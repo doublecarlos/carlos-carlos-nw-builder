@@ -3,3 +3,5 @@ venv/
 workspace/
 
 *.local*
+
+__pycache__/
