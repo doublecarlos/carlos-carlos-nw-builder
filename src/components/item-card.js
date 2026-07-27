@@ -180,12 +180,15 @@ window.NW.components.ItemCard = (() => {
               <span v-if="row.stacks > 1" class="badge">×{{ row.stacks }}</span>
             </div>
             <div v-if="row.name && row.conditions" class="stat-sub itemcard-bonus-when">
-              {{ row.conditions }}
+              Conditions: {{ row.conditions }}
             </div>
             <div v-if="row.secondary" class="stat-sub itemcard-bonus-shared">
-              contributes to this total — see {{ row.firstSource }}
+              This bonus was accounted for in {{ row.firstSource }}
             </div>
             <template v-else>
+              <div v-if="row.sharedWith" class="stat-sub itemcard-bonus-shared">
+                Other parts: {{ row.sharedWith.join(', ') }}
+              </div>
               <div v-if="row.stats && row.stats.tiered" class="itemcard-bonus-stats dim">(tiered)</div>
               <div v-else-if="row.stats" class="itemcard-bonus-stats">
                 <div v-if="row.stacks > 1" class="stat-sub">total, from {{ row.stacks }} stacking sources</div>
@@ -202,9 +205,6 @@ window.NW.components.ItemCard = (() => {
                     </div>
                   </div>
                 </template>
-              </div>
-              <div v-if="row.sharedWith" class="stat-sub itemcard-bonus-shared">
-                shared total — also granted by {{ row.sharedWith.join(', ') }}
               </div>
             </template>
             <div v-if="row.tiers" class="itemcard-bonus-tiers">
