@@ -39,6 +39,7 @@ window.NW.components.ItemForm = (() => {
       BonusRows: window.NW.components.BonusRows,
       SetBonuses: window.NW.components.SetBonuses,
       TokenInput: window.NW.components.TokenInput,
+      PercentInput: window.NW.components.PercentInput,
     },
 
     props: {
@@ -235,8 +236,8 @@ window.NW.components.ItemForm = (() => {
               {{ s.label }} ({{ s.key }})
             </option>
           </select>
-          <input type="number" step="any" v-model.number="stat.value">
-          <span class="hint">{{ stat.key && isPercent(stat.key) ? '0.09 = 9%' : '' }}</span>
+          <PercentInput v-if="isPercent(stat.key)" v-model="stat.value" />
+          <input v-else type="number" step="any" v-model.number="stat.value">
           <button type="button" class="link" @click="removeStat(index)">remove</button>
         </div>
 

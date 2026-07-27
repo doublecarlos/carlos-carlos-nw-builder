@@ -147,7 +147,10 @@ window.NW.components.BonusRows = (() => {
   return {
     name: 'BonusRows',
 
-    components: { TokenInput: window.NW.components.TokenInput },
+    components: {
+      TokenInput: window.NW.components.TokenInput,
+      PercentInput: window.NW.components.PercentInput,
+    },
 
     props: {
       // Mutated in place. The parent owns the draft array and re-reads it on save; passing a
@@ -312,8 +315,8 @@ window.NW.components.BonusRows = (() => {
                     {{ s.label }} ({{ s.key }})
                   </option>
                 </select>
-                <input type="number" step="any" v-model.number="stat.value">
-                <span class="hint">{{ stat.key && isPercent(stat.key) ? '0.09 = 9%' : '' }}</span>
+                <PercentInput v-if="isPercent(stat.key)" v-model="stat.value" />
+                <input v-else type="number" step="any" v-model.number="stat.value">
                 <button type="button" class="link" @click="removeStat(bonus.stats, sIndex)">remove</button>
               </div>
             </template>

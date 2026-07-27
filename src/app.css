@@ -613,6 +613,13 @@ input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: -1
 }
 .sub-section { align-items: center; color: var(--muted); display: flex; font-size: 11px; gap: 8px; margin: 6px 0 3px; }
 
+.pct-input {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  width: 110px;
+}
+.pct-input:not(:focus) { color: var(--accent); }
+
 .stat-row, .cond-row { align-items: center; display: flex; gap: 6px; margin-bottom: 4px; }
 .stat-row select, .cond-row select { min-width: 130px; }
 .stat-row input[type="number"] { width: 110px; }
