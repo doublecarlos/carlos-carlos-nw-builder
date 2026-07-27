@@ -36,11 +36,6 @@ window.NW = window.NW ?? {};
   // typing 3589 into a number field is one undo, not four.
   const COALESCE_MS = 700;
 
-  /** `savedById[id]` must never be the *same object* as the one sitting in `builds` -- Vue's
-   * reactivity dedupes proxies by underlying identity, so if they aliased, editing the live
-   * build would silently edit "saved" right along with it, and `dirty` could never go true. */
-  const cloneBuild = (build) => JSON.parse(JSON.stringify(build));
-
   const app = createApp({
     components: {
       BuildBar: window.NW.components.BuildBar,
@@ -64,12 +59,6 @@ window.NW = window.NW ?? {};
       return {
         builds: library.builds,
         activeId,
-        // buildId -> last-saved build, i.e. what Save writes and Revert/the saved-vs-draft
-        // compare read against. `builds` itself is the *draft* -- possibly-unsaved, autosaved
-        // continuously (see the `builds` watcher below) so a reload never loses it, but never
-        // written to the saved library (`nw:builds`) until a Save button press. Reactive (not
-        // `markRaw`'d like `db`): small, and `dirty` needs to react when it changes.
-        savedById: Object.fromEntries(library.savedById),
         // The editor's layer over the shipped catalogue. Persisted separately from builds --
         // it is a workspace, not part of any one build.
         workspaceOverlay: storage.loadOverlay(),
@@ -164,53 +153,6 @@ window.NW = window.NW ?? {};
         }
       },
 
-      // --- save / revert / saved-vs-draft compare ---------------------------------------------
-
-      /** The active build's own last save, or `null` for one that has never been saved --
-       * shouldn't happen in practice (create/duplicate/import/share all seed an entry
-       * immediately, see below), but a computed reading missing state should return nothing
-       * rather than throw. */
-      savedBuild() {
-        return this.savedById[this.activeId] ?? null;
-      },
-
-      /** `storage.sameBuild`, not `JSON.stringify` equality: `choices`/`values`/toggles grow and
-       * shrink by direct property add/delete, so their key order drifts between the live build
-       * and an earlier snapshot even when the content is identical. */
-      dirty() {
-        return !this.savedBuild || !storage.sameBuild(this.build, this.savedBuild);
-      },
-
-      /** Slot id -> its saved choice ('' for "was empty"), for every slot whose choice differs
-       * from the saved build. Feeds both the "N changed" note and `slot-list.js`'s per-row
-       * marker (a Map rather than a Set so that marker's tooltip can name what the slot used to
-       * be, not just flag that it changed). Scoped to slot choices only, same as the existing
-       * build-vs-build compare above (`differs`/`otherChoice` in slot-list.js) -- a context or
-       * toggle change still makes `dirty` true, it just isn't attributed to any one slot. */
-      changedSlotIds() {
-        const changed = new Map();
-        if (!this.savedBuild) return changed;
-        const saved = this.savedBuild.choices ?? {};
-        const live = this.build.choices;
-        for (const slotId of new Set([...Object.keys(live), ...Object.keys(saved)])) {
-          const savedChoice = saved[slotId] || '';
-          if ((live[slotId] || '') !== savedChoice) changed.set(slotId, savedChoice);
-        }
-        return changed;
-      },
-
-      /** Same shape as `compareResolved` above, resolved against the active build's own last
-       * save instead of another build in the library -- the engine can't tell the difference
-       * between "another build" and "this build a moment ago". */
-      savedResolved() {
-        if (!this.savedBuild) return null;
-        try {
-          return { ok: true, result: window.NW.engine.resolveBuild(this.db, this.savedBuild) };
-        } catch (error) {
-          return { ok: false, message: String(error) };
-        }
-      },
-
       /** Summarised here so the tab can show it without mounting the inspector. */
       bonusCounts() {
         if (!this.resolved.ok) return { total: 0, active: 0, nearMiss: 0 };
@@ -246,27 +188,18 @@ window.NW = window.NW ?? {};
     },
 
     watch: {
-      // The *draft* -- every edit lands here continuously, same debounce as before the
-      // save/revert split, just never touching the saved library (`nw:builds`) itself.
       builds: {
         deep: true,
         handler() {
           window.clearTimeout(this.saveTimer);
-          this.saveTimer = window.setTimeout(() => this.saveDraft(), SAVE_DEBOUNCE_MS);
+          this.saveTimer = window.setTimeout(() => this.save(), SAVE_DEBOUNCE_MS);
         },
       },
       // Every one of these is either a deliberate navigation (switch build, open/close the
       // editor) or, via `applyRoute`, the URL catching us up after the user already navigated
       // with the browser's own back/forward -- `router.apply`'s no-op guard means the latter
-      // case can't turn into a duplicate history entry. Switching builds doesn't touch `builds`
-      // itself, so it wouldn't otherwise reach either storage key -- persisted immediately
-      // (no debounce) on both, same as it always immediately persisted the one key before the
-      // split, so a reload reopens the build you were just on either way.
-      activeId() {
-        this.persistSaved();
-        this.saveDraft();
-        this.syncRoute();
-      },
+      // case can't turn into a duplicate history entry.
+      activeId() { this.save(); this.syncRoute(); },
       view() { this.syncRoute(); },
       // The sidebar tab is a lighter switch than a build/view change -- it still belongs in
       // the URL for a refresh to restore, but it would clutter the back button if every click
@@ -494,11 +427,6 @@ window.NW = window.NW ?? {};
       },
 
       // --- library --------------------------------------------------------------------------
-      // Create/duplicate/delete/import are structural, not a "build edit" -- they never go
-      // through `snapshot()`, and mirroring that, they save themselves immediately rather than
-      // waiting on a Save button press: a build that was just created, copied or imported has
-      // nothing pending to lose, so treating it as saved from the moment it exists is just
-      // accurate, not a workaround.
 
       // Switching, creating and importing never touch history: each build keeps its own, and
       // a build that has just been created has nothing to undo to yet.
@@ -508,19 +436,15 @@ window.NW = window.NW ?? {};
 
       createBuild() {
         const build = storage.defaultBuild(`Build ${this.builds.length + 1}`);
-        this.savedById[build.id] = cloneBuild(build);
         this.builds.push(build);
         this.activeId = build.id;
-        this.persistSaved();
       },
 
       duplicateBuild() {
         const copy = storage.duplicate(this.build);
-        this.savedById[copy.id] = cloneBuild(copy);
         this.builds.push(copy);
         this.activeId = copy.id;
         this.notice = `Duplicated as “${copy.name}”`;
-        this.persistSaved();
       },
 
       removeBuild() {
@@ -528,18 +452,14 @@ window.NW = window.NW ?? {};
         const index = this.builds.findIndex((item) => item.id === this.activeId);
         const [removed] = this.builds.splice(index, 1);
         this.dropHistory(removed.id);
-        delete this.savedById[removed.id];
         this.activeId = this.builds[Math.min(index, this.builds.length - 1)].id;
         this.notice = `Deleted “${removed.name}”`;
-        this.persistSaved();
       },
 
       importBuilds(builds) {
-        for (const build of builds) this.savedById[build.id] = cloneBuild(build);
         this.builds.push(...builds);
         this.activeId = builds[builds.length - 1].id;
         this.notice = `Imported ${builds.length} build(s)`;
-        this.persistSaved();
       },
 
       /**
@@ -567,48 +487,16 @@ window.NW = window.NW ?? {};
         this.notice = `Copied ${sectionIds.length} section(s) from “${source.name}”`;
       },
 
-      // --- save / revert ----------------------------------------------------------------------
-
-      /** The Save button: the active build only, and only while it's actually dirty. Bumps
-       * `updated` on the live build directly, not a detached copy -- unlike the old single-key
-       * `save()`, nothing here runs inside the watcher that autosaves the draft, so there is no
-       * feedback loop to dodge; the write is just one more change for that watcher to pick up. */
-      saveActive() {
-        if (!this.dirty) return;
-        this.build.updated = Date.now();
-        this.savedById[this.activeId] = cloneBuild(this.build);
-        this.persistSaved();
-        this.notice = `Saved “${this.build.name}”`;
-      },
-
-      /** The Revert button: throw the draft away and go back to the last save. Undoable like
-       * everything else in `snapshot()`'s ledger -- a reflex Revert is exactly the kind of thing
-       * a second thought wants to walk back. */
-      revertActive() {
-        if (!this.dirty) return;
-        this.snapshot(null, 'revert to saved');
-        this.replaceActive(cloneBuild(this.savedBuild));
-      },
-
       // --- plumbing -------------------------------------------------------------------------
 
-      /** Writes `savedById` -- never the live, possibly-unsaved `builds` -- as the saved
-       * library, in `builds`' own order so the saved list matches what's on screen. The only
-       * writer of `nw:builds`: called after `saveActive` and after any structural library change
-       * (create/duplicate/delete/import/share), all of which have nothing pending to lose. */
-      persistSaved() {
-        const builds = this.builds.map((item) => this.savedById[item.id]).filter(Boolean);
+      save() {
+        // Stamp `updated` on the serialised copy, never on the reactive build: writing it back
+        // would retrigger the deep watcher that called us and leave the app saving forever.
+        const now = Date.now();
+        const builds = this.builds.map((item) => (
+          item.id === this.activeId ? { ...item, updated: now } : item
+        ));
         const ok = storage.saveLibrary({ builds, activeId: this.activeId });
-        if (!ok && !this.storageFailed) {
-          this.storageFailed = true;
-          this.notice = 'Could not save to localStorage — export your build to keep it.';
-        }
-      },
-
-      /** The continuous, debounced write behind every keystroke (see the `builds` watcher) --
-       * the draft, never the saved library. */
-      saveDraft() {
-        const ok = storage.saveDraft({ builds: this.builds, activeId: this.activeId });
         if (!ok && !this.storageFailed) {
           this.storageFailed = true;
           this.notice = 'Could not save to localStorage — export your build to keep it.';
@@ -621,11 +509,9 @@ window.NW = window.NW ?? {};
         if (!payload) return;
         try {
           const shared = await storage.decodeShare(payload);
-          this.savedById[shared.id] = cloneBuild(shared);
           this.builds.push(shared);
           this.activeId = shared.id;
           this.notice = `Opened “${shared.name}” from a share link`;
-          this.persistSaved();
         } catch (error) {
           this.notice = `That share link could not be read: ${error.message ?? error}`;
         }
@@ -704,8 +590,6 @@ window.NW = window.NW ?? {};
           :can-redo="canRedo"
           :undo-label="undoLabel"
           :redo-label="redoLabel"
-          :dirty="dirty"
-          :changed-count="changedSlotIds.size"
           @select="selectBuild"
           @create="createBuild"
           @duplicate="duplicateBuild"
@@ -714,9 +598,7 @@ window.NW = window.NW ?? {};
           @copy-section="copySection"
           @import="importBuilds"
           @undo="undo"
-          @redo="redo"
-          @save="saveActive"
-          @revert="revertActive" />
+          @redo="redo" />
 
         <QuickOptions
           :context="build.context"
@@ -760,7 +642,6 @@ window.NW = window.NW ?? {};
           :compare-build="compareBuild"
           :highlight-diff="build.compare.highlight"
           :only-diff="build.compare.onlyDiff"
-          :changed-slot-ids="changedSlotIds"
           @choose="setChoice"
           @set-value="setValue"
           @set="setContext"
@@ -785,8 +666,7 @@ window.NW = window.NW ?? {};
           <!-- v-show, not v-if: switching tabs must not discard the inspector's filter. -->
           <StatPanel v-show="tab === 'stats'" :result="resolved.result"
                      :compare-result="compareResolved?.ok ? compareResolved.result : null"
-                     :compare-name="compareBuild?.name ?? ''"
-                     :saved-result="dirty && savedResolved?.ok ? savedResolved.result : null" />
+                     :compare-name="compareBuild?.name ?? ''" />
           <BonusInspector v-show="tab === 'bonuses'" :result="resolved.result" :db="db" />
         </aside>
       </main>

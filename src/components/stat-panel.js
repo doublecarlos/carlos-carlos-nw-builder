@@ -60,13 +60,11 @@ window.NW.components.StatPanel = (() => {
 
     props: {
       result: { type: Object, required: true },
-      // The sheet-style compare row(s) under the picker (`compareRows` below): another build's
-      // own `derived`, resolved by app.js against the same db (`compareResult`/`compareName`),
-      // and/or the active build's own last save (`savedResult`) -- either, both, or neither.
-      // Both null collapses the widget back to a single centred value.
+      // The sheet-style compare row under the picker: another build's own `derived`, resolved
+      // by app.js against the same db. `null` means "not comparing" and the widget collapses
+      // back to a single centred value.
       compareResult: { type: Object, default: null },
       compareName: { type: String, default: '' },
-      savedResult: { type: Object, default: null },
     },
 
     data: () => ({ showZero: false, damageRows: DAMAGE_ROWS, healingRows: HEALING_ROWS,
@@ -90,34 +88,22 @@ window.NW.components.StatPanel = (() => {
         return this.derived[source]?.[key] ?? 0;
       },
 
-      /**
-       * One row per comparison actually in play -- "Saved" (this build's own last save) and/or
-       * `compareName` (another build), in that order, filtered to whichever are present. Each
-       * row's own percentage reads relative to "this build" (sheet-style: the compare build's
-       * row shows how far *it* is from this one), independent of how many other rows exist.
-       */
-      compareRows() {
+      compareSummaryValue() {
+        if (!this.compareResult) return null;
         const [source, key] = this.summaryCalcKey.split(':');
-        const valueOf = (result) => result?.derived?.[source]?.[key] ?? 0;
-        const rows = [];
-        if (this.savedResult) rows.push({ label: 'Saved', value: valueOf(this.savedResult) });
-        if (this.compareResult) rows.push({ label: this.compareName, value: valueOf(this.compareResult) });
-        return rows.map((row) => ({ ...row, pct: this.relativePct(this.summaryValue, row.value) }));
+        return this.compareResult.derived?.[source]?.[key] ?? 0;
       },
 
-      /** "This build"'s own row only reads a percentage when there is exactly one comparison to
-       * read it against -- with both a saved row and a compare-build row up at once, "ahead of
-       * which one" stops being answerable, so it goes blank rather than guessing. */
-      thisPct() {
-        return this.compareRows.length === 1
-          ? this.relativePct(this.compareRows[0].value, this.summaryValue)
-          : null;
-      },
+      /** Sheet-style: each row's percentage reads relative to the *other* row, not a shared
+       * baseline -- "this build" is +9% over the compare build, and read the other way round
+       * the compare build is some different, smaller magnitude under this one. */
+      thisVsOtherPct() { return this.relativePct(this.compareSummaryValue, this.summaryValue); },
+      otherVsThisPct() { return this.relativePct(this.summaryValue, this.compareSummaryValue); },
 
-      /** Green ahead, red behind, plain exactly even or ambiguous (see `thisPct`) -- only "this
-       * build"'s own row reads this; the compare row(s) are informational, not judged. */
+      /** Green ahead of the compare build, red behind it, plain exactly even -- only "this
+       * build"'s own row reads this; the compare row is informational, not judged. */
       summaryRowCls() {
-        const pct = this.thisPct;
+        const pct = this.thisVsOtherPct;
         if (pct == null || Math.abs(pct) < 1e-9) return '';
         return pct > 0 ? 'is-positive' : 'is-negative';
       },
@@ -243,25 +229,25 @@ window.NW.components.StatPanel = (() => {
         </div>
 
         <!-- The one number the sheet keeps most visible: pick a damage calculation, see its
-             value here. With a saved snapshot to compare against (unsaved changes) and/or a
-             compare build selected (app.js's quick-compare picker) this grows the sheet's own
-             layout -- this build's row, then one per comparison, then how far apart they are. -->
+             value here. With a compare build selected (app.js's quick-compare picker) this
+             grows the sheet's own layout -- this build's row, then the other's, then how far
+             apart they are. -->
         <div class="summary-calc">
           <ComboBox class="summary-calc-select" v-model="summaryCalcKey" :options="summaryOptions" />
 
-          <span v-if="!compareRows.length" class="tile-value">{{ int(summaryValue) }}</span>
+          <span v-if="!compareResult" class="tile-value">{{ int(summaryValue) }}</span>
 
           <table v-else class="stat-table summary-compare">
             <tbody>
               <tr :class="summaryRowCls">
                 <td>This build</td>
                 <td class="num summary-compare-value">{{ int(summaryValue) }}</td>
-                <td class="num">{{ fmtPct(thisPct) }}</td>
+                <td class="num">{{ fmtPct(thisVsOtherPct) }}</td>
               </tr>
-              <tr v-for="row in compareRows" :key="row.label">
-                <td>{{ row.label }}</td>
-                <td class="num summary-compare-value">{{ int(row.value) }}</td>
-                <td class="num dim">{{ fmtPct(row.pct) }}</td>
+              <tr>
+                <td>{{ compareName }}</td>
+                <td class="num summary-compare-value">{{ int(compareSummaryValue) }}</td>
+                <td class="num dim">{{ fmtPct(otherVsThisPct) }}</td>
               </tr>
             </tbody>
           </table>

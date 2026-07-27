@@ -12,7 +12,6 @@ window.NW.storage = (() => {
   'use strict';
 
   const KEY = 'nw:builds';
-  const DRAFT_KEY = 'nw:builds-draft';
   const LEGACY_KEY = 'nw:current-build';
   const OVERLAY_KEY = 'nw:catalog-overlay';
   const HASH_PREFIX = '#b=';
@@ -143,47 +142,21 @@ window.NW.storage = (() => {
       updated: Date.now() };
   }
 
-  const canonical = (value) => {
-    if (Array.isArray(value)) return value.map(canonical);
-    if (value && typeof value === 'object') {
-      const out = {};
-      for (const key of Object.keys(value).sort()) out[key] = canonical(value[key]);
-      return out;
-    }
-    return value;
-  };
-
-  /**
-   * Key-order-insensitive equality. `choices`/`values`/`context.toggles` grow and shrink by
-   * direct property add/delete (`app.js`'s `setChoice` et al.), so their insertion order drifts
-   * independently between a live build and an earlier-saved snapshot even when the content is
-   * identical -- a plain `JSON.stringify` comparison would report a save-then-revert as still
-   * dirty.
-   */
-  const sameBuild = (a, b) => JSON.stringify(canonical(a)) === JSON.stringify(canonical(b));
-
   // --- the library ------------------------------------------------------------------------
-  // Two keys, two jobs. `KEY` (`nw:builds`) is the *saved* library -- what a Save button
-  // press writes, and what Revert and the saved-vs-draft compare read back against. `DRAFT_KEY`
-  // is every build's live, possibly-unsaved content, autosaved continuously the way the whole
-  // library used to be -- so a reload mid-edit restores exactly where you left off without that
-  // edit having touched the saved copy underneath.
 
   function emptyLibrary() {
     const build = defaultBuild();
     return { builds: [build], activeId: build.id };
   }
 
-  function readJson(key) {
+  function loadLibrary() {
+    let stored = null;
     try {
-      return JSON.parse(window.localStorage.getItem(key) ?? 'null');
+      stored = JSON.parse(window.localStorage.getItem(KEY) ?? 'null');
     } catch {
-      return null;
+      stored = null;
     }
-  }
 
-  function loadSavedLibrary() {
-    const stored = readJson(KEY);
     if (!stored || !Array.isArray(stored.builds) || !stored.builds.length) {
       const migrated = migrateLegacy();
       return migrated ?? emptyLibrary();
@@ -213,40 +186,9 @@ window.NW.storage = (() => {
     return { builds: [build], activeId: build.id };
   }
 
-  /**
-   * The saved library, overlaid with any draft still pending for a build that's still around --
-   * this is what app.js edits and renders. `savedById` (id -> saved build) rides along so app.js
-   * can tell a dirty build from a clean one (via `sameBuild`) and knows what Revert goes back to,
-   * without a second read of `KEY`. A draft for a build no longer in the saved library (deleted
-   * since the draft was written) has nowhere to go and is dropped.
-   */
-  function loadLibrary() {
-    const saved = loadSavedLibrary();
-    const savedIds = new Set(saved.builds.map((build) => build.id));
-    const savedById = new Map(saved.builds.map((build) => [build.id, build]));
-
-    const draftRaw = readJson(DRAFT_KEY);
-    const draftBuilds = Array.isArray(draftRaw?.builds) ? draftRaw.builds : [];
-    const draftById = new Map(
-      draftBuilds.map((build) => normalise(build)).filter((build) => savedIds.has(build.id))
-        .map((build) => [build.id, build]),
-    );
-
-    // `normalise(build)` even on the no-draft fallback, not the bare `saved.builds` entry --
-    // `normalise` always rebuilds `choices`/`values`/`context`/etc as fresh objects, so `builds`
-    // and `savedById` never end up aliasing the same nested objects. Without this, editing the
-    // live build with no draft yet in play would silently edit "saved" right along with it,
-    // since Vue's reactivity dedupes proxies by underlying object identity.
-    const builds = saved.builds.map((build) => draftById.get(build.id) ?? normalise(build));
-    const activeId = (draftRaw?.activeId && savedIds.has(draftRaw.activeId))
-      ? draftRaw.activeId
-      : saved.activeId;
-    return { builds, activeId, savedById };
-  }
-
-  function writeLibrary(key, library) {
+  function saveLibrary(library) {
     try {
-      window.localStorage.setItem(key, JSON.stringify({
+      window.localStorage.setItem(KEY, JSON.stringify({
         builds: library.builds,
         activeId: library.activeId,
       }));
@@ -257,13 +199,6 @@ window.NW.storage = (() => {
       return false;
     }
   }
-
-  /** The explicit-Save write -- only caller of this is a Save button press (or a structural
-   * change: create/duplicate/delete/import already have nothing to lose by saving themselves). */
-  const saveLibrary = (library) => writeLibrary(KEY, library);
-
-  /** The continuous, debounced write behind every keystroke -- never touches `KEY`. */
-  const saveDraft = (library) => writeLibrary(DRAFT_KEY, library);
 
   // --- the catalogue overlay ---------------------------------------------------------------
   // The editor's layer over the shipped items and bonuses. Kept under its own key because it
@@ -381,8 +316,8 @@ window.NW.storage = (() => {
   };
 
   return {
-    defaultBuild, normalise, duplicate, newId, sameBuild,
-    loadLibrary, saveLibrary, saveDraft, loadOverlay, saveOverlay,
+    defaultBuild, normalise, duplicate, newId,
+    loadLibrary, saveLibrary, loadOverlay, saveOverlay,
     toJson, parseJson,
     encodeShare, decodeShare, shareUrl, readHash, clearHash,
   };

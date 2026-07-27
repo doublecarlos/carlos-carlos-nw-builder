@@ -96,18 +96,6 @@ llm/plans/            numbered plans
 - **One reactive `build` + a `computed` calling `resolveBuild`.** It is pure and ~2 ms —
   recompute on every change; do not build incremental update machinery.
 - **Every mutation goes through an `app.js` method.** That is what keeps the undo stack small.
-- **Builds are saved *and* drafted, separately.** `builds`/`build` is the live, possibly-unsaved
-  draft — autosaved continuously to `nw:builds-draft` so a reload never loses it. `savedById`
-  (id → last-saved build) is the saved library, written to `nw:builds` only by `saveActive()`
-  (the Save button) or a structural change (create/duplicate/delete/import/share, which save
-  themselves immediately — nothing pending to lose). `dirty` compares the two via
-  `storage.sameBuild` (key-order-insensitive: `choices`/`values`/toggles grow and shrink by
-  direct property add/delete, so a plain `JSON.stringify` equality would false-positive on a
-  save-then-revert). **`savedById[id]` must never be the same object reference as anything in
-  `builds`** — Vue dedupes reactive proxies by underlying identity, so an aliased pair would
-  silently edit "saved" right along with "live" and `dirty` could never go true; always go
-  through `cloneBuild()` (or `storage.normalise`, which happens to always deep-copy) when
-  seeding one from the other.
 - **`db` is `markRaw`'d.** 369 items plus Maps; deep-proxying costs more than the calculation.
 - **Catalogue is layered**: base (shipped) ← workspace overlay (editor) ← `build.catalog`
   (per-build custom gear — plumbed but not yet exposed). An overlay is
