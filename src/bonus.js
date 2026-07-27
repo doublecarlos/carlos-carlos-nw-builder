@@ -166,12 +166,25 @@ window.NW.bonus = (() => {
     // Attribute each active bonus's stats back to the slot that instanced it. Multiplicative
     // stats combine per row in the pipeline, so an item and its own bonus must land on the
     // same row -- exactly as the sheet did.
+    //
+    // `stats` stays the per-stack payload (what the inspector should show next to "×2");
+    // `appliedStats` is what actually reaches the pipeline. Keeping both explicit avoids the
+    // easy mistake of reading `stats` and wondering why stacking seems not to work.
     const bonusStatsBySlot = new Map();
     for (const entry of evaluated) {
-      if (!entry.active || !entry.stats) continue;
+      if (!entry.active || !entry.stats) {
+        entry.appliedStats = null;
+        continue;
+      }
+      entry.appliedStats = entry.stacks === 1
+        ? { ...entry.stats }
+        : Object.fromEntries(
+          Object.entries(entry.stats).map(([key, value]) => [key, value * entry.stacks]),
+        );
+
       const bucket = bonusStatsBySlot.get(entry.slotId) ?? new Map();
-      for (const [key, value] of Object.entries(entry.stats)) {
-        bucket.set(key, (bucket.get(key) ?? 0) + value * entry.stacks);
+      for (const [key, value] of Object.entries(entry.appliedStats)) {
+        bucket.set(key, (bucket.get(key) ?? 0) + value);
       }
       bonusStatsBySlot.set(entry.slotId, bucket);
     }

@@ -43,28 +43,38 @@
 <script src="src/engine.js"></script>
 <script src="tests/fixture.js"></script>
 <script src="tests/harness.js"></script>
+<script src="tests/unit.js"></script>
 <script>
 (() => {
   let report;
+  let unit;
   try {
     report = window.NW.harness.run();
+    unit = window.NW.unit.run();
   } catch (error) {
     report = { ok: false, threw: true, totalFailures: 1, cases: [], error: String(error),
                stack: error.stack };
+    unit = { ok: false, total: 0, totalFailures: 1, results: [] };
   }
 
-  // Exposed so the headless runner can read the result without scraping the DOM.
+  // Exposed so an automated runner can read the result without scraping the DOM.
   window.NW_TEST_RESULT = report;
+  window.NW_UNIT_RESULT = unit;
 
+  const ok = report.ok && unit.ok;
   const banner = document.getElementById('banner');
-  banner.className = `banner ${report.ok ? 'pass' : 'fail'}`;
+  banner.className = `banner ${ok ? 'pass' : 'fail'}`;
   banner.textContent = report.threw
     ? `THREW: ${report.error}`
-    : (report.ok ? '✓ all fixtures reproduced' : `✗ ${report.totalFailures} mismatch(es)`);
+    : (ok
+        ? `✓ fixtures reproduced, ${unit.total} unit tests passed`
+        : `✗ ${report.totalFailures} fixture mismatch(es), `
+          + `${unit.totalFailures} unit assertion(s) failed`);
 
   document.getElementById('report').textContent = report.threw
     ? report.stack
-    : window.NW.harness.format(report);
+    : `${window.NW.harness.format(report)}\n\n${'-'.repeat(60)}\n\n`
+      + `${window.NW.unit.format(unit)}`;
 
   // A quick derived-value table for eyeballing, independent of pass/fail.
   const detail = document.getElementById('detail');

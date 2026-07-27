@@ -497,19 +497,24 @@ def write_report(path, migration, items, bonus_sets):
         f'{sum(len(s["effects"]) for s in bonus_sets)} effects',
         f'- {inline_count} inline bonuses on single items',
         '',
-        '## Decisions needed',
+        '## Decisions — all resolved (2026-07-26)',
         '',
-        '1. **Chilling Flow healer/tank payloads are unwired.** '
-        '`M33 Wintermarked Frostlute` and `M33 Wintermarked Skaldblade` list only the base and '
-        '`-dps-` variants, so a healer or tank using those weapons gets nothing -- even though '
-        'the `-healer-` and `-tank-` payload rows exist. Voidtouched wires all three roles, so '
-        'this looks like an omission rather than intent. Confirm, and I will wire them.',
-        '2. **`Sambocade (Movement)` has a payload row but no membership,** so the food grants '
-        'nothing today. Confirm whether it should grant `hit_points +20000, movement +5%`.',
-        '3. **Insignia covenant penalties are counted twice at one piece.** '
-        "`Executioner's Covenant` carries `defense/awareness/crit_avoid/deflect -1500` on the "
-        'item row *and* again on its 1-piece payload, so slotting one copy applies -3000. '
-        'Preserved as-is; confirm whether that is intended.',
+        '1. **Chilling Flow healer/tank payloads were unwired.** `M33 Wintermarked Frostlute` '
+        'and `M33 Wintermarked Skaldblade` listed only the base and `-dps-` variants, so a '
+        'healer or tank using those weapons got nothing. Confirmed an omission → wired, see '
+        'Corrections below.',
+        '2. **`Sambocade (Movement)` had a payload row but no membership,** so the food granted '
+        'nothing. Confirmed a bug → wired.',
+        '3. **Insignia covenant penalty was counted twice at one piece.** '
+        "`Executioner's Covenant` carried the -1500 defensive penalty on the item row *and* on "
+        'its 1-piece payload. Confirmed a bug → removed from the item row.',
+        '4. **`M33 Critical Breaker` is a single-item bonus.** Legacy enumerated only `::1:2`, '
+        'so wearing both member pieces (Hunter Hood + Marcher Poleyns) computed `::2:2`, found '
+        'no payload row and silently granted nothing. Confirmed: it applies **once at one or '
+        'more copies**. No correction is needed -- the new model already does this (no `pieces` '
+        'threshold, `stacking: unique`). The sheet-side cause was a missing `bonus_max_parts: '
+        '1`; that mechanism does not exist in the new model, so the bug cannot recur. Locked in '
+        'by a unit test in `tests/unit.js`.',
         '',
     ]
 
