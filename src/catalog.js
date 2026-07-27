@@ -133,7 +133,7 @@ window.NW.catalog = (() => {
 
   // Every non-stat key an item may legitimately carry. Anything else is a typo, and a
   // misspelled stat (`sevrity: 5000`) is invisible otherwise -- it simply never applies.
-  const ITEM_FIELDS = new Set(['name', 'filter', 'tags', 'sets', 'maxCopies', 'allowedClass',
+  const ITEM_FIELDS = new Set(['name', 'filter', 'tags', 'maxCopies', 'allowedClass',
     'dynamicStat', 'dynamicMin', 'dynamicMax', 'bonuses', 'excludes']);
 
   function checkConditions(when, path, report) {
@@ -211,28 +211,13 @@ window.NW.catalog = (() => {
       for (const cls of item.allowedClass ?? []) {
         if (!classes.has(cls)) report('error', `allowedClass "${cls}" is not a class`, item.name);
       }
-      for (const setId of item.sets ?? []) {
+      for (const setId of item.bonuses ?? []) {
         if (!setIds.has(setId)) {
-          report('warn', `set "${setId}" has no shared bonus defined`, item.name);
+          report('warn', `bonus "${setId}" has no definition`, item.name);
         }
       }
       if (item.dynamicStat && !statKeys.has(item.dynamicStat)) {
         report('error', `dynamicStat "${item.dynamicStat}" is not a stat`, item.name);
-      }
-
-      for (const bonus of item.bonuses ?? []) {
-        if (!bonus.id) report('error', 'a bonus has no id', item.name);
-        checkConditions(bonus.when, `bonus ${bonus.id ?? '?'}`, (level, message) =>
-          report(level, message, item.name));
-        checkStats(bonus.stats, `bonus ${bonus.id ?? '?'}`, item.name);
-        for (const tier of bonus.tiers ?? []) {
-          checkStats(tier.stats, `bonus ${bonus.id} tier`, item.name);
-        }
-        for (const variant of bonus.variants ?? []) {
-          checkStats(variant.stats, `bonus ${bonus.id} variant`, item.name);
-          checkConditions(variant.when, `bonus ${bonus.id} variant`, (level, message) =>
-            report(level, message, item.name));
-        }
       }
     }
 
@@ -240,6 +225,7 @@ window.NW.catalog = (() => {
       if (!set.id) { report('error', 'a bonus set has no id'); continue; }
       for (const effect of set.effects ?? []) {
         if (!effect.id) report('error', 'an effect has no id', set.id);
+        if (!effect.name) report('warn', `effect ${effect.id ?? '?'} has no friendly name`, set.id);
         checkConditions(effect.when, `effect ${effect.id ?? '?'}`, (level, message) =>
           report(level, message, set.id));
         checkStats(effect.stats, `effect ${effect.id ?? '?'}`, set.id);
@@ -257,8 +243,8 @@ window.NW.catalog = (() => {
   // Mirrors the key order the Python generator emits, so a pasted-back file diffs cleanly
   // against a regenerated one instead of reordering every line.
   const LEADING_KEYS = ['name', 'filter', 'il', 'combined_rating'];
-  const TRAILING_KEYS = ['tags', 'sets', 'maxCopies', 'allowedClass',
-    'dynamicStat', 'dynamicMin', 'dynamicMax', 'excludes', 'bonuses'];
+  const TRAILING_KEYS = ['tags', 'bonuses', 'maxCopies', 'allowedClass',
+    'dynamicStat', 'dynamicMin', 'dynamicMax', 'excludes'];
 
   const IDENT = /^[A-Za-z_$][A-Za-z0-9_$]*$/;
   const key = (name) => (IDENT.test(name) ? name : JSON.stringify(name));
@@ -304,8 +290,9 @@ window.NW.catalog = (() => {
   }
 
   function toBonusesFile(bonusSets) {
-    const header = '// Exported from the in-app data editor -- shared/set bonuses.\n'
-      + '// Membership lives on the items (`sets: [...]`), never here.\n\n';
+    const header = '// Exported from the in-app data editor -- every bonus, one per group.\n'
+      + '// A group with one member is private to that item; membership lives on the items\n'
+      + '// (`bonuses: [...]`), never here.\n\n';
     const body = bonusSets.map((set) => {
       const effects = (set.effects ?? [])
         .map((effect) => `    ${literal(effect)}`).join(',\n');

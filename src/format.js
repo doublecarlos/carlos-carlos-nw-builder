@@ -53,8 +53,7 @@ window.NW.format = (() => {
   };
 
   /** True when the item carries conditional effects worth flagging in the picker. */
-  const hasBonuses = (item) => Boolean(item && ((item.bonuses?.length ?? 0) > 0
-    || (item.sets?.length ?? 0) > 0));
+  const hasBonuses = (item) => Boolean(item && (item.bonuses?.length ?? 0) > 0);
 
   /** `warlock` -> `Warlock`, `artifactCall` -> `Artifact Call`. */
   const titleCase = (value) => String(value ?? '')

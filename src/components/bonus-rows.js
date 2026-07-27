@@ -95,6 +95,7 @@ window.NW.bonusDraft = (() => {
     return {
       uid: `b${Math.random().toString(36).slice(2, 8)}`,
       id: bonus.id ?? '',
+      name: bonus.name ?? '',
       mode: json ? 'json' : 'simple',
       json: JSON.stringify(bonus, null, 2),
       conditions: json ? [] : conditionRows(bonus.when),
@@ -116,6 +117,7 @@ window.NW.bonusDraft = (() => {
     if (draft.mode === 'json') return JSON.parse(draft.json);
 
     const out = { id: draft.id.trim() };
+    if (draft.name.trim()) out.name = draft.name.trim();
     const when = rowsToWhen(draft.conditions);
     if (Object.keys(when).length) out.when = when;
 
@@ -247,7 +249,11 @@ window.NW.components.BonusRows = (() => {
       <div>
         <div v-for="(bonus, bIndex) in rows" :key="bonus.uid" class="bonus-edit">
           <div class="bonus-edit-head">
-            <input class="bonus-id" type="text" v-model="bonus.id" :placeholder="idPlaceholder">
+            <label class="field"><span class="field-label">Name</span>
+              <input class="bonus-name" type="text" v-model="bonus.name"
+                     placeholder="friendly name shown in tooltips"></label>
+            <label class="field"><span class="field-label">Id</span>
+              <input class="bonus-id" type="text" v-model="bonus.id" :placeholder="idPlaceholder"></label>
             <button type="button" class="link" @click="toggleJson(bonus)">
               {{ bonus.mode === 'json' ? 'use the form' : 'edit as JSON' }}
             </button>

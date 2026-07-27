@@ -90,9 +90,6 @@ window.NW.components.DataEditor = (() => {
       /** Every bonus id in the catalogue — the vocabulary for `excludes`. */
       bonusIds() {
         const ids = new Set();
-        for (const item of this.db.items) {
-          for (const bonus of item.bonuses ?? []) if (bonus.id) ids.add(bonus.id);
-        }
         for (const set of this.db.bonusSets) {
           for (const effect of set.effects ?? []) if (effect.id) ids.add(effect.id);
         }

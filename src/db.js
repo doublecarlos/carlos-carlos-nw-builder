@@ -25,7 +25,7 @@ window.NW.db = (() => {
       byName.set(item.name, item);
       pushTo(byFilter, item.filter, item);
 
-      for (const setId of item.sets ?? []) pushTo(setMembers, setId, item.name);
+      for (const setId of item.bonuses ?? []) pushTo(setMembers, setId, item.name);
       for (const tag of item.tags ?? []) pushTo(itemsByTag, tag, item.name);
     }
 
@@ -69,16 +69,15 @@ window.NW.db = (() => {
       /** 0 or absent means unlimited. */
       maxCopies: (item) => item?.maxCopies ?? 0,
 
-      /** Every bonus an item can contribute: its own inline ones plus its sets'. */
+      /**
+       * Every bonus an item contributes: every bonus set it belongs to, whether that set has
+       * one member (a bonus that is nobody else's business) or many.
+       */
       bonusesFor(item) {
-        const own = (item.bonuses ?? []).map((bonus) => (
-          { bonus, setId: null, source: item.name }
-        ));
-        const shared = (item.sets ?? []).flatMap((setId) => {
+        return (item.bonuses ?? []).flatMap((setId) => {
           const set = bonusSetById.get(setId);
           return set ? set.effects.map((bonus) => ({ bonus, setId, source: item.name })) : [];
         });
-        return [...own, ...shared];
       },
     };
   }

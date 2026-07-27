@@ -41,7 +41,7 @@ window.NW.bonus = (() => {
 
       bump(equipped, item.name);
       for (const tag of item.tags ?? []) bump(tags, tag);
-      for (const setId of item.sets ?? []) bump(setPieces, setId);
+      for (const setId of item.bonuses ?? []) bump(setPieces, setId);
 
       for (const entry of db.bonusesFor(item)) {
         candidates.push({ ...entry, slotId: slot.id, order });

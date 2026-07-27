@@ -1,19 +1,18 @@
-// Editing form for one item: its fields, its own inline bonuses, and the sets it belongs to.
+// Editing form for one item: its fields, and the bonus groups it belongs to.
 //
 // Works on a *draft* and saves explicitly. Live-editing the overlay would mean a rename fires
 // once per keystroke, each one creating and tombstoning entries -- and the whole point of the
 // overlay is that it is a clean record of what the user changed.
 //
-// Bonus editing (structured conditions plus a JSON escape hatch) lives in `BonusRows`, shared
-// with the set editor below, because item bonuses and set effects are the same shape.
+// Bonus editing itself lives entirely in `BonusGroups` below -- there is no separate "this
+// item's own bonuses" concept here any more; a bonus only this item grants is just a group
+// with one member.
 
 window.NW = window.NW ?? {};
 window.NW.components = window.NW.components ?? {};
 
 window.NW.components.ItemForm = (() => {
   'use strict';
-
-  const draft = () => window.NW.bonusDraft;
 
   /**
    * Key-order-insensitive comparison. `toItem` rebuilds the object in the exporter's key
@@ -36,8 +35,7 @@ window.NW.components.ItemForm = (() => {
     name: 'ItemForm',
 
     components: {
-      BonusRows: window.NW.components.BonusRows,
-      SetBonuses: window.NW.components.SetBonuses,
+      BonusGroups: window.NW.components.BonusGroups,
       TokenInput: window.NW.components.TokenInput,
       PercentInput: window.NW.components.PercentInput,
     },
@@ -64,15 +62,9 @@ window.NW.components.ItemForm = (() => {
       classes: () => window.NW_SCHEMA.context.classes,
 
       dirty() {
-        let item;
-        try {
-          item = this.toItem();
-        } catch {
-          return true;      // a bonus has unparseable JSON: definitely not saved
-        }
+        const item = this.toItem();
         // An untouched blank form is not a pending change.
-        if (!this.source) return Boolean(item.name || item.filter || this.draft.stats.length
-          || this.draft.bonuses.length);
+        if (!this.source) return Boolean(item.name || item.filter || this.draft.stats.length);
         return !sameItem(item, this.source);
       },
     },
@@ -102,7 +94,7 @@ window.NW.components.ItemForm = (() => {
           maxCopies: source.maxCopies ?? null,
           allowedClass: [...(source.allowedClass ?? [])],
           tags: [...(source.tags ?? [])],
-          sets: [...(source.sets ?? [])],
+          bonuses: [...(source.bonuses ?? [])],
           excludes: [...(source.excludes ?? [])],
           dynamicStat: source.dynamicStat ?? '',
           dynamicMin: source.dynamicMin ?? null,
@@ -110,7 +102,6 @@ window.NW.components.ItemForm = (() => {
           stats: Object.keys(source)
             .filter((key) => statKeys.has(key))
             .map((key) => ({ key, value: source[key] })),
-          bonuses: (source.bonuses ?? []).map((bonus) => draft().toDraft(bonus)),
         };
       },
 
@@ -127,7 +118,7 @@ window.NW.components.ItemForm = (() => {
         }
 
         if (local.tags.length) item.tags = [...local.tags];
-        if (local.sets.length) item.sets = [...local.sets];
+        if (local.bonuses.length) item.bonuses = [...local.bonuses];
         if (local.excludes.length) item.excludes = [...local.excludes];
         if (local.maxCopies) item.maxCopies = Number(local.maxCopies);
         if (local.allowedClass.length) item.allowedClass = [...local.allowedClass];
@@ -142,22 +133,12 @@ window.NW.components.ItemForm = (() => {
           }
         }
 
-        // Throws on invalid JSON; `save` and `dirty` both handle that.
-        const bonuses = local.bonuses.map((bonus) => draft().toBonus(bonus));
-        if (bonuses.length) item.bonuses = bonuses;
-
         return item;
       },
 
       save() {
         this.error = '';
-        let item;
-        try {
-          item = this.toItem();
-        } catch (error) {
-          this.error = `A bonus has invalid JSON: ${error.message}`;
-          return;
-        }
+        const item = this.toItem();
         if (!item.name) { this.error = 'The item needs a name.'; return; }
         if (!item.filter) { this.error = 'The item needs a filter, or no slot can hold it.'; return; }
         this.$emit('save', { item, previousName: this.source?.name ?? null });
@@ -165,17 +146,16 @@ window.NW.components.ItemForm = (() => {
 
       addStat() { this.draft.stats.push({ key: '', value: 0 }); },
       removeStat(index) { this.draft.stats.splice(index, 1); },
-      addBonus() { this.draft.bonuses.push(draft().toDraft({ id: '', when: {}, stats: {} })); },
 
       /**
-       * A set created from the sets section is attached to this item straight away.
-       * Assigns a new array rather than pushing: `SetBonuses` watches `setIds`, and an
+       * A bonus created or attached from the Bonuses section is attached to this item straight
+       * away. Assigns a new array rather than pushing: `BonusGroups` watches `setIds`, and an
        * in-place push keeps the same reference, so the watcher would not fire and the new
-       * set would render with no draft behind it.
+       * group would render with no draft behind it.
        */
       attachSet(id) {
-        if (this.draft.sets.includes(id)) return;
-        this.draft.sets = [...this.draft.sets, id];
+        if (this.draft.bonuses.includes(id)) return;
+        this.draft.bonuses = [...this.draft.bonuses, id];
       },
     },
 
@@ -213,8 +193,6 @@ window.NW.components.ItemForm = (() => {
         <div class="form-grid form-grid--tokens">
           <div class="field"><span class="field-label">Tags</span>
             <TokenInput v-model="draft.tags" :options="tags" placeholder="Add a tag…" /></div>
-          <div class="field"><span class="field-label">Sets</span>
-            <TokenInput v-model="draft.sets" :options="setIds" placeholder="Add a set…" /></div>
         </div>
 
         <div class="form-section">Restricted to classes</div>
@@ -254,24 +232,15 @@ window.NW.components.ItemForm = (() => {
             <input type="number" v-model.number="draft.dynamicMax" :disabled="!draft.dynamicStat"></label>
         </div>
 
-        <div class="form-section">
-          Bonuses on this item
-          <button type="button" class="link" @click="addBonus">+ add</button>
-          <span v-if="!draft.bonuses.length" class="hint">
-            none — this item contributes only the stats above
-          </span>
-        </div>
-        <BonusRows :rows="draft.bonuses" :set-ids="draft.sets" :tags="tags"
-                   :bonus-ids="bonusIds" @error="error = $event" />
-
         <div class="form-section">Equipping this item suppresses</div>
         <TokenInput v-model="draft.excludes" :options="bonusIds"
                     placeholder="bonus id this item overrides…" />
         <p class="hint">Item-level override: those bonuses go inactive whenever this item is
           equipped, whatever grants them.</p>
 
-        <SetBonuses
-          :set-ids="draft.sets"
+        <BonusGroups
+          :set-ids="draft.bonuses"
+          :item-name="draft.name"
           :db="db"
           :all-set-ids="setIds"
           :tags="tags"

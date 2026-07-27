@@ -358,20 +358,30 @@ class Migration:
 
     # -- pass 4: emit --------------------------------------------------------------------------
     def emit(self):
-        inline = defaultdict(list)
         shared = []
 
         for bonus in self.bonuses:
             tiers = bonus.get('tiers') or []
             set_id = slug(bonus['owner'])
-            # A bonus needs a named set whenever its payload depends on how many slots
-            # contribute -- either several distinct member items, or piece-count tiers on a
-            # single item that can be equipped more than once.
-            needs_set = len(bonus['members']) > 1 or len(tiers) > 1 or bonus['parts'] > 1
+            # Every bonus lives in a named set now, whether or not anything else shares it --
+            # a single-item, single-tier bonus becomes a private set with one member. The only
+            # thing that ever made a set structurally necessary is a `pieces` condition needing
+            # something to count against; that still works exactly the same way, it just no
+            # longer decides whether a set exists at all.
+            needs_pieces_condition = len(tiers) > 1 or bonus['parts'] > 1
 
             payload = OrderedDict()
             payload['id'] = slug(bonus['owner'] + '-' + (bonus['label'] or 'bonus')
                                  + '-' + '-'.join(bonus['tags']))
+            # A friendly name, next to the slug id -- the base/only effect for an owner is just
+            # called after it; a second effect on the same owner (an alternate condition, e.g.
+            # M31 Thayan Predator's location:thay variant) appends what distinguishes it. Not
+            # polished English, but distinct and always populated; a human can hand-edit any of
+            # these afterwards through the data editor's Name field.
+            qualifier_parts = [p for p in ([bonus['label']] + bonus['tags']) if p]
+            payload['name'] = (bonus['owner'] if not qualifier_parts
+                                else f"{bonus['owner']} "
+                                     f"({', '.join(p.replace('_', ' ') for p in qualifier_parts)})")
             if bonus['when']:
                 payload['when'] = dict(bonus['when'])
 
@@ -387,7 +397,7 @@ class Migration:
             else:
                 payload['stats'] = bonus['stats']
 
-            if needs_set and not payload.get('tiers') and bonus['parts'] > 1:
+            if needs_pieces_condition and not payload.get('tiers') and bonus['parts'] > 1:
                 when = dict(payload.get('when') or {})
                 when['pieces'] = {'set': set_id, 'atLeast': bonus['parts']}
                 payload['when'] = when
@@ -399,19 +409,24 @@ class Migration:
                     'legacyMaxInstances': bonus['maxInstances'],
                 })
 
-            if needs_set:
-                shared.append({'bonus': payload, 'members': bonus['members'],
-                               'owner': bonus['owner'], 'setId': set_id})
-            else:
-                inline[bonus['members'][0]].append(payload)
+            shared.append({'bonus': payload, 'members': bonus['members'],
+                           'owner': bonus['owner'], 'setId': set_id})
 
-        # group shared bonuses by set
+        # group bonuses by set (a set of size 1 is a bonus that is nobody else's business)
         sets = OrderedDict()
         item_sets = defaultdict(set)
+        owner_by_set = {}
         for entry in shared:
             record = sets.setdefault(entry['setId'], {
                 'id': entry['setId'], 'name': entry['owner'], 'effects': [],
             })
+            # Two different owners should never collapse to the same set id -- that would
+            # silently merge two unrelated items' bonuses into one set.
+            prior_owner = owner_by_set.setdefault(entry['setId'], entry['owner'])
+            assert prior_owner == entry['owner'], (
+                f'set id {entry["setId"]!r} claimed by both {prior_owner!r} and '
+                f'{entry["owner"]!r} -- slug collision, needs a disambiguation rule'
+            )
             effect = dict(entry['bonus'])
             effect.pop('setId', None)
             record['effects'].append(effect)
@@ -455,9 +470,7 @@ class Migration:
             if name in self.item_tags:
                 out['tags'] = sorted(self.item_tags[name])
             if name in item_sets:
-                out['sets'] = sorted(item_sets[name])
-            if name in inline:
-                out['bonuses'] = inline[name]
+                out['bonuses'] = sorted(item_sets[name])
 
             excludes = split_ids(record.get('bonus_overrides'))
             if excludes:
@@ -476,8 +489,7 @@ class Migration:
 
 def write_report(path, migration, items, bonus_sets):
     report = migration.report
-    inline_count = sum(len(i.get('bonuses', [])) for i in items)
-    effect_count = inline_count + sum(len(s['effects']) for s in bonus_sets)
+    effect_count = sum(len(s['effects']) for s in bonus_sets)
     payload_rows = sum(len(v) for v in migration.payloads.values())
 
     lines = [
@@ -493,9 +505,8 @@ def write_report(path, migration, items, bonus_sets):
         f'- {len(items)} items emitted ({len(migration.records)} raw rows in, '
         f'{payload_rows} of them payload rows, '
         f'{len(migration.records) - payload_rows - len(items)} option pseudo-items dropped)',
-        f'- {len(bonus_sets)} shared set bonuses holding '
-        f'{sum(len(s["effects"]) for s in bonus_sets)} effects',
-        f'- {inline_count} inline bonuses on single items',
+        f'- {len(bonus_sets)} bonus sets holding {effect_count} effects '
+        f'(every bonus lives in a named set; a set with one member is private to that item)',
         '',
         '## Decisions — all resolved (2026-07-26)',
         '',
@@ -573,7 +584,7 @@ def write_report(path, migration, items, bonus_sets):
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument('--raw', default=repo_path('data', 'raw', 'db-items.json'))
-    ap.add_argument('--report', default=repo_path('docs', 'migration-report.md'))
+    ap.add_argument('--report', default=repo_path('llm', 'docs', 'migration-report.md'))
     args = ap.parse_args()
 
     raw = json.load(open(args.raw, encoding='utf-8'))
@@ -593,8 +604,9 @@ def main():
     jsemit.write_file(
         repo_path('data', 'db-bonuses.js'), 'NW_BONUSES', bonus_sets,
         header_comment=(
-            'GENERATED by tools/migrate_bonuses.py -- shared/set bonuses.\n'
-            'Membership lives on the items (`sets: [...]`), never here. See plan §2.3.'
+            'GENERATED by tools/migrate_bonuses.py -- every bonus, one per set.\n'
+            'A set with one member is private to that item; membership lives on the items\n'
+            '(`sets: [...]`), never here. See plan §2.3.'
         ))
 
     os.makedirs(os.path.dirname(args.report), exist_ok=True)

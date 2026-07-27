@@ -1,16 +1,19 @@
-// "Set bonuses on this item" -- the sets the open item belongs to, editable in place.
+// "Bonuses" -- every bonus group the open item belongs to, editable in place.
 //
-// Set bonuses used to live behind their own tab, which meant editing a two-piece set was a
-// context switch away from the item that grants it. They are edited here instead, next to the
-// item, using the same bonus editor as the item's own inline bonuses.
+// There is no separate "bonuses on this item" section any more: a bonus that only this item
+// grants is just a group with one member, which this component already renders correctly with
+// no special-casing (a card's "Currently 1 item(s)" line falls out of `db.setMembers` for
+// free). Bonuses used to live behind their own tab; they moved here so editing one is not a
+// context switch away from the item that grants it.
 //
-// Each set saves independently of the item: a set is shared by every item that references it,
-// so folding its Save into the item's would imply an ownership that does not exist.
+// Each group saves independently of the item: a shared group is referenced by every item that
+// lists its id, so folding its Save into the item's would imply an ownership that does not
+// exist.
 
 window.NW = window.NW ?? {};
 window.NW.components = window.NW.components ?? {};
 
-window.NW.components.SetBonuses = (() => {
+window.NW.components.BonusGroups = (() => {
   'use strict';
 
   const draft = () => window.NW.bonusDraft;
@@ -19,13 +22,18 @@ window.NW.components.SetBonuses = (() => {
     .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 
   return {
-    name: 'SetBonuses',
+    name: 'BonusGroups',
 
-    components: { BonusRows: window.NW.components.BonusRows },
+    components: {
+      BonusRows: window.NW.components.BonusRows,
+      ComboBox: window.NW.components.ComboBox,
+    },
 
     props: {
-      /** Set ids the item currently declares. */
+      /** Bonus group ids the item currently declares. */
       setIds: { type: Array, default: () => [] },
+      /** Seeds the id of a brand-new private bonus. */
+      itemName: { type: String, default: '' },
       db: { type: Object, required: true },
       allSetIds: { type: Array, default: () => [] },
       tags: { type: Array, default: () => [] },
@@ -38,7 +46,7 @@ window.NW.components.SetBonuses = (() => {
 
     computed: {
       /**
-       * One card per declared set, whether or not a definition exists for it yet. Cards
+       * One card per declared group, whether or not a definition exists for it yet. Cards
        * without a draft are skipped rather than rendered half-built: the watcher creates the
        * draft, and a render that raced it used to throw on `drafts[id].name`.
        */
@@ -49,6 +57,14 @@ window.NW.components.SetBonuses = (() => {
             const set = this.db.bonusSetById.get(id) ?? null;
             return { id, set, defined: Boolean(set) };
           });
+      },
+
+      /** Existing groups not already attached, for "attach an existing bonus". */
+      attachable() {
+        const attached = new Set(this.setIds);
+        return this.allSetIds
+          .filter((id) => !attached.has(id))
+          .map((id) => ({ value: id, label: this.db.bonusSetById.get(id)?.name ?? id }));
       },
     },
 
@@ -61,8 +77,8 @@ window.NW.components.SetBonuses = (() => {
 
     methods: {
       /**
-       * Rebuild drafts for sets we are not already editing. Existing drafts are left alone so
-       * an in-progress edit survives an unrelated change elsewhere in the form.
+       * Rebuild drafts for groups we are not already editing. Existing drafts are left alone
+       * so an in-progress edit survives an unrelated change elsewhere in the form.
        */
       sync() {
         for (const id of this.setIds) {
@@ -106,22 +122,24 @@ window.NW.components.SetBonuses = (() => {
         this.$emit('delete-set', id);
       },
 
+      /** A brand-new effect is unconditional by default -- the common case now that most
+       * bonuses are private to one item, not a multi-piece set requirement. */
       addEffect(id) {
-        // A brand-new effect on a set almost always means "when N pieces are equipped", so it
-        // starts with that condition already pointed at this set.
-        this.drafts[id].effects.push(draft().toDraft({
-          id: `${id}-bonus`,
-          when: { pieces: { set: id, atLeast: 2 } },
-          stats: {},
-        }));
+        this.drafts[id].effects.push(draft().toDraft({ id: `${id}-bonus`, when: {}, stats: {} }));
       },
 
-      /** Create a set and attach it to the item in one step. */
-      createSet() {
-        const base = slugify(this.newName || 'new-set') || 'new-set';
+      /** Create a bonus group and attach it to the item in one step, seeded from the item's
+       * own name -- the common case is a bonus that is only this item's business. */
+      addBonus() {
+        const base = slugify(this.itemName || 'new-bonus') || 'new-bonus';
         let id = base;
         let n = 2;
         while (this.allSetIds.includes(id)) { id = `${base}-${n}`; n += 1; }
+        this.$emit('attach-set', id);
+      },
+
+      attachExisting(id) {
+        if (!id) return;
         this.$emit('attach-set', id);
       },
     },
@@ -129,35 +147,41 @@ window.NW.components.SetBonuses = (() => {
     template: `
       <div>
         <div class="form-section">
-          Set bonuses on this item
-          <button type="button" class="link" @click="createSet">+ new set</button>
+          Bonuses
+          <button type="button" class="link" @click="addBonus">+ add bonus</button>
+          <span v-if="attachable.length" class="bonus-attach">
+            or
+            <ComboBox class="bonus-attach-combo" model-value="" :options="attachable"
+                      placeholder="attach an existing one…" @update:model-value="attachExisting" />
+          </span>
         </div>
 
         <p v-if="!cards.length" class="hint">
-          This item is not part of any set. Add a set above, or create one here — set bonuses
-          are shared by every item that lists the same set id.
+          This item has no bonuses yet. Add one above -- most are private to a single item;
+          attaching an existing bonus id shares it with whatever else already lists it.
         </p>
 
         <div v-for="card in cards" :key="card.id" class="setcard">
           <div class="setcard-head">
-            <label class="field"><span class="field-label">Set name</span>
+            <label class="field"><span class="field-label">Group name</span>
               <input class="setcard-name" type="text" v-model="drafts[card.id].name"></label>
             <code class="setcard-id">{{ card.id }}</code>
             <span v-if="!card.defined" class="badge badge--warn">not defined yet</span>
             <span class="spacer"></span>
-            <button type="button" class="btn btn--primary" @click="save(card.id)">Save set</button>
+            <button type="button" class="btn btn--primary" @click="save(card.id)">Save</button>
             <button type="button" class="btn" @click="reset(card.id)">Reset</button>
             <button v-if="card.defined" type="button" class="btn"
-                    @click="remove(card.id)">Delete set</button>
+                    @click="remove(card.id)">Delete</button>
           </div>
 
           <p v-if="errors[card.id]" class="drawer-error">{{ errors[card.id] }}</p>
 
           <p class="hint">
-            Granted to every item listing <code>{{ card.id }}</code>.
-            Currently
-            <strong>{{ (db.setMembers.get(card.id) ?? []).length }}</strong> item(s) —
-            {{ (db.setMembers.get(card.id) ?? []).join(', ') || 'none yet' }}.
+            <template v-if="(db.setMembers.get(card.id) ?? []).length > 1">
+              Shared by <strong>{{ (db.setMembers.get(card.id) ?? []).length }}</strong> items —
+              {{ (db.setMembers.get(card.id) ?? []).join(', ') }}.
+            </template>
+            <template v-else>Only on this item.</template>
           </p>
 
           <div class="sub-section">

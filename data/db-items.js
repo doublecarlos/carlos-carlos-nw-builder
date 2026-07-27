@@ -78,25 +78,13 @@ window.NW_ITEMS = [
   name:"1st Pack Tactics (Group)",
   filter:"group_buff",
   maxCopies:1,
-  bonuses:[
-    {
-      id:"1st-pack-tactics-group-bonus-party",
-      when:{toggle:"party"},
-      stats:{ca:2250, awareness:2250}
-    }
-  ]
+  bonuses:["1st-pack-tactics-group"]
 },
 {
   name:"1st Pack Tactics (Group) (Celestial)",
   filter:"group_buff",
   maxCopies:1,
-  bonuses:[
-    {
-      id:"1st-pack-tactics-group-celestial-bonus-party",
-      when:{toggle:"party"},
-      stats:{ca:2953, awareness:2953}
-    }
-  ]
+  bonuses:["1st-pack-tactics-group-celestial"]
 },
 {name:"1x MW set", filter:"group_buff", outgoing_damage:0.02, maxCopies:1},
 {
@@ -267,25 +255,13 @@ window.NW_ITEMS = [
   name:"2nd Pack Tactics (Group)",
   filter:"group_buff",
   maxCopies:1,
-  bonuses:[
-    {
-      id:"2nd-pack-tactics-group-bonus-party",
-      when:{toggle:"party"},
-      stats:{ca:1125, awareness:1125}
-    }
-  ]
+  bonuses:["2nd-pack-tactics-group"]
 },
 {
   name:"2nd Pack Tactics (Group) (Celestial)",
   filter:"group_buff",
   maxCopies:1,
-  bonuses:[
-    {
-      id:"2nd-pack-tactics-group-celestial-bonus-party",
-      when:{toggle:"party"},
-      stats:{ca:1476, awareness:1476}
-    }
-  ]
+  bonuses:["2nd-pack-tactics-group-celestial"]
 },
 {name:"2x MW set", filter:"group_buff", outgoing_damage:0.04, maxCopies:1},
 {
@@ -460,12 +436,7 @@ window.NW_ITEMS = [
 },
 {name:"Accuracy Kit", filter:"reinforcement_armor_kit", il:44, acc:880},
 {name:"Action Bonus", filter:"enchantment_bonus", ap_gain:0.06},
-{
-  name:"Acute Senses (CA)",
-  filter:"companion_enhancement",
-  il:900,
-  bonuses:[{id:"acute-senses-ca-bonus-combat", when:{toggle:"combat"}, stats:{ca_p:0.09}}]
-},
+{name:"Acute Senses (CA)", filter:"companion_enhancement", il:900, bonuses:["acute-senses-ca"]},
 {
   name:"Alchemist's Discipline [Alchemist] (Strike/CA) <Offense/Utility>",
   filter:"companion_power",
@@ -500,149 +471,27 @@ window.NW_ITEMS = [
   combined_rating:3544,
   severity:5906
 },
-{
-  name:"Arti: Assasin's Dice",
-  filter:"artifact_call",
-  maxCopies:1,
-  bonuses:[
-    {
-      id:"arti-assasin-s-dice-bonus-artifact-call",
-      when:{toggle:"artifactCall"},
-      stats:{enemy_crit_avoid:-0.05, enemy_deflect_sev:-0.05}
-    }
-  ]
-},
-{
-  name:"Arti: Beacon",
-  filter:"artifact_call",
-  maxCopies:1,
-  bonuses:[
-    {
-      id:"arti-beacon-bonus-artifact-call",
-      when:{toggle:"artifactCall"},
-      stats:{enemy_incoming_damage:0.1}
-    }
-  ]
-},
-{
-  name:"Arti: Blades/Wyvern",
-  filter:"artifact_call",
-  maxCopies:1,
-  bonuses:[
-    {
-      id:"arti-blades-wyvern-bonus-artifact-call",
-      when:{toggle:"artifactCall"},
-      stats:{enemy_incoming_damage:0.12}
-    }
-  ]
-},
-{
-  name:"Arti: Censer",
-  filter:"artifact_call",
-  maxCopies:1,
-  bonuses:[
-    {
-      id:"arti-censer-bonus-artifact-call",
-      when:{toggle:"artifactCall"},
-      stats:{enemy_incoming_damage:0.12}
-    }
-  ]
-},
-{
-  name:"Arti: Crystal",
-  filter:"artifact_call",
-  maxCopies:1,
-  bonuses:[
-    {
-      id:"arti-crystal-bonus-artifact-call",
-      when:{toggle:"artifactCall"},
-      stats:{enemy_incoming_damage:0.1}
-    }
-  ]
-},
-{
-  name:"Arti: Demogorgon's Reach",
-  filter:"artifact_call",
-  maxCopies:1,
-  bonuses:[
-    {
-      id:"arti-demogorgon-bonus-artifact-call",
-      when:{toggle:"artifactCall"},
-      stats:{enemy_incoming_damage:0.28}
-    }
-  ]
-},
-{
-  name:"Arti: Marco",
-  filter:"artifact_call",
-  maxCopies:1,
-  bonuses:[
-    {
-      id:"arti-marco-bonus-artifact-call",
-      when:{toggle:"artifactCall"},
-      stats:{enemy_incoming_damage:0.1}
-    }
-  ]
-},
-{
-  name:"Arti: Mythalar",
-  filter:"artifact_call",
-  maxCopies:1,
-  bonuses:[
-    {
-      id:"arti-mythalar-bonus-artifact-call",
-      when:{toggle:"artifactCall"},
-      stats:{enemy_incoming_damage:0.15}
-    }
-  ]
-},
-{
-  name:"Arti: Scepter",
-  filter:"artifact_call",
-  maxCopies:1,
-  bonuses:[
-    {
-      id:"arti-scepter-bonus-artifact-call",
-      when:{toggle:"artifactCall"},
-      stats:{enemy_incoming_damage:0.15}
-    }
-  ]
-},
+{name:"Arti: Assasin's Dice", filter:"artifact_call", maxCopies:1, bonuses:["arti-assasin-s-dice"]},
+{name:"Arti: Beacon", filter:"artifact_call", maxCopies:1, bonuses:["arti-beacon"]},
+{name:"Arti: Blades/Wyvern", filter:"artifact_call", maxCopies:1, bonuses:["arti-blades-wyvern"]},
+{name:"Arti: Censer", filter:"artifact_call", maxCopies:1, bonuses:["arti-censer"]},
+{name:"Arti: Crystal", filter:"artifact_call", maxCopies:1, bonuses:["arti-crystal"]},
+{name:"Arti: Demogorgon's Reach", filter:"artifact_call", maxCopies:1, bonuses:["arti-demogorgon"]},
+{name:"Arti: Marco", filter:"artifact_call", maxCopies:1, bonuses:["arti-marco"]},
+{name:"Arti: Mythalar", filter:"artifact_call", maxCopies:1, bonuses:["arti-mythalar"]},
+{name:"Arti: Scepter", filter:"artifact_call", maxCopies:1, bonuses:["arti-scepter"]},
 {
   name:"Arti: Spelljammer/Lantern",
   filter:"artifact_call",
   maxCopies:1,
-  bonuses:[
-    {
-      id:"arti-spelljammer-lantern-bonus-artifact-call",
-      when:{toggle:"artifactCall"},
-      stats:{enemy_incoming_damage:0.1}
-    }
-  ]
+  bonuses:["arti-spelljammer-lantern"]
 },
-{
-  name:"Arti: Tentacle Rod",
-  filter:"artifact_call",
-  maxCopies:1,
-  bonuses:[
-    {
-      id:"arti-tentacle-rod-bonus-artifact-call",
-      when:{toggle:"artifactCall"},
-      stats:{enemy_incoming_damage:0.05, enemy_awareness:-0.05}
-    }
-  ]
-},
+{name:"Arti: Tentacle Rod", filter:"artifact_call", maxCopies:1, bonuses:["arti-tentacle-rod"]},
 {
   name:"Arti: Volcano/Heart of Black Dragon",
   filter:"artifact_call",
   maxCopies:1,
-  bonuses:[
-    {
-      id:"arti-volcano-heart-of-black-dragon-bonus-artifact-call",
-      when:{toggle:"artifactCall"},
-      stats:{enemy_incoming_damage:0.1}
-    }
-  ]
+  bonuses:["arti-volcano-heart-of-black-dragon"]
 },
 {
   name:"Assassin's Knife",
@@ -662,24 +511,19 @@ window.NW_ITEMS = [
   power:2100,
   forte:5906
 },
-{
-  name:"Avian Aura (Group)",
-  filter:"group_buff",
-  maxCopies:1,
-  bonuses:[{id:"avian-aura-group-bonus-party", when:{toggle:"party"}, stats:{power:1600}}]
-},
+{name:"Avian Aura (Group)", filter:"group_buff", maxCopies:1, bonuses:["avian-aura-group"]},
 {
   name:"Avian Aura (Group) (Celestial)",
   filter:"group_buff",
   maxCopies:1,
-  bonuses:[{id:"avian-aura-group-celestial-bonus-party", when:{toggle:"party"}, stats:{power:2100}}]
+  bonuses:["avian-aura-group-celestial"]
 },
 {
   name:"Bard's Critical Tuning",
   filter:"class_stuff",
   maxCopies:1,
   allowedClass:["bard"],
-  bonuses:[{id:"bard-s-critical-tuning-bonus-combat", when:{toggle:"combat"}, stats:{sev_p:0.1}}]
+  bonuses:["bard-s-critical-tuning"]
 },
 {name:"Bard's Harmonize", filter:"class_stuff", ap_gain:0.02, maxCopies:1, allowedClass:["bard"]},
 {name:"Bard's Storyteller + Flamingo", filter:"group_buff", outgoing_damage:0.17, maxCopies:1},
@@ -688,16 +532,7 @@ window.NW_ITEMS = [
   filter:"class_stuff",
   maxCopies:1,
   allowedClass:["bard"],
-  bonuses:[
-    {
-      id:"bard-s-truly-inspired-skill-bonus-combat-dps",
-      when:{toggle:"combat"},
-      variants:[
-        {when:{role:"dps"}, stats:{outgoing_damage:0.1}},
-        {when:{role:"healer"}, stats:{overall_healing:0.1}}
-      ]
-    }
-  ]
+  bonuses:["bard-s-truly-inspired-skill"]
 },
 {
   name:"Base Attributes - Barbarian",
@@ -755,18 +590,7 @@ window.NW_ITEMS = [
   il:900,
   combined_rating:900,
   maxCopies:1,
-  bonuses:[
-    {
-      id:"batiri-s-wisdom-batiri-damage-offense-bonus-combat-mixed",
-      when:{toggle:"combat", combatType:"mixed"},
-      stats:{outgoing_damage:0.135}
-    },
-    {
-      id:"batiri-s-wisdom-batiri-damage-offense-bonus-combat-single",
-      when:{toggle:"combat", combatType:"single"},
-      stats:{outgoing_damage:0.135}
-    }
-  ]
+  bonuses:["batiri-s-wisdom-batiri-damage-offense"]
 },
 {
   name:"Beacon",
@@ -804,12 +628,7 @@ window.NW_ITEMS = [
   severity:1500,
   maxCopies:1
 },
-{
-  name:"Blue Fire Eye",
-  filter:"group_buff",
-  maxCopies:1,
-  bonuses:[{id:"blue-fire-eye-bonus-party", when:{toggle:"party"}, stats:{strike_p:0.03}}]
-},
+{name:"Blue Fire Eye", filter:"group_buff", maxCopies:1, bonuses:["blue-fire-eye"]},
 {name:"Boon Bug", filter:"misc", combined_rating:800},
 {name:"Boon: Accuracy", filter:"guild_boon_off", il:1000, combined_rating:800, acc:3000},
 {name:"Boon: Awareness", filter:"guild_boon_def", il:1000, combined_rating:800, awareness:3000},
@@ -856,12 +675,7 @@ window.NW_ITEMS = [
   dynamicMax:3600
 },
 {name:"Campfire Buff", filter:"attributes_campfire", str:1, con:1, dex:1, int:1, wis:1, cha:1},
-{
-  name:"Captain",
-  filter:"group_buff",
-  maxCopies:1,
-  bonuses:[{id:"captain-bonus-combat", when:{toggle:"combat"}, stats:{sev_p:0.05}}]
-},
+{name:"Captain", filter:"group_buff", maxCopies:1, bonuses:["captain"]},
 {
   name:"Celestial Lion's Presence 2% [Stalwart Golden Lion] (Damage) <Utility>",
   filter:"companion_power",
@@ -889,13 +703,7 @@ window.NW_ITEMS = [
 {
   name:"Cha Lua (Accuracy/Severity)",
   filter:"consumable_event_food",
-  bonuses:[
-    {
-      id:"cha-lua-accuracy-severity-bonus-consumables",
-      when:{toggle:"consumables"},
-      stats:{acc_p:0.1, sev_p:0.03}
-    }
-  ]
+  bonuses:["cha-lua-accuracy-severity"]
 },
 {
   name:"Coldlight Walker's Gaze [Coldlight Walker] (Strike/Severity) <Utility>",
@@ -972,13 +780,7 @@ window.NW_ITEMS = [
 {
   name:"Diamond Blessing (Damage)",
   filter:"consumable_blessing",
-  bonuses:[
-    {
-      id:"diamond-blessing-damage-bonus-consumables",
-      when:{toggle:"consumables"},
-      stats:{outgoing_damage:0.05}
-    }
-  ]
+  bonuses:["diamond-blessing-damage"]
 },
 {name:"Dominance", filter:"insignia", il:750, combined_rating:600, power:1125, forte:1125},
 {name:"Dominance (Pref)", filter:"insignia", il:900, combined_rating:720, power:1350, forte:1350},
@@ -990,12 +792,7 @@ window.NW_ITEMS = [
   combined_rating:3544,
   power:5906
 },
-{
-  name:"Drizzt",
-  filter:"group_buff",
-  maxCopies:1,
-  bonuses:[{id:"drizzt-bonus-party", when:{toggle:"party"}, stats:{mult_damage:0.03}}]
-},
+{name:"Drizzt", filter:"group_buff", maxCopies:1, bonuses:["drizzt"]},
 {
   name:"Enchanted Bregan D'aerthe Expert's Cloth",
   filter:"gear_armor",
@@ -1017,35 +814,18 @@ window.NW_ITEMS = [
   defense:450,
   maxCopies:1
 },
-{
-  name:"Etrien",
-  filter:"group_buff",
-  maxCopies:1,
-  bonuses:[
-    {
-      id:"etrien-bonus-combat-party",
-      when:{toggle:["combat","party"]},
-      stats:{power_p:0.02, strike_p:0.02}
-    }
-  ]
-},
+{name:"Etrien", filter:"group_buff", maxCopies:1, bonuses:["etrien"]},
 {
   name:"Executioner's Covenant",
   filter:"insignia_bonus",
   maxCopies:2,
-  sets:["executioner-s-covenant"]
+  bonuses:["executioner-s-covenant"]
 },
 {
   name:"Exploit Weakness (Strike/Sev - Blaspheme)",
   filter:"companion_enhancement",
   il:900,
-  bonuses:[
-    {
-      id:"exploit-weakness-strike-sev-blaspheme-bonus-combat",
-      when:{toggle:"combat"},
-      stats:{strike_p:0.045, sev_p:0.045}
-    }
-  ]
+  bonuses:["exploit-weakness-strike-sev-blaspheme"]
 },
 {
   name:"Fawn's Instincts [Fawn of Shiallia] (Power/Strike) <Offense/Utility>",
@@ -1091,27 +871,16 @@ window.NW_ITEMS = [
   overall_damage:0.02
 },
 {name:"Fighter's Enforced Threat", filter:"group_buff", enemy_awareness:-0.1, maxCopies:1},
-{
-  name:"Flapjack",
-  filter:"group_buff",
-  maxCopies:1,
-  bonuses:[{id:"flapjack-bonus-party", when:{toggle:"party"}, stats:{ca_p:0.05}}]
-},
+{name:"Flapjack", filter:"group_buff", maxCopies:1, bonuses:["flapjack"]},
 {
   name:"Flask of Potency +1 (Severity)",
   filter:"consumable_potion",
-  bonuses:[
-    {
-      id:"flask-of-potency-1-severity-bonus-consumables",
-      when:{toggle:"consumables"},
-      stats:{sev_p:0.05, power:550, acc:550, strike:550}
-    }
-  ]
+  bonuses:["flask-of-potency-1-severity"]
 },
 {name:"Generic (Defense)", filter:"enchantment_defense", il:1800, combined_rating:1620},
 {name:"Generic Companion", filter:"companion", il:3960, combined_rating:3366},
 {name:"Gith", filter:"class_stuff", ca_p:0.05, maxCopies:1},
-{name:"Gladiator's Guile", filter:"insignia_bonus", maxCopies:2, sets:["gladiator-s-guile"]},
+{name:"Gladiator's Guile", filter:"insignia_bonus", maxCopies:2, bonuses:["gladiator-s-guile"]},
 {
   name:"Golden Cat's Instincts [Golden Cat] (CA) <Any>",
   filter:"companion_power",
@@ -1128,27 +897,11 @@ window.NW_ITEMS = [
   enemy_crit_avoid:-0.035,
   maxCopies:1
 },
-{
-  name:"Grand Summer Feast",
-  filter:"consumable_event_food",
-  bonuses:[
-    {
-      id:"grand-summer-feast-bonus-consumables",
-      when:{toggle:"consumables"},
-      stats:{power_p:0.025, acc_p:0.015, strike_p:0.015, sev_p:0.025, hit_points_p:0.025, deflect_p:0.015}
-    }
-  ]
-},
+{name:"Grand Summer Feast", filter:"consumable_event_food", bonuses:["grand-summer-feast"]},
 {
   name:"Grand Summer Feast (Legacy)",
   filter:"consumable_event_food",
-  bonuses:[
-    {
-      id:"grand-summer-feast-legacy-bonus-consumables",
-      when:{toggle:"consumables"},
-      stats:{power_p:0.05, acc_p:0.05, strike_p:0.015, sev_p:0.025, hit_points_p:0.025, deflect_p:0.015}
-    }
-  ]
+  bonuses:["grand-summer-feast-legacy"]
 },
 {
   name:"Hero Soul (Forte) (Celestial)",
@@ -1160,13 +913,7 @@ window.NW_ITEMS = [
 {
   name:"Hot Wings (Accuracy/Severity)",
   filter:"consumable_event_food",
-  bonuses:[
-    {
-      id:"hot-wings-accuracy-severity-bonus-consumables",
-      when:{toggle:"consumables"},
-      stats:{acc_p:0.05, sev_p:0.05}
-    }
-  ]
+  bonuses:["hot-wings-accuracy-severity"]
 },
 {
   name:"Human",
@@ -1186,38 +933,16 @@ window.NW_ITEMS = [
   out_healing_p:0.01,
   maxCopies:1
 },
-{
-  name:"Invocation: Accuracy",
-  filter:"consumable_blessing",
-  bonuses:[{id:"invocation-accuracy-bonus-consumables", when:{toggle:"consumables"}, stats:{acc:1000}}]
-},
-{
-  name:"Invocation: Crit Strike",
-  filter:"consumable_blessing",
-  bonuses:[
-    {
-      id:"invocation-crit-strike-bonus-consumables",
-      when:{toggle:"consumables"},
-      stats:{strike:1000}
-    }
-  ]
-},
-{
-  name:"Invocation: Power",
-  filter:"consumable_blessing",
-  bonuses:[{id:"invocation-power-bonus-consumables", when:{toggle:"consumables"}, stats:{power:1000}}]
-},
-{
-  name:"Invocation: Severity",
-  filter:"consumable_blessing",
-  bonuses:[{id:"invocation-severity-bonus-consumables", when:{toggle:"consumables"}, stats:{severity:1000}}]
-},
+{name:"Invocation: Accuracy", filter:"consumable_blessing", bonuses:["invocation-accuracy"]},
+{name:"Invocation: Crit Strike", filter:"consumable_blessing", bonuses:["invocation-crit-strike"]},
+{name:"Invocation: Power", filter:"consumable_blessing", bonuses:["invocation-power"]},
+{name:"Invocation: Severity", filter:"consumable_blessing", bonuses:["invocation-severity"]},
 {
   name:"Lightning Flash",
   filter:"combat_enchant_offense",
   il:6000,
   mult_damage:0.12,
-  bonuses:[{id:"lightning-flash-bonus-combat", when:{toggle:"combat"}, stats:{acc_p:0.108, strike_p:0.108}}]
+  bonuses:["lightning-flash"]
 },
 {
   name:"M16 Burnished Sword Knot Epic",
@@ -1239,7 +964,7 @@ window.NW_ITEMS = [
   strike:852,
   severity:849,
   int:6,
-  sets:["m26-masterwork-neck-waist-set"]
+  bonuses:["m26-masterwork-neck-waist-set"]
 },
 {
   name:"M26 Scintillant Amulet +1",
@@ -1250,7 +975,7 @@ window.NW_ITEMS = [
   strike:902,
   severity:899,
   int:6,
-  sets:["m26-masterwork-neck-waist-set"]
+  bonuses:["m26-masterwork-neck-waist-set"]
 },
 {
   name:"M26 Scintillant Sash",
@@ -1262,7 +987,7 @@ window.NW_ITEMS = [
   strike:852,
   int:3,
   cha:3,
-  sets:["m26-masterwork-neck-waist-set"]
+  bonuses:["m26-masterwork-neck-waist-set"]
 },
 {
   name:"M26 Scintillant Sash +1",
@@ -1274,7 +999,7 @@ window.NW_ITEMS = [
   strike:902,
   int:3,
   cha:3,
-  sets:["m26-masterwork-neck-waist-set"]
+  bonuses:["m26-masterwork-neck-waist-set"]
 },
 {
   name:"M26 Shroomwood Amulet",
@@ -1284,7 +1009,7 @@ window.NW_ITEMS = [
   ca:1698,
   strike:852,
   str:6,
-  sets:["m26-masterwork-neck-waist-set"]
+  bonuses:["m26-masterwork-neck-waist-set"]
 },
 {
   name:"M26 Shroomwood Amulet +1",
@@ -1294,7 +1019,7 @@ window.NW_ITEMS = [
   ca:1798,
   strike:902,
   str:6,
-  sets:["m26-masterwork-neck-waist-set"]
+  bonuses:["m26-masterwork-neck-waist-set"]
 },
 {
   name:"M26 Shroomwood Sash",
@@ -1306,7 +1031,7 @@ window.NW_ITEMS = [
   severity:849,
   str:3,
   dex:3,
-  sets:["m26-masterwork-neck-waist-set"]
+  bonuses:["m26-masterwork-neck-waist-set"]
 },
 {
   name:"M26 Shroomwood Sash +1",
@@ -1318,7 +1043,7 @@ window.NW_ITEMS = [
   severity:899,
   str:3,
   dex:3,
-  sets:["m26-masterwork-neck-waist-set"]
+  bonuses:["m26-masterwork-neck-waist-set"]
 },
 {
   name:"M28 Voidtouched Greatsword",
@@ -1329,7 +1054,7 @@ window.NW_ITEMS = [
   strike:2250,
   flat_damage:275,
   allowedClass:["barbarian"],
-  sets:["m28-voidtouched-set"]
+  bonuses:["m28-voidtouched-set"]
 },
 {
   name:"M28 Voidtouched Pactblade",
@@ -1340,7 +1065,7 @@ window.NW_ITEMS = [
   forte:2250,
   flat_damage:275,
   allowedClass:["warlock"],
-  sets:["m28-voidtouched-set"]
+  bonuses:["m28-voidtouched-set"]
 },
 {
   name:"M28 Voidtouched Tome",
@@ -1350,7 +1075,7 @@ window.NW_ITEMS = [
   acc:2250,
   ca:2250,
   allowedClass:["warlock"],
-  sets:["m28-voidtouched-set"]
+  bonuses:["m28-voidtouched-set"]
 },
 {
   name:"M29 Enchanted Depthweave Cap (CA)",
@@ -1360,7 +1085,7 @@ window.NW_ITEMS = [
   strike:2400,
   forte:2400,
   allowedClass:["warlock","wizard"],
-  bonuses:[{id:"m29-enchanted-depthweave-cap-ca-bonus-combat", when:{toggle:"combat"}, stats:{ca_p:0.1}}]
+  bonuses:["m29-enchanted-depthweave-cap-ca"]
 },
 {
   name:"M29 Enchanted Depthweave Coat (Acc/CA)",
@@ -1371,7 +1096,7 @@ window.NW_ITEMS = [
   ca:2400,
   forte:1200,
   allowedClass:["warlock","wizard"],
-  sets:["m29-ruthless-advantage"]
+  bonuses:["m29-ruthless-advantage"]
 },
 {
   name:"M29 Enchanted Depthweave Vest (Acc/CA)",
@@ -1382,7 +1107,7 @@ window.NW_ITEMS = [
   ca:2400,
   forte:1200,
   allowedClass:["bard","cleric","ranger","rogue"],
-  sets:["m29-ruthless-advantage"]
+  bonuses:["m29-ruthless-advantage"]
 },
 {
   name:"M31 Belt of the Forsaken",
@@ -1400,18 +1125,7 @@ window.NW_ITEMS = [
   combined_rating:3870,
   acc:4612,
   severity:3483,
-  bonuses:[
-    {
-      id:"m31-bindings-of-the-death-pact-damage-bonus-combat",
-      when:{toggle:"combat"},
-      stats:{outgoing_damage:0.009}
-    },
-    {
-      id:"m31-bindings-of-the-death-pact-damage-combat-aoe-combat",
-      when:{combatType:"aoe", toggle:"combat"},
-      stats:{outgoing_damage:0.036000000000000004}
-    }
-  ]
+  bonuses:["m31-bindings-of-the-death-pact-damage"]
 },
 {
   name:"M31 Bloodlit Veil (CA/Power)",
@@ -1422,13 +1136,7 @@ window.NW_ITEMS = [
   acc:8092,
   severity:7470,
   maxCopies:1,
-  bonuses:[
-    {
-      id:"m31-bloodlit-veil-ca-power-bonus-aoe-combat",
-      when:{combatType:"aoe", toggle:"combat"},
-      stats:{power_p:0.025}
-    }
-  ]
+  bonuses:["m31-bloodlit-veil-ca-power"]
 },
 {
   name:"M31 Bloodwoven Ink (AP)",
@@ -1447,8 +1155,7 @@ window.NW_ITEMS = [
   combined_rating:2835,
   ca:1134,
   strike:2268,
-  sets:["m31-shirt-pant-dps-set"],
-  bonuses:[{id:"m31-bloodwoven-sigils-ca-bonus-combat", when:{toggle:"combat"}, stats:{ca_p:0.1}}]
+  bonuses:["m31-bloodwoven-sigils-ca","m31-shirt-pant-dps-set"]
 },
 {
   name:"M31 Bloodwoven Signs (Damage)",
@@ -1457,19 +1164,7 @@ window.NW_ITEMS = [
   combined_rating:2835,
   acc:2457,
   forte:1276,
-  sets:["m31-shirt-pant-dps-set"],
-  bonuses:[
-    {
-      id:"m31-bloodwoven-signs-damage-bonus-combat",
-      when:{toggle:"combat"},
-      stats:{outgoing_damage:0.035}
-    },
-    {
-      id:"m31-bloodwoven-signs-damage-bonus-location-thay-combat",
-      when:{location:"thay", toggle:"combat"},
-      stats:{outgoing_damage:0.035}
-    }
-  ]
+  bonuses:["m31-bloodwoven-signs-damage","m31-shirt-pant-dps-set"]
 },
 {
   name:"M31 Bulwark of the Eternal Zulkirate (Strike/Severity)",
@@ -1479,13 +1174,7 @@ window.NW_ITEMS = [
   forte:2612,
   deflect_sev:4354,
   control_bonus:3548,
-  bonuses:[
-    {
-      id:"m31-bulwark-of-the-eternal-zulkirate-strike-severity-bonus-combat",
-      when:{toggle:"combat"},
-      stats:{strike_p:0.075, sev_p:0.075}
-    }
-  ]
+  bonuses:["m31-bulwark-of-the-eternal-zulkirate-strike-severity"]
 },
 {
   name:"M31 Bulwark of the Zulkir's Decree (Power/Acc/Strike)",
@@ -1496,13 +1185,7 @@ window.NW_ITEMS = [
   forte:2150,
   defense:2628,
   inc_healing:3686,
-  bonuses:[
-    {
-      id:"m31-bulwark-of-the-zulkir-s-decree-power-acc-strike-bonus-combat",
-      when:{toggle:"combat"},
-      stats:{power_p:0.04, strike_p:0.04}
-    }
-  ]
+  bonuses:["m31-bulwark-of-the-zulkir-s-decree-power-acc-strike"]
 },
 {
   name:"M31 Crown of the Everscourge (CA)",
@@ -1522,13 +1205,7 @@ window.NW_ITEMS = [
   ca_p:0.04,
   acc:3993,
   severity:3686,
-  bonuses:[
-    {
-      id:"m31-gauntlets-of-the-wrathborn-acc-ca-bonus-single-combat-short-plus-combat",
-      when:{combatType:"single", duration:{atLeast:10}, toggle:"combat"},
-      stats:{acc_p:0.08}
-    }
-  ]
+  bonuses:["m31-gauntlets-of-the-wrathborn-acc-ca"]
 },
 {
   name:"M31 Greaves of the Crimson March (Damage)",
@@ -1537,13 +1214,7 @@ window.NW_ITEMS = [
   combined_rating:4095,
   ca:2457,
   severity:4505,
-  bonuses:[
-    {
-      id:"m31-greaves-of-the-crimson-march-damage-bonus-combat",
-      when:{toggle:"combat"},
-      stats:{outgoing_damage:0.09, mult_hit_points:-0.2}
-    }
-  ]
+  bonuses:["m31-greaves-of-the-crimson-march-damage"]
 },
 {name:"M31 Necklace of the Forsaken", filter:"gear_neck", il:4050, combined_rating:3645, ca:1215},
 {
@@ -1555,7 +1226,7 @@ window.NW_ITEMS = [
   severity:5688,
   ap_gain:0.015,
   maxCopies:1,
-  sets:["m31-thayan-predator"]
+  bonuses:["m31-thayan-predator"]
 },
 {
   name:"M31 Sanguine Seal (Damage)",
@@ -1565,7 +1236,7 @@ window.NW_ITEMS = [
   ca:3792,
   severity:8532,
   maxCopies:1,
-  sets:["m31-thayan-predator"]
+  bonuses:["m31-thayan-predator"]
 },
 {
   name:"M31 Threads of the Arch-Thrall (Power/Strike/Severity)",
@@ -1574,13 +1245,7 @@ window.NW_ITEMS = [
   combined_rating:3870,
   ca:2838,
   forte:2612,
-  bonuses:[
-    {
-      id:"m31-threads-of-the-arch-thrall-power-strike-severity-bonus-combat",
-      when:{toggle:"combat"},
-      stats:{power_p:0.05, strike_p:0.05, sev_p:0.05}
-    }
-  ]
+  bonuses:["m31-threads-of-the-arch-thrall-power-strike-severity"]
 },
 {
   name:"M31 Twisted Pact (Severity)",
@@ -1599,14 +1264,7 @@ window.NW_ITEMS = [
   combined_rating:4095,
   severity:4505,
   out_healing:2457,
-  bonuses:[
-    {id:"m31-ruthless-resources-ascendant-bonus", stats:{strike_p:0.05}},
-    {
-      id:"m31-ruthless-resources-ascendant-bonus-combat",
-      when:{toggle:"combat"},
-      stats:{mana_regen:0.5}
-    }
-  ]
+  bonuses:["m31-ruthless-resources-ascendant"]
 },
 {
   name:"M31.5 Ritualistic Necklace",
@@ -1634,13 +1292,7 @@ window.NW_ITEMS = [
   strike:4050,
   forte:3712,
   allowedClass:["warlock","wizard"],
-  bonuses:[
-    {
-      id:"m32-bracers-of-the-infernal-tempest-strike-bonus-combat",
-      when:{toggle:"combat"},
-      stats:{strike_p:0.045, recharge:0.015}
-    }
-  ]
+  bonuses:["m32-bracers-of-the-infernal-tempest-strike"]
 },
 {
   name:"M32 Circlet of the Infernal Tempest (Strike/Sev)",
@@ -1650,13 +1302,7 @@ window.NW_ITEMS = [
   strike:4050,
   forte:3712,
   allowedClass:["warlock","wizard"],
-  bonuses:[
-    {
-      id:"m32-circlet-of-the-infernal-tempest-strike-sev-bonus-combat",
-      when:{toggle:"combat"},
-      stats:{strike_p:0.05, sev_p:0.05}
-    }
-  ]
+  bonuses:["m32-circlet-of-the-infernal-tempest-strike-sev"]
 },
 {
   name:"M32 Codex of Eternal Chains (Celestial)",
@@ -1667,7 +1313,7 @@ window.NW_ITEMS = [
   strike:3150,
   severity:3150,
   allowedClass:["warlock"],
-  sets:["m32-omen-of-doom-celestial"]
+  bonuses:["m32-omen-of-doom-celestial"]
 },
 {
   name:"M32 Codex of Eternal Chains (Legendary)",
@@ -1677,7 +1323,7 @@ window.NW_ITEMS = [
   strike:4005,
   severity:4005,
   allowedClass:["warlock"],
-  sets:["m32-omen-of-doom-legendary"]
+  bonuses:["m32-omen-of-doom-legendary"]
 },
 {
   name:"M32 Codex of Eternal Chains (Mythic)",
@@ -1688,7 +1334,7 @@ window.NW_ITEMS = [
   strike:2880,
   severity:2880,
   allowedClass:["warlock"],
-  sets:["m32-omen-of-doom-mythic"]
+  bonuses:["m32-omen-of-doom-mythic"]
 },
 {
   name:"M32 Deathsilver Coil of Dominion (Acc/Strike)",
@@ -1699,13 +1345,7 @@ window.NW_ITEMS = [
   severity:8820,
   ap_gain:0.015,
   maxCopies:1,
-  bonuses:[
-    {
-      id:"m32-deathsilver-coil-of-dominion-acc-strike-bonus-combat",
-      when:{toggle:"combat"},
-      stats:{acc_p:0.05, strike_p:0.055}
-    }
-  ]
+  bonuses:["m32-deathsilver-coil-of-dominion-acc-strike"]
 },
 {
   name:"M32 Deathsilver Ring of  Submission (Strike)",
@@ -1716,18 +1356,7 @@ window.NW_ITEMS = [
   ca:5880,
   ap_gain:0.015,
   maxCopies:1,
-  bonuses:[
-    {
-      id:"m32-deathsilver-ring-of-submission-strike-bonus-combat-medium-plus-combat",
-      when:{duration:{atLeast:30}, toggle:"combat"},
-      stats:{strike_p:0.066}
-    },
-    {
-      id:"m32-deathsilver-ring-of-submission-strike-bonus-combat-short-combat",
-      when:{duration:{atLeast:10, below:30}, toggle:"combat"},
-      stats:{strike_p:0.022}
-    }
-  ]
+  bonuses:["m32-deathsilver-ring-of-submission-strike"]
 },
 {
   name:"M32 Doomcleaver (Celestial)",
@@ -1739,7 +1368,7 @@ window.NW_ITEMS = [
   flat_damage:200,
   deflect:3937,
   allowedClass:["barbarian"],
-  sets:["m32-doomcleaver-celestial","m32-knot-of-the-bloodhound-celestial"]
+  bonuses:["m32-doomcleaver-celestial","m32-knot-of-the-bloodhound-celestial"]
 },
 {
   name:"M32 Knot of the Bloodhound (Celestial)",
@@ -1750,7 +1379,7 @@ window.NW_ITEMS = [
   strike:3150,
   defense:1837,
   allowedClass:["barbarian"],
-  sets:["m32-doomcleaver-celestial","m32-knot-of-the-bloodhound-celestial"]
+  bonuses:["m32-doomcleaver-celestial","m32-knot-of-the-bloodhound-celestial"]
 },
 {
   name:"M32 Omen of Doom (Celestial)",
@@ -1762,7 +1391,7 @@ window.NW_ITEMS = [
   severity:3150,
   flat_damage:200,
   allowedClass:["warlock"],
-  sets:["m32-omen-of-doom-celestial"]
+  bonuses:["m32-omen-of-doom-celestial"]
 },
 {
   name:"M32 Omen of Doom (Legendary)",
@@ -1774,7 +1403,7 @@ window.NW_ITEMS = [
   severity:2670,
   flat_damage:50,
   allowedClass:["warlock"],
-  sets:["m32-omen-of-doom-legendary"]
+  bonuses:["m32-omen-of-doom-legendary"]
 },
 {
   name:"M32 Omen of Doom (Mythic)",
@@ -1786,7 +1415,7 @@ window.NW_ITEMS = [
   severity:2880,
   flat_damage:100,
   allowedClass:["warlock"],
-  sets:["m32-omen-of-doom-mythic"]
+  bonuses:["m32-omen-of-doom-mythic"]
 },
 {
   name:"M32 Rotsteel Loop of Ash (CA)",
@@ -1797,18 +1426,7 @@ window.NW_ITEMS = [
   severity:8370,
   ap_gain:0.015,
   maxCopies:1,
-  bonuses:[
-    {
-      id:"m32-rotsteel-loop-of-ash-ca-bonus-combat-long-plus-combat",
-      when:{duration:{atLeast:60}, toggle:"combat"},
-      stats:{ca_p:0.065}
-    },
-    {
-      id:"m32-rotsteel-loop-of-ash-ca-bonus-combat-medium-combat",
-      when:{duration:{atLeast:30, below:60}, toggle:"combat"},
-      stats:{ca_p:0.03}
-    }
-  ]
+  bonuses:["m32-rotsteel-loop-of-ash-ca"]
 },
 {
   name:"M32 Rotsteel Ring of Blight (Severity)",
@@ -1830,23 +1448,7 @@ window.NW_ITEMS = [
   severity:8370,
   ap_gain:0.015,
   maxCopies:1,
-  bonuses:[
-    {
-      id:"m32-rotsteel-ring-of-spores-strike-bonus-combat-long-plus-combat",
-      when:{duration:{atLeast:60}, toggle:"combat"},
-      stats:{strike_p:0.091}
-    },
-    {
-      id:"m32-rotsteel-ring-of-spores-strike-bonus-combat-medium-combat",
-      when:{duration:{atLeast:30, below:60}, toggle:"combat"},
-      stats:{strike_p:0.042}
-    },
-    {
-      id:"m32-rotsteel-ring-of-spores-strike-bonus-combat-short-combat",
-      when:{duration:{atLeast:10, below:30}, toggle:"combat"},
-      stats:{strike_p:0.014}
-    }
-  ]
+  bonuses:["m32-rotsteel-ring-of-spores-strike"]
 },
 {
   name:"M32.5 Cindersilk Hood (AP on mobs)",
@@ -1865,18 +1467,7 @@ window.NW_ITEMS = [
   severity:10260,
   ap_gain:0.015,
   maxCopies:1,
-  bonuses:[
-    {
-      id:"m33-coldsilver-coil-of-wrath-bonus-combat-combat-medium-plus",
-      when:{toggle:"combat", duration:{atLeast:30}},
-      stats:{acc_p:0.075}
-    },
-    {
-      id:"m33-coldsilver-coil-of-wrath-bonus-combat-combat-short",
-      when:{toggle:"combat", duration:{atLeast:10, below:30}},
-      stats:{acc_p:0.025}
-    }
-  ]
+  bonuses:["m33-coldsilver-coil-of-wrath"]
 },
 {
   name:"M33 Coldsilver Loop of the Arcane",
@@ -1888,13 +1479,7 @@ window.NW_ITEMS = [
   strike:10260,
   ap_gain:0.015,
   maxCopies:1,
-  bonuses:[
-    {
-      id:"m33-coldsilver-loop-of-the-arcane-main-combat",
-      when:{toggle:"combat"},
-      stats:{strike_p:0.055}
-    }
-  ]
+  bonuses:["m33-coldsilver-loop-of-the-arcane"]
 },
 {
   name:"M33 Coldsilver Ring of Initiative",
@@ -1905,19 +1490,7 @@ window.NW_ITEMS = [
   ca:6840,
   ap_gain:0.015,
   maxCopies:1,
-  bonuses:[
-    {id:"m33-coldsilver-ring-of-initiative-main", stats:{ca_p:0.05}},
-    {
-      id:"m33-coldsilver-ring-of-initiative-main-combat-aoe",
-      when:{toggle:"combat", combatType:"aoe"},
-      stats:{power_p:0.025}
-    },
-    {
-      id:"m33-coldsilver-ring-of-initiative-main-combat-mixed",
-      when:{toggle:"combat", combatType:"mixed"},
-      stats:{power_p:0.025}
-    }
-  ]
+  bonuses:["m33-coldsilver-ring-of-initiative"]
 },
 {
   name:"M33 Cracked Stormbind Tunic Pants",
@@ -1928,13 +1501,7 @@ window.NW_ITEMS = [
   ca:1380,
   strike:3312,
   ap_gain:0.015,
-  bonuses:[
-    {
-      id:"m33-cracked-stormbind-tunic-pants-bonus-combat",
-      when:{toggle:"combat"},
-      stats:{ca_p:0.07, crit_avoid_p:-0.075}
-    }
-  ]
+  bonuses:["m33-cracked-stormbind-tunic-pants"]
 },
 {
   name:"M33 Cracked Stormbind Tunic Shirt",
@@ -1945,13 +1512,7 @@ window.NW_ITEMS = [
   ca:1746,
   strike:3492,
   recharge:0.015,
-  bonuses:[
-    {
-      id:"m33-cracked-stormbind-tunic-shirt-bonus-combat",
-      when:{toggle:"combat"},
-      stats:{outgoing_damage:0.035, mult_hit_points:-0.1}
-    }
-  ],
+  bonuses:["m33-cracked-stormbind-tunic-shirt"],
   excludes:["m31-greaves-of-the-crimson-march-damage-bonus-combat"]
 },
 {
@@ -1963,8 +1524,7 @@ window.NW_ITEMS = [
   strike:2182,
   forte:2619,
   stamina_regen:0.015,
-  sets:["m33-freezing-energy"],
-  bonuses:[{id:"m33-survivor-s-gift-celestial-bonus", stats:{power_p:0.02, out_healing_p:0.07}}]
+  bonuses:["m33-freezing-energy","m33-survivor-s-gift-celestial"]
 },
 {
   name:"M33 Deep-Riven Stormbind Tunic",
@@ -1975,14 +1535,7 @@ window.NW_ITEMS = [
   ca:1455,
   strike:3492,
   ap_gain:0.015,
-  sets:["m33-freezing-grasp"],
-  bonuses:[
-    {
-      id:"m33-deep-riven-stormbind-tunic-bonus-combat",
-      when:{toggle:"combat"},
-      stats:{ca_p:0.08, crit_avoid_p:-0.08}
-    }
-  ]
+  bonuses:["m33-deep-riven-stormbind-tunic","m33-freezing-grasp"]
 },
 {
   name:"M33 Deep-Riven Titanweave Harness",
@@ -1993,14 +1546,7 @@ window.NW_ITEMS = [
   ca:2328,
   severity:2182,
   ap_gain:0.015,
-  sets:["m33-freezing-rage"],
-  bonuses:[
-    {
-      id:"m33-deep-riven-titanweave-harness-bonus-combat",
-      when:{toggle:"combat"},
-      stats:{power_p:0.035, strike_p:0.07}
-    }
-  ]
+  bonuses:["m33-deep-riven-titanweave-harness","m33-freezing-rage"]
 },
 {
   name:"M33 Frost-Riven Lifebraid Vestment",
@@ -2011,15 +1557,7 @@ window.NW_ITEMS = [
   forte:1964,
   out_healing:1746,
   ap_gain:0.015,
-  sets:["m33-freezing-energy"],
-  bonuses:[
-    {id:"m33-graceful-harmony-celestial-bonus", stats:{out_healing_p:0.014}},
-    {
-      id:"m33-graceful-harmony-celestial-bonus-party",
-      when:{toggle:"party"},
-      stats:{out_healing_p:0.055999999999999994}
-    }
-  ]
+  bonuses:["m33-freezing-energy","m33-graceful-harmony-celestial"]
 },
 {
   name:"M33 Frost-Riven Stormbind Tunic",
@@ -2030,14 +1568,7 @@ window.NW_ITEMS = [
   ca:1746,
   strike:3492,
   recharge:0.015,
-  sets:["m33-freezing-grasp"],
-  bonuses:[
-    {
-      id:"m33-frost-riven-stormbind-tunic-bonus-combat",
-      when:{toggle:"combat"},
-      stats:{outgoing_damage:0.05, mult_hit_points:-0.1}
-    }
-  ]
+  bonuses:["m33-freezing-grasp","m33-frost-riven-stormbind-tunic"]
 },
 {
   name:"M33 Frost-Riven Titanweave Harness",
@@ -2050,7 +1581,7 @@ window.NW_ITEMS = [
   strike:2619,
   inc_healing:-0.13,
   recharge:0.015,
-  sets:["m33-freezing-rage"]
+  bonuses:["m33-freezing-rage"]
 },
 {
   name:"M33 Frostforged Ring of the Companion (Strike/Sev)",
@@ -2086,28 +1617,7 @@ window.NW_ITEMS = [
   severity:10800,
   ap_gain:0.015,
   maxCopies:1,
-  bonuses:[
-    {
-      id:"m33-frostsilver-coil-of-wrath-bonus-combat-combat-medium-plus",
-      when:{toggle:"combat", duration:{atLeast:30}},
-      stats:{acc_p:0.105}
-    },
-    {
-      id:"m33-frostsilver-coil-of-wrath-bonus-combat-combat-short",
-      when:{toggle:"combat", duration:{atLeast:10, below:30}},
-      stats:{acc_p:0.035}
-    },
-    {
-      id:"m33-frostsilver-coil-of-wrath-accuracy",
-      when:{equipped:{tag:"gem:aquamarine", atLeast:1}},
-      stats:{acc_p:0.03}
-    },
-    {
-      id:"m33-frostsilver-coil-of-wrath-ca",
-      when:{equipped:{tag:"gem:amethyst", atLeast:1}},
-      stats:{ca_p:0.03}
-    }
-  ]
+  bonuses:["m33-frostsilver-coil-of-wrath"]
 },
 {
   name:"M33 Frostsilver Loop of the Arcane",
@@ -2119,23 +1629,7 @@ window.NW_ITEMS = [
   strike:10800,
   ap_gain:0.015,
   maxCopies:1,
-  bonuses:[
-    {
-      id:"m33-frostsilver-loop-of-the-arcane-accuracy",
-      when:{equipped:{tag:"gem:citrine", atLeast:1}},
-      stats:{acc_p:0.03}
-    },
-    {
-      id:"m33-frostsilver-loop-of-the-arcane-main-combat",
-      when:{toggle:"combat"},
-      stats:{strike_p:0.065}
-    },
-    {
-      id:"m33-frostsilver-loop-of-the-arcane-power",
-      when:{equipped:{tag:"gem:bloodstone", atLeast:1}},
-      stats:{power_p:0.03}
-    }
-  ]
+  bonuses:["m33-frostsilver-loop-of-the-arcane"]
 },
 {
   name:"M33 Frostsilver Ring of Initiative",
@@ -2146,29 +1640,7 @@ window.NW_ITEMS = [
   ca:7200,
   ap_gain:0.015,
   maxCopies:1,
-  bonuses:[
-    {id:"m33-frostsilver-ring-of-initiative-main", stats:{ca_p:0.06}},
-    {
-      id:"m33-frostsilver-ring-of-initiative-main-combat-aoe",
-      when:{toggle:"combat", combatType:"aoe"},
-      stats:{power_p:0.0325}
-    },
-    {
-      id:"m33-frostsilver-ring-of-initiative-main-combat-mixed",
-      when:{toggle:"combat", combatType:"mixed"},
-      stats:{power_p:0.0325}
-    },
-    {
-      id:"m33-frostsilver-ring-of-initiative-severity",
-      when:{equipped:{tag:"gem:fire_agate", atLeast:1}},
-      stats:{sev_p:0.03}
-    },
-    {
-      id:"m33-frostsilver-ring-of-initiative-strike",
-      when:{equipped:{tag:"gem:jade", atLeast:1}},
-      stats:{strike_p:0.03}
-    }
-  ]
+  bonuses:["m33-frostsilver-ring-of-initiative"]
 },
 {
   name:"M33 Runefrost Skimisher Bracers",
@@ -2186,13 +1658,7 @@ window.NW_ITEMS = [
   strike:4860,
   forte:3645,
   allowedClass:["bard","cleric","ranger","rogue"],
-  bonuses:[
-    {
-      id:"m33-ruthless-advantage-legendary-bonus-combat",
-      when:{toggle:"combat"},
-      stats:{acc_p:0.06, ca_p:0.06}
-    }
-  ]
+  bonuses:["m33-ruthless-advantage-legendary"]
 },
 {
   name:"M33 Runefrost Swift Armguards",
@@ -2202,13 +1668,7 @@ window.NW_ITEMS = [
   power:2835,
   acc:5265,
   allowedClass:["warlock","wizard"],
-  bonuses:[
-    {
-      id:"m33-runefrost-swift-armguards-bonus-combat",
-      when:{toggle:"combat"},
-      stats:{strike_p:0.045, recharge:0.015}
-    }
-  ]
+  bonuses:["m33-runefrost-swift-armguards"]
 },
 {
   name:"M33 True Ice Icon of the Companion (Forte/OGH)",
@@ -2252,7 +1712,7 @@ window.NW_ITEMS = [
   strike:3480,
   forte:2610,
   allowedClass:["bard"],
-  sets:["m33-chilling-flow-mythic"]
+  bonuses:["m33-chilling-flow-mythic"]
 },
 {
   name:"M33 Wintermarked Hunter Hood",
@@ -2262,7 +1722,7 @@ window.NW_ITEMS = [
   strike:5130,
   forte:3848,
   allowedClass:["warlock","wizard"],
-  sets:["m33-critical-breaker"]
+  bonuses:["m33-critical-breaker"]
 },
 {
   name:"M33 Wintermarked Marcher Poleyns",
@@ -2272,7 +1732,7 @@ window.NW_ITEMS = [
   ca:3420,
   severity:5130,
   allowedClass:["bard","cleric","ranger","rogue"],
-  sets:["m33-critical-breaker"]
+  bonuses:["m33-critical-breaker"]
 },
 {
   name:"M33 Wintermarked Skaldblade",
@@ -2284,7 +1744,7 @@ window.NW_ITEMS = [
   strike:3480,
   flat_damage:100,
   allowedClass:["bard"],
-  sets:["m33-chilling-flow-mythic"]
+  bonuses:["m33-chilling-flow-mythic"]
 },
 {
   name:"M33 Wintermarked Skirmisher Bracers",
@@ -2294,14 +1754,7 @@ window.NW_ITEMS = [
   ca:3420,
   severity:5130,
   allowedClass:["bard","cleric","ranger","rogue"],
-  bonuses:[
-    {id:"m33-relentless-reserves-bonus", stats:{strike_p:0.06}},
-    {
-      id:"m33-relentless-reserves-bonus-combat-combat-short-plus",
-      when:{toggle:"combat", duration:{atLeast:10}},
-      stats:{mana_regen:0.1}
-    }
-  ]
+  bonuses:["m33-relentless-reserves"]
 },
 {
   name:"M33 Wintermarked Swiftguards",
@@ -2311,13 +1764,7 @@ window.NW_ITEMS = [
   strike:5130,
   forte:3848,
   allowedClass:["warlock","wizard"],
-  bonuses:[
-    {
-      id:"m33-wintermarked-swiftguards-bonus-combat",
-      when:{toggle:"combat"},
-      stats:{power_p:0.03, strike_p:0.03, sev_p:0.03}
-    }
-  ]
+  bonuses:["m33-wintermarked-swiftguards"]
 },
 {
   name:"Marco's",
@@ -2330,37 +1777,20 @@ window.NW_ITEMS = [
 },
 {name:"Marilith Set", filter:"group_buff", enemy_incoming_damage:0.05, maxCopies:1},
 {name:"Max Crit Strike And Severity", filter:"gear_ring", strike_p:1, sev_p:1, maxCopies:1},
-{name:"Mender's Covenant", filter:"insignia_bonus", maxCopies:2, sets:["mender-s-covenant"]},
-{
-  name:"Misnc",
-  filter:"group_buff",
-  maxCopies:1,
-  bonuses:[{id:"misnc-bonus-combat", when:{toggle:"combat"}, stats:{ca_p:0.02}}]
-},
+{name:"Mender's Covenant", filter:"insignia_bonus", maxCopies:2, bonuses:["mender-s-covenant"]},
+{name:"Misnc", filter:"group_buff", maxCopies:1, bonuses:["misnc"]},
 {
   name:"Modification: Dark Spiral",
   filter:"modification_mainhand",
   allowedClass:["warlock"],
-  bonuses:[
-    {
-      id:"modification-dark-spiral-bonus-combat",
-      when:{toggle:"combat"},
-      stats:{outgoing_damage:0.005000000000000001}
-    }
-  ]
+  bonuses:["modification-dark-spiral"]
 },
 {name:"Modification: Forte (M32+)", filter:"modification_offhand_static", forte:1100},
 {
   name:"Modification: Hellish Rebuke",
   filter:"modification_mainhand",
   allowedClass:["warlock"],
-  bonuses:[
-    {
-      id:"modification-hellish-rebuke-bonus-combat",
-      when:{toggle:"combat"},
-      stats:{outgoing_damage:0.005000000000000001}
-    }
-  ]
+  bonuses:["modification-hellish-rebuke"]
 },
 {name:"Modification: Recharge Speed (M32+)", filter:"modification_offhand_static", recharge:0.025},
 {name:"Modification: Severity (M32+)", filter:"modification_offhand_static", severity:1400},
@@ -2387,82 +1817,29 @@ window.NW_ITEMS = [
   name:"Mount: Hag's Enchanted Cauldroon",
   filter:"artifact_call",
   maxCopies:1,
-  bonuses:[
-    {
-      id:"mount-hag-s-enchanted-cauldroon-bonus-artifact-call",
-      when:{toggle:"artifactCall"},
-      stats:{enemy_defense:-0.0985, enemy_awareness:-0.0985}
-    }
-  ]
+  bonuses:["mount-hag-s-enchanted-cauldroon"]
 },
-{
-  name:"Mount: Pegasus",
-  filter:"artifact_call",
-  maxCopies:1,
-  bonuses:[
-    {
-      id:"mount-pegasus-bonus-artifact-call",
-      when:{toggle:"artifactCall"},
-      stats:{outgoing_damage:0.197}
-    }
-  ]
-},
-{
-  name:"Mount: Red Dragon",
-  filter:"artifact_call",
-  maxCopies:1,
-  bonuses:[
-    {
-      id:"mount-red-dragon-bonus-artifact-call",
-      when:{toggle:"artifactCall"},
-      stats:{enemy_crit_avoid:-0.197}
-    }
-  ]
-},
+{name:"Mount: Pegasus", filter:"artifact_call", maxCopies:1, bonuses:["mount-pegasus"]},
+{name:"Mount: Red Dragon", filter:"artifact_call", maxCopies:1, bonuses:["mount-red-dragon"]},
 {
   name:"Mount: Swarm/Eclipse/Rex/Bestial",
   filter:"artifact_call",
   maxCopies:1,
-  bonuses:[
-    {
-      id:"mount-swarm-eclipse-rex-bestial-bonus-artifact-call",
-      when:{toggle:"artifactCall"},
-      stats:{enemy_incoming_damage:0.197},
-      stacking:"perSource"
-    }
-  ]
+  bonuses:["mount-swarm-eclipse-rex-bestial"]
 },
 {
   name:"Mount: Vortex/Panther/Necrotic",
   filter:"artifact_call",
   maxCopies:3,
-  bonuses:[
-    {
-      id:"mount-vortex-panther-necrotic-bonus-artifact-call",
-      when:{toggle:"artifactCall"},
-      stats:{enemy_incoming_damage:0.207},
-      stacking:"perSource"
-    }
-  ]
+  bonuses:["mount-vortex-panther-necrotic"]
 },
 {name:"Movement Bonus", filter:"enchantment_bonus", movement:0.18},
-{
-  name:"Mystic Aura (Group)",
-  filter:"group_buff",
-  maxCopies:1,
-  bonuses:[{id:"mystic-aura-group-bonus-party", when:{toggle:"party"}, stats:{power:2250, acc:2250}}]
-},
+{name:"Mystic Aura (Group)", filter:"group_buff", maxCopies:1, bonuses:["mystic-aura-group"]},
 {
   name:"Mystic Aura (Group) (Celestial)",
   filter:"group_buff",
   maxCopies:1,
-  bonuses:[
-    {
-      id:"mystic-aura-group-celestial-bonus-party",
-      when:{toggle:"party"},
-      stats:{power:2953, acc:2953}
-    }
-  ]
+  bonuses:["mystic-aura-group-celestial"]
 },
 {
   name:"Mythic Bregan Chest",
@@ -2498,59 +1875,28 @@ window.NW_ITEMS = [
   combined_rating:3544,
   ca:5906
 },
-{
-  name:"Other: Bard's Lore",
-  filter:"artifact_call",
-  maxCopies:1,
-  bonuses:[
-    {
-      id:"other-bard-s-lore-bonus-artifact-call",
-      when:{toggle:"artifactCall"},
-      stats:{enemy_crit_avoid:-0.2}
-    }
-  ]
-},
-{
-  name:"Paladin Aura",
-  filter:"group_buff",
-  maxCopies:1,
-  bonuses:[{id:"paladin-aura-bonus-party", when:{toggle:"party"}, stats:{strike_p:0.04}}]
-},
+{name:"Other: Bard's Lore", filter:"artifact_call", maxCopies:1, bonuses:["other-bard-s-lore"]},
+{name:"Paladin Aura", filter:"group_buff", maxCopies:1, bonuses:["paladin-aura"]},
 {
   name:"Perfect Vision (Acc)",
   filter:"companion_enhancement",
   il:900,
-  bonuses:[{id:"perfect-vision-acc-bonus-combat", when:{toggle:"combat"}, stats:{acc_p:0.09}}]
+  bonuses:["perfect-vision-acc"]
 },
 {
   name:"Personal: Warlock's Tyrannical Curse",
   filter:"artifact_call",
   maxCopies:1,
   allowedClass:["warlock"],
-  bonuses:[
-    {
-      id:"personal-warlock-s-tyrannical-curse-bonus-artifact-call",
-      when:{toggle:"artifactCall"},
-      stats:{enemy_incoming_damage:0.15}
-    }
-  ]
+  bonuses:["personal-warlock-s-tyrannical-curse"]
 },
-{
-  name:"Portobello",
-  filter:"group_buff",
-  maxCopies:1,
-  bonuses:[{id:"portobello-bonus-party", when:{toggle:"party"}, stats:{power_p:0.035, ca_p:0.035}}]
-},
-{
-  name:"Potency (Power)",
-  filter:"companion_enhancement",
-  bonuses:[{id:"potency-power-bonus-combat", when:{toggle:"combat"}, stats:{power_p:0.09}}]
-},
+{name:"Portobello", filter:"group_buff", maxCopies:1, bonuses:["portobello"]},
+{name:"Potency (Power)", filter:"companion_enhancement", bonuses:["potency-power"]},
 {
   name:"Potent Precision (Severity)",
   filter:"companion_enhancement",
   il:900,
-  bonuses:[{id:"potent-precision-severity-bonus-combat", when:{toggle:"combat"}, stats:{sev_p:0.09}}]
+  bonuses:["potent-precision-severity"]
 },
 {
   name:"Power (M32+, 600 to 3200)",
@@ -2593,17 +1939,7 @@ window.NW_ITEMS = [
   ca:2953,
   strike:2953
 },
-{
-  name:"Prime Rib (Power)",
-  filter:"consumable_food",
-  bonuses:[
-    {
-      id:"prime-rib-power-bonus-consumables",
-      when:{toggle:"consumables"},
-      stats:{power:4000, hit_points:20000}
-    }
-  ]
-},
+{name:"Prime Rib (Power)", filter:"consumable_food", bonuses:["prime-rib-power"]},
 {name:"Providence (0%)", filter:"mount_equip", il:3000, combined_rating:2700},
 {name:"Providence (0%) (Celestial)", filter:"mount_equip", il:3937, combined_rating:3544},
 {name:"Providence (3%)", filter:"mount_equip", il:3000, combined_rating:2700, overall_damage:0.03},
@@ -2641,25 +1977,9 @@ window.NW_ITEMS = [
   combined_rating:900,
   power_p:0.045,
   maxCopies:1,
-  bonuses:[
-    {
-      id:"raptor-s-instincts-tamed-velociraptor-power-offense-bonus-party",
-      when:{toggle:"party"},
-      stats:{power_p:0.18}
-    }
-  ]
+  bonuses:["raptor-s-instincts-tamed-velociraptor-power-offense"]
 },
-{
-  name:"Rattatoule (Accuracy)",
-  filter:"consumable_food",
-  bonuses:[
-    {
-      id:"rattatoule-accuracy-bonus-consumables",
-      when:{toggle:"consumables"},
-      stats:{acc:4000, hit_points:20000}
-    }
-  ]
-},
+{name:"Rattatoule (Accuracy)", filter:"consumable_food", bonuses:["rattatoule-accuracy"]},
 {name:"Recharge Bonus", filter:"enchantment_bonus", recharge:0.06},
 {
   name:"Rime Temper",
@@ -2673,25 +1993,14 @@ window.NW_ITEMS = [
   filter:"class_stuff",
   maxCopies:1,
   allowedClass:["warlock"],
-  bonuses:[{id:"risky-investment-bonus-combat", when:{toggle:"combat"}, stats:{outgoing_damage:0.088}}]
+  bonuses:["risky-investment"]
 },
-{
-  name:"Runic Aura (Group)",
-  filter:"group_buff",
-  maxCopies:1,
-  bonuses:[{id:"runic-aura-group-bonus-party", when:{toggle:"party"}, stats:{power:2250}}]
-},
+{name:"Runic Aura (Group)", filter:"group_buff", maxCopies:1, bonuses:["runic-aura-group"]},
 {
   name:"Runic Aura (Group) (Celestial)",
   filter:"group_buff",
   maxCopies:1,
-  bonuses:[
-    {
-      id:"runic-aura-group-celestial-bonus-party",
-      when:{toggle:"party"},
-      stats:{power:2953, defense:2953}
-    }
-  ]
+  bonuses:["runic-aura-group-celestial"]
 },
 {
   name:"Ruthless Efficiency (Strike)",
@@ -2707,37 +2016,17 @@ window.NW_ITEMS = [
   combined_rating:3544,
   strike:5906
 },
-{
-  name:"Sambocade (Movement)",
-  filter:"consumable_food",
-  bonuses:[
-    {
-      id:"sambocade-movement-bonus-consumables",
-      when:{toggle:"consumables"},
-      stats:{hit_points:20000, movement:0.05}
-    }
-  ]
-},
+{name:"Sambocade (Movement)", filter:"consumable_food", bonuses:["sambocade-movement"]},
 {
   name:"Scroll of Fate: Critical Severity",
   filter:"consumable_event_item",
-  bonuses:[
-    {
-      id:"scroll-of-fate-critical-severity-bonus-consumables",
-      when:{toggle:"consumables"},
-      stats:{severity:1500}
-    }
-  ]
+  bonuses:["scroll-of-fate-critical-severity"]
 },
-{
-  name:"Scroll of Fate: Power",
-  filter:"consumable_event_item",
-  bonuses:[{id:"scroll-of-fate-power-bonus-consumables", when:{toggle:"consumables"}, stats:{power:1500}}]
-},
+{name:"Scroll of Fate: Power", filter:"consumable_event_item", bonuses:["scroll-of-fate-power"]},
 {
   name:"Scroll of Fate: Recovery",
   filter:"consumable_event_item",
-  bonuses:[{id:"scroll-of-fate-recovery-bonus-consumables", when:{toggle:"consumables"}, stats:{acc:1500}}]
+  bonuses:["scroll-of-fate-recovery"]
 },
 {
   name:"Sealing Parchment",
@@ -2750,17 +2039,7 @@ window.NW_ITEMS = [
   stamina_regen:0.15,
   maxCopies:1
 },
-{
-  name:"Seared Tuna (Strike)",
-  filter:"consumable_food",
-  bonuses:[
-    {
-      id:"seared-tuna-strike-bonus-consumables",
-      when:{toggle:"consumables"},
-      stats:{strike:4000, hit_points:20000}
-    }
-  ]
-},
+{name:"Seared Tuna (Strike)", filter:"consumable_food", bonuses:["seared-tuna-strike"]},
 {name:"Severity Kit", filter:"reinforcement_armor_kit", il:44, severity:880},
 {name:"Slayer (2.5% overall)", filter:"overload", overall_damage:0.025},
 {name:"Slayer (4.5% overall)", filter:"overload", overall_damage:0.045},
@@ -2778,77 +2057,31 @@ window.NW_ITEMS = [
   outgoing_damage:0.03,
   maxCopies:1,
   allowedClass:["warlock"],
-  bonuses:[{id:"soul-sparks-average-bonus-combat", when:{toggle:"combat"}, stats:{outgoing_damage:0.05}}]
+  bonuses:["soul-sparks-average"]
 },
 {
   name:"Soul Sparks (max)",
   filter:"class_stuff",
   maxCopies:1,
   allowedClass:["warlock"],
-  bonuses:[{id:"soul-sparks-max-bonus-combat", when:{toggle:"combat"}, stats:{outgoing_damage:0.15}}]
+  bonuses:["soul-sparks-max"]
 },
-{
-  name:"Spider Totem",
-  filter:"trinket",
-  bonuses:[{id:"spider-totem-bonus-consumables", when:{toggle:"consumables"}, stats:{ca_p:0.025}}]
-},
-{
-  name:"Spider Totem (+Acc)",
-  filter:"trinket",
-  bonuses:[
-    {
-      id:"spider-totem-acc-bonus-consumables",
-      when:{toggle:"consumables"},
-      stats:{acc_p:0.02, ca_p:0.025}
-    }
-  ]
-},
-{
-  name:"Spider Totem (+Power)",
-  filter:"trinket",
-  bonuses:[
-    {
-      id:"spider-totem-power-bonus-consumables",
-      when:{toggle:"consumables"},
-      stats:{power_p:0.02, ca_p:0.025}
-    }
-  ]
-},
-{
-  name:"Spider Totem (+Strike)",
-  filter:"trinket",
-  bonuses:[
-    {
-      id:"spider-totem-strike-bonus-consumables",
-      when:{toggle:"consumables"},
-      stats:{ca_p:0.025, strike_p:0.02}
-    }
-  ]
-},
+{name:"Spider Totem", filter:"trinket", bonuses:["spider-totem"]},
+{name:"Spider Totem (+Acc)", filter:"trinket", bonuses:["spider-totem-acc"]},
+{name:"Spider Totem (+Power)", filter:"trinket", bonuses:["spider-totem-power"]},
+{name:"Spider Totem (+Strike)", filter:"trinket", bonuses:["spider-totem-strike"]},
 {
   name:"Spined Devil's Influence 6% [Spined Devil] (Damage) <Offense>",
   filter:"companion_power",
   il:900,
   combined_rating:900,
   maxCopies:1,
-  bonuses:[
-    {
-      id:"spined-devil-s-influence-6-spined-devil-damage-offense-bonus-combat",
-      when:{toggle:"combat"},
-      stats:{overall_damage:0.06}
-    }
-  ]
+  bonuses:["spined-devil-s-influence-6-spined-devil-damage-offense"]
 },
 {
   name:"Squash Soup (Strike/Severity)",
   filter:"consumable_event_food",
-  bonuses:[
-    {
-      id:"squash-soup-strike-severity-bonus-consumables",
-      when:{toggle:"consumables"},
-      stats:{strike_p:0.05, sev_p:0.05}
-    }
-  ]
+  bonuses:["squash-soup-strike-severity"]
 },
 {
   name:"Strike (M32+, 900 to 5400)",
@@ -2864,11 +2097,7 @@ window.NW_ITEMS = [
   combined_rating:900,
   mult_damage:0.02
 },
-{
-  name:"Sunlord (CA)",
-  filter:"consumable_elixir",
-  bonuses:[{id:"sunlord-ca-bonus-consumables", when:{toggle:"consumables"}, stats:{ca_p:0.05, acc:2000}}]
-},
+{name:"Sunlord (CA)", filter:"consumable_elixir", bonuses:["sunlord-ca"]},
 {
   name:"Supportive Regal Collar",
   filter:"supportive_collar",
@@ -2881,18 +2110,7 @@ window.NW_ITEMS = [
   filter:"combat_enchant_offense",
   il:7000,
   mult_damage:0.12,
-  bonuses:[
-    {
-      id:"swift-synergy-bonus-combat",
-      when:{toggle:"combat"},
-      stats:{ca_p:0.054000000000000006, sev_p:0.054000000000000006}
-    },
-    {
-      id:"swift-synergy-bonus-combat-party",
-      when:{toggle:["combat","party"]},
-      stats:{ca_p:0.054000000000000006, sev_p:0.054000000000000006}
-    }
-  ]
+  bonuses:["swift-synergy"]
 },
 {name:"Sword Coast Tactician", filter:"overload", power_p:0.05, ca_p:0.05},
 {
@@ -2926,22 +2144,11 @@ window.NW_ITEMS = [
   il:900,
   combined_rating:900,
   maxCopies:1,
-  bonuses:[
-    {
-      id:"the-bigger-they-are-minsc-damage-defense-bonus-combat",
-      when:{toggle:"combat"},
-      stats:{outgoing_damage:0.098}
-    }
-  ]
+  bonuses:["the-bigger-they-are-minsc-damage-defense"]
 },
 {name:"Tranquility", filter:"insignia", il:750, combined_rating:600, strike:1125, forte:1125},
 {name:"Tranquility (Pref)", filter:"insignia", il:900, combined_rating:720, strike:1350, forte:1350},
-{
-  name:"Tutor",
-  filter:"group_buff",
-  maxCopies:1,
-  bonuses:[{id:"tutor-bonus-party", when:{toggle:"party"}, stats:{ca_p:0.05}}]
-},
+{name:"Tutor", filter:"group_buff", maxCopies:1, bonuses:["tutor"]},
 {
   name:"Uncanny Precision (Accuracy/CA - Deadly Driderform)",
   filter:"mount_equip",
@@ -2966,7 +2173,7 @@ window.NW_ITEMS = [
   filter:"class_stuff",
   maxCopies:1,
   allowedClass:["warlock"],
-  bonuses:[{id:"warlock-s-curse-bonus-combat", when:{toggle:"combat"}, stats:{outgoing_damage:0.07}}]
+  bonuses:["warlock-s-curse"]
 },
 {
   name:"Warlock's Demonic Vision",
@@ -3000,24 +2207,12 @@ window.NW_ITEMS = [
 {
   name:"Watermelon Sorbet (Power/Accuracy)",
   filter:"consumable_event_food",
-  bonuses:[
-    {
-      id:"watermelon-sorbet-power-accuracy-bonus-consumables",
-      when:{toggle:"consumables"},
-      stats:{power_p:0.05, acc_p:0.05}
-    }
-  ]
+  bonuses:["watermelon-sorbet-power-accuracy"]
 },
 {
   name:"Watermelon Sorbet (Power/Accuracy) (Legacy)",
   filter:"consumable_event_food",
-  bonuses:[
-    {
-      id:"watermelon-sorbet-power-accuracy-legacy-bonus-consumables",
-      when:{toggle:"consumables"},
-      stats:{power_p:0.1, acc_p:0.1}
-    }
-  ]
+  bonuses:["watermelon-sorbet-power-accuracy-legacy"]
 },
 {
   name:"Wayfaring Barbed Collar",
@@ -3026,17 +2221,7 @@ window.NW_ITEMS = [
   combined_rating:900,
   sev_p:0.05
 },
-{
-  name:"Wild Storm (Severity)",
-  filter:"consumable_elixir",
-  bonuses:[
-    {
-      id:"wild-storm-severity-bonus-consumables",
-      when:{toggle:"consumables"},
-      stats:{sev_p:0.05, strike:2000}
-    }
-  ]
-},
+{name:"Wild Storm (Severity)", filter:"consumable_elixir", bonuses:["wild-storm-severity"]},
 {
   name:"Wolf's Instincts [Wolf] (Severity) <Offense/Utility>",
   filter:"companion_power",

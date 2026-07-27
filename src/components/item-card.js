@@ -44,7 +44,7 @@ window.NW.components.ItemCard = (() => {
           const label = window.NW.format.label(this.item.dynamicStat);
           out.push(`${label} ${this.item.dynamicMin}–${this.item.dynamicMax}, you choose`);
         }
-        if (this.item.sets?.length) out.push(`set: ${this.item.sets.join(', ')}`);
+        if (this.item.bonuses?.length) out.push(`bonuses: ${this.item.bonuses.join(', ')}`);
         return out;
       },
 
@@ -52,6 +52,7 @@ window.NW.components.ItemCard = (() => {
         return this.bonuses.map((entry) => ({
           id: entry.id,
           state: entry.excluded ? 'excluded' : (entry.active ? 'active' : 'inactive'),
+          name: entry.bonus?.name ?? null,
           conditions: (entry.gate?.leaves ?? []).map((leaf) => leaf.label).filter(Boolean)
             .join(' + '),
           unmet: entry.gate?.unmet ?? [],
@@ -161,8 +162,11 @@ window.NW.components.ItemCard = (() => {
           <div v-for="row in rows" :key="row.id" class="itemcard-bonus" :class="'bonus--' + row.state">
             <div class="itemcard-bonus-head">
               <span class="bonus-dot"></span>
-              <span class="itemcard-bonus-cond">{{ row.conditions || 'always' }}</span>
+              <span class="itemcard-bonus-cond">{{ row.name || row.conditions || 'always' }}</span>
               <span v-if="row.stacks > 1" class="badge">×{{ row.stacks }}</span>
+            </div>
+            <div v-if="row.name && row.conditions" class="stat-sub itemcard-bonus-when">
+              {{ row.conditions }}
             </div>
             <div v-if="row.stats" class="itemcard-bonus-stats">
               {{ row.stats.total }}<span v-if="row.stacks > 1"> total</span>

@@ -530,6 +530,7 @@ label.quickopts-row { cursor: pointer; }
 .bonus--inactive .itemcard-bonus-cond, .bonus--excluded .itemcard-bonus-cond { color: var(--muted); }
 .itemcard-bonus-stats { font-size: 11px; padding-left: 12px; }
 .itemcard-bonus-unmet { color: var(--warn); font-size: 11px; padding-left: 12px; }
+.itemcard-bonus-when { padding-left: 12px; }
 
 .itemcard-bonus-tiers { padding-left: 12px; }
 .itemcard-tier { color: var(--muted); font-size: 11px; }
@@ -690,6 +691,9 @@ label.quickopts-row { cursor: pointer; }
 }
 .sub-section { align-items: center; color: var(--muted); display: flex; font-size: 11px; gap: 8px; margin: 6px 0 3px; }
 
+.bonus-attach { align-items: center; display: inline-flex; gap: 6px; }
+.bonus-attach-combo { width: 220px; }
+
 .pct-field { display: inline-block; position: relative; width: 110px; }
 .pct-input {
   box-sizing: border-box;
@@ -723,8 +727,12 @@ label.quickopts-row { cursor: pointer; }
   margin-bottom: 8px;
   padding: 8px 10px;
 }
-.bonus-edit-head { align-items: center; display: flex; gap: 8px; }
-.bonus-id { flex: 1; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+/* flex-end, not center: the buttons here have no label above them, so centering would float
+ * them against the taller labeled Name/Id fields instead of lining up on the inputs. */
+.bonus-edit-head { align-items: flex-end; display: flex; gap: 8px; }
+.bonus-edit-head .field { flex: 1; min-width: 0; }
+.bonus-id, .bonus-name { width: 100%; }
+.bonus-id { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
 
 /* --- token / chip input ---------------------------------------------------------------- */
 

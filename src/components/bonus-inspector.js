@@ -50,15 +50,17 @@ window.NW.components.BonusInspector = (() => {
         const titleCounts = new Map();
         for (const entry of this.result.bonuses) {
           const set = entry.setId ? this.db.bonusSetById.get(entry.setId) : null;
-          const title = set?.name ?? entry.sources?.[0] ?? fromId(entry.id);
+          const title = entry.bonus?.name ?? set?.name ?? entry.sources?.[0] ?? fromId(entry.id);
           titleCounts.set(title, (titleCounts.get(title) ?? 0) + 1);
         }
 
         return this.result.bonuses.map((entry) => {
           const set = entry.setId ? this.db.bonusSetById.get(entry.setId) : null;
           const unmet = entry.gate?.unmet ?? [];
-          // A set bonus is best identified by its set; an inline one by the item carrying it.
-          const title = set?.name ?? entry.sources?.[0] ?? fromId(entry.id);
+          // The bonus's own friendly name is the most specific title; the group name, the
+          // item carrying it, and an id-derived fallback are progressively blunter instruments
+          // for a bonus that somehow has none.
+          const title = entry.bonus?.name ?? set?.name ?? entry.sources?.[0] ?? fromId(entry.id);
           return {
             raw: entry,
             id: entry.id,
