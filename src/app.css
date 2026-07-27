@@ -442,6 +442,23 @@ label.quickopts-row { cursor: pointer; }
 .stat-table tbody tr:nth-child(even) { background: color-mix(in srgb, var(--surface-2) 55%, transparent); }
 .stat-table--pairs td:last-child { text-align: right; width: 40%; }
 
+/* Rating and percent used to be two whole separate tables -- same rows, same order, just a
+ * different unit. One table with two column groups keeps both full-size (percent is the
+ * value that matters day to day, so it leads) without forcing a cross-reference between two
+ * tables to see one stat. */
+.stat-table--split th.group-head {
+  border-bottom: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 10px;
+  letter-spacing: .04em;
+  text-align: center;
+  text-transform: uppercase;
+}
+.stat-table--split .rating-col { color: var(--muted); }
+.stat-table--split tr.is-over .rating-col.over { color: var(--warn); font-weight: 600; }
+
+.stat-sub { color: var(--muted); font-size: 10px; line-height: 1.3; }
+
 /* Conditional formatting, in the spirit of the sheet: green sitting exactly on the cap, blue
  * with headroom to spare, warn colour when over. Same specificity as the zebra stripe above so
  * source order (this comes later) decides, rather than the stripe winning on every other row. */
@@ -513,6 +530,10 @@ label.quickopts-row { cursor: pointer; }
 .bonus--inactive .itemcard-bonus-cond, .bonus--excluded .itemcard-bonus-cond { color: var(--muted); }
 .itemcard-bonus-stats { font-size: 11px; padding-left: 12px; }
 .itemcard-bonus-unmet { color: var(--warn); font-size: 11px; padding-left: 12px; }
+
+.itemcard-bonus-tiers { padding-left: 12px; }
+.itemcard-tier { color: var(--muted); font-size: 11px; }
+.itemcard-tier.is-active { color: var(--text); font-weight: 600; }
 
 /* --- sidebar tabs -------------------------------------------------------------------- */
 

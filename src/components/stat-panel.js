@@ -176,37 +176,37 @@ window.NW.components.StatPanel = (() => {
         </div>
 
         <h3 class="panel-head">Ratings</h3>
-        <table class="stat-table">
+        <table class="stat-table stat-table--split">
           <thead>
-            <tr><th>Stat</th><th>Rating</th><th>Cap</th><th>Overcap</th><th>Headroom</th></tr>
+            <tr>
+              <th></th>
+              <th colspan="4" class="group-head">Percent</th>
+              <th colspan="4" class="group-head group-head--rating">Rating</th>
+            </tr>
+            <tr>
+              <th>Stat</th>
+              <th>Total</th><th>Cap</th><th>Overcap</th><th>Headroom</th>
+              <th class="rating-col">Total</th><th class="rating-col">Cap</th>
+              <th class="rating-col">Overcap</th><th class="rating-col">Headroom</th>
+            </tr>
           </thead>
           <tbody>
+            <!-- Coloured by the rating cell; percent and rating agree on cap status in
+                 practice, and a row can only have one background. -->
             <tr v-for="row in capRows" :key="row.rating.key"
                 v-show="visible(row.rating.total)"
                 :class="[capClass(row.rating), { 'row-sep': row.sepAfter }]">
-              <td>{{ row.label }}</td>
-              <td class="num">{{ int(row.rating.total) }}</td>
-              <td class="num dim">{{ int(row.rating.cap) }}</td>
-              <td class="num over">{{ row.rating.over > 0 ? int(row.rating.over) : '—' }}</td>
-              <td class="num dim">{{ row.rating.head > 0 ? int(row.rating.head) : '—' }}</td>
-            </tr>
-          </tbody>
-        </table>
-
-        <h3 class="panel-head">Percentages</h3>
-        <table class="stat-table">
-          <thead>
-            <tr><th>Stat</th><th>Total</th><th>Cap</th><th>Overcap</th><th>Headroom</th></tr>
-          </thead>
-          <tbody>
-            <tr v-for="row in capRows" :key="row.percent.key"
-                v-show="visible(row.percent.total)"
-                :class="[capClass(row.percent), { 'row-sep': row.sepAfter }]">
               <td>{{ row.label }}</td>
               <td class="num">{{ pct(row.percent.total) }}</td>
               <td class="num dim">{{ pct(row.percent.cap) }}</td>
               <td class="num over">{{ row.percent.over > 0 ? pct(row.percent.over) : '—' }}</td>
               <td class="num dim">{{ row.percent.head > 0 ? pct(row.percent.head) : '—' }}</td>
+              <td class="num dim rating-col">{{ int(row.rating.total) }}</td>
+              <td class="num dim rating-col">{{ int(row.rating.cap) }}</td>
+              <td class="num dim rating-col over">
+                {{ row.rating.over > 0 ? int(row.rating.over) : '—' }}
+              </td>
+              <td class="num dim rating-col">{{ row.rating.head > 0 ? int(row.rating.head) : '—' }}</td>
             </tr>
           </tbody>
         </table>
