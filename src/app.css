@@ -628,6 +628,123 @@ input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: -1
 .bonus-edit-head { align-items: center; display: flex; gap: 8px; }
 .bonus-id { flex: 1; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
 
+/* --- token / chip input ---------------------------------------------------------------- */
+
+.tokens {
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  cursor: text;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-height: 26px;
+  padding: 3px 5px;
+  position: relative;
+}
+.tokens.is-open { outline: 2px solid var(--accent); outline-offset: -1px; }
+
+.token {
+  align-items: center;
+  background: var(--accent-soft);
+  border-radius: 10px;
+  color: var(--text);
+  display: inline-flex;
+  font-size: 11px;
+  gap: 3px;
+  padding: 1px 3px 1px 8px;
+}
+.token-x {
+  background: none;
+  border: 0;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+  padding: 0 3px;
+}
+.token-x:hover { color: var(--danger); }
+
+.token-field {
+  background: none;
+  border: 0;
+  flex: 1;
+  min-width: 90px;
+  outline: none;
+  padding: 1px 2px;
+}
+.token-field:focus { outline: none; }
+
+.token-menu {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .18);
+  left: 0;
+  max-height: 220px;
+  overflow-y: auto;
+  position: absolute;
+  right: 0;
+  top: calc(100% + 2px);
+  z-index: 30;
+}
+.token-option { cursor: pointer; display: flex; gap: 8px; padding: 3px 8px; }
+.token-option.is-highlighted { background: var(--accent-soft); }
+.token-new {
+  background: color-mix(in srgb, var(--ok) 22%, transparent);
+  border-radius: 3px;
+  color: var(--ok);
+  font-size: 10px;
+  margin-left: auto;
+  padding: 0 5px;
+}
+
+.form-grid--tokens .field { flex: 1; min-width: 240px; }
+
+/* --- set bonus cards ------------------------------------------------------------------- */
+
+.setcard {
+  background: color-mix(in srgb, var(--accent-soft) 30%, transparent);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  margin-bottom: 10px;
+  padding: 9px 11px;
+}
+.setcard-head { align-items: center; display: flex; flex-wrap: wrap; gap: 6px; }
+.setcard-name { flex: 0 1 220px; font-weight: 600; }
+/* --- tiers and segmented toggles -------------------------------------------------------- */
+
+.seg { display: inline-flex; gap: 0; }
+.seg-btn {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  color: var(--muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+  padding: 2px 8px;
+}
+.seg-btn:first-child { border-radius: var(--radius) 0 0 var(--radius); }
+.seg-btn:last-child { border-radius: 0 var(--radius) var(--radius) 0; border-left: 0; }
+.seg-btn.is-on { background: var(--accent-soft); border-color: var(--accent); color: var(--text); }
+
+.tier {
+  border-left: 2px solid var(--accent);
+  margin: 5px 0 5px 2px;
+  padding-left: 9px;
+}
+.tier-head { align-items: center; display: flex; gap: 6px; margin-bottom: 3px; }
+.tier-pieces { width: 66px; }
+
+.setcard-id {
+  background: var(--surface-2);
+  border-radius: 3px;
+  color: var(--muted);
+  font-size: 11px;
+  padding: 1px 5px;
+}
+
 /* --- crash ---------------------------------------------------------------------------- */
 
 .crash { color: var(--danger); padding: 24px; }

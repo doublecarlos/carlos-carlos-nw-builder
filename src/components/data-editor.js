@@ -27,13 +27,9 @@ window.NW.components.DataEditor = (() => {
     emits: ['update-overlay', 'close'],
 
     data: () => ({
-      mode: 'items',            // 'items' | 'sets'
       query: '',
       statusFilter: 'all',      // all | changed | added | edited | removed
       selectedName: null,
-      selectedSetId: null,
-      setJson: '',
-      setError: '',
       showExport: false,
       exportTab: 'items',       // items | bonuses | overlay
       formDirty: false,
@@ -89,6 +85,18 @@ window.NW.components.DataEditor = (() => {
 
       tagList() {
         return [...this.db.itemsByTag.keys()].sort();
+      },
+
+      /** Every bonus id in the catalogue — the vocabulary for `excludes`. */
+      bonusIds() {
+        const ids = new Set();
+        for (const item of this.db.items) {
+          for (const bonus of item.bonuses ?? []) if (bonus.id) ids.add(bonus.id);
+        }
+        for (const set of this.db.bonusSets) {
+          for (const effect of set.effects ?? []) if (effect.id) ids.add(effect.id);
+        }
+        return [...ids].sort();
       },
 
       changedCount() {
@@ -160,44 +168,16 @@ window.NW.components.DataEditor = (() => {
       },
 
       // --- bonus sets -----------------------------------------------------------------------
+      // Edited from inside the item form now, next to the item that grants them.
 
-      selectSet(set) {
-        this.selectedSetId = set.id;
-        this.setJson = JSON.stringify(set, null, 2);
-        this.setError = '';
+      onSaveSet({ id, set }) {
+        this.$emit('update-overlay', catalog().upsert(this.overlay, 'bonusSets', id, set, id));
+        this.notice = `Saved set “${set.name || id}”`;
       },
 
-      newSet() {
-        this.selectedSetId = null;
-        this.setJson = JSON.stringify(
-          { id: 'my-set', name: 'My Set', effects: [{ id: 'my-set-bonus', tiers: [] }] }, null, 2,
-        );
-        this.setError = '';
-      },
-
-      saveSet() {
-        this.setError = '';
-        let parsed;
-        try {
-          parsed = JSON.parse(this.setJson);
-        } catch (error) {
-          this.setError = `Invalid JSON: ${error.message}`;
-          return;
-        }
-        if (!parsed.id) { this.setError = 'A bonus set needs an id.'; return; }
-        this.$emit('update-overlay',
-          catalog().upsert(this.overlay, 'bonusSets', parsed.id, parsed, this.selectedSetId));
-        this.selectedSetId = parsed.id;
-        this.notice = `Saved set “${parsed.id}”`;
-      },
-
-      deleteSet() {
-        if (!this.selectedSetId) return;
-        this.$emit('update-overlay',
-          catalog().remove(this.overlay, 'bonusSets', this.selectedSetId));
-        this.notice = `Removed set “${this.selectedSetId}”`;
-        this.selectedSetId = null;
-        this.setJson = '';
+      onDeleteSet(id) {
+        this.$emit('update-overlay', catalog().remove(this.overlay, 'bonusSets', id));
+        this.notice = `Removed set “${id}”`;
       },
 
       // --- export ---------------------------------------------------------------------------
@@ -240,12 +220,8 @@ window.NW.components.DataEditor = (() => {
     template: `
       <div class="editor">
         <div class="editor-bar">
-          <div class="tabs">
-            <button type="button" class="tab" :class="{ 'is-on': mode === 'items' }"
-                    @click="mode = 'items'">Items <span class="tab-count">{{ db.items.length }}</span></button>
-            <button type="button" class="tab" :class="{ 'is-on': mode === 'sets' }"
-                    @click="mode = 'sets'">Bonus sets <span class="tab-count">{{ db.bonusSets.length }}</span></button>
-          </div>
+          <strong>Data editor</strong>
+          <span class="hint">{{ db.items.length }} items · {{ db.bonusSets.length }} bonus sets</span>
 
           <span class="spacer"></span>
 
@@ -298,15 +274,14 @@ window.NW.components.DataEditor = (() => {
             <li v-for="(finding, i) in findings.slice(0, 40)" :key="i" :class="finding.level">
               <span class="finding-level">{{ finding.level }}</span>
               <button v-if="finding.name" type="button" class="link"
-                      @click="mode = 'items'; selectedName = finding.name">{{ finding.name }}</button>
+                      @click="selectedName = finding.name">{{ finding.name }}</button>
               <span>{{ finding.message }}</span>
             </li>
           </ul>
           <p v-if="findings.length > 40" class="hint">…and {{ findings.length - 40 }} more.</p>
         </div>
 
-        <!-- items -->
-        <div v-if="mode === 'items'" class="editor-body">
+        <div class="editor-body">
           <div class="editor-list">
             <div class="editor-list-head">
               <input type="search" v-model="query" placeholder="Filter items…">
@@ -340,44 +315,17 @@ window.NW.components.DataEditor = (() => {
               :key="selectedName ?? '__new__'"
               :source="selected"
               :status="selectedStatus"
+              :db="db"
               :filters="filters"
               :set-ids="setIds"
               :tags="tagList"
+              :bonus-ids="bonusIds"
               @save="onSave"
               @delete="onDelete"
               @revert="onRevert"
+              @save-set="onSaveSet"
+              @delete-set="onDeleteSet"
               @dirty="formDirty = $event" />
-          </div>
-        </div>
-
-        <!-- bonus sets -->
-        <div v-else class="editor-body">
-          <div class="editor-list">
-            <div class="editor-list-head">
-              <button type="button" class="btn btn--primary" @click="newSet">+ New set</button>
-            </div>
-            <div class="editor-list-body">
-              <div v-for="set in db.bonusSets" :key="set.id" class="editor-row"
-                   :class="{ 'is-on': set.id === selectedSetId }" @click="selectSet(set)">
-                <span class="editor-row-name">{{ set.name ?? set.id }}</span>
-                <span class="editor-row-filter">{{ (set.effects ?? []).length }} effect(s)</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="editor-form">
-            <div class="form-bar">
-              <strong>{{ selectedSetId ?? 'New bonus set' }}</strong>
-              <span class="spacer"></span>
-              <button type="button" class="btn btn--primary" :disabled="!setJson"
-                      @click="saveSet">Save</button>
-              <button v-if="selectedSetId" type="button" class="btn" @click="deleteSet">Delete</button>
-            </div>
-            <p v-if="setError" class="drawer-error">{{ setError }}</p>
-            <p class="hint">Set effects use tiers, variants and nested conditions, so they are
-              edited as JSON rather than through a form that could not represent them.</p>
-            <textarea class="code" rows="22" v-model="setJson"
-                      placeholder="Pick a set on the left, or create a new one."></textarea>
           </div>
         </div>
       </div>
