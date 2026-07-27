@@ -1,17 +1,5 @@
 [
   {
-    "id": "1st-pack-tactics-group-celestial",
-    "name": "1st Pack Tactics (Group) (Celestial)",
-    "effects": [
-      {
-        "id": "1st-pack-tactics-group-celestial-bonus-party",
-        "name": "1st Pack Tactics (Group) (Celestial) (party)",
-        "when": {"toggle": "party"},
-        "stats": {"ca": 2953, "awareness": 2953}
-      }
-    ]
-  },
-  {
     "id": "1st-pack-tactics-group",
     "name": "1st Pack Tactics (Group)",
     "effects": [
@@ -24,14 +12,14 @@
     ]
   },
   {
-    "id": "2nd-pack-tactics-group-celestial",
-    "name": "2nd Pack Tactics (Group) (Celestial)",
+    "id": "1st-pack-tactics-group-celestial",
+    "name": "1st Pack Tactics (Group) (Celestial)",
     "effects": [
       {
-        "id": "2nd-pack-tactics-group-celestial-bonus-party",
-        "name": "2nd Pack Tactics (Group) (Celestial) (party)",
+        "id": "1st-pack-tactics-group-celestial-bonus-party",
+        "name": "1st Pack Tactics (Group) (Celestial) (party)",
         "when": {"toggle": "party"},
-        "stats": {"ca": 1476, "awareness": 1476}
+        "stats": {"ca": 2953, "awareness": 2953}
       }
     ]
   },
@@ -44,6 +32,18 @@
         "name": "2nd Pack Tactics (Group) (party)",
         "when": {"toggle": "party"},
         "stats": {"ca": 1125, "awareness": 1125}
+      }
+    ]
+  },
+  {
+    "id": "2nd-pack-tactics-group-celestial",
+    "name": "2nd Pack Tactics (Group) (Celestial)",
+    "effects": [
+      {
+        "id": "2nd-pack-tactics-group-celestial-bonus-party",
+        "name": "2nd Pack Tactics (Group) (Celestial) (party)",
+        "when": {"toggle": "party"},
+        "stats": {"ca": 1476, "awareness": 1476}
       }
     ]
   },
@@ -204,18 +204,6 @@
     ]
   },
   {
-    "id": "avian-aura-group-celestial",
-    "name": "Avian Aura (Group) (Celestial)",
-    "effects": [
-      {
-        "id": "avian-aura-group-celestial-bonus-party",
-        "name": "Avian Aura (Group) (Celestial) (party)",
-        "when": {"toggle": "party"},
-        "stats": {"power": 2100}
-      }
-    ]
-  },
-  {
     "id": "avian-aura-group",
     "name": "Avian Aura (Group)",
     "effects": [
@@ -224,6 +212,18 @@
         "name": "Avian Aura (Group) (party)",
         "when": {"toggle": "party"},
         "stats": {"power": 1600}
+      }
+    ]
+  },
+  {
+    "id": "avian-aura-group-celestial",
+    "name": "Avian Aura (Group) (Celestial)",
+    "effects": [
+      {
+        "id": "avian-aura-group-celestial-bonus-party",
+        "name": "Avian Aura (Group) (Celestial) (party)",
+        "when": {"toggle": "party"},
+        "stats": {"power": 2100}
       }
     ]
   },
@@ -259,15 +259,9 @@
     "name": "Batiri's Wisdom [Batiri] (Damage) <Offense>",
     "effects": [
       {
-        "id": "batiri-s-wisdom-batiri-damage-offense-bonus-combat-mixed",
-        "name": "Batiri's Wisdom [Batiri] (Damage) <Offense> (combat, mixed)",
-        "when": {"toggle": "combat", "combatType": "mixed"},
-        "stats": {"outgoing_damage": 0.135}
-      },
-      {
-        "id": "batiri-s-wisdom-batiri-damage-offense-bonus-combat-single",
-        "name": "Batiri's Wisdom [Batiri] (Damage) <Offense> (combat, single)",
-        "when": {"toggle": "combat", "combatType": "single"},
+        "id": "batiri-s-wisdom-batiri-damage-offense-bonus-combat-single-mixed",
+        "name": "Batiri's Wisdom [Batiri] (Damage) <Offense> (single or mixed)",
+        "when": {"toggle": "combat", "any": [{"combatType": "single"}, {"combatType": "mixed"}]},
         "stats": {"outgoing_damage": 0.135}
       }
     ]
@@ -439,25 +433,6 @@
     ]
   },
   {
-    "id": "grand-summer-feast-legacy",
-    "name": "Grand Summer Feast (Legacy)",
-    "effects": [
-      {
-        "id": "grand-summer-feast-legacy-bonus-consumables",
-        "name": "Grand Summer Feast (Legacy) (consumables)",
-        "when": {"toggle": "consumables"},
-        "stats": {
-          "power_p": 0.05,
-          "acc_p": 0.05,
-          "strike_p": 0.015,
-          "sev_p": 0.025,
-          "hit_points_p": 0.025,
-          "deflect_p": 0.015
-        }
-      }
-    ]
-  },
-  {
     "id": "grand-summer-feast",
     "name": "Grand Summer Feast",
     "effects": [
@@ -468,6 +443,25 @@
         "stats": {
           "power_p": 0.025,
           "acc_p": 0.015,
+          "strike_p": 0.015,
+          "sev_p": 0.025,
+          "hit_points_p": 0.025,
+          "deflect_p": 0.015
+        }
+      }
+    ]
+  },
+  {
+    "id": "grand-summer-feast-legacy",
+    "name": "Grand Summer Feast (Legacy)",
+    "effects": [
+      {
+        "id": "grand-summer-feast-legacy-bonus-consumables",
+        "name": "Grand Summer Feast (Legacy) (consumables)",
+        "when": {"toggle": "consumables"},
+        "stats": {
+          "power_p": 0.05,
+          "acc_p": 0.05,
           "strike_p": 0.015,
           "sev_p": 0.025,
           "hit_points_p": 0.025,
@@ -1493,18 +1487,6 @@
     ]
   },
   {
-    "id": "mystic-aura-group-celestial",
-    "name": "Mystic Aura (Group) (Celestial)",
-    "effects": [
-      {
-        "id": "mystic-aura-group-celestial-bonus-party",
-        "name": "Mystic Aura (Group) (Celestial) (party)",
-        "when": {"toggle": "party"},
-        "stats": {"power": 2953, "acc": 2953}
-      }
-    ]
-  },
-  {
     "id": "mystic-aura-group",
     "name": "Mystic Aura (Group)",
     "effects": [
@@ -1513,6 +1495,18 @@
         "name": "Mystic Aura (Group) (party)",
         "when": {"toggle": "party"},
         "stats": {"power": 2250, "acc": 2250}
+      }
+    ]
+  },
+  {
+    "id": "mystic-aura-group-celestial",
+    "name": "Mystic Aura (Group) (Celestial)",
+    "effects": [
+      {
+        "id": "mystic-aura-group-celestial-bonus-party",
+        "name": "Mystic Aura (Group) (Celestial) (party)",
+        "when": {"toggle": "party"},
+        "stats": {"power": 2953, "acc": 2953}
       }
     ]
   },
@@ -1649,18 +1643,6 @@
     ]
   },
   {
-    "id": "runic-aura-group-celestial",
-    "name": "Runic Aura (Group) (Celestial)",
-    "effects": [
-      {
-        "id": "runic-aura-group-celestial-bonus-party",
-        "name": "Runic Aura (Group) (Celestial) (party)",
-        "when": {"toggle": "party"},
-        "stats": {"power": 2953, "defense": 2953}
-      }
-    ]
-  },
-  {
     "id": "runic-aura-group",
     "name": "Runic Aura (Group)",
     "effects": [
@@ -1669,6 +1651,18 @@
         "name": "Runic Aura (Group) (party)",
         "when": {"toggle": "party"},
         "stats": {"power": 2250}
+      }
+    ]
+  },
+  {
+    "id": "runic-aura-group-celestial",
+    "name": "Runic Aura (Group) (Celestial)",
+    "effects": [
+      {
+        "id": "runic-aura-group-celestial-bonus-party",
+        "name": "Runic Aura (Group) (Celestial) (party)",
+        "when": {"toggle": "party"},
+        "stats": {"power": 2953, "defense": 2953}
       }
     ]
   },
@@ -1757,6 +1751,18 @@
     ]
   },
   {
+    "id": "spider-totem",
+    "name": "Spider Totem",
+    "effects": [
+      {
+        "id": "spider-totem-bonus-consumables",
+        "name": "Spider Totem (consumables)",
+        "when": {"toggle": "consumables"},
+        "stats": {"ca_p": 0.025}
+      }
+    ]
+  },
+  {
     "id": "spider-totem-acc",
     "name": "Spider Totem (+Acc)",
     "effects": [
@@ -1789,18 +1795,6 @@
         "name": "Spider Totem (+Strike) (consumables)",
         "when": {"toggle": "consumables"},
         "stats": {"ca_p": 0.025, "strike_p": 0.02}
-      }
-    ]
-  },
-  {
-    "id": "spider-totem",
-    "name": "Spider Totem",
-    "effects": [
-      {
-        "id": "spider-totem-bonus-consumables",
-        "name": "Spider Totem (consumables)",
-        "when": {"toggle": "consumables"},
-        "stats": {"ca_p": 0.025}
       }
     ]
   },
@@ -1895,18 +1889,6 @@
     ]
   },
   {
-    "id": "watermelon-sorbet-power-accuracy-legacy",
-    "name": "Watermelon Sorbet (Power/Accuracy) (Legacy)",
-    "effects": [
-      {
-        "id": "watermelon-sorbet-power-accuracy-legacy-bonus-consumables",
-        "name": "Watermelon Sorbet (Power/Accuracy) (Legacy) (consumables)",
-        "when": {"toggle": "consumables"},
-        "stats": {"power_p": 0.1, "acc_p": 0.1}
-      }
-    ]
-  },
-  {
     "id": "watermelon-sorbet-power-accuracy",
     "name": "Watermelon Sorbet (Power/Accuracy)",
     "effects": [
@@ -1915,6 +1897,18 @@
         "name": "Watermelon Sorbet (Power/Accuracy) (consumables)",
         "when": {"toggle": "consumables"},
         "stats": {"power_p": 0.05, "acc_p": 0.05}
+      }
+    ]
+  },
+  {
+    "id": "watermelon-sorbet-power-accuracy-legacy",
+    "name": "Watermelon Sorbet (Power/Accuracy) (Legacy)",
+    "effects": [
+      {
+        "id": "watermelon-sorbet-power-accuracy-legacy-bonus-consumables",
+        "name": "Watermelon Sorbet (Power/Accuracy) (Legacy) (consumables)",
+        "when": {"toggle": "consumables"},
+        "stats": {"power_p": 0.1, "acc_p": 0.1}
       }
     ]
   },
