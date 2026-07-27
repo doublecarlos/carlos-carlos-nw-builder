@@ -38,6 +38,7 @@ window.NW = window.NW ?? {};
   const app = createApp({
     components: {
       BuildBar: window.NW.components.BuildBar,
+      BonusInspector: window.NW.components.BonusInspector,
       OptionsBar: window.NW.components.OptionsBar,
       SlotList: window.NW.components.SlotList,
       StatPanel: window.NW.components.StatPanel,
@@ -57,6 +58,7 @@ window.NW = window.NW ?? {};
         // Never persisted: history is a session concept, not part of the document.
         histories: {},
 
+        tab: 'stats',
         saveTimer: null,
         noticeTimer: null,
         topbarObserver: null,
@@ -84,6 +86,18 @@ window.NW = window.NW ?? {};
 
       filledSlots() {
         return Object.values(this.build.choices).filter(Boolean).length;
+      },
+
+      /** Summarised here so the tab can show it without mounting the inspector. */
+      bonusCounts() {
+        if (!this.resolved.ok) return { total: 0, active: 0, nearMiss: 0 };
+        const all = this.resolved.result.bonuses;
+        return {
+          total: all.length,
+          active: all.filter((bonus) => bonus.active).length,
+          nearMiss: all.filter((bonus) => !bonus.active && !bonus.excluded
+            && (bonus.gate?.unmet?.length ?? 0) === 1).length,
+        };
       },
 
       // Read without creating: a computed must not mutate state, so these tolerate a build
@@ -429,7 +443,21 @@ window.NW = window.NW ?? {};
           @choose="setChoice"
           @set-value="setValue" />
         <aside class="sidebar">
-          <StatPanel :result="resolved.result" />
+          <div class="tabs">
+            <button type="button" class="tab" :class="{ 'is-on': tab === 'stats' }"
+                    @click="tab = 'stats'">Stats</button>
+            <button type="button" class="tab" :class="{ 'is-on': tab === 'bonuses' }"
+                    @click="tab = 'bonuses'">
+              Bonuses <span class="tab-count">{{ bonusCounts.active }}/{{ bonusCounts.total }}</span>
+              <span v-if="bonusCounts.nearMiss" class="badge badge--near">
+                {{ bonusCounts.nearMiss }} away
+              </span>
+            </button>
+          </div>
+
+          <!-- v-show, not v-if: switching tabs must not discard the inspector's filter. -->
+          <StatPanel v-show="tab === 'stats'" :result="resolved.result" />
+          <BonusInspector v-show="tab === 'bonuses'" :result="resolved.result" :db="db" />
         </aside>
       </main>
 
