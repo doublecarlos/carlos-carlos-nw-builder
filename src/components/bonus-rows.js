@@ -170,6 +170,7 @@ window.NW.components.BonusRows = (() => {
       PercentInput: window.NW.components.PercentInput,
       ComboBox: window.NW.components.ComboBox,
       ConditionRows: window.NW.components.ConditionRows,
+      IconButton: window.NW.components.IconButton,
     },
 
     props: {
@@ -331,18 +332,21 @@ window.NW.components.BonusRows = (() => {
                 <button type="button" class="seg-btn" :class="{ 'is-on': bonus.payload === 'variants' }"
                         @click="setPayload(bonus, 'variants')">varies by condition</button>
               </div>
-              <button v-if="bonus.payload === 'flat'" type="button" class="link"
-                      @click="addStat(bonus.stats)">+ add stat</button>
             </div>
 
             <!-- flat payload -->
             <template v-if="bonus.payload === 'flat'">
               <div v-for="(stat, sIndex) in bonus.stats" :key="sIndex" class="stat-row">
+                <IconButton icon="plus" title="Add stat" @click="addStat(bonus.stats)" />
+                <IconButton icon="trash" title="Remove stat" @click="removeStat(bonus.stats, sIndex)" />
                 <ComboBox class="combo--stat" :model-value="stat.key" :options="statComboOptions"
                           placeholder="— pick a stat —" @update:model-value="v => stat.key = v" />
                 <PercentInput v-if="isPercent(stat.key)" v-model="stat.value" />
                 <input v-else type="number" step="any" v-model.number="stat.value">
-                <button type="button" class="link" @click="removeStat(bonus.stats, sIndex)">remove</button>
+              </div>
+              <div v-if="!bonus.stats.length" class="stat-row">
+                <IconButton  icon="plus"
+                            title="Add stat" @click="addStat(bonus.stats)" />
               </div>
             </template>
 
@@ -354,29 +358,32 @@ window.NW.components.BonusRows = (() => {
               </p>
               <div v-for="(tier, tIndex) in bonus.tiers" :key="tIndex" class="tier">
                 <div class="tier-head">
+                  <IconButton icon="arrow-up" title="Move tier up" :disabled="tIndex === 0"
+                              @click="moveTier(bonus, tIndex, -1)" />
+                  <IconButton icon="arrow-down" title="Move tier down" :disabled="tIndex === bonus.tiers.length - 1"
+                              @click="moveTier(bonus, tIndex, 1)" />
+                  <IconButton icon="copy" title="Duplicate tier" @click="duplicateTier(bonus, tIndex)" />
+                  <IconButton icon="circle-plus" title="Insert tier" @click="insertTier(bonus, tIndex)" />
+                  <IconButton icon="trash" title="Remove tier" @click="removeTier(bonus, tIndex)" />
                   <ComboBox class="combo--set" :model-value="tier.set" :options="setComboOptions"
                             placeholder="— set —" @update:model-value="v => tier.set = v" />
                   <input type="number" min="1" v-model.number="tier.atLeast" class="tier-pieces">
                   <span class="hint">piece(s) or more</span>
-                  <span class="spacer"></span>
-                  <button type="button" class="link" @click="addStat(tier.stats)">+ add stat</button>
-                  <button type="button" class="link" :disabled="tIndex === 0"
-                          @click="moveTier(bonus, tIndex, -1)">move up</button>
-                  <button type="button" class="link" :disabled="tIndex === bonus.tiers.length - 1"
-                          @click="moveTier(bonus, tIndex, 1)">move down</button>
-                  <button type="button" class="link" @click="duplicateTier(bonus, tIndex)">duplicate</button>
-                  <button type="button" class="link" @click="insertTier(bonus, tIndex)">insert below</button>
-                  <button type="button" class="link" @click="removeTier(bonus, tIndex)">remove tier</button>
                 </div>
                 <div v-for="(stat, sIndex) in tier.stats" :key="sIndex" class="stat-row">
+                  <IconButton icon="plus" title="Add stat" @click="addStat(tier.stats)" />
+                  <IconButton icon="trash" title="Remove stat" @click="removeStat(tier.stats, sIndex)" />
                   <ComboBox class="combo--stat" :model-value="stat.key" :options="statComboOptions"
                             placeholder="— pick a stat —" @update:model-value="v => stat.key = v" />
                   <PercentInput v-if="isPercent(stat.key)" v-model="stat.value" />
                   <input v-else type="number" step="any" v-model.number="stat.value">
-                  <button type="button" class="link" @click="removeStat(tier.stats, sIndex)">remove</button>
+                </div>
+                <div v-if="!tier.stats.length" class="cond-add">
+                  <IconButton v-if="!tier.stats.length" icon="plus" title="Add stat"
+                              @click="addStat(tier.stats)" />
                 </div>
               </div>
-              <button type="button" class="link" @click="addTier(bonus)">+ add tier</button>
+              <IconButton v-if="!bonus.tiers.length" icon="circle-plus" title="Add tier" @click="addTier(bonus)" />
             </template>
 
             <!-- variant payload -->
@@ -401,14 +408,18 @@ window.NW.components.BonusRows = (() => {
                 <ConditionRows :rows="variant.conditions" :depth="0" :set-ids="setIds" />
                 <div class="sub-section">
                   Grants
-                  <button type="button" class="link" @click="addStat(variant.stats)">+ add stat</button>
                 </div>
                 <div v-for="(stat, sIndex) in variant.stats" :key="sIndex" class="stat-row">
+                  <IconButton icon="plus" title="Add stat" @click="addStat(variant.stats)" />
+                  <IconButton icon="trash" title="Remove stat" @click="removeStat(variant.stats, sIndex)" />
                   <ComboBox class="combo--stat" :model-value="stat.key" :options="statComboOptions"
                             placeholder="— pick a stat —" @update:model-value="v => stat.key = v" />
                   <PercentInput v-if="isPercent(stat.key)" v-model="stat.value" />
                   <input v-else type="number" step="any" v-model.number="stat.value">
-                  <button type="button" class="link" @click="removeStat(variant.stats, sIndex)">remove</button>
+                </div>
+                <div v-if="!variant.stats.length" class="stat-row">
+                  <IconButton icon="plus" title="Add stat"
+                                                @click="addStat(variant.stats)" />
                 </div>
               </div>
               <button type="button" class="link" @click="addVariant(bonus)">+ add variant</button>

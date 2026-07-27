@@ -168,6 +168,7 @@ window.NW.components.ConditionRows = (() => {
 
     components: {
       ComboBox: window.NW.components.ComboBox,
+      IconButton: window.NW.components.IconButton,
     },
 
     props: {
@@ -191,7 +192,10 @@ window.NW.components.ConditionRows = (() => {
       },
 
       addLeaf() { this.rows.push(cd().newLeafRow()); },
-      addGroup(op) { this.rows.push(cd().newGroupRow(op)); },
+      addGroup(op, index) {
+        const insertIndex = (index === undefined || index === null) ? this.rows.length : index + 1;
+        this.rows.splice(insertIndex, 0, cd().newGroupRow(op));
+      },
       removeRow(index) { this.rows.splice(index, 1); },
       insertLeaf(index) { this.rows.splice(index + 1, 0, cd().newLeafRow()); },
       duplicateRow(index) { this.rows.splice(index + 1, 0, cd().cloneRow(this.rows[index])); },
@@ -242,8 +246,17 @@ window.NW.components.ConditionRows = (() => {
 
     template: `
       <div class="cond-list">
-        <div v-for="(row, i) in rows" :key="row.uid">
+        <div v-for="(row, i) in rows" :key="row.uid" class="cond-item">
           <div v-if="row.kind === 'leaf'" class="cond-row">
+            <IconButton icon="arrow-up" title="Move up" :disabled="i === 0" @click="moveRow(i, -1)" />
+            <IconButton icon="arrow-down" title="Move down" :disabled="i === rows.length - 1" @click="moveRow(i, 1)" />
+            <IconButton icon="copy" title="Duplicate" @click="duplicateRow(i)" />
+            <IconButton icon="plus" title="Add condition" @click="insertLeaf(i)" />
+            <IconButton v-if="canNest" icon="ampersand" title='Add &quot;All of&quot; condition group' @click="addGroup('all', i)" />
+            <IconButton v-if="canNest" icon="split" title='Add &quot;Any of&quot; condition group' @click="addGroup('any', i)" />
+            <IconButton v-if="canNest" icon="circle-alert" title='Add &quot;Not&quot; condition group' @click="addGroup('not', i)" />
+            <IconButton icon="trash" title="Remove condition" @click="removeRow(i)" />
+
             <label class="field"><span class="field-label">Condition</span>
               <ComboBox class="combo--cond-type" :model-value="row.type" :options="typeOptions"
                         @update:model-value="v => { row.type = v; changeType(row) }" /></label>
@@ -276,57 +289,51 @@ window.NW.components.ConditionRows = (() => {
                           @update:model-value="v => row.value = v" />
                 <input v-else type="text" v-model="row.value"></label>
             </template>
-
-            <span class="spacer"></span>
-            <button type="button" class="link" :disabled="i === 0" @click="moveRow(i, -1)">up</button>
-            <button type="button" class="link" :disabled="i === rows.length - 1"
-                    @click="moveRow(i, 1)">down</button>
-            <button type="button" class="link" @click="duplicateRow(i)">copy</button>
-            <button type="button" class="link" @click="insertLeaf(i)">insert</button>
-            <button type="button" class="link" @click="removeRow(i)">remove</button>
           </div>
 
-          <div v-else class="cond-group">
-            <div class="cond-group-head">
-              <span class="cond-group-op">{{ opLabel(row.op) }}</span>
-              <button v-if="row.op !== 'not'" type="button" class="link"
-                      @click="addBranch(row)">+ branch</button>
-              <span class="spacer"></span>
-              <button type="button" class="link" :disabled="i === 0" @click="moveRow(i, -1)">up</button>
-              <button type="button" class="link" :disabled="i === rows.length - 1"
-                      @click="moveRow(i, 1)">down</button>
-              <button type="button" class="link" @click="duplicateRow(i)">copy</button>
-              <button type="button" class="link" @click="insertLeaf(i)">insert</button>
-              <button type="button" class="link" @click="removeRow(i)">remove group</button>
-            </div>
-            <div v-for="(branch, bi) in row.branches" :key="bi" class="cond-branch">
-              <div v-if="row.op !== 'not' && bi > 0" class="cond-branch-op">
-                {{ row.op === 'any' ? 'or' : 'and' }}
+          <div v-else class="branch-row">
+            <IconButton icon="arrow-up" title="Move up" :disabled="i === 0" @click="moveRow(i, -1)" />
+            <IconButton icon="arrow-down" title="Move down" :disabled="i === rows.length - 1" @click="moveRow(i, 1)" />
+            <IconButton icon="copy" title="Duplicate" @click="duplicateRow(i)" />
+            <IconButton icon="plus" title="Add condition" @click="insertLeaf(i)" />
+            <IconButton v-if="canNest" icon="ampersand" title='Add &quot;All of&quot; condition group' @click="addGroup('all', i)" />
+            <IconButton v-if="canNest" icon="split" title='Add &quot;Any of&quot; condition group' @click="addGroup('any', i)" />
+            <IconButton v-if="canNest" icon="circle-alert" title='Add &quot;Not&quot; condition group' @click="addGroup('not', i)" />
+            <IconButton icon="trash" title="Remove condition" @click="removeRow(i)" />
+
+            <div class="cond-group">
+              <div class="cond-group-head">
+                <span class="cond-group-op">{{ opLabel(row.op) }}</span>
               </div>
-              <ConditionRows :rows="branch" :depth="depth + 1" :set-ids="setIds" />
-              <div v-if="row.op !== 'not'" class="cond-branch-actions">
-                <button type="button" class="link" :disabled="bi === 0"
-                        @click="moveBranch(row, bi, -1)">up</button>
-                <button type="button" class="link" :disabled="bi === row.branches.length - 1"
-                        @click="moveBranch(row, bi, 1)">down</button>
-                <button type="button" class="link" @click="duplicateBranch(row, bi)">copy branch</button>
-                <button type="button" class="link" @click="insertBranch(row, bi)">insert branch</button>
-                <button v-if="row.branches.length > 1" type="button" class="link"
-                        @click="removeBranch(row, bi)">remove branch</button>
+              <div v-for="(branch, bi) in row.branches" :key="bi" class="cond-branch">
+                <div v-if="row.op !== 'not' && bi > 0" class="cond-branch-op">
+                  {{ row.op === 'any' ? 'or' : 'and' }}
+                </div>
+                <ConditionRows :rows="branch" :depth="depth + 1" :set-ids="setIds" />
+                <div v-if="row.op !== 'not'" class="cond-branch-actions">
+                  <span class="hint">Branch: </span>
+                  <IconButton icon="arrow-up" title="Move branch up" :disabled="bi === 0"
+                              @click="moveBranch(row, bi, -1)" />
+                  <IconButton icon="arrow-down" title="Move branch down" :disabled="bi === row.branches.length - 1"
+                              @click="moveBranch(row, bi, 1)" />
+                  <IconButton icon="copy" title="Duplicate branch" @click="duplicateBranch(row, bi)" />
+                  <IconButton icon="circle-plus" title="Insert branch" @click="insertBranch(row, bi)" />
+                  <IconButton v-if="row.branches.length > 1" icon="trash" title="Remove branch"
+                              @click="removeBranch(row, bi)" />
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        <div class="cond-add">
-          <button type="button" class="link" @click="addLeaf">+ condition</button>
+        <div v-if="!rows.length" class="cond-add">
+          <IconButton icon="plus" title="Add condition" @click="addLeaf" />
           <template v-if="canNest">
-            <button type="button" class="link" @click="addGroup('all')">+ "all" group</button>
-            <button type="button" class="link" @click="addGroup('any')">+ "any" group</button>
-            <button type="button" class="link" @click="addGroup('not')">+ "not" group</button>
+            <IconButton icon="ampersand" title='Add &quot;All of&quot; condition group' @click="addGroup('all')" />
+            <IconButton icon="split" title='Add &quot;Any of&quot; condition group' @click="addGroup('any')" />
+            <IconButton icon="circle-alert" title='Add &quot;Not&quot; condition group' @click="addGroup('not')" />
           </template>
         </div>
-        <span v-if="!rows.length" class="hint">always</span>
       </div>
     `,
   };

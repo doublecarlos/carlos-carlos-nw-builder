@@ -39,6 +39,7 @@ window.NW.components.ItemForm = (() => {
       TokenInput: window.NW.components.TokenInput,
       PercentInput: window.NW.components.PercentInput,
       ComboBox: window.NW.components.ComboBox,
+      IconButton: window.NW.components.IconButton,
     },
 
     props: {
@@ -212,16 +213,17 @@ window.NW.components.ItemForm = (() => {
           </label>
         </div>
 
-        <div class="form-section">
-          Stats
-          <button type="button" class="link" @click="addStat">+ add</button>
-        </div>
+        <div class="form-section">Stats</div>
         <div v-for="(stat, index) in draft.stats" :key="index" class="stat-row">
+          <IconButton icon="plus" title="Add stat" @click="addStat" />
+          <IconButton icon="trash" title="Remove stat" @click="removeStat(index)" />
           <ComboBox class="combo--stat" :model-value="stat.key" :options="statComboOptions"
                     placeholder="— pick a stat —" @update:model-value="v => stat.key = v" />
           <PercentInput v-if="isPercent(stat.key)" v-model="stat.value" />
           <input v-else type="number" step="any" v-model.number="stat.value">
-          <button type="button" class="link" @click="removeStat(index)">remove</button>
+        </div>
+        <div v-if="!draft.stats.length" class="stat-row">
+          <IconButton icon="plus" title="Add stat" @click="addStat" />
         </div>
 
         <div class="form-section">Dynamic modification (user types the value)</div>

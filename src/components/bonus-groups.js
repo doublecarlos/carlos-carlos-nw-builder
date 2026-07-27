@@ -27,6 +27,7 @@ window.NW.components.BonusGroups = (() => {
     components: {
       BonusRows: window.NW.components.BonusRows,
       ComboBox: window.NW.components.ComboBox,
+      IconButton: window.NW.components.IconButton,
     },
 
     props: {
@@ -148,7 +149,7 @@ window.NW.components.BonusGroups = (() => {
       <div>
         <div class="form-section">
           Bonuses
-          <button type="button" class="link" @click="addBonus">+ add bonus</button>
+          <IconButton icon="circle-plus" title="Add bonus" @click="addBonus" />
           <span v-if="attachable.length" class="bonus-attach">
             or
             <ComboBox class="bonus-attach-combo" model-value="" :options="attachable"
@@ -186,7 +187,7 @@ window.NW.components.BonusGroups = (() => {
 
           <div class="sub-section">
             Effects
-            <button type="button" class="link" @click="addEffect(card.id)">+ add effect</button>
+            <IconButton icon="circle-plus" title="Add effect" @click="addEffect(card.id)" />
             <span v-if="!drafts[card.id].effects.length" class="hint">none yet</span>
           </div>
 
