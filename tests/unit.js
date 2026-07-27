@@ -45,7 +45,7 @@ window.NW.unit = (() => {
          + 'payload row and silently granted nothing. Confirmed 2026-07-26 as a single-item '
          + 'bonus: any number of copies grants it exactly once.',
       run(run, assert) {
-        const ID = 'm33-critical-breaker-bonus-combat-combat-medium-plus';
+        const ID = 'm33-critical-breaker-combat';
         const one = run({ 'gear.head': 'M33 Wintermarked Hunter Hood' });
         const two = run({ 'gear.head': 'M33 Wintermarked Hunter Hood',
                           'gear.boots': 'M33 Wintermarked Marcher Poleyns' });
@@ -81,9 +81,9 @@ window.NW.unit = (() => {
       why: 'Legacy had four fixed buckets; `-combat_short-` means [10, 30) and '
          + '`-combat_medium_plus-` means >= 30. Off-bucket values must behave sensibly.',
       run(run, assert) {
-        const SHORT = 'm33-frostsilver-coil-of-wrath-bonus-combat-combat-short';
-        const MEDIUM = 'm33-frostsilver-coil-of-wrath-bonus-combat-combat-medium-plus';
-        const ring = { 'gear.ring1': 'M33 Frostsilver Coil of Wrath' };
+        const SHORT = 'm32-deathsilver-ring-of-submission-strike-bonus-combat-short-combat';
+        const MEDIUM = 'm32-deathsilver-ring-of-submission-strike-bonus-combat-medium-plus-combat';
+        const ring = { 'gear.ring1': 'M32 Deathsilver Ring of  Submission (Strike)' };
         const at = (duration) => run(ring, { duration });
 
         assert(!at(9).activeById.has(SHORT), 'short inactive at 9s');
@@ -100,8 +100,8 @@ window.NW.unit = (() => {
     {
       name: 'Toggles gate bonuses, and a two-toggle condition needs both',
       run(run, assert) {
-        const ID = 'm33-frostsilver-coil-of-wrath-bonus-combat-combat-medium-plus';
-        const ring = { 'gear.ring1': 'M33 Frostsilver Coil of Wrath' };
+        const ID = 'm32-deathsilver-ring-of-submission-strike-bonus-combat-medium-plus-combat';
+        const ring = { 'gear.ring1': 'M32 Deathsilver Ring of  Submission (Strike)' };
         assert(run(ring).activeById.has(ID), 'active with combat on');
         assert(!run(ring, { toggles: { combat: false } }).activeById.has(ID),
           'inactive with combat off');
@@ -175,7 +175,7 @@ window.NW.unit = (() => {
       name: 'Exclusion suppresses the excluded bonus',
       why: 'Replaces legacy `bonus_overrides`.',
       run(run, assert) {
-        const ID = 'm31-greaves-of-the-crimson-march-damage-bonus-combat';
+        const ID = 'm31-bloodletting-ascendant';
         const alone = run({ 'gear.boots': 'M31 Greaves of the Crimson March (Damage)' });
         const suppressed = run({ 'gear.boots': 'M31 Greaves of the Crimson March (Damage)',
                                  'gear.shirt': 'M33 Cracked Stormbind Tunic Shirt' });
