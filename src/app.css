@@ -24,6 +24,7 @@
   --danger-soft: #fdecea;
   --warn: #b54708;
   --ok: #087443;
+  --diff: #ab9000;
 
   --radius: 6px;
   /* Measured from the real element at runtime (app.js `mounted`): the top bar wraps to a
@@ -46,6 +47,7 @@
     --danger-soft: #3a1d1a;
     --warn: #f0a868;
     --ok: #6edaa6;
+    --diff: #e0c53f;
   }
 }
 
@@ -131,6 +133,12 @@ input[type="number"]::-webkit-inner-spin-button { appearance: none; -webkit-appe
   justify-content: flex-end;
   gap: 8px;
 }
+
+/* Quick compare: pick another build, see it inline against the active one (slot highlights,
+ * the stat panel's headline row) -- deliberately just a picker in the top bar, not a page of
+ * its own. */
+.compare-quick { align-items: center; display: flex; gap: 6px; }
+.compare-select { min-width: 170px; }
 
 .notice {
   background: var(--accent-soft);
@@ -318,6 +326,7 @@ label.quickopts-row { cursor: pointer; }
   padding: 0 6px;
 }
 .badge--error { background: var(--danger-soft); color: var(--danger); }
+.badge--diff { background: color-mix(in srgb, var(--diff) 24%, transparent); color: var(--diff); }
 
 .section-body { border-top: 1px solid var(--line); padding: 4px 10px 8px; }
 
@@ -362,6 +371,9 @@ label.quickopts-row { cursor: pointer; }
 }
 .slot-value { align-items: center; display: flex; gap: 6px; margin-top: 4px; }
 .slot-error { color: var(--danger); margin: 3px 0 0; font-size: 1rem; }
+
+.slot-diff-note { color: var(--muted); font-size: 1rem; margin: 2px 0 0; }
+.slot-diff-note button.link { color: var(--accent); margin-left: 2px; padding: 0; }
 
 /* --- item picker --------------------------------------------------------------------- */
 
@@ -454,6 +466,20 @@ label.quickopts-row { cursor: pointer; }
 .summary-calc-select { width: 100%; }
 .tile-value { font-size: 1.6rem; font-weight: 600; text-align: center; white-space: nowrap; }
 
+/* The compare-mode layout: this build's row, the other build's row, its Δ% in the third
+ * column -- the sheet's own compare block, label/value/percentage. `.stat-table`'s own font
+ * size is too small for what is still meant to be the headline number, so the value column
+ * gets `.tile-value`'s treatment (just a size down, to fit two rows instead of one). */
+.summary-compare { margin-top: 2px; }
+.summary-compare td { padding: 3px 4px; }
+.summary-compare td:first-child { color: var(--muted); }
+.summary-compare-value { font-size: 1.25rem; font-weight: 600; }
+/* Only "this build"'s own row is judged -- ahead (green) or behind (red) the compare build --
+ * the label cell stays muted regardless via `:not(:first-child)`, so it never fights the
+ * `td:first-child` rule above on specificity. */
+.summary-compare tr.is-positive td:not(:first-child) { color: var(--ok); font-weight: 600; }
+.summary-compare tr.is-negative td:not(:first-child) { color: var(--danger); font-weight: 600; }
+
 .panel-meta {
   align-items: center;
   color: var(--muted);
@@ -509,6 +535,11 @@ label.quickopts-row { cursor: pointer; }
 /* --- item hover card ------------------------------------------------------------------ */
 
 .slot-row.is-hovered { background: color-mix(in srgb, var(--accent-soft) 40%, transparent); }
+
+/* Quick-compare: a row whose choice differs from the compare build, per app.js's picker. Same
+ * specificity as `.is-hovered` above -- this comes later in source order so the diff cue stays
+ * visible on hover instead of the two backgrounds fighting row-for-row. */
+.slot-row.is-diff { background: color-mix(in srgb, var(--diff) 20%, transparent); }
 
 .itemcard {
   background: var(--surface);

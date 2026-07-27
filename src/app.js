@@ -40,6 +40,7 @@ window.NW = window.NW ?? {};
     components: {
       BuildBar: window.NW.components.BuildBar,
       BonusInspector: window.NW.components.BonusInspector,
+      ComboBox: window.NW.components.ComboBox,
       DataEditor: window.NW.components.DataEditor,
       QuickOptions: window.NW.components.QuickOptions,
       SlotList: window.NW.components.SlotList,
@@ -117,6 +118,39 @@ window.NW = window.NW ?? {};
 
       filledSlots() {
         return Object.values(this.build.choices).filter(Boolean).length;
+      },
+
+      // --- quick compare ----------------------------------------------------------------------
+      // Picker + toggles live on `build.compare` -- saved with the build (storage.js), not
+      // session state -- so reopening a build remembers what it was being sized up against.
+
+      compareOptions() {
+        return [
+          { value: '', label: '— none —' },
+          ...this.builds.filter((b) => b.id !== this.activeId).map((b) => ({ value: b.id, label: b.name })),
+        ];
+      },
+
+      compareBuild() {
+        const id = this.build.compare.id;
+        if (!id || id === this.activeId) return null;
+        return this.builds.find((b) => b.id === id) ?? null;
+      },
+
+      /**
+       * Resolved against the *active* build's own `db`, not one composed for the compare
+       * build's own `catalog` -- this is a quick "how does this other build stack up" glance,
+       * not the editor's per-build custom-gear machinery. A compare build whose custom items
+       * live only in its own catalog would show those slots as unresolved; acceptable for what
+       * this is.
+       */
+      compareResolved() {
+        if (!this.compareBuild) return null;
+        try {
+          return { ok: true, result: window.NW.engine.resolveBuild(this.db, this.compareBuild) };
+        } catch (error) {
+          return { ok: false, message: String(error) };
+        }
       },
 
       /** Summarised here so the tab can show it without mounting the inspector. */
@@ -306,6 +340,51 @@ window.NW = window.NW ?? {};
         this.snapshot(`value:${slotId}`, `${this.slotLabel(slotId)} value`);
         if (raw === '' || raw == null) delete this.build.values[slotId];
         else this.build.values[slotId] = Number(raw);
+      },
+
+      /** The quick-compare picker's row: this build's slot made to match the compare build's,
+       * choice and typed value together, in one undo step. Unlike `setChoice`, silently no-ops
+       * with nothing selected to compare against -- the "apply" link only exists on a row a
+       * compare build is already lighting up. */
+      applyFromCompare(slotId) {
+        const other = this.compareBuild;
+        if (!other) return;
+        const slot = this.slotLabel(slotId);
+        const name = other.choices[slotId] || '';
+        this.snapshot(`choice:${slotId}`,
+          name ? `${slot} → ${name} (from “${other.name}”)` : `clear ${slot} (from “${other.name}”)`);
+        if (name) {
+          this.build.choices[slotId] = name;
+          const value = other.values?.[slotId];
+          if (value != null) this.build.values[slotId] = value;
+          else delete this.build.values[slotId];
+        } else {
+          delete this.build.choices[slotId];
+          delete this.build.values[slotId];
+        }
+      },
+
+      // Picker + toggles are a view preference, not a build edit -- saved with the build (so
+      // reopening it remembers what it was compared against) but deliberately not run through
+      // `snapshot()`, so flipping them never costs an undo step.
+      setCompareBuild(id) {
+        this.build.compare.id = id;
+      },
+
+      setCompareFlag(key, value) {
+        this.build.compare[key] = value;
+      },
+
+      // Same reasoning as compare above: which sections are open is saved with the build, but
+      // toggling one is not a "build edit" worth an undo step.
+      toggleSection(sectionId) {
+        this.build.expanded[sectionId] = !this.build.expanded[sectionId];
+      },
+
+      /** "expand all"/"collapse all" -- `db.sections` only, same as before: the Options header
+       * isn't a real section and has never been part of this. */
+      setExpanded(open) {
+        for (const section of this.db.sections) this.build.expanded[section.id] = open;
       },
 
       setContext(key, value) {
@@ -517,6 +596,22 @@ window.NW = window.NW ?? {};
           @set-toggle="setToggle" />
 
         <div class="topbar-actions">
+          <div class="compare-quick">
+            <span class="field-label">Compare</span>
+            <ComboBox class="compare-select" :model-value="build.compare.id" :options="compareOptions"
+                      @update:model-value="setCompareBuild" />
+            <label class="check">
+              <input type="checkbox" :checked="build.compare.highlight" :disabled="!compareBuild"
+                     @change="setCompareFlag('highlight', $event.target.checked)">
+              <span>highlight diffs</span>
+            </label>
+            <label class="check">
+              <input type="checkbox" :checked="build.compare.onlyDiff" :disabled="!compareBuild"
+                     @change="setCompareFlag('onlyDiff', $event.target.checked)">
+              <span>only diffs</span>
+            </label>
+          </div>
+
           <span v-if="notice" class="notice" @click="notice = ''">{{ notice }}</span>
           <span class="hint">{{ filledSlots }}/{{ db.slots.length }} slots</span>
           <button type="button" class="link" @click="clearSlots">clear slots</button>
@@ -533,10 +628,17 @@ window.NW = window.NW ?? {};
           :build="build"
           :result="resolved.result"
           :context="build.context"
+          :expanded="build.expanded"
+          :compare-build="compareBuild"
+          :highlight-diff="build.compare.highlight"
+          :only-diff="build.compare.onlyDiff"
           @choose="setChoice"
           @set-value="setValue"
           @set="setContext"
-          @set-forte="setForte" />
+          @set-forte="setForte"
+          @apply-slot="applyFromCompare"
+          @toggle-section="toggleSection"
+          @set-expanded="setExpanded" />
         <aside class="sidebar">
           <div class="tabs">
             <button type="button" class="tab" :class="{ 'is-on': tab === 'stats' }"
@@ -551,7 +653,9 @@ window.NW = window.NW ?? {};
           </div>
 
           <!-- v-show, not v-if: switching tabs must not discard the inspector's filter. -->
-          <StatPanel v-show="tab === 'stats'" :result="resolved.result" />
+          <StatPanel v-show="tab === 'stats'" :result="resolved.result"
+                     :compare-result="compareResolved?.ok ? compareResolved.result : null"
+                     :compare-name="compareBuild?.name ?? ''" />
           <BonusInspector v-show="tab === 'bonuses'" :result="resolved.result" :db="db" />
         </aside>
       </main>

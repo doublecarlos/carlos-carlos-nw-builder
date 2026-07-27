@@ -10,8 +10,6 @@ window.NW.components = window.NW.components ?? {};
 window.NW.components.SlotList = (() => {
   'use strict';
 
-  const OPEN_BY_DEFAULT = new Set(['gear']);
-
   const HOVER_DELAY_MS = 220;
   // If the pointer lands on a new row this soon after the last card closed, treat it as still
   // "in" the tooltip session and skip the opening delay -- sweeping down a list of items should
@@ -34,23 +32,28 @@ window.NW.components.SlotList = (() => {
       build: { type: Object, required: true },
       result: { type: Object, required: true },
       context: { type: Object, required: true },
+      // sectionId (plus 'options') -> open/closed. Owned by app.js (`build.expanded`, saved
+      // with the build) so it survives a reload the same way the rest of the build does --
+      // this component only reads it and asks for changes via `toggle-section`/`set-expanded`.
+      expanded: { type: Object, required: true },
+      // The quick-compare picker in app.js. `compareBuild` alone (no highlight) still backs
+      // the other-build note under a differing row; `highlightDiff` adds the row colour;
+      // `onlyDiff` hides everything that agrees.
+      compareBuild: { type: Object, default: null },
+      highlightDiff: { type: Boolean, default: false },
+      onlyDiff: { type: Boolean, default: false },
     },
 
-    emits: ['choose', 'set-value', 'set', 'set-forte'],
+    emits: ['choose', 'set-value', 'set', 'set-forte', 'apply-slot', 'toggle-section', 'set-expanded'],
 
-    data() {
-      const expanded = { options: false };
-      for (const section of this.db.sections) expanded[section.id] = OPEN_BY_DEFAULT.has(section.id);
-      return {
-        expanded,
-        hover: null,        // { slotId, left, top } -- the one hover card, or nothing
-        hoverTimer: null,
-        leaveTimer: null,   // grace period before a leave actually closes the card
-        lastHideAt: 0,      // Date.now() of the last close, for the "resume" fast path
-        editing: false,     // a picker has focus: suppress the card so it cannot cover a dropdown
-        cursor: null,        // { type: 'header'|'slot', id } -- keyboard cursor, independent of the mouse
-      };
-    },
+    data: () => ({
+      hover: null,        // { slotId, left, top } -- the one hover card, or nothing
+      hoverTimer: null,
+      leaveTimer: null,   // grace period before a leave actually closes the card
+      lastHideAt: 0,      // Date.now() of the last close, for the "resume" fast path
+      editing: false,     // a picker has focus: suppress the card so it cannot cover a dropdown
+      cursor: null,        // { type: 'header'|'slot', id } -- keyboard cursor, independent of the mouse
+    }),
 
     /** Imperative ref bag for per-row ItemPickers (see `setPickerRef`) -- not template state,
      *  so it lives outside `data()` and is never made reactive. */
@@ -138,16 +141,24 @@ window.NW.components.SlotList = (() => {
       },
 
       sections() {
-        return this.db.sections.map((section) => {
-          const slots = this.db.slots.filter((slot) => slot.section === section.id);
-          let filled = 0;
-          let errors = 0;
-          for (const slot of slots) {
-            if (this.rowBySlot.get(slot.id)?.item) filled += 1;
-            errors += this.errorsBySlot.get(slot.id)?.length ?? 0;
-          }
-          return { ...section, slots, filled, errors, total: slots.length };
-        });
+        const onlyDiff = this.onlyDiff && this.compareBuild;
+        return this.db.sections
+          .map((section) => {
+            const allSlots = this.db.slots.filter((slot) => slot.section === section.id);
+            // Counted off the section's full slot list, not the (possibly onlyDiff-filtered)
+            // one below -- the badge's job is telling a *collapsed* section apart, where
+            // `slots` would otherwise be invisible.
+            const diffs = this.compareBuild ? allSlots.filter((slot) => this.differs(slot.id)).length : 0;
+            const slots = onlyDiff ? allSlots.filter((slot) => this.differs(slot.id)) : allSlots;
+            let filled = 0;
+            let errors = 0;
+            for (const slot of slots) {
+              if (this.rowBySlot.get(slot.id)?.item) filled += 1;
+              errors += this.errorsBySlot.get(slot.id)?.length ?? 0;
+            }
+            return { ...section, slots, filled, errors, diffs, total: slots.length };
+          })
+          .filter((section) => !onlyDiff || section.slots.length > 0);
       },
 
       /**
@@ -181,16 +192,27 @@ window.NW.components.SlotList = (() => {
         return this.rowBySlot.get(slotId)?.item ?? null;
       },
 
+      // --- quick compare ---------------------------------------------------------------------
+
+      otherChoice(slotId) {
+        return this.compareBuild?.choices?.[slotId] || '';
+      },
+
+      differs(slotId) {
+        return Boolean(this.compareBuild)
+          && (this.build.choices[slotId] || '') !== this.otherChoice(slotId);
+      },
+
       errorsFor(slotId) {
         return this.errorsBySlot.get(slotId) ?? [];
       },
 
       toggle(sectionId) {
-        this.expanded[sectionId] = !this.expanded[sectionId];
+        this.$emit('toggle-section', sectionId);
       },
 
       setAll(open) {
-        for (const section of this.db.sections) this.expanded[section.id] = open;
+        this.$emit('set-expanded', open);
       },
 
       /**
@@ -468,11 +490,13 @@ window.NW.components.SlotList = (() => {
             <span class="section-label">{{ section.label }}</span>
             <span class="section-count">{{ section.filled }}/{{ section.total }}</span>
             <span v-if="section.errors" class="badge badge--error">{{ section.errors }}</span>
+            <span v-if="highlightDiff && section.diffs" class="badge badge--diff">{{ section.diffs }}</span>
           </button>
 
           <div v-if="expanded[section.id]" class="section-body">
             <div v-for="slot in section.slots" :key="slot.id" class="slot-row" tabindex="-1"
-                 :class="{ 'is-hovered': hover?.slotId === slot.id, 'is-cursor': isCursor('slot', slot.id) }"
+                 :class="{ 'is-hovered': hover?.slotId === slot.id, 'is-cursor': isCursor('slot', slot.id),
+                           'is-diff': highlightDiff && differs(slot.id) }"
                  :data-cursor-key="'slot:' + slot.id"
                  @mouseenter="onRowEnter($event, slot.id)"
                  @mouseleave="onRowLeave"
@@ -489,6 +513,13 @@ window.NW.components.SlotList = (() => {
                     @update:model-value="$emit('choose', slot.id, $event)" />
                   <span v-if="itemIn(slot.id)" class="slot-summary">{{ statSummary(slot.id) }}</span>
                 </div>
+
+                <p v-if="highlightDiff && differs(slot.id)" class="slot-diff-note">
+                  {{ compareBuild.name }}: {{ otherChoice(slot.id) || '(empty)' }}
+                  <button type="button" class="link" @click.stop="$emit('apply-slot', slot.id)">
+                    apply
+                  </button>
+                </p>
 
                 <!-- Dynamic weapon modifications carry a user-typed magnitude. Driven by the
                      item's own \`dynamicStat\`, not by a hard-coded slot id, so a second

@@ -60,6 +60,11 @@ window.NW.components.StatPanel = (() => {
 
     props: {
       result: { type: Object, required: true },
+      // The sheet-style compare row under the picker: another build's own `derived`, resolved
+      // by app.js against the same db. `null` means "not comparing" and the widget collapses
+      // back to a single centred value.
+      compareResult: { type: Object, default: null },
+      compareName: { type: String, default: '' },
     },
 
     data: () => ({ showZero: false, damageRows: DAMAGE_ROWS, healingRows: HEALING_ROWS,
@@ -81,6 +86,26 @@ window.NW.components.StatPanel = (() => {
       summaryValue() {
         const [source, key] = this.summaryCalcKey.split(':');
         return this.derived[source]?.[key] ?? 0;
+      },
+
+      compareSummaryValue() {
+        if (!this.compareResult) return null;
+        const [source, key] = this.summaryCalcKey.split(':');
+        return this.compareResult.derived?.[source]?.[key] ?? 0;
+      },
+
+      /** Sheet-style: each row's percentage reads relative to the *other* row, not a shared
+       * baseline -- "this build" is +9% over the compare build, and read the other way round
+       * the compare build is some different, smaller magnitude under this one. */
+      thisVsOtherPct() { return this.relativePct(this.compareSummaryValue, this.summaryValue); },
+      otherVsThisPct() { return this.relativePct(this.summaryValue, this.compareSummaryValue); },
+
+      /** Green ahead of the compare build, red behind it, plain exactly even -- only "this
+       * build"'s own row reads this; the compare row is informational, not judged. */
+      summaryRowCls() {
+        const pct = this.thisVsOtherPct;
+        if (pct == null || Math.abs(pct) < 1e-9) return '';
+        return pct > 0 ? 'is-positive' : 'is-negative';
       },
 
       /** One row per rating/percent pair, in display order (§ `RATING_ORDER`, UI-only). */
@@ -143,6 +168,19 @@ window.NW.components.StatPanel = (() => {
       pct: (value) => window.NW.format.pct(value),
       fmt: (key, value) => window.NW.format.stat(key, value),
 
+      /** `value` relative to `base`, signed: positive means `value` is the bigger of the two.
+       * `null` when there's nothing to compare against (no compare build) or `base` is zero
+       * (nothing to be a percentage of). */
+      relativePct(base, value) {
+        if (base == null || value == null || Math.abs(base) < 1e-9) return null;
+        return (value - base) / Math.abs(base);
+      },
+
+      fmtPct(value) {
+        if (value == null || Math.abs(value) < 1e-9) return '—';
+        return (value > 0 ? '+' : '') + this.pct(value);
+      },
+
       /** `over` is signed: positive means over the cap, negative means headroom to spare --
        * one merged column instead of the sheet's separate overcap/headroom pair. `capped` is
        * `min(total, cap)`, i.e. what the stat actually contributes once excess is thrown away.
@@ -191,10 +229,28 @@ window.NW.components.StatPanel = (() => {
         </div>
 
         <!-- The one number the sheet keeps most visible: pick a damage calculation, see its
-             value here. This will grow a second, comparison value once that feature lands. -->
+             value here. With a compare build selected (app.js's quick-compare picker) this
+             grows the sheet's own layout -- this build's row, then the other's, then how far
+             apart they are. -->
         <div class="summary-calc">
           <ComboBox class="summary-calc-select" v-model="summaryCalcKey" :options="summaryOptions" />
-          <span class="tile-value">{{ int(summaryValue) }}</span>
+
+          <span v-if="!compareResult" class="tile-value">{{ int(summaryValue) }}</span>
+
+          <table v-else class="stat-table summary-compare">
+            <tbody>
+              <tr :class="summaryRowCls">
+                <td>This build</td>
+                <td class="num summary-compare-value">{{ int(summaryValue) }}</td>
+                <td class="num">{{ fmtPct(thisVsOtherPct) }}</td>
+              </tr>
+              <tr>
+                <td>{{ compareName }}</td>
+                <td class="num summary-compare-value">{{ int(compareSummaryValue) }}</td>
+                <td class="num dim">{{ fmtPct(otherVsThisPct) }}</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
 
         <div class="panel-meta">

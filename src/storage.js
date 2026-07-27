@@ -27,7 +27,17 @@ window.NW.storage = (() => {
    */
   const DEFAULT_FORTE = { primary: 'power_p', secondaryA: 'strike_p', secondaryB: 'awareness_p' };
 
+  // slot-list.js's own default: every section collapsed except Gear, plus the Options header
+  // (not a real section, so it isn't in `NW_SLOTS.sections`) also collapsed.
+  const OPEN_BY_DEFAULT = new Set(['gear']);
+
   const newId = () => `b_${Math.random().toString(36).slice(2, 8)}${Date.now().toString(36).slice(-3)}`;
+
+  function defaultExpanded() {
+    const expanded = { options: false };
+    for (const section of window.NW_SLOTS.sections) expanded[section.id] = OPEN_BY_DEFAULT.has(section.id);
+    return expanded;
+  }
 
   function defaultBuild(name = 'New build') {
     const defaults = window.NW_SCHEMA.context.defaults;
@@ -42,6 +52,14 @@ window.NW.storage = (() => {
         toggles: { ...defaults.toggles },
         forte: { ...DEFAULT_FORTE },
       },
+      // The quick-compare picker (app.js topbar). Saved with the build -- unlike `tab`, which
+      // is pure session state -- so reopening a build remembers what you were sizing it up
+      // against. `id` is another build's id, resolved (and gracefully dropped if it no longer
+      // exists) by app.js's own `compareBuild` computed, not here.
+      compare: { id: '', highlight: false, onlyDiff: false },
+      // Which sections slot-list.js has open. Also saved with the build, for the same reason:
+      // reopening a build should look the way you left it.
+      expanded: defaultExpanded(),
     };
   }
 
@@ -72,8 +90,17 @@ window.NW.storage = (() => {
       }
       return out;
     };
+    const booleans = (source) => {
+      const out = {};
+      if (!isPlain(source)) return out;
+      for (const [key, value] of Object.entries(source)) {
+        if (typeof value === 'boolean') out[key] = value;
+      }
+      return out;
+    };
 
     const context = isPlain(raw.context) ? raw.context : {};
+    const compare = isPlain(raw.compare) ? raw.compare : {};
 
     // Custom gear stored with the build. Nothing writes this yet -- the editor edits the
     // workspace layer -- but preserving it here means a build carrying custom items survives
@@ -101,6 +128,12 @@ window.NW.storage = (() => {
         toggles: { ...base.context.toggles, ...(isPlain(context.toggles) ? context.toggles : {}) },
         forte: { ...base.context.forte, ...(isPlain(context.forte) ? context.forte : {}) },
       },
+      compare: {
+        id: typeof compare.id === 'string' ? compare.id : base.compare.id,
+        highlight: Boolean(compare.highlight),
+        onlyDiff: Boolean(compare.onlyDiff),
+      },
+      expanded: { ...base.expanded, ...booleans(raw.expanded) },
     };
   }
 
