@@ -19,6 +19,8 @@ window.NW.storage = (() => {
   const DRAFT_KEY = 'nw:builds-draft';
   const LEGACY_KEY = 'nw:current-build';
   const OVERLAY_KEY = 'nw:catalog-overlay';
+  const COLLECTIONS_KEY = 'nw:collections';
+  const COLLECTIONS_DRAFT_KEY = 'nw:collections-draft';
   const HASH_PREFIX = '#b=';
 
   // Payload markers, so a link made before/after a browser gained CompressionStream still
@@ -36,7 +38,7 @@ window.NW.storage = (() => {
   // (not a real section, so it isn't in `NW_SLOTS.sections`) also collapsed.
   const OPEN_BY_DEFAULT = new Set(['gear']);
 
-  const newId = () => `b_${Math.random().toString(36).slice(2, 8)}${Date.now().toString(36).slice(-3)}`;
+  const newId = (prefix = 'b') => `${prefix}_${Math.random().toString(36).slice(2, 8)}${Date.now().toString(36).slice(-3)}`;
 
   function defaultExpanded() {
     const expanded = { options: false };
@@ -271,6 +273,177 @@ window.NW.storage = (() => {
     }
   }
 
+  // --- collections -------------------------------------------------------------------------
+  // A thin grouping layer over the flat `builds` pool above: a collection references build ids
+  // rather than nesting build objects, so a build's content still lives in exactly one place
+  // and every existing per-build mechanism (undo, dirty check, revert, copy-section) keeps
+  // working unmodified. Saved/draft split mirrors the library above for the same reason: the
+  // draft (`nw:collections-draft`) autosaves continuously so creating/renaming/reordering
+  // collections survives a reload, while `nw:collections` only moves on an explicit collection
+  // Save.
+
+  function makeCollectionFor(builds, name) {
+    return {
+      id: newId('c'),
+      name,
+      updated: Date.now(),
+      buildIds: builds.map((build) => build.id),
+      activeBuildId: builds[0].id,
+    };
+  }
+
+  /** A brand new collection wrapping one brand new build -- app.js's `createCollection`. */
+  const defaultCollection = (name, build) => makeCollectionFor([build], name);
+
+  /** Tolerant coercion, same spirit as `normalise`: drops any `buildIds` entry that no longer
+   * exists in the flat pool (deleted independently, or a hand-edited import), and reports back
+   * null -- rather than a hollow collection -- when nothing valid survives, so the caller can
+   * fall back to wrapping the whole pool instead of showing an empty group. */
+  function normaliseCollection(raw, idSet) {
+    if (!raw || typeof raw !== 'object') return null;
+    const buildIds = Array.isArray(raw.buildIds) ? raw.buildIds.filter((id) => idSet.has(id)) : [];
+    if (!buildIds.length) return null;
+    return {
+      id: typeof raw.id === 'string' && raw.id ? raw.id : newId('c'),
+      name: typeof raw.name === 'string' && raw.name.trim() ? raw.name : 'Collection',
+      updated: Number.isFinite(raw.updated) ? raw.updated : Date.now(),
+      buildIds,
+      activeBuildId: buildIds.includes(raw.activeBuildId) ? raw.activeBuildId : buildIds[0],
+    };
+  }
+
+  /** Every build in the flat pool must be reachable from some collection, or it would simply
+   * vanish from the sidebar. Orphans (a build the stored grouping never mentioned -- normally
+   * only on the very first load after this feature shipped) are folded into the first
+   * collection rather than dropped. */
+  function coverBuilds(collections, builds) {
+    const covered = new Set(collections.flatMap((collection) => collection.buildIds));
+    const orphans = builds.map((build) => build.id).filter((id) => !covered.has(id));
+    if (!orphans.length) return collections;
+    return collections.map((collection, index) => (index === 0
+      ? { ...collection, buildIds: [...collection.buildIds, ...orphans] }
+      : collection));
+  }
+
+  function readCollections(key, builds) {
+    let stored = null;
+    try {
+      stored = JSON.parse(window.localStorage.getItem(key) ?? 'null');
+    } catch {
+      stored = null;
+    }
+    if (stored && Array.isArray(stored.collections) && stored.collections.length) {
+      const idSet = new Set(builds.map((build) => build.id));
+      const collections = coverBuilds(
+        stored.collections.map((raw) => normaliseCollection(raw, idSet)).filter(Boolean),
+        builds,
+      );
+      if (collections.length) {
+        const activeCollectionId = collections.some((c) => c.id === stored.activeCollectionId)
+          ? stored.activeCollectionId
+          : collections[0].id;
+        return { collections, activeCollectionId };
+      }
+    }
+    return null;
+  }
+
+  /** `builds` is the already-loaded flat pool (never empty -- `loadLibrary`/`emptyLibrary`
+   * guarantee that). Nothing stored, or nothing in it survives, wraps every build the pool
+   * has into one catch-all collection -- this is also how an existing user's first load after
+   * this feature shipped picks up their prior builds with no separate migration step. */
+  function loadCollections(builds) {
+    const result = readCollections(COLLECTIONS_KEY, builds);
+    if (result) return result;
+    const fresh = makeCollectionFor(builds, 'My builds');
+    return { collections: [fresh], activeCollectionId: fresh.id };
+  }
+
+  function saveCollections(state) {
+    try {
+      window.localStorage.setItem(COLLECTIONS_KEY, JSON.stringify({
+        collections: state.collections,
+        activeCollectionId: state.activeCollectionId,
+      }));
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /** Falls back to a clone of the saved grouping when there is no draft yet, same reasoning as
+   * `loadDraft` above. */
+  function loadCollectionsDraft(builds, saved) {
+    const result = readCollections(COLLECTIONS_DRAFT_KEY, builds);
+    if (result) return result;
+    return {
+      collections: coverBuilds(
+        saved.collections.map((collection) => ({ ...collection, buildIds: [...collection.buildIds] })),
+        builds,
+      ),
+      activeCollectionId: saved.activeCollectionId,
+    };
+  }
+
+  function saveCollectionsDraft(state) {
+    try {
+      window.localStorage.setItem(COLLECTIONS_DRAFT_KEY, JSON.stringify({
+        collections: state.collections,
+        activeCollectionId: state.activeCollectionId,
+      }));
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /** A self-contained snapshot of one collection -- used for export, file-save, and duplicate --
+   * bundling the actual build objects (not just the ids a collection otherwise stores) so it
+   * can round-trip through `parseCollectionJson` with no other context. */
+  function bundleCollection(collection, buildsById) {
+    return {
+      id: collection.id,
+      name: collection.name,
+      updated: collection.updated,
+      builds: collection.buildIds.map((id) => buildsById[id]).filter(Boolean),
+    };
+  }
+
+  /** The reverse of `bundleCollection`: re-ids the collection and every build inside it (like
+   * `parseJson`'s `keepId: false`), so importing a file can never collide with, or overwrite,
+   * a collection/build already in the library. */
+  function parseCollectionJson(text) {
+    const parsed = JSON.parse(text);
+    if (!parsed || typeof parsed !== 'object' || !Array.isArray(parsed.builds) || !parsed.builds.length) {
+      throw new Error('no builds in that collection');
+    }
+    const builds = parsed.builds.map((build) => normalise(build, { keepId: false }));
+    const collection = {
+      id: newId('c'),
+      name: typeof parsed.name === 'string' && parsed.name.trim() ? parsed.name : 'Imported collection',
+      updated: Date.now(),
+      buildIds: builds.map((build) => build.id),
+      activeBuildId: builds[0].id,
+    };
+    return { collection, builds };
+  }
+
+  /** Same re-id treatment as an import -- a duplicate must never share a build id with its
+   * source, or the two collections would silently edit the same build. */
+  function duplicateCollection(collection, buildsById, name) {
+    const builds = collection.buildIds.map((id) => duplicate(buildsById[id]));
+    return {
+      collection: {
+        id: newId('c'),
+        name: name ?? `${collection.name} copy`,
+        updated: Date.now(),
+        buildIds: builds.map((build) => build.id),
+        activeBuildId: builds[0]?.id ?? null,
+      },
+      builds,
+    };
+  }
+
   // --- the catalogue overlay ---------------------------------------------------------------
   // The editor's layer over the shipped items and bonuses. Kept under its own key because it
   // is a workspace, not part of any build: switching builds must not change the catalogue.
@@ -389,6 +562,8 @@ window.NW.storage = (() => {
   return {
     defaultBuild, normalise, duplicate, newId, cloneBuild, sameBuild,
     loadLibrary, saveLibrary, loadDraft, saveDraft, loadOverlay, saveOverlay,
+    defaultCollection, loadCollections, saveCollections, loadCollectionsDraft, saveCollectionsDraft,
+    bundleCollection, parseCollectionJson, duplicateCollection,
     toJson, parseJson,
     encodeShare, decodeShare, shareUrl, readHash, clearHash,
   };

@@ -39,6 +39,7 @@ window.NW = window.NW ?? {};
   const app = createApp({
     components: {
       BuildBar: window.NW.components.BuildBar,
+      BuildNav: window.NW.components.BuildNav,
       BonusInspector: window.NW.components.BonusInspector,
       ComboBox: window.NW.components.ComboBox,
       DataEditor: window.NW.components.DataEditor,
@@ -53,20 +54,53 @@ window.NW = window.NW ?? {};
       // (the `nw:builds` library) -- `dirty` compares the active build against its entry here.
       const savedLibrary = storage.loadLibrary();
       const draftLibrary = storage.loadDraft(savedLibrary);
-      // A `?build=`/`view=`/`tab=` from the URL (a refresh, or a back/forward landing here)
-      // wins over the draft's own idea of the active build, as long as it still exists.
+
+      // Collections are a grouping layer over the flat pool above -- see storage.js's own
+      // "--- collections ---" section comment. Same draft/saved split, same reasoning.
+      const savedCollectionsState = storage.loadCollections(savedLibrary.builds);
+      const draftCollectionsState = storage.loadCollectionsDraft(draftLibrary.builds, savedCollectionsState);
+
+      // A `?build=`/`collection=`/`view=`/`tab=` from the URL (a refresh, or a back/forward
+      // landing here) wins over the draft's own idea of what was active, as long as it still
+      // exists -- a specific `build=` wins over `collection=` (jumping to a build implies
+      // jumping to whichever collection actually owns it).
       const route = router.parse();
-      const activeId = draftLibrary.builds.some((build) => build.id === route.build)
-        ? route.build
-        : draftLibrary.activeId;
+      const ownerOf = (buildId) => draftCollectionsState.collections.find((c) => c.buildIds.includes(buildId));
+
+      let activeId;
+      let activeCollectionId;
+      const owner = route.build && draftLibrary.builds.some((b) => b.id === route.build) && ownerOf(route.build);
+      if (owner) {
+        activeId = route.build;
+        activeCollectionId = owner.id;
+      } else {
+        activeCollectionId = draftCollectionsState.collections.some((c) => c.id === route.collection)
+          ? route.collection
+          : draftCollectionsState.activeCollectionId;
+        const collection = draftCollectionsState.collections.find((c) => c.id === activeCollectionId);
+        activeId = collection.buildIds.includes(collection.activeBuildId)
+          ? collection.activeBuildId
+          : collection.buildIds[0];
+      }
 
       const savedById = {};
       for (const build of savedLibrary.builds) savedById[build.id] = build;
+      const savedCollections = {};
+      for (const collection of savedCollectionsState.collections) savedCollections[collection.id] = collection;
 
       return {
         builds: draftLibrary.builds,
         activeId,
         savedById,
+        collections: draftCollectionsState.collections,
+        activeCollectionId,
+        savedCollections,
+        // FileSystemFileHandle per collection id, for collections linked to a file on disk
+        // (BuildNav's collection menu -> Save As -> File on this PC). Populated lazily --
+        // never eagerly from `fsStore`'s IndexedDB on load, since using a handle needs a user
+        // gesture (Chromium re-checks permission per session) anyway, so there's nothing to
+        // gain by fetching it before a Save is actually clicked.
+        fileLinks: {},
         // The editor's layer over the shipped catalogue. Persisted separately from builds --
         // it is a workspace, not part of any one build.
         workspaceOverlay: storage.loadOverlay(),
@@ -79,6 +113,7 @@ window.NW = window.NW ?? {};
 
         tab: route.tab === 'bonuses' ? 'bonuses' : 'stats',
         saveTimer: null,
+        collectionsSaveTimer: null,
         noticeTimer: null,
         topbarObserver: null,
         notice: '',
@@ -89,6 +124,29 @@ window.NW = window.NW ?? {};
     computed: {
       build() {
         return this.builds.find((build) => build.id === this.activeId) ?? this.builds[0];
+      },
+
+      activeCollection() {
+        return this.collections.find((c) => c.id === this.activeCollectionId) ?? this.collections[0];
+      },
+
+      /** buildId -> bool, for BuildNav's per-tab unsaved-dot -- same comparison `dirty` below
+       * already does for just the active build, extended to every build in the pool. */
+      dirtyByBuild() {
+        const map = {};
+        for (const build of this.builds) map[build.id] = !storage.sameBuild(build, this.savedById[build.id]);
+        return map;
+      },
+
+      /** The active collection's other builds, for slot-list.js's per-section "copy from"
+       * control. Scoped to the collection (not every build in the app) -- collections exist
+       * to group related builds, and that's the set a "copy a section over" is actually
+       * useful against. */
+      otherBuildsInCollection() {
+        const ids = new Set(this.activeCollection.buildIds);
+        return this.builds
+          .filter((build) => build.id !== this.activeId && ids.has(build.id))
+          .map((build) => ({ value: build.id, label: build.name }));
       },
 
       /**
@@ -210,11 +268,21 @@ window.NW = window.NW ?? {};
           this.saveTimer = window.setTimeout(() => this.saveDraft(), SAVE_DEBOUNCE_MS);
         },
       },
+      // Same continuous "don't lose this on a reload" autosave as `builds` above, for the
+      // collections grouping (creating/renaming/reordering) rather than build content.
+      collections: {
+        deep: true,
+        handler() {
+          window.clearTimeout(this.collectionsSaveTimer);
+          this.collectionsSaveTimer = window.setTimeout(() => this.saveCollectionsDraft(), SAVE_DEBOUNCE_MS);
+        },
+      },
       // Every one of these is either a deliberate navigation (switch build, open/close the
       // editor) or, via `applyRoute`, the URL catching us up after the user already navigated
       // with the browser's own back/forward -- `router.apply`'s no-op guard means the latter
       // case can't turn into a duplicate history entry.
       activeId() { this.saveDraft(); this.syncRoute(); },
+      activeCollectionId() { this.saveCollectionsDraft(); this.syncRoute(); },
       view() { this.syncRoute(); },
       // The sidebar tab is a lighter switch than a build/view change -- it still belongs in
       // the URL for a refresh to restore, but it would clutter the back button if every click
@@ -445,48 +513,312 @@ window.NW = window.NW ?? {};
 
       // Switching, creating and importing never touch history: each build keeps its own, and
       // a build that has just been created has nothing to undo to yet.
-      selectBuild(id) {
+
+      /** BuildNav's own collection row. */
+      selectCollection(id) {
+        const collection = this.collections.find((c) => c.id === id);
+        if (!collection) return;
+        this.activeCollectionId = id;
+        this.activeId = collection.buildIds.includes(collection.activeBuildId)
+          ? collection.activeBuildId
+          : collection.buildIds[0];
+      },
+
+      /** BuildNav's own build row -- also remembers it as that collection's own `activeBuildId`,
+       * so reopening the collection later returns to the same tab. */
+      selectBuild(collectionId, id) {
+        const collection = this.collections.find((c) => c.id === collectionId);
+        if (!collection || !collection.buildIds.includes(id)) return;
+        this.activeCollectionId = collectionId;
         this.activeId = id;
+        collection.activeBuildId = id;
+      },
+
+      /** The build tab menu's own actions (save/revert/duplicate/reset/delete/rename) don't
+       * know or care which collection a build lives in -- they just need it made active first,
+       * so the existing active-build methods below can do the rest unchanged. */
+      ownerOf(buildId) {
+        return this.collections.find((c) => c.buildIds.includes(buildId));
+      },
+
+      selectBuildById(id) {
+        const owner = this.ownerOf(id);
+        if (owner) this.selectBuild(owner.id, id);
+      },
+
+      /** Refreshes `savedCollections[id]`'s own membership snapshot to match the live
+       * collection, without touching any build's content -- for the structural methods below,
+       * which promote a build's *content* into `savedById` themselves (`storage.cloneBuild`)
+       * but would otherwise leave the collection's own saved copy still missing the build id
+       * they just added or removed, showing a false "unsaved" dot forever after. */
+      syncSavedCollection(collection) {
+        this.savedCollections[collection.id] = { ...collection, buildIds: [...collection.buildIds] };
       },
 
       // Create/duplicate/delete/import/share all save themselves immediately, unlike an
       // ordinary edit: there is nothing pending to lose, since the build's own saved copy
-      // starts out identical to what was just built.
+      // starts out identical to what was just built. All four act on `activeCollection` --
+      // BuildNav's own per-collection "+ New build"/"Import" buttons select that collection
+      // active first (see `onCreateBuildIn`/`onImportBuildsIn` below) when it isn't already.
       createBuild() {
         const build = storage.defaultBuild(`Build ${this.builds.length + 1}`);
         this.builds.push(build);
         this.savedById[build.id] = storage.cloneBuild(build);
+        this.activeCollection.buildIds.push(build.id);
+        this.activeCollection.activeBuildId = build.id;
         this.activeId = build.id;
+        this.syncSavedCollection(this.activeCollection);
         this.persistSaved();
+        this.persistSavedCollections();
       },
 
       duplicateBuild() {
         const copy = storage.duplicate(this.build);
         this.builds.push(copy);
         this.savedById[copy.id] = storage.cloneBuild(copy);
+        this.activeCollection.buildIds.push(copy.id);
+        this.activeCollection.activeBuildId = copy.id;
         this.activeId = copy.id;
         this.notice = `Duplicated as “${copy.name}”`;
+        this.syncSavedCollection(this.activeCollection);
         this.persistSaved();
+        this.persistSavedCollections();
       },
 
+      /** Guarded per collection (at least one build must remain in it), not globally -- how
+       * many builds exist in *other* collections is irrelevant to whether this one can lose
+       * its last tab. */
       removeBuild() {
-        if (this.builds.length < 2) return;
+        const collection = this.activeCollection;
+        if (collection.buildIds.length < 2) return;
         const index = this.builds.findIndex((item) => item.id === this.activeId);
         const [removed] = this.builds.splice(index, 1);
         delete this.savedById[removed.id];
         this.dropHistory(removed.id);
-        this.activeId = this.builds[Math.min(index, this.builds.length - 1)].id;
+        const buildIndex = collection.buildIds.indexOf(removed.id);
+        collection.buildIds.splice(buildIndex, 1);
+        this.activeId = collection.buildIds[Math.min(buildIndex, collection.buildIds.length - 1)];
+        collection.activeBuildId = this.activeId;
         this.notice = `Deleted “${removed.name}”`;
+        this.syncSavedCollection(collection);
         this.persistSaved();
+        this.persistSavedCollections();
       },
 
       importBuilds(builds) {
         this.builds.push(...builds);
         for (const build of builds) this.savedById[build.id] = storage.cloneBuild(build);
+        this.activeCollection.buildIds.push(...builds.map((build) => build.id));
         this.activeId = builds[builds.length - 1].id;
+        this.activeCollection.activeBuildId = this.activeId;
         this.notice = `Imported ${builds.length} build(s)`;
+        this.syncSavedCollection(this.activeCollection);
         this.persistSaved();
+        this.persistSavedCollections();
       },
+
+      /** A single build's own JSON download -- BuildNav's build tab menu -> Export. Same
+       * Blob/anchor technique as `build-bar.js`'s own single-build export drawer. */
+      exportBuild(id) {
+        const build = this.builds.find((item) => item.id === id);
+        if (!build) return;
+        const blob = new Blob([storage.toJson(build)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${build.name.replace(/[^\w.-]+/g, '-') || 'build'}.json`;
+        link.click();
+        URL.revokeObjectURL(url);
+      },
+
+      // --- collections ------------------------------------------------------------------------
+
+      createCollection() {
+        const build = storage.defaultBuild('New build');
+        const collection = storage.defaultCollection(`Collection ${this.collections.length + 1}`, build);
+        this.builds.push(build);
+        this.savedById[build.id] = storage.cloneBuild(build);
+        this.collections.push(collection);
+        this.savedCollections[collection.id] = { ...collection, buildIds: [...collection.buildIds] };
+        this.activeCollectionId = collection.id;
+        this.activeId = build.id;
+        this.persistSaved();
+        this.persistSavedCollections();
+      },
+
+      renameCollection({ id, name }) {
+        const collection = this.collections.find((c) => c.id === id);
+        if (collection) collection.name = name;
+      },
+
+      duplicateCollection(id) {
+        const source = this.collections.find((c) => c.id === id);
+        if (!source) return;
+        const buildsById = Object.fromEntries(this.builds.map((build) => [build.id, build]));
+        const { collection, builds } = storage.duplicateCollection(source, buildsById);
+        this.builds.push(...builds);
+        for (const build of builds) this.savedById[build.id] = storage.cloneBuild(build);
+        this.collections.push(collection);
+        this.savedCollections[collection.id] = { ...collection, buildIds: [...collection.buildIds] };
+        this.activeCollectionId = collection.id;
+        this.activeId = collection.activeBuildId;
+        this.notice = `Duplicated as “${collection.name}”`;
+        this.persistSaved();
+        this.persistSavedCollections();
+      },
+
+      /** Guarded so at least one collection always remains -- mirrors `removeBuild`'s own
+       * guard, one level up. Drops its builds from the flat pool entirely (nothing else can
+       * reference them once their collection is gone) and its file link, if any. */
+      deleteCollection(id) {
+        if (this.collections.length < 2) return;
+        const index = this.collections.findIndex((c) => c.id === id);
+        if (index === -1) return;
+        const [removed] = this.collections.splice(index, 1);
+        for (const buildId of removed.buildIds) {
+          const buildIndex = this.builds.findIndex((build) => build.id === buildId);
+          if (buildIndex !== -1) this.builds.splice(buildIndex, 1);
+          delete this.savedById[buildId];
+          this.dropHistory(buildId);
+        }
+        delete this.savedCollections[removed.id];
+        delete this.fileLinks[removed.id];
+        window.NW.fsStore.deleteHandle(removed.id);
+        const next = this.collections[Math.min(index, this.collections.length - 1)];
+        this.activeCollectionId = next.id;
+        this.activeId = next.activeBuildId;
+        this.notice = `Deleted “${removed.name}”`;
+        this.persistSaved();
+        this.persistSavedCollections();
+      },
+
+      /** BuildNav's collection menu -> Save: commits every build the collection contains
+       * (same promotion `saveActive` does for just the active one) and persists the grouping,
+       * then -- if this collection is linked to a file -- writes it there too. */
+      async saveCollection(id) {
+        const collection = this.collections.find((c) => c.id === id);
+        if (!collection) return;
+        for (const buildId of collection.buildIds) {
+          const build = this.builds.find((item) => item.id === buildId);
+          if (build) this.savedById[buildId] = { ...storage.cloneBuild(build), updated: Date.now() };
+        }
+        this.savedCollections[id] = { ...collection, buildIds: [...collection.buildIds] };
+        this.persistSaved();
+        this.persistSavedCollections();
+        const handle = await this.fileHandleFor(id);
+        if (handle) await this.writeCollectionFile(id, handle);
+      },
+
+      /** `fileLinks[id]` only holds a handle picked *this session* (Save As -> File) -- a
+       * reload loses that in-memory link even though the handle itself is still sitting in
+       * `fsStore`'s IndexedDB, so a Save has to fall back to looking it up there before
+       * concluding the collection isn't file-linked at all. */
+      async fileHandleFor(id) {
+        if (this.fileLinks[id]) return this.fileLinks[id];
+        const handle = await window.NW.fsStore.getHandle(id);
+        if (handle) this.fileLinks[id] = handle;
+        return handle;
+      },
+
+      async writeCollectionFile(id, handle) {
+        const collection = this.collections.find((c) => c.id === id);
+        if (!collection) return;
+        try {
+          if (!(await window.NW.fsStore.verifyPermission(handle))) throw new Error('permission denied');
+          const buildsById = Object.fromEntries(this.builds.map((build) => [build.id, build]));
+          const bundle = storage.bundleCollection(collection, buildsById);
+          await window.NW.fsStore.writeText(handle, storage.toJson(bundle));
+        } catch (error) {
+          delete this.fileLinks[id];
+          this.notice = `Could not write “${collection.name}” to its linked file: ${error.message ?? error}`;
+        }
+      },
+
+      /** BuildNav's collection menu -> Save As. `target: 'storage'` is just `duplicateCollection`
+       * under another name (both produce an independent saved copy); `target: 'file'` picks a
+       * file, links it to *this* collection going forward, and writes it immediately. */
+      async saveCollectionAs({ id, target }) {
+        if (target === 'storage') {
+          this.duplicateCollection(id);
+          return;
+        }
+        const collection = this.collections.find((c) => c.id === id);
+        if (!collection || !window.NW.fsStore.supported) return;
+        try {
+          const suggested = `${collection.name.replace(/[^\w.-]+/g, '-') || 'collection'}.json`;
+          const handle = await window.NW.fsStore.pickSaveFile(suggested);
+          this.fileLinks[id] = handle;
+          await window.NW.fsStore.setHandle(id, handle);
+          await this.saveCollection(id);
+          this.notice = `“${collection.name}” now saves to that file`;
+        } catch (error) {
+          if (error?.name !== 'AbortError') {
+            this.notice = `Could not link that file: ${error.message ?? error}`;
+          }
+        }
+      },
+
+      /** BuildNav's collection menu -> Export: a one-shot download, no persistent link --
+       * distinct from Save As -> File, which remembers the file for future Saves. Same
+       * Blob/anchor technique as `exportBuild` above. */
+      exportCollection(id) {
+        const collection = this.collections.find((c) => c.id === id);
+        if (!collection) return;
+        const buildsById = Object.fromEntries(this.builds.map((build) => [build.id, build]));
+        const bundle = storage.bundleCollection(collection, buildsById);
+        const blob = new Blob([storage.toJson(bundle)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${collection.name.replace(/[^\w.-]+/g, '-') || 'collection'}.json`;
+        link.click();
+        URL.revokeObjectURL(url);
+      },
+
+      /** BuildNav's own "Import collection" button at the bottom of the sidebar. Parsing (and
+       * its failure) happens here, not in BuildNav, so it can share the one `notice` channel
+       * every other library-level error already uses. */
+      importCollectionText(text) {
+        try {
+          const { collection, builds } = storage.parseCollectionJson(text);
+          this.builds.push(...builds);
+          for (const build of builds) this.savedById[build.id] = storage.cloneBuild(build);
+          this.collections.push(collection);
+          this.savedCollections[collection.id] = { ...collection, buildIds: [...collection.buildIds] };
+          this.activeCollectionId = collection.id;
+          this.activeId = collection.activeBuildId;
+          this.notice = `Imported “${collection.name}” (${builds.length} build(s))`;
+          this.persistSaved();
+          this.persistSavedCollections();
+        } catch (error) {
+          this.notice = `That collection file could not be read: ${error.message ?? error}`;
+        }
+      },
+
+      /** BuildNav's per-collection "+ New build"/"Import" row -- makes that collection active
+       * first (a no-op if it already is) so `createBuild`/`importBuilds` land in it. */
+      onCreateBuildIn(collectionId) {
+        this.selectCollection(collectionId);
+        this.createBuild();
+      },
+
+      onImportBuildsIn({ collectionId, text }) {
+        this.selectCollection(collectionId);
+        try {
+          this.importBuilds(storage.parseJson(text));
+        } catch (error) {
+          this.notice = `That file could not be read: ${error.message ?? error}`;
+        }
+      },
+
+      // BuildNav's per-build tab menu: select the build (and its collection) active, then
+      // reuse the same active-build method the top toolbar's own buttons call.
+      onSaveBuild(id) { this.selectBuildById(id); this.saveActive(); },
+      onRevertBuild(id) { this.selectBuildById(id); this.revertActive(); },
+      onDuplicateBuild(id) { this.selectBuildById(id); this.duplicateBuild(); },
+      onResetBuild(id) { this.selectBuildById(id); this.resetAll(); },
+      onDeleteBuild(id) { this.selectBuildById(id); this.removeBuild(); },
+      onRenameBuild({ id, name }) { this.selectBuildById(id); this.renameBuild(name); },
 
       /**
        * Slot-id keyed, so it cannot misalign the way a spreadsheet range paste can. Slots the
@@ -567,6 +899,32 @@ window.NW = window.NW ?? {};
         }
       },
 
+      /** The collections analogue of `saveDraft` above -- continuous, debounced, never touches
+       * `savedCollections`. */
+      saveCollectionsDraft() {
+        const ok = storage.saveCollectionsDraft({
+          collections: this.collections,
+          activeCollectionId: this.activeCollectionId,
+        });
+        if (!ok && !this.storageFailed) {
+          this.storageFailed = true;
+          this.notice = 'Could not save to localStorage — export your build to keep it.';
+        }
+      },
+
+      /** The collections analogue of `persistSaved` above -- writes `savedCollections` as it
+       * stands right now to `nw:collections`. */
+      persistSavedCollections() {
+        const ok = storage.saveCollections({
+          collections: Object.values(this.savedCollections),
+          activeCollectionId: this.activeCollectionId,
+        });
+        if (!ok && !this.storageFailed) {
+          this.storageFailed = true;
+          this.notice = 'Could not save to localStorage — export your build to keep it.';
+        }
+      },
+
       /** The Save button: promotes the live draft to the saved library. */
       saveActive() {
         this.savedById[this.activeId] = { ...storage.cloneBuild(this.build), updated: Date.now() };
@@ -622,6 +980,7 @@ window.NW = window.NW ?? {};
       syncRoute({ push = true } = {}) {
         router.apply({
           view: this.view === 'editor' ? 'editor' : null,
+          collection: this.activeCollectionId,
           build: this.activeId,
           tab: this.tab === 'bonuses' ? 'bonuses' : null,
         }, { push });
@@ -643,6 +1002,9 @@ window.NW = window.NW ?? {};
       onPopState() {
         const route = router.parse();
         this.view = route.view === 'editor' ? 'editor' : 'builder';
+        if (route.collection && this.collections.some((c) => c.id === route.collection)) {
+          this.activeCollectionId = route.collection;
+        }
         if (route.build && this.builds.some((build) => build.id === route.build)) {
           this.activeId = route.build;
         }
@@ -665,20 +1027,13 @@ window.NW = window.NW ?? {};
         </div>
 
         <BuildBar
-          :builds="builds"
           :build="build"
-          :sections="db.sections"
           :can-undo="canUndo"
           :can-redo="canRedo"
           :undo-label="undoLabel"
           :redo-label="redoLabel"
           :dirty="dirty"
-          @select="selectBuild"
-          @create="createBuild"
-          @duplicate="duplicateBuild"
-          @remove="removeBuild"
           @rename="renameBuild"
-          @copy-section="copySection"
           @import="importBuilds"
           @undo="undo"
           @redo="redo"
@@ -718,6 +1073,33 @@ window.NW = window.NW ?? {};
       </header>
 
       <main class="layout" v-if="resolved.ok">
+        <BuildNav
+          :collections="collections"
+          :builds="builds"
+          :active-collection-id="activeCollectionId"
+          :active-id="activeId"
+          :dirty-by-build="dirtyByBuild"
+          :saved-collections="savedCollections"
+          @select-collection="selectCollection"
+          @select-build="({ collectionId, id }) => selectBuild(collectionId, id)"
+          @create-collection="createCollection"
+          @import-collection="importCollectionText"
+          @rename-collection="renameCollection"
+          @save-collection="saveCollection"
+          @save-collection-as="saveCollectionAs"
+          @duplicate-collection="duplicateCollection"
+          @export-collection="exportCollection"
+          @delete-collection="deleteCollection"
+          @create-build="onCreateBuildIn"
+          @import-builds="onImportBuildsIn"
+          @rename-build="onRenameBuild"
+          @save-build="onSaveBuild"
+          @revert-build="onRevertBuild"
+          @duplicate-build="onDuplicateBuild"
+          @export-build="exportBuild"
+          @reset-build="onResetBuild"
+          @delete-build="onDeleteBuild" />
+
         <SlotList
           :db="db"
           :build="build"
@@ -728,6 +1110,7 @@ window.NW = window.NW ?? {};
           :highlight-diff="build.compare.highlight"
           :only-diff="build.compare.onlyDiff"
           :saved-build="savedById[activeId]"
+          :other-builds="otherBuildsInCollection"
           @choose="setChoice"
           @set-value="setValue"
           @set="setContext"
@@ -737,7 +1120,8 @@ window.NW = window.NW ?? {};
           @set-expanded="setExpanded"
           @edit-item="editItem"
           @revert-slot="revertSlot"
-          @revert-section="revertSection" />
+          @revert-section="revertSection"
+          @copy-section="copySection" />
         <aside class="sidebar">
           <div class="tabs">
             <button type="button" class="tab" :class="{ 'is-on': tab === 'stats' }"

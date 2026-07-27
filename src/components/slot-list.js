@@ -26,6 +26,7 @@ window.NW.components.SlotList = (() => {
       ItemCard: window.NW.components.ItemCard,
       Options: window.NW.components.Options,
       IconButton: window.NW.components.IconButton,
+      ComboBox: window.NW.components.ComboBox,
     },
 
     props: {
@@ -47,10 +48,15 @@ window.NW.components.SlotList = (() => {
       // on any slot that differs from it, deliberately quieter than the compare-diff highlight
       // above: this is "you haven't saved this yet", not "here is what's different and why".
       savedBuild: { type: Object, default: null },
+      // Other builds in the *active collection* (app.js's `otherBuildsInCollection`), [{value,
+      // label}] -- feeds each section header's own "copy from" picker. Replaces the old
+      // whole-panel "copy a section between builds" drawer: doing it per section, right where
+      // the section lives, needs no build switcher of its own.
+      otherBuilds: { type: Array, default: () => [] },
     },
 
     emits: ['choose', 'set-value', 'set', 'set-forte', 'apply-slot', 'toggle-section', 'set-expanded',
-      'edit-item', 'revert-slot', 'revert-section'],
+      'edit-item', 'revert-slot', 'revert-section', 'copy-section'],
 
     data: () => ({
       hover: null,        // { slotId, left, top } -- the one hover card, or nothing
@@ -59,6 +65,7 @@ window.NW.components.SlotList = (() => {
       lastHideAt: 0,      // Date.now() of the last close, for the "resume" fast path
       editing: false,     // a picker has focus: suppress the card so it cannot cover a dropdown
       cursor: null,        // { type: 'header'|'slot', id } -- keyboard cursor, independent of the mouse
+      copyFrom: {},        // sectionId -> chosen source build id, defaults to `otherBuilds[0]`
     }),
 
     /** Imperative ref bag for per-row ItemPickers (see `setPickerRef`) -- not template state,
@@ -223,6 +230,16 @@ window.NW.components.SlotList = (() => {
 
       toggle(sectionId) {
         this.$emit('toggle-section', sectionId);
+      },
+
+      /** Defaults to the first other build in the collection so the control is usable with a
+       * single click, not "pick a build, then click copy". */
+      copyFromFor(sectionId) {
+        return this.copyFrom[sectionId] ?? this.otherBuilds[0]?.value ?? '';
+      },
+
+      setCopyFrom(sectionId, value) {
+        this.copyFrom = { ...this.copyFrom, [sectionId]: value };
       },
 
       setAll(open) {
@@ -520,6 +537,13 @@ window.NW.components.SlotList = (() => {
               <span v-if="highlightDiff && section.diffs" class="badge badge--diff">{{ section.diffs }}</span>
               <span v-if="section.unsaved" class="unsaved-dot" title="Unsaved changes in this section"></span>
             </button>
+            <ComboBox v-if="otherBuilds.length" class="section-copy-from" :model-value="copyFromFor(section.id)"
+                      :options="otherBuilds" placeholder="copy from…"
+                      @update:model-value="setCopyFrom(section.id, $event)" />
+            <IconButton v-if="otherBuilds.length" icon="copy"
+                        :title="'Copy this section from ' + (otherBuilds.find(o => o.value === copyFromFor(section.id))?.label ?? 'the selected build')"
+                        :disabled="!copyFromFor(section.id)"
+                        @click="$emit('copy-section', { fromId: copyFromFor(section.id), sectionIds: [section.id] })" />
             <IconButton v-if="section.unsaved" icon="undo-2" title="Revert this section to saved"
                         class="section-revert" @click="$emit('revert-section', section.id)" />
           </div>

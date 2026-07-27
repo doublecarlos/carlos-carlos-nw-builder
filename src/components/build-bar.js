@@ -1,5 +1,8 @@
-// Build management strip (plan §Phase 4): switch, duplicate, delete, copy a section between
-// builds, import/export JSON, share link, undo/redo.
+// Slim per-build action strip: rename, save/revert, import/export JSON, share link, undo/redo.
+//
+// Switching/creating/duplicating/deleting a build, and copying a section from another build,
+// now live in build-nav.js's sidebar (the former resp. per-section controls in slot-list.js) --
+// this bar is left with only what always applies to *the build currently on screen*.
 //
 // Read-only operations (encoding a share link, serialising to JSON) are done here directly.
 // Anything that *changes* a build is emitted to app.js instead, so every mutation still passes
@@ -14,14 +17,8 @@ window.NW.components.BuildBar = (() => {
   return {
     name: 'BuildBar',
 
-    components: {
-      ComboBox: window.NW.components.ComboBox,
-    },
-
     props: {
-      builds: { type: Array, required: true },
       build: { type: Object, required: true },
-      sections: { type: Array, required: true },
       canUndo: { type: Boolean, default: false },
       canRedo: { type: Boolean, default: false },
       undoLabel: { type: String, default: '' },
@@ -29,17 +26,12 @@ window.NW.components.BuildBar = (() => {
       dirty: { type: Boolean, default: false },
     },
 
-    emits: ['select', 'create', 'duplicate', 'remove', 'rename', 'copy-section', 'import',
-      'undo', 'redo', 'save', 'revert'],
+    emits: ['rename', 'import', 'undo', 'redo', 'save', 'revert'],
 
     data: () => ({
-      panel: '',              // '' | 'copy' | 'share' | 'io'
-      confirmDelete: false,
-      confirmTimer: null,
+      panel: '',              // '' | 'share' | 'io'
       confirmRevert: false,
       confirmRevertTimer: null,
-      copyFromId: '',
-      copySections: [],
       shareLink: '',
       shareError: '',
       exportText: '',
@@ -49,18 +41,6 @@ window.NW.components.BuildBar = (() => {
     }),
 
     computed: {
-      others() {
-        return this.builds.filter((build) => build.id !== this.build.id);
-      },
-
-      buildOptions() {
-        return this.builds.map((item) => ({ value: item.id, label: item.name }));
-      },
-
-      otherOptions() {
-        return this.others.map((item) => ({ value: item.id, label: item.name }));
-      },
-
       undoTitle() {
         return this.canUndo ? `Undo: ${this.undoLabel} (Ctrl+Z)` : 'Nothing to undo';
       },
@@ -80,24 +60,9 @@ window.NW.components.BuildBar = (() => {
     },
 
     methods: {
-      /**
-       * Two-step delete rather than a `confirm()` dialog: deleting a build is the one
-       * irreversible action here (undo is scoped to edits within a build), and a modal dialog
-       * would block the page for anything driving the UI programmatically.
-       */
-      onDelete() {
-        if (!this.confirmDelete) {
-          this.confirmDelete = true;
-          this.confirmTimer = window.setTimeout(() => { this.confirmDelete = false; }, 4000);
-          return;
-        }
-        window.clearTimeout(this.confirmTimer);
-        this.confirmDelete = false;
-        this.$emit('remove');
-      },
-
-      /** Same two-step confirm as delete: reverting throws away unsaved edits, the one other
-       * loss a click here can cause. */
+      /** Two-step confirm rather than a `confirm()` dialog: reverting throws away unsaved
+       * edits, and a modal dialog would block the page for anything driving the UI
+       * programmatically. */
       onRevert() {
         if (!this.confirmRevert) {
           this.confirmRevert = true;
@@ -116,10 +81,6 @@ window.NW.components.BuildBar = (() => {
         this.importNote = '';
         if (this.panel === 'share') this.makeShareLink();
         if (this.panel === 'io') this.exportText = window.NW.storage.toJson(this.build);
-        if (this.panel === 'copy') {
-          this.copyFromId = this.others[0]?.id ?? '';
-          this.copySections = [];
-        }
       },
 
       async makeShareLink() {
@@ -144,12 +105,6 @@ window.NW.components.BuildBar = (() => {
           // Clipboard permission denied. The text is on screen and already selected, so the
           // user can copy it by hand -- no need to interrupt them.
         }
-      },
-
-      applyCopySection() {
-        if (!this.copyFromId || !this.copySections.length) return;
-        this.$emit('copy-section', { fromId: this.copyFromId, sectionIds: [...this.copySections] });
-        this.panel = '';
       },
 
       downloadExport() {
@@ -187,12 +142,6 @@ window.NW.components.BuildBar = (() => {
     template: `
       <div class="buildbar">
         <div class="buildbar-row">
-          <div class="field">
-            <span class="field-label">Build</span>
-            <ComboBox class="build-select" :model-value="build.id" :options="buildOptions"
-                      @update:model-value="$emit('select', $event)" />
-          </div>
-
           <label class="field">
             <span class="field-label">Name</span>
             <input class="name-input" type="text" :value="build.name"
@@ -209,17 +158,6 @@ window.NW.components.BuildBar = (() => {
 
             <span class="sep"></span>
 
-            <button type="button" class="btn" @click="$emit('create')">New</button>
-            <button type="button" class="btn" @click="$emit('duplicate')">Duplicate</button>
-            <button type="button" class="btn" :class="{ 'is-danger': confirmDelete }"
-                    :disabled="builds.length < 2" @click="onDelete">
-              {{ confirmDelete ? 'Really delete?' : 'Delete' }}
-            </button>
-
-            <span class="sep"></span>
-
-            <button type="button" class="btn" :class="{ 'is-on': panel === 'copy' }"
-                    :disabled="others.length === 0" @click="toggle('copy')">Copy section…</button>
             <button type="button" class="btn" :class="{ 'is-on': panel === 'io' }"
                     @click="toggle('io')">Import / export…</button>
             <button type="button" class="btn" :class="{ 'is-on': panel === 'share' }"
@@ -236,33 +174,6 @@ window.NW.components.BuildBar = (() => {
               ↷ Redo<span v-if="canRedo" class="btn-detail">{{ redoLabel }}</span>
             </button>
           </div>
-        </div>
-
-        <!-- copy a section between builds. Slot-id keyed, so it cannot misalign the way a
-             spreadsheet range paste can. -->
-        <div v-if="panel === 'copy'" class="drawer">
-          <div class="drawer-row">
-            <div class="field">
-              <span class="field-label">Copy from</span>
-              <ComboBox v-model="copyFromId" :options="otherOptions" />
-            </div>
-            <button type="button" class="btn btn--primary"
-                    :disabled="!copySections.length" @click="applyCopySection">
-              Copy {{ copySections.length }} section(s) into “{{ build.name }}”
-            </button>
-            <button type="button" class="link" @click="copySections = sections.map(s => s.id)">
-              all
-            </button>
-            <button type="button" class="link" @click="copySections = []">none</button>
-          </div>
-          <div class="drawer-grid">
-            <label v-for="section in sections" :key="section.id" class="check">
-              <input type="checkbox" :value="section.id" v-model="copySections">
-              <span>{{ section.label }}</span>
-            </label>
-          </div>
-          <p class="hint">Replaces every slot in the chosen sections, including clearing ones
-            the source build leaves empty.</p>
         </div>
 
         <div v-if="panel === 'io'" class="drawer">

@@ -76,8 +76,9 @@ src/
   bonus.js            bonus resolution           │
   engine.js           pipeline + derived        ─┘
   catalog.js          layered catalogue: base + overlays (see below)
-  router.js           query-string <-> URL sync (view/build/tab; editor owns `item` itself)
-  storage.js          builds, import/export, share links, catalogue overlay
+  router.js           query-string <-> URL sync (view/collection/build/tab; editor owns `item`)
+  storage.js          builds, collections, import/export, share links, catalogue overlay
+  fs-store.js         File System Access API + IndexedDB handle persistence (collection save-to-file)
   format.js           number/percent formatting at the edge
   app.js              root component, all state mutation, undo
   components/         Vue components
@@ -116,13 +117,40 @@ llm/plans/            numbered plans
 - **Options are context, not slots.** Class/Role/Forte live in `build.context`.
 - **Routing is query-string, not path** (`?build=…&view=…`) — a static host serves `index.html`
   by path only, so `/builds/x` would 404 on refresh; `?x=y` always resolves. `app.js` owns
-  `view`/`build`/`tab` via a plain `watch` + `router.apply`; `data-editor.js` owns
+  `view`/`collection`/`build`/`tab` via a plain `watch` + `router.apply`; `data-editor.js` owns
   `item`/`set`/`section`/`status` itself, calling `router.apply` at each mutation site instead of
   a generic watcher for the selection params, because arrow-key list browsing needs `push:false`
   (replace) while a click needs `push:true` — a generic watcher can't tell those apart (`status`,
   the changed/added/edited/removed filter, has no such nuance and does use a plain `watch`, same
   as `tab`). Nothing needs a "did this change come from popstate" guard: `router.apply`'s own
   no-op-if-unchanged check makes re-applying state that came from a popstate event harmless.
+- **Collections are a grouping layer, not a nesting one.** A collection (`storage.js`) is
+  `{ id, name, updated, buildIds, activeBuildId }` — it references build ids into the same flat
+  `app.js` `builds` array/`savedById` map that always existed; a build's content still lives in
+  exactly one place. `app.js`'s `savedCollections[id]` is that grouping's own last-saved
+  snapshot (name + buildIds), separate from each build's own `savedById[id]` — a collection's
+  unsaved-dot (`BuildNav`'s `collectionDirty`) is true if its own metadata differs *or* any
+  build it contains is itself dirty. Any method that pushes/removes a build id from an
+  *existing* collection's `buildIds` (`createBuild`, `duplicateBuild`, `removeBuild`,
+  `importBuilds`) must call `syncSavedCollection` right after — forgetting it leaves
+  `savedCollections[id]` stale and the collection shows a false-dirty dot forever; this was a
+  real bug caught by clicking "+ New build" and watching the dot, not by re-reading the diff.
+  Draft/saved split, and the "structural changes save themselves immediately" rule, both mirror
+  the build-level pattern the collections layer sits on top of. Same `nw:collections` /
+  `nw:collections-draft` localStorage split as `nw:builds`/`nw:builds-draft`; a fresh load with
+  no `nw:collections` wraps whatever's in the (already-migrated) flat build pool into one
+  catch-all collection, so an existing user's prior builds show up as a single collection with
+  no separate migration step. `storage.coverBuilds` is the safety net for a build id no
+  collection mentions (normally only reachable via that same kind of staleness) — it dumps
+  orphans into the first collection rather than losing them, so don't be surprised if a build
+  shows up in an unexpected collection after hand-edited or corrupted `nw:collections` JSON.
+- **Collection file-save uses the File System Access API, Chromium-only.** `fs-store.js` gates
+  everything behind `supported` (`typeof window.showSaveFilePicker === 'function'`); Firefox/
+  Safari simply don't get the "File on this PC…" Save As option (BuildNav disables it). The
+  picked `FileSystemFileHandle` is kept in `app.js`'s `fileLinks[collectionId]` (session-only)
+  and mirrored into a one-table IndexedDB (`fs-store.js`) so the link *could* survive a reload —
+  but nothing eagerly reopens it on load, since using a handle needs a fresh user gesture anyway
+  (Chromium re-checks permission per session via `verifyPermission`/`requestPermission`).
 
 ## Working with this user
 
