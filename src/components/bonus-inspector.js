@@ -49,29 +49,25 @@ window.NW.components.BonusInspector = (() => {
       entries() {
         const titleCounts = new Map();
         for (const entry of this.result.bonuses) {
-          const set = entry.setId ? this.db.bonusSetById.get(entry.setId) : null;
-          const title = entry.bonus?.name ?? set?.name ?? entry.sources?.[0] ?? fromId(entry.id);
+          const title = entry.bonus?.name ?? entry.sources?.[0] ?? fromId(entry.id);
           titleCounts.set(title, (titleCounts.get(title) ?? 0) + 1);
         }
 
         return this.result.bonuses.map((entry) => {
-          const set = entry.setId ? this.db.bonusSetById.get(entry.setId) : null;
           const unmet = entry.gate?.unmet ?? [];
-          // The bonus's own friendly name is the most specific title; the group name, the
-          // item carrying it, and an id-derived fallback are progressively blunter instruments
-          // for a bonus that somehow has none.
-          const title = entry.bonus?.name ?? set?.name ?? entry.sources?.[0] ?? fromId(entry.id);
+          // The bonus's own friendly name is the most specific title; the item carrying it and
+          // an id-derived fallback are progressively blunter instruments for one that has none.
+          const title = entry.bonus?.name ?? entry.sources?.[0] ?? fromId(entry.id);
           return {
             raw: entry,
             id: entry.id,
             title,
             qualifier: titleCounts.get(title) > 1 ? conditionSummary(entry) : '',
-            setName: set?.name ?? null,
             sources: entry.sources ?? [],
             slot: this.db.slotById.get(entry.slotId)?.label ?? entry.slotId,
             stacks: entry.stacks ?? 1,
             chose: this.choseLabel(entry.chose),
-            payload: entry.active ? entry.appliedStats : (entry.bonus?.stats ?? null),
+            payload: entry.active ? entry.appliedStats : entry.previewStats,
             perStack: entry.stacks > 1 ? entry.stats : null,
             unmet,
             nearMiss: !entry.active && !entry.excluded && unmet.length === 1,
@@ -199,7 +195,6 @@ window.NW.components.BonusInspector = (() => {
                 per stack: {{ statList(entry.perStack).join(', ') }}
               </p>
               <p class="hint">
-                <span v-if="entry.setName">set “{{ entry.setName }}” · </span>
                 slot {{ entry.slot }} ·
                 from {{ entry.sources.join(', ') || '—' }}
               </p>

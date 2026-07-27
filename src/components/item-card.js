@@ -88,13 +88,19 @@ window.NW.components.ItemCard = (() => {
        * and `payload().each`), so this only fires for the plain leftover case.
        */
       sharedSources(entry) {
-        if (!entry.active || entry.bonus?.tiers || entry.bonus?.stacking === 'perSource') {
+        if (!entry.active || this.tierGrant(entry) || entry.bonus?.stacking === 'perSource') {
           return null;
         }
         const others = [...new Set(entry.sources ?? [])].filter((name) => name !== this.item.name);
         return others.length ? others : null;
       },
 
+      /** The one grant (if any) of this bonus that carries a `tiers` ladder. A bonus is a sum
+       * of several independent grants now, so "is this bonus tiered" means "does any one of its
+       * grants happen to be", not a property of the whole thing. */
+      tierGrant(entry) {
+        return entry.grants?.find((g) => g.raw.tiers) ?? null;
+      },
 
       /**
        * A tiered set bonus (e.g. Gladiator's Guile: 10% at 1 piece, 15% at 2) has no `when`
@@ -102,13 +108,14 @@ window.NW.components.ItemCard = (() => {
        * is empty and the card would otherwise show "always" next to a number that quietly
        * depends on how many pieces of the set are equipped. Every piece's own card lists the
        * same shared bonus, so without the ladder each ring reads as granting the full total on
-       * its own. Returns null for a non-tiered bonus.
+       * its own. Returns null for a bonus with no tiered grant.
        */
       tierLadder(entry) {
-        const tiers = entry.bonus?.tiers;
+        const grant = this.tierGrant(entry);
+        const tiers = grant?.raw.tiers;
         if (!tiers?.length) return null;
-        const activeAt = entry.active && entry.chose?.startsWith('tier:')
-          ? Number(entry.chose.slice('tier:'.length))
+        const activeAt = grant.active && grant.chose?.startsWith('tier:')
+          ? Number(grant.chose.slice('tier:'.length))
           : null;
         return tiers
           .map((tier) => ({
@@ -131,23 +138,22 @@ window.NW.components.ItemCard = (() => {
 
       /**
        * Active bonuses report what actually reached the pipeline (`appliedStats`); inactive
-       * ones can only offer their declared per-stack payload (`bonus.stats`), and tiered ones
-       * have not chosen a tier at all.
+       * ones can only offer a preview of the grant closest to unlocking (`previewStats`, null
+       * for a tiered/varied one that hasn't chosen a branch at all).
        *
        * When several sources stack (e.g. two rings of the same item), `appliedStats` is the
-       * combined total and `bonus.stats` is what one copy grants. Showing only the total on
-       * *each* ring's own card reads as "this ring alone gives +15%" -- when really the two
-       * rings share credit for it. `each` carries the per-copy figure so the template can spell
-       * that out; it is null whenever there is nothing to disambiguate (stacks === 1).
+       * combined total and `entry.stats` (the resolved sum of active grants, pre-stacking) is
+       * what one copy grants. Showing only the total on *each* ring's own card reads as "this
+       * ring alone gives +15%" -- when really the two rings share credit for it. `each` carries
+       * the per-copy figure so the template can spell that out; it is null whenever there is
+       * nothing to disambiguate (stacks === 1).
        */
       payload(entry) {
-        const stats = entry.active ? entry.appliedStats : entry.bonus?.stats;
-        if (!stats) return entry.bonus?.tiers ? { total: null, each: null, tiered: true } : null;
+        const stats = entry.active ? entry.appliedStats : entry.previewStats;
+        if (!stats) return this.tierGrant(entry) ? { total: null, each: null, tiered: true } : null;
 
         const stacks = entry.stacks ?? 1;
-        const each = entry.active && stacks > 1 && entry.bonus?.stats
-          ? this.statList(entry.bonus.stats)
-          : null;
+        const each = entry.active && stacks > 1 ? this.statList(entry.stats) : null;
         return { total: this.statList(stats), each, tiered: false };
       },
     },

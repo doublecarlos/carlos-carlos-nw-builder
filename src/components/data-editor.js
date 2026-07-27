@@ -70,7 +70,7 @@ window.NW.components.DataEditor = (() => {
         const rows = this.db.bonusSets.map((set) => ({
           key: set.id,
           name: set.name || set.id,
-          filter: `${(set.effects ?? []).length} effect(s)`,
+          filter: `${(set.grants ?? []).length} grant(s)`,
           set,
           status: catalog().statusOf(this.overlay, 'bonusSets', set.id),
           kind: 'bonusSet',
@@ -141,13 +141,11 @@ window.NW.components.DataEditor = (() => {
         return [...this.db.itemsByTag.keys()].sort();
       },
 
-      /** Every bonus id in the catalogue — the vocabulary for `excludes`. */
+      /** The vocabulary for `excludes`. A set now resolves as one unit, so only sets (not
+       * individual grants) are addressable -- same list as `setIds`, kept as its own computed
+       * since the two are used for unrelated purposes at the call sites. */
       bonusIds() {
-        const ids = new Set();
-        for (const set of this.db.bonusSets) {
-          for (const effect of set.effects ?? []) if (effect.id) ids.add(effect.id);
-        }
-        return [...ids].sort();
+        return this.setIds;
       },
 
       changedCount() {

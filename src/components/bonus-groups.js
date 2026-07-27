@@ -28,6 +28,7 @@ window.NW.components.BonusGroups = (() => {
       BonusRows: window.NW.components.BonusRows,
       ComboBox: window.NW.components.ComboBox,
       IconButton: window.NW.components.IconButton,
+      TokenInput: window.NW.components.TokenInput,
     },
 
     props: {
@@ -67,6 +68,11 @@ window.NW.components.BonusGroups = (() => {
           .filter((id) => !attached.has(id))
           .map((id) => ({ value: id, label: this.db.bonusSetById.get(id)?.name ?? id }));
       },
+
+      stackingOptions: () => ([
+        { value: '', label: 'once, however many sources' },
+        { value: 'perSource', label: 'once per contributing slot' },
+      ]),
     },
 
     watch: {
@@ -88,7 +94,10 @@ window.NW.components.BonusGroups = (() => {
           this.drafts[id] = {
             id,
             name: set?.name ?? id,
-            effects: (set?.effects ?? []).map((effect) => draft().toDraft(effect)),
+            grants: (set?.grants ?? []).map((grant) => draft().toDraft(grant)),
+            stacking: set?.stacking ?? '',
+            maxStacks: set?.maxStacks ?? null,
+            excludes: [...(set?.excludes ?? [])],
           };
         }
       },
@@ -112,25 +121,16 @@ window.NW.components.BonusGroups = (() => {
           this.errors[id] = `“${newId}” is already used by another bonus group.`;
           return;
         }
-        let effects;
+        let set;
         try {
-          effects = local.effects.map((effect) => draft().toBonus(effect));
+          set = draft().toSet({ ...local, id: newId });
         } catch (error) {
-          this.errors[id] = `An effect has invalid JSON: ${error.message}`;
-          return;
-        }
-        const missing = effects.findIndex((effect) => !effect.id);
-        if (missing !== -1) {
-          this.errors[id] = `Effect ${missing + 1} needs an id.`;
+          this.errors[id] = `A grant has invalid JSON: ${error.message}`;
           return;
         }
         this.errors[id] = '';
         const renamed = newId !== id;
-        this.$emit('save-set', {
-          id: newId,
-          previousId: renamed ? id : null,
-          set: { id: newId, name: local.name || newId, effects },
-        });
+        this.$emit('save-set', { id: newId, previousId: renamed ? id : null, set });
         // Rekey the draft under the new id so the card survives the id change without
         // waiting on a round trip through `setIds` -> `sync()`, which would otherwise
         // momentarily render it with a blank draft rebuilt from whatever `db` has yet.
@@ -162,10 +162,10 @@ window.NW.components.BonusGroups = (() => {
         this.$emit('detach-set', id);
       },
 
-      /** A brand-new effect is unconditional by default -- the common case now that most
+      /** A brand-new grant is unconditional by default -- the common case now that most
        * bonuses are private to one item, not a multi-piece set requirement. */
-      addEffect(id) {
-        this.drafts[id].effects.push(draft().toDraft({ id: `${id}-bonus`, when: {}, stats: {} }));
+      addGrant(id) {
+        this.drafts[id].grants.push(draft().toDraft({ when: {}, stats: {} }));
       },
 
       /** Create a bonus group and attach it to the item in one step, seeded from the item's
@@ -231,18 +231,31 @@ window.NW.components.BonusGroups = (() => {
             <template v-else>Only on this item.</template>
           </p>
 
+          <div class="sub-section">Stacking</div>
+          <div class="cond-row">
+            <ComboBox class="combo--stacking" :model-value="drafts[card.id].stacking" :options="stackingOptions"
+                      @update:model-value="v => drafts[card.id].stacking = v" />
+            <template v-if="drafts[card.id].stacking === 'perSource'">
+              <label class="field"><span class="field-label">Max stacks</span>
+                <input type="number" min="0" class="tier-pieces" v-model.number="drafts[card.id].maxStacks"></label>
+              <span class="hint">maximum stacks (blank = no limit)</span>
+            </template>
+          </div>
+
+          <div class="sub-section">Suppresses these bonuses</div>
+          <TokenInput v-model="drafts[card.id].excludes" :options="bonusIds"
+                      placeholder="bonus id to suppress…" />
+
           <div class="sub-section">
-            Effects
-            <IconButton icon="circle-plus" title="Add effect" @click="addEffect(card.id)" />
-            <span v-if="!drafts[card.id].effects.length" class="hint">none yet</span>
+            Grants
+            <IconButton icon="circle-plus" title="Add grant" @click="addGrant(card.id)" />
+            <span v-if="!drafts[card.id].grants.length" class="hint">none yet</span>
           </div>
 
           <BonusRows
-            :rows="drafts[card.id].effects"
+            :rows="drafts[card.id].grants"
             :set-ids="allSetIds"
             :tags="tags"
-            :bonus-ids="bonusIds"
-            id-placeholder="effect id"
             @error="errors[card.id] = $event" />
         </div>
       </div>

@@ -1842,7 +1842,7 @@
     "severity": 10800,
     "ap_gain": 0.015,
     "maxCopies": 1,
-    "bonuses": ["m33-frostsilver-coil-of-wrath", "m33-accumulating-precision-celestial"]
+    "bonuses": ["m33-frostsilver-coil-of-wrath-accuracy", "m33-frostsilver-coil-of-wrath-ca", "m33-accumulating-precision-celestial"]
   },
   {
     "name": "M33 Frostsilver Loop of the Arcane",
@@ -1854,7 +1854,7 @@
     "strike": 10800,
     "ap_gain": 0.015,
     "maxCopies": 1,
-    "bonuses": ["m33-frostsilver-loop-of-the-arcane", "m33-dashing-ranger-celestial"]
+    "bonuses": ["m33-frostsilver-loop-of-the-arcane-accuracy", "m33-frostsilver-loop-of-the-arcane-power", "m33-dashing-ranger-celestial"]
   },
   {
     "name": "M33 Frostsilver Ring of Initiative",
@@ -1865,7 +1865,7 @@
     "ca": 7200,
     "ap_gain": 0.015,
     "maxCopies": 1,
-    "bonuses": ["m33-frostsilver-ring-of-initiative", "m33-maiden-s-advantage-celestial"]
+    "bonuses": ["m33-frostsilver-ring-of-initiative-strike", "m33-frostsilver-ring-of-initiative-severity", "m33-maiden-s-advantage-celestial"]
   },
   {
     "name": "M33 Runefrost Skimisher Bracers",

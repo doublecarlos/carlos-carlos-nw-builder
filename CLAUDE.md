@@ -109,9 +109,20 @@ llm/plans/            numbered plans
   rename, not as a separate step.
 - **Percentages are decimals.** `0.09` is 9%. Format at the edge, never round in state.
   Percent fields convert with rounding — `3.6 / 100` is `0.036000000000000004`.
-- **`stats` vs `appliedStats`** on a resolved bonus: the former is per-stack, the latter is what
-  reaches the pipeline. Reading `stats` and wondering why stacking "doesn't work" has caught
-  two sessions.
+- **A bonus set resolves as one unit.** `data/db-bonuses.json`'s `{id, name, grants: [...]}` —
+  `effects[]` was retired 2026-07-27 (`tools/migrate_grants.py`, one-shot). A grant is anonymous
+  (`{when?, stats}` / `{when?, variants}` / `{when?, tiers}`, no `id`/`name`) since only the
+  *set* needs to be addressable now; `src/bonus.js`'s `evaluateBonus` sums every currently-active
+  grant into one resolved entry (`result.bonuses` is one row per set, not per grant). Wanting two
+  separately-visible bonuses on one item is still just two set ids in that item's `bonuses`
+  array (unchanged) — not a reason to keep a set's grants apart. `excludes`/`stacking`/
+  `maxStacks` live on the set now, not on a grant. A resolved entry's `chose` is only populated
+  when exactly one grant is active (two active grants have no single tier/variant to report);
+  `previewStats` (not `bonus.stats`) is what an *inactive* entry shows as a preview, taken from
+  whichever grant has the fewest unmet conditions.
+- **`stats` vs `appliedStats`** on a resolved bonus: the former is per-stack (now the *sum* of
+  every active grant's stats), the latter is what reaches the pipeline. Reading `stats` and
+  wondering why stacking "doesn't work" has caught two sessions.
 - **Empty slot is `undefined` / `''` / `'-'`** — all three handled by `db.get`.
 - **Duration is a free number of seconds**, not a bucket. Presets are convenience only.
 - **Options are context, not slots.** Class/Role/Forte live in `build.context`.

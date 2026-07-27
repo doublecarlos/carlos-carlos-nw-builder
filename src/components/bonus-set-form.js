@@ -32,6 +32,8 @@ window.NW.components.BonusSetForm = (() => {
     components: {
       BonusRows: window.NW.components.BonusRows,
       IconButton: window.NW.components.IconButton,
+      ComboBox: window.NW.components.ComboBox,
+      TokenInput: window.NW.components.TokenInput,
     },
 
     props: {
@@ -57,12 +59,16 @@ window.NW.components.BonusSetForm = (() => {
         return this.db.setMembers.get(this.source.id) ?? [];
       },
 
+      stackingOptions: () => ([
+        { value: '', label: 'once, however many sources' },
+        { value: 'perSource', label: 'once per contributing slot' },
+      ]),
+
       /** Best-effort conversion for the dirty check -- a row mid-edit as invalid JSON just
        * reads as "changed" rather than throwing here too. */
       asSet() {
         try {
-          const effects = this.draft.effects.map((effect) => draft().toBonus(effect));
-          return { id: this.draft.id.trim(), name: this.draft.name.trim() || this.draft.id.trim(), effects };
+          return draft().toSet(this.draft);
         } catch {
           return null;
         }
@@ -70,7 +76,7 @@ window.NW.components.BonusSetForm = (() => {
 
       dirty() {
         if (!this.source) {
-          return Boolean(this.draft.name || this.draft.id || this.draft.effects.length);
+          return Boolean(this.draft.name || this.draft.id || this.draft.grants.length);
         }
         const set = this.asSet;
         return !set || !sameSet(set, this.source);
@@ -96,7 +102,10 @@ window.NW.components.BonusSetForm = (() => {
         return {
           id: source.id ?? '',
           name: source.name ?? '',
-          effects: (source.effects ?? []).map((effect) => draft().toDraft(effect)),
+          grants: (source.grants ?? []).map((grant) => draft().toDraft(grant)),
+          stacking: source.stacking ?? '',
+          maxStacks: source.maxStacks ?? null,
+          excludes: [...(source.excludes ?? [])],
         };
       },
 
@@ -104,8 +113,8 @@ window.NW.components.BonusSetForm = (() => {
        * current name. */
       generateId() { this.draft.id = slugify(this.draft.name) || this.draft.id; },
 
-      addEffect() {
-        this.draft.effects.push(draft().toDraft({ id: '', when: {}, stats: {} }));
+      addGrant() {
+        this.draft.grants.push(draft().toDraft({ when: {}, stats: {} }));
       },
 
       save() {
@@ -116,20 +125,14 @@ window.NW.components.BonusSetForm = (() => {
           this.error = `“${id}” is already used by another bonus set.`;
           return;
         }
-        let effects;
+        let set;
         try {
-          effects = this.draft.effects.map((effect) => draft().toBonus(effect));
+          set = draft().toSet(this.draft);
         } catch (error) {
-          this.error = `An effect has invalid JSON: ${error.message}`;
+          this.error = `A grant has invalid JSON: ${error.message}`;
           return;
         }
-        const missing = effects.findIndex((effect) => !effect.id);
-        if (missing !== -1) { this.error = `Effect ${missing + 1} needs an id.`; return; }
-        this.$emit('save', {
-          id,
-          previousId: this.source?.id ?? null,
-          set: { id, name: this.draft.name.trim() || id, effects },
-        });
+        this.$emit('save', { id, previousId: this.source?.id ?? null, set });
       },
     },
 
@@ -168,18 +171,31 @@ window.NW.components.BonusSetForm = (() => {
           </template>
         </p>
 
+        <div class="sub-section">Stacking</div>
+        <div class="cond-row">
+          <ComboBox class="combo--stacking" :model-value="draft.stacking" :options="stackingOptions"
+                    @update:model-value="v => draft.stacking = v" />
+          <template v-if="draft.stacking === 'perSource'">
+            <label class="field"><span class="field-label">Max stacks</span>
+              <input type="number" min="0" class="tier-pieces" v-model.number="draft.maxStacks"></label>
+            <span class="hint">maximum stacks (blank = no limit)</span>
+          </template>
+        </div>
+
+        <div class="sub-section">Suppresses these bonuses</div>
+        <TokenInput v-model="draft.excludes" :options="bonusIds"
+                    placeholder="bonus id to suppress…" />
+
         <div class="form-section">
-          Effects
-          <IconButton icon="circle-plus" title="Add effect" @click="addEffect" />
-          <span v-if="!draft.effects.length" class="hint">none yet</span>
+          Grants
+          <IconButton icon="circle-plus" title="Add grant" @click="addGrant" />
+          <span v-if="!draft.grants.length" class="hint">none yet</span>
         </div>
 
         <BonusRows
-          :rows="draft.effects"
+          :rows="draft.grants"
           :set-ids="setIds"
           :tags="tags"
-          :bonus-ids="bonusIds"
-          id-placeholder="effect id"
           @error="error = $event" />
       </div>
     `,

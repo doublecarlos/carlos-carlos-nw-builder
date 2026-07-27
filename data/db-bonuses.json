@@ -2,70 +2,33 @@
   {
     "id": "1st-pack-tactics-group",
     "name": "1st Pack Tactics (Group)",
-    "effects": [
-      {
-        "id": "1st-pack-tactics-group-bonus-party",
-        "name": "1st Pack Tactics (Group) (party)",
-        "when": {"toggle": "party"},
-        "stats": {"ca": 2250, "awareness": 2250}
-      }
-    ]
+    "grants": [{"when": {"toggle": "party"}, "stats": {"ca": 2250, "awareness": 2250}}]
   },
   {
     "id": "1st-pack-tactics-group-celestial",
     "name": "1st Pack Tactics (Group) (Celestial)",
-    "effects": [
-      {
-        "id": "1st-pack-tactics-group-celestial-bonus-party",
-        "name": "1st Pack Tactics (Group) (Celestial) (party)",
-        "when": {"toggle": "party"},
-        "stats": {"ca": 2953, "awareness": 2953}
-      }
-    ]
+    "grants": [{"when": {"toggle": "party"}, "stats": {"ca": 2953, "awareness": 2953}}]
   },
   {
     "id": "2nd-pack-tactics-group",
     "name": "2nd Pack Tactics (Group)",
-    "effects": [
-      {
-        "id": "2nd-pack-tactics-group-bonus-party",
-        "name": "2nd Pack Tactics (Group) (party)",
-        "when": {"toggle": "party"},
-        "stats": {"ca": 1125, "awareness": 1125}
-      }
-    ]
+    "grants": [{"when": {"toggle": "party"}, "stats": {"ca": 1125, "awareness": 1125}}]
   },
   {
     "id": "2nd-pack-tactics-group-celestial",
     "name": "2nd Pack Tactics (Group) (Celestial)",
-    "effects": [
-      {
-        "id": "2nd-pack-tactics-group-celestial-bonus-party",
-        "name": "2nd Pack Tactics (Group) (Celestial) (party)",
-        "when": {"toggle": "party"},
-        "stats": {"ca": 1476, "awareness": 1476}
-      }
-    ]
+    "grants": [{"when": {"toggle": "party"}, "stats": {"ca": 1476, "awareness": 1476}}]
   },
   {
     "id": "acute-senses-ca",
     "name": "Acute Senses (CA)",
-    "effects": [
-      {
-        "id": "acute-senses-ca-bonus-combat",
-        "name": "Acute Senses (CA) (combat)",
-        "when": {"toggle": "combat"},
-        "stats": {"ca_p": 0.09}
-      }
-    ]
+    "grants": [{"when": {"toggle": "combat"}, "stats": {"ca_p": 0.09}}]
   },
   {
     "id": "arti-assasin-s-dice",
     "name": "Arti: Assasin's Dice",
-    "effects": [
+    "grants": [
       {
-        "id": "arti-assasin-s-dice-bonus-artifact-call",
-        "name": "Arti: Assasin's Dice (artifact call)",
         "when": {"toggle": "artifactCall"},
         "stats": {"enemy_crit_avoid": -0.05, "enemy_deflect_sev": -0.05}
       }
@@ -74,118 +37,53 @@
   {
     "id": "arti-beacon",
     "name": "Arti: Beacon",
-    "effects": [
-      {
-        "id": "arti-beacon-bonus-artifact-call",
-        "name": "Arti: Beacon (artifact call)",
-        "when": {"toggle": "artifactCall"},
-        "stats": {"enemy_incoming_damage": 0.1}
-      }
-    ]
+    "grants": [{"when": {"toggle": "artifactCall"}, "stats": {"enemy_incoming_damage": 0.1}}]
   },
   {
     "id": "arti-blades-wyvern",
     "name": "Arti: Blades/Wyvern",
-    "effects": [
-      {
-        "id": "arti-blades-wyvern-bonus-artifact-call",
-        "name": "Arti: Blades/Wyvern (artifact call)",
-        "when": {"toggle": "artifactCall"},
-        "stats": {"enemy_incoming_damage": 0.12}
-      }
-    ]
+    "grants": [{"when": {"toggle": "artifactCall"}, "stats": {"enemy_incoming_damage": 0.12}}]
   },
   {
     "id": "arti-censer",
     "name": "Arti: Censer",
-    "effects": [
-      {
-        "id": "arti-censer-bonus-artifact-call",
-        "name": "Arti: Censer (artifact call)",
-        "when": {"toggle": "artifactCall"},
-        "stats": {"enemy_incoming_damage": 0.12}
-      }
-    ]
+    "grants": [{"when": {"toggle": "artifactCall"}, "stats": {"enemy_incoming_damage": 0.12}}]
   },
   {
     "id": "arti-crystal",
     "name": "Arti: Crystal",
-    "effects": [
-      {
-        "id": "arti-crystal-bonus-artifact-call",
-        "name": "Arti: Crystal (artifact call)",
-        "when": {"toggle": "artifactCall"},
-        "stats": {"enemy_incoming_damage": 0.1}
-      }
-    ]
+    "grants": [{"when": {"toggle": "artifactCall"}, "stats": {"enemy_incoming_damage": 0.1}}]
   },
   {
     "id": "arti-demogorgon",
     "name": "Arti: Demogorgon",
-    "effects": [
-      {
-        "id": "arti-demogorgon-bonus-artifact-call",
-        "name": "Arti: Demogorgon (artifact call)",
-        "when": {"toggle": "artifactCall"},
-        "stats": {"enemy_incoming_damage": 0.28}
-      }
-    ]
+    "grants": [{"when": {"toggle": "artifactCall"}, "stats": {"enemy_incoming_damage": 0.28}}]
   },
   {
     "id": "arti-marco",
     "name": "Arti: Marco",
-    "effects": [
-      {
-        "id": "arti-marco-bonus-artifact-call",
-        "name": "Arti: Marco (artifact call)",
-        "when": {"toggle": "artifactCall"},
-        "stats": {"enemy_incoming_damage": 0.1}
-      }
-    ]
+    "grants": [{"when": {"toggle": "artifactCall"}, "stats": {"enemy_incoming_damage": 0.1}}]
   },
   {
     "id": "arti-mythalar",
     "name": "Arti: Mythalar",
-    "effects": [
-      {
-        "id": "arti-mythalar-bonus-artifact-call",
-        "name": "Arti: Mythalar (artifact call)",
-        "when": {"toggle": "artifactCall"},
-        "stats": {"enemy_incoming_damage": 0.15}
-      }
-    ]
+    "grants": [{"when": {"toggle": "artifactCall"}, "stats": {"enemy_incoming_damage": 0.15}}]
   },
   {
     "id": "arti-scepter",
     "name": "Arti: Scepter",
-    "effects": [
-      {
-        "id": "arti-scepter-bonus-artifact-call",
-        "name": "Arti: Scepter (artifact call)",
-        "when": {"toggle": "artifactCall"},
-        "stats": {"enemy_incoming_damage": 0.15}
-      }
-    ]
+    "grants": [{"when": {"toggle": "artifactCall"}, "stats": {"enemy_incoming_damage": 0.15}}]
   },
   {
     "id": "arti-spelljammer-lantern",
     "name": "Arti: Spelljammer/Lantern",
-    "effects": [
-      {
-        "id": "arti-spelljammer-lantern-bonus-artifact-call",
-        "name": "Arti: Spelljammer/Lantern (artifact call)",
-        "when": {"toggle": "artifactCall"},
-        "stats": {"enemy_incoming_damage": 0.1}
-      }
-    ]
+    "grants": [{"when": {"toggle": "artifactCall"}, "stats": {"enemy_incoming_damage": 0.1}}]
   },
   {
     "id": "arti-tentacle-rod",
     "name": "Arti: Tentacle Rod",
-    "effects": [
+    "grants": [
       {
-        "id": "arti-tentacle-rod-bonus-artifact-call",
-        "name": "Arti: Tentacle Rod (artifact call)",
         "when": {"toggle": "artifactCall"},
         "stats": {"enemy_incoming_damage": 0.05, "enemy_awareness": -0.05}
       }
@@ -194,58 +92,28 @@
   {
     "id": "arti-volcano-heart-of-black-dragon",
     "name": "Arti: Volcano/Heart of Black Dragon",
-    "effects": [
-      {
-        "id": "arti-volcano-heart-of-black-dragon-bonus-artifact-call",
-        "name": "Arti: Volcano/Heart of Black Dragon (artifact call)",
-        "when": {"toggle": "artifactCall"},
-        "stats": {"enemy_incoming_damage": 0.1}
-      }
-    ]
+    "grants": [{"when": {"toggle": "artifactCall"}, "stats": {"enemy_incoming_damage": 0.1}}]
   },
   {
     "id": "avian-aura-group",
     "name": "Avian Aura (Group)",
-    "effects": [
-      {
-        "id": "avian-aura-group-bonus-party",
-        "name": "Avian Aura (Group) (party)",
-        "when": {"toggle": "party"},
-        "stats": {"power": 1600}
-      }
-    ]
+    "grants": [{"when": {"toggle": "party"}, "stats": {"power": 1600}}]
   },
   {
     "id": "avian-aura-group-celestial",
     "name": "Avian Aura (Group) (Celestial)",
-    "effects": [
-      {
-        "id": "avian-aura-group-celestial-bonus-party",
-        "name": "Avian Aura (Group) (Celestial) (party)",
-        "when": {"toggle": "party"},
-        "stats": {"power": 2100}
-      }
-    ]
+    "grants": [{"when": {"toggle": "party"}, "stats": {"power": 2100}}]
   },
   {
     "id": "bard-s-critical-tuning",
     "name": "Bard's Critical Tuning",
-    "effects": [
-      {
-        "id": "bard-s-critical-tuning-bonus-combat",
-        "name": "Bard's Critical Tuning (combat)",
-        "when": {"toggle": "combat"},
-        "stats": {"sev_p": 0.1}
-      }
-    ]
+    "grants": [{"when": {"toggle": "combat"}, "stats": {"sev_p": 0.1}}]
   },
   {
     "id": "bard-s-truly-inspired-skill",
     "name": "Bard's Truly Inspired (Skill)",
-    "effects": [
+    "grants": [
       {
-        "id": "bard-s-truly-inspired-skill-bonus-combat-dps",
-        "name": "Bard's Truly Inspired (Skill) (combat, dps)",
         "when": {"toggle": "combat"},
         "variants": [
           {"when": {"role": "dps"}, "stats": {"outgoing_damage": 0.1}},
@@ -257,10 +125,8 @@
   {
     "id": "batiri-s-wisdom-batiri-damage-offense",
     "name": "Batiri's Wisdom [Batiri] (Damage) <Offense>",
-    "effects": [
+    "grants": [
       {
-        "id": "batiri-s-wisdom-batiri-damage-offense-bonus-combat-single-mixed",
-        "name": "Batiri's Wisdom [Batiri] (Damage) <Offense> (single or mixed)",
         "when": {"toggle": "combat", "any": [{"combatType": "single"}, {"combatType": "mixed"}]},
         "stats": {"outgoing_damage": 0.135}
       }
@@ -269,70 +135,33 @@
   {
     "id": "blue-fire-eye",
     "name": "Blue Fire Eye",
-    "effects": [
-      {
-        "id": "blue-fire-eye-bonus-party",
-        "name": "Blue Fire Eye (party)",
-        "when": {"toggle": "party"},
-        "stats": {"strike_p": 0.03}
-      }
-    ]
+    "grants": [{"when": {"toggle": "party"}, "stats": {"strike_p": 0.03}}]
   },
   {
     "id": "captain",
     "name": "Captain",
-    "effects": [
-      {
-        "id": "captain-bonus-combat",
-        "name": "Captain (combat)",
-        "when": {"toggle": "combat"},
-        "stats": {"sev_p": 0.05}
-      }
-    ]
+    "grants": [{"when": {"toggle": "combat"}, "stats": {"sev_p": 0.05}}]
   },
   {
     "id": "cha-lua-accuracy-severity",
     "name": "Cha Lua (Accuracy/Severity)",
-    "effects": [
-      {
-        "id": "cha-lua-accuracy-severity-bonus-consumables",
-        "name": "Cha Lua (Accuracy/Severity) (consumables)",
-        "when": {"toggle": "consumables"},
-        "stats": {"acc_p": 0.1, "sev_p": 0.03}
-      }
-    ]
+    "grants": [{"when": {"toggle": "consumables"}, "stats": {"acc_p": 0.1, "sev_p": 0.03}}]
   },
   {
     "id": "diamond-blessing-damage",
     "name": "Diamond Blessing (Damage)",
-    "effects": [
-      {
-        "id": "diamond-blessing-damage-bonus-consumables",
-        "name": "Diamond Blessing (Damage) (consumables)",
-        "when": {"toggle": "consumables"},
-        "stats": {"outgoing_damage": 0.05}
-      }
-    ]
+    "grants": [{"when": {"toggle": "consumables"}, "stats": {"outgoing_damage": 0.05}}]
   },
   {
     "id": "drizzt",
     "name": "Drizzt",
-    "effects": [
-      {
-        "id": "drizzt-bonus-party",
-        "name": "Drizzt (party)",
-        "when": {"toggle": "party"},
-        "stats": {"mult_damage": 0.03}
-      }
-    ]
+    "grants": [{"when": {"toggle": "party"}, "stats": {"mult_damage": 0.03}}]
   },
   {
     "id": "eagle-s-mastery-greater",
     "name": "Eagle's Mastery (Greater)",
-    "effects": [
+    "grants": [
       {
-        "id": "eagle-s-mastery-greater",
-        "name": "Eagle's Mastery (Greater)",
         "when": {"toggle": "combat"},
         "stats": {"power_p": 0.05, "strike_p": 0.05, "sev_p": 0.05}
       }
@@ -341,22 +170,13 @@
   {
     "id": "etrien",
     "name": "Etrien",
-    "effects": [
-      {
-        "id": "etrien-bonus-combat-party",
-        "name": "Etrien (combat, party)",
-        "when": {"toggle": ["combat", "party"]},
-        "stats": {"power_p": 0.02, "strike_p": 0.02}
-      }
-    ]
+    "grants": [{"when": {"toggle": ["combat", "party"]}, "stats": {"power_p": 0.02, "strike_p": 0.02}}]
   },
   {
     "id": "executioner-s-covenant",
     "name": "Executioner's Covenant",
-    "effects": [
+    "grants": [
       {
-        "id": "executioner-s-covenant-bonus",
-        "name": "Executioner's Covenant",
         "tiers": [
           {
             "pieces": {"set": "executioner-s-covenant", "atLeast": 1},
@@ -391,34 +211,18 @@
   {
     "id": "exploit-weakness-strike-sev-blaspheme",
     "name": "Exploit Weakness (Strike/Sev - Blaspheme)",
-    "effects": [
-      {
-        "id": "exploit-weakness-strike-sev-blaspheme-bonus-combat",
-        "name": "Exploit Weakness (Strike/Sev - Blaspheme) (combat)",
-        "when": {"toggle": "combat"},
-        "stats": {"strike_p": 0.045, "sev_p": 0.045}
-      }
-    ]
+    "grants": [{"when": {"toggle": "combat"}, "stats": {"strike_p": 0.045, "sev_p": 0.045}}]
   },
   {
     "id": "flapjack",
     "name": "Flapjack",
-    "effects": [
-      {
-        "id": "flapjack-bonus-party",
-        "name": "Flapjack (party)",
-        "when": {"toggle": "party"},
-        "stats": {"ca_p": 0.05}
-      }
-    ]
+    "grants": [{"when": {"toggle": "party"}, "stats": {"ca_p": 0.05}}]
   },
   {
     "id": "flask-of-potency-1-severity",
     "name": "Flask of Potency +1 (Severity)",
-    "effects": [
+    "grants": [
       {
-        "id": "flask-of-potency-1-severity-bonus-consumables",
-        "name": "Flask of Potency +1 (Severity) (consumables)",
         "when": {"toggle": "consumables"},
         "stats": {"sev_p": 0.05, "power": 550, "acc": 550, "strike": 550}
       }
@@ -427,10 +231,8 @@
   {
     "id": "gladiator-s-guile",
     "name": "Gladiator's Guile",
-    "effects": [
+    "grants": [
       {
-        "id": "gladiator-s-guile-bonus",
-        "name": "Gladiator's Guile",
         "tiers": [
           {
             "pieces": {"set": "gladiator-s-guile", "atLeast": 1},
@@ -447,10 +249,8 @@
   {
     "id": "grand-summer-feast",
     "name": "Grand Summer Feast",
-    "effects": [
+    "grants": [
       {
-        "id": "grand-summer-feast-bonus-consumables",
-        "name": "Grand Summer Feast (consumables)",
         "when": {"toggle": "consumables"},
         "stats": {
           "power_p": 0.025,
@@ -466,10 +266,8 @@
   {
     "id": "grand-summer-feast-legacy",
     "name": "Grand Summer Feast (Legacy)",
-    "effects": [
+    "grants": [
       {
-        "id": "grand-summer-feast-legacy-bonus-consumables",
-        "name": "Grand Summer Feast (Legacy) (consumables)",
         "when": {"toggle": "consumables"},
         "stats": {
           "power_p": 0.05,
@@ -485,111 +283,54 @@
   {
     "id": "hot-wings-accuracy-severity",
     "name": "Hot Wings (Accuracy/Severity)",
-    "effects": [
-      {
-        "id": "hot-wings-accuracy-severity-bonus-consumables",
-        "name": "Hot Wings (Accuracy/Severity) (consumables)",
-        "when": {"toggle": "consumables"},
-        "stats": {"acc_p": 0.05, "sev_p": 0.05}
-      }
-    ]
+    "grants": [{"when": {"toggle": "consumables"}, "stats": {"acc_p": 0.05, "sev_p": 0.05}}]
   },
   {
     "id": "invocation-accuracy",
     "name": "Invocation: Accuracy",
-    "effects": [
-      {
-        "id": "invocation-accuracy-bonus-consumables",
-        "name": "Invocation: Accuracy (consumables)",
-        "when": {"toggle": "consumables"},
-        "stats": {"acc": 1000}
-      }
-    ]
+    "grants": [{"when": {"toggle": "consumables"}, "stats": {"acc": 1000}}]
   },
   {
     "id": "invocation-crit-strike",
     "name": "Invocation: Crit Strike",
-    "effects": [
-      {
-        "id": "invocation-crit-strike-bonus-consumables",
-        "name": "Invocation: Crit Strike (consumables)",
-        "when": {"toggle": "consumables"},
-        "stats": {"strike": 1000}
-      }
-    ]
+    "grants": [{"when": {"toggle": "consumables"}, "stats": {"strike": 1000}}]
   },
   {
     "id": "invocation-power",
     "name": "Invocation: Power",
-    "effects": [
-      {
-        "id": "invocation-power-bonus-consumables",
-        "name": "Invocation: Power (consumables)",
-        "when": {"toggle": "consumables"},
-        "stats": {"power": 1000}
-      }
-    ]
+    "grants": [{"when": {"toggle": "consumables"}, "stats": {"power": 1000}}]
   },
   {
     "id": "invocation-severity",
     "name": "Invocation: Severity",
-    "effects": [
-      {
-        "id": "invocation-severity-bonus-consumables",
-        "name": "Invocation: Severity (consumables)",
-        "when": {"toggle": "consumables"},
-        "stats": {"severity": 1000}
-      }
-    ]
+    "grants": [{"when": {"toggle": "consumables"}, "stats": {"severity": 1000}}]
   },
   {
     "id": "lightning-flash",
     "name": "Lightning Flash",
-    "effects": [
-      {
-        "id": "lightning-flash-bonus-combat",
-        "name": "Lightning Flash (combat)",
-        "when": {"toggle": "combat"},
-        "stats": {"acc_p": 0.108, "strike_p": 0.108}
-      }
-    ]
+    "grants": [{"when": {"toggle": "combat"}, "stats": {"acc_p": 0.108, "strike_p": 0.108}}]
   },
   {
     "id": "m19-ruthless-might",
     "name": "M19 Ruthless Might",
-    "effects": [
-      {
-        "id": "m19-ruthless-might",
-        "name": "M19 Ruthless Might",
-        "when": {"toggle": "combat"},
-        "stats": {"strike_p": 0.075, "sev_p": 0.075}
-      }
-    ]
+    "grants": [{"when": {"toggle": "combat"}, "stats": {"strike_p": 0.075, "sev_p": 0.075}}]
   },
   {
     "id": "m24-maiden-s-advantage",
     "name": "M24 Maiden's Advantage",
-    "effects": [
+    "grants": [
+      {"stats": {"ca_p": 0.05}},
       {
-        "id": "m24-maiden-s-advantage-bonus",
-        "name": "M24 Maiden's Advantage Bonus",
-        "variants": [
-          {
-            "stats": {"ca_p": 0.05, "power_p": 0.025},
-            "when": {"any": [{"combatType": "aoe"}, {"combatType": "mixed"}]}
-          },
-          {"stats": {"ca_p": 0.05}}
-        ]
+        "when": {"any": [{"combatType": "aoe"}, {"combatType": "mixed"}]},
+        "stats": {"power_p": 0.025}
       }
     ]
   },
   {
     "id": "m26-masterwork-neck-waist-set",
     "name": "M26 Masterwork Neck/Waist Set",
-    "effects": [
+    "grants": [
       {
-        "id": "m26-masterwork-neck-waist-set-bonus-combat",
-        "name": "M26 Masterwork Neck/Waist Set (combat)",
         "when": {"toggle": "combat", "pieces": {"set": "m26-masterwork-neck-waist-set", "atLeast": 2}},
         "stats": {"acc_p": 0.075, "recharge": 0.15}
       }
@@ -598,22 +339,16 @@
   {
     "id": "m28-voidtouched-set",
     "name": "M28 Voidtouched Set",
-    "effects": [
+    "grants": [
       {
-        "id": "m28-voidtouched-set-bonus",
-        "name": "M28 Voidtouched Set",
-        "stats": {"incoming_damage": -0.05, "overall_healing": 0.05},
-        "when": {"pieces": {"set": "m28-voidtouched-set", "atLeast": 2}}
+        "when": {"pieces": {"set": "m28-voidtouched-set", "atLeast": 2}},
+        "stats": {"incoming_damage": -0.05, "overall_healing": 0.05}
       },
       {
-        "id": "m28-voidtouched-set-bonus-location-wildspace",
-        "name": "M28 Voidtouched Set (location wildspace)",
         "when": {"location": "wildspace", "pieces": {"set": "m28-voidtouched-set", "atLeast": 2}},
         "stats": {"movement": 0.12}
       },
       {
-        "id": "m28-voidtouched-set-bonus-single-dps-combat-medium-plus-combat",
-        "name": "M28 Voidtouched Set (single, dps, combat medium plus, combat)",
         "when": {
           "combatType": "single",
           "duration": {"atLeast": 30},
@@ -627,8 +362,6 @@
         ]
       },
       {
-        "id": "m28-voidtouched-set-bonus-single-dps-combat-medium-plus-location-wildspace-combat",
-        "name": "M28 Voidtouched Set (single, dps, combat medium plus, location wildspace, combat)",
         "when": {
           "combatType": "single",
           "duration": {"atLeast": 30},
@@ -647,34 +380,18 @@
   {
     "id": "m29-enchanted-depthweave-cap-ca",
     "name": "M29 Enchanted Depthweave Cap (CA)",
-    "effects": [
-      {
-        "id": "m29-enchanted-depthweave-cap-ca-bonus-combat",
-        "name": "M29 Enchanted Depthweave Cap (CA) (combat)",
-        "when": {"toggle": "combat"},
-        "stats": {"ca_p": 0.1}
-      }
-    ]
+    "grants": [{"when": {"toggle": "combat"}, "stats": {"ca_p": 0.1}}]
   },
   {
     "id": "m29-ruthless-advantage",
     "name": "M29 Ruthless Advantage",
-    "effects": [
-      {
-        "id": "m29-ruthless-advantage-bonus-combat",
-        "name": "M29 Ruthless Advantage (combat)",
-        "when": {"toggle": "combat"},
-        "stats": {"acc_p": 0.075, "ca_p": 0.075}
-      }
-    ]
+    "grants": [{"when": {"toggle": "combat"}, "stats": {"acc_p": 0.075, "ca_p": 0.075}}]
   },
   {
     "id": "m31-berserking-might-greater",
     "name": "M31 Berserking Might (Greater)",
-    "effects": [
+    "grants": [
       {
-        "id": "m31-berserking-might-greater",
-        "name": "M31 Berserking Might (Greater)",
         "variants": [
           {
             "stats": {"outgoing_damage": 0.036},
@@ -688,10 +405,8 @@
   {
     "id": "m31-bloodletting-ascendant",
     "name": "M31 Bloodletting (Ascendant)",
-    "effects": [
+    "grants": [
       {
-        "id": "m31-bloodletting-ascendant",
-        "name": "M31 Bloodletting (Ascendant)",
         "when": {"toggle": "combat"},
         "stats": {"outgoing_damage": 0.09, "mult_hit_points": -0.2}
       }
@@ -700,10 +415,8 @@
   {
     "id": "m31-critical-empowerment",
     "name": "M31 Critical Empowerment",
-    "effects": [
+    "grants": [
       {
-        "id": "m31-critical-empowerment",
-        "name": "M31 Critical Empowerment",
         "variants": [
           {"stats": {"outgoing_damage": 0.07}, "when": {"toggle": "combat", "location": "thay"}},
           {"stats": {"outgoing_damage": 0.035}, "when": {"toggle": "combat"}}
@@ -714,10 +427,8 @@
   {
     "id": "m31-enchanted-advantage",
     "name": "M31 Enchanted Advantage",
-    "effects": [
+    "grants": [
       {
-        "id": "m31-enchanted-advantage",
-        "name": "M31 Enchanted Advantage",
         "when": {"pieces": {"set": "m31-enchanted-advantage", "atLeast": 2}},
         "stats": {"ca_p": 0.02}
       }
@@ -726,86 +437,50 @@
   {
     "id": "m31-enduring-avantage-ascendant",
     "name": "M31 Enduring Avantage (Ascendant)",
-    "effects": [
-      {
-        "id": "m31-enduring-avantage-ascendant",
-        "name": "M31 Enduring Avantage (Ascendant)",
-        "stats": {"ca_p": 0.07, "recharge": 0.03}
-      }
-    ]
+    "grants": [{"stats": {"ca_p": 0.07, "recharge": 0.03}}]
   },
   {
     "id": "m31-enduring-critical",
     "name": "M31 Enduring Critical",
-    "effects": [{"id": "m31-enduring-critical", "name": "M31 Enduring Critical", "stats": {"sev_p": 0.07}}]
+    "grants": [{"stats": {"sev_p": 0.07}}]
   },
   {
     "id": "m31-enveloped-rage-ascendant",
     "name": "M31 Enveloped Rage (Ascendant)",
-    "effects": [
+    "grants": [
+      {"stats": {"ca_p": 0.04}},
       {
-        "id": "m31-enveloped-rage-ascendant",
-        "name": "M31 Enveloped Rage (Ascendant)",
-        "variants": [
-          {
-            "stats": {"acc_p": 0.08, "ca_p": 0.04},
-            "when": {"toggle": "combat", "duration": {"atLeast": 10}, "combatType": "single"}
-          },
-          {"stats": {"ca_p": 0.04}}
-        ]
+        "when": {"toggle": "combat", "duration": {"atLeast": 10}, "combatType": "single"},
+        "stats": {"acc_p": 0.08}
       }
     ]
   },
   {
     "id": "m31-reckless-advantage",
     "name": "M31 Reckless Advantage",
-    "effects": [
-      {
-        "id": "m31-reckless-advantage",
-        "name": "M31 Reckless Advantage",
-        "when": {"toggle": "combat"},
-        "stats": {"ca_p": 0.1, "crit_avoid_p": -0.075}
-      }
-    ]
+    "grants": [{"when": {"toggle": "combat"}, "stats": {"ca_p": 0.1, "crit_avoid_p": -0.075}}]
   },
   {
     "id": "m31-ruthless-might-ascendant",
     "name": "M31 Ruthless Might (Ascendant)",
-    "effects": [
-      {
-        "id": "m31-ruthless-might-ascendant",
-        "name": "M31 Ruthless Might (Ascendant)",
-        "variants": [
-          {
-            "stats": {"power_p": 0.04, "strike_p": 0.04, "acc_p": 0.05},
-            "when": {"toggle": "combat"}
-          },
-          {"stats": {"acc_p": 0.05}}
-        ]
-      }
+    "grants": [
+      {"stats": {"acc_p": 0.05}},
+      {"when": {"toggle": "combat"}, "stats": {"power_p": 0.04, "strike_p": 0.04}}
     ]
   },
   {
     "id": "m31-ruthless-resources-ascendant",
     "name": "M31 Ruthless Resources (Ascendant)",
-    "effects": [
-      {
-        "id": "m31-ruthless-resources-ascendant",
-        "name": "M31 Ruthless Resources (Ascendant)",
-        "variants": [
-          {"stats": {"strike_p": 0.05, "mana_regen": 0.5}, "when": {"toggle": "combat"}},
-          {"stats": {"strike_p": 0.05}}
-        ]
-      }
+    "grants": [
+      {"stats": {"strike_p": 0.05}},
+      {"when": {"toggle": "combat"}, "stats": {"mana_regen": 0.5}}
     ]
   },
   {
     "id": "m31-thayan-predator",
     "name": "M31 Thayan Predator",
-    "effects": [
+    "grants": [
       {
-        "id": "m31-thayan-predator",
-        "name": "M31 Thayan Predator",
         "variants": [
           {"stats": {"outgoing_damage": 0.05}, "when": {"location": "thay"}},
           {"stats": {"outgoing_damage": 0.02}}
@@ -816,52 +491,24 @@
   {
     "id": "m32-bracers-of-the-infernal-tempest-strike",
     "name": "M32 Bracers of the Infernal Tempest (Strike)",
-    "effects": [
-      {
-        "id": "m32-bracers-of-the-infernal-tempest-strike-bonus-combat",
-        "name": "M32 Bracers of the Infernal Tempest (Strike) (combat)",
-        "when": {"toggle": "combat"},
-        "stats": {"strike_p": 0.045, "recharge": 0.015}
-      }
-    ]
+    "grants": [{"when": {"toggle": "combat"}, "stats": {"strike_p": 0.045, "recharge": 0.015}}]
   },
   {
     "id": "m32-circlet-of-the-infernal-tempest-strike-sev",
     "name": "M32 Circlet of the Infernal Tempest (Strike/Sev)",
-    "effects": [
-      {
-        "id": "m32-circlet-of-the-infernal-tempest-strike-sev-bonus-combat",
-        "name": "M32 Circlet of the Infernal Tempest (Strike/Sev) (combat)",
-        "when": {"toggle": "combat"},
-        "stats": {"strike_p": 0.05, "sev_p": 0.05}
-      }
-    ]
+    "grants": [{"when": {"toggle": "combat"}, "stats": {"strike_p": 0.05, "sev_p": 0.05}}]
   },
   {
     "id": "m32-deathsilver-coil-of-dominion-acc-strike",
     "name": "M32 Deathsilver Coil of Dominion (Acc/Strike)",
-    "effects": [
-      {
-        "id": "m32-deathsilver-coil-of-dominion-acc-strike-bonus-combat",
-        "name": "M32 Deathsilver Coil of Dominion (Acc/Strike) (combat)",
-        "when": {"toggle": "combat"},
-        "stats": {"acc_p": 0.05, "strike_p": 0.055}
-      }
-    ]
+    "grants": [{"when": {"toggle": "combat"}, "stats": {"acc_p": 0.05, "strike_p": 0.055}}]
   },
   {
     "id": "m32-deathsilver-ring-of-submission-strike",
     "name": "M32 Deathsilver Ring of  Submission (Strike)",
-    "effects": [
+    "grants": [
+      {"when": {"duration": {"atLeast": 30}, "toggle": "combat"}, "stats": {"strike_p": 0.066}},
       {
-        "id": "m32-deathsilver-ring-of-submission-strike-bonus-combat-medium-plus-combat",
-        "name": "M32 Deathsilver Ring of  Submission (Strike) (combat medium plus, combat)",
-        "when": {"duration": {"atLeast": 30}, "toggle": "combat"},
-        "stats": {"strike_p": 0.066}
-      },
-      {
-        "id": "m32-deathsilver-ring-of-submission-strike-bonus-combat-short-combat",
-        "name": "M32 Deathsilver Ring of  Submission (Strike) (combat short, combat)",
         "when": {"duration": {"atLeast": 10, "below": 30}, "toggle": "combat"},
         "stats": {"strike_p": 0.022}
       }
@@ -870,10 +517,8 @@
   {
     "id": "m32-doomcleaver-celestial",
     "name": "M32 Doomcleaver (Celestial)",
-    "effects": [
+    "grants": [
       {
-        "id": "m32-doomcleaver-celestial-bonus-combat-medium-plus-combat",
-        "name": "M32 Doomcleaver (Celestial) (combat medium plus, combat)",
         "when": {
           "duration": {"atLeast": 30},
           "toggle": "combat",
@@ -886,46 +531,40 @@
   {
     "id": "m32-impending-doom-celestial",
     "name": "M32 Impending Doom (Celestial)",
-    "effects": [
+    "grants": [
       {
-        "id": "m32-impending-doom-celestial",
-        "name": "M32 Impending Doom (Celestial)",
         "when": {"pieces": {"set": "m32-impending-doom-celestial", "atLeast": 2}},
-        "variants": [
-          {
-            "stats": {"outgoing_damage": 0.05, "power_p": 0.05, "sev_p": 0.09},
-            "when": {"duration": {"atLeast": 30}, "toggle": "combat"}
-          },
-          {"stats": {"power_p": 0.05, "sev_p": 0.09}}
-        ]
+        "stats": {"power_p": 0.05, "sev_p": 0.09}
+      },
+      {
+        "when": {
+          "pieces": {"set": "m32-impending-doom-celestial", "atLeast": 2},
+          "duration": {"atLeast": 30},
+          "toggle": "combat"
+        },
+        "stats": {"outgoing_damage": 0.05}
       }
     ]
   },
   {
     "id": "m32-knot-of-the-bloodhound-celestial",
     "name": "M32 Knot of the Bloodhound (Celestial)",
-    "effects": [
+    "grants": [
       {
-        "id": "m32-knot-of-the-bloodhound-celestial-bonus",
-        "name": "M32 Knot of the Bloodhound (Celestial)",
-        "stats": {"power_p": 0.06, "sev_p": 0.075},
-        "when": {"pieces": {"set": "m32-knot-of-the-bloodhound-celestial", "atLeast": 2}}
+        "when": {"pieces": {"set": "m32-knot-of-the-bloodhound-celestial", "atLeast": 2}},
+        "stats": {"power_p": 0.06, "sev_p": 0.075}
       }
     ]
   },
   {
     "id": "m32-omen-of-doom-legendary",
     "name": "M32 Omen of Doom (Legendary)",
-    "effects": [
+    "grants": [
       {
-        "id": "m32-omen-of-doom-legendary-bonus",
-        "name": "M32 Omen of Doom (Legendary)",
-        "stats": {"power_p": 0.025, "sev_p": 0.075},
-        "when": {"pieces": {"set": "m32-omen-of-doom-legendary", "atLeast": 2}}
+        "when": {"pieces": {"set": "m32-omen-of-doom-legendary", "atLeast": 2}},
+        "stats": {"power_p": 0.025, "sev_p": 0.075}
       },
       {
-        "id": "m32-omen-of-doom-legendary-bonus-combat-medium-plus-combat",
-        "name": "M32 Omen of Doom (Legendary) (combat medium plus, combat)",
         "when": {
           "duration": {"atLeast": 30},
           "toggle": "combat",
@@ -938,16 +577,12 @@
   {
     "id": "m32-omen-of-doom-mythic",
     "name": "M32 Omen of Doom (Mythic)",
-    "effects": [
+    "grants": [
       {
-        "id": "m32-omen-of-doom-mythic-bonus",
-        "name": "M32 Omen of Doom (Mythic)",
-        "stats": {"power_p": 0.025, "sev_p": 0.075},
-        "when": {"pieces": {"set": "m32-omen-of-doom-mythic", "atLeast": 2}}
+        "when": {"pieces": {"set": "m32-omen-of-doom-mythic", "atLeast": 2}},
+        "stats": {"power_p": 0.025, "sev_p": 0.075}
       },
       {
-        "id": "m32-omen-of-doom-mythic-bonus-combat-medium-plus-combat",
-        "name": "M32 Omen of Doom (Mythic) (combat medium plus, combat)",
         "when": {
           "duration": {"atLeast": 30},
           "toggle": "combat",
@@ -960,16 +595,9 @@
   {
     "id": "m32-rotsteel-loop-of-ash-ca",
     "name": "M32 Rotsteel Loop of Ash (CA)",
-    "effects": [
+    "grants": [
+      {"when": {"duration": {"atLeast": 60}, "toggle": "combat"}, "stats": {"ca_p": 0.065}},
       {
-        "id": "m32-rotsteel-loop-of-ash-ca-bonus-combat-long-plus-combat",
-        "name": "M32 Rotsteel Loop of Ash (CA) (combat long plus, combat)",
-        "when": {"duration": {"atLeast": 60}, "toggle": "combat"},
-        "stats": {"ca_p": 0.065}
-      },
-      {
-        "id": "m32-rotsteel-loop-of-ash-ca-bonus-combat-medium-combat",
-        "name": "M32 Rotsteel Loop of Ash (CA) (combat medium, combat)",
         "when": {"duration": {"atLeast": 30, "below": 60}, "toggle": "combat"},
         "stats": {"ca_p": 0.03}
       }
@@ -978,22 +606,13 @@
   {
     "id": "m32-rotsteel-ring-of-spores-strike",
     "name": "M32 Rotsteel Ring of Spores (Strike)",
-    "effects": [
+    "grants": [
+      {"when": {"duration": {"atLeast": 60}, "toggle": "combat"}, "stats": {"strike_p": 0.091}},
       {
-        "id": "m32-rotsteel-ring-of-spores-strike-bonus-combat-long-plus-combat",
-        "name": "M32 Rotsteel Ring of Spores (Strike) (combat long plus, combat)",
-        "when": {"duration": {"atLeast": 60}, "toggle": "combat"},
-        "stats": {"strike_p": 0.091}
-      },
-      {
-        "id": "m32-rotsteel-ring-of-spores-strike-bonus-combat-medium-combat",
-        "name": "M32 Rotsteel Ring of Spores (Strike) (combat medium, combat)",
         "when": {"duration": {"atLeast": 30, "below": 60}, "toggle": "combat"},
         "stats": {"strike_p": 0.042}
       },
       {
-        "id": "m32-rotsteel-ring-of-spores-strike-bonus-combat-short-combat",
-        "name": "M32 Rotsteel Ring of Spores (Strike) (combat short, combat)",
         "when": {"duration": {"atLeast": 10, "below": 30}, "toggle": "combat"},
         "stats": {"strike_p": 0.014}
       }
@@ -1002,10 +621,8 @@
   {
     "id": "m33-accumulating-precision",
     "name": "M33 Accumulating Precision",
-    "effects": [
+    "grants": [
       {
-        "id": "m33-accumulating-precision-combat",
-        "name": "M33 Accumulating Precision (Combat)",
         "when": {"toggle": "combat"},
         "variants": [
           {"stats": {"acc_p": 0.025}, "when": {"duration": {"atLeast": 10, "below": 30}}},
@@ -1017,10 +634,8 @@
   {
     "id": "m33-accumulating-precision-celestial",
     "name": "M33 Accumulating Precision (Celestial)",
-    "effects": [
+    "grants": [
       {
-        "id": "m33-frostsilver-coil-of-wrath-2-bonus",
-        "name": "M33 Accumulating Precision (Celestial)",
         "when": {"toggle": "combat"},
         "variants": [
           {"stats": {"acc_p": 0.035}, "when": {"duration": {"atLeast": 10, "below": 30}}},
@@ -1032,23 +647,19 @@
   {
     "id": "m33-bloodletting",
     "name": "M33 Bloodletting",
-    "effects": [
+    "grants": [
       {
-        "id": "m33-bloodletting",
-        "name": "M33 Bloodletting",
         "when": {"toggle": "combat"},
-        "stats": {"outgoing_damage": 0.035, "mult_hit_points": -0.1},
-        "excludes": ["m31-bloodletting-ascendant"]
+        "stats": {"outgoing_damage": 0.035, "mult_hit_points": -0.1}
       }
-    ]
+    ],
+    "excludes": ["m31-bloodletting-ascendant"]
   },
   {
     "id": "m33-bloodletting-celestial",
     "name": "M33 Bloodletting (Celestial)",
-    "effects": [
+    "grants": [
       {
-        "id": "m33-bloodletting-celestial-bonus-combat",
-        "name": "M33 Bloodletting (Celestial) (Combat)",
         "when": {"toggle": "combat"},
         "stats": {"outgoing_damage": 0.05, "mult_hit_points": -0.1}
       }
@@ -1057,10 +668,8 @@
   {
     "id": "m33-chilling-flow-mythic",
     "name": "M33 Chilling Flow (Mythic)",
-    "effects": [
+    "grants": [
       {
-        "id": "m33-chilling-flow-mythic-power",
-        "name": "M33 Chilling Flow (Mythic) (Power)",
         "when": {
           "toggle": "combat",
           "duration": {"atLeast": 30},
@@ -1069,8 +678,6 @@
         "stats": {"power_p": 0.04}
       },
       {
-        "id": "m33-chilling-flow-mythic-role-bonus",
-        "name": "M33 Chilling Flow (Mythic) (Role Bonus)",
         "when": {
           "toggle": "combat",
           "duration": {"atLeast": 30},
@@ -1087,33 +694,18 @@
   {
     "id": "m33-corrupt-power",
     "name": "M33 Corrupt Power",
-    "effects": [
-      {
-        "id": "m33-corrupt-power",
-        "name": "M33 Corrupt Power Bonus",
-        "stats": {"strike_p": 0.09, "inc_healing_p": -0.13}
-      }
-    ]
+    "grants": [{"stats": {"strike_p": 0.09, "inc_healing_p": -0.13}}]
   },
   {
     "id": "m33-corrupt-power-celestial",
     "name": "M33 Corrupt Power (Celestial)",
-    "effects": [
-      {
-        "id": "m33-corrupt-power-celestial",
-        "name": "M33 Corrupt Power (Celestial)",
-        "when": {"toggle": "combat"},
-        "stats": {"power_p": 0.035, "strike_p": 0.07}
-      }
-    ]
+    "grants": [{"when": {"toggle": "combat"}, "stats": {"power_p": 0.035, "strike_p": 0.07}}]
   },
   {
     "id": "m33-critical-breaker",
     "name": "M33 Critical Breaker",
-    "effects": [
+    "grants": [
       {
-        "id": "m33-critical-breaker-combat",
-        "name": "M33 Critical Breaker (Combat)",
         "when": {"toggle": "combat"},
         "variants": [
           {"stats": {"strike_p": 0.036}, "when": {"duration": {"atLeast": 10, "below": 30}}},
@@ -1125,38 +717,18 @@
   {
     "id": "m33-dashing-ranger",
     "name": "M33 Dashing Ranger",
-    "effects": [
-      {
-        "id": "m33-dashing-ranger-bonus",
-        "name": "M33 Dashing Ranger Bonus",
-        "variants": [
-          {"stats": {"strike_p": 0.055, "acc_p": 0.05}, "when": {"toggle": "combat"}},
-          {"stats": {"acc_p": 0.05}}
-        ]
-      }
-    ]
+    "grants": [{"stats": {"acc_p": 0.05}}, {"when": {"toggle": "combat"}, "stats": {"strike_p": 0.055}}]
   },
   {
     "id": "m33-dashing-ranger-celestial",
     "name": "M33 Dashing Ranger (Celestial)",
-    "effects": [
-      {
-        "id": "m33-dashing-ranger-celestial",
-        "name": "M33 Dashing Ranger (Celestial)",
-        "variants": [
-          {"stats": {"acc_p": 0.06, "strike_p": 0.065}, "when": {"toggle": "combat"}},
-          {"stats": {"acc_p": 0.06}}
-        ]
-      }
-    ]
+    "grants": [{"stats": {"acc_p": 0.06}}, {"when": {"toggle": "combat"}, "stats": {"strike_p": 0.065}}]
   },
   {
     "id": "m33-eagle-s-mastery-lesser",
     "name": "M33 Eagle's Mastery (Lesser)",
-    "effects": [
+    "grants": [
       {
-        "id": "m33-eagle-s-mastery-lesser",
-        "name": "M33 Eagle's Mastery (Lesser)",
         "when": {"toggle": "combat"},
         "stats": {"power_p": 0.03, "strike_p": 0.03, "sev_p": 0.03}
       }
@@ -1165,100 +737,68 @@
   {
     "id": "m33-freezing-energy",
     "name": "M33 Freezing Energy",
-    "effects": [
+    "grants": [
       {
-        "id": "m33-freezing-energy-bonus",
-        "name": "M33 Freezing Energy",
-        "stats": {"strike_p": 0.04},
-        "when": {"pieces": {"set": "m33-freezing-energy", "atLeast": 2}}
+        "when": {"pieces": {"set": "m33-freezing-energy", "atLeast": 2}},
+        "stats": {"strike_p": 0.04}
       }
     ]
   },
   {
     "id": "m33-freezing-grasp",
     "name": "M33 Freezing Grasp",
-    "effects": [
+    "grants": [
       {
-        "id": "m33-freezing-grasp-bonus",
-        "name": "M33 Freezing Grasp",
-        "stats": {"acc_p": 0.04},
-        "when": {"pieces": {"set": "m33-freezing-grasp", "atLeast": 2}}
+        "when": {"pieces": {"set": "m33-freezing-grasp", "atLeast": 2}},
+        "stats": {"acc_p": 0.04}
       }
     ]
   },
   {
     "id": "m33-freezing-rage",
     "name": "M33 Freezing Rage",
-    "effects": [
-      {
-        "id": "m33-freezing-rage-bonus",
-        "name": "M33 Freezing Rage",
-        "stats": {"sev_p": 0.04},
-        "when": {"pieces": {"set": "m33-freezing-rage", "atLeast": 2}}
-      }
-    ]
+    "grants": [{"when": {"pieces": {"set": "m33-freezing-rage", "atLeast": 2}}, "stats": {"sev_p": 0.04}}]
   },
   {
-    "id": "m33-frostsilver-coil-of-wrath",
-    "name": "M33 Frostsilver Coil of Wrath",
-    "effects": [
-      {
-        "id": "m33-frostsilver-coil-of-wrath-accuracy",
-        "name": "M33 Frostsilver Coil of Wrath (Accuracy)",
-        "when": {"equipped": {"tag": "gem:aquamarine", "atLeast": 1}},
-        "stats": {"acc_p": 0.03}
-      },
-      {
-        "id": "m33-frostsilver-coil-of-wrath-ca",
-        "name": "M33 Frostsilver Coil of Wrath (CA)",
-        "when": {"equipped": {"tag": "gem:amethyst", "atLeast": 1}},
-        "stats": {"ca_p": 0.03}
-      }
-    ]
+    "id": "m33-frostsilver-coil-of-wrath-accuracy",
+    "name": "M33 Frostsilver Coil of Wrath (Accuracy)",
+    "grants": [{"when": {"equipped": {"tag": "gem:aquamarine", "atLeast": 1}}, "stats": {"acc_p": 0.03}}]
   },
   {
-    "id": "m33-frostsilver-loop-of-the-arcane",
-    "name": "M33 Frostsilver Loop of the Arcane",
-    "effects": [
+    "id": "m33-frostsilver-coil-of-wrath-ca",
+    "name": "M33 Frostsilver Coil of Wrath (CA)",
+    "grants": [{"when": {"equipped": {"tag": "gem:amethyst", "atLeast": 1}}, "stats": {"ca_p": 0.03}}]
+  },
+  {
+    "id": "m33-frostsilver-loop-of-the-arcane-accuracy",
+    "name": "M33 Frostsilver Loop of the Arcane (Accuracy)",
+    "grants": [{"when": {"equipped": {"tag": "gem:citrine", "atLeast": 1}}, "stats": {"acc_p": 0.03}}]
+  },
+  {
+    "id": "m33-frostsilver-loop-of-the-arcane-power",
+    "name": "M33 Frostsilver Loop of the Arcane (Power)",
+    "grants": [
       {
-        "id": "m33-frostsilver-loop-of-the-arcane-accuracy",
-        "name": "M33 Frostsilver Loop of the Arcane (Accuracy)",
-        "when": {"equipped": {"tag": "gem:citrine", "atLeast": 1}},
-        "stats": {"acc_p": 0.03}
-      },
-      {
-        "id": "m33-frostsilver-loop-of-the-arcane-power",
-        "name": "M33 Frostsilver Loop of the Arcane (Power)",
         "when": {"equipped": {"tag": "gem:bloodstone", "atLeast": 1}},
         "stats": {"power_p": 0.03}
       }
     ]
   },
   {
-    "id": "m33-frostsilver-ring-of-initiative",
-    "name": "M33 Frostsilver Ring of Initiative",
-    "effects": [
-      {
-        "id": "m33-frostsilver-ring-of-initiative-severity",
-        "name": "M33 Frostsilver Ring of Initiative (Severity)",
-        "when": {"equipped": {"tag": "gem:fire_agate", "atLeast": 1}},
-        "stats": {"sev_p": 0.03}
-      },
-      {
-        "id": "m33-frostsilver-ring-of-initiative-strike",
-        "name": "M33 Frostsilver Ring of Initiative (Strike)",
-        "when": {"equipped": {"tag": "gem:jade", "atLeast": 1}},
-        "stats": {"strike_p": 0.03}
-      }
-    ]
+    "id": "m33-frostsilver-ring-of-initiative-severity",
+    "name": "M33 Frostsilver Ring of Initiative (Severity)",
+    "grants": [{"when": {"equipped": {"tag": "gem:fire_agate", "atLeast": 1}}, "stats": {"sev_p": 0.03}}]
+  },
+  {
+    "id": "m33-frostsilver-ring-of-initiative-strike",
+    "name": "M33 Frostsilver Ring of Initiative (Strike)",
+    "grants": [{"when": {"equipped": {"tag": "gem:jade", "atLeast": 1}}, "stats": {"strike_p": 0.03}}]
   },
   {
     "id": "m33-graceful-harmony-celestial",
     "name": "M33 Graceful Harmony (Celestial)",
-    "effects": [
+    "grants": [
       {
-        "id": "m33-graceful-harmony-celestial-bonus",
-        "name": "M33 Graceful Harmony (Celestial)",
         "variants": [
           {"stats": {"out_healing_p": 0.07}, "when": {"toggle": "party"}},
           {"stats": {"out_healing_p": 0.014}, "when": {"not": {"toggle": "party"}}}
@@ -1269,103 +809,52 @@
   {
     "id": "m33-maiden-s-advantage-celestial",
     "name": "M33 Maiden's Advantage (Celestial)",
-    "effects": [
+    "grants": [
+      {"stats": {"ca_p": 0.06}},
       {
-        "id": "m33-frostsilver-ring-of-initiative-2-bonus",
-        "name": "M33 Maiden's Advantage (Celestial)",
-        "variants": [
-          {
-            "stats": {"ca_p": 0.06, "power_p": 0.0325},
-            "when": {"any": [{"combatType": "mixed"}, {"combatType": "aoe"}]}
-          },
-          {"stats": {"ca_p": 0.06}}
-        ]
+        "when": {"any": [{"combatType": "mixed"}, {"combatType": "aoe"}]},
+        "stats": {"power_p": 0.0325}
       }
     ]
   },
   {
     "id": "m33-reckless-advantage",
     "name": "M33 Reckless Advantage",
-    "effects": [
-      {
-        "id": "m33-reckless-advantage",
-        "name": "M33 Reckless Advantage",
-        "when": {"toggle": "combat"},
-        "stats": {"ca_p": 0.07, "crit_avoid_p": -0.075}
-      }
-    ]
+    "grants": [{"when": {"toggle": "combat"}, "stats": {"ca_p": 0.07, "crit_avoid_p": -0.075}}]
   },
   {
     "id": "m33-reckless-advantage-celestial",
     "name": "M33 Reckless Advantage (Celestial)",
-    "effects": [
-      {
-        "id": "m33-reckless-advantage-celestial",
-        "name": "M33 Reckless Advantage (Celestial)",
-        "when": {"toggle": "combat"},
-        "stats": {"ca_p": 0.08, "crit_avoid_p": -0.08}
-      }
-    ]
+    "grants": [{"when": {"toggle": "combat"}, "stats": {"ca_p": 0.08, "crit_avoid_p": -0.08}}]
   },
   {
     "id": "m33-relentless-reserves",
     "name": "M33 Relentless Reserves",
-    "effects": [
-      {
-        "id": "m33-relentless-reserves",
-        "name": "M33 Relentless Reserves",
-        "variants": [
-          {
-            "stats": {"mana_regen": 0.1, "strike_p": 0.06},
-            "when": {"toggle": "combat", "duration": {"atLeast": 10}}
-          },
-          {"stats": {"strike_p": 0.06}}
-        ]
-      }
+    "grants": [
+      {"stats": {"strike_p": 0.06}},
+      {"when": {"toggle": "combat", "duration": {"atLeast": 10}}, "stats": {"mana_regen": 0.1}}
     ]
   },
   {
     "id": "m33-runefrost-swift-armguards",
     "name": "M33 Runefrost Swift Armguards",
-    "effects": [
-      {
-        "id": "m33-runefrost-swift-armguards",
-        "name": "M33 Runefrost Swift Armguards",
-        "when": {"toggle": "combat"},
-        "stats": {"strike_p": 0.045, "recharge": 0.015}
-      }
-    ]
+    "grants": [{"when": {"toggle": "combat"}, "stats": {"strike_p": 0.045, "recharge": 0.015}}]
   },
   {
     "id": "m33-ruthless-advantage-legendary",
     "name": "M33 Ruthless Advantage (Legendary)",
-    "effects": [
-      {
-        "id": "m33-ruthless-advantage-legendary",
-        "name": "M33 Ruthless Advantage (Legendary)",
-        "when": {"toggle": "combat"},
-        "stats": {"acc_p": 0.06, "ca_p": 0.06}
-      }
-    ]
+    "grants": [{"when": {"toggle": "combat"}, "stats": {"acc_p": 0.06, "ca_p": 0.06}}]
   },
   {
     "id": "m33-survivor-s-gift-celestial",
     "name": "M33 Survivor's Gift (Celestial)",
-    "effects": [
-      {
-        "id": "m33-survivor-s-gift-celestial-bonus",
-        "name": "M33 Survivor's Gift (Celestial)",
-        "stats": {"power_p": 0.02, "out_healing_p": 0.07}
-      }
-    ]
+    "grants": [{"stats": {"power_p": 0.02, "out_healing_p": 0.07}}]
   },
   {
     "id": "mender-s-covenant",
     "name": "Mender's Covenant",
-    "effects": [
+    "grants": [
       {
-        "id": "mender-s-covenant-bonus",
-        "name": "Mender's Covenant",
         "tiers": [
           {
             "pieces": {"set": "mender-s-covenant", "atLeast": 1},
@@ -1400,46 +889,23 @@
   {
     "id": "misnc",
     "name": "Misnc",
-    "effects": [
-      {
-        "id": "misnc-bonus-combat",
-        "name": "Misnc (combat)",
-        "when": {"toggle": "combat"},
-        "stats": {"ca_p": 0.02}
-      }
-    ]
+    "grants": [{"when": {"toggle": "combat"}, "stats": {"ca_p": 0.02}}]
   },
   {
     "id": "modification-dark-spiral",
     "name": "Modification: Dark Spiral",
-    "effects": [
-      {
-        "id": "modification-dark-spiral-bonus-combat",
-        "name": "Modification: Dark Spiral (combat)",
-        "when": {"toggle": "combat"},
-        "stats": {"outgoing_damage": 0.005000000000000001}
-      }
-    ]
+    "grants": [{"when": {"toggle": "combat"}, "stats": {"outgoing_damage": 0.005000000000000001}}]
   },
   {
     "id": "modification-hellish-rebuke",
     "name": "Modification: Hellish Rebuke",
-    "effects": [
-      {
-        "id": "modification-hellish-rebuke-bonus-combat",
-        "name": "Modification: Hellish Rebuke (combat)",
-        "when": {"toggle": "combat"},
-        "stats": {"outgoing_damage": 0.005000000000000001}
-      }
-    ]
+    "grants": [{"when": {"toggle": "combat"}, "stats": {"outgoing_damage": 0.005000000000000001}}]
   },
   {
     "id": "mount-hag-s-enchanted-cauldroon",
     "name": "Mount: Hag's Enchanted Cauldroon",
-    "effects": [
+    "grants": [
       {
-        "id": "mount-hag-s-enchanted-cauldroon-bonus-artifact-call",
-        "name": "Mount: Hag's Enchanted Cauldroon (artifact call)",
         "when": {"toggle": "artifactCall"},
         "stats": {"enemy_defense": -0.0985, "enemy_awareness": -0.0985}
       }
@@ -1448,414 +914,179 @@
   {
     "id": "mount-pegasus",
     "name": "Mount: Pegasus",
-    "effects": [
-      {
-        "id": "mount-pegasus-bonus-artifact-call",
-        "name": "Mount: Pegasus (artifact call)",
-        "when": {"toggle": "artifactCall"},
-        "stats": {"outgoing_damage": 0.197}
-      }
-    ]
+    "grants": [{"when": {"toggle": "artifactCall"}, "stats": {"outgoing_damage": 0.197}}]
   },
   {
     "id": "mount-red-dragon",
     "name": "Mount: Red Dragon",
-    "effects": [
-      {
-        "id": "mount-red-dragon-bonus-artifact-call",
-        "name": "Mount: Red Dragon (artifact call)",
-        "when": {"toggle": "artifactCall"},
-        "stats": {"enemy_crit_avoid": -0.197}
-      }
-    ]
+    "grants": [{"when": {"toggle": "artifactCall"}, "stats": {"enemy_crit_avoid": -0.197}}]
   },
   {
     "id": "mount-swarm-eclipse-rex-bestial",
     "name": "Mount: Swarm/Eclipse/Rex/Bestial",
-    "effects": [
-      {
-        "id": "mount-swarm-eclipse-rex-bestial-bonus-artifact-call",
-        "name": "Mount: Swarm/Eclipse/Rex/Bestial (artifact call)",
-        "when": {"toggle": "artifactCall"},
-        "stats": {"enemy_incoming_damage": 0.197},
-        "stacking": "perSource"
-      }
-    ]
+    "grants": [{"when": {"toggle": "artifactCall"}, "stats": {"enemy_incoming_damage": 0.197}}],
+    "stacking": "perSource"
   },
   {
     "id": "mount-vortex-panther-necrotic",
     "name": "Mount: Vortex/Panther/Necrotic",
-    "effects": [
-      {
-        "id": "mount-vortex-panther-necrotic-bonus-artifact-call",
-        "name": "Mount: Vortex/Panther/Necrotic (artifact call)",
-        "when": {"toggle": "artifactCall"},
-        "stats": {"enemy_incoming_damage": 0.207},
-        "stacking": "perSource"
-      }
-    ]
+    "grants": [{"when": {"toggle": "artifactCall"}, "stats": {"enemy_incoming_damage": 0.207}}],
+    "stacking": "perSource"
   },
   {
     "id": "mystic-aura-group",
     "name": "Mystic Aura (Group)",
-    "effects": [
-      {
-        "id": "mystic-aura-group-bonus-party",
-        "name": "Mystic Aura (Group) (party)",
-        "when": {"toggle": "party"},
-        "stats": {"power": 2250, "acc": 2250}
-      }
-    ]
+    "grants": [{"when": {"toggle": "party"}, "stats": {"power": 2250, "acc": 2250}}]
   },
   {
     "id": "mystic-aura-group-celestial",
     "name": "Mystic Aura (Group) (Celestial)",
-    "effects": [
-      {
-        "id": "mystic-aura-group-celestial-bonus-party",
-        "name": "Mystic Aura (Group) (Celestial) (party)",
-        "when": {"toggle": "party"},
-        "stats": {"power": 2953, "acc": 2953}
-      }
-    ]
+    "grants": [{"when": {"toggle": "party"}, "stats": {"power": 2953, "acc": 2953}}]
   },
   {
     "id": "other-bard-s-lore",
     "name": "Other: Bard's Lore",
-    "effects": [
-      {
-        "id": "other-bard-s-lore-bonus-artifact-call",
-        "name": "Other: Bard's Lore (artifact call)",
-        "when": {"toggle": "artifactCall"},
-        "stats": {"enemy_crit_avoid": -0.2}
-      }
-    ]
+    "grants": [{"when": {"toggle": "artifactCall"}, "stats": {"enemy_crit_avoid": -0.2}}]
   },
   {
     "id": "paladin-aura",
     "name": "Paladin Aura",
-    "effects": [
-      {
-        "id": "paladin-aura-bonus-party",
-        "name": "Paladin Aura (party)",
-        "when": {"toggle": "party"},
-        "stats": {"strike_p": 0.04}
-      }
-    ]
+    "grants": [{"when": {"toggle": "party"}, "stats": {"strike_p": 0.04}}]
   },
   {
     "id": "perfect-vision-acc",
     "name": "Perfect Vision (Acc)",
-    "effects": [
-      {
-        "id": "perfect-vision-acc-bonus-combat",
-        "name": "Perfect Vision (Acc) (combat)",
-        "when": {"toggle": "combat"},
-        "stats": {"acc_p": 0.09}
-      }
-    ]
+    "grants": [{"when": {"toggle": "combat"}, "stats": {"acc_p": 0.09}}]
   },
   {
     "id": "personal-warlock-s-tyrannical-curse",
     "name": "Personal: Warlock's Tyrannical Curse",
-    "effects": [
-      {
-        "id": "personal-warlock-s-tyrannical-curse-bonus-artifact-call",
-        "name": "Personal: Warlock's Tyrannical Curse (artifact call)",
-        "when": {"toggle": "artifactCall"},
-        "stats": {"enemy_incoming_damage": 0.15}
-      }
-    ]
+    "grants": [{"when": {"toggle": "artifactCall"}, "stats": {"enemy_incoming_damage": 0.15}}]
   },
   {
     "id": "portobello",
     "name": "Portobello",
-    "effects": [
-      {
-        "id": "portobello-bonus-party",
-        "name": "Portobello (party)",
-        "when": {"toggle": "party"},
-        "stats": {"power_p": 0.035, "ca_p": 0.035}
-      }
-    ]
+    "grants": [{"when": {"toggle": "party"}, "stats": {"power_p": 0.035, "ca_p": 0.035}}]
   },
   {
     "id": "potency-power",
     "name": "Potency (Power)",
-    "effects": [
-      {
-        "id": "potency-power-bonus-combat",
-        "name": "Potency (Power) (combat)",
-        "when": {"toggle": "combat"},
-        "stats": {"power_p": 0.09}
-      }
-    ]
+    "grants": [{"when": {"toggle": "combat"}, "stats": {"power_p": 0.09}}]
   },
   {
     "id": "potent-precision-severity",
     "name": "Potent Precision (Severity)",
-    "effects": [
-      {
-        "id": "potent-precision-severity-bonus-combat",
-        "name": "Potent Precision (Severity) (combat)",
-        "when": {"toggle": "combat"},
-        "stats": {"sev_p": 0.09}
-      }
-    ]
+    "grants": [{"when": {"toggle": "combat"}, "stats": {"sev_p": 0.09}}]
   },
   {
     "id": "prime-rib-power",
     "name": "Prime Rib (Power)",
-    "effects": [
-      {
-        "id": "prime-rib-power-bonus-consumables",
-        "name": "Prime Rib (Power) (consumables)",
-        "when": {"toggle": "consumables"},
-        "stats": {"power": 4000, "hit_points": 20000}
-      }
-    ]
+    "grants": [{"when": {"toggle": "consumables"}, "stats": {"power": 4000, "hit_points": 20000}}]
   },
   {
     "id": "raptor-s-instincts-tamed-velociraptor-power-offense",
     "name": "Raptor's Instincts [Tamed Velociraptor] (Power) <Offense>",
-    "effects": [
-      {
-        "id": "raptor-s-instincts-tamed-velociraptor-power-offense-bonus-party",
-        "name": "Raptor's Instincts [Tamed Velociraptor] (Power) <Offense> (party)",
-        "when": {"toggle": "party"},
-        "stats": {"power_p": 0.18}
-      }
-    ]
+    "grants": [{"when": {"toggle": "party"}, "stats": {"power_p": 0.18}}]
   },
   {
     "id": "rattatoule-accuracy",
     "name": "Rattatoule (Accuracy)",
-    "effects": [
-      {
-        "id": "rattatoule-accuracy-bonus-consumables",
-        "name": "Rattatoule (Accuracy) (consumables)",
-        "when": {"toggle": "consumables"},
-        "stats": {"acc": 4000, "hit_points": 20000}
-      }
-    ]
+    "grants": [{"when": {"toggle": "consumables"}, "stats": {"acc": 4000, "hit_points": 20000}}]
   },
   {
     "id": "risky-investment",
     "name": "Risky Investment",
-    "effects": [
-      {
-        "id": "risky-investment-bonus-combat",
-        "name": "Risky Investment (combat)",
-        "when": {"toggle": "combat"},
-        "stats": {"outgoing_damage": 0.088}
-      }
-    ]
+    "grants": [{"when": {"toggle": "combat"}, "stats": {"outgoing_damage": 0.088}}]
   },
   {
     "id": "runic-aura-group",
     "name": "Runic Aura (Group)",
-    "effects": [
-      {
-        "id": "runic-aura-group-bonus-party",
-        "name": "Runic Aura (Group) (party)",
-        "when": {"toggle": "party"},
-        "stats": {"power": 2250}
-      }
-    ]
+    "grants": [{"when": {"toggle": "party"}, "stats": {"power": 2250}}]
   },
   {
     "id": "runic-aura-group-celestial",
     "name": "Runic Aura (Group) (Celestial)",
-    "effects": [
-      {
-        "id": "runic-aura-group-celestial-bonus-party",
-        "name": "Runic Aura (Group) (Celestial) (party)",
-        "when": {"toggle": "party"},
-        "stats": {"power": 2953, "defense": 2953}
-      }
-    ]
+    "grants": [{"when": {"toggle": "party"}, "stats": {"power": 2953, "defense": 2953}}]
   },
   {
     "id": "sambocade-movement",
     "name": "Sambocade (Movement)",
-    "effects": [
-      {
-        "id": "sambocade-movement-bonus-consumables",
-        "name": "Sambocade (Movement) (consumables)",
-        "when": {"toggle": "consumables"},
-        "stats": {"hit_points": 20000, "movement": 0.05}
-      }
-    ]
+    "grants": [{"when": {"toggle": "consumables"}, "stats": {"hit_points": 20000, "movement": 0.05}}]
   },
   {
     "id": "scroll-of-fate-critical-severity",
     "name": "Scroll of Fate: Critical Severity",
-    "effects": [
-      {
-        "id": "scroll-of-fate-critical-severity-bonus-consumables",
-        "name": "Scroll of Fate: Critical Severity (consumables)",
-        "when": {"toggle": "consumables"},
-        "stats": {"severity": 1500}
-      }
-    ]
+    "grants": [{"when": {"toggle": "consumables"}, "stats": {"severity": 1500}}]
   },
   {
     "id": "scroll-of-fate-power",
     "name": "Scroll of Fate: Power",
-    "effects": [
-      {
-        "id": "scroll-of-fate-power-bonus-consumables",
-        "name": "Scroll of Fate: Power (consumables)",
-        "when": {"toggle": "consumables"},
-        "stats": {"power": 1500}
-      }
-    ]
+    "grants": [{"when": {"toggle": "consumables"}, "stats": {"power": 1500}}]
   },
   {
     "id": "scroll-of-fate-recovery",
     "name": "Scroll of Fate: Recovery",
-    "effects": [
-      {
-        "id": "scroll-of-fate-recovery-bonus-consumables",
-        "name": "Scroll of Fate: Recovery (consumables)",
-        "when": {"toggle": "consumables"},
-        "stats": {"acc": 1500}
-      }
-    ]
+    "grants": [{"when": {"toggle": "consumables"}, "stats": {"acc": 1500}}]
   },
   {
     "id": "seared-tuna-strike",
     "name": "Seared Tuna (Strike)",
-    "effects": [
-      {
-        "id": "seared-tuna-strike-bonus-consumables",
-        "name": "Seared Tuna (Strike) (consumables)",
-        "when": {"toggle": "consumables"},
-        "stats": {"strike": 4000, "hit_points": 20000}
-      }
-    ]
+    "grants": [{"when": {"toggle": "consumables"}, "stats": {"strike": 4000, "hit_points": 20000}}]
   },
   {
     "id": "soul-sparks-average",
     "name": "Soul Sparks (average)",
-    "effects": [
-      {
-        "id": "soul-sparks-average-bonus-combat",
-        "name": "Soul Sparks (average) (combat)",
-        "when": {"toggle": "combat"},
-        "stats": {"outgoing_damage": 0.05}
-      }
-    ]
+    "grants": [{"when": {"toggle": "combat"}, "stats": {"outgoing_damage": 0.05}}]
   },
   {
     "id": "soul-sparks-max",
     "name": "Soul Sparks (max)",
-    "effects": [
-      {
-        "id": "soul-sparks-max-bonus-combat",
-        "name": "Soul Sparks (max) (combat)",
-        "when": {"toggle": "combat"},
-        "stats": {"outgoing_damage": 0.15}
-      }
-    ]
+    "grants": [{"when": {"toggle": "combat"}, "stats": {"outgoing_damage": 0.15}}]
   },
   {
     "id": "spider-totem",
     "name": "Spider Totem",
-    "effects": [
-      {
-        "id": "spider-totem-bonus-consumables",
-        "name": "Spider Totem (consumables)",
-        "when": {"toggle": "consumables"},
-        "stats": {"ca_p": 0.025}
-      }
-    ]
+    "grants": [{"when": {"toggle": "consumables"}, "stats": {"ca_p": 0.025}}]
   },
   {
     "id": "spider-totem-acc",
     "name": "Spider Totem (+Acc)",
-    "effects": [
-      {
-        "id": "spider-totem-acc-bonus-consumables",
-        "name": "Spider Totem (+Acc) (consumables)",
-        "when": {"toggle": "consumables"},
-        "stats": {"acc_p": 0.02, "ca_p": 0.025}
-      }
-    ]
+    "grants": [{"when": {"toggle": "consumables"}, "stats": {"acc_p": 0.02, "ca_p": 0.025}}]
   },
   {
     "id": "spider-totem-power",
     "name": "Spider Totem (+Power)",
-    "effects": [
-      {
-        "id": "spider-totem-power-bonus-consumables",
-        "name": "Spider Totem (+Power) (consumables)",
-        "when": {"toggle": "consumables"},
-        "stats": {"power_p": 0.02, "ca_p": 0.025}
-      }
-    ]
+    "grants": [{"when": {"toggle": "consumables"}, "stats": {"power_p": 0.02, "ca_p": 0.025}}]
   },
   {
     "id": "spider-totem-strike",
     "name": "Spider Totem (+Strike)",
-    "effects": [
-      {
-        "id": "spider-totem-strike-bonus-consumables",
-        "name": "Spider Totem (+Strike) (consumables)",
-        "when": {"toggle": "consumables"},
-        "stats": {"ca_p": 0.025, "strike_p": 0.02}
-      }
-    ]
+    "grants": [{"when": {"toggle": "consumables"}, "stats": {"ca_p": 0.025, "strike_p": 0.02}}]
   },
   {
     "id": "spined-devil-s-influence-6-spined-devil-damage-offense",
     "name": "Spined Devil's Influence 6% [Spined Devil] (Damage) <Offense>",
-    "effects": [
-      {
-        "id": "spined-devil-s-influence-6-spined-devil-damage-offense-bonus-combat",
-        "name": "Spined Devil's Influence 6% [Spined Devil] (Damage) <Offense> (combat)",
-        "when": {"toggle": "combat"},
-        "stats": {"overall_damage": 0.06}
-      }
-    ]
+    "grants": [{"when": {"toggle": "combat"}, "stats": {"overall_damage": 0.06}}]
   },
   {
     "id": "squash-soup-strike-severity",
     "name": "Squash Soup (Strike/Severity)",
-    "effects": [
-      {
-        "id": "squash-soup-strike-severity-bonus-consumables",
-        "name": "Squash Soup (Strike/Severity) (consumables)",
-        "when": {"toggle": "consumables"},
-        "stats": {"strike_p": 0.05, "sev_p": 0.05}
-      }
-    ]
+    "grants": [{"when": {"toggle": "consumables"}, "stats": {"strike_p": 0.05, "sev_p": 0.05}}]
   },
   {
     "id": "sunlord-ca",
     "name": "Sunlord (CA)",
-    "effects": [
-      {
-        "id": "sunlord-ca-bonus-consumables",
-        "name": "Sunlord (CA) (consumables)",
-        "when": {"toggle": "consumables"},
-        "stats": {"ca_p": 0.05, "acc": 2000}
-      }
-    ]
+    "grants": [{"when": {"toggle": "consumables"}, "stats": {"ca_p": 0.05, "acc": 2000}}]
   },
   {
     "id": "swift-synergy",
     "name": "Swift Synergy",
-    "effects": [
+    "grants": [
       {
-        "id": "swift-synergy-bonus-combat",
-        "name": "Swift Synergy (combat)",
         "when": {"toggle": "combat"},
         "stats": {"ca_p": 0.054000000000000006, "sev_p": 0.054000000000000006}
       },
       {
-        "id": "swift-synergy-bonus-combat-party",
-        "name": "Swift Synergy (combat, party)",
         "when": {"toggle": ["combat", "party"]},
         "stats": {"ca_p": 0.054000000000000006, "sev_p": 0.054000000000000006}
       }
@@ -1864,73 +1095,31 @@
   {
     "id": "the-bigger-they-are-minsc-damage-defense",
     "name": "The Bigger They Are [Minsc] (Damage) <Defense>",
-    "effects": [
-      {
-        "id": "the-bigger-they-are-minsc-damage-defense-bonus-combat",
-        "name": "The Bigger They Are [Minsc] (Damage) <Defense> (combat)",
-        "when": {"toggle": "combat"},
-        "stats": {"outgoing_damage": 0.098}
-      }
-    ]
+    "grants": [{"when": {"toggle": "combat"}, "stats": {"outgoing_damage": 0.098}}]
   },
   {
     "id": "tutor",
     "name": "Tutor",
-    "effects": [
-      {
-        "id": "tutor-bonus-party",
-        "name": "Tutor (party)",
-        "when": {"toggle": "party"},
-        "stats": {"ca_p": 0.05}
-      }
-    ]
+    "grants": [{"when": {"toggle": "party"}, "stats": {"ca_p": 0.05}}]
   },
   {
     "id": "warlock-s-curse",
     "name": "Warlock's Curse",
-    "effects": [
-      {
-        "id": "warlock-s-curse-bonus-combat",
-        "name": "Warlock's Curse (combat)",
-        "when": {"toggle": "combat"},
-        "stats": {"outgoing_damage": 0.07}
-      }
-    ]
+    "grants": [{"when": {"toggle": "combat"}, "stats": {"outgoing_damage": 0.07}}]
   },
   {
     "id": "watermelon-sorbet-power-accuracy",
     "name": "Watermelon Sorbet (Power/Accuracy)",
-    "effects": [
-      {
-        "id": "watermelon-sorbet-power-accuracy-bonus-consumables",
-        "name": "Watermelon Sorbet (Power/Accuracy) (consumables)",
-        "when": {"toggle": "consumables"},
-        "stats": {"power_p": 0.05, "acc_p": 0.05}
-      }
-    ]
+    "grants": [{"when": {"toggle": "consumables"}, "stats": {"power_p": 0.05, "acc_p": 0.05}}]
   },
   {
     "id": "watermelon-sorbet-power-accuracy-legacy",
     "name": "Watermelon Sorbet (Power/Accuracy) (Legacy)",
-    "effects": [
-      {
-        "id": "watermelon-sorbet-power-accuracy-legacy-bonus-consumables",
-        "name": "Watermelon Sorbet (Power/Accuracy) (Legacy) (consumables)",
-        "when": {"toggle": "consumables"},
-        "stats": {"power_p": 0.1, "acc_p": 0.1}
-      }
-    ]
+    "grants": [{"when": {"toggle": "consumables"}, "stats": {"power_p": 0.1, "acc_p": 0.1}}]
   },
   {
     "id": "wild-storm-severity",
     "name": "Wild Storm (Severity)",
-    "effects": [
-      {
-        "id": "wild-storm-severity-bonus-consumables",
-        "name": "Wild Storm (Severity) (consumables)",
-        "when": {"toggle": "consumables"},
-        "stats": {"sev_p": 0.05, "strike": 2000}
-      }
-    ]
+    "grants": [{"when": {"toggle": "consumables"}, "stats": {"sev_p": 0.05, "strike": 2000}}]
   }
 ]

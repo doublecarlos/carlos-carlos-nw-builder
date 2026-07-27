@@ -223,18 +223,15 @@ window.NW.catalog = (() => {
 
     for (const set of bonusSets) {
       if (!set.id) { report('error', 'a bonus set has no id'); continue; }
-      for (const effect of set.effects ?? []) {
-        if (!effect.id) report('error', 'an effect has no id', set.id, 'bonusSet');
-        if (!effect.name) {
-          report('warn', `effect ${effect.id ?? '?'} has no friendly name`, set.id, 'bonusSet');
-        }
-        checkConditions(effect.when, `effect ${effect.id ?? '?'}`, (level, message) =>
+      set.grants?.forEach((grant, index) => {
+        const label = `grant ${index + 1}`;
+        checkConditions(grant.when, label, (level, message) =>
           report(level, message, set.id, 'bonusSet'));
-        checkStats(effect.stats, `effect ${effect.id ?? '?'}`, set.id, 'bonusSet');
-        for (const tier of effect.tiers ?? []) {
-          checkStats(tier.stats, `effect ${effect.id} tier`, set.id, 'bonusSet');
+        checkStats(grant.stats, label, set.id, 'bonusSet');
+        for (const tier of grant.tiers ?? []) {
+          checkStats(tier.stats, `${label} tier`, set.id, 'bonusSet');
         }
-      }
+      });
     }
 
     return findings;
@@ -309,7 +306,10 @@ window.NW.catalog = (() => {
   function toBonusesFile(bonusSets) {
     const body = bonusSets
       .map((set) => {
-        const entries = [['id', set.id], ['name', set.name ?? set.id], ['effects', set.effects ?? []]];
+        const entries = [['id', set.id], ['name', set.name ?? set.id], ['grants', set.grants ?? []]];
+        for (const key of ['excludes', 'stacking', 'maxStacks']) {
+          if (set[key] !== undefined) entries.push([key, set[key]]);
+        }
         return `  ${entriesLiteral(entries, 2)}`;
       })
       .join(',\n');

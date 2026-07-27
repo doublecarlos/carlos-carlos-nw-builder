@@ -71,12 +71,13 @@ window.NW.db = (() => {
 
       /**
        * Every bonus an item contributes: every bonus set it belongs to, whether that set has
-       * one member (a bonus that is nobody else's business) or many.
+       * one member (a bonus that is nobody else's business) or many. One candidate per set --
+       * a set resolves as one unit (bonus.js sums its `grants`), not one candidate per grant.
        */
       bonusesFor(item) {
         return (item.bonuses ?? []).flatMap((setId) => {
           const set = bonusSetById.get(setId);
-          return set ? set.effects.map((bonus) => ({ bonus, setId, source: item.name })) : [];
+          return set ? [{ bonus: set, setId: set.id, source: item.name }] : [];
         });
       },
     };
