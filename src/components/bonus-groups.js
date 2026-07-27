@@ -41,7 +41,7 @@ window.NW.components.BonusGroups = (() => {
       bonusIds: { type: Array, default: () => [] },
     },
 
-    emits: ['save-set', 'delete-set', 'attach-set'],
+    emits: ['save-set', 'delete-set', 'detach-set', 'rename-set', 'attach-set'],
 
     data: () => ({ drafts: {}, errors: {} }),
 
@@ -86,6 +86,7 @@ window.NW.components.BonusGroups = (() => {
           if (this.drafts[id]) continue;
           const set = this.db.bonusSetById.get(id);
           this.drafts[id] = {
+            id,
             name: set?.name ?? id,
             effects: (set?.effects ?? []).map((effect) => draft().toDraft(effect)),
           };
@@ -102,6 +103,15 @@ window.NW.components.BonusGroups = (() => {
       save(id) {
         const local = this.drafts[id];
         if (!local) return;
+        const newId = (local.id || '').trim();
+        if (!newId) {
+          this.errors[id] = 'The group needs an id.';
+          return;
+        }
+        if (newId !== id && this.allSetIds.includes(newId)) {
+          this.errors[id] = `“${newId}” is already used by another bonus group.`;
+          return;
+        }
         let effects;
         try {
           effects = local.effects.map((effect) => draft().toBonus(effect));
@@ -115,12 +125,41 @@ window.NW.components.BonusGroups = (() => {
           return;
         }
         this.errors[id] = '';
-        this.$emit('save-set', { id, set: { id, name: local.name || id, effects } });
+        const renamed = newId !== id;
+        this.$emit('save-set', {
+          id: newId,
+          previousId: renamed ? id : null,
+          set: { id: newId, name: local.name || newId, effects },
+        });
+        // Rekey the draft under the new id so the card survives the id change without
+        // waiting on a round trip through `setIds` -> `sync()`, which would otherwise
+        // momentarily render it with a blank draft rebuilt from whatever `db` has yet.
+        if (renamed) {
+          delete this.drafts[id];
+          delete this.errors[id];
+          this.drafts[newId] = { ...local, id: newId };
+          this.$emit('rename-set', { oldId: id, newId });
+        }
+      },
+
+      /** Fill the id field from the current name -- the common case, since a private bonus's
+       * id is almost always just its item's name slugified. */
+      generateId(id) {
+        const local = this.drafts[id];
+        local.id = slugify(local.name) || local.id;
       },
 
       remove(id) {
         delete this.drafts[id];
         this.$emit('delete-set', id);
+      },
+
+      /** A card with no saved definition yet has nothing to remove from the catalogue -- just
+       * detach the id from this item so it stops showing up. */
+      detach(id) {
+        delete this.drafts[id];
+        delete this.errors[id];
+        this.$emit('detach-set', id);
       },
 
       /** A brand-new effect is unconditional by default -- the common case now that most
@@ -166,13 +205,20 @@ window.NW.components.BonusGroups = (() => {
           <div class="setcard-head">
             <label class="field"><span class="field-label">Group name</span>
               <input class="setcard-name" type="text" v-model="drafts[card.id].name"></label>
-            <code class="setcard-id">{{ card.id }}</code>
+            <label class="field"><span class="field-label">Group id</span>
+              <span class="setcard-id-row">
+                <input class="setcard-id" type="text" v-model="drafts[card.id].id">
+                <IconButton icon="wand-sparkles" title="Generate id from name" @click="generateId(card.id)" />
+              </span>
+            </label>
             <span v-if="!card.defined" class="badge badge--warn">not defined yet</span>
             <span class="spacer"></span>
             <button type="button" class="btn btn--primary" @click="save(card.id)">Save</button>
             <button type="button" class="btn" @click="reset(card.id)">Reset</button>
             <button v-if="card.defined" type="button" class="btn"
                     @click="remove(card.id)">Delete</button>
+            <button v-else type="button" class="btn"
+                    @click="detach(card.id)">Remove</button>
           </div>
 
           <p v-if="errors[card.id]" class="drawer-error">{{ errors[card.id] }}</p>

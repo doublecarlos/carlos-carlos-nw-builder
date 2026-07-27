@@ -245,8 +245,9 @@ window.NW.components.DataEditor = (() => {
       // --- bonus sets -----------------------------------------------------------------------
       // Edited from inside the item form now, next to the item that grants them.
 
-      onSaveSet({ id, set }) {
-        this.$emit('update-overlay', catalog().upsert(this.overlay, 'bonusSets', id, set, id));
+      onSaveSet({ id, set, previousId }) {
+        this.$emit('update-overlay',
+          catalog().upsert(this.overlay, 'bonusSets', id, set, previousId ?? id));
         this.notice = `Saved set “${set.name || id}”`;
       },
 

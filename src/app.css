@@ -824,6 +824,8 @@ label.quickopts-row { cursor: pointer; }
 .bonus-edit-head .field { flex: 1; min-width: 0; }
 .bonus-id, .bonus-name { width: 100%; }
 .bonus-id { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+.bonus-id-row { align-items: center; display: flex; gap: 4px; }
+.bonus-id-row .bonus-id { flex: 1; min-width: 0; }
 
 /* --- token / chip input ---------------------------------------------------------------- */
 
@@ -983,12 +985,15 @@ label.quickopts-row { cursor: pointer; }
 .cond-branch-actions { display: flex; gap: 2px; justify-content: flex-start; margin: 2px 0 4px; }
 .cond-add { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
 
+.setcard-id-row { align-items: center; display: flex; gap: 4px; }
 .setcard-id {
   background: var(--surface-2);
   border-radius: 3px;
   color: var(--muted);
+  font-family: var(--mono, monospace);
   font-size: 1rem;
   padding: 1px 5px;
+  width: 100%;
 }
 
 /* --- crash ---------------------------------------------------------------------------- */

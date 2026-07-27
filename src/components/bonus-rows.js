@@ -154,6 +154,9 @@ window.NW.components.BonusRows = (() => {
   const api = () => window.NW.bonusDraft;
   const cd = () => window.NW.conditionDraft;
 
+  const slugify = (text) => String(text).toLowerCase().trim()
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+
   /** Shared by every reorderable list here (bonuses, tiers, variants). */
   const moveItem = (list, index, delta) => {
     const to = index + delta;
@@ -204,6 +207,10 @@ window.NW.components.BonusRows = (() => {
 
     methods: {
       isPercent: (key) => window.NW.format.isPercentKind(window.NW.format.kindOf(key)),
+
+      /** Fill the id field from the current name -- same convention as the bonus group's own
+       * id-generate button. */
+      generateId(bonus) { bonus.id = slugify(bonus.name) || bonus.id; },
 
       addBonus() { this.rows.push(api().toDraft({ id: '', when: {}, stats: {} })); },
       removeBonus(index) { this.rows.splice(index, 1); },
@@ -302,7 +309,11 @@ window.NW.components.BonusRows = (() => {
               <input class="bonus-name" type="text" v-model="bonus.name"
                      placeholder="friendly name shown in tooltips"></label>
             <label class="field"><span class="field-label">Id</span>
-              <input class="bonus-id" type="text" v-model="bonus.id" :placeholder="idPlaceholder"></label>
+              <span class="bonus-id-row">
+                <input class="bonus-id" type="text" v-model="bonus.id" :placeholder="idPlaceholder">
+                <IconButton icon="wand-sparkles" title="Generate id from name" @click="generateId(bonus)" />
+              </span>
+            </label>
             <button type="button" class="link" @click="toggleJson(bonus)">
               {{ bonus.mode === 'json' ? 'use the form' : 'edit as JSON' }}
             </button>

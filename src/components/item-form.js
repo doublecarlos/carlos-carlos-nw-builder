@@ -167,6 +167,18 @@ window.NW.components.ItemForm = (() => {
         if (this.draft.bonuses.includes(id)) return;
         this.draft.bonuses = [...this.draft.bonuses, id];
       },
+
+      /** A card with no saved definition has nothing in the catalogue to remove -- just drop
+       * the id from this item's own list. */
+      detachSet(id) {
+        this.draft.bonuses = this.draft.bonuses.filter((setId) => setId !== id);
+      },
+
+      /** Keep this item pointed at a bonus group that was just renamed (same array-replace
+       * trick as `attachSet`, so `BonusGroups`'s `setIds` watcher fires). */
+      renameSet({ oldId, newId }) {
+        this.draft.bonuses = this.draft.bonuses.map((id) => (id === oldId ? newId : id));
+      },
     },
 
     template: `
@@ -252,6 +264,8 @@ window.NW.components.ItemForm = (() => {
           :bonus-ids="bonusIds"
           @save-set="$emit('save-set', $event)"
           @delete-set="$emit('delete-set', $event)"
+          @detach-set="detachSet"
+          @rename-set="renameSet"
           @attach-set="attachSet" />
       </div>
     `,

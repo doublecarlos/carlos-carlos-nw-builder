@@ -88,6 +88,11 @@ llm/plans/            numbered plans
 
 ## Architecture notes that will bite you
 
+- **Icons come from lucide, hand-copied.** `window.NW.icons` in `components/icon-button.js` is a
+  registry of inline `<path>`/`<circle>` markup, one entry per glyph, used by `IconButton` and a
+  few components that inline an svg directly. There is no icon package vendored — if a new icon
+  is needed, ask the user for the lucide glyph name (e.g. "wand-2") and they'll paste in the
+  markup; don't invent SVG paths from memory.
 - **One reactive `build` + a `computed` calling `resolveBuild`.** It is pure and ~2 ms —
   recompute on every change; do not build incremental update machinery.
 - **Every mutation goes through an `app.js` method.** That is what keeps the undo stack small.

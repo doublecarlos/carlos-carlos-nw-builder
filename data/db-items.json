@@ -1800,7 +1800,7 @@
     "ca": 1746,
     "strike": 3492,
     "recharge": 0.015,
-    "bonuses": ["m33-freezing-grasp", "m33-frost-riven-stormbind-tunic"]
+    "bonuses": ["m33-freezing-grasp", "m33-bloodletting-celestial"]
   },
   {
     "name": "M33 Frost-Riven Titanweave Harness",
