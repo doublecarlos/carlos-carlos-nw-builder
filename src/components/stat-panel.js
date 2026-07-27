@@ -12,6 +12,21 @@ window.NW.components.StatPanel = (() => {
 
   const schema = () => window.NW_SCHEMA;
 
+  // Display order only -- `data/schema.js` stays untouched. Forte sits with the defensive
+  // ratings rather than right after Severity, per the user's re-grouping.
+  const RATING_ORDER = [
+    'power', 'acc', 'ca', 'strike', 'severity', 'defense', 'awareness', 'crit_avoid',
+    'deflect', 'deflect_sev', 'forte', 'inc_healing', 'out_healing', 'control_bonus',
+    'control_resist',
+  ];
+  const orderIndex = (key) => {
+    const i = RATING_ORDER.indexOf(key);
+    return i === -1 ? RATING_ORDER.length : i;
+  };
+  // A rule below one of these keys gets a divider, marking the boundary between the offensive
+  // ratings, the defensive ones and forte.
+  const SEPARATOR_AFTER = new Set(['severity', 'deflect_sev']);
+
   const DAMAGE_ROWS = [
     ['Average', 'average'],
     ['Crit / no deflect', 'critNoDeflect'],
@@ -36,13 +51,17 @@ window.NW.components.StatPanel = (() => {
       stages() { return this.result.stages; },
       derived() { return this.result.derived; },
 
-      /** One row per rating/percent pair, in schema order. */
+      /** One row per rating/percent pair, in display order (§ `RATING_ORDER`, UI-only). */
       capRows() {
-        return schema().ratingConversion.map((rule) => ({
-          label: schema().statByKey[rule.rating]?.label ?? rule.rating,
-          rating: this.capRow(rule.rating),
-          percent: this.capRow(rule.percent),
-        }));
+        return schema().ratingConversion
+          .slice()
+          .sort((a, b) => orderIndex(a.rating) - orderIndex(b.rating))
+          .map((rule) => ({
+            label: schema().statByKey[rule.rating]?.label ?? rule.rating,
+            rating: this.capRow(rule.rating),
+            percent: this.capRow(rule.percent),
+            sepAfter: SEPARATOR_AFTER.has(rule.rating),
+          }));
       },
 
       /** Everything with no cap of its own: flats, mults and uncapped percents. */
@@ -103,6 +122,15 @@ window.NW.components.StatPanel = (() => {
       visible(value) {
         return this.showZero || Math.abs(value) > 1e-9;
       },
+
+      /** Google Sheets-style conditional formatting: green sitting exactly on the cap, blue
+       * with room to spare, the existing warn colour when over. `over`/`head` can't both be
+       * positive -- they are max(0, total-cap) and max(0, cap-total). */
+      capClass(cell) {
+        if (cell.over > 0) return 'is-over';
+        if (cell.head > 0) return 'is-headroom';
+        return 'is-capped';
+      },
     },
 
     template: `
@@ -155,7 +183,7 @@ window.NW.components.StatPanel = (() => {
           <tbody>
             <tr v-for="row in capRows" :key="row.rating.key"
                 v-show="visible(row.rating.total)"
-                :class="{ 'is-over': row.rating.over > 0 }">
+                :class="[capClass(row.rating), { 'row-sep': row.sepAfter }]">
               <td>{{ row.label }}</td>
               <td class="num">{{ int(row.rating.total) }}</td>
               <td class="num dim">{{ int(row.rating.cap) }}</td>
@@ -173,7 +201,7 @@ window.NW.components.StatPanel = (() => {
           <tbody>
             <tr v-for="row in capRows" :key="row.percent.key"
                 v-show="visible(row.percent.total)"
-                :class="{ 'is-over': row.percent.over > 0 }">
+                :class="[capClass(row.percent), { 'row-sep': row.sepAfter }]">
               <td>{{ row.label }}</td>
               <td class="num">{{ pct(row.percent.total) }}</td>
               <td class="num dim">{{ pct(row.percent.cap) }}</td>

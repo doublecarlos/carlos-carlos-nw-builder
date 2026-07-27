@@ -408,9 +408,17 @@ input[type="number"]::-webkit-inner-spin-button { appearance: none; -webkit-appe
 .stat-table tbody tr:nth-child(even) { background: color-mix(in srgb, var(--surface-2) 55%, transparent); }
 .stat-table--pairs td:last-child { text-align: right; width: 40%; }
 
+/* Conditional formatting, in the spirit of the sheet: green sitting exactly on the cap, blue
+ * with headroom to spare, warn colour when over. Same specificity as the zebra stripe above so
+ * source order (this comes later) decides, rather than the stripe winning on every other row. */
+.stat-table tbody tr.is-capped { background: color-mix(in srgb, var(--ok) 16%, transparent); }
+.stat-table tbody tr.is-headroom { background: color-mix(in srgb, var(--accent) 12%, transparent); }
+.stat-table tbody tr.is-over { background: color-mix(in srgb, var(--warn) 14%, transparent); }
+
 .stat-table .over { color: var(--muted); }
 .stat-table tr.is-over .over { color: var(--warn); font-weight: 600; }
 .stat-table tr.is-lead td { font-weight: 600; }
+.stat-table tr.row-sep td { border-bottom: 2px solid var(--line); }
 
 /* --- item hover card ------------------------------------------------------------------ */
 
