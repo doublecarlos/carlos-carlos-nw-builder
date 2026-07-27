@@ -18,6 +18,7 @@ Usage:
 
 import argparse
 import json
+import math
 import os
 import sys
 
@@ -119,6 +120,17 @@ def as_number(value):
     if isinstance(value, (int, float)):
         return float(value)
     return 0.0
+
+
+def sheet_round(value, digits=2):
+    """Google Sheets `ROUND()` semantics: half away from zero.
+
+    NOT Python's built-in `round()`, which is banker's rounding (half to even) --
+    `round(0.125, 2)` is 0.12 in Python but 0.13 in the sheet. Only bites when a value lands
+    exactly on a half boundary, which the forte redistribution does occasionally.
+    """
+    factor = 10 ** digits
+    return math.copysign(math.floor(abs(value) * factor + 0.5), value) / factor
 
 
 class LegacyDb:
@@ -298,7 +310,7 @@ def run_pipeline(rows, state, db):
         if stat in forte:
             forte[stat] += forte_pool / divisor
     if state.get('m32Forte'):
-        forte = {k: round(v, 2) for k, v in forte.items()}
+        forte = {k: sheet_round(v, 2) for k, v in forte.items()}
 
     totals = {k: after_abilities[k] + forte[k] for k in LEGACY_STATS}        # 250
 

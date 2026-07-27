@@ -26,6 +26,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from nwtools import repo_path      # noqa: E402
 from nwtools import jsemit         # noqa: E402
+import corrections                 # noqa: E402
 
 PAYLOAD_RE = re.compile(r'^(?P<id>.*)::(?P<parts>\d+):(?P<quals>\d+)$')
 BONUS_MARKER = ':_Bonus_'
@@ -180,8 +181,12 @@ class Migration:
         self.report = {
             'unknownTags': [], 'conflicts': [], 'orphanIds': [], 'unusedPayloads': [],
             'qualifierGroups': [], 'stacking': [], 'excludes': [], 'maxParts': [],
-            'inconsistentQualCount': [], 'notes': [],
+            'inconsistentQualCount': [], 'notes': [], 'corrections': [],
         }
+        # Deliberate fixes to source-data bugs, applied before anything is derived.
+        # The raw dump and the legacy oracle stay untouched, so the differential test reports
+        # each of these as an explainable divergence instead of hiding it.
+        corrections.apply(self.records, self.report)
 
     # -- pass 1: split payload rows from real items ------------------------------------------
     def partition(self):
@@ -317,27 +322,37 @@ class Migration:
             groups[key].append(bonus)
 
         collapsed = []
-        for key, group in groups.items():
-            role_members = [b for b in group if any(t in ROLE_TAGS for t in b['tags'])]
-            if len(group) == 1 or len(role_members) != len(group) or len(group) < 2:
-                collapsed.extend(group)
+        for group in groups.values():
+            # A group can mix a role-agnostic base effect with per-role effects sharing the
+            # same other conditions (M33 Chilling Flow does exactly this). Only the role-tagged
+            # subset collapses; the base stays an independent effect.
+            role_members = [b for b in group if b['when'].get('role')]
+            others = [b for b in group if not b['when'].get('role')]
+            collapsed.extend(others)
+
+            if len(role_members) < 2:
+                collapsed.extend(role_members)
+                continue
+            # Tiers are per-piece-count and cannot be folded into role variants.
+            if any(len(b.get('tiers') or []) > 1 for b in role_members):
+                collapsed.extend(role_members)
+                self.report['notes'].append(
+                    f'not collapsing role variants of {role_members[0]["id"]}: has piece tiers')
                 continue
 
-            base = dict(group[0])
-            shared = OrderedDict(
+            base = dict(role_members[0])
+            base['when'] = OrderedDict(
                 (k, v) for k, v in base['when'].items() if k != 'role')
-            base['when'] = shared
-            base['variants'] = []
-            for bonus in sorted(group, key=lambda b: b['when'].get('role', '')):
-                base['variants'].append({
-                    'when': {'role': bonus['when']['role']},
-                    'stats': bonus['stats'],
-                })
+            base['variants'] = [
+                {'when': {'role': bonus['when']['role']}, 'stats': bonus['stats']}
+                for bonus in sorted(role_members, key=lambda b: b['when']['role'])
+            ]
             base.pop('stats', None)
-            base['collapsedFrom'] = [b['id'] for b in group]
+            base.pop('tiers', None)
+            base['collapsedFrom'] = [b['id'] for b in role_members]
             collapsed.append(base)
             self.report['notes'].append(
-                f'collapsed {len(group)} role variants into {base["id"]}')
+                f'collapsed {len(role_members)} role variants into {base["id"]}')
 
         self.bonuses = collapsed
 
@@ -507,6 +522,21 @@ def write_report(path, migration, items, bonus_sets):
             for row in rows:
                 lines.append('- ' + render(row))
         lines.append('')
+
+    lines.append(f'## Corrections applied to source data ({len(report["corrections"])})')
+    lines.append('')
+    lines.append('Defined in `tools/corrections.py`. The raw dump and the legacy oracle are')
+    lines.append('left untouched, so each of these shows up in the differential test as an')
+    lines.append('intentional divergence. Delete an entry once it is fixed in the sheet.')
+    lines.append('')
+    for entry in report['corrections']:
+        lines.append(f'- **{entry["item"]}** — {entry["status"]}')
+        for change in entry.get('changes', []):
+            lines.append(f'  - `{change}`')
+        lines.append(f'  - _{entry["reason"]}_')
+    if not report['corrections']:
+        lines.append('_none_')
+    lines.append('')
 
     section('Unknown tags -- MUST be resolved', report['unknownTags'],
             lambda r: f'`{r["tag"]}` in `{r["id"]}`')

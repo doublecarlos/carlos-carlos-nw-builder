@@ -223,13 +223,12 @@ window.NW_BONUSES = [
     },
     {
       id:"m33-chilling-flow-mythic-bonus-combat-combat-medium-plus-dps",
-      when:{
-        toggle:"combat",
-        duration:{atLeast:30},
-        role:"dps",
-        pieces:{set:"m33-chilling-flow-mythic", atLeast:2}
-      },
-      stats:{sev_p:0.06}
+      when:{toggle:"combat", duration:{atLeast:30}, pieces:{set:"m33-chilling-flow-mythic", atLeast:2}},
+      variants:[
+        {when:{role:"dps"}, stats:{sev_p:0.06}},
+        {when:{role:"healer"}, stats:{overall_healing:0.05}},
+        {when:{role:"tank"}, stats:{awareness_p:0.05}}
+      ]
     }
   ]
 },

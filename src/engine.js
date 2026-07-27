@@ -25,6 +25,18 @@ window.NW.engine = (() => {
   const averageByChance = (multiplier, chance) => chance * multiplier + (1 - chance);
 
   /**
+   * Spreadsheet `ROUND()` semantics: half away from zero.
+   *
+   * Not plain `Math.round`, which rounds half toward +infinity (`Math.round(-12.5) === -12`
+   * where the sheet gives -13). Only differs on exact half boundaries, which the forte
+   * redistribution lands on occasionally.
+   */
+  const sheetRound = (value, digits = 2) => {
+    const factor = 10 ** digits;
+    return Math.sign(value) * Math.round(Math.abs(value) * factor) / factor;
+  };
+
+  /**
    * Per-slot stat vectors: the item's own stats plus the bonuses attributed to that slot.
    * Kept as rows because multiplicative stats combine per row, not per source.
    */
@@ -67,16 +79,17 @@ window.NW.engine = (() => {
     // --- stage 2: dynamic weapon modification --------------------------------------------
     // FIX #6: the sheet matched the target stat by searching the item's *display name*. The
     // item now declares `dynamicStat` outright, so renaming one cannot silently move the value.
+    //
+    // The declared range is NOT clamped here. Silently rewriting a number the user typed is
+    // worse than showing it and flagging it -- and it would make the engine disagree with the
+    // sheet for no stated reason. `findErrors` reports out-of-range values instead.
     const weaponMods = zeros(keys);
     for (const row of rows) {
       const stat = row.item?.dynamicStat;
       if (!stat) continue;
       const typed = build.values?.[row.slotId];
       if (typed == null || typed === '') continue;
-      let value = Number(typed) || 0;
-      if (row.item.dynamicMin != null) value = Math.max(value, row.item.dynamicMin);
-      if (row.item.dynamicMax != null) value = Math.min(value, row.item.dynamicMax);
-      weaponMods[stat] += value;
+      weaponMods[stat] += Number(typed) || 0;
     }
     const afterWeaponMods = addVectors(sums, weaponMods, keys);
 
@@ -120,9 +133,7 @@ window.NW.engine = (() => {
       if (stat && forte[stat] !== undefined) forte[stat] += fortePool / divisor;
     }
     if (context.m32Forte) {
-      for (const stat of Object.keys(forte)) {
-        forte[stat] = Math.round(forte[stat] * 100) / 100;
-      }
+      for (const stat of Object.keys(forte)) forte[stat] = sheetRound(forte[stat], 2);
     }
     const totals = addVectors(afterAbilityScores, forte, keys);
 
@@ -273,6 +284,21 @@ window.NW.engine = (() => {
           slotId: row.slotId, kind: 'maxCopies', choice: row.item.name,
           message: `${row.item.name} is equipped ${used} times, maximum ${max}`,
         });
+      }
+
+      // Dynamic weapon modifications carry a declared range. The value is used as typed
+      // (see stage 2); flagging it here is what makes that safe.
+      if (row.item.dynamicStat) {
+        const typed = build.values?.[row.slotId];
+        const value = Number(typed);
+        const { dynamicMin: min, dynamicMax: max_ } = row.item;
+        if (typed != null && typed !== '' && Number.isFinite(value)
+            && ((min != null && value < min) || (max_ != null && value > max_))) {
+          errors.push({
+            slotId: row.slotId, kind: 'outOfRange', choice: row.item.name,
+            message: `${row.item.name}: ${value} is outside ${min}–${max_}`,
+          });
+        }
       }
     }
     return errors;

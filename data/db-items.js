@@ -1032,10 +1032,6 @@ window.NW_ITEMS = [
 {
   name:"Executioner's Covenant",
   filter:"insignia_bonus",
-  defense:-1500,
-  awareness:-1500,
-  crit_avoid:-1500,
-  deflect:-1500,
   maxCopies:2,
   sets:["executioner-s-covenant"]
 },
@@ -2711,7 +2707,17 @@ window.NW_ITEMS = [
   combined_rating:3544,
   strike:5906
 },
-{name:"Sambocade (Movement)", filter:"consumable_food"},
+{
+  name:"Sambocade (Movement)",
+  filter:"consumable_food",
+  bonuses:[
+    {
+      id:"sambocade-movement-bonus-consumables",
+      when:{toggle:"consumables"},
+      stats:{hit_points:20000, movement:0.05}
+    }
+  ]
+},
 {
   name:"Scroll of Fate: Critical Severity",
   filter:"consumable_event_item",

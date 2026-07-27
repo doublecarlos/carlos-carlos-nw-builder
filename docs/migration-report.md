@@ -5,16 +5,40 @@ rest is context for the sign-off described in plan §5.2.
 
 ## Summary
 
-- **183 legacy payload rows -> 166 effects** (174 distinct bonus ids)
+- **183 legacy payload rows -> 167 effects** (174 distinct bonus ids)
 - 369 items emitted (590 raw rows in, 183 of them payload rows, 38 option pseudo-items dropped)
 - 18 shared set bonuses holding 27 effects
-- 139 inline bonuses on single items
+- 140 inline bonuses on single items
 
 ## Decisions needed
 
 1. **Chilling Flow healer/tank payloads are unwired.** `M33 Wintermarked Frostlute` and `M33 Wintermarked Skaldblade` list only the base and `-dps-` variants, so a healer or tank using those weapons gets nothing -- even though the `-healer-` and `-tank-` payload rows exist. Voidtouched wires all three roles, so this looks like an omission rather than intent. Confirm, and I will wire them.
 2. **`Sambocade (Movement)` has a payload row but no membership,** so the food grants nothing today. Confirm whether it should grant `hit_points +20000, movement +5%`.
 3. **Insignia covenant penalties are counted twice at one piece.** `Executioner's Covenant` carries `defense/awareness/crit_avoid/deflect -1500` on the item row *and* again on its 1-piece payload, so slotting one copy applies -3000. Preserved as-is; confirm whether that is intended.
+
+## Corrections applied to source data (4)
+
+Defined in `tools/corrections.py`. The raw dump and the legacy oracle are
+left untouched, so each of these shows up in the differential test as an
+intentional divergence. Delete an entry once it is fixed in the sheet.
+
+- **M33 Wintermarked Frostlute** — applied
+  - `+ member of M33 Chilling Flow (Mythic):_Bonus_-combat-combat_medium_plus-healer-`
+  - `+ member of M33 Chilling Flow (Mythic):_Bonus_-combat-combat_medium_plus-tank-`
+  - _Chilling Flow defines base / dps / healer / tank payloads, but the weapon listed only base and dps, so healers and tanks silently got nothing. M28 Voidtouched wires all three roles; this was an omission. Confirmed by the author 2026-07-26._
+- **M33 Wintermarked Skaldblade** — applied
+  - `+ member of M33 Chilling Flow (Mythic):_Bonus_-combat-combat_medium_plus-healer-`
+  - `+ member of M33 Chilling Flow (Mythic):_Bonus_-combat-combat_medium_plus-tank-`
+  - _Same omission as M33 Wintermarked Frostlute._
+- **Sambocade (Movement)** — applied
+  - `+ member of Sambocade (Movement):_Bonus_-consumables-`
+  - _The payload row `Sambocade (Movement):_Bonus_-consumables-::1:1` (hit_points +20000, movement +5%) existed but the food never declared membership, so eating it did nothing. Confirmed by the author 2026-07-26._
+- **Executioner's Covenant** — applied
+  - `defense: -1500 -> 0`
+  - `awareness: -1500 -> 0`
+  - `crit_avoid: -1500 -> 0`
+  - `deflect: -1500 -> 0`
+  - _The -1500 defensive penalty was on the item row *and* repeated on the 1-piece bonus payload, so a single copy applied -3000. The sibling insignia bonuses (Gladiator's Guile, Mender's Covenant) carry no stats on the item row at all -- all of the effect lives in the tiers. Confirmed as a bug by the author 2026-07-26._
 
 ## Unknown tags -- MUST be resolved (0)
 
@@ -33,11 +57,9 @@ _none_
 - `M33 Coldsilver Ring of Initiative:_Bonus_Severity` referenced by ['M33 Coldsilver Ring of Initiative']
 - `M33 Coldsilver Ring of Initiative:_Bonus_Strike` referenced by ['M33 Coldsilver Ring of Initiative']
 
-## Payload rows nothing references (3)
+## Payload rows nothing references (0)
 
-- `M33 Chilling Flow (Mythic):_Bonus_-combat-combat_medium_plus-healer-`
-- `M33 Chilling Flow (Mythic):_Bonus_-combat-combat_medium_plus-tank-`
-- `Sambocade (Movement):_Bonus_-consumables-`
+_none_
 
 ## Item-qualifier groups (legacy `bonus_qualifier_of`) (6)
 
@@ -68,9 +90,10 @@ _none_
 
 _none_
 
-## Notes (3)
+## Notes (4)
 
 - collapsed 2 role variants into Bard's Truly Inspired (Skill):_Bonus_-combat-dps-
 - collapsed 3 role variants into M28 Voidtouched Set:_Bonus_-single-dps-combat_medium_plus-combat-
 - collapsed 3 role variants into M28 Voidtouched Set:_Bonus_-single-dps-combat_medium_plus-location_wildspace-combat-
+- collapsed 3 role variants into M33 Chilling Flow (Mythic):_Bonus_-combat-combat_medium_plus-dps-
 
