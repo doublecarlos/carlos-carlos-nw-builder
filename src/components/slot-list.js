@@ -12,10 +12,16 @@ window.NW.components.SlotList = (() => {
 
   const OPEN_BY_DEFAULT = new Set(['gear']);
 
+  const HOVER_DELAY_MS = 220;
+  const CARD_W = 330;    // must match .itemcard width in app.css
+
   return {
     name: 'SlotList',
 
-    components: { ItemPicker: window.NW.components.ItemPicker },
+    components: {
+      ItemPicker: window.NW.components.ItemPicker,
+      ItemCard: window.NW.components.ItemCard,
+    },
 
     props: {
       db: { type: Object, required: true },
@@ -28,7 +34,12 @@ window.NW.components.SlotList = (() => {
     data() {
       const expanded = {};
       for (const section of this.db.sections) expanded[section.id] = OPEN_BY_DEFAULT.has(section.id);
-      return { expanded };
+      return {
+        expanded,
+        hover: null,        // { slotId, left, top } -- the one hover card, or nothing
+        hoverTimer: null,
+        editing: false,     // a picker has focus: suppress the card so it cannot cover a dropdown
+      };
     },
 
     computed: {
@@ -46,6 +57,38 @@ window.NW.components.SlotList = (() => {
           else map.set(error.slotId, [error]);
         }
         return map;
+      },
+
+      /**
+       * bonusId -> resolved entry, so a hover can look up an item's bonuses without scanning
+       * all 48 of them per row.
+       */
+      bonusById() {
+        return new Map(this.result.bonuses.map((bonus) => [bonus.id, bonus]));
+      },
+
+      hoveredItem() {
+        return this.hover ? this.itemIn(this.hover.slotId) : null;
+      },
+
+      /**
+       * Every bonus the hovered item takes part in -- its own inline ones and its sets'.
+       * Not `bonuses.filter(b => b.slotId === …)`: a set bonus is attributed to the single
+       * slot that instanced it, so the other pieces of the set would show nothing.
+       */
+      hoveredBonuses() {
+        const item = this.hoveredItem;
+        if (!item) return [];
+        const seen = new Set();
+        const out = [];
+        for (const entry of this.db.bonusesFor(item)) {
+          const resolved = this.bonusById.get(entry.bonus.id);
+          if (resolved && !seen.has(resolved.id)) {
+            seen.add(resolved.id);
+            out.push(resolved);
+          }
+        }
+        return out;
       },
 
       sections() {
@@ -84,10 +127,74 @@ window.NW.components.SlotList = (() => {
       setAll(open) {
         for (const section of this.db.sections) this.expanded[section.id] = open;
       },
+
+      // --- hover card ----------------------------------------------------------------------
+
+      onRowEnter(event, slotId) {
+        if (this.editing || !this.itemIn(slotId)) return;
+        window.clearTimeout(this.hoverTimer);
+        const rect = event.currentTarget.getBoundingClientRect();
+        const x = event.clientX;
+        // Delay: sweeping the pointer down a 180-row list should not strobe cards.
+        this.hoverTimer = window.setTimeout(() => this.place(slotId, rect, x), HOVER_DELAY_MS);
+      },
+
+      onRowLeave() {
+        window.clearTimeout(this.hoverTimer);
+        this.hover = null;
+      },
+
+      /**
+       * Anchored to the pointer horizontally and to the row vertically. Anchoring to the row's
+       * right edge instead would be tidier, but a slot row spans almost the full column, so
+       * the card would always land on top of the stat panel.
+       *
+       * The vertical flip needs the card's real height, not its CSS max-height, or a short
+       * card near the bottom of the screen flips for no reason -- so it is measured once the
+       * card exists and nudged only if it actually overflows.
+       */
+      place(slotId, rect, pointerX) {
+        const margin = 10;
+        let left = pointerX + 18;
+        if (left + CARD_W > window.innerWidth - margin) left = pointerX - CARD_W - 18;
+        this.hover = { slotId, left: Math.max(left, margin), top: rect.bottom + 6 };
+
+        this.$nextTick(() => {
+          const card = this.$el?.querySelector?.('.itemcard');
+          if (!card || !this.hover) return;
+          const height = card.offsetHeight;
+          if (this.hover.top + height <= window.innerHeight - margin) return;
+          const flipped = Math.max(rect.top - height - 6, margin);
+          this.hover = { ...this.hover, top: flipped };
+        });
+      },
+
+      /** The rect is viewport-relative, so any scroll invalidates it. */
+      onScroll() {
+        if (this.hover || this.hoverTimer) this.onRowLeave();
+      },
+
+      onFocusIn() {
+        this.editing = true;
+        this.onRowLeave();
+      },
+
+      onFocusOut() {
+        this.editing = false;
+      },
+    },
+
+    mounted() {
+      window.addEventListener('scroll', this.onScroll, true);
+    },
+
+    unmounted() {
+      window.clearTimeout(this.hoverTimer);
+      window.removeEventListener('scroll', this.onScroll, true);
     },
 
     template: `
-      <div class="slots">
+      <div class="slots" @focusin="onFocusIn" @focusout="onFocusOut">
         <div class="slots-toolbar">
           <button type="button" class="link" @click="setAll(true)">expand all</button>
           <button type="button" class="link" @click="setAll(false)">collapse all</button>
@@ -102,7 +209,10 @@ window.NW.components.SlotList = (() => {
           </button>
 
           <div v-if="expanded[section.id]" class="section-body">
-            <div v-for="slot in section.slots" :key="slot.id" class="slot-row">
+            <div v-for="slot in section.slots" :key="slot.id" class="slot-row"
+                 :class="{ 'is-hovered': hover?.slotId === slot.id }"
+                 @mouseenter="onRowEnter($event, slot.id)"
+                 @mouseleave="onRowLeave">
               <label class="slot-label" :for="slot.id">{{ slot.label }}</label>
 
               <div class="slot-control">
@@ -136,6 +246,14 @@ window.NW.components.SlotList = (() => {
             </div>
           </div>
         </section>
+
+        <!-- One card for the whole list, moved and refilled on hover. -->
+        <ItemCard
+          v-if="hover && hoveredItem"
+          :item="hoveredItem"
+          :bonuses="hoveredBonuses"
+          :slot-label="db.slotById.get(hover.slotId)?.label ?? ''"
+          :style="{ left: hover.left + 'px', top: hover.top + 'px' }" />
       </div>
     `,
   };

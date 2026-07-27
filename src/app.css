@@ -407,6 +407,58 @@ input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: -1
 .stat-table tr.is-over .over { color: var(--warn); font-weight: 600; }
 .stat-table tr.is-lead td { font-weight: 600; }
 
+/* --- item hover card ------------------------------------------------------------------ */
+
+.slot-row.is-hovered { background: color-mix(in srgb, var(--accent-soft) 40%, transparent); }
+
+.itemcard {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .22);
+  /* Width and max-height are read back by slot-list.js for positioning -- keep them in step. */
+  width: 330px;
+  max-height: 440px;
+  overflow-y: auto;
+  padding: 9px 11px;
+  position: fixed;
+  z-index: 40;
+  /* A tooltip must never eat a click meant for the row it describes, nor fight the hover
+   * that summoned it. */
+  pointer-events: none;
+}
+
+.itemcard-head { align-items: baseline; display: flex; gap: 8px; }
+.itemcard-name { flex: 1; font-weight: 600; }
+.itemcard-il { color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+.itemcard-slot { color: var(--muted); font-size: 11px; margin-bottom: 5px; }
+
+.itemcard-stats { display: grid; gap: 0 14px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.itemcard-stat { display: flex; gap: 8px; justify-content: space-between; font-size: 12px; }
+.itemcard-stat .num { font-variant-numeric: tabular-nums; }
+
+.itemcard-notes {
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 11px;
+  margin-top: 6px;
+  padding-top: 5px;
+}
+
+.itemcard-bonuses { border-top: 1px solid var(--line); margin-top: 6px; padding-top: 5px; }
+.itemcard-section {
+  color: var(--muted);
+  font-size: 10px;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+}
+.itemcard-bonus { margin-top: 4px; }
+.itemcard-bonus-head { align-items: center; display: flex; gap: 5px; }
+.itemcard-bonus-cond { flex: 1; font-size: 12px; min-width: 0; }
+.bonus--inactive .itemcard-bonus-cond, .bonus--excluded .itemcard-bonus-cond { color: var(--muted); }
+.itemcard-bonus-stats { font-size: 11px; padding-left: 12px; }
+.itemcard-bonus-unmet { color: var(--warn); font-size: 11px; padding-left: 12px; }
+
 /* --- sidebar tabs -------------------------------------------------------------------- */
 
 .tabs { display: flex; gap: 4px; margin-bottom: 6px; }
