@@ -4,14 +4,19 @@
 // comes back from localStorage, a pasted JSON blob or a URL hash goes through `normalise`
 // first, and anything `normalise` returns is safe to hand straight to the engine.
 //
-// The library lives under `nw:builds`. Phase 3 autosaved a single build under
-// `nw:current-build`; that key is migrated in on first load and then removed.
+// The saved library lives under `nw:builds`, written only when the user explicitly saves (or
+// by a structural change that has nothing pending to lose -- see app.js's `saveActive`). The
+// live, possibly-unsaved draft lives separately under `nw:builds-draft`, autosaved continuously
+// so a reload never loses work in progress. Phase 3 autosaved a single build under
+// `nw:current-build`; that key is migrated into the saved library on first load and then
+// removed.
 
 window.NW = window.NW ?? {};
 window.NW.storage = (() => {
   'use strict';
 
   const KEY = 'nw:builds';
+  const DRAFT_KEY = 'nw:builds-draft';
   const LEGACY_KEY = 'nw:current-build';
   const OVERLAY_KEY = 'nw:catalog-overlay';
   const HASH_PREFIX = '#b=';
@@ -142,6 +147,34 @@ window.NW.storage = (() => {
       updated: Date.now() };
   }
 
+  /** A deep copy safe to seed `savedById` from `builds` (or back) without aliasing the
+   * reactive proxy -- `normalise` already copies deeply and keeps the id. */
+  const cloneBuild = (build) => normalise(build);
+
+  /**
+   * Key-order-insensitive, `updated`-blind equality for the dirty check. `choices`/`values`/
+   * `toggles` grow and shrink by direct property add/delete, so a plain `JSON.stringify`
+   * comparison would false-positive on a save-then-revert; sorting keys fixes that. `updated`
+   * is excluded because only the saved copy gets it stamped (app.js's `saveActive`), so
+   * comparing it would report every build dirty forever after its first save.
+   */
+  const canonical = (value) => {
+    if (Array.isArray(value)) return value.map(canonical);
+    if (value && typeof value === 'object') {
+      const out = {};
+      for (const key of Object.keys(value).sort()) out[key] = canonical(value[key]);
+      return out;
+    }
+    return value;
+  };
+
+  function sameBuild(a, b) {
+    if (!a || !b) return a === b;
+    const { updated: ua, ...restA } = a;
+    const { updated: ub, ...restB } = b;
+    return JSON.stringify(canonical(restA)) === JSON.stringify(canonical(restB));
+  }
+
   // --- the library ------------------------------------------------------------------------
 
   function emptyLibrary() {
@@ -194,8 +227,46 @@ window.NW.storage = (() => {
       }));
       return true;
     } catch {
-      // Private browsing, or quota. Losing autosave is not worth an error dialogue -- but the
-      // caller is told, so it can surface it once rather than silently.
+      // Private browsing, or quota. The caller is told, so it can surface it once rather than
+      // silently -- losing a save is worth telling the user about, unlike the draft below.
+      return false;
+    }
+  }
+
+  /**
+   * The live, possibly-unsaved draft. Falls back to a clone of the saved library when there is
+   * no draft yet -- either a first-ever visit, or an existing user's first load after this
+   * split shipped, when `nw:builds` (their old autosave target) is the only copy of the truth.
+   */
+  function loadDraft(saved) {
+    let stored = null;
+    try {
+      stored = JSON.parse(window.localStorage.getItem(DRAFT_KEY) ?? 'null');
+    } catch {
+      stored = null;
+    }
+
+    if (!stored || !Array.isArray(stored.builds) || !stored.builds.length) {
+      return { builds: saved.builds.map((build) => cloneBuild(build)), activeId: saved.activeId };
+    }
+
+    const builds = stored.builds.map((build) => normalise(build));
+    const activeId = builds.some((build) => build.id === stored.activeId)
+      ? stored.activeId
+      : builds[0].id;
+    return { builds, activeId };
+  }
+
+  function saveDraft(library) {
+    try {
+      window.localStorage.setItem(DRAFT_KEY, JSON.stringify({
+        builds: library.builds,
+        activeId: library.activeId,
+      }));
+      return true;
+    } catch {
+      // Private browsing, or quota. Losing the continuous draft autosave is not worth an error
+      // dialogue by itself -- the caller only surfaces it once `saveActive` also fails.
       return false;
     }
   }
@@ -316,8 +387,8 @@ window.NW.storage = (() => {
   };
 
   return {
-    defaultBuild, normalise, duplicate, newId,
-    loadLibrary, saveLibrary, loadOverlay, saveOverlay,
+    defaultBuild, normalise, duplicate, newId, cloneBuild, sameBuild,
+    loadLibrary, saveLibrary, loadDraft, saveDraft, loadOverlay, saveOverlay,
     toJson, parseJson,
     encodeShare, decodeShare, shareUrl, readHash, clearHash,
   };

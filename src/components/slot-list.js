@@ -25,6 +25,7 @@ window.NW.components.SlotList = (() => {
       ItemPicker: window.NW.components.ItemPicker,
       ItemCard: window.NW.components.ItemCard,
       Options: window.NW.components.Options,
+      IconButton: window.NW.components.IconButton,
     },
 
     props: {
@@ -42,10 +43,14 @@ window.NW.components.SlotList = (() => {
       compareBuild: { type: Object, default: null },
       highlightDiff: { type: Boolean, default: false },
       onlyDiff: { type: Boolean, default: false },
+      // The active build's last-saved snapshot (app.js's `savedById[activeId]`) -- a plain dot
+      // on any slot that differs from it, deliberately quieter than the compare-diff highlight
+      // above: this is "you haven't saved this yet", not "here is what's different and why".
+      savedBuild: { type: Object, default: null },
     },
 
     emits: ['choose', 'set-value', 'set', 'set-forte', 'apply-slot', 'toggle-section', 'set-expanded',
-      'edit-item'],
+      'edit-item', 'revert-slot', 'revert-section'],
 
     data: () => ({
       hover: null,        // { slotId, left, top } -- the one hover card, or nothing
@@ -148,8 +153,9 @@ window.NW.components.SlotList = (() => {
             const allSlots = this.db.slots.filter((slot) => slot.section === section.id);
             // Counted off the section's full slot list, not the (possibly onlyDiff-filtered)
             // one below -- the badge's job is telling a *collapsed* section apart, where
-            // `slots` would otherwise be invisible.
+            // `slots` would otherwise be invisible. Same reasoning for `unsaved`.
             const diffs = this.compareBuild ? allSlots.filter((slot) => this.differs(slot.id)).length : 0;
+            const unsaved = allSlots.some((slot) => this.unsaved(slot.id));
             const slots = onlyDiff ? allSlots.filter((slot) => this.differs(slot.id)) : allSlots;
             let filled = 0;
             let errors = 0;
@@ -157,7 +163,7 @@ window.NW.components.SlotList = (() => {
               if (this.rowBySlot.get(slot.id)?.item) filled += 1;
               errors += this.errorsBySlot.get(slot.id)?.length ?? 0;
             }
-            return { ...section, slots, filled, errors, diffs, total: slots.length };
+            return { ...section, slots, filled, errors, diffs, unsaved, total: slots.length };
           })
           .filter((section) => !onlyDiff || section.slots.length > 0);
       },
@@ -204,6 +210,13 @@ window.NW.components.SlotList = (() => {
           && (this.build.choices[slotId] || '') !== this.otherChoice(slotId);
       },
 
+      /** True if this slot's choice or typed value hasn't been saved yet. */
+      unsaved(slotId) {
+        if (!this.savedBuild) return false;
+        if ((this.build.choices[slotId] || '') !== (this.savedBuild.choices[slotId] || '')) return true;
+        return (this.build.values[slotId] ?? null) !== (this.savedBuild.values[slotId] ?? null);
+      },
+
       errorsFor(slotId) {
         return this.errorsBySlot.get(slotId) ?? [];
       },
@@ -216,12 +229,12 @@ window.NW.components.SlotList = (() => {
         this.$emit('set-expanded', open);
       },
 
-      /** A plain click just moves the cursor here, same as an arrow key would. Shift+click on a
+      /** A plain click just moves the cursor here, same as an arrow key would. Ctrl+click on a
        * filled slot jumps straight to that item in the data editor -- a no-op on an empty slot,
        * since there is nothing there to edit. */
       onRowClick(event, slotId) {
         this.setCursor('slot', slotId);
-        if (!event.shiftKey) return;
+        if (!event.ctrlKey) return;
         const item = this.itemIn(slotId);
         if (item) this.$emit('edit-item', item.name);
       },
@@ -478,7 +491,7 @@ window.NW.components.SlotList = (() => {
           <button type="button" class="link" @click="setAll(true)">expand all</button>
           <button type="button" class="link" @click="setAll(false)">collapse all</button>
           <span class="spacer"></span>
-          <span class="hint">Shift+click a filled slot to edit that item</span>
+          <span class="hint">Ctrl+click a filled slot to edit that item</span>
         </div>
 
         <section class="section">
@@ -496,15 +509,20 @@ window.NW.components.SlotList = (() => {
         </section>
 
         <section v-for="section in sections" :key="section.id" class="section">
-          <button type="button" class="section-head" :class="{ 'is-cursor': isCursor('header', section.id) }"
-                  :data-cursor-key="'header:' + section.id"
-                  @click="toggle(section.id); setCursor('header', section.id)">
-            <span class="section-chevron">{{ expanded[section.id] ? '▾' : '▸' }}</span>
-            <span class="section-label">{{ section.label }}</span>
-            <span class="section-count">{{ section.filled }}/{{ section.total }}</span>
-            <span v-if="section.errors" class="badge badge--error">{{ section.errors }}</span>
-            <span v-if="highlightDiff && section.diffs" class="badge badge--diff">{{ section.diffs }}</span>
-          </button>
+          <div class="section-head-row">
+            <button type="button" class="section-head" :class="{ 'is-cursor': isCursor('header', section.id) }"
+                    :data-cursor-key="'header:' + section.id"
+                    @click="toggle(section.id); setCursor('header', section.id)">
+              <span class="section-chevron">{{ expanded[section.id] ? '▾' : '▸' }}</span>
+              <span class="section-label">{{ section.label }}</span>
+              <span class="section-count">{{ section.filled }}/{{ section.total }}</span>
+              <span v-if="section.errors" class="badge badge--error">{{ section.errors }}</span>
+              <span v-if="highlightDiff && section.diffs" class="badge badge--diff">{{ section.diffs }}</span>
+              <span v-if="section.unsaved" class="unsaved-dot" title="Unsaved changes in this section"></span>
+            </button>
+            <IconButton v-if="section.unsaved" icon="undo-2" title="Revert this section to saved"
+                        class="section-revert" @click="$emit('revert-section', section.id)" />
+          </div>
 
           <div v-if="expanded[section.id]" class="section-body">
             <div v-for="slot in section.slots" :key="slot.id" class="slot-row" tabindex="-1"
@@ -514,7 +532,13 @@ window.NW.components.SlotList = (() => {
                  @mouseenter="onRowEnter($event, slot.id)"
                  @mouseleave="onRowLeave"
                  @click="onRowClick($event, slot.id)">
-              <label class="slot-label" :for="slot.id">{{ slot.label }}</label>
+              <div class="slot-label-col">
+                <label class="slot-label" :for="slot.id">{{ slot.label }}</label>
+                <span v-if="unsaved(slot.id)" class="slot-change">
+                  <span class="unsaved-dot" title="Unsaved change"></span>
+                  <IconButton icon="undo-2" title="Revert to saved" @click="$emit('revert-slot', slot.id)" />
+                </span>
+              </div>
 
               <div class="slot-control">
                 <div class="slot-main">

@@ -24,6 +24,8 @@ window.NW.icons = {
     + '1.72l1.28 1.28a1.2 1.2 0 0 0 1.72 0L21.64 5.36a1.2 1.2 0 0 0 0-1.72"/><path d="m14 7 3 3"/>'
     + '<path d="M5 6v4"/><path d="M19 14v4"/><path d="M10 2v2"/><path d="M7 8H3"/>'
     + '<path d="M21 16h-4"/><path d="M11 3H9"/>',
+  'undo-2': '<path d="M9 14 4 9l5-5"/>'
+    + '<path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11"/>',
 };
 
 window.NW.components.IconButton = {

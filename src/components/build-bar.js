@@ -26,15 +26,18 @@ window.NW.components.BuildBar = (() => {
       canRedo: { type: Boolean, default: false },
       undoLabel: { type: String, default: '' },
       redoLabel: { type: String, default: '' },
+      dirty: { type: Boolean, default: false },
     },
 
     emits: ['select', 'create', 'duplicate', 'remove', 'rename', 'copy-section', 'import',
-      'undo', 'redo'],
+      'undo', 'redo', 'save', 'revert'],
 
     data: () => ({
       panel: '',              // '' | 'copy' | 'share' | 'io'
       confirmDelete: false,
       confirmTimer: null,
+      confirmRevert: false,
+      confirmRevertTimer: null,
       copyFromId: '',
       copySections: [],
       shareLink: '',
@@ -67,6 +70,15 @@ window.NW.components.BuildBar = (() => {
       },
     },
 
+    watch: {
+      // An armed "Really revert?" refers to whichever build was active when it was clicked --
+      // switching builds inside the 4s window must not leave it armed against a different one.
+      'build.id'() {
+        window.clearTimeout(this.confirmRevertTimer);
+        this.confirmRevert = false;
+      },
+    },
+
     methods: {
       /**
        * Two-step delete rather than a `confirm()` dialog: deleting a build is the one
@@ -82,6 +94,19 @@ window.NW.components.BuildBar = (() => {
         window.clearTimeout(this.confirmTimer);
         this.confirmDelete = false;
         this.$emit('remove');
+      },
+
+      /** Same two-step confirm as delete: reverting throws away unsaved edits, the one other
+       * loss a click here can cause. */
+      onRevert() {
+        if (!this.confirmRevert) {
+          this.confirmRevert = true;
+          this.confirmRevertTimer = window.setTimeout(() => { this.confirmRevert = false; }, 4000);
+          return;
+        }
+        window.clearTimeout(this.confirmRevertTimer);
+        this.confirmRevert = false;
+        this.$emit('revert');
       },
 
       toggle(panel) {
@@ -175,6 +200,15 @@ window.NW.components.BuildBar = (() => {
           </label>
 
           <div class="buildbar-actions">
+            <button type="button" class="btn btn--primary" :disabled="!dirty"
+                    @click="$emit('save')">Save</button>
+            <button type="button" class="btn" :class="{ 'is-danger': confirmRevert }"
+                    :disabled="!dirty" @click="onRevert">
+              {{ confirmRevert ? 'Really revert?' : 'Revert' }}
+            </button>
+
+            <span class="sep"></span>
+
             <button type="button" class="btn" @click="$emit('create')">New</button>
             <button type="button" class="btn" @click="$emit('duplicate')">Duplicate</button>
             <button type="button" class="btn" :class="{ 'is-danger': confirmDelete }"

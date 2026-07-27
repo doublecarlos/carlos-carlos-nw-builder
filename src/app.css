@@ -301,6 +301,11 @@ label.quickopts-row { cursor: pointer; }
   margin-bottom: 6px;
 }
 
+/* The revert icon (shown only when the section has unsaved slots) has to sit outside the
+ * toggle button -- a <button> can't nest another one -- so the button no longer spans the
+ * full row on its own; `.section-head-row` does that instead. */
+.section-head-row { align-items: center; display: flex; }
+
 .section-head {
   align-items: center;
   background: none;
@@ -308,16 +313,18 @@ label.quickopts-row { cursor: pointer; }
   color: inherit;
   cursor: pointer;
   display: flex;
+  flex: 1;
   font: inherit;
   font-weight: 600;
   gap: 8px;
+  min-width: 0;
   padding: 7px 10px;
   text-align: left;
-  width: 100%;
 }
 .section-head:hover { background: var(--surface-2); }
 .section-chevron { color: var(--muted); width: 10px; }
 .section-count { color: var(--muted); font-weight: 400; margin-left: auto; }
+.section-revert { flex: none; margin-right: 6px; }
 
 .badge {
   border-radius: 9px;
@@ -339,7 +346,20 @@ label.quickopts-row { cursor: pointer; }
   padding: 4px 0;
 }
 .slot-row:last-child { border-bottom: 0; }
-.slot-label { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* The change marker (dot + revert icon) sits pinned to the right of this column, close to
+ * where the picker starts, rather than right after the label text -- so it lines up in the
+ * same spot on every row regardless of how long that row's label is. */
+.slot-label-col { align-items: center; display: flex; justify-content: space-between; min-width: 0; }
+.slot-label {
+  color: var(--muted);
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.slot-change { align-items: center; display: flex; flex: none; gap: 2px; }
 
 /* Keyboard cursor: independent of mouse hover (`.is-hovered`) -- the two can point at different
  * rows at once, same as a spreadsheet's selection vs. hover state. */
@@ -374,6 +394,17 @@ label.quickopts-row { cursor: pointer; }
 
 .slot-diff-note { color: var(--muted); font-size: 1rem; margin: 2px 0 0; }
 .slot-diff-note button.link { color: var(--accent); margin-left: 2px; padding: 0; }
+
+/* Quieter than `.badge--diff`: a plain dot for "not saved yet", not a number to read. Spacing
+ * from its neighbours comes from the parent's flex `gap` (`.section-head`, `.slot-change`). */
+.unsaved-dot {
+  background: var(--accent);
+  border-radius: 50%;
+  display: inline-block;
+  flex: none;
+  height: 6px;
+  width: 6px;
+}
 
 /* --- item picker --------------------------------------------------------------------- */
 

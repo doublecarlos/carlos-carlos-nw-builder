@@ -48,17 +48,25 @@ window.NW = window.NW ?? {};
     },
 
     data() {
-      const library = storage.loadLibrary();
+      // `builds`/`build` is the live, possibly-unsaved draft, loaded from its own key so a
+      // reload never loses work in progress. `savedById` is the last-saved copy of each build
+      // (the `nw:builds` library) -- `dirty` compares the active build against its entry here.
+      const savedLibrary = storage.loadLibrary();
+      const draftLibrary = storage.loadDraft(savedLibrary);
       // A `?build=`/`view=`/`tab=` from the URL (a refresh, or a back/forward landing here)
-      // wins over the library's own idea of the active build, as long as it still exists.
+      // wins over the draft's own idea of the active build, as long as it still exists.
       const route = router.parse();
-      const activeId = library.builds.some((build) => build.id === route.build)
+      const activeId = draftLibrary.builds.some((build) => build.id === route.build)
         ? route.build
-        : library.activeId;
+        : draftLibrary.activeId;
+
+      const savedById = {};
+      for (const build of savedLibrary.builds) savedById[build.id] = build;
 
       return {
-        builds: library.builds,
+        builds: draftLibrary.builds,
         activeId,
+        savedById,
         // The editor's layer over the shipped catalogue. Persisted separately from builds --
         // it is a workspace, not part of any one build.
         workspaceOverlay: storage.loadOverlay(),
@@ -175,6 +183,11 @@ window.NW = window.NW ?? {};
       canUndo() { return (this.histories[this.activeId]?.past.length ?? 0) > 0; },
       canRedo() { return (this.histories[this.activeId]?.future.length ?? 0) > 0; },
 
+      /** Compared against the saved copy, not a plain equality: `storage.sameBuild` is
+       * key-order-insensitive and ignores `updated`, or a save-then-revert (or a build the
+       * `updated` stamp alone touched) would read as still dirty. */
+      dirty() { return !storage.sameBuild(this.build, this.savedById[this.activeId]); },
+
       /** What the buttons would actually reverse, for their tooltips. */
       undoLabel() {
         const past = this.histories[this.activeId]?.past;
@@ -188,18 +201,20 @@ window.NW = window.NW ?? {};
     },
 
     watch: {
+      // The draft autosaves continuously -- this is "don't lose work on a reload", not "save
+      // my changes"; that is `saveActive()`, wired to the Save button.
       builds: {
         deep: true,
         handler() {
           window.clearTimeout(this.saveTimer);
-          this.saveTimer = window.setTimeout(() => this.save(), SAVE_DEBOUNCE_MS);
+          this.saveTimer = window.setTimeout(() => this.saveDraft(), SAVE_DEBOUNCE_MS);
         },
       },
       // Every one of these is either a deliberate navigation (switch build, open/close the
       // editor) or, via `applyRoute`, the URL catching us up after the user already navigated
       // with the browser's own back/forward -- `router.apply`'s no-op guard means the latter
       // case can't turn into a duplicate history entry.
-      activeId() { this.save(); this.syncRoute(); },
+      activeId() { this.saveDraft(); this.syncRoute(); },
       view() { this.syncRoute(); },
       // The sidebar tab is a lighter switch than a build/view change -- it still belongs in
       // the URL for a refresh to restore, but it would clutter the back button if every click
@@ -434,32 +449,43 @@ window.NW = window.NW ?? {};
         this.activeId = id;
       },
 
+      // Create/duplicate/delete/import/share all save themselves immediately, unlike an
+      // ordinary edit: there is nothing pending to lose, since the build's own saved copy
+      // starts out identical to what was just built.
       createBuild() {
         const build = storage.defaultBuild(`Build ${this.builds.length + 1}`);
         this.builds.push(build);
+        this.savedById[build.id] = storage.cloneBuild(build);
         this.activeId = build.id;
+        this.persistSaved();
       },
 
       duplicateBuild() {
         const copy = storage.duplicate(this.build);
         this.builds.push(copy);
+        this.savedById[copy.id] = storage.cloneBuild(copy);
         this.activeId = copy.id;
         this.notice = `Duplicated as “${copy.name}”`;
+        this.persistSaved();
       },
 
       removeBuild() {
         if (this.builds.length < 2) return;
         const index = this.builds.findIndex((item) => item.id === this.activeId);
         const [removed] = this.builds.splice(index, 1);
+        delete this.savedById[removed.id];
         this.dropHistory(removed.id);
         this.activeId = this.builds[Math.min(index, this.builds.length - 1)].id;
         this.notice = `Deleted “${removed.name}”`;
+        this.persistSaved();
       },
 
       importBuilds(builds) {
         this.builds.push(...builds);
+        for (const build of builds) this.savedById[build.id] = storage.cloneBuild(build);
         this.activeId = builds[builds.length - 1].id;
         this.notice = `Imported ${builds.length} build(s)`;
+        this.persistSaved();
       },
 
       /**
@@ -487,20 +513,74 @@ window.NW = window.NW ?? {};
         this.notice = `Copied ${sectionIds.length} section(s) from “${source.name}”`;
       },
 
+      /** One slot's own "revert" icon (slot-list.js): undoes just that slot's unsaved edit,
+       * leaving the rest of the draft alone -- unlike `revertActive`, which throws away
+       * everything unsaved in the build. */
+      revertSlot(slotId) {
+        const saved = this.savedById[this.activeId];
+        if (!saved) return;
+        this.snapshot(null, `revert ${this.slotLabel(slotId)}`);
+        const choice = saved.choices[slotId];
+        if (choice) this.build.choices[slotId] = choice;
+        else delete this.build.choices[slotId];
+        const value = saved.values[slotId];
+        if (value != null) this.build.values[slotId] = value;
+        else delete this.build.values[slotId];
+      },
+
+      /** Same, for every slot in one section at once (a section header's own "revert" icon). */
+      revertSection(sectionId) {
+        const saved = this.savedById[this.activeId];
+        const slots = this.db.slots.filter((slot) => slot.section === sectionId);
+        if (!saved || !slots.length) return;
+        const label = this.db.sections.find((section) => section.id === sectionId)?.label ?? sectionId;
+        this.snapshot(null, `revert ${label}`);
+        for (const slot of slots) {
+          const choice = saved.choices[slot.id];
+          if (choice) this.build.choices[slot.id] = choice;
+          else delete this.build.choices[slot.id];
+          const value = saved.values[slot.id];
+          if (value != null) this.build.values[slot.id] = value;
+          else delete this.build.values[slot.id];
+        }
+      },
+
       // --- plumbing -------------------------------------------------------------------------
 
-      save() {
-        // Stamp `updated` on the serialised copy, never on the reactive build: writing it back
-        // would retrigger the deep watcher that called us and leave the app saving forever.
-        const now = Date.now();
-        const builds = this.builds.map((item) => (
-          item.id === this.activeId ? { ...item, updated: now } : item
-        ));
-        const ok = storage.saveLibrary({ builds, activeId: this.activeId });
+      /** The continuous, debounced "don't lose this on a reload" write -- not a save the user
+       * asked for, so it never touches `savedById` or clears `storageFailed`'s one-shot notice. */
+      saveDraft() {
+        const ok = storage.saveDraft({ builds: this.builds, activeId: this.activeId });
         if (!ok && !this.storageFailed) {
           this.storageFailed = true;
           this.notice = 'Could not save to localStorage — export your build to keep it.';
         }
+      },
+
+      /** Writes `savedById` as it stands right now to `nw:builds`. Shared by the explicit Save
+       * button and by structural changes that save themselves immediately. */
+      persistSaved() {
+        const ok = storage.saveLibrary({ builds: Object.values(this.savedById), activeId: this.activeId });
+        if (!ok && !this.storageFailed) {
+          this.storageFailed = true;
+          this.notice = 'Could not save to localStorage — export your build to keep it.';
+        }
+      },
+
+      /** The Save button: promotes the live draft to the saved library. */
+      saveActive() {
+        this.savedById[this.activeId] = { ...storage.cloneBuild(this.build), updated: Date.now() };
+        this.persistSaved();
+      },
+
+      /** Discards unsaved edits back to what was last saved. `build-bar.js` gates this behind
+       * its own two-step confirm, same as delete -- this is the one place an ordinary edit can
+       * be lost, since the draft otherwise survives everything (including a reload). */
+      revertActive() {
+        const saved = this.savedById[this.activeId];
+        if (!saved) return;
+        this.snapshot(null, 'revert unsaved changes');
+        this.replaceActive(storage.cloneBuild(saved));
       },
 
       /** A `#b=…` link is consumed once: the build joins the library and the hash is dropped. */
@@ -510,8 +590,10 @@ window.NW = window.NW ?? {};
         try {
           const shared = await storage.decodeShare(payload);
           this.builds.push(shared);
+          this.savedById[shared.id] = storage.cloneBuild(shared);
           this.activeId = shared.id;
           this.notice = `Opened “${shared.name}” from a share link`;
+          this.persistSaved();
         } catch (error) {
           this.notice = `That share link could not be read: ${error.message ?? error}`;
         }
@@ -545,7 +627,7 @@ window.NW = window.NW ?? {};
         }, { push });
       },
 
-      /** Shift+click on a filled slot (slot-list.js): jump straight into that item in the data
+      /** Ctrl+click on a filled slot (slot-list.js): jump straight into that item in the data
        * editor. `item` has to land in the URL before `view` flips -- the `view` watcher's own
        * `syncRoute()` runs (flush: pre, so before the DOM patches DataEditor into existence) and
        * merges `view=editor` onto whatever is already there, and DataEditor reads `item` off the
@@ -590,6 +672,7 @@ window.NW = window.NW ?? {};
           :can-redo="canRedo"
           :undo-label="undoLabel"
           :redo-label="redoLabel"
+          :dirty="dirty"
           @select="selectBuild"
           @create="createBuild"
           @duplicate="duplicateBuild"
@@ -598,7 +681,9 @@ window.NW = window.NW ?? {};
           @copy-section="copySection"
           @import="importBuilds"
           @undo="undo"
-          @redo="redo" />
+          @redo="redo"
+          @save="saveActive"
+          @revert="revertActive" />
 
         <QuickOptions
           :context="build.context"
@@ -642,6 +727,7 @@ window.NW = window.NW ?? {};
           :compare-build="compareBuild"
           :highlight-diff="build.compare.highlight"
           :only-diff="build.compare.onlyDiff"
+          :saved-build="savedById[activeId]"
           @choose="setChoice"
           @set-value="setValue"
           @set="setContext"
@@ -649,7 +735,9 @@ window.NW = window.NW ?? {};
           @apply-slot="applyFromCompare"
           @toggle-section="toggleSection"
           @set-expanded="setExpanded"
-          @edit-item="editItem" />
+          @edit-item="editItem"
+          @revert-slot="revertSlot"
+          @revert-section="revertSection" />
         <aside class="sidebar">
           <div class="tabs">
             <button type="button" class="tab" :class="{ 'is-on': tab === 'stats' }"
