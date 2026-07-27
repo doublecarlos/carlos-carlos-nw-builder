@@ -19,6 +19,7 @@ window.NW.components.DataEditor = (() => {
 
     components: {
       ItemForm: window.NW.components.ItemForm,
+      BonusSetForm: window.NW.components.BonusSetForm,
       ComboBox: window.NW.components.ComboBox,
     },
 
@@ -32,7 +33,9 @@ window.NW.components.DataEditor = (() => {
     data: () => ({
       query: '',
       statusFilter: 'all',      // all | changed | added | edited | removed
+      section: 'items',         // items | bonusSets
       selectedName: null,
+      selectedSetId: null,
       showExport: false,
       exportTab: 'items',       // items | bonuses | overlay
       formDirty: false,
@@ -44,17 +47,44 @@ window.NW.components.DataEditor = (() => {
     computed: {
       // Removed entries are gone from `db`, so the list is built from the composed catalogue
       // plus the overlay's tombstones -- otherwise a deletion would vanish with no way back.
-      rows() {
+      itemRows() {
         const rows = this.db.items.map((item) => ({
+          key: item.name,
           name: item.name,
           filter: item.filter,
           item,
           status: catalog().statusOf(this.overlay, 'items', item.name),
+          kind: 'item',
         }));
         for (const [name, value] of Object.entries(this.overlay.items ?? {})) {
-          if (value === null) rows.push({ name, filter: '—', item: null, status: 'removed' });
+          if (value === null) {
+            rows.push({ key: name, name, filter: '—', item: null, status: 'removed', kind: 'item' });
+          }
         }
         return rows.sort((a, b) => a.name.localeCompare(b.name));
+      },
+
+      /** Same shape as `itemRows`, one row per bonus set rather than per item -- so the same
+       * list/search/keyboard-nav code serves both without knowing which it's showing. */
+      bonusSetRows() {
+        const rows = this.db.bonusSets.map((set) => ({
+          key: set.id,
+          name: set.name || set.id,
+          filter: `${(set.effects ?? []).length} effect(s)`,
+          set,
+          status: catalog().statusOf(this.overlay, 'bonusSets', set.id),
+          kind: 'bonusSet',
+        }));
+        for (const [id, value] of Object.entries(this.overlay.bonusSets ?? {})) {
+          if (value === null) {
+            rows.push({ key: id, name: id, filter: '—', set: null, status: 'removed', kind: 'bonusSet' });
+          }
+        }
+        return rows.sort((a, b) => a.name.localeCompare(b.name));
+      },
+
+      rows() {
+        return this.section === 'bonusSets' ? this.bonusSetRows : this.itemRows;
       },
 
       filtered() {
@@ -77,7 +107,7 @@ window.NW.components.DataEditor = (() => {
         { value: 'removed', label: 'removed' },
       ]),
 
-  selected() {
+      selected() {
         if (this.selectedName == null) return null;
         return this.db.get(this.selectedName);
       },
@@ -86,6 +116,17 @@ window.NW.components.DataEditor = (() => {
         return this.selectedName == null
           ? 'base'
           : catalog().statusOf(this.overlay, 'items', this.selectedName);
+      },
+
+      selectedSet() {
+        if (this.selectedSetId == null) return null;
+        return this.db.bonusSetById.get(this.selectedSetId) ?? null;
+      },
+
+      selectedSetStatus() {
+        return this.selectedSetId == null
+          ? 'base'
+          : catalog().statusOf(this.overlay, 'bonusSets', this.selectedSetId);
       },
 
       filters() {
@@ -135,8 +176,14 @@ window.NW.components.DataEditor = (() => {
     },
 
     mounted() {
-      const routed = window.NW.router.parse().item;
-      if (routed && this.db.get(routed)) this.selectedName = routed;
+      const routed = window.NW.router.parse();
+      if (routed.section === 'bonusSets') {
+        this.section = 'bonusSets';
+        if (routed.set && this.db.bonusSetById.get(routed.set)) this.selectedSetId = routed.set;
+      } else if (routed.item && this.db.get(routed.item)) {
+        this.selectedName = routed.item;
+      }
+      if (this.isValidStatusFilter(routed.status)) this.statusFilter = routed.status;
       window.addEventListener('popstate', this.onPopState);
     },
 
@@ -144,32 +191,67 @@ window.NW.components.DataEditor = (() => {
       window.removeEventListener('popstate', this.onPopState);
     },
 
+    watch: {
+      // A lighter switch than picking a row -- doesn't deserve its own back/forward stop, same
+      // as app.js's `tab` watcher.
+      statusFilter(value) {
+        window.NW.router.apply({ status: value === 'all' ? null : value }, { push: false });
+      },
+    },
+
     methods: {
       // --- routing --------------------------------------------------------------------------
-      // `item` is this component's own corner of the URL -- app.js owns view/build/tab and
-      // knows nothing about what's selected in here. `select`'s `push` flag is what keeps
-      // arrow-key browsing from filling the back/forward stack with one stop per keystroke:
-      // a click is a real "go to this item" navigation, an arrow key is just skimming.
+      // `item`/`set`/`section`/`status` are this component's own corner of the URL -- app.js
+      // owns view/build/tab and knows nothing about what's selected in here. `select`'s `push`
+      // flag is what keeps arrow-key browsing from filling the back/forward stack with one stop
+      // per keystroke: a click is a real "go to this row" navigation, an arrow key is just
+      // skimming.
+
+      isValidStatusFilter(value) {
+        return this.statusFilterOptions.some((option) => option.value === value);
+      },
 
       /** Back/forward landed on this component while it was already mounted (still in the
-       * editor, just a different item). A fresh mount reads the same param in `mounted()`. */
+       * editor, just a different item/set/section/status filter). A fresh mount reads the same
+       * params in `mounted()`. */
       onPopState() {
-        const name = window.NW.router.parse().item ?? null;
-        this.selectedName = (name && this.db.get(name)) ? name : null;
+        const route = window.NW.router.parse();
+        if (route.section === 'bonusSets') {
+          this.section = 'bonusSets';
+          this.selectedSetId = (route.set && this.db.bonusSetById.get(route.set)) ? route.set : null;
+        } else {
+          this.section = 'items';
+          this.selectedName = (route.item && this.db.get(route.item)) ? route.item : null;
+        }
+        this.statusFilter = this.isValidStatusFilter(route.status) ? route.status : 'all';
+      },
+
+      switchSection(target) {
+        if (this.section === target) return;
+        this.section = target;
+        window.NW.router.apply(target === 'bonusSets'
+          ? { section: 'bonusSets', item: null, set: this.selectedSetId }
+          : { section: null, set: null, item: this.selectedName });
       },
 
       select(row, { push = true } = {}) {
         if (row.status === 'removed') return;
-        this.selectedName = row.name;
-        window.NW.router.apply({ item: row.name }, { push });
+        if (row.kind === 'bonusSet') {
+          this.selectedSetId = row.key;
+          window.NW.router.apply({ set: row.key, item: null }, { push });
+        } else {
+          this.selectedName = row.key;
+          window.NW.router.apply({ item: row.key, set: null }, { push });
+        }
       },
 
       /**
        * ArrowUp/Down drive the list from either the search box (kept focused, command-palette
-       * style -- typing still filters normally) or a focused row. `selectedName` doubles as the
-       * keyboard cursor: the existing click UX has no separate "highlighted but not open" state,
-       * so keyboard nav matches it exactly rather than inventing one. Guarded to the search
-       * input or an `.editor-row` so the status ComboBox's own dropdown keeps its arrows.
+       * style -- typing still filters normally) or a focused row. The current section's selected
+       * key doubles as the keyboard cursor: the existing click UX has no separate "highlighted
+       * but not open" state, so keyboard nav matches it exactly rather than inventing one.
+       * Guarded to the search input or an `.editor-row` so the status ComboBox's own dropdown
+       * keeps its arrows.
        */
       onListKeydown(event) {
         const isSearch = event.target.matches?.('input[type="search"]');
@@ -179,7 +261,8 @@ window.NW.components.DataEditor = (() => {
         const rows = this.filtered;
         if (!rows.length) return;
         event.preventDefault();
-        const idx = rows.findIndex((row) => row.name === this.selectedName);
+        const currentKey = this.section === 'bonusSets' ? this.selectedSetId : this.selectedName;
+        const idx = rows.findIndex((row) => row.key === currentKey);
         if (event.key === 'Enter') {
           if (idx !== -1) this.select(rows[idx]);
           return;
@@ -196,6 +279,12 @@ window.NW.components.DataEditor = (() => {
         window.NW.router.apply({ item: null });
         // Remounts ItemForm with an empty draft even if it was already showing a new item.
         this.$refs.form?.$forceUpdate?.();
+      },
+
+      newSet() {
+        this.selectedSetId = null;
+        window.NW.router.apply({ set: null });
+        this.$refs.setForm?.$forceUpdate?.();
       },
 
       onSave({ item, previousName }) {
@@ -220,9 +309,10 @@ window.NW.components.DataEditor = (() => {
         this.notice = `Reverted “${name}” to the shipped version`;
       },
 
-      restore(name) {
-        this.$emit('update-overlay', catalog().revert(this.overlay, 'items', name));
-        this.notice = `Restored “${name}”`;
+      restore(row) {
+        const group = row.kind === 'bonusSet' ? 'bonusSets' : 'items';
+        this.$emit('update-overlay', catalog().revert(this.overlay, group, row.key));
+        this.notice = `Restored “${row.name}”`;
       },
 
       /** Two-step, not a `confirm()` dialog -- same pattern as build-bar.js's delete: this
@@ -238,22 +328,95 @@ window.NW.components.DataEditor = (() => {
         this.confirmReset = false;
         this.$emit('update-overlay', catalog().emptyOverlay());
         this.selectedName = null;
-        window.NW.router.apply({ item: null });
+        this.selectedSetId = null;
+        window.NW.router.apply({ item: null, set: null });
         this.notice = 'Discarded every change — back to the shipped data';
       },
 
+      /** Jump to whatever a validation finding points at, switching section if needed --
+       * findings carry `kind` precisely so this doesn't have to guess from the id/name shape. */
+      selectFinding(finding) {
+        if (!finding.name) return;
+        if (finding.kind === 'bonusSet') {
+          this.section = 'bonusSets';
+          this.selectedSetId = finding.name;
+          window.NW.router.apply({ section: 'bonusSets', set: finding.name, item: null });
+        } else {
+          this.section = 'items';
+          this.selectedName = finding.name;
+          window.NW.router.apply({ section: null, item: finding.name, set: null });
+        }
+      },
+
       // --- bonus sets -----------------------------------------------------------------------
-      // Edited from inside the item form now, next to the item that grants them.
+      // `onSaveSet`/`onDeleteSet` are the sub-editor inside the item form (a bonus this item
+      // attaches or detaches); `onSaveSetTop`/`onDeleteSetTop`/`onRevertSetTop` are this
+      // component's own "Bonus sets" section, browsing and editing a set on its own.
+
+      /**
+       * Renaming a shared bonus set's *id* (not its display name -- items never reference that)
+       * would otherwise only ever patch the array of whichever item's form happened to be open;
+       * every other item that also lists the old id is left pointing at a dead one, and just
+       * silently stops granting it. Every item currently granting `oldId` gets its own overlay
+       * entry rewritten to `newId`, folded into the same overlay update as the rename itself --
+       * including the item whose form triggered the rename, so the fix holds even if that item
+       * is never explicitly re-saved.
+       */
+      cascadeSetRename(overlay, oldId, newId) {
+        const affected = (this.db.setMembers.get(oldId) ?? [])
+          .map((name) => this.db.get(name))
+          .filter((item) => item?.bonuses?.includes(oldId));
+        let next = overlay;
+        for (const item of affected) {
+          const updated = { ...item, bonuses: item.bonuses.map((bid) => (bid === oldId ? newId : bid)) };
+          next = catalog().upsert(next, 'items', item.name, updated, item.name);
+        }
+        return { overlay: next, count: affected.length };
+      },
 
       onSaveSet({ id, set, previousId }) {
-        this.$emit('update-overlay',
-          catalog().upsert(this.overlay, 'bonusSets', id, set, previousId ?? id));
-        this.notice = `Saved set “${set.name || id}”`;
+        let next = catalog().upsert(this.overlay, 'bonusSets', id, set, previousId ?? id);
+        let extra = '';
+        if (previousId && previousId !== id) {
+          const cascade = this.cascadeSetRename(next, previousId, id);
+          next = cascade.overlay;
+          if (cascade.count) extra = ` — updated ${cascade.count} other item(s) that referenced the old id`;
+        }
+        this.$emit('update-overlay', next);
+        this.notice = `Saved set “${set.name || id}”${extra}`;
       },
 
       onDeleteSet(id) {
         this.$emit('update-overlay', catalog().remove(this.overlay, 'bonusSets', id));
         this.notice = `Removed set “${id}”`;
+      },
+
+      onSaveSetTop({ id, set, previousId }) {
+        let next = catalog().upsert(this.overlay, 'bonusSets', id, set, previousId);
+        let extra = '';
+        if (previousId && previousId !== id) {
+          const cascade = this.cascadeSetRename(next, previousId, id);
+          next = cascade.overlay;
+          if (cascade.count) extra = ` — updated ${cascade.count} item(s) that referenced the old id`;
+        }
+        this.$emit('update-overlay', next);
+        this.selectedSetId = id;
+        window.NW.router.apply({ set: id });
+        this.notice = `Saved bonus set “${set.name || id}”${extra}`;
+      },
+
+      onDeleteSetTop() {
+        const id = this.selectedSetId;
+        this.$emit('update-overlay', catalog().remove(this.overlay, 'bonusSets', id));
+        this.selectedSetId = null;
+        window.NW.router.apply({ set: null });
+        this.notice = `Removed bonus set “${id}”`;
+      },
+
+      onRevertSetTop() {
+        const id = this.selectedSetId;
+        this.$emit('update-overlay', catalog().revert(this.overlay, 'bonusSets', id));
+        this.notice = `Reverted bonus set “${id}” to the shipped version`;
       },
 
       // --- export ---------------------------------------------------------------------------
@@ -297,7 +460,12 @@ window.NW.components.DataEditor = (() => {
       <div class="editor">
         <div class="editor-bar">
           <strong>Data editor</strong>
-          <span class="hint">{{ db.items.length }} items · {{ db.bonusSets.length }} bonus sets</span>
+          <div class="tabs">
+            <button type="button" class="tab" :class="{ 'is-on': section === 'items' }"
+                    @click="switchSection('items')">Items <span class="tab-count">{{ db.items.length }}</span></button>
+            <button type="button" class="tab" :class="{ 'is-on': section === 'bonusSets' }"
+                    @click="switchSection('bonusSets')">Bonus sets <span class="tab-count">{{ db.bonusSets.length }}</span></button>
+          </div>
 
           <span class="spacer"></span>
 
@@ -351,7 +519,7 @@ window.NW.components.DataEditor = (() => {
             <li v-for="(finding, i) in findings.slice(0, 40)" :key="i" :class="finding.level">
               <span class="finding-level">{{ finding.level }}</span>
               <button v-if="finding.name" type="button" class="link"
-                      @click="selectedName = finding.name">{{ finding.name }}</button>
+                      @click="selectFinding(finding)">{{ finding.name }}</button>
               <span>{{ finding.message }}</span>
             </li>
           </ul>
@@ -361,20 +529,24 @@ window.NW.components.DataEditor = (() => {
         <div class="editor-body">
           <div class="editor-list" @keydown="onListKeydown">
             <div class="editor-list-head">
-              <input type="search" v-model="query" placeholder="Filter items…">
+              <input type="search" v-model="query"
+                     :placeholder="section === 'bonusSets' ? 'Filter bonus sets…' : 'Filter items…'">
               <ComboBox class="combo--status" :model-value="statusFilter" :options="statusFilterOptions"
                         @update:model-value="v => statusFilter = v" />
-              <button type="button" class="btn btn--primary" @click="newItem">+ New item</button>
+              <button v-if="section === 'bonusSets'" type="button" class="btn btn--primary"
+                      @click="newSet">+ New bonus set</button>
+              <button v-else type="button" class="btn btn--primary" @click="newItem">+ New item</button>
             </div>
             <div class="editor-list-body">
-              <div v-for="row in filtered" :key="row.name" class="editor-row" tabindex="0"
-                   :class="{ 'is-on': row.name === selectedName }" @click="select(row)">
+              <div v-for="row in filtered" :key="row.key" class="editor-row" tabindex="0"
+                   :class="{ 'is-on': row.key === (section === 'bonusSets' ? selectedSetId : selectedName) }"
+                   @click="select(row)">
                 <span class="editor-row-name">{{ row.name }}</span>
                 <span v-if="row.status !== 'base'" class="badge" :class="'badge--' + row.status">
                   {{ row.status }}
                 </span>
                 <button v-if="row.status === 'removed'" type="button" class="link"
-                        @click.stop="restore(row.name)">restore</button>
+                        @click.stop="restore(row)">restore</button>
                 <span v-else class="editor-row-filter">{{ row.filter }}</span>
               </div>
               <p v-if="!filtered.length" class="dim" style="padding:8px">Nothing matches.</p>
@@ -383,6 +555,7 @@ window.NW.components.DataEditor = (() => {
 
           <div class="editor-form">
             <ItemForm
+              v-if="section === 'items'"
               ref="form"
               :key="selectedName ?? '__new__'"
               :source="selected"
@@ -397,6 +570,20 @@ window.NW.components.DataEditor = (() => {
               @revert="onRevert"
               @save-set="onSaveSet"
               @delete-set="onDeleteSet"
+              @dirty="formDirty = $event" />
+            <BonusSetForm
+              v-else
+              ref="setForm"
+              :key="selectedSetId ?? '__new__'"
+              :source="selectedSet"
+              :status="selectedSetStatus"
+              :db="db"
+              :set-ids="setIds"
+              :tags="tagList"
+              :bonus-ids="bonusIds"
+              @save="onSaveSetTop"
+              @delete="onDeleteSetTop"
+              @revert="onRevertSetTop"
               @dirty="formDirty = $event" />
           </div>
         </div>

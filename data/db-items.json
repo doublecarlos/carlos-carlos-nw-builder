@@ -1544,7 +1544,7 @@
     "strike": 3150,
     "severity": 3150,
     "allowedClass": ["warlock"],
-    "bonuses": ["m32-omen-of-doom-celestial"]
+    "bonuses": ["m32-impending-doom-celestial"]
   },
   {
     "name": "M32 Codex of Eternal Chains (Legendary)",
@@ -1622,7 +1622,7 @@
     "severity": 3150,
     "flat_damage": 200,
     "allowedClass": ["warlock"],
-    "bonuses": ["m32-omen-of-doom-celestial"]
+    "bonuses": ["m32-impending-doom-celestial"]
   },
   {
     "name": "M32 Omen of Doom (Legendary)",

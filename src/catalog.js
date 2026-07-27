@@ -159,7 +159,7 @@ window.NW.catalog = (() => {
    */
   function validate(items, bonusSets, schema = window.NW_SCHEMA) {
     const findings = [];
-    const report = (level, message, name) => findings.push({ level, message, name });
+    const report = (level, message, name, kind = 'item') => findings.push({ level, message, name, kind });
 
     const statKeys = new Set(schema.statKeys);
     const percentKinds = new Set(['percent', 'mult']);
@@ -168,21 +168,21 @@ window.NW.catalog = (() => {
     const setIds = new Set(bonusSets.map((set) => set.id));
     const seenNames = new Set();
 
-    const checkStats = (stats, label, name) => {
+    const checkStats = (stats, label, name, kind = 'item') => {
       for (const [key, value] of Object.entries(stats ?? {})) {
         if (!statKeys.has(key)) {
-          report('error', `${label}: "${key}" is not a stat in the schema`, name);
+          report('error', `${label}: "${key}" is not a stat in the schema`, name, kind);
           continue;
         }
         if (typeof value !== 'number' || !Number.isFinite(value)) {
-          report('error', `${label}: ${key} is not a finite number`, name);
+          report('error', `${label}: ${key} is not a finite number`, name, kind);
           continue;
         }
         // Percentages are decimals: 0.09 is 9%. Typing 9 means 900%, which is the single
         // easiest mistake to make in this data and impossible to spot in the totals.
         if (percentKinds.has(schema.statByKey[key]?.kind) && Math.abs(value) > 1.5) {
           report('warn', `${label}: ${key} = ${value} means ${value * 100}% — decimals here `
-            + '(0.09 is 9%)', name);
+            + '(0.09 is 9%)', name, kind);
         }
       }
     };
@@ -224,13 +224,15 @@ window.NW.catalog = (() => {
     for (const set of bonusSets) {
       if (!set.id) { report('error', 'a bonus set has no id'); continue; }
       for (const effect of set.effects ?? []) {
-        if (!effect.id) report('error', 'an effect has no id', set.id);
-        if (!effect.name) report('warn', `effect ${effect.id ?? '?'} has no friendly name`, set.id);
+        if (!effect.id) report('error', 'an effect has no id', set.id, 'bonusSet');
+        if (!effect.name) {
+          report('warn', `effect ${effect.id ?? '?'} has no friendly name`, set.id, 'bonusSet');
+        }
         checkConditions(effect.when, `effect ${effect.id ?? '?'}`, (level, message) =>
-          report(level, message, set.id));
-        checkStats(effect.stats, `effect ${effect.id ?? '?'}`, set.id);
+          report(level, message, set.id, 'bonusSet'));
+        checkStats(effect.stats, `effect ${effect.id ?? '?'}`, set.id, 'bonusSet');
         for (const tier of effect.tiers ?? []) {
-          checkStats(tier.stats, `effect ${effect.id} tier`, set.id);
+          checkStats(tier.stats, `effect ${effect.id} tier`, set.id, 'bonusSet');
         }
       }
     }

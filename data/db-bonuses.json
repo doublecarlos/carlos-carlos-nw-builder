@@ -869,6 +869,24 @@
     ]
   },
   {
+    "id": "m32-impending-doom-celestial",
+    "name": "M32 Impending Doom (Celestial)",
+    "effects": [
+      {
+        "id": "m32-impending-doom-celestial",
+        "name": "M32 Impending Doom (Celestial)",
+        "when": {"pieces": {"set": "m32-impending-doom-celestial", "atLeast": 2}},
+        "variants": [
+          {
+            "stats": {"outgoing_damage": 0.05, "power_p": 0.05, "sev_p": 0.09},
+            "when": {"duration": {"atLeast": 30}, "toggle": "combat"}
+          },
+          {"stats": {"power_p": 0.05, "sev_p": 0.09}}
+        ]
+      }
+    ]
+  },
+  {
     "id": "m32-knot-of-the-bloodhound-celestial",
     "name": "M32 Knot of the Bloodhound (Celestial)",
     "effects": [
@@ -877,28 +895,6 @@
         "name": "M32 Knot of the Bloodhound (Celestial)",
         "stats": {"power_p": 0.06, "sev_p": 0.075},
         "when": {"pieces": {"set": "m32-knot-of-the-bloodhound-celestial", "atLeast": 2}}
-      }
-    ]
-  },
-  {
-    "id": "m32-omen-of-doom-celestial",
-    "name": "M32 Omen of Doom (Celestial)",
-    "effects": [
-      {
-        "id": "m32-omen-of-doom-celestial-bonus",
-        "name": "M32 Omen of Doom (Celestial)",
-        "stats": {"power_p": 0.05, "sev_p": 0.09},
-        "when": {"pieces": {"set": "m32-omen-of-doom-celestial", "atLeast": 2}}
-      },
-      {
-        "id": "m32-omen-of-doom-celestial-bonus-combat-medium-plus-combat",
-        "name": "M32 Omen of Doom (Celestial) (combat medium plus, combat)",
-        "when": {
-          "duration": {"atLeast": 30},
-          "toggle": "combat",
-          "pieces": {"set": "m32-omen-of-doom-celestial", "atLeast": 2}
-        },
-        "stats": {"outgoing_damage": 0.05}
       }
     ]
   },

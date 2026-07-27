@@ -100,6 +100,12 @@ llm/plans/            numbered plans
 - **Catalogue is layered**: base (shipped) ← workspace overlay (editor) ← `build.catalog`
   (per-build custom gear — plumbed but not yet exposed). An overlay is
   `{ items: { name: item|null }, bonusSets: { id: set|null } }`; `null` is a tombstone.
+- **Items reference a bonus set by id, never by name.** `item.bonuses` is an array of set ids;
+  the set's `name` is display-only. Renaming a set's *id* (from either the item-form's bonus
+  editor or the data editor's own "Bonus sets" section) therefore has to rewrite `bonuses` on
+  every item that references the old id, or those items silently stop granting it —
+  `data-editor.js`'s `cascadeSetRename` does this as part of the same overlay update as the
+  rename, not as a separate step.
 - **Percentages are decimals.** `0.09` is 9%. Format at the edge, never round in state.
   Percent fields convert with rounding — `3.6 / 100` is `0.036000000000000004`.
 - **`stats` vs `appliedStats`** on a resolved bonus: the former is per-stack, the latter is what
@@ -110,10 +116,12 @@ llm/plans/            numbered plans
 - **Options are context, not slots.** Class/Role/Forte live in `build.context`.
 - **Routing is query-string, not path** (`?build=…&view=…`) — a static host serves `index.html`
   by path only, so `/builds/x` would 404 on refresh; `?x=y` always resolves. `app.js` owns
-  `view`/`build`/`tab` via a plain `watch` + `router.apply`; `data-editor.js` owns `item` itself
-  by calling `router.apply` at each mutation site instead, because arrow-key list browsing needs
-  `push:false` (replace) while a click needs `push:true` — a generic watcher can't tell those
-  apart. Nothing needs a "did this change come from popstate" guard: `router.apply`'s own
+  `view`/`build`/`tab` via a plain `watch` + `router.apply`; `data-editor.js` owns
+  `item`/`set`/`section`/`status` itself, calling `router.apply` at each mutation site instead of
+  a generic watcher for the selection params, because arrow-key list browsing needs `push:false`
+  (replace) while a click needs `push:true` — a generic watcher can't tell those apart (`status`,
+  the changed/added/edited/removed filter, has no such nuance and does use a plain `watch`, same
+  as `tab`). Nothing needs a "did this change come from popstate" guard: `router.apply`'s own
   no-op-if-unchanged check makes re-applying state that came from a popstate event harmless.
 
 ## Working with this user
