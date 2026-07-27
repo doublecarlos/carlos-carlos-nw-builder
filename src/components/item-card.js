@@ -4,8 +4,8 @@
 // Pure presentation -- the caller resolves which bonuses belong to the item and positions the
 // card. Rendered once by `slot-list`, not once per row: 180 slots must not mean 180 cards.
 //
-// `pointer-events: none` (see app.css) makes this a genuine tooltip: it can never swallow a
-// click meant for the row underneath, or fight the hover that summoned it.
+// Interactive (see app.css): a long card scrolls, so it must accept the pointer. `slot-list`
+// keeps it open while the pointer is over it and closes it on leave.
 
 window.NW = window.NW ?? {};
 window.NW.components = window.NW.components ?? {};

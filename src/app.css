@@ -484,12 +484,17 @@ label.quickopts-row { cursor: pointer; }
   width: 330px;
   max-height: 440px;
   overflow-y: auto;
+  /* Without this, a wheel scroll that reaches the card's own scroll limit chains onto the
+   * page underneath -- scrolling the build page and invalidating the card's anchor rect,
+   * which closes the card mid-scroll. */
+  overscroll-behavior: contain;
   padding: 9px 11px;
   position: fixed;
   z-index: 40;
-  /* A tooltip must never eat a click meant for the row it describes, nor fight the hover
-   * that summoned it. */
-  pointer-events: none;
+  /* Interactive on purpose: long cards overflow and need the scroll wheel, and reaching them
+   * with the pointer must not make them vanish. slot-list.js gives the card its own
+   * mouseenter/mouseleave so it stays open while the pointer is over it. */
+  pointer-events: auto;
 }
 
 .itemcard-head { align-items: baseline; display: flex; gap: 8px; }

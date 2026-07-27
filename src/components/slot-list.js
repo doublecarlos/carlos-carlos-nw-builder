@@ -13,6 +13,11 @@ window.NW.components.SlotList = (() => {
   const OPEN_BY_DEFAULT = new Set(['gear']);
 
   const HOVER_DELAY_MS = 220;
+  // If the pointer lands on a new row this soon after the last card closed, treat it as still
+  // "in" the tooltip session and skip the opening delay -- sweeping down a list of items should
+  // feel like one continuous hover, not a fresh 220ms wait per row.
+  const HOVER_RESUME_MS = 400;
+  const HOVER_CLOSE_GRACE_MS = 100;
   const CARD_W = 330;    // must match .itemcard width in app.css
 
   return {
@@ -40,6 +45,8 @@ window.NW.components.SlotList = (() => {
         expanded,
         hover: null,        // { slotId, left, top } -- the one hover card, or nothing
         hoverTimer: null,
+        leaveTimer: null,   // grace period before a leave actually closes the card
+        lastHideAt: 0,      // Date.now() of the last close, for the "resume" fast path
         editing: false,     // a picker has focus: suppress the card so it cannot cover a dropdown
       };
     },
@@ -137,14 +144,40 @@ window.NW.components.SlotList = (() => {
       onRowEnter(event, slotId) {
         if (this.editing || !this.itemIn(slotId)) return;
         window.clearTimeout(this.hoverTimer);
+        window.clearTimeout(this.leaveTimer);
         const rect = event.currentTarget.getBoundingClientRect();
         const x = event.clientX;
-        // Delay: sweeping the pointer down a 180-row list should not strobe cards.
-        this.hoverTimer = window.setTimeout(() => this.place(slotId, rect, x), HOVER_DELAY_MS);
+        // Delay: sweeping the pointer down a 180-row list should not strobe cards. But if a
+        // card only just closed, this is the same sweep -- resume instantly instead of making
+        // every row pay the delay again.
+        const resuming = Date.now() - this.lastHideAt < HOVER_RESUME_MS;
+        this.hoverTimer = window.setTimeout(
+          () => this.place(slotId, rect, x),
+          resuming ? 0 : HOVER_DELAY_MS,
+        );
       },
 
       onRowLeave() {
         window.clearTimeout(this.hoverTimer);
+        // Grace period, not an instant close: the card sits outside the row's own bounds, so
+        // reaching it always crosses this "gap" first. Without the grace period the card would
+        // vanish the instant the pointer leaves the row, before it ever reaches the card.
+        window.clearTimeout(this.leaveTimer);
+        this.leaveTimer = window.setTimeout(() => this.close(), HOVER_CLOSE_GRACE_MS);
+      },
+
+      /** Entering the card itself cancels any pending close from leaving the row. */
+      onCardEnter() {
+        window.clearTimeout(this.leaveTimer);
+      },
+
+      onCardLeave() {
+        this.close();
+      },
+
+      close() {
+        window.clearTimeout(this.leaveTimer);
+        if (this.hover) this.lastHideAt = Date.now();
         this.hover = null;
       },
 
@@ -173,14 +206,25 @@ window.NW.components.SlotList = (() => {
         });
       },
 
-      /** The rect is viewport-relative, so any scroll invalidates it. */
-      onScroll() {
-        if (this.hover || this.hoverTimer) this.onRowLeave();
+      /**
+       * The rect is viewport-relative, so any scroll of the page invalidates it -- close
+       * immediately, skipping the leave grace period that exists only for reaching the card by
+       * pointer. Registered on the capture phase (see `mounted`) so a scroll anywhere reaches
+       * it even inside a section body that stops propagation -- but capture-phase 'scroll'
+       * fires for *every* scrollable element's own scrolling too, including the card's own
+       * `overflow-y: auto`. Without this check, scrolling the long card's contents would look
+       * indistinguishable from scrolling the page and close the card on its first wheel tick.
+       */
+      onScroll(event) {
+        if (event.target?.closest?.('.itemcard')) return;
+        window.clearTimeout(this.hoverTimer);
+        if (this.hover) this.close();
       },
 
       onFocusIn() {
         this.editing = true;
-        this.onRowLeave();
+        window.clearTimeout(this.hoverTimer);
+        this.close();
       },
 
       onFocusOut() {
@@ -194,6 +238,7 @@ window.NW.components.SlotList = (() => {
 
     unmounted() {
       window.clearTimeout(this.hoverTimer);
+      window.clearTimeout(this.leaveTimer);
       window.removeEventListener('scroll', this.onScroll, true);
     },
 
@@ -269,7 +314,9 @@ window.NW.components.SlotList = (() => {
           :item="hoveredItem"
           :bonuses="hoveredBonuses"
           :slot-label="db.slotById.get(hover.slotId)?.label ?? ''"
-          :style="{ left: hover.left + 'px', top: hover.top + 'px' }" />
+          :style="{ left: hover.left + 'px', top: hover.top + 'px' }"
+          @mouseenter="onCardEnter"
+          @mouseleave="onCardLeave" />
       </div>
     `,
   };
