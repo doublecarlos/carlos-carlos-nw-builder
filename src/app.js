@@ -39,6 +39,7 @@ window.NW = window.NW ?? {};
     components: {
       BuildBar: window.NW.components.BuildBar,
       BonusInspector: window.NW.components.BonusInspector,
+      DataEditor: window.NW.components.DataEditor,
       OptionsBar: window.NW.components.OptionsBar,
       SlotList: window.NW.components.SlotList,
       StatPanel: window.NW.components.StatPanel,
@@ -47,11 +48,12 @@ window.NW = window.NW ?? {};
     data() {
       const library = storage.loadLibrary();
       return {
-        // markRaw: the item database is 369 items plus several Maps and never changes. Letting
-        // Vue deep-proxy it would cost more than the whole calculation does.
-        db: markRaw(window.NW.db.fromGlobals()),
         builds: library.builds,
         activeId: library.activeId,
+        // The editor's layer over the shipped catalogue. Persisted separately from builds --
+        // it is a workspace, not part of any one build.
+        workspaceOverlay: storage.loadOverlay(),
+        view: 'builder',        // 'builder' | 'editor'
 
         // buildId -> { past, future, … } of JSON snapshots. Per build, so switching away and
         // back preserves what you could undo. Strings, so Vue does not deep-proxy 50 copies.
@@ -70,6 +72,27 @@ window.NW = window.NW ?? {};
     computed: {
       build() {
         return this.builds.find((build) => build.id === this.activeId) ?? this.builds[0];
+      },
+
+      /**
+       * Catalogue layers, lowest priority first. The shipped data is the base (inside
+       * `catalog.makeDb`); everything here is folded over it.
+       *
+       * Custom gear saved with a build slots in as one more entry —
+       * `this.build.catalog` — and nothing else in the app has to change. `storage.normalise`
+       * already preserves that key on a build so it survives a save/reload round trip.
+       */
+      overlays() {
+        return [this.workspaceOverlay, this.build.catalog].filter(Boolean);
+      },
+
+      /**
+       * markRaw: 369 items plus several Maps. Vue deep-proxying it would cost more than the
+       * whole calculation. Rebuilt only when a layer actually changes -- indexing is well
+       * under a millisecond, so there is no reason to be cleverer than this.
+       */
+      db() {
+        return markRaw(window.NW.catalog.makeDb(this.overlays));
       },
 
       /**
@@ -102,6 +125,11 @@ window.NW = window.NW ?? {};
 
       // Read without creating: a computed must not mutate state, so these tolerate a build
       // that has not been edited yet and therefore has no history entry.
+      overlayCount() {
+        return Object.keys(this.workspaceOverlay.items ?? {}).length
+          + Object.keys(this.workspaceOverlay.bonusSets ?? {}).length;
+      },
+
       canUndo() { return (this.histories[this.activeId]?.past.length ?? 0) > 0; },
       canRedo() { return (this.histories[this.activeId]?.future.length ?? 0) > 0; },
 
@@ -130,6 +158,11 @@ window.NW = window.NW ?? {};
       notice(value) {
         window.clearTimeout(this.noticeTimer);
         if (value) this.noticeTimer = window.setTimeout(() => { this.notice = ''; }, 6000);
+      },
+
+      workspaceOverlay: {
+        deep: true,
+        handler(value) { storage.saveOverlay(value); },
       },
     },
 
@@ -398,6 +431,14 @@ window.NW = window.NW ?? {};
     },
 
     template: `
+      <DataEditor
+        v-if="view === 'editor'"
+        :db="db"
+        :overlay="workspaceOverlay"
+        @update-overlay="workspaceOverlay = $event"
+        @close="view = 'builder'" />
+
+      <template v-else>
       <header class="topbar">
         <div class="brand">
           <h1>Neverwinter build planner</h1>
@@ -432,6 +473,9 @@ window.NW = window.NW ?? {};
           <span class="hint">{{ filledSlots }}/{{ db.slots.length }} slots</span>
           <button type="button" class="link" @click="clearSlots">clear slots</button>
           <button type="button" class="link" @click="resetAll">reset</button>
+          <button type="button" class="btn" @click="view = 'editor'">
+            Edit data<span v-if="overlayCount" class="badge badge--edited">{{ overlayCount }}</span>
+          </button>
         </div>
       </header>
 
@@ -466,6 +510,7 @@ window.NW = window.NW ?? {};
         <p>{{ resolved.message }}</p>
         <pre>{{ resolved.stack }}</pre>
       </main>
+      </template>
     `,
   });
 

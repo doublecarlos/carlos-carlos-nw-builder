@@ -13,6 +13,7 @@ window.NW.storage = (() => {
 
   const KEY = 'nw:builds';
   const LEGACY_KEY = 'nw:current-build';
+  const OVERLAY_KEY = 'nw:catalog-overlay';
   const HASH_PREFIX = '#b=';
 
   // Payload markers, so a link made before/after a browser gained CompressionStream still
@@ -73,8 +74,16 @@ window.NW.storage = (() => {
     };
 
     const context = isPlain(raw.context) ? raw.context : {};
+
+    // Custom gear stored with the build. Nothing writes this yet -- the editor edits the
+    // workspace layer -- but preserving it here means a build carrying custom items survives
+    // a save/reload/share round trip, so turning the feature on is a UI change and not a
+    // migration. `app.js` already folds `build.catalog` in as a catalogue layer.
+    const perBuild = isPlain(raw.catalog) ? window.NW.catalog.normaliseOverlay(raw.catalog) : null;
+
     return {
       ...base,
+      ...(perBuild && !window.NW.catalog.isEmpty(perBuild) ? { catalog: perBuild } : {}),
       id: keepId && typeof raw.id === 'string' && raw.id ? raw.id : base.id,
       name: typeof raw.name === 'string' && raw.name.trim() ? raw.name : base.name,
       updated: Number.isFinite(raw.updated) ? raw.updated : Date.now(),
@@ -154,6 +163,30 @@ window.NW.storage = (() => {
     } catch {
       // Private browsing, or quota. Losing autosave is not worth an error dialogue -- but the
       // caller is told, so it can surface it once rather than silently.
+      return false;
+    }
+  }
+
+  // --- the catalogue overlay ---------------------------------------------------------------
+  // The editor's layer over the shipped items and bonuses. Kept under its own key because it
+  // is a workspace, not part of any build: switching builds must not change the catalogue.
+
+  function loadOverlay() {
+    try {
+      return window.NW.catalog.normaliseOverlay(
+        JSON.parse(window.localStorage.getItem(OVERLAY_KEY) ?? 'null'),
+      );
+    } catch {
+      return window.NW.catalog.emptyOverlay();
+    }
+  }
+
+  function saveOverlay(overlay) {
+    try {
+      if (window.NW.catalog.isEmpty(overlay)) window.localStorage.removeItem(OVERLAY_KEY);
+      else window.localStorage.setItem(OVERLAY_KEY, JSON.stringify(overlay));
+      return true;
+    } catch {
       return false;
     }
   }
@@ -251,7 +284,7 @@ window.NW.storage = (() => {
 
   return {
     defaultBuild, normalise, duplicate, newId,
-    loadLibrary, saveLibrary,
+    loadLibrary, saveLibrary, loadOverlay, saveOverlay,
     toJson, parseJson,
     encodeShare, decodeShare, shareUrl, readHash, clearHash,
   };
