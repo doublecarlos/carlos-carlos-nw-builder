@@ -92,20 +92,23 @@ window.NW_SCHEMA = (function () {
     { key: 'wis', label: 'Wisdom',       kind: 'flat', ability: true },
     { key: 'cha', label: 'Charisma',     kind: 'flat', ability: true },
 
-    // enemy side
-    { key: 'enemy_accuracy',       label: 'Accuracy',           kind: 'percent', enemy: true },
-    { key: 'enemy_ca',             label: 'Combat Advantage',   kind: 'percent', enemy: true },
-    { key: 'enemy_strike',         label: 'Strike',             kind: 'percent', enemy: true },
-    { key: 'enemy_severity',       label: 'Severity',           kind: 'percent', enemy: true },
-    { key: 'enemy_incoming_damage', label: 'Incoming Damage',   kind: 'percent', enemy: true },
-    { key: 'enemy_defense',        label: 'Defense',            kind: 'percent', enemy: true },
-    { key: 'enemy_awareness',      label: 'Awareness',          kind: 'percent', enemy: true },
-    { key: 'enemy_crit_avoid',     label: 'Critical Avoidance', kind: 'percent', enemy: true },
-    { key: 'enemy_deflect',        label: 'Deflect',            kind: 'percent', enemy: true },
-    { key: 'enemy_deflect_sev',    label: 'Deflect Severity',   kind: 'percent', enemy: true },
-    { key: 'enemy_incoming_damage_magical',  label: 'Incoming Magical',  kind: 'percent', enemy: true },
-    { key: 'enemy_incoming_damage_physical', label: 'Incoming Physical', kind: 'percent', enemy: true },
-    { key: 'enemy_outgoing_damage',          label: 'Outgoing Damage',   kind: 'percent', enemy: true },
+    // Enemy side. The labels carry the word "Enemy" because they are shown far from the
+    // enemy table -- in item cards, bonus payloads and item previews -- where `Accuracy`
+    // is indistinguishable from the player's `acc_p`. The stat panel's enemy table strips
+    // the prefix back off, since its own heading already says it.
+    { key: 'enemy_accuracy',       label: 'Enemy Accuracy',           kind: 'percent', enemy: true },
+    { key: 'enemy_ca',             label: 'Enemy Combat Advantage',   kind: 'percent', enemy: true },
+    { key: 'enemy_strike',         label: 'Enemy Strike',             kind: 'percent', enemy: true },
+    { key: 'enemy_severity',       label: 'Enemy Severity',           kind: 'percent', enemy: true },
+    { key: 'enemy_incoming_damage', label: 'Enemy Incoming Damage',   kind: 'percent', enemy: true },
+    { key: 'enemy_defense',        label: 'Enemy Defense',            kind: 'percent', enemy: true },
+    { key: 'enemy_awareness',      label: 'Enemy Awareness',          kind: 'percent', enemy: true },
+    { key: 'enemy_crit_avoid',     label: 'Enemy Critical Avoidance', kind: 'percent', enemy: true },
+    { key: 'enemy_deflect',        label: 'Enemy Deflect',            kind: 'percent', enemy: true },
+    { key: 'enemy_deflect_sev',    label: 'Enemy Deflect Severity',   kind: 'percent', enemy: true },
+    { key: 'enemy_incoming_damage_magical',  label: 'Enemy Incoming Magical',  kind: 'percent', enemy: true },
+    { key: 'enemy_incoming_damage_physical', label: 'Enemy Incoming Physical', kind: 'percent', enemy: true },
+    { key: 'enemy_outgoing_damage',          label: 'Enemy Outgoing Damage',   kind: 'percent', enemy: true },
 
     // currency
     { key: 'gold',  label: 'Gold',  kind: 'percent' },

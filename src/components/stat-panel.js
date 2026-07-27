@@ -68,7 +68,9 @@ window.NW.components.StatPanel = (() => {
       enemyRows() {
         return schema().stats
           .filter((stat) => stat.enemy)
-          .map((stat) => ({ key: stat.key, label: stat.label,
+          // The section heading already says "Enemy"; repeating it in all 13 rows just makes
+          // the column wider. Everywhere else the full label is what disambiguates.
+          .map((stat) => ({ key: stat.key, label: stat.label.replace(/^Enemy /, ''),
             value: this.stages.totals[stat.key] ?? 0 }));
       },
 
