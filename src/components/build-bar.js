@@ -14,6 +14,10 @@ window.NW.components.BuildBar = (() => {
   return {
     name: 'BuildBar',
 
+    components: {
+      ComboBox: window.NW.components.ComboBox,
+    },
+
     props: {
       builds: { type: Array, required: true },
       build: { type: Object, required: true },
@@ -44,6 +48,14 @@ window.NW.components.BuildBar = (() => {
     computed: {
       others() {
         return this.builds.filter((build) => build.id !== this.build.id);
+      },
+
+      buildOptions() {
+        return this.builds.map((item) => ({ value: item.id, label: item.name }));
+      },
+
+      otherOptions() {
+        return this.others.map((item) => ({ value: item.id, label: item.name }));
       },
 
       undoTitle() {
@@ -150,13 +162,11 @@ window.NW.components.BuildBar = (() => {
     template: `
       <div class="buildbar">
         <div class="buildbar-row">
-          <label class="field">
+          <div class="field">
             <span class="field-label">Build</span>
-            <select class="build-select" :value="build.id"
-                    @change="$emit('select', $event.target.value)">
-              <option v-for="item in builds" :key="item.id" :value="item.id">{{ item.name }}</option>
-            </select>
-          </label>
+            <ComboBox class="build-select" :model-value="build.id" :options="buildOptions"
+                      @update:model-value="$emit('select', $event)" />
+          </div>
 
           <label class="field">
             <span class="field-label">Name</span>
@@ -198,12 +208,10 @@ window.NW.components.BuildBar = (() => {
              spreadsheet range paste can. -->
         <div v-if="panel === 'copy'" class="drawer">
           <div class="drawer-row">
-            <label class="field">
+            <div class="field">
               <span class="field-label">Copy from</span>
-              <select v-model="copyFromId">
-                <option v-for="item in others" :key="item.id" :value="item.id">{{ item.name }}</option>
-              </select>
-            </label>
+              <ComboBox v-model="copyFromId" :options="otherOptions" />
+            </div>
             <button type="button" class="btn btn--primary"
                     :disabled="!copySections.length" @click="applyCopySection">
               Copy {{ copySections.length }} section(s) into “{{ build.name }}”

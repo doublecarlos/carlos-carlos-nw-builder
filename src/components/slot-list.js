@@ -21,18 +21,20 @@ window.NW.components.SlotList = (() => {
     components: {
       ItemPicker: window.NW.components.ItemPicker,
       ItemCard: window.NW.components.ItemCard,
+      Options: window.NW.components.Options,
     },
 
     props: {
       db: { type: Object, required: true },
       build: { type: Object, required: true },
       result: { type: Object, required: true },
+      context: { type: Object, required: true },
     },
 
-    emits: ['choose', 'set-value'],
+    emits: ['choose', 'set-value', 'set', 'set-forte'],
 
     data() {
-      const expanded = {};
+      const expanded = { options: false };
       for (const section of this.db.sections) expanded[section.id] = OPEN_BY_DEFAULT.has(section.id);
       return {
         expanded,
@@ -201,6 +203,18 @@ window.NW.components.SlotList = (() => {
           <button type="button" class="link" @click="setAll(true)">expand all</button>
           <button type="button" class="link" @click="setAll(false)">collapse all</button>
         </div>
+
+        <section class="section">
+          <button type="button" class="section-head" @click="expanded.options = !expanded.options">
+            <span class="section-chevron">{{ expanded.options ? '▾' : '▸' }}</span>
+            <span class="section-label">Options</span>
+          </button>
+          <div v-if="expanded.options" class="section-body">
+            <Options :context="context"
+                     @set="(key, value) => $emit('set', key, value)"
+                     @set-forte="(slot, key) => $emit('set-forte', slot, key)" />
+          </div>
+        </section>
 
         <section v-for="section in sections" :key="section.id" class="section">
           <button type="button" class="section-head" @click="toggle(section.id)">

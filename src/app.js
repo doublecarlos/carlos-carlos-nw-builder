@@ -40,7 +40,7 @@ window.NW = window.NW ?? {};
       BuildBar: window.NW.components.BuildBar,
       BonusInspector: window.NW.components.BonusInspector,
       DataEditor: window.NW.components.DataEditor,
-      OptionsBar: window.NW.components.OptionsBar,
+      QuickOptions: window.NW.components.QuickOptions,
       SlotList: window.NW.components.SlotList,
       StatPanel: window.NW.components.StatPanel,
     },
@@ -462,12 +462,6 @@ window.NW = window.NW ?? {};
           @undo="undo"
           @redo="redo" />
 
-        <OptionsBar
-          :context="build.context"
-          @set="setContext"
-          @set-toggle="setToggle"
-          @set-forte="setForte" />
-
         <div class="topbar-actions">
           <span v-if="notice" class="notice" @click="notice = ''">{{ notice }}</span>
           <span class="hint">{{ filledSlots }}/{{ db.slots.length }} slots</span>
@@ -477,6 +471,11 @@ window.NW = window.NW ?? {};
             Edit data<span v-if="overlayCount" class="badge badge--edited">{{ overlayCount }}</span>
           </button>
         </div>
+
+        <QuickOptions
+          :context="build.context"
+          @set="setContext"
+          @set-toggle="setToggle" />
       </header>
 
       <main class="layout" v-if="resolved.ok">
@@ -484,8 +483,11 @@ window.NW = window.NW ?? {};
           :db="db"
           :build="build"
           :result="resolved.result"
+          :context="build.context"
           @choose="setChoice"
-          @set-value="setValue" />
+          @set-value="setValue"
+          @set="setContext"
+          @set-forte="setForte" />
         <aside class="sidebar">
           <div class="tabs">
             <button type="button" class="tab" :class="{ 'is-on': tab === 'stats' }"
