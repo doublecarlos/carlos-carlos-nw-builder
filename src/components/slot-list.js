@@ -44,7 +44,8 @@ window.NW.components.SlotList = (() => {
       onlyDiff: { type: Boolean, default: false },
     },
 
-    emits: ['choose', 'set-value', 'set', 'set-forte', 'apply-slot', 'toggle-section', 'set-expanded'],
+    emits: ['choose', 'set-value', 'set', 'set-forte', 'apply-slot', 'toggle-section', 'set-expanded',
+      'edit-item'],
 
     data: () => ({
       hover: null,        // { slotId, left, top } -- the one hover card, or nothing
@@ -213,6 +214,16 @@ window.NW.components.SlotList = (() => {
 
       setAll(open) {
         this.$emit('set-expanded', open);
+      },
+
+      /** A plain click just moves the cursor here, same as an arrow key would. Shift+click on a
+       * filled slot jumps straight to that item in the data editor -- a no-op on an empty slot,
+       * since there is nothing there to edit. */
+      onRowClick(event, slotId) {
+        this.setCursor('slot', slotId);
+        if (!event.shiftKey) return;
+        const item = this.itemIn(slotId);
+        if (item) this.$emit('edit-item', item.name);
       },
 
       /**
@@ -466,6 +477,8 @@ window.NW.components.SlotList = (() => {
         <div class="slots-toolbar">
           <button type="button" class="link" @click="setAll(true)">expand all</button>
           <button type="button" class="link" @click="setAll(false)">collapse all</button>
+          <span class="spacer"></span>
+          <span class="hint">Shift+click a filled slot to edit that item</span>
         </div>
 
         <section class="section">
@@ -500,7 +513,7 @@ window.NW.components.SlotList = (() => {
                  :data-cursor-key="'slot:' + slot.id"
                  @mouseenter="onRowEnter($event, slot.id)"
                  @mouseleave="onRowLeave"
-                 @click="setCursor('slot', slot.id)">
+                 @click="onRowClick($event, slot.id)">
               <label class="slot-label" :for="slot.id">{{ slot.label }}</label>
 
               <div class="slot-control">

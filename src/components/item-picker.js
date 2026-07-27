@@ -53,9 +53,24 @@ window.NW.components.ItemPicker = (() => {
         return Math.max(this.filtered.length - this.matches.length, 0);
       },
 
-      /** Index 0 is always "clear the slot", so highlight indices line up with the DOM. */
+      /** "clear the slot" is only offered on a plain, untyped open -- once the user is
+       * filtering, defaulting the highlight onto "empty" (see `onInput`) put a stray Enter one
+       * keystroke away from wiping the slot instead of picking the thing just typed. */
+      showEmptyOption() {
+        return !this.query.trim();
+      },
+
+      /** Index 0 is "clear the slot" whenever it's offered, so highlight indices line up with
+       * the DOM either way. */
       options() {
-        return [null, ...this.matches.map((entry) => entry.item)];
+        const items = this.matches.map((entry) => entry.item);
+        return this.showEmptyOption ? [null, ...items] : items;
+      },
+
+      /** How far a `matches` index sits from its `options`/`highlight` index -- 1 while "clear
+       * the slot" occupies slot 0, 0 once it's hidden. */
+      matchOffset() {
+        return this.showEmptyOption ? 1 : 0;
       },
     },
 
@@ -108,14 +123,17 @@ window.NW.components.ItemPicker = (() => {
         this.query = '';
       },
 
-      choose(item) {
+      /** `blur: false` for the Tab case below -- the browser's own Tab-forward looks at
+       * whatever element is currently focused, so blurring here first (before that runs) would
+       * make it tab from nowhere instead of continuing from this input. */
+      choose(item, { blur = true } = {}) {
         this.$emit('update:modelValue', item ? item.name : '');
         this.close();
-        this.$refs.input?.blur();
+        if (blur) this.$refs.input?.blur();
       },
 
       /**
-       * Every branch here that acts also stops propagation: this input sits inside a
+       * Every branch here except plain Tab also stops propagation: this input sits inside a
        * `.slot-row` that slot-list.js's own window-level keydown listener watches for its
        * passive row cursor. Without stopping propagation, the same Enter that this handler
        * uses to close the dropdown would go on to reach that listener too -- and since the
@@ -123,7 +141,9 @@ window.NW.components.ItemPicker = (() => {
        * picker that just closed. Relying on the listener's own focused-input gate to prevent
        * that is fragile: it depends on `blur()` having synchronously updated
        * `document.activeElement` before the bubbling event reaches `window`, which is not
-       * guaranteed the same way in every browser.
+       * guaranteed the same way in every browser. Tab is the exception because it never calls
+       * `blur()` itself (see `choose` above) -- this input is still focused for that listener's
+       * synchronous pass, so its own focused-input gate already covers it.
        */
       onKeydown(event) {
         if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
@@ -146,12 +166,19 @@ window.NW.components.ItemPicker = (() => {
           return;
         }
         if (event.key === 'Tab') {
-          // Just closes -- does not pick, does not move focus on itself. A second Tab, with
-          // the dropdown now closed, is free to move focus normally.
           if (!this.open) return;
-          event.preventDefault();
-          event.stopPropagation();
-          this.close();
+          if (event.shiftKey) {
+            // Browsing backward -- just close, don't commit a highlight the user was
+            // arrowing away from.
+            event.preventDefault();
+            event.stopPropagation();
+            this.close();
+            return;
+          }
+          // Commit the highlighted choice, same as Enter, then let the browser's own Tab
+          // move focus on to whatever's next -- no preventDefault, and no stopPropagation
+          // (see the block comment above `onKeydown`).
+          this.choose(this.options[this.highlight] ?? null, { blur: false });
           return;
         }
         if (event.key === 'Escape') {
@@ -179,15 +206,9 @@ window.NW.components.ItemPicker = (() => {
           @blur="onBlur"
           @keydown="onKeydown">
 
-        <button
-          v-if="modelValue"
-          class="picker-clear"
-          type="button"
-          title="Clear this slot"
-          @mousedown.prevent="choose(null)">×</button>
-
         <div v-if="open" class="picker-menu" ref="list">
           <div
+            v-if="showEmptyOption"
             class="picker-row picker-row--clear"
             :class="{ 'is-highlighted': highlight === 0 }"
             @mousedown.prevent="choose(null)"
@@ -197,9 +218,9 @@ window.NW.components.ItemPicker = (() => {
             v-for="(entry, index) in matches"
             :key="entry.item.name"
             class="picker-row"
-            :class="{ 'is-highlighted': highlight === index + 1 }"
+            :class="{ 'is-highlighted': highlight === index + matchOffset }"
             @mousedown.prevent="choose(entry.item)"
-            @mouseenter="highlight = index + 1">
+            @mouseenter="highlight = index + matchOffset">
             <div class="picker-row-head">
               <span class="picker-name">{{ entry.item.name }}</span>
               <span v-if="entry.flagged" class="picker-flag" title="has conditional bonuses">◈</span>

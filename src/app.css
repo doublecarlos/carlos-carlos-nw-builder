@@ -383,22 +383,8 @@ label.quickopts-row { cursor: pointer; }
 .picker-input.is-empty::placeholder { color: var(--muted); }
 .picker.is-invalid .picker-input { border-color: var(--danger); }
 
-.picker-clear {
-  background: none;
-  border: 0;
-  color: var(--muted);
-  cursor: pointer;
-  font-size: 1.25rem;
-  line-height: 1;
-  padding: 0 5px;
-  position: absolute;
-  right: 1px;
-  top: 4px;
-}
-.picker-clear:hover { color: var(--danger); }
-
-/* combo-box has no clear button, so the caret gets the spot the "x" would use -- the only
- * hint left that this text input is actually a fixed-choice dropdown. */
+/* combo-box's caret sits in the same right-hand gutter `.picker-input`'s padding reserves --
+ * the only hint left that this text input is actually a fixed-choice dropdown. */
 .picker-caret {
   color: var(--muted);
   font-size: 1rem;

@@ -545,6 +545,16 @@ window.NW = window.NW ?? {};
         }, { push });
       },
 
+      /** Shift+click on a filled slot (slot-list.js): jump straight into that item in the data
+       * editor. `item` has to land in the URL before `view` flips -- the `view` watcher's own
+       * `syncRoute()` runs (flush: pre, so before the DOM patches DataEditor into existence) and
+       * merges `view=editor` onto whatever is already there, and DataEditor reads `item` off the
+       * URL once, in its own `mounted()`. */
+      editItem(itemName) {
+        router.apply({ item: itemName });
+        this.view = 'editor';
+      },
+
       /** Back/forward landed here: read the URL rather than trust the popstate payload, since
        * the payload is whatever was current when *this* session pushed it, not necessarily
        * what's now in the address bar (a page reload rebuilds history-less). */
@@ -638,7 +648,8 @@ window.NW = window.NW ?? {};
           @set-forte="setForte"
           @apply-slot="applyFromCompare"
           @toggle-section="toggleSection"
-          @set-expanded="setExpanded" />
+          @set-expanded="setExpanded"
+          @edit-item="editItem" />
         <aside class="sidebar">
           <div class="tabs">
             <button type="button" class="tab" :class="{ 'is-on': tab === 'stats' }"
