@@ -140,8 +140,8 @@ window.NW.components.SetBonuses = (() => {
 
         <div v-for="card in cards" :key="card.id" class="setcard">
           <div class="setcard-head">
-            <input class="setcard-name" type="text" v-model="drafts[card.id].name"
-                   placeholder="Set name">
+            <label class="field"><span class="field-label">Set name</span>
+              <input class="setcard-name" type="text" v-model="drafts[card.id].name"></label>
             <code class="setcard-id">{{ card.id }}</code>
             <span v-if="!card.defined" class="badge badge--warn">not defined yet</span>
             <span class="spacer"></span>

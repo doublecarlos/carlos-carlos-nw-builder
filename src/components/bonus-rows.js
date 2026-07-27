@@ -268,21 +268,27 @@ window.NW.components.BonusRows = (() => {
               </select>
 
               <template v-if="row.type === 'duration'">
-                <input type="number" v-model.number="row.atLeast" placeholder="at least (s)">
-                <input type="number" v-model.number="row.below" placeholder="below (s)">
+                <label class="field"><span class="field-label">At least (s)</span>
+                  <input type="number" v-model.number="row.atLeast"></label>
+                <label class="field"><span class="field-label">Below (s)</span>
+                  <input type="number" v-model.number="row.below"></label>
               </template>
               <template v-else-if="row.type === 'pieces'">
                 <select v-model="row.set">
                   <option value="">— set —</option>
                   <option v-for="s in setIds" :key="s" :value="s">{{ s }}</option>
                 </select>
-                <input type="number" min="1" v-model.number="row.atLeast" placeholder="pieces">
+                <label class="field"><span class="field-label">Pieces</span>
+                  <input type="number" min="1" v-model.number="row.atLeast"></label>
                 <span class="hint">piece(s) equipped</span>
               </template>
               <template v-else-if="row.type === 'equipped'">
-                <input type="text" v-model="row.tag" placeholder="tag" list="nw-tags">
-                <input type="text" v-model="row.item" placeholder="or exact item name">
-                <input type="number" v-model.number="row.atLeast" placeholder="count">
+                <label class="field"><span class="field-label">Tag</span>
+                  <input type="text" v-model="row.tag" list="nw-tags"></label>
+                <label class="field"><span class="field-label">Or exact item name</span>
+                  <input type="text" v-model="row.item"></label>
+                <label class="field"><span class="field-label">Count</span>
+                  <input type="number" v-model.number="row.atLeast"></label>
               </template>
               <template v-else>
                 <select v-if="optionsFor(row.type).length" v-model="row.value">
@@ -362,8 +368,8 @@ window.NW.components.BonusRows = (() => {
                 <option value="perSource">once per contributing slot</option>
               </select>
               <template v-if="bonus.stacking === 'perSource'">
-                <input type="number" min="0" class="tier-pieces" v-model.number="bonus.maxStacks"
-                       placeholder="max">
+                <label class="field"><span class="field-label">Max stacks</span>
+                  <input type="number" min="0" class="tier-pieces" v-model.number="bonus.maxStacks"></label>
                 <span class="hint">maximum stacks (blank = no limit)</span>
               </template>
             </div>

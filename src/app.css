@@ -83,6 +83,11 @@ input, select {
 }
 input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
 
+/* Spinner arrows are fiddly to hit and add nothing a keyboard/typed value doesn't already do. */
+input[type="number"] { appearance: textfield; -moz-appearance: textfield; text-align: right; }
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button { appearance: none; -webkit-appearance: none; margin: 0; }
+
 /* --- top bar ------------------------------------------------------------------------- */
 
 .topbar {
@@ -433,8 +438,16 @@ input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: -1
 .itemcard-il { color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
 .itemcard-slot { color: var(--muted); font-size: 11px; margin-bottom: 5px; }
 
-.itemcard-stats { display: grid; gap: 0 14px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.itemcard-stat { display: flex; gap: 8px; justify-content: space-between; font-size: 12px; }
+.itemcard-stats { display: flex; flex-direction: column; }
+.itemcard-stat {
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+  font-size: 12px;
+  padding: 3px 0;
+}
+.itemcard-stat:last-child { border-bottom: none; }
 .itemcard-stat .num { font-variant-numeric: tabular-nums; }
 
 .itemcard-notes {
@@ -613,14 +626,28 @@ input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: -1
 }
 .sub-section { align-items: center; color: var(--muted); display: flex; font-size: 11px; gap: 8px; margin: 6px 0 3px; }
 
+.pct-field { display: inline-block; position: relative; width: 110px; }
 .pct-input {
+  box-sizing: border-box;
   font-variant-numeric: tabular-nums;
+  padding-right: 20px;
   text-align: right;
-  width: 110px;
+  width: 100%;
 }
 .pct-input:not(:focus) { color: var(--accent); }
+.pct-suffix {
+  color: var(--muted);
+  font-size: 12px;
+  pointer-events: none;
+  position: absolute;
+  right: 7px;
+  top: 50%;
+  transform: translateY(-50%);
+}
 
-.stat-row, .cond-row { align-items: center; display: flex; gap: 6px; margin-bottom: 4px; }
+/* flex-end, not center: a bare select next to a labeled .field must align on the input
+ * itself, not the shorter select against the taller label-plus-input stack. */
+.stat-row, .cond-row { align-items: flex-end; display: flex; gap: 6px; margin-bottom: 4px; }
 .stat-row select, .cond-row select { min-width: 130px; }
 .stat-row input[type="number"] { width: 110px; }
 .cond-row input { min-width: 90px; }
@@ -719,7 +746,8 @@ input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: -1
   padding: 9px 11px;
 }
 .setcard-head { align-items: center; display: flex; flex-wrap: wrap; gap: 6px; }
-.setcard-name { flex: 0 1 220px; font-weight: 600; }
+.setcard-head .field { flex: 0 1 220px; }
+.setcard-name { font-weight: 600; }
 /* --- tiers and segmented toggles -------------------------------------------------------- */
 
 .seg { display: inline-flex; gap: 0; }

@@ -22,11 +22,12 @@ window.NW.components.PercentInput = (() => {
   /** percent number -> decimal. 3.6 -> 0.036, not 0.036000000000000004. */
   const toDecimal = (percent) => Number((Number(percent) / 100).toFixed(12));
 
-  /** Up to 4 decimals, trailing zeros trimmed: 9%, 3.6%, 9.85%. */
+  /** Up to 4 decimals, trailing zeros trimmed: 9, 3.6, 9.85. The % sign is a fixed suffix in
+   * the template, not part of this text, so it stays visible while typing too. */
   const display = (value) => {
     if (value === '' || value == null || !Number.isFinite(Number(value))) return '';
     const percent = toPercent(value);
-    return `${Number(percent.toFixed(4))}%`;
+    return String(Number(percent.toFixed(4)));
   };
 
   return {
@@ -94,19 +95,22 @@ window.NW.components.PercentInput = (() => {
     },
 
     template: `
-      <input
-        ref="input"
-        class="pct-input"
-        type="text"
-        inputmode="decimal"
-        autocomplete="off"
-        :value="shown"
-        :placeholder="placeholder"
-        @focus="onFocus"
-        @blur="onBlur"
-        @input="onInput"
-        @keydown.up="nudge(1, $event)"
-        @keydown.down="nudge(-1, $event)">
+      <span class="pct-field">
+        <input
+          ref="input"
+          class="pct-input"
+          type="text"
+          inputmode="decimal"
+          autocomplete="off"
+          :value="shown"
+          :placeholder="placeholder"
+          @focus="onFocus"
+          @blur="onBlur"
+          @input="onInput"
+          @keydown.up="nudge(1, $event)"
+          @keydown.down="nudge(-1, $event)">
+        <span class="pct-suffix">%</span>
+      </span>
     `,
 
     // Exposed for tests and for anyone needing the same rounding elsewhere.
