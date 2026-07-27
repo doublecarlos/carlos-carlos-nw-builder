@@ -109,7 +109,9 @@ window.NW.components.SlotList = (() => {
       statLabel: (key) => window.NW.format.label(key),
 
       itemsFor(slotId) {
-        return this.db.forSlot(slotId);
+        const cls = this.build.context.class;
+        return this.db.forSlot(slotId)
+          .filter((item) => !item.allowedClass || item.allowedClass.includes(cls));
       },
 
       itemIn(slotId) {
