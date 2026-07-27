@@ -327,6 +327,18 @@
     ]
   },
   {
+    "id": "eagle-s-mastery-greater",
+    "name": "Eagle's Mastery (Greater)",
+    "effects": [
+      {
+        "id": "eagle-s-mastery-greater",
+        "name": "Eagle's Mastery (Greater)",
+        "when": {"toggle": "combat"},
+        "stats": {"power_p": 0.05, "strike_p": 0.05, "sev_p": 0.05}
+      }
+    ]
+  },
+  {
     "id": "etrien",
     "name": "Etrien",
     "effects": [
@@ -543,6 +555,18 @@
     ]
   },
   {
+    "id": "m19-ruthless-might",
+    "name": "M19 Ruthless Might",
+    "effects": [
+      {
+        "id": "m19-ruthless-might",
+        "name": "M19 Ruthless Might",
+        "when": {"toggle": "combat"},
+        "stats": {"strike_p": 0.075, "sev_p": 0.075}
+      }
+    ]
+  },
+  {
     "id": "m24-maiden-s-advantage",
     "name": "M24 Maiden's Advantage",
     "effects": [
@@ -645,20 +669,19 @@
     ]
   },
   {
-    "id": "m31-bindings-of-the-death-pact-damage",
-    "name": "M31 Bindings of the Death Pact (Damage)",
+    "id": "m31-berserking-might-greater",
+    "name": "M31 Berserking Might (Greater)",
     "effects": [
       {
-        "id": "m31-bindings-of-the-death-pact-damage-bonus-combat",
-        "name": "M31 Bindings of the Death Pact (Damage) (combat)",
-        "when": {"toggle": "combat"},
-        "stats": {"outgoing_damage": 0.009}
-      },
-      {
-        "id": "m31-bindings-of-the-death-pact-damage-combat-aoe-combat",
-        "name": "M31 Bindings of the Death Pact (Damage) (Combat, aoe, combat)",
-        "when": {"combatType": "aoe", "toggle": "combat"},
-        "stats": {"outgoing_damage": 0.036000000000000004}
+        "id": "m31-berserking-might-greater",
+        "name": "M31 Berserking Might (Greater)",
+        "variants": [
+          {
+            "stats": {"outgoing_damage": 0.036},
+            "when": {"all": [{"toggle": "combat"}, {"combatType": "aoe"}]}
+          },
+          {"stats": {"outgoing_damage": 0.009}, "when": {"toggle": "combat"}}
+        ]
       }
     ]
   },
@@ -675,68 +698,90 @@
     ]
   },
   {
-    "id": "m31-bloodwoven-sigils-ca",
-    "name": "M31 Bloodwoven Sigils (CA)",
+    "id": "m31-critical-empowerment",
+    "name": "M31 Critical Empowerment",
     "effects": [
       {
-        "id": "m31-bloodwoven-sigils-ca-bonus-combat",
-        "name": "M31 Bloodwoven Sigils (CA) (combat)",
-        "when": {"toggle": "combat"},
-        "stats": {"ca_p": 0.1}
+        "id": "m31-critical-empowerment",
+        "name": "M31 Critical Empowerment",
+        "variants": [
+          {"stats": {"outgoing_damage": 0.07}, "when": {"toggle": "combat", "location": "thay"}},
+          {"stats": {"outgoing_damage": 0.035}, "when": {"toggle": "combat"}}
+        ]
       }
     ]
   },
   {
-    "id": "m31-bloodwoven-signs-damage",
-    "name": "M31 Bloodwoven Signs (Damage)",
+    "id": "m31-enchanted-advantage",
+    "name": "M31 Enchanted Advantage",
     "effects": [
       {
-        "id": "m31-bloodwoven-signs-damage-bonus-combat",
-        "name": "M31 Bloodwoven Signs (Damage) (combat)",
-        "when": {"toggle": "combat"},
-        "stats": {"outgoing_damage": 0.035}
-      },
-      {
-        "id": "m31-bloodwoven-signs-damage-bonus-location-thay-combat",
-        "name": "M31 Bloodwoven Signs (Damage) (location thay, combat)",
-        "when": {"location": "thay", "toggle": "combat"},
-        "stats": {"outgoing_damage": 0.035}
+        "id": "m31-enchanted-advantage",
+        "name": "M31 Enchanted Advantage",
+        "when": {"pieces": {"set": "m31-enchanted-advantage", "atLeast": 2}},
+        "stats": {"ca_p": 0.02}
       }
     ]
   },
   {
-    "id": "m31-bulwark-of-the-eternal-zulkirate-strike-severity",
-    "name": "M31 Bulwark of the Eternal Zulkirate (Strike/Severity)",
+    "id": "m31-enduring-avantage-ascendant",
+    "name": "M31 Enduring Avantage (Ascendant)",
     "effects": [
       {
-        "id": "m31-bulwark-of-the-eternal-zulkirate-strike-severity-bonus-combat",
-        "name": "M31 Bulwark of the Eternal Zulkirate (Strike/Severity) (combat)",
-        "when": {"toggle": "combat"},
-        "stats": {"strike_p": 0.075, "sev_p": 0.075}
+        "id": "m31-enduring-avantage-ascendant",
+        "name": "M31 Enduring Avantage (Ascendant)",
+        "stats": {"ca_p": 0.07, "recharge": 0.03}
       }
     ]
   },
   {
-    "id": "m31-bulwark-of-the-zulkir-s-decree-power-acc-strike",
-    "name": "M31 Bulwark of the Zulkir's Decree (Power/Acc/Strike)",
+    "id": "m31-enduring-critical",
+    "name": "M31 Enduring Critical",
+    "effects": [{"id": "m31-enduring-critical", "name": "M31 Enduring Critical", "stats": {"sev_p": 0.07}}]
+  },
+  {
+    "id": "m31-enveloped-rage-ascendant",
+    "name": "M31 Enveloped Rage (Ascendant)",
     "effects": [
       {
-        "id": "m31-bulwark-of-the-zulkir-s-decree-power-acc-strike-bonus-combat",
-        "name": "M31 Bulwark of the Zulkir's Decree (Power/Acc/Strike) (combat)",
-        "when": {"toggle": "combat"},
-        "stats": {"power_p": 0.04, "strike_p": 0.04}
+        "id": "m31-enveloped-rage-ascendant",
+        "name": "M31 Enveloped Rage (Ascendant)",
+        "variants": [
+          {
+            "stats": {"acc_p": 0.08, "ca_p": 0.04},
+            "when": {"toggle": "combat", "duration": {"atLeast": 10}, "combatType": "single"}
+          },
+          {"stats": {"ca_p": 0.04}}
+        ]
       }
     ]
   },
   {
-    "id": "m31-gauntlets-of-the-wrathborn-acc-ca",
-    "name": "M31 Gauntlets of the Wrathborn (Acc/CA)",
+    "id": "m31-reckless-advantage",
+    "name": "M31 Reckless Advantage",
     "effects": [
       {
-        "id": "m31-gauntlets-of-the-wrathborn-acc-ca-bonus-single-combat-short-plus-combat",
-        "name": "M31 Gauntlets of the Wrathborn (Acc/CA) (single, combat short plus, combat)",
-        "when": {"combatType": "single", "duration": {"atLeast": 10}, "toggle": "combat"},
-        "stats": {"acc_p": 0.08}
+        "id": "m31-reckless-advantage",
+        "name": "M31 Reckless Advantage",
+        "when": {"toggle": "combat"},
+        "stats": {"ca_p": 0.1, "crit_avoid_p": -0.075}
+      }
+    ]
+  },
+  {
+    "id": "m31-ruthless-might-ascendant",
+    "name": "M31 Ruthless Might (Ascendant)",
+    "effects": [
+      {
+        "id": "m31-ruthless-might-ascendant",
+        "name": "M31 Ruthless Might (Ascendant)",
+        "variants": [
+          {
+            "stats": {"power_p": 0.04, "strike_p": 0.04, "acc_p": 0.05},
+            "when": {"toggle": "combat"}
+          },
+          {"stats": {"acc_p": 0.05}}
+        ]
       }
     ]
   },
@@ -745,27 +790,12 @@
     "name": "M31 Ruthless Resources (Ascendant)",
     "effects": [
       {
-        "id": "m31-ruthless-resources-ascendant-bonus",
+        "id": "m31-ruthless-resources-ascendant",
         "name": "M31 Ruthless Resources (Ascendant)",
-        "stats": {"strike_p": 0.05}
-      },
-      {
-        "id": "m31-ruthless-resources-ascendant-bonus-combat",
-        "name": "M31 Ruthless Resources (Ascendant) (combat)",
-        "when": {"toggle": "combat"},
-        "stats": {"mana_regen": 0.5}
-      }
-    ]
-  },
-  {
-    "id": "m31-shirt-pant-dps-set",
-    "name": "M31 Shirt/Pant DPS Set",
-    "effects": [
-      {
-        "id": "m31-shirt-pant-dps-set-bonus",
-        "name": "M31 Shirt/Pant DPS Set",
-        "stats": {"ca_p": 0.02},
-        "when": {"pieces": {"set": "m31-shirt-pant-dps-set", "atLeast": 2}}
+        "variants": [
+          {"stats": {"strike_p": 0.05, "mana_regen": 0.5}, "when": {"toggle": "combat"}},
+          {"stats": {"strike_p": 0.05}}
+        ]
       }
     ]
   },
@@ -774,27 +804,12 @@
     "name": "M31 Thayan Predator",
     "effects": [
       {
-        "id": "m31-thayan-predator-bonus-location-thay",
-        "name": "M31 Thayan Predator (location thay)",
-        "when": {"location": "thay"},
-        "stats": {"outgoing_damage": 0.03}
-      },
-      {
-        "id": "m31-thayan-predator-base",
-        "name": "M31 Thayan Predator (base)",
-        "stats": {"outgoing_damage": 0.02}
-      }
-    ]
-  },
-  {
-    "id": "m31-threads-of-the-arch-thrall-power-strike-severity",
-    "name": "M31 Threads of the Arch-Thrall (Power/Strike/Severity)",
-    "effects": [
-      {
-        "id": "m31-threads-of-the-arch-thrall-power-strike-severity-bonus-combat",
-        "name": "M31 Threads of the Arch-Thrall (Power/Strike/Severity) (combat)",
-        "when": {"toggle": "combat"},
-        "stats": {"power_p": 0.05, "strike_p": 0.05, "sev_p": 0.05}
+        "id": "m31-thayan-predator",
+        "name": "M31 Thayan Predator",
+        "variants": [
+          {"stats": {"outgoing_damage": 0.05}, "when": {"location": "thay"}},
+          {"stats": {"outgoing_damage": 0.02}}
+        ]
       }
     ]
   },

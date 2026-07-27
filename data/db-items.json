@@ -1351,7 +1351,7 @@
     "combined_rating": 3870,
     "acc": 4612,
     "severity": 3483,
-    "bonuses": ["m31-bindings-of-the-death-pact-damage"]
+    "bonuses": ["m31-berserking-might-greater"]
   },
   {
     "name": "M31 Bloodlit Veil (CA/Power)",
@@ -1380,7 +1380,7 @@
     "combined_rating": 2835,
     "ca": 1134,
     "strike": 2268,
-    "bonuses": ["m31-bloodwoven-sigils-ca", "m31-shirt-pant-dps-set"]
+    "bonuses": ["m31-reckless-advantage", "m31-enchanted-advantage"]
   },
   {
     "name": "M31 Bloodwoven Signs (Damage)",
@@ -1389,7 +1389,7 @@
     "combined_rating": 2835,
     "acc": 2457,
     "forte": 1276,
-    "bonuses": ["m31-bloodwoven-signs-damage", "m31-shirt-pant-dps-set"]
+    "bonuses": ["m31-enchanted-advantage", "m31-critical-empowerment"]
   },
   {
     "name": "M31 Bulwark of the Eternal Zulkirate (Strike/Severity)",
@@ -1399,7 +1399,7 @@
     "forte": 2612,
     "deflect_sev": 4354,
     "control_bonus": 3548,
-    "bonuses": ["m31-bulwark-of-the-eternal-zulkirate-strike-severity"]
+    "bonuses": ["m19-ruthless-might"]
   },
   {
     "name": "M31 Bulwark of the Zulkir's Decree (Power/Acc/Strike)",
@@ -1410,27 +1410,25 @@
     "forte": 2150,
     "defense": 2628,
     "inc_healing": 3686,
-    "bonuses": ["m31-bulwark-of-the-zulkir-s-decree-power-acc-strike"]
+    "bonuses": ["m31-ruthless-might-ascendant"]
   },
   {
     "name": "M31 Crown of the Everscourge (CA)",
     "filter": "gear_head",
     "il": 4550,
     "combined_rating": 4095,
-    "ca_p": 0.07,
     "strike": 4505,
     "forte": 2764,
-    "recharge": 0.03
+    "bonuses": ["m31-enduring-avantage-ascendant"]
   },
   {
     "name": "M31 Gauntlets of the Wrathborn (Acc/CA)",
     "filter": "gear_arms",
     "il": 4550,
     "combined_rating": 4095,
-    "ca_p": 0.04,
     "acc": 3993,
     "severity": 3686,
-    "bonuses": ["m31-gauntlets-of-the-wrathborn-acc-ca"]
+    "bonuses": ["m31-enveloped-rage-ascendant"]
   },
   {
     "name": "M31 Greaves of the Crimson March (Damage)",
@@ -1476,17 +1474,17 @@
     "combined_rating": 3870,
     "ca": 2838,
     "forte": 2612,
-    "bonuses": ["m31-threads-of-the-arch-thrall-power-strike-severity"]
+    "bonuses": ["eagle-s-mastery-greater"]
   },
   {
     "name": "M31 Twisted Pact (Severity)",
     "filter": "gear_ring",
     "il": 4150,
     "combined_rating": 3320,
-    "sev_p": 0.07,
     "strike": 8964,
     "forte": 4482,
-    "maxCopies": 1
+    "maxCopies": 1,
+    "bonuses": ["m31-enduring-critical"]
   },
   {
     "name": "M31 Visage of the Eternal Herald",
