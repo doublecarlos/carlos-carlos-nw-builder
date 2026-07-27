@@ -314,7 +314,34 @@ label.quickopts-row { cursor: pointer; }
 .slot-row:last-child { border-bottom: 0; }
 .slot-label { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
+/* Keyboard cursor: independent of mouse hover (`.is-hovered`) -- the two can point at different
+ * rows at once, same as a spreadsheet's selection vs. hover state. */
+.slot-row.is-cursor, .section-head.is-cursor {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+}
+/* `.slot-row` is tabindex="-1" so real DOM focus can follow the keyboard cursor (see
+ * `syncCursorFocus` in slot-list.js) -- normally focus and `.is-cursor` land together, so this
+ * only suppresses the native ring for the rare moment they don't (e.g. a row losing `.is-cursor`
+ * a tick before the browser actually moves focus off it). `:not(.is-cursor)` -- not just source
+ * order -- keeps this from ever tying with (and winning over, being the same specificity and
+ * later) the `.is-cursor` rule above when both apply to the same row at once. */
+.slot-row:focus:not(.is-cursor) { outline: none; }
+
 .slot-control { min-width: 0; }
+/* The picker is capped, not stretched to fill the column -- the freed space carries a condensed
+ * stat summary instead of sitting empty. */
+.slot-main { align-items: center; display: flex; gap: 10px; }
+.slot-main .picker { flex: 0 1 320px; min-width: 160px; }
+.slot-summary {
+  color: var(--text);
+  flex: 1;
+  font-size: 12px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .slot-value { align-items: center; display: flex; gap: 6px; margin-top: 4px; }
 .slot-error { color: var(--danger); margin: 3px 0 0; font-size: 12px; }
 
@@ -534,12 +561,16 @@ label.quickopts-row { cursor: pointer; }
 .itemcard-bonus-cond { flex: 1; font-size: 12px; min-width: 0; }
 .bonus--inactive .itemcard-bonus-cond, .bonus--excluded .itemcard-bonus-cond { color: var(--muted); }
 .itemcard-bonus-stats { font-size: 11px; padding-left: 12px; }
+/* An inactive/excluded bonus's numbers are what it *would* grant, not what it does -- muted
+ * the same as its title, so the card doesn't read as if it were already contributing. */
+.bonus--inactive .itemcard-bonus-stats, .bonus--excluded .itemcard-bonus-stats { color: var(--muted); }
 .itemcard-bonus-unmet { color: var(--warn); font-size: 11px; padding-left: 12px; }
 .itemcard-bonus-when { padding-left: 12px; }
 
 .itemcard-bonus-tiers { padding-left: 12px; }
 .itemcard-tier { color: var(--muted); font-size: 11px; }
 .itemcard-tier.is-active { color: var(--text); font-weight: 600; }
+.itemcard-tier .itemcard-stat { font-size: 11px; padding: 2px 0; }
 .itemcard-bonus-shared { padding-left: 12px; }
 
 /* --- sidebar tabs -------------------------------------------------------------------- */

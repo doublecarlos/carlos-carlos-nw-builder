@@ -37,6 +37,8 @@ window.NW.components.DataEditor = (() => {
       exportTab: 'items',       // items | bonuses | overlay
       formDirty: false,
       notice: '',
+      confirmReset: false,
+      confirmResetTimer: null,
     }),
 
     computed: {
@@ -138,6 +140,33 @@ window.NW.components.DataEditor = (() => {
         this.selectedName = row.name;
       },
 
+      /**
+       * ArrowUp/Down drive the list from either the search box (kept focused, command-palette
+       * style -- typing still filters normally) or a focused row. `selectedName` doubles as the
+       * keyboard cursor: the existing click UX has no separate "highlighted but not open" state,
+       * so keyboard nav matches it exactly rather than inventing one. Guarded to the search
+       * input or an `.editor-row` so the status ComboBox's own dropdown keeps its arrows.
+       */
+      onListKeydown(event) {
+        const isSearch = event.target.matches?.('input[type="search"]');
+        const isRow = event.target.closest?.('.editor-row');
+        if (!isSearch && !isRow) return;
+        if (!['ArrowDown', 'ArrowUp', 'Enter'].includes(event.key)) return;
+        const rows = this.filtered;
+        if (!rows.length) return;
+        event.preventDefault();
+        const idx = rows.findIndex((row) => row.name === this.selectedName);
+        if (event.key === 'Enter') {
+          if (idx !== -1) this.select(rows[idx]);
+          return;
+        }
+        const dir = event.key === 'ArrowDown' ? 1 : -1;
+        const next = idx === -1
+          ? (dir === 1 ? 0 : rows.length - 1)
+          : Math.min(Math.max(idx + dir, 0), rows.length - 1);
+        this.select(rows[next]);
+      },
+
       newItem() {
         this.selectedName = null;
         // Remounts ItemForm with an empty draft even if it was already showing a new item.
@@ -169,7 +198,17 @@ window.NW.components.DataEditor = (() => {
         this.notice = `Restored “${name}”`;
       },
 
+      /** Two-step, not a `confirm()` dialog -- same pattern as build-bar.js's delete: this
+       *  wipes every change in the overlay, and a blocking modal would stall anything driving
+       *  the editor programmatically. */
       resetAll() {
+        if (!this.confirmReset) {
+          this.confirmReset = true;
+          this.confirmResetTimer = window.setTimeout(() => { this.confirmReset = false; }, 4000);
+          return;
+        }
+        window.clearTimeout(this.confirmResetTimer);
+        this.confirmReset = false;
         this.$emit('update-overlay', catalog().emptyOverlay());
         this.selectedName = null;
         this.notice = 'Discarded every change — back to the shipped data';
@@ -241,8 +280,9 @@ window.NW.components.DataEditor = (() => {
                   @click="showExport = !showExport">Export…</button>
           <label class="btn">Import overlay
             <input type="file" accept=".json" hidden @change="importOverlay"></label>
-          <button type="button" class="btn" :disabled="!changedCount" @click="resetAll">
-            Discard changes
+          <button type="button" class="btn" :class="{ 'is-danger': confirmReset }"
+                  :disabled="!changedCount" @click="resetAll">
+            {{ confirmReset ? 'Really discard?' : 'Discard changes' }}
           </button>
           <button type="button" class="btn" @click="$emit('close')">← Back to builder</button>
         </div>
@@ -290,7 +330,7 @@ window.NW.components.DataEditor = (() => {
         </div>
 
         <div class="editor-body">
-          <div class="editor-list">
+          <div class="editor-list" @keydown="onListKeydown">
             <div class="editor-list-head">
               <input type="search" v-model="query" placeholder="Filter items…">
               <ComboBox class="combo--status" :model-value="statusFilter" :options="statusFilterOptions"
@@ -298,7 +338,7 @@ window.NW.components.DataEditor = (() => {
               <button type="button" class="btn btn--primary" @click="newItem">+ New item</button>
             </div>
             <div class="editor-list-body">
-              <div v-for="row in filtered" :key="row.name" class="editor-row"
+              <div v-for="row in filtered" :key="row.name" class="editor-row" tabindex="0"
                    :class="{ 'is-on': row.name === selectedName }" @click="select(row)">
                 <span class="editor-row-name">{{ row.name }}</span>
                 <span v-if="row.status !== 'base'" class="badge" :class="'badge--' + row.status">

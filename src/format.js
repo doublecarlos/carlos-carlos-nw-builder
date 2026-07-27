@@ -27,6 +27,10 @@ window.NW.format = (() => {
 
   const label = (key) => statByKey()[key]?.label ?? key;
 
+  /** Short form for tight spaces (the inline gear-row summary); falls back to the full label
+   *  for every stat that has no abbreviation defined. */
+  const abbr = (key) => statByKey()[key]?.abbr ?? label(key);
+
   /** Format a stat value the way its kind demands. */
   const stat = (key, value) => (isPercentKind(kindOf(key)) ? pct(value) : int(value));
 
@@ -47,7 +51,7 @@ window.NW.format = (() => {
       if (key === 'il') continue;              // shown separately, as a badge
       const value = item[key];
       if (!value) continue;
-      parts.push(`${label(key)} ${signedStat(key, value)}`);
+      parts.push(`${abbr(key)} ${signedStat(key, value)}`);
     }
     return { parts: parts.slice(0, limit), more: Math.max(parts.length - limit, 0) };
   };
@@ -61,6 +65,6 @@ window.NW.format = (() => {
     .replace(/[_-]+/g, ' ')
     .replace(/\b\w/g, (c) => c.toUpperCase());
 
-  return { int, pct, stat, signedStat, label, kindOf, isPercentKind, itemPreview, hasBonuses,
+  return { int, pct, stat, signedStat, label, abbr, kindOf, isPercentKind, itemPreview, hasBonuses,
     titleCase, finite };
 })();

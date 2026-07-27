@@ -18,23 +18,23 @@ window.NW_SCHEMA = (function () {
 
   var STATS = [
     // identity / totals
-    { key: 'il',              label: 'Item Level',        kind: 'flat' },
-    { key: 'combined_rating', label: 'Combined Rating',   kind: 'flat' },
+    { key: 'il',              label: 'Item Level',        kind: 'flat', abbr: 'IL' },
+    { key: 'combined_rating', label: 'Combined Rating',   kind: 'flat', abbr: 'CR' },
 
     // offensive percents (paired with the ratings below)
     { key: 'power_p',         label: 'Power',             kind: 'percent', rating: 'power' },
-    { key: 'acc_p',           label: 'Accuracy',          kind: 'percent', rating: 'acc' },
-    { key: 'ca_p',            label: 'Combat Advantage',  kind: 'percent', rating: 'ca' },
-    { key: 'strike_p',        label: 'Strike',            kind: 'percent', rating: 'strike' },
-    { key: 'sev_p',           label: 'Severity',          kind: 'percent', rating: 'severity' },
+    { key: 'acc_p',           label: 'Accuracy',          kind: 'percent', rating: 'acc', abbr: 'Acc' },
+    { key: 'ca_p',            label: 'Combat Advantage',  kind: 'percent', rating: 'ca', abbr: 'CA' },
+    { key: 'strike_p',        label: 'Critical Strike',   kind: 'percent', rating: 'strike', abbr: 'C. Strike' },
+    { key: 'sev_p',           label: 'Critical Severity', kind: 'percent', rating: 'severity', abbr: 'C. Sev.' },
     { key: 'forte_p',         label: 'Forte',             kind: 'percent', rating: 'forte' },
 
     // offensive ratings
     { key: 'power',           label: 'Power',             kind: 'rating' },
-    { key: 'acc',             label: 'Accuracy',          kind: 'rating' },
-    { key: 'ca',              label: 'Combat Advantage',  kind: 'rating' },
-    { key: 'strike',          label: 'Strike',            kind: 'rating' },
-    { key: 'severity',        label: 'Severity',          kind: 'rating' },
+    { key: 'acc',             label: 'Accuracy',          kind: 'rating', abbr: 'Acc' },
+    { key: 'ca',              label: 'Combat Advantage',  kind: 'rating', abbr: 'CA' },
+    { key: 'strike',          label: 'Critical Strike',   kind: 'rating', abbr: 'C. Strike' },
+    { key: 'severity',        label: 'Critical Severity', kind: 'rating', abbr: 'C. Sev.' },
     { key: 'forte',           label: 'Forte',             kind: 'rating' },
 
     // damage
@@ -98,8 +98,8 @@ window.NW_SCHEMA = (function () {
     // the prefix back off, since its own heading already says it.
     { key: 'enemy_accuracy',       label: 'Enemy Accuracy',           kind: 'percent', enemy: true },
     { key: 'enemy_ca',             label: 'Enemy Combat Advantage',   kind: 'percent', enemy: true },
-    { key: 'enemy_strike',         label: 'Enemy Strike',             kind: 'percent', enemy: true },
-    { key: 'enemy_severity',       label: 'Enemy Severity',           kind: 'percent', enemy: true },
+    { key: 'enemy_strike',         label: 'Enemy Critical Strike',    kind: 'percent', enemy: true },
+    { key: 'enemy_severity',       label: 'Enemy Critical Severity',  kind: 'percent', enemy: true },
     { key: 'enemy_incoming_damage', label: 'Enemy Incoming Damage',   kind: 'percent', enemy: true },
     { key: 'enemy_defense',        label: 'Enemy Defense',            kind: 'percent', enemy: true },
     { key: 'enemy_awareness',      label: 'Enemy Awareness',          kind: 'percent', enemy: true },

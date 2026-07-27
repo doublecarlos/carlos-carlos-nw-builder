@@ -48,7 +48,14 @@ window.NW.components.SlotList = (() => {
         leaveTimer: null,   // grace period before a leave actually closes the card
         lastHideAt: 0,      // Date.now() of the last close, for the "resume" fast path
         editing: false,     // a picker has focus: suppress the card so it cannot cover a dropdown
+        cursor: null,        // { type: 'header'|'slot', id } -- keyboard cursor, independent of the mouse
       };
+    },
+
+    /** Imperative ref bag for per-row ItemPickers (see `setPickerRef`) -- not template state,
+     *  so it lives outside `data()` and is never made reactive. */
+    created() {
+      this.pickerRefs = {};
     },
 
     computed: {
@@ -100,6 +107,36 @@ window.NW.components.SlotList = (() => {
         return out;
       },
 
+      /**
+       * slotId -> active bonuses to credit to *that* row's inline summary, one row-line per
+       * bonus rather than a name attached to raw numbers. A bonus fed by several equipped
+       * items (a set piece requirement, or a flat bonus two items both grant) would otherwise
+       * print on every one of their rows -- read together that looks like each item grants it
+       * independently, when really they share credit for one thing. Google Sheets' own
+       * summary sidesteps this by crediting a shared bonus to only the first contributing row;
+       * this walks the slots in the same canonical (not display/expanded) order and does the
+       * same, via a `shown` set threaded through the whole pass.
+       */
+      bonusesBySlot() {
+        const shown = new Set();
+        const map = new Map();
+        for (const section of this.sections) {
+          for (const slot of section.slots) {
+            const item = this.itemIn(slot.id);
+            if (!item) continue;
+            const entries = [];
+            for (const raw of this.db.bonusesFor(item)) {
+              const resolved = this.bonusById.get(raw.bonus.id);
+              if (!resolved?.active || shown.has(resolved.id)) continue;
+              shown.add(resolved.id);
+              entries.push(resolved);
+            }
+            if (entries.length) map.set(slot.id, entries);
+          }
+        }
+        return map;
+      },
+
       sections() {
         return this.db.sections.map((section) => {
           const slots = this.db.slots.filter((slot) => slot.section === section.id);
@@ -111,6 +148,23 @@ window.NW.components.SlotList = (() => {
           }
           return { ...section, slots, filled, errors, total: slots.length };
         });
+      },
+
+      /**
+       * Flattens exactly what the template renders -- the Options header, then per section a
+       * header and (if expanded) its slot rows -- so keyboard movement always matches what is
+       * actually on screen. Collapsed sections simply contribute no slot entries, the same way
+       * a spreadsheet skips hidden rows.
+       */
+      visibleRows() {
+        const rows = [{ type: 'header', id: 'options' }];
+        for (const section of this.sections) {
+          rows.push({ type: 'header', id: section.id });
+          if (this.expanded[section.id]) {
+            for (const slot of section.slots) rows.push({ type: 'slot', id: slot.id });
+          }
+        }
+        return rows;
       },
     },
 
@@ -137,6 +191,130 @@ window.NW.components.SlotList = (() => {
 
       setAll(open) {
         for (const section of this.db.sections) this.expanded[section.id] = open;
+      },
+
+      /**
+       * Condensed, single-line stat summary for a row: the item's own stats plus whatever
+       * active bonuses are credited to this slot (`bonusesBySlot`), summed together key by key
+       * rather than attributed separately -- one number per stat, not a name-tagged breakdown.
+       */
+      statSummary(slotId) {
+        const item = this.itemIn(slotId);
+        if (!item) return '';
+        const totals = {};
+        for (const key of window.NW_SCHEMA.statKeys) {
+          if (item[key]) totals[key] = (totals[key] ?? 0) + item[key];
+        }
+        for (const entry of this.bonusesBySlot.get(slotId) ?? []) {
+          for (const [key, value] of Object.entries(entry.appliedStats ?? {})) {
+            totals[key] = (totals[key] ?? 0) + value;
+          }
+        }
+        const fmt = window.NW.format;
+        const parts = [];
+        for (const key of window.NW_SCHEMA.statKeys) {
+          if (!totals[key]) continue;
+          parts.push(`${fmt.abbr(key)} ${fmt.signedStat(key, totals[key])}`);
+        }
+        return parts.join(' • ');
+      },
+
+      // --- keyboard cursor -------------------------------------------------------------------
+
+      isCursor(type, id) {
+        return this.cursor?.type === type && this.cursor?.id === id;
+      },
+
+      setCursor(type, id) {
+        this.cursor = { type, id };
+        this.syncCursorFocus();
+      },
+
+      setPickerRef(slotId, el) {
+        if (el) this.pickerRefs[slotId] = el;
+        else delete this.pickerRefs[slotId];
+      },
+
+      /** Focusing the input reuses ItemPicker's own `onFocus` (opens, clears the query). Only
+       *  the type-ahead case needs a seeded query, via ItemPicker's `focusAndSeed`. */
+      focusPicker(slotId, seedChar) {
+        const picker = this.pickerRefs[slotId];
+        if (!picker) return;
+        if (seedChar) picker.focusAndSeed(seedChar);
+        else picker.$refs.input?.focus();
+      },
+
+      /**
+       * Scrolls the cursor row into view, and -- unless real focus is already somewhere inside
+       * it (a click straight into the picker, say) -- moves native DOM focus to it too. Without
+       * this, arrowing the visual cursor around leaves real focus stranded wherever it happened
+       * to be last, and Tab from there jumps somewhere unrelated to what's highlighted; with it,
+       * Tab naturally continues from the row the cursor is actually on (and, for a slot row,
+       * lands on that row's own picker next, since it's tabindex="-1" and the picker input is
+       * the next focusable thing after it in document order).
+       */
+      syncCursorFocus() {
+        this.$nextTick(() => {
+          if (!this.cursor) return;
+          const key = `${this.cursor.type}:${this.cursor.id}`;
+          const el = this.$el.querySelector(`[data-cursor-key="${CSS.escape(key)}"]`);
+          if (!el) return;
+          el.scrollIntoView({ block: 'nearest' });
+          if (!el.contains(document.activeElement)) el.focus({ preventScroll: true });
+        });
+      },
+
+      /**
+       * The passive gate: arrow/type-to-edit only fires when nothing has already claimed the
+       * keyboard for its own editing. This is deliberately not scoped to `.slots` -- Escape on
+       * an open picker blurs its input, which sends focus to <body>, and the cursor (never
+       * cleared) should be immediately live again with no extra click.
+       */
+      isPassiveTarget() {
+        const el = document.activeElement;
+        if (!el) return true;
+        const tag = el.tagName;
+        return tag !== 'INPUT' && tag !== 'TEXTAREA' && tag !== 'SELECT' && !el.isContentEditable;
+      },
+
+      onNavKeydown(event) {
+        if (!this.isPassiveTarget()) return;
+
+        if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+          const rows = this.visibleRows;
+          if (!rows.length) return;
+          event.preventDefault();
+          const dir = event.key === 'ArrowDown' ? 1 : -1;
+          const idx = this.cursor
+            ? rows.findIndex((r) => r.type === this.cursor.type && r.id === this.cursor.id)
+            : -1;
+          const next = idx === -1
+            ? (dir === 1 ? 0 : rows.length - 1)
+            : Math.min(Math.max(idx + dir, 0), rows.length - 1);
+          this.setCursor(rows[next].type, rows[next].id);
+          return;
+        }
+
+        if (!this.cursor) return;
+
+        if (event.key === 'Enter') {
+          event.preventDefault();
+          if (this.cursor.type === 'header') this.toggle(this.cursor.id);
+          else this.focusPicker(this.cursor.id);
+          return;
+        }
+
+        if (this.cursor.type === 'slot' && (event.key === 'Backspace' || event.key === 'Delete')) {
+          event.preventDefault();
+          this.$emit('choose', this.cursor.id, '');
+          return;
+        }
+
+        if (this.cursor.type === 'slot' && event.key.length === 1
+          && !event.ctrlKey && !event.metaKey && !event.altKey) {
+          event.preventDefault();
+          this.focusPicker(this.cursor.id, event.key);
+        }
       },
 
       // --- hover card ----------------------------------------------------------------------
@@ -221,10 +399,27 @@ window.NW.components.SlotList = (() => {
         if (this.hover) this.close();
       },
 
-      onFocusIn() {
+      /**
+       * `setCursor`/`syncCursorFocus` push the keyboard cursor's position onto real DOM focus,
+       * but focus can also move for reasons that never go through `setCursor` -- native Tab
+       * order, or a click landing directly on a descendant like the picker input rather than
+       * bubbling a `setCursor` call from the row div itself. Left alone, the cursor would go
+       * stale and point somewhere real focus already isn't, so arrow keys from there would
+       * jump from the wrong place. Syncing the other direction here -- real focus moving
+       * updates the cursor to match -- keeps the two from ever disagreeing.
+       */
+      onFocusIn(event) {
         this.editing = true;
         window.clearTimeout(this.hoverTimer);
         this.close();
+
+        const key = event.target.closest?.('[data-cursor-key]')?.dataset.cursorKey;
+        if (!key) return;
+        const sep = key.indexOf(':');
+        const type = key.slice(0, sep);
+        const id = key.slice(sep + 1);
+        if (this.cursor?.type === type && this.cursor?.id === id) return;
+        this.cursor = { type, id };
       },
 
       onFocusOut() {
@@ -234,12 +429,14 @@ window.NW.components.SlotList = (() => {
 
     mounted() {
       window.addEventListener('scroll', this.onScroll, true);
+      window.addEventListener('keydown', this.onNavKeydown);
     },
 
     unmounted() {
       window.clearTimeout(this.hoverTimer);
       window.clearTimeout(this.leaveTimer);
       window.removeEventListener('scroll', this.onScroll, true);
+      window.removeEventListener('keydown', this.onNavKeydown);
     },
 
     template: `
@@ -250,7 +447,9 @@ window.NW.components.SlotList = (() => {
         </div>
 
         <section class="section">
-          <button type="button" class="section-head" @click="expanded.options = !expanded.options">
+          <button type="button" class="section-head" :class="{ 'is-cursor': isCursor('header', 'options') }"
+                  data-cursor-key="header:options"
+                  @click="toggle('options'); setCursor('header', 'options')">
             <span class="section-chevron">{{ expanded.options ? '▾' : '▸' }}</span>
             <span class="section-label">Options</span>
           </button>
@@ -262,7 +461,9 @@ window.NW.components.SlotList = (() => {
         </section>
 
         <section v-for="section in sections" :key="section.id" class="section">
-          <button type="button" class="section-head" @click="toggle(section.id)">
+          <button type="button" class="section-head" :class="{ 'is-cursor': isCursor('header', section.id) }"
+                  :data-cursor-key="'header:' + section.id"
+                  @click="toggle(section.id); setCursor('header', section.id)">
             <span class="section-chevron">{{ expanded[section.id] ? '▾' : '▸' }}</span>
             <span class="section-label">{{ section.label }}</span>
             <span class="section-count">{{ section.filled }}/{{ section.total }}</span>
@@ -270,18 +471,24 @@ window.NW.components.SlotList = (() => {
           </button>
 
           <div v-if="expanded[section.id]" class="section-body">
-            <div v-for="slot in section.slots" :key="slot.id" class="slot-row"
-                 :class="{ 'is-hovered': hover?.slotId === slot.id }"
+            <div v-for="slot in section.slots" :key="slot.id" class="slot-row" tabindex="-1"
+                 :class="{ 'is-hovered': hover?.slotId === slot.id, 'is-cursor': isCursor('slot', slot.id) }"
+                 :data-cursor-key="'slot:' + slot.id"
                  @mouseenter="onRowEnter($event, slot.id)"
-                 @mouseleave="onRowLeave">
+                 @mouseleave="onRowLeave"
+                 @click="setCursor('slot', slot.id)">
               <label class="slot-label" :for="slot.id">{{ slot.label }}</label>
 
               <div class="slot-control">
-                <ItemPicker
-                  :items="itemsFor(slot.id)"
-                  :model-value="build.choices[slot.id] ?? ''"
-                  :invalid="errorsFor(slot.id).length > 0"
-                  @update:model-value="$emit('choose', slot.id, $event)" />
+                <div class="slot-main">
+                  <ItemPicker
+                    :ref="el => setPickerRef(slot.id, el)"
+                    :items="itemsFor(slot.id)"
+                    :model-value="build.choices[slot.id] ?? ''"
+                    :invalid="errorsFor(slot.id).length > 0"
+                    @update:model-value="$emit('choose', slot.id, $event)" />
+                  <span v-if="itemIn(slot.id)" class="slot-summary">{{ statSummary(slot.id) }}</span>
+                </div>
 
                 <!-- Dynamic weapon modifications carry a user-typed magnitude. Driven by the
                      item's own \`dynamicStat\`, not by a hard-coded slot id, so a second
@@ -313,6 +520,7 @@ window.NW.components.SlotList = (() => {
           v-if="hover && hoveredItem"
           :item="hoveredItem"
           :bonuses="hoveredBonuses"
+          :db="db"
           :slot-label="db.slotById.get(hover.slotId)?.label ?? ''"
           :style="{ left: hover.left + 'px', top: hover.top + 'px' }"
           @mouseenter="onCardEnter"

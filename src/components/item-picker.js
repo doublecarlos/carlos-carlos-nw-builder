@@ -70,10 +70,25 @@ window.NW.components.ItemPicker = (() => {
     methods: {
       int: (value) => window.NW.format.int(value),
 
+      /** Skips the reset when already open: `focusAndSeed` below pre-sets `open` before the
+       *  native focus event fires, and this must not stomp the query it just seeded. */
       onFocus() {
+        if (this.open) return;
         this.open = true;
         this.query = '';
+        // Start on whatever is already equipped, not on "empty" -- `options` reflects the
+        // now-open (unfiltered) list since `open` was just set above.
+        const current = this.options.findIndex((item) => item?.name === this.modelValue);
+        this.highlight = current === -1 ? 0 : current;
+      },
+
+      /** Called imperatively by slot-list's keyboard cursor: typing a character on a row with
+       *  no input focused opens this picker pre-filtered, like Sheets overwriting a cell. */
+      focusAndSeed(char) {
+        this.open = true;
+        this.query = char;
         this.highlight = 0;
+        this.$nextTick(() => this.$refs.input?.focus());
       },
 
       onInput(event) {
@@ -99,9 +114,21 @@ window.NW.components.ItemPicker = (() => {
         this.$refs.input?.blur();
       },
 
+      /**
+       * Every branch here that acts also stops propagation: this input sits inside a
+       * `.slot-row` that slot-list.js's own window-level keydown listener watches for its
+       * passive row cursor. Without stopping propagation, the same Enter that this handler
+       * uses to close the dropdown would go on to reach that listener too -- and since the
+       * cursor is still parked on this row, it would immediately refocus (reopen) the very
+       * picker that just closed. Relying on the listener's own focused-input gate to prevent
+       * that is fragile: it depends on `blur()` having synchronously updated
+       * `document.activeElement` before the bubbling event reaches `window`, which is not
+       * guaranteed the same way in every browser.
+       */
       onKeydown(event) {
         if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
           event.preventDefault();
+          event.stopPropagation();
           if (!this.open) {
             this.onFocus();
             return;
@@ -112,12 +139,24 @@ window.NW.components.ItemPicker = (() => {
           return;
         }
         if (event.key === 'Enter') {
+          if (!this.open) return;
           event.preventDefault();
-          if (this.open) this.choose(this.options[this.highlight] ?? null);
+          event.stopPropagation();
+          this.choose(this.options[this.highlight] ?? null);
+          return;
+        }
+        if (event.key === 'Tab') {
+          // Just closes -- does not pick, does not move focus on itself. A second Tab, with
+          // the dropdown now closed, is free to move focus normally.
+          if (!this.open) return;
+          event.preventDefault();
+          event.stopPropagation();
+          this.close();
           return;
         }
         if (event.key === 'Escape') {
           event.preventDefault();
+          event.stopPropagation();
           this.close();
           this.$refs.input?.blur();
         }
