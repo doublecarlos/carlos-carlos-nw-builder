@@ -1,13 +1,16 @@
 // Editor for a list of bonuses.
 //
 // Item bonuses and set effects turned out to be the same editing problem: both are
-// `{ id, when, stats|tiers }`, so one component serves both and the set editor reuses it.
+// `{ id, when, stats|tiers|variants }`, so one component serves both and the set editor
+// reuses it.
 //
-// What the form covers structurally: the leaf conditions, a flat stat payload, a *tiered*
-// payload keyed on set pieces, and the stacking rules (`stacking`, `maxStacks`, `excludes`).
-// Only `variants` and nested `any`/`all`/`not` fall through to the JSON escape hatch, and a
-// bonus using them opens in JSON mode automatically -- the editor never silently flattens a
-// structure it has no widget for.
+// What the form covers structurally: the condition tree (leaves plus `all`/`any`/`not`, see
+// condition-rows.js), a flat stat payload, a *tiered* payload keyed on set pieces, and a
+// *variants* payload (first matching condition wins), plus the stacking rules (`stacking`,
+// `maxStacks`, `excludes`). Only conditions nested deeper than `conditionDraft.MAX_DEPTH`,
+// unrecognized condition keys, complex tiers, or a bonus using both `tiers` and `variants`
+// fall through to the JSON escape hatch -- the editor never silently flattens a structure it
+// has no widget for.
 //
 // The draft <-> bonus conversion lives on `window.NW.bonusDraft` so item-form and set-bonuses
 // can build and read drafts without importing the component.
@@ -18,15 +21,13 @@ window.NW.components = window.NW.components ?? {};
 window.NW.bonusDraft = (() => {
   'use strict';
 
-  const SIMPLE_CONDITIONS = ['toggle', 'role', 'class', 'combatType', 'location', 'damageType',
-    'duration', 'pieces', 'equipped'];
+  const cd = () => window.NW.conditionDraft;
 
   // Exactly what the engine reads off a tier (bonus.js `evaluateBonus`). Anything else on a
   // tier would be dropped by the form, so its presence forces JSON mode instead.
   const TIER_KEYS = new Set(['pieces', 'stats']);
   const PIECES_KEYS = new Set(['set', 'atLeast']);
-
-  const fromCsv = (text) => String(text ?? '').split(',').map((s) => s.trim()).filter(Boolean);
+  const VARIANT_KEYS = new Set(['when', 'stats']);
 
   const tiersAreSimple = (tiers) => (tiers ?? []).every((tier) => (
     Object.keys(tier).every((key) => TIER_KEYS.has(key))
@@ -34,48 +35,18 @@ window.NW.bonusDraft = (() => {
     && Object.keys(tier.pieces).every((key) => PIECES_KEYS.has(key))
   ));
 
+  const variantsAreSimple = (variants) => (variants ?? []).every((variant) => (
+    Object.keys(variant).every((key) => VARIANT_KEYS.has(key))
+    && variant.stats && typeof variant.stats === 'object'
+    && cd().whenIsRepresentable(variant.when)
+  ));
+
   /** Structures the form cannot represent without losing something. */
   const needsJson = (bonus) => Boolean(
-    bonus.variants
-    || Object.keys(bonus.when ?? {}).some((key) => !SIMPLE_CONDITIONS.includes(key))
-    || (bonus.tiers && !tiersAreSimple(bonus.tiers)),
+    !cd().whenIsRepresentable(bonus.when)
+    || (bonus.tiers && !tiersAreSimple(bonus.tiers))
+    || (bonus.variants && (bonus.tiers || !variantsAreSimple(bonus.variants))),
   );
-
-  function conditionRows(when) {
-    return Object.entries(when ?? {}).map(([type, spec]) => {
-      if (type === 'duration') {
-        const range = typeof spec === 'number' ? { atLeast: spec } : (spec ?? {});
-        return { type, atLeast: range.atLeast ?? null, below: range.below ?? null };
-      }
-      if (type === 'pieces') return { type, set: spec?.set ?? '', atLeast: spec?.atLeast ?? 1 };
-      if (type === 'equipped') {
-        return { type, tag: spec?.tag ?? '', item: spec?.item ?? '', atLeast: spec?.atLeast ?? 1 };
-      }
-      return { type, value: Array.isArray(spec) ? spec.join(', ') : String(spec ?? '') };
-    });
-  }
-
-  function rowsToWhen(rows) {
-    const when = {};
-    for (const row of rows) {
-      if (row.type === 'duration') {
-        const range = {};
-        if (row.atLeast != null && row.atLeast !== '') range.atLeast = Number(row.atLeast);
-        if (row.below != null && row.below !== '') range.below = Number(row.below);
-        if (Object.keys(range).length) when.duration = range;
-      } else if (row.type === 'pieces') {
-        if (row.set) when.pieces = { set: row.set, atLeast: Number(row.atLeast) || 1 };
-      } else if (row.type === 'equipped') {
-        if (row.tag) when.equipped = { tag: row.tag, atLeast: Number(row.atLeast) || 1 };
-        else if (row.item) when.equipped = { item: row.item, atLeast: Number(row.atLeast) || 1 };
-      } else {
-        const values = fromCsv(row.value);
-        if (values.length === 1) when[row.type] = values[0];
-        else if (values.length > 1) when[row.type] = values;
-      }
-    }
-    return when;
-  }
 
   const statRows = (stats) => Object.entries(stats ?? {})
     .map(([key, value]) => ({ key, value }));
@@ -90,6 +61,12 @@ window.NW.bonusDraft = (() => {
     return stats;
   };
 
+  const newVariant = () => ({
+    uid: `v${Math.random().toString(36).slice(2, 8)}`,
+    conditions: [],
+    stats: [],
+  });
+
   function toDraft(bonus = {}) {
     const json = needsJson(bonus);
     return {
@@ -98,13 +75,18 @@ window.NW.bonusDraft = (() => {
       name: bonus.name ?? '',
       mode: json ? 'json' : 'simple',
       json: JSON.stringify(bonus, null, 2),
-      conditions: json ? [] : conditionRows(bonus.when),
-      payload: bonus.tiers ? 'tiers' : 'flat',
+      conditions: json ? [] : cd().whenToRows(bonus.when),
+      payload: bonus.variants ? 'variants' : (bonus.tiers ? 'tiers' : 'flat'),
       stats: json ? [] : statRows(bonus.stats),
       tiers: json ? [] : (bonus.tiers ?? []).map((tier) => ({
         set: tier.pieces?.set ?? '',
         atLeast: tier.pieces?.atLeast ?? 1,
         stats: statRows(tier.stats),
+      })),
+      variants: json ? [] : (bonus.variants ?? []).map((variant) => ({
+        ...newVariant(),
+        conditions: cd().whenToRows(variant.when),
+        stats: statRows(variant.stats),
       })),
       stacking: bonus.stacking ?? '',
       maxStacks: bonus.maxStacks ?? null,
@@ -118,7 +100,7 @@ window.NW.bonusDraft = (() => {
 
     const out = { id: draft.id.trim() };
     if (draft.name.trim()) out.name = draft.name.trim();
-    const when = rowsToWhen(draft.conditions);
+    const when = cd().rowsToWhen(draft.conditions);
     if (Object.keys(when).length) out.when = when;
 
     if (draft.payload === 'tiers') {
@@ -126,6 +108,13 @@ window.NW.bonusDraft = (() => {
         pieces: { set: tier.set, atLeast: Number(tier.atLeast) || 1 },
         stats: rowsToStats(tier.stats),
       }));
+    } else if (draft.payload === 'variants') {
+      out.variants = draft.variants.map((variant) => {
+        const vWhen = cd().rowsToWhen(variant.conditions);
+        const entry = { stats: rowsToStats(variant.stats) };
+        if (Object.keys(vWhen).length) entry.when = vWhen;
+        return entry;
+      });
     } else {
       out.stats = rowsToStats(draft.stats);
     }
@@ -137,14 +126,41 @@ window.NW.bonusDraft = (() => {
     return out;
   }
 
-  return { SIMPLE_CONDITIONS, needsJson, conditionRows, rowsToWhen, toDraft, toBonus,
-    statRows, rowsToStats };
+  /** Deep clone, with fresh uids throughout and the id suffixed so the copy does not collide
+   * with the original on save. */
+  function duplicateDraft(draft) {
+    return {
+      ...draft,
+      uid: `b${Math.random().toString(36).slice(2, 8)}`,
+      id: draft.id ? `${draft.id}-copy` : '',
+      conditions: draft.conditions.map(cd().cloneRow),
+      stats: draft.stats.map((s) => ({ ...s })),
+      tiers: draft.tiers.map((tier) => ({ ...tier, stats: tier.stats.map((s) => ({ ...s })) })),
+      variants: draft.variants.map((variant) => ({
+        ...newVariant(),
+        conditions: variant.conditions.map(cd().cloneRow),
+        stats: variant.stats.map((s) => ({ ...s })),
+      })),
+      excludes: [...draft.excludes],
+    };
+  }
+
+  return { needsJson, toDraft, toBonus, duplicateDraft, statRows, rowsToStats, newVariant };
 })();
 
 window.NW.components.BonusRows = (() => {
   'use strict';
 
   const api = () => window.NW.bonusDraft;
+  const cd = () => window.NW.conditionDraft;
+
+  /** Shared by every reorderable list here (bonuses, tiers, variants). */
+  const moveItem = (list, index, delta) => {
+    const to = index + delta;
+    if (to < 0 || to >= list.length) return;
+    const [item] = list.splice(index, 1);
+    list.splice(to, 0, item);
+  };
 
   return {
     name: 'BonusRows',
@@ -153,6 +169,7 @@ window.NW.components.BonusRows = (() => {
       TokenInput: window.NW.components.TokenInput,
       PercentInput: window.NW.components.PercentInput,
       ComboBox: window.NW.components.ComboBox,
+      ConditionRows: window.NW.components.ConditionRows,
     },
 
     props: {
@@ -167,17 +184,11 @@ window.NW.components.BonusRows = (() => {
 
     emits: ['error'],
 
-    data: () => ({ simpleConditions: window.NW.bonusDraft.SIMPLE_CONDITIONS }),
-
     computed: {
       statOptions: () => window.NW_SCHEMA.stats,
 
       statComboOptions() {
         return this.statOptions.map((s) => ({ value: s.key, label: `${s.label} (${s.key})` }));
-      },
-
-      conditionTypeOptions() {
-        return this.simpleConditions.map((t) => ({ value: t, label: t }));
       },
 
       setComboOptions() {
@@ -193,12 +204,11 @@ window.NW.components.BonusRows = (() => {
     methods: {
       isPercent: (key) => window.NW.format.isPercentKind(window.NW.format.kindOf(key)),
 
-      optionsForCombo(type) {
-        return this.optionsFor(type).map((o) => ({ value: o, label: o }));
-      },
-
       addBonus() { this.rows.push(api().toDraft({ id: '', when: {}, stats: {} })); },
       removeBonus(index) { this.rows.splice(index, 1); },
+      insertBonus(index) { this.rows.splice(index + 1, 0, api().toDraft({ id: '', when: {}, stats: {} })); },
+      duplicateBonus(index) { this.rows.splice(index + 1, 0, api().duplicateDraft(this.rows[index])); },
+      moveBonus(index, delta) { moveItem(this.rows, index, delta); },
 
       toggleJson(bonus) {
         if (bonus.mode === 'simple') {
@@ -209,8 +219,9 @@ window.NW.components.BonusRows = (() => {
         try {
           const parsed = JSON.parse(bonus.json);
           if (api().needsJson(parsed)) {
-            this.$emit('error', 'That bonus uses variants or a nested condition, which the '
-              + 'form cannot represent. Keeping it as JSON.');
+            this.$emit('error', 'That bonus is too complex for the form (an unrecognized '
+              + 'condition, tiers combined with variants, or conditions nested deeper than '
+              + `${window.NW.conditionDraft.MAX_DEPTH} levels). Keeping it as JSON.`);
             return;
           }
           Object.assign(bonus, api().toDraft(parsed), { uid: bonus.uid, mode: 'simple' });
@@ -218,16 +229,6 @@ window.NW.components.BonusRows = (() => {
         } catch (error) {
           this.$emit('error', `Cannot switch to the form: ${error.message}`);
         }
-      },
-
-      addCondition(bonus) { bonus.conditions.push({ type: 'toggle', value: '' }); },
-      removeCondition(bonus, index) { bonus.conditions.splice(index, 1); },
-
-      changeConditionType(row) {
-        // Each predicate carries different fields; reset to the new shape's defaults.
-        const type = row.type;
-        Object.keys(row).forEach((key) => { if (key !== 'type') delete row[key]; });
-        if (type === 'duration') { row.atLeast = null; row.below = null; } else if (type === 'pieces') { row.set = this.setIds[0] ?? ''; row.atLeast = 1; } else if (type === 'equipped') { row.tag = ''; row.item = ''; row.atLeast = 1; } else row.value = '';
       },
 
       addStat(rows) { rows.push({ key: '', value: 0 }); },
@@ -248,22 +249,47 @@ window.NW.components.BonusRows = (() => {
       },
 
       removeTier(bonus, index) { bonus.tiers.splice(index, 1); },
+      moveTier(bonus, index, delta) { moveItem(bonus.tiers, index, delta); },
+
+      /** Inserted/duplicated tiers start from the row clicked, not the last one -- more useful
+       * when there are several tiers and you are working in the middle of the list. */
+      insertTier(bonus, index) {
+        const ref = bonus.tiers[index];
+        bonus.tiers.splice(index + 1, 0, {
+          set: ref?.set ?? this.setIds[0] ?? '',
+          atLeast: (ref?.atLeast ?? 0) + 1,
+          stats: [],
+        });
+      },
+
+      duplicateTier(bonus, index) {
+        const tier = bonus.tiers[index];
+        bonus.tiers.splice(index + 1, 0, { ...tier, stats: tier.stats.map((s) => ({ ...s })) });
+      },
+
+      /** New variant starts unconditional -- the common case is one role-gated variant after
+       * another, each edited via the same condition tree as a top-level bonus. */
+      addVariant(bonus) { bonus.variants.push(api().newVariant()); },
+      removeVariant(bonus, index) { bonus.variants.splice(index, 1); },
+      insertVariant(bonus, index) { bonus.variants.splice(index + 1, 0, api().newVariant()); },
+
+      duplicateVariant(bonus, index) {
+        const variant = bonus.variants[index];
+        bonus.variants.splice(index + 1, 0, {
+          ...api().newVariant(),
+          conditions: variant.conditions.map(cd().cloneRow),
+          stats: variant.stats.map((s) => ({ ...s })),
+        });
+      },
+
+      /** Variants are matched in order, first win -- reordering changes which one applies. */
+      moveVariant(bonus, index, delta) { moveItem(bonus.variants, index, delta); },
 
       setPayload(bonus, payload) {
         if (bonus.payload === payload) return;
         bonus.payload = payload;
         if (payload === 'tiers' && !bonus.tiers.length) this.addTier(bonus);
-      },
-
-      optionsFor(type) {
-        const context = window.NW_SCHEMA.context;
-        if (type === 'toggle') return context.toggles;
-        if (type === 'role') return context.roles;
-        if (type === 'class') return context.classes;
-        if (type === 'combatType') return context.combatTypes;
-        if (type === 'location') return context.locations;
-        if (type === 'damageType') return context.damageTypes;
-        return [];
+        if (payload === 'variants' && !bonus.variants.length) this.addVariant(bonus);
       },
     },
 
@@ -279,51 +305,21 @@ window.NW.components.BonusRows = (() => {
             <button type="button" class="link" @click="toggleJson(bonus)">
               {{ bonus.mode === 'json' ? 'use the form' : 'edit as JSON' }}
             </button>
+            <span class="spacer"></span>
+            <button type="button" class="link" :disabled="bIndex === 0"
+                    @click="moveBonus(bIndex, -1)">move up</button>
+            <button type="button" class="link" :disabled="bIndex === rows.length - 1"
+                    @click="moveBonus(bIndex, 1)">move down</button>
+            <button type="button" class="link" @click="duplicateBonus(bIndex)">duplicate</button>
+            <button type="button" class="link" @click="insertBonus(bIndex)">insert below</button>
             <button type="button" class="link" @click="removeBonus(bIndex)">remove</button>
           </div>
 
           <textarea v-if="bonus.mode === 'json'" class="code" rows="8" v-model="bonus.json"></textarea>
 
           <template v-else>
-            <div class="sub-section">
-              Active when
-              <button type="button" class="link" @click="addCondition(bonus)">+ add</button>
-              <span v-if="!bonus.conditions.length" class="hint">always</span>
-            </div>
-            <div v-for="(row, cIndex) in bonus.conditions" :key="cIndex" class="cond-row">
-              <ComboBox class="combo--cond-type" :model-value="row.type" :options="conditionTypeOptions"
-                        @update:model-value="v => { row.type = v; changeConditionType(row) }" />
-
-              <template v-if="row.type === 'duration'">
-                <label class="field"><span class="field-label">At least (s)</span>
-                  <input type="number" v-model.number="row.atLeast"></label>
-                <label class="field"><span class="field-label">Below (s)</span>
-                  <input type="number" v-model.number="row.below"></label>
-              </template>
-              <template v-else-if="row.type === 'pieces'">
-                <ComboBox class="combo--set" :model-value="row.set" :options="setComboOptions"
-                          placeholder="— set —" @update:model-value="v => row.set = v" />
-                <label class="field"><span class="field-label">Pieces</span>
-                  <input type="number" min="1" v-model.number="row.atLeast"></label>
-                <span class="hint">piece(s) equipped</span>
-              </template>
-              <template v-else-if="row.type === 'equipped'">
-                <label class="field"><span class="field-label">Tag</span>
-                  <input type="text" v-model="row.tag" list="nw-tags"></label>
-                <label class="field"><span class="field-label">Or exact item name</span>
-                  <input type="text" v-model="row.item"></label>
-                <label class="field"><span class="field-label">Count</span>
-                  <input type="number" v-model.number="row.atLeast"></label>
-              </template>
-              <template v-else>
-                <ComboBox v-if="optionsFor(row.type).length" class="combo--cond-value"
-                          :model-value="row.value" :options="optionsForCombo(row.type)"
-                          @update:model-value="v => row.value = v" />
-                <input v-else type="text" v-model="row.value">
-              </template>
-
-              <button type="button" class="link" @click="removeCondition(bonus, cIndex)">remove</button>
-            </div>
+            <div class="sub-section">Active when</div>
+            <ConditionRows :rows="bonus.conditions" :depth="0" :set-ids="setIds" />
 
             <div class="sub-section">
               Grants
@@ -332,6 +328,8 @@ window.NW.components.BonusRows = (() => {
                         @click="setPayload(bonus, 'flat')">the same always</button>
                 <button type="button" class="seg-btn" :class="{ 'is-on': bonus.payload === 'tiers' }"
                         @click="setPayload(bonus, 'tiers')">tiered by set pieces</button>
+                <button type="button" class="seg-btn" :class="{ 'is-on': bonus.payload === 'variants' }"
+                        @click="setPayload(bonus, 'variants')">varies by condition</button>
               </div>
               <button v-if="bonus.payload === 'flat'" type="button" class="link"
                       @click="addStat(bonus.stats)">+ add stat</button>
@@ -349,7 +347,7 @@ window.NW.components.BonusRows = (() => {
             </template>
 
             <!-- tiered payload -->
-            <template v-else>
+            <template v-else-if="bonus.payload === 'tiers'">
               <p class="hint">
                 The highest matching tier wins and <strong>replaces</strong> the lower ones —
                 each tier's stats are the total at that piece count, not an extra on top.
@@ -362,17 +360,58 @@ window.NW.components.BonusRows = (() => {
                   <span class="hint">piece(s) or more</span>
                   <span class="spacer"></span>
                   <button type="button" class="link" @click="addStat(tier.stats)">+ add stat</button>
+                  <button type="button" class="link" :disabled="tIndex === 0"
+                          @click="moveTier(bonus, tIndex, -1)">move up</button>
+                  <button type="button" class="link" :disabled="tIndex === bonus.tiers.length - 1"
+                          @click="moveTier(bonus, tIndex, 1)">move down</button>
+                  <button type="button" class="link" @click="duplicateTier(bonus, tIndex)">duplicate</button>
+                  <button type="button" class="link" @click="insertTier(bonus, tIndex)">insert below</button>
                   <button type="button" class="link" @click="removeTier(bonus, tIndex)">remove tier</button>
                 </div>
                 <div v-for="(stat, sIndex) in tier.stats" :key="sIndex" class="stat-row">
                   <ComboBox class="combo--stat" :model-value="stat.key" :options="statComboOptions"
                             placeholder="— pick a stat —" @update:model-value="v => stat.key = v" />
-                  <input type="number" step="any" v-model.number="stat.value">
-                  <span class="hint">{{ stat.key && isPercent(stat.key) ? '0.09 = 9%' : '' }}</span>
+                  <PercentInput v-if="isPercent(stat.key)" v-model="stat.value" />
+                  <input v-else type="number" step="any" v-model.number="stat.value">
                   <button type="button" class="link" @click="removeStat(tier.stats, sIndex)">remove</button>
                 </div>
               </div>
               <button type="button" class="link" @click="addTier(bonus)">+ add tier</button>
+            </template>
+
+            <!-- variant payload -->
+            <template v-else>
+              <p class="hint">
+                The first variant whose own condition matches wins -- order them most-specific
+                first. Each variant's payload replaces the others, it does not add to them.
+              </p>
+              <div v-for="(variant, vIndex) in bonus.variants" :key="variant.uid" class="tier">
+                <div class="tier-head">
+                  <span class="hint">Variant {{ vIndex + 1 }}</span>
+                  <span class="spacer"></span>
+                  <button type="button" class="link" :disabled="vIndex === 0"
+                          @click="moveVariant(bonus, vIndex, -1)">move up</button>
+                  <button type="button" class="link" :disabled="vIndex === bonus.variants.length - 1"
+                          @click="moveVariant(bonus, vIndex, 1)">move down</button>
+                  <button type="button" class="link" @click="duplicateVariant(bonus, vIndex)">duplicate</button>
+                  <button type="button" class="link" @click="insertVariant(bonus, vIndex)">insert below</button>
+                  <button type="button" class="link" @click="removeVariant(bonus, vIndex)">remove variant</button>
+                </div>
+                <div class="sub-section">When</div>
+                <ConditionRows :rows="variant.conditions" :depth="0" :set-ids="setIds" />
+                <div class="sub-section">
+                  Grants
+                  <button type="button" class="link" @click="addStat(variant.stats)">+ add stat</button>
+                </div>
+                <div v-for="(stat, sIndex) in variant.stats" :key="sIndex" class="stat-row">
+                  <ComboBox class="combo--stat" :model-value="stat.key" :options="statComboOptions"
+                            placeholder="— pick a stat —" @update:model-value="v => stat.key = v" />
+                  <PercentInput v-if="isPercent(stat.key)" v-model="stat.value" />
+                  <input v-else type="number" step="any" v-model.number="stat.value">
+                  <button type="button" class="link" @click="removeStat(variant.stats, sIndex)">remove</button>
+                </div>
+              </div>
+              <button type="button" class="link" @click="addVariant(bonus)">+ add variant</button>
             </template>
 
             <!-- stacking -->

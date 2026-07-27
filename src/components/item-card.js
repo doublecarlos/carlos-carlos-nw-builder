@@ -46,10 +46,6 @@ window.NW.components.ItemCard = (() => {
           const label = window.NW.format.label(this.item.dynamicStat);
           out.push(`${label} ${this.item.dynamicMin}–${this.item.dynamicMax}, you choose`);
         }
-        if (this.item.bonuses?.length) {
-          const names = this.item.bonuses.map((id) => this.db?.bonusSetById.get(id)?.name ?? id);
-          out.push(`bonuses: ${names.join(', ')}`);
-        }
         return out;
       },
 

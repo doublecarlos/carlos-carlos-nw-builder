@@ -153,18 +153,6 @@ window.NW.components.StatPanel = (() => {
             <span class="tile-label">Hit points</span>
             <span class="tile-value">{{ int(derived.hp) }}</span>
           </div>
-          <div class="tile">
-            <span class="tile-label">Damage</span>
-            <span class="tile-value">{{ int(derived.damage.average) }}</span>
-          </div>
-          <div class="tile">
-            <span class="tile-label">Healing</span>
-            <span class="tile-value">{{ int(derived.healing.average) }}</span>
-          </div>
-          <div class="tile">
-            <span class="tile-label">EHP</span>
-            <span class="tile-value">{{ int(derived.ehp.average) }}</span>
-          </div>
         </div>
 
         <div class="panel-meta">
