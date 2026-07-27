@@ -134,10 +134,34 @@ window.NW.components.DataEditor = (() => {
       },
     },
 
+    mounted() {
+      const routed = window.NW.router.parse().item;
+      if (routed && this.db.get(routed)) this.selectedName = routed;
+      window.addEventListener('popstate', this.onPopState);
+    },
+
+    unmounted() {
+      window.removeEventListener('popstate', this.onPopState);
+    },
+
     methods: {
-      select(row) {
+      // --- routing --------------------------------------------------------------------------
+      // `item` is this component's own corner of the URL -- app.js owns view/build/tab and
+      // knows nothing about what's selected in here. `select`'s `push` flag is what keeps
+      // arrow-key browsing from filling the back/forward stack with one stop per keystroke:
+      // a click is a real "go to this item" navigation, an arrow key is just skimming.
+
+      /** Back/forward landed on this component while it was already mounted (still in the
+       * editor, just a different item). A fresh mount reads the same param in `mounted()`. */
+      onPopState() {
+        const name = window.NW.router.parse().item ?? null;
+        this.selectedName = (name && this.db.get(name)) ? name : null;
+      },
+
+      select(row, { push = true } = {}) {
         if (row.status === 'removed') return;
         this.selectedName = row.name;
+        window.NW.router.apply({ item: row.name }, { push });
       },
 
       /**
@@ -164,11 +188,12 @@ window.NW.components.DataEditor = (() => {
         const next = idx === -1
           ? (dir === 1 ? 0 : rows.length - 1)
           : Math.min(Math.max(idx + dir, 0), rows.length - 1);
-        this.select(rows[next]);
+        this.select(rows[next], { push: false });
       },
 
       newItem() {
         this.selectedName = null;
+        window.NW.router.apply({ item: null });
         // Remounts ItemForm with an empty draft even if it was already showing a new item.
         this.$refs.form?.$forceUpdate?.();
       },
@@ -177,6 +202,7 @@ window.NW.components.DataEditor = (() => {
         const next = catalog().upsert(this.overlay, 'items', item.name, item, previousName);
         this.$emit('update-overlay', next);
         this.selectedName = item.name;
+        window.NW.router.apply({ item: item.name });
         this.notice = `Saved “${item.name}”`;
       },
 
@@ -184,6 +210,7 @@ window.NW.components.DataEditor = (() => {
         const name = this.selectedName;
         this.$emit('update-overlay', catalog().remove(this.overlay, 'items', name));
         this.selectedName = null;
+        window.NW.router.apply({ item: null });
         this.notice = `Removed “${name}”`;
       },
 
@@ -211,6 +238,7 @@ window.NW.components.DataEditor = (() => {
         this.confirmReset = false;
         this.$emit('update-overlay', catalog().emptyOverlay());
         this.selectedName = null;
+        window.NW.router.apply({ item: null });
         this.notice = 'Discarded every change — back to the shipped data';
       },
 

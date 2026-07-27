@@ -16,6 +16,7 @@ window.NW = window.NW ?? {};
 
   const { createApp, markRaw } = window.Vue;
   const storage = window.NW.storage;
+  const router = window.NW.router;
   const fmt = window.NW.format;
 
   // Context keys whose title-cased name would read oddly in an undo tooltip.
@@ -47,20 +48,27 @@ window.NW = window.NW ?? {};
 
     data() {
       const library = storage.loadLibrary();
+      // A `?build=`/`view=`/`tab=` from the URL (a refresh, or a back/forward landing here)
+      // wins over the library's own idea of the active build, as long as it still exists.
+      const route = router.parse();
+      const activeId = library.builds.some((build) => build.id === route.build)
+        ? route.build
+        : library.activeId;
+
       return {
         builds: library.builds,
-        activeId: library.activeId,
+        activeId,
         // The editor's layer over the shipped catalogue. Persisted separately from builds --
         // it is a workspace, not part of any one build.
         workspaceOverlay: storage.loadOverlay(),
-        view: 'builder',        // 'builder' | 'editor'
+        view: route.view === 'editor' ? 'editor' : 'builder',        // 'builder' | 'editor'
 
         // buildId -> { past, future, … } of JSON snapshots. Per build, so switching away and
         // back preserves what you could undo. Strings, so Vue does not deep-proxy 50 copies.
         // Never persisted: history is a session concept, not part of the document.
         histories: {},
 
-        tab: 'stats',
+        tab: route.tab === 'bonuses' ? 'bonuses' : 'stats',
         saveTimer: null,
         noticeTimer: null,
         topbarObserver: null,
@@ -153,7 +161,16 @@ window.NW = window.NW ?? {};
           this.saveTimer = window.setTimeout(() => this.save(), SAVE_DEBOUNCE_MS);
         },
       },
-      activeId() { this.save(); },
+      // Every one of these is either a deliberate navigation (switch build, open/close the
+      // editor) or, via `applyRoute`, the URL catching us up after the user already navigated
+      // with the browser's own back/forward -- `router.apply`'s no-op guard means the latter
+      // case can't turn into a duplicate history entry.
+      activeId() { this.save(); this.syncRoute(); },
+      view() { this.syncRoute(); },
+      // The sidebar tab is a lighter switch than a build/view change -- it still belongs in
+      // the URL for a refresh to restore, but it would clutter the back button if every click
+      // were its own stop.
+      tab() { this.syncRoute({ push: false }); },
 
       notice(value) {
         window.clearTimeout(this.noticeTimer);
@@ -169,12 +186,17 @@ window.NW = window.NW ?? {};
     mounted() {
       this.measureTopbar();
       window.addEventListener('keydown', this.onKeydown);
+      window.addEventListener('popstate', this.onPopState);
+      // Establishes the canonical `?view=&build=&tab=` for a first-ever visit, without
+      // pushing a history entry for it.
+      this.syncRoute({ push: false });
       this.consumeShareLink();
     },
 
     unmounted() {
       this.topbarObserver?.disconnect();
       window.removeEventListener('keydown', this.onKeydown);
+      window.removeEventListener('popstate', this.onPopState);
     },
 
     methods: {
@@ -427,6 +449,33 @@ window.NW = window.NW ?? {};
         apply();
         this.topbarObserver = markRaw(new ResizeObserver(apply));
         this.topbarObserver.observe(header);
+      },
+
+      // --- routing --------------------------------------------------------------------------
+      // Only view/build/tab live here. The editor's own "which item is open" is a level down
+      // (data-editor.js) and reads/writes the `item` param itself -- app.js already knows
+      // nothing about the editor's internals, and routing keeps to that boundary.
+
+      /** Writes the current view/build/tab to the URL. `push: false` for changes that
+       * shouldn't be their own back/forward stop (see the `tab` watcher). */
+      syncRoute({ push = true } = {}) {
+        router.apply({
+          view: this.view === 'editor' ? 'editor' : null,
+          build: this.activeId,
+          tab: this.tab === 'bonuses' ? 'bonuses' : null,
+        }, { push });
+      },
+
+      /** Back/forward landed here: read the URL rather than trust the popstate payload, since
+       * the payload is whatever was current when *this* session pushed it, not necessarily
+       * what's now in the address bar (a page reload rebuilds history-less). */
+      onPopState() {
+        const route = router.parse();
+        this.view = route.view === 'editor' ? 'editor' : 'builder';
+        if (route.build && this.builds.some((build) => build.id === route.build)) {
+          this.activeId = route.build;
+        }
+        this.tab = route.tab === 'bonuses' ? 'bonuses' : 'stats';
       },
     },
 

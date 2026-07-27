@@ -61,6 +61,7 @@ src/
   bonus.js            bonus resolution           │
   engine.js           pipeline + derived        ─┘
   catalog.js          layered catalogue: base + overlays (see below)
+  router.js           query-string <-> URL sync (view/build/tab; editor owns `item` itself)
   storage.js          builds, import/export, share links, catalogue overlay
   format.js           number/percent formatting at the edge
   app.js              root component, all state mutation, undo
@@ -87,6 +88,13 @@ llm/plans/            numbered plans
 - **Empty slot is `undefined` / `''` / `'-'`** — all three handled by `db.get`.
 - **Duration is a free number of seconds**, not a bucket. Presets are convenience only.
 - **Options are context, not slots.** Class/Role/Forte live in `build.context`.
+- **Routing is query-string, not path** (`?build=…&view=…`) — a static host serves `index.html`
+  by path only, so `/builds/x` would 404 on refresh; `?x=y` always resolves. `app.js` owns
+  `view`/`build`/`tab` via a plain `watch` + `router.apply`; `data-editor.js` owns `item` itself
+  by calling `router.apply` at each mutation site instead, because arrow-key list browsing needs
+  `push:false` (replace) while a click needs `push:true` — a generic watcher can't tell those
+  apart. Nothing needs a "did this change come from popstate" guard: `router.apply`'s own
+  no-op-if-unchanged check makes re-applying state that came from a popstate event harmless.
 
 ## Working with this user
 
