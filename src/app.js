@@ -462,6 +462,11 @@ window.NW = window.NW ?? {};
           @undo="undo"
           @redo="redo" />
 
+        <QuickOptions
+          :context="build.context"
+          @set="setContext"
+          @set-toggle="setToggle" />
+
         <div class="topbar-actions">
           <span v-if="notice" class="notice" @click="notice = ''">{{ notice }}</span>
           <span class="hint">{{ filledSlots }}/{{ db.slots.length }} slots</span>
@@ -471,11 +476,6 @@ window.NW = window.NW ?? {};
             Edit data<span v-if="overlayCount" class="badge badge--edited">{{ overlayCount }}</span>
           </button>
         </div>
-
-        <QuickOptions
-          :context="build.context"
-          @set="setContext"
-          @set-toggle="setToggle" />
       </header>
 
       <main class="layout" v-if="resolved.ok">
