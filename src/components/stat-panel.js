@@ -180,14 +180,17 @@ window.NW.components.StatPanel = (() => {
           <thead>
             <tr>
               <th></th>
-              <th colspan="4" class="group-head">Percent</th>
-              <th colspan="4" class="group-head group-head--rating">Rating</th>
+              <th colspan="3" class="group-head">Percent</th>
+              <th colspan="3" class="group-head group-head--rating">Rating</th>
             </tr>
             <tr>
               <th>Stat</th>
-              <th>Total</th><th>Cap</th><th>Overcap</th><th>Headroom</th>
-              <th class="rating-col">Total</th><th class="rating-col">Cap</th>
-              <th class="rating-col">Overcap</th><th class="rating-col">Headroom</th>
+              <th>Total</th>
+              <th>Overcap</th>
+              <th>Headroom</th>
+              <th class="rating-col">Total</th>
+              <th class="rating-col">Overcap</th>
+              <th class="rating-col">Headroom</th>
             </tr>
           </thead>
           <tbody>
@@ -198,11 +201,9 @@ window.NW.components.StatPanel = (() => {
                 :class="[capClass(row.rating), { 'row-sep': row.sepAfter }]">
               <td>{{ row.label }}</td>
               <td class="num">{{ pct(row.percent.total) }}</td>
-              <td class="num dim">{{ pct(row.percent.cap) }}</td>
               <td class="num over">{{ row.percent.over > 0 ? pct(row.percent.over) : '—' }}</td>
               <td class="num dim">{{ row.percent.head > 0 ? pct(row.percent.head) : '—' }}</td>
               <td class="num dim rating-col">{{ int(row.rating.total) }}</td>
-              <td class="num dim rating-col">{{ int(row.rating.cap) }}</td>
               <td class="num dim rating-col over">
                 {{ row.rating.over > 0 ? int(row.rating.over) : '—' }}
               </td>

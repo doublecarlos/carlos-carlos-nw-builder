@@ -59,11 +59,30 @@ window.NW.components.ItemCard = (() => {
           stats: this.payload(entry),
           stacks: entry.stacks ?? 1,
           tiers: this.tierLadder(entry),
+          sharedWith: this.sharedSources(entry),
         }));
       },
     },
 
     methods: {
+      /**
+       * A flat, non-stacking bonus can still have more than one contributing item -- e.g. a
+       * set effect with no piece requirement at all, granted once as long as *any* piece is
+       * worn (M31 Thayan Predator's base +2%, fed by both Runebound Shackle and Sanguine Seal).
+       * Every contributing item's own card shows the same resolved total, so owning both reads
+       * as "each one gives +2%" when really it is one +2% shared between them. Tiered and
+       * per-source-stacking bonuses already explain their own multi-source case (the ladder,
+       * and `payload().each`), so this only fires for the plain leftover case.
+       */
+      sharedSources(entry) {
+        if (!entry.active || entry.bonus?.tiers || entry.bonus?.stacking === 'perSource') {
+          return null;
+        }
+        const others = [...new Set(entry.sources ?? [])].filter((name) => name !== this.item.name);
+        return others.length ? others : null;
+      },
+
+
       /**
        * A tiered set bonus (e.g. Gladiator's Guile: 10% at 1 piece, 15% at 2) has no `when`
        * condition at all -- the piece count is matched directly in bonus.js, so `gate.leaves`
@@ -157,6 +176,9 @@ window.NW.components.ItemCard = (() => {
                    :class="{ 'is-active': tier.active }">
                 {{ tier.pieces }} piece{{ tier.pieces > 1 ? 's' : '' }}: {{ tier.stats }}
               </div>
+            </div>
+            <div v-if="row.sharedWith" class="stat-sub itemcard-bonus-shared">
+              shared total — also granted by {{ row.sharedWith.join(', ') }}
             </div>
 
             <div v-for="(leaf, i) in row.unmet" :key="i" class="itemcard-bonus-unmet">

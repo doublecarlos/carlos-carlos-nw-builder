@@ -534,6 +534,7 @@ label.quickopts-row { cursor: pointer; }
 .itemcard-bonus-tiers { padding-left: 12px; }
 .itemcard-tier { color: var(--muted); font-size: 11px; }
 .itemcard-tier.is-active { color: var(--text); font-weight: 600; }
+.itemcard-bonus-shared { padding-left: 12px; }
 
 /* --- sidebar tabs -------------------------------------------------------------------- */
 
