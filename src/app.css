@@ -158,6 +158,8 @@ input[type="number"]::-webkit-inner-spin-button { appearance: none; -webkit-appe
 
 .sep { background: var(--line); height: 18px; margin: 0 4px; width: 1px; }
 
+.unsaved-note { color: var(--accent); white-space: nowrap; }
+
 .btn {
   background: var(--surface-2);
   border: 1px solid var(--line);
@@ -374,6 +376,11 @@ label.quickopts-row { cursor: pointer; }
 
 .slot-diff-note { color: var(--muted); font-size: 1rem; margin: 2px 0 0; }
 .slot-diff-note button.link { color: var(--accent); margin-left: 2px; padding: 0; }
+
+/* Unsaved-vs-saved marker (app.js's `changedSlotIds`) -- deliberately not `--diff`'s colour,
+ * which `.slot-row.is-diff` above already uses for the separate build-vs-build compare, so the
+ * two diff signals never read as the same thing. */
+.slot-modified { color: var(--accent); font-size: 0.6rem; margin-left: 3px; vertical-align: middle; }
 
 /* --- item picker --------------------------------------------------------------------- */
 

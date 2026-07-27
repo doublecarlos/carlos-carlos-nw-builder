@@ -42,6 +42,11 @@ window.NW.components.SlotList = (() => {
       compareBuild: { type: Object, default: null },
       highlightDiff: { type: Boolean, default: false },
       onlyDiff: { type: Boolean, default: false },
+      // slotId -> saved choice, for every slot whose choice differs from the active build's own
+      // last save (app.js's `changedSlotIds`) -- independent of `compareBuild` above, and
+      // lighter-weight: a small per-row marker rather than the full highlight/note treatment, so
+      // sizing up another build and seeing what's unsaved in this one don't visually collide.
+      changedSlotIds: { type: Map, default: () => new Map() },
     },
 
     emits: ['choose', 'set-value', 'set', 'set-forte', 'apply-slot', 'toggle-section', 'set-expanded',
@@ -202,6 +207,16 @@ window.NW.components.SlotList = (() => {
       differs(slotId) {
         return Boolean(this.compareBuild)
           && (this.build.choices[slotId] || '') !== this.otherChoice(slotId);
+      },
+
+      // --- save / revert ---------------------------------------------------------------------
+
+      differsFromSaved(slotId) {
+        return this.changedSlotIds.has(slotId);
+      },
+
+      savedChoiceTitle(slotId) {
+        return `Changed since last save — saved: ${this.changedSlotIds.get(slotId) || '(empty)'}`;
       },
 
       errorsFor(slotId) {
@@ -514,7 +529,11 @@ window.NW.components.SlotList = (() => {
                  @mouseenter="onRowEnter($event, slot.id)"
                  @mouseleave="onRowLeave"
                  @click="onRowClick($event, slot.id)">
-              <label class="slot-label" :for="slot.id">{{ slot.label }}</label>
+              <label class="slot-label" :for="slot.id">
+                {{ slot.label }}
+                <span v-if="differsFromSaved(slot.id)" class="slot-modified"
+                      :title="savedChoiceTitle(slot.id)">●</span>
+              </label>
 
               <div class="slot-control">
                 <div class="slot-main">

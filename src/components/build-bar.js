@@ -26,10 +26,15 @@ window.NW.components.BuildBar = (() => {
       canRedo: { type: Boolean, default: false },
       undoLabel: { type: String, default: '' },
       redoLabel: { type: String, default: '' },
+      // Whether the *active* build has unsaved changes, and how many of them are slot choices
+      // specifically (0 doesn't imply clean -- a context/toggle-only change is dirty with
+      // nothing to attribute to a slot, see app.js's `changedSlotIds`).
+      dirty: { type: Boolean, default: false },
+      changedCount: { type: Number, default: 0 },
     },
 
     emits: ['select', 'create', 'duplicate', 'remove', 'rename', 'copy-section', 'import',
-      'undo', 'redo'],
+      'undo', 'redo', 'save', 'revert'],
 
     data: () => ({
       panel: '',              // '' | 'copy' | 'share' | 'io'
@@ -64,6 +69,24 @@ window.NW.components.BuildBar = (() => {
 
       redoTitle() {
         return this.canRedo ? `Redo: ${this.redoLabel} (Ctrl+Shift+Z)` : 'Nothing to redo';
+      },
+
+      saveTitle() {
+        return this.dirty ? 'Save changes to this build' : 'No unsaved changes';
+      },
+
+      revertTitle() {
+        return this.dirty ? 'Discard changes back to the last save' : 'No unsaved changes';
+      },
+
+      /** Slot-scoped count when there is one to give (see `changedCount`'s doc above); a plain
+       * "unsaved changes" otherwise, so a context-only edit still reads as dirty rather than
+       * showing a confusing "0". */
+      unsavedNote() {
+        if (!this.dirty) return '';
+        return this.changedCount
+          ? `${this.changedCount} slot(s) changed`
+          : 'unsaved changes';
       },
     },
 
@@ -201,6 +224,14 @@ window.NW.components.BuildBar = (() => {
                     :title="redoTitle" @click="$emit('redo')">
               ↷ Redo<span v-if="canRedo" class="btn-detail">{{ redoLabel }}</span>
             </button>
+
+            <span class="sep"></span>
+
+            <span v-if="dirty" class="hint unsaved-note">{{ unsavedNote }}</span>
+            <button type="button" class="btn btn--primary" :disabled="!dirty"
+                    :title="saveTitle" @click="$emit('save')">Save</button>
+            <button type="button" class="btn" :disabled="!dirty"
+                    :title="revertTitle" @click="$emit('revert')">Revert</button>
           </div>
         </div>
 
