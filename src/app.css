@@ -440,17 +440,19 @@ label.quickopts-row { cursor: pointer; }
 }
 .panel-errors ul { margin: 4px 0 0; padding-left: 18px; }
 
-.tiles { display: grid; gap: 6px; grid-template-columns: repeat(5, minmax(0, 1fr)); }
-.tile {
+/* The summary widget: pick a damage calculation, see it front and centre -- the sheet's most
+ * visible number, where the IL/HP tiles used to sit. Picker on its own row, the value stacked
+ * below and centred -- closer to the sheet's own layout than a side-by-side row. */
+.summary-calc {
   background: var(--surface-2);
   border-radius: var(--radius);
   display: flex;
   flex-direction: column;
-  gap: 1px;
-  padding: 6px 8px;
+  gap: 4px;
+  padding: 8px 10px;
 }
-.tile-label { color: var(--muted); font-size: 1rem; text-transform: uppercase; letter-spacing: .04em; }
-.tile-value { font-size: 1.25rem; font-weight: 600; }
+.summary-calc-select { width: 100%; }
+.tile-value { font-size: 1.6rem; font-weight: 600; text-align: center; white-space: nowrap; }
 
 .panel-meta {
   align-items: center;
@@ -488,31 +490,19 @@ label.quickopts-row { cursor: pointer; }
 .stat-table--pairs td:last-child { text-align: right; width: 40%; }
 
 /* Rating and percent used to be two whole separate tables -- same rows, same order, just a
- * different unit. One table with two column groups keeps both full-size (percent is the
- * value that matters day to day, so it leads) without forcing a cross-reference between two
- * tables to see one stat. */
-.stat-table--split th.group-head {
-  border-bottom: 1px solid var(--line);
-  color: var(--muted);
-  font-size: 1rem;
-  letter-spacing: .04em;
-  text-align: center;
-  text-transform: uppercase;
-}
+ * different unit. One table keeps both full-size (percent is the value that matters day to
+ * day, so it leads) without forcing a cross-reference between two tables to see one stat. */
 .stat-table--split .rating-col { color: var(--muted); }
-.stat-table--split tr.is-over .rating-col.over { color: var(--warn); font-weight: 600; }
 
 .stat-sub { color: var(--muted); font-size: 1rem; line-height: 1.3; }
 
 /* Conditional formatting, in the spirit of the sheet: green sitting exactly on the cap, blue
- * with headroom to spare, warn colour when over. Same specificity as the zebra stripe above so
- * source order (this comes later) decides, rather than the stripe winning on every other row. */
-.stat-table tbody tr.is-capped { background: color-mix(in srgb, var(--ok) 16%, transparent); }
-.stat-table tbody tr.is-headroom { background: color-mix(in srgb, var(--accent) 12%, transparent); }
-.stat-table tbody tr.is-over { background: color-mix(in srgb, var(--warn) 14%, transparent); }
+ * with headroom to spare, warn colour when over -- applied per cell, since rating and percentage
+ * cap independently and a row can show both colours at once. */
+.stat-table td.is-capped { background: color-mix(in srgb, var(--ok) 16%, transparent); }
+.stat-table td.is-headroom { background: color-mix(in srgb, var(--accent) 12%, transparent); }
+.stat-table td.is-over { background: color-mix(in srgb, var(--warn) 14%, transparent); font-weight: 600; }
 
-.stat-table .over { color: var(--muted); }
-.stat-table tr.is-over .over { color: var(--warn); font-weight: 600; }
 .stat-table tr.is-lead td { font-weight: 600; }
 .stat-table tr.row-sep td { border-bottom: 2px solid var(--line); }
 

@@ -2,7 +2,8 @@
 //
 // Every table is derived from `NW_SCHEMA` rather than a hand-written stat list, so adding a
 // stat to the schema makes it appear here with no edit. Overcapped values are coloured; the
-// sheet's single signed "overcap" number is split into Overcap and Headroom (engine FIX #2).
+// rating/percent pair each get their own merged overcap-or-headroom column (signed: positive
+// over the cap, negative is spare headroom), coloured independently since they cap separately.
 
 window.NW = window.NW ?? {};
 window.NW.components = window.NW.components ?? {};
@@ -27,6 +28,10 @@ window.NW.components.StatPanel = (() => {
   // ratings, the defensive ones and forte.
   const SEPARATOR_AFTER = new Set(['severity', 'deflect_sev']);
 
+  // Above this much wasted rating, the Rating column goes red -- an arbitrary-looking number
+  // that exists only to match the threshold the game's own UI uses, for familiarity.
+  const RATING_OVER_WARN = 1000;
+
   const DAMAGE_ROWS = [
     ['Average', 'average'],
     ['Crit / no deflect', 'critNoDeflect'],
@@ -37,19 +42,46 @@ window.NW.components.StatPanel = (() => {
   const HEALING_ROWS = [['Average', 'average'], ['Crit', 'crit'], ['No crit', 'noCrit']];
   const EHP_ROWS = [['Average', 'average'], ['Crit / no deflect', 'critNoDeflect']];
 
+  // The summary widget's picker spans all three `derived` tables below, not just damage --
+  // `source` says which one, and doubles as the row key's namespace since 'average' repeats
+  // across all three.
+  const SUMMARY_GROUPS = [
+    { source: 'damage', label: 'Damage', rows: DAMAGE_ROWS },
+    { source: 'healing', label: 'Healing', rows: HEALING_ROWS },
+    { source: 'ehp', label: 'EHP', rows: EHP_ROWS },
+  ];
+
   return {
     name: 'StatPanel',
+
+    components: {
+      ComboBox: window.NW.components.ComboBox,
+    },
 
     props: {
       result: { type: Object, required: true },
     },
 
     data: () => ({ showZero: false, damageRows: DAMAGE_ROWS, healingRows: HEALING_ROWS,
-      ehpRows: EHP_ROWS }),
+      ehpRows: EHP_ROWS, summaryCalcKey: 'damage:average' }),
 
     computed: {
       stages() { return this.result.stages; },
       derived() { return this.result.derived; },
+
+      /** Options for the summary widget's calculation picker, across all three `derived`
+       * tables below (damage, healing, EHP) -- value is `source:key` so `summaryValue` can
+       * look the row straight back up. */
+      summaryOptions() {
+        return SUMMARY_GROUPS.flatMap(({ source, label, rows }) => rows.map(([rowLabel, key]) => (
+          { value: `${source}:${key}`, label: `${label} · ${rowLabel}` }
+        )));
+      },
+
+      summaryValue() {
+        const [source, key] = this.summaryCalcKey.split(':');
+        return this.derived[source]?.[key] ?? 0;
+      },
 
       /** One row per rating/percent pair, in display order (§ `RATING_ORDER`, UI-only). */
       capRows() {
@@ -57,9 +89,12 @@ window.NW.components.StatPanel = (() => {
           .slice()
           .sort((a, b) => orderIndex(a.rating) - orderIndex(b.rating))
           .map((rule) => ({
+            key: rule.rating,
             label: schema().statByKey[rule.rating]?.label ?? rule.rating,
-            rating: this.capRow(rule.rating),
-            percent: this.capRow(rule.percent),
+            // Rating goes red once its overcap passes RATING_OVER_WARN, matching the game's own
+            // in-client display -- percentage has no such threshold, it's green-or-default.
+            rating: this.capCell(rule.rating, RATING_OVER_WARN),
+            percent: this.capCell(rule.percent),
             sepAfter: SEPARATOR_AFTER.has(rule.rating),
           }));
       },
@@ -108,14 +143,23 @@ window.NW.components.StatPanel = (() => {
       pct: (value) => window.NW.format.pct(value),
       fmt: (key, value) => window.NW.format.stat(key, value),
 
-      capRow(key) {
-        const { totals, caps, overcap, headroom } = this.stages;
+      /** `over` is signed: positive means over the cap, negative means headroom to spare --
+       * one merged column instead of the sheet's separate overcap/headroom pair. `capped` is
+       * `min(total, cap)`, i.e. what the stat actually contributes once excess is thrown away.
+       * `primaryCls`/`overCls` split the colouring in two: Rating/Percentage read green (at or
+       * over cap) or default (headroom) -- they already show the effective value, so "over"
+       * isn't itself a problem -- while the excess, red when wasted / blue when there's room to
+       * spare, lives in the Overcap columns. `redOver` is the one exception: rating alone turns
+       * red once its own overcap passes it, to match the game client's own display. */
+      capCell(key, redOver = Infinity) {
+        const { totals, caps, capped } = this.stages;
+        const total = totals[key] ?? 0;
+        const cap = caps[key] ?? 0;
+        const over = total - cap;
         return {
-          key,
-          total: totals[key] ?? 0,
-          cap: caps[key] ?? 0,
-          over: overcap[key] ?? 0,
-          head: headroom[key] ?? 0,
+          key, total, cap, capped: capped[key] ?? total, over,
+          primaryCls: over > redOver ? 'is-over' : (over > -1e-9 ? 'is-capped' : ''),
+          overCls: over > 1e-9 ? 'is-over' : (over < -1e-9 ? 'is-headroom' : ''),
         };
       },
 
@@ -123,13 +167,15 @@ window.NW.components.StatPanel = (() => {
         return this.showZero || Math.abs(value) > 1e-9;
       },
 
-      /** Google Sheets-style conditional formatting: green sitting exactly on the cap, blue
-       * with room to spare, the existing warn colour when over. `over`/`head` can't both be
-       * positive -- they are max(0, total-cap) and max(0, cap-total). */
-      capClass(cell) {
-        if (cell.over > 0) return 'is-over';
-        if (cell.head > 0) return 'is-headroom';
-        return 'is-capped';
+      /** Signed display for a merged overcap/headroom cell: `—` exactly on the cap, otherwise
+       * an explicit `+`/`-` since these columns have no other cue for direction. */
+      signedPct(value) {
+        if (Math.abs(value) < 1e-9) return '—';
+        return (value > 0 ? '+' : '') + this.pct(value);
+      },
+      signedInt(value) {
+        if (Math.abs(value) < 1e-9) return '—';
+        return (value > 0 ? '+' : '') + this.int(value);
       },
     },
 
@@ -144,15 +190,11 @@ window.NW.components.StatPanel = (() => {
           </ul>
         </div>
 
-        <div class="tiles">
-          <div class="tile">
-            <span class="tile-label">Item level</span>
-            <span class="tile-value">{{ int(derived.itemLevel) }}</span>
-          </div>
-          <div class="tile">
-            <span class="tile-label">Hit points</span>
-            <span class="tile-value">{{ int(derived.hp) }}</span>
-          </div>
+        <!-- The one number the sheet keeps most visible: pick a damage calculation, see its
+             value here. This will grow a second, comparison value once that feature lands. -->
+        <div class="summary-calc">
+          <ComboBox class="summary-calc-select" v-model="summaryCalcKey" :options="summaryOptions" />
+          <span class="tile-value">{{ int(summaryValue) }}</span>
         </div>
 
         <div class="panel-meta">
@@ -163,39 +205,36 @@ window.NW.components.StatPanel = (() => {
           </label>
         </div>
 
+        <table class="stat-table stat-table--pairs">
+          <tbody>
+            <tr class="is-lead"><td>Item level</td><td class="num">{{ int(derived.itemLevel) }}</td></tr>
+            <tr class="is-lead"><td>Hit points</td><td class="num">{{ int(derived.hp) }}</td></tr>
+          </tbody>
+        </table>
+
         <h3 class="panel-head">Ratings</h3>
         <table class="stat-table stat-table--split">
           <thead>
             <tr>
-              <th></th>
-              <th colspan="3" class="group-head">Percent</th>
-              <th colspan="3" class="group-head group-head--rating">Rating</th>
-            </tr>
-            <tr>
               <th>Stat</th>
-              <th>Total</th>
-              <th>Overcap</th>
-              <th>Headroom</th>
-              <th class="rating-col">Total</th>
-              <th class="rating-col">Overcap</th>
-              <th class="rating-col">Headroom</th>
+              <th class="rating-col">Rating</th>
+              <th>Percentage</th>
+              <th>Overcap %</th>
+              <th class="rating-col">Overcap rating</th>
             </tr>
           </thead>
           <tbody>
-            <!-- Coloured by the rating cell; percent and rating agree on cap status in
-                 practice, and a row can only have one background. -->
-            <tr v-for="row in capRows" :key="row.rating.key"
+            <!-- Each cell coloured off its own column's 'over', not the row: rating and
+                 percentage cap independently, so one can read green while the other reads
+                 red on the same row. -->
+            <tr v-for="row in capRows" :key="row.key"
                 v-show="visible(row.rating.total)"
-                :class="[capClass(row.rating), { 'row-sep': row.sepAfter }]">
+                :class="{ 'row-sep': row.sepAfter }">
               <td>{{ row.label }}</td>
-              <td class="num">{{ pct(row.percent.total) }}</td>
-              <td class="num over">{{ row.percent.over > 0 ? pct(row.percent.over) : '—' }}</td>
-              <td class="num dim">{{ row.percent.head > 0 ? pct(row.percent.head) : '—' }}</td>
-              <td class="num dim rating-col">{{ int(row.rating.total) }}</td>
-              <td class="num dim rating-col over">
-                {{ row.rating.over > 0 ? int(row.rating.over) : '—' }}
-              </td>
-              <td class="num dim rating-col">{{ row.rating.head > 0 ? int(row.rating.head) : '—' }}</td>
+              <td class="num rating-col" :class="row.rating.primaryCls">{{ int(row.rating.total) }}</td>
+              <td class="num" :class="row.percent.primaryCls">{{ pct(row.percent.capped) }}</td>
+              <td class="num dim" :class="row.percent.overCls">{{ signedPct(row.percent.over) }}</td>
+              <td class="num dim rating-col" :class="row.rating.overCls">{{ signedInt(row.rating.over) }}</td>
             </tr>
           </tbody>
         </table>
