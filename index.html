@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Neverwinter build planner</title>
+<link rel="stylesheet" href="src/app.css">
+</head>
+<body>
+
+<div id="app">Loading…</div>
+
+<!--
+  Classic scripts, in dependency order. No bundler and no build step (handoff §2) -- serving
+  this directory as static files is the whole deployment story. `tools/serve.py` for
+  development; a static host in production.
+-->
+<script src="vendor/vue.global.prod.js"></script>
+
+<script src="data/schema.js"></script>
+<script src="data/slots.js"></script>
+<script src="data/db-items.js"></script>
+<script src="data/db-bonuses.js"></script>
+
+<script src="src/conditions.js"></script>
+<script src="src/db.js"></script>
+<script src="src/bonus.js"></script>
+<script src="src/engine.js"></script>
+
+<script src="src/format.js"></script>
+<script src="src/storage.js"></script>
+<script src="src/components/build-bar.js"></script>
+<script src="src/components/item-picker.js"></script>
+<script src="src/components/slot-list.js"></script>
+<script src="src/components/options-bar.js"></script>
+<script src="src/components/stat-panel.js"></script>
+<script src="src/app.js"></script>
+
+</body>
+</html>
