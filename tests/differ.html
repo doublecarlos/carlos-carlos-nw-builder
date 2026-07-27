@@ -42,7 +42,7 @@
 <script src="../src/engine.js"></script>
 <script src="differ-cases.js"></script>
 <script>
-(() => {
+window.NW.dataReady.then(() => {
   const TOLERANCE = 1e-6;
 
   const close = (a, b) => {
@@ -163,7 +163,11 @@
       + `0 regressions (${explainedCases} explained divergence(s))`
     : `✗ ${regressions.length} unexplained divergence(s)`;
   document.getElementById('report').textContent = lines.join('\n');
-})();
+}).catch((error) => {
+  const banner = document.getElementById('banner');
+  banner.className = 'banner fail';
+  banner.textContent = `FAILED TO LOAD DATA: ${error.message ?? error}`;
+});
 </script>
 </body>
 </html>

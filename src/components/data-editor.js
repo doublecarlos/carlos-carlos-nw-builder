@@ -1,5 +1,5 @@
 // The data editor: browse/add/edit/remove items and shared bonus sets, lint the result, and
-// export it back to the `data/*.js` files.
+// export it back to the `data/*.json` files.
 //
 // The editor never writes to disk -- it cannot, this is a static client app. It edits the
 // workspace *overlay* (see src/catalog.js) and hands you the file contents to paste back.
@@ -128,8 +128,8 @@ window.NW.components.DataEditor = (() => {
       },
 
       exportName() {
-        if (this.exportTab === 'items') return 'db-items.js';
-        if (this.exportTab === 'bonuses') return 'db-bonuses.js';
+        if (this.exportTab === 'items') return 'db-items.json';
+        if (this.exportTab === 'bonuses') return 'db-bonuses.json';
         return 'catalog-overlay.json';
       },
     },
@@ -321,9 +321,9 @@ window.NW.components.DataEditor = (() => {
           <div class="drawer-row">
             <div class="tabs">
               <button type="button" class="tab" :class="{ 'is-on': exportTab === 'items' }"
-                      @click="exportTab = 'items'">db-items.js</button>
+                      @click="exportTab = 'items'">db-items.json</button>
               <button type="button" class="tab" :class="{ 'is-on': exportTab === 'bonuses' }"
-                      @click="exportTab = 'bonuses'">db-bonuses.js</button>
+                      @click="exportTab = 'bonuses'">db-bonuses.json</button>
               <button type="button" class="tab" :class="{ 'is-on': exportTab === 'overlay' }"
                       @click="exportTab = 'overlay'">overlay only</button>
             </div>

@@ -9,7 +9,8 @@ results). `llm/docs/pending.md` is the user's running wishlist — read it befor
 ## Hard constraints
 
 1. **No npm, no build step, no bundler.** Classic `<script>` tags, `window.NW.*` namespace.
-2. **No ES modules, no `fetch`/XHR.** All data arrives as `window.NW_*` globals from `data/*.js`.
+2. **No ES modules.** `fetch` is allowed, but *only* for the `data/*.json` files — see below.
+   Everything else (builds, share links, overlays) stays in `localStorage`/URL, no XHR.
 3. **Vue 3 global build**, vendored at `vendor/vue.global.prod.js` (3.5.40). Components are
    plain objects with template-literal templates. No SFCs.
 4. **Modern JS is expected** — `const`/`let`, arrows, classes, `?.`, `??`.
@@ -19,14 +20,27 @@ results). `llm/docs/pending.md` is the user's running wishlist — read it befor
 hosting. The no-build/no-modules rules still stand; they are project rules, not `file://`
 fallout.
 
+**Data is JSON, loaded async.** `data/*.json` are plain data (no comments, no `window.NW_*`
+wrapper). Each has a same-named `data/*.js` loader that `fetch`s it and assigns the global
+(`data/schema.js` also derives `byKey`/`statKeys`/etc. — see its header comment for the
+FIX-note provenance that used to live inline in the data). Every loader appends its promise to
+`window.NW.dataReady` (`Promise.all([window.NW.dataReady, fetch(...)...])`, order-independent).
+`app.js` (and `tests.html`/`tests/differ.html`) `await window.NW.dataReady` before doing
+anything with `NW_SCHEMA`/`NW_SLOTS`/`NW_ITEMS`/`NW_BONUSES` — nothing else in `src/` reads
+those globals outside a function body, so this is the only place that has to wait. Each loader
+resolves its fetch URL against `document.currentScript.src`, not a bare relative path — pages
+that include the loader from a different directory (`tests/differ.html` via `../data/x.js`)
+would otherwise fetch the wrong path.
+
 ## Do not touch to make the UI easier
 
-`src/{conditions,db,bonus,engine}.js`, `data/*.js`, `tools/*.py` are pinned by three
+`src/{conditions,db,bonus,engine}.js`, `data/*.json`, `tools/*.py` are pinned by three
 independent test suites. If you think the engine is wrong, **prove it with a failing test
 first**.
 
-`data/schema.js` is hand-written and authoritative. `data/{slots,db-items,db-bonuses}.js` are
-GENERATED — regenerate via `tools/`, never hand-edit.
+`data/schema.json` is hand-written and authoritative. `data/{slots,db-items,db-bonuses}.json`
+are GENERATED — regenerate via `tools/`, never hand-edit. The `data/*.js` loader files are
+hand-written behavior (fetch + assign), not generated, and are fair game to edit.
 
 ## Run and verify
 
@@ -54,7 +68,8 @@ msedge --headless=old --disable-gpu --dump-dom --virtual-time-budget=20000 \
 
 ```
 index.html            app shell — script order matters
-data/                 schema.js (authoritative) + generated slots/items/bonuses
+data/                 *.json data (schema.json authoritative; slots/db-items/db-bonuses
+                      generated) + *.js loaders (fetch the json, assign the window.NW_* global)
 src/
   conditions.js       the `when` evaluator      ─┐
   db.js               indexing and lookups       │ engine — verified, hands off

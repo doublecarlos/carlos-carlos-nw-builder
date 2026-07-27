@@ -669,5 +669,10 @@ window.NW = window.NW ?? {};
     `,
   });
 
-  window.NW.app = app.mount('#app');
+  window.NW.dataReady
+    .then(() => { window.NW.app = app.mount('#app'); })
+    .catch((error) => {
+      document.getElementById('app').textContent =
+        `Failed to load data: ${error?.message ?? error}`;
+    });
 })();

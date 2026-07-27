@@ -239,26 +239,49 @@ window.NW.catalog = (() => {
   }
 
   // --- export ------------------------------------------------------------------------------
+  // Produces valid JSON, so the result can replace data/db-items.json / data/db-bonuses.json
+  // wholesale with no further editing (JSON has no comment syntax, so unlike the pre-JSON
+  // export there is no header here -- the provenance note lives in data/db-items.js /
+  // data/db-bonuses.js, the loaders that fetch these files).
 
   // Mirrors the key order the Python generator emits, so a pasted-back file diffs cleanly
   // against a regenerated one instead of reordering every line.
   const LEADING_KEYS = ['name', 'filter', 'il', 'combined_rating'];
-  const TRAILING_KEYS = ['tags', 'bonuses', 'maxCopies', 'allowedClass',
-    'dynamicStat', 'dynamicMin', 'dynamicMax', 'excludes'];
+  const TRAILING_KEYS = ['maxCopies', 'dynamicStat', 'dynamicMin', 'dynamicMax',
+    'allowedClass', 'tags', 'bonuses', 'excludes'];
 
-  const IDENT = /^[A-Za-z_$][A-Za-z0-9_$]*$/;
-  const key = (name) => (IDENT.test(name) ? name : JSON.stringify(name));
+  const key = (name) => JSON.stringify(name);
+  const WRAP_AT = 96;
 
-  /** Compact JS-literal serialiser: no quotes on plain keys, matching the generated files. */
-  function literal(value) {
+  /**
+   * Compact JSON serialiser: one line where it fits at the given indent, one entry per line
+   * (nested one level deeper) otherwise. Mirrors `tools/nwtools/jsonemit.value`, so an exported
+   * file's indentation matches what the Python generator would produce for the same data --
+   * `indent` is the column of this value's own brackets, not of its children.
+   */
+  function literal(value, indent = 0) {
     if (value === null) return 'null';
-    if (Array.isArray(value)) return `[${value.map(literal).join(', ')}]`;
+    if (Array.isArray(value)) {
+      const parts = value.map((v) => literal(v, indent));
+      const oneLine = `[${parts.join(', ')}]`;
+      if (oneLine.length + indent <= WRAP_AT) return oneLine;
+      const pad = ' '.repeat(indent + 2);
+      const inner = value.map((v) => literal(v, indent + 2));
+      return `[\n${inner.map((p) => pad + p).join(',\n')}\n${' '.repeat(indent)}]`;
+    }
     if (typeof value === 'object') {
-      return `{${Object.entries(value)
-        .filter(([, v]) => v !== undefined)
-        .map(([k, v]) => `${key(k)}:${literal(v)}`).join(', ')}}`;
+      return entriesLiteral(Object.entries(value).filter(([, v]) => v !== undefined), indent);
     }
     return JSON.stringify(value);
+  }
+
+  /** Same wrapping rule as `literal`, for an already-ordered `[key, value]` list. */
+  function entriesLiteral(entries, indent) {
+    const parts = entries.map(([k, v]) => `${key(k)}: ${literal(v, indent + 2)}`);
+    const oneLine = `{${parts.join(', ')}}`;
+    if (oneLine.length + indent <= WRAP_AT) return oneLine;
+    const pad = ' '.repeat(indent + 2);
+    return `{\n${parts.map((p) => pad + p).join(',\n')}\n${' '.repeat(indent)}}`;
   }
 
   function orderedEntries(item, statKeys) {
@@ -271,35 +294,24 @@ window.NW.catalog = (() => {
       .map((k) => [k, item[k]]);
   }
 
-  const WRAP_AT = 96;
-
-  function itemLiteral(item, statKeys) {
-    const entries = orderedEntries(item, statKeys);
-    const oneLine = `{${entries.map(([k, v]) => `${key(k)}:${literal(v)}`).join(', ')}}`;
-    if (oneLine.length <= WRAP_AT) return oneLine;
-    const body = entries.map(([k, v]) => `  ${key(k)}:${literal(v)}`).join(',\n');
-    return `{\n${body}\n}`;
-  }
-
+  // Every row sits at column 2 (one level inside the top-level array), matching write_rows in
+  // tools/nwtools/jsonemit.py -- the caller supplies the "  " prefix for a row's first line,
+  // `entriesLiteral`'s own `indent` argument accounts for every line after that.
   function toItemsFile(items, statKeys = window.NW_SCHEMA.statKeys) {
-    const header = '// Exported from the in-app data editor.\n'
-      + '// Same shape and key order as tools/migrate_bonuses.py emits, so this can replace\n'
-      + '// data/db-items.js wholesale. Percentages are decimals (0.09 === 9%).\n\n';
-    return `${header}window.NW_ITEMS = [\n`
-      + `${items.map((item) => itemLiteral(item, statKeys)).join(',\n')}\n];\n`;
+    const body = items
+      .map((item) => `  ${entriesLiteral(orderedEntries(item, statKeys), 2)}`)
+      .join(',\n');
+    return `[\n${body}\n]\n`;
   }
 
   function toBonusesFile(bonusSets) {
-    const header = '// Exported from the in-app data editor -- every bonus, one per group.\n'
-      + '// A group with one member is private to that item; membership lives on the items\n'
-      + '// (`bonuses: [...]`), never here.\n\n';
-    const body = bonusSets.map((set) => {
-      const effects = (set.effects ?? [])
-        .map((effect) => `    ${literal(effect)}`).join(',\n');
-      return `{\n  id:${literal(set.id)},\n  name:${literal(set.name ?? set.id)},\n`
-        + `  effects:[\n${effects}\n  ]\n}`;
-    }).join(',\n');
-    return `${header}window.NW_BONUSES = [\n${body}\n];\n`;
+    const body = bonusSets
+      .map((set) => {
+        const entries = [['id', set.id], ['name', set.name ?? set.id], ['effects', set.effects ?? []]];
+        return `  ${entriesLiteral(entries, 2)}`;
+      })
+      .join(',\n');
+    return `[\n${body}\n]\n`;
   }
 
   return {
