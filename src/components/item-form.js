@@ -38,6 +38,7 @@ window.NW.components.ItemForm = (() => {
       BonusGroups: window.NW.components.BonusGroups,
       TokenInput: window.NW.components.TokenInput,
       PercentInput: window.NW.components.PercentInput,
+      ComboBox: window.NW.components.ComboBox,
     },
 
     props: {
@@ -60,6 +61,14 @@ window.NW.components.ItemForm = (() => {
     computed: {
       statOptions: () => window.NW_SCHEMA.stats,
       classes: () => window.NW_SCHEMA.context.classes,
+
+      statComboOptions() {
+        return this.statOptions.map((s) => ({ value: s.key, label: `${s.label} (${s.key})` }));
+      },
+
+      dynamicStatOptions() {
+        return this.statOptions.map((s) => ({ value: s.key, label: s.label }));
+      },
 
       dirty() {
         const item = this.toItem();
@@ -208,12 +217,8 @@ window.NW.components.ItemForm = (() => {
           <button type="button" class="link" @click="addStat">+ add</button>
         </div>
         <div v-for="(stat, index) in draft.stats" :key="index" class="stat-row">
-          <select v-model="stat.key">
-            <option value="">— pick a stat —</option>
-            <option v-for="s in statOptions" :key="s.key" :value="s.key">
-              {{ s.label }} ({{ s.key }})
-            </option>
-          </select>
+          <ComboBox class="combo--stat" :model-value="stat.key" :options="statComboOptions"
+                    placeholder="— pick a stat —" @update:model-value="v => stat.key = v" />
           <PercentInput v-if="isPercent(stat.key)" v-model="stat.value" />
           <input v-else type="number" step="any" v-model.number="stat.value">
           <button type="button" class="link" @click="removeStat(index)">remove</button>
@@ -222,10 +227,8 @@ window.NW.components.ItemForm = (() => {
         <div class="form-section">Dynamic modification (user types the value)</div>
         <div class="form-grid">
           <label class="field"><span class="field-label">Stat</span>
-            <select v-model="draft.dynamicStat">
-              <option value="">— none —</option>
-              <option v-for="s in statOptions" :key="s.key" :value="s.key">{{ s.label }}</option>
-            </select></label>
+            <ComboBox :model-value="draft.dynamicStat" :options="dynamicStatOptions"
+                      placeholder="— none —" @update:model-value="v => draft.dynamicStat = v" /></label>
           <label class="field"><span class="field-label">Min</span>
             <input type="number" v-model.number="draft.dynamicMin" :disabled="!draft.dynamicStat"></label>
           <label class="field"><span class="field-label">Max</span>

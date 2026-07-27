@@ -718,12 +718,18 @@ label.quickopts-row { cursor: pointer; }
   transform: translateY(-50%);
 }
 
-/* flex-end, not center: a bare select next to a labeled .field must align on the input
- * itself, not the shorter select against the taller label-plus-input stack. */
+/* flex-end, not center: a bare combo box next to a labeled .field must align on the input
+ * itself, not the shorter combo box against the taller label-plus-input stack. */
 .stat-row, .cond-row { align-items: flex-end; display: flex; gap: 6px; margin-bottom: 4px; }
-.stat-row select, .cond-row select { min-width: 130px; }
 .stat-row input[type="number"] { width: 110px; }
 .cond-row input { min-width: 90px; }
+
+.combo--cond-type { width: 110px; }
+.combo--cond-value { width: 150px; }
+.combo--set { width: 170px; }
+.combo--stat { width: 220px; }
+.combo--stacking { width: 260px; }
+.combo--status { width: 160px; }
 
 .bonus-edit {
   background: var(--surface-2);

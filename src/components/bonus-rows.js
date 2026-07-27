@@ -152,6 +152,7 @@ window.NW.components.BonusRows = (() => {
     components: {
       TokenInput: window.NW.components.TokenInput,
       PercentInput: window.NW.components.PercentInput,
+      ComboBox: window.NW.components.ComboBox,
     },
 
     props: {
@@ -170,10 +171,31 @@ window.NW.components.BonusRows = (() => {
 
     computed: {
       statOptions: () => window.NW_SCHEMA.stats,
+
+      statComboOptions() {
+        return this.statOptions.map((s) => ({ value: s.key, label: `${s.label} (${s.key})` }));
+      },
+
+      conditionTypeOptions() {
+        return this.simpleConditions.map((t) => ({ value: t, label: t }));
+      },
+
+      setComboOptions() {
+        return this.setIds.map((s) => ({ value: s, label: s }));
+      },
+
+      stackingOptions: () => ([
+        { value: '', label: 'once, however many sources' },
+        { value: 'perSource', label: 'once per contributing slot' },
+      ]),
     },
 
     methods: {
       isPercent: (key) => window.NW.format.isPercentKind(window.NW.format.kindOf(key)),
+
+      optionsForCombo(type) {
+        return this.optionsFor(type).map((o) => ({ value: o, label: o }));
+      },
 
       addBonus() { this.rows.push(api().toDraft({ id: '', when: {}, stats: {} })); },
       removeBonus(index) { this.rows.splice(index, 1); },
@@ -269,9 +291,8 @@ window.NW.components.BonusRows = (() => {
               <span v-if="!bonus.conditions.length" class="hint">always</span>
             </div>
             <div v-for="(row, cIndex) in bonus.conditions" :key="cIndex" class="cond-row">
-              <select v-model="row.type" @change="changeConditionType(row)">
-                <option v-for="t in simpleConditions" :key="t" :value="t">{{ t }}</option>
-              </select>
+              <ComboBox class="combo--cond-type" :model-value="row.type" :options="conditionTypeOptions"
+                        @update:model-value="v => { row.type = v; changeConditionType(row) }" />
 
               <template v-if="row.type === 'duration'">
                 <label class="field"><span class="field-label">At least (s)</span>
@@ -280,10 +301,8 @@ window.NW.components.BonusRows = (() => {
                   <input type="number" v-model.number="row.below"></label>
               </template>
               <template v-else-if="row.type === 'pieces'">
-                <select v-model="row.set">
-                  <option value="">— set —</option>
-                  <option v-for="s in setIds" :key="s" :value="s">{{ s }}</option>
-                </select>
+                <ComboBox class="combo--set" :model-value="row.set" :options="setComboOptions"
+                          placeholder="— set —" @update:model-value="v => row.set = v" />
                 <label class="field"><span class="field-label">Pieces</span>
                   <input type="number" min="1" v-model.number="row.atLeast"></label>
                 <span class="hint">piece(s) equipped</span>
@@ -297,9 +316,9 @@ window.NW.components.BonusRows = (() => {
                   <input type="number" v-model.number="row.atLeast"></label>
               </template>
               <template v-else>
-                <select v-if="optionsFor(row.type).length" v-model="row.value">
-                  <option v-for="o in optionsFor(row.type)" :key="o" :value="o">{{ o }}</option>
-                </select>
+                <ComboBox v-if="optionsFor(row.type).length" class="combo--cond-value"
+                          :model-value="row.value" :options="optionsForCombo(row.type)"
+                          @update:model-value="v => row.value = v" />
                 <input v-else type="text" v-model="row.value">
               </template>
 
@@ -321,12 +340,8 @@ window.NW.components.BonusRows = (() => {
             <!-- flat payload -->
             <template v-if="bonus.payload === 'flat'">
               <div v-for="(stat, sIndex) in bonus.stats" :key="sIndex" class="stat-row">
-                <select v-model="stat.key">
-                  <option value="">— pick a stat —</option>
-                  <option v-for="s in statOptions" :key="s.key" :value="s.key">
-                    {{ s.label }} ({{ s.key }})
-                  </option>
-                </select>
+                <ComboBox class="combo--stat" :model-value="stat.key" :options="statComboOptions"
+                          placeholder="— pick a stat —" @update:model-value="v => stat.key = v" />
                 <PercentInput v-if="isPercent(stat.key)" v-model="stat.value" />
                 <input v-else type="number" step="any" v-model.number="stat.value">
                 <button type="button" class="link" @click="removeStat(bonus.stats, sIndex)">remove</button>
@@ -341,10 +356,8 @@ window.NW.components.BonusRows = (() => {
               </p>
               <div v-for="(tier, tIndex) in bonus.tiers" :key="tIndex" class="tier">
                 <div class="tier-head">
-                  <select v-model="tier.set">
-                    <option value="">— set —</option>
-                    <option v-for="s in setIds" :key="s" :value="s">{{ s }}</option>
-                  </select>
+                  <ComboBox class="combo--set" :model-value="tier.set" :options="setComboOptions"
+                            placeholder="— set —" @update:model-value="v => tier.set = v" />
                   <input type="number" min="1" v-model.number="tier.atLeast" class="tier-pieces">
                   <span class="hint">piece(s) or more</span>
                   <span class="spacer"></span>
@@ -352,12 +365,8 @@ window.NW.components.BonusRows = (() => {
                   <button type="button" class="link" @click="removeTier(bonus, tIndex)">remove tier</button>
                 </div>
                 <div v-for="(stat, sIndex) in tier.stats" :key="sIndex" class="stat-row">
-                  <select v-model="stat.key">
-                    <option value="">— pick a stat —</option>
-                    <option v-for="s in statOptions" :key="s.key" :value="s.key">
-                      {{ s.label }} ({{ s.key }})
-                    </option>
-                  </select>
+                  <ComboBox class="combo--stat" :model-value="stat.key" :options="statComboOptions"
+                            placeholder="— pick a stat —" @update:model-value="v => stat.key = v" />
                   <input type="number" step="any" v-model.number="stat.value">
                   <span class="hint">{{ stat.key && isPercent(stat.key) ? '0.09 = 9%' : '' }}</span>
                   <button type="button" class="link" @click="removeStat(tier.stats, sIndex)">remove</button>
@@ -369,10 +378,8 @@ window.NW.components.BonusRows = (() => {
             <!-- stacking -->
             <div class="sub-section">Stacking</div>
             <div class="cond-row">
-              <select v-model="bonus.stacking">
-                <option value="">once, however many sources</option>
-                <option value="perSource">once per contributing slot</option>
-              </select>
+              <ComboBox class="combo--stacking" :model-value="bonus.stacking" :options="stackingOptions"
+                        @update:model-value="v => bonus.stacking = v" />
               <template v-if="bonus.stacking === 'perSource'">
                 <label class="field"><span class="field-label">Max stacks</span>
                   <input type="number" min="0" class="tier-pieces" v-model.number="bonus.maxStacks"></label>

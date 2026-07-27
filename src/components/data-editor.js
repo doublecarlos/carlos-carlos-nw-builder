@@ -17,7 +17,10 @@ window.NW.components.DataEditor = (() => {
   return {
     name: 'DataEditor',
 
-    components: { ItemForm: window.NW.components.ItemForm },
+    components: {
+      ItemForm: window.NW.components.ItemForm,
+      ComboBox: window.NW.components.ComboBox,
+    },
 
     props: {
       db: { type: Object, required: true },
@@ -64,7 +67,15 @@ window.NW.components.DataEditor = (() => {
         });
       },
 
-      selected() {
+      statusFilterOptions: () => ([
+        { value: 'all', label: 'all' },
+        { value: 'changed', label: 'changed only' },
+        { value: 'added', label: 'added' },
+        { value: 'edited', label: 'edited' },
+        { value: 'removed', label: 'removed' },
+      ]),
+
+  selected() {
         if (this.selectedName == null) return null;
         return this.db.get(this.selectedName);
       },
@@ -282,13 +293,8 @@ window.NW.components.DataEditor = (() => {
           <div class="editor-list">
             <div class="editor-list-head">
               <input type="search" v-model="query" placeholder="Filter items…">
-              <select v-model="statusFilter">
-                <option value="all">all</option>
-                <option value="changed">changed only</option>
-                <option value="added">added</option>
-                <option value="edited">edited</option>
-                <option value="removed">removed</option>
-              </select>
+              <ComboBox class="combo--status" :model-value="statusFilter" :options="statusFilterOptions"
+                        @update:model-value="v => statusFilter = v" />
               <button type="button" class="btn btn--primary" @click="newItem">+ New item</button>
             </div>
             <div class="editor-list-body">
