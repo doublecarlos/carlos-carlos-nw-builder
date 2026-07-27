@@ -74,10 +74,25 @@ window.NW.components.ComboBox = (() => {
         this.query = '';
       },
 
-      choose(option) {
+      /** `blur: false` for the Tab case below -- the browser's own Tab-forward looks at
+       * whatever element is currently focused, so blurring here first (before that runs) would
+       * make it tab from nowhere instead of continuing from this input. */
+      choose(option, { blur = true } = {}) {
         this.$emit('update:modelValue', option.value);
         this.close();
-        this.$refs.input?.blur();
+        if (blur) this.$refs.input?.blur();
+      },
+
+      /**
+       * Enter has no native "move to the next field" behaviour the way Tab does. Only meaningful
+       * for a stat-key picker (rendered inside `.stat-row`, one per stat: id/remove buttons, this
+       * combo, then the value field) -- elsewhere there's no adjacent value input to jump to, and
+       * `row` comes back null so this is a no-op.
+       */
+      focusStatValue(input) {
+        const row = input.closest('.stat-row');
+        const value = row?.querySelector('.pct-input, input[type="number"]');
+        value?.focus();
       },
 
       onKeydown(event) {
@@ -94,7 +109,18 @@ window.NW.components.ComboBox = (() => {
         }
         if (event.key === 'Enter') {
           event.preventDefault();
-          if (this.open && this.filtered[this.highlight]) this.choose(this.filtered[this.highlight]);
+          if (this.open && this.filtered[this.highlight]) {
+            this.choose(this.filtered[this.highlight]);
+            this.focusStatValue(event.target);
+          }
+          return;
+        }
+        // Stat-key pickers only (see `focusStatValue`): commit the highlighted stat before the
+        // browser's own Tab moves focus to the value field right after this one in the DOM.
+        // No preventDefault -- the browser still does the actual tabbing.
+        if (event.key === 'Tab' && !event.shiftKey && this.open && this.filtered[this.highlight]
+          && event.target.closest('.stat-row')) {
+          this.choose(this.filtered[this.highlight], { blur: false });
           return;
         }
         if (event.key === 'Escape') {
@@ -139,4 +165,31 @@ window.NW.components.ComboBox = (() => {
       </div>
     `,
   };
+})();
+
+/**
+ * The other half of stat-row keyboard nav (see `ComboBox.focusStatValue` above): Tab/Enter on a
+ * stat's *value* field jumps to the next stat row's key picker. Plain Tab would land on that
+ * row's add/remove icon buttons first -- they sit before the combo box in the DOM -- and Enter
+ * has no native "next field" behaviour to begin with, so both are handled the same way here.
+ * Shared because the same `.stat-row` markup is built in four places (item-form.js's own stats,
+ * and bonus-rows.js's flat/tier/variant stats) with no component in common at the value-input
+ * level -- a plain `<input>` in three of the four, `PercentInput` in all four depending on the
+ * stat's kind.
+ */
+window.NW.statRowNav = (() => {
+  'use strict';
+
+  function focusNextCombo(event) {
+    if (event.key !== 'Tab' && event.key !== 'Enter') return;
+    if (event.key === 'Tab' && event.shiftKey) return;
+    const row = event.target.closest('.stat-row');
+    const next = row?.nextElementSibling;
+    const combo = next?.classList?.contains('stat-row') ? next.querySelector('.combo--stat input') : null;
+    if (!combo) return;
+    event.preventDefault();
+    combo.focus();
+  }
+
+  return { focusNextCombo };
 })();

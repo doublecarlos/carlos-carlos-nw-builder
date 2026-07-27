@@ -184,6 +184,7 @@ window.NW.components.DataEditor = (() => {
         this.selectedName = routed.item;
       }
       if (this.isValidStatusFilter(routed.status)) this.statusFilter = routed.status;
+      if (routed.q) this.query = routed.q;
       window.addEventListener('popstate', this.onPopState);
     },
 
@@ -192,28 +193,31 @@ window.NW.components.DataEditor = (() => {
     },
 
     watch: {
-      // A lighter switch than picking a row -- doesn't deserve its own back/forward stop, same
+      // Lighter switches than picking a row -- don't deserve their own back/forward stop, same
       // as app.js's `tab` watcher.
       statusFilter(value) {
         window.NW.router.apply({ status: value === 'all' ? null : value }, { push: false });
+      },
+      query(value) {
+        window.NW.router.apply({ q: value || null }, { push: false });
       },
     },
 
     methods: {
       // --- routing --------------------------------------------------------------------------
-      // `item`/`set`/`section`/`status` are this component's own corner of the URL -- app.js
-      // owns view/build/tab and knows nothing about what's selected in here. `select`'s `push`
-      // flag is what keeps arrow-key browsing from filling the back/forward stack with one stop
-      // per keystroke: a click is a real "go to this row" navigation, an arrow key is just
-      // skimming.
+      // `item`/`set`/`section`/`status`/`q` are this component's own corner of the URL --
+      // app.js owns view/build/tab and knows nothing about what's selected in here. `select`'s
+      // `push` flag is what keeps arrow-key browsing from filling the back/forward stack with
+      // one stop per keystroke: a click is a real "go to this row" navigation, an arrow key is
+      // just skimming.
 
       isValidStatusFilter(value) {
         return this.statusFilterOptions.some((option) => option.value === value);
       },
 
       /** Back/forward landed on this component while it was already mounted (still in the
-       * editor, just a different item/set/section/status filter). A fresh mount reads the same
-       * params in `mounted()`. */
+       * editor, just a different item/set/section/status filter/query). A fresh mount reads the
+       * same params in `mounted()`. */
       onPopState() {
         const route = window.NW.router.parse();
         if (route.section === 'bonusSets') {
@@ -224,6 +228,7 @@ window.NW.components.DataEditor = (() => {
           this.selectedName = (route.item && this.db.get(route.item)) ? route.item : null;
         }
         this.statusFilter = this.isValidStatusFilter(route.status) ? route.status : 'all';
+        this.query = route.q ?? '';
       },
 
       switchSection(target) {

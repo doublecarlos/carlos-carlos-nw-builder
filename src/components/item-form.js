@@ -156,6 +156,7 @@ window.NW.components.ItemForm = (() => {
 
       addStat() { this.draft.stats.push({ key: '', value: 0 }); },
       removeStat(index) { this.draft.stats.splice(index, 1); },
+      focusNextStat(event) { window.NW.statRowNav.focusNextCombo(event); },
 
       /**
        * A bonus created or attached from the Bonuses section is attached to this item straight
@@ -231,8 +232,8 @@ window.NW.components.ItemForm = (() => {
           <IconButton icon="trash" title="Remove stat" @click="removeStat(index)" />
           <ComboBox class="combo--stat" :model-value="stat.key" :options="statComboOptions"
                     placeholder="— pick a stat —" @update:model-value="v => stat.key = v" />
-          <PercentInput v-if="isPercent(stat.key)" v-model="stat.value" />
-          <input v-else type="number" step="any" v-model.number="stat.value">
+          <PercentInput v-if="isPercent(stat.key)" v-model="stat.value" @keydown="focusNextStat" />
+          <input v-else type="number" step="any" v-model.number="stat.value" @keydown="focusNextStat">
         </div>
         <div v-if="!draft.stats.length" class="stat-row">
           <IconButton icon="plus" title="Add stat" @click="addStat" />
