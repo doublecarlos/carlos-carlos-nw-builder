@@ -1169,12 +1169,12 @@
     ]
   },
   {
-    "id": "m33-frost-riven-stormbind-tunic",
-    "name": "M33 Frost-Riven Stormbind Tunic",
+    "id": "m33-bloodletting-celestial",
+    "name": "M33 Bloodletting (Celestial)",
     "effects": [
       {
-        "id": "m33-frost-riven-stormbind-tunic-bonus-combat",
-        "name": "M33 Frost-Riven Stormbind Tunic (combat)",
+        "id": "m33-bloodletting-celestial-bonus-combat",
+        "name": "M33 Bloodletting (Celestial) (Combat)",
         "when": {"toggle": "combat"},
         "stats": {"outgoing_damage": 0.05, "mult_hit_points": -0.1}
       }
@@ -1276,13 +1276,10 @@
       {
         "id": "m33-graceful-harmony-celestial-bonus",
         "name": "M33 Graceful Harmony (Celestial)",
-        "stats": {"out_healing_p": 0.014}
-      },
-      {
-        "id": "m33-graceful-harmony-celestial-bonus-party",
-        "name": "M33 Graceful Harmony (Celestial) (party)",
-        "when": {"toggle": "party"},
-        "stats": {"out_healing_p": 0.055999999999999994}
+        "variants": [
+          {"stats": {"out_healing_p": 0.07}, "when": {"toggle": "party"}},
+          {"stats": {"out_healing_p": 0.014}, "when": {"not": {"toggle": "party"}}}
+        ]
       }
     ]
   },
