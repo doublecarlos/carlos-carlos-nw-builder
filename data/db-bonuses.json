@@ -543,6 +543,23 @@
     ]
   },
   {
+    "id": "m24-maiden-s-advantage",
+    "name": "M24 Maiden's Advantage",
+    "effects": [
+      {
+        "id": "m24-maiden-s-advantage-bonus",
+        "name": "M24 Maiden's Advantage Bonus",
+        "variants": [
+          {
+            "stats": {"ca_p": 0.05, "power_p": 0.025},
+            "when": {"any": [{"combatType": "aoe"}, {"combatType": "mixed"}]}
+          },
+          {"stats": {"ca_p": 0.05}}
+        ]
+      }
+    ]
+  },
+  {
     "id": "m26-masterwork-neck-waist-set",
     "name": "M26 Masterwork Neck/Waist Set",
     "effects": [
@@ -646,14 +663,14 @@
     ]
   },
   {
-    "id": "m31-bloodlit-veil-ca-power",
-    "name": "M31 Bloodlit Veil (CA/Power)",
+    "id": "m31-bloodletting-ascendant",
+    "name": "M31 Bloodletting (Ascendant)",
     "effects": [
       {
-        "id": "m31-bloodlit-veil-ca-power-bonus-aoe-combat",
-        "name": "M31 Bloodlit Veil (CA/Power) (aoe, combat)",
-        "when": {"combatType": "aoe", "toggle": "combat"},
-        "stats": {"power_p": 0.025}
+        "id": "m31-bloodletting-ascendant",
+        "name": "M31 Bloodletting (Ascendant)",
+        "when": {"toggle": "combat"},
+        "stats": {"outgoing_damage": 0.09, "mult_hit_points": -0.2}
       }
     ]
   },
@@ -720,18 +737,6 @@
         "name": "M31 Gauntlets of the Wrathborn (Acc/CA) (single, combat short plus, combat)",
         "when": {"combatType": "single", "duration": {"atLeast": 10}, "toggle": "combat"},
         "stats": {"acc_p": 0.08}
-      }
-    ]
-  },
-  {
-    "id": "m31-greaves-of-the-crimson-march-damage",
-    "name": "M31 Greaves of the Crimson March (Damage)",
-    "effects": [
-      {
-        "id": "m31-greaves-of-the-crimson-march-damage-bonus-combat",
-        "name": "M31 Greaves of the Crimson March (Damage) (combat)",
-        "when": {"toggle": "combat"},
-        "stats": {"outgoing_damage": 0.09, "mult_hit_points": -0.2}
       }
     ]
   },
@@ -984,12 +989,67 @@
     ]
   },
   {
+    "id": "m33-accumulating-precision",
+    "name": "M33 Accumulating Precision",
+    "effects": [
+      {
+        "id": "m33-accumulating-precision-combat",
+        "name": "M33 Accumulating Precision (Combat)",
+        "when": {"toggle": "combat"},
+        "variants": [
+          {"stats": {"acc_p": 0.025}, "when": {"duration": {"atLeast": 10, "below": 30}}},
+          {"stats": {"acc_p": 0.075}, "when": {"duration": {"atLeast": 30}}}
+        ]
+      }
+    ]
+  },
+  {
+    "id": "m33-accumulating-precision-celestial",
+    "name": "M33 Accumulating Precision (Celestial)",
+    "effects": [
+      {
+        "id": "m33-frostsilver-coil-of-wrath-2-bonus",
+        "name": "M33 Accumulating Precision (Celestial)",
+        "when": {"toggle": "combat"},
+        "variants": [
+          {"stats": {"acc_p": 0.035}, "when": {"duration": {"atLeast": 10, "below": 30}}},
+          {"stats": {"acc_p": 0.105}, "when": {"duration": {"atLeast": 30}}}
+        ]
+      }
+    ]
+  },
+  {
+    "id": "m33-bloodletting",
+    "name": "M33 Bloodletting",
+    "effects": [
+      {
+        "id": "m33-bloodletting",
+        "name": "M33 Bloodletting",
+        "when": {"toggle": "combat"},
+        "stats": {"outgoing_damage": 0.035, "mult_hit_points": -0.1},
+        "excludes": ["m31-bloodletting-ascendant"]
+      }
+    ]
+  },
+  {
+    "id": "m33-bloodletting-celestial",
+    "name": "M33 Bloodletting (Celestial)",
+    "effects": [
+      {
+        "id": "m33-bloodletting-celestial-bonus-combat",
+        "name": "M33 Bloodletting (Celestial) (Combat)",
+        "when": {"toggle": "combat"},
+        "stats": {"outgoing_damage": 0.05, "mult_hit_points": -0.1}
+      }
+    ]
+  },
+  {
     "id": "m33-chilling-flow-mythic",
     "name": "M33 Chilling Flow (Mythic)",
     "effects": [
       {
-        "id": "m33-chilling-flow-mythic-bonus-combat-combat-medium-plus",
-        "name": "M33 Chilling Flow (Mythic) (combat, combat medium plus)",
+        "id": "m33-chilling-flow-mythic-power",
+        "name": "M33 Chilling Flow (Mythic) (Power)",
         "when": {
           "toggle": "combat",
           "duration": {"atLeast": 30},
@@ -998,95 +1058,41 @@
         "stats": {"power_p": 0.04}
       },
       {
-        "id": "m33-chilling-flow-mythic-bonus-combat-combat-medium-plus-dps",
-        "name": "M33 Chilling Flow (Mythic) (combat, combat medium plus, dps)",
+        "id": "m33-chilling-flow-mythic-role-bonus",
+        "name": "M33 Chilling Flow (Mythic) (Role Bonus)",
         "when": {
           "toggle": "combat",
           "duration": {"atLeast": 30},
           "pieces": {"set": "m33-chilling-flow-mythic", "atLeast": 2}
         },
         "variants": [
-          {"when": {"role": "dps"}, "stats": {"sev_p": 0.06}},
-          {"when": {"role": "healer"}, "stats": {"overall_healing": 0.05}},
-          {"when": {"role": "tank"}, "stats": {"awareness_p": 0.05}}
+          {"stats": {"sev_p": 0.06}, "when": {"role": "dps"}},
+          {"stats": {"overall_healing": 0.05}, "when": {"role": "healer"}},
+          {"stats": {"awareness_p": 0.05}, "when": {"role": "tank"}}
         ]
       }
     ]
   },
   {
-    "id": "m33-coldsilver-coil-of-wrath",
-    "name": "M33 Coldsilver Coil of Wrath",
+    "id": "m33-corrupt-power",
+    "name": "M33 Corrupt Power",
     "effects": [
       {
-        "id": "m33-coldsilver-coil-of-wrath-bonus-combat-combat-medium-plus",
-        "name": "M33 Coldsilver Coil of Wrath (combat, combat medium plus)",
-        "when": {"toggle": "combat", "duration": {"atLeast": 30}},
-        "stats": {"acc_p": 0.075}
-      },
-      {
-        "id": "m33-coldsilver-coil-of-wrath-bonus-combat-combat-short",
-        "name": "M33 Coldsilver Coil of Wrath (combat, combat short)",
-        "when": {"toggle": "combat", "duration": {"atLeast": 10, "below": 30}},
-        "stats": {"acc_p": 0.025}
+        "id": "m33-corrupt-power",
+        "name": "M33 Corrupt Power Bonus",
+        "stats": {"strike_p": 0.09, "inc_healing_p": -0.13}
       }
     ]
   },
   {
-    "id": "m33-coldsilver-loop-of-the-arcane",
-    "name": "M33 Coldsilver Loop of the Arcane",
+    "id": "m33-corrupt-power-celestial",
+    "name": "M33 Corrupt Power (Celestial)",
     "effects": [
       {
-        "id": "m33-coldsilver-loop-of-the-arcane-main-combat",
-        "name": "M33 Coldsilver Loop of the Arcane (Main, combat)",
+        "id": "m33-corrupt-power-celestial",
+        "name": "M33 Corrupt Power (Celestial)",
         "when": {"toggle": "combat"},
-        "stats": {"strike_p": 0.055}
-      }
-    ]
-  },
-  {
-    "id": "m33-coldsilver-ring-of-initiative",
-    "name": "M33 Coldsilver Ring of Initiative",
-    "effects": [
-      {
-        "id": "m33-coldsilver-ring-of-initiative-main",
-        "name": "M33 Coldsilver Ring of Initiative (Main)",
-        "stats": {"ca_p": 0.05}
-      },
-      {
-        "id": "m33-coldsilver-ring-of-initiative-main-combat-aoe",
-        "name": "M33 Coldsilver Ring of Initiative (Main, combat, aoe)",
-        "when": {"toggle": "combat", "combatType": "aoe"},
-        "stats": {"power_p": 0.025}
-      },
-      {
-        "id": "m33-coldsilver-ring-of-initiative-main-combat-mixed",
-        "name": "M33 Coldsilver Ring of Initiative (Main, combat, mixed)",
-        "when": {"toggle": "combat", "combatType": "mixed"},
-        "stats": {"power_p": 0.025}
-      }
-    ]
-  },
-  {
-    "id": "m33-cracked-stormbind-tunic-pants",
-    "name": "M33 Cracked Stormbind Tunic Pants",
-    "effects": [
-      {
-        "id": "m33-cracked-stormbind-tunic-pants-bonus-combat",
-        "name": "M33 Cracked Stormbind Tunic Pants (combat)",
-        "when": {"toggle": "combat"},
-        "stats": {"ca_p": 0.07, "crit_avoid_p": -0.075}
-      }
-    ]
-  },
-  {
-    "id": "m33-cracked-stormbind-tunic-shirt",
-    "name": "M33 Cracked Stormbind Tunic Shirt",
-    "effects": [
-      {
-        "id": "m33-cracked-stormbind-tunic-shirt-bonus-combat",
-        "name": "M33 Cracked Stormbind Tunic Shirt (combat)",
-        "when": {"toggle": "combat"},
-        "stats": {"outgoing_damage": 0.035, "mult_hit_points": -0.1}
+        "stats": {"power_p": 0.035, "strike_p": 0.07}
       }
     ]
   },
@@ -1095,40 +1101,53 @@
     "name": "M33 Critical Breaker",
     "effects": [
       {
-        "id": "m33-critical-breaker-bonus-combat-combat-medium-plus",
-        "name": "M33 Critical Breaker (combat, combat medium plus)",
-        "when": {"toggle": "combat", "duration": {"atLeast": 30}},
-        "stats": {"strike_p": 0.09}
-      },
-      {
-        "id": "m33-critical-breaker-bonus-combat-combat-short",
-        "name": "M33 Critical Breaker (combat, combat short)",
-        "when": {"toggle": "combat", "duration": {"atLeast": 10, "below": 30}},
-        "stats": {"strike_p": 0.036}
+        "id": "m33-critical-breaker-combat",
+        "name": "M33 Critical Breaker (Combat)",
+        "when": {"toggle": "combat"},
+        "variants": [
+          {"stats": {"strike_p": 0.036}, "when": {"duration": {"atLeast": 10, "below": 30}}},
+          {"stats": {"strike_p": 0.09}, "when": {"duration": {"atLeast": 30}}}
+        ]
       }
     ]
   },
   {
-    "id": "m33-deep-riven-stormbind-tunic",
-    "name": "M33 Deep-Riven Stormbind Tunic",
+    "id": "m33-dashing-ranger",
+    "name": "M33 Dashing Ranger",
     "effects": [
       {
-        "id": "m33-deep-riven-stormbind-tunic-bonus-combat",
-        "name": "M33 Deep-Riven Stormbind Tunic (combat)",
-        "when": {"toggle": "combat"},
-        "stats": {"ca_p": 0.08, "crit_avoid_p": -0.08}
+        "id": "m33-dashing-ranger-bonus",
+        "name": "M33 Dashing Ranger Bonus",
+        "variants": [
+          {"stats": {"strike_p": 0.055, "acc_p": 0.05}, "when": {"toggle": "combat"}},
+          {"stats": {"acc_p": 0.05}}
+        ]
       }
     ]
   },
   {
-    "id": "m33-deep-riven-titanweave-harness",
-    "name": "M33 Deep-Riven Titanweave Harness",
+    "id": "m33-dashing-ranger-celestial",
+    "name": "M33 Dashing Ranger (Celestial)",
     "effects": [
       {
-        "id": "m33-deep-riven-titanweave-harness-bonus-combat",
-        "name": "M33 Deep-Riven Titanweave Harness (combat)",
+        "id": "m33-dashing-ranger-celestial",
+        "name": "M33 Dashing Ranger (Celestial)",
+        "variants": [
+          {"stats": {"acc_p": 0.06, "strike_p": 0.065}, "when": {"toggle": "combat"}},
+          {"stats": {"acc_p": 0.06}}
+        ]
+      }
+    ]
+  },
+  {
+    "id": "m33-eagle-s-mastery-lesser",
+    "name": "M33 Eagle's Mastery (Lesser)",
+    "effects": [
+      {
+        "id": "m33-eagle-s-mastery-lesser",
+        "name": "M33 Eagle's Mastery (Lesser)",
         "when": {"toggle": "combat"},
-        "stats": {"power_p": 0.035, "strike_p": 0.07}
+        "stats": {"power_p": 0.03, "strike_p": 0.03, "sev_p": 0.03}
       }
     ]
   },
@@ -1169,33 +1188,9 @@
     ]
   },
   {
-    "id": "m33-bloodletting-celestial",
-    "name": "M33 Bloodletting (Celestial)",
-    "effects": [
-      {
-        "id": "m33-bloodletting-celestial-bonus-combat",
-        "name": "M33 Bloodletting (Celestial) (Combat)",
-        "when": {"toggle": "combat"},
-        "stats": {"outgoing_damage": 0.05, "mult_hit_points": -0.1}
-      }
-    ]
-  },
-  {
     "id": "m33-frostsilver-coil-of-wrath",
     "name": "M33 Frostsilver Coil of Wrath",
     "effects": [
-      {
-        "id": "m33-frostsilver-coil-of-wrath-bonus-combat-combat-medium-plus",
-        "name": "M33 Frostsilver Coil of Wrath (combat, combat medium plus)",
-        "when": {"toggle": "combat", "duration": {"atLeast": 30}},
-        "stats": {"acc_p": 0.105}
-      },
-      {
-        "id": "m33-frostsilver-coil-of-wrath-bonus-combat-combat-short",
-        "name": "M33 Frostsilver Coil of Wrath (combat, combat short)",
-        "when": {"toggle": "combat", "duration": {"atLeast": 10, "below": 30}},
-        "stats": {"acc_p": 0.035}
-      },
       {
         "id": "m33-frostsilver-coil-of-wrath-accuracy",
         "name": "M33 Frostsilver Coil of Wrath (Accuracy)",
@@ -1221,12 +1216,6 @@
         "stats": {"acc_p": 0.03}
       },
       {
-        "id": "m33-frostsilver-loop-of-the-arcane-main-combat",
-        "name": "M33 Frostsilver Loop of the Arcane (Main, combat)",
-        "when": {"toggle": "combat"},
-        "stats": {"strike_p": 0.065}
-      },
-      {
         "id": "m33-frostsilver-loop-of-the-arcane-power",
         "name": "M33 Frostsilver Loop of the Arcane (Power)",
         "when": {"equipped": {"tag": "gem:bloodstone", "atLeast": 1}},
@@ -1238,23 +1227,6 @@
     "id": "m33-frostsilver-ring-of-initiative",
     "name": "M33 Frostsilver Ring of Initiative",
     "effects": [
-      {
-        "id": "m33-frostsilver-ring-of-initiative-main",
-        "name": "M33 Frostsilver Ring of Initiative (Main)",
-        "stats": {"ca_p": 0.06}
-      },
-      {
-        "id": "m33-frostsilver-ring-of-initiative-main-combat-aoe",
-        "name": "M33 Frostsilver Ring of Initiative (Main, combat, aoe)",
-        "when": {"toggle": "combat", "combatType": "aoe"},
-        "stats": {"power_p": 0.0325}
-      },
-      {
-        "id": "m33-frostsilver-ring-of-initiative-main-combat-mixed",
-        "name": "M33 Frostsilver Ring of Initiative (Main, combat, mixed)",
-        "when": {"toggle": "combat", "combatType": "mixed"},
-        "stats": {"power_p": 0.0325}
-      },
       {
         "id": "m33-frostsilver-ring-of-initiative-severity",
         "name": "M33 Frostsilver Ring of Initiative (Severity)",
@@ -1284,19 +1256,60 @@
     ]
   },
   {
+    "id": "m33-maiden-s-advantage-celestial",
+    "name": "M33 Maiden's Advantage (Celestial)",
+    "effects": [
+      {
+        "id": "m33-frostsilver-ring-of-initiative-2-bonus",
+        "name": "M33 Maiden's Advantage (Celestial)",
+        "variants": [
+          {
+            "stats": {"ca_p": 0.06, "power_p": 0.0325},
+            "when": {"any": [{"combatType": "mixed"}, {"combatType": "aoe"}]}
+          },
+          {"stats": {"ca_p": 0.06}}
+        ]
+      }
+    ]
+  },
+  {
+    "id": "m33-reckless-advantage",
+    "name": "M33 Reckless Advantage",
+    "effects": [
+      {
+        "id": "m33-reckless-advantage",
+        "name": "M33 Reckless Advantage",
+        "when": {"toggle": "combat"},
+        "stats": {"ca_p": 0.07, "crit_avoid_p": -0.075}
+      }
+    ]
+  },
+  {
+    "id": "m33-reckless-advantage-celestial",
+    "name": "M33 Reckless Advantage (Celestial)",
+    "effects": [
+      {
+        "id": "m33-reckless-advantage-celestial",
+        "name": "M33 Reckless Advantage (Celestial)",
+        "when": {"toggle": "combat"},
+        "stats": {"ca_p": 0.08, "crit_avoid_p": -0.08}
+      }
+    ]
+  },
+  {
     "id": "m33-relentless-reserves",
     "name": "M33 Relentless Reserves",
     "effects": [
       {
-        "id": "m33-relentless-reserves-bonus",
+        "id": "m33-relentless-reserves",
         "name": "M33 Relentless Reserves",
-        "stats": {"strike_p": 0.06}
-      },
-      {
-        "id": "m33-relentless-reserves-bonus-combat-combat-short-plus",
-        "name": "M33 Relentless Reserves (combat, combat short plus)",
-        "when": {"toggle": "combat", "duration": {"atLeast": 10}},
-        "stats": {"mana_regen": 0.1}
+        "variants": [
+          {
+            "stats": {"mana_regen": 0.1, "strike_p": 0.06},
+            "when": {"toggle": "combat", "duration": {"atLeast": 10}}
+          },
+          {"stats": {"strike_p": 0.06}}
+        ]
       }
     ]
   },
@@ -1305,8 +1318,8 @@
     "name": "M33 Runefrost Swift Armguards",
     "effects": [
       {
-        "id": "m33-runefrost-swift-armguards-bonus-combat",
-        "name": "M33 Runefrost Swift Armguards (combat)",
+        "id": "m33-runefrost-swift-armguards",
+        "name": "M33 Runefrost Swift Armguards",
         "when": {"toggle": "combat"},
         "stats": {"strike_p": 0.045, "recharge": 0.015}
       }
@@ -1317,8 +1330,8 @@
     "name": "M33 Ruthless Advantage (Legendary)",
     "effects": [
       {
-        "id": "m33-ruthless-advantage-legendary-bonus-combat",
-        "name": "M33 Ruthless Advantage (Legendary) (combat)",
+        "id": "m33-ruthless-advantage-legendary",
+        "name": "M33 Ruthless Advantage (Legendary)",
         "when": {"toggle": "combat"},
         "stats": {"acc_p": 0.06, "ca_p": 0.06}
       }
@@ -1332,18 +1345,6 @@
         "id": "m33-survivor-s-gift-celestial-bonus",
         "name": "M33 Survivor's Gift (Celestial)",
         "stats": {"power_p": 0.02, "out_healing_p": 0.07}
-      }
-    ]
-  },
-  {
-    "id": "m33-wintermarked-swiftguards",
-    "name": "M33 Wintermarked Swiftguards",
-    "effects": [
-      {
-        "id": "m33-wintermarked-swiftguards-bonus-combat",
-        "name": "M33 Wintermarked Swiftguards (combat)",
-        "when": {"toggle": "combat"},
-        "stats": {"power_p": 0.03, "strike_p": 0.03, "sev_p": 0.03}
       }
     ]
   },

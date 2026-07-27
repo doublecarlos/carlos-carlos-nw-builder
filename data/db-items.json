@@ -1358,11 +1358,10 @@
     "filter": "gear_ring",
     "il": 4150,
     "combined_rating": 3320,
-    "ca_p": 0.05,
     "acc": 8092,
     "severity": 7470,
     "maxCopies": 1,
-    "bonuses": ["m31-bloodlit-veil-ca-power"]
+    "bonuses": ["m24-maiden-s-advantage"]
   },
   {
     "name": "M31 Bloodwoven Ink (AP)",
@@ -1440,7 +1439,7 @@
     "combined_rating": 4095,
     "ca": 2457,
     "severity": 4505,
-    "bonuses": ["m31-greaves-of-the-crimson-march-damage"]
+    "bonuses": ["m31-bloodletting-ascendant"]
   },
   {
     "name": "M31 Necklace of the Forsaken",
@@ -1699,19 +1698,18 @@
     "severity": 10260,
     "ap_gain": 0.015,
     "maxCopies": 1,
-    "bonuses": ["m33-coldsilver-coil-of-wrath"]
+    "bonuses": ["m33-accumulating-precision"]
   },
   {
     "name": "M33 Coldsilver Loop of the Arcane",
     "filter": "gear_ring",
     "il": 5700,
     "combined_rating": 4560,
-    "acc_p": 0.05,
     "ca": 6840,
     "strike": 10260,
     "ap_gain": 0.015,
     "maxCopies": 1,
-    "bonuses": ["m33-coldsilver-loop-of-the-arcane"]
+    "bonuses": ["m33-dashing-ranger"]
   },
   {
     "name": "M33 Coldsilver Ring of Initiative",
@@ -1722,7 +1720,7 @@
     "ca": 6840,
     "ap_gain": 0.015,
     "maxCopies": 1,
-    "bonuses": ["m33-coldsilver-ring-of-initiative"]
+    "bonuses": ["m24-maiden-s-advantage"]
   },
   {
     "name": "M33 Cracked Stormbind Tunic Pants",
@@ -1733,7 +1731,7 @@
     "ca": 1380,
     "strike": 3312,
     "ap_gain": 0.015,
-    "bonuses": ["m33-cracked-stormbind-tunic-pants"]
+    "bonuses": ["m33-reckless-advantage"]
   },
   {
     "name": "M33 Cracked Stormbind Tunic Shirt",
@@ -1744,8 +1742,7 @@
     "ca": 1746,
     "strike": 3492,
     "recharge": 0.015,
-    "bonuses": ["m33-cracked-stormbind-tunic-shirt"],
-    "excludes": ["m31-greaves-of-the-crimson-march-damage-bonus-combat"]
+    "bonuses": ["m33-bloodletting"]
   },
   {
     "name": "M33 Deep-Riven Lifebraid Vestment",
@@ -1767,7 +1764,7 @@
     "ca": 1455,
     "strike": 3492,
     "ap_gain": 0.015,
-    "bonuses": ["m33-deep-riven-stormbind-tunic", "m33-freezing-grasp"]
+    "bonuses": ["m33-freezing-grasp", "m33-reckless-advantage-celestial"]
   },
   {
     "name": "M33 Deep-Riven Titanweave Harness",
@@ -1778,7 +1775,7 @@
     "ca": 2328,
     "severity": 2182,
     "ap_gain": 0.015,
-    "bonuses": ["m33-deep-riven-titanweave-harness", "m33-freezing-rage"]
+    "bonuses": ["m33-corrupt-power-celestial", "m33-freezing-rage"]
   },
   {
     "name": "M33 Frost-Riven Lifebraid Vestment",
@@ -1807,13 +1804,11 @@
     "filter": "gear_shirt",
     "il": 4850,
     "combined_rating": 4365,
-    "strike_p": 0.09,
     "power": 1528,
     "ca": 2328,
     "strike": 2619,
-    "inc_healing": -0.13,
     "recharge": 0.015,
-    "bonuses": ["m33-freezing-rage"]
+    "bonuses": ["m33-freezing-rage", "m33-corrupt-power"]
   },
   {
     "name": "M33 Frostforged Ring of the Companion (Strike/Sev)",
@@ -1849,7 +1844,7 @@
     "severity": 10800,
     "ap_gain": 0.015,
     "maxCopies": 1,
-    "bonuses": ["m33-frostsilver-coil-of-wrath"]
+    "bonuses": ["m33-frostsilver-coil-of-wrath", "m33-accumulating-precision-celestial"]
   },
   {
     "name": "M33 Frostsilver Loop of the Arcane",
@@ -1861,7 +1856,7 @@
     "strike": 10800,
     "ap_gain": 0.015,
     "maxCopies": 1,
-    "bonuses": ["m33-frostsilver-loop-of-the-arcane"]
+    "bonuses": ["m33-frostsilver-loop-of-the-arcane", "m33-dashing-ranger-celestial"]
   },
   {
     "name": "M33 Frostsilver Ring of Initiative",
@@ -1872,7 +1867,7 @@
     "ca": 7200,
     "ap_gain": 0.015,
     "maxCopies": 1,
-    "bonuses": ["m33-frostsilver-ring-of-initiative"]
+    "bonuses": ["m33-frostsilver-ring-of-initiative", "m33-maiden-s-advantage-celestial"]
   },
   {
     "name": "M33 Runefrost Skimisher Bracers",
@@ -1996,7 +1991,7 @@
     "strike": 5130,
     "forte": 3848,
     "allowedClass": ["warlock", "wizard"],
-    "bonuses": ["m33-wintermarked-swiftguards"]
+    "bonuses": ["m33-eagle-s-mastery-lesser"]
   },
   {
     "name": "Marco's",
