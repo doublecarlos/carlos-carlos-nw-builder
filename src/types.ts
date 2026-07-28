@@ -367,23 +367,30 @@ export interface EngineRow {
  * both look a stage up by name at runtime (`stages[stageName]`). */
 export type Stages = Record<string, Record<StatKey, number>>;
 
+// Each of these three keeps a `[key: string]: number` index signature alongside its named
+// properties (harmless -- every property here is already a `number`) because StatPanel.vue
+// picks a row dynamically off a `[label, key][]` table (its own `damageRows`/`healingRows`/
+// `ehpRows`), not by a literal property access.
 export interface DamageOutputs {
   average: number;
   critNoDeflect: number;
   critDeflect: number;
   noCritNoDeflect: number;
   noCritDeflect: number;
+  [key: string]: number;
 }
 
 export interface HealingOutputs {
   average: number;
   crit: number;
   noCrit: number;
+  [key: string]: number;
 }
 
 export interface EhpOutputs {
   average: number;
   critNoDeflect: number;
+  [key: string]: number;
 }
 
 export interface DerivedOutputs {

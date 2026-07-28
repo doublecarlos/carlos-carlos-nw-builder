@@ -9,6 +9,7 @@ import { ref, computed } from 'vue';
 import ComboBox from './ComboBox.vue';
 import { NW_SCHEMA } from '../data';
 import { int as fmtInt, pct as fmtPct, stat as fmtStat } from '../format';
+import type { ResolvedBuild } from '../types';
 
 // Display order only -- data/schema.json stays untouched. Forte sits with the defensive
 // ratings rather than right after Severity, per the user's re-grouping.
@@ -49,11 +50,11 @@ const SUMMARY_GROUPS = [
 ];
 
 const props = withDefaults(defineProps<{
-  result: any;
+  result: ResolvedBuild;
   // The sheet-style compare row under the picker: another build's own `derived`, resolved
   // by App.vue against the same db. `null` means "not comparing" and the widget collapses
   // back to a single centred value.
-  compareResult?: any;
+  compareResult?: ResolvedBuild | null;
   compareName?: string;
 }>(), {
   compareResult: null,
@@ -73,15 +74,19 @@ const summaryOptions = SUMMARY_GROUPS.flatMap(({ source, label, rows }) => rows.
   { value: `${source}:${key}`, label: `${label} · ${rowLabel}` }
 )));
 
+// `derived`'s top-level fields are heterogeneous (itemLevel: number, damage: DamageOutputs,
+// ...), so a dynamic `source` key (from the summary picker's `source:key` value) can't be
+// looked up without a cast -- each of the three sub-tables it can name is number-valued
+// throughout, hence `Record<string, number>` rather than `unknown`.
 const summaryValue = computed(() => {
   const [source, key] = summaryCalcKey.value.split(':');
-  return derived.value[source]?.[key] ?? 0;
+  return (derived.value as unknown as Record<string, Record<string, number>>)[source]?.[key] ?? 0;
 });
 
 const compareSummaryValue = computed(() => {
   if (!props.compareResult) return null;
   const [source, key] = summaryCalcKey.value.split(':');
-  return props.compareResult.derived?.[source]?.[key] ?? 0;
+  return (props.compareResult.derived as unknown as Record<string, Record<string, number>>)[source]?.[key] ?? 0;
 });
 
 /** `value` relative to `base`, signed: positive means `value` is the bigger of the two.
@@ -106,9 +111,9 @@ const summaryRowCls = computed(() => {
   return pctVal > 0 ? 'is-positive' : 'is-negative';
 });
 
-const int = (value: any) => fmtInt(value);
-const pct = (value: any) => fmtPct(value);
-const fmt = (key: string, value: any) => fmtStat(key, value);
+const int = (value: unknown) => fmtInt(value);
+const pct = (value: unknown) => fmtPct(value);
+const fmt = (key: string, value: unknown) => fmtStat(key, value);
 
 /** `over` is signed: positive means over the cap, negative means headroom to spare --
  * one merged column instead of the sheet's separate overcap/headroom pair. `capped` is
@@ -133,8 +138,8 @@ function capCell(key: string, redOver = Infinity) {
 /** One row per rating/percent pair, in display order (§ `RATING_ORDER`, UI-only). */
 const capRows = computed(() => NW_SCHEMA.ratingConversion
   .slice()
-  .sort((a: any, b: any) => orderIndex(a.rating) - orderIndex(b.rating))
-  .map((rule: any) => ({
+  .sort((a, b) => orderIndex(a.rating) - orderIndex(b.rating))
+  .map((rule) => ({
     key: rule.rating,
     label: NW_SCHEMA.statByKey[rule.rating]?.label ?? rule.rating,
     // Rating goes red once its overcap passes RATING_OVER_WARN, matching the game's own
@@ -152,29 +157,29 @@ const otherRows = computed(() => {
     paired.add(rule.percent);
   }
   return NW_SCHEMA.stats
-    .filter((stat: any) => !stat.enemy && !stat.ability && !paired.has(stat.key))
-    .map((stat: any) => ({ key: stat.key, label: stat.label,
+    .filter((stat) => !stat.enemy && !stat.ability && !paired.has(stat.key))
+    .map((stat) => ({ key: stat.key, label: stat.label,
       value: stages.value.totals[stat.key] ?? 0 }));
 });
 
 const abilityRows = computed(() => NW_SCHEMA.stats
-  .filter((stat: any) => stat.ability)
-  .map((stat: any) => ({ key: stat.key, label: stat.label,
+  .filter((stat) => stat.ability)
+  .map((stat) => ({ key: stat.key, label: stat.label,
     value: stages.value.totals[stat.key] ?? 0 })));
 
 const enemyRows = computed(() => NW_SCHEMA.stats
-  .filter((stat: any) => stat.enemy)
+  .filter((stat) => stat.enemy)
   // The section heading already says "Enemy"; repeating it in all 13 rows just makes
   // the column wider. Everywhere else the full label is what disambiguates.
-  .map((stat: any) => ({ key: stat.key, label: stat.label.replace(/^Enemy /, ''),
+  .map((stat) => ({ key: stat.key, label: stat.label.replace(/^Enemy /, ''),
     value: stages.value.totals[stat.key] ?? 0 })));
 
 const bonusSummary = computed(() => {
   const all = props.result.bonuses;
   return {
     total: all.length,
-    active: all.filter((bonus: any) => bonus.active).length,
-    excluded: all.filter((bonus: any) => bonus.excluded).length,
+    active: all.filter((bonus) => bonus.active).length,
+    excluded: all.filter((bonus) => bonus.excluded).length,
   };
 });
 
