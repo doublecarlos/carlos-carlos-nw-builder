@@ -32,6 +32,7 @@ import ItemPicker from './components/ItemPicker.vue';
 import BonusInspector from './components/BonusInspector.vue';
 import BuildBar from './components/BuildBar.vue';
 import BuildNav from './components/BuildNav.vue';
+import ItemForm from './components/ItemForm.vue';
 
 declare global {
   interface Window {
@@ -101,3 +102,4 @@ window.NW.components.ItemPicker = ItemPicker;
 window.NW.components.BonusInspector = BonusInspector;
 window.NW.components.BuildBar = BuildBar;
 window.NW.components.BuildNav = BuildNav;
+window.NW.components.ItemForm = ItemForm;
