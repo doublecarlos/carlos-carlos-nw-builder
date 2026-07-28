@@ -11,6 +11,7 @@
 // they fail, so the ones a single toggle or set piece away float to the top.
 import { ref, reactive, computed } from 'vue';
 import { label as statLabel, signedStat } from '../format';
+import type { ResolvedBuild, Db, EvaluatedBonus, ConditionLeafResult, StatValues } from '../types';
 
 /** `m31-crimson-march-combat` -> `M31 Crimson March Combat`, for bonuses with no set name. */
 const fromId = (id: string) => String(id ?? '')
@@ -25,14 +26,14 @@ const fromId = (id: string) => String(id ?? '')
  * The bonus id also distinguishes them, but only as generated slugs: the same two bonuses
  * come out as "combat combat short" and "combat medium plus combat", which is noise.
  */
-const conditionSummary = (entry: any) => (entry.gate?.leaves ?? [])
-  .map((leaf: any) => leaf.label)
+const conditionSummary = (entry: EvaluatedBonus) => (entry.gate?.leaves ?? [])
+  .map((leaf) => leaf.label)
   .filter(Boolean)
   .join(' + ');
 
 const props = defineProps<{
-  result: any;
-  db: any;
+  result: ResolvedBuild;
+  db: Db;
 }>();
 
 const query = ref('');
@@ -47,7 +48,7 @@ function choseLabel(chose: string | null) {
   return chose;
 }
 
-function statList(stats: any) {
+function statList(stats: StatValues | null | undefined) {
   if (!stats) return [];
   return Object.entries(stats)
     .map(([key, value]) => `${statLabel(key)} ${signedStat(key, value)}`);
@@ -57,14 +58,30 @@ function toggle(id: string) {
   open[id] = !open[id];
 }
 
-const entries = computed(() => {
+interface Entry {
+  raw: EvaluatedBonus;
+  id: string;
+  title: string;
+  qualifier: string;
+  sources: string[];
+  slot: string;
+  stacks: number;
+  chose: string;
+  payload: StatValues | null;
+  perStack: StatValues | null;
+  unmet: ConditionLeafResult[];
+  nearMiss: boolean;
+  state: 'excluded' | 'active' | 'inactive';
+}
+
+const entries = computed<Entry[]>(() => {
   const titleCounts = new Map<string, number>();
   for (const entry of props.result.bonuses) {
     const title = entry.bonus?.name ?? entry.sources?.[0] ?? fromId(entry.id);
     titleCounts.set(title, (titleCounts.get(title) ?? 0) + 1);
   }
 
-  return props.result.bonuses.map((entry: any) => {
+  return props.result.bonuses.map((entry) => {
     const unmet = entry.gate?.unmet ?? [];
     // The bonus's own friendly name is the most specific title; the item carrying it and
     // an id-derived fallback are progressively blunter instruments for one that has none.
@@ -78,7 +95,7 @@ const entries = computed(() => {
       slot: props.db.slotById.get(entry.slotId)?.label ?? entry.slotId,
       stacks: entry.stacks ?? 1,
       chose: choseLabel(entry.chose),
-      payload: entry.active ? entry.appliedStats : entry.previewStats,
+      payload: entry.active ? (entry.appliedStats ?? null) : entry.previewStats,
       perStack: entry.stacks > 1 ? entry.stats : null,
       unmet,
       nearMiss: !entry.active && !entry.excluded && unmet.length === 1,
@@ -89,22 +106,22 @@ const entries = computed(() => {
 
 const filtered = computed(() => {
   const q = query.value.trim().toLowerCase();
-  return entries.value.filter((entry: any) => {
+  return entries.value.filter((entry) => {
     if (nearMissOnly.value && !entry.nearMiss) return false;
     if (!q) return true;
     return entry.title.toLowerCase().includes(q)
       || entry.id.toLowerCase().includes(q)
-      || entry.sources.some((source: string) => source.toLowerCase().includes(q));
+      || entry.sources.some((source) => source.toLowerCase().includes(q));
   });
 });
 
 const groups = computed(() => {
-  const active = filtered.value.filter((entry: any) => entry.state === 'active');
-  const excluded = filtered.value.filter((entry: any) => entry.state === 'excluded');
+  const active = filtered.value.filter((entry) => entry.state === 'active');
+  const excluded = filtered.value.filter((entry) => entry.state === 'excluded');
   // Fewest unmet conditions first: what you are closest to unlocking is what you want
   // to see, and a bonus failing five conditions is not actionable.
-  const inactive = filtered.value.filter((entry: any) => entry.state === 'inactive')
-    .sort((a: any, b: any) => a.unmet.length - b.unmet.length || a.title.localeCompare(b.title));
+  const inactive = filtered.value.filter((entry) => entry.state === 'inactive')
+    .sort((a, b) => a.unmet.length - b.unmet.length || a.title.localeCompare(b.title));
   return [
     { id: 'inactive', label: 'Inactive', list: inactive },
     { id: 'active', label: 'Active', list: active },
@@ -116,8 +133,8 @@ const counts = computed(() => {
   const all = entries.value;
   return {
     total: all.length,
-    active: all.filter((entry: any) => entry.state === 'active').length,
-    nearMiss: all.filter((entry: any) => entry.nearMiss).length,
+    active: all.filter((entry) => entry.state === 'active').length,
+    nearMiss: all.filter((entry) => entry.nearMiss).length,
   };
 });
 </script>
