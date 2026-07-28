@@ -144,3 +144,75 @@ function onPaste(event: ClipboardEvent) {
     </div>
   </div>
 </template>
+
+<style scoped>
+.tokens {
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  cursor: text;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-height: 26px;
+  padding: 3px 5px;
+  position: relative;
+}
+.tokens.is-open { outline: 2px solid var(--accent); outline-offset: -1px; }
+
+.token {
+  align-items: center;
+  background: var(--accent-soft);
+  border-radius: 10px;
+  color: var(--text);
+  display: inline-flex;
+  font-size: 1rem;
+  gap: 3px;
+  padding: 1px 3px 1px 8px;
+}
+.token-x {
+  background: none;
+  border: 0;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 1.083rem;
+  line-height: 1;
+  padding: 0 3px;
+}
+.token-x:hover { color: var(--danger); }
+
+.token-field {
+  background: none;
+  border: 0;
+  flex: 1;
+  min-width: 90px;
+  outline: none;
+  padding: 1px 2px;
+}
+.token-field:focus { outline: none; }
+
+.token-menu {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .18);
+  left: 0;
+  max-height: 220px;
+  overflow-y: auto;
+  position: absolute;
+  right: 0;
+  top: calc(100% + 2px);
+  z-index: 30;
+}
+.token-option { cursor: pointer; display: flex; gap: 8px; padding: 3px 8px; }
+.token-option.is-highlighted { background: var(--accent-soft); }
+.token-new {
+  background: color-mix(in srgb, var(--ok) 22%, transparent);
+  border-radius: 3px;
+  color: var(--ok);
+  font-size: 1rem;
+  margin-left: auto;
+  padding: 0 5px;
+}
+</style>

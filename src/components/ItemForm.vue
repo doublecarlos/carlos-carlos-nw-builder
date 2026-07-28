@@ -401,3 +401,14 @@ onUnmounted(() => {
       @attach-set="attachSet" />
   </div>
 </template>
+
+<style scoped>
+.drawer-grid {
+  display: grid;
+  gap: 2px 12px;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  margin-bottom: 6px;
+}
+
+.form-grid--tokens .field { flex: 1; min-width: 240px; }
+</style>

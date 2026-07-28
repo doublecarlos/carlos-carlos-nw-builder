@@ -157,3 +157,17 @@ function onKeydown(event: KeyboardEvent) {
     </div>
   </div>
 </template>
+
+<style scoped>
+/* combo-box's caret sits in the same right-hand gutter `.picker-input`'s padding reserves --
+ * the only hint left that this text input is actually a fixed-choice dropdown. */
+.picker-caret {
+  color: var(--muted);
+  font-size: 1rem;
+  pointer-events: none;
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+</style>

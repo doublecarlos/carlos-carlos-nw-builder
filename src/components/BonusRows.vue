@@ -261,3 +261,44 @@ function setPayload(grant: GrantDraft, payload: GrantDraft['payload']) {
     </div>
   </div>
 </template>
+
+<style scoped>
+.bonus-edit {
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  margin-bottom: 8px;
+  padding: 8px 10px;
+}
+/* flex-end, not center: the buttons here have no label above them, so centering would float
+ * them against the taller labeled Name/Id fields instead of lining up on the inputs. */
+.bonus-edit-head { align-items: flex-end; display: flex; flex-wrap: wrap; gap: 8px; }
+
+.seg { display: inline-flex; gap: 0; }
+.seg-btn {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  color: var(--muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 1rem;
+  padding: 2px 8px;
+}
+.seg-btn:first-child { border-radius: var(--radius) 0 0 var(--radius); }
+.seg-btn:last-child { border-radius: 0 var(--radius) var(--radius) 0; border-left: 0; }
+.seg-btn.is-on { background: var(--accent-soft); border-color: var(--accent); color: var(--text); }
+
+/* Boxed, not just a rule on the left -- with several tiers or variants stacked back to back,
+ * a 2px accent line was not enough contrast to tell where one ends and the next begins.
+ * `.bonus-edit` (the parent) is already `--surface-2`, so tiers go `--surface` to read as
+ * lighter cards sitting on top of it, the same relationship `.setcard` has to the page. */
+.tier {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius);
+  margin: 6px 0;
+  padding: 6px 9px 8px;
+}
+.tier-head { align-items: center; display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 3px; }
+</style>

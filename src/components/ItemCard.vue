@@ -5,7 +5,8 @@
 // Pure presentation -- the caller resolves which bonuses belong to the item and positions the
 // card. Rendered once by SlotList.vue, not once per row: 180 slots must not mean 180 cards.
 //
-// Interactive (see app.css): a long card scrolls, so it must accept the pointer. SlotList
+// Interactive (see this file's own <style> block): a long card scrolls, so it must accept
+// the pointer. SlotList
 // keeps it open while the pointer is over it and closes it on leave.
 import { computed } from 'vue';
 import { NW_SCHEMA } from '../data';
@@ -229,3 +230,91 @@ const rows = computed(() => props.bonuses.map((entry) => {
     </div>
   </div>
 </template>
+
+<style scoped>
+.itemcard {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .22);
+  /* Width and max-height are read back by SlotList.vue for positioning -- keep them in step
+   * with the `CARD_W` constant there. `max-width` is a narrow-viewport fallback: `place()`
+   * already clamps the card's `left` to stay on screen, but on a viewport under 330px wide
+   * (a small phone) the fixed width itself would still overflow. */
+  width: 330px;
+  max-width: calc(100vw - 20px);
+  max-height: 440px;
+  overflow-y: auto;
+  /* Without this, a wheel scroll that reaches the card's own scroll limit chains onto the
+   * page underneath -- scrolling the build page and invalidating the card's anchor rect,
+   * which closes the card mid-scroll. */
+  overscroll-behavior: contain;
+  padding: 9px 11px;
+  position: fixed;
+  z-index: 40;
+  /* Interactive on purpose: long cards overflow and need the scroll wheel, and reaching them
+   * with the pointer must not make them vanish. SlotList.vue gives the card its own
+   * mouseenter/mouseleave so it stays open while the pointer is over it. */
+  pointer-events: auto;
+}
+
+.itemcard-head { align-items: baseline; display: flex; gap: 8px; }
+.itemcard-name { flex: 1; font-weight: 600; }
+.itemcard-il { color: var(--muted); font-size: 1rem; font-variant-numeric: tabular-nums; }
+.itemcard-slot { color: var(--muted); font-size: 1rem; margin-bottom: 5px; }
+
+.itemcard-stats { display: flex; flex-direction: column; }
+.itemcard-stat {
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+  font-size: 1rem;
+  padding: 3px 0;
+}
+.itemcard-stat:last-child { border-bottom: none; }
+.itemcard-stat .num { font-variant-numeric: tabular-nums; }
+
+.itemcard-notes {
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 1rem;
+  margin-top: 6px;
+  padding-top: 5px;
+}
+
+.itemcard-bonuses { border-top: 1px solid var(--line); margin-top: 6px; padding-top: 5px; }
+.itemcard-section {
+  color: var(--muted);
+  font-size: 1rem;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+}
+.itemcard-bonus { margin-top: 4px; }
+.itemcard-bonus-head { align-items: center; display: flex; gap: 5px; }
+.itemcard-bonus-cond { flex: 1; font-size: 1rem; min-width: 0; }
+.bonus--inactive .itemcard-bonus-cond, .bonus--excluded .itemcard-bonus-cond { color: var(--muted); }
+.itemcard-bonus-stats { font-size: 1rem; padding-left: 12px; }
+/* An inactive/excluded bonus's numbers are what it *would* grant, not what it does -- muted
+ * the same as its title, so the card doesn't read as if it were already contributing. */
+.bonus--inactive .itemcard-bonus-stats, .bonus--excluded .itemcard-bonus-stats { color: var(--muted); }
+.itemcard-bonus-unmet { color: var(--warn); font-size: 1rem; padding-left: 12px; }
+.itemcard-bonus-when { padding-left: 12px; }
+
+.itemcard-bonus-tiers { padding-left: 12px; }
+.itemcard-tier { color: var(--muted); font-size: 1rem; }
+.itemcard-tier.is-active { color: var(--text); font-weight: 600; }
+.itemcard-tier .itemcard-stat { font-size: 1rem; padding: 2px 0; }
+.itemcard-bonus-shared { padding-left: 12px; }
+
+.stat-sub { color: var(--muted); font-size: 1rem; line-height: 1.3; }
+
+/* Bonus state indicator (dot + title colour) -- same small vocabulary as
+ * BonusInspector.vue's own `.bonus-dot`/`.bonus--*`, duplicated rather than shared: the two
+ * live in different visual contexts (a hover card vs. a sidebar list) and each fully owns
+ * its own look even though the convention happens to match. */
+.bonus-dot { border-radius: 50%; flex: none; height: 7px; width: 7px; }
+.bonus--active .bonus-dot { background: var(--ok); }
+.bonus--inactive .bonus-dot { background: var(--muted); opacity: .5; }
+.bonus--excluded .bonus-dot { background: var(--danger); }
+</style>

@@ -22,7 +22,7 @@ const HOVER_DELAY_MS = 220;
 // feel like one continuous hover, not a fresh 220ms wait per row.
 const HOVER_RESUME_MS = 400;
 const HOVER_CLOSE_GRACE_MS = 100;
-const CARD_W = 330;    // must match .itemcard width in app.css
+const CARD_W = 330;    // must match .itemcard width in ItemCard.vue's own <style>
 
 const props = withDefaults(defineProps<{
   db: Db;
@@ -672,3 +672,138 @@ onUnmounted(() => {
       @mouseleave="onCardLeave" />
   </div>
 </template>
+
+<style scoped>
+.slots-toolbar { display: flex; gap: 6px; margin-bottom: 6px; }
+
+.section {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  margin-bottom: 6px;
+}
+
+/* The revert icon (shown only when the section has unsaved slots) has to sit outside the
+ * toggle button -- a <button> can't nest another one -- so the button no longer spans the
+ * full row on its own; `.section-head-row` does that instead. */
+.section-head-row { align-items: center; display: flex; }
+
+.section-head {
+  align-items: center;
+  background: none;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  display: flex;
+  flex: 1;
+  font: inherit;
+  font-weight: 600;
+  gap: 8px;
+  min-width: 0;
+  padding: 7px 10px;
+  text-align: left;
+}
+.section-head:hover { background: var(--surface-2); }
+.section-chevron { color: var(--muted); width: 10px; }
+.section-count { color: var(--muted); font-weight: 400; margin-left: auto; }
+.section-revert { flex: none; margin-right: 6px; }
+
+/* The section header's "copy this section from…" control -- an icon button, not a permanent
+ * picker, so the header row (which already carries the label, counts and badges) stays quiet
+ * until it's actually needed. Opens to the side (left) of the button rather than below it,
+ * since the row itself has plenty of width and dropping down would sit awkwardly over the
+ * section's own body. */
+.copy-popover-wrap { flex: none; margin-right: 2px; position: relative; }
+.copy-popover {
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .18);
+  display: flex;
+  gap: 6px;
+  padding: 7px 9px;
+  position: absolute;
+  right: calc(100% + 6px);
+  top: 50%;
+  transform: translateY(-50%);
+  white-space: nowrap;
+  z-index: 25;
+}
+.copy-popover-label { color: var(--muted); font-size: 1rem; }
+.copy-popover-select { width: 170px; }
+
+.section-body { border-top: 1px solid var(--line); padding: 4px 10px 8px; }
+
+.slot-row {
+  align-items: baseline;
+  border-bottom: 1px solid color-mix(in srgb, var(--line) 45%, transparent);
+  display: grid;
+  gap: 10px;
+  grid-template-columns: 150px minmax(0, 1fr);
+  padding: 4px 0;
+}
+.slot-row:last-child { border-bottom: 0; }
+
+/* The change marker (dot + revert icon) sits pinned to the right of this column, close to
+ * where the picker starts, rather than right after the label text -- so it lines up in the
+ * same spot on every row regardless of how long that row's label is. */
+.slot-label-col { align-items: center; display: flex; justify-content: space-between; min-width: 0; }
+.slot-label {
+  color: var(--muted);
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.slot-change { align-items: center; display: flex; flex: none; gap: 2px; }
+
+/* Keyboard cursor: independent of mouse hover (`.is-hovered`) -- the two can point at different
+ * rows at once, same as a spreadsheet's selection vs. hover state. */
+.slot-row.is-cursor, .section-head.is-cursor {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+}
+/* `.slot-row` is tabindex="-1" so real DOM focus can follow the keyboard cursor (see
+ * `syncCursorFocus` above) -- normally focus and `.is-cursor` land together, so this only
+ * suppresses the native ring for the rare moment they don't (e.g. a row losing `.is-cursor`
+ * a tick before the browser actually moves focus off it). `:not(.is-cursor)` -- not just source
+ * order -- keeps this from ever tying with (and winning over, being the same specificity and
+ * later) the `.is-cursor` rule above when both apply to the same row at once. */
+.slot-row:focus:not(.is-cursor) { outline: none; }
+
+.slot-control { min-width: 0; }
+/* The picker is capped, not stretched to fill the column -- the freed space carries a condensed
+ * stat summary instead of sitting empty. */
+.slot-main { align-items: center; display: flex; flex-wrap: wrap; gap: 10px; }
+.slot-main .picker { flex: 0 1 320px; min-width: 160px; }
+.slot-summary {
+  color: var(--text);
+  flex: 1;
+  font-size: 1rem;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.slot-value { align-items: center; display: flex; gap: 6px; margin-top: 4px; }
+.slot-error { color: var(--danger); margin: 3px 0 0; font-size: 1rem; }
+
+.slot-diff-note { color: var(--muted); font-size: 1rem; margin: 2px 0 0; }
+.slot-diff-note button.link { color: var(--accent); margin-left: 2px; padding: 0; }
+
+.slot-row.is-hovered { background: color-mix(in srgb, var(--accent-soft) 40%, transparent); }
+
+/* Quick-compare: a row whose choice differs from the compare build, per App.vue's picker. Same
+ * specificity as `.is-hovered` above -- this comes later in source order so the diff cue stays
+ * visible on hover instead of the two backgrounds fighting row-for-row. */
+.slot-row.is-diff { background: color-mix(in srgb, var(--diff) 20%, transparent); }
+
+@media (max-width: 480px) {
+  /* The fixed 150px label column plus the picker's own 160px minimum no longer both fit --
+   * stack the label above the control instead of forcing a horizontal scrollbar per row. */
+  .slot-row { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+  .slot-main .picker { min-width: 0; }
+}
+</style>

@@ -216,3 +216,26 @@ function applyImport() {
     </div>
   </div>
 </template>
+
+<style scoped>
+.buildbar { flex: 1 1 100%; min-width: 0; }
+.buildbar-row { align-items: flex-end; display: flex; flex-wrap: wrap; gap: 8px 10px; }
+.buildbar-actions { align-items: center; display: flex; flex-wrap: wrap; gap: 4px; }
+
+.name-input { min-width: 180px; }
+
+.drawer-cols { display: grid; gap: 16px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.drawer-note { color: var(--ok); margin: 4px 0 0; }
+
+.share-input {
+  flex: 1;
+  font: 1rem/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  min-width: 260px;
+}
+
+@media (max-width: 640px) {
+  /* Two side-by-side textareas (export/import) get cramped well before the drawer itself
+   * runs out of width -- stack them instead of shrinking each to a sliver. */
+  .drawer-cols { grid-template-columns: minmax(0, 1fr); }
+}
+</style>

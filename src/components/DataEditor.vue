@@ -745,3 +745,66 @@ onUnmounted(() => {
     </div>
   </div>
 </template>
+
+<style scoped>
+.editor { padding: 12px 14px; }
+.editor-bar { align-items: center; display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+
+.drawer--findings { max-height: 190px; overflow-y: auto; }
+.findings { list-style: none; margin: 4px 0 0; padding: 0; }
+.findings li { display: flex; gap: 7px; font-size: 1rem; padding: 1px 0; }
+.finding-level {
+  border-radius: 3px;
+  flex: none;
+  font-size: 1rem;
+  padding: 0 5px;
+  text-transform: uppercase;
+}
+.findings li.error .finding-level { background: var(--danger-soft); color: var(--danger); }
+.findings li.warn .finding-level { background: color-mix(in srgb, var(--warn) 22%, transparent); color: var(--warn); }
+
+.combo--status { width: 100px; }
+
+.editor-body {
+  align-items: start;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 340px minmax(0, 1fr);
+}
+
+.editor-list, .editor-form {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.editor-list-head { border-bottom: 1px solid var(--line); display: flex; gap: 5px; padding: 7px; }
+/* Search is the primary way through 369 items; the status filter is a secondary narrowing
+ * most sessions never touch -- `flex: 3` (against the combo's fixed 100px above) gives it most
+ * of the row's width instead of splitting it evenly. */
+.editor-list-head input[type="search"].editor-search { flex: 3 1 0; min-width: 0; }
+.editor-list-body { max-height: calc(100vh - 20px); overflow-y: auto; }
+
+.editor-row {
+  align-items: center;
+  border-bottom: 1px solid color-mix(in srgb, var(--line) 45%, transparent);
+  cursor: pointer;
+  display: flex;
+  gap: 6px;
+  padding: 4px 8px;
+}
+.editor-row:hover { background: var(--surface-2); }
+.editor-row.is-on { background: var(--accent-soft); }
+.editor-row-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.editor-row-filter { color: var(--muted); font-size: 1rem; }
+
+.editor-form { max-height: calc(100vh - 20px); overflow-y: auto; padding: 10px 12px; }
+
+@media (max-width: 900px) {
+  /* The fixed 340px item list plus the form's own minimum content width no longer both fit
+   * side by side -- stack the list above the form instead of forcing the page to scroll
+   * horizontally. Each keeps its own `max-height`/`overflow-y`, so stacking just means two
+   * independently-scrolling panes instead of one row of two. */
+  .editor-body { grid-template-columns: minmax(0, 1fr); }
+  .editor-list-body { max-height: 40vh; }
+}
+</style>

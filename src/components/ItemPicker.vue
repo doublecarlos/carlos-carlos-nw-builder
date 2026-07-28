@@ -233,3 +233,15 @@ function onKeydown(event: KeyboardEvent) {
     </div>
   </div>
 </template>
+
+<style scoped>
+.picker-input.is-empty::placeholder { color: var(--muted); }
+.picker.is-invalid .picker-input { border-color: var(--danger); }
+
+.picker-row--clear { color: var(--muted); font-style: italic; }
+
+.picker-flag { color: var(--accent); font-size: 1rem; }
+.picker-il { color: var(--muted); font-size: 1rem; }
+.picker-row-stats { color: var(--muted); display: flex; flex-wrap: wrap; font-size: 1rem; gap: 8px; }
+.picker-more { font-style: italic; }
+</style>
