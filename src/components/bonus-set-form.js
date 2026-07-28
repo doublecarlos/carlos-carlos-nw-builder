@@ -26,6 +26,11 @@ window.NW.components.BonusSetForm = (() => {
   const slugify = (text) => String(text).toLowerCase().trim()
     .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 
+  // Same draft-level undo as item-form.js -- see its own comment for why a debounced deep watch
+  // instead of a snapshot-per-field-method the way the build form does it.
+  const SNAPSHOT_DEBOUNCE_MS = 700;
+  const UNDO_LIMIT = 50;
+
   return {
     name: 'BonusSetForm',
 
@@ -45,12 +50,25 @@ window.NW.components.BonusSetForm = (() => {
       setIds: { type: Array, default: () => [] },
       tags: { type: Array, default: () => [] },
       bonusIds: { type: Array, default: () => [] },
+      /** Same stash/restore as item-form.js's own `initialDraft` -- see there for why. */
+      initialDraft: { type: Object, default: null },
     },
 
     emits: ['save', 'delete', 'revert', 'dirty'],
 
     data() {
-      return { draft: this.buildDraft(this.source), error: '' };
+      const draft = this.initialDraft
+        ? JSON.parse(JSON.stringify(this.initialDraft))
+        : this.buildDraft(this.source);
+      return {
+        draft,
+        error: '',
+        draftHistory: { past: [], future: [] },
+        lastSnapshotJson: JSON.stringify(draft),
+        snapshotTimer: null,
+        confirmRevert: false,
+        confirmRevertTimer: null,
+      };
     },
 
     computed: {
@@ -81,6 +99,9 @@ window.NW.components.BonusSetForm = (() => {
         const set = this.asSet;
         return !set || !sameSet(set, this.source);
       },
+
+      canUndoDraft() { return this.draftHistory.past.length > 0; },
+      canRedoDraft() { return this.draftHistory.future.length > 0; },
     },
 
     watch: {
@@ -88,15 +109,79 @@ window.NW.components.BonusSetForm = (() => {
         handler(value) {
           this.draft = this.buildDraft(value);
           this.error = '';
+          this.resetDraftHistory();
         },
       },
       dirty: {
         immediate: true,
         handler(value) { this.$emit('dirty', value); },
       },
+      draft: {
+        deep: true,
+        handler() { this.scheduleSnapshot(); },
+      },
+    },
+
+    unmounted() {
+      window.clearTimeout(this.snapshotTimer);
+      window.clearTimeout(this.confirmRevertTimer);
     },
 
     methods: {
+      // --- draft undo -------------------------------------------------------------------------
+
+      resetDraftHistory() {
+        window.clearTimeout(this.snapshotTimer);
+        this.draftHistory = { past: [], future: [] };
+        this.lastSnapshotJson = JSON.stringify(this.draft);
+      },
+
+      scheduleSnapshot() {
+        window.clearTimeout(this.snapshotTimer);
+        this.snapshotTimer = window.setTimeout(() => this.commitSnapshot(), SNAPSHOT_DEBOUNCE_MS);
+      },
+
+      commitSnapshot() {
+        window.clearTimeout(this.snapshotTimer);
+        const current = JSON.stringify(this.draft);
+        if (current === this.lastSnapshotJson) return;
+        this.draftHistory.past.push(this.lastSnapshotJson);
+        if (this.draftHistory.past.length > UNDO_LIMIT) this.draftHistory.past.shift();
+        this.draftHistory.future.length = 0;
+        this.lastSnapshotJson = current;
+      },
+
+      undoDraft() {
+        this.commitSnapshot();
+        if (!this.draftHistory.past.length) return false;
+        this.draftHistory.future.push(this.lastSnapshotJson);
+        this.lastSnapshotJson = this.draftHistory.past.pop();
+        this.draft = JSON.parse(this.lastSnapshotJson);
+        return true;
+      },
+
+      redoDraft() {
+        if (!this.draftHistory.future.length) return false;
+        this.draftHistory.past.push(this.lastSnapshotJson);
+        this.lastSnapshotJson = this.draftHistory.future.pop();
+        this.draft = JSON.parse(this.lastSnapshotJson);
+        return true;
+      },
+
+      /** Same "discard the unsaved draft" as item-form.js's own `revertDraft` -- see there. */
+      revertDraft() {
+        if (!this.confirmRevert) {
+          this.confirmRevert = true;
+          this.confirmRevertTimer = window.setTimeout(() => { this.confirmRevert = false; }, 4000);
+          return;
+        }
+        window.clearTimeout(this.confirmRevertTimer);
+        this.confirmRevert = false;
+        this.draft = this.buildDraft(this.source);
+        this.error = '';
+        this.resetDraftHistory();
+      },
+
       buildDraft(set) {
         const source = set ?? {};
         return {
@@ -143,7 +228,15 @@ window.NW.components.BonusSetForm = (() => {
           <span v-if="status !== 'base'" class="badge" :class="'badge--' + status">{{ status }}</span>
           <span v-if="dirty" class="badge badge--near">unsaved</span>
           <span class="spacer"></span>
+          <button type="button" class="btn btn--history" :disabled="!canUndoDraft"
+                  title="Undo edit (Ctrl+Z)" @click="undoDraft">↶ Undo</button>
+          <button type="button" class="btn btn--history" :disabled="!canRedoDraft"
+                  title="Redo edit (Ctrl+Shift+Z)" @click="redoDraft">↷ Redo</button>
           <button type="button" class="btn btn--primary" :disabled="!dirty" @click="save">Save bonus set</button>
+          <button type="button" class="btn" :class="{ 'is-danger': confirmRevert }"
+                  :disabled="!dirty" @click="revertDraft">
+            {{ confirmRevert ? 'Really revert?' : 'Revert' }}
+          </button>
           <button v-if="status === 'edited'" type="button" class="btn"
                   @click="$emit('revert')">Revert to shipped</button>
           <button v-if="source" type="button" class="btn" @click="$emit('delete')">Delete</button>

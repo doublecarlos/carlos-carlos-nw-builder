@@ -887,6 +887,10 @@ label.quickopts-row { cursor: pointer; }
 .badge--edited { background: var(--accent-soft); color: var(--accent); }
 .badge--removed { background: var(--danger-soft); color: var(--danger); }
 .badge--warn { background: color-mix(in srgb, var(--warn) 22%, transparent); color: var(--warn); }
+/* Same red as `.badge--removed` -- a row's overlay *status* (added/edited/removed) and its
+ * form having an in-progress, not-yet-saved draft are different facts and can both be true at
+ * once, so this is its own class rather than reusing `badge--removed` outright. */
+.badge--unsaved { background: var(--danger-soft); color: var(--danger); }
 
 .drawer--findings { max-height: 190px; overflow-y: auto; }
 .findings { list-style: none; margin: 4px 0 0; padding: 0; }
@@ -914,7 +918,10 @@ label.quickopts-row { cursor: pointer; }
   border-radius: var(--radius);
 }
 .editor-list-head { border-bottom: 1px solid var(--line); display: flex; gap: 5px; padding: 7px; }
-.editor-list-head input[type="search"] { flex: 1; min-width: 0; }
+/* Search is the primary way through 369 items; the status filter is a secondary narrowing
+ * most sessions never touch -- `flex: 3` (against the combo's fixed 100px below) gives it most
+ * of the row's width instead of splitting it evenly. */
+.editor-list-head input[type="search"].editor-search { flex: 3 1 0; min-width: 0; }
 .editor-list-body { max-height: calc(100vh - 20px); overflow-y: auto; }
 
 .editor-row {
@@ -937,6 +944,7 @@ label.quickopts-row { cursor: pointer; }
   background: var(--surface);
   border-bottom: 1px solid var(--line);
   display: flex;
+  flex-wrap: wrap;
   gap: 6px;
   margin: -10px -12px 10px;
   padding: 8px 12px;
@@ -1003,7 +1011,7 @@ label.quickopts-row { cursor: pointer; }
 .combo--set { width: 170px; }
 .combo--stat { width: 220px; }
 .combo--stacking { width: 260px; }
-.combo--status { width: 160px; }
+.combo--status { width: 100px; }
 
 .bonus-edit {
   background: var(--surface-2);

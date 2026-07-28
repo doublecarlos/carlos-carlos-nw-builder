@@ -31,6 +31,19 @@ window.NW.components.ItemForm = (() => {
 
   const sameItem = (a, b) => JSON.stringify(canonical(a)) === JSON.stringify(canonical(b));
 
+  // Draft-level undo: separate from (and beneath) data-editor.js's own undo over *committed*
+  // overlay changes -- this one covers ordinary editing (typing, checking a class box, adding a
+  // stat row) before a Save ever happens, the same thing app.js's undo does for the build form.
+  // The build form gets there by having every mutation go through a named method that snapshots
+  // first; a form this size (name/filter/tags/classes/stats/dynamic mod/excludes) would need a
+  // wrapper per field to do the same. A debounced deep watch on `draft` gets the same result
+  // without one: `commitSnapshot` compares the settled draft against `lastSnapshotJson` (the
+  // draft as of the last step) and pushes *that* onto `past` if anything moved -- so a burst of
+  // keystrokes between pauses becomes one undo step, same grouping app.js's own `COALESCE_MS`
+  // gives the build form's fields.
+  const SNAPSHOT_DEBOUNCE_MS = 700;
+  const UNDO_LIMIT = 50;
+
   return {
     name: 'ItemForm',
 
@@ -51,12 +64,33 @@ window.NW.components.ItemForm = (() => {
       setIds: { type: Array, default: () => [] },
       tags: { type: Array, default: () => [] },
       bonusIds: { type: Array, default: () => [] },
+      /** A draft stashed by data-editor.js the last time this item's form was navigated away
+       * from while dirty -- read once, on mount, so re-selecting an item you were mid-edit on
+       * picks back up instead of silently reverting to the saved version. Plain-data only (no
+       * functions), so a JSON round trip is enough to give this component its own copy rather
+       * than sharing references with the stash. */
+      initialDraft: { type: Object, default: null },
     },
 
     emits: ['save', 'delete', 'revert', 'dirty', 'save-set', 'delete-set'],
 
     data() {
-      return { draft: this.buildDraft(this.source), error: '' };
+      const draft = this.initialDraft
+        ? JSON.parse(JSON.stringify(this.initialDraft))
+        : this.buildDraft(this.source);
+      return {
+        draft,
+        error: '',
+        draftHistory: { past: [], future: [] },
+        lastSnapshotJson: JSON.stringify(draft),
+        snapshotTimer: null,
+        // Two-step confirm for "discard my unsaved edits" -- same pattern (and same 4s window)
+        // as build-bar.js's own Revert. No watch needed to reset it on an identity change the
+        // way build-bar.js resets on `build.id`: this component remounts fresh (new `data()`)
+        // every time the selected item changes, via data-editor.js's `:key`.
+        confirmRevert: false,
+        confirmRevertTimer: null,
+      };
     },
 
     computed: {
@@ -77,6 +111,9 @@ window.NW.components.ItemForm = (() => {
         if (!this.source) return Boolean(item.name || item.filter || this.draft.stats.length);
         return !sameItem(item, this.source);
       },
+
+      canUndoDraft() { return this.draftHistory.past.length > 0; },
+      canRedoDraft() { return this.draftHistory.future.length > 0; },
     },
 
     watch: {
@@ -84,16 +121,88 @@ window.NW.components.ItemForm = (() => {
         handler(value) {
           this.draft = this.buildDraft(value);
           this.error = '';
+          // A save (the common way `source` changes under an unchanged key) makes the prior
+          // draft history meaningless -- there is nothing left upstream of the just-saved state
+          // worth undoing back to.
+          this.resetDraftHistory();
         },
       },
       dirty: {
         immediate: true,
         handler(value) { this.$emit('dirty', value); },
       },
+      draft: {
+        deep: true,
+        handler() { this.scheduleSnapshot(); },
+      },
     },
 
     methods: {
       isPercent: (key) => window.NW.format.isPercentKind(window.NW.format.kindOf(key)),
+
+      // --- draft undo -------------------------------------------------------------------------
+
+      resetDraftHistory() {
+        window.clearTimeout(this.snapshotTimer);
+        this.draftHistory = { past: [], future: [] };
+        this.lastSnapshotJson = JSON.stringify(this.draft);
+      },
+
+      scheduleSnapshot() {
+        window.clearTimeout(this.snapshotTimer);
+        this.snapshotTimer = window.setTimeout(() => this.commitSnapshot(), SNAPSHOT_DEBOUNCE_MS);
+      },
+
+      /** Pushes the draft as it stood at the last commit onto `past`, then moves the baseline
+       * up to the now-settled draft -- called after typing pauses (`scheduleSnapshot`) and
+       * flushed immediately before `undoDraft` reads `past`, so a `Ctrl+Z` right after a
+       * keystroke (before the debounce would have fired on its own) still undoes it. */
+      commitSnapshot() {
+        window.clearTimeout(this.snapshotTimer);
+        const current = JSON.stringify(this.draft);
+        if (current === this.lastSnapshotJson) return;
+        this.draftHistory.past.push(this.lastSnapshotJson);
+        if (this.draftHistory.past.length > UNDO_LIMIT) this.draftHistory.past.shift();
+        this.draftHistory.future.length = 0;
+        this.lastSnapshotJson = current;
+      },
+
+      /** Returns whether it actually undid anything, so the caller (data-editor.js's keydown
+       * handler) knows to fall back to the editor's own undo over *committed* changes once this
+       * form has nothing left to give back. */
+      undoDraft() {
+        this.commitSnapshot();
+        if (!this.draftHistory.past.length) return false;
+        this.draftHistory.future.push(this.lastSnapshotJson);
+        this.lastSnapshotJson = this.draftHistory.past.pop();
+        this.draft = JSON.parse(this.lastSnapshotJson);
+        return true;
+      },
+
+      redoDraft() {
+        if (!this.draftHistory.future.length) return false;
+        this.draftHistory.past.push(this.lastSnapshotJson);
+        this.lastSnapshotJson = this.draftHistory.future.pop();
+        this.draft = JSON.parse(this.lastSnapshotJson);
+        return true;
+      },
+
+      /** Discards the unsaved draft, back to whatever is currently saved (the shipped item, or
+       * an already-saved overlay edit -- unlike `@revert`/"Revert to shipped", this never
+       * touches the overlay itself). Two-step, not a `confirm()` dialog, same reasoning as
+       * build-bar.js's own Revert. */
+      revertDraft() {
+        if (!this.confirmRevert) {
+          this.confirmRevert = true;
+          this.confirmRevertTimer = window.setTimeout(() => { this.confirmRevert = false; }, 4000);
+          return;
+        }
+        window.clearTimeout(this.confirmRevertTimer);
+        this.confirmRevert = false;
+        this.draft = this.buildDraft(this.source);
+        this.error = '';
+        this.resetDraftHistory();
+      },
 
       buildDraft(item) {
         const source = item ?? {};
@@ -182,6 +291,11 @@ window.NW.components.ItemForm = (() => {
       },
     },
 
+    unmounted() {
+      window.clearTimeout(this.snapshotTimer);
+      window.clearTimeout(this.confirmRevertTimer);
+    },
+
     template: `
       <div class="form">
         <div class="form-bar">
@@ -189,7 +303,15 @@ window.NW.components.ItemForm = (() => {
           <span v-if="status !== 'base'" class="badge" :class="'badge--' + status">{{ status }}</span>
           <span v-if="dirty" class="badge badge--near">unsaved</span>
           <span class="spacer"></span>
+          <button type="button" class="btn btn--history" :disabled="!canUndoDraft"
+                  title="Undo edit (Ctrl+Z)" @click="undoDraft">↶ Undo</button>
+          <button type="button" class="btn btn--history" :disabled="!canRedoDraft"
+                  title="Redo edit (Ctrl+Shift+Z)" @click="redoDraft">↷ Redo</button>
           <button type="button" class="btn btn--primary" :disabled="!dirty" @click="save">Save item</button>
+          <button type="button" class="btn" :class="{ 'is-danger': confirmRevert }"
+                  :disabled="!dirty" @click="revertDraft">
+            {{ confirmRevert ? 'Really revert?' : 'Revert' }}
+          </button>
           <button v-if="status === 'edited'" type="button" class="btn"
                   @click="$emit('revert')">Revert to shipped</button>
           <button v-if="source" type="button" class="btn" @click="$emit('delete')">Delete</button>

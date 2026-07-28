@@ -21,6 +21,20 @@ window.NW.components.BonusGroups = (() => {
   const slugify = (text) => String(text).toLowerCase().trim()
     .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 
+  /** Key-order-insensitive comparison -- same convention (and same duplication, one copy per
+   * editing surface) as item-form.js's `sameItem` and bonus-set-form.js's `sameSet`. */
+  const canonical = (value) => {
+    if (Array.isArray(value)) return value.map(canonical);
+    if (value && typeof value === 'object') {
+      const out = {};
+      for (const key of Object.keys(value).sort()) out[key] = canonical(value[key]);
+      return out;
+    }
+    return value;
+  };
+
+  const sameSet = (a, b) => JSON.stringify(canonical(a)) === JSON.stringify(canonical(b));
+
   return {
     name: 'BonusGroups',
 
@@ -107,6 +121,22 @@ window.NW.components.BonusGroups = (() => {
         delete this.drafts[id];
         this.errors[id] = '';
         this.sync();
+      },
+
+      /** Gates the card's own Save button, same as the item form's and the top-level bonus set
+       * form's -- a card with no saved definition yet always has something worth saving, but a
+       * defined one is compared against the catalogue so an untouched card's Save stays
+       * disabled instead of sitting clickable with nothing to commit. */
+      isDirty(id) {
+        const local = this.drafts[id];
+        if (!local) return false;
+        const set = this.db.bonusSetById.get(id) ?? null;
+        if (!set) return true;
+        try {
+          return !sameSet(draft().toSet({ ...local, id: local.id || id }), set);
+        } catch {
+          return true;
+        }
       },
 
       save(id) {
@@ -212,8 +242,10 @@ window.NW.components.BonusGroups = (() => {
               </span>
             </label>
             <span v-if="!card.defined" class="badge badge--warn">not defined yet</span>
+            <span v-if="isDirty(card.id)" class="badge badge--near">unsaved</span>
             <span class="spacer"></span>
-            <button type="button" class="btn btn--primary" @click="save(card.id)">Save</button>
+            <button type="button" class="btn btn--primary" :disabled="!isDirty(card.id)"
+                    @click="save(card.id)">Save</button>
             <button type="button" class="btn" @click="reset(card.id)">Reset</button>
             <button v-if="card.defined" type="button" class="btn"
                     @click="remove(card.id)">Delete</button>
