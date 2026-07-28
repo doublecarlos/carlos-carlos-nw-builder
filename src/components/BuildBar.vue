@@ -6,7 +6,7 @@
 // this bar is left with only what always applies to *the build currently on screen*.
 //
 // Read-only operations (encoding a share link, serialising to JSON) are done here directly.
-// Anything that *changes* a build is emitted to app.js instead, so every mutation still passes
+// Anything that *changes* a build is emitted to App.vue instead, so every mutation still passes
 // through the one place the undo stack watches.
 import { ref, computed, watch } from 'vue';
 import * as storage from '../storage';

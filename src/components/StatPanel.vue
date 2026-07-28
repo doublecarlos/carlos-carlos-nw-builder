@@ -51,7 +51,7 @@ const SUMMARY_GROUPS = [
 const props = withDefaults(defineProps<{
   result: any;
   // The sheet-style compare row under the picker: another build's own `derived`, resolved
-  // by app.js against the same db. `null` means "not comparing" and the widget collapses
+  // by App.vue against the same db. `null` means "not comparing" and the widget collapses
   // back to a single centred value.
   compareResult?: any;
   compareName?: string;
@@ -211,7 +211,7 @@ function signedInt(value: number) {
     </div>
 
     <!-- The one number the sheet keeps most visible: pick a damage calculation, see its
-         value here. With a compare build selected (app.js's quick-compare picker) this
+         value here. With a compare build selected (App.vue's quick-compare picker) this
          grows the sheet's own layout -- this build's row, then the other's, then how far
          apart they are. -->
     <div class="summary-calc">

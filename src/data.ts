@@ -2,7 +2,7 @@
 // (data/*.js, deleted this phase) that used to populate window.NW_SCHEMA/NW_SLOTS/NW_ITEMS/
 // NW_BONUSES. `data/schema.json` is hand-written/authoritative; `data/slots.json`,
 // `data/db-items.json` and `data/db-bonuses.json` are GENERATED via tools/*.py -- never hand-
-// edit those three, regenerate them instead. Not-yet-converted classic files (app.js, most of
+// edit those three, regenerate them instead. Not-yet-converted classic files (App.vue, most of
 // src/components/) still read NW_SCHEMA etc as globals -- src/legacy-bridge.ts bridges these
 // exports back onto window for their sake until they convert too (Phase 5/6).
 //

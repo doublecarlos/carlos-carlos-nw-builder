@@ -26,21 +26,21 @@ const props = withDefaults(defineProps<{
   build: any;
   result: any;
   context: any;
-  // sectionId (plus 'options') -> open/closed. Owned by app.js (`build.expanded`, saved
+  // sectionId (plus 'options') -> open/closed. Owned by App.vue (`build.expanded`, saved
   // with the build) so it survives a reload the same way the rest of the build does --
   // this component only reads it and asks for changes via `toggle-section`/`set-expanded`.
   expanded: Record<string, boolean>;
-  // The quick-compare picker in app.js. `compareBuild` alone (no highlight) still backs
+  // The quick-compare picker in App.vue. `compareBuild` alone (no highlight) still backs
   // the other-build note under a differing row; `highlightDiff` adds the row colour;
   // `onlyDiff` hides everything that agrees.
   compareBuild?: any;
   highlightDiff?: boolean;
   onlyDiff?: boolean;
-  // The active build's last-saved snapshot (app.js's `savedById[activeId]`) -- a plain dot
+  // The active build's last-saved snapshot (App.vue's `savedById[activeId]`) -- a plain dot
   // on any slot that differs from it, deliberately quieter than the compare-diff highlight
   // above: this is "you haven't saved this yet", not "here is what's different and why".
   savedBuild?: any;
-  // Other builds in the *active collection* (app.js's `otherBuildsInCollection`), [{value,
+  // Other builds in the *active collection* (App.vue's `otherBuildsInCollection`), [{value,
   // label}] -- feeds each section header's own "copy from" picker. Replaces the old
   // whole-panel "copy a section between builds" drawer: doing it per section, right where
   // the section lives, needs no build switcher of its own.

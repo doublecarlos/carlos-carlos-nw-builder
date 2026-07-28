@@ -1,11 +1,11 @@
 // Build persistence, import/export and share links (plan §4.2, Phase 4).
 //
-// Owns the shape of a stored build so `app.js` never has to reason about it: anything that
+// Owns the shape of a stored build so `App.vue` never has to reason about it: anything that
 // comes back from localStorage, a pasted JSON blob or a URL hash goes through `normalise`
 // first, and anything `normalise` returns is safe to hand straight to the engine.
 //
 // The saved library lives under `nw:builds`, written only when the user explicitly saves (or
-// by a structural change that has nothing pending to lose -- see app.js's `saveActive`). The
+// by a structural change that has nothing pending to lose -- see App.vue's `saveActive`). The
 // live, possibly-unsaved draft lives separately under `nw:builds-draft`, autosaved continuously
 // so a reload never loses work in progress. Phase 3 autosaved a single build under
 // `nw:current-build`; that key is migrated into the saved library on first load and then
@@ -58,10 +58,10 @@ export function defaultBuild(name = 'New build') {
       toggles: { ...defaults.toggles },
       forte: { ...DEFAULT_FORTE },
     },
-    // The quick-compare picker (app.js topbar). Saved with the build -- unlike `tab`, which
+    // The quick-compare picker (App.vue topbar). Saved with the build -- unlike `tab`, which
     // is pure session state -- so reopening a build remembers what you were sizing it up
     // against. `id` is another build's id, resolved (and gracefully dropped if it no longer
-    // exists) by app.js's own `compareBuild` computed, not here.
+    // exists) by App.vue's own `compareBuild` computed, not here.
     compare: { id: '', highlight: false, onlyDiff: false },
     // Which sections slot-list.js has open. Also saved with the build, for the same reason:
     // reopening a build should look the way you left it.
@@ -111,7 +111,7 @@ export function normalise(raw: any, { keepId = true }: { keepId?: boolean } = {}
   // Custom gear stored with the build. Nothing writes this yet -- the editor edits the
   // workspace layer -- but preserving it here means a build carrying custom items survives
   // a save/reload/share round trip, so turning the feature on is a UI change and not a
-  // migration. `app.js` already folds `build.catalog` in as a catalogue layer.
+  // migration. `App.vue` already folds `build.catalog` in as a catalogue layer.
   const perBuild = isPlain(raw.catalog) ? catalog.normaliseOverlay(raw.catalog) : null;
 
   return {
@@ -156,7 +156,7 @@ export const cloneBuild = (build: any) => normalise(build);
  * Key-order-insensitive, `updated`-blind equality for the dirty check. `choices`/`values`/
  * `toggles` grow and shrink by direct property add/delete, so a plain `JSON.stringify`
  * comparison would false-positive on a save-then-revert; sorting keys fixes that. `updated`
- * is excluded because only the saved copy gets it stamped (app.js's `saveActive`), so
+ * is excluded because only the saved copy gets it stamped (App.vue's `saveActive`), so
  * comparing it would report every build dirty forever after its first save.
  */
 const canonical = (value: any): any => {
@@ -291,7 +291,7 @@ function makeCollectionFor(builds: any[], name: string) {
   };
 }
 
-/** A brand new collection wrapping one brand new build -- app.js's `createCollection`. */
+/** A brand new collection wrapping one brand new build -- App.vue's `createCollection`. */
 export const defaultCollection = (name: string, build: any) => makeCollectionFor([build], name);
 
 /** Tolerant coercion, same spirit as `normalise`: drops any `buildIds` entry that no longer

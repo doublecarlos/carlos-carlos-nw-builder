@@ -37,13 +37,13 @@ const sameItem = (a: any, b: any) => JSON.stringify(canonical(a)) === JSON.strin
 
 // Draft-level undo: separate from (and beneath) DataEditor's own undo over *committed*
 // overlay changes -- this one covers ordinary editing (typing, checking a class box, adding a
-// stat row) before a Save ever happens, the same thing app.js's undo does for the build form.
+// stat row) before a Save ever happens, the same thing App.vue's undo does for the build form.
 // The build form gets there by having every mutation go through a named method that snapshots
 // first; a form this size (name/filter/tags/classes/stats/dynamic mod/excludes) would need a
 // wrapper per field to do the same. A debounced deep watch on `draft` gets the same result
 // without one: `commitSnapshot` compares the settled draft against `lastSnapshotJson` (the
 // draft as of the last step) and pushes *that* onto `past` if anything moved -- so a burst of
-// keystrokes between pauses becomes one undo step, same grouping app.js's own `COALESCE_MS`
+// keystrokes between pauses becomes one undo step, same grouping App.vue's own `COALESCE_MS`
 // gives the build form's fields.
 const SNAPSHOT_DEBOUNCE_MS = 700;
 const UNDO_LIMIT = 50;

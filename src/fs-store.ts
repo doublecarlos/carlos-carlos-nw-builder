@@ -3,7 +3,7 @@
 // file across a reload, not just for the rest of this tab's session.
 //
 // Chromium-only (Edge/Chrome) as of writing -- `supported` gates every caller, and the
-// fallback (a plain download, no persistent link) lives in app.js next to the existing
+// fallback (a plain download, no persistent link) lives in App.vue next to the existing
 // Blob/anchor `downloadExport` technique, not here.
 
 const DB_NAME = 'nw-fs-handles';

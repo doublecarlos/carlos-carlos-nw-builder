@@ -6,7 +6,7 @@
 //
 // The component owns only its own transient UI state (open / query / highlight). The chosen
 // value is `modelValue` and every change leaves via `update:modelValue`, so the single
-// build document in app.js stays the only source of truth (undo stack has a single place to
+// build document in App.vue stays the only source of truth (undo stack has a single place to
 // hook into).
 import { ref, computed, watch, nextTick } from 'vue';
 import { itemPreview, hasBonuses, int as fmtInt } from '../format';

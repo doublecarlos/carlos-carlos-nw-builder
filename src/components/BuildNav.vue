@@ -4,7 +4,7 @@
 // or a linked file, via fs-store.ts) and exported as a whole; an individual build keeps its own
 // independent save/revert (BuildBar.vue), unchanged.
 //
-// Every mutation is emitted to app.js, same discipline as every other component here -- this
+// Every mutation is emitted to App.vue, same discipline as every other component here -- this
 // file only renders the tree and the popup menus, and reads storage.ts/fs-store.ts directly for
 // the read-only bits (parsing an imported build file), same as BuildBar.vue already does for
 // its own import/export drawer.
@@ -18,10 +18,10 @@ const props = defineProps<{
   builds: any[];
   activeCollectionId?: string;
   activeId?: string;
-  // buildId -> bool, app.js's `dirtyByBuild` computed (mirrors the existing per-build
+  // buildId -> bool, App.vue's `dirtyByBuild` computed (mirrors the existing per-build
   // `dirty` check BuildBar.vue's Save button already gates on).
   dirtyByBuild: Record<string, boolean>;
-  // collectionId -> last-saved { name, buildIds }, app.js's `savedCollections` -- compared
+  // collectionId -> last-saved { name, buildIds }, App.vue's `savedCollections` -- compared
   // against the live `collections` prop to decide a collection's own unsaved-dot.
   savedCollections: Record<string, any>;
 }>();
@@ -222,7 +222,7 @@ async function onImportBuildFile(event: Event) {
   const collectionId = importTarget.value;
   input.value = '';
   if (!file || !collectionId) return;
-  // Parsing (and its error notice) happens in app.js's `importBuildsIn` -- same `notice`
+  // Parsing (and its error notice) happens in App.vue's `importBuildsIn` -- same `notice`
   // channel as every other library-level error here, rather than a blocking alert().
   emit('import-builds', { collectionId, text: await file.text() });
 }

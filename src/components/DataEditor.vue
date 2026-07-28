@@ -38,7 +38,7 @@ const confirmReset = ref(false);
 let confirmResetTimer: number | undefined;
 // JSON snapshots of `overlay` (this component's prop), taken right before each committed
 // change (save/delete/revert/restore/reset/import) -- the same "snapshot before, restore
-// by re-emitting the JSON" shape as app.js's build undo, just one stream instead of one
+// by re-emitting the JSON" shape as App.vue's build undo, just one stream instead of one
 // per build, since there is only ever one overlay. Strings, not objects, so undoing a
 // hundred-item overlay a dozen times doesn't keep a dozen live deep copies around.
 const history = ref<{ past: { json: string; label: string }[]; future: { json: string; label: string }[] }>({ past: [], future: [] });
@@ -175,7 +175,7 @@ const redoLabel = computed(() => {
 
 // --- undo -----------------------------------------------------------------------------
 // The *editor's* undo, over committed overlay changes (save/delete/revert/restore/reset/
-// import) -- one stream, not one per build the way app.js keys its own history, since
+// import) -- one stream, not one per build the way App.vue keys its own history, since
 // there is only ever one overlay. Ordinary in-progress editing (typing, checking a class
 // box) has its own separate, lower-level undo scoped to whichever form is open --
 // ItemForm's/BonusSetForm's own `draftHistory` -- that `onKeydown` below tries
@@ -202,9 +202,9 @@ function redo() {
 }
 
 /**
- * Same Ctrl+Z/Ctrl+Shift+Z/Ctrl+Y convention as app.js's builder undo, including which
+ * Same Ctrl+Z/Ctrl+Shift+Z/Ctrl+Y convention as App.vue's builder undo, including which
  * fields it defers to native undo for -- only `<textarea>` (the export/import JSON boxes),
- * not every `<input>`. app.js hijacks Ctrl+Z inside ordinary fields on purpose, and the
+ * not every `<input>`. App.vue hijacks Ctrl+Z inside ordinary fields on purpose, and the
  * open item/bonus-set form's own draft-level undo (ItemForm.vue/BonusSetForm.vue) is
  * exactly that same convention one level down, so this defers to it first: only once the
  * open form has nothing left to undo does this fall through to the editor's own undo over
@@ -274,7 +274,7 @@ function clearFilters() {
 
 // --- routing --------------------------------------------------------------------------
 // `item`/`set`/`section`/`status`/`q` are this component's own corner of the URL --
-// app.js owns view/build/tab and knows nothing about what's selected in here. `select`'s
+// App.vue owns view/build/tab and knows nothing about what's selected in here. `select`'s
 // `push` flag is what keeps arrow-key browsing from filling the back/forward stack with
 // one stop per keystroke: a click is a real "go to this row" navigation, an arrow key is
 // just skimming.
