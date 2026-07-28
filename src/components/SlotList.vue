@@ -494,9 +494,20 @@ function onScroll(event: Event) {
  * stale and point somewhere real focus already isn't, so arrow keys from there would
  * jump from the wrong place. Syncing the other direction here -- real focus moving
  * updates the cursor to match -- keeps the two from ever disagreeing.
+ *
+ * `editing` only turns on for a real form control, via the same test as `isPassiveTarget`
+ * -- not for every focusin. `.slot-row`/`.section-head` are `tabindex="-1"` and receive
+ * real DOM focus themselves whenever `syncCursorFocus` runs (keyboard arrow nav, or a
+ * plain click anywhere in the row, including a spot like `.slot-summary` with nothing
+ * natively focusable under the pointer). That focus has nowhere else to go afterwards, so
+ * without this check `editing` latched permanently true the moment either happened, and
+ * only a picker selection's blur-to-`<body>` (a focusout with no matching focusin) ever
+ * reset it -- which is why the hover card looked "stuck off" until a gear change.
  */
 function onFocusIn(event: FocusEvent) {
-  editing = true;
+  const tag = (event.target as HTMLElement)?.tagName;
+  editing = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT'
+    || (event.target as HTMLElement)?.isContentEditable === true;
   window.clearTimeout(hoverTimer);
   close();
 
