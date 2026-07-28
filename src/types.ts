@@ -271,6 +271,21 @@ export interface Collections {
 
 // --- resolution (bonus.ts / engine.ts) --------------------------------------------------------
 
+/** The context a `when` predicate is evaluated against -- bonus.ts's `collect()` builds this
+ * once per resolve from the build's slots/context, conditions.ts only ever reads it. */
+export interface EvalContext {
+  class?: string;
+  role?: string;
+  combatType?: string;
+  location?: string;
+  damageType?: string;
+  duration: number;
+  toggles: Record<string, boolean>;
+  equipped: Map<string, number>;
+  tags: Map<string, number>;
+  setPieces: Map<string, number>;
+}
+
 export interface ConditionLeafResult {
   ok: boolean;
   label: string;
@@ -291,6 +306,22 @@ export interface ResolvedRow {
   item: Item | null;
 }
 
+export interface GrantEvaluation {
+  active: boolean;
+  gate: ConditionExplain;
+  stats: StatValues | null;
+  chose: string | null;
+}
+
+export interface BonusEvaluation {
+  active: boolean;
+  gate: ConditionExplain;
+  stats: StatValues | null;
+  chose: string | null;
+  previewStats: StatValues | null;
+  grants: (GrantEvaluation & { raw: Grant })[];
+}
+
 export interface EvaluatedBonus {
   id: string;
   bonus: BonusSet;
@@ -302,7 +333,7 @@ export interface EvaluatedBonus {
   chose: string | null;
   stats: StatValues | null;
   previewStats: StatValues | null;
-  grants: unknown[];
+  grants: (GrantEvaluation & { raw: Grant })[];
   stacks: number;
   excluded: boolean;
   excludedBy: string | null;
@@ -310,7 +341,7 @@ export interface EvaluatedBonus {
 }
 
 export interface ResolvedBonuses {
-  ctx: Record<string, unknown>;
+  ctx: EvalContext;
   rows: ResolvedRow[];
   bonuses: EvaluatedBonus[];
   bonusStatsBySlot: Map<string, Map<StatKey, number>>;
@@ -323,11 +354,54 @@ export interface EngineError {
   message: string;
 }
 
+/** A slot's item stats plus the bonuses attributed to it -- engine.ts's `rowVectors`. */
+export interface EngineRow {
+  slotId: string;
+  choice: string | undefined;
+  item: Item | null;
+  stats: Record<StatKey, number>;
+}
+
+/** Every stage of the pipeline (engine.ts's `run`), each a full stat vector. Kept as a
+ * dictionary rather than one named field per stage because the bonus inspector and stat panel
+ * both look a stage up by name at runtime (`stages[stageName]`). */
+export type Stages = Record<string, Record<StatKey, number>>;
+
+export interface DamageOutputs {
+  average: number;
+  critNoDeflect: number;
+  critDeflect: number;
+  noCritNoDeflect: number;
+  noCritDeflect: number;
+}
+
+export interface HealingOutputs {
+  average: number;
+  crit: number;
+  noCrit: number;
+}
+
+export interface EhpOutputs {
+  average: number;
+  critNoDeflect: number;
+}
+
+export interface DerivedOutputs {
+  itemLevel: number;
+  hp: number;
+  baseDamage: number;
+  effectiveMagPhys: number;
+  overallHealing: number;
+  damage: DamageOutputs;
+  healing: HealingOutputs;
+  ehp: EhpOutputs;
+}
+
 export interface ResolvedBuild {
-  context: Record<string, unknown>;
-  rows: { slotId: string; choice: string | undefined; item: Item | null; stats: Record<StatKey, number> }[];
+  context: EvalContext;
+  rows: EngineRow[];
   bonuses: EvaluatedBonus[];
-  stages: Record<string, Record<StatKey, number>>;
-  derived: Record<string, unknown>;
+  stages: Stages;
+  derived: DerivedOutputs;
   errors: EngineError[];
 }

@@ -5,11 +5,22 @@
 // overrides against *all* rows, so its results could depend on slot ordering. Nothing here does.
 
 import * as conditions from './conditions';
+import type {
+  Db, Build, BonusSet, Grant, BonusCandidate, EvalContext, ConditionExplain, ConditionWhen,
+  GrantEvaluation, BonusEvaluation, EvaluatedBonus, ResolvedBonuses, ResolvedRow, StatValues,
+} from './types';
 
-const bump = (map: Map<any, number>, key: any) => {
+const bump = (map: Map<string, number>, key: string | null | undefined) => {
   if (key == null) return;
   map.set(key, (map.get(key) ?? 0) + 1);
 };
+
+/** A `BonusCandidate` (one item's contribution of one bonus set) plus where/when it was
+ * instanced -- collect()'s per-slot bookkeeping, not part of the candidate itself. */
+interface Candidate extends BonusCandidate {
+  slotId: string;
+  order: number;
+}
 
 // --- pass 1: collect -------------------------------------------------------------------
 
@@ -21,15 +32,15 @@ const bump = (map: Map<any, number>, key: any) => {
  * (The legacy engine deduped qualifiers by item name, but since every tag condition is
  * `atLeast: 1` that difference can never be observable.)
  */
-export function collect(db: any, build: any) {
+export function collect(db: Db, build: Build): { ctx: EvalContext; rows: ResolvedRow[]; candidates: Candidate[] } {
   const context = build.context ?? {};
-  const equipped = new Map();
-  const tags = new Map();
-  const setPieces = new Map();
-  const rows: any[] = [];
-  const candidates: any[] = [];
+  const equipped = new Map<string, number>();
+  const tags = new Map<string, number>();
+  const setPieces = new Map<string, number>();
+  const rows: ResolvedRow[] = [];
+  const candidates: Candidate[] = [];
 
-  db.slots.forEach((slot: any, order: number) => {
+  db.slots.forEach((slot, order) => {
     const choice = build.choices?.[slot.id];
     const item = db.get(choice);
     rows.push({ slotId: slot.id, slot, choice, item });
@@ -44,7 +55,7 @@ export function collect(db: any, build: any) {
     }
   });
 
-  const ctx = {
+  const ctx: EvalContext = {
     class: context.class,
     role: context.role,
     combatType: context.combatType,
@@ -65,8 +76,8 @@ export function collect(db: any, build: any) {
 /** Resolve one grant against the context into a stat payload (or none). Exactly the old
  * per-effect gate -> variants -> tiers -> stats logic, parameterised on `grant` instead of a
  * whole named effect -- a grant carries no `id`/`name` of its own. */
-function evaluateGrant(grant: any, ctx: any, explain = true) {
-  const gate = explain
+function evaluateGrant(grant: Grant, ctx: EvalContext, explain = true): GrantEvaluation {
+  const gate: ConditionExplain = explain
     ? conditions.explain(grant.when, ctx)
     : { ok: conditions.evaluate(grant.when, ctx), leaves: [], unmet: [] };
 
@@ -74,7 +85,7 @@ function evaluateGrant(grant: any, ctx: any, explain = true) {
 
   // `variants`: first match wins (role-dependent payloads).
   if (grant.variants) {
-    const index = grant.variants.findIndex((v: any) => conditions.evaluate(v.when, ctx));
+    const index = grant.variants.findIndex((v) => conditions.evaluate(v.when, ctx));
     return index === -1
       ? { active: false, gate, stats: null, chose: null }
       : { active: true, gate, stats: grant.variants[index].stats, chose: `variant:${index}` };
@@ -83,11 +94,15 @@ function evaluateGrant(grant: any, ctx: any, explain = true) {
   // `tiers`: highest matching piece threshold wins. Payloads are absolute, not cumulative --
   // the legacy exact-match on piece count made them mutually exclusive.
   if (grant.tiers) {
-    let best: any = null;
+    let best: typeof grant.tiers[number] | null = null;
     let bestAt = -1;
     for (const tier of grant.tiers) {
       const need = tier.pieces?.atLeast ?? 1;
-      if (need > bestAt && conditions.evaluate({ pieces: tier.pieces }, ctx)) {
+      // `tier.pieces.set` is optional on the type (GrantTier) but not on `ConditionWhen.pieces`
+      // -- see types.ts: an *actually* setless tier still reaches `conditions.evaluate` exactly
+      // as the untyped original did, and fails closed there (`pieces.set` undefined -> 0 pieces
+      // counted), so this cast changes nothing at runtime.
+      if (need > bestAt && conditions.evaluate({ pieces: tier.pieces as ConditionWhen['pieces'] }, ctx)) {
         best = tier;
         bestAt = need;
       }
@@ -105,11 +120,11 @@ function evaluateGrant(grant: any, ctx: any, explain = true) {
  * stats are the sum of every currently-active grant (plan: "bonus schema restructuring"),
  * not one independently-tracked row per grant the way effects used to be.
  */
-export function evaluateBonus(set: any, ctx: any, explain = true) {
-  const results = (set.grants ?? []).map((grant: any) => ({
+export function evaluateBonus(set: BonusSet, ctx: EvalContext, explain = true): BonusEvaluation {
+  const results = (set.grants ?? []).map((grant) => ({
     raw: grant, ...evaluateGrant(grant, ctx, explain),
   }));
-  const activeResults = results.filter((r: any) => r.active);
+  const activeResults = results.filter((r) => r.active);
   const active = activeResults.length > 0;
 
   const stats: Record<string, number> = {};
@@ -129,10 +144,10 @@ export function evaluateBonus(set: any, ctx: any, explain = true) {
   // Fully inactive: pick the grant with the fewest unmet conditions as the near-miss
   // representative (ties broken by array order) -- "what you are closest to unlocking",
   // same philosophy bonus-inspector.js already documents, just resolved per-grant now.
-  let gate = { ok: true, leaves: [] as any[], unmet: [] as any[] };
-  let previewStats = null;
+  let gate: ConditionExplain = { ok: true, leaves: [], unmet: [] };
+  let previewStats: StatValues | null = null;
   if (!active) {
-    const best = results.reduce((a: any, b: any) => (
+    const best = results.reduce((a, b) => (
       (b.gate.unmet?.length ?? 0) < (a?.gate.unmet?.length ?? Infinity) ? b : a
     ), results[0]);
     gate = best?.gate ?? gate;
@@ -144,11 +159,17 @@ export function evaluateBonus(set: any, ctx: any, explain = true) {
 
 // --- passes 3 and 4: exclude, then apply ------------------------------------------------
 
-export function resolve(db: any, build: any, { explain = true }: { explain?: boolean } = {}) {
+interface Group {
+  id: string;
+  bonus: BonusSet;
+  sources: Candidate[];
+}
+
+export function resolve(db: Db, build: Build, { explain = true }: { explain?: boolean } = {}): ResolvedBonuses {
   const { ctx, rows, candidates } = collect(db, build);
 
   // Group by bonus id so stacking is decided once per bonus, not once per contributing slot.
-  const groups = new Map<string, any>();
+  const groups = new Map<string, Group>();
   for (const candidate of candidates) {
     const id = candidate.bonus.id;
     const group = groups.get(id);
@@ -158,7 +179,7 @@ export function resolve(db: any, build: any, { explain = true }: { explain?: boo
 
   // Evaluate everything before applying any exclusion, so exclusion never cascades and the
   // outcome cannot depend on evaluation order.
-  const evaluated = [...groups.values()].map((group) => {
+  const evaluated: EvaluatedBonus[] = [...groups.values()].map((group) => {
     const result = evaluateBonus(group.bonus, ctx, explain);
     const sources = [...group.sources].sort((a, b) => a.order - b.order);
 
@@ -190,7 +211,7 @@ export function resolve(db: any, build: any, { explain = true }: { explain?: boo
   // Exclusions come from equipped items (legacy `bonus_overrides`) and from active bonuses.
   const excluded = new Map<string, string>();
   for (const row of rows) {
-    for (const id of row.item?.excludes ?? []) excluded.set(id, row.item.name);
+    for (const id of row.item?.excludes ?? []) excluded.set(id, row.item!.name);
   }
   for (const entry of evaluated) {
     if (!entry.active) continue;
@@ -211,9 +232,9 @@ export function resolve(db: any, build: any, { explain = true }: { explain?: boo
   //
   // `stats` stays the per-stack payload (what the inspector should show next to "×2");
   // `appliedStats` is what actually reaches the pipeline. Keeping both explicit avoids the
-  // easy mistake of reading `stats` and wondering why stacking seems not to work.
+  // easy mistake of reading `stats` and wondering why stacking "doesn't work".
   const bonusStatsBySlot = new Map<string, Map<string, number>>();
-  for (const entry of evaluated as any[]) {
+  for (const entry of evaluated) {
     if (!entry.active || !entry.stats) {
       entry.appliedStats = null;
       continue;
