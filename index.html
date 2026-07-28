@@ -11,10 +11,25 @@
 <div id="app">Loading…</div>
 
 <!--
-  Classic scripts, in dependency order. No bundler and no build step (handoff §2) -- serving
-  this directory as static files is the whole deployment story. `tools/serve.py` for
-  development; a static host in production.
+  Migrating to Vite + Vue SFC + TypeScript (see llm/plans/ for the phased migration plan).
+
+  `<script type="module">` is always deferred (runs after the document parses, after every
+  classic script, regardless of tag position) -- so once any file becomes a real ES module,
+  every remaining classic-style file downstream of it must also run as type="module", or it
+  would execute (as a blocking classic script) *before* the module chain that populates the
+  window.NW.* globals it reads at parse time (e.g. src/bonus.js destructures `window.NW` at its
+  top level). Not-yet-converted files below are therefore marked type="module" even though most
+  still just do `window.NW.X = ...` internally rather than real import/export -- that keeps them
+  deferred in the same relative order as before, until each is actually rewritten with real
+  imports in its own phase. Two files are exempt and stay plain classic scripts:
+  vendor/vue.global.prod.js (must run synchronously first, before anything deferred, to set
+  window.Vue) and the data/*.js loaders (they resolve their fetch URL via
+  `document.currentScript.src`, which is null in module scripts -- Phase 3 of the migration
+  removes them in favor of static JSON imports). `npm run dev` (Vite) replaces
+  `tools/serve.py` for local development.
 -->
+<script type="module" src="/src/main.ts"></script>
+
 <script src="vendor/vue.global.prod.js"></script>
 
 <script src="data/schema.js"></script>
@@ -22,36 +37,31 @@
 <script src="data/db-items.js"></script>
 <script src="data/db-bonuses.js"></script>
 
-<script src="src/conditions.js"></script>
-<script src="src/db.js"></script>
-<script src="src/bonus.js"></script>
-<script src="src/engine.js"></script>
-
-<script src="src/format.js"></script>
-<script src="src/catalog.js"></script>
-<script src="src/router.js"></script>
-<script src="src/storage.js"></script>
-<script src="src/fs-store.js"></script>
-<script src="src/components/combo-box.js"></script>
-<script src="src/components/quick-options.js"></script>
-<script src="src/components/options.js"></script>
-<script src="src/components/build-bar.js"></script>
-<script src="src/components/build-nav.js"></script>
-<script src="src/components/item-picker.js"></script>
-<script src="src/components/item-card.js"></script>
-<script src="src/components/icon-button.js"></script>
-<script src="src/components/slot-list.js"></script>
-<script src="src/components/stat-panel.js"></script>
-<script src="src/components/bonus-inspector.js"></script>
-<script src="src/components/token-input.js"></script>
-<script src="src/components/percent-input.js"></script>
-<script src="src/components/condition-rows.js"></script>
-<script src="src/components/bonus-rows.js"></script>
-<script src="src/components/bonus-groups.js"></script>
-<script src="src/components/item-form.js"></script>
-<script src="src/components/bonus-set-form.js"></script>
-<script src="src/components/data-editor.js"></script>
-<script src="src/app.js"></script>
+<script type="module" src="src/format.js"></script>
+<script type="module" src="src/catalog.js"></script>
+<script type="module" src="src/router.js"></script>
+<script type="module" src="src/storage.js"></script>
+<script type="module" src="src/fs-store.js"></script>
+<script type="module" src="src/components/combo-box.js"></script>
+<script type="module" src="src/components/quick-options.js"></script>
+<script type="module" src="src/components/options.js"></script>
+<script type="module" src="src/components/build-bar.js"></script>
+<script type="module" src="src/components/build-nav.js"></script>
+<script type="module" src="src/components/item-picker.js"></script>
+<script type="module" src="src/components/item-card.js"></script>
+<script type="module" src="src/components/icon-button.js"></script>
+<script type="module" src="src/components/slot-list.js"></script>
+<script type="module" src="src/components/stat-panel.js"></script>
+<script type="module" src="src/components/bonus-inspector.js"></script>
+<script type="module" src="src/components/token-input.js"></script>
+<script type="module" src="src/components/percent-input.js"></script>
+<script type="module" src="src/components/condition-rows.js"></script>
+<script type="module" src="src/components/bonus-rows.js"></script>
+<script type="module" src="src/components/bonus-groups.js"></script>
+<script type="module" src="src/components/item-form.js"></script>
+<script type="module" src="src/components/bonus-set-form.js"></script>
+<script type="module" src="src/components/data-editor.js"></script>
+<script type="module" src="src/app.js"></script>
 
 </body>
 </html>
