@@ -12,9 +12,12 @@ results). `llm/docs/pending.md` is the user's running wishlist — read it befor
 2. **Vue 3 SFCs**, Composition API, `<script setup lang="ts">` everywhere — including the root
    (`App.vue`) and the five largest components. No Options API, no template-literal components.
    Vue comes from `node_modules` (no vendored/global build).
-3. **TypeScript, incrementally typed.** `tsconfig.json` is `strict: false`/`allowJs: true` on
-   purpose — a full-strict pass is a separate, not-yet-made decision. `npm run typecheck`
-   (`vue-tsc --noEmit`) must stay clean regardless.
+3. **TypeScript, `strict: true`.** `allowJs: true` stays on so a stray `.js` file wouldn't hard-fail
+   the build, but nothing under `src/` is JS anymore and `checkJs` is off, so that knob is
+   vestigial. The codebase turned out to already be almost fully strict-clean (2026-07-28: 8
+   errors total across the whole tree — a few `?? []`/optional-param guards, no design changes)
+   so the incremental-typing escape hatch was retired rather than left open. `npm run typecheck`
+   (`vue-tsc --noEmit`) must stay clean.
 4. **Modern JS/TS is expected** — `const`/`let`, arrows, classes, `?.`, `??`.
 5. Python: **stdlib only**. Permanent scripts in `tools/`, throwaway in `workspace/`.
 
@@ -65,7 +68,7 @@ means you changed the engine — prove it's intentional with a failing/updated t
 ```
 index.html            single entry: <script type="module" src="/src/main.ts">
 vite.config.ts         @vitejs/plugin-vue, build.outDir: dist
-tsconfig.json           strict: false, allowJs: true, resolveJsonModule: true
+tsconfig.json           strict: true, allowJs: true, resolveJsonModule: true
 data/                  *.json data (schema.json authoritative; slots/db-items/db-bonuses
                        generated) — no loader files, imported statically by src/data.ts
 src/

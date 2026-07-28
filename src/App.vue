@@ -864,6 +864,7 @@ async function consumeShareLink() {
   if (!payload) return;
   try {
     const shared = await storage.decodeShare(payload);
+    if (!shared) return;
     builds.value.push(shared);
     savedById.value[shared.id] = storage.cloneBuild(shared);
     activeId.value = shared.id;

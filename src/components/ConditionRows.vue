@@ -27,7 +27,7 @@ const canNest = computed(() => props.depth < maxNestDepth);
 const typeOptions = LEAF_TYPES.map((t) => ({ value: t, label: t }));
 const setComboOptions = computed(() => props.setIds.map((s) => ({ value: s, label: s })));
 
-function opLabel(op: string) {
+function opLabel(op?: string) {
   if (op === 'not') return 'not';
   return op === 'any' ? 'any of' : 'all of';
 }
@@ -69,7 +69,7 @@ function changeType(row: any) {
   Object.assign(row, fresh, { uid: row.uid });
 }
 
-function optionsFor(type: string): string[] {
+function optionsFor(type?: string): string[] {
   const context = NW_SCHEMA.context;
   if (type === 'toggle') return context.toggles;
   if (type === 'role') return context.roles;
@@ -80,7 +80,7 @@ function optionsFor(type: string): string[] {
   return [];
 }
 
-function optionsForCombo(type: string) {
+function optionsForCombo(type?: string) {
   return optionsFor(type).map((o) => ({ value: o, label: o }));
 }
 </script>
@@ -159,11 +159,11 @@ function optionsForCombo(type: string) {
               <span class="hint">Branch: </span>
               <IconButton icon="arrow-up" title="Move branch up" :disabled="bi === 0"
                           @click="moveBranch(row, bi, -1)" />
-              <IconButton icon="arrow-down" title="Move branch down" :disabled="bi === row.branches.length - 1"
+              <IconButton icon="arrow-down" title="Move branch down" :disabled="bi === (row.branches ?? []).length - 1"
                           @click="moveBranch(row, bi, 1)" />
               <IconButton icon="copy" title="Duplicate branch" @click="duplicateBranch(row, bi)" />
               <IconButton icon="circle-plus" title="Insert branch" @click="insertBranch(row, bi)" />
-              <IconButton v-if="row.branches.length > 1" icon="trash" title="Remove branch"
+              <IconButton v-if="(row.branches ?? []).length > 1" icon="trash" title="Remove branch"
                           @click="removeBranch(row, bi)" />
             </div>
           </div>
