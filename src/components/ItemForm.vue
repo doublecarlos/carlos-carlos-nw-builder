@@ -84,7 +84,7 @@ const emit = defineEmits<{
   'delete-set': [id: string];
 }>();
 
-interface ItemDraft {
+export interface ItemDraft {
   name: string;
   filter: string;
   // `number | string | null`, not just `number`: v-model.number (see the template) leaves an
