@@ -41,7 +41,7 @@ window.NW.bonus = (() => {
 
       bump(equipped, item.name);
       for (const tag of item.tags ?? []) bump(tags, tag);
-      for (const setId of item.sets ?? []) bump(setPieces, setId);
+      for (const setId of item.bonuses ?? []) bump(setPieces, setId);
 
       for (const entry of db.bonusesFor(item)) {
         candidates.push({ ...entry, slotId: slot.id, order });
@@ -66,28 +66,30 @@ window.NW.bonus = (() => {
 
   // --- pass 2: evaluate ------------------------------------------------------------------
 
-  /** Resolve one bonus definition against the context into a stat payload (or none). */
-  function evaluateBonus(bonus, ctx, explain = true) {
+  /** Resolve one grant against the context into a stat payload (or none). Exactly the old
+   * per-effect gate -> variants -> tiers -> stats logic, parameterised on `grant` instead of a
+   * whole named effect -- a grant carries no `id`/`name` of its own. */
+  function evaluateGrant(grant, ctx, explain = true) {
     const gate = explain
-      ? conditions.explain(bonus.when, ctx)
-      : { ok: conditions.evaluate(bonus.when, ctx), leaves: [], unmet: [] };
+      ? conditions.explain(grant.when, ctx)
+      : { ok: conditions.evaluate(grant.when, ctx), leaves: [], unmet: [] };
 
     if (!gate.ok) return { active: false, gate, stats: null, chose: null };
 
     // `variants`: first match wins (role-dependent payloads).
-    if (bonus.variants) {
-      const index = bonus.variants.findIndex((v) => conditions.evaluate(v.when, ctx));
+    if (grant.variants) {
+      const index = grant.variants.findIndex((v) => conditions.evaluate(v.when, ctx));
       return index === -1
         ? { active: false, gate, stats: null, chose: null }
-        : { active: true, gate, stats: bonus.variants[index].stats, chose: `variant:${index}` };
+        : { active: true, gate, stats: grant.variants[index].stats, chose: `variant:${index}` };
     }
 
     // `tiers`: highest matching piece threshold wins. Payloads are absolute, not cumulative --
     // the legacy exact-match on piece count made them mutually exclusive.
-    if (bonus.tiers) {
+    if (grant.tiers) {
       let best = null;
       let bestAt = -1;
-      for (const tier of bonus.tiers) {
+      for (const tier of grant.tiers) {
         const need = tier.pieces?.atLeast ?? 1;
         if (need > bestAt && conditions.evaluate({ pieces: tier.pieces }, ctx)) {
           best = tier;
@@ -99,7 +101,49 @@ window.NW.bonus = (() => {
         : { active: false, gate, stats: null, chose: null };
     }
 
-    return { active: true, gate, stats: bonus.stats ?? {}, chose: 'stats' };
+    return { active: true, gate, stats: grant.stats ?? {}, chose: 'stats' };
+  }
+
+  /**
+   * Resolve a whole bonus set: every grant it carries, summed. A set is one unit -- its final
+   * stats are the sum of every currently-active grant (plan: "bonus schema restructuring"),
+   * not one independently-tracked row per grant the way effects used to be.
+   */
+  function evaluateBonus(set, ctx, explain = true) {
+    const results = (set.grants ?? []).map((grant) => ({
+      raw: grant, ...evaluateGrant(grant, ctx, explain),
+    }));
+    const activeResults = results.filter((r) => r.active);
+    const active = activeResults.length > 0;
+
+    const stats = {};
+    for (const r of activeResults) {
+      for (const [key, value] of Object.entries(r.stats ?? {})) {
+        stats[key] = (stats[key] ?? 0) + value;
+      }
+    }
+
+    // Only meaningful -- and only shown as a badge -- when exactly one grant is active and it
+    // resolved via a tier/variant pick; two simultaneously-active grants have no single "chose"
+    // to report, and a plain flat grant's "stats" chose was never shown either.
+    const chose = activeResults.length === 1 && activeResults[0].chose !== 'stats'
+      ? activeResults[0].chose
+      : null;
+
+    // Fully inactive: pick the grant with the fewest unmet conditions as the near-miss
+    // representative (ties broken by array order) -- "what you are closest to unlocking",
+    // same philosophy bonus-inspector.js already documents, just resolved per-grant now.
+    let gate = { ok: true, leaves: [], unmet: [] };
+    let previewStats = null;
+    if (!active) {
+      const best = results.reduce((a, b) => (
+        (b.gate.unmet?.length ?? 0) < (a?.gate.unmet?.length ?? Infinity) ? b : a
+      ), results[0]);
+      gate = best?.gate ?? gate;
+      previewStats = best?.raw.stats ?? null;  // only a flat grant has a raw `.stats` to preview
+    }
+
+    return { active, gate, stats: active ? stats : null, chose, previewStats, grants: results };
   }
 
   // --- passes 3 and 4: exclude, then apply ------------------------------------------------
@@ -139,6 +183,8 @@ window.NW.bonus = (() => {
         gate: result.gate,
         chose: result.chose,
         stats: result.stats,
+        previewStats: result.previewStats,
+        grants: result.grants,
         stacks,
         excluded: false,
         excludedBy: null,

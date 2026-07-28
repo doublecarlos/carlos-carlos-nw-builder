@@ -1,0 +1,1209 @@
+/* Builder UI styles.
+ *
+ * Plain CSS, loaded with a <link> so it works from file:// like the rest of the app.
+ * Light and dark are both first-class: `color-scheme` plus a variable swap, which is most of
+ * what Phase 7's "dark theme" asks for and costs nothing to do now.
+ */
+
+:root {
+  color-scheme: light dark;
+  /* Base font size, in an absolute unit deliberately -- `rem` here would resolve against the
+   * browser's own default (usually 16px) instead of anchoring it. Every other font-size in
+   * this file is a `rem` multiple of this 12px, floored at 1rem so nothing renders smaller. */
+  font-size: 12px;
+
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --surface-2: #f0f2f5;
+  --line: #d8dce3;
+  --text: #14181f;
+  --muted: #667085;
+  --accent: #2f5bd7;
+  --accent-soft: #e6ecfb;
+  --danger: #b42318;
+  --danger-soft: #fdecea;
+  --warn: #b54708;
+  --ok: #087443;
+  --diff: #ab9000;
+
+  --radius: 6px;
+  /* Measured from the real element at runtime (app.js `mounted`): the top bar wraps to a
+   * different number of lines depending on window width, and a hard-coded offset would let the
+   * sticky panel slide underneath it. This value is only the pre-measurement fallback. */
+  --topbar-h: 176px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #14171c;
+    --surface: #1b1f26;
+    --surface-2: #232830;
+    --line: #333a45;
+    --text: #e6e9ef;
+    --muted: #97a0b0;
+    --accent: #7ea2ff;
+    --accent-soft: #24304d;
+    --danger: #ff9b90;
+    --danger-soft: #3a1d1a;
+    --warn: #f0a868;
+    --ok: #6edaa6;
+    --diff: #e0c53f;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 1rem/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+h1, h2, h3 { margin: 0; font-weight: 600; }
+
+.num, .tile-value, .picker-il {
+  font-variant-numeric: tabular-nums;
+}
+
+.hint { color: var(--muted); font-size: 1rem; }
+.dim { color: var(--muted); }
+
+button.link {
+  background: none;
+  border: 0;
+  cursor: pointer;
+  font: inherit;
+  padding: 2px 4px;
+}
+button.link:disabled { color: var(--muted); cursor: default; text-decoration: none; }
+
+/* Icon buttons (IconButton, icon-button.js): quieter than the text `.link` style they replace
+ * -- muted by default, accent only on hover -- since a row of six of these next to each other
+ * would otherwise read louder than the row's actual content. `button.icon-btn` (not `.icon-btn`)
+ * matches `button.link`'s specificity so this wins the padding/color tie by source order. */
+button.icon-btn {
+  align-items: center;
+  border-radius: 4px;
+  color: var(--muted);
+  display: inline-flex;
+  justify-content: center;
+  padding: 3px;
+}
+button.icon-btn:hover:not(:disabled) { background: var(--surface-2); color: var(--accent); }
+button.icon-btn:disabled { opacity: .35; }
+
+input, select {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  color: inherit;
+  font: inherit;
+  padding: 3px 6px;
+}
+input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+
+/* Spinner arrows are fiddly to hit and add nothing a keyboard/typed value doesn't already do. */
+input[type="number"] { appearance: textfield; -moz-appearance: textfield; text-align: right; }
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button { appearance: none; -webkit-appearance: none; margin: 0; }
+
+/* --- top bar ------------------------------------------------------------------------- */
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 12px 20px;
+  padding: 8px 14px;
+}
+
+.brand { display: flex; flex-direction: column; gap: 4px; min-width: 150px; }
+.brand h1 { font-size: 1.083rem; letter-spacing: .01em; }
+
+.topbar-actions {
+  flex: 1 1 100%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* Quick compare: pick another build, see it inline against the active one (slot highlights,
+ * the stat panel's headline row) -- deliberately just a picker in the top bar, not a page of
+ * its own. */
+.compare-quick { align-items: center; display: flex; gap: 6px; }
+.compare-select { min-width: 170px; }
+
+.notice {
+  background: var(--accent-soft);
+  border-radius: var(--radius);
+  cursor: pointer;
+  padding: 2px 8px;
+}
+
+/* --- build bar ----------------------------------------------------------------------- */
+
+.buildbar { flex: 1 1 100%; min-width: 0; }
+.buildbar-row { align-items: flex-end; display: flex; flex-wrap: wrap; gap: 8px 10px; }
+.buildbar-actions { align-items: center; display: flex; flex-wrap: wrap; gap: 4px; }
+
+.build-select { max-width: 220px; }
+.name-input { min-width: 180px; }
+
+.sep { background: var(--line); height: 18px; margin: 0 4px; width: 1px; }
+
+.btn {
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  padding: 4px 9px;
+}
+.btn:hover:not(:disabled) { border-color: var(--accent); }
+.btn:disabled { cursor: default; opacity: .45; }
+.btn.is-on { background: var(--accent-soft); border-color: var(--accent); }
+.btn--primary { background: var(--accent-soft); border-color: var(--accent); font-weight: 600; }
+.btn.is-danger { background: var(--danger-soft); border-color: var(--danger); color: var(--danger); }
+
+/* The inline label makes the next undo readable without hovering; the full text is still in
+ * the tooltip, since item names run long. */
+.btn--history { max-width: 260px; overflow: hidden; text-align: left; white-space: nowrap; }
+.btn-detail {
+  color: var(--muted);
+  display: inline-block;
+  margin-left: 5px;
+  max-width: 170px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: bottom;
+}
+
+.drawer {
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  margin-top: 8px;
+  padding: 10px 12px;
+}
+.drawer-head { color: var(--muted); font-size: 1rem; margin: 0 0 4px; text-transform: uppercase; }
+.drawer-row { align-items: flex-end; display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
+.drawer-cols { display: grid; gap: 16px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.drawer-grid {
+  display: grid;
+  gap: 2px 12px;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  margin-bottom: 6px;
+}
+.drawer-error { color: var(--danger); margin: 4px 0 0; }
+.drawer-note { color: var(--ok); margin: 4px 0 0; }
+
+.code {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  color: inherit;
+  font: 1rem/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  padding: 6px 8px;
+  resize: vertical;
+  width: 100%;
+}
+.share-input {
+  flex: 1;
+  font: 1rem/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  min-width: 260px;
+}
+
+.options { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: flex-start; }
+.options-group { display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: flex-end; }
+.options-group--toggles { gap: 4px 12px; align-items: center; }
+
+/* --- quick options (top bar) ----------------------------------------------------------- */
+
+/* A single wrapping row, not a narrow stacked column -- the toggles and the three fields flow
+ * across whatever width the top bar has instead of leaving it mostly empty. */
+.quickopts {
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  display: flex;
+  flex: 1 1 100%;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  padding: 6px 10px;
+}
+.quickopts-row { align-items: center; display: flex; font-size: 1rem; gap: 6px; white-space: nowrap; }
+label.quickopts-row { cursor: pointer; }
+.quickopts-sep { background: var(--line); height: 18px; width: 1px; }
+.quickopts-combo { width: 150px; }
+.quickopts-num { text-align: right; width: 60px; }
+.quickopts-presets { display: flex; gap: 3px; }
+
+.field { display: flex; flex-direction: column; gap: 2px; }
+.field-label { color: var(--muted); font-size: 1rem; }
+
+.check { display: inline-flex; align-items: center; gap: 4px; cursor: pointer; }
+.check--inline { margin-left: auto; color: var(--muted); }
+
+.num-input { width: 76px; }
+.num-input--wide { width: 92px; }
+
+.presets { display: flex; gap: 3px; align-self: flex-end; padding-bottom: 1px; }
+.preset {
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  color: var(--muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 1rem;
+  padding: 3px 6px;
+}
+.preset.is-on { background: var(--accent-soft); border-color: var(--accent); color: var(--text); }
+
+/* --- page shell ------------------------------------------------------------------------ */
+
+/* The collections sidebar (`.build-nav`) runs the full height of the page, with the top bar
+ * and the build itself confined to `.page-main` on its right -- it used to sit inside `.layout`
+ * as a grid column under the top bar, which both capped its height to the viewport-minus-topbar
+ * and (via that ancestor's `overflow-y: auto`) clipped any popup menu opened from a row near its
+ * bottom edge (see `.navmenu` below, now `position: fixed` for exactly that reason). */
+.page { display: flex; align-items: stretch; min-height: 100vh; }
+.page-main { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
+
+/* --- layout -------------------------------------------------------------------------- */
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 460px;
+  gap: 16px;
+  padding: 14px;
+  align-items: start;
+}
+
+.sidebar {
+  position: sticky;
+  top: calc(var(--topbar-h) + 14px);
+  max-height: calc(100vh - var(--topbar-h) - 28px);
+  overflow-y: auto;
+}
+
+@media (max-width: 1100px) {
+  .page { flex-direction: column; }
+  .layout { grid-template-columns: minmax(0, 1fr); }
+  .sidebar { position: static; max-height: none; }
+  .build-nav { position: static; height: auto; max-height: none; width: auto; border-right: 0; border-bottom: 1px solid var(--line); }
+}
+
+/* --- build nav (collections sidebar) --------------------------------------------------- */
+
+.build-nav {
+  flex: none;
+  width: 236px;
+  height: 100vh;
+  position: sticky;
+  top: 0;
+  overflow-y: auto;
+  background: var(--surface);
+  border-right: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 1rem;
+  padding: 10px 8px;
+}
+
+.nav-collection { margin-bottom: 4px; }
+
+.nav-row {
+  align-items: center;
+  border-radius: var(--radius);
+  display: flex;
+  gap: 4px;
+  padding: 3px 4px;
+  position: relative;
+}
+.nav-row--collection { font-weight: 600; }
+.nav-row--build { padding-left: 18px; }
+.nav-row.is-active { background: var(--accent-soft); }
+.nav-row--actions { color: var(--muted); gap: 10px; padding-left: 18px; }
+.nav-row--build.nav-row--actions { padding-left: 18px; }
+.nav-row--top { border-top: 1px solid var(--line); margin-top: 4px; padding-left: 4px; padding-top: 6px; }
+
+.nav-chevron {
+  background: none;
+  border: 0;
+  color: var(--muted);
+  cursor: pointer;
+  flex: none;
+  font: inherit;
+  padding: 0 2px;
+  width: 14px;
+}
+
+.nav-name {
+  background: none;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  flex: 1;
+  font: inherit;
+  min-width: 0;
+  overflow: hidden;
+  padding: 2px 0;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nav-rename {
+  flex: 1;
+  font: inherit;
+  min-width: 0;
+  padding: 2px 4px;
+}
+
+.nav-menu-wrap { position: relative; }
+
+.nav-kebab {
+  background: none;
+  border: 0;
+  border-radius: var(--radius);
+  color: var(--muted);
+  cursor: pointer;
+  flex: none;
+  font: inherit;
+  line-height: 1;
+  padding: 2px 5px;
+}
+.nav-kebab:hover { background: var(--surface-2); color: var(--text); }
+
+/* `position: fixed`, not `absolute` -- `.build-nav` is a scrolling container in its own right
+ * now (full page height), and an absolutely-positioned menu got clipped at its bottom edge for
+ * any row near the end of the list. `top`/`left` are computed in `openMenuFor` from the
+ * trigger's own viewport rect; `translateX(-100%)` right-aligns the menu to that point, the
+ * fixed-position equivalent of the `right: 0` this replaced. */
+.navmenu {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .18);
+  display: flex;
+  flex-direction: column;
+  min-width: 190px;
+  padding: 4px;
+  position: fixed;
+  transform: translateX(-100%);
+  z-index: 30;
+}
+
+.navmenu-item {
+  background: none;
+  border: 0;
+  border-radius: var(--radius);
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  padding: 5px 8px;
+  text-align: left;
+}
+.navmenu-item:hover:not(:disabled) { background: var(--surface-2); }
+.navmenu-item:disabled { color: var(--muted); cursor: default; }
+.navmenu-item--danger:hover:not(:disabled) { background: var(--danger-soft); color: var(--danger); }
+
+.nav-saveas {
+  border-left: 2px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  margin: 2px 0 2px 8px;
+}
+
+.nav-hidden-file { display: none; }
+
+/* --- slot list ----------------------------------------------------------------------- */
+
+.slots-toolbar { display: flex; gap: 6px; margin-bottom: 6px; }
+
+.section {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  margin-bottom: 6px;
+}
+
+/* The revert icon (shown only when the section has unsaved slots) has to sit outside the
+ * toggle button -- a <button> can't nest another one -- so the button no longer spans the
+ * full row on its own; `.section-head-row` does that instead. */
+.section-head-row { align-items: center; display: flex; }
+
+.section-head {
+  align-items: center;
+  background: none;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  display: flex;
+  flex: 1;
+  font: inherit;
+  font-weight: 600;
+  gap: 8px;
+  min-width: 0;
+  padding: 7px 10px;
+  text-align: left;
+}
+.section-head:hover { background: var(--surface-2); }
+.section-chevron { color: var(--muted); width: 10px; }
+.section-count { color: var(--muted); font-weight: 400; margin-left: auto; }
+.section-revert { flex: none; margin-right: 6px; }
+
+/* The section header's "copy this section from…" control -- an icon button, not a permanent
+ * picker, so the header row (which already carries the label, counts and badges) stays quiet
+ * until it's actually needed. Opens to the side (left) of the button rather than below it,
+ * since the row itself has plenty of width and dropping down would sit awkwardly over the
+ * section's own body. */
+.copy-popover-wrap { flex: none; margin-right: 2px; position: relative; }
+.copy-popover {
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .18);
+  display: flex;
+  gap: 6px;
+  padding: 7px 9px;
+  position: absolute;
+  right: calc(100% + 6px);
+  top: 50%;
+  transform: translateY(-50%);
+  white-space: nowrap;
+  z-index: 25;
+}
+.copy-popover-label { color: var(--muted); font-size: 1rem; }
+.copy-popover-select { width: 170px; }
+
+.badge {
+  border-radius: 9px;
+  font-size: 1rem;
+  font-weight: 600;
+  padding: 0 6px;
+}
+.badge--error { background: var(--danger-soft); color: var(--danger); }
+.badge--diff { background: color-mix(in srgb, var(--diff) 24%, transparent); color: var(--diff); }
+
+.section-body { border-top: 1px solid var(--line); padding: 4px 10px 8px; }
+
+.slot-row {
+  align-items: baseline;
+  border-bottom: 1px solid color-mix(in srgb, var(--line) 45%, transparent);
+  display: grid;
+  gap: 10px;
+  grid-template-columns: 150px minmax(0, 1fr);
+  padding: 4px 0;
+}
+.slot-row:last-child { border-bottom: 0; }
+
+/* The change marker (dot + revert icon) sits pinned to the right of this column, close to
+ * where the picker starts, rather than right after the label text -- so it lines up in the
+ * same spot on every row regardless of how long that row's label is. */
+.slot-label-col { align-items: center; display: flex; justify-content: space-between; min-width: 0; }
+.slot-label {
+  color: var(--muted);
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.slot-change { align-items: center; display: flex; flex: none; gap: 2px; }
+
+/* Keyboard cursor: independent of mouse hover (`.is-hovered`) -- the two can point at different
+ * rows at once, same as a spreadsheet's selection vs. hover state. */
+.slot-row.is-cursor, .section-head.is-cursor {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+}
+/* `.slot-row` is tabindex="-1" so real DOM focus can follow the keyboard cursor (see
+ * `syncCursorFocus` in slot-list.js) -- normally focus and `.is-cursor` land together, so this
+ * only suppresses the native ring for the rare moment they don't (e.g. a row losing `.is-cursor`
+ * a tick before the browser actually moves focus off it). `:not(.is-cursor)` -- not just source
+ * order -- keeps this from ever tying with (and winning over, being the same specificity and
+ * later) the `.is-cursor` rule above when both apply to the same row at once. */
+.slot-row:focus:not(.is-cursor) { outline: none; }
+
+.slot-control { min-width: 0; }
+/* The picker is capped, not stretched to fill the column -- the freed space carries a condensed
+ * stat summary instead of sitting empty. */
+.slot-main { align-items: center; display: flex; gap: 10px; }
+.slot-main .picker { flex: 0 1 320px; min-width: 160px; }
+.slot-summary {
+  color: var(--text);
+  flex: 1;
+  font-size: 1rem;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.slot-value { align-items: center; display: flex; gap: 6px; margin-top: 4px; }
+.slot-error { color: var(--danger); margin: 3px 0 0; font-size: 1rem; }
+
+.slot-diff-note { color: var(--muted); font-size: 1rem; margin: 2px 0 0; }
+.slot-diff-note button.link { color: var(--accent); margin-left: 2px; padding: 0; }
+
+/* Quieter than `.badge--diff`: a plain dot for "not saved yet", not a number to read. Spacing
+ * from its neighbours comes from the parent's flex `gap` (`.section-head`, `.slot-change`). */
+.unsaved-dot {
+  background: var(--accent);
+  border-radius: 50%;
+  display: inline-block;
+  flex: none;
+  height: 6px;
+  width: 6px;
+}
+
+/* --- item picker --------------------------------------------------------------------- */
+
+.picker { position: relative; }
+
+.picker-input { width: 100%; padding-right: 22px; }
+.picker-input.is-empty::placeholder { color: var(--muted); }
+.picker.is-invalid .picker-input { border-color: var(--danger); }
+
+/* combo-box's caret sits in the same right-hand gutter `.picker-input`'s padding reserves --
+ * the only hint left that this text input is actually a fixed-choice dropdown. */
+.picker-caret {
+  color: var(--muted);
+  font-size: 1rem;
+  pointer-events: none;
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.picker-menu {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .18);
+  left: 0;
+  max-height: 320px;
+  overflow-y: auto;
+  position: absolute;
+  right: 0;
+  top: calc(100% + 2px);
+  z-index: 30;
+}
+
+.picker-row { cursor: pointer; padding: 4px 8px; }
+.picker-row.is-highlighted { background: var(--accent-soft); }
+.picker-row--clear, .picker-row--none { color: var(--muted); font-style: italic; }
+
+.picker-row-head { align-items: baseline; display: flex; gap: 6px; }
+.picker-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.picker-flag { color: var(--accent); font-size: 1rem; }
+.picker-il { color: var(--muted); font-size: 1rem; }
+.picker-row-stats { color: var(--muted); display: flex; flex-wrap: wrap; font-size: 1rem; gap: 8px; }
+.picker-more { font-style: italic; }
+
+/* --- stat panel ---------------------------------------------------------------------- */
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 10px 12px 14px;
+}
+
+.panel-errors {
+  background: var(--danger-soft);
+  border-radius: var(--radius);
+  color: var(--danger);
+  margin-bottom: 10px;
+  padding: 7px 10px;
+}
+.panel-errors ul { margin: 4px 0 0; padding-left: 18px; }
+
+/* The summary widget: pick a damage calculation, see it front and centre -- the sheet's most
+ * visible number, where the IL/HP tiles used to sit. Picker on its own row, the value stacked
+ * below and centred -- closer to the sheet's own layout than a side-by-side row. */
+.summary-calc {
+  background: var(--surface-2);
+  border-radius: var(--radius);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 10px;
+}
+.summary-calc-select { width: 100%; }
+.tile-value { font-size: 1.6rem; font-weight: 600; text-align: center; white-space: nowrap; }
+
+/* The compare-mode layout: this build's row, the other build's row, its Δ% in the third
+ * column -- the sheet's own compare block, label/value/percentage. `.stat-table`'s own font
+ * size is too small for what is still meant to be the headline number, so the value column
+ * gets `.tile-value`'s treatment (just a size down, to fit two rows instead of one). */
+.summary-compare { margin-top: 2px; }
+.summary-compare td { padding: 3px 4px; }
+.summary-compare td:first-child { color: var(--muted); }
+.summary-compare-value { font-size: 1.25rem; font-weight: 600; }
+/* Only "this build"'s own row is judged -- ahead (green) or behind (red) the compare build --
+ * the label cell stays muted regardless via `:not(:first-child)`, so it never fights the
+ * `td:first-child` rule above on specificity. */
+.summary-compare tr.is-positive td:not(:first-child) { color: var(--ok); font-weight: 600; }
+.summary-compare tr.is-negative td:not(:first-child) { color: var(--danger); font-weight: 600; }
+
+.panel-meta {
+  align-items: center;
+  color: var(--muted);
+  display: flex;
+  gap: 12px;
+  font-size: 1rem;
+  padding: 8px 0 2px;
+}
+
+.panel-head {
+  border-bottom: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 1rem;
+  letter-spacing: .05em;
+  margin: 14px 0 2px;
+  padding-bottom: 3px;
+  text-transform: uppercase;
+}
+
+.stat-table { border-collapse: collapse; width: 100%; }
+.stat-table th {
+  color: var(--muted);
+  font-size: 1rem;
+  font-weight: 500;
+  letter-spacing: .03em;
+  padding: 3px 4px;
+  text-align: right;
+  text-transform: uppercase;
+}
+.stat-table th:first-child { text-align: left; }
+.stat-table td { padding: 2px 4px; }
+.stat-table td.num { text-align: right; }
+.stat-table tbody tr:nth-child(even) { background: color-mix(in srgb, var(--surface-2) 55%, transparent); }
+.stat-table--pairs td:last-child { text-align: right; width: 40%; }
+
+/* Rating and percent used to be two whole separate tables -- same rows, same order, just a
+ * different unit. One table keeps both full-size (percent is the value that matters day to
+ * day, so it leads) without forcing a cross-reference between two tables to see one stat. */
+.stat-table--split .rating-col { color: var(--muted); }
+
+.stat-sub { color: var(--muted); font-size: 1rem; line-height: 1.3; }
+
+/* Conditional formatting, in the spirit of the sheet: green sitting exactly on the cap, blue
+ * with headroom to spare, warn colour when over -- applied per cell, since rating and percentage
+ * cap independently and a row can show both colours at once. */
+.stat-table td.is-capped { background: color-mix(in srgb, var(--ok) 16%, transparent); }
+.stat-table td.is-headroom { background: color-mix(in srgb, var(--accent) 12%, transparent); }
+.stat-table td.is-over { background: color-mix(in srgb, var(--warn) 14%, transparent); font-weight: 600; }
+
+.stat-table tr.is-lead td { font-weight: 600; }
+.stat-table tr.row-sep td { border-bottom: 2px solid var(--line); }
+
+/* --- item hover card ------------------------------------------------------------------ */
+
+.slot-row.is-hovered { background: color-mix(in srgb, var(--accent-soft) 40%, transparent); }
+
+/* Quick-compare: a row whose choice differs from the compare build, per app.js's picker. Same
+ * specificity as `.is-hovered` above -- this comes later in source order so the diff cue stays
+ * visible on hover instead of the two backgrounds fighting row-for-row. */
+.slot-row.is-diff { background: color-mix(in srgb, var(--diff) 20%, transparent); }
+
+.itemcard {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .22);
+  /* Width and max-height are read back by slot-list.js for positioning -- keep them in step. */
+  width: 330px;
+  max-height: 440px;
+  overflow-y: auto;
+  /* Without this, a wheel scroll that reaches the card's own scroll limit chains onto the
+   * page underneath -- scrolling the build page and invalidating the card's anchor rect,
+   * which closes the card mid-scroll. */
+  overscroll-behavior: contain;
+  padding: 9px 11px;
+  position: fixed;
+  z-index: 40;
+  /* Interactive on purpose: long cards overflow and need the scroll wheel, and reaching them
+   * with the pointer must not make them vanish. slot-list.js gives the card its own
+   * mouseenter/mouseleave so it stays open while the pointer is over it. */
+  pointer-events: auto;
+}
+
+.itemcard-head { align-items: baseline; display: flex; gap: 8px; }
+.itemcard-name { flex: 1; font-weight: 600; }
+.itemcard-il { color: var(--muted); font-size: 1rem; font-variant-numeric: tabular-nums; }
+.itemcard-slot { color: var(--muted); font-size: 1rem; margin-bottom: 5px; }
+
+.itemcard-stats { display: flex; flex-direction: column; }
+.itemcard-stat {
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+  font-size: 1rem;
+  padding: 3px 0;
+}
+.itemcard-stat:last-child { border-bottom: none; }
+.itemcard-stat .num { font-variant-numeric: tabular-nums; }
+
+.itemcard-notes {
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 1rem;
+  margin-top: 6px;
+  padding-top: 5px;
+}
+
+.itemcard-bonuses { border-top: 1px solid var(--line); margin-top: 6px; padding-top: 5px; }
+.itemcard-section {
+  color: var(--muted);
+  font-size: 1rem;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+}
+.itemcard-bonus { margin-top: 4px; }
+.itemcard-bonus-head { align-items: center; display: flex; gap: 5px; }
+.itemcard-bonus-cond { flex: 1; font-size: 1rem; min-width: 0; }
+.bonus--inactive .itemcard-bonus-cond, .bonus--excluded .itemcard-bonus-cond { color: var(--muted); }
+.itemcard-bonus-stats { font-size: 1rem; padding-left: 12px; }
+/* An inactive/excluded bonus's numbers are what it *would* grant, not what it does -- muted
+ * the same as its title, so the card doesn't read as if it were already contributing. */
+.bonus--inactive .itemcard-bonus-stats, .bonus--excluded .itemcard-bonus-stats { color: var(--muted); }
+.itemcard-bonus-unmet { color: var(--warn); font-size: 1rem; padding-left: 12px; }
+.itemcard-bonus-when { padding-left: 12px; }
+
+.itemcard-bonus-tiers { padding-left: 12px; }
+.itemcard-tier { color: var(--muted); font-size: 1rem; }
+.itemcard-tier.is-active { color: var(--text); font-weight: 600; }
+.itemcard-tier .itemcard-stat { font-size: 1rem; padding: 2px 0; }
+.itemcard-bonus-shared { padding-left: 12px; }
+
+/* --- sidebar tabs -------------------------------------------------------------------- */
+
+/* Real tabs, not a row of pill buttons: each sits flush against its neighbour with only the
+ * top corners rounded, and the active one shares its background and bottom edge with `.panel`
+ * right below (StatPanel/BonusInspector's own root) so the seam between tab and content
+ * disappears -- `margin-bottom: -1px` pulls the row down onto the panel's own top border, and
+ * the active tab paints its bottom border in the panel's own background colour to erase it. */
+.tabs { display: flex; gap: 2px; margin-bottom: -1px; padding-left: 2px; position: relative; z-index: 1; }
+.tab {
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  border-radius: var(--radius) var(--radius) 0 0;
+  color: var(--muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font: inherit;
+  padding: 6px 12px 7px;
+}
+.tab:hover:not(.is-on) { background: var(--surface); color: var(--text); }
+.tab.is-on {
+  background: var(--surface);
+  border-color: var(--line);
+  border-bottom-color: var(--surface);
+  color: var(--text);
+  font-weight: 600;
+  position: relative;
+  z-index: 2;
+}
+.tab-count { font-size: 1rem; opacity: .75; font-variant-numeric: tabular-nums; }
+
+/* --- bonus inspector ------------------------------------------------------------------ */
+
+.inspector-head { position: sticky; top: 0; background: var(--surface); padding-bottom: 2px; z-index: 1; }
+.inspector-search { width: 100%; }
+
+.bonus { border-bottom: 1px solid color-mix(in srgb, var(--line) 50%, transparent); padding: 5px 0; }
+.bonus:last-child { border-bottom: 0; }
+
+.bonus-head {
+  align-items: center;
+  background: none;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  display: flex;
+  font: inherit;
+  gap: 6px;
+  padding: 0;
+  text-align: left;
+  width: 100%;
+}
+.bonus-head:hover .bonus-title { text-decoration: underline; }
+
+.bonus-dot { border-radius: 50%; flex: none; height: 7px; width: 7px; }
+.bonus--active .bonus-dot { background: var(--ok); }
+.bonus--inactive .bonus-dot { background: var(--muted); opacity: .5; }
+.bonus--excluded .bonus-dot { background: var(--danger); }
+
+.bonus-title { flex: none; max-width: 62%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bonus-qualifier { color: var(--muted); flex: 1; font-size: 1rem; min-width: 0; overflow: hidden;
+  text-overflow: ellipsis; white-space: nowrap; }
+.bonus-head > .badge:first-of-type { margin-left: auto; }
+.bonus--inactive .bonus-title, .bonus--excluded .bonus-title { color: var(--muted); }
+
+.badge--near { background: var(--accent-soft); color: var(--accent); }
+.bonus-head .badge { background: var(--surface-2); color: var(--muted); flex: none; }
+.bonus-head .badge--near { background: var(--accent-soft); color: var(--accent); }
+
+.unmet { list-style: none; margin: 3px 0 0; padding: 0 0 0 13px; }
+.unmet li { color: var(--muted); font-size: 1rem; }
+.unmet-label { color: var(--warn); }
+/* Vue condenses the whitespace between the label and detail spans away, so the gap has to
+ * come from CSS or the em dash butts against the label. */
+.unmet-detail { color: var(--muted); margin-left: .35em; }
+.unmet-children { list-style: none; margin: 0; padding-left: 12px; }
+.unmet-children li.is-ok { color: var(--ok); }
+
+.bonus-detail { padding: 4px 0 2px 13px; }
+.bonus-stats { display: flex; flex-wrap: wrap; gap: 4px 10px; }
+.bonus-stat { font-size: 1rem; }
+.bonus-detail .hint { display: block; margin: 2px 0 0; }
+.mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+
+/* --- data editor ---------------------------------------------------------------------- */
+
+.editor { padding: 12px 14px; }
+.editor-bar { align-items: center; display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.spacer { flex: 1; }
+
+.badge--added { background: color-mix(in srgb, var(--ok) 22%, transparent); color: var(--ok); }
+.badge--edited { background: var(--accent-soft); color: var(--accent); }
+.badge--removed { background: var(--danger-soft); color: var(--danger); }
+.badge--warn { background: color-mix(in srgb, var(--warn) 22%, transparent); color: var(--warn); }
+/* Same red as `.badge--removed` -- a row's overlay *status* (added/edited/removed) and its
+ * form having an in-progress, not-yet-saved draft are different facts and can both be true at
+ * once, so this is its own class rather than reusing `badge--removed` outright. */
+.badge--unsaved { background: var(--danger-soft); color: var(--danger); }
+
+.drawer--findings { max-height: 190px; overflow-y: auto; }
+.findings { list-style: none; margin: 4px 0 0; padding: 0; }
+.findings li { display: flex; gap: 7px; font-size: 1rem; padding: 1px 0; }
+.finding-level {
+  border-radius: 3px;
+  flex: none;
+  font-size: 1rem;
+  padding: 0 5px;
+  text-transform: uppercase;
+}
+.findings li.error .finding-level { background: var(--danger-soft); color: var(--danger); }
+.findings li.warn .finding-level { background: color-mix(in srgb, var(--warn) 22%, transparent); color: var(--warn); }
+
+.editor-body {
+  align-items: start;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 340px minmax(0, 1fr);
+}
+
+.editor-list, .editor-form {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.editor-list-head { border-bottom: 1px solid var(--line); display: flex; gap: 5px; padding: 7px; }
+/* Search is the primary way through 369 items; the status filter is a secondary narrowing
+ * most sessions never touch -- `flex: 3` (against the combo's fixed 100px below) gives it most
+ * of the row's width instead of splitting it evenly. */
+.editor-list-head input[type="search"].editor-search { flex: 3 1 0; min-width: 0; }
+.editor-list-body { max-height: calc(100vh - 20px); overflow-y: auto; }
+
+.editor-row {
+  align-items: center;
+  border-bottom: 1px solid color-mix(in srgb, var(--line) 45%, transparent);
+  cursor: pointer;
+  display: flex;
+  gap: 6px;
+  padding: 4px 8px;
+}
+.editor-row:hover { background: var(--surface-2); }
+.editor-row.is-on { background: var(--accent-soft); }
+.editor-row-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.editor-row-filter { color: var(--muted); font-size: 1rem; }
+
+.editor-form { max-height: calc(100vh - 20px); overflow-y: auto; padding: 10px 12px; }
+
+.form-bar {
+  align-items: center;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: -10px -12px 10px;
+  padding: 8px 12px;
+  position: sticky;
+  top: -10px;
+  z-index: 2;
+}
+.form-grid { display: flex; flex-wrap: wrap; gap: 8px 12px; margin-bottom: 8px; }
+.form-grid .field { min-width: 150px; }
+.form-section {
+  align-items: center;
+  border-bottom: 1px solid var(--line);
+  color: var(--text);
+  display: flex;
+  font-size: 1rem;
+  font-weight: 600;
+  gap: 8px;
+  letter-spacing: .05em;
+  margin: 12px 0 6px;
+  padding-bottom: 3px;
+  text-transform: uppercase;
+}
+.sub-section {
+  align-items: center;
+  color: var(--text);
+  display: flex;
+  font-size: 1rem;
+  font-weight: 600;
+  gap: 8px;
+  margin: 8px 0 4px;
+}
+
+.bonus-attach { align-items: center; display: inline-flex; gap: 6px; }
+.bonus-attach-combo { width: 220px; }
+
+.pct-field { display: inline-block; position: relative; width: 110px; }
+.pct-input {
+  box-sizing: border-box;
+  font-variant-numeric: tabular-nums;
+  padding-right: 20px;
+  text-align: right;
+  width: 100%;
+}
+.pct-input:not(:focus) { color: var(--accent); }
+.pct-suffix {
+  color: var(--muted);
+  font-size: 1rem;
+  pointer-events: none;
+  position: absolute;
+  right: 7px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+/* flex-end, not center: a bare combo box next to a labeled .field must align on the input
+ * itself, not the shorter combo box against the taller label-plus-input stack. */
+.stat-row, .cond-row, .branch-row { align-items: center; display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 4px; }
+.stat-row input[type="number"] { width: 110px; }
+.cond-row input, .branch-row input { min-width: 90px; }
+.branch-row { align-items: center; }
+
+.combo--cond-type { width: 110px; }
+.combo--cond-value { width: 150px; }
+.combo--set { width: 170px; }
+.combo--stat { width: 220px; }
+.combo--stacking { width: 260px; }
+.combo--status { width: 100px; }
+
+.bonus-edit {
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  margin-bottom: 8px;
+  padding: 8px 10px;
+}
+/* flex-end, not center: the buttons here have no label above them, so centering would float
+ * them against the taller labeled Name/Id fields instead of lining up on the inputs. */
+.bonus-edit-head { align-items: flex-end; display: flex; flex-wrap: wrap; gap: 8px; }
+.bonus-edit-head .field { flex: 1; min-width: 0; }
+.bonus-id, .bonus-name { width: 100%; }
+.bonus-id { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+.bonus-id-row { align-items: center; display: flex; gap: 4px; }
+.bonus-id-row .bonus-id { flex: 1; min-width: 0; }
+
+/* --- token / chip input ---------------------------------------------------------------- */
+
+.tokens {
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  cursor: text;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-height: 26px;
+  padding: 3px 5px;
+  position: relative;
+}
+.tokens.is-open { outline: 2px solid var(--accent); outline-offset: -1px; }
+
+.token {
+  align-items: center;
+  background: var(--accent-soft);
+  border-radius: 10px;
+  color: var(--text);
+  display: inline-flex;
+  font-size: 1rem;
+  gap: 3px;
+  padding: 1px 3px 1px 8px;
+}
+.token-x {
+  background: none;
+  border: 0;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 1.083rem;
+  line-height: 1;
+  padding: 0 3px;
+}
+.token-x:hover { color: var(--danger); }
+
+.token-field {
+  background: none;
+  border: 0;
+  flex: 1;
+  min-width: 90px;
+  outline: none;
+  padding: 1px 2px;
+}
+.token-field:focus { outline: none; }
+
+.token-menu {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .18);
+  left: 0;
+  max-height: 220px;
+  overflow-y: auto;
+  position: absolute;
+  right: 0;
+  top: calc(100% + 2px);
+  z-index: 30;
+}
+.token-option { cursor: pointer; display: flex; gap: 8px; padding: 3px 8px; }
+.token-option.is-highlighted { background: var(--accent-soft); }
+.token-new {
+  background: color-mix(in srgb, var(--ok) 22%, transparent);
+  border-radius: 3px;
+  color: var(--ok);
+  font-size: 1rem;
+  margin-left: auto;
+  padding: 0 5px;
+}
+
+.form-grid--tokens .field { flex: 1; min-width: 240px; }
+
+/* --- set bonus cards ------------------------------------------------------------------- */
+
+.setcard {
+  background: color-mix(in srgb, var(--accent-soft) 30%, transparent);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  margin-bottom: 10px;
+  padding: 9px 11px;
+}
+.setcard-head { align-items: center; display: flex; flex-wrap: wrap; gap: 6px; }
+.setcard-head .field { flex: 0 1 220px; }
+.setcard-name { font-weight: 600; }
+/* --- tiers and segmented toggles -------------------------------------------------------- */
+
+.seg { display: inline-flex; gap: 0; }
+.seg-btn {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  color: var(--muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 1rem;
+  padding: 2px 8px;
+}
+.seg-btn:first-child { border-radius: var(--radius) 0 0 var(--radius); }
+.seg-btn:last-child { border-radius: 0 var(--radius) var(--radius) 0; border-left: 0; }
+.seg-btn.is-on { background: var(--accent-soft); border-color: var(--accent); color: var(--text); }
+
+/* Boxed, not just a rule on the left -- with several tiers or variants stacked back to back,
+ * a 2px accent line was not enough contrast to tell where one ends and the next begins.
+ * `.bonus-edit` (the parent) is already `--surface-2`, so tiers go `--surface` to read as
+ * lighter cards sitting on top of it, the same relationship `.setcard` has to the page. */
+.tier {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius);
+  margin: 6px 0;
+  padding: 6px 9px 8px;
+}
+.tier-head { align-items: center; display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 3px; }
+.tier-pieces { width: 66px; }
+
+/* --- condition tree (condition-rows.js) ------------------------------------------------ */
+
+.cond-list { display: flex; flex-direction: column; }
+/* One row per direct child of the list -- ruled off like a table so a run of conditions
+ * reads as rows instead of a wrapped paragraph of buttons. */
+.cond-item {
+  border-bottom: 1px solid color-mix(in srgb, var(--line) 50%, transparent);
+  border-top: 1px solid color-mix(in srgb, var(--line) 50%, transparent);
+  padding: 4px 0;
+}
+/* A condition tree can sit on either a plain (`.editor-form`) or already-recessed
+ * (`.bonus-edit`, `.tier`) background depending where it's embedded, so the fill can't be a
+ * fixed surface color the way `.tier` is -- `currentColor` mixed at low alpha darkens on a
+ * light parent and lightens on a dark one either way, so the box reads as a step down from
+ * whatever it's sitting on rather than matching it outright. */
+.cond-group {
+  background: color-mix(in srgb, var(--text) 6%, transparent);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--muted);
+  border-radius: var(--radius);
+  margin: 3px 0;
+  padding: 5px 9px 3px;
+}
+.cond-group-head { align-items: center; display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 3px; }
+.cond-group-op {
+  background: var(--surface-2);
+  border-radius: 3px;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: .04em;
+  padding: 1px 6px;
+  text-transform: uppercase;
+}
+.cond-branch { padding: 3px 0; }
+/* Dashed rule between sibling branches of the same group -- the "or"/"and" label already
+ * says how they combine, this just makes the boundary between them visible at a glance. */
+.cond-branch + .cond-branch { border-top: 1px dashed var(--line); }
+.cond-branch-op { color: var(--muted); font-size: 1rem; margin: 1px 0 2px; text-transform: uppercase; }
+.cond-branch-actions { display: flex; gap: 2px; justify-content: flex-start; margin: 2px 0 4px; }
+.cond-add { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+
+.setcard-id-row { align-items: center; display: flex; gap: 4px; }
+.setcard-id {
+  background: var(--surface-2);
+  border-radius: 3px;
+  color: var(--muted);
+  font-family: var(--mono, monospace);
+  font-size: 1rem;
+  padding: 1px 5px;
+  width: 100%;
+}
+
+/* --- crash ---------------------------------------------------------------------------- */
+
+.crash { color: var(--danger); padding: 24px; }
+.crash pre { background: var(--surface); border-radius: var(--radius); overflow-x: auto; padding: 12px; }
+
+.lucide {
+  width: 1em;
+  height: 1em;
+}

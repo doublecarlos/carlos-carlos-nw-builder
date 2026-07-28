@@ -32,7 +32,8 @@
 <pre id="report">…</pre>
 <div id="detail"></div>
 
-<!-- Classic scripts only: no ES modules, so this page also works from file://. -->
+<!-- Classic scripts only: no ES modules. Data loads asynchronously (data/*.js fetch their
+     data/*.json), so the test run itself waits on window.NW.dataReady below. -->
 <script src="data/schema.js"></script>
 <script src="data/slots.js"></script>
 <script src="data/db-items.js"></script>
@@ -45,7 +46,7 @@
 <script src="tests/harness.js"></script>
 <script src="tests/unit.js"></script>
 <script>
-(() => {
+window.NW.dataReady.then(() => {
   let report;
   let unit;
   try {
@@ -96,7 +97,11 @@
         ).join('');
     detail.appendChild(table);
   }
-})();
+}).catch((error) => {
+  const banner = document.getElementById('banner');
+  banner.className = 'banner fail';
+  banner.textContent = `FAILED TO LOAD DATA: ${error.message ?? error}`;
+});
 </script>
 </body>
 </html>

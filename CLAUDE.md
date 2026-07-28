@@ -1,0 +1,176 @@
+# Neverwinter build planner
+
+A client-only web app that replaces a Google Sheets character planner. The **engine is
+finished and verified**; current work is UI.
+
+Deeper detail lives in `llm/plans/0002-ui-handoff.md` (architecture, decisions, verification
+results). `llm/docs/pending.md` is the user's running wishlist — read it before proposing work.
+
+## Hard constraints
+
+1. **No npm, no build step, no bundler.** Classic `<script>` tags, `window.NW.*` namespace.
+2. **No ES modules.** `fetch` is allowed, but *only* for the `data/*.json` files — see below.
+   Everything else (builds, share links, overlays) stays in `localStorage`/URL, no XHR.
+3. **Vue 3 global build**, vendored at `vendor/vue.global.prod.js` (3.5.40). Components are
+   plain objects with template-literal templates. No SFCs.
+4. **Modern JS is expected** — `const`/`let`, arrows, classes, `?.`, `??`.
+5. Python: **stdlib only**. Permanent scripts in `tools/`, throwaway in `workspace/`.
+
+`file://` support was **retired** — dev through `tools/serve.py`, production via static
+hosting. The no-build/no-modules rules still stand; they are project rules, not `file://`
+fallout.
+
+**Data is JSON, loaded async.** `data/*.json` are plain data (no comments, no `window.NW_*`
+wrapper). Each has a same-named `data/*.js` loader that `fetch`s it and assigns the global
+(`data/schema.js` also derives `byKey`/`statKeys`/etc. — see its header comment for the
+FIX-note provenance that used to live inline in the data). Every loader appends its promise to
+`window.NW.dataReady` (`Promise.all([window.NW.dataReady, fetch(...)...])`, order-independent).
+`app.js` (and `tests.html`/`tests/differ.html`) `await window.NW.dataReady` before doing
+anything with `NW_SCHEMA`/`NW_SLOTS`/`NW_ITEMS`/`NW_BONUSES` — nothing else in `src/` reads
+those globals outside a function body, so this is the only place that has to wait. Each loader
+resolves its fetch URL against `document.currentScript.src`, not a bare relative path — pages
+that include the loader from a different directory (`tests/differ.html` via `../data/x.js`)
+would otherwise fetch the wrong path.
+
+## Do not touch to make the UI easier
+
+`src/{conditions,db,bonus,engine}.js`, `data/*.json`, `tools/*.py` are pinned by three
+independent test suites. If you think the engine is wrong, **prove it with a failing test
+first**.
+
+`data/schema.json` is hand-written and authoritative. `data/{slots,db-items,db-bonuses}.json`
+are GENERATED — regenerate via `tools/`, never hand-edit. The `data/*.js` loader files are
+hand-written behavior (fetch + assign), not generated, and are fair game to edit.
+
+## Run and verify
+
+```sh
+./venv/Scripts/python.exe tools/serve.py        # http://localhost:8000, no-cache
+```
+
+| Page | Expect |
+|---|---|
+| `/tests.html` | `✓ fixtures reproduced, 13 unit tests passed` |
+| `/index.html` | the app |
+
+**The UI must never make `tests.html` go red.** If it does, you changed the engine.
+
+No Node in this environment. To check tests without a browser session:
+
+```sh
+msedge --headless=old --disable-gpu --dump-dom --virtual-time-budget=20000 \
+  http://localhost:8000/tests.html    # then grep for id="banner"
+```
+
+`--headless=new` silently emits nothing with `--dump-dom`; use `old`.
+
+## Layout
+
+```
+index.html            app shell — script order matters
+data/                 *.json data (schema.json authoritative; slots/db-items/db-bonuses
+                      generated) + *.js loaders (fetch the json, assign the window.NW_* global)
+src/
+  conditions.js       the `when` evaluator      ─┐
+  db.js               indexing and lookups       │ engine — verified, hands off
+  bonus.js            bonus resolution           │
+  engine.js           pipeline + derived        ─┘
+  catalog.js          layered catalogue: base + overlays (see below)
+  router.js           query-string <-> URL sync (view/collection/build/tab; editor owns `item`)
+  storage.js          builds, collections, import/export, share links, catalogue overlay
+  fs-store.js         File System Access API + IndexedDB handle persistence (collection save-to-file)
+  format.js           number/percent formatting at the edge
+  app.js              root component, all state mutation, undo
+  components/         Vue components
+tests.html, tests/    golden fixture + 13 unit tests + differ
+tools/                Python pipeline
+llm/plans/            numbered plans
+```
+
+## Architecture notes that will bite you
+
+- **Icons come from lucide, hand-copied.** `window.NW.icons` in `components/icon-button.js` is a
+  registry of inline `<path>`/`<circle>` markup, one entry per glyph, used by `IconButton` and a
+  few components that inline an svg directly. There is no icon package vendored — if a new icon
+  is needed, ask the user for the lucide glyph name (e.g. "wand-2") and they'll paste in the
+  markup; don't invent SVG paths from memory.
+- **One reactive `build` + a `computed` calling `resolveBuild`.** It is pure and ~2 ms —
+  recompute on every change; do not build incremental update machinery.
+- **Every mutation goes through an `app.js` method.** That is what keeps the undo stack small.
+- **`db` is `markRaw`'d.** 369 items plus Maps; deep-proxying costs more than the calculation.
+- **Catalogue is layered**: base (shipped) ← workspace overlay (editor) ← `build.catalog`
+  (per-build custom gear — plumbed but not yet exposed). An overlay is
+  `{ items: { name: item|null }, bonusSets: { id: set|null } }`; `null` is a tombstone.
+- **Items reference a bonus set by id, never by name.** `item.bonuses` is an array of set ids;
+  the set's `name` is display-only. Renaming a set's *id* (from either the item-form's bonus
+  editor or the data editor's own "Bonus sets" section) therefore has to rewrite `bonuses` on
+  every item that references the old id, or those items silently stop granting it —
+  `data-editor.js`'s `cascadeSetRename` does this as part of the same overlay update as the
+  rename, not as a separate step.
+- **Percentages are decimals.** `0.09` is 9%. Format at the edge, never round in state.
+  Percent fields convert with rounding — `3.6 / 100` is `0.036000000000000004`.
+- **A bonus set resolves as one unit.** `data/db-bonuses.json`'s `{id, name, grants: [...]}` —
+  `effects[]` was retired 2026-07-27 (`tools/migrate_grants.py`, one-shot). A grant is anonymous
+  (`{when?, stats}` / `{when?, variants}` / `{when?, tiers}`, no `id`/`name`) since only the
+  *set* needs to be addressable now; `src/bonus.js`'s `evaluateBonus` sums every currently-active
+  grant into one resolved entry (`result.bonuses` is one row per set, not per grant). Wanting two
+  separately-visible bonuses on one item is still just two set ids in that item's `bonuses`
+  array (unchanged) — not a reason to keep a set's grants apart. `excludes`/`stacking`/
+  `maxStacks` live on the set now, not on a grant. A resolved entry's `chose` is only populated
+  when exactly one grant is active (two active grants have no single tier/variant to report);
+  `previewStats` (not `bonus.stats`) is what an *inactive* entry shows as a preview, taken from
+  whichever grant has the fewest unmet conditions.
+- **`stats` vs `appliedStats`** on a resolved bonus: the former is per-stack (now the *sum* of
+  every active grant's stats), the latter is what reaches the pipeline. Reading `stats` and
+  wondering why stacking "doesn't work" has caught two sessions.
+- **Empty slot is `undefined` / `''` / `'-'`** — all three handled by `db.get`.
+- **Duration is a free number of seconds**, not a bucket. Presets are convenience only.
+- **Options are context, not slots.** Class/Role/Forte live in `build.context`.
+- **Routing is query-string, not path** (`?build=…&view=…`) — a static host serves `index.html`
+  by path only, so `/builds/x` would 404 on refresh; `?x=y` always resolves. `app.js` owns
+  `view`/`collection`/`build`/`tab` via a plain `watch` + `router.apply`; `data-editor.js` owns
+  `item`/`set`/`section`/`status` itself, calling `router.apply` at each mutation site instead of
+  a generic watcher for the selection params, because arrow-key list browsing needs `push:false`
+  (replace) while a click needs `push:true` — a generic watcher can't tell those apart (`status`,
+  the changed/added/edited/removed filter, has no such nuance and does use a plain `watch`, same
+  as `tab`). Nothing needs a "did this change come from popstate" guard: `router.apply`'s own
+  no-op-if-unchanged check makes re-applying state that came from a popstate event harmless.
+- **Collections are a grouping layer, not a nesting one.** A collection (`storage.js`) is
+  `{ id, name, updated, buildIds, activeBuildId }` — it references build ids into the same flat
+  `app.js` `builds` array/`savedById` map that always existed; a build's content still lives in
+  exactly one place. `app.js`'s `savedCollections[id]` is that grouping's own last-saved
+  snapshot (name + buildIds), separate from each build's own `savedById[id]` — a collection's
+  unsaved-dot (`BuildNav`'s `collectionDirty`) is true if its own metadata differs *or* any
+  build it contains is itself dirty. Any method that pushes/removes a build id from an
+  *existing* collection's `buildIds` (`createBuild`, `duplicateBuild`, `removeBuild`,
+  `importBuilds`) must call `syncSavedCollection` right after — forgetting it leaves
+  `savedCollections[id]` stale and the collection shows a false-dirty dot forever; this was a
+  real bug caught by clicking "+ New build" and watching the dot, not by re-reading the diff.
+  Draft/saved split, and the "structural changes save themselves immediately" rule, both mirror
+  the build-level pattern the collections layer sits on top of. Same `nw:collections` /
+  `nw:collections-draft` localStorage split as `nw:builds`/`nw:builds-draft`; a fresh load with
+  no `nw:collections` wraps whatever's in the (already-migrated) flat build pool into one
+  catch-all collection, so an existing user's prior builds show up as a single collection with
+  no separate migration step. `storage.coverBuilds` is the safety net for a build id no
+  collection mentions (normally only reachable via that same kind of staleness) — it dumps
+  orphans into the first collection rather than losing them, so don't be surprised if a build
+  shows up in an unexpected collection after hand-edited or corrupted `nw:collections` JSON.
+- **Collection file-save uses the File System Access API, Chromium-only.** `fs-store.js` gates
+  everything behind `supported` (`typeof window.showSaveFilePicker === 'function'`); Firefox/
+  Safari simply don't get the "File on this PC…" Save As option (BuildNav disables it). The
+  picked `FileSystemFileHandle` is kept in `app.js`'s `fileLinks[collectionId]` (session-only)
+  and mirrored into a one-table IndexedDB (`fs-store.js`) so the link *could* survive a reload —
+  but nothing eagerly reopens it on load, since using a handle needs a fresh user gesture anyway
+  (Chromium re-checks permission per session via `verifyPermission`/`requestPermission`).
+
+## Working with this user
+
+- They read the code and push back on sloppy reasoning. Justify decisions.
+- Surface data ambiguities as **explicit decisions**, not guesses.
+- Verify claims by testing the claim, not a proxy. Aggregate counts hide compensating changes;
+  assert the specific property.
+- When a check fails, work out whether the code or the test is wrong before "fixing" anything —
+  several apparent bugs here were bad assertions (capped stats not moving damage, `innerText`
+  needing layout).
+- Commit only when asked. Branch rather than committing to `master` directly.
+- Update CLAUDE.md as needed when doing changes.

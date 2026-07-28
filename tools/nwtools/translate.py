@@ -5,7 +5,6 @@ Shared by `gen_fixture_js.py` and `gen_differ_cases.py` so there is exactly one 
 """
 
 import json
-import re
 
 from . import repo_path
 
@@ -57,12 +56,9 @@ def strip_prefix(value, prefix):
 
 
 def load_row_to_slot():
-    """Row number -> slot id, read back out of the generated data/slots.js."""
-    source = open(repo_path('data', 'slots.js'), encoding='utf-8').read()
-    return {
-        int(match.group(2)): match.group(1)
-        for match in re.finditer(r'\{id:"([^"]+)".*?row:(\d+)\}', source)
-    }
+    """Row number -> slot id, read back out of the generated data/slots.json."""
+    data = json.load(open(repo_path('data', 'slots.json'), encoding='utf-8'))
+    return {slot['row']: slot['id'] for slot in data['slots']}
 
 
 def build_context(choices):
