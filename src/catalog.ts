@@ -17,29 +17,30 @@
 
 import { NW_ITEMS, NW_BONUSES, NW_SCHEMA, NW_SLOTS } from './data';
 import * as db from './db';
+import type { Item, BonusSet, Schema, CatalogOverlay, CatalogGroup, ConditionWhen, LintFinding } from './types';
 
-export const emptyOverlay = () => ({ items: {} as Record<string, any>, bonusSets: {} as Record<string, any> });
+export const emptyOverlay = (): CatalogOverlay => ({ items: {}, bonusSets: {} });
 
-export const isEmpty = (overlay: any) => !overlay
+export const isEmpty = (overlay: CatalogOverlay | null | undefined) => !overlay
   || (Object.keys(overlay.items ?? {}).length === 0
     && Object.keys(overlay.bonusSets ?? {}).length === 0);
 
 /** Anything persisted or pasted has to survive being wrong. */
-export function normaliseOverlay(raw: any) {
+export function normaliseOverlay(raw: unknown): CatalogOverlay {
   const overlay = emptyOverlay();
   if (!raw || typeof raw !== 'object') return overlay;
   for (const group of ['items', 'bonusSets'] as const) {
-    const source = raw[group];
+    const source = (raw as Record<string, unknown>)[group];
     if (!source || typeof source !== 'object') continue;
     for (const [key, value] of Object.entries(source)) {
       if (value === null) overlay[group][key] = null;              // tombstone
-      else if (value && typeof value === 'object') overlay[group][key] = value;
+      else if (value && typeof value === 'object') overlay[group][key] = value as Item & BonusSet;
     }
   }
   return overlay;
 }
 
-export const base = () => ({
+export const base = (): { items: Item[]; bonusSets: BonusSet[] } => ({
   items: NW_ITEMS ?? [],
   bonusSets: NW_BONUSES ?? [],
 });
@@ -48,11 +49,11 @@ export const base = () => ({
  * Fold overlays over the base, later layers winning. Output is sorted by name/id so the
  * export is stable and diffs against the generated files stay readable.
  */
-export function compose(overlays: any[] = []) {
+export function compose(overlays: (CatalogOverlay | null | undefined)[] = []) {
   const { items: baseItems, bonusSets: baseSets } = base();
 
-  const items = new Map(baseItems.map((item: any) => [item.name, item]));
-  const bonusSets = new Map(baseSets.map((set: any) => [set.id, set]));
+  const items = new Map(baseItems.map((item) => [item.name, item]));
+  const bonusSets = new Map(baseSets.map((set) => [set.id, set]));
 
   for (const overlay of overlays) {
     if (!overlay) continue;
@@ -67,42 +68,44 @@ export function compose(overlays: any[] = []) {
   }
 
   return {
-    items: [...items.values()].sort((a: any, b: any) => a.name.localeCompare(b.name)),
-    bonusSets: [...bonusSets.values()].sort((a: any, b: any) => a.id.localeCompare(b.id)),
+    items: [...items.values()].sort((a, b) => a.name.localeCompare(b.name)),
+    bonusSets: [...bonusSets.values()].sort((a, b) => a.id.localeCompare(b.id)),
   };
 }
 
 /** A db the engine accepts, built from the composed catalogue. */
-export function makeDb(overlays: any[] = []) {
+export function makeDb(overlays: (CatalogOverlay | null | undefined)[] = []) {
   const { items, bonusSets } = compose(overlays);
   return db.build(items, bonusSets, NW_SCHEMA, NW_SLOTS);
 }
 
 // --- editing (pure: every helper returns a new overlay) ---------------------------------
 
-const clone = (overlay: any) => ({
+const clone = (overlay: CatalogOverlay): CatalogOverlay => ({
   items: { ...overlay.items },
   bonusSets: { ...overlay.bonusSets },
 });
 
-const inBase = (group: 'items' | 'bonusSets', key: string) => (group === 'items'
-  ? base().items.some((item: any) => item.name === key)
-  : base().bonusSets.some((set: any) => set.id === key));
+const inBase = (group: CatalogGroup, key: string) => (group === 'items'
+  ? base().items.some((item) => item.name === key)
+  : base().bonusSets.some((set) => set.id === key));
 
 /** Save an entry. `previousKey` set and different means a rename. */
-export function upsert(overlay: any, group: 'items' | 'bonusSets', key: string, value: any, previousKey?: string) {
+export function upsert(
+  overlay: CatalogOverlay, group: CatalogGroup, key: string, value: Item | BonusSet, previousKey?: string,
+) {
   const next = clone(overlay);
   if (previousKey && previousKey !== key) {
     // A renamed base entry still has to be hidden, or both names would resolve.
     if (inBase(group, previousKey)) next[group][previousKey] = null;
     else delete next[group][previousKey];
   }
-  next[group][key] = value;
+  (next[group] as Record<string, Item | BonusSet | null>)[key] = value;
   return next;
 }
 
 /** Hide a base entry, or drop an added one outright. */
-export function remove(overlay: any, group: 'items' | 'bonusSets', key: string) {
+export function remove(overlay: CatalogOverlay, group: CatalogGroup, key: string) {
   const next = clone(overlay);
   if (inBase(group, key)) next[group][key] = null;
   else delete next[group][key];
@@ -110,14 +113,14 @@ export function remove(overlay: any, group: 'items' | 'bonusSets', key: string) 
 }
 
 /** Forget an override so the base entry shows through again. */
-export function revert(overlay: any, group: 'items' | 'bonusSets', key: string) {
+export function revert(overlay: CatalogOverlay, group: CatalogGroup, key: string) {
   const next = clone(overlay);
   delete next[group][key];
   return next;
 }
 
 /** How an entry differs from what shipped -- drives the badges in the editor list. */
-export function statusOf(overlay: any, group: 'items' | 'bonusSets', key: string) {
+export function statusOf(overlay: CatalogOverlay | null | undefined, group: CatalogGroup, key: string) {
   const override = overlay?.[group]?.[key];
   const shipped = inBase(group, key);
   if (override === null) return 'removed';
@@ -137,7 +140,9 @@ const CONDITION_KEYS = new Set(['toggle', 'role', 'class', 'combatType', 'locati
 const ITEM_FIELDS = new Set(['name', 'filter', 'tags', 'maxCopies', 'allowedClass',
   'dynamicStat', 'dynamicMin', 'dynamicMax', 'bonuses', 'excludes']);
 
-function checkConditions(when: any, path: string, report: (level: string, message: string) => void) {
+function checkConditions(
+  when: ConditionWhen | undefined, path: string, report: (level: 'error' | 'warn', message: string) => void,
+) {
   if (!when || typeof when !== 'object') return;
   for (const [key, spec] of Object.entries(when)) {
     if (!CONDITION_KEYS.has(key)) {
@@ -149,7 +154,7 @@ function checkConditions(when: any, path: string, report: (level: string, messag
       if (Array.isArray(spec)) spec.forEach((sub) => checkConditions(sub, path, report));
       else report('error', `${path}: "${key}" must be a list`);
     } else if (key === 'not') {
-      checkConditions(spec, path, report);
+      checkConditions(spec as ConditionWhen, path, report);
     }
   }
 }
@@ -158,18 +163,21 @@ function checkConditions(when: any, path: string, report: (level: string, messag
  * Lint the composed catalogue. Warnings are things that are probably a mistake; errors are
  * things the engine will misread or silently drop.
  */
-export function validate(items: any[], bonusSets: any[], schema: any = NW_SCHEMA) {
-  const findings: any[] = [];
-  const report = (level: string, message: string, name?: string, kind = 'item') => findings.push({ level, message, name, kind });
+export function validate(items: Item[], bonusSets: BonusSet[], schema: Schema = NW_SCHEMA): LintFinding[] {
+  const findings: LintFinding[] = [];
+  const report = (level: 'error' | 'warn', message: string, name?: string, kind: 'item' | 'bonusSet' = 'item') =>
+    findings.push({ level, message, name, kind });
 
   const statKeys = new Set(schema.statKeys);
   const percentKinds = new Set(['percent', 'mult']);
-  const slotFilters = new Set((NW_SLOTS?.slots ?? []).map((slot: any) => slot.filter));
+  const slotFilters = new Set((NW_SLOTS?.slots ?? []).map((slot) => slot.filter));
   const classes = new Set(schema.context.classes);
   const setIds = new Set(bonusSets.map((set) => set.id));
   const seenNames = new Set();
 
-  const checkStats = (stats: any, label: string, name?: string, kind = 'item') => {
+  const checkStats = (
+    stats: Record<string, unknown> | undefined, label: string, name?: string, kind: 'item' | 'bonusSet' = 'item',
+  ) => {
     for (const [key, value] of Object.entries(stats ?? {})) {
       if (!statKeys.has(key)) {
         report('error', `${label}: "${key}" is not a stat in the schema`, name, kind);
@@ -199,7 +207,7 @@ export function validate(items: any[], bonusSets: any[], schema: any = NW_SCHEMA
         item.name);
     }
 
-    const stats: Record<string, any> = {};
+    const stats: Record<string, unknown> = {};
     for (const key of Object.keys(item)) {
       if (statKeys.has(key)) stats[key] = item[key];
       else if (!ITEM_FIELDS.has(key)) {
@@ -224,7 +232,7 @@ export function validate(items: any[], bonusSets: any[], schema: any = NW_SCHEMA
 
   for (const set of bonusSets) {
     if (!set.id) { report('error', 'a bonus set has no id'); continue; }
-    set.grants?.forEach((grant: any, index: number) => {
+    set.grants?.forEach((grant, index) => {
       const label = `grant ${index + 1}`;
       checkConditions(grant.when, label, (level, message) =>
         report(level, message, set.id, 'bonusSet'));
@@ -259,7 +267,7 @@ const WRAP_AT = 96;
  * file's indentation matches what the Python generator would produce for the same data --
  * `indent` is the column of this value's own brackets, not of its children.
  */
-export function literal(value: any, indent = 0): string {
+export function literal(value: unknown, indent = 0): string {
   if (value === null) return 'null';
   if (Array.isArray(value)) {
     const parts = value.map((v) => literal(v, indent));
@@ -270,13 +278,13 @@ export function literal(value: any, indent = 0): string {
     return `[\n${inner.map((p) => pad + p).join(',\n')}\n${' '.repeat(indent)}]`;
   }
   if (typeof value === 'object') {
-    return entriesLiteral(Object.entries(value).filter(([, v]) => v !== undefined), indent);
+    return entriesLiteral(Object.entries(value as object).filter(([, v]) => v !== undefined), indent);
   }
   return JSON.stringify(value);
 }
 
 /** Same wrapping rule as `literal`, for an already-ordered `[key, value]` list. */
-function entriesLiteral(entries: [string, any][], indent: number): string {
+function entriesLiteral(entries: [string, unknown][], indent: number): string {
   const parts = entries.map(([k, v]) => `${key(k)}: ${literal(v, indent + 2)}`);
   const oneLine = `{${parts.join(', ')}}`;
   if (oneLine.length + indent <= WRAP_AT) return oneLine;
@@ -284,31 +292,31 @@ function entriesLiteral(entries: [string, any][], indent: number): string {
   return `{\n${parts.map((p) => pad + p).join(',\n')}\n${' '.repeat(indent)}}`;
 }
 
-function orderedEntries(item: any, statKeys: string[]) {
+function orderedEntries(item: Item, statKeys: string[]): [string, unknown][] {
   const used = new Set([...LEADING_KEYS, ...TRAILING_KEYS]);
   const stats = statKeys.filter((k) => item[k] !== undefined && !used.has(k));
   const rest = Object.keys(item)
     .filter((k) => !used.has(k) && !statKeys.includes(k));
   return [...LEADING_KEYS, ...stats, ...rest, ...TRAILING_KEYS]
     .filter((k) => item[k] !== undefined)
-    .map((k) => [k, item[k]] as [string, any]);
+    .map((k) => [k, item[k]] as [string, unknown]);
 }
 
 // Every row sits at column 2 (one level inside the top-level array), matching write_rows in
 // tools/nwtools/jsonemit.py -- the caller supplies the "  " prefix for a row's first line,
 // `entriesLiteral`'s own `indent` argument accounts for every line after that.
-export function toItemsFile(items: any[], statKeys: string[] = NW_SCHEMA.statKeys) {
+export function toItemsFile(items: Item[], statKeys: string[] = NW_SCHEMA.statKeys) {
   const body = items
     .map((item) => `  ${entriesLiteral(orderedEntries(item, statKeys), 2)}`)
     .join(',\n');
   return `[\n${body}\n]\n`;
 }
 
-export function toBonusesFile(bonusSets: any[]) {
+export function toBonusesFile(bonusSets: BonusSet[]) {
   const body = bonusSets
     .map((set) => {
-      const entries: [string, any][] = [['id', set.id], ['name', set.name ?? set.id], ['grants', set.grants ?? []]];
-      for (const key of ['excludes', 'stacking', 'maxStacks']) {
+      const entries: [string, unknown][] = [['id', set.id], ['name', set.name ?? set.id], ['grants', set.grants ?? []]];
+      for (const key of ['excludes', 'stacking', 'maxStacks'] as const) {
         if (set[key] !== undefined) entries.push([key, set[key]]);
       }
       return `  ${entriesLiteral(entries, 2)}`;

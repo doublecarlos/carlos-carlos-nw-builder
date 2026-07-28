@@ -1,23 +1,24 @@
 // Item database indexing (plan §4.2).
 //
-// Consumes the globals published by data/db-items.js, data/db-bonuses.js, data/schema.js and
-// data/slots.js and builds the lookups the engine and UI need. Pure: no DOM, no fetch.
-//
-// `fromGlobals` still reads `window.NW_*` for now -- Phase 3 of the npm/Vite migration replaces
-// those globals with a `src/data.ts` module of static imports; until then the data/*.js classic
-// loaders are still what populates them.
+// Consumes the statically-imported data (src/data.ts) and builds the lookups the engine and UI
+// need. Pure: no DOM, no fetch -- `build()` takes items/bonusSets/schema/slots as plain
+// arguments so catalog.ts can hand it a composed (base + overlay) catalogue instead.
 
 import { NW_ITEMS, NW_BONUSES, NW_SCHEMA, NW_SLOTS } from './data';
+import type { Item, BonusSet, Schema, SlotsData, Slot, Db, BonusCandidate } from './types';
 
-const pushTo = (map: Map<any, any[]>, key: any, value: any) => {
+const pushTo = <K,>(map: Map<K, string[]>, key: K, value: string) => {
   const list = map.get(key);
   if (list) list.push(value);
   else map.set(key, [value]);
 };
 
-export function build(items: any[], bonusSets: any[] = [], schema: any, slots: any) {
-  const byName = new Map<string, any>();
-  const byFilter = new Map<string, any[]>();
+export function build(items: Item[], bonusSets: BonusSet[] = [], schema: Schema, slots: SlotsData): Db {
+  const byName = new Map<string, Item>();
+  // Keyed by `string | undefined` (not just `string`): an item with no `filter` still lands
+  // here under the `undefined` key, same as the untyped original -- dead weight (`forFilter`
+  // is only ever called with a real string) but preserved rather than silently dropped.
+  const byFilter = new Map<string | undefined, Item[]>();
   const setMembers = new Map<string, string[]>();     // setId -> [item name]
   const itemsByTag = new Map<string, string[]>();     // tag   -> [item name]
   const duplicates: string[] = [];
@@ -25,7 +26,9 @@ export function build(items: any[], bonusSets: any[] = [], schema: any, slots: a
   for (const item of items) {
     if (byName.has(item.name)) duplicates.push(item.name);
     byName.set(item.name, item);
-    pushTo(byFilter, item.filter, item);
+    const filterList = byFilter.get(item.filter);
+    if (filterList) filterList.push(item);
+    else byFilter.set(item.filter, [item]);
 
     for (const setId of item.bonuses ?? []) pushTo(setMembers, setId, item.name);
     for (const tag of item.tags ?? []) pushTo(itemsByTag, tag, item.name);
@@ -39,7 +42,7 @@ export function build(items: any[], bonusSets: any[] = [], schema: any, slots: a
   // items (`sets: [...]`, plan §2.3), so this is the only place the two are joined.
   const bonusSetById = new Map(bonusSets.map((set) => [set.id, set]));
   const slotList = slots?.slots ?? [];
-  const slotById = new Map<string, any>(slotList.map((slot: any) => [slot.id, slot]));
+  const slotById = new Map<string, Slot>(slotList.map((slot) => [slot.id, slot]));
 
   return {
     items,
@@ -69,14 +72,14 @@ export function build(items: any[], bonusSets: any[] = [], schema: any, slots: a
     },
 
     /** 0 or absent means unlimited. */
-    maxCopies: (item: any) => item?.maxCopies ?? 0,
+    maxCopies: (item: Item | null | undefined) => item?.maxCopies ?? 0,
 
     /**
      * Every bonus an item contributes: every bonus set it belongs to, whether that set has
      * one member (a bonus that is nobody else's business) or many. One candidate per set --
      * a set resolves as one unit (bonus.js sums its `grants`), not one candidate per grant.
      */
-    bonusesFor(item: any) {
+    bonusesFor(item: Item): BonusCandidate[] {
       return (item.bonuses ?? []).flatMap((setId: string) => {
         const set = bonusSetById.get(setId);
         return set ? [{ bonus: set, setId: set.id, source: item.name }] : [];
@@ -84,14 +87,6 @@ export function build(items: any[], bonusSets: any[] = [], schema: any, slots: a
     },
   };
 }
-
-/** Convenience for the browser: build from the loaded globals. */
-export const fromGlobals = () => build(
-  (window as any).NW_ITEMS,
-  (window as any).NW_BONUSES,
-  (window as any).NW_SCHEMA,
-  (window as any).NW_SLOTS,
-);
 
 /** Convenience for tests/tooling: build from the statically-imported data (src/data.ts), no
  * `window` required. */

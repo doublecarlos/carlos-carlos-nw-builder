@@ -8,9 +8,9 @@
 // changes. The hash is left alone -- `storage.ts` already uses `#b=<payload>` for share links,
 // consumed once on load.
 
-export const parse = () => Object.fromEntries(new URLSearchParams(window.location.search));
+export const parse = (): Record<string, string> => Object.fromEntries(new URLSearchParams(window.location.search));
 
-const serialize = (params: Record<string, any>) => {
+const serialize = (params: Record<string, string | null | undefined>) => {
   const qs = new URLSearchParams();
   for (const [key, value] of Object.entries(params)) {
     if (value != null && value !== '') qs.set(key, value);
@@ -18,6 +18,10 @@ const serialize = (params: Record<string, any>) => {
   const text = qs.toString();
   return `${window.location.pathname}${text ? `?${text}` : ''}${window.location.hash}`;
 };
+
+/** A param value of `null` drops the key out of the URL instead of appearing as the literal
+ * string "null" -- see `apply` below. */
+export type RouterParams = Record<string, string | null | undefined>;
 
 /**
  * Merge `partial` onto the current query string and write it back. A key set to `null` (or
@@ -28,9 +32,9 @@ const serialize = (params: Record<string, any>) => {
  * downgraded to a replace automatically when the merge is a no-op, so re-applying state that
  * came from a popstate event (which already updated the URL) can't double up the entry.
  */
-export function apply(partial: Record<string, any>, { push = true }: { push?: boolean } = {}) {
+export function apply(partial: RouterParams, { push = true }: { push?: boolean } = {}) {
   const current = parse();
-  const merged: Record<string, any> = { ...current, ...partial };
+  const merged: Record<string, string | null | undefined> = { ...current, ...partial };
   for (const key of Object.keys(merged)) {
     if (merged[key] == null || merged[key] === '') delete merged[key];
   }

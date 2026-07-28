@@ -13,6 +13,7 @@
 
 import { NW_SLOTS, NW_SCHEMA } from './data';
 import * as catalog from './catalog';
+import type { Build, ForteSplit, Library, Collection, Collections, CatalogOverlay } from './types';
 
 const KEY = 'nw:builds';
 const DRAFT_KEY = 'nw:builds-draft';
@@ -31,7 +32,7 @@ const PLAIN = 'j';
  * The sheet's own forte picks. `NW_SCHEMA.context.defaults` carries no `forte` key -- see the
  * open item in llm/plans/0002-ui-handoff.md §9.
  */
-const DEFAULT_FORTE = { primary: 'power_p', secondaryA: 'strike_p', secondaryB: 'awareness_p' };
+const DEFAULT_FORTE: Required<ForteSplit> = { primary: 'power_p', secondaryA: 'strike_p', secondaryB: 'awareness_p' };
 
 // slot-list.js's own default: every section collapsed except Gear, plus the Options header
 // (not a real section, so it isn't in `NW_SLOTS.sections`) also collapsed.
@@ -45,7 +46,7 @@ function defaultExpanded() {
   return expanded;
 }
 
-export function defaultBuild(name = 'New build') {
+export function defaultBuild(name = 'New build'): Build {
   const defaults = NW_SCHEMA.context.defaults;
   return {
     id: newId(),
@@ -74,36 +75,43 @@ export function defaultBuild(name = 'New build') {
  * shape, a hand-edited export, or a user who pasted nonsense: unknown keys survive, missing
  * ones fall back to defaults, and the wrong type anywhere is replaced rather than thrown on.
  */
-export function normalise(raw: any, { keepId = true }: { keepId?: boolean } = {}) {
-  const base = defaultBuild();
-  if (!raw || typeof raw !== 'object') return base;
+const isPlain = (value: unknown): value is Record<string, unknown> =>
+  Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 
-  const isPlain = (value: any) => value && typeof value === 'object' && !Array.isArray(value);
-  const strings = (source: any) => {
-    const out: Record<string, string> = {};
-    if (!isPlain(source)) return out;
-    for (const [key, value] of Object.entries(source)) {
-      if (typeof value === 'string' && value !== '' && value !== '-') out[key] = value;
-    }
-    return out;
-  };
-  const numbers = (source: any) => {
-    const out: Record<string, number> = {};
-    if (!isPlain(source)) return out;
-    for (const [key, value] of Object.entries(source)) {
-      const parsed = Number(value);
-      if (value !== '' && value != null && Number.isFinite(parsed)) out[key] = parsed;
-    }
-    return out;
-  };
-  const booleans = (source: any) => {
-    const out: Record<string, boolean> = {};
-    if (!isPlain(source)) return out;
-    for (const [key, value] of Object.entries(source)) {
-      if (typeof value === 'boolean') out[key] = value;
-    }
-    return out;
-  };
+const strings = (source: unknown): Record<string, string> => {
+  const out: Record<string, string> = {};
+  if (!isPlain(source)) return out;
+  for (const [key, value] of Object.entries(source)) {
+    if (typeof value === 'string' && value !== '' && value !== '-') out[key] = value;
+  }
+  return out;
+};
+const numbers = (source: unknown): Record<string, number> => {
+  const out: Record<string, number> = {};
+  if (!isPlain(source)) return out;
+  for (const [key, value] of Object.entries(source)) {
+    const parsed = Number(value);
+    if (value !== '' && value != null && Number.isFinite(parsed)) out[key] = parsed;
+  }
+  return out;
+};
+const booleans = (source: unknown): Record<string, boolean> => {
+  const out: Record<string, boolean> = {};
+  if (!isPlain(source)) return out;
+  for (const [key, value] of Object.entries(source)) {
+    if (typeof value === 'boolean') out[key] = value;
+  }
+  return out;
+};
+
+/**
+ * Coerce anything build-shaped into a valid build. Tolerates a truncated write, an older
+ * shape, a hand-edited export, or a user who pasted nonsense: unknown keys survive, missing
+ * ones fall back to defaults, and the wrong type anywhere is replaced rather than thrown on.
+ */
+export function normalise(raw: unknown, { keepId = true }: { keepId?: boolean } = {}): Build {
+  const base = defaultBuild();
+  if (!isPlain(raw)) return base;
 
   const context = isPlain(raw.context) ? raw.context : {};
   const compare = isPlain(raw.compare) ? raw.compare : {};
@@ -112,16 +120,19 @@ export function normalise(raw: any, { keepId = true }: { keepId?: boolean } = {}
   // workspace layer -- but preserving it here means a build carrying custom items survives
   // a save/reload/share round trip, so turning the feature on is a UI change and not a
   // migration. `App.vue` already folds `build.catalog` in as a catalogue layer.
-  const perBuild = isPlain(raw.catalog) ? catalog.normaliseOverlay(raw.catalog) : null;
+  const perBuild: CatalogOverlay | null = isPlain(raw.catalog) ? catalog.normaliseOverlay(raw.catalog) : null;
 
   return {
     ...base,
     ...(perBuild && !catalog.isEmpty(perBuild) ? { catalog: perBuild } : {}),
     id: keepId && typeof raw.id === 'string' && raw.id ? raw.id : base.id,
     name: typeof raw.name === 'string' && raw.name.trim() ? raw.name : base.name,
-    updated: Number.isFinite(raw.updated) ? raw.updated : Date.now(),
+    updated: Number.isFinite(raw.updated) ? raw.updated as number : Date.now(),
     choices: strings(raw.choices),
     values: numbers(raw.values),
+    // `context`'s pass-through fields (class/role/combatType/location/damageType) are not
+    // individually validated -- same tolerance policy the untyped original had -- so the
+    // result is only knowable-safe by construction, not by the type checker; hence the cast.
     context: {
       ...base.context,
       ...context,
@@ -133,7 +144,7 @@ export function normalise(raw: any, { keepId = true }: { keepId?: boolean } = {}
         : base.context.magnitude,
       toggles: { ...base.context.toggles, ...(isPlain(context.toggles) ? context.toggles : {}) },
       forte: { ...base.context.forte, ...(isPlain(context.forte) ? context.forte : {}) },
-    },
+    } as Build['context'],
     compare: {
       id: typeof compare.id === 'string' ? compare.id : base.compare.id,
       highlight: Boolean(compare.highlight),
@@ -143,14 +154,14 @@ export function normalise(raw: any, { keepId = true }: { keepId?: boolean } = {}
   };
 }
 
-export function duplicate(build: any, name?: string) {
+export function duplicate(build: Build, name?: string): Build {
   return { ...normalise(build), id: newId(), name: name ?? `${build.name} copy`,
     updated: Date.now() };
 }
 
 /** A deep copy safe to seed `savedById` from `builds` (or back) without aliasing the
  * reactive proxy -- `normalise` already copies deeply and keeps the id. */
-export const cloneBuild = (build: any) => normalise(build);
+export const cloneBuild = (build: Build): Build => normalise(build);
 
 /**
  * Key-order-insensitive, `updated`-blind equality for the dirty check. `choices`/`values`/
@@ -159,17 +170,17 @@ export const cloneBuild = (build: any) => normalise(build);
  * is excluded because only the saved copy gets it stamped (App.vue's `saveActive`), so
  * comparing it would report every build dirty forever after its first save.
  */
-const canonical = (value: any): any => {
+const canonical = (value: unknown): unknown => {
   if (Array.isArray(value)) return value.map(canonical);
   if (value && typeof value === 'object') {
-    const out: Record<string, any> = {};
-    for (const key of Object.keys(value).sort()) out[key] = canonical(value[key]);
+    const out: Record<string, unknown> = {};
+    for (const key of Object.keys(value).sort()) out[key] = canonical((value as Record<string, unknown>)[key]);
     return out;
   }
   return value;
 };
 
-export function sameBuild(a: any, b: any) {
+export function sameBuild(a: Build | null | undefined, b: Build | null | undefined) {
   if (!a || !b) return a === b;
   const { updated: ua, ...restA } = a;
   const { updated: ub, ...restB } = b;
@@ -178,12 +189,12 @@ export function sameBuild(a: any, b: any) {
 
 // --- the library ------------------------------------------------------------------------
 
-function emptyLibrary() {
+function emptyLibrary(): Library {
   const build = defaultBuild();
   return { builds: [build], activeId: build.id };
 }
 
-export function loadLibrary() {
+export function loadLibrary(): Library {
   let stored = null;
   try {
     stored = JSON.parse(window.localStorage.getItem(KEY) ?? 'null');
@@ -196,15 +207,15 @@ export function loadLibrary() {
     return migrated ?? emptyLibrary();
   }
 
-  const builds = stored.builds.map((build: any) => normalise(build));
-  const activeId = builds.some((build: any) => build.id === stored.activeId)
+  const builds: Build[] = stored.builds.map((build: unknown) => normalise(build));
+  const activeId = builds.some((build) => build.id === stored.activeId)
     ? stored.activeId
     : builds[0].id;
   return { builds, activeId };
 }
 
 /** Phase 3's single-build key. Read once, folded into the library, then dropped. */
-function migrateLegacy() {
+function migrateLegacy(): Library | null {
   let legacy = null;
   try {
     legacy = JSON.parse(window.localStorage.getItem(LEGACY_KEY) ?? 'null');
@@ -220,7 +231,7 @@ function migrateLegacy() {
   return { builds: [build], activeId: build.id };
 }
 
-export function saveLibrary(library: any) {
+export function saveLibrary(library: Library) {
   try {
     window.localStorage.setItem(KEY, JSON.stringify({
       builds: library.builds,
@@ -239,7 +250,7 @@ export function saveLibrary(library: any) {
  * no draft yet -- either a first-ever visit, or an existing user's first load after this
  * split shipped, when `nw:builds` (their old autosave target) is the only copy of the truth.
  */
-export function loadDraft(saved: any) {
+export function loadDraft(saved: Library): Library {
   let stored = null;
   try {
     stored = JSON.parse(window.localStorage.getItem(DRAFT_KEY) ?? 'null');
@@ -248,17 +259,17 @@ export function loadDraft(saved: any) {
   }
 
   if (!stored || !Array.isArray(stored.builds) || !stored.builds.length) {
-    return { builds: saved.builds.map((build: any) => cloneBuild(build)), activeId: saved.activeId };
+    return { builds: saved.builds.map((build) => cloneBuild(build)), activeId: saved.activeId };
   }
 
-  const builds = stored.builds.map((build: any) => normalise(build));
-  const activeId = builds.some((build: any) => build.id === stored.activeId)
+  const builds: Build[] = stored.builds.map((build: unknown) => normalise(build));
+  const activeId = builds.some((build) => build.id === stored.activeId)
     ? stored.activeId
     : builds[0].id;
   return { builds, activeId };
 }
 
-export function saveDraft(library: any) {
+export function saveDraft(library: Library) {
   try {
     window.localStorage.setItem(DRAFT_KEY, JSON.stringify({
       builds: library.builds,
@@ -281,7 +292,7 @@ export function saveDraft(library: any) {
 // collections survives a reload, while `nw:collections` only moves on an explicit collection
 // Save.
 
-function makeCollectionFor(builds: any[], name: string) {
+function makeCollectionFor(builds: Build[], name: string): Collection {
   return {
     id: newId('c'),
     name,
@@ -292,22 +303,22 @@ function makeCollectionFor(builds: any[], name: string) {
 }
 
 /** A brand new collection wrapping one brand new build -- App.vue's `createCollection`. */
-export const defaultCollection = (name: string, build: any) => makeCollectionFor([build], name);
+export const defaultCollection = (name: string, build: Build) => makeCollectionFor([build], name);
 
 /** Tolerant coercion, same spirit as `normalise`: drops any `buildIds` entry that no longer
  * exists in the flat pool (deleted independently, or a hand-edited import), and reports back
  * null -- rather than a hollow collection -- when nothing valid survives, so the caller can
  * fall back to wrapping the whole pool instead of showing an empty group. */
-function normaliseCollection(raw: any, idSet: Set<string>) {
-  if (!raw || typeof raw !== 'object') return null;
-  const buildIds = Array.isArray(raw.buildIds) ? raw.buildIds.filter((id: string) => idSet.has(id)) : [];
+function normaliseCollection(raw: unknown, idSet: Set<string>): Collection | null {
+  if (!isPlain(raw)) return null;
+  const buildIds: string[] = Array.isArray(raw.buildIds) ? raw.buildIds.filter((id: string) => idSet.has(id)) : [];
   if (!buildIds.length) return null;
   return {
     id: typeof raw.id === 'string' && raw.id ? raw.id : newId('c'),
     name: typeof raw.name === 'string' && raw.name.trim() ? raw.name : 'Collection',
-    updated: Number.isFinite(raw.updated) ? raw.updated : Date.now(),
+    updated: Number.isFinite(raw.updated) ? raw.updated as number : Date.now(),
     buildIds,
-    activeBuildId: buildIds.includes(raw.activeBuildId) ? raw.activeBuildId : buildIds[0],
+    activeBuildId: buildIds.includes(raw.activeBuildId as string) ? raw.activeBuildId as string : buildIds[0],
   };
 }
 
@@ -315,7 +326,7 @@ function normaliseCollection(raw: any, idSet: Set<string>) {
  * vanish from the sidebar. Orphans (a build the stored grouping never mentioned -- normally
  * only on the very first load after this feature shipped) are folded into the first
  * collection rather than dropped. */
-function coverBuilds(collections: any[], builds: any[]) {
+function coverBuilds(collections: Collection[], builds: Build[]): Collection[] {
   const covered = new Set(collections.flatMap((collection) => collection.buildIds));
   const orphans = builds.map((build) => build.id).filter((id) => !covered.has(id));
   if (!orphans.length) return collections;
@@ -324,7 +335,7 @@ function coverBuilds(collections: any[], builds: any[]) {
     : collection));
 }
 
-function readCollections(key: string, builds: any[]) {
+function readCollections(key: string, builds: Build[]): Collections | null {
   let stored = null;
   try {
     stored = JSON.parse(window.localStorage.getItem(key) ?? 'null');
@@ -334,7 +345,7 @@ function readCollections(key: string, builds: any[]) {
   if (stored && Array.isArray(stored.collections) && stored.collections.length) {
     const idSet = new Set(builds.map((build) => build.id));
     const collections = coverBuilds(
-      stored.collections.map((raw: any) => normaliseCollection(raw, idSet)).filter(Boolean),
+      stored.collections.map((raw: unknown) => normaliseCollection(raw, idSet)).filter((c: Collection | null): c is Collection => c !== null),
       builds,
     );
     if (collections.length) {
@@ -351,14 +362,14 @@ function readCollections(key: string, builds: any[]) {
  * guarantee that). Nothing stored, or nothing in it survives, wraps every build the pool
  * has into one catch-all collection -- this is also how an existing user's first load after
  * this feature shipped picks up their prior builds with no separate migration step. */
-export function loadCollections(builds: any[]) {
+export function loadCollections(builds: Build[]): Collections {
   const result = readCollections(COLLECTIONS_KEY, builds);
   if (result) return result;
   const fresh = makeCollectionFor(builds, 'My builds');
   return { collections: [fresh], activeCollectionId: fresh.id };
 }
 
-export function saveCollections(state: any) {
+export function saveCollections(state: Collections) {
   try {
     window.localStorage.setItem(COLLECTIONS_KEY, JSON.stringify({
       collections: state.collections,
@@ -372,19 +383,19 @@ export function saveCollections(state: any) {
 
 /** Falls back to a clone of the saved grouping when there is no draft yet, same reasoning as
  * `loadDraft` above. */
-export function loadCollectionsDraft(builds: any[], saved: any) {
+export function loadCollectionsDraft(builds: Build[], saved: Collections): Collections {
   const result = readCollections(COLLECTIONS_DRAFT_KEY, builds);
   if (result) return result;
   return {
     collections: coverBuilds(
-      saved.collections.map((collection: any) => ({ ...collection, buildIds: [...collection.buildIds] })),
+      saved.collections.map((collection) => ({ ...collection, buildIds: [...collection.buildIds] })),
       builds,
     ),
     activeCollectionId: saved.activeCollectionId,
   };
 }
 
-export function saveCollectionsDraft(state: any) {
+export function saveCollectionsDraft(state: Collections) {
   try {
     window.localStorage.setItem(COLLECTIONS_DRAFT_KEY, JSON.stringify({
       collections: state.collections,
@@ -399,29 +410,29 @@ export function saveCollectionsDraft(state: any) {
 /** A self-contained snapshot of one collection -- used for export, file-save, and duplicate --
  * bundling the actual build objects (not just the ids a collection otherwise stores) so it
  * can round-trip through `parseCollectionJson` with no other context. */
-export function bundleCollection(collection: any, buildsById: Record<string, any>) {
+export function bundleCollection(collection: Collection, buildsById: Record<string, Build>) {
   return {
     id: collection.id,
     name: collection.name,
     updated: collection.updated,
-    builds: collection.buildIds.map((id: string) => buildsById[id]).filter(Boolean),
+    builds: collection.buildIds.map((id) => buildsById[id]).filter(Boolean),
   };
 }
 
 /** The reverse of `bundleCollection`: re-ids the collection and every build inside it (like
  * `parseJson`'s `keepId: false`), so importing a file can never collide with, or overwrite,
  * a collection/build already in the library. */
-export function parseCollectionJson(text: string) {
+export function parseCollectionJson(text: string): { collection: Collection; builds: Build[] } {
   const parsed = JSON.parse(text);
   if (!parsed || typeof parsed !== 'object' || !Array.isArray(parsed.builds) || !parsed.builds.length) {
     throw new Error('no builds in that collection');
   }
-  const builds = parsed.builds.map((build: any) => normalise(build, { keepId: false }));
-  const collection = {
+  const builds: Build[] = parsed.builds.map((build: unknown) => normalise(build, { keepId: false }));
+  const collection: Collection = {
     id: newId('c'),
     name: typeof parsed.name === 'string' && parsed.name.trim() ? parsed.name : 'Imported collection',
     updated: Date.now(),
-    buildIds: builds.map((build: any) => build.id),
+    buildIds: builds.map((build) => build.id),
     activeBuildId: builds[0].id,
   };
   return { collection, builds };
@@ -429,14 +440,14 @@ export function parseCollectionJson(text: string) {
 
 /** Same re-id treatment as an import -- a duplicate must never share a build id with its
  * source, or the two collections would silently edit the same build. */
-export function duplicateCollection(collection: any, buildsById: Record<string, any>, name?: string) {
-  const builds = collection.buildIds.map((id: string) => duplicate(buildsById[id]));
+export function duplicateCollection(collection: Collection, buildsById: Record<string, Build>, name?: string) {
+  const builds = collection.buildIds.map((id) => duplicate(buildsById[id]));
   return {
     collection: {
       id: newId('c'),
       name: name ?? `${collection.name} copy`,
       updated: Date.now(),
-      buildIds: builds.map((build: any) => build.id),
+      buildIds: builds.map((build) => build.id),
       activeBuildId: builds[0]?.id ?? null,
     },
     builds,
@@ -457,7 +468,7 @@ export function loadOverlay() {
   }
 }
 
-export function saveOverlay(overlay: any) {
+export function saveOverlay(overlay: CatalogOverlay) {
   try {
     if (catalog.isEmpty(overlay)) window.localStorage.removeItem(OVERLAY_KEY);
     else window.localStorage.setItem(OVERLAY_KEY, JSON.stringify(overlay));
@@ -469,13 +480,15 @@ export function saveOverlay(overlay: any) {
 
 // --- import / export --------------------------------------------------------------------
 
-export const toJson = (build: any) => JSON.stringify(build, null, 2);
+// Not narrowed to `Build`: also used to serialise a collection bundle (`bundleCollection`'s
+// `{ id, name, updated, builds }`), which isn't a build itself.
+export const toJson = (value: unknown) => JSON.stringify(value, null, 2);
 
 /**
  * Accepts a single build or an array of them, and returns an array either way. Throws only
  * on unparseable text -- structural problems are absorbed by `normalise`.
  */
-export function parseJson(text: string) {
+export function parseJson(text: string): Build[] {
   const parsed = JSON.parse(text);
   const list = Array.isArray(parsed) ? parsed : [parsed];
   if (!list.length) throw new Error('no builds in that JSON');
@@ -488,7 +501,7 @@ const bytesToBase64Url = (bytes: Uint8Array) => {
   // Chunked: String.fromCharCode(...bytes) blows the argument limit on a few kB.
   let binary = '';
   for (let i = 0; i < bytes.length; i += 0x8000) {
-    binary += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000) as any);
+    binary += String.fromCharCode.apply(null, Array.from(bytes.subarray(i, i + 0x8000)));
   }
   return window.btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 };
@@ -502,25 +515,25 @@ const base64UrlToBytes = (text: string) => {
   return bytes;
 };
 
-const hasCompression = () => typeof (window as any).CompressionStream === 'function'
-  && typeof (window as any).DecompressionStream === 'function';
+const hasCompression = () => typeof CompressionStream === 'function'
+  && typeof DecompressionStream === 'function';
 
 /**
  * A build is ~4 kB of repetitive JSON -- slot ids and item names -- so deflate takes it to
  * roughly a tenth of that, which keeps the link inside every practical URL limit.
  */
-export async function encodeShare(build: any) {
+export async function encodeShare(build: Build) {
   const json = JSON.stringify(normalise(build));
   const bytes = new TextEncoder().encode(json);
   if (!hasCompression()) return PLAIN + bytesToBase64Url(bytes);
 
   const stream = new Blob([bytes]).stream()
-    .pipeThrough(new (window as any).CompressionStream('deflate-raw'));
+    .pipeThrough(new CompressionStream('deflate-raw'));
   const buffer = await new Response(stream).arrayBuffer();
   return DEFLATED + bytesToBase64Url(new Uint8Array(buffer));
 }
 
-export async function decodeShare(payload: string) {
+export async function decodeShare(payload: string): Promise<Build | null> {
   if (!payload) return null;
   const marker = payload[0];
   const bytes = base64UrlToBytes(payload.slice(1));
@@ -528,8 +541,8 @@ export async function decodeShare(payload: string) {
   let json;
   if (marker === DEFLATED) {
     if (!hasCompression()) throw new Error('this browser cannot read compressed links');
-    const stream = new Blob([bytes]).stream()
-      .pipeThrough(new (window as any).DecompressionStream('deflate-raw'));
+    const stream = new Blob([bytes as BlobPart]).stream()
+      .pipeThrough(new DecompressionStream('deflate-raw'));
     json = await new Response(stream).text();
   } else if (marker === PLAIN) {
     json = new TextDecoder().decode(bytes);

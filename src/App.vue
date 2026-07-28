@@ -71,7 +71,10 @@ if (owner) {
   initialActiveCollectionId = draftCollectionsState.collections.some((c: any) => c.id === initialRoute.collection)
     ? initialRoute.collection
     : draftCollectionsState.activeCollectionId;
-  const collection = draftCollectionsState.collections.find((c: any) => c.id === initialActiveCollectionId);
+  // Non-null: `initialActiveCollectionId` is always either a real collection id or
+  // `draftCollectionsState.activeCollectionId`, and `collections` is never empty (storage.ts's
+  // `loadCollections`/`loadCollectionsDraft` guarantee at least one).
+  const collection = draftCollectionsState.collections.find((c: any) => c.id === initialActiveCollectionId)!;
   initialActiveId = collection.buildIds.includes(collection.activeBuildId)
     ? collection.activeBuildId
     : collection.buildIds[0];
