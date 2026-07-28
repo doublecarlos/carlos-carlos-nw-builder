@@ -51,9 +51,9 @@ def main():
     handler = functools.partial(NoCacheHandler, directory=REPO_ROOT)
     with ReusableServer(('127.0.0.1', args.port), handler) as httpd:
         print(f'serving {REPO_ROOT} at http://localhost:{args.port}/  (no-store)')
-        print(f'  differ  http://localhost:{args.port}/tests/differ.html')
-        print('  (engine unit/fixture tests moved to `npm run test`; `npm run dev` replaces')
-        print('   this script for serving the app itself -- see llm/plans/ for the migration)')
+        print('  (engine unit/fixture/differ tests moved to `npm run test` / `npm run')
+        print('   test:differ`; `npm run dev` replaces this script for serving the app itself')
+        print('   -- see llm/plans/ for the migration)')
         httpd.serve_forever()
 
 
