@@ -27,6 +27,11 @@ import * as conditionDraft from './condition-draft';
 import BonusRows from './components/BonusRows.vue';
 import * as bonusDraft from './bonus-draft';
 import BonusGroups from './components/BonusGroups.vue';
+import ItemCard from './components/ItemCard.vue';
+import ItemPicker from './components/ItemPicker.vue';
+import BonusInspector from './components/BonusInspector.vue';
+import BuildBar from './components/BuildBar.vue';
+import BuildNav from './components/BuildNav.vue';
 
 declare global {
   interface Window {
@@ -91,3 +96,8 @@ window.NW.conditionDraft = conditionDraft;
 window.NW.components.BonusRows = BonusRows;
 window.NW.bonusDraft = bonusDraft;
 window.NW.components.BonusGroups = BonusGroups;
+window.NW.components.ItemCard = ItemCard;
+window.NW.components.ItemPicker = ItemPicker;
+window.NW.components.BonusInspector = BonusInspector;
+window.NW.components.BuildBar = BuildBar;
+window.NW.components.BuildNav = BuildNav;
