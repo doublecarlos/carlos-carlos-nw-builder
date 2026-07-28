@@ -1,0 +1,107 @@
+<script setup lang="ts">
+// Percent field, in the spirit of a percent-formatted spreadsheet cell.
+//
+// The engine stores percentages as decimals (0.09 === 9%), which is right for the maths and
+// awful to type: `0.09` is easy to enter as `9`, and `catalog.validate` exists partly to catch
+// exactly that mistake. This widget removes the mistake instead of reporting it -- you read and
+// type percent units, and the decimal never surfaces.
+//
+// Float hygiene matters more here than it looks. `3.6 / 100` is 0.036000000000000004, not
+// 0.036, so a naive conversion would perturb every value it touched: the item would diff
+// against the shipped data, and the export would fill with noise digits. Both directions round
+// to a precision far finer than any real game value.
+import { ref, computed, nextTick } from 'vue';
+
+/** decimal -> percent number. 0.036 -> 3.6, not 3.5999999999999996. */
+const toPercent = (value: any) => Number((Number(value) * 100).toFixed(10));
+
+/** percent number -> decimal. 3.6 -> 0.036, not 0.036000000000000004. */
+const toDecimal = (percent: any) => Number((Number(percent) / 100).toFixed(12));
+
+/** Up to 4 decimals, trailing zeros trimmed: 9, 3.6, 9.85. The % sign is a fixed suffix in
+ * the template, not part of this text, so it stays visible while typing too. */
+const display = (value: any) => {
+  if (value === '' || value == null || !Number.isFinite(Number(value))) return '';
+  const percent = toPercent(value);
+  return String(Number(percent.toFixed(4)));
+};
+
+const props = withDefaults(defineProps<{
+  modelValue?: number | string;
+  placeholder?: string;
+  step?: number;      // percentage points per arrow press
+}>(), {
+  modelValue: '',
+  placeholder: '',
+  step: 1,
+});
+
+const emit = defineEmits<{ 'update:modelValue': [value: number | string] }>();
+
+const focused = ref(false);
+const text = ref('');
+
+const shown = computed(() => (focused.value ? text.value : display(props.modelValue)));
+
+function onFocus(event: FocusEvent) {
+  focused.value = true;
+  const value = props.modelValue;
+  text.value = (value === '' || value == null || !Number.isFinite(Number(value)))
+    ? ''
+    : String(toPercent(value));
+  // Select the whole value, so typing replaces rather than appends -- the spreadsheet
+  // behaviour, and the reason retyping a rate is not fiddly.
+  nextTick(() => (event.target as HTMLInputElement).select());
+}
+
+function onBlur() {
+  focused.value = false;
+}
+
+function onInput(event: Event) {
+  text.value = (event.target as HTMLInputElement).value;
+  commit(text.value);
+}
+
+function commit(raw: string) {
+  const cleaned = String(raw).replace(/[%\s]/g, '').replace(',', '.');
+  if (cleaned === '' || cleaned === '-') {
+    emit('update:modelValue', '');
+    return;
+  }
+  const percent = Number(cleaned);
+  // Mid-typing states like "9." or "-" are left alone rather than snapped to 0.
+  if (!Number.isFinite(percent)) return;
+  emit('update:modelValue', toDecimal(percent));
+}
+
+function nudge(direction: number, event: KeyboardEvent) {
+  event.preventDefault();
+  const current = Number.isFinite(Number(props.modelValue)) && props.modelValue !== ''
+    ? toPercent(props.modelValue)
+    : 0;
+  const factor = event.shiftKey ? 10 : 1;
+  const next = Number((current + direction * props.step * factor).toFixed(10));
+  text.value = String(next);
+  emit('update:modelValue', toDecimal(next));
+}
+</script>
+
+<template>
+  <span class="pct-field">
+    <input
+      ref="input"
+      class="pct-input"
+      type="text"
+      inputmode="decimal"
+      autocomplete="off"
+      :value="shown"
+      :placeholder="placeholder"
+      @focus="onFocus"
+      @blur="onBlur"
+      @input="onInput"
+      @keydown.up="nudge(1, $event)"
+      @keydown.down="nudge(-1, $event)">
+    <span class="pct-suffix">%</span>
+  </span>
+</template>

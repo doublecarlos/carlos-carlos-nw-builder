@@ -1,12 +1,9 @@
-// Shared icon-button: a `button.link` whose content is a 24x24 lucide glyph plus an inline
-// `<title>` for the native hover tooltip (and the accessible name, since the svg is the
-// button's only content). `window.NW.icons` is the shared glyph registry so condition-rows.js,
-// bonus-rows.js and bonus-groups.js draw from the same set instead of each inlining SVG markup.
+// Shared lucide glyph registry, hand-copied (no icon package vendored -- ask the user for the
+// lucide glyph name and they'll paste in the markup, don't invent SVG paths from memory).
+// IconButton.vue is the only component that renders these; ConditionRows/BonusRows/BonusGroups
+// draw from the same set via IconButton rather than each inlining SVG markup.
 
-window.NW = window.NW ?? {};
-window.NW.components = window.NW.components ?? {};
-
-window.NW.icons = {
+export const icons: Record<string, string> = {
   'arrow-up': '<path d="m5 12 7-7 7 7"/><path d="M12 19V5"/>',
   'arrow-down': '<path d="M12 5v14"/><path d="m19 12-7 7-7-7"/>',
   copy: '<rect width="14" height="14" x="8" y="8" rx="2" ry="2"/>'
@@ -26,29 +23,4 @@ window.NW.icons = {
     + '<path d="M21 16h-4"/><path d="M11 3H9"/>',
   'undo-2': '<path d="M9 14 4 9l5-5"/>'
     + '<path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11"/>',
-};
-
-window.NW.components.IconButton = {
-  name: 'IconButton',
-
-  props: {
-    icon: { type: String, required: true },
-    title: { type: String, required: true },
-    disabled: { type: Boolean, default: false },
-  },
-
-  emits: ['click'],
-
-  computed: {
-    // `<title>` inside the svg drives both the hover tooltip and the button's accessible name.
-    markup() { return `${window.NW.icons[this.icon] ?? ''}<title>${this.title}</title>`; },
-  },
-
-  template: `
-    <button type="button" class="link icon-btn" :disabled="disabled" @click="$emit('click')">
-      <svg role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-           fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-           stroke-linejoin="round" class="lucide" v-html="markup"></svg>
-    </button>
-  `,
 };

@@ -21,35 +21,32 @@
   top level). Not-yet-converted files below are therefore marked type="module" even though most
   still just do `window.NW.X = ...` internally rather than real import/export -- that keeps them
   deferred in the same relative order as before, until each is actually rewritten with real
-  imports in its own phase. Only vendor/vue.global.prod.js is exempt and stays a plain classic
-  script (must run synchronously first, before anything deferred, to set window.Vue).
+  imports in its own phase.
+
+  vendor/vue.global.prod.js is GONE, not merely deferred: it used to set window.Vue for classic
+  app.js/components, but that is a *separate* Vue module instance from the one Vite resolves for
+  every SFC's own `import { ref } from 'vue'` -- two Vue copies in one render tree corrupts
+  internal component-instance state the moment a component crosses the boundary (symptom:
+  "Cannot read properties of null (reading 'refs')", only on components using a template `ref`).
+  src/legacy-bridge.ts now re-exposes the *same* npm `vue` module as `window.Vue` instead, so
+  app.js's existing `const { createApp, markRaw } = window.Vue` keeps working unmodified. The
+  vendor file itself is deleted in the final cutover phase; only its <script> tag is gone here.
 
   Data is loaded via static imports (src/data.ts) now, not the classic data/*.js fetch loaders
-  (removed this phase) -- src/legacy-bridge.ts still bridges NW_SCHEMA/NW_SLOTS/NW_ITEMS/
+  (removed earlier) -- src/legacy-bridge.ts still bridges NW_SCHEMA/NW_SLOTS/NW_ITEMS/
   NW_BONUSES and an already-resolved `window.NW.dataReady` onto window for app.js and the
   not-yet-converted components below, which still read them as globals. `npm run dev` (Vite)
   replaces `tools/serve.py` for local development.
 -->
 <script type="module" src="/src/main.ts"></script>
 
-<script src="vendor/vue.global.prod.js"></script>
-
-<script type="module" src="src/components/combo-box.js"></script>
-<script type="module" src="src/components/quick-options.js"></script>
-<script type="module" src="src/components/options.js"></script>
 <script type="module" src="src/components/build-bar.js"></script>
 <script type="module" src="src/components/build-nav.js"></script>
 <script type="module" src="src/components/item-picker.js"></script>
 <script type="module" src="src/components/item-card.js"></script>
-<script type="module" src="src/components/icon-button.js"></script>
 <script type="module" src="src/components/slot-list.js"></script>
 <script type="module" src="src/components/stat-panel.js"></script>
 <script type="module" src="src/components/bonus-inspector.js"></script>
-<script type="module" src="src/components/token-input.js"></script>
-<script type="module" src="src/components/percent-input.js"></script>
-<script type="module" src="src/components/condition-rows.js"></script>
-<script type="module" src="src/components/bonus-rows.js"></script>
-<script type="module" src="src/components/bonus-groups.js"></script>
 <script type="module" src="src/components/item-form.js"></script>
 <script type="module" src="src/components/bonus-set-form.js"></script>
 <script type="module" src="src/components/data-editor.js"></script>

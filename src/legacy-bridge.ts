@@ -4,6 +4,7 @@
 // classic consumer converts; the whole file is deleted once nothing classic remains (see the
 // migration plan in llm/plans/).
 
+import * as Vue from 'vue';
 import * as conditions from './conditions';
 import * as db from './db';
 import * as bonus from './bonus';
@@ -14,6 +15,18 @@ import * as router from './router';
 import * as storage from './storage';
 import * as fsStore from './fs-store';
 import { NW_SCHEMA, NW_SLOTS, NW_ITEMS, NW_BONUSES } from './data';
+import * as statRowNav from './stat-row-nav';
+import ComboBox from './components/ComboBox.vue';
+import IconButton from './components/IconButton.vue';
+import TokenInput from './components/TokenInput.vue';
+import PercentInput from './components/PercentInput.vue';
+import QuickOptions from './components/QuickOptions.vue';
+import Options from './components/Options.vue';
+import ConditionRows from './components/ConditionRows.vue';
+import * as conditionDraft from './condition-draft';
+import BonusRows from './components/BonusRows.vue';
+import * as bonusDraft from './bonus-draft';
+import BonusGroups from './components/BonusGroups.vue';
 
 declare global {
   interface Window {
@@ -22,8 +35,21 @@ declare global {
     NW_SLOTS: any;
     NW_ITEMS: any;
     NW_BONUSES: any;
+    Vue: any;
   }
 }
+
+// `window.Vue` used to come from the classic vendor/vue.global.prod.js script, a *separate*
+// copy of Vue from the one Vite resolves for every SFC's own `import { ref, computed } from
+// 'vue'`. Two copies of Vue in the same render tree corrupts internal component-instance state
+// the moment a component crosses the boundary (symptom: "Cannot read properties of null
+// (reading 'refs')" deep in Vue's internals, only on components that use a template `ref` --
+// found by mounting each converted component standalone and bisecting). Re-exposing the *same*
+// module Vite gives everyone else as `window.Vue` fixes it for app.js and every not-yet-
+// converted classic component (`const { createApp, markRaw } = window.Vue`) without touching
+// their code. vendor/vue.global.prod.js's <script> tag is removed from index.html accordingly;
+// the file itself is deleted in the final cutover phase along with the tag's neighbors.
+window.Vue = Vue;
 
 window.NW = window.NW ?? {};
 window.NW.conditions = conditions;
@@ -47,3 +73,21 @@ window.NW_SLOTS = NW_SLOTS;
 window.NW_ITEMS = NW_ITEMS;
 window.NW_BONUSES = NW_BONUSES;
 window.NW.dataReady = Promise.resolve();
+
+// Already-converted components, bridged the same way for not-yet-converted classic parents
+// that still do `components: { X: window.NW.components.X }`. A .vue SFC's default export is
+// already a plain component-options object (true for <script setup> too, post-compile), so
+// this needs no adapter -- just the same assignment pattern as every other bridged module.
+window.NW.statRowNav = statRowNav;
+window.NW.components = window.NW.components ?? {};
+window.NW.components.ComboBox = ComboBox;
+window.NW.components.IconButton = IconButton;
+window.NW.components.TokenInput = TokenInput;
+window.NW.components.PercentInput = PercentInput;
+window.NW.components.QuickOptions = QuickOptions;
+window.NW.components.Options = Options;
+window.NW.components.ConditionRows = ConditionRows;
+window.NW.conditionDraft = conditionDraft;
+window.NW.components.BonusRows = BonusRows;
+window.NW.bonusDraft = bonusDraft;
+window.NW.components.BonusGroups = BonusGroups;
