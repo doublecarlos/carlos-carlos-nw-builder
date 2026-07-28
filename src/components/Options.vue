@@ -91,3 +91,10 @@ function onMagnitude(event: Event) {
     </div>
   </div>
 </template>
+
+<style scoped>
+.options { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: flex-start; }
+.options-group { display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: flex-end; }
+
+.num-input--wide { width: 92px; }
+</style>

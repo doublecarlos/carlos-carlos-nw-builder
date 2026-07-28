@@ -216,3 +216,58 @@ const counts = computed(() => {
     </p>
   </div>
 </template>
+
+<style scoped>
+.inspector-head { position: sticky; top: 0; background: var(--surface); padding-bottom: 2px; z-index: 1; }
+.inspector-search { width: 100%; }
+
+.bonus { border-bottom: 1px solid color-mix(in srgb, var(--line) 50%, transparent); padding: 5px 0; }
+.bonus:last-child { border-bottom: 0; }
+
+.bonus-head {
+  align-items: center;
+  background: none;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  display: flex;
+  font: inherit;
+  gap: 6px;
+  padding: 0;
+  text-align: left;
+  width: 100%;
+}
+.bonus-head:hover .bonus-title { text-decoration: underline; }
+
+/* Bonus state indicator (dot + title colour) -- same small vocabulary as ItemCard.vue's own
+ * `.bonus-dot`/`.bonus--*`, duplicated rather than shared: see ItemCard.vue's own comment on
+ * this. */
+.bonus-dot { border-radius: 50%; flex: none; height: 7px; width: 7px; }
+.bonus--active .bonus-dot { background: var(--ok); }
+.bonus--inactive .bonus-dot { background: var(--muted); opacity: .5; }
+.bonus--excluded .bonus-dot { background: var(--danger); }
+
+.bonus-title { flex: none; max-width: 62%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bonus-qualifier { color: var(--muted); flex: 1; font-size: 1rem; min-width: 0; overflow: hidden;
+  text-overflow: ellipsis; white-space: nowrap; }
+.bonus-head > .badge:first-of-type { margin-left: auto; }
+.bonus--inactive .bonus-title, .bonus--excluded .bonus-title { color: var(--muted); }
+
+.bonus-head .badge { background: var(--surface-2); color: var(--muted); flex: none; }
+.bonus-head .badge--near { background: var(--accent-soft); color: var(--accent); }
+
+.unmet { list-style: none; margin: 3px 0 0; padding: 0 0 0 13px; }
+.unmet li { color: var(--muted); font-size: 1rem; }
+.unmet-label { color: var(--warn); }
+/* Vue condenses the whitespace between the label and detail spans away, so the gap has to
+ * come from CSS or the em dash butts against the label. */
+.unmet-detail { color: var(--muted); margin-left: .35em; }
+.unmet-children { list-style: none; margin: 0; padding-left: 12px; }
+.unmet-children li.is-ok { color: var(--ok); }
+
+.bonus-detail { padding: 4px 0 2px 13px; }
+.bonus-stats { display: flex; flex-wrap: wrap; gap: 4px 10px; }
+.bonus-stat { font-size: 1rem; }
+.bonus-detail .hint { display: block; margin: 2px 0 0; }
+.mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+</style>

@@ -372,3 +372,143 @@ onUnmounted(() => {
            @change="onImportCollectionFile">
   </nav>
 </template>
+
+<style scoped>
+.build-nav {
+  flex: none;
+  width: 236px;
+  height: 100vh;
+  position: sticky;
+  top: 0;
+  overflow-y: auto;
+  background: var(--surface);
+  border-right: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 1rem;
+  padding: 10px 8px;
+}
+
+.nav-collection { margin-bottom: 4px; }
+
+.nav-row {
+  align-items: center;
+  border-radius: var(--radius);
+  display: flex;
+  gap: 4px;
+  padding: 3px 4px;
+  position: relative;
+}
+.nav-row--collection { font-weight: 600; }
+.nav-row--build { padding-left: 18px; }
+.nav-row.is-active { background: var(--accent-soft); }
+.nav-row--actions { color: var(--muted); gap: 10px; padding-left: 18px; }
+.nav-row--build.nav-row--actions { padding-left: 18px; }
+.nav-row--top { border-top: 1px solid var(--line); margin-top: 4px; padding-left: 4px; padding-top: 6px; }
+
+.nav-chevron {
+  background: none;
+  border: 0;
+  color: var(--muted);
+  cursor: pointer;
+  flex: none;
+  font: inherit;
+  padding: 0 2px;
+  width: 14px;
+}
+
+.nav-name {
+  background: none;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  flex: 1;
+  font: inherit;
+  min-width: 0;
+  overflow: hidden;
+  padding: 2px 0;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nav-rename {
+  flex: 1;
+  font: inherit;
+  min-width: 0;
+  padding: 2px 4px;
+}
+
+.nav-menu-wrap { position: relative; }
+
+.nav-kebab {
+  background: none;
+  border: 0;
+  border-radius: var(--radius);
+  color: var(--muted);
+  cursor: pointer;
+  flex: none;
+  font: inherit;
+  line-height: 1;
+  padding: 2px 5px;
+}
+.nav-kebab:hover { background: var(--surface-2); color: var(--text); }
+
+/* `position: fixed`, not `absolute` -- `.build-nav` is a scrolling container in its own right
+ * now (full page height), and an absolutely-positioned menu got clipped at its bottom edge for
+ * any row near the end of the list. `top`/`left` are computed in `openMenuFor` from the
+ * trigger's own viewport rect; `translateX(-100%)` right-aligns the menu to that point, the
+ * fixed-position equivalent of the `right: 0` this replaced. */
+.navmenu {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .18);
+  display: flex;
+  flex-direction: column;
+  min-width: 190px;
+  padding: 4px;
+  position: fixed;
+  transform: translateX(-100%);
+  z-index: 30;
+}
+
+.navmenu-item {
+  background: none;
+  border: 0;
+  border-radius: var(--radius);
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  padding: 5px 8px;
+  text-align: left;
+}
+.navmenu-item:hover:not(:disabled) { background: var(--surface-2); }
+.navmenu-item:disabled { color: var(--muted); cursor: default; }
+.navmenu-item--danger:hover:not(:disabled) { background: var(--danger-soft); color: var(--danger); }
+
+.nav-saveas {
+  border-left: 2px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  margin: 2px 0 2px 8px;
+}
+
+.nav-hidden-file { display: none; }
+
+/* Must come after the base `.build-nav` rule above -- an override with equal specificity
+ * defined earlier in the cascade loses the tie to a later rule, which is exactly what left
+ * this sidebar stuck at `height: 100vh` under the stacked mobile layout even though
+ * `.page`'s own breakpoint (App.vue) had already switched to `flex-direction: column`. */
+@media (max-width: 1100px) {
+  .build-nav {
+    position: static;
+    height: auto;
+    max-height: none;
+    width: auto;
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+}
+</style>

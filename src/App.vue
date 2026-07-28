@@ -1133,3 +1133,82 @@ onUnmounted(() => {
   </div>
   </template>
 </template>
+
+<style scoped>
+/* --- page shell --------------------------------------------------------------------- */
+
+/* The collections sidebar (BuildNav.vue) runs the full height of the page, with the top bar
+ * and the build itself confined to `.page-main` on its right -- it used to sit inside
+ * `.layout` as a grid column under the top bar, which both capped its height to the
+ * viewport-minus-topbar and (via that ancestor's `overflow-y: auto`) clipped any popup menu
+ * opened from a row near its bottom edge (see BuildNav.vue's `.navmenu`, `position: fixed`
+ * for exactly that reason). */
+.page { display: flex; align-items: stretch; min-height: 100vh; }
+.page-main { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
+
+/* --- top bar -------------------------------------------------------------------------- */
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 12px 20px;
+  padding: 8px 14px;
+}
+
+.brand { display: flex; flex-direction: column; gap: 4px; min-width: 150px; }
+.brand h1 { font-size: 1.083rem; letter-spacing: .01em; }
+
+.topbar-actions {
+  flex: 1 1 100%;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* Quick compare: pick another build, see it inline against the active one (slot highlights,
+ * the stat panel's headline row) -- deliberately just a picker in the top bar, not a page of
+ * its own. */
+.compare-quick { align-items: center; display: flex; flex-wrap: wrap; gap: 6px; }
+.compare-select { min-width: 170px; }
+
+/* --- builder layout --------------------------------------------------------------------- */
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 460px;
+  gap: 16px;
+  padding: 14px;
+  align-items: start;
+}
+
+.sidebar {
+  position: sticky;
+  top: calc(var(--topbar-h) + 14px);
+  max-height: calc(100vh - var(--topbar-h) - 28px);
+  overflow-y: auto;
+}
+
+.crash { color: var(--danger); padding: 24px; }
+.crash pre { background: var(--surface); border-radius: var(--radius); overflow-x: auto; padding: 12px; }
+
+@media (max-width: 1100px) {
+  .page { flex-direction: column; }
+  .layout { grid-template-columns: minmax(0, 1fr); }
+  .sidebar { position: static; max-height: none; }
+}
+
+@media (max-width: 560px) {
+  /* Below this the compare picker and the reset/edit-data actions no longer fit on one
+   * line with the notice -- let the whole action cluster wrap onto its own row rather than
+   * squeezing every control down to nothing. */
+  .topbar-actions { justify-content: flex-start; }
+}
+</style>

@@ -26,3 +26,25 @@ const markup = computed(() => `${icons[props.icon] ?? ''}<title>${props.title}</
          stroke-linejoin="round" class="lucide" v-html="markup"></svg>
   </button>
 </template>
+
+<style scoped>
+/* Quieter than the text `.link` style it's built on -- muted by default, accent only on
+ * hover -- since a row of six of these next to each other would otherwise read louder than
+ * the row's actual content. `button.icon-btn` (not `.icon-btn`) matches `button.link`'s
+ * specificity so this wins the padding/color tie by source order. */
+button.icon-btn {
+  align-items: center;
+  border-radius: 4px;
+  color: var(--muted);
+  display: inline-flex;
+  justify-content: center;
+  padding: 3px;
+}
+button.icon-btn:hover:not(:disabled) { background: var(--surface-2); color: var(--accent); }
+button.icon-btn:disabled { opacity: .35; }
+
+.lucide {
+  width: 1em;
+  height: 1em;
+}
+</style>

@@ -105,3 +105,24 @@ function nudge(direction: number, event: KeyboardEvent) {
     <span class="pct-suffix">%</span>
   </span>
 </template>
+
+<style scoped>
+.pct-field { display: inline-block; position: relative; width: 110px; }
+.pct-input {
+  box-sizing: border-box;
+  font-variant-numeric: tabular-nums;
+  padding-right: 20px;
+  text-align: right;
+  width: 100%;
+}
+.pct-input:not(:focus) { color: var(--accent); }
+.pct-suffix {
+  color: var(--muted);
+  font-size: 1rem;
+  pointer-events: none;
+  position: absolute;
+  right: 7px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+</style>

@@ -355,3 +355,73 @@ function signedInt(value: number) {
     </table>
   </div>
 </template>
+
+<style scoped>
+.panel-errors {
+  background: var(--danger-soft);
+  border-radius: var(--radius);
+  color: var(--danger);
+  margin-bottom: 10px;
+  padding: 7px 10px;
+}
+.panel-errors ul { margin: 4px 0 0; padding-left: 18px; }
+
+/* The summary widget: pick a damage calculation, see it front and centre -- the sheet's most
+ * visible number, where the IL/HP tiles used to sit. Picker on its own row, the value stacked
+ * below and centred -- closer to the sheet's own layout than a side-by-side row. */
+.summary-calc {
+  background: var(--surface-2);
+  border-radius: var(--radius);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 10px;
+}
+.summary-calc-select { width: 100%; }
+.tile-value { font-size: 1.6rem; font-weight: 600; text-align: center; white-space: nowrap; }
+
+/* The compare-mode layout: this build's row, the other build's row, its Δ% in the third
+ * column -- the sheet's own compare block, label/value/percentage. `.stat-table`'s own font
+ * size is too small for what is still meant to be the headline number, so the value column
+ * gets `.tile-value`'s treatment (just a size down, to fit two rows instead of one). */
+.summary-compare { margin-top: 2px; }
+.summary-compare td { padding: 3px 4px; }
+.summary-compare td:first-child { color: var(--muted); }
+.summary-compare-value { font-size: 1.25rem; font-weight: 600; }
+/* Only "this build"'s own row is judged -- ahead (green) or behind (red) the compare build --
+ * the label cell stays muted regardless via `:not(:first-child)`, so it never fights the
+ * `td:first-child` rule above on specificity. */
+.summary-compare tr.is-positive td:not(:first-child) { color: var(--ok); font-weight: 600; }
+.summary-compare tr.is-negative td:not(:first-child) { color: var(--danger); font-weight: 600; }
+
+.stat-table { border-collapse: collapse; width: 100%; }
+.stat-table th {
+  color: var(--muted);
+  font-size: 1rem;
+  font-weight: 500;
+  letter-spacing: .03em;
+  padding: 3px 4px;
+  text-align: right;
+  text-transform: uppercase;
+}
+.stat-table th:first-child { text-align: left; }
+.stat-table td { padding: 2px 4px; }
+.stat-table td.num { text-align: right; }
+.stat-table tbody tr:nth-child(even) { background: color-mix(in srgb, var(--surface-2) 55%, transparent); }
+.stat-table--pairs td:last-child { text-align: right; width: 40%; }
+
+/* Rating and percent used to be two whole separate tables -- same rows, same order, just a
+ * different unit. One table keeps both full-size (percent is the value that matters day to
+ * day, so it leads) without forcing a cross-reference between two tables to see one stat. */
+.stat-table--split .rating-col { color: var(--muted); }
+
+/* Conditional formatting, in the spirit of the sheet: green sitting exactly on the cap, blue
+ * with headroom to spare, warn colour when over -- applied per cell, since rating and percentage
+ * cap independently and a row can show both colours at once. */
+.stat-table td.is-capped { background: color-mix(in srgb, var(--ok) 16%, transparent); }
+.stat-table td.is-headroom { background: color-mix(in srgb, var(--accent) 12%, transparent); }
+.stat-table td.is-over { background: color-mix(in srgb, var(--warn) 14%, transparent); font-weight: 600; }
+
+.stat-table tr.is-lead td { font-weight: 600; }
+.stat-table tr.row-sep td { border-bottom: 2px solid var(--line); }
+</style>

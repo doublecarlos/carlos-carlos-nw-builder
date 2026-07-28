@@ -288,3 +288,19 @@ function attachExisting(id: string) {
     </div>
   </div>
 </template>
+
+<style scoped>
+.setcard {
+  background: color-mix(in srgb, var(--accent-soft) 30%, transparent);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  margin-bottom: 10px;
+  padding: 9px 11px;
+}
+.setcard-head { align-items: center; display: flex; flex-wrap: wrap; gap: 6px; }
+.setcard-head .field { flex: 0 1 220px; }
+.setcard-name { font-weight: 600; }
+
+.bonus-attach { align-items: center; display: inline-flex; gap: 6px; }
+.bonus-attach-combo { width: 220px; }
+</style>

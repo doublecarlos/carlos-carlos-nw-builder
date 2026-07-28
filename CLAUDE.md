@@ -81,6 +81,9 @@ tsconfig.json           strict: true, allowJs: true, resolveJsonModule: true
 data/                  *.json data (schema.json authoritative; slots/db-items/db-bonuses
                        generated) — no loader files, imported statically by src/data.ts
 src/
+  app.css               design tokens, resets, and primitives shared by 2+ unrelated
+                       components only -- everything else lives in its owning component's
+                       own `<style scoped>` (see below)
   types.ts             the shared domain model (Item/BonusSet/Grant/Schema/Db/Build/...) --
                        add a shape here, not a local `any`, when it crosses a file boundary
   data.ts              static imports of data/*.json + schema derivation (byKey/statKeys/etc.)
@@ -103,6 +106,29 @@ llm/plans/             numbered plans (0001/0002 predate this migration; not upd
 
 ## Architecture notes that will bite you
 
+- **Styling is split by ownership, not monolithic.** `src/app.css` (loaded globally via
+  `index.html`'s `<link>`, unchanged) holds only design tokens/dark-mode vars, resets, base
+  element styles, and primitives actually reused by 2+ *unrelated* components (buttons, badges,
+  fields, the tab strip, the combo/item-picker dropdown, the side-panel shell shared by
+  StatPanel/BonusInspector, and the data-editor form vocabulary shared by ItemForm/
+  BonusSetForm/BonusGroups/BonusRows/ConditionRows). Every class used by exactly one component
+  lives in that component's own `<style scoped>` block instead — added 2026-07-28 migrating off
+  a single 1200-line `app.css`, verified lossless by diffing every selector in the old file
+  against the union of the new one plus every component's scoped block (only 6 dead classes
+  dropped: `bonus-id`/`bonus-id-row`/`bonus-name`, `build-select`, `options-group--toggles`,
+  `presets` — none referenced anywhere). A pair of components that duplicate a small shared
+  rule on purpose (ItemCard.vue/BonusInspector.vue's own `.bonus-dot`/`.bonus--*` state
+  indicator) say so in a comment — that's a deliberate two-copies choice, not something to
+  hoist back into app.css.
+- **A `@media` override must come *after* its base rule, in the same file.** Two rules with
+  equal specificity resolve by source order regardless of which one is inside a media query —
+  a responsive override written earlier in the cascade than the base rule it's meant to beat
+  silently loses. This is exactly what broke narrow-window layout before the styling split:
+  `.build-nav`'s `@media (max-width: 1100px)` override used to sit *above* `.build-nav`'s own
+  base rule in the old app.css, so the sidebar stayed stuck at `height: 100vh` under the
+  stacked mobile layout and pushed the entire builder off-screen. Now that each component owns
+  its full rule set including its own breakpoints, keep writing base-rule-then-override within
+  the same `<style>` block rather than interleaving sections by topic.
 - **Icons come from lucide, hand-copied.** `src/icons.ts`'s `icons` export is a registry of
   inline `<path>`/`<circle>` markup, one entry per glyph, used by `IconButton` and a few
   components that inline an svg directly. There is no icon package vendored — if a new icon is

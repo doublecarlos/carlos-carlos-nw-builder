@@ -185,3 +185,50 @@ function optionsForCombo(type?: string) {
     </div>
   </div>
 </template>
+
+<style scoped>
+.cond-list { display: flex; flex-direction: column; }
+/* One row per direct child of the list -- ruled off like a table so a run of conditions
+ * reads as rows instead of a wrapped paragraph of buttons. */
+.cond-item {
+  border-bottom: 1px solid color-mix(in srgb, var(--line) 50%, transparent);
+  border-top: 1px solid color-mix(in srgb, var(--line) 50%, transparent);
+  padding: 4px 0;
+}
+
+.branch-row { align-items: center; display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 4px; }
+.branch-row input { min-width: 90px; }
+
+.combo--cond-type { width: 110px; }
+.combo--cond-value { width: 150px; }
+
+/* A condition tree can sit on either a plain (`.editor-form`) or already-recessed
+ * (`.bonus-edit`, `.tier`) background depending where it's embedded, so the fill can't be a
+ * fixed surface color the way `.tier` is -- `currentColor` mixed at low alpha darkens on a
+ * light parent and lightens on a dark one either way, so the box reads as a step down from
+ * whatever it's sitting on rather than matching it outright. */
+.cond-group {
+  background: color-mix(in srgb, var(--text) 6%, transparent);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--muted);
+  border-radius: var(--radius);
+  margin: 3px 0;
+  padding: 5px 9px 3px;
+}
+.cond-group-head { align-items: center; display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 3px; }
+.cond-group-op {
+  background: var(--surface-2);
+  border-radius: 3px;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: .04em;
+  padding: 1px 6px;
+  text-transform: uppercase;
+}
+.cond-branch { padding: 3px 0; }
+/* Dashed rule between sibling branches of the same group -- the "or"/"and" label already
+ * says how they combine, this just makes the boundary between them visible at a glance. */
+.cond-branch + .cond-branch { border-top: 1px dashed var(--line); }
+.cond-branch-op { color: var(--muted); font-size: 1rem; margin: 1px 0 2px; text-transform: uppercase; }
+.cond-branch-actions { display: flex; gap: 2px; justify-content: flex-start; margin: 2px 0 4px; }
+</style>

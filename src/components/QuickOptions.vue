@@ -80,3 +80,36 @@ function onDuration(event: Event) {
     </div>
   </div>
 </template>
+
+<style scoped>
+/* A single wrapping row, not a narrow stacked column -- the toggles and the three fields flow
+ * across whatever width the top bar has instead of leaving it mostly empty. */
+.quickopts {
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  display: flex;
+  flex: 1 1 100%;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  padding: 6px 10px;
+}
+.quickopts-row { align-items: center; display: flex; font-size: 1rem; gap: 6px; white-space: nowrap; }
+label.quickopts-row { cursor: pointer; }
+.quickopts-sep { background: var(--line); height: 18px; width: 1px; }
+.quickopts-combo { width: 150px; }
+.quickopts-num { text-align: right; width: 60px; }
+.quickopts-presets { display: flex; gap: 3px; }
+
+.preset {
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  color: var(--muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 1rem;
+  padding: 3px 6px;
+}
+.preset.is-on { background: var(--accent-soft); border-color: var(--accent); color: var(--text); }
+</style>
