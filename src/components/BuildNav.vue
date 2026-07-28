@@ -97,7 +97,8 @@ function isMenuOpen(type: string, id: string) {
 }
 
 /**
- * `.build-nav` is its own scrolling container (full page height, see app.css) -- a
+ * `.build-nav` is its own scrolling container (full page height, see this file's own
+ * `<style>` block) -- a
  * `position: absolute` menu clipped at its bottom edge for any row near the end of the
  * list, which is exactly the "bugs weirdly on the last tabs" report. `position: fixed`
  * escapes that clipping the same way `.itemcard` does in SlotList.vue, so the menu's

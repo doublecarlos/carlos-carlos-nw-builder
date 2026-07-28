@@ -5,7 +5,8 @@
 // Pure presentation -- the caller resolves which bonuses belong to the item and positions the
 // card. Rendered once by SlotList.vue, not once per row: 180 slots must not mean 180 cards.
 //
-// Interactive (see app.css): a long card scrolls, so it must accept the pointer. SlotList
+// Interactive (see this file's own <style> block): a long card scrolls, so it must accept
+// the pointer. SlotList
 // keeps it open while the pointer is over it and closes it on leave.
 import { computed } from 'vue';
 import { NW_SCHEMA } from '../data';

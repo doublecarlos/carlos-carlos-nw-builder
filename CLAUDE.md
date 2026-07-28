@@ -81,7 +81,7 @@ tsconfig.json           strict: true, allowJs: true, resolveJsonModule: true
 data/                  *.json data (schema.json authoritative; slots/db-items/db-bonuses
                        generated) — no loader files, imported statically by src/data.ts
 src/
-  app.css               design tokens, resets, and primitives shared by 2+ unrelated
+  base.css              design tokens, resets, and primitives shared by 2+ unrelated
                        components only -- everything else lives in its owning component's
                        own `<style scoped>` (see below)
   types.ts             the shared domain model (Item/BonusSet/Grant/Schema/Db/Build/...) --
@@ -106,7 +106,7 @@ llm/plans/             numbered plans (0001/0002 predate this migration; not upd
 
 ## Architecture notes that will bite you
 
-- **Styling is split by ownership, not monolithic.** `src/app.css` (loaded globally via
+- **Styling is split by ownership, not monolithic.** `src/base.css` (loaded globally via
   `index.html`'s `<link>`, unchanged) holds only design tokens/dark-mode vars, resets, base
   element styles, and primitives actually reused by 2+ *unrelated* components (buttons, badges,
   fields, the tab strip, the combo/item-picker dropdown, the side-panel shell shared by
@@ -119,7 +119,7 @@ llm/plans/             numbered plans (0001/0002 predate this migration; not upd
   `presets` — none referenced anywhere). A pair of components that duplicate a small shared
   rule on purpose (ItemCard.vue/BonusInspector.vue's own `.bonus-dot`/`.bonus--*` state
   indicator) say so in a comment — that's a deliberate two-copies choice, not something to
-  hoist back into app.css.
+  hoist back into base.css.
 - **A `@media` override must come *after* its base rule, in the same file.** Two rules with
   equal specificity resolve by source order regardless of which one is inside a media query —
   a responsive override written earlier in the cascade than the base rule it's meant to beat
