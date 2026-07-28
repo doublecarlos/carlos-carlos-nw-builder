@@ -17,23 +17,25 @@ import IconButton from './IconButton.vue';
 import { NW_SCHEMA } from '../data';
 import { isPercentKind, kindOf } from '../format';
 import { focusNextCombo } from '../stat-row-nav';
+import type { Item, Db, BonusSet } from '../types';
+import type { StatRow } from '../bonus-draft';
 
 /**
  * Key-order-insensitive comparison. `toItem` rebuilds the object in the exporter's key
  * order, which almost never matches the order the source happens to have, so a plain
  * `JSON.stringify` comparison reports every untouched item as modified.
  */
-const canonical = (value: any): any => {
+const canonical = (value: unknown): unknown => {
   if (Array.isArray(value)) return value.map(canonical);
   if (value && typeof value === 'object') {
-    const out: Record<string, any> = {};
-    for (const key of Object.keys(value).sort()) out[key] = canonical(value[key]);
+    const out: Record<string, unknown> = {};
+    for (const key of Object.keys(value).sort()) out[key] = canonical((value as Record<string, unknown>)[key]);
     return out;
   }
   return value;
 };
 
-const sameItem = (a: any, b: any) => JSON.stringify(canonical(a)) === JSON.stringify(canonical(b));
+const sameItem = (a: unknown, b: unknown) => JSON.stringify(canonical(a)) === JSON.stringify(canonical(b));
 
 // Draft-level undo: separate from (and beneath) DataEditor's own undo over *committed*
 // overlay changes -- this one covers ordinary editing (typing, checking a class box, adding a
@@ -50,9 +52,9 @@ const UNDO_LIMIT = 50;
 
 const props = withDefaults(defineProps<{
   /** The item being edited, or null for a brand-new one. */
-  source?: any;
+  source?: Item | null;
   status?: string;
-  db: any;
+  db: Db;
   filters?: string[];
   setIds?: string[];
   tags?: string[];
@@ -62,7 +64,7 @@ const props = withDefaults(defineProps<{
    * picks back up instead of silently reverting to the saved version. Plain-data only (no
    * functions), so a JSON round trip is enough to give this component its own copy rather
    * than sharing references with the stash. */
-  initialDraft?: any;
+  initialDraft?: ItemDraft | null;
 }>(), {
   source: null,
   status: 'base',
@@ -74,16 +76,33 @@ const props = withDefaults(defineProps<{
 });
 
 const emit = defineEmits<{
-  save: [payload: { item: any; previousName: string | null }];
+  save: [payload: { item: Item; previousName: string | null }];
   delete: [];
   revert: [];
   dirty: [value: boolean];
-  'save-set': [payload: any];
+  'save-set': [payload: { id: string; previousId: string | null; set: BonusSet }];
   'delete-set': [id: string];
 }>();
 
-function buildDraft(item: any) {
-  const source = item ?? {};
+interface ItemDraft {
+  name: string;
+  filter: string;
+  // `number | string | null`, not just `number`: v-model.number (see the template) leaves an
+  // emptied number input as the literal string '', not 0 -- same convention as PercentInput's
+  // own modelValue.
+  maxCopies: number | string | null;
+  allowedClass: string[];
+  tags: string[];
+  bonuses: string[];
+  excludes: string[];
+  dynamicStat: string;
+  dynamicMin: number | string | null;
+  dynamicMax: number | string | null;
+  stats: StatRow[];
+}
+
+function buildDraft(item: Item | null | undefined): ItemDraft {
+  const source = item ?? {} as Partial<Item>;
   const statKeys = new Set(NW_SCHEMA.statKeys);
   return {
     name: source.name ?? '',
@@ -98,7 +117,7 @@ function buildDraft(item: any) {
     dynamicMax: source.dynamicMax ?? null,
     stats: Object.keys(source)
       .filter((key) => statKeys.has(key))
-      .map((key) => ({ key, value: source[key] })),
+      .map((key) => ({ key, value: source[key as keyof Item] as number })),
   };
 }
 
@@ -119,13 +138,13 @@ let confirmRevertTimer: number | undefined;
 const statOptions = NW_SCHEMA.stats;
 const classes = NW_SCHEMA.context.classes;
 
-const statComboOptions = statOptions.map((s: any) => ({ value: s.key, label: `${s.label} (${s.key})` }));
-const dynamicStatOptions = statOptions.map((s: any) => ({ value: s.key, label: s.label }));
+const statComboOptions = statOptions.map((s) => ({ value: s.key, label: `${s.label} (${s.key})` }));
+const dynamicStatOptions = statOptions.map((s) => ({ value: s.key, label: s.label }));
 
 /** Draft -> the sparse item object the engine and the exporter expect. */
-function toItem() {
+function toItem(): Item {
   const local = draft.value;
-  const item: Record<string, any> = { name: local.name.trim(), filter: local.filter.trim() };
+  const item: Item = { name: local.name.trim(), filter: local.filter.trim() };
 
   for (const { key, value } of local.stats) {
     if (!key) continue;

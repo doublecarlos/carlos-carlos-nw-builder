@@ -10,14 +10,15 @@
 import { computed } from 'vue';
 import { NW_SCHEMA } from '../data';
 import { label as statLabel, signedStat } from '../format';
+import type { Item, Db, EvaluatedBonus, StatValues } from '../types';
 
 const props = withDefaults(defineProps<{
-  item: any;
+  item: Item;
   /** Resolved bonus entries this item takes part in, from `result.bonuses`. */
-  bonuses?: any[];
+  bonuses?: EvaluatedBonus[];
   slotLabel?: string;
   /** Only for resolving `item.bonuses` group ids to their set names in `notes` below. */
-  db?: any;
+  db?: Db | null;
 }>(), {
   bonuses: () => [],
   slotLabel: '',
@@ -27,18 +28,18 @@ const props = withDefaults(defineProps<{
 /** Same {key, label, value} shape as the `stats` computed, for one-per-line rendering
  *  anywhere a bonus payload is shown -- the tooltip should read the same way whether it's
  *  the item's own stats or a bonus's. */
-function statList(stats: any) {
+function statList(stats: StatValues | null | undefined) {
   return Object.entries(stats ?? {}).map(([key, value]) => (
     { key, label: statLabel(key), value: signedStat(key, value) }
   ));
 }
 
 const stats = computed(() => {
-  const out: any[] = [];
+  const out: { key: string; label: string; value: string }[] = [];
   for (const key of NW_SCHEMA.statKeys) {
     const value = props.item[key];
     if (!value) continue;
-    out.push({ key, label: statLabel(key), value: signedStat(key, value) });
+    out.push({ key, label: statLabel(key), value: signedStat(key, value as number) });
   }
   return out;
 });
@@ -64,7 +65,7 @@ const notes = computed(() => {
  * per-source-stacking bonuses already explain their own multi-source case (the ladder,
  * and `payload().each`), so this only fires for the plain leftover case.
  */
-function sharedSources(entry: any) {
+function sharedSources(entry: EvaluatedBonus) {
   if (!entry.active || tierGrant(entry) || entry.bonus?.stacking === 'perSource') {
     return null;
   }
@@ -75,8 +76,8 @@ function sharedSources(entry: any) {
 /** The one grant (if any) of this bonus that carries a `tiers` ladder. A bonus is a sum
  * of several independent grants now, so "is this bonus tiered" means "does any one of its
  * grants happen to be", not a property of the whole thing. */
-function tierGrant(entry: any) {
-  return entry.grants?.find((g: any) => g.raw.tiers) ?? null;
+function tierGrant(entry: EvaluatedBonus) {
+  return entry.grants?.find((g) => g.raw.tiers) ?? null;
 }
 
 /**
@@ -87,20 +88,20 @@ function tierGrant(entry: any) {
  * same shared bonus, so without the ladder each ring reads as granting the full total on
  * its own. Returns null for a bonus with no tiered grant.
  */
-function tierLadder(entry: any) {
+function tierLadder(entry: EvaluatedBonus) {
   const grant = tierGrant(entry);
   const tiers = grant?.raw.tiers;
   if (!tiers?.length) return null;
-  const activeAt = grant.active && grant.chose?.startsWith('tier:')
-    ? Number(grant.chose.slice('tier:'.length))
+  const activeAt = grant!.active && grant!.chose?.startsWith('tier:')
+    ? Number(grant!.chose.slice('tier:'.length))
     : null;
   return tiers
-    .map((tier: any) => ({
+    .map((tier) => ({
       pieces: tier.pieces?.atLeast ?? 1,
       stats: statList(tier.stats),
     }))
-    .sort((a: any, b: any) => a.pieces - b.pieces)
-    .map((tier: any) => ({ ...tier, active: tier.pieces === activeAt }));
+    .sort((a, b) => a.pieces - b.pieces)
+    .map((tier) => ({ ...tier, active: tier.pieces === activeAt }));
 }
 
 /**
@@ -115,7 +116,7 @@ function tierLadder(entry: any) {
  * the per-copy figure so the template can spell that out; it is null whenever there is
  * nothing to disambiguate (stacks === 1).
  */
-function payload(entry: any) {
+function payload(entry: EvaluatedBonus) {
   const stats = entry.active ? entry.appliedStats : entry.previewStats;
   if (!stats) return tierGrant(entry) ? { total: null, each: null, tiered: true } : null;
 
@@ -133,7 +134,7 @@ const rows = computed(() => props.bonuses.map((entry) => {
     id: entry.id,
     state: entry.excluded ? 'excluded' : (entry.active ? 'active' : 'inactive'),
     name: entry.bonus?.name ?? null,
-    conditions: (entry.gate?.leaves ?? []).map((leaf: any) => leaf.label).filter(Boolean)
+    conditions: (entry.gate?.leaves ?? []).map((leaf) => leaf.label).filter(Boolean)
       .join(' + '),
     unmet: entry.gate?.unmet ?? [],
     excludedBy: entry.excludedBy,
