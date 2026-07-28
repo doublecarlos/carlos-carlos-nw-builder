@@ -34,6 +34,7 @@ import BuildBar from './components/BuildBar.vue';
 import BuildNav from './components/BuildNav.vue';
 import ItemForm from './components/ItemForm.vue';
 import BonusSetForm from './components/BonusSetForm.vue';
+import SlotList from './components/SlotList.vue';
 
 declare global {
   interface Window {
@@ -105,3 +106,4 @@ window.NW.components.BuildBar = BuildBar;
 window.NW.components.BuildNav = BuildNav;
 window.NW.components.ItemForm = ItemForm;
 window.NW.components.BonusSetForm = BonusSetForm;
+window.NW.components.SlotList = SlotList;
