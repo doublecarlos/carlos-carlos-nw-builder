@@ -9,7 +9,7 @@
 const DB_NAME = 'nw-fs-handles';
 const STORE = 'handles';
 
-export const supported = typeof (window as any).showSaveFilePicker === 'function';
+export const supported = typeof window.showSaveFilePicker === 'function';
 
 function openDb(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -20,10 +20,10 @@ function openDb(): Promise<IDBDatabase> {
   });
 }
 
-async function withStore(mode: IDBTransactionMode, fn: (store: IDBObjectStore) => IDBRequest) {
+async function withStore<T>(mode: IDBTransactionMode, fn: (store: IDBObjectStore) => IDBRequest<T>): Promise<T> {
   const db = await openDb();
   try {
-    return await new Promise((resolve, reject) => {
+    return await new Promise<T>((resolve, reject) => {
       const tx = db.transaction(STORE, mode);
       const store = tx.objectStore(STORE);
       const request = fn(store);
@@ -35,17 +35,17 @@ async function withStore(mode: IDBTransactionMode, fn: (store: IDBObjectStore) =
   }
 }
 
-export const getHandle = (collectionId: string) => withStore('readonly', (store) => store.get(collectionId))
-  .catch(() => null);
+export const getHandle = (collectionId: string): Promise<FileSystemFileHandle | null> =>
+  withStore<FileSystemFileHandle>('readonly', (store) => store.get(collectionId)).catch(() => null);
 
-export const setHandle = (collectionId: string, handle: any) => withStore('readwrite', (store) => store.put(handle, collectionId))
-  .then(() => true).catch(() => false);
+export const setHandle = (collectionId: string, handle: FileSystemFileHandle) =>
+  withStore('readwrite', (store) => store.put(handle, collectionId)).then(() => true).catch(() => false);
 
 export const deleteHandle = (collectionId: string) => withStore('readwrite', (store) => store.delete(collectionId))
   .then(() => true).catch(() => false);
 
-export function pickSaveFile(suggestedName: string) {
-  return (window as any).showSaveFilePicker({
+export function pickSaveFile(suggestedName: string): Promise<FileSystemFileHandle> {
+  return window.showSaveFilePicker({
     suggestedName,
     types: [{ description: 'Neverwinter build collection', accept: { 'application/json': ['.json'] } }],
   });
@@ -54,13 +54,13 @@ export function pickSaveFile(suggestedName: string) {
 /** Chromium re-checks file permission per session -- `queryPermission` alone is often
  * 'prompt' again after a reload, and `requestPermission` needs to run from a user gesture,
  * which every caller here already is (a click on Save/Save As). */
-export async function verifyPermission(handle: any) {
-  const opts = { mode: 'readwrite' };
+export async function verifyPermission(handle: FileSystemFileHandle) {
+  const opts: FileSystemHandlePermissionDescriptor = { mode: 'readwrite' };
   if ((await handle.queryPermission(opts)) === 'granted') return true;
   return (await handle.requestPermission(opts)) === 'granted';
 }
 
-export async function writeText(handle: any, text: string) {
+export async function writeText(handle: FileSystemFileHandle, text: string) {
   const writable = await handle.createWritable();
   await writable.write(text);
   await writable.close();
