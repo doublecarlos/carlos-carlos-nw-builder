@@ -4,7 +4,7 @@
 // Sections start collapsed except Gear (handoff §6). That keeps the mounted DOM at ~15 rows
 // on load; expanding everything is ~180 rows, which the browser handles fine -- only one
 // dropdown is ever open, and that is where the per-row cost actually lives. No virtualisation.
-import { ref, computed, nextTick, onMounted, onUnmounted, type ComponentPublicInstance } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import ItemPicker from './ItemPicker.vue';
 import ItemCard from './ItemCard.vue';
 import Options from './Options.vue';
@@ -12,17 +12,11 @@ import IconButton from './IconButton.vue';
 import ComboBox from './ComboBox.vue';
 import { NW_SCHEMA } from '../data';
 import { label as statLabelFmt, abbr, signedStat } from '../format';
+import { useHoverCard } from '../composables/useHoverCard';
+import { useKeyboardCursor } from '../composables/useKeyboardCursor';
 import type {
   Db, Build, ResolvedBuild, BuildContext, Item, EvaluatedBonus, EngineRow, EngineError, Slot, SlotSection,
 } from '../types';
-
-const HOVER_DELAY_MS = 220;
-// If the pointer lands on a new row this soon after the last card closed, treat it as still
-// "in" the tooltip session and skip the opening delay -- sweeping down a list of items should
-// feel like one continuous hover, not a fresh 220ms wait per row.
-const HOVER_RESUME_MS = 400;
-const HOVER_CLOSE_GRACE_MS = 100;
-const CARD_W = 330;    // must match .itemcard width in ItemCard.vue's own <style>
 
 const props = withDefaults(defineProps<{
   db: Db;
@@ -72,19 +66,8 @@ const emit = defineEmits<{
 
 const root = ref<HTMLElement | null>(null);
 
-const hover = ref<{ slotId: string; left: number; top: number } | null>(null);   // the one hover card, or nothing
-let hoverTimer: number | undefined;
-let leaveTimer: number | undefined;   // grace period before a leave actually closes the card
-let lastHideAt = 0;      // Date.now() of the last close, for the "resume" fast path
-let editing = false;     // a picker has focus: suppress the card so it cannot cover a dropdown
-const cursor = ref<{ type: 'header' | 'slot'; id: string } | null>(null);   // keyboard cursor, independent of the mouse
 const copyFrom = ref<Record<string, string>>({});        // sectionId -> chosen source build id, defaults to `otherBuilds[0]`
 const copyMenuFor = ref<string | null>(null);   // sectionId currently showing the "copy section from" popover, or null
-
-/** Imperative ref bag for per-row ItemPickers (see `setPickerRef`) -- plain object, not
- *  `ref`/`reactive`, same as the old component's non-data `this.pickerRefs` (set up in its own
- *  `created()` hook precisely so it stayed outside Vue's reactivity). */
-const pickerRefs: Record<string, InstanceType<typeof ItemPicker>> = {};
 
 /** slotId -> the engine's resolved row, so the item object is never looked up twice. */
 const rowBySlot = computed(() => new Map(props.result.rows.map((row) => [row.slotId, row])));
@@ -109,6 +92,11 @@ const bonusById = computed(() => new Map(props.result.bonuses.map((bonus) => [bo
 function itemIn(slotId: string): Item | null {
   return rowBySlot.value.get(slotId)?.item ?? null;
 }
+
+const {
+  hover, onRowEnter, onRowLeave, onCardEnter, onCardLeave,
+  onFocusIn: onHoverFocusIn, onFocusOut,
+} = useHoverCard(root, (slotId) => itemIn(slotId) !== null);
 
 const hoveredItem = computed(() => (hover.value ? itemIn(hover.value.slotId) : null));
 
@@ -306,222 +294,18 @@ function statSummary(slotId: string) {
   return parts.join(' • ');
 }
 
-// --- keyboard cursor -------------------------------------------------------------------
+const {
+  isCursor, setCursor, setPickerRef, onFocusIn: onCursorFocusIn,
+} = useKeyboardCursor(root, visibleRows, {
+  onToggleHeader: toggle,
+  onClearSlot: (slotId) => emit('choose', slotId, ''),
+});
 
-function isCursor(type: string, id: string) {
-  return cursor.value?.type === type && cursor.value?.id === id;
-}
-
-function setCursor(type: 'header' | 'slot', id: string) {
-  cursor.value = { type, id };
-  syncCursorFocus();
-}
-
-function setPickerRef(slotId: string, el: Element | ComponentPublicInstance | null) {
-  if (el) pickerRefs[slotId] = el as InstanceType<typeof ItemPicker>;
-  else delete pickerRefs[slotId];
-}
-
-/** Focusing the input reuses ItemPicker's own `onFocus` (opens, clears the query). Only
- *  the type-ahead case needs a seeded query, via ItemPicker's `focusAndSeed`. */
-function focusPicker(slotId: string, seedChar?: string) {
-  const picker = pickerRefs[slotId];
-  if (!picker) return;
-  if (seedChar) picker.focusAndSeed(seedChar);
-  else picker.$el?.querySelector('input')?.focus();
-}
-
-/**
- * Scrolls the cursor row into view, and -- unless real focus is already somewhere inside
- * it (a click straight into the picker, say) -- moves native DOM focus to it too. Without
- * this, arrowing the visual cursor around leaves real focus stranded wherever it happened
- * to be last, and Tab from there jumps somewhere unrelated to what's highlighted; with it,
- * Tab naturally continues from the row the cursor is actually on (and, for a slot row,
- * lands on that row's own picker next, since it's tabindex="-1" and the picker input is
- * the next focusable thing after it in document order).
- */
-function syncCursorFocus() {
-  nextTick(() => {
-    if (!cursor.value) return;
-    const key = `${cursor.value.type}:${cursor.value.id}`;
-    const el = root.value?.querySelector(`[data-cursor-key="${CSS.escape(key)}"]`) as HTMLElement | null;
-    if (!el) return;
-    el.scrollIntoView({ block: 'nearest' });
-    if (!el.contains(document.activeElement)) el.focus({ preventScroll: true });
-  });
-}
-
-/**
- * The passive gate: arrow/type-to-edit only fires when nothing has already claimed the
- * keyboard for its own editing. This is deliberately not scoped to `.slots` -- Escape on
- * an open picker blurs its input, which sends focus to <body>, and the cursor (never
- * cleared) should be immediately live again with no extra click.
- */
-function isPassiveTarget() {
-  const el = document.activeElement;
-  if (!el) return true;
-  const tag = el.tagName;
-  return tag !== 'INPUT' && tag !== 'TEXTAREA' && tag !== 'SELECT' && !(el as HTMLElement).isContentEditable;
-}
-
-function onNavKeydown(event: KeyboardEvent) {
-  if (!isPassiveTarget()) return;
-
-  if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
-    const rows = visibleRows.value;
-    if (!rows.length) return;
-    event.preventDefault();
-    const dir = event.key === 'ArrowDown' ? 1 : -1;
-    const idx = cursor.value
-      ? rows.findIndex((r) => r.type === cursor.value!.type && r.id === cursor.value!.id)
-      : -1;
-    const next = idx === -1
-      ? (dir === 1 ? 0 : rows.length - 1)
-      : Math.min(Math.max(idx + dir, 0), rows.length - 1);
-    setCursor(rows[next].type as 'header' | 'slot', rows[next].id);
-    return;
-  }
-
-  if (!cursor.value) return;
-
-  if (event.key === 'Enter') {
-    event.preventDefault();
-    if (cursor.value.type === 'header') toggle(cursor.value.id);
-    else focusPicker(cursor.value.id);
-    return;
-  }
-
-  if (cursor.value.type === 'slot' && (event.key === 'Backspace' || event.key === 'Delete')) {
-    event.preventDefault();
-    emit('choose', cursor.value.id, '');
-    return;
-  }
-
-  if (cursor.value.type === 'slot' && event.key.length === 1
-    && !event.ctrlKey && !event.metaKey && !event.altKey) {
-    event.preventDefault();
-    focusPicker(cursor.value.id, event.key);
-  }
-}
-
-// --- hover card ----------------------------------------------------------------------
-
-function onRowEnter(event: MouseEvent, slotId: string) {
-  if (editing || !itemIn(slotId)) return;
-  window.clearTimeout(hoverTimer);
-  window.clearTimeout(leaveTimer);
-  const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
-  const x = event.clientX;
-  // Delay: sweeping the pointer down a 180-row list should not strobe cards. But if a
-  // card only just closed, this is the same sweep -- resume instantly instead of making
-  // every row pay the delay again.
-  const resuming = Date.now() - lastHideAt < HOVER_RESUME_MS;
-  hoverTimer = window.setTimeout(
-    () => place(slotId, rect, x),
-    resuming ? 0 : HOVER_DELAY_MS,
-  );
-}
-
-function onRowLeave() {
-  window.clearTimeout(hoverTimer);
-  // Grace period, not an instant close: the card sits outside the row's own bounds, so
-  // reaching it always crosses this "gap" first. Without the grace period the card would
-  // vanish the instant the pointer leaves the row, before it ever reaches the card.
-  window.clearTimeout(leaveTimer);
-  leaveTimer = window.setTimeout(() => close(), HOVER_CLOSE_GRACE_MS);
-}
-
-/** Entering the card itself cancels any pending close from leaving the row. */
-function onCardEnter() {
-  window.clearTimeout(leaveTimer);
-}
-
-function onCardLeave() {
-  close();
-}
-
-function close() {
-  window.clearTimeout(leaveTimer);
-  if (hover.value) lastHideAt = Date.now();
-  hover.value = null;
-}
-
-/**
- * Anchored to the pointer horizontally and to the row vertically. Anchoring to the row's
- * right edge instead would be tidier, but a slot row spans almost the full column, so
- * the card would always land on top of the stat panel.
- *
- * The vertical flip needs the card's real height, not its CSS max-height, or a short
- * card near the bottom of the screen flips for no reason -- so it is measured once the
- * card exists and nudged only if it actually overflows.
- */
-function place(slotId: string, rect: DOMRect, pointerX: number) {
-  const margin = 10;
-  let left = pointerX + 18;
-  if (left + CARD_W > window.innerWidth - margin) left = pointerX - CARD_W - 18;
-  hover.value = { slotId, left: Math.max(left, margin), top: rect.bottom + 6 };
-
-  nextTick(() => {
-    const card = root.value?.querySelector('.itemcard') as HTMLElement | null;
-    if (!card || !hover.value) return;
-    const height = card.offsetHeight;
-    if (hover.value.top + height <= window.innerHeight - margin) return;
-    const flipped = Math.max(rect.top - height - 6, margin);
-    hover.value = { ...hover.value, top: flipped };
-  });
-}
-
-/**
- * The rect is viewport-relative, so any scroll of the page invalidates it -- close
- * immediately, skipping the leave grace period that exists only for reaching the card by
- * pointer. Registered on the capture phase (see `onMounted`) so a scroll anywhere reaches
- * it even inside a section body that stops propagation -- but capture-phase 'scroll'
- * fires for *every* scrollable element's own scrolling too, including the card's own
- * `overflow-y: auto`. Without this check, scrolling the long card's contents would look
- * indistinguishable from scrolling the page and close the card on its first wheel tick.
- */
-function onScroll(event: Event) {
-  if ((event.target as HTMLElement)?.closest?.('.itemcard')) return;
-  window.clearTimeout(hoverTimer);
-  if (hover.value) close();
-}
-
-/**
- * `setCursor`/`syncCursorFocus` push the keyboard cursor's position onto real DOM focus,
- * but focus can also move for reasons that never go through `setCursor` -- native Tab
- * order, or a click landing directly on a descendant like the picker input rather than
- * bubbling a `setCursor` call from the row div itself. Left alone, the cursor would go
- * stale and point somewhere real focus already isn't, so arrow keys from there would
- * jump from the wrong place. Syncing the other direction here -- real focus moving
- * updates the cursor to match -- keeps the two from ever disagreeing.
- *
- * `editing` only turns on for a real form control, via the same test as `isPassiveTarget`
- * -- not for every focusin. `.slot-row`/`.section-head` are `tabindex="-1"` and receive
- * real DOM focus themselves whenever `syncCursorFocus` runs (keyboard arrow nav, or a
- * plain click anywhere in the row, including a spot like `.slot-summary` with nothing
- * natively focusable under the pointer). That focus has nowhere else to go afterwards, so
- * without this check `editing` latched permanently true the moment either happened, and
- * only a picker selection's blur-to-`<body>` (a focusout with no matching focusin) ever
- * reset it -- which is why the hover card looked "stuck off" until a gear change.
- */
+/** Forwards the list's own `focusin` to both composables -- see `useHoverCard`'s own doc
+ *  comment for why hover suppression can't just register its own listener. */
 function onFocusIn(event: FocusEvent) {
-  const tag = (event.target as HTMLElement)?.tagName;
-  editing = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT'
-    || (event.target as HTMLElement)?.isContentEditable === true;
-  window.clearTimeout(hoverTimer);
-  close();
-
-  const key = (event.target as HTMLElement)?.closest?.('[data-cursor-key]')?.getAttribute('data-cursor-key');
-  if (!key) return;
-  const sep = key.indexOf(':');
-  const type = key.slice(0, sep) as 'header' | 'slot';
-  const id = key.slice(sep + 1);
-  if (cursor.value?.type === type && cursor.value?.id === id) return;
-  cursor.value = { type, id };
-}
-
-function onFocusOut() {
-  editing = false;
+  onHoverFocusIn(event);
+  onCursorFocusIn(event);
 }
 
 /**
@@ -544,19 +328,8 @@ function onDocumentClick(event: MouseEvent) {
   copyMenuFor.value = null;
 }
 
-onMounted(() => {
-  window.addEventListener('scroll', onScroll, true);
-  window.addEventListener('keydown', onNavKeydown);
-  document.addEventListener('mousedown', onDocumentClick);
-});
-
-onUnmounted(() => {
-  window.clearTimeout(hoverTimer);
-  window.clearTimeout(leaveTimer);
-  window.removeEventListener('scroll', onScroll, true);
-  window.removeEventListener('keydown', onNavKeydown);
-  document.removeEventListener('mousedown', onDocumentClick);
-});
+onMounted(() => document.addEventListener('mousedown', onDocumentClick));
+onUnmounted(() => document.removeEventListener('mousedown', onDocumentClick));
 </script>
 
 <template>
