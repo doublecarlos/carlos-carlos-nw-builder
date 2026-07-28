@@ -656,10 +656,7 @@ onUnmounted(() => {
           Just your changes. Small, reviewable, and the same shape custom gear will use when
           it is stored with a build.
         </template>
-        <template v-else>
-          The whole file, in the key order tools/migrate_bonuses.py emits — replace
-          data/{{ exportName }} with this.
-        </template>
+        <template v-else>Replace data/{{ exportName }} with this.</template>
       </p>
     </div>
 

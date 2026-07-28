@@ -1,6 +1,5 @@
 // Golden-fixture comparison: every stage of the pipeline and every derived value, reproduced
-// against the source spreadsheet at 1e-6 tolerance. See tests/harness.ts for the comparison
-// logic and tests/fixtures/*.json / tools/gen_fixture_js.py for how tests/fixture.json is made.
+// against the source spreadsheet at 1e-6 tolerance.
 
 import { describe, it, expect } from 'vitest';
 import fixtures from './fixture.json';

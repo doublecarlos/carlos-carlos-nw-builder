@@ -263,9 +263,7 @@ const WRAP_AT = 96;
 
 /**
  * Compact JSON serialiser: one line where it fits at the given indent, one entry per line
- * (nested one level deeper) otherwise. Mirrors `tools/nwtools/jsonemit.value`, so an exported
- * file's indentation matches what the Python generator would produce for the same data --
- * `indent` is the column of this value's own brackets, not of its children.
+ * (nested one level deeper)
  */
 export function literal(value: unknown, indent = 0): string {
   if (value === null) return 'null';
@@ -302,9 +300,7 @@ function orderedEntries(item: Item, statKeys: string[]): [string, unknown][] {
     .map((k) => [k, item[k]] as [string, unknown]);
 }
 
-// Every row sits at column 2 (one level inside the top-level array), matching write_rows in
-// tools/nwtools/jsonemit.py -- the caller supplies the "  " prefix for a row's first line,
-// `entriesLiteral`'s own `indent` argument accounts for every line after that.
+// Every row sits at column 2 (one level inside the top-level array)
 export function toItemsFile(items: Item[], statKeys: string[] = NW_SCHEMA.statKeys) {
   const body = items
     .map((item) => `  ${entriesLiteral(orderedEntries(item, statKeys), 2)}`)

@@ -28,7 +28,6 @@ results). `llm/docs/pending.md` is the user's running wishlist — read it befor
    if a shape doesn't exist there yet and crosses a file boundary, add it there rather than
    inlining a local `any`. `npm run typecheck` (`vue-tsc --noEmit`) must stay clean.
 4. **Modern JS/TS is expected** — `const`/`let`, arrows, classes, `?.`, `??`.
-5. Python: **stdlib only**. Permanent scripts in `tools/`, throwaway in `workspace/`.
 
 This reverses what used to be the project's hard constraints (no npm/no build/no ES modules/
 classic `window.NW.*` global-build Vue) — a deliberate, user-requested full migration, not
@@ -44,14 +43,6 @@ No fetch, no loader files, no `dataReady` promise to await — a static import r
 module-evaluation time, before anything that imports `./data` can run. Editing a regenerated
 `data/*.json` hot-reloads under `vite dev`; a production build needs a rebuild.
 
-## Do not touch to make the UI easier
-
-`src/{conditions,db,bonus,engine}.ts`, `data/*.json`, `tools/*.py` are pinned by three
-independent test suites. If you think the engine is wrong, **prove it with a failing test
-first**.
-
-`data/schema.json` is hand-written and authoritative. `data/{slots,db-items,db-bonuses}.json`
-are GENERATED — regenerate via `tools/`, never hand-edit.
 
 ## Run and verify
 
@@ -60,17 +51,9 @@ npm run dev              # http://localhost:5173, Vite dev server + HMR
 npm run build             # production build to dist/
 npm run preview           # serve the production build locally
 npm run test              # Vitest: unit tests + golden-fixture comparison
-npm run test:differ       # differential-oracle scan (tsx, not a Vitest test — see below)
 npm run typecheck         # vue-tsc --noEmit
 ```
-
-`npm run test` must stay green. `npm run test:differ` reports divergences between the engine
-and `tools/legacy_engine.py`'s oracle across ~500 generated cases — it is a diagnostic scan,
-not a pass/fail gate: the repo has a known, pre-existing baseline of **206 unexplained
-regressions on `main`**, unrelated to any UI or migration work (see
-`llm/memory` if available, or ask — this has been verified against a clean-tree baseline
-before). The bar is "still ~206, not more," not zero. A new divergence beyond that baseline
-means you changed the engine — prove it's intentional with a failing/updated test first.
+`npm run test` must stay green. `
 
 ## Layout
 
@@ -99,8 +82,7 @@ src/
   main.ts              createApp(App).mount('#app')
   App.vue              root component, all state mutation, undo
   components/          Vue SFCs, <script setup lang="ts">
-tests/                 Vitest unit + fixture specs, run-differ.mts (tsx script, not Vitest)
-tools/                 Python pipeline
+tests/                 Vitest unit + fixture specs
 llm/plans/             numbered plans (0001/0002 predate this migration; not updated to match)
 ```
 
@@ -149,17 +131,6 @@ llm/plans/             numbered plans (0001/0002 predate this migration; not upd
   rename, not as a separate step.
 - **Percentages are decimals.** `0.09` is 9%. Format at the edge, never round in state.
   Percent fields convert with rounding — `3.6 / 100` is `0.036000000000000004`.
-- **A bonus set resolves as one unit.** `data/db-bonuses.json`'s `{id, name, grants: [...]}` —
-  `effects[]` was retired 2026-07-27 (`tools/migrate_grants.py`, one-shot). A grant is anonymous
-  (`{when?, stats}` / `{when?, variants}` / `{when?, tiers}`, no `id`/`name`) since only the
-  *set* needs to be addressable now; `src/bonus.ts`'s `evaluateBonus` sums every currently-active
-  grant into one resolved entry (`result.bonuses` is one row per set, not per grant). Wanting two
-  separately-visible bonuses on one item is still just two set ids in that item's `bonuses`
-  array (unchanged) — not a reason to keep a set's grants apart. `excludes`/`stacking`/
-  `maxStacks` live on the set now, not on a grant. A resolved entry's `chose` is only populated
-  when exactly one grant is active (two active grants have no single tier/variant to report);
-  `previewStats` (not `bonus.stats`) is what an *inactive* entry shows as a preview, taken from
-  whichever grant has the fewest unmet conditions.
 - **`stats` vs `appliedStats`** on a resolved bonus: the former is per-stack (now the *sum* of
   every active grant's stats), the latter is what reaches the pipeline. Reading `stats` and
   wondering why stacking "doesn't work" has caught two sessions.

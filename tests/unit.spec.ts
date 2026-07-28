@@ -1,7 +1,6 @@
 // Unit tests for the bonus model's semantics (plan Part 2).
 //
-// The golden fixture proves the engine reproduces the sheet; the differ proves the migration
-// changed nothing unintended. Neither pins down *why* the new model is better -- these do.
+// The golden fixture proves the engine reproduces the sheet.
 // Each test names the behaviour and, where relevant, the legacy bug it prevents.
 
 import { describe, it, expect } from 'vitest';

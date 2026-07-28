@@ -10,7 +10,6 @@
     "preview": "vite preview",
     "test": "vitest run --passWithNoTests",
     "test:watch": "vitest",
-    "test:differ": "tsx tests/run-differ.mts",
     "typecheck": "vue-tsc --noEmit"
   },
   "repository": {
