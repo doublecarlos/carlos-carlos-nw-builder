@@ -9,20 +9,9 @@ import IconButton from './IconButton.vue';
 import { NW_SCHEMA } from '../data';
 import { isPercentKind, kindOf } from '../format';
 import { focusNextCombo } from '../stat-row-nav';
-import { MAX_DEPTH, cloneRow, type ConditionRow } from '../condition-draft';
+import { MAX_DEPTH, cloneRow } from '../condition-draft';
 import * as bonusDraft from '../bonus-draft';
-
-// Loose on purpose (this is a draft, not the final grant shape) -- just precise enough that
-// `.stats`/`.tiers`/`.variants` stay array-typed, or nested `v-for` indices in the template
-// degrade to `string | number` (a vue-tsc quirk when the iterated value comes from a property
-// access on `any`).
-interface StatRow { key: string; value: any }
-interface TierRow { set: string; atLeast: number; stats: StatRow[] }
-interface VariantRow { uid: string; conditions: ConditionRow[]; stats: StatRow[] }
-interface GrantDraft {
-  uid: string; mode: string; json: string; conditions: ConditionRow[];
-  payload: string; stats: StatRow[]; tiers: TierRow[]; variants: VariantRow[];
-}
+import type { GrantDraft } from '../bonus-draft';
 
 const props = withDefaults(defineProps<{
   // Mutated in place. The parent owns the draft array and re-reads it on save; passing a

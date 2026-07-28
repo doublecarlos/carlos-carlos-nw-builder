@@ -6,6 +6,8 @@
 // groups, exactly mirroring what conditions.ts's `walk()` does with an object's keys. A group's
 // branches are each their own rows list, so nesting is just ConditionRows containing itself.
 
+import type { ConditionWhen, RangeSpec } from './types';
+
 // Every leaf conditions.ts understands. `all`/`any`/`not` are handled structurally, not
 // as leaves -- see below.
 export const LEAF_TYPES = ['toggle', 'role', 'class', 'combatType', 'location', 'damageType',
@@ -33,6 +35,9 @@ const fromCsv = (text: any) => String(text ?? '').split(',').map((s) => s.trim()
 
 // --- leaf <-> row --------------------------------------------------------------------
 
+// Dynamically shaped per `type` (duration/pieces/equipped/everything-else each carry
+// different fields) -- see ConditionRow's own comment for why this isn't a discriminated
+// union. `spec` is whatever conditions.ts's `ConditionWhen` carries for that leaf key.
 function leafFromSpec(type: string, spec?: any): any {
   if (type === 'duration') {
     const range = typeof spec === 'number' ? { atLeast: spec } : (spec ?? {});
@@ -46,9 +51,9 @@ function leafFromSpec(type: string, spec?: any): any {
 }
 
 /** Returns `undefined` for a row that is still blank -- callers skip those. */
-function leafToSpec(row: any): any {
+function leafToSpec(row: ConditionRow): any {
   if (row.type === 'duration') {
-    const range: any = {};
+    const range: RangeSpec = {};
     if (row.atLeast != null && row.atLeast !== '') range.atLeast = Number(row.atLeast);
     if (row.below != null && row.below !== '') range.below = Number(row.below);
     return Object.keys(range).length ? range : undefined;
@@ -66,9 +71,9 @@ function leafToSpec(row: any): any {
   return values.length === 1 ? values[0] : values;
 }
 
-export const newLeafRow = (type = 'toggle') => ({ uid: uid(), kind: 'leaf', ...leafFromSpec(type) });
+export const newLeafRow = (type = 'toggle'): ConditionRow => ({ uid: uid(), kind: 'leaf', ...leafFromSpec(type) });
 
-export const newGroupRow = (op = 'all') => ({
+export const newGroupRow = (op = 'all'): ConditionRow => ({
   uid: uid(),
   kind: 'group',
   op,
@@ -77,9 +82,9 @@ export const newGroupRow = (op = 'all') => ({
 
 /** Deep clone with fresh `uid`s throughout, so a duplicated row's Vue `:key`s never collide
  * with the original's (which would make edits on one bleed into the other). */
-export function cloneRow(row: any): any {
+export function cloneRow(row: ConditionRow): ConditionRow {
   if (row.kind === 'group') {
-    return { uid: uid(), kind: 'group', op: row.op, branches: row.branches.map((b: any[]) => b.map(cloneRow)) };
+    return { uid: uid(), kind: 'group', op: row.op, branches: (row.branches ?? []).map((b) => b.map(cloneRow)) };
   }
   return { ...row, uid: uid() };
 }
@@ -87,17 +92,17 @@ export function cloneRow(row: any): any {
 // --- tree <-> when-object --------------------------------------------------------------
 
 /** `when`-object -> rows list, one level. Each `all`/`any`/`not` recurses into its branches. */
-export function whenToRows(when: any, depth = 0): any[] {
+export function whenToRows(when: ConditionWhen | undefined, depth = 0): ConditionRow[] {
   return Object.entries(when ?? {}).map(([key, spec]) => {
     if (key === 'not') {
-      return { uid: uid(), kind: 'group', op: 'not', branches: [whenToRows(spec, depth + 1)] };
+      return { uid: uid(), kind: 'group', op: 'not', branches: [whenToRows(spec as ConditionWhen, depth + 1)] };
     }
     if (key === 'all' || key === 'any') {
       return {
         uid: uid(),
         kind: 'group',
         op: key,
-        branches: ((spec ?? []) as any[]).map((w) => whenToRows(w, depth + 1)),
+        branches: ((spec ?? []) as ConditionWhen[]).map((w) => whenToRows(w, depth + 1)),
       };
     }
     return { uid: uid(), kind: 'leaf', ...leafFromSpec(key, spec) };
@@ -110,7 +115,7 @@ export function whenToRows(when: any, depth = 0): any[] {
  * cannot both be assigned directly -- they are folded into a synthetic `all` array instead,
  * which is semantically identical (`all` just ANDs its entries) and never drops data.
  */
-export function rowsToWhen(rows: any[]): any {
+export function rowsToWhen(rows: ConditionRow[] | undefined): ConditionWhen {
   const buckets = new Map<string, any[]>();
   const push = (key: string, value: any) => {
     if (!buckets.has(key)) buckets.set(key, []);
@@ -120,23 +125,23 @@ export function rowsToWhen(rows: any[]): any {
   for (const row of rows ?? []) {
     if (row.kind === 'group') {
       if (row.op === 'not') {
-        const inner = rowsToWhen(row.branches[0]);
+        const inner = rowsToWhen((row.branches ?? [])[0]);
         if (Object.keys(inner).length) push('not', inner);
       } else {
-        const branchWhens = row.branches.map(rowsToWhen).filter((w: any) => Object.keys(w).length);
-        if (branchWhens.length) push(row.op, branchWhens);
+        const branchWhens = (row.branches ?? []).map(rowsToWhen).filter((w) => Object.keys(w).length);
+        if (branchWhens.length) push(row.op as string, branchWhens);
       }
     } else {
       const spec = leafToSpec(row);
-      if (spec !== undefined) push(row.type, spec);
+      if (spec !== undefined) push(row.type as string, spec);
     }
   }
 
-  const when: any = {};
+  const when: ConditionWhen = {};
   const allExtra: any[] = [];
   for (const [key, values] of buckets) {
     if (key === 'all') { allExtra.push(...values.flat()); continue; }
-    if (values.length === 1) { when[key] = values[0]; continue; }
+    if (values.length === 1) { (when as any)[key] = values[0]; continue; }
     allExtra.push(...values.map((v) => ({ [key]: v })));
   }
   if (allExtra.length) when.all = allExtra;
@@ -144,14 +149,14 @@ export function rowsToWhen(rows: any[]): any {
 }
 
 /** Can this `when`-object be edited by the tree, within `MAX_DEPTH` levels of nesting? */
-export function whenIsRepresentable(when: any, depth = 0): boolean {
+export function whenIsRepresentable(when: ConditionWhen | undefined, depth = 0): boolean {
   if (when == null) return true;
   if (typeof when !== 'object' || Array.isArray(when)) return false;
   if (depth >= MAX_DEPTH) return Object.keys(when).length === 0;
   return Object.entries(when).every(([key, spec]) => {
-    if (key === 'not') return whenIsRepresentable(spec, depth + 1);
+    if (key === 'not') return whenIsRepresentable(spec as ConditionWhen, depth + 1);
     if (key === 'all' || key === 'any') {
-      return Array.isArray(spec) && (spec as any[]).every((w) => whenIsRepresentable(w, depth + 1));
+      return Array.isArray(spec) && (spec as ConditionWhen[]).every((w) => whenIsRepresentable(w, depth + 1));
     }
     return LEAF_TYPES.includes(key);
   });
