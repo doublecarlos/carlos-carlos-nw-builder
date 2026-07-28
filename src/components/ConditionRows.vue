@@ -112,16 +112,20 @@ function optionsForCombo(type: string) {
           <label class="field"><span class="field-label">Set</span>
             <ComboBox class="combo--set" :model-value="row.set" :options="setComboOptions"
                       placeholder="— set —" @update:model-value="v => row.set = v" /></label>
-          <label class="field"><span class="field-label">Pieces</span>
-            <input type="number" min="1" v-model.number="row.atLeast"></label>
+          <label class="field"><span class="field-label">At least (s)</span>
+            <input type="number" v-model.number="row.atLeast"></label>
+          <label class="field"><span class="field-label">Below (s)</span>
+            <input type="number" v-model.number="row.below"></label>
         </template>
         <template v-else-if="row.type === 'equipped'">
           <label class="field"><span class="field-label">Tag</span>
             <input type="text" v-model="row.tag" list="nw-tags"></label>
           <label class="field"><span class="field-label">Or exact item name</span>
             <input type="text" v-model="row.item"></label>
-          <label class="field"><span class="field-label">Count</span>
+          <label class="field"><span class="field-label">At least (s)</span>
             <input type="number" v-model.number="row.atLeast"></label>
+          <label class="field"><span class="field-label">Below (s)</span>
+            <input type="number" v-model.number="row.below"></label>
         </template>
         <template v-else>
           <label class="field"><span class="field-label">Value</span>
