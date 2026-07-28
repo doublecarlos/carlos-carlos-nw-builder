@@ -27,7 +27,7 @@
   --diff: #ab9000;
 
   --radius: 6px;
-  /* Measured from the real element at runtime (app.js `mounted`): the top bar wraps to a
+  /* Measured from the real element at runtime (App.vue `mounted`): the top bar wraps to a
    * different number of lines depending on window width, and a hard-coded offset would let the
    * sticky panel slide underneath it. This value is only the pre-measurement fallback. */
   --topbar-h: 176px;
@@ -715,7 +715,7 @@ label.quickopts-row { cursor: pointer; }
 
 .slot-row.is-hovered { background: color-mix(in srgb, var(--accent-soft) 40%, transparent); }
 
-/* Quick-compare: a row whose choice differs from the compare build, per app.js's picker. Same
+/* Quick-compare: a row whose choice differs from the compare build, per App.vue's picker. Same
  * specificity as `.is-hovered` above -- this comes later in source order so the diff cue stays
  * visible on hover instead of the two backgrounds fighting row-for-row. */
 .slot-row.is-diff { background: color-mix(in srgb, var(--diff) 20%, transparent); }

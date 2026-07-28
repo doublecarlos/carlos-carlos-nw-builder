@@ -1,0 +1,37 @@
+{
+  "name": "neverwinter-web-builder",
+  "version": "1.0.0",
+  "description": "Neverwinter build planner",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest run --passWithNoTests",
+    "test:watch": "vitest",
+    "test:differ": "tsx tests/run-differ.mts",
+    "typecheck": "vue-tsc --noEmit"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/doublecarlos/yet-another-nw-builder.git"
+  },
+  "license": "UNLICENSED",
+  "bugs": {
+    "url": "https://github.com/doublecarlos/yet-another-nw-builder/issues"
+  },
+  "homepage": "https://github.com/doublecarlos/yet-another-nw-builder#readme",
+  "dependencies": {
+    "vue": "^3.5.40"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.2",
+    "@vitejs/plugin-vue": "^6.0.8",
+    "tsx": "^4.23.1",
+    "typescript": "^5.9.3",
+    "vite": "^8.1.5",
+    "vitest": "^4.1.10",
+    "vue-tsc": "^3.3.8"
+  }
+}

@@ -10,48 +10,7 @@
 
 <div id="app">Loading…</div>
 
-<!--
-  Classic scripts, in dependency order. No bundler and no build step (handoff §2) -- serving
-  this directory as static files is the whole deployment story. `tools/serve.py` for
-  development; a static host in production.
--->
-<script src="vendor/vue.global.prod.js"></script>
-
-<script src="data/schema.js"></script>
-<script src="data/slots.js"></script>
-<script src="data/db-items.js"></script>
-<script src="data/db-bonuses.js"></script>
-
-<script src="src/conditions.js"></script>
-<script src="src/db.js"></script>
-<script src="src/bonus.js"></script>
-<script src="src/engine.js"></script>
-
-<script src="src/format.js"></script>
-<script src="src/catalog.js"></script>
-<script src="src/router.js"></script>
-<script src="src/storage.js"></script>
-<script src="src/fs-store.js"></script>
-<script src="src/components/combo-box.js"></script>
-<script src="src/components/quick-options.js"></script>
-<script src="src/components/options.js"></script>
-<script src="src/components/build-bar.js"></script>
-<script src="src/components/build-nav.js"></script>
-<script src="src/components/item-picker.js"></script>
-<script src="src/components/item-card.js"></script>
-<script src="src/components/icon-button.js"></script>
-<script src="src/components/slot-list.js"></script>
-<script src="src/components/stat-panel.js"></script>
-<script src="src/components/bonus-inspector.js"></script>
-<script src="src/components/token-input.js"></script>
-<script src="src/components/percent-input.js"></script>
-<script src="src/components/condition-rows.js"></script>
-<script src="src/components/bonus-rows.js"></script>
-<script src="src/components/bonus-groups.js"></script>
-<script src="src/components/item-form.js"></script>
-<script src="src/components/bonus-set-form.js"></script>
-<script src="src/components/data-editor.js"></script>
-<script src="src/app.js"></script>
+<script type="module" src="/src/main.ts"></script>
 
 </body>
 </html>
