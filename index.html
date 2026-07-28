@@ -21,27 +21,19 @@
   top level). Not-yet-converted files below are therefore marked type="module" even though most
   still just do `window.NW.X = ...` internally rather than real import/export -- that keeps them
   deferred in the same relative order as before, until each is actually rewritten with real
-  imports in its own phase. Two files are exempt and stay plain classic scripts:
-  vendor/vue.global.prod.js (must run synchronously first, before anything deferred, to set
-  window.Vue) and the data/*.js loaders (they resolve their fetch URL via
-  `document.currentScript.src`, which is null in module scripts -- Phase 3 of the migration
-  removes them in favor of static JSON imports). `npm run dev` (Vite) replaces
-  `tools/serve.py` for local development.
+  imports in its own phase. Only vendor/vue.global.prod.js is exempt and stays a plain classic
+  script (must run synchronously first, before anything deferred, to set window.Vue).
+
+  Data is loaded via static imports (src/data.ts) now, not the classic data/*.js fetch loaders
+  (removed this phase) -- src/legacy-bridge.ts still bridges NW_SCHEMA/NW_SLOTS/NW_ITEMS/
+  NW_BONUSES and an already-resolved `window.NW.dataReady` onto window for app.js and the
+  not-yet-converted components below, which still read them as globals. `npm run dev` (Vite)
+  replaces `tools/serve.py` for local development.
 -->
 <script type="module" src="/src/main.ts"></script>
 
 <script src="vendor/vue.global.prod.js"></script>
 
-<script src="data/schema.js"></script>
-<script src="data/slots.js"></script>
-<script src="data/db-items.js"></script>
-<script src="data/db-bonuses.js"></script>
-
-<script type="module" src="src/format.js"></script>
-<script type="module" src="src/catalog.js"></script>
-<script type="module" src="src/router.js"></script>
-<script type="module" src="src/storage.js"></script>
-<script type="module" src="src/fs-store.js"></script>
 <script type="module" src="src/components/combo-box.js"></script>
 <script type="module" src="src/components/quick-options.js"></script>
 <script type="module" src="src/components/options.js"></script>

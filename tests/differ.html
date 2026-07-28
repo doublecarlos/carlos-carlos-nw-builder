@@ -32,15 +32,10 @@
 <div id="banner" class="banner">running…</div>
 <pre id="report">…</pre>
 
-<!-- See index.html's script-block comment for why not-yet-converted classic files need
-     type="module" once any file they depend on (here, ../src/legacy-bridge.ts) is a real ES
-     module: module scripts always defer until after the document parses, so mixing a blocking
-     classic script that reads window.NW.* with a deferred one that sets it would break load
-     order regardless of tag position. -->
-<script src="../data/schema.js"></script>
-<script src="../data/slots.js"></script>
-<script src="../data/db-items.js"></script>
-<script src="../data/db-bonuses.js"></script>
+<!-- Data is loaded via static imports (src/data.ts) now; ../src/legacy-bridge.ts bridges
+     NW_SCHEMA/NW_SLOTS/NW_ITEMS/NW_BONUSES and window.NW.dataReady onto window, since the inline
+     script below still reads them that way. See index.html's script-block comment for why it
+     has to be type="module" (module scripts always defer until after the document parses). -->
 <script type="module" src="../src/legacy-bridge.ts"></script>
 <script type="module" src="differ-cases.js"></script>
 <script type="module">
