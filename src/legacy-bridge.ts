@@ -36,6 +36,7 @@ import ItemForm from './components/ItemForm.vue';
 import BonusSetForm from './components/BonusSetForm.vue';
 import SlotList from './components/SlotList.vue';
 import StatPanel from './components/StatPanel.vue';
+import DataEditor from './components/DataEditor.vue';
 
 declare global {
   interface Window {
@@ -109,3 +110,4 @@ window.NW.components.ItemForm = ItemForm;
 window.NW.components.BonusSetForm = BonusSetForm;
 window.NW.components.SlotList = SlotList;
 window.NW.components.StatPanel = StatPanel;
+window.NW.components.DataEditor = DataEditor;
