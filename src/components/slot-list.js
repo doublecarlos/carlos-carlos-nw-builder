@@ -66,6 +66,7 @@ window.NW.components.SlotList = (() => {
       editing: false,     // a picker has focus: suppress the card so it cannot cover a dropdown
       cursor: null,        // { type: 'header'|'slot', id } -- keyboard cursor, independent of the mouse
       copyFrom: {},        // sectionId -> chosen source build id, defaults to `otherBuilds[0]`
+      copyMenuFor: null,   // sectionId currently showing the "copy section from" popover, or null
     }),
 
     /** Imperative ref bag for per-row ItemPickers (see `setPickerRef`) -- not template state,
@@ -240,6 +241,19 @@ window.NW.components.SlotList = (() => {
 
       setCopyFrom(sectionId, value) {
         this.copyFrom = { ...this.copyFrom, [sectionId]: value };
+      },
+
+      /** The section header's copy icon: no permanent picker sitting in the header, just a
+       * small "copy section from" popover with its own picker and confirm button. */
+      toggleCopyMenu(sectionId) {
+        this.copyMenuFor = this.copyMenuFor === sectionId ? null : sectionId;
+      },
+
+      confirmCopy(sectionId) {
+        const fromId = this.copyFromFor(sectionId);
+        if (!fromId) return;
+        this.$emit('copy-section', { fromId, sectionIds: [sectionId] });
+        this.copyMenuFor = null;
       },
 
       setAll(open) {
@@ -488,11 +502,31 @@ window.NW.components.SlotList = (() => {
       onFocusOut() {
         this.editing = false;
       },
+
+      /**
+       * Closes the "copy section from" popover when a click lands outside it -- the icon
+       * button that opens it toggles its own state, so this only has to handle "elsewhere".
+       *
+       * `event.composedPath()`, not `event.target.closest(...)`: choosing the popover's own
+       * ComboBox option closes *that* dropdown in the same mousedown (see `choose()` in
+       * combo-box.js), which synchronously detaches the clicked row from `.copy-popover` before
+       * this handler runs -- a live `closest()` walk from `event.target` at that point no longer
+       * finds the popover as an ancestor, even though the click plainly landed inside it.
+       * `composedPath()` is the path as it was at dispatch time, unaffected by DOM changes any
+       * listener made along the way.
+       */
+      onDocumentClick(event) {
+        if (!this.copyMenuFor) return;
+        const path = event.composedPath?.() ?? [];
+        if (path.some((el) => el.classList?.contains?.('copy-popover') || el.classList?.contains?.('section-copy-btn'))) return;
+        this.copyMenuFor = null;
+      },
     },
 
     mounted() {
       window.addEventListener('scroll', this.onScroll, true);
       window.addEventListener('keydown', this.onNavKeydown);
+      document.addEventListener('mousedown', this.onDocumentClick);
     },
 
     unmounted() {
@@ -500,6 +534,7 @@ window.NW.components.SlotList = (() => {
       window.clearTimeout(this.leaveTimer);
       window.removeEventListener('scroll', this.onScroll, true);
       window.removeEventListener('keydown', this.onNavKeydown);
+      document.removeEventListener('mousedown', this.onDocumentClick);
     },
 
     template: `
@@ -512,16 +547,18 @@ window.NW.components.SlotList = (() => {
         </div>
 
         <section class="section">
-          <button type="button" class="section-head" :class="{ 'is-cursor': isCursor('header', 'options') }"
-                  data-cursor-key="header:options"
-                  @click="toggle('options'); setCursor('header', 'options')">
-            <span class="section-chevron">{{ expanded.options ? '▾' : '▸' }}</span>
-            <span class="section-label">Options</span>
-          </button>
+          <div class="section-head-row">
+            <button type="button" class="section-head" :class="{ 'is-cursor': isCursor('header', 'options') }"
+                    data-cursor-key="header:options"
+                    @click="toggle('options'); setCursor('header', 'options')">
+              <span class="section-chevron">{{ expanded.options ? '▾' : '▸' }}</span>
+              <span class="section-label">Options</span>
+            </button>
+          </div>
           <div v-if="expanded.options" class="section-body">
             <Options :context="context"
-                     @set="(key, value) => $emit('set', key, value)"
-                     @set-forte="(slot, key) => $emit('set-forte', slot, key)" />
+                    @set="(key, value) => $emit('set', key, value)"
+                    @set-forte="(slot, key) => $emit('set-forte', slot, key)" />
           </div>
         </section>
 
@@ -537,13 +574,18 @@ window.NW.components.SlotList = (() => {
               <span v-if="highlightDiff && section.diffs" class="badge badge--diff">{{ section.diffs }}</span>
               <span v-if="section.unsaved" class="unsaved-dot" title="Unsaved changes in this section"></span>
             </button>
-            <ComboBox v-if="otherBuilds.length" class="section-copy-from" :model-value="copyFromFor(section.id)"
-                      :options="otherBuilds" placeholder="copy from…"
-                      @update:model-value="setCopyFrom(section.id, $event)" />
-            <IconButton v-if="otherBuilds.length" icon="copy"
-                        :title="'Copy this section from ' + (otherBuilds.find(o => o.value === copyFromFor(section.id))?.label ?? 'the selected build')"
-                        :disabled="!copyFromFor(section.id)"
-                        @click="$emit('copy-section', { fromId: copyFromFor(section.id), sectionIds: [section.id] })" />
+            <div v-if="otherBuilds.length" class="copy-popover-wrap">
+              <IconButton icon="copy" title="Copy this section from another build" class="section-copy-btn"
+                          @click="toggleCopyMenu(section.id)" />
+              <div v-if="copyMenuFor === section.id" class="copy-popover">
+                <span class="copy-popover-label">Copy section from</span>
+                <ComboBox class="copy-popover-select" :model-value="copyFromFor(section.id)"
+                          :options="otherBuilds" placeholder="choose a build…"
+                          @update:model-value="setCopyFrom(section.id, $event)" />
+                <button type="button" class="btn btn--primary" :disabled="!copyFromFor(section.id)"
+                        @click="confirmCopy(section.id)">Copy</button>
+              </div>
+            </div>
             <IconButton v-if="section.unsaved" icon="undo-2" title="Revert this section to saved"
                         class="section-revert" @click="$emit('revert-section', section.id)" />
           </div>

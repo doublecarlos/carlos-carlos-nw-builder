@@ -1021,58 +1021,7 @@ window.NW = window.NW ?? {};
         @close="view = 'builder'" />
 
       <template v-else>
-      <header class="topbar">
-        <div class="brand">
-          <h1>Neverwinter build planner</h1>
-        </div>
-
-        <BuildBar
-          :build="build"
-          :can-undo="canUndo"
-          :can-redo="canRedo"
-          :undo-label="undoLabel"
-          :redo-label="redoLabel"
-          :dirty="dirty"
-          @rename="renameBuild"
-          @import="importBuilds"
-          @undo="undo"
-          @redo="redo"
-          @save="saveActive"
-          @revert="revertActive" />
-
-        <QuickOptions
-          :context="build.context"
-          @set="setContext"
-          @set-toggle="setToggle" />
-
-        <div class="topbar-actions">
-          <div class="compare-quick">
-            <span class="field-label">Compare</span>
-            <ComboBox class="compare-select" :model-value="build.compare.id" :options="compareOptions"
-                      @update:model-value="setCompareBuild" />
-            <label class="check">
-              <input type="checkbox" :checked="build.compare.highlight" :disabled="!compareBuild"
-                     @change="setCompareFlag('highlight', $event.target.checked)">
-              <span>highlight diffs</span>
-            </label>
-            <label class="check">
-              <input type="checkbox" :checked="build.compare.onlyDiff" :disabled="!compareBuild"
-                     @change="setCompareFlag('onlyDiff', $event.target.checked)">
-              <span>only diffs</span>
-            </label>
-          </div>
-
-          <span v-if="notice" class="notice" @click="notice = ''">{{ notice }}</span>
-          <span class="hint">{{ filledSlots }}/{{ db.slots.length }} slots</span>
-          <button type="button" class="link" @click="clearSlots">clear slots</button>
-          <button type="button" class="link" @click="resetAll">reset</button>
-          <button type="button" class="btn" @click="view = 'editor'">
-            Edit data<span v-if="overlayCount" class="badge badge--edited">{{ overlayCount }}</span>
-          </button>
-        </div>
-      </header>
-
-      <main class="layout" v-if="resolved.ok">
+      <div class="page">
         <BuildNav
           :collections="collections"
           :builds="builds"
@@ -1100,54 +1049,108 @@ window.NW = window.NW ?? {};
           @reset-build="onResetBuild"
           @delete-build="onDeleteBuild" />
 
-        <SlotList
-          :db="db"
-          :build="build"
-          :result="resolved.result"
-          :context="build.context"
-          :expanded="build.expanded"
-          :compare-build="compareBuild"
-          :highlight-diff="build.compare.highlight"
-          :only-diff="build.compare.onlyDiff"
-          :saved-build="savedById[activeId]"
-          :other-builds="otherBuildsInCollection"
-          @choose="setChoice"
-          @set-value="setValue"
-          @set="setContext"
-          @set-forte="setForte"
-          @apply-slot="applyFromCompare"
-          @toggle-section="toggleSection"
-          @set-expanded="setExpanded"
-          @edit-item="editItem"
-          @revert-slot="revertSlot"
-          @revert-section="revertSection"
-          @copy-section="copySection" />
-        <aside class="sidebar">
-          <div class="tabs">
-            <button type="button" class="tab" :class="{ 'is-on': tab === 'stats' }"
-                    @click="tab = 'stats'">Stats</button>
-            <button type="button" class="tab" :class="{ 'is-on': tab === 'bonuses' }"
-                    @click="tab = 'bonuses'">
-              Bonuses <span class="tab-count">{{ bonusCounts.active }}/{{ bonusCounts.total }}</span>
-              <span v-if="bonusCounts.nearMiss" class="badge badge--near">
-                {{ bonusCounts.nearMiss }} away
-              </span>
-            </button>
-          </div>
+        <div class="page-main">
+          <header class="topbar">
+            <div class="brand">
+              <h1>Neverwinter build planner</h1>
+            </div>
 
-          <!-- v-show, not v-if: switching tabs must not discard the inspector's filter. -->
-          <StatPanel v-show="tab === 'stats'" :result="resolved.result"
-                     :compare-result="compareResolved?.ok ? compareResolved.result : null"
-                     :compare-name="compareBuild?.name ?? ''" />
-          <BonusInspector v-show="tab === 'bonuses'" :result="resolved.result" :db="db" />
-        </aside>
-      </main>
+            <BuildBar
+              :build="build"
+              :can-undo="canUndo"
+              :can-redo="canRedo"
+              :undo-label="undoLabel"
+              :redo-label="redoLabel"
+              :dirty="dirty"
+              @rename="renameBuild"
+              @import="importBuilds"
+              @undo="undo"
+              @redo="redo"
+              @save="saveActive"
+              @revert="revertActive" />
 
-      <main v-else class="crash">
-        <h2>The engine threw</h2>
-        <p>{{ resolved.message }}</p>
-        <pre>{{ resolved.stack }}</pre>
-      </main>
+            <QuickOptions
+              :context="build.context"
+              @set="setContext"
+              @set-toggle="setToggle" />
+
+            <div class="topbar-actions">
+              <span v-if="notice" class="notice" @click="notice = ''">{{ notice }}</span>
+              <div class="compare-quick">
+                <span class="field-label">Compare</span>
+                <ComboBox class="compare-select" :model-value="build.compare.id" :options="compareOptions"
+                          @update:model-value="setCompareBuild" />
+                <label class="check">
+                  <input type="checkbox" :checked="build.compare.highlight" :disabled="!compareBuild"
+                         @change="setCompareFlag('highlight', $event.target.checked)">
+                  <span>highlight diffs</span>
+                </label>
+                <label class="check">
+                  <input type="checkbox" :checked="build.compare.onlyDiff" :disabled="!compareBuild"
+                         @change="setCompareFlag('onlyDiff', $event.target.checked)">
+                  <span>only diffs</span>
+                </label>
+              </div>
+
+              <button type="button" class="link" @click="resetAll">reset</button>
+              <span class="hint">{{ filledSlots }}/{{ db.slots.length }} slots</span>
+              <button type="button" class="btn" @click="view = 'editor'">
+                Edit data<span v-if="overlayCount" class="badge badge--edited">{{ overlayCount }}</span>
+              </button>
+            </div>
+          </header>
+
+          <main class="layout" v-if="resolved.ok">
+            <SlotList
+              :db="db"
+              :build="build"
+              :result="resolved.result"
+              :context="build.context"
+              :expanded="build.expanded"
+              :compare-build="compareBuild"
+              :highlight-diff="build.compare.highlight"
+              :only-diff="build.compare.onlyDiff"
+              :saved-build="savedById[activeId]"
+              :other-builds="otherBuildsInCollection"
+              @choose="setChoice"
+              @set-value="setValue"
+              @set="setContext"
+              @set-forte="setForte"
+              @apply-slot="applyFromCompare"
+              @toggle-section="toggleSection"
+              @set-expanded="setExpanded"
+              @edit-item="editItem"
+              @revert-slot="revertSlot"
+              @revert-section="revertSection"
+              @copy-section="copySection" />
+            <aside class="sidebar">
+              <div class="tabs">
+                <button type="button" class="tab" :class="{ 'is-on': tab === 'stats' }"
+                        @click="tab = 'stats'">Stats</button>
+                <button type="button" class="tab" :class="{ 'is-on': tab === 'bonuses' }"
+                        @click="tab = 'bonuses'">
+                  Bonuses <span class="tab-count">{{ bonusCounts.active }}/{{ bonusCounts.total }}</span>
+                  <span v-if="bonusCounts.nearMiss" class="badge badge--near">
+                    {{ bonusCounts.nearMiss }} away
+                  </span>
+                </button>
+              </div>
+
+              <!-- v-show, not v-if: switching tabs must not discard the inspector's filter. -->
+              <StatPanel v-show="tab === 'stats'" :result="resolved.result"
+                         :compare-result="compareResolved?.ok ? compareResolved.result : null"
+                         :compare-name="compareBuild?.name ?? ''" />
+              <BonusInspector v-show="tab === 'bonuses'" :result="resolved.result" :db="db" />
+            </aside>
+          </main>
+
+          <main v-else class="crash">
+            <h2>The engine threw</h2>
+            <p>{{ resolved.message }}</p>
+            <pre>{{ resolved.stack }}</pre>
+          </main>
+        </div>
+      </div>
       </template>
     `,
   });

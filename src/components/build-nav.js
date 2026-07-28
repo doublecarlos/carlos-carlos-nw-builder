@@ -45,6 +45,7 @@ window.NW.components.BuildNav = (() => {
     data: () => ({
       collapsed: {},          // collectionId -> true when collapsed (absent = expanded)
       openMenu: null,         // { type: 'collection'|'build', id } | null
+      menuPos: { top: 0, left: 0 },   // viewport coords for the open menu, see `openMenuFor`
       saveAsFor: null,        // collection id currently showing the Save As sub-panel
       renaming: null,         // { type, id } | null
       renameText: '',
@@ -92,9 +93,34 @@ window.NW.components.BuildNav = (() => {
         return this.openMenu?.type === type && this.openMenu?.id === id;
       },
 
-      openMenuFor(type, id) {
+      /**
+       * `.build-nav` is its own scrolling container (full page height, see app.css) -- a
+       * `position: absolute` menu clipped at its bottom edge for any row near the end of the
+       * list, which is exactly the "bugs weirdly on the last tabs" report. `position: fixed`
+       * escapes that clipping the same way `.itemcard` does in slot-list.js, so the menu's
+       * coordinates have to be computed from the trigger's own viewport rect instead of just
+       * `right: 0` inside a `position: relative` wrapper.
+       */
+      openMenuFor(type, id, event) {
         this.saveAsFor = null;
-        this.openMenu = this.isMenuOpen(type, id) ? null : { type, id };
+        if (this.isMenuOpen(type, id)) {
+          this.openMenu = null;
+          return;
+        }
+        const wrap = event.currentTarget.closest('.nav-menu-wrap');
+        const rect = wrap.getBoundingClientRect();
+        this.menuPos = { top: rect.bottom + 2, left: rect.right };
+        this.openMenu = { type, id };
+
+        // Flip above the trigger if the menu (measured once it exists) would run off the
+        // bottom of the viewport -- same technique as slot-list.js's `place()`.
+        this.$nextTick(() => {
+          const menu = this.$el.querySelector('.navmenu');
+          if (!menu) return;
+          const margin = 8;
+          if (this.menuPos.top + menu.offsetHeight <= window.innerHeight - margin) return;
+          this.menuPos = { ...this.menuPos, top: Math.max(rect.top - menu.offsetHeight - 2, margin) };
+        });
       },
 
       closeMenu() {
@@ -106,6 +132,15 @@ window.NW.components.BuildNav = (() => {
        * inside it, each control (menu, rename input) already closes itself on its own action. */
       onDocumentClick(event) {
         if (this.$el.contains(event.target)) return;
+        this.closeMenu();
+      },
+
+      /** The menu is `position: fixed`, anchored at open time -- if the sidebar (or the page)
+       * scrolls afterward, the anchor point moves out from under it, so close it rather than
+       * leave it floating over the wrong row. Capture phase, same as slot-list.js's own
+       * `onScroll`, so it fires for the sidebar's internal scroll too. */
+      onScroll(event) {
+        if (!this.openMenu || event.target?.closest?.('.navmenu')) return;
         this.closeMenu();
       },
 
@@ -201,11 +236,13 @@ window.NW.components.BuildNav = (() => {
 
     mounted() {
       document.addEventListener('mousedown', this.onDocumentClick);
+      window.addEventListener('scroll', this.onScroll, true);
     },
 
     unmounted() {
       window.clearTimeout(this.confirmTimer);
       document.removeEventListener('mousedown', this.onDocumentClick);
+      window.removeEventListener('scroll', this.onScroll, true);
     },
 
     template: `
@@ -221,7 +258,7 @@ window.NW.components.BuildNav = (() => {
                    @blur="commitRename">
             <button v-else type="button" class="nav-name" @click="$emit('select-collection', collection.id)"
                     @dblclick="startRename('collection', collection.id, collection.name)"
-                    @contextmenu.prevent="openMenuFor('collection', collection.id)">
+                    @contextmenu.prevent="openMenuFor('collection', collection.id, $event)">
               {{ collection.name }}
             </button>
 
@@ -229,9 +266,10 @@ window.NW.components.BuildNav = (() => {
 
             <div class="nav-menu-wrap">
               <button type="button" class="nav-kebab" title="Collection menu"
-                      @click="openMenuFor('collection', collection.id)">⋮</button>
+                      @click="openMenuFor('collection', collection.id, $event)">⋮</button>
 
-              <div v-if="isMenuOpen('collection', collection.id)" class="navmenu">
+              <div v-if="isMenuOpen('collection', collection.id)" class="navmenu"
+                   :style="{ top: menuPos.top + 'px', left: menuPos.left + 'px' }">
                 <button type="button" class="navmenu-item"
                         @click="startRename('collection', collection.id, collection.name)">Rename</button>
                 <button type="button" class="navmenu-item" @click="$emit('save-collection', collection.id); closeMenu()">
@@ -269,7 +307,7 @@ window.NW.components.BuildNav = (() => {
               <button v-else type="button" class="nav-name"
                       @click="$emit('select-build', { collectionId: collection.id, id: build.id })"
                       @dblclick="startRename('build', build.id, build.name)"
-                      @contextmenu.prevent="openMenuFor('build', build.id)">
+                      @contextmenu.prevent="openMenuFor('build', build.id, $event)">
                 {{ build.name }}
               </button>
 
@@ -277,9 +315,10 @@ window.NW.components.BuildNav = (() => {
 
               <div class="nav-menu-wrap">
                 <button type="button" class="nav-kebab" title="Build menu"
-                        @click="openMenuFor('build', build.id)">⋮</button>
+                        @click="openMenuFor('build', build.id, $event)">⋮</button>
 
-                <div v-if="isMenuOpen('build', build.id)" class="navmenu">
+                <div v-if="isMenuOpen('build', build.id)" class="navmenu"
+                     :style="{ top: menuPos.top + 'px', left: menuPos.left + 'px' }">
                   <button type="button" class="navmenu-item"
                           @click="startRename('build', build.id, build.name)">Rename</button>
                   <button type="button" class="navmenu-item"

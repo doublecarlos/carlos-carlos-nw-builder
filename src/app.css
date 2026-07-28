@@ -268,17 +268,27 @@ label.quickopts-row { cursor: pointer; }
 }
 .preset.is-on { background: var(--accent-soft); border-color: var(--accent); color: var(--text); }
 
+/* --- page shell ------------------------------------------------------------------------ */
+
+/* The collections sidebar (`.build-nav`) runs the full height of the page, with the top bar
+ * and the build itself confined to `.page-main` on its right -- it used to sit inside `.layout`
+ * as a grid column under the top bar, which both capped its height to the viewport-minus-topbar
+ * and (via that ancestor's `overflow-y: auto`) clipped any popup menu opened from a row near its
+ * bottom edge (see `.navmenu` below, now `position: fixed` for exactly that reason). */
+.page { display: flex; align-items: stretch; min-height: 100vh; }
+.page-main { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
+
 /* --- layout -------------------------------------------------------------------------- */
 
 .layout {
   display: grid;
-  grid-template-columns: 220px minmax(0, 1fr) 460px;
+  grid-template-columns: minmax(0, 1fr) 460px;
   gap: 16px;
   padding: 14px;
   align-items: start;
 }
 
-.sidebar, .build-nav {
+.sidebar {
   position: sticky;
   top: calc(var(--topbar-h) + 14px);
   max-height: calc(100vh - var(--topbar-h) - 28px);
@@ -286,13 +296,29 @@ label.quickopts-row { cursor: pointer; }
 }
 
 @media (max-width: 1100px) {
+  .page { flex-direction: column; }
   .layout { grid-template-columns: minmax(0, 1fr); }
-  .sidebar, .build-nav { position: static; max-height: none; }
+  .sidebar { position: static; max-height: none; }
+  .build-nav { position: static; height: auto; max-height: none; width: auto; border-right: 0; border-bottom: 1px solid var(--line); }
 }
 
 /* --- build nav (collections sidebar) --------------------------------------------------- */
 
-.build-nav { display: flex; flex-direction: column; gap: 2px; font-size: 1rem; }
+.build-nav {
+  flex: none;
+  width: 236px;
+  height: 100vh;
+  position: sticky;
+  top: 0;
+  overflow-y: auto;
+  background: var(--surface);
+  border-right: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 1rem;
+  padding: 10px 8px;
+}
 
 .nav-collection { margin-bottom: 4px; }
 
@@ -359,6 +385,11 @@ label.quickopts-row { cursor: pointer; }
 }
 .nav-kebab:hover { background: var(--surface-2); color: var(--text); }
 
+/* `position: fixed`, not `absolute` -- `.build-nav` is a scrolling container in its own right
+ * now (full page height), and an absolutely-positioned menu got clipped at its bottom edge for
+ * any row near the end of the list. `top`/`left` are computed in `openMenuFor` from the
+ * trigger's own viewport rect; `translateX(-100%)` right-aligns the menu to that point, the
+ * fixed-position equivalent of the `right: 0` this replaced. */
 .navmenu {
   background: var(--surface);
   border: 1px solid var(--line);
@@ -368,9 +399,8 @@ label.quickopts-row { cursor: pointer; }
   flex-direction: column;
   min-width: 190px;
   padding: 4px;
-  position: absolute;
-  right: 0;
-  top: calc(100% + 2px);
+  position: fixed;
+  transform: translateX(-100%);
   z-index: 30;
 }
 
@@ -431,8 +461,32 @@ label.quickopts-row { cursor: pointer; }
 .section-head:hover { background: var(--surface-2); }
 .section-chevron { color: var(--muted); width: 10px; }
 .section-count { color: var(--muted); font-weight: 400; margin-left: auto; }
-.section-copy-from { flex: none; font-size: 1rem; margin-right: 2px; width: 130px; }
 .section-revert { flex: none; margin-right: 6px; }
+
+/* The section header's "copy this section from…" control -- an icon button, not a permanent
+ * picker, so the header row (which already carries the label, counts and badges) stays quiet
+ * until it's actually needed. Opens to the side (left) of the button rather than below it,
+ * since the row itself has plenty of width and dropping down would sit awkwardly over the
+ * section's own body. */
+.copy-popover-wrap { flex: none; margin-right: 2px; position: relative; }
+.copy-popover {
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .18);
+  display: flex;
+  gap: 6px;
+  padding: 7px 9px;
+  position: absolute;
+  right: calc(100% + 6px);
+  top: 50%;
+  transform: translateY(-50%);
+  white-space: nowrap;
+  z-index: 25;
+}
+.copy-popover-label { color: var(--muted); font-size: 1rem; }
+.copy-popover-select { width: 170px; }
 
 .badge {
   border-radius: 9px;
@@ -739,20 +793,35 @@ label.quickopts-row { cursor: pointer; }
 
 /* --- sidebar tabs -------------------------------------------------------------------- */
 
-.tabs { display: flex; gap: 4px; margin-bottom: 6px; }
+/* Real tabs, not a row of pill buttons: each sits flush against its neighbour with only the
+ * top corners rounded, and the active one shares its background and bottom edge with `.panel`
+ * right below (StatPanel/BonusInspector's own root) so the seam between tab and content
+ * disappears -- `margin-bottom: -1px` pulls the row down onto the panel's own top border, and
+ * the active tab paints its bottom border in the panel's own background colour to erase it. */
+.tabs { display: flex; gap: 2px; margin-bottom: -1px; padding-left: 2px; position: relative; z-index: 1; }
 .tab {
   background: var(--surface-2);
   border: 1px solid var(--line);
-  border-radius: var(--radius);
+  border-bottom: 1px solid var(--line);
+  border-radius: var(--radius) var(--radius) 0 0;
   color: var(--muted);
   cursor: pointer;
   display: flex;
   align-items: center;
   gap: 5px;
   font: inherit;
-  padding: 5px 10px;
+  padding: 6px 12px 7px;
 }
-.tab.is-on { background: var(--surface); border-color: var(--accent); color: var(--text); font-weight: 600; }
+.tab:hover:not(.is-on) { background: var(--surface); color: var(--text); }
+.tab.is-on {
+  background: var(--surface);
+  border-color: var(--line);
+  border-bottom-color: var(--surface);
+  color: var(--text);
+  font-weight: 600;
+  position: relative;
+  z-index: 2;
+}
 .tab-count { font-size: 1rem; opacity: .75; font-variant-numeric: tabular-nums; }
 
 /* --- bonus inspector ------------------------------------------------------------------ */
