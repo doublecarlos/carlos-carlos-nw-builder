@@ -9,18 +9,19 @@ import IconButton from './IconButton.vue';
 import ComboBox from './ComboBox.vue';
 import TokenInput from './TokenInput.vue';
 import * as bonusDraft from '../bonus-draft';
+import type { BonusSet, Db } from '../types';
 
-const canonical = (value: any): any => {
+const canonical = (value: unknown): unknown => {
   if (Array.isArray(value)) return value.map(canonical);
   if (value && typeof value === 'object') {
-    const out: Record<string, any> = {};
-    for (const key of Object.keys(value).sort()) out[key] = canonical(value[key]);
+    const out: Record<string, unknown> = {};
+    for (const key of Object.keys(value).sort()) out[key] = canonical((value as Record<string, unknown>)[key]);
     return out;
   }
   return value;
 };
 
-const sameSet = (a: any, b: any) => JSON.stringify(canonical(a)) === JSON.stringify(canonical(b));
+const sameSet = (a: unknown, b: unknown) => JSON.stringify(canonical(a)) === JSON.stringify(canonical(b));
 
 const slugify = (text: string) => String(text).toLowerCase().trim()
   .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
@@ -32,15 +33,15 @@ const UNDO_LIMIT = 50;
 
 const props = withDefaults(defineProps<{
   /** The bonus set being edited, or null for a brand-new one. */
-  source?: any;
+  source?: BonusSet | null;
   status?: string;
-  db: any;
+  db: Db;
   /** Every bonus set id -- both for the "tiered by set pieces" combo and the id-collision check. */
   setIds?: string[];
   tags?: string[];
   bonusIds?: string[];
   /** Same stash/restore as ItemForm.vue's own `initialDraft` -- see there for why. */
-  initialDraft?: any;
+  initialDraft?: bonusDraft.SetDraft | null;
 }>(), {
   source: null,
   status: 'base',
@@ -51,18 +52,18 @@ const props = withDefaults(defineProps<{
 });
 
 const emit = defineEmits<{
-  save: [payload: { id: string; previousId: string | null; set: any }];
+  save: [payload: { id: string; previousId: string | null; set: BonusSet }];
   delete: [];
   revert: [];
   dirty: [value: boolean];
 }>();
 
-function buildDraft(set: any) {
-  const source = set ?? {};
+function buildDraft(set: BonusSet | null | undefined): bonusDraft.SetDraft {
+  const source = set ?? {} as Partial<BonusSet>;
   return {
     id: source.id ?? '',
     name: source.name ?? '',
-    grants: (source.grants ?? []).map((grant: any) => bonusDraft.toDraft(grant)),
+    grants: (source.grants ?? []).map((grant) => bonusDraft.toDraft(grant)),
     stacking: source.stacking ?? '',
     maxStacks: source.maxStacks ?? null,
     excludes: [...(source.excludes ?? [])],

@@ -8,20 +8,23 @@
 // throwaway: only the layer the overlay lives in changes.
 import { ref, reactive, computed, watch, onMounted, onUnmounted } from 'vue';
 import ItemForm from './ItemForm.vue';
+import type { ItemDraft } from './ItemForm.vue';
 import BonusSetForm from './BonusSetForm.vue';
 import ComboBox from './ComboBox.vue';
 import * as catalog from '../catalog';
 import * as router from '../router';
+import type { Db, CatalogOverlay, CatalogGroup, Item, BonusSet, LintFinding } from '../types';
+import type { SetDraft } from '../bonus-draft';
 
 const UNDO_LIMIT = 50;
 
 const props = defineProps<{
-  db: any;
-  overlay: any;
+  db: Db;
+  overlay: CatalogOverlay;
 }>();
 
 const emit = defineEmits<{
-  'update-overlay': [overlay: any];
+  'update-overlay': [overlay: CatalogOverlay];
   close: [];
 }>();
 
@@ -47,19 +50,23 @@ const history = ref<{ past: { json: string; label: string }[]; future: { json: s
 // silently throw the edit away -- restored via `initialDraft` if the same row is
 // reselected. Only ever keyed by a *real* name/id, never the new-item/-set placeholder:
 // "+ New item" is a deliberate "start fresh" action, not a navigation to preserve.
-const itemDrafts = reactive<Record<string, any>>({});
-const setDrafts = reactive<Record<string, any>>({});
+const itemDrafts = reactive<Record<string, ItemDraft>>({});
+const setDrafts = reactive<Record<string, SetDraft>>({});
 
 const form = ref<InstanceType<typeof ItemForm> | null>(null);
 const setForm = ref<InstanceType<typeof BonusSetForm> | null>(null);
 
+interface ItemRow { key: string; name: string; filter: string; item: Item | null; status: string; kind: 'item' }
+interface BonusSetRow { key: string; name: string; filter: string; set: BonusSet | null; status: string; kind: 'bonusSet' }
+type EditorRow = ItemRow | BonusSetRow;
+
 // Removed entries are gone from `db`, so the list is built from the composed catalogue
 // plus the overlay's tombstones -- otherwise a deletion would vanish with no way back.
-const itemRows = computed(() => {
-  const rows: any[] = props.db.items.map((item: any) => ({
+const itemRows = computed<ItemRow[]>(() => {
+  const rows: ItemRow[] = props.db.items.map((item) => ({
     key: item.name,
     name: item.name,
-    filter: item.filter,
+    filter: item.filter ?? '',
     item,
     status: catalog.statusOf(props.overlay, 'items', item.name),
     kind: 'item',
@@ -74,8 +81,8 @@ const itemRows = computed(() => {
 
 /** Same shape as `itemRows`, one row per bonus set rather than per item -- so the same
  * list/search/keyboard-nav code serves both without knowing which it's showing. */
-const bonusSetRows = computed(() => {
-  const rows: any[] = props.db.bonusSets.map((set: any) => ({
+const bonusSetRows = computed<BonusSetRow[]>(() => {
+  const rows: BonusSetRow[] = props.db.bonusSets.map((set) => ({
     key: set.id,
     name: set.name || set.id,
     filter: `${(set.grants ?? []).length} grant(s)`,
@@ -131,9 +138,9 @@ const selectedSetStatus = computed(() => (selectedSetId.value == null
   ? 'base'
   : catalog.statusOf(props.overlay, 'bonusSets', selectedSetId.value)));
 
-const filters = computed<string[]>(() => [...new Set<string>(props.db.items.map((item: any) => item.filter).filter(Boolean))].sort());
+const filters = computed<string[]>(() => [...new Set<string>(props.db.items.map((item) => item.filter).filter((f): f is string => Boolean(f)))].sort());
 
-const setIds = computed<string[]>(() => [...new Set<string>(props.db.bonusSets.map((set: any) => set.id))].sort());
+const setIds = computed<string[]>(() => [...new Set<string>(props.db.bonusSets.map((set) => set.id))].sort());
 
 const tagList = computed<string[]>(() => [...props.db.itemsByTag.keys()].sort());
 
@@ -216,7 +223,7 @@ function onKeydown(event: KeyboardEvent) {
   if (key !== 'z' && key !== 'y') return;
   if ((event.target as HTMLElement)?.tagName === 'TEXTAREA') return;
   event.preventDefault();
-  const activeForm: any = section.value === 'bonusSets' ? setForm.value : form.value;
+  const activeForm = section.value === 'bonusSets' ? setForm.value : form.value;
   if (key === 'y' || event.shiftKey) {
     if (activeForm?.redoDraft?.()) return;
     redo();
@@ -234,15 +241,13 @@ function onKeydown(event: KeyboardEvent) {
 
 function stashItemDraft() {
   if (selectedName.value == null) return;
-  const f: any = form.value;
-  if (f?.dirty) itemDrafts[selectedName.value] = f.draft;
+  if (form.value?.dirty) itemDrafts[selectedName.value] = form.value.draft;
   else delete itemDrafts[selectedName.value];
 }
 
 function stashSetDraft() {
   if (selectedSetId.value == null) return;
-  const f: any = setForm.value;
-  if (f?.dirty) setDrafts[selectedSetId.value] = f.draft;
+  if (setForm.value?.dirty) setDrafts[selectedSetId.value] = setForm.value.draft;
   else delete setDrafts[selectedSetId.value];
 }
 
@@ -256,7 +261,7 @@ function stashCurrentDraft() {
 
 /** The list row's own red "unsaved" badge: true for the open form's live dirty state, or
  * for any other row still holding a stashed draft from an earlier visit. */
-function hasUnsavedDraft(row: any) {
+function hasUnsavedDraft(row: EditorRow) {
   if (row.kind === 'bonusSet') {
     if (row.key === selectedSetId.value) return formDirty.value;
     return Boolean(setDrafts[row.key]);
@@ -279,7 +284,7 @@ function clearFilters() {
 // one stop per keystroke: a click is a real "go to this row" navigation, an arrow key is
 // just skimming.
 
-function isValidStatusFilter(value: any) {
+function isValidStatusFilter(value: unknown) {
   return statusFilterOptions.some((option) => option.value === value);
 }
 
@@ -308,7 +313,7 @@ function switchSection(target: string) {
     : { section: null, set: null, item: selectedName.value });
 }
 
-function select(row: any, { push = true }: { push?: boolean } = {}) {
+function select(row: EditorRow, { push = true }: { push?: boolean } = {}) {
   if (row.status === 'removed') return;
   stashCurrentDraft();
   if (row.kind === 'bonusSet') {
@@ -355,17 +360,19 @@ function newItem() {
   selectedName.value = null;
   router.apply({ item: null });
   // Remounts ItemForm with an empty draft even if it was already showing a new item.
-  (form.value as any)?.$forceUpdate?.();
+  // $forceUpdate is a real Vue instance method but not part of ItemForm's own defineExpose
+  // surface (draft/dirty/undoDraft/redoDraft only), hence the cast to reach it anyway.
+  (form.value as unknown as { $forceUpdate?: () => void })?.$forceUpdate?.();
 }
 
 function newSet() {
   stashSetDraft();
   selectedSetId.value = null;
   router.apply({ set: null });
-  (setForm.value as any)?.$forceUpdate?.();
+  (setForm.value as unknown as { $forceUpdate?: () => void })?.$forceUpdate?.();
 }
 
-function onSave({ item, previousName }: { item: any; previousName: string | null }) {
+function onSave({ item, previousName }: { item: Item; previousName: string | null }) {
   snapshot(`Save item “${item.name}”`);
   const next = catalog.upsert(props.overlay, 'items', item.name, item, previousName ?? undefined);
   emit('update-overlay', next);
@@ -394,8 +401,8 @@ function onRevert() {
   notice.value = `Reverted “${name}” to the shipped version`;
 }
 
-function restore(row: any) {
-  const group = row.kind === 'bonusSet' ? 'bonusSets' : 'items';
+function restore(row: EditorRow) {
+  const group: CatalogGroup = row.kind === 'bonusSet' ? 'bonusSets' : 'items';
   snapshot(`Restore “${row.name}”`);
   emit('update-overlay', catalog.revert(props.overlay, group, row.key));
   if (row.kind === 'bonusSet') delete setDrafts[row.key];
@@ -426,7 +433,7 @@ function resetAll() {
 
 /** Jump to whatever a validation finding points at, switching section if needed --
  * findings carry `kind` precisely so this doesn't have to guess from the id/name shape. */
-function selectFinding(finding: any) {
+function selectFinding(finding: LintFinding) {
   if (!finding.name) return;
   if (finding.kind === 'bonusSet') {
     section.value = 'bonusSets';
@@ -453,19 +460,19 @@ function selectFinding(finding: any) {
  * including the item whose form triggered the rename, so the fix holds even if that item
  * is never explicitly re-saved.
  */
-function cascadeSetRename(overlay: any, oldId: string, newId: string) {
+function cascadeSetRename(overlay: CatalogOverlay, oldId: string, newId: string) {
   const affected = (props.db.setMembers.get(oldId) ?? [])
-    .map((name: string) => props.db.get(name))
-    .filter((item: any) => item?.bonuses?.includes(oldId));
+    .map((name) => props.db.get(name))
+    .filter((item): item is Item => Boolean(item?.bonuses?.includes(oldId)));
   let next = overlay;
   for (const item of affected) {
-    const updated = { ...item, bonuses: item.bonuses.map((bid: string) => (bid === oldId ? newId : bid)) };
+    const updated = { ...item, bonuses: item.bonuses!.map((bid) => (bid === oldId ? newId : bid)) };
     next = catalog.upsert(next, 'items', item.name, updated, item.name);
   }
   return { overlay: next, count: affected.length };
 }
 
-function onSaveSet({ id, set, previousId }: { id: string; set: any; previousId: string | null }) {
+function onSaveSet({ id, set, previousId }: { id: string; set: BonusSet; previousId: string | null }) {
   snapshot(`Save bonus “${set.name || id}”`);
   let next = catalog.upsert(props.overlay, 'bonusSets', id, set, previousId ?? id);
   let extra = '';
@@ -487,7 +494,7 @@ function onDeleteSet(id: string) {
   notice.value = `Removed set “${id}”`;
 }
 
-function onSaveSetTop({ id, set, previousId }: { id: string; set: any; previousId: string | null }) {
+function onSaveSetTop({ id, set, previousId }: { id: string; set: BonusSet; previousId: string | null }) {
   snapshot(`Save bonus set “${set.name || id}”`);
   let next = catalog.upsert(props.overlay, 'bonusSets', id, set, previousId ?? undefined);
   let extra = '';

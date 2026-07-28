@@ -13,14 +13,14 @@
 import { ref, computed, nextTick } from 'vue';
 
 /** decimal -> percent number. 0.036 -> 3.6, not 3.5999999999999996. */
-const toPercent = (value: any) => Number((Number(value) * 100).toFixed(10));
+const toPercent = (value: number | string) => Number((Number(value) * 100).toFixed(10));
 
 /** percent number -> decimal. 3.6 -> 0.036, not 0.036000000000000004. */
-const toDecimal = (percent: any) => Number((Number(percent) / 100).toFixed(12));
+const toDecimal = (percent: number | string) => Number((Number(percent) / 100).toFixed(12));
 
 /** Up to 4 decimals, trailing zeros trimmed: 9, 3.6, 9.85. The % sign is a fixed suffix in
  * the template, not part of this text, so it stays visible while typing too. */
-const display = (value: any) => {
+const display = (value: number | string) => {
   if (value === '' || value == null || !Number.isFinite(Number(value))) return '';
   const percent = toPercent(value);
   return String(Number(percent.toFixed(4)));

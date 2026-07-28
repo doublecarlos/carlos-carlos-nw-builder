@@ -10,9 +10,10 @@
 // through the one place the undo stack watches.
 import { ref, computed, watch } from 'vue';
 import * as storage from '../storage';
+import type { Build } from '../types';
 
 const props = withDefaults(defineProps<{
-  build: any;
+  build: Build;
   canUndo?: boolean;
   canRedo?: boolean;
   undoLabel?: string;
@@ -28,7 +29,7 @@ const props = withDefaults(defineProps<{
 
 const emit = defineEmits<{
   rename: [value: string];
-  import: [builds: any[]];
+  import: [builds: Build[]];
   undo: [];
   redo: [];
   save: [];

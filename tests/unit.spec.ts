@@ -7,6 +7,7 @@
 import { describe, it, expect } from 'vitest';
 import * as db from '../src/db';
 import * as engine from '../src/engine';
+import type { Build } from '../src/types';
 
 const built = db.fromData();
 
@@ -24,7 +25,9 @@ function runBuild(choices: Record<string, string>, contextOverrides: Record<stri
   if (contextOverrides.toggles) {
     context.toggles = { ...BASE_CONTEXT.toggles, ...contextOverrides.toggles };
   }
-  const result: any = engine.resolveBuild(built, { choices, values, context });
+  // Deliberately minimal -- only choices/values/context are exercised by resolveBuild, so
+  // this test fixture skips the rest of Build's fields (id/name/updated/compare/expanded).
+  const result: any = engine.resolveBuild(built, { choices, values, context } as unknown as Build);
   result.activeById = new Map(
     result.bonuses.filter((b: any) => b.active).map((b: any) => [b.id, b]),
   );

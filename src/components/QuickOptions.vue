@@ -10,6 +10,7 @@ import { computed } from 'vue';
 import ComboBox from './ComboBox.vue';
 import { NW_SCHEMA } from '../data';
 import { titleCase } from '../format';
+import type { BuildContext } from '../types';
 
 // Display order and labels are UI-only -- data/schema.json keeps its own order untouched.
 // The sheet's quick-options widget lists Consumables/Party/Combat/Other procs/Artifact call,
@@ -20,10 +21,10 @@ const TOGGLE_LABELS: Record<string, string> = { procs: 'Other procs', artifactCa
 // combatTypes as the sheet phrased them ("Single Target"), not a raw title-case of the key.
 const TYPE_LABELS: Record<string, string> = { single: 'Single Target', aoe: 'AoE', mixed: 'Mixed' };
 
-const props = defineProps<{ context: any }>();
+const props = defineProps<{ context: BuildContext }>();
 
 const emit = defineEmits<{
-  set: [key: string, value: any];
+  set: [key: string, value: string | number | boolean];
   'set-toggle': [name: string, value: boolean];
 }>();
 

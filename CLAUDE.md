@@ -12,12 +12,21 @@ results). `llm/docs/pending.md` is the user's running wishlist — read it befor
 2. **Vue 3 SFCs**, Composition API, `<script setup lang="ts">` everywhere — including the root
    (`App.vue`) and the five largest components. No Options API, no template-literal components.
    Vue comes from `node_modules` (no vendored/global build).
-3. **TypeScript, `strict: true`.** `allowJs: true` stays on so a stray `.js` file wouldn't hard-fail
-   the build, but nothing under `src/` is JS anymore and `checkJs` is off, so that knob is
-   vestigial. The codebase turned out to already be almost fully strict-clean (2026-07-28: 8
-   errors total across the whole tree — a few `?? []`/optional-param guards, no design changes)
-   so the incremental-typing escape hatch was retired rather than left open. `npm run typecheck`
-   (`vue-tsc --noEmit`) must stay clean.
+3. **TypeScript, `strict: true`, real types, not `any`.** `allowJs: true` stays on so a stray
+   `.js` file wouldn't hard-fail the build, but nothing under `src/` is JS anymore and `checkJs`
+   is off, so that knob is vestigial. `strict: true` landed 2026-07-28 (8 errors total across
+   the whole tree at the time — a few `?? []`/optional-param guards, no design changes); a
+   follow-up pass the same day threaded `src/types.ts` (the shared domain model — `Item`,
+   `BonusSet`, `Grant`, `ConditionWhen`, `Schema`, `Db`, `Build`, `Collection`, `ResolvedBuild`,
+   ...) through every file, taking repo-wide `any` usage from ~394 occurrences down to ~11. What
+   remains is either `catch (error: any)` (idiomatic, left alone) or a handful of documented,
+   genuinely-necessary spots — `condition-draft.ts`'s `ConditionRow`/`conditions.ts`'s `LEAVES`
+   dispatch table stay loose on purpose (a `when`-tree/leaf-dispatch is inherently
+   heterogeneous; see their own comments), and a few dynamic-key writes into a fixed-shape
+   object (`App.vue`'s `setContext`/`setForte`, `Options.vue`'s forte lookup) keep a documented
+   `as unknown as Record<...>` cast. New code should use real types from `types.ts`, not `any` —
+   if a shape doesn't exist there yet and crosses a file boundary, add it there rather than
+   inlining a local `any`. `npm run typecheck` (`vue-tsc --noEmit`) must stay clean.
 4. **Modern JS/TS is expected** — `const`/`let`, arrows, classes, `?.`, `??`.
 5. Python: **stdlib only**. Permanent scripts in `tools/`, throwaway in `workspace/`.
 
@@ -72,6 +81,8 @@ tsconfig.json           strict: true, allowJs: true, resolveJsonModule: true
 data/                  *.json data (schema.json authoritative; slots/db-items/db-bonuses
                        generated) — no loader files, imported statically by src/data.ts
 src/
+  types.ts             the shared domain model (Item/BonusSet/Grant/Schema/Db/Build/...) --
+                       add a shape here, not a local `any`, when it crosses a file boundary
   data.ts              static imports of data/*.json + schema derivation (byKey/statKeys/etc.)
   conditions.ts        the `when` evaluator      ─┐
   db.ts                indexing and lookups       │ engine — verified, hands off

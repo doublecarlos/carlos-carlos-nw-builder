@@ -4,7 +4,7 @@
 // Sections start collapsed except Gear (handoff §6). That keeps the mounted DOM at ~15 rows
 // on load; expanding everything is ~180 rows, which the browser handles fine -- only one
 // dropdown is ever open, and that is where the per-row cost actually lives. No virtualisation.
-import { ref, computed, nextTick, onMounted, onUnmounted } from 'vue';
+import { ref, computed, nextTick, onMounted, onUnmounted, type ComponentPublicInstance } from 'vue';
 import ItemPicker from './ItemPicker.vue';
 import ItemCard from './ItemCard.vue';
 import Options from './Options.vue';
@@ -12,6 +12,9 @@ import IconButton from './IconButton.vue';
 import ComboBox from './ComboBox.vue';
 import { NW_SCHEMA } from '../data';
 import { label as statLabelFmt, abbr, signedStat } from '../format';
+import type {
+  Db, Build, ResolvedBuild, BuildContext, Item, EvaluatedBonus, EngineRow, EngineError, Slot, SlotSection,
+} from '../types';
 
 const HOVER_DELAY_MS = 220;
 // If the pointer lands on a new row this soon after the last card closed, treat it as still
@@ -22,10 +25,10 @@ const HOVER_CLOSE_GRACE_MS = 100;
 const CARD_W = 330;    // must match .itemcard width in app.css
 
 const props = withDefaults(defineProps<{
-  db: any;
-  build: any;
-  result: any;
-  context: any;
+  db: Db;
+  build: Build;
+  result: ResolvedBuild;
+  context: BuildContext;
   // sectionId (plus 'options') -> open/closed. Owned by App.vue (`build.expanded`, saved
   // with the build) so it survives a reload the same way the rest of the build does --
   // this component only reads it and asks for changes via `toggle-section`/`set-expanded`.
@@ -33,13 +36,13 @@ const props = withDefaults(defineProps<{
   // The quick-compare picker in App.vue. `compareBuild` alone (no highlight) still backs
   // the other-build note under a differing row; `highlightDiff` adds the row colour;
   // `onlyDiff` hides everything that agrees.
-  compareBuild?: any;
+  compareBuild?: Build | null;
   highlightDiff?: boolean;
   onlyDiff?: boolean;
   // The active build's last-saved snapshot (App.vue's `savedById[activeId]`) -- a plain dot
   // on any slot that differs from it, deliberately quieter than the compare-diff highlight
   // above: this is "you haven't saved this yet", not "here is what's different and why".
-  savedBuild?: any;
+  savedBuild?: Build | null;
   // Other builds in the *active collection* (App.vue's `otherBuildsInCollection`), [{value,
   // label}] -- feeds each section header's own "copy from" picker. Replaces the old
   // whole-panel "copy a section between builds" drawer: doing it per section, right where
@@ -56,7 +59,7 @@ const props = withDefaults(defineProps<{
 const emit = defineEmits<{
   choose: [slotId: string, value: string];
   'set-value': [slotId: string, value: string];
-  set: [key: string, value: any];
+  set: [key: string, value: string | number | boolean];
   'set-forte': [slot: string, key: string];
   'apply-slot': [slotId: string];
   'toggle-section': [sectionId: string];
@@ -81,14 +84,14 @@ const copyMenuFor = ref<string | null>(null);   // sectionId currently showing t
 /** Imperative ref bag for per-row ItemPickers (see `setPickerRef`) -- plain object, not
  *  `ref`/`reactive`, same as the old component's non-data `this.pickerRefs` (set up in its own
  *  `created()` hook precisely so it stayed outside Vue's reactivity). */
-const pickerRefs: Record<string, any> = {};
+const pickerRefs: Record<string, InstanceType<typeof ItemPicker>> = {};
 
 /** slotId -> the engine's resolved row, so the item object is never looked up twice. */
-const rowBySlot = computed(() => new Map(props.result.rows.map((row: any) => [row.slotId, row])));
+const rowBySlot = computed(() => new Map(props.result.rows.map((row) => [row.slotId, row])));
 
 /** slotId -> [error]. Errors are rare, so a Map beats filtering per row. */
 const errorsBySlot = computed(() => {
-  const map = new Map<string, any[]>();
+  const map = new Map<string, EngineError[]>();
   for (const error of props.result.errors) {
     const list = map.get(error.slotId);
     if (list) list.push(error);
@@ -101,10 +104,10 @@ const errorsBySlot = computed(() => {
  * bonusId -> resolved entry, so a hover can look up an item's bonuses without scanning
  * all 48 of them per row.
  */
-const bonusById = computed(() => new Map(props.result.bonuses.map((bonus: any) => [bonus.id, bonus])));
+const bonusById = computed(() => new Map(props.result.bonuses.map((bonus) => [bonus.id, bonus])));
 
-function itemIn(slotId: string) {
-  return (rowBySlot.value as Map<string, any>).get(slotId)?.item ?? null;
+function itemIn(slotId: string): Item | null {
+  return rowBySlot.value.get(slotId)?.item ?? null;
 }
 
 const hoveredItem = computed(() => (hover.value ? itemIn(hover.value.slotId) : null));
@@ -117,10 +120,10 @@ const hoveredItem = computed(() => (hover.value ? itemIn(hover.value.slotId) : n
 const hoveredBonuses = computed(() => {
   const item = hoveredItem.value;
   if (!item) return [];
-  const seen = new Set();
-  const out: any[] = [];
+  const seen = new Set<string>();
+  const out: EvaluatedBonus[] = [];
   for (const entry of props.db.bonusesFor(item)) {
-    const resolved = (bonusById.value as Map<string, any>).get(entry.bonus.id);
+    const resolved = bonusById.value.get(entry.bonus.id);
     if (resolved && !seen.has(resolved.id)) {
       seen.add(resolved.id);
       out.push(resolved);
@@ -147,26 +150,35 @@ function unsaved(slotId: string) {
   return (props.build.values[slotId] ?? null) !== (props.savedBuild.values[slotId] ?? null);
 }
 
-const sections = computed(() => {
+interface SectionRow extends SlotSection {
+  slots: Slot[];
+  filled: number;
+  errors: number;
+  diffs: number;
+  unsaved: boolean;
+  total: number;
+}
+
+const sections = computed<SectionRow[]>(() => {
   const onlyDiff = props.onlyDiff && props.compareBuild;
   return props.db.sections
-    .map((section: any) => {
-      const allSlots = props.db.slots.filter((slot: any) => slot.section === section.id);
+    .map((section) => {
+      const allSlots = props.db.slots.filter((slot) => slot.section === section.id);
       // Counted off the section's full slot list, not the (possibly onlyDiff-filtered)
       // one below -- the badge's job is telling a *collapsed* section apart, where
       // `slots` would otherwise be invisible. Same reasoning for `unsaved`.
-      const diffs = props.compareBuild ? allSlots.filter((slot: any) => differs(slot.id)).length : 0;
-      const unsavedFlag = allSlots.some((slot: any) => unsaved(slot.id));
-      const slots = onlyDiff ? allSlots.filter((slot: any) => differs(slot.id)) : allSlots;
+      const diffs = props.compareBuild ? allSlots.filter((slot) => differs(slot.id)).length : 0;
+      const unsavedFlag = allSlots.some((slot) => unsaved(slot.id));
+      const slots = onlyDiff ? allSlots.filter((slot) => differs(slot.id)) : allSlots;
       let filled = 0;
       let errors = 0;
       for (const slot of slots) {
-        if ((rowBySlot.value as Map<string, any>).get(slot.id)?.item) filled += 1;
+        if (rowBySlot.value.get(slot.id)?.item) filled += 1;
         errors += errorsBySlot.value.get(slot.id)?.length ?? 0;
       }
       return { ...section, slots, filled, errors, diffs, unsaved: unsavedFlag, total: slots.length };
     })
-    .filter((section: any) => !onlyDiff || section.slots.length > 0);
+    .filter((section) => !onlyDiff || section.slots.length > 0);
 });
 
 /**
@@ -180,15 +192,15 @@ const sections = computed(() => {
  * same, via a `shown` set threaded through the whole pass.
  */
 const bonusesBySlot = computed(() => {
-  const shown = new Set();
-  const map = new Map<string, any[]>();
+  const shown = new Set<string>();
+  const map = new Map<string, EvaluatedBonus[]>();
   for (const section of sections.value) {
     for (const slot of section.slots) {
       const item = itemIn(slot.id);
       if (!item) continue;
-      const entries = [];
+      const entries: EvaluatedBonus[] = [];
       for (const raw of props.db.bonusesFor(item)) {
-        const resolved = (bonusById.value as Map<string, any>).get(raw.bonus.id);
+        const resolved = bonusById.value.get(raw.bonus.id);
         if (!resolved?.active || shown.has(resolved.id)) continue;
         shown.add(resolved.id);
         entries.push(resolved);
@@ -221,7 +233,7 @@ const statLabel = (key: string) => statLabelFmt(key);
 function itemsFor(slotId: string) {
   const cls = props.build.context.class;
   return props.db.forSlot(slotId)
-    .filter((item: any) => !item.allowedClass || item.allowedClass.includes(cls));
+    .filter((item) => !item.allowedClass || item.allowedClass.includes(cls));
 }
 
 function errorsFor(slotId: string) {
@@ -279,7 +291,7 @@ function statSummary(slotId: string) {
   if (!item) return '';
   const totals: Record<string, number> = {};
   for (const key of NW_SCHEMA.statKeys) {
-    if (item[key]) totals[key] = (totals[key] ?? 0) + item[key];
+    if (item[key]) totals[key] = (totals[key] ?? 0) + (item[key] as number);
   }
   for (const entry of bonusesBySlot.value.get(slotId) ?? []) {
     for (const [key, value] of Object.entries(entry.appliedStats ?? {})) {
@@ -305,8 +317,8 @@ function setCursor(type: 'header' | 'slot', id: string) {
   syncCursorFocus();
 }
 
-function setPickerRef(slotId: string, el: any) {
-  if (el) pickerRefs[slotId] = el;
+function setPickerRef(slotId: string, el: Element | ComponentPublicInstance | null) {
+  if (el) pickerRefs[slotId] = el as InstanceType<typeof ItemPicker>;
   else delete pickerRefs[slotId];
 }
 
@@ -516,7 +528,8 @@ function onFocusOut() {
 function onDocumentClick(event: MouseEvent) {
   if (!copyMenuFor.value) return;
   const path = event.composedPath?.() ?? [];
-  if (path.some((el: any) => el.classList?.contains?.('copy-popover') || el.classList?.contains?.('section-copy-btn'))) return;
+  if (path.some((el) => (el as Element).classList?.contains?.('copy-popover')
+    || (el as Element).classList?.contains?.('section-copy-btn'))) return;
   copyMenuFor.value = null;
 }
 
@@ -616,7 +629,7 @@ onUnmounted(() => {
             </div>
 
             <p v-if="highlightDiff && differs(slot.id)" class="slot-diff-note">
-              {{ compareBuild.name }}: {{ otherChoice(slot.id) || '(empty)' }}
+              {{ compareBuild?.name }}: {{ otherChoice(slot.id) || '(empty)' }}
               <button type="button" class="link" @click.stop="$emit('apply-slot', slot.id)">
                 apply
               </button>
@@ -629,14 +642,14 @@ onUnmounted(() => {
               <input
                 type="number"
                 class="num-input"
-                :min="itemIn(slot.id).dynamicMin"
-                :max="itemIn(slot.id).dynamicMax"
+                :min="itemIn(slot.id)?.dynamicMin"
+                :max="itemIn(slot.id)?.dynamicMax"
                 :value="build.values[slot.id] ?? ''"
-                :placeholder="itemIn(slot.id).dynamicMin"
+                :placeholder="String(itemIn(slot.id)?.dynamicMin ?? '')"
                 @input="$emit('set-value', slot.id, ($event.target as HTMLInputElement).value)">
               <span class="hint">
-                {{ statLabel(itemIn(slot.id).dynamicStat) }}
-                {{ itemIn(slot.id).dynamicMin }}–{{ itemIn(slot.id).dynamicMax }}
+                {{ statLabel(itemIn(slot.id)?.dynamicStat as string) }}
+                {{ itemIn(slot.id)?.dynamicMin }}–{{ itemIn(slot.id)?.dynamicMax }}
               </span>
             </div>
 

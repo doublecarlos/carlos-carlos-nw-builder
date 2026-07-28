@@ -16,30 +16,31 @@ import ComboBox from './ComboBox.vue';
 import IconButton from './IconButton.vue';
 import TokenInput from './TokenInput.vue';
 import * as bonusDraft from '../bonus-draft';
+import type { Db, BonusSet } from '../types';
 
 const slugify = (text: string) => String(text).toLowerCase().trim()
   .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 
 /** Key-order-insensitive comparison -- same convention (and same duplication, one copy per
  * editing surface) as ItemForm's `sameItem` and BonusSetForm's `sameSet`. */
-const canonical = (value: any): any => {
+const canonical = (value: unknown): unknown => {
   if (Array.isArray(value)) return value.map(canonical);
   if (value && typeof value === 'object') {
-    const out: Record<string, any> = {};
-    for (const key of Object.keys(value).sort()) out[key] = canonical(value[key]);
+    const out: Record<string, unknown> = {};
+    for (const key of Object.keys(value).sort()) out[key] = canonical((value as Record<string, unknown>)[key]);
     return out;
   }
   return value;
 };
 
-const sameSet = (a: any, b: any) => JSON.stringify(canonical(a)) === JSON.stringify(canonical(b));
+const sameSet = (a: unknown, b: unknown) => JSON.stringify(canonical(a)) === JSON.stringify(canonical(b));
 
 const props = withDefaults(defineProps<{
   /** Bonus group ids the item currently declares. */
   setIds?: string[];
   /** Seeds the id of a brand-new private bonus. */
   itemName?: string;
-  db: any;
+  db: Db;
   allSetIds?: string[];
   tags?: string[];
   bonusIds?: string[];
@@ -52,14 +53,14 @@ const props = withDefaults(defineProps<{
 });
 
 const emit = defineEmits<{
-  'save-set': [payload: { id: string; previousId: string | null; set: any }];
+  'save-set': [payload: { id: string; previousId: string | null; set: BonusSet }];
   'delete-set': [id: string];
   'detach-set': [id: string];
   'rename-set': [payload: { oldId: string; newId: string }];
   'attach-set': [id: string];
 }>();
 
-const drafts = reactive<Record<string, any>>({});
+const drafts = reactive<Record<string, bonusDraft.SetDraft>>({});
 const errors = reactive<Record<string, string>>({});
 
 /**
@@ -98,7 +99,7 @@ function sync() {
     drafts[id] = {
       id,
       name: set?.name ?? id,
-      grants: (set?.grants ?? []).map((grant: any) => bonusDraft.toDraft(grant)),
+      grants: (set?.grants ?? []).map((grant) => bonusDraft.toDraft(grant)),
       stacking: set?.stacking ?? '',
       maxStacks: set?.maxStacks ?? null,
       excludes: [...(set?.excludes ?? [])],

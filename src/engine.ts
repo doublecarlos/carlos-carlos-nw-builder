@@ -7,15 +7,19 @@
 // number on current data except where the sheet was demonstrably wrong.
 
 import * as bonus from './bonus';
+import type {
+  Db, Build, StatKey, ResolvedBonuses, EngineRow, Stages, DerivedOutputs, EngineError,
+  ResolvedBuild,
+} from './types';
 
-const zeros = (keys: string[]) => {
-  const out: Record<string, number> = {};
+const zeros = (keys: StatKey[]) => {
+  const out: Record<StatKey, number> = {};
   for (const key of keys) out[key] = 0;
   return out;
 };
 
-const addVectors = (a: Record<string, number>, b: Record<string, number>, keys: string[]) => {
-  const out: Record<string, number> = {};
+const addVectors = (a: Record<StatKey, number>, b: Record<StatKey, number>, keys: StatKey[]) => {
+  const out: Record<StatKey, number> = {};
   for (const key of keys) out[key] = (a[key] ?? 0) + (b[key] ?? 0);
   return out;
 };
@@ -38,32 +42,32 @@ const sheetRound = (value: number, digits = 2) => {
  * Per-slot stat vectors: the item's own stats plus the bonuses attributed to that slot.
  * Kept as rows because multiplicative stats combine per row, not per source.
  */
-function rowVectors(resolved: any, keys: string[]) {
-  return resolved.rows.map((row: any) => {
+function rowVectors(resolved: ResolvedBonuses, keys: StatKey[]): EngineRow[] {
+  return resolved.rows.map((row) => {
     const stats = zeros(keys);
     if (row.item) {
       for (const key of keys) {
-        if (row.item[key]) stats[key] = row.item[key];
+        if (row.item[key]) stats[key] = row.item[key] as number;
       }
     }
     const bonusStats = resolved.bonusStatsBySlot.get(row.slotId);
     if (bonusStats) {
-      for (const [key, value] of bonusStats) stats[key] = (stats[key] ?? 0) + (value as number);
+      for (const [key, value] of bonusStats) stats[key] = (stats[key] ?? 0) + value;
     }
     return { slotId: row.slotId, choice: row.choice, item: row.item, stats };
   });
 }
 
-function run(db: any, build: any, resolved: any) {
+function run(db: Db, build: Build, resolved: ResolvedBonuses): { rows: EngineRow[]; stages: Stages } {
   const { schema } = db;
-  const keys: string[] = schema.statKeys;
+  const keys: StatKey[] = schema.statKeys;
   const context = build.context ?? {};
   const multiplicative = new Set(schema.multiplicativeStats);
   const rows = rowVectors(resolved, keys);
 
   // --- stage 1: initial sums -----------------------------------------------------------
   const sums = zeros(keys);
-  const products = new Map<string, number>(schema.multiplicativeStats.map((key: string) => [key, 1]));
+  const products = new Map<string, number>(schema.multiplicativeStats.map((key) => [key, 1]));
 
   for (const row of rows) {
     for (const key of keys) {
@@ -72,7 +76,7 @@ function run(db: any, build: any, resolved: any) {
       else sums[key] += value;
     }
   }
-  for (const [key, product] of products) sums[key] = (product as number) - 1;
+  for (const [key, product] of products) sums[key] = product - 1;
 
   // --- stage 2: dynamic weapon modification --------------------------------------------
   // FIX #6: the sheet matched the target stat by searching the item's *display name*. The
@@ -86,13 +90,13 @@ function run(db: any, build: any, resolved: any) {
     const stat = row.item?.dynamicStat;
     if (!stat) continue;
     const typed = build.values?.[row.slotId];
-    if (typed == null || typed === '') continue;
+    if (typed == null) continue;
     weaponMods[stat] += Number(typed) || 0;
   }
   const afterWeaponMods = addVectors(sums, weaponMods, keys);
 
   // --- stage 3: combined rating --------------------------------------------------------
-  const afterCombinedRating: Record<string, number> = { ...afterWeaponMods };
+  const afterCombinedRating: Record<StatKey, number> = { ...afterWeaponMods };
   for (const key of schema.ratingStats) {
     afterCombinedRating[key] += sums.combined_rating;
   }
@@ -115,7 +119,7 @@ function run(db: any, build: any, resolved: any) {
   for (const rule of schema.abilityContributions) {
     abilities[rule.stat] += afterRatingPct[rule.ability] / rule.divisor;
   }
-  const afterAbilityScores: Record<string, number> = {};
+  const afterAbilityScores: Record<StatKey, number> = {};
   for (const key of keys) {
     afterAbilityScores[key] = multiplicative.has(key)
       ? (1 + afterRatingPct[key]) * (1 + abilities[key]) - 1
@@ -125,10 +129,12 @@ function run(db: any, build: any, resolved: any) {
   // --- stage 6: forte redistribution ---------------------------------------------------
   const forte = zeros(keys);
   const fortePool = afterAbilityScores.forte_p;
-  const picks = context.forte ?? {};
+  // `forteSplit`'s own keys (primary/secondaryA/secondaryB) are fixed, but it's iterated by
+  // `Object.entries` below alongside `picks`, so the lookup needs a plain index signature.
+  const picks = (context.forte ?? {}) as Record<string, StatKey | undefined>;
   for (const [slot, divisor] of Object.entries(schema.forteSplit)) {
     const stat = picks[slot];
-    if (stat && forte[stat] !== undefined) forte[stat] += fortePool / (divisor as number);
+    if (stat && forte[stat] !== undefined) forte[stat] += fortePool / divisor;
   }
   if (context.m32Forte) {
     for (const stat of Object.keys(forte)) forte[stat] = sheetRound(forte[stat], 2);
@@ -169,7 +175,7 @@ function run(db: any, build: any, resolved: any) {
 
 // --- derived outputs (plan §1.4) --------------------------------------------------------
 
-function derive(db: any, build: any, stages: any) {
+function derive(db: Db, build: Build, stages: Stages): DerivedOutputs {
   const { schema } = db;
   const context = build.context ?? {};
   const { capped, totals } = stages;
@@ -257,8 +263,8 @@ function derive(db: any, build: any, stages: any) {
 
 // --- validation (plan §1.6) -------------------------------------------------------------
 
-function findErrors(db: any, build: any, resolved: any) {
-  const errors: any[] = [];
+function findErrors(db: Db, build: Build, resolved: ResolvedBonuses): EngineError[] {
+  const errors: EngineError[] = [];
   const context = build.context ?? {};
   const counts = new Map<string, number>();
 
@@ -290,7 +296,7 @@ function findErrors(db: any, build: any, resolved: any) {
       const typed = build.values?.[row.slotId];
       const value = Number(typed);
       const { dynamicMin: min, dynamicMax: max_ } = row.item;
-      if (typed != null && typed !== '' && Number.isFinite(value)
+      if (typed != null && Number.isFinite(value)
           && ((min != null && value < min) || (max_ != null && value > max_))) {
         errors.push({
           slotId: row.slotId, kind: 'outOfRange', choice: row.item.name,
@@ -304,7 +310,7 @@ function findErrors(db: any, build: any, resolved: any) {
 
 // --- entry point --------------------------------------------------------------------------
 
-export function resolveBuild(db: any, build: any, options?: any) {
+export function resolveBuild(db: Db, build: Build, options?: { explain?: boolean }): ResolvedBuild {
   const resolved = bonus.resolve(db, build, options);
   const { rows, stages } = run(db, build, resolved);
   return {

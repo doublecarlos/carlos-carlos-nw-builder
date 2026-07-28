@@ -9,20 +9,9 @@ import IconButton from './IconButton.vue';
 import { NW_SCHEMA } from '../data';
 import { isPercentKind, kindOf } from '../format';
 import { focusNextCombo } from '../stat-row-nav';
-import { MAX_DEPTH, cloneRow, type ConditionRow } from '../condition-draft';
+import { MAX_DEPTH, cloneRow } from '../condition-draft';
 import * as bonusDraft from '../bonus-draft';
-
-// Loose on purpose (this is a draft, not the final grant shape) -- just precise enough that
-// `.stats`/`.tiers`/`.variants` stay array-typed, or nested `v-for` indices in the template
-// degrade to `string | number` (a vue-tsc quirk when the iterated value comes from a property
-// access on `any`).
-interface StatRow { key: string; value: any }
-interface TierRow { set: string; atLeast: number; stats: StatRow[] }
-interface VariantRow { uid: string; conditions: ConditionRow[]; stats: StatRow[] }
-interface GrantDraft {
-  uid: string; mode: string; json: string; conditions: ConditionRow[];
-  payload: string; stats: StatRow[]; tiers: TierRow[]; variants: VariantRow[];
-}
+import type { GrantDraft, StatRow } from '../bonus-draft';
 
 const props = withDefaults(defineProps<{
   // Mutated in place. The parent owns the draft array and re-reads it on save; passing a
@@ -38,7 +27,7 @@ const props = withDefaults(defineProps<{
 const emit = defineEmits<{ error: [message: string] }>();
 
 /** Shared by every reorderable list here (grants, tiers, variants). */
-const moveItem = (list: any[], index: number, delta: number) => {
+const moveItem = <T,>(list: T[], index: number, delta: number) => {
   const to = index + delta;
   if (to < 0 || to >= list.length) return;
   const [item] = list.splice(index, 1);
@@ -46,7 +35,7 @@ const moveItem = (list: any[], index: number, delta: number) => {
 };
 
 const statOptions = NW_SCHEMA.stats;
-const statComboOptions = statOptions.map((s: any) => ({ value: s.key, label: `${s.label} (${s.key})` }));
+const statComboOptions = statOptions.map((s) => ({ value: s.key, label: `${s.label} (${s.key})` }));
 const setComboOptions = computed(() => props.setIds.map((s) => ({ value: s, label: s })));
 
 const isPercent = (key: string) => isPercentKind(kindOf(key));
@@ -58,7 +47,7 @@ function insertGrant(index: number) { props.rows.splice(index + 1, 0, bonusDraft
 function duplicateGrant(index: number) { props.rows.splice(index + 1, 0, bonusDraft.duplicateDraft(props.rows[index])); }
 function moveGrant(index: number, delta: number) { moveItem(props.rows, index, delta); }
 
-function toggleJson(grant: any) {
+function toggleJson(grant: GrantDraft) {
   if (grant.mode === 'simple') {
     grant.json = JSON.stringify(bonusDraft.toGrant(grant), null, 2);
     grant.mode = 'json';
@@ -79,29 +68,29 @@ function toggleJson(grant: any) {
   }
 }
 
-function addStat(rows: any[]) { rows.push({ key: '', value: 0 }); }
-function removeStat(rows: any[], index: number) { rows.splice(index, 1); }
+function addStat(rows: StatRow[]) { rows.push({ key: '', value: 0 }); }
+function removeStat(rows: StatRow[], index: number) { rows.splice(index, 1); }
 
 /**
  * Tier payloads are absolute, not cumulative: the highest matching threshold wins and
  * replaces the lower one (bonus.ts). A new tier therefore starts from a copy of the
  * previous one, which is nearly always the intent.
  */
-function addTier(grant: any) {
+function addTier(grant: GrantDraft) {
   const last = grant.tiers[grant.tiers.length - 1];
   grant.tiers.push({
     set: last?.set ?? props.setIds[0] ?? '',
     atLeast: (last?.atLeast ?? 0) + 1,
-    stats: last ? last.stats.map((s: any) => ({ ...s })) : [],
+    stats: last ? last.stats.map((s) => ({ ...s })) : [],
   });
 }
 
-function removeTier(grant: any, index: number) { grant.tiers.splice(index, 1); }
-function moveTier(grant: any, index: number, delta: number) { moveItem(grant.tiers, index, delta); }
+function removeTier(grant: GrantDraft, index: number) { grant.tiers.splice(index, 1); }
+function moveTier(grant: GrantDraft, index: number, delta: number) { moveItem(grant.tiers, index, delta); }
 
 /** Inserted/duplicated tiers start from the row clicked, not the last one -- more useful
  * when there are several tiers and you are working in the middle of the list. */
-function insertTier(grant: any, index: number) {
+function insertTier(grant: GrantDraft, index: number) {
   const ref = grant.tiers[index];
   grant.tiers.splice(index + 1, 0, {
     set: ref?.set ?? props.setIds[0] ?? '',
@@ -110,30 +99,30 @@ function insertTier(grant: any, index: number) {
   });
 }
 
-function duplicateTier(grant: any, index: number) {
+function duplicateTier(grant: GrantDraft, index: number) {
   const tier = grant.tiers[index];
-  grant.tiers.splice(index + 1, 0, { ...tier, stats: tier.stats.map((s: any) => ({ ...s })) });
+  grant.tiers.splice(index + 1, 0, { ...tier, stats: tier.stats.map((s) => ({ ...s })) });
 }
 
 /** New variant starts unconditional -- the common case is one role-gated variant after
  * another, each edited via the same condition tree as a top-level grant. */
-function addVariant(grant: any) { grant.variants.push(bonusDraft.newVariant()); }
-function removeVariant(grant: any, index: number) { grant.variants.splice(index, 1); }
-function insertVariant(grant: any, index: number) { grant.variants.splice(index + 1, 0, bonusDraft.newVariant()); }
+function addVariant(grant: GrantDraft) { grant.variants.push(bonusDraft.newVariant()); }
+function removeVariant(grant: GrantDraft, index: number) { grant.variants.splice(index, 1); }
+function insertVariant(grant: GrantDraft, index: number) { grant.variants.splice(index + 1, 0, bonusDraft.newVariant()); }
 
-function duplicateVariant(grant: any, index: number) {
+function duplicateVariant(grant: GrantDraft, index: number) {
   const variant = grant.variants[index];
   grant.variants.splice(index + 1, 0, {
     ...bonusDraft.newVariant(),
     conditions: variant.conditions.map(cloneRow),
-    stats: variant.stats.map((s: any) => ({ ...s })),
+    stats: variant.stats.map((s) => ({ ...s })),
   });
 }
 
 /** Variants are matched in order, first win -- reordering changes which one applies. */
-function moveVariant(grant: any, index: number, delta: number) { moveItem(grant.variants, index, delta); }
+function moveVariant(grant: GrantDraft, index: number, delta: number) { moveItem(grant.variants, index, delta); }
 
-function setPayload(grant: any, payload: string) {
+function setPayload(grant: GrantDraft, payload: GrantDraft['payload']) {
   if (grant.payload === payload) return;
   grant.payload = payload;
   if (payload === 'tiers' && !grant.tiers.length) addTier(grant);

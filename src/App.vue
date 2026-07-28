@@ -24,6 +24,11 @@ import * as format from './format';
 import * as catalog from './catalog';
 import * as engine from './engine';
 import * as fsStore from './fs-store';
+import type { Build, Collection, CatalogOverlay, ResolvedBuild } from './types';
+
+interface HistoryEntry { json: string; label: string; }
+interface BuildHistory { past: HistoryEntry[]; future: HistoryEntry[]; lastKey: string | null; lastAt: number; }
+type Resolution = { ok: true; result: ResolvedBuild } | { ok: false; message: string; stack: string };
 
 // Context keys whose title-cased name would read oddly in an undo tooltip.
 const FIELD_LABELS: Record<string, string> = {
@@ -59,50 +64,53 @@ const draftCollectionsState = storage.loadCollectionsDraft(draftLibrary.builds, 
 // exists -- a specific `build=` wins over `collection=` (jumping to a build implies
 // jumping to whichever collection actually owns it).
 const initialRoute = router.parse();
-const ownerOf = (buildId: string) => draftCollectionsState.collections.find((c: any) => c.buildIds.includes(buildId));
+const ownerOf = (buildId: string) => draftCollectionsState.collections.find((c) => c.buildIds.includes(buildId));
 
 let initialActiveId: string;
 let initialActiveCollectionId: string;
-const owner = initialRoute.build && draftLibrary.builds.some((b: any) => b.id === initialRoute.build) && ownerOf(initialRoute.build);
+const owner = initialRoute.build && draftLibrary.builds.some((b) => b.id === initialRoute.build) && ownerOf(initialRoute.build);
 if (owner) {
   initialActiveId = initialRoute.build;
   initialActiveCollectionId = owner.id;
 } else {
-  initialActiveCollectionId = draftCollectionsState.collections.some((c: any) => c.id === initialRoute.collection)
+  initialActiveCollectionId = draftCollectionsState.collections.some((c) => c.id === initialRoute.collection)
     ? initialRoute.collection
     : draftCollectionsState.activeCollectionId;
-  const collection = draftCollectionsState.collections.find((c: any) => c.id === initialActiveCollectionId);
+  // Non-null: `initialActiveCollectionId` is always either a real collection id or
+  // `draftCollectionsState.activeCollectionId`, and `collections` is never empty (storage.ts's
+  // `loadCollections`/`loadCollectionsDraft` guarantee at least one).
+  const collection = draftCollectionsState.collections.find((c) => c.id === initialActiveCollectionId)!;
   initialActiveId = collection.buildIds.includes(collection.activeBuildId)
     ? collection.activeBuildId
     : collection.buildIds[0];
 }
 
-const initialSavedById: Record<string, any> = {};
+const initialSavedById: Record<string, Build> = {};
 for (const build of savedLibrary.builds) initialSavedById[build.id] = build;
-const initialSavedCollections: Record<string, any> = {};
+const initialSavedCollections: Record<string, Collection> = {};
 for (const collection of savedCollectionsState.collections) initialSavedCollections[collection.id] = collection;
 
-const builds = ref<any[]>(draftLibrary.builds);
+const builds = ref<Build[]>(draftLibrary.builds);
 const activeId = ref<string>(initialActiveId);
-const savedById = ref<Record<string, any>>(initialSavedById);
-const collections = ref<any[]>(draftCollectionsState.collections);
+const savedById = ref<Record<string, Build>>(initialSavedById);
+const collections = ref<Collection[]>(draftCollectionsState.collections);
 const activeCollectionId = ref<string>(initialActiveCollectionId);
-const savedCollections = ref<Record<string, any>>(initialSavedCollections);
+const savedCollections = ref<Record<string, Collection>>(initialSavedCollections);
 // FileSystemFileHandle per collection id, for collections linked to a file on disk
 // (BuildNav's collection menu -> Save As -> File on this PC). Populated lazily --
 // never eagerly from `fsStore`'s IndexedDB on load, since using a handle needs a user
 // gesture (Chromium re-checks permission per session) anyway, so there's nothing to
 // gain by fetching it before a Save is actually clicked.
-const fileLinks = ref<Record<string, any>>({});
+const fileLinks = ref<Record<string, FileSystemFileHandle>>({});
 // The editor's layer over the shipped catalogue. Persisted separately from builds --
 // it is a workspace, not part of any one build.
-const workspaceOverlay = ref<any>(storage.loadOverlay());
+const workspaceOverlay = ref<CatalogOverlay>(storage.loadOverlay());
 const view = ref<'builder' | 'editor'>(initialRoute.view === 'editor' ? 'editor' : 'builder');
 
 // buildId -> { past, future, … } of JSON snapshots. Per build, so switching away and
 // back preserves what you could undo. Strings, so Vue does not deep-proxy 50 copies.
 // Never persisted: history is a session concept, not part of the document.
-const histories = ref<Record<string, any>>({});
+const histories = ref<Record<string, BuildHistory>>({});
 
 const tab = ref<'stats' | 'bonuses'>(initialRoute.tab === 'bonuses' ? 'bonuses' : 'stats');
 let saveTimer: number | undefined;
@@ -158,7 +166,7 @@ const db = computed(() => markRaw(catalog.makeDb(overlays.value)));
  * The engine is verified, so a throw here is a bug worth seeing rather than hiding --
  * but it must not blank the page, or there would be nothing left to debug with.
  */
-const resolved = computed(() => {
+const resolved = computed<Resolution>(() => {
   try {
     return { ok: true, result: engine.resolveBuild(db.value, build.value) };
   } catch (error: any) {
@@ -190,23 +198,23 @@ const compareBuild = computed(() => {
  * live only in its own catalog would show those slots as unresolved; acceptable for what
  * this is.
  */
-const compareResolved = computed(() => {
+const compareResolved = computed<Resolution | null>(() => {
   if (!compareBuild.value) return null;
   try {
     return { ok: true, result: engine.resolveBuild(db.value, compareBuild.value) };
   } catch (error: any) {
-    return { ok: false, message: String(error) };
+    return { ok: false, message: String(error), stack: error?.stack ?? '' };
   }
 });
 
 /** Summarised here so the tab can show it without mounting the inspector. */
 const bonusCounts = computed(() => {
   if (!resolved.value.ok) return { total: 0, active: 0, nearMiss: 0 };
-  const all = (resolved.value as any).result.bonuses;
+  const all = resolved.value.result.bonuses;
   return {
     total: all.length,
-    active: all.filter((bonus: any) => bonus.active).length,
-    nearMiss: all.filter((bonus: any) => !bonus.active && !bonus.excluded
+    active: all.filter((bonus) => bonus.active).length,
+    nearMiss: all.filter((bonus) => !bonus.active && !bonus.excluded
       && (bonus.gate?.unmet?.length ?? 0) === 1).length,
   };
 });
@@ -282,7 +290,7 @@ function slotLabel(slotId: string) {
   return db.value.slotById.get(slotId)?.label ?? slotId;
 }
 
-function replaceActive(newBuild: any) {
+function replaceActive(newBuild: Build) {
   const index = builds.value.findIndex((item) => item.id === activeId.value);
   if (index === -1) builds.value.push(newBuild);
   else builds.value.splice(index, 1, newBuild);
@@ -294,7 +302,7 @@ function replaceActive(newBuild: any) {
 function undo() {
   if (!canUndo.value) return;
   const history = historyFor();
-  const entry = history.past.pop();
+  const entry = history.past.pop()!;  // non-null: canUndo.value already confirmed past.length > 0
   history.future.push({ json: JSON.stringify(build.value), label: entry.label });
   replaceActive(JSON.parse(entry.json));
   history.lastKey = null;
@@ -303,7 +311,7 @@ function undo() {
 function redo() {
   if (!canRedo.value) return;
   const history = historyFor();
-  const entry = history.future.pop();
+  const entry = history.future.pop()!;  // non-null: canRedo.value already confirmed future.length > 0
   history.past.push({ json: JSON.stringify(build.value), label: entry.label });
   replaceActive(JSON.parse(entry.json));
   history.lastKey = null;
@@ -373,7 +381,7 @@ function setCompareBuild(id: string) {
 }
 
 function setCompareFlag(key: string, value: boolean) {
-  build.value.compare[key] = value;
+  (build.value.compare as unknown as Record<string, boolean>)[key] = value;
 }
 
 // Same reasoning as compare above: which sections are open is saved with the build, but
@@ -388,13 +396,15 @@ function setExpanded(open: boolean) {
   for (const section of db.value.sections) build.value.expanded[section.id] = open;
 }
 
-function setContext(key: string, value: any) {
+function setContext(key: string, value: string | number | boolean) {
   const name = FIELD_LABELS[key] ?? format.titleCase(key);
   const shown = typeof value === 'boolean'
     ? (value ? 'on' : 'off')
     : format.titleCase(String(value));
   snapshot(`context:${key}`, `${name} → ${shown}`);
-  build.value.context[key] = value;
+  // BuildContext's fields are individually typed; this writes by a caller-supplied key
+  // (QuickOptions/SlotList's context controls), so it can't be narrowed further than that.
+  (build.value.context as unknown as Record<string, string | number | boolean>)[key] = value;
 }
 
 function setToggle(name: string, value: boolean) {
@@ -405,8 +415,9 @@ function setToggle(name: string, value: boolean) {
 function setForte(slot: string, statKey: string) {
   const target = statKey ? format.label(statKey) : 'none';
   snapshot(`forte:${slot}`, `${FORTE_LABELS[slot] ?? slot} → ${target}`);
-  if (statKey) build.value.context.forte[slot] = statKey;
-  else delete build.value.context.forte[slot];
+  const forte = build.value.context.forte as unknown as Record<string, string | undefined>;
+  if (statKey) forte[slot] = statKey;
+  else delete forte[slot];
 }
 
 function renameBuild(name: string) {
@@ -468,7 +479,7 @@ function selectBuildById(id: string) {
  * which promote a build's *content* into `savedById` themselves (`storage.cloneBuild`)
  * but would otherwise leave the collection's own saved copy still missing the build id
  * they just added or removed, showing a false "unsaved" dot forever after. */
-function syncSavedCollection(collection: any) {
+function syncSavedCollection(collection: Collection) {
   savedCollections.value[collection.id] = { ...collection, buildIds: [...collection.buildIds] };
 }
 
@@ -522,7 +533,7 @@ function removeBuild() {
   persistSavedCollections();
 }
 
-function importBuilds(newBuilds: any[]) {
+function importBuilds(newBuilds: Build[]) {
   builds.value.push(...newBuilds);
   for (const b of newBuilds) savedById.value[b.id] = storage.cloneBuild(b);
   activeCollection.value.buildIds.push(...newBuilds.map((b) => b.id));
@@ -637,7 +648,7 @@ async function fileHandleFor(id: string) {
   return handle;
 }
 
-async function writeCollectionFile(id: string, handle: any) {
+async function writeCollectionFile(id: string, handle: FileSystemFileHandle) {
   const collection = collections.value.find((c) => c.id === id);
   if (!collection) return;
   try {
@@ -780,9 +791,9 @@ function revertSlot(slotId: string) {
 /** Same, for every slot in one section at once (a section header's own "revert" icon). */
 function revertSection(sectionId: string) {
   const saved = savedById.value[activeId.value];
-  const slots = db.value.slots.filter((slot: any) => slot.section === sectionId);
+  const slots = db.value.slots.filter((slot) => slot.section === sectionId);
   if (!saved || !slots.length) return;
-  const label = db.value.sections.find((section: any) => section.id === sectionId)?.label ?? sectionId;
+  const label = db.value.sections.find((section) => section.id === sectionId)?.label ?? sectionId;
   snapshot(null, `revert ${label}`);
   for (const slot of slots) {
     const choice = saved.choices[slot.id];
@@ -1073,7 +1084,7 @@ onUnmounted(() => {
         <SlotList
           :db="db"
           :build="build"
-          :result="(resolved as any).result"
+          :result="resolved.result"
           :context="build.context"
           :expanded="build.expanded"
           :compare-build="compareBuild"
@@ -1106,17 +1117,17 @@ onUnmounted(() => {
           </div>
 
           <!-- v-show, not v-if: switching tabs must not discard the inspector's filter. -->
-          <StatPanel v-show="tab === 'stats'" :result="(resolved as any).result"
-                     :compare-result="(compareResolved as any)?.ok ? (compareResolved as any).result : null"
+          <StatPanel v-show="tab === 'stats'" :result="resolved.result"
+                     :compare-result="compareResolved?.ok ? compareResolved.result : null"
                      :compare-name="compareBuild?.name ?? ''" />
-          <BonusInspector v-show="tab === 'bonuses'" :result="(resolved as any).result" :db="db" />
+          <BonusInspector v-show="tab === 'bonuses'" :result="resolved.result" :db="db" />
         </aside>
       </main>
 
       <main v-else class="crash">
         <h2>The engine threw</h2>
-        <p>{{ (resolved as any).message }}</p>
-        <pre>{{ (resolved as any).stack }}</pre>
+        <p>{{ resolved.message }}</p>
+        <pre>{{ resolved.stack }}</pre>
       </main>
     </div>
   </div>

@@ -48,22 +48,26 @@ function moveRow(index: number, delta: number) {
   props.rows.splice(to, 0, item);
 }
 
-function addBranch(row: any) { row.branches.push([]); }
-function removeBranch(row: any, index: number) { row.branches.splice(index, 1); }
-function insertBranch(row: any, index: number) { row.branches.splice(index + 1, 0, []); }
-function duplicateBranch(row: any, index: number) {
-  row.branches.splice(index + 1, 0, row.branches[index].map(cloneRow));
+// These five all operate on a group row's `branches` -- always set for a `kind: 'group'` row
+// (newGroupRow), so a non-null assertion is safe even though the type keeps it optional (a
+// leaf row has no `branches` at all).
+function addBranch(row: ConditionRow) { row.branches!.push([]); }
+function removeBranch(row: ConditionRow, index: number) { row.branches!.splice(index, 1); }
+function insertBranch(row: ConditionRow, index: number) { row.branches!.splice(index + 1, 0, []); }
+function duplicateBranch(row: ConditionRow, index: number) {
+  row.branches!.splice(index + 1, 0, row.branches![index].map(cloneRow));
 }
 
-function moveBranch(row: any, index: number, delta: number) {
+function moveBranch(row: ConditionRow, index: number, delta: number) {
   const to = index + delta;
-  if (to < 0 || to >= row.branches.length) return;
-  const [item] = row.branches.splice(index, 1);
-  row.branches.splice(to, 0, item);
+  const branches = row.branches!;
+  if (to < 0 || to >= branches.length) return;
+  const [item] = branches.splice(index, 1);
+  branches.splice(to, 0, item);
 }
 
 // Each leaf type carries different fields; reset to the new type's defaults.
-function changeType(row: any) {
+function changeType(row: ConditionRow) {
   const fresh = newLeafRow(row.type);
   Object.keys(row).forEach((key) => { if (key !== 'uid' && key !== 'kind') delete row[key]; });
   Object.assign(row, fresh, { uid: row.uid });
