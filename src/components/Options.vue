@@ -10,6 +10,7 @@ import { computed } from 'vue';
 import ComboBox from './ComboBox.vue';
 import { NW_SCHEMA } from '../data';
 import { titleCase, label as statLabel } from '../format';
+import type { BuildContext } from '../types';
 
 // The stats the sheet's `option_forte` dropdown offered. This lives in the UI rather than in
 // data/schema.json because the engine accepts any stat key here (see engine.ts stage 6) -- the
@@ -23,9 +24,9 @@ const FORTE_SLOTS = [
   { key: 'secondaryB', label: 'Forte 2B', share: '¼' },
 ];
 
-const props = defineProps<{ context: any }>();
+const props = defineProps<{ context: BuildContext }>();
 const emit = defineEmits<{
-  set: [key: string, value: any];
+  set: [key: string, value: string | number | boolean];
   'set-forte': [slot: string, value: string];
 }>();
 
@@ -78,7 +79,7 @@ function onMagnitude(event: Event) {
     <div class="options-group">
       <div v-for="slot in FORTE_SLOTS" :key="slot.key" class="field">
         <span class="field-label">{{ slot.label }} <span class="hint">{{ slot.share }}</span></span>
-        <ComboBox :model-value="context.forte?.[slot.key] ?? ''" :options="forteOptions"
+        <ComboBox :model-value="(context.forte as Record<string, string | undefined>)?.[slot.key] ?? ''" :options="forteOptions"
                   @update:model-value="$emit('set-forte', slot.key, $event)" />
       </div>
 

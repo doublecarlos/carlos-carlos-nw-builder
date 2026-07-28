@@ -8,14 +8,15 @@
 // file only renders the tree and the popup menus, and reads storage.ts/fs-store.ts directly for
 // the read-only bits (parsing an imported build file), same as BuildBar.vue already does for
 // its own import/export drawer.
-import { ref, reactive, computed, nextTick, onMounted, onUnmounted } from 'vue';
+import { ref, reactive, computed, nextTick, onMounted, onUnmounted, type ComponentPublicInstance } from 'vue';
 import * as fsStore from '../fs-store';
+import type { Build, Collection } from '../types';
 
 const CONFIRM_MS = 4000;
 
 const props = defineProps<{
-  collections: any[];
-  builds: any[];
+  collections: Collection[];
+  builds: Build[];
   activeCollectionId?: string;
   activeId?: string;
   // buildId -> bool, App.vue's `dirtyByBuild` computed (mirrors the existing per-build
@@ -23,7 +24,7 @@ const props = defineProps<{
   dirtyByBuild: Record<string, boolean>;
   // collectionId -> last-saved { name, buildIds }, App.vue's `savedCollections` -- compared
   // against the live `collections` prop to decide a collection's own unsaved-dot.
-  savedCollections: Record<string, any>;
+  savedCollections: Record<string, Collection>;
 }>();
 
 const emit = defineEmits<{
@@ -56,7 +57,7 @@ const saveAsFor = ref<string | null>(null);      // collection id currently show
 const renaming = ref<{ type: string; id: string } | null>(null);
 const renameText = ref('');
 const renameInputEl = ref<HTMLInputElement | null>(null);
-function setRenameInputRef(el: any) { renameInputEl.value = el as HTMLInputElement | null; }
+function setRenameInputRef(el: Element | ComponentPublicInstance | null) { renameInputEl.value = el as HTMLInputElement | null; }
 const confirm = ref<{ type: string; id: string; action: string } | null>(null);   // two-step delete/reset
 let confirmTimer: number | undefined;
 const importTarget = ref<string | null>(null);   // collection id the hidden build-file input is armed for
@@ -67,8 +68,8 @@ const buildById = computed(() => new Map(props.builds.map((build) => [build.id, 
 
 const fsSupported = fsStore.supported;
 
-function buildsIn(collection: any) {
-  return collection.buildIds.map((id: string) => buildById.value.get(id)).filter(Boolean);
+function buildsIn(collection: Collection): Build[] {
+  return collection.buildIds.map((id) => buildById.value.get(id)).filter((b): b is Build => Boolean(b));
 }
 
 function isExpanded(id: string) {
@@ -81,12 +82,12 @@ function toggleExpanded(id: string) {
 
 /** Metadata (name/membership) differs from last saved, or any build it contains is
  * itself dirty -- either is "this collection has something unsaved in it". */
-function collectionDirty(collection: any) {
+function collectionDirty(collection: Collection) {
   const saved = props.savedCollections[collection.id];
   if (!saved || saved.name !== collection.name
     || saved.buildIds.length !== collection.buildIds.length
-    || saved.buildIds.some((id: string, index: number) => id !== collection.buildIds[index])) return true;
-  return collection.buildIds.some((id: string) => props.dirtyByBuild[id]);
+    || saved.buildIds.some((id, index) => id !== collection.buildIds[index])) return true;
+  return collection.buildIds.some((id) => props.dirtyByBuild[id]);
 }
 
 // --- menus ---------------------------------------------------------------------------
@@ -180,7 +181,10 @@ function confirmLabel(type: string, id: string, action: string, label: string) {
   return isConfirming(type, id, action) ? 'Really?' : label;
 }
 
-function runConfirmed(type: string, id: string, action: any) {
+/** `action` names one of this component's own delete/reset events -- always a literal at the
+ * call site (see the template), but dynamically forwarded to `emit` here, which no static
+ * union of event names makes straightforward without the cast. */
+function runConfirmed(type: string, id: string, action: 'delete-collection' | 'reset-build' | 'delete-build') {
   if (!isConfirming(type, id, action)) {
     confirm.value = { type, id, action };
     window.clearTimeout(confirmTimer);
@@ -189,7 +193,7 @@ function runConfirmed(type: string, id: string, action: any) {
   }
   window.clearTimeout(confirmTimer);
   confirm.value = null;
-  (emit as any)(action, id);
+  (emit as (event: string, id: string) => void)(action, id);
   closeMenu();
 }
 

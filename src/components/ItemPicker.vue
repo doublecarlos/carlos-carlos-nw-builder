@@ -10,6 +10,7 @@
 // hook into).
 import { ref, computed, watch, nextTick } from 'vue';
 import { itemPreview, hasBonuses, int as fmtInt } from '../format';
+import type { Item } from '../types';
 
 // Long filters (insignia, group buffs) run to 40+ entries. Rendering all of them for every
 // keystroke is wasted work when nobody scrolls past the first screenful.
@@ -17,7 +18,7 @@ const MAX_ROWS = 60;
 
 const props = withDefaults(defineProps<{
   modelValue?: string;
-  items: any[];
+  items: Item[];
   invalid?: boolean;
 }>(), {
   modelValue: '',
@@ -71,7 +72,7 @@ watch(highlight, () => {
   });
 });
 
-const int = (value: any) => fmtInt(value);
+const int = (value: unknown) => fmtInt(value);
 
 /** Skips the reset when already open: `focusAndSeed` below pre-sets `open` before the
  *  native focus event fires, and this must not stomp the query it just seeded. */
@@ -119,7 +120,7 @@ function close() {
 /** `blur: false` for the Tab case below -- the browser's own Tab-forward looks at
  * whatever element is currently focused, so blurring here first (before that runs) would
  * make it tab from nowhere instead of continuing from this input. */
-function choose(item: any, { blur = true }: { blur?: boolean } = {}) {
+function choose(item: Item | null, { blur = true }: { blur?: boolean } = {}) {
   emit('update:modelValue', item ? item.name : '');
   close();
   if (blur) input.value?.blur();
