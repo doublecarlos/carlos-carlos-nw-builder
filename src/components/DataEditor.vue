@@ -11,8 +11,8 @@ import ItemForm from './ItemForm.vue';
 import type { ItemDraft } from './ItemForm.vue';
 import BonusSetForm from './BonusSetForm.vue';
 import ComboBox from './ComboBox.vue';
-import Btn from './ui/Btn.vue';
-import HistoryBtn from './ui/HistoryBtn.vue';
+import Button from './ui/Button.vue';
+import HistoryButton from './ui/HistoryButton.vue';
 import Badge from './ui/Badge.vue';
 import Notice from './ui/Notice.vue';
 import Drawer from './ui/Drawer.vue';
@@ -625,21 +625,21 @@ onUnmounted(() => {
       <Badge v-if="errorCount" variant="error">{{ errorCount }} error(s)</Badge>
       <Badge v-if="warnCount" variant="warn">{{ warnCount }} warning(s)</Badge>
 
-      <Btn :active="showExport" @click="showExport = !showExport">Export…</Btn>
-      <Btn as="label">Import overlay
-        <input type="file" accept=".json" hidden @change="importOverlay"></Btn>
-      <Btn :danger="confirmReset" :disabled="!changedCount" @click="resetAll">
+      <Button :active="showExport" @click="showExport = !showExport">Export…</Button>
+      <Button as="label">Import overlay
+        <input type="file" accept=".json" hidden @change="importOverlay"></Button>
+      <Button :danger="confirmReset" :disabled="!changedCount" @click="resetAll">
         {{ confirmReset ? 'Really discard?' : 'Discard changes' }}
-      </Btn>
+      </Button>
 
       <span class="mx-1 h-4 w-px bg-line"></span>
 
-      <HistoryBtn :disabled="!canUndo" :detail="canUndo ? undoLabel : ''"
-              :title="canUndo ? 'Undo: ' + undoLabel + ' (Ctrl+Z)' : 'Nothing to undo'" @click="undo">↶ Undo</HistoryBtn>
-      <HistoryBtn :disabled="!canRedo" :detail="canRedo ? redoLabel : ''"
-              :title="canRedo ? 'Redo: ' + redoLabel + ' (Ctrl+Shift+Z)' : 'Nothing to redo'" @click="redo">↷ Redo</HistoryBtn>
+      <HistoryButton :disabled="!canUndo" :detail="canUndo ? undoLabel : ''"
+              :title="canUndo ? 'Undo: ' + undoLabel + ' (Ctrl+Z)' : 'Nothing to undo'" @click="undo">↶ Undo</HistoryButton>
+      <HistoryButton :disabled="!canRedo" :detail="canRedo ? redoLabel : ''"
+              :title="canRedo ? 'Redo: ' + redoLabel + ' (Ctrl+Shift+Z)' : 'Nothing to redo'" @click="redo">↷ Redo</HistoryButton>
 
-      <Btn @click="ui.closeEditor()">✕ Close</Btn>
+      <Button @click="ui.closeEditor()">✕ Close</Button>
     </div>
 
     <Notice v-if="notice" class="mb-2" @dismiss="notice = ''">{{ notice }}</Notice>
@@ -652,8 +652,8 @@ onUnmounted(() => {
           <TabButton :active="exportTab === 'overlay'" @click="exportTab = 'overlay'">overlay only</TabButton>
         </TabStrip>
         <span class="flex-1"></span>
-        <Btn @click="copyExport">Copy</Btn>
-        <Btn @click="downloadExport">Download {{ exportName }}</Btn>
+        <Button @click="copyExport">Copy</Button>
+        <Button @click="downloadExport">Download {{ exportName }}</Button>
       </div>
       <CodeBlock :value="exportText" :rows="12" />
       <p class="mt-1 text-sm text-muted">
@@ -671,7 +671,7 @@ onUnmounted(() => {
         <li v-for="(finding, i) in findings.slice(0, 40)" :key="i" class="flex gap-2 py-0.5 text-sm">
           <span class="flex-none rounded px-1.5 uppercase"
                 :class="finding.level === 'error' ? 'bg-danger-soft text-danger' : 'bg-warn/25 text-warn'">{{ finding.level }}</span>
-          <Btn v-if="finding.name" variant="link" @click="selectFinding(finding)">{{ finding.name }}</Btn>
+          <Button v-if="finding.name" variant="link" @click="selectFinding(finding)">{{ finding.name }}</Button>
           <span>{{ finding.message }}</span>
         </li>
       </ul>
@@ -685,9 +685,9 @@ onUnmounted(() => {
                  v-model="query" :placeholder="section === 'bonusSets' ? 'Filter bonus sets…' : 'Filter items…'">
           <ComboBox class="w-25" :model-value="statusFilter" :options="statusFilterOptions"
                     @update:model-value="v => statusFilter = v" />
-          <Btn v-if="query || statusFilter !== 'all'" variant="link" @click="clearFilters">clear filters</Btn>
-          <Btn v-if="section === 'bonusSets'" variant="primary" @click="newSet">+ New bonus set</Btn>
-          <Btn v-else variant="primary" @click="newItem">+ New item</Btn>
+          <Button v-if="query || statusFilter !== 'all'" variant="link" @click="clearFilters">clear filters</Button>
+          <Button v-if="section === 'bonusSets'" variant="primary" @click="newSet">+ New bonus set</Button>
+          <Button v-else variant="primary" @click="newItem">+ New item</Button>
         </div>
         <div class="min-h-0 flex-1 overflow-y-auto">
           <div v-for="row in filtered" :key="row.key" tabindex="0"
@@ -697,7 +697,7 @@ onUnmounted(() => {
             <span class="editor-row-name min-w-0 flex-1 truncate">{{ row.name }}</span>
             <Badge v-if="row.status !== 'base'" :variant="row.status as any">{{ row.status }}</Badge>
             <Badge v-if="hasUnsavedDraft(row)" variant="unsaved" title="Unsaved edits in the form">unsaved</Badge>
-            <Btn v-if="row.status === 'removed'" variant="link" @click.stop="restore(row)">restore</Btn>
+            <Button v-if="row.status === 'removed'" variant="link" @click.stop="restore(row)">restore</Button>
             <span v-else class="text-sm text-muted">{{ row.filter }}</span>
           </div>
           <p v-if="!filtered.length" class="p-2 text-muted">Nothing matches.</p>

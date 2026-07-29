@@ -6,7 +6,7 @@ import PercentInput from './PercentInput.vue';
 import ComboBox from './ComboBox.vue';
 import ConditionRows from './ConditionRows.vue';
 import IconButton from './IconButton.vue';
-import Btn from './ui/Btn.vue';
+import Button from './ui/Button.vue';
 import FormSection from './ui/FormSection.vue';
 import { NW_SCHEMA } from '../data';
 import { isPercentKind, kindOf } from '../format';
@@ -139,15 +139,15 @@ function setPayload(grant: GrantDraft, payload: GrantDraft['payload']) {
            would float them against the taller labeled fields elsewhere in the form. -->
       <div class="flex flex-wrap items-end gap-2">
         <span class="text-sm text-muted">Grant {{ gIndex + 1 }}</span>
-        <Btn variant="link" @click="toggleJson(grant)">
+        <Button variant="link" @click="toggleJson(grant)">
           {{ grant.mode === 'json' ? 'use the form' : 'edit as JSON' }}
-        </Btn>
+        </Button>
         <span class="flex-1"></span>
-        <Btn variant="link" :disabled="gIndex === 0" @click="moveGrant(gIndex, -1)">move up</Btn>
-        <Btn variant="link" :disabled="gIndex === rows.length - 1" @click="moveGrant(gIndex, 1)">move down</Btn>
-        <Btn variant="link" @click="duplicateGrant(gIndex)">duplicate</Btn>
-        <Btn variant="link" @click="insertGrant(gIndex)">insert below</Btn>
-        <Btn variant="link" @click="removeGrant(gIndex)">remove</Btn>
+        <Button variant="link" :disabled="gIndex === 0" @click="moveGrant(gIndex, -1)">move up</Button>
+        <Button variant="link" :disabled="gIndex === rows.length - 1" @click="moveGrant(gIndex, 1)">move down</Button>
+        <Button variant="link" @click="duplicateGrant(gIndex)">duplicate</Button>
+        <Button variant="link" @click="insertGrant(gIndex)">insert below</Button>
+        <Button variant="link" @click="removeGrant(gIndex)">remove</Button>
       </div>
 
       <textarea v-if="grant.mode === 'json'"
@@ -243,11 +243,11 @@ function setPayload(grant: GrantDraft, payload: GrantDraft['payload']) {
             <div class="mb-1 flex flex-wrap items-center gap-1.5">
               <span class="text-sm text-muted">Variant {{ vIndex + 1 }}</span>
               <span class="flex-1"></span>
-              <Btn variant="link" :disabled="vIndex === 0" @click="moveVariant(grant, vIndex, -1)">move up</Btn>
-              <Btn variant="link" :disabled="vIndex === grant.variants.length - 1" @click="moveVariant(grant, vIndex, 1)">move down</Btn>
-              <Btn variant="link" @click="duplicateVariant(grant, vIndex)">duplicate</Btn>
-              <Btn variant="link" @click="insertVariant(grant, vIndex)">insert below</Btn>
-              <Btn variant="link" @click="removeVariant(grant, vIndex)">remove variant</Btn>
+              <Button variant="link" :disabled="vIndex === 0" @click="moveVariant(grant, vIndex, -1)">move up</Button>
+              <Button variant="link" :disabled="vIndex === grant.variants.length - 1" @click="moveVariant(grant, vIndex, 1)">move down</Button>
+              <Button variant="link" @click="duplicateVariant(grant, vIndex)">duplicate</Button>
+              <Button variant="link" @click="insertVariant(grant, vIndex)">insert below</Button>
+              <Button variant="link" @click="removeVariant(grant, vIndex)">remove variant</Button>
             </div>
             <FormSection sub>When</FormSection>
             <ConditionRows :rows="variant.conditions" :depth="0" :set-ids="setIds" />
@@ -265,7 +265,7 @@ function setPayload(grant: GrantDraft, payload: GrantDraft['payload']) {
               <IconButton icon="plus" title="Add stat" @click="addStat(variant.stats)" />
             </div>
           </div>
-          <Btn variant="link" @click="addVariant(grant)">+ add variant</Btn>
+          <Button variant="link" @click="addVariant(grant)">+ add variant</Button>
         </template>
 
       </template>

@@ -15,7 +15,7 @@ import BonusRows from './BonusRows.vue';
 import ComboBox from './ComboBox.vue';
 import IconButton from './IconButton.vue';
 import TokenInput from './TokenInput.vue';
-import Btn from './ui/Btn.vue';
+import Button from './ui/Button.vue';
 import Badge from './ui/Badge.vue';
 import FormField from './ui/FormField.vue';
 import FormSection from './ui/FormSection.vue';
@@ -247,10 +247,10 @@ function attachExisting(id: string) {
         <Badge v-if="!card.defined" variant="warn">not defined yet</Badge>
         <Badge v-if="isDirty(card.id)">unsaved</Badge>
         <span class="flex-1"></span>
-        <Btn variant="primary" :disabled="!isDirty(card.id)" @click="save(card.id)">Save</Btn>
-        <Btn @click="reset(card.id)">Reset</Btn>
-        <Btn v-if="card.defined" @click="remove(card.id)">Delete</Btn>
-        <Btn v-else @click="detach(card.id)">Remove</Btn>
+        <Button variant="primary" :disabled="!isDirty(card.id)" @click="save(card.id)">Save</Button>
+        <Button @click="reset(card.id)">Reset</Button>
+        <Button v-if="card.defined" @click="remove(card.id)">Delete</Button>
+        <Button v-else @click="detach(card.id)">Remove</Button>
       </div>
 
       <p v-if="errors[card.id]" class="mt-1 text-danger">{{ errors[card.id] }}</p>

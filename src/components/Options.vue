@@ -9,7 +9,7 @@
 import { computed } from 'vue';
 import ComboBox from './ComboBox.vue';
 import FormField from './ui/FormField.vue';
-import Check from './ui/Check.vue';
+import Check from './ui/Checkbox.vue';
 import { NW_SCHEMA } from '../data';
 import { titleCase, label as statLabel } from '../format';
 import type { BuildContext } from '../types';

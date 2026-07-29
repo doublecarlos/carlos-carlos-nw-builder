@@ -14,7 +14,7 @@ defineEmits<{ 'update:modelValue': [value: boolean] }>();
 </script>
 
 <template>
-  <label class="inline-flex cursor-pointer items-center gap-1" :class="inline && 'ml-auto text-muted'">
+  <label class="flex cursor-pointer items-center gap-1" :class="inline && 'ml-auto text-muted'">
     <input type="checkbox" :checked="modelValue" :disabled="disabled"
            @change="$emit('update:modelValue', ($event.target as HTMLInputElement).checked)">
     <span><slot /></span>

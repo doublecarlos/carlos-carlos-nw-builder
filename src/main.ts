@@ -2,7 +2,7 @@ import { createApp } from 'vue';
 import App from './App.vue';
 import './theme.css';
 // TODO(tailwind-migration): dropped once every component's scoped CSS is converted.
-import './base.css';
+// import './base.css';
 import { initTheme } from './stores/theme';
 
 initTheme();

@@ -3,7 +3,7 @@
 // be saved (browser storage or a linked file, via fs-store.ts) and exported as a whole; an
 // individual build keeps its own independent save/revert (BuildBar.vue).
 import { ref, reactive, computed, nextTick, onMounted, onUnmounted, type ComponentPublicInstance } from 'vue';
-import Btn from './ui/Btn.vue';
+import Button from './ui/Button.vue';
 import UnsavedDot from './ui/UnsavedDot.vue';
 import * as fsStore from '../fs-store';
 import * as library from '../stores/library';
@@ -339,15 +339,15 @@ onUnmounted(() => {
         </div>
 
         <div class="nav-row--actions flex items-center gap-2.5 pl-5 text-muted">
-          <Btn variant="link" @click="library.createBuildIn(collection.id)">+ New build</Btn>
-          <Btn variant="link" @click="triggerImportBuild(collection.id)">Import</Btn>
+          <Button variant="link" @click="library.createBuildIn(collection.id)">+ New build</Button>
+          <Button variant="link" @click="triggerImportBuild(collection.id)">Import</Button>
         </div>
       </div>
     </div>
 
     <div class="nav-row--actions mt-1 flex items-center gap-2.5 border-t border-line pl-1 pt-1.5 text-muted">
-      <Btn variant="link" @click="library.createCollection()">+ New collection</Btn>
-      <Btn variant="link" @click="triggerImportCollection">Import collection</Btn>
+      <Button variant="link" @click="library.createCollection()">+ New collection</Button>
+      <Button variant="link" @click="triggerImportCollection">Import collection</Button>
     </div>
 
     <input ref="buildFileInput" type="file" accept=".json,application/json" class="hidden"

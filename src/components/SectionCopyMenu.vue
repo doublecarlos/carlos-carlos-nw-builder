@@ -10,7 +10,7 @@ const openSectionId = ref<string | null>(null);
 import { onMounted, onUnmounted } from 'vue';
 import IconButton from './IconButton.vue';
 import ComboBox from './ComboBox.vue';
-import Btn from './ui/Btn.vue';
+import Button from './ui/Button.vue';
 
 const props = defineProps<{
   sectionId: string;
@@ -66,7 +66,7 @@ onUnmounted(() => document.removeEventListener('mousedown', onDocumentClick));
       <span class="text-sm text-muted">Copy section from</span>
       <ComboBox class="copy-popover-select w-44" :model-value="chosen" :options="otherBuilds"
                 placeholder="choose a build…" @update:model-value="chosen = $event" />
-      <Btn variant="primary" :disabled="!chosen" @click="confirm">Copy</Btn>
+      <Button variant="primary" :disabled="!chosen" @click="confirm">Copy</Button>
     </div>
   </div>
 </template>

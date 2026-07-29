@@ -15,7 +15,7 @@ import * as engine from '../stores/engine';
 import Panel from './ui/Panel.vue';
 import PanelHead from './ui/PanelHead.vue';
 import Badge from './ui/Badge.vue';
-import Check from './ui/Check.vue';
+import Check from './ui/Checkbox.vue';
 import type { EvaluatedBonus, ConditionLeafResult, StatValues } from '../types';
 
 /** `m31-crimson-march-combat` -> `M31 Crimson March Combat`, for bonuses with no set name. */

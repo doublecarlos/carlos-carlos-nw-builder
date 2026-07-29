@@ -10,7 +10,7 @@ import ItemCard from './ItemCard.vue';
 import Options from './Options.vue';
 import IconButton from './IconButton.vue';
 import SectionCopyMenu from './SectionCopyMenu.vue';
-import Btn from './ui/Btn.vue';
+import Button from './ui/Button.vue';
 import Badge from './ui/Badge.vue';
 import UnsavedDot from './ui/UnsavedDot.vue';
 import { NW_SCHEMA, NW_SLOTS } from '../data';
@@ -284,8 +284,8 @@ function onFocusIn(event: FocusEvent) {
 <template>
   <div class="flex flex-col gap-1.5" ref="root" @focusin="onFocusIn" @focusout="onFocusOut">
     <div class="flex gap-1.5">
-      <Btn variant="link" @click="setAll(true)">expand all</Btn>
-      <Btn variant="link" @click="setAll(false)">collapse all</Btn>
+      <Button variant="link" @click="setAll(true)">expand all</Button>
+      <Button variant="link" @click="setAll(false)">collapse all</Button>
       <span class="flex-1"></span>
       <span class="text-sm text-muted">Ctrl+click a filled slot to edit that item</span>
     </div>
@@ -368,9 +368,9 @@ function onFocusIn(event: FocusEvent) {
 
             <p v-if="highlightDiff && differs(slot.id)" class="slot-diff-note mt-0.5 text-sm text-muted">
               {{ compareBuild?.name }}: {{ otherChoice(slot.id) || '(empty)' }}
-              <Btn variant="link" class="ml-0.5 text-accent" @click.stop="buildEditor.applyFromCompare(slot.id)">
+              <Button variant="link" class="ml-0.5 text-accent" @click.stop="buildEditor.applyFromCompare(slot.id)">
                 apply
-              </Btn>
+              </Button>
             </p>
 
             <!-- Same item both sides, but the bonus(es) it grants resolve differently --
@@ -404,9 +404,9 @@ function onFocusIn(event: FocusEvent) {
 
             <p v-if="highlightDiff && rowDiff(slot.id)?.value" class="slot-diff-note mt-0.5 text-sm text-muted">
               {{ compareBuild?.name }}: {{ compareBuild?.values?.[slot.id] ?? '(none)' }}
-              <Btn variant="link" class="ml-0.5 text-accent" @click.stop="buildEditor.applyValueFromCompare(slot.id)">
+              <Button variant="link" class="ml-0.5 text-accent" @click.stop="buildEditor.applyValueFromCompare(slot.id)">
                 apply
-              </Btn>
+              </Button>
             </p>
 
             <p v-for="error in errorsFor(slot.id)" :key="error.kind + error.choice"

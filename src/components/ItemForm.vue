@@ -14,8 +14,8 @@ import TokenInput from './TokenInput.vue';
 import PercentInput from './PercentInput.vue';
 import ComboBox from './ComboBox.vue';
 import IconButton from './IconButton.vue';
-import Btn from './ui/Btn.vue';
-import HistoryBtn from './ui/HistoryBtn.vue';
+import Button from './ui/Button.vue';
+import HistoryButton from './ui/HistoryButton.vue';
 import Badge from './ui/Badge.vue';
 import FormBar from './ui/FormBar.vue';
 import FormField from './ui/FormField.vue';
@@ -319,14 +319,14 @@ onUnmounted(() => {
       <Badge v-if="status !== 'base'" :variant="status as any">{{ status }}</Badge>
       <Badge v-if="dirty">unsaved</Badge>
       <span class="flex-1"></span>
-      <HistoryBtn :disabled="!canUndoDraft" title="Undo edit (Ctrl+Z)" @click="undoDraft">↶ Undo</HistoryBtn>
-      <HistoryBtn :disabled="!canRedoDraft" title="Redo edit (Ctrl+Shift+Z)" @click="redoDraft">↷ Redo</HistoryBtn>
-      <Btn variant="primary" :disabled="!dirty" @click="save">Save item</Btn>
-      <Btn :danger="confirmRevert" :disabled="!dirty" @click="revertDraft">
+      <HistoryButton :disabled="!canUndoDraft" title="Undo edit (Ctrl+Z)" @click="undoDraft">↶ Undo</HistoryButton>
+      <HistoryButton :disabled="!canRedoDraft" title="Redo edit (Ctrl+Shift+Z)" @click="redoDraft">↷ Redo</HistoryButton>
+      <Button variant="primary" :disabled="!dirty" @click="save">Save item</Button>
+      <Button :danger="confirmRevert" :disabled="!dirty" @click="revertDraft">
         {{ confirmRevert ? 'Really revert?' : 'Revert' }}
-      </Btn>
-      <Btn v-if="status === 'edited'" @click="$emit('revert')">Revert to shipped</Btn>
-      <Btn v-if="source" @click="$emit('delete')">Delete</Btn>
+      </Button>
+      <Button v-if="status === 'edited'" @click="$emit('revert')">Revert to shipped</Button>
+      <Button v-if="source" @click="$emit('delete')">Delete</Button>
     </FormBar>
 
     <p v-if="error" class="mt-1 text-danger">{{ error }}</p>

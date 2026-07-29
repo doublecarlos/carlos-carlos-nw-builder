@@ -7,8 +7,8 @@ import { ref, computed, watch } from 'vue';
 import * as storage from '../storage';
 import * as library from '../stores/library';
 import * as buildEditor from '../stores/buildEditor';
-import Btn from './ui/Btn.vue';
-import HistoryBtn from './ui/HistoryBtn.vue';
+import Button from './ui/Button.vue';
+import HistoryButton from './ui/HistoryButton.vue';
 import Drawer from './ui/Drawer.vue';
 import CodeBlock from './ui/CodeBlock.vue';
 import FormField from './ui/FormField.vue';
@@ -130,20 +130,20 @@ function applyImport() {
       </FormField>
 
       <div class="buildbar-actions flex flex-wrap items-center gap-1">
-        <Btn variant="primary" :disabled="!dirty" @click="buildEditor.saveActive()">Save</Btn>
-        <Btn :danger="confirmRevert" :disabled="!dirty" @click="onRevert">
+        <Button variant="primary" :disabled="!dirty" @click="buildEditor.saveActive()">Save</Button>
+        <Button :danger="confirmRevert" :disabled="!dirty" @click="onRevert">
           {{ confirmRevert ? 'Really revert?' : 'Revert' }}
-        </Btn>
+        </Button>
 
         <span class="mx-1 h-4 w-px bg-line"></span>
 
-        <Btn :active="panel === 'io'" @click="toggle('io')">Import / export…</Btn>
-        <Btn :active="panel === 'share'" @click="toggle('share')">Share…</Btn>
+        <Button :active="panel === 'io'" @click="toggle('io')">Import / export…</Button>
+        <Button :active="panel === 'share'" @click="toggle('share')">Share…</Button>
 
         <span class="mx-1 h-4 w-px bg-line"></span>
 
-        <HistoryBtn :disabled="!canUndo" :detail="canUndo ? undoLabel : ''" :title="undoTitle" @click="buildEditor.undo()">↶ Undo</HistoryBtn>
-        <HistoryBtn :disabled="!canRedo" :detail="canRedo ? redoLabel : ''" :title="redoTitle" @click="buildEditor.redo()">↷ Redo</HistoryBtn>
+        <HistoryButton :disabled="!canUndo" :detail="canUndo ? undoLabel : ''" :title="undoTitle" @click="buildEditor.undo()">↶ Undo</HistoryButton>
+        <HistoryButton :disabled="!canRedo" :detail="canRedo ? redoLabel : ''" :title="redoTitle" @click="buildEditor.redo()">↷ Redo</HistoryButton>
       </div>
     </div>
 
@@ -153,8 +153,8 @@ function applyImport() {
           <h4 class="mb-1 text-sm uppercase text-muted">Export</h4>
           <CodeBlock :value="exportText" :rows="7" />
           <div class="mt-1.5 flex flex-wrap items-end gap-2">
-            <Btn @click="copyToClipboard(exportText)">Copy to clipboard</Btn>
-            <Btn @click="downloadExport">Download .json</Btn>
+            <Button @click="copyToClipboard(exportText)">Copy to clipboard</Button>
+            <Button @click="downloadExport">Download .json</Button>
           </div>
         </div>
         <div>
@@ -163,7 +163,7 @@ function applyImport() {
                     rows="7" v-model="importText"
                     placeholder="Paste a build, or an array of builds…"></textarea>
           <div class="mt-1.5 flex flex-wrap items-end gap-2">
-            <Btn variant="primary" :disabled="!importText.trim()" @click="applyImport">Import</Btn>
+            <Button variant="primary" :disabled="!importText.trim()" @click="applyImport">Import</Button>
             <input type="file" accept=".json,application/json" @change="onImportFile">
           </div>
           <p v-if="importError" class="mt-1 text-danger">{{ importError }}</p>
@@ -178,7 +178,7 @@ function applyImport() {
       <div class="flex flex-wrap items-end gap-2">
         <input class="min-w-64 flex-1 rounded-md border border-line bg-surface px-1.5 py-0.5 font-mono focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
                type="text" readonly :value="shareLink" @focus="selectAllText">
-        <Btn :disabled="!shareLink" @click="copyToClipboard(shareLink)">Copy link</Btn>
+        <Button :disabled="!shareLink" @click="copyToClipboard(shareLink)">Copy link</Button>
       </div>
       <p v-if="shareError" class="mt-1 text-danger">{{ shareError }}</p>
       <p class="mt-1.5 text-sm text-muted">The whole build is compressed into the link — no server involved.
