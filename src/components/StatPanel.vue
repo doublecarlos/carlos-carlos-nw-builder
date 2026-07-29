@@ -256,16 +256,7 @@ function signedInt(value: number) {
     </table>
 
     <h3 class="panel-head">Ratings</h3>
-    <table class="stat-table stat-table--split">
-      <thead>
-        <tr>
-          <th>Stat</th>
-          <th class="rating-col">Rating</th>
-          <th>Percentage</th>
-          <th>Overcap %</th>
-          <th class="rating-col">Overcap rating</th>
-        </tr>
-      </thead>
+    <table class="stat-table stat-table--split rating-table">
       <tbody>
         <!-- Each cell coloured off its own column's 'over', not the row: rating and
              percentage cap independently, so one can read green while the other reads
@@ -274,10 +265,10 @@ function signedInt(value: number) {
             v-show="visible(row.rating.total)"
             :class="{ 'row-sep': row.sepAfter }">
           <td>{{ row.label }}</td>
-          <td class="num rating-col" :class="row.rating.primaryCls">{{ int(row.rating.total) }}</td>
+          <td class="num" :class="row.rating.primaryCls">{{ int(row.rating.total) }}</td>
           <td class="num" :class="row.percent.primaryCls">{{ pct(row.percent.capped) }}</td>
           <td class="num dim" :class="row.percent.overCls">{{ signedPct(row.percent.over) }}</td>
-          <td class="num dim rating-col" :class="row.rating.overCls">{{ signedInt(row.rating.over) }}</td>
+          <td class="num dim" :class="row.rating.overCls">{{ signedInt(row.rating.over) }}</td>
         </tr>
       </tbody>
     </table>
@@ -394,34 +385,32 @@ function signedInt(value: number) {
 .summary-compare tr.is-positive td:not(:first-child) { color: var(--ok); font-weight: 600; }
 .summary-compare tr.is-negative td:not(:first-child) { color: var(--danger); font-weight: 600; }
 
-.stat-table { border-collapse: collapse; width: 100%; }
-.stat-table th {
-  color: var(--muted);
-  font-size: 1rem;
-  font-weight: 500;
-  letter-spacing: .03em;
-  padding: 3px 4px;
-  text-align: right;
-  text-transform: uppercase;
+.stat-table {
+  border: 1px solid var(--line);
+  border-collapse: collapse;
+  width: 100%;
 }
-.stat-table th:first-child { text-align: left; }
-.stat-table td { padding: 2px 4px; }
+
+.stat-table.rating-table td {
+  border: 1px solid var(--line);
+}
+
+.stat-table td { padding: 2px 4px;}
 .stat-table td.num { text-align: right; }
 .stat-table tbody tr:nth-child(even) { background: color-mix(in srgb, var(--surface-2) 55%, transparent); }
-.stat-table--pairs td:last-child { text-align: right; width: 40%; }
 
-/* Rating and percent used to be two whole separate tables -- same rows, same order, just a
- * different unit. One table keeps both full-size (percent is the value that matters day to
- * day, so it leads) without forcing a cross-reference between two tables to see one stat. */
-.stat-table--split .rating-col { color: var(--muted); }
-
-/* Conditional formatting, in the spirit of the sheet: green sitting exactly on the cap, blue
- * with headroom to spare, warn colour when over -- applied per cell, since rating and percentage
- * cap independently and a row can show both colours at once. */
 .stat-table td.is-capped { background: color-mix(in srgb, var(--ok) 16%, transparent); }
 .stat-table td.is-headroom { background: color-mix(in srgb, var(--accent) 12%, transparent); }
 .stat-table td.is-over { background: color-mix(in srgb, var(--warn) 14%, transparent); font-weight: 600; }
 
 .stat-table tr.is-lead td { font-weight: 600; }
 .stat-table tr.row-sep td { border-bottom: 2px solid var(--line); }
+
+.stat-table tr:hover {
+  outline: 2px solid black;
+}
+
+.panel-head {
+  border: none;
+}
 </style>

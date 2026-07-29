@@ -1196,6 +1196,9 @@ onUnmounted(() => {
   overflow-y: auto;
 }
 
+.panel { border-radius: 0 var(--radius) var(--radius) var(--radius); }
+.tabs { padding-left: 0 }
+
 .crash { color: var(--danger); padding: 24px; }
 .crash pre { background: var(--surface); border-radius: var(--radius); overflow-x: auto; padding: 12px; }
 
