@@ -12,7 +12,9 @@ import StatSourceCard from './StatSourceCard.vue';
 import { sectionsFor } from '../stat-sources';
 import { NW_SCHEMA } from '../data';
 import { int as fmtInt, pct as fmtPct, stat as fmtStat } from '../format';
-import type { ResolvedBuild, Build } from '../types';
+import * as library from '../stores/library';
+import * as compare from '../stores/compare';
+import * as engine from '../stores/engine';
 
 // Display order only -- data/schema.json stays untouched. Forte sits with the defensive
 // ratings rather than right after Severity, per the user's re-grouping.
@@ -52,26 +54,26 @@ const SUMMARY_GROUPS = [
   { source: 'ehp', label: 'EHP', rows: ehpRows },
 ];
 
-const props = withDefaults(defineProps<{
-  result: ResolvedBuild;
-  // The sheet-style compare row under the picker: another build's own `derived`, resolved
-  // by App.vue against the same db. `null` means "not comparing" and the widget collapses
-  // back to a single centred value.
-  compareResult?: ResolvedBuild | null;
-  compareName?: string;
-  // Only needed for the stat source popover's forte picks and dynamic weapon mod values --
-  // the rest of the panel reads entirely off `result`.
-  build?: Build | null;
-}>(), {
-  compareResult: null,
-  compareName: '',
-  build: null,
+// Only ever mounted when `engine.resolved.value.ok` -- the throw documents
+// that invariant instead of a defensive fallback for a state that can't happen.
+const result = computed(() => {
+  const r = engine.resolved.value;
+  if (!r.ok) throw new Error('StatPanel requires a resolved build');
+  return r.result;
 });
+// The sheet-style compare row under the picker: another build's own `derived`, resolved
+// against the same db. `null` means "not comparing" and the widget collapses back to a
+// single centred value.
+const compareResult = computed(() => (engine.compareResolved.value?.ok ? engine.compareResolved.value.result : null));
+const compareName = computed(() => compare.compareBuild.value?.name ?? '');
+// Only needed for the stat source popover's forte picks and dynamic weapon mod values -- the
+// rest of the panel reads entirely off `result`.
+const build = library.build;
 
 const summaryCalcKey = ref('damage:average');
 
-const stages = computed(() => props.result.stages);
-const derived = computed(() => props.result.derived);
+const stages = computed(() => result.value.stages);
+const derived = computed(() => result.value.derived);
 
 /** Options for the summary widget's calculation picker, across all three `derived`
  * tables below (damage, healing, EHP) -- value is `source:key` so `summaryValue` can
@@ -90,9 +92,9 @@ const summaryValue = computed(() => {
 });
 
 const compareSummaryValue = computed(() => {
-  if (!props.compareResult) return null;
+  if (!compareResult.value) return null;
   const [source, key] = summaryCalcKey.value.split(':');
-  return (props.compareResult.derived as unknown as Record<string, Record<string, number>>)[source]?.[key] ?? 0;
+  return (compareResult.value.derived as unknown as Record<string, Record<string, number>>)[source]?.[key] ?? 0;
 });
 
 /** `value` relative to `base`, signed: positive means `value` is the bigger of the two.
@@ -181,7 +183,7 @@ const enemyRows = computed(() => NW_SCHEMA.stats
     value: stages.value.totals[stat.key] ?? 0 })));
 
 const bonusSummary = computed(() => {
-  const all = props.result.bonuses;
+  const all = result.value.bonuses;
   return {
     total: all.length,
     active: all.filter((bonus) => bonus.active).length,
@@ -219,7 +221,7 @@ const openCard = ref<OpenCard | null>(null);
 
 const openLabel = computed(() => NW_SCHEMA.statByKey[openCard.value?.key ?? '']?.label ?? openCard.value?.key ?? '');
 const openSections = computed(() => (
-  openCard.value ? sectionsFor(props.result, props.build, openCard.value.key) : []
+  openCard.value ? sectionsFor(result.value, build.value, openCard.value.key) : []
 ));
 
 /**

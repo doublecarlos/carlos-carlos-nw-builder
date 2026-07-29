@@ -1,40 +1,19 @@
 <script setup lang="ts">
 // Slim per-build action strip: rename, save/revert, import/export JSON, share link, undo/redo.
-//
-// Switching/creating/duplicating/deleting a build, and copying a section from another build,
-// live in BuildNav.vue's sidebar (the former resp. per-section controls in SlotList.vue) --
-// this bar is left with only what always applies to *the build currently on screen*.
-//
-// Read-only operations (encoding a share link, serialising to JSON) are done here directly.
-// Anything that *changes* a build is emitted to App.vue instead, so every mutation still passes
-// through the one place the undo stack watches.
+// Switching/creating/duplicating/deleting a build lives in BuildNav.vue's sidebar; copying a
+// section between builds is a per-section control in SlotList.vue. This bar is left with only
+// what always applies to *the build currently on screen*.
 import { ref, computed, watch } from 'vue';
 import * as storage from '../storage';
-import type { Build } from '../types';
+import * as library from '../stores/library';
+import * as buildEditor from '../stores/buildEditor';
 
-const props = withDefaults(defineProps<{
-  build: Build;
-  canUndo?: boolean;
-  canRedo?: boolean;
-  undoLabel?: string;
-  redoLabel?: string;
-  dirty?: boolean;
-}>(), {
-  canUndo: false,
-  canRedo: false,
-  undoLabel: '',
-  redoLabel: '',
-  dirty: false,
-});
-
-const emit = defineEmits<{
-  rename: [value: string];
-  import: [builds: Build[]];
-  undo: [];
-  redo: [];
-  save: [];
-  revert: [];
-}>();
+const build = library.build;
+const dirty = library.dirty;
+const canUndo = buildEditor.canUndo;
+const canRedo = buildEditor.canRedo;
+const undoLabel = buildEditor.undoLabel;
+const redoLabel = buildEditor.redoLabel;
 
 const panel = ref('');              // '' | 'share' | 'io'
 const confirmRevert = ref(false);
@@ -46,12 +25,12 @@ const importText = ref('');
 const importError = ref('');
 const importNote = ref('');
 
-const undoTitle = computed(() => (props.canUndo ? `Undo: ${props.undoLabel} (Ctrl+Z)` : 'Nothing to undo'));
-const redoTitle = computed(() => (props.canRedo ? `Redo: ${props.redoLabel} (Ctrl+Shift+Z)` : 'Nothing to redo'));
+const undoTitle = computed(() => (canUndo.value ? `Undo: ${undoLabel.value} (Ctrl+Z)` : 'Nothing to undo'));
+const redoTitle = computed(() => (canRedo.value ? `Redo: ${redoLabel.value} (Ctrl+Shift+Z)` : 'Nothing to redo'));
 
 // An armed "Really revert?" refers to whichever build was active when it was clicked --
 // switching builds inside the 4s window must not leave it armed against a different one.
-watch(() => props.build.id, () => {
+watch(() => build.value.id, () => {
   window.clearTimeout(confirmRevertTimer);
   confirmRevert.value = false;
 });
@@ -67,14 +46,14 @@ function onRevert() {
   }
   window.clearTimeout(confirmRevertTimer);
   confirmRevert.value = false;
-  emit('revert');
+  buildEditor.revertActive();
 }
 
 async function makeShareLink() {
   shareLink.value = '';
   shareError.value = '';
   try {
-    const payload = await storage.encodeShare(props.build);
+    const payload = await storage.encodeShare(build.value);
     shareLink.value = storage.shareUrl(payload);
   } catch (error: any) {
     shareError.value = String(error.message ?? error);
@@ -87,7 +66,7 @@ function toggle(name: string) {
   importError.value = '';
   importNote.value = '';
   if (panel.value === 'share') makeShareLink();
-  if (panel.value === 'io') exportText.value = storage.toJson(props.build);
+  if (panel.value === 'io') exportText.value = storage.toJson(build.value);
 }
 
 function selectAllText(event: FocusEvent) {
@@ -108,7 +87,7 @@ function downloadExport() {
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
-  link.download = `${props.build.name.replace(/[^\w.-]+/g, '-') || 'build'}.json`;
+  link.download = `${build.value.name.replace(/[^\w.-]+/g, '-') || 'build'}.json`;
   link.click();
   URL.revokeObjectURL(url);
 }
@@ -127,7 +106,7 @@ function applyImport() {
   importNote.value = '';
   try {
     const builds = storage.parseJson(importText.value);
-    emit('import', builds);
+    library.importBuilds(builds);
     importNote.value = `imported ${builds.length} build(s)`;
     importText.value = '';
   } catch (error: any) {
@@ -142,12 +121,12 @@ function applyImport() {
       <label class="field">
         <span class="field-label">Name</span>
         <input class="name-input" type="text" :value="build.name"
-               @input="$emit('rename', ($event.target as HTMLInputElement).value)">
+               @input="buildEditor.renameBuild(($event.target as HTMLInputElement).value)">
       </label>
 
       <div class="buildbar-actions">
         <button type="button" class="btn btn--primary" :disabled="!dirty"
-                @click="$emit('save')">Save</button>
+                @click="buildEditor.saveActive()">Save</button>
         <button type="button" class="btn" :class="{ 'is-danger': confirmRevert }"
                 :disabled="!dirty" @click="onRevert">
           {{ confirmRevert ? 'Really revert?' : 'Revert' }}
@@ -163,11 +142,11 @@ function applyImport() {
         <span class="sep"></span>
 
         <button type="button" class="btn btn--history" :disabled="!canUndo"
-                :title="undoTitle" @click="$emit('undo')">
+                :title="undoTitle" @click="buildEditor.undo()">
           ↶ Undo<span v-if="canUndo" class="btn-detail">{{ undoLabel }}</span>
         </button>
         <button type="button" class="btn btn--history" :disabled="!canRedo"
-                :title="redoTitle" @click="$emit('redo')">
+                :title="redoTitle" @click="buildEditor.redo()">
           ↷ Redo<span v-if="canRedo" class="btn-detail">{{ redoLabel }}</span>
         </button>
       </div>

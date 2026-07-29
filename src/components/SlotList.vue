@@ -4,86 +4,69 @@
 // Sections start collapsed except Gear (handoff §6). That keeps the mounted DOM at ~15 rows
 // on load; expanding everything is ~180 rows, which the browser handles fine -- only one
 // dropdown is ever open, and that is where the per-row cost actually lives. No virtualisation.
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { computed, reactive, ref, watch } from 'vue';
 import ItemPicker from './ItemPicker.vue';
 import ItemCard from './ItemCard.vue';
 import Options from './Options.vue';
 import IconButton from './IconButton.vue';
-import ComboBox from './ComboBox.vue';
-import { NW_SCHEMA } from '../data';
+import SectionCopyMenu from './SectionCopyMenu.vue';
+import { NW_SCHEMA, NW_SLOTS } from '../data';
 import { label as statLabelFmt, abbr, signedStat } from '../format';
 import { useHoverCard } from '../composables/useHoverCard';
 import { useKeyboardCursor } from '../composables/useKeyboardCursor';
-import type {
-  Db, Build, ResolvedBuild, BuildContext, Item, EvaluatedBonus, StatValues, EngineRow, EngineError, Slot,
-  SlotSection,
-} from '../types';
-
-const props = withDefaults(defineProps<{
-  db: Db;
-  build: Build;
-  result: ResolvedBuild;
-  context: BuildContext;
-  // sectionId (plus 'options') -> open/closed. Owned by App.vue as a UI-level preference
-  // (shared across every build, not saved with one) -- this component only reads it and
-  // asks for changes via `toggle-section`/`set-expanded`.
-  expanded: Record<string, boolean>;
-  // The quick-compare picker in App.vue. `compareBuild` alone (no highlight) still backs
-  // the other-build note under a differing row; `highlightDiff` adds the row colour;
-  // `onlyDiff` hides everything that agrees. `compareResult` is `compareBuild` resolved
-  // against the active build's own `db` (App.vue's `compareResolved`) -- needed alongside
-  // `compareBuild` because a bonus can resolve differently between the two builds even when
-  // the same item is equipped (a gate reading class/role/toggles/other slots), which a plain
-  // `build.choices` comparison can never see.
-  compareBuild?: Build | null;
-  compareResult?: ResolvedBuild | null;
-  highlightDiff?: boolean;
-  onlyDiff?: boolean;
-  // The active build's last-saved snapshot (App.vue's `savedById[activeId]`) -- a plain dot
-  // on any slot that differs from it, deliberately quieter than the compare-diff highlight
-  // above: this is "you haven't saved this yet", not "here is what's different and why".
-  savedBuild?: Build | null;
-  // Other builds in the *active collection* (App.vue's `otherBuildsInCollection`), [{value,
-  // label}] -- feeds each section header's own "copy from" picker. Replaces the old
-  // whole-panel "copy a section between builds" drawer: doing it per section, right where
-  // the section lives, needs no build switcher of its own.
-  otherBuilds?: { value: string; label: string }[];
-}>(), {
-  compareBuild: null,
-  compareResult: null,
-  highlightDiff: false,
-  onlyDiff: false,
-  savedBuild: null,
-  otherBuilds: () => [],
-});
-
-const emit = defineEmits<{
-  choose: [slotId: string, value: string];
-  'set-value': [slotId: string, value: string];
-  set: [key: string, value: string | number | boolean];
-  'set-forte': [slot: string, key: string];
-  'apply-slot': [slotId: string];
-  'apply-value': [slotId: string];
-  'toggle-section': [sectionId: string];
-  'set-expanded': [open: boolean];
-  'edit-item': [name: string];
-  'revert-slot': [slotId: string];
-  'revert-section': [sectionId: string];
-  'copy-section': [payload: { fromId: string; sectionIds: string[] }];
-}>();
+import { useCompareDiff } from '../composables/useCompareDiff';
+import * as storage from '../storage';
+import * as router from '../router';
+import * as library from '../stores/library';
+import * as buildEditor from '../stores/buildEditor';
+import * as compare from '../stores/compare';
+import * as engine from '../stores/engine';
+import * as ui from '../stores/ui';
+import type { Item, EvaluatedBonus, EngineError, Slot, SlotSection } from '../types';
 
 const root = ref<HTMLElement | null>(null);
 
-const copyFrom = ref<Record<string, string>>({});        // sectionId -> chosen source build id, defaults to `otherBuilds[0]`
-const copyMenuFor = ref<string | null>(null);   // sectionId currently showing the "copy section from" popover, or null
+const db = engine.db;
+const build = library.build;
+// Only ever mounted when `engine.resolved.value.ok` -- the throw documents that invariant
+// instead of a defensive fallback for a state that can't happen.
+const result = computed(() => {
+  const r = engine.resolved.value;
+  if (!r.ok) throw new Error('SlotList requires a resolved build');
+  return r.result;
+});
+const context = computed(() => build.value.context);
+const compareBuild = compare.compareBuild;
+const compareResult = computed(() => (engine.compareResolved.value?.ok ? engine.compareResolved.value.result : null));
+const highlightDiff = computed(() => build.value.compare.highlight);
+const onlyDiff = computed(() => build.value.compare.onlyDiff);
+// The active build's last-saved snapshot -- a plain dot on any slot that differs from it,
+// deliberately quieter than the compare-diff highlight below: this is "you haven't saved
+// this yet", not "here is what's different and why".
+const savedBuild = computed(() => library.savedById.value[library.activeId.value] ?? null);
+// Other builds in the *active collection* -- feeds each section header's own "copy from"
+// picker (SectionCopyMenu.vue).
+const otherBuilds = library.otherBuildsInCollection;
+
+// Which sections are open -- a UI preference, not a build edit, shared across every build
+// rather than saved with one, persisted under its own key so it survives a reload. Every
+// section starts collapsed except Gear, plus the Options header (not a real section, so it
+// isn't in `NW_SLOTS.sections`).
+const OPEN_BY_DEFAULT = new Set(['gear']);
+const savedExpanded = storage.loadUiState().expanded;
+const expanded = reactive<Record<string, boolean>>({ options: savedExpanded?.options ?? false });
+for (const section of NW_SLOTS.sections) {
+  expanded[section.id] = savedExpanded?.[section.id] ?? OPEN_BY_DEFAULT.has(section.id);
+}
+watch(expanded, () => { storage.saveUiState({ expanded: { ...expanded } }); }, { deep: true });
 
 /** slotId -> the engine's resolved row, so the item object is never looked up twice. */
-const rowBySlot = computed(() => new Map(props.result.rows.map((row) => [row.slotId, row])));
+const rowBySlot = computed(() => new Map(result.value.rows.map((row) => [row.slotId, row])));
 
 /** slotId -> [error]. Errors are rare, so a Map beats filtering per row. */
 const errorsBySlot = computed(() => {
   const map = new Map<string, EngineError[]>();
-  for (const error of props.result.errors) {
+  for (const error of result.value.errors) {
     const list = map.get(error.slotId);
     if (list) list.push(error);
     else map.set(error.slotId, [error]);
@@ -95,7 +78,7 @@ const errorsBySlot = computed(() => {
  * bonusId -> resolved entry, so a hover can look up an item's bonuses without scanning
  * all 48 of them per row.
  */
-const bonusById = computed(() => new Map(props.result.bonuses.map((bonus) => [bonus.id, bonus])));
+const bonusById = computed(() => new Map(result.value.bonuses.map((bonus) => [bonus.id, bonus])));
 
 function itemIn(slotId: string): Item | null {
   return rowBySlot.value.get(slotId)?.item ?? null;
@@ -118,7 +101,7 @@ const hoveredBonuses = computed(() => {
   if (!item) return [];
   const seen = new Set<string>();
   const out: EvaluatedBonus[] = [];
-  for (const entry of props.db.bonusesFor(item)) {
+  for (const entry of db.value.bonusesFor(item)) {
     const resolved = bonusById.value.get(entry.bonus.id);
     if (resolved && !seen.has(resolved.id)) {
       seen.add(resolved.id);
@@ -130,149 +113,17 @@ const hoveredBonuses = computed(() => {
 
 // --- quick compare ---------------------------------------------------------------------
 
-function otherChoice(slotId: string) {
-  return props.compareBuild?.choices?.[slotId] || '';
-}
-
-function differs(slotId: string) {
-  return Boolean(props.compareBuild)
-    && (props.build.choices[slotId] || '') !== otherChoice(slotId);
-}
+const { differs, otherChoice, valueDiffers, rowDiff, rowHasDiff, optionsDiffCount } = useCompareDiff({
+  db, build, result, compareBuild, compareResult, itemIn,
+});
 
 /** True if this slot's choice or typed value hasn't been saved yet. */
 function unsaved(slotId: string) {
-  if (!props.savedBuild) return false;
-  if ((props.build.choices[slotId] || '') !== (props.savedBuild.choices[slotId] || '')) return true;
-  return (props.build.values[slotId] ?? null) !== (props.savedBuild.values[slotId] ?? null);
+  const saved = savedBuild.value;
+  if (!saved) return false;
+  if ((build.value.choices[slotId] || '') !== (saved.choices[slotId] || '')) return true;
+  return (build.value.values[slotId] ?? null) !== (saved.values[slotId] ?? null);
 }
-
-/** True if this slot's typed dynamic-modification magnitude differs from the compare
- * build's -- only meaningful when the same item occupies the slot in both (a differing
- * item already gets its own note via `differs` above, and the two magnitudes would not be
- * comparable if the items' `dynamicStat` ranges don't even match). */
-function valueDiffers(slotId: string) {
-  if (!props.compareBuild || differs(slotId)) return false;
-  if (!itemIn(slotId)?.dynamicStat) return false;
-  return (props.build.values[slotId] ?? null) !== (props.compareBuild.values?.[slotId] ?? null);
-}
-
-function statsEqual(a?: StatValues | null, b?: StatValues | null) {
-  const aKeys = Object.keys(a ?? {});
-  const bKeys = Object.keys(b ?? {});
-  if (aKeys.length !== bKeys.length) return false;
-  return aKeys.every((key) => (a as StatValues)[key] === (b ?? {})[key]);
-}
-
-/** Same bonus, same gate inputs on paper (same equipped item) -- but active/excluded/stacks/
- * the stats it actually contributes can still differ, since a `when` gate can read class,
- * role, toggles, duration or *other* slots' items, none of which `differs()` above looks at. */
-function bonusStatusEqual(a: EvaluatedBonus | null, b: EvaluatedBonus | null) {
-  if (!a || !b) return !a && !b;
-  return a.active === b.active && a.excluded === b.excluded && a.stacks === b.stacks
-    && statsEqual(a.appliedStats, b.appliedStats);
-}
-
-/** One sentence per differing bonus, specific to *what* differs -- active/excluded/stacks/
- * amount are distinct, useful facts, not just "this is different somehow". */
-function describeBonusDiff(here: EvaluatedBonus | null, there: EvaluatedBonus | null, name: string) {
-  const otherName = props.compareBuild?.name ?? 'the compare build';
-  if (!here || !there) return `${name} could not be compared with “${otherName}”.`;
-  if (here.active !== there.active) {
-    return here.active
-      ? `${name} is active here but not in “${otherName}”.`
-      : `${name} is active in “${otherName}” but not here.`;
-  }
-  if (here.excluded !== there.excluded) {
-    return here.excluded
-      ? `${name} is suppressed by another bonus here, but not in “${otherName}”.`
-      : `${name} is suppressed by another bonus in “${otherName}”, but not here.`;
-  }
-  if (here.stacks !== there.stacks) {
-    return `${name} stacks ×${here.stacks} here vs ×${there.stacks} in “${otherName}”.`;
-  }
-  return `${name} grants a different amount in “${otherName}”.`;
-}
-
-/**
- * Every bonus this slot's item takes part in whose resolved outcome (active/excluded/
- * stacks/applied amount) doesn't match the compare build -- skipped entirely when the
- * slot's own choice already differs, since that note covers it and the two bonus lists
- * would otherwise not even be comparable apples-to-apples.
- */
-function bonusDiffsFor(slotId: string): { id: string; message: string }[] {
-  if (!props.compareBuild || !props.compareResult || differs(slotId)) return [];
-  const item = itemIn(slotId);
-  if (!item) return [];
-  const out: { id: string; message: string }[] = [];
-  const seen = new Set<string>();
-  for (const candidate of props.db.bonusesFor(item)) {
-    const id = candidate.bonus.id;
-    if (seen.has(id)) continue;
-    seen.add(id);
-    const here = props.result.bonuses.find((bonus) => bonus.id === id) ?? null;
-    const there = props.compareResult.bonuses.find((bonus) => bonus.id === id) ?? null;
-    if (bonusStatusEqual(here, there)) continue;
-    out.push({ id, message: describeBonusDiff(here, there, candidate.bonus.name ?? id) });
-  }
-  return out;
-}
-
-interface SlotDiff {
-  choice: boolean;
-  value: boolean;
-  bonuses: { id: string; message: string }[];
-}
-
-/**
- * One combined pass per slot -- choice, typed value and bonus outcome -- computed once
- * (like `rowBySlot`/`errorsBySlot` above) rather than recomputed per template access, since
- * `bonusDiffsFor` walks the item's own bonus list per call.
- */
-const rowDiffsBySlot = computed(() => {
-  const map = new Map<string, SlotDiff>();
-  if (!props.compareBuild) return map;
-  for (const slot of props.db.slots) {
-    const choice = differs(slot.id);
-    const value = !choice && valueDiffers(slot.id);
-    const bonuses = choice ? [] : bonusDiffsFor(slot.id);
-    if (choice || value || bonuses.length) map.set(slot.id, { choice, value, bonuses });
-  }
-  return map;
-});
-
-function rowDiff(slotId: string): SlotDiff | undefined {
-  return rowDiffsBySlot.value.get(slotId);
-}
-
-function rowHasDiff(slotId: string) {
-  return rowDiffsBySlot.value.has(slotId);
-}
-
-// Same field list Options.vue itself diffs against (class/role/damageType/magnitude/the 3
-// forte picks/m32Forte) -- duplicated here rather than read back off the child component,
-// same reasoning as `differs`/`rowHasDiff` computing their own counts directly off the data
-// instead of asking SlotList's own children to report back.
-const OPTIONS_FIELDS = ['class', 'role', 'damageType', 'magnitude', 'm32Forte'] as const;
-const FORTE_KEYS = ['primary', 'secondaryA', 'secondaryB'];
-
-/** How many Options fields (SlotList's own collapsible "Options" section, not the top bar's
- * QuickOptions) differ from the compare build -- feeds that section header's own diff badge,
- * same as every other section below. */
-const optionsDiffCount = computed(() => {
-  if (!props.compareBuild) return 0;
-  const mine = props.context;
-  const theirs = props.compareBuild.context;
-  let count = 0;
-  for (const key of OPTIONS_FIELDS) {
-    if ((mine as unknown as Record<string, unknown>)[key] !== (theirs as unknown as Record<string, unknown>)[key]) count += 1;
-  }
-  for (const key of FORTE_KEYS) {
-    const mineForte = (mine.forte as Record<string, string | undefined>)?.[key] ?? '';
-    const theirForte = (theirs.forte as Record<string, string | undefined>)?.[key] ?? '';
-    if (mineForte !== theirForte) count += 1;
-  }
-  return count;
-});
 
 interface SectionRow extends SlotSection {
   slots: Slot[];
@@ -284,18 +135,18 @@ interface SectionRow extends SlotSection {
 }
 
 const sections = computed<SectionRow[]>(() => {
-  const onlyDiff = props.onlyDiff && props.compareBuild;
-  return props.db.sections
+  const onlyDiffAndComparing = onlyDiff.value && compareBuild.value;
+  return db.value.sections
     .map((section) => {
-      const allSlots = props.db.slots.filter((slot) => slot.section === section.id);
+      const allSlots = db.value.slots.filter((slot) => slot.section === section.id);
       // Counted off the section's full slot list, not the (possibly onlyDiff-filtered)
       // one below -- the badge's job is telling a *collapsed* section apart, where
       // `slots` would otherwise be invisible. Same reasoning for `unsaved`. A "diff" here is
       // the combined choice/value/bonus-outcome check (`rowHasDiff`), not just a differing
       // choice, so the badge also catches a same-item slot whose bonus or typed value differs.
-      const diffs = props.compareBuild ? allSlots.filter((slot) => rowHasDiff(slot.id)).length : 0;
+      const diffs = compareBuild.value ? allSlots.filter((slot) => rowHasDiff(slot.id)).length : 0;
       const unsavedFlag = allSlots.some((slot) => unsaved(slot.id));
-      const slots = onlyDiff ? allSlots.filter((slot) => rowHasDiff(slot.id)) : allSlots;
+      const slots = onlyDiffAndComparing ? allSlots.filter((slot) => rowHasDiff(slot.id)) : allSlots;
       let filled = 0;
       let errors = 0;
       for (const slot of slots) {
@@ -304,7 +155,7 @@ const sections = computed<SectionRow[]>(() => {
       }
       return { ...section, slots, filled, errors, diffs, unsaved: unsavedFlag, total: slots.length };
     })
-    .filter((section) => !onlyDiff || section.slots.length > 0);
+    .filter((section) => !onlyDiffAndComparing || section.slots.length > 0);
 });
 
 /**
@@ -325,7 +176,7 @@ const bonusesBySlot = computed(() => {
       const item = itemIn(slot.id);
       if (!item) continue;
       const entries: EvaluatedBonus[] = [];
-      for (const raw of props.db.bonusesFor(item)) {
+      for (const raw of db.value.bonusesFor(item)) {
         const resolved = bonusById.value.get(raw.bonus.id);
         if (!resolved?.active || shown.has(resolved.id)) continue;
         shown.add(resolved.id);
@@ -347,7 +198,7 @@ const visibleRows = computed(() => {
   const rows: { type: string; id: string }[] = [{ type: 'header', id: 'options' }];
   for (const section of sections.value) {
     rows.push({ type: 'header', id: section.id });
-    if (props.expanded[section.id]) {
+    if (expanded[section.id]) {
       for (const slot of section.slots) rows.push({ type: 'slot', id: slot.id });
     }
   }
@@ -357,8 +208,8 @@ const visibleRows = computed(() => {
 const statLabel = (key: string) => statLabelFmt(key);
 
 function itemsFor(slotId: string) {
-  const cls = props.build.context.class;
-  return props.db.forSlot(slotId)
+  const cls = build.value.context.class;
+  return db.value.forSlot(slotId)
     .filter((item) => !item.allowedClass || item.allowedClass.includes(cls));
 }
 
@@ -367,34 +218,11 @@ function errorsFor(slotId: string) {
 }
 
 function toggle(sectionId: string) {
-  emit('toggle-section', sectionId);
-}
-
-/** Defaults to the first other build in the collection so the control is usable with a
- * single click, not "pick a build, then click copy". */
-function copyFromFor(sectionId: string) {
-  return copyFrom.value[sectionId] ?? props.otherBuilds[0]?.value ?? '';
-}
-
-function setCopyFrom(sectionId: string, value: string) {
-  copyFrom.value = { ...copyFrom.value, [sectionId]: value };
-}
-
-/** The section header's copy icon: no permanent picker sitting in the header, just a
- * small "copy section from" popover with its own picker and confirm button. */
-function toggleCopyMenu(sectionId: string) {
-  copyMenuFor.value = copyMenuFor.value === sectionId ? null : sectionId;
-}
-
-function confirmCopy(sectionId: string) {
-  const fromId = copyFromFor(sectionId);
-  if (!fromId) return;
-  emit('copy-section', { fromId, sectionIds: [sectionId] });
-  copyMenuFor.value = null;
+  expanded[sectionId] = !expanded[sectionId];
 }
 
 function setAll(open: boolean) {
-  emit('set-expanded', open);
+  for (const section of db.value.sections) expanded[section.id] = open;
 }
 
 /** A plain click just moves the cursor here, same as an arrow key would. Ctrl+click on a
@@ -404,7 +232,9 @@ function onRowClick(event: MouseEvent, slotId: string) {
   setCursor('slot', slotId);
   if (!event.ctrlKey) return;
   const item = itemIn(slotId);
-  if (item) emit('edit-item', item.name);
+  if (!item) return;
+  router.apply({ item: item.name });
+  ui.openEditor();
 }
 
 /**
@@ -436,7 +266,7 @@ const {
   isCursor, setCursor, setPickerRef, onFocusIn: onCursorFocusIn,
 } = useKeyboardCursor(root, visibleRows, {
   onToggleHeader: toggle,
-  onClearSlot: (slotId) => emit('choose', slotId, ''),
+  onClearSlot: (slotId) => buildEditor.setChoice(slotId, ''),
 });
 
 /** Forwards the list's own `focusin` to both composables -- see `useHoverCard`'s own doc
@@ -445,29 +275,6 @@ function onFocusIn(event: FocusEvent) {
   onHoverFocusIn(event);
   onCursorFocusIn(event);
 }
-
-/**
- * Closes the "copy section from" popover when a click lands outside it -- the icon
- * button that opens it toggles its own state, so this only has to handle "elsewhere".
- *
- * `event.composedPath()`, not `event.target.closest(...)`: choosing the popover's own
- * ComboBox option closes *that* dropdown in the same mousedown (see `choose()` in
- * ComboBox.vue), which synchronously detaches the clicked row from `.copy-popover` before
- * this handler runs -- a live `closest()` walk from `event.target` at that point no longer
- * finds the popover as an ancestor, even though the click plainly landed inside it.
- * `composedPath()` is the path as it was at dispatch time, unaffected by DOM changes any
- * listener made along the way.
- */
-function onDocumentClick(event: MouseEvent) {
-  if (!copyMenuFor.value) return;
-  const path = event.composedPath?.() ?? [];
-  if (path.some((el) => (el as Element).classList?.contains?.('copy-popover')
-    || (el as Element).classList?.contains?.('section-copy-btn'))) return;
-  copyMenuFor.value = null;
-}
-
-onMounted(() => document.addEventListener('mousedown', onDocumentClick));
-onUnmounted(() => document.removeEventListener('mousedown', onDocumentClick));
 </script>
 
 <template>
@@ -494,8 +301,8 @@ onUnmounted(() => document.removeEventListener('mousedown', onDocumentClick));
                 :compare-context="compareBuild?.context ?? null"
                 :compare-name="compareBuild?.name ?? ''"
                 :highlight-diff="highlightDiff"
-                @set="(key, value) => $emit('set', key, value)"
-                @set-forte="(slot, key) => $emit('set-forte', slot, key)" />
+                @set="buildEditor.setContext"
+                @set-forte="buildEditor.setForte" />
       </div>
     </section>
 
@@ -511,20 +318,10 @@ onUnmounted(() => document.removeEventListener('mousedown', onDocumentClick));
           <span v-if="highlightDiff && section.diffs" class="badge badge--diff">{{ section.diffs }}</span>
           <span v-if="section.unsaved" class="unsaved-dot" title="Unsaved changes in this section"></span>
         </button>
-        <div v-if="otherBuilds.length" class="copy-popover-wrap">
-          <IconButton icon="copy" title="Copy this section from another build" class="section-copy-btn"
-                      @click="toggleCopyMenu(section.id)" />
-          <div v-if="copyMenuFor === section.id" class="copy-popover">
-            <span class="copy-popover-label">Copy section from</span>
-            <ComboBox class="copy-popover-select" :model-value="copyFromFor(section.id)"
-                      :options="otherBuilds" placeholder="choose a build…"
-                      @update:model-value="setCopyFrom(section.id, $event)" />
-            <button type="button" class="btn btn--primary" :disabled="!copyFromFor(section.id)"
-                    @click="confirmCopy(section.id)">Copy</button>
-          </div>
-        </div>
+        <SectionCopyMenu v-if="otherBuilds.length" :section-id="section.id" :other-builds="otherBuilds"
+                         @copy="(fromId) => buildEditor.copySection(fromId, [section.id])" />
         <IconButton v-if="section.unsaved" icon="undo-2" title="Revert this section to saved"
-                    class="section-revert" @click="$emit('revert-section', section.id)" />
+                    class="section-revert" @click="buildEditor.revertSection(section.id)" />
       </div>
 
       <div v-if="expanded[section.id]" class="section-body">
@@ -539,7 +336,7 @@ onUnmounted(() => document.removeEventListener('mousedown', onDocumentClick));
             <label class="slot-label" :for="slot.id">{{ slot.label }}</label>
             <span v-if="unsaved(slot.id)" class="slot-change">
               <span class="unsaved-dot" title="Unsaved change"></span>
-              <IconButton icon="undo-2" title="Revert to saved" @click="$emit('revert-slot', slot.id)" />
+              <IconButton icon="undo-2" title="Revert to saved" @click="buildEditor.revertSlot(slot.id)" />
             </span>
           </div>
 
@@ -550,13 +347,13 @@ onUnmounted(() => document.removeEventListener('mousedown', onDocumentClick));
                 :items="itemsFor(slot.id)"
                 :model-value="build.choices[slot.id] ?? ''"
                 :invalid="errorsFor(slot.id).length > 0"
-                @update:model-value="$emit('choose', slot.id, $event)" />
+                @update:model-value="buildEditor.setChoice(slot.id, $event)" />
               <span v-if="itemIn(slot.id)" class="slot-summary">{{ statSummary(slot.id) }}</span>
             </div>
 
             <p v-if="highlightDiff && differs(slot.id)" class="slot-diff-note">
               {{ compareBuild?.name }}: {{ otherChoice(slot.id) || '(empty)' }}
-              <button type="button" class="link" @click.stop="$emit('apply-slot', slot.id)">
+              <button type="button" class="link" @click.stop="buildEditor.applyFromCompare(slot.id)">
                 apply
               </button>
             </p>
@@ -583,7 +380,7 @@ onUnmounted(() => document.removeEventListener('mousedown', onDocumentClick));
                 :max="itemIn(slot.id)?.dynamicMax"
                 :value="build.values[slot.id] ?? ''"
                 :placeholder="String(itemIn(slot.id)?.dynamicMin ?? '')"
-                @input="$emit('set-value', slot.id, ($event.target as HTMLInputElement).value)">
+                @input="buildEditor.setValue(slot.id, ($event.target as HTMLInputElement).value)">
               <span class="hint">
                 {{ statLabel(itemIn(slot.id)?.dynamicStat as string) }}
                 {{ itemIn(slot.id)?.dynamicMin }}–{{ itemIn(slot.id)?.dynamicMax }}
@@ -592,7 +389,7 @@ onUnmounted(() => document.removeEventListener('mousedown', onDocumentClick));
 
             <p v-if="highlightDiff && rowDiff(slot.id)?.value" class="slot-diff-note">
               {{ compareBuild?.name }}: {{ compareBuild?.values?.[slot.id] ?? '(none)' }}
-              <button type="button" class="link" @click.stop="$emit('apply-value', slot.id)">
+              <button type="button" class="link" @click.stop="buildEditor.applyValueFromCompare(slot.id)">
                 apply
               </button>
             </p>
@@ -655,31 +452,6 @@ onUnmounted(() => document.removeEventListener('mousedown', onDocumentClick));
  * puts the same push directly on its own diff badge instead. */
 .section-label + .badge--diff { margin-left: auto; }
 .section-revert { flex: none; margin-right: 6px; }
-
-/* The section header's "copy this section from…" control -- an icon button, not a permanent
- * picker, so the header row (which already carries the label, counts and badges) stays quiet
- * until it's actually needed. Opens to the side (left) of the button rather than below it,
- * since the row itself has plenty of width and dropping down would sit awkwardly over the
- * section's own body. */
-.copy-popover-wrap { flex: none; margin-right: 2px; position: relative; }
-.copy-popover {
-  align-items: center;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, .18);
-  display: flex;
-  gap: 6px;
-  padding: 7px 9px;
-  position: absolute;
-  right: calc(100% + 6px);
-  top: 50%;
-  transform: translateY(-50%);
-  white-space: nowrap;
-  z-index: 25;
-}
-.copy-popover-label { color: var(--muted); font-size: 1rem; }
-.copy-popover-select { width: 170px; }
 
 .section-body { border-top: 1px solid var(--line); padding: 4px 10px 8px; }
 

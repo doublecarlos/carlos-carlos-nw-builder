@@ -13,20 +13,16 @@ import BonusSetForm from './BonusSetForm.vue';
 import ComboBox from './ComboBox.vue';
 import * as catalog from '../catalog';
 import * as router from '../router';
-import type { Db, CatalogOverlay, CatalogGroup, Item, BonusSet, LintFinding } from '../types';
+import * as engine from '../stores/engine';
+import * as workspace from '../stores/workspace';
+import * as ui from '../stores/ui';
+import type { CatalogGroup, CatalogOverlay, Item, BonusSet, LintFinding } from '../types';
 import type { SetDraft } from '../bonus-draft';
 
 const UNDO_LIMIT = 50;
 
-const props = defineProps<{
-  db: Db;
-  overlay: CatalogOverlay;
-}>();
-
-const emit = defineEmits<{
-  'update-overlay': [overlay: CatalogOverlay];
-  close: [];
-}>();
+const db = engine.db;
+const overlay = workspace.workspaceOverlay;
 
 const query = ref('');
 const statusFilter = ref('all');      // all | changed | added | edited | removed
@@ -63,15 +59,15 @@ type EditorRow = ItemRow | BonusSetRow;
 // Removed entries are gone from `db`, so the list is built from the composed catalogue
 // plus the overlay's tombstones -- otherwise a deletion would vanish with no way back.
 const itemRows = computed<ItemRow[]>(() => {
-  const rows: ItemRow[] = props.db.items.map((item) => ({
+  const rows: ItemRow[] = db.value.items.map((item) => ({
     key: item.name,
     name: item.name,
     filter: item.filter ?? '',
     item,
-    status: catalog.statusOf(props.overlay, 'items', item.name),
+    status: catalog.statusOf(overlay.value, 'items', item.name),
     kind: 'item',
   }));
-  for (const [name, value] of Object.entries(props.overlay.items ?? {})) {
+  for (const [name, value] of Object.entries(overlay.value.items ?? {})) {
     if (value === null) {
       rows.push({ key: name, name, filter: '—', item: null, status: 'removed', kind: 'item' });
     }
@@ -82,15 +78,15 @@ const itemRows = computed<ItemRow[]>(() => {
 /** Same shape as `itemRows`, one row per bonus set rather than per item -- so the same
  * list/search/keyboard-nav code serves both without knowing which it's showing. */
 const bonusSetRows = computed<BonusSetRow[]>(() => {
-  const rows: BonusSetRow[] = props.db.bonusSets.map((set) => ({
+  const rows: BonusSetRow[] = db.value.bonusSets.map((set) => ({
     key: set.id,
     name: set.name || set.id,
     filter: `${(set.grants ?? []).length} grant(s)`,
     set,
-    status: catalog.statusOf(props.overlay, 'bonusSets', set.id),
+    status: catalog.statusOf(overlay.value, 'bonusSets', set.id),
     kind: 'bonusSet',
   }));
-  for (const [id, value] of Object.entries(props.overlay.bonusSets ?? {})) {
+  for (const [id, value] of Object.entries(overlay.value.bonusSets ?? {})) {
     if (value === null) {
       rows.push({ key: id, name: id, filter: '—', set: null, status: 'removed', kind: 'bonusSet' });
     }
@@ -122,45 +118,45 @@ const statusFilterOptions = [
 
 const selected = computed(() => {
   if (selectedName.value == null) return null;
-  return props.db.get(selectedName.value);
+  return db.value.get(selectedName.value);
 });
 
 const selectedStatus = computed(() => (selectedName.value == null
   ? 'base'
-  : catalog.statusOf(props.overlay, 'items', selectedName.value)));
+  : catalog.statusOf(overlay.value, 'items', selectedName.value)));
 
 const selectedSet = computed(() => {
   if (selectedSetId.value == null) return null;
-  return props.db.bonusSetById.get(selectedSetId.value) ?? null;
+  return db.value.bonusSetById.get(selectedSetId.value) ?? null;
 });
 
 const selectedSetStatus = computed(() => (selectedSetId.value == null
   ? 'base'
-  : catalog.statusOf(props.overlay, 'bonusSets', selectedSetId.value)));
+  : catalog.statusOf(overlay.value, 'bonusSets', selectedSetId.value)));
 
-const filters = computed<string[]>(() => [...new Set<string>(props.db.items.map((item) => item.filter).filter((f): f is string => Boolean(f)))].sort());
+const filters = computed<string[]>(() => [...new Set<string>(db.value.items.map((item) => item.filter).filter((f): f is string => Boolean(f)))].sort());
 
-const setIds = computed<string[]>(() => [...new Set<string>(props.db.bonusSets.map((set) => set.id))].sort());
+const setIds = computed<string[]>(() => [...new Set<string>(db.value.bonusSets.map((set) => set.id))].sort());
 
-const tagList = computed<string[]>(() => [...props.db.itemsByTag.keys()].sort());
+const tagList = computed<string[]>(() => [...db.value.itemsByTag.keys()].sort());
 
 /** The vocabulary for `excludes`. A set now resolves as one unit, so only sets (not
  * individual grants) are addressable -- same list as `setIds`, kept as its own computed
  * since the two are used for unrelated purposes at the call sites. */
 const bonusIds = computed(() => setIds.value);
 
-const changedCount = computed(() => Object.keys(props.overlay.items ?? {}).length
-  + Object.keys(props.overlay.bonusSets ?? {}).length);
+const changedCount = computed(() => Object.keys(overlay.value.items ?? {}).length
+  + Object.keys(overlay.value.bonusSets ?? {}).length);
 
-const findings = computed(() => catalog.validate(props.db.items, props.db.bonusSets));
+const findings = computed(() => catalog.validate(db.value.items, db.value.bonusSets));
 
 const errorCount = computed(() => findings.value.filter((f) => f.level === 'error').length);
 const warnCount = computed(() => findings.value.filter((f) => f.level === 'warn').length);
 
 const exportText = computed(() => {
-  if (exportTab.value === 'items') return catalog.toItemsFile(props.db.items);
-  if (exportTab.value === 'bonuses') return catalog.toBonusesFile(props.db.bonusSets);
-  return JSON.stringify(props.overlay, null, 2);
+  if (exportTab.value === 'items') return catalog.toItemsFile(db.value.items);
+  if (exportTab.value === 'bonuses') return catalog.toBonusesFile(db.value.bonusSets);
+  return JSON.stringify(overlay.value, null, 2);
 });
 
 const exportName = computed(() => {
@@ -189,7 +185,7 @@ const redoLabel = computed(() => {
 // first; this one only ever sees a fresh snapshot right before a commit lands.
 
 function snapshot(label: string) {
-  history.value.past.push({ json: JSON.stringify(props.overlay), label });
+  history.value.past.push({ json: JSON.stringify(overlay.value), label });
   if (history.value.past.length > UNDO_LIMIT) history.value.past.shift();
   history.value.future.length = 0;
 }
@@ -197,15 +193,15 @@ function snapshot(label: string) {
 function undo() {
   if (!canUndo.value) return;
   const entry = history.value.past.pop()!;
-  history.value.future.push({ json: JSON.stringify(props.overlay), label: entry.label });
-  emit('update-overlay', JSON.parse(entry.json));
+  history.value.future.push({ json: JSON.stringify(overlay.value), label: entry.label });
+  workspace.setWorkspaceOverlay(JSON.parse(entry.json));
 }
 
 function redo() {
   if (!canRedo.value) return;
   const entry = history.value.future.pop()!;
-  history.value.past.push({ json: JSON.stringify(props.overlay), label: entry.label });
-  emit('update-overlay', JSON.parse(entry.json));
+  history.value.past.push({ json: JSON.stringify(overlay.value), label: entry.label });
+  workspace.setWorkspaceOverlay(JSON.parse(entry.json));
 }
 
 /**
@@ -295,10 +291,10 @@ function onPopState() {
   const route = router.parse();
   if (route.section === 'bonusSets') {
     section.value = 'bonusSets';
-    selectedSetId.value = (route.set && props.db.bonusSetById.get(route.set)) ? route.set : null;
+    selectedSetId.value = (route.set && db.value.bonusSetById.get(route.set)) ? route.set : null;
   } else {
     section.value = 'items';
-    selectedName.value = (route.item && props.db.get(route.item)) ? route.item : null;
+    selectedName.value = (route.item && db.value.get(route.item)) ? route.item : null;
   }
   statusFilter.value = isValidStatusFilter(route.status) ? route.status : 'all';
   query.value = route.q ?? '';
@@ -374,8 +370,8 @@ function newSet() {
 
 function onSave({ item, previousName }: { item: Item; previousName: string | null }) {
   snapshot(`Save item “${item.name}”`);
-  const next = catalog.upsert(props.overlay, 'items', item.name, item, previousName ?? undefined);
-  emit('update-overlay', next);
+  const next = catalog.upsert(overlay.value, 'items', item.name, item, previousName ?? undefined);
+  workspace.setWorkspaceOverlay(next);
   delete itemDrafts[item.name];
   if (previousName && previousName !== item.name) delete itemDrafts[previousName];
   selectedName.value = item.name;
@@ -386,7 +382,7 @@ function onSave({ item, previousName }: { item: Item; previousName: string | nul
 function onDelete() {
   const name = selectedName.value!;
   snapshot(`Delete item “${name}”`);
-  emit('update-overlay', catalog.remove(props.overlay, 'items', name));
+  workspace.setWorkspaceOverlay(catalog.remove(overlay.value, 'items', name));
   delete itemDrafts[name];
   selectedName.value = null;
   router.apply({ item: null });
@@ -396,7 +392,7 @@ function onDelete() {
 function onRevert() {
   const name = selectedName.value!;
   snapshot(`Revert item “${name}”`);
-  emit('update-overlay', catalog.revert(props.overlay, 'items', name));
+  workspace.setWorkspaceOverlay(catalog.revert(overlay.value, 'items', name));
   delete itemDrafts[name];
   notice.value = `Reverted “${name}” to the shipped version`;
 }
@@ -404,7 +400,7 @@ function onRevert() {
 function restore(row: EditorRow) {
   const group: CatalogGroup = row.kind === 'bonusSet' ? 'bonusSets' : 'items';
   snapshot(`Restore “${row.name}”`);
-  emit('update-overlay', catalog.revert(props.overlay, group, row.key));
+  workspace.setWorkspaceOverlay(catalog.revert(overlay.value, group, row.key));
   if (row.kind === 'bonusSet') delete setDrafts[row.key];
   else delete itemDrafts[row.key];
   notice.value = `Restored “${row.name}”`;
@@ -422,7 +418,7 @@ function resetAll() {
   window.clearTimeout(confirmResetTimer);
   confirmReset.value = false;
   snapshot('Discard all changes');
-  emit('update-overlay', catalog.emptyOverlay());
+  workspace.setWorkspaceOverlay(catalog.emptyOverlay());
   selectedName.value = null;
   selectedSetId.value = null;
   for (const key of Object.keys(itemDrafts)) delete itemDrafts[key];
@@ -461,8 +457,8 @@ function selectFinding(finding: LintFinding) {
  * is never explicitly re-saved.
  */
 function cascadeSetRename(overlay: CatalogOverlay, oldId: string, newId: string) {
-  const affected = (props.db.setMembers.get(oldId) ?? [])
-    .map((name) => props.db.get(name))
+  const affected = (db.value.setMembers.get(oldId) ?? [])
+    .map((name) => db.value.get(name))
     .filter((item): item is Item => Boolean(item?.bonuses?.includes(oldId)));
   let next = overlay;
   for (const item of affected) {
@@ -474,14 +470,14 @@ function cascadeSetRename(overlay: CatalogOverlay, oldId: string, newId: string)
 
 function onSaveSet({ id, set, previousId }: { id: string; set: BonusSet; previousId: string | null }) {
   snapshot(`Save bonus “${set.name || id}”`);
-  let next = catalog.upsert(props.overlay, 'bonusSets', id, set, previousId ?? id);
+  let next = catalog.upsert(overlay.value, 'bonusSets', id, set, previousId ?? id);
   let extra = '';
   if (previousId && previousId !== id) {
     const cascade = cascadeSetRename(next, previousId, id);
     next = cascade.overlay;
     if (cascade.count) extra = ` — updated ${cascade.count} other item(s) that referenced the old id`;
   }
-  emit('update-overlay', next);
+  workspace.setWorkspaceOverlay(next);
   delete setDrafts[id];
   if (previousId && previousId !== id) delete setDrafts[previousId];
   notice.value = `Saved set “${set.name || id}”${extra}`;
@@ -489,21 +485,21 @@ function onSaveSet({ id, set, previousId }: { id: string; set: BonusSet; previou
 
 function onDeleteSet(id: string) {
   snapshot(`Delete bonus “${id}”`);
-  emit('update-overlay', catalog.remove(props.overlay, 'bonusSets', id));
+  workspace.setWorkspaceOverlay(catalog.remove(overlay.value, 'bonusSets', id));
   delete setDrafts[id];
   notice.value = `Removed set “${id}”`;
 }
 
 function onSaveSetTop({ id, set, previousId }: { id: string; set: BonusSet; previousId: string | null }) {
   snapshot(`Save bonus set “${set.name || id}”`);
-  let next = catalog.upsert(props.overlay, 'bonusSets', id, set, previousId ?? undefined);
+  let next = catalog.upsert(overlay.value, 'bonusSets', id, set, previousId ?? undefined);
   let extra = '';
   if (previousId && previousId !== id) {
     const cascade = cascadeSetRename(next, previousId, id);
     next = cascade.overlay;
     if (cascade.count) extra = ` — updated ${cascade.count} item(s) that referenced the old id`;
   }
-  emit('update-overlay', next);
+  workspace.setWorkspaceOverlay(next);
   delete setDrafts[id];
   if (previousId && previousId !== id) delete setDrafts[previousId];
   selectedSetId.value = id;
@@ -514,7 +510,7 @@ function onSaveSetTop({ id, set, previousId }: { id: string; set: BonusSet; prev
 function onDeleteSetTop() {
   const id = selectedSetId.value!;
   snapshot(`Delete bonus set “${id}”`);
-  emit('update-overlay', catalog.remove(props.overlay, 'bonusSets', id));
+  workspace.setWorkspaceOverlay(catalog.remove(overlay.value, 'bonusSets', id));
   delete setDrafts[id];
   selectedSetId.value = null;
   router.apply({ set: null });
@@ -524,7 +520,7 @@ function onDeleteSetTop() {
 function onRevertSetTop() {
   const id = selectedSetId.value!;
   snapshot(`Revert bonus set “${id}”`);
-  emit('update-overlay', catalog.revert(props.overlay, 'bonusSets', id));
+  workspace.setWorkspaceOverlay(catalog.revert(overlay.value, 'bonusSets', id));
   delete setDrafts[id];
   notice.value = `Reverted bonus set “${id}” to the shipped version`;
 }
@@ -557,7 +553,7 @@ async function importOverlay(event: Event) {
   try {
     const parsed = JSON.parse(await file.text());
     snapshot('Import overlay');
-    emit('update-overlay', catalog.normaliseOverlay(parsed));
+    workspace.setWorkspaceOverlay(catalog.normaliseOverlay(parsed));
     notice.value = 'Overlay imported';
   } catch (error: any) {
     notice.value = `Could not read that overlay: ${error.message}`;
@@ -578,8 +574,8 @@ onMounted(() => {
   const routed = router.parse();
   if (routed.section === 'bonusSets') {
     section.value = 'bonusSets';
-    if (routed.set && props.db.bonusSetById.get(routed.set)) selectedSetId.value = routed.set;
-  } else if (routed.item && props.db.get(routed.item)) {
+    if (routed.set && db.value.bonusSetById.get(routed.set)) selectedSetId.value = routed.set;
+  } else if (routed.item && db.value.get(routed.item)) {
     selectedName.value = routed.item;
   }
   if (isValidStatusFilter(routed.status)) statusFilter.value = routed.status;
@@ -639,7 +635,7 @@ onUnmounted(() => {
         ↷ Redo<span v-if="canRedo" class="btn-detail">{{ redoLabel }}</span>
       </button>
 
-      <button type="button" class="btn" @click="$emit('close')">✕ Close</button>
+      <button type="button" class="btn" @click="ui.closeEditor()">✕ Close</button>
     </div>
 
     <p v-if="notice" class="notice" @click="notice = ''">{{ notice }}</p>

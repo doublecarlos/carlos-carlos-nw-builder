@@ -41,3 +41,11 @@ export async function chooseItem(page: Page, slotId: string, itemName: string) {
   await input.fill(itemName);
   await row.getByText(itemName, { exact: true }).click();
 }
+
+/** Picks an option from a ComboBox.vue instance (the compare picker, a section's "copy from"
+ * picker, …) -- same click-to-open/click-the-row interaction as `chooseItem` above, just over
+ * a fixed option list instead of the item catalogue. */
+export async function chooseCombo(combo: Locator, label: string) {
+  await combo.locator('.picker-input').click();
+  await combo.getByText(label, { exact: true }).click();
+}

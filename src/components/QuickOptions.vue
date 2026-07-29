@@ -10,7 +10,9 @@ import { computed } from 'vue';
 import ComboBox from './ComboBox.vue';
 import { NW_SCHEMA } from '../data';
 import { titleCase } from '../format';
-import type { BuildContext } from '../types';
+import * as library from '../stores/library';
+import * as compare from '../stores/compare';
+import * as buildEditor from '../stores/buildEditor';
 
 // Display order and labels are UI-only -- data/schema.json keeps its own order untouched.
 // The sheet's quick-options widget lists Consumables/Party/Combat/Other procs/Artifact call,
@@ -21,25 +23,10 @@ const TOGGLE_LABELS: Record<string, string> = { procs: 'Other procs', artifactCa
 // combatTypes as the sheet phrased them ("Single Target"), not a raw title-case of the key.
 const TYPE_LABELS: Record<string, string> = { single: 'Single Target', aoe: 'AoE', mixed: 'Mixed' };
 
-const props = withDefaults(defineProps<{
-  context: BuildContext;
-  // The quick-compare build's own context (App.vue's `compareBuild.context`) -- `null` means
-  // "not comparing", same convention as SlotList's `compareBuild` prop. `highlightDiff`
-  // mirrors `build.compare.highlight` so this bar obeys the same on/off toggle as the rest
-  // of the comparison highlighting.
-  compareContext?: BuildContext | null;
-  compareName?: string;
-  highlightDiff?: boolean;
-}>(), {
-  compareContext: null,
-  compareName: '',
-  highlightDiff: false,
-});
-
-const emit = defineEmits<{
-  set: [key: string, value: string | number | boolean];
-  'set-toggle': [name: string, value: boolean];
-}>();
+const context = computed(() => library.build.value.context);
+const compareContext = computed(() => compare.compareBuild.value?.context ?? null);
+const compareName = computed(() => compare.compareBuild.value?.name ?? '');
+const highlightDiff = computed(() => library.build.value.compare.highlight);
 
 const schema = NW_SCHEMA.context;
 
@@ -55,17 +42,17 @@ const locationOptions = computed(() => schema.locations.map((value: string) => (
 /** Free number of seconds; blank and nonsense both read as 0 rather than NaN. */
 function onDuration(event: Event) {
   const value = Number((event.target as HTMLInputElement).value);
-  emit('set', 'duration', Number.isFinite(value) ? Math.max(value, 0) : 0);
+  buildEditor.setContext('duration', Number.isFinite(value) ? Math.max(value, 0) : 0);
 }
 
 function toggleDiffers(name: string) {
-  if (!props.highlightDiff || !props.compareContext) return false;
-  return !!props.context.toggles?.[name] !== !!props.compareContext.toggles?.[name];
+  if (!highlightDiff.value || !compareContext.value) return false;
+  return !!context.value.toggles?.[name] !== !!compareContext.value.toggles?.[name];
 }
 
 function fieldDiffers(key: 'combatType' | 'location' | 'duration') {
-  if (!props.highlightDiff || !props.compareContext) return false;
-  return props.context[key] !== props.compareContext[key];
+  if (!highlightDiff.value || !compareContext.value) return false;
+  return context.value[key] !== compareContext.value[key];
 }
 
 const typeLabel = (value: string) => TYPE_LABELS[value] ?? titleCase(value);
@@ -73,18 +60,18 @@ const typeLabel = (value: string) => TYPE_LABELS[value] ?? titleCase(value);
 /** The hover tooltip for a differing field -- the label itself just goes bold/dotted/coloured
  * (see `.field-diff` below), so this is the only place the compare build's actual value shows. */
 function toggleDiffTitle(name: string) {
-  const other = props.compareContext;
+  const other = compareContext.value;
   if (!other) return undefined;
-  return `${props.compareName}: ${other.toggles?.[name] ? 'on' : 'off'}`;
+  return `${compareName.value}: ${other.toggles?.[name] ? 'on' : 'off'}`;
 }
 
 function diffTitle(key: 'combatType' | 'location' | 'duration') {
-  const other = props.compareContext;
+  const other = compareContext.value;
   if (!other) return undefined;
   switch (key) {
-    case 'combatType': return `${props.compareName}: ${typeLabel(other.combatType)}`;
-    case 'location': return `${props.compareName}: ${titleCase(other.location)}`;
-    case 'duration': return `${props.compareName}: ${other.duration}s`;
+    case 'combatType': return `${compareName.value}: ${typeLabel(other.combatType)}`;
+    case 'location': return `${compareName.value}: ${titleCase(other.location)}`;
+    case 'duration': return `${compareName.value}: ${other.duration}s`;
     default: return undefined;
   }
 }
@@ -94,7 +81,7 @@ function diffTitle(key: 'combatType' | 'location' | 'duration') {
   <div class="quickopts">
     <label v-for="toggle in orderedToggles" :key="toggle.name" class="quickopts-row">
       <input type="checkbox" :checked="!!context.toggles?.[toggle.name]"
-             @change="$emit('set-toggle', toggle.name, ($event.target as HTMLInputElement).checked)">
+             @change="buildEditor.setToggle(toggle.name, ($event.target as HTMLInputElement).checked)">
       <span class="quickopts-label" :class="{ 'field-diff': toggleDiffers(toggle.name) }"
             :title="toggleDiffers(toggle.name) ? toggleDiffTitle(toggle.name) : undefined">
         {{ toggle.label }}
@@ -107,14 +94,14 @@ function diffTitle(key: 'combatType' | 'location' | 'duration') {
       <span class="quickopts-label" :class="{ 'field-diff': fieldDiffers('combatType') }"
             :title="fieldDiffers('combatType') ? diffTitle('combatType') : undefined">Type</span>
       <ComboBox class="quickopts-combo" :model-value="context.combatType"
-                :options="typeOptions" @update:model-value="$emit('set', 'combatType', $event)" />
+                :options="typeOptions" @update:model-value="buildEditor.setContext('combatType', $event)" />
     </div>
 
     <div class="quickopts-row">
       <span class="quickopts-label" :class="{ 'field-diff': fieldDiffers('location') }"
             :title="fieldDiffers('location') ? diffTitle('location') : undefined">Location</span>
       <ComboBox class="quickopts-combo" :model-value="context.location"
-                :options="locationOptions" @update:model-value="$emit('set', 'location', $event)" />
+                :options="locationOptions" @update:model-value="buildEditor.setContext('location', $event)" />
     </div>
 
     <div class="quickopts-row">
@@ -125,7 +112,7 @@ function diffTitle(key: 'combatType' | 'location' | 'duration') {
       <div class="quickopts-presets">
         <button v-for="preset in schema.durationPresets" :key="preset" type="button"
                 class="preset" :class="{ 'is-on': Number(context.duration) === preset }"
-                @click="$emit('set', 'duration', preset)">{{ preset }}s</button>
+                @click="buildEditor.setContext('duration', preset)">{{ preset }}s</button>
       </div>
     </div>
   </div>

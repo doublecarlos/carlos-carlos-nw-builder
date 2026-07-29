@@ -11,7 +11,8 @@
 // they fail, so the ones a single toggle or set piece away float to the top.
 import { ref, reactive, computed } from 'vue';
 import { label as statLabel, signedStat } from '../format';
-import type { ResolvedBuild, Db, EvaluatedBonus, ConditionLeafResult, StatValues } from '../types';
+import * as engine from '../stores/engine';
+import type { EvaluatedBonus, ConditionLeafResult, StatValues } from '../types';
 
 /** `m31-crimson-march-combat` -> `M31 Crimson March Combat`, for bonuses with no set name. */
 const fromId = (id: string) => String(id ?? '')
@@ -31,10 +32,14 @@ const conditionSummary = (entry: EvaluatedBonus) => (entry.gate?.leaves ?? [])
   .filter(Boolean)
   .join(' + ');
 
-const props = defineProps<{
-  result: ResolvedBuild;
-  db: Db;
-}>();
+// Only ever mounted when `engine.resolved.value.ok` -- the throw documents
+// that invariant instead of a defensive fallback for a state that can't happen.
+const result = computed(() => {
+  const r = engine.resolved.value;
+  if (!r.ok) throw new Error('BonusInspector requires a resolved build');
+  return r.result;
+});
+const db = engine.db;
 
 const query = ref('');
 const nearMissOnly = ref(false);
@@ -76,12 +81,12 @@ interface Entry {
 
 const entries = computed<Entry[]>(() => {
   const titleCounts = new Map<string, number>();
-  for (const entry of props.result.bonuses) {
+  for (const entry of result.value.bonuses) {
     const title = entry.bonus?.name ?? entry.sources?.[0] ?? fromId(entry.id);
     titleCounts.set(title, (titleCounts.get(title) ?? 0) + 1);
   }
 
-  return props.result.bonuses.map((entry) => {
+  return result.value.bonuses.map((entry) => {
     const unmet = entry.gate?.unmet ?? [];
     // The bonus's own friendly name is the most specific title; the item carrying it and
     // an id-derived fallback are progressively blunter instruments for one that has none.
@@ -92,7 +97,7 @@ const entries = computed<Entry[]>(() => {
       title,
       qualifier: (titleCounts.get(title) ?? 0) > 1 ? conditionSummary(entry) : '',
       sources: entry.sources ?? [],
-      slot: props.db.slotById.get(entry.slotId)?.label ?? entry.slotId,
+      slot: db.value.slotById.get(entry.slotId)?.label ?? entry.slotId,
       stacks: entry.stacks ?? 1,
       chose: choseLabel(entry.chose),
       payload: entry.active ? (entry.appliedStats ?? null) : entry.previewStats,

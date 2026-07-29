@@ -1,53 +1,21 @@
 <script setup lang="ts">
-// Left sidebar: collections of builds, replacing the old dropdown-based build switcher in
-// BuildBar.vue. A collection is a named group of build tabs that can be saved (browser storage
-// or a linked file, via fs-store.ts) and exported as a whole; an individual build keeps its own
-// independent save/revert (BuildBar.vue), unchanged.
-//
-// Every mutation is emitted to App.vue, same discipline as every other component here -- this
-// file only renders the tree and the popup menus, and reads storage.ts/fs-store.ts directly for
-// the read-only bits (parsing an imported build file), same as BuildBar.vue already does for
-// its own import/export drawer.
+// Left sidebar: collections of builds. A collection is a named group of build tabs that can
+// be saved (browser storage or a linked file, via fs-store.ts) and exported as a whole; an
+// individual build keeps its own independent save/revert (BuildBar.vue).
 import { ref, reactive, computed, nextTick, onMounted, onUnmounted, type ComponentPublicInstance } from 'vue';
 import * as fsStore from '../fs-store';
+import * as library from '../stores/library';
+import * as buildEditor from '../stores/buildEditor';
 import type { Build, Collection } from '../types';
 
 const CONFIRM_MS = 4000;
 
-const props = defineProps<{
-  collections: Collection[];
-  builds: Build[];
-  activeCollectionId?: string;
-  activeId?: string;
-  // buildId -> bool, App.vue's `dirtyByBuild` computed (mirrors the existing per-build
-  // `dirty` check BuildBar.vue's Save button already gates on).
-  dirtyByBuild: Record<string, boolean>;
-  // collectionId -> last-saved { name, buildIds }, App.vue's `savedCollections` -- compared
-  // against the live `collections` prop to decide a collection's own unsaved-dot.
-  savedCollections: Record<string, Collection>;
-}>();
-
-const emit = defineEmits<{
-  'select-collection': [id: string];
-  'select-build': [payload: { collectionId: string; id: string }];
-  'create-collection': [];
-  'import-collection': [text: string];
-  'rename-collection': [payload: { id: string; name: string }];
-  'save-collection': [id: string];
-  'save-collection-as': [payload: { id: string; target: string }];
-  'duplicate-collection': [id: string];
-  'export-collection': [id: string];
-  'delete-collection': [id: string];
-  'create-build': [collectionId: string];
-  'import-builds': [payload: { collectionId: string; text: string }];
-  'rename-build': [payload: { id: string; name: string }];
-  'save-build': [id: string];
-  'revert-build': [id: string];
-  'duplicate-build': [id: string];
-  'export-build': [id: string];
-  'reset-build': [id: string];
-  'delete-build': [id: string];
-}>();
+const collections = library.collections;
+const builds = library.builds;
+const activeCollectionId = library.activeCollectionId;
+const activeId = library.activeId;
+const dirtyByBuild = library.dirtyByBuild;
+const savedCollections = library.savedCollections;
 
 const root = ref<HTMLElement | null>(null);
 const collapsed = reactive<Record<string, boolean>>({});          // collectionId -> true when collapsed (absent = expanded)
@@ -64,7 +32,7 @@ const importTarget = ref<string | null>(null);   // collection id the hidden bui
 const buildFileInput = ref<HTMLInputElement | null>(null);
 const collectionFileInput = ref<HTMLInputElement | null>(null);
 
-const buildById = computed(() => new Map(props.builds.map((build) => [build.id, build])));
+const buildById = computed(() => new Map(builds.value.map((build) => [build.id, build])));
 
 const fsSupported = fsStore.supported;
 
@@ -83,11 +51,11 @@ function toggleExpanded(id: string) {
 /** Metadata (name/membership) differs from last saved, or any build it contains is
  * itself dirty -- either is "this collection has something unsaved in it". */
 function collectionDirty(collection: Collection) {
-  const saved = props.savedCollections[collection.id];
+  const saved = savedCollections.value[collection.id];
   if (!saved || saved.name !== collection.name
     || saved.buildIds.length !== collection.buildIds.length
     || saved.buildIds.some((id, index) => id !== collection.buildIds[index])) return true;
-  return collection.buildIds.some((id) => props.dirtyByBuild[id]);
+  return collection.buildIds.some((id) => dirtyByBuild.value[id]);
 }
 
 // --- menus ---------------------------------------------------------------------------
@@ -168,9 +136,19 @@ function commitRename() {
   const name = renameText.value.trim();
   renaming.value = null;
   if (!name) return;
-  if (type === 'collection') emit('rename-collection', { id, name });
-  else emit('rename-build', { id, name });
+  if (type === 'collection') library.renameCollection(id, name);
+  else { library.selectBuildById(id); buildEditor.renameBuild(name); }
 }
+
+// --- per-build actions (select the row's build active first, then delegate) -------------
+// A row's build isn't necessarily the active one, and every undo-tracked action (save,
+// revert, rename, reset) only ever operates on "whichever build is active".
+
+function saveBuild(id: string) { library.selectBuildById(id); buildEditor.saveActive(); }
+function revertBuild(id: string) { library.selectBuildById(id); buildEditor.revertActive(); }
+function duplicateBuildRow(id: string) { library.selectBuildById(id); library.duplicateBuild(); }
+function resetBuild(id: string) { library.selectBuildById(id); buildEditor.resetAll(); }
+function deleteBuildRow(id: string) { library.selectBuildById(id); library.removeBuild(); }
 
 // --- two-step confirm for delete/reset --------------------------------------------------
 
@@ -182,10 +160,10 @@ function confirmLabel(type: string, id: string, action: string, label: string) {
   return isConfirming(type, id, action) ? 'Really?' : label;
 }
 
-/** `action` names one of this component's own delete/reset events -- always a literal at the
- * call site (see the template), but dynamically forwarded to `emit` here, which no static
- * union of event names makes straightforward without the cast. */
-function runConfirmed(type: string, id: string, action: 'delete-collection' | 'reset-build' | 'delete-build') {
+/** `run` is the actual action, invoked only once the same trigger has been clicked twice in
+ * a row (within `CONFIRM_MS`) -- same two-step confirm as before, just carrying a closure
+ * instead of an event name for `emit` to forward. */
+function runConfirmed(type: string, id: string, action: string, run: () => void) {
   if (!isConfirming(type, id, action)) {
     confirm.value = { type, id, action };
     window.clearTimeout(confirmTimer);
@@ -194,7 +172,7 @@ function runConfirmed(type: string, id: string, action: 'delete-collection' | 'r
   }
   window.clearTimeout(confirmTimer);
   confirm.value = null;
-  (emit as (event: string, id: string) => void)(action, id);
+  run();
   closeMenu();
 }
 
@@ -205,12 +183,12 @@ function toggleSaveAs(id: string) {
 }
 
 function saveAsStorage(id: string) {
-  emit('duplicate-collection', id);
+  library.duplicateCollection(id);
   closeMenu();
 }
 
 function saveAsFile(id: string) {
-  emit('save-collection-as', { id, target: 'file' });
+  library.saveCollectionAs(id, 'file');
   closeMenu();
 }
 
@@ -227,9 +205,7 @@ async function onImportBuildFile(event: Event) {
   const collectionId = importTarget.value;
   input.value = '';
   if (!file || !collectionId) return;
-  // Parsing (and its error notice) happens in App.vue's `importBuildsIn` -- same `notice`
-  // channel as every other library-level error here, rather than a blocking alert().
-  emit('import-builds', { collectionId, text: await file.text() });
+  library.importBuildsIn(collectionId, await file.text());
 }
 
 function triggerImportCollection() {
@@ -241,7 +217,7 @@ async function onImportCollectionFile(event: Event) {
   const file = input.files?.[0];
   input.value = '';
   if (!file) return;
-  emit('import-collection', await file.text());
+  library.importCollectionText(await file.text());
 }
 
 onMounted(() => {
@@ -267,7 +243,7 @@ onUnmounted(() => {
         <input v-if="isRenaming('collection', collection.id)" :ref="setRenameInputRef" v-model="renameText"
                class="nav-rename" @keydown.enter="commitRename" @keydown.esc="renaming = null"
                @blur="commitRename">
-        <button v-else type="button" class="nav-name" @click="$emit('select-collection', collection.id)"
+        <button v-else type="button" class="nav-name" @click="library.selectCollection(collection.id)"
                 @dblclick="startRename('collection', collection.id, collection.name)"
                 @contextmenu.prevent="openMenuFor('collection', collection.id, $event)">
           {{ collection.name }}
@@ -283,7 +259,7 @@ onUnmounted(() => {
                :style="{ top: menuPos.top + 'px', left: menuPos.left + 'px' }">
             <button type="button" class="navmenu-item"
                     @click="startRename('collection', collection.id, collection.name)">Rename</button>
-            <button type="button" class="navmenu-item" @click="$emit('save-collection', collection.id); closeMenu()">
+            <button type="button" class="navmenu-item" @click="library.saveCollection(collection.id); closeMenu()">
               Save
             </button>
             <button type="button" class="navmenu-item" @click="toggleSaveAs(collection.id)">Save As…</button>
@@ -298,11 +274,11 @@ onUnmounted(() => {
               </button>
             </div>
             <button type="button" class="navmenu-item"
-                    @click="$emit('duplicate-collection', collection.id); closeMenu()">Duplicate</button>
+                    @click="library.duplicateCollection(collection.id); closeMenu()">Duplicate</button>
             <button type="button" class="navmenu-item"
-                    @click="$emit('export-collection', collection.id); closeMenu()">Export…</button>
+                    @click="library.exportCollection(collection.id); closeMenu()">Export…</button>
             <button type="button" class="navmenu-item navmenu-item--danger"
-                    @click="runConfirmed('collection', collection.id, 'delete-collection')">
+                    @click="runConfirmed('collection', collection.id, 'delete-collection', () => library.deleteCollection(collection.id))">
               {{ confirmLabel('collection', collection.id, 'delete-collection', 'Delete') }}
             </button>
           </div>
@@ -316,7 +292,7 @@ onUnmounted(() => {
                  class="nav-rename" @keydown.enter="commitRename" @keydown.esc="renaming = null"
                  @blur="commitRename">
           <button v-else type="button" class="nav-name"
-                  @click="$emit('select-build', { collectionId: collection.id, id: build.id })"
+                  @click="library.selectBuild(collection.id, build.id)"
                   @dblclick="startRename('build', build.id, build.name)"
                   @contextmenu.prevent="openMenuFor('build', build.id, $event)">
             {{ build.name }}
@@ -334,21 +310,21 @@ onUnmounted(() => {
                       @click="startRename('build', build.id, build.name)">Rename</button>
               <button type="button" class="navmenu-item"
                       :disabled="!dirtyByBuild[build.id]"
-                      @click="$emit('save-build', build.id); closeMenu()">Save</button>
+                      @click="saveBuild(build.id); closeMenu()">Save</button>
               <button type="button" class="navmenu-item"
                       :disabled="!dirtyByBuild[build.id]"
-                      @click="$emit('revert-build', build.id); closeMenu()">Revert</button>
+                      @click="revertBuild(build.id); closeMenu()">Revert</button>
               <button type="button" class="navmenu-item"
-                      @click="$emit('duplicate-build', build.id); closeMenu()">Duplicate</button>
+                      @click="duplicateBuildRow(build.id); closeMenu()">Duplicate</button>
               <button type="button" class="navmenu-item"
-                      @click="$emit('export-build', build.id); closeMenu()">Export…</button>
+                      @click="library.exportBuild(build.id); closeMenu()">Export…</button>
               <button type="button" class="navmenu-item"
-                      @click="runConfirmed('build', build.id, 'reset-build')">
+                      @click="runConfirmed('build', build.id, 'reset-build', () => resetBuild(build.id))">
                 {{ confirmLabel('build', build.id, 'reset-build', 'Reset') }}
               </button>
               <button type="button" class="navmenu-item navmenu-item--danger"
                       :disabled="buildsIn(collection).length < 2"
-                      @click="runConfirmed('build', build.id, 'delete-build')">
+                      @click="runConfirmed('build', build.id, 'delete-build', () => deleteBuildRow(build.id))">
                 {{ confirmLabel('build', build.id, 'delete-build', 'Delete') }}
               </button>
             </div>
@@ -356,14 +332,14 @@ onUnmounted(() => {
         </div>
 
         <div class="nav-row nav-row--actions">
-          <button type="button" class="link" @click="$emit('create-build', collection.id)">+ New build</button>
+          <button type="button" class="link" @click="library.createBuildIn(collection.id)">+ New build</button>
           <button type="button" class="link" @click="triggerImportBuild(collection.id)">Import</button>
         </div>
       </div>
     </div>
 
     <div class="nav-row nav-row--actions nav-row--top">
-      <button type="button" class="link" @click="$emit('create-collection')">+ New collection</button>
+      <button type="button" class="link" @click="library.createCollection()">+ New collection</button>
       <button type="button" class="link" @click="triggerImportCollection">Import collection</button>
     </div>
 
