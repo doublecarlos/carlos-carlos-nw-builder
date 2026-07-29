@@ -4,9 +4,9 @@
 // Each test names the behaviour and, where relevant, the legacy bug it prevents.
 
 import { describe, it, expect } from 'vitest';
-import * as db from '../src/db';
-import * as engine from '../src/engine';
-import type { Build } from '../src/types';
+import * as db from '../../src/db';
+import * as engine from '../../src/engine';
+import type { Build } from '../../src/types';
 
 const built = db.fromData();
 

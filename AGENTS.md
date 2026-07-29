@@ -15,6 +15,8 @@ npm run dev               # http://localhost:5173, Vite dev server + HMR
 npm run build             # production build to dist/
 npm run preview           # serve the production build locally
 npm run test              # Vitest: unit tests + golden-fixture comparison
+npm run test:ui           # Playwright: end-to-end tests against a real browser
+npm run verify            # both of the above, in sequence
 npm run typecheck         # vue-tsc --noEmit
 ```
 `npm run test` must stay green.
@@ -46,7 +48,11 @@ src/
   main.ts              createApp(App).mount('#app')
   App.vue              root component, all state mutation, undo
   components/          Vue SFCs, <script setup lang="ts">
-tests/                 Vitest unit + fixture specs
+tests/
+  unit/                Vitest unit + golden-fixture specs
+  e2e/                  Playwright specs, run against a live `npm run dev` server
+    support/            shared page helpers (selectors, common flows)
+playwright.config.ts    testDir tests/e2e, starts the dev server, chromium only
 ```
 
 ## Architecture notes
@@ -78,9 +84,10 @@ tests/                 Vitest unit + fixture specs
 - **Collection file-save uses the File System Access API, Chromium-only.**
 
 ## Behavior
-
 - Justify decisions.
 - Surface data ambiguities as **explicit decisions**, not guesses.
 - Verify claims by testing the claim, not a proxy.
 - When a check fails, work out whether the code or the test is wrong before "fixing" anything
 - Commit only when asked. Branch rather than committing to `main` directly.
+- Use playwright-cli to test the UI when making changes
+- Add unit tests or playwright tests as needed. Test intent, not exact code behavior.

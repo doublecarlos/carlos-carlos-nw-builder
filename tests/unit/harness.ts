@@ -1,7 +1,7 @@
 // Shared test harness. No DOM, no fetch -- pure comparison of an engine result against a
 // golden fixture. tests/fixture.spec.ts drives this from Vitest.
 
-import * as engine from '../src/engine';
+import * as engine from '../../src/engine';
 
 // Stats the sheet carried but the new schema deliberately drops (plan Part 3).
 export const IGNORED_STATS = new Set([

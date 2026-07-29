@@ -3,7 +3,7 @@
 
 import { describe, it, expect } from 'vitest';
 import fixtures from './fixture.json';
-import * as db from '../src/db';
+import * as db from '../../src/db';
 import { compareFixture, format } from './harness';
 
 const TOLERANCE = 1e-6;
