@@ -163,10 +163,6 @@ label.quickopts-row { cursor: pointer; }
 }
 .preset.is-on { background: var(--accent-soft); border-color: var(--accent); color: var(--text); }
 
-/* Quick-compare: this field differs from the compare build's own context -- same `--diff`
- * accent SlotList.vue's row highlight and Options.vue's fields use. Deliberately quiet (bold
- * label + a dot, no note line eating layout): the compare build's actual value is a hover
- * away in the title tooltip, not printed inline. */
 .field-diff { color: var(--diff); cursor: help; font-weight: 700; }
-.field-diff::after { content: ' \25CF'; font-size: .6rem; vertical-align: middle; }
+.field-diff::after { content: ' \25CF'; }
 </style>

@@ -158,10 +158,6 @@ function forteDiffTitle(slotKey: string) {
 
 .num-input--wide { width: 92px; }
 
-/* Quick-compare: this field differs from the compare build's own context -- same `--diff`
- * accent SlotList.vue's row highlight uses. Deliberately quiet (bold label + a dot, no note
- * line eating layout): the compare build's actual value is a hover away in the title
- * tooltip, not printed inline. */
 .field-diff { color: var(--diff); cursor: help; font-weight: 700; }
-.field-diff::after { content: ' \25CF'; font-size: .6rem; vertical-align: middle; }
+.field-diff::after { content: ' \25CF'; }
 </style>
