@@ -116,7 +116,6 @@ const tab = ref<'stats' | 'bonuses'>(initialRoute.tab === 'bonuses' ? 'bonuses' 
 let saveTimer: number | undefined;
 let collectionsSaveTimer: number | undefined;
 let noticeTimer: number | undefined;
-let topbarObserver: ResizeObserver | null = null;
 const notice = ref('');
 const storageFailed = ref(false);
 
@@ -887,18 +886,6 @@ async function consumeShareLink() {
   storage.clearHash();
 }
 
-function measureTopbar() {
-  // The stat panel is sticky below the top bar, whose height changes as its controls
-  // wrap. Measure it instead of guessing, or the panel's first rows hide behind the bar.
-  const header = document.querySelector('.topbar') as HTMLElement | null;
-  if (!header || !window.ResizeObserver) return;
-  const apply = () => document.documentElement.style
-    .setProperty('--topbar-h', `${header.offsetHeight}px`);
-  apply();
-  topbarObserver = markRaw(new ResizeObserver(apply));
-  topbarObserver.observe(header);
-}
-
 // --- routing --------------------------------------------------------------------------
 // Only view/build/tab live here. The editor's own "which item is open" is a level down
 // (DataEditor.vue) and reads/writes the `item` param itself -- App.vue already knows
@@ -976,7 +963,6 @@ watch(notice, (value) => {
 watch(workspaceOverlay, (value) => { storage.saveOverlay(value); }, { deep: true });
 
 onMounted(() => {
-  measureTopbar();
   window.addEventListener('keydown', onKeydown);
   window.addEventListener('popstate', onPopState);
   // Establishes the canonical `?view=&build=&tab=` for a first-ever visit, without
@@ -986,7 +972,6 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
-  topbarObserver?.disconnect();
   window.removeEventListener('keydown', onKeydown);
   window.removeEventListener('popstate', onPopState);
 });
@@ -1081,6 +1066,7 @@ onUnmounted(() => {
       </header>
 
       <main class="layout" v-if="resolved.ok">
+        <div class="content">
         <SlotList
           :db="db"
           :build="build"
@@ -1103,6 +1089,7 @@ onUnmounted(() => {
           @revert-slot="revertSlot"
           @revert-section="revertSection"
           @copy-section="copySection" />
+        </div>
         <aside class="sidebar">
           <div class="tabs">
             <button type="button" class="tab" :class="{ 'is-on': tab === 'stats' }"
@@ -1136,22 +1123,13 @@ onUnmounted(() => {
 
 <style scoped>
 /* --- page shell --------------------------------------------------------------------- */
-
-/* The collections sidebar (BuildNav.vue) runs the full height of the page, with the top bar
- * and the build itself confined to `.page-main` on its right -- it used to sit inside
- * `.layout` as a grid column under the top bar, which both capped its height to the
- * viewport-minus-topbar and (via that ancestor's `overflow-y: auto`) clipped any popup menu
- * opened from a row near its bottom edge (see BuildNav.vue's `.navmenu`, `position: fixed`
- * for exactly that reason). */
 .page { display: flex; align-items: stretch; min-height: 100vh; }
-.page-main { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
+.page-main { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; height: 100vh; }
 
 /* --- top bar -------------------------------------------------------------------------- */
 
 .topbar {
-  position: sticky;
-  top: 0;
-  z-index: 20;
+  flex: none;
   background: var(--surface);
   border-bottom: 1px solid var(--line);
   display: flex;
@@ -1182,30 +1160,34 @@ onUnmounted(() => {
 /* --- builder layout --------------------------------------------------------------------- */
 
 .layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 460px;
+  display: flex;
+  align-items: stretch;
+  flex: 1 1 auto;
+  min-height: 0;
   gap: 16px;
   padding: 14px;
-  align-items: start;
 }
 
-.sidebar {
-  position: sticky;
-  top: calc(var(--topbar-h) + 14px);
-  max-height: calc(100vh - var(--topbar-h) - 28px);
-  overflow-y: auto;
-}
+.content { flex: 1 1 auto; min-width: 0; overflow-y: auto; }
+
+.sidebar { flex: none; width: 460px; overflow-y: auto; }
 
 .panel { border-radius: 0 var(--radius) var(--radius) var(--radius); }
 .tabs { padding-left: 0 }
 
-.crash { color: var(--danger); padding: 24px; }
+.crash { flex: 1 1 auto; min-height: 0; overflow-y: auto; color: var(--danger); padding: 24px; }
 .crash pre { background: var(--surface); border-radius: var(--radius); overflow-x: auto; padding: 12px; }
 
 @media (max-width: 1100px) {
+  /* Below this width `.build-nav` itself gives up its own `height: 100vh` pane (see its
+   * media query) and goes back to plain document flow -- match that here instead of running
+   * two different "who owns the scrollbar" models at once. The top bar goes back to
+   * `position: sticky` since it's the page, not a pane, that scrolls in this mode. */
   .page { flex-direction: column; }
-  .layout { grid-template-columns: minmax(0, 1fr); }
-  .sidebar { position: static; max-height: none; }
+  .page-main { height: auto; }
+  .topbar { position: sticky; top: 0; z-index: 20; }
+  .layout { flex-direction: column; }
+  .content, .sidebar { width: auto; overflow-y: visible; }
 }
 
 @media (max-width: 560px) {

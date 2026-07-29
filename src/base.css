@@ -29,10 +29,6 @@
   --diff: #ab9000;
 
   --radius: 6px;
-  /* Measured from the real element at runtime (App.vue `mounted`): the top bar wraps to a
-   * different number of lines depending on window width, and a hard-coded offset would let the
-   * sticky panel slide underneath it. This value is only the pre-measurement fallback. */
-  --topbar-h: 176px;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -57,11 +53,8 @@
 
 html, body {
   /* Every scrollable region in this app (build-nav, itemcard, editor lists/forms, picker
-   * menus) manages its own overflow explicitly -- the page itself should never grow wider
-   * than the viewport. A component that overflows anyway is a bug in that component, not
-   * something to paper over here, but this stops that bug from producing a page-wide
-   * horizontal scrollbar on narrow windows. */
-  overflow-x: hidden;
+   * menus) manages its own overflow explicitly. */
+  overflow-x: clip;
 }
 
 body {
