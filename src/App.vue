@@ -317,6 +317,7 @@ function redo() {
 }
 
 function onKeydown(event: KeyboardEvent) {
+  if (view.value === 'editor') return;
   if (!(event.ctrlKey || event.metaKey) || event.altKey) return;
   const key = event.key.toLowerCase();
   if (key !== 'z' && key !== 'y') return;
@@ -978,14 +979,6 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <DataEditor
-    v-if="view === 'editor'"
-    :db="db"
-    :overlay="workspaceOverlay"
-    @update-overlay="workspaceOverlay = $event"
-    @close="view = 'builder'" />
-
-  <template v-else>
   <div class="page">
     <BuildNav
       :collections="collections"
@@ -1118,7 +1111,16 @@ onUnmounted(() => {
       </main>
     </div>
   </div>
-  </template>
+
+  <div v-if="view === 'editor'" class="editor-overlay" @click.self="view = 'builder'">
+    <div class="editor-overlay-panel">
+      <DataEditor
+        :db="db"
+        :overlay="workspaceOverlay"
+        @update-overlay="workspaceOverlay = $event"
+        @close="view = 'builder'" />
+    </div>
+  </div>
 </template>
 
 <style scoped>
@@ -1195,5 +1197,37 @@ onUnmounted(() => {
    * line with the notice -- let the whole action cluster wrap onto its own row rather than
    * squeezing every control down to nothing. */
   .topbar-actions { justify-content: flex-start; }
+}
+
+/* --- data editor overlay ---------------------------------------------------------------
+ * `.page` stays mounted underneath (see the `onKeydown` guard above) -- this is a layer on
+ * top of it, not a replacement, so a Ctrl+click on a slot can jump into the editor without
+ * losing the builder's own scroll position/state. */
+
+.editor-overlay {
+  align-items: center;
+  background: color-mix(in srgb, black 45%, transparent);
+  display: flex;
+  inset: 0;
+  justify-content: center;
+  padding: 28px;
+  position: fixed;
+  z-index: 50;
+}
+
+.editor-overlay-panel {
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, .35);
+  display: flex;
+  height: 100%;
+  max-width: 1400px;
+  overflow: hidden;
+  width: 100%;
+}
+
+@media (max-width: 900px) {
+  .editor-overlay { padding: 0; }
+  .editor-overlay-panel { border-radius: 0; }
 }
 </style>

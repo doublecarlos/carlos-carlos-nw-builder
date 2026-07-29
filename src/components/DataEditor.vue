@@ -591,6 +591,14 @@ onMounted(() => {
 onUnmounted(() => {
   window.removeEventListener('popstate', onPopState);
   window.removeEventListener('keydown', onKeydown);
+  // This component owns `item`/`set`/`section`/`status`/`q` (App.vue's routing comment above
+  // its own `syncRoute` -- it knows nothing about the editor's internals). App.vue's `close`
+  // handler and its `view` watcher only ever clear `view` itself, so without this a closed
+  // editor would leave stale editor params sitting in the URL. `push: false`: App.vue's own
+  // `view` watcher (flush: pre, so it runs first, before this unmount) already pushed the
+  // "editor closed" history entry -- this just replaces it with the params stripped, rather
+  // than adding a second stop right behind it.
+  router.apply({ item: null, set: null, section: null, status: null, q: null }, { push: false });
 });
 </script>
 
@@ -631,7 +639,7 @@ onUnmounted(() => {
         ↷ Redo<span v-if="canRedo" class="btn-detail">{{ redoLabel }}</span>
       </button>
 
-      <button type="button" class="btn" @click="$emit('close')">← Back to builder</button>
+      <button type="button" class="btn" @click="$emit('close')">✕ Close</button>
     </div>
 
     <p v-if="notice" class="notice" @click="notice = ''">{{ notice }}</p>
@@ -744,10 +752,10 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
-.editor { padding: 12px 14px; }
-.editor-bar { align-items: center; display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.editor { display: flex; flex: 1 1 auto; flex-direction: column; height: 100%; min-height: 0; min-width: 0; padding: 12px 14px; }
+.editor-bar { align-items: center; display: flex; flex: none; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
 
-.drawer--findings { max-height: 190px; overflow-y: auto; }
+.drawer--findings { flex: none; max-height: 190px; overflow-y: auto; }
 .findings { list-style: none; margin: 4px 0 0; padding: 0; }
 .findings li { display: flex; gap: 7px; font-size: 1rem; padding: 1px 0; }
 .finding-level {
@@ -763,10 +771,11 @@ onUnmounted(() => {
 .combo--status { width: 100px; }
 
 .editor-body {
-  align-items: start;
-  display: grid;
+  align-items: stretch;
+  display: flex;
+  flex: 1 1 auto;
   gap: 12px;
-  grid-template-columns: 340px minmax(0, 1fr);
+  min-height: 0;
 }
 
 .editor-list, .editor-form {
@@ -774,12 +783,15 @@ onUnmounted(() => {
   border: 1px solid var(--line);
   border-radius: var(--radius);
 }
-.editor-list-head { border-bottom: 1px solid var(--line); display: flex; gap: 5px; padding: 7px; }
+/* `.editor-list` is itself a flex column (head + scrollable body) rather than scrolling as a
+ * whole, so the search/filter row stays put while the row list scrolls under it. */
+.editor-list { display: flex; flex: none; flex-direction: column; width: 340px; }
+.editor-list-head { border-bottom: 1px solid var(--line); display: flex; flex: none; gap: 5px; padding: 7px; }
 /* Search is the primary way through 369 items; the status filter is a secondary narrowing
  * most sessions never touch -- `flex: 3` (against the combo's fixed 100px above) gives it most
  * of the row's width instead of splitting it evenly. */
 .editor-list-head input[type="search"].editor-search { flex: 3 1 0; min-width: 0; }
-.editor-list-body { max-height: calc(100vh - 20px); overflow-y: auto; }
+.editor-list-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
 
 .editor-row {
   align-items: center;
@@ -794,14 +806,15 @@ onUnmounted(() => {
 .editor-row-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .editor-row-filter { color: var(--muted); font-size: 1rem; }
 
-.editor-form { max-height: calc(100vh - 20px); overflow-y: auto; padding: 10px 12px; }
+.editor-form { flex: 1 1 auto; min-width: 0; overflow-y: auto; padding: 10px 12px; }
 
 @media (max-width: 900px) {
   /* The fixed 340px item list plus the form's own minimum content width no longer both fit
    * side by side -- stack the list above the form instead of forcing the page to scroll
-   * horizontally. Each keeps its own `max-height`/`overflow-y`, so stacking just means two
-   * independently-scrolling panes instead of one row of two. */
-  .editor-body { grid-template-columns: minmax(0, 1fr); }
-  .editor-list-body { max-height: 40vh; }
+   * horizontally. Each keeps its own `overflow-y`, so stacking just means two independently-
+   * scrolling panes instead of one row of two. */
+  .editor-body { flex-direction: column; }
+  .editor-list { height: 40vh; width: auto; }
+  .editor-form { flex: 1 1 auto; }
 }
 </style>
