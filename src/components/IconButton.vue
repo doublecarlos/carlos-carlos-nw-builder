@@ -13,14 +13,14 @@ const props = withDefaults(defineProps<{
   disabled: false,
 });
 
-defineEmits<{ click: [] }>();
+defineEmits<{ click: [event: MouseEvent] }>();
 
 // `<title>` inside the svg drives both the hover tooltip and the button's accessible name.
 const markup = computed(() => `${icons[props.icon] ?? ''}<title>${props.title}</title>`);
 </script>
 
 <template>
-  <button type="button" class="link icon-btn" :disabled="disabled" @click="$emit('click')">
+  <button type="button" class="link icon-btn" :disabled="disabled" @click="$emit('click', $event)">
     <svg role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
          fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
          stroke-linejoin="round" class="lucide" v-html="markup"></svg>

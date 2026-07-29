@@ -1119,7 +1119,7 @@ onUnmounted(() => {
           <!-- v-show, not v-if: switching tabs must not discard the inspector's filter. -->
           <StatPanel v-show="tab === 'stats'" :result="resolved.result"
                      :compare-result="compareResolved?.ok ? compareResolved.result : null"
-                     :compare-name="compareBuild?.name ?? ''" />
+                     :compare-name="compareBuild?.name ?? ''" :build="build" />
           <BonusInspector v-show="tab === 'bonuses'" :result="resolved.result" :db="db" />
         </aside>
       </main>

@@ -5,6 +5,7 @@ __pycache__/
 node_modules/
 dist/
 .playwright/
+.playwright-cli/
 playwright-report/
 test-results/
 

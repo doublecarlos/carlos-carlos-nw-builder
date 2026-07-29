@@ -5,11 +5,14 @@
 // stat to the schema makes it appear here with no edit. Overcapped values are coloured; the
 // rating/percent pair each get their own merged overcap-or-headroom column (signed: positive
 // over the cap, negative is spare headroom), coloured independently since they cap separately.
-import { ref, computed } from 'vue';
+import { ref, computed, nextTick, onMounted, onUnmounted } from 'vue';
 import ComboBox from './ComboBox.vue';
+import IconButton from './IconButton.vue';
+import StatSourceCard from './StatSourceCard.vue';
+import { sectionsFor } from '../stat-sources';
 import { NW_SCHEMA } from '../data';
 import { int as fmtInt, pct as fmtPct, stat as fmtStat } from '../format';
-import type { ResolvedBuild } from '../types';
+import type { ResolvedBuild, Build } from '../types';
 
 // Display order only -- data/schema.json stays untouched. Forte sits with the defensive
 // ratings rather than right after Severity, per the user's re-grouping.
@@ -56,9 +59,13 @@ const props = withDefaults(defineProps<{
   // back to a single centred value.
   compareResult?: ResolvedBuild | null;
   compareName?: string;
+  // Only needed for the stat source popover's forte picks and dynamic weapon mod values --
+  // the rest of the panel reads entirely off `result`.
+  build?: Build | null;
 }>(), {
   compareResult: null,
   compareName: '',
+  build: null,
 });
 
 const summaryCalcKey = ref('damage:average');
@@ -197,10 +204,79 @@ function signedInt(value: number) {
   if (Math.abs(value) < 1e-9) return '—';
   return (value > 0 ? '+' : '') + int(value);
 }
+
+// The stat source popover ("why is this number what it is", per stat) -- source attribution
+// itself lives in stat-sources.ts, since it's pure data derivation with no template of its
+// own. Click-triggered (a circle-alert button ahead of each row's label), not hover-triggered:
+// a dense stat table put the pointer's path from a row to its own hover card through *other*
+// rows' triggers often enough that a hover card kept getting swapped out from under the
+// pointer before it ever arrived -- a deliberate click has no such transit to go wrong.
+const root = ref<HTMLElement | null>(null);
+const CARD_W = 260;   // must match StatSourceCard.vue's own width
+
+interface OpenCard { key: string; left: number; top: number }
+const openCard = ref<OpenCard | null>(null);
+
+const openLabel = computed(() => NW_SCHEMA.statByKey[openCard.value?.key ?? '']?.label ?? openCard.value?.key ?? '');
+const openSections = computed(() => (
+  openCard.value ? sectionsFor(props.result, props.build, openCard.value.key) : []
+));
+
+/**
+ * Anchored to the trigger button: to its right normally, flipped to its left if that would
+ * run off the viewport. The vertical flip needs the card's real height, not its CSS
+ * max-height, so it's measured once the card exists and nudged only if it actually overflows
+ * -- same two-step approach as SlotList.vue's own item hover card.
+ */
+function placeCard(key: string, rect: DOMRect) {
+  const margin = 10;
+  let left = rect.right + 8;
+  if (left + CARD_W > window.innerWidth - margin) left = rect.left - CARD_W - 8;
+  openCard.value = { key, left: Math.max(left, margin), top: rect.top };
+
+  nextTick(() => {
+    const card = root.value?.querySelector('.statcard') as HTMLElement | null;
+    if (!card || !openCard.value) return;
+    const height = card.offsetHeight;
+    if (openCard.value.top + height <= window.innerHeight - margin) return;
+    openCard.value = { ...openCard.value, top: Math.max(window.innerHeight - margin - height, margin) };
+  });
+}
+
+function closeCard() {
+  openCard.value = null;
+}
+
+/** A second click on the same row's own button closes it again; a click on a *different*
+ * row's button just switches the card straight over. */
+function toggleCard(event: MouseEvent, key: string) {
+  if (openCard.value?.key === key) {
+    closeCard();
+    return;
+  }
+  placeCard(key, (event.currentTarget as HTMLElement).getBoundingClientRect());
+}
+
+/**
+ * Closes the popover on any click outside it -- same pattern as SlotList.vue's own "copy
+ * section from" popover. `composedPath()`, not a live `closest()` walk, for the same reason
+ * documented there: a click that lands on a *different* row's trigger button must reach
+ * `toggleCard` and switch the card over, not have this handler close it first.
+ */
+function onDocumentClick(event: MouseEvent) {
+  if (!openCard.value) return;
+  const path = event.composedPath?.() ?? [];
+  if (path.some((el) => (el as Element).classList?.contains?.('statcard')
+    || (el as Element).classList?.contains?.('stat-info-btn'))) return;
+  closeCard();
+}
+
+onMounted(() => document.addEventListener('mousedown', onDocumentClick));
+onUnmounted(() => document.removeEventListener('mousedown', onDocumentClick));
 </script>
 
 <template>
-  <div class="panel">
+  <div class="panel" ref="root">
     <div v-if="result.errors.length" class="panel-errors">
       <strong>{{ result.errors.length }} problem(s)</strong>
       <ul>
@@ -255,7 +331,11 @@ function signedInt(value: number) {
              red on the same row. -->
         <tr v-for="row in capRows" :key="row.key"
             :class="{ 'row-sep': row.sepAfter }">
-          <td>{{ row.label }}</td>
+          <td class="stat-label-cell">
+            <IconButton icon="circle-alert" title="Show contributing sources" class="stat-info-btn"
+                        :data-stat-key="row.key" @click="toggleCard($event, row.key)" />
+            <span>{{ row.label }}</span>
+          </td>
           <td class="num" :class="row.rating.primaryCls">{{ int(row.rating.total) }}</td>
           <td class="num" :class="row.percent.primaryCls">{{ pct(row.percent.capped) }}</td>
           <td class="num dim" :class="row.percent.overCls">{{ signedPct(row.percent.over) }}</td>
@@ -268,7 +348,11 @@ function signedInt(value: number) {
     <table class="stat-table stat-table--pairs">
       <tbody>
         <tr v-for="row in otherRows" :key="row.key">
-          <td>{{ row.label }}</td>
+          <td class="stat-label-cell">
+            <IconButton icon="circle-alert" title="Show contributing sources" class="stat-info-btn"
+                        :data-stat-key="row.key" @click="toggleCard($event, row.key)" />
+            <span>{{ row.label }}</span>
+          </td>
           <td class="num">{{ fmt(row.key, row.value) }}</td>
         </tr>
       </tbody>
@@ -278,7 +362,11 @@ function signedInt(value: number) {
     <table class="stat-table stat-table--pairs">
       <tbody>
         <tr v-for="row in abilityRows" :key="row.key">
-          <td>{{ row.label }}</td>
+          <td class="stat-label-cell">
+            <IconButton icon="circle-alert" title="Show contributing sources" class="stat-info-btn"
+                        :data-stat-key="row.key" @click="toggleCard($event, row.key)" />
+            <span>{{ row.label }}</span>
+          </td>
           <td class="num">{{ int(row.value) }}</td>
         </tr>
       </tbody>
@@ -287,8 +375,12 @@ function signedInt(value: number) {
     <h3 class="panel-head">Enemy</h3>
     <table class="stat-table stat-table--pairs">
       <tbody>
-        <tr v-for="row in enemyRows" :key="row.key"">
-          <td>{{ row.label }}</td>
+        <tr v-for="row in enemyRows" :key="row.key">
+          <td class="stat-label-cell">
+            <IconButton icon="circle-alert" title="Show contributing sources" class="stat-info-btn"
+                        :data-stat-key="row.key" @click="toggleCard($event, row.key)" />
+            <span>{{ row.label }}</span>
+          </td>
           <td class="num">{{ fmt(row.key, row.value) }}</td>
         </tr>
       </tbody>
@@ -335,6 +427,11 @@ function signedInt(value: number) {
         </tr>
       </tbody>
     </table>
+
+    <StatSourceCard v-if="openCard" :label="openLabel" :sections="openSections"
+                    :data-stat-key="openCard.key"
+                    :style="{ left: openCard.left + 'px', top: openCard.top + 'px' }"
+                    @close="closeCard" />
   </div>
 </template>
 
@@ -388,6 +485,11 @@ function signedInt(value: number) {
 
 .stat-table td { padding: 2px 4px;}
 .stat-table td.num { text-align: right; }
+
+/* The label cell now carries the "show sources" trigger ahead of its text -- a plain
+ * `display: flex` on the `<td>` itself, same trick `.slot-label-col` uses in SlotList.vue. */
+.stat-label-cell { align-items: center; display: flex; gap: 2px; }
+.stat-info-btn { flex: none; }
 .stat-table tbody tr:nth-child(even) { background: color-mix(in srgb, var(--surface-2) 55%, transparent); }
 
 .stat-table td.is-capped { background: color-mix(in srgb, var(--ok) 16%, transparent); }
