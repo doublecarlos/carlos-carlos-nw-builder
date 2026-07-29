@@ -7,8 +7,8 @@
 // itself by its own inferred name with no self-registration needed (unlike the old build, which
 // had no global component registry and so had to attach itself to its own `components`).
 import { computed } from 'vue';
-import ComboBox from './ComboBox.vue';
-import IconButton from './IconButton.vue';
+import ComboBox from './ui/ComboBox.vue';
+import IconButton from './ui/IconButton.vue';
 import FormField from './ui/FormField.vue';
 import { NW_SCHEMA } from '../data';
 import { LEAF_TYPES, MAX_DEPTH, newLeafRow, newGroupRow, cloneRow, type ConditionRow } from '../condition-draft';

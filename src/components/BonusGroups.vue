@@ -12,9 +12,9 @@
 // exist.
 import { reactive, computed, watch } from 'vue';
 import BonusRows from './BonusRows.vue';
-import ComboBox from './ComboBox.vue';
-import IconButton from './IconButton.vue';
-import TokenInput from './TokenInput.vue';
+import ComboBox from './ui/ComboBox.vue';
+import IconButton from './ui/IconButton.vue';
+import TokenInput from './ui/TokenInput.vue';
 import Button from './ui/Button.vue';
 import Badge from './ui/Badge.vue';
 import FormField from './ui/FormField.vue';

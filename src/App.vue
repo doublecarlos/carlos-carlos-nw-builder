@@ -9,7 +9,7 @@ import BuildBar from './components/BuildBar.vue';
 import ThemeToggle from './components/ui/ThemeToggle.vue';
 import BuildNav from './components/BuildNav.vue';
 import BonusInspector from './components/BonusInspector.vue';
-import ComboBox from './components/ComboBox.vue';
+import ComboBox from './components/ui/ComboBox.vue';
 import DataEditor from './components/DataEditor.vue';
 import QuickOptions from './components/QuickOptions.vue';
 import SlotList from './components/SlotList.vue';
@@ -23,6 +23,7 @@ import * as engine from './stores/engine';
 import * as ui from './stores/ui';
 import { notice, showNotice } from './stores/notice';
 import { overlayCount } from './stores/workspace';
+import Button from './components/ui/Button.vue';
 
 const build = library.build;
 const db = engine.db;
@@ -144,9 +145,10 @@ onUnmounted(() => {
 
           <button type="button" class="link" @click="buildEditor.resetAll()">reset</button>
           <span class="hint">{{ buildEditor.filledSlots.value }}/{{ db.slots.length }} slots</span>
-          <button type="button" class="btn" @click="ui.openEditor()">
+
+          <Button @click="ui.openEditor()">
             Edit data<span v-if="overlayCount" class="badge badge--edited">{{ overlayCount }}</span>
-          </button>
+          </Button>
           <ThemeToggle />
         </div>
       </header>

@@ -3,6 +3,7 @@
 // vocabulary. `as="label"` covers the one spot (DataEditor's file-picker) that needs button
 // chrome around a native `<label>` instead of a `<button>`.
 import { computed } from 'vue';
+import Icon from './Icon.vue';
 
 const props = withDefaults(defineProps<{
   as?: 'button' | 'label';
@@ -10,12 +11,14 @@ const props = withDefaults(defineProps<{
   active?: boolean;
   danger?: boolean;
   disabled?: boolean;
+  icon?: string;
 }>(), {
   as: 'button',
   variant: 'default',
   active: false,
   danger: false,
   disabled: false,
+  icon: '',
 });
 
 const classes = computed(() => {
@@ -38,6 +41,7 @@ const classes = computed(() => {
 
 <template>
   <component :is="as" v-bind="as === 'button' ? { type: 'button', disabled } : {}" :class="classes">
+    <Icon v-if="icon !== ''" :name="icon"></Icon>
     <slot />
   </component>
 </template>

@@ -2,10 +2,10 @@
 // Editor for a bonus set's list of grants. See bonus-draft.ts's header for the structural
 // notes (anonymous grants, flat/tiered/variants payloads, the JSON escape hatch).
 import { computed } from 'vue';
-import PercentInput from './PercentInput.vue';
-import ComboBox from './ComboBox.vue';
+import PercentInput from './ui/PercentInput.vue';
+import ComboBox from './ui/ComboBox.vue';
 import ConditionRows from './ConditionRows.vue';
-import IconButton from './IconButton.vue';
+import IconButton from './ui/IconButton.vue';
 import Button from './ui/Button.vue';
 import FormSection from './ui/FormSection.vue';
 import { NW_SCHEMA } from '../data';

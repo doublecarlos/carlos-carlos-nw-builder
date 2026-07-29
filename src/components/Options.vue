@@ -7,7 +7,7 @@
 // Not called "advanced options": class is a basic, load-bearing choice, just an infrequently
 // changed one. The name describes how often it's touched, not how simple it is.
 import { computed } from 'vue';
-import ComboBox from './ComboBox.vue';
+import ComboBox from './ui/ComboBox.vue';
 import FormField from './ui/FormField.vue';
 import Check from './ui/Checkbox.vue';
 import { NW_SCHEMA } from '../data';

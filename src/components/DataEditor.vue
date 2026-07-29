@@ -10,7 +10,7 @@ import { ref, reactive, computed, watch, onMounted, onUnmounted } from 'vue';
 import ItemForm from './ItemForm.vue';
 import type { ItemDraft } from './ItemForm.vue';
 import BonusSetForm from './BonusSetForm.vue';
-import ComboBox from './ComboBox.vue';
+import ComboBox from './ui/ComboBox.vue';
 import Button from './ui/Button.vue';
 import HistoryButton from './ui/HistoryButton.vue';
 import Badge from './ui/Badge.vue';
@@ -634,10 +634,10 @@ onUnmounted(() => {
 
       <span class="mx-1 h-4 w-px bg-line"></span>
 
-      <HistoryButton :disabled="!canUndo" :detail="canUndo ? undoLabel : ''"
-              :title="canUndo ? 'Undo: ' + undoLabel + ' (Ctrl+Z)' : 'Nothing to undo'" @click="undo">↶ Undo</HistoryButton>
-      <HistoryButton :disabled="!canRedo" :detail="canRedo ? redoLabel : ''"
-              :title="canRedo ? 'Redo: ' + redoLabel + ' (Ctrl+Shift+Z)' : 'Nothing to redo'" @click="redo">↷ Redo</HistoryButton>
+      <HistoryButton type="undo" :disabled="!canUndo" :detail="canUndo ? undoLabel : ''"
+              :title="canUndo ? 'Undo: ' + undoLabel + ' (Ctrl+Z)' : 'Nothing to undo'" @click="undo">Undo</HistoryButton>
+      <HistoryButton type="redo" :disabled="!canRedo" :detail="canRedo ? redoLabel : ''"
+              :title="canRedo ? 'Redo: ' + redoLabel + ' (Ctrl+Shift+Z)' : 'Nothing to redo'" @click="redo">Redo</HistoryButton>
 
       <Button @click="ui.closeEditor()">✕ Close</Button>
     </div>

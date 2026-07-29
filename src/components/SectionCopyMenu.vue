@@ -8,8 +8,8 @@ const openSectionId = ref<string | null>(null);
 <script setup lang="ts">
 // A section header's "copy this section from another build" control.
 import { onMounted, onUnmounted } from 'vue';
-import IconButton from './IconButton.vue';
-import ComboBox from './ComboBox.vue';
+import IconButton from './ui/IconButton.vue';
+import ComboBox from './ui/ComboBox.vue';
 import Button from './ui/Button.vue';
 
 const props = defineProps<{

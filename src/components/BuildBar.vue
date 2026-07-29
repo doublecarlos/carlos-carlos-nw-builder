@@ -142,8 +142,8 @@ function applyImport() {
 
         <span class="mx-1 h-4 w-px bg-line"></span>
 
-        <HistoryButton :disabled="!canUndo" :detail="canUndo ? undoLabel : ''" :title="undoTitle" @click="buildEditor.undo()">↶ Undo</HistoryButton>
-        <HistoryButton :disabled="!canRedo" :detail="canRedo ? redoLabel : ''" :title="redoTitle" @click="buildEditor.redo()">↷ Redo</HistoryButton>
+        <HistoryButton type="undo" :disabled="!canUndo" :detail="canUndo ? undoLabel : ''" :title="undoTitle" @click="buildEditor.undo()">Undo</HistoryButton>
+        <HistoryButton type="redo" :disabled="!canRedo" :detail="canRedo ? redoLabel : ''" :title="redoTitle" @click="buildEditor.redo()">Redo</HistoryButton>
       </div>
     </div>
 

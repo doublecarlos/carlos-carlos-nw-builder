@@ -2,7 +2,7 @@
 // The "label / value" table shape repeated across StatPanel.vue's IL/HP tile, Other stats,
 // Ability scores, Enemy, Damage, Healing and EHP sections -- one component instead of the same
 // markup seven times over.
-import IconButton from '../IconButton.vue';
+import IconButton from './IconButton.vue';
 
 defineProps<{
   rows: { key: string; label: string; value: string; lead?: boolean; muted?: boolean; onInfo?: (event: MouseEvent) => void }[];

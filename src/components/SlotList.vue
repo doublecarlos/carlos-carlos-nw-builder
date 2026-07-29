@@ -8,7 +8,7 @@ import { computed, reactive, ref, watch } from 'vue';
 import ItemPicker from './ItemPicker.vue';
 import ItemCard from './ItemCard.vue';
 import Options from './Options.vue';
-import IconButton from './IconButton.vue';
+import IconButton from './ui/IconButton.vue';
 import SectionCopyMenu from './SectionCopyMenu.vue';
 import Button from './ui/Button.vue';
 import Badge from './ui/Badge.vue';

@@ -127,7 +127,7 @@ test.describe('section collapse/expand', () => {
     await expect(slotRow(page, 'reinforcements.armorKit1')).toBeVisible();
 
     // Collapsing it back is not a build edit, so it never lands on the undo stack.
-    await expect(page.getByRole('button', { name: '↶ Undo' })).toBeDisabled();
+    await expect(page.getByRole('button', { name: 'Undo' })).toBeDisabled();
   });
 });
 

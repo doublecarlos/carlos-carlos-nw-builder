@@ -6,8 +6,8 @@
 // rating/percent pair each get their own merged overcap-or-headroom column (signed: positive
 // over the cap, negative is spare headroom), coloured independently since they cap separately.
 import { ref, computed, nextTick, onMounted, onUnmounted } from 'vue';
-import ComboBox from './ComboBox.vue';
-import IconButton from './IconButton.vue';
+import ComboBox from './ui/ComboBox.vue';
+import IconButton from './ui/IconButton.vue';
 import StatSourceCard from './StatSourceCard.vue';
 import Panel from './ui/Panel.vue';
 import PanelHead from './ui/PanelHead.vue';

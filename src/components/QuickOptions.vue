@@ -7,7 +7,7 @@
 // is rarely changed mid-session, so it moved to a collapsible section ahead of Gear
 // (SlotList.vue's `AdvancedOptions` section) instead of eating width here.
 import { computed } from 'vue';
-import ComboBox from './ComboBox.vue';
+import ComboBox from './ui/ComboBox.vue';
 import { NW_SCHEMA } from '../data';
 import { titleCase } from '../format';
 import * as library from '../stores/library';

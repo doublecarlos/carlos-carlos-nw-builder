@@ -7,8 +7,8 @@
 // Reuses ItemPicker's PickerMenu/PickerRow primitives rather than inventing a second look for
 // the same interaction.
 import { ref, computed, watch, nextTick } from 'vue';
-import PickerMenu from './ui/PickerMenu.vue';
-import PickerRow from './ui/PickerRow.vue';
+import PickerMenu from './PickerMenu.vue';
+import PickerRow from './PickerRow.vue';
 
 const MAX_ROWS = 60;
 
