@@ -24,9 +24,9 @@ const props = withDefaults(defineProps<{
   build: Build;
   result: ResolvedBuild;
   context: BuildContext;
-  // sectionId (plus 'options') -> open/closed. Owned by App.vue (`build.expanded`, saved
-  // with the build) so it survives a reload the same way the rest of the build does --
-  // this component only reads it and asks for changes via `toggle-section`/`set-expanded`.
+  // sectionId (plus 'options') -> open/closed. Owned by App.vue as a UI-level preference
+  // (shared across every build, not saved with one) -- this component only reads it and
+  // asks for changes via `toggle-section`/`set-expanded`.
   expanded: Record<string, boolean>;
   // The quick-compare picker in App.vue. `compareBuild` alone (no highlight) still backs
   // the other-build note under a differing row; `highlightDiff` adds the row colour;

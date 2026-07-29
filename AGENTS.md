@@ -89,7 +89,7 @@ playwright.config.ts    testDir tests/e2e, starts the dev server, chromium only
 - Verify claims by testing the claim, not a proxy.
 - When a check fails, work out whether the code or the test is wrong before "fixing" anything
 - Commit only when asked. Branch rather than committing to `main` directly.
-- Use playwright-cli to test the UI when making changes. Save playwright artifacts in `workspace/` (gitignored).
-- Add unit tests or playwright tests as needed. Test intent, not exact code behavior.
+- When implementing a feature or fix, also add automated tests for it. Test intent, not exact code behavior. This is both for UI testing (playwright) or unit testing (vitest).
+- `playwright-cli` is available if you need to "control" a browser to analyse page behavior on the spot.
 - Comments should be concise. Tone down the verbosity.
 - When creating branches, use an appropriate prefix (feature/, fix/, etc)

@@ -77,8 +77,8 @@ test.describe('section collapse/expand', () => {
 
   test('"expand all" / "collapse all" open and close every real section, but never Options', async ({ page }) => {
     await openBuilder(page);
-    // Gear starts open, Reinforcements starts closed, Options starts closed -- see storage.ts's
-    // `defaultExpanded` (only "gear" is in `OPEN_BY_DEFAULT`).
+    // Gear starts open, Reinforcements starts closed, Options starts closed -- see App.vue's
+    // `OPEN_BY_DEFAULT` (only "gear" is in it).
     await expect(slotRow(page, 'gear.head')).toBeVisible();
     await expect(slotRow(page, 'reinforcements.armorKit1')).toBeHidden();
     await expect(page.locator('.options')).toBeHidden();
@@ -102,6 +102,32 @@ test.describe('section collapse/expand', () => {
     await openBuilder(page);
     await expect(headerRow(page, 'options').locator('.section-count')).toHaveCount(0);
     await expect(headerRow(page, 'gear').locator('.section-count')).toHaveText(/^\d+\/\d+$/);
+  });
+
+  test('open/closed state survives a reload', async ({ page }) => {
+    await openBuilder(page);
+    await expect(slotRow(page, 'reinforcements.armorKit1')).toBeHidden();
+
+    await headerRow(page, 'reinforcements').click();
+    await expect(slotRow(page, 'reinforcements.armorKit1')).toBeVisible();
+
+    await page.reload();
+    await expect(headerRow(page, 'gear')).toBeVisible();
+    await expect(slotRow(page, 'reinforcements.armorKit1')).toBeVisible();
+  });
+
+  test('open/closed state is a UI preference, not saved with the build', async ({ page }) => {
+    await openBuilder(page);
+    await headerRow(page, 'reinforcements').click();
+    await expect(slotRow(page, 'reinforcements.armorKit1')).toBeVisible();
+
+    // A brand-new build sees the same section states -- proving they live outside any one
+    // build's own document rather than resetting to the shared defaults.
+    await page.getByRole('button', { name: '+ New build' }).click();
+    await expect(slotRow(page, 'reinforcements.armorKit1')).toBeVisible();
+
+    // Collapsing it back is not a build edit, so it never lands on the undo stack.
+    await expect(page.getByRole('button', { name: '↶ Undo' })).toBeDisabled();
   });
 });
 

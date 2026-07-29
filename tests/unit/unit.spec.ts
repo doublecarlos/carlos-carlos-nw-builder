@@ -25,7 +25,7 @@ function runBuild(choices: Record<string, string>, contextOverrides: Record<stri
     context.toggles = { ...BASE_CONTEXT.toggles, ...contextOverrides.toggles };
   }
   // Deliberately minimal -- only choices/values/context are exercised by resolveBuild, so
-  // this test fixture skips the rest of Build's fields (id/name/updated/compare/expanded).
+  // this test fixture skips the rest of Build's fields (id/name/updated/compare).
   const result: any = engine.resolveBuild(built, { choices, values, context } as unknown as Build);
   result.activeById = new Map(
     result.bonuses.filter((b: any) => b.active).map((b: any) => [b.id, b]),

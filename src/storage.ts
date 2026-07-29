@@ -11,7 +11,7 @@
 // `nw:current-build`; that key is migrated into the saved library on first load and then
 // removed.
 
-import { NW_SLOTS, NW_SCHEMA } from './data';
+import { NW_SCHEMA } from './data';
 import * as catalog from './catalog';
 import type { Build, ForteSplit, Library, Collection, Collections, CatalogOverlay } from './types';
 
@@ -19,6 +19,7 @@ const KEY = 'nw:builds';
 const DRAFT_KEY = 'nw:builds-draft';
 const LEGACY_KEY = 'nw:current-build';
 const OVERLAY_KEY = 'nw:catalog-overlay';
+const UI_KEY = 'nw:ui';
 const COLLECTIONS_KEY = 'nw:collections';
 const COLLECTIONS_DRAFT_KEY = 'nw:collections-draft';
 const HASH_PREFIX = '#b=';
@@ -34,17 +35,7 @@ const PLAIN = 'j';
  */
 const DEFAULT_FORTE: Required<ForteSplit> = { primary: 'power_p', secondaryA: 'strike_p', secondaryB: 'awareness_p' };
 
-// slot-list.js's own default: every section collapsed except Gear, plus the Options header
-// (not a real section, so it isn't in `NW_SLOTS.sections`) also collapsed.
-const OPEN_BY_DEFAULT = new Set(['gear']);
-
 export const newId = (prefix = 'b') => `${prefix}_${Math.random().toString(36).slice(2, 8)}${Date.now().toString(36).slice(-3)}`;
-
-function defaultExpanded() {
-  const expanded: Record<string, boolean> = { options: false };
-  for (const section of NW_SLOTS.sections) expanded[section.id] = OPEN_BY_DEFAULT.has(section.id);
-  return expanded;
-}
 
 export function defaultBuild(name = 'New build'): Build {
   const defaults = NW_SCHEMA.context.defaults;
@@ -64,9 +55,6 @@ export function defaultBuild(name = 'New build'): Build {
     // against. `id` is another build's id, resolved (and gracefully dropped if it no longer
     // exists) by App.vue's own `compareBuild` computed, not here.
     compare: { id: '', highlight: false, onlyDiff: false },
-    // Which sections slot-list.js has open. Also saved with the build, for the same reason:
-    // reopening a build should look the way you left it.
-    expanded: defaultExpanded(),
   };
 }
 
@@ -150,7 +138,6 @@ export function normalise(raw: unknown, { keepId = true }: { keepId?: boolean } 
       highlight: Boolean(compare.highlight),
       onlyDiff: Boolean(compare.onlyDiff),
     },
-    expanded: { ...base.expanded, ...booleans(raw.expanded) },
   };
 }
 
@@ -472,6 +459,33 @@ export function saveOverlay(overlay: CatalogOverlay) {
   try {
     if (catalog.isEmpty(overlay)) window.localStorage.removeItem(OVERLAY_KEY);
     else window.localStorage.setItem(OVERLAY_KEY, JSON.stringify(overlay));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// --- ui state ----------------------------------------------------------------------------
+// View-only preferences (e.g. which SlotList sections are open) that live alongside builds
+// but aren't part of any one build -- same reasoning as the catalogue overlay above. App.vue
+// supplies its own defaults for anything missing here, so this only has to carry what's set.
+
+export interface UiState {
+  expanded: Record<string, boolean>;
+}
+
+export function loadUiState(): Partial<UiState> {
+  try {
+    const stored = JSON.parse(window.localStorage.getItem(UI_KEY) ?? 'null');
+    return isPlain(stored) ? { expanded: booleans(stored.expanded) } : {};
+  } catch {
+    return {};
+  }
+}
+
+export function saveUiState(state: UiState) {
+  try {
+    window.localStorage.setItem(UI_KEY, JSON.stringify(state));
     return true;
   } catch {
     return false;

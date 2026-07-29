@@ -247,7 +247,6 @@ export interface Build {
   values: Record<string, number>;
   context: BuildContext;
   compare: BuildCompare;
-  expanded: Record<string, boolean>;
   catalog?: CatalogOverlay;
 }
 

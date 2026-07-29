@@ -9,7 +9,7 @@
 // Every mutation goes through a method here rather than being written into the build from a
 // child component. That is what makes the undo stack a dozen lines instead of a subsystem:
 // `snapshot()` runs at exactly one layer, and nothing can edit a build behind its back.
-import { ref, computed, watch, onMounted, onUnmounted, markRaw } from 'vue';
+import { ref, reactive, computed, watch, onMounted, onUnmounted, markRaw } from 'vue';
 import BuildBar from './components/BuildBar.vue';
 import BuildNav from './components/BuildNav.vue';
 import BonusInspector from './components/BonusInspector.vue';
@@ -24,6 +24,7 @@ import * as format from './format';
 import * as catalog from './catalog';
 import * as engine from './engine';
 import * as fsStore from './fs-store';
+import { NW_SLOTS } from './data';
 import type { Build, Collection, CatalogOverlay, ResolvedBuild } from './types';
 
 interface HistoryEntry { json: string; label: string; }
@@ -113,6 +114,19 @@ const view = ref<'builder' | 'editor'>(initialRoute.view === 'editor' ? 'editor'
 const histories = ref<Record<string, BuildHistory>>({});
 
 const tab = ref<'stats' | 'bonuses'>(initialRoute.tab === 'bonuses' ? 'bonuses' : 'stats');
+
+// Which SlotList sections are open. A UI preference, not a build edit -- shared across every
+// build rather than saved with one, and never run through `snapshot()`. Persisted under its
+// own key (`storage.loadUiState`/`saveUiState`) rather than with the build, so it survives a
+// reload without being part of the document. Every section starts collapsed except Gear, plus
+// the Options header (not a real section, so it isn't in `NW_SLOTS.sections`).
+const OPEN_BY_DEFAULT = new Set(['gear']);
+const savedExpanded = storage.loadUiState().expanded;
+const expanded = reactive<Record<string, boolean>>({ options: savedExpanded?.options ?? false });
+for (const section of NW_SLOTS.sections) {
+  expanded[section.id] = savedExpanded?.[section.id] ?? OPEN_BY_DEFAULT.has(section.id);
+}
+
 let saveTimer: number | undefined;
 let collectionsSaveTimer: number | undefined;
 let noticeTimer: number | undefined;
@@ -399,16 +413,14 @@ function setCompareFlag(key: string, value: boolean) {
   (build.value.compare as unknown as Record<string, boolean>)[key] = value;
 }
 
-// Same reasoning as compare above: which sections are open is saved with the build, but
-// toggling one is not a "build edit" worth an undo step.
 function toggleSection(sectionId: string) {
-  build.value.expanded[sectionId] = !build.value.expanded[sectionId];
+  expanded[sectionId] = !expanded[sectionId];
 }
 
 /** "expand all"/"collapse all" -- `db.sections` only, same as before: the Options header
  * isn't a real section and has never been part of this. */
 function setExpanded(open: boolean) {
-  for (const section of db.value.sections) build.value.expanded[section.id] = open;
+  for (const section of db.value.sections) expanded[section.id] = open;
 }
 
 function setContext(key: string, value: string | number | boolean) {
@@ -978,6 +990,8 @@ watch(notice, (value) => {
 
 watch(workspaceOverlay, (value) => { storage.saveOverlay(value); }, { deep: true });
 
+watch(expanded, () => { storage.saveUiState({ expanded: { ...expanded } }); }, { deep: true });
+
 onMounted(() => {
   window.addEventListener('keydown', onKeydown);
   window.addEventListener('popstate', onPopState);
@@ -1083,7 +1097,7 @@ onUnmounted(() => {
           :build="build"
           :result="resolved.result"
           :context="build.context"
-          :expanded="build.expanded"
+          :expanded="expanded"
           :compare-build="compareBuild"
           :compare-result="compareResolved?.ok ? compareResolved.result : null"
           :highlight-diff="build.compare.highlight"
