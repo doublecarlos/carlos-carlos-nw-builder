@@ -1,5 +1,6 @@
 import { createApp } from 'vue';
 import App from './App.vue';
+import './base.css'
 
 declare global {
   interface Window {

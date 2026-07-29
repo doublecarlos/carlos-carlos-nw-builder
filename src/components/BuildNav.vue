@@ -111,7 +111,7 @@ function openMenuFor(type: string, id: string, event: MouseEvent) {
     openMenu.value = null;
     return;
   }
-  const wrap = (event.currentTarget as HTMLElement).closest('.nav-menu-wrap') as HTMLElement;
+  const wrap = (event.currentTarget as HTMLElement).closest('.nav-row')?.querySelector('.nav-menu-wrap') as HTMLElement;
   const rect = wrap.getBoundingClientRect();
   menuPos.top = rect.bottom + 2;
   menuPos.left = rect.right;
@@ -136,7 +136,7 @@ function closeMenu() {
 /** Closes any open menu/confirm when a click lands outside the sidebar entirely --
  * inside it, each control (menu, rename input) already closes itself on its own action. */
 function onDocumentClick(event: MouseEvent) {
-  if (root.value?.contains(event.target as Node)) return;
+  if ((event.target as HTMLElement).closest('.navmenu')) return;
   closeMenu();
 }
 
@@ -375,6 +375,7 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
+
 .build-nav {
   flex: none;
   width: 236px;
@@ -403,10 +404,16 @@ onUnmounted(() => {
 }
 .nav-row--collection { font-weight: 600; }
 .nav-row--build { padding-left: 18px; }
-.nav-row.is-active { background: var(--accent-soft); }
+.nav-row--build.is-active { background: var(--accent-soft); }
+.nav-row--collection.is-active .nav-name { text-decoration: underline; }
 .nav-row--actions { color: var(--muted); gap: 10px; padding-left: 18px; }
 .nav-row--build.nav-row--actions { padding-left: 18px; }
 .nav-row--top { border-top: 1px solid var(--line); margin-top: 4px; padding-left: 4px; padding-top: 6px; }
+
+.nav-builds {
+  margin-left: 5px;
+  border-left: 1px solid var(--accent)
+}
 
 .nav-chevron {
   background: none;
