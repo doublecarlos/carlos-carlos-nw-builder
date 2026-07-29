@@ -373,6 +373,21 @@ function applyFromCompare(slotId: string) {
   }
 }
 
+/** The quick-compare picker's "apply" on a differing typed value (SlotList.vue): copies just
+ * the compare build's magnitude for a slot whose item already matches -- `applyFromCompare`
+ * above copies choice and value together, which would be the wrong tool here since the item
+ * is not what differs. */
+function applyValueFromCompare(slotId: string) {
+  const other = compareBuild.value;
+  if (!other) return;
+  const slot = slotLabel(slotId);
+  const value = other.values?.[slotId];
+  snapshot(`value:${slotId}`,
+    `${slot} value → ${value ?? '(none)'} (from “${other.name}”)`);
+  if (value != null) build.value.values[slotId] = value;
+  else delete build.value.values[slotId];
+}
+
 // Picker + toggles are a view preference, not a build edit -- saved with the build (so
 // reopening it remembers what it was compared against) but deliberately not run through
 // `snapshot()`, so flipping them never costs an undo step.
@@ -1029,6 +1044,9 @@ onUnmounted(() => {
 
         <QuickOptions
           :context="build.context"
+          :compare-context="compareBuild?.context ?? null"
+          :compare-name="compareBuild?.name ?? ''"
+          :highlight-diff="build.compare.highlight"
           @set="setContext"
           @set-toggle="setToggle" />
 
@@ -1067,6 +1085,7 @@ onUnmounted(() => {
           :context="build.context"
           :expanded="build.expanded"
           :compare-build="compareBuild"
+          :compare-result="compareResolved?.ok ? compareResolved.result : null"
           :highlight-diff="build.compare.highlight"
           :only-diff="build.compare.onlyDiff"
           :saved-build="savedById[activeId]"
@@ -1076,6 +1095,7 @@ onUnmounted(() => {
           @set="setContext"
           @set-forte="setForte"
           @apply-slot="applyFromCompare"
+          @apply-value="applyValueFromCompare"
           @toggle-section="toggleSection"
           @set-expanded="setExpanded"
           @edit-item="editItem"

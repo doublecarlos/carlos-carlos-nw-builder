@@ -15,7 +15,8 @@ import { label as statLabelFmt, abbr, signedStat } from '../format';
 import { useHoverCard } from '../composables/useHoverCard';
 import { useKeyboardCursor } from '../composables/useKeyboardCursor';
 import type {
-  Db, Build, ResolvedBuild, BuildContext, Item, EvaluatedBonus, EngineRow, EngineError, Slot, SlotSection,
+  Db, Build, ResolvedBuild, BuildContext, Item, EvaluatedBonus, StatValues, EngineRow, EngineError, Slot,
+  SlotSection,
 } from '../types';
 
 const props = withDefaults(defineProps<{
@@ -29,8 +30,13 @@ const props = withDefaults(defineProps<{
   expanded: Record<string, boolean>;
   // The quick-compare picker in App.vue. `compareBuild` alone (no highlight) still backs
   // the other-build note under a differing row; `highlightDiff` adds the row colour;
-  // `onlyDiff` hides everything that agrees.
+  // `onlyDiff` hides everything that agrees. `compareResult` is `compareBuild` resolved
+  // against the active build's own `db` (App.vue's `compareResolved`) -- needed alongside
+  // `compareBuild` because a bonus can resolve differently between the two builds even when
+  // the same item is equipped (a gate reading class/role/toggles/other slots), which a plain
+  // `build.choices` comparison can never see.
   compareBuild?: Build | null;
+  compareResult?: ResolvedBuild | null;
   highlightDiff?: boolean;
   onlyDiff?: boolean;
   // The active build's last-saved snapshot (App.vue's `savedById[activeId]`) -- a plain dot
@@ -44,6 +50,7 @@ const props = withDefaults(defineProps<{
   otherBuilds?: { value: string; label: string }[];
 }>(), {
   compareBuild: null,
+  compareResult: null,
   highlightDiff: false,
   onlyDiff: false,
   savedBuild: null,
@@ -56,6 +63,7 @@ const emit = defineEmits<{
   set: [key: string, value: string | number | boolean];
   'set-forte': [slot: string, key: string];
   'apply-slot': [slotId: string];
+  'apply-value': [slotId: string];
   'toggle-section': [sectionId: string];
   'set-expanded': [open: boolean];
   'edit-item': [name: string];
@@ -138,6 +146,134 @@ function unsaved(slotId: string) {
   return (props.build.values[slotId] ?? null) !== (props.savedBuild.values[slotId] ?? null);
 }
 
+/** True if this slot's typed dynamic-modification magnitude differs from the compare
+ * build's -- only meaningful when the same item occupies the slot in both (a differing
+ * item already gets its own note via `differs` above, and the two magnitudes would not be
+ * comparable if the items' `dynamicStat` ranges don't even match). */
+function valueDiffers(slotId: string) {
+  if (!props.compareBuild || differs(slotId)) return false;
+  if (!itemIn(slotId)?.dynamicStat) return false;
+  return (props.build.values[slotId] ?? null) !== (props.compareBuild.values?.[slotId] ?? null);
+}
+
+function statsEqual(a?: StatValues | null, b?: StatValues | null) {
+  const aKeys = Object.keys(a ?? {});
+  const bKeys = Object.keys(b ?? {});
+  if (aKeys.length !== bKeys.length) return false;
+  return aKeys.every((key) => (a as StatValues)[key] === (b ?? {})[key]);
+}
+
+/** Same bonus, same gate inputs on paper (same equipped item) -- but active/excluded/stacks/
+ * the stats it actually contributes can still differ, since a `when` gate can read class,
+ * role, toggles, duration or *other* slots' items, none of which `differs()` above looks at. */
+function bonusStatusEqual(a: EvaluatedBonus | null, b: EvaluatedBonus | null) {
+  if (!a || !b) return !a && !b;
+  return a.active === b.active && a.excluded === b.excluded && a.stacks === b.stacks
+    && statsEqual(a.appliedStats, b.appliedStats);
+}
+
+/** One sentence per differing bonus, specific to *what* differs -- active/excluded/stacks/
+ * amount are distinct, useful facts, not just "this is different somehow". */
+function describeBonusDiff(here: EvaluatedBonus | null, there: EvaluatedBonus | null, name: string) {
+  const otherName = props.compareBuild?.name ?? 'the compare build';
+  if (!here || !there) return `${name} could not be compared with “${otherName}”.`;
+  if (here.active !== there.active) {
+    return here.active
+      ? `${name} is active here but not in “${otherName}”.`
+      : `${name} is active in “${otherName}” but not here.`;
+  }
+  if (here.excluded !== there.excluded) {
+    return here.excluded
+      ? `${name} is suppressed by another bonus here, but not in “${otherName}”.`
+      : `${name} is suppressed by another bonus in “${otherName}”, but not here.`;
+  }
+  if (here.stacks !== there.stacks) {
+    return `${name} stacks ×${here.stacks} here vs ×${there.stacks} in “${otherName}”.`;
+  }
+  return `${name} grants a different amount in “${otherName}”.`;
+}
+
+/**
+ * Every bonus this slot's item takes part in whose resolved outcome (active/excluded/
+ * stacks/applied amount) doesn't match the compare build -- skipped entirely when the
+ * slot's own choice already differs, since that note covers it and the two bonus lists
+ * would otherwise not even be comparable apples-to-apples.
+ */
+function bonusDiffsFor(slotId: string): { id: string; message: string }[] {
+  if (!props.compareBuild || !props.compareResult || differs(slotId)) return [];
+  const item = itemIn(slotId);
+  if (!item) return [];
+  const out: { id: string; message: string }[] = [];
+  const seen = new Set<string>();
+  for (const candidate of props.db.bonusesFor(item)) {
+    const id = candidate.bonus.id;
+    if (seen.has(id)) continue;
+    seen.add(id);
+    const here = props.result.bonuses.find((bonus) => bonus.id === id) ?? null;
+    const there = props.compareResult.bonuses.find((bonus) => bonus.id === id) ?? null;
+    if (bonusStatusEqual(here, there)) continue;
+    out.push({ id, message: describeBonusDiff(here, there, candidate.bonus.name ?? id) });
+  }
+  return out;
+}
+
+interface SlotDiff {
+  choice: boolean;
+  value: boolean;
+  bonuses: { id: string; message: string }[];
+}
+
+/**
+ * One combined pass per slot -- choice, typed value and bonus outcome -- computed once
+ * (like `rowBySlot`/`errorsBySlot` above) rather than recomputed per template access, since
+ * `bonusDiffsFor` walks the item's own bonus list per call.
+ */
+const rowDiffsBySlot = computed(() => {
+  const map = new Map<string, SlotDiff>();
+  if (!props.compareBuild) return map;
+  for (const slot of props.db.slots) {
+    const choice = differs(slot.id);
+    const value = !choice && valueDiffers(slot.id);
+    const bonuses = choice ? [] : bonusDiffsFor(slot.id);
+    if (choice || value || bonuses.length) map.set(slot.id, { choice, value, bonuses });
+  }
+  return map;
+});
+
+function rowDiff(slotId: string): SlotDiff | undefined {
+  return rowDiffsBySlot.value.get(slotId);
+}
+
+function rowHasDiff(slotId: string) {
+  return rowDiffsBySlot.value.has(slotId);
+}
+
+// Same field list Options.vue itself diffs against (class/role/damageType/magnitude/the 3
+// forte picks/m32Forte) -- duplicated here rather than read back off the child component,
+// same reasoning as `differs`/`rowHasDiff` computing their own counts directly off the data
+// instead of asking SlotList's own children to report back.
+const OPTIONS_FIELDS = ['class', 'role', 'damageType', 'magnitude', 'm32Forte'] as const;
+const FORTE_KEYS = ['primary', 'secondaryA', 'secondaryB'];
+
+/** How many Options fields (SlotList's own collapsible "Options" section, not the top bar's
+ * QuickOptions) differ from the compare build -- feeds that section header's own diff badge,
+ * same as every other section below. */
+const optionsDiffCount = computed(() => {
+  if (!props.compareBuild) return 0;
+  const mine = props.context;
+  const theirs = props.compareBuild.context;
+  let count = 0;
+  for (const key of OPTIONS_FIELDS) {
+    if ((mine as unknown as Record<string, unknown>)[key] !== (theirs as unknown as Record<string, unknown>)[key]) count += 1;
+  }
+  for (const key of FORTE_KEYS) {
+    const mineForte = (mine.forte as Record<string, string | undefined>)?.[key] ?? '';
+    const theirForte = (theirs.forte as Record<string, string | undefined>)?.[key] ?? '';
+    if (mineForte !== theirForte) count += 1;
+  }
+  return count;
+});
+
 interface SectionRow extends SlotSection {
   slots: Slot[];
   filled: number;
@@ -154,10 +290,12 @@ const sections = computed<SectionRow[]>(() => {
       const allSlots = props.db.slots.filter((slot) => slot.section === section.id);
       // Counted off the section's full slot list, not the (possibly onlyDiff-filtered)
       // one below -- the badge's job is telling a *collapsed* section apart, where
-      // `slots` would otherwise be invisible. Same reasoning for `unsaved`.
-      const diffs = props.compareBuild ? allSlots.filter((slot) => differs(slot.id)).length : 0;
+      // `slots` would otherwise be invisible. Same reasoning for `unsaved`. A "diff" here is
+      // the combined choice/value/bonus-outcome check (`rowHasDiff`), not just a differing
+      // choice, so the badge also catches a same-item slot whose bonus or typed value differs.
+      const diffs = props.compareBuild ? allSlots.filter((slot) => rowHasDiff(slot.id)).length : 0;
       const unsavedFlag = allSlots.some((slot) => unsaved(slot.id));
-      const slots = onlyDiff ? allSlots.filter((slot) => differs(slot.id)) : allSlots;
+      const slots = onlyDiff ? allSlots.filter((slot) => rowHasDiff(slot.id)) : allSlots;
       let filled = 0;
       let errors = 0;
       for (const slot of slots) {
@@ -348,10 +486,14 @@ onUnmounted(() => document.removeEventListener('mousedown', onDocumentClick));
                 @click="toggle('options'); setCursor('header', 'options')">
           <span class="section-chevron">{{ expanded.options ? '▾' : '▸' }}</span>
           <span class="section-label">Options</span>
+          <span v-if="highlightDiff && optionsDiffCount" class="badge badge--diff">{{ optionsDiffCount }}</span>
         </button>
       </div>
       <div v-if="expanded.options" class="section-body">
         <Options :context="context"
+                :compare-context="compareBuild?.context ?? null"
+                :compare-name="compareBuild?.name ?? ''"
+                :highlight-diff="highlightDiff"
                 @set="(key, value) => $emit('set', key, value)"
                 @set-forte="(slot, key) => $emit('set-forte', slot, key)" />
       </div>
@@ -388,7 +530,7 @@ onUnmounted(() => document.removeEventListener('mousedown', onDocumentClick));
       <div v-if="expanded[section.id]" class="section-body">
         <div v-for="slot in section.slots" :key="slot.id" class="slot-row" tabindex="-1"
              :class="{ 'is-hovered': hover?.slotId === slot.id, 'is-cursor': isCursor('slot', slot.id),
-                       'is-diff': highlightDiff && differs(slot.id) }"
+                       'is-diff': highlightDiff && rowHasDiff(slot.id) }"
              :data-cursor-key="'slot:' + slot.id"
              @mouseenter="onRowEnter($event, slot.id)"
              @mouseleave="onRowLeave"
@@ -419,6 +561,17 @@ onUnmounted(() => document.removeEventListener('mousedown', onDocumentClick));
               </button>
             </p>
 
+            <!-- Same item both sides, but the bonus(es) it grants resolve differently --
+                 e.g. a `when` gate reading class/role/toggles/duration/other slots. No apply
+                 action: there is no single field to copy, the difference lives elsewhere in
+                 the build. -->
+            <template v-if="highlightDiff">
+              <p v-for="bonusDiff in rowDiff(slot.id)?.bonuses ?? []" :key="bonusDiff.id"
+                 class="slot-bonus-diff-note">
+                {{ bonusDiff.message }}
+              </p>
+            </template>
+
             <!-- Dynamic weapon modifications carry a user-typed magnitude. Driven by the
                  item's own `dynamicStat`, not by a hard-coded slot id, so a second
                  dynamic modification would work with no UI change. -->
@@ -436,6 +589,13 @@ onUnmounted(() => document.removeEventListener('mousedown', onDocumentClick));
                 {{ itemIn(slot.id)?.dynamicMin }}–{{ itemIn(slot.id)?.dynamicMax }}
               </span>
             </div>
+
+            <p v-if="highlightDiff && rowDiff(slot.id)?.value" class="slot-diff-note">
+              {{ compareBuild?.name }}: {{ compareBuild?.values?.[slot.id] ?? '(none)' }}
+              <button type="button" class="link" @click.stop="$emit('apply-value', slot.id)">
+                apply
+              </button>
+            </p>
 
             <p v-for="error in errorsFor(slot.id)" :key="error.kind + error.choice"
                class="slot-error">{{ error.message }}</p>
@@ -490,6 +650,10 @@ onUnmounted(() => document.removeEventListener('mousedown', onDocumentClick));
 .section-head:hover { background: var(--surface-2); }
 .section-chevron { color: var(--muted); width: 10px; }
 .section-count { color: var(--muted); font-weight: 400; margin-left: auto; }
+/* The Options section header has no `.section-count` (no filled/total to show) to carry the
+ * `margin-left: auto` that pushes every other section's badges to the right edge -- this
+ * puts the same push directly on its own diff badge instead. */
+.section-label + .badge--diff { margin-left: auto; }
 .section-revert { flex: none; margin-right: 6px; }
 
 /* The section header's "copy this section from…" control -- an icon button, not a permanent
@@ -576,6 +740,11 @@ onUnmounted(() => document.removeEventListener('mousedown', onDocumentClick));
 
 .slot-diff-note { color: var(--muted); font-size: 1rem; margin: 2px 0 0; }
 .slot-diff-note button.link { color: var(--accent); margin-left: 2px; padding: 0; }
+
+/* Same item, differently-resolved bonus -- no "apply" action fits (the cause lives
+ * elsewhere in the build), so this reads as a plain warning note rather than the
+ * accent-coloured choice/value diff notes above. */
+.slot-bonus-diff-note { color: var(--diff); font-size: 1rem; font-weight: 600; margin: 2px 0 0; }
 
 .slot-row.is-hovered { background: color-mix(in srgb, var(--accent-soft) 40%, transparent); }
 

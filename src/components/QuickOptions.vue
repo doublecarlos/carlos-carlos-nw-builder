@@ -21,7 +21,20 @@ const TOGGLE_LABELS: Record<string, string> = { procs: 'Other procs', artifactCa
 // combatTypes as the sheet phrased them ("Single Target"), not a raw title-case of the key.
 const TYPE_LABELS: Record<string, string> = { single: 'Single Target', aoe: 'AoE', mixed: 'Mixed' };
 
-const props = defineProps<{ context: BuildContext }>();
+const props = withDefaults(defineProps<{
+  context: BuildContext;
+  // The quick-compare build's own context (App.vue's `compareBuild.context`) -- `null` means
+  // "not comparing", same convention as SlotList's `compareBuild` prop. `highlightDiff`
+  // mirrors `build.compare.highlight` so this bar obeys the same on/off toggle as the rest
+  // of the comparison highlighting.
+  compareContext?: BuildContext | null;
+  compareName?: string;
+  highlightDiff?: boolean;
+}>(), {
+  compareContext: null,
+  compareName: '',
+  highlightDiff: false,
+});
 
 const emit = defineEmits<{
   set: [key: string, value: string | number | boolean];
@@ -44,6 +57,37 @@ function onDuration(event: Event) {
   const value = Number((event.target as HTMLInputElement).value);
   emit('set', 'duration', Number.isFinite(value) ? Math.max(value, 0) : 0);
 }
+
+function toggleDiffers(name: string) {
+  if (!props.highlightDiff || !props.compareContext) return false;
+  return !!props.context.toggles?.[name] !== !!props.compareContext.toggles?.[name];
+}
+
+function fieldDiffers(key: 'combatType' | 'location' | 'duration') {
+  if (!props.highlightDiff || !props.compareContext) return false;
+  return props.context[key] !== props.compareContext[key];
+}
+
+const typeLabel = (value: string) => TYPE_LABELS[value] ?? titleCase(value);
+
+/** The hover tooltip for a differing field -- the label itself just goes bold/dotted/coloured
+ * (see `.field-diff` below), so this is the only place the compare build's actual value shows. */
+function toggleDiffTitle(name: string) {
+  const other = props.compareContext;
+  if (!other) return undefined;
+  return `${props.compareName}: ${other.toggles?.[name] ? 'on' : 'off'}`;
+}
+
+function diffTitle(key: 'combatType' | 'location' | 'duration') {
+  const other = props.compareContext;
+  if (!other) return undefined;
+  switch (key) {
+    case 'combatType': return `${props.compareName}: ${typeLabel(other.combatType)}`;
+    case 'location': return `${props.compareName}: ${titleCase(other.location)}`;
+    case 'duration': return `${props.compareName}: ${other.duration}s`;
+    default: return undefined;
+  }
+}
 </script>
 
 <template>
@@ -51,25 +95,31 @@ function onDuration(event: Event) {
     <label v-for="toggle in orderedToggles" :key="toggle.name" class="quickopts-row">
       <input type="checkbox" :checked="!!context.toggles?.[toggle.name]"
              @change="$emit('set-toggle', toggle.name, ($event.target as HTMLInputElement).checked)">
-      <span class="quickopts-label">{{ toggle.label }}</span>
+      <span class="quickopts-label" :class="{ 'field-diff': toggleDiffers(toggle.name) }"
+            :title="toggleDiffers(toggle.name) ? toggleDiffTitle(toggle.name) : undefined">
+        {{ toggle.label }}
+      </span>
     </label>
 
     <span class="quickopts-sep"></span>
 
     <div class="quickopts-row">
-      <span class="quickopts-label">Type</span>
+      <span class="quickopts-label" :class="{ 'field-diff': fieldDiffers('combatType') }"
+            :title="fieldDiffers('combatType') ? diffTitle('combatType') : undefined">Type</span>
       <ComboBox class="quickopts-combo" :model-value="context.combatType"
                 :options="typeOptions" @update:model-value="$emit('set', 'combatType', $event)" />
     </div>
 
     <div class="quickopts-row">
-      <span class="quickopts-label">Location</span>
+      <span class="quickopts-label" :class="{ 'field-diff': fieldDiffers('location') }"
+            :title="fieldDiffers('location') ? diffTitle('location') : undefined">Location</span>
       <ComboBox class="quickopts-combo" :model-value="context.location"
                 :options="locationOptions" @update:model-value="$emit('set', 'location', $event)" />
     </div>
 
     <div class="quickopts-row">
-      <span class="quickopts-label">Duration (s)</span>
+      <span class="quickopts-label" :class="{ 'field-diff': fieldDiffers('duration') }"
+            :title="fieldDiffers('duration') ? diffTitle('duration') : undefined">Duration (s)</span>
       <input class="num-input quickopts-num" type="number" min="0" step="1"
              :value="context.duration" @input="onDuration">
       <div class="quickopts-presets">
@@ -112,4 +162,11 @@ label.quickopts-row { cursor: pointer; }
   padding: 3px 6px;
 }
 .preset.is-on { background: var(--accent-soft); border-color: var(--accent); color: var(--text); }
+
+/* Quick-compare: this field differs from the compare build's own context -- same `--diff`
+ * accent SlotList.vue's row highlight and Options.vue's fields use. Deliberately quiet (bold
+ * label + a dot, no note line eating layout): the compare build's actual value is a hover
+ * away in the title tooltip, not printed inline. */
+.field-diff { color: var(--diff); cursor: help; font-weight: 700; }
+.field-diff::after { content: ' \25CF'; font-size: .6rem; vertical-align: middle; }
 </style>

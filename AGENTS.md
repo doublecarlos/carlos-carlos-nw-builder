@@ -84,4 +84,3 @@ tests/                 Vitest unit + fixture specs
 - Verify claims by testing the claim, not a proxy.
 - When a check fails, work out whether the code or the test is wrong before "fixing" anything
 - Commit only when asked. Branch rather than committing to `main` directly.
-- Update AGENTS.md as needed when doing changes, but keep it concise.
