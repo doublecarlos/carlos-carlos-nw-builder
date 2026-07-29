@@ -92,4 +92,5 @@ playwright.config.ts    testDir tests/e2e, starts the dev server, chromium only
 - When implementing a feature or fix, also add automated tests for it. Test intent, not exact code behavior. This is both for UI testing (playwright) or unit testing (vitest).
 - `playwright-cli` is available if you need to "control" a browser to analyse page behavior on the spot.
 - Comments should be concise. Tone down the verbosity.
-- When creating branches, use an appropriate prefix (feature/, fix/, etc)
+- When creating branches, use an appropriate prefix (feature/, fix/, etc).
+- Don't try to design icons by hand. If we need a new icon, ask for it.

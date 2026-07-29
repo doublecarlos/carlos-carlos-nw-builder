@@ -88,10 +88,10 @@ function nudge(direction: number, event: KeyboardEvent) {
 </script>
 
 <template>
-  <span class="pct-field">
+  <span class="relative inline-block w-28">
     <input
       ref="input"
-      class="pct-input"
+      class="w-full border border-line rounded-md pr-5 text-right tabular-nums text-accent focus:text-text"
       type="text"
       inputmode="decimal"
       autocomplete="off"
@@ -102,27 +102,6 @@ function nudge(direction: number, event: KeyboardEvent) {
       @input="onInput"
       @keydown.up="nudge(1, $event)"
       @keydown.down="nudge(-1, $event)">
-    <span class="pct-suffix">%</span>
+    <span class="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-sm text-muted">%</span>
   </span>
 </template>
-
-<style scoped>
-.pct-field { display: inline-block; position: relative; width: 110px; }
-.pct-input {
-  box-sizing: border-box;
-  font-variant-numeric: tabular-nums;
-  padding-right: 20px;
-  text-align: right;
-  width: 100%;
-}
-.pct-input:not(:focus) { color: var(--accent); }
-.pct-suffix {
-  color: var(--muted);
-  font-size: 1rem;
-  pointer-events: none;
-  position: absolute;
-  right: 7px;
-  top: 50%;
-  transform: translateY(-50%);
-}
-</style>

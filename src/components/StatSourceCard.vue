@@ -18,94 +18,31 @@ defineProps<{
 }>();
 
 defineEmits<{ close: [] }>();
+
+// Width (`w-64` = 256px) and max-height (`max-h-96` = 384px) are read back by StatPanel.vue's
+// own positioning logic (`CARD_W`) -- keep them in step. `.statcard` on the root is a bare JS
+// hook for that same positioning code (`closest('.statcard')`), not a style.
 </script>
 
 <template>
-  <div class="statcard">
-    <div class="statcard-head">
-      <span class="statcard-title">{{ label }}</span>
-      <button type="button" class="statcard-close" title="Close" @click="$emit('close')">×</button>
+  <!-- statcard/statcard-*: bare hook classes for StatPanel.vue's own positioning JS and the
+       e2e specs -- not styled through them, see the comment above. -->
+  <div class="statcard fixed z-40 max-h-96 w-64 max-w-[90vw] overflow-y-auto overscroll-contain rounded-md border border-line bg-surface px-2.5 py-2 shadow-lg">
+    <div class="sticky top-0 -mx-2.5 -mt-2 flex items-baseline justify-between gap-2 bg-surface px-2.5 pb-1 pt-2">
+      <span class="statcard-title font-semibold">{{ label }}</span>
+      <button type="button" class="statcard-close flex-none pl-2 leading-none text-muted hover:text-text" title="Close" @click="$emit('close')">×</button>
     </div>
     <template v-for="(section, i) in sections" :key="section.key">
-      <div v-if="sections.length > 1" class="statcard-section">{{ section.title }}</div>
-      <div v-if="section.sources.length" class="statcard-rows">
-        <div v-for="src in section.sources" :key="src.name" class="statcard-row">
+      <div v-if="sections.length > 1" class="statcard-section mt-1.5 text-sm uppercase tracking-wide text-muted">{{ section.title }}</div>
+      <div v-if="section.sources.length" class="statcard-rows flex flex-col">
+        <div v-for="src in section.sources" :key="src.name"
+             class="statcard-row flex justify-between gap-2 border-b border-line py-0.5 text-sm last:border-b-0">
           <span>{{ src.name }}</span>
-          <span class="num">{{ signedStat(section.key, src.value) }}</span>
+          <span class="tabular-nums">{{ signedStat(section.key, src.value) }}</span>
         </div>
       </div>
-      <div v-else class="dim statcard-empty">no contributing sources</div>
-      <div v-if="i < sections.length - 1" class="statcard-divider"></div>
+      <div v-else class="statcard-empty py-0.5 text-sm text-muted">no contributing sources</div>
+      <div v-if="i < sections.length - 1" class="mt-1.5 border-t border-line"></div>
     </template>
   </div>
 </template>
-
-<style scoped>
-.statcard {
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, .22);
-  /* Width/max-height read back by StatPanel.vue's own positioning logic -- keep in step with
-   * the constant there. */
-  width: 260px;
-  max-width: calc(100vw - 20px);
-  max-height: 380px;
-  overflow-y: auto;
-  /* Without this, a wheel scroll that reaches the card's own scroll limit chains onto the
-   * page underneath -- see ItemCard.vue's own identical comment. */
-  overscroll-behavior: contain;
-  padding: 9px 11px;
-  position: fixed;
-  z-index: 40;
-}
-
-.statcard-head {
-  align-items: baseline;
-  background: var(--surface);
-  display: flex;
-  gap: 8px;
-  justify-content: space-between;
-  /* Pinned so a long source list scrolls under the title/close button instead of past them. */
-  position: sticky;
-  top: -9px;
-  margin: -9px -11px 0;
-  padding: 9px 11px 4px;
-}
-.statcard-title { font-weight: 600; }
-.statcard-close {
-  background: none;
-  border: 0;
-  color: var(--muted);
-  cursor: pointer;
-  flex: none;
-  font-size: 1.1rem;
-  line-height: 1;
-  padding: 0 0 0 8px;
-}
-.statcard-close:hover { color: var(--text); }
-
-.statcard-section {
-  color: var(--muted);
-  font-size: 1rem;
-  letter-spacing: .05em;
-  margin-top: 6px;
-  text-transform: uppercase;
-}
-
-.statcard-rows { display: flex; flex-direction: column; }
-.statcard-row {
-  border-bottom: 1px solid var(--line);
-  display: flex;
-  font-size: 1rem;
-  gap: 8px;
-  justify-content: space-between;
-  padding: 3px 0;
-}
-.statcard-row:last-child { border-bottom: none; }
-.statcard-row .num { font-variant-numeric: tabular-nums; }
-
-.statcard-empty { font-size: 1rem; padding: 3px 0; }
-
-.statcard-divider { border-top: 1px solid var(--line); margin-top: 6px; }
-</style>

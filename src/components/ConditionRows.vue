@@ -9,6 +9,7 @@
 import { computed } from 'vue';
 import ComboBox from './ComboBox.vue';
 import IconButton from './IconButton.vue';
+import FormField from './ui/FormField.vue';
 import { NW_SCHEMA } from '../data';
 import { LEAF_TYPES, MAX_DEPTH, newLeafRow, newGroupRow, cloneRow, type ConditionRow } from '../condition-draft';
 
@@ -90,9 +91,11 @@ function optionsForCombo(type?: string) {
 </script>
 
 <template>
-  <div class="cond-list">
-    <div v-for="(row, i) in rows" :key="row.uid" class="cond-item">
-      <div v-if="row.kind === 'leaf'" class="cond-row">
+  <!-- One row per direct child of the list -- ruled off like a table so a run of conditions
+       reads as rows instead of a wrapped paragraph of buttons. -->
+  <div class="flex flex-col">
+    <div v-for="(row, i) in rows" :key="row.uid" class="border-y border-line/50 py-1">
+      <div v-if="row.kind === 'leaf'" class="flex flex-wrap items-center gap-1.5">
         <IconButton icon="arrow-up" title="Move up" :disabled="i === 0" @click="moveRow(i, -1)" />
         <IconButton icon="arrow-down" title="Move down" :disabled="i === rows.length - 1" @click="moveRow(i, 1)" />
         <IconButton icon="copy" title="Duplicate" @click="duplicateRow(i)" />
@@ -102,45 +105,40 @@ function optionsForCombo(type?: string) {
         <IconButton v-if="canNest" icon="circle-alert" title='Add &quot;Not&quot; condition group' @click="addGroup('not', i)" />
         <IconButton icon="trash" title="Remove condition" @click="removeRow(i)" />
 
-        <label class="field"><span class="field-label">Condition</span>
-          <ComboBox class="combo--cond-type" :model-value="row.type" :options="typeOptions"
-                    @update:model-value="v => { row.type = v; changeType(row) }" /></label>
+        <FormField label="Condition" class="min-w-0">
+          <ComboBox class="w-28" :model-value="row.type" :options="typeOptions"
+                    @update:model-value="v => { row.type = v; changeType(row) }" />
+        </FormField>
 
         <template v-if="row.type === 'duration'">
-          <label class="field"><span class="field-label">At least (s)</span>
-            <input type="number" v-model.number="row.atLeast"></label>
-          <label class="field"><span class="field-label">Below (s)</span>
-            <input type="number" v-model.number="row.below"></label>
+          <FormField label="At least (s)" class="min-w-0"><input class="w-24 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent" type="number" v-model.number="row.atLeast"></FormField>
+          <FormField label="Below (s)" class="min-w-0"><input class="w-24 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent" type="number" v-model.number="row.below"></FormField>
         </template>
         <template v-else-if="row.type === 'pieces'">
-          <label class="field"><span class="field-label">Set</span>
-            <ComboBox class="combo--set" :model-value="row.set" :options="setComboOptions"
-                      placeholder="— set —" @update:model-value="v => row.set = v" /></label>
-          <label class="field"><span class="field-label">At least (s)</span>
-            <input type="number" v-model.number="row.atLeast"></label>
-          <label class="field"><span class="field-label">Below (s)</span>
-            <input type="number" v-model.number="row.below"></label>
+          <FormField label="Set" class="min-w-0">
+            <ComboBox class="w-44" :model-value="row.set" :options="setComboOptions"
+                      placeholder="— set —" @update:model-value="v => row.set = v" />
+          </FormField>
+          <FormField label="At least (s)" class="min-w-0"><input class="w-24 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent" type="number" v-model.number="row.atLeast"></FormField>
+          <FormField label="Below (s)" class="min-w-0"><input class="w-24 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent" type="number" v-model.number="row.below"></FormField>
         </template>
         <template v-else-if="row.type === 'equipped'">
-          <label class="field"><span class="field-label">Tag</span>
-            <input type="text" v-model="row.tag" list="nw-tags"></label>
-          <label class="field"><span class="field-label">Or exact item name</span>
-            <input type="text" v-model="row.item"></label>
-          <label class="field"><span class="field-label">At least (s)</span>
-            <input type="number" v-model.number="row.atLeast"></label>
-          <label class="field"><span class="field-label">Below (s)</span>
-            <input type="number" v-model.number="row.below"></label>
+          <FormField label="Tag" class="min-w-0"><input class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent" type="text" v-model="row.tag" list="nw-tags"></FormField>
+          <FormField label="Or exact item name" class="min-w-0"><input class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent" type="text" v-model="row.item"></FormField>
+          <FormField label="At least (s)" class="min-w-0"><input class="w-24 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent" type="number" v-model.number="row.atLeast"></FormField>
+          <FormField label="Below (s)" class="min-w-0"><input class="w-24 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent" type="number" v-model.number="row.below"></FormField>
         </template>
         <template v-else>
-          <label class="field"><span class="field-label">Value</span>
-            <ComboBox v-if="optionsFor(row.type).length" class="combo--cond-value"
+          <FormField label="Value" class="min-w-0">
+            <ComboBox v-if="optionsFor(row.type).length" class="w-38"
                       :model-value="row.value" :options="optionsForCombo(row.type)"
                       @update:model-value="v => row.value = v" />
-            <input v-else type="text" v-model="row.value"></label>
+            <input v-else class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent" type="text" v-model="row.value">
+          </FormField>
         </template>
       </div>
 
-      <div v-else class="branch-row">
+      <div v-else class="flex flex-wrap items-center gap-1.5 mb-1">
         <IconButton icon="arrow-up" title="Move up" :disabled="i === 0" @click="moveRow(i, -1)" />
         <IconButton icon="arrow-down" title="Move down" :disabled="i === rows.length - 1" @click="moveRow(i, 1)" />
         <IconButton icon="copy" title="Duplicate" @click="duplicateRow(i)" />
@@ -150,32 +148,38 @@ function optionsForCombo(type?: string) {
         <IconButton v-if="canNest" icon="circle-alert" title='Add &quot;Not&quot; condition group' @click="addGroup('not', i)" />
         <IconButton icon="trash" title="Remove condition" @click="removeRow(i)" />
 
-        <div class="cond-group">
-          <div class="cond-group-head">
-            <span class="cond-group-op">{{ opLabel(row.op) }}</span>
+        <!-- A condition tree can sit on either a plain or already-recessed background
+             depending where it's embedded, so the fill mixes in the current text colour at
+             low alpha rather than a fixed surface colour -- it reads as a step down from
+             whatever it's sitting on either way. -->
+        <div class="w-full rounded-md border border-line border-l-4 border-l-muted bg-text/5 my-0.5 px-2 pb-0.5 pt-1">
+          <div class="flex flex-wrap items-center gap-1 mb-0.5">
+            <span class="rounded bg-surface-2 px-1.5 text-sm font-semibold uppercase tracking-wide">{{ opLabel(row.op) }}</span>
           </div>
-          <div v-for="(branch, bi) in row.branches" :key="bi" class="cond-branch">
-            <div v-if="row.op !== 'not' && bi > 0" class="cond-branch-op">
-              {{ row.op === 'any' ? 'or' : 'and' }}
-            </div>
-            <ConditionRows :rows="branch" :depth="depth + 1" :set-ids="setIds" />
-            <div v-if="row.op !== 'not'" class="cond-branch-actions">
-              <span class="hint">Branch: </span>
-              <IconButton icon="arrow-up" title="Move branch up" :disabled="bi === 0"
-                          @click="moveBranch(row, bi, -1)" />
-              <IconButton icon="arrow-down" title="Move branch down" :disabled="bi === (row.branches ?? []).length - 1"
-                          @click="moveBranch(row, bi, 1)" />
-              <IconButton icon="copy" title="Duplicate branch" @click="duplicateBranch(row, bi)" />
-              <IconButton icon="circle-plus" title="Insert branch" @click="insertBranch(row, bi)" />
-              <IconButton v-if="(row.branches ?? []).length > 1" icon="trash" title="Remove branch"
-                          @click="removeBranch(row, bi)" />
+          <div class="flex flex-col divide-y divide-dashed divide-line">
+            <div v-for="(branch, bi) in row.branches" :key="bi" class="py-0.5">
+              <div v-if="row.op !== 'not' && bi > 0" class="my-0.5 text-sm uppercase text-muted">
+                {{ row.op === 'any' ? 'or' : 'and' }}
+              </div>
+              <ConditionRows :rows="branch" :depth="depth + 1" :set-ids="setIds" />
+              <div v-if="row.op !== 'not'" class="my-1 flex items-center gap-0.5">
+                <span class="text-sm text-muted">Branch: </span>
+                <IconButton icon="arrow-up" title="Move branch up" :disabled="bi === 0"
+                            @click="moveBranch(row, bi, -1)" />
+                <IconButton icon="arrow-down" title="Move branch down" :disabled="bi === (row.branches ?? []).length - 1"
+                            @click="moveBranch(row, bi, 1)" />
+                <IconButton icon="copy" title="Duplicate branch" @click="duplicateBranch(row, bi)" />
+                <IconButton icon="circle-plus" title="Insert branch" @click="insertBranch(row, bi)" />
+                <IconButton v-if="(row.branches ?? []).length > 1" icon="trash" title="Remove branch"
+                            @click="removeBranch(row, bi)" />
+              </div>
             </div>
           </div>
         </div>
       </div>
     </div>
 
-    <div v-if="!rows.length" class="cond-add">
+    <div v-if="!rows.length" class="mt-1 flex flex-wrap gap-1">
       <IconButton icon="plus" title="Add condition" @click="addLeaf" />
       <template v-if="canNest">
         <IconButton icon="ampersand" title='Add &quot;All of&quot; condition group' @click="addGroup('all')" />
@@ -185,50 +189,3 @@ function optionsForCombo(type?: string) {
     </div>
   </div>
 </template>
-
-<style scoped>
-.cond-list { display: flex; flex-direction: column; }
-/* One row per direct child of the list -- ruled off like a table so a run of conditions
- * reads as rows instead of a wrapped paragraph of buttons. */
-.cond-item {
-  border-bottom: 1px solid color-mix(in srgb, var(--line) 50%, transparent);
-  border-top: 1px solid color-mix(in srgb, var(--line) 50%, transparent);
-  padding: 4px 0;
-}
-
-.branch-row { align-items: center; display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 4px; }
-.branch-row input { min-width: 90px; }
-
-.combo--cond-type { width: 110px; }
-.combo--cond-value { width: 150px; }
-
-/* A condition tree can sit on either a plain (`.editor-form`) or already-recessed
- * (`.bonus-edit`, `.tier`) background depending where it's embedded, so the fill can't be a
- * fixed surface color the way `.tier` is -- `currentColor` mixed at low alpha darkens on a
- * light parent and lightens on a dark one either way, so the box reads as a step down from
- * whatever it's sitting on rather than matching it outright. */
-.cond-group {
-  background: color-mix(in srgb, var(--text) 6%, transparent);
-  border: 1px solid var(--line);
-  border-left: 3px solid var(--muted);
-  border-radius: var(--radius);
-  margin: 3px 0;
-  padding: 5px 9px 3px;
-}
-.cond-group-head { align-items: center; display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 3px; }
-.cond-group-op {
-  background: var(--surface-2);
-  border-radius: 3px;
-  font-size: 1rem;
-  font-weight: 600;
-  letter-spacing: .04em;
-  padding: 1px 6px;
-  text-transform: uppercase;
-}
-.cond-branch { padding: 3px 0; }
-/* Dashed rule between sibling branches of the same group -- the "or"/"and" label already
- * says how they combine, this just makes the boundary between them visible at a glance. */
-.cond-branch + .cond-branch { border-top: 1px dashed var(--line); }
-.cond-branch-op { color: var(--muted); font-size: 1rem; margin: 1px 0 2px; text-transform: uppercase; }
-.cond-branch-actions { display: flex; gap: 2px; justify-content: flex-start; margin: 2px 0 4px; }
-</style>

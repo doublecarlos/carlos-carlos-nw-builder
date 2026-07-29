@@ -194,7 +194,7 @@ test.describe('keyboard cursor', () => {
     const row = slotRow(page, 'gear.head');
     await expect(pickerInput(row)).toBeFocused();
     await expect(pickerInput(row)).toHaveValue('d');
-    await expect(row.locator('.picker-menu')).toBeVisible();
+    await expect(row.getByTestId('picker-menu')).toBeVisible();
   });
 
   test('arrow keys are not treated as row navigation while the picker input is focused', async ({ page }) => {
@@ -206,12 +206,12 @@ test.describe('keyboard cursor', () => {
 
     const row = slotRow(page, 'gear.head');
     await pickerInput(row).click();
-    await expect(row.locator('.picker-menu')).toBeVisible();
+    await expect(row.getByTestId('picker-menu')).toBeVisible();
 
     // A real form control now has focus, so SlotList's own passive gate must ignore this --
     // it's ItemPicker's own ArrowDown handler that owns the key here.
     await page.keyboard.press('ArrowDown');
     await expect(cursorRow(page)).toHaveAttribute('data-cursor-key', 'slot:gear.head');
-    await expect(row.locator('.picker-menu')).toBeVisible();
+    await expect(row.getByTestId('picker-menu')).toBeVisible();
   });
 });

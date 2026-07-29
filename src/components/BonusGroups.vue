@@ -15,6 +15,10 @@ import BonusRows from './BonusRows.vue';
 import ComboBox from './ComboBox.vue';
 import IconButton from './IconButton.vue';
 import TokenInput from './TokenInput.vue';
+import Btn from './ui/Btn.vue';
+import Badge from './ui/Badge.vue';
+import FormField from './ui/FormField.vue';
+import FormSection from './ui/FormSection.vue';
 import * as bonusDraft from '../bonus-draft';
 import type { Db, BonusSet } from '../types';
 
@@ -212,46 +216,46 @@ function attachExisting(id: string) {
 
 <template>
   <div>
-    <div class="form-section">
+    <FormSection>
       Bonuses
       <IconButton icon="circle-plus" title="Add bonus" @click="addBonus" />
-      <span v-if="attachable.length" class="bonus-attach">
+      <span v-if="attachable.length" class="inline-flex items-center gap-1.5">
         or
-        <ComboBox class="bonus-attach-combo" model-value="" :options="attachable"
+        <ComboBox class="w-56" model-value="" :options="attachable"
                   placeholder="attach an existing one…" @update:model-value="attachExisting" />
       </span>
-    </div>
+    </FormSection>
 
-    <p v-if="!cards.length" class="hint">
+    <p v-if="!cards.length" class="text-sm text-muted">
       This item has no bonuses yet. Add one above -- most are private to a single item;
       attaching an existing bonus id shares it with whatever else already lists it.
     </p>
 
-    <div v-for="card in cards" :key="card.id" class="setcard">
-      <div class="setcard-head">
-        <label class="field"><span class="field-label">Group name</span>
-          <input class="setcard-name" type="text" v-model="drafts[card.id].name"></label>
-        <label class="field"><span class="field-label">Group id</span>
-          <span class="setcard-id-row">
-            <input class="setcard-id" type="text" v-model="drafts[card.id].id">
+    <div v-for="card in cards" :key="card.id" class="mb-2.5 rounded-md border border-line bg-accent-soft/30 px-2.5 py-2">
+      <div class="flex flex-wrap items-center gap-1.5">
+        <FormField label="Group name" class="basis-56 flex-auto">
+          <input class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 font-semibold focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+                 type="text" v-model="drafts[card.id].name">
+        </FormField>
+        <FormField label="Group id" class="basis-56 flex-auto">
+          <span class="flex items-center gap-1">
+            <input class="w-full rounded bg-surface-2 px-1.5 text-sm text-muted focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+                   type="text" v-model="drafts[card.id].id">
             <IconButton icon="wand-sparkles" title="Generate id from name" @click="generateId(card.id)" />
           </span>
-        </label>
-        <span v-if="!card.defined" class="badge badge--warn">not defined yet</span>
-        <span v-if="isDirty(card.id)" class="badge badge--near">unsaved</span>
-        <span class="spacer"></span>
-        <button type="button" class="btn btn--primary" :disabled="!isDirty(card.id)"
-                @click="save(card.id)">Save</button>
-        <button type="button" class="btn" @click="reset(card.id)">Reset</button>
-        <button v-if="card.defined" type="button" class="btn"
-                @click="remove(card.id)">Delete</button>
-        <button v-else type="button" class="btn"
-                @click="detach(card.id)">Remove</button>
+        </FormField>
+        <Badge v-if="!card.defined" variant="warn">not defined yet</Badge>
+        <Badge v-if="isDirty(card.id)">unsaved</Badge>
+        <span class="flex-1"></span>
+        <Btn variant="primary" :disabled="!isDirty(card.id)" @click="save(card.id)">Save</Btn>
+        <Btn @click="reset(card.id)">Reset</Btn>
+        <Btn v-if="card.defined" @click="remove(card.id)">Delete</Btn>
+        <Btn v-else @click="detach(card.id)">Remove</Btn>
       </div>
 
-      <p v-if="errors[card.id]" class="drawer-error">{{ errors[card.id] }}</p>
+      <p v-if="errors[card.id]" class="mt-1 text-danger">{{ errors[card.id] }}</p>
 
-      <p class="hint">
+      <p class="text-sm text-muted">
         <template v-if="(db.setMembers.get(card.id) ?? []).length > 1">
           Shared by <strong>{{ (db.setMembers.get(card.id) ?? []).length }}</strong> items —
           {{ (db.setMembers.get(card.id) ?? []).join(', ') }}.
@@ -259,26 +263,29 @@ function attachExisting(id: string) {
         <template v-else>Only on this item.</template>
       </p>
 
-      <div class="sub-section">Stacking</div>
-      <div class="cond-row">
-        <ComboBox class="combo--stacking" :model-value="drafts[card.id].stacking" :options="stackingOptions"
+      <FormSection sub>Stacking</FormSection>
+      <div class="flex flex-wrap items-center gap-1.5 mb-1">
+        <ComboBox class="w-64" :model-value="drafts[card.id].stacking" :options="stackingOptions"
                   @update:model-value="v => drafts[card.id].stacking = v" />
         <template v-if="drafts[card.id].stacking === 'perSource'">
-          <label class="field"><span class="field-label">Max stacks</span>
-            <input type="number" min="0" class="tier-pieces" v-model.number="drafts[card.id].maxStacks"></label>
-          <span class="hint">maximum stacks (blank = no limit)</span>
+          <FormField label="Max stacks">
+            <input type="number" min="0"
+                   class="w-16 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+                   v-model.number="drafts[card.id].maxStacks">
+          </FormField>
+          <span class="text-sm text-muted">maximum stacks (blank = no limit)</span>
         </template>
       </div>
 
-      <div class="sub-section">Suppresses these bonuses</div>
+      <FormSection sub>Suppresses these bonuses</FormSection>
       <TokenInput v-model="drafts[card.id].excludes" :options="bonusIds"
                   placeholder="bonus id to suppress…" />
 
-      <div class="sub-section">
+      <FormSection sub>
         Grants
         <IconButton icon="circle-plus" title="Add grant" @click="addGrant(card.id)" />
-        <span v-if="!drafts[card.id].grants.length" class="hint">none yet</span>
-      </div>
+        <span v-if="!drafts[card.id].grants.length" class="text-sm text-muted">none yet</span>
+      </FormSection>
 
       <BonusRows
         :rows="drafts[card.id].grants"
@@ -288,19 +295,3 @@ function attachExisting(id: string) {
     </div>
   </div>
 </template>
-
-<style scoped>
-.setcard {
-  background: color-mix(in srgb, var(--accent-soft) 30%, transparent);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  margin-bottom: 10px;
-  padding: 9px 11px;
-}
-.setcard-head { align-items: center; display: flex; flex-wrap: wrap; gap: 6px; }
-.setcard-head .field { flex: 0 1 220px; }
-.setcard-name { font-weight: 600; }
-
-.bonus-attach { align-items: center; display: inline-flex; gap: 6px; }
-.bonus-attach-combo { width: 220px; }
-</style>

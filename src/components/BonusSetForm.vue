@@ -8,6 +8,13 @@ import BonusRows from './BonusRows.vue';
 import IconButton from './IconButton.vue';
 import ComboBox from './ComboBox.vue';
 import TokenInput from './TokenInput.vue';
+import Btn from './ui/Btn.vue';
+import HistoryBtn from './ui/HistoryBtn.vue';
+import Badge from './ui/Badge.vue';
+import FormBar from './ui/FormBar.vue';
+import FormField from './ui/FormField.vue';
+import FormGrid from './ui/FormGrid.vue';
+import FormSection from './ui/FormSection.vue';
 import * as bonusDraft from '../bonus-draft';
 import type { BonusSet, Db } from '../types';
 
@@ -210,40 +217,39 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="form">
-    <div class="form-bar">
+  <div>
+    <FormBar>
       <strong>{{ draft.name || draft.id || 'New bonus set' }}</strong>
-      <span v-if="status !== 'base'" class="badge" :class="'badge--' + status">{{ status }}</span>
-      <span v-if="dirty" class="badge badge--near">unsaved</span>
-      <span class="spacer"></span>
-      <button type="button" class="btn btn--history" :disabled="!canUndoDraft"
-              title="Undo edit (Ctrl+Z)" @click="undoDraft">↶ Undo</button>
-      <button type="button" class="btn btn--history" :disabled="!canRedoDraft"
-              title="Redo edit (Ctrl+Shift+Z)" @click="redoDraft">↷ Redo</button>
-      <button type="button" class="btn btn--primary" :disabled="!dirty" @click="save">Save bonus set</button>
-      <button type="button" class="btn" :class="{ 'is-danger': confirmRevert }"
-              :disabled="!dirty" @click="revertDraft">
+      <Badge v-if="status !== 'base'" :variant="status as any">{{ status }}</Badge>
+      <Badge v-if="dirty">unsaved</Badge>
+      <span class="flex-1"></span>
+      <HistoryBtn :disabled="!canUndoDraft" title="Undo edit (Ctrl+Z)" @click="undoDraft">↶ Undo</HistoryBtn>
+      <HistoryBtn :disabled="!canRedoDraft" title="Redo edit (Ctrl+Shift+Z)" @click="redoDraft">↷ Redo</HistoryBtn>
+      <Btn variant="primary" :disabled="!dirty" @click="save">Save bonus set</Btn>
+      <Btn :danger="confirmRevert" :disabled="!dirty" @click="revertDraft">
         {{ confirmRevert ? 'Really revert?' : 'Revert' }}
-      </button>
-      <button v-if="status === 'edited'" type="button" class="btn"
-              @click="$emit('revert')">Revert to shipped</button>
-      <button v-if="source" type="button" class="btn" @click="$emit('delete')">Delete</button>
-    </div>
+      </Btn>
+      <Btn v-if="status === 'edited'" @click="$emit('revert')">Revert to shipped</Btn>
+      <Btn v-if="source" @click="$emit('delete')">Delete</Btn>
+    </FormBar>
 
-    <p v-if="error" class="drawer-error">{{ error }}</p>
+    <p v-if="error" class="mt-1 text-danger">{{ error }}</p>
 
-    <div class="form-grid">
-      <label class="field"><span class="field-label">Group name</span>
-        <input type="text" v-model="draft.name"></label>
-      <label class="field"><span class="field-label">Group id</span>
-        <span class="setcard-id-row">
-          <input class="setcard-id" type="text" v-model="draft.id">
+    <FormGrid>
+      <FormField label="Group name">
+        <input class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+               type="text" v-model="draft.name">
+      </FormField>
+      <FormField label="Group id">
+        <span class="flex items-center gap-1">
+          <input class="w-full rounded bg-surface-2 px-1.5 text-sm text-muted focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+                 type="text" v-model="draft.id">
           <IconButton icon="wand-sparkles" title="Generate id from name" @click="generateId" />
         </span>
-      </label>
-    </div>
+      </FormField>
+    </FormGrid>
 
-    <p class="hint">
+    <p class="text-sm text-muted">
       <template v-if="members.length">
         Granted by <strong>{{ members.length }}</strong> item(s) — {{ members.join(', ') }}.
       </template>
@@ -252,26 +258,29 @@ onUnmounted(() => {
       </template>
     </p>
 
-    <div class="sub-section">Stacking</div>
-    <div class="cond-row">
-      <ComboBox class="combo--stacking" :model-value="draft.stacking" :options="stackingOptions"
+    <FormSection sub>Stacking</FormSection>
+    <div class="flex flex-wrap items-center gap-1.5 mb-1">
+      <ComboBox class="w-64" :model-value="draft.stacking" :options="stackingOptions"
                 @update:model-value="v => draft.stacking = v" />
       <template v-if="draft.stacking === 'perSource'">
-        <label class="field"><span class="field-label">Max stacks</span>
-          <input type="number" min="0" class="tier-pieces" v-model.number="draft.maxStacks"></label>
-        <span class="hint">maximum stacks (blank = no limit)</span>
+        <FormField label="Max stacks">
+          <input type="number" min="0"
+                 class="w-16 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+                 v-model.number="draft.maxStacks">
+        </FormField>
+        <span class="text-sm text-muted">maximum stacks (blank = no limit)</span>
       </template>
     </div>
 
-    <div class="sub-section">Suppresses these bonuses</div>
+    <FormSection sub>Suppresses these bonuses</FormSection>
     <TokenInput v-model="draft.excludes" :options="bonusIds"
                 placeholder="bonus id to suppress…" />
 
-    <div class="form-section">
+    <FormSection>
       Grants
       <IconButton icon="circle-plus" title="Add grant" @click="addGrant" />
-      <span v-if="!draft.grants.length" class="hint">none yet</span>
-    </div>
+      <span v-if="!draft.grants.length" class="text-sm text-muted">none yet</span>
+    </FormSection>
 
     <BonusRows
       :rows="draft.grants"

@@ -21,7 +21,7 @@ test('Save is disabled until dirty, and clears the unsaved dot', async ({ page }
 
   await chooseItem(page, 'gear.head', HEAD_ITEM);
   await expect(save).toBeEnabled();
-  await expect(page.locator('.nav-row--build .unsaved-dot')).toBeVisible();
+  await expect(page.locator('.nav-row--build').getByTestId('unsaved-dot')).toBeVisible();
 
   await save.click();
   await expect(save).toBeDisabled();

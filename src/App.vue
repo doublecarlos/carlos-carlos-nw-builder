@@ -6,6 +6,7 @@
 // page is showing -- lives in src/stores and is read/mutated by whichever component needs it.
 import { ref, watch, onMounted, onUnmounted } from 'vue';
 import BuildBar from './components/BuildBar.vue';
+import ThemeToggle from './components/ui/ThemeToggle.vue';
 import BuildNav from './components/BuildNav.vue';
 import BonusInspector from './components/BonusInspector.vue';
 import ComboBox from './components/ComboBox.vue';
@@ -146,6 +147,7 @@ onUnmounted(() => {
           <button type="button" class="btn" @click="ui.openEditor()">
             Edit data<span v-if="overlayCount" class="badge badge--edited">{{ overlayCount }}</span>
           </button>
+          <ThemeToggle />
         </div>
       </header>
 

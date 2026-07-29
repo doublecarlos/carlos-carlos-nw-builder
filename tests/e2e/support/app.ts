@@ -19,7 +19,7 @@ export function slotRow(page: Page, slotId: string): Locator {
 }
 
 export function pickerInput(row: Locator): Locator {
-  return row.locator('input.picker-input');
+  return row.getByTestId('picker-input');
 }
 
 /** The single row currently carrying the keyboard cursor (`.is-cursor`, shared by header and
@@ -46,6 +46,6 @@ export async function chooseItem(page: Page, slotId: string, itemName: string) {
  * picker, …) -- same click-to-open/click-the-row interaction as `chooseItem` above, just over
  * a fixed option list instead of the item catalogue. */
 export async function chooseCombo(combo: Locator, label: string) {
-  await combo.locator('.picker-input').click();
+  await combo.getByTestId('picker-input').click();
   await combo.getByText(label, { exact: true }).click();
 }

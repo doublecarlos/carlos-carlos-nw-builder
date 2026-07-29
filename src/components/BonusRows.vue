@@ -6,6 +6,8 @@ import PercentInput from './PercentInput.vue';
 import ComboBox from './ComboBox.vue';
 import ConditionRows from './ConditionRows.vue';
 import IconButton from './IconButton.vue';
+import Btn from './ui/Btn.vue';
+import FormSection from './ui/FormSection.vue';
 import { NW_SCHEMA } from '../data';
 import { isPercentKind, kindOf } from '../format';
 import { focusNextCombo } from '../stat-row-nav';
@@ -132,64 +134,74 @@ function setPayload(grant: GrantDraft, payload: GrantDraft['payload']) {
 
 <template>
   <div>
-    <div v-for="(grant, gIndex) in rows" :key="grant.uid" class="bonus-edit">
-      <div class="bonus-edit-head">
-        <span class="hint">Grant {{ gIndex + 1 }}</span>
-        <button type="button" class="link" @click="toggleJson(grant)">
+    <div v-for="(grant, gIndex) in rows" :key="grant.uid" class="mb-2 rounded-md border border-line bg-surface-2 p-2.5">
+      <!-- items-end, not items-center: these buttons have no label above them, so centering
+           would float them against the taller labeled fields elsewhere in the form. -->
+      <div class="flex flex-wrap items-end gap-2">
+        <span class="text-sm text-muted">Grant {{ gIndex + 1 }}</span>
+        <Btn variant="link" @click="toggleJson(grant)">
           {{ grant.mode === 'json' ? 'use the form' : 'edit as JSON' }}
-        </button>
-        <span class="spacer"></span>
-        <button type="button" class="link" :disabled="gIndex === 0"
-                @click="moveGrant(gIndex, -1)">move up</button>
-        <button type="button" class="link" :disabled="gIndex === rows.length - 1"
-                @click="moveGrant(gIndex, 1)">move down</button>
-        <button type="button" class="link" @click="duplicateGrant(gIndex)">duplicate</button>
-        <button type="button" class="link" @click="insertGrant(gIndex)">insert below</button>
-        <button type="button" class="link" @click="removeGrant(gIndex)">remove</button>
+        </Btn>
+        <span class="flex-1"></span>
+        <Btn variant="link" :disabled="gIndex === 0" @click="moveGrant(gIndex, -1)">move up</Btn>
+        <Btn variant="link" :disabled="gIndex === rows.length - 1" @click="moveGrant(gIndex, 1)">move down</Btn>
+        <Btn variant="link" @click="duplicateGrant(gIndex)">duplicate</Btn>
+        <Btn variant="link" @click="insertGrant(gIndex)">insert below</Btn>
+        <Btn variant="link" @click="removeGrant(gIndex)">remove</Btn>
       </div>
 
-      <textarea v-if="grant.mode === 'json'" class="code" rows="8" v-model="grant.json"></textarea>
+      <textarea v-if="grant.mode === 'json'"
+                class="mt-1 w-full resize-y rounded-md border border-line bg-surface p-2 font-mono"
+                rows="8" v-model="grant.json"></textarea>
 
       <template v-else>
-        <div class="sub-section">Active when</div>
+        <FormSection sub>Active when</FormSection>
         <ConditionRows :rows="grant.conditions" :depth="0" :set-ids="setIds" />
 
-        <div class="sub-section">
+        <FormSection sub>
           Payload
-          <div class="seg">
-            <button type="button" class="seg-btn" :class="{ 'is-on': grant.payload === 'flat' }"
+          <div class="inline-flex">
+            <button type="button" class="border border-line px-2 py-0.5 text-sm first:rounded-l-md last:rounded-r-md last:border-l-0"
+                    :class="grant.payload === 'flat' ? 'border-accent bg-accent-soft text-text' : 'bg-surface text-muted'"
                     @click="setPayload(grant, 'flat')">the same always</button>
-            <button type="button" class="seg-btn" :class="{ 'is-on': grant.payload === 'tiers' }"
+            <button type="button" class="border border-line px-2 py-0.5 text-sm first:rounded-l-md last:rounded-r-md last:border-l-0"
+                    :class="grant.payload === 'tiers' ? 'border-accent bg-accent-soft text-text' : 'bg-surface text-muted'"
                     @click="setPayload(grant, 'tiers')">tiered by set pieces</button>
-            <button type="button" class="seg-btn" :class="{ 'is-on': grant.payload === 'variants' }"
+            <button type="button" class="border border-line px-2 py-0.5 text-sm first:rounded-l-md last:rounded-r-md last:border-l-0"
+                    :class="grant.payload === 'variants' ? 'border-accent bg-accent-soft text-text' : 'bg-surface text-muted'"
                     @click="setPayload(grant, 'variants')">varies by condition</button>
           </div>
-        </div>
+        </FormSection>
 
         <!-- flat payload -->
         <template v-if="grant.payload === 'flat'">
-          <div v-for="(stat, sIndex) in grant.stats" :key="sIndex" class="stat-row">
+          <div v-for="(stat, sIndex) in grant.stats" :key="sIndex" class="stat-row flex flex-wrap items-center gap-1.5 mb-1">
             <IconButton icon="plus" title="Add stat" @click="addStat(grant.stats)" />
             <IconButton icon="trash" title="Remove stat" @click="removeStat(grant.stats, sIndex)" />
-            <ComboBox class="combo--stat" :model-value="stat.key" :options="statComboOptions"
+            <ComboBox class="combo--stat w-52" :model-value="stat.key" :options="statComboOptions"
                       placeholder="— pick a stat —" @update:model-value="v => stat.key = v" />
             <PercentInput v-if="isPercent(stat.key)" v-model="stat.value" @keydown="focusNextStat" />
-            <input v-else type="number" step="any" v-model.number="stat.value" @keydown="focusNextStat">
+            <input v-else class="w-28 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+                   type="number" step="any" v-model.number="stat.value" @keydown="focusNextStat">
           </div>
-          <div v-if="!grant.stats.length" class="stat-row">
-            <IconButton  icon="plus"
-                        title="Add stat" @click="addStat(grant.stats)" />
+          <div v-if="!grant.stats.length" class="stat-row flex flex-wrap items-center gap-1.5 mb-1">
+            <IconButton icon="plus" title="Add stat" @click="addStat(grant.stats)" />
           </div>
         </template>
 
         <!-- tiered payload -->
         <template v-else-if="grant.payload === 'tiers'">
-          <p class="hint">
+          <p class="text-sm text-muted">
             The highest matching tier wins and <strong>replaces</strong> the lower ones —
             each tier's stats are the total at that piece count, not an extra on top.
           </p>
-          <div v-for="(tier, tIndex) in grant.tiers" :key="tIndex" class="tier">
-            <div class="tier-head">
+          <!-- Boxed, not just a rule on the left -- with several tiers stacked back to back a
+               thin line alone isn't enough contrast to tell where one ends and the next
+               begins. The parent is already `bg-surface-2`, so tiers go `bg-surface` to read
+               as lighter cards sitting on top of it. -->
+          <div v-for="(tier, tIndex) in grant.tiers" :key="tIndex"
+               class="my-1.5 rounded-md border border-line border-l-4 border-l-accent bg-surface px-2.5 py-1.5">
+            <div class="mb-1 flex flex-wrap items-center gap-1.5">
               <IconButton icon="arrow-up" title="Move tier up" :disabled="tIndex === 0"
                           @click="moveTier(grant, tIndex, -1)" />
               <IconButton icon="arrow-down" title="Move tier down" :disabled="tIndex === grant.tiers.length - 1"
@@ -197,20 +209,22 @@ function setPayload(grant: GrantDraft, payload: GrantDraft['payload']) {
               <IconButton icon="copy" title="Duplicate tier" @click="duplicateTier(grant, tIndex)" />
               <IconButton icon="circle-plus" title="Insert tier" @click="insertTier(grant, tIndex)" />
               <IconButton icon="trash" title="Remove tier" @click="removeTier(grant, tIndex)" />
-              <ComboBox class="combo--set" :model-value="tier.set" :options="setComboOptions"
+              <ComboBox class="combo--set w-44" :model-value="tier.set" :options="setComboOptions"
                         placeholder="— set —" @update:model-value="v => tier.set = v" />
-              <input type="number" min="1" v-model.number="tier.atLeast" class="tier-pieces">
-              <span class="hint">piece(s) or more</span>
+              <input type="number" min="1" v-model.number="tier.atLeast"
+                     class="w-16 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent">
+              <span class="text-sm text-muted">piece(s) or more</span>
             </div>
-            <div v-for="(stat, sIndex) in tier.stats" :key="sIndex" class="stat-row">
+            <div v-for="(stat, sIndex) in tier.stats" :key="sIndex" class="stat-row flex flex-wrap items-center gap-1.5 mb-1">
               <IconButton icon="plus" title="Add stat" @click="addStat(tier.stats)" />
               <IconButton icon="trash" title="Remove stat" @click="removeStat(tier.stats, sIndex)" />
-              <ComboBox class="combo--stat" :model-value="stat.key" :options="statComboOptions"
+              <ComboBox class="combo--stat w-52" :model-value="stat.key" :options="statComboOptions"
                         placeholder="— pick a stat —" @update:model-value="v => stat.key = v" />
               <PercentInput v-if="isPercent(stat.key)" v-model="stat.value" @keydown="focusNextStat" />
-              <input v-else type="number" step="any" v-model.number="stat.value" @keydown="focusNextStat">
+              <input v-else class="w-28 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+                     type="number" step="any" v-model.number="stat.value" @keydown="focusNextStat">
             </div>
-            <div v-if="!tier.stats.length" class="cond-add">
+            <div v-if="!tier.stats.length" class="mt-1 flex flex-wrap gap-1">
               <IconButton v-if="!tier.stats.length" icon="plus" title="Add stat"
                           @click="addStat(tier.stats)" />
             </div>
@@ -220,85 +234,41 @@ function setPayload(grant: GrantDraft, payload: GrantDraft['payload']) {
 
         <!-- variant payload -->
         <template v-else>
-          <p class="hint">
+          <p class="text-sm text-muted">
             The first variant whose own condition matches wins -- order them most-specific
             first. Each variant's payload replaces the others, it does not add to them.
           </p>
-          <div v-for="(variant, vIndex) in grant.variants" :key="variant.uid" class="tier">
-            <div class="tier-head">
-              <span class="hint">Variant {{ vIndex + 1 }}</span>
-              <span class="spacer"></span>
-              <button type="button" class="link" :disabled="vIndex === 0"
-                      @click="moveVariant(grant, vIndex, -1)">move up</button>
-              <button type="button" class="link" :disabled="vIndex === grant.variants.length - 1"
-                      @click="moveVariant(grant, vIndex, 1)">move down</button>
-              <button type="button" class="link" @click="duplicateVariant(grant, vIndex)">duplicate</button>
-              <button type="button" class="link" @click="insertVariant(grant, vIndex)">insert below</button>
-              <button type="button" class="link" @click="removeVariant(grant, vIndex)">remove variant</button>
+          <div v-for="(variant, vIndex) in grant.variants" :key="variant.uid"
+               class="my-1.5 rounded-md border border-line border-l-4 border-l-accent bg-surface px-2.5 py-1.5">
+            <div class="mb-1 flex flex-wrap items-center gap-1.5">
+              <span class="text-sm text-muted">Variant {{ vIndex + 1 }}</span>
+              <span class="flex-1"></span>
+              <Btn variant="link" :disabled="vIndex === 0" @click="moveVariant(grant, vIndex, -1)">move up</Btn>
+              <Btn variant="link" :disabled="vIndex === grant.variants.length - 1" @click="moveVariant(grant, vIndex, 1)">move down</Btn>
+              <Btn variant="link" @click="duplicateVariant(grant, vIndex)">duplicate</Btn>
+              <Btn variant="link" @click="insertVariant(grant, vIndex)">insert below</Btn>
+              <Btn variant="link" @click="removeVariant(grant, vIndex)">remove variant</Btn>
             </div>
-            <div class="sub-section">When</div>
+            <FormSection sub>When</FormSection>
             <ConditionRows :rows="variant.conditions" :depth="0" :set-ids="setIds" />
-            <div class="sub-section">
-              Grants
-            </div>
-            <div v-for="(stat, sIndex) in variant.stats" :key="sIndex" class="stat-row">
+            <FormSection sub>Grants</FormSection>
+            <div v-for="(stat, sIndex) in variant.stats" :key="sIndex" class="stat-row flex flex-wrap items-center gap-1.5 mb-1">
               <IconButton icon="plus" title="Add stat" @click="addStat(variant.stats)" />
               <IconButton icon="trash" title="Remove stat" @click="removeStat(variant.stats, sIndex)" />
-              <ComboBox class="combo--stat" :model-value="stat.key" :options="statComboOptions"
+              <ComboBox class="combo--stat w-52" :model-value="stat.key" :options="statComboOptions"
                         placeholder="— pick a stat —" @update:model-value="v => stat.key = v" />
               <PercentInput v-if="isPercent(stat.key)" v-model="stat.value" @keydown="focusNextStat" />
-              <input v-else type="number" step="any" v-model.number="stat.value" @keydown="focusNextStat">
+              <input v-else class="w-28 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+                     type="number" step="any" v-model.number="stat.value" @keydown="focusNextStat">
             </div>
-            <div v-if="!variant.stats.length" class="stat-row">
-              <IconButton icon="plus" title="Add stat"
-                                            @click="addStat(variant.stats)" />
+            <div v-if="!variant.stats.length" class="stat-row flex flex-wrap items-center gap-1.5 mb-1">
+              <IconButton icon="plus" title="Add stat" @click="addStat(variant.stats)" />
             </div>
           </div>
-          <button type="button" class="link" @click="addVariant(grant)">+ add variant</button>
+          <Btn variant="link" @click="addVariant(grant)">+ add variant</Btn>
         </template>
 
       </template>
     </div>
   </div>
 </template>
-
-<style scoped>
-.bonus-edit {
-  background: var(--surface-2);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  margin-bottom: 8px;
-  padding: 8px 10px;
-}
-/* flex-end, not center: the buttons here have no label above them, so centering would float
- * them against the taller labeled Name/Id fields instead of lining up on the inputs. */
-.bonus-edit-head { align-items: flex-end; display: flex; flex-wrap: wrap; gap: 8px; }
-
-.seg { display: inline-flex; gap: 0; }
-.seg-btn {
-  background: var(--surface);
-  border: 1px solid var(--line);
-  color: var(--muted);
-  cursor: pointer;
-  font: inherit;
-  font-size: 1rem;
-  padding: 2px 8px;
-}
-.seg-btn:first-child { border-radius: var(--radius) 0 0 var(--radius); }
-.seg-btn:last-child { border-radius: 0 var(--radius) var(--radius) 0; border-left: 0; }
-.seg-btn.is-on { background: var(--accent-soft); border-color: var(--accent); color: var(--text); }
-
-/* Boxed, not just a rule on the left -- with several tiers or variants stacked back to back,
- * a 2px accent line was not enough contrast to tell where one ends and the next begins.
- * `.bonus-edit` (the parent) is already `--surface-2`, so tiers go `--surface` to read as
- * lighter cards sitting on top of it, the same relationship `.setcard` has to the page. */
-.tier {
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-left: 3px solid var(--accent);
-  border-radius: var(--radius);
-  margin: 6px 0;
-  padding: 6px 9px 8px;
-}
-.tier-head { align-items: center; display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 3px; }
-</style>

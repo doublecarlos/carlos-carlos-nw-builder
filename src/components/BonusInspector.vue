@@ -12,6 +12,10 @@
 import { ref, reactive, computed } from 'vue';
 import { label as statLabel, signedStat } from '../format';
 import * as engine from '../stores/engine';
+import Panel from './ui/Panel.vue';
+import PanelHead from './ui/PanelHead.vue';
+import Badge from './ui/Badge.vue';
+import Check from './ui/Check.vue';
 import type { EvaluatedBonus, ConditionLeafResult, StatValues } from '../types';
 
 /** `m31-crimson-march-combat` -> `M31 Crimson March Combat`, for bonuses with no set name. */
@@ -77,7 +81,17 @@ interface Entry {
   unmet: ConditionLeafResult[];
   nearMiss: boolean;
   state: 'excluded' | 'active' | 'inactive';
+  dotClass: string;
+  muted: boolean;
 }
+
+// Same small vocabulary as ItemCard.vue's own per-row state colouring, duplicated rather than
+// shared: the two live in different visual contexts (a hover card vs. this sidebar list).
+const STATE_DOT: Record<string, string> = {
+  active: 'bg-ok',
+  inactive: 'bg-muted opacity-50',
+  excluded: 'bg-danger',
+};
 
 const entries = computed<Entry[]>(() => {
   const titleCounts = new Map<string, number>();
@@ -91,6 +105,7 @@ const entries = computed<Entry[]>(() => {
     // The bonus's own friendly name is the most specific title; the item carrying it and
     // an id-derived fallback are progressively blunter instruments for one that has none.
     const title = entry.bonus?.name ?? entry.sources?.[0] ?? fromId(entry.id);
+    const state = entry.excluded ? 'excluded' : (entry.active ? 'active' : 'inactive');
     return {
       raw: entry,
       id: entry.id,
@@ -104,7 +119,9 @@ const entries = computed<Entry[]>(() => {
       perStack: entry.stacks > 1 ? entry.stats : null,
       unmet,
       nearMiss: !entry.active && !entry.excluded && unmet.length === 1,
-      state: entry.excluded ? 'excluded' : (entry.active ? 'active' : 'inactive'),
+      state,
+      dotClass: STATE_DOT[state],
+      muted: state !== 'active',
     };
   });
 });
@@ -145,134 +162,73 @@ const counts = computed(() => {
 </script>
 
 <template>
-  <div class="panel">
-    <div class="inspector-head">
-      <input class="inspector-search" type="search" v-model="query"
-             placeholder="Filter by bonus, set or item…">
-      <div class="panel-meta">
+  <Panel flush>
+    <div class="sticky top-0 z-1 bg-surface pb-0.5">
+      <input class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+             type="search" v-model="query" placeholder="Filter by bonus, set or item…">
+      <div class="flex items-center gap-3 py-2 text-sm text-muted">
         <span>{{ counts.active }}/{{ counts.total }} active</span>
-        <label class="check check--inline">
-          <input type="checkbox" v-model="nearMissOnly">
-          <span>near misses only ({{ counts.nearMiss }})</span>
-        </label>
+        <Check v-model="nearMissOnly" inline>near misses only ({{ counts.nearMiss }})</Check>
       </div>
     </div>
 
     <template v-for="group in groups" :key="group.id">
-      <h3 v-if="group.list.length" class="panel-head">
-        {{ group.label }} <span class="dim">({{ group.list.length }})</span>
-      </h3>
+      <PanelHead v-if="group.list.length">
+        {{ group.label }} <span class="text-muted">({{ group.list.length }})</span>
+      </PanelHead>
 
-      <div v-for="entry in group.list" :key="entry.id"
-           class="bonus" :class="'bonus--' + entry.state">
-        <button type="button" class="bonus-head" @click="toggle(entry.id)">
-          <span class="bonus-dot"></span>
-          <span class="bonus-title">{{ entry.title }}</span>
-          <span v-if="entry.qualifier" class="bonus-qualifier" :title="entry.qualifier">
+      <div v-for="entry in group.list" :key="entry.id" class="border-b border-line/50 py-1.5 last:border-b-0">
+        <button type="button" class="group flex w-full items-center gap-1.5 text-left cursor-pointer" @click="toggle(entry.id)">
+          <span class="size-1.5 flex-none rounded-full" :class="entry.dotClass"></span>
+          <span class="max-w-3/5 flex-none overflow-hidden text-ellipsis whitespace-nowrap group-hover:underline"
+                :class="entry.muted && 'text-muted'">{{ entry.title }}</span>
+          <span v-if="entry.qualifier" class="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-sm text-muted" :title="entry.qualifier">
             {{ entry.qualifier }}
           </span>
-          <span v-if="entry.nearMiss" class="badge badge--near">1 away</span>
-          <span v-if="entry.stacks > 1" class="badge">×{{ entry.stacks }}</span>
-          <span v-if="entry.chose" class="badge">{{ entry.chose }}</span>
+          <Badge v-if="entry.nearMiss" class="ml-auto flex-none">1 away</Badge>
+          <span v-if="entry.stacks > 1" class="flex-none rounded-full bg-surface-2 px-1.5 text-sm font-semibold text-muted">×{{ entry.stacks }}</span>
+          <span v-if="entry.chose" class="flex-none rounded-full bg-surface-2 px-1.5 text-sm font-semibold text-muted">{{ entry.chose }}</span>
         </button>
 
         <!-- The payoff: for an inactive bonus, exactly which conditions failed and what
              they would need. Rendered verbatim from the engine. -->
-        <ul v-if="entry.unmet.length" class="unmet">
-          <li v-for="(leaf, i) in entry.unmet" :key="i">
-            <span class="unmet-label">{{ leaf.label }}</span>
-            <span v-if="leaf.detail" class="unmet-detail">— {{ leaf.detail }}</span>
-            <ul v-if="leaf.children?.length" class="unmet-children">
-              <li v-for="(child, j) in leaf.children" :key="j"
-                  :class="{ 'is-ok': child.ok }">
+        <ul v-if="entry.unmet.length" class="mt-1 list-none pl-3.5">
+          <li v-for="(leaf, i) in entry.unmet" :key="i" class="text-sm text-muted">
+            <span class="text-warn">{{ leaf.label }}</span>
+            <span v-if="leaf.detail" class="ml-1 text-muted">— {{ leaf.detail }}</span>
+            <ul v-if="leaf.children?.length" class="list-none pl-3">
+              <li v-for="(child, j) in leaf.children" :key="j" :class="child.ok && 'text-ok'">
                 {{ child.ok ? '✓' : '✗' }} {{ child.label }}
-                <span v-if="child.detail" class="unmet-detail">— {{ child.detail }}</span>
+                <span v-if="child.detail" class="ml-1 text-muted">— {{ child.detail }}</span>
               </li>
             </ul>
           </li>
         </ul>
 
-        <p v-if="entry.raw.excluded" class="unmet">
-          <span class="unmet-label">overridden by</span>
-          <span class="unmet-detail">{{ entry.raw.excludedBy }}</span>
+        <p v-if="entry.raw.excluded" class="mt-1 pl-3.5 text-sm text-muted">
+          <span class="text-warn">overridden by</span>
+          <span class="ml-1 text-muted">{{ entry.raw.excludedBy }}</span>
         </p>
 
-        <div v-if="open[entry.id]" class="bonus-detail">
-          <div class="bonus-stats">
-            <span v-for="part in statList(entry.payload)" :key="part" class="bonus-stat">
-              {{ part }}
-            </span>
-            <span v-if="!statList(entry.payload).length" class="dim">no stat payload</span>
+        <div v-if="open[entry.id]" class="pb-0.5 pl-3.5 pt-1">
+          <div class="flex flex-wrap gap-x-2.5 gap-y-1 text-sm">
+            <span v-for="part in statList(entry.payload)" :key="part">{{ part }}</span>
+            <span v-if="!statList(entry.payload).length" class="text-muted">no stat payload</span>
           </div>
-          <p v-if="entry.perStack" class="hint">
+          <p v-if="entry.perStack" class="mt-1 block text-sm text-muted">
             per stack: {{ statList(entry.perStack).join(', ') }}
           </p>
-          <p class="hint">
+          <p class="mt-1 block text-sm text-muted">
             slot {{ entry.slot }} ·
             from {{ entry.sources.join(', ') || '—' }}
           </p>
-          <p class="hint mono">{{ entry.id }}</p>
+          <p class="mt-1 block font-mono text-sm text-muted">{{ entry.id }}</p>
         </div>
       </div>
     </template>
 
-    <p v-if="!filtered.length" class="dim" style="padding:10px 0">
+    <p v-if="!filtered.length" class="py-2.5 text-muted">
       Nothing matches that filter.
     </p>
-  </div>
+  </Panel>
 </template>
-
-<style scoped>
-.inspector-head { position: sticky; top: 0; background: var(--surface); padding-bottom: 2px; z-index: 1; }
-.inspector-search { width: 100%; }
-
-.bonus { border-bottom: 1px solid color-mix(in srgb, var(--line) 50%, transparent); padding: 5px 0; }
-.bonus:last-child { border-bottom: 0; }
-
-.bonus-head {
-  align-items: center;
-  background: none;
-  border: 0;
-  color: inherit;
-  cursor: pointer;
-  display: flex;
-  font: inherit;
-  gap: 6px;
-  padding: 0;
-  text-align: left;
-  width: 100%;
-}
-.bonus-head:hover .bonus-title { text-decoration: underline; }
-
-/* Bonus state indicator (dot + title colour) -- same small vocabulary as ItemCard.vue's own
- * `.bonus-dot`/`.bonus--*`, duplicated rather than shared: see ItemCard.vue's own comment on
- * this. */
-.bonus-dot { border-radius: 50%; flex: none; height: 7px; width: 7px; }
-.bonus--active .bonus-dot { background: var(--ok); }
-.bonus--inactive .bonus-dot { background: var(--muted); opacity: .5; }
-.bonus--excluded .bonus-dot { background: var(--danger); }
-
-.bonus-title { flex: none; max-width: 62%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.bonus-qualifier { color: var(--muted); flex: 1; font-size: 1rem; min-width: 0; overflow: hidden;
-  text-overflow: ellipsis; white-space: nowrap; }
-.bonus-head > .badge:first-of-type { margin-left: auto; }
-.bonus--inactive .bonus-title, .bonus--excluded .bonus-title { color: var(--muted); }
-
-.bonus-head .badge { background: var(--surface-2); color: var(--muted); flex: none; }
-.bonus-head .badge--near { background: var(--accent-soft); color: var(--accent); }
-
-.unmet { list-style: none; margin: 3px 0 0; padding: 0 0 0 13px; }
-.unmet li { color: var(--muted); font-size: 1rem; }
-.unmet-label { color: var(--warn); }
-/* Vue condenses the whitespace between the label and detail spans away, so the gap has to
- * come from CSS or the em dash butts against the label. */
-.unmet-detail { color: var(--muted); margin-left: .35em; }
-.unmet-children { list-style: none; margin: 0; padding-left: 12px; }
-.unmet-children li.is-ok { color: var(--ok); }
-
-.bonus-detail { padding: 4px 0 2px 13px; }
-.bonus-stats { display: flex; flex-wrap: wrap; gap: 4px 10px; }
-.bonus-stat { font-size: 1rem; }
-.bonus-detail .hint { display: block; margin: 2px 0 0; }
-.mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
-</style>

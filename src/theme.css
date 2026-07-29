@@ -1,0 +1,89 @@
+/* Design tokens only -- see AGENTS.md's "no global style definitions other than theme
+ * variables" rule. Resets/element defaults come from Tailwind's own Preflight (imported
+ * below); anything components actually share (buttons, badges, panels, ...) lives in its own
+ * component under src/components/ui, not here.
+ *
+ * Colors stay CSS custom properties (not baked into `@theme` as literal values) so a runtime
+ * `.dark` class toggle can swap them -- `@theme` just aliases into `--color-*` so Tailwind's
+ * `bg-surface`/`text-muted`/etc. utilities pick them up.
+ */
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  color-scheme: light;
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --surface-2: #f0f2f5;
+  --line: #d8dce3;
+  --text: #14181f;
+  --muted: #667085;
+  --accent: #2f5bd7;
+  --accent-soft: #e6ecfb;
+  --danger: #b42318;
+  --danger-soft: #fdecea;
+  --warn: #b54708;
+  --ok: #087443;
+  --diff: #ab9000;
+  --radius: 6px;
+}
+
+.dark {
+  color-scheme: dark;
+  --bg: #14171c;
+  --surface: #1b1f26;
+  --surface-2: #232830;
+  --line: #333a45;
+  --text: #e6e9ef;
+  --muted: #97a0b0;
+  --accent: #7ea2ff;
+  --accent-soft: #24304d;
+  --danger: #ff9b90;
+  --danger-soft: #3a1d1a;
+  --warn: #f0a868;
+  --ok: #6edaa6;
+  --diff: #e0c53f;
+}
+
+@theme {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-text: var(--text);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-warn: var(--warn);
+  --color-ok: var(--ok);
+  --color-diff: var(--diff);
+
+  --radius-md: var(--radius);
+
+  /* Base font size is deliberately absolute (see below), so every rem-based Tailwind
+   * spacing/font-size utility resolves against *this*, not the browser's 16px default. */
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+/* Page-level defaults with no owning component (`<html>`/`<body>` render outside App.vue,
+ * Preflight already handles resets/font-family/box-sizing) -- not "shared component style",
+ * just the document itself.
+ *
+ * Base font size, in an absolute unit deliberately -- `rem` here would resolve against the
+ * browser's own default (usually 16px) instead of anchoring it. Every Tailwind rem-based
+ * spacing/text utility in every component resolves against this 12px, matching the original
+ * hand-rolled scale's own density.
+ */
+html {
+  font-size: 14px;
+}
+
+/* Every scrollable region in this app (build-nav, itemcard, editor lists/forms, picker menus)
+ * manages its own overflow explicitly. */
+html, body {
+  overflow-x: clip;
+}
