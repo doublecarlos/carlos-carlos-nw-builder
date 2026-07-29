@@ -9,7 +9,7 @@
 import { computed } from 'vue';
 import ComboBox from './ui/ComboBox.vue';
 import FormField from './ui/FormField.vue';
-import Check from './ui/Checkbox.vue';
+import Checkbox from './ui/Checkbox.vue';
 import { NW_SCHEMA } from '../data';
 import { titleCase, label as statLabel } from '../format';
 import type { BuildContext } from '../types';
@@ -142,12 +142,12 @@ function forteDiffTitle(slotKey: string) {
                   @update:model-value="$emit('set-forte', slot.key, $event)" />
       </FormField>
 
-      <Check :model-value="!!context.m32Forte" @update:model-value="$emit('set', 'm32Forte', $event)">
+      <Checkbox :model-value="!!context.m32Forte" @update:model-value="$emit('set', 'm32Forte', $event)">
         <span :class="fieldDiffers('m32Forte') && 'cursor-help font-bold text-diff'"
               :title="fieldDiffers('m32Forte') ? diffTitle('m32Forte') : 'Round each forte share to 2 decimals, as M32+ does'">
           M32 Forte<template v-if="fieldDiffers('m32Forte')"> ●</template>
         </span>
-      </Check>
+      </Checkbox>
     </div>
   </div>
 </template>

@@ -17,8 +17,8 @@ export default defineConfig({
     // system install (a real `channel: 'chrome'` requires an admin-elevated install this
     // machine doesn't have).
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
-    { name: 'edge', use: { ...devices['Desktop Edge'], channel: 'msedge' } },
-    { name: 'firefox', use: { ...devices['Desktop Firefox'] } },
+    { name: 'edge', use: { ...devices['Desktop Edge'], channel: 'msedge' }, dependencies: ['chromium'] },
+    { name: 'firefox', use: { ...devices['Desktop Firefox'] }, dependencies: ['chromium']},
   ],
   webServer: {
     command: 'npm run dev',

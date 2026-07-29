@@ -24,6 +24,7 @@ import * as ui from './stores/ui';
 import { notice, showNotice } from './stores/notice';
 import { overlayCount } from './stores/workspace';
 import Button from './components/ui/Button.vue';
+import Checkbox from './components/ui/Checkbox.vue';
 
 const build = library.build;
 const db = engine.db;
@@ -131,16 +132,9 @@ onUnmounted(() => {
             <span class="field-label">Compare</span>
             <ComboBox class="compare-select" :model-value="build.compare.id" :options="compare.compareOptions.value"
                       @update:model-value="compare.setCompareBuild" />
-            <label class="check">
-              <input type="checkbox" :checked="build.compare.highlight" :disabled="!compareBuild"
-                     @change="compare.setCompareFlag('highlight', ($event.target as HTMLInputElement).checked)">
-              <span>highlight diffs</span>
-            </label>
-            <label class="check">
-              <input type="checkbox" :checked="build.compare.onlyDiff" :disabled="!compareBuild"
-                     @change="compare.setCompareFlag('onlyDiff', ($event.target as HTMLInputElement).checked)">
-              <span>only diffs</span>
-            </label>
+
+            <Checkbox :checked="build.compare.highlight" @change="compare.setCompareFlag('highlight', $event)">Highlight changes</Checkbox>
+            <Checkbox :checked="build.compare.onlyDiff" @change="compare.setCompareFlag('onlyDiff', $event)">Only show changes</Checkbox>
           </div>
 
           <button type="button" class="link" @click="buildEditor.resetAll()">reset</button>

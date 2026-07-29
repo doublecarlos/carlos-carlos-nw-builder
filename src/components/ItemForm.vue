@@ -26,6 +26,7 @@ import { isPercentKind, kindOf } from '../format';
 import { focusNextCombo } from '../stat-row-nav';
 import type { Item, Db, BonusSet } from '../types';
 import type { StatRow } from '../bonus-draft';
+import Checkbox from './ui/Checkbox.vue';
 
 /**
  * Key-order-insensitive comparison. `toItem` rebuilds the object in the exporter's key
@@ -361,10 +362,9 @@ onUnmounted(() => {
 
     <FormSection>Restricted to classes</FormSection>
     <div class="mb-1.5 flex flex-wrap gap-x-3 gap-y-0.5">
-      <label v-for="cls in classes" :key="cls" class="inline-flex cursor-pointer items-center gap-1">
-        <input type="checkbox" :value="cls" v-model="draft.allowedClass">
-        <span>{{ cls }}</span>
-      </label>
+      <Checkbox v-for="cls in classes" :key="cls" :value="cls" v-model="draft.allowedClass">
+        {{ cls }}
+      </Checkbox>
     </div>
 
     <FormSection>Stats</FormSection>

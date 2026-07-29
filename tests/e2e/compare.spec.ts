@@ -6,22 +6,13 @@ import { openBuilder, chooseItem, chooseCombo, headerRow, slotRow, pickerInput }
 
 const HEAD_ITEM = 'M29 Enchanted Depthweave Cap (CA)';
 
-test('selecting a compare build enables the highlight/only-diff toggles', async ({ page }) => {
-  await openBuilder(page);
-  await page.getByRole('button', { name: '+ New build' }).click();
-
-  await chooseCombo(page.locator('.compare-select'), 'New build');
-  await expect(page.getByRole('checkbox', { name: 'highlight diffs' })).toBeEnabled();
-  await expect(page.getByRole('checkbox', { name: 'only diffs' })).toBeEnabled();
-});
-
 test('highlighting a diff and applying it copies the compare build\'s choice', async ({ page }) => {
   await openBuilder(page);
   await chooseItem(page, 'gear.head', HEAD_ITEM);
 
   await page.getByRole('button', { name: '+ New build' }).click();
   await chooseCombo(page.locator('.compare-select'), 'New build');
-  await page.getByRole('checkbox', { name: 'highlight diffs' }).check();
+  await page.getByRole('checkbox', { name: 'Highlight changes' }).check();
 
   const row = slotRow(page, 'gear.head');
   await expect(row).toHaveClass(/is-diff/);

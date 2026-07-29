@@ -15,7 +15,7 @@ import * as engine from '../stores/engine';
 import Panel from './ui/Panel.vue';
 import PanelHead from './ui/PanelHead.vue';
 import Badge from './ui/Badge.vue';
-import Check from './ui/Checkbox.vue';
+import Checkbox from './ui/Checkbox.vue';
 import type { EvaluatedBonus, ConditionLeafResult, StatValues } from '../types';
 
 /** `m31-crimson-march-combat` -> `M31 Crimson March Combat`, for bonuses with no set name. */
@@ -168,7 +168,7 @@ const counts = computed(() => {
              type="search" v-model="query" placeholder="Filter by bonus, set or item…">
       <div class="flex items-center gap-3 py-2 text-sm text-muted">
         <span>{{ counts.active }}/{{ counts.total }} active</span>
-        <Check v-model="nearMissOnly" inline>near misses only ({{ counts.nearMiss }})</Check>
+        <Checkbox v-model="nearMissOnly" inline>near misses only ({{ counts.nearMiss }})</Checkbox>
       </div>
     </div>
 

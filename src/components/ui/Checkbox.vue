@@ -1,22 +1,32 @@
 <script setup lang="ts">
 // A checkbox + its label as one clickable unit. `inline` pushes it to the end of a flex row
-// (App.vue's compare toggles, BonusInspector's near-miss filter).
+
 withDefaults(defineProps<{
-  modelValue: boolean;
   disabled?: boolean;
   inline?: boolean;
+  checked?: boolean;
+  value?: string;
 }>(), {
   disabled: false,
   inline: false,
+  value: ''
 });
 
-defineEmits<{ 'update:modelValue': [value: boolean] }>();
+const model = defineModel();
+
+const emit = defineEmits<{
+  'change': [checked: boolean];
+}>();
+
+function handleChange(event: Event) {
+  const target = event.target as HTMLInputElement;
+  emit('change', target.checked);
+}
 </script>
 
 <template>
-  <label class="flex cursor-pointer items-center gap-1" :class="inline && 'ml-auto text-muted'">
-    <input type="checkbox" :checked="modelValue" :disabled="disabled"
-           @change="$emit('update:modelValue', ($event.target as HTMLInputElement).checked)">
+  <label class="flex cursor-pointer items-center gap-1 select-none" :class="inline && 'ml-auto text-muted'">
+    <input type="checkbox" :checked="checked" :value="value" v-model="model" :disabled="disabled" @change="handleChange">
     <span><slot /></span>
   </label>
 </template>

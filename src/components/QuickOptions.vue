@@ -13,6 +13,7 @@ import { titleCase } from '../format';
 import * as library from '../stores/library';
 import * as compare from '../stores/compare';
 import * as buildEditor from '../stores/buildEditor';
+import Checkbox from './ui/Checkbox.vue';
 
 // Display order and labels are UI-only -- data/schema.json keeps its own order untouched.
 // The sheet's quick-options widget lists Consumables/Party/Combat/Other procs/Artifact call,
@@ -79,14 +80,15 @@ function diffTitle(key: 'combatType' | 'location' | 'duration') {
 
 <template>
   <div class="flex flex-1 flex-wrap items-center gap-x-4 gap-y-1.5 rounded-md border border-line px-2.5 py-1.5">
-    <label v-for="toggle in orderedToggles" :key="toggle.name" class="flex cursor-pointer items-center gap-1.5 whitespace-nowrap text-sm">
-      <input type="checkbox" :checked="!!context.toggles?.[toggle.name]"
-             @change="buildEditor.setToggle(toggle.name, ($event.target as HTMLInputElement).checked)">
+    <Checkbox v-for="toggle in orderedToggles" :key="toggle.name"
+      :checked="!!context.toggles?.[toggle.name]"
+      @change="buildEditor.setToggle(toggle.name, $event)"
+    >
       <span :class="toggleDiffers(toggle.name) ? 'cursor-help font-bold text-diff' : ''"
             :title="toggleDiffers(toggle.name) ? toggleDiffTitle(toggle.name) : undefined">
         {{ toggle.label }}<template v-if="toggleDiffers(toggle.name)"> ●</template>
       </span>
-    </label>
+    </Checkbox>
 
     <span class="h-4 w-px bg-line"></span>
 
