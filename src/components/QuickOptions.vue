@@ -81,8 +81,8 @@ function diffTitle(key: 'combatType' | 'location' | 'duration') {
 <template>
   <div class="flex flex-1 flex-wrap items-center gap-x-4 gap-y-1.5 rounded-md border border-line px-2.5 py-1.5">
     <Checkbox v-for="toggle in orderedToggles" :key="toggle.name"
-      :checked="!!context.toggles?.[toggle.name]"
-      @change="buildEditor.setToggle(toggle.name, $event)"
+      :model-value="!!context.toggles?.[toggle.name]"
+      @update:model-value="v => buildEditor.setToggle(toggle.name, v)"
     >
       <span :class="toggleDiffers(toggle.name) ? 'cursor-help font-bold text-diff' : ''"
             :title="toggleDiffers(toggle.name) ? toggleDiffTitle(toggle.name) : undefined">

@@ -133,8 +133,10 @@ onUnmounted(() => {
             <ComboBox class="compare-select" :model-value="build.compare.id" :options="compare.compareOptions.value"
                       @update:model-value="compare.setCompareBuild" />
 
-            <Checkbox :checked="build.compare.highlight" @change="compare.setCompareFlag('highlight', $event)">Highlight changes</Checkbox>
-            <Checkbox :checked="build.compare.onlyDiff" @change="compare.setCompareFlag('onlyDiff', $event)">Only show changes</Checkbox>
+            <Checkbox :model-value="build.compare.highlight" :disabled="!compareBuild"
+                      @update:model-value="v => compare.setCompareFlag('highlight', v)">Highlight changes</Checkbox>
+            <Checkbox :model-value="build.compare.onlyDiff" :disabled="!compareBuild"
+                      @update:model-value="v => compare.setCompareFlag('onlyDiff', v)">Only show changes</Checkbox>
           </div>
 
           <button type="button" class="link" @click="buildEditor.resetAll()">reset</button>
