@@ -8,11 +8,6 @@
 
 :root {
   color-scheme: light dark;
-  /* Base font size, in an absolute unit deliberately -- `rem` here would resolve against the
-   * browser's own default (usually 16px) instead of anchoring it. Every other font-size in
-   * this file (and every component's own scoped style) is a `rem` multiple of this 12px,
-   * floored at 1rem so nothing renders smaller. */
-  font-size: 12px;
 
   --bg: #f6f7f9;
   --surface: #ffffff;

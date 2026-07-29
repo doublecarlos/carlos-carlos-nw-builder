@@ -226,6 +226,7 @@ function toggle(sectionId: string) {
 
 function setAll(open: boolean) {
   for (const section of db.value.sections) expanded[section.id] = open;
+  expanded.options = open;
 }
 
 /** A plain click just moves the cursor here, same as an arrow key would. Ctrl+click on a
@@ -294,7 +295,7 @@ function onFocusIn(event: FocusEvent) {
            the toggle button -- a <button> can't nest another one. -->
       <div class="flex items-center">
         <button type="button"
-                class="flex flex-1 items-center gap-2 min-w-0 px-2.5 py-1.5 text-left font-semibold hover:bg-surface-2"
+                class="bg-surface-2 flex flex-1 items-center gap-2 min-w-0 px-2.5 py-1.5 text-left font-semibold hover:bg-surface-2"
                 :class="isCursor('header', 'options') && 'is-cursor outline-2 -outline-offset-1 outline-accent'"
                 data-cursor-key="header:options"
                 @click="toggle('options'); setCursor('header', 'options')">
@@ -303,7 +304,7 @@ function onFocusIn(event: FocusEvent) {
           <Badge v-if="highlightDiff && optionsDiffCount" variant="diff">{{ optionsDiffCount }}</Badge>
         </button>
       </div>
-      <div v-if="expanded.options" class="border-t border-line px-2.5 pb-2 pt-1">
+      <div v-if="expanded.options" class="bg-surface border-t border-line px-2.5 pb-2 pt-1">
         <Options :context="context"
                 :compare-context="compareBuild?.context ?? null"
                 :compare-name="compareBuild?.name ?? ''"
@@ -314,7 +315,7 @@ function onFocusIn(event: FocusEvent) {
     </section>
 
     <section v-for="section in sections" :key="section.id" class="rounded-md border border-line">
-      <div class="flex items-center">
+      <div class="bg-surface-2 flex items-center">
         <button type="button"
                 class="flex flex-1 items-center gap-2 min-w-0 px-2.5 py-1.5 text-left font-semibold hover:bg-surface-2"
                 :class="isCursor('header', section.id) && 'is-cursor outline-2 -outline-offset-1 outline-accent'"
@@ -333,7 +334,7 @@ function onFocusIn(event: FocusEvent) {
                     class="mr-1.5 flex-none" @click="buildEditor.revertSection(section.id)" />
       </div>
 
-      <div v-if="expanded[section.id]" class="border-t border-line px-2.5 pb-2 pt-1">
+      <div v-if="expanded[section.id]" class="bg-surface border-t border-line px-2.5 pb-2 pt-1">
         <div v-for="slot in section.slots" :key="slot.id"
              class="flex items-baseline gap-2.5 border-b border-line/45 py-1 last:border-b-0" tabindex="-1"
              :class="[

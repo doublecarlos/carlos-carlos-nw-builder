@@ -75,7 +75,7 @@ test.describe('section collapse/expand', () => {
     await expect(slotRow(page, 'gear.head')).toBeVisible();
   });
 
-  test('"expand all" / "collapse all" open and close every real section, but never Options', async ({ page }) => {
+  test('"expand all" / "collapse all" open and close every section', async ({ page }) => {
     await openBuilder(page);
     // Gear starts open, Reinforcements starts closed, Options starts closed -- see App.vue's
     // `OPEN_BY_DEFAULT` (only "gear" is in it).
@@ -90,7 +90,7 @@ test.describe('section collapse/expand', () => {
 
     await page.getByRole('button', { name: 'collapse all' }).click();
     await expect(slotRow(page, 'gear.head')).toBeHidden();
-    await expect(page.locator('.options')).toBeVisible();
+    await expect(page.locator('.options')).toBeHidden();
 
     await page.getByRole('button', { name: 'expand all' }).click();
     await expect(slotRow(page, 'gear.head')).toBeVisible();
