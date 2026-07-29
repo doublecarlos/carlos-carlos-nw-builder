@@ -61,7 +61,6 @@ const props = withDefaults(defineProps<{
   compareName: '',
 });
 
-const showZero = ref(false);
 const summaryCalcKey = ref('damage:average');
 
 const stages = computed(() => props.result.stages);
@@ -183,10 +182,6 @@ const bonusSummary = computed(() => {
   };
 });
 
-function visible(value: number) {
-  return showZero.value || Math.abs(value) > 1e-9;
-}
-
 function fmtPctSigned(value: number | null) {
   if (value == null || Math.abs(value) < 1e-9) return '—';
   return (value > 0 ? '+' : '') + pct(value);
@@ -243,9 +238,6 @@ function signedInt(value: number) {
     <div class="panel-meta">
       <span>{{ bonusSummary.active }}/{{ bonusSummary.total }} bonuses active</span>
       <span v-if="bonusSummary.excluded">{{ bonusSummary.excluded }} excluded</span>
-      <label class="check check--inline">
-        <input type="checkbox" v-model="showZero"><span>show zeroes</span>
-      </label>
     </div>
 
     <table class="stat-table stat-table--pairs">
@@ -262,7 +254,6 @@ function signedInt(value: number) {
              percentage cap independently, so one can read green while the other reads
              red on the same row. -->
         <tr v-for="row in capRows" :key="row.key"
-            v-show="visible(row.rating.total)"
             :class="{ 'row-sep': row.sepAfter }">
           <td>{{ row.label }}</td>
           <td class="num" :class="row.rating.primaryCls">{{ int(row.rating.total) }}</td>
@@ -276,7 +267,7 @@ function signedInt(value: number) {
     <h3 class="panel-head">Other stats</h3>
     <table class="stat-table stat-table--pairs">
       <tbody>
-        <tr v-for="row in otherRows" :key="row.key" v-show="visible(row.value)">
+        <tr v-for="row in otherRows" :key="row.key">
           <td>{{ row.label }}</td>
           <td class="num">{{ fmt(row.key, row.value) }}</td>
         </tr>
@@ -296,7 +287,7 @@ function signedInt(value: number) {
     <h3 class="panel-head">Enemy</h3>
     <table class="stat-table stat-table--pairs">
       <tbody>
-        <tr v-for="row in enemyRows" :key="row.key" v-show="visible(row.value)">
+        <tr v-for="row in enemyRows" :key="row.key"">
           <td>{{ row.label }}</td>
           <td class="num">{{ fmt(row.key, row.value) }}</td>
         </tr>
