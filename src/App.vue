@@ -159,8 +159,8 @@ onUnmounted(() => {
         </div>
       </header>
 
-      <main class="flex flex-1 items-stretch gap-4 p-3.5 max-lg:flex-col" v-if="resolved.ok">
-        <div class="min-w-0 flex-1 overflow-y-auto max-lg:w-auto max-lg:overflow-y-visible">
+      <main class="flex min-h-0 flex-1 items-stretch gap-4 p-3.5 max-lg:flex-col" v-if="resolved.ok">
+        <div class="min-w-0 flex-1 overflow-y-auto max-lg:w-auto max-lg:overflow-y-visible" data-testid="builder-content">
           <SlotList />
         </div>
         <aside class="sidebar w-130 flex-none overflow-y-auto max-lg:w-auto max-lg:overflow-y-visible">
