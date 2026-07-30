@@ -81,21 +81,21 @@ test.describe('section collapse/expand', () => {
     // `OPEN_BY_DEFAULT` (only "gear" is in it).
     await expect(slotRow(page, 'gear.head')).toBeVisible();
     await expect(slotRow(page, 'reinforcements.armorKit1')).toBeHidden();
-    await expect(page.locator('.options')).toBeHidden();
+    await expect(slotRow(page, 'options.class')).toBeHidden();
 
-    // Open Options by hand -- "expand all"/"collapse all" only ever touch `db.sections`
-    // (App.vue's `setExpanded`), so this is the only way to prove they leave it alone.
+    // Open Options by hand -- it's a normal section now (a build_parameter slot per field),
+    // so this just proves "expand all"/"collapse all" apply to it the same as any other.
     await headerRow(page, 'options').click();
-    await expect(page.locator('.options')).toBeVisible();
+    await expect(slotRow(page, 'options.class')).toBeVisible();
 
     await page.getByRole('button', { name: 'collapse all' }).click();
     await expect(slotRow(page, 'gear.head')).toBeHidden();
-    await expect(page.locator('.options')).toBeHidden();
+    await expect(slotRow(page, 'options.class')).toBeHidden();
 
     await page.getByRole('button', { name: 'expand all' }).click();
     await expect(slotRow(page, 'gear.head')).toBeVisible();
     await expect(slotRow(page, 'reinforcements.armorKit1')).toBeVisible();
-    await expect(page.locator('.options')).toBeVisible();
+    await expect(slotRow(page, 'options.class')).toBeVisible();
   });
 
   test('the Options header has no filled/total badge, unlike a real section', async ({ page }) => {

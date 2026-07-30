@@ -1,11 +1,12 @@
 // Every mutation that writes the active build's *content* goes through here, and every one of
 // them takes a snapshot first -- this is the one place undo has to watch.
 import { computed, reactive, watch } from 'vue';
-import * as format from '../format';
 import * as storage from '../storage';
 import * as library from './library';
 import * as compare from './compare';
 import { db } from './engine';
+import { getPath, setPath } from '../build-path';
+import type { BuildParameterSlot } from '../types';
 
 interface HistoryEntry { json: string; label: string; }
 interface BuildHistory { past: HistoryEntry[]; future: HistoryEntry[]; lastKey: string | null; lastAt: number; }
@@ -14,16 +15,6 @@ const UNDO_LIMIT = 50;
 // Consecutive edits of the same thing inside this window collapse into one undo step, so
 // typing 3589 into a number field is one undo, not four.
 const COALESCE_MS = 700;
-
-// Context keys whose title-cased name would read oddly in an undo tooltip.
-const FIELD_LABELS: Record<string, string> = {
-  combatType: 'Combat type',
-  damageType: 'Damage type',
-  m32Forte: 'M32 Forte',
-  duration: 'Duration (s)',
-};
-
-const FORTE_LABELS: Record<string, string> = { primary: 'Forte 1', secondaryA: 'Forte 2A', secondaryB: 'Forte 2B' };
 
 // buildId -> { past, future, … } of JSON snapshots. Per build, so switching away and back
 // preserves what you could undo. Never persisted: history is a session concept.
@@ -161,26 +152,16 @@ export function applyValueFromCompare(slotId: string) {
   else delete build.values[slotId];
 }
 
-export function setContext(key: string, value: string | number | boolean) {
-  const name = FIELD_LABELS[key] ?? format.titleCase(key);
+/** Every `build_parameter` slot's setter, whatever `path` it writes -- Options/QuickOptions'
+ * class/role/duration/toggles/forte picks today, mount bolster/boon points/etc. later. Replaces
+ * the old per-field `setContext`/`setToggle`/`setForte` trio: those differed only in *where* in
+ * `context` they wrote and how they phrased the undo label, both of which the slot already says. */
+export function setParam(slot: BuildParameterSlot, value: string | number | boolean) {
   const shown = typeof value === 'boolean'
     ? (value ? 'on' : 'off')
-    : format.titleCase(String(value));
-  snapshot(`context:${key}`, `${name} → ${shown}`);
-  (library.activeBuildForEdit().context as unknown as Record<string, string | number | boolean>)[key] = value;
-}
-
-export function setToggle(name: string, value: boolean) {
-  snapshot(`toggle:${name}`, `${format.titleCase(name)} ${value ? 'on' : 'off'}`);
-  library.activeBuildForEdit().context.toggles[name] = value;
-}
-
-export function setForte(slot: string, statKey: string) {
-  const target = statKey ? format.label(statKey) : 'none';
-  snapshot(`forte:${slot}`, `${FORTE_LABELS[slot] ?? slot} → ${target}`);
-  const forte = library.activeBuildForEdit().context.forte as unknown as Record<string, string | undefined>;
-  if (statKey) forte[slot] = statKey;
-  else delete forte[slot];
+    : slot.options?.find((o) => o.value === value)?.label ?? String(value || 'none');
+  snapshot(`param:${slot.id}`, `${slot.label} → ${shown}`);
+  setPath(library.activeBuildForEdit(), slot.path, value);
 }
 
 export function renameBuild(name: string) {
@@ -219,6 +200,11 @@ export function copySection(fromId: string, sectionIds: string[]) {
   for (const slot of db.value.slots) {
     if (!wanted.has(slot.section)) continue;
 
+    if (slot.type === 'build_parameter') {
+      setPath(build, slot.path, getPath(source, slot.path));
+      continue;
+    }
+
     const choice = source.choices[slot.id];
     if (choice) build.choices[slot.id] = choice;
     else delete build.choices[slot.id];
@@ -236,6 +222,11 @@ export function revertSlot(slotId: string) {
   if (!saved) return;
   snapshot(null, `revert ${slotLabel(slotId)}`);
   const build = library.activeBuildForEdit();
+  const slot = db.value.slotById.get(slotId);
+  if (slot?.type === 'build_parameter') {
+    setPath(build, slot.path, getPath(saved, slot.path));
+    return;
+  }
   const choice = saved.choices[slotId];
   if (choice) build.choices[slotId] = choice;
   else delete build.choices[slotId];
@@ -253,6 +244,10 @@ export function revertSection(sectionId: string) {
   snapshot(null, `revert ${label}`);
   const build = library.activeBuildForEdit();
   for (const slot of slots) {
+    if (slot.type === 'build_parameter') {
+      setPath(build, slot.path, getPath(saved, slot.path));
+      continue;
+    }
     const choice = saved.choices[slot.id];
     if (choice) build.choices[slot.id] = choice;
     else delete build.choices[slot.id];

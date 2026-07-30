@@ -10,8 +10,9 @@ import { computed } from 'vue';
 import ComboBox from './ui/ComboBox.vue';
 import IconButton from './ui/IconButton.vue';
 import FormField from './ui/FormField.vue';
-import { NW_SCHEMA } from '../data';
+import { NW_SLOTS } from '../data';
 import { LEAF_TYPES, MAX_DEPTH, newLeafRow, newGroupRow, cloneRow, type ConditionRow } from '../condition-draft';
+import type { BuildParameterSlot } from '../types';
 
 const props = withDefaults(defineProps<{
   // Mutated in place -- same convention as BonusRows' `rows` prop.
@@ -74,19 +75,25 @@ function changeType(row: ConditionRow) {
   Object.assign(row, fresh, { uid: row.uid });
 }
 
-function optionsFor(type?: string): string[] {
-  const context = NW_SCHEMA.context;
-  if (type === 'toggle') return context.toggles;
-  if (type === 'role') return context.roles;
-  if (type === 'class') return context.classes;
-  if (type === 'combatType') return context.combatTypes;
-  if (type === 'location') return context.locations;
-  if (type === 'damageType') return context.damageTypes;
-  return [];
-}
+// Each condition leaf's valid values come from the matching `options` build_parameter slot in
+// slots.json -- the same source of truth the Options section itself renders from, so a value
+// typo'd here can't drift from what's actually selectable in a build.
+const PATH_FOR_TYPE: Record<string, string> = {
+  role: 'context.role', class: 'context.class', combatType: 'context.combatType',
+  location: 'context.location', damageType: 'context.damageType',
+};
 
 function optionsForCombo(type?: string) {
-  return optionsFor(type).map((o) => ({ value: o, label: o }));
+  if (type === 'toggle') {
+    return NW_SLOTS.slots
+      .filter((slot): slot is BuildParameterSlot => (
+        slot.type === 'build_parameter' && slot.path.startsWith('context.toggles.')
+      ))
+      .map((slot) => ({ value: slot.path.slice('context.toggles.'.length), label: slot.label }));
+  }
+  const path = type ? PATH_FOR_TYPE[type] : undefined;
+  const slot = path ? NW_SLOTS.slots.find((s) => s.type === 'build_parameter' && s.path === path) : undefined;
+  return (slot as BuildParameterSlot | undefined)?.options ?? [];
 }
 </script>
 
@@ -130,7 +137,7 @@ function optionsForCombo(type?: string) {
         </template>
         <template v-else>
           <FormField label="Value" class="min-w-0">
-            <ComboBox v-if="optionsFor(row.type).length" class="w-38"
+            <ComboBox v-if="optionsForCombo(row.type).length" class="w-38"
                       :model-value="row.value" :options="optionsForCombo(row.type)"
                       @update:model-value="v => row.value = v" />
             <input v-else class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent" type="text" v-model="row.value">

@@ -11,9 +11,10 @@
 // `nw:current-build`; that key is migrated into the saved library on first load and then
 // removed.
 
-import { NW_SCHEMA } from './data';
+import { NW_SLOTS } from './data';
 import * as catalog from './catalog';
-import type { Build, ForteSplit, Library, Collection, Collections, CatalogOverlay } from './types';
+import { setPath } from './build-path';
+import type { Build, Library, Collection, Collections, CatalogOverlay } from './types';
 
 const KEY = 'nw:builds';
 const DRAFT_KEY = 'nw:builds-draft';
@@ -29,27 +30,27 @@ const HASH_PREFIX = '#b=';
 const DEFLATED = 'd';
 const PLAIN = 'j';
 
-/**
- * The sheet's own forte picks. `NW_SCHEMA.context.defaults` carries no `forte` key -- see the
- * open item in llm/plans/0002-ui-handoff.md §9.
- */
-const DEFAULT_FORTE: Required<ForteSplit> = { primary: 'power_p', secondaryA: 'strike_p', secondaryB: 'awareness_p' };
-
 export const newId = (prefix = 'b') => `${prefix}_${Math.random().toString(36).slice(2, 8)}${Date.now().toString(36).slice(-3)}`;
 
+/**
+ * `context`'s starting shape comes entirely from the `options` section's `build_parameter`
+ * slots' own `default` -- no separate defaults object to keep in sync with the slot list, and
+ * no forte-specific special case (its 3 picks are just 3 more `default`s on 3 more slots).
+ */
 export function defaultBuild(name = 'New build'): Build {
-  const defaults = NW_SCHEMA.context.defaults;
+  const root: { context: Record<string, unknown> } = { context: {} };
+  for (const slot of NW_SLOTS.slots) {
+    if (slot.type === 'build_parameter' && slot.default !== undefined) {
+      setPath(root, slot.path, slot.default);
+    }
+  }
   return {
     id: newId(),
     name,
     updated: Date.now(),
     choices: {},
     values: {},
-    context: {
-      ...defaults,
-      toggles: { ...defaults.toggles },
-      forte: { ...DEFAULT_FORTE },
-    },
+    context: root.context as unknown as Build['context'],
     // The quick-compare picker (App.vue topbar). Saved with the build -- unlike `tab`, which
     // is pure session state -- so reopening a build remembers what you were sizing it up
     // against. `id` is another build's id, resolved (and gracefully dropped if it no longer

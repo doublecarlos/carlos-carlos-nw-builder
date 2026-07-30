@@ -65,10 +65,11 @@ export function build(items: Item[], bonusSets: BonusSet[] = [], schema: Schema,
     /** Items selectable in a filter category, sorted by name. */
     forFilter: (filter: string) => byFilter.get(filter) ?? [],
 
-    /** Items selectable in a given slot id. */
+    /** Items selectable in a given slot id -- empty for a build_parameter slot, which has no
+     * `filter` to look up (it isn't an item choice at all). */
     forSlot(slotId: string) {
       const slot = slotById.get(slotId);
-      return slot ? (byFilter.get(slot.filter) ?? []) : [];
+      return slot?.type === 'item_picker' ? (byFilter.get(slot.filter) ?? []) : [];
     },
 
     /** 0 or absent means unlimited. */

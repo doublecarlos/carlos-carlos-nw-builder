@@ -121,20 +121,5 @@
     "dps": { "label": "DPS", "hpBonus": 1.0, "damageBonus": 1.2 },
     "healer": { "label": "Healer", "hpBonus": 1.1, "damageBonus": 1.1 },
     "tank": { "label": "Tank", "hpBonus": 1.2, "damageBonus": 1.0 }
-  },
-
-  "context": {
-    "classes": ["barbarian", "bard", "cleric", "fighter", "paladin", "ranger", "rogue", "warlock", "wizard"],
-    "roles": ["dps", "healer", "tank"],
-    "combatTypes": ["single", "aoe", "mixed"],
-    "locations": ["generic", "thay", "wildspace"],
-    "damageTypes": ["magical", "physical"],
-    "toggles": ["combat", "party", "consumables", "procs", "artifactCall"],
-    "durationPresets": [0, 10, 30, 60],
-    "defaults": {
-      "class": "warlock", "role": "dps", "combatType": "single", "duration": 60,
-      "location": "generic", "damageType": "magical", "magnitude": 4332, "m32Forte": true,
-      "toggles": { "combat": true, "party": true, "consumables": true, "procs": true, "artifactCall": true }
-    }
   }
 }

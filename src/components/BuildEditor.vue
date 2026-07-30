@@ -5,19 +5,16 @@
 // on load; expanding everything is ~180 rows, which the browser handles fine -- only one
 // dropdown is ever open, and that is where the per-row cost actually lives. No virtualisation.
 import { computed, reactive, ref, watch } from 'vue';
-import ItemPicker from './ItemPicker.vue';
 import ItemCard from './ItemCard.vue';
-import Options from './Options.vue';
-import IconButton from './ui/IconButton.vue';
-import SectionCopyMenu from './SectionCopyMenu.vue';
+import BuildSection from './BuildSection.vue';
+import BuildSlot from './BuildSlot.vue';
 import Button from './ui/Button.vue';
-import Badge from './ui/Badge.vue';
-import UnsavedDot from './ui/UnsavedDot.vue';
 import { NW_SCHEMA, NW_SLOTS } from '../data';
-import { label as statLabelFmt, abbr, signedStat } from '../format';
+import { abbr, signedStat } from '../format';
 import { useHoverCard } from '../composables/useHoverCard';
 import { useKeyboardCursor } from '../composables/useKeyboardCursor';
-import { useCompareDiff } from '../composables/useCompareDiff';
+import { useCompareDiff, paramDiffers, paramDiffTitle } from '../composables/useCompareDiff';
+import { getPath } from '../build-path';
 import * as storage from '../storage';
 import * as router from '../router';
 import * as library from '../stores/library';
@@ -38,7 +35,6 @@ const result = computed(() => {
   if (!r.ok) throw new Error('BuildEditor requires a resolved build');
   return r.result;
 });
-const context = computed(() => build.value.context);
 const compareBuild = compare.compareBuild;
 const compareResult = computed(() => (engine.compareResolved.value?.ok ? engine.compareResolved.value.result : null));
 const highlightDiff = computed(() => build.value.compare.highlight);
@@ -53,11 +49,11 @@ const otherBuilds = library.otherBuildsInCollection;
 
 // Which sections are open -- a UI preference, not a build edit, shared across every build
 // rather than saved with one, persisted under its own key so it survives a reload. Every
-// section starts collapsed except Gear, plus the Options header (not a real section, so it
-// isn't in `NW_SLOTS.sections`).
+// section starts collapsed except Gear. "options" is a real section like any other now (first
+// in `NW_SLOTS.sections`), so it needs no separate seed.
 const OPEN_BY_DEFAULT = new Set(['gear']);
 const savedExpanded = storage.loadUiState().expanded;
-const expanded = reactive<Record<string, boolean>>({ options: savedExpanded?.options ?? false });
+const expanded = reactive<Record<string, boolean>>({});
 for (const section of NW_SLOTS.sections) {
   expanded[section.id] = savedExpanded?.[section.id] ?? OPEN_BY_DEFAULT.has(section.id);
 }
@@ -116,14 +112,20 @@ const hoveredBonuses = computed(() => {
 
 // --- quick compare ---------------------------------------------------------------------
 
-const { differs, otherChoice, valueDiffers, rowDiff, rowHasDiff, optionsDiffCount } = useCompareDiff({
+const {
+  differs, otherChoice, valueDiffers, rowDiff, rowHasDiff, optionsDiffCount,
+} = useCompareDiff({
   db, build, result, compareBuild, compareResult, itemIn,
 });
 
-/** True if this slot's choice or typed value hasn't been saved yet. */
+/** True if this slot's choice, typed value, or build_parameter value hasn't been saved yet. */
 function unsaved(slotId: string) {
   const saved = savedBuild.value;
   if (!saved) return false;
+  const slot = db.value.slotById.get(slotId);
+  if (slot?.type === 'build_parameter') {
+    return (getPath(build.value, slot.path) ?? null) !== (getPath(saved, slot.path) ?? null);
+  }
   if ((build.value.choices[slotId] || '') !== (saved.choices[slotId] || '')) return true;
   return (build.value.values[slotId] ?? null) !== (saved.values[slotId] ?? null);
 }
@@ -137,26 +139,39 @@ interface SectionRow extends SlotSection {
   total: number;
 }
 
+/** True for a slot the section body actually renders -- a `quick` build_parameter slot lives
+ * in the always-visible QuickOptions strip instead, so it never counts toward this section's
+ * badge/diff/unsaved state (it's never hidden by a collapse the way a real row can be). */
+function rowDiffers(slot: Slot) {
+  return slot.type === 'build_parameter'
+    ? paramDiffers(build.value, compareBuild.value, slot)
+    : rowHasDiff(slot.id);
+}
+
 const sections = computed<SectionRow[]>(() => {
   const onlyDiffAndComparing = onlyDiff.value && compareBuild.value;
   return db.value.sections
     .map((section) => {
-      const allSlots = db.value.slots.filter((slot) => slot.section === section.id);
+      const allSlots = db.value.slots.filter((slot) => (
+        slot.section === section.id && !(slot.type === 'build_parameter' && slot.quick)
+      ));
       // Counted off the section's full slot list, not the (possibly onlyDiff-filtered)
       // one below -- the badge's job is telling a *collapsed* section apart, where
-      // `slots` would otherwise be invisible. Same reasoning for `unsaved`. A "diff" here is
-      // the combined choice/value/bonus-outcome check (`rowHasDiff`), not just a differing
-      // choice, so the badge also catches a same-item slot whose bonus or typed value differs.
-      const diffs = compareBuild.value ? allSlots.filter((slot) => rowHasDiff(slot.id)).length : 0;
+      // `slots` would otherwise be invisible. Same reasoning for `unsaved`.
+      const diffs = compareBuild.value ? allSlots.filter(rowDiffers).length : 0;
       const unsavedFlag = allSlots.some((slot) => unsaved(slot.id));
-      const slots = onlyDiffAndComparing ? allSlots.filter((slot) => rowHasDiff(slot.id)) : allSlots;
+      const slots = onlyDiffAndComparing ? allSlots.filter(rowDiffers) : allSlots;
+      // The fill-count badge only means anything for item_picker slots -- a build_parameter
+      // always has *some* value, "filled" isn't a meaningful state for it. A section made
+      // entirely of them (Options) ends up with total 0, so the badge just doesn't render.
+      const pickerSlots = slots.filter((slot) => slot.type === 'item_picker');
       let filled = 0;
       let errors = 0;
-      for (const slot of slots) {
+      for (const slot of pickerSlots) {
         if (rowBySlot.value.get(slot.id)?.item) filled += 1;
         errors += errorsBySlot.value.get(slot.id)?.length ?? 0;
       }
-      return { ...section, slots, filled, errors, diffs, unsaved: unsavedFlag, total: slots.length };
+      return { ...section, slots, filled, errors, diffs, unsaved: unsavedFlag, total: pickerSlots.length };
     })
     .filter((section) => !onlyDiffAndComparing || section.slots.length > 0);
 });
@@ -192,13 +207,12 @@ const bonusesBySlot = computed(() => {
 });
 
 /**
- * Flattens exactly what the template renders -- the Options header, then per section a
- * header and (if expanded) its slot rows -- so keyboard movement always matches what is
- * actually on screen. Collapsed sections simply contribute no slot entries, the same way
- * a spreadsheet skips hidden rows.
+ * Flattens exactly what the template renders -- a header per section, then (if expanded) its
+ * slot rows -- so keyboard movement always matches what is actually on screen. Collapsed
+ * sections simply contribute no slot entries, the same way a spreadsheet skips hidden rows.
  */
 const visibleRows = computed(() => {
-  const rows: { type: string; id: string }[] = [{ type: 'header', id: 'options' }];
+  const rows: { type: string; id: string }[] = [];
   for (const section of sections.value) {
     rows.push({ type: 'header', id: section.id });
     if (expanded[section.id]) {
@@ -207,8 +221,6 @@ const visibleRows = computed(() => {
   }
   return rows;
 });
-
-const statLabel = (key: string) => statLabelFmt(key);
 
 function itemsFor(slotId: string) {
   const cls = build.value.context.class;
@@ -226,7 +238,6 @@ function toggle(sectionId: string) {
 
 function setAll(open: boolean) {
   for (const section of db.value.sections) expanded[section.id] = open;
-  expanded.options = open;
 }
 
 /** A plain click just moves the cursor here, same as an arrow key would. Ctrl+click on a
@@ -270,7 +281,11 @@ const {
   isCursor, setCursor, setPickerRef, onFocusIn: onCursorFocusIn,
 } = useKeyboardCursor(root, visibleRows, {
   onToggleHeader: toggle,
-  onClearSlot: (slotId) => buildEditor.setChoice(slotId, ''),
+  // Backspace-to-clear only makes sense for an item choice -- a build_parameter always has
+  // some value, there's nothing to "clear" it back to that isn't already its own control.
+  onClearSlot: (slotId) => {
+    if (db.value.slotById.get(slotId)?.type === 'item_picker') buildEditor.setChoice(slotId, '');
+  },
 });
 
 /** Forwards the list's own `focusin` to both composables -- see `useHoverCard`'s own doc
@@ -290,131 +305,29 @@ function onFocusIn(event: FocusEvent) {
       <span class="text-sm text-muted">Ctrl+click a filled slot to edit that item</span>
     </div>
 
-    <section class="rounded-md border border-line">
-      <!-- The revert icon (shown only when the section has unsaved slots) has to sit outside
-           the toggle button -- a <button> can't nest another one. -->
-      <div class="flex items-center">
-        <button type="button"
-                class="bg-surface-2 flex flex-1 items-center gap-2 min-w-0 px-2.5 py-1.5 text-left font-semibold hover:bg-surface-2"
-                :class="isCursor('header', 'options') && 'is-cursor outline-2 -outline-offset-1 outline-accent'"
-                data-cursor-key="header:options"
-                @click="toggle('options'); setCursor('header', 'options')">
-          <span class="w-2.5 text-muted">{{ expanded.options ? '▾' : '▸' }}</span>
-          <span class="flex-1 truncate">Options</span>
-          <Badge v-if="highlightDiff && optionsDiffCount" variant="diff">{{ optionsDiffCount }}</Badge>
-        </button>
-      </div>
-      <div v-if="expanded.options" class="bg-surface border-t border-line px-2.5 pb-2 pt-1">
-        <Options :context="context"
-                :compare-context="compareBuild?.context ?? null"
-                :compare-name="compareBuild?.name ?? ''"
-                :highlight-diff="highlightDiff"
-                @set="buildEditor.setContext"
-                @set-forte="buildEditor.setForte" />
-      </div>
-    </section>
-
-    <section v-for="section in sections" :key="section.id" class="rounded-md border border-line">
-      <div class="bg-surface-2 flex items-center">
-        <button type="button"
-                class="flex flex-1 items-center gap-2 min-w-0 px-2.5 py-1.5 text-left font-semibold hover:bg-surface-2"
-                :class="isCursor('header', section.id) && 'is-cursor outline-2 -outline-offset-1 outline-accent'"
-                :data-cursor-key="'header:' + section.id"
-                @click="toggle(section.id); setCursor('header', section.id)">
-          <span class="w-2.5 text-muted">{{ expanded[section.id] ? '▾' : '▸' }}</span>
-          <span class="truncate">{{ section.label }}</span>
-          <span class="section-count ml-auto font-normal text-muted">{{ section.filled }}/{{ section.total }}</span>
-          <Badge v-if="section.errors" variant="error">{{ section.errors }}</Badge>
-          <Badge v-if="highlightDiff && section.diffs" variant="diff">{{ section.diffs }}</Badge>
-          <UnsavedDot v-if="section.unsaved" title="Unsaved changes in this section" />
-        </button>
-        <SectionCopyMenu v-if="otherBuilds.length" :section-id="section.id" :other-builds="otherBuilds"
-                         @copy="(fromId) => buildEditor.copySection(fromId, [section.id])" />
-        <IconButton v-if="section.unsaved" icon="undo-2" title="Revert this section to saved"
-                    class="mr-1.5 flex-none" @click="buildEditor.revertSection(section.id)" />
-      </div>
-
-      <div v-if="expanded[section.id]" class="bg-surface border-t border-line px-2.5 pb-2 pt-1">
-        <div v-for="slot in section.slots" :key="slot.id"
-             class="flex items-baseline gap-2.5 border-b border-line/45 py-1 last:border-b-0" tabindex="-1"
-             :class="[
-               hover?.slotId === slot.id && 'is-hovered bg-accent-soft/40',
-               isCursor('slot', slot.id) && 'is-cursor outline-2 -outline-offset-1 outline-accent',
-               highlightDiff && rowHasDiff(slot.id) && 'is-diff bg-diff/20',
-             ]"
-             :data-cursor-key="'slot:' + slot.id"
-             @mouseenter="onRowEnter($event, slot.id)"
-             @mouseleave="onRowLeave"
-             @click="onRowClick($event, slot.id)">
-          <div class="flex w-36 shrink-0 items-center justify-between min-w-0">
-            <label class="slot-label min-w-0 flex-1 truncate text-muted" :for="slot.id">{{ slot.label }}</label>
-            <span v-if="unsaved(slot.id)" class="flex flex-none items-center gap-0.5">
-              <UnsavedDot title="Unsaved change" />
-              <IconButton icon="undo-2" title="Revert to saved" @click="buildEditor.revertSlot(slot.id)" />
-            </span>
-          </div>
-
-          <div class="min-w-0 flex-1">
-            <div class="flex flex-wrap items-center gap-2.5">
-              <ItemPicker
-                :ref="el => setPickerRef(slot.id, el)"
-                class="grow-0 basis-80 min-w-40"
-                :items="itemsFor(slot.id)"
-                :model-value="build.choices[slot.id] ?? ''"
-                :invalid="errorsFor(slot.id).length > 0"
-                @update:model-value="buildEditor.setChoice(slot.id, $event)" />
-              <span v-if="itemIn(slot.id)" class="min-w-0 flex-1 truncate text-sm text-text">{{ statSummary(slot.id) }}</span>
-            </div>
-
-            <p v-if="highlightDiff && differs(slot.id)" class="slot-diff-note mt-0.5 text-sm text-muted">
-              {{ compareBuild?.name }}: {{ otherChoice(slot.id) || '(empty)' }}
-              <Button variant="link" class="ml-0.5 text-accent" @click.stop="buildEditor.applyFromCompare(slot.id)">
-                apply
-              </Button>
-            </p>
-
-            <!-- Same item both sides, but the bonus(es) it grants resolve differently --
-                 e.g. a `when` gate reading class/role/toggles/duration/other slots. No apply
-                 action: there is no single field to copy, the difference lives elsewhere in
-                 the build. -->
-            <template v-if="highlightDiff">
-              <p v-for="bonusDiff in rowDiff(slot.id)?.bonuses ?? []" :key="bonusDiff.id"
-                 class="mt-0.5 text-sm font-semibold text-diff">
-                {{ bonusDiff.message }}
-              </p>
-            </template>
-
-            <!-- Dynamic weapon modifications carry a user-typed magnitude. Driven by the
-                 item's own `dynamicStat`, not by a hard-coded slot id, so a second
-                 dynamic modification would work with no UI change. -->
-            <div v-if="itemIn(slot.id)?.dynamicStat" class="mt-1 flex items-center gap-1.5">
-              <input
-                type="number"
-                class="w-20 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-                :min="itemIn(slot.id)?.dynamicMin"
-                :max="itemIn(slot.id)?.dynamicMax"
-                :value="build.values[slot.id] ?? ''"
-                :placeholder="String(itemIn(slot.id)?.dynamicMin ?? '')"
-                @input="buildEditor.setValue(slot.id, ($event.target as HTMLInputElement).value)">
-              <span class="text-sm text-muted">
-                {{ statLabel(itemIn(slot.id)?.dynamicStat as string) }}
-                {{ itemIn(slot.id)?.dynamicMin }}–{{ itemIn(slot.id)?.dynamicMax }}
-              </span>
-            </div>
-
-            <p v-if="highlightDiff && rowDiff(slot.id)?.value" class="slot-diff-note mt-0.5 text-sm text-muted">
-              {{ compareBuild?.name }}: {{ compareBuild?.values?.[slot.id] ?? '(none)' }}
-              <Button variant="link" class="ml-0.5 text-accent" @click.stop="buildEditor.applyValueFromCompare(slot.id)">
-                apply
-              </Button>
-            </p>
-
-            <p v-for="error in errorsFor(slot.id)" :key="error.kind + error.choice"
-               class="mt-0.5 text-sm text-danger">{{ error.message }}</p>
-          </div>
-        </div>
-      </div>
-    </section>
+    <BuildSection
+      v-for="section in sections" :key="section.id"
+      :id="section.id" :label="section.label" :slots="section.slots"
+      :filled="section.filled" :total="section.total" :errors="section.errors" :diffs="section.diffs"
+      :unsaved="section.unsaved" :expanded="expanded[section.id]" :is-cursor="isCursor('header', section.id)"
+      :highlight-diff="highlightDiff" :other-builds="otherBuilds"
+      @toggle="toggle(section.id); setCursor('header', section.id)"
+      @copy="(fromId) => buildEditor.copySection(fromId, [section.id])"
+      @revert="buildEditor.revertSection(section.id)">
+      <template #default="{ slot }: { slot: Slot }">
+        <BuildSlot
+          :slot="slot" :build="build" :compare-build="compareBuild" :highlight-diff="highlightDiff"
+          :is-hovered="hover?.slotId === slot.id" :is-cursor="isCursor('slot', slot.id)" :unsaved="unsaved(slot.id)"
+          :item="itemIn(slot.id)" :items="itemsFor(slot.id)" :errors="errorsFor(slot.id)"
+          :stat-summary="statSummary(slot.id)" :choice-differs="differs(slot.id)"
+          :other-choice-label="otherChoice(slot.id)" :bonus-diffs="rowDiff(slot.id)?.bonuses"
+          :value-differs="!!rowDiff(slot.id)?.value" :other-value="compareBuild?.values?.[slot.id]"
+          :param-differs="slot.type === 'build_parameter' ? paramDiffers(build, compareBuild, slot) : false"
+          :other-param-label="slot.type === 'build_parameter' ? paramDiffTitle(compareBuild, slot) : undefined"
+          @enter="onRowEnter($event, slot.id)" @leave="onRowLeave" @rowclick="onRowClick($event, slot.id)"
+          @picker-ref="el => setPickerRef(slot.id, el)" />
+      </template>
+    </BuildSection>
 
     <!-- One card for the whole list, moved and refilled on hover. -->
     <ItemCard

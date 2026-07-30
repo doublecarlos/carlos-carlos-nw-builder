@@ -35,29 +35,6 @@ export interface RoleDef {
   damageBonus: number;
 }
 
-export interface ContextDefaults {
-  class: string;
-  role: string;
-  combatType: string;
-  duration: number;
-  location: string;
-  damageType: string;
-  magnitude: number;
-  m32Forte: boolean;
-  toggles: Record<string, boolean>;
-}
-
-export interface ContextSchema {
-  classes: string[];
-  roles: string[];
-  combatTypes: string[];
-  locations: string[];
-  damageTypes: string[];
-  toggles: string[];
-  durationPresets: number[];
-  defaults: ContextDefaults;
-}
-
 export interface Schema {
   stats: StatDef[];
   statByKey: Record<StatKey, StatDef>;
@@ -69,22 +46,48 @@ export interface Schema {
   abilityContributions: AbilityContribution[];
   forteSplit: Record<string, number>;
   roles: Record<string, RoleDef>;
-  context: ContextSchema;
 }
 
 export interface SlotSection {
   id: string;
   label: string;
-  row: number;
 }
 
-export interface Slot {
+/** A build-wide value with no item of its own -- today's build-context fields (class, role,
+ * duration, toggles, ...), and later mount/companion bolster, boon points, etc. `path` is a
+ * dotted path into `Build` (`context.role`, `context.forte.primary`, `context.toggles.combat`)
+ * resolved by build-path.ts's `getPath`/`setPath`, so the engine keeps reading/writing exactly
+ * the fields it does today -- this only changes how the value is declared and rendered.
+ *
+ * Fields below `quick` are a loose union of what each `paramType` needs (`options` for `list`,
+ * `min`/`max`/`step`/`presets` for `number`/`percent`) -- same "optional fields, no separate
+ * type per variant" convention `Item`'s `dynamicStat`/`dynamicMin`/`dynamicMax` already uses. */
+export interface BuildParameterSlot {
   id: string;
   label: string;
   section: string;
-  filter: string;
-  row: number;
+  type: 'build_parameter';
+  paramType: 'list' | 'number' | 'percent' | 'boolean';
+  path: string;
+  /** Shown in the always-visible QuickOptions strip instead of its section's slot list. */
+  quick?: boolean;
+  default?: string | number | boolean;
+  options?: { value: string; label: string }[];
+  min?: number;
+  max?: number;
+  step?: number;
+  presets?: number[];
 }
+
+export interface ItemPickerSlot {
+  id: string;
+  label: string;
+  section: string;
+  type: 'item_picker';
+  filter: string;
+}
+
+export type Slot = ItemPickerSlot | BuildParameterSlot;
 
 export interface SlotsData {
   sections: SlotSection[];

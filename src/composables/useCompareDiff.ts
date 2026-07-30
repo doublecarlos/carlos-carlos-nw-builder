@@ -1,12 +1,37 @@
 // The quick-compare picker's per-slot diffing: whether a slot's choice, typed value, or a
 // bonus it takes part in differs from the compare build.
 import { computed, type Ref } from 'vue';
-import type { Build, Db, EvaluatedBonus, Item, ResolvedBuild, StatValues } from '../types';
+import { getPath } from '../build-path';
+import type { Build, BuildParameterSlot, Db, EvaluatedBonus, Item, ResolvedBuild, StatValues } from '../types';
 
 export interface SlotDiff {
   choice: boolean;
   value: boolean;
   bonuses: { id: string; message: string }[];
+}
+
+/** True if this build_parameter slot's value differs between two builds. Generic over any
+ * slot's `path` -- replaces the old hardcoded per-field `fieldDiffers`/`forteDiffers`/
+ * `toggleDiffers` that used to live separately (and duplicated) in Options.vue and
+ * QuickOptions.vue. Standalone rather than part of `useCompareDiff` below: it only needs the
+ * two builds, not the item/bonus machinery every other diff helper here depends on, so
+ * QuickOptions.vue (which has no per-row item context at all) can use it directly. */
+export function paramDiffers(build: Build, compareBuild: Build | null, slot: BuildParameterSlot) {
+  if (!compareBuild) return false;
+  return (getPath(build, slot.path) ?? '') !== (getPath(compareBuild, slot.path) ?? '');
+}
+
+function paramLabel(slot: BuildParameterSlot, value: unknown) {
+  if (slot.paramType === 'boolean') return value ? 'on' : 'off';
+  if (slot.paramType === 'list') return slot.options?.find((o) => o.value === value)?.label ?? '(none)';
+  return value ?? '(none)';
+}
+
+/** The hover tooltip for a differing build_parameter slot -- the control itself just goes
+ * bold/dotted/coloured, this is the only place the compare build's actual value shows. */
+export function paramDiffTitle(compareBuild: Build | null, slot: BuildParameterSlot) {
+  if (!compareBuild) return undefined;
+  return `${compareBuild.name}: ${paramLabel(slot, getPath(compareBuild, slot.path))}`;
 }
 
 export function useCompareDiff(options: {
@@ -124,28 +149,15 @@ export function useCompareDiff(options: {
     return rowDiffsBySlot.value.has(slotId);
   }
 
-  // Same field list Options.vue itself diffs against (class/role/damageType/magnitude/the 3
-  // forte picks/m32Forte) -- duplicated here rather than read back off the child component,
-  // same reasoning as `differs`/`rowHasDiff` computing their own counts directly off the data.
-  const OPTIONS_FIELDS = ['class', 'role', 'damageType', 'magnitude', 'm32Forte'] as const;
-  const FORTE_KEYS = ['primary', 'secondaryA', 'secondaryB'];
-
-  /** How many Options fields (BuildEditor's own collapsible "Options" section, not the top bar's
-   * QuickOptions) differ from the compare build -- feeds that section header's own diff badge. */
+  /** How many of the "options" section's own build_parameter slots (not `quick`, so not the
+   * top bar's QuickOptions strip) differ from the compare build -- feeds that section header's
+   * diff badge. */
   const optionsDiffCount = computed(() => {
     if (!compareBuild.value) return 0;
-    const mine = build.value.context;
-    const theirs = compareBuild.value.context;
-    let count = 0;
-    for (const key of OPTIONS_FIELDS) {
-      if ((mine as unknown as Record<string, unknown>)[key] !== (theirs as unknown as Record<string, unknown>)[key]) count += 1;
-    }
-    for (const key of FORTE_KEYS) {
-      const mineForte = (mine.forte as Record<string, string | undefined>)?.[key] ?? '';
-      const theirForte = (theirs.forte as Record<string, string | undefined>)?.[key] ?? '';
-      if (mineForte !== theirForte) count += 1;
-    }
-    return count;
+    return db.value.slots.filter((slot): slot is BuildParameterSlot => (
+      slot.type === 'build_parameter' && slot.section === 'options' && !slot.quick
+        && paramDiffers(build.value, compareBuild.value, slot)
+    )).length;
   });
 
   return { otherChoice, differs, valueDiffers, rowDiff, rowHasDiff, optionsDiffCount };

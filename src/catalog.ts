@@ -170,8 +170,12 @@ export function validate(items: Item[], bonusSets: BonusSet[], schema: Schema = 
 
   const statKeys = new Set(schema.statKeys);
   const percentKinds = new Set(['percent', 'mult']);
-  const slotFilters = new Set((NW_SLOTS?.slots ?? []).map((slot) => slot.filter));
-  const classes = new Set(schema.context.classes);
+  const allSlots = NW_SLOTS?.slots ?? [];
+  const slotFilters = new Set(
+    allSlots.filter((slot) => slot.type === 'item_picker').map((slot) => slot.filter),
+  );
+  const classSlot = allSlots.find((slot) => slot.type === 'build_parameter' && slot.path === 'context.class');
+  const classes = new Set((classSlot?.type === 'build_parameter' ? classSlot.options : undefined)?.map((o) => o.value) ?? []);
   const setIds = new Set(bonusSets.map((set) => set.id));
   const seenNames = new Set();
 

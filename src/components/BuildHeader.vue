@@ -1,6 +1,7 @@
 <script setup lang="ts">
 // Top bar: page title, the active build's own action strip (BuildBar), the quick context
 // toggles (QuickOptions), the compare picker, and the data-editor entry point.
+import { computed } from 'vue';
 import BuildBar from './BuildBar.vue';
 import ThemeToggle from './ui/ThemeToggle.vue';
 import ComboBox from './ui/ComboBox.vue';
@@ -20,6 +21,9 @@ import { overlayCount } from '../stores/workspace';
 const build = library.build;
 const db = engine.db;
 const compareBuild = compare.compareBuild;
+// build_parameter slots (Options/QuickOptions) always have *some* value -- "filled" isn't a
+// meaningful state for them, so they don't belong in this count's denominator either.
+const itemSlotCount = computed(() => db.value.slots.filter((slot) => slot.type === 'item_picker').length);
 </script>
 
 <template>
@@ -49,7 +53,7 @@ const compareBuild = compare.compareBuild;
       </div>
 
       <Button variant="link" @click="buildEditor.resetAll()">reset</Button>
-      <span class="text-sm text-muted">{{ buildEditor.filledSlots.value }}/{{ db.slots.length }} slots</span>
+      <span class="text-sm text-muted">{{ buildEditor.filledSlots.value }}/{{ itemSlotCount }} slots</span>
 
       <Button @click="ui.openEditor()">
         Edit data<Badge v-if="overlayCount" variant="edited">{{ overlayCount }}</Badge>
