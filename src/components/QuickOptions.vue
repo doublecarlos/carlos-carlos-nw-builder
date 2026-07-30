@@ -84,7 +84,7 @@ function diffTitle(key: 'combatType' | 'location' | 'duration') {
       :model-value="!!context.toggles?.[toggle.name]"
       @update:model-value="v => buildEditor.setToggle(toggle.name, v)"
     >
-      <span :class="toggleDiffers(toggle.name) ? 'cursor-help font-bold text-diff' : ''"
+      <span :class="toggleDiffers(toggle.name) ? 'font-bold text-diff' : ''"
             :title="toggleDiffers(toggle.name) ? toggleDiffTitle(toggle.name) : undefined">
         {{ toggle.label }}<template v-if="toggleDiffers(toggle.name)"> ●</template>
       </span>

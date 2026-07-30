@@ -32,9 +32,8 @@ test('deleting an item flags it, feeds the "Edit data" badge, and restore clears
   const row = editor.locator('.editor-row', { hasText: HEAD_ITEM });
   await expect(row.getByTestId('badge').and(page.locator('[data-variant="removed"]'))).toBeVisible();
 
-  // App.vue's own overlay-count badge isn't converted to Badge.vue yet -- TODO(tailwind-migration).
   await editor.getByRole('button', { name: '✕ Close' }).click();
-  await expect(page.getByRole('button', { name: 'Edit data' }).locator('.badge')).toHaveText('1');
+  await expect(page.getByRole('button', { name: 'Edit data' }).getByTestId('badge')).toHaveText('1');
 
   await page.getByRole('button', { name: 'Edit data' }).click();
   await editor.locator('.editor-search').fill(HEAD_ITEM);
