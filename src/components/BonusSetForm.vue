@@ -15,6 +15,7 @@ import FormBar from './ui/FormBar.vue';
 import FormField from './ui/FormField.vue';
 import FormGrid from './ui/FormGrid.vue';
 import FormSection from './ui/FormSection.vue';
+import IdField from './ui/IdField.vue';
 import * as bonusDraft from '../bonus-draft';
 import * as catalog from '../catalog';
 import type { BonusSet, Db } from '../types';
@@ -47,6 +48,14 @@ const props = withDefaults(defineProps<{
   bonusIds?: string[];
   /** Same stash/restore as ItemForm.vue's own `initialDraft` -- see there for why. */
   initialDraft?: bonusDraft.SetDraft | null;
+  /** An id already decided elsewhere, for a `source`-less instance that is *not* a brand-new
+   * bonus set -- BonusGroups.vue's case of an item referencing an id with no catalogue entry
+   * (a dangling reference, e.g. from a hand-edited import). Without this, `displayId`/`save()`
+   * would treat any `!source` instance as brand-new and preview an id derived from the typed
+   * name instead of the id that's already fixed. Absent for both the top-level "browse one"
+   * editor and a genuinely new, not-yet-attached bonus, where the id should keep following the
+   * name until first save. */
+  fixedId?: string | null;
 }>(), {
   source: null,
   status: 'base',
@@ -54,6 +63,7 @@ const props = withDefaults(defineProps<{
   tags: () => [],
   bonusIds: () => [],
   initialDraft: null,
+  fixedId: null,
 });
 
 const emit = defineEmits<{
@@ -115,10 +125,10 @@ const dirty = computed(() => {
   return !set || !sameSet(set, props.source);
 });
 
-/** The id shown next to Name -- the frozen one for an existing set, or a live preview of what
- * `save()` would assign on first save for a brand-new one. Same reasoning as ItemForm.vue's
- * own `displayId`: never a form field a user edits directly. */
-const displayId = computed(() => props.source?.id
+/** The id shown next to Name -- the frozen one for an existing set or a known `fixedId`, or a
+ * live preview of what `save()` would assign on first save for a brand-new one. Same reasoning
+ * as ItemForm.vue's own `displayId`: never a form field a user edits directly. */
+const displayId = computed(() => props.source?.id ?? props.fixedId
   ?? (draft.value.name.trim() ? catalog.nextId(draft.value.name.trim(), props.setIds, 'bonus-set') : ''));
 
 const canUndoDraft = computed(() => draftHistory.value.past.length > 0);
@@ -188,7 +198,7 @@ function save() {
   error.value = '';
   const name = draft.value.name.trim();
   if (!name) { error.value = 'The bonus set needs a name.'; return; }
-  const id = props.source?.id ?? catalog.nextId(name, props.setIds, 'bonus-set');
+  const id = props.source?.id ?? props.fixedId ?? catalog.nextId(name, props.setIds, 'bonus-set');
   let set;
   try {
     set = bonusDraft.toSet({ ...draft.value, id });
@@ -230,6 +240,10 @@ onUnmounted(() => {
       </Button>
       <Button v-if="status === 'edited'" @click="$emit('revert')">Revert to shipped</Button>
       <Button v-if="source" @click="$emit('delete')">Delete</Button>
+      <!-- BonusGroups.vue's per-item embedding injects its own "Detach" here -- stopping this
+           item from listing the set is always valid (whether or not the set is defined,
+           shared, or brand-new), and is not something a standalone editor has any use for. -->
+      <slot name="extra-actions" />
     </FormBar>
 
     <p v-if="error" class="mt-1 text-danger">{{ error }}</p>
@@ -239,12 +253,7 @@ onUnmounted(() => {
         <input class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
                type="text" v-model="draft.name">
       </FormField>
-      <FormField label="Group id">
-        <span class="flex w-full items-center rounded bg-surface-2 px-1.5 py-0.5 text-sm text-muted"
-              :title="source ? 'Frozen -- renaming the group does not change its id' : 'Assigned when first saved'">
-          {{ displayId || '(assigned on save)' }}
-        </span>
-      </FormField>
+      <IdField label="Group id" :id="displayId" :existing="Boolean(source || fixedId)" />
     </FormGrid>
 
     <p class="text-sm text-muted">

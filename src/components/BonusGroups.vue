@@ -1,48 +1,33 @@
 <script setup lang="ts">
 // "Bonuses" -- every bonus group the open item belongs to, editable in place.
 //
-// There is no separate "bonuses on this item" section any more: a bonus that only this item
-// grants is just a group with one member, which this component already renders correctly with
-// no special-casing (a card's "Currently 1 item(s)" line falls out of `db.setMembers` for
-// free). Bonuses used to live behind their own tab; they moved here so editing one is not a
-// context switch away from the item that grants it.
+// A thin orchestrator over BonusSetForm.vue: this owns which ids are attached to the item
+// (attach/detach, the "+ Add bonus"/"attach existing" affordances, one pending not-yet-saved
+// slot per in-progress new bonus) and defers all of the actual editing -- name, id preview,
+// stacking, excludes, grants, undo/redo, save/revert/delete -- to BonusSetForm itself, the same
+// component the standalone "Bonus sets" section uses. One bonus-editing surface, not two that
+// can drift apart (the bug this replaced: a hand-rolled id-generation copy here froze the id the
+// instant "+ Add bonus" was clicked, seeded from the *item's* name, instead of previewing it
+// live from whatever the user types into the bonus's own Name field the way BonusSetForm does).
 //
-// Each group saves independently of the item: a shared group is referenced by every item that
-// lists its id, so folding its Save into the item's would imply an ownership that does not
-// exist.
-import { reactive, computed, watch } from 'vue';
-import BonusRows from './BonusRows.vue';
+// A pending slot has no id at all until its first save: BonusSetForm previews one live off
+// Name (seeded from the item's own name as a starting point), and that same Save both persists
+// the set and attaches the resulting id to the item, in one step -- there is nothing to decide
+// up front any more.
+import { ref, computed } from 'vue';
+import BonusSetForm from './BonusSetForm.vue';
 import ComboBox from './ui/ComboBox.vue';
 import IconButton from './ui/IconButton.vue';
-import TokenInput from './ui/TokenInput.vue';
 import Button from './ui/Button.vue';
 import Badge from './ui/Badge.vue';
-import FormField from './ui/FormField.vue';
 import FormSection from './ui/FormSection.vue';
-import * as bonusDraft from '../bonus-draft';
 import type { Db, BonusSet } from '../types';
-
-const slugify = (text: string) => String(text).toLowerCase().trim()
-  .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
-
-/** Key-order-insensitive comparison -- same convention (and same duplication, one copy per
- * editing surface) as ItemForm's `sameItem` and BonusSetForm's `sameSet`. */
-const canonical = (value: unknown): unknown => {
-  if (Array.isArray(value)) return value.map(canonical);
-  if (value && typeof value === 'object') {
-    const out: Record<string, unknown> = {};
-    for (const key of Object.keys(value).sort()) out[key] = canonical((value as Record<string, unknown>)[key]);
-    return out;
-  }
-  return value;
-};
-
-const sameSet = (a: unknown, b: unknown) => JSON.stringify(canonical(a)) === JSON.stringify(canonical(b));
+import type { SetDraft } from '../bonus-draft';
 
 const props = withDefaults(defineProps<{
   /** Bonus group ids the item currently declares. */
   setIds?: string[];
-  /** Seeds the id of a brand-new private bonus. */
+  /** Seeds the Name field of a brand-new private bonus. */
   itemName?: string;
   db: Db;
   allSetIds?: string[];
@@ -63,20 +48,19 @@ const emit = defineEmits<{
   'attach-set': [id: string];
 }>();
 
-const drafts = reactive<Record<string, bonusDraft.SetDraft>>({});
-const errors = reactive<Record<string, string>>({});
+interface Slot { key: string; id: string | null }
 
-/**
- * One card per declared group, whether or not a definition exists for it yet. Cards
- * without a draft are skipped rather than rendered half-built: the watcher creates the
- * draft, and a render that raced it used to throw on `drafts[id].name`.
- */
-const cards = computed(() => props.setIds
-  .filter((id) => drafts[id])
-  .map((id) => {
-    const set = props.db.bonusSetById.get(id) ?? null;
-    return { id, set, defined: Boolean(set) };
-  }));
+let nextPendingKey = 0;
+const pending = ref<Slot[]>([]);
+
+/** One slot per attached id, plus however many pending (not-yet-saved, not-yet-attached) ones
+ * are in progress. An attached slot is keyed by its id; a pending slot keeps its own key across
+ * the save transition (see `onSlotSave`) so its BonusSetForm instance is never remounted --
+ * and so never loses its in-progress draft/undo history -- right at the moment it's saved. */
+const slots = computed<Slot[]>(() => [
+  ...props.setIds.map((id): Slot => ({ key: `id:${id}`, id })),
+  ...pending.value,
+]);
 
 /** Existing groups not already attached, for "attach an existing bonus". */
 const attachable = computed(() => {
@@ -86,102 +70,22 @@ const attachable = computed(() => {
     .map((id) => ({ value: id, label: props.db.bonusSetById.get(id)?.name ?? id }));
 });
 
-const stackingOptions = [
-  { value: '', label: 'once, however many sources' },
-  { value: 'perSource', label: 'once per contributing slot' },
-];
-
-/**
- * Rebuild drafts for groups we are not already editing. Existing drafts are left alone
- * so an in-progress edit survives an unrelated change elsewhere in the form.
- */
-function sync() {
-  for (const id of props.setIds) {
-    if (drafts[id]) continue;
-    const set = props.db.bonusSetById.get(id);
-    drafts[id] = {
-      id,
-      name: set?.name ?? id,
-      grants: (set?.grants ?? []).map((grant) => bonusDraft.toDraft(grant)),
-      stacking: set?.stacking ?? '',
-      maxStacks: set?.maxStacks ?? null,
-      excludes: [...(set?.excludes ?? [])],
-    };
-  }
+function sourceFor(slot: Slot): BonusSet | null {
+  return slot.id ? (props.db.bonusSetById.get(slot.id) ?? null) : null;
 }
 
-// `deep` as well as `immediate`: callers should hand us a fresh array, but a single
-// in-place mutation anywhere would otherwise leave a card with no draft behind it.
-watch(() => props.setIds, sync, { immediate: true, deep: true });
-watch(() => props.db, sync);
-
-/** Discard a draft so it is rebuilt from the saved data on the next sync. */
-function reset(id: string) {
-  delete drafts[id];
-  errors[id] = '';
-  sync();
+/** A pending slot's id previews from Name, so it's seeded with the item's own name -- the
+ * common case is a bonus that's only this item's business. Read once at creation (`initialDraft`
+ * is only ever consulted on mount), same as the old design's id-seed -- not kept in sync with
+ * later edits to the item's own name. */
+function initialDraftFor(slot: Slot): SetDraft | null {
+  if (slot.id) return null;
+  return { id: '', name: props.itemName, grants: [], stacking: '', maxStacks: null, excludes: [] };
 }
 
-/** Gates the card's own Save button, same as the item form's and the top-level bonus set
- * form's -- a card with no saved definition yet always has something worth saving, but a
- * defined one is compared against the catalogue so an untouched card's Save stays
- * disabled instead of sitting clickable with nothing to commit. */
-function isDirty(id: string) {
-  const local = drafts[id];
-  if (!local) return false;
-  const set = props.db.bonusSetById.get(id) ?? null;
-  if (!set) return true;
-  try {
-    return !sameSet(bonusDraft.toSet({ ...local, id }), set);
-  } catch {
-    return true;
-  }
-}
-
-/** The card's id is fixed at creation (`addBonus`, below) and never changes afterwards --
- * unlike the item form's, there is no separate save-vs-first-save distinction to make here
- * since a card only ever exists under an id `addBonus` already generated. */
-function save(id: string) {
-  const local = drafts[id];
-  if (!local) return;
-  let set;
-  try {
-    set = bonusDraft.toSet({ ...local, id });
-  } catch (error: any) {
-    errors[id] = `A grant has invalid JSON: ${error.message}`;
-    return;
-  }
-  errors[id] = '';
-  emit('save-set', { id, set });
-}
-
-function remove(id: string) {
-  delete drafts[id];
-  emit('delete-set', id);
-}
-
-/** A card with no saved definition yet has nothing to remove from the catalogue -- just
- * detach the id from this item so it stops showing up. */
-function detach(id: string) {
-  delete drafts[id];
-  delete errors[id];
-  emit('detach-set', id);
-}
-
-/** A brand-new grant is unconditional by default -- the common case now that most
- * bonuses are private to one item, not a multi-piece set requirement. */
-function addGrant(id: string) {
-  drafts[id].grants.push(bonusDraft.toDraft({ when: {}, stats: {} }));
-}
-
-/** Create a bonus group and attach it to the item in one step, seeded from the item's
- * own name -- the common case is a bonus that is only this item's business. */
 function addBonus() {
-  const base = slugify(props.itemName || 'new-bonus') || 'new-bonus';
-  let id = base;
-  let n = 2;
-  while (props.allSetIds.includes(id)) { id = `${base}-${n}`; n += 1; }
-  emit('attach-set', id);
+  pending.value.push({ key: `pending:${nextPendingKey}`, id: null });
+  nextPendingKey += 1;
 }
 
 function attachExisting(id: string) {
@@ -189,10 +93,31 @@ function attachExisting(id: string) {
   emit('attach-set', id);
 }
 
-/** `db.setMembers` is keyed by item id -- resolved to display names here, the only place
- * either of `db`'s id-lists (this one, `itemsByTag`) reaches the screen. */
-function memberNames(setId: string): string[] {
-  return (props.db.setMembers.get(setId) ?? []).map((id) => props.db.get(id)?.name ?? id);
+/** A pending slot's first save both persists the set (forwarded as-is) and attaches the
+ * resulting id to the item -- see the module comment above. The pending slot itself is then
+ * dropped: the id it just got now flows through `props.setIds` instead, same as any other
+ * attached bonus, so keeping both around would double-render it. BonusSetForm resets its own
+ * draft/undo history after every save regardless (its own comment on why), so there's nothing
+ * lost by letting the real, `props.setIds`-driven instance mount fresh rather than trying to
+ * keep this exact component instance alive across the transition. An already-attached slot's
+ * save is just a plain re-save, forwarded as-is. */
+function onSlotSave(slot: Slot, payload: { id: string; set: BonusSet }) {
+  emit('save-set', payload);
+  if (!slot.id) {
+    emit('attach-set', payload.id);
+    pending.value = pending.value.filter((s) => s !== slot);
+  }
+}
+
+/** Stop this item from listing the set -- always valid, whether or not the set is defined,
+ * shared, or brand-new. A pending slot has nothing attached yet, so this just discards it. */
+function onSlotDetach(slot: Slot) {
+  if (slot.id) emit('detach-set', slot.id);
+  else pending.value = pending.value.filter((s) => s !== slot);
+}
+
+function onSlotDelete(slot: Slot) {
+  if (slot.id) emit('delete-set', slot.id);
 }
 </script>
 
@@ -208,69 +133,30 @@ function memberNames(setId: string): string[] {
       </span>
     </FormSection>
 
-    <p v-if="!cards.length" class="text-sm text-muted">
+    <p v-if="!slots.length" class="text-sm text-muted">
       This item has no bonuses yet. Add one above -- most are private to a single item;
       attaching an existing bonus id shares it with whatever else already lists it.
     </p>
 
-    <div v-for="card in cards" :key="card.id" class="mb-2.5 rounded-md border border-line bg-accent-soft/30 px-2.5 py-2">
-      <div class="flex flex-wrap items-center gap-1.5">
-        <FormField label="Group name" class="basis-56 flex-auto">
-          <input class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 font-semibold focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-                 type="text" v-model="drafts[card.id].name">
-        </FormField>
-        <FormField label="Group id" class="basis-56 flex-auto">
-          <span class="flex w-full items-center rounded bg-surface-2 px-1.5 py-0.5 text-sm text-muted"
-                title="Frozen -- renaming the group does not change its id">{{ card.id }}</span>
-        </FormField>
-        <Badge v-if="!card.defined" variant="warn">not defined yet</Badge>
-        <Badge v-if="isDirty(card.id)">unsaved</Badge>
-        <span class="flex-1"></span>
-        <Button variant="primary" :disabled="!isDirty(card.id)" @click="save(card.id)">Save</Button>
-        <Button @click="reset(card.id)">Reset</Button>
-        <Button v-if="card.defined" @click="remove(card.id)">Delete</Button>
-        <Button v-else @click="detach(card.id)">Remove</Button>
-      </div>
-
-      <p v-if="errors[card.id]" class="mt-1 text-danger">{{ errors[card.id] }}</p>
-
-      <p class="text-sm text-muted">
-        <template v-if="memberNames(card.id).length > 1">
-          Shared by <strong>{{ memberNames(card.id).length }}</strong> items —
-          {{ memberNames(card.id).join(', ') }}.
-        </template>
-        <template v-else>Only on this item.</template>
-      </p>
-
-      <FormSection sub>Stacking</FormSection>
-      <div class="flex flex-wrap items-center gap-1.5 mb-1">
-        <ComboBox class="w-64" :model-value="drafts[card.id].stacking" :options="stackingOptions"
-                  @update:model-value="v => drafts[card.id].stacking = v" />
-        <template v-if="drafts[card.id].stacking === 'perSource'">
-          <FormField label="Max stacks">
-            <input type="number" min="0"
-                   class="w-16 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-                   v-model.number="drafts[card.id].maxStacks">
-          </FormField>
-          <span class="text-sm text-muted">maximum stacks (blank = no limit)</span>
-        </template>
-      </div>
-
-      <FormSection sub>Suppresses these bonuses</FormSection>
-      <TokenInput v-model="drafts[card.id].excludes" :options="bonusIds"
-                  placeholder="bonus id to suppress…" />
-
-      <FormSection sub>
-        Grants
-        <IconButton icon="circle-plus" title="Add grant" @click="addGrant(card.id)" />
-        <span v-if="!drafts[card.id].grants.length" class="text-sm text-muted">none yet</span>
-      </FormSection>
-
-      <BonusRows
-        :rows="drafts[card.id].grants"
+    <div v-for="slot in slots" :key="slot.key" data-testid="bonus-card" class="mb-2.5 rounded-md border border-line bg-accent-soft/30 px-2.5 py-2">
+      <!-- A dangling reference (attached id with no catalogue entry -- a hand-edited import,
+           typically) has nothing else to signal it: BonusSetForm's own `status` badge needs
+           overlay access this component doesn't have, so it stays 'base' here throughout. -->
+      <Badge v-if="slot.id && !sourceFor(slot)" variant="warn" class="mb-1">not defined yet</Badge>
+      <BonusSetForm
+        :source="sourceFor(slot)"
+        :fixed-id="slot.id"
+        :initial-draft="initialDraftFor(slot)"
+        :db="db"
         :set-ids="allSetIds"
         :tags="tags"
-        @error="errors[card.id] = $event" />
+        :bonus-ids="bonusIds"
+        @save="onSlotSave(slot, $event)"
+        @delete="onSlotDelete(slot)">
+        <template #extra-actions>
+          <Button @click="onSlotDetach(slot)">Detach</Button>
+        </template>
+      </BonusSetForm>
     </div>
   </div>
 </template>

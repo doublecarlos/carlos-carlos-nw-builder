@@ -20,6 +20,7 @@ import Badge from './ui/Badge.vue';
 import FormBar from './ui/FormBar.vue';
 import FormField from './ui/FormField.vue';
 import FormGrid from './ui/FormGrid.vue';
+import IdField from './ui/IdField.vue';
 import FormSection from './ui/FormSection.vue';
 import { NW_SCHEMA, NW_SLOTS } from '../data';
 import { findParamSlot } from '../build-path';
@@ -283,12 +284,8 @@ function addStat() { draft.value.stats.push({ key: '', value: 0 }); }
 function removeStat(index: number) { draft.value.stats.splice(index, 1); }
 function focusNextStat(event: KeyboardEvent) { focusNextCombo(event); }
 
-/**
- * A bonus created or attached from the Bonuses section is attached to this item straight
- * away. Assigns a new array rather than pushing: BonusGroups watches `setIds`, and an
- * in-place push keeps the same reference, so the watcher would not fire and the new
- * group would render with no draft behind it.
- */
+/** A bonus created (on its first save) or attached from the Bonuses section joins this
+ * item's own list straight away. */
 function attachSet(id: string) {
   if (draft.value.bonuses.includes(id)) return;
   draft.value.bonuses = [...draft.value.bonuses, id];
@@ -343,12 +340,7 @@ onUnmounted(() => {
         <input class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
                type="text" v-model="draft.name">
       </FormField>
-      <FormField label="Id">
-        <span class="flex w-full items-center rounded-md bg-surface-2 px-1.5 py-0.5 text-sm text-muted"
-              :title="source ? 'Frozen -- renaming the item does not change its id' : 'Assigned when first saved'">
-          {{ displayId || '(assigned on save)' }}
-        </span>
-      </FormField>
+      <IdField label="Id" :id="displayId" :existing="Boolean(source)" />
       <FormField label="Filter (slot category)">
         <input class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
                type="text" v-model="draft.filter" list="nw-filters">
