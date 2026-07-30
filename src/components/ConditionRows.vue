@@ -79,21 +79,49 @@ function changeType(row: ConditionRow) {
 // slots.json -- the same source of truth the Options section itself renders from, so a value
 // typo'd here can't drift from what's actually selectable in a build.
 const PATH_FOR_TYPE: Record<string, string> = {
-  role: 'context.role', class: 'context.class', combatType: 'context.combatType',
-  location: 'context.location', damageType: 'context.damageType',
+  role: 'role', class: 'class', combatType: 'combatType',
+  location: 'location', damageType: 'damageType',
 };
 
 function optionsForCombo(type?: string) {
   if (type === 'toggle') {
     return NW_SLOTS.slots
       .filter((slot): slot is BuildParameterSlot => (
-        slot.type === 'build_parameter' && slot.path.startsWith('context.toggles.')
+        slot.type === 'build_parameter' && slot.path.startsWith('toggles.')
       ))
-      .map((slot) => ({ value: slot.path.slice('context.toggles.'.length), label: slot.label }));
+      .map((slot) => ({ value: slot.path.slice('toggles.'.length), label: slot.label }));
   }
   const path = type ? PATH_FOR_TYPE[type] : undefined;
   const slot = path ? NW_SLOTS.slots.find((s) => s.type === 'build_parameter' && s.path === path) : undefined;
   return (slot as BuildParameterSlot | undefined)?.options ?? [];
+}
+
+// --- the generic `param` leaf -----------------------------------------------------------
+// Every build_parameter slot is a candidate key; the comparison control shown depends on the
+// selected one's `paramType`, same source of truth `optionsForCombo` above already uses for the
+// dedicated leaves.
+const paramSlots = NW_SLOTS.slots.filter((slot): slot is BuildParameterSlot => slot.type === 'build_parameter');
+const paramKeyOptions = paramSlots.map((slot) => ({ value: slot.path, label: `${slot.label} (${slot.path})` }));
+
+function paramSlotFor(key?: string) {
+  return paramSlots.find((slot) => slot.path === key);
+}
+
+/** Options for a `param` leaf's "equals" combo, when the addressed slot is a `list`. */
+function paramValueOptions(key?: string) {
+  return paramSlotFor(key)?.options ?? [];
+}
+
+/** Picking a key resets the comparison to match its `paramType` -- the old fields would
+ * otherwise carry over nonsensically (e.g. a leftover `atLeast` after switching to a boolean). */
+function changeParamKey(row: ConditionRow, key: string) {
+  row.key = key;
+  const slot = paramSlotFor(key);
+  row.form = slot?.paramType === 'boolean' ? 'boolean' : slot?.paramType === 'list' ? 'string' : 'number';
+  row.atLeast = null;
+  row.below = null;
+  row.is = null;
+  row.equals = '';
 }
 </script>
 
@@ -134,6 +162,31 @@ function optionsForCombo(type?: string) {
           <FormField label="Or exact item name" class="min-w-0"><input class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent" type="text" v-model="row.item"></FormField>
           <FormField label="At least (s)" class="min-w-0"><input class="w-24 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent" type="number" v-model.number="row.atLeast"></FormField>
           <FormField label="Below (s)" class="min-w-0"><input class="w-24 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent" type="number" v-model.number="row.below"></FormField>
+        </template>
+        <template v-else-if="row.type === 'param'">
+          <FormField label="Parameter" class="min-w-0">
+            <ComboBox class="w-48" :model-value="row.key" :options="paramKeyOptions"
+                      placeholder="— parameter —" @update:model-value="v => changeParamKey(row, v)" />
+          </FormField>
+          <template v-if="row.form === 'boolean'">
+            <FormField label="Is" class="min-w-0">
+              <ComboBox class="w-24" :model-value="row.is === true ? 'on' : row.is === false ? 'off' : ''"
+                        :options="[{ value: 'on', label: 'on' }, { value: 'off', label: 'off' }]"
+                        placeholder="— is —" @update:model-value="v => row.is = v === 'on'" />
+            </FormField>
+          </template>
+          <template v-else-if="row.form === 'string'">
+            <FormField label="Equals" class="min-w-0">
+              <ComboBox v-if="paramValueOptions(row.key).length" class="w-38"
+                        :model-value="row.equals" :options="paramValueOptions(row.key)"
+                        @update:model-value="v => row.equals = v" />
+              <input v-else class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent" type="text" v-model="row.equals">
+            </FormField>
+          </template>
+          <template v-else>
+            <FormField label="At least" class="min-w-0"><input class="w-24 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent" type="number" step="any" v-model.number="row.atLeast"></FormField>
+            <FormField label="Below" class="min-w-0"><input class="w-24 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent" type="number" step="any" v-model.number="row.below"></FormField>
+          </template>
         </template>
         <template v-else>
           <FormField label="Value" class="min-w-0">

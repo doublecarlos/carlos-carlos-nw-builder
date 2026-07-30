@@ -1,9 +1,12 @@
-// Generic dotted-path get/set into a Build, used by BuildParameterSlot's `path`
-// (`context.role`, `context.forte.primary`, `context.toggles.combat`) so BuildSlot/QuickOptions
-// can read and write any build_parameter slot without a per-field switch.
+// Generic dotted-path get/set into a Build's `context`, used by BuildParameterSlot's `path`
+// (`role`, `forte.primary`, `toggles.combat`) so BuildSlot/QuickOptions can read and write any
+// build_parameter slot without a per-field switch. Callers pass `build.context` as `root`, not
+// `build` itself, so a path structurally cannot address a sibling of `context` (`choices`,
+// `id`, `catalog`, ...).
 //
-// `setPath` deletes the leaf key on an empty-string/undefined value rather than storing it --
-// the same convention `stores/buildEditor.ts`'s old `setForte` used to "unset" a forte pick.
+// `setPath` deletes the leaf key on an empty-string/undefined value rather than storing it.
+
+import type { BuildParameterSlot, Slot } from './types';
 
 export function getPath(root: unknown, path: string): unknown {
   let node: unknown = root;
@@ -28,4 +31,13 @@ export function setPath(root: unknown, path: string, value: unknown): void {
   }
   if (value === '' || value == null) delete node[last];
   else node[last] = value;
+}
+
+/** The `build_parameter` slot whose `path` is exactly `path` (relative to `context`) -- e.g.
+ * `findParamSlot(NW_SLOTS.slots, 'class')`. Shared lookup for the two call sites (catalog.ts's
+ * validator, ItemForm.vue's class checkboxes) that both need "the class slot" specifically. */
+export function findParamSlot(slots: Slot[], path: string): BuildParameterSlot | undefined {
+  return slots.find((slot): slot is BuildParameterSlot => (
+    slot.type === 'build_parameter' && slot.path === path
+  ));
 }

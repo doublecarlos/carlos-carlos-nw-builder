@@ -11,7 +11,7 @@ import type { ConditionWhen, RangeSpec } from './types';
 // Every leaf conditions.ts understands. `all`/`any`/`not` are handled structurally, not
 // as leaves -- see below.
 export const LEAF_TYPES = ['toggle', 'role', 'class', 'combatType', 'location', 'damageType',
-  'duration', 'pieces', 'equipped'];
+  'duration', 'pieces', 'equipped', 'param'];
 
 // Caps how many `all`/`any`/`not` groups can nest inside one another. Purely a UI guard
 // against runaway trees -- conditions.ts itself has no such limit.
@@ -47,6 +47,20 @@ function leafFromSpec(type: string, spec?: any): any {
   if (type === 'equipped') {
     return { type, tag: spec?.tag ?? '', item: spec?.item ?? '', atLeast: spec?.atLeast ?? 1 };
   }
+  if (type === 'param') {
+    // `form` picks which of the three mutually-exclusive comparisons the row shows -- inferred
+    // from whichever field the spec actually carries, not from looking up the addressed slot's
+    // `paramType` (so a row for a since-renamed/removed slot still round-trips instead of
+    // silently losing its comparison).
+    let form: 'number' | 'boolean' | 'string' = 'number';
+    if (spec?.is !== undefined) form = 'boolean';
+    else if (spec?.equals !== undefined) form = 'string';
+    return {
+      type, key: spec?.key ?? '', form,
+      atLeast: spec?.atLeast ?? null, below: spec?.below ?? null, is: spec?.is ?? null,
+      equals: Array.isArray(spec?.equals) ? spec.equals.join(', ') : (spec?.equals ?? ''),
+    };
+  }
   return { type, value: Array.isArray(spec) ? spec.join(', ') : String(spec ?? '') };
 }
 
@@ -65,6 +79,20 @@ function leafToSpec(row: ConditionRow): any {
     if (row.tag) return { tag: row.tag, atLeast: Number(row.atLeast) || 1 };
     if (row.item) return { item: row.item, atLeast: Number(row.atLeast) || 1 };
     return undefined;
+  }
+  if (row.type === 'param') {
+    if (!row.key) return undefined;
+    if (row.form === 'boolean') {
+      return row.is === true || row.is === false ? { key: row.key, is: row.is } : undefined;
+    }
+    if (row.form === 'string') {
+      const values = fromCsv(row.equals);
+      return values.length ? { key: row.key, equals: values.length === 1 ? values[0] : values } : undefined;
+    }
+    const range: { atLeast?: number; below?: number } = {};
+    if (row.atLeast != null && row.atLeast !== '') range.atLeast = Number(row.atLeast);
+    if (row.below != null && row.below !== '') range.below = Number(row.below);
+    return range.atLeast !== undefined || range.below !== undefined ? { key: row.key, ...range } : undefined;
   }
   const values = fromCsv(row.value);
   if (!values.length) return undefined;

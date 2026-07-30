@@ -51,7 +51,7 @@ const emit = defineEmits<{
 
 const choice = () => props.build.choices[props.slot.id] ?? '';
 const value = () => props.build.values[props.slot.id];
-const paramValue = () => getPath(props.build, (props.slot as BuildParameterSlot).path) as string | number | boolean | undefined;
+const paramValue = () => getPath(props.build.context, (props.slot as BuildParameterSlot).path) as string | number | boolean | undefined;
 </script>
 
 <template>

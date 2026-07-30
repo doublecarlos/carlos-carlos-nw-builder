@@ -93,6 +93,41 @@ const LEAVES: Record<string, (spec: any, ctx: EvalContext) => ConditionLeafResul
     };
   },
 
+  /** Reads any build_parameter by `key` (a slot's `path`) from `ctx.params`. The three
+   * comparison forms are mutually exclusive -- chosen by whichever of `is`/`equals`/
+   * `atLeast`+`below` the spec carries, not by looking up the slot's `paramType` (catalog.ts's
+   * linter is what keeps the two in sync at data time). */
+  param(spec: { key: string; atLeast?: number; below?: number; is?: boolean; equals?: string | string[] }, ctx) {
+    // Fails closed on a key with no resolved value. Checked with `.has`, not a falsy `value`
+    // check: a param legitimately resolving to `false`/`0`/`''` must not be treated as unknown.
+    if (!ctx.params?.has(spec.key)) {
+      return { ok: false, label: `param "${spec.key}"`, detail: 'unknown parameter' };
+    }
+    const value = ctx.params.get(spec.key);
+
+    if (spec.is !== undefined) {
+      return {
+        ok: value === spec.is,
+        label: `${spec.key} is ${spec.is ? 'on' : 'off'}`,
+        detail: `you have ${value === undefined ? '—' : (value ? 'on' : 'off')}`,
+      };
+    }
+    if (spec.equals !== undefined) {
+      const wanted = asArray(spec.equals);
+      return {
+        ok: wanted.includes(value as string),
+        label: `${spec.key}: ${wanted.join(' or ')}`,
+        detail: `you have ${value ?? '—'}`,
+      };
+    }
+    const numeric = typeof value === 'number' ? value : 0;
+    return {
+      ok: inRange(numeric, { atLeast: spec.atLeast, below: spec.below }),
+      label: `${spec.key} ${describeRange({ atLeast: spec.atLeast, below: spec.below })}`,
+      detail: `you have ${value ?? 0}`,
+    };
+  },
+
   equipped(spec: RangeSpec & { tag?: string; item?: string }, ctx) {
     const have = spec.tag != null
       ? countOf(ctx.tags, spec.tag)

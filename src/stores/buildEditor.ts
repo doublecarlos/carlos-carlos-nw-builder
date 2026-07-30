@@ -161,7 +161,7 @@ export function setParam(slot: BuildParameterSlot, value: string | number | bool
     ? (value ? 'on' : 'off')
     : slot.options?.find((o) => o.value === value)?.label ?? String(value || 'none');
   snapshot(`param:${slot.id}`, `${slot.label} → ${shown}`);
-  setPath(library.activeBuildForEdit(), slot.path, value);
+  setPath(library.activeBuildForEdit().context, slot.path, value);
 }
 
 export function renameBuild(name: string) {
@@ -201,7 +201,7 @@ export function copySection(fromId: string, sectionIds: string[]) {
     if (!wanted.has(slot.section)) continue;
 
     if (slot.type === 'build_parameter') {
-      setPath(build, slot.path, getPath(source, slot.path));
+      setPath(build.context, slot.path, getPath(source.context, slot.path));
       continue;
     }
 
@@ -224,7 +224,7 @@ export function revertSlot(slotId: string) {
   const build = library.activeBuildForEdit();
   const slot = db.value.slotById.get(slotId);
   if (slot?.type === 'build_parameter') {
-    setPath(build, slot.path, getPath(saved, slot.path));
+    setPath(build.context, slot.path, getPath(saved.context, slot.path));
     return;
   }
   const choice = saved.choices[slotId];
@@ -245,7 +245,7 @@ export function revertSection(sectionId: string) {
   const build = library.activeBuildForEdit();
   for (const slot of slots) {
     if (slot.type === 'build_parameter') {
-      setPath(build, slot.path, getPath(saved, slot.path));
+      setPath(build.context, slot.path, getPath(saved.context, slot.path));
       continue;
     }
     const choice = saved.choices[slot.id];

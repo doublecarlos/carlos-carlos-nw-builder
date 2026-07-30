@@ -90,6 +90,6 @@ playwright.config.ts    testDir tests/e2e, starts the dev server, chromium only
 - Commit only when asked. Branch rather than committing to `main` directly.
 - When implementing a feature or fix, also add automated tests for it. Test intent, not exact code behavior. This is both for UI testing (playwright) or unit testing (vitest).
 - `playwright-cli` is available if you need to "control" a browser to analyse page behavior on the spot.
-- Comments should be concise. Tone down the verbosity.
 - When creating branches, use an appropriate prefix (feature/, fix/, etc).
 - Don't try to design icons by hand. If we need a new icon, ask for it.
+- Comments should be concise, direct and describe the design intent of what the code is doing now. They should not reference plan files (as plans are discarded after some time), should not compare the code with an old implementation that doesn't exist anymore.

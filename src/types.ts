@@ -55,9 +55,9 @@ export interface SlotSection {
 
 /** A build-wide value with no item of its own -- today's build-context fields (class, role,
  * duration, toggles, ...), and later mount/companion bolster, boon points, etc. `path` is a
- * dotted path into `Build` (`context.role`, `context.forte.primary`, `context.toggles.combat`)
- * resolved by build-path.ts's `getPath`/`setPath`, so the engine keeps reading/writing exactly
- * the fields it does today -- this only changes how the value is declared and rendered.
+ * dotted path into `build.context` (`role`, `forte.primary`, `toggles.combat`), resolved by
+ * build-path.ts's `getPath`/`setPath` against `build.context` (not `build` itself, so a path
+ * cannot address a sibling of `context` like `choices` or `id`).
  *
  * Fields below `quick` are a loose union of what each `paramType` needs (`options` for `list`,
  * `min`/`max`/`step`/`presets` for `number`/`percent`) -- same "optional fields, no separate
@@ -124,6 +124,20 @@ export interface RangeSpec {
 /** A bare number is shorthand for `{ atLeast: n }` -- see conditions.ts's `inRange`. */
 export type RangeLike = number | RangeSpec;
 
+/** Reads any `build_parameter` by its (context-relative) path -- the escape hatch for a
+ * parameter with no dedicated leaf. `key` is a path, e.g. `bolster` or `toggles.combat`, not a
+ * slot id. The three comparison forms are mutually exclusive, chosen by the addressed
+ * parameter's `paramType`: `atLeast`/`below` for `number`/`percent` (half-open, same as
+ * `duration`'s range), `is` for `boolean`, `equals` for `list` (a scalar or array -- an array
+ * means "is one of", same as `role`/`class`/`location`). */
+export interface ParamCondition {
+  key: string;
+  atLeast?: number;
+  below?: number;
+  is?: boolean;
+  equals?: string | string[];
+}
+
 /** A `when` predicate (conditions.ts). Keys present are ANDed; an absent key is unconstrained.
  * Loose on leaf value types (`string | string[]`) because conditions.ts's `asArray` accepts
  * either uniformly. */
@@ -137,6 +151,7 @@ export interface ConditionWhen {
   duration?: RangeLike;
   pieces?: RangeSpec & { set: string };
   equipped?: RangeSpec & { tag?: string; item?: string };
+  param?: ParamCondition;
   all?: ConditionWhen[];
   any?: ConditionWhen[];
   not?: ConditionWhen;
@@ -286,6 +301,9 @@ export interface EvalContext {
   equipped: Map<string, number>;
   tags: Map<string, number>;
   setPieces: Map<string, number>;
+  /** Every `build_parameter`'s current value, keyed by its (context-relative) `path` -- what
+   * the `param` leaf reads. Built once by bonus.ts's `collect()`. */
+  params: Map<string, string | number | boolean>;
 }
 
 export interface ConditionLeafResult {

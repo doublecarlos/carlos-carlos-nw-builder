@@ -69,4 +69,31 @@ describe('buildEditor undo coalescing', () => {
     expect(library.build.value.choices.ring1).toBe('ItemA');
     expect(buildEditor.canRedo.value).toBe(false);
   });
+
+  // A build_parameter slot's `path` is resolved against `build.context`, not `build` --
+  // setParam/revertSlot writing to the wrong root would either throw (no such top-level
+  // property) or silently create a stray field alongside `context` instead of inside it.
+  it('setParam writes into build.context at the slot\'s path, not the build root', async () => {
+    const { library, buildEditor } = await freshStores();
+    const classSlot = { id: 'options.class', label: 'Class', section: 'options',
+      type: 'build_parameter' as const, paramType: 'list' as const, path: 'class' };
+
+    buildEditor.setParam(classSlot, 'wizard');
+
+    expect(library.build.value.context.class).toBe('wizard');
+    expect((library.build.value as any).class).toBeUndefined();
+  });
+
+  it('revertSlot restores a build_parameter to the saved build\'s value', async () => {
+    const { library, buildEditor } = await freshStores();
+    const classSlot = { id: 'options.class', label: 'Class', section: 'options',
+      type: 'build_parameter' as const, paramType: 'list' as const, path: 'class' };
+    const savedClass = library.savedById.value[library.activeId.value].context.class;
+
+    buildEditor.setParam(classSlot, 'wizard');
+    expect(library.build.value.context.class).toBe('wizard');
+
+    buildEditor.revertSlot('options.class');
+    expect(library.build.value.context.class).toBe(savedClass);
+  });
 });

@@ -8,7 +8,7 @@
           "label": "Class",
           "type": "build_parameter",
           "paramType": "list",
-          "path": "context.class",
+          "path": "class",
           "default": "warlock",
           "options": [
             {"value": "barbarian", "label": "Barbarian"},
@@ -27,7 +27,7 @@
           "label": "Role",
           "type": "build_parameter",
           "paramType": "list",
-          "path": "context.role",
+          "path": "role",
           "default": "dps",
           "options": [
             {"value": "dps", "label": "DPS"},
@@ -40,7 +40,7 @@
           "label": "Damage type",
           "type": "build_parameter",
           "paramType": "list",
-          "path": "context.damageType",
+          "path": "damageType",
           "default": "magical",
           "options": [{"value": "magical", "label": "Magical"}, {"value": "physical", "label": "Physical"}]
         },
@@ -49,7 +49,7 @@
           "label": "Magnitude",
           "type": "build_parameter",
           "paramType": "number",
-          "path": "context.magnitude",
+          "path": "magnitude",
           "default": 4332,
           "min": 0
         },
@@ -58,7 +58,7 @@
           "label": "Forte 1 (½)",
           "type": "build_parameter",
           "paramType": "list",
-          "path": "context.forte.primary",
+          "path": "forte.primary",
           "default": "power_p",
           "options": [
             {"value": "", "label": "— none —"},
@@ -80,7 +80,7 @@
           "label": "Forte 2A (¼)",
           "type": "build_parameter",
           "paramType": "list",
-          "path": "context.forte.secondaryA",
+          "path": "forte.secondaryA",
           "default": "strike_p",
           "options": [
             {"value": "", "label": "— none —"},
@@ -102,7 +102,7 @@
           "label": "Forte 2B (¼)",
           "type": "build_parameter",
           "paramType": "list",
-          "path": "context.forte.secondaryB",
+          "path": "forte.secondaryB",
           "default": "awareness_p",
           "options": [
             {"value": "", "label": "— none —"},
@@ -124,7 +124,7 @@
           "label": "M32 Forte",
           "type": "build_parameter",
           "paramType": "boolean",
-          "path": "context.m32Forte",
+          "path": "m32Forte",
           "default": true
         },
         {
@@ -132,7 +132,7 @@
           "label": "Combat type",
           "type": "build_parameter",
           "paramType": "list",
-          "path": "context.combatType",
+          "path": "combatType",
           "default": "single",
           "quick": true,
           "options": [
@@ -146,7 +146,7 @@
           "label": "Location",
           "type": "build_parameter",
           "paramType": "list",
-          "path": "context.location",
+          "path": "location",
           "default": "generic",
           "quick": true,
           "options": [
@@ -160,7 +160,7 @@
           "label": "Duration (s)",
           "type": "build_parameter",
           "paramType": "number",
-          "path": "context.duration",
+          "path": "duration",
           "default": 60,
           "min": 0,
           "quick": true,
@@ -171,7 +171,7 @@
           "label": "Consumables",
           "type": "build_parameter",
           "paramType": "boolean",
-          "path": "context.toggles.consumables",
+          "path": "toggles.consumables",
           "default": true,
           "quick": true
         },
@@ -180,7 +180,7 @@
           "label": "Party",
           "type": "build_parameter",
           "paramType": "boolean",
-          "path": "context.toggles.party",
+          "path": "toggles.party",
           "default": true,
           "quick": true
         },
@@ -189,7 +189,7 @@
           "label": "Combat",
           "type": "build_parameter",
           "paramType": "boolean",
-          "path": "context.toggles.combat",
+          "path": "toggles.combat",
           "default": true,
           "quick": true
         },
@@ -198,7 +198,7 @@
           "label": "Other procs",
           "type": "build_parameter",
           "paramType": "boolean",
-          "path": "context.toggles.procs",
+          "path": "toggles.procs",
           "default": true,
           "quick": true
         },
@@ -207,7 +207,7 @@
           "label": "Artifact call",
           "type": "build_parameter",
           "paramType": "boolean",
-          "path": "context.toggles.artifactCall",
+          "path": "toggles.artifactCall",
           "default": true,
           "quick": true
         }

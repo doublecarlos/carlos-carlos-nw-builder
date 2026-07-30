@@ -5,6 +5,7 @@
 // overrides against *all* rows, so its results could depend on slot ordering. Nothing here does.
 
 import * as conditions from './conditions';
+import { getPath } from './build-path';
 import type {
   Db, Build, BonusSet, Grant, BonusCandidate, EvalContext, ConditionExplain, ConditionWhen,
   GrantEvaluation, BonusEvaluation, EvaluatedBonus, ResolvedBonuses, ResolvedRow, StatValues,
@@ -55,6 +56,17 @@ export function collect(db: Db, build: Build): { ctx: EvalContext; rows: Resolve
     }
   });
 
+  // Every build_parameter's current value, by its path -- what the `param` leaf reads. A slot
+  // the build has no value for falls back to its declared `default`, so a condition reads
+  // exactly what the UI shows.
+  const params = new Map<string, string | number | boolean>();
+  for (const slot of db.slots) {
+    if (slot.type !== 'build_parameter') continue;
+    const value = getPath(context, slot.path);
+    const resolved = (value === undefined ? slot.default : value) as string | number | boolean | undefined;
+    if (resolved !== undefined) params.set(slot.path, resolved);
+  }
+
   const ctx: EvalContext = {
     class: context.class,
     role: context.role,
@@ -66,6 +78,7 @@ export function collect(db: Db, build: Build): { ctx: EvalContext; rows: Resolve
     equipped,
     tags,
     setPieces,
+    params,
   };
 
   return { ctx, rows, candidates };

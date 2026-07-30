@@ -18,7 +18,7 @@ export interface SlotDiff {
  * QuickOptions.vue (which has no per-row item context at all) can use it directly. */
 export function paramDiffers(build: Build, compareBuild: Build | null, slot: BuildParameterSlot) {
   if (!compareBuild) return false;
-  return (getPath(build, slot.path) ?? '') !== (getPath(compareBuild, slot.path) ?? '');
+  return (getPath(build.context, slot.path) ?? '') !== (getPath(compareBuild.context, slot.path) ?? '');
 }
 
 function paramLabel(slot: BuildParameterSlot, value: unknown) {
@@ -31,7 +31,7 @@ function paramLabel(slot: BuildParameterSlot, value: unknown) {
  * bold/dotted/coloured, this is the only place the compare build's actual value shows. */
 export function paramDiffTitle(compareBuild: Build | null, slot: BuildParameterSlot) {
   if (!compareBuild) return undefined;
-  return `${compareBuild.name}: ${paramLabel(slot, getPath(compareBuild, slot.path))}`;
+  return `${paramLabel(slot, getPath(compareBuild.context, slot.path))}`;
 }
 
 export function useCompareDiff(options: {

@@ -17,7 +17,11 @@
 
 import { NW_ITEMS, NW_BONUSES, NW_SCHEMA, NW_SLOTS } from './data';
 import * as db from './db';
-import type { Item, BonusSet, Schema, CatalogOverlay, CatalogGroup, ConditionWhen, LintFinding } from './types';
+import { findParamSlot } from './build-path';
+import type {
+  Item, BonusSet, Schema, CatalogOverlay, CatalogGroup, ConditionWhen, ParamCondition, LintFinding, Slot,
+  BuildParameterSlot,
+} from './types';
 
 export const emptyOverlay = (): CatalogOverlay => ({ items: {}, bonusSets: {} });
 
@@ -133,15 +137,66 @@ export { inBase };
 // --- validation --------------------------------------------------------------------------
 
 const CONDITION_KEYS = new Set(['toggle', 'role', 'class', 'combatType', 'location',
-  'damageType', 'duration', 'pieces', 'equipped', 'all', 'any', 'not']);
+  'damageType', 'duration', 'pieces', 'equipped', 'param', 'all', 'any', 'not']);
 
 // Every non-stat key an item may legitimately carry. Anything else is a typo, and a
 // misspelled stat (`sevrity: 5000`) is invisible otherwise -- it simply never applies.
 const ITEM_FIELDS = new Set(['name', 'filter', 'tags', 'maxCopies', 'allowedClass',
   'dynamicStat', 'dynamicMin', 'dynamicMax', 'bonuses', 'excludes']);
 
+// A `param` condition addressing one of these paths duplicates a dedicated leaf that already
+// exists for it -- not wrong (conditions.ts happily evaluates either), but worth steering
+// authors toward the leaf that reads better and is what every shipped bonus already uses.
+const DEDICATED_LEAF_FOR_PATH: Record<string, string> = {
+  role: 'role', class: 'class', combatType: 'combatType', location: 'location',
+  damageType: 'damageType', duration: 'duration',
+};
+
+function checkParamCondition(
+  spec: ParamCondition | undefined, path: string,
+  report: (level: 'error' | 'warn', message: string) => void,
+  paramSlots: Map<string, BuildParameterSlot>,
+) {
+  if (!spec || typeof spec !== 'object' || !spec.key) {
+    report('error', `${path}: param condition has no "key"`);
+    return;
+  }
+
+  const dedicated = DEDICATED_LEAF_FOR_PATH[spec.key] ?? (spec.key.startsWith('toggles.') ? 'toggle' : null);
+  if (dedicated) {
+    report('warn', `${path}: param "${spec.key}" has a dedicated "${dedicated}" condition -- prefer that`);
+  }
+
+  const slot = paramSlots.get(spec.key);
+  if (!slot) {
+    // conditions.ts's param leaf fails closed on an unresolvable key, same as an unknown
+    // condition key -- the bonus would silently never apply.
+    report('error', `${path}: param "${spec.key}" is not a build_parameter's path — the condition can never be active`);
+    return;
+  }
+
+  const numeric = slot.paramType === 'number' || slot.paramType === 'percent';
+  if (numeric && spec.atLeast === undefined && spec.below === undefined) {
+    report('error', `${path}: param "${spec.key}" is a number — use atLeast/below`);
+  } else if (slot.paramType === 'boolean' && spec.is === undefined) {
+    report('error', `${path}: param "${spec.key}" is a boolean — use "is"`);
+  } else if (slot.paramType === 'list' && spec.equals === undefined) {
+    report('error', `${path}: param "${spec.key}" is a list — use "equals"`);
+  }
+
+  if (slot.paramType === 'list' && spec.equals !== undefined) {
+    const allowed = new Set((slot.options ?? []).map((o) => o.value));
+    for (const value of Array.isArray(spec.equals) ? spec.equals : [spec.equals]) {
+      if (!allowed.has(value)) {
+        report('error', `${path}: param "${spec.key}" equals "${value}", which is not one of its declared options`);
+      }
+    }
+  }
+}
+
 function checkConditions(
   when: ConditionWhen | undefined, path: string, report: (level: 'error' | 'warn', message: string) => void,
+  paramSlots: Map<string, BuildParameterSlot>,
 ) {
   if (!when || typeof when !== 'object') return;
   for (const [key, spec] of Object.entries(when)) {
@@ -151,12 +206,59 @@ function checkConditions(
       continue;
     }
     if (key === 'all' || key === 'any') {
-      if (Array.isArray(spec)) spec.forEach((sub) => checkConditions(sub, path, report));
+      if (Array.isArray(spec)) spec.forEach((sub) => checkConditions(sub, path, report, paramSlots));
       else report('error', `${path}: "${key}" must be a list`);
     } else if (key === 'not') {
-      checkConditions(spec as ConditionWhen, path, report);
+      checkConditions(spec as ConditionWhen, path, report, paramSlots);
+    } else if (key === 'param') {
+      checkParamCondition(spec as ParamCondition, path, report, paramSlots);
     }
   }
+}
+
+// BuildContext's own field names (types.ts). A path colliding with one of these would corrupt
+// engine state on write: a bare "forte"/"toggles" replaces the whole object, and a path nested
+// under a scalar field ("class.tier") overwrites that scalar with an object.
+const CONTEXT_SCALAR_KEYS = new Set(['class', 'role', 'combatType', 'location', 'damageType',
+  'duration', 'magnitude', 'm32Forte']);
+const CONTEXT_CONTAINER_KEYS = new Set(['forte', 'toggles']);
+
+function shadowsBuildContext(path: string): boolean {
+  const [head, ...rest] = path.split('.');
+  return rest.length === 0 ? CONTEXT_CONTAINER_KEYS.has(head) : CONTEXT_SCALAR_KEYS.has(head);
+}
+
+/**
+ * Lint every `build_parameter` slot's `path`: empty, duplicated (two slots silently fighting
+ * over one value), or shadowing a `BuildContext` field outright. Standalone from `validate()`
+ * below since it needs only the slot list, not a composed catalogue.
+ */
+export function validateSlots(slots: Slot[]): LintFinding[] {
+  const findings: LintFinding[] = [];
+  const seenPaths = new Map<string, string>();
+  for (const slot of slots) {
+    if (slot.type !== 'build_parameter') continue;
+    if (!slot.path) {
+      findings.push({ level: 'error', message: `${slot.id}: build_parameter slot has no path`, kind: 'item' });
+      continue;
+    }
+    const owner = seenPaths.get(slot.path);
+    if (owner) {
+      findings.push({
+        level: 'error', kind: 'item',
+        message: `${slot.id}: path "${slot.path}" duplicates ${owner}'s -- they would silently share one value`,
+      });
+    } else {
+      seenPaths.set(slot.path, slot.id);
+    }
+    if (shadowsBuildContext(slot.path)) {
+      findings.push({
+        level: 'error', kind: 'item',
+        message: `${slot.id}: path "${slot.path}" shadows a BuildContext field`,
+      });
+    }
+  }
+  return findings;
 }
 
 /**
@@ -164,7 +266,7 @@ function checkConditions(
  * things the engine will misread or silently drop.
  */
 export function validate(items: Item[], bonusSets: BonusSet[], schema: Schema = NW_SCHEMA): LintFinding[] {
-  const findings: LintFinding[] = [];
+  const findings: LintFinding[] = [...validateSlots(NW_SLOTS?.slots ?? [])];
   const report = (level: 'error' | 'warn', message: string, name?: string, kind: 'item' | 'bonusSet' = 'item') =>
     findings.push({ level, message, name, kind });
 
@@ -174,10 +276,14 @@ export function validate(items: Item[], bonusSets: BonusSet[], schema: Schema = 
   const slotFilters = new Set(
     allSlots.filter((slot) => slot.type === 'item_picker').map((slot) => slot.filter),
   );
-  const classSlot = allSlots.find((slot) => slot.type === 'build_parameter' && slot.path === 'context.class');
-  const classes = new Set((classSlot?.type === 'build_parameter' ? classSlot.options : undefined)?.map((o) => o.value) ?? []);
+  const classSlot = findParamSlot(allSlots, 'class');
+  const classes = new Set(classSlot?.options?.map((o) => o.value) ?? []);
   const setIds = new Set(bonusSets.map((set) => set.id));
   const seenNames = new Set();
+  const paramSlots = new Map<string, BuildParameterSlot>();
+  for (const slot of allSlots) {
+    if (slot.type === 'build_parameter') paramSlots.set(slot.path, slot);
+  }
 
   const checkStats = (
     stats: Record<string, unknown> | undefined, label: string, name?: string, kind: 'item' | 'bonusSet' = 'item',
@@ -239,7 +345,7 @@ export function validate(items: Item[], bonusSets: BonusSet[], schema: Schema = 
     set.grants?.forEach((grant, index) => {
       const label = `grant ${index + 1}`;
       checkConditions(grant.when, label, (level, message) =>
-        report(level, message, set.id, 'bonusSet'));
+        report(level, message, set.id, 'bonusSet'), paramSlots);
       checkStats(grant.stats, label, set.id, 'bonusSet');
       for (const tier of grant.tiers ?? []) {
         checkStats(tier.stats, `${label} tier`, set.id, 'bonusSet');

@@ -22,6 +22,7 @@ import FormField from './ui/FormField.vue';
 import FormGrid from './ui/FormGrid.vue';
 import FormSection from './ui/FormSection.vue';
 import { NW_SCHEMA, NW_SLOTS } from '../data';
+import { findParamSlot } from '../build-path';
 import { isPercentKind, kindOf } from '../format';
 import { focusNextCombo } from '../stat-row-nav';
 import type { Item, Db, BonusSet } from '../types';
@@ -144,8 +145,8 @@ const confirmRevert = ref(false);
 let confirmRevertTimer: number | undefined;
 
 const statOptions = NW_SCHEMA.stats;
-const classSlot = NW_SLOTS.slots.find((slot) => slot.type === 'build_parameter' && slot.path === 'context.class');
-const classes = (classSlot?.type === 'build_parameter' ? classSlot.options : undefined)?.map((o) => o.value) ?? [];
+const classSlot = findParamSlot(NW_SLOTS.slots, 'class');
+const classes = classSlot?.options?.map((o) => o.value) ?? [];
 
 const statComboOptions = statOptions.map((s) => ({ value: s.key, label: `${s.label} (${s.key})` }));
 const dynamicStatOptions = statOptions.map((s) => ({ value: s.key, label: s.label }));

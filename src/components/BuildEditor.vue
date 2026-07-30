@@ -124,7 +124,7 @@ function unsaved(slotId: string) {
   if (!saved) return false;
   const slot = db.value.slotById.get(slotId);
   if (slot?.type === 'build_parameter') {
-    return (getPath(build.value, slot.path) ?? null) !== (getPath(saved, slot.path) ?? null);
+    return (getPath(build.value.context, slot.path) ?? null) !== (getPath(saved.context, slot.path) ?? null);
   }
   if ((build.value.choices[slotId] || '') !== (saved.choices[slotId] || '')) return true;
   return (build.value.values[slotId] ?? null) !== (saved.values[slotId] ?? null);

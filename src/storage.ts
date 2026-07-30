@@ -41,7 +41,7 @@ export function defaultBuild(name = 'New build'): Build {
   const root: { context: Record<string, unknown> } = { context: {} };
   for (const slot of NW_SLOTS.slots) {
     if (slot.type === 'build_parameter' && slot.default !== undefined) {
-      setPath(root, slot.path, slot.default);
+      setPath(root.context, slot.path, slot.default);
     }
   }
   return {
