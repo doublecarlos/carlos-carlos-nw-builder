@@ -4,39 +4,25 @@
 // Everything else -- the build library, the active build's content and undo history, the
 // compare picker, the resolved-engine pipeline, the data editor's workspace overlay, which
 // page is showing -- lives in src/stores and is read/mutated by whichever component needs it.
-import { ref, watch, onMounted, onUnmounted } from 'vue';
-import BuildBar from './components/BuildBar.vue';
-import ThemeToggle from './components/ui/ThemeToggle.vue';
-import BuildNav from './components/BuildNav.vue';
-import BonusInspector from './components/BonusInspector.vue';
-import ComboBox from './components/ui/ComboBox.vue';
+import { watch, onMounted, onUnmounted } from 'vue';
+import Library from './components/Library.vue';
+import BuildHeader from './components/BuildHeader.vue';
+import BuildEditor from './components/BuildEditor.vue';
+import BuildDetails from './components/BuildDetails.vue';
 import DataEditor from './components/DataEditor.vue';
-import QuickOptions from './components/QuickOptions.vue';
-import SlotList from './components/SlotList.vue';
-import StatPanel from './components/StatPanel.vue';
 import * as storage from './storage';
 import * as router from './router';
 import * as library from './stores/library';
 import * as buildEditor from './stores/buildEditor';
-import * as compare from './stores/compare';
 import * as engine from './stores/engine';
 import * as ui from './stores/ui';
-import { notice, showNotice } from './stores/notice';
-import { overlayCount } from './stores/workspace';
-import Button from './components/ui/Button.vue';
-import Checkbox from './components/ui/Checkbox.vue';
-import Badge from './components/ui/Badge.vue';
-import Notice from './components/ui/Notice.vue';
-import TabStrip from './components/ui/TabStrip.vue';
-import TabButton from './components/ui/TabButton.vue';
+import * as details from './stores/details';
+import { showNotice } from './stores/notice';
 
-const build = library.build;
-const db = engine.db;
 const resolved = engine.resolved;
-const compareBuild = compare.compareBuild;
 
 const initialRoute = router.parse();
-const tab = ref<'stats' | 'bonuses'>(initialRoute.tab === 'bonuses' ? 'bonuses' : 'stats');
+if (initialRoute.tab === 'bonuses') details.setTab('bonuses');
 if (initialRoute.view === 'editor') ui.setView('editor');
 
 function onKeydown(event: KeyboardEvent) {
@@ -79,7 +65,7 @@ function syncRoute({ push = true }: { push?: boolean } = {}) {
     view: ui.view.value === 'editor' ? 'editor' : null,
     collection: library.activeCollectionId.value,
     build: library.activeId.value,
-    tab: tab.value === 'bonuses' ? 'bonuses' : null,
+    tab: details.tab.value === 'bonuses' ? 'bonuses' : null,
   }, { push });
 }
 
@@ -90,7 +76,7 @@ function onPopState() {
   const route = router.parse();
   ui.setView(route.view === 'editor' ? 'editor' : 'builder');
   library.restoreFromRoute(route.collection, route.build);
-  tab.value = route.tab === 'bonuses' ? 'bonuses' : 'stats';
+  details.setTab(route.tab === 'bonuses' ? 'bonuses' : 'stats');
 }
 
 watch(library.activeId, () => syncRoute());
@@ -99,7 +85,7 @@ watch(ui.view, () => syncRoute());
 // The sidebar tab is a lighter switch than a build/view change -- it still belongs in
 // the URL for a refresh to restore, but it would clutter the back button if every click
 // were its own stop.
-watch(tab, () => syncRoute({ push: false }));
+watch(details.tab, () => syncRoute({ push: false }));
 
 onMounted(() => {
   window.addEventListener('keydown', onKeydown);
@@ -117,67 +103,19 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <!-- Stacks above the builder below `lg`, matching BuildNav.vue's own breakpoint -- a
-       height:100vh column layout makes no sense once the sidebar and the builder are
-       stacked instead of side-by-side. -->
+  <!-- Stacks above the builder below `lg` -- a height:100vh column layout makes no sense once
+       the sidebar and the builder are stacked instead of side-by-side. Placement classes for
+       Library/BuildHeader/BuildEditor/BuildDetails all live here, passed in via class
+       fallthrough, rather than baked into each component's own root. -->
   <div class="flex flex-col items-stretch bg-bg text-text lg:min-h-screen lg:flex-row">
-    <BuildNav />
+    <Library class="flex-none border-b border-line lg:sticky lg:top-0 lg:h-screen lg:w-60 lg:border-b-0 lg:border-r" />
 
     <div class="flex min-w-0 flex-1 flex-col lg:h-screen">
-      <header class="flex flex-none flex-wrap items-start gap-x-5 gap-y-3 border-b border-line bg-surface px-3.5 py-2 max-lg:sticky max-lg:top-0 max-lg:z-20">
-        <div class="flex min-w-38 flex-col gap-1">
-          <h1 class="text-base font-semibold tracking-wide">Neverwinter build planner</h1>
-        </div>
-
-        <BuildBar />
-
-        <QuickOptions />
-
-        <div class="flex flex-1 basis-full flex-wrap items-center justify-end gap-2 max-sm:justify-start">
-          <Notice v-if="notice" @dismiss="showNotice('')">{{ notice }}</Notice>
-          <!-- Quick compare: pick another build, see it inline against the active one (slot
-               highlights, the stat panel's headline row) -- deliberately just a picker in the
-               top bar, not a page of its own. -->
-          <div class="flex flex-wrap items-center gap-1.5">
-            <span class="text-sm text-muted">Compare</span>
-            <ComboBox class="compare-select min-w-48" :model-value="build.compare.id" :options="compare.compareOptions.value"
-                      @update:model-value="compare.setCompareBuild" />
-
-            <Checkbox :model-value="build.compare.highlight" :disabled="!compareBuild"
-                      @update:model-value="v => compare.setCompareFlag('highlight', v)">Highlight changes</Checkbox>
-            <Checkbox :model-value="build.compare.onlyDiff" :disabled="!compareBuild"
-                      @update:model-value="v => compare.setCompareFlag('onlyDiff', v)">Only show changes</Checkbox>
-          </div>
-
-          <Button variant="link" @click="buildEditor.resetAll()">reset</Button>
-          <span class="text-sm text-muted">{{ buildEditor.filledSlots.value }}/{{ db.slots.length }} slots</span>
-
-          <Button @click="ui.openEditor()">
-            Edit data<Badge v-if="overlayCount" variant="edited">{{ overlayCount }}</Badge>
-          </Button>
-          <ThemeToggle />
-        </div>
-      </header>
+      <BuildHeader class="flex-none border-b border-line max-lg:sticky max-lg:top-0 max-lg:z-20" />
 
       <main class="flex min-h-0 flex-1 items-stretch gap-4 p-3.5 max-lg:flex-col" v-if="resolved.ok">
-        <div class="min-w-0 flex-1 overflow-y-auto max-lg:w-auto max-lg:overflow-y-visible" data-testid="builder-content">
-          <SlotList />
-        </div>
-        <aside class="sidebar w-130 flex-none overflow-y-auto max-lg:w-auto max-lg:overflow-y-visible">
-          <TabStrip>
-            <TabButton :active="tab === 'stats'" @click="tab = 'stats'">Stats</TabButton>
-            <TabButton :active="tab === 'bonuses'" @click="tab = 'bonuses'">
-              Bonuses <span class="text-sm opacity-75 tabular-nums">{{ engine.bonusCounts.value.active }}/{{ engine.bonusCounts.value.total }}</span>
-              <Badge v-if="engine.bonusCounts.value.nearMiss" variant="near">
-                {{ engine.bonusCounts.value.nearMiss }} away
-              </Badge>
-            </TabButton>
-          </TabStrip>
-
-          <!-- v-show, not v-if: switching tabs must not discard the inspector's filter. -->
-          <StatPanel v-show="tab === 'stats'" />
-          <BonusInspector v-show="tab === 'bonuses'" />
-        </aside>
+        <BuildEditor class="min-w-0 flex-1 overflow-y-auto max-lg:w-auto max-lg:overflow-y-visible" />
+        <BuildDetails class="w-130 flex-none overflow-y-auto max-lg:w-auto max-lg:overflow-y-visible" />
       </main>
 
       <main v-else class="flex-1 min-h-0 overflow-y-auto p-6 text-danger">

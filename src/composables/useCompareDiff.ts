@@ -130,7 +130,7 @@ export function useCompareDiff(options: {
   const OPTIONS_FIELDS = ['class', 'role', 'damageType', 'magnitude', 'm32Forte'] as const;
   const FORTE_KEYS = ['primary', 'secondaryA', 'secondaryB'];
 
-  /** How many Options fields (SlotList's own collapsible "Options" section, not the top bar's
+  /** How many Options fields (BuildEditor's own collapsible "Options" section, not the top bar's
    * QuickOptions) differ from the compare build -- feeds that section header's own diff badge. */
   const optionsDiffCount = computed(() => {
     if (!compareBuild.value) return 0;

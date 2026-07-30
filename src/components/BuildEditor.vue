@@ -35,7 +35,7 @@ const build = library.build;
 // instead of a defensive fallback for a state that can't happen.
 const result = computed(() => {
   const r = engine.resolved.value;
-  if (!r.ok) throw new Error('SlotList requires a resolved build');
+  if (!r.ok) throw new Error('BuildEditor requires a resolved build');
   return r.result;
 });
 const context = computed(() => build.value.context);
@@ -282,7 +282,7 @@ function onFocusIn(event: FocusEvent) {
 </script>
 
 <template>
-  <div class="flex flex-col gap-1.5" ref="root" @focusin="onFocusIn" @focusout="onFocusOut">
+  <section class="flex flex-col gap-1.5" data-testid="builder-content" ref="root" @focusin="onFocusIn" @focusout="onFocusOut">
     <div class="flex gap-1.5">
       <Button variant="link" @click="setAll(true)">expand all</Button>
       <Button variant="link" @click="setAll(false)">collapse all</Button>
@@ -426,5 +426,5 @@ function onFocusIn(event: FocusEvent) {
       :style="{ left: hover.left + 'px', top: hover.top + 'px' }"
       @mouseenter="onCardEnter"
       @mouseleave="onCardLeave" />
-  </div>
+  </section>
 </template>

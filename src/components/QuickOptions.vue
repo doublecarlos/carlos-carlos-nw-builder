@@ -5,7 +5,7 @@
 //
 // Everything else that used to live in the top bar (class, role, damage type, magnitude, forte)
 // is rarely changed mid-session, so it moved to a collapsible section ahead of Gear
-// (SlotList.vue's `AdvancedOptions` section) instead of eating width here.
+// (BuildEditor.vue's `AdvancedOptions` section) instead of eating width here.
 import { computed } from 'vue';
 import ComboBox from './ui/ComboBox.vue';
 import { NW_SCHEMA } from '../data';

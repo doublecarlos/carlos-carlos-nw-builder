@@ -88,7 +88,7 @@ function onFocus() {
   highlight.value = current === -1 ? 0 : current;
 }
 
-/** Called imperatively by SlotList's keyboard cursor (via a template ref): typing a
+/** Called imperatively by BuildEditor's keyboard cursor (via a template ref): typing a
  *  character on a row with no input focused opens this picker pre-filtered, like Sheets
  *  overwriting a cell. Exposed explicitly -- `<script setup>` components are closed by
  *  default, unlike the old classic-object component whose methods were reachable from any
@@ -130,7 +130,7 @@ function choose(item: Item | null, { blur = true }: { blur?: boolean } = {}) {
 
 /**
  * Every branch here except plain Tab also stops propagation: this input sits inside a
- * `.slot-row` that SlotList's own window-level keydown listener watches for its
+ * `.slot-row` that BuildEditor's own window-level keydown listener watches for its
  * passive row cursor. Without stopping propagation, the same Enter that this handler
  * uses to close the dropdown would go on to reach that listener too -- and since the
  * cursor is still parked on this row, it would immediately refocus (reopen) the very

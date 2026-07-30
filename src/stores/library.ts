@@ -83,7 +83,7 @@ export function activeBuildForEdit() {
 
 const activeCollection = computed(() => _collections.value.find((c) => c.id === _activeCollectionId.value) ?? _collections.value[0]);
 
-/** buildId -> bool, for BuildNav's per-tab unsaved-dot -- same comparison `dirty` below does
+/** buildId -> bool, for Library's per-tab unsaved-dot -- same comparison `dirty` below does
  * for just the active build, extended to every build in the pool. */
 export const dirtyByBuild = computed(() => {
   const map: Record<string, boolean> = {};
@@ -95,7 +95,7 @@ export const dirtyByBuild = computed(() => {
  * insensitive and ignores `updated`, or a save-then-revert would read as still dirty. */
 export const dirty = computed(() => !storage.sameBuild(build.value, _savedById.value[_activeId.value]));
 
-/** The active collection's other builds, for SlotList.vue's per-section "copy from" control.
+/** The active collection's other builds, for BuildEditor.vue's per-section "copy from" control.
  * Scoped to the collection, not every build in the app -- collections exist to group related
  * builds, and that's the set a "copy a section over" is actually useful against. */
 export const otherBuildsInCollection = computed(() => {
@@ -140,7 +140,7 @@ export function ownerOfBuild(buildId: string) {
 }
 
 /** Makes a build active (and its collection) without needing the caller to know which
- * collection it lives in -- BuildNav's per-build tab menu (save/revert/duplicate/reset/
+ * collection it lives in -- Library's per-build tab menu (save/revert/duplicate/reset/
  * delete/rename) selects a build this way before delegating to buildEditor.ts. */
 export function selectBuildById(id: string) {
   const owner = ownerOfBuild(id);
@@ -182,7 +182,7 @@ export function createBuild() {
   persistSavedCollections();
 }
 
-/** BuildNav's per-collection "+ New build" -- makes that collection active first (a no-op if
+/** Library's per-collection "+ New build" -- makes that collection active first (a no-op if
  * it already is) so the new build lands in it. */
 export function createBuildIn(collectionId: string) {
   selectCollection(collectionId);

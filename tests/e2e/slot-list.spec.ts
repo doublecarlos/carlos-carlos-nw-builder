@@ -1,4 +1,4 @@
-// End-to-end coverage for SlotList.vue's own interactions -- picking/clearing items, the
+// End-to-end coverage for BuildEditor.vue's own interactions -- picking/clearing items, the
 // section header controls, and the passive keyboard cursor. Quick-compare, unsaved/revert and
 // copy-section are covered separately; this file sticks to the base single-build experience.
 import { test, expect } from '@playwright/test';
@@ -208,7 +208,7 @@ test.describe('keyboard cursor', () => {
     await pickerInput(row).click();
     await expect(row.getByTestId('picker-menu')).toBeVisible();
 
-    // A real form control now has focus, so SlotList's own passive gate must ignore this --
+    // A real form control now has focus, so BuildEditor's own passive gate must ignore this --
     // it's ItemPicker's own ArrowDown handler that owns the key here.
     await page.keyboard.press('ArrowDown');
     await expect(cursorRow(page)).toHaveAttribute('data-cursor-key', 'slot:gear.head');

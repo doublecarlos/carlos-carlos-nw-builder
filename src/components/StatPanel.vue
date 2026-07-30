@@ -254,7 +254,7 @@ const openSections = computed(() => (
  * Anchored to the trigger button: to its right normally, flipped to its left if that would
  * run off the viewport. The vertical flip needs the card's real height, not its CSS
  * max-height, so it's measured once the card exists and nudged only if it actually overflows
- * -- same two-step approach as SlotList.vue's own item hover card.
+ * -- same two-step approach as BuildEditor.vue's own item hover card.
  */
 function placeCard(key: string, rect: DOMRect) {
   const margin = 10;
@@ -286,7 +286,7 @@ function toggleCard(event: MouseEvent, key: string) {
 }
 
 /**
- * Closes the popover on any click outside it -- same pattern as SlotList.vue's own "copy
+ * Closes the popover on any click outside it -- same pattern as BuildEditor.vue's own "copy
  * section from" popover. `composedPath()`, not a live `closest()` walk, for the same reason
  * documented there: a click that lands on a *different* row's trigger button must reach
  * `toggleCard` and switch the card over, not have this handler close it first.
