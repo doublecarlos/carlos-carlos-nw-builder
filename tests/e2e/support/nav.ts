@@ -1,4 +1,4 @@
-// Shared helpers for BuildNav.vue's sidebar -- collection/build rows, their kebab menus, and
+// Shared helpers for Library.vue's sidebar -- collection/build rows, their kebab menus, and
 // the shared two-step confirm.
 import { expect, type Locator, type Page } from '@playwright/test';
 

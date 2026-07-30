@@ -3,7 +3,7 @@
  * `useKeyboardCursor` (the passive gate: arrow/type-to-edit only fires when nothing has
  * already claimed the keyboard) -- both need the same "is this actually a form control, not
  * just something focusable" test, and having it drift into two separate copies is exactly how
- * SlotList.vue's hover card ended up suppressed forever: `.slot-row`/`.section-head` are
+ * BuildEditor.vue's hover card ended up suppressed forever: `.slot-row`/`.section-head` are
  * `tabindex="-1"` and receive real DOM focus themselves whenever the keyboard cursor moves,
  * which is not "editing" in the sense either caller means.
  */

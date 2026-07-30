@@ -1,10 +1,10 @@
-// Shared helpers for driving SlotList through the real app shell. Kept to what more than one
-// spec needs -- selectors that lean on SlotList's own `data-cursor-key` attributes, since those
+// Shared helpers for driving BuildEditor through the real app shell. Kept to what more than one
+// spec needs -- selectors that lean on BuildEditor's own `data-cursor-key` attributes, since those
 // are the same hooks the keyboard cursor itself relies on, and a stable choose-item flow.
 import { expect, type Locator, type Page } from '@playwright/test';
 
 /** Loads the app into a fresh browser context (no localStorage yet, so App.vue's own defaults
- * kick in: one build, "gear" the only section expanded) and waits for SlotList to be there. */
+ * kick in: one build, "gear" the only section expanded) and waits for BuildEditor to be there. */
 export async function openBuilder(page: Page) {
   await page.goto('/');
   await expect(headerRow(page, 'gear')).toBeVisible();

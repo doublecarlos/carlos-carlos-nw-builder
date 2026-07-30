@@ -466,7 +466,7 @@ export function saveOverlay(overlay: CatalogOverlay) {
 }
 
 // --- ui state ----------------------------------------------------------------------------
-// View-only preferences (e.g. which SlotList sections are open) that live alongside builds
+// View-only preferences (e.g. which BuildEditor sections are open) that live alongside builds
 // but aren't part of any one build -- same reasoning as the catalogue overlay above. App.vue
 // supplies its own defaults for anything missing here, so this only has to carry what's set.
 

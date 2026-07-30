@@ -2,7 +2,7 @@
 import type { Locator, Page } from '@playwright/test';
 
 /** The circle-alert button that opens a stat's source popover, keyed by its schema stat key
- * (`data-stat-key`, StatPanel.vue's own test hook -- same convention as SlotList.vue's
+ * (`data-stat-key`, StatPanel.vue's own test hook -- same convention as BuildEditor.vue's
  * `data-cursor-key`). Scoped to `button` since the open popover carries the same attribute. */
 export function statInfoButton(page: Page, key: string): Locator {
   return page.locator(`button[data-stat-key="${key}"]`);

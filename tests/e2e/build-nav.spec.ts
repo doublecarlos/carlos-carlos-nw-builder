@@ -1,4 +1,4 @@
-// End-to-end coverage for BuildNav.vue's sidebar: creating/renaming/duplicating/deleting
+// End-to-end coverage for Library.vue's sidebar: creating/renaming/duplicating/deleting
 // collections and builds. slot-list.spec.ts sticks to the single-build experience; this file
 // covers the library/collection layer around it.
 import { test, expect } from '@playwright/test';

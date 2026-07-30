@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // Slim per-build action strip: rename, save/revert, import/export JSON, share link, undo/redo.
-// Switching/creating/duplicating/deleting a build lives in BuildNav.vue's sidebar; copying a
-// section between builds is a per-section control in SlotList.vue. This bar is left with only
+// Switching/creating/duplicating/deleting a build lives in Library.vue's sidebar; copying a
+// section between builds is a per-section control in BuildEditor.vue. This bar is left with only
 // what always applies to *the build currently on screen*.
 import { ref, computed, watch } from 'vue';
 import * as storage from '../storage';

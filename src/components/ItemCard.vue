@@ -3,10 +3,10 @@
 // with the active ones marked and the inactive ones explained.
 //
 // Pure presentation -- the caller resolves which bonuses belong to the item and positions the
-// card. Rendered once by SlotList.vue, not once per row: 180 slots must not mean 180 cards.
+// card. Rendered once by BuildEditor.vue, not once per row: 180 slots must not mean 180 cards.
 //
 // Interactive (see this file's own <style> block): a long card scrolls, so it must accept
-// the pointer. SlotList
+// the pointer. BuildEditor
 // keeps it open while the pointer is over it and closes it on leave.
 import { computed } from 'vue';
 import { NW_SCHEMA } from '../data';

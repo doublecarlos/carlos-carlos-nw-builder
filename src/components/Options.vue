@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // The build-context fields that are rarely touched mid-session: class, role, damage type,
 // magnitude and the 3 forte picks. Rendered inside a collapsible "Options" section ahead of
-// Gear (SlotList.vue), so they no longer eat top-bar width every session -- see
+// Gear (BuildEditor.vue), so they no longer eat top-bar width every session -- see
 // QuickOptions.vue for the 5 toggles + combat type + duration + location that stayed visible.
 //
 // Not called "advanced options": class is a basic, load-bearing choice, just an infrequently
@@ -29,7 +29,7 @@ const FORTE_SLOTS = [
 const props = withDefaults(defineProps<{
   context: BuildContext;
   // The quick-compare build's own context (App.vue's `compareBuild.context`, forwarded
-  // through SlotList.vue) -- `null` means "not comparing", same convention as SlotList's own
+  // through BuildEditor.vue) -- `null` means "not comparing", same convention as BuildEditor's own
   // `compareBuild` prop. `highlightDiff` mirrors `build.compare.highlight` so this section
   // obeys the same on/off toggle as the slot rows.
   compareContext?: BuildContext | null;

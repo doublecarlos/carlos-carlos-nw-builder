@@ -71,7 +71,7 @@ function isMenuOpen(type: string, id: string) {
  * `<style>` block) -- a
  * `position: absolute` menu clipped at its bottom edge for any row near the end of the
  * list, which is exactly the "bugs weirdly on the last tabs" report. `position: fixed`
- * escapes that clipping the same way `.itemcard` does in SlotList.vue, so the menu's
+ * escapes that clipping the same way `.itemcard` does in BuildEditor.vue, so the menu's
  * coordinates have to be computed from the trigger's own viewport rect instead of just
  * `right: 0` inside a `position: relative` wrapper.
  */
@@ -88,7 +88,7 @@ function openMenuFor(type: string, id: string, event: MouseEvent) {
   openMenu.value = { type, id };
 
   // Flip above the trigger if the menu (measured once it exists) would run off the
-  // bottom of the viewport -- same technique as SlotList.vue's `place()`.
+  // bottom of the viewport -- same technique as BuildEditor.vue's `place()`.
   nextTick(() => {
     const menu = root.value?.querySelector('.navmenu') as HTMLElement | null;
     if (!menu) return;
@@ -112,7 +112,7 @@ function onDocumentClick(event: MouseEvent) {
 
 /** The menu is `position: fixed`, anchored at open time -- if the sidebar (or the page)
  * scrolls afterward, the anchor point moves out from under it, so close it rather than
- * leave it floating over the wrong row. Capture phase, same as SlotList.vue's own
+ * leave it floating over the wrong row. Capture phase, same as BuildEditor.vue's own
  * `onScroll`, so it fires for the sidebar's internal scroll too. */
 function onScroll(event: Event) {
   if (!openMenu.value || (event.target as HTMLElement)?.closest?.('.navmenu')) return;
@@ -235,10 +235,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <!-- Stacks above the builder below `lg`, matching App.vue's own `.page` breakpoint -- a
-       sticky full-height sidebar makes no sense once the two are stacked instead of
-       side-by-side. -->
-  <nav class="flex flex-none flex-col gap-0.5 overflow-y-auto border-b border-line bg-surface p-2 text-sm lg:sticky lg:top-0 lg:h-screen lg:w-60 lg:border-b-0 lg:border-r" ref="root">
+  <nav class="flex flex-col gap-0.5 overflow-y-auto bg-surface p-2 text-sm" data-testid="library" ref="root">
     <div v-for="collection in collections" :key="collection.id" class="mb-1">
       <div class="nav-row nav-row--collection relative flex items-center gap-1 rounded-md px-1 py-1 font-semibold"
            :class="collection.id === activeCollectionId && 'is-active'">
