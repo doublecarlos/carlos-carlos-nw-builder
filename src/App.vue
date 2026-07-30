@@ -123,7 +123,7 @@ onUnmounted(() => {
   <div class="flex flex-col items-stretch bg-bg text-text lg:min-h-screen lg:flex-row">
     <BuildNav />
 
-    <div class="flex flex-1 flex-col lg:h-screen">
+    <div class="flex min-w-0 flex-1 flex-col lg:h-screen">
       <header class="flex flex-none flex-wrap items-start gap-x-5 gap-y-3 border-b border-line bg-surface px-3.5 py-2 max-lg:sticky max-lg:top-0 max-lg:z-20">
         <div class="flex min-w-38 flex-col gap-1">
           <h1 class="text-base font-semibold tracking-wide">Neverwinter build planner</h1>
