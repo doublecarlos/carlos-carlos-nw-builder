@@ -63,6 +63,7 @@ const paramValue = () => getPath(props.build.context, (props.slot as BuildParame
       highlightDiff && (choiceDiffers || valueDiffers || paramDiffers || (bonusDiffs?.length ?? 0) > 0) && 'is-diff bg-diff/20',
     ]"
     :data-cursor-key="'slot:' + slot.id"
+    :data-slot-kind="slot.type"
     @mouseenter="emit('enter', $event)"
     @mouseleave="emit('leave')"
     @click="emit('rowclick', $event)">
@@ -134,11 +135,16 @@ const paramValue = () => getPath(props.build.context, (props.slot as BuildParame
       <template v-else>
         <!-- No label in the slot content -- `.slot-label` on the left already shows it, unlike
              QuickOptions.vue's compact strip which has no separate label column. -->
-        <BuildParamInput :slot="slot" :model-value="paramValue()"
+        <BuildParamInput :ref="el => emit('pickerRef', el)"
+                          :slot="slot" :wide="true"
+                          :model-value="paramValue()"
                           @update:model-value="buildEditor.setParam(slot, $event)" />
 
         <p v-if="highlightDiff && paramDiffers" class="slot-diff-note mt-0.5 text-sm text-muted">
           {{ compareBuild?.name }}: {{ otherParamLabel }}
+          <Button variant="link" class="ml-0.5 text-accent" @click.stop="buildEditor.applyParamFromCompare(slot)">
+            apply
+          </Button>
         </p>
       </template>
     </div>

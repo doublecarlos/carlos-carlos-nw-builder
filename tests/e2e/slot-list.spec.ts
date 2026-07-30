@@ -215,3 +215,104 @@ test.describe('keyboard cursor', () => {
     await expect(row.getByTestId('picker-menu')).toBeVisible();
   });
 });
+
+// build_parameter rows (in the Options section) share the same keyboard cursor
+// infrastructure as item_picker rows -- Enter-to-focus, type-to-seed, Delete-to-reset --
+// just exercised on a different control type.
+test.describe('keyboard cursor: build_parameter rows', () => {
+  // Navigation after opening Options: header click focuses header:options,
+  // ArrowDown#1 → slot:options.class, ArrowDown#2 → slot:options.role, etc.
+  test('Enter on a build_parameter row focuses its control', async ({ page }) => {
+    await openBuilder(page);
+    // Open the Options section first
+    await headerRow(page, 'options').click();
+    // Arrow down: header:options → slot:options.class
+    await page.keyboard.press('ArrowDown');
+    await expect(cursorRow(page)).toHaveAttribute('data-cursor-key', 'slot:options.class');
+
+    const row = slotRow(page, 'options.class');
+    await page.keyboard.press('Enter');
+    await expect(row.getByTestId('picker-input')).toBeFocused();
+  });
+
+  test('typing a character opens and seeds a list-type control', async ({ page }) => {
+    await openBuilder(page);
+    await headerRow(page, 'options').click();
+    // header:options → slot:options.class
+    await page.keyboard.press('ArrowDown');
+    await expect(cursorRow(page)).toHaveAttribute('data-cursor-key', 'slot:options.class');
+
+    const row = slotRow(page, 'options.class');
+    await page.keyboard.press('p');
+
+    await expect(row.getByTestId('picker-input')).toBeFocused();
+    await expect(row.getByTestId('picker-input')).toHaveValue('p');
+    await expect(row.getByTestId('picker-menu')).toBeVisible();
+    // The class list should be filtered to Paladin only
+    await expect(row.getByText('Paladin', { exact: true })).toBeVisible();
+  });
+
+  test('Backspace on a build_parameter row resets to its default', async ({ page }) => {
+    await openBuilder(page);
+    await headerRow(page, 'options').click();
+    // header:options → slot:options.class → slot:options.role
+    await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('ArrowDown');
+    await expect(cursorRow(page)).toHaveAttribute('data-cursor-key', 'slot:options.role');
+
+    const row = slotRow(page, 'options.role');
+    // Change to 'healer'
+    await row.getByTestId('picker-input').click();
+    await row.getByText('Healer', { exact: true }).click();
+
+    // Verify it changed
+    await expect(row.getByTestId('picker-input')).toHaveValue('Healer');
+
+    // Move cursor back to the row and press Backspace
+    await row.locator('.slot-label').click();
+    await page.keyboard.press('Backspace');
+
+    // Should be reset to default (dps)
+    await expect(row.getByTestId('picker-input')).toHaveValue('DPS');
+  });
+
+  test('typing a character while the list is focused does not change rows', async ({ page }) => {
+    await openBuilder(page);
+    await headerRow(page, 'options').click();
+    // header:options → slot:options.class
+    await page.keyboard.press('ArrowDown');
+    await expect(cursorRow(page)).toHaveAttribute('data-cursor-key', 'slot:options.class');
+
+    const row = slotRow(page, 'options.class');
+    // Open the combobox by clicking its input
+    await row.getByTestId('picker-input').click();
+    await expect(row.getByTestId('picker-menu')).toBeVisible();
+
+    // ArrowDown while the picker is open: the passive gate should ignore this.
+    await page.keyboard.press('ArrowDown');
+    await expect(cursorRow(page)).toHaveAttribute('data-cursor-key', 'slot:options.class');
+    await expect(row.getByTestId('picker-menu')).toBeVisible();
+  });
+
+  test('Delete (same as Backspace) resets to default', async ({ page }) => {
+    await openBuilder(page);
+    await headerRow(page, 'options').click();
+    // header:options → slot:options.class → slot:options.role
+    await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('ArrowDown');
+    await expect(cursorRow(page)).toHaveAttribute('data-cursor-key', 'slot:options.role');
+
+    const row = slotRow(page, 'options.role');
+    // Change to 'tank'
+    await row.getByTestId('picker-input').click();
+    await row.getByText('Tank', { exact: true }).click();
+
+    await expect(row.getByTestId('picker-input')).toHaveValue('Tank');
+
+    // Move cursor back and press Delete
+    await row.locator('.slot-label').click();
+    await page.keyboard.press('Delete');
+
+    await expect(row.getByTestId('picker-input')).toHaveValue('DPS');
+  });
+});

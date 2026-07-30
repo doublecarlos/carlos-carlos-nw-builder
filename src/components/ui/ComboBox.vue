@@ -78,21 +78,17 @@ function choose(option: { value: string; label: string }, { blur = true }: { blu
   if (blur) input.value?.blur();
 }
 
-/**
- * Enter has no native "move to the next field" behaviour the way Tab does. Only meaningful
- * for a stat-key picker (rendered inside `.stat-row`, one per stat: id/remove buttons, this
- * combo, then the value field) -- elsewhere there's no adjacent value input to jump to, and
- * `row` comes back null so this is a no-op.
- */
-function focusStatValue(el: HTMLElement) {
-  const row = el.closest('.stat-row');
-  const value = row?.querySelector<HTMLElement>('input[type="number"], input[inputmode="decimal"]');
-  value?.focus();
-}
-
 function onKeydown(event: KeyboardEvent) {
+  if (event.key === 'Escape') {
+    event.preventDefault();
+    event.stopPropagation();
+    close();
+    input.value?.blur();
+    return;
+  }
   if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
     event.preventDefault();
+    event.stopPropagation();
     if (!open.value) {
       onFocus();
       return;
@@ -103,25 +99,34 @@ function onKeydown(event: KeyboardEvent) {
     return;
   }
   if (event.key === 'Enter') {
+    if (!open.value) return;
     event.preventDefault();
-    if (open.value && filtered.value[highlight.value]) {
-      choose(filtered.value[highlight.value]);
-      focusStatValue(event.target as HTMLElement);
-    }
+    event.stopPropagation();
+    choose(filtered.value[highlight.value]);
     return;
   }
-  // Stat-key pickers only (see `focusStatValue`): commit the highlighted stat before the
-  // browser's own Tab moves focus to the value field right after this one in the DOM.
-  // No preventDefault -- the browser still does the actual tabbing.
-  if (event.key === 'Tab' && !event.shiftKey && open.value && filtered.value[highlight.value]
-    && (event.target as HTMLElement).closest('.stat-row')) {
+  if (event.key === 'Tab') {
+    if (!open.value) return;
+    if (event.shiftKey) {
+      // Browsing backward -- just close.
+      event.preventDefault();
+      event.stopPropagation();
+      close();
+      return;
+    }
+    // Stat-key pickers only: commit the highlighted stat before the
+    // browser's own Tab moves focus to the value field right after this one in the DOM.
+    // No preventDefault -- the browser still does the actual tabbing.
+    if ((event.target as HTMLElement).closest('.stat-row')) {
+      choose(filtered.value[highlight.value], { blur: false });
+      return;
+    }
+    // Tab forwards, no stat-row: commit the highlighted choice then let the
+    // browser's own Tab move focus on -- no preventDefault (no stopPropagation
+    // either -- the input is still focused for the window-level listener's
+    // synchronous gate).
     choose(filtered.value[highlight.value], { blur: false });
     return;
-  }
-  if (event.key === 'Escape') {
-    event.preventDefault();
-    close();
-    input.value?.blur();
   }
 }
 </script>

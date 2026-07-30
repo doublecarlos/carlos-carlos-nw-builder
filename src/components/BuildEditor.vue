@@ -212,11 +212,11 @@ const bonusesBySlot = computed(() => {
  * sections simply contribute no slot entries, the same way a spreadsheet skips hidden rows.
  */
 const visibleRows = computed(() => {
-  const rows: { type: string; id: string }[] = [];
+  const rows: { type: string; id: string; kind?: "item_picker" | "build_parameter" }[] = [];
   for (const section of sections.value) {
     rows.push({ type: 'header', id: section.id });
     if (expanded[section.id]) {
-      for (const slot of section.slots) rows.push({ type: 'slot', id: slot.id });
+      for (const slot of section.slots) rows.push({ type: 'slot', id: slot.id, kind: slot.type });
     }
   }
   return rows;
@@ -244,7 +244,8 @@ function setAll(open: boolean) {
  * filled slot jumps straight to that item in the data editor -- a no-op on an empty slot,
  * since there is nothing there to edit. */
 function onRowClick(event: MouseEvent, slotId: string) {
-  setCursor('slot', slotId);
+  const slotType = db.value.slotById.get(slotId)?.type as 'item_picker' | 'build_parameter' | undefined;
+  setCursor('slot', slotId, slotType);
   if (!event.ctrlKey) return;
   const item = itemIn(slotId);
   if (!item) return;
@@ -278,13 +279,17 @@ function statSummary(slotId: string) {
 }
 
 const {
-  isCursor, setCursor, setPickerRef, onFocusIn: onCursorFocusIn,
+  isCursor, setCursor, setPickerRef, setParamRef, onFocusIn: onCursorFocusIn,
 } = useKeyboardCursor(root, visibleRows, {
   onToggleHeader: toggle,
   // Backspace-to-clear only makes sense for an item choice -- a build_parameter always has
   // some value, there's nothing to "clear" it back to that isn't already its own control.
   onClearSlot: (slotId) => {
     if (db.value.slotById.get(slotId)?.type === 'item_picker') buildEditor.setChoice(slotId, '');
+  },
+  onResetParam: (slotId) => {
+    const slot = db.value.slotById.get(slotId);
+    if (slot?.type === 'build_parameter') buildEditor.resetParamToDefault(slot);
   },
 });
 

@@ -2,12 +2,18 @@ import { nextTick, onMounted, onUnmounted, ref, type ComponentPublicInstance, ty
 import { isFormControl } from './focus';
 
 export type CursorKind = 'header' | 'slot';
-export interface CursorPos { type: CursorKind; id: string; }
-interface Row { type: string; id: string; }
+export interface CursorPos { type: CursorKind; id: string; kind?: "item_picker" | "build_parameter"; }
+interface Row { type: string; id: string; kind?: "item_picker" | "build_parameter"; }
 
 /** The subset of ItemPicker's public surface the cursor needs -- a structural type instead of
  *  importing the component so this composable doesn't need to know which component fills a
  *  slot row. */
+interface ParamHandle {
+  focus: () => void;
+  /** Open a list-type control and seed its query with char. */
+  focusAndSeed: (char: string) => void;
+}
+
 interface PickerHandle { focusAndSeed: (char: string) => void; $el?: Element | null; }
 
 export interface KeyboardCursorHandlers {
@@ -15,6 +21,8 @@ export interface KeyboardCursorHandlers {
   onToggleHeader: (sectionId: string) => void;
   /** Backspace/Delete on a slot row: clear its choice. */
   onClearSlot: (slotId: string) => void;
+  /** Reset a build_parameter slot to its default value. */
+  onResetParam: (slotId: string) => void;
 }
 
 /**
@@ -33,13 +41,14 @@ export function useKeyboardCursor(
   /** Imperative ref bag for per-row ItemPickers -- plain object, not `ref`/`reactive`, so it
    *  stays outside Vue's reactivity (see `setPickerRef`). */
   const pickerRefs: Record<string, PickerHandle> = {};
+  const paramRefs: Record<string, ParamHandle> = {};
 
   function isCursor(type: string, id: string) {
     return cursor.value?.type === type && cursor.value?.id === id;
   }
 
-  function setCursor(type: CursorKind, id: string) {
-    cursor.value = { type, id };
+  function setCursor(type: CursorKind, id: string, kind?: 'item_picker' | 'build_parameter') {
+    cursor.value = { type, id, kind };
     syncCursorFocus();
   }
 
@@ -51,6 +60,12 @@ export function useKeyboardCursor(
   /** Focusing the input reuses ItemPicker's own `onFocus` (opens, clears the query). Only
    *  the type-ahead case needs a seeded query, via ItemPicker's `focusAndSeed`. */
   function focusPicker(slotId: string, seedChar?: string) {
+    const param = paramRefs[slotId];
+    if (param) {
+      if (seedChar) param.focusAndSeed(seedChar);
+      else param.focus();
+      return;
+    }
     const picker = pickerRefs[slotId];
     if (!picker) return;
     if (seedChar) picker.focusAndSeed(seedChar);
@@ -101,7 +116,7 @@ export function useKeyboardCursor(
       const next = idx === -1
         ? (dir === 1 ? 0 : rows.length - 1)
         : Math.min(Math.max(idx + dir, 0), rows.length - 1);
-      setCursor(rows[next].type as CursorKind, rows[next].id);
+      setCursor(rows[next].type as CursorKind, rows[next].id, rows[next].kind);
       return;
     }
 
@@ -116,7 +131,11 @@ export function useKeyboardCursor(
 
     if (cursor.value.type === 'slot' && (event.key === 'Backspace' || event.key === 'Delete')) {
       event.preventDefault();
-      handlers.onClearSlot(cursor.value.id);
+      if (cursor.value.kind === 'build_parameter') {
+        handlers.onResetParam(cursor.value.id);
+      } else {
+        handlers.onClearSlot(cursor.value.id);
+      }
       return;
     }
 
@@ -146,11 +165,20 @@ export function useKeyboardCursor(
     const type = key.slice(0, sep) as CursorKind;
     const id = key.slice(sep + 1);
     if (cursor.value?.type === type && cursor.value?.id === id) return;
-    cursor.value = { type, id };
+    // Read slot kind from the DOM (set by BuildSlot.vue's :data-slot-kind)
+    const kind = (event.target as HTMLElement)?.closest?.('[data-slot-kind]')
+      ?.getAttribute('data-slot-kind') as 'item_picker' | 'build_parameter' | null;
+    cursor.value = { type, id, kind: kind ?? undefined };
+  }
+
+  /** Register a build_parameter control ref. */
+  function setParamRef(slotId: string, el: Element | ComponentPublicInstance | null) {
+    if (el) paramRefs[slotId] = el as unknown as ParamHandle;
+    else delete paramRefs[slotId];
   }
 
   onMounted(() => window.addEventListener('keydown', onNavKeydown));
   onUnmounted(() => window.removeEventListener('keydown', onNavKeydown));
 
-  return { cursor, isCursor, setCursor, setPickerRef, onFocusIn };
+  return { cursor, isCursor, setCursor, setPickerRef, setParamRef, onFocusIn };
 }

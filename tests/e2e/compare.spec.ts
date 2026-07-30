@@ -2,7 +2,7 @@
 // "copy from another build" popover (SectionCopyMenu.vue) -- both need a second build in the
 // picture, which slot-list.spec.ts deliberately stays away from.
 import { test, expect } from '@playwright/test';
-import { openBuilder, chooseItem, chooseCombo, headerRow, slotRow, pickerInput } from './support/app';
+import { openBuilder, chooseItem, chooseCombo, headerRow, slotRow, pickerInput, cursorRow } from './support/app';
 
 const HEAD_ITEM = 'M29 Enchanted Depthweave Cap (CA)';
 
@@ -38,4 +38,66 @@ test('copying a section from another build fills its slots', async ({ page }) =>
   await popover.getByRole('button', { name: 'Copy' }).click();
 
   await expect(pickerInput(slotRow(page, 'gear.head'))).toHaveValue(HEAD_ITEM);
+});
+
+test.describe('build_parameter compare diff apply', () => {
+  test('a changed build_parameter row shows a diff note with an apply button', async ({ page }) => {
+    // Build 1: set class to paladin via direct combobox click
+    await openBuilder(page);
+    const classRow = slotRow(page, 'options.class');
+    await headerRow(page, 'options').click();
+    await classRow.getByTestId('picker-input').click();
+    await classRow.getByText('Paladin', { exact: true }).click();
+
+    // Build 2: default warlock, compared against build 1
+    await page.getByRole('button', { name: '+ New build' }).click();
+    await chooseCombo(page.locator('.compare-select'), 'New build');
+    await page.getByRole('checkbox', { name: 'Highlight changes' }).check();
+    // Options section is already open from the earlier toggle above --
+    // just expand it if it got collapsed during the build switch
+    const expanded = await headerRow(page, 'options').locator('span:first-child').textContent();
+    if (expanded === '▸') await headerRow(page, 'options').click();
+
+    // Navigate to the class row (header:options → slot:options.class)
+    await page.keyboard.press('ArrowDown');
+    await expect(cursorRow(page)).toHaveAttribute('data-cursor-key', 'slot:options.class');
+
+    const row = slotRow(page, 'options.class');
+    await expect(row).toHaveClass(/is-diff/);
+
+    // The diff note should show build 1's value and have an apply button
+    await expect(row.locator('.slot-diff-note')).toContainText('Paladin');
+    await expect(row.getByRole('button', { name: 'apply' })).toBeVisible();
+  });
+
+  test('applying from compare copies the build_parameter value', async ({ page }) => {
+    // Build 1: set class to paladin via direct combobox click
+    await openBuilder(page);
+    const classRow = slotRow(page, 'options.class');
+    await headerRow(page, 'options').click();
+    await classRow.getByTestId('picker-input').click();
+    await classRow.getByText('Paladin', { exact: true }).click();
+
+    // Build 2: default warlock, compared against build 1
+    await page.getByRole('button', { name: '+ New build' }).click();
+    await chooseCombo(page.locator('.compare-select'), 'New build');
+    await page.getByRole('checkbox', { name: 'Highlight changes' }).check();
+    // Options section is already open from the earlier toggle above
+    const expanded = await headerRow(page, 'options').locator('span:first-child').textContent();
+    if (expanded === '▸') await headerRow(page, 'options').click();
+
+    // Navigate to the class row
+    await page.keyboard.press('ArrowDown');
+
+    const row = slotRow(page, 'options.class');
+    await expect(row).toHaveClass(/is-diff/);
+    await expect(row.getByRole('button', { name: 'apply' })).toBeVisible();
+
+    // Click apply
+    await row.getByRole('button', { name: 'apply' }).click();
+
+    // Should now match the compare build's value
+    await expect(row.getByTestId('picker-input')).toHaveValue('Paladin');
+    await expect(row).not.toHaveClass(/is-diff/);
+  });
 });

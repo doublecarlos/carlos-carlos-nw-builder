@@ -41,7 +41,7 @@ function differs(slot: BuildParameterSlot) {
               :title="differs(slot) ? paramDiffTitle(compareBuild, slot) : undefined">
           {{ slot.label }}<template v-if="differs(slot)"> ●</template>
         </span>
-        <BuildParamInput :class="slot.paramType === 'list' && 'w-36'" :slot="slot"
+        <BuildParamInput :slot="slot"
                           :model-value="getPath(build.context, slot.path) as string | number"
                           @update:model-value="buildEditor.setParam(slot, $event)" />
       </div>

@@ -166,6 +166,22 @@ export function setParam(slot: BuildParameterSlot, value: string | number | bool
   setPath(library.activeBuildForEdit().context, slot.path, value);
 }
 
+/** Reset a build_parameter slot back to its default (from slots.json).
+ *  Triggered by Backspace/Delete on a build_parameter row via the keyboard cursor. */
+export function resetParamToDefault(slot: BuildParameterSlot) {
+  snapshot(`param:${slot.id}`, `${slot.label} → default`);
+  setPath(library.activeBuildForEdit().context, slot.path, slot.default);
+}
+
+export function applyParamFromCompare(slot: BuildParameterSlot) {
+  const other = compare.compareBuild.value;
+  if (!other) return;
+  const fromVal = getPath(other.context, slot.path);
+  snapshot(`param:${slot.id}`,
+    `${slot.label} → ${fromVal ?? '(none)'} (from "${other.name}")`);
+  setPath(library.activeBuildForEdit().context, slot.path, fromVal);
+}
+
 export function renameBuild(name: string) {
   snapshot('name', 'rename build');
   library.activeBuildForEdit().name = name;
