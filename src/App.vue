@@ -47,7 +47,12 @@ async function consumeShareLink() {
   if (!payload) return;
   try {
     const shared = await storage.decodeShare(payload);
-    if (shared) library.addSharedBuild(shared);
+    if (shared) {
+      library.addSharedBuild(shared.build);
+      if (shared.catalogStale) {
+        showNotice(`Opened “${shared.build.name}” from a share link — made against an older item catalogue; some items may no longer resolve`);
+      }
+    }
   } catch (error: any) {
     showNotice(`That share link could not be read: ${error.message ?? error}`);
   }

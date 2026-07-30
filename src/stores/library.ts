@@ -235,7 +235,11 @@ export function importBuilds(newBuilds: Build[]) {
 export function importBuildsIn(collectionId: string, text: string) {
   selectCollection(collectionId);
   try {
-    importBuilds(storage.parseJson(text));
+    const { builds, catalogStale } = storage.parseJson(text);
+    importBuilds(builds);
+    if (catalogStale) {
+      showNotice(`Imported ${builds.length} build(s) — made against an older item catalogue; some items may no longer resolve`);
+    }
   } catch (error: any) {
     showNotice(`That file could not be read: ${error.message ?? error}`);
   }
@@ -245,7 +249,7 @@ export function importBuildsIn(collectionId: string, text: string) {
 export function exportBuild(id: string) {
   const b = _builds.value.find((item) => item.id === id);
   if (!b) return;
-  downloadJson(storage.toJson(b), `${b.name.replace(/[^\w.-]+/g, '-') || 'build'}.json`);
+  downloadJson(storage.toBuildJson(b), `${b.name.replace(/[^\w.-]+/g, '-') || 'build'}.json`);
 }
 
 // --- collections -----------------------------------------------------------------------------
@@ -324,7 +328,7 @@ async function writeCollectionFile(id: string, handle: FileSystemFileHandle) {
     if (!(await fsStore.verifyPermission(handle))) throw new Error('permission denied');
     const buildsById = Object.fromEntries(_builds.value.map((b) => [b.id, b]));
     const bundle = storage.bundleCollection(collection, buildsById);
-    await fsStore.writeText(handle, storage.toJson(bundle));
+    await fsStore.writeText(handle, storage.toCollectionJson(bundle));
   } catch (error: any) {
     delete _fileLinks.value[id];
     showNotice(`Could not write “${collection.name}” to its linked file: ${error.message ?? error}`);
@@ -377,19 +381,20 @@ export function exportCollection(id: string) {
   if (!collection) return;
   const buildsById = Object.fromEntries(_builds.value.map((b) => [b.id, b]));
   const bundle = storage.bundleCollection(collection, buildsById);
-  downloadJson(storage.toJson(bundle), `${collection.name.replace(/[^\w.-]+/g, '-') || 'collection'}.json`);
+  downloadJson(storage.toCollectionJson(bundle), `${collection.name.replace(/[^\w.-]+/g, '-') || 'collection'}.json`);
 }
 
 export function importCollectionText(text: string) {
   try {
-    const { collection, builds: newBuilds } = storage.parseCollectionJson(text);
+    const { collection, builds: newBuilds, catalogStale } = storage.parseCollectionJson(text);
     _builds.value.push(...newBuilds);
     for (const b of newBuilds) _savedById.value[b.id] = storage.cloneBuild(b);
     _collections.value.push(collection);
     _savedCollections.value[collection.id] = { ...collection, buildIds: [...collection.buildIds] };
     _activeCollectionId.value = collection.id;
     _activeId.value = collection.activeBuildId;
-    showNotice(`Imported “${collection.name}” (${newBuilds.length} build(s))`);
+    const stale = catalogStale ? ' — made against an older item catalogue; some items may no longer resolve' : '';
+    showNotice(`Imported “${collection.name}” (${newBuilds.length} build(s))${stale}`);
     persistSaved();
     persistSavedCollections();
   } catch (error: any) {

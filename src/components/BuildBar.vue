@@ -71,7 +71,7 @@ function toggle(name: string) {
   importError.value = '';
   importNote.value = '';
   if (panel.value === 'share') makeShareLink();
-  if (panel.value === 'io') exportText.value = storage.toJson(build.value);
+  if (panel.value === 'io') exportText.value = storage.toBuildJson(build.value);
 }
 
 function selectAllText(event: FocusEvent) {
@@ -110,9 +110,10 @@ function applyImport() {
   importError.value = '';
   importNote.value = '';
   try {
-    const builds = storage.parseJson(importText.value);
+    const { builds, catalogStale } = storage.parseJson(importText.value);
     library.importBuilds(builds);
-    importNote.value = `imported ${builds.length} build(s)`;
+    const stale = catalogStale ? ' — made against an older item catalogue; some items may no longer resolve' : '';
+    importNote.value = `imported ${builds.length} build(s)${stale}`;
     importText.value = '';
   } catch (error: any) {
     importError.value = String(error.message ?? error);

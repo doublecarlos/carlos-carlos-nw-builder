@@ -11,9 +11,11 @@
 // `nw:current-build`; that key is migrated into the saved library on first load and then
 // removed.
 
-import { NW_SLOTS } from './data';
+import { NW_SLOTS, NW_CATALOG_VERSION } from './data';
 import * as catalog from './catalog';
 import { setPath } from './build-path';
+import pkg from '../package.json';
+import { showNotice } from './stores/notice';
 import type { Build, Library, Collection, Collections, CatalogOverlay } from './types';
 
 const KEY = 'nw:builds';
@@ -29,6 +31,82 @@ const HASH_PREFIX = '#b=';
 // decodes. `d` = raw deflate, `j` = uncompressed JSON.
 const DEFLATED = 'd';
 const PLAIN = 'j';
+
+// --- versioned envelope ------------------------------------------------------------------
+// Wraps every build/collection payload this module reads or writes (localStorage, JSON
+// export/import, share links) with what it needs to be read back safely: the shape version of
+// `data` (`v`), which of the payload shapes this module owns it is (`kind`), and what item
+// catalogue it was authored against (`catalog`). Without this, a shape-breaking change (like
+// swapping item names for ids) fails silently -- a build loads looking fine with every slot
+// quietly empty. With it, that becomes a real refusal with a message.
+//
+// Un-enveloped data (everything saved/exported before this existed) is deliberately NOT
+// refused: `unwrap` only throws on a *mismatched* `v`/`kind`, so today's un-enveloped
+// localStorage and already-issued exports/links keep working exactly as before. The refuse
+// behaviour only starts biting the next time `SCHEMA_VERSION` actually moves -- which is the
+// point: this doesn't retroactively invalidate anything, it just makes the *next* breaking
+// change honest instead of silent.
+
+export const SCHEMA_VERSION = 1;
+
+export type EnvelopeKind = 'build' | 'collection' | 'library' | 'collections' | 'overlay';
+
+export interface Envelope<T> {
+  v: number;
+  kind: EnvelopeKind;
+  catalog: number;
+  app?: string;
+  exported?: number;
+  data: T;
+}
+
+function wrap<T>(kind: EnvelopeKind, data: T): Envelope<T> {
+  return { v: SCHEMA_VERSION, kind, catalog: NW_CATALOG_VERSION, app: pkg.version, exported: Date.now(), data };
+}
+
+/**
+ * Unwraps an envelope, or passes un-enveloped (legacy) data through untouched as `data` --
+ * see the module comment above for why that's not a refusal. A *mismatched* `v` or `kind` on
+ * genuinely enveloped data throws a plain `Error` with a message safe to show the user as-is.
+ * `catalogStale` is a soft signal only (never throws): the caller decides whether/how to warn.
+ */
+function unwrap<T>(raw: unknown, expectedKind: EnvelopeKind): { data: T; catalogStale: boolean } {
+  if (!isPlain(raw) || typeof raw.v !== 'number') {
+    return { data: raw as T, catalogStale: false };
+  }
+  if (raw.kind !== expectedKind) {
+    throw new Error(`This is a "${raw.kind ?? 'unknown'}" file, not a "${expectedKind}" one.`);
+  }
+  if (raw.v !== SCHEMA_VERSION) {
+    throw new Error(raw.v < SCHEMA_VERSION
+      ? `This ${expectedKind} was made with an older version of the app and can no longer be opened.`
+      : `This ${expectedKind} was made with a newer version of the app — open it there instead.`);
+  }
+  return {
+    data: raw.data as T,
+    catalogStale: typeof raw.catalog === 'number' && raw.catalog !== NW_CATALOG_VERSION,
+  };
+}
+
+/** Reads and unwraps one localStorage key. Returns `null` for "nothing stored" (the normal
+ * first-visit/never-saved case) exactly as before, but also for a version/kind mismatch --
+ * the caller's existing "nothing stored" fallback is what makes that non-fatal, per this
+ * module's own envelope comment above. The mismatch itself still surfaces, once, as a notice. */
+function readEnveloped<T>(key: string, kind: EnvelopeKind): T | null {
+  let stored = null;
+  try {
+    stored = JSON.parse(window.localStorage.getItem(key) ?? 'null');
+  } catch {
+    return null;
+  }
+  if (!stored) return null;
+  try {
+    return unwrap<T>(stored, kind).data;
+  } catch (error: any) {
+    showNotice(`${error.message} — starting fresh.`);
+    return null;
+  }
+}
 
 export const newId = (prefix = 'b') => `${prefix}_${Math.random().toString(36).slice(2, 8)}${Date.now().toString(36).slice(-3)}`;
 
@@ -183,12 +261,7 @@ function emptyLibrary(): Library {
 }
 
 export function loadLibrary(): Library {
-  let stored = null;
-  try {
-    stored = JSON.parse(window.localStorage.getItem(KEY) ?? 'null');
-  } catch {
-    stored = null;
-  }
+  const stored = readEnveloped<{ builds: unknown[]; activeId: string }>(KEY, 'library');
 
   if (!stored || !Array.isArray(stored.builds) || !stored.builds.length) {
     const migrated = migrateLegacy();
@@ -221,10 +294,10 @@ function migrateLegacy(): Library | null {
 
 export function saveLibrary(library: Library) {
   try {
-    window.localStorage.setItem(KEY, JSON.stringify({
+    window.localStorage.setItem(KEY, JSON.stringify(wrap('library', {
       builds: library.builds,
       activeId: library.activeId,
-    }));
+    })));
     return true;
   } catch {
     // Private browsing, or quota. The caller is told, so it can surface it once rather than
@@ -239,12 +312,7 @@ export function saveLibrary(library: Library) {
  * split shipped, when `nw:builds` (their old autosave target) is the only copy of the truth.
  */
 export function loadDraft(saved: Library): Library {
-  let stored = null;
-  try {
-    stored = JSON.parse(window.localStorage.getItem(DRAFT_KEY) ?? 'null');
-  } catch {
-    stored = null;
-  }
+  const stored = readEnveloped<{ builds: unknown[]; activeId: string }>(DRAFT_KEY, 'library');
 
   if (!stored || !Array.isArray(stored.builds) || !stored.builds.length) {
     return { builds: saved.builds.map((build) => cloneBuild(build)), activeId: saved.activeId };
@@ -259,10 +327,10 @@ export function loadDraft(saved: Library): Library {
 
 export function saveDraft(library: Library) {
   try {
-    window.localStorage.setItem(DRAFT_KEY, JSON.stringify({
+    window.localStorage.setItem(DRAFT_KEY, JSON.stringify(wrap('library', {
       builds: library.builds,
       activeId: library.activeId,
-    }));
+    })));
     return true;
   } catch {
     // Private browsing, or quota. Losing the continuous draft autosave is not worth an error
@@ -324,12 +392,7 @@ function coverBuilds(collections: Collection[], builds: Build[]): Collection[] {
 }
 
 function readCollections(key: string, builds: Build[]): Collections | null {
-  let stored = null;
-  try {
-    stored = JSON.parse(window.localStorage.getItem(key) ?? 'null');
-  } catch {
-    stored = null;
-  }
+  const stored = readEnveloped<{ collections: unknown[]; activeCollectionId: string }>(key, 'collections');
   if (stored && Array.isArray(stored.collections) && stored.collections.length) {
     const idSet = new Set(builds.map((build) => build.id));
     const collections = coverBuilds(
@@ -359,10 +422,10 @@ export function loadCollections(builds: Build[]): Collections {
 
 export function saveCollections(state: Collections) {
   try {
-    window.localStorage.setItem(COLLECTIONS_KEY, JSON.stringify({
+    window.localStorage.setItem(COLLECTIONS_KEY, JSON.stringify(wrap('collections', {
       collections: state.collections,
       activeCollectionId: state.activeCollectionId,
-    }));
+    })));
     return true;
   } catch {
     return false;
@@ -385,10 +448,10 @@ export function loadCollectionsDraft(builds: Build[], saved: Collections): Colle
 
 export function saveCollectionsDraft(state: Collections) {
   try {
-    window.localStorage.setItem(COLLECTIONS_DRAFT_KEY, JSON.stringify({
+    window.localStorage.setItem(COLLECTIONS_DRAFT_KEY, JSON.stringify(wrap('collections', {
       collections: state.collections,
       activeCollectionId: state.activeCollectionId,
-    }));
+    })));
     return true;
   } catch {
     return false;
@@ -407,23 +470,30 @@ export function bundleCollection(collection: Collection, buildsById: Record<stri
   };
 }
 
+/** Wraps a `bundleCollection()` result for export/file-save -- the counterpart
+ * `parseCollectionJson` unwraps. */
+export const toCollectionJson = (bundle: unknown) => toJson(wrap('collection', bundle));
+
 /** The reverse of `bundleCollection`: re-ids the collection and every build inside it (like
  * `parseJson`'s `keepId: false`), so importing a file can never collide with, or overwrite,
  * a collection/build already in the library. */
-export function parseCollectionJson(text: string): { collection: Collection; builds: Build[] } {
+export function parseCollectionJson(text: string): { collection: Collection; builds: Build[]; catalogStale: boolean } {
   const parsed = JSON.parse(text);
-  if (!parsed || typeof parsed !== 'object' || !Array.isArray(parsed.builds) || !parsed.builds.length) {
+  const { data, catalogStale } = unwrap<unknown>(parsed, 'collection');
+  if (!data || typeof data !== 'object' || !Array.isArray((data as { builds?: unknown }).builds)
+    || !(data as { builds: unknown[] }).builds.length) {
     throw new Error('no builds in that collection');
   }
-  const builds: Build[] = parsed.builds.map((build: unknown) => normalise(build, { keepId: false }));
+  const bundle = data as { name?: unknown; builds: unknown[] };
+  const builds: Build[] = bundle.builds.map((build: unknown) => normalise(build, { keepId: false }));
   const collection: Collection = {
     id: newId('c'),
-    name: typeof parsed.name === 'string' && parsed.name.trim() ? parsed.name : 'Imported collection',
+    name: typeof bundle.name === 'string' && bundle.name.trim() ? bundle.name : 'Imported collection',
     updated: Date.now(),
     buildIds: builds.map((build) => build.id),
     activeBuildId: builds[0].id,
   };
-  return { collection, builds };
+  return { collection, builds, catalogStale };
 }
 
 /** Same re-id treatment as an import -- a duplicate must never share a build id with its
@@ -447,19 +517,13 @@ export function duplicateCollection(collection: Collection, buildsById: Record<s
 // is a workspace, not part of any build: switching builds must not change the catalogue.
 
 export function loadOverlay() {
-  try {
-    return catalog.normaliseOverlay(
-      JSON.parse(window.localStorage.getItem(OVERLAY_KEY) ?? 'null'),
-    );
-  } catch {
-    return catalog.emptyOverlay();
-  }
+  return catalog.normaliseOverlay(readEnveloped<unknown>(OVERLAY_KEY, 'overlay'));
 }
 
 export function saveOverlay(overlay: CatalogOverlay) {
   try {
     if (catalog.isEmpty(overlay)) window.localStorage.removeItem(OVERLAY_KEY);
-    else window.localStorage.setItem(OVERLAY_KEY, JSON.stringify(overlay));
+    else window.localStorage.setItem(OVERLAY_KEY, JSON.stringify(wrap('overlay', overlay)));
     return true;
   } catch {
     return false;
@@ -518,19 +582,23 @@ export function saveThemePreference(preference: ThemePreference) {
 
 // --- import / export --------------------------------------------------------------------
 
-// Not narrowed to `Build`: also used to serialise a collection bundle (`bundleCollection`'s
-// `{ id, name, updated, builds }`), which isn't a build itself.
 export const toJson = (value: unknown) => JSON.stringify(value, null, 2);
 
+/** A single build's own export -- the counterpart `parseJson` unwraps. */
+export const toBuildJson = (build: Build) => toJson(wrap('build', build));
+
 /**
- * Accepts a single build or an array of them, and returns an array either way. Throws only
- * on unparseable text -- structural problems are absorbed by `normalise`.
+ * Accepts a single (enveloped) build, or -- for backward compatibility with anything saved
+ * before the envelope existed -- an un-enveloped single build or array of them, and returns an
+ * array either way. Throws only on unparseable text or a version/kind mismatch; structural
+ * problems within a build are absorbed by `normalise`.
  */
-export function parseJson(text: string): Build[] {
+export function parseJson(text: string): { builds: Build[]; catalogStale: boolean } {
   const parsed = JSON.parse(text);
-  const list = Array.isArray(parsed) ? parsed : [parsed];
+  const { data, catalogStale } = unwrap<unknown>(parsed, 'build');
+  const list = Array.isArray(data) ? data : [data];
   if (!list.length) throw new Error('no builds in that JSON');
-  return list.map((build) => normalise(build, { keepId: false }));
+  return { builds: list.map((build) => normalise(build, { keepId: false })), catalogStale };
 }
 
 // --- share links ------------------------------------------------------------------------
@@ -561,7 +629,7 @@ const hasCompression = () => typeof CompressionStream === 'function'
  * roughly a tenth of that, which keeps the link inside every practical URL limit.
  */
 export async function encodeShare(build: Build) {
-  const json = JSON.stringify(normalise(build));
+  const json = JSON.stringify(wrap('build', normalise(build)));
   const bytes = new TextEncoder().encode(json);
   if (!hasCompression()) return PLAIN + bytesToBase64Url(bytes);
 
@@ -571,7 +639,7 @@ export async function encodeShare(build: Build) {
   return DEFLATED + bytesToBase64Url(new Uint8Array(buffer));
 }
 
-export async function decodeShare(payload: string): Promise<Build | null> {
+export async function decodeShare(payload: string): Promise<{ build: Build; catalogStale: boolean } | null> {
   if (!payload) return null;
   const marker = payload[0];
   const bytes = base64UrlToBytes(payload.slice(1));
@@ -588,7 +656,8 @@ export async function decodeShare(payload: string): Promise<Build | null> {
     throw new Error('unrecognised share link');
   }
 
-  return normalise(JSON.parse(json), { keepId: false });
+  const { data, catalogStale } = unwrap<unknown>(JSON.parse(json), 'build');
+  return { build: normalise(data, { keepId: false }), catalogStale };
 }
 
 export const shareUrl = (payload: string) => {
