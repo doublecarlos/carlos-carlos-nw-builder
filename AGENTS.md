@@ -70,7 +70,6 @@ playwright.config.ts    testDir tests/e2e, starts the dev server, chromium only
   wondering why stacking "doesn't work" has caught two sessions.
 - **Empty slot is `undefined` / `''` / `'-'`** — all three handled by `db.get`.
 - **Duration is a free number of seconds**, not a bucket. Presets are convenience only.
-- **Options are context, not slots.** Class/Role/Forte live in `build.context`.
 - **Routing is query-string, not path** (`?build=…&view=…`) — a static host serves `index.html`
   by path only, so `/builds/x` would 404 on refresh; `?x=y` always resolves. `App.vue` owns
   `view`/`collection`/`build`/`tab` via a plain `watch` + `router.apply`; `DataEditor.vue` owns
