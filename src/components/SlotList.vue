@@ -8,8 +8,11 @@ import { computed, reactive, ref, watch } from 'vue';
 import ItemPicker from './ItemPicker.vue';
 import ItemCard from './ItemCard.vue';
 import Options from './Options.vue';
-import IconButton from './IconButton.vue';
+import IconButton from './ui/IconButton.vue';
 import SectionCopyMenu from './SectionCopyMenu.vue';
+import Button from './ui/Button.vue';
+import Badge from './ui/Badge.vue';
+import UnsavedDot from './ui/UnsavedDot.vue';
 import { NW_SCHEMA, NW_SLOTS } from '../data';
 import { label as statLabelFmt, abbr, signedStat } from '../format';
 import { useHoverCard } from '../composables/useHoverCard';
@@ -223,6 +226,7 @@ function toggle(sectionId: string) {
 
 function setAll(open: boolean) {
   for (const section of db.value.sections) expanded[section.id] = open;
+  expanded.options = open;
 }
 
 /** A plain click just moves the cursor here, same as an arrow key would. Ctrl+click on a
@@ -278,25 +282,29 @@ function onFocusIn(event: FocusEvent) {
 </script>
 
 <template>
-  <div class="slots" ref="root" @focusin="onFocusIn" @focusout="onFocusOut">
-    <div class="slots-toolbar">
-      <button type="button" class="link" @click="setAll(true)">expand all</button>
-      <button type="button" class="link" @click="setAll(false)">collapse all</button>
-      <span class="spacer"></span>
-      <span class="hint">Ctrl+click a filled slot to edit that item</span>
+  <div class="flex flex-col gap-1.5" ref="root" @focusin="onFocusIn" @focusout="onFocusOut">
+    <div class="flex gap-1.5">
+      <Button variant="link" @click="setAll(true)">expand all</Button>
+      <Button variant="link" @click="setAll(false)">collapse all</Button>
+      <span class="flex-1"></span>
+      <span class="text-sm text-muted">Ctrl+click a filled slot to edit that item</span>
     </div>
 
-    <section class="section">
-      <div class="section-head-row">
-        <button type="button" class="section-head" :class="{ 'is-cursor': isCursor('header', 'options') }"
+    <section class="rounded-md border border-line">
+      <!-- The revert icon (shown only when the section has unsaved slots) has to sit outside
+           the toggle button -- a <button> can't nest another one. -->
+      <div class="flex items-center">
+        <button type="button"
+                class="bg-surface-2 flex flex-1 items-center gap-2 min-w-0 px-2.5 py-1.5 text-left font-semibold hover:bg-surface-2"
+                :class="isCursor('header', 'options') && 'is-cursor outline-2 -outline-offset-1 outline-accent'"
                 data-cursor-key="header:options"
                 @click="toggle('options'); setCursor('header', 'options')">
-          <span class="section-chevron">{{ expanded.options ? '▾' : '▸' }}</span>
-          <span class="section-label">Options</span>
-          <span v-if="highlightDiff && optionsDiffCount" class="badge badge--diff">{{ optionsDiffCount }}</span>
+          <span class="w-2.5 text-muted">{{ expanded.options ? '▾' : '▸' }}</span>
+          <span class="flex-1 truncate">Options</span>
+          <Badge v-if="highlightDiff && optionsDiffCount" variant="diff">{{ optionsDiffCount }}</Badge>
         </button>
       </div>
-      <div v-if="expanded.options" class="section-body">
+      <div v-if="expanded.options" class="bg-surface border-t border-line px-2.5 pb-2 pt-1">
         <Options :context="context"
                 :compare-context="compareBuild?.context ?? null"
                 :compare-name="compareBuild?.name ?? ''"
@@ -306,56 +314,63 @@ function onFocusIn(event: FocusEvent) {
       </div>
     </section>
 
-    <section v-for="section in sections" :key="section.id" class="section">
-      <div class="section-head-row">
-        <button type="button" class="section-head" :class="{ 'is-cursor': isCursor('header', section.id) }"
+    <section v-for="section in sections" :key="section.id" class="rounded-md border border-line">
+      <div class="bg-surface-2 flex items-center">
+        <button type="button"
+                class="flex flex-1 items-center gap-2 min-w-0 px-2.5 py-1.5 text-left font-semibold hover:bg-surface-2"
+                :class="isCursor('header', section.id) && 'is-cursor outline-2 -outline-offset-1 outline-accent'"
                 :data-cursor-key="'header:' + section.id"
                 @click="toggle(section.id); setCursor('header', section.id)">
-          <span class="section-chevron">{{ expanded[section.id] ? '▾' : '▸' }}</span>
-          <span class="section-label">{{ section.label }}</span>
-          <span class="section-count">{{ section.filled }}/{{ section.total }}</span>
-          <span v-if="section.errors" class="badge badge--error">{{ section.errors }}</span>
-          <span v-if="highlightDiff && section.diffs" class="badge badge--diff">{{ section.diffs }}</span>
-          <span v-if="section.unsaved" class="unsaved-dot" title="Unsaved changes in this section"></span>
+          <span class="w-2.5 text-muted">{{ expanded[section.id] ? '▾' : '▸' }}</span>
+          <span class="truncate">{{ section.label }}</span>
+          <span class="section-count ml-auto font-normal text-muted">{{ section.filled }}/{{ section.total }}</span>
+          <Badge v-if="section.errors" variant="error">{{ section.errors }}</Badge>
+          <Badge v-if="highlightDiff && section.diffs" variant="diff">{{ section.diffs }}</Badge>
+          <UnsavedDot v-if="section.unsaved" title="Unsaved changes in this section" />
         </button>
         <SectionCopyMenu v-if="otherBuilds.length" :section-id="section.id" :other-builds="otherBuilds"
                          @copy="(fromId) => buildEditor.copySection(fromId, [section.id])" />
         <IconButton v-if="section.unsaved" icon="undo-2" title="Revert this section to saved"
-                    class="section-revert" @click="buildEditor.revertSection(section.id)" />
+                    class="mr-1.5 flex-none" @click="buildEditor.revertSection(section.id)" />
       </div>
 
-      <div v-if="expanded[section.id]" class="section-body">
-        <div v-for="slot in section.slots" :key="slot.id" class="slot-row" tabindex="-1"
-             :class="{ 'is-hovered': hover?.slotId === slot.id, 'is-cursor': isCursor('slot', slot.id),
-                       'is-diff': highlightDiff && rowHasDiff(slot.id) }"
+      <div v-if="expanded[section.id]" class="bg-surface border-t border-line px-2.5 pb-2 pt-1">
+        <div v-for="slot in section.slots" :key="slot.id"
+             class="flex items-baseline gap-2.5 border-b border-line/45 py-1 last:border-b-0" tabindex="-1"
+             :class="[
+               hover?.slotId === slot.id && 'is-hovered bg-accent-soft/40',
+               isCursor('slot', slot.id) && 'is-cursor outline-2 -outline-offset-1 outline-accent',
+               highlightDiff && rowHasDiff(slot.id) && 'is-diff bg-diff/20',
+             ]"
              :data-cursor-key="'slot:' + slot.id"
              @mouseenter="onRowEnter($event, slot.id)"
              @mouseleave="onRowLeave"
              @click="onRowClick($event, slot.id)">
-          <div class="slot-label-col">
-            <label class="slot-label" :for="slot.id">{{ slot.label }}</label>
-            <span v-if="unsaved(slot.id)" class="slot-change">
-              <span class="unsaved-dot" title="Unsaved change"></span>
+          <div class="flex w-36 shrink-0 items-center justify-between min-w-0">
+            <label class="slot-label min-w-0 flex-1 truncate text-muted" :for="slot.id">{{ slot.label }}</label>
+            <span v-if="unsaved(slot.id)" class="flex flex-none items-center gap-0.5">
+              <UnsavedDot title="Unsaved change" />
               <IconButton icon="undo-2" title="Revert to saved" @click="buildEditor.revertSlot(slot.id)" />
             </span>
           </div>
 
-          <div class="slot-control">
-            <div class="slot-main">
+          <div class="min-w-0 flex-1">
+            <div class="flex flex-wrap items-center gap-2.5">
               <ItemPicker
                 :ref="el => setPickerRef(slot.id, el)"
+                class="grow-0 basis-80 min-w-40"
                 :items="itemsFor(slot.id)"
                 :model-value="build.choices[slot.id] ?? ''"
                 :invalid="errorsFor(slot.id).length > 0"
                 @update:model-value="buildEditor.setChoice(slot.id, $event)" />
-              <span v-if="itemIn(slot.id)" class="slot-summary">{{ statSummary(slot.id) }}</span>
+              <span v-if="itemIn(slot.id)" class="min-w-0 flex-1 truncate text-sm text-text">{{ statSummary(slot.id) }}</span>
             </div>
 
-            <p v-if="highlightDiff && differs(slot.id)" class="slot-diff-note">
+            <p v-if="highlightDiff && differs(slot.id)" class="slot-diff-note mt-0.5 text-sm text-muted">
               {{ compareBuild?.name }}: {{ otherChoice(slot.id) || '(empty)' }}
-              <button type="button" class="link" @click.stop="buildEditor.applyFromCompare(slot.id)">
+              <Button variant="link" class="ml-0.5 text-accent" @click.stop="buildEditor.applyFromCompare(slot.id)">
                 apply
-              </button>
+              </Button>
             </p>
 
             <!-- Same item both sides, but the bonus(es) it grants resolve differently --
@@ -364,7 +379,7 @@ function onFocusIn(event: FocusEvent) {
                  the build. -->
             <template v-if="highlightDiff">
               <p v-for="bonusDiff in rowDiff(slot.id)?.bonuses ?? []" :key="bonusDiff.id"
-                 class="slot-bonus-diff-note">
+                 class="mt-0.5 text-sm font-semibold text-diff">
                 {{ bonusDiff.message }}
               </p>
             </template>
@@ -372,30 +387,30 @@ function onFocusIn(event: FocusEvent) {
             <!-- Dynamic weapon modifications carry a user-typed magnitude. Driven by the
                  item's own `dynamicStat`, not by a hard-coded slot id, so a second
                  dynamic modification would work with no UI change. -->
-            <div v-if="itemIn(slot.id)?.dynamicStat" class="slot-value">
+            <div v-if="itemIn(slot.id)?.dynamicStat" class="mt-1 flex items-center gap-1.5">
               <input
                 type="number"
-                class="num-input"
+                class="w-20 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
                 :min="itemIn(slot.id)?.dynamicMin"
                 :max="itemIn(slot.id)?.dynamicMax"
                 :value="build.values[slot.id] ?? ''"
                 :placeholder="String(itemIn(slot.id)?.dynamicMin ?? '')"
                 @input="buildEditor.setValue(slot.id, ($event.target as HTMLInputElement).value)">
-              <span class="hint">
+              <span class="text-sm text-muted">
                 {{ statLabel(itemIn(slot.id)?.dynamicStat as string) }}
                 {{ itemIn(slot.id)?.dynamicMin }}–{{ itemIn(slot.id)?.dynamicMax }}
               </span>
             </div>
 
-            <p v-if="highlightDiff && rowDiff(slot.id)?.value" class="slot-diff-note">
+            <p v-if="highlightDiff && rowDiff(slot.id)?.value" class="slot-diff-note mt-0.5 text-sm text-muted">
               {{ compareBuild?.name }}: {{ compareBuild?.values?.[slot.id] ?? '(none)' }}
-              <button type="button" class="link" @click.stop="buildEditor.applyValueFromCompare(slot.id)">
+              <Button variant="link" class="ml-0.5 text-accent" @click.stop="buildEditor.applyValueFromCompare(slot.id)">
                 apply
-              </button>
+              </Button>
             </p>
 
             <p v-for="error in errorsFor(slot.id)" :key="error.kind + error.choice"
-               class="slot-error">{{ error.message }}</p>
+               class="mt-0.5 text-sm text-danger">{{ error.message }}</p>
           </div>
         </div>
       </div>
@@ -413,122 +428,3 @@ function onFocusIn(event: FocusEvent) {
       @mouseleave="onCardLeave" />
   </div>
 </template>
-
-<style scoped>
-.slots-toolbar { display: flex; gap: 6px; margin-bottom: 6px; }
-
-.section {
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  margin-bottom: 6px;
-}
-
-/* The revert icon (shown only when the section has unsaved slots) has to sit outside the
- * toggle button -- a <button> can't nest another one -- so the button no longer spans the
- * full row on its own; `.section-head-row` does that instead. */
-.section-head-row { align-items: center; display: flex; }
-
-.section-head {
-  align-items: center;
-  background: none;
-  border: 0;
-  color: inherit;
-  cursor: pointer;
-  display: flex;
-  flex: 1;
-  font: inherit;
-  font-weight: 600;
-  gap: 8px;
-  min-width: 0;
-  padding: 7px 10px;
-  text-align: left;
-}
-.section-head:hover { background: var(--surface-2); }
-.section-chevron { color: var(--muted); width: 10px; }
-.section-count { color: var(--muted); font-weight: 400; margin-left: auto; }
-/* The Options section header has no `.section-count` (no filled/total to show) to carry the
- * `margin-left: auto` that pushes every other section's badges to the right edge -- this
- * puts the same push directly on its own diff badge instead. */
-.section-label + .badge--diff { margin-left: auto; }
-.section-revert { flex: none; margin-right: 6px; }
-
-.section-body { border-top: 1px solid var(--line); padding: 4px 10px 8px; }
-
-.slot-row {
-  align-items: baseline;
-  border-bottom: 1px solid color-mix(in srgb, var(--line) 45%, transparent);
-  display: grid;
-  gap: 10px;
-  grid-template-columns: 150px minmax(0, 1fr);
-  padding: 4px 0;
-}
-.slot-row:last-child { border-bottom: 0; }
-
-/* The change marker (dot + revert icon) sits pinned to the right of this column, close to
- * where the picker starts, rather than right after the label text -- so it lines up in the
- * same spot on every row regardless of how long that row's label is. */
-.slot-label-col { align-items: center; display: flex; justify-content: space-between; min-width: 0; }
-.slot-label {
-  color: var(--muted);
-  flex: 1 1 auto;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.slot-change { align-items: center; display: flex; flex: none; gap: 2px; }
-
-/* Keyboard cursor: independent of mouse hover (`.is-hovered`) -- the two can point at different
- * rows at once, same as a spreadsheet's selection vs. hover state. */
-.slot-row.is-cursor, .section-head.is-cursor {
-  outline: 2px solid var(--accent);
-  outline-offset: -1px;
-}
-/* `.slot-row` is tabindex="-1" so real DOM focus can follow the keyboard cursor (see
- * `syncCursorFocus` above) -- normally focus and `.is-cursor` land together, so this only
- * suppresses the native ring for the rare moment they don't (e.g. a row losing `.is-cursor`
- * a tick before the browser actually moves focus off it). `:not(.is-cursor)` -- not just source
- * order -- keeps this from ever tying with (and winning over, being the same specificity and
- * later) the `.is-cursor` rule above when both apply to the same row at once. */
-.slot-row:focus:not(.is-cursor) { outline: none; }
-
-.slot-control { min-width: 0; }
-/* The picker is capped, not stretched to fill the column -- the freed space carries a condensed
- * stat summary instead of sitting empty. */
-.slot-main { align-items: center; display: flex; flex-wrap: wrap; gap: 10px; }
-.slot-main .picker { flex: 0 1 320px; min-width: 160px; }
-.slot-summary {
-  color: var(--text);
-  flex: 1;
-  font-size: 1rem;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.slot-value { align-items: center; display: flex; gap: 6px; margin-top: 4px; }
-.slot-error { color: var(--danger); margin: 3px 0 0; font-size: 1rem; }
-
-.slot-diff-note { color: var(--muted); font-size: 1rem; margin: 2px 0 0; }
-.slot-diff-note button.link { color: var(--accent); margin-left: 2px; padding: 0; }
-
-/* Same item, differently-resolved bonus -- no "apply" action fits (the cause lives
- * elsewhere in the build), so this reads as a plain warning note rather than the
- * accent-coloured choice/value diff notes above. */
-.slot-bonus-diff-note { color: var(--diff); font-size: 1rem; font-weight: 600; margin: 2px 0 0; }
-
-.slot-row.is-hovered { background: color-mix(in srgb, var(--accent-soft) 40%, transparent); }
-
-/* Quick-compare: a row whose choice differs from the compare build, per App.vue's picker. Same
- * specificity as `.is-hovered` above -- this comes later in source order so the diff cue stays
- * visible on hover instead of the two backgrounds fighting row-for-row. */
-.slot-row.is-diff { background: color-mix(in srgb, var(--diff) 20%, transparent); }
-
-@media (max-width: 480px) {
-  /* The fixed 150px label column plus the picker's own 160px minimum no longer both fit --
-   * stack the label above the control instead of forcing a horizontal scrollbar per row. */
-  .slot-row { grid-template-columns: minmax(0, 1fr); gap: 2px; }
-  .slot-main .picker { min-width: 0; }
-}
-</style>

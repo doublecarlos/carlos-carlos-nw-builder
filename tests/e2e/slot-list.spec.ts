@@ -75,7 +75,7 @@ test.describe('section collapse/expand', () => {
     await expect(slotRow(page, 'gear.head')).toBeVisible();
   });
 
-  test('"expand all" / "collapse all" open and close every real section, but never Options', async ({ page }) => {
+  test('"expand all" / "collapse all" open and close every section', async ({ page }) => {
     await openBuilder(page);
     // Gear starts open, Reinforcements starts closed, Options starts closed -- see App.vue's
     // `OPEN_BY_DEFAULT` (only "gear" is in it).
@@ -90,7 +90,7 @@ test.describe('section collapse/expand', () => {
 
     await page.getByRole('button', { name: 'collapse all' }).click();
     await expect(slotRow(page, 'gear.head')).toBeHidden();
-    await expect(page.locator('.options')).toBeVisible();
+    await expect(page.locator('.options')).toBeHidden();
 
     await page.getByRole('button', { name: 'expand all' }).click();
     await expect(slotRow(page, 'gear.head')).toBeVisible();
@@ -127,7 +127,7 @@ test.describe('section collapse/expand', () => {
     await expect(slotRow(page, 'reinforcements.armorKit1')).toBeVisible();
 
     // Collapsing it back is not a build edit, so it never lands on the undo stack.
-    await expect(page.getByRole('button', { name: '↶ Undo' })).toBeDisabled();
+    await expect(page.getByRole('button', { name: 'Undo' })).toBeDisabled();
   });
 });
 
@@ -194,7 +194,7 @@ test.describe('keyboard cursor', () => {
     const row = slotRow(page, 'gear.head');
     await expect(pickerInput(row)).toBeFocused();
     await expect(pickerInput(row)).toHaveValue('d');
-    await expect(row.locator('.picker-menu')).toBeVisible();
+    await expect(row.getByTestId('picker-menu')).toBeVisible();
   });
 
   test('arrow keys are not treated as row navigation while the picker input is focused', async ({ page }) => {
@@ -206,12 +206,12 @@ test.describe('keyboard cursor', () => {
 
     const row = slotRow(page, 'gear.head');
     await pickerInput(row).click();
-    await expect(row.locator('.picker-menu')).toBeVisible();
+    await expect(row.getByTestId('picker-menu')).toBeVisible();
 
     // A real form control now has focus, so SlotList's own passive gate must ignore this --
     // it's ItemPicker's own ArrowDown handler that owns the key here.
     await page.keyboard.press('ArrowDown');
     await expect(cursorRow(page)).toHaveAttribute('data-cursor-key', 'slot:gear.head');
-    await expect(row.locator('.picker-menu')).toBeVisible();
+    await expect(row.getByTestId('picker-menu')).toBeVisible();
   });
 });

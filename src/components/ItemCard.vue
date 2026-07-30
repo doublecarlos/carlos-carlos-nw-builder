@@ -12,6 +12,7 @@ import { computed } from 'vue';
 import { NW_SCHEMA } from '../data';
 import { label as statLabel, signedStat } from '../format';
 import type { Item, Db, EvaluatedBonus, StatValues } from '../types';
+import Badge from './ui/Badge.vue';
 
 const props = withDefaults(defineProps<{
   item: Item;
@@ -126,14 +127,25 @@ function payload(entry: EvaluatedBonus) {
   return { total: statList(stats), each, tiered: false };
 }
 
+// Bonus state -> dot colour + whether its title/numbers read muted (an inactive/excluded
+// bonus's numbers are what it *would* grant, not what it does).
+const STATE_DOT: Record<string, string> = {
+  active: 'bg-ok',
+  inactive: 'bg-muted opacity-50',
+  excluded: 'bg-danger',
+};
+
 const rows = computed(() => props.bonuses.map((entry) => {
   const sharedWith = sharedSources(entry);
   // `sources` is sorted deterministically upstream (bonus.ts, by evaluation order), so
   // every card agrees on which one is "first" without any cross-item coordination.
   const isFirst = !entry.sources?.length || entry.sources[0] === props.item.name;
+  const state = entry.excluded ? 'excluded' : (entry.active ? 'active' : 'inactive');
   return {
     id: entry.id,
-    state: entry.excluded ? 'excluded' : (entry.active ? 'active' : 'inactive'),
+    state,
+    dotClass: STATE_DOT[state],
+    muted: state !== 'active',
     name: entry.bonus?.name ?? null,
     conditions: (entry.gate?.leaves ?? []).map((leaf) => leaf.label).filter(Boolean)
       .join(' + '),
@@ -153,168 +165,88 @@ const rows = computed(() => props.bonuses.map((entry) => {
 </script>
 
 <template>
-  <div class="itemcard">
-    <div class="itemcard-head">
-      <span class="itemcard-name">{{ item.name }}</span>
-      <span v-if="item.il" class="itemcard-il">iL {{ item.il.toLocaleString() }}</span>
+  <!-- Width/max-height read back by useHoverCard.ts's `CARD_W` positioning constant -- keep
+       in step. `pointer-events-auto` + `overscroll-contain`: a long card scrolls and must
+       accept the pointer without the page underneath scrolling once the card hits its own
+       limit. -->
+  <div class="itemcard fixed z-40 w-80 max-w-[90vw] max-h-96 overflow-y-auto overscroll-contain
+              rounded-md border border-line bg-surface px-2.5 py-2 shadow-lg pointer-events-auto">
+    <div class="flex items-baseline gap-2">
+      <span class="flex-1 font-semibold">{{ item.name }}</span>
+      <span v-if="item.il" class="text-sm tabular-nums text-muted">iL {{ item.il.toLocaleString() }}</span>
     </div>
-    <div v-if="slotLabel" class="itemcard-slot">{{ slotLabel }}</div>
+    <div v-if="slotLabel" class="mb-1 text-sm text-muted">{{ slotLabel }}</div>
 
-    <div class="itemcard-stats">
-      <div v-for="stat in stats" :key="stat.key" class="itemcard-stat">
-        <span>{{ stat.label }}</span><span class="num">{{ stat.value }}</span>
+    <div class="flex flex-col">
+      <div v-for="stat in stats" :key="stat.key"
+           class="flex justify-between gap-2 border-b border-line py-0.5 text-sm last:border-b-0">
+        <span>{{ stat.label }}</span><span class="tabular-nums">{{ stat.value }}</span>
       </div>
-      <div v-if="!stats.length" class="dim">no direct stats</div>
+      <div v-if="!stats.length" class="text-muted">no direct stats</div>
     </div>
 
-    <div v-if="notes.length" class="itemcard-notes">
+    <div v-if="notes.length" class="mt-1.5 border-t border-line pt-1 text-sm text-muted">
       <div v-for="note in notes" :key="note">{{ note }}</div>
     </div>
 
-    <div v-if="rows.length" class="itemcard-bonuses">
-      <div class="itemcard-section">Bonuses</div>
-      <div v-for="row in rows" :key="row.id" class="itemcard-bonus" :class="'bonus--' + row.state">
-        <div class="itemcard-bonus-head">
-          <span class="bonus-dot"></span>
-          <span class="itemcard-bonus-cond">{{ row.name || row.conditions || 'always' }}</span>
-          <span v-if="row.stacks > 1" class="badge">×{{ row.stacks }}</span>
+    <div v-if="rows.length" class="mt-1.5 border-t border-line pt-1">
+      <div class="text-sm uppercase tracking-wide text-muted">Bonuses</div>
+      <div v-for="row in rows" :key="row.id" class="mt-1">
+        <div class="flex items-center gap-1.5">
+          <span class="size-1.5 flex-none rounded-full" :class="row.dotClass"></span>
+          <span class="min-w-0 flex-1 text-sm" :class="row.muted && 'text-muted'">{{ row.name || row.conditions || 'always' }}</span>
+          <Badge v-if="row.stacks > 1">×{{ row.stacks }}</Badge>
         </div>
-        <div v-if="row.name && row.conditions" class="stat-sub itemcard-bonus-when">
+        <div v-if="row.name && row.conditions" class="pl-3 text-sm leading-snug text-muted">
           Conditions: {{ row.conditions }}
         </div>
-        <div v-if="row.secondary" class="stat-sub itemcard-bonus-shared">
+        <div v-if="row.secondary" class="pl-3 text-sm leading-snug text-muted">
           This bonus was accounted for in {{ row.firstSource }}
         </div>
         <template v-else>
-          <div v-if="row.sharedWith" class="stat-sub itemcard-bonus-shared">
+          <div v-if="row.sharedWith" class="pl-3 text-sm leading-snug text-muted">
             Other parts: {{ row.sharedWith.join(', ') }}
           </div>
-          <div v-if="row.stats && row.stats.tiered" class="itemcard-bonus-stats dim">(tiered)</div>
-          <div v-else-if="row.stats" class="itemcard-bonus-stats">
-            <div v-if="row.stacks > 1" class="stat-sub">total, from {{ row.stacks }} stacking sources</div>
-            <div class="itemcard-stats">
-              <div v-for="s in row.stats.total" :key="s.key" class="itemcard-stat">
-                <span>{{ s.label }}</span><span class="num">{{ s.value }}</span>
+          <div v-if="row.stats && row.stats.tiered" class="pl-3 text-sm text-muted">(tiered)</div>
+          <div v-else-if="row.stats" class="pl-3 text-sm" :class="row.muted && 'text-muted'">
+            <div v-if="row.stacks > 1" class="text-sm leading-snug text-muted">total, from {{ row.stacks }} stacking sources</div>
+            <div class="flex flex-col">
+              <div v-for="s in row.stats.total" :key="s.key"
+                   class="flex justify-between gap-2 border-b border-line py-0.5 last:border-b-0">
+                <span>{{ s.label }}</span><span class="tabular-nums">{{ s.value }}</span>
               </div>
             </div>
             <template v-if="row.stats.each">
-              <div class="stat-sub">each:</div>
-              <div class="itemcard-stats">
-                <div v-for="s in row.stats.each" :key="s.key" class="itemcard-stat">
-                  <span>{{ s.label }}</span><span class="num">{{ s.value }}</span>
+              <div class="text-sm leading-snug text-muted">each:</div>
+              <div class="flex flex-col">
+                <div v-for="s in row.stats.each" :key="s.key"
+                     class="flex justify-between gap-2 border-b border-line py-0.5 last:border-b-0">
+                  <span>{{ s.label }}</span><span class="tabular-nums">{{ s.value }}</span>
                 </div>
               </div>
             </template>
           </div>
         </template>
-        <div v-if="row.tiers" class="itemcard-bonus-tiers">
-          <div class="stat-sub">tiered by set pieces, shared by every piece:</div>
-          <div v-for="tier in row.tiers" :key="tier.pieces" class="itemcard-tier"
-               :class="{ 'is-active': tier.active }">
+        <div v-if="row.tiers" class="pl-3">
+          <div class="text-sm leading-snug text-muted">tiered by set pieces, shared by every piece:</div>
+          <div v-for="tier in row.tiers" :key="tier.pieces" class="text-sm"
+               :class="tier.active ? 'font-semibold text-text' : 'text-muted'">
             <div>{{ tier.pieces }} piece{{ tier.pieces > 1 ? 's' : '' }}:</div>
-            <div class="itemcard-stats">
-              <div v-for="s in tier.stats" :key="s.key" class="itemcard-stat">
-                <span>{{ s.label }}</span><span class="num">{{ s.value }}</span>
+            <div class="flex flex-col">
+              <div v-for="s in tier.stats" :key="s.key" class="flex justify-between gap-2 py-0.5">
+                <span>{{ s.label }}</span><span class="tabular-nums">{{ s.value }}</span>
               </div>
             </div>
           </div>
         </div>
 
-        <div v-for="(leaf, i) in row.unmet" :key="i" class="itemcard-bonus-unmet">
+        <div v-for="(leaf, i) in row.unmet" :key="i" class="pl-3 text-sm text-warn">
           needs {{ leaf.label }}<span v-if="leaf.detail"> — {{ leaf.detail }}</span>
         </div>
-        <div v-if="row.excludedBy" class="itemcard-bonus-unmet">
+        <div v-if="row.excludedBy" class="pl-3 text-sm text-warn">
           overridden by {{ row.excludedBy }}
         </div>
       </div>
     </div>
   </div>
 </template>
-
-<style scoped>
-.itemcard {
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, .22);
-  /* Width and max-height are read back by SlotList.vue for positioning -- keep them in step
-   * with the `CARD_W` constant there. `max-width` is a narrow-viewport fallback: `place()`
-   * already clamps the card's `left` to stay on screen, but on a viewport under 330px wide
-   * (a small phone) the fixed width itself would still overflow. */
-  width: 330px;
-  max-width: calc(100vw - 20px);
-  max-height: 440px;
-  overflow-y: auto;
-  /* Without this, a wheel scroll that reaches the card's own scroll limit chains onto the
-   * page underneath -- scrolling the build page and invalidating the card's anchor rect,
-   * which closes the card mid-scroll. */
-  overscroll-behavior: contain;
-  padding: 9px 11px;
-  position: fixed;
-  z-index: 40;
-  /* Interactive on purpose: long cards overflow and need the scroll wheel, and reaching them
-   * with the pointer must not make them vanish. SlotList.vue gives the card its own
-   * mouseenter/mouseleave so it stays open while the pointer is over it. */
-  pointer-events: auto;
-}
-
-.itemcard-head { align-items: baseline; display: flex; gap: 8px; }
-.itemcard-name { flex: 1; font-weight: 600; }
-.itemcard-il { color: var(--muted); font-size: 1rem; font-variant-numeric: tabular-nums; }
-.itemcard-slot { color: var(--muted); font-size: 1rem; margin-bottom: 5px; }
-
-.itemcard-stats { display: flex; flex-direction: column; }
-.itemcard-stat {
-  border-bottom: 1px solid var(--line);
-  display: flex;
-  gap: 8px;
-  justify-content: space-between;
-  font-size: 1rem;
-  padding: 3px 0;
-}
-.itemcard-stat:last-child { border-bottom: none; }
-.itemcard-stat .num { font-variant-numeric: tabular-nums; }
-
-.itemcard-notes {
-  border-top: 1px solid var(--line);
-  color: var(--muted);
-  font-size: 1rem;
-  margin-top: 6px;
-  padding-top: 5px;
-}
-
-.itemcard-bonuses { border-top: 1px solid var(--line); margin-top: 6px; padding-top: 5px; }
-.itemcard-section {
-  color: var(--muted);
-  font-size: 1rem;
-  letter-spacing: .05em;
-  text-transform: uppercase;
-}
-.itemcard-bonus { margin-top: 4px; }
-.itemcard-bonus-head { align-items: center; display: flex; gap: 5px; }
-.itemcard-bonus-cond { flex: 1; font-size: 1rem; min-width: 0; }
-.bonus--inactive .itemcard-bonus-cond, .bonus--excluded .itemcard-bonus-cond { color: var(--muted); }
-.itemcard-bonus-stats { font-size: 1rem; padding-left: 12px; }
-/* An inactive/excluded bonus's numbers are what it *would* grant, not what it does -- muted
- * the same as its title, so the card doesn't read as if it were already contributing. */
-.bonus--inactive .itemcard-bonus-stats, .bonus--excluded .itemcard-bonus-stats { color: var(--muted); }
-.itemcard-bonus-unmet { color: var(--warn); font-size: 1rem; padding-left: 12px; }
-.itemcard-bonus-when { padding-left: 12px; }
-
-.itemcard-bonus-tiers { padding-left: 12px; }
-.itemcard-tier { color: var(--muted); font-size: 1rem; }
-.itemcard-tier.is-active { color: var(--text); font-weight: 600; }
-.itemcard-tier .itemcard-stat { font-size: 1rem; padding: 2px 0; }
-.itemcard-bonus-shared { padding-left: 12px; }
-
-.stat-sub { color: var(--muted); font-size: 1rem; line-height: 1.3; }
-
-/* Bonus state indicator (dot + title colour) -- same small vocabulary as
- * BonusInspector.vue's own `.bonus-dot`/`.bonus--*`, duplicated rather than shared: the two
- * live in different visual contexts (a hover card vs. a sidebar list) and each fully owns
- * its own look even though the convention happens to match. */
-.bonus-dot { border-radius: 50%; flex: none; height: 7px; width: 7px; }
-.bonus--active .bonus-dot { background: var(--ok); }
-.bonus--inactive .bonus-dot { background: var(--muted); opacity: .5; }
-.bonus--excluded .bonus-dot { background: var(--danger); }
-</style>

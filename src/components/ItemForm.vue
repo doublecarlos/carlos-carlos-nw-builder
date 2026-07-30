@@ -10,15 +10,23 @@
 // with one member.
 import { ref, computed, watch, onUnmounted } from 'vue';
 import BonusGroups from './BonusGroups.vue';
-import TokenInput from './TokenInput.vue';
-import PercentInput from './PercentInput.vue';
-import ComboBox from './ComboBox.vue';
-import IconButton from './IconButton.vue';
+import TokenInput from './ui/TokenInput.vue';
+import PercentInput from './ui/PercentInput.vue';
+import ComboBox from './ui/ComboBox.vue';
+import IconButton from './ui/IconButton.vue';
+import Button from './ui/Button.vue';
+import HistoryButton from './ui/HistoryButton.vue';
+import Badge from './ui/Badge.vue';
+import FormBar from './ui/FormBar.vue';
+import FormField from './ui/FormField.vue';
+import FormGrid from './ui/FormGrid.vue';
+import FormSection from './ui/FormSection.vue';
 import { NW_SCHEMA } from '../data';
 import { isPercentKind, kindOf } from '../format';
 import { focusNextCombo } from '../stat-row-nav';
 import type { Item, Db, BonusSet } from '../types';
 import type { StatRow } from '../bonus-draft';
+import Checkbox from './ui/Checkbox.vue';
 
 /**
  * Key-order-insensitive comparison. `toItem` rebuilds the object in the exporter's key
@@ -306,36 +314,38 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="form">
-    <div class="form-bar">
+  <div>
+    <FormBar>
       <strong>{{ draft.name || 'New item' }}</strong>
-      <span v-if="status !== 'base'" class="badge" :class="'badge--' + status">{{ status }}</span>
-      <span v-if="dirty" class="badge badge--near">unsaved</span>
-      <span class="spacer"></span>
-      <button type="button" class="btn btn--history" :disabled="!canUndoDraft"
-              title="Undo edit (Ctrl+Z)" @click="undoDraft">↶ Undo</button>
-      <button type="button" class="btn btn--history" :disabled="!canRedoDraft"
-              title="Redo edit (Ctrl+Shift+Z)" @click="redoDraft">↷ Redo</button>
-      <button type="button" class="btn btn--primary" :disabled="!dirty" @click="save">Save item</button>
-      <button type="button" class="btn" :class="{ 'is-danger': confirmRevert }"
-              :disabled="!dirty" @click="revertDraft">
+      <Badge v-if="status !== 'base'" :variant="status as any">{{ status }}</Badge>
+      <Badge v-if="dirty">unsaved</Badge>
+      <span class="flex-1"></span>
+      <HistoryButton type="undo" :disabled="!canUndoDraft" title="Undo edit (Ctrl+Z)" @click="undoDraft">Undo</HistoryButton>
+      <HistoryButton type="redo" :disabled="!canRedoDraft" title="Redo edit (Ctrl+Shift+Z)" @click="redoDraft">Redo</HistoryButton>
+      <Button variant="primary" :disabled="!dirty" @click="save">Save item</Button>
+      <Button :danger="confirmRevert" :disabled="!dirty" @click="revertDraft">
         {{ confirmRevert ? 'Really revert?' : 'Revert' }}
-      </button>
-      <button v-if="status === 'edited'" type="button" class="btn"
-              @click="$emit('revert')">Revert to shipped</button>
-      <button v-if="source" type="button" class="btn" @click="$emit('delete')">Delete</button>
-    </div>
+      </Button>
+      <Button v-if="status === 'edited'" @click="$emit('revert')">Revert to shipped</Button>
+      <Button v-if="source" @click="$emit('delete')">Delete</Button>
+    </FormBar>
 
-    <p v-if="error" class="drawer-error">{{ error }}</p>
+    <p v-if="error" class="mt-1 text-danger">{{ error }}</p>
 
-    <div class="form-grid">
-      <label class="field"><span class="field-label">Name</span>
-        <input type="text" v-model="draft.name"></label>
-      <label class="field"><span class="field-label">Filter (slot category)</span>
-        <input type="text" v-model="draft.filter" list="nw-filters"></label>
-      <label class="field"><span class="field-label">Max copies (0 = unlimited)</span>
-        <input type="number" min="0" v-model.number="draft.maxCopies"></label>
-    </div>
+    <FormGrid>
+      <FormField label="Name">
+        <input class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+               type="text" v-model="draft.name">
+      </FormField>
+      <FormField label="Filter (slot category)">
+        <input class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+               type="text" v-model="draft.filter" list="nw-filters">
+      </FormField>
+      <FormField label="Max copies (0 = unlimited)">
+        <input class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+               type="number" min="0" v-model.number="draft.maxCopies">
+      </FormField>
+    </FormGrid>
 
     <datalist id="nw-filters">
       <option v-for="f in filters" :key="f" :value="f"></option>
@@ -344,47 +354,53 @@ onUnmounted(() => {
       <option v-for="t in tags" :key="t" :value="t"></option>
     </datalist>
 
-    <div class="form-grid form-grid--tokens">
-      <div class="field"><span class="field-label">Tags</span>
-        <TokenInput v-model="draft.tags" :options="tags" placeholder="Add a tag…" /></div>
+    <FormGrid>
+      <FormField label="Tags" class="min-w-80 flex-1">
+        <TokenInput v-model="draft.tags" :options="tags" placeholder="Add a tag…" />
+      </FormField>
+    </FormGrid>
+
+    <FormSection>Restricted to classes</FormSection>
+    <div class="mb-1.5 flex flex-wrap gap-x-3 gap-y-0.5">
+      <Checkbox v-for="cls in classes" :key="cls" :value="cls" v-model="draft.allowedClass">
+        {{ cls }}
+      </Checkbox>
     </div>
 
-    <div class="form-section">Restricted to classes</div>
-    <div class="drawer-grid">
-      <label v-for="cls in classes" :key="cls" class="check">
-        <input type="checkbox" :value="cls" v-model="draft.allowedClass">
-        <span>{{ cls }}</span>
-      </label>
-    </div>
-
-    <div class="form-section">Stats</div>
-    <div v-for="(stat, index) in draft.stats" :key="index" class="stat-row">
+    <FormSection>Stats</FormSection>
+    <div v-for="(stat, index) in draft.stats" :key="index" class="stat-row flex flex-wrap items-center gap-1.5 mb-1">
       <IconButton icon="plus" title="Add stat" @click="addStat" />
       <IconButton icon="trash" title="Remove stat" @click="removeStat(index)" />
-      <ComboBox class="combo--stat" :model-value="stat.key" :options="statComboOptions"
+      <ComboBox class="combo--stat w-52" :model-value="stat.key" :options="statComboOptions"
                 placeholder="— pick a stat —" @update:model-value="v => stat.key = v" />
       <PercentInput v-if="isPercent(stat.key)" v-model="stat.value" @keydown="focusNextStat" />
-      <input v-else type="number" step="any" v-model.number="stat.value" @keydown="focusNextStat">
+      <input v-else class="w-28 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+             type="number" step="any" v-model.number="stat.value" @keydown="focusNextStat">
     </div>
-    <div v-if="!draft.stats.length" class="stat-row">
+    <div v-if="!draft.stats.length" class="stat-row flex flex-wrap items-center gap-1.5 mb-1">
       <IconButton icon="plus" title="Add stat" @click="addStat" />
     </div>
 
-    <div class="form-section">Dynamic modification (user types the value)</div>
-    <div class="form-grid">
-      <label class="field"><span class="field-label">Stat</span>
+    <FormSection>Dynamic modification (user types the value)</FormSection>
+    <FormGrid>
+      <FormField label="Stat">
         <ComboBox :model-value="draft.dynamicStat" :options="dynamicStatOptions"
-                  placeholder="— none —" @update:model-value="v => draft.dynamicStat = v" /></label>
-      <label class="field"><span class="field-label">Min</span>
-        <input type="number" v-model.number="draft.dynamicMin" :disabled="!draft.dynamicStat"></label>
-      <label class="field"><span class="field-label">Max</span>
-        <input type="number" v-model.number="draft.dynamicMax" :disabled="!draft.dynamicStat"></label>
-    </div>
+                  placeholder="— none —" @update:model-value="v => draft.dynamicStat = v" />
+      </FormField>
+      <FormField label="Min">
+        <input class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent disabled:opacity-50"
+               type="number" v-model.number="draft.dynamicMin" :disabled="!draft.dynamicStat">
+      </FormField>
+      <FormField label="Max">
+        <input class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent disabled:opacity-50"
+               type="number" v-model.number="draft.dynamicMax" :disabled="!draft.dynamicStat">
+      </FormField>
+    </FormGrid>
 
-    <div class="form-section">Equipping this item suppresses</div>
+    <FormSection>Equipping this item suppresses</FormSection>
     <TokenInput v-model="draft.excludes" :options="bonusIds"
                 placeholder="bonus id this item overrides…" />
-    <p class="hint">Item-level override: those bonuses go inactive whenever this item is
+    <p class="text-sm text-muted">Item-level override: those bonuses go inactive whenever this item is
       equipped, whatever grants them.</p>
 
     <BonusGroups
@@ -401,14 +417,3 @@ onUnmounted(() => {
       @attach-set="attachSet" />
   </div>
 </template>
-
-<style scoped>
-.drawer-grid {
-  display: grid;
-  gap: 2px 12px;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  margin-bottom: 6px;
-}
-
-.form-grid--tokens .field { flex: 1; min-width: 240px; }
-</style>

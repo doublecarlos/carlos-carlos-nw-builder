@@ -8,8 +8,9 @@ const openSectionId = ref<string | null>(null);
 <script setup lang="ts">
 // A section header's "copy this section from another build" control.
 import { onMounted, onUnmounted } from 'vue';
-import IconButton from './IconButton.vue';
-import ComboBox from './ComboBox.vue';
+import IconButton from './ui/IconButton.vue';
+import ComboBox from './ui/ComboBox.vue';
+import Button from './ui/Button.vue';
 
 const props = defineProps<{
   sectionId: string;
@@ -58,36 +59,14 @@ onUnmounted(() => document.removeEventListener('mousedown', onDocumentClick));
 </script>
 
 <template>
-  <div class="copy-popover-wrap">
+  <div class="relative mr-0.5 flex-none">
     <IconButton icon="copy" title="Copy this section from another build" class="section-copy-btn"
                 @click="toggle" />
-    <div v-if="isOpen()" class="copy-popover">
-      <span class="copy-popover-label">Copy section from</span>
-      <ComboBox class="copy-popover-select" :model-value="chosen" :options="otherBuilds"
+    <div v-if="isOpen()" class="copy-popover absolute right-full top-1/2 z-30 mr-1.5 flex -translate-y-1/2 items-center gap-1.5 whitespace-nowrap rounded-md border border-line bg-surface px-2 py-1.5 shadow-lg">
+      <span class="text-sm text-muted">Copy section from</span>
+      <ComboBox class="copy-popover-select w-44" :model-value="chosen" :options="otherBuilds"
                 placeholder="choose a build…" @update:model-value="chosen = $event" />
-      <button type="button" class="btn btn--primary" :disabled="!chosen" @click="confirm">Copy</button>
+      <Button variant="primary" :disabled="!chosen" @click="confirm">Copy</Button>
     </div>
   </div>
 </template>
-
-<style scoped>
-.copy-popover-wrap { flex: none; margin-right: 2px; position: relative; }
-.copy-popover {
-  align-items: center;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, .18);
-  display: flex;
-  gap: 6px;
-  padding: 7px 9px;
-  position: absolute;
-  right: calc(100% + 6px);
-  top: 50%;
-  transform: translateY(-50%);
-  white-space: nowrap;
-  z-index: 25;
-}
-.copy-popover-label { color: var(--muted); font-size: 1rem; }
-.copy-popover-select { width: 170px; }
-</style>

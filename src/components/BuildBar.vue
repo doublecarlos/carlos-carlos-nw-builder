@@ -7,6 +7,11 @@ import { ref, computed, watch } from 'vue';
 import * as storage from '../storage';
 import * as library from '../stores/library';
 import * as buildEditor from '../stores/buildEditor';
+import Button from './ui/Button.vue';
+import HistoryButton from './ui/HistoryButton.vue';
+import Drawer from './ui/Drawer.vue';
+import CodeBlock from './ui/CodeBlock.vue';
+import FormField from './ui/FormField.vue';
 
 const build = library.build;
 const dirty = library.dirty;
@@ -116,105 +121,68 @@ function applyImport() {
 </script>
 
 <template>
-  <div class="buildbar">
-    <div class="buildbar-row">
-      <label class="field">
-        <span class="field-label">Name</span>
-        <input class="name-input" type="text" :value="build.name"
+  <div class="min-w-0 flex-1 basis-full">
+    <div class="flex flex-wrap items-end gap-x-2.5 gap-y-2">
+      <FormField label="Name">
+        <input class="name-input min-w-60 w-full rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+               type="text" :value="build.name"
                @input="buildEditor.renameBuild(($event.target as HTMLInputElement).value)">
-      </label>
+      </FormField>
 
-      <div class="buildbar-actions">
-        <button type="button" class="btn btn--primary" :disabled="!dirty"
-                @click="buildEditor.saveActive()">Save</button>
-        <button type="button" class="btn" :class="{ 'is-danger': confirmRevert }"
-                :disabled="!dirty" @click="onRevert">
+      <div class="buildbar-actions flex flex-wrap items-center gap-1">
+        <Button variant="primary" :disabled="!dirty" @click="buildEditor.saveActive()">Save</Button>
+        <Button :danger="confirmRevert" :disabled="!dirty" @click="onRevert">
           {{ confirmRevert ? 'Really revert?' : 'Revert' }}
-        </button>
+        </Button>
 
-        <span class="sep"></span>
+        <span class="mx-1 h-4 w-px bg-line"></span>
 
-        <button type="button" class="btn" :class="{ 'is-on': panel === 'io' }"
-                @click="toggle('io')">Import / export…</button>
-        <button type="button" class="btn" :class="{ 'is-on': panel === 'share' }"
-                @click="toggle('share')">Share…</button>
+        <Button :active="panel === 'io'" @click="toggle('io')">Import / export…</Button>
+        <Button :active="panel === 'share'" @click="toggle('share')">Share…</Button>
 
-        <span class="sep"></span>
+        <span class="mx-1 h-4 w-px bg-line"></span>
 
-        <button type="button" class="btn btn--history" :disabled="!canUndo"
-                :title="undoTitle" @click="buildEditor.undo()">
-          ↶ Undo<span v-if="canUndo" class="btn-detail">{{ undoLabel }}</span>
-        </button>
-        <button type="button" class="btn btn--history" :disabled="!canRedo"
-                :title="redoTitle" @click="buildEditor.redo()">
-          ↷ Redo<span v-if="canRedo" class="btn-detail">{{ redoLabel }}</span>
-        </button>
+        <HistoryButton type="undo" :disabled="!canUndo" :detail="canUndo ? undoLabel : ''" :title="undoTitle" @click="buildEditor.undo()">Undo</HistoryButton>
+        <HistoryButton type="redo" :disabled="!canRedo" :detail="canRedo ? redoLabel : ''" :title="redoTitle" @click="buildEditor.redo()">Redo</HistoryButton>
       </div>
     </div>
 
-    <div v-if="panel === 'io'" class="drawer">
-      <div class="drawer-cols">
+    <Drawer v-if="panel === 'io'">
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
-          <h4 class="drawer-head">Export</h4>
-          <textarea class="code" rows="7" readonly :value="exportText"
-                    @focus="selectAllText"></textarea>
-          <div class="drawer-row">
-            <button type="button" class="btn" @click="copyToClipboard(exportText)">
-              Copy to clipboard
-            </button>
-            <button type="button" class="btn" @click="downloadExport">Download .json</button>
+          <h4 class="mb-1 text-sm uppercase text-muted">Export</h4>
+          <CodeBlock :value="exportText" :rows="7" />
+          <div class="mt-1.5 flex flex-wrap items-end gap-2">
+            <Button @click="copyToClipboard(exportText)">Copy to clipboard</Button>
+            <Button @click="downloadExport">Download .json</Button>
           </div>
         </div>
         <div>
-          <h4 class="drawer-head">Import</h4>
-          <textarea class="code" rows="7" v-model="importText"
+          <h4 class="mb-1 text-sm uppercase text-muted">Import</h4>
+          <textarea class="w-full resize-y rounded-md border border-line bg-surface p-2 font-mono"
+                    rows="7" v-model="importText"
                     placeholder="Paste a build, or an array of builds…"></textarea>
-          <div class="drawer-row">
-            <button type="button" class="btn btn--primary" :disabled="!importText.trim()"
-                    @click="applyImport">Import</button>
+          <div class="mt-1.5 flex flex-wrap items-end gap-2">
+            <Button variant="primary" :disabled="!importText.trim()" @click="applyImport">Import</Button>
             <input type="file" accept=".json,application/json" @change="onImportFile">
           </div>
-          <p v-if="importError" class="drawer-error">{{ importError }}</p>
-          <p v-if="importNote" class="drawer-note">{{ importNote }}</p>
+          <p v-if="importError" class="mt-1 text-danger">{{ importError }}</p>
+          <p v-if="importNote" class="mt-1 text-ok">{{ importNote }}</p>
         </div>
       </div>
-      <p class="hint">Imported builds are added alongside the existing ones and always get a
+      <p class="mt-1.5 text-sm text-muted">Imported builds are added alongside the existing ones and always get a
         fresh id, so an import can never overwrite a build you already have.</p>
-    </div>
+    </Drawer>
 
-    <div v-if="panel === 'share'" class="drawer">
-      <div class="drawer-row">
-        <input class="share-input" type="text" readonly :value="shareLink"
-               @focus="selectAllText">
-        <button type="button" class="btn" :disabled="!shareLink"
-                @click="copyToClipboard(shareLink)">Copy link</button>
+    <Drawer v-if="panel === 'share'">
+      <div class="flex flex-wrap items-end gap-2">
+        <input class="min-w-64 flex-1 rounded-md border border-line bg-surface px-1.5 py-0.5 font-mono focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+               type="text" readonly :value="shareLink" @focus="selectAllText">
+        <Button :disabled="!shareLink" @click="copyToClipboard(shareLink)">Copy link</Button>
       </div>
-      <p v-if="shareError" class="drawer-error">{{ shareError }}</p>
-      <p class="hint">The whole build is compressed into the link — no server involved.
+      <p v-if="shareError" class="mt-1 text-danger">{{ shareError }}</p>
+      <p class="mt-1.5 text-sm text-muted">The whole build is compressed into the link — no server involved.
         Opening it adds a copy to the recipient's library.</p>
-    </div>
+    </Drawer>
   </div>
 </template>
-
-<style scoped>
-.buildbar { flex: 1 1 100%; min-width: 0; }
-.buildbar-row { align-items: flex-end; display: flex; flex-wrap: wrap; gap: 8px 10px; }
-.buildbar-actions { align-items: center; display: flex; flex-wrap: wrap; gap: 4px; }
-
-.name-input { min-width: 180px; }
-
-.drawer-cols { display: grid; gap: 16px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.drawer-note { color: var(--ok); margin: 4px 0 0; }
-
-.share-input {
-  flex: 1;
-  font: 1rem/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  min-width: 260px;
-}
-
-@media (max-width: 640px) {
-  /* Two side-by-side textareas (export/import) get cramped well before the drawer itself
-   * runs out of width -- stack them instead of shrinking each to a sliver. */
-  .drawer-cols { grid-template-columns: minmax(0, 1fr); }
-}
-</style>

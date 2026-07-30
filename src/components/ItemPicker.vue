@@ -11,6 +11,8 @@
 import { ref, computed, watch, nextTick } from 'vue';
 import { itemPreview, hasBonuses, int as fmtInt } from '../format';
 import type { Item } from '../types';
+import PickerMenu from './ui/PickerMenu.vue';
+import PickerRow from './ui/PickerRow.vue';
 
 // Long filters (insignia, group buffs) run to 40+ entries. Rendering all of them for every
 // keystroke is wasted work when nobody scrolls past the first screenful.
@@ -31,7 +33,7 @@ const open = ref(false);
 const query = ref('');
 const highlight = ref(0);
 const input = ref<HTMLInputElement | null>(null);
-const list = ref<HTMLElement | null>(null);
+const list = ref<InstanceType<typeof PickerMenu> | null>(null);
 
 const filtered = computed(() => {
   if (!open.value) return [];
@@ -68,7 +70,7 @@ const matchOffset = computed(() => (showEmptyOption.value ? 1 : 0));
 
 watch(highlight, () => {
   nextTick(() => {
-    list.value?.querySelector('.is-highlighted')?.scrollIntoView({ block: 'nearest' });
+    (list.value?.$el as HTMLElement | undefined)?.querySelector('[data-highlighted]')?.scrollIntoView({ block: 'nearest' });
   });
 });
 
@@ -185,63 +187,49 @@ function onKeydown(event: KeyboardEvent) {
 </script>
 
 <template>
-  <div class="picker" :class="{ 'is-open': open, 'is-invalid': invalid }">
+  <div class="relative">
     <input
       ref="input"
-      class="picker-input"
+      data-testid="picker-input"
+      class="w-full rounded-md border bg-surface py-0.5 px-1.5 placeholder:text-muted focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+      :class="invalid ? 'border-danger' : 'border-line'"
       type="text"
       autocomplete="off"
       spellcheck="false"
       :value="open ? query : (modelValue || '')"
       :placeholder="modelValue || '—'"
-      :class="{ 'is-empty': !modelValue }"
       @focus="onFocus"
       @input="onInput"
       @blur="onBlur"
       @keydown="onKeydown">
 
-    <div v-if="open" class="picker-menu" ref="list">
-      <div
+    <PickerMenu v-if="open" ref="list">
+      <PickerRow
         v-if="showEmptyOption"
-        class="picker-row picker-row--clear"
-        :class="{ 'is-highlighted': highlight === 0 }"
+        muted
+        :highlighted="highlight === 0"
         @mousedown.prevent="choose(null)"
-        @mouseenter="highlight = 0">— empty —</div>
+        @mouseenter="highlight = 0">— empty —</PickerRow>
 
-      <div
+      <PickerRow
         v-for="(entry, index) in matches"
         :key="entry.item.name"
-        class="picker-row"
-        :class="{ 'is-highlighted': highlight === index + matchOffset }"
+        :highlighted="highlight === index + matchOffset"
         @mousedown.prevent="choose(entry.item)"
         @mouseenter="highlight = index + matchOffset">
-        <div class="picker-row-head">
-          <span class="picker-name">{{ entry.item.name }}</span>
-          <span v-if="entry.flagged" class="picker-flag" title="has conditional bonuses">◈</span>
-          <span v-if="entry.item.il" class="picker-il">iL {{ int(entry.item.il) }}</span>
+        <div class="flex items-baseline gap-1.5">
+          <span class="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap">{{ entry.item.name }}</span>
+          <span v-if="entry.flagged" class="text-sm text-accent" title="has conditional bonuses">◈</span>
+          <span v-if="entry.item.il" class="text-sm text-muted tabular-nums">iL {{ int(entry.item.il) }}</span>
         </div>
-        <div class="picker-row-stats">
-          <span v-for="part in entry.preview.parts" :key="part" class="picker-stat">{{ part }}</span>
-          <span v-if="entry.preview.more" class="picker-more">+{{ entry.preview.more }} more</span>
+        <div class="flex flex-wrap gap-2 text-sm text-muted">
+          <span v-for="part in entry.preview.parts" :key="part">{{ part }}</span>
+          <span v-if="entry.preview.more" class="italic">+{{ entry.preview.more }} more</span>
         </div>
-      </div>
+      </PickerRow>
 
-      <div v-if="!matches.length" class="picker-row picker-row--none">no match</div>
-      <div v-if="hiddenCount" class="picker-row picker-row--none">
-        {{ hiddenCount }} more — keep typing
-      </div>
-    </div>
+      <PickerRow v-if="!matches.length" muted>no match</PickerRow>
+      <PickerRow v-if="hiddenCount" muted>{{ hiddenCount }} more — keep typing</PickerRow>
+    </PickerMenu>
   </div>
 </template>
-
-<style scoped>
-.picker-input.is-empty::placeholder { color: var(--muted); }
-.picker.is-invalid .picker-input { border-color: var(--danger); }
-
-.picker-row--clear { color: var(--muted); font-style: italic; }
-
-.picker-flag { color: var(--accent); font-size: 1rem; }
-.picker-il { color: var(--muted); font-size: 1rem; }
-.picker-row-stats { color: var(--muted); display: flex; flex-wrap: wrap; font-size: 1rem; gap: 8px; }
-.picker-more { font-style: italic; }
-</style>

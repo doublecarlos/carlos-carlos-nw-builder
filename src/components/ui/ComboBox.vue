@@ -4,9 +4,11 @@
 // stat preview. Replaces a native <select> wherever the option list is short and known ahead
 // of time (class, role, combat type, location, damage type, forte picks).
 //
-// Reuses ItemPicker's `.picker*` CSS classes rather than inventing a second look for the same
-// interaction.
+// Reuses ItemPicker's PickerMenu/PickerRow primitives rather than inventing a second look for
+// the same interaction.
 import { ref, computed, watch, nextTick } from 'vue';
+import PickerMenu from './PickerMenu.vue';
+import PickerRow from './PickerRow.vue';
 
 const MAX_ROWS = 60;
 
@@ -26,7 +28,7 @@ const open = ref(false);
 const query = ref('');
 const highlight = ref(0);
 const input = ref<HTMLInputElement | null>(null);
-const list = ref<HTMLElement | null>(null);
+const list = ref<InstanceType<typeof PickerMenu> | null>(null);
 
 const selected = computed(() => props.options.find((option) => option.value === props.modelValue) ?? null);
 
@@ -41,7 +43,7 @@ const filtered = computed(() => {
 
 watch(highlight, () => {
   nextTick(() => {
-    list.value?.querySelector('.is-highlighted')?.scrollIntoView({ block: 'nearest' });
+    (list.value?.$el as HTMLElement | undefined)?.querySelector('[data-highlighted]')?.scrollIntoView({ block: 'nearest' });
   });
 });
 
@@ -84,7 +86,7 @@ function choose(option: { value: string; label: string }, { blur = true }: { blu
  */
 function focusStatValue(el: HTMLElement) {
   const row = el.closest('.stat-row');
-  const value = row?.querySelector<HTMLElement>('.pct-input, input[type="number"]');
+  const value = row?.querySelector<HTMLElement>('input[type="number"], input[inputmode="decimal"]');
   value?.focus();
 }
 
@@ -125,10 +127,11 @@ function onKeydown(event: KeyboardEvent) {
 </script>
 
 <template>
-  <div class="picker" :class="{ 'is-open': open }">
+  <div class="relative">
     <input
       ref="input"
-      class="picker-input"
+      data-testid="picker-input"
+      class="w-full rounded-md border border-line bg-surface py-0.5 pl-1.5 pr-6 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
       type="text"
       autocomplete="off"
       spellcheck="false"
@@ -138,36 +141,23 @@ function onKeydown(event: KeyboardEvent) {
       @input="onInput"
       @blur="onBlur"
       @keydown="onKeydown">
-    <span class="picker-caret">▾</span>
+    <!-- Sits in the same right-hand gutter the input's padding reserves -- the only hint
+         this text input is actually a fixed-choice dropdown. -->
+    <span class="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-sm text-muted">▾</span>
 
-    <div v-if="open" class="picker-menu" ref="list">
-      <div
+    <PickerMenu v-if="open" ref="list">
+      <PickerRow
         v-for="(option, index) in filtered"
         :key="option.value"
-        class="picker-row"
-        :class="{ 'is-highlighted': highlight === index }"
+        :highlighted="highlight === index"
         @mousedown.prevent="choose(option)"
         @mouseenter="highlight = index">
-        <div class="picker-row-head">
-          <span class="picker-name">{{ option.label }}</span>
+        <div class="flex items-baseline gap-1.5">
+          <span class="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap">{{ option.label }}</span>
         </div>
-      </div>
+      </PickerRow>
 
-      <div v-if="!filtered.length" class="picker-row picker-row--none">no match</div>
-    </div>
+      <PickerRow v-if="!filtered.length" muted>no match</PickerRow>
+    </PickerMenu>
   </div>
 </template>
-
-<style scoped>
-/* combo-box's caret sits in the same right-hand gutter `.picker-input`'s padding reserves --
- * the only hint left that this text input is actually a fixed-choice dropdown. */
-.picker-caret {
-  color: var(--muted);
-  font-size: 1rem;
-  pointer-events: none;
-  position: absolute;
-  right: 8px;
-  top: 50%;
-  transform: translateY(-50%);
-}
-</style>

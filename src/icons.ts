@@ -15,6 +15,7 @@ import circleAlert from './assets/icons/circle-alert.svg?raw';
 import trash from './assets/icons/trash.svg?raw';
 import wandSparkles from './assets/icons/wand-sparkles.svg?raw';
 import undo2 from './assets/icons/undo-2.svg?raw';
+import redo2 from './assets/icons/redo-2.svg?raw';
 
 // lucide files ship as a full <svg ...>...</svg> document; Icon.vue supplies its own <svg>
 // wrapper (so it can size/style it and add a <title>), so only the inner markup is kept here.
@@ -32,4 +33,5 @@ export const icons: Record<string, string> = {
   trash: inner(trash),
   'wand-sparkles': inner(wandSparkles),
   'undo-2': inner(undo2),
+  'redo-2': inner(redo2)
 };

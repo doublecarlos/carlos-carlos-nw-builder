@@ -10,7 +10,15 @@ import { ref, reactive, computed, watch, onMounted, onUnmounted } from 'vue';
 import ItemForm from './ItemForm.vue';
 import type { ItemDraft } from './ItemForm.vue';
 import BonusSetForm from './BonusSetForm.vue';
-import ComboBox from './ComboBox.vue';
+import ComboBox from './ui/ComboBox.vue';
+import Button from './ui/Button.vue';
+import HistoryButton from './ui/HistoryButton.vue';
+import Badge from './ui/Badge.vue';
+import Notice from './ui/Notice.vue';
+import Drawer from './ui/Drawer.vue';
+import CodeBlock from './ui/CodeBlock.vue';
+import TabStrip from './ui/TabStrip.vue';
+import TabButton from './ui/TabButton.vue';
 import * as catalog from '../catalog';
 import * as router from '../router';
 import * as engine from '../stores/engine';
@@ -599,116 +607,104 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="editor">
-    <div class="editor-bar">
+  <div class="flex min-h-0 min-w-0 flex-1 flex-col p-3">
+    <div class="mb-2 flex flex-none flex-wrap items-center gap-1.5">
       <strong>Data editor</strong>
-      <div class="tabs">
-        <button type="button" class="tab" :class="{ 'is-on': section === 'items' }"
-                @click="switchSection('items')">Items <span class="tab-count">{{ db.items.length }}</span></button>
-        <button type="button" class="tab" :class="{ 'is-on': section === 'bonusSets' }"
-                @click="switchSection('bonusSets')">Bonus sets <span class="tab-count">{{ db.bonusSets.length }}</span></button>
-      </div>
+      <TabStrip>
+        <TabButton :active="section === 'items'" @click="switchSection('items')">
+          Items <span class="text-sm opacity-75 tabular-nums">{{ db.items.length }}</span>
+        </TabButton>
+        <TabButton :active="section === 'bonusSets'" @click="switchSection('bonusSets')">
+          Bonus sets <span class="text-sm opacity-75 tabular-nums">{{ db.bonusSets.length }}</span>
+        </TabButton>
+      </TabStrip>
 
-      <span class="spacer"></span>
+      <span class="flex-1"></span>
 
-      <span v-if="changedCount" class="badge badge--edited">{{ changedCount }} changed</span>
-      <span v-if="errorCount" class="badge badge--error">{{ errorCount }} error(s)</span>
-      <span v-if="warnCount" class="badge badge--warn">{{ warnCount }} warning(s)</span>
+      <Badge v-if="changedCount" variant="edited">{{ changedCount }} changed</Badge>
+      <Badge v-if="errorCount" variant="error">{{ errorCount }} error(s)</Badge>
+      <Badge v-if="warnCount" variant="warn">{{ warnCount }} warning(s)</Badge>
 
-      <button type="button" class="btn" :class="{ 'is-on': showExport }"
-              @click="showExport = !showExport">Export…</button>
-      <label class="btn">Import overlay
-        <input type="file" accept=".json" hidden @change="importOverlay"></label>
-      <button type="button" class="btn" :class="{ 'is-danger': confirmReset }"
-              :disabled="!changedCount" @click="resetAll">
+      <Button :active="showExport" @click="showExport = !showExport">Export…</Button>
+      <Button as="label">Import overlay
+        <input type="file" accept=".json" hidden @change="importOverlay"></Button>
+      <Button :danger="confirmReset" :disabled="!changedCount" @click="resetAll">
         {{ confirmReset ? 'Really discard?' : 'Discard changes' }}
-      </button>
+      </Button>
 
-      <span class="sep"></span>
+      <span class="mx-1 h-4 w-px bg-line"></span>
 
-      <button type="button" class="btn btn--history" :disabled="!canUndo"
-              :title="canUndo ? 'Undo: ' + undoLabel + ' (Ctrl+Z)' : 'Nothing to undo'" @click="undo">
-        ↶ Undo<span v-if="canUndo" class="btn-detail">{{ undoLabel }}</span>
-      </button>
-      <button type="button" class="btn btn--history" :disabled="!canRedo"
-              :title="canRedo ? 'Redo: ' + redoLabel + ' (Ctrl+Shift+Z)' : 'Nothing to redo'" @click="redo">
-        ↷ Redo<span v-if="canRedo" class="btn-detail">{{ redoLabel }}</span>
-      </button>
+      <HistoryButton type="undo" :disabled="!canUndo" :detail="canUndo ? undoLabel : ''"
+              :title="canUndo ? 'Undo: ' + undoLabel + ' (Ctrl+Z)' : 'Nothing to undo'" @click="undo">Undo</HistoryButton>
+      <HistoryButton type="redo" :disabled="!canRedo" :detail="canRedo ? redoLabel : ''"
+              :title="canRedo ? 'Redo: ' + redoLabel + ' (Ctrl+Shift+Z)' : 'Nothing to redo'" @click="redo">Redo</HistoryButton>
 
-      <button type="button" class="btn" @click="ui.closeEditor()">✕ Close</button>
+      <Button @click="ui.closeEditor()">✕ Close</Button>
     </div>
 
-    <p v-if="notice" class="notice" @click="notice = ''">{{ notice }}</p>
+    <Notice v-if="notice" class="mb-2" @dismiss="notice = ''">{{ notice }}</Notice>
 
-    <div v-if="showExport" class="drawer">
-      <div class="drawer-row">
-        <div class="tabs">
-          <button type="button" class="tab" :class="{ 'is-on': exportTab === 'items' }"
-                  @click="exportTab = 'items'">db-items.json</button>
-          <button type="button" class="tab" :class="{ 'is-on': exportTab === 'bonuses' }"
-                  @click="exportTab = 'bonuses'">db-bonuses.json</button>
-          <button type="button" class="tab" :class="{ 'is-on': exportTab === 'overlay' }"
-                  @click="exportTab = 'overlay'">overlay only</button>
-        </div>
-        <span class="spacer"></span>
-        <button type="button" class="btn" @click="copyExport">Copy</button>
-        <button type="button" class="btn" @click="downloadExport">Download {{ exportName }}</button>
+    <Drawer v-if="showExport" class="mb-2">
+      <div class="mb-1.5 flex flex-wrap items-end gap-2">
+        <TabStrip>
+          <TabButton :active="exportTab === 'items'" @click="exportTab = 'items'">db-items.json</TabButton>
+          <TabButton :active="exportTab === 'bonuses'" @click="exportTab = 'bonuses'">db-bonuses.json</TabButton>
+          <TabButton :active="exportTab === 'overlay'" @click="exportTab = 'overlay'">overlay only</TabButton>
+        </TabStrip>
+        <span class="flex-1"></span>
+        <Button @click="copyExport">Copy</Button>
+        <Button @click="downloadExport">Download {{ exportName }}</Button>
       </div>
-      <textarea class="code" rows="12" readonly :value="exportText" @focus="selectAllText"></textarea>
-      <p class="hint">
+      <CodeBlock :value="exportText" :rows="12" />
+      <p class="mt-1 text-sm text-muted">
         <template v-if="exportTab === 'overlay'">
           Just your changes. Small, reviewable, and the same shape custom gear will use when
           it is stored with a build.
         </template>
         <template v-else>Replace data/{{ exportName }} with this.</template>
       </p>
-    </div>
+    </Drawer>
 
-    <div v-if="findings.length" class="drawer drawer--findings">
-      <div class="drawer-head">Validation</div>
-      <ul class="findings">
-        <li v-for="(finding, i) in findings.slice(0, 40)" :key="i" :class="finding.level">
-          <span class="finding-level">{{ finding.level }}</span>
-          <button v-if="finding.name" type="button" class="link"
-                  @click="selectFinding(finding)">{{ finding.name }}</button>
+    <Drawer v-if="findings.length" class="mb-2 max-h-48 flex-none overflow-y-auto">
+      <div class="text-sm uppercase text-muted">Validation</div>
+      <ul class="mt-1 list-none">
+        <li v-for="(finding, i) in findings.slice(0, 40)" :key="i" class="flex gap-2 py-0.5 text-sm">
+          <span class="flex-none rounded px-1.5 uppercase"
+                :class="finding.level === 'error' ? 'bg-danger-soft text-danger' : 'bg-warn/25 text-warn'">{{ finding.level }}</span>
+          <Button v-if="finding.name" variant="link" @click="selectFinding(finding)">{{ finding.name }}</Button>
           <span>{{ finding.message }}</span>
         </li>
       </ul>
-      <p v-if="findings.length > 40" class="hint">…and {{ findings.length - 40 }} more.</p>
-    </div>
+      <p v-if="findings.length > 40" class="mt-1 text-sm text-muted">…and {{ findings.length - 40 }} more.</p>
+    </Drawer>
 
-    <div class="editor-body">
-      <div class="editor-list" @keydown="onListKeydown">
-        <div class="editor-list-head">
-          <input type="search" class="editor-search" v-model="query"
-                 :placeholder="section === 'bonusSets' ? 'Filter bonus sets…' : 'Filter items…'">
-          <ComboBox class="combo--status" :model-value="statusFilter" :options="statusFilterOptions"
+    <div class="flex min-h-0 flex-1 flex-col items-stretch gap-3 lg:flex-row">
+      <div class="flex min-h-0 flex-none flex-col rounded-md border border-line bg-surface lg:w-96" @keydown="onListKeydown">
+        <div class="flex flex-none gap-1.5 border-b border-line p-2">
+          <input type="search" class="editor-search min-w-0 flex-1 rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+                 v-model="query" :placeholder="section === 'bonusSets' ? 'Filter bonus sets…' : 'Filter items…'">
+          <ComboBox class="w-25" :model-value="statusFilter" :options="statusFilterOptions"
                     @update:model-value="v => statusFilter = v" />
-          <button v-if="query || statusFilter !== 'all'" type="button" class="link"
-                  @click="clearFilters">clear filters</button>
-          <button v-if="section === 'bonusSets'" type="button" class="btn btn--primary"
-                  @click="newSet">+ New bonus set</button>
-          <button v-else type="button" class="btn btn--primary" @click="newItem">+ New item</button>
+          <Button v-if="query || statusFilter !== 'all'" variant="link" @click="clearFilters">clear filters</Button>
+          <Button v-if="section === 'bonusSets'" variant="primary" @click="newSet">+ New bonus set</Button>
+          <Button v-else variant="primary" @click="newItem">+ New item</Button>
         </div>
-        <div class="editor-list-body">
-          <div v-for="row in filtered" :key="row.key" class="editor-row" tabindex="0"
-               :class="{ 'is-on': row.key === (section === 'bonusSets' ? selectedSetId : selectedName) }"
+        <div class="min-h-0 flex-1 overflow-y-auto">
+          <div v-for="row in filtered" :key="row.key" tabindex="0"
+               class="editor-row flex cursor-pointer items-center gap-1.5 border-b border-line/45 px-2 py-1 hover:bg-surface-2"
+               :class="row.key === (section === 'bonusSets' ? selectedSetId : selectedName) && 'is-on bg-accent-soft'"
                @click="select(row)">
-            <span class="editor-row-name">{{ row.name }}</span>
-            <span v-if="row.status !== 'base'" class="badge" :class="'badge--' + row.status">
-              {{ row.status }}
-            </span>
-            <span v-if="hasUnsavedDraft(row)" class="badge badge--unsaved"
-                  title="Unsaved edits in the form">unsaved</span>
-            <button v-if="row.status === 'removed'" type="button" class="link"
-                    @click.stop="restore(row)">restore</button>
-            <span v-else class="editor-row-filter">{{ row.filter }}</span>
+            <span class="editor-row-name min-w-0 flex-1 truncate">{{ row.name }}</span>
+            <Badge v-if="row.status !== 'base'" :variant="row.status as any">{{ row.status }}</Badge>
+            <Badge v-if="hasUnsavedDraft(row)" variant="unsaved" title="Unsaved edits in the form">unsaved</Badge>
+            <Button v-if="row.status === 'removed'" variant="link" @click.stop="restore(row)">restore</Button>
+            <span v-else class="text-sm text-muted">{{ row.filter }}</span>
           </div>
-          <p v-if="!filtered.length" class="dim" style="padding:8px">Nothing matches.</p>
+          <p v-if="!filtered.length" class="p-2 text-muted">Nothing matches.</p>
         </div>
       </div>
 
-      <div class="editor-form">
+      <div class="min-w-0 flex-1 overflow-y-auto rounded-md border border-line bg-surface p-2.5">
         <ItemForm
           v-if="section === 'items'"
           ref="form"
@@ -746,71 +742,3 @@ onUnmounted(() => {
     </div>
   </div>
 </template>
-
-<style scoped>
-.editor { display: flex; flex: 1 1 auto; flex-direction: column; height: 100%; min-height: 0; min-width: 0; padding: 12px 14px; }
-.editor-bar { align-items: center; display: flex; flex: none; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
-
-.drawer--findings { flex: none; max-height: 190px; overflow-y: auto; }
-.findings { list-style: none; margin: 4px 0 0; padding: 0; }
-.findings li { display: flex; gap: 7px; font-size: 1rem; padding: 1px 0; }
-.finding-level {
-  border-radius: 3px;
-  flex: none;
-  font-size: 1rem;
-  padding: 0 5px;
-  text-transform: uppercase;
-}
-.findings li.error .finding-level { background: var(--danger-soft); color: var(--danger); }
-.findings li.warn .finding-level { background: color-mix(in srgb, var(--warn) 22%, transparent); color: var(--warn); }
-
-.combo--status { width: 100px; }
-
-.editor-body {
-  align-items: stretch;
-  display: flex;
-  flex: 1 1 auto;
-  gap: 12px;
-  min-height: 0;
-}
-
-.editor-list, .editor-form {
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-}
-/* `.editor-list` is itself a flex column (head + scrollable body) rather than scrolling as a
- * whole, so the search/filter row stays put while the row list scrolls under it. */
-.editor-list { display: flex; flex: none; flex-direction: column; width: 340px; }
-.editor-list-head { border-bottom: 1px solid var(--line); display: flex; flex: none; gap: 5px; padding: 7px; }
-/* Search is the primary way through 369 items; the status filter is a secondary narrowing
- * most sessions never touch -- `flex: 3` (against the combo's fixed 100px above) gives it most
- * of the row's width instead of splitting it evenly. */
-.editor-list-head input[type="search"].editor-search { flex: 3 1 0; min-width: 0; }
-.editor-list-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
-
-.editor-row {
-  align-items: center;
-  border-bottom: 1px solid color-mix(in srgb, var(--line) 45%, transparent);
-  cursor: pointer;
-  display: flex;
-  gap: 6px;
-  padding: 4px 8px;
-}
-.editor-row:hover { background: var(--surface-2); }
-.editor-row.is-on { background: var(--accent-soft); }
-.editor-row-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.editor-row-filter { color: var(--muted); font-size: 1rem; }
-
-.editor-form { flex: 1 1 auto; min-width: 0; overflow-y: auto; padding: 10px 12px; }
-
-@media (max-width: 900px) {
-  /* The fixed 340px item list plus the form's own minimum content width no longer both fit
-   * side by side -- stack the list above the form instead of forcing the page to scroll
-   * horizontally. Each keeps its own `overflow-y`, so stacking just means two independently-
-   * scrolling panes instead of one row of two. */
-  .editor-body { flex-direction: column; }
-  .editor-list { height: 40vh; width: auto; }
-  .editor-form { flex: 1 1 auto; }
-}
-</style>

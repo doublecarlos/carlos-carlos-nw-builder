@@ -6,9 +6,12 @@
 // rating/percent pair each get their own merged overcap-or-headroom column (signed: positive
 // over the cap, negative is spare headroom), coloured independently since they cap separately.
 import { ref, computed, nextTick, onMounted, onUnmounted } from 'vue';
-import ComboBox from './ComboBox.vue';
-import IconButton from './IconButton.vue';
+import ComboBox from './ui/ComboBox.vue';
+import IconButton from './ui/IconButton.vue';
 import StatSourceCard from './StatSourceCard.vue';
+import Panel from './ui/Panel.vue';
+import PanelHead from './ui/PanelHead.vue';
+import StatPairsTable from './ui/StatPairsTable.vue';
 import { sectionsFor } from '../stat-sources';
 import { NW_SCHEMA } from '../data';
 import { int as fmtInt, pct as fmtPct, stat as fmtStat } from '../format';
@@ -116,7 +119,7 @@ const otherVsThisPct = computed(() => relativePct(summaryValue.value, compareSum
 const summaryRowCls = computed(() => {
   const pctVal = thisVsOtherPct.value;
   if (pctVal == null || Math.abs(pctVal) < 1e-9) return '';
-  return pctVal > 0 ? 'is-positive' : 'is-negative';
+  return pctVal > 0 ? 'text-ok font-semibold' : 'text-danger font-semibold';
 });
 
 const int = (value: unknown) => fmtInt(value);
@@ -138,8 +141,8 @@ function capCell(key: string, redOver = Infinity) {
   const over = total - cap;
   return {
     key, total, cap, capped: capped[key] ?? total, over,
-    primaryCls: over > redOver ? 'is-over' : (over > -1e-9 ? 'is-capped' : ''),
-    overCls: over > 1e-9 ? 'is-over' : (over < -1e-9 ? 'is-headroom' : ''),
+    primaryCls: over > redOver ? 'bg-warn/15 font-semibold' : (over > -1e-9 ? 'bg-ok/15' : ''),
+    overCls: over > 1e-9 ? 'bg-warn/15 font-semibold' : (over < -1e-9 ? 'bg-accent/10' : ''),
   };
 }
 
@@ -167,20 +170,43 @@ const otherRows = computed(() => {
   return NW_SCHEMA.stats
     .filter((stat) => !stat.enemy && !stat.ability && !paired.has(stat.key))
     .map((stat) => ({ key: stat.key, label: stat.label,
-      value: stages.value.totals[stat.key] ?? 0 }));
+      value: fmt(stat.key, stages.value.totals[stat.key] ?? 0),
+      onInfo: (event: MouseEvent) => toggleCard(event, stat.key) }));
 });
 
 const abilityRows = computed(() => NW_SCHEMA.stats
   .filter((stat) => stat.ability)
   .map((stat) => ({ key: stat.key, label: stat.label,
-    value: stages.value.totals[stat.key] ?? 0 })));
+    value: int(stages.value.totals[stat.key] ?? 0),
+    onInfo: (event: MouseEvent) => toggleCard(event, stat.key) })));
 
 const enemyRows = computed(() => NW_SCHEMA.stats
   .filter((stat) => stat.enemy)
   // The section heading already says "Enemy"; repeating it in all 13 rows just makes
   // the column wider. Everywhere else the full label is what disambiguates.
   .map((stat) => ({ key: stat.key, label: stat.label.replace(/^Enemy /, ''),
-    value: stages.value.totals[stat.key] ?? 0 })));
+    value: fmt(stat.key, stages.value.totals[stat.key] ?? 0),
+    onInfo: (event: MouseEvent) => toggleCard(event, stat.key) })));
+
+const ilHpRows = computed(() => [
+  { key: 'itemLevel', label: 'Item level', value: int(derived.value.itemLevel), lead: true },
+  { key: 'hp', label: 'Hit points', value: int(derived.value.hp), lead: true },
+]);
+
+const damageTableRows = computed(() => [
+  ...damageRows.map(([label, key]) => ({ key, label, value: int(derived.value.damage[key as keyof typeof derived.value.damage]), lead: key === 'average' })),
+  { key: 'baseDamage', label: 'Base damage', value: int(derived.value.baseDamage), muted: true },
+  { key: 'effectiveMagPhys', label: 'Effective magical/physical', value: pct(derived.value.effectiveMagPhys), muted: true },
+]);
+
+const healingTableRows = computed(() => [
+  ...healingRows.map(([label, key]) => ({ key, label, value: int(derived.value.healing[key as keyof typeof derived.value.healing]), lead: key === 'average' })),
+  { key: 'overallHealing', label: 'Overall outgoing healing', value: pct(derived.value.overallHealing), muted: true },
+]);
+
+const ehpTableRows = computed(() => ehpRows.map(([label, key]) => (
+  { key, label, value: int(derived.value.ehp[key as keyof typeof derived.value.ehp]), lead: key === 'average' }
+)));
 
 const bonusSummary = computed(() => {
   const all = result.value.bonuses;
@@ -213,8 +239,8 @@ function signedInt(value: number) {
 // a dense stat table put the pointer's path from a row to its own hover card through *other*
 // rows' triggers often enough that a hover card kept getting swapped out from under the
 // pointer before it ever arrived -- a deliberate click has no such transit to go wrong.
-const root = ref<HTMLElement | null>(null);
-const CARD_W = 260;   // must match StatSourceCard.vue's own width
+const root = ref<InstanceType<typeof Panel> | null>(null);
+const CARD_W = 256;   // must match StatSourceCard.vue's root `w-64` (256px) utility
 
 interface OpenCard { key: string; left: number; top: number }
 const openCard = ref<OpenCard | null>(null);
@@ -237,7 +263,7 @@ function placeCard(key: string, rect: DOMRect) {
   openCard.value = { key, left: Math.max(left, margin), top: rect.top };
 
   nextTick(() => {
-    const card = root.value?.querySelector('.statcard') as HTMLElement | null;
+    const card = (root.value?.$el as HTMLElement | undefined)?.querySelector('.statcard') as HTMLElement | null;
     if (!card || !openCard.value) return;
     const height = card.offsetHeight;
     if (openCard.value.top + height <= window.innerHeight - margin) return;
@@ -278,10 +304,10 @@ onUnmounted(() => document.removeEventListener('mousedown', onDocumentClick));
 </script>
 
 <template>
-  <div class="panel" ref="root">
-    <div v-if="result.errors.length" class="panel-errors">
+  <Panel flush ref="root">
+    <div v-if="result.errors.length" class="mb-2.5 rounded-md bg-danger-soft px-2.5 py-1.5 text-danger">
       <strong>{{ result.errors.length }} problem(s)</strong>
-      <ul>
+      <ul class="mt-1 pl-5">
         <li v-for="error in result.errors" :key="error.slotId + error.kind">
           {{ error.message }}
         </li>
@@ -292,220 +318,76 @@ onUnmounted(() => document.removeEventListener('mousedown', onDocumentClick));
          value here. With a compare build selected (App.vue's quick-compare picker) this
          grows the sheet's own layout -- this build's row, then the other's, then how far
          apart they are. -->
-    <div class="summary-calc">
-      <ComboBox class="summary-calc-select" v-model="summaryCalcKey" :options="summaryOptions" />
+    <div class="flex flex-col gap-1 rounded-md bg-surface-2 px-2.5 py-2">
+      <ComboBox class="w-full" v-model="summaryCalcKey" :options="summaryOptions" />
 
-      <span v-if="!compareResult" class="tile-value">{{ int(summaryValue) }}</span>
+      <span v-if="!compareResult" class="whitespace-nowrap text-center text-2xl font-semibold">{{ int(summaryValue) }}</span>
 
-      <table v-else class="stat-table summary-compare">
+      <table v-else class="mt-0.5 w-full border-collapse border border-line">
         <tbody>
           <tr :class="summaryRowCls">
-            <td>This build</td>
-            <td class="num summary-compare-value">{{ int(summaryValue) }}</td>
-            <td class="num">{{ fmtPctSigned(thisVsOtherPct) }}</td>
+            <td class="px-1 py-0.5 text-muted">This build</td>
+            <td class="px-1 py-0.5 text-right text-xl font-semibold tabular-nums">{{ int(summaryValue) }}</td>
+            <td class="px-1 py-0.5 text-right tabular-nums">{{ fmtPctSigned(thisVsOtherPct) }}</td>
           </tr>
           <tr>
-            <td>{{ compareName }}</td>
-            <td class="num summary-compare-value">{{ int(compareSummaryValue) }}</td>
-            <td class="num dim">{{ fmtPctSigned(otherVsThisPct) }}</td>
+            <td class="px-1 py-0.5 text-muted">{{ compareName }}</td>
+            <td class="px-1 py-0.5 text-right text-xl font-semibold tabular-nums">{{ int(compareSummaryValue) }}</td>
+            <td class="px-1 py-0.5 text-right tabular-nums text-muted">{{ fmtPctSigned(otherVsThisPct) }}</td>
           </tr>
         </tbody>
       </table>
     </div>
 
-    <div class="panel-meta">
+    <div class="flex items-center gap-3 py-2 text-sm text-muted">
       <span>{{ bonusSummary.active }}/{{ bonusSummary.total }} bonuses active</span>
       <span v-if="bonusSummary.excluded">{{ bonusSummary.excluded }} excluded</span>
     </div>
 
-    <table class="stat-table stat-table--pairs">
-      <tbody>
-        <tr class="is-lead"><td>Item level</td><td class="num">{{ int(derived.itemLevel) }}</td></tr>
-        <tr class="is-lead"><td>Hit points</td><td class="num">{{ int(derived.hp) }}</td></tr>
-      </tbody>
-    </table>
+    <StatPairsTable :rows="ilHpRows" />
 
-    <h3 class="panel-head">Ratings</h3>
-    <table class="stat-table stat-table--split rating-table">
+    <PanelHead>Ratings</PanelHead>
+    <table class="w-full border-collapse border border-line">
       <tbody>
         <!-- Each cell coloured off its own column's 'over', not the row: rating and
              percentage cap independently, so one can read green while the other reads
              red on the same row. -->
-        <tr v-for="row in capRows" :key="row.key"
-            :class="{ 'row-sep': row.sepAfter }">
-          <td class="stat-label-cell">
-            <IconButton icon="circle-alert" title="Show contributing sources" class="stat-info-btn"
+        <tr v-for="row in capRows" :key="row.key" class="even:bg-surface-2/55"
+            :class="row.sepAfter && 'border-b-2 border-b-line'">
+          <td class="flex items-center gap-0.5 border border-line px-1 py-0.5">
+            <IconButton icon="circle-alert" title="Show contributing sources" class="stat-info-btn flex-none"
                         :data-stat-key="row.key" @click="toggleCard($event, row.key)" />
             <span>{{ row.label }}</span>
           </td>
-          <td class="num" :class="row.rating.primaryCls">{{ int(row.rating.total) }}</td>
-          <td class="num" :class="row.percent.primaryCls">{{ pct(row.percent.capped) }}</td>
-          <td class="num dim" :class="row.percent.overCls">{{ signedPct(row.percent.over) }}</td>
-          <td class="num dim" :class="row.rating.overCls">{{ signedInt(row.rating.over) }}</td>
+          <td class="border border-line px-1 py-0.5 text-right tabular-nums" :class="row.rating.primaryCls">{{ int(row.rating.total) }}</td>
+          <td class="border border-line px-1 py-0.5 text-right tabular-nums" :class="row.percent.primaryCls">{{ pct(row.percent.capped) }}</td>
+          <td class="border border-line px-1 py-0.5 text-right tabular-nums text-muted" :class="row.percent.overCls">{{ signedPct(row.percent.over) }}</td>
+          <td class="border border-line px-1 py-0.5 text-right tabular-nums text-muted" :class="row.rating.overCls">{{ signedInt(row.rating.over) }}</td>
         </tr>
       </tbody>
     </table>
 
-    <h3 class="panel-head">Other stats</h3>
-    <table class="stat-table stat-table--pairs">
-      <tbody>
-        <tr v-for="row in otherRows" :key="row.key">
-          <td class="stat-label-cell">
-            <IconButton icon="circle-alert" title="Show contributing sources" class="stat-info-btn"
-                        :data-stat-key="row.key" @click="toggleCard($event, row.key)" />
-            <span>{{ row.label }}</span>
-          </td>
-          <td class="num">{{ fmt(row.key, row.value) }}</td>
-        </tr>
-      </tbody>
-    </table>
+    <PanelHead>Other stats</PanelHead>
+    <StatPairsTable :rows="otherRows" />
 
-    <h3 class="panel-head">Ability scores</h3>
-    <table class="stat-table stat-table--pairs">
-      <tbody>
-        <tr v-for="row in abilityRows" :key="row.key">
-          <td class="stat-label-cell">
-            <IconButton icon="circle-alert" title="Show contributing sources" class="stat-info-btn"
-                        :data-stat-key="row.key" @click="toggleCard($event, row.key)" />
-            <span>{{ row.label }}</span>
-          </td>
-          <td class="num">{{ int(row.value) }}</td>
-        </tr>
-      </tbody>
-    </table>
+    <PanelHead>Ability scores</PanelHead>
+    <StatPairsTable :rows="abilityRows" />
 
-    <h3 class="panel-head">Enemy</h3>
-    <table class="stat-table stat-table--pairs">
-      <tbody>
-        <tr v-for="row in enemyRows" :key="row.key">
-          <td class="stat-label-cell">
-            <IconButton icon="circle-alert" title="Show contributing sources" class="stat-info-btn"
-                        :data-stat-key="row.key" @click="toggleCard($event, row.key)" />
-            <span>{{ row.label }}</span>
-          </td>
-          <td class="num">{{ fmt(row.key, row.value) }}</td>
-        </tr>
-      </tbody>
-    </table>
+    <PanelHead>Enemy</PanelHead>
+    <StatPairsTable :rows="enemyRows" />
 
-    <h3 class="panel-head">Damage</h3>
-    <table class="stat-table stat-table--pairs">
-      <tbody>
-        <tr v-for="[label, key] in damageRows" :key="key"
-            :class="{ 'is-lead': key === 'average' }">
-          <td>{{ label }}</td>
-          <td class="num">{{ int(derived.damage[key]) }}</td>
-        </tr>
-        <tr><td class="dim">Base damage</td><td class="num dim">{{ int(derived.baseDamage) }}</td></tr>
-        <tr>
-          <td class="dim">Effective magical/physical</td>
-          <td class="num dim">{{ pct(derived.effectiveMagPhys) }}</td>
-        </tr>
-      </tbody>
-    </table>
+    <PanelHead>Damage</PanelHead>
+    <StatPairsTable :rows="damageTableRows" />
 
-    <h3 class="panel-head">Healing</h3>
-    <table class="stat-table stat-table--pairs">
-      <tbody>
-        <tr v-for="[label, key] in healingRows" :key="key"
-            :class="{ 'is-lead': key === 'average' }">
-          <td>{{ label }}</td>
-          <td class="num">{{ int(derived.healing[key]) }}</td>
-        </tr>
-        <tr>
-          <td class="dim">Overall outgoing healing</td>
-          <td class="num dim">{{ pct(derived.overallHealing) }}</td>
-        </tr>
-      </tbody>
-    </table>
+    <PanelHead>Healing</PanelHead>
+    <StatPairsTable :rows="healingTableRows" />
 
-    <h3 class="panel-head">Effective hit points</h3>
-    <table class="stat-table stat-table--pairs">
-      <tbody>
-        <tr v-for="[label, key] in ehpRows" :key="key"
-            :class="{ 'is-lead': key === 'average' }">
-          <td>{{ label }}</td>
-          <td class="num">{{ int(derived.ehp[key]) }}</td>
-        </tr>
-      </tbody>
-    </table>
+    <PanelHead>Effective hit points</PanelHead>
+    <StatPairsTable :rows="ehpTableRows" />
 
     <StatSourceCard v-if="openCard" :label="openLabel" :sections="openSections"
                     :data-stat-key="openCard.key"
                     :style="{ left: openCard.left + 'px', top: openCard.top + 'px' }"
                     @close="closeCard" />
-  </div>
+  </Panel>
 </template>
-
-<style scoped>
-.panel-errors {
-  background: var(--danger-soft);
-  border-radius: var(--radius);
-  color: var(--danger);
-  margin-bottom: 10px;
-  padding: 7px 10px;
-}
-.panel-errors ul { margin: 4px 0 0; padding-left: 18px; }
-
-/* The summary widget: pick a damage calculation, see it front and centre -- the sheet's most
- * visible number, where the IL/HP tiles used to sit. Picker on its own row, the value stacked
- * below and centred -- closer to the sheet's own layout than a side-by-side row. */
-.summary-calc {
-  background: var(--surface-2);
-  border-radius: var(--radius);
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 8px 10px;
-}
-.summary-calc-select { width: 100%; }
-.tile-value { font-size: 1.6rem; font-weight: 600; text-align: center; white-space: nowrap; }
-
-/* The compare-mode layout: this build's row, the other build's row, its Δ% in the third
- * column -- the sheet's own compare block, label/value/percentage. `.stat-table`'s own font
- * size is too small for what is still meant to be the headline number, so the value column
- * gets `.tile-value`'s treatment (just a size down, to fit two rows instead of one). */
-.summary-compare { margin-top: 2px; }
-.summary-compare td { padding: 3px 4px; }
-.summary-compare td:first-child { color: var(--muted); }
-.summary-compare-value { font-size: 1.25rem; font-weight: 600; }
-/* Only "this build"'s own row is judged -- ahead (green) or behind (red) the compare build --
- * the label cell stays muted regardless via `:not(:first-child)`, so it never fights the
- * `td:first-child` rule above on specificity. */
-.summary-compare tr.is-positive td:not(:first-child) { color: var(--ok); font-weight: 600; }
-.summary-compare tr.is-negative td:not(:first-child) { color: var(--danger); font-weight: 600; }
-
-.stat-table {
-  border: 1px solid var(--line);
-  border-collapse: collapse;
-  width: 100%;
-}
-
-.stat-table.rating-table td {
-  border: 1px solid var(--line);
-}
-
-.stat-table td { padding: 2px 4px;}
-.stat-table td.num { text-align: right; }
-
-/* The label cell now carries the "show sources" trigger ahead of its text -- a plain
- * `display: flex` on the `<td>` itself, same trick `.slot-label-col` uses in SlotList.vue. */
-.stat-label-cell { align-items: center; display: flex; gap: 2px; }
-.stat-info-btn { flex: none; }
-.stat-table tbody tr:nth-child(even) { background: color-mix(in srgb, var(--surface-2) 55%, transparent); }
-
-.stat-table td.is-capped { background: color-mix(in srgb, var(--ok) 16%, transparent); }
-.stat-table td.is-headroom { background: color-mix(in srgb, var(--accent) 12%, transparent); }
-.stat-table td.is-over { background: color-mix(in srgb, var(--warn) 14%, transparent); font-weight: 600; }
-
-.stat-table tr.is-lead td { font-weight: 600; }
-.stat-table tr.row-sep td { border-bottom: 2px solid var(--line); }
-
-.stat-table tr:hover {
-  outline: 2px solid black;
-}
-
-.panel-head {
-  border: none;
-}
-</style>

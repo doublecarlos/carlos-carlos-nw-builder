@@ -7,7 +7,9 @@
 // Not called "advanced options": class is a basic, load-bearing choice, just an infrequently
 // changed one. The name describes how often it's touched, not how simple it is.
 import { computed } from 'vue';
-import ComboBox from './ComboBox.vue';
+import ComboBox from './ui/ComboBox.vue';
+import FormField from './ui/FormField.vue';
+import Checkbox from './ui/Checkbox.vue';
 import { NW_SCHEMA } from '../data';
 import { titleCase, label as statLabel } from '../format';
 import type { BuildContext } from '../types';
@@ -99,65 +101,53 @@ function forteDiffTitle(slotKey: string) {
 </script>
 
 <template>
-  <div class="options">
-    <div class="options-group">
-      <div class="field">
-        <span class="field-label" :class="{ 'field-diff': fieldDiffers('class') }"
-              :title="fieldDiffers('class') ? diffTitle('class') : undefined">Class</span>
+  <div class="options flex flex-wrap items-start gap-x-5 gap-y-2.5">
+    <div class="flex flex-wrap items-end gap-x-2.5 gap-y-2">
+      <FormField>
+        <span :class="fieldDiffers('class') ? 'cursor-help font-bold text-diff' : 'text-sm text-muted'"
+              :title="fieldDiffers('class') ? diffTitle('class') : undefined">Class<template v-if="fieldDiffers('class')"> ●</template></span>
         <ComboBox :model-value="context.class" :options="classOptions"
                   @update:model-value="$emit('set', 'class', $event)" />
-      </div>
+      </FormField>
 
-      <div class="field">
-        <span class="field-label" :class="{ 'field-diff': fieldDiffers('role') }"
-              :title="fieldDiffers('role') ? diffTitle('role') : undefined">Role</span>
+      <FormField>
+        <span :class="fieldDiffers('role') ? 'cursor-help font-bold text-diff' : 'text-sm text-muted'"
+              :title="fieldDiffers('role') ? diffTitle('role') : undefined">Role<template v-if="fieldDiffers('role')"> ●</template></span>
         <ComboBox :model-value="context.role" :options="roleOptions"
                   @update:model-value="$emit('set', 'role', $event)" />
-      </div>
+      </FormField>
 
-      <div class="field">
-        <span class="field-label" :class="{ 'field-diff': fieldDiffers('damageType') }"
-              :title="fieldDiffers('damageType') ? diffTitle('damageType') : undefined">Damage type</span>
+      <FormField>
+        <span :class="fieldDiffers('damageType') ? 'cursor-help font-bold text-diff' : 'text-sm text-muted'"
+              :title="fieldDiffers('damageType') ? diffTitle('damageType') : undefined">Damage type<template v-if="fieldDiffers('damageType')"> ●</template></span>
         <ComboBox :model-value="context.damageType" :options="damageTypeOptions"
                   @update:model-value="$emit('set', 'damageType', $event)" />
-      </div>
+      </FormField>
 
-      <label class="field">
-        <span class="field-label" :class="{ 'field-diff': fieldDiffers('magnitude') }"
-              :title="fieldDiffers('magnitude') ? diffTitle('magnitude') : undefined">Magnitude</span>
-        <input class="num-input num-input--wide" type="number" min="0" step="1"
-               :value="context.magnitude" @input="onMagnitude">
+      <label class="flex min-w-40 flex-col gap-0.5">
+        <span :class="fieldDiffers('magnitude') ? 'cursor-help font-bold text-diff' : 'text-sm text-muted'"
+              :title="fieldDiffers('magnitude') ? diffTitle('magnitude') : undefined">Magnitude<template v-if="fieldDiffers('magnitude')"> ●</template></span>
+        <input class="w-24 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+               type="number" min="0" step="1" :value="context.magnitude" @input="onMagnitude">
       </label>
     </div>
 
-    <div class="options-group">
-      <div v-for="slot in FORTE_SLOTS" :key="slot.key" class="field">
-        <span class="field-label" :class="{ 'field-diff': forteDiffers(slot.key) }"
+    <div class="flex flex-wrap items-end gap-x-2.5 gap-y-2">
+      <FormField v-for="slot in FORTE_SLOTS" :key="slot.key">
+        <span :class="forteDiffers(slot.key) ? 'cursor-help font-bold text-diff' : 'text-sm text-muted'"
               :title="forteDiffers(slot.key) ? forteDiffTitle(slot.key) : undefined">
-          {{ slot.label }} <span class="hint">{{ slot.share }}</span>
+          {{ slot.label }} <span class="text-muted">{{ slot.share }}</span><template v-if="forteDiffers(slot.key)"> ●</template>
         </span>
         <ComboBox :model-value="(context.forte as Record<string, string | undefined>)?.[slot.key] ?? ''" :options="forteOptions"
                   @update:model-value="$emit('set-forte', slot.key, $event)" />
-      </div>
+      </FormField>
 
-      <label class="check">
-        <input type="checkbox" :checked="!!context.m32Forte"
-               @change="$emit('set', 'm32Forte', ($event.target as HTMLInputElement).checked)">
-        <span :class="{ 'field-diff': fieldDiffers('m32Forte') }"
+      <Checkbox :model-value="!!context.m32Forte" @update:model-value="$emit('set', 'm32Forte', $event)">
+        <span :class="fieldDiffers('m32Forte') && 'cursor-help font-bold text-diff'"
               :title="fieldDiffers('m32Forte') ? diffTitle('m32Forte') : 'Round each forte share to 2 decimals, as M32+ does'">
-          M32 Forte
+          M32 Forte<template v-if="fieldDiffers('m32Forte')"> ●</template>
         </span>
-      </label>
+      </Checkbox>
     </div>
   </div>
 </template>
-
-<style scoped>
-.options { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: flex-start; }
-.options-group { display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: flex-end; }
-
-.num-input--wide { width: 92px; }
-
-.field-diff { color: var(--diff); cursor: help; font-weight: 700; }
-.field-diff::after { content: ' \25CF'; }
-</style>

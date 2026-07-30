@@ -51,7 +51,7 @@ const entries = computed(() => (freeValue.value ? [freeValue.value, ...suggestio
 
 watch(highlight, () => {
   nextTick(() => {
-    menu.value?.querySelector('.is-highlighted')?.scrollIntoView({ block: 'nearest' });
+    menu.value?.querySelector('[data-highlighted]')?.scrollIntoView({ block: 'nearest' });
   });
 });
 
@@ -114,16 +114,18 @@ function onPaste(event: ClipboardEvent) {
 </script>
 
 <template>
-  <div class="tokens" :class="{ 'is-open': open }" @mousedown.self="input?.focus()">
-    <span v-for="(token, index) in modelValue" :key="token" class="token">
+  <div class="relative flex min-h-7 flex-wrap items-center gap-1 rounded-md border border-line bg-surface px-1.5 py-1 cursor-text focus-within:outline-2 focus-within:-outline-offset-1 focus-within:outline-accent"
+       @mousedown.self="input?.focus()">
+    <span v-for="(token, index) in modelValue" :key="token"
+          class="inline-flex items-center gap-1 rounded-full bg-accent-soft py-0.5 pl-2 pr-1 text-sm text-text">
       {{ token }}
-      <button type="button" class="token-x" title="Remove"
-              @mousedown.prevent="removeAt(index)">×</button>
+      <button type="button" class="cursor-pointer border-0 bg-transparent px-1 leading-none text-muted hover:text-danger"
+              title="Remove" @mousedown.prevent="removeAt(index)">×</button>
     </span>
 
     <input
       ref="input"
-      class="token-field"
+      class="min-w-20 flex-1 border-0 bg-transparent px-0.5 py-0.5 outline-none"
       type="text"
       autocomplete="off"
       spellcheck="false"
@@ -134,85 +136,15 @@ function onPaste(event: ClipboardEvent) {
       @keydown="onKeydown"
       @paste="onPaste">
 
-    <div v-if="open && entries.length" class="token-menu" ref="menu">
+    <div v-if="open && entries.length" ref="menu"
+         class="absolute inset-x-0 top-full z-30 mt-0.5 max-h-56 overflow-y-auto rounded-md border border-line bg-surface shadow-lg">
       <div v-for="(entry, index) in entries" :key="entry"
-           class="token-option" :class="{ 'is-highlighted': index === highlight }"
+           class="flex cursor-pointer gap-2 px-2 py-1" :class="index === highlight && 'bg-accent-soft'"
+           :data-highlighted="index === highlight || undefined"
            @mousedown.prevent="add(entry)" @mouseenter="highlight = index">
         <span>{{ entry }}</span>
-        <span v-if="entry === freeValue" class="token-new">new</span>
+        <span v-if="entry === freeValue" class="ml-auto rounded bg-ok/25 px-1.5 text-sm text-ok">new</span>
       </div>
     </div>
   </div>
 </template>
-
-<style scoped>
-.tokens {
-  align-items: center;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  cursor: text;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  min-height: 26px;
-  padding: 3px 5px;
-  position: relative;
-}
-.tokens.is-open { outline: 2px solid var(--accent); outline-offset: -1px; }
-
-.token {
-  align-items: center;
-  background: var(--accent-soft);
-  border-radius: 10px;
-  color: var(--text);
-  display: inline-flex;
-  font-size: 1rem;
-  gap: 3px;
-  padding: 1px 3px 1px 8px;
-}
-.token-x {
-  background: none;
-  border: 0;
-  color: var(--muted);
-  cursor: pointer;
-  font-size: 1.083rem;
-  line-height: 1;
-  padding: 0 3px;
-}
-.token-x:hover { color: var(--danger); }
-
-.token-field {
-  background: none;
-  border: 0;
-  flex: 1;
-  min-width: 90px;
-  outline: none;
-  padding: 1px 2px;
-}
-.token-field:focus { outline: none; }
-
-.token-menu {
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, .18);
-  left: 0;
-  max-height: 220px;
-  overflow-y: auto;
-  position: absolute;
-  right: 0;
-  top: calc(100% + 2px);
-  z-index: 30;
-}
-.token-option { cursor: pointer; display: flex; gap: 8px; padding: 3px 8px; }
-.token-option.is-highlighted { background: var(--accent-soft); }
-.token-new {
-  background: color-mix(in srgb, var(--ok) 22%, transparent);
-  border-radius: 3px;
-  color: var(--ok);
-  font-size: 1rem;
-  margin-left: auto;
-  padding: 0 5px;
-}
-</style>

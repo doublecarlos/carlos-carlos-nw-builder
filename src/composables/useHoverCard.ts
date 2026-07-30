@@ -7,7 +7,7 @@ const HOVER_DELAY_MS = 220;
 // feel like one continuous hover, not a fresh 220ms wait per row.
 const HOVER_RESUME_MS = 400;
 const HOVER_CLOSE_GRACE_MS = 100;
-const CARD_W = 330;    // must match .itemcard width in ItemCard.vue's own <style>
+const CARD_W = 320;    // must match ItemCard.vue's root `w-80` (320px) utility
 
 export interface HoverPosition { slotId: string; left: number; top: number; }
 

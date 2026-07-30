@@ -6,9 +6,10 @@
 // page is showing -- lives in src/stores and is read/mutated by whichever component needs it.
 import { ref, watch, onMounted, onUnmounted } from 'vue';
 import BuildBar from './components/BuildBar.vue';
+import ThemeToggle from './components/ui/ThemeToggle.vue';
 import BuildNav from './components/BuildNav.vue';
 import BonusInspector from './components/BonusInspector.vue';
-import ComboBox from './components/ComboBox.vue';
+import ComboBox from './components/ui/ComboBox.vue';
 import DataEditor from './components/DataEditor.vue';
 import QuickOptions from './components/QuickOptions.vue';
 import SlotList from './components/SlotList.vue';
@@ -22,6 +23,12 @@ import * as engine from './stores/engine';
 import * as ui from './stores/ui';
 import { notice, showNotice } from './stores/notice';
 import { overlayCount } from './stores/workspace';
+import Button from './components/ui/Button.vue';
+import Checkbox from './components/ui/Checkbox.vue';
+import Badge from './components/ui/Badge.vue';
+import Notice from './components/ui/Notice.vue';
+import TabStrip from './components/ui/TabStrip.vue';
+import TabButton from './components/ui/TabButton.vue';
 
 const build = library.build;
 const db = engine.db;
@@ -110,61 +117,62 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="page">
+  <!-- Stacks above the builder below `lg`, matching BuildNav.vue's own breakpoint -- a
+       height:100vh column layout makes no sense once the sidebar and the builder are
+       stacked instead of side-by-side. -->
+  <div class="flex flex-col items-stretch bg-bg text-text lg:min-h-screen lg:flex-row">
     <BuildNav />
 
-    <div class="page-main">
-      <header class="topbar">
-        <div class="brand">
-          <h1>Neverwinter build planner</h1>
+    <div class="flex flex-1 flex-col lg:h-screen">
+      <header class="flex flex-none flex-wrap items-start gap-x-5 gap-y-3 border-b border-line bg-surface px-3.5 py-2 max-lg:sticky max-lg:top-0 max-lg:z-20">
+        <div class="flex min-w-38 flex-col gap-1">
+          <h1 class="text-base font-semibold tracking-wide">Neverwinter build planner</h1>
         </div>
 
         <BuildBar />
 
         <QuickOptions />
 
-        <div class="topbar-actions">
-          <span v-if="notice" class="notice" @click="showNotice('')">{{ notice }}</span>
-          <div class="compare-quick">
-            <span class="field-label">Compare</span>
-            <ComboBox class="compare-select" :model-value="build.compare.id" :options="compare.compareOptions.value"
+        <div class="flex flex-1 basis-full flex-wrap items-center justify-end gap-2 max-sm:justify-start">
+          <Notice v-if="notice" @dismiss="showNotice('')">{{ notice }}</Notice>
+          <!-- Quick compare: pick another build, see it inline against the active one (slot
+               highlights, the stat panel's headline row) -- deliberately just a picker in the
+               top bar, not a page of its own. -->
+          <div class="flex flex-wrap items-center gap-1.5">
+            <span class="text-sm text-muted">Compare</span>
+            <ComboBox class="compare-select min-w-48" :model-value="build.compare.id" :options="compare.compareOptions.value"
                       @update:model-value="compare.setCompareBuild" />
-            <label class="check">
-              <input type="checkbox" :checked="build.compare.highlight" :disabled="!compareBuild"
-                     @change="compare.setCompareFlag('highlight', ($event.target as HTMLInputElement).checked)">
-              <span>highlight diffs</span>
-            </label>
-            <label class="check">
-              <input type="checkbox" :checked="build.compare.onlyDiff" :disabled="!compareBuild"
-                     @change="compare.setCompareFlag('onlyDiff', ($event.target as HTMLInputElement).checked)">
-              <span>only diffs</span>
-            </label>
+
+            <Checkbox :model-value="build.compare.highlight" :disabled="!compareBuild"
+                      @update:model-value="v => compare.setCompareFlag('highlight', v)">Highlight changes</Checkbox>
+            <Checkbox :model-value="build.compare.onlyDiff" :disabled="!compareBuild"
+                      @update:model-value="v => compare.setCompareFlag('onlyDiff', v)">Only show changes</Checkbox>
           </div>
 
-          <button type="button" class="link" @click="buildEditor.resetAll()">reset</button>
-          <span class="hint">{{ buildEditor.filledSlots.value }}/{{ db.slots.length }} slots</span>
-          <button type="button" class="btn" @click="ui.openEditor()">
-            Edit data<span v-if="overlayCount" class="badge badge--edited">{{ overlayCount }}</span>
-          </button>
+          <Button variant="link" @click="buildEditor.resetAll()">reset</Button>
+          <span class="text-sm text-muted">{{ buildEditor.filledSlots.value }}/{{ db.slots.length }} slots</span>
+
+          <Button @click="ui.openEditor()">
+            Edit data<Badge v-if="overlayCount" variant="edited">{{ overlayCount }}</Badge>
+          </Button>
+          <ThemeToggle />
         </div>
       </header>
 
-      <main class="layout" v-if="resolved.ok">
-        <div class="content">
-        <SlotList />
+      <main class="flex flex-1 items-stretch gap-4 p-3.5 max-lg:flex-col" v-if="resolved.ok">
+        <div class="min-w-0 flex-1 overflow-y-auto max-lg:w-auto max-lg:overflow-y-visible">
+          <SlotList />
         </div>
-        <aside class="sidebar">
-          <div class="tabs">
-            <button type="button" class="tab" :class="{ 'is-on': tab === 'stats' }"
-                    @click="tab = 'stats'">Stats</button>
-            <button type="button" class="tab" :class="{ 'is-on': tab === 'bonuses' }"
-                    @click="tab = 'bonuses'">
-              Bonuses <span class="tab-count">{{ engine.bonusCounts.value.active }}/{{ engine.bonusCounts.value.total }}</span>
-              <span v-if="engine.bonusCounts.value.nearMiss" class="badge badge--near">
+        <aside class="sidebar w-130 flex-none overflow-y-auto max-lg:w-auto max-lg:overflow-y-visible">
+          <TabStrip>
+            <TabButton :active="tab === 'stats'" @click="tab = 'stats'">Stats</TabButton>
+            <TabButton :active="tab === 'bonuses'" @click="tab = 'bonuses'">
+              Bonuses <span class="text-sm opacity-75 tabular-nums">{{ engine.bonusCounts.value.active }}/{{ engine.bonusCounts.value.total }}</span>
+              <Badge v-if="engine.bonusCounts.value.nearMiss" variant="near">
                 {{ engine.bonusCounts.value.nearMiss }} away
-              </span>
-            </button>
-          </div>
+              </Badge>
+            </TabButton>
+          </TabStrip>
 
           <!-- v-show, not v-if: switching tabs must not discard the inspector's filter. -->
           <StatPanel v-show="tab === 'stats'" />
@@ -172,126 +180,18 @@ onUnmounted(() => {
         </aside>
       </main>
 
-      <main v-else class="crash">
-        <h2>The engine threw</h2>
+      <main v-else class="flex-1 min-h-0 overflow-y-auto p-6 text-danger">
+        <h2 class="text-lg font-semibold">The engine threw</h2>
         <p>{{ resolved.message }}</p>
-        <pre>{{ resolved.stack }}</pre>
+        <pre class="overflow-x-auto rounded-md bg-surface p-3">{{ resolved.stack }}</pre>
       </main>
     </div>
   </div>
 
-  <div v-if="ui.view.value === 'editor'" class="editor-overlay" @click.self="ui.closeEditor()">
-    <div class="editor-overlay-panel">
+  <div v-if="ui.view.value === 'editor'" class="editor-overlay fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-0 md:p-7"
+       @click.self="ui.closeEditor()">
+    <div class="flex h-full w-full max-w-7xl overflow-hidden rounded-none bg-surface shadow-2xl md:rounded-md">
       <DataEditor />
     </div>
   </div>
 </template>
-
-<style scoped>
-/* --- page shell --------------------------------------------------------------------- */
-.page { display: flex; align-items: stretch; min-height: 100vh; }
-.page-main { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; height: 100vh; }
-
-/* --- top bar -------------------------------------------------------------------------- */
-
-.topbar {
-  flex: none;
-  background: var(--surface);
-  border-bottom: 1px solid var(--line);
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  gap: 12px 20px;
-  padding: 8px 14px;
-}
-
-.brand { display: flex; flex-direction: column; gap: 4px; min-width: 150px; }
-.brand h1 { font-size: 1.083rem; letter-spacing: .01em; }
-
-.topbar-actions {
-  flex: 1 1 100%;
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 8px;
-}
-
-/* Quick compare: pick another build, see it inline against the active one (slot highlights,
- * the stat panel's headline row) -- deliberately just a picker in the top bar, not a page of
- * its own. */
-.compare-quick { align-items: center; display: flex; flex-wrap: wrap; gap: 6px; }
-.compare-select { min-width: 170px; }
-
-/* --- builder layout --------------------------------------------------------------------- */
-
-.layout {
-  display: flex;
-  align-items: stretch;
-  flex: 1 1 auto;
-  min-height: 0;
-  gap: 16px;
-  padding: 14px;
-}
-
-.content { flex: 1 1 auto; min-width: 0; overflow-y: auto; }
-
-.sidebar { flex: none; width: 460px; overflow-y: auto; }
-
-.panel { border-radius: 0 var(--radius) var(--radius) var(--radius); }
-.tabs { padding-left: 0 }
-
-.crash { flex: 1 1 auto; min-height: 0; overflow-y: auto; color: var(--danger); padding: 24px; }
-.crash pre { background: var(--surface); border-radius: var(--radius); overflow-x: auto; padding: 12px; }
-
-@media (max-width: 1100px) {
-  /* Below this width `.build-nav` itself gives up its own `height: 100vh` pane (see its
-   * media query) and goes back to plain document flow -- match that here instead of running
-   * two different "who owns the scrollbar" models at once. The top bar goes back to
-   * `position: sticky` since it's the page, not a pane, that scrolls in this mode. */
-  .page { flex-direction: column; }
-  .page-main { height: auto; }
-  .topbar { position: sticky; top: 0; z-index: 20; }
-  .layout { flex-direction: column; }
-  .content, .sidebar { width: auto; overflow-y: visible; }
-}
-
-@media (max-width: 560px) {
-  /* Below this the compare picker and the reset/edit-data actions no longer fit on one
-   * line with the notice -- let the whole action cluster wrap onto its own row rather than
-   * squeezing every control down to nothing. */
-  .topbar-actions { justify-content: flex-start; }
-}
-
-/* --- data editor overlay ---------------------------------------------------------------
- * `.page` stays mounted underneath -- this is a layer on top of it, not a replacement, so a
- * Ctrl+click on a slot can jump into the editor without losing the builder's own scroll
- * position/state. */
-
-.editor-overlay {
-  align-items: center;
-  background: color-mix(in srgb, black 45%, transparent);
-  display: flex;
-  inset: 0;
-  justify-content: center;
-  padding: 28px;
-  position: fixed;
-  z-index: 50;
-}
-
-.editor-overlay-panel {
-  background: var(--surface);
-  border-radius: var(--radius);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, .35);
-  display: flex;
-  height: 100%;
-  max-width: 1400px;
-  overflow: hidden;
-  width: 100%;
-}
-
-@media (max-width: 900px) {
-  .editor-overlay { padding: 0; }
-  .editor-overlay-panel { border-radius: 0; }
-}
-</style>

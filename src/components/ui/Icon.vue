@@ -3,7 +3,7 @@
 // its native hover tooltip -- the same role it plays inline in IconButton, just generalized so
 // any consumer can render a bare icon.
 import { computed } from 'vue';
-import { icons } from '../icons';
+import { icons } from '../../icons';
 
 const props = defineProps<{
   name: string;
@@ -16,15 +16,8 @@ const markup = computed(() => icons[props.name] ?? '');
 <template>
   <svg role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-       stroke-linejoin="round" class="lucide">
+       stroke-linejoin="round" class="size-3.5">
     <title v-if="title">{{ title }}</title>
     <g v-html="markup"></g>
   </svg>
 </template>
-
-<style scoped>
-.lucide {
-  width: 1em;
-  height: 1em;
-}
-</style>

@@ -492,6 +492,29 @@ export function saveUiState(state: UiState) {
   }
 }
 
+// --- theme preference ----------------------------------------------------------------------
+
+export type ThemePreference = 'light' | 'dark' | 'system';
+const THEME_KEY = 'nw:theme';
+
+export function loadThemePreference(): ThemePreference {
+  try {
+    const stored = window.localStorage.getItem(THEME_KEY);
+    return stored === 'light' || stored === 'dark' ? stored : 'system';
+  } catch {
+    return 'system';
+  }
+}
+
+export function saveThemePreference(preference: ThemePreference) {
+  try {
+    window.localStorage.setItem(THEME_KEY, preference);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 // --- import / export --------------------------------------------------------------------
 
 // Not narrowed to `Build`: also used to serialise a collection bundle (`bundleCollection`'s

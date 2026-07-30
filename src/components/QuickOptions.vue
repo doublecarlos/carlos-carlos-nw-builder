@@ -7,12 +7,13 @@
 // is rarely changed mid-session, so it moved to a collapsible section ahead of Gear
 // (SlotList.vue's `AdvancedOptions` section) instead of eating width here.
 import { computed } from 'vue';
-import ComboBox from './ComboBox.vue';
+import ComboBox from './ui/ComboBox.vue';
 import { NW_SCHEMA } from '../data';
 import { titleCase } from '../format';
 import * as library from '../stores/library';
 import * as compare from '../stores/compare';
 import * as buildEditor from '../stores/buildEditor';
+import Checkbox from './ui/Checkbox.vue';
 
 // Display order and labels are UI-only -- data/schema.json keeps its own order untouched.
 // The sheet's quick-options widget lists Consumables/Party/Combat/Other procs/Artifact call,
@@ -78,78 +79,44 @@ function diffTitle(key: 'combatType' | 'location' | 'duration') {
 </script>
 
 <template>
-  <div class="quickopts">
-    <label v-for="toggle in orderedToggles" :key="toggle.name" class="quickopts-row">
-      <input type="checkbox" :checked="!!context.toggles?.[toggle.name]"
-             @change="buildEditor.setToggle(toggle.name, ($event.target as HTMLInputElement).checked)">
-      <span class="quickopts-label" :class="{ 'field-diff': toggleDiffers(toggle.name) }"
+  <div class="flex flex-1 flex-wrap items-center gap-x-4 gap-y-1.5 rounded-md border border-line px-2.5 py-1.5">
+    <Checkbox v-for="toggle in orderedToggles" :key="toggle.name"
+      :model-value="!!context.toggles?.[toggle.name]"
+      @update:model-value="v => buildEditor.setToggle(toggle.name, v)"
+    >
+      <span :class="toggleDiffers(toggle.name) ? 'font-bold text-diff' : ''"
             :title="toggleDiffers(toggle.name) ? toggleDiffTitle(toggle.name) : undefined">
-        {{ toggle.label }}
+        {{ toggle.label }}<template v-if="toggleDiffers(toggle.name)"> ●</template>
       </span>
-    </label>
+    </Checkbox>
 
-    <span class="quickopts-sep"></span>
+    <span class="h-4 w-px bg-line"></span>
 
-    <div class="quickopts-row">
-      <span class="quickopts-label" :class="{ 'field-diff': fieldDiffers('combatType') }"
-            :title="fieldDiffers('combatType') ? diffTitle('combatType') : undefined">Type</span>
-      <ComboBox class="quickopts-combo" :model-value="context.combatType"
+    <div class="flex items-center gap-1.5 whitespace-nowrap text-sm">
+      <span :class="fieldDiffers('combatType') ? 'cursor-help font-bold text-diff' : ''"
+            :title="fieldDiffers('combatType') ? diffTitle('combatType') : undefined">Type<template v-if="fieldDiffers('combatType')"> ●</template></span>
+      <ComboBox class="w-36" :model-value="context.combatType"
                 :options="typeOptions" @update:model-value="buildEditor.setContext('combatType', $event)" />
     </div>
 
-    <div class="quickopts-row">
-      <span class="quickopts-label" :class="{ 'field-diff': fieldDiffers('location') }"
-            :title="fieldDiffers('location') ? diffTitle('location') : undefined">Location</span>
-      <ComboBox class="quickopts-combo" :model-value="context.location"
+    <div class="flex items-center gap-1.5 whitespace-nowrap text-sm">
+      <span :class="fieldDiffers('location') ? 'cursor-help font-bold text-diff' : ''"
+            :title="fieldDiffers('location') ? diffTitle('location') : undefined">Location<template v-if="fieldDiffers('location')"> ●</template></span>
+      <ComboBox class="w-36" :model-value="context.location"
                 :options="locationOptions" @update:model-value="buildEditor.setContext('location', $event)" />
     </div>
 
-    <div class="quickopts-row">
-      <span class="quickopts-label" :class="{ 'field-diff': fieldDiffers('duration') }"
-            :title="fieldDiffers('duration') ? diffTitle('duration') : undefined">Duration (s)</span>
-      <input class="num-input quickopts-num" type="number" min="0" step="1"
-             :value="context.duration" @input="onDuration">
-      <div class="quickopts-presets">
+    <div class="flex items-center gap-1.5 whitespace-nowrap text-sm">
+      <span :class="fieldDiffers('duration') ? 'cursor-help font-bold text-diff' : ''"
+            :title="fieldDiffers('duration') ? diffTitle('duration') : undefined">Duration (s)<template v-if="fieldDiffers('duration')"> ●</template></span>
+      <input class="w-14 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+             type="number" min="0" step="1" :value="context.duration" @input="onDuration">
+      <div class="flex gap-0.5">
         <button v-for="preset in schema.durationPresets" :key="preset" type="button"
-                class="preset" :class="{ 'is-on': Number(context.duration) === preset }"
+                class="rounded-md border px-1.5 py-0.5 text-sm"
+                :class="Number(context.duration) === preset ? 'border-accent bg-accent-soft text-text' : 'border-line bg-surface-2 text-muted'"
                 @click="buildEditor.setContext('duration', preset)">{{ preset }}s</button>
       </div>
     </div>
   </div>
 </template>
-
-<style scoped>
-/* A single wrapping row, not a narrow stacked column -- the toggles and the three fields flow
- * across whatever width the top bar has instead of leaving it mostly empty. */
-.quickopts {
-  align-items: center;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  display: flex;
-  flex: 1 1 100%;
-  flex-wrap: wrap;
-  gap: 6px 18px;
-  padding: 6px 10px;
-}
-.quickopts-row { align-items: center; display: flex; font-size: 1rem; gap: 6px; white-space: nowrap; }
-label.quickopts-row { cursor: pointer; }
-.quickopts-sep { background: var(--line); height: 18px; width: 1px; }
-.quickopts-combo { width: 150px; }
-.quickopts-num { text-align: right; width: 60px; }
-.quickopts-presets { display: flex; gap: 3px; }
-
-.preset {
-  background: var(--surface-2);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  color: var(--muted);
-  cursor: pointer;
-  font: inherit;
-  font-size: 1rem;
-  padding: 3px 6px;
-}
-.preset.is-on { background: var(--accent-soft); border-color: var(--accent); color: var(--text); }
-
-.field-diff { color: var(--diff); cursor: help; font-weight: 700; }
-.field-diff::after { content: ' \25CF'; }
-</style>

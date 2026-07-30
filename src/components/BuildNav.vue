@@ -3,6 +3,8 @@
 // be saved (browser storage or a linked file, via fs-store.ts) and exported as a whole; an
 // individual build keeps its own independent save/revert (BuildBar.vue).
 import { ref, reactive, computed, nextTick, onMounted, onUnmounted, type ComponentPublicInstance } from 'vue';
+import Button from './ui/Button.vue';
+import UnsavedDot from './ui/UnsavedDot.vue';
 import * as fsStore from '../fs-store';
 import * as library from '../stores/library';
 import * as buildEditor from '../stores/buildEditor';
@@ -233,51 +235,56 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <nav class="build-nav" ref="root">
-    <div v-for="collection in collections" :key="collection.id" class="nav-collection">
-      <div class="nav-row nav-row--collection" :class="{ 'is-active': collection.id === activeCollectionId }">
-        <button type="button" class="nav-chevron" @click="toggleExpanded(collection.id)">
+  <!-- Stacks above the builder below `lg`, matching App.vue's own `.page` breakpoint -- a
+       sticky full-height sidebar makes no sense once the two are stacked instead of
+       side-by-side. -->
+  <nav class="flex flex-none flex-col gap-0.5 overflow-y-auto border-b border-line bg-surface p-2 text-sm lg:sticky lg:top-0 lg:h-screen lg:w-60 lg:border-b-0 lg:border-r" ref="root">
+    <div v-for="collection in collections" :key="collection.id" class="mb-1">
+      <div class="nav-row nav-row--collection relative flex items-center gap-1 rounded-md px-1 py-1 font-semibold"
+           :class="collection.id === activeCollectionId && 'is-active'">
+        <button type="button" class="w-4 flex-none cursor-pointer px-0.5 text-muted" @click="toggleExpanded(collection.id)">
           {{ isExpanded(collection.id) ? '▾' : '▸' }}
         </button>
 
         <input v-if="isRenaming('collection', collection.id)" :ref="setRenameInputRef" v-model="renameText"
-               class="nav-rename" @keydown.enter="commitRename" @keydown.esc="renaming = null"
-               @blur="commitRename">
-        <button v-else type="button" class="nav-name" @click="library.selectCollection(collection.id)"
+               class="nav-rename min-w-0 flex-1 rounded-md border border-line bg-surface px-1 py-0.5"
+               @keydown.enter="commitRename" @keydown.esc="renaming = null" @blur="commitRename">
+        <button v-else type="button"
+                class="nav-name min-w-0 flex-1 cursor-pointer overflow-hidden text-ellipsis whitespace-nowrap py-0.5 text-left"
+                :class="collection.id === activeCollectionId && 'underline'"
+                @click="library.selectCollection(collection.id)"
                 @dblclick="startRename('collection', collection.id, collection.name)"
                 @contextmenu.prevent="openMenuFor('collection', collection.id, $event)">
           {{ collection.name }}
         </button>
 
-        <span v-if="collectionDirty(collection)" class="unsaved-dot" title="Unsaved changes"></span>
+        <UnsavedDot v-if="collectionDirty(collection)" title="Unsaved changes" />
 
-        <div class="nav-menu-wrap">
-          <button type="button" class="nav-kebab" title="Collection menu"
-                  @click="openMenuFor('collection', collection.id, $event)">⋮</button>
+        <div class="nav-menu-wrap relative">
+          <button type="button" class="nav-kebab flex-none cursor-pointer rounded-md px-1.5 leading-none text-muted hover:bg-surface-2 hover:text-text"
+                  title="Collection menu" @click="openMenuFor('collection', collection.id, $event)">⋮</button>
 
-          <div v-if="isMenuOpen('collection', collection.id)" class="navmenu"
+          <div v-if="isMenuOpen('collection', collection.id)" class="navmenu fixed z-30 flex min-w-48 -translate-x-full flex-col rounded-md border border-line bg-surface p-1 shadow-lg"
                :style="{ top: menuPos.top + 'px', left: menuPos.left + 'px' }">
-            <button type="button" class="navmenu-item"
+            <button type="button" class="rounded-md px-2 py-1 text-left cursor-pointer hover:bg-surface-2"
                     @click="startRename('collection', collection.id, collection.name)">Rename</button>
-            <button type="button" class="navmenu-item" @click="library.saveCollection(collection.id); closeMenu()">
-              Save
-            </button>
-            <button type="button" class="navmenu-item" @click="toggleSaveAs(collection.id)">Save As…</button>
-            <div v-if="saveAsFor === collection.id" class="nav-saveas">
-              <button type="button" class="navmenu-item" @click="saveAsStorage(collection.id)">
-                Browser storage (new copy)
-              </button>
-              <button type="button" class="navmenu-item" :disabled="!fsSupported"
+            <button type="button" class="rounded-md px-2 py-1 text-left cursor-pointer hover:bg-surface-2"
+                    @click="library.saveCollection(collection.id); closeMenu()">Save</button>
+            <button type="button" class="rounded-md px-2 py-1 text-left cursor-pointer hover:bg-surface-2"
+                    @click="toggleSaveAs(collection.id)">Save As…</button>
+            <div v-if="saveAsFor === collection.id" class="my-0.5 ml-2 flex flex-col border-l-2 border-line">
+              <button type="button" class="rounded-md px-2 py-1 text-left cursor-pointer hover:bg-surface-2"
+                      @click="saveAsStorage(collection.id)">Browser storage (new copy)</button>
+              <button type="button" class="rounded-md px-2 py-1 text-left enabled:cursor-pointer disabled:text-muted enabled:hover:bg-surface-2"
+                      :disabled="!fsSupported"
                       :title="fsSupported ? '' : 'This browser cannot keep a file linked -- use Export instead'"
-                      @click="saveAsFile(collection.id)">
-                File on this PC…
-              </button>
+                      @click="saveAsFile(collection.id)">File on this PC…</button>
             </div>
-            <button type="button" class="navmenu-item"
+            <button type="button" class="rounded-md px-2 py-1 text-left cursor-pointer hover:bg-surface-2"
                     @click="library.duplicateCollection(collection.id); closeMenu()">Duplicate</button>
-            <button type="button" class="navmenu-item"
+            <button type="button" class="rounded-md px-2 py-1 text-left cursor-pointer hover:bg-surface-2"
                     @click="library.exportCollection(collection.id); closeMenu()">Export…</button>
-            <button type="button" class="navmenu-item navmenu-item--danger"
+            <button type="button" class="rounded-md px-2 py-1 text-left cursor-pointer hover:bg-danger-soft hover:text-danger"
                     @click="runConfirmed('collection', collection.id, 'delete-collection', () => library.deleteCollection(collection.id))">
               {{ confirmLabel('collection', collection.id, 'delete-collection', 'Delete') }}
             </button>
@@ -285,44 +292,44 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <div v-if="isExpanded(collection.id)" class="nav-builds">
-        <div v-for="build in buildsIn(collection)" :key="build.id" class="nav-row nav-row--build"
-             :class="{ 'is-active': build.id === activeId }">
+      <div v-if="isExpanded(collection.id)" class="ml-1.5 border-l border-accent">
+        <div v-for="build in buildsIn(collection)" :key="build.id"
+             class="nav-row nav-row--build relative flex items-center gap-1 rounded-md py-1 pl-5 pr-1"
+             :class="build.id === activeId && 'is-active bg-accent-soft'">
           <input v-if="isRenaming('build', build.id)" :ref="setRenameInputRef" v-model="renameText"
-                 class="nav-rename" @keydown.enter="commitRename" @keydown.esc="renaming = null"
-                 @blur="commitRename">
-          <button v-else type="button" class="nav-name"
+                 class="nav-rename min-w-0 flex-1 rounded-md border border-line bg-surface px-1 py-0.5"
+                 @keydown.enter="commitRename" @keydown.esc="renaming = null" @blur="commitRename">
+          <button v-else type="button"
+                  class="nav-name min-w-0 flex-1 cursor-pointer overflow-hidden text-ellipsis whitespace-nowrap py-0.5 text-left"
                   @click="library.selectBuild(collection.id, build.id)"
                   @dblclick="startRename('build', build.id, build.name)"
                   @contextmenu.prevent="openMenuFor('build', build.id, $event)">
             {{ build.name }}
           </button>
 
-          <span v-if="dirtyByBuild[build.id]" class="unsaved-dot" title="Unsaved changes"></span>
+          <UnsavedDot v-if="dirtyByBuild[build.id]" title="Unsaved changes" />
 
-          <div class="nav-menu-wrap">
-            <button type="button" class="nav-kebab" title="Build menu"
-                    @click="openMenuFor('build', build.id, $event)">⋮</button>
+          <div class="nav-menu-wrap relative">
+            <button type="button" class="nav-kebab flex-none cursor-pointer rounded-md px-1.5 leading-none text-muted hover:bg-surface-2 hover:text-text"
+                    title="Build menu" @click="openMenuFor('build', build.id, $event)">⋮</button>
 
-            <div v-if="isMenuOpen('build', build.id)" class="navmenu"
+            <div v-if="isMenuOpen('build', build.id)" class="navmenu fixed z-30 flex min-w-48 -translate-x-full flex-col rounded-md border border-line bg-surface p-1 shadow-lg"
                  :style="{ top: menuPos.top + 'px', left: menuPos.left + 'px' }">
-              <button type="button" class="navmenu-item"
+              <button type="button" class="rounded-md px-2 py-1 text-left cursor-pointer hover:bg-surface-2"
                       @click="startRename('build', build.id, build.name)">Rename</button>
-              <button type="button" class="navmenu-item"
-                      :disabled="!dirtyByBuild[build.id]"
-                      @click="saveBuild(build.id); closeMenu()">Save</button>
-              <button type="button" class="navmenu-item"
-                      :disabled="!dirtyByBuild[build.id]"
-                      @click="revertBuild(build.id); closeMenu()">Revert</button>
-              <button type="button" class="navmenu-item"
+              <button type="button" class="rounded-md px-2 py-1 text-left enabled:cursor-pointer disabled:text-muted enabled:hover:bg-surface-2"
+                      :disabled="!dirtyByBuild[build.id]" @click="saveBuild(build.id); closeMenu()">Save</button>
+              <button type="button" class="rounded-md px-2 py-1 text-left enabled:cursor-pointer disabled:text-muted enabled:hover:bg-surface-2"
+                      :disabled="!dirtyByBuild[build.id]" @click="revertBuild(build.id); closeMenu()">Revert</button>
+              <button type="button" class="rounded-md px-2 py-1 text-left cursor-pointer hover:bg-surface-2"
                       @click="duplicateBuildRow(build.id); closeMenu()">Duplicate</button>
-              <button type="button" class="navmenu-item"
+              <button type="button" class="rounded-md px-2 py-1 text-left cursor-pointer hover:bg-surface-2"
                       @click="library.exportBuild(build.id); closeMenu()">Export…</button>
-              <button type="button" class="navmenu-item"
+              <button type="button" class="rounded-md px-2 py-1 text-left cursor-pointer hover:bg-surface-2"
                       @click="runConfirmed('build', build.id, 'reset-build', () => resetBuild(build.id))">
                 {{ confirmLabel('build', build.id, 'reset-build', 'Reset') }}
               </button>
-              <button type="button" class="navmenu-item navmenu-item--danger"
+              <button type="button" class="rounded-md px-2 py-1 text-left enabled:cursor-pointer disabled:text-muted enabled:hover:bg-danger-soft enabled:hover:text-danger"
                       :disabled="buildsIn(collection).length < 2"
                       @click="runConfirmed('build', build.id, 'delete-build', () => deleteBuildRow(build.id))">
                 {{ confirmLabel('build', build.id, 'delete-build', 'Delete') }}
@@ -331,168 +338,21 @@ onUnmounted(() => {
           </div>
         </div>
 
-        <div class="nav-row nav-row--actions">
-          <button type="button" class="link" @click="library.createBuildIn(collection.id)">+ New build</button>
-          <button type="button" class="link" @click="triggerImportBuild(collection.id)">Import</button>
+        <div class="nav-row--actions flex items-center gap-2.5 pl-5 text-muted">
+          <Button variant="link" @click="library.createBuildIn(collection.id)">+ New build</Button>
+          <Button variant="link" @click="triggerImportBuild(collection.id)">Import</Button>
         </div>
       </div>
     </div>
 
-    <div class="nav-row nav-row--actions nav-row--top">
-      <button type="button" class="link" @click="library.createCollection()">+ New collection</button>
-      <button type="button" class="link" @click="triggerImportCollection">Import collection</button>
+    <div class="nav-row--actions mt-1 flex items-center gap-2.5 border-t border-line pl-1 pt-1.5 text-muted">
+      <Button variant="link" @click="library.createCollection()">+ New collection</Button>
+      <Button variant="link" @click="triggerImportCollection">Import collection</Button>
     </div>
 
-    <input ref="buildFileInput" type="file" accept=".json,application/json" class="nav-hidden-file"
+    <input ref="buildFileInput" type="file" accept=".json,application/json" class="hidden"
            @change="onImportBuildFile">
-    <input ref="collectionFileInput" type="file" accept=".json,application/json" class="nav-hidden-file"
+    <input ref="collectionFileInput" type="file" accept=".json,application/json" class="hidden"
            @change="onImportCollectionFile">
   </nav>
 </template>
-
-<style scoped>
-
-.build-nav {
-  flex: none;
-  width: 236px;
-  height: 100vh;
-  position: sticky;
-  top: 0;
-  overflow-y: auto;
-  background: var(--surface);
-  border-right: 1px solid var(--line);
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  font-size: 1rem;
-  padding: 10px 8px;
-}
-
-.nav-collection { margin-bottom: 4px; }
-
-.nav-row {
-  align-items: center;
-  border-radius: var(--radius);
-  display: flex;
-  gap: 4px;
-  padding: 3px 4px;
-  position: relative;
-}
-.nav-row--collection { font-weight: 600; }
-.nav-row--build { padding-left: 18px; }
-.nav-row--build.is-active { background: var(--accent-soft); }
-.nav-row--collection.is-active .nav-name { text-decoration: underline; }
-.nav-row--actions { color: var(--muted); gap: 10px; padding-left: 18px; }
-.nav-row--build.nav-row--actions { padding-left: 18px; }
-.nav-row--top { border-top: 1px solid var(--line); margin-top: 4px; padding-left: 4px; padding-top: 6px; }
-
-.nav-builds {
-  margin-left: 5px;
-  border-left: 1px solid var(--accent)
-}
-
-.nav-chevron {
-  background: none;
-  border: 0;
-  color: var(--muted);
-  cursor: pointer;
-  flex: none;
-  font: inherit;
-  padding: 0 2px;
-  width: 14px;
-}
-
-.nav-name {
-  background: none;
-  border: 0;
-  color: inherit;
-  cursor: pointer;
-  flex: 1;
-  font: inherit;
-  min-width: 0;
-  overflow: hidden;
-  padding: 2px 0;
-  text-align: left;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.nav-rename {
-  flex: 1;
-  font: inherit;
-  min-width: 0;
-  padding: 2px 4px;
-}
-
-.nav-menu-wrap { position: relative; }
-
-.nav-kebab {
-  background: none;
-  border: 0;
-  border-radius: var(--radius);
-  color: var(--muted);
-  cursor: pointer;
-  flex: none;
-  font: inherit;
-  line-height: 1;
-  padding: 2px 5px;
-}
-.nav-kebab:hover { background: var(--surface-2); color: var(--text); }
-
-/* `position: fixed`, not `absolute` -- `.build-nav` is a scrolling container in its own right
- * now (full page height), and an absolutely-positioned menu got clipped at its bottom edge for
- * any row near the end of the list. `top`/`left` are computed in `openMenuFor` from the
- * trigger's own viewport rect; `translateX(-100%)` right-aligns the menu to that point, the
- * fixed-position equivalent of the `right: 0` this replaced. */
-.navmenu {
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, .18);
-  display: flex;
-  flex-direction: column;
-  min-width: 190px;
-  padding: 4px;
-  position: fixed;
-  transform: translateX(-100%);
-  z-index: 30;
-}
-
-.navmenu-item {
-  background: none;
-  border: 0;
-  border-radius: var(--radius);
-  color: inherit;
-  cursor: pointer;
-  font: inherit;
-  padding: 5px 8px;
-  text-align: left;
-}
-.navmenu-item:hover:not(:disabled) { background: var(--surface-2); }
-.navmenu-item:disabled { color: var(--muted); cursor: default; }
-.navmenu-item--danger:hover:not(:disabled) { background: var(--danger-soft); color: var(--danger); }
-
-.nav-saveas {
-  border-left: 2px solid var(--line);
-  display: flex;
-  flex-direction: column;
-  margin: 2px 0 2px 8px;
-}
-
-.nav-hidden-file { display: none; }
-
-/* Must come after the base `.build-nav` rule above -- an override with equal specificity
- * defined earlier in the cascade loses the tie to a later rule, which is exactly what left
- * this sidebar stuck at `height: 100vh` under the stacked mobile layout even though
- * `.page`'s own breakpoint (App.vue) had already switched to `flex-direction: column`. */
-@media (max-width: 1100px) {
-  .build-nav {
-    position: static;
-    height: auto;
-    max-height: none;
-    width: auto;
-    border-right: 0;
-    border-bottom: 1px solid var(--line);
-  }
-}
-</style>
