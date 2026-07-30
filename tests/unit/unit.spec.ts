@@ -19,7 +19,18 @@ const BASE_CONTEXT = {
   toggles: { combat: true, party: true, consumables: true, procs: true, artifactCall: true },
 };
 
-function runBuild(choices: Record<string, string>, contextOverrides: Record<string, any> = {}, values: Record<string, any> = {}) {
+/** Every test below writes `choices` by item *name* -- far more readable than the ids that
+ * actually key `build.choices` -- so this resolves each one against the real shipped data
+ * before handing it to the engine. Throws on a typo'd name rather than silently resolving to
+ * nothing, which a bad string in `choices` would otherwise do. */
+function idOf(name: string): string {
+  const item = built.items.find((i) => i.name === name);
+  if (!item) throw new Error(`no shipped item named "${name}"`);
+  return item.id;
+}
+
+function runBuild(choicesByName: Record<string, string>, contextOverrides: Record<string, any> = {}, values: Record<string, any> = {}) {
+  const choices = Object.fromEntries(Object.entries(choicesByName).map(([slot, name]) => [slot, idOf(name)]));
   const context: any = { ...BASE_CONTEXT, ...contextOverrides };
   if (contextOverrides.toggles) {
     context.toggles = { ...BASE_CONTEXT.toggles, ...contextOverrides.toggles };

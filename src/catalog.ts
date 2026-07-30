@@ -7,7 +7,7 @@
 //
 //     effective = base  <-  workspace overlay  <-  (future) build overlay
 //
-// An overlay is `{ items: { [name]: item|null }, bonusSets: { [id]: set|null } }`, where the
+// An overlay is `{ items: { [id]: item|null }, bonusSets: { [id]: set|null } }`, where the
 // value replaces whatever the layers below it had and `null` is a tombstone hiding a base
 // entry. That single shape covers add, edit and delete, survives JSON, and composes -- which
 // is what makes the per-build case a matter of passing one more overlay rather than a redesign.
@@ -56,14 +56,14 @@ export const base = (): { items: Item[]; bonusSets: BonusSet[] } => ({
 export function compose(overlays: (CatalogOverlay | null | undefined)[] = []) {
   const { items: baseItems, bonusSets: baseSets } = base();
 
-  const items = new Map(baseItems.map((item) => [item.name, item]));
+  const items = new Map(baseItems.map((item) => [item.id, item]));
   const bonusSets = new Map(baseSets.map((set) => [set.id, set]));
 
   for (const overlay of overlays) {
     if (!overlay) continue;
-    for (const [name, item] of Object.entries(overlay.items ?? {})) {
-      if (item === null) items.delete(name);
-      else items.set(name, item);
+    for (const [id, item] of Object.entries(overlay.items ?? {})) {
+      if (item === null) items.delete(id);
+      else items.set(id, item);
     }
     for (const [id, set] of Object.entries(overlay.bonusSets ?? {})) {
       if (set === null) bonusSets.delete(id);
@@ -91,21 +91,34 @@ const clone = (overlay: CatalogOverlay): CatalogOverlay => ({
 });
 
 const inBase = (group: CatalogGroup, key: string) => (group === 'items'
-  ? base().items.some((item) => item.name === key)
+  ? base().items.some((item) => item.id === key)
   : base().bonusSets.some((set) => set.id === key));
 
-/** Save an entry. `previousKey` set and different means a rename. */
-export function upsert(
-  overlay: CatalogOverlay, group: CatalogGroup, key: string, value: Item | BonusSet, previousKey?: string,
-) {
+/** Save an entry under its id. Ids are frozen at creation (`nextId`, below) and never
+ * user-edited afterwards, so unlike the old name-keyed overlay there is no rename to track
+ * here any more -- the key an entry is saved under never changes across its lifetime. */
+export function upsert(overlay: CatalogOverlay, group: CatalogGroup, key: string, value: Item | BonusSet) {
   const next = clone(overlay);
-  if (previousKey && previousKey !== key) {
-    // A renamed base entry still has to be hidden, or both names would resolve.
-    if (inBase(group, previousKey)) next[group][previousKey] = null;
-    else delete next[group][previousKey];
-  }
   (next[group] as Record<string, Item | BonusSet | null>)[key] = value;
   return next;
+}
+
+const slugify = (text: string) => String(text).toLowerCase().trim()
+  .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+
+/**
+ * A stable id for a brand-new item or bonus set, derived from its name at the moment of first
+ * save and never regenerated afterwards -- see `Item.id`'s own comment on why. Disambiguates
+ * against `existingIds` (every id already in use) by appending `-2`, `-3`, ... so two entries
+ * whose names happen to slugify the same still get distinct ids with no user action needed.
+ */
+export function nextId(name: string, existingIds: string[], fallback = 'item'): string {
+  const base = slugify(name) || fallback;
+  const taken = new Set(existingIds);
+  if (!taken.has(base)) return base;
+  let n = 2;
+  while (taken.has(`${base}-${n}`)) n += 1;
+  return `${base}-${n}`;
 }
 
 /** Hide a base entry, or drop an added one outright. */
@@ -141,7 +154,7 @@ const CONDITION_KEYS = new Set(['toggle', 'role', 'class', 'combatType', 'locati
 
 // Every non-stat key an item may legitimately carry. Anything else is a typo, and a
 // misspelled stat (`sevrity: 5000`) is invisible otherwise -- it simply never applies.
-const ITEM_FIELDS = new Set(['name', 'filter', 'tags', 'maxCopies', 'allowedClass',
+const ITEM_FIELDS = new Set(['id', 'name', 'filter', 'tags', 'maxCopies', 'allowedClass',
   'dynamicStat', 'dynamicMin', 'dynamicMax', 'bonuses', 'excludes']);
 
 // A `param` condition addressing one of these paths duplicates a dedicated leaf that already
@@ -279,7 +292,7 @@ export function validate(items: Item[], bonusSets: BonusSet[], schema: Schema = 
   const classSlot = findParamSlot(allSlots, 'class');
   const classes = new Set(classSlot?.options?.map((o) => o.value) ?? []);
   const setIds = new Set(bonusSets.map((set) => set.id));
-  const seenNames = new Set();
+  const seenIds = new Set();
   const paramSlots = new Map<string, BuildParameterSlot>();
   for (const slot of allSlots) {
     if (slot.type === 'build_parameter') paramSlots.set(slot.path, slot);
@@ -307,14 +320,14 @@ export function validate(items: Item[], bonusSets: BonusSet[], schema: Schema = 
   };
 
   for (const item of items) {
-    if (!item.name) { report('error', 'an item has no name'); continue; }
-    if (seenNames.has(item.name)) report('error', 'duplicate item name', item.name);
-    seenNames.add(item.name);
+    if (!item.id) { report('error', 'an item has no id', item.name); continue; }
+    if (seenIds.has(item.id)) report('error', 'duplicate item id', item.id);
+    seenIds.add(item.id);
 
-    if (!item.filter) report('error', 'no filter — the item appears in no slot', item.name);
+    if (!item.filter) report('error', 'no filter — the item appears in no slot', item.id);
     else if (!slotFilters.has(item.filter)) {
       report('warn', `filter "${item.filter}" matches no slot, so nothing can equip it`,
-        item.name);
+        item.id);
     }
 
     const stats: Record<string, unknown> = {};
@@ -322,21 +335,21 @@ export function validate(items: Item[], bonusSets: BonusSet[], schema: Schema = 
       if (statKeys.has(key)) stats[key] = item[key];
       else if (!ITEM_FIELDS.has(key)) {
         report('error', `"${key}" is neither a stat nor an item field — it is ignored `
-          + 'entirely, so a misspelled stat name silently does nothing', item.name);
+          + 'entirely, so a misspelled stat name silently does nothing', item.id);
       }
     }
-    checkStats(stats, 'stat', item.name);
+    checkStats(stats, 'stat', item.id);
 
     for (const cls of item.allowedClass ?? []) {
-      if (!classes.has(cls)) report('error', `allowedClass "${cls}" is not a class`, item.name);
+      if (!classes.has(cls)) report('error', `allowedClass "${cls}" is not a class`, item.id);
     }
     for (const setId of item.bonuses ?? []) {
       if (!setIds.has(setId)) {
-        report('warn', `bonus "${setId}" has no definition`, item.name);
+        report('warn', `bonus "${setId}" has no definition`, item.id);
       }
     }
     if (item.dynamicStat && !statKeys.has(item.dynamicStat)) {
-      report('error', `dynamicStat "${item.dynamicStat}" is not a stat`, item.name);
+      report('error', `dynamicStat "${item.dynamicStat}" is not a stat`, item.id);
     }
   }
 
@@ -363,8 +376,10 @@ export function validate(items: Item[], bonusSets: BonusSet[], schema: Schema = 
 // data/db-bonuses.js, the loaders that fetch these files).
 
 // Mirrors the key order the Python generator emits, so a pasted-back file diffs cleanly
-// against a regenerated one instead of reordering every line.
-const LEADING_KEYS = ['name', 'filter', 'il', 'combined_rating'];
+// against a regenerated one instead of reordering every line. `id` leads (Item.id's own
+// comment: frozen at first assignment) -- the external generator will need to learn to
+// preserve/assign it too, or a future regeneration will silently drop every id.
+const LEADING_KEYS = ['id', 'name', 'filter', 'il', 'combined_rating'];
 const TRAILING_KEYS = ['maxCopies', 'dynamicStat', 'dynamicMin', 'dynamicMax',
   'allowedClass', 'tags', 'bonuses', 'excludes'];
 

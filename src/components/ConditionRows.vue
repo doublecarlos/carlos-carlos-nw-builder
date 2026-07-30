@@ -159,7 +159,7 @@ function changeParamKey(row: ConditionRow, key: string) {
         </template>
         <template v-else-if="row.type === 'equipped'">
           <FormField label="Tag" class="min-w-0"><input class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent" type="text" v-model="row.tag" list="nw-tags"></FormField>
-          <FormField label="Or exact item name" class="min-w-0"><input class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent" type="text" v-model="row.item"></FormField>
+          <FormField label="Or exact item id" class="min-w-0"><input class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent" type="text" v-model="row.item"></FormField>
           <FormField label="At least (s)" class="min-w-0"><input class="w-24 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent" type="number" v-model.number="row.atLeast"></FormField>
           <FormField label="Below (s)" class="min-w-0"><input class="w-24 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent" type="number" v-model.number="row.below"></FormField>
         </template>

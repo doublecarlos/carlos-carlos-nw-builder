@@ -57,10 +57,9 @@ const props = withDefaults(defineProps<{
 });
 
 const emit = defineEmits<{
-  'save-set': [payload: { id: string; previousId: string | null; set: BonusSet }];
+  'save-set': [payload: { id: string; set: BonusSet }];
   'delete-set': [id: string];
   'detach-set': [id: string];
-  'rename-set': [payload: { oldId: string; newId: string }];
   'attach-set': [id: string];
 }>();
 
@@ -133,50 +132,27 @@ function isDirty(id: string) {
   const set = props.db.bonusSetById.get(id) ?? null;
   if (!set) return true;
   try {
-    return !sameSet(bonusDraft.toSet({ ...local, id: local.id || id }), set);
+    return !sameSet(bonusDraft.toSet({ ...local, id }), set);
   } catch {
     return true;
   }
 }
 
+/** The card's id is fixed at creation (`addBonus`, below) and never changes afterwards --
+ * unlike the item form's, there is no separate save-vs-first-save distinction to make here
+ * since a card only ever exists under an id `addBonus` already generated. */
 function save(id: string) {
   const local = drafts[id];
   if (!local) return;
-  const newId = (local.id || '').trim();
-  if (!newId) {
-    errors[id] = 'The group needs an id.';
-    return;
-  }
-  if (newId !== id && props.allSetIds.includes(newId)) {
-    errors[id] = `“${newId}” is already used by another bonus group.`;
-    return;
-  }
   let set;
   try {
-    set = bonusDraft.toSet({ ...local, id: newId });
+    set = bonusDraft.toSet({ ...local, id });
   } catch (error: any) {
     errors[id] = `A grant has invalid JSON: ${error.message}`;
     return;
   }
   errors[id] = '';
-  const renamed = newId !== id;
-  emit('save-set', { id: newId, previousId: renamed ? id : null, set });
-  // Rekey the draft under the new id so the card survives the id change without
-  // waiting on a round trip through `setIds` -> `sync()`, which would otherwise
-  // momentarily render it with a blank draft rebuilt from whatever `db` has yet.
-  if (renamed) {
-    delete drafts[id];
-    delete errors[id];
-    drafts[newId] = { ...local, id: newId };
-    emit('rename-set', { oldId: id, newId });
-  }
-}
-
-/** Fill the id field from the current name -- the common case, since a private bonus's
- * id is almost always just its item's name slugified. */
-function generateId(id: string) {
-  const local = drafts[id];
-  local.id = slugify(local.name) || local.id;
+  emit('save-set', { id, set });
 }
 
 function remove(id: string) {
@@ -212,6 +188,12 @@ function attachExisting(id: string) {
   if (!id) return;
   emit('attach-set', id);
 }
+
+/** `db.setMembers` is keyed by item id -- resolved to display names here, the only place
+ * either of `db`'s id-lists (this one, `itemsByTag`) reaches the screen. */
+function memberNames(setId: string): string[] {
+  return (props.db.setMembers.get(setId) ?? []).map((id) => props.db.get(id)?.name ?? id);
+}
 </script>
 
 <template>
@@ -238,11 +220,8 @@ function attachExisting(id: string) {
                  type="text" v-model="drafts[card.id].name">
         </FormField>
         <FormField label="Group id" class="basis-56 flex-auto">
-          <span class="flex items-center gap-1">
-            <input class="w-full rounded bg-surface-2 px-1.5 text-sm text-muted focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-                   type="text" v-model="drafts[card.id].id">
-            <IconButton icon="wand-sparkles" title="Generate id from name" @click="generateId(card.id)" />
-          </span>
+          <span class="flex w-full items-center rounded bg-surface-2 px-1.5 py-0.5 text-sm text-muted"
+                title="Frozen -- renaming the group does not change its id">{{ card.id }}</span>
         </FormField>
         <Badge v-if="!card.defined" variant="warn">not defined yet</Badge>
         <Badge v-if="isDirty(card.id)">unsaved</Badge>
@@ -256,9 +235,9 @@ function attachExisting(id: string) {
       <p v-if="errors[card.id]" class="mt-1 text-danger">{{ errors[card.id] }}</p>
 
       <p class="text-sm text-muted">
-        <template v-if="(db.setMembers.get(card.id) ?? []).length > 1">
-          Shared by <strong>{{ (db.setMembers.get(card.id) ?? []).length }}</strong> items —
-          {{ (db.setMembers.get(card.id) ?? []).join(', ') }}.
+        <template v-if="memberNames(card.id).length > 1">
+          Shared by <strong>{{ memberNames(card.id).length }}</strong> items —
+          {{ memberNames(card.id).join(', ') }}.
         </template>
         <template v-else>Only on this item.</template>
       </p>

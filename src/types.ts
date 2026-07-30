@@ -102,6 +102,12 @@ export interface SlotsData {
  * with `name`/`tags`/etc (TS2411), so it's `unknown` here -- read a stat with `item[key] as
  * number` (or `Number(item[key]) || 0`), same coercion the code already did untyped. */
 export interface Item {
+  /** Generator-assigned slug, frozen at first assignment (catalog.ts's `nextId`) and never
+   * regenerated from `name` afterwards -- see catalog.ts's own note on why. This, not `name`,
+   * is what a build/overlay/condition addresses; `name` is display-only and may repeat. */
+  id: string;
+  /** Display only, may repeat -- see `id` above. Still required (the editor won't save an
+   * item with no name), just no longer the identity. */
   name: string;
   filter?: string;
   tags?: string[];
@@ -207,7 +213,7 @@ export interface Db {
   setMembers: Map<string, string[]>;
   itemsByTag: Map<string, string[]>;
   duplicates: string[];
-  get(name: string | null | undefined): Item | null;
+  get(id: string | null | undefined): Item | null;
   forFilter(filter: string): Item[];
   forSlot(slotId: string): Item[];
   maxCopies(item: Item | null | undefined): number;

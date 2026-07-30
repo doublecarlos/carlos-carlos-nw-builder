@@ -128,6 +128,10 @@ const LEAVES: Record<string, (spec: any, ctx: EvalContext) => ConditionLeafResul
     };
   },
 
+  // `spec.item`, when used instead of `tag`, is an item id (bonus.ts's `collect()` keys
+  // `ctx.equipped` by id) -- exercised by zero shipped bonuses today, so the label below
+  // showing the raw id rather than a display name (this module has no `Db` to resolve one)
+  // isn't yet visible in practice.
   equipped(spec: RangeSpec & { tag?: string; item?: string }, ctx) {
     const have = spec.tag != null
       ? countOf(ctx.tags, spec.tag)

@@ -21,9 +21,16 @@ const MAX_ROWS = 60;
 const props = withDefaults(defineProps<{
   modelValue?: string;
   items: Item[];
+  /** The item `modelValue` (an id) currently resolves to, or null/undefined for an empty
+   * slot -- drives the closed box's display text/placeholder. Passed down already-resolved
+   * by the caller (BuildSlot.vue already has it) rather than looked up here, since `items`
+   * is only this slot's *selectable* list and would miss an equipped item that's since
+   * fallen out of it (e.g. a class change narrowing `allowedClass`). */
+  selectedItem?: Item | null;
   invalid?: boolean;
 }>(), {
   modelValue: '',
+  selectedItem: null,
   invalid: false,
 });
 
@@ -84,7 +91,7 @@ function onFocus() {
   query.value = '';
   // Start on whatever is already equipped, not on "empty" -- `options` reflects the
   // now-open (unfiltered) list since `open` was just set above.
-  const current = options.value.findIndex((item) => item?.name === props.modelValue);
+  const current = options.value.findIndex((item) => item?.id === props.modelValue);
   highlight.value = current === -1 ? 0 : current;
 }
 
@@ -123,7 +130,7 @@ function close() {
  * whatever element is currently focused, so blurring here first (before that runs) would
  * make it tab from nowhere instead of continuing from this input. */
 function choose(item: Item | null, { blur = true }: { blur?: boolean } = {}) {
-  emit('update:modelValue', item ? item.name : '');
+  emit('update:modelValue', item ? item.id : '');
   close();
   if (blur) input.value?.blur();
 }
@@ -196,8 +203,8 @@ function onKeydown(event: KeyboardEvent) {
       type="text"
       autocomplete="off"
       spellcheck="false"
-      :value="open ? query : (modelValue || '')"
-      :placeholder="modelValue || '—'"
+      :value="open ? query : (selectedItem?.name || '')"
+      :placeholder="selectedItem?.name || '—'"
       @focus="onFocus"
       @input="onInput"
       @blur="onBlur"
@@ -213,7 +220,7 @@ function onKeydown(event: KeyboardEvent) {
 
       <PickerRow
         v-for="(entry, index) in matches"
-        :key="entry.item.name"
+        :key="entry.item.id"
         :highlighted="highlight === index + matchOffset"
         @mousedown.prevent="choose(entry.item)"
         @mouseenter="highlight = index + matchOffset">

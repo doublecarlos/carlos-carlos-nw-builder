@@ -113,7 +113,7 @@ const hoveredBonuses = computed(() => {
 // --- quick compare ---------------------------------------------------------------------
 
 const {
-  differs, otherChoice, valueDiffers, rowDiff, rowHasDiff, optionsDiffCount,
+  differs, otherChoiceLabel, valueDiffers, rowDiff, rowHasDiff, optionsDiffCount,
 } = useCompareDiff({
   db, build, result, compareBuild, compareResult, itemIn,
 });
@@ -248,7 +248,7 @@ function onRowClick(event: MouseEvent, slotId: string) {
   if (!event.ctrlKey) return;
   const item = itemIn(slotId);
   if (!item) return;
-  router.apply({ item: item.name });
+  router.apply({ item: item.id });
   ui.openEditor();
 }
 
@@ -320,7 +320,7 @@ function onFocusIn(event: FocusEvent) {
           :is-hovered="hover?.slotId === slot.id" :is-cursor="isCursor('slot', slot.id)" :unsaved="unsaved(slot.id)"
           :item="itemIn(slot.id)" :items="itemsFor(slot.id)" :errors="errorsFor(slot.id)"
           :stat-summary="statSummary(slot.id)" :choice-differs="differs(slot.id)"
-          :other-choice-label="otherChoice(slot.id)" :bonus-diffs="rowDiff(slot.id)?.bonuses"
+          :other-choice-label="otherChoiceLabel(slot.id)" :bonus-diffs="rowDiff(slot.id)?.bonuses"
           :value-differs="!!rowDiff(slot.id)?.value" :other-value="compareBuild?.values?.[slot.id]"
           :param-differs="slot.type === 'build_parameter' ? paramDiffers(build, compareBuild, slot) : false"
           :other-param-label="slot.type === 'build_parameter' ? paramDiffTitle(compareBuild, slot) : undefined"

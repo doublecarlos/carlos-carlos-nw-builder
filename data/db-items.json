@@ -1,5 +1,6 @@
 [
   {
+    "id": "1-amethyst-awareness",
     "name": "1) Amethyst (Awareness)",
     "filter": "enchantment_defense",
     "il": 1800,
@@ -8,6 +9,7 @@
     "tags": ["gem:amethyst"]
   },
   {
+    "id": "1-amethyst-ca",
     "name": "1) Amethyst (CA)",
     "filter": "enchantment_offense",
     "il": 1800,
@@ -16,6 +18,7 @@
     "tags": ["gem:amethyst"]
   },
   {
+    "id": "1-citrine-acc",
     "name": "1) Citrine (Acc)",
     "filter": "enchantment_offense",
     "il": 1800,
@@ -24,6 +27,7 @@
     "tags": ["gem:citrine"]
   },
   {
+    "id": "1-citrine-deflect",
     "name": "1) Citrine (Deflect)",
     "filter": "enchantment_defense",
     "il": 1800,
@@ -32,6 +36,7 @@
     "tags": ["gem:citrine"]
   },
   {
+    "id": "1-cobalt-deflect-severity",
     "name": "1) Cobalt (Deflect Severity)",
     "filter": "enchantment_defense",
     "il": 1800,
@@ -39,6 +44,7 @@
     "deflect_sev": 2700
   },
   {
+    "id": "1-cobalt-severity",
     "name": "1) Cobalt (Severity)",
     "filter": "enchantment_offense",
     "il": 1800,
@@ -46,6 +52,7 @@
     "severity": 2700
   },
   {
+    "id": "1-garnet-defense",
     "name": "1) Garnet (Defense)",
     "filter": "enchantment_defense",
     "il": 1800,
@@ -53,6 +60,7 @@
     "defense": 2700
   },
   {
+    "id": "1-garnet-forte",
     "name": "1) Garnet (Forte)",
     "filter": "enchantment_utility",
     "il": 1800,
@@ -60,6 +68,7 @@
     "forte": 2700
   },
   {
+    "id": "1-garnet-power",
     "name": "1) Garnet (Power)",
     "filter": "enchantment_offense",
     "il": 1800,
@@ -67,6 +76,7 @@
     "power": 2700
   },
   {
+    "id": "1-jade-crit-avoid",
     "name": "1) Jade (Crit Avoid)",
     "filter": "enchantment_defense",
     "il": 1800,
@@ -75,6 +85,7 @@
     "tags": ["gem:jade"]
   },
   {
+    "id": "1-jade-crit",
     "name": "1) Jade (Crit)",
     "filter": "enchantment_offense",
     "il": 1800,
@@ -83,19 +94,28 @@
     "tags": ["gem:jade"]
   },
   {
+    "id": "1st-pack-tactics-group",
     "name": "1st Pack Tactics (Group)",
     "filter": "group_buff",
     "maxCopies": 1,
     "bonuses": ["1st-pack-tactics-group"]
   },
   {
+    "id": "1st-pack-tactics-group-celestial",
     "name": "1st Pack Tactics (Group) (Celestial)",
     "filter": "group_buff",
     "maxCopies": 1,
     "bonuses": ["1st-pack-tactics-group-celestial"]
   },
-  {"name": "1x MW set", "filter": "group_buff", "outgoing_damage": 0.02, "maxCopies": 1},
   {
+    "id": "1x-mw-set",
+    "name": "1x MW set",
+    "filter": "group_buff",
+    "outgoing_damage": 0.02,
+    "maxCopies": 1
+  },
+  {
+    "id": "2-aquamarine-accuracy-severity",
     "name": "2) Aquamarine (Accuracy/Severity)",
     "filter": "enchantment_offense",
     "il": 1800,
@@ -105,6 +125,7 @@
     "tags": ["gem:aquamarine"]
   },
   {
+    "id": "2-aquamarine-crit-avoid-deflect",
     "name": "2) Aquamarine (Crit Avoid/Deflect)",
     "filter": "enchantment_defense",
     "il": 1800,
@@ -114,6 +135,7 @@
     "tags": ["gem:aquamarine"]
   },
   {
+    "id": "2-bloodstone-deflect-deflect-severity",
     "name": "2) Bloodstone (Deflect/Deflect Severity)",
     "filter": "enchantment_defense",
     "il": 1800,
@@ -123,6 +145,7 @@
     "tags": ["gem:bloodstone"]
   },
   {
+    "id": "2-bloodstone-power-ca",
     "name": "2) Bloodstone (Power/CA)",
     "filter": "enchantment_offense",
     "il": 1800,
@@ -132,6 +155,7 @@
     "tags": ["gem:bloodstone"]
   },
   {
+    "id": "2-diamond-ca-severity",
     "name": "2) Diamond (CA/Severity)",
     "filter": "enchantment_offense",
     "il": 1800,
@@ -140,6 +164,7 @@
     "severity": 1485
   },
   {
+    "id": "2-diamond-defense-crit-avoid",
     "name": "2) Diamond (Defense/Crit Avoid)",
     "filter": "enchantment_defense",
     "il": 1800,
@@ -148,6 +173,7 @@
     "crit_avoid": 1485
   },
   {
+    "id": "2-kyanite-awareness-crit-avoid",
     "name": "2) Kyanite (Awareness/Crit Avoid)",
     "filter": "enchantment_defense",
     "il": 1800,
@@ -156,6 +182,7 @@
     "crit_avoid": 1485
   },
   {
+    "id": "2-kyanite-strike-severity",
     "name": "2) Kyanite (Strike/Severity)",
     "filter": "enchantment_offense",
     "il": 1800,
@@ -164,6 +191,7 @@
     "severity": 1485
   },
   {
+    "id": "2-moonstone-defense-awareness",
     "name": "2) Moonstone (Defense/Awareness)",
     "filter": "enchantment_defense",
     "il": 1800,
@@ -172,6 +200,7 @@
     "awareness": 1485
   },
   {
+    "id": "2-moonstone-power-ca",
     "name": "2) Moonstone (Power/CA)",
     "filter": "enchantment_offense",
     "il": 1800,
@@ -180,6 +209,7 @@
     "ca": 1485
   },
   {
+    "id": "2-onyx-ca-severity",
     "name": "2) Onyx (CA/Severity)",
     "filter": "enchantment_offense",
     "il": 1800,
@@ -188,6 +218,7 @@
     "severity": 1485
   },
   {
+    "id": "2-onyx-crit-avoid-deflect-severity",
     "name": "2) Onyx (Crit Avoid/Deflect Severity)",
     "filter": "enchantment_defense",
     "il": 1800,
@@ -196,6 +227,7 @@
     "deflect_sev": 1485
   },
   {
+    "id": "2-opal-awareness-deflect",
     "name": "2) Opal (Awareness/Deflect)",
     "filter": "enchantment_defense",
     "il": 1800,
@@ -204,6 +236,7 @@
     "deflect": 1485
   },
   {
+    "id": "2-opal-power-strike",
     "name": "2) Opal (Power/Strike)",
     "filter": "enchantment_offense",
     "il": 1800,
@@ -212,6 +245,7 @@
     "strike": 1485
   },
   {
+    "id": "2-peridot-acc-strike",
     "name": "2) Peridot (Acc/Strike)",
     "filter": "enchantment_offense",
     "il": 1800,
@@ -220,6 +254,7 @@
     "strike": 1485
   },
   {
+    "id": "2-peridot-defense-deflect-severity",
     "name": "2) Peridot (Defense/Deflect Severity)",
     "filter": "enchantment_defense",
     "il": 1800,
@@ -228,6 +263,7 @@
     "deflect_sev": 1485
   },
   {
+    "id": "2-ruby-defense-deflect",
     "name": "2) Ruby (Defense/Deflect)",
     "filter": "enchantment_defense",
     "il": 1800,
@@ -236,6 +272,7 @@
     "deflect": 1485
   },
   {
+    "id": "2-ruby-power-accuracy",
     "name": "2) Ruby (Power/Accuracy)",
     "filter": "enchantment_offense",
     "il": 1800,
@@ -244,6 +281,7 @@
     "acc": 1485
   },
   {
+    "id": "2-sapphire-awareness-deflect-severity",
     "name": "2) Sapphire (Awareness/Deflect Severity)",
     "filter": "enchantment_defense",
     "il": 1800,
@@ -252,6 +290,7 @@
     "deflect_sev": 1485
   },
   {
+    "id": "2-sapphire-ca-strike",
     "name": "2) Sapphire (CA/Strike)",
     "filter": "enchantment_offense",
     "il": 1800,
@@ -260,19 +299,28 @@
     "strike": 1485
   },
   {
+    "id": "2nd-pack-tactics-group",
     "name": "2nd Pack Tactics (Group)",
     "filter": "group_buff",
     "maxCopies": 1,
     "bonuses": ["2nd-pack-tactics-group"]
   },
   {
+    "id": "2nd-pack-tactics-group-celestial",
     "name": "2nd Pack Tactics (Group) (Celestial)",
     "filter": "group_buff",
     "maxCopies": 1,
     "bonuses": ["2nd-pack-tactics-group-celestial"]
   },
-  {"name": "2x MW set", "filter": "group_buff", "outgoing_damage": 0.04, "maxCopies": 1},
   {
+    "id": "2x-mw-set",
+    "name": "2x MW set",
+    "filter": "group_buff",
+    "outgoing_damage": 0.04,
+    "maxCopies": 1
+  },
+  {
+    "id": "3-ammolite-defense-awareness-crit-avoid",
     "name": "3) Ammolite (Defense/Awareness/Crit Avoid)",
     "filter": "enchantment_defense",
     "il": 1800,
@@ -282,6 +330,7 @@
     "crit_avoid": 1080
   },
   {
+    "id": "3-ammolite-power-ca-strike",
     "name": "3) Ammolite (Power/CA/Strike)",
     "filter": "enchantment_offense",
     "il": 1800,
@@ -291,6 +340,7 @@
     "strike": 1080
   },
   {
+    "id": "3-bismuth-acc-ca-severity",
     "name": "3) Bismuth (Acc/CA/Severity)",
     "filter": "enchantment_offense",
     "il": 1800,
@@ -300,6 +350,7 @@
     "severity": 1080
   },
   {
+    "id": "3-bismuth-defense-awareness-deflect",
     "name": "3) Bismuth (Defense/Awareness/Deflect)",
     "filter": "enchantment_defense",
     "il": 1800,
@@ -309,6 +360,7 @@
     "deflect": 1080
   },
   {
+    "id": "3-bone-filligree-acc-ca-strike",
     "name": "3) Bone Filligree (Acc/CA/Strike)",
     "filter": "enchantment_offense",
     "il": 1800,
@@ -318,6 +370,7 @@
     "strike": 1080
   },
   {
+    "id": "3-bone-filligree-awareness-deflect-deflect-severity",
     "name": "3) Bone Filligree (Awareness/Deflect/Deflect Severity)",
     "filter": "enchantment_defense",
     "il": 1800,
@@ -327,6 +380,7 @@
     "deflect_sev": 1080
   },
   {
+    "id": "3-fire-agate-awareness-crit-avoid-deflect",
     "name": "3) Fire Agate (Awareness/Crit Avoid/Deflect)",
     "filter": "enchantment_defense",
     "il": 1800,
@@ -337,6 +391,7 @@
     "tags": ["gem:fire_agate"]
   },
   {
+    "id": "3-fire-agate-power-strike-severity",
     "name": "3) Fire Agate (Power/Strike/Severity)",
     "filter": "enchantment_offense",
     "il": 1800,
@@ -347,6 +402,7 @@
     "tags": ["gem:fire_agate"]
   },
   {
+    "id": "3-mother-of-pearl-acc-strike-severity",
     "name": "3) Mother of Pearl (Acc/Strike/Severity)",
     "filter": "enchantment_offense",
     "il": 1800,
@@ -356,6 +412,7 @@
     "severity": 1080
   },
   {
+    "id": "3-mother-of-pearl-awareness-crit-avoid-deflect-severity",
     "name": "3) Mother of Pearl (Awareness/Crit Avoid/Deflect Severity)",
     "filter": "enchantment_defense",
     "il": 1800,
@@ -365,6 +422,7 @@
     "deflect_sev": 1080
   },
   {
+    "id": "3-netherite-defense-deflect-deflect-severity",
     "name": "3) Netherite (Defense/Deflect/Deflect Severity)",
     "filter": "enchantment_defense",
     "il": 1800,
@@ -374,6 +432,7 @@
     "deflect_sev": 1080
   },
   {
+    "id": "3-netherite-power-acc-ca",
     "name": "3) Netherite (Power/Acc/CA)",
     "filter": "enchantment_offense",
     "il": 1800,
@@ -383,6 +442,7 @@
     "ca": 1080
   },
   {
+    "id": "3-rubellite-tourmaline-defense-crit-avoid-deflect-severity",
     "name": "3) Rubellite Tourmaline (Defense/Crit Avoid/Deflect Severity)",
     "filter": "enchantment_defense",
     "il": 1800,
@@ -392,6 +452,7 @@
     "deflect_sev": 1080
   },
   {
+    "id": "3-rubellite-tourmaline-power-ca-severity",
     "name": "3) Rubellite Tourmaline (Power/CA/Severity)",
     "filter": "enchantment_offense",
     "il": 1800,
@@ -401,6 +462,7 @@
     "severity": 1080
   },
   {
+    "id": "3-skullite-defense-crit-avoid-deflect",
     "name": "3) Skullite (Defense/Crit Avoid/Deflect)",
     "filter": "enchantment_defense",
     "il": 1800,
@@ -410,6 +472,7 @@
     "deflect": 1080
   },
   {
+    "id": "3-skullite-power-accuracy-strike",
     "name": "3) Skullite (Power/Accuracy/Strike)",
     "filter": "enchantment_offense",
     "il": 1800,
@@ -418,10 +481,29 @@
     "acc": 1080,
     "strike": 1080
   },
-  {"name": "3x MW set", "filter": "group_buff", "outgoing_damage": 0.06, "maxCopies": 1},
-  {"name": "4x MW set", "filter": "group_buff", "outgoing_damage": 0.08, "maxCopies": 1},
-  {"name": "5x MW set", "filter": "group_buff", "outgoing_damage": 0.1, "maxCopies": 1},
   {
+    "id": "3x-mw-set",
+    "name": "3x MW set",
+    "filter": "group_buff",
+    "outgoing_damage": 0.06,
+    "maxCopies": 1
+  },
+  {
+    "id": "4x-mw-set",
+    "name": "4x MW set",
+    "filter": "group_buff",
+    "outgoing_damage": 0.08,
+    "maxCopies": 1
+  },
+  {
+    "id": "5x-mw-set",
+    "name": "5x MW set",
+    "filter": "group_buff",
+    "outgoing_damage": 0.1,
+    "maxCopies": 1
+  },
+  {
+    "id": "aasimar",
     "name": "Aasimar",
     "filter": "class_stuff",
     "power_p": 0.02,
@@ -431,26 +513,55 @@
     "out_healing_p": 0.02,
     "maxCopies": 1
   },
-  {"name": "Ability Scores - Cha", "filter": "attributes_level", "cha": 6},
-  {"name": "Ability Scores - Dex", "filter": "attributes_level", "dex": 6},
-  {"name": "Ability Scores - Int", "filter": "attributes_level", "int": 6},
-  {"name": "Ability Scores - Str", "filter": "attributes_level", "str": 6},
   {
+    "id": "ability-scores-cha",
+    "name": "Ability Scores - Cha",
+    "filter": "attributes_level",
+    "cha": 6
+  },
+  {
+    "id": "ability-scores-dex",
+    "name": "Ability Scores - Dex",
+    "filter": "attributes_level",
+    "dex": 6
+  },
+  {
+    "id": "ability-scores-int",
+    "name": "Ability Scores - Int",
+    "filter": "attributes_level",
+    "int": 6
+  },
+  {
+    "id": "ability-scores-str",
+    "name": "Ability Scores - Str",
+    "filter": "attributes_level",
+    "str": 6
+  },
+  {
+    "id": "acc-m32-1000-to-5800",
     "name": "Acc (M32+, 1000 to 5800)",
     "filter": "modification_offhand_dynamic",
     "dynamicStat": "acc",
     "dynamicMin": 1000,
     "dynamicMax": 5800
   },
-  {"name": "Accuracy Kit", "filter": "reinforcement_armor_kit", "il": 44, "acc": 880},
-  {"name": "Action Bonus", "filter": "enchantment_bonus", "ap_gain": 0.06},
   {
+    "id": "accuracy-kit",
+    "name": "Accuracy Kit",
+    "filter": "reinforcement_armor_kit",
+    "il": 44,
+    "acc": 880
+  },
+  {"id": "action-bonus", "name": "Action Bonus", "filter": "enchantment_bonus", "ap_gain": 0.06},
+  {
+    "id": "acute-senses-ca",
     "name": "Acute Senses (CA)",
     "filter": "companion_enhancement",
     "il": 900,
     "bonuses": ["acute-senses-ca"]
   },
   {
+    "id": "alchemist-s-discipline-alchemist-strike-ca-offense-utility",
     "name": "Alchemist's Discipline [Alchemist] (Strike/CA) <Offense/Utility>",
     "filter": "companion_power",
     "il": 900,
@@ -460,12 +571,14 @@
     "maxCopies": 1
   },
   {
+    "id": "apocalipse-set",
     "name": "Apocalipse Set",
     "filter": "group_buff",
     "enemy_incoming_damage": 0.05,
     "maxCopies": 1
   },
   {
+    "id": "arma-egg-on",
     "name": "Arma-Egg-On",
     "filter": "artifact",
     "il": 2600,
@@ -476,6 +589,7 @@
     "maxCopies": 1
   },
   {
+    "id": "armor-breaker-severity",
     "name": "Armor Breaker (Severity)",
     "filter": "mount_equip",
     "il": 3000,
@@ -483,6 +597,7 @@
     "severity": 4500
   },
   {
+    "id": "armor-breaker-severity-celestial",
     "name": "Armor Breaker (Severity) (Celestial)",
     "filter": "mount_equip",
     "il": 3937,
@@ -490,73 +605,91 @@
     "severity": 5906
   },
   {
+    "id": "arti-assasin-s-dice",
     "name": "Arti: Assasin's Dice",
     "filter": "artifact_call",
     "maxCopies": 1,
     "bonuses": ["arti-assasin-s-dice"]
   },
   {
+    "id": "arti-beacon",
     "name": "Arti: Beacon",
     "filter": "artifact_call",
     "maxCopies": 1,
     "bonuses": ["arti-beacon"]
   },
   {
+    "id": "arti-blades-wyvern",
     "name": "Arti: Blades/Wyvern",
     "filter": "artifact_call",
     "maxCopies": 1,
     "bonuses": ["arti-blades-wyvern"]
   },
   {
+    "id": "arti-censer",
     "name": "Arti: Censer",
     "filter": "artifact_call",
     "maxCopies": 1,
     "bonuses": ["arti-censer"]
   },
   {
+    "id": "arti-crystal",
     "name": "Arti: Crystal",
     "filter": "artifact_call",
     "maxCopies": 1,
     "bonuses": ["arti-crystal"]
   },
   {
+    "id": "arti-demogorgon-s-reach",
     "name": "Arti: Demogorgon's Reach",
     "filter": "artifact_call",
     "maxCopies": 1,
     "bonuses": ["arti-demogorgon"]
   },
-  {"name": "Arti: Marco", "filter": "artifact_call", "maxCopies": 1, "bonuses": ["arti-marco"]},
   {
+    "id": "arti-marco",
+    "name": "Arti: Marco",
+    "filter": "artifact_call",
+    "maxCopies": 1,
+    "bonuses": ["arti-marco"]
+  },
+  {
+    "id": "arti-mythalar",
     "name": "Arti: Mythalar",
     "filter": "artifact_call",
     "maxCopies": 1,
     "bonuses": ["arti-mythalar"]
   },
   {
+    "id": "arti-scepter",
     "name": "Arti: Scepter",
     "filter": "artifact_call",
     "maxCopies": 1,
     "bonuses": ["arti-scepter"]
   },
   {
+    "id": "arti-spelljammer-lantern",
     "name": "Arti: Spelljammer/Lantern",
     "filter": "artifact_call",
     "maxCopies": 1,
     "bonuses": ["arti-spelljammer-lantern"]
   },
   {
+    "id": "arti-tentacle-rod",
     "name": "Arti: Tentacle Rod",
     "filter": "artifact_call",
     "maxCopies": 1,
     "bonuses": ["arti-tentacle-rod"]
   },
   {
+    "id": "arti-volcano-heart-of-black-dragon",
     "name": "Arti: Volcano/Heart of Black Dragon",
     "filter": "artifact_call",
     "maxCopies": 1,
     "bonuses": ["arti-volcano-heart-of-black-dragon"]
   },
   {
+    "id": "assassin-s-knife",
     "name": "Assassin's Knife",
     "filter": "artifact",
     "il": 2000,
@@ -567,6 +700,7 @@
     "maxCopies": 1
   },
   {
+    "id": "avian-aura-celestial",
     "name": "Avian Aura (Celestial)",
     "filter": "mount_equip",
     "il": 3937,
@@ -575,18 +709,21 @@
     "forte": 5906
   },
   {
+    "id": "avian-aura-group",
     "name": "Avian Aura (Group)",
     "filter": "group_buff",
     "maxCopies": 1,
     "bonuses": ["avian-aura-group"]
   },
   {
+    "id": "avian-aura-group-celestial",
     "name": "Avian Aura (Group) (Celestial)",
     "filter": "group_buff",
     "maxCopies": 1,
     "bonuses": ["avian-aura-group-celestial"]
   },
   {
+    "id": "bard-s-critical-tuning",
     "name": "Bard's Critical Tuning",
     "filter": "class_stuff",
     "maxCopies": 1,
@@ -594,6 +731,7 @@
     "bonuses": ["bard-s-critical-tuning"]
   },
   {
+    "id": "bard-s-harmonize",
     "name": "Bard's Harmonize",
     "filter": "class_stuff",
     "ap_gain": 0.02,
@@ -601,12 +739,14 @@
     "allowedClass": ["bard"]
   },
   {
+    "id": "bard-s-storyteller-flamingo",
     "name": "Bard's Storyteller + Flamingo",
     "filter": "group_buff",
     "outgoing_damage": 0.17,
     "maxCopies": 1
   },
   {
+    "id": "bard-s-truly-inspired-skill",
     "name": "Bard's Truly Inspired (Skill)",
     "filter": "class_stuff",
     "maxCopies": 1,
@@ -614,6 +754,7 @@
     "bonuses": ["bard-s-truly-inspired-skill"]
   },
   {
+    "id": "base-attributes-barbarian",
     "name": "Base Attributes - Barbarian",
     "filter": "attributes_class",
     "str": 18,
@@ -625,6 +766,7 @@
     "allowedClass": ["barbarian"]
   },
   {
+    "id": "base-attributes-bard",
     "name": "Base Attributes - Bard",
     "filter": "attributes_class",
     "str": 13,
@@ -636,6 +778,7 @@
     "allowedClass": ["bard"]
   },
   {
+    "id": "base-attributes-warlock",
     "name": "Base Attributes - Warlock",
     "filter": "attributes_class",
     "str": 8,
@@ -647,6 +790,7 @@
     "allowedClass": ["warlock"]
   },
   {
+    "id": "baseline-character",
     "name": "Baseline Character",
     "filter": "baseline",
     "il": 5000,
@@ -664,6 +808,7 @@
     "enemy_deflect_sev": 0.9
   },
   {
+    "id": "batiri-s-wisdom-batiri-damage-offense",
     "name": "Batiri's Wisdom [Batiri] (Damage) <Offense>",
     "filter": "companion_power",
     "il": 900,
@@ -672,6 +817,7 @@
     "bonuses": ["batiri-s-wisdom-batiri-damage-offense"]
   },
   {
+    "id": "beacon",
     "name": "Beacon",
     "filter": "artifact",
     "il": 1500,
@@ -682,6 +828,7 @@
     "maxCopies": 1
   },
   {
+    "id": "blazing-oportunity-ca-severity-bestial-fire-archon",
     "name": "Blazing Oportunity (CA/Severity - Bestial Fire Archon)",
     "filter": "mount_equip",
     "il": 3000,
@@ -690,6 +837,7 @@
     "severity": 2250
   },
   {
+    "id": "blazing-oportunity-ca-severity-bestial-fire-archon-celestial",
     "name": "Blazing Oportunity (CA/Severity - Bestial Fire Archon) (Celestial)",
     "filter": "mount_equip",
     "il": 3937,
@@ -698,6 +846,7 @@
     "severity": 2953
   },
   {
+    "id": "bloodbrass-pistol",
     "name": "Bloodbrass Pistol",
     "filter": "artifact",
     "il": 2000,
@@ -708,13 +857,15 @@
     "maxCopies": 1
   },
   {
+    "id": "blue-fire-eye",
     "name": "Blue Fire Eye",
     "filter": "group_buff",
     "maxCopies": 1,
     "bonuses": ["blue-fire-eye"]
   },
-  {"name": "Boon Bug", "filter": "misc", "combined_rating": 800},
+  {"id": "boon-bug", "name": "Boon Bug", "filter": "misc", "combined_rating": 800},
   {
+    "id": "boon-accuracy",
     "name": "Boon: Accuracy",
     "filter": "guild_boon_off",
     "il": 1000,
@@ -722,6 +873,7 @@
     "acc": 3000
   },
   {
+    "id": "boon-awareness",
     "name": "Boon: Awareness",
     "filter": "guild_boon_def",
     "il": 1000,
@@ -729,6 +881,7 @@
     "awareness": 3000
   },
   {
+    "id": "boon-critical-avoidance",
     "name": "Boon: Critical Avoidance",
     "filter": "guild_boon_def",
     "il": 1000,
@@ -736,6 +889,7 @@
     "crit_avoid": 3000
   },
   {
+    "id": "boon-defense",
     "name": "Boon: Defense",
     "filter": "guild_boon_def",
     "il": 1000,
@@ -743,6 +897,7 @@
     "defense": 3000
   },
   {
+    "id": "boon-incoming-healing",
     "name": "Boon: Incoming Healing",
     "filter": "guild_boon_def",
     "il": 1000,
@@ -750,6 +905,7 @@
     "inc_healing": 3000
   },
   {
+    "id": "boon-movement-speed",
     "name": "Boon: Movement Speed",
     "filter": "guild_boon_util",
     "il": 1000,
@@ -757,6 +913,7 @@
     "movement": 0.1
   },
   {
+    "id": "boon-power",
     "name": "Boon: Power",
     "filter": "guild_boon_off",
     "il": 1000,
@@ -764,12 +921,14 @@
     "power": 3000
   },
   {
+    "id": "boon-revive-sickness",
     "name": "Boon: Revive Sickness",
     "filter": "guild_boon_util",
     "il": 1000,
     "combined_rating": 800
   },
   {
+    "id": "boon-severity",
     "name": "Boon: Severity",
     "filter": "guild_boon_off",
     "il": 1000,
@@ -777,6 +936,7 @@
     "severity": 3000
   },
   {
+    "id": "boon-strike",
     "name": "Boon: Strike",
     "filter": "guild_boon_off",
     "il": 1000,
@@ -784,6 +944,7 @@
     "strike": 3000
   },
   {
+    "id": "boons",
     "name": "Boons",
     "filter": "boons",
     "power_p": 0.04,
@@ -797,6 +958,7 @@
     "recharge": 0.04
   },
   {
+    "id": "brutality",
     "name": "Brutality",
     "filter": "insignia",
     "il": 750,
@@ -805,6 +967,7 @@
     "severity": 1125
   },
   {
+    "id": "brutality-pref",
     "name": "Brutality (Pref)",
     "filter": "insignia",
     "il": 900,
@@ -813,6 +976,7 @@
     "severity": 1350
   },
   {
+    "id": "ca-m32-600-to-3600",
     "name": "CA (M32+, 600 to 3600)",
     "filter": "modification_offhand_dynamic",
     "dynamicStat": "ca",
@@ -820,6 +984,7 @@
     "dynamicMax": 3600
   },
   {
+    "id": "campfire-buff",
     "name": "Campfire Buff",
     "filter": "attributes_campfire",
     "str": 1,
@@ -829,8 +994,15 @@
     "wis": 1,
     "cha": 1
   },
-  {"name": "Captain", "filter": "group_buff", "maxCopies": 1, "bonuses": ["captain"]},
   {
+    "id": "captain",
+    "name": "Captain",
+    "filter": "group_buff",
+    "maxCopies": 1,
+    "bonuses": ["captain"]
+  },
+  {
+    "id": "celestial-lion-s-presence-2-stalwart-golden-lion-damage-utility",
     "name": "Celestial Lion's Presence 2% [Stalwart Golden Lion] (Damage) <Utility>",
     "filter": "companion_power",
     "il": 900,
@@ -839,6 +1011,7 @@
     "maxCopies": 1
   },
   {
+    "id": "celestial-lion-s-presence-3-stalwart-golden-lion-damage-utility",
     "name": "Celestial Lion's Presence 3% [Stalwart Golden Lion] (Damage) <Utility>",
     "filter": "companion_power",
     "il": 900,
@@ -847,6 +1020,7 @@
     "maxCopies": 1
   },
   {
+    "id": "celestial-lion-s-presence-4-stalwart-golden-lion-damage-utility",
     "name": "Celestial Lion's Presence 4% [Stalwart Golden Lion] (Damage) <Utility>",
     "filter": "companion_power",
     "il": 900,
@@ -855,11 +1029,13 @@
     "maxCopies": 1
   },
   {
+    "id": "cha-lua-accuracy-severity",
     "name": "Cha Lua (Accuracy/Severity)",
     "filter": "consumable_event_food",
     "bonuses": ["cha-lua-accuracy-severity"]
   },
   {
+    "id": "coldlight-walker-s-gaze-coldlight-walker-strike-severity-utility",
     "name": "Coldlight Walker's Gaze [Coldlight Walker] (Strike/Severity) <Utility>",
     "filter": "companion_power",
     "il": 900,
@@ -868,9 +1044,21 @@
     "sev_p": 0.045,
     "maxCopies": 1
   },
-  {"name": "Combat Advantage Jewel", "filter": "reinforcement_jewel", "il": 44, "ca": 880},
-  {"name": "Comp Enchantment (Celestial)", "filter": "companion_enchantment", "il": 1800},
   {
+    "id": "combat-advantage-jewel",
+    "name": "Combat Advantage Jewel",
+    "filter": "reinforcement_jewel",
+    "il": 44,
+    "ca": 880
+  },
+  {
+    "id": "comp-enchantment-celestial",
+    "name": "Comp Enchantment (Celestial)",
+    "filter": "companion_enchantment",
+    "il": 1800
+  },
+  {
+    "id": "compy-s-instincts-alpha-compy-power-utility",
     "name": "Compy's Instincts [Alpha Compy] (Power) <Utility>",
     "filter": "companion_power",
     "il": 900,
@@ -879,6 +1067,7 @@
     "maxCopies": 1
   },
   {
+    "id": "crimson-calamity",
     "name": "Crimson Calamity",
     "filter": "artifact",
     "il": 2600,
@@ -889,8 +1078,15 @@
     "stamina_regen": 0.15,
     "maxCopies": 1
   },
-  {"name": "Crit Strike Kit", "filter": "reinforcement_armor_kit", "il": 44, "strike": 880},
   {
+    "id": "crit-strike-kit",
+    "name": "Crit Strike Kit",
+    "filter": "reinforcement_armor_kit",
+    "il": 44,
+    "strike": 880
+  },
+  {
+    "id": "crystal",
     "name": "Crystal",
     "filter": "artifact",
     "il": 1500,
@@ -901,6 +1097,7 @@
     "maxCopies": 1
   },
   {
+    "id": "dark-dealings-dark-dealer-accuracy-ca-utility",
     "name": "Dark Dealings [Dark Dealer] (Accuracy/CA) <Utility>",
     "filter": "companion_power",
     "il": 900,
@@ -909,8 +1106,14 @@
     "ca_p": 0.045,
     "maxCopies": 1
   },
-  {"name": "Debuff Enhancement", "filter": "companion_enhancement", "il": 900},
   {
+    "id": "debuff-enhancement",
+    "name": "Debuff Enhancement",
+    "filter": "companion_enhancement",
+    "il": 900
+  },
+  {
+    "id": "demogorgon-s-reach",
     "name": "Demogorgon's Reach",
     "filter": "artifact",
     "il": 1200,
@@ -921,6 +1124,7 @@
     "maxCopies": 1
   },
   {
+    "id": "demon-skull",
     "name": "Demon Skull",
     "filter": "artifact",
     "il": 2600,
@@ -930,13 +1134,21 @@
     "severity": 1825,
     "maxCopies": 1
   },
-  {"name": "Devil's precision", "filter": "overload", "acc_p": 0.05, "strike_p": 0.05},
   {
+    "id": "devil-s-precision",
+    "name": "Devil's precision",
+    "filter": "overload",
+    "acc_p": 0.05,
+    "strike_p": 0.05
+  },
+  {
+    "id": "diamond-blessing-damage",
     "name": "Diamond Blessing (Damage)",
     "filter": "consumable_blessing",
     "bonuses": ["diamond-blessing-damage"]
   },
   {
+    "id": "dominance",
     "name": "Dominance",
     "filter": "insignia",
     "il": 750,
@@ -945,6 +1157,7 @@
     "forte": 1125
   },
   {
+    "id": "dominance-pref",
     "name": "Dominance (Pref)",
     "filter": "insignia",
     "il": 900,
@@ -953,6 +1166,7 @@
     "forte": 1350
   },
   {
+    "id": "dominant-force-power",
     "name": "Dominant Force (Power)",
     "filter": "mount_equip",
     "il": 3000,
@@ -960,14 +1174,22 @@
     "power": 4500
   },
   {
+    "id": "dominant-force-power-celestial",
     "name": "Dominant Force (Power) (Celestial)",
     "filter": "mount_equip",
     "il": 3937,
     "combined_rating": 3544,
     "power": 5906
   },
-  {"name": "Drizzt", "filter": "group_buff", "maxCopies": 1, "bonuses": ["drizzt"]},
   {
+    "id": "drizzt",
+    "name": "Drizzt",
+    "filter": "group_buff",
+    "maxCopies": 1,
+    "bonuses": ["drizzt"]
+  },
+  {
+    "id": "enchanted-bregan-d-aerthe-expert-s-cloth",
     "name": "Enchanted Bregan D'aerthe Expert's Cloth",
     "filter": "gear_armor",
     "il": 2050,
@@ -978,6 +1200,7 @@
     "allowedClass": ["bard", "warlock"]
   },
   {
+    "id": "envenomed-storyteller-s-journal",
     "name": "Envenomed Storyteller's Journal",
     "filter": "artifact",
     "il": 600,
@@ -988,20 +1211,29 @@
     "defense": 450,
     "maxCopies": 1
   },
-  {"name": "Etrien", "filter": "group_buff", "maxCopies": 1, "bonuses": ["etrien"]},
   {
+    "id": "etrien",
+    "name": "Etrien",
+    "filter": "group_buff",
+    "maxCopies": 1,
+    "bonuses": ["etrien"]
+  },
+  {
+    "id": "executioner-s-covenant",
     "name": "Executioner's Covenant",
     "filter": "insignia_bonus",
     "maxCopies": 2,
     "bonuses": ["executioner-s-covenant"]
   },
   {
+    "id": "exploit-weakness-strike-sev-blaspheme",
     "name": "Exploit Weakness (Strike/Sev - Blaspheme)",
     "filter": "companion_enhancement",
     "il": 900,
     "bonuses": ["exploit-weakness-strike-sev-blaspheme"]
   },
   {
+    "id": "fawn-s-instincts-fawn-of-shiallia-power-strike-offense-utility",
     "name": "Fawn's Instincts [Fawn of Shiallia] (Power/Strike) <Offense/Utility>",
     "filter": "companion_power",
     "il": 900,
@@ -1011,6 +1243,7 @@
     "maxCopies": 1
   },
   {
+    "id": "ferocious-predator-power-severity",
     "name": "Ferocious Predator (Power/Severity)",
     "filter": "mount_equip",
     "il": 3000,
@@ -1019,6 +1252,7 @@
     "severity": 2250
   },
   {
+    "id": "ferocious-predator-power-severity-celestial",
     "name": "Ferocious Predator (Power/Severity) (Celestial)",
     "filter": "mount_equip",
     "il": 3937,
@@ -1026,14 +1260,22 @@
     "power": 2953,
     "severity": 2953
   },
-  {"name": "Ferocity (0%)", "filter": "mount_equip", "il": 3000, "combined_rating": 2700},
   {
+    "id": "ferocity-0",
+    "name": "Ferocity (0%)",
+    "filter": "mount_equip",
+    "il": 3000,
+    "combined_rating": 2700
+  },
+  {
+    "id": "ferocity-0-celestial",
     "name": "Ferocity (0%) (Celestial)",
     "filter": "mount_equip",
     "il": 3937,
     "combined_rating": 3544
   },
   {
+    "id": "ferocity-1",
     "name": "Ferocity (1%)",
     "filter": "mount_equip",
     "il": 3000,
@@ -1041,6 +1283,7 @@
     "overall_damage": 0.01
   },
   {
+    "id": "ferocity-1-celestial",
     "name": "Ferocity (1%) (Celestial)",
     "filter": "mount_equip",
     "il": 3937,
@@ -1048,6 +1291,7 @@
     "overall_damage": 0.01
   },
   {
+    "id": "ferocity-2",
     "name": "Ferocity (2%)",
     "filter": "mount_equip",
     "il": 3000,
@@ -1055,6 +1299,7 @@
     "overall_damage": 0.02
   },
   {
+    "id": "ferocity-2-celestial",
     "name": "Ferocity (2%) (Celestial)",
     "filter": "mount_equip",
     "il": 3937,
@@ -1062,32 +1307,49 @@
     "overall_damage": 0.02
   },
   {
+    "id": "fighter-s-enforced-threat",
     "name": "Fighter's Enforced Threat",
     "filter": "group_buff",
     "enemy_awareness": -0.1,
     "maxCopies": 1
   },
-  {"name": "Flapjack", "filter": "group_buff", "maxCopies": 1, "bonuses": ["flapjack"]},
   {
+    "id": "flapjack",
+    "name": "Flapjack",
+    "filter": "group_buff",
+    "maxCopies": 1,
+    "bonuses": ["flapjack"]
+  },
+  {
+    "id": "flask-of-potency-1-severity",
     "name": "Flask of Potency +1 (Severity)",
     "filter": "consumable_potion",
     "bonuses": ["flask-of-potency-1-severity"]
   },
   {
+    "id": "generic-defense",
     "name": "Generic (Defense)",
     "filter": "enchantment_defense",
     "il": 1800,
     "combined_rating": 1620
   },
-  {"name": "Generic Companion", "filter": "companion", "il": 3960, "combined_rating": 3366},
-  {"name": "Gith", "filter": "class_stuff", "ca_p": 0.05, "maxCopies": 1},
   {
+    "id": "generic-companion",
+    "name": "Generic Companion",
+    "filter": "companion",
+    "il": 3960,
+    "combined_rating": 3366
+  },
+  {"id": "gith", "name": "Gith", "filter": "class_stuff", "ca_p": 0.05, "maxCopies": 1},
+  {
+    "id": "gladiator-s-guile",
     "name": "Gladiator's Guile",
     "filter": "insignia_bonus",
     "maxCopies": 2,
     "bonuses": ["gladiator-s-guile"]
   },
   {
+    "id": "golden-cat-s-instincts-golden-cat-ca-any",
     "name": "Golden Cat's Instincts [Golden Cat] (CA) <Any>",
     "filter": "companion_power",
     "il": 900,
@@ -1096,6 +1358,7 @@
     "maxCopies": 1
   },
   {
+    "id": "grace-ring",
     "name": "Grace Ring",
     "filter": "group_buff",
     "enemy_defense": -0.035,
@@ -1104,16 +1367,19 @@
     "maxCopies": 1
   },
   {
+    "id": "grand-summer-feast",
     "name": "Grand Summer Feast",
     "filter": "consumable_event_food",
     "bonuses": ["grand-summer-feast"]
   },
   {
+    "id": "grand-summer-feast-legacy",
     "name": "Grand Summer Feast (Legacy)",
     "filter": "consumable_event_food",
     "bonuses": ["grand-summer-feast-legacy"]
   },
   {
+    "id": "hero-soul-forte-celestial",
     "name": "Hero Soul (Forte) (Celestial)",
     "filter": "mount_equip",
     "il": 3937,
@@ -1121,11 +1387,13 @@
     "forte": 5906
   },
   {
+    "id": "hot-wings-accuracy-severity",
     "name": "Hot Wings (Accuracy/Severity)",
     "filter": "consumable_event_food",
     "bonuses": ["hot-wings-accuracy-severity"]
   },
   {
+    "id": "human",
     "name": "Human",
     "filter": "class_stuff",
     "power_p": 0.01,
@@ -1144,26 +1412,31 @@
     "maxCopies": 1
   },
   {
+    "id": "invocation-accuracy",
     "name": "Invocation: Accuracy",
     "filter": "consumable_blessing",
     "bonuses": ["invocation-accuracy"]
   },
   {
+    "id": "invocation-crit-strike",
     "name": "Invocation: Crit Strike",
     "filter": "consumable_blessing",
     "bonuses": ["invocation-crit-strike"]
   },
   {
+    "id": "invocation-power",
     "name": "Invocation: Power",
     "filter": "consumable_blessing",
     "bonuses": ["invocation-power"]
   },
   {
+    "id": "invocation-severity",
     "name": "Invocation: Severity",
     "filter": "consumable_blessing",
     "bonuses": ["invocation-severity"]
   },
   {
+    "id": "lightning-flash",
     "name": "Lightning Flash",
     "filter": "combat_enchant_offense",
     "il": 6000,
@@ -1171,6 +1444,7 @@
     "bonuses": ["lightning-flash"]
   },
   {
+    "id": "m16-burnished-sword-knot-epic",
     "name": "M16 Burnished Sword Knot Epic",
     "filter": "gear_weapon_offhand",
     "il": 850,
@@ -1182,6 +1456,7 @@
     "allowedClass": ["barbarian"]
   },
   {
+    "id": "m26-scintillant-amulet",
     "name": "M26 Scintillant Amulet",
     "filter": "gear_neck",
     "il": 1700,
@@ -1193,6 +1468,7 @@
     "bonuses": ["m26-masterwork-neck-waist-set"]
   },
   {
+    "id": "m26-scintillant-amulet-1",
     "name": "M26 Scintillant Amulet +1",
     "filter": "gear_neck",
     "il": 1800,
@@ -1204,6 +1480,7 @@
     "bonuses": ["m26-masterwork-neck-waist-set"]
   },
   {
+    "id": "m26-scintillant-sash",
     "name": "M26 Scintillant Sash",
     "filter": "gear_waist",
     "il": 1700,
@@ -1216,6 +1493,7 @@
     "bonuses": ["m26-masterwork-neck-waist-set"]
   },
   {
+    "id": "m26-scintillant-sash-1",
     "name": "M26 Scintillant Sash +1",
     "filter": "gear_waist",
     "il": 1800,
@@ -1228,6 +1506,7 @@
     "bonuses": ["m26-masterwork-neck-waist-set"]
   },
   {
+    "id": "m26-shroomwood-amulet",
     "name": "M26 Shroomwood Amulet",
     "filter": "gear_neck",
     "il": 1700,
@@ -1238,6 +1517,7 @@
     "bonuses": ["m26-masterwork-neck-waist-set"]
   },
   {
+    "id": "m26-shroomwood-amulet-1",
     "name": "M26 Shroomwood Amulet +1",
     "filter": "gear_neck",
     "il": 1800,
@@ -1248,6 +1528,7 @@
     "bonuses": ["m26-masterwork-neck-waist-set"]
   },
   {
+    "id": "m26-shroomwood-sash",
     "name": "M26 Shroomwood Sash",
     "filter": "gear_waist",
     "il": 1700,
@@ -1260,6 +1541,7 @@
     "bonuses": ["m26-masterwork-neck-waist-set"]
   },
   {
+    "id": "m26-shroomwood-sash-1",
     "name": "M26 Shroomwood Sash +1",
     "filter": "gear_waist",
     "il": 1800,
@@ -1272,6 +1554,7 @@
     "bonuses": ["m26-masterwork-neck-waist-set"]
   },
   {
+    "id": "m28-voidtouched-greatsword",
     "name": "M28 Voidtouched Greatsword",
     "filter": "gear_weapon_mainhand",
     "il": 3000,
@@ -1283,6 +1566,7 @@
     "bonuses": ["m28-voidtouched-set"]
   },
   {
+    "id": "m28-voidtouched-pactblade",
     "name": "M28 Voidtouched Pactblade",
     "filter": "gear_weapon_mainhand",
     "il": 3000,
@@ -1294,6 +1578,7 @@
     "bonuses": ["m28-voidtouched-set"]
   },
   {
+    "id": "m28-voidtouched-tome",
     "name": "M28 Voidtouched Tome",
     "filter": "gear_weapon_offhand",
     "il": 3000,
@@ -1304,6 +1589,7 @@
     "bonuses": ["m28-voidtouched-set"]
   },
   {
+    "id": "m29-enchanted-depthweave-cap-ca",
     "name": "M29 Enchanted Depthweave Cap (CA)",
     "filter": "gear_head",
     "il": 3200,
@@ -1314,6 +1600,7 @@
     "bonuses": ["m29-enchanted-depthweave-cap-ca"]
   },
   {
+    "id": "m29-enchanted-depthweave-coat-acc-ca",
     "name": "M29 Enchanted Depthweave Coat (Acc/CA)",
     "filter": "gear_armor",
     "il": 3200,
@@ -1325,6 +1612,7 @@
     "bonuses": ["m29-ruthless-advantage"]
   },
   {
+    "id": "m29-enchanted-depthweave-vest-acc-ca",
     "name": "M29 Enchanted Depthweave Vest (Acc/CA)",
     "filter": "gear_armor",
     "il": 3200,
@@ -1336,6 +1624,7 @@
     "bonuses": ["m29-ruthless-advantage"]
   },
   {
+    "id": "m31-belt-of-the-forsaken",
     "name": "M31 Belt of the Forsaken",
     "filter": "gear_waist",
     "il": 4050,
@@ -1345,6 +1634,7 @@
     "int": 3
   },
   {
+    "id": "m31-bindings-of-the-death-pact-damage",
     "name": "M31 Bindings of the Death Pact (Damage)",
     "filter": "gear_arms",
     "il": 4300,
@@ -1354,6 +1644,7 @@
     "bonuses": ["m31-berserking-might-greater"]
   },
   {
+    "id": "m31-bloodlit-veil-ca-power",
     "name": "M31 Bloodlit Veil (CA/Power)",
     "filter": "gear_ring",
     "il": 4150,
@@ -1364,6 +1655,7 @@
     "bonuses": ["m24-maiden-s-advantage"]
   },
   {
+    "id": "m31-bloodwoven-ink-ap",
     "name": "M31 Bloodwoven Ink (AP)",
     "filter": "gear_shirt",
     "il": 3150,
@@ -1374,6 +1666,7 @@
     "recharge": 0.015
   },
   {
+    "id": "m31-bloodwoven-sigils-ca",
     "name": "M31 Bloodwoven Sigils (CA)",
     "filter": "gear_pants",
     "il": 3150,
@@ -1383,6 +1676,7 @@
     "bonuses": ["m31-reckless-advantage", "m31-enchanted-advantage"]
   },
   {
+    "id": "m31-bloodwoven-signs-damage",
     "name": "M31 Bloodwoven Signs (Damage)",
     "filter": "gear_shirt",
     "il": 3150,
@@ -1392,6 +1686,7 @@
     "bonuses": ["m31-enchanted-advantage", "m31-critical-empowerment"]
   },
   {
+    "id": "m31-bulwark-of-the-eternal-zulkirate-strike-severity",
     "name": "M31 Bulwark of the Eternal Zulkirate (Strike/Severity)",
     "filter": "gear_armor",
     "il": 4300,
@@ -1402,6 +1697,7 @@
     "bonuses": ["m19-ruthless-might"]
   },
   {
+    "id": "m31-bulwark-of-the-zulkir-s-decree-power-acc-strike",
     "name": "M31 Bulwark of the Zulkir's Decree (Power/Acc/Strike)",
     "filter": "gear_armor",
     "il": 4550,
@@ -1413,6 +1709,7 @@
     "bonuses": ["m31-ruthless-might-ascendant"]
   },
   {
+    "id": "m31-crown-of-the-everscourge-ca",
     "name": "M31 Crown of the Everscourge (CA)",
     "filter": "gear_head",
     "il": 4550,
@@ -1422,6 +1719,7 @@
     "bonuses": ["m31-enduring-avantage-ascendant"]
   },
   {
+    "id": "m31-gauntlets-of-the-wrathborn-acc-ca",
     "name": "M31 Gauntlets of the Wrathborn (Acc/CA)",
     "filter": "gear_arms",
     "il": 4550,
@@ -1431,6 +1729,7 @@
     "bonuses": ["m31-enveloped-rage-ascendant"]
   },
   {
+    "id": "m31-greaves-of-the-crimson-march-damage",
     "name": "M31 Greaves of the Crimson March (Damage)",
     "filter": "gear_boots",
     "il": 4550,
@@ -1440,6 +1739,7 @@
     "bonuses": ["m31-bloodletting-ascendant"]
   },
   {
+    "id": "m31-necklace-of-the-forsaken",
     "name": "M31 Necklace of the Forsaken",
     "filter": "gear_neck",
     "il": 4050,
@@ -1447,6 +1747,7 @@
     "ca": 1215
   },
   {
+    "id": "m31-runebound-shackle-damage",
     "name": "M31 Runebound Shackle (Damage)",
     "filter": "gear_ring",
     "il": 3950,
@@ -1458,6 +1759,7 @@
     "bonuses": ["m31-thayan-predator"]
   },
   {
+    "id": "m31-sanguine-seal-damage",
     "name": "M31 Sanguine Seal (Damage)",
     "filter": "gear_ring",
     "il": 3950,
@@ -1468,6 +1770,7 @@
     "bonuses": ["m31-thayan-predator"]
   },
   {
+    "id": "m31-threads-of-the-arch-thrall-power-strike-severity",
     "name": "M31 Threads of the Arch-Thrall (Power/Strike/Severity)",
     "filter": "gear_boots",
     "il": 4300,
@@ -1477,6 +1780,7 @@
     "bonuses": ["eagle-s-mastery-greater"]
   },
   {
+    "id": "m31-twisted-pact-severity",
     "name": "M31 Twisted Pact (Severity)",
     "filter": "gear_ring",
     "il": 4150,
@@ -1487,6 +1791,7 @@
     "bonuses": ["m31-enduring-critical"]
   },
   {
+    "id": "m31-visage-of-the-eternal-herald",
     "name": "M31 Visage of the Eternal Herald",
     "filter": "gear_head",
     "il": 4550,
@@ -1496,6 +1801,7 @@
     "bonuses": ["m31-ruthless-resources-ascendant"]
   },
   {
+    "id": "m31-5-ritualistic-necklace",
     "name": "M31.5 Ritualistic Necklace",
     "filter": "gear_neck",
     "il": 4050,
@@ -1505,6 +1811,7 @@
     "crit_avoid": 1671
   },
   {
+    "id": "m31-5-ritualistic-strap",
     "name": "M31.5 Ritualistic Strap",
     "filter": "gear_waist",
     "il": 4050,
@@ -1514,6 +1821,7 @@
     "deflect": 2278
   },
   {
+    "id": "m32-bracers-of-the-infernal-tempest-strike",
     "name": "M32 Bracers of the Infernal Tempest (Strike)",
     "filter": "gear_arms",
     "il": 5000,
@@ -1524,6 +1832,7 @@
     "bonuses": ["m32-bracers-of-the-infernal-tempest-strike"]
   },
   {
+    "id": "m32-circlet-of-the-infernal-tempest-strike-sev",
     "name": "M32 Circlet of the Infernal Tempest (Strike/Sev)",
     "filter": "gear_head",
     "il": 5000,
@@ -1534,6 +1843,7 @@
     "bonuses": ["m32-circlet-of-the-infernal-tempest-strike-sev"]
   },
   {
+    "id": "m32-codex-of-eternal-chains-celestial",
     "name": "M32 Codex of Eternal Chains (Celestial)",
     "filter": "gear_weapon_offhand",
     "il": 5250,
@@ -1545,6 +1855,7 @@
     "bonuses": ["m32-impending-doom-celestial"]
   },
   {
+    "id": "m32-codex-of-eternal-chains-legendary",
     "name": "M32 Codex of Eternal Chains (Legendary)",
     "filter": "gear_weapon_offhand",
     "il": 4450,
@@ -1555,6 +1866,7 @@
     "bonuses": ["m32-omen-of-doom-legendary"]
   },
   {
+    "id": "m32-codex-of-eternal-chains-mythic",
     "name": "M32 Codex of Eternal Chains (Mythic)",
     "filter": "gear_weapon_offhand",
     "il": 4800,
@@ -1566,6 +1878,7 @@
     "bonuses": ["m32-omen-of-doom-mythic"]
   },
   {
+    "id": "m32-deathsilver-coil-of-dominion-acc-strike",
     "name": "M32 Deathsilver Coil of Dominion (Acc/Strike)",
     "filter": "gear_ring",
     "il": 4900,
@@ -1577,6 +1890,7 @@
     "bonuses": ["m32-deathsilver-coil-of-dominion-acc-strike"]
   },
   {
+    "id": "m32-deathsilver-ring-of-submission-strike",
     "name": "M32 Deathsilver Ring of  Submission (Strike)",
     "filter": "gear_ring",
     "il": 4900,
@@ -1588,6 +1902,7 @@
     "bonuses": ["m32-deathsilver-ring-of-submission-strike"]
   },
   {
+    "id": "m32-doomcleaver-celestial",
     "name": "M32 Doomcleaver (Celestial)",
     "filter": "gear_weapon_mainhand",
     "il": 5250,
@@ -1600,6 +1915,7 @@
     "bonuses": ["m32-doomcleaver-celestial", "m32-knot-of-the-bloodhound-celestial"]
   },
   {
+    "id": "m32-knot-of-the-bloodhound-celestial",
     "name": "M32 Knot of the Bloodhound (Celestial)",
     "filter": "gear_weapon_offhand",
     "il": 5250,
@@ -1611,6 +1927,7 @@
     "bonuses": ["m32-doomcleaver-celestial", "m32-knot-of-the-bloodhound-celestial"]
   },
   {
+    "id": "m32-omen-of-doom-celestial",
     "name": "M32 Omen of Doom (Celestial)",
     "filter": "gear_weapon_mainhand",
     "il": 5250,
@@ -1623,6 +1940,7 @@
     "bonuses": ["m32-impending-doom-celestial"]
   },
   {
+    "id": "m32-omen-of-doom-legendary",
     "name": "M32 Omen of Doom (Legendary)",
     "filter": "gear_weapon_mainhand",
     "il": 4450,
@@ -1635,6 +1953,7 @@
     "bonuses": ["m32-omen-of-doom-legendary"]
   },
   {
+    "id": "m32-omen-of-doom-mythic",
     "name": "M32 Omen of Doom (Mythic)",
     "filter": "gear_weapon_mainhand",
     "il": 4800,
@@ -1647,6 +1966,7 @@
     "bonuses": ["m32-omen-of-doom-mythic"]
   },
   {
+    "id": "m32-rotsteel-loop-of-ash-ca",
     "name": "M32 Rotsteel Loop of Ash (CA)",
     "filter": "gear_ring",
     "il": 4650,
@@ -1658,6 +1978,7 @@
     "bonuses": ["m32-rotsteel-loop-of-ash-ca"]
   },
   {
+    "id": "m32-rotsteel-ring-of-blight-severity",
     "name": "M32 Rotsteel Ring of Blight (Severity)",
     "filter": "gear_ring",
     "il": 4650,
@@ -1669,6 +1990,7 @@
     "maxCopies": 1
   },
   {
+    "id": "m32-rotsteel-ring-of-spores-strike",
     "name": "M32 Rotsteel Ring of Spores (Strike)",
     "filter": "gear_ring",
     "il": 4650,
@@ -1680,6 +2002,7 @@
     "bonuses": ["m32-rotsteel-ring-of-spores-strike"]
   },
   {
+    "id": "m32-5-cindersilk-hood-ap-on-mobs",
     "name": "M32.5 Cindersilk Hood (AP on mobs)",
     "filter": "gear_head",
     "il": 4600,
@@ -1688,6 +2011,7 @@
     "forte": 3291
   },
   {
+    "id": "m33-coldsilver-coil-of-wrath",
     "name": "M33 Coldsilver Coil of Wrath",
     "filter": "gear_ring",
     "il": 5700,
@@ -1699,6 +2023,7 @@
     "bonuses": ["m33-accumulating-precision"]
   },
   {
+    "id": "m33-coldsilver-loop-of-the-arcane",
     "name": "M33 Coldsilver Loop of the Arcane",
     "filter": "gear_ring",
     "il": 5700,
@@ -1710,6 +2035,7 @@
     "bonuses": ["m33-dashing-ranger"]
   },
   {
+    "id": "m33-coldsilver-ring-of-initiative",
     "name": "M33 Coldsilver Ring of Initiative",
     "filter": "gear_ring",
     "il": 5700,
@@ -1721,6 +2047,7 @@
     "bonuses": ["m24-maiden-s-advantage"]
   },
   {
+    "id": "m33-cracked-stormbind-tunic-pants",
     "name": "M33 Cracked Stormbind Tunic Pants",
     "filter": "gear_pants",
     "il": 4600,
@@ -1732,6 +2059,7 @@
     "bonuses": ["m33-reckless-advantage"]
   },
   {
+    "id": "m33-cracked-stormbind-tunic-shirt",
     "name": "M33 Cracked Stormbind Tunic Shirt",
     "filter": "gear_shirt",
     "il": 4850,
@@ -1743,6 +2071,7 @@
     "bonuses": ["m33-bloodletting"]
   },
   {
+    "id": "m33-deep-riven-lifebraid-vestment",
     "name": "M33 Deep-Riven Lifebraid Vestment",
     "filter": "gear_pants",
     "il": 4850,
@@ -1754,6 +2083,7 @@
     "bonuses": ["m33-freezing-energy", "m33-survivor-s-gift-celestial"]
   },
   {
+    "id": "m33-deep-riven-stormbind-tunic",
     "name": "M33 Deep-Riven Stormbind Tunic",
     "filter": "gear_pants",
     "il": 4850,
@@ -1765,6 +2095,7 @@
     "bonuses": ["m33-freezing-grasp", "m33-reckless-advantage-celestial"]
   },
   {
+    "id": "m33-deep-riven-titanweave-harness",
     "name": "M33 Deep-Riven Titanweave Harness",
     "filter": "gear_pants",
     "il": 4850,
@@ -1776,6 +2107,7 @@
     "bonuses": ["m33-corrupt-power-celestial", "m33-freezing-rage"]
   },
   {
+    "id": "m33-frost-riven-lifebraid-vestment",
     "name": "M33 Frost-Riven Lifebraid Vestment",
     "filter": "gear_shirt",
     "il": 4850,
@@ -1787,6 +2119,7 @@
     "bonuses": ["m33-freezing-energy", "m33-graceful-harmony-celestial"]
   },
   {
+    "id": "m33-frost-riven-stormbind-tunic",
     "name": "M33 Frost-Riven Stormbind Tunic",
     "filter": "gear_shirt",
     "il": 4850,
@@ -1798,6 +2131,7 @@
     "bonuses": ["m33-freezing-grasp", "m33-bloodletting-celestial"]
   },
   {
+    "id": "m33-frost-riven-titanweave-harness",
     "name": "M33 Frost-Riven Titanweave Harness",
     "filter": "gear_shirt",
     "il": 4850,
@@ -1809,6 +2143,7 @@
     "bonuses": ["m33-freezing-rage", "m33-corrupt-power"]
   },
   {
+    "id": "m33-frostforged-ring-of-the-companion-strike-sev",
     "name": "M33 Frostforged Ring of the Companion (Strike/Sev)",
     "filter": "companion_equip",
     "il": 2850,
@@ -1817,6 +2152,7 @@
     "severity": 2565
   },
   {
+    "id": "m33-frostforged-sword-knot-of-the-companion-acc-ca-forte",
     "name": "M33 Frostforged Sword Knot of the Companion (Acc/CA/Forte)",
     "filter": "companion_equip",
     "il": 2850,
@@ -1826,6 +2162,7 @@
     "forte": 1347
   },
   {
+    "id": "m33-frostforged-talisman-of-the-companion-ca-sev",
     "name": "M33 Frostforged Talisman of the Companion (CA/Sev)",
     "filter": "companion_equip",
     "il": 2850,
@@ -1834,6 +2171,7 @@
     "severity": 2565
   },
   {
+    "id": "m33-frostsilver-coil-of-wrath",
     "name": "M33 Frostsilver Coil of Wrath",
     "filter": "gear_ring",
     "il": 6000,
@@ -1842,9 +2180,14 @@
     "severity": 10800,
     "ap_gain": 0.015,
     "maxCopies": 1,
-    "bonuses": ["m33-frostsilver-coil-of-wrath-accuracy", "m33-frostsilver-coil-of-wrath-ca", "m33-accumulating-precision-celestial"]
+    "bonuses": [
+      "m33-frostsilver-coil-of-wrath-accuracy",
+      "m33-frostsilver-coil-of-wrath-ca",
+      "m33-accumulating-precision-celestial"
+    ]
   },
   {
+    "id": "m33-frostsilver-loop-of-the-arcane",
     "name": "M33 Frostsilver Loop of the Arcane",
     "filter": "gear_ring",
     "il": 6000,
@@ -1854,9 +2197,14 @@
     "strike": 10800,
     "ap_gain": 0.015,
     "maxCopies": 1,
-    "bonuses": ["m33-frostsilver-loop-of-the-arcane-accuracy", "m33-frostsilver-loop-of-the-arcane-power", "m33-dashing-ranger-celestial"]
+    "bonuses": [
+      "m33-frostsilver-loop-of-the-arcane-accuracy",
+      "m33-frostsilver-loop-of-the-arcane-power",
+      "m33-dashing-ranger-celestial"
+    ]
   },
   {
+    "id": "m33-frostsilver-ring-of-initiative",
     "name": "M33 Frostsilver Ring of Initiative",
     "filter": "gear_ring",
     "il": 6000,
@@ -1865,9 +2213,14 @@
     "ca": 7200,
     "ap_gain": 0.015,
     "maxCopies": 1,
-    "bonuses": ["m33-frostsilver-ring-of-initiative-strike", "m33-frostsilver-ring-of-initiative-severity", "m33-maiden-s-advantage-celestial"]
+    "bonuses": [
+      "m33-frostsilver-ring-of-initiative-strike",
+      "m33-frostsilver-ring-of-initiative-severity",
+      "m33-maiden-s-advantage-celestial"
+    ]
   },
   {
+    "id": "m33-runefrost-skimisher-bracers",
     "name": "M33 Runefrost Skimisher Bracers",
     "filter": "gear_arms",
     "il": 5400,
@@ -1876,6 +2229,7 @@
     "forte": 3645
   },
   {
+    "id": "m33-runefrost-skirmisher-s-breastplate",
     "name": "M33 Runefrost Skirmisher's Breastplate",
     "filter": "gear_armor",
     "il": 5400,
@@ -1886,6 +2240,7 @@
     "bonuses": ["m33-ruthless-advantage-legendary"]
   },
   {
+    "id": "m33-runefrost-swift-armguards",
     "name": "M33 Runefrost Swift Armguards",
     "filter": "gear_arms",
     "il": 5400,
@@ -1896,6 +2251,7 @@
     "bonuses": ["m33-runefrost-swift-armguards"]
   },
   {
+    "id": "m33-true-ice-icon-of-the-companion-forte-ogh",
     "name": "M33 True Ice Icon of the Companion (Forte/OGH)",
     "filter": "companion_equip",
     "il": 3000,
@@ -1904,6 +2260,7 @@
     "out_healing": 2340
   },
   {
+    "id": "m33-true-ice-ring-of-the-companion-strike-sev",
     "name": "M33 True Ice Ring of the Companion (Strike/Sev)",
     "filter": "companion_equip",
     "il": 3000,
@@ -1912,6 +2269,7 @@
     "severity": 2700
   },
   {
+    "id": "m33-true-ice-sword-knot-of-the-companion-acc-ca-forte",
     "name": "M33 True Ice Sword Knot of the Companion (Acc/CA/Forte)",
     "filter": "companion_equip",
     "il": 3000,
@@ -1921,6 +2279,7 @@
     "forte": 1418
   },
   {
+    "id": "m33-true-ice-talisman-of-the-companion-ca-sev",
     "name": "M33 True Ice Talisman of the Companion (CA/Sev)",
     "filter": "companion_equip",
     "il": 3000,
@@ -1929,6 +2288,7 @@
     "severity": 2700
   },
   {
+    "id": "m33-wintermarked-frostlute",
     "name": "M33 Wintermarked Frostlute",
     "filter": "gear_weapon_offhand",
     "il": 5800,
@@ -1940,6 +2300,7 @@
     "bonuses": ["m33-chilling-flow-mythic"]
   },
   {
+    "id": "m33-wintermarked-hunter-hood",
     "name": "M33 Wintermarked Hunter Hood",
     "filter": "gear_head",
     "il": 5700,
@@ -1950,6 +2311,7 @@
     "bonuses": ["m33-critical-breaker"]
   },
   {
+    "id": "m33-wintermarked-marcher-poleyns",
     "name": "M33 Wintermarked Marcher Poleyns",
     "filter": "gear_boots",
     "il": 5700,
@@ -1960,6 +2322,7 @@
     "bonuses": ["m33-critical-breaker"]
   },
   {
+    "id": "m33-wintermarked-skaldblade",
     "name": "M33 Wintermarked Skaldblade",
     "filter": "gear_weapon_mainhand",
     "il": 5800,
@@ -1972,6 +2335,7 @@
     "bonuses": ["m33-chilling-flow-mythic"]
   },
   {
+    "id": "m33-wintermarked-skirmisher-bracers",
     "name": "M33 Wintermarked Skirmisher Bracers",
     "filter": "gear_arms",
     "il": 5700,
@@ -1982,6 +2346,7 @@
     "bonuses": ["m33-relentless-reserves"]
   },
   {
+    "id": "m33-wintermarked-swiftguards",
     "name": "M33 Wintermarked Swiftguards",
     "filter": "gear_arms",
     "il": 5700,
@@ -1992,6 +2357,7 @@
     "bonuses": ["m33-eagle-s-mastery-lesser"]
   },
   {
+    "id": "marco-s",
     "name": "Marco's",
     "filter": "artifact",
     "il": 1500,
@@ -2001,12 +2367,14 @@
     "maxCopies": 1
   },
   {
+    "id": "marilith-set",
     "name": "Marilith Set",
     "filter": "group_buff",
     "enemy_incoming_damage": 0.05,
     "maxCopies": 1
   },
   {
+    "id": "max-crit-strike-and-severity",
     "name": "Max Crit Strike And Severity",
     "filter": "gear_ring",
     "strike_p": 1,
@@ -2014,36 +2382,47 @@
     "maxCopies": 1
   },
   {
+    "id": "mender-s-covenant",
     "name": "Mender's Covenant",
     "filter": "insignia_bonus",
     "maxCopies": 2,
     "bonuses": ["mender-s-covenant"]
   },
-  {"name": "Misnc", "filter": "group_buff", "maxCopies": 1, "bonuses": ["misnc"]},
+  {"id": "misnc", "name": "Misnc", "filter": "group_buff", "maxCopies": 1, "bonuses": ["misnc"]},
   {
+    "id": "modification-dark-spiral",
     "name": "Modification: Dark Spiral",
     "filter": "modification_mainhand",
     "allowedClass": ["warlock"],
     "bonuses": ["modification-dark-spiral"]
   },
-  {"name": "Modification: Forte (M32+)", "filter": "modification_offhand_static", "forte": 1100},
   {
+    "id": "modification-forte-m32",
+    "name": "Modification: Forte (M32+)",
+    "filter": "modification_offhand_static",
+    "forte": 1100
+  },
+  {
+    "id": "modification-hellish-rebuke",
     "name": "Modification: Hellish Rebuke",
     "filter": "modification_mainhand",
     "allowedClass": ["warlock"],
     "bonuses": ["modification-hellish-rebuke"]
   },
   {
+    "id": "modification-recharge-speed-m32",
     "name": "Modification: Recharge Speed (M32+)",
     "filter": "modification_offhand_static",
     "recharge": 0.025
   },
   {
+    "id": "modification-severity-m32",
     "name": "Modification: Severity (M32+)",
     "filter": "modification_offhand_static",
     "severity": 1400
   },
   {
+    "id": "molten-sword-knot-acc-ca-forte",
     "name": "Molten Sword Knot (Acc/CA/Forte)",
     "filter": "companion_equip",
     "il": 2200,
@@ -2053,6 +2432,7 @@
     "forte": 825
   },
   {
+    "id": "molten-talisman-ca-severity",
     "name": "Molten Talisman (CA/Severity)",
     "filter": "companion_equip",
     "il": 2200,
@@ -2060,52 +2440,75 @@
     "ca": 1650,
     "severity": 1650
   },
-  {"name": "Mount Combat Power", "filter": "mount_combat", "il": 3000},
-  {"name": "Mount Combat Power (Celestial)", "filter": "mount_combat", "il": 3937},
   {
+    "id": "mount-combat-power",
+    "name": "Mount Combat Power",
+    "filter": "mount_combat",
+    "il": 3000
+  },
+  {
+    "id": "mount-combat-power-celestial",
+    "name": "Mount Combat Power (Celestial)",
+    "filter": "mount_combat",
+    "il": 3937
+  },
+  {
+    "id": "mount-hag-s-enchanted-cauldroon",
     "name": "Mount: Hag's Enchanted Cauldroon",
     "filter": "artifact_call",
     "maxCopies": 1,
     "bonuses": ["mount-hag-s-enchanted-cauldroon"]
   },
   {
+    "id": "mount-pegasus",
     "name": "Mount: Pegasus",
     "filter": "artifact_call",
     "maxCopies": 1,
     "bonuses": ["mount-pegasus"]
   },
   {
+    "id": "mount-red-dragon",
     "name": "Mount: Red Dragon",
     "filter": "artifact_call",
     "maxCopies": 1,
     "bonuses": ["mount-red-dragon"]
   },
   {
+    "id": "mount-swarm-eclipse-rex-bestial",
     "name": "Mount: Swarm/Eclipse/Rex/Bestial",
     "filter": "artifact_call",
     "maxCopies": 1,
     "bonuses": ["mount-swarm-eclipse-rex-bestial"]
   },
   {
+    "id": "mount-vortex-panther-necrotic",
     "name": "Mount: Vortex/Panther/Necrotic",
     "filter": "artifact_call",
     "maxCopies": 3,
     "bonuses": ["mount-vortex-panther-necrotic"]
   },
-  {"name": "Movement Bonus", "filter": "enchantment_bonus", "movement": 0.18},
   {
+    "id": "movement-bonus",
+    "name": "Movement Bonus",
+    "filter": "enchantment_bonus",
+    "movement": 0.18
+  },
+  {
+    "id": "mystic-aura-group",
     "name": "Mystic Aura (Group)",
     "filter": "group_buff",
     "maxCopies": 1,
     "bonuses": ["mystic-aura-group"]
   },
   {
+    "id": "mystic-aura-group-celestial",
     "name": "Mystic Aura (Group) (Celestial)",
     "filter": "group_buff",
     "maxCopies": 1,
     "bonuses": ["mystic-aura-group-celestial"]
   },
   {
+    "id": "mythic-bregan-chest",
     "name": "Mythic Bregan Chest",
     "filter": "group_buff",
     "enemy_defense": -0.05,
@@ -2114,6 +2517,7 @@
     "maxCopies": 1
   },
   {
+    "id": "neverwinter-knight-s-discipline-neverwinter-knight-damage-offense",
     "name": "Neverwinter Knight's Discipline [Neverwinter Knight] (Damage) <Offense>",
     "filter": "companion_power",
     "il": 900,
@@ -2122,6 +2526,7 @@
     "maxCopies": 1
   },
   {
+    "id": "nightflame",
     "name": "Nightflame",
     "filter": "artifact",
     "il": 2600,
@@ -2132,6 +2537,7 @@
     "maxCopies": 1
   },
   {
+    "id": "opportunistic-ca",
     "name": "Opportunistic (CA)",
     "filter": "mount_equip",
     "il": 3000,
@@ -2139,6 +2545,7 @@
     "ca": 4500
   },
   {
+    "id": "opportunistic-ca-celestial",
     "name": "Opportunistic (CA) (Celestial)",
     "filter": "mount_equip",
     "il": 3937,
@@ -2146,48 +2553,78 @@
     "ca": 5906
   },
   {
+    "id": "other-bard-s-lore",
     "name": "Other: Bard's Lore",
     "filter": "artifact_call",
     "maxCopies": 1,
     "bonuses": ["other-bard-s-lore"]
   },
-  {"name": "Paladin Aura", "filter": "group_buff", "maxCopies": 1, "bonuses": ["paladin-aura"]},
   {
+    "id": "paladin-aura",
+    "name": "Paladin Aura",
+    "filter": "group_buff",
+    "maxCopies": 1,
+    "bonuses": ["paladin-aura"]
+  },
+  {
+    "id": "perfect-vision-acc",
     "name": "Perfect Vision (Acc)",
     "filter": "companion_enhancement",
     "il": 900,
     "bonuses": ["perfect-vision-acc"]
   },
   {
+    "id": "personal-warlock-s-tyrannical-curse",
     "name": "Personal: Warlock's Tyrannical Curse",
     "filter": "artifact_call",
     "maxCopies": 1,
     "allowedClass": ["warlock"],
     "bonuses": ["personal-warlock-s-tyrannical-curse"]
   },
-  {"name": "Portobello", "filter": "group_buff", "maxCopies": 1, "bonuses": ["portobello"]},
-  {"name": "Potency (Power)", "filter": "companion_enhancement", "bonuses": ["potency-power"]},
   {
+    "id": "portobello",
+    "name": "Portobello",
+    "filter": "group_buff",
+    "maxCopies": 1,
+    "bonuses": ["portobello"]
+  },
+  {
+    "id": "potency-power",
+    "name": "Potency (Power)",
+    "filter": "companion_enhancement",
+    "bonuses": ["potency-power"]
+  },
+  {
+    "id": "potent-precision-severity",
     "name": "Potent Precision (Severity)",
     "filter": "companion_enhancement",
     "il": 900,
     "bonuses": ["potent-precision-severity"]
   },
   {
+    "id": "power-m32-600-to-3200",
     "name": "Power (M32+, 600 to 3200)",
     "filter": "modification_offhand_dynamic",
     "dynamicStat": "power",
     "dynamicMin": 600,
     "dynamicMax": 3200
   },
-  {"name": "Power Kit", "filter": "reinforcement_armor_kit", "il": 44, "power": 880},
   {
+    "id": "power-kit",
+    "name": "Power Kit",
+    "filter": "reinforcement_armor_kit",
+    "il": 44,
+    "power": 880
+  },
+  {
+    "id": "practical-regal-collar",
     "name": "Practical Regal Collar",
     "filter": "pratical_collar",
     "il": 1000,
     "combined_rating": 1000
   },
   {
+    "id": "precision-strike-severity-worgs",
     "name": "Precision (Strike/Severity - Worgs)",
     "filter": "mount_equip",
     "il": 3000,
@@ -2196,6 +2633,7 @@
     "severity": 2250
   },
   {
+    "id": "precision-strike-severity-worgs-celestial",
     "name": "Precision (Strike/Severity - Worgs) (Celestial)",
     "filter": "mount_equip",
     "il": 3937,
@@ -2204,6 +2642,7 @@
     "severity": 2953
   },
   {
+    "id": "predator-s-focus-strike-ca-golden-armored-griffon",
     "name": "Predator's Focus (Strike/CA - Golden Armored Griffon)",
     "filter": "mount_equip",
     "il": 3000,
@@ -2212,6 +2651,7 @@
     "strike": 2250
   },
   {
+    "id": "predator-s-focus-strike-ca-golden-armored-griffon-celestial",
     "name": "Predator's Focus (Strike/CA - Golden Armored Griffon) (Celestial)",
     "filter": "mount_equip",
     "il": 3937,
@@ -2219,15 +2659,28 @@
     "ca": 2953,
     "strike": 2953
   },
-  {"name": "Prime Rib (Power)", "filter": "consumable_food", "bonuses": ["prime-rib-power"]},
-  {"name": "Providence (0%)", "filter": "mount_equip", "il": 3000, "combined_rating": 2700},
   {
+    "id": "prime-rib-power",
+    "name": "Prime Rib (Power)",
+    "filter": "consumable_food",
+    "bonuses": ["prime-rib-power"]
+  },
+  {
+    "id": "providence-0",
+    "name": "Providence (0%)",
+    "filter": "mount_equip",
+    "il": 3000,
+    "combined_rating": 2700
+  },
+  {
+    "id": "providence-0-celestial",
     "name": "Providence (0%) (Celestial)",
     "filter": "mount_equip",
     "il": 3937,
     "combined_rating": 3544
   },
   {
+    "id": "providence-3",
     "name": "Providence (3%)",
     "filter": "mount_equip",
     "il": 3000,
@@ -2235,6 +2688,7 @@
     "overall_damage": 0.03
   },
   {
+    "id": "providence-3-celestial",
     "name": "Providence (3%) (Celestial)",
     "filter": "mount_equip",
     "il": 3937,
@@ -2242,43 +2696,85 @@
     "overall_damage": 0.03
   },
   {
+    "id": "purple-armor-break",
     "name": "Purple: Armor Break",
     "filter": "group_buff",
     "enemy_defense": -0.09,
     "maxCopies": 1
   },
   {
+    "id": "purple-dulled-senses",
     "name": "Purple: Dulled Senses",
     "filter": "group_buff",
     "enemy_awareness": -0.09,
     "maxCopies": 1
   },
   {
+    "id": "purple-slowed-reactions",
     "name": "Purple: Slowed Reactions",
     "filter": "group_buff",
     "enemy_deflect": -0.09,
     "maxCopies": 1
   },
   {
+    "id": "purple-vulnerability",
     "name": "Purple: Vulnerability",
     "filter": "group_buff",
     "enemy_crit_avoid": -0.09,
     "maxCopies": 1
   },
-  {"name": "Quick Action", "filter": "mount_equip", "il": 3000, "combined_rating": 2700},
   {
+    "id": "quick-action",
+    "name": "Quick Action",
+    "filter": "mount_equip",
+    "il": 3000,
+    "combined_rating": 2700
+  },
+  {
+    "id": "quick-action-celestial",
     "name": "Quick Action (Celestial)",
     "filter": "mount_equip",
     "il": 3937,
     "combined_rating": 3544
   },
-  {"name": "Race Attributes +2 Cha", "filter": "attributes_race", "cha": 2},
-  {"name": "Race Attributes +2 Dex", "filter": "attributes_race", "dex": 2},
-  {"name": "Race Attributes +2 Int", "filter": "attributes_race", "int": 2},
-  {"name": "Race Attributes +2 Str", "filter": "attributes_race", "str": 2},
-  {"name": "Race Attributes +3 Str", "filter": "attributes_race", "str": 3},
-  {"name": "Rage of Flames", "filter": "overload", "outgoing_damage": 0.05},
   {
+    "id": "race-attributes-2-cha",
+    "name": "Race Attributes +2 Cha",
+    "filter": "attributes_race",
+    "cha": 2
+  },
+  {
+    "id": "race-attributes-2-dex",
+    "name": "Race Attributes +2 Dex",
+    "filter": "attributes_race",
+    "dex": 2
+  },
+  {
+    "id": "race-attributes-2-int",
+    "name": "Race Attributes +2 Int",
+    "filter": "attributes_race",
+    "int": 2
+  },
+  {
+    "id": "race-attributes-2-str",
+    "name": "Race Attributes +2 Str",
+    "filter": "attributes_race",
+    "str": 2
+  },
+  {
+    "id": "race-attributes-3-str",
+    "name": "Race Attributes +3 Str",
+    "filter": "attributes_race",
+    "str": 3
+  },
+  {
+    "id": "rage-of-flames",
+    "name": "Rage of Flames",
+    "filter": "overload",
+    "outgoing_damage": 0.05
+  },
+  {
+    "id": "rapid-accuracy-accuracy",
     "name": "Rapid Accuracy (Accuracy)",
     "filter": "mount_equip",
     "il": 3000,
@@ -2286,6 +2782,7 @@
     "acc": 4500
   },
   {
+    "id": "rapid-accuracy-accuracy-celestial",
     "name": "Rapid Accuracy (Accuracy) (Celestial)",
     "filter": "mount_equip",
     "il": 3937,
@@ -2293,6 +2790,7 @@
     "acc": 5906
   },
   {
+    "id": "raptor-s-instincts-tamed-velociraptor-power-offense",
     "name": "Raptor's Instincts [Tamed Velociraptor] (Power) <Offense>",
     "filter": "companion_power",
     "il": 900,
@@ -2302,12 +2800,19 @@
     "bonuses": ["raptor-s-instincts-tamed-velociraptor-power-offense"]
   },
   {
+    "id": "rattatoule-accuracy",
     "name": "Rattatoule (Accuracy)",
     "filter": "consumable_food",
     "bonuses": ["rattatoule-accuracy"]
   },
-  {"name": "Recharge Bonus", "filter": "enchantment_bonus", "recharge": 0.06},
   {
+    "id": "recharge-bonus",
+    "name": "Recharge Bonus",
+    "filter": "enchantment_bonus",
+    "recharge": 0.06
+  },
+  {
+    "id": "rime-temper",
     "name": "Rime Temper",
     "filter": "combat_enchant_defense",
     "il": 7000,
@@ -2315,6 +2820,7 @@
     "mult_hit_points": 0.15
   },
   {
+    "id": "risky-investment",
     "name": "Risky Investment",
     "filter": "class_stuff",
     "maxCopies": 1,
@@ -2322,18 +2828,21 @@
     "bonuses": ["risky-investment"]
   },
   {
+    "id": "runic-aura-group",
     "name": "Runic Aura (Group)",
     "filter": "group_buff",
     "maxCopies": 1,
     "bonuses": ["runic-aura-group"]
   },
   {
+    "id": "runic-aura-group-celestial",
     "name": "Runic Aura (Group) (Celestial)",
     "filter": "group_buff",
     "maxCopies": 1,
     "bonuses": ["runic-aura-group-celestial"]
   },
   {
+    "id": "ruthless-efficiency-strike",
     "name": "Ruthless Efficiency (Strike)",
     "filter": "mount_equip",
     "il": 3000,
@@ -2341,6 +2850,7 @@
     "strike": 4500
   },
   {
+    "id": "ruthless-efficiency-strike-celestial",
     "name": "Ruthless Efficiency (Strike) (Celestial)",
     "filter": "mount_equip",
     "il": 3937,
@@ -2348,26 +2858,31 @@
     "strike": 5906
   },
   {
+    "id": "sambocade-movement",
     "name": "Sambocade (Movement)",
     "filter": "consumable_food",
     "bonuses": ["sambocade-movement"]
   },
   {
+    "id": "scroll-of-fate-critical-severity",
     "name": "Scroll of Fate: Critical Severity",
     "filter": "consumable_event_item",
     "bonuses": ["scroll-of-fate-critical-severity"]
   },
   {
+    "id": "scroll-of-fate-power",
     "name": "Scroll of Fate: Power",
     "filter": "consumable_event_item",
     "bonuses": ["scroll-of-fate-power"]
   },
   {
+    "id": "scroll-of-fate-recovery",
     "name": "Scroll of Fate: Recovery",
     "filter": "consumable_event_item",
     "bonuses": ["scroll-of-fate-recovery"]
   },
   {
+    "id": "sealing-parchment",
     "name": "Sealing Parchment",
     "filter": "artifact",
     "il": 2600,
@@ -2379,15 +2894,38 @@
     "maxCopies": 1
   },
   {
+    "id": "seared-tuna-strike",
     "name": "Seared Tuna (Strike)",
     "filter": "consumable_food",
     "bonuses": ["seared-tuna-strike"]
   },
-  {"name": "Severity Kit", "filter": "reinforcement_armor_kit", "il": 44, "severity": 880},
-  {"name": "Slayer (2.5% overall)", "filter": "overload", "overall_damage": 0.025},
-  {"name": "Slayer (4.5% overall)", "filter": "overload", "overall_damage": 0.045},
-  {"name": "Slayer (5.0% overall)", "filter": "overload", "overall_damage": 0.05},
   {
+    "id": "severity-kit",
+    "name": "Severity Kit",
+    "filter": "reinforcement_armor_kit",
+    "il": 44,
+    "severity": 880
+  },
+  {
+    "id": "slayer-2-5-overall",
+    "name": "Slayer (2.5% overall)",
+    "filter": "overload",
+    "overall_damage": 0.025
+  },
+  {
+    "id": "slayer-4-5-overall",
+    "name": "Slayer (4.5% overall)",
+    "filter": "overload",
+    "overall_damage": 0.045
+  },
+  {
+    "id": "slayer-5-0-overall",
+    "name": "Slayer (5.0% overall)",
+    "filter": "overload",
+    "overall_damage": 0.05
+  },
+  {
+    "id": "soul-investiture",
     "name": "Soul Investiture",
     "filter": "class_stuff",
     "overall_damage": 0.04,
@@ -2395,6 +2933,7 @@
     "allowedClass": ["warlock"]
   },
   {
+    "id": "soul-sparks-average",
     "name": "Soul Sparks (average)",
     "filter": "class_stuff",
     "outgoing_damage": 0.03,
@@ -2403,17 +2942,39 @@
     "bonuses": ["soul-sparks-average"]
   },
   {
+    "id": "soul-sparks-max",
     "name": "Soul Sparks (max)",
     "filter": "class_stuff",
     "maxCopies": 1,
     "allowedClass": ["warlock"],
     "bonuses": ["soul-sparks-max"]
   },
-  {"name": "Spider Totem", "filter": "trinket", "bonuses": ["spider-totem"]},
-  {"name": "Spider Totem (+Acc)", "filter": "trinket", "bonuses": ["spider-totem-acc"]},
-  {"name": "Spider Totem (+Power)", "filter": "trinket", "bonuses": ["spider-totem-power"]},
-  {"name": "Spider Totem (+Strike)", "filter": "trinket", "bonuses": ["spider-totem-strike"]},
   {
+    "id": "spider-totem",
+    "name": "Spider Totem",
+    "filter": "trinket",
+    "bonuses": ["spider-totem"]
+  },
+  {
+    "id": "spider-totem-acc",
+    "name": "Spider Totem (+Acc)",
+    "filter": "trinket",
+    "bonuses": ["spider-totem-acc"]
+  },
+  {
+    "id": "spider-totem-power",
+    "name": "Spider Totem (+Power)",
+    "filter": "trinket",
+    "bonuses": ["spider-totem-power"]
+  },
+  {
+    "id": "spider-totem-strike",
+    "name": "Spider Totem (+Strike)",
+    "filter": "trinket",
+    "bonuses": ["spider-totem-strike"]
+  },
+  {
+    "id": "spined-devil-s-influence-6-spined-devil-damage-offense",
     "name": "Spined Devil's Influence 6% [Spined Devil] (Damage) <Offense>",
     "filter": "companion_power",
     "il": 900,
@@ -2422,11 +2983,13 @@
     "bonuses": ["spined-devil-s-influence-6-spined-devil-damage-offense"]
   },
   {
+    "id": "squash-soup-strike-severity",
     "name": "Squash Soup (Strike/Severity)",
     "filter": "consumable_event_food",
     "bonuses": ["squash-soup-strike-severity"]
   },
   {
+    "id": "strike-m32-900-to-5400",
     "name": "Strike (M32+, 900 to 5400)",
     "filter": "modification_offhand_dynamic",
     "dynamicStat": "strike",
@@ -2434,14 +2997,21 @@
     "dynamicMax": 5400
   },
   {
+    "id": "sturdy-crescent-collar",
     "name": "Sturdy Crescent Collar",
     "filter": "sturdy_collar",
     "il": 1000,
     "combined_rating": 900,
     "mult_damage": 0.02
   },
-  {"name": "Sunlord (CA)", "filter": "consumable_elixir", "bonuses": ["sunlord-ca"]},
   {
+    "id": "sunlord-ca",
+    "name": "Sunlord (CA)",
+    "filter": "consumable_elixir",
+    "bonuses": ["sunlord-ca"]
+  },
+  {
+    "id": "supportive-regal-collar",
     "name": "Supportive Regal Collar",
     "filter": "supportive_collar",
     "il": 1000,
@@ -2449,14 +3019,22 @@
     "out_healing_p": 0.05
   },
   {
+    "id": "swift-synergy",
     "name": "Swift Synergy",
     "filter": "combat_enchant_offense",
     "il": 7000,
     "mult_damage": 0.12,
     "bonuses": ["swift-synergy"]
   },
-  {"name": "Sword Coast Tactician", "filter": "overload", "power_p": 0.05, "ca_p": 0.05},
   {
+    "id": "sword-coast-tactician",
+    "name": "Sword Coast Tactician",
+    "filter": "overload",
+    "power_p": 0.05,
+    "ca_p": 0.05
+  },
+  {
+    "id": "thayan-ring-acc-sev",
     "name": "Thayan Ring (Acc/Sev)",
     "filter": "companion_equip",
     "il": 2600,
@@ -2465,6 +3043,7 @@
     "severity": 2340
   },
   {
+    "id": "thayan-sword-knot-acc-ca-forte",
     "name": "Thayan Sword Knot (Acc/CA/Forte)",
     "filter": "companion_equip",
     "il": 2600,
@@ -2474,6 +3053,7 @@
     "forte": 1228
   },
   {
+    "id": "thayan-talisman-ca-strike",
     "name": "Thayan Talisman (CA/Strike)",
     "filter": "companion_equip",
     "il": 2600,
@@ -2482,6 +3062,7 @@
     "strike": 2340
   },
   {
+    "id": "the-bigger-they-are-minsc-damage-defense",
     "name": "The Bigger They Are [Minsc] (Damage) <Defense>",
     "filter": "companion_power",
     "il": 900,
@@ -2490,6 +3071,7 @@
     "bonuses": ["the-bigger-they-are-minsc-damage-defense"]
   },
   {
+    "id": "tranquility",
     "name": "Tranquility",
     "filter": "insignia",
     "il": 750,
@@ -2498,6 +3080,7 @@
     "forte": 1125
   },
   {
+    "id": "tranquility-pref",
     "name": "Tranquility (Pref)",
     "filter": "insignia",
     "il": 900,
@@ -2505,8 +3088,9 @@
     "strike": 1350,
     "forte": 1350
   },
-  {"name": "Tutor", "filter": "group_buff", "maxCopies": 1, "bonuses": ["tutor"]},
+  {"id": "tutor", "name": "Tutor", "filter": "group_buff", "maxCopies": 1, "bonuses": ["tutor"]},
   {
+    "id": "uncanny-precision-accuracy-ca-deadly-driderform",
     "name": "Uncanny Precision (Accuracy/CA - Deadly Driderform)",
     "filter": "mount_equip",
     "il": 3000,
@@ -2515,6 +3099,7 @@
     "ca": 2250
   },
   {
+    "id": "uncanny-precision-accuracy-ca-deadly-driderform-celestial",
     "name": "Uncanny Precision (Accuracy/CA - Deadly Driderform) (Celestial)",
     "filter": "mount_equip",
     "il": 3937,
@@ -2523,14 +3108,27 @@
     "ca": 2953
   },
   {
+    "id": "unified-crescent-collar",
     "name": "Unified Crescent Collar",
     "filter": "unified_collar",
     "il": 1000,
     "combined_rating": 1000
   },
-  {"name": "VIP HP Bonus (Self)", "filter": "misc", "hit_points_p": 0.01},
-  {"name": "Vistani Set", "filter": "group_buff", "enemy_incoming_damage": 0.05, "maxCopies": 1},
   {
+    "id": "vip-hp-bonus-self",
+    "name": "VIP HP Bonus (Self)",
+    "filter": "misc",
+    "hit_points_p": 0.01
+  },
+  {
+    "id": "vistani-set",
+    "name": "Vistani Set",
+    "filter": "group_buff",
+    "enemy_incoming_damage": 0.05,
+    "maxCopies": 1
+  },
+  {
+    "id": "warlock-s-curse",
     "name": "Warlock's Curse",
     "filter": "class_stuff",
     "maxCopies": 1,
@@ -2538,6 +3136,7 @@
     "bonuses": ["warlock-s-curse"]
   },
   {
+    "id": "warlock-s-demonic-vision",
     "name": "Warlock's Demonic Vision",
     "filter": "class_stuff",
     "awareness_p": 0.025,
@@ -2545,6 +3144,7 @@
     "allowedClass": ["warlock"]
   },
   {
+    "id": "warlock-s-devastating-critical",
     "name": "Warlock's Devastating Critical",
     "filter": "class_stuff",
     "sev_p": 0.1,
@@ -2552,6 +3152,7 @@
     "allowedClass": ["warlock"]
   },
   {
+    "id": "warlock-s-dust-to-dust",
     "name": "Warlock's Dust to Dust",
     "filter": "class_stuff",
     "outgoing_damage": 0.05,
@@ -2559,6 +3160,7 @@
     "allowedClass": ["warlock"]
   },
   {
+    "id": "warlock-s-shadow-walk",
     "name": "Warlock's Shadow Walk",
     "filter": "class_stuff",
     "strike_p": 0.025,
@@ -2567,16 +3169,19 @@
     "allowedClass": ["warlock"]
   },
   {
+    "id": "watermelon-sorbet-power-accuracy",
     "name": "Watermelon Sorbet (Power/Accuracy)",
     "filter": "consumable_event_food",
     "bonuses": ["watermelon-sorbet-power-accuracy"]
   },
   {
+    "id": "watermelon-sorbet-power-accuracy-legacy",
     "name": "Watermelon Sorbet (Power/Accuracy) (Legacy)",
     "filter": "consumable_event_food",
     "bonuses": ["watermelon-sorbet-power-accuracy-legacy"]
   },
   {
+    "id": "wayfaring-barbed-collar",
     "name": "Wayfaring Barbed Collar",
     "filter": "wayfaring_collar",
     "il": 1000,
@@ -2584,11 +3189,13 @@
     "sev_p": 0.05
   },
   {
+    "id": "wild-storm-severity",
     "name": "Wild Storm (Severity)",
     "filter": "consumable_elixir",
     "bonuses": ["wild-storm-severity"]
   },
   {
+    "id": "wolf-s-instincts-wolf-severity-offense-utility",
     "name": "Wolf's Instincts [Wolf] (Severity) <Offense/Utility>",
     "filter": "companion_power",
     "il": 900,
@@ -2596,5 +3203,11 @@
     "sev_p": 0.09,
     "maxCopies": 1
   },
-  {"name": "Wood Elf", "filter": "class_stuff", "strike_p": 0.05, "maxCopies": 1}
+  {
+    "id": "wood-elf",
+    "name": "Wood Elf",
+    "filter": "class_stuff",
+    "strike_p": 0.05,
+    "maxCopies": 1
+  }
 ]

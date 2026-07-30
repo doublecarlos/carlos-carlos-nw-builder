@@ -47,7 +47,7 @@ export function collect(db: Db, build: Build): { ctx: EvalContext; rows: Resolve
     rows.push({ slotId: slot.id, slot, choice, item });
     if (!item) return;
 
-    bump(equipped, item.name);
+    bump(equipped, item.id);
     for (const tag of item.tags ?? []) bump(tags, tag);
     for (const setId of item.bonuses ?? []) bump(setPieces, setId);
 

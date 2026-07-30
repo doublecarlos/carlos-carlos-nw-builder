@@ -82,6 +82,7 @@ const paramValue = () => getPath(props.build.context, (props.slot as BuildParame
             class="grow-0 basis-80 min-w-40"
             :items="items ?? []"
             :model-value="choice()"
+            :selected-item="item"
             :invalid="(errors?.length ?? 0) > 0"
             @update:model-value="buildEditor.setChoice(slot.id, $event)" />
           <span v-if="item" class="min-w-0 flex-1 truncate text-sm text-text">{{ statSummary }}</span>

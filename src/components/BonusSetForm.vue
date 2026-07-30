@@ -16,6 +16,7 @@ import FormField from './ui/FormField.vue';
 import FormGrid from './ui/FormGrid.vue';
 import FormSection from './ui/FormSection.vue';
 import * as bonusDraft from '../bonus-draft';
+import * as catalog from '../catalog';
 import type { BonusSet, Db } from '../types';
 
 const canonical = (value: unknown): unknown => {
@@ -29,9 +30,6 @@ const canonical = (value: unknown): unknown => {
 };
 
 const sameSet = (a: unknown, b: unknown) => JSON.stringify(canonical(a)) === JSON.stringify(canonical(b));
-
-const slugify = (text: string) => String(text).toLowerCase().trim()
-  .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 
 // Same draft-level undo as ItemForm.vue -- see its own comment for why a debounced deep watch
 // instead of a snapshot-per-field-method the way the build form does it.
@@ -59,7 +57,7 @@ const props = withDefaults(defineProps<{
 });
 
 const emit = defineEmits<{
-  save: [payload: { id: string; previousId: string | null; set: BonusSet }];
+  save: [payload: { id: string; set: BonusSet }];
   delete: [];
   revert: [];
   dirty: [value: boolean];
@@ -87,9 +85,11 @@ let snapshotTimer: number | undefined;
 const confirmRevert = ref(false);
 let confirmRevertTimer: number | undefined;
 
+/** `db.setMembers` is keyed by item id -- resolved to display names here, same reasoning as
+ * BonusGroups.vue's own `memberNames`. */
 const members = computed(() => {
   if (!props.source) return [];
-  return props.db.setMembers.get(props.source.id) ?? [];
+  return (props.db.setMembers.get(props.source.id) ?? []).map((id) => props.db.get(id)?.name ?? id);
 });
 
 const stackingOptions = [
@@ -109,11 +109,17 @@ const asSet = computed(() => {
 
 const dirty = computed(() => {
   if (!props.source) {
-    return Boolean(draft.value.name || draft.value.id || draft.value.grants.length);
+    return Boolean(draft.value.name || draft.value.grants.length);
   }
   const set = asSet.value;
   return !set || !sameSet(set, props.source);
 });
+
+/** The id shown next to Name -- the frozen one for an existing set, or a live preview of what
+ * `save()` would assign on first save for a brand-new one. Same reasoning as ItemForm.vue's
+ * own `displayId`: never a form field a user edits directly. */
+const displayId = computed(() => props.source?.id
+  ?? (draft.value.name.trim() ? catalog.nextId(draft.value.name.trim(), props.setIds, 'bonus-set') : ''));
 
 const canUndoDraft = computed(() => draftHistory.value.past.length > 0);
 const canRedoDraft = computed(() => draftHistory.value.future.length > 0);
@@ -174,30 +180,23 @@ function revertDraft() {
   resetDraftHistory();
 }
 
-/** Same convention as the item form and the per-card group editor: fill the id from the
- * current name. */
-function generateId() { draft.value.id = slugify(draft.value.name) || draft.value.id; }
-
 function addGrant() {
   draft.value.grants.push(bonusDraft.toDraft({ when: {}, stats: {} }));
 }
 
 function save() {
   error.value = '';
-  const id = draft.value.id.trim();
-  if (!id) { error.value = 'The bonus set needs an id.'; return; }
-  if (id !== props.source?.id && props.setIds.includes(id)) {
-    error.value = `“${id}” is already used by another bonus set.`;
-    return;
-  }
+  const name = draft.value.name.trim();
+  if (!name) { error.value = 'The bonus set needs a name.'; return; }
+  const id = props.source?.id ?? catalog.nextId(name, props.setIds, 'bonus-set');
   let set;
   try {
-    set = bonusDraft.toSet(draft.value);
+    set = bonusDraft.toSet({ ...draft.value, id });
   } catch (err: any) {
     error.value = `A grant has invalid JSON: ${err.message}`;
     return;
   }
-  emit('save', { id, previousId: props.source?.id ?? null, set });
+  emit('save', { id, set });
 }
 
 watch(() => props.source, (value) => {
@@ -241,10 +240,9 @@ onUnmounted(() => {
                type="text" v-model="draft.name">
       </FormField>
       <FormField label="Group id">
-        <span class="flex items-center gap-1">
-          <input class="w-full rounded bg-surface-2 px-1.5 text-sm text-muted focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-                 type="text" v-model="draft.id">
-          <IconButton icon="wand-sparkles" title="Generate id from name" @click="generateId" />
+        <span class="flex w-full items-center rounded bg-surface-2 px-1.5 py-0.5 text-sm text-muted"
+              :title="source ? 'Frozen -- renaming the group does not change its id' : 'Assigned when first saved'">
+          {{ displayId || '(assigned on save)' }}
         </span>
       </FormField>
     </FormGrid>

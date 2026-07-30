@@ -14,24 +14,24 @@ const pushTo = <K,>(map: Map<K, string[]>, key: K, value: string) => {
 };
 
 export function build(items: Item[], bonusSets: BonusSet[] = [], schema: Schema, slots: SlotsData): Db {
-  const byName = new Map<string, Item>();
+  const byId = new Map<string, Item>();
   // Keyed by `string | undefined` (not just `string`): an item with no `filter` still lands
   // here under the `undefined` key, same as the untyped original -- dead weight (`forFilter`
   // is only ever called with a real string) but preserved rather than silently dropped.
   const byFilter = new Map<string | undefined, Item[]>();
-  const setMembers = new Map<string, string[]>();     // setId -> [item name]
-  const itemsByTag = new Map<string, string[]>();     // tag   -> [item name]
+  const setMembers = new Map<string, string[]>();     // setId -> [item id]
+  const itemsByTag = new Map<string, string[]>();     // tag   -> [item id]
   const duplicates: string[] = [];
 
   for (const item of items) {
-    if (byName.has(item.name)) duplicates.push(item.name);
-    byName.set(item.name, item);
+    if (byId.has(item.id)) duplicates.push(item.id);
+    byId.set(item.id, item);
     const filterList = byFilter.get(item.filter);
     if (filterList) filterList.push(item);
     else byFilter.set(item.filter, [item]);
 
-    for (const setId of item.bonuses ?? []) pushTo(setMembers, setId, item.name);
-    for (const tag of item.tags ?? []) pushTo(itemsByTag, tag, item.name);
+    for (const setId of item.bonuses ?? []) pushTo(setMembers, setId, item.id);
+    for (const tag of item.tags ?? []) pushTo(itemsByTag, tag, item.id);
   }
 
   for (const list of byFilter.values()) {
@@ -56,10 +56,10 @@ export function build(items: Item[], bonusSets: BonusSet[] = [], schema: Schema,
     itemsByTag,
     duplicates,
 
-    /** Look up an item by exact name. `-`, blank and nullish all mean "empty slot". */
-    get(name: string | null | undefined) {
-      if (name == null || name === '' || name === '-') return null;
-      return byName.get(name) ?? null;
+    /** Look up an item by id. `-`, blank and nullish all mean "empty slot". */
+    get(id: string | null | undefined) {
+      if (id == null || id === '' || id === '-') return null;
+      return byId.get(id) ?? null;
     },
 
     /** Items selectable in a filter category, sorted by name. */

@@ -269,7 +269,7 @@ function findErrors(db: Db, build: Build, resolved: ResolvedBonuses): EngineErro
   const counts = new Map<string, number>();
 
   for (const row of resolved.rows) {
-    if (row.item) counts.set(row.item.name, (counts.get(row.item.name) ?? 0) + 1);
+    if (row.item) counts.set(row.item.id, (counts.get(row.item.id) ?? 0) + 1);
   }
 
   for (const row of resolved.rows) {
@@ -282,7 +282,7 @@ function findErrors(db: Db, build: Build, resolved: ResolvedBonuses): EngineErro
       });
     }
     const max = db.maxCopies(row.item);
-    const used = counts.get(row.item.name);
+    const used = counts.get(row.item.id);
     if (max && used! > max) {
       errors.push({
         slotId: row.slotId, kind: 'maxCopies', choice: row.item.name,

@@ -23,6 +23,7 @@ import FormGrid from './ui/FormGrid.vue';
 import FormSection from './ui/FormSection.vue';
 import { NW_SCHEMA, NW_SLOTS } from '../data';
 import { findParamSlot } from '../build-path';
+import * as catalog from '../catalog';
 import { isPercentKind, kindOf } from '../format';
 import { focusNextCombo } from '../stat-row-nav';
 import type { Item, Db, BonusSet } from '../types';
@@ -85,11 +86,11 @@ const props = withDefaults(defineProps<{
 });
 
 const emit = defineEmits<{
-  save: [payload: { item: Item; previousName: string | null }];
+  save: [payload: { item: Item }];
   delete: [];
   revert: [];
   dirty: [value: boolean];
-  'save-set': [payload: { id: string; previousId: string | null; set: BonusSet }];
+  'save-set': [payload: { id: string; set: BonusSet }];
   'delete-set': [id: string];
 }>();
 
@@ -144,6 +145,12 @@ let snapshotTimer: number | undefined;
 const confirmRevert = ref(false);
 let confirmRevertTimer: number | undefined;
 
+/** The id shown next to Name -- the frozen one for an existing item, or a live preview of
+ * what `toItem()` would assign on first save for a brand-new one. Read-only either way: an
+ * item's id is never a form field a user edits directly. */
+const displayId = computed(() => props.source?.id
+  ?? (draft.value.name.trim() ? catalog.nextId(draft.value.name.trim(), props.db.items.map((i) => i.id), 'item') : ''));
+
 const statOptions = NW_SCHEMA.stats;
 const classSlot = findParamSlot(NW_SLOTS.slots, 'class');
 const classes = classSlot?.options?.map((o) => o.value) ?? [];
@@ -151,10 +158,13 @@ const classes = classSlot?.options?.map((o) => o.value) ?? [];
 const statComboOptions = statOptions.map((s) => ({ value: s.key, label: `${s.label} (${s.key})` }));
 const dynamicStatOptions = statOptions.map((s) => ({ value: s.key, label: s.label }));
 
-/** Draft -> the sparse item object the engine and the exporter expect. */
+/** Draft -> the sparse item object the engine and the exporter expect. Id is frozen at
+ * first save (`catalog.nextId`, from the name typed at that moment) and never regenerated
+ * afterwards -- editing the name on later saves only ever changes display text. */
 function toItem(): Item {
   const local = draft.value;
-  const item: Item = { name: local.name.trim(), filter: local.filter.trim() };
+  const id = props.source?.id ?? catalog.nextId(local.name.trim(), props.db.items.map((i) => i.id), 'item');
+  const item: Item = { id, name: local.name.trim(), filter: local.filter.trim() };
 
   for (const { key, value } of local.stats) {
     if (!key) continue;
@@ -266,7 +276,7 @@ function save() {
   const item = toItem();
   if (!item.name) { error.value = 'The item needs a name.'; return; }
   if (!item.filter) { error.value = 'The item needs a filter, or no slot can hold it.'; return; }
-  emit('save', { item, previousName: props.source?.name ?? null });
+  emit('save', { item });
 }
 
 function addStat() { draft.value.stats.push({ key: '', value: 0 }); }
@@ -288,12 +298,6 @@ function attachSet(id: string) {
  * the id from this item's own list. */
 function detachSet(id: string) {
   draft.value.bonuses = draft.value.bonuses.filter((setId: string) => setId !== id);
-}
-
-/** Keep this item pointed at a bonus group that was just renamed (same array-replace
- * trick as `attachSet`, so BonusGroups's `setIds` watcher fires). */
-function renameSet({ oldId, newId }: { oldId: string; newId: string }) {
-  draft.value.bonuses = draft.value.bonuses.map((id: string) => (id === oldId ? newId : id));
 }
 
 watch(() => props.source, (value) => {
@@ -338,6 +342,12 @@ onUnmounted(() => {
       <FormField label="Name">
         <input class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
                type="text" v-model="draft.name">
+      </FormField>
+      <FormField label="Id">
+        <span class="flex w-full items-center rounded-md bg-surface-2 px-1.5 py-0.5 text-sm text-muted"
+              :title="source ? 'Frozen -- renaming the item does not change its id' : 'Assigned when first saved'">
+          {{ displayId || '(assigned on save)' }}
+        </span>
       </FormField>
       <FormField label="Filter (slot category)">
         <input class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
@@ -415,7 +425,6 @@ onUnmounted(() => {
       @save-set="$emit('save-set', $event)"
       @delete-set="$emit('delete-set', $event)"
       @detach-set="detachSet"
-      @rename-set="renameSet"
       @attach-set="attachSet" />
   </div>
 </template>

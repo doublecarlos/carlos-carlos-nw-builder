@@ -97,12 +97,13 @@ export function redo() {
 
 // --- build content edits --------------------------------------------------------------------
 
-export function setChoice(slotId: string, name: string) {
+export function setChoice(slotId: string, id: string) {
   const slot = slotLabel(slotId);
-  snapshot(`choice:${slotId}`, name ? `${slot} → ${name}` : `clear ${slot}`);
+  const label = id ? (db.value.get(id)?.name ?? id) : '';
+  snapshot(`choice:${slotId}`, id ? `${slot} → ${label}` : `clear ${slot}`);
   const build = library.activeBuildForEdit();
-  if (name) {
-    build.choices[slotId] = name;
+  if (id) {
+    build.choices[slotId] = id;
   } else {
     delete build.choices[slotId];
     delete build.values[slotId];
@@ -123,12 +124,13 @@ export function applyFromCompare(slotId: string) {
   const other = compare.compareBuild.value;
   if (!other) return;
   const slot = slotLabel(slotId);
-  const name = other.choices[slotId] || '';
+  const id = other.choices[slotId] || '';
+  const label = id ? (db.value.get(id)?.name ?? id) : '';
   snapshot(`choice:${slotId}`,
-    name ? `${slot} → ${name} (from “${other.name}”)` : `clear ${slot} (from “${other.name}”)`);
+    id ? `${slot} → ${label} (from “${other.name}”)` : `clear ${slot} (from “${other.name}”)`);
   const build = library.activeBuildForEdit();
-  if (name) {
-    build.choices[slotId] = name;
+  if (id) {
+    build.choices[slotId] = id;
     const value = other.values?.[slotId];
     if (value != null) build.values[slotId] = value;
     else delete build.values[slotId];

@@ -48,6 +48,14 @@ export function useCompareDiff(options: {
     return compareBuild.value?.choices?.[slotId] || '';
   }
 
+  /** Display text for the compare build's choice -- `otherChoice` above stays id-based (it
+   * feeds `differs`' identity comparison), this resolves that id to the name shown in the
+   * "apply" tooltip/diff note. */
+  function otherChoiceLabel(slotId: string) {
+    const id = otherChoice(slotId);
+    return id ? (db.value.get(id)?.name ?? id) : '';
+  }
+
   function differs(slotId: string) {
     return Boolean(compareBuild.value)
       && (build.value.choices[slotId] || '') !== otherChoice(slotId);
@@ -160,5 +168,5 @@ export function useCompareDiff(options: {
     )).length;
   });
 
-  return { otherChoice, differs, valueDiffers, rowDiff, rowHasDiff, optionsDiffCount };
+  return { otherChoice, otherChoiceLabel, differs, valueDiffers, rowDiff, rowHasDiff, optionsDiffCount };
 }

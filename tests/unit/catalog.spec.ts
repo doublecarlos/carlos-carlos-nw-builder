@@ -54,10 +54,50 @@ describe('catalog.validateSlots', () => {
 describe('catalog.validate (class lookup after path trim)', () => {
   it('still finds allowedClass values through the class slot', () => {
     const findings = catalog.validate(
-      [{ name: 'Test Item', filter: 'gear_head', allowedClass: ['not-a-class'] }],
+      [{ id: 'test-item', name: 'Test Item', filter: 'gear_head', allowedClass: ['not-a-class'] }],
       [],
     );
-    expect(findings.some((f) => f.name === 'Test Item' && /allowedClass/.test(f.message))).toBe(true);
+    expect(findings.some((f) => f.name === 'test-item' && /allowedClass/.test(f.message))).toBe(true);
+  });
+});
+
+describe('catalog.validate: item id lint', () => {
+  it('reports a missing id, naming the item by its display name', () => {
+    const findings = catalog.validate([{ name: 'No Id', filter: 'gear_head' } as any], []);
+    expect(findings.some((f) => f.name === 'No Id' && /no id/.test(f.message))).toBe(true);
+  });
+
+  it('reports a duplicate id, but not a duplicate name', () => {
+    const items = [
+      { id: 'dup', name: 'Item A', filter: 'gear_head' },
+      { id: 'dup', name: 'Item B', filter: 'gear_head' },
+    ];
+    const findings = catalog.validate(items, []);
+    expect(findings.some((f) => /duplicate item id/.test(f.message))).toBe(true);
+    expect(findings.some((f) => /duplicate.*name/i.test(f.message))).toBe(false);
+  });
+
+  it('two items sharing a display name are both clean otherwise', () => {
+    const items = [
+      { id: 'ring-a', name: 'Ring', filter: 'gear_ring' },
+      { id: 'ring-b', name: 'Ring', filter: 'gear_ring' },
+    ];
+    expect(catalog.validate(items, [])).toEqual([]);
+  });
+});
+
+describe('catalog.nextId', () => {
+  it('slugifies a name with no existing collision', () => {
+    expect(catalog.nextId('Brutality (Pref)', [])).toBe('brutality-pref');
+  });
+
+  it('disambiguates against existing ids by appending -2, -3, ...', () => {
+    expect(catalog.nextId('Brutality', ['brutality'])).toBe('brutality-2');
+    expect(catalog.nextId('Brutality', ['brutality', 'brutality-2'])).toBe('brutality-3');
+  });
+
+  it('falls back to the given default when the name slugifies to nothing', () => {
+    expect(catalog.nextId('!!!', [], 'bonus-set')).toBe('bonus-set');
   });
 });
 
