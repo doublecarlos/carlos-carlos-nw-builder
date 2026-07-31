@@ -11,20 +11,18 @@ const MAX_SUGGESTIONS = 40;
 
 const props = withDefaults(
   defineProps<{
-    modelValue?: string[];
     options?: string[];
     placeholder?: string;
     allowFree?: boolean;
   }>(),
   {
-    modelValue: () => [],
     options: () => [],
     placeholder: "Type to search…",
     allowFree: true,
   },
 );
 
-const emit = defineEmits<{ "update:modelValue": [value: string[]] }>();
+const model = defineModel<string[]>({ default: () => [] });
 
 const query = ref("");
 const open = ref(false);
@@ -35,7 +33,7 @@ const menu = ref<HTMLElement | null>(null);
 const suggestions = computed(() => {
   if (!open.value) return [];
   const q = query.value.trim().toLowerCase();
-  const chosen = new Set(props.modelValue);
+  const chosen = new Set(model.value);
   return props.options
     .filter(
       (option) =>
@@ -48,7 +46,7 @@ const suggestions = computed(() => {
 const freeValue = computed(() => {
   const value = query.value.trim();
   if (!props.allowFree || !value) return "";
-  if (props.modelValue.includes(value)) return "";
+  if (model.value.includes(value)) return "";
   return props.options.includes(value) ? "" : value;
 });
 
@@ -66,16 +64,16 @@ watch(highlight, () => {
 
 function add(value: string) {
   const token = String(value ?? "").trim();
-  if (!token || props.modelValue.includes(token)) return;
-  emit("update:modelValue", [...props.modelValue, token]);
+  if (!token || model.value.includes(token)) return;
+  model.value = [...model.value, token];
   query.value = "";
   highlight.value = 0;
 }
 
 function removeAt(index: number) {
-  const next = [...props.modelValue];
+  const next = [...model.value];
   next.splice(index, 1);
-  emit("update:modelValue", next);
+  model.value = next;
 }
 
 function onKeydown(event: KeyboardEvent) {
@@ -83,9 +81,9 @@ function onKeydown(event: KeyboardEvent) {
 
   // Backspace on an empty box eats the previous token -- the behaviour everyone expects
   // from an address field.
-  if (key === "Backspace" && !query.value && props.modelValue.length) {
+  if (key === "Backspace" && !query.value && model.value.length) {
     event.preventDefault();
-    removeAt(props.modelValue.length - 1);
+    removeAt(model.value.length - 1);
     return;
   }
 
@@ -131,7 +129,7 @@ function onPaste(event: ClipboardEvent) {
     @mousedown.self="input?.focus()"
   >
     <span
-      v-for="(token, index) in modelValue"
+      v-for="(token, index) in model"
       :key="token"
       class="inline-flex items-center gap-1 rounded-full bg-accent-soft py-0.5 pl-2 pr-1 text-sm text-text"
     >
@@ -153,7 +151,7 @@ function onPaste(event: ClipboardEvent) {
       type="text"
       autocomplete="off"
       spellcheck="false"
-      :placeholder="modelValue.length ? '' : placeholder"
+      :placeholder="model.length ? '' : placeholder"
       @focus="
         open = true;
         highlight = 0;

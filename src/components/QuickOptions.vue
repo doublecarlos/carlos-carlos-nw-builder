@@ -65,7 +65,7 @@ function asStrNum(slot: BuildParameterSlot): string | number {
         <BuildParamInput
           :slot-def="slot"
           :model-value="asStrNum(slot)"
-          @update:model-value="buildEditor.setParam(slot, $event)"
+          @update:model-value="buildEditor.setParam(slot, $event!)"
         />
       </div>
 
@@ -73,7 +73,7 @@ function asStrNum(slot: BuildParameterSlot): string | number {
         v-else
         :slot-def="slot"
         :model-value="getPath(build.context, slot.path) as boolean"
-        @update:model-value="buildEditor.setParam(slot, $event)"
+        @update:model-value="buildEditor.setParam(slot, $event!)"
       >
         <span
           :class="differs(slot) ? 'font-bold text-diff' : ''"

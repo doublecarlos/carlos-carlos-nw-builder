@@ -20,7 +20,6 @@ const MAX_ROWS = 60;
 
 const props = withDefaults(
   defineProps<{
-    modelValue?: string;
     items: Item[];
     /** The item `modelValue` (an id) currently resolves to, or null/undefined for an empty
      * slot -- drives the closed box's display text/placeholder. Passed down already-resolved
@@ -31,13 +30,12 @@ const props = withDefaults(
     invalid?: boolean;
   }>(),
   {
-    modelValue: "",
     selectedItem: null,
     invalid: false,
   },
 );
 
-const emit = defineEmits<{ "update:modelValue": [value: string] }>();
+const model = defineModel<string>({ default: "" });
 
 const open = ref(false);
 const query = ref("");
@@ -100,9 +98,7 @@ function onFocus() {
   query.value = "";
   // Start on whatever is already equipped, not on "empty" -- `options` reflects the
   // now-open (unfiltered) list since `open` was just set above.
-  const current = options.value.findIndex(
-    (item) => item?.id === props.modelValue,
-  );
+  const current = options.value.findIndex((item) => item?.id === model.value);
   highlight.value = current === -1 ? 0 : current;
 }
 
@@ -140,7 +136,7 @@ function close() {
  * whatever element is currently focused, so blurring here first (before that runs) would
  * make it tab from nowhere instead of continuing from this input. */
 function choose(item: Item | null, { blur = true }: { blur?: boolean } = {}) {
-  emit("update:modelValue", item ? item.id : "");
+  model.value = item ? item.id : "";
   close();
   if (blur) input.value?.blur();
 }

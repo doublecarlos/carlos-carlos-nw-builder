@@ -14,18 +14,16 @@ const MAX_ROWS = 60;
 
 const props = withDefaults(
   defineProps<{
-    modelValue?: string;
     /** [{ value, label }], in the order they should list. */
     options: { value: string; label: string }[];
     placeholder?: string;
   }>(),
   {
-    modelValue: "",
     placeholder: "—",
   },
 );
 
-const emit = defineEmits<{ "update:modelValue": [value: string] }>();
+const model = defineModel<string>({ default: "" });
 
 const open = ref(false);
 const query = ref("");
@@ -34,8 +32,7 @@ const input = ref<HTMLInputElement | null>(null);
 const list = ref<InstanceType<typeof PickerMenu> | null>(null);
 
 const selected = computed(
-  () =>
-    props.options.find((option) => option.value === props.modelValue) ?? null,
+  () => props.options.find((option) => option.value === model.value) ?? null,
 );
 
 const filtered = computed(() => {
@@ -59,7 +56,7 @@ function onFocus() {
   open.value = true;
   query.value = "";
   const current = props.options.findIndex(
-    (option) => option.value === props.modelValue,
+    (option) => option.value === model.value,
   );
   highlight.value = Math.max(current, 0);
 }
@@ -86,7 +83,7 @@ function choose(
   option: { value: string; label: string },
   { blur = true }: { blur?: boolean } = {},
 ) {
-  emit("update:modelValue", option.value);
+  model.value = option.value;
   close();
   if (blur) input.value?.blur();
 }

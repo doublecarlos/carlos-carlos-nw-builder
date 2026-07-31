@@ -31,29 +31,27 @@ const display = (value: number | string) => {
 
 const props = withDefaults(
   defineProps<{
-    modelValue?: number | string;
     placeholder?: string;
     step?: number; // percentage points per arrow press
   }>(),
   {
-    modelValue: "",
     placeholder: "",
     step: 1,
   },
 );
 
-const emit = defineEmits<{ "update:modelValue": [value: number | string] }>();
+const model = defineModel<number | string>({ default: "" });
 
 const focused = ref(false);
 const text = ref("");
 
 const shown = computed(() =>
-  focused.value ? text.value : display(props.modelValue),
+  focused.value ? text.value : display(model.value),
 );
 
 function onFocus(event: FocusEvent) {
   focused.value = true;
-  const value = props.modelValue;
+  const value = model.value;
   text.value =
     value === "" || value == null || !Number.isFinite(Number(value))
       ? ""
@@ -75,25 +73,25 @@ function onInput(event: Event) {
 function commit(raw: string) {
   const cleaned = String(raw).replace(/[%\s]/g, "").replace(",", ".");
   if (cleaned === "" || cleaned === "-") {
-    emit("update:modelValue", "");
+    model.value = "";
     return;
   }
   const percent = Number(cleaned);
   // Mid-typing states like "9." or "-" are left alone rather than snapped to 0.
   if (!Number.isFinite(percent)) return;
-  emit("update:modelValue", toDecimal(percent));
+  model.value = toDecimal(percent);
 }
 
 function nudge(direction: number, event: KeyboardEvent) {
   event.preventDefault();
   const current =
-    Number.isFinite(Number(props.modelValue)) && props.modelValue !== ""
-      ? toPercent(props.modelValue)
+    Number.isFinite(Number(model.value)) && model.value !== ""
+      ? toPercent(model.value)
       : 0;
   const factor = event.shiftKey ? 10 : 1;
   const next = Number((current + direction * props.step * factor).toFixed(10));
   text.value = String(next);
-  emit("update:modelValue", toDecimal(next));
+  model.value = toDecimal(next);
 }
 </script>
 

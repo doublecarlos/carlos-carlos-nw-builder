@@ -20,7 +20,6 @@ import type { BuildParameterSlot } from "../../types";
 const props = withDefaults(
   defineProps<{
     slotDef: BuildParameterSlot;
-    modelValue: string | number | boolean | undefined;
     /** When true, constrains control widths for uniform row alignment in section rows.
      *  QuickOptions (the horizontal strip) never passes `wide` -- it has its own layout. */
     wide?: boolean;
@@ -30,9 +29,7 @@ const props = withDefaults(
   },
 );
 
-const emit = defineEmits<{
-  "update:modelValue": [value: string | number | boolean];
-}>();
+const model = defineModel<string | number | boolean>();
 
 /** Width class per paramType when `wide` is set, so every row lines up visually. */
 function widthCls(slotDef: BuildParameterSlot) {
@@ -42,10 +39,7 @@ function widthCls(slotDef: BuildParameterSlot) {
 
 function onNumber(event: Event) {
   const value = Number((event.target as HTMLInputElement).value);
-  emit(
-    "update:modelValue",
-    Number.isFinite(value) ? value : (props.slotDef.min ?? 0),
-  );
+  model.value = Number.isFinite(value) ? value : (props.slotDef.min ?? 0);
 }
 
 // --- keyboard cursor integration ---------------------------------------------------------
@@ -90,23 +84,23 @@ defineExpose({ focus: focusControl, focusAndSeed });
       v-if="slotDef.paramType === 'list'"
       ref="comboboxInstance"
       :class="wide && 'w-36'"
-      :model-value="(modelValue as string) ?? ''"
+      :model-value="(model as string) ?? ''"
       :options="slotDef.options ?? []"
-      @update:model-value="$emit('update:modelValue', $event)"
+      @update:model-value="model = $event as string"
     />
 
     <PercentInput
       v-else-if="slotDef.paramType === 'percent'"
       :class="wide && 'w-28'"
-      :model-value="(modelValue as number) ?? ''"
-      @update:model-value="$emit('update:modelValue', $event)"
+      :model-value="(model as number) ?? ''"
+      @update:model-value="model = $event as number | string"
     />
 
     <BaseCheckbox
       v-else-if="slotDef.paramType === 'boolean'"
       :class="wide && 'w-36'"
-      :model-value="!!modelValue"
-      @update:model-value="$emit('update:modelValue', $event as boolean)"
+      :model-value="!!model"
+      @update:model-value="model = $event as boolean"
     >
       <slot />
     </BaseCheckbox>
@@ -121,7 +115,7 @@ defineExpose({ focus: focusControl, focusAndSeed });
         :min="slotDef.min"
         :max="slotDef.max"
         :step="slotDef.step"
-        :value="modelValue ?? ''"
+        :value="model ?? ''"
         @input="onNumber"
       />
       <div v-if="slotDef.presets?.length" class="flex gap-0.5">
@@ -131,11 +125,11 @@ defineExpose({ focus: focusControl, focusAndSeed });
           type="button"
           class="rounded-md border px-1.5 py-0.5 text-sm"
           :class="
-            Number(modelValue) === preset
+            Number(model) === preset
               ? 'border-accent bg-accent-soft text-text'
               : 'border-line bg-surface-2 text-muted'
           "
-          @click="$emit('update:modelValue', preset)"
+          @click="model = preset as string | number | boolean"
         >
           {{ preset }}
         </button>

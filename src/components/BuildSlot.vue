@@ -201,7 +201,7 @@ const paramValue = () =>
           :slot-def="slotDef"
           :wide="true"
           :model-value="paramValue()"
-          @update:model-value="buildEditor.setParam(slotDef, $event)"
+          @update:model-value="buildEditor.setParam(slotDef, $event!)"
         />
 
         <p
