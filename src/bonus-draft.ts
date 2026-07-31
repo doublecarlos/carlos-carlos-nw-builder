@@ -14,47 +14,71 @@
 // the whole bonus stacks), so they're edited once by the caller (BonusSetForm.vue/
 // bonus-groups.js), not per row here.
 
-import { whenIsRepresentable, whenToRows, rowsToWhen, cloneRow, type ConditionRow } from './condition-draft';
-import type { Grant, GrantVariant, BonusSet, StatValues } from './types';
+import {
+  whenIsRepresentable,
+  whenToRows,
+  rowsToWhen,
+  cloneRow,
+  type ConditionRow,
+} from "./condition-draft";
+import type { Grant, GrantVariant, BonusSet, StatValues } from "./types";
 
 // Exactly what the engine reads off a tier (bonus.ts `evaluateBonus`). Anything else on a
 // tier would be dropped by the form, so its presence forces JSON mode instead.
-const TIER_KEYS = new Set(['pieces', 'stats']);
-const PIECES_KEYS = new Set(['set', 'atLeast']);
-const VARIANT_KEYS = new Set(['when', 'stats']);
+const TIER_KEYS = new Set(["pieces", "stats"]);
+const PIECES_KEYS = new Set(["set", "atLeast"]);
+const VARIANT_KEYS = new Set(["when", "stats"]);
 
-const tiersAreSimple = (tiers: NonNullable<Grant['tiers']>) => (tiers ?? []).every((tier) => (
-  Object.keys(tier).every((key) => TIER_KEYS.has(key))
-  && tier.pieces && typeof tier.pieces === 'object'
-  && Object.keys(tier.pieces).every((key) => PIECES_KEYS.has(key))
-));
+const tiersAreSimple = (tiers: NonNullable<Grant["tiers"]>) =>
+  (tiers ?? []).every(
+    (tier) =>
+      Object.keys(tier).every((key) => TIER_KEYS.has(key)) &&
+      tier.pieces &&
+      typeof tier.pieces === "object" &&
+      Object.keys(tier.pieces).every((key) => PIECES_KEYS.has(key)),
+  );
 
-const variantsAreSimple = (variants: NonNullable<Grant['variants']>) => (variants ?? []).every((variant) => (
-  Object.keys(variant).every((key) => VARIANT_KEYS.has(key))
-  && variant.stats && typeof variant.stats === 'object'
-  && whenIsRepresentable(variant.when)
-));
+const variantsAreSimple = (variants: NonNullable<Grant["variants"]>) =>
+  (variants ?? []).every(
+    (variant) =>
+      Object.keys(variant).every((key) => VARIANT_KEYS.has(key)) &&
+      variant.stats &&
+      typeof variant.stats === "object" &&
+      whenIsRepresentable(variant.when),
+  );
 
 /** Structures the form cannot represent without losing something. */
-export const needsJson = (grant: Grant) => Boolean(
-  !whenIsRepresentable(grant.when)
-  || (grant.tiers && !tiersAreSimple(grant.tiers))
-  || (grant.variants && (grant.tiers || !variantsAreSimple(grant.variants))),
-);
+export const needsJson = (grant: Grant) =>
+  Boolean(
+    !whenIsRepresentable(grant.when) ||
+    (grant.tiers && !tiersAreSimple(grant.tiers)) ||
+    (grant.variants && (grant.tiers || !variantsAreSimple(grant.variants))),
+  );
 
 export interface StatRow {
   key: string;
   value: string | number;
 }
 
-export const statRows = (stats: StatValues | undefined): StatRow[] => Object.entries(stats ?? {})
-  .map(([key, value]) => ({ key, value: value as number }));
+export const statRows = (stats: StatValues | undefined): StatRow[] =>
+  Object.entries(stats ?? {}).map(([key, value]) => ({
+    key,
+    value: value as number,
+  }));
 
-export const rowsToStats = (rows: StatRow[] | undefined): Record<string, number> => {
+export const rowsToStats = (
+  rows: StatRow[] | undefined,
+): Record<string, number> => {
   const stats: Record<string, number> = {};
   for (const { key, value } of rows ?? []) {
     const number = Number(value);
-    if (!key || (value as unknown) === '' || value == null || !Number.isFinite(number)) continue;
+    if (
+      !key ||
+      (value as unknown) === "" ||
+      value == null ||
+      !Number.isFinite(number)
+    )
+      continue;
     stats[key] = number;
   }
   return stats;
@@ -80,10 +104,10 @@ export interface TierDraft {
 
 export interface GrantDraft {
   uid: string;
-  mode: 'simple' | 'json';
+  mode: "simple" | "json";
   json: string;
   conditions: ConditionRow[];
-  payload: 'flat' | 'tiers' | 'variants';
+  payload: "flat" | "tiers" | "variants";
   stats: StatRow[];
   tiers: TierDraft[];
   variants: VariantDraft[];
@@ -93,38 +117,42 @@ export function toDraft(grant: Grant = {}): GrantDraft {
   const json = needsJson(grant);
   return {
     uid: `b${Math.random().toString(36).slice(2, 8)}`,
-    mode: json ? 'json' : 'simple',
+    mode: json ? "json" : "simple",
     json: JSON.stringify(grant, null, 2),
     conditions: json ? [] : whenToRows(grant.when),
-    payload: grant.variants ? 'variants' : (grant.tiers ? 'tiers' : 'flat'),
+    payload: grant.variants ? "variants" : grant.tiers ? "tiers" : "flat",
     stats: json ? [] : statRows(grant.stats),
-    tiers: json ? [] : (grant.tiers ?? []).map((tier) => ({
-      set: tier.pieces?.set ?? '',
-      atLeast: tier.pieces?.atLeast ?? 1,
-      stats: statRows(tier.stats),
-    })),
-    variants: json ? [] : (grant.variants ?? []).map((variant) => ({
-      ...newVariant(),
-      conditions: whenToRows(variant.when),
-      stats: statRows(variant.stats),
-    })),
+    tiers: json
+      ? []
+      : (grant.tiers ?? []).map((tier) => ({
+          set: tier.pieces?.set ?? "",
+          atLeast: tier.pieces?.atLeast ?? 1,
+          stats: statRows(tier.stats),
+        })),
+    variants: json
+      ? []
+      : (grant.variants ?? []).map((variant) => ({
+          ...newVariant(),
+          conditions: whenToRows(variant.when),
+          stats: statRows(variant.stats),
+        })),
   };
 }
 
 /** Throws on unparseable JSON so the caller can report it rather than dropping the grant. */
 export function toGrant(draft: GrantDraft): Grant {
-  if (draft.mode === 'json') return JSON.parse(draft.json);
+  if (draft.mode === "json") return JSON.parse(draft.json);
 
   const out: Grant = {};
   const when = rowsToWhen(draft.conditions);
   if (Object.keys(when).length) out.when = when;
 
-  if (draft.payload === 'tiers') {
+  if (draft.payload === "tiers") {
     out.tiers = draft.tiers.map((tier) => ({
       pieces: { set: tier.set, atLeast: Number(tier.atLeast) || 1 },
       stats: rowsToStats(tier.stats),
     }));
-  } else if (draft.payload === 'variants') {
+  } else if (draft.payload === "variants") {
     out.variants = draft.variants.map((variant) => {
       const vWhen = rowsToWhen(variant.conditions);
       const entry: GrantVariant = { stats: rowsToStats(variant.stats) };
@@ -153,7 +181,11 @@ export interface SetDraft {
  * surfaces can't drift on what counts as "present". Throws if any grant is unparseable JSON. */
 export function toSet(draft: SetDraft): BonusSet {
   const grants = draft.grants.map((g) => toGrant(g));
-  const out: BonusSet = { id: draft.id.trim(), name: draft.name.trim() || draft.id.trim(), grants };
+  const out: BonusSet = {
+    id: draft.id.trim(),
+    name: draft.name.trim() || draft.id.trim(),
+    grants,
+  };
   if (draft.stacking) out.stacking = draft.stacking;
   if (draft.maxStacks) out.maxStacks = Number(draft.maxStacks);
   if (draft.excludes?.length) out.excludes = [...draft.excludes];
@@ -167,7 +199,10 @@ export function duplicateDraft(draft: GrantDraft): GrantDraft {
     uid: `b${Math.random().toString(36).slice(2, 8)}`,
     conditions: draft.conditions.map(cloneRow),
     stats: draft.stats.map((s) => ({ ...s })),
-    tiers: draft.tiers.map((tier) => ({ ...tier, stats: tier.stats.map((s) => ({ ...s })) })),
+    tiers: draft.tiers.map((tier) => ({
+      ...tier,
+      stats: tier.stats.map((s) => ({ ...s })),
+    })),
     variants: draft.variants.map((variant) => ({
       ...newVariant(),
       conditions: variant.conditions.map(cloneRow),

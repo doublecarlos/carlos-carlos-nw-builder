@@ -8,9 +8,18 @@ export function installWindowShim() {
   win.window = globalThis;
   win.localStorage = {
     getItem: (key: string) => (store.has(key) ? store.get(key)! : null),
-    setItem: (key: string, value: string) => { store.set(key, value); },
-    removeItem: (key: string) => { store.delete(key); },
+    setItem: (key: string, value: string) => {
+      store.set(key, value);
+    },
+    removeItem: (key: string) => {
+      store.delete(key);
+    },
   };
-  win.location = { search: '', pathname: '/', hash: '', href: 'http://localhost/' };
+  win.location = {
+    search: "",
+    pathname: "/",
+    hash: "",
+    href: "http://localhost/",
+  };
   win.history = { pushState: () => {}, replaceState: () => {} };
 }

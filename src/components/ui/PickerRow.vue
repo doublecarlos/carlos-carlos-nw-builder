@@ -9,8 +9,11 @@ withDefaults(defineProps<{ highlighted?: boolean; muted?: boolean }>(), {
 </script>
 
 <template>
-  <div class="cursor-pointer px-2 py-1" :class="[highlighted && 'bg-accent-soft', muted && 'italic text-muted']"
-       :data-highlighted="highlighted || undefined">
+  <div
+    class="cursor-pointer px-2 py-1"
+    :class="[highlighted && 'bg-accent-soft', muted && 'italic text-muted']"
+    :data-highlighted="highlighted || undefined"
+  >
     <slot />
   </div>
 </template>

@@ -1,0 +1,22 @@
+#!/bin/sh
+# Pre-commit hook: runs `npm run verify` to ensure lint, formatting, type checking,
+# and tests all pass before allowing a commit.
+
+echo "Running pre-commit verification..."
+
+if ! npm run verify; then
+  echo ""
+  echo "❌ Pre-commit verification failed."
+  echo ""
+  echo "The following checks did not pass:"
+  echo "  - ESLint                          (npm run lint)"
+  echo "  - Prettier formatting             (npm run format:check)"
+  echo "  - TypeScript type checking        (npm run typecheck)"
+  echo "  - Unit tests                      (npm run test)"
+  echo "  - End-to-end tests                (npm run test:ui)"
+  echo ""
+  echo "Fix the issues above and commit again."
+  exit 1
+fi
+
+echo "✅ Pre-commit verification passed."

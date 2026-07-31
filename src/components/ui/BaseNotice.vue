@@ -5,7 +5,10 @@ defineEmits<{ dismiss: [] }>();
 </script>
 
 <template>
-  <span class="cursor-pointer rounded-md bg-accent-soft px-2 py-0.5" @click="$emit('dismiss')">
+  <span
+    class="cursor-pointer rounded-md bg-accent-soft px-2 py-0.5"
+    @click="$emit('dismiss')"
+  >
     <slot />
   </span>
 </template>

@@ -6,10 +6,10 @@
 // fallback (a plain download, no persistent link) lives in App.vue next to the existing
 // Blob/anchor `downloadExport` technique, not here.
 
-const DB_NAME = 'nw-fs-handles';
-const STORE = 'handles';
+const DB_NAME = "nw-fs-handles";
+const STORE = "handles";
 
-export const supported = typeof window.showSaveFilePicker === 'function';
+export const supported = typeof window.showSaveFilePicker === "function";
 
 function openDb(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -20,7 +20,10 @@ function openDb(): Promise<IDBDatabase> {
   });
 }
 
-async function withStore<T>(mode: IDBTransactionMode, fn: (store: IDBObjectStore) => IDBRequest<T>): Promise<T> {
+async function withStore<T>(
+  mode: IDBTransactionMode,
+  fn: (store: IDBObjectStore) => IDBRequest<T>,
+): Promise<T> {
   const db = await openDb();
   try {
     return await new Promise<T>((resolve, reject) => {
@@ -35,19 +38,34 @@ async function withStore<T>(mode: IDBTransactionMode, fn: (store: IDBObjectStore
   }
 }
 
-export const getHandle = (collectionId: string): Promise<FileSystemFileHandle | null> =>
-  withStore<FileSystemFileHandle>('readonly', (store) => store.get(collectionId)).catch(() => null);
+export const getHandle = (
+  collectionId: string,
+): Promise<FileSystemFileHandle | null> =>
+  withStore<FileSystemFileHandle>("readonly", (store) =>
+    store.get(collectionId),
+  ).catch(() => null);
 
 export const setHandle = (collectionId: string, handle: FileSystemFileHandle) =>
-  withStore('readwrite', (store) => store.put(handle, collectionId)).then(() => true).catch(() => false);
+  withStore("readwrite", (store) => store.put(handle, collectionId))
+    .then(() => true)
+    .catch(() => false);
 
-export const deleteHandle = (collectionId: string) => withStore('readwrite', (store) => store.delete(collectionId))
-  .then(() => true).catch(() => false);
+export const deleteHandle = (collectionId: string) =>
+  withStore("readwrite", (store) => store.delete(collectionId))
+    .then(() => true)
+    .catch(() => false);
 
-export function pickSaveFile(suggestedName: string): Promise<FileSystemFileHandle> {
+export function pickSaveFile(
+  suggestedName: string,
+): Promise<FileSystemFileHandle> {
   return window.showSaveFilePicker({
     suggestedName,
-    types: [{ description: 'Neverwinter build collection', accept: { 'application/json': ['.json'] } }],
+    types: [
+      {
+        description: "Neverwinter build collection",
+        accept: { "application/json": [".json"] },
+      },
+    ],
   });
 }
 
@@ -55,9 +73,9 @@ export function pickSaveFile(suggestedName: string): Promise<FileSystemFileHandl
  * 'prompt' again after a reload, and `requestPermission` needs to run from a user gesture,
  * which every caller here already is (a click on Save/Save As). */
 export async function verifyPermission(handle: FileSystemFileHandle) {
-  const opts: FileSystemHandlePermissionDescriptor = { mode: 'readwrite' };
-  if ((await handle.queryPermission(opts)) === 'granted') return true;
-  return (await handle.requestPermission(opts)) === 'granted';
+  const opts: FileSystemHandlePermissionDescriptor = { mode: "readwrite" };
+  if ((await handle.queryPermission(opts)) === "granted") return true;
+  return (await handle.requestPermission(opts)) === "granted";
 }
 
 export async function writeText(handle: FileSystemFileHandle, text: string) {

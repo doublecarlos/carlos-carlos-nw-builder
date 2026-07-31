@@ -9,9 +9,9 @@
 // happen -- TS widens a JSON-imported string property to plain `string` on import, unlike an
 // `as const` literal, so `StatKey` is just `string` with a documentation-only name.
 
-import type rawSchema from '../data/schema.json';
+import type rawSchema from "../data/schema.json";
 
-export type StatDef = (typeof rawSchema)['stats'][number];
+export type StatDef = (typeof rawSchema)["stats"][number];
 export type StatKey = string;
 export type StatValues = Partial<Record<StatKey, number>>;
 
@@ -66,8 +66,8 @@ export interface BuildParameterSlot {
   id: string;
   label: string;
   section: string;
-  type: 'build_parameter';
-  paramType: 'list' | 'number' | 'percent' | 'boolean';
+  type: "build_parameter";
+  paramType: "list" | "number" | "percent" | "boolean";
   path: string;
   /** Shown in the always-visible QuickOptions strip instead of its section's slot list. */
   quick?: boolean;
@@ -83,7 +83,7 @@ export interface ItemPickerSlot {
   id: string;
   label: string;
   section: string;
-  type: 'item_picker';
+  type: "item_picker";
   filter: string;
 }
 
@@ -189,7 +189,7 @@ export interface BonusSet {
   name?: string;
   grants?: Grant[];
   excludes?: string[];
-  stacking?: 'perSource' | string;
+  stacking?: "perSource" | string;
   maxStacks?: number;
 }
 
@@ -227,13 +227,13 @@ export interface CatalogOverlay {
   bonusSets: Record<string, BonusSet | null>;
 }
 
-export type CatalogGroup = 'items' | 'bonusSets';
+export type CatalogGroup = "items" | "bonusSets";
 
 export interface LintFinding {
-  level: 'error' | 'warn';
+  level: "error" | "warn";
   message: string;
   name?: string;
-  kind: 'item' | 'bonusSet';
+  kind: "item" | "bonusSet";
 }
 
 // --- builds (storage.ts) ---------------------------------------------------------------------
@@ -375,7 +375,7 @@ export interface ResolvedBonuses {
 
 export interface EngineError {
   slotId: string;
-  kind: 'class' | 'maxCopies' | 'outOfRange';
+  kind: "class" | "maxCopies" | "outOfRange";
   choice: string;
   message: string;
 }

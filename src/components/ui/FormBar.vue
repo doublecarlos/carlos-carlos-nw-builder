@@ -5,7 +5,10 @@
 </script>
 
 <template>
-  <div data-testid="form-bar" class="sticky top-0 z-2 -m-3 mb-3 flex flex-wrap items-center gap-1.5 border-b border-line bg-surface p-3">
+  <div
+    data-testid="form-bar"
+    class="sticky top-0 z-2 -m-3 mb-3 flex flex-wrap items-center gap-1.5 border-b border-line bg-surface p-3"
+  >
     <slot />
   </div>
 </template>

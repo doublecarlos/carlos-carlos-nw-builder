@@ -5,8 +5,10 @@
 </script>
 
 <template>
-  <div data-testid="picker-menu"
-       class="absolute inset-x-0 top-full z-30 mt-0.5 max-h-80 overflow-y-auto rounded-md border border-line bg-surface shadow-lg">
+  <div
+    data-testid="picker-menu"
+    class="absolute inset-x-0 top-full z-30 mt-0.5 max-h-80 overflow-y-auto rounded-md border border-line bg-surface shadow-lg"
+  >
     <slot />
   </div>
 </template>

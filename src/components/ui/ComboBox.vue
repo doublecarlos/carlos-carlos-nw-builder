@@ -6,31 +6,37 @@
 //
 // Reuses ItemPicker's PickerMenu/PickerRow primitives rather than inventing a second look for
 // the same interaction.
-import { ref, computed, watch, nextTick } from 'vue';
-import PickerMenu from './PickerMenu.vue';
-import PickerRow from './PickerRow.vue';
+import { ref, computed, watch, nextTick } from "vue";
+import PickerMenu from "./PickerMenu.vue";
+import PickerRow from "./PickerRow.vue";
 
 const MAX_ROWS = 60;
 
-const props = withDefaults(defineProps<{
-  modelValue?: string;
-  /** [{ value, label }], in the order they should list. */
-  options: { value: string; label: string }[];
-  placeholder?: string;
-}>(), {
-  modelValue: '',
-  placeholder: '—',
-});
+const props = withDefaults(
+  defineProps<{
+    modelValue?: string;
+    /** [{ value, label }], in the order they should list. */
+    options: { value: string; label: string }[];
+    placeholder?: string;
+  }>(),
+  {
+    modelValue: "",
+    placeholder: "—",
+  },
+);
 
-const emit = defineEmits<{ 'update:modelValue': [value: string] }>();
+const emit = defineEmits<{ "update:modelValue": [value: string] }>();
 
 const open = ref(false);
-const query = ref('');
+const query = ref("");
 const highlight = ref(0);
 const input = ref<HTMLInputElement | null>(null);
 const list = ref<InstanceType<typeof PickerMenu> | null>(null);
 
-const selected = computed(() => props.options.find((option) => option.value === props.modelValue) ?? null);
+const selected = computed(
+  () =>
+    props.options.find((option) => option.value === props.modelValue) ?? null,
+);
 
 const filtered = computed(() => {
   if (!open.value) return [];
@@ -43,14 +49,18 @@ const filtered = computed(() => {
 
 watch(highlight, () => {
   nextTick(() => {
-    (list.value?.$el as HTMLElement | undefined)?.querySelector('[data-highlighted]')?.scrollIntoView({ block: 'nearest' });
+    (list.value?.$el as HTMLElement | undefined)
+      ?.querySelector("[data-highlighted]")
+      ?.scrollIntoView({ block: "nearest" });
   });
 });
 
 function onFocus() {
   open.value = true;
-  query.value = '';
-  const current = props.options.findIndex((option) => option.value === props.modelValue);
+  query.value = "";
+  const current = props.options.findIndex(
+    (option) => option.value === props.modelValue,
+  );
   highlight.value = Math.max(current, 0);
 }
 
@@ -66,46 +76,49 @@ function onBlur() {
 
 function close() {
   open.value = false;
-  query.value = '';
+  query.value = "";
 }
 
 /** `blur: false` for the Tab case below -- the browser's own Tab-forward looks at
  * whatever element is currently focused, so blurring here first (before that runs) would
  * make it tab from nowhere instead of continuing from this input. */
-function choose(option: { value: string; label: string }, { blur = true }: { blur?: boolean } = {}) {
-  emit('update:modelValue', option.value);
+function choose(
+  option: { value: string; label: string },
+  { blur = true }: { blur?: boolean } = {},
+) {
+  emit("update:modelValue", option.value);
   close();
   if (blur) input.value?.blur();
 }
 
 function onKeydown(event: KeyboardEvent) {
-  if (event.key === 'Escape') {
+  if (event.key === "Escape") {
     event.preventDefault();
     event.stopPropagation();
     close();
     input.value?.blur();
     return;
   }
-  if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+  if (event.key === "ArrowDown" || event.key === "ArrowUp") {
     event.preventDefault();
     event.stopPropagation();
     if (!open.value) {
       onFocus();
       return;
     }
-    const step = event.key === 'ArrowDown' ? 1 : -1;
+    const step = event.key === "ArrowDown" ? 1 : -1;
     const last = filtered.value.length - 1;
     highlight.value = Math.min(Math.max(highlight.value + step, 0), last);
     return;
   }
-  if (event.key === 'Enter') {
+  if (event.key === "Enter") {
     if (!open.value) return;
     event.preventDefault();
     event.stopPropagation();
     choose(filtered.value[highlight.value]);
     return;
   }
-  if (event.key === 'Tab') {
+  if (event.key === "Tab") {
     if (!open.value) return;
     if (event.shiftKey) {
       // Browsing backward -- just close.
@@ -117,7 +130,7 @@ function onKeydown(event: KeyboardEvent) {
     // Stat-key pickers only: commit the highlighted stat before the
     // browser's own Tab moves focus to the value field right after this one in the DOM.
     // No preventDefault -- the browser still does the actual tabbing.
-    if ((event.target as HTMLElement).closest('.stat-row')) {
+    if ((event.target as HTMLElement).closest(".stat-row")) {
       choose(filtered.value[highlight.value], { blur: false });
       return;
     }
@@ -140,15 +153,19 @@ function onKeydown(event: KeyboardEvent) {
       type="text"
       autocomplete="off"
       spellcheck="false"
-      :value="open ? query : (selected ? selected.label : '')"
+      :value="open ? query : selected ? selected.label : ''"
       :placeholder="placeholder"
       @focus="onFocus"
       @input="onInput"
       @blur="onBlur"
-      @keydown="onKeydown">
+      @keydown="onKeydown"
+    />
     <!-- Sits in the same right-hand gutter the input's padding reserves -- the only hint
          this text input is actually a fixed-choice dropdown. -->
-    <span class="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-sm text-muted">▾</span>
+    <span
+      class="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-sm text-muted"
+      >▾</span
+    >
 
     <PickerMenu v-if="open" ref="list">
       <PickerRow
@@ -156,9 +173,13 @@ function onKeydown(event: KeyboardEvent) {
         :key="option.value"
         :highlighted="highlight === index"
         @mousedown.prevent="choose(option)"
-        @mouseenter="highlight = index">
+        @mouseenter="highlight = index"
+      >
         <div class="flex items-baseline gap-1.5">
-          <span class="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap">{{ option.label }}</span>
+          <span
+            class="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap"
+            >{{ option.label }}</span
+          >
         </div>
       </PickerRow>
 

@@ -1,5 +1,5 @@
 // Shared helpers for StatPanel.vue's stat source popover (StatSourceCard.vue).
-import type { Locator, Page } from '@playwright/test';
+import type { Locator, Page } from "@playwright/test";
 
 /** The circle-alert button that opens a stat's source popover, keyed by its schema stat key
  * (`data-stat-key`, StatPanel.vue's own test hook -- same convention as BuildEditor.vue's
@@ -10,11 +10,11 @@ export function statInfoButton(page: Page, key: string): Locator {
 
 /** The one popover for the whole panel -- present only while a stat's card is open. */
 export function statCard(page: Page): Locator {
-  return page.locator('.statcard');
+  return page.locator(".statcard");
 }
 
 export function statCardClose(page: Page): Locator {
-  return statCard(page).locator('.statcard-close');
+  return statCard(page).locator(".statcard-close");
 }
 
 /**
@@ -24,5 +24,5 @@ export function statCardClose(page: Page): Locator {
  * instead and contributes no entry here.
  */
 export function statCardSourceGroups(page: Page): Locator {
-  return statCard(page).locator('.statcard-rows');
+  return statCard(page).locator(".statcard-rows");
 }

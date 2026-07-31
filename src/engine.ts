@@ -6,11 +6,18 @@
 // Deviations from the sheet are marked `FIX #n` and justified in plan Part 3. None changes a
 // number on current data except where the sheet was demonstrably wrong.
 
-import * as bonus from './bonus';
+import * as bonus from "./bonus";
 import type {
-  Db, Build, StatKey, ResolvedBonuses, EngineRow, Stages, DerivedOutputs, EngineError,
+  Db,
+  Build,
+  StatKey,
+  ResolvedBonuses,
+  EngineRow,
+  Stages,
+  DerivedOutputs,
+  EngineError,
   ResolvedBuild,
-} from './types';
+} from "./types";
 
 const zeros = (keys: StatKey[]) => {
   const out: Record<StatKey, number> = {};
@@ -18,13 +25,18 @@ const zeros = (keys: StatKey[]) => {
   return out;
 };
 
-const addVectors = (a: Record<StatKey, number>, b: Record<StatKey, number>, keys: StatKey[]) => {
+const addVectors = (
+  a: Record<StatKey, number>,
+  b: Record<StatKey, number>,
+  keys: StatKey[],
+) => {
   const out: Record<StatKey, number> = {};
   for (const key of keys) out[key] = (a[key] ?? 0) + (b[key] ?? 0);
   return out;
 };
 
-const averageByChance = (multiplier: number, chance: number) => chance * multiplier + (1 - chance);
+const averageByChance = (multiplier: number, chance: number) =>
+  chance * multiplier + (1 - chance);
 
 /**
  * Spreadsheet `ROUND()` semantics: half away from zero.
@@ -35,7 +47,7 @@ const averageByChance = (multiplier: number, chance: number) => chance * multipl
  */
 const sheetRound = (value: number, digits = 2) => {
   const factor = 10 ** digits;
-  return Math.sign(value) * Math.round(Math.abs(value) * factor) / factor;
+  return (Math.sign(value) * Math.round(Math.abs(value) * factor)) / factor;
 };
 
 /**
@@ -52,13 +64,18 @@ function rowVectors(resolved: ResolvedBonuses, keys: StatKey[]): EngineRow[] {
     }
     const bonusStats = resolved.bonusStatsBySlot.get(row.slotId);
     if (bonusStats) {
-      for (const [key, value] of bonusStats) stats[key] = (stats[key] ?? 0) + value;
+      for (const [key, value] of bonusStats)
+        stats[key] = (stats[key] ?? 0) + value;
     }
     return { slotId: row.slotId, choice: row.choice, item: row.item, stats };
   });
 }
 
-function run(db: Db, build: Build, resolved: ResolvedBonuses): { rows: EngineRow[]; stages: Stages } {
+function run(
+  db: Db,
+  build: Build,
+  resolved: ResolvedBonuses,
+): { rows: EngineRow[]; stages: Stages } {
   const { schema } = db;
   const keys: StatKey[] = schema.statKeys;
   const context = build.context ?? {};
@@ -67,12 +84,15 @@ function run(db: Db, build: Build, resolved: ResolvedBonuses): { rows: EngineRow
 
   // --- stage 1: initial sums -----------------------------------------------------------
   const sums = zeros(keys);
-  const products = new Map<string, number>(schema.multiplicativeStats.map((key) => [key, 1]));
+  const products = new Map<string, number>(
+    schema.multiplicativeStats.map((key) => [key, 1]),
+  );
 
   for (const row of rows) {
     for (const key of keys) {
       const value = row.stats[key] ?? 0;
-      if (multiplicative.has(key)) products.set(key, (products.get(key) as number) * (1 + value));
+      if (multiplicative.has(key))
+        products.set(key, (products.get(key) as number) * (1 + value));
       else sums[key] += value;
     }
   }
@@ -106,7 +126,8 @@ function run(db: Db, build: Build, resolved: ResolvedBonuses): { rows: EngineRow
   const ratingPct = zeros(keys);
   for (const rule of schema.ratingConversion) {
     const shortfall = Math.max(
-      itemLevel + rule.allowedOver - afterCombinedRating[rule.rating], 0,
+      itemLevel + rule.allowedOver - afterCombinedRating[rule.rating],
+      0,
     );
     ratingPct[rule.percent] = rule.capPct - shortfall / 100000;
   }
@@ -137,7 +158,8 @@ function run(db: Db, build: Build, resolved: ResolvedBonuses): { rows: EngineRow
     if (stat && forte[stat] !== undefined) forte[stat] += fortePool / divisor;
   }
   if (context.m32Forte) {
-    for (const stat of Object.keys(forte)) forte[stat] = sheetRound(forte[stat], 2);
+    for (const stat of Object.keys(forte))
+      forte[stat] = sheetRound(forte[stat], 2);
   }
   const totals = addVectors(afterAbilityScores, forte, keys);
 
@@ -166,9 +188,21 @@ function run(db: Db, build: Build, resolved: ResolvedBonuses): { rows: EngineRow
   return {
     rows,
     stages: {
-      sums, weaponMods, afterWeaponMods, afterCombinedRating, ratingPct,
-      afterRatingPct, abilities, afterAbilityScores, forte,
-      afterForte: totals, totals, caps, capped, overcap, headroom,
+      sums,
+      weaponMods,
+      afterWeaponMods,
+      afterCombinedRating,
+      ratingPct,
+      afterRatingPct,
+      abilities,
+      afterAbilityScores,
+      forte,
+      afterForte: totals,
+      totals,
+      caps,
+      capped,
+      overcap,
+      headroom,
     },
   };
 }
@@ -181,20 +215,23 @@ function derive(db: Db, build: Build, stages: Stages): DerivedOutputs {
   const { capped, totals } = stages;
   const role = schema.roles[context.role] ?? schema.roles.dps;
   const magnitude = Number(context.magnitude) || 0;
-  const magical = context.damageType !== 'physical';
+  const magical = context.damageType !== "physical";
 
   const itemLevel = totals.il;
-  const hp = (itemLevel * 10 + capped.hit_points)
-    * role.hpBonus
-    * (1 + capped.hit_points_p)
-    * (1 + capped.mult_hit_points);
+  const hp =
+    (itemLevel * 10 + capped.hit_points) *
+    role.hpBonus *
+    (1 + capped.hit_points_p) *
+    (1 + capped.mult_hit_points);
 
   // FIX #1: reads the capped stage like every other derived value. `flat_damage` has no cap
   // and no later stage touches it, so this is a no-op today -- but it removes a trap where a
   // future bonus feeding `flat_damage` through a later stage would be silently dropped.
   const baseDamage = capped.flat_damage + (itemLevel / 10) * role.damageBonus;
 
-  const effMagPhys = magical ? capped.magical_damage_boost : capped.physical_damage_boost;
+  const effMagPhys = magical
+    ? capped.magical_damage_boost
+    : capped.physical_damage_boost;
   const enemyEff = magical
     ? capped.enemy_incoming_damage_magical
     : capped.enemy_incoming_damage_physical;
@@ -203,36 +240,41 @@ function derive(db: Db, build: Build, stages: Stages): DerivedOutputs {
   const damage = (critChance: number, deflectChance: number) => {
     const critMult = 1 + capped.sev_p - capped.enemy_crit_avoid;
     const deflectMult = 1 / (1 + capped.enemy_deflect_sev - capped.acc_p);
-    const other = (1 + effMagPhys) * (1 + enemyEff)
-      * (1 + capped.outgoing_damage)
-      * (1 + capped.enemy_incoming_damage)
-      * (1 + capped.mult_damage);
-    const value = baseDamage
-      * (magnitude / 100)
-      * (1 + capped.power_p)
-      * averageByChance(critMult, critChance)
-      * (1 + capped.ca_p - capped.enemy_awareness)
-      * (1 / (1 + capped.enemy_defense))
-      * averageByChance(deflectMult, deflectChance)
-      * other;
+    const other =
+      (1 + effMagPhys) *
+      (1 + enemyEff) *
+      (1 + capped.outgoing_damage) *
+      (1 + capped.enemy_incoming_damage) *
+      (1 + capped.mult_damage);
+    const value =
+      baseDamage *
+      (magnitude / 100) *
+      (1 + capped.power_p) *
+      averageByChance(critMult, critChance) *
+      (1 + capped.ca_p - capped.enemy_awareness) *
+      (1 / (1 + capped.enemy_defense)) *
+      averageByChance(deflectMult, deflectChance) *
+      other;
     return value * (1 / (1 - capped.overall_damage));
   };
 
-  const healing = (critChance: number) => baseDamage
-    * (magnitude / 100)
-    * (1 + capped.power_p)
-    * averageByChance(1 + capped.sev_p / 2, critChance)
-    * (1 + overallOgh);
+  const healing = (critChance: number) =>
+    baseDamage *
+    (magnitude / 100) *
+    (1 + capped.power_p) *
+    averageByChance(1 + capped.sev_p / 2, critChance) *
+    (1 + overallOgh);
 
   const ehp = (critChance: number, deflectChance: number) => {
     const critMult = 1 + capped.enemy_severity - capped.crit_avoid_p;
     const deflectMult = 1 / (1 + capped.deflect_sev_p - capped.enemy_accuracy);
-    const finalMult = (1 / (1 + capped.defense_p))
-      * (1 + capped.enemy_ca - capped.awareness_p)
-      * averageByChance(critMult, critChance)
-      * averageByChance(deflectMult, deflectChance)
-      * (1 + capped.enemy_outgoing_damage)
-      * (1 + capped.incoming_damage);
+    const finalMult =
+      (1 / (1 + capped.defense_p)) *
+      (1 + capped.enemy_ca - capped.awareness_p) *
+      averageByChance(critMult, critChance) *
+      averageByChance(deflectMult, deflectChance) *
+      (1 + capped.enemy_outgoing_damage) *
+      (1 + capped.incoming_damage);
     return hp / finalMult;
   };
 
@@ -263,7 +305,11 @@ function derive(db: Db, build: Build, stages: Stages): DerivedOutputs {
 
 // --- validation (plan §1.6) -------------------------------------------------------------
 
-function findErrors(db: Db, build: Build, resolved: ResolvedBonuses): EngineError[] {
+function findErrors(
+  db: Db,
+  build: Build,
+  resolved: ResolvedBonuses,
+): EngineError[] {
   const errors: EngineError[] = [];
   const context = build.context ?? {};
   const counts = new Map<string, number>();
@@ -277,15 +323,19 @@ function findErrors(db: Db, build: Build, resolved: ResolvedBonuses): EngineErro
     const allowed = row.item.allowedClass;
     if (allowed && !allowed.includes(context.class)) {
       errors.push({
-        slotId: row.slotId, kind: 'class', choice: row.item.name,
-        message: `${row.item.name} requires ${allowed.join(' or ')}`,
+        slotId: row.slotId,
+        kind: "class",
+        choice: row.item.name,
+        message: `${row.item.name} requires ${allowed.join(" or ")}`,
       });
     }
     const max = db.maxCopies(row.item);
     const used = counts.get(row.item.id);
     if (max && used! > max) {
       errors.push({
-        slotId: row.slotId, kind: 'maxCopies', choice: row.item.name,
+        slotId: row.slotId,
+        kind: "maxCopies",
+        choice: row.item.name,
         message: `${row.item.name} is equipped ${used} times, maximum ${max}`,
       });
     }
@@ -296,10 +346,15 @@ function findErrors(db: Db, build: Build, resolved: ResolvedBonuses): EngineErro
       const typed = build.values?.[row.slotId];
       const value = Number(typed);
       const { dynamicMin: min, dynamicMax: max_ } = row.item;
-      if (typed != null && Number.isFinite(value)
-          && ((min != null && value < min) || (max_ != null && value > max_))) {
+      if (
+        typed != null &&
+        Number.isFinite(value) &&
+        ((min != null && value < min) || (max_ != null && value > max_))
+      ) {
         errors.push({
-          slotId: row.slotId, kind: 'outOfRange', choice: row.item.name,
+          slotId: row.slotId,
+          kind: "outOfRange",
+          choice: row.item.name,
           message: `${row.item.name}: ${value} is outside ${min}–${max_}`,
         });
       }
@@ -310,7 +365,11 @@ function findErrors(db: Db, build: Build, resolved: ResolvedBonuses): EngineErro
 
 // --- entry point --------------------------------------------------------------------------
 
-export function resolveBuild(db: Db, build: Build, options?: { explain?: boolean }): ResolvedBuild {
+export function resolveBuild(
+  db: Db,
+  build: Build,
+  options?: { explain?: boolean },
+): ResolvedBuild {
   const resolved = bonus.resolve(db, build, options);
   const { rows, stages } = run(db, build, resolved);
   return {

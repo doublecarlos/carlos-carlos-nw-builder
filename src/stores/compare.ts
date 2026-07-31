@@ -2,12 +2,14 @@
 // display toggles. Saved with the build (`build.compare`, storage.ts) rather than session
 // state -- so reopening a build remembers what it was being compared against -- but
 // deliberately not undo-tracked, so flipping a toggle never costs an undo step.
-import { computed } from 'vue';
-import * as library from './library';
+import { computed } from "vue";
+import * as library from "./library";
 
 export const compareOptions = computed(() => [
-  { value: '', label: '— none —' },
-  ...library.builds.value.filter((b) => b.id !== library.activeId.value).map((b) => ({ value: b.id, label: b.name })),
+  { value: "", label: "— none —" },
+  ...library.builds.value
+    .filter((b) => b.id !== library.activeId.value)
+    .map((b) => ({ value: b.id, label: b.name })),
 ]);
 
 export const compareBuild = computed(() => {
@@ -20,6 +22,6 @@ export function setCompareBuild(id: string) {
   library.activeBuildForEdit().compare.id = id;
 }
 
-export function setCompareFlag(key: 'highlight' | 'onlyDiff', value: boolean) {
+export function setCompareFlag(key: "highlight" | "onlyDiff", value: boolean) {
   library.activeBuildForEdit().compare[key] = value;
 }

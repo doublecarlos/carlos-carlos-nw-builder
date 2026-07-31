@@ -5,26 +5,38 @@
 // stat to the schema makes it appear here with no edit. Overcapped values are coloured; the
 // rating/percent pair each get their own merged overcap-or-headroom column (signed: positive
 // over the cap, negative is spare headroom), coloured independently since they cap separately.
-import { ref, computed, nextTick, onMounted, onUnmounted } from 'vue';
-import ComboBox from './ui/ComboBox.vue';
-import IconButton from './ui/IconButton.vue';
-import StatSourceCard from './StatSourceCard.vue';
-import Panel from './ui/Panel.vue';
-import PanelHead from './ui/PanelHead.vue';
-import StatPairsTable from './ui/StatPairsTable.vue';
-import { sectionsFor } from '../stat-sources';
-import { NW_SCHEMA } from '../data';
-import { int as fmtInt, pct as fmtPct, stat as fmtStat } from '../format';
-import * as library from '../stores/library';
-import * as compare from '../stores/compare';
-import * as engine from '../stores/engine';
+import { ref, computed, nextTick, onMounted, onUnmounted } from "vue";
+import ComboBox from "./ui/ComboBox.vue";
+import IconButton from "./ui/IconButton.vue";
+import StatSourceCard from "./StatSourceCard.vue";
+import BasePanel from "./ui/BasePanel.vue";
+import PanelHead from "./ui/PanelHead.vue";
+import StatPairsTable from "./ui/StatPairsTable.vue";
+import { sectionsFor } from "../stat-sources";
+import { NW_SCHEMA } from "../data";
+import { int as fmtInt, pct as fmtPct, stat as fmtStat } from "../format";
+import * as library from "../stores/library";
+import * as compare from "../stores/compare";
+import * as engine from "../stores/engine";
 
 // Display order only -- data/schema.json stays untouched. Forte sits with the defensive
 // ratings rather than right after Severity, per the user's re-grouping.
 const RATING_ORDER = [
-  'power', 'acc', 'ca', 'strike', 'severity', 'defense', 'awareness', 'crit_avoid',
-  'deflect', 'deflect_sev', 'forte', 'inc_healing', 'out_healing', 'control_bonus',
-  'control_resist',
+  "power",
+  "acc",
+  "ca",
+  "strike",
+  "severity",
+  "defense",
+  "awareness",
+  "crit_avoid",
+  "deflect",
+  "deflect_sev",
+  "forte",
+  "inc_healing",
+  "out_healing",
+  "control_bonus",
+  "control_resist",
 ];
 const orderIndex = (key: string) => {
   const i = RATING_ORDER.indexOf(key);
@@ -32,48 +44,57 @@ const orderIndex = (key: string) => {
 };
 // A rule below one of these keys gets a divider, marking the boundary between the offensive
 // ratings, the defensive ones and forte.
-const SEPARATOR_AFTER = new Set(['severity', 'deflect_sev']);
+const SEPARATOR_AFTER = new Set(["severity", "deflect_sev"]);
 
 // Above this much wasted rating, the Rating column goes red -- an arbitrary-looking number
 // that exists only to match the threshold the game's own UI uses, for familiarity.
 const RATING_OVER_WARN = 1000;
 
 const damageRows: [string, string][] = [
-  ['Average', 'average'],
-  ['Crit / no deflect', 'critNoDeflect'],
-  ['Crit / deflect', 'critDeflect'],
-  ['No crit / no deflect', 'noCritNoDeflect'],
-  ['No crit / deflect', 'noCritDeflect'],
+  ["Average", "average"],
+  ["Crit / no deflect", "critNoDeflect"],
+  ["Crit / deflect", "critDeflect"],
+  ["No crit / no deflect", "noCritNoDeflect"],
+  ["No crit / deflect", "noCritDeflect"],
 ];
-const healingRows: [string, string][] = [['Average', 'average'], ['Crit', 'crit'], ['No crit', 'noCrit']];
-const ehpRows: [string, string][] = [['Average', 'average'], ['Crit / no deflect', 'critNoDeflect']];
+const healingRows: [string, string][] = [
+  ["Average", "average"],
+  ["Crit", "crit"],
+  ["No crit", "noCrit"],
+];
+const ehpRows: [string, string][] = [
+  ["Average", "average"],
+  ["Crit / no deflect", "critNoDeflect"],
+];
 
 // The summary widget's picker spans all three `derived` tables below, not just damage --
 // `source` says which one, and doubles as the row key's namespace since 'average' repeats
 // across all three.
 const SUMMARY_GROUPS = [
-  { source: 'damage', label: 'Damage', rows: damageRows },
-  { source: 'healing', label: 'Healing', rows: healingRows },
-  { source: 'ehp', label: 'EHP', rows: ehpRows },
+  { source: "damage", label: "Damage", rows: damageRows },
+  { source: "healing", label: "Healing", rows: healingRows },
+  { source: "ehp", label: "EHP", rows: ehpRows },
 ];
 
 // Only ever mounted when `engine.resolved.value.ok` -- the throw documents
 // that invariant instead of a defensive fallback for a state that can't happen.
 const result = computed(() => {
   const r = engine.resolved.value;
-  if (!r.ok) throw new Error('StatPanel requires a resolved build');
+  if (!r.ok) throw new Error("StatPanel requires a resolved build");
   return r.result;
 });
 // The sheet-style compare row under the picker: another build's own `derived`, resolved
 // against the same db. `null` means "not comparing" and the widget collapses back to a
 // single centred value.
-const compareResult = computed(() => (engine.compareResolved.value?.ok ? engine.compareResolved.value.result : null));
-const compareName = computed(() => compare.compareBuild.value?.name ?? '');
+const compareResult = computed(() =>
+  engine.compareResolved.value?.ok ? engine.compareResolved.value.result : null,
+);
+const compareName = computed(() => compare.compareBuild.value?.name ?? "");
 // Only needed for the stat source popover's forte picks and dynamic weapon mod values -- the
 // rest of the panel reads entirely off `result`.
 const build = library.build;
 
-const summaryCalcKey = ref('damage:average');
+const summaryCalcKey = ref("damage:average");
 
 const stages = computed(() => result.value.stages);
 const derived = computed(() => result.value.derived);
@@ -81,23 +102,37 @@ const derived = computed(() => result.value.derived);
 /** Options for the summary widget's calculation picker, across all three `derived`
  * tables below (damage, healing, EHP) -- value is `source:key` so `summaryValue` can
  * look the row straight back up. */
-const summaryOptions = SUMMARY_GROUPS.flatMap(({ source, label, rows }) => rows.map(([rowLabel, key]) => (
-  { value: `${source}:${key}`, label: `${label} · ${rowLabel}` }
-)));
+const summaryOptions = SUMMARY_GROUPS.flatMap(({ source, label, rows }) =>
+  rows.map(([rowLabel, key]) => ({
+    value: `${source}:${key}`,
+    label: `${label} · ${rowLabel}`,
+  })),
+);
 
 // `derived`'s top-level fields are heterogeneous (itemLevel: number, damage: DamageOutputs,
 // ...), so a dynamic `source` key (from the summary picker's `source:key` value) can't be
 // looked up without a cast -- each of the three sub-tables it can name is number-valued
 // throughout, hence `Record<string, number>` rather than `unknown`.
 const summaryValue = computed(() => {
-  const [source, key] = summaryCalcKey.value.split(':');
-  return (derived.value as unknown as Record<string, Record<string, number>>)[source]?.[key] ?? 0;
+  const [source, key] = summaryCalcKey.value.split(":");
+  return (
+    (derived.value as unknown as Record<string, Record<string, number>>)[
+      source
+    ]?.[key] ?? 0
+  );
 });
 
 const compareSummaryValue = computed(() => {
   if (!compareResult.value) return null;
-  const [source, key] = summaryCalcKey.value.split(':');
-  return (compareResult.value.derived as unknown as Record<string, Record<string, number>>)[source]?.[key] ?? 0;
+  const [source, key] = summaryCalcKey.value.split(":");
+  return (
+    (
+      compareResult.value.derived as unknown as Record<
+        string,
+        Record<string, number>
+      >
+    )[source]?.[key] ?? 0
+  );
 });
 
 /** `value` relative to `base`, signed: positive means `value` is the bigger of the two.
@@ -111,15 +146,19 @@ function relativePct(base: number | null, value: number | null) {
 /** Sheet-style: each row's percentage reads relative to the *other* row, not a shared
  * baseline -- "this build" is +9% over the compare build, and read the other way round
  * the compare build is some different, smaller magnitude under this one. */
-const thisVsOtherPct = computed(() => relativePct(compareSummaryValue.value, summaryValue.value));
-const otherVsThisPct = computed(() => relativePct(summaryValue.value, compareSummaryValue.value));
+const thisVsOtherPct = computed(() =>
+  relativePct(compareSummaryValue.value, summaryValue.value),
+);
+const otherVsThisPct = computed(() =>
+  relativePct(summaryValue.value, compareSummaryValue.value),
+);
 
 /** Green ahead of the compare build, red behind it, plain exactly even -- only "this
  * build"'s own row reads this; the compare row is informational, not judged. */
 const summaryRowCls = computed(() => {
   const pctVal = thisVsOtherPct.value;
-  if (pctVal == null || Math.abs(pctVal) < 1e-9) return '';
-  return pctVal > 0 ? 'text-ok font-semibold' : 'text-danger font-semibold';
+  if (pctVal == null || Math.abs(pctVal) < 1e-9) return "";
+  return pctVal > 0 ? "text-ok font-semibold" : "text-danger font-semibold";
 });
 
 const int = (value: unknown) => fmtInt(value);
@@ -140,25 +179,41 @@ function capCell(key: string, redOver = Infinity) {
   const cap = caps[key] ?? 0;
   const over = total - cap;
   return {
-    key, total, cap, capped: capped[key] ?? total, over,
-    primaryCls: over > redOver ? 'bg-warn/15 font-semibold' : (over > -1e-9 ? 'bg-ok/15' : ''),
-    overCls: over > 1e-9 ? 'bg-warn/15 font-semibold' : (over < -1e-9 ? 'bg-accent/10' : ''),
+    key,
+    total,
+    cap,
+    capped: capped[key] ?? total,
+    over,
+    primaryCls:
+      over > redOver
+        ? "bg-warn/15 font-semibold"
+        : over > -1e-9
+          ? "bg-ok/15"
+          : "",
+    overCls:
+      over > 1e-9
+        ? "bg-warn/15 font-semibold"
+        : over < -1e-9
+          ? "bg-accent/10"
+          : "",
   };
 }
 
 /** One row per rating/percent pair, in display order (§ `RATING_ORDER`, UI-only). */
-const capRows = computed(() => NW_SCHEMA.ratingConversion
-  .slice()
-  .sort((a, b) => orderIndex(a.rating) - orderIndex(b.rating))
-  .map((rule) => ({
-    key: rule.rating,
-    label: NW_SCHEMA.statByKey[rule.rating]?.label ?? rule.rating,
-    // Rating goes red once its overcap passes RATING_OVER_WARN, matching the game's own
-    // in-client display -- percentage has no such threshold, it's green-or-default.
-    rating: capCell(rule.rating, RATING_OVER_WARN),
-    percent: capCell(rule.percent),
-    sepAfter: SEPARATOR_AFTER.has(rule.rating),
-  })));
+const capRows = computed(() =>
+  NW_SCHEMA.ratingConversion
+    .slice()
+    .sort((a, b) => orderIndex(a.rating) - orderIndex(b.rating))
+    .map((rule) => ({
+      key: rule.rating,
+      label: NW_SCHEMA.statByKey[rule.rating]?.label ?? rule.rating,
+      // Rating goes red once its overcap passes RATING_OVER_WARN, matching the game's own
+      // in-client display -- percentage has no such threshold, it's green-or-default.
+      rating: capCell(rule.rating, RATING_OVER_WARN),
+      percent: capCell(rule.percent),
+      sepAfter: SEPARATOR_AFTER.has(rule.rating),
+    })),
+);
 
 /** Everything with no cap of its own: flats, mults and uncapped percents. */
 const otherRows = computed(() => {
@@ -169,44 +224,94 @@ const otherRows = computed(() => {
   }
   return NW_SCHEMA.stats
     .filter((stat) => !stat.enemy && !stat.ability && !paired.has(stat.key))
-    .map((stat) => ({ key: stat.key, label: stat.label,
+    .map((stat) => ({
+      key: stat.key,
+      label: stat.label,
       value: fmt(stat.key, stages.value.totals[stat.key] ?? 0),
-      onInfo: (event: MouseEvent) => toggleCard(event, stat.key) }));
+      onInfo: (event: MouseEvent) => toggleCard(event, stat.key),
+    }));
 });
 
-const abilityRows = computed(() => NW_SCHEMA.stats
-  .filter((stat) => stat.ability)
-  .map((stat) => ({ key: stat.key, label: stat.label,
-    value: int(stages.value.totals[stat.key] ?? 0),
-    onInfo: (event: MouseEvent) => toggleCard(event, stat.key) })));
+const abilityRows = computed(() =>
+  NW_SCHEMA.stats
+    .filter((stat) => stat.ability)
+    .map((stat) => ({
+      key: stat.key,
+      label: stat.label,
+      value: int(stages.value.totals[stat.key] ?? 0),
+      onInfo: (event: MouseEvent) => toggleCard(event, stat.key),
+    })),
+);
 
-const enemyRows = computed(() => NW_SCHEMA.stats
-  .filter((stat) => stat.enemy)
-  // The section heading already says "Enemy"; repeating it in all 13 rows just makes
-  // the column wider. Everywhere else the full label is what disambiguates.
-  .map((stat) => ({ key: stat.key, label: stat.label.replace(/^Enemy /, ''),
-    value: fmt(stat.key, stages.value.totals[stat.key] ?? 0),
-    onInfo: (event: MouseEvent) => toggleCard(event, stat.key) })));
+const enemyRows = computed(() =>
+  NW_SCHEMA.stats
+    .filter((stat) => stat.enemy)
+    // The section heading already says "Enemy"; repeating it in all 13 rows just makes
+    // the column wider. Everywhere else the full label is what disambiguates.
+    .map((stat) => ({
+      key: stat.key,
+      label: stat.label.replace(/^Enemy /, ""),
+      value: fmt(stat.key, stages.value.totals[stat.key] ?? 0),
+      onInfo: (event: MouseEvent) => toggleCard(event, stat.key),
+    })),
+);
 
 const ilHpRows = computed(() => [
-  { key: 'itemLevel', label: 'Item level', value: int(derived.value.itemLevel), lead: true },
-  { key: 'hp', label: 'Hit points', value: int(derived.value.hp), lead: true },
+  {
+    key: "itemLevel",
+    label: "Item level",
+    value: int(derived.value.itemLevel),
+    lead: true,
+  },
+  { key: "hp", label: "Hit points", value: int(derived.value.hp), lead: true },
 ]);
 
 const damageTableRows = computed(() => [
-  ...damageRows.map(([label, key]) => ({ key, label, value: int(derived.value.damage[key as keyof typeof derived.value.damage]), lead: key === 'average' })),
-  { key: 'baseDamage', label: 'Base damage', value: int(derived.value.baseDamage), muted: true },
-  { key: 'effectiveMagPhys', label: 'Effective magical/physical', value: pct(derived.value.effectiveMagPhys), muted: true },
+  ...damageRows.map(([label, key]) => ({
+    key,
+    label,
+    value: int(derived.value.damage[key as keyof typeof derived.value.damage]),
+    lead: key === "average",
+  })),
+  {
+    key: "baseDamage",
+    label: "Base damage",
+    value: int(derived.value.baseDamage),
+    muted: true,
+  },
+  {
+    key: "effectiveMagPhys",
+    label: "Effective magical/physical",
+    value: pct(derived.value.effectiveMagPhys),
+    muted: true,
+  },
 ]);
 
 const healingTableRows = computed(() => [
-  ...healingRows.map(([label, key]) => ({ key, label, value: int(derived.value.healing[key as keyof typeof derived.value.healing]), lead: key === 'average' })),
-  { key: 'overallHealing', label: 'Overall outgoing healing', value: pct(derived.value.overallHealing), muted: true },
+  ...healingRows.map(([label, key]) => ({
+    key,
+    label,
+    value: int(
+      derived.value.healing[key as keyof typeof derived.value.healing],
+    ),
+    lead: key === "average",
+  })),
+  {
+    key: "overallHealing",
+    label: "Overall outgoing healing",
+    value: pct(derived.value.overallHealing),
+    muted: true,
+  },
 ]);
 
-const ehpTableRows = computed(() => ehpRows.map(([label, key]) => (
-  { key, label, value: int(derived.value.ehp[key as keyof typeof derived.value.ehp]), lead: key === 'average' }
-)));
+const ehpTableRows = computed(() =>
+  ehpRows.map(([label, key]) => ({
+    key,
+    label,
+    value: int(derived.value.ehp[key as keyof typeof derived.value.ehp]),
+    lead: key === "average",
+  })),
+);
 
 const bonusSummary = computed(() => {
   const all = result.value.bonuses;
@@ -218,19 +323,19 @@ const bonusSummary = computed(() => {
 });
 
 function fmtPctSigned(value: number | null) {
-  if (value == null || Math.abs(value) < 1e-9) return '—';
-  return (value > 0 ? '+' : '') + pct(value);
+  if (value == null || Math.abs(value) < 1e-9) return "—";
+  return (value > 0 ? "+" : "") + pct(value);
 }
 
 /** Signed display for a merged overcap/headroom cell: `—` exactly on the cap, otherwise
  * an explicit `+`/`-` since these columns have no other cue for direction. */
 function signedPct(value: number) {
-  if (Math.abs(value) < 1e-9) return '—';
-  return (value > 0 ? '+' : '') + pct(value);
+  if (Math.abs(value) < 1e-9) return "—";
+  return (value > 0 ? "+" : "") + pct(value);
 }
 function signedInt(value: number) {
-  if (Math.abs(value) < 1e-9) return '—';
-  return (value > 0 ? '+' : '') + int(value);
+  if (Math.abs(value) < 1e-9) return "—";
+  return (value > 0 ? "+" : "") + int(value);
 }
 
 // The stat source popover ("why is this number what it is", per stat) -- source attribution
@@ -239,16 +344,27 @@ function signedInt(value: number) {
 // a dense stat table put the pointer's path from a row to its own hover card through *other*
 // rows' triggers often enough that a hover card kept getting swapped out from under the
 // pointer before it ever arrived -- a deliberate click has no such transit to go wrong.
-const root = ref<InstanceType<typeof Panel> | null>(null);
-const CARD_W = 256;   // must match StatSourceCard.vue's root `w-64` (256px) utility
+const root = ref<InstanceType<typeof BasePanel> | null>(null);
+const CARD_W = 256; // must match StatSourceCard.vue's root `w-64` (256px) utility
 
-interface OpenCard { key: string; left: number; top: number }
+interface OpenCard {
+  key: string;
+  left: number;
+  top: number;
+}
 const openCard = ref<OpenCard | null>(null);
 
-const openLabel = computed(() => NW_SCHEMA.statByKey[openCard.value?.key ?? '']?.label ?? openCard.value?.key ?? '');
-const openSections = computed(() => (
-  openCard.value ? sectionsFor(result.value, build.value, openCard.value.key) : []
-));
+const openLabel = computed(
+  () =>
+    NW_SCHEMA.statByKey[openCard.value?.key ?? ""]?.label ??
+    openCard.value?.key ??
+    "",
+);
+const openSections = computed(() =>
+  openCard.value
+    ? sectionsFor(result.value, build.value, openCard.value.key)
+    : [],
+);
 
 /**
  * Anchored to the trigger button: to its right normally, flipped to its left if that would
@@ -263,11 +379,16 @@ function placeCard(key: string, rect: DOMRect) {
   openCard.value = { key, left: Math.max(left, margin), top: rect.top };
 
   nextTick(() => {
-    const card = (root.value?.$el as HTMLElement | undefined)?.querySelector('.statcard') as HTMLElement | null;
+    const card = (root.value?.$el as HTMLElement | undefined)?.querySelector(
+      ".statcard",
+    ) as HTMLElement | null;
     if (!card || !openCard.value) return;
     const height = card.offsetHeight;
     if (openCard.value.top + height <= window.innerHeight - margin) return;
-    openCard.value = { ...openCard.value, top: Math.max(window.innerHeight - margin - height, margin) };
+    openCard.value = {
+      ...openCard.value,
+      top: Math.max(window.innerHeight - margin - height, margin),
+    };
   });
 }
 
@@ -294,18 +415,27 @@ function toggleCard(event: MouseEvent, key: string) {
 function onDocumentClick(event: MouseEvent) {
   if (!openCard.value) return;
   const path = event.composedPath?.() ?? [];
-  if (path.some((el) => (el as Element).classList?.contains?.('statcard')
-    || (el as Element).classList?.contains?.('stat-info-btn'))) return;
+  if (
+    path.some(
+      (el) =>
+        (el as Element).classList?.contains?.("statcard") ||
+        (el as Element).classList?.contains?.("stat-info-btn"),
+    )
+  )
+    return;
   closeCard();
 }
 
-onMounted(() => document.addEventListener('mousedown', onDocumentClick));
-onUnmounted(() => document.removeEventListener('mousedown', onDocumentClick));
+onMounted(() => document.addEventListener("mousedown", onDocumentClick));
+onUnmounted(() => document.removeEventListener("mousedown", onDocumentClick));
 </script>
 
 <template>
-  <Panel flush ref="root">
-    <div v-if="result.errors.length" class="mb-2.5 rounded-md bg-danger-soft px-2.5 py-1.5 text-danger">
+  <BasePanel ref="root" flush>
+    <div
+      v-if="result.errors.length"
+      class="mb-2.5 rounded-md bg-danger-soft px-2.5 py-1.5 text-danger"
+    >
       <strong>{{ result.errors.length }} problem(s)</strong>
       <ul class="mt-1 pl-5">
         <li v-for="error in result.errors" :key="error.slotId + error.kind">
@@ -319,29 +449,53 @@ onUnmounted(() => document.removeEventListener('mousedown', onDocumentClick));
          grows the sheet's own layout -- this build's row, then the other's, then how far
          apart they are. -->
     <div class="flex flex-col gap-1 rounded-md bg-surface-2 px-2.5 py-2">
-      <ComboBox class="w-full" v-model="summaryCalcKey" :options="summaryOptions" />
+      <ComboBox
+        v-model="summaryCalcKey"
+        class="w-full"
+        :options="summaryOptions"
+      />
 
-      <span v-if="!compareResult" class="whitespace-nowrap text-center text-2xl font-semibold">{{ int(summaryValue) }}</span>
+      <span
+        v-if="!compareResult"
+        class="whitespace-nowrap text-center text-2xl font-semibold"
+        >{{ int(summaryValue) }}</span
+      >
 
       <table v-else class="mt-0.5 w-full border-collapse border border-line">
         <tbody>
           <tr :class="summaryRowCls">
             <td class="px-1 py-0.5 text-muted">This build</td>
-            <td class="px-1 py-0.5 text-right text-xl font-semibold tabular-nums">{{ int(summaryValue) }}</td>
-            <td class="px-1 py-0.5 text-right tabular-nums">{{ fmtPctSigned(thisVsOtherPct) }}</td>
+            <td
+              class="px-1 py-0.5 text-right text-xl font-semibold tabular-nums"
+            >
+              {{ int(summaryValue) }}
+            </td>
+            <td class="px-1 py-0.5 text-right tabular-nums">
+              {{ fmtPctSigned(thisVsOtherPct) }}
+            </td>
           </tr>
           <tr>
             <td class="px-1 py-0.5 text-muted">{{ compareName }}</td>
-            <td class="px-1 py-0.5 text-right text-xl font-semibold tabular-nums">{{ int(compareSummaryValue) }}</td>
-            <td class="px-1 py-0.5 text-right tabular-nums text-muted">{{ fmtPctSigned(otherVsThisPct) }}</td>
+            <td
+              class="px-1 py-0.5 text-right text-xl font-semibold tabular-nums"
+            >
+              {{ int(compareSummaryValue) }}
+            </td>
+            <td class="px-1 py-0.5 text-right tabular-nums text-muted">
+              {{ fmtPctSigned(otherVsThisPct) }}
+            </td>
           </tr>
         </tbody>
       </table>
     </div>
 
     <div class="flex items-center gap-3 py-2 text-sm text-muted">
-      <span>{{ bonusSummary.active }}/{{ bonusSummary.total }} bonuses active</span>
-      <span v-if="bonusSummary.excluded">{{ bonusSummary.excluded }} excluded</span>
+      <span
+        >{{ bonusSummary.active }}/{{ bonusSummary.total }} bonuses active</span
+      >
+      <span v-if="bonusSummary.excluded"
+        >{{ bonusSummary.excluded }} excluded</span
+      >
     </div>
 
     <StatPairsTable :rows="ilHpRows" />
@@ -352,17 +506,46 @@ onUnmounted(() => document.removeEventListener('mousedown', onDocumentClick));
         <!-- Each cell coloured off its own column's 'over', not the row: rating and
              percentage cap independently, so one can read green while the other reads
              red on the same row. -->
-        <tr v-for="row in capRows" :key="row.key" class="even:bg-surface-2/55"
-            :class="row.sepAfter && 'border-b-2 border-b-line'">
+        <tr
+          v-for="row in capRows"
+          :key="row.key"
+          class="even:bg-surface-2/55"
+          :class="row.sepAfter && 'border-b-2 border-b-line'"
+        >
           <td class="flex items-center gap-0.5 border border-line px-1 py-0.5">
-            <IconButton icon="circle-alert" title="Show contributing sources" class="stat-info-btn flex-none"
-                        :data-stat-key="row.key" @click="toggleCard($event, row.key)" />
+            <IconButton
+              icon="circle-alert"
+              title="Show contributing sources"
+              class="stat-info-btn flex-none"
+              :data-stat-key="row.key"
+              @click="toggleCard($event, row.key)"
+            />
             <span>{{ row.label }}</span>
           </td>
-          <td class="border border-line px-1 py-0.5 text-right tabular-nums" :class="row.rating.primaryCls">{{ int(row.rating.total) }}</td>
-          <td class="border border-line px-1 py-0.5 text-right tabular-nums" :class="row.percent.primaryCls">{{ pct(row.percent.capped) }}</td>
-          <td class="border border-line px-1 py-0.5 text-right tabular-nums text-muted" :class="row.percent.overCls">{{ signedPct(row.percent.over) }}</td>
-          <td class="border border-line px-1 py-0.5 text-right tabular-nums text-muted" :class="row.rating.overCls">{{ signedInt(row.rating.over) }}</td>
+          <td
+            class="border border-line px-1 py-0.5 text-right tabular-nums"
+            :class="row.rating.primaryCls"
+          >
+            {{ int(row.rating.total) }}
+          </td>
+          <td
+            class="border border-line px-1 py-0.5 text-right tabular-nums"
+            :class="row.percent.primaryCls"
+          >
+            {{ pct(row.percent.capped) }}
+          </td>
+          <td
+            class="border border-line px-1 py-0.5 text-right tabular-nums text-muted"
+            :class="row.percent.overCls"
+          >
+            {{ signedPct(row.percent.over) }}
+          </td>
+          <td
+            class="border border-line px-1 py-0.5 text-right tabular-nums text-muted"
+            :class="row.rating.overCls"
+          >
+            {{ signedInt(row.rating.over) }}
+          </td>
         </tr>
       </tbody>
     </table>
@@ -385,9 +568,13 @@ onUnmounted(() => document.removeEventListener('mousedown', onDocumentClick));
     <PanelHead>Effective hit points</PanelHead>
     <StatPairsTable :rows="ehpTableRows" />
 
-    <StatSourceCard v-if="openCard" :label="openLabel" :sections="openSections"
-                    :data-stat-key="openCard.key"
-                    :style="{ left: openCard.left + 'px', top: openCard.top + 'px' }"
-                    @close="closeCard" />
-  </Panel>
+    <StatSourceCard
+      v-if="openCard"
+      :label="openLabel"
+      :sections="openSections"
+      :data-stat-key="openCard.key"
+      :style="{ left: openCard.left + 'px', top: openCard.top + 'px' }"
+      @close="closeCard"
+    />
+  </BasePanel>
 </template>

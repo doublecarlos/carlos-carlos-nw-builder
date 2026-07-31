@@ -8,36 +8,39 @@
 // value is `modelValue` and every change leaves via `update:modelValue`, so the single
 // build document in App.vue stays the only source of truth (undo stack has a single place to
 // hook into).
-import { ref, computed, watch, nextTick } from 'vue';
-import { itemPreview, hasBonuses, int as fmtInt } from '../format';
-import type { Item } from '../types';
-import PickerMenu from './ui/PickerMenu.vue';
-import PickerRow from './ui/PickerRow.vue';
+import { ref, computed, watch, nextTick } from "vue";
+import { itemPreview, hasBonuses, int as fmtInt } from "../format";
+import type { Item } from "../types";
+import PickerMenu from "./ui/PickerMenu.vue";
+import PickerRow from "./ui/PickerRow.vue";
 
 // Long filters (insignia, group buffs) run to 40+ entries. Rendering all of them for every
 // keystroke is wasted work when nobody scrolls past the first screenful.
 const MAX_ROWS = 60;
 
-const props = withDefaults(defineProps<{
-  modelValue?: string;
-  items: Item[];
-  /** The item `modelValue` (an id) currently resolves to, or null/undefined for an empty
-   * slot -- drives the closed box's display text/placeholder. Passed down already-resolved
-   * by the caller (BuildSlot.vue already has it) rather than looked up here, since `items`
-   * is only this slot's *selectable* list and would miss an equipped item that's since
-   * fallen out of it (e.g. a class change narrowing `allowedClass`). */
-  selectedItem?: Item | null;
-  invalid?: boolean;
-}>(), {
-  modelValue: '',
-  selectedItem: null,
-  invalid: false,
-});
+const props = withDefaults(
+  defineProps<{
+    modelValue?: string;
+    items: Item[];
+    /** The item `modelValue` (an id) currently resolves to, or null/undefined for an empty
+     * slot -- drives the closed box's display text/placeholder. Passed down already-resolved
+     * by the caller (BuildSlot.vue already has it) rather than looked up here, since `items`
+     * is only this slot's *selectable* list and would miss an equipped item that's since
+     * fallen out of it (e.g. a class change narrowing `allowedClass`). */
+    selectedItem?: Item | null;
+    invalid?: boolean;
+  }>(),
+  {
+    modelValue: "",
+    selectedItem: null,
+    invalid: false,
+  },
+);
 
-const emit = defineEmits<{ 'update:modelValue': [value: string] }>();
+const emit = defineEmits<{ "update:modelValue": [value: string] }>();
 
 const open = ref(false);
-const query = ref('');
+const query = ref("");
 const highlight = ref(0);
 const input = ref<HTMLInputElement | null>(null);
 const list = ref<InstanceType<typeof PickerMenu> | null>(null);
@@ -51,13 +54,17 @@ const filtered = computed(() => {
 });
 
 /** Decorated once per filter change rather than once per render pass. */
-const matches = computed(() => filtered.value.slice(0, MAX_ROWS).map((item) => ({
-  item,
-  preview: itemPreview(item, 3),
-  flagged: hasBonuses(item),
-})));
+const matches = computed(() =>
+  filtered.value.slice(0, MAX_ROWS).map((item) => ({
+    item,
+    preview: itemPreview(item, 3),
+    flagged: hasBonuses(item),
+  })),
+);
 
-const hiddenCount = computed(() => Math.max(filtered.value.length - matches.value.length, 0));
+const hiddenCount = computed(() =>
+  Math.max(filtered.value.length - matches.value.length, 0),
+);
 
 /** "clear the slot" is only offered on a plain, untyped open -- once the user is
  * filtering, defaulting the highlight onto "empty" (see `onInput`) put a stray Enter one
@@ -77,7 +84,9 @@ const matchOffset = computed(() => (showEmptyOption.value ? 1 : 0));
 
 watch(highlight, () => {
   nextTick(() => {
-    (list.value?.$el as HTMLElement | undefined)?.querySelector('[data-highlighted]')?.scrollIntoView({ block: 'nearest' });
+    (list.value?.$el as HTMLElement | undefined)
+      ?.querySelector("[data-highlighted]")
+      ?.scrollIntoView({ block: "nearest" });
   });
 });
 
@@ -88,10 +97,12 @@ const int = (value: unknown) => fmtInt(value);
 function onFocus() {
   if (open.value) return;
   open.value = true;
-  query.value = '';
+  query.value = "";
   // Start on whatever is already equipped, not on "empty" -- `options` reflects the
   // now-open (unfiltered) list since `open` was just set above.
-  const current = options.value.findIndex((item) => item?.id === props.modelValue);
+  const current = options.value.findIndex(
+    (item) => item?.id === props.modelValue,
+  );
   highlight.value = current === -1 ? 0 : current;
 }
 
@@ -123,14 +134,14 @@ function onBlur() {
 
 function close() {
   open.value = false;
-  query.value = '';
+  query.value = "";
 }
 
 /** `blur: false` for the Tab case below -- the browser's own Tab-forward looks at
  * whatever element is currently focused, so blurring here first (before that runs) would
  * make it tab from nowhere instead of continuing from this input. */
 function choose(item: Item | null, { blur = true }: { blur?: boolean } = {}) {
-  emit('update:modelValue', item ? item.id : '');
+  emit("update:modelValue", item ? item.id : "");
   close();
   if (blur) input.value?.blur();
 }
@@ -149,26 +160,26 @@ function choose(item: Item | null, { blur = true }: { blur?: boolean } = {}) {
  * synchronous pass, so its own focused-input gate already covers it.
  */
 function onKeydown(event: KeyboardEvent) {
-  if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+  if (event.key === "ArrowDown" || event.key === "ArrowUp") {
     event.preventDefault();
     event.stopPropagation();
     if (!open.value) {
       onFocus();
       return;
     }
-    const step = event.key === 'ArrowDown' ? 1 : -1;
+    const step = event.key === "ArrowDown" ? 1 : -1;
     const last = options.value.length - 1;
     highlight.value = Math.min(Math.max(highlight.value + step, 0), last);
     return;
   }
-  if (event.key === 'Enter') {
+  if (event.key === "Enter") {
     if (!open.value) return;
     event.preventDefault();
     event.stopPropagation();
     choose(options.value[highlight.value] ?? null);
     return;
   }
-  if (event.key === 'Tab') {
+  if (event.key === "Tab") {
     if (!open.value) return;
     if (event.shiftKey) {
       // Browsing backward -- just close, don't commit a highlight the user was
@@ -184,7 +195,7 @@ function onKeydown(event: KeyboardEvent) {
     choose(options.value[highlight.value] ?? null, { blur: false });
     return;
   }
-  if (event.key === 'Escape') {
+  if (event.key === "Escape") {
     event.preventDefault();
     event.stopPropagation();
     close();
@@ -203,12 +214,13 @@ function onKeydown(event: KeyboardEvent) {
       type="text"
       autocomplete="off"
       spellcheck="false"
-      :value="open ? query : (selectedItem?.name || '')"
+      :value="open ? query : selectedItem?.name || ''"
       :placeholder="selectedItem?.name || '—'"
       @focus="onFocus"
       @input="onInput"
       @blur="onBlur"
-      @keydown="onKeydown">
+      @keydown="onKeydown"
+    />
 
     <PickerMenu v-if="open" ref="list">
       <PickerRow
@@ -216,27 +228,46 @@ function onKeydown(event: KeyboardEvent) {
         muted
         :highlighted="highlight === 0"
         @mousedown.prevent="choose(null)"
-        @mouseenter="highlight = 0">— empty —</PickerRow>
+        @mouseenter="highlight = 0"
+        >— empty —</PickerRow
+      >
 
       <PickerRow
         v-for="(entry, index) in matches"
         :key="entry.item.id"
         :highlighted="highlight === index + matchOffset"
         @mousedown.prevent="choose(entry.item)"
-        @mouseenter="highlight = index + matchOffset">
+        @mouseenter="highlight = index + matchOffset"
+      >
         <div class="flex items-baseline gap-1.5">
-          <span class="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap">{{ entry.item.name }}</span>
-          <span v-if="entry.flagged" class="text-sm text-accent" title="has conditional bonuses">◈</span>
-          <span v-if="entry.item.il" class="text-sm text-muted tabular-nums">iL {{ int(entry.item.il) }}</span>
+          <span
+            class="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap"
+            >{{ entry.item.name }}</span
+          >
+          <span
+            v-if="entry.flagged"
+            class="text-sm text-accent"
+            title="has conditional bonuses"
+            >◈</span
+          >
+          <span v-if="entry.item.il" class="text-sm text-muted tabular-nums"
+            >iL {{ int(entry.item.il) }}</span
+          >
         </div>
         <div class="flex flex-wrap gap-2 text-sm text-muted">
-          <span v-for="part in entry.preview.parts" :key="part">{{ part }}</span>
-          <span v-if="entry.preview.more" class="italic">+{{ entry.preview.more }} more</span>
+          <span v-for="part in entry.preview.parts" :key="part">{{
+            part
+          }}</span>
+          <span v-if="entry.preview.more" class="italic"
+            >+{{ entry.preview.more }} more</span
+          >
         </div>
       </PickerRow>
 
       <PickerRow v-if="!matches.length" muted>no match</PickerRow>
-      <PickerRow v-if="hiddenCount" muted>{{ hiddenCount }} more — keep typing</PickerRow>
+      <PickerRow v-if="hiddenCount" muted
+        >{{ hiddenCount }} more — keep typing</PickerRow
+      >
     </PickerMenu>
   </div>
 </template>

@@ -5,12 +5,16 @@
 // new dependency for four members. Chromium-only, per fs-store.ts's own header comment.
 
 interface FileSystemHandlePermissionDescriptor {
-  mode?: 'read' | 'readwrite';
+  mode?: "read" | "readwrite";
 }
 
 interface FileSystemFileHandle {
-  queryPermission(descriptor?: FileSystemHandlePermissionDescriptor): Promise<PermissionState>;
-  requestPermission(descriptor?: FileSystemHandlePermissionDescriptor): Promise<PermissionState>;
+  queryPermission(
+    descriptor?: FileSystemHandlePermissionDescriptor,
+  ): Promise<PermissionState>;
+  requestPermission(
+    descriptor?: FileSystemHandlePermissionDescriptor,
+  ): Promise<PermissionState>;
 }
 
 interface SaveFilePickerOptions {
@@ -19,5 +23,7 @@ interface SaveFilePickerOptions {
 }
 
 interface Window {
-  showSaveFilePicker(options?: SaveFilePickerOptions): Promise<FileSystemFileHandle>;
+  showSaveFilePicker(
+    options?: SaveFilePickerOptions,
+  ): Promise<FileSystemFileHandle>;
 }

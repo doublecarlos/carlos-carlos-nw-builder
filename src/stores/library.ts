@@ -2,12 +2,12 @@
 // it, which build/collection is active, last-saved snapshots (for dirty-checking and revert),
 // and file links for collections saved to disk. Bootstraps itself, including honouring a
 // `?build=`/`collection=` already in the URL on first load.
-import { computed, ref, watch } from 'vue';
-import * as storage from '../storage';
-import * as router from '../router';
-import * as fsStore from '../fs-store';
-import { flagStorageFailed, showNotice } from './notice';
-import type { Build, Collection } from '../types';
+import { computed, ref, watch } from "vue";
+import * as storage from "../storage";
+import * as router from "../router";
+import * as fsStore from "../fs-store";
+import { flagStorageFailed, showNotice } from "./notice";
+import type { Build, Collection } from "../types";
 
 const SAVE_DEBOUNCE_MS = 250;
 
@@ -16,25 +16,36 @@ const SAVE_DEBOUNCE_MS = 250;
 const savedLibrary = storage.loadLibrary();
 const draftLibrary = storage.loadDraft(savedLibrary);
 const savedCollectionsState = storage.loadCollections(savedLibrary.builds);
-const draftCollectionsState = storage.loadCollectionsDraft(draftLibrary.builds, savedCollectionsState);
+const draftCollectionsState = storage.loadCollectionsDraft(
+  draftLibrary.builds,
+  savedCollectionsState,
+);
 
 const initialRoute = router.parse();
-const ownerOf = (buildId: string) => draftCollectionsState.collections.find((c) => c.buildIds.includes(buildId));
+const ownerOf = (buildId: string) =>
+  draftCollectionsState.collections.find((c) => c.buildIds.includes(buildId));
 
 let initialActiveId: string;
 let initialActiveCollectionId: string;
-const owner = initialRoute.build && draftLibrary.builds.some((b) => b.id === initialRoute.build) && ownerOf(initialRoute.build);
+const owner =
+  initialRoute.build &&
+  draftLibrary.builds.some((b) => b.id === initialRoute.build) &&
+  ownerOf(initialRoute.build);
 if (owner) {
   initialActiveId = initialRoute.build;
   initialActiveCollectionId = owner.id;
 } else {
-  initialActiveCollectionId = draftCollectionsState.collections.some((c) => c.id === initialRoute.collection)
+  initialActiveCollectionId = draftCollectionsState.collections.some(
+    (c) => c.id === initialRoute.collection,
+  )
     ? initialRoute.collection
     : draftCollectionsState.activeCollectionId;
   // Non-null: `initialActiveCollectionId` is always either a real collection id or
   // `draftCollectionsState.activeCollectionId`, and `collections` is never empty (storage.ts's
   // `loadCollections`/`loadCollectionsDraft` guarantee at least one).
-  const collection = draftCollectionsState.collections.find((c) => c.id === initialActiveCollectionId)!;
+  const collection = draftCollectionsState.collections.find(
+    (c) => c.id === initialActiveCollectionId,
+  )!;
   initialActiveId = collection.buildIds.includes(collection.activeBuildId)
     ? collection.activeBuildId
     : collection.buildIds[0];
@@ -43,7 +54,8 @@ if (owner) {
 const initialSavedById: Record<string, Build> = {};
 for (const b of savedLibrary.builds) initialSavedById[b.id] = b;
 const initialSavedCollections: Record<string, Collection> = {};
-for (const c of savedCollectionsState.collections) initialSavedCollections[c.id] = c;
+for (const c of savedCollectionsState.collections)
+  initialSavedCollections[c.id] = c;
 
 // --- state (module-private; see each export's own readonly/computed wrapper) --------------
 
@@ -52,7 +64,9 @@ const _activeId = ref<string>(initialActiveId);
 const _savedById = ref<Record<string, Build>>(initialSavedById);
 const _collections = ref<Collection[]>(draftCollectionsState.collections);
 const _activeCollectionId = ref<string>(initialActiveCollectionId);
-const _savedCollections = ref<Record<string, Collection>>(initialSavedCollections);
+const _savedCollections = ref<Record<string, Collection>>(
+  initialSavedCollections,
+);
 // FileSystemFileHandle per collection id, for collections linked to a file on disk. Populated
 // lazily -- never eagerly from `fsStore`'s IndexedDB, since using a handle needs a user gesture
 // (Chromium re-checks permission per session) anyway, so there's nothing to gain fetching it
@@ -70,7 +84,9 @@ export const collections = computed(() => _collections.value);
 export const activeCollectionId = computed(() => _activeCollectionId.value);
 export const savedCollections = computed(() => _savedCollections.value);
 
-const activeBuild = computed(() => _builds.value.find((b) => b.id === _activeId.value) ?? _builds.value[0]);
+const activeBuild = computed(
+  () => _builds.value.find((b) => b.id === _activeId.value) ?? _builds.value[0],
+);
 export const build = activeBuild;
 
 /** The active build's content, named distinctly from `build` above to flag every call site
@@ -81,19 +97,26 @@ export function activeBuildForEdit() {
   return activeBuild.value;
 }
 
-const activeCollection = computed(() => _collections.value.find((c) => c.id === _activeCollectionId.value) ?? _collections.value[0]);
+const activeCollection = computed(
+  () =>
+    _collections.value.find((c) => c.id === _activeCollectionId.value) ??
+    _collections.value[0],
+);
 
-/** buildId -> bool, for Library's per-tab unsaved-dot -- same comparison `dirty` below does
+/** buildId -> bool, for BuildLibrary's per-tab unsaved-dot -- same comparison `dirty` below does
  * for just the active build, extended to every build in the pool. */
 export const dirtyByBuild = computed(() => {
   const map: Record<string, boolean> = {};
-  for (const b of _builds.value) map[b.id] = !storage.sameBuild(b, _savedById.value[b.id]);
+  for (const b of _builds.value)
+    map[b.id] = !storage.sameBuild(b, _savedById.value[b.id]);
   return map;
 });
 
 /** Compared against the saved copy, not a plain equality: `storage.sameBuild` is key-order-
  * insensitive and ignores `updated`, or a save-then-revert would read as still dirty. */
-export const dirty = computed(() => !storage.sameBuild(build.value, _savedById.value[_activeId.value]));
+export const dirty = computed(
+  () => !storage.sameBuild(build.value, _savedById.value[_activeId.value]),
+);
 
 /** The active collection's other builds, for BuildEditor.vue's per-section "copy from" control.
  * Scoped to the collection, not every build in the app -- collections exist to group related
@@ -140,7 +163,7 @@ export function ownerOfBuild(buildId: string) {
 }
 
 /** Makes a build active (and its collection) without needing the caller to know which
- * collection it lives in -- Library's per-build tab menu (save/revert/duplicate/reset/
+ * collection it lives in -- BuildLibrary's per-build tab menu (save/revert/duplicate/reset/
  * delete/rename) selects a build this way before delegating to buildEditor.ts. */
 export function selectBuildById(id: string) {
   const owner = ownerOfBuild(id);
@@ -157,7 +180,10 @@ export function markBuildSaved(id: string, snapshot: Build) {
 /** Restores active collection/build straight from the URL (browser back/forward) -- unlike
  * `selectCollection`/`selectBuild`, doesn't touch a collection's own `activeBuildId`, since
  * this is catching the app up to navigation that already happened rather than a fresh pick. */
-export function restoreFromRoute(collectionId: string | undefined, buildId: string | undefined) {
+export function restoreFromRoute(
+  collectionId: string | undefined,
+  buildId: string | undefined,
+) {
   if (collectionId && _collections.value.some((c) => c.id === collectionId)) {
     _activeCollectionId.value = collectionId;
   }
@@ -182,7 +208,7 @@ export function createBuild() {
   persistSavedCollections();
 }
 
-/** Library's per-collection "+ New build" -- makes that collection active first (a no-op if
+/** BuildLibrary's per-collection "+ New build" -- makes that collection active first (a no-op if
  * it already is) so the new build lands in it. */
 export function createBuildIn(collectionId: string) {
   selectCollection(collectionId);
@@ -212,7 +238,8 @@ export function removeBuild() {
   delete _savedById.value[removed.id];
   const buildIndex = collection.buildIds.indexOf(removed.id);
   collection.buildIds.splice(buildIndex, 1);
-  _activeId.value = collection.buildIds[Math.min(buildIndex, collection.buildIds.length - 1)];
+  _activeId.value =
+    collection.buildIds[Math.min(buildIndex, collection.buildIds.length - 1)];
   collection.activeBuildId = _activeId.value;
   showNotice(`Deleted “${removed.name}”`);
   syncSavedCollection(collection);
@@ -238,10 +265,14 @@ export function importBuildsIn(collectionId: string, text: string) {
     const { builds, catalogStale } = storage.parseJson(text);
     importBuilds(builds);
     if (catalogStale) {
-      showNotice(`Imported ${builds.length} build(s) — made against an older item catalogue; some items may no longer resolve`);
+      showNotice(
+        `Imported ${builds.length} build(s) — made against an older item catalogue; some items may no longer resolve`,
+      );
     }
-  } catch (error: any) {
-    showNotice(`That file could not be read: ${error.message ?? error}`);
+  } catch (error: unknown) {
+    showNotice(
+      `That file could not be read: ${error instanceof Error ? error.message : String(error)}`,
+    );
   }
 }
 
@@ -249,18 +280,27 @@ export function importBuildsIn(collectionId: string, text: string) {
 export function exportBuild(id: string) {
   const b = _builds.value.find((item) => item.id === id);
   if (!b) return;
-  downloadJson(storage.toBuildJson(b), `${b.name.replace(/[^\w.-]+/g, '-') || 'build'}.json`);
+  downloadJson(
+    storage.toBuildJson(b),
+    `${b.name.replace(/[^\w.-]+/g, "-") || "build"}.json`,
+  );
 }
 
 // --- collections -----------------------------------------------------------------------------
 
 export function createCollection() {
-  const newBuild = storage.defaultBuild('New build');
-  const collection = storage.defaultCollection(`Collection ${_collections.value.length + 1}`, newBuild);
+  const newBuild = storage.defaultBuild("New build");
+  const collection = storage.defaultCollection(
+    `Collection ${_collections.value.length + 1}`,
+    newBuild,
+  );
   _builds.value.push(newBuild);
   _savedById.value[newBuild.id] = storage.cloneBuild(newBuild);
   _collections.value.push(collection);
-  _savedCollections.value[collection.id] = { ...collection, buildIds: [...collection.buildIds] };
+  _savedCollections.value[collection.id] = {
+    ...collection,
+    buildIds: [...collection.buildIds],
+  };
   _activeCollectionId.value = collection.id;
   _activeId.value = newBuild.id;
   persistSaved();
@@ -276,11 +316,17 @@ export function duplicateCollection(id: string) {
   const source = _collections.value.find((c) => c.id === id);
   if (!source) return;
   const buildsById = Object.fromEntries(_builds.value.map((b) => [b.id, b]));
-  const { collection, builds: newBuilds } = storage.duplicateCollection(source, buildsById);
+  const { collection, builds: newBuilds } = storage.duplicateCollection(
+    source,
+    buildsById,
+  );
   _builds.value.push(...newBuilds);
   for (const b of newBuilds) _savedById.value[b.id] = storage.cloneBuild(b);
   _collections.value.push(collection);
-  _savedCollections.value[collection.id] = { ...collection, buildIds: [...collection.buildIds] };
+  _savedCollections.value[collection.id] = {
+    ...collection,
+    buildIds: [...collection.buildIds],
+  };
   _activeCollectionId.value = collection.id;
   _activeId.value = collection.activeBuildId;
   showNotice(`Duplicated as “${collection.name}”`);
@@ -303,7 +349,8 @@ export function deleteCollection(id: string) {
   delete _savedCollections.value[removed.id];
   delete _fileLinks.value[removed.id];
   fsStore.deleteHandle(removed.id);
-  const next = _collections.value[Math.min(index, _collections.value.length - 1)];
+  const next =
+    _collections.value[Math.min(index, _collections.value.length - 1)];
   _activeCollectionId.value = next.id;
   _activeId.value = next.activeBuildId;
   showNotice(`Deleted “${removed.name}”`);
@@ -325,13 +372,16 @@ async function writeCollectionFile(id: string, handle: FileSystemFileHandle) {
   const collection = _collections.value.find((c) => c.id === id);
   if (!collection) return;
   try {
-    if (!(await fsStore.verifyPermission(handle))) throw new Error('permission denied');
+    if (!(await fsStore.verifyPermission(handle)))
+      throw new Error("permission denied");
     const buildsById = Object.fromEntries(_builds.value.map((b) => [b.id, b]));
     const bundle = storage.bundleCollection(collection, buildsById);
     await fsStore.writeText(handle, storage.toCollectionJson(bundle));
-  } catch (error: any) {
+  } catch (error: unknown) {
     delete _fileLinks.value[id];
-    showNotice(`Could not write “${collection.name}” to its linked file: ${error.message ?? error}`);
+    showNotice(
+      `Could not write "${collection.name}" to its linked file: ${error instanceof Error ? error.message : String(error)}`,
+    );
   }
 }
 
@@ -342,9 +392,16 @@ export async function saveCollection(id: string) {
   if (!collection) return;
   for (const buildId of collection.buildIds) {
     const b = _builds.value.find((item) => item.id === buildId);
-    if (b) _savedById.value[buildId] = { ...storage.cloneBuild(b), updated: Date.now() };
+    if (b)
+      _savedById.value[buildId] = {
+        ...storage.cloneBuild(b),
+        updated: Date.now(),
+      };
   }
-  _savedCollections.value[id] = { ...collection, buildIds: [...collection.buildIds] };
+  _savedCollections.value[id] = {
+    ...collection,
+    buildIds: [...collection.buildIds],
+  };
   persistSaved();
   persistSavedCollections();
   const handle = await fileHandleFor(id);
@@ -354,22 +411,24 @@ export async function saveCollection(id: string) {
 /** `target: 'storage'` is just `duplicateCollection` under another name; `target: 'file'`
  * picks a file, links it to *this* collection going forward, and writes it immediately. */
 export async function saveCollectionAs(id: string, target: string) {
-  if (target === 'storage') {
+  if (target === "storage") {
     duplicateCollection(id);
     return;
   }
   const collection = _collections.value.find((c) => c.id === id);
   if (!collection || !fsStore.supported) return;
   try {
-    const suggested = `${collection.name.replace(/[^\w.-]+/g, '-') || 'collection'}.json`;
+    const suggested = `${collection.name.replace(/[^\w.-]+/g, "-") || "collection"}.json`;
     const handle = await fsStore.pickSaveFile(suggested);
     _fileLinks.value[id] = handle;
     await fsStore.setHandle(id, handle);
     await saveCollection(id);
-    showNotice(`“${collection.name}” now saves to that file`);
-  } catch (error: any) {
-    if (error?.name !== 'AbortError') {
-      showNotice(`Could not link that file: ${error.message ?? error}`);
+    showNotice(`"${collection.name}" now saves to that file`);
+  } catch (error: unknown) {
+    if (error instanceof Error && error.name !== "AbortError") {
+      showNotice(
+        `Could not link that file: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
   }
 }
@@ -381,24 +440,40 @@ export function exportCollection(id: string) {
   if (!collection) return;
   const buildsById = Object.fromEntries(_builds.value.map((b) => [b.id, b]));
   const bundle = storage.bundleCollection(collection, buildsById);
-  downloadJson(storage.toCollectionJson(bundle), `${collection.name.replace(/[^\w.-]+/g, '-') || 'collection'}.json`);
+  downloadJson(
+    storage.toCollectionJson(bundle),
+    `${collection.name.replace(/[^\w.-]+/g, "-") || "collection"}.json`,
+  );
 }
 
 export function importCollectionText(text: string) {
   try {
-    const { collection, builds: newBuilds, catalogStale } = storage.parseCollectionJson(text);
+    const {
+      collection,
+      builds: newBuilds,
+      catalogStale,
+    } = storage.parseCollectionJson(text);
     _builds.value.push(...newBuilds);
     for (const b of newBuilds) _savedById.value[b.id] = storage.cloneBuild(b);
     _collections.value.push(collection);
-    _savedCollections.value[collection.id] = { ...collection, buildIds: [...collection.buildIds] };
+    _savedCollections.value[collection.id] = {
+      ...collection,
+      buildIds: [...collection.buildIds],
+    };
     _activeCollectionId.value = collection.id;
     _activeId.value = collection.activeBuildId;
-    const stale = catalogStale ? ' — made against an older item catalogue; some items may no longer resolve' : '';
-    showNotice(`Imported “${collection.name}” (${newBuilds.length} build(s))${stale}`);
+    const stale = catalogStale
+      ? " — made against an older item catalogue; some items may no longer resolve"
+      : "";
+    showNotice(
+      `Imported “${collection.name}” (${newBuilds.length} build(s))${stale}`,
+    );
     persistSaved();
     persistSavedCollections();
-  } catch (error: any) {
-    showNotice(`That collection file could not be read: ${error.message ?? error}`);
+  } catch (error: unknown) {
+    showNotice(
+      `That collection file could not be read: ${error instanceof Error ? error.message : String(error)}`,
+    );
   }
 }
 
@@ -419,8 +494,14 @@ export function addSharedBuild(shared: Build) {
  * button (buildEditor.ts's `saveActive`) and by structural changes that save themselves
  * immediately. */
 export function persistSaved() {
-  const ok = storage.saveLibrary({ builds: Object.values(_savedById.value), activeId: _activeId.value });
-  if (!ok) flagStorageFailed('Could not save to localStorage — export your build to keep it.');
+  const ok = storage.saveLibrary({
+    builds: Object.values(_savedById.value),
+    activeId: _activeId.value,
+  });
+  if (!ok)
+    flagStorageFailed(
+      "Could not save to localStorage — export your build to keep it.",
+    );
 }
 
 export function persistSavedCollections() {
@@ -428,7 +509,10 @@ export function persistSavedCollections() {
     collections: Object.values(_savedCollections.value),
     activeCollectionId: _activeCollectionId.value,
   });
-  if (!ok) flagStorageFailed('Could not save to localStorage — export your build to keep it.');
+  if (!ok)
+    flagStorageFailed(
+      "Could not save to localStorage — export your build to keep it.",
+    );
 }
 
 /** Refreshes `savedCollections[id]`'s own membership snapshot to match the live collection --
@@ -436,12 +520,21 @@ export function persistSavedCollections() {
  * would otherwise leave the collection's saved copy missing the build id they just added or
  * removed, showing a false "unsaved" dot forever after. */
 function syncSavedCollection(collection: Collection) {
-  _savedCollections.value[collection.id] = { ...collection, buildIds: [...collection.buildIds] };
+  _savedCollections.value[collection.id] = {
+    ...collection,
+    buildIds: [...collection.buildIds],
+  };
 }
 
 function saveDraft() {
-  const ok = storage.saveDraft({ builds: _builds.value, activeId: _activeId.value });
-  if (!ok) flagStorageFailed('Could not save to localStorage — export your build to keep it.');
+  const ok = storage.saveDraft({
+    builds: _builds.value,
+    activeId: _activeId.value,
+  });
+  if (!ok)
+    flagStorageFailed(
+      "Could not save to localStorage — export your build to keep it.",
+    );
 }
 
 function saveCollectionsDraft() {
@@ -449,13 +542,16 @@ function saveCollectionsDraft() {
     collections: _collections.value,
     activeCollectionId: _activeCollectionId.value,
   });
-  if (!ok) flagStorageFailed('Could not save to localStorage — export your build to keep it.');
+  if (!ok)
+    flagStorageFailed(
+      "Could not save to localStorage — export your build to keep it.",
+    );
 }
 
 function downloadJson(text: string, filename: string) {
-  const blob = new Blob([text], { type: 'application/json' });
+  const blob = new Blob([text], { type: "application/json" });
   const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
+  const link = document.createElement("a");
   link.href = url;
   link.download = filename;
   link.click();
@@ -467,12 +563,23 @@ let collectionsSaveTimer: number | undefined;
 
 // The draft autosaves continuously -- this is "don't lose work on a reload", not "save my
 // changes" (that's `saveActive()` in buildEditor.ts, wired to the Save button).
-watch(_builds, () => {
-  window.clearTimeout(saveTimer);
-  saveTimer = window.setTimeout(() => saveDraft(), SAVE_DEBOUNCE_MS);
-}, { deep: true });
+watch(
+  _builds,
+  () => {
+    window.clearTimeout(saveTimer);
+    saveTimer = window.setTimeout(() => saveDraft(), SAVE_DEBOUNCE_MS);
+  },
+  { deep: true },
+);
 
-watch(_collections, () => {
-  window.clearTimeout(collectionsSaveTimer);
-  collectionsSaveTimer = window.setTimeout(() => saveCollectionsDraft(), SAVE_DEBOUNCE_MS);
-}, { deep: true });
+watch(
+  _collections,
+  () => {
+    window.clearTimeout(collectionsSaveTimer);
+    collectionsSaveTimer = window.setTimeout(
+      () => saveCollectionsDraft(),
+      SAVE_DEBOUNCE_MS,
+    );
+  },
+  { deep: true },
+);

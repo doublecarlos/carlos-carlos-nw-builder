@@ -8,12 +8,14 @@
 // stat's kind.
 
 export function focusNextCombo(event: KeyboardEvent) {
-  if (event.key !== 'Tab' && event.key !== 'Enter') return;
-  if (event.key === 'Tab' && event.shiftKey) return;
+  if (event.key !== "Tab" && event.key !== "Enter") return;
+  if (event.key === "Tab" && event.shiftKey) return;
   const target = event.target as HTMLElement;
-  const row = target.closest('.stat-row');
+  const row = target.closest(".stat-row");
   const next = row?.nextElementSibling;
-  const combo = next?.classList?.contains('stat-row') ? next.querySelector<HTMLInputElement>('.combo--stat input') : null;
+  const combo = next?.classList?.contains("stat-row")
+    ? next.querySelector<HTMLInputElement>(".combo--stat input")
+    : null;
   if (!combo) return;
   event.preventDefault();
   combo.focus();

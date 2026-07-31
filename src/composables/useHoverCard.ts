@@ -1,5 +1,5 @@
-import { nextTick, onMounted, onUnmounted, ref, type Ref } from 'vue';
-import { isFormControl } from './focus';
+import { nextTick, onMounted, onUnmounted, ref, type Ref } from "vue";
+import { isFormControl } from "./focus";
 
 const HOVER_DELAY_MS = 220;
 // If the pointer lands on a new row this soon after the last card closed, treat it as still
@@ -7,9 +7,13 @@ const HOVER_DELAY_MS = 220;
 // feel like one continuous hover, not a fresh 220ms wait per row.
 const HOVER_RESUME_MS = 400;
 const HOVER_CLOSE_GRACE_MS = 100;
-const CARD_W = 320;    // must match ItemCard.vue's root `w-80` (320px) utility
+const CARD_W = 320; // must match ItemCard.vue's root `w-80` (320px) utility
 
-export interface HoverPosition { slotId: string; left: number; top: number; }
+export interface HoverPosition {
+  slotId: string;
+  left: number;
+  top: number;
+}
 
 /**
  * One hover card for a whole scrolling list of rows: `hover` holds at most one entry, moved
@@ -27,12 +31,15 @@ export interface HoverPosition { slotId: string; left: number; top: number; }
  * focusin and nothing ever set it back, since only a picker's blur-to-`<body>` (a focusout with
  * no matching focusin) reset it.
  */
-export function useHoverCard(root: Ref<HTMLElement | null>, hasItem: (slotId: string) => boolean) {
+export function useHoverCard(
+  root: Ref<HTMLElement | null>,
+  hasItem: (slotId: string) => boolean,
+) {
   const hover = ref<HoverPosition | null>(null);
   let hoverTimer: number | undefined;
-  let leaveTimer: number | undefined;   // grace period before a leave actually closes the card
-  let lastHideAt = 0;      // Date.now() of the last close, for the "resume" fast path
-  let editing = false;     // a real form control has focus: suppress the card so it cannot cover a dropdown
+  let leaveTimer: number | undefined; // grace period before a leave actually closes the card
+  let lastHideAt = 0; // Date.now() of the last close, for the "resume" fast path
+  let editing = false; // a real form control has focus: suppress the card so it cannot cover a dropdown
 
   function onRowEnter(event: MouseEvent, slotId: string) {
     if (editing || !hasItem(slotId)) return;
@@ -83,11 +90,16 @@ export function useHoverCard(root: Ref<HTMLElement | null>, hasItem: (slotId: st
   function place(slotId: string, rect: DOMRect, pointerX: number) {
     const margin = 10;
     let left = pointerX + 18;
-    if (left + CARD_W > window.innerWidth - margin) left = pointerX - CARD_W - 18;
-    hover.value = { slotId, left: Math.max(left, margin), top: rect.bottom + 6 };
+    if (left + CARD_W > window.innerWidth - margin)
+      left = pointerX - CARD_W - 18;
+    hover.value = {
+      slotId,
+      left: Math.max(left, margin),
+      top: rect.bottom + 6,
+    };
 
     nextTick(() => {
-      const card = root.value?.querySelector('.itemcard') as HTMLElement | null;
+      const card = root.value?.querySelector(".itemcard") as HTMLElement | null;
       if (!card || !hover.value) return;
       const height = card.offsetHeight;
       if (hover.value.top + height <= window.innerHeight - margin) return;
@@ -106,7 +118,7 @@ export function useHoverCard(root: Ref<HTMLElement | null>, hasItem: (slotId: st
    * scrolling the page and close the card on its first wheel tick.
    */
   function onScroll(event: Event) {
-    if ((event.target as HTMLElement)?.closest?.('.itemcard')) return;
+    if ((event.target as HTMLElement)?.closest?.(".itemcard")) return;
     window.clearTimeout(hoverTimer);
     if (hover.value) close();
   }
@@ -121,12 +133,20 @@ export function useHoverCard(root: Ref<HTMLElement | null>, hasItem: (slotId: st
     editing = false;
   }
 
-  onMounted(() => window.addEventListener('scroll', onScroll, true));
+  onMounted(() => window.addEventListener("scroll", onScroll, true));
   onUnmounted(() => {
     window.clearTimeout(hoverTimer);
     window.clearTimeout(leaveTimer);
-    window.removeEventListener('scroll', onScroll, true);
+    window.removeEventListener("scroll", onScroll, true);
   });
 
-  return { hover, onRowEnter, onRowLeave, onCardEnter, onCardLeave, onFocusIn, onFocusOut };
+  return {
+    hover,
+    onRowEnter,
+    onRowLeave,
+    onCardEnter,
+    onCardLeave,
+    onFocusIn,
+    onFocusOut,
+  };
 }

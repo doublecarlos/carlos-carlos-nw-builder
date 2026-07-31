@@ -14,41 +14,47 @@
 // Name (seeded from the item's own name as a starting point), and that same Save both persists
 // the set and attaches the resulting id to the item, in one step -- there is nothing to decide
 // up front any more.
-import { ref, computed } from 'vue';
-import BonusSetForm from './BonusSetForm.vue';
-import ComboBox from './ui/ComboBox.vue';
-import IconButton from './ui/IconButton.vue';
-import Button from './ui/Button.vue';
-import Badge from './ui/Badge.vue';
-import FormSection from './ui/FormSection.vue';
-import type { Db, BonusSet } from '../types';
-import type { SetDraft } from '../bonus-draft';
+import { ref, computed } from "vue";
+import BonusSetForm from "./BonusSetForm.vue";
+import ComboBox from "./ui/ComboBox.vue";
+import IconButton from "./ui/IconButton.vue";
+import BaseButton from "./ui/BaseButton.vue";
+import BaseBadge from "./ui/BaseBadge.vue";
+import FormSection from "./ui/FormSection.vue";
+import type { Db, BonusSet } from "../types";
+import type { SetDraft } from "../bonus-draft";
 
-const props = withDefaults(defineProps<{
-  /** Bonus group ids the item currently declares. */
-  setIds?: string[];
-  /** Seeds the Name field of a brand-new private bonus. */
-  itemName?: string;
-  db: Db;
-  allSetIds?: string[];
-  tags?: string[];
-  bonusIds?: string[];
-}>(), {
-  setIds: () => [],
-  itemName: '',
-  allSetIds: () => [],
-  tags: () => [],
-  bonusIds: () => [],
-});
+const props = withDefaults(
+  defineProps<{
+    /** Bonus group ids the item currently declares. */
+    setIds?: string[];
+    /** Seeds the Name field of a brand-new private bonus. */
+    itemName?: string;
+    db: Db;
+    allSetIds?: string[];
+    tags?: string[];
+    bonusIds?: string[];
+  }>(),
+  {
+    setIds: () => [],
+    itemName: "",
+    allSetIds: () => [],
+    tags: () => [],
+    bonusIds: () => [],
+  },
+);
 
 const emit = defineEmits<{
-  'save-set': [payload: { id: string; set: BonusSet }];
-  'delete-set': [id: string];
-  'detach-set': [id: string];
-  'attach-set': [id: string];
+  "save-set": [payload: { id: string; set: BonusSet }];
+  "delete-set": [id: string];
+  "detach-set": [id: string];
+  "attach-set": [id: string];
 }>();
 
-interface Slot { key: string; id: string | null }
+interface Slot {
+  key: string;
+  id: string | null;
+}
 
 let nextPendingKey = 0;
 const pending = ref<Slot[]>([]);
@@ -67,7 +73,10 @@ const attachable = computed(() => {
   const attached = new Set(props.setIds);
   return props.allSetIds
     .filter((id) => !attached.has(id))
-    .map((id) => ({ value: id, label: props.db.bonusSetById.get(id)?.name ?? id }));
+    .map((id) => ({
+      value: id,
+      label: props.db.bonusSetById.get(id)?.name ?? id,
+    }));
 });
 
 function sourceFor(slot: Slot): BonusSet | null {
@@ -80,7 +89,14 @@ function sourceFor(slot: Slot): BonusSet | null {
  * later edits to the item's own name. */
 function initialDraftFor(slot: Slot): SetDraft | null {
   if (slot.id) return null;
-  return { id: '', name: props.itemName, grants: [], stacking: '', maxStacks: null, excludes: [] };
+  return {
+    id: "",
+    name: props.itemName,
+    grants: [],
+    stacking: "",
+    maxStacks: null,
+    excludes: [],
+  };
 }
 
 function addBonus() {
@@ -90,7 +106,7 @@ function addBonus() {
 
 function attachExisting(id: string) {
   if (!id) return;
-  emit('attach-set', id);
+  emit("attach-set", id);
 }
 
 /** A pending slot's first save both persists the set (forwarded as-is) and attaches the
@@ -102,9 +118,9 @@ function attachExisting(id: string) {
  * keep this exact component instance alive across the transition. An already-attached slot's
  * save is just a plain re-save, forwarded as-is. */
 function onSlotSave(slot: Slot, payload: { id: string; set: BonusSet }) {
-  emit('save-set', payload);
+  emit("save-set", payload);
   if (!slot.id) {
-    emit('attach-set', payload.id);
+    emit("attach-set", payload.id);
     pending.value = pending.value.filter((s) => s !== slot);
   }
 }
@@ -112,12 +128,12 @@ function onSlotSave(slot: Slot, payload: { id: string; set: BonusSet }) {
 /** Stop this item from listing the set -- always valid, whether or not the set is defined,
  * shared, or brand-new. A pending slot has nothing attached yet, so this just discards it. */
 function onSlotDetach(slot: Slot) {
-  if (slot.id) emit('detach-set', slot.id);
+  if (slot.id) emit("detach-set", slot.id);
   else pending.value = pending.value.filter((s) => s !== slot);
 }
 
 function onSlotDelete(slot: Slot) {
-  if (slot.id) emit('delete-set', slot.id);
+  if (slot.id) emit("delete-set", slot.id);
 }
 </script>
 
@@ -128,21 +144,34 @@ function onSlotDelete(slot: Slot) {
       <IconButton icon="circle-plus" title="Add bonus" @click="addBonus" />
       <span v-if="attachable.length" class="inline-flex items-center gap-1.5">
         or
-        <ComboBox class="w-56" model-value="" :options="attachable"
-                  placeholder="attach an existing one…" @update:model-value="attachExisting" />
+        <ComboBox
+          class="w-56"
+          model-value=""
+          :options="attachable"
+          placeholder="attach an existing one…"
+          @update:model-value="attachExisting"
+        />
       </span>
     </FormSection>
 
     <p v-if="!slots.length" class="text-sm text-muted">
-      This item has no bonuses yet. Add one above -- most are private to a single item;
-      attaching an existing bonus id shares it with whatever else already lists it.
+      This item has no bonuses yet. Add one above -- most are private to a
+      single item; attaching an existing bonus id shares it with whatever else
+      already lists it.
     </p>
 
-    <div v-for="slot in slots" :key="slot.key" data-testid="bonus-card" class="mb-2.5 rounded-md border border-line bg-accent-soft/30 px-2.5 py-2">
+    <div
+      v-for="slot in slots"
+      :key="slot.key"
+      data-testid="bonus-card"
+      class="mb-2.5 rounded-md border border-line bg-accent-soft/30 px-2.5 py-2"
+    >
       <!-- A dangling reference (attached id with no catalogue entry -- a hand-edited import,
            typically) has nothing else to signal it: BonusSetForm's own `status` badge needs
            overlay access this component doesn't have, so it stays 'base' here throughout. -->
-      <Badge v-if="slot.id && !sourceFor(slot)" variant="warn" class="mb-1">not defined yet</Badge>
+      <BaseBadge v-if="slot.id && !sourceFor(slot)" variant="warn" class="mb-1"
+        >not defined yet</BaseBadge
+      >
       <BonusSetForm
         :source="sourceFor(slot)"
         :fixed-id="slot.id"
@@ -152,9 +181,10 @@ function onSlotDelete(slot: Slot) {
         :tags="tags"
         :bonus-ids="bonusIds"
         @save="onSlotSave(slot, $event)"
-        @delete="onSlotDelete(slot)">
+        @delete="onSlotDelete(slot)"
+      >
         <template #extra-actions>
-          <Button @click="onSlotDetach(slot)">Detach</Button>
+          <BaseButton @click="onSlotDetach(slot)">Detach</BaseButton>
         </template>
       </BonusSetForm>
     </div>

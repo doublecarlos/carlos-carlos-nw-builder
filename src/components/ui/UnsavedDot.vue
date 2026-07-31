@@ -5,5 +5,8 @@
 </script>
 
 <template>
-  <span class="inline-block size-1.5 flex-none rounded-full bg-accent" data-testid="unsaved-dot"></span>
+  <span
+    class="inline-block size-1.5 flex-none rounded-full bg-accent"
+    data-testid="unsaved-dot"
+  ></span>
 </template>

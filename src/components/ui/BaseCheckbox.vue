@@ -6,22 +6,35 @@
 // prop pair, which drove the input's checked state out of sync with callers that don't also
 // bind `v-model` (Vue's checkbox `v-model` is a directive that sets `el.checked` itself,
 // stomping a plain `:checked` prop on every mount).
-withDefaults(defineProps<{
-  disabled?: boolean;
-  inline?: boolean;
-  value?: string;
-}>(), {
-  disabled: false,
-  inline: false,
-  value: '',
-});
+withDefaults(
+  defineProps<{
+    disabled?: boolean;
+    inline?: boolean;
+    value?: string;
+  }>(),
+  {
+    disabled: false,
+    inline: false,
+    value: "",
+  },
+);
 
-const model = defineModel({ required: true });
+// boolean for a standalone toggle; string[] for a checkbox-group bound to one array with each
+// checkbox's own `value` prop deciding what it adds/removes (ItemForm's "restricted to classes").
+const model = defineModel<boolean | string[]>({ required: true });
 </script>
 
 <template>
-  <label class="flex cursor-pointer items-center gap-1 select-none" :class="inline && 'ml-auto text-muted'">
-    <input type="checkbox" :value="value" v-model="model" :disabled="disabled">
+  <label
+    class="flex cursor-pointer items-center gap-1 select-none"
+    :class="inline && 'ml-auto text-muted'"
+  >
+    <input
+      v-model="model"
+      type="checkbox"
+      :value="value"
+      :disabled="disabled"
+    />
     <span><slot /></span>
   </label>
 </template>

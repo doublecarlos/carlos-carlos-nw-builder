@@ -1,5 +1,5 @@
 <script lang="ts">
-import { ref } from 'vue';
+import { ref } from "vue";
 // Shared across every instance (one per section header) so opening one popover closes
 // whichever other one was already open.
 const openSectionId = ref<string | null>(null);
@@ -7,10 +7,10 @@ const openSectionId = ref<string | null>(null);
 
 <script setup lang="ts">
 // A section header's "copy this section from another build" control.
-import { onMounted, onUnmounted } from 'vue';
-import IconButton from './ui/IconButton.vue';
-import ComboBox from './ui/ComboBox.vue';
-import Button from './ui/Button.vue';
+import { onMounted, onUnmounted } from "vue";
+import IconButton from "./ui/IconButton.vue";
+import ComboBox from "./ui/ComboBox.vue";
+import BaseButton from "./ui/BaseButton.vue";
 
 const props = defineProps<{
   sectionId: string;
@@ -23,7 +23,7 @@ const emit = defineEmits<{
 
 // Defaults to the first other build in the collection so the control is usable with a
 // single click, not "pick a build, then click copy".
-const chosen = ref(props.otherBuilds[0]?.value ?? '');
+const chosen = ref(props.otherBuilds[0]?.value ?? "");
 
 const isOpen = () => openSectionId.value === props.sectionId;
 
@@ -33,7 +33,7 @@ function toggle() {
 
 function confirm() {
   if (!chosen.value) return;
-  emit('copy', chosen.value);
+  emit("copy", chosen.value);
   openSectionId.value = null;
 }
 
@@ -49,24 +49,44 @@ function confirm() {
 function onDocumentClick(event: MouseEvent) {
   if (!isOpen()) return;
   const path = event.composedPath?.() ?? [];
-  if (path.some((el) => (el as Element).classList?.contains?.('copy-popover')
-    || (el as Element).classList?.contains?.('section-copy-btn'))) return;
+  if (
+    path.some(
+      (el) =>
+        (el as Element).classList?.contains?.("copy-popover") ||
+        (el as Element).classList?.contains?.("section-copy-btn"),
+    )
+  )
+    return;
   openSectionId.value = null;
 }
 
-onMounted(() => document.addEventListener('mousedown', onDocumentClick));
-onUnmounted(() => document.removeEventListener('mousedown', onDocumentClick));
+onMounted(() => document.addEventListener("mousedown", onDocumentClick));
+onUnmounted(() => document.removeEventListener("mousedown", onDocumentClick));
 </script>
 
 <template>
   <div class="relative mr-0.5 flex-none">
-    <IconButton icon="copy" title="Copy this section from another build" class="section-copy-btn"
-                @click="toggle" />
-    <div v-if="isOpen()" class="copy-popover absolute right-full top-1/2 z-30 mr-1.5 flex -translate-y-1/2 items-center gap-1.5 whitespace-nowrap rounded-md border border-line bg-surface px-2 py-1.5 shadow-lg">
+    <IconButton
+      icon="copy"
+      title="Copy this section from another build"
+      class="section-copy-btn"
+      @click="toggle"
+    />
+    <div
+      v-if="isOpen()"
+      class="copy-popover absolute right-full top-1/2 z-30 mr-1.5 flex -translate-y-1/2 items-center gap-1.5 whitespace-nowrap rounded-md border border-line bg-surface px-2 py-1.5 shadow-lg"
+    >
       <span class="text-sm text-muted">Copy section from</span>
-      <ComboBox class="copy-popover-select w-44" :model-value="chosen" :options="otherBuilds"
-                placeholder="choose a build…" @update:model-value="chosen = $event" />
-      <Button variant="primary" :disabled="!chosen" @click="confirm">Copy</Button>
+      <ComboBox
+        class="copy-popover-select w-44"
+        :model-value="chosen"
+        :options="otherBuilds"
+        placeholder="choose a build…"
+        @update:model-value="chosen = $event"
+      />
+      <BaseButton variant="primary" :disabled="!chosen" @click="confirm"
+        >Copy</BaseButton
+      >
     </div>
   </div>
 </template>

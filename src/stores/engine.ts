@@ -1,14 +1,16 @@
 // The resolved-build pipeline: fold the catalogue overlays into a `db`, run the engine over
 // the active (and, if picked, compare) build.
-import { computed, markRaw } from 'vue';
-import * as catalog from '../catalog';
-import * as engine from '../engine';
-import * as library from './library';
-import * as compare from './compare';
-import { workspaceOverlay } from './workspace';
-import type { ResolvedBuild } from '../types';
+import { computed, markRaw } from "vue";
+import * as catalog from "../catalog";
+import * as engine from "../engine";
+import * as library from "./library";
+import * as compare from "./compare";
+import { workspaceOverlay } from "./workspace";
+import type { ResolvedBuild } from "../types";
 
-type Resolution = { ok: true; result: ResolvedBuild } | { ok: false; message: string; stack: string };
+type Resolution =
+  | { ok: true; result: ResolvedBuild }
+  | { ok: false; message: string; stack: string };
 
 /**
  * Catalogue layers, lowest priority first. The shipped data is the base (inside
@@ -18,7 +20,9 @@ type Resolution = { ok: true; result: ResolvedBuild } | { ok: false; message: st
  * nothing else in the app has to change. `storage.normalise` already preserves that key on a
  * build so it survives a save/reload round trip.
  */
-const overlays = computed(() => [workspaceOverlay.value, library.build.value.catalog].filter(Boolean));
+const overlays = computed(() =>
+  [workspaceOverlay.value, library.build.value.catalog].filter(Boolean),
+);
 
 /**
  * markRaw: 369 items plus several Maps. Vue deep-proxying it would cost more than the whole
@@ -33,9 +37,16 @@ export const db = computed(() => markRaw(catalog.makeDb(overlays.value)));
  */
 export const resolved = computed<Resolution>(() => {
   try {
-    return { ok: true, result: engine.resolveBuild(db.value, library.build.value) };
-  } catch (error: any) {
-    return { ok: false, message: String(error), stack: error?.stack ?? '' };
+    return {
+      ok: true,
+      result: engine.resolveBuild(db.value, library.build.value),
+    };
+  } catch (error: unknown) {
+    return {
+      ok: false,
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error && error.stack ? error.stack : "",
+    };
   }
 });
 
@@ -48,9 +59,16 @@ export const resolved = computed<Resolution>(() => {
 export const compareResolved = computed<Resolution | null>(() => {
   if (!compare.compareBuild.value) return null;
   try {
-    return { ok: true, result: engine.resolveBuild(db.value, compare.compareBuild.value) };
-  } catch (error: any) {
-    return { ok: false, message: String(error), stack: error?.stack ?? '' };
+    return {
+      ok: true,
+      result: engine.resolveBuild(db.value, compare.compareBuild.value),
+    };
+  } catch (error: unknown) {
+    return {
+      ok: false,
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error && error.stack ? error.stack : "",
+    };
   }
 });
 
@@ -61,7 +79,11 @@ export const bonusCounts = computed(() => {
   return {
     total: all.length,
     active: all.filter((bonus) => bonus.active).length,
-    nearMiss: all.filter((bonus) => !bonus.active && !bonus.excluded
-      && (bonus.gate?.unmet?.length ?? 0) === 1).length,
+    nearMiss: all.filter(
+      (bonus) =>
+        !bonus.active &&
+        !bonus.excluded &&
+        (bonus.gate?.unmet?.length ?? 0) === 1,
+    ).length,
   };
 });

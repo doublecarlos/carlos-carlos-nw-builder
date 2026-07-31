@@ -63,7 +63,8 @@
 
   --radius-md: var(--radius);
 
-  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 
@@ -74,11 +75,20 @@
 
   /* Every scrollable region in this app (build-nav, itemcard, editor lists/forms, picker menus)
   * manages its own overflow explicitly. */
-  html, body {
+  html,
+  body {
     overflow-x: clip;
   }
 
-  input[type="number"] { appearance: textfield; -moz-appearance: textfield; text-align: right; }
+  input[type="number"] {
+    appearance: textfield;
+    -moz-appearance: textfield;
+    text-align: right;
+  }
   input[type="number"]::-webkit-outer-spin-button,
-  input[type="number"]::-webkit-inner-spin-button { appearance: none; -webkit-appearance: none; margin: 0; }
+  input[type="number"]::-webkit-inner-spin-button {
+    appearance: none;
+    -webkit-appearance: none;
+    margin: 0;
+  }
 }

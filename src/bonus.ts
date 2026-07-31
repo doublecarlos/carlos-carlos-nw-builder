@@ -4,12 +4,24 @@
 // The sheet counted bonus instances by scanning rows *above* the current one while checking
 // overrides against *all* rows, so its results could depend on slot ordering. Nothing here does.
 
-import * as conditions from './conditions';
-import { getPath } from './build-path';
+import * as conditions from "./conditions";
+import { getPath } from "./build-path";
 import type {
-  Db, Build, BonusSet, Grant, BonusCandidate, EvalContext, ConditionExplain, ConditionWhen,
-  GrantEvaluation, BonusEvaluation, EvaluatedBonus, ResolvedBonuses, ResolvedRow, StatValues,
-} from './types';
+  Db,
+  Build,
+  BonusSet,
+  Grant,
+  BonusCandidate,
+  EvalContext,
+  ConditionExplain,
+  ConditionWhen,
+  GrantEvaluation,
+  BonusEvaluation,
+  EvaluatedBonus,
+  ResolvedBonuses,
+  ResolvedRow,
+  StatValues,
+} from "./types";
 
 const bump = (map: Map<string, number>, key: string | null | undefined) => {
   if (key == null) return;
@@ -33,7 +45,10 @@ interface Candidate extends BonusCandidate {
  * (The legacy engine deduped qualifiers by item name, but since every tag condition is
  * `atLeast: 1` that difference can never be observable.)
  */
-export function collect(db: Db, build: Build): { ctx: EvalContext; rows: ResolvedRow[]; candidates: Candidate[] } {
+export function collect(
+  db: Db,
+  build: Build,
+): { ctx: EvalContext; rows: ResolvedRow[]; candidates: Candidate[] } {
   const context = build.context ?? {};
   const equipped = new Map<string, number>();
   const tags = new Map<string, number>();
@@ -61,9 +76,10 @@ export function collect(db: Db, build: Build): { ctx: EvalContext; rows: Resolve
   // exactly what the UI shows.
   const params = new Map<string, string | number | boolean>();
   for (const slot of db.slots) {
-    if (slot.type !== 'build_parameter') continue;
+    if (slot.type !== "build_parameter") continue;
     const value = getPath(context, slot.path);
-    const resolved = (value === undefined ? slot.default : value) as string | number | boolean | undefined;
+    const resolved = (value === undefined ? slot.default : value) as
+      string | number | boolean | undefined;
     if (resolved !== undefined) params.set(slot.path, resolved);
   }
 
@@ -89,7 +105,11 @@ export function collect(db: Db, build: Build): { ctx: EvalContext; rows: Resolve
 /** Resolve one grant against the context into a stat payload (or none). Exactly the old
  * per-effect gate -> variants -> tiers -> stats logic, parameterised on `grant` instead of a
  * whole named effect -- a grant carries no `id`/`name` of its own. */
-function evaluateGrant(grant: Grant, ctx: EvalContext, explain = true): GrantEvaluation {
+function evaluateGrant(
+  grant: Grant,
+  ctx: EvalContext,
+  explain = true,
+): GrantEvaluation {
   const gate: ConditionExplain = explain
     ? conditions.explain(grant.when, ctx)
     : { ok: conditions.evaluate(grant.when, ctx), leaves: [], unmet: [] };
@@ -98,16 +118,23 @@ function evaluateGrant(grant: Grant, ctx: EvalContext, explain = true): GrantEva
 
   // `variants`: first match wins (role-dependent payloads).
   if (grant.variants) {
-    const index = grant.variants.findIndex((v) => conditions.evaluate(v.when, ctx));
+    const index = grant.variants.findIndex((v) =>
+      conditions.evaluate(v.when, ctx),
+    );
     return index === -1
       ? { active: false, gate, stats: null, chose: null }
-      : { active: true, gate, stats: grant.variants[index].stats, chose: `variant:${index}` };
+      : {
+          active: true,
+          gate,
+          stats: grant.variants[index].stats,
+          chose: `variant:${index}`,
+        };
   }
 
   // `tiers`: highest matching piece threshold wins. Payloads are absolute, not cumulative --
   // the legacy exact-match on piece count made them mutually exclusive.
   if (grant.tiers) {
-    let best: typeof grant.tiers[number] | null = null;
+    let best: (typeof grant.tiers)[number] | null = null;
     let bestAt = -1;
     for (const tier of grant.tiers) {
       const need = tier.pieces?.atLeast ?? 1;
@@ -115,7 +142,13 @@ function evaluateGrant(grant: Grant, ctx: EvalContext, explain = true): GrantEva
       // -- see types.ts: an *actually* setless tier still reaches `conditions.evaluate` exactly
       // as the untyped original did, and fails closed there (`pieces.set` undefined -> 0 pieces
       // counted), so this cast changes nothing at runtime.
-      if (need > bestAt && conditions.evaluate({ pieces: tier.pieces as ConditionWhen['pieces'] }, ctx)) {
+      if (
+        need > bestAt &&
+        conditions.evaluate(
+          { pieces: tier.pieces as ConditionWhen["pieces"] },
+          ctx,
+        )
+      ) {
         best = tier;
         bestAt = need;
       }
@@ -125,7 +158,7 @@ function evaluateGrant(grant: Grant, ctx: EvalContext, explain = true): GrantEva
       : { active: false, gate, stats: null, chose: null };
   }
 
-  return { active: true, gate, stats: grant.stats ?? {}, chose: 'stats' };
+  return { active: true, gate, stats: grant.stats ?? {}, chose: "stats" };
 }
 
 /**
@@ -133,9 +166,14 @@ function evaluateGrant(grant: Grant, ctx: EvalContext, explain = true): GrantEva
  * stats are the sum of every currently-active grant (plan: "bonus schema restructuring"),
  * not one independently-tracked row per grant the way effects used to be.
  */
-export function evaluateBonus(set: BonusSet, ctx: EvalContext, explain = true): BonusEvaluation {
+export function evaluateBonus(
+  set: BonusSet,
+  ctx: EvalContext,
+  explain = true,
+): BonusEvaluation {
   const results = (set.grants ?? []).map((grant) => ({
-    raw: grant, ...evaluateGrant(grant, ctx, explain),
+    raw: grant,
+    ...evaluateGrant(grant, ctx, explain),
   }));
   const activeResults = results.filter((r) => r.active);
   const active = activeResults.length > 0;
@@ -150,9 +188,10 @@ export function evaluateBonus(set: BonusSet, ctx: EvalContext, explain = true): 
   // Only meaningful -- and only shown as a badge -- when exactly one grant is active and it
   // resolved via a tier/variant pick; two simultaneously-active grants have no single "chose"
   // to report, and a plain flat grant's "stats" chose was never shown either.
-  const chose = activeResults.length === 1 && activeResults[0].chose !== 'stats'
-    ? activeResults[0].chose
-    : null;
+  const chose =
+    activeResults.length === 1 && activeResults[0].chose !== "stats"
+      ? activeResults[0].chose
+      : null;
 
   // Fully inactive: pick the grant with the fewest unmet conditions as the near-miss
   // representative (ties broken by array order) -- "what you are closest to unlocking",
@@ -160,14 +199,25 @@ export function evaluateBonus(set: BonusSet, ctx: EvalContext, explain = true): 
   let gate: ConditionExplain = { ok: true, leaves: [], unmet: [] };
   let previewStats: StatValues | null = null;
   if (!active) {
-    const best = results.reduce((a, b) => (
-      (b.gate.unmet?.length ?? 0) < (a?.gate.unmet?.length ?? Infinity) ? b : a
-    ), results[0]);
+    const best = results.reduce(
+      (a, b) =>
+        (b.gate.unmet?.length ?? 0) < (a?.gate.unmet?.length ?? Infinity)
+          ? b
+          : a,
+      results[0],
+    );
     gate = best?.gate ?? gate;
-    previewStats = best?.raw.stats ?? null;  // only a flat grant has a raw `.stats` to preview
+    previewStats = best?.raw.stats ?? null; // only a flat grant has a raw `.stats` to preview
   }
 
-  return { active, gate, stats: active ? stats : null, chose, previewStats, grants: results };
+  return {
+    active,
+    gate,
+    stats: active ? stats : null,
+    chose,
+    previewStats,
+    grants: results,
+  };
 }
 
 // --- passes 3 and 4: exclude, then apply ------------------------------------------------
@@ -178,7 +228,11 @@ interface Group {
   sources: Candidate[];
 }
 
-export function resolve(db: Db, build: Build, { explain = true }: { explain?: boolean } = {}): ResolvedBonuses {
+export function resolve(
+  db: Db,
+  build: Build,
+  { explain = true }: { explain?: boolean } = {},
+): ResolvedBonuses {
   const { ctx, rows, candidates } = collect(db, build);
 
   // Group by bonus id so stacking is decided once per bonus, not once per contributing slot.
@@ -197,7 +251,7 @@ export function resolve(db: Db, build: Build, { explain = true }: { explain?: bo
     const sources = [...group.sources].sort((a, b) => a.order - b.order);
 
     let stacks = 1;
-    if (group.bonus.stacking === 'perSource') {
+    if (group.bonus.stacking === "perSource") {
       stacks = group.bonus.maxStacks
         ? Math.min(sources.length, group.bonus.maxStacks)
         : sources.length;
@@ -208,7 +262,7 @@ export function resolve(db: Db, build: Build, { explain = true }: { explain?: bo
       bonus: group.bonus,
       setId: sources[0].setId,
       sources: sources.map((s) => s.source),
-      slotId: sources[0].slotId,      // instancing slot, used for stat attribution
+      slotId: sources[0].slotId, // instancing slot, used for stat attribution
       active: result.active,
       gate: result.gate,
       chose: result.chose,
@@ -252,11 +306,15 @@ export function resolve(db: Db, build: Build, { explain = true }: { explain?: bo
       entry.appliedStats = null;
       continue;
     }
-    entry.appliedStats = entry.stacks === 1
-      ? { ...entry.stats }
-      : Object.fromEntries(
-        Object.entries(entry.stats).map(([key, value]) => [key, (value as number) * entry.stacks]),
-      );
+    entry.appliedStats =
+      entry.stacks === 1
+        ? { ...entry.stats }
+        : Object.fromEntries(
+            Object.entries(entry.stats).map(([key, value]) => [
+              key,
+              (value as number) * entry.stacks,
+            ]),
+          );
 
     const bucket = bonusStatsBySlot.get(entry.slotId) ?? new Map();
     for (const [key, value] of Object.entries(entry.appliedStats)) {

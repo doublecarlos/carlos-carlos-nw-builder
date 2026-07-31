@@ -1,9 +1,24 @@
-import { nextTick, onMounted, onUnmounted, ref, type ComponentPublicInstance, type Ref } from 'vue';
-import { isFormControl } from './focus';
+import {
+  nextTick,
+  onMounted,
+  onUnmounted,
+  ref,
+  type ComponentPublicInstance,
+  type Ref,
+} from "vue";
+import { isFormControl } from "./focus";
 
-export type CursorKind = 'header' | 'slot';
-export interface CursorPos { type: CursorKind; id: string; kind?: "item_picker" | "build_parameter"; }
-interface Row { type: string; id: string; kind?: "item_picker" | "build_parameter"; }
+export type CursorKind = "header" | "slot";
+export interface CursorPos {
+  type: CursorKind;
+  id: string;
+  kind?: "item_picker" | "build_parameter";
+}
+interface Row {
+  type: string;
+  id: string;
+  kind?: "item_picker" | "build_parameter";
+}
 
 /** The subset of ItemPicker's public surface the cursor needs -- a structural type instead of
  *  importing the component so this composable doesn't need to know which component fills a
@@ -14,7 +29,10 @@ interface ParamHandle {
   focusAndSeed: (char: string) => void;
 }
 
-interface PickerHandle { focusAndSeed: (char: string) => void; $el?: Element | null; }
+interface PickerHandle {
+  focusAndSeed: (char: string) => void;
+  $el?: Element | null;
+}
 
 export interface KeyboardCursorHandlers {
   /** Enter on a header row: the same thing a click on it does (expand/collapse). */
@@ -47,12 +65,19 @@ export function useKeyboardCursor(
     return cursor.value?.type === type && cursor.value?.id === id;
   }
 
-  function setCursor(type: CursorKind, id: string, kind?: 'item_picker' | 'build_parameter') {
+  function setCursor(
+    type: CursorKind,
+    id: string,
+    kind?: "item_picker" | "build_parameter",
+  ) {
     cursor.value = { type, id, kind };
     syncCursorFocus();
   }
 
-  function setPickerRef(slotId: string, el: Element | ComponentPublicInstance | null) {
+  function setPickerRef(
+    slotId: string,
+    el: Element | ComponentPublicInstance | null,
+  ) {
     if (el) pickerRefs[slotId] = el as unknown as PickerHandle;
     else delete pickerRefs[slotId];
   }
@@ -69,7 +94,7 @@ export function useKeyboardCursor(
     const picker = pickerRefs[slotId];
     if (!picker) return;
     if (seedChar) picker.focusAndSeed(seedChar);
-    else picker.$el?.querySelector('input')?.focus();
+    else picker.$el?.querySelector("input")?.focus();
   }
 
   /**
@@ -85,10 +110,13 @@ export function useKeyboardCursor(
     nextTick(() => {
       if (!cursor.value) return;
       const key = `${cursor.value.type}:${cursor.value.id}`;
-      const el = root.value?.querySelector(`[data-cursor-key="${CSS.escape(key)}"]`) as HTMLElement | null;
+      const el = root.value?.querySelector(
+        `[data-cursor-key="${CSS.escape(key)}"]`,
+      ) as HTMLElement | null;
       if (!el) return;
-      el.scrollIntoView({ block: 'nearest' });
-      if (!el.contains(document.activeElement)) el.focus({ preventScroll: true });
+      el.scrollIntoView({ block: "nearest" });
+      if (!el.contains(document.activeElement))
+        el.focus({ preventScroll: true });
     });
   }
 
@@ -105,33 +133,42 @@ export function useKeyboardCursor(
   function onNavKeydown(event: KeyboardEvent) {
     if (!isPassiveTarget()) return;
 
-    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
       const rows = visibleRows.value;
       if (!rows.length) return;
       event.preventDefault();
-      const dir = event.key === 'ArrowDown' ? 1 : -1;
+      const dir = event.key === "ArrowDown" ? 1 : -1;
       const idx = cursor.value
-        ? rows.findIndex((r) => r.type === cursor.value!.type && r.id === cursor.value!.id)
+        ? rows.findIndex(
+            (r) => r.type === cursor.value!.type && r.id === cursor.value!.id,
+          )
         : -1;
-      const next = idx === -1
-        ? (dir === 1 ? 0 : rows.length - 1)
-        : Math.min(Math.max(idx + dir, 0), rows.length - 1);
+      const next =
+        idx === -1
+          ? dir === 1
+            ? 0
+            : rows.length - 1
+          : Math.min(Math.max(idx + dir, 0), rows.length - 1);
       setCursor(rows[next].type as CursorKind, rows[next].id, rows[next].kind);
       return;
     }
 
     if (!cursor.value) return;
 
-    if (event.key === 'Enter') {
+    if (event.key === "Enter") {
       event.preventDefault();
-      if (cursor.value.type === 'header') handlers.onToggleHeader(cursor.value.id);
+      if (cursor.value.type === "header")
+        handlers.onToggleHeader(cursor.value.id);
       else focusPicker(cursor.value.id);
       return;
     }
 
-    if (cursor.value.type === 'slot' && (event.key === 'Backspace' || event.key === 'Delete')) {
+    if (
+      cursor.value.type === "slot" &&
+      (event.key === "Backspace" || event.key === "Delete")
+    ) {
       event.preventDefault();
-      if (cursor.value.kind === 'build_parameter') {
+      if (cursor.value.kind === "build_parameter") {
         handlers.onResetParam(cursor.value.id);
       } else {
         handlers.onClearSlot(cursor.value.id);
@@ -139,8 +176,13 @@ export function useKeyboardCursor(
       return;
     }
 
-    if (cursor.value.type === 'slot' && event.key.length === 1
-      && !event.ctrlKey && !event.metaKey && !event.altKey) {
+    if (
+      cursor.value.type === "slot" &&
+      event.key.length === 1 &&
+      !event.ctrlKey &&
+      !event.metaKey &&
+      !event.altKey
+    ) {
       event.preventDefault();
       focusPicker(cursor.value.id, event.key);
     }
@@ -159,26 +201,33 @@ export function useKeyboardCursor(
    * gained focus" from "a descendant did" without the same `closest()` walk anyway.
    */
   function onFocusIn(event: FocusEvent) {
-    const key = (event.target as HTMLElement)?.closest?.('[data-cursor-key]')?.getAttribute('data-cursor-key');
+    const key = (event.target as HTMLElement)
+      ?.closest?.("[data-cursor-key]")
+      ?.getAttribute("data-cursor-key");
     if (!key) return;
-    const sep = key.indexOf(':');
+    const sep = key.indexOf(":");
     const type = key.slice(0, sep) as CursorKind;
     const id = key.slice(sep + 1);
     if (cursor.value?.type === type && cursor.value?.id === id) return;
     // Read slot kind from the DOM (set by BuildSlot.vue's :data-slot-kind)
-    const kind = (event.target as HTMLElement)?.closest?.('[data-slot-kind]')
-      ?.getAttribute('data-slot-kind') as 'item_picker' | 'build_parameter' | null;
+    const kind = (event.target as HTMLElement)
+      ?.closest?.("[data-slot-kind]")
+      ?.getAttribute("data-slot-kind") as
+      "item_picker" | "build_parameter" | null;
     cursor.value = { type, id, kind: kind ?? undefined };
   }
 
   /** Register a build_parameter control ref. */
-  function setParamRef(slotId: string, el: Element | ComponentPublicInstance | null) {
+  function setParamRef(
+    slotId: string,
+    el: Element | ComponentPublicInstance | null,
+  ) {
     if (el) paramRefs[slotId] = el as unknown as ParamHandle;
     else delete paramRefs[slotId];
   }
 
-  onMounted(() => window.addEventListener('keydown', onNavKeydown));
-  onUnmounted(() => window.removeEventListener('keydown', onNavKeydown));
+  onMounted(() => window.addEventListener("keydown", onNavKeydown));
+  onUnmounted(() => window.removeEventListener("keydown", onNavKeydown));
 
   return { cursor, isCursor, setCursor, setPickerRef, setParamRef, onFocusIn };
 }

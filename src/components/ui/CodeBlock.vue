@@ -8,6 +8,11 @@ function selectAll(event: FocusEvent) {
 </script>
 
 <template>
-  <textarea class="w-full resize-y rounded-md border border-line bg-surface p-2 font-mono"
-            :rows="rows ?? 12" readonly :value="value" @focus="selectAll"></textarea>
+  <textarea
+    class="w-full resize-y rounded-md border border-line bg-surface p-2 font-mono"
+    :rows="rows ?? 12"
+    readonly
+    :value="value"
+    @focus="selectAll"
+  ></textarea>
 </template>

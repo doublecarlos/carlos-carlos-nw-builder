@@ -3,7 +3,7 @@
 // BonusGroups.vue's per-card view all show one next to the entry's name. Never an `<input>`:
 // an id is generator-assigned (catalog.ts's `nextId`) at first save and never user-edited
 // afterwards, so there is nothing here to type into, only to read.
-import FormField from './FormField.vue';
+import FormField from "./FormField.vue";
 
 defineProps<{
   label: string;
@@ -18,9 +18,15 @@ defineProps<{
 
 <template>
   <FormField :label="label">
-    <span class="flex w-full items-center rounded-md bg-surface-2 px-1.5 py-0.5 text-sm text-muted"
-          :title="existing ? 'Frozen -- renaming does not change it' : 'Assigned when first saved'">
-      {{ id || '(assigned on save)' }}
+    <span
+      class="flex w-full items-center rounded-md bg-surface-2 px-1.5 py-0.5 text-sm text-muted"
+      :title="
+        existing
+          ? 'Frozen -- renaming does not change it'
+          : 'Assigned when first saved'
+      "
+    >
+      {{ id || "(assigned on save)" }}
     </span>
   </FormField>
 </template>

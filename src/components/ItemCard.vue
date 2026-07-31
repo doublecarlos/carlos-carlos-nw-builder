@@ -8,32 +8,37 @@
 // Interactive (see this file's own <style> block): a long card scrolls, so it must accept
 // the pointer. BuildEditor
 // keeps it open while the pointer is over it and closes it on leave.
-import { computed } from 'vue';
-import { NW_SCHEMA } from '../data';
-import { label as statLabel, signedStat } from '../format';
-import type { Item, Db, EvaluatedBonus, StatValues } from '../types';
-import Badge from './ui/Badge.vue';
+import { computed } from "vue";
+import { NW_SCHEMA } from "../data";
+import { label as statLabel, signedStat } from "../format";
+import type { Item, Db, EvaluatedBonus, StatValues } from "../types";
+import BaseBadge from "./ui/BaseBadge.vue";
 
-const props = withDefaults(defineProps<{
-  item: Item;
-  /** Resolved bonus entries this item takes part in, from `result.bonuses`. */
-  bonuses?: EvaluatedBonus[];
-  slotLabel?: string;
-  /** Only for resolving `item.bonuses` group ids to their set names in `notes` below. */
-  db?: Db | null;
-}>(), {
-  bonuses: () => [],
-  slotLabel: '',
-  db: null,
-});
+const props = withDefaults(
+  defineProps<{
+    item: Item;
+    /** Resolved bonus entries this item takes part in, from `result.bonuses`. */
+    bonuses?: EvaluatedBonus[];
+    slotLabel?: string;
+    /** Only for resolving `item.bonuses` group ids to their set names in `notes` below. */
+    db?: Db | null;
+  }>(),
+  {
+    bonuses: () => [],
+    slotLabel: "",
+    db: null,
+  },
+);
 
 /** Same {key, label, value} shape as the `stats` computed, for one-per-line rendering
  *  anywhere a bonus payload is shown -- the tooltip should read the same way whether it's
  *  the item's own stats or a bonus's. */
 function statList(stats: StatValues | null | undefined) {
-  return Object.entries(stats ?? {}).map(([key, value]) => (
-    { key, label: statLabel(key), value: signedStat(key, value) }
-  ));
+  return Object.entries(stats ?? {}).map(([key, value]) => ({
+    key,
+    label: statLabel(key),
+    value: signedStat(key, value),
+  }));
 }
 
 const stats = computed(() => {
@@ -41,7 +46,11 @@ const stats = computed(() => {
   for (const key of NW_SCHEMA.statKeys) {
     const value = props.item[key];
     if (!value) continue;
-    out.push({ key, label: statLabel(key), value: signedStat(key, value as number) });
+    out.push({
+      key,
+      label: statLabel(key),
+      value: signedStat(key, value as number),
+    });
   }
   return out;
 });
@@ -49,11 +58,14 @@ const stats = computed(() => {
 /** Notes that are not stats but change whether the item is legal or what it grants. */
 const notes = computed(() => {
   const out: string[] = [];
-  if (props.item.allowedClass) out.push(`${props.item.allowedClass.join(' or ')} only`);
+  if (props.item.allowedClass)
+    out.push(`${props.item.allowedClass.join(" or ")} only`);
   if (props.item.maxCopies) out.push(`max ${props.item.maxCopies} equipped`);
   if (props.item.dynamicStat) {
     const lbl = statLabel(props.item.dynamicStat);
-    out.push(`${lbl} ${props.item.dynamicMin}–${props.item.dynamicMax}, you choose`);
+    out.push(
+      `${lbl} ${props.item.dynamicMin}–${props.item.dynamicMax}, you choose`,
+    );
   }
   return out;
 });
@@ -68,10 +80,16 @@ const notes = computed(() => {
  * and `payload().each`), so this only fires for the plain leftover case.
  */
 function sharedSources(entry: EvaluatedBonus) {
-  if (!entry.active || tierGrant(entry) || entry.bonus?.stacking === 'perSource') {
+  if (
+    !entry.active ||
+    tierGrant(entry) ||
+    entry.bonus?.stacking === "perSource"
+  ) {
     return null;
   }
-  const others = [...new Set(entry.sources ?? [])].filter((name) => name !== props.item.name);
+  const others = [...new Set(entry.sources ?? [])].filter(
+    (name) => name !== props.item.name,
+  );
   return others.length ? others : null;
 }
 
@@ -94,9 +112,10 @@ function tierLadder(entry: EvaluatedBonus) {
   const grant = tierGrant(entry);
   const tiers = grant?.raw.tiers;
   if (!tiers?.length) return null;
-  const activeAt = grant!.active && grant!.chose?.startsWith('tier:')
-    ? Number(grant!.chose.slice('tier:'.length))
-    : null;
+  const activeAt =
+    grant!.active && grant!.chose?.startsWith("tier:")
+      ? Number(grant!.chose.slice("tier:".length))
+      : null;
   return tiers
     .map((tier) => ({
       pieces: tier.pieces?.atLeast ?? 1,
@@ -120,7 +139,8 @@ function tierLadder(entry: EvaluatedBonus) {
  */
 function payload(entry: EvaluatedBonus) {
   const stats = entry.active ? entry.appliedStats : entry.previewStats;
-  if (!stats) return tierGrant(entry) ? { total: null, each: null, tiered: true } : null;
+  if (!stats)
+    return tierGrant(entry) ? { total: null, each: null, tiered: true } : null;
 
   const stacks = entry.stacks ?? 1;
   const each = entry.active && stacks > 1 ? statList(entry.stats) : null;
@@ -130,38 +150,47 @@ function payload(entry: EvaluatedBonus) {
 // Bonus state -> dot colour + whether its title/numbers read muted (an inactive/excluded
 // bonus's numbers are what it *would* grant, not what it does).
 const STATE_DOT: Record<string, string> = {
-  active: 'bg-ok',
-  inactive: 'bg-muted opacity-50',
-  excluded: 'bg-danger',
+  active: "bg-ok",
+  inactive: "bg-muted opacity-50",
+  excluded: "bg-danger",
 };
 
-const rows = computed(() => props.bonuses.map((entry) => {
-  const sharedWith = sharedSources(entry);
-  // `sources` is sorted deterministically upstream (bonus.ts, by evaluation order), so
-  // every card agrees on which one is "first" without any cross-item coordination.
-  const isFirst = !entry.sources?.length || entry.sources[0] === props.item.name;
-  const state = entry.excluded ? 'excluded' : (entry.active ? 'active' : 'inactive');
-  return {
-    id: entry.id,
-    state,
-    dotClass: STATE_DOT[state],
-    muted: state !== 'active',
-    name: entry.bonus?.name ?? null,
-    conditions: (entry.gate?.leaves ?? []).map((leaf) => leaf.label).filter(Boolean)
-      .join(' + '),
-    unmet: entry.gate?.unmet ?? [],
-    excludedBy: entry.excludedBy,
-    stats: payload(entry),
-    stacks: entry.stacks ?? 1,
-    tiers: tierLadder(entry),
-    sharedWith,
-    // A shared bonus is real numbers on exactly one card and a pointer everywhere else
-    // -- showing the same total on every contributing card reads as each one granting
-    // it independently, when they share credit for one thing.
-    secondary: Boolean(sharedWith) && !isFirst,
-    firstSource: entry.sources?.[0] ?? null,
-  };
-}));
+const rows = computed(() =>
+  props.bonuses.map((entry) => {
+    const sharedWith = sharedSources(entry);
+    // `sources` is sorted deterministically upstream (bonus.ts, by evaluation order), so
+    // every card agrees on which one is "first" without any cross-item coordination.
+    const isFirst =
+      !entry.sources?.length || entry.sources[0] === props.item.name;
+    const state = entry.excluded
+      ? "excluded"
+      : entry.active
+        ? "active"
+        : "inactive";
+    return {
+      id: entry.id,
+      state,
+      dotClass: STATE_DOT[state],
+      muted: state !== "active",
+      name: entry.bonus?.name ?? null,
+      conditions: (entry.gate?.leaves ?? [])
+        .map((leaf) => leaf.label)
+        .filter(Boolean)
+        .join(" + "),
+      unmet: entry.gate?.unmet ?? [],
+      excludedBy: entry.excludedBy,
+      stats: payload(entry),
+      stacks: entry.stacks ?? 1,
+      tiers: tierLadder(entry),
+      sharedWith,
+      // A shared bonus is real numbers on exactly one card and a pointer everywhere else
+      // -- showing the same total on every contributing card reads as each one granting
+      // it independently, when they share credit for one thing.
+      secondary: Boolean(sharedWith) && !isFirst,
+      firstSource: entry.sources?.[0] ?? null,
+    };
+  }),
+);
 </script>
 
 <template>
@@ -169,23 +198,33 @@ const rows = computed(() => props.bonuses.map((entry) => {
        in step. `pointer-events-auto` + `overscroll-contain`: a long card scrolls and must
        accept the pointer without the page underneath scrolling once the card hits its own
        limit. -->
-  <div class="itemcard fixed z-40 w-80 max-w-[90vw] max-h-96 overflow-y-auto overscroll-contain
-              rounded-md border border-line bg-surface px-2.5 py-2 shadow-lg pointer-events-auto">
+  <div
+    class="itemcard fixed z-40 w-80 max-w-[90vw] max-h-96 overflow-y-auto overscroll-contain rounded-md border border-line bg-surface px-2.5 py-2 shadow-lg pointer-events-auto"
+  >
     <div class="flex items-baseline gap-2">
       <span class="flex-1 font-semibold">{{ item.name }}</span>
-      <span v-if="item.il" class="text-sm tabular-nums text-muted">iL {{ item.il.toLocaleString() }}</span>
+      <span v-if="item.il" class="text-sm tabular-nums text-muted"
+        >iL {{ item.il.toLocaleString() }}</span
+      >
     </div>
     <div v-if="slotLabel" class="mb-1 text-sm text-muted">{{ slotLabel }}</div>
 
     <div class="flex flex-col">
-      <div v-for="stat in stats" :key="stat.key"
-           class="flex justify-between gap-2 border-b border-line py-0.5 text-sm last:border-b-0">
-        <span>{{ stat.label }}</span><span class="tabular-nums">{{ stat.value }}</span>
+      <div
+        v-for="stat in stats"
+        :key="stat.key"
+        class="flex justify-between gap-2 border-b border-line py-0.5 text-sm last:border-b-0"
+      >
+        <span>{{ stat.label }}</span
+        ><span class="tabular-nums">{{ stat.value }}</span>
       </div>
       <div v-if="!stats.length" class="text-muted">no direct stats</div>
     </div>
 
-    <div v-if="notes.length" class="mt-1.5 border-t border-line pt-1 text-sm text-muted">
+    <div
+      v-if="notes.length"
+      class="mt-1.5 border-t border-line pt-1 text-sm text-muted"
+    >
       <div v-for="note in notes" :key="note">{{ note }}</div>
     </div>
 
@@ -193,55 +232,103 @@ const rows = computed(() => props.bonuses.map((entry) => {
       <div class="text-sm uppercase tracking-wide text-muted">Bonuses</div>
       <div v-for="row in rows" :key="row.id" class="mt-1">
         <div class="flex items-center gap-1.5">
-          <span class="size-1.5 flex-none rounded-full" :class="row.dotClass"></span>
-          <span class="min-w-0 flex-1 text-sm" :class="row.muted && 'text-muted'">{{ row.name || row.conditions || 'always' }}</span>
-          <Badge v-if="row.stacks > 1">×{{ row.stacks }}</Badge>
+          <span
+            class="size-1.5 flex-none rounded-full"
+            :class="row.dotClass"
+          ></span>
+          <span
+            class="min-w-0 flex-1 text-sm"
+            :class="row.muted && 'text-muted'"
+            >{{ row.name || row.conditions || "always" }}</span
+          >
+          <BaseBadge v-if="row.stacks > 1">×{{ row.stacks }}</BaseBadge>
         </div>
-        <div v-if="row.name && row.conditions" class="pl-3 text-sm leading-snug text-muted">
+        <div
+          v-if="row.name && row.conditions"
+          class="pl-3 text-sm leading-snug text-muted"
+        >
           Conditions: {{ row.conditions }}
         </div>
         <div v-if="row.secondary" class="pl-3 text-sm leading-snug text-muted">
           This bonus was accounted for in {{ row.firstSource }}
         </div>
         <template v-else>
-          <div v-if="row.sharedWith" class="pl-3 text-sm leading-snug text-muted">
-            Other parts: {{ row.sharedWith.join(', ') }}
+          <div
+            v-if="row.sharedWith"
+            class="pl-3 text-sm leading-snug text-muted"
+          >
+            Other parts: {{ row.sharedWith.join(", ") }}
           </div>
-          <div v-if="row.stats && row.stats.tiered" class="pl-3 text-sm text-muted">(tiered)</div>
-          <div v-else-if="row.stats" class="pl-3 text-sm" :class="row.muted && 'text-muted'">
-            <div v-if="row.stacks > 1" class="text-sm leading-snug text-muted">total, from {{ row.stacks }} stacking sources</div>
+          <div
+            v-if="row.stats && row.stats.tiered"
+            class="pl-3 text-sm text-muted"
+          >
+            (tiered)
+          </div>
+          <div
+            v-else-if="row.stats"
+            class="pl-3 text-sm"
+            :class="row.muted && 'text-muted'"
+          >
+            <div v-if="row.stacks > 1" class="text-sm leading-snug text-muted">
+              total, from {{ row.stacks }} stacking sources
+            </div>
             <div class="flex flex-col">
-              <div v-for="s in row.stats.total" :key="s.key"
-                   class="flex justify-between gap-2 border-b border-line py-0.5 last:border-b-0">
-                <span>{{ s.label }}</span><span class="tabular-nums">{{ s.value }}</span>
+              <div
+                v-for="s in row.stats.total"
+                :key="s.key"
+                class="flex justify-between gap-2 border-b border-line py-0.5 last:border-b-0"
+              >
+                <span>{{ s.label }}</span
+                ><span class="tabular-nums">{{ s.value }}</span>
               </div>
             </div>
             <template v-if="row.stats.each">
               <div class="text-sm leading-snug text-muted">each:</div>
               <div class="flex flex-col">
-                <div v-for="s in row.stats.each" :key="s.key"
-                     class="flex justify-between gap-2 border-b border-line py-0.5 last:border-b-0">
-                  <span>{{ s.label }}</span><span class="tabular-nums">{{ s.value }}</span>
+                <div
+                  v-for="s in row.stats.each"
+                  :key="s.key"
+                  class="flex justify-between gap-2 border-b border-line py-0.5 last:border-b-0"
+                >
+                  <span>{{ s.label }}</span
+                  ><span class="tabular-nums">{{ s.value }}</span>
                 </div>
               </div>
             </template>
           </div>
         </template>
         <div v-if="row.tiers" class="pl-3">
-          <div class="text-sm leading-snug text-muted">tiered by set pieces, shared by every piece:</div>
-          <div v-for="tier in row.tiers" :key="tier.pieces" class="text-sm"
-               :class="tier.active ? 'font-semibold text-text' : 'text-muted'">
-            <div>{{ tier.pieces }} piece{{ tier.pieces > 1 ? 's' : '' }}:</div>
+          <div class="text-sm leading-snug text-muted">
+            tiered by set pieces, shared by every piece:
+          </div>
+          <div
+            v-for="tier in row.tiers"
+            :key="tier.pieces"
+            class="text-sm"
+            :class="tier.active ? 'font-semibold text-text' : 'text-muted'"
+          >
+            <div>{{ tier.pieces }} piece{{ tier.pieces > 1 ? "s" : "" }}:</div>
             <div class="flex flex-col">
-              <div v-for="s in tier.stats" :key="s.key" class="flex justify-between gap-2 py-0.5">
-                <span>{{ s.label }}</span><span class="tabular-nums">{{ s.value }}</span>
+              <div
+                v-for="s in tier.stats"
+                :key="s.key"
+                class="flex justify-between gap-2 py-0.5"
+              >
+                <span>{{ s.label }}</span
+                ><span class="tabular-nums">{{ s.value }}</span>
               </div>
             </div>
           </div>
         </div>
 
-        <div v-for="(leaf, i) in row.unmet" :key="i" class="pl-3 text-sm text-warn">
-          needs {{ leaf.label }}<span v-if="leaf.detail"> — {{ leaf.detail }}</span>
+        <div
+          v-for="(leaf, i) in row.unmet"
+          :key="i"
+          class="pl-3 text-sm text-warn"
+        >
+          needs {{ leaf.label
+          }}<span v-if="leaf.detail"> — {{ leaf.detail }}</span>
         </div>
         <div v-if="row.excludedBy" class="pl-3 text-sm text-warn">
           overridden by {{ row.excludedBy }}

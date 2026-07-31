@@ -7,11 +7,23 @@
 // consult a computed stat or another bonus's output, which is what keeps evaluation single-pass
 // and free of cycles.
 
-import type { ConditionWhen, RangeLike, RangeSpec, EvalContext, ConditionLeafResult, ConditionExplain } from './types';
+import type {
+  ConditionWhen,
+  RangeLike,
+  RangeSpec,
+  EvalContext,
+  ConditionLeafResult,
+  ConditionExplain,
+  ParamCondition,
+} from "./types";
 
-const asArray = <T,>(value: T | T[]): T[] => (Array.isArray(value) ? value : [value]);
+const asArray = <T>(value: T | T[]): T[] =>
+  Array.isArray(value) ? value : [value];
 
-const countOf = (map: Map<string, number> | undefined, key: string | null | undefined): number => {
+const countOf = (
+  map: Map<string, number> | undefined,
+  key: string | null | undefined,
+): number => {
   if (!map || key == null) return 0;
   return map.get(key) ?? 0;
 };
@@ -21,9 +33,12 @@ const countOf = (map: Map<string, number> | undefined, key: string | null | unde
  * `{ atLeast, below }` -- either bound optional, `atLeast` inclusive, `below` exclusive.
  * A bare number is shorthand for `{ atLeast: n }`.
  */
-export const inRange = (value: number, spec: RangeLike | null | undefined): boolean => {
+export const inRange = (
+  value: number,
+  spec: RangeLike | null | undefined,
+): boolean => {
   if (spec == null) return true;
-  if (typeof spec === 'number') return value >= spec;
+  if (typeof spec === "number") return value >= spec;
   if (spec.atLeast != null && value < spec.atLeast) return false;
   if (spec.below != null && value >= spec.below) return false;
   if (spec.exactly != null && value !== spec.exactly) return false;
@@ -31,64 +46,90 @@ export const inRange = (value: number, spec: RangeLike | null | undefined): bool
 };
 
 export const describeRange = (spec: RangeLike | null | undefined): string => {
-  if (spec == null) return 'any';
-  if (typeof spec === 'number') return `≥ ${spec}`;
+  if (spec == null) return "any";
+  if (typeof spec === "number") return `≥ ${spec}`;
   if (spec.exactly != null) return `= ${spec.exactly}`;
-  if (spec.atLeast != null && spec.below != null) return `${spec.atLeast}–${spec.below}`;
+  if (spec.atLeast != null && spec.below != null)
+    return `${spec.atLeast}–${spec.below}`;
   if (spec.atLeast != null) return `≥ ${spec.atLeast}`;
   if (spec.below != null) return `< ${spec.below}`;
-  return 'any';
+  return "any";
 };
 
 // --- leaf predicates -------------------------------------------------------------------
 // Each returns { ok, label, detail } so the UI can explain *why* a bonus is inactive --
 // "needs duration ≥ 30s (you have 10s)" rather than just a missing row.
 
-const matchOneOf = (field: 'role' | 'class' | 'combatType' | 'location' | 'damageType', label: string) =>
+const matchOneOf =
+  (
+    field: "role" | "class" | "combatType" | "location" | "damageType",
+    label: string,
+  ) =>
   (spec: string | string[], ctx: EvalContext): ConditionLeafResult => {
     const wanted = asArray(spec);
     return {
       ok: wanted.includes(ctx[field] as string),
-      label: `${label}: ${wanted.join(' or ')}`,
-      detail: `you have ${ctx[field] ?? '—'}`,
+      label: `${label}: ${wanted.join(" or ")}`,
+      detail: `you have ${ctx[field] ?? "—"}`,
     };
   };
 
-// Dispatched dynamically by `walk` over an arbitrary `Object.entries(when)`, so the key can't
-// be correlated back to its own leaf's spec type here -- each leaf function above/below is
-// itself precisely typed; only this lookup table's shared signature has to fall back to `any`,
-// same reasoning condition-draft.ts documents for `ConditionRow`.
-const LEAVES: Record<string, (spec: any, ctx: EvalContext) => ConditionLeafResult> = {
-  toggle(spec: string | string[], ctx) {
-    const wanted = asArray(spec);
+// Dispatched dynamically by `walk`, so the key can't be correlated to its own
+// leaf's spec type -- each handler narrows `spec` from `unknown` to the shape
+// it expects. The spec values come directly from ConditionWhen, validated by
+// catalog.ts's linter at data-load time.
+const LEAVES: Record<
+  string,
+  (spec: unknown, ctx: EvalContext) => ConditionLeafResult
+> = {
+  toggle(spec, ctx) {
+    const wanted = asArray(spec as string | string[]);
     const missing = wanted.filter((name) => !ctx.toggles?.[name]);
     return {
       ok: missing.length === 0,
-      label: `${wanted.join(' + ')} enabled`,
-      detail: missing.length ? `off: ${missing.join(', ')}` : '',
+      label: `${wanted.join(" + ")} enabled`,
+      detail: missing.length ? `off: ${missing.join(", ")}` : "",
     };
   },
 
-  role: matchOneOf('role', 'Role'),
-  class: matchOneOf('class', 'Class'),
-  combatType: matchOneOf('combatType', 'Combat type'),
-  location: matchOneOf('location', 'Location'),
-  damageType: matchOneOf('damageType', 'Damage type'),
+  role(spec, ctx) {
+    return matchOneOf("role", "Role")(spec as string | string[], ctx);
+  },
+  class(spec, ctx) {
+    return matchOneOf("class", "Class")(spec as string | string[], ctx);
+  },
+  combatType(spec, ctx) {
+    return matchOneOf("combatType", "Combat type")(
+      spec as string | string[],
+      ctx,
+    );
+  },
+  location(spec, ctx) {
+    return matchOneOf("location", "Location")(spec as string | string[], ctx);
+  },
+  damageType(spec, ctx) {
+    return matchOneOf("damageType", "Damage type")(
+      spec as string | string[],
+      ctx,
+    );
+  },
 
-  duration(spec: RangeLike, ctx) {
+  duration(spec, ctx) {
+    const s = spec as RangeLike;
     const value = ctx.duration ?? 0;
     return {
-      ok: inRange(value, spec),
-      label: `duration ${describeRange(spec)}s`,
+      ok: inRange(value, s),
+      label: `duration ${describeRange(s)}s`,
       detail: `you have ${value}s`,
     };
   },
 
-  pieces(spec: RangeSpec & { set: string }, ctx) {
-    const have = countOf(ctx.setPieces, spec.set);
+  pieces(spec, ctx) {
+    const s = spec as RangeSpec & { set: string };
+    const have = countOf(ctx.setPieces, s.set);
     return {
-      ok: inRange(have, spec),
-      label: `${spec.atLeast ?? 1} piece(s) of ${spec.set}`,
+      ok: inRange(have, s),
+      label: `${s.atLeast ?? 1} piece(s) of ${s.set}`,
       detail: `you have ${have}`,
     };
   },
@@ -97,33 +138,38 @@ const LEAVES: Record<string, (spec: any, ctx: EvalContext) => ConditionLeafResul
    * comparison forms are mutually exclusive -- chosen by whichever of `is`/`equals`/
    * `atLeast`+`below` the spec carries, not by looking up the slot's `paramType` (catalog.ts's
    * linter is what keeps the two in sync at data time). */
-  param(spec: { key: string; atLeast?: number; below?: number; is?: boolean; equals?: string | string[] }, ctx) {
+  param(spec, ctx) {
+    const s = spec as ParamCondition;
     // Fails closed on a key with no resolved value. Checked with `.has`, not a falsy `value`
     // check: a param legitimately resolving to `false`/`0`/`''` must not be treated as unknown.
-    if (!ctx.params?.has(spec.key)) {
-      return { ok: false, label: `param "${spec.key}"`, detail: 'unknown parameter' };
-    }
-    const value = ctx.params.get(spec.key);
-
-    if (spec.is !== undefined) {
+    if (!ctx.params?.has(s.key)) {
       return {
-        ok: value === spec.is,
-        label: `${spec.key} is ${spec.is ? 'on' : 'off'}`,
-        detail: `you have ${value === undefined ? '—' : (value ? 'on' : 'off')}`,
+        ok: false,
+        label: `param "${s.key}"`,
+        detail: "unknown parameter",
       };
     }
-    if (spec.equals !== undefined) {
-      const wanted = asArray(spec.equals);
+    const value = ctx.params.get(s.key);
+
+    if (s.is !== undefined) {
+      return {
+        ok: value === s.is,
+        label: `${s.key} is ${s.is ? "on" : "off"}`,
+        detail: `you have ${value === undefined ? "—" : value ? "on" : "off"}`,
+      };
+    }
+    if (s.equals !== undefined) {
+      const wanted = asArray(s.equals);
       return {
         ok: wanted.includes(value as string),
-        label: `${spec.key}: ${wanted.join(' or ')}`,
-        detail: `you have ${value ?? '—'}`,
+        label: `${s.key}: ${wanted.join(" or ")}`,
+        detail: `you have ${value ?? "—"}`,
       };
     }
-    const numeric = typeof value === 'number' ? value : 0;
+    const numeric = typeof value === "number" ? value : 0;
     return {
-      ok: inRange(numeric, { atLeast: spec.atLeast, below: spec.below }),
-      label: `${spec.key} ${describeRange({ atLeast: spec.atLeast, below: spec.below })}`,
+      ok: inRange(numeric, { atLeast: s.atLeast, below: s.below }),
+      label: `${s.key} ${describeRange({ atLeast: s.atLeast, below: s.below })}`,
       detail: `you have ${value ?? 0}`,
     };
   },
@@ -132,16 +178,14 @@ const LEAVES: Record<string, (spec: any, ctx: EvalContext) => ConditionLeafResul
   // `ctx.equipped` by id) -- exercised by zero shipped bonuses today, so the label below
   // showing the raw id rather than a display name (this module has no `Db` to resolve one)
   // isn't yet visible in practice.
-  equipped(spec: RangeSpec & { tag?: string; item?: string }, ctx) {
-    const have = spec.tag != null
-      ? countOf(ctx.tags, spec.tag)
-      : countOf(ctx.equipped, spec.item);
-    const range = spec.atLeast != null || spec.below != null
-      ? spec
-      : { atLeast: 1 };
+  equipped(spec, ctx) {
+    const s = spec as RangeSpec & { tag?: string; item?: string };
+    const have =
+      s.tag != null ? countOf(ctx.tags, s.tag) : countOf(ctx.equipped, s.item);
+    const range = s.atLeast != null || s.below != null ? s : { atLeast: 1 };
     return {
       ok: inRange(have, range),
-      label: `${range.atLeast ?? 1}× ${spec.tag ?? spec.item}`,
+      label: `${range.atLeast ?? 1}× ${s.tag ?? s.item}`,
       detail: `you have ${have}`,
     };
   },
@@ -150,33 +194,41 @@ const LEAVES: Record<string, (spec: any, ctx: EvalContext) => ConditionLeafResul
 // --- combinators -----------------------------------------------------------------------
 
 /** Evaluate `when`, pushing per-leaf results into `out` when explaining. */
-function walk(when: ConditionWhen | undefined, ctx: EvalContext, out: ConditionLeafResult[] | null): boolean {
+function walk(
+  when: ConditionWhen | undefined,
+  ctx: EvalContext,
+  out: ConditionLeafResult[] | null,
+): boolean {
   if (!when) return true;
   let ok = true;
 
   for (const [key, spec] of Object.entries(when)) {
-    if (key === 'all') {
+    if (key === "all") {
       for (const sub of spec as ConditionWhen[]) {
         if (!walk(sub, ctx, out)) ok = false;
       }
       continue;
     }
 
-    if (key === 'any') {
+    if (key === "any") {
       const branch: ConditionLeafResult[] = [];
       const alternatives = spec as ConditionWhen[];
       // Evaluate every alternative so the UI can show what each one needed.
       const results = alternatives.map((sub) => walk(sub, ctx, branch));
       const anyOk = results.some(Boolean);
-      out?.push({ ok: anyOk, label: `any of ${alternatives.length}`, children: branch });
+      out?.push({
+        ok: anyOk,
+        label: `any of ${alternatives.length}`,
+        children: branch,
+      });
       if (!anyOk) ok = false;
       continue;
     }
 
-    if (key === 'not') {
+    if (key === "not") {
       const inner: ConditionLeafResult[] = [];
       const innerOk = walk(spec as ConditionWhen, ctx, inner);
-      out?.push({ ok: !innerOk, label: 'not', children: inner });
+      out?.push({ ok: !innerOk, label: "not", children: inner });
       if (innerOk) ok = false;
       continue;
     }
@@ -184,7 +236,7 @@ function walk(when: ConditionWhen | undefined, ctx: EvalContext, out: ConditionL
     const leaf = LEAVES[key];
     if (!leaf) {
       // Unknown key: fail closed and say so, rather than silently granting the bonus.
-      out?.push({ ok: false, label: `unknown condition "${key}"`, detail: '' });
+      out?.push({ ok: false, label: `unknown condition "${key}"`, detail: "" });
       ok = false;
       continue;
     }
@@ -198,10 +250,16 @@ function walk(when: ConditionWhen | undefined, ctx: EvalContext, out: ConditionL
 }
 
 /** True when every leaf of `when` holds against `ctx`. */
-export const evaluate = (when: ConditionWhen | undefined, ctx: EvalContext): boolean => walk(when, ctx, null);
+export const evaluate = (
+  when: ConditionWhen | undefined,
+  ctx: EvalContext,
+): boolean => walk(when, ctx, null);
 
 /** As `evaluate`, but also returns the per-leaf breakdown for the bonus inspector. */
-export function explain(when: ConditionWhen | undefined, ctx: EvalContext): ConditionExplain {
+export function explain(
+  when: ConditionWhen | undefined,
+  ctx: EvalContext,
+): ConditionExplain {
   const leaves: ConditionLeafResult[] = [];
   const ok = walk(when, ctx, leaves);
   return { ok, leaves, unmet: leaves.filter((leaf) => !leaf.ok) };

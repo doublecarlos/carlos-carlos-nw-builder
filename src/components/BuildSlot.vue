@@ -8,19 +8,25 @@
 // cursor) -- those stay owned by BuildEditor.vue/BuildSection.vue and arrive as props/emits.
 // Its own single-slot mutations (choice, typed value, param, revert, apply-from-compare) go
 // straight to the buildEditor store, same as every other component that edits build content.
-import ItemPicker from './ItemPicker.vue';
-import BuildParamInput from './ui/BuildParamInput.vue';
-import IconButton from './ui/IconButton.vue';
-import Button from './ui/Button.vue';
-import UnsavedDot from './ui/UnsavedDot.vue';
-import * as buildEditor from '../stores/buildEditor';
-import { getPath } from '../build-path';
-import { label as statLabel } from '../format';
-import type { ComponentPublicInstance } from 'vue';
-import type { Slot, Item, EngineError, Build, BuildParameterSlot } from '../types';
+import ItemPicker from "./ItemPicker.vue";
+import BuildParamInput from "./ui/BuildParamInput.vue";
+import IconButton from "./ui/IconButton.vue";
+import BaseButton from "./ui/BaseButton.vue";
+import UnsavedDot from "./ui/UnsavedDot.vue";
+import * as buildEditor from "../stores/buildEditor";
+import { getPath } from "../build-path";
+import { label as statLabel } from "../format";
+import type { ComponentPublicInstance } from "vue";
+import type {
+  Slot,
+  Item,
+  EngineError,
+  Build,
+  BuildParameterSlot,
+} from "../types";
 
 const props = defineProps<{
-  slot: Slot;
+  slotDef: Slot;
   build: Build;
   compareBuild?: Build | null;
   highlightDiff: boolean;
@@ -47,58 +53,95 @@ const emit = defineEmits<{
   leave: [];
   rowclick: [event: MouseEvent];
   pickerRef: [el: Element | ComponentPublicInstance | null];
+  paramRef: [el: Element | ComponentPublicInstance | null];
 }>();
 
-const choice = () => props.build.choices[props.slot.id] ?? '';
-const value = () => props.build.values[props.slot.id];
-const paramValue = () => getPath(props.build.context, (props.slot as BuildParameterSlot).path) as string | number | boolean | undefined;
+const choice = () => props.build.choices[props.slotDef.id] ?? "";
+const value = () => props.build.values[props.slotDef.id];
+const paramValue = () =>
+  getPath(props.build.context, (props.slotDef as BuildParameterSlot).path) as
+    string | number | boolean | undefined;
 </script>
 
 <template>
   <div
-    class="flex items-baseline gap-2.5 border-b border-line/45 py-1 last:border-b-0" tabindex="-1"
+    class="flex items-baseline gap-2.5 border-b border-line/45 py-1 last:border-b-0"
+    tabindex="-1"
     :class="[
       isHovered && 'is-hovered bg-accent-soft/40',
       isCursor && 'is-cursor outline-2 -outline-offset-1 outline-accent',
-      highlightDiff && (choiceDiffers || valueDiffers || paramDiffers || (bonusDiffs?.length ?? 0) > 0) && 'is-diff bg-diff/20',
+      highlightDiff &&
+        (choiceDiffers ||
+          valueDiffers ||
+          paramDiffers ||
+          (bonusDiffs?.length ?? 0) > 0) &&
+        'is-diff bg-diff/20',
     ]"
-    :data-cursor-key="'slot:' + slot.id"
-    :data-slot-kind="slot.type"
+    :data-cursor-key="'slot:' + slotDef.id"
+    :data-slot-kind="slotDef.type"
     @mouseenter="emit('enter', $event)"
     @mouseleave="emit('leave')"
-    @click="emit('rowclick', $event)">
+    @click="emit('rowclick', $event)"
+  >
     <div class="flex w-36 shrink-0 items-center justify-between min-w-0">
-      <label class="slot-label min-w-0 flex-1 truncate text-muted" :for="slot.id">{{ slot.label }}</label>
+      <label
+        class="slot-label min-w-0 flex-1 truncate text-muted"
+        :for="slotDef.id"
+        >{{ slotDef.label }}</label
+      >
       <span v-if="unsaved" class="flex flex-none items-center gap-0.5">
         <UnsavedDot title="Unsaved change" />
-        <IconButton icon="undo-2" title="Revert to saved" @click="buildEditor.revertSlot(slot.id)" />
+        <IconButton
+          icon="undo-2"
+          title="Revert to saved"
+          @click="buildEditor.revertSlot(slotDef.id)"
+        />
       </span>
     </div>
 
     <div class="min-w-0 flex-1">
-      <template v-if="slot.type === 'item_picker'">
+      <template v-if="slotDef.type === 'item_picker'">
         <div class="flex flex-wrap items-center gap-2.5">
           <ItemPicker
-            :ref="el => emit('pickerRef', el as Element | ComponentPublicInstance | null)"
+            :ref="
+              (el) =>
+                emit(
+                  'pickerRef',
+                  el as Element | ComponentPublicInstance | null,
+                )
+            "
             class="grow-0 basis-80 min-w-40"
             :items="items ?? []"
             :model-value="choice()"
             :selected-item="item"
             :invalid="(errors?.length ?? 0) > 0"
-            @update:model-value="buildEditor.setChoice(slot.id, $event)" />
-          <span v-if="item" class="min-w-0 flex-1 truncate text-sm text-text">{{ statSummary }}</span>
+            @update:model-value="buildEditor.setChoice(slotDef.id, $event)"
+          />
+          <span v-if="item" class="min-w-0 flex-1 truncate text-sm text-text">{{
+            statSummary
+          }}</span>
         </div>
 
-        <p v-if="highlightDiff && choiceDiffers" class="slot-diff-note mt-0.5 text-sm text-muted">
-          {{ compareBuild?.name }}: {{ otherChoiceLabel || '(empty)' }}
-          <Button variant="link" class="ml-0.5 text-accent" @click.stop="buildEditor.applyFromCompare(slot.id)">
+        <p
+          v-if="highlightDiff && choiceDiffers"
+          class="slot-diff-note mt-0.5 text-sm text-muted"
+        >
+          {{ compareBuild?.name }}: {{ otherChoiceLabel || "(empty)" }}
+          <BaseButton
+            variant="link"
+            class="ml-0.5 text-accent"
+            @click.stop="buildEditor.applyFromCompare(slotDef.id)"
+          >
             apply
-          </Button>
+          </BaseButton>
         </p>
 
         <template v-if="highlightDiff">
-          <p v-for="bonusDiff in bonusDiffs ?? []" :key="bonusDiff.id"
-             class="mt-0.5 text-sm font-semibold text-diff">
+          <p
+            v-for="bonusDiff in bonusDiffs ?? []"
+            :key="bonusDiff.id"
+            class="mt-0.5 text-sm font-semibold text-diff"
+          >
             {{ bonusDiff.message }}
           </p>
         </template>
@@ -110,41 +153,69 @@ const paramValue = () => getPath(props.build.context, (props.slot as BuildParame
           <input
             type="number"
             class="w-20 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-            :min="item?.dynamicMin as number | undefined"
-            :max="item?.dynamicMax as number | undefined"
+            :min="item?.dynamicMin"
+            :max="item?.dynamicMax"
             :value="value() ?? ''"
             :placeholder="String(item?.dynamicMin ?? '')"
-            @input="buildEditor.setValue(slot.id, ($event.target as HTMLInputElement).value)">
+            @input="
+              buildEditor.setValue(
+                slotDef.id,
+                ($event.target as HTMLInputElement).value,
+              )
+            "
+          />
           <span class="text-sm text-muted">
             {{ statLabel(item?.dynamicStat as string) }}
             {{ item?.dynamicMin }}–{{ item?.dynamicMax }}
           </span>
         </div>
 
-        <p v-if="highlightDiff && valueDiffers" class="slot-diff-note mt-0.5 text-sm text-muted">
-          {{ compareBuild?.name }}: {{ otherValue ?? '(none)' }}
-          <Button variant="link" class="ml-0.5 text-accent" @click.stop="buildEditor.applyValueFromCompare(slot.id)">
+        <p
+          v-if="highlightDiff && valueDiffers"
+          class="slot-diff-note mt-0.5 text-sm text-muted"
+        >
+          {{ compareBuild?.name }}: {{ otherValue ?? "(none)" }}
+          <BaseButton
+            variant="link"
+            class="ml-0.5 text-accent"
+            @click.stop="buildEditor.applyValueFromCompare(slotDef.id)"
+          >
             apply
-          </Button>
+          </BaseButton>
         </p>
 
-        <p v-for="error in errors ?? []" :key="error.kind + error.choice"
-           class="mt-0.5 text-sm text-danger">{{ error.message }}</p>
+        <p
+          v-for="error in errors ?? []"
+          :key="error.kind + error.choice"
+          class="mt-0.5 text-sm text-danger"
+        >
+          {{ error.message }}
+        </p>
       </template>
 
       <template v-else>
         <!-- No label in the slot content -- `.slot-label` on the left already shows it, unlike
              QuickOptions.vue's compact strip which has no separate label column. -->
-        <BuildParamInput :ref="el => emit('pickerRef', el)"
-                          :slot="slot" :wide="true"
-                          :model-value="paramValue()"
-                          @update:model-value="buildEditor.setParam(slot, $event)" />
+        <BuildParamInput
+          :ref="(el) => emit('paramRef', el)"
+          :slot-def="slotDef"
+          :wide="true"
+          :model-value="paramValue()"
+          @update:model-value="buildEditor.setParam(slotDef, $event)"
+        />
 
-        <p v-if="highlightDiff && paramDiffers" class="slot-diff-note mt-0.5 text-sm text-muted">
+        <p
+          v-if="highlightDiff && paramDiffers"
+          class="slot-diff-note mt-0.5 text-sm text-muted"
+        >
           {{ compareBuild?.name }}: {{ otherParamLabel }}
-          <Button variant="link" class="ml-0.5 text-accent" @click.stop="buildEditor.applyParamFromCompare(slot)">
+          <BaseButton
+            variant="link"
+            class="ml-0.5 text-accent"
+            @click.stop="buildEditor.applyParamFromCompare(slotDef)"
+          >
             apply
-          </Button>
+          </BaseButton>
         </p>
       </template>
     </div>

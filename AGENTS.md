@@ -3,6 +3,7 @@
 A client-only web app to plan Neverwinter builds.
 
 ## Technologies
+
 1. **npm + Vite.** `npm run dev`/`build`/`preview`. Real ES modules throughout.
 2. **Vue 3 SFCs**, Composition API, `<script setup lang="ts">` everywhere
 3. **TypeScript, `strict: true`, real types, not `any`.**
@@ -16,10 +17,15 @@ npm run build             # production build to dist/
 npm run preview           # serve the production build locally
 npm run test              # Vitest: unit tests + golden-fixture comparison
 npm run test:ui           # Playwright: end-to-end tests against a real browser
-npm run verify            # both of the above, in sequence
 npm run typecheck         # vue-tsc --noEmit
+npm run lint              # ESLint (flat config, eslint.config.js)
+npm run lint:fix          # ESLint, auto-fixing what it can
+npm run format            # Prettier, writes changes
+npm run format:check      # Prettier, check-only (used by verify/CI)
+npm run verify            # lint + format:check + typecheck + test + test:ui, in sequence
 ```
-`npm run test` must stay green.
+
+`npm run test` must stay green. `npm run verify` must stay green before considering a change done.
 
 ## Layout
 
@@ -27,6 +33,10 @@ npm run typecheck         # vue-tsc --noEmit
 index.html            single entry: <script type="module" src="/src/main.ts">
 vite.config.ts         @vitejs/plugin-vue, build.outDir: dist
 tsconfig.json           strict: true, allowJs: true, resolveJsonModule: true
+eslint.config.js        flat config: eslint-plugin-vue + typescript-eslint, scoped vitest/
+                       playwright rules for tests/, Prettier owns formatting (skip-formatting
+                       last)
+.prettierrc.json        empty -- Prettier's own defaults, deliberately not overridden
 data/                  *.json data (schema.json authoritative; slots/db-items/db-bonuses
                        generated) — no loader files, imported statically by src/data.ts
 src/
@@ -56,6 +66,7 @@ playwright.config.ts    testDir tests/e2e, starts the dev server, chromium only
 ```
 
 ## Architecture notes
+
 - **One reactive `build` + a `computed` calling `resolveBuild`.** It is pure and ~2 ms —
   recompute on every change; do not build incremental update machinery.
 - **Every mutation goes through an `App.vue` method.** That is what keeps the undo stack small.
@@ -65,7 +76,7 @@ playwright.config.ts    testDir tests/e2e, starts the dev server, chromium only
   `{ items: { name: item|null }, bonusSets: { id: set|null } }`; `null` is a tombstone.
 - **Items reference a bonus set by id, never by name.**
 - **Percentages are decimals.** `0.09` is 9%. Format at the edge, never round in state.
-- **`stats` vs `appliedStats`** on a resolved bonus: the former is per-stack (now the *sum* of
+- **`stats` vs `appliedStats`** on a resolved bonus: the former is per-stack (now the _sum_ of
   every active grant's stats), the latter is what reaches the pipeline. Reading `stats` and
   wondering why stacking "doesn't work" has caught two sessions.
 - **Empty slot is `undefined` / `''` / `'-'`** — all three handled by `db.get`.
@@ -83,6 +94,7 @@ playwright.config.ts    testDir tests/e2e, starts the dev server, chromium only
 - **Collection file-save uses the File System Access API, Chromium-only.**
 
 ## Behavior
+
 - Justify decisions.
 - Surface data ambiguities as **explicit decisions**, not guesses.
 - Verify claims by testing the claim, not a proxy.

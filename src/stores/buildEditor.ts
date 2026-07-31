@@ -1,15 +1,23 @@
 // Every mutation that writes the active build's *content* goes through here, and every one of
 // them takes a snapshot first -- this is the one place undo has to watch.
-import { computed, reactive, watch } from 'vue';
-import * as storage from '../storage';
-import * as library from './library';
-import * as compare from './compare';
-import { db } from './engine';
-import { getPath, setPath } from '../build-path';
-import type { BuildParameterSlot } from '../types';
+import { computed, reactive, watch } from "vue";
+import * as storage from "../storage";
+import * as library from "./library";
+import * as compare from "./compare";
+import { db } from "./engine";
+import { getPath, setPath } from "../build-path";
+import type { BuildParameterSlot } from "../types";
 
-interface HistoryEntry { json: string; label: string; }
-interface BuildHistory { past: HistoryEntry[]; future: HistoryEntry[]; lastKey: string | null; lastAt: number; }
+interface HistoryEntry {
+  json: string;
+  label: string;
+}
+interface BuildHistory {
+  past: HistoryEntry[];
+  future: HistoryEntry[];
+  lastKey: string | null;
+  lastAt: number;
+}
 
 const UNDO_LIMIT = 50;
 // Consecutive edits of the same thing inside this window collapse into one undo step, so
@@ -22,10 +30,14 @@ const histories = reactive<Record<string, BuildHistory>>({});
 
 // A deleted build's history would otherwise sit in memory forever -- prune whenever the pool
 // changes shape (library.ts owns removal; this just reacts to the result).
-watch(() => library.builds.value.map((b) => b.id), (ids) => {
-  const live = new Set(ids);
-  for (const id of Object.keys(histories)) if (!live.has(id)) delete histories[id];
-});
+watch(
+  () => library.builds.value.map((b) => b.id),
+  (ids) => {
+    const live = new Set(ids);
+    for (const id of Object.keys(histories))
+      if (!live.has(id)) delete histories[id];
+  },
+);
 
 function historyFor(id: string = library.activeId.value) {
   let history = histories[id];
@@ -36,18 +48,22 @@ function historyFor(id: string = library.activeId.value) {
   return history;
 }
 
-export const canUndo = computed(() => (histories[library.activeId.value]?.past.length ?? 0) > 0);
-export const canRedo = computed(() => (histories[library.activeId.value]?.future.length ?? 0) > 0);
+export const canUndo = computed(
+  () => (histories[library.activeId.value]?.past.length ?? 0) > 0,
+);
+export const canRedo = computed(
+  () => (histories[library.activeId.value]?.future.length ?? 0) > 0,
+);
 
 /** What the buttons would actually reverse, for their tooltips. */
 export const undoLabel = computed(() => {
   const past = histories[library.activeId.value]?.past;
-  return past?.length ? past[past.length - 1].label : '';
+  return past?.length ? past[past.length - 1].label : "";
 });
 
 export const redoLabel = computed(() => {
   const future = histories[library.activeId.value]?.future;
-  return future?.length ? future[future.length - 1].label : '';
+  return future?.length ? future[future.length - 1].label : "";
 });
 
 /**
@@ -58,10 +74,11 @@ export const redoLabel = computed(() => {
 function snapshot(key: string | null, label: string) {
   const history = historyFor();
   const now = Date.now();
-  const coalesce = key != null
-    && key === history.lastKey
-    && now - history.lastAt < COALESCE_MS
-    && history.past.length > 0;
+  const coalesce =
+    key != null &&
+    key === history.lastKey &&
+    now - history.lastAt < COALESCE_MS &&
+    history.past.length > 0;
 
   if (!coalesce) {
     history.past.push({ json: JSON.stringify(library.build.value), label });
@@ -80,8 +97,11 @@ function slotLabel(slotId: string) {
 export function undo() {
   if (!canUndo.value) return;
   const history = historyFor();
-  const entry = history.past.pop()!;  // non-null: canUndo.value already confirmed past.length > 0
-  history.future.push({ json: JSON.stringify(library.build.value), label: entry.label });
+  const entry = history.past.pop()!; // non-null: canUndo.value already confirmed past.length > 0
+  history.future.push({
+    json: JSON.stringify(library.build.value),
+    label: entry.label,
+  });
   library.replaceActive(JSON.parse(entry.json));
   history.lastKey = null;
 }
@@ -89,8 +109,11 @@ export function undo() {
 export function redo() {
   if (!canRedo.value) return;
   const history = historyFor();
-  const entry = history.future.pop()!;  // non-null: canRedo.value already confirmed future.length > 0
-  history.past.push({ json: JSON.stringify(library.build.value), label: entry.label });
+  const entry = history.future.pop()!; // non-null: canRedo.value already confirmed future.length > 0
+  history.past.push({
+    json: JSON.stringify(library.build.value),
+    label: entry.label,
+  });
   library.replaceActive(JSON.parse(entry.json));
   history.lastKey = null;
 }
@@ -99,7 +122,7 @@ export function redo() {
 
 export function setChoice(slotId: string, id: string) {
   const slot = slotLabel(slotId);
-  const label = id ? (db.value.get(id)?.name ?? id) : '';
+  const label = id ? (db.value.get(id)?.name ?? id) : "";
   snapshot(`choice:${slotId}`, id ? `${slot} → ${label}` : `clear ${slot}`);
   const build = library.activeBuildForEdit();
   if (id) {
@@ -113,7 +136,7 @@ export function setChoice(slotId: string, id: string) {
 export function setValue(slotId: string, raw: string) {
   snapshot(`value:${slotId}`, `${slotLabel(slotId)} value`);
   const build = library.activeBuildForEdit();
-  if (raw === '' || raw == null) delete build.values[slotId];
+  if (raw === "" || raw == null) delete build.values[slotId];
   else build.values[slotId] = Number(raw);
 }
 
@@ -124,10 +147,14 @@ export function applyFromCompare(slotId: string) {
   const other = compare.compareBuild.value;
   if (!other) return;
   const slot = slotLabel(slotId);
-  const id = other.choices[slotId] || '';
-  const label = id ? (db.value.get(id)?.name ?? id) : '';
-  snapshot(`choice:${slotId}`,
-    id ? `${slot} → ${label} (from “${other.name}”)` : `clear ${slot} (from “${other.name}”)`);
+  const id = other.choices[slotId] || "";
+  const label = id ? (db.value.get(id)?.name ?? id) : "";
+  snapshot(
+    `choice:${slotId}`,
+    id
+      ? `${slot} → ${label} (from “${other.name}”)`
+      : `clear ${slot} (from “${other.name}”)`,
+  );
   const build = library.activeBuildForEdit();
   if (id) {
     build.choices[slotId] = id;
@@ -148,7 +175,10 @@ export function applyValueFromCompare(slotId: string) {
   if (!other) return;
   const slot = slotLabel(slotId);
   const value = other.values?.[slotId];
-  snapshot(`value:${slotId}`, `${slot} value → ${value ?? '(none)'} (from “${other.name}”)`);
+  snapshot(
+    `value:${slotId}`,
+    `${slot} value → ${value ?? "(none)"} (from “${other.name}”)`,
+  );
   const build = library.activeBuildForEdit();
   if (value != null) build.values[slotId] = value;
   else delete build.values[slotId];
@@ -158,10 +188,17 @@ export function applyValueFromCompare(slotId: string) {
  * class/role/duration/toggles/forte picks today, mount bolster/boon points/etc. later. Replaces
  * the old per-field `setContext`/`setToggle`/`setForte` trio: those differed only in *where* in
  * `context` they wrote and how they phrased the undo label, both of which the slot already says. */
-export function setParam(slot: BuildParameterSlot, value: string | number | boolean) {
-  const shown = typeof value === 'boolean'
-    ? (value ? 'on' : 'off')
-    : slot.options?.find((o) => o.value === value)?.label ?? String(value || 'none');
+export function setParam(
+  slot: BuildParameterSlot,
+  value: string | number | boolean,
+) {
+  const shown =
+    typeof value === "boolean"
+      ? value
+        ? "on"
+        : "off"
+      : (slot.options?.find((o) => o.value === value)?.label ??
+        String(value || "none"));
   snapshot(`param:${slot.id}`, `${slot.label} → ${shown}`);
   setPath(library.activeBuildForEdit().context, slot.path, value);
 }
@@ -177,17 +214,21 @@ export function applyParamFromCompare(slot: BuildParameterSlot) {
   const other = compare.compareBuild.value;
   if (!other) return;
   const fromVal = getPath(other.context, slot.path);
-  snapshot(`param:${slot.id}`,
-    `${slot.label} → ${fromVal ?? '(none)'} (from "${other.name}")`);
+  snapshot(
+    `param:${slot.id}`,
+    `${slot.label} → ${fromVal ?? "(none)"} (from "${other.name}")`,
+  );
   setPath(library.activeBuildForEdit().context, slot.path, fromVal);
 }
 
 export function renameBuild(name: string) {
-  snapshot('name', 'rename build');
+  snapshot("name", "rename build");
   library.activeBuildForEdit().name = name;
 }
 
-export const filledSlots = computed(() => Object.values(library.build.value.choices).filter(Boolean).length);
+export const filledSlots = computed(
+  () => Object.values(library.build.value.choices).filter(Boolean).length,
+);
 
 export function clearSlots() {
   snapshot(null, `clear all ${filledSlots.value} slots`);
@@ -197,7 +238,7 @@ export function clearSlots() {
 }
 
 export function resetAll() {
-  snapshot(null, 'reset build');
+  snapshot(null, "reset build");
   const fresh = storage.defaultBuild(library.build.value.name);
   fresh.id = library.build.value.id;
   library.replaceActive(fresh);
@@ -218,7 +259,7 @@ export function copySection(fromId: string, sectionIds: string[]) {
   for (const slot of db.value.slots) {
     if (!wanted.has(slot.section)) continue;
 
-    if (slot.type === 'build_parameter') {
+    if (slot.type === "build_parameter") {
       setPath(build.context, slot.path, getPath(source.context, slot.path));
       continue;
     }
@@ -241,7 +282,7 @@ export function revertSlot(slotId: string) {
   snapshot(null, `revert ${slotLabel(slotId)}`);
   const build = library.activeBuildForEdit();
   const slot = db.value.slotById.get(slotId);
-  if (slot?.type === 'build_parameter') {
+  if (slot?.type === "build_parameter") {
     setPath(build.context, slot.path, getPath(saved.context, slot.path));
     return;
   }
@@ -258,11 +299,13 @@ export function revertSection(sectionId: string) {
   const saved = library.savedById.value[library.activeId.value];
   const slots = db.value.slots.filter((slot) => slot.section === sectionId);
   if (!saved || !slots.length) return;
-  const label = db.value.sections.find((section) => section.id === sectionId)?.label ?? sectionId;
+  const label =
+    db.value.sections.find((section) => section.id === sectionId)?.label ??
+    sectionId;
   snapshot(null, `revert ${label}`);
   const build = library.activeBuildForEdit();
   for (const slot of slots) {
-    if (slot.type === 'build_parameter') {
+    if (slot.type === "build_parameter") {
       setPath(build.context, slot.path, getPath(saved.context, slot.path));
       continue;
     }
@@ -277,7 +320,10 @@ export function revertSection(sectionId: string) {
 
 /** The Save button: promotes the live draft to the saved library. */
 export function saveActive() {
-  library.markBuildSaved(library.activeId.value, { ...storage.cloneBuild(library.build.value), updated: Date.now() });
+  library.markBuildSaved(library.activeId.value, {
+    ...storage.cloneBuild(library.build.value),
+    updated: Date.now(),
+  });
 }
 
 /** Discards unsaved edits back to what was last saved. BuildBar.vue gates this behind its
@@ -286,6 +332,6 @@ export function saveActive() {
 export function revertActive() {
   const saved = library.savedById.value[library.activeId.value];
   if (!saved) return;
-  snapshot(null, 'revert unsaved changes');
+  snapshot(null, "revert unsaved changes");
   library.replaceActive(storage.cloneBuild(saved));
 }

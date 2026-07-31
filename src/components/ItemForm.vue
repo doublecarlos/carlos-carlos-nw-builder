@@ -8,28 +8,28 @@
 // Bonus editing itself lives entirely in BonusGroups below -- there is no separate "this
 // item's own bonuses" concept here any more; a bonus only this item grants is just a group
 // with one member.
-import { ref, computed, watch, onUnmounted } from 'vue';
-import BonusGroups from './BonusGroups.vue';
-import TokenInput from './ui/TokenInput.vue';
-import PercentInput from './ui/PercentInput.vue';
-import ComboBox from './ui/ComboBox.vue';
-import IconButton from './ui/IconButton.vue';
-import Button from './ui/Button.vue';
-import HistoryButton from './ui/HistoryButton.vue';
-import Badge from './ui/Badge.vue';
-import FormBar from './ui/FormBar.vue';
-import FormField from './ui/FormField.vue';
-import FormGrid from './ui/FormGrid.vue';
-import IdField from './ui/IdField.vue';
-import FormSection from './ui/FormSection.vue';
-import { NW_SCHEMA, NW_SLOTS } from '../data';
-import { findParamSlot } from '../build-path';
-import * as catalog from '../catalog';
-import { isPercentKind, kindOf } from '../format';
-import { focusNextCombo } from '../stat-row-nav';
-import type { Item, Db, BonusSet } from '../types';
-import type { StatRow } from '../bonus-draft';
-import Checkbox from './ui/Checkbox.vue';
+import { ref, computed, watch, onUnmounted } from "vue";
+import BonusGroups from "./BonusGroups.vue";
+import TokenInput from "./ui/TokenInput.vue";
+import PercentInput from "./ui/PercentInput.vue";
+import ComboBox from "./ui/ComboBox.vue";
+import IconButton from "./ui/IconButton.vue";
+import BaseButton from "./ui/BaseButton.vue";
+import HistoryButton from "./ui/HistoryButton.vue";
+import BaseBadge from "./ui/BaseBadge.vue";
+import FormBar from "./ui/FormBar.vue";
+import FormField from "./ui/FormField.vue";
+import FormGrid from "./ui/FormGrid.vue";
+import IdField from "./ui/IdField.vue";
+import FormSection from "./ui/FormSection.vue";
+import { NW_SCHEMA, NW_SLOTS } from "../data";
+import { findParamSlot } from "../build-path";
+import * as catalog from "../catalog";
+import { isPercentKind, kindOf } from "../format";
+import { focusNextCombo } from "../stat-row-nav";
+import type { Item, Db, BonusSet } from "../types";
+import type { StatRow } from "../bonus-draft";
+import BaseCheckbox from "./ui/BaseCheckbox.vue";
 
 /**
  * Key-order-insensitive comparison. `toItem` rebuilds the object in the exporter's key
@@ -38,15 +38,17 @@ import Checkbox from './ui/Checkbox.vue';
  */
 const canonical = (value: unknown): unknown => {
   if (Array.isArray(value)) return value.map(canonical);
-  if (value && typeof value === 'object') {
+  if (value && typeof value === "object") {
     const out: Record<string, unknown> = {};
-    for (const key of Object.keys(value).sort()) out[key] = canonical((value as Record<string, unknown>)[key]);
+    for (const key of Object.keys(value).sort())
+      out[key] = canonical((value as Record<string, unknown>)[key]);
     return out;
   }
   return value;
 };
 
-const sameItem = (a: unknown, b: unknown) => JSON.stringify(canonical(a)) === JSON.stringify(canonical(b));
+const sameItem = (a: unknown, b: unknown) =>
+  JSON.stringify(canonical(a)) === JSON.stringify(canonical(b));
 
 // Draft-level undo: separate from (and beneath) DataEditor's own undo over *committed*
 // overlay changes -- this one covers ordinary editing (typing, checking a class box, adding a
@@ -61,38 +63,41 @@ const sameItem = (a: unknown, b: unknown) => JSON.stringify(canonical(a)) === JS
 const SNAPSHOT_DEBOUNCE_MS = 700;
 const UNDO_LIMIT = 50;
 
-const props = withDefaults(defineProps<{
-  /** The item being edited, or null for a brand-new one. */
-  source?: Item | null;
-  status?: string;
-  db: Db;
-  filters?: string[];
-  setIds?: string[];
-  tags?: string[];
-  bonusIds?: string[];
-  /** A draft stashed by DataEditor the last time this item's form was navigated away
-   * from while dirty -- read once, on mount, so re-selecting an item you were mid-edit on
-   * picks back up instead of silently reverting to the saved version. Plain-data only (no
-   * functions), so a JSON round trip is enough to give this component its own copy rather
-   * than sharing references with the stash. */
-  initialDraft?: ItemDraft | null;
-}>(), {
-  source: null,
-  status: 'base',
-  filters: () => [],
-  setIds: () => [],
-  tags: () => [],
-  bonusIds: () => [],
-  initialDraft: null,
-});
+const props = withDefaults(
+  defineProps<{
+    /** The item being edited, or null for a brand-new one. */
+    source?: Item | null;
+    status?: string;
+    db: Db;
+    filters?: string[];
+    setIds?: string[];
+    tags?: string[];
+    bonusIds?: string[];
+    /** A draft stashed by DataEditor the last time this item's form was navigated away
+     * from while dirty -- read once, on mount, so re-selecting an item you were mid-edit on
+     * picks back up instead of silently reverting to the saved version. Plain-data only (no
+     * functions), so a JSON round trip is enough to give this component its own copy rather
+     * than sharing references with the stash. */
+    initialDraft?: ItemDraft | null;
+  }>(),
+  {
+    source: null,
+    status: "base",
+    filters: () => [],
+    setIds: () => [],
+    tags: () => [],
+    bonusIds: () => [],
+    initialDraft: null,
+  },
+);
 
 const emit = defineEmits<{
   save: [payload: { item: Item }];
   delete: [];
   revert: [];
   dirty: [value: boolean];
-  'save-set': [payload: { id: string; set: BonusSet }];
-  'delete-set': [id: string];
+  "save-set": [payload: { id: string; set: BonusSet }];
+  "delete-set": [id: string];
 }>();
 
 export interface ItemDraft {
@@ -113,17 +118,17 @@ export interface ItemDraft {
 }
 
 function buildDraft(item: Item | null | undefined): ItemDraft {
-  const source = item ?? {} as Partial<Item>;
+  const source = item ?? ({} as Partial<Item>);
   const statKeys = new Set(NW_SCHEMA.statKeys);
   return {
-    name: source.name ?? '',
-    filter: source.filter ?? '',
+    name: source.name ?? "",
+    filter: source.filter ?? "",
     maxCopies: source.maxCopies ?? null,
     allowedClass: [...(source.allowedClass ?? [])],
     tags: [...(source.tags ?? [])],
     bonuses: [...(source.bonuses ?? [])],
     excludes: [...(source.excludes ?? [])],
-    dynamicStat: source.dynamicStat ?? '',
+    dynamicStat: source.dynamicStat ?? "",
     dynamicMin: source.dynamicMin ?? null,
     dynamicMax: source.dynamicMax ?? null,
     stats: Object.keys(source)
@@ -132,11 +137,16 @@ function buildDraft(item: Item | null | undefined): ItemDraft {
   };
 }
 
-const draft = ref<ReturnType<typeof buildDraft>>(props.initialDraft
-  ? JSON.parse(JSON.stringify(props.initialDraft))
-  : buildDraft(props.source));
-const error = ref('');
-const draftHistory = ref<{ past: string[]; future: string[] }>({ past: [], future: [] });
+const draft = ref<ReturnType<typeof buildDraft>>(
+  props.initialDraft
+    ? JSON.parse(JSON.stringify(props.initialDraft))
+    : buildDraft(props.source),
+);
+const error = ref("");
+const draftHistory = ref<{ past: string[]; future: string[] }>({
+  past: [],
+  future: [],
+});
 const lastSnapshotJson = ref(JSON.stringify(draft.value));
 let snapshotTimer: number | undefined;
 // Two-step confirm for "discard my unsaved edits" -- same pattern (and same 4s window)
@@ -149,28 +159,53 @@ let confirmRevertTimer: number | undefined;
 /** The id shown next to Name -- the frozen one for an existing item, or a live preview of
  * what `toItem()` would assign on first save for a brand-new one. Read-only either way: an
  * item's id is never a form field a user edits directly. */
-const displayId = computed(() => props.source?.id
-  ?? (draft.value.name.trim() ? catalog.nextId(draft.value.name.trim(), props.db.items.map((i) => i.id), 'item') : ''));
+const displayId = computed(
+  () =>
+    props.source?.id ??
+    (draft.value.name.trim()
+      ? catalog.nextId(
+          draft.value.name.trim(),
+          props.db.items.map((i) => i.id),
+          "item",
+        )
+      : ""),
+);
 
 const statOptions = NW_SCHEMA.stats;
-const classSlot = findParamSlot(NW_SLOTS.slots, 'class');
+const classSlot = findParamSlot(NW_SLOTS.slots, "class");
 const classes = classSlot?.options?.map((o) => o.value) ?? [];
 
-const statComboOptions = statOptions.map((s) => ({ value: s.key, label: `${s.label} (${s.key})` }));
-const dynamicStatOptions = statOptions.map((s) => ({ value: s.key, label: s.label }));
+const statComboOptions = statOptions.map((s) => ({
+  value: s.key,
+  label: `${s.label} (${s.key})`,
+}));
+const dynamicStatOptions = statOptions.map((s) => ({
+  value: s.key,
+  label: s.label,
+}));
 
 /** Draft -> the sparse item object the engine and the exporter expect. Id is frozen at
  * first save (`catalog.nextId`, from the name typed at that moment) and never regenerated
  * afterwards -- editing the name on later saves only ever changes display text. */
 function toItem(): Item {
   const local = draft.value;
-  const id = props.source?.id ?? catalog.nextId(local.name.trim(), props.db.items.map((i) => i.id), 'item');
-  const item: Item = { id, name: local.name.trim(), filter: local.filter.trim() };
+  const id =
+    props.source?.id ??
+    catalog.nextId(
+      local.name.trim(),
+      props.db.items.map((i) => i.id),
+      "item",
+    );
+  const item: Item = {
+    id,
+    name: local.name.trim(),
+    filter: local.filter.trim(),
+  };
 
   for (const { key, value } of local.stats) {
     if (!key) continue;
     const number = Number(value);
-    if (value === '' || value == null || !Number.isFinite(number)) continue;
+    if (value === "" || value == null || !Number.isFinite(number)) continue;
     item[key] = number;
   }
 
@@ -182,10 +217,10 @@ function toItem(): Item {
 
   if (local.dynamicStat) {
     item.dynamicStat = local.dynamicStat;
-    if (local.dynamicMin != null && local.dynamicMin !== '') {
+    if (local.dynamicMin != null && local.dynamicMin !== "") {
       item.dynamicMin = Number(local.dynamicMin);
     }
-    if (local.dynamicMax != null && local.dynamicMax !== '') {
+    if (local.dynamicMax != null && local.dynamicMax !== "") {
       item.dynamicMax = Number(local.dynamicMax);
     }
   }
@@ -196,7 +231,8 @@ function toItem(): Item {
 const dirty = computed(() => {
   const item = toItem();
   // An untouched blank form is not a pending change.
-  if (!props.source) return Boolean(item.name || item.filter || draft.value.stats.length);
+  if (!props.source)
+    return Boolean(item.name || item.filter || draft.value.stats.length);
   return !sameItem(item, props.source);
 });
 
@@ -215,7 +251,10 @@ function resetDraftHistory() {
 
 function scheduleSnapshot() {
   window.clearTimeout(snapshotTimer);
-  snapshotTimer = window.setTimeout(() => commitSnapshot(), SNAPSHOT_DEBOUNCE_MS);
+  snapshotTimer = window.setTimeout(
+    () => commitSnapshot(),
+    SNAPSHOT_DEBOUNCE_MS,
+  );
 }
 
 /** Pushes the draft as it stood at the last commit onto `past`, then moves the baseline
@@ -227,7 +266,8 @@ function commitSnapshot() {
   const current = JSON.stringify(draft.value);
   if (current === lastSnapshotJson.value) return;
   draftHistory.value.past.push(lastSnapshotJson.value);
-  if (draftHistory.value.past.length > UNDO_LIMIT) draftHistory.value.past.shift();
+  if (draftHistory.value.past.length > UNDO_LIMIT)
+    draftHistory.value.past.shift();
   draftHistory.value.future.length = 0;
   lastSnapshotJson.value = current;
 }
@@ -262,27 +302,41 @@ defineExpose({ draft, dirty, undoDraft, redoDraft });
 function revertDraft() {
   if (!confirmRevert.value) {
     confirmRevert.value = true;
-    confirmRevertTimer = window.setTimeout(() => { confirmRevert.value = false; }, 4000);
+    confirmRevertTimer = window.setTimeout(() => {
+      confirmRevert.value = false;
+    }, 4000);
     return;
   }
   window.clearTimeout(confirmRevertTimer);
   confirmRevert.value = false;
   draft.value = buildDraft(props.source);
-  error.value = '';
+  error.value = "";
   resetDraftHistory();
 }
 
 function save() {
-  error.value = '';
+  error.value = "";
   const item = toItem();
-  if (!item.name) { error.value = 'The item needs a name.'; return; }
-  if (!item.filter) { error.value = 'The item needs a filter, or no slot can hold it.'; return; }
-  emit('save', { item });
+  if (!item.name) {
+    error.value = "The item needs a name.";
+    return;
+  }
+  if (!item.filter) {
+    error.value = "The item needs a filter, or no slot can hold it.";
+    return;
+  }
+  emit("save", { item });
 }
 
-function addStat() { draft.value.stats.push({ key: '', value: 0 }); }
-function removeStat(index: number) { draft.value.stats.splice(index, 1); }
-function focusNextStat(event: KeyboardEvent) { focusNextCombo(event); }
+function addStat() {
+  draft.value.stats.push({ key: "", value: 0 });
+}
+function removeStat(index: number) {
+  draft.value.stats.splice(index, 1);
+}
+function focusNextStat(event: KeyboardEvent) {
+  focusNextCombo(event);
+}
 
 /** A bonus created (on its first save) or attached from the Bonuses section joins this
  * item's own list straight away. */
@@ -294,19 +348,24 @@ function attachSet(id: string) {
 /** A card with no saved definition has nothing in the catalogue to remove -- just drop
  * the id from this item's own list. */
 function detachSet(id: string) {
-  draft.value.bonuses = draft.value.bonuses.filter((setId: string) => setId !== id);
+  draft.value.bonuses = draft.value.bonuses.filter(
+    (setId: string) => setId !== id,
+  );
 }
 
-watch(() => props.source, (value) => {
-  draft.value = buildDraft(value);
-  error.value = '';
-  // A save (the common way `source` changes under an unchanged key) makes the prior
-  // draft history meaningless -- there is nothing left upstream of the just-saved state
-  // worth undoing back to.
-  resetDraftHistory();
-});
+watch(
+  () => props.source,
+  (value) => {
+    draft.value = buildDraft(value);
+    error.value = "";
+    // A save (the common way `source` changes under an unchanged key) makes the prior
+    // draft history meaningless -- there is nothing left upstream of the just-saved state
+    // worth undoing back to.
+    resetDraftHistory();
+  },
+);
 
-watch(dirty, (value) => emit('dirty', value), { immediate: true });
+watch(dirty, (value) => emit("dirty", value), { immediate: true });
 
 watch(draft, () => scheduleSnapshot(), { deep: true });
 
@@ -319,35 +378,68 @@ onUnmounted(() => {
 <template>
   <div>
     <FormBar>
-      <strong>{{ draft.name || 'New item' }}</strong>
-      <Badge v-if="status !== 'base'" :variant="status as any">{{ status }}</Badge>
-      <Badge v-if="dirty">unsaved</Badge>
+      <strong>{{ draft.name || "New item" }}</strong>
+      <BaseBadge v-if="status !== 'base'" :variant="status as any">{{
+        status
+      }}</BaseBadge>
+      <BaseBadge v-if="dirty">unsaved</BaseBadge>
       <span class="flex-1"></span>
-      <HistoryButton type="undo" :disabled="!canUndoDraft" title="Undo edit (Ctrl+Z)" @click="undoDraft">Undo</HistoryButton>
-      <HistoryButton type="redo" :disabled="!canRedoDraft" title="Redo edit (Ctrl+Shift+Z)" @click="redoDraft">Redo</HistoryButton>
-      <Button variant="primary" :disabled="!dirty" @click="save">Save item</Button>
-      <Button :danger="confirmRevert" :disabled="!dirty" @click="revertDraft">
-        {{ confirmRevert ? 'Really revert?' : 'Revert' }}
-      </Button>
-      <Button v-if="status === 'edited'" @click="$emit('revert')">Revert to shipped</Button>
-      <Button v-if="source" @click="$emit('delete')">Delete</Button>
+      <HistoryButton
+        type="undo"
+        :disabled="!canUndoDraft"
+        title="Undo edit (Ctrl+Z)"
+        @click="undoDraft"
+        >Undo</HistoryButton
+      >
+      <HistoryButton
+        type="redo"
+        :disabled="!canRedoDraft"
+        title="Redo edit (Ctrl+Shift+Z)"
+        @click="redoDraft"
+        >Redo</HistoryButton
+      >
+      <BaseButton variant="primary" :disabled="!dirty" @click="save"
+        >Save item</BaseButton
+      >
+      <BaseButton
+        :danger="confirmRevert"
+        :disabled="!dirty"
+        @click="revertDraft"
+      >
+        {{ confirmRevert ? "Really revert?" : "Revert" }}
+      </BaseButton>
+      <BaseButton v-if="status === 'edited'" @click="$emit('revert')"
+        >Revert to shipped</BaseButton
+      >
+      <BaseButton v-if="source" @click="$emit('delete')">Delete</BaseButton>
     </FormBar>
 
     <p v-if="error" class="mt-1 text-danger">{{ error }}</p>
 
     <FormGrid>
       <FormField label="Name">
-        <input class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-               type="text" v-model="draft.name">
+        <input
+          v-model="draft.name"
+          class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+          type="text"
+        />
       </FormField>
-      <IdField label="Id" :id="displayId" :existing="Boolean(source)" />
+      <IdField :id="displayId" label="Id" :existing="Boolean(source)" />
       <FormField label="Filter (slot category)">
-        <input class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-               type="text" v-model="draft.filter" list="nw-filters">
+        <input
+          v-model="draft.filter"
+          class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+          type="text"
+          list="nw-filters"
+        />
       </FormField>
       <FormField label="Max copies (0 = unlimited)">
-        <input class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-               type="number" min="0" v-model.number="draft.maxCopies">
+        <input
+          v-model.number="draft.maxCopies"
+          class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+          type="number"
+          min="0"
+        />
       </FormField>
     </FormGrid>
 
@@ -360,52 +452,100 @@ onUnmounted(() => {
 
     <FormGrid>
       <FormField label="Tags" class="min-w-80 flex-1">
-        <TokenInput v-model="draft.tags" :options="tags" placeholder="Add a tag…" />
+        <TokenInput
+          v-model="draft.tags"
+          :options="tags"
+          placeholder="Add a tag…"
+        />
       </FormField>
     </FormGrid>
 
     <FormSection>Restricted to classes</FormSection>
     <div class="mb-1.5 flex flex-wrap gap-x-3 gap-y-0.5">
-      <Checkbox v-for="cls in classes" :key="cls" :value="cls" v-model="draft.allowedClass">
+      <BaseCheckbox
+        v-for="cls in classes"
+        :key="cls"
+        v-model="draft.allowedClass"
+        :value="cls"
+      >
         {{ cls }}
-      </Checkbox>
+      </BaseCheckbox>
     </div>
 
     <FormSection>Stats</FormSection>
-    <div v-for="(stat, index) in draft.stats" :key="index" class="stat-row flex flex-wrap items-center gap-1.5 mb-1">
+    <div
+      v-for="(stat, index) in draft.stats"
+      :key="index"
+      class="stat-row flex flex-wrap items-center gap-1.5 mb-1"
+    >
       <IconButton icon="plus" title="Add stat" @click="addStat" />
       <IconButton icon="trash" title="Remove stat" @click="removeStat(index)" />
-      <ComboBox class="combo--stat w-52" :model-value="stat.key" :options="statComboOptions"
-                placeholder="— pick a stat —" @update:model-value="v => stat.key = v" />
-      <PercentInput v-if="isPercent(stat.key)" v-model="stat.value" @keydown="focusNextStat" />
-      <input v-else class="w-28 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-             type="number" step="any" v-model.number="stat.value" @keydown="focusNextStat">
+      <ComboBox
+        class="combo--stat w-52"
+        :model-value="stat.key"
+        :options="statComboOptions"
+        placeholder="— pick a stat —"
+        @update:model-value="(v) => (stat.key = v)"
+      />
+      <PercentInput
+        v-if="isPercent(stat.key)"
+        v-model="stat.value"
+        @keydown="focusNextStat"
+      />
+      <input
+        v-else
+        v-model.number="stat.value"
+        class="w-28 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+        type="number"
+        step="any"
+        @keydown="focusNextStat"
+      />
     </div>
-    <div v-if="!draft.stats.length" class="stat-row flex flex-wrap items-center gap-1.5 mb-1">
+    <div
+      v-if="!draft.stats.length"
+      class="stat-row flex flex-wrap items-center gap-1.5 mb-1"
+    >
       <IconButton icon="plus" title="Add stat" @click="addStat" />
     </div>
 
     <FormSection>Dynamic modification (user types the value)</FormSection>
     <FormGrid>
       <FormField label="Stat">
-        <ComboBox :model-value="draft.dynamicStat" :options="dynamicStatOptions"
-                  placeholder="— none —" @update:model-value="v => draft.dynamicStat = v" />
+        <ComboBox
+          :model-value="draft.dynamicStat"
+          :options="dynamicStatOptions"
+          placeholder="— none —"
+          @update:model-value="(v) => (draft.dynamicStat = v)"
+        />
       </FormField>
       <FormField label="Min">
-        <input class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent disabled:opacity-50"
-               type="number" v-model.number="draft.dynamicMin" :disabled="!draft.dynamicStat">
+        <input
+          v-model.number="draft.dynamicMin"
+          class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent disabled:opacity-50"
+          type="number"
+          :disabled="!draft.dynamicStat"
+        />
       </FormField>
       <FormField label="Max">
-        <input class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent disabled:opacity-50"
-               type="number" v-model.number="draft.dynamicMax" :disabled="!draft.dynamicStat">
+        <input
+          v-model.number="draft.dynamicMax"
+          class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent disabled:opacity-50"
+          type="number"
+          :disabled="!draft.dynamicStat"
+        />
       </FormField>
     </FormGrid>
 
     <FormSection>Equipping this item suppresses</FormSection>
-    <TokenInput v-model="draft.excludes" :options="bonusIds"
-                placeholder="bonus id this item overrides…" />
-    <p class="text-sm text-muted">Item-level override: those bonuses go inactive whenever this item is
-      equipped, whatever grants them.</p>
+    <TokenInput
+      v-model="draft.excludes"
+      :options="bonusIds"
+      placeholder="bonus id this item overrides…"
+    />
+    <p class="text-sm text-muted">
+      Item-level override: those bonuses go inactive whenever this item is
+      equipped, whatever grants them.
+    </p>
 
     <BonusGroups
       :set-ids="draft.bonuses"
@@ -417,6 +557,7 @@ onUnmounted(() => {
       @save-set="$emit('save-set', $event)"
       @delete-set="$emit('delete-set', $event)"
       @detach-set="detachSet"
-      @attach-set="attachSet" />
+      @attach-set="attachSet"
+    />
   </div>
 </template>

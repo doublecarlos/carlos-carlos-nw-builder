@@ -1,8 +1,8 @@
 // The editor's layer over the shipped catalogue (see catalog.ts) -- a workspace, not part of
 // any one build, so it's persisted under its own key.
-import { computed, ref, watch } from 'vue';
-import * as storage from '../storage';
-import type { CatalogOverlay } from '../types';
+import { computed, ref, watch } from "vue";
+import * as storage from "../storage";
+import type { CatalogOverlay } from "../types";
 
 const _workspaceOverlay = ref<CatalogOverlay>(storage.loadOverlay());
 
@@ -15,7 +15,16 @@ export function setWorkspaceOverlay(overlay: CatalogOverlay) {
   _workspaceOverlay.value = overlay;
 }
 
-export const overlayCount = computed(() => Object.keys(_workspaceOverlay.value.items ?? {}).length
-  + Object.keys(_workspaceOverlay.value.bonusSets ?? {}).length);
+export const overlayCount = computed(
+  () =>
+    Object.keys(_workspaceOverlay.value.items ?? {}).length +
+    Object.keys(_workspaceOverlay.value.bonusSets ?? {}).length,
+);
 
-watch(_workspaceOverlay, (value) => { storage.saveOverlay(value); }, { deep: true });
+watch(
+  _workspaceOverlay,
+  (value) => {
+    storage.saveOverlay(value);
+  },
+  { deep: true },
+);
