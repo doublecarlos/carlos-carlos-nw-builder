@@ -79,7 +79,7 @@ defineExpose({ focus: focusControl, focusAndSeed });
 </script>
 
 <template>
-  <div ref="root" class="min-w-0 flex-1">
+  <div ref="root" class="min-w-0">
     <ComboBox
       v-if="slotDef.paramType === 'list'"
       ref="comboboxInstance"

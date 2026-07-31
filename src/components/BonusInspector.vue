@@ -186,7 +186,7 @@ const counts = computed(() => {
       />
       <div class="flex items-center gap-3 py-2 text-sm text-muted">
         <span>{{ counts.active }}/{{ counts.total }} active</span>
-        <BaseCheckbox v-model="nearMissOnly" inline
+        <BaseCheckbox v-model="nearMissOnly" inline class="ml-auto"
           >near misses only ({{ counts.nearMiss }})</BaseCheckbox
         >
       </div>

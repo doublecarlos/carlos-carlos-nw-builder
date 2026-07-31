@@ -199,6 +199,7 @@ function toggleJson(gIndex: number) {
             <PercentInput
               v-if="isPercent(stat.key)"
               v-model="stat.value"
+              class="w-28"
               @keydown="focusNextStat"
             />
             <input
@@ -306,6 +307,7 @@ function toggleJson(gIndex: number) {
               <PercentInput
                 v-if="isPercent(stat.key)"
                 v-model="stat.value"
+                class="w-28"
                 @keydown="focusNextStat"
               />
               <input
@@ -412,6 +414,7 @@ function toggleJson(gIndex: number) {
               <PercentInput
                 v-if="isPercent(stat.key)"
                 v-model="stat.value"
+                class="w-28"
                 @keydown="focusNextStat"
               />
               <input

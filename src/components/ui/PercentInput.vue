@@ -96,7 +96,7 @@ function nudge(direction: number, event: KeyboardEvent) {
 </script>
 
 <template>
-  <span class="relative inline-block w-28">
+  <span class="relative inline-block">
     <input
       ref="input"
       class="w-full border border-line rounded-md pr-5 text-right tabular-nums text-accent focus:text-text"

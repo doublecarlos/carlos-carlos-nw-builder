@@ -133,7 +133,7 @@ function applyImport() {
 </script>
 
 <template>
-  <div class="min-w-0 flex-1 basis-full">
+  <div class="min-w-0">
     <div class="flex flex-wrap items-end gap-x-2.5 gap-y-2">
       <FormField label="Name">
         <input
@@ -191,11 +191,11 @@ function applyImport() {
       </div>
     </div>
 
-    <BaseDrawer v-if="panel === 'io'">
+    <BaseDrawer v-if="panel === 'io'" class="mt-2">
       <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
           <h4 class="mb-1 text-sm uppercase text-muted">Export</h4>
-          <CodeBlock :value="exportText" :rows="7" />
+          <CodeBlock :value="exportText" :rows="7" class="w-full" />
           <div class="mt-1.5 flex flex-wrap items-end gap-2">
             <BaseButton @click="copyToClipboard(exportText)"
               >Copy to clipboard</BaseButton
@@ -234,7 +234,7 @@ function applyImport() {
       </p>
     </BaseDrawer>
 
-    <BaseDrawer v-if="panel === 'share'">
+    <BaseDrawer v-if="panel === 'share'" class="mt-2">
       <div class="flex flex-wrap items-end gap-2">
         <input
           class="min-w-64 flex-1 rounded-md border border-line bg-surface px-1.5 py-0.5 font-mono focus:outline-2 focus:-outline-offset-1 focus:outline-accent"

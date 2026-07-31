@@ -3,7 +3,7 @@
 </script>
 
 <template>
-  <div class="mb-2 flex flex-wrap gap-x-3 gap-y-2">
+  <div class="flex flex-wrap gap-x-3 gap-y-2">
     <slot />
   </div>
 </template>

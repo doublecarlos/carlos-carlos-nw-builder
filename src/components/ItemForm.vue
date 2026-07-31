@@ -377,7 +377,7 @@ onUnmounted(() => {
 
 <template>
   <div>
-    <FormBar>
+    <FormBar class="-m-3 mb-3">
       <strong>{{ draft.name || "New item" }}</strong>
       <BaseBadge v-if="status !== 'base'" :variant="status as any">{{
         status
@@ -416,7 +416,7 @@ onUnmounted(() => {
 
     <p v-if="error" class="mt-1 text-danger">{{ error }}</p>
 
-    <FormGrid>
+    <FormGrid class="mb-2">
       <FormField label="Name">
         <input
           v-model="draft.name"
@@ -450,7 +450,7 @@ onUnmounted(() => {
       <option v-for="t in tags" :key="t" :value="t"></option>
     </datalist>
 
-    <FormGrid>
+    <FormGrid class="mb-2">
       <FormField label="Tags" class="min-w-80 flex-1">
         <TokenInput
           v-model="draft.tags"
@@ -490,6 +490,7 @@ onUnmounted(() => {
       <PercentInput
         v-if="isPercent(stat.key)"
         v-model="stat.value"
+        class="w-28"
         @keydown="focusNextStat"
       />
       <input
@@ -509,7 +510,7 @@ onUnmounted(() => {
     </div>
 
     <FormSection>Dynamic modification (user types the value)</FormSection>
-    <FormGrid>
+    <FormGrid class="mb-2">
       <FormField label="Stat">
         <ComboBox
           :model-value="draft.dynamicStat"

@@ -5,7 +5,7 @@ defineProps<{ label?: string }>();
 </script>
 
 <template>
-  <div class="flex min-w-40 flex-col gap-0.5">
+  <div class="flex flex-col gap-0.5">
     <span v-if="label" class="text-sm text-muted">{{ label }}</span>
     <slot />
   </div>

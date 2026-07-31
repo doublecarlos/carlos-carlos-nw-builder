@@ -9,7 +9,7 @@ function selectAll(event: FocusEvent) {
 
 <template>
   <textarea
-    class="w-full resize-y rounded-md border border-line bg-surface p-2 font-mono"
+    class="resize-y rounded-md border border-line bg-surface p-2 font-mono"
     :rows="rows ?? 12"
     readonly
     :value="value"

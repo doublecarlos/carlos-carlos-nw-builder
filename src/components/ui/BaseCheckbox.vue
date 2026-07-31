@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// A checkbox + its label as one clickable unit. `inline` pushes it to the end of a flex row
+// A checkbox + its label as one clickable unit. `inline` marks it as text-muted.
 // (App.vue's compare toggles, BonusInspector's near-miss filter). State is `v-model` only --
 // `model-value`/`update:model-value`, spelled out where a caller needs to route the change
 // through a named store action instead of a plain ref -- never a parallel `checked`/`change`
@@ -27,7 +27,7 @@ const model = defineModel<boolean | string[]>({ required: true });
 <template>
   <label
     class="flex cursor-pointer items-center gap-1 select-none"
-    :class="inline && 'ml-auto text-muted'"
+    :class="inline && 'text-muted'"
   >
     <input
       v-model="model"

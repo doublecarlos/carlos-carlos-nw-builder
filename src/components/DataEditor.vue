@@ -766,7 +766,7 @@ onUnmounted(() => {
           >Download {{ exportName }}</BaseButton
         >
       </div>
-      <CodeBlock :value="exportText" :rows="12" />
+      <CodeBlock :value="exportText" :rows="12" class="w-full" />
       <p class="mt-1 text-sm text-muted">
         <template v-if="exportTab === 'overlay'">
           Just your changes. Small, reviewable, and the same shape custom gear

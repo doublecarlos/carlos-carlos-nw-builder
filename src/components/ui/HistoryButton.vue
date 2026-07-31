@@ -18,7 +18,7 @@ const iconMap = {
 <template>
   <BaseButton
     :disabled="disabled"
-    class="max-w-xs overflow-hidden text-left whitespace-nowrap"
+    class="overflow-hidden text-left whitespace-nowrap"
     :icon="iconMap[type]"
   >
     <slot />

@@ -39,7 +39,7 @@ const itemSlotCount = computed(
       </h1>
     </div>
 
-    <BuildBar />
+    <BuildBar class="flex-1 basis-full" />
 
     <QuickOptions />
 

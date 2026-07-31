@@ -270,7 +270,7 @@ onUnmounted(() => {
 
 <template>
   <div>
-    <FormBar>
+    <FormBar class="-m-3 mb-3">
       <strong>{{ draft.name || draft.id || "New bonus set" }}</strong>
       <BaseBadge v-if="status !== 'base'" :variant="status as any">{{
         status
@@ -313,7 +313,7 @@ onUnmounted(() => {
 
     <p v-if="error" class="mt-1 text-danger">{{ error }}</p>
 
-    <FormGrid>
+    <FormGrid class="mb-2">
       <FormField label="Group name">
         <input
           v-model="draft.name"
