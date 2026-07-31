@@ -19,9 +19,7 @@ export interface SlotDiff {
 }
 
 /** True if this build_parameter slot's value differs between two builds. Generic over any
- * slot's `path` -- replaces the old hardcoded per-field `fieldDiffers`/`forteDiffers`/
- * `toggleDiffers` that used to live separately (and duplicated) in Options.vue and
- * QuickOptions.vue. Standalone rather than part of `useCompareDiff` below: it only needs the
+ * slot's `path`. Standalone rather than part of `useCompareDiff` below: it only needs the
  * two builds, not the item/bonus machinery every other diff helper here depends on, so
  * QuickOptions.vue (which has no per-row item context at all) can use it directly. */
 export function paramDiffers(

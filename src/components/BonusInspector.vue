@@ -1,11 +1,11 @@
 <script setup lang="ts">
-// The bonus inspector (plan §Phase 5, §2.5) -- the thing the spreadsheet could not do.
+// The bonus inspector -- the thing the spreadsheet could not do.
 //
 // The sheet could tell you a bonus was not applying. It could never tell you *why*, because
 // its conditions were string matches evaluated inline with no record of what failed. The
 // engine keeps `gate.leaves` / `gate.unmet` per bonus, each leaf already carrying a human
 // `label` and `detail` ("duration ≥ 30s" / "you have 10s"), so this component mostly renders
-// what it is handed -- see the handoff §4.
+// what it is handed.
 //
 // Near-miss ordering is the useful part: inactive bonuses are sorted by how many conditions
 // they fail, so the ones a single toggle or set piece away float to the top.

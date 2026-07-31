@@ -1,7 +1,7 @@
 <script setup lang="ts">
-// The left column: 15 collapsible sections over 180 slots (plan §1.5, §Phase 3).
+// The left column: 15 collapsible sections over 180 slots.
 //
-// Sections start collapsed except Gear (handoff §6). That keeps the mounted DOM at ~15 rows
+// Sections start collapsed except Gear. That keeps the mounted DOM at ~15 rows
 // on load; expanding everything is ~180 rows, which the browser handles fine -- only one
 // dropdown is ever open, and that is where the per-row cost actually lives. No virtualisation.
 import { computed, reactive, ref, watch } from "vue";

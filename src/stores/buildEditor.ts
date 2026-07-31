@@ -185,9 +185,8 @@ export function applyValueFromCompare(slotId: string) {
 }
 
 /** Every `build_parameter` slot's setter, whatever `path` it writes -- Options/QuickOptions'
- * class/role/duration/toggles/forte picks today, mount bolster/boon points/etc. later. Replaces
- * the old per-field `setContext`/`setToggle`/`setForte` trio: those differed only in *where* in
- * `context` they wrote and how they phrased the undo label, both of which the slot already says. */
+ * class/role/duration/toggles/forte picks today, mount bolster/boon points/etc. later. Each
+ * slot already knows where in `context` it writes and how to phrase the undo label. */
 export function setParam(
   slot: BuildParameterSlot,
   value: string | number | boolean,

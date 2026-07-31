@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// Searchable item typeahead for one slot (plan §Phase 3, "Left").
+// Searchable item typeahead for one slot.
 //
 // A native <datalist> was considered and rejected: it cannot show item level and a stat
 // preview per row, and its keyboard behaviour is not controllable. This is ~120 lines instead.
@@ -109,8 +109,7 @@ function onFocus() {
 /** Called imperatively by BuildEditor's keyboard cursor (via a template ref): typing a
  *  character on a row with no input focused opens this picker pre-filtered, like Sheets
  *  overwriting a cell. Exposed explicitly -- `<script setup>` components are closed by
- *  default, unlike the old classic-object component whose methods were reachable from any
- *  $refs holder. */
+ *  default. */
 function focusAndSeed(char: string) {
   open.value = true;
   query.value = char;

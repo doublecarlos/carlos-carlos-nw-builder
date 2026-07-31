@@ -1,4 +1,4 @@
-// Item database indexing (plan §4.2).
+// Item database indexing.
 //
 // Consumes the statically-imported data (src/data.ts) and builds the lookups the engine and UI
 // need. Pure: no DOM, no fetch -- `build()` takes items/bonusSets/schema/slots as plain
@@ -29,8 +29,8 @@ export function build(
 ): Db {
   const byId = new Map<string, Item>();
   // Keyed by `string | undefined` (not just `string`): an item with no `filter` still lands
-  // here under the `undefined` key, same as the untyped original -- dead weight (`forFilter`
-  // is only ever called with a real string) but preserved rather than silently dropped.
+  // here under the `undefined` key -- dead weight (`forFilter` is only ever called with a
+  // real string) but preserved rather than silently dropped.
   const byFilter = new Map<string | undefined, Item[]>();
   const setMembers = new Map<string, string[]>(); // setId -> [item id]
   const itemsByTag = new Map<string, string[]>(); // tag   -> [item id]
@@ -52,7 +52,7 @@ export function build(
   }
 
   // Shared bonuses, keyed by set id. Membership is never listed here -- it lives on the
-  // items (`sets: [...]`, plan §2.3), so this is the only place the two are joined.
+  // items (`sets: [...]`), so this is the only place the two are joined.
   const bonusSetById = new Map(bonusSets.map((set) => [set.id, set]));
   const slotList = slots?.slots ?? [];
   const slotById = new Map<string, Slot>(

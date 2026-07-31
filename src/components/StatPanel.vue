@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// The right column: the sheet's output block, rebuilt (plan §1.3 caps, §1.4 derived).
+// The right column: the sheet's output block, rebuilt.
 //
 // Every table is derived from NW_SCHEMA rather than a hand-written stat list, so adding a
 // stat to the schema makes it appear here with no edit. Overcapped values are coloured; the

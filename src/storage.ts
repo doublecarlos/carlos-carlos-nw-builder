@@ -1,4 +1,4 @@
-// Build persistence, import/export and share links (plan §4.2, Phase 4).
+// Build persistence, import/export and share links.
 //
 // Owns the shape of a stored build so `App.vue` never has to reason about it: anything that
 // comes back from localStorage, a pasted JSON blob or a URL hash goes through `normalise`
@@ -7,9 +7,8 @@
 // The saved library lives under `nw:builds`, written only when the user explicitly saves (or
 // by a structural change that has nothing pending to lose -- see App.vue's `saveActive`). The
 // live, possibly-unsaved draft lives separately under `nw:builds-draft`, autosaved continuously
-// so a reload never loses work in progress. Phase 3 autosaved a single build under
-// `nw:current-build`; that key is migrated into the saved library on first load and then
-// removed.
+// so a reload never loses work in progress. The old single-build key `nw:current-build` is
+// migrated into the saved library on first load and then removed.
 
 import { NW_SLOTS, NW_CATALOG_VERSION } from "./data";
 import * as catalog from "./catalog";
@@ -233,8 +232,8 @@ export function normalise(
     choices: strings(raw.choices),
     values: numbers(raw.values),
     // `context`'s pass-through fields (class/role/combatType/location/damageType) are not
-    // individually validated -- same tolerance policy the untyped original had -- so the
-    // result is only knowable-safe by construction, not by the type checker; hence the cast.
+    // individually validated -- the result is only knowable-safe by construction, not by
+    // the type checker; hence the cast.
     context: {
       ...base.context,
       ...context,
@@ -329,7 +328,7 @@ export function loadLibrary(): Library {
   return { builds, activeId };
 }
 
-/** Phase 3's single-build key. Read once, folded into the library, then dropped. */
+/** The old single-build key. Read once, folded into the library, then dropped. */
 function migrateLegacy(): Library | null {
   let legacy = null;
   try {

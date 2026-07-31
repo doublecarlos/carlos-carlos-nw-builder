@@ -1,4 +1,4 @@
-// Bonus resolution (plan §2.4).
+// Bonus resolution.
 //
 // Four passes, deliberately order-independent: collect -> evaluate -> exclude -> apply.
 // The sheet counted bonus instances by scanning rows *above* the current one while checking
@@ -35,7 +35,7 @@ interface Candidate extends BonusCandidate {
   order: number;
 }
 
-// --- pass 1: collect -------------------------------------------------------------------
+// --- pass 1: collect ---
 
 /**
  * Walk the build's slots once and gather everything a condition can read.
@@ -100,11 +100,10 @@ export function collect(
   return { ctx, rows, candidates };
 }
 
-// --- pass 2: evaluate ------------------------------------------------------------------
+// --- pass 2: evaluate ---
 
-/** Resolve one grant against the context into a stat payload (or none). Exactly the old
- * per-effect gate -> variants -> tiers -> stats logic, parameterised on `grant` instead of a
- * whole named effect -- a grant carries no `id`/`name` of its own. */
+/** Resolve one grant against the context into a stat payload (or none).
+ * A grant carries no `id`/`name` of its own. */
 function evaluateGrant(
   grant: Grant,
   ctx: EvalContext,
@@ -139,9 +138,9 @@ function evaluateGrant(
     for (const tier of grant.tiers) {
       const need = tier.pieces?.atLeast ?? 1;
       // `tier.pieces.set` is optional on the type (GrantTier) but not on `ConditionWhen.pieces`
-      // -- see types.ts: an *actually* setless tier still reaches `conditions.evaluate` exactly
-      // as the untyped original did, and fails closed there (`pieces.set` undefined -> 0 pieces
-      // counted), so this cast changes nothing at runtime.
+      // -- see types.ts: an *actually* setless tier still reaches `conditions.evaluate` and
+      // fails closed there (`pieces.set` undefined -> 0 pieces counted), so this cast changes
+      // nothing at runtime.
       if (
         need > bestAt &&
         conditions.evaluate(
@@ -163,8 +162,8 @@ function evaluateGrant(
 
 /**
  * Resolve a whole bonus set: every grant it carries, summed. A set is one unit -- its final
- * stats are the sum of every currently-active grant (plan: "bonus schema restructuring"),
- * not one independently-tracked row per grant the way effects used to be.
+ * stats are the sum of every currently-active grant, not one independently-tracked row
+ * per grant.
  */
 export function evaluateBonus(
   set: BonusSet,
@@ -220,7 +219,7 @@ export function evaluateBonus(
   };
 }
 
-// --- passes 3 and 4: exclude, then apply ------------------------------------------------
+// --- passes 3 and 4: exclude, then apply ---
 
 interface Group {
   id: string;

@@ -1,7 +1,7 @@
-// Presentation helpers (plan §4.2, UI layer).
+// Presentation helpers.
 //
 // The engine stores percentages as decimals (0.09 === 9%) and never rounds anything. All
-// rounding happens here, at the edge, exactly once -- see the handoff §4 "Percentages".
+// rounding happens here, at the edge, exactly once.
 
 import { NW_SCHEMA } from "./data";
 import type { Item, StatKey } from "./types";

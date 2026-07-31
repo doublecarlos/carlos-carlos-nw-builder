@@ -1,9 +1,9 @@
-// The calculation pipeline (plan §1.3) and derived outputs (§1.4).
+// The calculation pipeline and derived outputs.
 //
 // Every intermediate stage is kept, which is what makes the "why is my Power that number?"
 // inspector possible -- something the spreadsheet cannot do.
 //
-// Deviations from the sheet are marked `FIX #n` and justified in plan Part 3. None changes a
+// Deviations from the sheet are marked `FIX #n` and justified in the issue tracker. None changes a
 // number on current data except where the sheet was demonstrably wrong.
 
 import * as bonus from "./bonus";
@@ -207,7 +207,7 @@ function run(
   };
 }
 
-// --- derived outputs (plan §1.4) --------------------------------------------------------
+// --- derived outputs ---
 
 function derive(db: Db, build: Build, stages: Stages): DerivedOutputs {
   const { schema } = db;
@@ -303,7 +303,7 @@ function derive(db: Db, build: Build, stages: Stages): DerivedOutputs {
   };
 }
 
-// --- validation (plan §1.6) -------------------------------------------------------------
+// --- validation ---
 
 function findErrors(
   db: Db,
@@ -363,7 +363,7 @@ function findErrors(
   return errors;
 }
 
-// --- entry point --------------------------------------------------------------------------
+// --- entry point ---
 
 export function resolveBuild(
   db: Db,

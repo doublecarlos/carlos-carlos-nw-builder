@@ -311,10 +311,9 @@ function onKeydown(event: KeyboardEvent) {
 }
 
 // --- unsaved form drafts ----------------------------------------------------------------
-// Switching rows used to remount the form fresh (`:key="selectedId ?? '__new__'"`) and
-// silently drop whatever was mid-edit. Stashing here, right before the key changes, means
-// the draft survives the trip and comes back via `initialDraft` if the same row is
-// reselected -- see `itemDrafts`/`setDrafts` above.
+// Stashing drafts here, right before the row key changes, means the draft survives the trip
+// and comes back via `initialDraft` if the same row is reselected -- see `itemDrafts`/`setDrafts`
+// above.
 
 function stashItemDraft() {
   if (selectedId.value == null) return;

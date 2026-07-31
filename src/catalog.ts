@@ -110,8 +110,8 @@ const inBase = (group: CatalogGroup, key: string) =>
     : base().bonusSets.some((set) => set.id === key);
 
 /** Save an entry under its id. Ids are frozen at creation (`nextId`, below) and never
- * user-edited afterwards, so unlike the old name-keyed overlay there is no rename to track
- * here any more -- the key an entry is saved under never changes across its lifetime. */
+ * user-edited afterwards, so the key an entry is saved under never changes across its
+ * lifetime. */
 export function upsert(
   overlay: CatalogOverlay,
   group: CatalogGroup,

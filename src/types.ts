@@ -175,8 +175,7 @@ export interface GrantTier {
   stats: StatValues;
 }
 
-/** Anonymous by design -- only the owning `BonusSet.id` is addressable, not the grant itself.
- * See CLAUDE.md, "a bonus set resolves as one unit". */
+/** Anonymous by design -- only the owning `BonusSet.id` is addressable, not the grant itself. */
 export interface Grant {
   when?: ConditionWhen;
   stats?: StatValues;

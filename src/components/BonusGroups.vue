@@ -85,8 +85,7 @@ function sourceFor(slot: Slot): BonusSet | null {
 
 /** A pending slot's id previews from Name, so it's seeded with the item's own name -- the
  * common case is a bonus that's only this item's business. Read once at creation (`initialDraft`
- * is only ever consulted on mount), same as the old design's id-seed -- not kept in sync with
- * later edits to the item's own name. */
+ * is only ever consulted on mount) -- not kept in sync with later edits to the item's own name. */
 function initialDraftFor(slot: Slot): SetDraft | null {
   if (slot.id) return null;
   return {

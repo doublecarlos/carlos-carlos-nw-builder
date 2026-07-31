@@ -1,9 +1,9 @@
-// The `when` predicate evaluator (plan §2.2).
+// The `when` predicate evaluator.
 //
 // A condition is plain JSON -- no eval, no regex, no strings parsed at runtime. Keys present
 // are ANDed; an absent key is unconstrained; an empty or missing `when` is always true.
 //
-// Design rule (plan §2.2): conditions read the *build*, never the *results*. Nothing here may
+// Design rule: conditions read the *build*, never the *results*. Nothing here may
 // consult a computed stat or another bonus's output, which is what keeps evaluation single-pass
 // and free of cycles.
 

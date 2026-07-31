@@ -4,8 +4,7 @@
 // editing-side stand-in for one when-object: a flat AND of leaves and groups, exactly mirroring
 // what conditions.ts's `walk()` does with an object's keys. A group's branches are each their
 // own rows list, so nesting is just this component containing itself -- a SFC can recurse into
-// itself by its own inferred name with no self-registration needed (unlike the old build, which
-// had no global component registry and so had to attach itself to its own `components`).
+// itself by its own inferred name with no self-registration needed.
 import { computed } from "vue";
 import ComboBox from "./ui/ComboBox.vue";
 import IconButton from "./ui/IconButton.vue";
