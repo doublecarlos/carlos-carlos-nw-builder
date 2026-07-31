@@ -100,26 +100,62 @@ const paramValue = () =>
     </div>
 
     <div class="min-w-0 flex-1">
+      <!-- Shared flex container so ItemPicker and BuildParamInput (via ComboBox)
+           get the same grow-0 basis-80 min-w-40 sizing -- consistent row width
+           regardless of slot type. -->
+      <div class="flex flex-wrap items-center gap-2.5">
+        <ItemPicker
+          v-if="slotDef.type === 'item_picker'"
+          :ref="
+            (el) =>
+              emit('pickerRef', el as Element | ComponentPublicInstance | null)
+          "
+          class="grow-0 basis-80 min-w-40"
+          :items="items ?? []"
+          :model-value="choice()"
+          :selected-item="item"
+          :invalid="(errors?.length ?? 0) > 0"
+          @update:model-value="buildEditor.setChoice(slotDef.id, $event)"
+        />
+        <BuildParamInput
+          v-else
+          :ref="(el) => emit('paramRef', el)"
+          class="grow-0 basis-80 min-w-40"
+          :slot-def="slotDef"
+          :wide="true"
+          :model-value="paramValue()"
+          @update:model-value="buildEditor.setParam(slotDef, $event!)"
+        />
+        <span
+          v-if="slotDef.type === 'item_picker' && item"
+          class="min-w-0 flex-1 truncate text-sm text-text"
+          >{{ statSummary }}</span
+        >
+      </div>
+
       <template v-if="slotDef.type === 'item_picker'">
-        <div class="flex flex-wrap items-center gap-2.5">
-          <ItemPicker
-            :ref="
-              (el) =>
-                emit(
-                  'pickerRef',
-                  el as Element | ComponentPublicInstance | null,
-                )
+        <!-- Dynamic weapon modifications carry a user-typed magnitude. Driven by the item's own
+             `dynamicStat`, not by a hard-coded slot id, so a second one would work with no UI
+             change -- item-local params (later phase) generalize this further. -->
+        <div v-if="item?.dynamicStat" class="mt-1 flex items-center gap-1.5">
+          <input
+            type="number"
+            class="w-20 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+            :min="item?.dynamicMin"
+            :max="item?.dynamicMax"
+            :value="value() ?? ''"
+            :placeholder="String(item?.dynamicMin ?? '')"
+            @input="
+              buildEditor.setValue(
+                slotDef.id,
+                ($event.target as HTMLInputElement).value,
+              )
             "
-            class="grow-0 basis-80 min-w-40"
-            :items="items ?? []"
-            :model-value="choice()"
-            :selected-item="item"
-            :invalid="(errors?.length ?? 0) > 0"
-            @update:model-value="buildEditor.setChoice(slotDef.id, $event)"
           />
-          <span v-if="item" class="min-w-0 flex-1 truncate text-sm text-text">{{
-            statSummary
-          }}</span>
+          <span class="text-sm text-muted">
+            {{ statLabel(item?.dynamicStat as string) }}
+            {{ item?.dynamicMin }}–{{ item?.dynamicMax }}
+          </span>
         </div>
 
         <p
@@ -146,30 +182,6 @@ const paramValue = () =>
           </p>
         </template>
 
-        <!-- Dynamic weapon modifications carry a user-typed magnitude. Driven by the item's own
-             `dynamicStat`, not by a hard-coded slot id, so a second one would work with no UI
-             change -- item-local params (later phase) generalize this further. -->
-        <div v-if="item?.dynamicStat" class="mt-1 flex items-center gap-1.5">
-          <input
-            type="number"
-            class="w-20 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-            :min="item?.dynamicMin"
-            :max="item?.dynamicMax"
-            :value="value() ?? ''"
-            :placeholder="String(item?.dynamicMin ?? '')"
-            @input="
-              buildEditor.setValue(
-                slotDef.id,
-                ($event.target as HTMLInputElement).value,
-              )
-            "
-          />
-          <span class="text-sm text-muted">
-            {{ statLabel(item?.dynamicStat as string) }}
-            {{ item?.dynamicMin }}–{{ item?.dynamicMax }}
-          </span>
-        </div>
-
         <p
           v-if="highlightDiff && valueDiffers"
           class="slot-diff-note mt-0.5 text-sm text-muted"
@@ -194,16 +206,6 @@ const paramValue = () =>
       </template>
 
       <template v-else>
-        <!-- No label in the slot content -- `.slot-label` on the left already shows it, unlike
-             QuickOptions.vue's compact strip which has no separate label column. -->
-        <BuildParamInput
-          :ref="(el) => emit('paramRef', el)"
-          :slot-def="slotDef"
-          :wide="true"
-          :model-value="paramValue()"
-          @update:model-value="buildEditor.setParam(slotDef, $event!)"
-        />
-
         <p
           v-if="highlightDiff && paramDiffers"
           class="slot-diff-note mt-0.5 text-sm text-muted"
