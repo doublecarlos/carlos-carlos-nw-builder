@@ -7,6 +7,7 @@
 // over the cap, negative is spare headroom), coloured independently since they cap separately.
 import { ref, computed, nextTick, onMounted, onUnmounted } from "vue";
 import ComboBox from "./ui/ComboBox.vue";
+import BaseCheckbox from "./ui/BaseCheckbox.vue";
 import IconButton from "./ui/IconButton.vue";
 import StatSourceCard from "./StatSourceCard.vue";
 import BasePanel from "./ui/BasePanel.vue";
@@ -89,7 +90,6 @@ const result = computed(() => {
 const compareResult = computed(() =>
   engine.compareResolved.value?.ok ? engine.compareResolved.value.result : null,
 );
-const compareName = computed(() => compare.compareBuild.value?.name ?? "");
 // Only needed for the stat source popover's forte picks and dynamic weapon mod values -- the
 // rest of the panel reads entirely off `result`.
 const build = library.build;
@@ -445,9 +445,9 @@ onUnmounted(() => document.removeEventListener("mousedown", onDocumentClick));
     </div>
 
     <!-- The one number the sheet keeps most visible: pick a damage calculation, see its
-         value here. With a compare build selected (App.vue's quick-compare picker) this
-         grows the sheet's own layout -- this build's row, then the other's, then how far
-         apart they are. -->
+         value here. A comparison table below shows the other build's value and the gap
+         between them, with the compare-build selector and display toggles embedded in
+         the table itself. -->
     <div class="flex flex-col gap-1 rounded-md bg-surface-2 px-2.5 py-2">
       <ComboBox
         v-model="summaryCalcKey"
@@ -455,34 +455,63 @@ onUnmounted(() => document.removeEventListener("mousedown", onDocumentClick));
         :options="summaryOptions"
       />
 
-      <span
-        v-if="!compareResult"
-        class="whitespace-nowrap text-center text-2xl font-semibold"
-        >{{ int(summaryValue) }}</span
-      >
-
-      <table v-else class="mt-0.5 w-full border-collapse border border-line">
+      <table class="mt-0.5 w-full border-collapse border border-line">
         <tbody>
-          <tr :class="summaryRowCls">
-            <td class="px-1 py-0.5 text-muted">This build</td>
+          <tr class="border border-line">
+            <td class="px-1 py-0.5">This build</td>
             <td
-              class="px-1 py-0.5 text-right text-xl font-semibold tabular-nums"
+              class="px-1 py-0.5 text-right text-xl font-semibold tabular-nums w-40"
+              :class="summaryRowCls"
             >
               {{ int(summaryValue) }}
             </td>
-            <td class="px-1 py-0.5 text-right tabular-nums">
+            <td
+              class="px-1 py-0.5 text-right tabular-nums w-20"
+              :class="summaryRowCls"
+            >
               {{ fmtPctSigned(thisVsOtherPct) }}
             </td>
           </tr>
-          <tr>
-            <td class="px-1 py-0.5 text-muted">{{ compareName }}</td>
+          <tr class="border border-line">
+            <td class="px-1 py-0.5">
+              <ComboBox
+                class="compare-select"
+                :model-value="build.compare.id"
+                :options="compare.compareOptions.value"
+                @update:model-value="compare.setCompareBuild"
+              />
+            </td>
             <td
               class="px-1 py-0.5 text-right text-xl font-semibold tabular-nums"
             >
-              {{ int(compareSummaryValue) }}
+              {{ compareResult ? int(compareSummaryValue) : "—" }}
             </td>
             <td class="px-1 py-0.5 text-right tabular-nums text-muted">
-              {{ fmtPctSigned(otherVsThisPct) }}
+              {{ compareResult ? fmtPctSigned(otherVsThisPct) : "—" }}
+            </td>
+          </tr>
+          <tr class="border border-line">
+            <td colspan="3" class="px-1 py-0.5">
+              <BaseCheckbox
+                :model-value="build.compare.highlight"
+                :disabled="!compareResult"
+                @update:model-value="
+                  (v) => compare.setCompareFlag('highlight', v as boolean)
+                "
+                >Highlight changes</BaseCheckbox
+              >
+            </td>
+          </tr>
+          <tr class="border border-line">
+            <td colspan="3" class="px-1 py-0.5">
+              <BaseCheckbox
+                :model-value="build.compare.onlyDiff"
+                :disabled="!compareResult"
+                @update:model-value="
+                  (v) => compare.setCompareFlag('onlyDiff', v as boolean)
+                "
+                >Only show changes</BaseCheckbox
+              >
             </td>
           </tr>
         </tbody>

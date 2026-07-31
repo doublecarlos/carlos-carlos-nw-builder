@@ -18,10 +18,10 @@ npm run preview           # serve the production build locally
 npm run test              # Vitest: unit tests + golden-fixture comparison
 npm run test:ui           # Playwright: end-to-end tests against a real browser
 npm run typecheck         # vue-tsc --noEmit
-npm run lint              # ESLint (flat config, eslint.config.js)
-npm run lint:fix          # ESLint, auto-fixing what it can
-npm run format            # Prettier, writes changes
-npm run format:check      # Prettier, check-only (used by verify/CI)
+npm run lint              # ESLint (auto-fix)
+npm run lint:check        # ESLint (check-only)
+npm run format            # Prettier (auto-fix)
+npm run format:check      # Prettier (check-only)
 npm run verify            # lint + format:check + typecheck + test + test:ui, in sequence
 ```
 
