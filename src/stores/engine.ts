@@ -3,9 +3,9 @@
 import { computed, markRaw } from "vue";
 import * as catalog from "../catalog";
 import * as engine from "../engine";
-import * as library from "./library";
+import * as builds from "./builds";
+import * as layers from "./layers";
 import * as compare from "./compare";
-import { workspaceOverlay } from "./workspace";
 import type { ResolvedBuild } from "../types";
 
 type Resolution =
@@ -16,13 +16,14 @@ type Resolution =
  * Catalogue layers, lowest priority first. The shipped data is the base (inside
  * `catalog.makeDb`); everything here is folded over it.
  *
- * Custom gear saved with a build slots in as one more entry -- `build.catalog` -- and
- * nothing else in the app has to change. `storage.normalise` already preserves that key on a
- * build so it survives a save/reload round trip.
+ * Enabled layers come first, then the active build's per-build catalog. Order matters:
+ * a layer earlier in the list can be overridden by a later layer or the build catalog.
  */
-const overlays = computed(() =>
-  [workspaceOverlay.value, library.build.value.catalog].filter(Boolean),
-);
+const overlays = computed(() => {
+  const result = [...layers.enabledOverlays.value];
+  if (builds.build.value?.catalog) result.push(builds.build.value.catalog);
+  return result;
+});
 
 /**
  * markRaw: 369 items plus several Maps. Vue deep-proxying it would cost more than the whole
@@ -37,9 +38,11 @@ export const db = computed(() => markRaw(catalog.makeDb(overlays.value)));
  */
 export const resolved = computed<Resolution>(() => {
   try {
+    const b = builds.build.value;
+    if (!b) return { ok: false, message: "No build selected", stack: "" };
     return {
       ok: true,
-      result: engine.resolveBuild(db.value, library.build.value),
+      result: engine.resolveBuild(db.value, b),
     };
   } catch (error: unknown) {
     return {

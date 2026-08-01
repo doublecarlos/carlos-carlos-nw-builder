@@ -73,6 +73,9 @@ const props = withDefaults(
     setIds?: string[];
     tags?: string[];
     bonusIds?: string[];
+    /** All existing ids across base + every layer (including disabled) + the build's
+     * per-build catalog, for id allocation. When absent, falls back to `db.items` ids. */
+    allocatableIds?: string[];
     /** A draft stashed by DataEditor the last time this item's form was navigated away
      * from while dirty -- read once, on mount, so re-selecting an item you were mid-edit on
      * picks back up instead of silently reverting to the saved version. Plain-data only (no
@@ -87,6 +90,7 @@ const props = withDefaults(
     setIds: () => [],
     tags: () => [],
     bonusIds: () => [],
+    allocatableIds: () => [],
     initialDraft: null,
   },
 );
@@ -165,7 +169,9 @@ const displayId = computed(
     (draft.value.name.trim()
       ? catalog.nextId(
           draft.value.name.trim(),
-          props.db.items.map((i) => i.id),
+          props.allocatableIds.length
+            ? props.allocatableIds
+            : props.db.items.map((i) => i.id),
           "item",
         )
       : ""),
@@ -193,7 +199,9 @@ function toItem(): Item {
     props.source?.id ??
     catalog.nextId(
       local.name.trim(),
-      props.db.items.map((i) => i.id),
+      props.allocatableIds.length
+        ? props.allocatableIds
+        : props.db.items.map((i) => i.id),
       "item",
     );
   const item: Item = {
@@ -422,6 +430,7 @@ onUnmounted(() => {
           v-model="draft.name"
           class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
           type="text"
+          data-testid="item-name-input"
         />
       </FormField>
       <IdField :id="displayId" label="Id" :existing="Boolean(source)" />
@@ -431,6 +440,7 @@ onUnmounted(() => {
           class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
           type="text"
           list="nw-filters"
+          data-testid="item-filter-input"
         />
       </FormField>
       <FormField label="Max copies (0 = unlimited)">
@@ -555,6 +565,7 @@ onUnmounted(() => {
       :all-set-ids="setIds"
       :tags="tags"
       :bonus-ids="bonusIds"
+      :allocatable-ids="props.allocatableIds"
       @save-set="$emit('save-set', $event)"
       @delete-set="$emit('delete-set', $event)"
       @detach-set="detachSet"

@@ -9,18 +9,28 @@
 // live, possibly-unsaved draft lives separately under `nw:builds-draft`, autosaved continuously
 // so a reload never loses work in progress. The old single-build key `nw:current-build` is
 // migrated into the saved library on first load and then removed.
+//
+// Phase 2a adds layer storage and the IndexedDB wrapper alongside the existing localStorage
+// functions. The collection/library functions stay until 2b deletes them.
 
 import { NW_SLOTS, NW_CATALOG_VERSION } from "./data";
 import * as catalog from "./catalog";
+import * as idb from "./idb";
 import { setPath } from "./build-path";
 import pkg from "../package.json";
 import { showNotice } from "./stores/notice";
 import type {
   Build,
+  Layer,
   Library,
   Collection,
   Collections,
   CatalogOverlay,
+  AppMeta,
+  Selection,
+  TrashEntry,
+  ItemHistory,
+  Db,
 } from "./types";
 
 const KEY = "nw:builds";
@@ -30,12 +40,6 @@ const OVERLAY_KEY = "nw:catalog-overlay";
 const UI_KEY = "nw:ui";
 const COLLECTIONS_KEY = "nw:collections";
 const COLLECTIONS_DRAFT_KEY = "nw:collections-draft";
-const HASH_PREFIX = "#b=";
-
-// Payload markers, so a link made before/after a browser gained CompressionStream still
-// decodes. `d` = raw deflate, `j` = uncompressed JSON.
-const DEFLATED = "d";
-const PLAIN = "j";
 
 // --- versioned envelope ------------------------------------------------------------------
 // Wraps every build/collection payload this module reads or writes (localStorage, JSON
@@ -55,7 +59,13 @@ const PLAIN = "j";
 export const SCHEMA_VERSION = 1;
 
 export type EnvelopeKind =
-  "build" | "collection" | "library" | "collections" | "overlay";
+  | "build"
+  | "collection"
+  | "library"
+  | "collections"
+  | "overlay"
+  | "layer"
+  | "bundle";
 
 export interface Envelope<T> {
   v: number;
@@ -131,8 +141,12 @@ function readEnveloped<T>(key: string, kind: EnvelopeKind): T | null {
   }
 }
 
+// --- identifiers --------------------------------------------------------------------------
+
 export const newId = (prefix = "b") =>
   `${prefix}_${Math.random().toString(36).slice(2, 8)}${Date.now().toString(36).slice(-3)}`;
+
+// --- builds -------------------------------------------------------------------------------
 
 /**
  * `context`'s starting shape comes entirely from the `options` section's `build_parameter`
@@ -149,7 +163,6 @@ export function defaultBuild(name = "New build"): Build {
   return {
     id: newId(),
     name,
-    updated: Date.now(),
     choices: {},
     values: {},
     context: root.context as unknown as Build["context"],
@@ -220,15 +233,16 @@ export function normalise(
     ? catalog.normaliseOverlay(raw.catalog)
     : null;
 
+  const downloaded = isPlain(raw.downloaded)
+    ? (raw.downloaded as Build["downloaded"])
+    : undefined;
+
   return {
     ...base,
     ...(perBuild && !catalog.isEmpty(perBuild) ? { catalog: perBuild } : {}),
     id: keepId && typeof raw.id === "string" && raw.id ? raw.id : base.id,
     name:
       typeof raw.name === "string" && raw.name.trim() ? raw.name : base.name,
-    updated: Number.isFinite(raw.updated)
-      ? (raw.updated as number)
-      : Date.now(),
     choices: strings(raw.choices),
     values: numbers(raw.values),
     // `context`'s pass-through fields (class/role/combatType/location/damageType) are not
@@ -257,6 +271,7 @@ export function normalise(
       highlight: Boolean(compare.highlight),
       onlyDiff: Boolean(compare.onlyDiff),
     },
+    ...(downloaded ? { downloaded } : {}),
   };
 }
 
@@ -265,7 +280,6 @@ export function duplicate(build: Build, name?: string): Build {
     ...normalise(build),
     id: newId(),
     name: name ?? `${build.name} copy`,
-    updated: Date.now(),
   };
 }
 
@@ -296,8 +310,8 @@ export function sameBuild(
   b: Build | null | undefined,
 ) {
   if (!a || !b) return a === b;
-  const { updated: ua, ...restA } = a;
-  const { updated: ub, ...restB } = b;
+  const { downloaded: _da, ...restA } = a;
+  const { downloaded: _db, ...restB } = b;
   return JSON.stringify(canonical(restA)) === JSON.stringify(canonical(restB));
 }
 
@@ -724,12 +738,215 @@ export function saveThemePreference(preference: ThemePreference) {
   }
 }
 
-// --- import / export --------------------------------------------------------------------
+// --- layer storage (new in phase 2a) -----------------------------------------------------
+
+/** A brand-new layer with an empty overlay. */
+export function defaultLayer(name = "Layer"): Layer {
+  return {
+    id: newId("l"),
+    name,
+    enabled: true,
+    overlay: catalog.emptyOverlay(),
+  };
+}
+
+/** Tolerant coercion, same spirit as `normalise`. */
+export function normaliseLayer(raw: unknown): Layer {
+  const base = defaultLayer("Layer");
+  if (!isPlain(raw)) return base;
+  const downloaded = isPlain(raw.downloaded)
+    ? (raw.downloaded as Layer["downloaded"])
+    : undefined;
+  return {
+    id: typeof raw.id === "string" && raw.id ? raw.id : base.id,
+    name:
+      typeof raw.name === "string" && raw.name.trim() ? raw.name : base.name,
+    enabled: typeof raw.enabled === "boolean" ? raw.enabled : true,
+    overlay: catalog.normaliseOverlay(raw.overlay),
+    ...(downloaded ? { downloaded } : {}),
+  };
+}
+
+// --- IDB persistence (new in phase 2a) ---------------------------------------------------
+
+/** Load every record from every IDB store, repairing `meta` against what actually exists. */
+export async function loadAll(): Promise<{
+  builds: Build[];
+  layers: Layer[];
+  meta: AppMeta;
+  trash: TrashEntry[];
+  history: Map<string, ItemHistory>;
+}> {
+  const [rawBuilds, rawLayers, rawMeta, rawTrash, rawHistory] =
+    await Promise.all([
+      idb.getAll("builds"),
+      idb.getAll("layers"),
+      idb.get("meta", "app"),
+      idb.getAll("trash"),
+      idb.getAll("history"),
+    ]);
+
+  // Unwrap envelopes: each record is `wrap("build", build)` or `wrap("layer", layer)`.
+  const unwrapEnvelope = (raw: unknown) => {
+    if (isPlain(raw) && typeof raw.v === "number" && isPlain(raw.data))
+      return raw.data as Record<string, unknown>;
+    return raw as Record<string, unknown>;
+  };
+
+  const builds: Build[] = (rawBuilds as unknown[]).map((b: unknown) =>
+    normalise(unwrapEnvelope(b)),
+  );
+  const layers: Layer[] = (rawLayers as unknown[]).map((l: unknown) =>
+    normaliseLayer(unwrapEnvelope(l)),
+  );
+  const trash: TrashEntry[] = (rawTrash as TrashEntry[]).filter(
+    (t) => isPlain(t) && (t.kind === "build" || t.kind === "layer"),
+  );
+
+  const buildIds = new Set(builds.map((b) => b.id));
+  const layerIds = new Set(layers.map((l) => l.id));
+
+  // Repair meta: drop dangling ids, append unlisted ones.
+  const rawMetaObj =
+    rawMeta && isPlain(rawMeta) ? (rawMeta as Record<string, unknown>) : null;
+  const meta: AppMeta = rawMetaObj
+    ? {
+        buildOrder: Array.isArray(rawMetaObj.buildOrder)
+          ? (rawMetaObj.buildOrder as string[]).filter((id: string) =>
+              buildIds.has(id),
+            )
+          : [],
+        layerOrder: Array.isArray(rawMetaObj.layerOrder)
+          ? (rawMetaObj.layerOrder as string[]).filter((id: string) =>
+              layerIds.has(id),
+            )
+          : [],
+        lastSelection:
+          rawMetaObj.lastSelection && isPlain(rawMetaObj.lastSelection)
+            ? (rawMetaObj.lastSelection as Selection)
+            : null,
+      }
+    : { buildOrder: [], layerOrder: [], lastSelection: null };
+
+  for (const id of buildIds) {
+    if (!meta.buildOrder.includes(id)) meta.buildOrder.push(id);
+  }
+  for (const id of layerIds) {
+    if (!meta.layerOrder.includes(id)) meta.layerOrder.push(id);
+  }
+
+  // Build history map: keyed `<kind>:<id>`, drop histories whose item no longer exists
+  // and is not in the trash (a restored item should get its undo history back).
+  const history = new Map<string, ItemHistory>();
+  const allLive = new Set([...buildIds, ...layerIds]);
+  const trashedIds = new Set<string>();
+  for (const entry of trash) {
+    trashedIds.add(entry.item.id);
+  }
+  for (const raw of rawHistory as unknown[]) {
+    if (isPlain(raw) && typeof raw.id === "string" && isPlain(raw.data)) {
+      const key = raw.id as string;
+      // Extract the id from the key `<kind>:<id>`
+      const itemId = key.includes(":") ? key.split(":")[1] : key;
+      if (allLive.has(itemId) || trashedIds.has(itemId)) {
+        history.set(key, raw.data as unknown as ItemHistory);
+      }
+    }
+  }
+
+  return { builds, layers, meta, trash, history };
+}
+
+export async function putBuild(build: Build): Promise<void> {
+  await idb.put("builds", build.id, wrap("build", build));
+}
+
+export async function putLayer(layer: Layer): Promise<void> {
+  await idb.put("layers", layer.id, wrap("layer", layer));
+}
+
+export async function deleteBuildRecord(id: string): Promise<void> {
+  await idb.remove("builds", id);
+}
+
+export async function deleteLayerRecord(id: string): Promise<void> {
+  await idb.remove("layers", id);
+}
+
+export async function putMeta(meta: AppMeta): Promise<void> {
+  await idb.put("meta", "app", meta);
+}
+
+export async function putTrash(entry: TrashEntry): Promise<void> {
+  await idb.put(
+    "trash",
+    `${entry.kind}_${entry.item.id}_${entry.deletedAt}`,
+    entry,
+  );
+}
+
+export async function deleteTrash(key: string): Promise<void> {
+  await idb.remove("trash", key);
+}
+
+// --- comparison helpers -------------------------------------------------------------------
+
+/** Key-order-insensitive comparison of two items, ignoring `downloaded` (which would
+ * otherwise make every compare-after-save report as different). */
+export function sameContent<T extends { downloaded?: unknown }>(
+  a: T | null | undefined,
+  b: T | null | undefined,
+): boolean {
+  if (!a || !b) return a === b;
+  const { downloaded: _da, ...restA } = a;
+  const { downloaded: _db, ...restB } = b;
+  return JSON.stringify(canonical(restA)) === JSON.stringify(canonical(restB));
+}
+
+/** Rebuild an item from its `downloaded.snapshot`, keeping its id and name. */
+export function revertToDownloaded<
+  T extends { id: string; name: string; downloaded?: { snapshot: T } },
+>(item: T): T {
+  if (!item.downloaded?.snapshot) return item;
+  return {
+    ...item.downloaded.snapshot,
+    id: item.id,
+    name: item.name,
+  };
+}
+
+// --- import / export (layers and bundles) -------------------------------------------------
 
 export const toJson = (value: unknown) => JSON.stringify(value, null, 2);
 
-/** A single build's own export -- the counterpart `parseJson` unwraps. */
-export const toBuildJson = (build: Build) => toJson(wrap("build", build));
+/** A single build's own export -- the counterpart `parseJson` unwraps. Strips the `compare`
+ *  field (it references a sibling build by id and means nothing elsewhere; `normalise`
+ *  refills the default on import) and embeds catalogue entries the build depends on that
+ *  the shipped base does not already provide. */
+export function toBuildJson(build: Build, db?: Db): string {
+  const { compare: _c, ...rest } = build;
+  const stripped: Build = rest as Build;
+  if (db) {
+    const embedded = catalog.referencedOverlay(db, stripped);
+    if (!catalog.isEmpty(embedded)) {
+      stripped.catalog = embedded;
+    } else {
+      delete stripped.catalog;
+    }
+  }
+  return toJson(wrap("build", stripped));
+}
+
+/** A single layer's export. */
+export const toLayerJson = (layer: Layer) => toJson(wrap("layer", layer));
+
+/** A combined bundle of builds + layers for export. */
+export interface Bundle {
+  builds: Build[];
+  layers: Layer[];
+}
+
+export const toBundleJson = (bundle: Bundle) => toJson(wrap("bundle", bundle));
 
 /**
  * Accepts a single (enveloped) build, or -- for backward compatibility with anything saved
@@ -751,95 +968,48 @@ export function parseJson(text: string): {
   };
 }
 
-// --- share links ------------------------------------------------------------------------
-
-const bytesToBase64Url = (bytes: Uint8Array) => {
-  // Chunked: String.fromCharCode(...bytes) blows the argument limit on a few kB.
-  let binary = "";
-  for (let i = 0; i < bytes.length; i += 0x8000) {
-    binary += String.fromCharCode.apply(
-      null,
-      Array.from(bytes.subarray(i, i + 0x8000)),
-    );
-  }
-  return window
-    .btoa(binary)
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/, "");
-};
-
-const base64UrlToBytes = (text: string) => {
-  const padded = text
-    .replace(/-/g, "+")
-    .replace(/_/g, "/")
-    .padEnd(Math.ceil(text.length / 4) * 4, "=");
-  const binary = window.atob(padded);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
-  return bytes;
-};
-
-const hasCompression = () =>
-  typeof CompressionStream === "function" &&
-  typeof DecompressionStream === "function";
-
-/**
- * A build is ~4 kB of repetitive JSON -- slot ids and item names -- so deflate takes it to
- * roughly a tenth of that, which keeps the link inside every practical URL limit.
- */
-export async function encodeShare(build: Build) {
-  const json = JSON.stringify(wrap("build", normalise(build)));
-  const bytes = new TextEncoder().encode(json);
-  if (!hasCompression()) return PLAIN + bytesToBase64Url(bytes);
-
-  const stream = new Blob([bytes])
-    .stream()
-    .pipeThrough(new CompressionStream("deflate-raw"));
-  const buffer = await new Response(stream).arrayBuffer();
-  return DEFLATED + bytesToBase64Url(new Uint8Array(buffer));
+/** Parse a single-layer export. */
+export function parseLayerJson(text: string): {
+  layer: Layer;
+  catalogStale: boolean;
+} {
+  const parsed = JSON.parse(text);
+  const { data, catalogStale } = unwrap<unknown>(parsed, "layer");
+  return { layer: normaliseLayer(data), catalogStale };
 }
 
-export async function decodeShare(
-  payload: string,
-): Promise<{ build: Build; catalogStale: boolean } | null> {
-  if (!payload) return null;
-  const marker = payload[0];
-  const bytes = base64UrlToBytes(payload.slice(1));
+/** Parse a bundle export. */
+export function parseBundleJson(text: string): {
+  bundle: Bundle;
+  catalogStale: boolean;
+} {
+  const parsed = JSON.parse(text);
+  const { data, catalogStale } = unwrap<unknown>(parsed, "bundle");
+  const bundle = data as { builds?: unknown[]; layers?: unknown[] };
 
-  let json;
-  if (marker === DEFLATED) {
-    if (!hasCompression())
-      throw new Error("this browser cannot read compressed links");
-    const stream = new Blob([bytes as BlobPart])
-      .stream()
-      .pipeThrough(new DecompressionStream("deflate-raw"));
-    json = await new Response(stream).text();
-  } else if (marker === PLAIN) {
-    json = new TextDecoder().decode(bytes);
-  } else {
-    throw new Error("unrecognised share link");
-  }
+  const rawBuilds = (bundle.builds ?? []).map((b: unknown) =>
+    normalise(b, { keepId: false }),
+  );
+  const rawLayers = (bundle.layers ?? []).map((l: unknown) =>
+    normaliseLayer(l),
+  );
 
-  const { data, catalogStale } = unwrap<unknown>(JSON.parse(json), "build");
-  return { build: normalise(data, { keepId: false }), catalogStale };
+  // Fresh ids throughout, name collisions suffixed `(2)`
+  const seenBuildNames = new Set<string>();
+  const builds = rawBuilds.map((b) => {
+    let name = b.name;
+    while (seenBuildNames.has(name)) name = `${name} (2)`;
+    seenBuildNames.add(name);
+    return { ...b, id: newId("b"), name };
+  });
+
+  const seenLayerNames = new Set<string>();
+  const layers = rawLayers.map((l) => {
+    let name = l.name;
+    while (seenLayerNames.has(name)) name = `${name} (2)`;
+    seenLayerNames.add(name);
+    return { ...l, id: newId("l"), name };
+  });
+
+  return { bundle: { builds, layers }, catalogStale };
 }
-
-export const shareUrl = (payload: string) => {
-  const url = new URL(window.location.href);
-  url.hash = "";
-  return `${url.href.replace(/#$/, "")}${HASH_PREFIX}${payload}`;
-};
-
-/** The payload in the current URL, or null. Does not modify the URL. */
-export const readHash = () =>
-  window.location.hash.startsWith(HASH_PREFIX)
-    ? window.location.hash.slice(HASH_PREFIX.length)
-    : null;
-
-/** Drop the hash without adding a history entry -- the link has been consumed. */
-export const clearHash = () => {
-  const url = new URL(window.location.href);
-  url.hash = "";
-  window.history.replaceState(null, "", url.href.replace(/#$/, ""));
-};

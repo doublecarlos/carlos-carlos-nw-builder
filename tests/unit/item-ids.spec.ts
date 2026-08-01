@@ -45,7 +45,6 @@ function testBuild(choices: Record<string, string>): Build {
   return {
     id: "b",
     name: "b",
-    updated: 0,
     choices,
     values: {},
     context: {

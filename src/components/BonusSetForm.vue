@@ -50,6 +50,9 @@ const props = withDefaults(
     setIds?: string[];
     tags?: string[];
     bonusIds?: string[];
+    /** All existing ids across base + every layer (including disabled) + the build's
+     * per-build catalog, for id allocation. When absent, falls back to `setIds`. */
+    allocatableIds?: string[];
     /** Same stash/restore as ItemForm.vue's own `initialDraft` -- see there for why. */
     initialDraft?: bonusDraft.SetDraft | null;
     /** An id already decided elsewhere, for a `source`-less instance that is *not* a brand-new
@@ -67,6 +70,7 @@ const props = withDefaults(
     setIds: () => [],
     tags: () => [],
     bonusIds: () => [],
+    allocatableIds: () => [],
     initialDraft: null,
     fixedId: null,
   },
@@ -146,7 +150,11 @@ const displayId = computed(
     props.source?.id ??
     props.fixedId ??
     (draft.value.name.trim()
-      ? catalog.nextId(draft.value.name.trim(), props.setIds, "bonus-set")
+      ? catalog.nextId(
+          draft.value.name.trim(),
+          props.allocatableIds.length ? props.allocatableIds : props.setIds,
+          "bonus-set",
+        )
       : ""),
 );
 
@@ -229,7 +237,11 @@ function save() {
   const id =
     props.source?.id ??
     props.fixedId ??
-    catalog.nextId(name, props.setIds, "bonus-set");
+    catalog.nextId(
+      name,
+      props.allocatableIds.length ? props.allocatableIds : props.setIds,
+      "bonus-set",
+    );
   let set;
   try {
     set = bonusDraft.toSet({ ...draft.value, id });

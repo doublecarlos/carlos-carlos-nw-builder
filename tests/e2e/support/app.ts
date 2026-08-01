@@ -3,11 +3,17 @@
 // are the same hooks the keyboard cursor itself relies on, and a stable choose-item flow.
 import { expect, type Locator, type Page } from "@playwright/test";
 
-/** Loads the app into a fresh browser context (no localStorage yet, so App.vue's own defaults
- * kick in: one build, "gear" the only section expanded) and waits for BuildEditor to be there. */
+/** Loads the app into a fresh browser context and creates a build so the builder is
+ * visible. With storage on IndexedDB, a fresh context has no data, so the empty state
+ * shows first — clicking "+ New build" gets us into the builder. */
 export async function openBuilder(page: Page) {
   await page.goto("/");
-  await expect(headerRow(page, "gear")).toBeVisible();
+  // Wait for hydration to finish, then create a build if we see the empty state.
+  const newBuildBtn = page.getByTestId("empty-new-build");
+  if (await newBuildBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
+    await newBuildBtn.click();
+  }
+  await expect(headerRow(page, "gear")).toBeVisible({ timeout: 5000 });
 }
 
 export function headerRow(page: Page, sectionId: string): Locator {
@@ -58,4 +64,24 @@ export async function chooseItem(page: Page, slotId: string, itemName: string) {
 export async function chooseCombo(combo: Locator, label: string) {
   await combo.getByTestId("picker-input").click();
   await combo.getByText(label, { exact: true }).click();
+}
+
+/** The build name input in the editor header. */
+export function buildNameInput(page: Page): Locator {
+  return page.getByTestId("build-name-input");
+}
+
+/** The undo button in the app header. */
+export function undoButton(page: Page): Locator {
+  return page.getByTestId("header-undo");
+}
+
+/** The redo button in the app header. */
+export function redoButton(page: Page): Locator {
+  return page.getByTestId("header-redo");
+}
+
+/** The draft indicator in the editor header. */
+export function draftIndicator(page: Page): Locator {
+  return page.getByTestId("draft-indicator");
 }

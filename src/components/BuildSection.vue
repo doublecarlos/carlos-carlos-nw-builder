@@ -9,8 +9,6 @@
 // caller) -- a section made entirely of build_parameter slots (Options) naturally gets no badge
 // as a result, not because this component special-cases its id.
 import BaseBadge from "./ui/BaseBadge.vue";
-import IconButton from "./ui/IconButton.vue";
-import UnsavedDot from "./ui/UnsavedDot.vue";
 import SectionCopyMenu from "./SectionCopyMenu.vue";
 import type { Slot } from "../types";
 
@@ -22,7 +20,6 @@ defineProps<{
   total: number;
   errors: number;
   diffs: number;
-  unsaved: boolean;
   expanded: boolean;
   isCursor: boolean;
   highlightDiff: boolean;
@@ -32,7 +29,6 @@ defineProps<{
 defineEmits<{
   toggle: [];
   copy: [fromId: string];
-  revert: [];
 }>();
 </script>
 
@@ -59,20 +55,12 @@ defineEmits<{
         <BaseBadge v-if="highlightDiff && diffs" variant="diff">{{
           diffs
         }}</BaseBadge>
-        <UnsavedDot v-if="unsaved" title="Unsaved changes in this section" />
       </button>
       <SectionCopyMenu
         v-if="otherBuilds.length"
         :section-id="id"
         :other-builds="otherBuilds"
         @copy="(fromId) => $emit('copy', fromId)"
-      />
-      <IconButton
-        v-if="unsaved"
-        icon="undo-2"
-        title="Revert this section to saved"
-        class="mr-1.5 flex-none"
-        @click="$emit('revert')"
       />
     </div>
 

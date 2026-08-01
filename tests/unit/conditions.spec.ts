@@ -111,7 +111,6 @@ function testBuild(context: Record<string, unknown>): Build {
   return {
     id: "b",
     name: "b",
-    updated: 0,
     choices: {},
     values: {},
     context: context as unknown as Build["context"],

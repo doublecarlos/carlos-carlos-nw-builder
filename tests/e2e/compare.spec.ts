@@ -21,8 +21,8 @@ test("highlighting a diff and applying it copies the compare build's choice", as
   await openBuilder(page);
   await chooseItem(page, "gear.head", HEAD_ITEM);
 
-  await page.getByRole("button", { name: "+ New build" }).click();
-  await chooseCombo(page.locator(".compare-select"), "New build");
+  await page.getByRole("button", { name: "+" }).first().click();
+  await chooseCombo(page.locator(".compare-select"), "Build 1");
   await page.getByRole("checkbox", { name: "Highlight changes" }).check();
 
   const row = slotRow(page, "gear.head");
@@ -40,14 +40,14 @@ test("copying a section from another build fills its slots", async ({
   await openBuilder(page);
   await chooseItem(page, "gear.head", HEAD_ITEM);
 
-  await page.getByRole("button", { name: "+ New build" }).click();
+  await page.getByRole("button", { name: "+" }).first().click();
   const gearHeader = headerRow(page, "gear");
   const copyBtn = gearHeader.locator("..").locator(".section-copy-btn");
   await copyBtn.click();
 
   const popover = page.locator(".copy-popover");
   await expect(popover).toBeVisible();
-  await chooseCombo(popover.locator(".copy-popover-select"), "New build");
+  await chooseCombo(popover.locator(".copy-popover-select"), "Build 1");
   await popover.getByRole("button", { name: "Copy" }).click();
 
   await expect(pickerInput(slotRow(page, "gear.head"))).toHaveValue(HEAD_ITEM);
@@ -65,8 +65,8 @@ test.describe("build_parameter compare diff apply", () => {
     await classRow.getByText("Paladin", { exact: true }).click();
 
     // Build 2: default warlock, compared against build 1
-    await page.getByRole("button", { name: "+ New build" }).click();
-    await chooseCombo(page.locator(".compare-select"), "New build");
+    await page.getByRole("button", { name: "+" }).first().click();
+    await chooseCombo(page.locator(".compare-select"), "Build 1");
     await page.getByRole("checkbox", { name: "Highlight changes" }).check();
     await ensureSectionExpanded(page, "options");
 
@@ -96,8 +96,8 @@ test.describe("build_parameter compare diff apply", () => {
     await classRow.getByText("Paladin", { exact: true }).click();
 
     // Build 2: default warlock, compared against build 1
-    await page.getByRole("button", { name: "+ New build" }).click();
-    await chooseCombo(page.locator(".compare-select"), "New build");
+    await page.getByRole("button", { name: "+" }).first().click();
+    await chooseCombo(page.locator(".compare-select"), "Build 1");
     await page.getByRole("checkbox", { name: "Highlight changes" }).check();
     await ensureSectionExpanded(page, "options");
 

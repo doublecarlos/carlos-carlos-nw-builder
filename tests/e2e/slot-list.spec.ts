@@ -69,7 +69,7 @@ test.describe("choosing and clearing an item", () => {
 });
 
 test.describe("row click behaviour", () => {
-  test("Ctrl+click on a filled slot opens the data editor on that item; a plain click does not", async ({
+  test("Ctrl+click on a filled slot opens the layer editor on that item; a plain click does not", async ({
     page,
   }) => {
     await openBuilder(page);
@@ -81,10 +81,12 @@ test.describe("row click behaviour", () => {
       "data-cursor-key",
       "slot:gear.head",
     );
-    await expect(page.locator(".editor-overlay")).toBeHidden();
+    // No modifier: the build editor stays visible.
+    await expect(page.getByTestId("build-name-input")).toBeVisible();
 
+    // Ctrl+click: the layer editor opens with the item form.
     await row.locator(".slot-label").click({ modifiers: ["Control"] });
-    await expect(page.locator(".editor-overlay")).toBeVisible();
+    await expect(page.getByTestId("build-name-input")).toBeHidden();
     await expect(page.locator(".editor-row.is-on .editor-row-name")).toHaveText(
       HEAD_ITEM,
     );
@@ -161,7 +163,7 @@ test.describe("section collapse/expand", () => {
 
     // A brand-new build sees the same section states -- proving they live outside any one
     // build's own document rather than resetting to the shared defaults.
-    await page.getByRole("button", { name: "+ New build" }).click();
+    await page.getByRole("button", { name: "+" }).first().click();
     await expect(slotRow(page, "reinforcements.armorKit1")).toBeVisible();
 
     // Collapsing it back is not a build edit, so it never lands on the undo stack.

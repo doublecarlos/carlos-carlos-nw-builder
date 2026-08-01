@@ -4,18 +4,26 @@
 
 echo "Running pre-commit verification..."
 
-if ! npm run verify; then
+FAILED_MESSAGES=()
+
+if ! npm run lint:check; then FAILED_MESSAGES+=("ESlint"); fi
+
+if ! npm run format:check; then FAILED_MESSAGES+=("Prettier"); fi
+
+if ! npm run typecheck; then FAILED_MESSAGES+=("Typecheck"); fi
+
+if ! npm run test; then FAILED_MESSAGES+=("Vitest"); fi
+
+if ! npm run test:ui; then FAILED_MESSAGES+=("Playwright"); fi
+
+if (( ${#FAILED_MESSAGES[@]} > 0 )); then
   echo ""
   echo "❌ Pre-commit verification failed."
   echo ""
   echo "The following checks did not pass:"
-  echo "  - ESLint                          (npm run lint)"
-  echo "  - Prettier formatting             (npm run format:check)"
-  echo "  - TypeScript type checking        (npm run typecheck)"
-  echo "  - Unit tests                      (npm run test)"
-  echo "  - End-to-end tests                (npm run test:ui)"
-  echo ""
-  echo "Fix the issues above and commit again."
+  for message in "${FAILED_MESSAGES[@]}"; do
+    echo "  - ${message}"
+  done
   exit 1
 fi
 

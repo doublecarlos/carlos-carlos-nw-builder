@@ -8,9 +8,16 @@ import { installWindowShim } from "./window-shim";
 async function freshStores() {
   vi.resetModules();
   installWindowShim();
-  const library = await import("../../../src/stores/library");
+  const builds = await import("../../../src/stores/builds");
+  const history = await import("../../../src/stores/history");
+  const layers = await import("../../../src/stores/layers");
+  const selection = await import("../../../src/stores/selection");
+  const trash = await import("../../../src/stores/trash");
   const buildEditor = await import("../../../src/stores/buildEditor");
-  return { library, buildEditor };
+  builds._setLoading(false);
+  history._setLoading(false);
+  layers._setLoading(false);
+  return { builds, history, layers, selection, trash, buildEditor };
 }
 
 describe("buildEditor undo coalescing", () => {
@@ -19,62 +26,62 @@ describe("buildEditor undo coalescing", () => {
   });
 
   it("collapses consecutive edits of the same slot into one undo step", async () => {
-    const { library, buildEditor } = await freshStores();
+    const { builds, buildEditor } = await freshStores();
     buildEditor.setChoice("ring1", "ItemA");
     buildEditor.setChoice("ring1", "ItemB");
 
-    expect(library.build.value.choices.ring1).toBe("ItemB");
+    expect(builds.build.value.choices.ring1).toBe("ItemB");
     buildEditor.undo();
-    expect(library.build.value.choices.ring1).toBeUndefined();
+    expect(builds.build.value.choices.ring1).toBeUndefined();
     expect(buildEditor.canUndo.value).toBe(false);
   });
 
   it("does not coalesce edits to a different slot", async () => {
-    const { library, buildEditor } = await freshStores();
+    const { builds, buildEditor } = await freshStores();
     buildEditor.setChoice("ring1", "ItemA");
     buildEditor.setChoice("ring2", "ItemC");
 
     buildEditor.undo();
-    expect(library.build.value.choices.ring2).toBeUndefined();
-    expect(library.build.value.choices.ring1).toBe("ItemA");
+    expect(builds.build.value.choices.ring2).toBeUndefined();
+    expect(builds.build.value.choices.ring1).toBe("ItemA");
 
     buildEditor.undo();
-    expect(library.build.value.choices.ring1).toBeUndefined();
+    expect(builds.build.value.choices.ring1).toBeUndefined();
     expect(buildEditor.canUndo.value).toBe(false);
   });
 
   it("does not coalesce once the coalescing window has elapsed", async () => {
     vi.useFakeTimers();
-    const { library, buildEditor } = await freshStores();
+    const { builds, buildEditor } = await freshStores();
     buildEditor.setChoice("ring1", "ItemA");
     vi.advanceTimersByTime(800);
     buildEditor.setChoice("ring1", "ItemB");
 
     buildEditor.undo();
-    expect(library.build.value.choices.ring1).toBe("ItemA");
+    expect(builds.build.value.choices.ring1).toBe("ItemA");
     expect(buildEditor.canUndo.value).toBe(true);
 
     buildEditor.undo();
-    expect(library.build.value.choices.ring1).toBeUndefined();
+    expect(builds.build.value.choices.ring1).toBeUndefined();
   });
 
   it("redo replays an undone step", async () => {
-    const { library, buildEditor } = await freshStores();
+    const { builds, buildEditor } = await freshStores();
     buildEditor.setChoice("ring1", "ItemA");
     buildEditor.undo();
-    expect(library.build.value.choices.ring1).toBeUndefined();
+    expect(builds.build.value.choices.ring1).toBeUndefined();
 
     expect(buildEditor.canRedo.value).toBe(true);
     buildEditor.redo();
-    expect(library.build.value.choices.ring1).toBe("ItemA");
+    expect(builds.build.value.choices.ring1).toBe("ItemA");
     expect(buildEditor.canRedo.value).toBe(false);
   });
 
   // A build_parameter slot's `path` is resolved against `build.context`, not `build` --
-  // setParam/revertSlot writing to the wrong root would either throw (no such top-level
+  // setParam writing to the wrong root would either throw (no such top-level
   // property) or silently create a stray field alongside `context` instead of inside it.
   it("setParam writes into build.context at the slot's path, not the build root", async () => {
-    const { library, buildEditor } = await freshStores();
+    const { builds, buildEditor } = await freshStores();
     const classSlot = {
       id: "options.class",
       label: "Class",
@@ -86,27 +93,7 @@ describe("buildEditor undo coalescing", () => {
 
     buildEditor.setParam(classSlot, "wizard");
 
-    expect(library.build.value.context.class).toBe("wizard");
-    expect(Object.hasOwn(library.build.value, "class")).toBe(false);
-  });
-
-  it("revertSlot restores a build_parameter to the saved build's value", async () => {
-    const { library, buildEditor } = await freshStores();
-    const classSlot = {
-      id: "options.class",
-      label: "Class",
-      section: "options",
-      type: "build_parameter" as const,
-      paramType: "list" as const,
-      path: "class",
-    };
-    const savedClass =
-      library.savedById.value[library.activeId.value].context.class;
-
-    buildEditor.setParam(classSlot, "wizard");
-    expect(library.build.value.context.class).toBe("wizard");
-
-    buildEditor.revertSlot("options.class");
-    expect(library.build.value.context.class).toBe(savedClass);
+    expect(builds.build.value.context.class).toBe("wizard");
+    expect(Object.hasOwn(builds.build.value, "class")).toBe(false);
   });
 });

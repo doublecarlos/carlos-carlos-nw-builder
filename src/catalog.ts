@@ -29,6 +29,8 @@ import type {
   LintFinding,
   Slot,
   BuildParameterSlot,
+  Db,
+  Build,
 } from "./types";
 
 export const emptyOverlay = (): CatalogOverlay => ({
@@ -183,6 +185,91 @@ export function statusOf(
   if (override === null) return "removed";
   if (override === undefined) return shipped ? "base" : "base";
   return shipped ? "edited" : "added";
+}
+
+// --- portable files (phase 7) -------------------------------------------------------------
+
+/** Deep-equality via sorted-key canonical JSON, matching storage.ts's `canonical` helper. */
+function deepEqual(a: unknown, b: unknown): boolean {
+  return JSON.stringify(canonical(a)) === JSON.stringify(canonical(b));
+}
+
+function canonical(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(canonical);
+  if (value && typeof value === "object") {
+    const out: Record<string, unknown> = {};
+    for (const key of Object.keys(value).sort())
+      out[key] = canonical((value as Record<string, unknown>)[key]);
+    return out;
+  }
+  return value;
+}
+
+/** Everything in the composed catalogue this build depends on that base does not already
+ *  provide — what a download has to carry to resolve identically elsewhere. */
+export function referencedOverlay(db: Db, build: Build): CatalogOverlay {
+  const itemIds = new Set<string>();
+  const setIds = new Set<string>();
+
+  // Seed items from choices
+  for (const id of Object.values(build.choices)) {
+    if (id && id !== "-" && id !== "") itemIds.add(id);
+  }
+
+  // Resolve items to find referenced bonus-set ids
+  const visitedItems = new Set<string>();
+  const stack = [...itemIds];
+  while (stack.length > 0) {
+    const id = stack.pop()!;
+    if (visitedItems.has(id)) continue;
+    visitedItems.add(id);
+    const item = db.get(id);
+    if (!item) continue;
+    for (const setId of item.bonuses ?? []) setIds.add(setId);
+    for (const setId of item.excludes ?? []) setIds.add(setId);
+  }
+
+  // Follow set excludes transitively — sets can chain through excludes
+  const visitedSets = new Set<string>();
+  const setStack = [...setIds];
+  while (setStack.length > 0) {
+    const id = setStack.pop()!;
+    if (visitedSets.has(id)) continue;
+    visitedSets.add(id);
+    const set = db.bonusSetById.get(id);
+    if (!set) continue;
+    for (const exId of set.excludes ?? []) {
+      if (!visitedSets.has(exId)) setStack.push(exId);
+    }
+  }
+
+  // Build reference maps for base catalogue
+  const baseItems = new Map(base().items.map((i) => [i.id, i]));
+  const baseSets = new Map(base().bonusSets.map((s) => [s.id, s]));
+
+  const overlay = emptyOverlay();
+
+  // Emit only items absent from base or not deep-equal to their base counterpart
+  for (const id of itemIds) {
+    const item = db.get(id);
+    if (!item) continue;
+    const baseItem = baseItems.get(id);
+    if (!baseItem || !deepEqual(item, baseItem)) {
+      overlay.items[id] = item;
+    }
+  }
+
+  // Emit only bonus sets absent from base or not deep-equal to their base counterpart
+  for (const id of visitedSets) {
+    const set = db.bonusSetById.get(id);
+    if (!set) continue;
+    const baseSet = baseSets.get(id);
+    if (!baseSet || !deepEqual(set, baseSet)) {
+      overlay.bonusSets[id] = set;
+    }
+  }
+
+  return overlay;
 }
 
 export { inBase };

@@ -1,17 +1,19 @@
 <script setup lang="ts">
-// The data editor: browse/add/edit/remove items and shared bonus sets, lint the result, and
-// export it back to the `data/*.json` files.
+// The layer editor: browse/add/edit/remove items and shared bonus sets in a single layer,
+// lint the composed catalogue, and export the results.
+//
+// Takes the selected Layer as a prop and writes through `layers.updateOverlay`. When the
+// layer is disabled, the editor shows a muted banner saying its changes are not applied.
 //
 // The editor never writes to disk -- it cannot, this is a static client app. It edits the
-// workspace *overlay* (see catalog.ts) and hands you the file contents to paste back.
-// The same overlay shape is what per-build custom gear will use later, so nothing here is
-// throwaway: only the layer the overlay lives in changes.
+// layer's overlay (see catalog.ts) and hands you the file contents to paste back.
 import { ref, reactive, computed, watch, onMounted, onUnmounted } from "vue";
 import ItemForm from "./ItemForm.vue";
 import type { ItemDraft } from "./ItemForm.vue";
 import BonusSetForm from "./BonusSetForm.vue";
 import ComboBox from "./ui/ComboBox.vue";
 import BaseButton from "./ui/BaseButton.vue";
+import BaseCheckbox from "./ui/BaseCheckbox.vue";
 import HistoryButton from "./ui/HistoryButton.vue";
 import BaseBadge from "./ui/BaseBadge.vue";
 import BaseNotice from "./ui/BaseNotice.vue";
@@ -22,15 +24,26 @@ import TabButton from "./ui/TabButton.vue";
 import * as catalog from "../catalog";
 import * as router from "../router";
 import * as engine from "../stores/engine";
-import * as workspace from "../stores/workspace";
-import * as ui from "../stores/ui";
-import type { CatalogGroup, Item, BonusSet, LintFinding } from "../types";
+import * as history from "../stores/history";
+import * as layers from "../stores/layers";
+import type {
+  CatalogGroup,
+  CatalogOverlay,
+  Item,
+  BonusSet,
+  LintFinding,
+  Layer,
+} from "../types";
 import type { SetDraft } from "../bonus-draft";
 
-const UNDO_LIMIT = 50;
-
 const db = engine.db;
-const overlay = workspace.workspaceOverlay;
+
+const props = defineProps<{ layer: Layer }>();
+
+const overlay = computed(() => props.layer.overlay);
+function setOverlay(newValue: CatalogOverlay) {
+  layers.updateOverlay(props.layer.id, newValue);
+}
 
 const query = ref("");
 const statusFilter = ref("all"); // all | changed | added | edited | removed
@@ -43,15 +56,6 @@ const formDirty = ref(false);
 const notice = ref("");
 const confirmReset = ref(false);
 let confirmResetTimer: number | undefined;
-// JSON snapshots of `overlay` (this component's prop), taken right before each committed
-// change (save/delete/revert/restore/reset/import) -- the same "snapshot before, restore
-// by re-emitting the JSON" shape as App.vue's build undo, just one stream instead of one
-// per build, since there is only ever one overlay. Strings, not objects, so undoing a
-// hundred-item overlay a dozen times doesn't keep a dozen live deep copies around.
-const history = ref<{
-  past: { json: string; label: string }[];
-  future: { json: string; label: string }[];
-}>({ past: [], future: [] });
 // itemName/setId -> that form's in-progress `draft`, stashed just before switching away
 // from it while dirty (see `stashCurrentDraft`) so picking a different row doesn't
 // silently throw the edit away -- restored via `initialDraft` if the same row is
@@ -216,6 +220,27 @@ const changedCount = computed(
     Object.keys(overlay.value.bonusSets ?? {}).length,
 );
 
+/** Entry count badge: non-tombstone entries in the overlay. */
+const entryCount = computed(() => {
+  let count = 0;
+  for (const value of Object.values(overlay.value.items ?? {})) {
+    if (value !== null) count += 1;
+  }
+  for (const value of Object.values(overlay.value.bonusSets ?? {})) {
+    if (value !== null) count += 1;
+  }
+  return count;
+});
+
+/** All existing ids across base + every layer + the selected build's catalog, for id
+ * allocation. See decision 12 and phase 2b §2.5. */
+const allocatableIds = computed(() => {
+  const ids = new Set<string>(layers.allocatableIds());
+  const build = engine.db.value.items.map((item) => item.id);
+  for (const id of build) ids.add(id);
+  return [...ids];
+});
+
 const findings = computed(() =>
   catalog.validate(db.value.items, db.value.bonusSets),
 );
@@ -228,9 +253,16 @@ const warnCount = computed(
 );
 
 const exportText = computed(() => {
-  if (exportTab.value === "items") return catalog.toItemsFile(db.value.items);
-  if (exportTab.value === "bonuses")
-    return catalog.toBonusesFile(db.value.bonusSets);
+  if (exportTab.value === "items") {
+    // Composed across all enabled layers for the maintainer path.
+    const allEnabled = catalog.compose(layers.enabledOverlays.value);
+    return catalog.toItemsFile(allEnabled.items);
+  }
+  if (exportTab.value === "bonuses") {
+    const allEnabled = catalog.compose(layers.enabledOverlays.value);
+    return catalog.toBonusesFile(allEnabled.bonusSets);
+  }
+  // "This layer": raw overlay JSON.
   return JSON.stringify(overlay.value, null, 2);
 });
 
@@ -240,59 +272,32 @@ const exportName = computed(() => {
   return "catalog-overlay.json";
 });
 
-const canUndo = computed(() => history.value.past.length > 0);
-const canRedo = computed(() => history.value.future.length > 0);
-const undoLabel = computed(() => {
-  const past = history.value.past;
-  return past.length ? past[past.length - 1].label : "";
-});
-const redoLabel = computed(() => {
-  const future = history.value.future;
-  return future.length ? future[future.length - 1].label : "";
-});
+// --- undo (delegated to the history store) -------------------------------------------------
+// The history store owns the committed-undo stack for layers, keyed `layer:<id>`. Form-level
+// draft undo inside ItemForm.vue / BonusSetForm.vue still takes precedence while a form is
+// dirty -- the `onKeydown` below checks the form first.
 
-// --- undo -----------------------------------------------------------------------------
-// The *editor's* undo, over committed overlay changes (save/delete/revert/restore/reset/
-// import) -- one stream, not one per build the way App.vue keys its own history, since
-// there is only ever one overlay. Ordinary in-progress editing (typing, checking a class
-// box) has its own separate, lower-level undo scoped to whichever form is open --
-// ItemForm's/BonusSetForm's own `draftHistory` -- that `onKeydown` below tries
-// first; this one only ever sees a fresh snapshot right before a commit lands.
-
-function snapshot(label: string) {
-  history.value.past.push({ json: JSON.stringify(overlay.value), label });
-  if (history.value.past.length > UNDO_LIMIT) history.value.past.shift();
-  history.value.future.length = 0;
-}
+const canUndo = history.canUndo;
+const canRedo = history.canRedo;
+const undoLabel = history.undoLabel;
+const redoLabel = history.redoLabel;
 
 function undo() {
-  if (!canUndo.value) return;
-  const entry = history.value.past.pop()!;
-  history.value.future.push({
-    json: JSON.stringify(overlay.value),
-    label: entry.label,
-  });
-  workspace.setWorkspaceOverlay(JSON.parse(entry.json));
+  const json = history.undo("layer", props.layer.id, overlay.value);
+  if (json != null) setOverlay(JSON.parse(json));
 }
 
 function redo() {
-  if (!canRedo.value) return;
-  const entry = history.value.future.pop()!;
-  history.value.past.push({
-    json: JSON.stringify(overlay.value),
-    label: entry.label,
-  });
-  workspace.setWorkspaceOverlay(JSON.parse(entry.json));
+  const json = history.redo("layer", props.layer.id, overlay.value);
+  if (json != null) setOverlay(JSON.parse(json));
 }
 
 /**
  * Same Ctrl+Z/Ctrl+Shift+Z/Ctrl+Y convention as App.vue's builder undo, including which
  * fields it defers to native undo for -- only `<textarea>` (the export/import JSON boxes),
- * not every `<input>`. App.vue hijacks Ctrl+Z inside ordinary fields on purpose, and the
- * open item/bonus-set form's own draft-level undo (ItemForm.vue/BonusSetForm.vue) is
- * exactly that same convention one level down, so this defers to it first: only once the
- * open form has nothing left to undo does this fall through to the editor's own undo over
- * *committed* changes (save/delete/revert/…).
+ * not every `<input>`. App.vue's own handler fires for the committed stack; this handler
+ * only checks the open form's draft undo first, so in-progress edits take precedence over
+ * committed changes.
  */
 function onKeydown(event: KeyboardEvent) {
   if (!(event.ctrlKey || event.metaKey) || event.altKey) return;
@@ -458,42 +463,66 @@ function newSet() {
 }
 
 function onSave({ item }: { item: Item }) {
-  snapshot(`Save item “${item.name}”`);
+  history.snapshot(
+    "layer",
+    props.layer.id,
+    `save:${item.id}`,
+    `Save item "${item.name}"`,
+    overlay.value,
+  );
   const next = catalog.upsert(overlay.value, "items", item.id, item);
-  workspace.setWorkspaceOverlay(next);
+  setOverlay(next);
   delete itemDrafts[item.id];
   selectedId.value = item.id;
   router.apply({ item: item.id });
-  notice.value = `Saved “${item.name}”`;
+  notice.value = `Saved "${item.name}"`;
 }
 
 function onDelete() {
   const id = selectedId.value!;
   const name = selected.value?.name ?? id;
-  snapshot(`Delete item “${name}”`);
-  workspace.setWorkspaceOverlay(catalog.remove(overlay.value, "items", id));
+  history.snapshot(
+    "layer",
+    props.layer.id,
+    `delete:${id}`,
+    `Delete item "${name}"`,
+    overlay.value,
+  );
+  setOverlay(catalog.remove(overlay.value, "items", id));
   delete itemDrafts[id];
   selectedId.value = null;
   router.apply({ item: null });
-  notice.value = `Removed “${name}”`;
+  notice.value = `Removed "${name}"`;
 }
 
 function onRevert() {
   const id = selectedId.value!;
   const name = selected.value?.name ?? id;
-  snapshot(`Revert item “${name}”`);
-  workspace.setWorkspaceOverlay(catalog.revert(overlay.value, "items", id));
+  history.snapshot(
+    "layer",
+    props.layer.id,
+    `revert:${id}`,
+    `Revert item "${name}"`,
+    overlay.value,
+  );
+  setOverlay(catalog.revert(overlay.value, "items", id));
   delete itemDrafts[id];
-  notice.value = `Reverted “${name}” to the shipped version`;
+  notice.value = `Reverted "${name}" to the shipped version`;
 }
 
 function restore(row: EditorRow) {
   const group: CatalogGroup = row.kind === "bonusSet" ? "bonusSets" : "items";
-  snapshot(`Restore “${row.name}”`);
-  workspace.setWorkspaceOverlay(catalog.revert(overlay.value, group, row.key));
+  history.snapshot(
+    "layer",
+    props.layer.id,
+    `restore:${row.key}`,
+    `Restore "${row.name}"`,
+    overlay.value,
+  );
+  setOverlay(catalog.revert(overlay.value, group, row.key));
   if (row.kind === "bonusSet") delete setDrafts[row.key];
   else delete itemDrafts[row.key];
-  notice.value = `Restored “${row.name}”`;
+  notice.value = `Restored "${row.name}"`;
 }
 
 /** Two-step, not a `confirm()` dialog -- same pattern as BuildBar.vue's delete: this
@@ -509,8 +538,14 @@ function resetAll() {
   }
   window.clearTimeout(confirmResetTimer);
   confirmReset.value = false;
-  snapshot("Discard all changes");
-  workspace.setWorkspaceOverlay(catalog.emptyOverlay());
+  history.snapshot(
+    "layer",
+    props.layer.id,
+    null,
+    "Discard all changes",
+    overlay.value,
+  );
+  setOverlay(catalog.emptyOverlay());
   selectedId.value = null;
   selectedSetId.value = null;
   for (const key of Object.keys(itemDrafts)) delete itemDrafts[key];
@@ -540,48 +575,74 @@ function selectFinding(finding: LintFinding) {
 // component's own "Bonus sets" section, browsing and editing a set on its own.
 
 function onSaveSet({ id, set }: { id: string; set: BonusSet }) {
-  snapshot(`Save bonus “${set.name || id}”`);
-  workspace.setWorkspaceOverlay(
-    catalog.upsert(overlay.value, "bonusSets", id, set),
+  history.snapshot(
+    "layer",
+    props.layer.id,
+    `save-set:${id}`,
+    `Save bonus "${set.name || id}"`,
+    overlay.value,
   );
+  setOverlay(catalog.upsert(overlay.value, "bonusSets", id, set));
   delete setDrafts[id];
-  notice.value = `Saved set “${set.name || id}”`;
+  notice.value = `Saved set "${set.name || id}"`;
 }
 
 function onDeleteSet(id: string) {
-  snapshot(`Delete bonus “${id}”`);
-  workspace.setWorkspaceOverlay(catalog.remove(overlay.value, "bonusSets", id));
+  history.snapshot(
+    "layer",
+    props.layer.id,
+    `delete-set:${id}`,
+    `Delete bonus "${id}"`,
+    overlay.value,
+  );
+  setOverlay(catalog.remove(overlay.value, "bonusSets", id));
   delete setDrafts[id];
-  notice.value = `Removed set “${id}”`;
+  notice.value = `Removed set "${id}"`;
 }
 
 function onSaveSetTop({ id, set }: { id: string; set: BonusSet }) {
-  snapshot(`Save bonus set “${set.name || id}”`);
-  workspace.setWorkspaceOverlay(
-    catalog.upsert(overlay.value, "bonusSets", id, set),
+  history.snapshot(
+    "layer",
+    props.layer.id,
+    `save-set:${id}`,
+    `Save bonus set "${set.name || id}"`,
+    overlay.value,
   );
+  setOverlay(catalog.upsert(overlay.value, "bonusSets", id, set));
   delete setDrafts[id];
   selectedSetId.value = id;
   router.apply({ set: id });
-  notice.value = `Saved bonus set “${set.name || id}”`;
+  notice.value = `Saved bonus set "${set.name || id}"`;
 }
 
 function onDeleteSetTop() {
   const id = selectedSetId.value!;
-  snapshot(`Delete bonus set “${id}”`);
-  workspace.setWorkspaceOverlay(catalog.remove(overlay.value, "bonusSets", id));
+  history.snapshot(
+    "layer",
+    props.layer.id,
+    `delete-set:${id}`,
+    `Delete bonus set "${id}"`,
+    overlay.value,
+  );
+  setOverlay(catalog.remove(overlay.value, "bonusSets", id));
   delete setDrafts[id];
   selectedSetId.value = null;
   router.apply({ set: null });
-  notice.value = `Removed bonus set “${id}”`;
+  notice.value = `Removed bonus set "${id}"`;
 }
 
 function onRevertSetTop() {
   const id = selectedSetId.value!;
-  snapshot(`Revert bonus set “${id}”`);
-  workspace.setWorkspaceOverlay(catalog.revert(overlay.value, "bonusSets", id));
+  history.snapshot(
+    "layer",
+    props.layer.id,
+    `revert-set:${id}`,
+    `Revert bonus set "${id}"`,
+    overlay.value,
+  );
+  setOverlay(catalog.revert(overlay.value, "bonusSets", id));
   delete setDrafts[id];
-  notice.value = `Reverted bonus set “${id}” to the shipped version`;
+  notice.value = `Reverted bonus set "${id}" to the shipped version`;
 }
 
 // --- export ---------------------------------------------------------------------------
@@ -611,8 +672,14 @@ async function importOverlay(event: Event) {
   if (!file) return;
   try {
     const parsed = JSON.parse(await file.text());
-    snapshot("Import overlay");
-    workspace.setWorkspaceOverlay(catalog.normaliseOverlay(parsed));
+    history.snapshot(
+      "layer",
+      props.layer.id,
+      null,
+      "Import overlay",
+      overlay.value,
+    );
+    setOverlay(catalog.normaliseOverlay(parsed));
     notice.value = "Overlay imported";
   } catch (error: unknown) {
     notice.value = `Could not read that overlay: ${error instanceof Error ? error.message : String(error)}`;
@@ -629,12 +696,17 @@ watch(query, (value) => {
 
 onMounted(() => {
   const routed = router.parse();
+  // When the layer changes, keep the `item` param if the new layer's composed catalogue
+  // still has that id, otherwise drop it (phase 6 §2.3).
   if (routed.section === "bonusSets") {
     section.value = "bonusSets";
     if (routed.set && db.value.bonusSetById.get(routed.set))
       selectedSetId.value = routed.set;
   } else if (routed.item && db.value.get(routed.item)) {
     selectedId.value = routed.item;
+  } else {
+    selectedId.value = null;
+    selectedSetId.value = null;
   }
   if (isValidStatusFilter(routed.status)) statusFilter.value = routed.status;
   if (routed.q) query.value = routed.q;
@@ -646,12 +718,8 @@ onUnmounted(() => {
   window.removeEventListener("popstate", onPopState);
   window.removeEventListener("keydown", onKeydown);
   // This component owns `item`/`set`/`section`/`status`/`q` (App.vue's routing comment above
-  // its own `syncRoute` -- it knows nothing about the editor's internals). App.vue's `close`
-  // handler and its `view` watcher only ever clear `view` itself, so without this a closed
-  // editor would leave stale editor params sitting in the URL. `push: false`: App.vue's own
-  // `view` watcher (flush: pre, so it runs first, before this unmount) already pushed the
-  // "editor closed" history entry -- this just replaces it with the params stripped, rather
-  // than adding a second stop right behind it.
+  // its own `syncRoute` -- it knows nothing about the editor's internals). On unmount, clear
+  // these params so they don't linger in the URL when switching back to the build view.
   router.apply(
     { item: null, set: null, section: null, status: null, q: null },
     { push: false },
@@ -661,8 +729,25 @@ onUnmounted(() => {
 
 <template>
   <div class="flex min-h-0 min-w-0 flex-1 flex-col p-3">
+    <!-- Layer header strip -->
     <div class="mb-2 flex flex-none flex-wrap items-center gap-1.5">
-      <strong>Data editor</strong>
+      <div class="flex items-center gap-1.5">
+        <BaseCheckbox
+          :model-value="props.layer.enabled"
+          @update:model-value="
+            (v) =>
+              typeof v === 'boolean' &&
+              layers.setLayerEnabled(props.layer.id, v)
+          "
+        />
+        <strong>{{ props.layer.name }}</strong>
+        <span class="text-sm text-muted tabular-nums"
+          >{{ entryCount }} entr{{ entryCount === 1 ? "y" : "ies" }}</span
+        >
+      </div>
+
+      <span class="mx-1 h-4 w-px bg-line"></span>
+
       <TabStrip>
         <TabButton
           :active="section === 'items'"
@@ -733,8 +818,15 @@ onUnmounted(() => {
         @click="redo"
         >Redo</HistoryButton
       >
+    </div>
 
-      <BaseButton @click="ui.closeEditor()">✕ Close</BaseButton>
+    <!-- Disabled layer banner -->
+    <div
+      v-if="!props.layer.enabled"
+      class="mb-2 rounded-md border border-warn/40 bg-warn/10 px-3 py-1.5 text-sm text-warn"
+    >
+      This layer is disabled — its changes are not currently applied to the
+      build. Enable it to see its effects.
     </div>
 
     <BaseNotice v-if="notice" class="mb-2" @dismiss="notice = ''">{{
@@ -757,7 +849,7 @@ onUnmounted(() => {
           <TabButton
             :active="exportTab === 'overlay'"
             @click="exportTab = 'overlay'"
-            >overlay only</TabButton
+            >This layer</TabButton
           >
         </TabStrip>
         <span class="flex-1"></span>
@@ -768,11 +860,15 @@ onUnmounted(() => {
       </div>
       <CodeBlock :value="exportText" :rows="12" class="w-full" />
       <p class="mt-1 text-sm text-muted">
-        <template v-if="exportTab === 'overlay'">
-          Just your changes. Small, reviewable, and the same shape custom gear
-          will use when it is stored with a build.
+        <template v-if="exportTab === 'items'">
+          Composed from all enabled layers — for regenerating the shipped data
+          files.
         </template>
-        <template v-else>Replace data/{{ exportName }} with this.</template>
+        <template v-else-if="exportTab === 'bonuses'">
+          Composed from all enabled layers — for regenerating the shipped data
+          files.
+        </template>
+        <template v-else> Just this layer's raw overlay JSON. </template>
       </p>
     </BaseDrawer>
 
@@ -902,6 +998,7 @@ onUnmounted(() => {
           :set-ids="setIds"
           :tags="tagList"
           :bonus-ids="bonusIds"
+          :allocatable-ids="allocatableIds"
           @save="onSave"
           @delete="onDelete"
           @revert="onRevert"
@@ -922,6 +1019,7 @@ onUnmounted(() => {
           :set-ids="setIds"
           :tags="tagList"
           :bonus-ids="bonusIds"
+          :allocatable-ids="allocatableIds"
           @save="onSaveSetTop"
           @delete="onDeleteSetTop"
           @revert="onRevertSetTop"

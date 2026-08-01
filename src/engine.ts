@@ -319,7 +319,18 @@ function findErrors(
   }
 
   for (const row of resolved.rows) {
-    if (!row.item) continue;
+    if (!row.item) {
+      // Row has a choice set but the item doesn't resolve.
+      if (row.choice) {
+        errors.push({
+          slotId: row.slotId,
+          kind: "missing",
+          choice: row.choice,
+          message: `Item "${row.choice}" is not in your catalogue`,
+        });
+      }
+      continue;
+    }
     const allowed = row.item.allowedClass;
     if (allowed && !allowed.includes(context.class)) {
       errors.push({

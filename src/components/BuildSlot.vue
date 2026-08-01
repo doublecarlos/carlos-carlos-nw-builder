@@ -10,9 +10,7 @@
 // straight to the buildEditor store, same as every other component that edits build content.
 import ItemPicker from "./ItemPicker.vue";
 import BuildParamInput from "./ui/BuildParamInput.vue";
-import IconButton from "./ui/IconButton.vue";
 import BaseButton from "./ui/BaseButton.vue";
-import UnsavedDot from "./ui/UnsavedDot.vue";
 import * as buildEditor from "../stores/buildEditor";
 import { getPath } from "../build-path";
 import { label as statLabel } from "../format";
@@ -32,7 +30,6 @@ const props = defineProps<{
   highlightDiff: boolean;
   isHovered: boolean;
   isCursor: boolean;
-  unsaved: boolean;
   // item_picker only
   item?: Item | null;
   items?: Item[];
@@ -89,14 +86,6 @@ const paramValue = () =>
         :for="slotDef.id"
         >{{ slotDef.label }}</label
       >
-      <span v-if="unsaved" class="flex flex-none items-center gap-0.5">
-        <UnsavedDot title="Unsaved change" />
-        <IconButton
-          icon="undo-2"
-          title="Revert to saved"
-          @click="buildEditor.revertSlot(slotDef.id)"
-        />
-      </span>
     </div>
 
     <div class="min-w-0 flex-1">

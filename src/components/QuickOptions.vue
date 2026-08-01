@@ -12,12 +12,12 @@ import BuildParamInput from "./ui/BuildParamInput.vue";
 import { NW_SLOTS } from "../data";
 import { getPath } from "../build-path";
 import { paramDiffers, paramDiffTitle } from "../composables/useCompareDiff";
-import * as library from "../stores/library";
+import * as builds from "../stores/builds";
 import * as compare from "../stores/compare";
 import * as buildEditor from "../stores/buildEditor";
 import type { BuildParameterSlot } from "../types";
 
-const build = library.build;
+const build = builds.build;
 const compareBuild = compare.compareBuild;
 const highlightDiff = () => build.value.compare.highlight;
 

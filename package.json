@@ -8,6 +8,7 @@
     "dev": "vite --strictPort",
     "build": "vite build",
     "preview": "vite preview",
+    "fix": "prettier --write . && eslint . --fix",
     "test": "vitest run",
     "test:ui": "playwright test",
     "test:watch": "vitest",
@@ -15,8 +16,7 @@
     "lint": "eslint . --fix",
     "lint:check": "eslint .",
     "format": "prettier --write .",
-    "format:check": "prettier --check .",
-    "verify": "npm run lint && npm run format:check && npm run typecheck && npm run test && npm run test:ui"
+    "format:check": "prettier --check ."
   },
   "repository": {
     "type": "git",

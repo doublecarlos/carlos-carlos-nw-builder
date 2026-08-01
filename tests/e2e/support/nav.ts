@@ -1,13 +1,13 @@
-// Shared helpers for BuildLibrary.vue's sidebar -- collection/build rows, their kebab menus, and
-// the shared two-step confirm.
+// Shared helpers for Nav.vue's sidebar -- build/layer rows, menu helpers, filter, and
+// recently deleted.
 import { expect, type Locator, type Page } from "@playwright/test";
-
-export function collectionRow(page: Page, name: string): Locator {
-  return page.locator(".nav-row--collection").filter({ hasText: name });
-}
 
 export function buildRow(page: Page, name: string): Locator {
   return page.locator(".nav-row--build").filter({ hasText: name });
+}
+
+export function layerRow(page: Page, name: string): Locator {
+  return page.locator(".nav-row--layer").filter({ hasText: name });
 }
 
 /** Opens a row's kebab menu and returns it (`.navmenu`), scoped so `getByText` only ever
@@ -36,4 +36,67 @@ export async function renameViaSidebar(page: Page, row: Locator, name: string) {
   const input = page.locator(".nav-rename");
   await input.fill(name);
   await input.press("Enter");
+}
+
+/** Clicks the "+ New" button under the Builds section heading. */
+export async function addBuild(page: Page) {
+  await page
+    .locator("text=Builds")
+    .locator("..")
+    .getByRole("button", { name: "+ New" })
+    .click();
+}
+
+/** Clicks the "+ New" button under the Customization Layers section heading. */
+export async function addLayer(page: Page) {
+  await page
+    .locator("text=Customization Layers")
+    .locator("..")
+    .getByRole("button", { name: "+ New" })
+    .click();
+}
+
+/** Enters a filter string in the Builds filter box. */
+export async function filterBuilds(page: Page, text: string) {
+  // The builds filter is the first input[placeholder="Filter…"] in the nav.
+  const filter = page.locator('input[placeholder="Filter…"]').first();
+  await filter.fill(text);
+}
+
+/** Enters a filter string in the Layers filter box. */
+export async function filterLayers(page: Page, text: string) {
+  // The layers filter is the second input[placeholder="Filter…"] in the nav.
+  const filter = page.locator('input[placeholder="Filter…"]').nth(1);
+  await filter.fill(text);
+}
+
+/** Clicks the "Move up" button in an open menu. */
+export async function moveUp(menu: Locator) {
+  await menu.getByRole("button", { name: "Move up" }).click();
+}
+
+/** Clicks the "Move down" button in an open menu. */
+export async function moveDown(menu: Locator) {
+  await menu.getByRole("button", { name: "Move down" }).click();
+}
+
+/** Toggles the layer checkbox — clicks the checkbox input inside the layer row. */
+export async function toggleLayerCheckbox(row: Locator) {
+  await row.locator('input[type="checkbox"]').click();
+}
+
+/** Finds the Recently deleted section header. */
+export function recentlyDeletedHeader(page: Page): Locator {
+  return page.locator("text=Recently deleted").locator("..");
+}
+
+/** Clicks the Restore button on a trash entry. */
+export async function restoreTrash(page: Page) {
+  await page
+    .locator("text=Recently deleted")
+    .locator("..")
+    .locator("..")
+    .getByRole("button", { name: "Restore" })
+    .first()
+    .click();
 }

@@ -2,6 +2,12 @@
 // import time (they bootstrap themselves, same as they would in a real page load). The unit
 // suite runs under vitest's `node` environment (no jsdom dependency) -- this is enough surface
 // for the stores under test without pulling in a full DOM.
+//
+// Also provides an in-memory IDB backend via `idb.setBackend()`.
+
+import { setBackend } from "../../../src/idb";
+import type { Backend, StoreName } from "../../../src/idb";
+
 export function installWindowShim() {
   const store = new Map<string, string>();
   const win = globalThis as unknown as Record<string, unknown>;
@@ -22,4 +28,38 @@ export function installWindowShim() {
     href: "http://localhost/",
   };
   win.history = { pushState: () => {}, replaceState: () => {} };
+}
+
+/** An in-memory Map-based IDB backend for unit tests. Each store is a Map<string, unknown>. */
+export function installIdbShim() {
+  const stores = new Map<StoreName, Map<string, unknown>>();
+  for (const name of [
+    "builds",
+    "layers",
+    "history",
+    "trash",
+    "meta",
+  ] as StoreName[]) {
+    stores.set(name, new Map());
+  }
+
+  const backend: Backend = {
+    async get(store: StoreName, key: string) {
+      return stores.get(store)?.get(key) ?? null;
+    },
+    async getAll(store: StoreName) {
+      const map = stores.get(store);
+      if (!map) return [];
+      return [...map.values()];
+    },
+    async put(store: StoreName, key: string, value: unknown) {
+      stores.get(store)?.set(key, value);
+    },
+    async remove(store: StoreName, key: string) {
+      stores.get(store)?.delete(key);
+    },
+  };
+
+  setBackend(backend);
+  return { stores, clear: () => stores.forEach((m) => m.clear()) };
 }

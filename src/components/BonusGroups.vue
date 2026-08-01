@@ -34,6 +34,8 @@ const props = withDefaults(
     allSetIds?: string[];
     tags?: string[];
     bonusIds?: string[];
+    /** All existing ids for collision-free id allocation. */
+    allocatableIds?: string[];
   }>(),
   {
     setIds: () => [],
@@ -41,6 +43,7 @@ const props = withDefaults(
     allSetIds: () => [],
     tags: () => [],
     bonusIds: () => [],
+    allocatableIds: () => [],
   },
 );
 
@@ -179,6 +182,7 @@ function onSlotDelete(slot: Slot) {
         :set-ids="allSetIds"
         :tags="tags"
         :bonus-ids="bonusIds"
+        :allocatable-ids="props.allocatableIds"
         @save="onSlotSave(slot, $event)"
         @delete="onSlotDelete(slot)"
       >

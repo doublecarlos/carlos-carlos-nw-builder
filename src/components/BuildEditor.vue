@@ -18,14 +18,15 @@ import {
   paramDiffers,
   paramDiffTitle,
 } from "../composables/useCompareDiff";
-import { getPath } from "../build-path";
 import * as storage from "../storage";
 import * as router from "../router";
-import * as library from "../stores/library";
+import * as builds from "../stores/builds";
 import * as buildEditor from "../stores/buildEditor";
 import * as compare from "../stores/compare";
 import * as engine from "../stores/engine";
-import * as ui from "../stores/ui";
+import * as selection from "../stores/selection";
+import * as layers from "../stores/layers";
+import { isMac } from "../platform";
 import type {
   Item,
   EvaluatedBonus,
@@ -37,7 +38,7 @@ import type {
 const root = ref<HTMLElement | null>(null);
 
 const db = engine.db;
-const build = library.build;
+const build = builds.build;
 // Only ever mounted when `engine.resolved.value.ok` -- the throw documents that invariant
 // instead of a defensive fallback for a state that can't happen.
 const result = computed(() => {
@@ -51,15 +52,7 @@ const compareResult = computed(() =>
 );
 const highlightDiff = computed(() => build.value.compare.highlight);
 const onlyDiff = computed(() => build.value.compare.onlyDiff);
-// The active build's last-saved snapshot -- a plain dot on any slotDef that differs from it,
-// deliberately quieter than the compare-diff highlight below: this is "you haven't saved
-// this yet", not "here is what's different and why".
-const savedBuild = computed(
-  () => library.savedById.value[library.activeId.value] ?? null,
-);
-// Other builds in the *active collection* -- feeds each section header's own "copy from"
-// picker (SectionCopyMenu.vue).
-const otherBuilds = library.otherBuildsInCollection;
+const otherBuilds = builds.otherBuilds;
 
 // Which sections are open -- a UI preference, not a build edit, shared across every build
 // rather than saved with one, persisted under its own key so it survives a reload. Every
@@ -153,30 +146,11 @@ const { differs, otherChoiceLabel, rowDiff, rowHasDiff } = useCompareDiff({
   itemIn,
 });
 
-/** True if this slotDef's choice, typed value, or build_parameter value hasn't been saved yet. */
-function unsaved(slotId: string) {
-  const saved = savedBuild.value;
-  if (!saved) return false;
-  const slotDef = db.value.slotById.get(slotId);
-  if (slotDef?.type === "build_parameter") {
-    return (
-      (getPath(build.value.context, slotDef.path) ?? null) !==
-      (getPath(saved.context, slotDef.path) ?? null)
-    );
-  }
-  if ((build.value.choices[slotId] || "") !== (saved.choices[slotId] || ""))
-    return true;
-  return (
-    (build.value.values[slotId] ?? null) !== (saved.values[slotId] ?? null)
-  );
-}
-
 interface SectionRow extends SlotSection {
   slots: Slot[];
   filled: number;
   errors: number;
   diffs: number;
-  unsaved: boolean;
   total: number;
 }
 
@@ -202,7 +176,6 @@ const sections = computed<SectionRow[]>(() => {
       // one below -- the badge's job is telling a *collapsed* section apart, where
       // `slots` would otherwise be invisible. Same reasoning for `unsaved`.
       const diffs = compareBuild.value ? allSlots.filter(rowDiffers).length : 0;
-      const unsavedFlag = allSlots.some((slotDef) => unsaved(slotDef.id));
       const slots = onlyDiffAndComparing
         ? allSlots.filter(rowDiffers)
         : allSlots;
@@ -224,7 +197,6 @@ const sections = computed<SectionRow[]>(() => {
         filled,
         errors,
         diffs,
-        unsaved: unsavedFlag,
         total: pickerSlots.length,
       };
     })
@@ -301,18 +273,19 @@ function setAll(open: boolean) {
   for (const section of db.value.sections) expanded[section.id] = open;
 }
 
-/** A plain click just moves the cursor here, same as an arrow key would. Ctrl+click on a
- * filled slotDef jumps straight to that item in the data editor -- a no-op on an empty slotDef,
- * since there is nothing there to edit. */
+/** A plain click moves the cursor here, same as an arrow key would. Ctrl/Cmd+click on a
+ * filled slot jumps straight to that item in the layer editor -- a no-op on an empty slot,
+ * since there is nothing there to edit. The platform's own modifier exclusively (decision 46). */
 function onRowClick(event: MouseEvent, slotId: string) {
   const slotType = db.value.slotById.get(slotId)?.type as
     "item_picker" | "build_parameter" | undefined;
   setCursor("slot", slotId, slotType);
-  if (!event.ctrlKey) return;
+  if (!(isMac ? event.metaKey : event.ctrlKey)) return;
   const item = itemIn(slotId);
   if (!item) return;
+  const layer = layers.ensureTargetLayer();
   router.apply({ item: item.id });
-  ui.openEditor();
+  selection.selectLayer(layer.id);
 }
 
 /**
@@ -384,7 +357,8 @@ function onFocusIn(event: FocusEvent) {
       >
       <span class="flex-1"></span>
       <span class="text-sm text-muted"
-        >Ctrl+click a filled slotDef to edit that item</span
+        >{{ isMac ? "Cmd" : "Ctrl" }}+click a filled slot to edit in a
+        layer</span
       >
     </div>
 
@@ -398,7 +372,6 @@ function onFocusIn(event: FocusEvent) {
       :total="section.total"
       :errors="section.errors"
       :diffs="section.diffs"
-      :unsaved="section.unsaved"
       :expanded="expanded[section.id]"
       :is-cursor="isCursor('header', section.id)"
       :highlight-diff="highlightDiff"
@@ -408,7 +381,6 @@ function onFocusIn(event: FocusEvent) {
         setCursor('header', section.id);
       "
       @copy="(fromId) => buildEditor.copySection(fromId, [section.id])"
-      @revert="buildEditor.revertSection(section.id)"
     >
       <template #default="{ slotDef }: { slotDef: Slot }">
         <BuildSlot
@@ -418,7 +390,6 @@ function onFocusIn(event: FocusEvent) {
           :highlight-diff="highlightDiff"
           :is-hovered="hover?.slotId === slotDef.id"
           :is-cursor="isCursor('slot', slotDef.id)"
-          :unsaved="unsaved(slotDef.id)"
           :item="itemIn(slotDef.id)"
           :items="itemsFor(slotDef.id)"
           :errors="errorsFor(slotDef.id)"

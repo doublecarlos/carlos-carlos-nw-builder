@@ -16,7 +16,7 @@ import StatPairsTable from "./ui/StatPairsTable.vue";
 import { sectionsFor } from "../stat-sources";
 import { NW_SCHEMA } from "../data";
 import { int as fmtInt, pct as fmtPct, stat as fmtStat } from "../format";
-import * as library from "../stores/library";
+import * as builds from "../stores/builds";
 import * as compare from "../stores/compare";
 import * as engine from "../stores/engine";
 
@@ -92,7 +92,7 @@ const compareResult = computed(() =>
 );
 // Only needed for the stat source popover's forte picks and dynamic weapon mod values -- the
 // rest of the panel reads entirely off `result`.
-const build = library.build;
+const build = builds.build;
 
 const summaryCalcKey = ref("damage:average");
 

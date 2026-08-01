@@ -265,12 +265,53 @@ export interface BuildCompare {
 export interface Build {
   id: string;
   name: string;
-  updated: number;
   choices: Record<string, string>;
   values: Record<string, number>;
   context: BuildContext;
   compare: BuildCompare;
   catalog?: CatalogOverlay;
+  downloaded?: { snapshot: BuildSnapshot; at: number };
+}
+
+export type BuildSnapshot = Omit<Build, "downloaded">;
+
+export interface Layer {
+  id: string;
+  name: string;
+  /** Travels with the layer in a download. */
+  enabled: boolean;
+  overlay: CatalogOverlay;
+  /** Full content as last downloaded or imported — decision 15. */
+  downloaded?: { snapshot: LayerSnapshot; at: number };
+}
+
+export type LayerSnapshot = Omit<Layer, "downloaded">;
+
+/** App-level state that belongs to no single item. */
+export interface AppMeta {
+  buildOrder: string[];
+  layerOrder: string[];
+  lastSelection: Selection | null;
+}
+
+export type Selection = { kind: "build" | "layer"; id: string };
+
+export interface HistoryEntry {
+  json: string;
+  label: string;
+}
+
+export interface ItemHistory {
+  past: HistoryEntry[];
+  future: HistoryEntry[];
+  lastKey: string | null;
+  lastAt: number;
+}
+
+export interface TrashEntry {
+  kind: "build" | "layer";
+  item: Build | Layer;
+  deletedAt: number;
 }
 
 export interface Library {
@@ -374,7 +415,7 @@ export interface ResolvedBonuses {
 
 export interface EngineError {
   slotId: string;
-  kind: "class" | "maxCopies" | "outOfRange";
+  kind: "class" | "maxCopies" | "outOfRange" | "missing";
   choice: string;
   message: string;
 }
