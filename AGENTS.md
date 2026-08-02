@@ -46,3 +46,8 @@ You **MUST NOT**:
 - `src/stores` - Data stores for shared state between components
 - `tests/e2e` - UI tests using playwright
 - `tests/unit` - Unit tests using Vitest
+
+# Other
+
+When running git commands that may invoke an editor, remember to set GIT_EDITOR to avoid getting stuck waiting for an interactive editor.
+Specially useful for rebase operations.
