@@ -6,7 +6,7 @@
 // rating/percent pair each get their own merged overcap-or-headroom column (signed: positive
 // over the cap, negative is spare headroom), coloured independently since they cap separately.
 import { ref, computed } from "vue";
-import { useEventListener } from "@vueuse/core";
+import { onClickOutside } from "@vueuse/core";
 import ComboBox from "./ui/ComboBox.vue";
 import BaseCheckbox from "./ui/BaseCheckbox.vue";
 import IconButton from "./ui/IconButton.vue";
@@ -389,27 +389,14 @@ function toggleCard(event: MouseEvent, key: string) {
   placeCard(key, (event.currentTarget as HTMLElement).getBoundingClientRect());
 }
 
-/**
- * Closes the popover on any click outside it -- same pattern as BuildEditor.vue's own "copy
- * section from" popover. `composedPath()`, not a live `closest()` walk, for the same reason
- * documented there: a click that lands on a *different* row's trigger button must reach
- * `toggleCard` and switch the card over, not have this handler close it first.
- */
-function onDocumentClick(event: MouseEvent) {
-  if (!openCard.value) return;
-  const path = event.composedPath?.() ?? [];
-  if (
-    path.some(
-      (el) =>
-        (el as Element).classList?.contains?.("statcard") ||
-        (el as Element).classList?.contains?.("stat-info-btn"),
-    )
-  )
-    return;
-  closeCard();
-}
-
-useEventListener(document, "mousedown", onDocumentClick);
+/** Closes the popover on any click outside it -- `onClickOutside` ignores clicks on
+ * the card itself (`.statcard`) and on other stat info buttons (`.stat-info-btn`),
+ * so a click on a different row's trigger reaches `toggleCard` and switches the card
+ * over instead of closing it first. */
+onClickOutside(root, () => closeCard(), {
+  ignore: [".statcard", ".stat-info-btn"],
+  capture: false,
+});
 </script>
 
 <template>

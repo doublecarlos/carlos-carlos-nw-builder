@@ -2,7 +2,7 @@
 // Left sidebar: builds, customization layers, and recently deleted. Owns shared state
 // (menus, rename, confirm) and delegates list rendering to NavBuilds / NavLayers / NavTrash.
 import { ref, reactive, nextTick } from "vue";
-import { useEventListener } from "@vueuse/core";
+import { useEventListener, onClickOutside } from "@vueuse/core";
 import NavBuilds from "./NavBuilds.vue";
 import NavLayers from "./NavLayers.vue";
 import NavTrash from "./NavTrash.vue";
@@ -384,18 +384,19 @@ function onTrashMenuAction(action: string, key: string) {
 
 // --- document event handlers for closing menus ----------------------------------------
 
-function onDocumentClick(event: MouseEvent) {
-  if (!openMenu.value) return;
-  const target = event.target as HTMLElement;
-  if (target.closest(".navmenu") || target.closest(".nav-kebab")) return;
-  closeMenu();
-}
-
 function onScrollCapture() {
   closeMenu();
 }
 
-useEventListener(document, "click", onDocumentClick, true);
+/** Closes the context menu on any click outside it -- ignores clicks on the menu itself
+ * (`.navmenu`) and on the kebab trigger buttons (`.nav-kebab`), so those reach their own
+ * handlers first. Uses the bubbling phase (`capture: false`) so that a click on the
+ * already-open row's kebab button toggles the menu closed before this handler runs. */
+onClickOutside(root, () => closeMenu(), {
+  ignore: [".navmenu", ".nav-kebab"],
+  capture: false,
+});
+
 useEventListener(document, "scroll", onScrollCapture, {
   capture: true,
   passive: true,
