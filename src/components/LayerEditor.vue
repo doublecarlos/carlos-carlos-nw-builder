@@ -8,9 +8,11 @@
 // The editor never writes to disk -- it cannot, this is a static client app. It edits the
 // layer's overlay (see catalog.ts) and hands you the file contents to paste back.
 import { ref, reactive, computed, watch, onMounted, onUnmounted } from "vue";
-import ItemForm from "./ItemForm.vue";
-import type { ItemDraft } from "./ItemForm.vue";
-import BonusSetForm from "./BonusSetForm.vue";
+import { useEventListener, useMagicKeys, whenever } from "@vueuse/core";
+import { useConfirm } from "../composables/useConfirm";
+import ItemForm from "./game/ItemForm.vue";
+import type { ItemDraft } from "./game/ItemForm.vue";
+import BonusSetForm from "./game/BonusSetForm.vue";
 import ComboBox from "./ui/ComboBox.vue";
 import BaseButton from "./ui/BaseButton.vue";
 import BaseCheckbox from "./ui/BaseCheckbox.vue";
@@ -21,9 +23,9 @@ import BaseDrawer from "./ui/BaseDrawer.vue";
 import CodeBlock from "./ui/CodeBlock.vue";
 import TabStrip from "./ui/TabStrip.vue";
 import TabButton from "./ui/TabButton.vue";
-import * as catalog from "../catalog";
-import * as router from "../router";
-import * as engine from "../stores/engine";
+import * as catalog from "../data/catalog";
+import * as router from "../lib/router";
+import * as engine from "../stores/resolved";
 import * as history from "../stores/history";
 import * as layers from "../stores/layers";
 import type {
@@ -34,7 +36,7 @@ import type {
   LintFinding,
   Layer,
 } from "../types";
-import type { SetDraft } from "../bonus-draft";
+import type { SetDraft } from "../engine/bonus-draft";
 
 const db = engine.db;
 
@@ -53,9 +55,9 @@ const selectedSetId = ref<string | null>(null);
 const showExport = ref(false);
 const exportTab = ref("items"); // items | bonuses | overlay
 const formDirty = ref(false);
+const newItemCounter = ref(0);
 const notice = ref("");
-const confirmReset = ref(false);
-let confirmResetTimer: number | undefined;
+const confirmReset_ = useConfirm(4000);
 // itemName/setId -> that form's in-progress `draft`, stashed just before switching away
 // from it while dirty (see `stashCurrentDraft`) so picking a different row doesn't
 // silently throw the edit away -- restored via `initialDraft` if the same row is
@@ -299,21 +301,50 @@ function redo() {
  * only checks the open form's draft undo first, so in-progress edits take precedence over
  * committed changes.
  */
-function onKeydown(event: KeyboardEvent) {
-  if (!(event.ctrlKey || event.metaKey) || event.altKey) return;
-  const key = event.key.toLowerCase();
-  if (key !== "z" && key !== "y") return;
-  if ((event.target as HTMLElement)?.tagName === "TEXTAREA") return;
-  event.preventDefault();
-  const activeForm = section.value === "bonusSets" ? setForm.value : form.value;
-  if (key === "y" || event.shiftKey) {
-    if (activeForm?.redoDraft?.()) return;
-    redo();
-  } else {
+
+const editorKeys = useMagicKeys({
+  passive: false,
+  onEventFired(e) {
+    if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
+    const k = e.key.toLowerCase();
+    if (k !== "z" && k !== "y") return;
+    if ((e.target as HTMLElement)?.tagName === "TEXTAREA") return;
+    e.preventDefault();
+  },
+});
+
+function canUndoRedoEditor() {
+  return (document.activeElement as HTMLElement | null)?.tagName !== "TEXTAREA";
+}
+
+// Undo: Ctrl+Z or Meta+Z
+whenever(
+  () =>
+    (editorKeys["Ctrl+Z"]?.value || editorKeys["Meta+Z"]?.value) &&
+    canUndoRedoEditor(),
+  () => {
+    const activeForm =
+      section.value === "bonusSets" ? setForm.value : form.value;
     if (activeForm?.undoDraft?.()) return;
     undo();
-  }
-}
+  },
+);
+
+// Redo: Ctrl+Y, Ctrl+Shift+Z, or Meta equivalents
+whenever(
+  () =>
+    (editorKeys["Ctrl+Y"]?.value ||
+      editorKeys["Meta+Y"]?.value ||
+      editorKeys["Ctrl+Shift+Z"]?.value ||
+      editorKeys["Meta+Shift+Z"]?.value) &&
+    canUndoRedoEditor(),
+  () => {
+    const activeForm =
+      section.value === "bonusSets" ? setForm.value : form.value;
+    if (activeForm?.redoDraft?.()) return;
+    redo();
+  },
+);
 
 // --- unsaved form drafts ----------------------------------------------------------------
 // Stashing drafts here, right before the row key changes, means the draft survives the trip
@@ -448,18 +479,15 @@ function onListKeydown(event: KeyboardEvent) {
 function newItem() {
   stashItemDraft();
   selectedId.value = null;
+  newItemCounter.value++;
   router.apply({ item: null });
-  // Remounts ItemForm with an empty draft even if it was already showing a new item.
-  // $forceUpdate is a real Vue instance method but not part of ItemForm's own defineExpose
-  // surface (draft/dirty/undoDraft/redoDraft only), hence the cast to reach it anyway.
-  (form.value as unknown as { $forceUpdate?: () => void })?.$forceUpdate?.();
 }
 
 function newSet() {
   stashSetDraft();
   selectedSetId.value = null;
+  newItemCounter.value++;
   router.apply({ set: null });
-  (setForm.value as unknown as { $forceUpdate?: () => void })?.$forceUpdate?.();
 }
 
 function onSave({ item }: { item: Item }) {
@@ -529,15 +557,7 @@ function restore(row: EditorRow) {
  *  wipes every change in the overlay, and a blocking modal would stall anything driving
  *  the editor programmatically. */
 function resetAll() {
-  if (!confirmReset.value) {
-    confirmReset.value = true;
-    confirmResetTimer = window.setTimeout(() => {
-      confirmReset.value = false;
-    }, 4000);
-    return;
-  }
-  window.clearTimeout(confirmResetTimer);
-  confirmReset.value = false;
+  if (!confirmReset_.run("reset")) return;
   history.snapshot(
     "layer",
     props.layer.id,
@@ -710,16 +730,11 @@ onMounted(() => {
   }
   if (isValidStatusFilter(routed.status)) statusFilter.value = routed.status;
   if (routed.q) query.value = routed.q;
-  window.addEventListener("popstate", onPopState);
-  window.addEventListener("keydown", onKeydown);
 });
 
+useEventListener(window, "popstate", onPopState);
+
 onUnmounted(() => {
-  window.removeEventListener("popstate", onPopState);
-  window.removeEventListener("keydown", onKeydown);
-  // This component owns `item`/`set`/`section`/`status`/`q` (App.vue's routing comment above
-  // its own `syncRoute` -- it knows nothing about the editor's internals). On unmount, clear
-  // these params so they don't linger in the URL when switching back to the build view.
   router.apply(
     { item: null, set: null, section: null, status: null, q: null },
     { push: false },
@@ -789,11 +804,15 @@ onUnmounted(() => {
         <input type="file" accept=".json" hidden @change="importOverlay"
       /></BaseButton>
       <BaseButton
-        :danger="confirmReset"
+        :danger="confirmReset_.isConfirming('reset')"
         :disabled="!changedCount"
         @click="resetAll"
       >
-        {{ confirmReset ? "Really discard?" : "Discard changes" }}
+        {{
+          confirmReset_.isConfirming("reset")
+            ? "Really discard?"
+            : "Discard changes"
+        }}
       </BaseButton>
 
       <span class="mx-1 h-4 w-px bg-line"></span>
@@ -987,7 +1006,7 @@ onUnmounted(() => {
         <ItemForm
           v-if="section === 'items'"
           ref="form"
-          :key="selectedId ?? '__new__'"
+          :key="selectedId ?? `__new__${newItemCounter}`"
           :source="selected"
           :status="selectedStatus"
           :initial-draft="
@@ -1009,7 +1028,7 @@ onUnmounted(() => {
         <BonusSetForm
           v-else
           ref="setForm"
-          :key="selectedSetId ?? '__new__'"
+          :key="selectedSetId ?? `__new__${newItemCounter}`"
           :source="selectedSet"
           :status="selectedSetStatus"
           :initial-draft="

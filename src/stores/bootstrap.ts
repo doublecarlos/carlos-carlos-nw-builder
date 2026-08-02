@@ -1,7 +1,7 @@
 // One-shot hydrate: loads everything from IDB, fills the stores, applies the URL route,
 // then drops the loading flag. Called once by main.ts before the app mounts.
-import * as storage from "../storage";
-import * as router from "../router";
+import * as storage from "../storage/storage";
+import * as router from "../lib/router";
 import * as builds from "./builds";
 import * as history from "./history";
 import * as layers from "./layers";

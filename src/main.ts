@@ -1,6 +1,6 @@
 import { createApp } from "vue";
 import App from "./App.vue";
-import "./theme.css";
+import "./base.css";
 import { initTheme } from "./stores/theme";
 import { hydrate } from "./stores/bootstrap";
 

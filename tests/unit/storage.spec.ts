@@ -5,53 +5,17 @@
 // instead of silently misread, and a stale catalogue is a soft signal, not a refusal.
 import { describe, expect, it, beforeEach } from "vitest";
 import { installWindowShim, installIdbShim } from "./stores/window-shim";
-import * as storage from "../../src/storage";
-import * as catalog from "../../src/catalog";
-import { NW_CATALOG_VERSION } from "../../src/data";
-import { notice } from "../../src/stores/notice";
+import * as storage from "../../src/storage/storage";
+import * as catalog from "../../src/data/catalog";
+import { NW_CATALOG_VERSION } from "../../src/data/data";
 import type { CatalogOverlay, Build, Db } from "../../src/types";
 
 beforeEach(() => {
   installWindowShim();
 });
 
-describe("localStorage channels: envelope round trip and legacy passthrough", () => {
-  it("saveLibrary -> loadLibrary round-trips transparently", () => {
-    const build = storage.defaultBuild("Round trip");
-    storage.saveLibrary({ builds: [build], activeId: build.id });
-    const loaded = storage.loadLibrary();
-    expect(loaded.activeId).toBe(build.id);
-    expect(loaded.builds).toHaveLength(1);
-    expect(loaded.builds[0].name).toBe("Round trip");
-  });
-
-  it("reads a legacy (un-enveloped) nw:builds value exactly as before", () => {
-    const build = storage.defaultBuild("Legacy");
-    window.localStorage.setItem(
-      "nw:builds",
-      JSON.stringify({ builds: [build], activeId: build.id }),
-    );
-    const loaded = storage.loadLibrary();
-    expect(loaded.activeId).toBe(build.id);
-    expect(loaded.builds[0].name).toBe("Legacy");
-  });
-
-  it("a version/kind mismatch falls back to a fresh library and shows a notice, not a crash", () => {
-    window.localStorage.setItem(
-      "nw:builds",
-      JSON.stringify({
-        v: 999,
-        kind: "library",
-        catalog: NW_CATALOG_VERSION,
-        data: { builds: [], activeId: "" },
-      }),
-    );
-    const loaded = storage.loadLibrary();
-    expect(loaded.builds).toHaveLength(1); // emptyLibrary()'s single default build
-    expect(notice.value).toMatch(/newer version/i);
-  });
-
-  it("overlay: saveOverlay -> loadOverlay round-trips, and a legacy overlay still loads", () => {
+describe("overlay localStorage", () => {
+  it("saveOverlay -> loadOverlay round-trips, and a legacy overlay still loads", () => {
     const overlay: CatalogOverlay = {
       items: {
         "some-id": { id: "some-id", name: "Test", filter: "gear_head" },
@@ -113,23 +77,6 @@ describe("parseJson (single-build import)", () => {
     expect(() => storage.parseJson(payload)).toThrow(/older version/i);
   });
 
-  it("refuses a collection bundle imported as a single build (wrong kind)", () => {
-    const build = storage.defaultBuild();
-    const bundle = storage.bundleCollection(
-      {
-        id: "c1",
-        name: "Coll",
-        updated: 0,
-        buildIds: [build.id],
-        activeBuildId: build.id,
-      },
-      { [build.id]: build },
-    );
-    expect(() => storage.parseJson(storage.toCollectionJson(bundle))).toThrow(
-      /not a "build"/,
-    );
-  });
-
   it("reports catalogStale when the envelope carries a different catalogue version", () => {
     const build = storage.defaultBuild();
     const payload = JSON.stringify({
@@ -139,35 +86,6 @@ describe("parseJson (single-build import)", () => {
       data: build,
     });
     expect(storage.parseJson(payload).catalogStale).toBe(true);
-  });
-});
-
-describe("parseCollectionJson", () => {
-  it("round-trips a bundle exported via toCollectionJson", () => {
-    const build = storage.defaultBuild("In a collection");
-    const bundle = storage.bundleCollection(
-      {
-        id: "c1",
-        name: "My collection",
-        updated: 0,
-        buildIds: [build.id],
-        activeBuildId: build.id,
-      },
-      { [build.id]: build },
-    );
-    const { collection, builds, catalogStale } = storage.parseCollectionJson(
-      storage.toCollectionJson(bundle),
-    );
-    expect(collection.name).toBe("My collection");
-    expect(builds).toHaveLength(1);
-    expect(catalogStale).toBe(false);
-  });
-
-  it("refuses a single build imported as a collection (wrong kind)", () => {
-    const build = storage.defaultBuild();
-    expect(() =>
-      storage.parseCollectionJson(storage.toBuildJson(build)),
-    ).toThrow(/not a "collection"/);
   });
 });
 
@@ -390,23 +308,6 @@ describe("layer JSON round trip", () => {
       /not a "layer"/,
     );
   });
-
-  it("refuses a collection imported as a layer (wrong kind)", () => {
-    const build = storage.defaultBuild();
-    const bundle = storage.bundleCollection(
-      {
-        id: "c1",
-        name: "Coll",
-        updated: 0,
-        buildIds: [build.id],
-        activeBuildId: build.id,
-      },
-      { [build.id]: build },
-    );
-    expect(() =>
-      storage.parseLayerJson(storage.toCollectionJson(bundle)),
-    ).toThrow(/not a "layer"/);
-  });
 });
 
 describe("bundle JSON round trip", () => {
@@ -447,23 +348,6 @@ describe("overlay envelope: layer-kind and bundle-kind", () => {
       data: layer,
     });
     expect(() => storage.parseLayerJson(oldEnvelope)).toThrow(/older version/);
-  });
-
-  it("a collection-kind file is refused when imported as a layer", () => {
-    const build = storage.defaultBuild();
-    const bundle = storage.bundleCollection(
-      {
-        id: "c1",
-        name: "Coll",
-        updated: 0,
-        buildIds: [build.id],
-        activeBuildId: build.id,
-      },
-      { [build.id]: build },
-    );
-    expect(() =>
-      storage.parseLayerJson(storage.toCollectionJson(bundle)),
-    ).toThrow(/not a "layer"/);
   });
 });
 

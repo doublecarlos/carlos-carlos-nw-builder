@@ -2,7 +2,8 @@
 // folds every enabled layer's overlay (plus the active build's catalog) on top of the
 // base catalogue.
 import { computed, ref } from "vue";
-import * as storage from "../storage";
+import { useDebounceFn } from "@vueuse/core";
+import * as storage from "../storage/storage";
 import * as history from "./history";
 import * as trash from "./trash";
 import * as selection from "./selection";
@@ -235,19 +236,7 @@ export function _init(layersMap: Map<string, Layer>, order: string[]) {
 // --- persistence (incremental — only dirty ids are written) -----------------------------
 
 const _dirtyIds = new Set<string>();
-let _saveTimer: number | undefined;
 let _loading = true;
-
-function markDirty(id: string) {
-  if (_loading) return;
-  _dirtyIds.add(id);
-  window.clearTimeout(_saveTimer);
-  _saveTimer = window.setTimeout(() => flushSave(), SAVE_DEBOUNCE_MS);
-}
-
-function clearDirty(id: string) {
-  _dirtyIds.delete(id);
-}
 
 async function flushSave() {
   const ids = [..._dirtyIds];
@@ -264,6 +253,18 @@ async function flushSave() {
       }
     }
   }
+}
+
+const flushSaveDebounced = useDebounceFn(flushSave, SAVE_DEBOUNCE_MS);
+
+function markDirty(id: string) {
+  if (_loading) return;
+  _dirtyIds.add(id);
+  flushSaveDebounced();
+}
+
+function clearDirty(id: string) {
+  _dirtyIds.delete(id);
 }
 
 /** Called by bootstrap once hydration finishes so persistence can start. */

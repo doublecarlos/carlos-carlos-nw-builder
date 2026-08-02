@@ -10,11 +10,11 @@ export function statInfoButton(page: Page, key: string): Locator {
 
 /** The one popover for the whole panel -- present only while a stat's card is open. */
 export function statCard(page: Page): Locator {
-  return page.locator(".statcard");
+  return page.locator('[data-testid="stat-card"]');
 }
 
 export function statCardClose(page: Page): Locator {
-  return statCard(page).locator(".statcard-close");
+  return statCard(page).locator('[data-testid="stat-card-close"]');
 }
 
 /**
@@ -24,5 +24,5 @@ export function statCardClose(page: Page): Locator {
  * instead and contributes no entry here.
  */
 export function statCardSourceGroups(page: Page): Locator {
-  return statCard(page).locator(".statcard-rows");
+  return statCard(page).locator('[data-testid="stat-card-rows"]');
 }

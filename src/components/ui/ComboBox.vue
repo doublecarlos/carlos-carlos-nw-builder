@@ -7,6 +7,7 @@
 // Reuses ItemPicker's PickerMenu/PickerRow primitives rather than inventing a second look for
 // the same interaction.
 import { ref, computed, watch, nextTick } from "vue";
+import { onKeyStroke } from "@vueuse/core";
 import PickerMenu from "./PickerMenu.vue";
 import PickerRow from "./PickerRow.vue";
 
@@ -45,11 +46,7 @@ const filtered = computed(() => {
 });
 
 watch(highlight, () => {
-  nextTick(() => {
-    (list.value?.$el as HTMLElement | undefined)
-      ?.querySelector("[data-highlighted]")
-      ?.scrollIntoView({ block: "nearest" });
-  });
+  nextTick(() => list.value?.scrollToHighlighted());
 });
 
 function onFocus() {
@@ -88,46 +85,61 @@ function choose(
   if (blur) input.value?.blur();
 }
 
-function onKeydown(event: KeyboardEvent) {
-  if (event.key === "Escape") {
-    event.preventDefault();
-    event.stopPropagation();
+// --- keyboard handling via onKeyStroke (scoped to the input ref) ------------------------
+
+onKeyStroke(
+  "Escape",
+  (e) => {
+    e.preventDefault();
+    e.stopPropagation();
     close();
     input.value?.blur();
-    return;
-  }
-  if (event.key === "ArrowDown" || event.key === "ArrowUp") {
-    event.preventDefault();
-    event.stopPropagation();
+  },
+  { target: input },
+);
+
+onKeyStroke(
+  (e) => e.key === "ArrowDown" || e.key === "ArrowUp",
+  (e) => {
+    e.preventDefault();
+    e.stopPropagation();
     if (!open.value) {
       onFocus();
       return;
     }
-    const step = event.key === "ArrowDown" ? 1 : -1;
+    const step = e.key === "ArrowDown" ? 1 : -1;
     const last = filtered.value.length - 1;
     highlight.value = Math.min(Math.max(highlight.value + step, 0), last);
-    return;
-  }
-  if (event.key === "Enter") {
+  },
+  { target: input },
+);
+
+onKeyStroke(
+  "Enter",
+  (e) => {
     if (!open.value) return;
-    event.preventDefault();
-    event.stopPropagation();
+    e.preventDefault();
+    e.stopPropagation();
     choose(filtered.value[highlight.value]);
-    return;
-  }
-  if (event.key === "Tab") {
+  },
+  { target: input },
+);
+
+onKeyStroke(
+  "Tab",
+  (e) => {
     if (!open.value) return;
-    if (event.shiftKey) {
+    if (e.shiftKey) {
       // Browsing backward -- just close.
-      event.preventDefault();
-      event.stopPropagation();
+      e.preventDefault();
+      e.stopPropagation();
       close();
       return;
     }
     // Stat-key pickers only: commit the highlighted stat before the
     // browser's own Tab moves focus to the value field right after this one in the DOM.
     // No preventDefault -- the browser still does the actual tabbing.
-    if ((event.target as HTMLElement).closest(".stat-row")) {
+    if ((e.target as HTMLElement).closest(".stat-row")) {
       choose(filtered.value[highlight.value], { blur: false });
       return;
     }
@@ -136,9 +148,9 @@ function onKeydown(event: KeyboardEvent) {
     // either -- the input is still focused for the window-level listener's
     // synchronous gate).
     choose(filtered.value[highlight.value], { blur: false });
-    return;
-  }
-}
+  },
+  { target: input },
+);
 </script>
 
 <template>
@@ -155,7 +167,6 @@ function onKeydown(event: KeyboardEvent) {
       @focus="onFocus"
       @input="onInput"
       @blur="onBlur"
-      @keydown="onKeydown"
     />
     <!-- Sits in the same right-hand gutter the input's padding reserves -- the only hint
          this text input is actually a fixed-choice dropdown. -->
@@ -172,7 +183,13 @@ function onKeydown(event: KeyboardEvent) {
         @mousedown.prevent="choose(option)"
         @mouseenter="highlight = index"
       >
-        <div class="flex items-baseline gap-1.5">
+        <slot
+          v-if="$slots.option"
+          name="option"
+          :option="option"
+          :highlighted="highlight === index"
+        />
+        <div v-else class="flex items-baseline gap-1.5">
           <span
             class="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap"
             >{{ option.label }}</span

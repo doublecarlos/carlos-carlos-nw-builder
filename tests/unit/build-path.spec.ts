@@ -1,9 +1,9 @@
 // build_parameter paths are resolved against `build.context`, not `build` itself, so a path
 // structurally cannot address a sibling of `context` (`choices`, `id`, `catalog`, ...).
 import { describe, it, expect } from "vitest";
-import { getPath, setPath, findParamSlot } from "../../src/build-path";
-import { defaultBuild } from "../../src/storage";
-import { NW_SLOTS, NW_SCHEMA } from "../../src/data";
+import { getPath, setPath, findParamSlot } from "../../src/lib/build-path";
+import { defaultBuild } from "../../src/storage/storage";
+import { NW_SLOTS, NW_SCHEMA } from "../../src/data/data";
 import type { BuildParameterSlot } from "../../src/types";
 
 describe("build-path", () => {

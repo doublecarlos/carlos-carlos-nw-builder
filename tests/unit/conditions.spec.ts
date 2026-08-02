@@ -1,9 +1,9 @@
 // The generic `param` leaf -- one leaf, three mutually exclusive comparison forms, keyed on a
 // build_parameter's (context-relative) path.
 import { describe, it, expect } from "vitest";
-import { evaluate, explain } from "../../src/conditions";
-import * as db from "../../src/db";
-import * as bonus from "../../src/bonus";
+import { evaluate, explain } from "../../src/engine/conditions";
+import * as db from "../../src/data/db";
+import * as bonus from "../../src/engine/bonus";
 import type { EvalContext, SlotsData, Schema, Build } from "../../src/types";
 
 function ctx(

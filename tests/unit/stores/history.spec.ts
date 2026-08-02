@@ -1,12 +1,12 @@
 // Per-item persisted undo stack — unit tests for coalescing, limit, selection, trash
 // interaction, and survival across a simulated reload.
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { Backend, StoreName } from "../../../src/idb";
+import type { Backend, StoreName } from "../../../src/storage/idb";
 
 async function freshStores() {
   vi.resetModules();
   // Set up the IDB backend directly on the freshly imported idb module.
-  const idb = await import("../../../src/idb");
+  const idb = await import("../../../src/storage/idb");
   const { installWindowShim } = await import("./window-shim");
   installWindowShim();
 
@@ -257,7 +257,7 @@ describe("history store", () => {
     vi.advanceTimersByTime(300);
 
     // Verify the data is in the IDB store
-    const idb = await import("../../../src/idb");
+    const idb = await import("../../../src/storage/idb");
     const stored = await idb.get("history", `build:${b.id}`);
     expect(stored).not.toBeNull();
     expect(stored).toHaveProperty("id", `build:${b.id}`);

@@ -6,6 +6,10 @@ withDefaults(defineProps<{ highlighted?: boolean; muted?: boolean }>(), {
   highlighted: false,
   muted: false,
 });
+
+defineSlots<{
+  default(): unknown;
+}>();
 </script>
 
 <template>

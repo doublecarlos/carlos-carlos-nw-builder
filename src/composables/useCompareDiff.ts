@@ -1,7 +1,7 @@
 // The quick-compare picker's per-slot diffing: whether a slot's choice, typed value, or a
 // bonus it takes part in differs from the compare build.
 import { computed, type Ref } from "vue";
-import { getPath } from "../build-path";
+import { getPath } from "../lib/build-path";
 import type {
   Build,
   BuildParameterSlot,

@@ -5,8 +5,8 @@
 //
 // Also provides an in-memory IDB backend via `idb.setBackend()`.
 
-import { setBackend } from "../../../src/idb";
-import type { Backend, StoreName } from "../../../src/idb";
+import { setBackend } from "../../../src/storage/idb";
+import type { Backend, StoreName } from "../../../src/storage/idb";
 
 export function installWindowShim() {
   const store = new Map<string, string>();

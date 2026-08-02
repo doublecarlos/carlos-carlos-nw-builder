@@ -5,12 +5,13 @@
 // on load; expanding everything is ~180 rows, which the browser handles fine -- only one
 // dropdown is ever open, and that is where the per-row cost actually lives. No virtualisation.
 import { computed, reactive, ref, watch } from "vue";
-import ItemCard from "./ItemCard.vue";
-import BuildSection from "./BuildSection.vue";
-import BuildSlot from "./BuildSlot.vue";
+import ItemCard from "./game/ItemCard.vue";
+import BaseTooltip from "./ui/BaseTooltip.vue";
+import BuildSection from "./game/BuildSection.vue";
+import BuildSlot from "./game/BuildSlot.vue";
 import BaseButton from "./ui/BaseButton.vue";
-import { NW_SCHEMA, NW_SLOTS } from "../data";
-import { abbr, signedStat } from "../format";
+import { NW_SCHEMA, NW_SLOTS } from "../data/data";
+import { abbr, signedStat } from "../lib/format";
 import { useHoverCard } from "../composables/useHoverCard";
 import { useKeyboardCursor } from "../composables/useKeyboardCursor";
 import {
@@ -18,15 +19,15 @@ import {
   paramDiffers,
   paramDiffTitle,
 } from "../composables/useCompareDiff";
-import * as storage from "../storage";
-import * as router from "../router";
+import * as storage from "../storage/storage";
+import * as router from "../lib/router";
 import * as builds from "../stores/builds";
 import * as buildEditor from "../stores/buildEditor";
 import * as compare from "../stores/compare";
-import * as engine from "../stores/engine";
+import * as engine from "../stores/resolved";
 import * as selection from "../stores/selection";
 import * as layers from "../stores/layers";
-import { isMac } from "../platform";
+import { isMac } from "../lib/platform";
 import type {
   Item,
   EvaluatedBonus,
@@ -36,6 +37,7 @@ import type {
 } from "../types";
 
 const root = ref<HTMLElement | null>(null);
+const tooltip = ref<InstanceType<typeof BaseTooltip> | null>(null);
 
 const db = engine.db;
 const build = builds.build;
@@ -109,7 +111,7 @@ const {
   onCardLeave,
   onFocusIn: onHoverFocusIn,
   onFocusOut,
-} = useHoverCard(root, (slotId) => itemIn(slotId) !== null);
+} = useHoverCard(tooltip, (slotId) => itemIn(slotId) !== null);
 
 const hoveredItem = computed(() =>
   hover.value ? itemIn(hover.value.slotId) : null,
@@ -419,15 +421,16 @@ function onFocusIn(event: FocusEvent) {
     </BuildSection>
 
     <!-- One card for the whole list, moved and refilled on hover. -->
-    <ItemCard
-      v-if="hover && hoveredItem"
-      :item="hoveredItem"
-      :bonuses="hoveredBonuses"
-      :db="db"
-      :slot-label="db.slotById.get(hover.slotId)?.label ?? ''"
-      :style="{ left: hover.left + 'px', top: hover.top + 'px' }"
-      @mouseenter="onCardEnter"
-      @mouseleave="onCardLeave"
-    />
+    <BaseTooltip ref="tooltip" :width="320">
+      <ItemCard
+        v-if="hover && hoveredItem"
+        :item="hoveredItem"
+        :bonuses="hoveredBonuses"
+        :db="db"
+        :slot-label="db.slotById.get(hover.slotId)?.label ?? ''"
+        @mouseenter="onCardEnter"
+        @mouseleave="onCardLeave"
+      />
+    </BaseTooltip>
   </section>
 </template>

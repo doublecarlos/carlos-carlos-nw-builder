@@ -4,9 +4,9 @@
 import TabStrip from "./ui/TabStrip.vue";
 import TabButton from "./ui/TabButton.vue";
 import StatPanel from "./StatPanel.vue";
-import BonusInspector from "./BonusInspector.vue";
+import BonusInspector from "./game/BonusInspector.vue";
 import BaseBadge from "./ui/BaseBadge.vue";
-import * as engine from "../stores/engine";
+import * as engine from "../stores/resolved";
 import * as details from "../stores/details";
 
 const tab = details.tab;

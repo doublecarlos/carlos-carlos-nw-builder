@@ -10,9 +10,9 @@
 // on every edit and emit it to the parent. Now `addStat(gi)` mutates
 // `draft.grants[gi].stats.push(row)` directly — no structural cloning needed.
 
-import * as bonusDraft from "../bonus-draft";
-import type { ConditionRow } from "../condition-draft";
-import type { GrantDraft } from "../bonus-draft";
+import * as bonusDraft from "../engine/bonus-draft";
+import type { ConditionRow } from "../engine/condition-draft";
+import type { GrantDraft } from "../engine/bonus-draft";
 
 // -- GrantStore ========================================================
 // Per-grant: owns all mutations inside a single GrantDraft (payload, stats, tiers, variants,

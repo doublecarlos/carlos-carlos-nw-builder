@@ -3,17 +3,18 @@
 //
 // Layout: header (always visible), then either a loading skeleton, an empty state, or the
 // three-column builder (nav, editor area with sticky header, stat panel).
-import { watch, onMounted, onUnmounted, computed } from "vue";
+import { watch, computed } from "vue";
+import { useEventListener, useMagicKeys, whenever } from "@vueuse/core";
 import Nav from "./components/Nav.vue";
 import AppHeader from "./components/AppHeader.vue";
 import EmptyState from "./components/EmptyState.vue";
 import BuildEditor from "./components/BuildEditor.vue";
 import BuildDetails from "./components/BuildDetails.vue";
-import QuickOptions from "./components/QuickOptions.vue";
+import QuickOptions from "./components/game/QuickOptions.vue";
 import LayerEditor from "./components/LayerEditor.vue";
-import * as router from "./router";
+import * as router from "./lib/router";
 import * as buildEditor from "./stores/buildEditor";
-import * as engine from "./stores/engine";
+import * as engine from "./stores/resolved";
 import * as details from "./stores/details";
 import * as selection from "./stores/selection";
 import * as builds from "./stores/builds";
@@ -90,25 +91,56 @@ const selectedLayer = computed(() => {
 });
 
 // --- keyboard shortcut --------------------------------------------------------------------
+// useMagicKeys tracks Ctrl/Meta+Z/Y combinations reactively. The `onEventFired` hook
+// calls preventDefault() synchronously during the keydown event, before the browser's
+// native undo/redo can act on a focused input — but only when the guard conditions pass
+// (a build is active, not TEXTAREA/name-input, and no Alt modifier).
 
-function onKeydown(event: KeyboardEvent) {
-  // Layer editor has its own Ctrl+Z/Y handler, so skip the global one when a layer is active.
-  if (selection.selection.value?.kind === "layer") return;
-  if (!(event.ctrlKey || event.metaKey) || event.altKey) return;
-  const key = event.key.toLowerCase();
-  if (key !== "z" && key !== "y") return;
+const keys = useMagicKeys({
+  passive: false,
+  onEventFired(e) {
+    if (
+      !(e.ctrlKey || e.metaKey) ||
+      e.altKey ||
+      selection.selection.value?.kind === "layer"
+    )
+      return;
+    const k = e.key.toLowerCase();
+    if (k !== "z" && k !== "y") return;
+    const target = e.target as HTMLElement;
+    if (
+      target?.tagName === "TEXTAREA" ||
+      target?.classList?.contains("name-input")
+    )
+      return;
+    e.preventDefault();
+  },
+});
 
-  const target = event.target as HTMLElement;
-  if (
-    target?.tagName === "TEXTAREA" ||
-    target?.classList?.contains("name-input")
-  )
-    return;
-
-  event.preventDefault();
-  if (key === "y" || event.shiftKey) buildEditor.redo();
-  else buildEditor.undo();
+function canUndoRedo() {
+  if (selection.selection.value?.kind === "layer") return false;
+  const active = document.activeElement as HTMLElement | null;
+  return !(
+    active?.tagName === "TEXTAREA" || active?.classList?.contains("name-input")
+  );
 }
+
+// Undo: Ctrl+Z or Meta+Z (without Shift)
+whenever(
+  () => (keys["Ctrl+Z"]?.value || keys["Meta+Z"]?.value) && canUndoRedo(),
+  () => buildEditor.undo(),
+);
+
+// Redo: Ctrl+Y, Ctrl+Shift+Z, or Meta equivalents
+whenever(
+  () =>
+    (keys["Ctrl+Y"]?.value ||
+      keys["Meta+Y"]?.value ||
+      keys["Ctrl+Shift+Z"]?.value ||
+      keys["Meta+Shift+Z"]?.value) &&
+    canUndoRedo(),
+  () => buildEditor.redo(),
+);
 
 // --- routing --------------------------------------------------------------------------
 
@@ -144,16 +176,9 @@ watch(
 );
 watch(details.tab, () => syncRoute({ push: false }));
 
-onMounted(() => {
-  window.addEventListener("keydown", onKeydown);
-  window.addEventListener("popstate", onPopState);
-  syncRoute({ push: false });
-});
+useEventListener(window, "popstate", onPopState);
 
-onUnmounted(() => {
-  window.removeEventListener("keydown", onKeydown);
-  window.removeEventListener("popstate", onPopState);
-});
+syncRoute({ push: false });
 </script>
 
 <template>

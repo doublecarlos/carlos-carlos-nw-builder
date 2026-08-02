@@ -1,14 +1,15 @@
 // The flat pool of builds: id→Build map, order, loading, selectors, and every mutation
 // that creates/destroys/reorders them. Build content edits live in buildEditor.ts.
 import { computed, ref, watch } from "vue";
-import * as storage from "../storage";
+import { useDebounceFn } from "@vueuse/core";
+import * as storage from "../storage/storage";
 import * as history from "./history";
 import * as trash from "./trash";
 import * as selection from "./selection";
 import { buildOrder, persistMeta } from "./meta";
 import { flagStorageFailed, showNotice } from "./notice";
 import * as layers from "./layers";
-import { db as engineDb } from "./engine";
+import { db as engineDb } from "./resolved";
 import type { Build } from "../types";
 
 const SAVE_DEBOUNCE_MS = 250;
@@ -226,18 +227,6 @@ export function _setLoading(value: boolean) {
 // --- persistence (incremental — only dirty ids are written) -----------------------------
 
 const _dirtyIds = new Set<string>();
-let _saveTimer: number | undefined;
-
-function markDirty(id: string) {
-  if (_loading.value) return;
-  _dirtyIds.add(id);
-  window.clearTimeout(_saveTimer);
-  _saveTimer = window.setTimeout(() => flushSave(), SAVE_DEBOUNCE_MS);
-}
-
-function clearDirty(id: string) {
-  _dirtyIds.delete(id);
-}
 
 async function flushSave() {
   const ids = [..._dirtyIds];
@@ -254,6 +243,18 @@ async function flushSave() {
       }
     }
   }
+}
+
+const flushSaveDebounced = useDebounceFn(flushSave, SAVE_DEBOUNCE_MS);
+
+function markDirty(id: string) {
+  if (_loading.value) return;
+  _dirtyIds.add(id);
+  flushSaveDebounced();
+}
+
+function clearDirty(id: string) {
+  _dirtyIds.delete(id);
 }
 
 // Deep-watch the active build so buildEditor.ts content edits (which mutate build.value in

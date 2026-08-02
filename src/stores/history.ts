@@ -15,7 +15,8 @@
 // Consecutive calls to `snapshot` with the same `key` inside a 700 ms window collapse into
 // one undo step. Pass `null` to force a distinct step.
 import { computed, ref } from "vue";
-import * as idb from "../idb";
+import { useDebounceFn } from "@vueuse/core";
+import * as idb from "../storage/idb";
 import * as selection from "./selection";
 
 const UNDO_LIMIT = 50;
@@ -41,15 +42,7 @@ let _loading = true;
 
 /** The dirty set for IDB persistence, same pattern as builds.ts/layers.ts. */
 const _dirtyIds = new Set<string>();
-let _saveTimer: number | undefined;
 const SAVE_DEBOUNCE_MS = 250;
-
-function markDirty(key: string) {
-  if (_loading) return;
-  _dirtyIds.add(key);
-  window.clearTimeout(_saveTimer);
-  _saveTimer = window.setTimeout(() => flushSave(), SAVE_DEBOUNCE_MS);
-}
 
 async function flushSave() {
   const keys = [..._dirtyIds];
@@ -65,6 +58,14 @@ async function flushSave() {
       }
     }
   }
+}
+
+const flushSaveDebounced = useDebounceFn(flushSave, SAVE_DEBOUNCE_MS);
+
+function markDirty(key: string) {
+  if (_loading) return;
+  _dirtyIds.add(key);
+  flushSaveDebounced();
 }
 
 // --- key helpers --------------------------------------------------------------------------

@@ -24,10 +24,10 @@ test.describe("stat source popover", () => {
     await statInfoButton(page, "power").click();
     const card = statCard(page);
     await expect(card).toBeVisible();
-    await expect(card.locator(".statcard-title")).toHaveText("Power");
+    await expect(card.locator('[data-testid="stat-card-title"]')).toHaveText("Power");
 
     // No items/bonuses at all yet, so Rating has nothing to show.
-    await expect(card.locator(".statcard-empty")).toHaveText(
+    await expect(card.locator('[data-testid="stat-card-empty"]')).toHaveText(
       "no contributing sources",
     );
 
@@ -35,7 +35,7 @@ test.describe("stat source popover", () => {
     // forte pick (storage.ts's `DEFAULT_FORTE.primary` is `power_p`).
     const groups = statCardSourceGroups(page);
     await expect(groups).toHaveCount(1);
-    const percentRows = groups.nth(0).locator(".statcard-row");
+    const percentRows = groups.nth(0).locator('[data-testid="stat-card-row"]');
     await expect(percentRows).toHaveCount(2);
     await expect(percentRows.nth(0)).toContainText("Rating contribution");
     await expect(percentRows.nth(1)).toContainText("Forte");
@@ -52,12 +52,12 @@ test.describe("stat source popover", () => {
     await statInfoButton(page, "strike").click();
     const card = statCard(page);
     await expect(card).toBeVisible();
-    await expect(card.locator(".statcard-title")).toHaveText("Critical Strike");
+    await expect(card.locator('[data-testid="stat-card-title"]')).toHaveText("Critical Strike");
 
     const groups = statCardSourceGroups(page);
     await expect(groups).toHaveCount(2);
 
-    const ratingRows = groups.nth(0).locator(".statcard-row");
+    const ratingRows = groups.nth(0).locator('[data-testid="stat-card-row"]');
     await expect(ratingRows).toHaveCount(2);
     await expect(ratingRows.nth(0)).toContainText(HEAD_ITEM);
     await expect(ratingRows.nth(0)).toContainText("+");
@@ -65,7 +65,7 @@ test.describe("stat source popover", () => {
 
     // strike_p is storage.ts's `DEFAULT_FORTE.secondaryA` -- Rating contribution plus the
     // forte pool, no ability contribution (strike_p isn't an abilityContributions target).
-    const percentRows = groups.nth(1).locator(".statcard-row");
+    const percentRows = groups.nth(1).locator('[data-testid="stat-card-row"]');
     await expect(percentRows).toHaveCount(2);
     await expect(percentRows.nth(0)).toContainText("Rating contribution");
     await expect(percentRows.nth(1)).toContainText("Forte");
@@ -84,7 +84,7 @@ test.describe("stat source popover", () => {
     await statInfoButton(page, "ca").click();
     const percentRows = statCardSourceGroups(page)
       .nth(1)
-      .locator(".statcard-row");
+      .locator('[data-testid="stat-card-row"]');
     await expect(percentRows.filter({ hasText: HEAD_ITEM })).toHaveCount(1);
   });
 
@@ -98,8 +98,8 @@ test.describe("stat source popover", () => {
     // every *other* rating stat's own Rating section, not part of a pair itself.
     await statInfoButton(page, "combined_rating").click();
     const card = statCard(page);
-    await expect(card.locator(".statcard-section")).toHaveCount(0);
-    const rows = card.locator(".statcard-row");
+    await expect(card.locator('[data-testid="stat-card-section"]')).toHaveCount(0);
+    const rows = card.locator('[data-testid="stat-card-row"]');
     await expect(rows).toHaveCount(1);
     await expect(rows.first()).toContainText(HEAD_ITEM);
   });
@@ -120,11 +120,11 @@ test.describe("stat source popover", () => {
   }) => {
     await openBuilder(page);
     await statInfoButton(page, "power").click();
-    await expect(statCard(page).locator(".statcard-title")).toHaveText("Power");
+    await expect(statCard(page).locator('[data-testid="stat-card-title"]')).toHaveText("Power");
 
     await statInfoButton(page, "acc").click();
     await expect(statCard(page)).toHaveCount(1);
-    await expect(statCard(page).locator(".statcard-title")).toHaveText(
+    await expect(statCard(page).locator('[data-testid="stat-card-title"]')).toHaveText(
       "Accuracy",
     );
   });

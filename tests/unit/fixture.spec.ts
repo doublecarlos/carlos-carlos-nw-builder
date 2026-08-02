@@ -3,7 +3,7 @@
 
 import { describe, it, expect } from "vitest";
 import fixtures from "./fixture.json";
-import * as db from "../../src/db";
+import * as db from "../../src/data/db";
 import { compareFixture, format } from "./harness";
 
 // fixture.json is loaded as `any` by JSON import; we cast it to the shape

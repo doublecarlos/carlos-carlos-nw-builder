@@ -3,7 +3,7 @@
 // purged. Restore re-inserts the record and appends to the relevant order.
 import { computed, ref } from "vue";
 import * as history from "./history";
-import * as storage from "../storage";
+import * as storage from "../storage/storage";
 import type { Build, Layer, TrashEntry } from "../types";
 
 const PURGE_MS = 7 * 24 * 60 * 60 * 1000;

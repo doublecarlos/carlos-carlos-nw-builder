@@ -3,7 +3,7 @@
 // a rejection rather than a throw.
 import { describe, it, expect, beforeEach } from "vitest";
 import { installIdbShim } from "./stores/window-shim";
-import * as idb from "../../src/idb";
+import * as idb from "../../src/storage/idb";
 
 beforeEach(() => {
   installIdbShim();

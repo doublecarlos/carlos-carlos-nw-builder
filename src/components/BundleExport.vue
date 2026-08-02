@@ -5,9 +5,9 @@
 import { ref, computed } from "vue";
 import * as builds from "../stores/builds";
 import * as layers from "../stores/layers";
-import * as storage from "../storage";
-import { db } from "../stores/engine";
-import * as catalog from "../catalog";
+import * as storage from "../storage/storage";
+import { db } from "../stores/resolved";
+import * as catalog from "../data/catalog";
 import { showNotice } from "../stores/notice";
 
 const emit = defineEmits<{

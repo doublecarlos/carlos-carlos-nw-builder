@@ -314,24 +314,6 @@ export interface TrashEntry {
   deletedAt: number;
 }
 
-export interface Library {
-  builds: Build[];
-  activeId: string;
-}
-
-export interface Collection {
-  id: string;
-  name: string;
-  updated: number;
-  buildIds: string[];
-  activeBuildId: string;
-}
-
-export interface Collections {
-  collections: Collection[];
-  activeCollectionId: string;
-}
-
 // --- resolution (bonus.ts / engine.ts) --------------------------------------------------------
 
 /** The context a `when` predicate is evaluated against -- bonus.ts's `collect()` builds this

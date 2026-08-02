@@ -2,8 +2,8 @@
 // otherwise silently corrupt engine state (setPath clobbering `context.forte`/`context.toggles`
 // wholesale, or two slots fighting over one value).
 import { describe, it, expect } from "vitest";
-import * as catalog from "../../src/catalog";
-import { NW_SLOTS } from "../../src/data";
+import * as catalog from "../../src/data/catalog";
+import { NW_SLOTS } from "../../src/data/data";
 import type {
   BonusSet,
   ConditionWhen,

@@ -1,9 +1,12 @@
 <script setup lang="ts">
-// Left sidebar: builds, customization layers, and recently deleted.
-// Replaces the interim BuildLibrary.vue.
-import { ref, reactive, nextTick, computed, onMounted, onUnmounted } from "vue";
-import BaseButton from "./ui/BaseButton.vue";
-import BaseCheckbox from "./ui/BaseCheckbox.vue";
+// Left sidebar: builds, customization layers, and recently deleted. Owns shared state
+// (menus, rename, confirm) and delegates list rendering to NavBuilds / NavLayers / NavTrash.
+import { ref, reactive, nextTick } from "vue";
+import { useEventListener } from "@vueuse/core";
+import NavBuilds from "./NavBuilds.vue";
+import NavLayers from "./NavLayers.vue";
+import NavTrash from "./NavTrash.vue";
+import { useConfirm } from "../composables/useConfirm";
 import * as builds from "../stores/builds";
 import * as layers from "../stores/layers";
 import * as selection from "../stores/selection";
@@ -18,8 +21,7 @@ const openMenu = ref<{ type: string; id: string } | null>(null);
 const menuPos = reactive({ top: 0, left: 0 });
 const renaming = ref<{ type: string; id: string } | null>(null);
 const renameText = ref("");
-const confirm = ref<{ type: string; id: string; action: string } | null>(null);
-let confirmTimer: number | undefined;
+const confirm_ = useConfirm(CONFIRM_MS);
 
 const buildFileInput = ref<HTMLInputElement | null>(null);
 const layerFileInput = ref<HTMLInputElement | null>(null);
@@ -39,26 +41,7 @@ function timeAgo(ms: number): string {
   return days === 1 ? "1 day ago" : `${days} days ago`;
 }
 
-// --- filtered lists -------------------------------------------------------------------
-
-const filteredBuilds = computed(() => {
-  if (!buildFilter.value) return builds.builds.value;
-  const q = buildFilter.value.toLowerCase();
-  return builds.builds.value.filter((b) => b.name.toLowerCase().includes(q));
-});
-
-const filteredLayers = computed(() => {
-  if (!layerFilter.value) return layers.layers.value;
-  const q = layerFilter.value.toLowerCase();
-  return layers.layers.value.filter((l) => l.name.toLowerCase().includes(q));
-});
-
 // --- selection helpers ----------------------------------------------------------------
-
-function isSelected(kind: "build" | "layer", id: string) {
-  const sel = selection.selection.value;
-  return sel?.kind === kind && sel.id === id;
-}
 
 // --- menus ---------------------------------------------------------------------------
 
@@ -92,10 +75,6 @@ function closeMenu() {
 
 // --- rename ---------------------------------------------------------------------------
 
-function isRenaming(type: string, id: string) {
-  return renaming.value?.type === type && renaming.value?.id === id;
-}
-
 function startRename(type: string, id: string, name: string) {
   closeMenu();
   renaming.value = { type, id };
@@ -116,18 +95,10 @@ function commitRename() {
   }
 }
 
-// --- two-step confirm ----------------------------------------------------------------
-
-function isConfirming(type: string, id: string, action: string) {
-  return (
-    confirm.value?.type === type &&
-    confirm.value?.id === id &&
-    confirm.value?.action === action
-  );
-}
+// --- two-step confirm (delegates to useConfirm composable) ---------------------------
 
 function confirmLabel(type: string, id: string, action: string, label: string) {
-  return isConfirming(type, id, action) ? "Really?" : label;
+  return confirm_.label(`${type}:${id}:${action}`, label);
 }
 
 function runConfirmed(
@@ -136,18 +107,10 @@ function runConfirmed(
   action: string,
   run: () => void,
 ) {
-  if (!isConfirming(type, id, action)) {
-    confirm.value = { type, id, action };
-    window.clearTimeout(confirmTimer);
-    confirmTimer = window.setTimeout(() => {
-      confirm.value = null;
-    }, CONFIRM_MS);
-    return;
+  if (confirm_.run(`${type}:${id}:${action}`)) {
+    run();
+    closeMenu();
   }
-  window.clearTimeout(confirmTimer);
-  confirm.value = null;
-  run();
-  closeMenu();
 }
 
 // --- build actions --------------------------------------------------------------------
@@ -156,33 +119,27 @@ function duplicateCurrentBuild(id: string) {
   selection.selectBuild(id);
   builds.duplicateBuild();
 }
-
 function deleteBuildRow(id: string) {
   builds.deleteBuild(id);
   closeMenu();
 }
-
 function exportBuild(id: string) {
   builds.downloadBuild(id);
   closeMenu();
 }
-
 function resetBuild(id: string) {
   selection.selectBuild(id);
   buildEditor.resetAll();
   closeMenu();
 }
-
 async function moveBuildUp(id: string) {
   await builds.moveBuild(id, -1);
   closeMenu();
 }
-
 async function moveBuildDown(id: string) {
   await builds.moveBuild(id, 1);
   closeMenu();
 }
-
 function revertBuild(id: string) {
   builds.revertToDownloaded(id);
   closeMenu();
@@ -192,6 +149,10 @@ function isBuildRevertable(id: string): boolean {
   const b = builds.builds.value.find((bb) => bb.id === id);
   if (!b?.downloaded?.snapshot) return false;
   return !builds.isDownloaded(id);
+}
+
+function buildIndex(id: string) {
+  return builds.builds.value.findIndex((b) => b.id === id);
 }
 
 // --- layer actions --------------------------------------------------------------------
@@ -205,27 +166,22 @@ async function moveLayerUp(id: string) {
   await layers.moveLayer(id, -1);
   closeMenu();
 }
-
 async function moveLayerDown(id: string) {
   await layers.moveLayer(id, 1);
   closeMenu();
 }
-
 function duplicateLayerRow(id: string) {
   layers.duplicateLayer(id);
   closeMenu();
 }
-
 function exportLayer(id: string) {
   layers.downloadLayer(id);
   closeMenu();
 }
-
 function deleteLayerRow(id: string) {
   layers.deleteLayer(id);
   closeMenu();
 }
-
 function revertLayer(id: string) {
   layers.revertToDownloaded(id);
   closeMenu();
@@ -234,9 +190,12 @@ function revertLayer(id: string) {
 function isLayerRevertable(id: string): boolean {
   const l = layers.layers.value.find((ll) => ll.id === id);
   if (!l?.downloaded?.snapshot) return false;
-  // Compare current state (minus downloaded) to the snapshot.
   const current = { ...l, downloaded: undefined };
   return JSON.stringify(current) !== JSON.stringify(l.downloaded.snapshot);
+}
+
+function layerIndex(id: string) {
+  return layers.layers.value.findIndex((l) => l.id === id);
 }
 
 // --- import ---------------------------------------------------------------------------
@@ -244,7 +203,6 @@ function isLayerRevertable(id: string): boolean {
 function triggerImportBuild() {
   buildFileInput.value?.click();
 }
-
 function triggerImportLayer() {
   layerFileInput.value?.click();
 }
@@ -267,18 +225,11 @@ async function onImportLayerFile(event: Event) {
 
 // --- trash actions --------------------------------------------------------------------
 
-function restoreTrash(entry: TrashEntry) {
+function restoreTrashEntry(entry: TrashEntry) {
   const item = trash.restore(entry);
   if (!item) return;
-  if (entry.kind === "build") {
-    builds.importBuilds([item as Build], false);
-  } else {
-    layers.importLayerText(JSON.stringify(item));
-  }
-}
-
-function restoreTrashEntry(entry: TrashEntry) {
-  restoreTrash(entry);
+  if (entry.kind === "build") builds.importBuilds([item as Build], false);
+  else layers.importLayerText(JSON.stringify(item));
   closeMenu();
 }
 
@@ -287,14 +238,148 @@ function purgeTrash(entry: TrashEntry) {
   closeMenu();
 }
 
-// --- build index helpers --------------------------------------------------------------
+// --- menu items computed --------------------------------------------------------------
 
-function buildIndex(id: string) {
-  return builds.builds.value.findIndex((b) => b.id === id);
+const buildMenuItems = (id: string) => [
+  { action: "rename", label: "Rename" },
+  { action: "moveUp", label: "Move up", disabled: buildIndex(id) === 0 },
+  {
+    action: "moveDown",
+    label: "Move down",
+    disabled: buildIndex(id) === builds.builds.value.length - 1,
+  },
+  { action: "duplicate", label: "Duplicate" },
+  { action: "download", label: "Download…" },
+  {
+    action: "revert",
+    label: confirmLabel(
+      "build",
+      id,
+      "revert-build",
+      "Revert to last downloaded…",
+    ),
+    disabled: !isBuildRevertable(id),
+  },
+  { action: "reset", label: confirmLabel("build", id, "reset-build", "Reset") },
+  {
+    action: "delete",
+    label: confirmLabel("build", id, "delete-build", "Delete"),
+    danger: true,
+    disabled: builds.builds.value.length < 2,
+  },
+];
+
+const layerMenuItems = (id: string) => [
+  { action: "rename", label: "Rename" },
+  { action: "moveUp", label: "Move up", disabled: layerIndex(id) === 0 },
+  {
+    action: "moveDown",
+    label: "Move down",
+    disabled: layerIndex(id) === layers.layers.value.length - 1,
+  },
+  { action: "duplicate", label: "Duplicate" },
+  { action: "download", label: "Download…" },
+  {
+    action: "revert",
+    label: confirmLabel(
+      "layer",
+      id,
+      "revert-layer",
+      "Revert to last downloaded…",
+    ),
+    disabled: !isLayerRevertable(id),
+  },
+  {
+    action: "delete",
+    label: confirmLabel("layer", id, "delete-layer", "Delete"),
+    danger: true,
+    disabled: layers.layers.value.length < 2,
+  },
+];
+
+const trashMenuItems = (key: string) => [
+  { action: "restore", label: "Restore" },
+  {
+    action: "purge",
+    label: confirmLabel("trash", key, "purge-trash", "Delete permanently"),
+    danger: true,
+  },
+];
+
+// --- menu action dispatchers ----------------------------------------------------------
+
+function onBuildMenuAction(action: string, id: string) {
+  switch (action) {
+    case "rename":
+      startRename(
+        "build",
+        id,
+        builds.builds.value.find((b) => b.id === id)?.name ?? "",
+      );
+      break;
+    case "moveUp":
+      moveBuildUp(id);
+      break;
+    case "moveDown":
+      moveBuildDown(id);
+      break;
+    case "duplicate":
+      duplicateCurrentBuild(id);
+      closeMenu();
+      break;
+    case "download":
+      exportBuild(id);
+      break;
+    case "revert":
+      runConfirmed("build", id, "revert-build", () => revertBuild(id));
+      break;
+    case "reset":
+      runConfirmed("build", id, "reset-build", () => resetBuild(id));
+      break;
+    case "delete":
+      runConfirmed("build", id, "delete-build", () => deleteBuildRow(id));
+      break;
+  }
 }
 
-function layerIndex(id: string) {
-  return layers.layers.value.findIndex((l) => l.id === id);
+function onLayerMenuAction(action: string, id: string) {
+  switch (action) {
+    case "rename":
+      startRename(
+        "layer",
+        id,
+        layers.layers.value.find((l) => l.id === id)?.name ?? "",
+      );
+      break;
+    case "moveUp":
+      moveLayerUp(id);
+      break;
+    case "moveDown":
+      moveLayerDown(id);
+      break;
+    case "duplicate":
+      duplicateLayerRow(id);
+      break;
+    case "download":
+      exportLayer(id);
+      break;
+    case "revert":
+      runConfirmed("layer", id, "revert-layer", () => revertLayer(id));
+      break;
+    case "delete":
+      runConfirmed("layer", id, "delete-layer", () => deleteLayerRow(id));
+      break;
+  }
+}
+
+function onTrashMenuAction(action: string, key: string) {
+  const entry = trash.trashed.value.find(
+    (t) => `${t.kind}_${t.item.id}` === key,
+  );
+  if (!entry) return;
+  if (action === "restore") restoreTrashEntry(entry);
+  else if (action === "purge")
+    runConfirmed("trash", key, "purge-trash", () => purgeTrash(entry));
 }
 
 // --- document event handlers for closing menus ----------------------------------------
@@ -310,17 +395,10 @@ function onScrollCapture() {
   closeMenu();
 }
 
-onMounted(() => {
-  document.addEventListener("click", onDocumentClick, true);
-  document.addEventListener("scroll", onScrollCapture, {
-    capture: true,
-    passive: true,
-  });
-});
-
-onUnmounted(() => {
-  document.removeEventListener("click", onDocumentClick, true);
-  document.removeEventListener("scroll", onScrollCapture, { capture: true });
+useEventListener(document, "click", onDocumentClick, true);
+useEventListener(document, "scroll", onScrollCapture, {
+  capture: true,
+  passive: true,
 });
 </script>
 
@@ -330,425 +408,87 @@ onUnmounted(() => {
     class="flex flex-col gap-0.5 bg-surface p-2 text-sm"
     data-testid="library"
   >
-    <!-- Builds -->
-    <div class="flex min-h-0 flex-1 flex-col">
-      <div class="mb-1 flex items-center justify-between px-1 py-0.5">
-        <span class="text-xs font-semibold uppercase text-muted">Builds</span>
-        <div class="flex items-center gap-1">
-          <BaseButton variant="link" @click="triggerImportBuild"
-            >Import</BaseButton
-          >
-          <BaseButton variant="link" @click="builds.createBuild()"
-            >+ New</BaseButton
-          >
-        </div>
-      </div>
+    <NavBuilds
+      :builds="builds.builds.value"
+      :selected-id="
+        selection.selection.value?.kind === 'build'
+          ? selection.selection.value.id
+          : null
+      "
+      :filter="buildFilter"
+      :renaming-id="renaming?.type === 'build' ? renaming.id : null"
+      :rename-text="renameText"
+      :menu-open-id="openMenu?.type === 'build' ? openMenu.id : null"
+      :menu-items="
+        openMenu?.type === 'build' ? buildMenuItems(openMenu.id) : []
+      "
+      :menu-pos="menuPos"
+      :can-move-up="(id) => buildIndex(id) !== 0"
+      :can-move-down="(id) => buildIndex(id) !== builds.builds.value.length - 1"
+      @update:filter="(v) => (buildFilter = v)"
+      @select="(id) => selection.selectBuild(id)"
+      @rename-start="
+        (id, name) => {
+          renaming = { type: 'build', id };
+          renameText = name;
+        }
+      "
+      @rename-commit="commitRename"
+      @rename-cancel="renaming = null"
+      @menu-open="(id, ev) => openMenuFor('build', id, ev)"
+      @menu-action="(a, id) => onBuildMenuAction(a, id)"
+      @create="builds.createBuild()"
+      @import="triggerImportBuild"
+    />
 
-      <!-- Build filter -->
-      <input
-        v-model="buildFilter"
-        type="text"
-        placeholder="Filter…"
-        class="mb-1 rounded-md border border-line bg-surface px-2 py-0.5 text-xs focus:outline-accent"
-      />
+    <NavLayers
+      :layers="layers.layers.value"
+      :selected-id="
+        selection.selection.value?.kind === 'layer'
+          ? selection.selection.value.id
+          : null
+      "
+      :filter="layerFilter"
+      :renaming-id="renaming?.type === 'layer' ? renaming.id : null"
+      :rename-text="renameText"
+      :menu-open-id="openMenu?.type === 'layer' ? openMenu.id : null"
+      :menu-items="
+        openMenu?.type === 'layer' ? layerMenuItems(openMenu.id) : []
+      "
+      :menu-pos="menuPos"
+      :can-move-up="(id) => layerIndex(id) !== 0"
+      :can-move-down="(id) => layerIndex(id) !== layers.layers.value.length - 1"
+      @update:filter="(v) => (layerFilter = v)"
+      @select="(id) => selection.selectLayer(id)"
+      @toggle-enabled="(id) => toggleLayerEnabled(id)"
+      @rename-start="
+        (id, name) => {
+          renaming = { type: 'layer', id };
+          renameText = name;
+        }
+      "
+      @rename-commit="commitRename"
+      @rename-cancel="renaming = null"
+      @menu-open="(id, ev) => openMenuFor('layer', id, ev)"
+      @menu-action="(a, id) => onLayerMenuAction(a, id)"
+      @create="layers.createLayer()"
+      @import="triggerImportLayer"
+    />
 
-      <!-- Build list -->
-      <div class="flex-1 overflow-y-auto">
-        <div
-          v-for="b in filteredBuilds"
-          :key="b.id"
-          class="nav-row nav-row--build relative flex items-center gap-1 rounded-md py-1 pl-5 pr-1"
-          :class="isSelected('build', b.id) && 'is-active bg-accent-soft'"
-        >
-          <input
-            v-if="isRenaming('build', b.id)"
-            v-model="renameText"
-            class="nav-rename min-w-0 flex-1 rounded-md border border-line bg-surface px-1 py-0.5"
-            @keydown.enter="commitRename"
-            @keydown.esc="renaming = null"
-            @blur="commitRename"
-          />
-          <button
-            v-else
-            type="button"
-            class="nav-name min-w-0 flex-1 cursor-pointer overflow-hidden text-ellipsis whitespace-nowrap py-0.5 text-left"
-            @click="selection.selectBuild(b.id)"
-            @dblclick="startRename('build', b.id, b.name)"
-            @contextmenu.prevent="openMenuFor('build', b.id, $event)"
-          >
-            {{ b.name }}
-          </button>
-
-          <div class="nav-menu-wrap relative">
-            <button
-              type="button"
-              class="nav-kebab flex-none cursor-pointer rounded-md px-1.5 leading-none text-muted hover:bg-surface-2 hover:text-text"
-              title="Build menu"
-              @click="openMenuFor('build', b.id, $event)"
-            >
-              ⋮
-            </button>
-
-            <div
-              v-if="isMenuOpen('build', b.id)"
-              class="navmenu fixed z-30 flex min-w-48 -translate-x-full flex-col rounded-md border border-line bg-surface p-1 shadow-lg"
-              :style="{ top: menuPos.top + 'px', left: menuPos.left + 'px' }"
-            >
-              <button
-                type="button"
-                class="rounded-md px-2 py-1 text-left cursor-pointer hover:bg-surface-2"
-                @click="startRename('build', b.id, b.name)"
-              >
-                Rename
-              </button>
-              <button
-                type="button"
-                class="rounded-md px-2 py-1 text-left cursor-pointer hover:bg-surface-2"
-                :disabled="buildIndex(b.id) === 0"
-                :class="buildIndex(b.id) === 0 && 'text-muted'"
-                @click="moveBuildUp(b.id)"
-              >
-                Move up
-              </button>
-              <button
-                type="button"
-                class="rounded-md px-2 py-1 text-left cursor-pointer hover:bg-surface-2"
-                :disabled="buildIndex(b.id) === builds.builds.value.length - 1"
-                :class="
-                  buildIndex(b.id) === builds.builds.value.length - 1 &&
-                  'text-muted'
-                "
-                @click="moveBuildDown(b.id)"
-              >
-                Move down
-              </button>
-              <button
-                type="button"
-                class="rounded-md px-2 py-1 text-left cursor-pointer hover:bg-surface-2"
-                @click="
-                  duplicateCurrentBuild(b.id);
-                  closeMenu();
-                "
-              >
-                Duplicate
-              </button>
-              <button
-                type="button"
-                class="rounded-md px-2 py-1 text-left cursor-pointer hover:bg-surface-2"
-                @click="
-                  exportBuild(b.id);
-                  closeMenu();
-                "
-              >
-                Download…
-              </button>
-              <button
-                type="button"
-                class="rounded-md px-2 py-1 text-left cursor-pointer hover:bg-surface-2"
-                :disabled="!isBuildRevertable(b.id)"
-                :class="!isBuildRevertable(b.id) && 'text-muted'"
-                @click="
-                  runConfirmed('build', b.id, 'revert-build', () =>
-                    revertBuild(b.id),
-                  )
-                "
-              >
-                {{
-                  confirmLabel(
-                    "build",
-                    b.id,
-                    "revert-build",
-                    "Revert to last downloaded…",
-                  )
-                }}
-              </button>
-              <button
-                type="button"
-                class="rounded-md px-2 py-1 text-left cursor-pointer hover:bg-surface-2"
-                @click="
-                  runConfirmed('build', b.id, 'reset-build', () =>
-                    resetBuild(b.id),
-                  )
-                "
-              >
-                {{ confirmLabel("build", b.id, "reset-build", "Reset") }}
-              </button>
-              <button
-                type="button"
-                class="rounded-md px-2 py-1 text-left enabled:cursor-pointer disabled:text-muted enabled:hover:bg-danger-soft enabled:hover:text-danger"
-                :disabled="builds.builds.value.length < 2"
-                @click="
-                  runConfirmed('build', b.id, 'delete-build', () =>
-                    deleteBuildRow(b.id),
-                  )
-                "
-              >
-                {{ confirmLabel("build", b.id, "delete-build", "Delete") }}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Customization Layers -->
-    <div class="border-t border-line pt-1.5">
-      <div class="mb-1 flex items-center justify-between px-1 py-0.5">
-        <span
-          class="flex items-center gap-1 text-xs font-semibold uppercase text-muted"
-        >
-          Customization Layers
-          <span
-            class="inline-flex h-3.5 w-3.5 cursor-help items-center justify-center rounded-full bg-surface-2 text-[10px] leading-none text-muted"
-            title="Layers apply top to bottom — a lower layer overrides the ones above it."
-            >?</span
-          >
-        </span>
-        <div class="flex items-center gap-1">
-          <BaseButton variant="link" @click="triggerImportLayer"
-            >Import</BaseButton
-          >
-          <BaseButton variant="link" @click="layers.createLayer()"
-            >+ New</BaseButton
-          >
-        </div>
-      </div>
-
-      <!-- Layer filter -->
-      <input
-        v-model="layerFilter"
-        type="text"
-        placeholder="Filter…"
-        class="mb-1 rounded-md border border-line bg-surface px-2 py-0.5 text-xs focus:outline-accent"
-      />
-
-      <!-- Layer list (scrollable, max-h) -->
-      <div class="max-h-48 overflow-y-auto">
-        <div
-          v-for="l in filteredLayers"
-          :key="l.id"
-          class="nav-row nav-row--layer relative flex items-center gap-1 rounded-md py-1 pl-5 pr-1"
-          :class="isSelected('layer', l.id) && 'is-active bg-accent-soft'"
-        >
-          <div @click.stop>
-            <BaseCheckbox
-              :model-value="l.enabled"
-              @update:model-value="toggleLayerEnabled(l.id)"
-            />
-          </div>
-
-          <input
-            v-if="isRenaming('layer', l.id)"
-            v-model="renameText"
-            class="nav-rename min-w-0 flex-1 rounded-md border border-line bg-surface px-1 py-0.5"
-            @keydown.enter="commitRename"
-            @keydown.esc="renaming = null"
-            @blur="commitRename"
-          />
-          <button
-            v-else
-            type="button"
-            class="nav-name min-w-0 flex-1 cursor-pointer overflow-hidden text-ellipsis whitespace-nowrap py-0.5 text-left"
-            :class="!l.enabled && 'text-muted'"
-            @click="selection.selectLayer(l.id)"
-            @dblclick="startRename('layer', l.id, l.name)"
-            @contextmenu.prevent="openMenuFor('layer', l.id, $event)"
-          >
-            {{ l.name }}
-          </button>
-
-          <div class="nav-menu-wrap relative">
-            <button
-              type="button"
-              class="nav-kebab flex-none cursor-pointer rounded-md px-1.5 leading-none text-muted hover:bg-surface-2 hover:text-text"
-              title="Layer menu"
-              @click="openMenuFor('layer', l.id, $event)"
-            >
-              ⋮
-            </button>
-
-            <div
-              v-if="isMenuOpen('layer', l.id)"
-              class="navmenu fixed z-30 flex min-w-48 -translate-x-full flex-col rounded-md border border-line bg-surface p-1 shadow-lg"
-              :style="{ top: menuPos.top + 'px', left: menuPos.left + 'px' }"
-            >
-              <button
-                type="button"
-                class="rounded-md px-2 py-1 text-left cursor-pointer hover:bg-surface-2"
-                @click="startRename('layer', l.id, l.name)"
-              >
-                Rename
-              </button>
-              <button
-                type="button"
-                class="rounded-md px-2 py-1 text-left cursor-pointer hover:bg-surface-2"
-                :disabled="layerIndex(l.id) === 0"
-                :class="layerIndex(l.id) === 0 && 'text-muted'"
-                @click="moveLayerUp(l.id)"
-              >
-                Move up
-              </button>
-              <button
-                type="button"
-                class="rounded-md px-2 py-1 text-left cursor-pointer hover:bg-surface-2"
-                :disabled="layerIndex(l.id) === layers.layers.value.length - 1"
-                :class="
-                  layerIndex(l.id) === layers.layers.value.length - 1 &&
-                  'text-muted'
-                "
-                @click="moveLayerDown(l.id)"
-              >
-                Move down
-              </button>
-              <button
-                type="button"
-                class="rounded-md px-2 py-1 text-left cursor-pointer hover:bg-surface-2"
-                @click="
-                  duplicateLayerRow(l.id);
-                  closeMenu();
-                "
-              >
-                Duplicate
-              </button>
-              <button
-                type="button"
-                class="rounded-md px-2 py-1 text-left cursor-pointer hover:bg-surface-2"
-                @click="
-                  exportLayer(l.id);
-                  closeMenu();
-                "
-              >
-                Download…
-              </button>
-              <button
-                type="button"
-                class="rounded-md px-2 py-1 text-left cursor-pointer hover:bg-surface-2"
-                :disabled="!isLayerRevertable(l.id)"
-                :class="!isLayerRevertable(l.id) && 'text-muted'"
-                @click="
-                  runConfirmed('layer', l.id, 'revert-layer', () =>
-                    revertLayer(l.id),
-                  )
-                "
-              >
-                {{
-                  confirmLabel(
-                    "layer",
-                    l.id,
-                    "revert-layer",
-                    "Revert to last downloaded…",
-                  )
-                }}
-              </button>
-              <button
-                type="button"
-                class="rounded-md px-2 py-1 text-left enabled:cursor-pointer disabled:text-muted enabled:hover:bg-danger-soft enabled:hover:text-danger"
-                :disabled="layers.layers.value.length < 2"
-                @click="
-                  runConfirmed('layer', l.id, 'delete-layer', () =>
-                    deleteLayerRow(l.id),
-                  )
-                "
-              >
-                {{ confirmLabel("layer", l.id, "delete-layer", "Delete") }}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Recently deleted -->
-    <div
-      v-if="trash.trashed.value.length > 0"
-      class="border-t border-line pt-1.5"
-    >
-      <div
-        class="flex cursor-pointer items-center justify-between px-1 py-0.5 select-none"
-        @click="trashExpanded = !trashExpanded"
-      >
-        <span class="text-xs font-semibold uppercase text-muted">
-          {{ trashExpanded ? "▾" : "▸" }} Recently deleted ({{
-            trash.trashed.value.length
-          }})
-        </span>
-      </div>
-
-      <div v-if="trashExpanded" class="overflow-y-auto">
-        <div
-          v-for="entry in trash.trashed.value"
-          :key="`${entry.kind}_${entry.item.id}_${entry.deletedAt}`"
-          class="nav-row relative flex items-center gap-1 rounded-md py-1 pl-5 pr-1"
-        >
-          <span
-            class="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-xs text-muted"
-          >
-            <span class="text-[10px] uppercase">{{
-              entry.kind === "build" ? "B" : "L"
-            }}</span>
-            {{ entry.item.name }}
-            <span class="text-[10px]">— {{ timeAgo(entry.deletedAt) }}</span>
-          </span>
-
-          <button
-            type="button"
-            class="flex-none cursor-pointer rounded-md px-1 py-0.5 text-xs text-accent hover:bg-accent-soft"
-            @click="restoreTrashEntry(entry)"
-          >
-            Restore
-          </button>
-          <div class="nav-menu-wrap relative">
-            <button
-              type="button"
-              class="nav-kebab flex-none cursor-pointer rounded-md px-1.5 leading-none text-muted hover:bg-surface-2 hover:text-text"
-              title="Trash menu"
-              @click="
-                openMenuFor('trash', `${entry.kind}_${entry.item.id}`, $event)
-              "
-            >
-              ⋮
-            </button>
-            <div
-              v-if="isMenuOpen('trash', `${entry.kind}_${entry.item.id}`)"
-              class="navmenu fixed z-30 flex min-w-48 -translate-x-full flex-col rounded-md border border-line bg-surface p-1 shadow-lg"
-              :style="{ top: menuPos.top + 'px', left: menuPos.left + 'px' }"
-            >
-              <button
-                type="button"
-                class="rounded-md px-2 py-1 text-left cursor-pointer hover:bg-surface-2"
-                @click="restoreTrashEntry(entry)"
-              >
-                Restore
-              </button>
-              <button
-                type="button"
-                class="rounded-md px-2 py-1 text-left cursor-pointer enabled:hover:bg-danger-soft enabled:hover:text-danger"
-                @click="
-                  runConfirmed(
-                    'trash',
-                    `${entry.kind}_${entry.item.id}`,
-                    'purge-trash',
-                    () => purgeTrash(entry),
-                  )
-                "
-              >
-                {{
-                  confirmLabel(
-                    "trash",
-                    `${entry.kind}_${entry.item.id}`,
-                    "purge-trash",
-                    "Delete permanently",
-                  )
-                }}
-              </button>
-            </div>
-          </div>
-        </div>
-        <p class="px-1 py-0.5 text-[10px] text-muted">
-          Entries clear themselves after 7 days.
-        </p>
-      </div>
-    </div>
+    <NavTrash
+      :entries="trash.trashed.value"
+      :expanded="trashExpanded"
+      :menu-open-id="openMenu?.type === 'trash' ? openMenu.id : null"
+      :menu-items="
+        openMenu?.type === 'trash' ? trashMenuItems(openMenu.id) : []
+      "
+      :menu-pos="menuPos"
+      :time-ago="timeAgo"
+      @toggle-expand="trashExpanded = !trashExpanded"
+      @restore="(entry) => restoreTrashEntry(entry)"
+      @menu-open="(id, ev) => openMenuFor('trash', id, ev)"
+      @menu-action="(a, id) => onTrashMenuAction(a, id)"
+    />
 
     <input
       ref="buildFileInput"

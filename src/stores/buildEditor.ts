@@ -1,12 +1,12 @@
 // Every mutation that writes the active build's *content* goes through here, and every one of
 // them snapshots before mutating -- the history store owns the undo stack.
 import { computed, watch } from "vue";
-import * as storage from "../storage";
+import * as storage from "../storage/storage";
 import * as builds from "./builds";
 import * as compare from "./compare";
 import * as history from "./history";
-import { db } from "./engine";
-import { getPath, setPath } from "../build-path";
+import { db } from "./resolved";
+import { getPath, setPath } from "../lib/build-path";
 import type { BuildParameterSlot } from "../types";
 
 // Re-export computed accessors so BuildBar.vue etc. can keep importing from buildEditor.

@@ -2,7 +2,7 @@
 // AppMeta record without importing each other. All three stores read/write their own field
 // on these refs; selection.ts is the single writer of the IDB meta record.
 import { ref } from "vue";
-import * as storage from "../storage";
+import * as storage from "../storage/storage";
 import type { Selection } from "../types";
 
 export const buildOrder = ref<string[]>([]);

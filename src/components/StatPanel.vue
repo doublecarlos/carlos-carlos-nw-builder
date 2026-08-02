@@ -5,20 +5,22 @@
 // stat to the schema makes it appear here with no edit. Overcapped values are coloured; the
 // rating/percent pair each get their own merged overcap-or-headroom column (signed: positive
 // over the cap, negative is spare headroom), coloured independently since they cap separately.
-import { ref, computed, nextTick, onMounted, onUnmounted } from "vue";
+import { ref, computed } from "vue";
+import { useEventListener } from "@vueuse/core";
 import ComboBox from "./ui/ComboBox.vue";
 import BaseCheckbox from "./ui/BaseCheckbox.vue";
 import IconButton from "./ui/IconButton.vue";
-import StatSourceCard from "./StatSourceCard.vue";
+import StatSourceCard from "./game/StatSourceCard.vue";
+import BaseTooltip from "./ui/BaseTooltip.vue";
 import BasePanel from "./ui/BasePanel.vue";
 import PanelHead from "./ui/PanelHead.vue";
 import StatPairsTable from "./ui/StatPairsTable.vue";
-import { sectionsFor } from "../stat-sources";
-import { NW_SCHEMA } from "../data";
-import { int as fmtInt, pct as fmtPct, stat as fmtStat } from "../format";
+import { sectionsFor } from "../engine/stat-sources";
+import { NW_SCHEMA } from "../data/data";
+import { int as fmtInt, pct as fmtPct, stat as fmtStat } from "../lib/format";
 import * as builds from "../stores/builds";
 import * as compare from "../stores/compare";
-import * as engine from "../stores/engine";
+import * as engine from "../stores/resolved";
 
 // Display order only -- data/schema.json stays untouched. Forte sits with the defensive
 // ratings rather than right after Severity, per the user's re-grouping.
@@ -345,12 +347,10 @@ function signedInt(value: number) {
 // rows' triggers often enough that a hover card kept getting swapped out from under the
 // pointer before it ever arrived -- a deliberate click has no such transit to go wrong.
 const root = ref<InstanceType<typeof BasePanel> | null>(null);
-const CARD_W = 256; // must match StatSourceCard.vue's root `w-64` (256px) utility
+const tooltip = ref<InstanceType<typeof BaseTooltip> | null>(null);
 
 interface OpenCard {
   key: string;
-  left: number;
-  top: number;
 }
 const openCard = ref<OpenCard | null>(null);
 
@@ -367,29 +367,12 @@ const openSections = computed(() =>
 );
 
 /**
- * Anchored to the trigger button: to its right normally, flipped to its left if that would
- * run off the viewport. The vertical flip needs the card's real height, not its CSS
- * max-height, so it's measured once the card exists and nudged only if it actually overflows
- * -- same two-step approach as BuildEditor.vue's own item hover card.
+ * Anchored to the trigger button: delegates to BaseTooltip's place() which handles
+ * horizontal flip and vertical overflow detection.
  */
 function placeCard(key: string, rect: DOMRect) {
-  const margin = 10;
-  let left = rect.right + 8;
-  if (left + CARD_W > window.innerWidth - margin) left = rect.left - CARD_W - 8;
-  openCard.value = { key, left: Math.max(left, margin), top: rect.top };
-
-  nextTick(() => {
-    const card = (root.value?.$el as HTMLElement | undefined)?.querySelector(
-      ".statcard",
-    ) as HTMLElement | null;
-    if (!card || !openCard.value) return;
-    const height = card.offsetHeight;
-    if (openCard.value.top + height <= window.innerHeight - margin) return;
-    openCard.value = {
-      ...openCard.value,
-      top: Math.max(window.innerHeight - margin - height, margin),
-    };
-  });
+  tooltip.value?.place(rect);
+  openCard.value = { key };
 }
 
 function closeCard() {
@@ -426,8 +409,7 @@ function onDocumentClick(event: MouseEvent) {
   closeCard();
 }
 
-onMounted(() => document.addEventListener("mousedown", onDocumentClick));
-onUnmounted(() => document.removeEventListener("mousedown", onDocumentClick));
+useEventListener(document, "mousedown", onDocumentClick);
 </script>
 
 <template>
@@ -597,13 +579,14 @@ onUnmounted(() => document.removeEventListener("mousedown", onDocumentClick));
     <PanelHead>Effective hit points</PanelHead>
     <StatPairsTable :rows="ehpTableRows" />
 
-    <StatSourceCard
-      v-if="openCard"
-      :label="openLabel"
-      :sections="openSections"
-      :data-stat-key="openCard.key"
-      :style="{ left: openCard.left + 'px', top: openCard.top + 'px' }"
-      @close="closeCard"
-    />
+    <BaseTooltip ref="tooltip" :width="256">
+      <StatSourceCard
+        v-if="openCard"
+        :label="openLabel"
+        :sections="openSections"
+        :data-stat-key="openCard.key"
+        @close="closeCard"
+      />
+    </BaseTooltip>
   </BasePanel>
 </template>

@@ -1,5 +1,7 @@
-import { nextTick, onMounted, onUnmounted, ref, type Ref } from "vue";
+import { ref, type Ref } from "vue";
+import { useEventListener, useTimeoutFn } from "@vueuse/core";
 import { isFormControl } from "./focus";
+import type BaseTooltip from "../components/ui/BaseTooltip.vue";
 
 const HOVER_DELAY_MS = 220;
 // If the pointer lands on a new row this soon after the last card closed, treat it as still
@@ -7,20 +9,15 @@ const HOVER_DELAY_MS = 220;
 // feel like one continuous hover, not a fresh 220ms wait per row.
 const HOVER_RESUME_MS = 400;
 const HOVER_CLOSE_GRACE_MS = 100;
-const CARD_W = 320; // must match ItemCard.vue's root `w-80` (320px) utility
 
 export interface HoverPosition {
   slotId: string;
-  left: number;
-  top: number;
 }
 
 /**
- * One hover card for a whole scrolling list of rows: `hover` holds at most one entry, moved
- * and refilled by the caller (which resolves the item/bonuses for `hover.value.slotId`) rather
- * than each row owning its own card. `root` is where `place()` looks for the rendered
- * `.itemcard` to measure its real height for the vertical flip; `hasItem` gates opening (an
- * empty slot has nothing to show).
+ * One hover card for a whole scrolling list of rows: positions via a `BaseTooltip` (which
+ * Teleports to body and handles viewport-edge flipping). `hasItem` gates opening (an empty
+ * slot has nothing to show).
  *
  * The caller must wire `onFocusIn`/`onFocusOut` to the container's own `focusin`/`focusout` --
  * they can't be registered here via `addEventListener`, because `editing` has to turn on only
@@ -32,40 +29,70 @@ export interface HoverPosition {
  * no matching focusin) reset it.
  */
 export function useHoverCard(
-  root: Ref<HTMLElement | null>,
+  tooltip: Ref<InstanceType<typeof BaseTooltip> | null>,
   hasItem: (slotId: string) => boolean,
 ) {
   const hover = ref<HoverPosition | null>(null);
-  let hoverTimer: number | undefined;
-  let leaveTimer: number | undefined; // grace period before a leave actually closes the card
+  /** Stashed arguments for the hover timer callback, since the timer delay varies. */
+  const hoverArgs = ref<{ slotId: string; rect: DOMRect; x: number } | null>(
+    null,
+  );
   let lastHideAt = 0; // Date.now() of the last close, for the "resume" fast path
   let editing = false; // a real form control has focus: suppress the card so it cannot cover a dropdown
 
+  const { start: startHoverTimer, stop: stopHoverTimer } = useTimeoutFn(() => {
+    const args = hoverArgs.value;
+    if (args) {
+      tooltip.value?.place(args.rect, args.x);
+      hover.value = { slotId: args.slotId };
+    }
+    hoverArgs.value = null;
+  }, HOVER_DELAY_MS);
+
+  // Immediate variant for the "resume" fast path — sweeping down a list should feel
+  // like one continuous hover, not a fresh delay per row.
+  const { start: startHoverTimerNow, stop: stopHoverTimerNow } = useTimeoutFn(
+    () => {
+      const args = hoverArgs.value;
+      if (args) {
+        tooltip.value?.place(args.rect, args.x);
+        hover.value = { slotId: args.slotId };
+      }
+      hoverArgs.value = null;
+    },
+    0,
+  );
+
+  const { start: startLeaveTimer, stop: stopLeaveTimer } = useTimeoutFn(() => {
+    close();
+  }, HOVER_CLOSE_GRACE_MS);
+
   function onRowEnter(event: MouseEvent, slotId: string) {
     if (editing || !hasItem(slotId)) return;
-    window.clearTimeout(hoverTimer);
-    window.clearTimeout(leaveTimer);
+    stopHoverTimer();
+    stopHoverTimerNow();
+    stopLeaveTimer();
     const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
     const x = event.clientX;
     const resuming = Date.now() - lastHideAt < HOVER_RESUME_MS;
-    hoverTimer = window.setTimeout(
-      () => place(slotId, rect, x),
-      resuming ? 0 : HOVER_DELAY_MS,
-    );
+    hoverArgs.value = { slotId, rect, x };
+    if (resuming) startHoverTimerNow();
+    else startHoverTimer();
   }
 
   function onRowLeave() {
-    window.clearTimeout(hoverTimer);
+    stopHoverTimer();
+    stopHoverTimerNow();
     // Grace period, not an instant close: the card sits outside the row's own bounds, so
     // reaching it always crosses this "gap" first. Without the grace period the card would
     // vanish the instant the pointer leaves the row, before it ever reaches the card.
-    window.clearTimeout(leaveTimer);
-    leaveTimer = window.setTimeout(() => close(), HOVER_CLOSE_GRACE_MS);
+    stopLeaveTimer();
+    startLeaveTimer();
   }
 
   /** Entering the card itself cancels any pending close from leaving the row. */
   function onCardEnter() {
-    window.clearTimeout(leaveTimer);
+    stopLeaveTimer();
   }
 
   function onCardLeave() {
@@ -73,59 +100,29 @@ export function useHoverCard(
   }
 
   function close() {
-    window.clearTimeout(leaveTimer);
-    if (hover.value) lastHideAt = Date.now();
+    stopLeaveTimer();
+    if (hover.value) {
+      lastHideAt = Date.now();
+      tooltip.value?.close();
+    }
     hover.value = null;
   }
 
   /**
-   * Anchored to the pointer horizontally and to the row vertically. Anchoring to the row's
-   * right edge instead would be tidier, but a slot row spans almost the full column, so
-   * the card would always land on top of the stat panel.
-   *
-   * The vertical flip needs the card's real height, not its CSS max-height, or a short
-   * card near the bottom of the screen flips for no reason -- so it is measured once the
-   * card exists and nudged only if it actually overflows.
-   */
-  function place(slotId: string, rect: DOMRect, pointerX: number) {
-    const margin = 10;
-    let left = pointerX + 18;
-    if (left + CARD_W > window.innerWidth - margin)
-      left = pointerX - CARD_W - 18;
-    hover.value = {
-      slotId,
-      left: Math.max(left, margin),
-      top: rect.bottom + 6,
-    };
-
-    nextTick(() => {
-      const card = root.value?.querySelector(".itemcard") as HTMLElement | null;
-      if (!card || !hover.value) return;
-      const height = card.offsetHeight;
-      if (hover.value.top + height <= window.innerHeight - margin) return;
-      const flipped = Math.max(rect.top - height - 6, margin);
-      hover.value = { ...hover.value, top: flipped };
-    });
-  }
-
-  /**
-   * The rect is viewport-relative, so any scroll of the page invalidates it -- close
-   * immediately, skipping the leave grace period that exists only for reaching the card by
-   * pointer. Registered on the capture phase so a scroll anywhere reaches it even inside a
-   * section body that stops propagation -- but capture-phase 'scroll' fires for *every*
-   * scrollable element's own scrolling too, including the card's own `overflow-y: auto`.
-   * Without this check, scrolling the long card's contents would look indistinguishable from
-   * scrolling the page and close the card on its first wheel tick.
+   * Close on any scroll outside the card itself. With Teleport the card lives under
+   * `<body>`, so `.itemcard` is checked globally — no need for a `root` ref.
    */
   function onScroll(event: Event) {
     if ((event.target as HTMLElement)?.closest?.(".itemcard")) return;
-    window.clearTimeout(hoverTimer);
+    stopHoverTimer();
+    stopHoverTimerNow();
     if (hover.value) close();
   }
 
   function onFocusIn(event: FocusEvent) {
     editing = isFormControl(event.target as Element | null);
-    window.clearTimeout(hoverTimer);
+    stopHoverTimer();
+    stopHoverTimerNow();
     close();
   }
 
@@ -133,12 +130,7 @@ export function useHoverCard(
     editing = false;
   }
 
-  onMounted(() => window.addEventListener("scroll", onScroll, true));
-  onUnmounted(() => {
-    window.clearTimeout(hoverTimer);
-    window.clearTimeout(leaveTimer);
-    window.removeEventListener("scroll", onScroll, true);
-  });
+  useEventListener(window, "scroll", onScroll, true);
 
   return {
     hover,

@@ -21,8 +21,8 @@ These must pass before a change is considered done:
 ## Behavior
 
 - Git:
-  - Don't change `main` directly. Create a prefixed branch if you're not in one already.
-  - Prefixes: `feature/`, `bugfix/`, `chore/`
+  - Use these prefixes when creating new branches: `feature/`, `bugfix/`, `chore/`
+  - You are absolutely forbidden of using Git flags to skip commit hooks, for any reason.
 - Follow best practices
 - If anything is unclear, ask for clarification explicitly
 - When a check fails, work out whether the code or the test is wrong before "fixing" anything
@@ -65,19 +65,49 @@ src/
   format.ts            number/percent formatting at the edge
   main.ts              createApp(App).mount('#app')
   App.vue              root component, routing, keyboard shortcuts
+  data/                static data loading, indexing, catalogue
+    data.ts            imports data/*.json → NW_SCHEMA/NW_SLOTS/NW_CATALOG_VERSION
+    db.ts              indexing and lookups
+    catalog.ts         layered catalogue: base + overlays
+    index.ts           barrel
+  engine/              build calculation pipeline
+    bonus.ts           bonus resolution
+    bonus-draft.ts     bonus form types
+    conditions.ts      the `when` evaluator
+    condition-draft.ts condition form types
+    engine.ts          pipeline + derived
+    stat-sources.ts    per-stat source attribution
+    index.ts           barrel
+  storage/             persistence
+    storage.ts         builds, layers, import/export, share links, overlay persistence
+    idb.ts             IndexedDB wrapper (per-record writes, no bulk ops)
+  lib/                 pure utilities — no domain logic
+    format.ts          number/percent formatting at the edge
+    build-path.ts      dotted-path get/set for build.context
+    platform.ts        isMac constant
+    icons.ts           SVG icon registry
+    router.ts          query-string <-> URL sync (build/layer/tab)
+    stat-row-nav.ts    keyboard nav between stat rows
   stores/
     builds.ts          flat pool of builds (id->Build map, order, creation/deletion)
     layers.ts          named catalogue overlays (enabled/disabled, creation/deletion)
     selection.ts       which build or layer is selected (sessionStorage per tab)
     history.ts         per-item undo stack (persisted to IndexedDB)
     trash.ts           soft-delete for builds and layers (7-day expiry)
-    engine.ts          resolved-build pipeline: fold overlays, run engine
+    resolved.ts        resolved-build pipeline: fold overlays, run engine
     buildEditor.ts     every mutation that writes the active build's content
     meta.ts            shared order refs (buildOrder, layerOrder)
     notice.ts          single toast message
     compare.ts         compare-build picker
     details.ts         tab selection (stats vs bonuses)
-  components/          Vue SFCs, <script setup lang="ts">
+    theme.ts           light/dark/system preference
+    bonus-draft.ts     form-level draft state for bonus set editing
+    bootstrap.ts       one-shot hydration
+  composables/         cross-cutting reactive logic
+  components/
+    ui/                generic UI primitives — zero game-domain imports
+    game/              game-domain widgets (items, builds, slots, bonuses, stats)
+    *.vue              page-level: structural composition surfaces
 tests/
   unit/                Vitest unit + golden-fixture specs
   e2e/                  Playwright specs, run against a live `npm run dev` server
@@ -104,6 +134,16 @@ bonusSets: { id: set|null } }`; `null` is a tombstone.
   no-op-if-unchanged check makes re-applying state that came from a popstate event harmless.
 - **Builds and layers are the only top-level items**; bundles are an import/export convenience
   with no representation in the app or engine.
+- **New `components/ui/` files must have zero game-domain imports** — no `types.ts`, no schema
+  references, no business-logic props. If it imports from `types.ts` or the `data/`/`engine/`
+  directories, it belongs in `components/game/`.
+- **New game-domain widgets go in `components/game/`.** These import from `types.ts`,
+  `data/`, `engine/`, `lib/format.ts`, or composables related to builds/items/stats.
+- **New source files follow the directory split:** `engine/` for pipeline code, `data/` for
+  static data + catalogue, `storage/` for persistence, `lib/` for pure utilities.
+- **When changing Vue code, load relevant skills first** — use the `vue`, `vue-best-practices`,
+  and `vueuse-functions` skills to ensure established patterns are maintained.
+- **`base.css`** is the design-token file (renamed from `theme.css`). No separate theme.css.
 
 ## Storage engine
 

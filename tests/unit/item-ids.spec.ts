@@ -3,9 +3,9 @@
 // section calls out: two items sharing a display name still resolve and count independently,
 // and renaming an item's display name leaves anything that refers to it by id unaffected.
 import { describe, it, expect } from "vitest";
-import * as db from "../../src/db";
-import * as engine from "../../src/engine";
-import * as catalog from "../../src/catalog";
+import * as db from "../../src/data/db";
+import * as engine from "../../src/engine/engine";
+import * as catalog from "../../src/data/catalog";
 import type { Build, Item, Schema, SlotsData } from "../../src/types";
 
 const schema: Schema = {

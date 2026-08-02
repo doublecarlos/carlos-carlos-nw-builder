@@ -3,7 +3,7 @@
 // its native hover tooltip -- the same role it plays inline in IconButton, just generalized so
 // any consumer can render a bare icon.
 import { computed } from "vue";
-import { icons } from "../../icons";
+import { icons } from "../../lib/icons";
 
 const props = defineProps<{
   name: string;
