@@ -494,7 +494,11 @@ export function validate(
       .map((slot) => slot.filter),
   );
   const classSlot = findParamSlot(allSlots, "class");
-  const classes = new Set(classSlot?.options?.map((o) => o.value) ?? []);
+  // Exclude the class slot's own "— none —" row: "" is not a class an item may be
+  // restricted to, and accepting it would let a typo'd allowedClass pass silently.
+  const classes = new Set(
+    (classSlot?.options?.map((o) => o.value) ?? []).filter(Boolean),
+  );
   const setIds = new Set(bonusSets.map((set) => set.id));
   const seenIds = new Set();
   const paramSlots = new Map<string, BuildParameterSlot>();

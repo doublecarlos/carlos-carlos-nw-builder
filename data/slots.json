@@ -11,8 +11,12 @@
           "type": "build_parameter",
           "paramType": "list",
           "path": "class",
-          "default": "warlock",
+          "default": "",
           "options": [
+            {
+              "value": "",
+              "label": "— none —"
+            },
             {
               "value": "barbarian",
               "label": "Barbarian"
@@ -57,8 +61,12 @@
           "type": "build_parameter",
           "paramType": "list",
           "path": "role",
-          "default": "dps",
+          "default": "",
           "options": [
+            {
+              "value": "",
+              "label": "— none —"
+            },
             {
               "value": "dps",
               "label": "DPS"
@@ -79,8 +87,12 @@
           "type": "build_parameter",
           "paramType": "list",
           "path": "damageType",
-          "default": "magical",
+          "default": "",
           "options": [
+            {
+              "value": "",
+              "label": "— none —"
+            },
             {
               "value": "magical",
               "label": "Magical"
@@ -97,7 +109,7 @@
           "type": "build_parameter",
           "paramType": "number",
           "path": "magnitude",
-          "default": 4332,
+          "default": "",
           "min": 0
         },
         {
@@ -106,7 +118,7 @@
           "type": "build_parameter",
           "paramType": "list",
           "path": "forte.primary",
-          "default": "power_p",
+          "default": "",
           "options": [
             {
               "value": "",
@@ -164,7 +176,7 @@
           "type": "build_parameter",
           "paramType": "list",
           "path": "forte.secondaryA",
-          "default": "strike_p",
+          "default": "",
           "options": [
             {
               "value": "",
@@ -222,7 +234,7 @@
           "type": "build_parameter",
           "paramType": "list",
           "path": "forte.secondaryB",
-          "default": "awareness_p",
+          "default": "",
           "options": [
             {
               "value": "",

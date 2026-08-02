@@ -256,9 +256,14 @@ const visibleRows = computed(() => {
 
 function itemsFor(slotId: string) {
   const cls = build.value.context.class;
+  // An unset class constrains nothing: with the class slot now defaulting to empty, a
+  // fresh build would otherwise hide every class-restricted item with no explanation.
+  // Equipping one still flags the `requires X` error once a class is (not) chosen.
   return db.value
     .forSlot(slotId)
-    .filter((item) => !item.allowedClass || item.allowedClass.includes(cls));
+    .filter(
+      (item) => !item.allowedClass || !cls || item.allowedClass.includes(cls),
+    );
 }
 
 function errorsFor(slotId: string) {
@@ -321,8 +326,9 @@ const {
   onFocusIn: onCursorFocusIn,
 } = useKeyboardCursor(root, visibleRows, {
   onToggleHeader: toggle,
-  // Backspace-to-clear only makes sense for an item choice -- a build_parameter always has
-  // some value, there's nothing to "clear" it back to that isn't already its own control.
+  // Backspace-to-clear clears an item choice outright; a build_parameter resets to its
+  // declared default -- for class/role/damage type/magnitude/forte that default is now
+  // empty, so Delete reads as "clear the row" exactly like an item slot.
   onClearSlot: (slotId) => {
     if (db.value.slotById.get(slotId)?.type === "item_picker")
       buildEditor.setChoice(slotId, "");

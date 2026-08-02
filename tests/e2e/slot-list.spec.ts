@@ -386,8 +386,8 @@ test.describe("keyboard cursor: build_parameter rows", () => {
     await row.locator(".slot-label").click();
     await page.keyboard.press("Backspace");
 
-    // Should be reset to default (dps)
-    await expect(row.getByTestId("picker-input")).toHaveValue("DPS");
+    // Backspace clears the slot, same as an item row -- the empty option is the default.
+    await expect(row.getByTestId("picker-input")).toHaveValue("— none —");
   });
 
   test("typing a character while the list is focused does not change rows", async ({
@@ -438,6 +438,7 @@ test.describe("keyboard cursor: build_parameter rows", () => {
     await row.locator(".slot-label").click();
     await page.keyboard.press("Delete");
 
-    await expect(row.getByTestId("picker-input")).toHaveValue("DPS");
+    // Delete clears the slot, same as an item row -- the empty option is the default.
+    await expect(row.getByTestId("picker-input")).toHaveValue("— none —");
   });
 });

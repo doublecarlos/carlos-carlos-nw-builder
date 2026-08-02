@@ -183,7 +183,11 @@ function optionsForCombo(type?: string) {
         (s) => s.type === "build_parameter" && s.path === path,
       )
     : undefined;
-  return (slot as BuildParameterSlot | undefined)?.options ?? [];
+  // Drop a slot's own "— none —" row: "" is a build-editor value, not a condition
+  // value -- a `class: ""` leaf would serialise to nothing anyway (`fromCsv`).
+  return ((slot as BuildParameterSlot | undefined)?.options ?? []).filter(
+    (o) => o.value,
+  );
 }
 
 // --- the generic `param` leaf -----------------------------------------------------------
@@ -204,7 +208,7 @@ function paramSlotFor(key?: string) {
 
 /** Options for a `param` leaf's "equals" combo, when the addressed slot is a `list`. */
 function paramValueOptions(key?: string) {
-  return paramSlotFor(key)?.options ?? [];
+  return (paramSlotFor(key)?.options ?? []).filter((o) => o.value);
 }
 
 /** Picking a key resets the comparison to match its `paramType` -- the old fields would

@@ -291,7 +291,9 @@ const displayId = computed(
 
 const statOptions = NW_SCHEMA.stats;
 const classSlot = findParamSlot(NW_SLOTS.slots, "class");
-const classes = classSlot?.options?.map((o) => o.value) ?? [];
+// The class slot's own "— none —" row is for the build editor, not for restricting an
+// item to no class at all -- drop the empty value from the checkbox list.
+const classes = (classSlot?.options?.map((o) => o.value) ?? []).filter(Boolean);
 
 const statComboOptions = statOptions.map((s) => ({
   value: s.key,

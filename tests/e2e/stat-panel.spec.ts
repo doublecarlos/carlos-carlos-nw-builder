@@ -9,10 +9,11 @@ import {
   statCardSourceGroups,
 } from "./support/stats";
 
-// Same item slot-list.spec.ts already relies on: unique across the item table and allowed for
-// the default "warlock" class. It grants `strike`/`forte`/`combined_rating` directly (an item-
-// stat trio, not by a bonus) and carries an active bonus of its own granting Combat Advantage
-// -- useful precisely because its Rating/Percentage sources come from two different mechanisms.
+// Same item slot-list.spec.ts already relies on: unique across the item table and class-
+// restricted to warlock, so equipping it also exercises the allowed-class error path. It
+// grants `strike`/`forte`/`combined_rating` directly (an item-stat trio, not by a bonus)
+// and carries an active bonus of its own granting Combat Advantage -- useful precisely
+// because its Rating/Percentage sources come from two different mechanisms.
 const HEAD_ITEM = "M29 Enchanted Depthweave Cap (CA)";
 
 test.describe("stat source popover", () => {
@@ -33,14 +34,13 @@ test.describe("stat source popover", () => {
       "no contributing sources",
     );
 
-    // Percentage still has the rating->percent conversion itself, plus the default build's own
-    // forte pick (storage.ts's `DEFAULT_FORTE.primary` is `power_p`).
+    // Percentage still has the rating->percent conversion itself. The forte slots now
+    // default to empty, so no "Forte" source row exists on a fresh build.
     const groups = statCardSourceGroups(page);
     await expect(groups).toHaveCount(1);
     const percentRows = groups.nth(0).locator('[data-testid="stat-card-row"]');
-    await expect(percentRows).toHaveCount(2);
+    await expect(percentRows).toHaveCount(1);
     await expect(percentRows.nth(0)).toContainText("Rating contribution");
-    await expect(percentRows.nth(1)).toContainText("Forte");
   });
 
   test("equipping an item adds it as a Rating source alongside Combined rating", async ({
@@ -67,12 +67,11 @@ test.describe("stat source popover", () => {
     await expect(ratingRows.nth(0)).toContainText("+");
     await expect(ratingRows.nth(1)).toContainText("Combined rating");
 
-    // strike_p is storage.ts's `DEFAULT_FORTE.secondaryA` -- Rating contribution plus the
-    // forte pool, no ability contribution (strike_p isn't an abilityContributions target).
+    // strike_p has no ability contribution -- only Rating contribution feeds it, since
+    // the forte slots default to empty on a fresh build.
     const percentRows = groups.nth(1).locator('[data-testid="stat-card-row"]');
-    await expect(percentRows).toHaveCount(2);
+    await expect(percentRows).toHaveCount(1);
     await expect(percentRows.nth(0)).toContainText("Rating contribution");
-    await expect(percentRows.nth(1)).toContainText("Forte");
   });
 
   test("a bonus contributes to the stat it grants, distinct from the item that carries it", async ({

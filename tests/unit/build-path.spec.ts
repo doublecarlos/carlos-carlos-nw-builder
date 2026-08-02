@@ -44,17 +44,18 @@ describe("build-path", () => {
     for (const slot of NW_SLOTS.slots) {
       if (slot.type !== "build_parameter" || slot.default === undefined)
         continue;
-      expect(getPath(build.context, slot.path)).toBe(slot.default);
+      // An empty default means "no value": `setPath` deletes empty leaves, so the path
+      // reads as empty rather than carrying an explicit "" (see setPath's test above).
+      // Every consumer falls back the same way (`?? ""`, `|| 0`).
+      expect(getPath(build.context, slot.path) ?? "").toBe(slot.default ?? "");
     }
   });
 
   it("forte reads as a group: all three forte slots land under context.forte", () => {
     const build = defaultBuild();
-    expect(build.context.forte).toEqual({
-      primary: "power_p",
-      secondaryA: "strike_p",
-      secondaryB: "awareness_p",
-    });
+    // All three forte picks now default to empty, so no key is stored -- the group
+    // exists with no picks, which stage 6 (engine.ts) treats as "no redistribution".
+    expect(build.context.forte).toEqual({});
     // stage 6 (engine.ts) iterates schema.forteSplit's own keys against context.forte -- the
     // nesting this proves is exactly what it depends on.
     expect(Object.keys(NW_SCHEMA.forteSplit).sort()).toEqual(
