@@ -163,7 +163,7 @@ onKeyStroke(
 );
 
 onKeyStroke(
-  (e) => e.key === "ArrowDown" || e.key === "ArrowUp",
+  ["ArrowDown", "ArrowUp"],
   (e) => {
     e.preventDefault();
     e.stopPropagation();

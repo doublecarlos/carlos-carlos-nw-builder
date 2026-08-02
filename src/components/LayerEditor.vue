@@ -8,7 +8,7 @@
 // The editor never writes to disk -- it cannot, this is a static client app. It edits the
 // layer's overlay (see catalog.ts) and hands you the file contents to paste back.
 import { ref, computed, watch, onMounted, onUnmounted } from "vue";
-import { useEventListener } from "@vueuse/core";
+import { onKeyStroke, useEventListener } from "@vueuse/core";
 import { useConfirm } from "../composables/useConfirm";
 import ItemForm from "./game/ItemForm.vue";
 import BonusSetForm from "./game/BonusSetForm.vue";
@@ -335,12 +335,11 @@ function select(row: EditorRow, { push = true }: { push?: boolean } = {}) {
  * Guarded to the search input or an `.editor-row` so the status ComboBox's own dropdown
  * keeps its arrows.
  */
-function onListKeydown(event: KeyboardEvent) {
+onKeyStroke(["ArrowDown", "ArrowUp", "Enter"], (event) => {
   const target = event.target as HTMLElement;
   const isSearch = target.matches?.('input[type="search"]');
   const isRow = target.closest?.(".editor-row");
   if (!isSearch && !isRow) return;
-  if (!["ArrowDown", "ArrowUp", "Enter"].includes(event.key)) return;
   const rowsList = filtered.value;
   if (!rowsList.length) return;
   event.preventDefault();
@@ -359,7 +358,7 @@ function onListKeydown(event: KeyboardEvent) {
         : rowsList.length - 1
       : Math.min(Math.max(idx + dir, 0), rowsList.length - 1);
   select(rowsList[next], { push: false });
-}
+});
 
 function newItem() {
   selectedId.value = null;
@@ -823,7 +822,6 @@ onUnmounted(() => {
     <div class="flex min-h-0 flex-1 flex-col items-stretch gap-3 lg:flex-row">
       <div
         class="flex min-h-0 flex-none flex-col rounded-md border border-line bg-surface lg:w-96"
-        @keydown="onListKeydown"
       >
         <div class="flex flex-none gap-1.5 border-b border-line p-2">
           <input

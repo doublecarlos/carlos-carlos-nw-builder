@@ -6,6 +6,7 @@
 // existing set (so autocomplete), but creating a brand-new set id by typing it is a normal
 // thing to do (so free text).
 import { ref, computed, watch, nextTick } from "vue";
+import { onKeyStroke } from "@vueuse/core";
 
 const MAX_SUGGESTIONS = 40;
 
@@ -76,44 +77,57 @@ function removeAt(index: number) {
   model.value = next;
 }
 
-function onKeydown(event: KeyboardEvent) {
-  const { key } = event;
+// --- keyboard handling via onKeyStroke (scoped to the input ref) --------------------
+// Each key group is handled declaratively with string/array key names instead of
+// manual event.key checks.
 
-  // Backspace on an empty box eats the previous token -- the behaviour everyone expects
-  // from an address field.
-  if (key === "Backspace" && !query.value && model.value.length) {
+onKeyStroke(
+  "Backspace",
+  (event) => {
+    if (query.value || !model.value.length) return;
     event.preventDefault();
     removeAt(model.value.length - 1);
-    return;
-  }
+  },
+  { target: input },
+);
 
-  if (key === "ArrowDown" || key === "ArrowUp") {
+onKeyStroke(
+  ["ArrowDown", "ArrowUp"],
+  (event) => {
     event.preventDefault();
     open.value = true;
-    const step = key === "ArrowDown" ? 1 : -1;
+    const step = event.key === "ArrowDown" ? 1 : -1;
     highlight.value = Math.min(
       Math.max(highlight.value + step, 0),
       entries.value.length - 1,
     );
-    return;
-  }
+  },
+  { target: input },
+);
 
-  // Comma and Enter both commit, so pasting "a, b, c" and typing behave alike.
-  if (key === "Enter" || key === "," || key === "Tab") {
+// Comma and Enter both commit, so pasting "a, b, c" and typing behave alike.
+// Tab also commits when there's a query or a highlighted entry.
+onKeyStroke(
+  ["Enter", ",", "Tab"],
+  (event) => {
     const picked = entries.value[highlight.value];
-    if (key === "Tab" && !query.value && !picked) return;
+    if (event.key === "Tab" && !query.value && !picked) return;
     if (picked || query.value.trim()) {
       event.preventDefault();
       add(picked ?? query.value);
     }
-    return;
-  }
+  },
+  { target: input },
+);
 
-  if (key === "Escape") {
+onKeyStroke(
+  "Escape",
+  () => {
     open.value = false;
     query.value = "";
-  }
-}
+  },
+  { target: input },
+);
 
 function onPaste(event: ClipboardEvent) {
   const text = event.clipboardData?.getData("text") ?? "";
@@ -157,7 +171,6 @@ function onPaste(event: ClipboardEvent) {
         highlight = 0;
       "
       @blur="open = false"
-      @keydown="onKeydown"
       @paste="onPaste"
     />
 

@@ -1,11 +1,5 @@
-import {
-  nextTick,
-  onMounted,
-  onUnmounted,
-  ref,
-  type ComponentPublicInstance,
-  type Ref,
-} from "vue";
+import { nextTick, ref, type ComponentPublicInstance, type Ref } from "vue";
+import { onKeyStroke } from "@vueuse/core";
 import { isFormControl } from "./focus";
 
 export type CursorKind = "header" | "slot";
@@ -130,64 +124,6 @@ export function useKeyboardCursor(
     return !isFormControl(document.activeElement);
   }
 
-  function onNavKeydown(event: KeyboardEvent) {
-    if (!isPassiveTarget()) return;
-
-    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
-      const rows = visibleRows.value;
-      if (!rows.length) return;
-      event.preventDefault();
-      const dir = event.key === "ArrowDown" ? 1 : -1;
-      const idx = cursor.value
-        ? rows.findIndex(
-            (r) => r.type === cursor.value!.type && r.id === cursor.value!.id,
-          )
-        : -1;
-      const next =
-        idx === -1
-          ? dir === 1
-            ? 0
-            : rows.length - 1
-          : Math.min(Math.max(idx + dir, 0), rows.length - 1);
-      setCursor(rows[next].type as CursorKind, rows[next].id, rows[next].kind);
-      return;
-    }
-
-    if (!cursor.value) return;
-
-    if (event.key === "Enter") {
-      event.preventDefault();
-      if (cursor.value.type === "header")
-        handlers.onToggleHeader(cursor.value.id);
-      else focusPicker(cursor.value.id);
-      return;
-    }
-
-    if (
-      cursor.value.type === "slot" &&
-      (event.key === "Backspace" || event.key === "Delete")
-    ) {
-      event.preventDefault();
-      if (cursor.value.kind === "build_parameter") {
-        handlers.onResetParam(cursor.value.id);
-      } else {
-        handlers.onClearSlot(cursor.value.id);
-      }
-      return;
-    }
-
-    if (
-      cursor.value.type === "slot" &&
-      event.key.length === 1 &&
-      !event.ctrlKey &&
-      !event.metaKey &&
-      !event.altKey
-    ) {
-      event.preventDefault();
-      focusPicker(cursor.value.id, event.key);
-    }
-  }
-
   /**
    * `setCursor`/`syncCursorFocus` push the keyboard cursor's position onto real DOM focus,
    * but focus can also move for reasons that never go through `setCursor` -- native Tab
@@ -226,8 +162,77 @@ export function useKeyboardCursor(
     else delete paramRefs[slotId];
   }
 
-  onMounted(() => window.addEventListener("keydown", onNavKeydown));
-  onUnmounted(() => window.removeEventListener("keydown", onNavKeydown));
+  // --- keyboard handling via onKeyStroke + useMagicKeys pattern -------------------
+  // Navigation keys are handled with onKeyStroke (string-key form) because they need
+  // preventDefault() — useMagicKeys + whenever cannot provide the event object.
+  // The passive gate (isFormControl) is checked in the shared guard.
+
+  onKeyStroke(
+    ["ArrowDown", "ArrowUp"],
+    (event) => {
+      if (!isPassiveTarget()) return;
+      const rows = visibleRows.value;
+      if (!rows.length) return;
+      event.preventDefault();
+      const dir = event.key === "ArrowDown" ? 1 : -1;
+      const idx = cursor.value
+        ? rows.findIndex(
+            (r) => r.type === cursor.value!.type && r.id === cursor.value!.id,
+          )
+        : -1;
+      const next =
+        idx === -1
+          ? dir === 1
+            ? 0
+            : rows.length - 1
+          : Math.min(Math.max(idx + dir, 0), rows.length - 1);
+      setCursor(rows[next].type as CursorKind, rows[next].id, rows[next].kind);
+    },
+    { dedupe: true },
+  );
+
+  onKeyStroke(
+    "Enter",
+    (event) => {
+      if (!isPassiveTarget() || !cursor.value) return;
+      event.preventDefault();
+      if (cursor.value.type === "header")
+        handlers.onToggleHeader(cursor.value.id);
+      else focusPicker(cursor.value.id);
+    },
+    { dedupe: true },
+  );
+
+  onKeyStroke(
+    ["Backspace", "Delete"],
+    (event) => {
+      if (!isPassiveTarget() || !cursor.value) return;
+      if (cursor.value.type !== "slot") return;
+      event.preventDefault();
+      if (cursor.value.kind === "build_parameter") {
+        handlers.onResetParam(cursor.value.id);
+      } else {
+        handlers.onClearSlot(cursor.value.id);
+      }
+    },
+    { dedupe: true },
+  );
+
+  // Type-ahead: single printable characters trigger focusAndSeed on the current slot.
+  onKeyStroke(
+    (event) =>
+      cursor.value?.type === "slot" &&
+      event.key.length === 1 &&
+      !event.ctrlKey &&
+      !event.metaKey &&
+      !event.altKey,
+    (event) => {
+      if (!isPassiveTarget() || !cursor.value) return;
+      event.preventDefault();
+      focusPicker(cursor.value.id, event.key);
+    },
+    { dedupe: true },
+  );
 
   return { cursor, isCursor, setCursor, setPickerRef, setParamRef, onFocusIn };
 }
