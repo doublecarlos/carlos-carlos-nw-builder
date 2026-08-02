@@ -832,29 +832,34 @@ onUnmounted(() => {
       <div
         class="flex min-h-0 flex-none flex-col rounded-md border border-line bg-surface lg:w-96"
       >
-        <div class="flex flex-none gap-1.5 border-b border-line p-2">
+        <div class="p-2">
           <input
             v-model="query"
             type="search"
-            class="editor-search min-w-0 flex-1 rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+            class="editor-search w-full min-w-0 rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
             :placeholder="
               section === 'bonusSets' ? 'Filter bonus sets…' : 'Filter items…'
             "
           />
+        </div>
+        <div class="flex flex-none gap-1.5 px-2">
           <ComboBox
-            class="w-25"
+            class="w-full"
             :model-value="statusFilter"
             :options="statusFilterOptions"
             @update:model-value="(v) => (statusFilter = v)"
           />
+        </div>
+        <div class="flex flex-none gap-1.5 border-b border-line px-2 py-2">
           <BaseButton
-            v-if="query || statusFilter !== 'all'"
-            variant="link"
+            :disabled="!(query || statusFilter !== 'all')"
+            class="flex-1 text-center justify-center"
             @click="clearFilters"
             ><FilterX />clear filters</BaseButton
           >
           <BaseButton
             v-if="section === 'bonusSets'"
+            class="flex-1 text-center justify-center"
             variant="primary"
             data-testid="new-bonus-set"
             @click="newSet"
@@ -862,6 +867,7 @@ onUnmounted(() => {
           >
           <BaseButton
             v-else
+            class="flex-1 text-center justify-center"
             variant="primary"
             data-testid="new-item"
             @click="newItem"
