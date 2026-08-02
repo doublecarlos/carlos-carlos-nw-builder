@@ -30,6 +30,10 @@ defineEmits<{
   toggle: [];
   copy: [fromId: string];
 }>();
+
+defineSlots<{
+  default(props: { slotDef: Slot }): unknown;
+}>();
 </script>
 
 <template>
@@ -68,7 +72,9 @@ defineEmits<{
       v-if="expanded"
       class="bg-surface border-t border-line px-2.5 pb-2 pt-1"
     >
-      <slot v-for="slot in slots" :key="slot.id" :slot-def="slot" />
+      <template v-for="slot in slots" :key="slot.id">
+        <slot :slot-def="slot" />
+      </template>
     </div>
   </section>
 </template>
