@@ -127,9 +127,10 @@ const LEAVES: Record<
   pieces(spec, ctx) {
     const s = spec as RangeSpec & { set: string };
     const have = countOf(ctx.setPieces, s.set);
+    const displayName = ctx.setNames?.get(s.set) ?? s.set;
     return {
       ok: inRange(have, s),
-      label: `${s.atLeast ?? 1} piece(s) of ${s.set}`,
+      label: `${s.atLeast ?? 1} piece(s) of ${displayName}`,
       detail: `you have ${have}`,
     };
   },

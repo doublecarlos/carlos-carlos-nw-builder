@@ -16,6 +16,7 @@ function ctx(
     equipped: new Map(),
     tags: new Map(),
     setPieces: new Map(),
+    setNames: new Map(),
     params: new Map(Object.entries(params)),
     ...overrides,
   };
@@ -130,5 +131,39 @@ describe("bonus.ts collect() populates EvalContext.params", () => {
       testBuild({ bolster: 0.9 }),
     );
     expect(builtCtx.params.get("bolster")).toBe(0.9);
+  });
+});
+
+describe("conditions.ts pieces leaf uses setNames for friendly labels", () => {
+  it("shows the set name when available in setNames", () => {
+    const c = ctx(
+      {},
+      {
+        setPieces: new Map([["m32-impending-doom-celestial", 1]]),
+        setNames: new Map([["m32-impending-doom-celestial", "Impending Doom"]]),
+      },
+    );
+    const result = explain(
+      { pieces: { set: "m32-impending-doom-celestial", atLeast: 2 } },
+      c,
+    );
+    expect(result.ok).toBe(false);
+    expect(result.unmet[0].label).toBe("2 piece(s) of Impending Doom");
+  });
+
+  it("falls back to the set id when not in setNames", () => {
+    const c = ctx(
+      {},
+      {
+        setPieces: new Map([["m32-unknown-set", 1]]),
+        setNames: new Map(),
+      },
+    );
+    const result = explain(
+      { pieces: { set: "m32-unknown-set", atLeast: 2 } },
+      c,
+    );
+    expect(result.ok).toBe(false);
+    expect(result.unmet[0].label).toBe("2 piece(s) of m32-unknown-set");
   });
 });

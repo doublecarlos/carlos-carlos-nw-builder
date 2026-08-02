@@ -329,8 +329,11 @@ export interface EvalContext {
   equipped: Map<string, number>;
   tags: Map<string, number>;
   setPieces: Map<string, number>;
+  /** Friendly names for bonus set IDs, so conditions can display "Gladiator's Guile"
+   *  instead of "m31-gladiators-guile" in their labels. */
+  setNames: Map<string, string>;
   /** Every `build_parameter`'s current value, keyed by its (context-relative) `path` -- what
-   * the `param` leaf reads. Built once by bonus.ts's `collect()`. */
+   *  the `param` leaf reads. Built once by bonus.ts's `collect()`. */
   params: Map<string, string | number | boolean>;
 }
 

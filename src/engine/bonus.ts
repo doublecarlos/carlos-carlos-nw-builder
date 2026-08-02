@@ -83,6 +83,13 @@ export function collect(
     if (resolved !== undefined) params.set(slot.path, resolved);
   }
 
+  // Populate set names from the db so conditions can display friendly names
+  // instead of internal IDs like "m32-impending-doom-celestial".
+  const setNames = new Map<string, string>();
+  for (const [id, bonusSet] of db.bonusSetById) {
+    if (bonusSet.name) setNames.set(id, bonusSet.name);
+  }
+
   const ctx: EvalContext = {
     class: context.class,
     role: context.role,
@@ -94,6 +101,7 @@ export function collect(
     equipped,
     tags,
     setPieces,
+    setNames,
     params,
   };
 
