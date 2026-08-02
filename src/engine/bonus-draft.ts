@@ -19,6 +19,7 @@ import {
   whenToRows,
   rowsToWhen,
   cloneRow,
+  whenRowsComplete,
   type ConditionRow,
 } from "./condition-draft";
 import type { Grant, GrantVariant, BonusSet, StatValues } from "../types";
@@ -138,6 +139,19 @@ export function toDraft(grant: Grant = {}): GrantDraft {
         })),
   };
 }
+
+/**
+ * True when every condition tree in the grant serializes without dropping anything: the
+ * grant's own `when`, plus each variant's when when the payload is `variants` (a variant
+ * with *no* condition is valid -- it always matches -- so an empty tree is complete). The
+ * form uses this to hold off auto-saving while a condition is half-drawn; otherwise
+ * `rowsToWhen` would silently drop the empty leaf and the source round-trip would wipe the
+ * row from the editor.
+ */
+export const grantWhenIsComplete = (grant: GrantDraft): boolean =>
+  whenRowsComplete(grant.conditions) &&
+  (grant.payload !== "variants" ||
+    grant.variants.every((variant) => whenRowsComplete(variant.conditions)));
 
 /** Throws on unparseable JSON so the caller can report it rather than dropping the grant. */
 export function toGrant(draft: GrantDraft): Grant {

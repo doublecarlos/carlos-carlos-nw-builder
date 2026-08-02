@@ -278,6 +278,31 @@ export function rowsToWhen(rows: ConditionRow[] | undefined): ConditionWhen {
   return when;
 }
 
+/**
+ * True when every leaf carries a value and every group branch is non-empty -- i.e. the tree
+ * serializes without silently dropping anything. `leafToSpec`/`rowsToWhen` drop leaves with
+ * no value and empty branches, so saving a half-drawn tree would come back smaller than
+ * what the user drew (and the source round-trip would wipe the row from the editor). The
+ * editors use this to hold off auto-saving while a condition is mid-edit.
+ */
+export function whenRowsComplete(rows: ConditionRow[] | undefined): boolean {
+  return (rows ?? []).every(isRowComplete);
+}
+
+/** A group is complete only when every branch carries at least one complete row -- an empty
+ * branch (or one holding only empty leaves) serializes to nothing via `rowsToWhen`. */
+function isRowComplete(row: ConditionRow): boolean {
+  if (row.kind === "group") {
+    const branches = row.branches ?? [];
+    return branches.length > 0 && branches.every(isBranchComplete);
+  }
+  return leafToSpec(row) !== undefined;
+}
+
+function isBranchComplete(branch: ConditionRow[]): boolean {
+  return branch.length > 0 && branch.every(isRowComplete);
+}
+
 /** Can this `when`-object be edited by the tree, within `MAX_DEPTH` levels of nesting? */
 export function whenIsRepresentable(
   when: ConditionWhen | undefined,

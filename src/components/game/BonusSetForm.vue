@@ -223,6 +223,13 @@ function emitChange() {
   window.clearTimeout(debounceTimer);
   const name = draft.value.name.trim();
   if (!name) return;
+  // Hold off saving while any grant's condition tree is half-drawn (a leaf with no value
+  // yet, an empty group branch): `rowsToWhen` drops it silently, and the source round-trip
+  // would then wipe the row from the form. The next mutation re-schedules this emit.
+  if (
+    !draft.value.grants.every((grant) => bonusDraft.grantWhenIsComplete(grant))
+  )
+    return;
   const id =
     props.source?.id ??
     props.fixedId ??
@@ -298,6 +305,13 @@ function save() {
   const name = draft.value.name.trim();
   if (!name) {
     error.value = "The bonus set needs a name.";
+    return;
+  }
+  if (
+    !draft.value.grants.every((grant) => bonusDraft.grantWhenIsComplete(grant))
+  ) {
+    error.value =
+      "A grant has an unfinished condition -- fill in its value or remove the condition before saving.";
     return;
   }
   const id =

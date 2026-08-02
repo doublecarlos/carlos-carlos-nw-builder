@@ -188,3 +188,61 @@ test.describe("Ctrl+click on a filled slot", () => {
     await expect(page.getByText("0 entries")).toBeVisible();
   });
 });
+
+test.describe("bonus set grant conditions", () => {
+  test("changing a condition's type mid-edit does not drop the condition", async ({
+    page,
+  }) => {
+    await openBuilder(page);
+    await addLayer(page);
+    const layer = layerRow(page, "Layer 1");
+    await layer.locator(".nav-name").click();
+
+    // Open the Bonus sets section and pick a set whose grant has a toggle condition.
+    await page.getByRole("button", { name: /Bonus sets \d+/ }).click();
+    await page.locator(".editor-search").fill("1st Pack Tactics (Group)");
+    const setRow = page
+      .locator(".editor-row")
+      .filter({ hasText: "1st Pack Tactics (Group)" })
+      .first();
+    await setRow.click();
+
+    const typePicker = page
+      .getByText("Condition", { exact: true })
+      .locator("..")
+      .getByTestId("picker-input");
+    const valuePicker = page
+      .getByText("Value", { exact: true })
+      .locator("..")
+      .getByTestId("picker-input");
+    await expect(typePicker).toHaveValue("toggle");
+    await expect(valuePicker).toHaveValue("Party");
+
+    // Switch the condition from toggle to class. Changing the type resets the value, so
+    // the condition is momentarily incomplete -- the debounced auto-save must not fire
+    // with a half-drawn tree (it would silently drop the when and the source round-trip
+    // would wipe the row from the form).
+    await typePicker.click();
+    await page.getByText("class", { exact: true }).click();
+    await expect(typePicker).toHaveValue("class");
+
+    // Wait past the 700ms debounce: the row must still be there and nothing must have
+    // been persisted (no "edited" status badge on the set row -- the "unsaved" badge
+    // for the dirty form is expected).
+    await page.waitForTimeout(1500);
+    await expect(typePicker).toHaveValue("class");
+    await expect(valuePicker).toBeVisible();
+    const statusBadge = setRow
+      .getByTestId("badge")
+      .filter({ hasText: "edited" });
+    await expect(statusBadge).toHaveCount(0);
+
+    // Now complete the condition by picking a class value. The next auto-save carries
+    // the full tree, and the row still survives the round-trip.
+    await valuePicker.click();
+    await page.getByText("Cleric", { exact: true }).click();
+    await expect(typePicker).toHaveValue("class");
+    await expect(valuePicker).toHaveValue("Cleric");
+    await expect(statusBadge).toBeVisible();
+  });
+});
