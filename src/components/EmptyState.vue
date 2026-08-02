@@ -1,10 +1,10 @@
 <script setup lang="ts">
 // Centered empty state: shown when there are no builds and no layers.
-import { ref } from "vue";
+import { useTemplateRef } from "vue";
 import * as builds from "../stores/builds";
 import * as layers from "../stores/layers";
 
-const importFileInput = ref<HTMLInputElement | null>(null);
+const importFileInput = useTemplateRef("importFileInput");
 
 function triggerImport() {
   importFileInput.value?.click();

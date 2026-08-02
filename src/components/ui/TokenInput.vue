@@ -5,7 +5,7 @@
 // Used for an item's set membership, where both halves matter: you usually want to attach an
 // existing set (so autocomplete), but creating a brand-new set id by typing it is a normal
 // thing to do (so free text).
-import { ref, computed, watch, nextTick } from "vue";
+import { ref, computed, watch, nextTick, useTemplateRef } from "vue";
 import { onKeyStroke } from "@vueuse/core";
 
 const MAX_SUGGESTIONS = 40;
@@ -28,8 +28,8 @@ const model = defineModel<string[]>({ default: () => [] });
 const query = ref("");
 const open = ref(false);
 const highlight = ref(0);
-const input = ref<HTMLInputElement | null>(null);
-const menu = ref<HTMLElement | null>(null);
+const input = useTemplateRef("input");
+const menu = useTemplateRef("menu");
 
 const suggestions = computed(() => {
   if (!open.value) return [];

@@ -4,7 +4,7 @@
 // location, damage type, forte picks).
 //
 // Reuses ComboBoxMenu/ComboBoxMenuRow primitives for the floating dropdown.
-import { ref, computed, watch, nextTick } from "vue";
+import { ref, computed, watch, nextTick, useTemplateRef } from "vue";
 import { onKeyStroke } from "@vueuse/core";
 import ComboBoxMenu from "./ComboBoxMenu.vue";
 import ComboBoxMenuRow from "./ComboBoxMenuRow.vue";
@@ -39,7 +39,7 @@ const model = defineModel<string>({ default: "" });
 const open = ref(false);
 const query = ref("");
 const highlight = ref(0);
-const input = ref<HTMLInputElement | null>(null);
+const input = useTemplateRef("input");
 const list = ref<InstanceType<typeof ComboBoxMenu> | null>(null);
 
 const selected = computed(

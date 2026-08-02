@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // Full-width header bar: app title, export/import, undo/redo, theme toggle, and notice.
-import { ref } from "vue";
+import { ref, useTemplateRef } from "vue";
 import ThemeToggle from "./ui/ThemeToggle.vue";
 import HistoryButton from "./ui/HistoryButton.vue";
 import BaseNotice from "./ui/BaseNotice.vue";
@@ -10,7 +10,7 @@ import * as builds from "../stores/builds";
 import * as layers from "../stores/layers";
 import { notice, showNotice } from "../stores/notice";
 
-const importFileInput = ref<HTMLInputElement | null>(null);
+const importFileInput = useTemplateRef("importFileInput");
 const showBundleExport = ref(false);
 
 const { canUndo, canRedo, undoLabel, redoLabel, undo, redo } =

@@ -4,7 +4,7 @@
 // Sections start collapsed except Gear. That keeps the mounted DOM at ~15 rows
 // on load; expanding everything is ~180 rows, which the browser handles fine -- only one
 // dropdown is ever open, and that is where the per-row cost actually lives. No virtualisation.
-import { computed, reactive, ref, watch } from "vue";
+import { computed, reactive, ref, watch, useTemplateRef } from "vue";
 import ItemCard from "./game/ItemCard.vue";
 import BasePopover from "./ui/BasePopover.vue";
 import BuildSection from "./game/BuildSection.vue";
@@ -36,7 +36,7 @@ import type {
   SlotSection,
 } from "../types";
 
-const root = ref<HTMLElement | null>(null);
+const root = useTemplateRef("root");
 const tooltip = ref<InstanceType<typeof BasePopover> | null>(null);
 
 const db = engine.db;

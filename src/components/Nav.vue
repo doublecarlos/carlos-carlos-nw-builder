@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // Left sidebar: builds, customization layers, and recently deleted. Owns shared state
 // (menus, rename, confirm) and delegates list rendering to NavBuilds / NavLayers / NavTrash.
-import { ref } from "vue";
+import { ref, useTemplateRef } from "vue";
 import { useEventListener, onClickOutside } from "@vueuse/core";
 import NavBuilds from "./NavBuilds.vue";
 import NavLayers from "./NavLayers.vue";
@@ -16,15 +16,15 @@ import type { Build, TrashEntry } from "../types";
 
 const CONFIRM_MS = 4000;
 
-const root = ref<HTMLElement | null>(null);
+const root = useTemplateRef("root");
 const openMenu = ref<{ type: string; id: string } | null>(null);
 const menuAnchor = ref<DOMRect | null>(null);
 const renaming = ref<{ type: string; id: string } | null>(null);
 const renameText = ref("");
 const confirm_ = useConfirm(CONFIRM_MS);
 
-const buildFileInput = ref<HTMLInputElement | null>(null);
-const layerFileInput = ref<HTMLInputElement | null>(null);
+const buildFileInput = useTemplateRef("buildFileInput");
+const layerFileInput = useTemplateRef("layerFileInput");
 
 const buildFilter = ref("");
 const layerFilter = ref("");

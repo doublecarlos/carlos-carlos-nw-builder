@@ -11,7 +11,7 @@
 // `boolean` is the one case with a default slot: BaseCheckbox's clickable label is *inside* the
 // control (a bigger, more natural click target), so the caller passes its label as slot content
 // instead of rendering a separate label element the way the other three paramTypes need.
-import { ref, nextTick } from "vue";
+import { ref, nextTick, useTemplateRef } from "vue";
 import ComboBox from "../ui/ComboBox.vue";
 import PercentInput from "../ui/PercentInput.vue";
 import BaseCheckbox from "../ui/BaseCheckbox.vue";
@@ -45,7 +45,7 @@ function onNumber(event: Event) {
 // --- keyboard cursor integration ---------------------------------------------------------
 
 const comboboxInstance = ref<InstanceType<typeof ComboBox> | null>(null);
-const root = ref<HTMLElement | null>(null);
+const root = useTemplateRef("root");
 
 /** Focus the underlying input. For a list-type this opens the combobox and positions the
  *  cursor inside its input; for other types it just focuses the control. */

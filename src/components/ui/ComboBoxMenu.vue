@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { useTemplateRef } from "vue";
 
 // Floating dropdown shell used by ComboBox.vue. Same interaction (type to filter, arrow keys,
 // Enter, Escape), just different row content via the `#option` slot. `data-testid` rather than
 // a styling class: e2e specs need a stable hook that survives restyling.
 
-const el = ref<HTMLElement | null>(null);
+const el = useTemplateRef("el");
 
 /** Scroll the `[data-highlighted]` row into view. Called by the parent picker's
  * `watch(highlight, ...)` instead of reaching into `$el`. */

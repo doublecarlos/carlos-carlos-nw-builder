@@ -6,7 +6,7 @@
 // Content scrolls independently via an inner wrapper; the measurement for the vertical flip
 // uses the real rendered height, not a CSS max-height, so a short tooltip near the viewport
 // bottom does not flip unnecessarily.
-import { ref, nextTick } from "vue";
+import { ref, nextTick, useTemplateRef } from "vue";
 
 const props = withDefaults(
   defineProps<{
@@ -16,7 +16,7 @@ const props = withDefaults(
   { width: 256 },
 );
 
-const el = ref<HTMLElement | null>(null);
+const el = useTemplateRef("el");
 const pos = ref<{ left: number; top: number } | null>(null);
 
 const MARGIN = 10;
