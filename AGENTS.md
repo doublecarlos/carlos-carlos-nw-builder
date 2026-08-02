@@ -21,7 +21,7 @@ You are **required** to:
 
 You **MUST NOT**:
 
-- Workaround limitations set in place, such as using Git flags to skip commit hooks
+- Workaround Git commit hooks with flags to disable them
 
 # Good practices
 
