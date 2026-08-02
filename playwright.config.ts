@@ -1,4 +1,5 @@
 import { defineConfig, devices } from "@playwright/test";
+import { DEV_PORT } from "./ports";
 
 // Vitest owns tests/unit; this suite drives a real browser against a live dev server, so it
 // stays a separate config with its own testDir, not just a different `include` glob.
@@ -9,7 +10,7 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   reporter: "html",
   use: {
-    baseURL: "http://localhost:5200",
+    baseURL: `http://localhost:${DEV_PORT}`,
     trace: "on-first-retry",
     viewport: { width: 1440, height: 900 },
   },
@@ -22,8 +23,9 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: "npm run dev -- --port 5200",
-    url: "http://localhost:5200",
+    command: `npm run dev -- --port ${DEV_PORT}`,
+    url: `http://localhost:${DEV_PORT}`,
     reuseExistingServer: !process.env.CI,
   },
+  workers: 3,
 });
