@@ -1,10 +1,9 @@
 /**
  * Shared by `useHoverCard` (suppress the card while a real control is being edited) and
- * `useKeyboardCursor` (the passive gate: arrow/type-to-edit only fires when nothing has
- * already claimed the keyboard) -- both need the same "is this actually a form control, not
- * just something focusable" test, and having it drift into two separate copies is exactly how
- * BuildEditor.vue's hover card ended up suppressed forever: `.slot-row`/`.section-head` are
- * `tabindex="-1"` and receive real DOM focus themselves whenever the keyboard cursor moves,
+ * `useUndoRedoKeys` (don't hijack Ctrl+Z in a text field) -- both need the same "is this
+ * actually a form control, not just something focusable" test, and having it drift into two
+ * separate copies is exactly how BuildEditor.vue's hover card ended up suppressed forever:
+ * `.slot-row`/`.section-head` receive programmatic focus whenever the keyboard cursor moves,
  * which is not "editing" in the sense either caller means.
  */
 export function isFormControl(el: Element | null): boolean {

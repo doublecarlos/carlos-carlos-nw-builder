@@ -10,9 +10,11 @@
 // as a result, not because this component special-cases its id.
 import BaseBadge from "../ui/BaseBadge.vue";
 import SectionCopyMenu from "./SectionCopyMenu.vue";
+import { useCursorRowKeys } from "../../composables/useCursorRowKeys";
+import { useTemplateRef } from "vue";
 import type { Slot } from "../../types";
 
-defineProps<{
+const props = defineProps<{
   id: string;
   label: string;
   slots: Slot[];
@@ -21,7 +23,8 @@ defineProps<{
   errors: number;
   diffs: number;
   expanded: boolean;
-  isCursor: boolean;
+  /** Arrow keys on the focused header: BuildEditor moves focus to the next/previous row. */
+  onArrow: (dir: 1 | -1) => void;
   highlightDiff: boolean;
   otherBuilds: { value: string; label: string }[];
 }>();
@@ -34,17 +37,23 @@ defineEmits<{
 defineSlots<{
   default(props: { slotDef: Slot }): unknown;
 }>();
+
+/** The header button is its own cursor target: while it has focus it IS the highlighted row,
+ *  and arrows move focus to the neighbouring row. Enter/Space need no binding -- a focused
+ *  button's native click already fires the toggle. */
+const button = useTemplateRef("button");
+useCursorRowKeys(button, {
+  onArrow: (dir) => props.onArrow(dir),
+});
 </script>
 
 <template>
   <section class="rounded-md border border-line">
     <div class="bg-surface-2 flex items-center">
       <button
+        ref="button"
         type="button"
-        class="flex flex-1 items-center gap-2 min-w-0 px-2.5 py-1.5 text-left font-semibold hover:bg-surface-2"
-        :class="
-          isCursor && 'is-cursor outline-2 -outline-offset-1 outline-accent'
-        "
+        class="flex flex-1 items-center gap-2 min-w-0 px-2.5 py-1.5 text-left font-semibold hover:bg-surface-2 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
         :data-cursor-key="'header:' + id"
         @click="$emit('toggle')"
       >

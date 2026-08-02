@@ -5,6 +5,7 @@
 // on load; expanding everything is ~180 rows, which the browser handles fine -- only one
 // dropdown is ever open, and that is where the per-row cost actually lives. No virtualisation.
 import { computed, reactive, ref, watch, useTemplateRef } from "vue";
+import { useActiveElement } from "@vueuse/core";
 import ItemCard from "./game/ItemCard.vue";
 import BasePopover from "./ui/BasePopover.vue";
 import BuildSection from "./game/BuildSection.vue";
@@ -14,7 +15,6 @@ import { ChevronsDownUp, ChevronsUpDown } from "@lucide/vue";
 import { NW_SCHEMA, NW_SLOTS } from "../data/data";
 import { abbr, signedStat } from "../lib/format";
 import { useHoverCard } from "../composables/useHoverCard";
-import { useKeyboardCursor } from "../composables/useKeyboardCursor";
 import {
   useCompareDiff,
   paramDiffers,
@@ -38,6 +38,7 @@ import type {
 } from "../types";
 
 const root = useTemplateRef("root");
+const activeElement = useActiveElement();
 const tooltip = ref<InstanceType<typeof BasePopover> | null>(null);
 
 const db = engine.db;
@@ -234,27 +235,6 @@ const bonusesBySlot = computed(() => {
   return map;
 });
 
-/**
- * Flattens exactly what the template renders -- a header per section, then (if expanded) its
- * slotDef rows -- so keyboard movement always matches what is actually on screen. Collapsed
- * sections simply contribute no slotDef entries, the same way a spreadsheet skips hidden rows.
- */
-const visibleRows = computed(() => {
-  const rows: {
-    type: string;
-    id: string;
-    kind?: "item_picker" | "build_parameter";
-  }[] = [];
-  for (const section of sections.value) {
-    rows.push({ type: "header", id: section.id });
-    if (expanded[section.id]) {
-      for (const slotDef of section.slots)
-        rows.push({ type: "slot", id: slotDef.id, kind: slotDef.type });
-    }
-  }
-  return rows;
-});
-
 function itemsFor(slotId: string) {
   const cls = build.value.context.class;
   // An unset class constrains nothing: with the class slot now defaulting to empty, a
@@ -279,13 +259,10 @@ function setAll(open: boolean) {
   for (const section of db.value.sections) expanded[section.id] = open;
 }
 
-/** A plain click moves the cursor here, same as an arrow key would. Ctrl/Cmd+click on a
- * filled slot jumps straight to that item in the layer editor -- a no-op on an empty slot,
- * since there is nothing there to edit. The platform's own modifier exclusively (decision 46). */
+/** A plain click parks the cursor via BuildSlot's own anchor focus; Ctrl/Cmd+click on a
+ *  filled slot jumps straight to that item in the layer editor -- a no-op on an empty slot,
+ *  since there is nothing there to edit. The platform's own modifier exclusively (decision 46). */
 function onRowClick(event: MouseEvent, slotId: string) {
-  const slotType = db.value.slotById.get(slotId)?.type as
-    "item_picker" | "build_parameter" | undefined;
-  setCursor("slot", slotId, slotType);
   if (!(isMac ? event.metaKey : event.ctrlKey)) return;
   const item = itemIn(slotId);
   if (!item) return;
@@ -319,33 +296,29 @@ function statSummary(slotId: string) {
   return parts.join(" • ");
 }
 
-const {
-  isCursor,
-  setCursor,
-  setPickerRef,
-  setParamRef,
-  onFocusIn: onCursorFocusIn,
-} = useKeyboardCursor(root, visibleRows, {
-  onToggleHeader: toggle,
-  // Backspace-to-clear clears an item choice outright; a build_parameter resets to its
-  // declared default -- for class/role/damage type/magnitude/forte that default is now
-  // empty, so Delete reads as "clear the row" exactly like an item slot.
-  onClearSlot: (slotId) => {
-    if (db.value.slotById.get(slotId)?.type === "item_picker")
-      buildEditor.setChoice(slotId, "");
-  },
-  onResetParam: (slotId) => {
-    const slotDef = db.value.slotById.get(slotId);
-    if (slotDef?.type === "build_parameter")
-      buildEditor.resetParamToDefault(slotDef);
-  },
-});
+/**
+ * Arrow-key row navigation. There is no virtual cursor -- real focus IS the cursor, so
+ * "move" means focusing the next/previous row's focus target: a header's own button, or a
+ * slot row's invisible cursor anchor (BuildSlot.vue). Collapsed and only-diff sections
+ * simply don't render their rows, so DOM order equals what's visible.
+ */
+function moveCursor(dir: 1 | -1) {
+  const rows = root.value?.querySelectorAll("[data-cursor-key]");
+  if (!rows?.length) return;
+  const current = activeElement.value?.closest("[data-cursor-key]");
+  const idx = current ? Array.from(rows).indexOf(current) : -1;
+  const next = rows[Math.min(Math.max(idx + dir, 0), rows.length - 1)];
+  const target =
+    next.querySelector<HTMLElement>("[data-cursor-anchor]") ??
+    (next as HTMLElement);
+  target.focus();
+}
 
-/** Forwards the list's own `focusin` to both composables -- see `useHoverCard`'s own doc
- *  comment for why hover suppression can't just register its own listener. */
+/** Forwards the list's own `focusin` to the hover card -- see `useHoverCard`'s own doc
+ *  comment for why hover suppression can't just register its own listener. The keyboard
+ *  cursor needs no such forwarding: with native focus, the rows own their own keys. */
 function onFocusIn(event: FocusEvent) {
   onHoverFocusIn(event);
-  onCursorFocusIn(event);
 }
 </script>
 
@@ -382,13 +355,10 @@ function onFocusIn(event: FocusEvent) {
       :errors="section.errors"
       :diffs="section.diffs"
       :expanded="expanded[section.id]"
-      :is-cursor="isCursor('header', section.id)"
+      :on-arrow="moveCursor"
       :highlight-diff="highlightDiff"
       :other-builds="otherBuilds"
-      @toggle="
-        toggle(section.id);
-        setCursor('header', section.id);
-      "
+      @toggle="toggle(section.id)"
       @copy="(fromId) => buildEditor.copySection(fromId, [section.id])"
     >
       <template #default="{ slotDef }: { slotDef: Slot }">
@@ -398,7 +368,7 @@ function onFocusIn(event: FocusEvent) {
           :compare-build="compareBuild"
           :highlight-diff="highlightDiff"
           :is-hovered="hover?.slotId === slotDef.id"
-          :is-cursor="isCursor('slot', slotDef.id)"
+          :on-arrow="moveCursor"
           :item="itemIn(slotDef.id)"
           :items="itemsFor(slotDef.id)"
           :errors="errorsFor(slotDef.id)"
@@ -421,8 +391,6 @@ function onFocusIn(event: FocusEvent) {
           @enter="onRowEnter($event, slotDef.id)"
           @leave="onRowLeave"
           @rowclick="onRowClick($event, slotDef.id)"
-          @picker-ref="(el) => setPickerRef(slotDef.id, el)"
-          @param-ref="(el) => setParamRef(slotDef.id, el)"
         />
       </template>
     </BuildSection>

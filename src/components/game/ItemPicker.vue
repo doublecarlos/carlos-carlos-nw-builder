@@ -59,6 +59,11 @@ const matchMap = computed(() => {
 const int = (value: unknown) => fmtInt(value);
 
 defineExpose({
+  /** Focus the underlying input -- same open/clear behavior as a direct click (ComboBox's
+   *  own `onFocus` opens the list and starts a fresh query). */
+  focus() {
+    combobox.value?.$el?.querySelector("input")?.focus();
+  },
   /** Delegates to ComboBox's focusAndSeed. */
   focusAndSeed(char: string) {
     combobox.value?.focusAndSeed(char);

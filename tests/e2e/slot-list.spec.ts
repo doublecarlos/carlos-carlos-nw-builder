@@ -1,7 +1,7 @@
 // End-to-end coverage for BuildEditor.vue's own interactions -- picking/clearing items, the
 // section header controls, and the passive keyboard cursor. Quick-compare, unsaved/revert and
 // copy-section are covered separately; this file sticks to the base single-build experience.
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 import {
   openBuilder,
   headerRow,
@@ -167,18 +167,27 @@ test.describe("section collapse/expand", () => {
   });
 });
 
+/**
+ * Parks the native-focus cursor on the Options header. There's no virtual cursor to fall
+ * back to, so arrows need focus to start from somewhere: a plain click on the first Options
+ * slot row's label focuses that row's cursor anchor, then ArrowUp moves focus up to the
+ * header button itself.
+ */
+async function parkOnOptionsHeader(page: Page) {
+  await slotRow(page, "options.class").locator(".slot-label").click();
+  await page.keyboard.press("ArrowUp");
+  await expect(cursorRow(page)).toHaveAttribute(
+    "data-cursor-key",
+    "header:options",
+  );
+}
+
 test.describe("keyboard cursor", () => {
   test("ArrowDown/Up walk headers and only expanded sections' slot rows", async ({
     page,
   }) => {
     await openBuilder(page);
-
-    // A fresh cursor's first ArrowDown always lands on rows[0] -- the Options header.
-    await page.keyboard.press("ArrowDown");
-    await expect(cursorRow(page)).toHaveAttribute(
-      "data-cursor-key",
-      "header:options",
-    );
+    await parkOnOptionsHeader(page);
 
     // Options is expanded, so the next row is its first slot.
     await page.keyboard.press("ArrowDown");
@@ -218,7 +227,7 @@ test.describe("keyboard cursor", () => {
 
   test("Enter on a header row toggles that section", async ({ page }) => {
     await openBuilder(page);
-    await page.keyboard.press("ArrowDown"); // -> header:options
+    await parkOnOptionsHeader(page);
     // Walk through all expanded Options slots, then one more to reach the Gear header.
     const optionsSlotCount = await page
       .locator('[data-cursor-key^="slot:options."]')
@@ -231,6 +240,7 @@ test.describe("keyboard cursor", () => {
     );
     await expect(slotRow(page, "gear.head")).toBeVisible();
 
+    // Enter on the focused header button is the button's native click: it toggles.
     await page.keyboard.press("Enter");
     await expect(slotRow(page, "gear.head")).toBeHidden();
 
@@ -240,7 +250,7 @@ test.describe("keyboard cursor", () => {
 
   test("Enter on a slot row focuses its picker", async ({ page }) => {
     await openBuilder(page);
-    await page.keyboard.press("ArrowDown"); // -> header:options
+    await parkOnOptionsHeader(page);
     // Walk through all expanded Options slots, then one more for the Gear header, then its first slot.
     const optionsSlotCount = await page
       .locator('[data-cursor-key^="slot:options."]')
@@ -265,7 +275,7 @@ test.describe("keyboard cursor", () => {
     page,
   }) => {
     await openBuilder(page);
-    await page.keyboard.press("ArrowDown"); // -> header:options
+    await parkOnOptionsHeader(page);
     // Walk through all expanded Options slots to reach the Gear header, then past it to its first slot.
     const optionsSlotCount = await page
       .locator('[data-cursor-key^="slot:options."]')
@@ -287,7 +297,7 @@ test.describe("keyboard cursor", () => {
     page,
   }) => {
     await openBuilder(page);
-    await page.keyboard.press("ArrowDown"); // -> header:options
+    await parkOnOptionsHeader(page);
     // Walk through all expanded Options slots to reach the Gear header, then past it to its first slot.
     const optionsSlotCount = await page
       .locator('[data-cursor-key^="slot:options."]')
@@ -305,8 +315,8 @@ test.describe("keyboard cursor", () => {
     await pickerInput(row).click();
     await expect(row.getByTestId("picker-menu")).toBeVisible();
 
-    // A real form control now has focus, so BuildEditor's own passive gate must ignore this --
-    // it's ItemPicker's own ArrowDown handler that owns the key here.
+    // The picker input now has focus and its own key handling owns the arrows -- keydowns
+    // inside the input never reach the row's cursor anchor (a sibling, not an ancestor).
     await page.keyboard.press("ArrowDown");
     await expect(cursorRow(page)).toHaveAttribute(
       "data-cursor-key",
@@ -314,20 +324,64 @@ test.describe("keyboard cursor", () => {
     );
     await expect(row.getByTestId("picker-menu")).toBeVisible();
   });
+
+  test("Escape from an open picker keeps the row cursor", async ({ page }) => {
+    await openBuilder(page);
+    // Park the cursor directly on a row (click its label, not the input).
+    await slotRow(page, "gear.head").locator(".slot-label").click();
+    await expect(cursorRow(page)).toHaveAttribute(
+      "data-cursor-key",
+      "slot:gear.head",
+    );
+
+    // Enter opens the picker; Escape closes it and blurs to the row's cursor anchor instead
+    // of <body>, so the row stays highlighted and arrow keys stay live.
+    await page.keyboard.press("Enter");
+    const row = slotRow(page, "gear.head");
+    await expect(pickerInput(row)).toBeFocused();
+    await expect(row.getByTestId("picker-menu")).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(cursorRow(page)).toHaveAttribute(
+      "data-cursor-key",
+      "slot:gear.head",
+    );
+
+    // The cursor is live again: arrows move to a neighbouring row.
+    await page.keyboard.press("ArrowDown");
+    expect(await cursorKey(page)).not.toBe("slot:gear.head");
+  });
+
+  test("choosing with Enter keeps the row cursor", async ({ page }) => {
+    await openBuilder(page);
+    await slotRow(page, "gear.head").locator(".slot-label").click();
+    const row = slotRow(page, "gear.head");
+
+    // Type-ahead seeds the picker, Enter chooses the highlighted option -- the picker then
+    // blurs to the row's cursor anchor (same as Escape), not to <body>.
+    await page.keyboard.press("d");
+    await expect(pickerInput(row)).toBeFocused();
+    await expect(row.getByTestId("picker-menu")).toBeVisible();
+    await page.keyboard.press("Enter");
+    await expect(cursorRow(page)).toHaveAttribute(
+      "data-cursor-key",
+      "slot:gear.head",
+    );
+
+    await page.keyboard.press("ArrowDown");
+    expect(await cursorKey(page)).not.toBe("slot:gear.head");
+  });
 });
 
 // build_parameter rows (in the Options section) share the same keyboard cursor
 // infrastructure as item_picker rows -- Enter-to-focus, type-to-seed, Delete-to-reset --
 // just exercised on a different control type.
 test.describe("keyboard cursor: build_parameter rows", () => {
-  // Navigation after opening Options: header click focuses header:options,
-  // ArrowDown#1 → slot:options.class, ArrowDown#2 → slot:options.role, etc.
+  // ArrowDown from the parked Options header: #1 → slot:options.class, #2 → slot:options.role.
   test("Enter on a build_parameter row focuses its control", async ({
     page,
   }) => {
     await openBuilder(page);
-    // Options section is open by default -- first ArrowDown lands on header, second on its first slot.
-    await page.keyboard.press("ArrowDown");
+    await parkOnOptionsHeader(page);
     await page.keyboard.press("ArrowDown");
     await expect(cursorRow(page)).toHaveAttribute(
       "data-cursor-key",
@@ -343,8 +397,7 @@ test.describe("keyboard cursor: build_parameter rows", () => {
     page,
   }) => {
     await openBuilder(page);
-    // Options section is open by default -- first ArrowDown lands on header, second on its first slot.
-    await page.keyboard.press("ArrowDown");
+    await parkOnOptionsHeader(page);
     await page.keyboard.press("ArrowDown");
     await expect(cursorRow(page)).toHaveAttribute(
       "data-cursor-key",
@@ -365,8 +418,7 @@ test.describe("keyboard cursor: build_parameter rows", () => {
     page,
   }) => {
     await openBuilder(page);
-    // Options section is open by default -- ArrowDown: header, first slot, second slot.
-    await page.keyboard.press("ArrowDown");
+    await parkOnOptionsHeader(page);
     await page.keyboard.press("ArrowDown");
     await page.keyboard.press("ArrowDown");
     await expect(cursorRow(page)).toHaveAttribute(
@@ -394,8 +446,7 @@ test.describe("keyboard cursor: build_parameter rows", () => {
     page,
   }) => {
     await openBuilder(page);
-    // Options section is open by default -- first ArrowDown lands on header, second on its first slot.
-    await page.keyboard.press("ArrowDown");
+    await parkOnOptionsHeader(page);
     await page.keyboard.press("ArrowDown");
     await expect(cursorRow(page)).toHaveAttribute(
       "data-cursor-key",
@@ -407,7 +458,7 @@ test.describe("keyboard cursor: build_parameter rows", () => {
     await row.getByTestId("picker-input").click();
     await expect(row.getByTestId("picker-menu")).toBeVisible();
 
-    // ArrowDown while the picker is open: the passive gate should ignore this.
+    // The input's own key handling owns arrows while it's focused.
     await page.keyboard.press("ArrowDown");
     await expect(cursorRow(page)).toHaveAttribute(
       "data-cursor-key",
@@ -418,8 +469,7 @@ test.describe("keyboard cursor: build_parameter rows", () => {
 
   test("Delete (same as Backspace) resets to default", async ({ page }) => {
     await openBuilder(page);
-    // Options section is open by default -- ArrowDown: header, first slot, second slot.
-    await page.keyboard.press("ArrowDown");
+    await parkOnOptionsHeader(page);
     await page.keyboard.press("ArrowDown");
     await page.keyboard.press("ArrowDown");
     await expect(cursorRow(page)).toHaveAttribute(

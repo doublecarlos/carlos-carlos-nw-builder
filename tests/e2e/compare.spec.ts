@@ -69,8 +69,9 @@ test.describe("build_parameter compare diff apply", () => {
     await page.getByRole("checkbox", { name: "Highlight changes" }).check();
     await ensureSectionExpanded(page, "options");
 
-    // Navigate to the class row (header:options → slot:options.class)
-    await page.keyboard.press("ArrowDown");
+    // Park the cursor on the class row (native focus: nothing is focused yet, so the first
+    // arrow key would have nowhere to start from -- a click parks it instead).
+    await slotRow(page, "options.class").locator(".slot-label").click();
     await expect(cursorRow(page)).toHaveAttribute(
       "data-cursor-key",
       "slot:options.class",
@@ -99,8 +100,8 @@ test.describe("build_parameter compare diff apply", () => {
     await page.getByRole("checkbox", { name: "Highlight changes" }).check();
     await ensureSectionExpanded(page, "options");
 
-    // Navigate to the class row
-    await page.keyboard.press("ArrowDown");
+    // Park the cursor on the class row, same as the sibling test above.
+    await slotRow(page, "options.class").locator(".slot-label").click();
 
     const row = slotRow(page, "options.class");
     await expect(row).toHaveClass(/is-diff/);

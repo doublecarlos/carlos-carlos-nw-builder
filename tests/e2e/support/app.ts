@@ -38,10 +38,11 @@ export function pickerInput(row: Locator): Locator {
   return row.getByTestId("picker-input");
 }
 
-/** The single row currently carrying the keyboard cursor (`.is-cursor`, shared by header and
- * slot rows) -- reads it back via the same `data-cursor-key` the composable navigates by. */
+/** The row currently holding real focus -- a header button, a slot row's invisible cursor
+ * anchor, or a slot row's picker input all make their row match `:focus-within`, which is the
+ * native-focus replacement for the old virtual-cursor `.is-cursor` class. */
 export function cursorRow(page: Page): Locator {
-  return page.locator(".is-cursor");
+  return page.locator("[data-cursor-key]:focus-within");
 }
 
 export async function cursorKey(page: Page): Promise<string | null> {

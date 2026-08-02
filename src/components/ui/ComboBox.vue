@@ -6,6 +6,7 @@
 // Reuses ComboBoxMenu/ComboBoxMenuRow primitives for the floating dropdown.
 import { ref, computed, watch, nextTick, useTemplateRef } from "vue";
 import { onKeyStroke } from "@vueuse/core";
+import { blurToRowAnchor } from "../../lib/row-cursor";
 import ComboBoxMenu from "./ComboBoxMenu.vue";
 import ComboBoxMenuRow from "./ComboBoxMenuRow.vue";
 
@@ -119,7 +120,10 @@ function choose(
 ) {
   model.value = option ? option.value : "";
   close();
-  if (blur) input.value?.blur();
+  // Blur to the row's cursor anchor when this input sits in one (see blurToRowAnchor):
+  // choosing with Enter or clicking an option must keep the row cursor alive, not drop
+  // focus to <body> where arrow keys die until the user clicks a row again.
+  if (blur) blurToRowAnchor(input.value);
 }
 
 /** Called imperatively by BuildEditor's keyboard cursor (via a template ref): typing a
@@ -138,17 +142,13 @@ defineExpose({ focusAndSeed });
 // --- keyboard handling via onKeyStroke (scoped to the input ref) ------------------------
 
 /**
- * Every branch here except plain Tab also stops propagation: this input sits inside a
- * `.slot-row` that BuildEditor's own window-level keydown listener watches for its
- * passive row cursor. Without stopping propagation, the same Enter that this handler
- * uses to close the dropdown would go on to reach that listener too -- and since the
- * cursor is still parked on this row, it would immediately refocus (reopen) the very
- * picker that just closed. Relying on the listener's own focused-input gate to prevent
- * that is fragile: it depends on `blur()` having synchronously updated
- * `document.activeElement` before the bubbling event reaches `window`, which is not
- * guaranteed the same way in every browser. Tab is the exception because it never calls
- * `blur()` itself (see `choose` above) -- this input is still focused for that listener's
- * synchronous pass, so its own focused-input gate already covers it.
+ * Every branch here except plain Tab stops propagation so the picker's keys stay isolated
+ * from whatever else is listening further up the tree. With the native-focus cursor (#62)
+ * this is purely defensive -- the row's cursor anchor is a *sibling* of this input, not an
+ * ancestor, so its keydown listeners can't receive these events anyway -- but no other
+ * window-level listener should see Enter/arrows that belong to an open dropdown either.
+ * Tab is the exception because it never calls `blur()` itself (see `choose` above) -- this
+ * input is still focused when the browser's own Tab-forward runs.
  */
 
 onKeyStroke(
@@ -157,7 +157,8 @@ onKeyStroke(
     e.preventDefault();
     e.stopPropagation();
     close();
-    input.value?.blur();
+    // Same blur-to-anchor as choose: Escape closes the picker but keeps the row cursor.
+    blurToRowAnchor(input.value);
   },
   { target: input },
 );
