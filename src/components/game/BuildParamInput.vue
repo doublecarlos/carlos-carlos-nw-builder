@@ -33,6 +33,8 @@ const model = defineModel<string | number | boolean>();
 
 /** Width class per paramType when `wide` is set, so every row lines up visually. */
 function widthCls(slotDef: BuildParameterSlot) {
+  if (props.wide) return "w-full";
+
   if (slotDef.paramType === "number") return "w-10";
   return "w-20";
 }
