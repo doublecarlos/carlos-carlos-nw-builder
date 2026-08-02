@@ -66,11 +66,6 @@ export async function chooseCombo(combo: Locator, label: string) {
   await combo.getByText(label, { exact: true }).click();
 }
 
-/** The build name input in the editor header. */
-export function buildNameInput(page: Page): Locator {
-  return page.getByTestId("build-name-input");
-}
-
 /** The undo button in the app header. */
 export function undoButton(page: Page): Locator {
   return page.getByTestId("header-undo");

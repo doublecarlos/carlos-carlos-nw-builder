@@ -6,22 +6,11 @@ import {
   chooseItem,
   slotRow,
   pickerInput,
-  buildNameInput,
   undoButton,
   redoButton,
 } from "./support/app";
 
 const HEAD_ITEM = "M29 Enchanted Depthweave Cap (CA)";
-
-test("renaming via the name field updates the sidebar tab", async ({
-  page,
-}) => {
-  await openBuilder(page);
-  await buildNameInput(page).fill("My Warlock");
-  await buildNameInput(page).blur();
-
-  await expect(page.getByTestId("library")).toHaveText(/My Warlock/);
-});
 
 test("Undo/redo carry a label naming the step, and walk the history back and forth", async ({
   page,

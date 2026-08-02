@@ -82,11 +82,11 @@ test.describe("row click behaviour", () => {
       "slot:gear.head",
     );
     // No modifier: the build editor stays visible.
-    await expect(page.getByTestId("build-name-input")).toBeVisible();
+    await expect(page.getByTestId("builder-content")).toBeVisible();
 
     // Ctrl+click: the layer editor opens with the item form.
     await row.locator(".slot-label").click({ modifiers: ["Control"] });
-    await expect(page.getByTestId("build-name-input")).toBeHidden();
+    await expect(page.getByTestId("builder-content")).toBeHidden();
     await expect(page.locator(".editor-row.is-on .editor-row-name")).toHaveText(
       HEAD_ITEM,
     );

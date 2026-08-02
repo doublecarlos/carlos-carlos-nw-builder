@@ -29,7 +29,7 @@ test.describe("selecting a layer replaces the build editor", () => {
     ).toBeVisible();
 
     // The build name input should not be visible (layer editor replaces the editor area).
-    await expect(page.getByTestId("build-name-input")).toBeHidden();
+    await expect(page.getByTestId("builder-content")).toBeHidden();
   });
 
   test("editing an item in a layer changes the build's resolved stats after switching back", async ({
@@ -60,7 +60,7 @@ test.describe("selecting a layer replaces the build editor", () => {
     await build.locator(".nav-name").click();
 
     // The build editor should be back.
-    await expect(page.getByTestId("build-name-input")).toBeVisible();
+    await expect(page.getByTestId("builder-content")).toBeVisible();
   });
 
   test("the editor for a disabled layer shows the 'not applied' banner", async ({
@@ -117,7 +117,7 @@ test.describe("Ctrl+click on a filled slot", () => {
     });
 
     // The build editor should still be visible (no layer editor).
-    await expect(page.getByTestId("build-name-input")).toBeVisible();
+    await expect(page.getByTestId("builder-content")).toBeVisible();
   });
 
   test("Ctrl+click twice on different slots targets the same layer the second time", async ({

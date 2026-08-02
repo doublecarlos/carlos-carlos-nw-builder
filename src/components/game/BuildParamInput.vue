@@ -33,8 +33,8 @@ const model = defineModel<string | number | boolean>();
 
 /** Width class per paramType when `wide` is set, so every row lines up visually. */
 function widthCls(slotDef: BuildParameterSlot) {
-  if (slotDef.paramType === "number") return "w-20";
-  return "w-36";
+  if (slotDef.paramType === "number") return "w-10";
+  return "w-20";
 }
 
 function onNumber(event: Event) {
@@ -84,6 +84,7 @@ defineExpose({ focus: focusControl, focusAndSeed });
       v-if="slotDef.paramType === 'list'"
       ref="comboboxInstance"
       :class="wide && 'w-full'"
+      class="w-30"
       :model-value="(model as string) ?? ''"
       :options="slotDef.options ?? []"
       @update:model-value="model = $event as string"
@@ -92,6 +93,7 @@ defineExpose({ focus: focusControl, focusAndSeed });
     <PercentInput
       v-else-if="slotDef.paramType === 'percent'"
       :class="wide && 'w-full'"
+      class="w-30"
       :model-value="(model as number) ?? ''"
       @update:model-value="model = $event as number | string"
     />
@@ -111,7 +113,6 @@ defineExpose({ focus: focusControl, focusAndSeed });
         :class="[
           widthCls(slotDef),
           'rounded-md border border-line bg-surface py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent',
-          'w-full',
         ]"
         :min="slotDef.min"
         :max="slotDef.max"

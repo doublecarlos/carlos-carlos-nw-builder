@@ -1,6 +1,6 @@
 // Shell layout: header, three columns, empty state, loading skeleton, and the draft indicator.
 import { test, expect } from "@playwright/test";
-import { openBuilder, draftIndicator, buildNameInput } from "./support/app";
+import { openBuilder, draftIndicator } from "./support/app";
 
 test("first load creates a default build and shows the builder immediately", async ({
   page,
@@ -10,7 +10,6 @@ test("first load creates a default build and shows the builder immediately", asy
   await expect(page.getByTestId("editor-column")).toBeVisible({
     timeout: 10000,
   });
-  await expect(buildNameInput(page)).toHaveValue(/Build \d/);
 });
 
 test("reloading shows the skeleton briefly then the builder", async ({
@@ -22,13 +21,6 @@ test("reloading shows the skeleton briefly then the builder", async ({
   await expect(page.getByTestId("editor-column")).toBeVisible({
     timeout: 10000,
   });
-});
-
-test("the draft indicator says 'not downloaded' for a new build", async ({
-  page,
-}) => {
-  await openBuilder(page);
-  await expect(draftIndicator(page)).toContainText("not downloaded");
 });
 
 test.skip("the notice element carries a title equal to its text", async ({

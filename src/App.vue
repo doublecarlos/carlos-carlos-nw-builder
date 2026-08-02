@@ -13,7 +13,6 @@ import BuildDetails from "./components/BuildDetails.vue";
 import QuickOptions from "./components/game/QuickOptions.vue";
 import LayerEditor from "./components/LayerEditor.vue";
 import * as router from "./lib/router";
-import * as buildEditor from "./stores/buildEditor";
 import * as engine from "./stores/resolved";
 import * as details from "./stores/details";
 import * as selection from "./stores/selection";
@@ -29,59 +28,6 @@ const loading = builds.loading;
 const hasContent = computed(
   () => builds.builds.value.length > 0 || layers.layers.value.length > 0,
 );
-
-// --- draft indicator ----------------------------------------------------------------------
-const activeBuildId = computed(() => {
-  const sel = selection.selection.value;
-  if (sel?.kind === "build") return sel.id;
-  // Fall back to the auto-created default build.
-  return builds.build.value?.id ?? null;
-});
-
-const isDownloaded = computed(() => {
-  const id = activeBuildId.value;
-  if (!id) return true;
-  return builds.isDownloaded(id);
-});
-
-const downloadedAt = computed(() => {
-  const id = activeBuildId.value;
-  if (!id) return null;
-  return builds.downloadedAt(id);
-});
-
-const draftLabel = computed(() => {
-  if (!isDownloaded.value) return "Draft — not downloaded";
-  const at = downloadedAt.value;
-  if (!at) return "Downloaded";
-  const seconds = Math.floor((Date.now() - at) / 1000);
-  if (seconds < 60) return "Downloaded just now";
-  if (seconds < 3600) return `Downloaded ${Math.floor(seconds / 60)}m ago`;
-  if (seconds < 86400) return `Downloaded ${Math.floor(seconds / 3600)}h ago`;
-  return `Downloaded ${Math.floor(seconds / 86400)}d ago`;
-});
-
-const draftTitle = computed(() => {
-  const at = downloadedAt.value;
-  if (!at) return "";
-  return new Date(at).toLocaleString();
-});
-
-// The selected item's name, for the editor header.
-// Falls back to the auto-created default build when no selection exists.
-const selectedName = computed(() => {
-  const sel = selection.selection.value;
-  if (sel?.kind === "build") {
-    const b = builds.builds.value.find((b) => b.id === sel.id);
-    return b?.name ?? "";
-  }
-  if (sel?.kind === "layer") {
-    const l = layers.layers.value.find((l) => l.id === sel.id);
-    return l?.name ?? "";
-  }
-  // Fall back to the active build (auto-created default).
-  return builds.build.value?.name ?? "";
-});
 
 /** The selected layer object, for the LayerEditor prop. */
 const selectedLayer = computed(() => {
@@ -169,32 +115,6 @@ syncRoute({ push: false });
               class="sticky top-0 z-10 flex flex-wrap items-center gap-3 border-b border-line bg-surface px-3.5 py-2"
             >
               <QuickOptions class="flex-1" />
-
-              <div class="flex items-center gap-2 text-sm">
-                <input
-                  class="name-input min-w-40 rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-                  type="text"
-                  :value="selectedName"
-                  placeholder="Build name"
-                  data-testid="build-name-input"
-                  @input="
-                    buildEditor.renameBuild(
-                      ($event.target as HTMLInputElement).value,
-                    )
-                  "
-                />
-                <span
-                  v-if="
-                    !selection.selection.value ||
-                    selection.selection.value?.kind === 'build'
-                  "
-                  class="text-xs text-muted"
-                  :title="draftTitle"
-                  data-testid="draft-indicator"
-                >
-                  {{ draftLabel }}
-                </span>
-              </div>
             </div>
 
             <!-- Engine error -->

@@ -1,7 +1,7 @@
 // End-to-end coverage for Nav.vue's sidebar: builds, customization layers, recently
 // deleted, filtering, ordering, and the layer checkbox.
 import { test, expect } from "@playwright/test";
-import { openBuilder, buildNameInput } from "./support/app";
+import { openBuilder } from "./support/app";
 import {
   buildRow,
   layerRow,
@@ -18,19 +18,16 @@ import {
 
 // --- Builds -------------------------------------------------------------------------
 
-test("+ New under Builds appends and selects; editor header shows the new name", async ({
-  page,
-}) => {
+test("+ New under Builds appends and selects", async ({ page }) => {
   await openBuilder(page);
   await addBuild(page);
 
   const created = buildRow(page, "Build 2");
   await expect(created).toBeVisible();
   await expect(created).toHaveClass(/is-active/);
-  await expect(buildNameInput(page)).toHaveValue("Build 2");
 });
 
-test("renaming a build via double-click updates the sidebar and header", async ({
+test("renaming a build via double-click updates the sidebar", async ({
   page,
 }) => {
   await openBuilder(page);
@@ -38,7 +35,6 @@ test("renaming a build via double-click updates the sidebar and header", async (
   await renameViaSidebar(page, row, "My Warlock");
 
   await expect(buildRow(page, "My Warlock")).toBeVisible();
-  await expect(buildNameInput(page)).toHaveValue("My Warlock");
 });
 
 test("renaming a build via the kebab menu commits on Enter", async ({
@@ -54,7 +50,6 @@ test("renaming a build via the kebab menu commits on Enter", async ({
   await input.press("Enter");
 
   await expect(buildRow(page, "My Cleric")).toBeVisible();
-  await expect(buildNameInput(page)).toHaveValue("My Cleric");
 });
 
 test("the filter box narrows the build list and clearing it restores every row", async ({
