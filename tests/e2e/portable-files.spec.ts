@@ -8,7 +8,7 @@ import { openBuilder } from "./support/app";
 async function exportedBuildJson(page: Page): Promise<Record<string, unknown>> {
   const firstBuild = page.locator(".nav-row--build").first();
   await firstBuild.locator(".nav-kebab").click();
-  const menu = firstBuild.locator(".navmenu");
+  const menu = page.locator(".navmenu");
   const downloadPromise = page.waitForEvent("download");
   await menu.getByRole("button", { name: "Download…" }).click();
   const download = await downloadPromise;

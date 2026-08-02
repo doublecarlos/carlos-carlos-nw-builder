@@ -9,7 +9,7 @@ async function exportedEnvelope(page: Page) {
   // Open the first build's kebab menu and click Export.
   const firstBuild = page.locator(".nav-row--build").first();
   await firstBuild.locator(".nav-kebab").click();
-  const menu = firstBuild.locator(".navmenu");
+  const menu = page.locator(".navmenu");
 
   const downloadPromise = page.waitForEvent("download");
   await menu.getByRole("button", { name: "Download…" }).click();

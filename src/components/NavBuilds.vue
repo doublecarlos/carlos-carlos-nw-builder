@@ -21,7 +21,8 @@ const props = defineProps<{
     danger?: boolean;
     disabled?: boolean;
   }[];
-  menuPos: { top: number; left: number };
+  /** Bounding rect of the row that opened the menu, for popover anchoring. */
+  menuAnchor: DOMRect | null;
   /** Index helpers for Move up/down disabled state. */
   canMoveUp: (id: string) => boolean;
   canMoveDown: (id: string) => boolean;
@@ -109,7 +110,7 @@ const filteredBuilds = computed(() => {
 
           <NavContextMenu
             v-if="menuOpenId === b.id"
-            :position="menuPos"
+            :anchor="menuAnchor"
             :items="menuItems"
             @action="(a) => $emit('menu-action', a, b.id)"
           />

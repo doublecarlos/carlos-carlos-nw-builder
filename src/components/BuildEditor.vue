@@ -6,7 +6,7 @@
 // dropdown is ever open, and that is where the per-row cost actually lives. No virtualisation.
 import { computed, reactive, ref, watch } from "vue";
 import ItemCard from "./game/ItemCard.vue";
-import BaseTooltip from "./ui/BaseTooltip.vue";
+import BasePopover from "./ui/BasePopover.vue";
 import BuildSection from "./game/BuildSection.vue";
 import BuildSlot from "./game/BuildSlot.vue";
 import BaseButton from "./ui/BaseButton.vue";
@@ -37,7 +37,7 @@ import type {
 } from "../types";
 
 const root = ref<HTMLElement | null>(null);
-const tooltip = ref<InstanceType<typeof BaseTooltip> | null>(null);
+const tooltip = ref<InstanceType<typeof BasePopover> | null>(null);
 
 const db = engine.db;
 const build = builds.build;
@@ -421,7 +421,7 @@ function onFocusIn(event: FocusEvent) {
     </BuildSection>
 
     <!-- One card for the whole list, moved and refilled on hover. -->
-    <BaseTooltip ref="tooltip" :width="320">
+    <BasePopover ref="tooltip" :width="320">
       <ItemCard
         v-if="hover && hoveredItem"
         :item="hoveredItem"
@@ -431,6 +431,6 @@ function onFocusIn(event: FocusEvent) {
         @mouseenter="onCardEnter"
         @mouseleave="onCardLeave"
       />
-    </BaseTooltip>
+    </BasePopover>
   </section>
 </template>

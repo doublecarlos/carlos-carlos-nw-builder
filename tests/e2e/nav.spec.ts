@@ -315,8 +315,8 @@ test("clicking outside an open menu closes it", async ({ page }) => {
   const menu = await openRowMenu(buildRow(page, "Build 1"));
   await expect(menu).toBeVisible();
 
-  // Click on empty space in the nav area, outside any menu or kebab button.
-  await page.getByTestId("library").click({ position: { x: 2, y: 2 } });
+  // Click on the main editor area, outside the nav sidebar and the teleported menu.
+  await page.getByTestId("builder-content").click({ position: { x: 2, y: 2 } });
   await expect(menu).toBeHidden();
 });
 
@@ -325,12 +325,13 @@ test("clicking a different row's kebab switches the menu", async ({ page }) => {
   await addLayer(page);
 
   // Open menu on Build 1.
-  const menu1 = await openRowMenu(buildRow(page, "Build 1"));
-  await expect(menu1).toBeVisible();
+  await openRowMenu(buildRow(page, "Build 1"));
 
-  // Click Layer 1's kebab -- should switch, not leave both open.
+  // Click Layer 1's kebab -- the menu should switch to show layer actions.
+  // BasePopover teleports the menu to <body>, so there is a single .navmenu
+  // element at any time; verify it shows layer items after the switch.
   await layerRow(page, "Layer 1").locator(".nav-kebab").click();
-  const menu2 = layerRow(page, "Layer 1").locator(".navmenu");
-  await expect(menu2).toBeVisible();
-  await expect(menu1).toBeHidden();
+  const menu = page.locator(".navmenu");
+  await expect(menu).toBeVisible();
+  await expect(menu.getByRole("button", { name: "Duplicate" })).toBeVisible();
 });

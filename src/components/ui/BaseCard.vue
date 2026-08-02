@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // Presentational card shell: rounded border, surface background, shadow. Use inside
-// BaseTooltip for overlay cards, or stand-alone for inline cards.
+// BasePopover for overlay cards, or stand-alone for inline cards.
 </script>
 
 <template>

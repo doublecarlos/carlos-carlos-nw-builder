@@ -11,7 +11,7 @@ import ComboBox from "./ui/ComboBox.vue";
 import BaseCheckbox from "./ui/BaseCheckbox.vue";
 import IconButton from "./ui/IconButton.vue";
 import StatSourceCard from "./game/StatSourceCard.vue";
-import BaseTooltip from "./ui/BaseTooltip.vue";
+import BasePopover from "./ui/BasePopover.vue";
 import BasePanel from "./ui/BasePanel.vue";
 import PanelHead from "./ui/PanelHead.vue";
 import StatPairsTable from "./ui/StatPairsTable.vue";
@@ -347,7 +347,7 @@ function signedInt(value: number) {
 // rows' triggers often enough that a hover card kept getting swapped out from under the
 // pointer before it ever arrived -- a deliberate click has no such transit to go wrong.
 const root = ref<InstanceType<typeof BasePanel> | null>(null);
-const tooltip = ref<InstanceType<typeof BaseTooltip> | null>(null);
+const tooltip = ref<InstanceType<typeof BasePopover> | null>(null);
 
 interface OpenCard {
   key: string;
@@ -367,7 +367,7 @@ const openSections = computed(() =>
 );
 
 /**
- * Anchored to the trigger button: delegates to BaseTooltip's place() which handles
+ * Anchored to the trigger button: delegates to BasePopover's place() which handles
  * horizontal flip and vertical overflow detection.
  */
 function placeCard(key: string, rect: DOMRect) {
@@ -566,7 +566,7 @@ onClickOutside(root, () => closeCard(), {
     <PanelHead>Effective hit points</PanelHead>
     <StatPairsTable :rows="ehpTableRows" />
 
-    <BaseTooltip ref="tooltip" :width="256">
+    <BasePopover ref="tooltip" :width="256">
       <StatSourceCard
         v-if="openCard"
         :label="openLabel"
@@ -574,6 +574,6 @@ onClickOutside(root, () => closeCard(), {
         :data-stat-key="openCard.key"
         @close="closeCard"
       />
-    </BaseTooltip>
+    </BasePopover>
   </BasePanel>
 </template>

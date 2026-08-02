@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // Left sidebar: builds, customization layers, and recently deleted. Owns shared state
 // (menus, rename, confirm) and delegates list rendering to NavBuilds / NavLayers / NavTrash.
-import { ref, reactive, nextTick } from "vue";
+import { ref } from "vue";
 import { useEventListener, onClickOutside } from "@vueuse/core";
 import NavBuilds from "./NavBuilds.vue";
 import NavLayers from "./NavLayers.vue";
@@ -18,7 +18,7 @@ const CONFIRM_MS = 4000;
 
 const root = ref<HTMLElement | null>(null);
 const openMenu = ref<{ type: string; id: string } | null>(null);
-const menuPos = reactive({ top: 0, left: 0 });
+const menuAnchor = ref<DOMRect | null>(null);
 const renaming = ref<{ type: string; id: string } | null>(null);
 const renameText = ref("");
 const confirm_ = useConfirm(CONFIRM_MS);
@@ -52,25 +52,18 @@ function isMenuOpen(type: string, id: string) {
 function openMenuFor(type: string, id: string, event: MouseEvent) {
   if (isMenuOpen(type, id)) {
     openMenu.value = null;
+    menuAnchor.value = null;
     return;
   }
   const el = event.currentTarget as HTMLElement;
   const rect = el.closest(".nav-row")!.getBoundingClientRect();
-  menuPos.top = rect.bottom + 2;
-  menuPos.left = rect.right;
+  menuAnchor.value = rect;
   openMenu.value = { type, id };
-
-  nextTick(() => {
-    const menu = root.value?.querySelector(".navmenu") as HTMLElement | null;
-    if (!menu) return;
-    const margin = 8;
-    if (menuPos.top + menu.offsetHeight <= window.innerHeight - margin) return;
-    menuPos.top = Math.max(rect.top - menu.offsetHeight - 2, margin);
-  });
 }
 
 function closeMenu() {
   openMenu.value = null;
+  menuAnchor.value = null;
 }
 
 // --- rename ---------------------------------------------------------------------------
@@ -423,7 +416,7 @@ useEventListener(document, "scroll", onScrollCapture, {
       :menu-items="
         openMenu?.type === 'build' ? buildMenuItems(openMenu.id) : []
       "
-      :menu-pos="menuPos"
+      :menu-anchor="menuAnchor"
       :can-move-up="(id) => buildIndex(id) !== 0"
       :can-move-down="(id) => buildIndex(id) !== builds.builds.value.length - 1"
       @update:filter="(v) => (buildFilter = v)"
@@ -456,7 +449,7 @@ useEventListener(document, "scroll", onScrollCapture, {
       :menu-items="
         openMenu?.type === 'layer' ? layerMenuItems(openMenu.id) : []
       "
-      :menu-pos="menuPos"
+      :menu-anchor="menuAnchor"
       :can-move-up="(id) => layerIndex(id) !== 0"
       :can-move-down="(id) => layerIndex(id) !== layers.layers.value.length - 1"
       @update:filter="(v) => (layerFilter = v)"
@@ -483,7 +476,7 @@ useEventListener(document, "scroll", onScrollCapture, {
       :menu-items="
         openMenu?.type === 'trash' ? trashMenuItems(openMenu.id) : []
       "
-      :menu-pos="menuPos"
+      :menu-anchor="menuAnchor"
       :time-ago="timeAgo"
       @toggle-expand="trashExpanded = !trashExpanded"
       @restore="(entry) => restoreTrashEntry(entry)"

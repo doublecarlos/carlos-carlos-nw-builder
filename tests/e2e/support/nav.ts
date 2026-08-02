@@ -11,10 +11,11 @@ export function layerRow(page: Page, name: string): Locator {
 }
 
 /** Opens a row's kebab menu and returns it (`.navmenu`), scoped so `getByText` only ever
- * matches within this one open menu. */
+ * matches within this one open menu. BasePopover teleports the menu to <body>, so the
+ * menu is found globally rather than as a descendant of the row. */
 export async function openRowMenu(row: Locator): Promise<Locator> {
   await row.locator(".nav-kebab").click();
-  const menu = row.locator(".navmenu");
+  const menu = row.page().locator(".navmenu");
   await expect(menu).toBeVisible();
   return menu;
 }

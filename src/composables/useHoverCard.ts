@@ -1,7 +1,7 @@
 import { ref, type Ref } from "vue";
 import { useEventListener, useTimeoutFn } from "@vueuse/core";
 import { isFormControl } from "./focus";
-import type BaseTooltip from "../components/ui/BaseTooltip.vue";
+import type BasePopover from "../components/ui/BasePopover.vue";
 
 const HOVER_DELAY_MS = 220;
 // If the pointer lands on a new row this soon after the last card closed, treat it as still
@@ -15,7 +15,7 @@ export interface HoverPosition {
 }
 
 /**
- * One hover card for a whole scrolling list of rows: positions via a `BaseTooltip` (which
+ * One hover card for a whole scrolling list of rows: positions via a `BasePopover` (which
  * Teleports to body and handles viewport-edge flipping). `hasItem` gates opening (an empty
  * slot has nothing to show).
  *
@@ -29,7 +29,7 @@ export interface HoverPosition {
  * no matching focusin) reset it.
  */
 export function useHoverCard(
-  tooltip: Ref<InstanceType<typeof BaseTooltip> | null>,
+  tooltip: Ref<InstanceType<typeof BasePopover> | null>,
   hasItem: (slotId: string) => boolean,
 ) {
   const hover = ref<HoverPosition | null>(null);

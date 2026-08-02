@@ -1,6 +1,6 @@
 // Shell layout: header, three columns, empty state, loading skeleton, and the draft indicator.
 import { test, expect } from "@playwright/test";
-import { openBuilder, draftIndicator } from "./support/app";
+import { openBuilder } from "./support/app";
 
 test("first load creates a default build and shows the builder immediately", async ({
   page,

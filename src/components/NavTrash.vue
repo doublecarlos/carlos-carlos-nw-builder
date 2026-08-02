@@ -13,7 +13,8 @@ defineProps<{
     danger?: boolean;
     disabled?: boolean;
   }[];
-  menuPos: { top: number; left: number };
+  /** Bounding rect of the row that opened the menu, for popover anchoring. */
+  menuAnchor: DOMRect | null;
   timeAgo: (ms: number) => string;
 }>();
 
@@ -73,7 +74,7 @@ defineEmits<{
 
           <NavContextMenu
             v-if="menuOpenId === `${entry.kind}_${entry.item.id}`"
-            :position="menuPos"
+            :anchor="menuAnchor"
             :items="menuItems"
             @action="
               (a) => $emit('menu-action', a, `${entry.kind}_${entry.item.id}`)
