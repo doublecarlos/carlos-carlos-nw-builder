@@ -1,26 +1,36 @@
 <script setup lang="ts">
-// Typeable single-select dropdown over a fixed, small option list -- the same interaction as
-// ItemPicker.vue (type to filter, arrow keys, Enter, Escape), stripped of the item-specific
-// stat preview. Replaces a native <select> wherever the option list is short and known ahead
-// of time (class, role, combat type, location, damage type, forte picks).
+// Typeable single-select dropdown over a fixed, small option list. Replaces a native <select>
+// wherever the option list is short and known ahead of time (class, role, combat type,
+// location, damage type, forte picks).
 //
-// Reuses ItemPicker's PickerMenu/PickerRow primitives rather than inventing a second look for
-// the same interaction.
+// Reuses ComboBoxMenu/ComboBoxMenuRow primitives for the floating dropdown.
 import { ref, computed, watch, nextTick } from "vue";
 import { onKeyStroke } from "@vueuse/core";
-import PickerMenu from "./PickerMenu.vue";
-import PickerRow from "./PickerRow.vue";
-
-const MAX_ROWS = 60;
+import ComboBoxMenu from "./ComboBoxMenu.vue";
+import ComboBoxMenuRow from "./ComboBoxMenuRow.vue";
 
 const props = withDefaults(
   defineProps<{
     /** [{ value, label }], in the order they should list. */
     options: { value: string; label: string }[];
     placeholder?: string;
+    /** Red border while the current choice fails validation. */
+    invalid?: boolean;
+    /** Offer "clear the slot" as the first, highlightable row. */
+    showEmptyOption?: boolean;
+    /** Cap on rendered rows -- filters run to 40+ entries and nobody scrolls past the
+     *  first screenful, so rendering everything for every keystroke is wasted work. */
+    maxRows?: number;
+    /** Override the closed-box display when the model value doesn't match any option
+     *  (e.g. the equipped item was removed from the catalogue). */
+    closedDisplay?: string;
   }>(),
   {
     placeholder: "—",
+    invalid: false,
+    showEmptyOption: false,
+    maxRows: 60,
+    closedDisplay: "",
   },
 );
 
@@ -30,7 +40,7 @@ const open = ref(false);
 const query = ref("");
 const highlight = ref(0);
 const input = ref<HTMLInputElement | null>(null);
-const list = ref<InstanceType<typeof PickerMenu> | null>(null);
+const list = ref<InstanceType<typeof ComboBoxMenu> | null>(null);
 
 const selected = computed(
   () => props.options.find((option) => option.value === model.value) ?? null,
@@ -42,20 +52,45 @@ const filtered = computed(() => {
   const source = q
     ? props.options.filter((option) => option.label.toLowerCase().includes(q))
     : props.options;
-  return source.slice(0, MAX_ROWS);
+  return source.slice(0, props.maxRows);
 });
+
+/** Rows cut by `maxRows`, reported in the menu's footer so filtering feels bounded. */
+const hiddenCount = computed(() =>
+  Math.max(props.options.length - filtered.value.length, 0),
+);
+
+/** "clear the slot" is only offered on a plain, untyped open -- once the user is
+ * filtering, defaulting the highlight onto "empty" would put a stray Enter one keystroke
+ * away from wiping the slot instead of picking the thing just typed. */
+const showEmpty = computed(() => props.showEmptyOption && !query.value.trim());
+
+/** Index 0 is "clear the slot" whenever it's offered, so highlight indices line up with
+ * the DOM either way. */
+const rowOptions = computed(() =>
+  showEmpty.value ? [null, ...filtered.value] : filtered.value,
+);
+
+/** How far a `filtered` index sits from its `rowOptions`/`highlight` index -- 1 while "clear
+ * the slot" occupies slot 0, 0 once it's hidden. */
+const matchOffset = computed(() => (showEmpty.value ? 1 : 0));
 
 watch(highlight, () => {
   nextTick(() => list.value?.scrollToHighlighted());
 });
 
+/** Skips the reset when already open: `focusAndSeed` below pre-sets `open` before the
+ *  native focus event fires, and this must not stomp the query it just seeded. */
 function onFocus() {
+  if (open.value) return;
   open.value = true;
   query.value = "";
-  const current = props.options.findIndex(
-    (option) => option.value === model.value,
+  // Start on whatever is already selected, not on "empty" -- `rowOptions` reflects the
+  // now-open (unfiltered) list since `open` was just set above.
+  const current = rowOptions.value.findIndex(
+    (option) => option && option.value === model.value,
   );
-  highlight.value = Math.max(current, 0);
+  highlight.value = current === -1 ? 0 : current;
 }
 
 function onInput(event: Event) {
@@ -65,6 +100,8 @@ function onInput(event: Event) {
 }
 
 function onBlur() {
+  // Options use @mousedown.prevent, so a click never reaches this -- but Tab and
+  // focus-stealing elsewhere do, and the dropdown must not survive them.
   close();
 }
 
@@ -77,15 +114,42 @@ function close() {
  * whatever element is currently focused, so blurring here first (before that runs) would
  * make it tab from nowhere instead of continuing from this input. */
 function choose(
-  option: { value: string; label: string },
+  option: { value: string; label: string } | null,
   { blur = true }: { blur?: boolean } = {},
 ) {
-  model.value = option.value;
+  model.value = option ? option.value : "";
   close();
   if (blur) input.value?.blur();
 }
 
+/** Called imperatively by BuildEditor's keyboard cursor (via a template ref): typing a
+ *  character on a row with no input focused opens this picker pre-filtered, like Sheets
+ *  overwriting a cell. Exposed explicitly -- `<script setup>` components are closed by
+ *  default. */
+function focusAndSeed(char: string) {
+  open.value = true;
+  query.value = char;
+  highlight.value = 0;
+  nextTick(() => input.value?.focus());
+}
+
+defineExpose({ focusAndSeed });
+
 // --- keyboard handling via onKeyStroke (scoped to the input ref) ------------------------
+
+/**
+ * Every branch here except plain Tab also stops propagation: this input sits inside a
+ * `.slot-row` that BuildEditor's own window-level keydown listener watches for its
+ * passive row cursor. Without stopping propagation, the same Enter that this handler
+ * uses to close the dropdown would go on to reach that listener too -- and since the
+ * cursor is still parked on this row, it would immediately refocus (reopen) the very
+ * picker that just closed. Relying on the listener's own focused-input gate to prevent
+ * that is fragile: it depends on `blur()` having synchronously updated
+ * `document.activeElement` before the bubbling event reaches `window`, which is not
+ * guaranteed the same way in every browser. Tab is the exception because it never calls
+ * `blur()` itself (see `choose` above) -- this input is still focused for that listener's
+ * synchronous pass, so its own focused-input gate already covers it.
+ */
 
 onKeyStroke(
   "Escape",
@@ -108,7 +172,7 @@ onKeyStroke(
       return;
     }
     const step = e.key === "ArrowDown" ? 1 : -1;
-    const last = filtered.value.length - 1;
+    const last = rowOptions.value.length - 1;
     highlight.value = Math.min(Math.max(highlight.value + step, 0), last);
   },
   { target: input },
@@ -120,7 +184,7 @@ onKeyStroke(
     if (!open.value) return;
     e.preventDefault();
     e.stopPropagation();
-    choose(filtered.value[highlight.value]);
+    choose(rowOptions.value[highlight.value] ?? null);
   },
   { target: input },
 );
@@ -130,24 +194,17 @@ onKeyStroke(
   (e) => {
     if (!open.value) return;
     if (e.shiftKey) {
-      // Browsing backward -- just close.
+      // Browsing backward -- just close, don't commit a highlight the user was
+      // arrowing away from.
       e.preventDefault();
       e.stopPropagation();
       close();
       return;
     }
-    // Stat-key pickers only: commit the highlighted stat before the
-    // browser's own Tab moves focus to the value field right after this one in the DOM.
-    // No preventDefault -- the browser still does the actual tabbing.
-    if ((e.target as HTMLElement).closest(".stat-row")) {
-      choose(filtered.value[highlight.value], { blur: false });
-      return;
-    }
-    // Tab forwards, no stat-row: commit the highlighted choice then let the
-    // browser's own Tab move focus on -- no preventDefault (no stopPropagation
-    // either -- the input is still focused for the window-level listener's
-    // synchronous gate).
-    choose(filtered.value[highlight.value], { blur: false });
+    // Commit the highlighted choice, same as Enter, then let the browser's own Tab
+    // move focus on to whatever's next -- no preventDefault, and no stopPropagation
+    // (see the block comment above).
+    choose(rowOptions.value[highlight.value] ?? null, { blur: false });
   },
   { target: input },
 );
@@ -158,11 +215,12 @@ onKeyStroke(
     <input
       ref="input"
       data-testid="picker-input"
-      class="w-full rounded-md border border-line bg-surface py-0.5 pl-1.5 pr-6 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+      class="w-full rounded-md border bg-surface py-0.5 pl-1.5 pr-6 placeholder:text-muted focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+      :class="invalid ? 'border-danger' : 'border-line'"
       type="text"
       autocomplete="off"
       spellcheck="false"
-      :value="open ? query : selected ? selected.label : ''"
+      :value="open ? query : closedDisplay || (selected ? selected.label : '')"
       :placeholder="placeholder"
       @focus="onFocus"
       @input="onInput"
@@ -175,19 +233,29 @@ onKeyStroke(
       >▾</span
     >
 
-    <PickerMenu v-if="open" ref="list">
-      <PickerRow
+    <ComboBoxMenu v-if="open" ref="list">
+      <ComboBoxMenuRow
+        v-if="showEmpty"
+        muted
+        :highlighted="highlight === 0"
+        @mousedown.prevent="choose(null)"
+        @mouseenter="highlight = 0"
+      >
+        <slot name="empty">— empty —</slot>
+      </ComboBoxMenuRow>
+
+      <ComboBoxMenuRow
         v-for="(option, index) in filtered"
         :key="option.value"
-        :highlighted="highlight === index"
+        :highlighted="highlight === index + matchOffset"
         @mousedown.prevent="choose(option)"
-        @mouseenter="highlight = index"
+        @mouseenter="highlight = index + matchOffset"
       >
         <slot
           v-if="$slots.option"
           name="option"
           :option="option"
-          :highlighted="highlight === index"
+          :highlighted="highlight === index + matchOffset"
         />
         <div v-else class="flex items-baseline gap-1.5">
           <span
@@ -195,9 +263,16 @@ onKeyStroke(
             >{{ option.label }}</span
           >
         </div>
-      </PickerRow>
+      </ComboBoxMenuRow>
 
-      <PickerRow v-if="!filtered.length" muted>no match</PickerRow>
-    </PickerMenu>
+      <ComboBoxMenuRow v-if="!filtered.length" muted>
+        <slot name="no-match">no match</slot>
+      </ComboBoxMenuRow>
+      <ComboBoxMenuRow v-if="hiddenCount" muted>
+        <slot name="more" :count="hiddenCount"
+          >{{ hiddenCount }} more — keep typing</slot
+        >
+      </ComboBoxMenuRow>
+    </ComboBoxMenu>
   </div>
 </template>

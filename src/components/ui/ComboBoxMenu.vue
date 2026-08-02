@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { ref } from "vue";
 
-// Floating dropdown shell shared by ComboBox and ItemPicker -- same interaction (type to
-// filter, arrow keys, Enter, Escape), just different row content. `data-testid` rather than a
-// styling class: e2e specs need a stable hook that survives restyling.
+// Floating dropdown shell used by ComboBox.vue. Same interaction (type to filter, arrow keys,
+// Enter, Escape), just different row content via the `#option` slot. `data-testid` rather than
+// a styling class: e2e specs need a stable hook that survives restyling.
 
 const el = ref<HTMLElement | null>(null);
 

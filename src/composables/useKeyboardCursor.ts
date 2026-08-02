@@ -82,8 +82,8 @@ export function useKeyboardCursor(
     else delete pickerRefs[slotId];
   }
 
-  /** Focusing the input reuses ItemPicker's own `onFocus` (opens, clears the query). Only
-   *  the type-ahead case needs a seeded query, via ItemPicker's `focusAndSeed`. */
+  /** Focusing the input reuses ComboBox's own `onFocus` (opens, clears the query). Only
+   *  the type-ahead case needs a seeded query, via ComboBox's `focusAndSeed`. */
   function focusPicker(slotId: string, seedChar?: string) {
     const param = paramRefs[slotId];
     if (param) {

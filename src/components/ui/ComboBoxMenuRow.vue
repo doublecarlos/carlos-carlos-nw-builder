@@ -1,7 +1,7 @@
 <script setup lang="ts">
-// One row inside PickerMenu.vue. `data-highlighted` is a JS/scroll-into-view hook (see
-// ComboBox/ItemPicker/TokenInput's `watch(highlight, ...)`), kept separate from the
-// `highlighted` prop's Tailwind styling so restyling the row never breaks that lookup.
+// One row inside ComboBoxMenu.vue. `data-highlighted` is a JS/scroll-into-view hook (see
+// ComboBox.vue's `watch(highlight, ...)`), kept separate from the `highlighted` prop's
+// Tailwind styling so restyling the row never breaks that lookup.
 withDefaults(defineProps<{ highlighted?: boolean; muted?: boolean }>(), {
   highlighted: false,
   muted: false,
