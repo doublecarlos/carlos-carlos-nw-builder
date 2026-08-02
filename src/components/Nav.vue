@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // Left sidebar: builds, customization layers, and recently deleted. Owns shared state
 // (menus, rename, confirm) and delegates list rendering to NavBuilds / NavLayers / NavTrash.
-import { ref, useTemplateRef } from "vue";
+import { ref, computed, useTemplateRef } from "vue";
 import { useEventListener, onClickOutside } from "@vueuse/core";
 import NavBuilds from "./NavBuilds.vue";
 import NavLayers from "./NavLayers.vue";
@@ -379,12 +379,17 @@ function onScrollCapture() {
   closeMenu();
 }
 
-/** Closes the context menu on any click outside it -- ignores clicks on the menu itself
- * (`.navmenu`) and on the kebab trigger buttons (`.nav-kebab`), so those reach their own
- * handlers first. Uses the bubbling phase (`capture: false`) so that a click on the
- * already-open row's kebab button toggles the menu closed before this handler runs. */
-onClickOutside(root, () => closeMenu(), {
-  ignore: [".navmenu", ".nav-kebab"],
+/** The teleported menu element (`.navmenu`), if a menu is open — used as the target for
+ * onClickOutside so that clicks anywhere outside the menu (including elsewhere in the
+ * sidebar) close it. Kebab buttons are in the ignore list so their own click handler
+ * (toggle/switch) runs first. */
+const menuElement = computed((): HTMLElement | null => {
+  if (!openMenu.value) return null;
+  return document.querySelector(".navmenu") as HTMLElement | null;
+});
+
+onClickOutside(menuElement, () => closeMenu(), {
+  ignore: [".nav-kebab"],
   capture: false,
 });
 

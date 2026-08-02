@@ -332,6 +332,19 @@ test("clicking outside an open menu closes it", async ({ page }) => {
   await expect(menu).toBeHidden();
 });
 
+test("clicking elsewhere in the sidebar closes an open menu", async ({
+  page,
+}) => {
+  await openBuilder(page);
+  await addBuild(page);
+  const menu = await openRowMenu(buildRow(page, "Build 2"));
+  await expect(menu).toBeVisible();
+
+  // Click on another row's name -- still inside the sidebar, but outside the menu.
+  await buildRow(page, "Build 1").locator(".nav-name").click();
+  await expect(menu).toBeHidden();
+});
+
 test("clicking a different row's kebab switches the menu", async ({ page }) => {
   await openBuilder(page);
   await addLayer(page);
