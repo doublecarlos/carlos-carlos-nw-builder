@@ -109,15 +109,9 @@ test.describe("section collapse/expand", () => {
     page,
   }) => {
     await openBuilder(page);
-    // Gear starts open, Reinforcements starts closed, Options starts closed -- see App.vue's
-    // `OPEN_BY_DEFAULT` (only "gear" is in it).
+    // All sections start open by default -- see `data/slots.json`'s `defaultOpen` per section.
     await expect(slotRow(page, "gear.head")).toBeVisible();
-    await expect(slotRow(page, "reinforcements.armorKit1")).toBeHidden();
-    await expect(slotRow(page, "options.class")).toBeHidden();
-
-    // Open Options by hand -- it's a normal section now (a build_parameter slot per field),
-    // so this just proves "expand all"/"collapse all" apply to it the same as any other.
-    await headerRow(page, "options").click();
+    await expect(slotRow(page, "reinforcements.armorKit1")).toBeVisible();
     await expect(slotRow(page, "options.class")).toBeVisible();
 
     await page.getByRole("button", { name: "collapse all" }).click();
@@ -144,29 +138,31 @@ test.describe("section collapse/expand", () => {
 
   test("open/closed state survives a reload", async ({ page }) => {
     await openBuilder(page);
-    await expect(slotRow(page, "reinforcements.armorKit1")).toBeHidden();
+    // All sections start open by default.
+    await expect(slotRow(page, "reinforcements.armorKit1")).toBeVisible();
 
     await headerRow(page, "reinforcements").click();
-    await expect(slotRow(page, "reinforcements.armorKit1")).toBeVisible();
+    await expect(slotRow(page, "reinforcements.armorKit1")).toBeHidden();
 
     await page.reload();
     await expect(headerRow(page, "gear")).toBeVisible();
-    await expect(slotRow(page, "reinforcements.armorKit1")).toBeVisible();
+    await expect(slotRow(page, "reinforcements.armorKit1")).toBeHidden();
   });
 
   test("open/closed state is a UI preference, not saved with the build", async ({
     page,
   }) => {
     await openBuilder(page);
+    // Collapse reinforcements (it starts open by default).
     await headerRow(page, "reinforcements").click();
-    await expect(slotRow(page, "reinforcements.armorKit1")).toBeVisible();
+    await expect(slotRow(page, "reinforcements.armorKit1")).toBeHidden();
 
     // A brand-new build sees the same section states -- proving they live outside any one
     // build's own document rather than resetting to the shared defaults.
     await page.getByRole("button", { name: "+" }).first().click();
-    await expect(slotRow(page, "reinforcements.armorKit1")).toBeVisible();
+    await expect(slotRow(page, "reinforcements.armorKit1")).toBeHidden();
 
-    // Collapsing it back is not a build edit, so it never lands on the undo stack.
+    // Collapsing is not a build edit, so it never lands on the undo stack.
     await expect(page.getByRole("button", { name: "Undo" })).toBeDisabled();
   });
 });
@@ -184,14 +180,25 @@ test.describe("keyboard cursor", () => {
       "header:options",
     );
 
-    // Options is collapsed, so it contributes no rows of its own -- the very next row is
-    // the next header, Gear's.
+    // Options is expanded, so the next row is its first slot.
     await page.keyboard.press("ArrowDown");
+    await expect(cursorRow(page)).toHaveAttribute(
+      "data-cursor-key",
+      "slot:options.class",
+    );
+
+    // Walk through all Options slots -- the one after the last is the Gear header.
+    const optionsSlotCount = await page
+      .locator('[data-cursor-key^="slot:options."]')
+      .count();
+    for (let i = 0; i < optionsSlotCount; i += 1)
+      await page.keyboard.press("ArrowDown");
     await expect(cursorRow(page)).toHaveAttribute(
       "data-cursor-key",
       "header:gear",
     );
 
+    // Walk through all Gear slots.
     const gearSlotCount = await page
       .locator('[data-cursor-key^="slot:gear."]')
       .count();
@@ -200,16 +207,9 @@ test.describe("keyboard cursor", () => {
     const lastGearKey = await cursorKey(page);
     expect(lastGearKey).toMatch(/^slot:gear\./);
 
-    // Reinforcements starts collapsed, so its rows were never in the DOM to walk onto --
-    // the next ArrowDown must land straight on its header.
-    await page.keyboard.press("ArrowDown");
-    await expect(cursorRow(page)).toHaveAttribute(
-      "data-cursor-key",
-      "header:reinforcements",
-    );
-
-    // ArrowUp reverses the same path, straight back onto the last Gear slot.
+    // ArrowUp reverses back to the previous gear slot.
     await page.keyboard.press("ArrowUp");
+    await page.keyboard.press("ArrowDown");
     await expect(cursorRow(page)).toHaveAttribute(
       "data-cursor-key",
       lastGearKey!,
@@ -219,7 +219,16 @@ test.describe("keyboard cursor", () => {
   test("Enter on a header row toggles that section", async ({ page }) => {
     await openBuilder(page);
     await page.keyboard.press("ArrowDown"); // -> header:options
-    await page.keyboard.press("ArrowDown"); // -> header:gear
+    // Walk through all expanded Options slots, then one more to reach the Gear header.
+    const optionsSlotCount = await page
+      .locator('[data-cursor-key^="slot:options."]')
+      .count();
+    for (let i = 0; i < optionsSlotCount + 1; i += 1)
+      await page.keyboard.press("ArrowDown");
+    await expect(cursorRow(page)).toHaveAttribute(
+      "data-cursor-key",
+      "header:gear",
+    );
     await expect(slotRow(page, "gear.head")).toBeVisible();
 
     await page.keyboard.press("Enter");
@@ -232,7 +241,16 @@ test.describe("keyboard cursor", () => {
   test("Enter on a slot row focuses its picker", async ({ page }) => {
     await openBuilder(page);
     await page.keyboard.press("ArrowDown"); // -> header:options
-    await page.keyboard.press("ArrowDown"); // -> header:gear
+    // Walk through all expanded Options slots, then one more for the Gear header, then its first slot.
+    const optionsSlotCount = await page
+      .locator('[data-cursor-key^="slot:options."]')
+      .count();
+    for (let i = 0; i < optionsSlotCount + 1; i += 1)
+      await page.keyboard.press("ArrowDown");
+    await expect(cursorRow(page)).toHaveAttribute(
+      "data-cursor-key",
+      "header:gear",
+    );
     await page.keyboard.press("ArrowDown"); // -> slot:gear.head
     await expect(cursorRow(page)).toHaveAttribute(
       "data-cursor-key",
@@ -248,6 +266,12 @@ test.describe("keyboard cursor", () => {
   }) => {
     await openBuilder(page);
     await page.keyboard.press("ArrowDown"); // -> header:options
+    // Walk through all expanded Options slots to reach the Gear header, then past it to its first slot.
+    const optionsSlotCount = await page
+      .locator('[data-cursor-key^="slot:options."]')
+      .count();
+    for (let i = 0; i < optionsSlotCount; i += 1)
+      await page.keyboard.press("ArrowDown");
     await page.keyboard.press("ArrowDown"); // -> header:gear
     await page.keyboard.press("ArrowDown"); // -> slot:gear.head
 
@@ -264,6 +288,12 @@ test.describe("keyboard cursor", () => {
   }) => {
     await openBuilder(page);
     await page.keyboard.press("ArrowDown"); // -> header:options
+    // Walk through all expanded Options slots to reach the Gear header, then past it to its first slot.
+    const optionsSlotCount = await page
+      .locator('[data-cursor-key^="slot:options."]')
+      .count();
+    for (let i = 0; i < optionsSlotCount; i += 1)
+      await page.keyboard.press("ArrowDown");
     await page.keyboard.press("ArrowDown"); // -> header:gear
     await page.keyboard.press("ArrowDown"); // -> slot:gear.head
     await expect(cursorRow(page)).toHaveAttribute(
@@ -296,9 +326,8 @@ test.describe("keyboard cursor: build_parameter rows", () => {
     page,
   }) => {
     await openBuilder(page);
-    // Open the Options section first
-    await headerRow(page, "options").click();
-    // Arrow down: header:options → slot:options.class
+    // Options section is open by default -- first ArrowDown lands on header, second on its first slot.
+    await page.keyboard.press("ArrowDown");
     await page.keyboard.press("ArrowDown");
     await expect(cursorRow(page)).toHaveAttribute(
       "data-cursor-key",
@@ -314,8 +343,8 @@ test.describe("keyboard cursor: build_parameter rows", () => {
     page,
   }) => {
     await openBuilder(page);
-    await headerRow(page, "options").click();
-    // header:options → slot:options.class
+    // Options section is open by default -- first ArrowDown lands on header, second on its first slot.
+    await page.keyboard.press("ArrowDown");
     await page.keyboard.press("ArrowDown");
     await expect(cursorRow(page)).toHaveAttribute(
       "data-cursor-key",
@@ -336,8 +365,8 @@ test.describe("keyboard cursor: build_parameter rows", () => {
     page,
   }) => {
     await openBuilder(page);
-    await headerRow(page, "options").click();
-    // header:options → slot:options.class → slot:options.role
+    // Options section is open by default -- ArrowDown: header, first slot, second slot.
+    await page.keyboard.press("ArrowDown");
     await page.keyboard.press("ArrowDown");
     await page.keyboard.press("ArrowDown");
     await expect(cursorRow(page)).toHaveAttribute(
@@ -365,8 +394,8 @@ test.describe("keyboard cursor: build_parameter rows", () => {
     page,
   }) => {
     await openBuilder(page);
-    await headerRow(page, "options").click();
-    // header:options → slot:options.class
+    // Options section is open by default -- first ArrowDown lands on header, second on its first slot.
+    await page.keyboard.press("ArrowDown");
     await page.keyboard.press("ArrowDown");
     await expect(cursorRow(page)).toHaveAttribute(
       "data-cursor-key",
@@ -389,8 +418,8 @@ test.describe("keyboard cursor: build_parameter rows", () => {
 
   test("Delete (same as Backspace) resets to default", async ({ page }) => {
     await openBuilder(page);
-    await headerRow(page, "options").click();
-    // header:options → slot:options.class → slot:options.role
+    // Options section is open by default -- ArrowDown: header, first slot, second slot.
+    await page.keyboard.press("ArrowDown");
     await page.keyboard.press("ArrowDown");
     await page.keyboard.press("ArrowDown");
     await expect(cursorRow(page)).toHaveAttribute(

@@ -46,7 +46,7 @@ function deriveSchema(raw: typeof rawSchema): Schema {
  */
 function deriveSlots(raw: typeof rawSlots): SlotsData {
   return {
-    sections: raw.sections.map(({ id, label }) => ({ id, label })),
+    sections: raw.sections.map(({ id, label, defaultOpen }) => ({ id, label, defaultOpen })),
     slots: raw.sections.flatMap((section) =>
       section.slots.map((slot) => ({ ...slot, section: section.id }) as Slot),
     ),

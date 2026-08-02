@@ -1,7 +1,9 @@
 {
   "sections": [
     {
-      "id": "options", "label": "Options",
+      "defaultOpen": true,
+      "id": "options",
+      "label": "Options",
       "slots": [
         {
           "id": "options.class",
@@ -11,15 +13,42 @@
           "path": "class",
           "default": "warlock",
           "options": [
-            {"value": "barbarian", "label": "Barbarian"},
-            {"value": "bard", "label": "Bard"},
-            {"value": "cleric", "label": "Cleric"},
-            {"value": "fighter", "label": "Fighter"},
-            {"value": "paladin", "label": "Paladin"},
-            {"value": "ranger", "label": "Ranger"},
-            {"value": "rogue", "label": "Rogue"},
-            {"value": "warlock", "label": "Warlock"},
-            {"value": "wizard", "label": "Wizard"}
+            {
+              "value": "barbarian",
+              "label": "Barbarian"
+            },
+            {
+              "value": "bard",
+              "label": "Bard"
+            },
+            {
+              "value": "cleric",
+              "label": "Cleric"
+            },
+            {
+              "value": "fighter",
+              "label": "Fighter"
+            },
+            {
+              "value": "paladin",
+              "label": "Paladin"
+            },
+            {
+              "value": "ranger",
+              "label": "Ranger"
+            },
+            {
+              "value": "rogue",
+              "label": "Rogue"
+            },
+            {
+              "value": "warlock",
+              "label": "Warlock"
+            },
+            {
+              "value": "wizard",
+              "label": "Wizard"
+            }
           ]
         },
         {
@@ -30,9 +59,18 @@
           "path": "role",
           "default": "dps",
           "options": [
-            {"value": "dps", "label": "DPS"},
-            {"value": "healer", "label": "Healer"},
-            {"value": "tank", "label": "Tank"}
+            {
+              "value": "dps",
+              "label": "DPS"
+            },
+            {
+              "value": "healer",
+              "label": "Healer"
+            },
+            {
+              "value": "tank",
+              "label": "Tank"
+            }
           ]
         },
         {
@@ -42,7 +80,16 @@
           "paramType": "list",
           "path": "damageType",
           "default": "magical",
-          "options": [{"value": "magical", "label": "Magical"}, {"value": "physical", "label": "Physical"}]
+          "options": [
+            {
+              "value": "magical",
+              "label": "Magical"
+            },
+            {
+              "value": "physical",
+              "label": "Physical"
+            }
+          ]
         },
         {
           "id": "options.magnitude",
@@ -61,18 +108,54 @@
           "path": "forte.primary",
           "default": "power_p",
           "options": [
-            {"value": "", "label": "— none —"},
-            {"value": "power_p", "label": "Power"},
-            {"value": "sev_p", "label": "Critical Severity"},
-            {"value": "strike_p", "label": "Critical Strike"},
-            {"value": "acc_p", "label": "Accuracy"},
-            {"value": "ca_p", "label": "Combat Advantage"},
-            {"value": "defense_p", "label": "Defense"},
-            {"value": "awareness_p", "label": "Awareness"},
-            {"value": "crit_avoid_p", "label": "Critical Avoidance"},
-            {"value": "deflect_p", "label": "Deflect"},
-            {"value": "deflect_sev_p", "label": "Deflect Severity"},
-            {"value": "mana_regen", "label": "Mana Regen"}
+            {
+              "value": "",
+              "label": "— none —"
+            },
+            {
+              "value": "power_p",
+              "label": "Power"
+            },
+            {
+              "value": "sev_p",
+              "label": "Critical Severity"
+            },
+            {
+              "value": "strike_p",
+              "label": "Critical Strike"
+            },
+            {
+              "value": "acc_p",
+              "label": "Accuracy"
+            },
+            {
+              "value": "ca_p",
+              "label": "Combat Advantage"
+            },
+            {
+              "value": "defense_p",
+              "label": "Defense"
+            },
+            {
+              "value": "awareness_p",
+              "label": "Awareness"
+            },
+            {
+              "value": "crit_avoid_p",
+              "label": "Critical Avoidance"
+            },
+            {
+              "value": "deflect_p",
+              "label": "Deflect"
+            },
+            {
+              "value": "deflect_sev_p",
+              "label": "Deflect Severity"
+            },
+            {
+              "value": "mana_regen",
+              "label": "Mana Regen"
+            }
           ]
         },
         {
@@ -83,18 +166,54 @@
           "path": "forte.secondaryA",
           "default": "strike_p",
           "options": [
-            {"value": "", "label": "— none —"},
-            {"value": "power_p", "label": "Power"},
-            {"value": "sev_p", "label": "Critical Severity"},
-            {"value": "strike_p", "label": "Critical Strike"},
-            {"value": "acc_p", "label": "Accuracy"},
-            {"value": "ca_p", "label": "Combat Advantage"},
-            {"value": "defense_p", "label": "Defense"},
-            {"value": "awareness_p", "label": "Awareness"},
-            {"value": "crit_avoid_p", "label": "Critical Avoidance"},
-            {"value": "deflect_p", "label": "Deflect"},
-            {"value": "deflect_sev_p", "label": "Deflect Severity"},
-            {"value": "mana_regen", "label": "Mana Regen"}
+            {
+              "value": "",
+              "label": "— none —"
+            },
+            {
+              "value": "power_p",
+              "label": "Power"
+            },
+            {
+              "value": "sev_p",
+              "label": "Critical Severity"
+            },
+            {
+              "value": "strike_p",
+              "label": "Critical Strike"
+            },
+            {
+              "value": "acc_p",
+              "label": "Accuracy"
+            },
+            {
+              "value": "ca_p",
+              "label": "Combat Advantage"
+            },
+            {
+              "value": "defense_p",
+              "label": "Defense"
+            },
+            {
+              "value": "awareness_p",
+              "label": "Awareness"
+            },
+            {
+              "value": "crit_avoid_p",
+              "label": "Critical Avoidance"
+            },
+            {
+              "value": "deflect_p",
+              "label": "Deflect"
+            },
+            {
+              "value": "deflect_sev_p",
+              "label": "Deflect Severity"
+            },
+            {
+              "value": "mana_regen",
+              "label": "Mana Regen"
+            }
           ]
         },
         {
@@ -105,18 +224,54 @@
           "path": "forte.secondaryB",
           "default": "awareness_p",
           "options": [
-            {"value": "", "label": "— none —"},
-            {"value": "power_p", "label": "Power"},
-            {"value": "sev_p", "label": "Critical Severity"},
-            {"value": "strike_p", "label": "Critical Strike"},
-            {"value": "acc_p", "label": "Accuracy"},
-            {"value": "ca_p", "label": "Combat Advantage"},
-            {"value": "defense_p", "label": "Defense"},
-            {"value": "awareness_p", "label": "Awareness"},
-            {"value": "crit_avoid_p", "label": "Critical Avoidance"},
-            {"value": "deflect_p", "label": "Deflect"},
-            {"value": "deflect_sev_p", "label": "Deflect Severity"},
-            {"value": "mana_regen", "label": "Mana Regen"}
+            {
+              "value": "",
+              "label": "— none —"
+            },
+            {
+              "value": "power_p",
+              "label": "Power"
+            },
+            {
+              "value": "sev_p",
+              "label": "Critical Severity"
+            },
+            {
+              "value": "strike_p",
+              "label": "Critical Strike"
+            },
+            {
+              "value": "acc_p",
+              "label": "Accuracy"
+            },
+            {
+              "value": "ca_p",
+              "label": "Combat Advantage"
+            },
+            {
+              "value": "defense_p",
+              "label": "Defense"
+            },
+            {
+              "value": "awareness_p",
+              "label": "Awareness"
+            },
+            {
+              "value": "crit_avoid_p",
+              "label": "Critical Avoidance"
+            },
+            {
+              "value": "deflect_p",
+              "label": "Deflect"
+            },
+            {
+              "value": "deflect_sev_p",
+              "label": "Deflect Severity"
+            },
+            {
+              "value": "mana_regen",
+              "label": "Mana Regen"
+            }
           ]
         },
         {
@@ -136,9 +291,18 @@
           "default": "single",
           "quick": true,
           "options": [
-            {"value": "single", "label": "Single Target"},
-            {"value": "aoe", "label": "AoE"},
-            {"value": "mixed", "label": "Mixed"}
+            {
+              "value": "single",
+              "label": "Single Target"
+            },
+            {
+              "value": "aoe",
+              "label": "AoE"
+            },
+            {
+              "value": "mixed",
+              "label": "Mixed"
+            }
           ]
         },
         {
@@ -150,9 +314,18 @@
           "default": "generic",
           "quick": true,
           "options": [
-            {"value": "generic", "label": "Generic"},
-            {"value": "thay", "label": "Thay"},
-            {"value": "wildspace", "label": "Wildspace"}
+            {
+              "value": "generic",
+              "label": "Generic"
+            },
+            {
+              "value": "thay",
+              "label": "Thay"
+            },
+            {
+              "value": "wildspace",
+              "label": "Wildspace"
+            }
           ]
         },
         {
@@ -164,7 +337,12 @@
           "default": 60,
           "min": 0,
           "quick": true,
-          "presets": [0, 10, 30, 60]
+          "presets": [
+            0,
+            10,
+            30,
+            60
+          ]
         },
         {
           "id": "options.toggleConsumables",
@@ -214,11 +392,28 @@
       ]
     },
     {
-      "id": "gear", "label": "Gear",
+      "defaultOpen": true,
+      "id": "gear",
+      "label": "Gear",
       "slots": [
-        {"id": "gear.head", "label": "Head", "filter": "gear_head", "type": "item_picker"},
-        {"id": "gear.armor", "label": "Armor", "filter": "gear_armor", "type": "item_picker"},
-        {"id": "gear.arms", "label": "Arms", "filter": "gear_arms", "type": "item_picker"},
+        {
+          "id": "gear.head",
+          "label": "Head",
+          "filter": "gear_head",
+          "type": "item_picker"
+        },
+        {
+          "id": "gear.armor",
+          "label": "Armor",
+          "filter": "gear_armor",
+          "type": "item_picker"
+        },
+        {
+          "id": "gear.arms",
+          "label": "Arms",
+          "filter": "gear_arms",
+          "type": "item_picker"
+        },
         {
           "id": "gear.mainhand",
           "label": "Mainhand",
@@ -249,17 +444,54 @@
           "filter": "modification_offhand_dynamic",
           "type": "item_picker"
         },
-        {"id": "gear.boots", "label": "Boots", "filter": "gear_boots", "type": "item_picker"},
-        {"id": "gear.neck", "label": "Neck", "filter": "gear_neck", "type": "item_picker"},
-        {"id": "gear.ring1", "label": "Ring 1", "filter": "gear_ring", "type": "item_picker"},
-        {"id": "gear.ring2", "label": "Ring 2", "filter": "gear_ring", "type": "item_picker"},
-        {"id": "gear.waist", "label": "Waist", "filter": "gear_waist", "type": "item_picker"},
-        {"id": "gear.shirt", "label": "Shirt", "filter": "gear_shirt", "type": "item_picker"},
-        {"id": "gear.pants", "label": "Pants", "filter": "gear_pants", "type": "item_picker"}
+        {
+          "id": "gear.boots",
+          "label": "Boots",
+          "filter": "gear_boots",
+          "type": "item_picker"
+        },
+        {
+          "id": "gear.neck",
+          "label": "Neck",
+          "filter": "gear_neck",
+          "type": "item_picker"
+        },
+        {
+          "id": "gear.ring1",
+          "label": "Ring 1",
+          "filter": "gear_ring",
+          "type": "item_picker"
+        },
+        {
+          "id": "gear.ring2",
+          "label": "Ring 2",
+          "filter": "gear_ring",
+          "type": "item_picker"
+        },
+        {
+          "id": "gear.waist",
+          "label": "Waist",
+          "filter": "gear_waist",
+          "type": "item_picker"
+        },
+        {
+          "id": "gear.shirt",
+          "label": "Shirt",
+          "filter": "gear_shirt",
+          "type": "item_picker"
+        },
+        {
+          "id": "gear.pants",
+          "label": "Pants",
+          "filter": "gear_pants",
+          "type": "item_picker"
+        }
       ]
     },
     {
-      "id": "reinforcements", "label": "Reinforcements",
+      "defaultOpen": true,
+      "id": "reinforcements",
+      "label": "Reinforcements",
       "slots": [
         {
           "id": "reinforcements.armorKit1",
@@ -312,7 +544,9 @@
       ]
     },
     {
-      "id": "buffs", "label": "Buffs",
+      "defaultOpen": true,
+      "id": "buffs",
+      "label": "Buffs",
       "slots": [
         {
           "id": "buffs.eventFood",
@@ -338,7 +572,12 @@
           "filter": "consumable_food",
           "type": "item_picker"
         },
-        {"id": "buffs.trinket", "label": "Trinket", "filter": "trinket", "type": "item_picker"},
+        {
+          "id": "buffs.trinket",
+          "label": "Trinket",
+          "filter": "trinket",
+          "type": "item_picker"
+        },
         {
           "id": "buffs.eventItem",
           "label": "Event Item",
@@ -354,7 +593,9 @@
       ]
     },
     {
-      "id": "enchantments", "label": "Enchantments",
+      "defaultOpen": true,
+      "id": "enchantments",
+      "label": "Enchantments",
       "slots": [
         {
           "id": "enchantments.offense1",
@@ -431,7 +672,9 @@
       ]
     },
     {
-      "id": "overloads", "label": "Overloads",
+      "defaultOpen": true,
+      "id": "overloads",
+      "label": "Overloads",
       "slots": [
         {
           "id": "overloads.overload1",
@@ -448,7 +691,9 @@
       ]
     },
     {
-      "id": "artifacts", "label": "Artifacts",
+      "defaultOpen": true,
+      "id": "artifacts",
+      "label": "Artifacts",
       "slots": [
         {
           "id": "artifacts.artifact1",
@@ -477,7 +722,9 @@
       ]
     },
     {
-      "id": "boons", "label": "Boons",
+      "defaultOpen": true,
+      "id": "boons",
+      "label": "Boons",
       "slots": [
         {
           "id": "boons.characterBoons",
@@ -506,7 +753,9 @@
       ]
     },
     {
-      "id": "companions", "label": "Companions",
+      "defaultOpen": true,
+      "id": "companions",
+      "label": "Companions",
       "slots": [
         {
           "id": "companions.companion",
@@ -577,7 +826,9 @@
       ]
     },
     {
-      "id": "mounts", "label": "Mounts",
+      "defaultOpen": true,
+      "id": "mounts",
+      "label": "Mounts",
       "slots": [
         {
           "id": "mounts.mountCombat",
@@ -624,7 +875,9 @@
       ]
     },
     {
-      "id": "insignia", "label": "Insignia",
+      "defaultOpen": true,
+      "id": "insignia",
+      "label": "Insignia",
       "slots": [
         {
           "id": "insignia.insignia1_1",
@@ -779,7 +1032,9 @@
       ]
     },
     {
-      "id": "baselineAndAttributes", "label": "Baseline and Attributes",
+      "defaultOpen": true,
+      "id": "baselineAndAttributes",
+      "label": "Baseline and Attributes",
       "slots": [
         {
           "id": "baselineAndAttributes.baseline",
@@ -826,7 +1081,9 @@
       ]
     },
     {
-      "id": "classRaceStuff", "label": "Class/Race stuff",
+      "defaultOpen": true,
+      "id": "classRaceStuff",
+      "label": "Class/Race stuff",
       "slots": [
         {
           "id": "classRaceStuff.classRaceStuff1",
@@ -927,7 +1184,9 @@
       ]
     },
     {
-      "id": "group", "label": "Group",
+      "defaultOpen": true,
+      "id": "group",
+      "label": "Group",
       "slots": [
         {
           "id": "group.group1",
@@ -1100,7 +1359,9 @@
       ]
     },
     {
-      "id": "artifactCall", "label": "Artifact Call",
+      "defaultOpen": true,
+      "id": "artifactCall",
+      "label": "Artifact Call",
       "slots": [
         {
           "id": "artifactCall.artifactCall1",
@@ -1261,16 +1522,58 @@
       ]
     },
     {
-      "id": "misc", "label": "Misc",
+      "defaultOpen": true,
+      "id": "misc",
+      "label": "Misc",
       "slots": [
-        {"id": "misc.misc1", "label": "Misc 1", "filter": "misc", "type": "item_picker"},
-        {"id": "misc.misc2", "label": "Misc 2", "filter": "misc", "type": "item_picker"},
-        {"id": "misc.misc3", "label": "Misc 3", "filter": "misc", "type": "item_picker"},
-        {"id": "misc.misc4", "label": "Misc 4", "filter": "misc", "type": "item_picker"},
-        {"id": "misc.misc5", "label": "Misc 5", "filter": "misc", "type": "item_picker"},
-        {"id": "misc.misc6", "label": "Misc 6", "filter": "misc", "type": "item_picker"},
-        {"id": "misc.misc7", "label": "Misc 7", "filter": "misc", "type": "item_picker"},
-        {"id": "misc.misc8", "label": "Misc 8", "filter": "misc", "type": "item_picker"}
+        {
+          "id": "misc.misc1",
+          "label": "Misc 1",
+          "filter": "misc",
+          "type": "item_picker"
+        },
+        {
+          "id": "misc.misc2",
+          "label": "Misc 2",
+          "filter": "misc",
+          "type": "item_picker"
+        },
+        {
+          "id": "misc.misc3",
+          "label": "Misc 3",
+          "filter": "misc",
+          "type": "item_picker"
+        },
+        {
+          "id": "misc.misc4",
+          "label": "Misc 4",
+          "filter": "misc",
+          "type": "item_picker"
+        },
+        {
+          "id": "misc.misc5",
+          "label": "Misc 5",
+          "filter": "misc",
+          "type": "item_picker"
+        },
+        {
+          "id": "misc.misc6",
+          "label": "Misc 6",
+          "filter": "misc",
+          "type": "item_picker"
+        },
+        {
+          "id": "misc.misc7",
+          "label": "Misc 7",
+          "filter": "misc",
+          "type": "item_picker"
+        },
+        {
+          "id": "misc.misc8",
+          "label": "Misc 8",
+          "filter": "misc",
+          "type": "item_picker"
+        }
       ]
     }
   ]

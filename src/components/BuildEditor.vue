@@ -57,15 +57,13 @@ const onlyDiff = computed(() => build.value.compare.onlyDiff);
 const otherBuilds = builds.otherBuilds;
 
 // Which sections are open -- a UI preference, not a build edit, shared across every build
-// rather than saved with one, persisted under its own key so it survives a reload. Every
-// section starts collapsed except Gear. "options" is a real section like any other now (first
-// in `NW_SLOTS.sections`), so it needs no separate seed.
-const OPEN_BY_DEFAULT = new Set(["gear"]);
+// rather than saved with one, persisted under its own key so it survives a reload. The default
+// open state is authored per-section in `data/slots.json` (`defaultOpen`).
 const savedExpanded = storage.loadUiState().expanded;
 const expanded = reactive<Record<string, boolean>>({});
 for (const section of NW_SLOTS.sections) {
   expanded[section.id] =
-    savedExpanded?.[section.id] ?? OPEN_BY_DEFAULT.has(section.id);
+    savedExpanded?.[section.id] ?? section.defaultOpen !== false;
 }
 watch(
   expanded,

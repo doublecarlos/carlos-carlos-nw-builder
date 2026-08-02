@@ -51,6 +51,8 @@ export interface Schema {
 export interface SlotSection {
   id: string;
   label: string;
+  /** Whether the section starts expanded in the build editor, authored in `data/slots.json`. */
+  defaultOpen?: boolean;
 }
 
 /** A build-wide value with no item of its own -- today's build-context fields (class, role,

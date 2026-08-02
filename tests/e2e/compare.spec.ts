@@ -60,7 +60,6 @@ test.describe("build_parameter compare diff apply", () => {
     // Build 1: set class to paladin via direct combobox click
     await openBuilder(page);
     const classRow = slotRow(page, "options.class");
-    await headerRow(page, "options").click();
     await classRow.getByTestId("picker-input").click();
     await classRow.getByText("Paladin", { exact: true }).click();
 
@@ -91,7 +90,6 @@ test.describe("build_parameter compare diff apply", () => {
     // Build 1: set class to paladin via direct combobox click
     await openBuilder(page);
     const classRow = slotRow(page, "options.class");
-    await headerRow(page, "options").click();
     await classRow.getByTestId("picker-input").click();
     await classRow.getByText("Paladin", { exact: true }).click();
 
