@@ -29,9 +29,9 @@ defineEmits<{ close: [] }>();
 
 <template>
   <BaseCard class="statcard" data-testid="stat-card">
-    <BaseCardHeader sticky>
+    <BaseCardHeader sticky class="flex">
       <span
-        class="statcard-title font-semibold"
+        class="statcard-title font-semibold flex-1"
         data-testid="stat-card-title"
         >{{ label }}</span
       >
