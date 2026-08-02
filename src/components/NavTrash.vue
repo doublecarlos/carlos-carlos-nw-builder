@@ -23,6 +23,7 @@ defineEmits<{
   restore: [entry: TrashEntry];
   "menu-open": [id: string, event: MouseEvent];
   "menu-action": [action: string, id: string];
+  "menu-close": [];
 }>();
 </script>
 
@@ -76,9 +77,11 @@ defineEmits<{
             v-if="menuOpenId === `${entry.kind}_${entry.item.id}`"
             :anchor="menuAnchor"
             :items="menuItems"
+            :ignore="['.nav-kebab']"
             @action="
               (a) => $emit('menu-action', a, `${entry.kind}_${entry.item.id}`)
             "
+            @close="$emit('menu-close')"
           />
         </div>
       </div>

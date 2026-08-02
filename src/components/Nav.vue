@@ -1,8 +1,8 @@
 <script setup lang="ts">
 // Left sidebar: builds, customization layers, and recently deleted. Owns shared state
 // (menus, rename, confirm) and delegates list rendering to NavBuilds / NavLayers / NavTrash.
-import { ref, computed, useTemplateRef } from "vue";
-import { useEventListener, onClickOutside } from "@vueuse/core";
+import { ref, useTemplateRef } from "vue";
+import { useEventListener } from "@vueuse/core";
 import NavBuilds from "./NavBuilds.vue";
 import NavLayers from "./NavLayers.vue";
 import NavTrash from "./NavTrash.vue";
@@ -379,20 +379,6 @@ function onScrollCapture() {
   closeMenu();
 }
 
-/** The teleported menu element (`.navmenu`), if a menu is open — used as the target for
- * onClickOutside so that clicks anywhere outside the menu (including elsewhere in the
- * sidebar) close it. Kebab buttons are in the ignore list so their own click handler
- * (toggle/switch) runs first. */
-const menuElement = computed((): HTMLElement | null => {
-  if (!openMenu.value) return null;
-  return document.querySelector(".navmenu") as HTMLElement | null;
-});
-
-onClickOutside(menuElement, () => closeMenu(), {
-  ignore: [".nav-kebab"],
-  capture: false,
-});
-
 useEventListener(document, "scroll", onScrollCapture, {
   capture: true,
   passive: true,
@@ -434,6 +420,7 @@ useEventListener(document, "scroll", onScrollCapture, {
       @rename-cancel="renaming = null"
       @menu-open="(id, ev) => openMenuFor('build', id, ev)"
       @menu-action="(a, id) => onBuildMenuAction(a, id)"
+      @menu-close="closeMenu"
       @create="builds.createBuild()"
       @import="triggerImportBuild"
     />
@@ -468,6 +455,7 @@ useEventListener(document, "scroll", onScrollCapture, {
       @rename-cancel="renaming = null"
       @menu-open="(id, ev) => openMenuFor('layer', id, ev)"
       @menu-action="(a, id) => onLayerMenuAction(a, id)"
+      @menu-close="closeMenu"
       @create="layers.createLayer()"
       @import="triggerImportLayer"
     />
@@ -485,6 +473,7 @@ useEventListener(document, "scroll", onScrollCapture, {
       @restore="(entry) => restoreTrashEntry(entry)"
       @menu-open="(id, ev) => openMenuFor('trash', id, ev)"
       @menu-action="(a, id) => onTrashMenuAction(a, id)"
+      @menu-close="closeMenu"
     />
 
     <input

@@ -36,6 +36,7 @@ defineEmits<{
   "rename-cancel": [];
   "menu-open": [id: string, event: MouseEvent];
   "menu-action": [action: string, id: string];
+  "menu-close": [];
   create: [];
   import: [];
 }>();
@@ -112,7 +113,9 @@ const filteredBuilds = computed(() => {
             v-if="menuOpenId === b.id"
             :anchor="menuAnchor"
             :items="menuItems"
+            :ignore="['.nav-kebab']"
             @action="(a) => $emit('menu-action', a, b.id)"
+            @close="$emit('menu-close')"
           />
         </div>
       </div>
