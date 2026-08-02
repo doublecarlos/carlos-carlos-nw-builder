@@ -129,13 +129,35 @@ function diffLabel(oldJson: string, newJson: string): string {
   try {
     const old = JSON.parse(oldJson);
     const nw = JSON.parse(newJson);
-    if (old.name !== nw.name) return "edit name";
-    if (old.stacking !== nw.stacking) return "edit stacking";
-    if (old.maxStacks !== nw.maxStacks) return "edit max stacks";
-    if (JSON.stringify(old.excludes) !== JSON.stringify(nw.excludes))
+    if (old.name !== nw.name) return `edit name → "${nw.name}"`;
+    if (old.stacking !== nw.stacking)
+      return `edit stacking → "${nw.stacking || "(none)"}"`;
+    if (old.maxStacks !== nw.maxStacks)
+      return `edit max stacks → ${nw.maxStacks ?? "(none)"}`;
+    if (JSON.stringify(old.excludes) !== JSON.stringify(nw.excludes)) {
+      const oldSet = new Set(old.excludes ?? []);
+      const newSet = new Set(nw.excludes ?? []);
+      const added = (nw.excludes ?? []).filter(
+        (v: string) => !oldSet.has(v),
+      ).length;
+      const removed = (old.excludes ?? []).filter(
+        (v: string) => !newSet.has(v),
+      ).length;
+      if (added && removed) return `edit excludes (+${added} / −${removed})`;
+      if (added) return `add exclude${added > 1 ? "s" : ""} (${added})`;
+      if (removed)
+        return `remove exclude${removed > 1 ? "s" : ""} (${removed})`;
       return "edit excludes";
-    if (JSON.stringify(old.grants) !== JSON.stringify(nw.grants))
-      return "edit grants";
+    }
+    if (JSON.stringify(old.grants) !== JSON.stringify(nw.grants)) {
+      const oldCount = (old.grants ?? []).length;
+      const newCount = (nw.grants ?? []).length;
+      if (newCount > oldCount)
+        return `add grant${newCount - oldCount > 1 ? "s" : ""} (${newCount} total)`;
+      if (newCount < oldCount)
+        return `remove grant${oldCount - newCount > 1 ? "s" : ""} (${newCount} total)`;
+      return `edit grants (${newCount} total)`;
+    }
   } catch {
     // JSON parse error -- shouldn't happen but be safe.
   }

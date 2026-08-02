@@ -97,3 +97,23 @@ describe("buildEditor undo coalescing", () => {
     expect(Object.hasOwn(builds.build.value, "class")).toBe(false);
   });
 });
+
+describe("buildEditor undo labels", () => {
+  it("renameBuild includes the new name in the label", async () => {
+    const { buildEditor } = await freshStores();
+    buildEditor.renameBuild("My Warlock");
+    expect(buildEditor.undoLabel.value).toBe('rename build → "My Warlock"');
+  });
+
+  it("setValue includes the new value in the label", async () => {
+    const { buildEditor } = await freshStores();
+    buildEditor.setValue("ring1", "42");
+    expect(buildEditor.undoLabel.value).toContain("→ 42");
+  });
+
+  it("setValue shows (none) when clearing", async () => {
+    const { buildEditor } = await freshStores();
+    buildEditor.setValue("ring1", "");
+    expect(buildEditor.undoLabel.value).toContain("→ (none)");
+  });
+});

@@ -68,11 +68,12 @@ export function setChoice(slotId: string, id: string) {
 export function setValue(slotId: string, raw: string) {
   const b = builds.build.value;
   if (!b) return;
+  const shown = raw === "" || raw == null ? "(none)" : raw;
   history.snapshot(
     "build",
     b.id,
     `value:${slotId}`,
-    `${slotLabel(slotId)} value`,
+    `${slotLabel(slotId)} value → ${shown}`,
     b,
   );
   if (raw === "" || raw == null) delete b.values[slotId];
@@ -180,7 +181,7 @@ export function applyParamFromCompare(slot: BuildParameterSlot) {
 export function renameBuild(name: string) {
   const b = builds.build.value;
   if (!b) return;
-  history.snapshot("build", b.id, "name", "rename build", b);
+  history.snapshot("build", b.id, "name", `rename build → "${name}"`, b);
   b.name = name;
 }
 

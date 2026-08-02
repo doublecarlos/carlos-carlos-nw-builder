@@ -71,7 +71,7 @@ export function createLayer(name?: string): Layer {
 export function renameLayer(id: string, name: string) {
   const layer = _layers.value.get(id);
   if (layer) {
-    history.snapshot("layer", id, "name", "Rename layer", layer);
+    history.snapshot("layer", id, "name", `rename layer → "${name}"`, layer);
     layer.name = name;
     markDirty(id);
   }

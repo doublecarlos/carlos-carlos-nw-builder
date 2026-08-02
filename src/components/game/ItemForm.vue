@@ -148,26 +148,64 @@ function diffLabel(oldJson: string, newJson: string): string {
   try {
     const old = JSON.parse(oldJson);
     const nw = JSON.parse(newJson);
-    if (old.name !== nw.name) return "edit name";
-    if (old.filter !== nw.filter) return "edit filter";
-    if (old.maxCopies !== nw.maxCopies) return "edit max copies";
+    if (old.name !== nw.name) return `edit name → "${nw.name}"`;
+    if (old.filter !== nw.filter) return `edit filter → "${nw.filter}"`;
+    if (old.maxCopies !== nw.maxCopies)
+      return `edit max copies → ${nw.maxCopies ?? "(none)"}`;
     if (JSON.stringify(old.allowedClass) !== JSON.stringify(nw.allowedClass))
       return "edit classes";
     if (JSON.stringify(old.tags) !== JSON.stringify(nw.tags))
-      return "edit tags";
+      return diffArrayLabel("tag", old.tags ?? [], nw.tags ?? []);
     if (JSON.stringify(old.bonuses) !== JSON.stringify(nw.bonuses))
-      return "edit bonuses";
+      return diffArrayLabel("bonus", old.bonuses ?? [], nw.bonuses ?? []);
     if (JSON.stringify(old.excludes) !== JSON.stringify(nw.excludes))
-      return "edit excludes";
-    if (old.dynamicStat !== nw.dynamicStat) return "edit dynamic stat";
+      return diffArrayLabel("exclude", old.excludes ?? [], nw.excludes ?? []);
+    if (old.dynamicStat !== nw.dynamicStat)
+      return `edit dynamic stat → "${nw.dynamicStat || "(none)"}"`;
     if (old.dynamicMin !== nw.dynamicMin || old.dynamicMax !== nw.dynamicMax)
-      return "edit dynamic range";
+      return `edit dynamic range → ${nw.dynamicMin ?? "_"}–${nw.dynamicMax ?? "_"}`;
     if (JSON.stringify(old.stats) !== JSON.stringify(nw.stats))
-      return "edit stats";
+      return diffStatsLabel(old.stats ?? [], nw.stats ?? []);
   } catch {
     // JSON parse error -- shouldn't happen but be safe.
   }
   return "edit item";
+}
+
+/** Label array mutations as add/remove with the changed entry count. */
+function diffArrayLabel(
+  noun: string,
+  oldArr: unknown[],
+  newArr: unknown[],
+): string {
+  const oldSet = new Set(oldArr.map(String));
+  const newSet = new Set(newArr.map(String));
+  const added = newArr.filter((v) => !oldSet.has(String(v))).length;
+  const removed = oldArr.filter((v) => !newSet.has(String(v))).length;
+  if (added && removed) return `edit ${noun}s (+${added} / −${removed})`;
+  if (added) return `add ${noun}${added > 1 ? "s" : ""} (${added})`;
+  if (removed) return `remove ${noun}${removed > 1 ? "s" : ""} (${removed})`;
+  return `edit ${noun}s`;
+}
+
+/** Label stat changes with the specific stat key(s) that changed. */
+function diffStatsLabel(
+  oldStats: { key: string; value: number }[],
+  newStats: { key: string; value: number }[],
+): string {
+  const oldMap = new Map(oldStats.map((s) => [s.key, s.value]));
+  const newMap = new Map(newStats.map((s) => [s.key, s.value]));
+  const changed: string[] = [];
+  for (const [key, val] of newMap) {
+    if (!oldMap.has(key)) changed.push(`+${key}`);
+    else if (oldMap.get(key) !== val) changed.push(key);
+  }
+  for (const key of oldMap.keys()) {
+    if (!newMap.has(key)) changed.push(`−${key}`);
+  }
+  if (changed.length === 1) return `edit stat: ${changed[0]}`;
+  if (changed.length <= 3) return `edit stats: ${changed.join(", ")}`;
+  return `edit stats (${changed.length} changed)`;
 }
 
 function resetDraftHistory() {
