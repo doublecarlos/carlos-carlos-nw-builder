@@ -2,6 +2,7 @@
 // Undo/redo button: fixed-width, single line, with an inline detail label of what the next
 // step would do -- shared by BuildBar, ItemForm, BonusSetForm and DataEditor's own history.
 import BaseButton from "./BaseButton.vue";
+import { Redo2, Undo2 } from "@lucide/vue";
 
 defineProps<{
   disabled?: boolean;
@@ -10,22 +11,18 @@ defineProps<{
 }>();
 
 const iconMap = {
-  undo: "undo-2",
-  redo: "redo-2",
-};
+  undo: Undo2,
+  redo: Redo2,
+} as const;
 </script>
 
 <template>
   <BaseButton
     :disabled="disabled"
     class="overflow-hidden text-left whitespace-nowrap"
-    :icon="iconMap[type]"
+    :data-testid="'history-' + type"
   >
+    <component :is="iconMap[type]" />
     <slot />
-    <span
-      v-if="detail"
-      class="ml-1 inline-block max-w-40 overflow-hidden text-ellipsis whitespace-nowrap align-bottom text-muted"
-      >{{ detail }}</span
-    >
   </BaseButton>
 </template>

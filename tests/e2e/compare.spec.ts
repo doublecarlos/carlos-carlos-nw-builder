@@ -21,7 +21,7 @@ test("highlighting a diff and applying it copies the compare build's choice", as
   await openBuilder(page);
   await chooseItem(page, "gear.head", HEAD_ITEM);
 
-  await page.getByRole("button", { name: "+" }).first().click();
+  await page.getByTestId("nav-add-build").click();
   await chooseCombo(page.locator(".compare-select"), "Build 1");
   await page.getByRole("checkbox", { name: "Highlight changes" }).check();
 
@@ -40,7 +40,7 @@ test("copying a section from another build fills its slots", async ({
   await openBuilder(page);
   await chooseItem(page, "gear.head", HEAD_ITEM);
 
-  await page.getByRole("button", { name: "+" }).first().click();
+  await page.getByTestId("nav-add-build").click();
   const gearHeader = headerRow(page, "gear");
   const copyBtn = gearHeader.locator("..").locator(".section-copy-btn");
   await copyBtn.click();
@@ -64,7 +64,7 @@ test.describe("build_parameter compare diff apply", () => {
     await classRow.getByText("Paladin", { exact: true }).click();
 
     // Build 2: default warlock, compared against build 1
-    await page.getByRole("button", { name: "+" }).first().click();
+    await page.getByTestId("nav-add-build").click();
     await chooseCombo(page.locator(".compare-select"), "Build 1");
     await page.getByRole("checkbox", { name: "Highlight changes" }).check();
     await ensureSectionExpanded(page, "options");
@@ -94,7 +94,7 @@ test.describe("build_parameter compare diff apply", () => {
     await classRow.getByText("Paladin", { exact: true }).click();
 
     // Build 2: default warlock, compared against build 1
-    await page.getByRole("button", { name: "+" }).first().click();
+    await page.getByTestId("nav-add-build").click();
     await chooseCombo(page.locator(".compare-select"), "Build 1");
     await page.getByRole("checkbox", { name: "Highlight changes" }).check();
     await ensureSectionExpanded(page, "options");

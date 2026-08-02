@@ -8,6 +8,7 @@ import TokenInput from "../ui/TokenInput.vue";
 import PercentInput from "../ui/PercentInput.vue";
 import ComboBox from "../ui/ComboBox.vue";
 import IconButton from "../ui/IconButton.vue";
+import { Plus, Save, Trash, Undo2 } from "@lucide/vue";
 import BaseButton from "../ui/BaseButton.vue";
 import BaseBadge from "../ui/BaseBadge.vue";
 import FormBar from "../ui/FormBar.vue";
@@ -467,12 +468,14 @@ onUnmounted(() => {
         variant="primary"
         :disabled="!dirty"
         @click="save"
-        >Save item</BaseButton
+        ><Save />Save item</BaseButton
       >
       <BaseButton v-if="status === 'edited'" @click="$emit('revert')"
-        >Revert to shipped</BaseButton
+        ><Undo2 />Revert to shipped</BaseButton
       >
-      <BaseButton v-if="source" @click="$emit('delete')">Delete</BaseButton>
+      <BaseButton v-if="source" @click="$emit('delete')"
+        ><Trash />Delete</BaseButton
+      >
     </FormBar>
 
     <p v-if="error" class="mt-1 text-danger">{{ error }}</p>
@@ -541,8 +544,10 @@ onUnmounted(() => {
       :key="index"
       class="stat-row flex flex-wrap items-center gap-1.5 mb-1"
     >
-      <IconButton icon="plus" title="Add stat" @click="addStat" />
-      <IconButton icon="trash" title="Remove stat" @click="removeStat(index)" />
+      <IconButton title="Add stat" @click="addStat"><Plus /></IconButton>
+      <IconButton title="Remove stat" @click="removeStat(index)"
+        ><Trash
+      /></IconButton>
       <ComboBox
         class="combo--stat w-52"
         :model-value="stat.key"
@@ -569,7 +574,7 @@ onUnmounted(() => {
       v-if="!draft.stats.length"
       class="stat-row flex flex-wrap items-center gap-1.5 mb-1"
     >
-      <IconButton icon="plus" title="Add stat" @click="addStat" />
+      <IconButton title="Add stat" @click="addStat"><Plus /></IconButton>
     </div>
 
     <FormSection>Dynamic modification (user types the value)</FormSection>

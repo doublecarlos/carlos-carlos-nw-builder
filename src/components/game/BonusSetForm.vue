@@ -5,6 +5,7 @@
 import { ref, computed, watch, onUnmounted } from "vue";
 import BonusRows from "./BonusRows.vue";
 import IconButton from "../ui/IconButton.vue";
+import { CirclePlus, Save, Trash, Undo2 } from "@lucide/vue";
 import ComboBox from "../ui/ComboBox.vue";
 import TokenInput from "../ui/TokenInput.vue";
 import BaseButton from "../ui/BaseButton.vue";
@@ -418,12 +419,14 @@ onUnmounted(() => {
         variant="primary"
         :disabled="!dirty"
         @click="save"
-        >Save bonus set</BaseButton
+        ><Save />Save bonus set</BaseButton
       >
       <BaseButton v-if="status === 'edited'" @click="$emit('revert')"
-        >Revert to shipped</BaseButton
+        ><Undo2 />Revert to shipped</BaseButton
       >
-      <BaseButton v-if="source" @click="$emit('delete')">Delete</BaseButton>
+      <BaseButton v-if="source" @click="$emit('delete')"
+        ><Trash />Delete</BaseButton
+      >
       <!-- BonusGroups.vue's per-item embedding injects its own "Detach" here -->
       <slot name="extra-actions" />
     </FormBar>
@@ -488,7 +491,9 @@ onUnmounted(() => {
 
     <FormSection>
       Grants
-      <IconButton icon="circle-plus" title="Add grant" @click="addGrant" />
+      <IconButton title="Add grant" @click="addGrant"
+        ><CirclePlus
+      /></IconButton>
       <span v-if="!draft.grants.length" class="text-sm text-muted"
         >none yet</span
       >

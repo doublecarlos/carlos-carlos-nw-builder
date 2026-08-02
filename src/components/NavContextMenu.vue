@@ -2,8 +2,8 @@
 // Reusable kebab-menu flyout for builds, layers, and trash entries.
 // Positioned by BasePopover: the parent provides the trigger element's bounding rect
 // and the popover handles viewport-edge flipping and clamping automatically.
-import { ref, onMounted, nextTick } from "vue";
-import { onClickOutside } from "@vueuse/core";
+import { ref, onMounted, nextTick, type Component } from "vue";
+import { onClickOutside, useMagicKeys, whenever } from "@vueuse/core";
 import BasePopover from "./ui/BasePopover.vue";
 
 const props = withDefaults(
@@ -13,6 +13,8 @@ const props = withDefaults(
     items: {
       action: string;
       label: string;
+      /** Lucide component rendered left of the label. */
+      icon?: Component;
       danger?: boolean;
       disabled?: boolean;
     }[];
@@ -41,6 +43,9 @@ onMounted(async () => {
 onClickOutside(menuEl, () => emit("close"), {
   ignore: props.ignore,
 });
+
+const { escape } = useMagicKeys();
+whenever(escape, () => emit("close"));
 </script>
 
 <template>
@@ -53,7 +58,7 @@ onClickOutside(menuEl, () => emit("close"), {
         v-for="item in items"
         :key="item.action"
         type="button"
-        class="rounded-md px-2 py-1 text-left"
+        class="inline-flex w-full items-center gap-1.5 rounded-md px-2 py-1 text-left"
         :class="
           item.disabled
             ? 'text-muted'
@@ -64,6 +69,11 @@ onClickOutside(menuEl, () => emit("close"), {
         :disabled="item.disabled"
         @click="$emit('action', item.action)"
       >
+        <component
+          :is="item.icon"
+          v-if="item.icon"
+          class="size-3.5 flex-none"
+        />
         {{ item.label }}
       </button>
     </div>

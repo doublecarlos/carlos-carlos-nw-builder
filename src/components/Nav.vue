@@ -3,6 +3,7 @@
 // (menus, rename, confirm) and delegates list rendering to NavBuilds / NavLayers / NavTrash.
 import { ref, useTemplateRef } from "vue";
 import { useEventListener } from "@vueuse/core";
+import { Copy, Download, Pencil, RotateCcw, Trash } from "@lucide/vue";
 import NavBuilds from "./NavBuilds.vue";
 import NavLayers from "./NavLayers.vue";
 import NavTrash from "./NavTrash.vue";
@@ -230,9 +231,9 @@ function purgeTrash(entry: TrashEntry) {
 // --- menu items computed --------------------------------------------------------------
 
 const buildMenuItems = (id: string) => [
-  { action: "rename", label: "Rename" },
-  { action: "duplicate", label: "Duplicate" },
-  { action: "download", label: "Download…" },
+  { action: "rename", label: "Rename", icon: Pencil },
+  { action: "duplicate", label: "Duplicate", icon: Copy },
+  { action: "download", label: "Download…", icon: Download },
   {
     action: "revert",
     label: confirmLabel(
@@ -242,19 +243,25 @@ const buildMenuItems = (id: string) => [
       "Revert to last downloaded…",
     ),
     disabled: !isBuildRevertable(id),
+    icon: RotateCcw,
   },
-  { action: "reset", label: confirmLabel("build", id, "reset-build", "Reset") },
+  {
+    action: "reset",
+    label: confirmLabel("build", id, "reset-build", "Reset"),
+    icon: RotateCcw,
+  },
   {
     action: "delete",
     label: confirmLabel("build", id, "delete-build", "Delete"),
     danger: true,
+    icon: Trash,
   },
 ];
 
 const layerMenuItems = (id: string) => [
-  { action: "rename", label: "Rename" },
-  { action: "duplicate", label: "Duplicate" },
-  { action: "download", label: "Download…" },
+  { action: "rename", label: "Rename", icon: Pencil },
+  { action: "duplicate", label: "Duplicate", icon: Copy },
+  { action: "download", label: "Download…", icon: Download },
   {
     action: "revert",
     label: confirmLabel(
@@ -264,20 +271,23 @@ const layerMenuItems = (id: string) => [
       "Revert to last downloaded…",
     ),
     disabled: !isLayerRevertable(id),
+    icon: RotateCcw,
   },
   {
     action: "delete",
     label: confirmLabel("layer", id, "delete-layer", "Delete"),
     danger: true,
+    icon: Trash,
   },
 ];
 
 const trashMenuItems = (key: string) => [
-  { action: "restore", label: "Restore" },
+  { action: "restore", label: "Restore", icon: RotateCcw },
   {
     action: "purge",
     label: confirmLabel("trash", key, "purge-trash", "Delete permanently"),
     danger: true,
+    icon: Trash,
   },
 ];
 

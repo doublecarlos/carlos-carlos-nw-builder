@@ -159,7 +159,7 @@ test.describe("section collapse/expand", () => {
 
     // A brand-new build sees the same section states -- proving they live outside any one
     // build's own document rather than resetting to the shared defaults.
-    await page.getByRole("button", { name: "+" }).first().click();
+    await page.getByTestId("nav-add-build").click();
     await expect(slotRow(page, "reinforcements.armorKit1")).toBeHidden();
 
     // Collapsing is not a build edit, so it never lands on the undo stack.

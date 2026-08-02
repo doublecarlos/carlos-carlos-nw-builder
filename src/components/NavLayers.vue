@@ -1,9 +1,16 @@
 <script setup lang="ts">
 // Layer list section inside the left sidebar. Pure presentation.
-import { computed, type Directive } from "vue";
+import { computed, type Component, type Directive } from "vue";
 import BaseButton from "./ui/BaseButton.vue";
 import BaseCheckbox from "./ui/BaseCheckbox.vue";
 import IconButton from "./ui/IconButton.vue";
+import {
+  ArrowDown,
+  ArrowUp,
+  EllipsisVertical,
+  Plus,
+  Upload,
+} from "@lucide/vue";
 import NavContextMenu from "./NavContextMenu.vue";
 import type { Layer } from "../types";
 
@@ -24,6 +31,8 @@ const props = defineProps<{
   menuItems: {
     action: string;
     label: string;
+    /** Lucide component rendered left of the label. */
+    icon?: Component;
     danger?: boolean;
     disabled?: boolean;
   }[];
@@ -61,17 +70,15 @@ const filteredLayers = computed(() => {
     <div class="mb-1 flex items-center justify-between px-1 py-0.5">
       <span
         class="flex items-center gap-1 text-xs font-semibold uppercase text-muted"
+        title="Layers apply top to bottom — a lower layer overrides the ones above it."
       >
-        Customization Layers
-        <span
-          class="inline-flex h-3.5 w-3.5 cursor-help items-center justify-center rounded-full bg-surface-2 text-[10px] leading-none text-muted"
-          title="Layers apply top to bottom — a lower layer overrides the ones above it."
-          >?</span
-        >
+        Layers
       </span>
       <div class="flex items-center gap-1">
-        <BaseButton variant="link" @click="$emit('import')">Import</BaseButton>
-        <BaseButton variant="link" @click="$emit('create')">+ New</BaseButton>
+        <BaseButton @click="$emit('import')"><Upload />Import</BaseButton>
+        <BaseButton data-testid="nav-add-layer" @click="$emit('create')"
+          ><Plus />New</BaseButton
+        >
       </div>
     </div>
 
@@ -79,7 +86,7 @@ const filteredLayers = computed(() => {
       :value="filter"
       type="text"
       placeholder="Filter…"
-      class="mb-1 rounded-md border border-line bg-surface px-2 py-0.5 text-xs focus:outline-accent"
+      class="mb-1 rounded-md border border-line bg-surface px-2 py-0.5 text-xs focus:outline-accent w-full"
       @input="$emit('update:filter', ($event.target as HTMLInputElement).value)"
     />
 
@@ -91,19 +98,21 @@ const filteredLayers = computed(() => {
         :class="selectedId === l.id && 'is-active bg-accent-soft'"
       >
         <IconButton
-          icon="arrow-up"
           title="Move up"
           data-testid="move-up"
           :disabled="!canMoveUp(l.id)"
           @click="$emit('move-up', l.id)"
-        />
+        >
+          <ArrowUp />
+        </IconButton>
         <IconButton
-          icon="arrow-down"
           title="Move down"
           data-testid="move-down"
           :disabled="!canMoveDown(l.id)"
           @click="$emit('move-down', l.id)"
-        />
+        >
+          <ArrowDown />
+        </IconButton>
 
         <div @click.stop>
           <BaseCheckbox
@@ -147,7 +156,7 @@ const filteredLayers = computed(() => {
             title="Layer menu"
             @click="$emit('menu-open', l.id, $event)"
           >
-            ⋮
+            <EllipsisVertical class="size-3.5" />
           </button>
 
           <NavContextMenu

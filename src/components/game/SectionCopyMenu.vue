@@ -9,6 +9,7 @@ const openSectionId = ref<string | null>(null);
 // A section header's "copy this section from another build" control.
 import { onMounted, onUnmounted } from "vue";
 import IconButton from "../ui/IconButton.vue";
+import { Copy } from "@lucide/vue";
 import ComboBox from "../ui/ComboBox.vue";
 import BaseButton from "../ui/BaseButton.vue";
 
@@ -67,11 +68,12 @@ onUnmounted(() => document.removeEventListener("mousedown", onDocumentClick));
 <template>
   <div class="relative mr-0.5 flex-none">
     <IconButton
-      icon="copy"
       title="Copy this section from another build"
       class="section-copy-btn"
       @click="toggle"
-    />
+    >
+      <Copy />
+    </IconButton>
     <div
       v-if="isOpen()"
       class="copy-popover absolute right-full top-1/2 z-30 mr-1.5 flex -translate-y-1/2 items-center gap-1.5 whitespace-nowrap rounded-md border border-line bg-surface px-2 py-1.5 shadow-lg"

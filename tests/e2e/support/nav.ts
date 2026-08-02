@@ -39,22 +39,14 @@ export async function renameViaSidebar(page: Page, row: Locator, name: string) {
   await input.press("Enter");
 }
 
-/** Clicks the "+ New" button under the Builds section heading. */
+/** Clicks the "New" (plus-icon) button under the Builds section heading. */
 export async function addBuild(page: Page) {
-  await page
-    .locator("text=Builds")
-    .locator("..")
-    .getByRole("button", { name: "+ New" })
-    .click();
+  await page.getByTestId("nav-add-build").click();
 }
 
-/** Clicks the "+ New" button under the Customization Layers section heading. */
+/** Clicks the "New" (plus-icon) button under the Customization Layers section heading. */
 export async function addLayer(page: Page) {
-  await page
-    .locator("text=Customization Layers")
-    .locator("..")
-    .getByRole("button", { name: "+ New" })
-    .click();
+  await page.getByTestId("nav-add-layer").click();
 }
 
 /** Enters a filter string in the Builds filter box. */

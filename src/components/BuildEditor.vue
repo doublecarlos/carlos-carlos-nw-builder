@@ -10,6 +10,7 @@ import BasePopover from "./ui/BasePopover.vue";
 import BuildSection from "./game/BuildSection.vue";
 import BuildSlot from "./game/BuildSlot.vue";
 import BaseButton from "./ui/BaseButton.vue";
+import { ChevronsDownUp, ChevronsUpDown } from "@lucide/vue";
 import { NW_SCHEMA, NW_SLOTS } from "../data/data";
 import { abbr, signedStat } from "../lib/format";
 import { useHoverCard } from "../composables/useHoverCard";
@@ -357,9 +358,11 @@ function onFocusIn(event: FocusEvent) {
     @focusout="onFocusOut"
   >
     <div class="flex gap-1.5">
-      <BaseButton variant="link" @click="setAll(true)">expand all</BaseButton>
-      <BaseButton variant="link" @click="setAll(false)"
-        >collapse all</BaseButton
+      <BaseButton @click="setAll(true)"
+        ><ChevronsUpDown />expand all</BaseButton
+      >
+      <BaseButton @click="setAll(false)"
+        ><ChevronsDownUp />collapse all</BaseButton
       >
       <span class="flex-1"></span>
       <span class="text-sm text-muted"

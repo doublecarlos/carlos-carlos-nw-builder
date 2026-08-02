@@ -1,5 +1,10 @@
 import { ref, type Ref } from "vue";
-import { useEventListener, useTimeoutFn } from "@vueuse/core";
+import {
+  useEventListener,
+  useMagicKeys,
+  useTimeoutFn,
+  whenever,
+} from "@vueuse/core";
 import { isFormControl } from "./focus";
 import type BasePopover from "../components/ui/BasePopover.vue";
 
@@ -131,6 +136,9 @@ export function useHoverCard(
   }
 
   useEventListener(window, "scroll", onScroll, true);
+
+  const { escape } = useMagicKeys();
+  whenever(escape, () => close());
 
   return {
     hover,

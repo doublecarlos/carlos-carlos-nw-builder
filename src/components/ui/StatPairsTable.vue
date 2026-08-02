@@ -3,6 +3,7 @@
 // Ability scores, Enemy, Damage, Healing and EHP sections -- one component instead of the same
 // markup seven times over.
 import IconButton from "./IconButton.vue";
+import { CircleAlert } from "@lucide/vue";
 
 defineProps<{
   rows: {
@@ -31,12 +32,13 @@ defineProps<{
         >
           <IconButton
             v-if="row.onInfo"
-            icon="circle-alert"
             title="Show contributing sources"
             class="stat-info-btn flex-none"
             :data-stat-key="row.key"
             @click="row.onInfo"
-          />
+          >
+            <CircleAlert />
+          </IconButton>
           <span>{{ row.label }}</span>
         </td>
         <td

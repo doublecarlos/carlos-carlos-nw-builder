@@ -21,6 +21,14 @@ import BaseDrawer from "./ui/BaseDrawer.vue";
 import CodeBlock from "./ui/CodeBlock.vue";
 import TabStrip from "./ui/TabStrip.vue";
 import TabButton from "./ui/TabButton.vue";
+import {
+  CirclePlus,
+  Copy,
+  Download,
+  FilterX,
+  RotateCcw,
+  Upload,
+} from "@lucide/vue";
 import * as catalog from "../data/catalog";
 import * as router from "../lib/router";
 import * as engine from "../stores/resolved";
@@ -712,10 +720,10 @@ onUnmounted(() => {
       >
 
       <BaseButton :active="showExport" @click="showExport = !showExport"
-        >Export…</BaseButton
+        ><Download />Export…</BaseButton
       >
       <BaseButton as="label"
-        >Import overlay
+        ><Upload />Import overlay
         <input type="file" accept=".json" hidden @change="importOverlay"
       /></BaseButton>
       <BaseButton
@@ -723,6 +731,7 @@ onUnmounted(() => {
         :disabled="!changedCount"
         @click="resetAll"
       >
+        <RotateCcw />
         {{
           confirmReset_.isConfirming("reset")
             ? "Really discard?"
@@ -766,9 +775,9 @@ onUnmounted(() => {
           >
         </TabStrip>
         <span class="flex-1"></span>
-        <BaseButton @click="copyExport">Copy</BaseButton>
+        <BaseButton @click="copyExport"><Copy />Copy</BaseButton>
         <BaseButton @click="downloadExport"
-          >Download {{ exportName }}</BaseButton
+          ><Download />Download {{ exportName }}</BaseButton
         >
       </div>
       <CodeBlock :value="exportText" :rows="12" class="w-full" />
@@ -842,16 +851,21 @@ onUnmounted(() => {
             v-if="query || statusFilter !== 'all'"
             variant="link"
             @click="clearFilters"
-            >clear filters</BaseButton
+            ><FilterX />clear filters</BaseButton
           >
           <BaseButton
             v-if="section === 'bonusSets'"
             variant="primary"
+            data-testid="new-bonus-set"
             @click="newSet"
-            >+ New bonus set</BaseButton
+            ><CirclePlus />New bonus set</BaseButton
           >
-          <BaseButton v-else variant="primary" @click="newItem"
-            >+ New item</BaseButton
+          <BaseButton
+            v-else
+            variant="primary"
+            data-testid="new-item"
+            @click="newItem"
+            ><CirclePlus />New item</BaseButton
           >
         </div>
         <div class="min-h-0 flex-1 overflow-y-auto">
@@ -885,7 +899,7 @@ onUnmounted(() => {
               v-if="row.status === 'removed'"
               variant="link"
               @click.stop="restore(row)"
-              >restore</BaseButton
+              ><RotateCcw />restore</BaseButton
             >
             <span v-else class="text-sm text-muted">{{ row.filter }}</span>
           </div>

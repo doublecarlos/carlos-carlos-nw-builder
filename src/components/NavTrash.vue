@@ -1,6 +1,13 @@
 <script setup lang="ts">
 // Recently-deleted section inside the left sidebar. Pure presentation.
 import NavContextMenu from "./NavContextMenu.vue";
+import {
+  ChevronDown,
+  ChevronRight,
+  EllipsisVertical,
+  RotateCcw,
+} from "@lucide/vue";
+import type { Component } from "vue";
 import type { TrashEntry } from "../types";
 
 defineProps<{
@@ -10,6 +17,8 @@ defineProps<{
   menuItems: {
     action: string;
     label: string;
+    /** Lucide component rendered left of the label. */
+    icon?: Component;
     danger?: boolean;
     disabled?: boolean;
   }[];
@@ -33,8 +42,12 @@ defineEmits<{
       class="flex cursor-pointer select-none items-center justify-between px-1 py-0.5"
       @click="$emit('toggle-expand')"
     >
-      <span class="text-xs font-semibold uppercase text-muted">
-        {{ expanded ? "▾" : "▸" }} Recently deleted ({{ entries.length }})
+      <span
+        class="inline-flex items-center gap-1 text-xs font-semibold uppercase text-muted"
+      >
+        <ChevronDown v-if="expanded" class="size-3.5" />
+        <ChevronRight v-else class="size-3.5" />
+        Recently deleted ({{ entries.length }})
       </span>
     </div>
 
@@ -56,9 +69,10 @@ defineEmits<{
 
         <button
           type="button"
-          class="flex-none cursor-pointer rounded-md px-1 py-0.5 text-xs text-accent hover:bg-accent-soft"
+          class="inline-flex cursor-pointer items-center gap-1 rounded-md px-1 py-0.5 text-xs text-accent hover:bg-accent-soft"
           @click="$emit('restore', entry)"
         >
+          <RotateCcw class="size-3.5" />
           Restore
         </button>
         <div class="nav-menu-wrap relative">
@@ -70,7 +84,7 @@ defineEmits<{
               $emit('menu-open', `${entry.kind}_${entry.item.id}`, $event)
             "
           >
-            ⋮
+            <EllipsisVertical class="size-3.5" />
           </button>
 
           <NavContextMenu

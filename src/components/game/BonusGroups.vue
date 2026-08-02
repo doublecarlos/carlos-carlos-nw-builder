@@ -18,6 +18,7 @@ import { ref, computed } from "vue";
 import BonusSetForm from "./BonusSetForm.vue";
 import ComboBox from "../ui/ComboBox.vue";
 import IconButton from "../ui/IconButton.vue";
+import { CirclePlus } from "@lucide/vue";
 import BaseButton from "../ui/BaseButton.vue";
 import BaseBadge from "../ui/BaseBadge.vue";
 import FormSection from "../ui/FormSection.vue";
@@ -151,7 +152,9 @@ function onSlotDelete(slot: Slot) {
   <div>
     <FormSection>
       Bonuses
-      <IconButton icon="circle-plus" title="Add bonus" @click="addBonus" />
+      <IconButton title="Add bonus" @click="addBonus"
+        ><CirclePlus
+      /></IconButton>
       <span v-if="attachable.length" class="inline-flex items-center gap-1.5">
         or
         <ComboBox

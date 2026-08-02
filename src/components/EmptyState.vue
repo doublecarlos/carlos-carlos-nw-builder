@@ -1,6 +1,7 @@
 <script setup lang="ts">
 // Centered empty state: shown when there are no builds and no layers.
 import { useTemplateRef } from "vue";
+import { Plus, Upload } from "@lucide/vue";
 import * as builds from "../stores/builds";
 import * as layers from "../stores/layers";
 
@@ -41,18 +42,20 @@ async function onImportFile(event: Event) {
       <div class="flex gap-3">
         <button
           type="button"
-          class="cursor-pointer rounded-md bg-accent-soft px-4 py-2 font-semibold text-accent hover:bg-accent-soft/80"
+          class="inline-flex cursor-pointer items-center gap-1.5 rounded-md bg-accent-soft px-4 py-2 font-semibold text-accent hover:bg-accent-soft/80"
           data-testid="empty-new-build"
           @click="builds.createBuild()"
         >
-          + New build
+          <Plus class="size-3.5" />
+          New build
         </button>
         <button
           type="button"
-          class="cursor-pointer rounded-md border border-line bg-surface px-4 py-2 hover:bg-surface-2"
+          class="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-line bg-surface px-4 py-2 hover:bg-surface-2"
           data-testid="empty-import"
           @click="triggerImport"
         >
+          <Upload class="size-3.5" />
           Import…
         </button>
         <input

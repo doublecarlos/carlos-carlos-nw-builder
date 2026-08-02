@@ -1,9 +1,16 @@
 <script setup lang="ts">
 // Build list section inside the left sidebar. Pure presentation — actions, menu items,
 // and rename state are provided by the parent (Nav.vue).
-import { computed, type Directive } from "vue";
+import { computed, type Component, type Directive } from "vue";
 import BaseButton from "./ui/BaseButton.vue";
 import IconButton from "./ui/IconButton.vue";
+import {
+  ArrowDown,
+  ArrowUp,
+  EllipsisVertical,
+  Plus,
+  Upload,
+} from "@lucide/vue";
 import NavContextMenu from "./NavContextMenu.vue";
 import type { Build } from "../types";
 
@@ -26,6 +33,8 @@ const props = defineProps<{
   menuItems: {
     action: string;
     label: string;
+    /** Lucide component rendered left of the label. */
+    icon?: Component;
     danger?: boolean;
     disabled?: boolean;
   }[];
@@ -63,8 +72,10 @@ const filteredBuilds = computed(() => {
     <div class="mb-1 flex items-center justify-between px-1 py-0.5">
       <span class="text-xs font-semibold uppercase text-muted">Builds</span>
       <div class="flex items-center gap-1">
-        <BaseButton variant="link" @click="$emit('import')">Import</BaseButton>
-        <BaseButton variant="link" @click="$emit('create')">+ New</BaseButton>
+        <BaseButton @click="$emit('import')"><Upload />Import</BaseButton>
+        <BaseButton data-testid="nav-add-build" @click="$emit('create')"
+          ><Plus />New</BaseButton
+        >
       </div>
     </div>
 
@@ -84,19 +95,21 @@ const filteredBuilds = computed(() => {
         :class="selectedId === b.id && 'is-active bg-accent-soft'"
       >
         <IconButton
-          icon="arrow-up"
           title="Move up"
           data-testid="move-up"
           :disabled="!canMoveUp(b.id)"
           @click="$emit('move-up', b.id)"
-        />
+        >
+          <ArrowUp />
+        </IconButton>
         <IconButton
-          icon="arrow-down"
           title="Move down"
           data-testid="move-down"
           :disabled="!canMoveDown(b.id)"
           @click="$emit('move-down', b.id)"
-        />
+        >
+          <ArrowDown />
+        </IconButton>
 
         <input
           v-if="renamingId === b.id"
@@ -132,7 +145,7 @@ const filteredBuilds = computed(() => {
             title="Build menu"
             @click="$emit('menu-open', b.id, $event)"
           >
-            ⋮
+            <EllipsisVertical class="size-3.5" />
           </button>
 
           <NavContextMenu

@@ -3,8 +3,10 @@
 import { ref, useTemplateRef } from "vue";
 import ThemeToggle from "./ui/ThemeToggle.vue";
 import HistoryButton from "./ui/HistoryButton.vue";
+import BaseButton from "./ui/BaseButton.vue";
 import BaseNotice from "./ui/BaseNotice.vue";
 import BundleExport from "./BundleExport.vue";
+import { Download, Upload } from "@lucide/vue";
 import { useUndoRedoKeys } from "../composables/useUndoRedoKeys";
 import * as builds from "../stores/builds";
 import * as layers from "../stores/layers";
@@ -48,31 +50,22 @@ async function onImportFile(event: Event) {
 
 <template>
   <header
-    class="flex h-10 items-center gap-3 border-b border-line bg-surface px-3.5 text-sm"
+    class="flex items-center gap-3 border-b border-line bg-surface px-2 py-2 text-sm"
     data-testid="app-header"
   >
     <h1 class="text-base font-semibold tracking-wide whitespace-nowrap">
       Neverwinter build planner
     </h1>
 
-    <button
-      type="button"
-      class="cursor-pointer text-muted hover:text-text"
-      data-testid="header-export-bundle"
-      @click="triggerExportBundle"
+    <BaseButton data-testid="header-export-bundle" @click="triggerExportBundle"
+      ><Download />Export</BaseButton
     >
-      Export bundle…
-    </button>
     <BundleExport v-if="showBundleExport" @close="showBundleExport = false" />
 
-    <button
-      type="button"
-      class="cursor-pointer text-muted hover:text-text"
-      data-testid="header-import"
-      @click="triggerImport"
+    <BaseButton data-testid="header-import" @click="triggerImport"
+      ><Upload />Import</BaseButton
     >
-      Import…
-    </button>
+
     <input
       ref="importFileInput"
       type="file"
@@ -80,6 +73,21 @@ async function onImportFile(event: Event) {
       class="hidden"
       @change="onImportFile"
     />
+
+    <span class="h-4 w-px bg-line" />
+
+    <span class="ml-auto">
+      <BaseNotice
+        v-if="notice"
+        class="inline-block max-w-80 overflow-hidden text-ellipsis whitespace-nowrap"
+        :title="notice"
+        @dismiss="showNotice('')"
+      >
+        {{ notice }}
+      </BaseNotice>
+    </span>
+
+    <span class="flex-1"></span>
 
     <span class="h-4 w-px bg-line" />
 
@@ -106,17 +114,6 @@ async function onImportFile(event: Event) {
 
     <span class="h-4 w-px bg-line" />
 
-    <ThemeToggle />
-
-    <span class="ml-auto">
-      <BaseNotice
-        v-if="notice"
-        class="inline-block max-w-80 overflow-hidden text-ellipsis whitespace-nowrap"
-        :title="notice"
-        @dismiss="showNotice('')"
-      >
-        {{ notice }}
-      </BaseNotice>
-    </span>
+    <ThemeToggle class="w-30 justify-center" />
   </header>
 </template>

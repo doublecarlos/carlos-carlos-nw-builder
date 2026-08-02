@@ -12,20 +12,16 @@ import {
 
 const HEAD_ITEM = "M29 Enchanted Depthweave Cap (CA)";
 
-test("Undo/redo carry a label naming the step, and walk the history back and forth", async ({
-  page,
-}) => {
+test("Undo/redo walk the history back and forth", async ({ page }) => {
   await openBuilder(page);
   await expect(undoButton(page)).toBeDisabled();
 
   await chooseItem(page, "gear.head", HEAD_ITEM);
-  await expect(undoButton(page)).toContainText(HEAD_ITEM);
   await expect(undoButton(page)).toBeEnabled();
 
   await undoButton(page).click();
   await expect(pickerInput(slotRow(page, "gear.head"))).toHaveValue("");
   await expect(undoButton(page)).toBeDisabled();
-  await expect(redoButton(page)).toContainText(HEAD_ITEM);
 
   await redoButton(page).click();
   await expect(pickerInput(slotRow(page, "gear.head"))).toHaveValue(HEAD_ITEM);

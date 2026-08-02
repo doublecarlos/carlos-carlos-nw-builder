@@ -12,6 +12,7 @@ import PercentInput from "../ui/PercentInput.vue";
 import ComboBox from "../ui/ComboBox.vue";
 import ConditionRows from "./ConditionRows.vue";
 import IconButton from "../ui/IconButton.vue";
+import { ArrowDown, ArrowUp, CirclePlus, Copy, Plus, Trash } from "@lucide/vue";
 import BaseButton from "../ui/BaseButton.vue";
 import FormSection from "../ui/FormSection.vue";
 import { NW_SCHEMA } from "../../data/data";
@@ -91,27 +92,38 @@ function toggleJson(gIndex: number) {
           {{ grant.mode === "json" ? "use the form" : "edit as JSON" }}
         </BaseButton>
         <span class="flex-1"></span>
-        <BaseButton
-          variant="link"
+        <IconButton
+          title="Move grant up"
           :disabled="gIndex === 0"
           @click="props.store.moveGrant(gIndex, -1)"
-          >move up</BaseButton
         >
-        <BaseButton
-          variant="link"
+          <ArrowUp />
+        </IconButton>
+        <IconButton
+          title="Move grant down"
           :disabled="gIndex === props.store.grants.length - 1"
           @click="props.store.moveGrant(gIndex, 1)"
-          >move down</BaseButton
         >
-        <BaseButton variant="link" @click="props.store.duplicateGrant(gIndex)"
-          >duplicate</BaseButton
+          <ArrowDown />
+        </IconButton>
+        <IconButton
+          title="Duplicate grant"
+          @click="props.store.duplicateGrant(gIndex)"
         >
-        <BaseButton variant="link" @click="props.store.insertGrant(gIndex)"
-          >insert below</BaseButton
+          <Copy />
+        </IconButton>
+        <IconButton
+          title="Insert grant below"
+          @click="props.store.insertGrant(gIndex)"
         >
-        <BaseButton variant="link" @click="props.store.removeGrant(gIndex)"
-          >remove</BaseButton
+          <CirclePlus />
+        </IconButton>
+        <IconButton
+          title="Remove grant"
+          @click="props.store.removeGrant(gIndex)"
         >
+          <Trash />
+        </IconButton>
       </div>
 
       <textarea
@@ -179,16 +191,14 @@ function toggleJson(gIndex: number) {
             :key="sIndex"
             class="stat-row flex flex-wrap items-center gap-1.5 mb-1"
           >
+            <IconButton title="Add stat" @click="gs(gIndex).addStat()"
+              ><Plus
+            /></IconButton>
             <IconButton
-              icon="plus"
-              title="Add stat"
-              @click="gs(gIndex).addStat()"
-            />
-            <IconButton
-              icon="trash"
               title="Remove stat"
               @click="gs(gIndex).removeStat(sIndex)"
-            />
+              ><Trash
+            /></IconButton>
             <ComboBox
               class="combo--stat w-52"
               :model-value="stat.key"
@@ -215,11 +225,9 @@ function toggleJson(gIndex: number) {
             v-if="!grant.stats.length"
             class="stat-row flex flex-wrap items-center gap-1.5 mb-1"
           >
-            <IconButton
-              icon="plus"
-              title="Add stat"
-              @click="gs(gIndex).addStat()"
-            />
+            <IconButton title="Add stat" @click="gs(gIndex).addStat()"
+              ><Plus
+            /></IconButton>
           </div>
         </template>
 
@@ -241,32 +249,32 @@ function toggleJson(gIndex: number) {
           >
             <div class="mb-1 flex flex-wrap items-center gap-1.5">
               <IconButton
-                icon="arrow-up"
                 title="Move tier up"
                 :disabled="tIndex === 0"
                 @click="gs(gIndex).moveTier(tIndex, -1)"
-              />
+                ><ArrowUp
+              /></IconButton>
               <IconButton
-                icon="arrow-down"
                 title="Move tier down"
                 :disabled="tIndex === grant.tiers.length - 1"
                 @click="gs(gIndex).moveTier(tIndex, 1)"
-              />
+                ><ArrowDown
+              /></IconButton>
               <IconButton
-                icon="copy"
                 title="Duplicate tier"
                 @click="gs(gIndex).duplicateTier(tIndex)"
-              />
+                ><Copy
+              /></IconButton>
               <IconButton
-                icon="circle-plus"
                 title="Insert tier"
                 @click="gs(gIndex).insertTier(tIndex)"
-              />
+                ><CirclePlus
+              /></IconButton>
               <IconButton
-                icon="trash"
                 title="Remove tier"
                 @click="gs(gIndex).removeTier(tIndex)"
-              />
+                ><Trash
+              /></IconButton>
               <ComboBox
                 class="combo--set w-44"
                 :model-value="tier.set"
@@ -287,16 +295,14 @@ function toggleJson(gIndex: number) {
               :key="sIndex"
               class="stat-row flex flex-wrap items-center gap-1.5 mb-1"
             >
+              <IconButton title="Add stat" @click="gs(gIndex).addStat()"
+                ><Plus
+              /></IconButton>
               <IconButton
-                icon="plus"
-                title="Add stat"
-                @click="gs(gIndex).addStat()"
-              />
-              <IconButton
-                icon="trash"
                 title="Remove stat"
                 @click="gs(gIndex).removeStat(sIndex)"
-              />
+                ><Trash
+              /></IconButton>
               <ComboBox
                 class="combo--stat w-52"
                 :model-value="stat.key"
@@ -320,19 +326,17 @@ function toggleJson(gIndex: number) {
               />
             </div>
             <div v-if="!tier.stats.length" class="mt-1 flex flex-wrap gap-1">
-              <IconButton
-                icon="plus"
-                title="Add stat"
-                @click="gs(gIndex).addStat()"
-              />
+              <IconButton title="Add stat" @click="gs(gIndex).addStat()"
+                ><Plus
+              /></IconButton>
             </div>
           </div>
           <IconButton
             v-if="!grant.tiers.length"
-            icon="circle-plus"
             title="Add tier"
             @click="gs(gIndex).addTier()"
-          />
+            ><CirclePlus
+          /></IconButton>
         </template>
 
         <!-- variant payload -->
@@ -350,33 +354,38 @@ function toggleJson(gIndex: number) {
             <div class="mb-1 flex flex-wrap items-center gap-1.5">
               <span class="text-sm text-muted">Variant {{ vIndex + 1 }}</span>
               <span class="flex-1"></span>
-              <BaseButton
-                variant="link"
+              <IconButton
+                title="Move variant up"
                 :disabled="vIndex === 0"
                 @click="gs(gIndex).moveVariant(vIndex, -1)"
-                >move up</BaseButton
               >
-              <BaseButton
-                variant="link"
+                <ArrowUp />
+              </IconButton>
+              <IconButton
+                title="Move variant down"
                 :disabled="vIndex === grant.variants.length - 1"
                 @click="gs(gIndex).moveVariant(vIndex, 1)"
-                >move down</BaseButton
               >
-              <BaseButton
-                variant="link"
+                <ArrowDown />
+              </IconButton>
+              <IconButton
+                title="Duplicate variant"
                 @click="gs(gIndex).duplicateVariant(vIndex)"
-                >duplicate</BaseButton
               >
-              <BaseButton
-                variant="link"
+                <Copy />
+              </IconButton>
+              <IconButton
+                title="Insert variant"
                 @click="gs(gIndex).insertVariant(vIndex)"
-                >insert below</BaseButton
               >
-              <BaseButton
-                variant="link"
+                <CirclePlus />
+              </IconButton>
+              <IconButton
+                title="Remove variant"
                 @click="gs(gIndex).removeVariant(vIndex)"
-                >remove variant</BaseButton
               >
+                <Trash />
+              </IconButton>
             </div>
             <FormSection sub>When</FormSection>
             <ConditionRows
@@ -394,16 +403,14 @@ function toggleJson(gIndex: number) {
               :key="sIndex"
               class="stat-row flex flex-wrap items-center gap-1.5 mb-1"
             >
+              <IconButton title="Add stat" @click="gs(gIndex).addStat()"
+                ><Plus
+              /></IconButton>
               <IconButton
-                icon="plus"
-                title="Add stat"
-                @click="gs(gIndex).addStat()"
-              />
-              <IconButton
-                icon="trash"
                 title="Remove stat"
                 @click="gs(gIndex).removeStat(sIndex)"
-              />
+                ><Trash
+              /></IconButton>
               <ComboBox
                 class="combo--stat w-52"
                 :model-value="stat.key"
@@ -430,15 +437,16 @@ function toggleJson(gIndex: number) {
               v-if="!variant.stats.length"
               class="stat-row flex flex-wrap items-center gap-1.5 mb-1"
             >
-              <IconButton
-                icon="plus"
-                title="Add stat"
-                @click="gs(gIndex).addStat()"
-              />
+              <IconButton title="Add stat" @click="gs(gIndex).addStat()"
+                ><Plus
+              /></IconButton>
             </div>
           </div>
-          <BaseButton variant="link" @click="gs(gIndex).addVariant()"
-            >+ add variant</BaseButton
+          <BaseButton
+            variant="link"
+            data-testid="add-variant"
+            @click="gs(gIndex).addVariant()"
+            ><CirclePlus />add variant</BaseButton
           >
         </template>
       </template>

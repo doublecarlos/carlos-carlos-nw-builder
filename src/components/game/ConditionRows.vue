@@ -8,6 +8,17 @@
 import { computed } from "vue";
 import ComboBox from "../ui/ComboBox.vue";
 import IconButton from "../ui/IconButton.vue";
+import {
+  Ampersand,
+  ArrowDown,
+  ArrowUp,
+  CircleAlert,
+  CirclePlus,
+  Copy,
+  Plus,
+  Split,
+  Trash,
+} from "@lucide/vue";
 import FormField from "../ui/FormField.vue";
 import { NW_SLOTS } from "../../data/data";
 import {
@@ -242,43 +253,42 @@ function changeParamKey(row: ConditionRow, key: string) {
         v-if="row.kind === 'leaf'"
         class="flex flex-wrap items-center gap-1.5"
       >
+        <IconButton title="Move up" :disabled="i === 0" @click="moveRow(i, -1)"
+          ><ArrowUp
+        /></IconButton>
         <IconButton
-          icon="arrow-up"
-          title="Move up"
-          :disabled="i === 0"
-          @click="moveRow(i, -1)"
-        />
-        <IconButton
-          icon="arrow-down"
           title="Move down"
           :disabled="i === rows.length - 1"
           @click="moveRow(i, 1)"
-        />
-        <IconButton icon="copy" title="Duplicate" @click="duplicateRow(i)" />
-        <IconButton icon="plus" title="Add condition" @click="insertLeaf(i)" />
+          ><ArrowDown
+        /></IconButton>
+        <IconButton title="Duplicate" @click="duplicateRow(i)"
+          ><Copy
+        /></IconButton>
+        <IconButton title="Add condition" @click="insertLeaf(i)"
+          ><Plus
+        /></IconButton>
         <IconButton
           v-if="canNest"
-          icon="ampersand"
           title='Add "All of" condition group'
           @click="addGroup('all', i)"
-        />
+          ><Ampersand
+        /></IconButton>
         <IconButton
           v-if="canNest"
-          icon="split"
           title='Add "Any of" condition group'
           @click="addGroup('any', i)"
-        />
+          ><Split
+        /></IconButton>
         <IconButton
           v-if="canNest"
-          icon="circle-alert"
           title='Add "Not" condition group'
           @click="addGroup('not', i)"
-        />
-        <IconButton
-          icon="trash"
-          title="Remove condition"
-          @click="removeRow(i)"
-        />
+          ><CircleAlert
+        /></IconButton>
+        <IconButton title="Remove condition" @click="removeRow(i)"
+          ><Trash
+        /></IconButton>
 
         <FormField label="Condition" class="min-w-0">
           <ComboBox
@@ -438,43 +448,42 @@ function changeParamKey(row: ConditionRow, key: string) {
       </div>
 
       <div v-else class="flex flex-wrap items-center gap-1.5 mb-1">
+        <IconButton title="Move up" :disabled="i === 0" @click="moveRow(i, -1)"
+          ><ArrowUp
+        /></IconButton>
         <IconButton
-          icon="arrow-up"
-          title="Move up"
-          :disabled="i === 0"
-          @click="moveRow(i, -1)"
-        />
-        <IconButton
-          icon="arrow-down"
           title="Move down"
           :disabled="i === rows.length - 1"
           @click="moveRow(i, 1)"
-        />
-        <IconButton icon="copy" title="Duplicate" @click="duplicateRow(i)" />
-        <IconButton icon="plus" title="Add condition" @click="insertLeaf(i)" />
+          ><ArrowDown
+        /></IconButton>
+        <IconButton title="Duplicate" @click="duplicateRow(i)"
+          ><Copy
+        /></IconButton>
+        <IconButton title="Add condition" @click="insertLeaf(i)"
+          ><Plus
+        /></IconButton>
         <IconButton
           v-if="canNest"
-          icon="ampersand"
           title='Add "All of" condition group'
           @click="addGroup('all', i)"
-        />
+          ><Ampersand
+        /></IconButton>
         <IconButton
           v-if="canNest"
-          icon="split"
           title='Add "Any of" condition group'
           @click="addGroup('any', i)"
-        />
+          ><Split
+        /></IconButton>
         <IconButton
           v-if="canNest"
-          icon="circle-alert"
           title='Add "Not" condition group'
           @click="addGroup('not', i)"
-        />
-        <IconButton
-          icon="trash"
-          title="Remove condition"
-          @click="removeRow(i)"
-        />
+          ><CircleAlert
+        /></IconButton>
+        <IconButton title="Remove condition" @click="removeRow(i)"
+          ><Trash
+        /></IconButton>
 
         <!-- A condition tree can sit on either a plain or already-recessed background
              depending where it's embedded, so the fill mixes in the current text colour at
@@ -509,33 +518,31 @@ function changeParamKey(row: ConditionRow, key: string) {
               >
                 <span class="text-sm text-muted">Branch: </span>
                 <IconButton
-                  icon="arrow-up"
                   title="Move branch up"
                   :disabled="bi === 0"
                   @click="moveBranch(row, bi, -1)"
-                />
+                  ><ArrowUp
+                /></IconButton>
                 <IconButton
-                  icon="arrow-down"
                   title="Move branch down"
                   :disabled="bi === (row.branches ?? []).length - 1"
                   @click="moveBranch(row, bi, 1)"
-                />
+                  ><ArrowDown
+                /></IconButton>
                 <IconButton
-                  icon="copy"
                   title="Duplicate branch"
                   @click="duplicateBranch(row, bi)"
-                />
-                <IconButton
-                  icon="circle-plus"
-                  title="Insert branch"
-                  @click="insertBranch(row, bi)"
-                />
+                  ><Copy
+                /></IconButton>
+                <IconButton title="Insert branch" @click="insertBranch(row, bi)"
+                  ><CirclePlus
+                /></IconButton>
                 <IconButton
                   v-if="(row.branches ?? []).length > 1"
-                  icon="trash"
                   title="Remove branch"
                   @click="removeBranch(row, bi)"
-                />
+                  ><Trash
+                /></IconButton>
               </div>
             </div>
           </div>
@@ -544,23 +551,21 @@ function changeParamKey(row: ConditionRow, key: string) {
     </div>
 
     <div v-if="!rows.length" class="mt-1 flex flex-wrap gap-1">
-      <IconButton icon="plus" title="Add condition" @click="addLeaf" />
+      <IconButton title="Add condition" @click="addLeaf"><Plus /></IconButton>
       <template v-if="canNest">
         <IconButton
-          icon="ampersand"
           title='Add "All of" condition group'
           @click="addGroup('all')"
-        />
+          ><Ampersand
+        /></IconButton>
         <IconButton
-          icon="split"
           title='Add "Any of" condition group'
           @click="addGroup('any')"
-        />
-        <IconButton
-          icon="circle-alert"
-          title='Add "Not" condition group'
-          @click="addGroup('not')"
-        />
+          ><Split
+        /></IconButton>
+        <IconButton title='Add "Not" condition group' @click="addGroup('not')"
+          ><CircleAlert
+        /></IconButton>
       </template>
     </div>
   </div>

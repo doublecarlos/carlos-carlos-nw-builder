@@ -16,7 +16,7 @@ test("disable layer → missing marker → re-enable restores the item", async (
 
   // Create a brand-new item in the layer with a unique name.
   await layer.locator(".nav-name").click();
-  await page.getByRole("button", { name: "+ New item" }).click();
+  await page.getByTestId("new-item").click();
   await page.getByTestId("item-name-input").fill(UNIQUE_ITEM);
 
   // Also set the filter so it appears in the Head slot's picker.

@@ -9,6 +9,9 @@ import * as storage from "../storage/storage";
 import { db } from "../stores/resolved";
 import * as catalog from "../data/catalog";
 import { showNotice } from "../stores/notice";
+import { Download } from "@lucide/vue";
+import BaseButton from "./ui/BaseButton.vue";
+import { useMagicKeys, whenever } from "@vueuse/core";
 
 const emit = defineEmits<{
   close: [];
@@ -162,6 +165,9 @@ function selectAllBuilds() {
 function selectAllLayers() {
   selectedLayerIds.value = new Set(layers.layers.value.map((l) => l.id));
 }
+
+const { escape } = useMagicKeys();
+whenever(escape, () => emit("close"));
 </script>
 
 <template>
@@ -283,21 +289,15 @@ function selectAllLayers() {
 
       <!-- Footer -->
       <div class="flex justify-end gap-2 border-t border-line px-4 py-3">
-        <button
-          type="button"
-          class="cursor-pointer rounded-md border border-line px-3 py-1 text-sm hover:bg-surface-2"
-          @click="emit('close')"
-        >
-          Cancel
-        </button>
-        <button
-          type="button"
-          class="cursor-pointer rounded-md bg-accent px-3 py-1 text-sm text-white hover:brightness-110"
+        <BaseButton @click="emit('close')"> Cancel </BaseButton>
+        <BaseButton
           data-testid="bundle-export-button"
+          variant="primary"
           @click="exportBundle"
         >
+          <Download />
           Export
-        </button>
+        </BaseButton>
       </div>
     </div>
   </div>

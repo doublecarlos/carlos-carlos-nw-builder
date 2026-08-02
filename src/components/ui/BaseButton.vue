@@ -3,7 +3,6 @@
 // vocabulary. `as="label"` covers the one spot (DataEditor's file-picker) that needs button
 // chrome around a native `<label>` instead of a `<button>`.
 import { computed } from "vue";
-import BaseIcon from "./BaseIcon.vue";
 
 const props = withDefaults(
   defineProps<{
@@ -12,7 +11,6 @@ const props = withDefaults(
     active?: boolean;
     danger?: boolean;
     disabled?: boolean;
-    icon?: string;
   }>(),
   {
     as: "button",
@@ -20,14 +18,13 @@ const props = withDefaults(
     active: false,
     danger: false,
     disabled: false,
-    icon: "",
   },
 );
 
 const classes = computed(() => {
   if (props.variant === "link") {
     return [
-      "bg-transparent border-0 cursor-pointer px-1 py-0.5",
+      "[&_svg]:size-3.5 bg-transparent border-0 cursor-pointer px-1 py-0.5",
       props.disabled && "text-muted cursor-default",
     ];
   }
@@ -38,7 +35,7 @@ const classes = computed(() => {
     tone = "bg-accent-soft border-accent";
 
   return [
-    "inline-flex items-center gap-1 rounded-md border cursor-pointer px-2.5 py-1",
+    "[&_svg]:size-3.5 inline-flex items-center gap-1 rounded-md border cursor-pointer px-2.5 py-1",
     "disabled:cursor-default disabled:opacity-45",
     tone,
     props.variant === "primary" && "font-semibold",
@@ -52,7 +49,6 @@ const classes = computed(() => {
     v-bind="as === 'button' ? { type: 'button', disabled } : {}"
     :class="classes"
   >
-    <BaseIcon v-if="icon !== ''" :name="icon"></BaseIcon>
     <slot />
   </component>
 </template>

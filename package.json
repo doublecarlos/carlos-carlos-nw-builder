@@ -28,6 +28,7 @@
   },
   "homepage": "https://github.com/doublecarlos/yet-another-nw-builder#readme",
   "dependencies": {
+    "@lucide/vue": "^1.28.0",
     "@vueuse/core": "^14.4.0",
     "vue": "^3.5.40"
   },

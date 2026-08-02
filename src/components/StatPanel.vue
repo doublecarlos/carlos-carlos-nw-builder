@@ -10,6 +10,7 @@ import { onClickOutside } from "@vueuse/core";
 import ComboBox from "./ui/ComboBox.vue";
 import BaseCheckbox from "./ui/BaseCheckbox.vue";
 import IconButton from "./ui/IconButton.vue";
+import { CircleAlert } from "@lucide/vue";
 import StatSourceCard from "./game/StatSourceCard.vue";
 import BasePopover from "./ui/BasePopover.vue";
 import BasePanel from "./ui/BasePanel.vue";
@@ -512,12 +513,13 @@ onClickOutside(root, () => closeCard(), {
         >
           <td class="flex items-center gap-0.5 border border-line px-1 py-0.5">
             <IconButton
-              icon="circle-alert"
               title="Show contributing sources"
               class="stat-info-btn flex-none"
               :data-stat-key="row.key"
               @click="toggleCard($event, row.key)"
-            />
+            >
+              <CircleAlert />
+            </IconButton>
             <span>{{ row.label }}</span>
           </td>
           <td
