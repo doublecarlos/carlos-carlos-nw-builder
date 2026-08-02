@@ -74,10 +74,10 @@
   }
 
   /* Every scrollable region in this app (build-nav, itemcard, editor lists/forms, picker menus)
-  * manages its own overflow explicitly. */
+  * manages its own vertical overflow explicitly. */
   html,
   body {
-    overflow-x: clip;
+    overflow-y: clip;
   }
 
   input[type="number"] {
