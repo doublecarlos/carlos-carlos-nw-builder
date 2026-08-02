@@ -92,10 +92,7 @@ test("Move up reorders the build list", async ({ page }) => {
   await expect(buildRow(page, "Build 2")).toBeVisible();
 
   // Move Build 2 up so it comes first.
-  {
-    const menu = await openRowMenu(buildRow(page, "Build 2"));
-    await moveUp(menu);
-  }
+  await moveUp(buildRow(page, "Build 2"));
 
   // After move-up, Build 2 should be the first row.
   const buildRows = page.locator(".nav-row--build");
@@ -107,10 +104,7 @@ test("Move up order survives a reload", async ({ page }) => {
   await openBuilder(page);
   await addBuild(page);
 
-  {
-    const menu = await openRowMenu(buildRow(page, "Build 2"));
-    await moveUp(menu);
-  }
+  await moveUp(buildRow(page, "Build 2"));
 
   // Wait for IDB write to complete before reload.
   // eslint-disable-next-line playwright/no-wait-for-timeout -- No DOM event to observe for IDB flush
@@ -126,8 +120,7 @@ test("Move up order survives a reload", async ({ page }) => {
 
 test("Move down is disabled for the last build", async ({ page }) => {
   await openBuilder(page);
-  const menu = await openRowMenu(buildRow(page, "Build 1"));
-  const down = menu.getByRole("button", { name: "Move down" });
+  const down = buildRow(page, "Build 1").getByTestId("move-down");
   await expect(down).toBeDisabled();
 });
 
@@ -262,15 +255,12 @@ test("Move up reorders layers and Move down is disabled at the ends", async ({
 
   // Move up should be disabled for the first layer.
   {
-    const menu = await openRowMenu(layerRow(page, "Layer 1"));
-    await expect(menu.getByRole("button", { name: "Move up" })).toBeDisabled();
+    const up = layerRow(page, "Layer 1").getByTestId("move-up");
+    await expect(up).toBeDisabled();
   }
 
   // Move up on Layer 2 so it becomes first.
-  {
-    const menu = await openRowMenu(layerRow(page, "Layer 2"));
-    await moveUp(menu);
-  }
+  await moveUp(layerRow(page, "Layer 2"));
 
   const layerRows = page.locator(".nav-row--layer");
   const firstText = await layerRows.nth(0).textContent();

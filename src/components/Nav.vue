@@ -127,11 +127,9 @@ function resetBuild(id: string) {
 }
 async function moveBuildUp(id: string) {
   await builds.moveBuild(id, -1);
-  closeMenu();
 }
 async function moveBuildDown(id: string) {
   await builds.moveBuild(id, 1);
-  closeMenu();
 }
 function revertBuild(id: string) {
   builds.revertToDownloaded(id);
@@ -157,11 +155,9 @@ function toggleLayerEnabled(id: string) {
 
 async function moveLayerUp(id: string) {
   await layers.moveLayer(id, -1);
-  closeMenu();
 }
 async function moveLayerDown(id: string) {
   await layers.moveLayer(id, 1);
-  closeMenu();
 }
 function duplicateLayerRow(id: string) {
   layers.duplicateLayer(id);
@@ -235,12 +231,6 @@ function purgeTrash(entry: TrashEntry) {
 
 const buildMenuItems = (id: string) => [
   { action: "rename", label: "Rename" },
-  { action: "moveUp", label: "Move up", disabled: buildIndex(id) === 0 },
-  {
-    action: "moveDown",
-    label: "Move down",
-    disabled: buildIndex(id) === builds.builds.value.length - 1,
-  },
   { action: "duplicate", label: "Duplicate" },
   { action: "download", label: "Download…" },
   {
@@ -263,12 +253,6 @@ const buildMenuItems = (id: string) => [
 
 const layerMenuItems = (id: string) => [
   { action: "rename", label: "Rename" },
-  { action: "moveUp", label: "Move up", disabled: layerIndex(id) === 0 },
-  {
-    action: "moveDown",
-    label: "Move down",
-    disabled: layerIndex(id) === layers.layers.value.length - 1,
-  },
   { action: "duplicate", label: "Duplicate" },
   { action: "download", label: "Download…" },
   {
@@ -308,12 +292,6 @@ function onBuildMenuAction(action: string, id: string) {
         builds.builds.value.find((b) => b.id === id)?.name ?? "",
       );
       break;
-    case "moveUp":
-      moveBuildUp(id);
-      break;
-    case "moveDown":
-      moveBuildDown(id);
-      break;
     case "duplicate":
       duplicateCurrentBuild(id);
       closeMenu();
@@ -341,12 +319,6 @@ function onLayerMenuAction(action: string, id: string) {
         id,
         layers.layers.value.find((l) => l.id === id)?.name ?? "",
       );
-      break;
-    case "moveUp":
-      moveLayerUp(id);
-      break;
-    case "moveDown":
-      moveLayerDown(id);
       break;
     case "duplicate":
       duplicateLayerRow(id);
@@ -421,6 +393,8 @@ useEventListener(document, "scroll", onScrollCapture, {
       @menu-open="(id, ev) => openMenuFor('build', id, ev)"
       @menu-action="(a, id) => onBuildMenuAction(a, id)"
       @menu-close="closeMenu"
+      @move-up="(id) => moveBuildUp(id)"
+      @move-down="(id) => moveBuildDown(id)"
       @create="builds.createBuild()"
       @import="triggerImportBuild"
     />
@@ -456,6 +430,8 @@ useEventListener(document, "scroll", onScrollCapture, {
       @menu-open="(id, ev) => openMenuFor('layer', id, ev)"
       @menu-action="(a, id) => onLayerMenuAction(a, id)"
       @menu-close="closeMenu"
+      @move-up="(id) => moveLayerUp(id)"
+      @move-down="(id) => moveLayerDown(id)"
       @create="layers.createLayer()"
       @import="triggerImportLayer"
     />

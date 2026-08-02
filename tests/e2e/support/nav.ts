@@ -71,14 +71,14 @@ export async function filterLayers(page: Page, text: string) {
   await filter.fill(text);
 }
 
-/** Clicks the "Move up" button in an open menu. */
-export async function moveUp(menu: Locator) {
-  await menu.getByRole("button", { name: "Move up" }).click();
+/** Clicks the Move up IconButton on the row directly. */
+export async function moveUp(row: Locator) {
+  await row.getByTestId("move-up").click();
 }
 
-/** Clicks the "Move down" button in an open menu. */
-export async function moveDown(menu: Locator) {
-  await menu.getByRole("button", { name: "Move down" }).click();
+/** Clicks the Move down IconButton on the row directly. */
+export async function moveDown(row: Locator) {
+  await row.getByTestId("move-down").click();
 }
 
 /** Toggles the layer checkbox — clicks the checkbox input inside the layer row. */

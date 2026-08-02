@@ -3,6 +3,7 @@
 import { computed, type Directive } from "vue";
 import BaseButton from "./ui/BaseButton.vue";
 import BaseCheckbox from "./ui/BaseCheckbox.vue";
+import IconButton from "./ui/IconButton.vue";
 import NavContextMenu from "./NavContextMenu.vue";
 import type { Layer } from "../types";
 
@@ -39,6 +40,8 @@ defineEmits<{
   "rename-start": [id: string, name: string];
   "rename-commit": [];
   "rename-cancel": [];
+  "move-up": [id: string];
+  "move-down": [id: string];
   "menu-open": [id: string, event: MouseEvent];
   "menu-action": [action: string, id: string];
   "menu-close": [];
@@ -87,6 +90,21 @@ const filteredLayers = computed(() => {
         class="nav-row nav-row--layer relative flex items-center gap-1 rounded-md py-1 pl-5 pr-1"
         :class="selectedId === l.id && 'is-active bg-accent-soft'"
       >
+        <IconButton
+          icon="arrow-up"
+          title="Move up"
+          data-testid="move-up"
+          :disabled="!canMoveUp(l.id)"
+          @click="$emit('move-up', l.id)"
+        />
+        <IconButton
+          icon="arrow-down"
+          title="Move down"
+          data-testid="move-down"
+          :disabled="!canMoveDown(l.id)"
+          @click="$emit('move-down', l.id)"
+        />
+
         <div @click.stop>
           <BaseCheckbox
             :model-value="l.enabled"

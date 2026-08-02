@@ -3,6 +3,7 @@
 // and rename state are provided by the parent (Nav.vue).
 import { computed, type Directive } from "vue";
 import BaseButton from "./ui/BaseButton.vue";
+import IconButton from "./ui/IconButton.vue";
 import NavContextMenu from "./NavContextMenu.vue";
 import type { Build } from "../types";
 
@@ -41,6 +42,8 @@ defineEmits<{
   "rename-start": [id: string, name: string];
   "rename-commit": [];
   "rename-cancel": [];
+  "move-up": [id: string];
+  "move-down": [id: string];
   "menu-open": [id: string, event: MouseEvent];
   "menu-action": [action: string, id: string];
   "menu-close": [];
@@ -80,6 +83,21 @@ const filteredBuilds = computed(() => {
         class="nav-row nav-row--build relative flex items-center gap-1 rounded-md py-1 pl-5 pr-1"
         :class="selectedId === b.id && 'is-active bg-accent-soft'"
       >
+        <IconButton
+          icon="arrow-up"
+          title="Move up"
+          data-testid="move-up"
+          :disabled="!canMoveUp(b.id)"
+          @click="$emit('move-up', b.id)"
+        />
+        <IconButton
+          icon="arrow-down"
+          title="Move down"
+          data-testid="move-down"
+          :disabled="!canMoveDown(b.id)"
+          @click="$emit('move-down', b.id)"
+        />
+
         <input
           v-if="renamingId === b.id"
           v-rename-focus
