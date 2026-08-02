@@ -5,7 +5,7 @@ import { openBuilder, chooseItem } from "./support/app";
 
 const HEAD_ITEM = "M29 Enchanted Depthweave Cap (CA)";
 
-test.fixme("Ctrl+Z undoes a build slot edit", async ({ page }) => {
+test("Ctrl+Z undoes a build slot edit", async ({ page }) => {
   await openBuilder(page);
   const undo = page.getByRole("button", { name: /Undo/ });
   const redo = page.getByRole("button", { name: /Redo/ });
@@ -14,10 +14,13 @@ test.fixme("Ctrl+Z undoes a build slot edit", async ({ page }) => {
   await expect(undo).toBeDisabled();
   await expect(redo).toBeDisabled();
 
-  // Make a choice
+  // Make a choice, then click the header to move focus away from the picker input
+  // so Ctrl+Z reaches our global shortcut instead of being swallowed by the browser's
+  // native undo on a focused text field.
   await chooseItem(page, "gear.head", HEAD_ITEM);
   await expect(undo).toBeEnabled();
   await expect(redo).toBeDisabled();
+  await page.getByTestId("app-header").click();
 
   // Ctrl+Z to undo
   await page.keyboard.press("Control+z");
@@ -25,19 +28,38 @@ test.fixme("Ctrl+Z undoes a build slot edit", async ({ page }) => {
   await expect(redo).toBeEnabled();
 });
 
-test.fixme("Ctrl+Shift+Z redoes after undo", async ({ page }) => {
+test("Ctrl+Shift+Z redoes after undo", async ({ page }) => {
   await openBuilder(page);
   const undo = page.getByRole("button", { name: /Undo/ });
   const redo = page.getByRole("button", { name: /Redo/ });
 
   await chooseItem(page, "gear.head", HEAD_ITEM);
   await expect(undo).toBeEnabled();
+  await page.getByTestId("app-header").click();
 
   await page.keyboard.press("Control+z");
   await expect(undo).toBeDisabled();
   await expect(redo).toBeEnabled();
 
   await page.keyboard.press("Control+Shift+z");
+  await expect(undo).toBeEnabled();
+  await expect(redo).toBeDisabled();
+});
+
+test("Ctrl+Y redoes after undo", async ({ page }) => {
+  await openBuilder(page);
+  const undo = page.getByRole("button", { name: /Undo/ });
+  const redo = page.getByRole("button", { name: /Redo/ });
+
+  await chooseItem(page, "gear.head", HEAD_ITEM);
+  await expect(undo).toBeEnabled();
+  await page.getByTestId("app-header").click();
+
+  await page.keyboard.press("Control+z");
+  await expect(undo).toBeDisabled();
+  await expect(redo).toBeEnabled();
+
+  await page.keyboard.press("Control+y");
   await expect(undo).toBeEnabled();
   await expect(redo).toBeDisabled();
 });

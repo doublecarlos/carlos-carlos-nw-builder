@@ -5,7 +5,7 @@ import ThemeToggle from "./ui/ThemeToggle.vue";
 import HistoryButton from "./ui/HistoryButton.vue";
 import BaseNotice from "./ui/BaseNotice.vue";
 import BundleExport from "./BundleExport.vue";
-import { useUndoRedo } from "../composables/useUndoRedo";
+import { useUndoRedoKeys } from "../composables/useUndoRedoKeys";
 import * as builds from "../stores/builds";
 import * as layers from "../stores/layers";
 import { notice, showNotice } from "../stores/notice";
@@ -13,7 +13,8 @@ import { notice, showNotice } from "../stores/notice";
 const importFileInput = ref<HTMLInputElement | null>(null);
 const showBundleExport = ref(false);
 
-const { canUndo, canRedo, undoLabel, redoLabel, undo, redo } = useUndoRedo();
+const { canUndo, canRedo, undoLabel, redoLabel, undo, redo } =
+  useUndoRedoKeys();
 
 function triggerExportBundle() {
   showBundleExport.value = true;
