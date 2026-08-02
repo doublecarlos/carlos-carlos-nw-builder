@@ -1,10 +1,17 @@
 <script setup lang="ts">
 // Build list section inside the left sidebar. Pure presentation — actions, menu items,
 // and rename state are provided by the parent (Nav.vue).
-import { computed } from "vue";
+import { computed, type Directive } from "vue";
 import BaseButton from "./ui/BaseButton.vue";
 import NavContextMenu from "./NavContextMenu.vue";
 import type { Build } from "../types";
+
+const vRenameFocus: Directive<HTMLInputElement> = {
+  mounted(el) {
+    el.focus();
+    el.select();
+  },
+};
 
 const props = defineProps<{
   builds: Build[];
@@ -75,6 +82,7 @@ const filteredBuilds = computed(() => {
       >
         <input
           v-if="renamingId === b.id"
+          v-rename-focus
           :value="renameText"
           class="nav-rename min-w-0 flex-1 rounded-md border border-line bg-surface px-1 py-0.5"
           @input="

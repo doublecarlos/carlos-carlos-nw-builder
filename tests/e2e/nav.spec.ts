@@ -52,6 +52,22 @@ test("renaming a build via the kebab menu commits on Enter", async ({
   await expect(buildRow(page, "My Cleric")).toBeVisible();
 });
 
+test("rename input auto-focuses and selects all text", async ({ page }) => {
+  await openBuilder(page);
+  const row = buildRow(page, "Build 1");
+
+  // Start rename via double-click.
+  await row.locator(".nav-name").dblclick();
+
+  const input = page.locator(".nav-rename");
+  await expect(input).toBeFocused();
+
+  // Type a character without clearing first — the existing text was selected,
+  // so the character replaces it entirely.
+  await input.press("x");
+  await expect(input).toHaveValue("x");
+});
+
 test("the filter box narrows the build list and clearing it restores every row", async ({
   page,
 }) => {

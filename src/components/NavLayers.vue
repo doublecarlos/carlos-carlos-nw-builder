@@ -1,10 +1,17 @@
 <script setup lang="ts">
 // Layer list section inside the left sidebar. Pure presentation.
-import { computed } from "vue";
+import { computed, type Directive } from "vue";
 import BaseButton from "./ui/BaseButton.vue";
 import BaseCheckbox from "./ui/BaseCheckbox.vue";
 import NavContextMenu from "./NavContextMenu.vue";
 import type { Layer } from "../types";
+
+const vRenameFocus: Directive<HTMLInputElement> = {
+  mounted(el) {
+    el.focus();
+    el.select();
+  },
+};
 
 const props = defineProps<{
   layers: Layer[];
@@ -89,6 +96,7 @@ const filteredLayers = computed(() => {
 
         <input
           v-if="renamingId === l.id"
+          v-rename-focus
           :value="renameText"
           class="nav-rename min-w-0 flex-1 rounded-md border border-line bg-surface px-1 py-0.5"
           @input="
