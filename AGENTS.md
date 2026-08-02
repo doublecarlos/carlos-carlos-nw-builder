@@ -22,6 +22,7 @@ You are **required** to:
 You **MUST NOT**:
 
 - Workaround Git commit hooks with flags to disable them
+- Use the `npx` command. Use only already globally installed packages directly by their simple name, or `npm run` targets.
 
 # Good practices
 
