@@ -258,7 +258,6 @@ const buildMenuItems = (id: string) => [
     action: "delete",
     label: confirmLabel("build", id, "delete-build", "Delete"),
     danger: true,
-    disabled: builds.builds.value.length < 2,
   },
 ];
 
@@ -286,7 +285,6 @@ const layerMenuItems = (id: string) => [
     action: "delete",
     label: confirmLabel("layer", id, "delete-layer", "Delete"),
     danger: true,
-    disabled: layers.layers.value.length < 2,
   },
 ];
 

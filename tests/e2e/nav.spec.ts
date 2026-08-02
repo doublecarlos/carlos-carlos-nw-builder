@@ -305,10 +305,21 @@ test("duplicating a build creates a copy and switches to it", async ({
 
 // --- Delete last build --------------------------------------------------------------
 
-test("the last build cannot be deleted", async ({ page }) => {
+test("deleting the last build replaces it with an empty one", async ({
+  page,
+}) => {
   await openBuilder(page);
+
+  // Delete the only build.
   const menu = await openRowMenu(buildRow(page, "Build 1"));
-  await expect(menu.getByRole("button", { name: "Delete" })).toBeDisabled();
+  await confirmDangerAction(menu, "Delete");
+
+  // A fresh "Build 1" should replace it.
+  await expect(buildRow(page, "Build 1")).toBeVisible();
+
+  // The old build should be in the trash.
+  const trash = recentlyDeletedHeader(page);
+  await expect(trash).toBeVisible();
 });
 
 test("clicking outside an open menu closes it", async ({ page }) => {

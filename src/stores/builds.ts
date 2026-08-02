@@ -89,7 +89,24 @@ export function duplicateBuild() {
 export function deleteBuild(id: string) {
   const b = _builds.value.get(id);
   if (!b) return;
-  if (_builds.value.size < 2) return;
+
+  // If this is the last build, replace it with a fresh empty build.
+  if (_builds.value.size < 2) {
+    clearDirty(id);
+    _builds.value.delete(id);
+    buildOrder.value = [];
+    storage.deleteBuildRecord(id).catch(() => {});
+
+    trash._add("build", b);
+    showNotice(`Deleted "${b.name}"`);
+
+    const replacement = storage.defaultBuild("Build 1");
+    _builds.value.set(replacement.id, replacement);
+    buildOrder.value.push(replacement.id);
+    markDirty(replacement.id);
+    selection.selectBuild(replacement.id);
+    return;
+  }
 
   clearDirty(id);
   _builds.value.delete(id);
@@ -97,7 +114,7 @@ export function deleteBuild(id: string) {
   storage.deleteBuildRecord(id).catch(() => {});
 
   trash._add("build", b);
-  showNotice(`Deleted “${b.name}”`);
+  showNotice(`Deleted "${b.name}"`);
 
   if (
     selection.selection.value?.kind === "build" &&

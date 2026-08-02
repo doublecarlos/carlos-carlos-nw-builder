@@ -59,6 +59,22 @@ describe("layers store", () => {
     expect(trash.trashed.value.some((e) => e.item.id === idB)).toBe(true);
   });
 
+  it("deleteLayer deletes the last layer without replacement", async () => {
+    const { layers, trash } = await freshStores();
+
+    // ensureTargetLayer creates Layer 1 when empty.
+    const old = layers.ensureTargetLayer();
+    expect(layers.layers.value.length).toBe(1);
+
+    layers.deleteLayer(old.id);
+
+    // The old layer should be in trash.
+    expect(trash.trashed.value.some((e) => e.item.id === old.id)).toBe(true);
+
+    // There should be no layers left.
+    expect(layers.layers.value.length).toBe(0);
+  });
+
   it("moveLayer clamps at both ends", async () => {
     const { layers } = await freshStores();
     layers.createLayer("A");

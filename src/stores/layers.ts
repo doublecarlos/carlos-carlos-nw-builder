@@ -95,7 +95,6 @@ export function duplicateLayer(id: string) {
 export function deleteLayer(id: string) {
   const layer = _layers.value.get(id);
   if (!layer) return;
-  if (_layers.value.size < 2) return;
 
   clearDirty(id);
   _layers.value.delete(id);
@@ -103,7 +102,7 @@ export function deleteLayer(id: string) {
   storage.deleteLayerRecord(id).catch(() => {});
 
   trash._add("layer", layer);
-  showNotice(`Deleted “${layer.name}”`);
+  showNotice(`Deleted "${layer.name}"`);
 
   if (
     selection.selection.value?.kind === "layer" &&

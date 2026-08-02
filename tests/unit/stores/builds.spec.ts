@@ -53,6 +53,24 @@ describe("builds store", () => {
     expect(trash.trashed.value.some((e) => e.item.id === secondId)).toBe(true);
   });
 
+  it("deleteBuild replaces the last build with an empty one", async () => {
+    const { builds, trash } = await freshStores();
+
+    // There should be exactly one build initially.
+    expect(builds.builds.value.length).toBe(1);
+    const oldId = builds.build.value.id;
+
+    builds.deleteBuild(oldId);
+
+    // The old build should be in trash.
+    expect(trash.trashed.value.some((e) => e.item.id === oldId)).toBe(true);
+
+    // There should still be exactly one build, with a fresh id.
+    expect(builds.builds.value.length).toBe(1);
+    expect(builds.build.value.id).not.toBe(oldId);
+    expect(builds.build.value.name).toBe("Build 1");
+  });
+
   it("moveBuild reorders within bounds", async () => {
     const { builds } = await freshStores();
     builds.createBuild();
