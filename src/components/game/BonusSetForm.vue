@@ -1,15 +1,13 @@
 <script setup lang="ts">
-// Editing form for one bonus set, browsed and edited on its own -- not from inside the item
-// that happens to grant it. Same effect editor as BonusGroups's per-card view (BonusRows), but
-// full-page like ItemForm and independent of any item: a bonus set here may be granted by
-// zero, one, or many items, and this form does not care which.
+// Editing form for one bonus set. Hybrid approach:
+// - Existing sets (source != null): live edits, changes emit immediately
+// - New sets (source == null): explicit Save button, draft until name is finalized
 import { ref, computed, watch, onUnmounted } from "vue";
 import BonusRows from "./BonusRows.vue";
 import IconButton from "../ui/IconButton.vue";
 import ComboBox from "../ui/ComboBox.vue";
 import TokenInput from "../ui/TokenInput.vue";
 import BaseButton from "../ui/BaseButton.vue";
-import HistoryButton from "../ui/HistoryButton.vue";
 import BaseBadge from "../ui/BaseBadge.vue";
 import FormBar from "../ui/FormBar.vue";
 import FormField from "../ui/FormField.vue";
@@ -18,8 +16,12 @@ import FormSection from "../ui/FormSection.vue";
 import IdField from "../ui/IdField.vue";
 import * as bonusDraft from "../../engine/bonus-draft";
 import * as catalog from "../../data/catalog";
+import * as formUndo from "../../stores/formUndo";
 import { BonusDraftStore } from "../../stores/bonus-draft";
 import type { BonusSet, Db } from "../../types";
+
+const DEBOUNCE_MS = 700;
+const UNDO_LIMIT = 50;
 
 const canonical = (value: unknown): unknown => {
   if (Array.isArray(value)) return value.map(canonical);
@@ -35,34 +37,19 @@ const canonical = (value: unknown): unknown => {
 const sameSet = (a: unknown, b: unknown) =>
   JSON.stringify(canonical(a)) === JSON.stringify(canonical(b));
 
-// Same draft-level undo as ItemForm.vue -- see its own comment for why a debounced deep watch
-// instead of a snapshot-per-field-method the way the build form does it.
-const SNAPSHOT_DEBOUNCE_MS = 700;
-const UNDO_LIMIT = 50;
-
 const props = withDefaults(
   defineProps<{
     /** The bonus set being edited, or null for a brand-new one. */
     source?: BonusSet | null;
     status?: string;
     db: Db;
-    /** Every bonus set id -- both for the "tiered by set pieces" combo and the id-collision check. */
     setIds?: string[];
     tags?: string[];
     bonusIds?: string[];
-    /** All existing ids across base + every layer (including disabled) + the build's
-     * per-build catalog, for id allocation. When absent, falls back to `setIds`. */
     allocatableIds?: string[];
-    /** Same stash/restore as ItemForm.vue's own `initialDraft` -- see there for why. */
-    initialDraft?: bonusDraft.SetDraft | null;
-    /** An id already decided elsewhere, for a `source`-less instance that is *not* a brand-new
-     * bonus set -- BonusGroups.vue's case of an item referencing an id with no catalogue entry
-     * (a dangling reference, e.g. from a hand-edited import). Without this, `displayId`/`save()`
-     * would treat any `!source` instance as brand-new and preview an id derived from the typed
-     * name instead of the id that's already fixed. Absent for both the top-level "browse one"
-     * editor and a genuinely new, not-yet-attached bonus, where the id should keep following the
-     * name until first save. */
     fixedId?: string | null;
+    /** Initial draft for pending slots (BonusGroups embedded case). */
+    initialDraft?: bonusDraft.SetDraft | null;
   }>(),
   {
     source: null,
@@ -71,16 +58,18 @@ const props = withDefaults(
     tags: () => [],
     bonusIds: () => [],
     allocatableIds: () => [],
-    initialDraft: null,
     fixedId: null,
+    initialDraft: null,
   },
 );
 
 const emit = defineEmits<{
+  /** Emitted on every change for existing sets (debounced). */
+  "update:set": [payload: { id: string; set: BonusSet; label: string }];
+  /** Emitted on Save click for new sets. */
   save: [payload: { id: string; set: BonusSet }];
   delete: [];
   revert: [];
-  dirty: [value: boolean];
 }>();
 
 function buildDraft(set: BonusSet | null | undefined): bonusDraft.SetDraft {
@@ -95,23 +84,146 @@ function buildDraft(set: BonusSet | null | undefined): bonusDraft.SetDraft {
   };
 }
 
+// Existing sets: live edits. New sets: draft until Save.
+const isNew = computed(() => !props.source && !props.fixedId);
+
 const draft = ref<ReturnType<typeof buildDraft>>(
   props.initialDraft
     ? JSON.parse(JSON.stringify(props.initialDraft))
     : buildDraft(props.source),
 );
 const error = ref("");
-const draftHistory = ref<{ past: string[]; future: string[] }>({
+let debounceTimer: number | undefined;
+// Initialize with set JSON for correct comparison on existing sets.
+let lastEmittedJson = JSON.stringify(
+  props.source
+    ? bonusDraft.toSet({ ...draft.value, id: props.source.id })
+    : draft.value,
+);
+
+// --- Draft undo (new sets only) -------------------------------------------------------
+interface DraftEntry {
+  json: string;
+  label: string;
+}
+
+const draftHistory = ref<{ past: DraftEntry[]; future: DraftEntry[] }>({
   past: [],
   future: [],
 });
 const lastSnapshotJson = ref(JSON.stringify(draft.value));
 let snapshotTimer: number | undefined;
-const confirmRevert = ref(false);
-let confirmRevertTimer: number | undefined;
 
-/** `db.setMembers` is keyed by item id -- resolved to display names here, same reasoning as
- * BonusGroups.vue's own `memberNames`. */
+const canUndoDraft = computed(() => draftHistory.value.past.length > 0);
+const canRedoDraft = computed(() => draftHistory.value.future.length > 0);
+const undoDraftLabel = computed(() => {
+  const past = draftHistory.value.past;
+  return past.length ? past[past.length - 1].label : "";
+});
+const redoDraftLabel = computed(() => {
+  const future = draftHistory.value.future;
+  return future.length ? future[future.length - 1].label : "";
+});
+
+function diffLabel(oldJson: string, newJson: string): string {
+  try {
+    const old = JSON.parse(oldJson);
+    const nw = JSON.parse(newJson);
+    if (old.name !== nw.name) return "edit name";
+    if (old.stacking !== nw.stacking) return "edit stacking";
+    if (old.maxStacks !== nw.maxStacks) return "edit max stacks";
+    if (JSON.stringify(old.excludes) !== JSON.stringify(nw.excludes))
+      return "edit excludes";
+    if (JSON.stringify(old.grants) !== JSON.stringify(nw.grants))
+      return "edit grants";
+  } catch {
+    // JSON parse error -- shouldn't happen but be safe.
+  }
+  return "edit bonus set";
+}
+
+function resetDraftHistory() {
+  window.clearTimeout(snapshotTimer);
+  draftHistory.value = { past: [], future: [] };
+  lastSnapshotJson.value = JSON.stringify(draft.value);
+}
+
+function scheduleSnapshot() {
+  window.clearTimeout(snapshotTimer);
+  snapshotTimer = window.setTimeout(commitSnapshot, DEBOUNCE_MS);
+}
+
+function commitSnapshot() {
+  window.clearTimeout(snapshotTimer);
+  const current = JSON.stringify(draft.value);
+  if (current === lastSnapshotJson.value) return;
+  const label = diffLabel(lastSnapshotJson.value, current);
+  draftHistory.value.past.push({ json: lastSnapshotJson.value, label });
+  if (draftHistory.value.past.length > UNDO_LIMIT)
+    draftHistory.value.past.shift();
+  draftHistory.value.future.length = 0;
+  lastSnapshotJson.value = current;
+}
+
+function undoDraft() {
+  commitSnapshot();
+  if (!draftHistory.value.past.length) return false;
+  const entry = draftHistory.value.past.pop()!;
+  draftHistory.value.future.push({
+    json: lastSnapshotJson.value,
+    label: entry.label,
+  });
+  lastSnapshotJson.value = entry.json;
+  draft.value = JSON.parse(entry.json);
+  return true;
+}
+
+function redoDraft() {
+  if (!draftHistory.value.future.length) return false;
+  const entry = draftHistory.value.future.pop()!;
+  draftHistory.value.past.push({
+    json: lastSnapshotJson.value,
+    label: entry.label,
+  });
+  lastSnapshotJson.value = entry.json;
+  draft.value = JSON.parse(entry.json);
+  return true;
+}
+
+// --- Live edit emit (existing sets) ---------------------------------------------------
+
+function scheduleEmit() {
+  window.clearTimeout(debounceTimer);
+  debounceTimer = window.setTimeout(emitChange, DEBOUNCE_MS);
+}
+
+function emitChange() {
+  window.clearTimeout(debounceTimer);
+  const name = draft.value.name.trim();
+  if (!name) return;
+  const id =
+    props.source?.id ??
+    props.fixedId ??
+    catalog.nextId(
+      name,
+      props.allocatableIds.length ? props.allocatableIds : props.setIds,
+      "bonus-set",
+    );
+  let set: BonusSet;
+  try {
+    set = bonusDraft.toSet({ ...draft.value, id });
+  } catch {
+    return;
+  }
+  const currentJson = JSON.stringify(set);
+  if (currentJson === lastEmittedJson) return;
+  const label = diffLabel(lastEmittedJson, currentJson);
+  lastEmittedJson = currentJson;
+  emit("update:set", { id, set, label });
+}
+
+// --- Common ---------------------------------------------------------------------------
+
 const members = computed(() => {
   if (!props.source) return [];
   return (props.db.setMembers.get(props.source.id) ?? []).map(
@@ -124,8 +236,6 @@ const stackingOptions = [
   { value: "perSource", label: "once per contributing slot" },
 ];
 
-/** Best-effort conversion for the dirty check -- a row mid-edit as invalid JSON just
- * reads as "changed" rather than throwing here too. */
 const asSet = computed(() => {
   try {
     return bonusDraft.toSet(draft.value);
@@ -142,9 +252,8 @@ const dirty = computed(() => {
   return !set || !sameSet(set, props.source);
 });
 
-/** The id shown next to Name -- the frozen one for an existing set or a known `fixedId`, or a
- * live preview of what `save()` would assign on first save for a brand-new one. Same reasoning
- * as ItemForm.vue's own `displayId`: never a form field a user edits directly. */
+defineExpose({ draft, dirty });
+
 const displayId = computed(
   () =>
     props.source?.id ??
@@ -157,71 +266,6 @@ const displayId = computed(
         )
       : ""),
 );
-
-const canUndoDraft = computed(() => draftHistory.value.past.length > 0);
-const canRedoDraft = computed(() => draftHistory.value.future.length > 0);
-
-// --- draft undo -------------------------------------------------------------------------
-
-function resetDraftHistory() {
-  window.clearTimeout(snapshotTimer);
-  draftHistory.value = { past: [], future: [] };
-  lastSnapshotJson.value = JSON.stringify(draft.value);
-}
-
-function scheduleSnapshot() {
-  window.clearTimeout(snapshotTimer);
-  snapshotTimer = window.setTimeout(
-    () => commitSnapshot(),
-    SNAPSHOT_DEBOUNCE_MS,
-  );
-}
-
-function commitSnapshot() {
-  window.clearTimeout(snapshotTimer);
-  const current = JSON.stringify(draft.value);
-  if (current === lastSnapshotJson.value) return;
-  draftHistory.value.past.push(lastSnapshotJson.value);
-  if (draftHistory.value.past.length > UNDO_LIMIT)
-    draftHistory.value.past.shift();
-  draftHistory.value.future.length = 0;
-  lastSnapshotJson.value = current;
-}
-
-function undoDraft() {
-  commitSnapshot();
-  if (!draftHistory.value.past.length) return false;
-  draftHistory.value.future.push(lastSnapshotJson.value);
-  lastSnapshotJson.value = draftHistory.value.past.pop()!;
-  draft.value = JSON.parse(lastSnapshotJson.value);
-  return true;
-}
-
-function redoDraft() {
-  if (!draftHistory.value.future.length) return false;
-  draftHistory.value.past.push(lastSnapshotJson.value);
-  lastSnapshotJson.value = draftHistory.value.future.pop()!;
-  draft.value = JSON.parse(lastSnapshotJson.value);
-  return true;
-}
-
-defineExpose({ draft, dirty, undoDraft, redoDraft });
-
-/** Same "discard the unsaved draft" as ItemForm.vue's own `revertDraft` -- see there. */
-function revertDraft() {
-  if (!confirmRevert.value) {
-    confirmRevert.value = true;
-    confirmRevertTimer = window.setTimeout(() => {
-      confirmRevert.value = false;
-    }, 4000);
-    return;
-  }
-  window.clearTimeout(confirmRevertTimer);
-  confirmRevert.value = false;
-  draft.value = buildDraft(props.source);
-  error.value = "";
-  resetDraftHistory();
-}
 
 function addGrant() {
   draft.value.grants.push(bonusDraft.toDraft({ when: {}, stats: {} }));
@@ -252,31 +296,74 @@ function save() {
   emit("save", { id, set });
 }
 
+// The store drives all grant-list mutations — BonusRows calls store methods instead of
+// emitting replaced arrays. It writes directly onto `draft.value.grants`.
+const draftStore = new BonusDraftStore(
+  () => draft.value.grants,
+  isNew.value ? scheduleSnapshot : scheduleEmit,
+  undefined,
+);
+
+// Rebuild draft when source changes (e.g. after undo/redo reverts the overlay).
 watch(
   () => props.source,
   (value) => {
     draft.value = buildDraft(value);
     error.value = "";
+    lastEmittedJson = JSON.stringify(
+      bonusDraft.toSet({ ...draft.value, id: value?.id ?? "" }),
+    );
     resetDraftHistory();
   },
 );
 
-watch(dirty, (value) => emit("dirty", value), { immediate: true });
-
-// The store drives all grant-list mutations — BonusRows calls store methods instead of
-// emitting replaced arrays. It writes directly onto `draft.value.grants` so Vue's deep
-// watch (below) picks up the change and schedules an undo snapshot.
-const draftStore = new BonusDraftStore(
-  () => draft.value.grants,
-  scheduleSnapshot,
-  undefined,
+// For existing sets: schedule emit on draft change.
+// For new sets: schedule snapshot for draft undo.
+watch(
+  draft,
+  () => {
+    if (isNew.value) {
+      scheduleSnapshot();
+    } else {
+      scheduleEmit();
+    }
+  },
+  { deep: true },
 );
 
-watch(draft, () => scheduleSnapshot(), { deep: true });
+// Register formUndo for new sets (draft undo).
+let unregisterFormUndo: (() => void) | undefined;
+
+function registerFormUndo() {
+  unregisterFormUndo?.();
+  if (isNew.value) {
+    unregisterFormUndo = formUndo.register({
+      get canUndo() {
+        return canUndoDraft.value;
+      },
+      get canRedo() {
+        return canRedoDraft.value;
+      },
+      undo: undoDraft,
+      redo: redoDraft,
+      get undoLabel() {
+        return undoDraftLabel.value;
+      },
+      get redoLabel() {
+        return redoDraftLabel.value;
+      },
+    });
+  } else {
+    unregisterFormUndo = undefined;
+  }
+}
+
+watch(isNew, registerFormUndo, { immediate: true });
 
 onUnmounted(() => {
+  window.clearTimeout(debounceTimer);
   window.clearTimeout(snapshotTimer);
-  window.clearTimeout(confirmRevertTimer);
+  unregisterFormUndo?.();
 });
 </script>
 
@@ -287,39 +374,21 @@ onUnmounted(() => {
       <BaseBadge v-if="status !== 'base'" :variant="status as any">{{
         status
       }}</BaseBadge>
-      <BaseBadge v-if="dirty">unsaved</BaseBadge>
+      <BaseBadge v-if="dirty && isNew">unsaved</BaseBadge>
       <span class="flex-1"></span>
-      <HistoryButton
-        type="undo"
-        :disabled="!canUndoDraft"
-        title="Undo edit (Ctrl+Z)"
-        @click="undoDraft"
-        >Undo</HistoryButton
-      >
-      <HistoryButton
-        type="redo"
-        :disabled="!canRedoDraft"
-        title="Redo edit (Ctrl+Shift+Z)"
-        @click="redoDraft"
-        >Redo</HistoryButton
-      >
-      <BaseButton variant="primary" :disabled="!dirty" @click="save"
+      <!-- Save button only for new sets -->
+      <BaseButton
+        v-if="isNew"
+        variant="primary"
+        :disabled="!dirty"
+        @click="save"
         >Save bonus set</BaseButton
       >
-      <BaseButton
-        :danger="confirmRevert"
-        :disabled="!dirty"
-        @click="revertDraft"
-      >
-        {{ confirmRevert ? "Really revert?" : "Revert" }}
-      </BaseButton>
       <BaseButton v-if="status === 'edited'" @click="$emit('revert')"
         >Revert to shipped</BaseButton
       >
       <BaseButton v-if="source" @click="$emit('delete')">Delete</BaseButton>
-      <!-- BonusGroups.vue's per-item embedding injects its own "Detach" here -- stopping this
-           item from listing the set is always valid (whether or not the set is defined,
-           shared, or brand-new), and is not something a standalone editor has any use for. -->
+      <!-- BonusGroups.vue's per-item embedding injects its own "Detach" here -->
       <slot name="extra-actions" />
     </FormBar>
 

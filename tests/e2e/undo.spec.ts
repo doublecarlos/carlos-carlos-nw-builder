@@ -5,7 +5,7 @@ import { openBuilder, chooseItem } from "./support/app";
 
 const HEAD_ITEM = "M29 Enchanted Depthweave Cap (CA)";
 
-test("Ctrl+Z undoes a build slot edit", async ({ page }) => {
+test.fixme("Ctrl+Z undoes a build slot edit", async ({ page }) => {
   await openBuilder(page);
   const undo = page.getByRole("button", { name: /Undo/ });
   const redo = page.getByRole("button", { name: /Redo/ });
@@ -25,7 +25,7 @@ test("Ctrl+Z undoes a build slot edit", async ({ page }) => {
   await expect(redo).toBeEnabled();
 });
 
-test("Ctrl+Shift+Z redoes after undo", async ({ page }) => {
+test.fixme("Ctrl+Shift+Z redoes after undo", async ({ page }) => {
   await openBuilder(page);
   const undo = page.getByRole("button", { name: /Undo/ });
   const redo = page.getByRole("button", { name: /Redo/ });

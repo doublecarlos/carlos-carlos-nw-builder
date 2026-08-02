@@ -7,16 +7,14 @@
 //
 // The editor never writes to disk -- it cannot, this is a static client app. It edits the
 // layer's overlay (see catalog.ts) and hands you the file contents to paste back.
-import { ref, reactive, computed, watch, onMounted, onUnmounted } from "vue";
-import { useEventListener, useMagicKeys, whenever } from "@vueuse/core";
+import { ref, computed, watch, onMounted, onUnmounted } from "vue";
+import { useEventListener } from "@vueuse/core";
 import { useConfirm } from "../composables/useConfirm";
 import ItemForm from "./game/ItemForm.vue";
-import type { ItemDraft } from "./game/ItemForm.vue";
 import BonusSetForm from "./game/BonusSetForm.vue";
 import ComboBox from "./ui/ComboBox.vue";
 import BaseButton from "./ui/BaseButton.vue";
 import BaseCheckbox from "./ui/BaseCheckbox.vue";
-import HistoryButton from "./ui/HistoryButton.vue";
 import BaseBadge from "./ui/BaseBadge.vue";
 import BaseNotice from "./ui/BaseNotice.vue";
 import BaseDrawer from "./ui/BaseDrawer.vue";
@@ -36,7 +34,6 @@ import type {
   LintFinding,
   Layer,
 } from "../types";
-import type { SetDraft } from "../engine/bonus-draft";
 
 const db = engine.db;
 
@@ -54,17 +51,9 @@ const selectedId = ref<string | null>(null);
 const selectedSetId = ref<string | null>(null);
 const showExport = ref(false);
 const exportTab = ref("items"); // items | bonuses | overlay
-const formDirty = ref(false);
 const newItemCounter = ref(0);
 const notice = ref("");
 const confirmReset_ = useConfirm(4000);
-// itemName/setId -> that form's in-progress `draft`, stashed just before switching away
-// from it while dirty (see `stashCurrentDraft`) so picking a different row doesn't
-// silently throw the edit away -- restored via `initialDraft` if the same row is
-// reselected. Only ever keyed by a *real* name/id, never the new-item/-set placeholder:
-// "+ New item" is a deliberate "start fresh" action, not a navigation to preserve.
-const itemDrafts = reactive<Record<string, ItemDraft>>({});
-const setDrafts = reactive<Record<string, SetDraft>>({});
 
 const form = ref<InstanceType<typeof ItemForm> | null>(null);
 const setForm = ref<InstanceType<typeof BonusSetForm> | null>(null);
@@ -234,6 +223,13 @@ const entryCount = computed(() => {
   return count;
 });
 
+const hasUnsavedDraft = (row: EditorRow) => {
+  if (row.kind === "bonusSet") {
+    if (row.key === selectedSetId.value) return setForm.value?.dirty ?? false;
+  }
+  return false;
+};
+
 /** All existing ids across base + every layer + the selected build's catalog, for id
  * allocation. See decision 12 and phase 2b §2.5. */
 const allocatableIds = computed(() => {
@@ -274,115 +270,6 @@ const exportName = computed(() => {
   return "catalog-overlay.json";
 });
 
-// --- undo (delegated to the history store) -------------------------------------------------
-// The history store owns the committed-undo stack for layers, keyed `layer:<id>`. Form-level
-// draft undo inside ItemForm.vue / BonusSetForm.vue still takes precedence while a form is
-// dirty -- the `onKeydown` below checks the form first.
-
-const canUndo = history.canUndo;
-const canRedo = history.canRedo;
-const undoLabel = history.undoLabel;
-const redoLabel = history.redoLabel;
-
-function undo() {
-  const json = history.undo("layer", props.layer.id, overlay.value);
-  if (json != null) setOverlay(JSON.parse(json));
-}
-
-function redo() {
-  const json = history.redo("layer", props.layer.id, overlay.value);
-  if (json != null) setOverlay(JSON.parse(json));
-}
-
-/**
- * Same Ctrl+Z/Ctrl+Shift+Z/Ctrl+Y convention as App.vue's builder undo, including which
- * fields it defers to native undo for -- only `<textarea>` (the export/import JSON boxes),
- * not every `<input>`. App.vue's own handler fires for the committed stack; this handler
- * only checks the open form's draft undo first, so in-progress edits take precedence over
- * committed changes.
- */
-
-const editorKeys = useMagicKeys({
-  passive: false,
-  onEventFired(e) {
-    if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
-    const k = e.key.toLowerCase();
-    if (k !== "z" && k !== "y") return;
-    if ((e.target as HTMLElement)?.tagName === "TEXTAREA") return;
-    e.preventDefault();
-  },
-});
-
-function canUndoRedoEditor() {
-  return (document.activeElement as HTMLElement | null)?.tagName !== "TEXTAREA";
-}
-
-// Undo: Ctrl+Z or Meta+Z
-whenever(
-  () =>
-    (editorKeys["Ctrl+Z"]?.value || editorKeys["Meta+Z"]?.value) &&
-    canUndoRedoEditor(),
-  () => {
-    const activeForm =
-      section.value === "bonusSets" ? setForm.value : form.value;
-    if (activeForm?.undoDraft?.()) return;
-    undo();
-  },
-);
-
-// Redo: Ctrl+Y, Ctrl+Shift+Z, or Meta equivalents
-whenever(
-  () =>
-    (editorKeys["Ctrl+Y"]?.value ||
-      editorKeys["Meta+Y"]?.value ||
-      editorKeys["Ctrl+Shift+Z"]?.value ||
-      editorKeys["Meta+Shift+Z"]?.value) &&
-    canUndoRedoEditor(),
-  () => {
-    const activeForm =
-      section.value === "bonusSets" ? setForm.value : form.value;
-    if (activeForm?.redoDraft?.()) return;
-    redo();
-  },
-);
-
-// --- unsaved form drafts ----------------------------------------------------------------
-// Stashing drafts here, right before the row key changes, means the draft survives the trip
-// and comes back via `initialDraft` if the same row is reselected -- see `itemDrafts`/`setDrafts`
-// above.
-
-function stashItemDraft() {
-  if (selectedId.value == null) return;
-  if (form.value?.dirty) itemDrafts[selectedId.value] = form.value.draft;
-  else delete itemDrafts[selectedId.value];
-}
-
-function stashSetDraft() {
-  if (selectedSetId.value == null) return;
-  if (setForm.value?.dirty)
-    setDrafts[selectedSetId.value] = setForm.value.draft;
-  else delete setDrafts[selectedSetId.value];
-}
-
-/** Whichever form is actually on screen right now matches `section`, not the row's own
- * kind -- `select()` never changes `section` itself, so at the moment this runs the two
- * always agree. */
-function stashCurrentDraft() {
-  if (section.value === "bonusSets") stashSetDraft();
-  else stashItemDraft();
-}
-
-/** The list row's own red "unsaved" badge: true for the open form's live dirty state, or
- * for any other row still holding a stashed draft from an earlier visit. */
-function hasUnsavedDraft(row: EditorRow) {
-  if (row.kind === "bonusSet") {
-    if (row.key === selectedSetId.value) return formDirty.value;
-    return Boolean(setDrafts[row.key]);
-  }
-  if (row.key === selectedId.value) return formDirty.value;
-  return Boolean(itemDrafts[row.key]);
-}
-
 // --- filters ---------------------------------------------------------------------------
 
 function clearFilters() {
@@ -421,7 +308,6 @@ function onPopState() {
 
 function switchSection(target: string) {
   if (section.value === target) return;
-  stashCurrentDraft();
   section.value = target;
   router.apply(
     target === "bonusSets"
@@ -432,7 +318,6 @@ function switchSection(target: string) {
 
 function select(row: EditorRow, { push = true }: { push?: boolean } = {}) {
   if (row.status === "removed") return;
-  stashCurrentDraft();
   if (row.kind === "bonusSet") {
     selectedSetId.value = row.key;
     router.apply({ set: row.key, item: null }, { push });
@@ -477,14 +362,12 @@ function onListKeydown(event: KeyboardEvent) {
 }
 
 function newItem() {
-  stashItemDraft();
   selectedId.value = null;
   newItemCounter.value++;
   router.apply({ item: null });
 }
 
 function newSet() {
-  stashSetDraft();
   selectedSetId.value = null;
   newItemCounter.value++;
   router.apply({ set: null });
@@ -500,10 +383,22 @@ function onSave({ item }: { item: Item }) {
   );
   const next = catalog.upsert(overlay.value, "items", item.id, item);
   setOverlay(next);
-  delete itemDrafts[item.id];
   selectedId.value = item.id;
   router.apply({ item: item.id });
   notice.value = `Saved "${item.name}"`;
+}
+
+/** Live-edit handler: debounced changes from existing items go here. */
+function onUpdateItem({ item, label }: { item: Item; label: string }) {
+  history.snapshot(
+    "layer",
+    props.layer.id,
+    `edit:${item.id}`,
+    label,
+    overlay.value,
+  );
+  const next = catalog.upsert(overlay.value, "items", item.id, item);
+  setOverlay(next);
 }
 
 function onDelete() {
@@ -517,7 +412,6 @@ function onDelete() {
     overlay.value,
   );
   setOverlay(catalog.remove(overlay.value, "items", id));
-  delete itemDrafts[id];
   selectedId.value = null;
   router.apply({ item: null });
   notice.value = `Removed "${name}"`;
@@ -534,7 +428,6 @@ function onRevert() {
     overlay.value,
   );
   setOverlay(catalog.revert(overlay.value, "items", id));
-  delete itemDrafts[id];
   notice.value = `Reverted "${name}" to the shipped version`;
 }
 
@@ -548,8 +441,6 @@ function restore(row: EditorRow) {
     overlay.value,
   );
   setOverlay(catalog.revert(overlay.value, group, row.key));
-  if (row.kind === "bonusSet") delete setDrafts[row.key];
-  else delete itemDrafts[row.key];
   notice.value = `Restored "${row.name}"`;
 }
 
@@ -568,8 +459,6 @@ function resetAll() {
   setOverlay(catalog.emptyOverlay());
   selectedId.value = null;
   selectedSetId.value = null;
-  for (const key of Object.keys(itemDrafts)) delete itemDrafts[key];
-  for (const key of Object.keys(setDrafts)) delete setDrafts[key];
   router.apply({ item: null, set: null });
   notice.value = "Discarded every change — back to the shipped data";
 }
@@ -603,8 +492,19 @@ function onSaveSet({ id, set }: { id: string; set: BonusSet }) {
     overlay.value,
   );
   setOverlay(catalog.upsert(overlay.value, "bonusSets", id, set));
-  delete setDrafts[id];
   notice.value = `Saved set "${set.name || id}"`;
+}
+
+/** Live-edit handler: debounced changes from existing bonus sets in item editor go here. */
+function onUpdateSet({ id, set }: { id: string; set: BonusSet }) {
+  history.snapshot(
+    "layer",
+    props.layer.id,
+    `edit-set:${id}`,
+    `Edit bonus "${set.name || id}"`,
+    overlay.value,
+  );
+  setOverlay(catalog.upsert(overlay.value, "bonusSets", id, set));
 }
 
 function onDeleteSet(id: string) {
@@ -616,7 +516,6 @@ function onDeleteSet(id: string) {
     overlay.value,
   );
   setOverlay(catalog.remove(overlay.value, "bonusSets", id));
-  delete setDrafts[id];
   notice.value = `Removed set "${id}"`;
 }
 
@@ -629,10 +528,29 @@ function onSaveSetTop({ id, set }: { id: string; set: BonusSet }) {
     overlay.value,
   );
   setOverlay(catalog.upsert(overlay.value, "bonusSets", id, set));
-  delete setDrafts[id];
   selectedSetId.value = id;
   router.apply({ set: id });
   notice.value = `Saved bonus set "${set.name || id}"`;
+}
+
+/** Live-edit handler: debounced changes from existing bonus sets go here. */
+function onUpdateSetTop({
+  id,
+  set,
+  label,
+}: {
+  id: string;
+  set: BonusSet;
+  label: string;
+}) {
+  history.snapshot(
+    "layer",
+    props.layer.id,
+    `edit-set:${id}`,
+    label,
+    overlay.value,
+  );
+  setOverlay(catalog.upsert(overlay.value, "bonusSets", id, set));
 }
 
 function onDeleteSetTop() {
@@ -645,7 +563,6 @@ function onDeleteSetTop() {
     overlay.value,
   );
   setOverlay(catalog.remove(overlay.value, "bonusSets", id));
-  delete setDrafts[id];
   selectedSetId.value = null;
   router.apply({ set: null });
   notice.value = `Removed bonus set "${id}"`;
@@ -661,7 +578,6 @@ function onRevertSetTop() {
     overlay.value,
   );
   setOverlay(catalog.revert(overlay.value, "bonusSets", id));
-  delete setDrafts[id];
   notice.value = `Reverted bonus set "${id}" to the shipped version`;
 }
 
@@ -816,27 +732,6 @@ onUnmounted(() => {
       </BaseButton>
 
       <span class="mx-1 h-4 w-px bg-line"></span>
-
-      <HistoryButton
-        type="undo"
-        :disabled="!canUndo"
-        :detail="canUndo ? undoLabel : ''"
-        :title="
-          canUndo ? 'Undo: ' + undoLabel + ' (Ctrl+Z)' : 'Nothing to undo'
-        "
-        @click="undo"
-        >Undo</HistoryButton
-      >
-      <HistoryButton
-        type="redo"
-        :disabled="!canRedo"
-        :detail="canRedo ? redoLabel : ''"
-        :title="
-          canRedo ? 'Redo: ' + redoLabel + ' (Ctrl+Shift+Z)' : 'Nothing to redo'
-        "
-        @click="redo"
-        >Redo</HistoryButton
-      >
     </div>
 
     <!-- Disabled layer banner -->
@@ -1009,9 +904,6 @@ onUnmounted(() => {
           :key="selectedId ?? `__new__${newItemCounter}`"
           :source="selected"
           :status="selectedStatus"
-          :initial-draft="
-            selectedId != null ? (itemDrafts[selectedId] ?? null) : null
-          "
           :db="db"
           :filters="filters"
           :set-ids="setIds"
@@ -1019,11 +911,12 @@ onUnmounted(() => {
           :bonus-ids="bonusIds"
           :allocatable-ids="allocatableIds"
           @save="onSave"
+          @update:item="onUpdateItem"
           @delete="onDelete"
           @revert="onRevert"
           @save-set="onSaveSet"
           @delete-set="onDeleteSet"
-          @dirty="formDirty = $event"
+          @update-set="onUpdateSet"
         />
         <BonusSetForm
           v-else
@@ -1031,18 +924,15 @@ onUnmounted(() => {
           :key="selectedSetId ?? `__new__${newItemCounter}`"
           :source="selectedSet"
           :status="selectedSetStatus"
-          :initial-draft="
-            selectedSetId != null ? (setDrafts[selectedSetId] ?? null) : null
-          "
           :db="db"
           :set-ids="setIds"
           :tags="tagList"
           :bonus-ids="bonusIds"
           :allocatable-ids="allocatableIds"
           @save="onSaveSetTop"
+          @update:set="onUpdateSetTop"
           @delete="onDeleteSetTop"
           @revert="onRevertSetTop"
-          @dirty="formDirty = $event"
         />
       </div>
     </div>

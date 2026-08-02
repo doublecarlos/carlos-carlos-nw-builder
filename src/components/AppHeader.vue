@@ -5,7 +5,7 @@ import ThemeToggle from "./ui/ThemeToggle.vue";
 import HistoryButton from "./ui/HistoryButton.vue";
 import BaseNotice from "./ui/BaseNotice.vue";
 import BundleExport from "./BundleExport.vue";
-import * as buildEditor from "../stores/buildEditor";
+import { useUndoRedo } from "../composables/useUndoRedo";
 import * as builds from "../stores/builds";
 import * as layers from "../stores/layers";
 import { notice, showNotice } from "../stores/notice";
@@ -13,10 +13,7 @@ import { notice, showNotice } from "../stores/notice";
 const importFileInput = ref<HTMLInputElement | null>(null);
 const showBundleExport = ref(false);
 
-const canUndo = buildEditor.canUndo;
-const canRedo = buildEditor.canRedo;
-const undoLabel = buildEditor.undoLabel;
-const redoLabel = buildEditor.redoLabel;
+const { canUndo, canRedo, undoLabel, redoLabel, undo, redo } = useUndoRedo();
 
 function triggerExportBundle() {
   showBundleExport.value = true;
@@ -91,7 +88,7 @@ async function onImportFile(event: Event) {
       :detail="canUndo ? undoLabel : ''"
       :title="canUndo ? `Undo: ${undoLabel} (Ctrl+Z)` : 'Nothing to undo'"
       data-testid="header-undo"
-      @click="buildEditor.undo()"
+      @click="undo()"
     >
       Undo
     </HistoryButton>
@@ -101,7 +98,7 @@ async function onImportFile(event: Event) {
       :detail="canRedo ? redoLabel : ''"
       :title="canRedo ? `Redo: ${redoLabel} (Ctrl+Shift+Z)` : 'Nothing to redo'"
       data-testid="header-redo"
-      @click="buildEditor.redo()"
+      @click="redo()"
     >
       Redo
     </HistoryButton>

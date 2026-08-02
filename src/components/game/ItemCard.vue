@@ -207,86 +207,82 @@ const rows = computed(() =>
       >
     </BaseCardHeader>
     <BaseCardBody>
-    <div v-if="slotLabel" class="mb-1 text-sm text-muted">{{ slotLabel }}</div>
-    <div class="flex flex-col">
-      <div
-        v-for="stat in stats"
-        :key="stat.key"
-        class="flex justify-between gap-2 border-b border-line py-0.5 text-sm last:border-b-0"
-      >
-        <span>{{ stat.label }}</span
-        ><span class="tabular-nums">{{ stat.value }}</span>
+      <div v-if="slotLabel" class="mb-1 text-sm text-muted">
+        {{ slotLabel }}
       </div>
-      <div v-if="!stats.length" class="text-muted">no direct stats</div>
-    </div>
-
-    <div
-      v-if="notes.length"
-      class="mt-1.5 border-t border-line pt-1 text-sm text-muted"
-    >
-      <div v-for="note in notes" :key="note">{{ note }}</div>
-    </div>
-
-    <div v-if="rows.length" class="mt-1.5 border-t border-line pt-1">
-      <div class="text-sm uppercase tracking-wide text-muted">Bonuses</div>
-      <div v-for="row in rows" :key="row.id" class="mt-1">
-        <div class="flex items-center gap-1.5">
-          <span
-            class="size-1.5 flex-none rounded-full"
-            :class="row.dotClass"
-          ></span>
-          <span
-            class="min-w-0 flex-1 text-sm"
-            :class="row.muted && 'text-muted'"
-            >{{ row.name || row.conditions || "always" }}</span
-          >
-          <BaseBadge v-if="row.stacks > 1">×{{ row.stacks }}</BaseBadge>
-        </div>
+      <div class="flex flex-col">
         <div
-          v-if="row.name && row.conditions"
-          class="pl-3 text-sm leading-snug text-muted"
+          v-for="stat in stats"
+          :key="stat.key"
+          class="flex justify-between gap-2 border-b border-line py-0.5 text-sm last:border-b-0"
         >
-          Conditions: {{ row.conditions }}
+          <span>{{ stat.label }}</span
+          ><span class="tabular-nums">{{ stat.value }}</span>
         </div>
-        <div v-if="row.secondary" class="pl-3 text-sm leading-snug text-muted">
-          This bonus was accounted for in {{ row.firstSource }}
-        </div>
-        <template v-else>
+        <div v-if="!stats.length" class="text-muted">no direct stats</div>
+      </div>
+
+      <div
+        v-if="notes.length"
+        class="mt-1.5 border-t border-line pt-1 text-sm text-muted"
+      >
+        <div v-for="note in notes" :key="note">{{ note }}</div>
+      </div>
+
+      <div v-if="rows.length" class="mt-1.5 border-t border-line pt-1">
+        <div class="text-sm uppercase tracking-wide text-muted">Bonuses</div>
+        <div v-for="row in rows" :key="row.id" class="mt-1">
+          <div class="flex items-center gap-1.5">
+            <span
+              class="size-1.5 flex-none rounded-full"
+              :class="row.dotClass"
+            ></span>
+            <span
+              class="min-w-0 flex-1 text-sm"
+              :class="row.muted && 'text-muted'"
+              >{{ row.name || row.conditions || "always" }}</span
+            >
+            <BaseBadge v-if="row.stacks > 1">×{{ row.stacks }}</BaseBadge>
+          </div>
           <div
-            v-if="row.sharedWith"
+            v-if="row.name && row.conditions"
             class="pl-3 text-sm leading-snug text-muted"
           >
-            Other parts: {{ row.sharedWith.join(", ") }}
+            Conditions: {{ row.conditions }}
           </div>
           <div
-            v-if="row.stats && row.stats.tiered"
-            class="pl-3 text-sm text-muted"
+            v-if="row.secondary"
+            class="pl-3 text-sm leading-snug text-muted"
           >
-            (tiered)
+            This bonus was accounted for in {{ row.firstSource }}
           </div>
-          <div
-            v-else-if="row.stats"
-            class="pl-3 text-sm"
-            :class="row.muted && 'text-muted'"
-          >
-            <div v-if="row.stacks > 1" class="text-sm leading-snug text-muted">
-              total, from {{ row.stacks }} stacking sources
+          <template v-else>
+            <div
+              v-if="row.sharedWith"
+              class="pl-3 text-sm leading-snug text-muted"
+            >
+              Other parts: {{ row.sharedWith.join(", ") }}
             </div>
-            <div class="flex flex-col">
+            <div
+              v-if="row.stats && row.stats.tiered"
+              class="pl-3 text-sm text-muted"
+            >
+              (tiered)
+            </div>
+            <div
+              v-else-if="row.stats"
+              class="pl-3 text-sm"
+              :class="row.muted && 'text-muted'"
+            >
               <div
-                v-for="s in row.stats.total"
-                :key="s.key"
-                class="flex justify-between gap-2 border-b border-line py-0.5 last:border-b-0"
+                v-if="row.stacks > 1"
+                class="text-sm leading-snug text-muted"
               >
-                <span>{{ s.label }}</span
-                ><span class="tabular-nums">{{ s.value }}</span>
+                total, from {{ row.stacks }} stacking sources
               </div>
-            </div>
-            <template v-if="row.stats.each">
-              <div class="text-sm leading-snug text-muted">each:</div>
               <div class="flex flex-col">
                 <div
-                  v-for="s in row.stats.each"
+                  v-for="s in row.stats.total"
                   :key="s.key"
                   class="flex justify-between gap-2 border-b border-line py-0.5 last:border-b-0"
                 >
@@ -294,46 +290,60 @@ const rows = computed(() =>
                   ><span class="tabular-nums">{{ s.value }}</span>
                 </div>
               </div>
-            </template>
-          </div>
-        </template>
-        <div v-if="row.tiers" class="pl-3">
-          <div class="text-sm leading-snug text-muted">
-            tiered by set pieces, shared by every piece:
-          </div>
-          <div
-            v-for="tier in row.tiers"
-            :key="tier.pieces"
-            class="text-sm"
-            :class="tier.active ? 'font-semibold text-text' : 'text-muted'"
-          >
-            <div>{{ tier.pieces }} piece{{ tier.pieces > 1 ? "s" : "" }}:</div>
-            <div class="flex flex-col">
-              <div
-                v-for="s in tier.stats"
-                :key="s.key"
-                class="flex justify-between gap-2 py-0.5"
-              >
-                <span>{{ s.label }}</span
-                ><span class="tabular-nums">{{ s.value }}</span>
+              <template v-if="row.stats.each">
+                <div class="text-sm leading-snug text-muted">each:</div>
+                <div class="flex flex-col">
+                  <div
+                    v-for="s in row.stats.each"
+                    :key="s.key"
+                    class="flex justify-between gap-2 border-b border-line py-0.5 last:border-b-0"
+                  >
+                    <span>{{ s.label }}</span
+                    ><span class="tabular-nums">{{ s.value }}</span>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </template>
+          <div v-if="row.tiers" class="pl-3">
+            <div class="text-sm leading-snug text-muted">
+              tiered by set pieces, shared by every piece:
+            </div>
+            <div
+              v-for="tier in row.tiers"
+              :key="tier.pieces"
+              class="text-sm"
+              :class="tier.active ? 'font-semibold text-text' : 'text-muted'"
+            >
+              <div>
+                {{ tier.pieces }} piece{{ tier.pieces > 1 ? "s" : "" }}:
+              </div>
+              <div class="flex flex-col">
+                <div
+                  v-for="s in tier.stats"
+                  :key="s.key"
+                  class="flex justify-between gap-2 py-0.5"
+                >
+                  <span>{{ s.label }}</span
+                  ><span class="tabular-nums">{{ s.value }}</span>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <div
-          v-for="(leaf, i) in row.unmet"
-          :key="i"
-          class="pl-3 text-sm text-warn"
-        >
-          needs {{ leaf.label
-          }}<span v-if="leaf.detail"> — {{ leaf.detail }}</span>
-        </div>
-        <div v-if="row.excludedBy" class="pl-3 text-sm text-warn">
-          overridden by {{ row.excludedBy }}
+          <div
+            v-for="(leaf, i) in row.unmet"
+            :key="i"
+            class="pl-3 text-sm text-warn"
+          >
+            needs {{ leaf.label
+            }}<span v-if="leaf.detail"> — {{ leaf.detail }}</span>
+          </div>
+          <div v-if="row.excludedBy" class="pl-3 text-sm text-warn">
+            overridden by {{ row.excludedBy }}
+          </div>
         </div>
       </div>
-    </div>
     </BaseCardBody>
   </BaseCard>
 </template>

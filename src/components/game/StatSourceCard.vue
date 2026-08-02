@@ -30,7 +30,11 @@ defineEmits<{ close: [] }>();
 <template>
   <BaseCard class="statcard" data-testid="stat-card">
     <BaseCardHeader sticky>
-      <span class="statcard-title font-semibold" data-testid="stat-card-title">{{ label }}</span>
+      <span
+        class="statcard-title font-semibold"
+        data-testid="stat-card-title"
+        >{{ label }}</span
+      >
       <button
         type="button"
         class="statcard-close flex-none pl-2 leading-none text-muted hover:text-text"
@@ -42,35 +46,43 @@ defineEmits<{ close: [] }>();
       </button>
     </BaseCardHeader>
     <BaseCardBody>
-    <template v-for="(section, i) in sections" :key="section.key">
-      <div
-        v-if="sections.length > 1"
-        class="statcard-section mt-1.5 text-sm uppercase tracking-wide text-muted"
-        data-testid="stat-card-section"
-      >
-        {{ section.title }}
-      </div>
-      <div v-if="section.sources.length" class="statcard-rows flex flex-col" data-testid="stat-card-rows">
+      <template v-for="(section, i) in sections" :key="section.key">
         <div
-          v-for="src in section.sources"
-          :key="src.name"
-          class="statcard-row flex justify-between gap-2 border-b border-line py-0.5 text-sm last:border-b-0"
-          data-testid="stat-card-row"
+          v-if="sections.length > 1"
+          class="statcard-section mt-1.5 text-sm uppercase tracking-wide text-muted"
+          data-testid="stat-card-section"
         >
-          <span>{{ src.name }}</span>
-          <span class="tabular-nums">{{
-            signedStat(section.key, src.value)
-          }}</span>
+          {{ section.title }}
         </div>
-      </div>
-      <div v-else class="statcard-empty py-0.5 text-sm text-muted" data-testid="stat-card-empty">
-        no contributing sources
-      </div>
-      <div
-        v-if="i < sections.length - 1"
-        class="mt-1.5 border-t border-line"
-      ></div>
-    </template>
+        <div
+          v-if="section.sources.length"
+          class="statcard-rows flex flex-col"
+          data-testid="stat-card-rows"
+        >
+          <div
+            v-for="src in section.sources"
+            :key="src.name"
+            class="statcard-row flex justify-between gap-2 border-b border-line py-0.5 text-sm last:border-b-0"
+            data-testid="stat-card-row"
+          >
+            <span>{{ src.name }}</span>
+            <span class="tabular-nums">{{
+              signedStat(section.key, src.value)
+            }}</span>
+          </div>
+        </div>
+        <div
+          v-else
+          class="statcard-empty py-0.5 text-sm text-muted"
+          data-testid="stat-card-empty"
+        >
+          no contributing sources
+        </div>
+        <div
+          v-if="i < sections.length - 1"
+          class="mt-1.5 border-t border-line"
+        ></div>
+      </template>
     </BaseCardBody>
   </BaseCard>
 </template>

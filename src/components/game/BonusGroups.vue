@@ -52,6 +52,7 @@ const emit = defineEmits<{
   "delete-set": [id: string];
   "detach-set": [id: string];
   "attach-set": [id: string];
+  "update-set": [payload: { id: string; set: BonusSet }];
 }>();
 
 interface Slot {
@@ -127,6 +128,13 @@ function onSlotSave(slot: Slot, payload: { id: string; set: BonusSet }) {
   }
 }
 
+/** Live-edit handler: debounced changes from existing bonus sets go here. */
+function onSlotUpdate(slot: Slot, payload: { id: string; set: BonusSet }) {
+  if (slot.id) {
+    emit("update-set", payload);
+  }
+}
+
 /** Stop this item from listing the set -- always valid, whether or not the set is defined,
  * shared, or brand-new. A pending slot has nothing attached yet, so this just discards it. */
 function onSlotDetach(slot: Slot) {
@@ -184,6 +192,7 @@ function onSlotDelete(slot: Slot) {
         :bonus-ids="bonusIds"
         :allocatable-ids="props.allocatableIds"
         @save="onSlotSave(slot, $event)"
+        @update:set="onSlotUpdate(slot, $event)"
         @delete="onSlotDelete(slot)"
       >
         <template #extra-actions>

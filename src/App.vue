@@ -1,10 +1,10 @@
 <script setup lang="ts">
-// Root component: page shell, global undo/redo shortcut, URL sync.
+// Root component: page shell, URL sync.
 //
 // Layout: header (always visible), then either a loading skeleton, an empty state, or the
 // three-column builder (nav, editor area with sticky header, stat panel).
 import { watch, computed } from "vue";
-import { useEventListener, useMagicKeys, whenever } from "@vueuse/core";
+import { useEventListener } from "@vueuse/core";
 import Nav from "./components/Nav.vue";
 import AppHeader from "./components/AppHeader.vue";
 import EmptyState from "./components/EmptyState.vue";
@@ -89,58 +89,6 @@ const selectedLayer = computed(() => {
   if (sel?.kind !== "layer") return null;
   return layers.layers.value.find((l) => l.id === sel.id) ?? null;
 });
-
-// --- keyboard shortcut --------------------------------------------------------------------
-// useMagicKeys tracks Ctrl/Meta+Z/Y combinations reactively. The `onEventFired` hook
-// calls preventDefault() synchronously during the keydown event, before the browser's
-// native undo/redo can act on a focused input — but only when the guard conditions pass
-// (a build is active, not TEXTAREA/name-input, and no Alt modifier).
-
-const keys = useMagicKeys({
-  passive: false,
-  onEventFired(e) {
-    if (
-      !(e.ctrlKey || e.metaKey) ||
-      e.altKey ||
-      selection.selection.value?.kind === "layer"
-    )
-      return;
-    const k = e.key.toLowerCase();
-    if (k !== "z" && k !== "y") return;
-    const target = e.target as HTMLElement;
-    if (
-      target?.tagName === "TEXTAREA" ||
-      target?.classList?.contains("name-input")
-    )
-      return;
-    e.preventDefault();
-  },
-});
-
-function canUndoRedo() {
-  if (selection.selection.value?.kind === "layer") return false;
-  const active = document.activeElement as HTMLElement | null;
-  return !(
-    active?.tagName === "TEXTAREA" || active?.classList?.contains("name-input")
-  );
-}
-
-// Undo: Ctrl+Z or Meta+Z (without Shift)
-whenever(
-  () => (keys["Ctrl+Z"]?.value || keys["Meta+Z"]?.value) && canUndoRedo(),
-  () => buildEditor.undo(),
-);
-
-// Redo: Ctrl+Y, Ctrl+Shift+Z, or Meta equivalents
-whenever(
-  () =>
-    (keys["Ctrl+Y"]?.value ||
-      keys["Meta+Y"]?.value ||
-      keys["Ctrl+Shift+Z"]?.value ||
-      keys["Meta+Shift+Z"]?.value) &&
-    canUndoRedo(),
-  () => buildEditor.redo(),
-);
 
 // --- routing --------------------------------------------------------------------------
 

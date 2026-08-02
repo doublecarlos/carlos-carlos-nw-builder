@@ -24,7 +24,9 @@ test.describe("stat source popover", () => {
     await statInfoButton(page, "power").click();
     const card = statCard(page);
     await expect(card).toBeVisible();
-    await expect(card.locator('[data-testid="stat-card-title"]')).toHaveText("Power");
+    await expect(card.locator('[data-testid="stat-card-title"]')).toHaveText(
+      "Power",
+    );
 
     // No items/bonuses at all yet, so Rating has nothing to show.
     await expect(card.locator('[data-testid="stat-card-empty"]')).toHaveText(
@@ -52,7 +54,9 @@ test.describe("stat source popover", () => {
     await statInfoButton(page, "strike").click();
     const card = statCard(page);
     await expect(card).toBeVisible();
-    await expect(card.locator('[data-testid="stat-card-title"]')).toHaveText("Critical Strike");
+    await expect(card.locator('[data-testid="stat-card-title"]')).toHaveText(
+      "Critical Strike",
+    );
 
     const groups = statCardSourceGroups(page);
     await expect(groups).toHaveCount(2);
@@ -98,7 +102,9 @@ test.describe("stat source popover", () => {
     // every *other* rating stat's own Rating section, not part of a pair itself.
     await statInfoButton(page, "combined_rating").click();
     const card = statCard(page);
-    await expect(card.locator('[data-testid="stat-card-section"]')).toHaveCount(0);
+    await expect(card.locator('[data-testid="stat-card-section"]')).toHaveCount(
+      0,
+    );
     const rows = card.locator('[data-testid="stat-card-row"]');
     await expect(rows).toHaveCount(1);
     await expect(rows.first()).toContainText(HEAD_ITEM);
@@ -120,13 +126,15 @@ test.describe("stat source popover", () => {
   }) => {
     await openBuilder(page);
     await statInfoButton(page, "power").click();
-    await expect(statCard(page).locator('[data-testid="stat-card-title"]')).toHaveText("Power");
+    await expect(
+      statCard(page).locator('[data-testid="stat-card-title"]'),
+    ).toHaveText("Power");
 
     await statInfoButton(page, "acc").click();
     await expect(statCard(page)).toHaveCount(1);
-    await expect(statCard(page).locator('[data-testid="stat-card-title"]')).toHaveText(
-      "Accuracy",
-    );
+    await expect(
+      statCard(page).locator('[data-testid="stat-card-title"]'),
+    ).toHaveText("Accuracy");
   });
 
   test("the close button closes the card", async ({ page }) => {
