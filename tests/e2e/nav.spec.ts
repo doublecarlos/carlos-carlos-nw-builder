@@ -97,6 +97,7 @@ test("Move up order survives a reload", async ({ page }) => {
   }
 
   // Wait for IDB write to complete before reload.
+  // eslint-disable-next-line playwright/no-wait-for-timeout -- No DOM event to observe for IDB flush
   await page.waitForTimeout(500);
 
   await page.reload();
