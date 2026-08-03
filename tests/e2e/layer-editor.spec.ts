@@ -1,7 +1,7 @@
 // End-to-end coverage for the in-place layer editor (replaces the old modal DataEditor).
 // Selecting a layer replaces the build editor and stat panel; editing an item in a layer shows
 // its effect on the build's resolved stats after switching back.
-import { test, expect } from "@playwright/test";
+import { test, expect, type Locator, type Page } from "@playwright/test";
 import { openBuilder, chooseItem } from "./support/app";
 import { addLayer, layerRow } from "./support/nav";
 
@@ -244,5 +244,104 @@ test.describe("bonus set grant conditions", () => {
     await expect(typePicker).toHaveValue("class");
     await expect(valuePicker).toHaveValue("Cleric");
     await expect(statusBadge).toBeVisible();
+  });
+});
+
+test.describe("bonus set stat payload editing", () => {
+  /** Opens the layer editor's Bonus sets section and selects one set by name. */
+  async function openSet(page: Page, name: string) {
+    await openBuilder(page);
+    await addLayer(page);
+    await layerRow(page, "Layer 1").locator(".nav-name").click();
+    await page.getByRole("button", { name: /Bonus sets \d+/ }).click();
+    await page.locator(".editor-search").fill(name);
+    const setRow = page
+      .locator(".editor-row")
+      .filter({ hasText: name })
+      .first();
+    await setRow.click();
+    await expect(page.locator(".stat-row").first()).toBeVisible();
+    return setRow;
+  }
+
+  /** Picks a stat for the row's combo by typing the full label, then selecting it. */
+  async function pickStat(row: Locator) {
+    const picker = row.getByTestId("picker-input");
+    await picker.click();
+    await picker.fill("Power (power)");
+    await row.getByText("Power (power)", { exact: true }).click();
+  }
+
+  test("adding a stat to a tiered payload adds it to the tier and survives auto-save", async ({
+    page,
+  }) => {
+    const setRow = await openSet(page, "Executioner's Covenant");
+
+    // Two tiers, eight stats each.
+    const rowsBefore = await page.locator(".stat-row").count();
+    await page.getByRole("button", { name: "Add stat" }).first().click();
+    await expect(page.locator(".stat-row")).toHaveCount(rowsBefore + 1);
+
+    // The tier's set combo lists the set ids (they reach the form through the store).
+    await page
+      .locator(".combo--set")
+      .first()
+      .getByTestId("picker-input")
+      .click();
+    await expect(
+      page
+        .getByTestId("picker-menu")
+        .getByText("executioner-s-covenant", { exact: true }),
+    ).toBeVisible();
+    await page.keyboard.press("Escape");
+
+    // Fill the new row, then wait past the 700ms auto-save debounce: the row must
+    // survive the round-trip and the set must be marked edited.
+    await pickStat(page.locator(".stat-row").last());
+    await page.waitForTimeout(1500);
+    await expect(page.locator(".stat-row")).toHaveCount(rowsBefore + 1);
+    await expect(
+      setRow.getByTestId("badge").filter({ hasText: "edited" }),
+    ).toBeVisible();
+  });
+
+  test("adding a stat to a 'varies by condition' payload adds it to the variant", async ({
+    page,
+  }) => {
+    const setRow = await openSet(page, "Bard's Truly Inspired (Skill)");
+
+    // Two variants, one stat each.
+    const rowsBefore = await page.locator(".stat-row").count();
+    await page.getByRole("button", { name: "Add stat" }).first().click();
+    await expect(page.locator(".stat-row")).toHaveCount(rowsBefore + 1);
+
+    // Fill the new row and let it auto-save: it must survive the round-trip.
+    await pickStat(page.locator(".stat-row").last());
+    await page.waitForTimeout(1500);
+    await expect(page.locator(".stat-row")).toHaveCount(rowsBefore + 1);
+    await expect(
+      setRow.getByTestId("badge").filter({ hasText: "edited" }),
+    ).toBeVisible();
+  });
+
+  test("pre-added empty stat rows survive filling one of them", async ({
+    page,
+  }) => {
+    const setRow = await openSet(page, "1st Pack Tactics (Group)");
+
+    // The add-rows-first workflow: add three empty rows, then fill only the first new
+    // one. The still-empty rows must not be wiped by the auto-save round-trip.
+    for (let i = 0; i < 3; i++) {
+      await page.getByRole("button", { name: "Add stat" }).first().click();
+    }
+    const rows = page.locator(".stat-row");
+    await expect(rows).toHaveCount(5); // 2 existing + 3 added
+    await pickStat(rows.nth(2));
+
+    await page.waitForTimeout(1500);
+    await expect(rows).toHaveCount(5);
+    await expect(
+      setRow.getByTestId("badge").filter({ hasText: "edited" }),
+    ).toBeVisible();
   });
 });

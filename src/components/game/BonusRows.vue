@@ -295,12 +295,14 @@ function toggleJson(gIndex: number) {
               :key="sIndex"
               class="stat-row flex flex-wrap items-center gap-1.5 mb-1"
             >
-              <IconButton title="Add stat" @click="gs(gIndex).addStat()"
+              <IconButton
+                title="Add stat"
+                @click="gs(gIndex).addTierStat(tIndex)"
                 ><Plus
               /></IconButton>
               <IconButton
                 title="Remove stat"
-                @click="gs(gIndex).removeStat(sIndex)"
+                @click="gs(gIndex).removeTierStat(sIndex, tIndex)"
                 ><Trash
               /></IconButton>
               <ComboBox
@@ -326,7 +328,9 @@ function toggleJson(gIndex: number) {
               />
             </div>
             <div v-if="!tier.stats.length" class="mt-1 flex flex-wrap gap-1">
-              <IconButton title="Add stat" @click="gs(gIndex).addStat()"
+              <IconButton
+                title="Add stat"
+                @click="gs(gIndex).addTierStat(tIndex)"
                 ><Plus
               /></IconButton>
             </div>
@@ -403,12 +407,14 @@ function toggleJson(gIndex: number) {
               :key="sIndex"
               class="stat-row flex flex-wrap items-center gap-1.5 mb-1"
             >
-              <IconButton title="Add stat" @click="gs(gIndex).addStat()"
+              <IconButton
+                title="Add stat"
+                @click="gs(gIndex).addVariantStat(vIndex)"
                 ><Plus
               /></IconButton>
               <IconButton
                 title="Remove stat"
-                @click="gs(gIndex).removeStat(sIndex)"
+                @click="gs(gIndex).removeVariantStat(sIndex, vIndex)"
                 ><Trash
               /></IconButton>
               <ComboBox
@@ -437,7 +443,9 @@ function toggleJson(gIndex: number) {
               v-if="!variant.stats.length"
               class="stat-row flex flex-wrap items-center gap-1.5 mb-1"
             >
-              <IconButton title="Add stat" @click="gs(gIndex).addStat()"
+              <IconButton
+                title="Add stat"
+                @click="gs(gIndex).addVariantStat(vIndex)"
                 ><Plus
               /></IconButton>
             </div>

@@ -338,13 +338,20 @@ function save() {
 const draftStore = new BonusDraftStore(
   () => draft.value.grants,
   isNew.value ? scheduleSnapshot : scheduleEmit,
-  undefined,
+  props.setIds,
 );
 
 // Rebuild draft when source changes (e.g. after undo/redo reverts the overlay).
 watch(
   () => props.source,
   (value) => {
+    // Live edits round-trip through the layer overlay: emitChange → updateOverlay → db
+    // recompute → this prop. Rebuilding from that echo would wipe half-drawn rows —
+    // rowsToStats drops empty stat rows on serialize, so an "add the rows first, fill
+    // them later" session would lose the still-empty ones. Skip the rebuild when the
+    // new source is byte-identical to what this form last emitted.
+    if (value && lastEmittedJson && JSON.stringify(value) === lastEmittedJson)
+      return;
     draft.value = buildDraft(value);
     error.value = "";
     lastEmittedJson = JSON.stringify(

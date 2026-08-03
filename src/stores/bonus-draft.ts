@@ -48,6 +48,7 @@ export class GrantStore {
     this.store.onChange();
   }
 
+  /** Add a stat row to the flat payload's list. */
   addStat(): void {
     this.grant.stats.push({ key: "", value: 0 });
     this.store.onChange();
@@ -55,6 +56,36 @@ export class GrantStore {
 
   removeStat(index: number): void {
     this.grant.stats.splice(index, 1);
+    this.store.onChange();
+  }
+
+  /** Add a stat row to one tier of a tiered payload. */
+  addTierStat(tierIndex: number): void {
+    const tier = this.grant.tiers[tierIndex];
+    if (!tier) return;
+    tier.stats.push({ key: "", value: 0 });
+    this.store.onChange();
+  }
+
+  removeTierStat(statIndex: number, tierIndex: number): void {
+    const tier = this.grant.tiers[tierIndex];
+    if (!tier) return;
+    tier.stats.splice(statIndex, 1);
+    this.store.onChange();
+  }
+
+  /** Add a stat row to one variant of a variant payload. */
+  addVariantStat(variantIndex: number): void {
+    const variant = this.grant.variants[variantIndex];
+    if (!variant) return;
+    variant.stats.push({ key: "", value: 0 });
+    this.store.onChange();
+  }
+
+  removeVariantStat(statIndex: number, variantIndex: number): void {
+    const variant = this.grant.variants[variantIndex];
+    if (!variant) return;
+    variant.stats.splice(statIndex, 1);
     this.store.onChange();
   }
 
