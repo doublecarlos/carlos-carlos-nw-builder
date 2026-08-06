@@ -10,7 +10,7 @@
 
 You are **required** to:
 
-- Follow Vue JS best practices, including using composables to avoid code duplication
+- Follow Vue JS best practices, checking all vue-related skills if available
 - Make good use of Vue JS builtins, as well as functionality provided by VueUse
 - Implement tests as needed, both UI and unit tests
 - Run `npm run fix` to perform formatting and linting
