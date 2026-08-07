@@ -7,7 +7,11 @@ import * as compare from "./compare";
 import * as history from "./history";
 import { db } from "./resolved";
 import { getPath, setPath } from "../lib/build-path";
-import type { BuildParameterSlot, PointAssignmentSlot } from "../types";
+import type {
+  BuildParameterSlot,
+  PointAssignmentSlot,
+  SectionPreset,
+} from "../types";
 
 // Re-export computed accessors so BuildBar.vue etc. can keep importing from buildEditor.
 export const canUndo = history.canUndo;
@@ -309,5 +313,35 @@ export function copySection(fromId: string, sectionIds: string[]) {
     const value = source.values[slot.id];
     if (value != null) b.values[slot.id] = value;
     else delete b.values[slot.id];
+  }
+}
+
+/**
+ * Writes a `SectionPreset`'s defaults into the active build -- a merge, not `copySection`'s
+ * full-section replace: only the slots/items a field mentions are written, everything else in
+ * the section (and, within a `point_assignment` row, every item the preset doesn't name) is
+ * left exactly as it was. One `history.snapshot` covers the whole apply as a single undo step.
+ */
+export function applyPreset(preset: SectionPreset) {
+  const b = builds.build.value;
+  if (!b) return;
+
+  history.snapshot("build", b.id, null, `apply preset "${preset.label}"`, b);
+
+  for (const [slotId, value] of Object.entries(preset.params ?? {})) {
+    const slot = db.value.slotById.get(slotId);
+    if (slot?.type === "build_parameter") setPath(b.context, slot.path, value);
+  }
+
+  for (const [slotId, itemId] of Object.entries(preset.choices ?? {})) {
+    b.choices[slotId] = itemId;
+  }
+
+  for (const [slotId, value] of Object.entries(preset.values ?? {})) {
+    b.values[slotId] = value;
+  }
+
+  for (const [slotId, rows] of Object.entries(preset.assignments ?? {})) {
+    b.assignments[slotId] = { ...b.assignments[slotId], ...rows };
   }
 }

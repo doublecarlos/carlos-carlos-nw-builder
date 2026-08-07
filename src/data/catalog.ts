@@ -29,6 +29,8 @@ import type {
   ParamCondition,
   LintFinding,
   Slot,
+  SectionPreset,
+  SlotSection,
   BuildParameterSlot,
   Db,
   Build,
@@ -37,33 +39,40 @@ import type {
 export const emptyOverlay = (): CatalogOverlay => ({
   items: {},
   bonusSets: {},
+  sectionPresets: {},
 });
 
 export const isEmpty = (overlay: CatalogOverlay | null | undefined) =>
   !overlay ||
   (Object.keys(overlay.items ?? {}).length === 0 &&
-    Object.keys(overlay.bonusSets ?? {}).length === 0);
+    Object.keys(overlay.bonusSets ?? {}).length === 0 &&
+    Object.keys(overlay.sectionPresets ?? {}).length === 0);
 
 /** Anything persisted or pasted has to survive being wrong. */
 export function normaliseOverlay(raw: unknown): CatalogOverlay {
   const overlay = emptyOverlay();
   if (!raw || typeof raw !== "object") return overlay;
-  for (const group of ["items", "bonusSets"] as const) {
+  for (const group of ["items", "bonusSets", "sectionPresets"] as const) {
     const source = (raw as Record<string, unknown>)[group];
     if (!source || typeof source !== "object") continue;
     for (const [key, value] of Object.entries(source)) {
       if (value === null)
         overlay[group][key] = null; // tombstone
       else if (value && typeof value === "object")
-        overlay[group][key] = value as Item & BonusSet;
+        overlay[group][key] = value as Item & BonusSet & SectionPreset;
     }
   }
   return overlay;
 }
 
-export const base = (): { items: Item[]; bonusSets: BonusSet[] } => ({
+export const base = (): {
+  items: Item[];
+  bonusSets: BonusSet[];
+  sectionPresets: SectionPreset[];
+} => ({
   items: NW_ITEMS ?? [],
   bonusSets: NW_BONUSES ?? [],
+  sectionPresets: NW_SLOTS.presets ?? [],
 });
 
 /**
@@ -71,10 +80,12 @@ export const base = (): { items: Item[]; bonusSets: BonusSet[] } => ({
  * export is stable and diffs against the generated files stay readable.
  */
 export function compose(overlays: (CatalogOverlay | null | undefined)[] = []) {
-  const { items: baseItems, bonusSets: baseSets } = base();
+  const { items: baseItems, bonusSets: baseSets, sectionPresets: basePresets } =
+    base();
 
   const items = new Map(baseItems.map((item) => [item.id, item]));
   const bonusSets = new Map(baseSets.map((set) => [set.id, set]));
+  const sectionPresets = new Map(basePresets.map((preset) => [preset.id, preset]));
 
   for (const overlay of overlays) {
     if (!overlay) continue;
@@ -86,18 +97,28 @@ export function compose(overlays: (CatalogOverlay | null | undefined)[] = []) {
       if (set === null) bonusSets.delete(id);
       else bonusSets.set(id, set);
     }
+    for (const [id, preset] of Object.entries(overlay.sectionPresets ?? {})) {
+      if (preset === null) sectionPresets.delete(id);
+      else sectionPresets.set(id, preset);
+    }
   }
 
   return {
     items: [...items.values()].sort((a, b) => a.name.localeCompare(b.name)),
     bonusSets: [...bonusSets.values()].sort((a, b) => a.id.localeCompare(b.id)),
+    sectionPresets: [...sectionPresets.values()].sort((a, b) =>
+      a.id.localeCompare(b.id),
+    ),
   };
 }
 
 /** A db the engine accepts, built from the composed catalogue. */
 export function makeDb(overlays: (CatalogOverlay | null | undefined)[] = []) {
-  const { items, bonusSets } = compose(overlays);
-  return db.build(items, bonusSets, NW_SCHEMA, NW_SLOTS);
+  const { items, bonusSets, sectionPresets } = compose(overlays);
+  return db.build(items, bonusSets, NW_SCHEMA, {
+    ...NW_SLOTS,
+    presets: sectionPresets,
+  });
 }
 
 // --- editing (pure: every helper returns a new overlay) ---------------------------------
@@ -105,12 +126,16 @@ export function makeDb(overlays: (CatalogOverlay | null | undefined)[] = []) {
 const clone = (overlay: CatalogOverlay): CatalogOverlay => ({
   items: { ...overlay.items },
   bonusSets: { ...overlay.bonusSets },
+  sectionPresets: { ...overlay.sectionPresets },
 });
 
-const inBase = (group: CatalogGroup, key: string) =>
-  group === "items"
-    ? base().items.some((item) => item.id === key)
-    : base().bonusSets.some((set) => set.id === key);
+const inBase = (group: CatalogGroup, key: string) => {
+  const catalogueBase = base();
+  if (group === "items") return catalogueBase.items.some((item) => item.id === key);
+  if (group === "bonusSets")
+    return catalogueBase.bonusSets.some((set) => set.id === key);
+  return catalogueBase.sectionPresets.some((preset) => preset.id === key);
+};
 
 /** Save an entry under its id. Ids are frozen at creation (`nextId`, below) and never
  * user-edited afterwards, so the key an entry is saved under never changes across its
@@ -119,10 +144,11 @@ export function upsert(
   overlay: CatalogOverlay,
   group: CatalogGroup,
   key: string,
-  value: Item | BonusSet,
+  value: Item | BonusSet | SectionPreset,
 ) {
   const next = clone(overlay);
-  (next[group] as Record<string, Item | BonusSet | null>)[key] = value;
+  (next[group] as Record<string, Item | BonusSet | SectionPreset | null>)[key] =
+    value;
   return next;
 }
 
@@ -464,6 +490,84 @@ export function validateSlots(slots: Slot[]): LintFinding[] {
   return findings;
 }
 
+// A preset field's declared slot type -- `validatePresets`' own check that e.g. `choices`
+// only ever references an `item_picker` slot, not a `build_parameter` one wearing the wrong
+// hat and silently doing nothing when applied.
+const PRESET_FIELD_SLOT_TYPE = {
+  params: "build_parameter",
+  choices: "item_picker",
+  values: "item_picker",
+  assignments: "point_assignment",
+} as const;
+
+/**
+ * Lint every `SectionPreset`: a duplicate id, a reference to a slot id that doesn't exist, a
+ * reference that exists but belongs to a different section (a preset can only touch its own
+ * section), or a reference whose slot type doesn't match the field it was declared under (e.g.
+ * an `item_picker` slot id under `assignments`). Standalone from `validate()` below, same as
+ * `validateSlots`, since it needs only the slot/preset lists, not a composed catalogue.
+ */
+export function validatePresets(
+  presets: SectionPreset[],
+  slots: Slot[],
+): LintFinding[] {
+  const findings: LintFinding[] = [];
+  const slotById = new Map(slots.map((slot) => [slot.id, slot]));
+  const seenIds = new Set<string>();
+
+  for (const preset of presets) {
+    if (!preset.id) {
+      findings.push({
+        level: "error",
+        kind: "sectionPreset",
+        message: `a preset in section "${preset.section}" has no id`,
+      });
+    } else if (seenIds.has(preset.id)) {
+      findings.push({
+        level: "error",
+        kind: "sectionPreset",
+        name: preset.id,
+        message: `preset "${preset.id}" is defined more than once`,
+      });
+    } else {
+      seenIds.add(preset.id);
+    }
+
+    for (const [field, expectedType] of Object.entries(
+      PRESET_FIELD_SLOT_TYPE,
+    )) {
+      for (const slotId of Object.keys(
+        preset[field as keyof typeof PRESET_FIELD_SLOT_TYPE] ?? {},
+      )) {
+        const slot = slotById.get(slotId);
+        if (!slot) {
+          findings.push({
+            level: "error",
+            kind: "sectionPreset",
+            name: preset.id,
+            message: `preset "${preset.id}": "${slotId}" (in ${field}) is not a known slot`,
+          });
+        } else if (slot.type !== expectedType) {
+          findings.push({
+            level: "error",
+            kind: "sectionPreset",
+            name: preset.id,
+            message: `preset "${preset.id}": "${slotId}" is a ${slot.type} slot, but ${field} only applies to a ${expectedType} slot`,
+          });
+        } else if (slot.section !== preset.section) {
+          findings.push({
+            level: "error",
+            kind: "sectionPreset",
+            name: preset.id,
+            message: `preset "${preset.id}" (section "${preset.section}"): "${slotId}" belongs to section "${slot.section}"`,
+          });
+        }
+      }
+    }
+  }
+  return findings;
+}
+
 /**
  * Lint the composed catalogue. Warnings are things that are probably a mistake; errors are
  * things the engine will misread or silently drop.
@@ -472,8 +576,12 @@ export function validate(
   items: Item[],
   bonusSets: BonusSet[],
   schema: Schema = NW_SCHEMA,
+  presets: SectionPreset[] = NW_SLOTS.presets ?? [],
 ): LintFinding[] {
-  const findings: LintFinding[] = [...validateSlots(NW_SLOTS?.slots ?? [])];
+  const findings: LintFinding[] = [
+    ...validateSlots(NW_SLOTS?.slots ?? []),
+    ...validatePresets(presets, NW_SLOTS?.slots ?? []),
+  ];
   const report = (
     level: "error" | "warn",
     message: string,
@@ -756,4 +864,47 @@ export function toBonusesFile(bonusSets: BonusSet[]) {
     })
     .join(",\n");
   return `[\n${body}\n]\n`;
+}
+
+/** Drops the `section` field `data.ts`'s `deriveSlots` injects on load -- the raw file's own
+ * slot/preset objects never carry it (it's implied by nesting), so round-tripping through
+ * `toSlotsFile` has to strip it back off before re-serializing. */
+function stripSection<T extends { section?: string }>(value: T) {
+  const { section: _section, ...rest } = value;
+  return rest;
+}
+
+/**
+ * Regenerates the whole `data/slots.json` body from the composed in-memory data -- same "paste
+ * back over the file" workflow `toItemsFile`/`toBonusesFile` already give items/bonus sets, just
+ * shaped for slots.json's nested `{ sections: [{ ..., presets?, slots }] }` structure instead of
+ * a bare top-level array. Slots and presets are round-tripped through the generic `literal()`
+ * serialiser as-is (once `section` is stripped) rather than through a hand-ordered key table
+ * like `orderedEntries` -- their own property order, preserved by the spread in `deriveSlots`,
+ * already matches how they were authored, so there is nothing left to reorder.
+ */
+export function toSlotsFile(
+  sections: SlotSection[],
+  slots: Slot[],
+  presets: SectionPreset[],
+): string {
+  const body = sections
+    .map((section) => {
+      const sectionSlots = slots
+        .filter((slot) => slot.section === section.id)
+        .map(stripSection);
+      const sectionPresets = presets
+        .filter((preset) => preset.section === section.id)
+        .map(stripSection);
+      const entries: [string, unknown][] = [
+        ["defaultOpen", section.defaultOpen],
+        ["id", section.id],
+        ["label", section.label],
+      ];
+      if (sectionPresets.length) entries.push(["presets", sectionPresets]);
+      entries.push(["slots", sectionSlots]);
+      return `    ${entriesLiteral(entries.filter(([, v]) => v !== undefined), 4)}`;
+    })
+    .join(",\n");
+  return `{\n  "sections": [\n${body}\n  ]\n}\n`;
 }

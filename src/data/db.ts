@@ -64,6 +64,7 @@ export function build(
     schema,
     slots: slotList,
     sections: slots?.sections ?? [],
+    presets: slots?.presets ?? [],
     slotById,
     bonusSets,
     bonusSetById,

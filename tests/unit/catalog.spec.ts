@@ -9,6 +9,8 @@ import type {
   ConditionWhen,
   Item,
   Slot,
+  SectionPreset,
+  SlotSection,
   CatalogOverlay,
   Db,
   Build,
@@ -93,6 +95,97 @@ describe("catalog.validateSlots", () => {
   it("reports a point_assignment slot with no filter", () => {
     const findings = catalog.validateSlots([pointAssignmentSlot("a", "")]);
     expect(findings.some((f) => /no filter/.test(f.message))).toBe(true);
+  });
+});
+
+describe("catalog.validatePresets", () => {
+  const slots: Slot[] = [
+    paramSlot("options.role", "role"),
+    {
+      id: "gear.head",
+      label: "Head",
+      section: "gear",
+      type: "item_picker",
+      filter: "gear_head",
+    },
+    pointAssignmentSlot("boons.tier1", "boon_tier1"),
+  ];
+
+  const preset = (fields: Partial<SectionPreset>): SectionPreset => ({
+    id: "test-preset",
+    label: "Test",
+    section: "options",
+    ...fields,
+  });
+
+  it("the shipped slots.json presets are all well-formed", () => {
+    expect(
+      catalog.validatePresets(NW_SLOTS.presets ?? [], NW_SLOTS.slots),
+    ).toEqual([]);
+  });
+
+  it("accepts a well-formed preset touching every field", () => {
+    const findings = catalog.validatePresets(
+      [
+        preset({ section: "options", params: { "options.role": "dps" } }),
+        preset({
+          id: "gear-preset",
+          section: "gear",
+          choices: { "gear.head": "some-item" },
+          values: { "gear.head": 500 },
+        }),
+        preset({
+          id: "boons-preset",
+          section: "boons",
+          assignments: { "boons.tier1": { "some-boon": 2 } },
+        }),
+      ],
+      slots,
+    );
+    expect(findings).toEqual([]);
+  });
+
+  it("reports a reference to an unknown slot id", () => {
+    const findings = catalog.validatePresets(
+      [preset({ params: { "options.nope": "x" } })],
+      slots,
+    );
+    expect(findings.some((f) => /not a known slot/.test(f.message))).toBe(true);
+  });
+
+  it("reports a field targeting the wrong slot type", () => {
+    const findings = catalog.validatePresets(
+      [preset({ choices: { "options.role": "x" } })],
+      slots,
+    );
+    expect(
+      findings.some((f) =>
+        /is a build_parameter slot.*item_picker/.test(f.message),
+      ),
+    ).toBe(true);
+  });
+
+  it("reports a slot belonging to a different section", () => {
+    const findings = catalog.validatePresets(
+      [preset({ section: "options", choices: { "gear.head": "x" } })],
+      slots,
+    );
+    expect(
+      findings.some((f) => /belongs to section "gear"/.test(f.message)),
+    ).toBe(true);
+  });
+
+  it("reports a duplicate preset id", () => {
+    const findings = catalog.validatePresets(
+      [
+        preset({ params: { "options.role": "dps" } }),
+        preset({ params: { "options.role": "tank" } }),
+      ],
+      slots,
+    );
+    expect(findings.some((f) => /defined more than once/.test(f.message))).toBe(
+      true,
+    );
   });
 });
 
@@ -249,6 +342,7 @@ describe("catalog.compose: layer overlay (two layers, same item id)", () => {
         },
       },
       bonusSets: {},
+      sectionPresets: {},
     };
     const later: CatalogOverlay = {
       items: {
@@ -259,6 +353,7 @@ describe("catalog.compose: layer overlay (two layers, same item id)", () => {
         },
       },
       bonusSets: {},
+      sectionPresets: {},
     };
     const composed = catalog.compose([early, later]);
     const item = composed.items.find((i) => i.id === "shared-item");
@@ -275,6 +370,7 @@ describe("catalog.compose: layer overlay (two layers, same item id)", () => {
         },
       },
       bonusSets: {},
+      sectionPresets: {},
     };
     // Disabling the later layer means not passing it to compose
     const composed = catalog.compose([early]);
@@ -292,13 +388,169 @@ describe("catalog.compose: layer overlay (two layers, same item id)", () => {
         },
       },
       bonusSets: {},
+      sectionPresets: {},
     };
     const later: CatalogOverlay = {
       items: { "shared-item": null },
       bonusSets: {},
+      sectionPresets: {},
     };
     const composed = catalog.compose([early, later]);
     expect(composed.items.find((i) => i.id === "shared-item")).toBeUndefined();
+  });
+});
+
+describe("catalog.compose: sectionPresets overlay", () => {
+  const presetOverlay = (preset: SectionPreset | null): CatalogOverlay => ({
+    items: {},
+    bonusSets: {},
+    sectionPresets: { "test-preset": preset },
+  });
+
+  it("a layer-added preset appears in the composed list", () => {
+    const composed = catalog.compose([
+      presetOverlay({
+        id: "test-preset",
+        label: "Test",
+        section: "options",
+        params: { "options.role": "dps" },
+      }),
+    ]);
+    expect(
+      composed.sectionPresets.find((p) => p.id === "test-preset")?.label,
+    ).toBe("Test");
+  });
+
+  it("a later overlay's edit wins over an earlier one", () => {
+    const early = presetOverlay({
+      id: "test-preset",
+      label: "Original",
+      section: "options",
+    });
+    const later = presetOverlay({
+      id: "test-preset",
+      label: "Renamed",
+      section: "options",
+    });
+    const composed = catalog.compose([early, later]);
+    expect(
+      composed.sectionPresets.find((p) => p.id === "test-preset")?.label,
+    ).toBe("Renamed");
+  });
+
+  it("a tombstone (null) removes the preset from the composed list", () => {
+    const added = presetOverlay({
+      id: "test-preset",
+      label: "Test",
+      section: "options",
+    });
+    const removed = presetOverlay(null);
+    const composed = catalog.compose([added, removed]);
+    expect(
+      composed.sectionPresets.find((p) => p.id === "test-preset"),
+    ).toBeUndefined();
+  });
+
+  it("a tombstone over a shipped preset hides it, without touching the others", () => {
+    const shipped = NW_SLOTS.presets?.[0];
+    expect(shipped).toBeDefined();
+    const composed = catalog.compose([
+      { items: {}, bonusSets: {}, sectionPresets: { [shipped!.id]: null } },
+    ]);
+    expect(
+      composed.sectionPresets.find((p) => p.id === shipped!.id),
+    ).toBeUndefined();
+    expect(composed.sectionPresets.length).toBe(
+      (NW_SLOTS.presets?.length ?? 0) - 1,
+    );
+  });
+});
+
+describe("catalog.toSlotsFile", () => {
+  it("round-trips a small sections/slots/presets fixture", () => {
+    const sections: SlotSection[] = [
+      { defaultOpen: true, id: "a", label: "A" },
+      { defaultOpen: false, id: "b", label: "B" },
+    ];
+    const slots: Slot[] = [
+      {
+        id: "a.x",
+        label: "X",
+        section: "a",
+        type: "build_parameter",
+        paramType: "boolean",
+        path: "x",
+      },
+      {
+        id: "b.y",
+        label: "Y",
+        section: "b",
+        type: "point_assignment",
+        filter: "filter_y",
+      },
+    ];
+    const presets: SectionPreset[] = [
+      {
+        id: "a.preset1",
+        label: "Preset 1",
+        section: "a",
+        params: { "a.x": true },
+      },
+    ];
+
+    const parsed = JSON.parse(catalog.toSlotsFile(sections, slots, presets));
+
+    expect(parsed.sections).toEqual([
+      {
+        defaultOpen: true,
+        id: "a",
+        label: "A",
+        presets: [
+          { id: "a.preset1", label: "Preset 1", params: { "a.x": true } },
+        ],
+        slots: [
+          {
+            id: "a.x",
+            label: "X",
+            type: "build_parameter",
+            paramType: "boolean",
+            path: "x",
+          },
+        ],
+      },
+      {
+        defaultOpen: false,
+        id: "b",
+        label: "B",
+        slots: [
+          {
+            id: "b.y",
+            label: "Y",
+            type: "point_assignment",
+            filter: "filter_y",
+          },
+        ],
+      },
+    ]);
+  });
+
+  it("omits the presets key entirely for a section with none", () => {
+    const sections: SlotSection[] = [
+      { defaultOpen: true, id: "a", label: "A" },
+    ];
+    const parsed = JSON.parse(catalog.toSlotsFile(sections, [], []));
+    expect(Object.hasOwn(parsed.sections[0], "presets")).toBe(false);
+  });
+
+  it("produces valid JSON for the real shipped data", () => {
+    const parsed = JSON.parse(
+      catalog.toSlotsFile(
+        NW_SLOTS.sections,
+        NW_SLOTS.slots,
+        NW_SLOTS.presets ?? [],
+      ),
+    );
+    expect(parsed.sections.length).toBe(NW_SLOTS.sections.length);
   });
 });
 

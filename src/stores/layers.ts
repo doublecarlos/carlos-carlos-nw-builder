@@ -46,10 +46,11 @@ export function ensureTargetLayer(): Layer {
 export function allocatableIds(): string[] {
   const ids: string[] = [];
   // Base catalogue ids are known statically, collected from the shipped data.
-  // Layers contribute all their item and bonus set ids.
+  // Layers contribute all their item, bonus set and section preset ids.
   for (const layer of _layers.value.values()) {
     ids.push(...Object.keys(layer.overlay.items ?? {}));
     ids.push(...Object.keys(layer.overlay.bonusSets ?? {}));
+    ids.push(...Object.keys(layer.overlay.sectionPresets ?? {}));
   }
   return ids;
 }

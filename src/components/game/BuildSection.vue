@@ -10,9 +10,10 @@
 // as a result, not because this component special-cases its id.
 import BaseBadge from "../ui/BaseBadge.vue";
 import SectionCopyMenu from "./SectionCopyMenu.vue";
+import PresetMenu from "./PresetMenu.vue";
 import { useCursorRowKeys } from "../../composables/useCursorRowKeys";
 import { useTemplateRef } from "vue";
-import type { Slot } from "../../types";
+import type { Slot, SectionPreset } from "../../types";
 
 const props = defineProps<{
   id: string;
@@ -27,11 +28,13 @@ const props = defineProps<{
   onArrow: (dir: 1 | -1) => void;
   highlightDiff: boolean;
   otherBuilds: { value: string; label: string }[];
+  presets: SectionPreset[];
 }>();
 
 defineEmits<{
   toggle: [];
   copy: [fromId: string];
+  "apply-preset": [preset: SectionPreset];
 }>();
 
 defineSlots<{
@@ -69,6 +72,12 @@ useCursorRowKeys(button, {
           diffs
         }}</BaseBadge>
       </button>
+      <PresetMenu
+        v-if="presets.length"
+        :section-id="id"
+        :presets="presets"
+        @apply="(preset) => $emit('apply-preset', preset)"
+      />
       <SectionCopyMenu
         v-if="otherBuilds.length"
         :section-id="id"

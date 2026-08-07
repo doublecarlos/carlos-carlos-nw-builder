@@ -37,6 +37,7 @@ import type {
   EngineError,
   Slot,
   SlotSection,
+  SectionPreset,
 } from "../types";
 
 const root = useTemplateRef("root");
@@ -168,6 +169,7 @@ interface SectionRow extends SlotSection {
   errors: number;
   diffs: number;
   total: number;
+  presets: SectionPreset[];
 }
 
 /** True for a slotDef the section body actually renders -- a `quick` build_parameter slotDef lives
@@ -228,6 +230,9 @@ const sections = computed<SectionRow[]>(() => {
         errors,
         diffs,
         total: pickerSlots.length,
+        presets: db.value.presets.filter(
+          (preset) => preset.section === section.id,
+        ),
       };
     })
     .filter((section) => !onlyDiffAndComparing || section.slots.length > 0);
@@ -386,8 +391,10 @@ function onFocusIn(event: FocusEvent) {
       :on-arrow="moveCursor"
       :highlight-diff="highlightDiff"
       :other-builds="otherBuilds"
+      :presets="section.presets"
       @toggle="toggle(section.id)"
       @copy="(fromId) => buildEditor.copySection(fromId, [section.id])"
+      @apply-preset="(preset) => buildEditor.applyPreset(preset)"
     >
       <template #default="{ slotDef }: { slotDef: Slot }">
         <BuildSlot

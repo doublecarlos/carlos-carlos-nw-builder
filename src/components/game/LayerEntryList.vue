@@ -3,12 +3,13 @@
 // entry, and browse/select/restore existing ones. Owns its own keyboard cursor (arrow keys
 // from the search box or a focused row) since that only ever needs this list's own rows and
 // selection -- the parent still owns what "select" actually does (routing, section state).
+import { computed } from "vue";
 import { onKeyStroke } from "@vueuse/core";
 import { CirclePlus, FilterX, RotateCcw } from "@lucide/vue";
 import BaseButton from "../ui/BaseButton.vue";
 import BaseBadge from "../ui/BaseBadge.vue";
 import ComboBox from "../ui/ComboBox.vue";
-import type { Item, BonusSet } from "../../types";
+import type { Item, BonusSet, SectionPreset } from "../../types";
 
 export interface ItemRow {
   key: string;
@@ -26,16 +27,49 @@ export interface BonusSetRow {
   status: string;
   kind: "bonusSet";
 }
-export type EditorRow = ItemRow | BonusSetRow;
+export interface PresetRow {
+  key: string;
+  name: string;
+  filter: string;
+  preset: SectionPreset | null;
+  status: string;
+  kind: "sectionPreset";
+}
+export type EditorRow = ItemRow | BonusSetRow | PresetRow;
 
 const props = defineProps<{
   /** Already filtered by query/status -- this component only renders and navigates them. */
   rows: EditorRow[];
-  section: string; // items | bonusSets
+  section: string; // items | bonusSets | sectionPresets
   selectedKey: string | null;
   statusFilterOptions: { value: string; label: string }[];
   hasUnsavedDraft: (row: EditorRow) => boolean;
 }>();
+
+const CREATE_LABEL: Record<string, string> = {
+  bonusSets: "New bonus set",
+  sectionPresets: "New preset",
+  items: "New item",
+};
+const SEARCH_PLACEHOLDER: Record<string, string> = {
+  bonusSets: "Filter bonus sets…",
+  sectionPresets: "Filter presets…",
+  items: "Filter items…",
+};
+const CREATE_TESTID: Record<string, string> = {
+  bonusSets: "new-bonus-set",
+  sectionPresets: "new-preset",
+  items: "new-item",
+};
+const createLabel = computed(
+  () => CREATE_LABEL[props.section] ?? CREATE_LABEL.items,
+);
+const createTestId = computed(
+  () => CREATE_TESTID[props.section] ?? CREATE_TESTID.items,
+);
+const searchPlaceholder = computed(
+  () => SEARCH_PLACEHOLDER[props.section] ?? SEARCH_PLACEHOLDER.items,
+);
 
 const emit = defineEmits<{
   select: [row: EditorRow, options?: { push?: boolean }];
@@ -97,9 +131,7 @@ onKeyStroke(["ArrowDown", "ArrowUp", "Enter"], (event) => {
         v-model="query"
         type="search"
         class="editor-search w-full min-w-0 rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-        :placeholder="
-          section === 'bonusSets' ? 'Filter bonus sets…' : 'Filter items…'
-        "
+        :placeholder="searchPlaceholder"
       />
     </div>
     <div class="flex flex-none gap-1.5 px-2">
@@ -118,20 +150,11 @@ onKeyStroke(["ArrowDown", "ArrowUp", "Enter"], (event) => {
         ><FilterX />clear filters</BaseButton
       >
       <BaseButton
-        v-if="section === 'bonusSets'"
         class="flex-1 text-center justify-center"
         variant="primary"
-        data-testid="new-bonus-set"
+        :data-testid="createTestId"
         @click="emit('create')"
-        ><CirclePlus />New bonus set</BaseButton
-      >
-      <BaseButton
-        v-else
-        class="flex-1 text-center justify-center"
-        variant="primary"
-        data-testid="new-item"
-        @click="emit('create')"
-        ><CirclePlus />New item</BaseButton
+        ><CirclePlus />{{ createLabel }}</BaseButton
       >
     </div>
     <div class="min-h-0 flex-1 overflow-y-auto">

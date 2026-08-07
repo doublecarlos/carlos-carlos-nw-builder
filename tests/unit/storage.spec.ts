@@ -21,6 +21,7 @@ describe("overlay localStorage", () => {
         "some-id": { id: "some-id", name: "Test", filter: "gear_head" },
       },
       bonusSets: {},
+      sectionPresets: {},
     };
     storage.saveOverlay(overlay);
     expect(storage.loadOverlay()).toEqual(overlay);
@@ -32,6 +33,7 @@ describe("overlay localStorage", () => {
     expect(storage.loadOverlay()).toEqual({
       items: {},
       bonusSets: { x: null },
+      sectionPresets: {},
     });
   });
 });
@@ -120,6 +122,7 @@ describe("defaultLayer / normaliseLayer", () => {
         "test-id": { id: "test-id", name: "Test", filter: "gear_head" },
       },
       bonusSets: {},
+      sectionPresets: {},
     };
     const layer = storage.normaliseLayer({ overlay });
     expect(layer.overlay.items["test-id"]).toBeDefined();
@@ -633,6 +636,7 @@ describe("bundle round trip", () => {
         "layer-item": { id: "layer-item", name: "Layer", filter: "gear_head" },
       },
       bonusSets: {},
+      sectionPresets: {},
     };
 
     const json = storage.toBundleJson({ builds: [build], layers: [] });

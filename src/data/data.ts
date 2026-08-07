@@ -10,6 +10,7 @@ import type {
   StatKey,
   SlotsData,
   Slot,
+  SectionPreset,
   Item,
   BonusSet,
 } from "../types";
@@ -39,10 +40,13 @@ function deriveSchema(raw: typeof rawSchema): Schema {
 }
 
 /**
- * `data/slots.json` is authored nested (a section's slots live inside it -- no per-slot `section`
- * back-reference, no `row`; order is array position). Every consumer (db.ts, engine.ts,
- * bonus.ts, BuildEditor.vue) still wants the flat `{sections, slots}` shape `Db` has always had,
- * so this is the one place that reconciles the two -- everything downstream is unchanged.
+ * `data/slots.json` is authored nested (a section's slots -- and, optionally, its presets --
+ * live inside it -- no per-slot `section` back-reference, no `row`; order is array position).
+ * Every consumer (db.ts, engine.ts, bonus.ts, BuildEditor.vue) still wants the flat
+ * `{sections, slots, presets}` shape `Db` has always had (plus presets), so this is the one
+ * place that reconciles the two -- everything downstream is unchanged. `presets` is optional
+ * per section in the JSON (most sections don't have any yet), hence the cast rather than a
+ * destructure that `resolveJsonModule` could type-check against every section uniformly.
  */
 function deriveSlots(raw: typeof rawSlots): SlotsData {
   return {
@@ -50,6 +54,14 @@ function deriveSlots(raw: typeof rawSlots): SlotsData {
     slots: raw.sections.flatMap((section) =>
       section.slots.map((slot) => ({ ...slot, section: section.id }) as Slot),
     ),
+    presets: raw.sections.flatMap((section) => {
+      const rawPresets = (
+        section as { presets?: Omit<SectionPreset, "section">[] }
+      ).presets;
+      return (rawPresets ?? []).map(
+        (preset) => ({ ...preset, section: section.id }) as SectionPreset,
+      );
+    }),
   };
 }
 

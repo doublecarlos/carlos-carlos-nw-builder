@@ -12,6 +12,7 @@ import { useEventListener } from "@vueuse/core";
 import { useConfirm } from "../composables/useConfirm";
 import ItemForm from "./game/ItemForm.vue";
 import BonusSetForm from "./game/BonusSetForm.vue";
+import PresetForm from "./game/PresetForm.vue";
 import LayerExportDrawer from "./game/LayerExportDrawer.vue";
 import LayerValidationDrawer from "./game/LayerValidationDrawer.vue";
 import LayerEntryList from "./game/LayerEntryList.vue";
@@ -32,6 +33,7 @@ import type {
   CatalogOverlay,
   Item,
   BonusSet,
+  SectionPreset,
   LintFinding,
   Layer,
 } from "../types";
@@ -39,6 +41,7 @@ import type {
   EditorRow,
   ItemRow,
   BonusSetRow,
+  PresetRow,
 } from "./game/LayerEntryList.vue";
 
 const db = engine.db;
@@ -52,17 +55,19 @@ function setOverlay(newValue: CatalogOverlay) {
 
 const query = ref("");
 const statusFilter = ref("all"); // all | changed | added | edited | removed
-const section = ref("items"); // items | bonusSets
+const section = ref("items"); // items | bonusSets | sectionPresets
 const selectedId = ref<string | null>(null);
 const selectedSetId = ref<string | null>(null);
+const selectedPresetId = ref<string | null>(null);
 const showExport = ref(false);
-const exportTab = ref("items"); // items | bonuses | overlay
+const exportTab = ref("items"); // items | bonuses | overlay | slots
 const newItemCounter = ref(0);
 const notice = ref("");
 const confirmReset_ = useConfirm(4000);
 
 const form = ref<InstanceType<typeof ItemForm> | null>(null);
 const setForm = ref<InstanceType<typeof BonusSetForm> | null>(null);
+const presetForm = ref<InstanceType<typeof PresetForm> | null>(null);
 
 // Removed entries are gone from `db`, so the list is built from the composed catalogue
 // plus the overlay's tombstones -- otherwise a deletion would vanish with no way back.
@@ -119,9 +124,41 @@ const bonusSetRows = computed<BonusSetRow[]>(() => {
   return rows.sort((a, b) => a.name.localeCompare(b.name));
 });
 
-const rows = computed(() =>
-  section.value === "bonusSets" ? bonusSetRows.value : itemRows.value,
-);
+/** Same shape as `itemRows`/`bonusSetRows`, one row per section preset. */
+const presetRows = computed<PresetRow[]>(() => {
+  const rows: PresetRow[] = db.value.presets.map((preset) => ({
+    key: preset.id,
+    name: preset.label || preset.id,
+    filter: preset.section,
+    preset,
+    status: catalog.statusOf(overlay.value, "sectionPresets", preset.id),
+    kind: "sectionPreset",
+  }));
+  for (const [id, value] of Object.entries(
+    overlay.value.sectionPresets ?? {},
+  )) {
+    if (value === null) {
+      const shipped = catalog
+        .base()
+        .sectionPresets.find((preset) => preset.id === id);
+      rows.push({
+        key: id,
+        name: shipped?.label ?? id,
+        filter: shipped?.section ?? "—",
+        preset: null,
+        status: "removed",
+        kind: "sectionPreset",
+      });
+    }
+  }
+  return rows.sort((a, b) => a.name.localeCompare(b.name));
+});
+
+const rows = computed(() => {
+  if (section.value === "bonusSets") return bonusSetRows.value;
+  if (section.value === "sectionPresets") return presetRows.value;
+  return itemRows.value;
+});
 
 const filtered = computed(() => {
   const q = query.value.trim().toLowerCase();
@@ -170,6 +207,17 @@ const selectedSetStatus = computed(() =>
     : catalog.statusOf(overlay.value, "bonusSets", selectedSetId.value),
 );
 
+const selectedPreset = computed(() => {
+  if (selectedPresetId.value == null) return null;
+  return db.value.presets.find((p) => p.id === selectedPresetId.value) ?? null;
+});
+
+const selectedPresetStatus = computed(() =>
+  selectedPresetId.value == null
+    ? "base"
+    : catalog.statusOf(overlay.value, "sectionPresets", selectedPresetId.value),
+);
+
 const filters = computed<string[]>(() =>
   [
     ...new Set<string>(
@@ -196,7 +244,8 @@ const bonusIds = computed(() => setIds.value);
 const changedCount = computed(
   () =>
     Object.keys(overlay.value.items ?? {}).length +
-    Object.keys(overlay.value.bonusSets ?? {}).length,
+    Object.keys(overlay.value.bonusSets ?? {}).length +
+    Object.keys(overlay.value.sectionPresets ?? {}).length,
 );
 
 /** Entry count badge: non-tombstone entries in the overlay. */
@@ -208,12 +257,19 @@ const entryCount = computed(() => {
   for (const value of Object.values(overlay.value.bonusSets ?? {})) {
     if (value !== null) count += 1;
   }
+  for (const value of Object.values(overlay.value.sectionPresets ?? {})) {
+    if (value !== null) count += 1;
+  }
   return count;
 });
 
 const hasUnsavedDraft = (row: EditorRow) => {
   if (row.kind === "bonusSet") {
     if (row.key === selectedSetId.value) return setForm.value?.dirty ?? false;
+  }
+  if (row.kind === "sectionPreset") {
+    if (row.key === selectedPresetId.value)
+      return presetForm.value?.dirty ?? false;
   }
   return false;
 };
@@ -224,11 +280,17 @@ const allocatableIds = computed(() => {
   const ids = new Set<string>(layers.allocatableIds());
   const build = engine.db.value.items.map((item) => item.id);
   for (const id of build) ids.add(id);
+  for (const preset of engine.db.value.presets) ids.add(preset.id);
   return [...ids];
 });
 
 const findings = computed(() =>
-  catalog.validate(db.value.items, db.value.bonusSets),
+  catalog.validate(
+    db.value.items,
+    db.value.bonusSets,
+    undefined,
+    db.value.presets,
+  ),
 );
 
 const errorCount = computed(
@@ -258,6 +320,12 @@ function onPopState() {
     section.value = "bonusSets";
     selectedSetId.value =
       route.set && db.value.bonusSetById.get(route.set) ? route.set : null;
+  } else if (route.section === "sectionPresets") {
+    section.value = "sectionPresets";
+    selectedPresetId.value =
+      route.preset && db.value.presets.some((p) => p.id === route.preset)
+        ? route.preset
+        : null;
   } else {
     section.value = "items";
     selectedId.value =
@@ -270,27 +338,49 @@ function onPopState() {
 function switchSection(target: string) {
   if (section.value === target) return;
   section.value = target;
-  router.apply(
-    target === "bonusSets"
-      ? { section: "bonusSets", item: null, set: selectedSetId.value }
-      : { section: null, set: null, item: selectedId.value },
-  );
+  if (target === "bonusSets") {
+    router.apply({
+      section: "bonusSets",
+      item: null,
+      preset: null,
+      set: selectedSetId.value,
+    });
+  } else if (target === "sectionPresets") {
+    router.apply({
+      section: "sectionPresets",
+      item: null,
+      set: null,
+      preset: selectedPresetId.value,
+    });
+  } else {
+    router.apply({
+      section: null,
+      set: null,
+      preset: null,
+      item: selectedId.value,
+    });
+  }
 }
 
 function select(row: EditorRow, { push = true }: { push?: boolean } = {}) {
   if (row.status === "removed") return;
   if (row.kind === "bonusSet") {
     selectedSetId.value = row.key;
-    router.apply({ set: row.key, item: null }, { push });
+    router.apply({ set: row.key, item: null, preset: null }, { push });
+  } else if (row.kind === "sectionPreset") {
+    selectedPresetId.value = row.key;
+    router.apply({ preset: row.key, item: null, set: null }, { push });
   } else {
     selectedId.value = row.key;
-    router.apply({ item: row.key, set: null }, { push });
+    router.apply({ item: row.key, set: null, preset: null }, { push });
   }
 }
 
-const selectedKey = computed(() =>
-  section.value === "bonusSets" ? selectedSetId.value : selectedId.value,
-);
+const selectedKey = computed(() => {
+  if (section.value === "bonusSets") return selectedSetId.value;
+  if (section.value === "sectionPresets") return selectedPresetId.value;
+  return selectedId.value;
+});
 
 function newItem() {
   selectedId.value = null;
@@ -302,6 +392,12 @@ function newSet() {
   selectedSetId.value = null;
   newItemCounter.value++;
   router.apply({ set: null });
+}
+
+function newPreset() {
+  selectedPresetId.value = null;
+  newItemCounter.value++;
+  router.apply({ preset: null });
 }
 
 function onSave({ item }: { item: Item }) {
@@ -363,7 +459,12 @@ function onRevert() {
 }
 
 function restore(row: EditorRow) {
-  const group: CatalogGroup = row.kind === "bonusSet" ? "bonusSets" : "items";
+  const group: CatalogGroup =
+    row.kind === "bonusSet"
+      ? "bonusSets"
+      : row.kind === "sectionPreset"
+        ? "sectionPresets"
+        : "items";
   history.snapshot(
     "layer",
     props.layer.id,
@@ -390,7 +491,8 @@ function resetAll() {
   setOverlay(catalog.emptyOverlay());
   selectedId.value = null;
   selectedSetId.value = null;
-  router.apply({ item: null, set: null });
+  selectedPresetId.value = null;
+  router.apply({ item: null, set: null, preset: null });
   notice.value = "Discarded every change — back to the shipped data";
 }
 
@@ -401,11 +503,30 @@ function selectFinding(finding: LintFinding) {
   if (finding.kind === "bonusSet") {
     section.value = "bonusSets";
     selectedSetId.value = finding.name;
-    router.apply({ section: "bonusSets", set: finding.name, item: null });
+    router.apply({
+      section: "bonusSets",
+      set: finding.name,
+      item: null,
+      preset: null,
+    });
+  } else if (finding.kind === "sectionPreset") {
+    section.value = "sectionPresets";
+    selectedPresetId.value = finding.name;
+    router.apply({
+      section: "sectionPresets",
+      preset: finding.name,
+      item: null,
+      set: null,
+    });
   } else {
     section.value = "items";
     selectedId.value = finding.name;
-    router.apply({ section: null, item: finding.name, set: null });
+    router.apply({
+      section: null,
+      item: finding.name,
+      set: null,
+      preset: null,
+    });
   }
 }
 
@@ -512,6 +633,72 @@ function onRevertSetTop() {
   notice.value = `Reverted bonus set "${id}" to the shipped version`;
 }
 
+// --- section presets ------------------------------------------------------------------
+
+function onSavePreset({ preset }: { preset: SectionPreset }) {
+  history.snapshot(
+    "layer",
+    props.layer.id,
+    `save-preset:${preset.id}`,
+    `Save preset "${preset.label || preset.id}"`,
+    overlay.value,
+  );
+  setOverlay(
+    catalog.upsert(overlay.value, "sectionPresets", preset.id, preset),
+  );
+  selectedPresetId.value = preset.id;
+  router.apply({ preset: preset.id });
+  notice.value = `Saved preset "${preset.label || preset.id}"`;
+}
+
+/** Live-edit handler: debounced changes from an existing preset go here. */
+function onUpdatePreset({
+  preset,
+  label,
+}: {
+  preset: SectionPreset;
+  label: string;
+}) {
+  history.snapshot(
+    "layer",
+    props.layer.id,
+    `edit-preset:${preset.id}`,
+    label,
+    overlay.value,
+  );
+  setOverlay(
+    catalog.upsert(overlay.value, "sectionPresets", preset.id, preset),
+  );
+}
+
+function onDeletePreset() {
+  const id = selectedPresetId.value!;
+  history.snapshot(
+    "layer",
+    props.layer.id,
+    `delete-preset:${id}`,
+    `Delete preset "${id}"`,
+    overlay.value,
+  );
+  setOverlay(catalog.remove(overlay.value, "sectionPresets", id));
+  selectedPresetId.value = null;
+  router.apply({ preset: null });
+  notice.value = `Removed preset "${id}"`;
+}
+
+function onRevertPreset() {
+  const id = selectedPresetId.value!;
+  history.snapshot(
+    "layer",
+    props.layer.id,
+    `revert-preset:${id}`,
+    `Revert preset "${id}"`,
+    overlay.value,
+  );
+  setOverlay(catalog.revert(overlay.value, "sectionPresets", id));
+  notice.value = `Reverted preset "${id}" to the shipped version`;
+}
+
 async function importOverlay(event: Event) {
   const input = event.target as HTMLInputElement;
   const file = input.files?.[0];
@@ -548,11 +735,16 @@ onMounted(() => {
     section.value = "bonusSets";
     if (routed.set && db.value.bonusSetById.get(routed.set))
       selectedSetId.value = routed.set;
+  } else if (routed.section === "sectionPresets") {
+    section.value = "sectionPresets";
+    if (routed.preset && db.value.presets.some((p) => p.id === routed.preset))
+      selectedPresetId.value = routed.preset;
   } else if (routed.item && db.value.get(routed.item)) {
     selectedId.value = routed.item;
   } else {
     selectedId.value = null;
     selectedSetId.value = null;
+    selectedPresetId.value = null;
   }
   if (isValidStatusFilter(routed.status)) statusFilter.value = routed.status;
   if (routed.q) query.value = routed.q;
@@ -562,7 +754,14 @@ useEventListener(window, "popstate", onPopState);
 
 onUnmounted(() => {
   router.apply(
-    { item: null, set: null, section: null, status: null, q: null },
+    {
+      item: null,
+      set: null,
+      preset: null,
+      section: null,
+      status: null,
+      q: null,
+    },
     { push: false },
   );
 });
@@ -606,6 +805,15 @@ onUnmounted(() => {
           Bonus sets
           <span class="text-sm opacity-75 tabular-nums">{{
             db.bonusSets.length
+          }}</span>
+        </TabButton>
+        <TabButton
+          :active="section === 'sectionPresets'"
+          @click="switchSection('sectionPresets')"
+        >
+          Presets
+          <span class="text-sm opacity-75 tabular-nums">{{
+            db.presets.length
           }}</span>
         </TabButton>
       </TabStrip>
@@ -682,7 +890,13 @@ onUnmounted(() => {
         :status-filter-options="statusFilterOptions"
         :has-unsaved-draft="hasUnsavedDraft"
         @select="select"
-        @create="section === 'bonusSets' ? newSet() : newItem()"
+        @create="
+          section === 'bonusSets'
+            ? newSet()
+            : section === 'sectionPresets'
+              ? newPreset()
+              : newItem()
+        "
         @restore="restore"
       />
 
@@ -710,7 +924,7 @@ onUnmounted(() => {
           @update-set="onUpdateSet"
         />
         <BonusSetForm
-          v-else
+          v-else-if="section === 'bonusSets'"
           ref="setForm"
           :key="selectedSetId ?? `__new__${newItemCounter}`"
           :source="selectedSet"
@@ -724,6 +938,19 @@ onUnmounted(() => {
           @update:set="onUpdateSetTop"
           @delete="onDeleteSetTop"
           @revert="onRevertSetTop"
+        />
+        <PresetForm
+          v-else
+          ref="presetForm"
+          :key="selectedPresetId ?? `__new__${newItemCounter}`"
+          :source="selectedPreset"
+          :status="selectedPresetStatus"
+          :db="db"
+          :allocatable-ids="allocatableIds"
+          @save="onSavePreset"
+          @update:preset="onUpdatePreset"
+          @delete="onDeletePreset"
+          @revert="onRevertPreset"
         />
       </div>
     </div>

@@ -12,6 +12,7 @@ import TabStrip from "../ui/TabStrip.vue";
 import TabButton from "../ui/TabButton.vue";
 import * as catalog from "../../data/catalog";
 import * as layers from "../../stores/layers";
+import { NW_SLOTS } from "../../data/data";
 import type { CatalogOverlay } from "../../types";
 
 const props = defineProps<{
@@ -23,7 +24,7 @@ const emit = defineEmits<{
   notice: [message: string];
 }>();
 
-const activeTab = defineModel<string>({ default: "items" }); // items | bonuses | overlay
+const activeTab = defineModel<string>({ default: "items" }); // items | bonuses | slots | overlay
 
 const exportText = computed(() => {
   if (activeTab.value === "items") {
@@ -35,6 +36,17 @@ const exportText = computed(() => {
     const allEnabled = catalog.compose(layers.enabledOverlays.value);
     return catalog.toBonusesFile(allEnabled.bonusSets);
   }
+  if (activeTab.value === "slots") {
+    // Slots themselves aren't overlay-editable (only presets are), so `NW_SLOTS.sections`/
+    // `.slots` are the static shipped ones -- only `sectionPresets` is folded across every
+    // enabled layer, same "maintainer path" as items/bonuses above.
+    const allEnabled = catalog.compose(layers.enabledOverlays.value);
+    return catalog.toSlotsFile(
+      NW_SLOTS.sections,
+      NW_SLOTS.slots,
+      allEnabled.sectionPresets,
+    );
+  }
   // "This layer": raw overlay JSON.
   return JSON.stringify(props.overlay, null, 2);
 });
@@ -42,6 +54,7 @@ const exportText = computed(() => {
 const exportName = computed(() => {
   if (activeTab.value === "items") return "db-items.json";
   if (activeTab.value === "bonuses") return "db-bonuses.json";
+  if (activeTab.value === "slots") return "slots.json";
   return "catalog-overlay.json";
 });
 
@@ -77,6 +90,9 @@ function downloadExport() {
           @click="activeTab = 'bonuses'"
           >db-bonuses.json</TabButton
         >
+        <TabButton :active="activeTab === 'slots'" @click="activeTab = 'slots'"
+          >slots.json</TabButton
+        >
         <TabButton
           :active="activeTab === 'overlay'"
           @click="activeTab = 'overlay'"
@@ -98,6 +114,10 @@ function downloadExport() {
       <template v-else-if="activeTab === 'bonuses'">
         Composed from all enabled layers — for regenerating the shipped data
         files.
+      </template>
+      <template v-else-if="activeTab === 'slots'">
+        Composed from all enabled layers' presets — for regenerating
+        <code>data/slots.json</code>.
       </template>
       <template v-else> Just this layer's raw overlay JSON. </template>
     </p>

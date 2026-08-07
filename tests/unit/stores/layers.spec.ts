@@ -107,10 +107,28 @@ describe("layers store", () => {
     layers.updateOverlay(l.id, {
       items: { "custom-item": { id: "custom-item", name: "Test" } },
       bonusSets: {},
+      sectionPresets: {},
     });
     layers.setLayerEnabled(l.id, false);
     const ids = layers.allocatableIds();
     expect(ids).toContain("custom-item");
+  });
+
+  it("allocatableIds includes section preset ids", async () => {
+    const { layers } = await freshStores();
+    const l = layers.createLayer();
+    layers.updateOverlay(l.id, {
+      items: {},
+      bonusSets: {},
+      sectionPresets: {
+        "custom-preset": {
+          id: "custom-preset",
+          label: "Test",
+          section: "options",
+        },
+      },
+    });
+    expect(layers.allocatableIds()).toContain("custom-preset");
   });
 
   it("allocatableIds returns empty when no layers have items", async () => {

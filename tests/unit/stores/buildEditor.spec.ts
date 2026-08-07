@@ -167,6 +167,86 @@ describe("buildEditor point_assignment edits", () => {
   });
 });
 
+// A preset touching all four fields at once: `options.role` (a real build_parameter),
+// `ring1`/`ring1` (a fictitious item_picker slot, same test-only convention the rest of this
+// file uses for choices/values), and the real shipped `boons.tier1` point_assignment slot
+// (same rationale as the describe block above -- exercising the merge against real seeded
+// data rather than a synthetic row).
+describe("buildEditor.applyPreset", () => {
+  const preset = {
+    id: "test-preset",
+    label: "Test Preset",
+    section: "options",
+    params: { "options.role": "dps" },
+    choices: { ring1: "ItemA" },
+    values: { ring1: 42 },
+    assignments: { "boons.tier1": { "boon-tier1-power": 3 } },
+  };
+
+  const tier1Slot = {
+    id: "boons.tier1",
+    label: "Boons (Tier 1)",
+    section: "boons",
+    type: "point_assignment" as const,
+    filter: "boon_tier1",
+  };
+
+  it("writes params/choices/values/assignments in one call", async () => {
+    const { builds, buildEditor } = await freshStores();
+    buildEditor.applyPreset(preset);
+
+    expect(builds.build.value.context.role).toBe("dps");
+    expect(builds.build.value.choices.ring1).toBe("ItemA");
+    expect(builds.build.value.values.ring1).toBe(42);
+    expect(builds.build.value.assignments["boons.tier1"]).toEqual({
+      "boon-tier1-power": 3,
+      "boon-tier1-defense": 0,
+    });
+  });
+
+  it("leaves a slot the preset doesn't mention untouched (partial apply)", async () => {
+    const { builds, buildEditor } = await freshStores();
+    buildEditor.setChoice("ring2", "PreExisting");
+    buildEditor.applyPreset(preset);
+    expect(builds.build.value.choices.ring2).toBe("PreExisting");
+  });
+
+  it("merges into an assignment row without clobbering a sibling item", async () => {
+    const { builds, buildEditor } = await freshStores();
+    buildEditor.setAssignment(tier1Slot, "boon-tier1-defense", 1);
+    buildEditor.applyPreset(preset);
+    expect(builds.build.value.assignments["boons.tier1"]).toEqual({
+      "boon-tier1-power": 3,
+      "boon-tier1-defense": 1,
+    });
+  });
+
+  it("applies as a single undo step", async () => {
+    const { builds, buildEditor } = await freshStores();
+    buildEditor.applyPreset(preset);
+    buildEditor.undo();
+    // The default "" is deleted rather than stored (build-path.ts's `setPath`), so a fresh
+    // build's `role` is absent, not an empty string.
+    expect(builds.build.value.context.role).toBeUndefined();
+    expect(builds.build.value.choices.ring1).toBeUndefined();
+    expect(builds.build.value.assignments["boons.tier1"]).toEqual({
+      "boon-tier1-power": 0,
+      "boon-tier1-defense": 0,
+    });
+  });
+
+  it("ignores a params entry whose slot id is not a build_parameter", async () => {
+    const { builds, buildEditor } = await freshStores();
+    buildEditor.applyPreset({
+      id: "bad-preset",
+      label: "Bad",
+      section: "gear",
+      params: { "gear.head": "nope" }, // gear.head is an item_picker slot
+    });
+    expect(builds.build.value.context.role).toBeUndefined();
+  });
+});
+
 describe("buildEditor undo labels", () => {
   it("renameBuild includes the new name in the label", async () => {
     const { buildEditor } = await freshStores();

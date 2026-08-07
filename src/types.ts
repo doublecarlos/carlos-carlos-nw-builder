@@ -106,9 +106,34 @@ export interface PointAssignmentSlot {
 
 export type Slot = ItemPickerSlot | BuildParameterSlot | PointAssignmentSlot;
 
+/** A named set of defaults for one section, authored alongside it in `data/slots.json` (see
+ * `deriveSlots` in data.ts, which injects `section` the same way it does for a `Slot`). Applying
+ * one (buildEditor.ts's `applyPreset`) is a merge, not a replace: only the slots/items a field
+ * mentions are written, everything else in the section is left as-is. Each field mirrors the
+ * `Build` field it writes into, keyed by slot id rather than by path/nothing so a preset is
+ * self-contained without needing a slot lookup to author. */
+export interface SectionPreset {
+  id: string;
+  label: string;
+  section: string;
+  /** `build_parameter` slots -- same value shape as their own `default`. */
+  params?: Record<string, string | number | boolean>;
+  /** `item_picker` slots -- slot id to item id. */
+  choices?: Record<string, string>;
+  /** An `item_picker` slot's dynamic-stat magnitude, paired with `choices` the same way
+   * `Build.values` pairs with `Build.choices`. */
+  values?: Record<string, number>;
+  /** `point_assignment` slots -- slot id to `{ itemId: count }`, merged into the existing row
+   * rather than replacing it (matches `setAssignment`'s own per-item merge). */
+  assignments?: Record<string, Record<string, number>>;
+}
+
 export interface SlotsData {
   sections: SlotSection[];
   slots: Slot[];
+  /** Optional: several unit-test fixtures build a minimal `SlotsData` with no presets of
+   * their own -- `db.ts`'s `build()` already defaults a missing one to `[]`. */
+  presets?: SectionPreset[];
 }
 
 // --- items / bonuses -----------------------------------------------------------------------
@@ -238,6 +263,7 @@ export interface Db {
   schema: Schema;
   slots: Slot[];
   sections: SlotSection[];
+  presets: SectionPreset[];
   slotById: Map<string, Slot>;
   bonusSets: BonusSet[];
   bonusSetById: Map<string, BonusSet>;
@@ -256,15 +282,16 @@ export interface Db {
 export interface CatalogOverlay {
   items: Record<string, Item | null>;
   bonusSets: Record<string, BonusSet | null>;
+  sectionPresets: Record<string, SectionPreset | null>;
 }
 
-export type CatalogGroup = "items" | "bonusSets";
+export type CatalogGroup = "items" | "bonusSets" | "sectionPresets";
 
 export interface LintFinding {
   level: "error" | "warn";
   message: string;
   name?: string;
-  kind: "item" | "bonusSet";
+  kind: "item" | "bonusSet" | "sectionPreset";
 }
 
 // --- builds (storage.ts) ---------------------------------------------------------------------
