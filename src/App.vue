@@ -3,7 +3,7 @@
 //
 // Layout: header (always visible), then either a loading skeleton, an empty state, or the
 // three-column builder (nav, editor area with sticky header, stat panel).
-import { watch, computed } from "vue";
+import { watch, computed, nextTick, useTemplateRef } from "vue";
 import { useEventListener } from "@vueuse/core";
 import Nav from "./components/Nav.vue";
 import AppHeader from "./components/AppHeader.vue";
@@ -18,6 +18,7 @@ import * as details from "./stores/details";
 import * as selection from "./stores/selection";
 import * as builds from "./stores/builds";
 import * as layers from "./stores/layers";
+import * as editorScroll from "./stores/editorScroll";
 
 const resolved = engine.resolved;
 
@@ -73,6 +74,22 @@ watch(details.tab, () => syncRoute({ push: false }));
 useEventListener(window, "popstate", onPopState);
 
 syncRoute({ push: false });
+
+// --- build editor scroll position ------------------------------------------------------
+// Selecting a layer unmounts this element (the layer editor takes over columns 2-3), so
+// restoring scrollTop on mount is what makes switching back to the build feel like it never
+// left, instead of snapping back to the top of the list.
+const buildScrollEl = useTemplateRef<HTMLElement>("buildScrollEl");
+
+watch(buildScrollEl, async (el) => {
+  if (!el) return;
+  await nextTick();
+  el.scrollTop = editorScroll.buildScrollTop.value;
+});
+
+function onBuildScroll(event: Event) {
+  editorScroll.buildScrollTop.value = (event.target as HTMLElement).scrollTop;
+}
 </script>
 
 <template>
@@ -132,8 +149,10 @@ syncRoute({ push: false });
             <!-- Build editor -->
             <main
               v-else
+              ref="buildScrollEl"
               class="flex-1 min-h-0 overflow-y-auto p-3.5"
               data-testid="editor-column"
+              @scroll="onBuildScroll"
             >
               <BuildEditor />
             </main>

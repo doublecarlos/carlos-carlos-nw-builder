@@ -28,6 +28,7 @@ import * as router from "../lib/router";
 import * as engine from "../stores/resolved";
 import * as history from "../stores/history";
 import * as layers from "../stores/layers";
+import * as layerEditorUi from "../stores/layerEditorUi";
 import type {
   CatalogGroup,
   CatalogOverlay,
@@ -52,6 +53,12 @@ const overlay = computed(() => props.layer.overlay);
 function setOverlay(newValue: CatalogOverlay) {
   layers.updateOverlay(props.layer.id, newValue);
 }
+
+/** This layer's own remembered section/filter/selection -- see the store's own doc comment.
+ *  A computed, not a plain const: the nav can switch `props.layer` directly from one layer
+ *  to another without this component unmounting, and a stale binding would leak writes into
+ *  the previous layer's stored state. */
+const ui = computed(() => layerEditorUi.getState(props.layer.id));
 
 const query = ref("");
 const statusFilter = ref("all"); // all | changed | added | edited | removed
@@ -727,27 +734,58 @@ watch(query, (value) => {
   router.apply({ q: value || null }, { push: false });
 });
 
+// Mirror every field this component owns into the per-layer store, so a later remount (a
+// round trip through the build editor) has something to restore from once the URL itself
+// has been cleared by `onUnmounted` below.
+watch(
+  [section, selectedId, selectedSetId, selectedPresetId, statusFilter, query],
+  ([sec, item, set, preset, status, q]) => {
+    ui.value.section = sec;
+    ui.value.item = item ?? "";
+    ui.value.set = set ?? "";
+    ui.value.preset = preset ?? "";
+    ui.value.status = status === "all" ? "" : status;
+    ui.value.q = q;
+  },
+);
+
+/** Whether the URL itself carries any of this component's own params -- true for a deep
+ *  link or a back/forward navigation, false for a plain remount after switching editors
+ *  (those params were wiped on the way out). Only in the true case should the URL outrank
+ *  the per-layer store below. */
+function hasRoutedLayerState(routed: Record<string, string>) {
+  return Boolean(
+    routed.item ||
+    routed.set ||
+    routed.preset ||
+    routed.section ||
+    routed.status ||
+    routed.q,
+  );
+}
+
 onMounted(() => {
   const routed = router.parse();
+  const source = hasRoutedLayerState(routed) ? routed : ui.value;
   // When the layer changes, keep the `item` param if the new layer's composed catalogue
   // still has that id, otherwise drop it (phase 6 §2.3).
-  if (routed.section === "bonusSets") {
+  if (source.section === "bonusSets") {
     section.value = "bonusSets";
-    if (routed.set && db.value.bonusSetById.get(routed.set))
-      selectedSetId.value = routed.set;
-  } else if (routed.section === "sectionPresets") {
+    if (source.set && db.value.bonusSetById.get(source.set))
+      selectedSetId.value = source.set;
+  } else if (source.section === "sectionPresets") {
     section.value = "sectionPresets";
-    if (routed.preset && db.value.presets.some((p) => p.id === routed.preset))
-      selectedPresetId.value = routed.preset;
-  } else if (routed.item && db.value.get(routed.item)) {
-    selectedId.value = routed.item;
+    if (source.preset && db.value.presets.some((p) => p.id === source.preset))
+      selectedPresetId.value = source.preset;
+  } else if (source.item && db.value.get(source.item)) {
+    selectedId.value = source.item;
   } else {
     selectedId.value = null;
     selectedSetId.value = null;
     selectedPresetId.value = null;
   }
-  if (isValidStatusFilter(routed.status)) statusFilter.value = routed.status;
-  if (routed.q) query.value = routed.q;
+  if (isValidStatusFilter(source.status)) statusFilter.value = source.status;
+  if (source.q) query.value = source.q;
 });
 
 useEventListener(window, "popstate", onPopState);
