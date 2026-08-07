@@ -2,7 +2,9 @@
 import crypto from "node:crypto";
 
 const isAgent =
-  process.env.AGENT != null || process.env.PI_CODING_AGENT != null || process.env.CLAUDECODE != null;
+  process.env.AGENT != null ||
+  process.env.PI_CODING_AGENT != null ||
+  process.env.CLAUDECODE != null;
 
 const folder = import.meta.dirname;
 

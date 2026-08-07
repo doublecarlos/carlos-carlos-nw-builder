@@ -2,8 +2,10 @@
 // One row inside a BuildSection: an item_picker slot (today's picker + stat summary + typed
 // dynamicStat mod), a point_assignment slot (a row of numeric steppers, one per item), or a
 // build_parameter slot (a generic control over BuildParamInput). Row chrome (hover/diff
-// highlighting, the click-to-cursor/ctrl-click-to-edit behaviour) is identical across all
-// three -- only the content between the label and the diff notes differs.
+// highlighting, the click-to-cursor/ctrl-click-to-edit behaviour, the cursor anchor, the
+// errors list) is identical across all three and lives here; each type's own control + diff
+// note pairing lives in its own row component (ItemPickerRow/PointAssignmentRow/
+// BuildParameterRow), picked below by `slotDef.type`.
 //
 // Keyboard cursor: there is no virtual cursor -- real focus IS the cursor. Each row carries an
 // invisible, tabindex="-1" cursor anchor right after its input controller; the row highlights
@@ -12,19 +14,14 @@
 // cross-row, and it arrives as the `onArrow` prop from BuildEditor.
 //
 // Purely presentational for anything that needs cross-row coordination (hover card) -- those
-// stay owned by BuildEditor.vue and arrive as props/emits. Its own single-slot mutations
-// (choice, typed value, param, assignment, revert, apply-from-compare) go straight to the
-// buildEditor store, same as every other component that edits build content.
-import ItemPicker from "./ItemPicker.vue";
-import BuildParamInput from "./BuildParamInput.vue";
-import PointAssignmentInput from "./PointAssignmentInput.vue";
-import BaseButton from "../ui/BaseButton.vue";
+// stay owned by BuildEditor.vue and arrive as props/emits.
+import ItemPickerRow from "./ItemPickerRow.vue";
+import BuildParameterRow from "./BuildParameterRow.vue";
+import PointAssignmentRow from "./PointAssignmentRow.vue";
 import * as buildEditor from "../../stores/buildEditor";
-import { getPath } from "../../lib/build-path";
-import { label as statLabel } from "../../lib/format";
 import { isFormControl } from "../../composables/focus";
 import { useCursorRowKeys } from "../../composables/useCursorRowKeys";
-import { computed, useTemplateRef } from "vue";
+import { useTemplateRef } from "vue";
 import type {
   Slot,
   Item,
@@ -33,13 +30,6 @@ import type {
   BuildParameterSlot,
   PointAssignmentSlot,
 } from "../../types";
-
-/** The slice of ItemPicker/BuildParamInput/PointAssignmentInput's public surface the cursor
- *  anchor needs -- a structural type so the anchor doesn't care which component fills the row. */
-interface CursorControl {
-  focus: () => void;
-  focusAndSeed: (char: string) => void;
-}
 
 const props = defineProps<{
   slotDef: Slot;
@@ -77,24 +67,13 @@ const emit = defineEmits<{
 }>();
 
 const anchor = useTemplateRef("anchor");
-const picker = useTemplateRef<InstanceType<typeof ItemPicker>>("picker");
-const param = useTemplateRef<InstanceType<typeof BuildParamInput>>("param");
-const assignment =
-  useTemplateRef<InstanceType<typeof PointAssignmentInput>>("assignment");
-
-const control = computed<CursorControl | null>(() => {
-  if (props.slotDef.type === "item_picker") return picker.value ?? null;
-  if (props.slotDef.type === "point_assignment")
-    return assignment.value ?? null;
-  return param.value ?? null;
-});
-
-const choice = () => props.build.choices[props.slotDef.id] ?? "";
-const value = () => props.build.values[props.slotDef.id];
-const paramValue = () =>
-  getPath(props.build.context, (props.slotDef as BuildParameterSlot).path) as
-    string | number | boolean | undefined;
-const assignmentValues = () => props.build.assignments[props.slotDef.id] ?? {};
+/** The active row component -- only one of ItemPickerRow/PointAssignmentRow/BuildParameterRow
+ *  is ever rendered at a time, so they can share this one ref name. Each exposes the same
+ *  `{ focus, focusAndSeed }` surface regardless of which fills the row. */
+const control = useTemplateRef<{
+  focus: () => void;
+  focusAndSeed: (char: string) => void;
+}>("control");
 
 /**
  * A plain click parks the cursor on this row: focus its anchor, unless the click landed on a
@@ -166,51 +145,45 @@ useCursorRowKeys(anchor, {
         class="sr-only"
       />
 
-      <!-- Shared flex container so ItemPicker and BuildParamInput (via ComboBox)
-           get the same grow-0 basis-80 min-w-40 sizing -- consistent row width
-           regardless of slot type. -->
-      <div class="flex flex-wrap items-center gap-2.5">
-        <ItemPicker
-          v-if="slotDef.type === 'item_picker'"
-          ref="picker"
-          class="grow-0 basis-80 min-w-40"
-          :items="items ?? []"
-          :model-value="choice()"
-          :selected-item="item"
-          :invalid="(errors?.length ?? 0) > 0"
-          @update:model-value="buildEditor.setChoice(slotDef.id, $event)"
-        />
-        <PointAssignmentInput
-          v-else-if="slotDef.type === 'point_assignment'"
-          ref="assignment"
-          :slot-def="slotDef"
-          :values="assignmentValues()"
-          @change="
-            (itemId, count) =>
-              buildEditor.setAssignment(
-                slotDef as PointAssignmentSlot,
-                itemId,
-                count,
-              )
-          "
-          @item-enter="(event, itemId) => emit('enter', event, itemId)"
-          @item-leave="emit('leave')"
-        />
-        <BuildParamInput
-          v-else
-          ref="param"
-          class="grow-0 basis-80 min-w-40"
-          :slot-def="slotDef"
-          :wide="true"
-          :model-value="paramValue()"
-          @update:model-value="buildEditor.setParam(slotDef, $event!)"
-        />
-        <span
-          v-if="slotDef.type === 'item_picker' && item"
-          class="min-w-0 flex-1 truncate text-sm text-text"
-          >{{ statSummary }}</span
-        >
-      </div>
+      <ItemPickerRow
+        v-if="slotDef.type === 'item_picker'"
+        ref="control"
+        :slot-def="slotDef"
+        :build="build"
+        :compare-build="compareBuild"
+        :highlight-diff="highlightDiff"
+        :item="item"
+        :items="items"
+        :stat-summary="statSummary"
+        :invalid="(errors?.length ?? 0) > 0"
+        :choice-differs="choiceDiffers"
+        :other-choice-label="otherChoiceLabel"
+        :bonus-diffs="bonusDiffs"
+        :value-differs="valueDiffers"
+        :other-value="otherValue"
+      />
+      <PointAssignmentRow
+        v-else-if="slotDef.type === 'point_assignment'"
+        ref="control"
+        :slot-def="slotDef"
+        :build="build"
+        :compare-build="compareBuild"
+        :highlight-diff="highlightDiff"
+        :assignment-differs="assignmentDiffers"
+        :other-assignment-label="otherAssignmentLabel"
+        @item-enter="(event, itemId) => emit('enter', event, itemId)"
+        @item-leave="emit('leave')"
+      />
+      <BuildParameterRow
+        v-else
+        ref="control"
+        :slot-def="slotDef"
+        :build="build"
+        :compare-build="compareBuild"
+        :highlight-diff="highlightDiff"
+        :param-differs="paramDiffers"
+        :other-param-label="otherParamLabel"
+      />
 
       <!-- The keyboard cursor anchor: invisible, out of the tab order, but focusable. Focus
            here (or on the input below) lights the row's focus-within outline; keydowns land
@@ -228,108 +201,6 @@ useCursorRowKeys(anchor, {
         data-cursor-anchor
         class="sr-only"
       />
-
-      <template v-if="slotDef.type === 'item_picker'">
-        <!-- Dynamic weapon modifications carry a user-typed magnitude. Driven by the item's own
-             `dynamicStat`, not by a hard-coded slot id, so a second one would work with no UI
-             change -- item-local params (later phase) generalize this further. -->
-        <div v-if="item?.dynamicStat" class="mt-1 flex items-center gap-1.5">
-          <input
-            type="number"
-            class="w-20 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-            :min="item?.dynamicMin"
-            :max="item?.dynamicMax"
-            :value="value() ?? ''"
-            :placeholder="String(item?.dynamicMin ?? '')"
-            @input="
-              buildEditor.setValue(
-                slotDef.id,
-                ($event.target as HTMLInputElement).value,
-              )
-            "
-          />
-          <span class="text-sm text-muted">
-            {{ statLabel(item?.dynamicStat as string) }}
-            {{ item?.dynamicMin }}–{{ item?.dynamicMax }}
-          </span>
-        </div>
-
-        <p
-          v-if="highlightDiff && choiceDiffers"
-          class="slot-diff-note mt-0.5 text-sm text-muted"
-        >
-          {{ compareBuild?.name }}: {{ otherChoiceLabel || "(empty)" }}
-          <BaseButton
-            variant="link"
-            class="ml-0.5 text-accent"
-            @click.stop="buildEditor.applyFromCompare(slotDef.id)"
-          >
-            apply
-          </BaseButton>
-        </p>
-
-        <template v-if="highlightDiff">
-          <p
-            v-for="bonusDiff in bonusDiffs ?? []"
-            :key="bonusDiff.id"
-            class="mt-0.5 text-sm font-semibold text-diff"
-          >
-            {{ bonusDiff.message }}
-          </p>
-        </template>
-
-        <p
-          v-if="highlightDiff && valueDiffers"
-          class="slot-diff-note mt-0.5 text-sm text-muted"
-        >
-          {{ compareBuild?.name }}: {{ otherValue ?? "(none)" }}
-          <BaseButton
-            variant="link"
-            class="ml-0.5 text-accent"
-            @click.stop="buildEditor.applyValueFromCompare(slotDef.id)"
-          >
-            apply
-          </BaseButton>
-        </p>
-      </template>
-
-      <p
-        v-if="
-          slotDef.type === 'point_assignment' &&
-          highlightDiff &&
-          assignmentDiffers
-        "
-        class="slot-diff-note mt-0.5 text-sm text-muted"
-      >
-        {{ compareBuild?.name }}: {{ otherAssignmentLabel }}
-        <BaseButton
-          variant="link"
-          class="ml-0.5 text-accent"
-          @click.stop="
-            buildEditor.applyAssignmentsFromCompare(
-              slotDef as PointAssignmentSlot,
-            )
-          "
-        >
-          apply
-        </BaseButton>
-      </p>
-
-      <p
-        v-if="
-          slotDef.type === 'build_parameter' && highlightDiff && paramDiffers
-        "
-        class="slot-diff-note mt-0.5 text-sm text-muted"
-      >
-        {{ compareBuild?.name }}: {{ otherParamLabel }}
-        <BaseButton
-          variant="link"
-          class="ml-0.5 text-accent"
-          @click.stop="buildEditor.applyParamFromCompare(slotDef)"
-        >
-          apply
-        </BaseButton>
-      </p>
 
       <!-- item_picker and point_assignment are the only kinds `errors` is ever populated for
            (engine.ts's findErrors) -- an empty list on build_parameter just renders nothing. -->

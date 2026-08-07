@@ -10,6 +10,8 @@ import * as bonus from "./bonus";
 import type {
   Db,
   Build,
+  BuildContext,
+  Item,
   StatKey,
   ResolvedBonuses,
   EngineRow,
@@ -312,6 +314,42 @@ function derive(db: Db, build: Build, stages: Stages): DerivedOutputs {
 
 // --- validation ---
 
+/** Class-restriction and maxCopies checks for one item occupying one slot -- identical shape
+ *  whether the item came from an item_picker's resolved row or a point_assignment's per-item
+ *  count, so both loops in `findErrors` share this instead of duplicating the two checks. */
+function checkItemErrors(
+  slotId: string,
+  item: Item,
+  db: Db,
+  context: BuildContext,
+  counts: Map<string, number>,
+): EngineError[] {
+  const errors: EngineError[] = [];
+
+  const allowed = item.allowedClass;
+  if (allowed && !allowed.includes(context.class)) {
+    errors.push({
+      slotId,
+      kind: "class",
+      choice: item.name,
+      message: `${item.name} requires ${allowed.join(" or ")}`,
+    });
+  }
+
+  const max = db.maxCopies(item);
+  const used = counts.get(item.id);
+  if (max && used! > max) {
+    errors.push({
+      slotId,
+      kind: "maxCopies",
+      choice: item.name,
+      message: `${item.name} is equipped ${used} times, maximum ${max}`,
+    });
+  }
+
+  return errors;
+}
+
 function findErrors(
   db: Db,
   build: Build,
@@ -344,25 +382,8 @@ function findErrors(
       const count = assigned[item.id] ?? def;
       if (count <= 0) continue;
 
-      const allowed = item.allowedClass;
-      if (allowed && !allowed.includes(context.class)) {
-        errors.push({
-          slotId: slot.id,
-          kind: "class",
-          choice: item.name,
-          message: `${item.name} requires ${allowed.join(" or ")}`,
-        });
-      }
-      const max = db.maxCopies(item);
-      const used = counts.get(item.id);
-      if (max && used! > max) {
-        errors.push({
-          slotId: slot.id,
-          kind: "maxCopies",
-          choice: item.name,
-          message: `${item.name} is equipped ${used} times, maximum ${max}`,
-        });
-      }
+      errors.push(...checkItemErrors(slot.id, item, db, context, counts));
+
       if (count < min || count > rowMax) {
         errors.push({
           slotId: slot.id,
@@ -387,25 +408,7 @@ function findErrors(
       }
       continue;
     }
-    const allowed = row.item.allowedClass;
-    if (allowed && !allowed.includes(context.class)) {
-      errors.push({
-        slotId: row.slotId,
-        kind: "class",
-        choice: row.item.name,
-        message: `${row.item.name} requires ${allowed.join(" or ")}`,
-      });
-    }
-    const max = db.maxCopies(row.item);
-    const used = counts.get(row.item.id);
-    if (max && used! > max) {
-      errors.push({
-        slotId: row.slotId,
-        kind: "maxCopies",
-        choice: row.item.name,
-        message: `${row.item.name} is equipped ${used} times, maximum ${max}`,
-      });
-    }
+    errors.push(...checkItemErrors(row.slotId, row.item, db, context, counts));
 
     // Dynamic weapon modifications carry a declared range. The value is used as typed
     // (see stage 2); flagging it here is what makes that safe.

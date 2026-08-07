@@ -1,0 +1,117 @@
+<script setup lang="ts">
+// The item_picker case of BuildSlot.vue's row content: the picker itself, its typed
+// dynamicStat magnitude (when the chosen item has one), and this type's diff notes
+// (choice/bonus/value). Row chrome (label, cursor anchor, hover/diff highlighting, the
+// errors list) stays in BuildSlot.vue since it's identical across every slot type.
+import { useTemplateRef } from "vue";
+import ItemPicker from "./ItemPicker.vue";
+import BaseButton from "../ui/BaseButton.vue";
+import * as buildEditor from "../../stores/buildEditor";
+import { label as statLabel } from "../../lib/format";
+import type { Build, Item, ItemPickerSlot } from "../../types";
+
+const props = defineProps<{
+  slotDef: ItemPickerSlot;
+  build: Build;
+  compareBuild?: Build | null;
+  highlightDiff: boolean;
+  item?: Item | null;
+  items?: Item[];
+  statSummary?: string;
+  invalid?: boolean;
+  choiceDiffers?: boolean;
+  otherChoiceLabel?: string;
+  bonusDiffs?: { id: string; message: string }[];
+  valueDiffers?: boolean;
+  otherValue?: number | null;
+}>();
+
+const picker = useTemplateRef<InstanceType<typeof ItemPicker>>("picker");
+
+defineExpose({
+  focus: () => picker.value?.focus(),
+  focusAndSeed: (char: string) => picker.value?.focusAndSeed(char),
+});
+
+const choice = () => props.build.choices[props.slotDef.id] ?? "";
+const value = () => props.build.values[props.slotDef.id];
+</script>
+
+<template>
+  <div class="flex flex-wrap items-center gap-2.5">
+    <ItemPicker
+      ref="picker"
+      class="grow-0 basis-80 min-w-40"
+      :items="items ?? []"
+      :model-value="choice()"
+      :selected-item="item"
+      :invalid="invalid"
+      @update:model-value="buildEditor.setChoice(slotDef.id, $event)"
+    />
+    <span v-if="item" class="min-w-0 flex-1 truncate text-sm text-text">{{
+      statSummary
+    }}</span>
+  </div>
+
+  <!-- Dynamic weapon modifications carry a user-typed magnitude. Driven by the item's own
+       `dynamicStat`, not by a hard-coded slot id, so a second one would work with no UI
+       change -- item-local params (later phase) generalize this further. -->
+  <div v-if="item?.dynamicStat" class="mt-1 flex items-center gap-1.5">
+    <input
+      type="number"
+      class="w-20 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+      :min="item?.dynamicMin"
+      :max="item?.dynamicMax"
+      :value="value() ?? ''"
+      :placeholder="String(item?.dynamicMin ?? '')"
+      @input="
+        buildEditor.setValue(
+          slotDef.id,
+          ($event.target as HTMLInputElement).value,
+        )
+      "
+    />
+    <span class="text-sm text-muted">
+      {{ statLabel(item?.dynamicStat as string) }}
+      {{ item?.dynamicMin }}–{{ item?.dynamicMax }}
+    </span>
+  </div>
+
+  <p
+    v-if="highlightDiff && choiceDiffers"
+    class="slot-diff-note mt-0.5 text-sm text-muted"
+  >
+    {{ compareBuild?.name }}: {{ otherChoiceLabel || "(empty)" }}
+    <BaseButton
+      variant="link"
+      class="ml-0.5 text-accent"
+      @click.stop="buildEditor.applyFromCompare(slotDef.id)"
+    >
+      apply
+    </BaseButton>
+  </p>
+
+  <template v-if="highlightDiff">
+    <p
+      v-for="bonusDiff in bonusDiffs ?? []"
+      :key="bonusDiff.id"
+      class="mt-0.5 text-sm font-semibold text-diff"
+    >
+      {{ bonusDiff.message }}
+    </p>
+  </template>
+
+  <p
+    v-if="highlightDiff && valueDiffers"
+    class="slot-diff-note mt-0.5 text-sm text-muted"
+  >
+    {{ compareBuild?.name }}: {{ otherValue ?? "(none)" }}
+    <BaseButton
+      variant="link"
+      class="ml-0.5 text-accent"
+      @click.stop="buildEditor.applyValueFromCompare(slotDef.id)"
+    >
+      apply
+    </BaseButton>
+  </p>
+</template>

@@ -18,6 +18,7 @@ import type {
   GrantEvaluation,
   BonusEvaluation,
   EvaluatedBonus,
+  PointAssignmentSlot,
   ResolvedBonuses,
   ResolvedRow,
   StatValues,
@@ -40,6 +41,59 @@ interface Candidate extends BonusCandidate {
 }
 
 // --- pass 1: collect ---
+
+/**
+ * One point_assignment slot's contribution -- every point behaves exactly like one more
+ * item_picker slot choosing that item, so this bumps `equipped`/tags/set pieces by each
+ * item's count (into the caller's running maps), sums the row's own stats into a bucket
+ * (engine.ts's `rowVectors` adds this alongside `bonusStatsBySlot`), and expands one bonus
+ * candidate per point so stacking (`sources.length`) reads the same as an item_picker pick.
+ */
+function collectPointAssignment(
+  slot: PointAssignmentSlot,
+  build: Build,
+  db: Db,
+  order: number,
+  equipped: Map<string, number>,
+  tags: Map<string, number>,
+  setPieces: Map<string, number>,
+): {
+  row: ResolvedRow;
+  statBucket: Map<string, number>;
+  candidates: Candidate[];
+} {
+  const counts = build.assignments?.[slot.id] ?? {};
+  const statBucket = new Map<string, number>();
+  const candidates: Candidate[] = [];
+
+  for (const item of db.forSlot(slot.id)) {
+    const count = counts[item.id] ?? item.pointAssignment!.default;
+    if (count <= 0) continue;
+
+    bump(equipped, item.id, count);
+    for (const tag of item.tags ?? []) bump(tags, tag, count);
+    for (const setId of item.bonuses ?? []) bump(setPieces, setId, count);
+
+    for (const key of db.schema.statKeys) {
+      const raw = item[key];
+      if (!raw) continue;
+      statBucket.set(key, (statBucket.get(key) ?? 0) + (raw as number) * count);
+    }
+
+    const perPoint = db.bonusesFor(item);
+    for (let i = 0; i < count; i++) {
+      for (const entry of perPoint) {
+        candidates.push({ ...entry, slotId: slot.id, order });
+      }
+    }
+  }
+
+  return {
+    row: { slotId: slot.id, slot, choice: undefined, item: null },
+    statBucket,
+    candidates,
+  };
+}
 
 /**
  * Walk the build's slots once and gather everything a condition can read.
@@ -68,39 +122,22 @@ export function collect(
 
   db.slots.forEach((slot, order) => {
     if (slot.type === "point_assignment") {
-      // No single `item` to attribute this row to -- the row's own item stats land in
+      const collected = collectPointAssignment(
+        slot,
+        build,
+        db,
+        order,
+        equipped,
+        tags,
+        setPieces,
+      );
+      rows.push(collected.row);
+      candidates.push(...collected.candidates);
+      // No single `item` to attribute this row to -- its stats land in
       // `assignmentStatsBySlot` instead (engine.ts's `rowVectors` adds both alongside
-      // `bonusStatsBySlot`), and each point behaves exactly like one more `item_picker` slot
-      // choosing that item: it bumps `equipped`/tags/set pieces by its count and contributes
-      // one bonus candidate per point, so stacking (`sources.length`) reads the same either way.
-      rows.push({ slotId: slot.id, slot, choice: undefined, item: null });
-      const counts = build.assignments?.[slot.id] ?? {};
-      const statBucket = new Map<string, number>();
-      for (const item of db.forSlot(slot.id)) {
-        const count = counts[item.id] ?? item.pointAssignment!.default;
-        if (count <= 0) continue;
-
-        bump(equipped, item.id, count);
-        for (const tag of item.tags ?? []) bump(tags, tag, count);
-        for (const setId of item.bonuses ?? []) bump(setPieces, setId, count);
-
-        for (const key of db.schema.statKeys) {
-          const raw = item[key];
-          if (!raw) continue;
-          statBucket.set(
-            key,
-            (statBucket.get(key) ?? 0) + (raw as number) * count,
-          );
-        }
-
-        const perPoint = db.bonusesFor(item);
-        for (let i = 0; i < count; i++) {
-          for (const entry of perPoint) {
-            candidates.push({ ...entry, slotId: slot.id, order });
-          }
-        }
-      }
-      if (statBucket.size) assignmentStatsBySlot.set(slot.id, statBucket);
+      // `bonusStatsBySlot`).
+      if (collected.statBucket.size)
+        assignmentStatsBySlot.set(slot.id, collected.statBucket);
       return;
     }
 
