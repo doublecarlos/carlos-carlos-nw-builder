@@ -1,7 +1,7 @@
 // End-to-end coverage for a point_assignment slot's row of steppers (BuildSlot.vue via
 // PointAssignmentInput.vue) -- the shipped "boons.tier1" example slot (data/slots.json)
-// resolves two rows, "Power" and "Defense" (data/db-items.json's "boon_tier1" filter), each
-// starting at their own default of 0.
+// resolves several rows, including "Power" and "Critical Avoidance" (data/db-items.json's
+// "boon_tier1" filter), each starting at their own default of 0.
 import { test, expect } from "@playwright/test";
 import {
   openBuilder,
@@ -13,7 +13,7 @@ import {
 
 const SLOT_ID = "boons.tier1";
 const POWER_ID = "boon-tier1-power";
-const DEFENSE_ID = "boon-tier1-defense";
+const AVOIDANCE_ID = "boon-tier1-avoidance";
 
 test.describe("point_assignment steppers", () => {
   test("both rows start at their default of 0", async ({ page }) => {
@@ -21,7 +21,7 @@ test.describe("point_assignment steppers", () => {
     const row = slotRow(page, SLOT_ID);
     await expect(row).toBeVisible();
     await expect(assignmentInput(row, POWER_ID)).toHaveValue("0");
-    await expect(assignmentInput(row, DEFENSE_ID)).toHaveValue("0");
+    await expect(assignmentInput(row, AVOIDANCE_ID)).toHaveValue("0");
   });
 
   test("the + button increments one item's count without touching the other's", async ({
@@ -34,7 +34,7 @@ test.describe("point_assignment steppers", () => {
     await stepAssignment(row, POWER_ID, "increase");
 
     await expect(assignmentInput(row, POWER_ID)).toHaveValue("2");
-    await expect(assignmentInput(row, DEFENSE_ID)).toHaveValue("0");
+    await expect(assignmentInput(row, AVOIDANCE_ID)).toHaveValue("0");
   });
 
   test("the - button decrements, and stops at the row's min", async ({
@@ -56,7 +56,7 @@ test.describe("point_assignment steppers", () => {
   test("typing a value directly updates the count", async ({ page }) => {
     await openBuilder(page);
     const row = slotRow(page, SLOT_ID);
-    const input = assignmentInput(row, DEFENSE_ID);
+    const input = assignmentInput(row, AVOIDANCE_ID);
 
     await input.fill("3");
     await input.blur();
@@ -71,16 +71,16 @@ test.describe("point_assignment steppers", () => {
     const row = slotRow(page, SLOT_ID);
 
     await stepAssignment(row, POWER_ID, "increase");
-    await stepAssignment(row, DEFENSE_ID, "increase");
+    await stepAssignment(row, AVOIDANCE_ID, "increase");
     await expect(assignmentInput(row, POWER_ID)).toHaveValue("1");
-    await expect(assignmentInput(row, DEFENSE_ID)).toHaveValue("1");
+    await expect(assignmentInput(row, AVOIDANCE_ID)).toHaveValue("1");
 
     // Park the cursor on the row (not its inputs) and reset via the keyboard cursor.
     await row.locator(".slot-label").click();
     await page.keyboard.press("Backspace");
 
     await expect(assignmentInput(row, POWER_ID)).toHaveValue("0");
-    await expect(assignmentInput(row, DEFENSE_ID)).toHaveValue("0");
+    await expect(assignmentInput(row, AVOIDANCE_ID)).toHaveValue("0");
   });
 });
 
@@ -106,7 +106,7 @@ test.describe("point_assignment hover card", () => {
 
     const card = page.locator(".fixed.z-40");
     await expect(card.getByTestId("item-card-name")).toHaveText("Power");
-    await expect(card.getByText("Boons (Tier 1)")).toBeVisible();
+    await expect(card.getByText("Tier 1")).toBeVisible();
   });
 
   test("the card previews an item whether or not points are currently spent on it", async ({
@@ -135,8 +135,10 @@ test.describe("point_assignment hover card", () => {
     await assignmentLabel(row, POWER_ID).hover();
     await expect(card.getByTestId("item-card-name")).toHaveText("Power");
 
-    await assignmentLabel(row, DEFENSE_ID).hover();
-    await expect(card.getByTestId("item-card-name")).toHaveText("Defense");
+    await assignmentLabel(row, AVOIDANCE_ID).hover();
+    await expect(card.getByTestId("item-card-name")).toHaveText(
+      "Critical Avoidance",
+    );
   });
 
   test("moving the pointer away closes the card", async ({ page }) => {

@@ -98,67 +98,72 @@ describe("buildEditor undo coalescing", () => {
   });
 });
 
-// The real shipped "boons.tier1" slot -- two rows, min 0/max 4/default 0 (data/slots.json,
-// data/db-items.json's "boon-tier1-power"/"boon-tier1-defense"). `defaultBuild` seeds both
-// rows into `build.assignments["boons.tier1"]` up front, same as `context` is seeded from
+// The real shipped "boons.tier1" slot -- seven rows, min 0/max 5/default 0 (data/slots.json,
+// data/db-items.json's "boon-tier1-*" items). `defaultBuild` seeds every row into
+// `build.assignments["boons.tier1"]` up front, same as `context` is seeded from
 // build_parameter defaults, so every assertion below has to account for that seed rather than
 // assume the slot starts out absent.
 describe("buildEditor point_assignment edits", () => {
   const slot = {
     id: "boons.tier1",
-    label: "Boons (Tier 1)",
+    label: "Tier 1",
     section: "boons",
     type: "point_assignment" as const,
     filter: "boon_tier1",
   };
 
+  const seededRows = {
+    "boon-tier1-power": 0,
+    "boon-tier1-avoidance": 0,
+    "boon-tier1-strike": 0,
+    "boon-tier1-hp": 0,
+    "boon-tier1-cultist": 0,
+    "boon-tier1-gold": 0,
+    "boon-tier1-loot-radius": 0,
+  };
+
   it("defaultBuild seeds both rows before any edit", async () => {
     const { builds } = await freshStores();
-    expect(builds.build.value.assignments["boons.tier1"]).toEqual({
-      "boon-tier1-power": 0,
-      "boon-tier1-defense": 0,
-    });
+    expect(builds.build.value.assignments["boons.tier1"]).toEqual(seededRows);
   });
 
   it("setAssignment writes the count under the slot id, keyed by item", async () => {
     const { builds, buildEditor } = await freshStores();
     buildEditor.setAssignment(slot, "boon-tier1-power", 2);
     expect(builds.build.value.assignments["boons.tier1"]).toEqual({
+      ...seededRows,
       "boon-tier1-power": 2,
-      "boon-tier1-defense": 0,
     });
   });
 
   it("setAssignment on a second item does not clobber the first", async () => {
     const { builds, buildEditor } = await freshStores();
     buildEditor.setAssignment(slot, "boon-tier1-power", 2);
-    buildEditor.setAssignment(slot, "boon-tier1-defense", 1);
+    buildEditor.setAssignment(slot, "boon-tier1-avoidance", 1);
     expect(builds.build.value.assignments["boons.tier1"]).toEqual({
+      ...seededRows,
       "boon-tier1-power": 2,
-      "boon-tier1-defense": 1,
+      "boon-tier1-avoidance": 1,
     });
   });
 
   it("undo reverts one item's count without touching the other's", async () => {
     const { builds, buildEditor } = await freshStores();
     buildEditor.setAssignment(slot, "boon-tier1-power", 2);
-    buildEditor.setAssignment(slot, "boon-tier1-defense", 1);
+    buildEditor.setAssignment(slot, "boon-tier1-avoidance", 1);
     buildEditor.undo();
     expect(builds.build.value.assignments["boons.tier1"]).toEqual({
+      ...seededRows,
       "boon-tier1-power": 2,
-      "boon-tier1-defense": 0,
     });
   });
 
   it("resetAssignmentsToDefault resets every row in the slot at once", async () => {
     const { builds, buildEditor } = await freshStores();
     buildEditor.setAssignment(slot, "boon-tier1-power", 2);
-    buildEditor.setAssignment(slot, "boon-tier1-defense", 1);
+    buildEditor.setAssignment(slot, "boon-tier1-avoidance", 1);
     buildEditor.resetAssignmentsToDefault(slot);
-    expect(builds.build.value.assignments["boons.tier1"]).toEqual({
-      "boon-tier1-power": 0,
-      "boon-tier1-defense": 0,
-    });
+    expect(builds.build.value.assignments["boons.tier1"]).toEqual(seededRows);
   });
 });
 

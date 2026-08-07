@@ -356,7 +356,12 @@ describe("point_assignment: assignments", () => {
     const build = storage.defaultBuild();
     expect(build.assignments["boons.tier1"]).toEqual({
       "boon-tier1-power": 0,
-      "boon-tier1-defense": 0,
+      "boon-tier1-avoidance": 0,
+      "boon-tier1-strike": 0,
+      "boon-tier1-hp": 0,
+      "boon-tier1-cultist": 0,
+      "boon-tier1-gold": 0,
+      "boon-tier1-loot-radius": 0,
     });
   });
 
@@ -370,7 +375,12 @@ describe("point_assignment: assignments", () => {
     // seeded default rather than being dropped.
     expect(build.assignments["boons.tier1"]).toEqual({
       "boon-tier1-power": 3,
-      "boon-tier1-defense": 0,
+      "boon-tier1-avoidance": 0,
+      "boon-tier1-strike": 0,
+      "boon-tier1-hp": 0,
+      "boon-tier1-cultist": 0,
+      "boon-tier1-gold": 0,
+      "boon-tier1-loot-radius": 0,
     });
   });
 
@@ -388,7 +398,12 @@ describe("point_assignment: assignments", () => {
     const build = storage.normalise(raw);
     expect(build.assignments["boons.tier1"]).toEqual({
       "boon-tier1-power": 0,
-      "boon-tier1-defense": 0,
+      "boon-tier1-avoidance": 0,
+      "boon-tier1-strike": 0,
+      "boon-tier1-hp": 0,
+      "boon-tier1-cultist": 0,
+      "boon-tier1-gold": 0,
+      "boon-tier1-loot-radius": 0,
     });
   });
 });

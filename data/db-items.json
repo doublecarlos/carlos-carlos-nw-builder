@@ -546,6 +546,13 @@
     "dynamicMax": 5800
   },
   {
+    "id": "boon-tier4-accuracy",
+    "name": "Accuracy",
+    "filter": "boon_tier4",
+    "acc_p": 0.002,
+    "pointAssignment": {"min": 0, "max": 5, "default": 0, "priority": 1}
+  },
+  {
     "id": "accuracy-kit",
     "name": "Accuracy Kit",
     "filter": "reinforcement_armor_kit",
@@ -569,6 +576,13 @@
     "ca_p": 0.045,
     "strike_p": 0.045,
     "maxCopies": 1
+  },
+  {
+    "id": "boon-advanced-ap",
+    "name": "AP Gain",
+    "filter": "boon_tier_advanced",
+    "ap_gain": 0.01,
+    "pointAssignment": {"min": 0, "max": 4, "default": 0, "priority": 4}
   },
   {
     "id": "apocalipse-set",
@@ -723,6 +737,13 @@
     "bonuses": ["avian-aura-group-celestial"]
   },
   {
+    "id": "boon-tier3-awareness",
+    "name": "Awareness",
+    "filter": "boon_tier3",
+    "awareness_p": 0.002,
+    "pointAssignment": {"min": 0, "max": 5, "default": 0, "priority": 2}
+  },
+  {
     "id": "bard-s-critical-tuning",
     "name": "Bard's Critical Tuning",
     "filter": "class_stuff",
@@ -846,6 +867,24 @@
     "severity": 2953
   },
   {
+    "id": "boon-master-blessed-advantage",
+    "name": "Blessed Advantage",
+    "filter": "boon_tier_master",
+    "pointAssignment": {"min": 0, "max": 3, "default": 0, "priority": 6}
+  },
+  {
+    "id": "boon-master-blessed-resilience",
+    "name": "Blessed Resilience",
+    "filter": "boon_tier_master",
+    "pointAssignment": {"min": 0, "max": 3, "default": 0, "priority": 7}
+  },
+  {
+    "id": "boon-master-blood-lust",
+    "name": "Blood Lust",
+    "filter": "boon_tier_master",
+    "pointAssignment": {"min": 0, "max": 3, "default": 0, "priority": 2}
+  },
+  {
     "id": "bloodbrass-pistol",
     "name": "Bloodbrass Pistol",
     "filter": "artifact",
@@ -944,20 +983,6 @@
     "strike": 3000
   },
   {
-    "id": "boons",
-    "name": "Boons",
-    "filter": "boons",
-    "power_p": 0.04,
-    "acc_p": 0.01,
-    "ca_p": 0.01,
-    "strike_p": 0.01,
-    "sev_p": 0.01,
-    "forte_p": 0.04,
-    "hit_points_p": 0.04,
-    "ap_gain": 0.04,
-    "recharge": 0.04
-  },
-  {
     "id": "brutality",
     "name": "Brutality",
     "filter": "insignia",
@@ -1045,6 +1070,13 @@
     "maxCopies": 1
   },
   {
+    "id": "boon-tier3-ca",
+    "name": "Combat Adv",
+    "filter": "boon_tier3",
+    "ca_p": 0.002,
+    "pointAssignment": {"min": 0, "max": 5, "default": 0, "priority": 1}
+  },
+  {
     "id": "combat-advantage-jewel",
     "name": "Combat Advantage Jewel",
     "filter": "reinforcement_jewel",
@@ -1067,6 +1099,21 @@
     "maxCopies": 1
   },
   {
+    "id": "boon-advanced-control-bonus",
+    "name": "Control Bonus",
+    "filter": "boon_tier_advanced",
+    "control_bonus_p": 0.01,
+    "pointAssignment": {"min": 0, "max": 4, "default": 0, "priority": 6}
+  },
+  {
+    "id": "boon-tier4-control-resist",
+    "name": "Control Res",
+    "filter": "boon_tier4",
+    "control_resist_p": 0.002,
+    "pointAssignment": {"min": 0, "max": 5, "default": 0, "priority": 5},
+    "dynamicStat": "power_p"
+  },
+  {
     "id": "crimson-calamity",
     "name": "Crimson Calamity",
     "filter": "artifact",
@@ -1086,6 +1133,27 @@
     "strike": 880
   },
   {
+    "id": "boon-tier1-avoidance",
+    "name": "Critical Avoidance",
+    "filter": "boon_tier1",
+    "crit_avoid_p": 0.002,
+    "pointAssignment": {"min": 0, "max": 5, "default": 0, "priority": 2}
+  },
+  {
+    "id": "boon-tier2-severity",
+    "name": "Critical Severity",
+    "filter": "boon_tier2",
+    "sev_p": 0.002,
+    "pointAssignment": {"min": 0, "max": 5, "default": 0, "priority": 1}
+  },
+  {
+    "id": "boon-tier1-strike",
+    "name": "Critical Strike",
+    "filter": "boon_tier1",
+    "strike_p": 0.002,
+    "pointAssignment": {"min": 0, "max": 5, "default": 0, "priority": 1}
+  },
+  {
     "id": "crystal",
     "name": "Crystal",
     "filter": "artifact",
@@ -1095,6 +1163,12 @@
     "acc": 1125,
     "ca": 1125,
     "maxCopies": 1
+  },
+  {
+    "id": "boon-tier1-cultist",
+    "name": "Cultist",
+    "filter": "boon_tier1",
+    "pointAssignment": {"min": 0, "max": 5, "default": 0, "priority": 4}
   },
   {
     "id": "dark-dealings-dark-dealer-accuracy-ca-utility",
@@ -1107,17 +1181,44 @@
     "maxCopies": 1
   },
   {
+    "id": "boon-master-death-s-bulwark",
+    "name": "Death's Bulwark",
+    "filter": "boon_tier_master",
+    "pointAssignment": {"min": 0, "max": 3, "default": 0, "priority": 1}
+  },
+  {
+    "id": "boon-master-deathly-rage",
+    "name": "Deathly Rage",
+    "filter": "boon_tier_master",
+    "pointAssignment": {"min": 0, "max": 3, "default": 0, "priority": 0}
+  },
+  {
     "id": "debuff-enhancement",
     "name": "Debuff Enhancement",
     "filter": "companion_enhancement",
     "il": 900
   },
   {
-    "id": "boon-tier1-defense",
+    "id": "boon-tier2-defense",
     "name": "Defense",
-    "filter": "boon_tier1",
+    "filter": "boon_tier2",
     "defense_p": 0.002,
-    "pointAssignment": {"min": 0, "max": 5, "default": 0, "priority": 1}
+    "pointAssignment": {"min": 0, "max": 5, "default": 0, "priority": 2}
+  },
+  {
+    "id": "boon-tier4-deflect",
+    "name": "Deflect",
+    "filter": "boon_tier4",
+    "deflect_p": 0.002,
+    "pointAssignment": {"min": 0, "max": 5, "default": 0, "priority": 2},
+    "dynamicStat": "il"
+  },
+  {
+    "id": "boon-tier3-deflect-sev",
+    "name": "Deflect Severity",
+    "filter": "boon_tier3",
+    "deflect_sev_p": 0.002,
+    "pointAssignment": {"min": 0, "max": 5, "default": 0, "priority": 5}
   },
   {
     "id": "demogorgon-s-reach",
@@ -1142,6 +1243,12 @@
     "maxCopies": 1
   },
   {
+    "id": "boon-tier2-demonic",
+    "name": "Demonic",
+    "filter": "boon_tier2",
+    "pointAssignment": {"min": 0, "max": 5, "default": 0, "priority": 4}
+  },
+  {
     "id": "devil-s-precision",
     "name": "Devil's precision",
     "filter": "overload",
@@ -1153,6 +1260,12 @@
     "name": "Diamond Blessing (Damage)",
     "filter": "consumable_blessing",
     "bonuses": ["diamond-blessing-damage"]
+  },
+  {
+    "id": "boon-tier3-dino",
+    "name": "Dino",
+    "filter": "boon_tier3",
+    "pointAssignment": {"min": 0, "max": 5, "default": 0, "priority": 4}
   },
   {
     "id": "dominance",
@@ -1205,6 +1318,12 @@
     "severity": 923,
     "crit_avoid": 615,
     "allowedClass": ["bard", "warlock"]
+  },
+  {
+    "id": "boon-master-enhanced-application",
+    "name": "Enhanced Application",
+    "filter": "boon_tier_master",
+    "pointAssignment": {"min": 0, "max": 3, "default": 0, "priority": 5}
   },
   {
     "id": "envenomed-storyteller-s-journal",
@@ -1334,6 +1453,19 @@
     "bonuses": ["flask-of-potency-1-severity"]
   },
   {
+    "id": "boon-master-focused-retaliation",
+    "name": "Focused Retaliation",
+    "filter": "boon_tier_master",
+    "pointAssignment": {"min": 0, "max": 3, "default": 0, "priority": 3}
+  },
+  {
+    "id": "boon-advanced-forte",
+    "name": "Forte",
+    "filter": "boon_tier_advanced",
+    "forte_p": 0.01,
+    "pointAssignment": {"min": 0, "max": 4, "default": 0, "priority": 1}
+  },
+  {
     "id": "generic-defense",
     "name": "Generic (Defense)",
     "filter": "enchantment_defense",
@@ -1354,6 +1486,13 @@
     "filter": "insignia_bonus",
     "maxCopies": 2,
     "bonuses": ["gladiator-s-guile"]
+  },
+  {
+    "id": "boon-tier1-gold",
+    "name": "Gold",
+    "filter": "boon_tier1",
+    "gold": 0.01,
+    "pointAssignment": {"min": 0, "max": 5, "default": 0, "priority": 5}
   },
   {
     "id": "golden-cat-s-instincts-golden-cat-ca-any",
@@ -1400,6 +1539,34 @@
     "bonuses": ["hot-wings-accuracy-severity"]
   },
   {
+    "id": "boon-tier1-hp",
+    "name": "HP",
+    "filter": "boon_tier1",
+    "hit_points_p": 0.002,
+    "pointAssignment": {"min": 0, "max": 5, "default": 0, "priority": 3}
+  },
+  {
+    "id": "boon-tier2-hp",
+    "name": "HP",
+    "filter": "boon_tier2",
+    "hit_points_p": 0.002,
+    "pointAssignment": {"min": 0, "max": 5, "default": 0, "priority": 3}
+  },
+  {
+    "id": "boon-tier3-hp",
+    "name": "HP",
+    "filter": "boon_tier3",
+    "hit_points_p": 0.002,
+    "pointAssignment": {"min": 0, "max": 5, "default": 0, "priority": 3}
+  },
+  {
+    "id": "boon-tier4-hp",
+    "name": "HP",
+    "filter": "boon_tier4",
+    "hit_points_p": 0.002,
+    "pointAssignment": {"min": 0, "max": 5, "default": 0, "priority": 3}
+  },
+  {
     "id": "human",
     "name": "Human",
     "filter": "class_stuff",
@@ -1417,6 +1584,13 @@
     "inc_healing_p": 0.01,
     "out_healing_p": 0.01,
     "maxCopies": 1
+  },
+  {
+    "id": "boon-advanced-incoming-healing",
+    "name": "Inc. Heal",
+    "filter": "boon_tier_advanced",
+    "inc_healing_p": 0.01,
+    "pointAssignment": {"min": 0, "max": 4, "default": 0, "priority": 0}
   },
   {
     "id": "invocation-accuracy",
@@ -1443,12 +1617,42 @@
     "bonuses": ["invocation-severity"]
   },
   {
+    "id": "boon-master-life-lessons",
+    "name": "Life Lessons",
+    "filter": "boon_tier_master",
+    "pointAssignment": {"min": 0, "max": 3, "default": 0, "priority": 4}
+  },
+  {
     "id": "lightning-flash",
     "name": "Lightning Flash",
     "filter": "combat_enchant_offense",
     "il": 6000,
     "mult_damage": 0.12,
     "bonuses": ["lightning-flash"]
+  },
+  {
+    "id": "boon-tier2-lingering-medicine",
+    "name": "Lingering",
+    "filter": "boon_tier2",
+    "pointAssignment": {"min": 0, "max": 5, "default": 0, "priority": 6}
+  },
+  {
+    "id": "boon-tier3-lingering-fortification",
+    "name": "Lingering",
+    "filter": "boon_tier3",
+    "pointAssignment": {"min": 0, "max": 5, "default": 0, "priority": 6}
+  },
+  {
+    "id": "boon-tier4-lingering-power",
+    "name": "Lingering",
+    "filter": "boon_tier4",
+    "pointAssignment": {"min": 0, "max": 5, "default": 0, "priority": 6}
+  },
+  {
+    "id": "boon-tier1-loot-radius",
+    "name": "Loot Radius",
+    "filter": "boon_tier1",
+    "pointAssignment": {"min": 0, "max": 5, "default": 0, "priority": 6}
   },
   {
     "id": "m16-burnished-sword-knot-epic",
@@ -2501,6 +2705,13 @@
     "movement": 0.18
   },
   {
+    "id": "boon-tier2-movement",
+    "name": "Movement Speed",
+    "filter": "boon_tier2",
+    "movement": 0.025,
+    "pointAssignment": {"min": 0, "max": 5, "default": 0, "priority": 5}
+  },
+  {
     "id": "mystic-aura-group",
     "name": "Mystic Aura (Group)",
     "filter": "group_buff",
@@ -2522,6 +2733,12 @@
     "enemy_awareness": -0.05,
     "enemy_crit_avoid": -0.05,
     "maxCopies": 1
+  },
+  {
+    "id": "boon-tier4-necrotic",
+    "name": "Necrotic",
+    "filter": "boon_tier4",
+    "pointAssignment": {"min": 0, "max": 5, "default": 0, "priority": 4}
   },
   {
     "id": "neverwinter-knight-s-discipline-neverwinter-knight-damage-offense",
@@ -2565,6 +2782,13 @@
     "filter": "artifact_call",
     "maxCopies": 1,
     "bonuses": ["other-bard-s-lore"]
+  },
+  {
+    "id": "boon-advanced-outgoing-healing",
+    "name": "Out. Heal",
+    "filter": "boon_tier_advanced",
+    "out_healing_p": 0.01,
+    "pointAssignment": {"min": 0, "max": 4, "default": 0, "priority": 3}
   },
   {
     "id": "paladin-aura",
@@ -2614,6 +2838,28 @@
     "filter": "boon_tier1",
     "power_p": 0.002,
     "pointAssignment": {"min": 0, "max": 5, "default": 0, "priority": 0}
+  },
+  {
+    "id": "boon-tier2-power",
+    "name": "Power",
+    "filter": "boon_tier2",
+    "power_p": 0.002,
+    "pointAssignment": {"min": 0, "max": 5, "default": 0, "priority": 0}
+  },
+  {
+    "id": "boon-tier3-power",
+    "name": "Power",
+    "filter": "boon_tier3",
+    "power_p": 0.002,
+    "pointAssignment": {"min": 0, "max": 5, "default": 0, "priority": 0}
+  },
+  {
+    "id": "boon-tier4-power",
+    "name": "Power",
+    "filter": "boon_tier4",
+    "power_p": 0.002,
+    "pointAssignment": {"min": 0, "max": 5, "default": 0, "priority": 0},
+    "dynamicStat": "il"
   },
   {
     "id": "power-m32-600-to-3200",
@@ -2820,6 +3066,13 @@
     "bonuses": ["rattatoule-accuracy"]
   },
   {
+    "id": "boon-advance-recharge",
+    "name": "Recharge",
+    "filter": "boon_tier_advanced",
+    "recharge": 0.01,
+    "pointAssignment": {"min": 0, "max": 4, "default": 0, "priority": 5}
+  },
+  {
     "id": "recharge-bonus",
     "name": "Recharge Bonus",
     "filter": "enchantment_bonus",
@@ -3001,6 +3254,13 @@
     "name": "Squash Soup (Strike/Severity)",
     "filter": "consumable_event_food",
     "bonuses": ["squash-soup-strike-severity"]
+  },
+  {
+    "id": "boon-advanced-stamina",
+    "name": "Stamina",
+    "filter": "boon_tier_advanced",
+    "stamina_regen": 0.01,
+    "pointAssignment": {"min": 0, "max": 4, "default": 0, "priority": 2}
   },
   {
     "id": "strike-m32-900-to-5400",

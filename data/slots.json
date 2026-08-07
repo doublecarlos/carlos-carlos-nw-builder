@@ -739,12 +739,6 @@
       "label": "Boons",
       "slots": [
         {
-          "id": "boons.characterBoons",
-          "label": "Character Boons",
-          "filter": "boons",
-          "type": "item_picker"
-        },
-        {
           "id": "boons.guildOffense",
           "label": "Guild - Offense",
           "filter": "guild_boon_off",
@@ -763,8 +757,38 @@
           "type": "item_picker"
         },
         {
+          "id": "boons.tier_master",
+          "label": "Master boons",
+          "type": "point_assignment",
+          "filter": "boon_tier_master"
+        },
+        {
+          "id": "boons.tier_advanced",
+          "label": "Advanced boons",
+          "type": "point_assignment",
+          "filter": "boon_tier_advanced"
+        },
+        {
+          "id": "boons.tier4",
+          "label": "Tier 4",
+          "type": "point_assignment",
+          "filter": "boon_tier4"
+        },
+        {
+          "id": "boons.tier3",
+          "label": "Tier 3",
+          "type": "point_assignment",
+          "filter": "boon_tier3"
+        },
+        {
+          "id": "boons.tier2",
+          "label": "Tier 2",
+          "type": "point_assignment",
+          "filter": "boon_tier2"
+        },
+        {
           "id": "boons.tier1",
-          "label": "Boons (Tier 1)",
+          "label": "Tier 1",
           "type": "point_assignment",
           "filter": "boon_tier1"
         }

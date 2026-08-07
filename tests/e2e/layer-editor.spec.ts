@@ -200,7 +200,7 @@ test.describe("point_assignment items in the Layer Editor", () => {
 
     await page.getByTestId("new-item").click();
     await page.getByTestId("item-name-input").fill("Boon: Tier 1 Test");
-    // "boon_tier1" is the shipped "Boons (Tier 1)" point_assignment slot's own filter (data/
+    // "boon_tier1" is the shipped "Tier 1" point_assignment slot's own filter (data/
     // slots.json) -- an item carrying it is resolved as a stepper row via that slot's filter,
     // not chosen from a picker.
     await page.getByTestId("item-filter-input").fill("boon_tier1");

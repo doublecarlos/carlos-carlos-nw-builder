@@ -21,7 +21,6 @@
         "baselineAndAttributes.attributesRace1": "race-attributes-2-int",
         "baselineAndAttributes.attributesRace2": "race-attributes-2-dex",
         "baselineAndAttributes.baseline": "baseline-character",
-        "boons.characterBoons": "boons",
         "boons.guildDefense": "boon-defense",
         "boons.guildOffense": "boon-accuracy",
         "boons.guildUtility": "boon-revive-sickness",
@@ -124,6 +123,33 @@
         "reinforcements.jewel2": "combat-advantage-jewel",
         "reinforcements.jewel3": "combat-advantage-jewel",
         "reinforcements.jewel4": "combat-advantage-jewel"
+      },
+      "assignments": {
+        "boons.tier1": {
+          "boon-tier1-strike": 5,
+          "boon-tier1-hp": 5,
+          "boon-tier1-power": 5
+        },
+        "boons.tier2": {
+          "boon-tier2-severity": 5,
+          "boon-tier2-hp": 5,
+          "boon-tier2-power": 5
+        },
+        "boons.tier3": {
+          "boon-tier3-ca": 5,
+          "boon-tier3-hp": 5,
+          "boon-tier3-power": 5
+        },
+        "boons.tier4": {
+          "boon-tier4-accuracy": 5,
+          "boon-tier4-hp": 5,
+          "boon-tier4-power": 5
+        },
+        "boons.tier_advanced": {
+          "boon-advanced-forte": 4,
+          "boon-advanced-ap": 4,
+          "boon-advance-recharge": 4
+        }
       },
       "context": {
         "class": "warlock",
