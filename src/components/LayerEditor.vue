@@ -69,6 +69,11 @@ const selectedPresetId = ref<string | null>(null);
 const showExport = ref(false);
 const exportTab = ref("items"); // items | bonuses | overlay | slots
 const newItemCounter = ref(0);
+/** Seed values for the next brand-new item/set draft, set by "Duplicate" and consumed
+ *  once at that form's mount -- cleared whenever a plain "New" is requested instead so a
+ *  stale duplicate doesn't leak into an unrelated blank draft. */
+const duplicateItemSeed = ref<Item | null>(null);
+const duplicateSetSeed = ref<BonusSet | null>(null);
 const notice = ref("");
 const confirmReset_ = useConfirm(4000);
 
@@ -322,6 +327,10 @@ function isValidStatusFilter(value: unknown) {
  * editor, just a different item/set/section/status filter/query). A fresh mount reads the
  * same params in `onMounted`. */
 function onPopState() {
+  // A duplicate draft's seed is only ever meant for the mount it was set up for -- back/
+  // forward must never resurrect it onto an unrelated blank draft.
+  duplicateItemSeed.value = null;
+  duplicateSetSeed.value = null;
   const route = router.parse();
   if (route.section === "bonusSets") {
     section.value = "bonusSets";
@@ -391,14 +400,39 @@ const selectedKey = computed(() => {
 
 function newItem() {
   selectedId.value = null;
+  duplicateItemSeed.value = null;
   newItemCounter.value++;
   router.apply({ item: null });
 }
 
 function newSet() {
   selectedSetId.value = null;
+  duplicateSetSeed.value = null;
   newItemCounter.value++;
   router.apply({ set: null });
+}
+
+/** Opens a new item draft pre-filled from the currently selected item -- an explicit Save
+ *  is still required, and that Save is what mints the copy's id (from whatever name ends
+ *  up in the draft, so retyping the name before saving is what changes it). */
+function duplicateItem() {
+  const item = selected.value;
+  if (!item) return;
+  duplicateItemSeed.value = item;
+  selectedId.value = null;
+  newItemCounter.value++;
+  router.apply({ item: null });
+  notice.value = `Duplicating "${item.name}" — edit and save to create a copy`;
+}
+
+function duplicateSet() {
+  const set = selectedSet.value;
+  if (!set) return;
+  duplicateSetSeed.value = set;
+  selectedSetId.value = null;
+  newItemCounter.value++;
+  router.apply({ set: null });
+  notice.value = `Duplicating "${set.name || set.id}" — edit and save to create a copy`;
 }
 
 function newPreset() {
@@ -946,6 +980,7 @@ onUnmounted(() => {
           ref="form"
           :key="selectedId ?? `__new__${newItemCounter}`"
           :source="selected"
+          :duplicate-from="duplicateItemSeed"
           :status="selectedStatus"
           :db="db"
           :filters="filters"
@@ -956,6 +991,7 @@ onUnmounted(() => {
           @save="onSave"
           @update:item="onUpdateItem"
           @delete="onDelete"
+          @duplicate="duplicateItem"
           @revert="onRevert"
           @save-set="onSaveSet"
           @delete-set="onDeleteSet"
@@ -966,6 +1002,7 @@ onUnmounted(() => {
           ref="setForm"
           :key="selectedSetId ?? `__new__${newItemCounter}`"
           :source="selectedSet"
+          :duplicate-from="duplicateSetSeed"
           :status="selectedSetStatus"
           :db="db"
           :set-ids="setIds"
@@ -975,6 +1012,7 @@ onUnmounted(() => {
           @save="onSaveSetTop"
           @update:set="onUpdateSetTop"
           @delete="onDeleteSetTop"
+          @duplicate="duplicateSet"
           @revert="onRevertSetTop"
         />
         <PresetForm

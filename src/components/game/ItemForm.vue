@@ -8,7 +8,7 @@ import TokenInput from "../ui/TokenInput.vue";
 import PercentInput from "../ui/PercentInput.vue";
 import ComboBox from "../ui/ComboBox.vue";
 import IconButton from "../ui/IconButton.vue";
-import { Plus, Save, Trash, Undo2 } from "@lucide/vue";
+import { Copy, Plus, Save, Trash, Undo2 } from "@lucide/vue";
 import BaseButton from "../ui/BaseButton.vue";
 import BaseBadge from "../ui/BaseBadge.vue";
 import FormBar from "../ui/FormBar.vue";
@@ -31,6 +31,9 @@ const props = withDefaults(
   defineProps<{
     /** The item being edited, or null for a brand-new one. */
     source?: Item | null;
+    /** Seed values for a brand-new draft, copied from an existing item ("Duplicate").
+     *  Ignored once `source` is set -- only meaningful while creating a new item. */
+    duplicateFrom?: Item | null;
     status?: string;
     db: Db;
     filters?: string[];
@@ -41,6 +44,7 @@ const props = withDefaults(
   }>(),
   {
     source: null,
+    duplicateFrom: null,
     status: "base",
     filters: () => [],
     setIds: () => [],
@@ -56,6 +60,7 @@ const emit = defineEmits<{
   /** Emitted on Save click for new items. */
   save: [payload: { item: Item }];
   delete: [];
+  duplicate: [];
   revert: [];
   "save-set": [payload: { id: string; set: BonusSet }];
   "delete-set": [id: string];
@@ -113,7 +118,9 @@ function buildDraft(item: Item | null | undefined): ItemDraft {
 // Existing items: live edits. New items: draft until Save.
 const isNew = computed(() => !props.source);
 
-const draft = ref<ReturnType<typeof buildDraft>>(buildDraft(props.source));
+const draft = ref<ReturnType<typeof buildDraft>>(
+  buildDraft(props.source ?? props.duplicateFrom),
+);
 const error = ref("");
 // Initialize with item JSON for correct comparison on existing items.
 let lastEmittedJson = JSON.stringify(toItem());
@@ -431,6 +438,12 @@ watch(
       >
       <BaseButton v-if="status === 'edited'" @click="$emit('revert')"
         ><Undo2 />Revert to shipped</BaseButton
+      >
+      <BaseButton
+        v-if="source"
+        data-testid="duplicate-item"
+        @click="$emit('duplicate')"
+        ><Copy />Duplicate</BaseButton
       >
       <BaseButton v-if="source" @click="$emit('delete')"
         ><Trash />Delete</BaseButton

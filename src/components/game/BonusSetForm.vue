@@ -5,7 +5,7 @@
 import { ref, computed, watch } from "vue";
 import BonusRows from "./BonusRows.vue";
 import IconButton from "../ui/IconButton.vue";
-import { CirclePlus, Save, Trash, Undo2 } from "@lucide/vue";
+import { CirclePlus, Copy, Save, Trash, Undo2 } from "@lucide/vue";
 import ComboBox from "../ui/ComboBox.vue";
 import TokenInput from "../ui/TokenInput.vue";
 import BaseButton from "../ui/BaseButton.vue";
@@ -26,6 +26,10 @@ const props = withDefaults(
   defineProps<{
     /** The bonus set being edited, or null for a brand-new one. */
     source?: BonusSet | null;
+    /** Seed values for a brand-new draft, copied from an existing set ("Duplicate").
+     *  Ignored once `source` or `initialDraft` is set -- only meaningful while creating
+     *  a new top-level set. */
+    duplicateFrom?: BonusSet | null;
     status?: string;
     db: Db;
     setIds?: string[];
@@ -38,6 +42,7 @@ const props = withDefaults(
   }>(),
   {
     source: null,
+    duplicateFrom: null,
     status: "base",
     setIds: () => [],
     tags: () => [],
@@ -54,6 +59,7 @@ const emit = defineEmits<{
   /** Emitted on Save click for new sets. */
   save: [payload: { id: string; set: BonusSet }];
   delete: [];
+  duplicate: [];
   revert: [];
 }>();
 
@@ -75,7 +81,10 @@ const isNew = computed(() => !props.source && !props.fixedId);
 const draft = ref<ReturnType<typeof buildDraft>>(
   props.initialDraft
     ? JSON.parse(JSON.stringify(props.initialDraft))
-    : buildDraft(props.source),
+    : buildDraft(
+        props.source ??
+          (props.duplicateFrom ? { ...props.duplicateFrom, id: "" } : null),
+      ),
 );
 const error = ref("");
 // Initialize with set JSON for correct comparison on existing sets.
@@ -294,6 +303,12 @@ watch(
       <BaseButton v-if="status === 'edited'" @click="$emit('revert')"
         ><Undo2 />Revert to shipped</BaseButton
       >
+      <BaseButton
+        v-if="source"
+        data-testid="duplicate-bonus-set"
+        @click="$emit('duplicate')"
+        ><Copy />Duplicate</BaseButton
+      >
       <BaseButton v-if="source" @click="$emit('delete')"
         ><Trash />Delete</BaseButton
       >
@@ -309,6 +324,7 @@ watch(
           v-model="draft.name"
           class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
           type="text"
+          data-testid="bonus-set-name-input"
         />
       </FormField>
       <IdField
