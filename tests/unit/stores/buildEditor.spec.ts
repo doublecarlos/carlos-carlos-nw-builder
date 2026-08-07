@@ -102,7 +102,18 @@ describe("buildEditor undo coalescing", () => {
 // data/db-items.json's "boon-tier1-*" items). `defaultBuild` seeds every row into
 // `build.assignments["boons.tier1"]` up front, same as `context` is seeded from
 // build_parameter defaults, so every assertion below has to account for that seed rather than
-// assume the slot starts out absent.
+// assume the slot starts out absent. Shared with the `applyPreset` describe block below, which
+// exercises the same real slot.
+const seededRows = {
+  "boon-tier1-power": 0,
+  "boon-tier1-avoidance": 0,
+  "boon-tier1-strike": 0,
+  "boon-tier1-hp": 0,
+  "boon-tier1-cultist": 0,
+  "boon-tier1-gold": 0,
+  "boon-tier1-loot-radius": 0,
+};
+
 describe("buildEditor point_assignment edits", () => {
   const slot = {
     id: "boons.tier1",
@@ -110,16 +121,6 @@ describe("buildEditor point_assignment edits", () => {
     section: "boons",
     type: "point_assignment" as const,
     filter: "boon_tier1",
-  };
-
-  const seededRows = {
-    "boon-tier1-power": 0,
-    "boon-tier1-avoidance": 0,
-    "boon-tier1-strike": 0,
-    "boon-tier1-hp": 0,
-    "boon-tier1-cultist": 0,
-    "boon-tier1-gold": 0,
-    "boon-tier1-loot-radius": 0,
   };
 
   it("defaultBuild seeds both rows before any edit", async () => {
@@ -199,8 +200,8 @@ describe("buildEditor.applyPreset", () => {
     expect(builds.build.value.choices.ring1).toBe("ItemA");
     expect(builds.build.value.values.ring1).toBe(42);
     expect(builds.build.value.assignments["boons.tier1"]).toEqual({
+      ...seededRows,
       "boon-tier1-power": 3,
-      "boon-tier1-defense": 0,
     });
   });
 
@@ -213,11 +214,12 @@ describe("buildEditor.applyPreset", () => {
 
   it("merges into an assignment row without clobbering a sibling item", async () => {
     const { builds, buildEditor } = await freshStores();
-    buildEditor.setAssignment(tier1Slot, "boon-tier1-defense", 1);
+    buildEditor.setAssignment(tier1Slot, "boon-tier1-avoidance", 1);
     buildEditor.applyPreset(preset);
     expect(builds.build.value.assignments["boons.tier1"]).toEqual({
+      ...seededRows,
       "boon-tier1-power": 3,
-      "boon-tier1-defense": 1,
+      "boon-tier1-avoidance": 1,
     });
   });
 
@@ -229,10 +231,7 @@ describe("buildEditor.applyPreset", () => {
     // build's `role` is absent, not an empty string.
     expect(builds.build.value.context.role).toBeUndefined();
     expect(builds.build.value.choices.ring1).toBeUndefined();
-    expect(builds.build.value.assignments["boons.tier1"]).toEqual({
-      "boon-tier1-power": 0,
-      "boon-tier1-defense": 0,
-    });
+    expect(builds.build.value.assignments["boons.tier1"]).toEqual(seededRows);
   });
 
   it("ignores a params entry whose slot id is not a build_parameter", async () => {

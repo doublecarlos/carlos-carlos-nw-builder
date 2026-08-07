@@ -22,6 +22,7 @@ const props = defineProps<{
   filled: number;
   total: number;
   errors: number;
+  warnings: number;
   diffs: number;
   expanded: boolean;
   /** Arrow keys on the focused header: BuildEditor moves focus to the next/previous row. */
@@ -68,6 +69,7 @@ useCursorRowKeys(button, {
           >{{ total ? `${filled}/${total}` : "" }}</span
         >
         <BaseBadge v-if="errors" variant="error">{{ errors }}</BaseBadge>
+        <BaseBadge v-if="warnings" variant="warn">{{ warnings }}</BaseBadge>
         <BaseBadge v-if="highlightDiff && diffs" variant="diff">{{
           diffs
         }}</BaseBadge>

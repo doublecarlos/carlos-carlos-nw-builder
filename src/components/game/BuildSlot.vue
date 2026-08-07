@@ -155,7 +155,7 @@ useCursorRowKeys(anchor, {
         :item="item"
         :items="items"
         :stat-summary="statSummary"
-        :invalid="(errors?.length ?? 0) > 0"
+        :invalid="errors?.some((e) => e.severity !== 'warning') ?? false"
         :choice-differs="choiceDiffers"
         :other-choice-label="otherChoiceLabel"
         :bonus-diffs="bonusDiffs"
@@ -207,7 +207,8 @@ useCursorRowKeys(anchor, {
       <p
         v-for="error in errors ?? []"
         :key="error.kind + error.choice"
-        class="mt-0.5 text-sm text-danger"
+        class="mt-0.5 text-sm"
+        :class="error.severity === 'warning' ? 'text-warn' : 'text-danger'"
       >
         {{ error.message }}
       </p>

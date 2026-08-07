@@ -29,7 +29,7 @@ export class GrantStore {
     return this.store.grants[this.gi]!;
   }
 
-  setPayload(payload: "flat" | "tiers" | "variants"): void {
+  setPayload(payload: "flat" | "tiers" | "variants" | "problem"): void {
     const grant = this.grant;
     grant.payload = payload;
     // Auto-create initial tier when switching to tiered mode (only if empty).

@@ -100,6 +100,17 @@ const summaryCalcKey = ref("damage:average");
 
 const stages = computed(() => result.value.stages);
 const derived = computed(() => result.value.derived);
+const errorList = computed(() =>
+  result.value.errors.filter((e) => e.severity !== "warning"),
+);
+const warningList = computed(() =>
+  result.value.errors.filter((e) => e.severity === "warning"),
+);
+// The message alone doesn't say which slot it's about -- unlike engine.ts's own hardcoded
+// checks, a bonus-authored `problem` message is free text the item's author wrote, with no
+// guarantee it names the item itself.
+const slotLabel = (slotId: string) =>
+  engine.db.value.slotById.get(slotId)?.label ?? slotId;
 
 /** Options for the summary widget's calculation picker, across all three `derived`
  * tables below (damage, healing, EHP) -- value is `source:key` so `summaryValue` can
@@ -357,13 +368,26 @@ const {
 <template>
   <BasePanel ref="root" flush>
     <div
-      v-if="result.errors.length"
+      v-if="errorList.length"
       class="mb-2.5 rounded-md bg-danger-soft px-2.5 py-1.5 text-danger"
     >
-      <strong>{{ result.errors.length }} problem(s)</strong>
+      <strong>{{ errorList.length }} problem(s)</strong>
       <ul class="mt-1 pl-5">
-        <li v-for="error in result.errors" :key="error.slotId + error.kind">
-          {{ error.message }}
+        <li v-for="error in errorList" :key="error.slotId + error.kind">
+          <strong>{{ slotLabel(error.slotId) }}:</strong> {{ error.message }}
+        </li>
+      </ul>
+    </div>
+
+    <div
+      v-if="warningList.length"
+      class="mb-2.5 rounded-md border border-warn/40 bg-warn/10 px-2.5 py-1.5 text-warn"
+    >
+      <strong>{{ warningList.length }} warning(s)</strong>
+      <ul class="mt-1 pl-5">
+        <li v-for="warning in warningList" :key="warning.slotId + warning.kind">
+          <strong>{{ slotLabel(warning.slotId) }}:</strong>
+          {{ warning.message }}
         </li>
       </ul>
     </div>

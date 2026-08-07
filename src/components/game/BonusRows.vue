@@ -181,6 +181,18 @@ function toggleJson(gIndex: number) {
             >
               varies by condition
             </button>
+            <button
+              type="button"
+              class="border border-line px-2 py-0.5 text-sm first:rounded-l-md last:rounded-r-md last:border-l-0"
+              :class="
+                grant.payload === 'problem'
+                  ? 'border-accent bg-accent-soft text-text'
+                  : 'bg-surface text-muted'
+              "
+              @click="gs(gIndex).setPayload('problem')"
+            >
+              reports a problem
+            </button>
           </div>
         </FormSection>
 
@@ -344,7 +356,7 @@ function toggleJson(gIndex: number) {
         </template>
 
         <!-- variant payload -->
-        <template v-else>
+        <template v-else-if="grant.payload === 'variants'">
           <p class="text-sm text-muted">
             The first variant whose own condition matches wins -- order them
             most-specific first. Each variant's payload replaces the others, it
@@ -456,6 +468,52 @@ function toggleJson(gIndex: number) {
             @click="gs(gIndex).addVariant()"
             ><CirclePlus />add variant</BaseButton
           >
+        </template>
+
+        <!-- problem payload: reports a build error/warning instead of granting stats -->
+        <template v-else-if="grant.payload === 'problem'">
+          <p class="text-sm text-muted">
+            Shown inline on the slot and in the sidebar's problem summary
+            whenever "Active when" matches -- it grants no stats.
+          </p>
+          <div class="mb-1.5 flex flex-wrap items-center gap-1.5">
+            <span class="text-sm text-muted">Severity</span>
+            <div class="inline-flex">
+              <button
+                type="button"
+                data-testid="problem-severity-error"
+                class="border border-line px-2 py-0.5 text-sm first:rounded-l-md last:rounded-r-md last:border-l-0"
+                :class="
+                  grant.problemSeverity === 'error'
+                    ? 'border-danger bg-danger-soft text-danger'
+                    : 'bg-surface text-muted'
+                "
+                @click="grant.problemSeverity = 'error'"
+              >
+                error
+              </button>
+              <button
+                type="button"
+                data-testid="problem-severity-warning"
+                class="border border-line px-2 py-0.5 text-sm first:rounded-l-md last:rounded-r-md last:border-l-0"
+                :class="
+                  grant.problemSeverity === 'warning'
+                    ? 'border-warn bg-warn/25 text-warn'
+                    : 'bg-surface text-muted'
+                "
+                @click="grant.problemSeverity = 'warning'"
+              >
+                warning
+              </button>
+            </div>
+          </div>
+          <textarea
+            v-model="grant.problemMessage"
+            data-testid="problem-message"
+            class="w-full resize-y rounded-md border border-line bg-surface p-2"
+            rows="2"
+            placeholder="Message shown to the user when this condition matches…"
+          ></textarea>
         </template>
       </template>
     </div>

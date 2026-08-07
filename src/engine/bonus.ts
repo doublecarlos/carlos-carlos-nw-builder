@@ -205,7 +205,19 @@ function evaluateGrant(
     ? conditions.explain(grant.when, ctx)
     : { ok: conditions.evaluate(grant.when, ctx), leaves: [], unmet: [] };
 
-  if (!gate.ok) return { active: false, gate, stats: null, chose: null };
+  if (!gate.ok)
+    return { active: false, gate, stats: null, chose: null, problem: null };
+
+  // `problem`: reports a build error/warning instead of granting stats.
+  if (grant.problem) {
+    return {
+      active: true,
+      gate,
+      stats: null,
+      chose: "problem",
+      problem: grant.problem,
+    };
+  }
 
   // `variants`: first match wins (role-dependent payloads).
   if (grant.variants) {
@@ -213,12 +225,13 @@ function evaluateGrant(
       conditions.evaluate(v.when, ctx),
     );
     return index === -1
-      ? { active: false, gate, stats: null, chose: null }
+      ? { active: false, gate, stats: null, chose: null, problem: null }
       : {
           active: true,
           gate,
           stats: grant.variants[index].stats,
           chose: `variant:${index}`,
+          problem: null,
         };
   }
 
@@ -245,11 +258,23 @@ function evaluateGrant(
       }
     }
     return best
-      ? { active: true, gate, stats: best.stats, chose: `tier:${bestAt}` }
-      : { active: false, gate, stats: null, chose: null };
+      ? {
+          active: true,
+          gate,
+          stats: best.stats,
+          chose: `tier:${bestAt}`,
+          problem: null,
+        }
+      : { active: false, gate, stats: null, chose: null, problem: null };
   }
 
-  return { active: true, gate, stats: grant.stats ?? {}, chose: "stats" };
+  return {
+    active: true,
+    gate,
+    stats: grant.stats ?? {},
+    chose: "stats",
+    problem: null,
+  };
 }
 
 /**
@@ -275,6 +300,10 @@ export function evaluateBonus(
       stats[key] = (stats[key] ?? 0) + (value as number);
     }
   }
+
+  const problems = activeResults
+    .map((r) => r.problem)
+    .filter((p): p is NonNullable<typeof p> => p != null);
 
   // Only meaningful -- and only shown as a badge -- when exactly one grant is active and it
   // resolved via a tier/variant pick; two simultaneously-active grants have no single "chose"
@@ -308,6 +337,7 @@ export function evaluateBonus(
     chose,
     previewStats,
     grants: results,
+    problems,
   };
 }
 
@@ -360,6 +390,7 @@ export function resolve(
       stats: result.stats,
       previewStats: result.previewStats,
       grants: result.grants,
+      problems: result.problems,
       stacks,
       excluded: false,
       excludedBy: null as string | null,

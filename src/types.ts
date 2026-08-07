@@ -232,12 +232,23 @@ export interface GrantTier {
   stats: StatValues;
 }
 
-/** Anonymous by design -- only the owning `BonusSet.id` is addressable, not the grant itself. */
+/** A grant that reports a build problem instead of granting stats -- surfaced the same way as
+ * engine.ts's own hardcoded checks (inline on the slot, summarized in the sidebar), just
+ * authored as data via the bonus system instead of TypeScript. */
+export interface GrantProblem {
+  severity: "error" | "warning";
+  message: string;
+}
+
+/** Anonymous by design -- only the owning `BonusSet.id` is addressable, not the grant itself.
+ * `stats`/`tiers`/`variants`/`problem` are mutually exclusive payloads chosen at authoring
+ * time (see bonus-draft.ts's `payload`); only one is ever set on a given grant. */
 export interface Grant {
   when?: ConditionWhen;
   stats?: StatValues;
   variants?: GrantVariant[];
   tiers?: GrantTier[];
+  problem?: GrantProblem;
 }
 
 export interface BonusSet {
@@ -426,6 +437,7 @@ export interface GrantEvaluation {
   gate: ConditionExplain;
   stats: StatValues | null;
   chose: string | null;
+  problem: GrantProblem | null;
 }
 
 export interface BonusEvaluation {
@@ -435,6 +447,9 @@ export interface BonusEvaluation {
   chose: string | null;
   previewStats: StatValues | null;
   grants: (GrantEvaluation & { raw: Grant })[];
+  /** Every active grant's `problem` payload, in grant order -- a set mixing stat and problem
+   * grants reports both, same as it sums both grants' stats. */
+  problems: GrantProblem[];
 }
 
 export interface EvaluatedBonus {
@@ -449,6 +464,7 @@ export interface EvaluatedBonus {
   stats: StatValues | null;
   previewStats: StatValues | null;
   grants: (GrantEvaluation & { raw: Grant })[];
+  problems: GrantProblem[];
   stacks: number;
   excluded: boolean;
   excludedBy: string | null;
@@ -468,9 +484,10 @@ export interface ResolvedBonuses {
 
 export interface EngineError {
   slotId: string;
-  kind: "class" | "maxCopies" | "outOfRange" | "missing";
+  kind: "class" | "maxCopies" | "outOfRange" | "missing" | "bonusRule";
   choice: string;
   message: string;
+  severity: "error" | "warning";
 }
 
 /** A slot's item stats plus the bonuses attributed to it -- engine.ts's `rowVectors`. */

@@ -15,6 +15,7 @@ import type {
   Grant,
   ConditionWhen,
   Item,
+  ItemPickerSlot,
   PointAssignmentSlot,
   Schema,
   SlotsData,
@@ -469,5 +470,166 @@ describe("point_assignment resolution", () => {
       buildWith({ "boon-restricted": 1 }),
     );
     expect(result.errors.some((e) => e.kind === "class")).toBe(true);
+  });
+});
+
+// A `Grant.problem` reports a build error/warning instead of granting stats -- reuses the
+// same `when` gating as a stat grant, so a synthetic db isolates both authoring shapes
+// (item_picker and point_assignment) the issue asked for: an item-level mismatch check and a
+// point-threshold check.
+describe("problem grants (bonus-authored errors/warnings)", () => {
+  const schema: Schema = {
+    stats: [],
+    statByKey: {},
+    statKeys: ["power_p"],
+    multiplicativeStats: [],
+    ratingStats: [],
+    abilityStats: [],
+    ratingConversion: [],
+    abilityContributions: [],
+    forteSplit: {},
+    roles: { dps: { label: "dps", hpBonus: 1, damageBonus: 1 } },
+  };
+
+  // item_picker case: an error grant gated on the build's own class -- stands in for "the
+  // chosen race bonus doesn't match the race picked".
+  const mismatchSet: BonusSet = {
+    id: "class-mismatch-check",
+    grants: [
+      {
+        when: { not: { class: ["fighter"] } },
+        problem: { severity: "error", message: "This bonus needs Fighter" },
+      },
+    ],
+  };
+  const mismatchItem: Item = {
+    id: "fighter-bonus-item",
+    name: "Fighter Bonus Item",
+    filter: "test_slot",
+    bonuses: ["class-mismatch-check"],
+  };
+  const pickerSlot: ItemPickerSlot = {
+    id: "gear.test",
+    label: "Test Gear",
+    section: "gear",
+    type: "item_picker",
+    filter: "test_slot",
+  };
+
+  // point_assignment case: a warning gated on a tag threshold -- "warning if a tier 2 boon is
+  // picked but fewer than 10 points are spent on tier 1 boons".
+  const tier1Item: Item = {
+    id: "boon-tier1",
+    name: "Boon Tier 1",
+    filter: "test_boon",
+    tags: ["tier1"],
+    pointAssignment: { min: 0, max: 10, default: 0 },
+  };
+  const tier2Set: BonusSet = {
+    id: "tier2-requires-tier1",
+    grants: [
+      {
+        when: { not: { equipped: { tag: "tier1", atLeast: 10 } } },
+        problem: {
+          severity: "warning",
+          message: "Spend at least 10 points on tier 1 boons first",
+        },
+      },
+    ],
+  };
+  const tier2Item: Item = {
+    id: "boon-tier2",
+    name: "Boon Tier 2",
+    filter: "test_boon",
+    bonuses: ["tier2-requires-tier1"],
+    pointAssignment: { min: 0, max: 4, default: 0 },
+  };
+  const boonSlot: PointAssignmentSlot = {
+    id: "boons.test",
+    label: "Boons",
+    section: "boons",
+    type: "point_assignment",
+    filter: "test_boon",
+  };
+
+  const slotsData: SlotsData = {
+    sections: [
+      { id: "gear", label: "Gear" },
+      { id: "boons", label: "Boons" },
+    ],
+    slots: [pickerSlot, boonSlot],
+  };
+  const testDb = db.build(
+    [mismatchItem, tier1Item, tier2Item],
+    [mismatchSet, tier2Set],
+    schema,
+    slotsData,
+  );
+
+  function buildWith(
+    choices: Record<string, string>,
+    assignments: Record<string, Record<string, number>> = {},
+    contextOverrides: Partial<BuildContext> = {},
+  ): Build {
+    return {
+      id: "b",
+      name: "b",
+      choices,
+      values: {},
+      assignments,
+      context: { ...BASE_CONTEXT, ...contextOverrides },
+      compare: { id: "", highlight: false, onlyDiff: false },
+    } as unknown as Build;
+  }
+
+  it("reports an error when the grant's condition matches, attributed to the instancing slot", () => {
+    const result = engine.resolveBuild(
+      testDb,
+      buildWith({ "gear.test": "fighter-bonus-item" }, {}, { class: "rogue" }),
+    );
+    const found = result.errors.find((e) => e.kind === "bonusRule");
+    expect(found).toBeDefined();
+    expect(found?.severity).toBe("error");
+    expect(found?.slotId).toBe("gear.test");
+    expect(found?.message).toBe("This bonus needs Fighter");
+  });
+
+  it("reports nothing when the condition doesn't match", () => {
+    const result = engine.resolveBuild(
+      testDb,
+      buildWith(
+        { "gear.test": "fighter-bonus-item" },
+        {},
+        { class: "fighter" },
+      ),
+    );
+    expect(result.errors.some((e) => e.kind === "bonusRule")).toBe(false);
+  });
+
+  it("a problem grant contributes no stats", () => {
+    const result = engine.resolveBuild(
+      testDb,
+      buildWith({ "gear.test": "fighter-bonus-item" }, {}, { class: "rogue" }),
+    );
+    expect(result.stages.sums.power_p).toBe(0);
+  });
+
+  it("a point_assignment-driven warning fires below the tag threshold", () => {
+    const result = engine.resolveBuild(
+      testDb,
+      buildWith({}, { "boons.test": { "boon-tier1": 5, "boon-tier2": 1 } }),
+    );
+    const found = result.errors.find((e) => e.kind === "bonusRule");
+    expect(found).toBeDefined();
+    expect(found?.severity).toBe("warning");
+    expect(found?.slotId).toBe("boons.test");
+  });
+
+  it("the same warning clears once the threshold is met", () => {
+    const result = engine.resolveBuild(
+      testDb,
+      buildWith({}, { "boons.test": { "boon-tier1": 10, "boon-tier2": 1 } }),
+    );
+    expect(result.errors.some((e) => e.kind === "bonusRule")).toBe(false);
   });
 });

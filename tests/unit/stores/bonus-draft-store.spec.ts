@@ -8,7 +8,7 @@ import * as bonusDraft from "../../../src/engine/bonus-draft";
 
 /** One-grant store, payload pre-switched when requested, change count tracked. */
 function makeStore(
-  payload: "flat" | "tiers" | "variants" = "flat",
+  payload: "flat" | "tiers" | "variants" | "problem" = "flat",
   setIds: string[] = [],
 ) {
   const grants = [bonusDraft.toDraft({ when: {}, stats: {} })];
@@ -91,5 +91,23 @@ describe("BonusDraftStore setIds wiring", () => {
   it("setPayload('tiers') seeds the auto-created tier with the first set id", () => {
     const { gs } = makeStore("tiers", ["set-a", "set-b"]);
     expect(gs.grant.tiers[0].set).toBe("set-a");
+  });
+});
+
+describe("GrantStore setPayload('problem')", () => {
+  it("switches the payload and leaves the default severity/message in place", () => {
+    const { gs, changes } = makeStore("problem");
+    expect(gs.grant.payload).toBe("problem");
+    expect(gs.grant.problemSeverity).toBe("warning");
+    expect(gs.grant.problemMessage).toBe("");
+    expect(changes()).toBe(1);
+  });
+
+  it("severity and message are plain draft fields, mutated directly like a tier's stat row", () => {
+    const { gs } = makeStore("problem");
+    gs.grant.problemSeverity = "error";
+    gs.grant.problemMessage = "Wrong race";
+    expect(gs.grant.problemSeverity).toBe("error");
+    expect(gs.grant.problemMessage).toBe("Wrong race");
   });
 });

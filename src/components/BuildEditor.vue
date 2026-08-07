@@ -167,6 +167,7 @@ interface SectionRow extends SlotSection {
   slots: Slot[];
   filled: number;
   errors: number;
+  warnings: number;
   diffs: number;
   total: number;
   presets: SectionPreset[];
@@ -212,22 +213,30 @@ const sections = computed<SectionRow[]>(() => {
       );
       let filled = 0;
       let errors = 0;
+      let warnings = 0;
       for (const slotDef of pickerSlots) {
         if (rowBySlot.value.get(slotDef.id)?.item) filled += 1;
-        errors += errorsBySlot.value.get(slotDef.id)?.length ?? 0;
+        for (const error of errorsBySlot.value.get(slotDef.id) ?? []) {
+          if (error.severity === "warning") warnings += 1;
+          else errors += 1;
+        }
       }
       // point_assignment slots can also produce errors (class/maxCopies/outOfRange, per-item
       // rather than per-slot), but they never count toward `filled` -- like build_parameter, a
       // point_assignment slot always has *some* value, so "filled" isn't meaningful for it.
       for (const slotDef of slots) {
         if (slotDef.type !== "point_assignment") continue;
-        errors += errorsBySlot.value.get(slotDef.id)?.length ?? 0;
+        for (const error of errorsBySlot.value.get(slotDef.id) ?? []) {
+          if (error.severity === "warning") warnings += 1;
+          else errors += 1;
+        }
       }
       return {
         ...section,
         slots,
         filled,
         errors,
+        warnings,
         diffs,
         total: pickerSlots.length,
         presets: db.value.presets.filter(
@@ -386,6 +395,7 @@ function onFocusIn(event: FocusEvent) {
       :filled="section.filled"
       :total="section.total"
       :errors="section.errors"
+      :warnings="section.warnings"
       :diffs="section.diffs"
       :expanded="expanded[section.id]"
       :on-arrow="moveCursor"

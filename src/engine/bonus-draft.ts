@@ -22,13 +22,21 @@ import {
   whenRowsComplete,
   type ConditionRow,
 } from "./condition-draft";
-import type { Grant, GrantVariant, BonusSet, StatValues } from "../types";
+import type {
+  Grant,
+  GrantVariant,
+  GrantProblem,
+  BonusSet,
+  StatValues,
+} from "../types";
 
 // Exactly what the engine reads off a tier (bonus.ts `evaluateBonus`). Anything else on a
 // tier would be dropped by the form, so its presence forces JSON mode instead.
 const TIER_KEYS = new Set(["pieces", "stats"]);
 const PIECES_KEYS = new Set(["set", "atLeast"]);
 const VARIANT_KEYS = new Set(["when", "stats"]);
+const PROBLEM_KEYS = new Set(["severity", "message"]);
+const PROBLEM_SEVERITIES = new Set(["error", "warning"]);
 
 const tiersAreSimple = (tiers: NonNullable<Grant["tiers"]>) =>
   (tiers ?? []).every(
@@ -48,12 +56,19 @@ const variantsAreSimple = (variants: NonNullable<Grant["variants"]>) =>
       whenIsRepresentable(variant.when),
   );
 
+const problemIsSimple = (problem: GrantProblem) =>
+  Object.keys(problem).every((key) => PROBLEM_KEYS.has(key)) &&
+  PROBLEM_SEVERITIES.has(problem.severity) &&
+  typeof problem.message === "string";
+
 /** Structures the form cannot represent without losing something. */
 export const needsJson = (grant: Grant) =>
   Boolean(
     !whenIsRepresentable(grant.when) ||
     (grant.tiers && !tiersAreSimple(grant.tiers)) ||
-    (grant.variants && (grant.tiers || !variantsAreSimple(grant.variants))),
+    (grant.variants && (grant.tiers || !variantsAreSimple(grant.variants))) ||
+    (grant.problem &&
+      (grant.tiers || grant.variants || !problemIsSimple(grant.problem))),
   );
 
 export interface StatRow {
@@ -108,10 +123,12 @@ export interface GrantDraft {
   mode: "simple" | "json";
   json: string;
   conditions: ConditionRow[];
-  payload: "flat" | "tiers" | "variants";
+  payload: "flat" | "tiers" | "variants" | "problem";
   stats: StatRow[];
   tiers: TierDraft[];
   variants: VariantDraft[];
+  problemSeverity: "error" | "warning";
+  problemMessage: string;
 }
 
 export function toDraft(grant: Grant = {}): GrantDraft {
@@ -121,7 +138,13 @@ export function toDraft(grant: Grant = {}): GrantDraft {
     mode: json ? "json" : "simple",
     json: JSON.stringify(grant, null, 2),
     conditions: json ? [] : whenToRows(grant.when),
-    payload: grant.variants ? "variants" : grant.tiers ? "tiers" : "flat",
+    payload: grant.problem
+      ? "problem"
+      : grant.variants
+        ? "variants"
+        : grant.tiers
+          ? "tiers"
+          : "flat",
     stats: json ? [] : statRows(grant.stats),
     tiers: json
       ? []
@@ -137,6 +160,8 @@ export function toDraft(grant: Grant = {}): GrantDraft {
           conditions: whenToRows(variant.when),
           stats: statRows(variant.stats),
         })),
+    problemSeverity: json ? "warning" : (grant.problem?.severity ?? "warning"),
+    problemMessage: json ? "" : (grant.problem?.message ?? ""),
   };
 }
 
@@ -161,7 +186,12 @@ export function toGrant(draft: GrantDraft): Grant {
   const when = rowsToWhen(draft.conditions);
   if (Object.keys(when).length) out.when = when;
 
-  if (draft.payload === "tiers") {
+  if (draft.payload === "problem") {
+    out.problem = {
+      severity: draft.problemSeverity,
+      message: draft.problemMessage,
+    };
+  } else if (draft.payload === "tiers") {
     out.tiers = draft.tiers.map((tier) => ({
       pieces: { set: tier.set, atLeast: Number(tier.atLeast) || 1 },
       stats: rowsToStats(tier.stats),

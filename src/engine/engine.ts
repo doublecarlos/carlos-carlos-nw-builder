@@ -333,6 +333,7 @@ function checkItemErrors(
       kind: "class",
       choice: item.name,
       message: `${item.name} requires ${allowed.join(" or ")}`,
+      severity: "error",
     });
   }
 
@@ -344,6 +345,7 @@ function checkItemErrors(
       kind: "maxCopies",
       choice: item.name,
       message: `${item.name} is equipped ${used} times, maximum ${max}`,
+      severity: "error",
     });
   }
 
@@ -390,6 +392,7 @@ function findErrors(
           kind: "outOfRange",
           choice: item.name,
           message: `${item.name}: ${count} is outside ${min}–${rowMax}`,
+          severity: "error",
         });
       }
     }
@@ -404,6 +407,7 @@ function findErrors(
           kind: "missing",
           choice: row.choice,
           message: `Item "${row.choice}" is not in your catalogue`,
+          severity: "error",
         });
       }
       continue;
@@ -426,8 +430,30 @@ function findErrors(
           kind: "outOfRange",
           choice: row.item.name,
           message: `${row.item.name}: ${value} is outside ${min}–${max_}`,
+          severity: "error",
         });
       }
+    }
+  }
+  return errors;
+}
+
+/** Data-authored errors/warnings: any active bonus grant carrying a `problem` payload
+ * (types.ts's `Grant.problem`) instead of stats. One `EngineError` per active problem grant,
+ * attributed to the same slot its stats would have been (`EvaluatedBonus.slotId`) -- an
+ * excluded or inactive bonus reports nothing, same as it grants no stats. */
+function bonusProblems(resolved: ResolvedBonuses): EngineError[] {
+  const errors: EngineError[] = [];
+  for (const entry of resolved.bonuses) {
+    if (!entry.active) continue;
+    for (const problem of entry.problems) {
+      errors.push({
+        slotId: entry.slotId,
+        kind: "bonusRule",
+        choice: entry.bonus.name ?? entry.setId,
+        message: problem.message,
+        severity: problem.severity,
+      });
     }
   }
   return errors;
@@ -448,7 +474,7 @@ export function resolveBuild(
     bonuses: resolved.bonuses,
     stages,
     derived: derive(db, build, stages),
-    errors: findErrors(db, build, resolved),
+    errors: [...findErrors(db, build, resolved), ...bonusProblems(resolved)],
   };
 }
 
