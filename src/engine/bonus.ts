@@ -23,9 +23,13 @@ import type {
   StatValues,
 } from "../types";
 
-const bump = (map: Map<string, number>, key: string | null | undefined) => {
-  if (key == null) return;
-  map.set(key, (map.get(key) ?? 0) + 1);
+const bump = (
+  map: Map<string, number>,
+  key: string | null | undefined,
+  amount = 1,
+) => {
+  if (key == null || amount <= 0) return;
+  map.set(key, (map.get(key) ?? 0) + amount);
 };
 
 /** A `BonusCandidate` (one item's contribution of one bonus set) plus where/when it was
@@ -48,15 +52,58 @@ interface Candidate extends BonusCandidate {
 export function collect(
   db: Db,
   build: Build,
-): { ctx: EvalContext; rows: ResolvedRow[]; candidates: Candidate[] } {
+): {
+  ctx: EvalContext;
+  rows: ResolvedRow[];
+  candidates: Candidate[];
+  assignmentStatsBySlot: Map<string, Map<string, number>>;
+} {
   const context = build.context ?? {};
   const equipped = new Map<string, number>();
   const tags = new Map<string, number>();
   const setPieces = new Map<string, number>();
   const rows: ResolvedRow[] = [];
   const candidates: Candidate[] = [];
+  const assignmentStatsBySlot = new Map<string, Map<string, number>>();
 
   db.slots.forEach((slot, order) => {
+    if (slot.type === "point_assignment") {
+      // No single `item` to attribute this row to -- the row's own item stats land in
+      // `assignmentStatsBySlot` instead (engine.ts's `rowVectors` adds both alongside
+      // `bonusStatsBySlot`), and each point behaves exactly like one more `item_picker` slot
+      // choosing that item: it bumps `equipped`/tags/set pieces by its count and contributes
+      // one bonus candidate per point, so stacking (`sources.length`) reads the same either way.
+      rows.push({ slotId: slot.id, slot, choice: undefined, item: null });
+      const counts = build.assignments?.[slot.id] ?? {};
+      const statBucket = new Map<string, number>();
+      for (const item of db.forSlot(slot.id)) {
+        const count = counts[item.id] ?? item.pointAssignment!.default;
+        if (count <= 0) continue;
+
+        bump(equipped, item.id, count);
+        for (const tag of item.tags ?? []) bump(tags, tag, count);
+        for (const setId of item.bonuses ?? []) bump(setPieces, setId, count);
+
+        for (const key of db.schema.statKeys) {
+          const raw = item[key];
+          if (!raw) continue;
+          statBucket.set(
+            key,
+            (statBucket.get(key) ?? 0) + (raw as number) * count,
+          );
+        }
+
+        const perPoint = db.bonusesFor(item);
+        for (let i = 0; i < count; i++) {
+          for (const entry of perPoint) {
+            candidates.push({ ...entry, slotId: slot.id, order });
+          }
+        }
+      }
+      if (statBucket.size) assignmentStatsBySlot.set(slot.id, statBucket);
+      return;
+    }
+
     const choice = build.choices?.[slot.id];
     const item = db.get(choice);
     rows.push({ slotId: slot.id, slot, choice, item });
@@ -105,7 +152,7 @@ export function collect(
     params,
   };
 
-  return { ctx, rows, candidates };
+  return { ctx, rows, candidates, assignmentStatsBySlot };
 }
 
 // --- pass 2: evaluate ---
@@ -240,7 +287,7 @@ export function resolve(
   build: Build,
   { explain = true }: { explain?: boolean } = {},
 ): ResolvedBonuses {
-  const { ctx, rows, candidates } = collect(db, build);
+  const { ctx, rows, candidates, assignmentStatsBySlot } = collect(db, build);
 
   // Group by bonus id so stacking is decided once per bonus, not once per contributing slot.
   const groups = new Map<string, Group>();
@@ -330,5 +377,11 @@ export function resolve(
     bonusStatsBySlot.set(entry.slotId, bucket);
   }
 
-  return { ctx, rows, bonuses: evaluated, bonusStatsBySlot };
+  return {
+    ctx,
+    rows,
+    bonuses: evaluated,
+    bonusStatsBySlot,
+    assignmentStatsBySlot,
+  };
 }

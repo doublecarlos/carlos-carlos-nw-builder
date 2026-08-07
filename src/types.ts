@@ -89,7 +89,22 @@ export interface ItemPickerSlot {
   filter: string;
 }
 
-export type Slot = ItemPickerSlot | BuildParameterSlot;
+/** A row of independent numeric steppers sharing one label, one per item matching `filter` --
+ * same resolution `ItemPickerSlot` uses, except every match becomes its own row instead of one
+ * picked choice. Every point spent on a row's item is resolved by the engine exactly as if that
+ * item had been picked in that many separate `item_picker` slots (bonus.ts's `collect()` bumps
+ * `equipped`/tags/set pieces/bonus candidates by the count instead of by one). No shared point
+ * budget across the row: each item's `pointAssignment.min`/`max` (on the item itself, see
+ * `Item`) is its own bound, not a pool split between them. */
+export interface PointAssignmentSlot {
+  id: string;
+  label: string;
+  section: string;
+  type: "point_assignment";
+  filter: string;
+}
+
+export type Slot = ItemPickerSlot | BuildParameterSlot | PointAssignmentSlot;
 
 export interface SlotsData {
   sections: SlotSection[];
@@ -118,9 +133,24 @@ export interface Item {
   dynamicStat?: StatKey;
   dynamicMin?: number;
   dynamicMax?: number;
+  /** Set only on an item meant to be spent points on via a `point_assignment` slot whose
+   * `filter` matches this item's own -- see `PointAssignmentConfig`. */
+  pointAssignment?: PointAssignmentConfig;
   bonuses?: string[];
   excludes?: string[];
   [key: string]: unknown;
+}
+
+/** Bounds for one item's stepper in whichever `PointAssignmentSlot` matches this item's
+ * `filter` -- presence of this object is what makes an item selectable there at all (see
+ * `Db.forSlot`'s point_assignment branch), same role `dynamicStat` plays in gating
+ * `dynamicMin`/`dynamicMax`. `priority` breaks ties in display order (lower first); items
+ * sharing one priority (or omitting it, default 0) fall back to name order. */
+export interface PointAssignmentConfig {
+  min: number;
+  max: number;
+  default: number;
+  priority?: number;
 }
 
 export interface RangeSpec {
@@ -269,6 +299,11 @@ export interface Build {
   name: string;
   choices: Record<string, string>;
   values: Record<string, number>;
+  /** Every `point_assignment` slot's current counts, by slot id then item id. Seeded from each
+   * row's `default` (storage.ts's `defaultBuild`), same as `context` is seeded from
+   * `build_parameter` defaults -- so a read never needs an `?? row.default` fallback for a
+   * build the app itself produced, only for hand-edited/imported ones. */
+  assignments: Record<string, Record<string, number>>;
   context: BuildContext;
   compare: BuildCompare;
   catalog?: CatalogOverlay;
@@ -398,6 +433,10 @@ export interface ResolvedBonuses {
   rows: ResolvedRow[];
   bonuses: EvaluatedBonus[];
   bonusStatsBySlot: Map<string, Map<StatKey, number>>;
+  /** A `point_assignment` slot's own item stats (each row's item stats × its count, summed) --
+   * the counterpart to `bonusStatsBySlot` for the item side rather than the bonus side, since
+   * a `point_assignment` row has no single `ResolvedRow.item` to read stats off of. */
+  assignmentStatsBySlot: Map<string, Map<StatKey, number>>;
 }
 
 export interface EngineError {

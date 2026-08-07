@@ -38,6 +38,28 @@ export function pickerInput(row: Locator): Locator {
   return row.getByTestId("picker-input");
 }
 
+/** A point_assignment row's stepper input for one item id. */
+export function assignmentInput(row: Locator, itemId: string): Locator {
+  return row.getByTestId(`assignment-input-${itemId}`);
+}
+
+/** A point_assignment row's item-name label -- the hover-card trigger for that item. */
+export function assignmentLabel(row: Locator, itemId: string): Locator {
+  return row.getByTestId(`assignment-label-${itemId}`);
+}
+
+/** Clicks the -/+ button next to a point_assignment row's stepper input. */
+export async function stepAssignment(
+  row: Locator,
+  itemId: string,
+  dir: "increase" | "decrease",
+) {
+  const wrapper = assignmentInput(row, itemId).locator("..");
+  await wrapper
+    .getByTitle(dir === "increase" ? "Increase" : "Decrease")
+    .click();
+}
+
 /** The row currently holding real focus -- a header button, a slot row's invisible cursor
  * anchor, or a slot row's picker input all make their row match `:focus-within`, which is the
  * native-focus replacement for the old virtual-cursor `.is-cursor` class. */

@@ -363,7 +363,12 @@ const openLabel = computed(
 );
 const openSections = computed(() =>
   openCard.value
-    ? sectionsFor(result.value, build.value, openCard.value.key)
+    ? sectionsFor(
+        result.value,
+        build.value,
+        engine.db.value,
+        openCard.value.key,
+      )
     : [],
 );
 

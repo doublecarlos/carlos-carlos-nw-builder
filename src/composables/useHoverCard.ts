@@ -17,6 +17,9 @@ const HOVER_CLOSE_GRACE_MS = 100;
 
 export interface HoverPosition {
   slotId: string;
+  /** Set only for a point_assignment row's per-item hover target (PointAssignmentInput.vue) --
+   *  a row with no single item to default to, unlike item_picker's whole-row hover. */
+  itemId?: string;
 }
 
 /**
@@ -35,13 +38,16 @@ export interface HoverPosition {
  */
 export function useHoverCard(
   tooltip: Ref<InstanceType<typeof BasePopover> | null>,
-  hasItem: (slotId: string) => boolean,
+  hasItem: (slotId: string, itemId?: string) => boolean,
 ) {
   const hover = ref<HoverPosition | null>(null);
   /** Stashed arguments for the hover timer callback, since the timer delay varies. */
-  const hoverArgs = ref<{ slotId: string; rect: DOMRect; x: number } | null>(
-    null,
-  );
+  const hoverArgs = ref<{
+    slotId: string;
+    itemId?: string;
+    rect: DOMRect;
+    x: number;
+  } | null>(null);
   let lastHideAt = 0; // Date.now() of the last close, for the "resume" fast path
   let editing = false; // a real form control has focus: suppress the card so it cannot cover a dropdown
 
@@ -49,7 +55,7 @@ export function useHoverCard(
     const args = hoverArgs.value;
     if (args) {
       tooltip.value?.place(args.rect, args.x);
-      hover.value = { slotId: args.slotId };
+      hover.value = { slotId: args.slotId, itemId: args.itemId };
     }
     hoverArgs.value = null;
   }, HOVER_DELAY_MS);
@@ -61,7 +67,7 @@ export function useHoverCard(
       const args = hoverArgs.value;
       if (args) {
         tooltip.value?.place(args.rect, args.x);
-        hover.value = { slotId: args.slotId };
+        hover.value = { slotId: args.slotId, itemId: args.itemId };
       }
       hoverArgs.value = null;
     },
@@ -72,15 +78,15 @@ export function useHoverCard(
     close();
   }, HOVER_CLOSE_GRACE_MS);
 
-  function onRowEnter(event: MouseEvent, slotId: string) {
-    if (editing || !hasItem(slotId)) return;
+  function onRowEnter(event: MouseEvent, slotId: string, itemId?: string) {
+    if (editing || !hasItem(slotId, itemId)) return;
     stopHoverTimer();
     stopHoverTimerNow();
     stopLeaveTimer();
     const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
     const x = event.clientX;
     const resuming = Date.now() - lastHideAt < HOVER_RESUME_MS;
-    hoverArgs.value = { slotId, rect, x };
+    hoverArgs.value = { slotId, itemId, rect, x };
     if (resuming) startHoverTimerNow();
     else startHoverTimer();
   }

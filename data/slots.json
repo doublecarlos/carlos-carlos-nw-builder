@@ -761,6 +761,12 @@
           "label": "Guild - Utility",
           "filter": "guild_boon_util",
           "type": "item_picker"
+        },
+        {
+          "id": "boons.tier1",
+          "label": "Boons (Tier 1)",
+          "type": "point_assignment",
+          "filter": "boon_tier1"
         }
       ]
     },

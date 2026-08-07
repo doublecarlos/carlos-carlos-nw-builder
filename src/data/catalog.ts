@@ -304,6 +304,7 @@ const ITEM_FIELDS = new Set([
   "dynamicStat",
   "dynamicMin",
   "dynamicMax",
+  "pointAssignment",
   "bonuses",
   "excludes",
 ]);
@@ -438,6 +439,16 @@ export function validateSlots(slots: Slot[]): LintFinding[] {
   const findings: LintFinding[] = [];
   const seenPaths = new Map<string, string>();
   for (const slot of slots) {
+    if (slot.type === "point_assignment") {
+      if (!slot.filter) {
+        findings.push({
+          level: "error",
+          kind: "item",
+          message: `${slot.id}: point_assignment slot has no filter`,
+        });
+      }
+      continue;
+    }
     if (slot.type !== "build_parameter") continue;
     if (!slot.path) {
       findings.push({
@@ -488,11 +499,20 @@ export function validate(
   const statKeys = new Set(schema.statKeys);
   const percentKinds = new Set(["percent", "mult"]);
   const allSlots = NW_SLOTS?.slots ?? [];
-  const slotFilters = new Set(
+  const itemPickerFilters = new Set<string>(
     allSlots
       .filter((slot) => slot.type === "item_picker")
       .map((slot) => slot.filter),
   );
+  const pointAssignmentFilters = new Set<string>(
+    allSlots
+      .filter((slot) => slot.type === "point_assignment")
+      .map((slot) => slot.filter),
+  );
+  const slotFilters = new Set<string>([
+    ...itemPickerFilters,
+    ...pointAssignmentFilters,
+  ]);
   const classSlot = findParamSlot(allSlots, "class");
   // Exclude the class slot's own "— none —" row: "" is not a class an item may be
   // restricted to, and accepting it would let a typo'd allowedClass pass silently.
@@ -551,14 +571,55 @@ export function validate(
     if (seenIds.has(item.id)) report("error", "duplicate item id", item.id);
     seenIds.add(item.id);
 
-    if (!item.filter)
+    if (!item.filter) {
       report("error", "no filter — the item appears in no slot", item.id);
-    else if (!slotFilters.has(item.filter)) {
+    } else if (!slotFilters.has(item.filter)) {
       report(
         "warn",
         `filter "${item.filter}" matches no slot, so nothing can equip it`,
         item.id,
       );
+    } else if (
+      itemPickerFilters.has(item.filter) &&
+      pointAssignmentFilters.has(item.filter)
+    ) {
+      report(
+        "error",
+        `filter "${item.filter}" is claimed by both an item_picker slot and a ` +
+          "point_assignment slot — which one resolves it is ambiguous",
+        item.id,
+      );
+    } else if (
+      pointAssignmentFilters.has(item.filter) &&
+      !item.pointAssignment
+    ) {
+      report(
+        "warn",
+        `filter "${item.filter}" is a point_assignment slot's filter, but this ` +
+          "item has no pointAssignment config, so it never appears as a row",
+        item.id,
+      );
+    }
+
+    if (item.pointAssignment) {
+      const { min, max, default: def } = item.pointAssignment;
+      if (
+        ![min, max, def].every(
+          (n) => typeof n === "number" && Number.isFinite(n),
+        )
+      ) {
+        report(
+          "error",
+          "pointAssignment has a non-numeric min/max/default",
+          item.id,
+        );
+      } else if (min > max || def < min || def > max) {
+        report(
+          "error",
+          `pointAssignment default ${def} is outside ${min}–${max}`,
+          item.id,
+        );
+      }
     }
 
     const stats: Record<string, unknown> = {};

@@ -189,6 +189,32 @@ test.describe("Ctrl+click on a filled slot", () => {
   });
 });
 
+test.describe("point_assignment items in the Layer Editor", () => {
+  test("a new item tagged with a point_assignment slot's own filter saves fine", async ({
+    page,
+  }) => {
+    await openBuilder(page);
+    await addLayer(page);
+    const layer = layerRow(page, "Layer 1");
+    await layer.locator(".nav-name").click();
+
+    await page.getByTestId("new-item").click();
+    await page.getByTestId("item-name-input").fill("Boon: Tier 1 Test");
+    // "boon_tier1" is the shipped "Boons (Tier 1)" point_assignment slot's own filter (data/
+    // slots.json) -- an item carrying it is resolved as a stepper row via that slot's filter,
+    // not chosen from a picker.
+    await page.getByTestId("item-filter-input").fill("boon_tier1");
+
+    await page.getByRole("button", { name: "Save item" }).click();
+
+    // No blocking error, and the item now shows up in the layer's own item list.
+    await expect(page.locator("p.text-danger")).toHaveCount(0);
+    await expect(
+      page.locator(".editor-row").filter({ hasText: "Boon: Tier 1 Test" }),
+    ).toBeVisible();
+  });
+});
+
 test.describe("bonus set grant conditions", () => {
   test("changing a condition's type mid-edit does not drop the condition", async ({
     page,

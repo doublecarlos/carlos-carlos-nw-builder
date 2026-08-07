@@ -3,7 +3,7 @@
 // wholesale, or two slots fighting over one value).
 import { describe, it, expect } from "vitest";
 import * as catalog from "../../src/data/catalog";
-import { NW_SLOTS } from "../../src/data/data";
+import { NW_SLOTS, NW_ITEMS, NW_BONUSES } from "../../src/data/data";
 import type {
   BonusSet,
   ConditionWhen,
@@ -21,6 +21,14 @@ const paramSlot = (id: string, path: string): Slot => ({
   type: "build_parameter",
   paramType: "boolean",
   path,
+});
+
+const pointAssignmentSlot = (id: string, filter: string): Slot => ({
+  id,
+  label: id,
+  section: "boons",
+  type: "point_assignment",
+  filter,
 });
 
 describe("catalog.validateSlots", () => {
@@ -73,6 +81,18 @@ describe("catalog.validateSlots", () => {
       },
     ]);
     expect(findings).toEqual([]);
+  });
+
+  it("accepts a well-formed point_assignment slot", () => {
+    const findings = catalog.validateSlots([
+      pointAssignmentSlot("boons.tier1", "boon_tier1"),
+    ]);
+    expect(findings).toEqual([]);
+  });
+
+  it("reports a point_assignment slot with no filter", () => {
+    const findings = catalog.validateSlots([pointAssignmentSlot("a", "")]);
+    expect(findings.some((f) => /no filter/.test(f.message))).toBe(true);
   });
 });
 
@@ -128,6 +148,76 @@ describe("catalog.validate: item id lint", () => {
       { id: "ring-b", name: "Ring", filter: "gear_ring" },
     ];
     expect(catalog.validate(items, [])).toEqual([]);
+  });
+});
+
+describe("catalog.validate: point_assignment-referenced items", () => {
+  it("carries a point_assignment slot's own filter, resolved as a row via that filter", () => {
+    const item = NW_ITEMS.find((i) => i.id === "boon-tier1-power");
+    expect(item?.filter).toBe("boon_tier1");
+    // Bounds themselves are game data, free to tune -- only the shape matters here.
+    expect(item?.pointAssignment?.min).toBeTypeOf("number");
+    expect(item?.pointAssignment?.max).toBeTypeOf("number");
+    expect(item?.pointAssignment?.default).toBeTypeOf("number");
+  });
+
+  it("a point_assignment slot's filter passes the 'matches no slot' check", () => {
+    const findings = catalog.validate(NW_ITEMS, NW_BONUSES);
+    expect(
+      findings.some(
+        (f) =>
+          f.name === "boon-tier1-power" &&
+          /no filter|matches no slot/.test(f.message),
+      ),
+    ).toBe(false);
+  });
+
+  it("an item with no filter at all is still an error, same as any other item", () => {
+    const items = [{ id: "orphan", name: "Orphan", filter: "" }];
+    const findings = catalog.validate(items, []);
+    expect(findings.some((f) => /no filter/.test(f.message))).toBe(true);
+  });
+
+  it("the shipped 'boon_tier1' filter is not also claimed by an item_picker slot", () => {
+    // validate()'s ambiguous-filter check reads NW_SLOTS directly (not a parameter), so this
+    // documents the invariant it depends on rather than exercising the check with a synthetic
+    // slot list.
+    expect(
+      NW_SLOTS.slots.some(
+        (s) => s.type === "item_picker" && s.filter === "boon_tier1",
+      ),
+    ).toBe(false);
+  });
+
+  it("an item's pointAssignment default outside its own min/max is an error", () => {
+    const items: Item[] = [
+      {
+        id: "bad-boon",
+        name: "Bad Boon",
+        filter: "boon_tier1",
+        pointAssignment: { min: 1, max: 4, default: 0 },
+      },
+    ];
+    const findings = catalog.validate(items, []);
+    expect(
+      findings.some(
+        (f) => f.name === "bad-boon" && /is outside/.test(f.message),
+      ),
+    ).toBe(true);
+  });
+
+  it("a point_assignment filter with no pointAssignment config on the item is a warning", () => {
+    const items: Item[] = [
+      {
+        id: "unconfigured-boon",
+        name: "Unconfigured Boon",
+        filter: "boon_tier1",
+      },
+    ];
+    const findings = catalog.validate(items, []);
+    const finding = findings.find((f) => f.name === "unconfigured-boon");
+    expect(finding?.level).toBe("warn");
+    expect(finding?.message).toMatch(/no pointAssignment config/);
   });
 });
 
@@ -347,6 +437,7 @@ describe("catalog.referencedOverlay", () => {
       name: "Test",
       choices: { gear_head: BASE_ITEM_ID },
       values: {},
+      assignments: {},
       context: {} as Build["context"],
       compare: { id: "", highlight: false, onlyDiff: false },
     };
@@ -362,6 +453,7 @@ describe("catalog.referencedOverlay", () => {
       name: "Test",
       choices: { gear_head: BASE_ITEM_ID, gear_ring: "layer-item" },
       values: {},
+      assignments: {},
       context: {} as Build["context"],
       compare: { id: "", highlight: false, onlyDiff: false },
     };
@@ -388,6 +480,7 @@ describe("catalog.referencedOverlay", () => {
       name: "Test",
       choices: { gear_ring: "layer-item" },
       values: {},
+      assignments: {},
       context: {} as Build["context"],
       compare: { id: "", highlight: false, onlyDiff: false },
     };
@@ -406,6 +499,7 @@ describe("catalog.referencedOverlay", () => {
       name: "Test",
       choices: { gear_head: BASE_ITEM_ID },
       values: {},
+      assignments: {},
       context: {} as Build["context"],
       compare: { id: "", highlight: false, onlyDiff: false },
     };
@@ -436,6 +530,7 @@ describe("catalog.referencedOverlay", () => {
       name: "Test",
       choices: { group_buff: BASE_SET_ITEM_ID },
       values: {},
+      assignments: {},
       context: {} as Build["context"],
       compare: { id: "", highlight: false, onlyDiff: false },
     };
@@ -457,6 +552,7 @@ describe("catalog.referencedOverlay", () => {
       name: "Test",
       choices: { gear_head: BASE_ITEM_ID },
       values: {},
+      assignments: {},
       context: {} as Build["context"],
       compare: { id: "", highlight: false, onlyDiff: false },
     };

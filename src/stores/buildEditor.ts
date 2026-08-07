@@ -7,7 +7,7 @@ import * as compare from "./compare";
 import * as history from "./history";
 import { db } from "./resolved";
 import { getPath, setPath } from "../lib/build-path";
-import type { BuildParameterSlot } from "../types";
+import type { BuildParameterSlot, PointAssignmentSlot } from "../types";
 
 // Re-export computed accessors so BuildBar.vue etc. can keep importing from buildEditor.
 export const canUndo = history.canUndo;
@@ -178,6 +178,60 @@ export function applyParamFromCompare(slot: BuildParameterSlot) {
   setPath(b.context, slot.path, fromVal);
 }
 
+export function setAssignment(
+  slot: PointAssignmentSlot,
+  itemId: string,
+  count: number,
+) {
+  const b = builds.build.value;
+  if (!b) return;
+  const label = db.value.get(itemId)?.name ?? itemId;
+  history.snapshot(
+    "build",
+    b.id,
+    `assignment:${slot.id}:${itemId}`,
+    `${slot.label} ${label} → ${count}`,
+    b,
+  );
+  b.assignments[slot.id] = { ...b.assignments[slot.id], [itemId]: count };
+}
+
+export function resetAssignmentsToDefault(slot: PointAssignmentSlot) {
+  const b = builds.build.value;
+  if (!b) return;
+  history.snapshot(
+    "build",
+    b.id,
+    `assignment:${slot.id}`,
+    `${slot.label} → default`,
+    b,
+  );
+  const reset: Record<string, number> = {};
+  for (const item of db.value.forSlot(slot.id))
+    reset[item.id] = item.pointAssignment!.default;
+  b.assignments[slot.id] = reset;
+}
+
+export function applyAssignmentsFromCompare(slot: PointAssignmentSlot) {
+  const other = compare.compareBuild.value;
+  if (!other) return;
+  const b = builds.build.value;
+  if (!b) return;
+  history.snapshot(
+    "build",
+    b.id,
+    `assignment:${slot.id}`,
+    `${slot.label} → values from "${other.name}"`,
+    b,
+  );
+  const applied: Record<string, number> = {};
+  for (const item of db.value.forSlot(slot.id)) {
+    applied[item.id] =
+      other.assignments?.[slot.id]?.[item.id] ?? item.pointAssignment!.default;
+  }
+  b.assignments[slot.id] = applied;
+}
+
 export function renameBuild(name: string) {
   const b = builds.build.value;
   if (!b) return;
@@ -202,6 +256,7 @@ export function clearSlots() {
   );
   b.choices = {};
   b.values = {};
+  b.assignments = storage.defaultBuild().assignments;
 }
 
 export function resetAll() {
@@ -233,6 +288,17 @@ export function copySection(fromId: string, sectionIds: string[]) {
 
     if (slot.type === "build_parameter") {
       setPath(b.context, slot.path, getPath(source.context, slot.path));
+      continue;
+    }
+
+    if (slot.type === "point_assignment") {
+      const rows: Record<string, number> = {};
+      for (const item of db.value.forSlot(slot.id)) {
+        rows[item.id] =
+          source.assignments?.[slot.id]?.[item.id] ??
+          item.pointAssignment!.default;
+      }
+      b.assignments[slot.id] = rows;
       continue;
     }
 

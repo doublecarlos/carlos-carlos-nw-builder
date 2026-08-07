@@ -201,7 +201,9 @@ const rows = computed(() =>
        are handled by BasePopover. Internal structure uses BaseCard for the visual frame. -->
   <BaseCard>
     <BaseCardHeader sticky>
-      <span class="flex-1 font-semibold">{{ item.name }}</span>
+      <span class="flex-1 font-semibold" data-testid="item-card-name">{{
+        item.name
+      }}</span>
       <span v-if="item.il" class="text-sm tabular-nums text-muted"
         >iL {{ item.il.toLocaleString() }}</span
       >

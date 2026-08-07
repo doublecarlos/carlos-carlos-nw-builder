@@ -8,7 +8,13 @@
 // (a resolved build's `stages.*`) rather than recomputing its math, so this can never drift
 // from what the panel actually displays.
 import { NW_SCHEMA } from "../data/data";
-import type { ResolvedBuild, Build, EvaluatedBonus, StatKey } from "../types";
+import type {
+  ResolvedBuild,
+  Build,
+  Db,
+  EvaluatedBonus,
+  StatKey,
+} from "../types";
 
 export interface StatSource {
   name: string;
@@ -43,6 +49,34 @@ function itemSources(result: ResolvedBuild, key: StatKey): StatSource[] {
       row.item.name,
       (totals.get(row.item.name) ?? 0) + (raw as number),
     );
+  }
+  return [...totals].map(([name, value]) => ({ name, value }));
+}
+
+/** Every point_assignment row's item stat × its count -- the counterpart to `itemSources`
+ * above for a slot with no single `ResolvedRow.item` to read (bonus.ts's `collect()` folds
+ * these into `assignmentStatsBySlot` for the pipeline; this re-attributes them back to the
+ * item that earned them, same reasoning as this file's own module comment). */
+function assignmentSources(
+  db: Db | null | undefined,
+  build: Build | null | undefined,
+  key: StatKey,
+): StatSource[] {
+  if (!db || !build) return [];
+  const totals = new Map<string, number>();
+  for (const slot of db.slots) {
+    if (slot.type !== "point_assignment") continue;
+    const counts = build.assignments?.[slot.id] ?? {};
+    for (const item of db.forSlot(slot.id)) {
+      const count = counts[item.id] ?? item.pointAssignment!.default;
+      if (count <= 0) continue;
+      const raw = item[key];
+      if (!raw) continue;
+      totals.set(
+        item.name,
+        (totals.get(item.name) ?? 0) + (raw as number) * count,
+      );
+    }
   }
   return [...totals].map(([name, value]) => ({ name, value }));
 }
@@ -133,11 +167,13 @@ function forteSource(
 function sourcesFor(
   result: ResolvedBuild,
   build: Build | null | undefined,
+  db: Db | null | undefined,
   key: StatKey,
 ): StatSource[] {
   return [
     ...ratingContributionSource(result, key),
     ...itemSources(result, key),
+    ...assignmentSources(db, build, key),
     ...bonusSources(result, key),
     ...weaponModSources(result, build, key),
     ...combinedRatingSource(result, key),
@@ -152,6 +188,7 @@ function sourcesFor(
 export function sectionsFor(
   result: ResolvedBuild,
   build: Build | null | undefined,
+  db: Db | null | undefined,
   key: StatKey,
 ): StatSourceSection[] {
   const rule = NW_SCHEMA.ratingConversion.find((r) => r.rating === key);
@@ -160,14 +197,14 @@ export function sectionsFor(
       {
         title: "Rating",
         key: rule.rating,
-        sources: sourcesFor(result, build, rule.rating),
+        sources: sourcesFor(result, build, db, rule.rating),
       },
       {
         title: "Percentage",
         key: rule.percent,
-        sources: sourcesFor(result, build, rule.percent),
+        sources: sourcesFor(result, build, db, rule.percent),
       },
     ];
   }
-  return [{ title: "", key, sources: sourcesFor(result, build, key) }];
+  return [{ title: "", key, sources: sourcesFor(result, build, db, key) }];
 }

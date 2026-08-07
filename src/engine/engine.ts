@@ -62,6 +62,13 @@ function rowVectors(resolved: ResolvedBonuses, keys: StatKey[]): EngineRow[] {
         if (row.item[key]) stats[key] = row.item[key] as number;
       }
     }
+    // A point_assignment row has no single item to read stats off of -- its assignments'
+    // items, scaled by count, were already summed by bonus.ts's collect() into this map.
+    const assignmentStats = resolved.assignmentStatsBySlot.get(row.slotId);
+    if (assignmentStats) {
+      for (const [key, value] of assignmentStats)
+        stats[key] = (stats[key] ?? 0) + value;
+    }
     const bonusStats = resolved.bonusStatsBySlot.get(row.slotId);
     if (bonusStats) {
       for (const [key, value] of bonusStats)
@@ -316,6 +323,55 @@ function findErrors(
 
   for (const row of resolved.rows) {
     if (row.item) counts.set(row.item.id, (counts.get(row.item.id) ?? 0) + 1);
+  }
+  // point_assignment slots contribute to the same maxCopies count as an item_picker pick would
+  // (each point is "one more copy"), but they have no ResolvedRow.item to have been counted by
+  // the pass above -- counted here from the slot definitions themselves instead.
+  for (const slot of db.slots) {
+    if (slot.type !== "point_assignment") continue;
+    const assigned = build.assignments?.[slot.id] ?? {};
+    for (const item of db.forSlot(slot.id)) {
+      const count = assigned[item.id] ?? item.pointAssignment!.default;
+      if (count > 0) counts.set(item.id, (counts.get(item.id) ?? 0) + count);
+    }
+  }
+
+  for (const slot of db.slots) {
+    if (slot.type !== "point_assignment") continue;
+    const assigned = build.assignments?.[slot.id] ?? {};
+    for (const item of db.forSlot(slot.id)) {
+      const { min, max: rowMax, default: def } = item.pointAssignment!;
+      const count = assigned[item.id] ?? def;
+      if (count <= 0) continue;
+
+      const allowed = item.allowedClass;
+      if (allowed && !allowed.includes(context.class)) {
+        errors.push({
+          slotId: slot.id,
+          kind: "class",
+          choice: item.name,
+          message: `${item.name} requires ${allowed.join(" or ")}`,
+        });
+      }
+      const max = db.maxCopies(item);
+      const used = counts.get(item.id);
+      if (max && used! > max) {
+        errors.push({
+          slotId: slot.id,
+          kind: "maxCopies",
+          choice: item.name,
+          message: `${item.name} is equipped ${used} times, maximum ${max}`,
+        });
+      }
+      if (count < min || count > rowMax) {
+        errors.push({
+          slotId: slot.id,
+          kind: "outOfRange",
+          choice: item.name,
+          message: `${item.name}: ${count} is outside ${min}–${rowMax}`,
+        });
+      }
+    }
   }
 
   for (const row of resolved.rows) {

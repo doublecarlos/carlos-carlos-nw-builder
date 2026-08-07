@@ -114,6 +114,7 @@ function testBuild(context: Record<string, unknown>): Build {
     name: "b",
     choices: {},
     values: {},
+    assignments: {},
     context: context as unknown as Build["context"],
     compare: { id: "", highlight: false, onlyDiff: false },
   };

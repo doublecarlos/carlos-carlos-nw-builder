@@ -8,6 +8,7 @@ import type {
   Db,
   EvaluatedBonus,
   Item,
+  PointAssignmentSlot,
   ResolvedBuild,
   StatValues,
 } from "../types";
@@ -49,6 +50,44 @@ export function paramDiffTitle(
 ) {
   if (!compareBuild) return undefined;
   return `${paramLabel(slot, getPath(compareBuild.context, slot.path))}`;
+}
+
+/** True if any row of this point_assignment slot differs from the compare build -- needs `db`
+ * (unlike `paramDiffers`) since the row list is resolved by the slot's `filter`, not carried on
+ * the slot itself. */
+export function assignmentDiffers(
+  db: Db,
+  build: Build,
+  compareBuild: Build | null,
+  slot: PointAssignmentSlot,
+) {
+  if (!compareBuild) return false;
+  return db.forSlot(slot.id).some((item) => {
+    const def = item.pointAssignment!.default;
+    const here = build.assignments?.[slot.id]?.[item.id] ?? def;
+    const there = compareBuild.assignments?.[slot.id]?.[item.id] ?? def;
+    return here !== there;
+  });
+}
+
+/** The compare build's counts for every row of this slot, "Item A 2, Item B 0" -- the
+ * point_assignment counterpart to `paramDiffTitle`. Needs `db` (unlike `paramDiffTitle`) to
+ * resolve the slot's filter to its rows and each row's item id to a display name. */
+export function assignmentDiffTitle(
+  db: Db,
+  compareBuild: Build | null,
+  slot: PointAssignmentSlot,
+) {
+  if (!compareBuild) return undefined;
+  return db
+    .forSlot(slot.id)
+    .map((item) => {
+      const there =
+        compareBuild.assignments?.[slot.id]?.[item.id] ??
+        item.pointAssignment!.default;
+      return `${item.name} ${there}`;
+    })
+    .join(", ");
 }
 
 export function useCompareDiff(options: {

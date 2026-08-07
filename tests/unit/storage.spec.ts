@@ -351,6 +351,48 @@ describe("overlay envelope: layer-kind and bundle-kind", () => {
   });
 });
 
+describe("point_assignment: assignments", () => {
+  it("defaultBuild seeds every row's default, keyed by slot then item", () => {
+    const build = storage.defaultBuild();
+    expect(build.assignments["boons.tier1"]).toEqual({
+      "boon-tier1-power": 0,
+      "boon-tier1-defense": 0,
+    });
+  });
+
+  it("normalise preserves a valid assignments payload", () => {
+    const raw = {
+      ...storage.defaultBuild(),
+      assignments: { "boons.tier1": { "boon-tier1-power": 3 } },
+    };
+    const build = storage.normalise(raw);
+    // The row present in `raw` is overridden; the row `raw` didn't mention keeps its
+    // seeded default rather than being dropped.
+    expect(build.assignments["boons.tier1"]).toEqual({
+      "boon-tier1-power": 3,
+      "boon-tier1-defense": 0,
+    });
+  });
+
+  it("normalise falls back to the seeded default for a garbage count", () => {
+    const raw = {
+      ...storage.defaultBuild(),
+      assignments: { "boons.tier1": { "boon-tier1-power": "not-a-number" } },
+    };
+    const build = storage.normalise(raw);
+    expect(build.assignments["boons.tier1"]["boon-tier1-power"]).toBe(0);
+  });
+
+  it("normalise defaults assignments entirely when the payload has none at all", () => {
+    const raw = { ...storage.defaultBuild(), assignments: undefined };
+    const build = storage.normalise(raw);
+    expect(build.assignments["boons.tier1"]).toEqual({
+      "boon-tier1-power": 0,
+      "boon-tier1-defense": 0,
+    });
+  });
+});
+
 describe("defaultBuild and duplicate no longer carry updated", () => {
   it("defaultBuild does not have an updated field", () => {
     const build = storage.defaultBuild();

@@ -89,6 +89,10 @@ export interface ItemDraft {
   dynamicStat: string;
   dynamicMin: number | string | null;
   dynamicMax: number | string | null;
+  pointMin: number | string | null;
+  pointMax: number | string | null;
+  pointDefault: number | string | null;
+  pointPriority: number | string | null;
   stats: StatRow[];
 }
 
@@ -106,6 +110,10 @@ function buildDraft(item: Item | null | undefined): ItemDraft {
     dynamicStat: source.dynamicStat ?? "",
     dynamicMin: source.dynamicMin ?? null,
     dynamicMax: source.dynamicMax ?? null,
+    pointMin: source.pointAssignment?.min ?? null,
+    pointMax: source.pointAssignment?.max ?? null,
+    pointDefault: source.pointAssignment?.default ?? null,
+    pointPriority: source.pointAssignment?.priority ?? null,
     stats: Object.keys(source)
       .filter((key) => statKeys.has(key))
       .map((key) => ({ key, value: source[key as keyof Item] as number })),
@@ -165,6 +173,10 @@ function diffLabel(oldJson: string, newJson: string): string {
       return `edit dynamic stat → "${nw.dynamicStat || "(none)"}"`;
     if (old.dynamicMin !== nw.dynamicMin || old.dynamicMax !== nw.dynamicMax)
       return `edit dynamic range → ${nw.dynamicMin ?? "_"}–${nw.dynamicMax ?? "_"}`;
+    if (
+      JSON.stringify(old.pointAssignment) !== JSON.stringify(nw.pointAssignment)
+    )
+      return "edit point assignment";
     if (JSON.stringify(old.stats) !== JSON.stringify(nw.stats))
       return diffStatsLabel(old.stats ?? [], nw.stats ?? []);
   } catch {
@@ -343,6 +355,22 @@ function toItem(): Item {
     if (local.dynamicMax != null && local.dynamicMax !== "") {
       item.dynamicMax = Number(local.dynamicMax);
     }
+  }
+
+  const hasPointField = (v: number | string | null) => v != null && v !== "";
+  if (
+    hasPointField(local.pointMin) ||
+    hasPointField(local.pointMax) ||
+    hasPointField(local.pointDefault)
+  ) {
+    item.pointAssignment = {
+      min: Number(local.pointMin) || 0,
+      max: Number(local.pointMax) || 0,
+      default: Number(local.pointDefault) || 0,
+      ...(hasPointField(local.pointPriority)
+        ? { priority: Number(local.pointPriority) }
+        : {}),
+    };
   }
 
   return item;
@@ -601,6 +629,41 @@ onUnmounted(() => {
           class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent disabled:opacity-50"
           type="number"
           :disabled="!draft.dynamicStat"
+        />
+      </FormField>
+    </FormGrid>
+
+    <FormSection
+      >Point assignment (boons, attributes, other point_assignment slots
+      filter)</FormSection
+    >
+    <FormGrid class="mb-2">
+      <FormField label="Min">
+        <input
+          v-model.number="draft.pointMin"
+          class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+          type="number"
+        />
+      </FormField>
+      <FormField label="Max">
+        <input
+          v-model.number="draft.pointMax"
+          class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+          type="number"
+        />
+      </FormField>
+      <FormField label="Default">
+        <input
+          v-model.number="draft.pointDefault"
+          class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+          type="number"
+        />
+      </FormField>
+      <FormField label="Priority">
+        <input
+          v-model.number="draft.pointPriority"
+          class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+          type="number"
         />
       </FormField>
     </FormGrid>

@@ -11,6 +11,8 @@ import {
   slotRow,
   pickerInput,
   cursorRow,
+  assignmentInput,
+  stepAssignment,
 } from "./support/app";
 
 const HEAD_ITEM = "M29 Enchanted Depthweave Cap (CA)";
@@ -112,6 +114,49 @@ test.describe("build_parameter compare diff apply", () => {
 
     // Should now match the compare build's value
     await expect(row.getByTestId("picker-input")).toHaveValue("Paladin");
+    await expect(row).not.toHaveClass(/is-diff/);
+  });
+});
+
+test.describe("point_assignment compare diff apply", () => {
+  const SLOT_ID = "boons.tier1";
+  const POWER_ID = "boon-tier1-power";
+
+  test("a changed point_assignment row shows a diff note with an apply button", async ({
+    page,
+  }) => {
+    // Build 1: spend a point on power
+    await openBuilder(page);
+    await stepAssignment(slotRow(page, SLOT_ID), POWER_ID, "increase");
+
+    // Build 2: default (0 points), compared against build 1
+    await page.getByTestId("nav-add-build").click();
+    await chooseCombo(page.locator(".compare-select"), "Build 1");
+    await page.getByRole("checkbox", { name: "Highlight changes" }).check();
+
+    const row = slotRow(page, SLOT_ID);
+    await expect(row).toHaveClass(/is-diff/);
+    await expect(row.locator(".slot-diff-note")).toContainText("Power 1");
+    await expect(row.getByRole("button", { name: "apply" })).toBeVisible();
+  });
+
+  test("applying from compare copies every row's count from the compare build", async ({
+    page,
+  }) => {
+    // Build 1: spend a point on power
+    await openBuilder(page);
+    await stepAssignment(slotRow(page, SLOT_ID), POWER_ID, "increase");
+
+    // Build 2: default (0 points), compared against build 1
+    await page.getByTestId("nav-add-build").click();
+    await chooseCombo(page.locator(".compare-select"), "Build 1");
+    await page.getByRole("checkbox", { name: "Highlight changes" }).check();
+
+    const row = slotRow(page, SLOT_ID);
+    await expect(row).toHaveClass(/is-diff/);
+    await row.getByRole("button", { name: "apply" }).click();
+
+    await expect(assignmentInput(row, POWER_ID)).toHaveValue("1");
     await expect(row).not.toHaveClass(/is-diff/);
   });
 });

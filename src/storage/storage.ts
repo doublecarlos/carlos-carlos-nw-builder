@@ -15,6 +15,7 @@
 
 import { NW_SLOTS, NW_CATALOG_VERSION } from "../data/data";
 import * as catalog from "../data/catalog";
+import { fromData as baseDb } from "../data/db";
 import * as idb from "./idb";
 import { setPath } from "../lib/build-path";
 import pkg from "../../package.json";
@@ -140,9 +141,18 @@ export const newId = (prefix = "b") =>
  */
 export function defaultBuild(name = "New build"): Build {
   const root: { context: Record<string, unknown> } = { context: {} };
+  const assignments: Build["assignments"] = {};
+  // Base catalogue only (no workspace overlay) -- same reach every other pure helper in this
+  // file has, and enough to seed every shipped point_assignment row's default.
+  const db = baseDb();
   for (const slot of NW_SLOTS.slots) {
     if (slot.type === "build_parameter" && slot.default !== undefined) {
       setPath(root.context, slot.path, slot.default);
+    } else if (slot.type === "point_assignment") {
+      const row: Record<string, number> = {};
+      for (const item of db.forSlot(slot.id))
+        row[item.id] = item.pointAssignment!.default;
+      assignments[slot.id] = row;
     }
   }
   return {
@@ -150,6 +160,7 @@ export function defaultBuild(name = "New build"): Build {
     name,
     choices: {},
     values: {},
+    assignments,
     context: root.context as unknown as Build["context"],
     // The quick-compare picker (App.vue topbar). Saved with the build -- unlike `tab`, which
     // is pure session state -- so reopening a build remembers what you were sizing it up
@@ -195,6 +206,21 @@ const booleans = (source: unknown): Record<string, boolean> => {
   return out;
 };
 
+/** `assignments`' own coercion: a slot id's inner map falls back to `base`'s (each row's
+ * seeded default) key by key, rather than replacing the whole inner map, so a raw payload
+ * missing one row (an older export, a hand trim) doesn't lose the other rows' defaults. */
+const nestedNumbers = (
+  source: unknown,
+  base: Record<string, Record<string, number>>,
+): Record<string, Record<string, number>> => {
+  const out: Record<string, Record<string, number>> = {};
+  const raw = isPlain(source) ? source : {};
+  for (const slotId of new Set([...Object.keys(base), ...Object.keys(raw)])) {
+    out[slotId] = { ...base[slotId], ...numbers(raw[slotId]) };
+  }
+  return out;
+};
+
 /**
  * Coerce anything build-shaped into a valid build. Tolerates a truncated write, an older
  * shape, a hand-edited export, or a user who pasted nonsense: unknown keys survive, missing
@@ -230,6 +256,7 @@ export function normalise(
       typeof raw.name === "string" && raw.name.trim() ? raw.name : base.name,
     choices: strings(raw.choices),
     values: numbers(raw.values),
+    assignments: nestedNumbers(raw.assignments, base.assignments),
     // `context`'s pass-through fields (class/role/combatType/location/damageType) are not
     // individually validated -- the result is only knowable-safe by construction, not by
     // the type checker; hence the cast.

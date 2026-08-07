@@ -9,10 +9,15 @@ import * as engine from "../../src/engine/engine";
 import type {
   Build,
   BuildContext,
+  BonusSet,
   EvaluatedBonus,
   EngineError,
   Grant,
   ConditionWhen,
+  Item,
+  PointAssignmentSlot,
+  Schema,
+  SlotsData,
 } from "../../src/types";
 
 const built = db.fromData();
@@ -353,5 +358,116 @@ describe("bonus model semantics", () => {
     ]);
     const unknown = [...seen].filter((k) => !allowed.has(k));
     expect(unknown).toEqual([]);
+  });
+});
+
+// A point_assignment slot's count is meant to resolve exactly like N separate item_picker
+// picks of the same item -- a synthetic db (not the real shipped one) isolates that claim
+// with a bonus set built specifically to prove stacking scales with the count.
+describe("point_assignment resolution", () => {
+  const schema: Schema = {
+    stats: [],
+    statByKey: {},
+    statKeys: ["power_p"],
+    multiplicativeStats: [],
+    ratingStats: [],
+    abilityStats: [],
+    ratingConversion: [],
+    abilityContributions: [],
+    forteSplit: {},
+    roles: { dps: { label: "dps", hpBonus: 1, damageBonus: 1 } },
+  };
+
+  const powerItem: Item = {
+    id: "boon-power",
+    name: "Boon Power",
+    filter: "test_boon_tier",
+    power_p: 0.01,
+    maxCopies: 3,
+    bonuses: ["boon-power-set"],
+    pointAssignment: { min: 0, max: 4, default: 0 },
+  };
+  const powerSet: BonusSet = {
+    id: "boon-power-set",
+    stacking: "perSource",
+    grants: [{ stats: { power_p: 0.02 } }],
+  };
+  const restrictedItem: Item = {
+    id: "boon-restricted",
+    name: "Boon Restricted",
+    filter: "test_boon_tier",
+    allowedClass: ["fighter"],
+    pointAssignment: { min: 0, max: 2, default: 0 },
+  };
+
+  const pointSlot: PointAssignmentSlot = {
+    id: "boons.tier1",
+    label: "Boons (Tier 1)",
+    section: "boons",
+    type: "point_assignment",
+    filter: "test_boon_tier",
+  };
+  const slotsData: SlotsData = {
+    sections: [{ id: "boons", label: "Boons" }],
+    slots: [pointSlot],
+  };
+  const testDb = db.build(
+    [powerItem, restrictedItem],
+    [powerSet],
+    schema,
+    slotsData,
+  );
+
+  function buildWith(counts: Record<string, number>): Build {
+    return {
+      id: "b",
+      name: "b",
+      choices: {},
+      values: {},
+      assignments: { "boons.tier1": counts },
+      context: BASE_CONTEXT,
+      compare: { id: "", highlight: false, onlyDiff: false },
+    } as unknown as Build;
+  }
+
+  it("a count of 0 (the default) contributes nothing", () => {
+    const result = engine.resolveBuild(testDb, buildWith({}));
+    expect(
+      result.bonuses.find((b) => b.id === "boon-power-set")?.active,
+    ).toBeFalsy();
+    expect(result.stages.sums.power_p).toBe(0);
+  });
+
+  it("N points bump stacking the same way N separate item_picker picks would", () => {
+    const one = engine.resolveBuild(testDb, buildWith({ "boon-power": 1 }));
+    const two = engine.resolveBuild(testDb, buildWith({ "boon-power": 2 }));
+    expect(one.bonuses.find((b) => b.id === "boon-power-set")?.stacks).toBe(1);
+    expect(two.bonuses.find((b) => b.id === "boon-power-set")?.stacks).toBe(2);
+  });
+
+  it("the item's own stat scales by count, on top of the stacked bonus", () => {
+    const two = engine.resolveBuild(testDb, buildWith({ "boon-power": 2 }));
+    // item: 0.01 x 2 points, bonus: 0.02 per stack x 2 stacks
+    expect(two.stages.sums.power_p).toBeCloseTo(2 * 0.01 + 2 * 0.02, 9);
+  });
+
+  it("a count over the item's maxCopies is flagged, same as too many picks", () => {
+    const result = engine.resolveBuild(testDb, buildWith({ "boon-power": 4 }));
+    expect(result.errors.some((e) => e.kind === "maxCopies")).toBe(true);
+  });
+
+  it("a count outside the row's min/max is flagged as outOfRange, not clamped", () => {
+    // Not achievable through the UI's own -/+ buttons (they clamp), but a hand-edited or
+    // imported build can carry one -- same reasoning as dynamicStat's own outOfRange check.
+    const result = engine.resolveBuild(testDb, buildWith({ "boon-power": 6 }));
+    expect(result.errors.some((e) => e.kind === "outOfRange")).toBe(true);
+  });
+
+  it("a class-restricted item flags a class error the same way a picked item would", () => {
+    const result = engine.resolveBuild(
+      testDb,
+      buildWith({ "boon-restricted": 1 }),
+    );
+    expect(result.errors.some((e) => e.kind === "class")).toBe(true);
   });
 });

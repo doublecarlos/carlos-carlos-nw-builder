@@ -1113,6 +1113,13 @@
     "il": 900
   },
   {
+    "id": "boon-tier1-defense",
+    "name": "Defense",
+    "filter": "boon_tier1",
+    "defense_p": 0.002,
+    "pointAssignment": {"min": 0, "max": 5, "default": 0, "priority": 1}
+  },
+  {
     "id": "demogorgon-s-reach",
     "name": "Demogorgon's Reach",
     "filter": "artifact",
@@ -2600,6 +2607,13 @@
     "filter": "companion_enhancement",
     "il": 900,
     "bonuses": ["potent-precision-severity"]
+  },
+  {
+    "id": "boon-tier1-power",
+    "name": "Power",
+    "filter": "boon_tier1",
+    "power_p": 0.002,
+    "pointAssignment": {"min": 0, "max": 5, "default": 0, "priority": 0}
   },
   {
     "id": "power-m32-600-to-3200",

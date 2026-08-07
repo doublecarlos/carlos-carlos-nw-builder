@@ -19,6 +19,8 @@ import {
   useCompareDiff,
   paramDiffers,
   paramDiffTitle,
+  assignmentDiffers,
+  assignmentDiffTitle,
 } from "../composables/useCompareDiff";
 import * as storage from "../storage/storage";
 import * as router from "../lib/router";
@@ -103,6 +105,15 @@ function itemIn(slotId: string): Item | null {
   return rowBySlot.value.get(slotId)?.item ?? null;
 }
 
+/** The hover card's own item resolution: an item_picker/build_parameter row hovers as a
+ * whole (`itemIn`, the row's single resolved item), but a point_assignment row has no
+ * single item -- `itemId` names which of its rows was hovered instead (looked up straight
+ * off the catalogue, not off `build.assignments`, since the card should preview any row's
+ * item whether or not points are currently spent on it). */
+function itemForHover(slotId: string, itemId?: string): Item | null {
+  return itemId ? db.value.get(itemId) : itemIn(slotId);
+}
+
 const {
   hover,
   onRowEnter,
@@ -111,10 +122,13 @@ const {
   onCardLeave,
   onFocusIn: onHoverFocusIn,
   onFocusOut,
-} = useHoverCard(tooltip, (slotId) => itemIn(slotId) !== null);
+} = useHoverCard(
+  tooltip,
+  (slotId, itemId) => itemForHover(slotId, itemId) !== null,
+);
 
 const hoveredItem = computed(() =>
-  hover.value ? itemIn(hover.value.slotId) : null,
+  hover.value ? itemForHover(hover.value.slotId, hover.value.itemId) : null,
 );
 
 /**
@@ -160,9 +174,16 @@ interface SectionRow extends SlotSection {
  * in the always-visible QuickOptions strip instead, so it never counts toward this section's
  * badge/diff/unsaved state (it's never hidden by a collapse the way a real row can be). */
 function rowDiffers(slotDef: Slot) {
-  return slotDef.type === "build_parameter"
-    ? paramDiffers(build.value, compareBuild.value, slotDef)
-    : rowHasDiff(slotDef.id);
+  if (slotDef.type === "build_parameter")
+    return paramDiffers(build.value, compareBuild.value, slotDef);
+  if (slotDef.type === "point_assignment")
+    return assignmentDiffers(
+      db.value,
+      build.value,
+      compareBuild.value,
+      slotDef,
+    );
+  return rowHasDiff(slotDef.id);
 }
 
 const sections = computed<SectionRow[]>(() => {
@@ -191,6 +212,13 @@ const sections = computed<SectionRow[]>(() => {
       let errors = 0;
       for (const slotDef of pickerSlots) {
         if (rowBySlot.value.get(slotDef.id)?.item) filled += 1;
+        errors += errorsBySlot.value.get(slotDef.id)?.length ?? 0;
+      }
+      // point_assignment slots can also produce errors (class/maxCopies/outOfRange, per-item
+      // rather than per-slot), but they never count toward `filled` -- like build_parameter, a
+      // point_assignment slot always has *some* value, so "filled" isn't meaningful for it.
+      for (const slotDef of slots) {
+        if (slotDef.type !== "point_assignment") continue;
         errors += errorsBySlot.value.get(slotDef.id)?.length ?? 0;
       }
       return {
@@ -388,7 +416,17 @@ function onFocusIn(event: FocusEvent) {
               ? paramDiffTitle(compareBuild, slotDef)
               : undefined
           "
-          @enter="onRowEnter($event, slotDef.id)"
+          :assignment-differs="
+            slotDef.type === 'point_assignment'
+              ? assignmentDiffers(db, build, compareBuild, slotDef)
+              : false
+          "
+          :other-assignment-label="
+            slotDef.type === 'point_assignment'
+              ? assignmentDiffTitle(db, compareBuild, slotDef)
+              : undefined
+          "
+          @enter="(event, itemId) => onRowEnter(event, slotDef.id, itemId)"
           @leave="onRowLeave"
           @rowclick="onRowClick($event, slotDef.id)"
         />
