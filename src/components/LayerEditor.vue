@@ -8,27 +8,20 @@
 // The editor never writes to disk -- it cannot, this is a static client app. It edits the
 // layer's overlay (see catalog.ts) and hands you the file contents to paste back.
 import { ref, computed, watch, onMounted, onUnmounted } from "vue";
-import { onKeyStroke, useEventListener } from "@vueuse/core";
+import { useEventListener } from "@vueuse/core";
 import { useConfirm } from "../composables/useConfirm";
 import ItemForm from "./game/ItemForm.vue";
 import BonusSetForm from "./game/BonusSetForm.vue";
-import ComboBox from "./ui/ComboBox.vue";
+import LayerExportDrawer from "./game/LayerExportDrawer.vue";
+import LayerValidationDrawer from "./game/LayerValidationDrawer.vue";
+import LayerEntryList from "./game/LayerEntryList.vue";
 import BaseButton from "./ui/BaseButton.vue";
 import BaseCheckbox from "./ui/BaseCheckbox.vue";
 import BaseBadge from "./ui/BaseBadge.vue";
 import BaseNotice from "./ui/BaseNotice.vue";
-import BaseDrawer from "./ui/BaseDrawer.vue";
-import CodeBlock from "./ui/CodeBlock.vue";
 import TabStrip from "./ui/TabStrip.vue";
 import TabButton from "./ui/TabButton.vue";
-import {
-  CirclePlus,
-  Copy,
-  Download,
-  FilterX,
-  RotateCcw,
-  Upload,
-} from "@lucide/vue";
+import { Download, RotateCcw, Upload } from "@lucide/vue";
 import * as catalog from "../data/catalog";
 import * as router from "../lib/router";
 import * as engine from "../stores/resolved";
@@ -42,6 +35,11 @@ import type {
   LintFinding,
   Layer,
 } from "../types";
+import type {
+  EditorRow,
+  ItemRow,
+  BonusSetRow,
+} from "./game/LayerEntryList.vue";
 
 const db = engine.db;
 
@@ -65,24 +63,6 @@ const confirmReset_ = useConfirm(4000);
 
 const form = ref<InstanceType<typeof ItemForm> | null>(null);
 const setForm = ref<InstanceType<typeof BonusSetForm> | null>(null);
-
-interface ItemRow {
-  key: string;
-  name: string;
-  filter: string;
-  item: Item | null;
-  status: string;
-  kind: "item";
-}
-interface BonusSetRow {
-  key: string;
-  name: string;
-  filter: string;
-  set: BonusSet | null;
-  status: string;
-  kind: "bonusSet";
-}
-type EditorRow = ItemRow | BonusSetRow;
 
 // Removed entries are gone from `db`, so the list is built from the composed catalogue
 // plus the overlay's tombstones -- otherwise a deletion would vanish with no way back.
@@ -258,33 +238,6 @@ const warnCount = computed(
   () => findings.value.filter((f) => f.level === "warn").length,
 );
 
-const exportText = computed(() => {
-  if (exportTab.value === "items") {
-    // Composed across all enabled layers for the maintainer path.
-    const allEnabled = catalog.compose(layers.enabledOverlays.value);
-    return catalog.toItemsFile(allEnabled.items);
-  }
-  if (exportTab.value === "bonuses") {
-    const allEnabled = catalog.compose(layers.enabledOverlays.value);
-    return catalog.toBonusesFile(allEnabled.bonusSets);
-  }
-  // "This layer": raw overlay JSON.
-  return JSON.stringify(overlay.value, null, 2);
-});
-
-const exportName = computed(() => {
-  if (exportTab.value === "items") return "db-items.json";
-  if (exportTab.value === "bonuses") return "db-bonuses.json";
-  return "catalog-overlay.json";
-});
-
-// --- filters ---------------------------------------------------------------------------
-
-function clearFilters() {
-  query.value = "";
-  statusFilter.value = "all";
-}
-
 // --- routing --------------------------------------------------------------------------
 // `item`/`set`/`section`/`status`/`q` are this component's own corner of the URL --
 // App.vue owns view/build/tab and knows nothing about what's selected in here. `select`'s
@@ -335,38 +288,9 @@ function select(row: EditorRow, { push = true }: { push?: boolean } = {}) {
   }
 }
 
-/**
- * ArrowUp/Down drive the list from either the search box (kept focused, command-palette
- * style -- typing still filters normally) or a focused row. The current section's selected
- * key doubles as the keyboard cursor: the existing click UX has no separate "highlighted
- * but not open" state, so keyboard nav matches it exactly rather than inventing one.
- * Guarded to the search input or an `.editor-row` so the status ComboBox's own dropdown
- * keeps its arrows.
- */
-onKeyStroke(["ArrowDown", "ArrowUp", "Enter"], (event) => {
-  const target = event.target as HTMLElement;
-  const isSearch = target.matches?.('input[type="search"]');
-  const isRow = target.closest?.(".editor-row");
-  if (!isSearch && !isRow) return;
-  const rowsList = filtered.value;
-  if (!rowsList.length) return;
-  event.preventDefault();
-  const currentKey =
-    section.value === "bonusSets" ? selectedSetId.value : selectedId.value;
-  const idx = rowsList.findIndex((row) => row.key === currentKey);
-  if (event.key === "Enter") {
-    if (idx !== -1) select(rowsList[idx]);
-    return;
-  }
-  const dir = event.key === "ArrowDown" ? 1 : -1;
-  const next =
-    idx === -1
-      ? dir === 1
-        ? 0
-        : rowsList.length - 1
-      : Math.min(Math.max(idx + dir, 0), rowsList.length - 1);
-  select(rowsList[next], { push: false });
-});
+const selectedKey = computed(() =>
+  section.value === "bonusSets" ? selectedSetId.value : selectedId.value,
+);
 
 function newItem() {
   selectedId.value = null;
@@ -588,27 +512,6 @@ function onRevertSetTop() {
   notice.value = `Reverted bonus set "${id}" to the shipped version`;
 }
 
-// --- export ---------------------------------------------------------------------------
-
-async function copyExport() {
-  try {
-    await navigator.clipboard.writeText(exportText.value);
-    notice.value = `Copied ${exportName.value} to the clipboard`;
-  } catch {
-    notice.value = "Clipboard blocked — select the text and copy it manually";
-  }
-}
-
-function downloadExport() {
-  const blob = new Blob([exportText.value], { type: "text/plain" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = exportName.value;
-  link.click();
-  URL.revokeObjectURL(url);
-}
-
 async function importOverlay(event: Event) {
   const input = event.target as HTMLInputElement;
   const file = input.files?.[0];
@@ -755,163 +658,33 @@ onUnmounted(() => {
       notice
     }}</BaseNotice>
 
-    <BaseDrawer v-if="showExport" class="mb-2">
-      <div class="mb-1.5 flex flex-wrap items-end gap-2">
-        <TabStrip>
-          <TabButton
-            :active="exportTab === 'items'"
-            @click="exportTab = 'items'"
-            >db-items.json</TabButton
-          >
-          <TabButton
-            :active="exportTab === 'bonuses'"
-            @click="exportTab = 'bonuses'"
-            >db-bonuses.json</TabButton
-          >
-          <TabButton
-            :active="exportTab === 'overlay'"
-            @click="exportTab = 'overlay'"
-            >This layer</TabButton
-          >
-        </TabStrip>
-        <span class="flex-1"></span>
-        <BaseButton @click="copyExport"><Copy />Copy</BaseButton>
-        <BaseButton @click="downloadExport"
-          ><Download />Download {{ exportName }}</BaseButton
-        >
-      </div>
-      <CodeBlock :value="exportText" :rows="12" class="w-full" />
-      <p class="mt-1 text-sm text-muted">
-        <template v-if="exportTab === 'items'">
-          Composed from all enabled layers — for regenerating the shipped data
-          files.
-        </template>
-        <template v-else-if="exportTab === 'bonuses'">
-          Composed from all enabled layers — for regenerating the shipped data
-          files.
-        </template>
-        <template v-else> Just this layer's raw overlay JSON. </template>
-      </p>
-    </BaseDrawer>
+    <LayerExportDrawer
+      v-if="showExport"
+      v-model="exportTab"
+      :overlay="overlay"
+      class="mb-2"
+      @notice="notice = $event"
+    />
 
-    <BaseDrawer
+    <LayerValidationDrawer
       v-if="findings.length"
-      class="mb-2 max-h-48 flex-none overflow-y-auto"
-    >
-      <div class="text-sm uppercase text-muted">Validation</div>
-      <ul class="mt-1 list-none">
-        <li
-          v-for="(finding, i) in findings.slice(0, 40)"
-          :key="i"
-          class="flex gap-2 py-0.5 text-sm"
-        >
-          <span
-            class="flex-none rounded px-1.5 uppercase"
-            :class="
-              finding.level === 'error'
-                ? 'bg-danger-soft text-danger'
-                : 'bg-warn/25 text-warn'
-            "
-            >{{ finding.level }}</span
-          >
-          <BaseButton
-            v-if="finding.name"
-            variant="link"
-            @click="selectFinding(finding)"
-            >{{ finding.name }}</BaseButton
-          >
-          <span>{{ finding.message }}</span>
-        </li>
-      </ul>
-      <p v-if="findings.length > 40" class="mt-1 text-sm text-muted">
-        …and {{ findings.length - 40 }} more.
-      </p>
-    </BaseDrawer>
+      :findings="findings"
+      @select="selectFinding"
+    />
 
     <div class="flex min-h-0 flex-1 flex-col items-stretch gap-3 lg:flex-row">
-      <div
-        class="flex min-h-0 flex-none flex-col rounded-md border border-line bg-surface lg:w-96"
-      >
-        <div class="p-2">
-          <input
-            v-model="query"
-            type="search"
-            class="editor-search w-full min-w-0 rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-            :placeholder="
-              section === 'bonusSets' ? 'Filter bonus sets…' : 'Filter items…'
-            "
-          />
-        </div>
-        <div class="flex flex-none gap-1.5 px-2">
-          <ComboBox
-            class="w-full"
-            :model-value="statusFilter"
-            :options="statusFilterOptions"
-            @update:model-value="(v) => (statusFilter = v)"
-          />
-        </div>
-        <div class="flex flex-none gap-1.5 border-b border-line px-2 py-2">
-          <BaseButton
-            :disabled="!(query || statusFilter !== 'all')"
-            class="flex-1 text-center justify-center"
-            @click="clearFilters"
-            ><FilterX />clear filters</BaseButton
-          >
-          <BaseButton
-            v-if="section === 'bonusSets'"
-            class="flex-1 text-center justify-center"
-            variant="primary"
-            data-testid="new-bonus-set"
-            @click="newSet"
-            ><CirclePlus />New bonus set</BaseButton
-          >
-          <BaseButton
-            v-else
-            class="flex-1 text-center justify-center"
-            variant="primary"
-            data-testid="new-item"
-            @click="newItem"
-            ><CirclePlus />New item</BaseButton
-          >
-        </div>
-        <div class="min-h-0 flex-1 overflow-y-auto">
-          <div
-            v-for="row in filtered"
-            :key="row.key"
-            tabindex="0"
-            class="editor-row flex cursor-pointer items-center gap-1.5 border-b border-line/45 px-2 py-1 hover:bg-surface-2"
-            :class="
-              row.key ===
-                (section === 'bonusSets' ? selectedSetId : selectedId) &&
-              'is-on bg-accent-soft'
-            "
-            @click="select(row)"
-          >
-            <span class="editor-row-name min-w-0 flex-1 truncate">{{
-              row.name
-            }}</span>
-            <BaseBadge
-              v-if="row.status !== 'base'"
-              :variant="row.status as any"
-              >{{ row.status }}</BaseBadge
-            >
-            <BaseBadge
-              v-if="hasUnsavedDraft(row)"
-              variant="unsaved"
-              title="Unsaved edits in the form"
-              >unsaved</BaseBadge
-            >
-            <BaseButton
-              v-if="row.status === 'removed'"
-              variant="link"
-              @click.stop="restore(row)"
-              ><RotateCcw />restore</BaseButton
-            >
-            <span v-else class="text-sm text-muted">{{ row.filter }}</span>
-          </div>
-          <p v-if="!filtered.length" class="p-2 text-muted">Nothing matches.</p>
-        </div>
-      </div>
+      <LayerEntryList
+        v-model:query="query"
+        v-model:status-filter="statusFilter"
+        :rows="filtered"
+        :section="section"
+        :selected-key="selectedKey"
+        :status-filter-options="statusFilterOptions"
+        :has-unsaved-draft="hasUnsavedDraft"
+        @select="select"
+        @create="section === 'bonusSets' ? newSet() : newItem()"
+        @restore="restore"
+      />
 
       <div
         class="min-w-0 flex-1 overflow-y-auto rounded-md border border-line bg-surface p-2.5"

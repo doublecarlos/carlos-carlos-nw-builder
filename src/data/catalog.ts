@@ -18,6 +18,7 @@
 import { NW_ITEMS, NW_BONUSES, NW_SCHEMA, NW_SLOTS } from "./data";
 import * as db from "./db";
 import { findParamSlot } from "../lib/build-path";
+import { deepEqual } from "../lib/deep-equal";
 import type {
   Item,
   BonusSet,
@@ -188,22 +189,6 @@ export function statusOf(
 }
 
 // --- portable files (phase 7) -------------------------------------------------------------
-
-/** Deep-equality via sorted-key canonical JSON, matching storage.ts's `canonical` helper. */
-function deepEqual(a: unknown, b: unknown): boolean {
-  return JSON.stringify(canonical(a)) === JSON.stringify(canonical(b));
-}
-
-function canonical(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(canonical);
-  if (value && typeof value === "object") {
-    const out: Record<string, unknown> = {};
-    for (const key of Object.keys(value).sort())
-      out[key] = canonical((value as Record<string, unknown>)[key]);
-    return out;
-  }
-  return value;
-}
 
 /** Everything in the composed catalogue this build depends on that base does not already
  *  provide — what a download has to carry to resolve identically elsewhere. */

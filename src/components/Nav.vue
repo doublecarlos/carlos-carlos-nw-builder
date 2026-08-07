@@ -112,6 +112,7 @@ function runConfirmed(
 function duplicateCurrentBuild(id: string) {
   selection.selectBuild(id);
   builds.duplicateBuild();
+  closeMenu();
 }
 function deleteBuildRow(id: string) {
   builds.deleteBuild(id);
@@ -304,7 +305,6 @@ function onBuildMenuAction(action: string, id: string) {
       break;
     case "duplicate":
       duplicateCurrentBuild(id);
-      closeMenu();
       break;
     case "download":
       exportBuild(id);

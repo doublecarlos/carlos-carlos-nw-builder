@@ -58,15 +58,10 @@ const warnings = computed(() => {
   return result;
 });
 
-function toggleBuild(id: string) {
-  const next = new Set(selectedBuildIds.value);
-  if (next.has(id)) next.delete(id);
-  else next.add(id);
-  selectedBuildIds.value = next;
-
-  // Recompute auto-ticked layers
+/** Every layer that at least one of `buildIds` depends on (per `catalog.referencedOverlay`). */
+function computeAutoTickedLayers(buildIds: Iterable<string>): Set<string> {
   const newAuto = new Set<string>();
-  for (const buildId of next) {
+  for (const buildId of buildIds) {
     const b = builds.builds.value.find((b) => b.id === buildId);
     if (!b) continue;
     const overlay = catalog.referencedOverlay(db.value, b);
@@ -85,6 +80,16 @@ function toggleBuild(id: string) {
       }
     }
   }
+  return newAuto;
+}
+
+function toggleBuild(id: string) {
+  const next = new Set(selectedBuildIds.value);
+  if (next.has(id)) next.delete(id);
+  else next.add(id);
+  selectedBuildIds.value = next;
+
+  const newAuto = computeAutoTickedLayers(next);
   autoTickedLayerIds.value = newAuto;
 
   // Auto-tick required layers, but keep any manually unticked ones.
@@ -133,31 +138,9 @@ function exportBundle() {
 }
 
 function selectAllBuilds() {
-  selectedBuildIds.value = new Set(builds.builds.value.map((b) => b.id));
-  toggleBuild(builds.builds.value[0]?.id ?? ""); // trigger recompute
-  // Remove the toggle we just did and set all
-  selectedBuildIds.value = new Set(builds.builds.value.map((b) => b.id));
-  // Recompute dependencies
-  const newAuto = new Set<string>();
-  for (const buildId of selectedBuildIds.value) {
-    const b = builds.builds.value.find((b) => b.id === buildId);
-    if (!b) continue;
-    const overlay = catalog.referencedOverlay(db.value, b);
-    for (const layer of layers.layers.value) {
-      for (const key of Object.keys(overlay.items ?? {})) {
-        if (layer.overlay.items?.[key] !== undefined) {
-          newAuto.add(layer.id);
-          break;
-        }
-      }
-      for (const key of Object.keys(overlay.bonusSets ?? {})) {
-        if (layer.overlay.bonusSets?.[key] !== undefined) {
-          newAuto.add(layer.id);
-          break;
-        }
-      }
-    }
-  }
+  const allBuildIds = builds.builds.value.map((b) => b.id);
+  selectedBuildIds.value = new Set(allBuildIds);
+  const newAuto = computeAutoTickedLayers(allBuildIds);
   autoTickedLayerIds.value = newAuto;
   selectedLayerIds.value = new Set(newAuto);
 }

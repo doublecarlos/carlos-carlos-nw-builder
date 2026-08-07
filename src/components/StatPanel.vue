@@ -6,7 +6,6 @@
 // rating/percent pair each get their own merged overcap-or-headroom column (signed: positive
 // over the cap, negative is spare headroom), coloured independently since they cap separately.
 import { ref, computed } from "vue";
-import { onClickOutside } from "@vueuse/core";
 import ComboBox from "./ui/ComboBox.vue";
 import BaseCheckbox from "./ui/BaseCheckbox.vue";
 import IconButton from "./ui/IconButton.vue";
@@ -16,7 +15,7 @@ import BasePopover from "./ui/BasePopover.vue";
 import BasePanel from "./ui/BasePanel.vue";
 import PanelHead from "./ui/PanelHead.vue";
 import StatPairsTable from "./ui/StatPairsTable.vue";
-import { sectionsFor } from "../engine/stat-sources";
+import { useStatSourcePopover } from "../composables/useStatSourcePopover";
 import { NW_SCHEMA } from "../data/data";
 import { int as fmtInt, pct as fmtPct, stat as fmtStat } from "../lib/format";
 import * as builds from "../stores/builds";
@@ -343,66 +342,16 @@ function signedInt(value: number) {
 
 // The stat source popover ("why is this number what it is", per stat) -- source attribution
 // itself lives in stat-sources.ts, since it's pure data derivation with no template of its
-// own. Click-triggered (a circle-alert button ahead of each row's label), not hover-triggered:
-// a dense stat table put the pointer's path from a row to its own hover card through *other*
-// rows' triggers often enough that a hover card kept getting swapped out from under the
-// pointer before it ever arrived -- a deliberate click has no such transit to go wrong.
-const root = ref<InstanceType<typeof BasePanel> | null>(null);
-const tooltip = ref<InstanceType<typeof BasePopover> | null>(null);
-
-interface OpenCard {
-  key: string;
-}
-const openCard = ref<OpenCard | null>(null);
-
-const openLabel = computed(
-  () =>
-    NW_SCHEMA.statByKey[openCard.value?.key ?? ""]?.label ??
-    openCard.value?.key ??
-    "",
-);
-const openSections = computed(() =>
-  openCard.value
-    ? sectionsFor(
-        result.value,
-        build.value,
-        engine.db.value,
-        openCard.value.key,
-      )
-    : [],
-);
-
-/**
- * Anchored to the trigger button: delegates to BasePopover's place() which handles
- * horizontal flip and vertical overflow detection.
- */
-function placeCard(key: string, rect: DOMRect) {
-  tooltip.value?.place(rect);
-  openCard.value = { key };
-}
-
-function closeCard() {
-  openCard.value = null;
-}
-
-/** A second click on the same row's own button closes it again; a click on a *different*
- * row's button just switches the card straight over. */
-function toggleCard(event: MouseEvent, key: string) {
-  if (openCard.value?.key === key) {
-    closeCard();
-    return;
-  }
-  placeCard(key, (event.currentTarget as HTMLElement).getBoundingClientRect());
-}
-
-/** Closes the popover on any click outside it -- `onClickOutside` ignores clicks on
- * the card itself (`.statcard`) and on other stat info buttons (`.stat-info-btn`),
- * so a click on a different row's trigger reaches `toggleCard` and switches the card
- * over instead of closing it first. */
-onClickOutside(root, () => closeCard(), {
-  ignore: [".statcard", ".stat-info-btn"],
-  capture: false,
-});
+// own. See useStatSourcePopover for the click-to-open/close/click-outside behaviour.
+const {
+  root,
+  tooltip,
+  openCard,
+  openLabel,
+  openSections,
+  toggleCard,
+  closeCard,
+} = useStatSourcePopover(result, build, engine.db);
 </script>
 
 <template>

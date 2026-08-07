@@ -18,6 +18,7 @@ import * as catalog from "../data/catalog";
 import { fromData as baseDb } from "../data/db";
 import * as idb from "./idb";
 import { setPath } from "../lib/build-path";
+import { deepEqual } from "../lib/deep-equal";
 import pkg from "../../package.json";
 import { showNotice } from "../stores/notice";
 import type {
@@ -295,23 +296,6 @@ export function duplicate(build: Build, name?: string): Build {
   };
 }
 
-/** Key-order-insensitive, `updated`-blind equality for the dirty check. `choices`/`values`/
- * `toggles` grow and shrink by direct property add/delete, so a plain `JSON.stringify`
- * comparison would false-positive on a save-then-revert; sorting keys fixes that. `updated`
- * is excluded because only the saved copy gets it stamped (App.vue's `saveActive`), so
- * comparing it would report every build dirty forever after its first save.
- */
-const canonical = (value: unknown): unknown => {
-  if (Array.isArray(value)) return value.map(canonical);
-  if (value && typeof value === "object") {
-    const out: Record<string, unknown> = {};
-    for (const key of Object.keys(value).sort())
-      out[key] = canonical((value as Record<string, unknown>)[key]);
-    return out;
-  }
-  return value;
-};
-
 // --- the catalogue overlay ---------------------------------------------------------------
 // The editor's layer over the shipped items and bonuses. Kept under its own key because it
 // is a workspace, not part of any build: switching builds must not change the catalogue.
@@ -529,7 +513,7 @@ export function sameContent<T extends { downloaded?: unknown }>(
   if (!a || !b) return a === b;
   const { downloaded: _da, ...restA } = a;
   const { downloaded: _db, ...restB } = b;
-  return JSON.stringify(canonical(restA)) === JSON.stringify(canonical(restB));
+  return deepEqual(restA, restB);
 }
 
 /** Rebuild an item from its `downloaded.snapshot`, keeping its id and name. */

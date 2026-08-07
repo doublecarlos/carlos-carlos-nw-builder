@@ -1,0 +1,169 @@
+<script setup lang="ts">
+// LayerEditor's left panel: search/status-filter the current section's rows, create a new
+// entry, and browse/select/restore existing ones. Owns its own keyboard cursor (arrow keys
+// from the search box or a focused row) since that only ever needs this list's own rows and
+// selection -- the parent still owns what "select" actually does (routing, section state).
+import { onKeyStroke } from "@vueuse/core";
+import { CirclePlus, FilterX, RotateCcw } from "@lucide/vue";
+import BaseButton from "../ui/BaseButton.vue";
+import BaseBadge from "../ui/BaseBadge.vue";
+import ComboBox from "../ui/ComboBox.vue";
+import type { Item, BonusSet } from "../../types";
+
+export interface ItemRow {
+  key: string;
+  name: string;
+  filter: string;
+  item: Item | null;
+  status: string;
+  kind: "item";
+}
+export interface BonusSetRow {
+  key: string;
+  name: string;
+  filter: string;
+  set: BonusSet | null;
+  status: string;
+  kind: "bonusSet";
+}
+export type EditorRow = ItemRow | BonusSetRow;
+
+const props = defineProps<{
+  /** Already filtered by query/status -- this component only renders and navigates them. */
+  rows: EditorRow[];
+  section: string; // items | bonusSets
+  selectedKey: string | null;
+  statusFilterOptions: { value: string; label: string }[];
+  hasUnsavedDraft: (row: EditorRow) => boolean;
+}>();
+
+const emit = defineEmits<{
+  select: [row: EditorRow, options?: { push?: boolean }];
+  create: [];
+  restore: [row: EditorRow];
+}>();
+
+const query = defineModel<string>("query", { required: true });
+const statusFilter = defineModel<string>("statusFilter", { required: true });
+
+function clearFilters() {
+  query.value = "";
+  statusFilter.value = "all";
+}
+
+function onRowClick(row: EditorRow) {
+  if (row.status === "removed") return;
+  emit("select", row);
+}
+
+/**
+ * ArrowUp/Down drive the list from either the search box (kept focused, command-palette
+ * style -- typing still filters normally) or a focused row. The current section's selected
+ * key doubles as the keyboard cursor: the existing click UX has no separate "highlighted
+ * but not open" state, so keyboard nav matches it exactly rather than inventing one.
+ * Guarded to the search input or an `.editor-row` so the status ComboBox's own dropdown
+ * keeps its arrows.
+ */
+onKeyStroke(["ArrowDown", "ArrowUp", "Enter"], (event) => {
+  const target = event.target as HTMLElement;
+  const isSearch = target.matches?.('input[type="search"]');
+  const isRow = target.closest?.(".editor-row");
+  if (!isSearch && !isRow) return;
+  const rowsList = props.rows;
+  if (!rowsList.length) return;
+  event.preventDefault();
+  const idx = rowsList.findIndex((row) => row.key === props.selectedKey);
+  if (event.key === "Enter") {
+    if (idx !== -1) emit("select", rowsList[idx]);
+    return;
+  }
+  const dir = event.key === "ArrowDown" ? 1 : -1;
+  const next =
+    idx === -1
+      ? dir === 1
+        ? 0
+        : rowsList.length - 1
+      : Math.min(Math.max(idx + dir, 0), rowsList.length - 1);
+  emit("select", rowsList[next], { push: false });
+});
+</script>
+
+<template>
+  <div
+    class="flex min-h-0 flex-none flex-col rounded-md border border-line bg-surface lg:w-96"
+  >
+    <div class="p-2">
+      <input
+        v-model="query"
+        type="search"
+        class="editor-search w-full min-w-0 rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+        :placeholder="
+          section === 'bonusSets' ? 'Filter bonus sets…' : 'Filter items…'
+        "
+      />
+    </div>
+    <div class="flex flex-none gap-1.5 px-2">
+      <ComboBox
+        class="w-full"
+        :model-value="statusFilter"
+        :options="statusFilterOptions"
+        @update:model-value="(v) => (statusFilter = v)"
+      />
+    </div>
+    <div class="flex flex-none gap-1.5 border-b border-line px-2 py-2">
+      <BaseButton
+        :disabled="!(query || statusFilter !== 'all')"
+        class="flex-1 text-center justify-center"
+        @click="clearFilters"
+        ><FilterX />clear filters</BaseButton
+      >
+      <BaseButton
+        v-if="section === 'bonusSets'"
+        class="flex-1 text-center justify-center"
+        variant="primary"
+        data-testid="new-bonus-set"
+        @click="emit('create')"
+        ><CirclePlus />New bonus set</BaseButton
+      >
+      <BaseButton
+        v-else
+        class="flex-1 text-center justify-center"
+        variant="primary"
+        data-testid="new-item"
+        @click="emit('create')"
+        ><CirclePlus />New item</BaseButton
+      >
+    </div>
+    <div class="min-h-0 flex-1 overflow-y-auto">
+      <div
+        v-for="row in rows"
+        :key="row.key"
+        tabindex="0"
+        class="editor-row flex cursor-pointer items-center gap-1.5 border-b border-line/45 px-2 py-1 hover:bg-surface-2"
+        :class="row.key === selectedKey && 'is-on bg-accent-soft'"
+        @click="onRowClick(row)"
+      >
+        <span class="editor-row-name min-w-0 flex-1 truncate">{{
+          row.name
+        }}</span>
+        <BaseBadge v-if="row.status !== 'base'" :variant="row.status as any">{{
+          row.status
+        }}</BaseBadge>
+        <BaseBadge
+          v-if="hasUnsavedDraft(row)"
+          variant="unsaved"
+          title="Unsaved edits in the form"
+          >unsaved</BaseBadge
+        >
+        <BaseButton
+          v-if="row.status === 'removed'"
+          variant="link"
+          @click.stop="emit('restore', row)"
+          ><RotateCcw />restore</BaseButton
+        >
+        <span v-else class="text-sm text-muted">{{ row.filter }}</span>
+      </div>
+      <p v-if="!rows.length" class="p-2 text-muted">Nothing matches.</p>
+    </div>
+  </div>
+</template>

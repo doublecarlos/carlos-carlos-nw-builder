@@ -2,7 +2,7 @@
 // Editing form for one item. Hybrid approach:
 // - Existing items (source != null): live edits, changes emit immediately
 // - New items (source == null): explicit Save button, draft until name is finalized
-import { ref, computed, watch, onUnmounted } from "vue";
+import { ref, computed, watch } from "vue";
 import BonusGroups from "./BonusGroups.vue";
 import TokenInput from "../ui/TokenInput.vue";
 import PercentInput from "../ui/PercentInput.vue";
@@ -19,29 +19,13 @@ import FormSection from "../ui/FormSection.vue";
 import { NW_SCHEMA, NW_SLOTS } from "../../data/data";
 import { findParamSlot } from "../../lib/build-path";
 import * as catalog from "../../data/catalog";
-import * as formUndo from "../../stores/formUndo";
+import { deepEqual } from "../../lib/deep-equal";
+import { useDraftHistory } from "../../composables/useDraftHistory";
 import { isPercentKind, kindOf } from "../../lib/format";
 import { focusNextCombo } from "../../lib/stat-row-nav";
 import type { Item, Db, BonusSet } from "../../types";
 import type { StatRow } from "../../engine/bonus-draft";
 import BaseCheckbox from "../ui/BaseCheckbox.vue";
-
-const DEBOUNCE_MS = 700;
-const UNDO_LIMIT = 50;
-
-const canonical = (value: unknown): unknown => {
-  if (Array.isArray(value)) return value.map(canonical);
-  if (value && typeof value === "object") {
-    const out: Record<string, unknown> = {};
-    for (const key of Object.keys(value).sort())
-      out[key] = canonical((value as Record<string, unknown>)[key]);
-    return out;
-  }
-  return value;
-};
-
-const sameItem = (a: unknown, b: unknown) =>
-  JSON.stringify(canonical(a)) === JSON.stringify(canonical(b));
 
 const props = withDefaults(
   defineProps<{
@@ -125,33 +109,8 @@ const isNew = computed(() => !props.source);
 
 const draft = ref<ReturnType<typeof buildDraft>>(buildDraft(props.source));
 const error = ref("");
-let debounceTimer: number | undefined;
 // Initialize with item JSON for correct comparison on existing items.
 let lastEmittedJson = JSON.stringify(toItem());
-
-// --- Draft undo (new items only) -------------------------------------------------------
-interface DraftEntry {
-  json: string;
-  label: string;
-}
-
-const draftHistory = ref<{ past: DraftEntry[]; future: DraftEntry[] }>({
-  past: [],
-  future: [],
-});
-const lastSnapshotJson = ref(JSON.stringify(draft.value));
-let snapshotTimer: number | undefined;
-
-const canUndoDraft = computed(() => draftHistory.value.past.length > 0);
-const canRedoDraft = computed(() => draftHistory.value.future.length > 0);
-const undoDraftLabel = computed(() => {
-  const past = draftHistory.value.past;
-  return past.length ? past[past.length - 1].label : "";
-});
-const redoDraftLabel = computed(() => {
-  const future = draftHistory.value.future;
-  return future.length ? future[future.length - 1].label : "";
-});
 
 function diffLabel(oldJson: string, newJson: string): string {
   try {
@@ -221,63 +180,9 @@ function diffStatsLabel(
   return `edit stats (${changed.length} changed)`;
 }
 
-function resetDraftHistory() {
-  window.clearTimeout(snapshotTimer);
-  draftHistory.value = { past: [], future: [] };
-  lastSnapshotJson.value = JSON.stringify(draft.value);
-}
-
-function scheduleSnapshot() {
-  window.clearTimeout(snapshotTimer);
-  snapshotTimer = window.setTimeout(commitSnapshot, DEBOUNCE_MS);
-}
-
-function commitSnapshot() {
-  window.clearTimeout(snapshotTimer);
-  const current = JSON.stringify(draft.value);
-  if (current === lastSnapshotJson.value) return;
-  const label = diffLabel(lastSnapshotJson.value, current);
-  draftHistory.value.past.push({ json: lastSnapshotJson.value, label });
-  if (draftHistory.value.past.length > UNDO_LIMIT)
-    draftHistory.value.past.shift();
-  draftHistory.value.future.length = 0;
-  lastSnapshotJson.value = current;
-}
-
-function undoDraft() {
-  commitSnapshot();
-  if (!draftHistory.value.past.length) return false;
-  const entry = draftHistory.value.past.pop()!;
-  draftHistory.value.future.push({
-    json: lastSnapshotJson.value,
-    label: entry.label,
-  });
-  lastSnapshotJson.value = entry.json;
-  draft.value = JSON.parse(entry.json);
-  return true;
-}
-
-function redoDraft() {
-  if (!draftHistory.value.future.length) return false;
-  const entry = draftHistory.value.future.pop()!;
-  draftHistory.value.past.push({
-    json: lastSnapshotJson.value,
-    label: entry.label,
-  });
-  lastSnapshotJson.value = entry.json;
-  draft.value = JSON.parse(entry.json);
-  return true;
-}
-
 // --- Live edit emit (existing items) ---------------------------------------------------
 
-function scheduleEmit() {
-  window.clearTimeout(debounceTimer);
-  debounceTimer = window.setTimeout(emitChange, DEBOUNCE_MS);
-}
-
 function emitChange() {
-  window.clearTimeout(debounceTimer);
   const item = toItem();
   const currentJson = JSON.stringify(item);
   if (currentJson === lastEmittedJson) return;
@@ -285,6 +190,13 @@ function emitChange() {
   lastEmittedJson = currentJson;
   emit("update:item", { item, label });
 }
+
+const { resetDraftHistory } = useDraftHistory({
+  draft,
+  isNew,
+  diffLabel,
+  onEmit: emitChange,
+});
 
 // --- Common ---------------------------------------------------------------------------
 
@@ -380,7 +292,7 @@ const dirty = computed(() => {
   const item = toItem();
   if (!props.source)
     return Boolean(item.name || item.filter || draft.value.stats.length);
-  return !sameItem(item, props.source);
+  return !deepEqual(item, props.source);
 });
 
 const isPercent = (key: string) => isPercentKind(kindOf(key));
@@ -430,55 +342,6 @@ watch(
     resetDraftHistory();
   },
 );
-
-// For existing items: schedule emit on draft change.
-// For new items: schedule snapshot for draft undo.
-watch(
-  draft,
-  () => {
-    if (isNew.value) {
-      scheduleSnapshot();
-    } else {
-      scheduleEmit();
-    }
-  },
-  { deep: true },
-);
-
-// Register formUndo for new items (draft undo).
-let unregisterFormUndo: (() => void) | undefined;
-
-function registerFormUndo() {
-  unregisterFormUndo?.();
-  if (isNew.value) {
-    unregisterFormUndo = formUndo.register({
-      get canUndo() {
-        return canUndoDraft.value;
-      },
-      get canRedo() {
-        return canRedoDraft.value;
-      },
-      undo: undoDraft,
-      redo: redoDraft,
-      get undoLabel() {
-        return undoDraftLabel.value;
-      },
-      get redoLabel() {
-        return redoDraftLabel.value;
-      },
-    });
-  } else {
-    unregisterFormUndo = undefined;
-  }
-}
-
-watch(isNew, registerFormUndo, { immediate: true });
-
-onUnmounted(() => {
-  window.clearTimeout(debounceTimer);
-  window.clearTimeout(snapshotTimer);
-  unregisterFormUndo?.();
-});
 </script>
 
 <template>
