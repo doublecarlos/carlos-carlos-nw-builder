@@ -80,6 +80,12 @@ export interface ItemDraft {
   stats: StatRow[];
 }
 
+/** Point assignment fields count as "set" once they hold a real number, not just an
+ *  empty string left behind by a cleared number input. */
+function hasPointField(v: number | string | null): boolean {
+  return v != null && v !== "";
+}
+
 function buildDraft(item: Item | null | undefined): ItemDraft {
   const source = item ?? ({} as Partial<Item>);
   const statKeys = new Set(NW_SCHEMA.statKeys);
@@ -269,7 +275,6 @@ function toItem(): Item {
     }
   }
 
-  const hasPointField = (v: number | string | null) => v != null && v !== "";
   if (
     hasPointField(local.pointMin) ||
     hasPointField(local.pointMax) ||
@@ -321,6 +326,67 @@ function focusNextStat(event: KeyboardEvent) {
   focusNextCombo(event);
 }
 
+// Dynamic modification and point assignment are single field groups rather than arrays,
+// so "added"/"removed" is tracked as its own flag instead of splicing a list. Both start
+// active whenever the source item already carries values for them.
+function hasDynamicModification(d: ItemDraft): boolean {
+  return d.dynamicStat !== "";
+}
+function hasPointAssignment(d: ItemDraft): boolean {
+  return (
+    hasPointField(d.pointMin) ||
+    hasPointField(d.pointMax) ||
+    hasPointField(d.pointDefault) ||
+    hasPointField(d.pointPriority)
+  );
+}
+
+const dynamicModActive = ref(hasDynamicModification(draft.value));
+const pointActive = ref(hasPointAssignment(draft.value));
+
+// Draft undo/redo (new-item history) replaces `draft.value` wholesale, bypassing the
+// add/remove handlers below -- resurface the group automatically whenever its fields come
+// back populated so a redo of "add" doesn't leave the fields hidden behind a stale flag.
+// Never flips a flag to false itself; only the explicit remove handlers do that.
+watch(
+  () => draft.value.dynamicStat,
+  (stat) => {
+    if (stat !== "") dynamicModActive.value = true;
+  },
+);
+watch(
+  () => [
+    draft.value.pointMin,
+    draft.value.pointMax,
+    draft.value.pointDefault,
+    draft.value.pointPriority,
+  ],
+  () => {
+    if (hasPointAssignment(draft.value)) pointActive.value = true;
+  },
+);
+
+function addDynamicModification() {
+  dynamicModActive.value = true;
+}
+function removeDynamicModification() {
+  draft.value.dynamicStat = "";
+  draft.value.dynamicMin = null;
+  draft.value.dynamicMax = null;
+  dynamicModActive.value = false;
+}
+
+function addPointAssignment() {
+  pointActive.value = true;
+}
+function removePointAssignment() {
+  draft.value.pointMin = null;
+  draft.value.pointMax = null;
+  draft.value.pointDefault = null;
+  draft.value.pointPriority = null;
+  pointActive.value = false;
+}
+
 function attachSet(id: string) {
   if (draft.value.bonuses.includes(id)) return;
   draft.value.bonuses = [...draft.value.bonuses, id];
@@ -337,6 +403,8 @@ watch(
   () => props.source,
   (value) => {
     draft.value = buildDraft(value);
+    dynamicModActive.value = hasDynamicModification(draft.value);
+    pointActive.value = hasPointAssignment(draft.value);
     error.value = "";
     lastEmittedJson = JSON.stringify(toItem());
     resetDraftHistory();
@@ -468,8 +536,29 @@ watch(
       <IconButton title="Add stat" @click="addStat"><Plus /></IconButton>
     </div>
 
-    <FormSection>Dynamic modification (user types the value)</FormSection>
-    <FormGrid class="mb-2">
+    <FormSection>
+      Dynamic modification (user types the value)
+      <span class="flex-1"></span>
+      <IconButton
+        v-if="!dynamicModActive"
+        title="Add dynamic modification"
+        data-testid="add-dynamic-modification"
+        @click="addDynamicModification"
+        ><Plus
+      /></IconButton>
+      <IconButton
+        v-else
+        title="Remove dynamic modification"
+        data-testid="remove-dynamic-modification"
+        @click="removeDynamicModification"
+        ><Trash
+      /></IconButton>
+    </FormSection>
+    <FormGrid
+      v-if="dynamicModActive"
+      data-testid="dynamic-modification-fields"
+      class="mb-2"
+    >
       <FormField label="Stat">
         <ComboBox
           :model-value="draft.dynamicStat"
@@ -496,11 +585,29 @@ watch(
       </FormField>
     </FormGrid>
 
-    <FormSection
-      >Point assignment (boons, attributes, other point_assignment slots
-      filter)</FormSection
+    <FormSection>
+      Point assignment (boons, attributes, other point_assignment slots filter)
+      <span class="flex-1"></span>
+      <IconButton
+        v-if="!pointActive"
+        title="Add point assignment"
+        data-testid="add-point-assignment"
+        @click="addPointAssignment"
+        ><Plus
+      /></IconButton>
+      <IconButton
+        v-else
+        title="Remove point assignment"
+        data-testid="remove-point-assignment"
+        @click="removePointAssignment"
+        ><Trash
+      /></IconButton>
+    </FormSection>
+    <FormGrid
+      v-if="pointActive"
+      data-testid="point-assignment-fields"
+      class="mb-2"
     >
-    <FormGrid class="mb-2">
       <FormField label="Min">
         <input
           v-model.number="draft.pointMin"
