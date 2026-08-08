@@ -82,7 +82,11 @@ defineExpose({ focus, focusAndSeed });
 
 <template>
   <div ref="root" class="flex flex-wrap items-end gap-4">
-    <div v-for="item in rows" :key="item.id" class="flex flex-col gap-1">
+    <div
+      v-for="item in rows"
+      :key="item.id"
+      class="flex flex-col items-center gap-1"
+    >
       <span
         class="truncate text-sm text-center"
         :data-testid="`assignment-label-${item.id}`"
