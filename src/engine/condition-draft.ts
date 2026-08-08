@@ -12,6 +12,7 @@ import type { ConditionWhen, RangeSpec } from "../types";
 // as leaves -- see below.
 export const LEAF_TYPES = [
   "toggle",
+  "proc",
   "role",
   "class",
   "combatType",
@@ -45,6 +46,10 @@ export interface ConditionRow {
   is?: boolean | null;
   equals?: string;
   value?: string;
+  /** `proc` only -- see `ConditionWhen.proc`'s own doc comment. `procDefault: null` means
+   *  "unset" (runtime default-on), distinct from an explicit `false`. */
+  procLabel?: string;
+  procDefault?: boolean | null;
 }
 
 const uid = () => `c${Math.random().toString(36).slice(2, 8)}`;
@@ -64,6 +69,16 @@ function leafFromSpec(
 ): Omit<ConditionRow, "uid" | "kind"> {
   // spec comes from the when-object (validated by catalog.ts at load time);
   // each branch narrows spec to the shape it expects.
+  if (type === "proc") {
+    const s = spec as
+      boolean | { label?: string; default?: boolean } | undefined;
+    const obj = typeof s === "object" && s ? s : undefined;
+    return {
+      type,
+      procLabel: obj?.label ?? "",
+      procDefault: obj?.default ?? null,
+    };
+  }
   if (type === "duration") {
     if (typeof spec === "number") {
       return { type, atLeast: spec, below: null };
@@ -129,7 +144,18 @@ function leafToSpec(
   | number
   | RangeSpec
   | ({ key: string } & Record<string, unknown>)
+  | { label?: string; default?: boolean }
+  | boolean
   | undefined {
+  if (row.type === "proc") {
+    const obj: { label?: string; default?: boolean } = {};
+    if (row.procLabel) obj.label = row.procLabel;
+    if (row.procDefault === true || row.procDefault === false)
+      obj.default = row.procDefault;
+    // Bare `true` when neither field is set -- keeps a plain proc gate's data minimal instead
+    // of authoring a pointless empty `{}`.
+    return Object.keys(obj).length ? obj : true;
+  }
   if (row.type === "duration") {
     const range: RangeSpec = {};
     if (row.atLeast != null && row.atLeast !== "")

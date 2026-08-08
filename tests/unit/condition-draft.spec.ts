@@ -7,6 +7,8 @@ import {
   whenRowsComplete,
   newLeafRow,
   newGroupRow,
+  whenToRows,
+  rowsToWhen,
 } from "../../src/engine/condition-draft";
 
 const leaf = (type: string, value: string) => {
@@ -72,5 +74,43 @@ describe("condition-draft whenRowsComplete", () => {
 
     inner.branches = [[complete]];
     expect(whenRowsComplete([outer])).toBe(true);
+  });
+});
+
+describe("condition-draft proc leaf", () => {
+  it("a fresh proc row is complete (no fields required) and serializes to bare true", () => {
+    const row = newLeafRow("proc");
+    expect(whenRowsComplete([row])).toBe(true);
+    expect(rowsToWhen([row])).toEqual({ proc: true });
+  });
+
+  it("a label without an explicit default still serializes to just the label", () => {
+    const row = newLeafRow("proc");
+    row.procLabel = "Fireball proc";
+    expect(rowsToWhen([row])).toEqual({ proc: { label: "Fireball proc" } });
+  });
+
+  it("an explicit default (on or off) serializes even with no label", () => {
+    const row = newLeafRow("proc");
+    row.procDefault = false;
+    expect(rowsToWhen([row])).toEqual({ proc: { default: false } });
+
+    row.procDefault = true;
+    expect(rowsToWhen([row])).toEqual({ proc: { default: true } });
+  });
+
+  it("label and default together round-trip through whenToRows", () => {
+    const when = { proc: { label: "Fireball proc", default: false } };
+    const rows = whenToRows(when);
+    expect(rows[0].procLabel).toBe("Fireball proc");
+    expect(rows[0].procDefault).toBe(false);
+    expect(rowsToWhen(rows)).toEqual(when);
+  });
+
+  it("bare true round-trips back to a row with no label and an unset (null) default", () => {
+    const rows = whenToRows({ proc: true });
+    expect(rows[0].procLabel).toBe("");
+    expect(rows[0].procDefault).toBeNull();
+    expect(rowsToWhen(rows)).toEqual({ proc: true });
   });
 });

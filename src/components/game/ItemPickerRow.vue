@@ -3,10 +3,12 @@
 // dynamicStat magnitude (when the chosen item has one), and this type's diff notes
 // (choice/bonus/value). Row chrome (label, cursor anchor, hover/diff highlighting, the
 // errors list) stays in BuildSlot.vue since it's identical across every slot type.
-import { useTemplateRef } from "vue";
+import { computed, useTemplateRef } from "vue";
 import ItemPicker from "./ItemPicker.vue";
 import BaseButton from "../ui/BaseButton.vue";
+import BaseCheckbox from "../ui/BaseCheckbox.vue";
 import * as buildEditor from "../../stores/buildEditor";
+import { useItemProcs } from "../../composables/useItemProcs";
 import { label as statLabel } from "../../lib/format";
 import type { Build, Item, ItemPickerSlot } from "../../types";
 
@@ -27,6 +29,8 @@ const props = defineProps<{
 }>();
 
 const picker = useTemplateRef<InstanceType<typeof ItemPicker>>("picker");
+
+const procRows = useItemProcs(computed(() => props.item));
 
 defineExpose({
   focus: () => picker.value?.focus(),
@@ -51,6 +55,23 @@ const value = () => props.build.values[props.slotDef.id];
     <span v-if="item" class="min-w-0 flex-1 truncate text-sm text-text">{{
       statSummary
     }}</span>
+  </div>
+
+  <!-- One checkbox per proc-gated grant credited to this item -- see useItemProcs.ts for why
+       only the shared bonus's first-contributing row gets one. -->
+  <div v-if="procRows.length" class="mt-1 flex flex-wrap items-center gap-2.5">
+    <BaseCheckbox
+      v-for="row in procRows"
+      :key="row.grantKey"
+      inline
+      :data-testid="`proc-toggle-${row.grantKey}`"
+      :model-value="row.checked"
+      @update:model-value="
+        buildEditor.setProc(row.grantKey, $event as boolean, row.label)
+      "
+    >
+      {{ row.label }}
+    </BaseCheckbox>
   </div>
 
   <!-- Dynamic weapon modifications carry a user-typed magnitude. Driven by the item's own

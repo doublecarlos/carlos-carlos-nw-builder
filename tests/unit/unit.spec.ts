@@ -40,7 +40,6 @@ const BASE_CONTEXT: BuildContext = {
     combat: true,
     party: true,
     consumables: true,
-    procs: true,
     artifactCall: true,
   },
 };
@@ -382,6 +381,7 @@ describe("bonus model semantics", () => {
     for (const set of built.bonusSets) set.grants?.forEach(visit);
     const allowed = new Set([
       "toggle",
+      "proc",
       "role",
       "class",
       "combatType",
@@ -503,6 +503,186 @@ describe("point_assignment resolution", () => {
       buildWith({ "boon-restricted": 1 }),
     );
     expect(result.errors.some((e) => e.kind === "class")).toBe(true);
+  });
+});
+
+// Per-item procs (#82): each proc-conditional grant reads its own toggle from `build.procs`,
+// keyed by `${bonusSetId}:${grantIndex}` -- independent of any other grant's, and independent
+// of the old build-wide `toggles` map. A synthetic db isolates the key format and default-on
+// behaviour from the shipped data, which doesn't author any `proc` conditions yet.
+describe("per-item procs", () => {
+  const schema: Schema = {
+    stats: [],
+    statByKey: {},
+    statKeys: ["power_p", "crit_p"],
+    multiplicativeStats: [],
+    ratingStats: [],
+    abilityStats: [],
+    ratingConversion: [],
+    abilityContributions: [],
+    forteSplit: {},
+    roles: { dps: { label: "dps", hpBonus: 1, damageBonus: 1 } },
+  };
+
+  const procRing: Item = {
+    id: "proc-ring",
+    name: "Proc Ring",
+    bonuses: ["proc-ring-set"],
+  };
+  const procRingSet: BonusSet = {
+    id: "proc-ring-set",
+    grants: [{ when: { proc: true }, stats: { power_p: 0.05 } }],
+  };
+
+  // Two independent procs modelled as two grants under one set, per the issue's own answer:
+  // "any proc will be strictly modelled as a standalone grant".
+  const doubleProcTrinket: Item = {
+    id: "double-proc-trinket",
+    name: "Double Proc Trinket",
+    bonuses: ["double-proc-set"],
+  };
+  const doubleProcSet: BonusSet = {
+    id: "double-proc-set",
+    grants: [
+      { when: { proc: true }, stats: { power_p: 0.01 } },
+      { when: { proc: true }, stats: { crit_p: 0.02 } },
+    ],
+  };
+
+  // The object form of `proc` -- a custom checkbox label, and a proc that starts off rather
+  // than the usual default-on.
+  const situationalTrinket: Item = {
+    id: "situational-trinket",
+    name: "Situational Trinket",
+    bonuses: ["situational-trinket-set"],
+  };
+  const situationalTrinketSet: BonusSet = {
+    id: "situational-trinket-set",
+    grants: [
+      {
+        when: { proc: { label: "Only vs. bosses", default: false } },
+        stats: { power_p: 0.07 },
+      },
+    ],
+  };
+
+  const gearSlot: ItemPickerSlot = {
+    id: "gear.ring1",
+    label: "Ring 1",
+    section: "gear",
+    type: "item_picker",
+    filter: "test_gear",
+  };
+  const slotsData: SlotsData = {
+    sections: [{ id: "gear", label: "Gear" }],
+    slots: [gearSlot],
+  };
+  const testDb = db.build(
+    [procRing, doubleProcTrinket, situationalTrinket],
+    [procRingSet, doubleProcSet, situationalTrinketSet],
+    schema,
+    slotsData,
+  );
+
+  function buildWith(
+    choice: string,
+    procs: Record<string, boolean> = {},
+  ): Build {
+    return {
+      id: "b",
+      name: "b",
+      choices: { "gear.ring1": choice },
+      values: {},
+      assignments: {},
+      procs,
+      context: BASE_CONTEXT,
+      compare: { id: "", highlight: false, onlyDiff: false },
+    } as unknown as Build;
+  }
+
+  it("defaults on: a grant with no explicit build.procs entry still fires", () => {
+    const result = engine.resolveBuild(testDb, buildWith("proc-ring"));
+    const bonus = result.bonuses.find((b) => b.id === "proc-ring-set");
+    expect(bonus?.active).toBe(true);
+    expect(bonus?.grants[0].procKey).toBe("proc-ring-set:0");
+  });
+
+  it("an explicit false for the grant's key turns it off", () => {
+    const result = engine.resolveBuild(
+      testDb,
+      buildWith("proc-ring", { "proc-ring-set:0": false }),
+    );
+    expect(result.bonuses.find((b) => b.id === "proc-ring-set")?.active).toBe(
+      false,
+    );
+  });
+
+  it("a grant with no proc condition carries a null procKey", () => {
+    const flat: BonusSet = {
+      id: "flat-set",
+      grants: [{ stats: { power_p: 0.03 } }],
+    };
+    const flatItem: Item = {
+      id: "flat-ring",
+      name: "Flat Ring",
+      bonuses: ["flat-set"],
+    };
+    const flatDb = db.build([flatItem], [flat], schema, slotsData);
+    const result = engine.resolveBuild(
+      flatDb,
+      buildWith("flat-ring") as unknown as Build,
+    );
+    expect(
+      result.bonuses.find((b) => b.id === "flat-set")?.grants[0].procKey,
+    ).toBeNull();
+  });
+
+  it("two proc grants in one set toggle independently by grant index", () => {
+    const bothOn = engine.resolveBuild(
+      testDb,
+      buildWith("double-proc-trinket"),
+    );
+    expect(bothOn.stages.sums.power_p).toBeCloseTo(0.01, 9);
+    expect(bothOn.stages.sums.crit_p).toBeCloseTo(0.02, 9);
+
+    const firstOff = engine.resolveBuild(
+      testDb,
+      buildWith("double-proc-trinket", { "double-proc-set:0": false }),
+    );
+    expect(firstOff.stages.sums.power_p).toBe(0);
+    expect(firstOff.stages.sums.crit_p).toBeCloseTo(0.02, 9);
+  });
+
+  it("feeds ConditionExplain the same way a toggle does, for the bonus inspector", () => {
+    const off = engine.resolveBuild(
+      testDb,
+      buildWith("proc-ring", { "proc-ring-set:0": false }),
+    );
+    const bonus = off.bonuses.find((b) => b.id === "proc-ring-set")!;
+    expect(bonus.gate.unmet[0]?.label).toBe("proc");
+    expect(bonus.gate.unmet[0]?.detail).toBe("disabled");
+  });
+
+  it("a spec with default: false starts off with no explicit build.procs entry", () => {
+    const result = engine.resolveBuild(
+      testDb,
+      buildWith("situational-trinket"),
+    );
+    expect(
+      result.bonuses.find((b) => b.id === "situational-trinket-set")?.active,
+    ).toBe(false);
+  });
+
+  it("an explicit true in build.procs overrides a spec's default: false", () => {
+    const result = engine.resolveBuild(
+      testDb,
+      buildWith("situational-trinket", {
+        "situational-trinket-set:0": true,
+      }),
+    );
+    expect(
+      result.bonuses.find((b) => b.id === "situational-trinket-set")?.active,
+    ).toBe(true);
   });
 });
 

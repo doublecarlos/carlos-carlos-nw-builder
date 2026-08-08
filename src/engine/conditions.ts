@@ -15,6 +15,7 @@ import type {
   ConditionLeafResult,
   ConditionExplain,
   ParamCondition,
+  ProcCondition,
 } from "../types";
 
 const asArray = <T>(value: T | T[]): T[] =>
@@ -77,7 +78,11 @@ const matchOneOf =
 // catalog.ts's linter at data-load time.
 const LEAVES: Record<
   string,
-  (spec: unknown, ctx: EvalContext) => ConditionLeafResult
+  (
+    spec: unknown,
+    ctx: EvalContext,
+    grantKey: string | null,
+  ) => ConditionLeafResult
 > = {
   toggle(spec, ctx) {
     const wanted = asArray(spec as string | string[]);
@@ -86,6 +91,23 @@ const LEAVES: Record<
       ok: missing.length === 0,
       label: `${wanted.join(" + ")} enabled`,
       detail: missing.length ? `off: ${missing.join(", ")}` : "",
+    };
+  },
+
+  // Per-grant proc toggle (`build.procs`, keyed by `grantKey`) -- the per-item counterpart to
+  // `toggle`'s build-wide flags. `grantKey` is threaded in by bonus.ts's `evaluateGrant` from
+  // outside the `when` tree, since a grant carries no id of its own to key its own state by.
+  // A build with no explicit `build.procs` entry for this grant falls back to the spec's own
+  // `default` (itself defaulting to true, same as every other toggle's default-on behaviour).
+  proc(spec, ctx, grantKey) {
+    const s = spec as boolean | ProcCondition | undefined;
+    const startsOn =
+      typeof s === "object" && s !== null ? (s.default ?? true) : true;
+    const on = grantKey == null ? true : (ctx.procs?.[grantKey] ?? startsOn);
+    return {
+      ok: on,
+      label: "proc",
+      detail: on ? "enabled" : "disabled",
     };
   },
 
@@ -187,11 +209,13 @@ const LEAVES: Record<
 
 // --- combinators -----------------------------------------------------------------------
 
-/** Evaluate `when`, pushing per-leaf results into `out` when explaining. */
+/** Evaluate `when`, pushing per-leaf results into `out` when explaining. `grantKey` is only
+ *  consumed by the `proc` leaf -- see its own comment for why it can't just live on `ctx`. */
 function walk(
   when: ConditionWhen | undefined,
   ctx: EvalContext,
   out: ConditionLeafResult[] | null,
+  grantKey: string | null,
 ): boolean {
   if (!when) return true;
   let ok = true;
@@ -199,7 +223,7 @@ function walk(
   for (const [key, spec] of Object.entries(when)) {
     if (key === "all") {
       for (const sub of spec as ConditionWhen[]) {
-        if (!walk(sub, ctx, out)) ok = false;
+        if (!walk(sub, ctx, out, grantKey)) ok = false;
       }
       continue;
     }
@@ -208,7 +232,9 @@ function walk(
       const branch: ConditionLeafResult[] = [];
       const alternatives = spec as ConditionWhen[];
       // Evaluate every alternative so the UI can show what each one needed.
-      const results = alternatives.map((sub) => walk(sub, ctx, branch));
+      const results = alternatives.map((sub) =>
+        walk(sub, ctx, branch, grantKey),
+      );
       const anyOk = results.some(Boolean);
       out?.push({
         ok: anyOk,
@@ -221,7 +247,7 @@ function walk(
 
     if (key === "not") {
       const inner: ConditionLeafResult[] = [];
-      const innerOk = walk(spec as ConditionWhen, ctx, inner);
+      const innerOk = walk(spec as ConditionWhen, ctx, inner, grantKey);
       out?.push({ ok: !innerOk, label: "not", children: inner });
       if (innerOk) ok = false;
       continue;
@@ -235,7 +261,7 @@ function walk(
       continue;
     }
 
-    const result = leaf(spec, ctx);
+    const result = leaf(spec, ctx, grantKey);
     out?.push(result);
     if (!result.ok) ok = false;
   }
@@ -243,18 +269,47 @@ function walk(
   return ok;
 }
 
-/** True when every leaf of `when` holds against `ctx`. */
+/** True when every leaf of `when` holds against `ctx`. `grantKey` (bonus.ts's per-grant
+ *  identity) is only needed when `when` may contain a `proc` leaf. */
 export const evaluate = (
   when: ConditionWhen | undefined,
   ctx: EvalContext,
-): boolean => walk(when, ctx, null);
+  grantKey: string | null = null,
+): boolean => walk(when, ctx, null, grantKey);
 
 /** As `evaluate`, but also returns the per-leaf breakdown for the bonus inspector. */
 export function explain(
   when: ConditionWhen | undefined,
   ctx: EvalContext,
+  grantKey: string | null = null,
 ): ConditionExplain {
   const leaves: ConditionLeafResult[] = [];
-  const ok = walk(when, ctx, leaves);
+  const ok = walk(when, ctx, leaves, grantKey);
   return { ok, leaves, unmet: leaves.filter((leaf) => !leaf.ok) };
 }
+
+/** The `proc` leaf's spec (including inside `all`/`any`/`not`), or `undefined` if `when`
+ *  carries none -- the UI's own lookup for a grant's checkbox label/starting state, not used by
+ *  evaluation itself (which reads the leaf's `spec` directly as `walk` dispatches it). Bare
+ *  `true` is returned as-is (no label/default override); the first `proc` found wins, same as
+ *  the walk order every other leaf implicitly assumes. */
+export function procSpec(
+  when: ConditionWhen | undefined,
+): boolean | ProcCondition | undefined {
+  if (!when) return undefined;
+  if (when.proc) return when.proc;
+  for (const branch of when.all ?? []) {
+    const found = procSpec(branch);
+    if (found) return found;
+  }
+  for (const branch of when.any ?? []) {
+    const found = procSpec(branch);
+    if (found) return found;
+  }
+  return when.not ? procSpec(when.not) : undefined;
+}
+
+/** True when `when` carries a `proc` leaf anywhere -- i.e. this grant needs a per-item proc
+ *  checkbox. */
+export const usesProc = (when: ConditionWhen | undefined): boolean =>
+  procSpec(when) !== undefined;

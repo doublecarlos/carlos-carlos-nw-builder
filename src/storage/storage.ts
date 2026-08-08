@@ -162,6 +162,7 @@ export function defaultBuild(name = "New build"): Build {
     choices: {},
     values: {},
     assignments,
+    procs: {},
     context: root.context as unknown as Build["context"],
     // The quick-compare picker (App.vue topbar). Saved with the build -- unlike `tab`, which
     // is pure session state -- so reopening a build remembers what you were sizing it up
@@ -258,6 +259,7 @@ export function normalise(
     choices: strings(raw.choices),
     values: numbers(raw.values),
     assignments: nestedNumbers(raw.assignments, base.assignments),
+    procs: booleans(raw.procs),
     // `context`'s pass-through fields (class/role/combatType/damageType) are not
     // individually validated -- the result is only knowable-safe by construction, not by
     // the type checker; hence the cast.

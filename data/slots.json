@@ -403,15 +403,6 @@
           "quick": true
         },
         {
-          "id": "options.toggleProcs",
-          "label": "Other procs",
-          "type": "build_parameter",
-          "paramType": "boolean",
-          "path": "toggles.procs",
-          "default": true,
-          "quick": true
-        },
-        {
           "id": "options.toggleArtifactCall",
           "label": "Artifact call",
           "type": "build_parameter",
