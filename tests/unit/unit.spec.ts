@@ -9,6 +9,7 @@ import * as engine from "../../src/engine/engine";
 import type {
   Build,
   BuildContext,
+  BuildParameterSlot,
   BonusSet,
   EvaluatedBonus,
   EngineError,
@@ -470,6 +471,165 @@ describe("point_assignment resolution", () => {
       buildWith({ "boon-restricted": 1 }),
     );
     expect(result.errors.some((e) => e.kind === "class")).toBe(true);
+  });
+});
+
+// A build_parameter's `linkedItem` is meant to resolve through the exact same
+// equip/tag/set-piece/bonus-candidate bookkeeping an item_picker pick does (bonus.ts's
+// `collect()` derives the row's "choice" from the param's current value instead of
+// `build.choices`, but everything downstream is shared) -- a synthetic db isolates both
+// authoring shapes the issue asked for: a `list` param's per-option item and a `boolean`
+// param's single item.
+describe("build_parameter linked items", () => {
+  const schema: Schema = {
+    stats: [],
+    statByKey: {},
+    statKeys: ["power_p", "hit_points"],
+    multiplicativeStats: [],
+    ratingStats: [],
+    abilityStats: [],
+    ratingConversion: [],
+    abilityContributions: [],
+    forteSplit: {},
+    roles: { dps: { label: "dps", hpBonus: 1, damageBonus: 1 } },
+  };
+
+  const halfOrcItem: Item = {
+    id: "race-half-orc",
+    name: "Race: Half-Orc",
+    hit_points: 100,
+    bonuses: ["half-orc-set"],
+    maxCopies: 1,
+  };
+  const halfOrcSet: BonusSet = {
+    id: "half-orc-set",
+    grants: [{ stats: { power_p: 0.02 } }],
+  };
+  const restrictedRaceItem: Item = {
+    id: "race-restricted",
+    name: "Race: Restricted",
+    allowedClass: ["fighter"],
+  };
+  const consumableItem: Item = {
+    id: "consumable-buff",
+    name: "Consumable Buff",
+    power_p: 0.01,
+  };
+
+  const raceSlot: BuildParameterSlot = {
+    id: "options.race",
+    label: "Race",
+    section: "options",
+    type: "build_parameter",
+    paramType: "list",
+    path: "race",
+    default: "",
+    options: [
+      { value: "", label: "— none —" },
+      { value: "half-orc", label: "Half-Orc", linkedItem: "race-half-orc" },
+      { value: "elf", label: "Elf" },
+      {
+        value: "restricted",
+        label: "Restricted",
+        linkedItem: "race-restricted",
+      },
+    ],
+  };
+  const consumableSlot: BuildParameterSlot = {
+    id: "options.consumable",
+    label: "Consumable buff",
+    section: "options",
+    type: "build_parameter",
+    paramType: "boolean",
+    path: "toggles.consumableBuff",
+    default: false,
+    linkedItem: "consumable-buff",
+  };
+  const slotsData: SlotsData = {
+    sections: [{ id: "options", label: "Options" }],
+    slots: [raceSlot, consumableSlot],
+  };
+  const testDb = db.build(
+    [halfOrcItem, restrictedRaceItem, consumableItem],
+    [halfOrcSet],
+    schema,
+    slotsData,
+  );
+
+  function buildWith(
+    contextOverrides: Partial<BuildContext> & {
+      race?: string;
+      toggles?: Record<string, boolean>;
+    } = {},
+  ): Build {
+    return {
+      id: "b",
+      name: "b",
+      choices: {},
+      values: {},
+      assignments: {},
+      context: { ...BASE_CONTEXT, race: "", ...contextOverrides },
+      compare: { id: "", highlight: false, onlyDiff: false },
+    } as unknown as Build;
+  }
+
+  it("an unset list param contributes nothing", () => {
+    const result = engine.resolveBuild(testDb, buildWith());
+    expect(result.stages.sums.hit_points).toBe(0);
+    expect(
+      result.bonuses.find((b) => b.id === "half-orc-set")?.active,
+    ).toBeFalsy();
+  });
+
+  it("selecting an option with a linkedItem equips it: item stats and its bonuses both apply", () => {
+    const result = engine.resolveBuild(testDb, buildWith({ race: "half-orc" }));
+    expect(result.stages.sums.hit_points).toBeCloseTo(100, 9);
+    expect(result.stages.sums.power_p).toBeCloseTo(0.02, 9);
+    expect(result.bonuses.find((b) => b.id === "half-orc-set")?.active).toBe(
+      true,
+    );
+  });
+
+  it("selecting an option with no linkedItem contributes nothing", () => {
+    const result = engine.resolveBuild(testDb, buildWith({ race: "elf" }));
+    expect(result.stages.sums.hit_points).toBe(0);
+  });
+
+  it("a list param's and a boolean param's linked items compose, not overwrite each other", () => {
+    const both = engine.resolveBuild(
+      testDb,
+      buildWith({ race: "half-orc", toggles: { consumableBuff: true } }),
+    );
+    // half-orc: hit_points 100, power_p 0.02 (bonus); consumable: power_p 0.01
+    expect(both.stages.sums.hit_points).toBeCloseTo(100, 9);
+    expect(both.stages.sums.power_p).toBeCloseTo(0.02 + 0.01, 9);
+  });
+
+  it("a checked boolean param's linkedItem applies; unchecked it does not", () => {
+    const on = engine.resolveBuild(
+      testDb,
+      buildWith({ toggles: { consumableBuff: true } }),
+    );
+    const off = engine.resolveBuild(
+      testDb,
+      buildWith({ toggles: { consumableBuff: false } }),
+    );
+    expect(on.stages.sums.power_p).toBeCloseTo(0.01, 9);
+    expect(off.stages.sums.power_p).toBe(0);
+  });
+
+  it("a class-restricted linked item flags a class error the same way a picked item would", () => {
+    const result = engine.resolveBuild(
+      testDb,
+      buildWith({ race: "restricted", class: "rogue" }),
+    );
+    expect(result.errors.some((e) => e.kind === "class")).toBe(true);
+  });
+
+  it("a linked item resolves onto its own row, not the item_picker row shape", () => {
+    const result = engine.resolveBuild(testDb, buildWith({ race: "half-orc" }));
+    const row = result.rows.find((r) => r.slotId === "options.race");
+    expect(row?.item?.id).toBe("race-half-orc");
   });
 });
 

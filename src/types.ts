@@ -63,7 +63,15 @@ export interface SlotSection {
  *
  * Fields below `quick` are a loose union of what each `paramType` needs (`options` for `list`,
  * `min`/`max`/`step`/`presets` for `number`/`percent`) -- same "optional fields, no separate
- * type per variant" convention `Item`'s `dynamicStat`/`dynamicMin`/`dynamicMax` already uses. */
+ * type per variant" convention `Item`'s `dynamicStat`/`dynamicMin`/`dynamicMax` already uses.
+ *
+ * `linkedItem` (an `Item.id`) is how a `list`/`boolean` param "equips" an item through its
+ * current value -- a `list` option picks its own via `options[].linkedItem`, a `boolean`
+ * shares the one on the slot itself, checked or not. `number`/`percent` never have one: there
+ * is no single moment a numeric value starts/stops being "equipped". Resolved by
+ * build-path.ts's `resolveLinkedItem`, which bonus.ts's `collect()` and catalog.ts's
+ * `referencedOverlay` both call so a param's item is derived the same way everywhere rather
+ * than stored -- see `resolveLinkedItem`'s own comment for why. */
 export interface BuildParameterSlot {
   id: string;
   label: string;
@@ -74,11 +82,13 @@ export interface BuildParameterSlot {
   /** Shown in the always-visible QuickOptions strip instead of its section's slot list. */
   quick?: boolean;
   default?: string | number | boolean;
-  options?: { value: string; label: string }[];
+  options?: { value: string; label: string; linkedItem?: string }[];
   min?: number;
   max?: number;
   step?: number;
   presets?: number[];
+  /** Only meaningful when `paramType` is `"boolean"` -- see the class doc comment above. */
+  linkedItem?: string;
 }
 
 export interface ItemPickerSlot {

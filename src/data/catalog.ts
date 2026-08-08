@@ -17,7 +17,7 @@
 
 import { NW_ITEMS, NW_BONUSES, NW_SCHEMA, NW_SLOTS } from "./data";
 import * as db from "./db";
-import { findParamSlot } from "../lib/build-path";
+import { findParamSlot, resolveLinkedItem } from "../lib/build-path";
 import { deepEqual } from "../lib/deep-equal";
 import type {
   Item,
@@ -225,6 +225,15 @@ export function referencedOverlay(db: Db, build: Build): CatalogOverlay {
   // Seed items from choices
   for (const id of Object.values(build.choices)) {
     if (id && id !== "-" && id !== "") itemIds.add(id);
+  }
+
+  // Seed items from build_parameter slots' linkedItem -- the item a list/boolean param
+  // currently resolves to is just as much "part of the build" as a picked one, so a download
+  // needs to carry it too if it's not already in base.
+  for (const slot of db.slots) {
+    if (slot.type !== "build_parameter") continue;
+    const id = resolveLinkedItem(slot, build.context);
+    if (id) itemIds.add(id);
   }
 
   // Resolve items to find referenced bonus-set ids
@@ -568,6 +577,72 @@ export function validatePresets(
   return findings;
 }
 
+/** Every item id a `build_parameter` slot "equips" through its `linkedItem` -- a list option's
+ * or a checked boolean's own. Standalone from `validate()` below, same as `validateSlots`/
+ * `validatePresets`, since `validate()` uses it only to exempt these items from the "no
+ * filter" checks (such an item is never meant to appear in an item_picker/point_assignment
+ * row, so it has no filter to match one). */
+export function collectLinkedItemIds(slots: Slot[]): Set<string> {
+  const linkedItemIds = new Set<string>();
+  for (const slot of slots) {
+    if (slot.type !== "build_parameter") continue;
+    if (slot.paramType === "list") {
+      for (const option of slot.options ?? []) {
+        if (option.linkedItem) linkedItemIds.add(option.linkedItem);
+      }
+    } else if (slot.linkedItem) {
+      linkedItemIds.add(slot.linkedItem);
+    }
+  }
+  return linkedItemIds;
+}
+
+/**
+ * Lint every `build_parameter` slot's `linkedItem`: a reference to an item id with no
+ * definition, or one set on a slot type (`number`/`percent`) that can never resolve one.
+ * Standalone from `validate()` below, same as `validateSlots`/`validatePresets`, since it
+ * needs only the slot list and the catalogue's item ids, not the rest of the composed
+ * catalogue.
+ */
+export function validateLinkedItems(
+  slots: Slot[],
+  itemIds: Set<string>,
+): LintFinding[] {
+  const findings: LintFinding[] = [];
+  for (const slot of slots) {
+    if (slot.type !== "build_parameter") continue;
+    if (slot.paramType === "list") {
+      for (const option of slot.options ?? []) {
+        if (option.linkedItem && !itemIds.has(option.linkedItem)) {
+          findings.push({
+            level: "warn",
+            kind: "item",
+            name: slot.id,
+            message: `linkedItem "${option.linkedItem}" (option "${option.value}") has no definition`,
+          });
+        }
+      }
+    } else if (slot.linkedItem) {
+      if (slot.paramType !== "boolean") {
+        findings.push({
+          level: "error",
+          kind: "item",
+          name: slot.id,
+          message: `linkedItem is only meaningful on a list or boolean param — this is a ${slot.paramType}`,
+        });
+      } else if (!itemIds.has(slot.linkedItem)) {
+        findings.push({
+          level: "warn",
+          kind: "item",
+          name: slot.id,
+          message: `linkedItem "${slot.linkedItem}" has no definition`,
+        });
+      }
+    }
+  }
+  return findings;
+}
+
 /**
  * Lint the composed catalogue. Warnings are things that are probably a mistake; errors are
  * things the engine will misread or silently drop.
@@ -613,11 +688,14 @@ export function validate(
     (classSlot?.options?.map((o) => o.value) ?? []).filter(Boolean),
   );
   const setIds = new Set(bonusSets.map((set) => set.id));
+  const itemIds = new Set(items.map((item) => item.id).filter(Boolean));
   const seenIds = new Set();
   const paramSlots = new Map<string, BuildParameterSlot>();
   for (const slot of allSlots) {
     if (slot.type === "build_parameter") paramSlots.set(slot.path, slot);
   }
+  const linkedItemIds = collectLinkedItemIds(allSlots);
+  findings.push(...validateLinkedItems(allSlots, itemIds));
 
   const checkStats = (
     stats: Record<string, unknown> | undefined,
@@ -665,13 +743,17 @@ export function validate(
     seenIds.add(item.id);
 
     if (!item.filter) {
-      report("error", "no filter — the item appears in no slot", item.id);
+      if (!linkedItemIds.has(item.id)) {
+        report("error", "no filter — the item appears in no slot", item.id);
+      }
     } else if (!slotFilters.has(item.filter)) {
-      report(
-        "warn",
-        `filter "${item.filter}" matches no slot, so nothing can equip it`,
-        item.id,
-      );
+      if (!linkedItemIds.has(item.id)) {
+        report(
+          "warn",
+          `filter "${item.filter}" matches no slot, so nothing can equip it`,
+          item.id,
+        );
+      }
     } else if (
       itemPickerFilters.has(item.filter) &&
       pointAssignmentFilters.has(item.filter)

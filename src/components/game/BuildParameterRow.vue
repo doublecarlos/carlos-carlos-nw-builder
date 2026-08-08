@@ -7,13 +7,18 @@ import BuildParamInput from "./BuildParamInput.vue";
 import BaseButton from "../ui/BaseButton.vue";
 import * as buildEditor from "../../stores/buildEditor";
 import { getPath } from "../../lib/build-path";
-import type { Build, BuildParameterSlot } from "../../types";
+import type { Build, BuildParameterSlot, Item } from "../../types";
 
 const props = defineProps<{
   slotDef: BuildParameterSlot;
   build: Build;
   compareBuild?: Build | null;
   highlightDiff: boolean;
+  /** The slot's resolved `linkedItem`, if it has one -- see build-path.ts's
+   * `resolveLinkedItem`. Only a list/boolean param's current value ever resolves one. */
+  item?: Item | null;
+  statSummary?: string;
+  bonusDiffs?: { id: string; message: string }[];
   paramDiffers?: boolean;
   otherParamLabel?: string;
 }>();
@@ -40,6 +45,9 @@ const paramValue = () =>
       :model-value="paramValue()"
       @update:model-value="buildEditor.setParam(slotDef, $event!)"
     />
+    <span v-if="item" class="min-w-0 flex-1 truncate text-sm text-text">{{
+      statSummary
+    }}</span>
   </div>
 
   <p
@@ -55,4 +63,14 @@ const paramValue = () =>
       apply
     </BaseButton>
   </p>
+
+  <template v-if="highlightDiff && !paramDiffers">
+    <p
+      v-for="bonusDiff in bonusDiffs ?? []"
+      :key="bonusDiff.id"
+      class="mt-0.5 text-sm font-semibold text-diff"
+    >
+      {{ bonusDiff.message }}
+    </p>
+  </template>
 </template>

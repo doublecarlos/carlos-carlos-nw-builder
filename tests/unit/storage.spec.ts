@@ -525,6 +525,7 @@ describe("toBuildJson with db (portable files)", () => {
       get: (id: string | null | undefined) =>
         id === "layer-item" ? layerItem : null,
       bonusSetById: new Map([[layerSet.id, layerSet]]),
+      slots: [],
     } as unknown as Db;
 
     const json = JSON.parse(storage.toBuildJson(build, db));
@@ -551,6 +552,7 @@ describe("toBuildJson with db (portable files)", () => {
       get: (id: string | null | undefined) =>
         id === BASE_ITEM_ID ? shippedItem : null,
       bonusSetById: new Map(),
+      slots: [],
     } as unknown as Db;
 
     const json = JSON.parse(storage.toBuildJson(build, db));
@@ -578,6 +580,7 @@ describe("toBuildJson with db (portable files)", () => {
       get: (id: string | null | undefined) =>
         id === "layer-item" ? layerItem : null,
       bonusSetById: new Map([[layerSet.id, layerSet]]),
+      slots: [],
     } as unknown as Db;
 
     const json = storage.toBuildJson(build, db);

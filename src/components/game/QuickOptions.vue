@@ -9,12 +9,14 @@
 // slot itself is what decides where a field renders, not this component's own knowledge of
 // which fields exist.
 import BuildParamInput from "./BuildParamInput.vue";
-import { NW_SLOTS } from "../../data/data";
+import { NW_SCHEMA, NW_SLOTS } from "../../data/data";
 import { getPath } from "../../lib/build-path";
+import { abbr, signedStat } from "../../lib/format";
 import { paramDiffers, paramDiffTitle } from "../../composables/useCompareDiff";
 import * as builds from "../../stores/builds";
 import * as compare from "../../stores/compare";
 import * as buildEditor from "../../stores/buildEditor";
+import * as engine from "../../stores/resolved";
 import type { BuildParameterSlot } from "../../types";
 
 const build = builds.build;
@@ -33,6 +35,25 @@ function differs(slot: BuildParameterSlot) {
 /** `getPath` returns `unknown`; cast to the non-boolean union used by non-boolean slots. */
 function asStrNum(slot: BuildParameterSlot): string | number {
   return getPath(build.value.context, slot.path) as string | number;
+}
+
+/** A plain-text stat summary for a `quick` slot's resolved `linkedItem`, shown as a native
+ * tooltip -- this strip is deliberately compact (see the file-level comment), so it gets the
+ * text-only version of what BuildEditor's own rows show with a full hover card. Reads the
+ * engine's own resolved row rather than resolving the item itself, so this already reflects
+ * any bonuses attributed to the slot, not just the item's own stats. */
+function linkedItemSummary(slot: BuildParameterSlot): string | undefined {
+  if (!engine.resolved.value.ok) return undefined;
+  const row = engine.resolved.value.result.rows.find(
+    (r) => r.slotId === slot.id,
+  );
+  if (!row?.item) return undefined;
+  const parts: string[] = [];
+  for (const key of NW_SCHEMA.statKeys) {
+    if (row.stats[key])
+      parts.push(`${abbr(key)} ${signedStat(key, row.stats[key])}`);
+  }
+  return parts.length ? parts.join(" • ") : undefined;
 }
 </script>
 
@@ -57,7 +78,9 @@ function asStrNum(slot: BuildParameterSlot): string | number {
         <span
           :class="differs(slot) ? 'cursor-help font-bold text-diff' : ''"
           :title="
-            differs(slot) ? paramDiffTitle(compareBuild, slot) : undefined
+            differs(slot)
+              ? paramDiffTitle(compareBuild, slot)
+              : linkedItemSummary(slot)
           "
         >
           {{ slot.label }}<template v-if="differs(slot)"> ●</template>
@@ -78,7 +101,9 @@ function asStrNum(slot: BuildParameterSlot): string | number {
         <span
           :class="differs(slot) ? 'font-bold text-diff' : ''"
           :title="
-            differs(slot) ? paramDiffTitle(compareBuild, slot) : undefined
+            differs(slot)
+              ? paramDiffTitle(compareBuild, slot)
+              : linkedItemSummary(slot)
           "
         >
           {{ slot.label }}<template v-if="differs(slot)"> ●</template>

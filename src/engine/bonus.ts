@@ -5,7 +5,7 @@
 // overrides against *all* rows, so its results could depend on slot ordering. Nothing here does.
 
 import * as conditions from "./conditions";
-import { getPath } from "../lib/build-path";
+import { getPath, resolveLinkedItem } from "../lib/build-path";
 import type {
   Db,
   Build,
@@ -141,7 +141,14 @@ export function collect(
       return;
     }
 
-    const choice = build.choices?.[slot.id];
+    // A build_parameter row has no entry in `build.choices` -- its "choice" is derived from
+    // its current context value instead (`resolveLinkedItem`), so a list/boolean param with a
+    // `linkedItem` resolves through the exact same equip/tag/set-piece/candidate bookkeeping
+    // below as an item_picker pick, with no separate branch needed.
+    const choice =
+      slot.type === "build_parameter"
+        ? resolveLinkedItem(slot, context)
+        : build.choices?.[slot.id];
     const item = db.get(choice);
     rows.push({ slotId: slot.id, slot, choice, item });
     if (!item) return;

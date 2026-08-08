@@ -6,6 +6,7 @@ import * as catalog from "../../src/data/catalog";
 import { NW_SLOTS, NW_ITEMS, NW_BONUSES } from "../../src/data/data";
 import type {
   BonusSet,
+  BuildParameterSlot,
   ConditionWhen,
   Item,
   Slot,
@@ -633,15 +634,180 @@ describe("catalog.validate: param condition lint", () => {
   });
 });
 
+// The `linkedItem` lint: a list option's or a boolean slot's `linkedItem` referencing a
+// missing item id, or set on a slot type that can never resolve one. `validate()` itself
+// always reads slots from the real shipped `NW_SLOTS` (no injectable parameter, unlike
+// `items`/`bonusSets`), so the standalone helpers it calls -- `collectLinkedItemIds`/
+// `validateLinkedItems` -- are exercised directly with synthetic slots here, same as
+// `validateSlots`/`validatePresets` are above.
+describe("catalog.validateLinkedItems / collectLinkedItemIds", () => {
+  const listSlotWith = (linkedItem: string): BuildParameterSlot => ({
+    id: "options.race",
+    label: "Race",
+    section: "options",
+    type: "build_parameter",
+    paramType: "list",
+    path: "race",
+    options: [{ value: "half-orc", label: "Half-Orc", linkedItem }],
+  });
+
+  it("warns when a list option's linkedItem has no definition", () => {
+    const findings = catalog.validateLinkedItems(
+      [listSlotWith("does-not-exist")],
+      new Set(),
+    );
+    expect(findings).toHaveLength(1);
+    expect(findings[0].level).toBe("warn");
+    expect(findings[0].name).toBe("options.race");
+    expect(findings[0].message).toMatch(/no definition/);
+  });
+
+  it("is clean when a list option's linkedItem resolves to a real item id", () => {
+    const findings = catalog.validateLinkedItems(
+      [listSlotWith("race-half-orc")],
+      new Set(["race-half-orc"]),
+    );
+    expect(findings).toEqual([]);
+  });
+
+  it("warns when a boolean slot's linkedItem has no definition", () => {
+    const boolSlot: BuildParameterSlot = {
+      id: "options.consumable",
+      label: "Consumable",
+      section: "options",
+      type: "build_parameter",
+      paramType: "boolean",
+      path: "toggles.consumableBuff",
+      linkedItem: "does-not-exist",
+    };
+    const findings = catalog.validateLinkedItems([boolSlot], new Set());
+    expect(findings).toHaveLength(1);
+    expect(findings[0].level).toBe("warn");
+    expect(findings[0].name).toBe("options.consumable");
+  });
+
+  it("is clean when a boolean slot's linkedItem resolves to a real item id", () => {
+    const boolSlot: BuildParameterSlot = {
+      id: "options.consumable",
+      label: "Consumable",
+      section: "options",
+      type: "build_parameter",
+      paramType: "boolean",
+      path: "toggles.consumableBuff",
+      linkedItem: "consumable-buff",
+    };
+    expect(
+      catalog.validateLinkedItems([boolSlot], new Set(["consumable-buff"])),
+    ).toEqual([]);
+  });
+
+  it("errors when linkedItem is set on a number/percent param", () => {
+    const numberSlot: BuildParameterSlot = {
+      id: "options.magnitude2",
+      label: "Magnitude",
+      section: "options",
+      type: "build_parameter",
+      paramType: "number",
+      path: "magnitude2",
+      linkedItem: "some-item",
+    };
+    const findings = catalog.validateLinkedItems(
+      [numberSlot],
+      new Set(["some-item"]),
+    );
+    expect(findings).toHaveLength(1);
+    expect(findings[0].level).toBe("error");
+    expect(findings[0].message).toMatch(/only meaningful on a list or boolean/);
+  });
+
+  it("item_picker and point_assignment slots are ignored entirely", () => {
+    const findings = catalog.validateLinkedItems(
+      [
+        {
+          id: "gear.head",
+          label: "Head",
+          section: "gear",
+          type: "item_picker",
+          filter: "gear_head",
+        },
+        {
+          id: "boons.tier1",
+          label: "Boons",
+          section: "boons",
+          type: "point_assignment",
+          filter: "boon_tier1",
+        },
+      ],
+      new Set(),
+    );
+    expect(findings).toEqual([]);
+  });
+
+  it("collectLinkedItemIds gathers every list option's and boolean slot's linkedItem", () => {
+    const boolSlot: BuildParameterSlot = {
+      id: "options.consumable",
+      label: "Consumable",
+      section: "options",
+      type: "build_parameter",
+      paramType: "boolean",
+      path: "toggles.consumableBuff",
+      linkedItem: "consumable-buff",
+    };
+    const ids = catalog.collectLinkedItemIds([
+      listSlotWith("race-half-orc"),
+      boolSlot,
+    ]);
+    expect(ids).toEqual(new Set(["race-half-orc", "consumable-buff"]));
+  });
+
+  it("the shipped catalogue has no dangling linkedItem references", () => {
+    const findings = catalog.validate(NW_ITEMS, NW_BONUSES);
+    expect(
+      findings.some((f) => /linkedItem.*no definition/.test(f.message)),
+    ).toBe(false);
+  });
+});
+
+describe("catalog.validate: an item referenced only via linkedItem is exempt from filter checks", () => {
+  // validate() reads slots from the real shipped NW_SLOTS, so this exercises the exemption
+  // through collectLinkedItemIds directly rather than a synthetic slot passed to validate().
+  it("collectLinkedItemIds is what validate() consults to exempt a linked-only item", () => {
+    const linkedIds = catalog.collectLinkedItemIds([
+      {
+        id: "options.race",
+        label: "Race",
+        section: "options",
+        type: "build_parameter",
+        paramType: "list",
+        path: "race",
+        options: [
+          { value: "half-orc", label: "Half-Orc", linkedItem: "race-half-orc" },
+        ],
+      },
+    ]);
+    expect(linkedIds.has("race-half-orc")).toBe(true);
+    // An item with no filter that is NOT in this set is still flagged (existing behaviour,
+    // unaffected by linkedItem).
+    const findings = catalog.validate(
+      [{ id: "orphan", name: "Orphan", filter: "" }],
+      [],
+    );
+    expect(
+      findings.some((f) => f.name === "orphan" && /no filter/.test(f.message)),
+    ).toBe(true);
+  });
+});
+
 // --- referencedOverlay -------------------------------------------------------------------
 
-/** Build a minimal Db for testing. Only `get` and `bonusSetById` are exercised. */
-function testDb(items: Item[], bonusSets: BonusSet[]): Db {
+/** Build a minimal Db for testing. Only `get`, `bonusSetById` and `slots` are exercised. */
+function testDb(items: Item[], bonusSets: BonusSet[], slots: Slot[] = []): Db {
   const byId = new Map(items.map((i) => [i.id, i]));
   const bySetId = new Map(bonusSets.map((s) => [s.id, s]));
   return {
     get: (id: string | null | undefined) => byId.get(id ?? "") ?? null,
     bonusSetById: bySetId,
+    slots,
   } as unknown as Db;
 }
 
@@ -806,6 +972,62 @@ describe("catalog.referencedOverlay", () => {
       values: {},
       assignments: {},
       context: {} as Build["context"],
+      compare: { id: "", highlight: false, onlyDiff: false },
+    };
+    const overlay = catalog.referencedOverlay(db, build);
+    expect(catalog.isEmpty(overlay)).toBe(true);
+  });
+
+  it("picks up a build_parameter's resolved linkedItem, same as a picked item", () => {
+    const raceSlot: BuildParameterSlot = {
+      id: "options.race",
+      label: "Race",
+      section: "options",
+      type: "build_parameter",
+      paramType: "list",
+      path: "race",
+      default: "",
+      options: [
+        { value: "half-orc", label: "Half-Orc", linkedItem: "layer-item" },
+      ],
+    };
+    const db = testDb([baseItem, layerItem], [layerSet], [raceSlot]);
+    const build: Build = {
+      id: "b1",
+      name: "Test",
+      choices: {},
+      values: {},
+      assignments: {},
+      context: { race: "half-orc" } as unknown as Build["context"],
+      compare: { id: "", highlight: false, onlyDiff: false },
+    };
+    const overlay = catalog.referencedOverlay(db, build);
+    expect(overlay.items["layer-item"]).toBeDefined();
+    expect(overlay.bonusSets["layer-set"]).toBeDefined();
+  });
+
+  it("does not pick up a build_parameter's linkedItem when its value doesn't select it", () => {
+    const raceSlot: BuildParameterSlot = {
+      id: "options.race",
+      label: "Race",
+      section: "options",
+      type: "build_parameter",
+      paramType: "list",
+      path: "race",
+      default: "",
+      options: [
+        { value: "half-orc", label: "Half-Orc", linkedItem: "layer-item" },
+        { value: "elf", label: "Elf" },
+      ],
+    };
+    const db = testDb([baseItem, layerItem], [layerSet], [raceSlot]);
+    const build: Build = {
+      id: "b1",
+      name: "Test",
+      choices: {},
+      values: {},
+      assignments: {},
+      context: { race: "elf" } as unknown as Build["context"],
       compare: { id: "", highlight: false, onlyDiff: false },
     };
     const overlay = catalog.referencedOverlay(db, build);
