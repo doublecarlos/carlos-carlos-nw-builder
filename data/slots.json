@@ -41,39 +41,48 @@
             },
             {
               "value": "barbarian",
-              "label": "Barbarian"
+              "label": "Barbarian",
+              "linkedItem": "class-barbarian"
             },
             {
               "value": "bard",
-              "label": "Bard"
+              "label": "Bard",
+              "linkedItem": "class-bard"
             },
             {
               "value": "cleric",
-              "label": "Cleric"
+              "label": "Cleric",
+              "linkedItem": "class-to-be-implemented"
             },
             {
               "value": "fighter",
-              "label": "Fighter"
+              "label": "Fighter",
+              "linkedItem": "class-to-be-implemented"
             },
             {
               "value": "paladin",
-              "label": "Paladin"
+              "label": "Paladin",
+              "linkedItem": "class-to-be-implemented"
             },
             {
               "value": "ranger",
-              "label": "Ranger"
+              "label": "Ranger",
+              "linkedItem": "class-to-be-implemented"
             },
             {
               "value": "rogue",
-              "label": "Rogue"
+              "label": "Rogue",
+              "linkedItem": "class-to-be-implemented"
             },
             {
               "value": "warlock",
-              "label": "Warlock"
+              "label": "Warlock",
+              "linkedItem": "class-warlock"
             },
             {
               "value": "wizard",
-              "label": "Wizard"
+              "label": "Wizard",
+              "linkedItem": "class-to-be-implemented"
             }
           ]
         },
@@ -405,6 +414,67 @@
           "path": "toggles.artifactCall",
           "default": true,
           "quick": true
+        }
+      ]
+    },
+    {
+      "defaultOpen": true,
+      "id": "raceLeveling",
+      "label": "Race and Leveling",
+      "slots": [
+        {
+          "id": "raceLeveling.race",
+          "label": "Race",
+          "filter": "race",
+          "type": "item_picker"
+        },
+        {
+          "id": "raceLeveling.raceAttributes1",
+          "label": "Race Attributes 1",
+          "filter": "race_attributes",
+          "type": "item_picker"
+        },
+        {
+          "id": "raceLeveling.raceAttributes2",
+          "label": "Race Attributes 2",
+          "filter": "race_attributes",
+          "type": "item_picker"
+        },
+        {
+          "id": "raceLeveling.leveling_str",
+          "label": "Leveling STR",
+          "type": "point_assignment",
+          "filter": "leveling_str"
+        },
+        {
+          "id": "raceLeveling.leveling_con",
+          "label": "Leveling CON",
+          "type": "point_assignment",
+          "filter": "leveling_con"
+        },
+        {
+          "id": "raceLeveling.leveling_dex",
+          "label": "Leveling DEX",
+          "type": "point_assignment",
+          "filter": "leveling_dex"
+        },
+        {
+          "id": "raceLeveling.leveling_int",
+          "label": "Leveling INT",
+          "type": "point_assignment",
+          "filter": "leveling_int"
+        },
+        {
+          "id": "raceLeveling.leveling_wis",
+          "label": "Leveling WIS",
+          "type": "point_assignment",
+          "filter": "leveling_wis"
+        },
+        {
+          "id": "raceLeveling.leveling_cha",
+          "label": "Leveling CHA",
+          "type": "point_assignment",
+          "filter": "leveling_cha"
         }
       ]
     },
@@ -742,6 +812,24 @@
       "defaultOpen": true,
       "id": "boons",
       "label": "Boons",
+      "presets": [
+        {
+          "id": "boons-max-offense",
+          "label": "Max Offense",
+          "assignments": {
+            "boons.tier1": {"boon-tier1-power": 5, "boon-tier1-strike": 5},
+            "boons.tier2": {"boon-tier2-power": 5, "boon-tier2-severity": 5, "boon-tier2-demonic": 0},
+            "boons.tier3": {"boon-tier3-power": 5, "boon-tier3-ca": 5, "boon-tier3-dino": 0},
+            "boons.tier4": {"boon-tier4-power": 5, "boon-tier4-accuracy": 5},
+            "boons.tier_advanced": {
+              "boon-advanced-incoming-healing": 0,
+              "boon-advanced-forte": 4,
+              "boon-advanced-ap": 4,
+              "boon-advance-recharge": 4
+            }
+          }
+        }
+      ],
       "slots": [
         {
           "id": "boons.guildOffense",
@@ -1081,20 +1169,8 @@
     {
       "defaultOpen": true,
       "id": "baselineAndAttributes",
-      "label": "Baseline and Attributes",
+      "label": "Attributes",
       "slots": [
-        {
-          "id": "baselineAndAttributes.baseline",
-          "label": "Baseline",
-          "filter": "baseline",
-          "type": "item_picker"
-        },
-        {
-          "id": "baselineAndAttributes.attributesClass",
-          "label": "Attributes - Class",
-          "filter": "attributes_class",
-          "type": "item_picker"
-        },
         {
           "id": "baselineAndAttributes.attributesLeveling1",
           "label": "Attributes - Leveling 1",
@@ -1105,18 +1181,6 @@
           "id": "baselineAndAttributes.attributesLeveling2",
           "label": "Attributes - Leveling 2",
           "filter": "attributes_level",
-          "type": "item_picker"
-        },
-        {
-          "id": "baselineAndAttributes.attributesRace1",
-          "label": "Attributes - Race 1",
-          "filter": "attributes_race",
-          "type": "item_picker"
-        },
-        {
-          "id": "baselineAndAttributes.attributesRace2",
-          "label": "Attributes - Race 2",
-          "filter": "attributes_race",
           "type": "item_picker"
         },
         {

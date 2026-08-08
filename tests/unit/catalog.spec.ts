@@ -241,7 +241,12 @@ describe("catalog.validate: item id lint", () => {
       { id: "ring-a", name: "Ring", filter: "gear_ring" },
       { id: "ring-b", name: "Ring", filter: "gear_ring" },
     ];
-    expect(catalog.validate(items, [])).toEqual([]);
+    // Scoped to these two items -- validate() also lints the real shipped NW_SLOTS (e.g.
+    // linkedItem references), which this synthetic two-item catalogue can never satisfy.
+    const findings = catalog
+      .validate(items, [])
+      .filter((f) => f.name === "ring-a" || f.name === "ring-b");
+    expect(findings).toEqual([]);
   });
 });
 
@@ -562,10 +567,17 @@ describe("catalog.validate: param condition lint", () => {
   const setWith = (when: ConditionWhen): BonusSet[] => [
     { id: "test-set", grants: [{ when, stats: {} }] },
   ];
+  // Scoped to `kind === "bonusSet"` so these helpers isolate the condition lint under test
+  // from unrelated findings validate() also produces against the real shipped NW_SLOTS (e.g.
+  // linkedItem lint, which items=[] can never satisfy).
   const errorsFor = (when: ConditionWhen) =>
-    catalog.validate([], setWith(when)).filter((f) => f.level === "error");
+    catalog
+      .validate([], setWith(when))
+      .filter((f) => f.level === "error" && f.kind === "bonusSet");
   const warningsFor = (when: ConditionWhen) =>
-    catalog.validate([], setWith(when)).filter((f) => f.level === "warn");
+    catalog
+      .validate([], setWith(when))
+      .filter((f) => f.level === "warn" && f.kind === "bonusSet");
 
   it("an unresolvable key is an error -- the condition can never be active", () => {
     const errors = errorsFor({ param: { key: "does-not-exist", is: true } });

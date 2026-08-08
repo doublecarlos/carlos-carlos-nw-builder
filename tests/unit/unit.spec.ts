@@ -324,7 +324,12 @@ describe("bonus model semantics", () => {
       { "gear.offhandMod2": 5800 },
     );
     expect(inRange.stages.weaponMods.ca).toBeCloseTo(2000, 9);
-    expect(inRange.errors.length).toBe(0);
+    // Not errors.length === 0: BASE_CONTEXT leaves every leveling ability-score slot at its
+    // default (unassigned), which trips the unrelated "level-attr-warning" bonusRule -- this
+    // assertion only cares that an in-range typed value raises no outOfRange error.
+    expect(
+      inRange.errors.some((e: EngineError) => e.kind === "outOfRange"),
+    ).toBe(false);
     expect(over.stages.weaponMods.ca).toBeCloseTo(5800, 9);
     expect(over.errors.some((e: EngineError) => e.kind === "outOfRange")).toBe(
       true,

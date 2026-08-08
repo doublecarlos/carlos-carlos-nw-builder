@@ -196,11 +196,22 @@ test.describe("keyboard cursor", () => {
       "slot:options.class",
     );
 
-    // Walk through all Options slots -- the one after the last is the Gear header.
+    // Walk through all Options slots -- the one after the last is the Race and Leveling header.
     const optionsSlotCount = await page
       .locator('[data-cursor-key^="slot:options."]')
       .count();
     for (let i = 0; i < optionsSlotCount; i += 1)
+      await page.keyboard.press("ArrowDown");
+    await expect(cursorRow(page)).toHaveAttribute(
+      "data-cursor-key",
+      "header:raceLeveling",
+    );
+
+    // Walk through all Race and Leveling slots -- the one after the last is the Gear header.
+    const raceLevelingSlotCount = await page
+      .locator('[data-cursor-key^="slot:raceLeveling."]')
+      .count();
+    for (let i = 0; i < raceLevelingSlotCount + 1; i += 1)
       await page.keyboard.press("ArrowDown");
     await expect(cursorRow(page)).toHaveAttribute(
       "data-cursor-key",
@@ -228,11 +239,17 @@ test.describe("keyboard cursor", () => {
   test("Enter on a header row toggles that section", async ({ page }) => {
     await openBuilder(page);
     await parkOnOptionsHeader(page);
-    // Walk through all expanded Options slots, then one more to reach the Gear header.
+    // Walk through all expanded Options slots, then one more to reach the Race and Leveling
+    // header, then through its slots and one more to reach the Gear header.
     const optionsSlotCount = await page
       .locator('[data-cursor-key^="slot:options."]')
       .count();
     for (let i = 0; i < optionsSlotCount + 1; i += 1)
+      await page.keyboard.press("ArrowDown");
+    const raceLevelingSlotCount = await page
+      .locator('[data-cursor-key^="slot:raceLeveling."]')
+      .count();
+    for (let i = 0; i < raceLevelingSlotCount + 1; i += 1)
       await page.keyboard.press("ArrowDown");
     await expect(cursorRow(page)).toHaveAttribute(
       "data-cursor-key",
@@ -251,11 +268,17 @@ test.describe("keyboard cursor", () => {
   test("Enter on a slot row focuses its picker", async ({ page }) => {
     await openBuilder(page);
     await parkOnOptionsHeader(page);
-    // Walk through all expanded Options slots, then one more for the Gear header, then its first slot.
+    // Walk through all expanded Options slots, then one more for the Race and Leveling header,
+    // then through its slots and one more for the Gear header, then its first slot.
     const optionsSlotCount = await page
       .locator('[data-cursor-key^="slot:options."]')
       .count();
     for (let i = 0; i < optionsSlotCount + 1; i += 1)
+      await page.keyboard.press("ArrowDown");
+    const raceLevelingSlotCount = await page
+      .locator('[data-cursor-key^="slot:raceLeveling."]')
+      .count();
+    for (let i = 0; i < raceLevelingSlotCount + 1; i += 1)
       await page.keyboard.press("ArrowDown");
     await expect(cursorRow(page)).toHaveAttribute(
       "data-cursor-key",
@@ -276,11 +299,18 @@ test.describe("keyboard cursor", () => {
   }) => {
     await openBuilder(page);
     await parkOnOptionsHeader(page);
-    // Walk through all expanded Options slots to reach the Gear header, then past it to its first slot.
+    // Walk through all expanded Options slots to reach the Race and Leveling header, then
+    // through its slots to reach the Gear header, then past it to its first slot.
     const optionsSlotCount = await page
       .locator('[data-cursor-key^="slot:options."]')
       .count();
     for (let i = 0; i < optionsSlotCount; i += 1)
+      await page.keyboard.press("ArrowDown");
+    await page.keyboard.press("ArrowDown"); // -> header:raceLeveling
+    const raceLevelingSlotCount = await page
+      .locator('[data-cursor-key^="slot:raceLeveling."]')
+      .count();
+    for (let i = 0; i < raceLevelingSlotCount; i += 1)
       await page.keyboard.press("ArrowDown");
     await page.keyboard.press("ArrowDown"); // -> header:gear
     await page.keyboard.press("ArrowDown"); // -> slot:gear.head
@@ -298,11 +328,18 @@ test.describe("keyboard cursor", () => {
   }) => {
     await openBuilder(page);
     await parkOnOptionsHeader(page);
-    // Walk through all expanded Options slots to reach the Gear header, then past it to its first slot.
+    // Walk through all expanded Options slots to reach the Race and Leveling header, then
+    // through its slots to reach the Gear header, then past it to its first slot.
     const optionsSlotCount = await page
       .locator('[data-cursor-key^="slot:options."]')
       .count();
     for (let i = 0; i < optionsSlotCount; i += 1)
+      await page.keyboard.press("ArrowDown");
+    await page.keyboard.press("ArrowDown"); // -> header:raceLeveling
+    const raceLevelingSlotCount = await page
+      .locator('[data-cursor-key^="slot:raceLeveling."]')
+      .count();
+    for (let i = 0; i < raceLevelingSlotCount; i += 1)
       await page.keyboard.press("ArrowDown");
     await page.keyboard.press("ArrowDown"); // -> header:gear
     await page.keyboard.press("ArrowDown"); // -> slot:gear.head

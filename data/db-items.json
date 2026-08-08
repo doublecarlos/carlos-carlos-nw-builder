@@ -503,9 +503,9 @@
     "maxCopies": 1
   },
   {
-    "id": "aasimar",
+    "id": "race-aasimar",
     "name": "Aasimar",
-    "filter": "class_stuff",
+    "filter": "race",
     "power_p": 0.02,
     "hit_points_p": 0.02,
     "defense_p": 0.02,
@@ -744,89 +744,11 @@
     "pointAssignment": {"min": 0, "max": 5, "default": 0, "priority": 2}
   },
   {
-    "id": "bard-s-critical-tuning",
-    "name": "Bard's Critical Tuning",
-    "filter": "class_stuff",
-    "maxCopies": 1,
-    "allowedClass": ["bard"],
-    "bonuses": ["bard-s-critical-tuning"]
-  },
-  {
-    "id": "bard-s-harmonize",
-    "name": "Bard's Harmonize",
-    "filter": "class_stuff",
-    "ap_gain": 0.02,
-    "maxCopies": 1,
-    "allowedClass": ["bard"]
-  },
-  {
     "id": "bard-s-storyteller-flamingo",
     "name": "Bard's Storyteller + Flamingo",
     "filter": "group_buff",
     "outgoing_damage": 0.17,
     "maxCopies": 1
-  },
-  {
-    "id": "bard-s-truly-inspired-skill",
-    "name": "Bard's Truly Inspired (Skill)",
-    "filter": "class_stuff",
-    "maxCopies": 1,
-    "allowedClass": ["bard"],
-    "bonuses": ["bard-s-truly-inspired-skill"]
-  },
-  {
-    "id": "base-attributes-barbarian",
-    "name": "Base Attributes - Barbarian",
-    "filter": "attributes_class",
-    "str": 18,
-    "con": 14,
-    "dex": 14,
-    "int": 8,
-    "wis": 10,
-    "cha": 10,
-    "allowedClass": ["barbarian"]
-  },
-  {
-    "id": "base-attributes-bard",
-    "name": "Base Attributes - Bard",
-    "filter": "attributes_class",
-    "str": 13,
-    "con": 13,
-    "dex": 12,
-    "int": 8,
-    "wis": 10,
-    "cha": 18,
-    "allowedClass": ["bard"]
-  },
-  {
-    "id": "base-attributes-warlock",
-    "name": "Base Attributes - Warlock",
-    "filter": "attributes_class",
-    "str": 8,
-    "con": 14,
-    "dex": 12,
-    "int": 16,
-    "wis": 8,
-    "cha": 16,
-    "allowedClass": ["warlock"]
-  },
-  {
-    "id": "baseline-character",
-    "name": "Baseline Character",
-    "filter": "baseline",
-    "il": 5000,
-    "str": 2,
-    "con": 2,
-    "dex": 2,
-    "int": 2,
-    "wis": 2,
-    "cha": 2,
-    "enemy_ca": 0.9,
-    "enemy_strike": 0.5,
-    "enemy_severity": 0.9,
-    "enemy_defense": 0.5,
-    "enemy_deflect": 0.5,
-    "enemy_deflect_sev": 0.9
   },
   {
     "id": "batiri-s-wisdom-batiri-damage-offense",
@@ -1060,6 +982,62 @@
     "bonuses": ["cha-lua-accuracy-severity"]
   },
   {
+    "id": "class-barbarian",
+    "name": "Class: Barbarian",
+    "filter": "build_param_linked_item",
+    "str": 18,
+    "con": 14,
+    "dex": 14,
+    "int": 8,
+    "wis": 10,
+    "cha": 10,
+    "allowedClass": ["barbarian"],
+    "bonuses": ["baseline-character", "baseline-enemy-stats"]
+  },
+  {
+    "id": "class-bard",
+    "name": "Class: Bard",
+    "filter": "build_param_linked_item",
+    "str": 13,
+    "con": 13,
+    "dex": 12,
+    "int": 8,
+    "wis": 10,
+    "cha": 18,
+    "allowedClass": ["bard"],
+    "bonuses": [
+      "baseline-character",
+      "baseline-enemy-stats",
+      "bard-s-critical-tuning",
+      "bard-s-harmonize",
+      "bard-s-truly-inspired-skill"
+    ]
+  },
+  {
+    "id": "class-to-be-implemented",
+    "name": "Class: Not implemented yet",
+    "filter": "build_param_linked_item",
+    "bonuses": ["baseline-character", "baseline-enemy-stats"]
+  },
+  {
+    "id": "class-warlock",
+    "name": "Class: Warlock",
+    "filter": "build_param_linked_item",
+    "str": 8,
+    "con": 14,
+    "dex": 12,
+    "int": 16,
+    "wis": 8,
+    "cha": 16,
+    "allowedClass": ["warlock"],
+    "bonuses": [
+      "baseline-character",
+      "baseline-enemy-stats",
+      "warlock-s-demonic-vision",
+      "warlock-s-devastating-critical"
+    ]
+  },
+  {
     "id": "coldlight-walker-s-gaze-coldlight-walker-strike-severity-utility",
     "name": "Coldlight Walker's Gaze [Coldlight Walker] (Strike/Severity) <Utility>",
     "filter": "companion_power",
@@ -1137,21 +1115,25 @@
     "name": "Critical Avoidance",
     "filter": "boon_tier1",
     "crit_avoid_p": 0.002,
-    "pointAssignment": {"min": 0, "max": 5, "default": 0, "priority": 2}
+    "pointAssignment": {"min": 0, "max": 5, "default": 0, "priority": 2},
+    "tags": ["boon:tier1+"]
   },
   {
     "id": "boon-tier2-severity",
     "name": "Critical Severity",
     "filter": "boon_tier2",
     "sev_p": 0.002,
-    "pointAssignment": {"min": 0, "max": 5, "default": 0, "priority": 1}
+    "pointAssignment": {"min": 0, "max": 5, "default": 0, "priority": 1},
+    "tags": ["boon:tier1+", "boon:tier2+"],
+    "bonuses": ["boon-tier2-warning"]
   },
   {
     "id": "boon-tier1-strike",
     "name": "Critical Strike",
     "filter": "boon_tier1",
     "strike_p": 0.002,
-    "pointAssignment": {"min": 0, "max": 5, "default": 0, "priority": 1}
+    "pointAssignment": {"min": 0, "max": 5, "default": 0, "priority": 1},
+    "tags": ["boon:tier1+"]
   },
   {
     "id": "crystal",
@@ -1168,7 +1150,8 @@
     "id": "boon-tier1-cultist",
     "name": "Cultist",
     "filter": "boon_tier1",
-    "pointAssignment": {"min": 0, "max": 5, "default": 0, "priority": 4}
+    "pointAssignment": {"min": 0, "max": 5, "default": 0, "priority": 4},
+    "tags": ["boon:tier1+"]
   },
   {
     "id": "dark-dealings-dark-dealer-accuracy-ca-utility",
@@ -1203,7 +1186,8 @@
     "name": "Defense",
     "filter": "boon_tier2",
     "defense_p": 0.002,
-    "pointAssignment": {"min": 0, "max": 5, "default": 0, "priority": 2}
+    "pointAssignment": {"min": 0, "max": 5, "default": 0, "priority": 2},
+    "bonuses": ["boon-tier2-warning"]
   },
   {
     "id": "boon-tier4-deflect",
@@ -1246,7 +1230,8 @@
     "id": "boon-tier2-demonic",
     "name": "Demonic",
     "filter": "boon_tier2",
-    "pointAssignment": {"min": 0, "max": 5, "default": 0, "priority": 4}
+    "pointAssignment": {"min": 0, "max": 5, "default": 0, "priority": 4},
+    "bonuses": ["boon-tier2-warning"]
   },
   {
     "id": "devil-s-precision",
@@ -1479,7 +1464,7 @@
     "il": 3960,
     "combined_rating": 3366
   },
-  {"id": "gith", "name": "Gith", "filter": "class_stuff", "ca_p": 0.05, "maxCopies": 1},
+  {"id": "race-gith", "name": "Gith", "filter": "race", "ca_p": 0.05, "maxCopies": 1},
   {
     "id": "gladiator-s-guile",
     "name": "Gladiator's Guile",
@@ -1492,7 +1477,8 @@
     "name": "Gold",
     "filter": "boon_tier1",
     "gold": 0.01,
-    "pointAssignment": {"min": 0, "max": 5, "default": 0, "priority": 5}
+    "pointAssignment": {"min": 0, "max": 5, "default": 0, "priority": 5},
+    "tags": ["boon:tier1+"]
   },
   {
     "id": "golden-cat-s-instincts-golden-cat-ca-any",
@@ -1543,14 +1529,16 @@
     "name": "HP",
     "filter": "boon_tier1",
     "hit_points_p": 0.002,
-    "pointAssignment": {"min": 0, "max": 5, "default": 0, "priority": 3}
+    "pointAssignment": {"min": 0, "max": 5, "default": 0, "priority": 3},
+    "tags": ["boon:tier1+"]
   },
   {
     "id": "boon-tier2-hp",
     "name": "HP",
     "filter": "boon_tier2",
     "hit_points_p": 0.002,
-    "pointAssignment": {"min": 0, "max": 5, "default": 0, "priority": 3}
+    "pointAssignment": {"min": 0, "max": 5, "default": 0, "priority": 3},
+    "bonuses": ["boon-tier2-warning"]
   },
   {
     "id": "boon-tier3-hp",
@@ -1569,7 +1557,7 @@
   {
     "id": "human",
     "name": "Human",
-    "filter": "class_stuff",
+    "filter": "race",
     "power_p": 0.01,
     "acc_p": 0.01,
     "ca_p": 0.01,
@@ -1634,7 +1622,8 @@
     "id": "boon-tier2-lingering-medicine",
     "name": "Lingering",
     "filter": "boon_tier2",
-    "pointAssignment": {"min": 0, "max": 5, "default": 0, "priority": 6}
+    "pointAssignment": {"min": 0, "max": 5, "default": 0, "priority": 6},
+    "bonuses": ["boon-tier2-warning"]
   },
   {
     "id": "boon-tier3-lingering-fortification",
@@ -1652,7 +1641,8 @@
     "id": "boon-tier1-loot-radius",
     "name": "Loot Radius",
     "filter": "boon_tier1",
-    "pointAssignment": {"min": 0, "max": 5, "default": 0, "priority": 6}
+    "pointAssignment": {"min": 0, "max": 5, "default": 0, "priority": 6},
+    "tags": ["boon:tier1+"]
   },
   {
     "id": "m16-burnished-sword-knot-epic",
@@ -2709,7 +2699,9 @@
     "name": "Movement Speed",
     "filter": "boon_tier2",
     "movement": 0.025,
-    "pointAssignment": {"min": 0, "max": 5, "default": 0, "priority": 5}
+    "pointAssignment": {"min": 0, "max": 5, "default": 0, "priority": 5},
+    "tags": ["boon:tier1+", "boon:tier2+"],
+    "bonuses": ["boon-tier2-warning"]
   },
   {
     "id": "mystic-aura-group",
@@ -2837,14 +2829,17 @@
     "name": "Power",
     "filter": "boon_tier1",
     "power_p": 0.002,
-    "pointAssignment": {"min": 0, "max": 5, "default": 0, "priority": 0}
+    "pointAssignment": {"min": 0, "max": 5, "default": 0, "priority": 0},
+    "tags": ["boon:tier1+"]
   },
   {
     "id": "boon-tier2-power",
     "name": "Power",
     "filter": "boon_tier2",
     "power_p": 0.002,
-    "pointAssignment": {"min": 0, "max": 5, "default": 0, "priority": 0}
+    "pointAssignment": {"min": 0, "max": 5, "default": 0, "priority": 0},
+    "tags": ["boon:tier1+", "boon:tier2+"],
+    "bonuses": ["boon-tier2-warning"]
   },
   {
     "id": "boon-tier3-power",
@@ -3000,31 +2995,31 @@
   {
     "id": "race-attributes-2-cha",
     "name": "Race Attributes +2 Cha",
-    "filter": "attributes_race",
+    "filter": "race_attributes",
     "cha": 2
   },
   {
     "id": "race-attributes-2-dex",
     "name": "Race Attributes +2 Dex",
-    "filter": "attributes_race",
+    "filter": "race_attributes",
     "dex": 2
   },
   {
     "id": "race-attributes-2-int",
     "name": "Race Attributes +2 Int",
-    "filter": "attributes_race",
+    "filter": "race_attributes",
     "int": 2
   },
   {
     "id": "race-attributes-2-str",
     "name": "Race Attributes +2 Str",
-    "filter": "attributes_race",
+    "filter": "race_attributes",
     "str": 2
   },
   {
     "id": "race-attributes-3-str",
     "name": "Race Attributes +3 Str",
-    "filter": "attributes_race",
+    "filter": "race_attributes",
     "str": 3
   },
   {
@@ -3064,6 +3059,438 @@
     "name": "Rattatoule (Accuracy)",
     "filter": "consumable_food",
     "bonuses": ["rattatoule-accuracy"]
+  },
+  {
+    "id": "leveling-str-3",
+    "name": "Level 3",
+    "filter": "leveling_str",
+    "str": 1,
+    "pointAssignment": {"min": 0, "max": 1, "default": 0, "priority": 0},
+    "tags": ["level_attr:3"],
+    "bonuses": ["level-attr-warning"]
+  },
+  {
+    "id": "leveling-str-6",
+    "name": "Level 6",
+    "filter": "leveling_str",
+    "str": 1,
+    "pointAssignment": {"min": 0, "max": 1, "default": 0, "priority": 1},
+    "tags": ["level_attr:6"],
+    "bonuses": ["level-attr-warning"]
+  },
+  {
+    "id": "leveling-str-9",
+    "name": "Level 9",
+    "filter": "leveling_str",
+    "str": 1,
+    "pointAssignment": {"min": 1, "max": 1, "default": 1, "priority": 2},
+    "tags": ["level_attr:9"],
+    "bonuses": ["level-attr-warning"]
+  },
+  {
+    "id": "leveling-str-12",
+    "name": "Level 12",
+    "filter": "leveling_str",
+    "str": 1,
+    "pointAssignment": {"min": 0, "max": 1, "default": 0, "priority": 3},
+    "tags": ["level_attr:12"],
+    "bonuses": ["level-attr-warning"]
+  },
+  {
+    "id": "leveling-str-14",
+    "name": "Level 14",
+    "filter": "leveling_str",
+    "str": 1,
+    "pointAssignment": {"min": 0, "max": 1, "default": 0, "priority": 4},
+    "tags": ["level_attr:14"],
+    "bonuses": ["level-attr-warning"]
+  },
+  {
+    "id": "leveling-str-16",
+    "name": "Level 16",
+    "filter": "leveling_str",
+    "str": 1,
+    "pointAssignment": {"min": 1, "max": 1, "default": 1, "priority": 5},
+    "tags": ["level_attr:16"],
+    "bonuses": ["level-attr-warning"]
+  },
+  {
+    "id": "leveling-str-18",
+    "name": "Level 18",
+    "filter": "leveling_str",
+    "str": 1,
+    "pointAssignment": {"min": 0, "max": 1, "default": 0, "priority": 6},
+    "tags": ["level_attr:18"],
+    "bonuses": ["level-attr-warning"]
+  },
+  {
+    "id": "leveling-str-20",
+    "name": "Level 20",
+    "filter": "leveling_str",
+    "str": 1,
+    "pointAssignment": {"min": 0, "max": 1, "default": 0, "priority": 7},
+    "tags": ["level_attr:20"],
+    "bonuses": ["level-attr-warning"]
+  },
+  {
+    "id": "leveling-con-3",
+    "name": "Level 3",
+    "filter": "leveling_con",
+    "con": 1,
+    "pointAssignment": {"min": 0, "max": 1, "default": 0, "priority": 0},
+    "tags": ["level_attr:3"],
+    "bonuses": ["level-attr-warning"]
+  },
+  {
+    "id": "leveling-con-6",
+    "name": "Level 6",
+    "filter": "leveling_con",
+    "con": 1,
+    "pointAssignment": {"min": 0, "max": 1, "default": 0, "priority": 1},
+    "tags": ["level_attr:6"],
+    "bonuses": ["level-attr-warning"]
+  },
+  {
+    "id": "leveling-con-9",
+    "name": "Level 9",
+    "filter": "leveling_con",
+    "con": 1,
+    "pointAssignment": {"min": 1, "max": 1, "default": 1, "priority": 2},
+    "tags": ["level_attr:9"],
+    "bonuses": ["level-attr-warning"]
+  },
+  {
+    "id": "leveling-con-12",
+    "name": "Level 12",
+    "filter": "leveling_con",
+    "con": 1,
+    "pointAssignment": {"min": 0, "max": 1, "default": 0, "priority": 3},
+    "tags": ["level_attr:12"],
+    "bonuses": ["level-attr-warning"]
+  },
+  {
+    "id": "leveling-con-14",
+    "name": "Level 14",
+    "filter": "leveling_con",
+    "con": 1,
+    "pointAssignment": {"min": 0, "max": 1, "default": 0, "priority": 4},
+    "tags": ["level_attr:14"],
+    "bonuses": ["level-attr-warning"]
+  },
+  {
+    "id": "leveling-con-16",
+    "name": "Level 16",
+    "filter": "leveling_con",
+    "con": 1,
+    "pointAssignment": {"min": 1, "max": 1, "default": 1, "priority": 5},
+    "tags": ["level_attr:16"],
+    "bonuses": ["level-attr-warning"]
+  },
+  {
+    "id": "leveling-con-18",
+    "name": "Level 18",
+    "filter": "leveling_con",
+    "con": 1,
+    "pointAssignment": {"min": 0, "max": 1, "default": 0, "priority": 6},
+    "tags": ["level_attr:18"],
+    "bonuses": ["level-attr-warning"]
+  },
+  {
+    "id": "leveling-con-20",
+    "name": "Level 20",
+    "filter": "leveling_con",
+    "con": 1,
+    "pointAssignment": {"min": 0, "max": 1, "default": 0, "priority": 7},
+    "tags": ["level_attr:20"],
+    "bonuses": ["level-attr-warning"]
+  },
+  {
+    "id": "leveling-dex-3",
+    "name": "Level 3",
+    "filter": "leveling_dex",
+    "dex": 1,
+    "pointAssignment": {"min": 0, "max": 1, "default": 0, "priority": 0},
+    "tags": ["level_attr:3"],
+    "bonuses": ["level-attr-warning"]
+  },
+  {
+    "id": "leveling-dex-6",
+    "name": "Level 6",
+    "filter": "leveling_dex",
+    "dex": 1,
+    "pointAssignment": {"min": 0, "max": 1, "default": 0, "priority": 1},
+    "tags": ["level_attr:6"],
+    "bonuses": ["level-attr-warning"]
+  },
+  {
+    "id": "leveling-dex-9",
+    "name": "Level 9",
+    "filter": "leveling_dex",
+    "dex": 1,
+    "pointAssignment": {"min": 1, "max": 1, "default": 1, "priority": 2},
+    "tags": ["level_attr:9"],
+    "bonuses": ["level-attr-warning"]
+  },
+  {
+    "id": "leveling-dex-12",
+    "name": "Level 12",
+    "filter": "leveling_dex",
+    "dex": 1,
+    "pointAssignment": {"min": 0, "max": 1, "default": 0, "priority": 3},
+    "tags": ["level_attr:12"],
+    "bonuses": ["level-attr-warning"]
+  },
+  {
+    "id": "leveling-dex-14",
+    "name": "Level 14",
+    "filter": "leveling_dex",
+    "dex": 1,
+    "pointAssignment": {"min": 0, "max": 1, "default": 0, "priority": 4},
+    "tags": ["level_attr:14"],
+    "bonuses": ["level-attr-warning"]
+  },
+  {
+    "id": "leveling-dex-16",
+    "name": "Level 16",
+    "filter": "leveling_dex",
+    "dex": 1,
+    "pointAssignment": {"min": 1, "max": 1, "default": 1, "priority": 5},
+    "tags": ["level_attr:16"],
+    "bonuses": ["level-attr-warning"]
+  },
+  {
+    "id": "leveling-dex-18",
+    "name": "Level 18",
+    "filter": "leveling_dex",
+    "dex": 1,
+    "pointAssignment": {"min": 0, "max": 1, "default": 0, "priority": 6},
+    "tags": ["level_attr:18"],
+    "bonuses": ["level-attr-warning"]
+  },
+  {
+    "id": "leveling-dex-20",
+    "name": "Level 20",
+    "filter": "leveling_dex",
+    "dex": 1,
+    "pointAssignment": {"min": 0, "max": 1, "default": 0, "priority": 7},
+    "tags": ["level_attr:20"],
+    "bonuses": ["level-attr-warning"]
+  },
+  {
+    "id": "leveling-int-3",
+    "name": "Level 3",
+    "filter": "leveling_int",
+    "int": 1,
+    "pointAssignment": {"min": 0, "max": 1, "default": 0, "priority": 0},
+    "tags": ["level_attr:3"],
+    "bonuses": ["level-attr-warning"]
+  },
+  {
+    "id": "leveling-int-6",
+    "name": "Level 6",
+    "filter": "leveling_int",
+    "int": 1,
+    "pointAssignment": {"min": 0, "max": 1, "default": 0, "priority": 1},
+    "tags": ["level_attr:6"],
+    "bonuses": ["level-attr-warning"]
+  },
+  {
+    "id": "leveling-int-9",
+    "name": "Level 9",
+    "filter": "leveling_int",
+    "int": 1,
+    "pointAssignment": {"min": 1, "max": 1, "default": 1, "priority": 2},
+    "tags": ["level_attr:9"],
+    "bonuses": ["level-attr-warning"]
+  },
+  {
+    "id": "leveling-int-12",
+    "name": "Level 12",
+    "filter": "leveling_int",
+    "int": 1,
+    "pointAssignment": {"min": 0, "max": 1, "default": 0, "priority": 3},
+    "tags": ["level_attr:12"],
+    "bonuses": ["level-attr-warning"]
+  },
+  {
+    "id": "leveling-int-14",
+    "name": "Level 14",
+    "filter": "leveling_int",
+    "int": 1,
+    "pointAssignment": {"min": 0, "max": 1, "default": 0, "priority": 4},
+    "tags": ["level_attr:14"],
+    "bonuses": ["level-attr-warning"]
+  },
+  {
+    "id": "leveling-int-16",
+    "name": "Level 16",
+    "filter": "leveling_int",
+    "int": 1,
+    "pointAssignment": {"min": 1, "max": 1, "default": 1, "priority": 5},
+    "tags": ["level_attr:16"],
+    "bonuses": ["level-attr-warning"]
+  },
+  {
+    "id": "leveling-int-18",
+    "name": "Level 18",
+    "filter": "leveling_int",
+    "int": 1,
+    "pointAssignment": {"min": 0, "max": 1, "default": 0, "priority": 6},
+    "tags": ["level_attr:18"],
+    "bonuses": ["level-attr-warning"]
+  },
+  {
+    "id": "leveling-int-20",
+    "name": "Level 20",
+    "filter": "leveling_int",
+    "int": 1,
+    "pointAssignment": {"min": 0, "max": 1, "default": 0, "priority": 7},
+    "tags": ["level_attr:20"],
+    "bonuses": ["level-attr-warning"]
+  },
+  {
+    "id": "leveling-wis-3",
+    "name": "Level 3",
+    "filter": "leveling_wis",
+    "wis": 1,
+    "pointAssignment": {"min": 0, "max": 1, "default": 0, "priority": 0},
+    "tags": ["level_attr:3"],
+    "bonuses": ["level-attr-warning"]
+  },
+  {
+    "id": "leveling-wis-6",
+    "name": "Level 6",
+    "filter": "leveling_wis",
+    "wis": 1,
+    "pointAssignment": {"min": 0, "max": 1, "default": 0, "priority": 1},
+    "tags": ["level_attr:6"],
+    "bonuses": ["level-attr-warning"]
+  },
+  {
+    "id": "leveling-wis-9",
+    "name": "Level 9",
+    "filter": "leveling_wis",
+    "wis": 1,
+    "pointAssignment": {"min": 1, "max": 1, "default": 1, "priority": 2},
+    "tags": ["level_attr:9"],
+    "bonuses": ["level-attr-warning"]
+  },
+  {
+    "id": "leveling-wis-12",
+    "name": "Level 12",
+    "filter": "leveling_wis",
+    "wis": 1,
+    "pointAssignment": {"min": 0, "max": 1, "default": 0, "priority": 3},
+    "tags": ["level_attr:12"],
+    "bonuses": ["level-attr-warning"]
+  },
+  {
+    "id": "leveling-wis-14",
+    "name": "Level 14",
+    "filter": "leveling_wis",
+    "wis": 1,
+    "pointAssignment": {"min": 0, "max": 1, "default": 0, "priority": 4},
+    "tags": ["level_attr:14"],
+    "bonuses": ["level-attr-warning"]
+  },
+  {
+    "id": "leveling-wis-16",
+    "name": "Level 16",
+    "filter": "leveling_wis",
+    "wis": 1,
+    "pointAssignment": {"min": 1, "max": 1, "default": 1, "priority": 5},
+    "tags": ["level_attr:16"],
+    "bonuses": ["level-attr-warning"]
+  },
+  {
+    "id": "leveling-wis-18",
+    "name": "Level 18",
+    "filter": "leveling_wis",
+    "wis": 1,
+    "pointAssignment": {"min": 0, "max": 1, "default": 0, "priority": 6},
+    "tags": ["level_attr:18"],
+    "bonuses": ["level-attr-warning"]
+  },
+  {
+    "id": "leveling-wis-20",
+    "name": "Level 20",
+    "filter": "leveling_wis",
+    "wis": 1,
+    "pointAssignment": {"min": 0, "max": 1, "default": 0, "priority": 7},
+    "tags": ["level_attr:20"],
+    "bonuses": ["level-attr-warning"]
+  },
+  {
+    "id": "leveling-cha-3",
+    "name": "Level 3",
+    "filter": "leveling_cha",
+    "cha": 1,
+    "pointAssignment": {"min": 0, "max": 1, "default": 0, "priority": 0},
+    "tags": ["level_attr:3"],
+    "bonuses": ["level-attr-warning"]
+  },
+  {
+    "id": "leveling-cha-6",
+    "name": "Level 6",
+    "filter": "leveling_cha",
+    "cha": 1,
+    "pointAssignment": {"min": 0, "max": 1, "default": 0, "priority": 1},
+    "tags": ["level_attr:6"],
+    "bonuses": ["level-attr-warning"]
+  },
+  {
+    "id": "leveling-cha-9",
+    "name": "Level 9",
+    "filter": "leveling_cha",
+    "cha": 1,
+    "pointAssignment": {"min": 1, "max": 1, "default": 1, "priority": 2},
+    "tags": ["level_attr:9"],
+    "bonuses": ["level-attr-warning"]
+  },
+  {
+    "id": "leveling-cha-12",
+    "name": "Level 12",
+    "filter": "leveling_cha",
+    "cha": 1,
+    "pointAssignment": {"min": 0, "max": 1, "default": 0, "priority": 3},
+    "tags": ["level_attr:12"],
+    "bonuses": ["level-attr-warning"]
+  },
+  {
+    "id": "leveling-cha-14",
+    "name": "Level 14",
+    "filter": "leveling_cha",
+    "cha": 1,
+    "pointAssignment": {"min": 0, "max": 1, "default": 0, "priority": 4},
+    "tags": ["level_attr:14"],
+    "bonuses": ["level-attr-warning"]
+  },
+  {
+    "id": "leveling-cha-16",
+    "name": "Level 16",
+    "filter": "leveling_cha",
+    "cha": 1,
+    "pointAssignment": {"min": 1, "max": 1, "default": 1, "priority": 5},
+    "tags": ["level_attr:16"],
+    "bonuses": ["level-attr-warning"]
+  },
+  {
+    "id": "leveling-cha-18",
+    "name": "Level 18",
+    "filter": "leveling_cha",
+    "cha": 1,
+    "pointAssignment": {"min": 0, "max": 1, "default": 0, "priority": 6},
+    "tags": ["level_attr:18"],
+    "bonuses": ["level-attr-warning"]
+  },
+  {
+    "id": "leveling-cha-20",
+    "name": "Level 20",
+    "filter": "leveling_cha",
+    "cha": 1,
+    "pointAssignment": {"min": 0, "max": 1, "default": 0, "priority": 7},
+    "tags": ["level_attr:20"],
+    "bonuses": ["level-attr-warning"]
   },
   {
     "id": "boon-advance-recharge",
@@ -3410,22 +3837,6 @@
     "bonuses": ["warlock-s-curse"]
   },
   {
-    "id": "warlock-s-demonic-vision",
-    "name": "Warlock's Demonic Vision",
-    "filter": "class_stuff",
-    "awareness_p": 0.025,
-    "maxCopies": 1,
-    "allowedClass": ["warlock"]
-  },
-  {
-    "id": "warlock-s-devastating-critical",
-    "name": "Warlock's Devastating Critical",
-    "filter": "class_stuff",
-    "sev_p": 0.1,
-    "maxCopies": 1,
-    "allowedClass": ["warlock"]
-  },
-  {
     "id": "warlock-s-dust-to-dust",
     "name": "Warlock's Dust to Dust",
     "filter": "class_stuff",
@@ -3478,9 +3889,9 @@
     "maxCopies": 1
   },
   {
-    "id": "wood-elf",
+    "id": "race-wood-elf",
     "name": "Wood Elf",
-    "filter": "class_stuff",
+    "filter": "race",
     "strike_p": 0.05,
     "maxCopies": 1
   },

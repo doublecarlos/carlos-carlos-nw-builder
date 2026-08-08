@@ -110,6 +110,11 @@
     "grants": [{"when": {"toggle": "combat"}, "stats": {"sev_p": 0.1}}]
   },
   {
+    "id": "bard-s-harmonize",
+    "name": "Bard's Harmonize",
+    "grants": [{"stats": {"ap_gain": 0.02}}]
+  },
+  {
     "id": "bard-s-truly-inspired-skill",
     "name": "Bard's Truly Inspired (Skill)",
     "grants": [
@@ -119,6 +124,27 @@
           {"when": {"role": "dps"}, "stats": {"outgoing_damage": 0.1}},
           {"when": {"role": "healer"}, "stats": {"overall_healing": 0.1}}
         ]
+      }
+    ]
+  },
+  {
+    "id": "baseline-character",
+    "name": "Baseline Character",
+    "grants": [{"stats": {"il": 5000}}]
+  },
+  {
+    "id": "baseline-enemy-stats",
+    "name": "Baseline Enemy Stats",
+    "grants": [
+      {
+        "stats": {
+          "enemy_ca": 0.9,
+          "enemy_strike": 0.5,
+          "enemy_severity": 0.9,
+          "enemy_defense": 0.5,
+          "enemy_deflect": 0.5,
+          "enemy_deflect_sev": 0.9
+        }
       }
     ]
   },
@@ -136,6 +162,39 @@
     "id": "blue-fire-eye",
     "name": "Blue Fire Eye",
     "grants": [{"when": {"toggle": "party"}, "stats": {"strike_p": 0.03}}]
+  },
+  {
+    "id": "boon-tier2-warning",
+    "name": "Tier 2 Boon Warning",
+    "grants": [
+      {
+        "when": {"not": {"equipped": {"tag": "boon:tier1+", "atLeast": 10}}},
+        "problem": {
+          "severity": "warning",
+          "message": "Tier 2 boons need at least 10 points spent on previous boons."
+        }
+      }
+    ]
+  },
+  {
+    "id": "level-attr-warning",
+    "name": "Leveling Ability Score Warning",
+    "grants": [
+      {
+        "when": { "any": [
+          {"not": {"equipped": {"tag": "level_attr:3", "atLeast": 2, "below": 3}}},
+          {"not": {"equipped": {"tag": "level_attr:6", "atLeast": 2, "below": 3}}},
+          {"not": {"equipped": {"tag": "level_attr:12", "atLeast": 2, "below": 3}}},
+          {"not": {"equipped": {"tag": "level_attr:14", "atLeast": 2, "below": 3}}},
+          {"not": {"equipped": {"tag": "level_attr:18", "atLeast": 2, "below": 3}}},
+          {"not": {"equipped": {"tag": "level_attr:20", "atLeast": 2, "below": 3}}}
+        ]},
+        "problem": {
+          "severity": "warning",
+          "message": "Need to select 2 Ability Score points for each level"
+        }
+      }
+    ]
   },
   {
     "id": "captain",
@@ -1106,6 +1165,16 @@
     "id": "warlock-s-curse",
     "name": "Warlock's Curse",
     "grants": [{"when": {"toggle": "combat"}, "stats": {"outgoing_damage": 0.07}}]
+  },
+  {
+    "id": "warlock-s-demonic-vision",
+    "name": "Warlock's Demonic Vision",
+    "grants": [{"stats": {"awareness_p": 0.025}}]
+  },
+  {
+    "id": "warlock-s-devastating-critical",
+    "name": "Warlock's Devastating Critical",
+    "grants": [{"stats": {"sev_p": 0.1}}]
   },
   {
     "id": "watermelon-sorbet-power-accuracy",

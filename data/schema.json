@@ -57,12 +57,12 @@
     { "key": "control_resist_p", "label": "Control Resist", "kind": "percent", "rating": "control_resist" },
     { "key": "control_resist", "label": "Control Resist", "kind": "rating" },
 
-    { "key": "str", "label": "Strength", "kind": "flat", "ability": true },
-    { "key": "con", "label": "Constitution", "kind": "flat", "ability": true },
-    { "key": "dex", "label": "Dexterity", "kind": "flat", "ability": true },
-    { "key": "int", "label": "Intelligence", "kind": "flat", "ability": true },
-    { "key": "wis", "label": "Wisdom", "kind": "flat", "ability": true },
-    { "key": "cha", "label": "Charisma", "kind": "flat", "ability": true },
+    { "key": "str", "label": "Strength", "kind": "flat", "ability": true, "abbr": "STR" },
+    { "key": "con", "label": "Constitution", "kind": "flat", "ability": true, "abbr": "CON"},
+    { "key": "dex", "label": "Dexterity", "kind": "flat", "ability": true, "abbr": "DEX"},
+    { "key": "int", "label": "Intelligence", "kind": "flat", "ability": true, "abbr": "INT" },
+    { "key": "wis", "label": "Wisdom", "kind": "flat", "ability": true, "abbr": "WIS" },
+    { "key": "cha", "label": "Charisma", "kind": "flat", "ability": true, "abbr": "CHA"},
 
     { "key": "enemy_accuracy", "label": "Enemy Accuracy", "kind": "percent", "enemy": true },
     { "key": "enemy_ca", "label": "Enemy Combat Advantage", "kind": "percent", "enemy": true },

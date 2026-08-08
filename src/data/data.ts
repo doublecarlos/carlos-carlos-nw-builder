@@ -68,7 +68,7 @@ function deriveSlots(raw: typeof rawSlots): SlotsData {
 export const NW_SCHEMA: Schema = deriveSchema(rawSchema);
 export const NW_SLOTS: SlotsData = deriveSlots(rawSlots);
 export const NW_ITEMS: Item[] = rawItems;
-export const NW_BONUSES: BonusSet[] = rawBonusSets;
+export const NW_BONUSES: BonusSet[] = rawBonusSets as BonusSet[];
 
 /** What a build's stored choices/overlay were authored against -- storage.ts's export/import/
  * share-link envelope carries this so a stale build can warn ("no longer resolves") instead of
