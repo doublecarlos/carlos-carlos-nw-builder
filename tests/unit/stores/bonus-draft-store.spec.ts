@@ -100,14 +100,17 @@ describe("GrantStore setPayload('problem')", () => {
     expect(gs.grant.payload).toBe("problem");
     expect(gs.grant.problemSeverity).toBe("warning");
     expect(gs.grant.problemMessage).toBe("");
+    expect(gs.grant.problemLabel).toBe("");
     expect(changes()).toBe(1);
   });
 
-  it("severity and message are plain draft fields, mutated directly like a tier's stat row", () => {
+  it("severity, message and label are plain draft fields, mutated directly like a tier's stat row", () => {
     const { gs } = makeStore("problem");
     gs.grant.problemSeverity = "error";
     gs.grant.problemMessage = "Wrong race";
+    gs.grant.problemLabel = "Race check";
     expect(gs.grant.problemSeverity).toBe("error");
     expect(gs.grant.problemMessage).toBe("Wrong race");
+    expect(gs.grant.problemLabel).toBe("Race check");
   });
 });

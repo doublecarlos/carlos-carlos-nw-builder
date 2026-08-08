@@ -266,6 +266,11 @@ export interface GrantTier {
 export interface GrantProblem {
   severity: "error" | "warning";
   message: string;
+  /** Shown instead of the triggering slot's name as the sidebar summary's lead-in -- for a
+   * problem about a build-wide concept (e.g. boon progression) rather than the slot it happens
+   * to be attributed to, the slot name is misleading as a label. Falls back to the slot's own
+   * label when absent. */
+  label?: string;
 }
 
 /** Anonymous by design -- only the owning `BonusSet.id` is addressable, not the grant itself.
@@ -514,6 +519,9 @@ export interface EngineError {
   choice: string;
   message: string;
   severity: "error" | "warning";
+  /** `GrantProblem.label`, when the error came from one -- StatPanel.vue's sidebar summary
+   * prefers this over the slot's own label. */
+  label?: string;
 }
 
 /** A slot's item stats plus the bonuses attributed to it -- engine.ts's `rowVectors`. */

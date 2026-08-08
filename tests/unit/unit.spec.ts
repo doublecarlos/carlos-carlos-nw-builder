@@ -700,6 +700,28 @@ describe("problem grants (bonus-authored errors/warnings)", () => {
     filter: "test_slot",
     bonuses: ["class-mismatch-check"],
   };
+
+  // Same shape as class-mismatch-check, but its problem grant carries its own `label` --
+  // issue #95: the sidebar summary should prefer this over the triggering slot's name.
+  const labeledMismatchSet: BonusSet = {
+    id: "class-mismatch-check-labeled",
+    grants: [
+      {
+        when: { not: { class: ["fighter"] } },
+        problem: {
+          severity: "error",
+          message: "This bonus needs Fighter",
+          label: "Class Check",
+        },
+      },
+    ],
+  };
+  const labeledMismatchItem: Item = {
+    id: "fighter-bonus-item-labeled",
+    name: "Fighter Bonus Item (Labeled)",
+    filter: "test_slot",
+    bonuses: ["class-mismatch-check-labeled"],
+  };
   const pickerSlot: ItemPickerSlot = {
     id: "gear.test",
     label: "Test Gear",
@@ -752,8 +774,8 @@ describe("problem grants (bonus-authored errors/warnings)", () => {
     slots: [pickerSlot, boonSlot],
   };
   const testDb = db.build(
-    [mismatchItem, tier1Item, tier2Item],
-    [mismatchSet, tier2Set],
+    [mismatchItem, labeledMismatchItem, tier1Item, tier2Item],
+    [mismatchSet, labeledMismatchSet, tier2Set],
     schema,
     slotsData,
   );
@@ -784,6 +806,20 @@ describe("problem grants (bonus-authored errors/warnings)", () => {
     expect(found?.severity).toBe("error");
     expect(found?.slotId).toBe("gear.test");
     expect(found?.message).toBe("This bonus needs Fighter");
+    expect(found?.label).toBeUndefined();
+  });
+
+  it("carries the problem grant's own label through, when it has one", () => {
+    const result = engine.resolveBuild(
+      testDb,
+      buildWith(
+        { "gear.test": "fighter-bonus-item-labeled" },
+        {},
+        { class: "rogue" },
+      ),
+    );
+    const found = result.errors.find((e) => e.kind === "bonusRule");
+    expect(found?.label).toBe("Class Check");
   });
 
   it("reports nothing when the condition doesn't match", () => {

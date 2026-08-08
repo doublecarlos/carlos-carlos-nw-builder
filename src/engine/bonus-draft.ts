@@ -35,7 +35,7 @@ import type {
 const TIER_KEYS = new Set(["pieces", "stats"]);
 const PIECES_KEYS = new Set(["set", "atLeast"]);
 const VARIANT_KEYS = new Set(["when", "stats"]);
-const PROBLEM_KEYS = new Set(["severity", "message"]);
+const PROBLEM_KEYS = new Set(["severity", "message", "label"]);
 const PROBLEM_SEVERITIES = new Set(["error", "warning"]);
 
 const tiersAreSimple = (tiers: NonNullable<Grant["tiers"]>) =>
@@ -129,6 +129,7 @@ export interface GrantDraft {
   variants: VariantDraft[];
   problemSeverity: "error" | "warning";
   problemMessage: string;
+  problemLabel: string;
 }
 
 export function toDraft(grant: Grant = {}): GrantDraft {
@@ -162,6 +163,7 @@ export function toDraft(grant: Grant = {}): GrantDraft {
         })),
     problemSeverity: json ? "warning" : (grant.problem?.severity ?? "warning"),
     problemMessage: json ? "" : (grant.problem?.message ?? ""),
+    problemLabel: json ? "" : (grant.problem?.label ?? ""),
   };
 }
 
@@ -191,6 +193,7 @@ export function toGrant(draft: GrantDraft): Grant {
       severity: draft.problemSeverity,
       message: draft.problemMessage,
     };
+    if (draft.problemLabel) out.problem.label = draft.problemLabel;
   } else if (draft.payload === "tiers") {
     out.tiers = draft.tiers.map((tier) => ({
       pieces: { set: tier.set, atLeast: Number(tier.atLeast) || 1 },

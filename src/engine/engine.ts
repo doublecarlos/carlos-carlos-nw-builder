@@ -453,6 +453,7 @@ function bonusProblems(resolved: ResolvedBonuses): EngineError[] {
         choice: entry.bonus.name ?? entry.setId,
         message: problem.message,
         severity: problem.severity,
+        label: problem.label,
       });
     }
   }

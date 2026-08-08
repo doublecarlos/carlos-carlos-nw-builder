@@ -33,6 +33,26 @@ describe("bonus-draft problem payload", () => {
     expect(toGrant(draft)).toEqual(grant);
   });
 
+  it("a problem grant with a label round-trips it, and omits it entirely when blank", () => {
+    const labeled: Grant = {
+      problem: {
+        severity: "warning",
+        message: "Spend more on tier 1 boons",
+        label: "Boon progression",
+      },
+    };
+    const draft = toDraft(labeled);
+    expect(draft.problemLabel).toBe("Boon progression");
+    expect(toGrant(draft)).toEqual(labeled);
+
+    const unlabeled: Grant = {
+      problem: { severity: "warning", message: "Spend more on tier 1 boons" },
+    };
+    expect(toDraft(unlabeled).problemLabel).toBe("");
+    expect(toGrant(toDraft(unlabeled))).toEqual(unlabeled);
+    expect(toGrant(toDraft(unlabeled)).problem).not.toHaveProperty("label");
+  });
+
   it("a grant with no condition still round-trips (always active)", () => {
     const grant: Grant = {
       problem: { severity: "warning", message: "Always shown" },

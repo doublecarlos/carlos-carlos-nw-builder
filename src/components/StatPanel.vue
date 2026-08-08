@@ -21,6 +21,7 @@ import { int as fmtInt, pct as fmtPct, stat as fmtStat } from "../lib/format";
 import * as builds from "../stores/builds";
 import * as compare from "../stores/compare";
 import * as engine from "../stores/resolved";
+import type { EngineError } from "../types";
 
 // Display order only -- data/schema.json stays untouched. Forte sits with the defensive
 // ratings rather than right after Severity, per the user's re-grouping.
@@ -108,9 +109,13 @@ const warningList = computed(() =>
 );
 // The message alone doesn't say which slot it's about -- unlike engine.ts's own hardcoded
 // checks, a bonus-authored `problem` message is free text the item's author wrote, with no
-// guarantee it names the item itself.
+// guarantee it names the item itself. A problem grant's own `label` (types.ts's
+// `GrantProblem.label`) takes precedence when set, since the slot it's attributed to is often
+// incidental to what the problem is actually about (e.g. a boon-progression warning).
 const slotLabel = (slotId: string) =>
   engine.db.value.slotById.get(slotId)?.label ?? slotId;
+const errorLabel = (error: EngineError) =>
+  error.label ?? slotLabel(error.slotId);
 
 /** Options for the summary widget's calculation picker, across all three `derived`
  * tables below (damage, healing, EHP) -- value is `source:key` so `summaryValue` can
@@ -374,7 +379,7 @@ const {
       <strong>{{ errorList.length }} problem(s)</strong>
       <ul class="mt-1 pl-5">
         <li v-for="error in errorList" :key="error.slotId + error.kind">
-          <strong>{{ slotLabel(error.slotId) }}:</strong> {{ error.message }}
+          <strong>{{ errorLabel(error) }}:</strong> {{ error.message }}
         </li>
       </ul>
     </div>
@@ -386,7 +391,7 @@ const {
       <strong>{{ warningList.length }} warning(s)</strong>
       <ul class="mt-1 pl-5">
         <li v-for="warning in warningList" :key="warning.slotId + warning.kind">
-          <strong>{{ slotLabel(warning.slotId) }}:</strong>
+          <strong>{{ errorLabel(warning) }}:</strong>
           {{ warning.message }}
         </li>
       </ul>

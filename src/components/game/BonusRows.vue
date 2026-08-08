@@ -507,6 +507,13 @@ function toggleJson(gIndex: number) {
               </button>
             </div>
           </div>
+          <input
+            v-model="grant.problemLabel"
+            data-testid="problem-label"
+            type="text"
+            class="mb-1.5 w-full rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+            placeholder="Label shown in the sidebar summary (defaults to the slot's name)…"
+          />
           <textarea
             v-model="grant.problemMessage"
             data-testid="problem-message"
