@@ -47,6 +47,7 @@ export function useDraftHistory<T>({
   const lastSnapshotJson = ref(JSON.stringify(draft.value));
   let snapshotTimer: number | undefined;
   let emitTimer: number | undefined;
+  let emitPending = false;
 
   const canUndoDraft = computed(() => draftHistory.value.past.length > 0);
   const canRedoDraft = computed(() => draftHistory.value.future.length > 0);
@@ -109,7 +110,19 @@ export function useDraftHistory<T>({
 
   function scheduleEmit() {
     window.clearTimeout(emitTimer);
-    emitTimer = window.setTimeout(onEmit, DEBOUNCE_MS);
+    emitPending = true;
+    emitTimer = window.setTimeout(() => {
+      emitPending = false;
+      onEmit();
+    }, DEBOUNCE_MS);
+  }
+
+  /** Fire a pending debounced emit immediately, e.g. right before the form unmounts. */
+  function flushEmit() {
+    if (!emitPending) return;
+    window.clearTimeout(emitTimer);
+    emitPending = false;
+    onEmit();
   }
 
   // For existing entries: schedule the live emit on draft change.
@@ -153,7 +166,7 @@ export function useDraftHistory<T>({
 
   onUnmounted(() => {
     window.clearTimeout(snapshotTimer);
-    window.clearTimeout(emitTimer);
+    flushEmit();
     unregisterFormUndo?.();
   });
 
@@ -167,5 +180,6 @@ export function useDraftHistory<T>({
     resetDraftHistory,
     scheduleSnapshot,
     scheduleEmit,
+    flushEmit,
   };
 }

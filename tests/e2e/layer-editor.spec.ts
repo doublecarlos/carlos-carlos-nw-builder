@@ -189,6 +189,54 @@ test.describe("Ctrl+click on a filled slot", () => {
   });
 });
 
+test.describe("switching items mid-edit", () => {
+  test("an edit that hasn't hit the 700ms auto-save debounce yet survives switching to another item", async ({
+    page,
+  }) => {
+    await openBuilder(page);
+    await addLayer(page);
+    await layerRow(page, "Layer 1").locator(".nav-name").click();
+
+    // Open the head item and rename it, but switch away immediately -- well before the
+    // 700ms auto-save debounce fires. The pending edit must still be flushed and saved
+    // (issue #86: it used to be silently dropped when the form unmounted).
+    await page.locator(".editor-search").fill(HEAD_ITEM);
+    const headRow = page
+      .locator(".editor-row")
+      .filter({ hasText: HEAD_ITEM })
+      .first();
+    await headRow.click();
+    const nameInput = page.getByTestId("item-name-input");
+    await expect(nameInput).toHaveValue(HEAD_ITEM);
+    const renamed = `${HEAD_ITEM} (renamed)`;
+    await nameInput.fill(renamed);
+
+    // Immediately switch to a different item, well before the debounce would fire.
+    await page.locator(".editor-search").fill(ARMS_ITEM);
+    const armsRow = page
+      .locator(".editor-row")
+      .filter({ hasText: ARMS_ITEM })
+      .first();
+    await armsRow.click();
+    await expect(nameInput).toHaveValue(ARMS_ITEM);
+
+    // The head item's row must show as edited right away -- the switch flushed the
+    // pending rename instead of discarding it.
+    await page.locator(".editor-search").fill(HEAD_ITEM);
+    const renamedHeadRow = page
+      .locator(".editor-row")
+      .filter({ hasText: renamed });
+    await expect(renamedHeadRow).toBeVisible();
+    await expect(
+      renamedHeadRow.getByTestId("badge").filter({ hasText: "edited" }),
+    ).toBeVisible();
+
+    // And re-opening it shows the renamed value, not the original.
+    await renamedHeadRow.click();
+    await expect(nameInput).toHaveValue(renamed);
+  });
+});
+
 test.describe("point_assignment items in the Layer Editor", () => {
   test("a new item tagged with a point_assignment slot's own filter saves fine", async ({
     page,
