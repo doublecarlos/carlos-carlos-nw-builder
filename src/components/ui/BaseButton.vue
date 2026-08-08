@@ -24,7 +24,7 @@ const props = withDefaults(
 const classes = computed(() => {
   if (props.variant === "link") {
     return [
-      "[&_svg]:size-3.5 bg-transparent border-0 cursor-pointer px-1 py-0.5",
+      "[&_svg]:size-3.5 inline-flex items-center gap-1 bg-transparent border-0 cursor-pointer px-1 py-0.5",
       props.disabled && "text-muted cursor-default",
     ];
   }

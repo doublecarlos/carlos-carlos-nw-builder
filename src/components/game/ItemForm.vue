@@ -549,9 +549,8 @@ watch(
       <IconButton title="Add stat" @click="addStat"><Plus /></IconButton>
     </div>
 
-    <FormSection>
-      Dynamic modification (user types the value)
-      <span class="flex-1"></span>
+    <FormSection>Dynamic modification (user types the value)</FormSection>
+    <div class="flex flex-wrap items-center gap-1.5 mb-2">
       <IconButton
         v-if="!dynamicModActive"
         title="Add dynamic modification"
@@ -566,41 +565,42 @@ watch(
         @click="removeDynamicModification"
         ><Trash
       /></IconButton>
-    </FormSection>
-    <FormGrid
-      v-if="dynamicModActive"
-      data-testid="dynamic-modification-fields"
-      class="mb-2"
-    >
-      <FormField label="Stat">
-        <ComboBox
-          :model-value="draft.dynamicStat"
-          :options="dynamicStatOptions"
-          placeholder="— none —"
-          @update:model-value="(v) => (draft.dynamicStat = v)"
-        />
-      </FormField>
-      <FormField label="Min">
-        <input
-          v-model.number="draft.dynamicMin"
-          class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent disabled:opacity-50"
-          type="number"
-          :disabled="!draft.dynamicStat"
-        />
-      </FormField>
-      <FormField label="Max">
-        <input
-          v-model.number="draft.dynamicMax"
-          class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent disabled:opacity-50"
-          type="number"
-          :disabled="!draft.dynamicStat"
-        />
-      </FormField>
-    </FormGrid>
+      <FormGrid
+        v-if="dynamicModActive"
+        data-testid="dynamic-modification-fields"
+      >
+        <FormField label="Stat">
+          <ComboBox
+            :model-value="draft.dynamicStat"
+            :options="dynamicStatOptions"
+            placeholder="— none —"
+            @update:model-value="(v) => (draft.dynamicStat = v)"
+          />
+        </FormField>
+        <FormField label="Min">
+          <input
+            v-model.number="draft.dynamicMin"
+            class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent disabled:opacity-50"
+            type="number"
+            :disabled="!draft.dynamicStat"
+          />
+        </FormField>
+        <FormField label="Max">
+          <input
+            v-model.number="draft.dynamicMax"
+            class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent disabled:opacity-50"
+            type="number"
+            :disabled="!draft.dynamicStat"
+          />
+        </FormField>
+      </FormGrid>
+    </div>
 
-    <FormSection>
-      Point assignment (boons, attributes, other point_assignment slots filter)
-      <span class="flex-1"></span>
+    <FormSection
+      >Point assignment (boons, attributes, other point_assignment slots
+      filter)</FormSection
+    >
+    <div class="flex flex-wrap items-center gap-1.5 mb-2">
       <IconButton
         v-if="!pointActive"
         title="Add point assignment"
@@ -615,41 +615,37 @@ watch(
         @click="removePointAssignment"
         ><Trash
       /></IconButton>
-    </FormSection>
-    <FormGrid
-      v-if="pointActive"
-      data-testid="point-assignment-fields"
-      class="mb-2"
-    >
-      <FormField label="Min">
-        <input
-          v-model.number="draft.pointMin"
-          class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-          type="number"
-        />
-      </FormField>
-      <FormField label="Max">
-        <input
-          v-model.number="draft.pointMax"
-          class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-          type="number"
-        />
-      </FormField>
-      <FormField label="Default">
-        <input
-          v-model.number="draft.pointDefault"
-          class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-          type="number"
-        />
-      </FormField>
-      <FormField label="Priority">
-        <input
-          v-model.number="draft.pointPriority"
-          class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-          type="number"
-        />
-      </FormField>
-    </FormGrid>
+      <FormGrid v-if="pointActive" data-testid="point-assignment-fields">
+        <FormField label="Min">
+          <input
+            v-model.number="draft.pointMin"
+            class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+            type="number"
+          />
+        </FormField>
+        <FormField label="Max">
+          <input
+            v-model.number="draft.pointMax"
+            class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+            type="number"
+          />
+        </FormField>
+        <FormField label="Default">
+          <input
+            v-model.number="draft.pointDefault"
+            class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+            type="number"
+          />
+        </FormField>
+        <FormField label="Priority">
+          <input
+            v-model.number="draft.pointPriority"
+            class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+            type="number"
+          />
+        </FormField>
+      </FormGrid>
+    </div>
 
     <FormSection>Equipping this item suppresses</FormSection>
     <TokenInput

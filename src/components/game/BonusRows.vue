@@ -12,7 +12,15 @@ import PercentInput from "../ui/PercentInput.vue";
 import ComboBox from "../ui/ComboBox.vue";
 import ConditionRows from "./ConditionRows.vue";
 import IconButton from "../ui/IconButton.vue";
-import { ArrowDown, ArrowUp, CirclePlus, Copy, Plus, Trash } from "@lucide/vue";
+import {
+  ArrowDown,
+  ArrowUp,
+  CirclePlus,
+  Copy,
+  FileJson,
+  Plus,
+  Trash,
+} from "@lucide/vue";
 import BaseButton from "../ui/BaseButton.vue";
 import FormSection from "../ui/FormSection.vue";
 import { NW_SCHEMA } from "../../data/data";
@@ -86,44 +94,48 @@ function toggleJson(gIndex: number) {
     >
       <!-- items-end, not items-center: these buttons have no label above them, so centering
            would float them against the taller labeled fields elsewhere in the form. -->
-      <div class="flex flex-wrap items-end gap-2">
+      <div class="flex flex-wrap items-end justify-between gap-2">
         <span class="text-sm text-muted">Grant {{ gIndex + 1 }}</span>
-        <BaseButton variant="link" @click="toggleJson(gIndex)">
-          {{ grant.mode === "json" ? "use the form" : "edit as JSON" }}
-        </BaseButton>
-        <span class="flex-1"></span>
-        <IconButton
-          title="Move grant up"
-          :disabled="gIndex === 0"
-          @click="props.store.moveGrant(gIndex, -1)"
-        >
-          <ArrowUp />
-        </IconButton>
-        <IconButton
-          title="Move grant down"
-          :disabled="gIndex === props.store.grants.length - 1"
-          @click="props.store.moveGrant(gIndex, 1)"
-        >
-          <ArrowDown />
-        </IconButton>
-        <IconButton
-          title="Duplicate grant"
-          @click="props.store.duplicateGrant(gIndex)"
-        >
-          <Copy />
-        </IconButton>
-        <IconButton
-          title="Insert grant below"
-          @click="props.store.insertGrant(gIndex)"
-        >
-          <CirclePlus />
-        </IconButton>
-        <IconButton
-          title="Remove grant"
-          @click="props.store.removeGrant(gIndex)"
-        >
-          <Trash />
-        </IconButton>
+        <div class="flex flex-wrap items-center gap-1.5">
+          <IconButton
+            title="Move grant up"
+            :disabled="gIndex === 0"
+            @click="props.store.moveGrant(gIndex, -1)"
+          >
+            <ArrowUp />
+          </IconButton>
+          <IconButton
+            title="Move grant down"
+            :disabled="gIndex === props.store.grants.length - 1"
+            @click="props.store.moveGrant(gIndex, 1)"
+          >
+            <ArrowDown />
+          </IconButton>
+          <IconButton
+            title="Duplicate grant"
+            @click="props.store.duplicateGrant(gIndex)"
+          >
+            <Copy />
+          </IconButton>
+          <IconButton
+            title="Insert grant below"
+            @click="props.store.insertGrant(gIndex)"
+          >
+            <CirclePlus />
+          </IconButton>
+          <IconButton
+            title="Remove grant"
+            @click="props.store.removeGrant(gIndex)"
+          >
+            <Trash />
+          </IconButton>
+          <IconButton
+            :title="grant.mode === 'json' ? 'Use the form' : 'Edit as JSON'"
+            @click="toggleJson(gIndex)"
+          >
+            <FileJson />
+          </IconButton>
+        </div>
       </div>
 
       <textarea
@@ -367,41 +379,44 @@ function toggleJson(gIndex: number) {
             :key="variant.uid"
             class="my-1.5 rounded-md border border-line border-l-4 border-l-accent bg-surface px-2.5 py-1.5"
           >
-            <div class="mb-1 flex flex-wrap items-center gap-1.5">
+            <div
+              class="mb-1 flex flex-wrap items-center justify-between gap-1.5"
+            >
               <span class="text-sm text-muted">Variant {{ vIndex + 1 }}</span>
-              <span class="flex-1"></span>
-              <IconButton
-                title="Move variant up"
-                :disabled="vIndex === 0"
-                @click="gs(gIndex).moveVariant(vIndex, -1)"
-              >
-                <ArrowUp />
-              </IconButton>
-              <IconButton
-                title="Move variant down"
-                :disabled="vIndex === grant.variants.length - 1"
-                @click="gs(gIndex).moveVariant(vIndex, 1)"
-              >
-                <ArrowDown />
-              </IconButton>
-              <IconButton
-                title="Duplicate variant"
-                @click="gs(gIndex).duplicateVariant(vIndex)"
-              >
-                <Copy />
-              </IconButton>
-              <IconButton
-                title="Insert variant"
-                @click="gs(gIndex).insertVariant(vIndex)"
-              >
-                <CirclePlus />
-              </IconButton>
-              <IconButton
-                title="Remove variant"
-                @click="gs(gIndex).removeVariant(vIndex)"
-              >
-                <Trash />
-              </IconButton>
+              <div class="flex flex-wrap items-center gap-1.5">
+                <IconButton
+                  title="Move variant up"
+                  :disabled="vIndex === 0"
+                  @click="gs(gIndex).moveVariant(vIndex, -1)"
+                >
+                  <ArrowUp />
+                </IconButton>
+                <IconButton
+                  title="Move variant down"
+                  :disabled="vIndex === grant.variants.length - 1"
+                  @click="gs(gIndex).moveVariant(vIndex, 1)"
+                >
+                  <ArrowDown />
+                </IconButton>
+                <IconButton
+                  title="Duplicate variant"
+                  @click="gs(gIndex).duplicateVariant(vIndex)"
+                >
+                  <Copy />
+                </IconButton>
+                <IconButton
+                  title="Insert variant"
+                  @click="gs(gIndex).insertVariant(vIndex)"
+                >
+                  <CirclePlus />
+                </IconButton>
+                <IconButton
+                  title="Remove variant"
+                  @click="gs(gIndex).removeVariant(vIndex)"
+                >
+                  <Trash />
+                </IconButton>
+              </div>
             </div>
             <FormSection sub>When</FormSection>
             <ConditionRows
