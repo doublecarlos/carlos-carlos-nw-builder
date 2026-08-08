@@ -543,6 +543,10 @@
           "type": "item_picker"
         },
         {
+          "id": "gear.sepBootsNeck",
+          "type": "separator"
+        },
+        {
           "id": "gear.neck",
           "label": "Neck",
           "filter": "gear_neck",
@@ -714,10 +718,18 @@
           "type": "item_picker"
         },
         {
+          "id": "enchantments.sepOffenseUtility",
+          "type": "separator"
+        },
+        {
           "id": "enchantments.utility",
           "label": "Utility",
           "filter": "enchantment_utility",
           "type": "item_picker"
+        },
+        {
+          "id": "enchantments.sepUtilityDefense",
+          "type": "separator"
         },
         {
           "id": "enchantments.defense1",
@@ -744,6 +756,10 @@
           "type": "item_picker"
         },
         {
+          "id": "enchantments.sepDefenseCombat",
+          "type": "separator"
+        },
+        {
           "id": "enchantments.combatOffense",
           "label": "Combat (Offense)",
           "filter": "combat_enchant_offense",
@@ -754,6 +770,10 @@
           "label": "Combat (Defense)",
           "filter": "combat_enchant_defense",
           "type": "item_picker"
+        },
+        {
+          "id": "enchantments.sepCombatBonus",
+          "type": "separator"
         },
         {
           "id": "enchantments.bonus",

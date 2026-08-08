@@ -121,6 +121,9 @@ export function collect(
   const assignmentStatsBySlot = new Map<string, Map<string, number>>();
 
   db.slots.forEach((slot, order) => {
+    // A visual-only row: no choice, no item, nothing to attribute a bonus to.
+    if (slot.type === "separator") return;
+
     if (slot.type === "point_assignment") {
       const collected = collectPointAssignment(
         slot,

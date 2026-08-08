@@ -114,7 +114,26 @@ export interface PointAssignmentSlot {
   filter: string;
 }
 
-export type Slot = ItemPickerSlot | BuildParameterSlot | PointAssignmentSlot;
+/** The three slot types that render a real row (label, cursor anchor, hover/diff wiring) --
+ * `BuildSlot.vue`'s own prop type, since a `SeparatorSlot` is routed around it entirely and
+ * never reaches its shared row chrome. */
+export type RowSlot = ItemPickerSlot | BuildParameterSlot | PointAssignmentSlot;
+
+/** A purely visual divider between slots in a section's list -- no choice, no cursor stop, no
+ * label rendering. Exists only so `data/slots.json` can group related slots (offense vs. defense
+ * enchantments, boots vs. neck gear) without a dedicated section per group. `label` is optional
+ * and unused by `SeparatorRow.vue` itself -- it only exists so the handful of call sites that
+ * look up any `Slot` by id (`slotById.get(id)?.label`) keep compiling without special-casing a
+ * type they'll never actually see a separator's id come through. */
+export interface SeparatorSlot {
+  id: string;
+  section: string;
+  type: "separator";
+  label?: string;
+}
+
+export type Slot =
+  ItemPickerSlot | BuildParameterSlot | PointAssignmentSlot | SeparatorSlot;
 
 /** A named set of defaults for one section, authored alongside it in `data/slots.json` (see
  * `deriveSlots` in data.ts, which injects `section` the same way it does for a `Slot`). Applying

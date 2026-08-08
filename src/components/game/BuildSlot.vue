@@ -23,7 +23,7 @@ import { isFormControl } from "../../composables/focus";
 import { useCursorRowKeys } from "../../composables/useCursorRowKeys";
 import { useTemplateRef } from "vue";
 import type {
-  Slot,
+  RowSlot,
   Item,
   EngineError,
   Build,
@@ -32,7 +32,7 @@ import type {
 } from "../../types";
 
 const props = defineProps<{
-  slotDef: Slot;
+  slotDef: RowSlot;
   build: Build;
   compareBuild?: Build | null;
   highlightDiff: boolean;
@@ -58,6 +58,9 @@ const props = defineProps<{
   // point_assignment only
   assignmentDiffers?: boolean;
   otherAssignmentLabel?: string;
+  /** True for the row immediately above a separator -- its own bottom border would otherwise
+   *  double up against the separator's, so BuildEditor.vue suppresses it for that one row. */
+  noBorder?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -109,8 +112,9 @@ useCursorRowKeys(anchor, {
 
 <template>
   <div
-    class="relative flex justify-center gap-2.5 border-b border-line/45 py-1 last:border-b-0 focus-within:outline-2 focus-within:-outline-offset-1 focus-within:outline-accent"
+    class="relative flex justify-center gap-2.5 py-1 focus-within:outline-2 focus-within:-outline-offset-1 focus-within:outline-accent"
     :class="[
+      noBorder ? 'border-b-0' : 'border-b border-line/45 last:border-b-0',
       isHovered && 'is-hovered bg-accent-soft/40',
       highlightDiff &&
         (choiceDiffers ||

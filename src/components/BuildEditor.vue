@@ -10,6 +10,7 @@ import ItemCard from "./game/ItemCard.vue";
 import BasePopover from "./ui/BasePopover.vue";
 import BuildSection from "./game/BuildSection.vue";
 import BuildSlot from "./game/BuildSlot.vue";
+import SeparatorRow from "./game/SeparatorRow.vue";
 import BaseButton from "./ui/BaseButton.vue";
 import { ChevronsDownUp, ChevronsUpDown } from "@lucide/vue";
 import { NW_SCHEMA, NW_SLOTS } from "../data/data";
@@ -247,6 +248,22 @@ const sections = computed<SectionRow[]>(() => {
     .filter((section) => !onlyDiffAndComparing || section.slots.length > 0);
 });
 
+/** Ids of rows immediately followed by a separator in their section's rendered slot list --
+ *  BuildSlot.vue suppresses its own bottom border for these, so a row's border and the
+ *  separator's own bar never double up right next to each other. Derived from the same
+ *  (possibly onlyDiff-filtered) list actually rendered, so a filtered-out separator correctly
+ *  stops suppressing its neighbour's border. */
+const noBorderIds = computed(() => {
+  const ids = new Set<string>();
+  for (const section of sections.value) {
+    for (let i = 0; i < section.slots.length - 1; i += 1) {
+      if (section.slots[i + 1].type === "separator")
+        ids.add(section.slots[i].id);
+    }
+  }
+  return ids;
+});
+
 /**
  * slotId -> active bonuses to credit to *that* row's inline summary, one row-line per
  * bonus rather than a name attached to raw numbers. A bonus fed by several equipped
@@ -408,12 +425,15 @@ function onFocusIn(event: FocusEvent) {
       @clear="buildEditor.clearSection(section.id, section.label)"
     >
       <template #default="{ slotDef }: { slotDef: Slot }">
+        <SeparatorRow v-if="slotDef.type === 'separator'" :slot-def="slotDef" />
         <BuildSlot
+          v-else
           :slot-def="slotDef"
           :build="build"
           :compare-build="compareBuild"
           :highlight-diff="highlightDiff"
           :is-hovered="hover?.slotId === slotDef.id"
+          :no-border="noBorderIds.has(slotDef.id)"
           :on-arrow="moveCursor"
           :item="itemIn(slotDef.id)"
           :items="itemsFor(slotDef.id)"

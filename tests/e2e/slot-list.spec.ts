@@ -409,6 +409,48 @@ test.describe("keyboard cursor", () => {
   });
 });
 
+test.describe("separator slots", () => {
+  test("renders visibly between Boots and Neck but carries no cursor key", async ({
+    page,
+  }) => {
+    await openBuilder(page);
+    const separator = page.getByTestId("separator:gear.sepBootsNeck");
+    await expect(separator).toBeVisible();
+    await expect(separator).not.toHaveAttribute("data-cursor-key");
+  });
+
+  test("ArrowDown from Boots skips straight to Neck", async ({ page }) => {
+    await openBuilder(page);
+    await slotRow(page, "gear.boots").locator(".slot-label").click();
+    await expect(cursorRow(page)).toHaveAttribute(
+      "data-cursor-key",
+      "slot:gear.boots",
+    );
+
+    await page.keyboard.press("ArrowDown");
+    await expect(cursorRow(page)).toHaveAttribute(
+      "data-cursor-key",
+      "slot:gear.neck",
+    );
+  });
+
+  test("the row right above a separator has no bottom border of its own", async ({
+    page,
+  }) => {
+    await openBuilder(page);
+    // Boots sits right above the separator: its own border is suppressed so it doesn't
+    // double up against the separator's bar. Neck has no separator after it and keeps its own.
+    await expect(slotRow(page, "gear.boots")).toHaveCSS(
+      "border-bottom-width",
+      "0px",
+    );
+    await expect(slotRow(page, "gear.neck")).toHaveCSS(
+      "border-bottom-width",
+      "1px",
+    );
+  });
+});
+
 // build_parameter rows (in the Options section) share the same keyboard cursor
 // infrastructure as item_picker rows -- Enter-to-focus, type-to-seed, Delete-to-reset --
 // just exercised on a different control type.
