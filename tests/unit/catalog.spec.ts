@@ -472,6 +472,69 @@ describe("catalog.compose: sectionPresets overlay", () => {
   });
 });
 
+describe("catalog.toItemsFile", () => {
+  it("leads with id/name/filter and trails with tags/bonuses/etc, regardless of the input's own key order", () => {
+    // Deliberately scrambled -- a stray hand edit to data/db-items.json shouldn't survive
+    // the next `npm run fix` unchanged.
+    const scrambled = {
+      tags: ["a"],
+      il: 10,
+      filter: "gear_head",
+      name: "Z Item",
+      id: "z-item",
+    } as Item;
+    const text = catalog.toItemsFile([scrambled]);
+    expect(JSON.parse(text)).toEqual([scrambled]);
+    const positions = ["id", "name", "filter", "il", "tags"].map((key) =>
+      text.indexOf(`"${key}"`),
+    );
+    expect(positions).toEqual([...positions].sort((a, b) => a - b));
+  });
+
+  it("produces valid JSON for the real shipped data", () => {
+    expect(JSON.parse(catalog.toItemsFile(NW_ITEMS))).toEqual(NW_ITEMS);
+  });
+});
+
+describe("catalog.toBonusesFile", () => {
+  it("leads with id/name/grants, regardless of the input's own key order", () => {
+    const scrambled = {
+      maxStacks: 2,
+      grants: [],
+      name: "Z Set",
+      id: "z-set",
+    } as BonusSet;
+    const text = catalog.toBonusesFile([scrambled]);
+    expect(JSON.parse(text)).toEqual([scrambled]);
+    const positions = ["id", "name", "grants", "maxStacks"].map((key) =>
+      text.indexOf(`"${key}"`),
+    );
+    expect(positions).toEqual([...positions].sort((a, b) => a - b));
+  });
+
+  it("defaults a missing name to the set's id", () => {
+    const sets: BonusSet[] = [{ id: "no-name-set", grants: [] }];
+    const parsed = JSON.parse(catalog.toBonusesFile(sets));
+    expect(parsed).toEqual([
+      { id: "no-name-set", name: "no-name-set", grants: [] },
+    ]);
+  });
+
+  it("keeps an explicit name as-is", () => {
+    const sets: BonusSet[] = [
+      { id: "named-set", name: "Named Set", grants: [] },
+    ];
+    const parsed = JSON.parse(catalog.toBonusesFile(sets));
+    expect(parsed[0].name).toBe("Named Set");
+  });
+
+  it("produces valid JSON for the real shipped data", () => {
+    expect(JSON.parse(catalog.toBonusesFile(NW_BONUSES))).toEqual(
+      NW_BONUSES.map((set) => ({ ...set, name: set.name ?? set.id })),
+    );
+  });
+});
+
 describe("catalog.toSlotsFile", () => {
   it("round-trips a small sections/slots/presets fixture", () => {
     const sections: SlotSection[] = [

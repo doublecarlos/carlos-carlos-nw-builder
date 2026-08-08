@@ -80,12 +80,17 @@ export const base = (): {
  * export is stable and diffs against the generated files stay readable.
  */
 export function compose(overlays: (CatalogOverlay | null | undefined)[] = []) {
-  const { items: baseItems, bonusSets: baseSets, sectionPresets: basePresets } =
-    base();
+  const {
+    items: baseItems,
+    bonusSets: baseSets,
+    sectionPresets: basePresets,
+  } = base();
 
   const items = new Map(baseItems.map((item) => [item.id, item]));
   const bonusSets = new Map(baseSets.map((set) => [set.id, set]));
-  const sectionPresets = new Map(basePresets.map((preset) => [preset.id, preset]));
+  const sectionPresets = new Map(
+    basePresets.map((preset) => [preset.id, preset]),
+  );
 
   for (const overlay of overlays) {
     if (!overlay) continue;
@@ -131,7 +136,8 @@ const clone = (overlay: CatalogOverlay): CatalogOverlay => ({
 
 const inBase = (group: CatalogGroup, key: string) => {
   const catalogueBase = base();
-  if (group === "items") return catalogueBase.items.some((item) => item.id === key);
+  if (group === "items")
+    return catalogueBase.items.some((item) => item.id === key);
   if (group === "bonusSets")
     return catalogueBase.bonusSets.some((set) => set.id === key);
   return catalogueBase.sectionPresets.some((preset) => preset.id === key);
@@ -853,14 +859,15 @@ export function validate(
 // Produces valid JSON, so the result can replace data/db-items.json / data/db-bonuses.json
 // wholesale with no further editing (JSON has no comment syntax, so unlike the pre-JSON
 // export there is no header here -- the provenance note lives in data/db-items.js /
-// data/db-bonuses.js, the loaders that fetch these files).
+// data/db-bonuses.js, the loaders that fetch these files). Formatting is Prettier's job once
+// the result lands in the repo (`npm run fix`); this side only rebuilds each entry's own key
+// order -- id/name/filter leading, tags/bonuses/etc trailing -- so a hand edit that scrambles
+// an item's keys is corrected back on the next `npm run fix` rather than round-tripping as-is
+// forever. Stats (whatever is left over) keep their existing relative order: there is no
+// canonical order among them worth enforcing, and their number/names vary per item.
 
-// Mirrors the key order the Python generator emits, so a pasted-back file diffs cleanly
-// against a regenerated one instead of reordering every line. `id` leads (Item.id's own
-// comment: frozen at first assignment) -- the external generator will need to learn to
-// preserve/assign it too, or a future regeneration will silently drop every id.
-const LEADING_KEYS = ["id", "name", "filter", "il", "combined_rating"];
-const TRAILING_KEYS = [
+const ITEM_LEADING_KEYS = ["id", "name", "filter"] as const;
+const ITEM_TRAILING_KEYS = [
   "maxCopies",
   "dynamicStat",
   "dynamicMin",
@@ -869,80 +876,34 @@ const TRAILING_KEYS = [
   "tags",
   "bonuses",
   "excludes",
-];
+  "pointAssignment",
+] as const;
 
-const key = (name: string) => JSON.stringify(name);
-const WRAP_AT = 96;
-
-/**
- * Compact JSON serialiser: one line where it fits at the given indent, one entry per line
- * (nested one level deeper)
- */
-export function literal(value: unknown, indent = 0): string {
-  if (value === null) return "null";
-  if (Array.isArray(value)) {
-    const parts = value.map((v) => literal(v, indent));
-    const oneLine = `[${parts.join(", ")}]`;
-    if (oneLine.length + indent <= WRAP_AT) return oneLine;
-    const pad = " ".repeat(indent + 2);
-    const inner = value.map((v) => literal(v, indent + 2));
-    return `[\n${inner.map((p) => pad + p).join(",\n")}\n${" ".repeat(indent)}]`;
+function canonicalItem(item: Item): Item {
+  const used = new Set<string>([...ITEM_LEADING_KEYS, ...ITEM_TRAILING_KEYS]);
+  const stats = Object.keys(item).filter((key) => !used.has(key));
+  const ordered = {} as Record<string, unknown>;
+  for (const key of [...ITEM_LEADING_KEYS, ...stats, ...ITEM_TRAILING_KEYS]) {
+    const value = (item as Record<string, unknown>)[key];
+    if (value !== undefined) ordered[key] = value;
   }
-  if (typeof value === "object") {
-    return entriesLiteral(
-      Object.entries(value as object).filter(([, v]) => v !== undefined),
-      indent,
-    );
-  }
-  return JSON.stringify(value);
+  return ordered as Item;
 }
 
-/** Same wrapping rule as `literal`, for an already-ordered `[key, value]` list. */
-function entriesLiteral(entries: [string, unknown][], indent: number): string {
-  const parts = entries.map(([k, v]) => `${key(k)}: ${literal(v, indent + 2)}`);
-  const oneLine = `{${parts.join(", ")}}`;
-  if (oneLine.length + indent <= WRAP_AT) return oneLine;
-  const pad = " ".repeat(indent + 2);
-  return `{\n${parts.map((p) => pad + p).join(",\n")}\n${" ".repeat(indent)}}`;
+export function toItemsFile(items: Item[]): string {
+  return `${JSON.stringify(items.map(canonicalItem), null, 2)}\n`;
 }
 
-function orderedEntries(item: Item, statKeys: string[]): [string, unknown][] {
-  const used = new Set([...LEADING_KEYS, ...TRAILING_KEYS]);
-  const stats = statKeys.filter((k) => item[k] !== undefined && !used.has(k));
-  const rest = Object.keys(item).filter(
-    (k) => !used.has(k) && !statKeys.includes(k),
-  );
-  return [...LEADING_KEYS, ...stats, ...rest, ...TRAILING_KEYS]
-    .filter((k) => item[k] !== undefined)
-    .map((k) => [k, item[k]] as [string, unknown]);
-}
-
-// Every row sits at column 2 (one level inside the top-level array)
-export function toItemsFile(
-  items: Item[],
-  statKeys: string[] = NW_SCHEMA.statKeys,
-) {
-  const body = items
-    .map((item) => `  ${entriesLiteral(orderedEntries(item, statKeys), 2)}`)
-    .join(",\n");
-  return `[\n${body}\n]\n`;
-}
-
-export function toBonusesFile(bonusSets: BonusSet[]) {
-  const body = bonusSets
-    .map((set) => {
-      const entries: [string, unknown][] = [
-        ["id", set.id],
-        ["name", set.name ?? set.id],
-        ["grants", set.grants ?? []],
-      ];
-      for (const key of ["excludes", "stacking", "maxStacks"] as const) {
-        if (set[key] !== undefined) entries.push([key, set[key]]);
-      }
-      return `  ${entriesLiteral(entries, 2)}`;
-    })
-    .join(",\n");
-  return `[\n${body}\n]\n`;
+export function toBonusesFile(bonusSets: BonusSet[]): string {
+  const canonical = bonusSets.map((set) => ({
+    id: set.id,
+    name: set.name ?? set.id,
+    grants: set.grants ?? [],
+    ...(set.excludes !== undefined ? { excludes: set.excludes } : {}),
+    ...(set.stacking !== undefined ? { stacking: set.stacking } : {}),
+    ...(set.maxStacks !== undefined ? { maxStacks: set.maxStacks } : {}),
+  }));
+  return `${JSON.stringify(canonical, null, 2)}\n`;
 }
 
 /** Drops the `section` field `data.ts`'s `deriveSlots` injects on load -- the raw file's own
@@ -957,33 +918,29 @@ function stripSection<T extends { section?: string }>(value: T) {
  * Regenerates the whole `data/slots.json` body from the composed in-memory data -- same "paste
  * back over the file" workflow `toItemsFile`/`toBonusesFile` already give items/bonus sets, just
  * shaped for slots.json's nested `{ sections: [{ ..., presets?, slots }] }` structure instead of
- * a bare top-level array. Slots and presets are round-tripped through the generic `literal()`
- * serialiser as-is (once `section` is stripped) rather than through a hand-ordered key table
- * like `orderedEntries` -- their own property order, preserved by the spread in `deriveSlots`,
- * already matches how they were authored, so there is nothing left to reorder.
+ * a bare top-level array.
  */
 export function toSlotsFile(
   sections: SlotSection[],
   slots: Slot[],
   presets: SectionPreset[],
 ): string {
-  const body = sections
-    .map((section) => {
+  const body = {
+    sections: sections.map((section) => {
       const sectionSlots = slots
         .filter((slot) => slot.section === section.id)
         .map(stripSection);
       const sectionPresets = presets
         .filter((preset) => preset.section === section.id)
         .map(stripSection);
-      const entries: [string, unknown][] = [
-        ["defaultOpen", section.defaultOpen],
-        ["id", section.id],
-        ["label", section.label],
-      ];
-      if (sectionPresets.length) entries.push(["presets", sectionPresets]);
-      entries.push(["slots", sectionSlots]);
-      return `    ${entriesLiteral(entries.filter(([, v]) => v !== undefined), 4)}`;
-    })
-    .join(",\n");
-  return `{\n  "sections": [\n${body}\n  ]\n}\n`;
+      return {
+        defaultOpen: section.defaultOpen,
+        id: section.id,
+        label: section.label,
+        ...(sectionPresets.length ? { presets: sectionPresets } : {}),
+        slots: sectionSlots,
+      };
+    }),
+  };
+  return `${JSON.stringify(body, null, 2)}\n`;
 }

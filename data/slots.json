@@ -8,22 +8,32 @@
         {
           "id": "options.dps-magical",
           "label": "DPS (Magical)",
-          "params": { "options.role": "dps", "options.damageType": "magical" }
+          "params": {
+            "options.role": "dps",
+            "options.damageType": "magical"
+          }
         },
         {
           "id": "options.dps-physical",
           "label": "DPS (Physical)",
-          "params": { "options.role": "dps", "options.damageType": "physical" }
+          "params": {
+            "options.role": "dps",
+            "options.damageType": "physical"
+          }
         },
         {
           "id": "options.healer",
           "label": "Healer",
-          "params": { "options.role": "healer" }
+          "params": {
+            "options.role": "healer"
+          }
         },
         {
           "id": "options.tank",
           "label": "Tank",
-          "params": { "options.role": "tank" }
+          "params": {
+            "options.role": "tank"
+          }
         }
       ],
       "slots": [
@@ -363,12 +373,7 @@
           "default": 60,
           "min": 0,
           "quick": true,
-          "presets": [
-            0,
-            10,
-            30,
-            60
-          ]
+          "presets": [0, 10, 30, 60]
         },
         {
           "id": "options.toggleConsumables",
@@ -817,10 +822,24 @@
           "id": "boons-max-offense",
           "label": "Max Offense",
           "assignments": {
-            "boons.tier1": {"boon-tier1-power": 5, "boon-tier1-strike": 5},
-            "boons.tier2": {"boon-tier2-power": 5, "boon-tier2-severity": 5, "boon-tier2-demonic": 0},
-            "boons.tier3": {"boon-tier3-power": 5, "boon-tier3-ca": 5, "boon-tier3-dino": 0},
-            "boons.tier4": {"boon-tier4-power": 5, "boon-tier4-accuracy": 5},
+            "boons.tier1": {
+              "boon-tier1-power": 5,
+              "boon-tier1-strike": 5
+            },
+            "boons.tier2": {
+              "boon-tier2-power": 5,
+              "boon-tier2-severity": 5,
+              "boon-tier2-demonic": 0
+            },
+            "boons.tier3": {
+              "boon-tier3-power": 5,
+              "boon-tier3-ca": 5,
+              "boon-tier3-dino": 0
+            },
+            "boons.tier4": {
+              "boon-tier4-power": 5,
+              "boon-tier4-accuracy": 5
+            },
             "boons.tier_advanced": {
               "boon-advanced-incoming-healing": 0,
               "boon-advanced-forte": 4,

@@ -18,6 +18,7 @@
     "src/**/*",
     "tests/**/*.ts",
     "tests/**/*.mts",
+    "scripts/**/*.ts",
     "vite.config.ts",
     "vitest.config.ts",
     "*.ts"
