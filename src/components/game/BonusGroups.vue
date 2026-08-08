@@ -59,6 +59,9 @@ const emit = defineEmits<{
 interface Slot {
   key: string;
   id: string | null;
+  /** Source set copied by "Duplicate" -- seeds a fresh pending slot's draft via
+   *  BonusSetForm's `duplicate-from` prop instead of leaving it blank. */
+  seed?: BonusSet | null;
 }
 
 let nextPendingKey = 0;
@@ -92,7 +95,7 @@ function sourceFor(slot: Slot): BonusSet | null {
  * common case is a bonus that's only this item's business. Read once at creation (`initialDraft`
  * is only ever consulted on mount) -- not kept in sync with later edits to the item's own name. */
 function initialDraftFor(slot: Slot): SetDraft | null {
-  if (slot.id) return null;
+  if (slot.id || slot.seed) return null;
   return {
     id: "",
     name: props.itemName,
@@ -146,6 +149,19 @@ function onSlotDetach(slot: Slot) {
 function onSlotDelete(slot: Slot) {
   if (slot.id) emit("delete-set", slot.id);
 }
+
+/** "Duplicate" on an attached bonus set adds a new pending slot seeded from it -- same
+ * unsaved-until-Save flow as "Add bonus", just pre-filled instead of blank. */
+function onSlotDuplicate(slot: Slot) {
+  const source = sourceFor(slot);
+  if (!source) return;
+  pending.value.push({
+    key: `pending:${nextPendingKey}`,
+    id: null,
+    seed: source,
+  });
+  nextPendingKey += 1;
+}
 </script>
 
 <template>
@@ -189,6 +205,7 @@ function onSlotDelete(slot: Slot) {
         :source="sourceFor(slot)"
         :fixed-id="slot.id"
         :initial-draft="initialDraftFor(slot)"
+        :duplicate-from="slot.seed ?? null"
         :db="db"
         :set-ids="allSetIds"
         :tags="tags"
@@ -197,6 +214,7 @@ function onSlotDelete(slot: Slot) {
         @save="onSlotSave(slot, $event)"
         @update:set="onSlotUpdate(slot, $event)"
         @delete="onSlotDelete(slot)"
+        @duplicate="onSlotDuplicate(slot)"
       >
         <template #extra-actions>
           <BaseButton @click="onSlotDetach(slot)">Detach</BaseButton>

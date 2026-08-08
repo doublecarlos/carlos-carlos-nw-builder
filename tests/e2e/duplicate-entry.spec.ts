@@ -91,3 +91,44 @@ test("Duplicate is not offered while creating a brand-new item", async ({
   await page.getByTestId("new-item").click();
   await expect(page.getByTestId("duplicate-item")).toBeHidden();
 });
+
+test("duplicating a bonus set attached to an item adds a pre-filled unsaved bonus", async ({
+  page,
+}) => {
+  const ITEM = "ZZZ Test Item Bonus Duplicate";
+  const SET = "ZZZ Test Item Bonus Duplicate Set";
+
+  await openBuilder(page);
+  await addLayer(page);
+  await layerRow(page, "Layer 1").locator(".nav-name").click();
+
+  // Create the item, then add and save one bonus directly in its Bonuses section.
+  await page.getByTestId("new-item").click();
+  await page.getByTestId("item-name-input").fill(ITEM);
+  await page.getByTestId("item-filter-input").fill("gear_head");
+  await page.getByRole("button", { name: "Save item" }).click();
+
+  await page.getByRole("button", { name: "Add bonus" }).click();
+  let cards = page.getByTestId("bonus-card");
+  await expect(cards).toHaveCount(1);
+  await cards.first().getByTestId("bonus-set-name-input").fill(SET);
+  await cards.first().getByRole("button", { name: "Save bonus set" }).click();
+  await expect(cards.first().getByTestId("duplicate-bonus-set")).toBeVisible();
+
+  // Duplicate it: a second card appears, pre-filled and unsaved -- the original is untouched.
+  await cards.first().getByTestId("duplicate-bonus-set").click();
+  cards = page.getByTestId("bonus-card");
+  await expect(cards).toHaveCount(2);
+  const newCard = cards.nth(1);
+  await expect(newCard.getByTestId("bonus-set-name-input")).toHaveValue(SET);
+  await expect(
+    newCard.getByRole("button", { name: "Save bonus set" }),
+  ).toBeVisible();
+
+  // Saving the duplicate attaches it as its own bonus, so the item now lists both.
+  await newCard.getByRole("button", { name: "Save bonus set" }).click();
+  cards = page.getByTestId("bonus-card");
+  await expect(cards).toHaveCount(2);
+  await expect(cards.nth(0).getByTestId("duplicate-bonus-set")).toBeVisible();
+  await expect(cards.nth(1).getByTestId("duplicate-bonus-set")).toBeVisible();
+});
