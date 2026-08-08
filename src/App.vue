@@ -119,8 +119,6 @@ function onBuildScroll(event: Event) {
           <div class="flex min-w-0 flex-1">
             <LayerEditor :layer="selectedLayer" />
           </div>
-          <!-- Column 3 placeholder (absorbed by LayerEditor) -->
-          <div class="w-130 flex-none"></div>
         </template>
 
         <!-- Build selected: sticky header + BuildEditor + StatPanel -->
