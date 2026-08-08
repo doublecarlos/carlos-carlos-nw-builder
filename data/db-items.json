@@ -550,6 +550,8 @@
     "name": "Accuracy",
     "filter": "boon_tier4",
     "acc_p": 0.002,
+    "tags": ["boon:prereq-advanced", "boon:prereq-master"],
+    "bonuses": ["boon-tier4-warning"],
     "pointAssignment": {
       "min": 0,
       "max": 5,
@@ -592,6 +594,8 @@
     "name": "AP Gain",
     "filter": "boon_tier_advanced",
     "ap_gain": 0.01,
+    "tags": ["boon:prereq-master"],
+    "bonuses": ["boon-advanced-warning"],
     "pointAssignment": {
       "min": 0,
       "max": 4,
@@ -756,6 +760,12 @@
     "name": "Awareness",
     "filter": "boon_tier3",
     "awareness_p": 0.002,
+    "tags": [
+      "boon:prereq-tier-4",
+      "boon:prereq-advanced",
+      "boon:prereq-master"
+    ],
+    "bonuses": ["boon-tier3-warning"],
     "pointAssignment": {
       "min": 0,
       "max": 5,
@@ -1092,6 +1102,12 @@
     "name": "Combat Adv",
     "filter": "boon_tier3",
     "ca_p": 0.002,
+    "tags": [
+      "boon:prereq-tier-4",
+      "boon:prereq-advanced",
+      "boon:prereq-master"
+    ],
+    "bonuses": ["boon-tier3-warning"],
     "pointAssignment": {
       "min": 0,
       "max": 5,
@@ -1126,6 +1142,8 @@
     "name": "Control Bonus",
     "filter": "boon_tier_advanced",
     "control_bonus_p": 0.01,
+    "tags": ["boon:prereq-master"],
+    "bonuses": ["boon-advanced-warning"],
     "pointAssignment": {
       "min": 0,
       "max": 4,
@@ -1139,6 +1157,8 @@
     "filter": "boon_tier4",
     "control_resist_p": 0.002,
     "dynamicStat": "power_p",
+    "tags": ["boon:prereq-advanced", "boon:prereq-master"],
+    "bonuses": ["boon-tier4-warning"],
     "pointAssignment": {
       "min": 0,
       "max": 5,
@@ -1170,7 +1190,13 @@
     "name": "Critical Avoidance",
     "filter": "boon_tier1",
     "crit_avoid_p": 0.002,
-    "tags": ["boon:tier1+"],
+    "tags": [
+      "boon:prereq-tier-2",
+      "boon:prereq-tier-3",
+      "boon:prereq-tier-4",
+      "boon:prereq-advanced",
+      "boon:prereq-master"
+    ],
     "pointAssignment": {
       "min": 0,
       "max": 5,
@@ -1183,7 +1209,12 @@
     "name": "Critical Severity",
     "filter": "boon_tier2",
     "sev_p": 0.002,
-    "tags": ["boon:tier1+", "boon:tier2+"],
+    "tags": [
+      "boon:prereq-tier-3",
+      "boon:prereq-tier-4",
+      "boon:prereq-advanced",
+      "boon:prereq-master"
+    ],
     "bonuses": ["boon-tier2-warning"],
     "pointAssignment": {
       "min": 0,
@@ -1197,7 +1228,13 @@
     "name": "Critical Strike",
     "filter": "boon_tier1",
     "strike_p": 0.002,
-    "tags": ["boon:tier1+"],
+    "tags": [
+      "boon:prereq-tier-2",
+      "boon:prereq-tier-3",
+      "boon:prereq-tier-4",
+      "boon:prereq-advanced",
+      "boon:prereq-master"
+    ],
     "pointAssignment": {
       "min": 0,
       "max": 5,
@@ -1220,7 +1257,13 @@
     "id": "boon-tier1-cultist",
     "name": "Cultist",
     "filter": "boon_tier1",
-    "tags": ["boon:tier1+"],
+    "tags": [
+      "boon:prereq-tier-2",
+      "boon:prereq-tier-3",
+      "boon:prereq-tier-4",
+      "boon:prereq-advanced",
+      "boon:prereq-master"
+    ],
     "pointAssignment": {
       "min": 0,
       "max": 5,
@@ -1271,7 +1314,12 @@
     "name": "Defense",
     "filter": "boon_tier2",
     "defense_p": 0.002,
-    "bonuses": ["boon-tier2-warning"],
+    "tags": [
+      "boon:prereq-tier-3",
+      "boon:prereq-tier-4",
+      "boon:prereq-advanced",
+      "boon:prereq-master"
+    ],
     "pointAssignment": {
       "min": 0,
       "max": 5,
@@ -1285,6 +1333,8 @@
     "filter": "boon_tier4",
     "deflect_p": 0.002,
     "dynamicStat": "il",
+    "tags": ["boon:prereq-advanced", "boon:prereq-master"],
+    "bonuses": ["boon-tier4-warning"],
     "pointAssignment": {
       "min": 0,
       "max": 5,
@@ -1297,6 +1347,12 @@
     "name": "Deflect Severity",
     "filter": "boon_tier3",
     "deflect_sev_p": 0.002,
+    "tags": [
+      "boon:prereq-tier-4",
+      "boon:prereq-advanced",
+      "boon:prereq-master"
+    ],
+    "bonuses": ["boon-tier3-warning"],
     "pointAssignment": {
       "min": 0,
       "max": 5,
@@ -1330,7 +1386,12 @@
     "id": "boon-tier2-demonic",
     "name": "Demonic",
     "filter": "boon_tier2",
-    "bonuses": ["boon-tier2-warning"],
+    "tags": [
+      "boon:prereq-tier-3",
+      "boon:prereq-tier-4",
+      "boon:prereq-advanced",
+      "boon:prereq-master"
+    ],
     "pointAssignment": {
       "min": 0,
       "max": 5,
@@ -1355,6 +1416,12 @@
     "id": "boon-tier3-dino",
     "name": "Dino",
     "filter": "boon_tier3",
+    "tags": [
+      "boon:prereq-tier-4",
+      "boon:prereq-advanced",
+      "boon:prereq-master"
+    ],
+    "bonuses": ["boon-tier3-warning"],
     "pointAssignment": {
       "min": 0,
       "max": 5,
@@ -1568,6 +1635,8 @@
     "name": "Forte",
     "filter": "boon_tier_advanced",
     "forte_p": 0.01,
+    "tags": ["boon:prereq-master"],
+    "bonuses": ["boon-advanced-warning"],
     "pointAssignment": {
       "min": 0,
       "max": 4,
@@ -1608,7 +1677,13 @@
     "name": "Gold",
     "filter": "boon_tier1",
     "gold": 0.01,
-    "tags": ["boon:tier1+"],
+    "tags": [
+      "boon:prereq-tier-2",
+      "boon:prereq-tier-3",
+      "boon:prereq-tier-4",
+      "boon:prereq-advanced",
+      "boon:prereq-master"
+    ],
     "pointAssignment": {
       "min": 0,
       "max": 5,
@@ -1665,7 +1740,13 @@
     "name": "HP",
     "filter": "boon_tier1",
     "hit_points_p": 0.002,
-    "tags": ["boon:tier1+"],
+    "tags": [
+      "boon:prereq-tier-2",
+      "boon:prereq-tier-3",
+      "boon:prereq-tier-4",
+      "boon:prereq-advanced",
+      "boon:prereq-master"
+    ],
     "pointAssignment": {
       "min": 0,
       "max": 5,
@@ -1678,7 +1759,12 @@
     "name": "HP",
     "filter": "boon_tier2",
     "hit_points_p": 0.002,
-    "bonuses": ["boon-tier2-warning"],
+    "tags": [
+      "boon:prereq-tier-3",
+      "boon:prereq-tier-4",
+      "boon:prereq-advanced",
+      "boon:prereq-master"
+    ],
     "pointAssignment": {
       "min": 0,
       "max": 5,
@@ -1691,6 +1777,12 @@
     "name": "HP",
     "filter": "boon_tier3",
     "hit_points_p": 0.002,
+    "tags": [
+      "boon:prereq-tier-4",
+      "boon:prereq-advanced",
+      "boon:prereq-master"
+    ],
+    "bonuses": ["boon-tier3-warning"],
     "pointAssignment": {
       "min": 0,
       "max": 5,
@@ -1703,6 +1795,8 @@
     "name": "HP",
     "filter": "boon_tier4",
     "hit_points_p": 0.002,
+    "tags": ["boon:prereq-advanced", "boon:prereq-master"],
+    "bonuses": ["boon-tier4-warning"],
     "pointAssignment": {
       "min": 0,
       "max": 5,
@@ -1734,6 +1828,8 @@
     "name": "Inc. Heal",
     "filter": "boon_tier_advanced",
     "inc_healing_p": 0.01,
+    "tags": ["boon:prereq-master"],
+    "bonuses": ["boon-advanced-warning"],
     "pointAssignment": {
       "min": 0,
       "max": 4,
@@ -1788,7 +1884,12 @@
     "id": "boon-tier2-lingering-medicine",
     "name": "Lingering",
     "filter": "boon_tier2",
-    "bonuses": ["boon-tier2-warning"],
+    "tags": [
+      "boon:prereq-tier-3",
+      "boon:prereq-tier-4",
+      "boon:prereq-advanced",
+      "boon:prereq-master"
+    ],
     "pointAssignment": {
       "min": 0,
       "max": 5,
@@ -1800,6 +1901,12 @@
     "id": "boon-tier3-lingering-fortification",
     "name": "Lingering",
     "filter": "boon_tier3",
+    "tags": [
+      "boon:prereq-tier-4",
+      "boon:prereq-advanced",
+      "boon:prereq-master"
+    ],
+    "bonuses": ["boon-tier3-warning"],
     "pointAssignment": {
       "min": 0,
       "max": 5,
@@ -1811,6 +1918,8 @@
     "id": "boon-tier4-lingering-power",
     "name": "Lingering",
     "filter": "boon_tier4",
+    "tags": ["boon:prereq-advanced", "boon:prereq-master"],
+    "bonuses": ["boon-tier4-warning"],
     "pointAssignment": {
       "min": 0,
       "max": 5,
@@ -1822,7 +1931,13 @@
     "id": "boon-tier1-loot-radius",
     "name": "Loot Radius",
     "filter": "boon_tier1",
-    "tags": ["boon:tier1+"],
+    "tags": [
+      "boon:prereq-tier-2",
+      "boon:prereq-tier-3",
+      "boon:prereq-tier-4",
+      "boon:prereq-advanced",
+      "boon:prereq-master"
+    ],
     "pointAssignment": {
       "min": 0,
       "max": 5,
@@ -2897,7 +3012,12 @@
     "name": "Movement Speed",
     "filter": "boon_tier2",
     "movement": 0.025,
-    "tags": ["boon:tier1+", "boon:tier2+"],
+    "tags": [
+      "boon:prereq-tier-3",
+      "boon:prereq-tier-4",
+      "boon:prereq-advanced",
+      "boon:prereq-master"
+    ],
     "bonuses": ["boon-tier2-warning"],
     "pointAssignment": {
       "min": 0,
@@ -2933,6 +3053,8 @@
     "id": "boon-tier4-necrotic",
     "name": "Necrotic",
     "filter": "boon_tier4",
+    "tags": ["boon:prereq-advanced", "boon:prereq-master"],
+    "bonuses": ["boon-tier4-warning"],
     "pointAssignment": {
       "min": 0,
       "max": 5,
@@ -2988,6 +3110,8 @@
     "name": "Out. Heal",
     "filter": "boon_tier_advanced",
     "out_healing_p": 0.01,
+    "tags": ["boon:prereq-master"],
+    "bonuses": ["boon-advanced-warning"],
     "pointAssignment": {
       "min": 0,
       "max": 4,
@@ -3042,7 +3166,13 @@
     "name": "Power",
     "filter": "boon_tier1",
     "power_p": 0.002,
-    "tags": ["boon:tier1+"],
+    "tags": [
+      "boon:prereq-tier-2",
+      "boon:prereq-tier-3",
+      "boon:prereq-tier-4",
+      "boon:prereq-advanced",
+      "boon:prereq-master"
+    ],
     "pointAssignment": {
       "min": 0,
       "max": 5,
@@ -3055,7 +3185,12 @@
     "name": "Power",
     "filter": "boon_tier2",
     "power_p": 0.002,
-    "tags": ["boon:tier1+", "boon:tier2+"],
+    "tags": [
+      "boon:prereq-tier-3",
+      "boon:prereq-tier-4",
+      "boon:prereq-advanced",
+      "boon:prereq-master"
+    ],
     "bonuses": ["boon-tier2-warning"],
     "pointAssignment": {
       "min": 0,
@@ -3069,6 +3204,12 @@
     "name": "Power",
     "filter": "boon_tier3",
     "power_p": 0.002,
+    "tags": [
+      "boon:prereq-tier-4",
+      "boon:prereq-advanced",
+      "boon:prereq-master"
+    ],
+    "bonuses": ["boon-tier3-warning"],
     "pointAssignment": {
       "min": 0,
       "max": 5,
@@ -3082,6 +3223,8 @@
     "filter": "boon_tier4",
     "power_p": 0.002,
     "dynamicStat": "il",
+    "tags": ["boon:prereq-advanced", "boon:prereq-master"],
+    "bonuses": ["boon-tier4-warning"],
     "pointAssignment": {
       "min": 0,
       "max": 5,
@@ -3970,6 +4113,8 @@
     "name": "Recharge",
     "filter": "boon_tier_advanced",
     "recharge": 0.01,
+    "tags": ["boon:prereq-master"],
+    "bonuses": ["boon-advanced-warning"],
     "pointAssignment": {
       "min": 0,
       "max": 4,
@@ -4165,6 +4310,8 @@
     "name": "Stamina",
     "filter": "boon_tier_advanced",
     "stamina_regen": 0.01,
+    "tags": ["boon:prereq-master"],
+    "bonuses": ["boon-advanced-warning"],
     "pointAssignment": {
       "min": 0,
       "max": 4,

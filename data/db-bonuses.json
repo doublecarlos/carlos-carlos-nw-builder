@@ -396,7 +396,7 @@
         "when": {
           "not": {
             "equipped": {
-              "tag": "boon:tier1+",
+              "tag": "boon:prereq-tier-2",
               "atLeast": 10
             }
           }
@@ -404,6 +404,66 @@
         "problem": {
           "severity": "warning",
           "message": "Tier 2 boons need at least 10 points spent on previous boons."
+        }
+      }
+    ]
+  },
+  {
+    "id": "boon-tier3-warning",
+    "name": "Tier 3 Boon Warning",
+    "grants": [
+      {
+        "when": {
+          "not": {
+            "equipped": {
+              "tag": "boon:prereq-tier-3",
+              "atLeast": 20
+            }
+          }
+        },
+        "problem": {
+          "severity": "warning",
+          "message": "Tier 3 boons need at least 20 points spent on previous boons."
+        }
+      }
+    ]
+  },
+  {
+    "id": "boon-tier4-warning",
+    "name": "Tier 4 Boon Warning",
+    "grants": [
+      {
+        "when": {
+          "not": {
+            "equipped": {
+              "tag": "boon:prereq-tier-4",
+              "atLeast": 30
+            }
+          }
+        },
+        "problem": {
+          "severity": "warning",
+          "message": "Tier 4 boons need at least 30 points spent on previous boons."
+        }
+      }
+    ]
+  },
+  {
+    "id": "boon-advanced-warning",
+    "name": "Advanced Boon Warning",
+    "grants": [
+      {
+        "when": {
+          "not": {
+            "equipped": {
+              "tag": "boon:prereq-advanced",
+              "atLeast": 45
+            }
+          }
+        },
+        "problem": {
+          "severity": "warning",
+          "message": "Advanced boons need at least 45 points spent on previous boons."
         }
       }
     ]
