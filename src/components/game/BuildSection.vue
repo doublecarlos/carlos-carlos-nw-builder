@@ -55,11 +55,13 @@ useCursorRowKeys(button, {
 
 <template>
   <section class="rounded-md border border-line">
-    <div class="bg-surface-2 flex items-center">
+    <div
+      class="bg-surface-2 flex items-center pr-1.5 focus-within:outline-2 focus-within:-outline-offset-1 focus-within:outline-accent"
+    >
       <button
         ref="button"
         type="button"
-        class="flex flex-1 items-center gap-2 min-w-0 px-2.5 py-1.5 text-left font-semibold hover:bg-surface-2 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+        class="flex flex-1 items-center gap-2 min-w-0 px-2.5 py-1.5 text-left font-semibold hover:bg-surface-2 focus:outline-none"
         :data-cursor-key="'header:' + id"
         @click="$emit('toggle')"
       >

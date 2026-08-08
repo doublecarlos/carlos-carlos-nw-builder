@@ -23,7 +23,7 @@ function click() {
 <template>
   <BaseButton
     title="Reset every slot in this section to its default"
-    danger
+    class="mr-0.5 w-36 flex-none justify-center whitespace-nowrap"
     @click="click"
   >
     <RotateCcw />{{ confirm_.label(sectionId, "Clear section") }}
