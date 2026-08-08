@@ -6,6 +6,7 @@
 import { describe, it, expect } from "vitest";
 import * as db from "../../src/data/db";
 import * as engine from "../../src/engine/engine";
+import { isHiddenBonus } from "../../src/engine/bonus";
 import type {
   Build,
   BuildContext,
@@ -822,5 +823,35 @@ describe("problem grants (bonus-authored errors/warnings)", () => {
       buildWith({}, { "boons.test": { "boon-tier1": 10, "boon-tier2": 1 } }),
     );
     expect(result.errors.some((e) => e.kind === "bonusRule")).toBe(false);
+  });
+
+  // Displays that list "bonuses" (ItemCard.vue's hover card, BonusInspector.vue's sidebar
+  // table) should leave a problem-only set out entirely -- issue #94: it read as an inactive
+  // (or, worse, active-looking) bonus that never actually grants anything.
+  describe("isHiddenBonus", () => {
+    it("hides a set whose only grant reports a problem", () => {
+      expect(isHiddenBonus(mismatchSet)).toBe(true);
+      expect(isHiddenBonus(tier2Set)).toBe(true);
+    });
+
+    it("does not hide a plain stats-only set", () => {
+      const statsOnly: BonusSet = {
+        id: "stats-only",
+        grants: [{ stats: { power_p: 1 } }],
+      };
+      expect(isHiddenBonus(statsOnly)).toBe(false);
+    });
+
+    it("does not hide a set that mixes a problem grant with a stats grant", () => {
+      const mixed: BonusSet = {
+        id: "mixed",
+        grants: [{ stats: { power_p: 1 } }, mismatchSet.grants![0]],
+      };
+      expect(isHiddenBonus(mixed)).toBe(false);
+    });
+
+    it("does not hide a set with no grants", () => {
+      expect(isHiddenBonus({ id: "empty" })).toBe(false);
+    });
   });
 });

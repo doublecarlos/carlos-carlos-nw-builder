@@ -11,6 +11,7 @@
 // they fail, so the ones a single toggle or set piece away float to the top.
 import { ref, reactive, computed } from "vue";
 import { label as statLabel, signedStat } from "../../lib/format";
+import { isHiddenBonus } from "../../engine/bonus";
 import * as engine from "../../stores/resolved";
 import BasePanel from "../ui/BasePanel.vue";
 import PanelHead from "../ui/PanelHead.vue";
@@ -100,14 +101,21 @@ const STATE_DOT: Record<string, string> = {
   excluded: "bg-danger",
 };
 
+// Problem-only bonuses (a set that exists purely to report a build error/warning) are
+// already surfaced inline on their slot and in the errors summary -- listing them here too,
+// especially while inactive, reads as a bonus that never grants anything.
+const visibleBonuses = computed(() =>
+  result.value.bonuses.filter((entry) => !isHiddenBonus(entry.bonus)),
+);
+
 const entries = computed<Entry[]>(() => {
   const titleCounts = new Map<string, number>();
-  for (const entry of result.value.bonuses) {
+  for (const entry of visibleBonuses.value) {
     const title = entry.bonus?.name ?? entry.sources?.[0] ?? fromId(entry.id);
     titleCounts.set(title, (titleCounts.get(title) ?? 0) + 1);
   }
 
-  return result.value.bonuses.map((entry) => {
+  return visibleBonuses.value.map((entry) => {
     const unmet = entry.gate?.unmet ?? [];
     // The bonus's own friendly name is the most specific title; the item carrying it and
     // an id-derived fallback are progressively blunter instruments for one that has none.

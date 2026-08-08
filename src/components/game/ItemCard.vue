@@ -11,6 +11,7 @@
 import { computed } from "vue";
 import { NW_SCHEMA } from "../../data/data";
 import { label as statLabel, signedStat } from "../../lib/format";
+import { isHiddenBonus } from "../../engine/bonus";
 import type { Item, Db, EvaluatedBonus, StatValues } from "../../types";
 import BaseBadge from "../ui/BaseBadge.vue";
 import BaseCard from "../ui/BaseCard.vue";
@@ -159,40 +160,42 @@ const STATE_DOT: Record<string, string> = {
 };
 
 const rows = computed(() =>
-  props.bonuses.map((entry) => {
-    const sharedWith = sharedSources(entry);
-    // `sources` is sorted deterministically upstream (bonus.ts, by evaluation order), so
-    // every card agrees on which one is "first" without any cross-item coordination.
-    const isFirst =
-      !entry.sources?.length || entry.sources[0] === props.item.name;
-    const state = entry.excluded
-      ? "excluded"
-      : entry.active
-        ? "active"
-        : "inactive";
-    return {
-      id: entry.id,
-      state,
-      dotClass: STATE_DOT[state],
-      muted: state !== "active",
-      name: entry.bonus?.name ?? null,
-      conditions: (entry.gate?.leaves ?? [])
-        .map((leaf) => leaf.label)
-        .filter(Boolean)
-        .join(" + "),
-      unmet: entry.gate?.unmet ?? [],
-      excludedBy: entry.excludedBy,
-      stats: payload(entry),
-      stacks: entry.stacks ?? 1,
-      tiers: tierLadder(entry),
-      sharedWith,
-      // A shared bonus is real numbers on exactly one card and a pointer everywhere else
-      // -- showing the same total on every contributing card reads as each one granting
-      // it independently, when they share credit for one thing.
-      secondary: Boolean(sharedWith) && !isFirst,
-      firstSource: entry.sources?.[0] ?? null,
-    };
-  }),
+  props.bonuses
+    .filter((entry) => !isHiddenBonus(entry.bonus))
+    .map((entry) => {
+      const sharedWith = sharedSources(entry);
+      // `sources` is sorted deterministically upstream (bonus.ts, by evaluation order), so
+      // every card agrees on which one is "first" without any cross-item coordination.
+      const isFirst =
+        !entry.sources?.length || entry.sources[0] === props.item.name;
+      const state = entry.excluded
+        ? "excluded"
+        : entry.active
+          ? "active"
+          : "inactive";
+      return {
+        id: entry.id,
+        state,
+        dotClass: STATE_DOT[state],
+        muted: state !== "active",
+        name: entry.bonus?.name ?? null,
+        conditions: (entry.gate?.leaves ?? [])
+          .map((leaf) => leaf.label)
+          .filter(Boolean)
+          .join(" + "),
+        unmet: entry.gate?.unmet ?? [],
+        excludedBy: entry.excludedBy,
+        stats: payload(entry),
+        stacks: entry.stacks ?? 1,
+        tiers: tierLadder(entry),
+        sharedWith,
+        // A shared bonus is real numbers on exactly one card and a pointer everywhere else
+        // -- showing the same total on every contributing card reads as each one granting
+        // it independently, when they share credit for one thing.
+        secondary: Boolean(sharedWith) && !isFirst,
+        firstSource: entry.sources?.[0] ?? null,
+      };
+    }),
 );
 </script>
 

@@ -284,6 +284,20 @@ function evaluateGrant(
 }
 
 /**
+ * True when a bonus set has no business appearing in a "bonuses" listing (ItemCard.vue,
+ * BonusInspector.vue), active or not -- currently just the problem-only case: every grant it
+ * carries has a `problem` payload, so the set exists purely to report a build error/warning,
+ * never stats. That's already surfaced inline on its slot and in the errors summary
+ * (engine.ts's `bonusProblems`), so showing it again as a would-be bonus that never grants
+ * anything is just noise. A single predicate rather than one flag per reason, so a future
+ * "hide this from listings" case (an internal bookkeeping set, say) has one place to join in.
+ */
+export function isHiddenBonus(bonus: BonusSet): boolean {
+  const grants = bonus.grants ?? [];
+  return grants.length > 0 && grants.every((g) => g.problem != null);
+}
+
+/**
  * Resolve a whole bonus set: every grant it carries, summed. A set is one unit -- its final
  * stats are the sum of every currently-active grant, not one independently-tracked row
  * per grant.

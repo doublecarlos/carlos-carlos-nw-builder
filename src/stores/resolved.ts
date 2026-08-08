@@ -3,6 +3,7 @@
 import { computed, markRaw } from "vue";
 import * as catalog from "../data/catalog";
 import * as engine from "../engine/engine";
+import { isHiddenBonus } from "../engine/bonus";
 import * as builds from "./builds";
 import * as layers from "./layers";
 import * as compare from "./compare";
@@ -75,10 +76,14 @@ export const compareResolved = computed<Resolution | null>(() => {
   }
 });
 
-/** Summarised here so the tab can show it without mounting the inspector. */
+/** Summarised here so the tab can show it without mounting the inspector. Matches
+ * BonusInspector.vue's own `visibleBonuses` filter, so the tab badge and the panel it opens
+ * never disagree on the total. */
 export const bonusCounts = computed(() => {
   if (!resolved.value.ok) return { total: 0, active: 0, nearMiss: 0 };
-  const all = resolved.value.result.bonuses;
+  const all = resolved.value.result.bonuses.filter(
+    (bonus) => !isHiddenBonus(bonus.bonus),
+  );
   return {
     total: all.length,
     active: all.filter((bonus) => bonus.active).length,
