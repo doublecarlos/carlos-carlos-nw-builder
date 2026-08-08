@@ -246,6 +246,88 @@ describe("buildEditor.applyPreset", () => {
   });
 });
 
+// Real shipped slots spanning all three types, chosen to also cover two different
+// sections ("options" and "boons"/"gear") so clearSection's section filter is exercised,
+// not just its per-type reset.
+describe("buildEditor.clearSection", () => {
+  const tier1Slot = {
+    id: "boons.tier1",
+    label: "Tier 1",
+    section: "boons",
+    type: "point_assignment" as const,
+    filter: "boon_tier1",
+  };
+
+  it("resets a build_parameter slot's path to its default", async () => {
+    const { builds, buildEditor } = await freshStores();
+    buildEditor.setParam(
+      {
+        id: "options.role",
+        label: "Role",
+        section: "options",
+        type: "build_parameter" as const,
+        paramType: "list" as const,
+        path: "role",
+        default: "",
+      },
+      "dps",
+    );
+    expect(builds.build.value.context.role).toBe("dps");
+
+    buildEditor.clearSection("options", "Options");
+    expect(builds.build.value.context.role).toBeUndefined();
+  });
+
+  it("resets a point_assignment slot's rows to their defaults", async () => {
+    const { builds, buildEditor } = await freshStores();
+    buildEditor.setAssignment(tier1Slot, "boon-tier1-power", 3);
+    buildEditor.clearSection("boons", "Boons");
+    expect(builds.build.value.assignments["boons.tier1"]).toEqual(seededRows);
+  });
+
+  it("clears an item_picker slot's choice and value", async () => {
+    const { builds, buildEditor } = await freshStores();
+    buildEditor.setChoice("gear.head", "ItemA");
+    buildEditor.setValue("gear.head", "5");
+
+    buildEditor.clearSection("gear", "Gear");
+    expect(builds.build.value.choices["gear.head"]).toBeUndefined();
+    expect(builds.build.value.values["gear.head"]).toBeUndefined();
+  });
+
+  it("leaves other sections untouched", async () => {
+    const { builds, buildEditor } = await freshStores();
+    buildEditor.setChoice("gear.head", "ItemA");
+    buildEditor.setAssignment(tier1Slot, "boon-tier1-power", 3);
+
+    buildEditor.clearSection("gear", "Gear");
+    expect(builds.build.value.assignments["boons.tier1"]).toEqual({
+      ...seededRows,
+      "boon-tier1-power": 3,
+    });
+  });
+
+  it("applies as a single undo step", async () => {
+    const { builds, buildEditor } = await freshStores();
+    buildEditor.setChoice("gear.head", "ItemA");
+    buildEditor.setAssignment(tier1Slot, "boon-tier1-power", 3);
+
+    buildEditor.clearSection("boons", "Boons");
+    buildEditor.undo();
+    expect(builds.build.value.assignments["boons.tier1"]).toEqual({
+      ...seededRows,
+      "boon-tier1-power": 3,
+    });
+  });
+
+  it("includes the section label in the undo label", async () => {
+    const { buildEditor } = await freshStores();
+    buildEditor.setChoice("gear.head", "ItemA");
+    buildEditor.clearSection("gear", "Gear");
+    expect(buildEditor.undoLabel.value).toBe('clear section "Gear"');
+  });
+});
+
 describe("buildEditor undo labels", () => {
   it("renameBuild includes the new name in the label", async () => {
     const { buildEditor } = await freshStores();

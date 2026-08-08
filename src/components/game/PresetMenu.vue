@@ -13,7 +13,7 @@ const openSectionId = ref<string | null>(null);
 // unlike SectionCopyMenu, there's no separate "pick a target, then confirm" step, since a
 // preset is already the fully-specified target.
 import { onMounted, onUnmounted } from "vue";
-import IconButton from "../ui/IconButton.vue";
+import BaseButton from "../ui/BaseButton.vue";
 import { LayoutTemplate } from "@lucide/vue";
 import type { SectionPreset } from "../../types";
 
@@ -59,13 +59,13 @@ onUnmounted(() => document.removeEventListener("mousedown", onDocumentClick));
 
 <template>
   <div class="relative mr-0.5 flex-none">
-    <IconButton
+    <BaseButton
       title="Apply a preset to this section"
       class="section-preset-btn"
       @click="toggle"
     >
-      <LayoutTemplate />
-    </IconButton>
+      <LayoutTemplate />Presets…
+    </BaseButton>
     <div
       v-if="isOpen()"
       class="preset-popover absolute right-full top-1/2 z-30 mr-1.5 flex max-h-64 min-w-40 -translate-y-1/2 flex-col gap-0.5 overflow-y-auto whitespace-nowrap rounded-md border border-line bg-surface p-1 shadow-lg"

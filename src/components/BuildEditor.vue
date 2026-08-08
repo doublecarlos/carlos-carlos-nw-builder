@@ -405,6 +405,7 @@ function onFocusIn(event: FocusEvent) {
       @toggle="toggle(section.id)"
       @copy="(fromId) => buildEditor.copySection(fromId, [section.id])"
       @apply-preset="(preset) => buildEditor.applyPreset(preset)"
+      @clear="buildEditor.clearSection(section.id, section.label)"
     >
       <template #default="{ slotDef }: { slotDef: Slot }">
         <BuildSlot

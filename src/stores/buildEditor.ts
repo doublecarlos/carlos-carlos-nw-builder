@@ -316,6 +316,32 @@ export function copySection(fromId: string, sectionIds: string[]) {
   }
 }
 
+/** Resets every slot in a section to `defaultBuild()`'s value -- same per-type handling as
+ *  `copySection`, just sourced from the built-in defaults instead of another build. */
+export function clearSection(sectionId: string, label: string) {
+  const b = builds.build.value;
+  if (!b) return;
+
+  history.snapshot("build", b.id, null, `clear section "${label}"`, b);
+  const fresh = storage.defaultBuild();
+  for (const slot of db.value.slots) {
+    if (slot.section !== sectionId) continue;
+
+    if (slot.type === "build_parameter") {
+      setPath(b.context, slot.path, getPath(fresh.context, slot.path));
+      continue;
+    }
+
+    if (slot.type === "point_assignment") {
+      b.assignments[slot.id] = fresh.assignments[slot.id];
+      continue;
+    }
+
+    delete b.choices[slot.id];
+    delete b.values[slot.id];
+  }
+}
+
 /**
  * Writes a `SectionPreset`'s defaults into the active build -- a merge, not `copySection`'s
  * full-section replace: only the slots/items a field mentions are written, everything else in

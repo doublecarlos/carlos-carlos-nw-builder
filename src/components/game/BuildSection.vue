@@ -11,6 +11,7 @@
 import BaseBadge from "../ui/BaseBadge.vue";
 import SectionCopyMenu from "./SectionCopyMenu.vue";
 import PresetMenu from "./PresetMenu.vue";
+import SectionClearButton from "./SectionClearButton.vue";
 import { useCursorRowKeys } from "../../composables/useCursorRowKeys";
 import { useTemplateRef } from "vue";
 import type { Slot, SectionPreset } from "../../types";
@@ -36,6 +37,7 @@ defineEmits<{
   toggle: [];
   copy: [fromId: string];
   "apply-preset": [preset: SectionPreset];
+  clear: [];
 }>();
 
 defineSlots<{
@@ -86,6 +88,7 @@ useCursorRowKeys(button, {
         :other-builds="otherBuilds"
         @copy="(fromId) => $emit('copy', fromId)"
       />
+      <SectionClearButton :section-id="id" @clear="$emit('clear')" />
     </div>
 
     <div
