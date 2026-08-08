@@ -258,7 +258,7 @@ export function normalise(
     choices: strings(raw.choices),
     values: numbers(raw.values),
     assignments: nestedNumbers(raw.assignments, base.assignments),
-    // `context`'s pass-through fields (class/role/combatType/location/damageType) are not
+    // `context`'s pass-through fields (class/role/combatType/damageType) are not
     // individually validated -- the result is only knowable-safe by construction, not by
     // the type checker; hence the cast.
     context: {

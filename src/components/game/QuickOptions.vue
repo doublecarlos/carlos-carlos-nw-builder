@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // Compact "quick options" strip: whichever build_parameter slots are marked `quick: true` in
-// slots.json (today: the 5 toggles, combat type, location, duration) -- laid out as one small
+// slots.json (today: the 5 toggles, combat type, duration) -- laid out as one small
 // horizontal row instead of a wrapping column, matching the sheet's own quick-options widget.
 //
 // Everything else in the "options" section (class, role, damage type, magnitude, forte) is

@@ -345,7 +345,7 @@
         "stats": {"incoming_damage": -0.05, "overall_healing": 0.05}
       },
       {
-        "when": {"location": "wildspace", "pieces": {"set": "m28-voidtouched-set", "atLeast": 2}},
+        "when": {"equipped": {"item": "location-wildspace"}, "pieces": {"set": "m28-voidtouched-set", "atLeast": 2}},
         "stats": {"movement": 0.12}
       },
       {
@@ -365,7 +365,7 @@
         "when": {
           "combatType": "single",
           "duration": {"atLeast": 30},
-          "location": "wildspace",
+          "equipped": {"item": "location-wildspace"},
           "toggle": "combat",
           "pieces": {"set": "m28-voidtouched-set", "atLeast": 2}
         },
@@ -418,7 +418,7 @@
     "grants": [
       {
         "variants": [
-          {"stats": {"outgoing_damage": 0.07}, "when": {"toggle": "combat", "location": "thay"}},
+          {"stats": {"outgoing_damage": 0.07}, "when": {"toggle": "combat", "equipped": {"item": "location-thay"}}},
           {"stats": {"outgoing_damage": 0.035}, "when": {"toggle": "combat"}}
         ]
       }
@@ -482,7 +482,7 @@
     "grants": [
       {
         "variants": [
-          {"stats": {"outgoing_damage": 0.05}, "when": {"location": "thay"}},
+          {"stats": {"outgoing_damage": 0.05}, "when": {"equipped": {"item": "location-thay"}}},
           {"stats": {"outgoing_damage": 0.02}}
         ]
       }

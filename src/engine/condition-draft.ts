@@ -15,7 +15,6 @@ export const LEAF_TYPES = [
   "role",
   "class",
   "combatType",
-  "location",
   "damageType",
   "duration",
   "pieces",

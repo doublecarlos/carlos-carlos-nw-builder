@@ -31,7 +31,6 @@ const BASE_CONTEXT: BuildContext = {
   role: "dps",
   combatType: "single",
   duration: 60,
-  location: "generic",
   damageType: "magical",
   magnitude: 100,
   m32Forte: false,
@@ -223,6 +222,34 @@ describe("bonus model semantics", () => {
     ).toBe(true);
   });
 
+  it("Location is an item_picker choice, read via an `equipped` condition", () => {
+    const pieces = {
+      "gear.mainhand": "M28 Voidtouched Pactblade",
+      "gear.offhand": "M28 Voidtouched Tome",
+    };
+    const ID = "m28-voidtouched-set";
+    expect(runBuild(pieces).statOf(ID, "movement")).toBeUndefined();
+    expect(
+      runBuild({ ...pieces, "options.location": "Wildspace" }).statOf(
+        ID,
+        "movement",
+      ),
+    ).toBeCloseTo(0.12, 9);
+
+    const predatorId = "m31-thayan-predator";
+    const ring = { "gear.ring1": "M31 Runebound Shackle (Damage)" };
+    expect(runBuild(ring).statOf(predatorId, "outgoing_damage")).toBeCloseTo(
+      0.02,
+      9,
+    );
+    expect(
+      runBuild({ ...ring, "options.location": "Thay" }).statOf(
+        predatorId,
+        "outgoing_damage",
+      ),
+    ).toBeCloseTo(0.05, 9);
+  });
+
   it("perSource stacking multiplies by contributing slots", () => {
     // Replaces legacy `bonus_max_instances: 100` + `max_copies: 3`.
     const ID = "mount-vortex-panther-necrotic";
@@ -352,7 +379,6 @@ describe("bonus model semantics", () => {
       "role",
       "class",
       "combatType",
-      "location",
       "damageType",
       "duration",
       "pieces",

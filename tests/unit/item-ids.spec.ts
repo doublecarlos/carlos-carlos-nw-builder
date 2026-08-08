@@ -52,7 +52,6 @@ function testBuild(choices: Record<string, string>): Build {
       class: "",
       role: "",
       combatType: "",
-      location: "",
       damageType: "",
       duration: 0,
       magnitude: 0,

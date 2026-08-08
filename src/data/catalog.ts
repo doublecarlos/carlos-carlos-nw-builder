@@ -301,7 +301,6 @@ const CONDITION_KEYS = new Set([
   "role",
   "class",
   "combatType",
-  "location",
   "damageType",
   "duration",
   "pieces",
@@ -336,7 +335,6 @@ const DEDICATED_LEAF_FOR_PATH: Record<string, string> = {
   role: "role",
   class: "class",
   combatType: "combatType",
-  location: "location",
   damageType: "damageType",
   duration: "duration",
 };
@@ -435,7 +433,6 @@ const CONTEXT_SCALAR_KEYS = new Set([
   "class",
   "role",
   "combatType",
-  "location",
   "damageType",
   "duration",
   "magnitude",

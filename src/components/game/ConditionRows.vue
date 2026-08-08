@@ -172,7 +172,6 @@ const PATH_FOR_TYPE: Record<string, string> = {
   role: "role",
   class: "class",
   combatType: "combatType",
-  location: "location",
   damageType: "damageType",
 };
 

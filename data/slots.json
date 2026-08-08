@@ -342,25 +342,8 @@
         {
           "id": "options.location",
           "label": "Location",
-          "type": "build_parameter",
-          "paramType": "list",
-          "path": "location",
-          "default": "generic",
-          "quick": true,
-          "options": [
-            {
-              "value": "generic",
-              "label": "Generic"
-            },
-            {
-              "value": "thay",
-              "label": "Thay"
-            },
-            {
-              "value": "wildspace",
-              "label": "Wildspace"
-            }
-          ]
+          "filter": "location",
+          "type": "item_picker"
         },
         {
           "id": "options.duration",

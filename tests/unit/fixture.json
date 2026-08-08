@@ -161,7 +161,6 @@
           "secondaryA": "strike_p",
           "secondaryB": "awareness_p"
         },
-        "location": "generic",
         "m32Forte": true,
         "magnitude": 4332,
         "role": "dps",

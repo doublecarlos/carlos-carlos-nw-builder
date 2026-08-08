@@ -185,7 +185,6 @@ export function collect(
     class: context.class,
     role: context.role,
     combatType: context.combatType,
-    location: context.location,
     damageType: context.damageType,
     duration: context.duration ?? 0,
     toggles: context.toggles ?? {},

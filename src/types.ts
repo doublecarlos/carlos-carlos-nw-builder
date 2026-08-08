@@ -202,7 +202,7 @@ export type RangeLike = number | RangeSpec;
  * slot id. The three comparison forms are mutually exclusive, chosen by the addressed
  * parameter's `paramType`: `atLeast`/`below` for `number`/`percent` (half-open, same as
  * `duration`'s range), `is` for `boolean`, `equals` for `list` (a scalar or array -- an array
- * means "is one of", same as `role`/`class`/`location`). */
+ * means "is one of", same as `role`/`class`/`combatType`). */
 export interface ParamCondition {
   key: string;
   atLeast?: number;
@@ -219,7 +219,6 @@ export interface ConditionWhen {
   role?: string | string[];
   class?: string | string[];
   combatType?: string | string[];
-  location?: string | string[];
   damageType?: string | string[];
   duration?: RangeLike;
   pieces?: RangeSpec & { set: string };
@@ -327,7 +326,6 @@ export interface BuildContext {
   class: string;
   role: string;
   combatType: string;
-  location: string;
   damageType: string;
   duration: number;
   magnitude: number;
@@ -407,7 +405,6 @@ export interface EvalContext {
   class?: string;
   role?: string;
   combatType?: string;
-  location?: string;
   damageType?: string;
   duration: number;
   toggles: Record<string, boolean>;

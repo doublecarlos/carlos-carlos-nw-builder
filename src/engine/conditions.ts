@@ -61,10 +61,7 @@ export const describeRange = (spec: RangeLike | null | undefined): string => {
 // "needs duration ≥ 30s (you have 10s)" rather than just a missing row.
 
 const matchOneOf =
-  (
-    field: "role" | "class" | "combatType" | "location" | "damageType",
-    label: string,
-  ) =>
+  (field: "role" | "class" | "combatType" | "damageType", label: string) =>
   (spec: string | string[], ctx: EvalContext): ConditionLeafResult => {
     const wanted = asArray(spec);
     return {
@@ -103,9 +100,6 @@ const LEAVES: Record<
       spec as string | string[],
       ctx,
     );
-  },
-  location(spec, ctx) {
-    return matchOneOf("location", "Location")(spec as string | string[], ctx);
   },
   damageType(spec, ctx) {
     return matchOneOf("damageType", "Damage type")(
@@ -176,9 +170,8 @@ const LEAVES: Record<
   },
 
   // `spec.item`, when used instead of `tag`, is an item id (bonus.ts's `collect()` keys
-  // `ctx.equipped` by id) -- exercised by zero shipped bonuses today, so the label below
-  // showing the raw id rather than a display name (this module has no `Db` to resolve one)
-  // isn't yet visible in practice.
+  // `ctx.equipped` by id) -- the label below shows the raw id rather than a display name
+  // since this module has no `Db` to resolve one.
   equipped(spec, ctx) {
     const s = spec as RangeSpec & { tag?: string; item?: string };
     const have =

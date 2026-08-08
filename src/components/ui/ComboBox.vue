@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // Typeable single-select dropdown over a fixed, small option list. Replaces a native <select>
 // wherever the option list is short and known ahead of time (class, role, combat type,
-// location, damage type, forte picks).
+// damage type, forte picks).
 //
 // Reuses ComboBoxMenu/ComboBoxMenuRow primitives for the floating dropdown.
 import { ref, computed, watch, nextTick, useTemplateRef } from "vue";

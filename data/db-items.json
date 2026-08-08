@@ -3483,5 +3483,17 @@
     "filter": "class_stuff",
     "strike_p": 0.05,
     "maxCopies": 1
+  },
+  {
+    "id": "location-thay",
+    "name": "Thay",
+    "filter": "location",
+    "maxCopies": 1
+  },
+  {
+    "id": "location-wildspace",
+    "name": "Wildspace",
+    "filter": "location",
+    "maxCopies": 1
   }
 ]

@@ -207,7 +207,7 @@ const sections = computed<SectionRow[]>(() => {
         : allSlots;
       // The fill-count badge only means anything for item_picker slots -- a build_parameter
       // always has *some* value, "filled" isn't a meaningful state for it. A section made
-      // entirely of them (Options) ends up with total 0, so the badge just doesn't render.
+      // entirely of build_parameter slots ends up with total 0, so the badge just doesn't render.
       const pickerSlots = slots.filter(
         (slotDef) => slotDef.type === "item_picker",
       );

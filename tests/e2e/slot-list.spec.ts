@@ -124,13 +124,13 @@ test.describe("section collapse/expand", () => {
     await expect(slotRow(page, "options.class")).toBeVisible();
   });
 
-  test("the Options header has no filled/total badge, unlike a real section", async ({
+  test("the Options header's badge only counts its one item_picker slot (Location)", async ({
     page,
   }) => {
     await openBuilder(page);
     await expect(
       headerRow(page, "options").locator(".section-count"),
-    ).toHaveCount(0);
+    ).toHaveText("0/1");
     await expect(headerRow(page, "gear").locator(".section-count")).toHaveText(
       /^\d+\/\d+$/,
     );
