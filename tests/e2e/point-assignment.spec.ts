@@ -154,3 +154,52 @@ test.describe("point_assignment hover card", () => {
     await expect(card).toBeHidden();
   });
 });
+
+// Mirrors slot-list.spec.ts's "row click behaviour" coverage for item_picker rows: Ctrl/Cmd
+// click jumps straight to a layer's item form. A point_assignment row has several items, not
+// one, so the target here is one item's own label (assignmentLabel) rather than the row's
+// `.slot-label` -- ctrl-clicking the row's own label stays a no-op, same as an empty slot.
+test.describe("point_assignment Ctrl+click", () => {
+  test("Ctrl+click on an item's label opens the layer editor on that item", async ({
+    page,
+  }) => {
+    await openBuilder(page);
+    const row = slotRow(page, SLOT_ID);
+    await row.scrollIntoViewIfNeeded();
+
+    await assignmentLabel(row, POWER_ID).click({ modifiers: ["Control"] });
+
+    await expect(page.getByTestId("builder-content")).toBeHidden();
+    await expect(page.locator(".editor-row.is-on .editor-row-name")).toHaveText(
+      "Power",
+    );
+  });
+
+  test("Ctrl+click on a different item's label in the same row opens that item instead", async ({
+    page,
+  }) => {
+    await openBuilder(page);
+    const row = slotRow(page, SLOT_ID);
+    await row.scrollIntoViewIfNeeded();
+
+    await assignmentLabel(row, AVOIDANCE_ID).click({
+      modifiers: ["Control"],
+    });
+
+    await expect(page.locator(".editor-row.is-on .editor-row-name")).toHaveText(
+      "Critical Avoidance",
+    );
+  });
+
+  test("Ctrl+click on the row's own label (not an item) does nothing", async ({
+    page,
+  }) => {
+    await openBuilder(page);
+    const row = slotRow(page, SLOT_ID);
+    await row.scrollIntoViewIfNeeded();
+
+    await row.locator(".slot-label").click({ modifiers: ["Control"] });
+
+    await expect(page.getByTestId("builder-content")).toBeVisible();
+  });
+});

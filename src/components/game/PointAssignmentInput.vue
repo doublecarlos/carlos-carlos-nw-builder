@@ -90,6 +90,7 @@ defineExpose({ focus, focusAndSeed });
       <span
         class="truncate text-sm text-center"
         :data-testid="`assignment-label-${item.id}`"
+        :data-item-id="item.id"
         @mouseenter="emit('itemEnter', $event, item.id)"
         @mouseleave="emit('itemLeave')"
         >{{ item.name }}</span

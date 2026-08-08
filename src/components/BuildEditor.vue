@@ -320,10 +320,12 @@ function setAll(open: boolean) {
 
 /** A plain click parks the cursor via BuildSlot's own anchor focus; Ctrl/Cmd+click on a
  *  filled slot jumps straight to that item in the layer editor -- a no-op on an empty slot,
- *  since there is nothing there to edit. The platform's own modifier exclusively (decision 46). */
-function onRowClick(event: MouseEvent, slotId: string) {
+ *  since there is nothing there to edit. The platform's own modifier exclusively (decision 46).
+ *  `itemId` names which stepper was clicked on a point_assignment row, which has no single
+ *  `itemIn` resolution of its own (BuildSlot.vue's own doc comment on `onRowClick`). */
+function onRowClick(event: MouseEvent, slotId: string, itemId?: string) {
   if (!(isMac ? event.metaKey : event.ctrlKey)) return;
-  const item = itemIn(slotId);
+  const item = itemId ? db.value.get(itemId) : itemIn(slotId);
   if (!item) return;
   const layer = layers.ensureTargetLayer();
   router.apply({ item: item.id });
@@ -466,7 +468,7 @@ function onFocusIn(event: FocusEvent) {
           "
           @enter="(event, itemId) => onRowEnter(event, slotDef.id, itemId)"
           @leave="onRowLeave"
-          @rowclick="onRowClick($event, slotDef.id)"
+          @rowclick="(event, itemId) => onRowClick(event, slotDef.id, itemId)"
         />
       </template>
     </BuildSection>

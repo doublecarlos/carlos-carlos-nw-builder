@@ -68,7 +68,7 @@ const emit = defineEmits<{
    *  (PointAssignmentInput.vue's own `item-enter`), forwarded straight through. */
   enter: [event: MouseEvent, itemId?: string];
   leave: [];
-  rowclick: [event: MouseEvent];
+  rowclick: [event: MouseEvent, itemId?: string];
 }>();
 
 const anchor = useTemplateRef("anchor");
@@ -85,10 +85,17 @@ const control = useTemplateRef<{
  * real control (the input focuses itself then). Clicks on picker menu rows bubble here too --
  * they carry the "choose this item" mousedown but by click-time the input has already blurred,
  * so parking the anchor is exactly what the old virtual cursor did on that path.
+ *
+ * A point_assignment row has no single item (item_picker/build_parameter rows do, via
+ * BuildEditor's `itemIn`), so ctrl-click-to-edit needs to know *which* of its stepper items was
+ * clicked -- PointAssignmentInput.vue tags each item's label with `data-item-id` for that.
  */
 function onRowClick(event: MouseEvent) {
   if (!isFormControl(event.target as Element | null)) anchor.value?.focus();
-  emit("rowclick", event);
+  const itemId = (event.target as Element | null)?.closest<HTMLElement>(
+    "[data-item-id]",
+  )?.dataset.itemId;
+  emit("rowclick", event, itemId);
 }
 
 useCursorRowKeys(anchor, {
