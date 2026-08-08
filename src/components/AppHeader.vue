@@ -1,12 +1,13 @@
 <script setup lang="ts">
-// Full-width header bar: app title, export/import, undo/redo, theme toggle, and notice.
+// Full-width header bar: app title, export/import, an auto-save indicator, undo/redo, theme
+// toggle, and notice.
 import { ref, useTemplateRef } from "vue";
 import ThemeToggle from "./ui/ThemeToggle.vue";
 import HistoryButton from "./ui/HistoryButton.vue";
 import BaseButton from "./ui/BaseButton.vue";
 import BaseNotice from "./ui/BaseNotice.vue";
 import BundleExport from "./BundleExport.vue";
-import { Download, Upload } from "@lucide/vue";
+import { Download, HardDrive, Upload } from "@lucide/vue";
 import { useUndoRedoKeys } from "../composables/useUndoRedoKeys";
 import * as builds from "../stores/builds";
 import * as layers from "../stores/layers";
@@ -75,6 +76,15 @@ async function onImportFile(event: Event) {
     />
 
     <span class="h-4 w-px bg-line" />
+
+    <span
+      class="flex items-center gap-1 whitespace-nowrap text-muted"
+      data-testid="autosave-indicator"
+      title="Edits are saved automatically to this browser's storage. That storage can be cleared or lost — use Export to keep a backup elsewhere."
+    >
+      <HardDrive class="h-3.5 w-3.5" />
+      Auto-saved to this browser
+    </span>
 
     <span class="ml-auto">
       <BaseNotice
