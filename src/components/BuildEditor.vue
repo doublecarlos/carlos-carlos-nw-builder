@@ -296,13 +296,16 @@ const bonusesBySlot = computed(() => {
 
 function itemsFor(slotId: string) {
   const cls = build.value.context.class;
-  // An unset class constrains nothing: with the class slot now defaulting to empty, a
-  // fresh build would otherwise hide every class-restricted item with no explanation.
-  // Equipping one still flags the `requires X` error once a class is (not) chosen.
+  const race = build.value.context.race;
+  // An unset class/race constrains nothing: with both slots defaulting to empty, a
+  // fresh build would otherwise hide every restricted item with no explanation.
+  // Equipping one still flags the `requires X` error once a class/race is (not) chosen.
   return db.value
     .forSlot(slotId)
     .filter(
-      (item) => !item.allowedClass || !cls || item.allowedClass.includes(cls),
+      (item) =>
+        (!item.allowedClass || !cls || item.allowedClass.includes(cls)) &&
+        (!item.allowedRace || !race || item.allowedRace.includes(race)),
     );
 }
 

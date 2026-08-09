@@ -839,6 +839,48 @@ describe("build_parameter linked items", () => {
     expect(result.errors.some((e) => e.kind === "class")).toBe(true);
   });
 
+  it("a race-restricted item, already picked, flags a race error once its race no longer matches", () => {
+    const raceRestrictedItem: Item = {
+      id: "trinket-race-restricted",
+      name: "Trinket: Race Restricted",
+      filter: "test_trinket",
+      allowedRace: ["half-orc"],
+    };
+    const trinketSlot: ItemPickerSlot = {
+      id: "gear.trinket",
+      label: "Trinket",
+      section: "gear",
+      type: "item_picker",
+      filter: "test_trinket",
+    };
+    const raceRestrictedDb = db.build([raceRestrictedItem], [], schema, {
+      sections: [{ id: "gear", label: "Gear" }],
+      slots: [trinketSlot],
+    });
+
+    const matchingRace = engine.resolveBuild(raceRestrictedDb, {
+      id: "b",
+      name: "b",
+      choices: { "gear.trinket": raceRestrictedItem.id },
+      values: {},
+      assignments: {},
+      context: { ...BASE_CONTEXT, race: "half-orc" },
+      compare: { id: "", highlight: false, onlyDiff: false },
+    } as unknown as Build);
+    expect(matchingRace.errors.some((e) => e.kind === "race")).toBe(false);
+
+    const wrongRace = engine.resolveBuild(raceRestrictedDb, {
+      id: "b",
+      name: "b",
+      choices: { "gear.trinket": raceRestrictedItem.id },
+      values: {},
+      assignments: {},
+      context: { ...BASE_CONTEXT, race: "elf" },
+      compare: { id: "", highlight: false, onlyDiff: false },
+    } as unknown as Build);
+    expect(wrongRace.errors.some((e) => e.kind === "race")).toBe(true);
+  });
+
   it("a linked item resolves onto its own row, not the item_picker row shape", () => {
     const result = engine.resolveBuild(testDb, buildWith({ race: "half-orc" }));
     const row = result.rows.find((r) => r.slotId === "options.race");

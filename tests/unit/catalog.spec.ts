@@ -209,6 +209,25 @@ describe("catalog.validate (class lookup after path trim)", () => {
       ),
     ).toBe(true);
   });
+
+  it("still finds allowedRace values through the race slot", () => {
+    const findings = catalog.validate(
+      [
+        {
+          id: "test-item",
+          name: "Test Item",
+          filter: "gear_head",
+          allowedRace: ["not-a-race"],
+        },
+      ],
+      [],
+    );
+    expect(
+      findings.some(
+        (f) => f.name === "test-item" && /allowedRace/.test(f.message),
+      ),
+    ).toBe(true);
+  });
 });
 
 describe("catalog.validate: item id lint", () => {

@@ -64,6 +64,8 @@ const notes = computed(() => {
   const out: string[] = [];
   if (props.item.allowedClass)
     out.push(`${props.item.allowedClass.join(" or ")} only`);
+  if (props.item.allowedRace)
+    out.push(`${props.item.allowedRace.join(" or ")} race only`);
   if (props.item.maxCopies) out.push(`max ${props.item.maxCopies} equipped`);
   if (props.item.dynamicStat) {
     const lbl = statLabel(props.item.dynamicStat);

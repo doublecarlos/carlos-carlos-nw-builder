@@ -72,6 +72,7 @@ export interface ItemDraft {
   filter: string;
   maxCopies: number | string | null;
   allowedClass: string[];
+  allowedRace: string[];
   tags: string[];
   bonuses: string[];
   excludes: string[];
@@ -99,6 +100,7 @@ function buildDraft(item: Item | null | undefined): ItemDraft {
     filter: source.filter ?? "",
     maxCopies: source.maxCopies ?? null,
     allowedClass: [...(source.allowedClass ?? [])],
+    allowedRace: [...(source.allowedRace ?? [])],
     tags: [...(source.tags ?? [])],
     bonuses: [...(source.bonuses ?? [])],
     excludes: [...(source.excludes ?? [])],
@@ -135,6 +137,8 @@ function diffLabel(oldJson: string, newJson: string): string {
       return `edit max copies → ${nw.maxCopies ?? "(none)"}`;
     if (JSON.stringify(old.allowedClass) !== JSON.stringify(nw.allowedClass))
       return "edit classes";
+    if (JSON.stringify(old.allowedRace) !== JSON.stringify(nw.allowedRace))
+      return "edit races";
     if (JSON.stringify(old.tags) !== JSON.stringify(nw.tags))
       return diffArrayLabel("tag", old.tags ?? [], nw.tags ?? []);
     if (JSON.stringify(old.bonuses) !== JSON.stringify(nw.bonuses))
@@ -232,6 +236,8 @@ const classSlot = findParamSlot(NW_SLOTS.slots, "class");
 // The class slot's own "— none —" row is for the build editor, not for restricting an
 // item to no class at all -- drop the empty value from the checkbox list.
 const classes = (classSlot?.options?.map((o) => o.value) ?? []).filter(Boolean);
+const raceSlot = findParamSlot(NW_SLOTS.slots, "race");
+const races = (raceSlot?.options?.map((o) => o.value) ?? []).filter(Boolean);
 
 const statComboOptions = statOptions.map((s) => ({
   value: s.key,
@@ -271,6 +277,7 @@ function toItem(): Item {
   if (local.excludes.length) item.excludes = [...local.excludes];
   if (local.maxCopies) item.maxCopies = Number(local.maxCopies);
   if (local.allowedClass.length) item.allowedClass = [...local.allowedClass];
+  if (local.allowedRace.length) item.allowedRace = [...local.allowedRace];
 
   if (local.dynamicStat) {
     item.dynamicStat = local.dynamicStat;
@@ -507,6 +514,18 @@ watch(
         :value="cls"
       >
         {{ cls }}
+      </BaseCheckbox>
+    </div>
+
+    <FormSection>Restricted to races</FormSection>
+    <div class="mb-1.5 flex flex-wrap gap-x-3 gap-y-0.5">
+      <BaseCheckbox
+        v-for="race in races"
+        :key="race"
+        v-model="draft.allowedRace"
+        :value="race"
+      >
+        {{ race }}
       </BaseCheckbox>
     </div>
 
