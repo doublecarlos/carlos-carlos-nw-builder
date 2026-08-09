@@ -114,7 +114,10 @@ function moveFocus(dir: 1 | -1) {
       <span class="text-xs font-semibold uppercase text-muted">Builds</span>
       <div class="flex items-center gap-1">
         <BaseButton @click="$emit('import')"><Upload />Import</BaseButton>
-        <BaseButton data-testid="nav-add-build" @click="$emit('create')"
+        <BaseButton
+          data-testid="nav-add-build"
+          title="New build (Ctrl+N)"
+          @click="$emit('create')"
           ><Plus />New</BaseButton
         >
       </div>
@@ -123,7 +126,8 @@ function moveFocus(dir: 1 | -1) {
     <input
       :value="filter"
       type="text"
-      placeholder="Filter…"
+      placeholder="Filter… (/)"
+      data-testid="nav-builds-filter"
       class="mb-1 rounded-md border border-line bg-surface px-2 py-0.5 text-xs focus:outline-accent"
       @input="$emit('update:filter', ($event.target as HTMLInputElement).value)"
     />

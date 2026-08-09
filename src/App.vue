@@ -19,8 +19,11 @@ import * as selection from "./stores/selection";
 import * as builds from "./stores/builds";
 import * as layers from "./stores/layers";
 import * as editorScroll from "./stores/editorScroll";
+import { useGlobalShortcuts } from "./composables/useGlobalShortcuts";
 
 const resolved = engine.resolved;
+
+useGlobalShortcuts();
 
 // --- loading state ------------------------------------------------------------------------
 const loading = builds.loading;

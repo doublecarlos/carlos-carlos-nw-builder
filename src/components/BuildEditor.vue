@@ -509,7 +509,7 @@ function onFocusIn(event: FocusEvent) {
         type="search"
         data-testid="slot-filter-text"
         class="slot-filter-text min-w-40 rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-        placeholder="Filter slots…"
+        placeholder="Filter slots… (/)"
       />
       <ComboBox
         class="w-52"

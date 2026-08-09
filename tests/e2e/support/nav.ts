@@ -51,15 +51,14 @@ export async function addLayer(page: Page) {
 
 /** Enters a filter string in the Builds filter box. */
 export async function filterBuilds(page: Page, text: string) {
-  // The builds filter is the first input[placeholder="Filter…"] in the nav.
-  const filter = page.locator('input[placeholder="Filter…"]').first();
-  await filter.fill(text);
+  await page.getByTestId("nav-builds-filter").fill(text);
 }
 
 /** Enters a filter string in the Layers filter box. */
 export async function filterLayers(page: Page, text: string) {
-  // The layers filter is the second input[placeholder="Filter…"] in the nav.
-  const filter = page.locator('input[placeholder="Filter…"]').nth(1);
+  // The layers filter is the only input[placeholder="Filter…"] left in the nav now that the
+  // builds filter's placeholder carries its own "(/)" shortcut hint.
+  const filter = page.locator('input[placeholder="Filter…"]').first();
   await filter.fill(text);
 }
 
