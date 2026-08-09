@@ -89,6 +89,21 @@ export async function chooseCombo(combo: Locator, label: string) {
   await combo.getByText(label, { exact: true }).click();
 }
 
+/** The build slot text filter input, above the section list. */
+export function slotFilterInput(page: Page): Locator {
+  return page.getByTestId("slot-filter-text");
+}
+
+/** The build slot stat filter's ComboBox, above the section list. */
+export function slotFilterStatCombo(page: Page): Locator {
+  return page.getByTestId("slot-filter-stat");
+}
+
+/** The button that resets both slot filters at once. */
+export function slotFilterClearButton(page: Page): Locator {
+  return page.getByTestId("slot-filter-clear");
+}
+
 /** The undo button in the app header. */
 export function undoButton(page: Page): Locator {
   return page.getByTestId("header-undo");

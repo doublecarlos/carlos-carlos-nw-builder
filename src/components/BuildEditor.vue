@@ -12,7 +12,9 @@ import BuildSection from "./game/BuildSection.vue";
 import BuildSlot from "./game/BuildSlot.vue";
 import SeparatorRow from "./game/SeparatorRow.vue";
 import BaseButton from "./ui/BaseButton.vue";
-import { ChevronsDownUp, ChevronsUpDown } from "@lucide/vue";
+import BaseBadge from "./ui/BaseBadge.vue";
+import ComboBox from "./ui/ComboBox.vue";
+import { ChevronsDownUp, ChevronsUpDown, FilterX } from "@lucide/vue";
 import { NW_SCHEMA, NW_SLOTS } from "../data/data";
 import { abbr, signedStat } from "../lib/format";
 import { useHoverCard } from "../composables/useHoverCard";
@@ -78,6 +80,95 @@ watch(
   },
   { deep: true },
 );
+
+// --- slot filter -------------------------------------------------------------------------
+
+const filterText = ref("");
+const filterStat = ref("");
+const filterActive = computed(
+  () => !!filterText.value.trim() || !!filterStat.value,
+);
+
+// Rating and percent variants of the same underlying stat share a label ("Power" for both
+// `power` and `power_p`), so the key is appended the same way ItemForm.vue's own stat
+// dropdown disambiguates them.
+const statFilterOptions = [
+  { value: "", label: "All stats" },
+  ...NW_SCHEMA.stats.map((stat) => ({
+    value: stat.key,
+    label: `${stat.label} (${stat.key})`,
+  })),
+];
+
+function clearFilters() {
+  filterText.value = "";
+  filterStat.value = "";
+}
+
+/** Every currently active bonus's stats, summed by the slotDef that instanced it -- the same
+ *  attribution the engine itself uses (`ResolvedBonuses.bonusStatsBySlot`), rebuilt here off
+ *  `result.value.bonuses` directly rather than reusing `bonusesBySlot` below: that one credits
+ *  a shared bonus to only its first contributing slot (for the row summary's display) and is
+ *  itself derived from `sections`, which the stat filter feeds into -- reusing it would make
+ *  `sections` depend on its own output. This has no such ordering concern: every slot a bonus
+ *  is attributed to should match the filter, shared or not. */
+const activeBonusStatsBySlot = computed(() => {
+  const map = new Map<string, Record<string, number>>();
+  for (const entry of result.value.bonuses) {
+    if (!entry.active || !entry.appliedStats) continue;
+    const totals = map.get(entry.slotId) ?? {};
+    for (const [key, value] of Object.entries(entry.appliedStats)) {
+      totals[key] = (totals[key] ?? 0) + (value ?? 0);
+    }
+    map.set(entry.slotId, totals);
+  }
+  return map;
+});
+
+/** Whether this slotDef currently grants the given stat, directly or through an active bonus.
+ *  Checked first against `activeBonusStatsBySlot` -- the build's *actual* resolved state, same
+ *  as the row's own stat summary -- then against the slot's own candidate items: item_picker
+ *  and point_assignment slots check their selectable item list; a build_parameter checks its
+ *  options' linked items (e.g. a race choice's attribute item). A bonus only a *different*
+ *  candidate item would unlock (not the one currently equipped) is deliberately out of scope --
+ *  that means re-running the engine per candidate item (see ItemPicker.vue's
+ *  `previewBonusStats`), far more than a slot filter needs. */
+function slotGrantsStat(slotDef: Slot, statKey: string): boolean {
+  if (activeBonusStatsBySlot.value.get(slotDef.id)?.[statKey]) return true;
+  if (slotDef.type === "item_picker" || slotDef.type === "point_assignment") {
+    return itemsFor(slotDef.id).some((item) => !!item[statKey]);
+  }
+  if (slotDef.type === "build_parameter") {
+    return (slotDef.options ?? []).some((option) => {
+      const item = option.linkedItem ? db.value.get(option.linkedItem) : null;
+      return !!item?.[statKey];
+    });
+  }
+  return false;
+}
+
+/** A slotDef is kept when its own label matches the text query, or when the section's own
+ *  header does -- a matching header pulls in every slot underneath it, unfiltered by text.
+ *  The stat filter is independent of that override: it always narrows the result further. */
+function slotMatchesFilters(section: SlotSection, slotDef: Slot): boolean {
+  if (slotDef.type === "separator") return false;
+  if (filterStat.value && !slotGrantsStat(slotDef, filterStat.value))
+    return false;
+  const q = filterText.value.trim().toLowerCase();
+  if (!q) return true;
+  return (
+    section.label.toLowerCase().includes(q) ||
+    slotDef.label.toLowerCase().includes(q)
+  );
+}
+
+/** While filtering, a section with any surviving slot is forced open so its matches are
+ *  actually visible -- otherwise a match inside a collapsed section would never show. The
+ *  manually-toggled `expanded` state underneath is left untouched, so clearing the filter
+ *  restores whatever the user had before. */
+function sectionExpanded(sectionId: string) {
+  return filterActive.value ? true : expanded[sectionId];
+}
 
 /** slotId -> the engine's resolved row, so the item object is never looked up twice. */
 const rowBySlot = computed(
@@ -199,13 +290,16 @@ const sections = computed<SectionRow[]>(() => {
           slotDef.section === section.id &&
           !(slotDef.type === "build_parameter" && slotDef.quick),
       );
-      // Counted off the section's full slotDef list, not the (possibly onlyDiff-filtered)
-      // one below -- the badge's job is telling a *collapsed* section apart, where
+      // Counted off the section's full slotDef list, not the (possibly onlyDiff/filter-
+      // narrowed) one below -- the badge's job is telling a *collapsed* section apart, where
       // `slots` would otherwise be invisible. Same reasoning for `unsaved`.
       const diffs = compareBuild.value ? allSlots.filter(rowDiffers).length : 0;
-      const slots = onlyDiffAndComparing
-        ? allSlots.filter(rowDiffers)
-        : allSlots;
+      const slots = allSlots.filter((slotDef) => {
+        if (onlyDiffAndComparing && !rowDiffers(slotDef)) return false;
+        if (filterActive.value && !slotMatchesFilters(section, slotDef))
+          return false;
+        return true;
+      });
       // The fill-count badge only means anything for item_picker slots -- a build_parameter
       // always has *some* value, "filled" isn't a meaningful state for it. A section made
       // entirely of build_parameter slots ends up with total 0, so the badge just doesn't render.
@@ -245,8 +339,18 @@ const sections = computed<SectionRow[]>(() => {
         ),
       };
     })
-    .filter((section) => !onlyDiffAndComparing || section.slots.length > 0);
+    .filter(
+      (section) =>
+        section.slots.length > 0 ||
+        (!onlyDiffAndComparing && !filterActive.value),
+    );
 });
+
+/** Total rendered slots across every visible section, for the "N matches" indicator next to
+ *  the filter controls. */
+const filteredSlotCount = computed(() =>
+  sections.value.reduce((sum, section) => sum + section.slots.length, 0),
+);
 
 /** Ids of rows immediately followed by a separator in their section's rendered slot list --
  *  BuildSlot.vue suppresses its own bottom border for these, so a row's border and the
@@ -394,12 +498,40 @@ function onFocusIn(event: FocusEvent) {
     @focusin="onFocusIn"
     @focusout="onFocusOut"
   >
-    <div class="flex gap-1.5">
+    <div class="flex flex-wrap items-center gap-1.5">
       <BaseButton @click="setAll(true)"
         ><ChevronsUpDown />expand all</BaseButton
       >
       <BaseButton @click="setAll(false)"
         ><ChevronsDownUp />collapse all</BaseButton
+      >
+      <input
+        v-model="filterText"
+        type="search"
+        data-testid="slot-filter-text"
+        class="slot-filter-text min-w-40 rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+        placeholder="Filter slots…"
+      />
+      <ComboBox
+        class="w-52"
+        data-testid="slot-filter-stat"
+        :options="statFilterOptions"
+        :model-value="filterStat"
+        @update:model-value="(v) => (filterStat = v)"
+      />
+      <BaseButton
+        :disabled="!filterActive"
+        data-testid="slot-filter-clear"
+        @click="clearFilters"
+        ><FilterX />clear filters</BaseButton
+      >
+      <BaseBadge
+        v-if="filterActive"
+        variant="near"
+        data-testid="slot-filter-count"
+        >{{ filteredSlotCount }} match{{
+          filteredSlotCount === 1 ? "" : "es"
+        }}</BaseBadge
       >
       <span class="flex-1"></span>
       <span class="text-sm text-muted"
@@ -419,7 +551,7 @@ function onFocusIn(event: FocusEvent) {
       :errors="section.errors"
       :warnings="section.warnings"
       :diffs="section.diffs"
-      :expanded="expanded[section.id]"
+      :expanded="sectionExpanded(section.id)"
       :on-arrow="moveCursor"
       :highlight-diff="highlightDiff"
       :other-builds="otherBuilds"
