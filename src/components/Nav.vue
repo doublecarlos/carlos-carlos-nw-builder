@@ -81,13 +81,24 @@ function commitRename() {
   const { type, id } = renaming.value;
   const name = renameText.value.trim();
   renaming.value = null;
-  if (!name) return;
-  if (type === "build") {
-    selection.selectBuild(id);
-    buildEditor.renameBuild(name);
-  } else {
-    layers.renameLayer(id, name);
+  if (name) {
+    if (type === "build") {
+      selection.selectBuild(id);
+      buildEditor.renameBuild(name);
+    } else {
+      layers.renameLayer(id, name);
+    }
   }
+  // The rename <input> unmounts as soon as `renaming` clears, taking focus with it --
+  // land back on the row's own button so keyboard nav (arrows, F2, Delete) can continue.
+  if (type === "build" || type === "layer") focusRow(type, id);
+}
+
+function cancelRename() {
+  const cancelled = renaming.value;
+  renaming.value = null;
+  if (cancelled && (cancelled.type === "build" || cancelled.type === "layer"))
+    focusRow(cancelled.type, cancelled.id);
 }
 
 // --- two-step confirm (delegates to useConfirm composable) ---------------------------
@@ -123,16 +134,18 @@ function onDeleteRequest(type: "build" | "layer", id: string) {
   }
   if (type === "build") deleteBuildRow(id);
   else deleteLayerRow(id);
-  focusSelectedRow(type);
+  // The deleted row's button (and the keyboard focus on it) is gone -- refocus whatever the
+  // store auto-selected next so the keyboard cursor isn't dropped.
+  const next = selection.selection.value;
+  if (next && next.kind === type) focusRow(type, next.id);
 }
 
-/** After a keyboard delete, the deleted row's button (and the keyboard focus on it) is gone --
- *  refocus whatever the store auto-selected next so the keyboard cursor isn't dropped. */
-async function focusSelectedRow(type: "build" | "layer") {
+/** Focuses a nav row's own button by id, once Vue has applied whatever DOM change (reorder,
+ *  rename exit, re-selection after delete) is in flight. Used everywhere a keyboard-driven
+ *  action would otherwise drop focus to <body> and strand the keyboard cursor. */
+async function focusRow(type: "build" | "layer", id: string) {
   await nextTick();
-  const sel = selection.selection.value;
-  if (!sel || sel.kind !== type) return;
-  root.value?.querySelector<HTMLElement>(`[data-nav-key="${sel.id}"]`)?.focus();
+  root.value?.querySelector<HTMLElement>(`[data-nav-key="${id}"]`)?.focus();
 }
 
 // --- build actions --------------------------------------------------------------------
@@ -157,9 +170,11 @@ function resetBuild(id: string) {
 }
 async function moveBuildUp(id: string) {
   await builds.moveBuild(id, -1);
+  focusRow("build", id);
 }
 async function moveBuildDown(id: string) {
   await builds.moveBuild(id, 1);
+  focusRow("build", id);
 }
 function revertBuild(id: string) {
   builds.revertToDownloaded(id);
@@ -185,9 +200,11 @@ function toggleLayerEnabled(id: string) {
 
 async function moveLayerUp(id: string) {
   await layers.moveLayer(id, -1);
+  focusRow("layer", id);
 }
 async function moveLayerDown(id: string) {
   await layers.moveLayer(id, 1);
+  focusRow("layer", id);
 }
 function duplicateLayerRow(id: string) {
   layers.duplicateLayer(id);
@@ -427,7 +444,7 @@ useEventListener(document, "scroll", onScrollCapture, {
         }
       "
       @rename-commit="commitRename"
-      @rename-cancel="renaming = null"
+      @rename-cancel="cancelRename"
       @menu-open="(id, ev) => openMenuFor('build', id, ev)"
       @menu-action="(a, id) => onBuildMenuAction(a, id)"
       @menu-close="closeMenu"
@@ -465,7 +482,7 @@ useEventListener(document, "scroll", onScrollCapture, {
         }
       "
       @rename-commit="commitRename"
-      @rename-cancel="renaming = null"
+      @rename-cancel="cancelRename"
       @menu-open="(id, ev) => openMenuFor('layer', id, ev)"
       @menu-action="(a, id) => onLayerMenuAction(a, id)"
       @menu-close="closeMenu"

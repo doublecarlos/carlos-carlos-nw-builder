@@ -399,6 +399,27 @@ test("Ctrl+ArrowUp reorders the focused build like Move up", async ({
   await expect(buildRows.nth(1)).toContainText("Build 1");
 });
 
+test("Ctrl+ArrowUp keeps focus on the moved row so it can be repeated", async ({
+  page,
+}) => {
+  await openBuilder(page);
+  await addBuild(page);
+  await addBuild(page);
+  await expect(buildRow(page, "Build 3")).toBeVisible();
+
+  await buildRow(page, "Build 3").locator(".nav-name").focus();
+  await page.keyboard.press("Control+ArrowUp");
+  await expect(buildRow(page, "Build 3").locator(".nav-name")).toBeFocused();
+
+  // Focus survived the first move, so a second Ctrl+ArrowUp keeps moving the same build.
+  await page.keyboard.press("Control+ArrowUp");
+
+  const buildRows = page.locator(".nav-row--build");
+  await expect(buildRows.nth(0)).toContainText("Build 3");
+  await expect(buildRows.nth(1)).toContainText("Build 1");
+  await expect(buildRows.nth(2)).toContainText("Build 2");
+});
+
 test("F2 on a focused row starts rename", async ({ page }) => {
   await openBuilder(page);
   await buildRow(page, "Build 1").locator(".nav-name").focus();
@@ -407,6 +428,42 @@ test("F2 on a focused row starts rename", async ({ page }) => {
   const input = page.locator(".nav-rename");
   await expect(input).toBeFocused();
   await expect(input).toHaveValue("Build 1");
+});
+
+test("committing a rename with Enter returns focus to the row for continued keyboard nav", async ({
+  page,
+}) => {
+  await openBuilder(page);
+  await addBuild(page);
+  await buildRow(page, "Build 1").locator(".nav-name").focus();
+  await page.keyboard.press("F2");
+
+  const input = page.locator(".nav-rename");
+  await input.fill("Renamed");
+  await input.press("Enter");
+
+  const renamed = buildRow(page, "Renamed");
+  await expect(renamed.locator(".nav-name")).toBeFocused();
+
+  // Focus survived the rename, so arrow nav still works right after.
+  await page.keyboard.press("ArrowDown");
+  await expect(buildRow(page, "Build 2")).toHaveClass(/is-active/);
+});
+
+test("cancelling a rename with Escape returns focus to the row", async ({
+  page,
+}) => {
+  await openBuilder(page);
+  await buildRow(page, "Build 1").locator(".nav-name").focus();
+  await page.keyboard.press("F2");
+  await page.keyboard.press("Escape");
+
+  await expect(buildRow(page, "Build 1").locator(".nav-name")).toBeFocused();
+  await expect(buildRow(page, "Build 1")).toBeVisible();
+
+  // Focus survived, so keyboard nav still works right after.
+  await page.keyboard.press("F2");
+  await expect(page.locator(".nav-rename")).toBeFocused();
 });
 
 test("Delete on a focused row arms a confirm notice, and fires on the second press", async ({
