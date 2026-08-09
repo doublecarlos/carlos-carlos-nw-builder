@@ -1,8 +1,8 @@
 <script setup lang="ts">
 // Searchable item typeahead for one slot -- thin wrapper around ComboBox.vue that maps
 // Item objects to the generic {value, label} options format and renders the item-specific
-// stat preview (plus, given `bonusPreview`, the bonus stats picking it would add) through
-// ComboBox's `#option` slot.
+// stat preview (plus, given `bonusPreview`, the bonus stats picking it would add now, and
+// the ones it's a step toward but hasn't unlocked yet) through ComboBox's `#option` slot.
 //
 // A native <datalist> was considered and rejected: it cannot show item level and a stat
 // preview per row, and its keyboard behaviour is not controllable. This is ~120 lines instead.
@@ -54,15 +54,26 @@ const options = computed(() =>
   props.items.map((item) => ({ value: item.id, label: item.name })),
 );
 
+interface BonusStatsPreview {
+  /** What's active if `item` is picked -- same attribution `EngineRow` itself sums into a
+   *  row's stats, so this matches what the row's own stat summary would show once the item
+   *  is actually picked. */
+  current: Record<string, number>;
+  /** The ceiling: bonuses `item` itself contributes to (issue #125) that aren't active in
+   *  this hypothetical build -- e.g. a set piece it would count toward but not complete on
+   *  its own. Sourced from `previewStats`, the same near-miss payload BonusInspector.vue
+   *  and ItemCard.vue already show for equipped items' inactive bonuses. */
+  potential: Record<string, number>;
+}
+
 /**
  * The bonus stats `item` would add if it were slotted into `bonusPreview.slotId` -- resolved
- * by cloning the active build with just that one slot's choice swapped, then reading which
- * active bonuses the engine attributes back to that same slot (same attribution `EngineRow`
- * itself sums into a row's stats, so this matches what the row's own stat summary would show
- * once the item is actually picked). A bad candidate/build combination fails resolution
- * rather than crash the whole dropdown -- the preview just stays empty for that one row.
+ * by cloning the active build with just that one slot's choice swapped, then reading the
+ * engine's own attribution/near-miss data off the result. A bad candidate/build combination
+ * fails resolution rather than crash the whole dropdown -- the preview just stays empty for
+ * that one row.
  */
-function previewBonusStats(item: Item): Record<string, number> | null {
+function previewBonusStats(item: Item): BonusStatsPreview | null {
   const ctx = props.bonusPreview;
   if (!ctx) return null;
   try {
@@ -71,19 +82,54 @@ function previewBonusStats(item: Item): Record<string, number> | null {
       choices: { ...ctx.build.choices, [ctx.slotId]: item.id },
     };
     const result = engine.resolveBuild(ctx.db, hypothetical);
-    const stats: Record<string, number> = {};
+
+    const current: Record<string, number> = {};
     for (const bonus of result.bonuses) {
       if (!bonus.active || bonus.slotId !== ctx.slotId || !bonus.appliedStats)
         continue;
       for (const [key, value] of Object.entries(bonus.appliedStats)) {
-        stats[key] = (stats[key] ?? 0) + (value ?? 0);
+        current[key] = (current[key] ?? 0) + (value ?? 0);
       }
     }
-    return stats;
+
+    // `db.bonusesFor(item)` -- item's own contribution list -- rather than filtering
+    // `result.bonuses` by slotId: an inactive bonus has no "instancing slot" worth trusting,
+    // so membership is what decides whether this candidate is one of its sources at all.
+    const bonusById = new Map(result.bonuses.map((bonus) => [bonus.id, bonus]));
+    const potential: Record<string, number> = {};
+    for (const candidate of ctx.db.bonusesFor(item)) {
+      const resolved = bonusById.get(candidate.bonus.id);
+      if (
+        !resolved ||
+        resolved.active ||
+        resolved.excluded ||
+        !resolved.previewStats
+      )
+        continue;
+      for (const [key, value] of Object.entries(resolved.previewStats)) {
+        potential[key] = (potential[key] ?? 0) + (value ?? 0);
+      }
+    }
+
+    return { current, potential };
   } catch {
     return null;
   }
 }
+
+/** Same formatted parts, so "potential" can be hidden when it would just repeat "current". */
+const sameParts = (
+  a: ReturnType<typeof bonusStatPreview>,
+  b: ReturnType<typeof bonusStatPreview>,
+) =>
+  a.more === b.more &&
+  a.parts.length === b.parts.length &&
+  a.parts.every((part, i) => part === b.parts[i]);
+
+const EMPTY_PREVIEW: ReturnType<typeof bonusStatPreview> = {
+  parts: [],
+  more: 0,
+};
 
 /** Decorated once per filter change rather than once per render pass -- and, since this is a
  *  lazy `computed` only ever read from the (`v-if="open"`-gated) option list, only while this
@@ -95,14 +141,22 @@ const matchMap = computed(() => {
       item: Item;
       preview: ReturnType<typeof itemPreview>;
       bonusPreview: ReturnType<typeof bonusStatPreview>;
+      potentialPreview: ReturnType<typeof bonusStatPreview>;
       flagged: boolean;
     }
   >();
   for (const item of props.items) {
+    const bonusStats = previewBonusStats(item);
+    const bonusPreview = bonusStatPreview(bonusStats?.current);
+    const potentialPreview = bonusStatPreview(bonusStats?.potential);
     map.set(item.id, {
       item,
       preview: itemPreview(item, 3),
-      bonusPreview: bonusStatPreview(previewBonusStats(item)),
+      bonusPreview,
+      // "Up to" is only worth showing when it says something "current" doesn't already.
+      potentialPreview: sameParts(bonusPreview, potentialPreview)
+        ? EMPTY_PREVIEW
+        : potentialPreview,
       flagged: hasBonuses(item),
     });
   }
@@ -139,7 +193,7 @@ defineExpose({
       <template v-if="matchMap.has(option.value)">
         <div class="flex items-baseline gap-1.5">
           <span
-            class="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap"
+            class="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap font-semibold"
             >{{ option.label }}</span
           >
           <span
@@ -154,34 +208,62 @@ defineExpose({
             >iL {{ int(matchMap.get(option.value)?.item?.il) }}</span
           >
         </div>
-        <div class="flex flex-wrap gap-2 text-sm text-muted">
-          <span
-            v-for="part in matchMap.get(option.value)?.preview?.parts ?? []"
-            :key="part"
-            >{{ part }}</span
+        <!-- Indented under the name, so the row reads as "item, then what it's worth". -->
+        <div class="flex flex-col gap-0.5 pl-2">
+          <div class="flex flex-wrap gap-2 text-sm text-text">
+            <span
+              v-for="part in matchMap.get(option.value)?.preview?.parts ?? []"
+              :key="part"
+              >{{ part }}</span
+            >
+            <span
+              v-if="matchMap.get(option.value)?.preview?.more"
+              class="italic"
+              >+{{ matchMap.get(option.value)?.preview?.more }} more</span
+            >
+          </div>
+          <!-- What picking this item would add via bonuses, e.g. a set piece it would
+               complete -- distinct from the item's own stats above (issue #116). -->
+          <div
+            v-if="matchMap.get(option.value)?.bonusPreview?.parts?.length"
+            data-testid="picker-option-bonus-preview"
+            class="flex flex-wrap gap-2 text-sm text-accent"
           >
-          <span v-if="matchMap.get(option.value)?.preview?.more" class="italic"
-            >+{{ matchMap.get(option.value)?.preview?.more }} more</span
+            <span
+              v-for="part in matchMap.get(option.value)?.bonusPreview?.parts ??
+              []"
+              :key="part"
+              >{{ part }}</span
+            >
+            <span
+              v-if="matchMap.get(option.value)?.bonusPreview?.more"
+              class="italic"
+              >+{{ matchMap.get(option.value)?.bonusPreview?.more }} more</span
+            >
+          </div>
+          <!-- The ceiling: bonuses this item contributes to that aren't active yet -- hidden
+               whenever it would just repeat the "current" line above (issue #125). -->
+          <div
+            v-if="matchMap.get(option.value)?.potentialPreview?.parts?.length"
+            data-testid="picker-option-potential-preview"
+            class="flex flex-wrap items-baseline gap-2 text-sm text-muted"
           >
-        </div>
-        <!-- What picking this item would add via bonuses, e.g. a set piece it would complete --
-             distinct from the item's own stats above (issue #116). -->
-        <div
-          v-if="matchMap.get(option.value)?.bonusPreview?.parts?.length"
-          data-testid="picker-option-bonus-preview"
-          class="flex flex-wrap gap-2 text-sm text-accent"
-        >
-          <span
-            v-for="part in matchMap.get(option.value)?.bonusPreview?.parts ??
-            []"
-            :key="part"
-            >{{ part }}</span
-          >
-          <span
-            v-if="matchMap.get(option.value)?.bonusPreview?.more"
-            class="italic"
-            >+{{ matchMap.get(option.value)?.bonusPreview?.more }} more</span
-          >
+            <span class="italic">Up to:</span>
+            <span
+              v-for="part in matchMap.get(option.value)?.potentialPreview
+                ?.parts ?? []"
+              :key="part"
+              >{{ part }}</span
+            >
+            <span
+              v-if="matchMap.get(option.value)?.potentialPreview?.more"
+              class="italic"
+              >+{{
+                matchMap.get(option.value)?.potentialPreview?.more
+              }}
+              more</span
+            >
+          </div>
         </div>
       </template>
     </template>
