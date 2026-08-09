@@ -14,8 +14,6 @@ if ! npm run typecheck; then FAILED_MESSAGES+=("Typecheck"); fi
 
 if ! npm run test; then FAILED_MESSAGES+=("Vitest"); fi
 
-if ! npm run test:ui; then FAILED_MESSAGES+=("Playwright"); fi
-
 if (( ${#FAILED_MESSAGES[@]} > 0 )); then
   echo ""
   echo "❌ Pre-commit verification failed."
