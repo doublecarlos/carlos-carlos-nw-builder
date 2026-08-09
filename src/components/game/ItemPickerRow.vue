@@ -7,6 +7,8 @@ import { computed, useTemplateRef } from "vue";
 import ItemPicker from "./ItemPicker.vue";
 import BaseButton from "../ui/BaseButton.vue";
 import BaseCheckbox from "../ui/BaseCheckbox.vue";
+import IconButton from "../ui/IconButton.vue";
+import { Plus } from "@lucide/vue";
 import * as buildEditor from "../../stores/buildEditor";
 import { useItemProcs } from "../../composables/useItemProcs";
 import { label as statLabel } from "../../lib/format";
@@ -29,6 +31,12 @@ const props = defineProps<{
   bonusDiffs?: { id: string; message: string }[];
   valueDiffers?: boolean;
   otherValue?: number | null;
+}>();
+
+const emit = defineEmits<{
+  /** The row's own "new item" shortcut -- BuildSlot.vue forwards it up with this row's
+   *  `filter`, so the item editor can open with a fresh draft pre-filtered to this slot. */
+  addItem: [];
 }>();
 
 const picker = useTemplateRef<InstanceType<typeof ItemPicker>>("picker");
@@ -59,6 +67,13 @@ const value = () => props.build.values[props.slotDef.id];
     <span v-if="item" class="min-w-0 flex-1 truncate text-sm text-text">{{
       statSummary
     }}</span>
+    <IconButton
+      title="Create a new item for this slot"
+      data-testid="add-item-for-slot"
+      @click="emit('addItem')"
+    >
+      <Plus />
+    </IconButton>
   </div>
 
   <!-- One checkbox per proc-gated grant credited to this item -- see useItemProcs.ts for why

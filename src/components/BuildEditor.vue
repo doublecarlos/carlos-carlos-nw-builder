@@ -418,6 +418,16 @@ function onRowClick(event: MouseEvent, slotId: string, itemId?: string) {
   selection.selectLayer(layer.id);
 }
 
+/** An item_picker/point_assignment row's own "+" button: jumps to the layer editor with a
+ *  fresh item draft, its filter pre-filled from this row's own `slotDef.filter` -- same
+ *  navigation `onRowClick` above uses, minus the modifier-key gate since this is an explicit
+ *  button rather than a repurposed click. */
+function onAddItem(filter: string) {
+  const layer = layers.ensureTargetLayer();
+  router.apply({ item: null, newItemFilter: filter });
+  selection.selectLayer(layer.id);
+}
+
 /**
  * Condensed, single-line stat summary for a row: the item's own stats plus whatever
  * active bonuses are credited to this slotDef (`bonusesBySlot`), summed together key by key
@@ -594,6 +604,7 @@ function onFocusIn(event: FocusEvent) {
           @enter="(event, itemId) => onRowEnter(event, slotDef.id, itemId)"
           @leave="onRowLeave"
           @rowclick="(event, itemId) => onRowClick(event, slotDef.id, itemId)"
+          @add-item="(filter) => onAddItem(filter)"
         />
       </template>
     </BuildSection>

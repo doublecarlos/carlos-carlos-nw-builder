@@ -20,6 +20,7 @@ So I decided to ask a clanker to create a web app for the same purpose, and use 
 And here we are!
 
 ## hey-clanker issues
+
 Github issues are being used to coordinate/request stuff to clankers.
 These are tagged "hey-clanker" to differentiate them from "real" issues.
 To hide all of them in the issue list, add "-label:hey-clanker" on the search bar.
