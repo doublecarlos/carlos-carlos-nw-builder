@@ -92,9 +92,7 @@ function toggleJson(gIndex: number) {
       :key="grant.uid"
       class="mb-2 rounded-md border border-line bg-surface-2 p-2.5"
     >
-      <!-- items-end, not items-center: these buttons have no label above them, so centering
-           would float them against the taller labeled fields elsewhere in the form. -->
-      <div class="flex flex-wrap items-end justify-between gap-2">
+      <div class="flex flex-wrap items-center gap-2">
         <span class="text-sm text-muted">Grant {{ gIndex + 1 }}</span>
         <div class="flex flex-wrap items-center gap-1.5">
           <IconButton
@@ -379,9 +377,7 @@ function toggleJson(gIndex: number) {
             :key="variant.uid"
             class="my-1.5 rounded-md border border-line border-l-4 border-l-accent bg-surface px-2.5 py-1.5"
           >
-            <div
-              class="mb-1 flex flex-wrap items-center justify-between gap-1.5"
-            >
+            <div class="mb-1 flex flex-wrap items-center gap-2">
               <span class="text-sm text-muted">Variant {{ vIndex + 1 }}</span>
               <div class="flex flex-wrap items-center gap-1.5">
                 <IconButton
