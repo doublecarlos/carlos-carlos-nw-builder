@@ -243,9 +243,9 @@ const displayId = computed(
 const classSlot = findParamSlot(NW_SLOTS.slots, "class");
 // The class slot's own "— none —" row is for the build editor, not for restricting an
 // item to no class at all -- drop the empty value from the checkbox list.
-const classes = (classSlot?.options?.map((o) => o.value) ?? []).filter(Boolean);
+const classes = (classSlot?.options ?? []).filter((o) => o.value);
 const raceSlot = findParamSlot(NW_SLOTS.slots, "race");
-const races = (raceSlot?.options?.map((o) => o.value) ?? []).filter(Boolean);
+const races = (raceSlot?.options ?? []).filter((o) => o.value);
 
 const statComboOptions = statPickerOptions;
 const dynamicStatOptions = statPickerOptions;
@@ -536,11 +536,11 @@ watch(
     <div class="mb-1.5 flex flex-wrap gap-x-3 gap-y-0.5">
       <BaseCheckbox
         v-for="cls in classes"
-        :key="cls"
+        :key="cls.value"
         v-model="draft.allowedClass"
-        :value="cls"
+        :value="cls.value"
       >
-        {{ cls }}
+        {{ cls.label }}
       </BaseCheckbox>
     </div>
 
@@ -548,11 +548,11 @@ watch(
     <div class="mb-1.5 flex flex-wrap gap-x-3 gap-y-0.5">
       <BaseCheckbox
         v-for="race in races"
-        :key="race"
+        :key="race.value"
         v-model="draft.allowedRace"
-        :value="race"
+        :value="race.value"
       >
-        {{ race }}
+        {{ race.label }}
       </BaseCheckbox>
     </div>
 
