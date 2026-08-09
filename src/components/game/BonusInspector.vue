@@ -11,6 +11,7 @@
 // they fail, so the ones a single toggle or set piece away float to the top.
 import { ref, reactive, computed } from "vue";
 import { label as statLabel, signedStat } from "../../lib/format";
+import { matchesQuery } from "../../lib/text-filter";
 import { isHiddenBonus } from "../../engine/bonus";
 import * as engine from "../../stores/resolved";
 import BasePanel from "../ui/BasePanel.vue";
@@ -147,15 +148,9 @@ const entries = computed<Entry[]>(() => {
 });
 
 const filtered = computed(() => {
-  const q = query.value.trim().toLowerCase();
   return entries.value.filter((entry) => {
     if (nearMissOnly.value && !entry.nearMiss) return false;
-    if (!q) return true;
-    return (
-      entry.title.toLowerCase().includes(q) ||
-      entry.id.toLowerCase().includes(q) ||
-      entry.sources.some((source) => source.toLowerCase().includes(q))
-    );
+    return matchesQuery([entry.title, entry.id, ...entry.sources], query.value);
   });
 });
 

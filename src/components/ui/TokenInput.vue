@@ -7,6 +7,7 @@
 // thing to do (so free text).
 import { ref, computed, watch, nextTick, useTemplateRef } from "vue";
 import { onKeyStroke } from "@vueuse/core";
+import { matchesQuery } from "../../lib/text-filter";
 
 const MAX_SUGGESTIONS = 40;
 
@@ -33,12 +34,10 @@ const menu = useTemplateRef("menu");
 
 const suggestions = computed(() => {
   if (!open.value) return [];
-  const q = query.value.trim().toLowerCase();
   const chosen = new Set(model.value);
   return props.options
     .filter(
-      (option) =>
-        !chosen.has(option) && (!q || option.toLowerCase().includes(q)),
+      (option) => !chosen.has(option) && matchesQuery(option, query.value),
     )
     .slice(0, MAX_SUGGESTIONS);
 });

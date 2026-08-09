@@ -93,6 +93,24 @@ test.describe("slot filter: text", () => {
     await expect(slotRow(page, "gear.arms")).toBeVisible();
     await expect(slotRow(page, "gear.head")).toBeHidden();
   });
+
+  test("multiple whitespace-separated words each match, even across different fields", async ({
+    page,
+  }) => {
+    await openBuilder(page);
+    await chooseItem(page, "gear.arms", "M33 Runefrost Swift Armguards");
+
+    // "Arms" matches the slot label, "Runefrost" matches the equipped item's name -- neither
+    // word alone is enough to prove the AND-across-words behaviour, only both together.
+    await slotFilterInput(page).fill("Arms Runefrost");
+    await expect(slotRow(page, "gear.arms")).toBeVisible();
+    await expect(slotRow(page, "gear.head")).toBeHidden();
+
+    // A word that matches nothing on this slot drops it out, even though the other word
+    // still matches.
+    await slotFilterInput(page).fill("Arms Nonexistent");
+    await expect(slotRow(page, "gear.arms")).toBeHidden();
+  });
 });
 
 test.describe("slot filter: stat", () => {

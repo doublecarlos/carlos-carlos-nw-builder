@@ -7,6 +7,7 @@
 import { ref, computed, watch, nextTick, useTemplateRef } from "vue";
 import { onKeyStroke } from "@vueuse/core";
 import { blurToRowAnchor } from "../../lib/row-cursor";
+import { matchesQuery } from "../../lib/text-filter";
 import ComboBoxMenu from "./ComboBoxMenu.vue";
 import ComboBoxMenuRow from "./ComboBoxMenuRow.vue";
 
@@ -53,10 +54,9 @@ const selected = computed(
 
 const filtered = computed(() => {
   if (!open.value) return [];
-  const q = query.value.trim().toLowerCase();
-  const source = q
-    ? props.options.filter((option) => option.label.toLowerCase().includes(q))
-    : props.options;
+  const source = props.options.filter((option) =>
+    matchesQuery(option.label, query.value),
+  );
   return source.slice(0, props.maxRows);
 });
 

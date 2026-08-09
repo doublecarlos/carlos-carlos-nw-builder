@@ -86,6 +86,18 @@ test("the filter box narrows the build list and clearing it restores every row",
   await expect(buildRow(page, "Build 2")).toBeVisible();
 });
 
+test("the filter box matches multiple whitespace-separated words in any order", async ({
+  page,
+}) => {
+  await openBuilder(page);
+  await renameViaSidebar(page, buildRow(page, "Build 1"), "Celestial Amethyst");
+  await addBuild(page);
+
+  await filterBuilds(page, "ame cel");
+  await expect(buildRow(page, "Celestial Amethyst")).toBeVisible();
+  await expect(buildRow(page, "Build 2")).toHaveCount(0);
+});
+
 test("Move up reorders the build list", async ({ page }) => {
   await openBuilder(page);
   await addBuild(page);

@@ -9,6 +9,7 @@
 // something new and blurring or pressing Enter/Tab commits the typed text itself.
 import { ref, computed, watch, nextTick, useTemplateRef } from "vue";
 import { onKeyStroke } from "@vueuse/core";
+import { matchesQuery } from "../../lib/text-filter";
 import ComboBoxMenu from "./ComboBoxMenu.vue";
 import ComboBoxMenuRow from "./ComboBoxMenuRow.vue";
 
@@ -37,9 +38,8 @@ const menu = useTemplateRef("menu");
 
 const suggestions = computed(() => {
   if (!open.value) return [];
-  const q = query.value.trim().toLowerCase();
   return props.options
-    .filter((option) => !q || option.toLowerCase().includes(q))
+    .filter((option) => matchesQuery(option, query.value))
     .slice(0, MAX_SUGGESTIONS);
 });
 

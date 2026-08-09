@@ -29,6 +29,7 @@ import * as engine from "../stores/resolved";
 import * as history from "../stores/history";
 import * as layers from "../stores/layers";
 import * as layerEditorUi from "../stores/layerEditorUi";
+import { matchesQuery } from "../lib/text-filter";
 import type {
   CatalogGroup,
   CatalogOverlay,
@@ -173,7 +174,6 @@ const rows = computed(() => {
 });
 
 const filtered = computed(() => {
-  const q = query.value.trim().toLowerCase();
   return rows.value.filter((row) => {
     if (statusFilter.value === "changed" && row.status === "base") return false;
     if (
@@ -181,11 +181,7 @@ const filtered = computed(() => {
       row.status !== statusFilter.value
     )
       return false;
-    if (!q) return true;
-    return (
-      row.name.toLowerCase().includes(q) ||
-      (row.filter ?? "").toLowerCase().includes(q)
-    );
+    return matchesQuery([row.name, row.filter ?? ""], query.value);
   });
 });
 

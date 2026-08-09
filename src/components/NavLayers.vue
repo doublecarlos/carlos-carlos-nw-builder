@@ -13,6 +13,7 @@ import {
 } from "@lucide/vue";
 import NavContextMenu from "./NavContextMenu.vue";
 import { isMac } from "../lib/platform";
+import { matchesQuery } from "../lib/text-filter";
 import type { Layer } from "../types";
 
 const vRenameFocus: Directive<HTMLInputElement> = {
@@ -62,8 +63,7 @@ const emit = defineEmits<{
 
 const filteredLayers = computed(() => {
   if (!props.filter) return props.layers;
-  const q = props.filter.toLowerCase();
-  return props.layers.filter((l) => l.name.toLowerCase().includes(q));
+  return props.layers.filter((l) => matchesQuery(l.name, props.filter));
 });
 
 const root = useTemplateRef("root");

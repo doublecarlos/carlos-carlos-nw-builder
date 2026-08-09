@@ -19,6 +19,7 @@ import { ChevronsDownUp, ChevronsUpDown, FilterX } from "@lucide/vue";
 import { NW_SCHEMA, NW_SLOTS } from "../data/data";
 import { forSlotAndBuild } from "../data/db";
 import { abbr, signedStat, statPickerOptions } from "../lib/format";
+import { matchesQuery } from "../lib/text-filter";
 import { useHoverCard } from "../composables/useHoverCard";
 import {
   useCompareDiff,
@@ -122,13 +123,14 @@ function slotMatchesFilters(section: SlotSection, slotDef: Slot): boolean {
   if (slotDef.type === "separator" || slotDef.type === "text") return false;
   if (filterStat.value && !slotGrantsStat(slotDef, filterStat.value))
     return false;
-  const q = filterText.value.trim().toLowerCase();
-  if (!q) return true;
-  return (
-    section.label.toLowerCase().includes(q) ||
-    slotDef.label.toLowerCase().includes(q) ||
-    !!itemIn(slotDef.id)?.name.toLowerCase().includes(q) ||
-    statSummary(slotDef.id).toLowerCase().includes(q)
+  return matchesQuery(
+    [
+      section.label,
+      slotDef.label,
+      itemIn(slotDef.id)?.name ?? "",
+      statSummary(slotDef.id),
+    ],
+    filterText.value,
   );
 }
 

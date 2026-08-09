@@ -9,6 +9,7 @@ import * as storage from "../storage/storage";
 import { db } from "../stores/resolved";
 import * as catalog from "../data/catalog";
 import { showNotice } from "../stores/notice";
+import { matchesQuery } from "../lib/text-filter";
 import { Download } from "@lucide/vue";
 import BaseButton from "./ui/BaseButton.vue";
 import { useEscapeToClose } from "../composables/useEscapeToClose";
@@ -25,20 +26,14 @@ const selectedLayerIds = ref<Set<string>>(new Set());
 const autoTickedLayerIds = ref<Set<string>>(new Set());
 
 // All builds, filtered by name.
-const filteredBuilds = computed(() => {
-  const q = buildFilter.value.toLowerCase();
-  return builds.builds.value.filter(
-    (b) => !q || b.name.toLowerCase().includes(q),
-  );
-});
+const filteredBuilds = computed(() =>
+  builds.builds.value.filter((b) => matchesQuery(b.name, buildFilter.value)),
+);
 
 // All layers, filtered by name.
-const filteredLayers = computed(() => {
-  const q = layerFilter.value.toLowerCase();
-  return layers.layers.value.filter(
-    (l) => !q || l.name.toLowerCase().includes(q),
-  );
-});
+const filteredLayers = computed(() =>
+  layers.layers.value.filter((l) => matchesQuery(l.name, layerFilter.value)),
+);
 
 // Warn when a required layer is unticked.
 const warnings = computed(() => {
