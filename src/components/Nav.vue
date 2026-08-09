@@ -277,7 +277,7 @@ function purgeTrash(entry: TrashEntry) {
 // --- menu items computed --------------------------------------------------------------
 
 const buildMenuItems = (id: string) => [
-  { action: "rename", label: "Rename", icon: Pencil },
+  { action: "rename", label: "Rename (F2)", icon: Pencil },
   { action: "duplicate", label: "Duplicate", icon: Copy },
   { action: "download", label: "Download…", icon: Download },
   {
@@ -305,7 +305,7 @@ const buildMenuItems = (id: string) => [
 ];
 
 const layerMenuItems = (id: string) => [
-  { action: "rename", label: "Rename", icon: Pencil },
+  { action: "rename", label: "Rename (F2)", icon: Pencil },
   { action: "duplicate", label: "Duplicate", icon: Copy },
   { action: "download", label: "Download…", icon: Download },
   {

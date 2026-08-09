@@ -123,6 +123,10 @@ function moveFocus(dir: 1 | -1) {
       </div>
     </div>
 
+    <p class="mb-1 px-1 text-[11px] text-muted">
+      ↑/↓ select · F2 rename · Delete remove
+    </p>
+
     <input
       :value="filter"
       type="text"
@@ -140,7 +144,7 @@ function moveFocus(dir: 1 | -1) {
         :class="selectedId === b.id && 'is-active bg-accent-soft'"
       >
         <IconButton
-          title="Move up"
+          title="Move up (Ctrl+↑)"
           data-testid="move-up"
           :disabled="!canMoveUp(b.id)"
           @click="$emit('move-up', b.id)"
@@ -148,7 +152,7 @@ function moveFocus(dir: 1 | -1) {
           <ArrowUp />
         </IconButton>
         <IconButton
-          title="Move down"
+          title="Move down (Ctrl+↓)"
           data-testid="move-down"
           :disabled="!canMoveDown(b.id)"
           @click="$emit('move-down', b.id)"
