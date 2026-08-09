@@ -48,6 +48,16 @@ You **MUST NOT**:
 - `tests/e2e` - UI tests using playwright
 - `tests/unit` - Unit tests using Vitest
 
+# Dev server port
+
+Each worktree gets its own dev/Playwright port, derived from `ports.ts` (see there for details). To find the port for the current worktree — e.g. to open the dev server in a browser or curl it — run:
+
+```sh
+npm run port --silent
+```
+
+The `--silent` flag is required to suppress npm's own script-header output, leaving only the port number on stdout.
+
 # Other
 
 When running git commands that may invoke an editor, remember to set GIT_EDITOR to avoid getting stuck waiting for an interactive editor.

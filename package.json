@@ -8,6 +8,7 @@
     "dev": "vite --strictPort",
     "build": "vite build",
     "preview": "vite preview",
+    "port": "tsx ports.ts",
     "fix": "npm run regen-data && prettier --write . && eslint . --fix",
     "regen-data": "tsx scripts/regen-data.ts",
     "test": "vitest run",
