@@ -23,8 +23,7 @@ import {
 } from "@lucide/vue";
 import BaseButton from "../ui/BaseButton.vue";
 import FormSection from "../ui/FormSection.vue";
-import { NW_SCHEMA } from "../../data/data";
-import { isPercentKind, kindOf } from "../../lib/format";
+import { isPercentKind, kindOf, statPickerOptions } from "../../lib/format";
 import { focusNextCombo } from "../../lib/stat-row-nav";
 import { BonusDraftStore } from "../../stores/bonus-draft";
 
@@ -39,11 +38,7 @@ const props = withDefaults(
   { setIds: () => [], tags: () => [] },
 );
 
-const statOptions = NW_SCHEMA.stats;
-const statComboOptions = statOptions.map((s) => ({
-  value: s.key,
-  label: `${s.label} (${s.key})`,
-}));
+const statComboOptions = statPickerOptions;
 const setComboOptions = computed(() =>
   props.store.setIds.map((s) => ({ value: s, label: s })),
 );

@@ -16,7 +16,7 @@ import BaseBadge from "./ui/BaseBadge.vue";
 import ComboBox from "./ui/ComboBox.vue";
 import { ChevronsDownUp, ChevronsUpDown, FilterX } from "@lucide/vue";
 import { NW_SCHEMA, NW_SLOTS } from "../data/data";
-import { abbr, signedStat } from "../lib/format";
+import { abbr, signedStat, statPickerOptions } from "../lib/format";
 import { useHoverCard } from "../composables/useHoverCard";
 import {
   useCompareDiff,
@@ -89,15 +89,9 @@ const filterActive = computed(
   () => !!filterText.value.trim() || !!filterStat.value,
 );
 
-// Rating and percent variants of the same underlying stat share a label ("Power" for both
-// `power` and `power_p`), so the key is appended the same way ItemForm.vue's own stat
-// dropdown disambiguates them.
 const statFilterOptions = [
   { value: "", label: "All stats" },
-  ...NW_SCHEMA.stats.map((stat) => ({
-    value: stat.key,
-    label: `${stat.label} (${stat.key})`,
-  })),
+  ...statPickerOptions,
 ];
 
 function clearFilters() {

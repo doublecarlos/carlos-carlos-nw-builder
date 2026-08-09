@@ -21,7 +21,7 @@ import { findParamSlot } from "../../lib/build-path";
 import * as catalog from "../../data/catalog";
 import { deepEqual } from "../../lib/deep-equal";
 import { useDraftHistory } from "../../composables/useDraftHistory";
-import { isPercentKind, kindOf } from "../../lib/format";
+import { isPercentKind, kindOf, statPickerOptions } from "../../lib/format";
 import { focusNextCombo } from "../../lib/stat-row-nav";
 import type { Item, Db, BonusSet } from "../../types";
 import type { StatRow } from "../../engine/bonus-draft";
@@ -231,7 +231,6 @@ const displayId = computed(
       : ""),
 );
 
-const statOptions = NW_SCHEMA.stats;
 const classSlot = findParamSlot(NW_SLOTS.slots, "class");
 // The class slot's own "— none —" row is for the build editor, not for restricting an
 // item to no class at all -- drop the empty value from the checkbox list.
@@ -239,14 +238,8 @@ const classes = (classSlot?.options?.map((o) => o.value) ?? []).filter(Boolean);
 const raceSlot = findParamSlot(NW_SLOTS.slots, "race");
 const races = (raceSlot?.options?.map((o) => o.value) ?? []).filter(Boolean);
 
-const statComboOptions = statOptions.map((s) => ({
-  value: s.key,
-  label: `${s.label} (${s.key})`,
-}));
-const dynamicStatOptions = statOptions.map((s) => ({
-  value: s.key,
-  label: s.label,
-}));
+const statComboOptions = statPickerOptions;
+const dynamicStatOptions = statPickerOptions;
 
 function toItem(): Item {
   const local = draft.value;

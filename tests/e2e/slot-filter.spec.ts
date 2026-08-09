@@ -68,7 +68,7 @@ test.describe("slot filter: stat", () => {
     page,
   }) => {
     await openBuilder(page);
-    await chooseCombo(slotFilterStatCombo(page), "Power (power)");
+    await chooseCombo(slotFilterStatCombo(page), "Power");
 
     // gear.arms has an item granting power directly; gear.head has none.
     await expect(slotRow(page, "gear.arms")).toBeVisible();
@@ -78,7 +78,7 @@ test.describe("slot filter: stat", () => {
   test("text and stat filters combine", async ({ page }) => {
     await openBuilder(page);
     await slotFilterInput(page).fill("Arms");
-    await chooseCombo(slotFilterStatCombo(page), "Power (power)");
+    await chooseCombo(slotFilterStatCombo(page), "Power");
     await expect(slotRow(page, "gear.arms")).toBeVisible();
 
     // Head no longer matches the stat filter, so it's gone even though it wouldn't have
@@ -98,13 +98,13 @@ test.describe("slot filter: stat", () => {
     // "Prime Rib (Power)" carries no `power` stat of its own -- it grants +4000 Power through
     // an active bonus (gated only on the "Consumables" toggle, checked by default) once
     // equipped, so the Food slot only matches the Power filter after it's chosen.
-    await chooseCombo(slotFilterStatCombo(page), "Power (power)");
+    await chooseCombo(slotFilterStatCombo(page), "Power");
     await expect(slotRow(page, "buffs.food")).toBeHidden();
 
     await slotFilterClearButton(page).click();
     await chooseItem(page, "buffs.food", "Prime Rib (Power)");
 
-    await chooseCombo(slotFilterStatCombo(page), "Power (power)");
+    await chooseCombo(slotFilterStatCombo(page), "Power");
     await expect(slotRow(page, "buffs.food")).toBeVisible();
   });
 });

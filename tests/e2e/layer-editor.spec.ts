@@ -342,8 +342,8 @@ test.describe("bonus set stat payload editing", () => {
   async function pickStat(row: Locator) {
     const picker = row.getByTestId("picker-input");
     await picker.click();
-    await picker.fill("Power (power)");
-    await row.getByText("Power (power)", { exact: true }).click();
+    await picker.fill("Power");
+    await row.getByText("Power", { exact: true }).click();
   }
 
   test("adding a stat to a tiered payload adds it to the tier and survives auto-save", async ({

@@ -90,4 +90,29 @@ export const titleCase = (value: unknown) =>
     .replace(/[_-]+/g, " ")
     .replace(/\b\w/g, (c) => c.toUpperCase());
 
+export interface StatOption {
+  value: StatKey;
+  label: string;
+}
+
+/** The percent half of every rating/percent pair (`NW_SCHEMA.ratingConversion` is the schema's
+ *  own authored mapping) -- these are exactly the stats that share a label with a rating
+ *  counterpart (e.g. "Accuracy" for both `acc` and `acc_p`). */
+const percentPairKeys = new Set(
+  NW_SCHEMA.ratingConversion.map((rule) => rule.percent),
+);
+
+/**
+ * The full stat list (`NW_SCHEMA.stats`) as `{value, label}` options, for any dropdown that
+ * lets a user pick one stat out of the whole schema. A rating/percent pair shares a plain
+ * label in the schema -- the raw key used to be appended in parentheses to tell them apart
+ * (`Accuracy (acc_p)`), which only means anything to someone who already knows the `_p`
+ * suffix convention. The percent half gets a "%" suffix instead (`Accuracy %`), the rating
+ * half keeps its plain label.
+ */
+export const statPickerOptions: StatOption[] = NW_SCHEMA.stats.map((s) => ({
+  value: s.key,
+  label: percentPairKeys.has(s.key) ? `${s.label} %` : s.label,
+}));
+
 export { finite };

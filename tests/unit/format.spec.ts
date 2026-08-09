@@ -2,7 +2,12 @@
 // these tests cover both the shape each returns and the schema-order/limit/zero-filtering
 // behaviour that logic is responsible for.
 import { describe, it, expect } from "vitest";
-import { itemPreview, bonusStatPreview } from "../../src/lib/format";
+import {
+  itemPreview,
+  bonusStatPreview,
+  statPickerOptions,
+} from "../../src/lib/format";
+import { NW_SCHEMA } from "../../src/data/data";
 import type { Item } from "../../src/types";
 
 describe("itemPreview", () => {
@@ -62,5 +67,31 @@ describe("bonusStatPreview", () => {
     expect(
       bonusStatPreview({ combined_rating: 1, power: 2, acc: 3, ca: 4 }, 2),
     ).toEqual({ parts: ["CR +1", "Power +2"], more: 2 });
+  });
+});
+
+describe("statPickerOptions", () => {
+  it("covers every schema stat, in schema order", () => {
+    expect(statPickerOptions.map((o) => o.value)).toEqual(
+      NW_SCHEMA.stats.map((s) => s.key),
+    );
+  });
+
+  it("suffixes the percent half of a rating/percent pair with %, and leaves the rating half plain", () => {
+    const byValue = new Map(statPickerOptions.map((o) => [o.value, o.label]));
+    expect(byValue.get("acc")).toBe("Accuracy");
+    expect(byValue.get("acc_p")).toBe("Accuracy %");
+    expect(byValue.get("power")).toBe("Power");
+    expect(byValue.get("power_p")).toBe("Power %");
+  });
+
+  it("leaves a stat with no rating/percent counterpart labelled plainly", () => {
+    const byValue = new Map(statPickerOptions.map((o) => [o.value, o.label]));
+    expect(byValue.get("il")).toBe("Item Level");
+  });
+
+  it("gives every option a unique label", () => {
+    const labels = statPickerOptions.map((o) => o.label);
+    expect(new Set(labels).size).toBe(labels.length);
   });
 });
