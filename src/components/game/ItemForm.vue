@@ -77,6 +77,7 @@ export interface ItemDraft {
   allowedClass: string[];
   allowedRace: string[];
   tags: string[];
+  gameIds: string[];
   bonuses: string[];
   excludes: string[];
   dynamicStat: string;
@@ -107,6 +108,7 @@ function buildDraft(item: Item | null | undefined): ItemDraft {
     allowedClass: [...(source.allowedClass ?? [])],
     allowedRace: [...(source.allowedRace ?? [])],
     tags: [...(source.tags ?? [])],
+    gameIds: [...(source.gameIds ?? [])],
     bonuses: [...(source.bonuses ?? [])],
     excludes: [...(source.excludes ?? [])],
     dynamicStat: source.dynamicStat ?? "",
@@ -150,6 +152,8 @@ function diffLabel(oldJson: string, newJson: string): string {
       return "edit races";
     if (JSON.stringify(old.tags) !== JSON.stringify(nw.tags))
       return diffArrayLabel("tag", old.tags ?? [], nw.tags ?? []);
+    if (JSON.stringify(old.gameIds) !== JSON.stringify(nw.gameIds))
+      return diffArrayLabel("game id", old.gameIds ?? [], nw.gameIds ?? []);
     if (JSON.stringify(old.bonuses) !== JSON.stringify(nw.bonuses))
       return diffArrayLabel("bonus", old.bonuses ?? [], nw.bonuses ?? []);
     if (JSON.stringify(old.excludes) !== JSON.stringify(nw.excludes))
@@ -280,6 +284,7 @@ function toItem(): Item {
   }
 
   if (local.tags.length) item.tags = [...local.tags];
+  if (local.gameIds.length) item.gameIds = [...local.gameIds];
   if (local.bonuses.length) item.bonuses = [...local.bonuses];
   if (local.excludes.length) item.excludes = [...local.excludes];
   if (local.maxCopies) item.maxCopies = Number(local.maxCopies);
@@ -503,6 +508,19 @@ watch(
           v-model="draft.tags"
           :options="tags"
           placeholder="Add a tag…"
+        />
+      </FormField>
+    </FormGrid>
+
+    <FormGrid class="mb-2">
+      <FormField
+        label="Game IDs (the Hitem values from a demo record)"
+        class="min-w-80 flex-1"
+      >
+        <TokenInput
+          v-model="draft.gameIds"
+          placeholder="Add a game id…"
+          data-testid="item-gameids-input"
         />
       </FormField>
     </FormGrid>

@@ -7,11 +7,16 @@ import HistoryButton from "./ui/HistoryButton.vue";
 import BaseButton from "./ui/BaseButton.vue";
 import BaseNotice from "./ui/BaseNotice.vue";
 import BundleExport from "./BundleExport.vue";
-import { Download, HardDrive, Upload } from "@lucide/vue";
+import GameImport from "./GameImport.vue";
+import { Download, Gamepad2, HardDrive, Upload } from "@lucide/vue";
 import { useUndoRedoKeys } from "../composables/useUndoRedoKeys";
 import * as builds from "../stores/builds";
 import * as layers from "../stores/layers";
 import { notice, showNotice } from "../stores/notice";
+import {
+  isOpen as gameImportOpen,
+  openWizard as openGameImport,
+} from "../stores/gameImport";
 
 const importFileInput = useTemplateRef("importFileInput");
 const showBundleExport = ref(false);
@@ -66,6 +71,11 @@ async function onImportFile(event: Event) {
     <BaseButton data-testid="header-import" @click="triggerImport"
       ><Upload />Import</BaseButton
     >
+
+    <BaseButton data-testid="header-import-from-game" @click="openGameImport"
+      ><Gamepad2 />Import from game</BaseButton
+    >
+    <GameImport v-if="gameImportOpen" />
 
     <input
       ref="importFileInput"

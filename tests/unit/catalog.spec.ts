@@ -287,6 +287,110 @@ describe("catalog.validate: item shortDescription/longDescription", () => {
   });
 });
 
+describe("catalog.validate: gameIds lint", () => {
+  it("does not flag a well-formed gameIds list", () => {
+    const items = [
+      {
+        id: "some-item",
+        name: "Some Item",
+        filter: "gear_head",
+        gameIds: ["Head_M31_Heavyheal_S-tier"],
+      },
+    ];
+    const findings = catalog
+      .validate(items, [])
+      .filter((f) => f.name === "some-item");
+    expect(findings).toEqual([]);
+  });
+
+  it("does not flag gameIds as an unknown field", () => {
+    const items = [
+      {
+        id: "some-item",
+        name: "Some Item",
+        filter: "gear_head",
+        gameIds: ["Some_Gid"],
+      },
+    ];
+    const findings = catalog
+      .validate(items, [])
+      .filter((f) => /neither a stat nor an item field/.test(f.message));
+    expect(findings).toEqual([]);
+  });
+
+  it("reports a non-string / empty gameIds entry as an error", () => {
+    const items = [
+      {
+        id: "bad-item",
+        name: "Bad Item",
+        filter: "gear_head",
+        gameIds: ["", 5 as unknown as string],
+      },
+    ];
+    const findings = catalog.validate(items, []);
+    const own = findings.filter((f) => f.name === "bad-item");
+    expect(own).toHaveLength(2);
+    expect(own.every((f) => f.level === "error")).toBe(true);
+    expect(own.every((f) => /not a non-empty string/.test(f.message))).toBe(
+      true,
+    );
+  });
+
+  it("warns on a duplicate entry within one item's own gameIds", () => {
+    const items = [
+      {
+        id: "dup-item",
+        name: "Dup Item",
+        filter: "gear_head",
+        gameIds: ["Same_Gid", "Same_Gid"],
+      },
+    ];
+    const finding = catalog
+      .validate(items, [])
+      .find((f) => f.name === "dup-item");
+    expect(finding?.level).toBe("warn");
+    expect(finding?.message).toMatch(/duplicate entry/);
+  });
+
+  it("errors when two different items claim the same game id, naming both", () => {
+    const items = [
+      {
+        id: "item-a",
+        name: "Item A",
+        filter: "gear_head",
+        gameIds: ["Shared_Gid"],
+      },
+      {
+        id: "item-b",
+        name: "Item B",
+        filter: "gear_head",
+        gameIds: ["Shared_Gid"],
+      },
+    ];
+    const finding = catalog
+      .validate(items, [])
+      .find((f) => /claimed by multiple items/.test(f.message));
+    expect(finding?.level).toBe("error");
+    expect(finding?.message).toContain("item-a");
+    expect(finding?.message).toContain("item-b");
+  });
+
+  it("the same item listing one game id twice is not also reported as a cross-item conflict", () => {
+    const items = [
+      {
+        id: "dup-item",
+        name: "Dup Item",
+        filter: "gear_head",
+        gameIds: ["Same_Gid", "Same_Gid"],
+      },
+    ];
+    const findings = catalog.validate(items, []);
+    expect(
+      findings.some((f) => /claimed by multiple items/.test(f.message)),
+    ).toBe(false);
+  });
+});
+
 describe("catalog.validate: point_assignment-referenced items", () => {
   it("carries a point_assignment slot's own filter, resolved as a row via that filter", () => {
     const item = NW_ITEMS.find((i) => i.id === "boon-tier1-power");

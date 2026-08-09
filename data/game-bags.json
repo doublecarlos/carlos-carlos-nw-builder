@@ -1,0 +1,161 @@
+{
+  "bags": [
+    { "bag": "Head", "slots": ["gear.head"] },
+    { "bag": "Armor", "slots": ["gear.armor"] },
+    { "bag": "Arms", "slots": ["gear.arms"] },
+    { "bag": "Feet", "slots": ["gear.boots"] },
+    { "bag": "Melee", "slots": ["gear.mainhand", "gear.offhand"] },
+    { "bag": "Neck", "slots": ["gear.neck"] },
+    { "bag": "Waist", "slots": ["gear.waist"] },
+    { "bag": "Shirt", "slots": ["gear.shirt"] },
+    { "bag": "Pants", "slots": ["gear.pants"] },
+    { "bag": "Ring", "slots": ["gear.ring1", "gear.ring2"] },
+    {
+      "bag": "OffenseGem",
+      "slots": [
+        "enchantments.offense1",
+        "enchantments.offense2",
+        "enchantments.offense3",
+        "enchantments.offense4"
+      ]
+    },
+    {
+      "bag": "DefenseGem",
+      "slots": [
+        "enchantments.defense1",
+        "enchantments.defense2",
+        "enchantments.defense3",
+        "enchantments.defense4"
+      ]
+    },
+    { "bag": "UtilityGem", "slots": ["enchantments.utility"] },
+    { "bag": "BonusGem", "slots": ["enchantments.bonus"] },
+    {
+      "bag": "CombatGem",
+      "slots": ["enchantments.combatOffense", "enchantments.combatDefense"]
+    },
+    {
+      "bag": "OverloadGem",
+      "slots": ["overloads.overload1", "overloads.overload2"]
+    },
+    { "bag": "ArtifactPrimary", "slots": ["artifacts.artifact1"] },
+    {
+      "bag": "ArtifactSecondary",
+      "slots": [
+        "artifacts.artifact2",
+        "artifacts.artifact3",
+        "artifacts.artifact4"
+      ]
+    },
+    {
+      "bag": "PetEquip",
+      "slots": ["companions.equip1", "companions.equip2", "companions.equip3"]
+    },
+    { "bag": "PetGem", "slots": ["companions.enchantment"] },
+    {
+      "bag": "PetEquippedActiveBonus",
+      "slots": [
+        "companions.offense",
+        "companions.defense",
+        "companions.universal1",
+        "companions.universal2",
+        "companions.utility",
+        "companions.enhancement"
+      ]
+    },
+    {
+      "bag": "MountCollars",
+      "slots": [
+        "mounts.sturdyCollar",
+        "mounts.supportiveCollar",
+        "mounts.wayfaringCollar",
+        "mounts.unifiedCollar",
+        "mounts.practicalCollar"
+      ]
+    },
+    { "bag": "MountEquippedPassivePower", "slots": ["mounts.mountEquip"] },
+    { "bag": "MountEquippedActivePower", "slots": ["mounts.mountCombat"] },
+    {
+      "bag": "MountEquippedActiveSlots",
+      "gemSlots": [
+        [
+          "insignia.insignia1_1",
+          "insignia.insignia1_2",
+          "insignia.insignia1_3",
+          "insignia.insignia1_4"
+        ],
+        [
+          "insignia.insignia2_1",
+          "insignia.insignia2_2",
+          "insignia.insignia2_3",
+          "insignia.insignia2_4"
+        ],
+        [
+          "insignia.insignia3_1",
+          "insignia.insignia3_2",
+          "insignia.insignia3_3",
+          "insignia.insignia3_4"
+        ],
+        [
+          "insignia.insignia4_1",
+          "insignia.insignia4_2",
+          "insignia.insignia4_3",
+          "insignia.insignia4_4"
+        ],
+        [
+          "insignia.insignia5_1",
+          "insignia.insignia5_2",
+          "insignia.insignia5_3",
+          "insignia.insignia5_4"
+        ]
+      ]
+    },
+    {
+      "bag": "Potions",
+      "slots": [
+        "buffs.potion",
+        "buffs.elixir",
+        "buffs.food",
+        "buffs.trinket",
+        "buffs.eventItem"
+      ]
+    },
+    {
+      "bag": "FashionHead",
+      "notModelled": "Cosmetic appearance override, no stat effect."
+    },
+    {
+      "bag": "FashionBody",
+      "notModelled": "Cosmetic appearance override, no stat effect."
+    },
+    {
+      "bag": "FashionFeet",
+      "notModelled": "Cosmetic appearance override, no stat effect."
+    },
+    {
+      "bag": "FashionAccessory",
+      "notModelled": "Cosmetic appearance override, no stat effect."
+    },
+    {
+      "bag": "MountEquippedCostume",
+      "notModelled": "Cosmetic mount skin, no stat effect."
+    },
+    {
+      "bag": "Mounts",
+      "notModelled": "The summoned mount itself is cosmetic here."
+    },
+    {
+      "bag": "MountEquippedSpeed",
+      "notModelled": "Movement speed tier, no stat effect in our model."
+    },
+    {
+      "bag": "VanityPetEquip",
+      "notModelled": "Cosmetic vanity pet, no stat effect."
+    },
+    { "bag": "WeaponFX", "notModelled": "Cosmetic weapon effect." },
+    { "bag": "ArmorFX", "notModelled": "Cosmetic armor effect." },
+    { "bag": "HeadFX", "notModelled": "Cosmetic head effect." },
+    { "bag": "FootstepFX", "notModelled": "Cosmetic footstep effect." },
+    { "bag": "TrailFX", "notModelled": "Cosmetic trail effect." }
+  ]
+}

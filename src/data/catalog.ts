@@ -336,6 +336,7 @@ const ITEM_FIELDS = new Set([
   "excludes",
   "shortDescription",
   "longDescription",
+  "gameIds",
 ]);
 
 // A `param` condition addressing one of these paths duplicates a dedicated leaf that already
@@ -738,6 +739,7 @@ export function validate(
   const setIds = new Set(bonusSets.map((set) => set.id));
   const itemIds = new Set(items.map((item) => item.id).filter(Boolean));
   const seenIds = new Set();
+  const gameIdOwners = new Map<string, Set<string>>();
   const paramSlots = new Map<string, BuildParameterSlot>();
   for (const slot of allSlots) {
     if (slot.type === "build_parameter") paramSlots.set(slot.path, slot);
@@ -878,6 +880,33 @@ export function validate(
         "error",
         `dynamicStat "${item.dynamicStat}" is not a stat`,
         item.id,
+      );
+    }
+
+    if (item.gameIds) {
+      const seenInItem = new Set<string>();
+      for (const gameId of item.gameIds) {
+        if (typeof gameId !== "string" || !gameId) {
+          report("error", "gameIds entry is not a non-empty string", item.id);
+          continue;
+        }
+        if (seenInItem.has(gameId)) {
+          report("warn", `gameIds has a duplicate entry "${gameId}"`, item.id);
+        }
+        seenInItem.add(gameId);
+        const owners = gameIdOwners.get(gameId) ?? new Set<string>();
+        owners.add(item.id);
+        gameIdOwners.set(gameId, owners);
+      }
+    }
+  }
+
+  for (const [gameId, owners] of gameIdOwners) {
+    if (owners.size > 1) {
+      report(
+        "error",
+        `gameId "${gameId}" is claimed by multiple items: ` +
+          `${[...owners].join(", ")} — the map would be ambiguous`,
       );
     }
   }

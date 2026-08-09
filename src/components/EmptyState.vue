@@ -1,9 +1,14 @@
 <script setup lang="ts">
 // Centered empty state: shown when there are no builds and no layers.
 import { useTemplateRef } from "vue";
-import { Plus, Upload } from "@lucide/vue";
+import { Gamepad2, Plus, Upload } from "@lucide/vue";
 import * as builds from "../stores/builds";
 import * as layers from "../stores/layers";
+import GameImport from "./GameImport.vue";
+import {
+  isOpen as gameImportOpen,
+  openWizard as openGameImport,
+} from "../stores/gameImport";
 
 const importFileInput = useTemplateRef("importFileInput");
 
@@ -58,6 +63,15 @@ async function onImportFile(event: Event) {
           <Upload class="size-[14px]" />
           Import…
         </button>
+        <button
+          type="button"
+          class="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-line bg-surface px-4 py-2 hover:bg-surface-2"
+          data-testid="empty-import-from-game"
+          @click="openGameImport"
+        >
+          <Gamepad2 class="size-[14px]" />
+          Import from game…
+        </button>
         <input
           ref="importFileInput"
           type="file"
@@ -67,5 +81,6 @@ async function onImportFile(event: Event) {
         />
       </div>
     </div>
+    <GameImport v-if="gameImportOpen" />
   </div>
 </template>

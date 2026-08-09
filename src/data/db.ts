@@ -34,6 +34,7 @@ export function build(
   const byFilter = new Map<string | undefined, Item[]>();
   const setMembers = new Map<string, string[]>(); // setId -> [item id]
   const itemsByTag = new Map<string, string[]>(); // tag   -> [item id]
+  const itemByGameId = new Map<string, string>(); // Hitem -> item id
   const duplicates: string[] = [];
 
   for (const item of items) {
@@ -45,6 +46,7 @@ export function build(
 
     for (const setId of item.bonuses ?? []) pushTo(setMembers, setId, item.id);
     for (const tag of item.tags ?? []) pushTo(itemsByTag, tag, item.id);
+    for (const gameId of item.gameIds ?? []) itemByGameId.set(gameId, item.id);
   }
 
   for (const list of byFilter.values()) {
@@ -70,6 +72,7 @@ export function build(
     bonusSetById,
     setMembers,
     itemsByTag,
+    itemByGameId,
     duplicates,
 
     /** Look up an item by id. `-`, blank and nullish all mean "empty slot". */

@@ -200,6 +200,11 @@ export interface Item {
   /** Longer flavor/explanation shown on the item's hover card, below its stats -- see
    * `ItemCard.vue`. */
   longDescription?: string;
+  /** In-game internal item identifiers (`Hitem` in a demo record) that this catalogue entry
+   * stands for. Several game items routinely collapse onto one entry -- different ranks of
+   * the same enchantment, or a mount's four rarity tiers. Consumed only by the game importer;
+   * the engine ignores it. */
+  gameIds?: string[];
   [key: string]: unknown;
 }
 
@@ -346,6 +351,11 @@ export interface Db {
   bonusSetById: Map<string, BonusSet>;
   setMembers: Map<string, string[]>;
   itemsByTag: Map<string, string[]>;
+  /** Game `Hitem` -> catalogue item id. Built from base catalogue + active overlay, so a
+   *  layer can add mappings the shipped catalogue does not have. Overlay entries win over
+   *  base entries for the same game id, matching how overlays already win for the item
+   *  itself -- see catalog.ts's `compose`. */
+  itemByGameId: Map<string, string>;
   duplicates: string[];
   get(id: string | null | undefined): Item | null;
   forFilter(filter: string): Item[];
