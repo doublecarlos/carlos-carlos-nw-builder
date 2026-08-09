@@ -84,6 +84,52 @@ test.describe("point_assignment steppers", () => {
   });
 });
 
+// Ctrl/Cmd+click on a stepper jumps straight to that direction's bound instead of stepping by
+// one -- distinct from the row-level Ctrl+click-to-edit below, which targets an item's label
+// rather than its +/- buttons and is a no-op for point_assignment rows outside a label.
+test.describe("point_assignment Ctrl+click steppers", () => {
+  test("Ctrl+click on + jumps straight to the row's max", async ({ page }) => {
+    await openBuilder(page);
+    const row = slotRow(page, SLOT_ID);
+
+    await stepAssignment(row, POWER_ID, "increase", {
+      modifiers: ["Control"],
+    });
+
+    await expect(assignmentInput(row, POWER_ID)).toHaveValue("5");
+    await expect(assignmentInput(row, AVOIDANCE_ID)).toHaveValue("0");
+  });
+
+  test("the +/- tooltips mention the Ctrl+click shortcut", async ({ page }) => {
+    await openBuilder(page);
+    const row = slotRow(page, SLOT_ID);
+    const wrapper = assignmentInput(row, POWER_ID).locator("..");
+
+    await expect(
+      wrapper.getByTitle("Increase", { exact: false }),
+    ).toHaveAttribute("title", /Ctrl\+click for max/);
+    await expect(
+      wrapper.getByTitle("Decrease", { exact: false }),
+    ).toHaveAttribute("title", /Ctrl\+click for min/);
+  });
+
+  test("Ctrl+click on - jumps straight to the row's min", async ({ page }) => {
+    await openBuilder(page);
+    const row = slotRow(page, SLOT_ID);
+
+    await stepAssignment(row, POWER_ID, "increase", {
+      modifiers: ["Control"],
+    });
+    await expect(assignmentInput(row, POWER_ID)).toHaveValue("5");
+
+    await stepAssignment(row, POWER_ID, "decrease", {
+      modifiers: ["Control"],
+    });
+
+    await expect(assignmentInput(row, POWER_ID)).toHaveValue("0");
+  });
+});
+
 // The hover card is the same machinery an item_picker row's whole-row hover already uses
 // (useHoverCard.ts / ItemCard.vue via BuildEditor.vue's single shared BasePopover) -- here
 // the trigger is one row's item-name label instead of the whole row, since a point_assignment

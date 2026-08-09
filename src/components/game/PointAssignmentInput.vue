@@ -16,7 +16,10 @@ import BaseCheckbox from "../ui/BaseCheckbox.vue";
 import { db } from "../../stores/resolved";
 import * as buildEditor from "../../stores/buildEditor";
 import { procRowsForItem } from "../../composables/useItemProcs";
+import { isMac } from "../../lib/platform";
 import type { Item, PointAssignmentSlot } from "../../types";
+
+const modKey = isMac ? "Cmd" : "Ctrl";
 
 const props = defineProps<{
   slotDef: PointAssignmentSlot;
@@ -57,8 +60,15 @@ function onInput(item: Item, event: Event) {
   );
 }
 
-function step(item: Item, dir: 1 | -1) {
+/** A plain click steps by one; Ctrl/Cmd+click jumps straight to that direction's bound
+ *  (min for "-", max for "+") -- same platform-modifier convention BuildEditor.vue's own
+ *  ctrl-click-to-edit uses. */
+function step(item: Item, dir: 1 | -1, event: MouseEvent) {
   const { min, max } = item.pointAssignment!;
+  if (isMac ? event.metaKey : event.ctrlKey) {
+    emit("change", item.id, dir === 1 ? max : min);
+    return;
+  }
   const next = Math.min(Math.max(valueFor(item) + dir, min), max);
   emit("change", item.id, next);
 }
@@ -97,9 +107,9 @@ defineExpose({ focus, focusAndSeed });
       >
       <div class="flex items-center gap-1">
         <IconButton
-          title="Decrease"
+          :title="`Decrease (${modKey}+click for min)`"
           :disabled="valueFor(item) <= item.pointAssignment!.min"
-          @click="step(item, -1)"
+          @click="step(item, -1, $event)"
         >
           <Minus />
         </IconButton>
@@ -113,9 +123,9 @@ defineExpose({ focus, focusAndSeed });
           @input="onInput(item, $event)"
         />
         <IconButton
-          title="Increase"
+          :title="`Increase (${modKey}+click for max)`"
           :disabled="valueFor(item) >= item.pointAssignment!.max"
-          @click="step(item, 1)"
+          @click="step(item, 1, $event)"
         >
           <Plus />
         </IconButton>

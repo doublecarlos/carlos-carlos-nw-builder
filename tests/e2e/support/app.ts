@@ -54,16 +54,18 @@ export function addItemButton(row: Locator): Locator {
   return row.getByTestId("add-item-for-slot");
 }
 
-/** Clicks the -/+ button next to a point_assignment row's stepper input. */
+/** Clicks the -/+ button next to a point_assignment row's stepper input. Ctrl/Cmd+click (via
+ *  `modifiers`) jumps straight to that direction's bound instead of stepping by one. */
 export async function stepAssignment(
   row: Locator,
   itemId: string,
   dir: "increase" | "decrease",
+  options?: { modifiers?: ("Control" | "Meta")[] },
 ) {
   const wrapper = assignmentInput(row, itemId).locator("..");
   await wrapper
     .getByTitle(dir === "increase" ? "Increase" : "Decrease")
-    .click();
+    .click({ modifiers: options?.modifiers });
 }
 
 /** The row currently holding real focus -- a header button, a slot row's invisible cursor
