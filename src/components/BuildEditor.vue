@@ -111,9 +111,11 @@ function slotGrantsStat(slotDef: Slot, statKey: string): boolean {
   return !!rowBySlot.value.get(slotDef.id)?.stats[statKey];
 }
 
-/** A slotDef is kept when its own label matches the text query, or when the section's own
- *  header does -- a matching header pulls in every slot underneath it, unfiltered by text.
- *  The stat filter is independent of that override: it always narrows the result further. */
+/** A slotDef is kept when its own label matches the text query, when the section's own
+ *  header does -- a matching header pulls in every slot underneath it, unfiltered by text --
+ *  when its current choice's (or linked item's) name matches, or when its rendered stat
+ *  summary (the text next to the picker, `statSummary`) does. The stat filter is independent
+ *  of all of that: it always narrows the result further. */
 function slotMatchesFilters(section: SlotSection, slotDef: Slot): boolean {
   if (slotDef.type === "separator") return false;
   if (filterStat.value && !slotGrantsStat(slotDef, filterStat.value))
@@ -122,7 +124,9 @@ function slotMatchesFilters(section: SlotSection, slotDef: Slot): boolean {
   if (!q) return true;
   return (
     section.label.toLowerCase().includes(q) ||
-    slotDef.label.toLowerCase().includes(q)
+    slotDef.label.toLowerCase().includes(q) ||
+    !!itemIn(slotDef.id)?.name.toLowerCase().includes(q) ||
+    statSummary(slotDef.id).toLowerCase().includes(q)
   );
 }
 
@@ -245,15 +249,26 @@ function rowDiffers(slotDef: Slot) {
   return rowHasDiff(slotDef.id);
 }
 
+/** Every non-quick slotDef in canonical order, grouped by section -- unaffected by the active
+ *  text/stat filter or the only-diff toggle, unlike `sections.value`'s own per-section lists.
+ *  `sections` and `bonusesBySlot` both read their slot lists off this rather than off each
+ *  other: `slotMatchesFilters` (used by `sections`) matches against `statSummary`, which reads
+ *  `bonusesBySlot` -- if that read `sections.value` back, the two computeds would cycle. */
+const allSlotsBySection = computed(() =>
+  db.value.sections.map((section) => ({
+    section,
+    slots: db.value.slots.filter(
+      (slotDef) =>
+        slotDef.section === section.id &&
+        !(slotDef.type === "build_parameter" && slotDef.quick),
+    ),
+  })),
+);
+
 const sections = computed<SectionRow[]>(() => {
   const onlyDiffAndComparing = onlyDiff.value && compareBuild.value;
-  return db.value.sections
-    .map((section) => {
-      const allSlots = db.value.slots.filter(
-        (slotDef) =>
-          slotDef.section === section.id &&
-          !(slotDef.type === "build_parameter" && slotDef.quick),
-      );
+  return allSlotsBySection.value
+    .map(({ section, slots: allSlots }) => {
       // Counted off the section's full slotDef list, not the (possibly onlyDiff/filter-
       // narrowed) one below -- the badge's job is telling a *collapsed* section apart, where
       // `slots` would otherwise be invisible. Same reasoning for `unsaved`.
@@ -345,8 +360,8 @@ const noBorderIds = computed(() => {
 const bonusesBySlot = computed(() => {
   const shown = new Set<string>();
   const map = new Map<string, EvaluatedBonus[]>();
-  for (const section of sections.value) {
-    for (const slotDef of section.slots) {
+  for (const { slots } of allSlotsBySection.value) {
+    for (const slotDef of slots) {
       const item = itemIn(slotDef.id);
       if (!item) continue;
       const entries: EvaluatedBonus[] = [];

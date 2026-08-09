@@ -1,6 +1,7 @@
 // End-to-end coverage for BuildEditor.vue's text/stat slot filter (issue #130): narrowing the
 // visible slots and sections, the section-header-match override, forcing a matching but
-// manually-collapsed section back open, and the clear-filters affordance.
+// manually-collapsed section back open, and the clear-filters affordance. Also covers matching
+// on a slot's current choice and its rendered stat summary (issue #139).
 import { test, expect } from "@playwright/test";
 import {
   openBuilder,
@@ -59,6 +60,37 @@ test.describe("slot filter: text", () => {
     await expect(slotRow(page, "gear.head")).toBeVisible();
 
     await slotFilterClearButton(page).click();
+    await expect(slotRow(page, "gear.head")).toBeHidden();
+  });
+
+  test("typing the name of a slot's current choice matches it", async ({
+    page,
+  }) => {
+    await openBuilder(page);
+    await chooseItem(page, "gear.arms", "M33 Runefrost Swift Armguards");
+
+    await slotFilterInput(page).fill("Runefrost");
+    await expect(slotRow(page, "gear.arms")).toBeVisible();
+    await expect(slotRow(page, "gear.head")).toBeHidden();
+  });
+
+  test("an empty slot never matches an item name query", async ({ page }) => {
+    await openBuilder(page);
+
+    await slotFilterInput(page).fill("Runefrost");
+    await expect(slotRow(page, "gear.arms")).toBeHidden();
+  });
+
+  test("typing text from a slot's rendered stat summary matches it", async ({
+    page,
+  }) => {
+    await openBuilder(page);
+    await chooseItem(page, "gear.arms", "M33 Runefrost Swift Armguards");
+
+    // The armguards grant Accuracy directly -- its abbreviation shows in the stat summary
+    // rendered next to the picker, and nothing else on the page's slot/section labels does.
+    await slotFilterInput(page).fill("Acc ");
+    await expect(slotRow(page, "gear.arms")).toBeVisible();
     await expect(slotRow(page, "gear.head")).toBeHidden();
   });
 });
