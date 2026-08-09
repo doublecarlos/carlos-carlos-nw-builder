@@ -269,6 +269,24 @@ describe("catalog.validate: item id lint", () => {
   });
 });
 
+describe("catalog.validate: item shortDescription/longDescription", () => {
+  it("does not flag shortDescription/longDescription as an unknown field", () => {
+    const items = [
+      {
+        id: "cindersilk-hood",
+        name: "Cindersilk Hood",
+        filter: "gear_head",
+        shortDescription: "AP when killing mobs",
+        longDescription: "When you kill an enemy, gain 3% Action Points.",
+      },
+    ];
+    const findings = catalog
+      .validate(items, [])
+      .filter((f) => f.name === "cindersilk-hood");
+    expect(findings).toEqual([]);
+  });
+});
+
 describe("catalog.validate: point_assignment-referenced items", () => {
   it("carries a point_assignment slot's own filter, resolved as a row via that filter", () => {
     const item = NW_ITEMS.find((i) => i.id === "boon-tier1-power");

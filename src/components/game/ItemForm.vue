@@ -70,6 +70,8 @@ const emit = defineEmits<{
 export interface ItemDraft {
   name: string;
   filter: string;
+  shortDescription: string;
+  longDescription: string;
   maxCopies: number | string | null;
   allowedClass: string[];
   allowedRace: string[];
@@ -98,6 +100,8 @@ function buildDraft(item: Item | null | undefined): ItemDraft {
   return {
     name: source.name ?? "",
     filter: source.filter ?? "",
+    shortDescription: source.shortDescription ?? "",
+    longDescription: source.longDescription ?? "",
     maxCopies: source.maxCopies ?? null,
     allowedClass: [...(source.allowedClass ?? [])],
     allowedRace: [...(source.allowedRace ?? [])],
@@ -133,6 +137,10 @@ function diffLabel(oldJson: string, newJson: string): string {
     const nw = JSON.parse(newJson);
     if (old.name !== nw.name) return `edit name → "${nw.name}"`;
     if (old.filter !== nw.filter) return `edit filter → "${nw.filter}"`;
+    if (old.shortDescription !== nw.shortDescription)
+      return "edit short description";
+    if (old.longDescription !== nw.longDescription)
+      return "edit long description";
     if (old.maxCopies !== nw.maxCopies)
       return `edit max copies → ${nw.maxCopies ?? "(none)"}`;
     if (JSON.stringify(old.allowedClass) !== JSON.stringify(nw.allowedClass))
@@ -257,6 +265,11 @@ function toItem(): Item {
     name: local.name.trim(),
     filter: local.filter.trim(),
   };
+
+  if (local.shortDescription.trim())
+    item.shortDescription = local.shortDescription.trim();
+  if (local.longDescription.trim())
+    item.longDescription = local.longDescription.trim();
 
   for (const { key, value } of local.stats) {
     if (!key) continue;
@@ -495,6 +508,31 @@ watch(
           :options="tags"
           placeholder="Add a tag…"
         />
+      </FormField>
+    </FormGrid>
+
+    <FormSection>Description (optional)</FormSection>
+    <FormGrid class="mb-2">
+      <FormField
+        label="Short (shown next to the stat summary)"
+        class="min-w-80 flex-1"
+      >
+        <input
+          v-model="draft.shortDescription"
+          class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+          type="text"
+          data-testid="item-short-description-input"
+          placeholder="e.g. AP when killing mobs"
+        />
+      </FormField>
+      <FormField label="Long (shown on the hover card)" class="min-w-80 flex-1">
+        <textarea
+          v-model="draft.longDescription"
+          class="w-full resize-y rounded-md border border-line bg-surface p-2"
+          rows="2"
+          data-testid="item-long-description-input"
+          placeholder="e.g. When you kill an enemy, gain 3% Action Points."
+        ></textarea>
       </FormField>
     </FormGrid>
 

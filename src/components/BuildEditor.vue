@@ -430,12 +430,22 @@ function statSummary(slotId: string) {
   for (const key of NW_SCHEMA.statKeys) {
     if (item[key]) totals[key] = (totals[key] ?? 0) + (item[key] as number);
   }
+  // The item's own shortDescription leads, followed by every active grant crediting this
+  // row that carries one -- same "attributed to the first contributing row" set the stats
+  // above already dedupe through (bonusesBySlot).
+  const descriptions: string[] = [];
+  if (item.shortDescription) descriptions.push(item.shortDescription as string);
   for (const entry of bonusesBySlot.value.get(slotId) ?? []) {
     for (const [key, value] of Object.entries(entry.appliedStats ?? {})) {
       totals[key] = (totals[key] ?? 0) + (value as number);
     }
+    for (const grant of entry.grants ?? []) {
+      if (grant.active && grant.raw.shortDescription) {
+        descriptions.push(grant.raw.shortDescription);
+      }
+    }
   }
-  const parts = [];
+  const parts = [...descriptions];
   for (const key of NW_SCHEMA.statKeys) {
     if (!totals[key]) continue;
     parts.push(`${abbr(key)} ${signedStat(key, totals[key])}`);

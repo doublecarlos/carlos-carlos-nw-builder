@@ -147,6 +147,24 @@ function toggleJson(gIndex: number) {
           @update="(updated) => props.store.setConditions(gIndex, updated)"
         />
 
+        <FormSection sub>Description (optional)</FormSection>
+        <div class="mb-1.5 flex flex-col gap-1.5">
+          <input
+            v-model="grant.shortDescription"
+            data-testid="grant-short-description"
+            type="text"
+            class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+            placeholder="Short description, shown next to the item's stat summary when active…"
+          />
+          <textarea
+            v-model="grant.longDescription"
+            data-testid="grant-long-description"
+            class="w-full resize-y rounded-md border border-line bg-surface p-2"
+            rows="2"
+            placeholder="Long description, shown on the item's hover card when active…"
+          ></textarea>
+        </div>
+
         <FormSection sub>
           Payload
           <div class="inline-flex">

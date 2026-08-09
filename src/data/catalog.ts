@@ -334,6 +334,8 @@ const ITEM_FIELDS = new Set([
   "pointAssignment",
   "bonuses",
   "excludes",
+  "shortDescription",
+  "longDescription",
 ]);
 
 // A `param` condition addressing one of these paths duplicates a dedicated leaf that already
@@ -916,6 +918,8 @@ export function validate(
 
 const ITEM_LEADING_KEYS = ["id", "name", "filter"] as const;
 const ITEM_TRAILING_KEYS = [
+  "shortDescription",
+  "longDescription",
   "maxCopies",
   "dynamicStat",
   "dynamicMin",

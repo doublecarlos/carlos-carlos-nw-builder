@@ -93,3 +93,41 @@ describe("bonus-draft problem payload", () => {
     expect(draft.problemMessage).toBe("");
   });
 });
+
+describe("bonus-draft short/long description", () => {
+  it("round-trips both fields on a flat-payload grant", () => {
+    const grant: Grant = {
+      stats: { ap: 300 },
+      shortDescription: "AP when killing mobs",
+      longDescription: "When you kill an enemy, gain 3% Action Points.",
+    };
+    expect(needsJson(grant)).toBe(false);
+
+    const draft = toDraft(grant);
+    expect(draft.shortDescription).toBe("AP when killing mobs");
+    expect(draft.longDescription).toBe(
+      "When you kill an enemy, gain 3% Action Points.",
+    );
+    expect(toGrant(draft)).toEqual(grant);
+  });
+
+  it("omits both fields entirely when blank", () => {
+    const grant: Grant = { stats: { ap: 300 } };
+    const draft = toDraft(grant);
+    expect(draft.shortDescription).toBe("");
+    expect(draft.longDescription).toBe("");
+    const result = toGrant(draft);
+    expect(result).not.toHaveProperty("shortDescription");
+    expect(result).not.toHaveProperty("longDescription");
+  });
+
+  it("round-trips on a problem-payload grant too, alongside its own fields", () => {
+    const grant: Grant = {
+      problem: { severity: "warning", message: "Needs 10 tier 1 points" },
+      shortDescription: "short",
+      longDescription: "long",
+    };
+    expect(needsJson(grant)).toBe(false);
+    expect(toGrant(toDraft(grant))).toEqual(grant);
+  });
+});

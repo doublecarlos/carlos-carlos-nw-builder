@@ -187,6 +187,11 @@ const rows = computed(() =>
           .join(" + "),
         unmet: entry.gate?.unmet ?? [],
         excludedBy: entry.excludedBy,
+        // Every active grant's own longDescription, in grant order -- a set with more than
+        // one descriptive grant shows each (rare: usually only one grant per set bothers).
+        descriptions: (entry.grants ?? [])
+          .filter((g) => g.active && g.raw.longDescription)
+          .map((g) => g.raw.longDescription as string),
         stats: payload(entry),
         stacks: entry.stacks ?? 1,
         tiers: tierLadder(entry),
@@ -216,6 +221,13 @@ const rows = computed(() =>
     <BaseCardBody>
       <div v-if="slotLabel" class="mb-1 text-sm text-muted">
         {{ slotLabel }}
+      </div>
+      <div
+        v-if="item.longDescription"
+        class="mb-1.5 text-sm"
+        data-testid="item-card-long-description"
+      >
+        {{ item.longDescription }}
       </div>
       <div class="flex flex-col">
         <div
@@ -256,6 +268,13 @@ const rows = computed(() =>
             class="pl-3 text-sm leading-snug text-muted"
           >
             Conditions: {{ row.conditions }}
+          </div>
+          <div
+            v-for="desc in row.descriptions"
+            :key="desc"
+            class="pl-3 text-sm leading-snug"
+          >
+            {{ desc }}
           </div>
           <div
             v-if="row.secondary"

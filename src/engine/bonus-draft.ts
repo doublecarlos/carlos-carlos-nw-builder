@@ -130,6 +130,10 @@ export interface GrantDraft {
   problemSeverity: "error" | "warning";
   problemMessage: string;
   problemLabel: string;
+  /** Same across every payload, unlike the payload-specific fields above -- see
+   * `Grant.shortDescription`/`longDescription`. */
+  shortDescription: string;
+  longDescription: string;
 }
 
 export function toDraft(grant: Grant = {}): GrantDraft {
@@ -164,6 +168,8 @@ export function toDraft(grant: Grant = {}): GrantDraft {
     problemSeverity: json ? "warning" : (grant.problem?.severity ?? "warning"),
     problemMessage: json ? "" : (grant.problem?.message ?? ""),
     problemLabel: json ? "" : (grant.problem?.label ?? ""),
+    shortDescription: json ? "" : (grant.shortDescription ?? ""),
+    longDescription: json ? "" : (grant.longDescription ?? ""),
   };
 }
 
@@ -209,6 +215,9 @@ export function toGrant(draft: GrantDraft): Grant {
   } else {
     out.stats = rowsToStats(draft.stats);
   }
+
+  if (draft.shortDescription) out.shortDescription = draft.shortDescription;
+  if (draft.longDescription) out.longDescription = draft.longDescription;
 
   return out;
 }

@@ -193,6 +193,13 @@ export interface Item {
   pointAssignment?: PointAssignmentConfig;
   bonuses?: string[];
   excludes?: string[];
+  /** Short blurb shown alongside the item's stat summary in the build editor, for an
+   * effect that reads better as text than as a stat (e.g. a proc) -- see
+   * `BuildEditor.vue`'s `statSummary`. */
+  shortDescription?: string;
+  /** Longer flavor/explanation shown on the item's hover card, below its stats -- see
+   * `ItemCard.vue`. */
+  longDescription?: string;
   [key: string]: unknown;
 }
 
@@ -303,6 +310,11 @@ export interface Grant {
   variants?: GrantVariant[];
   tiers?: GrantTier[];
   problem?: GrantProblem;
+  /** Same as `Item.shortDescription`/`longDescription`, shown whenever this grant is
+   * active -- next to its slot's stat summary and on that slot's hover card
+   * respectively, alongside the item's own text. */
+  shortDescription?: string;
+  longDescription?: string;
 }
 
 export interface BonusSet {
