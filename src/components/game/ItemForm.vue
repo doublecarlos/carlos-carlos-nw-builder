@@ -5,6 +5,7 @@
 import { ref, computed, watch } from "vue";
 import BonusGroups from "./BonusGroups.vue";
 import TokenInput from "../ui/TokenInput.vue";
+import CreatableComboBox from "../ui/CreatableComboBox.vue";
 import PercentInput from "../ui/PercentInput.vue";
 import ComboBox from "../ui/ComboBox.vue";
 import IconButton from "../ui/IconButton.vue";
@@ -476,12 +477,10 @@ watch(
       </FormField>
       <IdField :id="displayId" label="Id" :existing="Boolean(source)" />
       <FormField label="Filter (slot category)">
-        <input
+        <CreatableComboBox
           v-model="draft.filter"
-          class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-          type="text"
-          list="nw-filters"
-          data-testid="item-filter-input"
+          :options="filters"
+          testid="item-filter-input"
         />
       </FormField>
       <FormField label="Max copies (0 = unlimited)">
@@ -494,9 +493,6 @@ watch(
       </FormField>
     </FormGrid>
 
-    <datalist id="nw-filters">
-      <option v-for="f in filters" :key="f" :value="f"></option>
-    </datalist>
     <datalist id="nw-tags">
       <option v-for="t in tags" :key="t" :value="t"></option>
     </datalist>
