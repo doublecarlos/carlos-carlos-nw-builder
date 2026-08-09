@@ -14,7 +14,7 @@ import BaseCard from "../ui/BaseCard.vue";
 import BaseCardHeader from "../ui/BaseCardHeader.vue";
 import BaseCardBody from "../ui/BaseCardBody.vue";
 import type { StatSourceSection } from "../../engine/stat-sources";
-import { useMagicKeys, whenever } from "@vueuse/core";
+import { useEscapeToClose } from "../../composables/useEscapeToClose";
 
 defineProps<{
   label: string;
@@ -23,8 +23,7 @@ defineProps<{
 
 const emit = defineEmits<{ close: [] }>();
 
-const { escape } = useMagicKeys();
-whenever(escape, () => emit("close"));
+useEscapeToClose(() => emit("close"));
 
 // Width (`w-64` = 256px) and max-height (`max-h-96` = 384px) are read back by StatPanel.vue's
 // own positioning logic (`CARD_W`) -- keep them in step. `.statcard` on the root is a bare JS

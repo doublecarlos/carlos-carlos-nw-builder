@@ -15,6 +15,7 @@ const openSectionId = ref<string | null>(null);
 import { onMounted, onUnmounted } from "vue";
 import BaseButton from "../ui/BaseButton.vue";
 import { LayoutTemplate } from "@lucide/vue";
+import { useEscapeToClose } from "../../composables/useEscapeToClose";
 import type { SectionPreset } from "../../types";
 
 const props = defineProps<{
@@ -55,6 +56,10 @@ function onDocumentClick(event: MouseEvent) {
 
 onMounted(() => document.addEventListener("mousedown", onDocumentClick));
 onUnmounted(() => document.removeEventListener("mousedown", onDocumentClick));
+
+useEscapeToClose(() => {
+  if (isOpen()) openSectionId.value = null;
+});
 </script>
 
 <template>

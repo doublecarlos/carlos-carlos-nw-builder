@@ -11,7 +11,7 @@ import * as catalog from "../data/catalog";
 import { showNotice } from "../stores/notice";
 import { Download } from "@lucide/vue";
 import BaseButton from "./ui/BaseButton.vue";
-import { useMagicKeys, whenever } from "@vueuse/core";
+import { useEscapeToClose } from "../composables/useEscapeToClose";
 
 const emit = defineEmits<{
   close: [];
@@ -149,8 +149,7 @@ function selectAllLayers() {
   selectedLayerIds.value = new Set(layers.layers.value.map((l) => l.id));
 }
 
-const { escape } = useMagicKeys();
-whenever(escape, () => emit("close"));
+useEscapeToClose(() => emit("close"));
 </script>
 
 <template>

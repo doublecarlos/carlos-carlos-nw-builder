@@ -3,8 +3,9 @@
 // Positioned by BasePopover: the parent provides the trigger element's bounding rect
 // and the popover handles viewport-edge flipping and clamping automatically.
 import { ref, onMounted, nextTick, type Component } from "vue";
-import { onClickOutside, useMagicKeys, whenever } from "@vueuse/core";
+import { onClickOutside } from "@vueuse/core";
 import BasePopover from "./ui/BasePopover.vue";
+import { useEscapeToClose } from "../composables/useEscapeToClose";
 
 const props = withDefaults(
   defineProps<{
@@ -44,8 +45,7 @@ onClickOutside(menuEl, () => emit("close"), {
   ignore: props.ignore,
 });
 
-const { escape } = useMagicKeys();
-whenever(escape, () => emit("close"));
+useEscapeToClose(() => emit("close"));
 </script>
 
 <template>

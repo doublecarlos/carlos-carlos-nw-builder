@@ -11,6 +11,7 @@ import { onMounted, onUnmounted } from "vue";
 import { Copy } from "@lucide/vue";
 import ComboBox from "../ui/ComboBox.vue";
 import BaseButton from "../ui/BaseButton.vue";
+import { useEscapeToClose } from "../../composables/useEscapeToClose";
 
 const props = defineProps<{
   sectionId: string;
@@ -62,6 +63,10 @@ function onDocumentClick(event: MouseEvent) {
 
 onMounted(() => document.addEventListener("mousedown", onDocumentClick));
 onUnmounted(() => document.removeEventListener("mousedown", onDocumentClick));
+
+useEscapeToClose(() => {
+  if (isOpen()) openSectionId.value = null;
+});
 </script>
 
 <template>
