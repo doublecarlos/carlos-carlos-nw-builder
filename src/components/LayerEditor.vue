@@ -973,7 +973,7 @@ onUnmounted(() => {
       />
 
       <div
-        class="min-w-0 flex-1 overflow-y-auto rounded-md border border-line bg-surface p-2.5"
+        class="min-w-0 flex-1 overflow-y-auto rounded-md border border-line bg-surface p-3"
       >
         <ItemForm
           v-if="section === 'items'"
