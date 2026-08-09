@@ -153,7 +153,7 @@ const matchMap = computed(() => {
       item,
       preview: itemPreview(item, 3),
       bonusPreview,
-      // "Up to" is only worth showing when it says something "current" doesn't already.
+      // "Potentially" is only worth showing when it says something "current" doesn't already.
       potentialPreview: sameParts(bonusPreview, potentialPreview)
         ? EMPTY_PREVIEW
         : potentialPreview,
@@ -248,7 +248,7 @@ defineExpose({
             data-testid="picker-option-potential-preview"
             class="flex flex-wrap items-baseline gap-2 text-sm text-muted"
           >
-            <span class="italic">Up to:</span>
+            <span class="italic">Potentially:</span>
             <span
               v-for="part in matchMap.get(option.value)?.potentialPreview
                 ?.parts ?? []"

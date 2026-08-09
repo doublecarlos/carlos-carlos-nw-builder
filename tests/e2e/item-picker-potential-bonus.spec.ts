@@ -1,5 +1,5 @@
 // End-to-end coverage for ItemPicker.vue's "potential" bonus preview (issue #125): a candidate
-// that contributes to a set bonus which isn't active yet shows an "Up to:" line for what it
+// that contributes to a set bonus which isn't active yet shows a "Potentially:" line for what it
 // would add once the rest of the set is in place, sourced from the same per-candidate resolve
 // the "current" bonus preview (#116) already runs.
 import { test, expect } from "@playwright/test";
@@ -9,13 +9,13 @@ import { openBuilder, slotRow, pickerInput, chooseItem } from "./support/app";
 // the "combat" toggle alone -- CA +10%/Crit Avoid -7.5%) and half of M31 Enchanted Advantage,
 // a 2-piece set granting `ca_p +0.02` only once both pieces are equipped. That combination is
 // exactly the case #125 is about: an item that's already worth something on its own, *and*
-// a further "Up to:" ceiling once the rest of the set is in place. The set's other piece lives
+// a further "Potentially:" ceiling once the rest of the set is in place. The set's other piece lives
 // in gear.shirt.
 const PANTS_PIECE = "M31 Bloodwoven Sigils (CA)";
 const SHIRT_PIECE = "M31 Bloodwoven Signs (Damage)";
 
 test.describe("item picker potential bonus preview", () => {
-  test("a candidate that would only partially complete a set shows both its own active bonus and an 'Up to:' ceiling", async ({
+  test("a candidate that would only partially complete a set shows both its own active bonus and an 'Potentially:' ceiling", async ({
     page,
   }) => {
     await openBuilder(page);
@@ -34,7 +34,7 @@ test.describe("item picker potential bonus preview", () => {
 
     // Only one piece of the 2-piece set would be equipped -- that half stays a "ceiling".
     const potential = option.getByTestId("picker-option-potential-preview");
-    await expect(potential).toContainText("Up to:");
+    await expect(potential).toContainText("Potentially:");
     await expect(potential).toContainText("CA +2.00%");
   });
 
