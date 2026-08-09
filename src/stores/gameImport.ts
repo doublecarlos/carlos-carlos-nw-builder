@@ -8,19 +8,30 @@ import { readSnapshot } from "../lib/demo-snapshot";
 import { buildFromLoadout } from "../lib/demo-import";
 import * as builds from "./builds";
 import * as layers from "./layers";
+import * as history from "./history";
+import * as catalog from "../data/catalog";
 import { db } from "./resolved";
 import { showNotice } from "./notice";
-import type { DemoSnapshot } from "../lib/demo-snapshot";
+import type {
+  DemoSnapshot,
+  DemoCharacter,
+  DemoLoadout,
+} from "../lib/demo-snapshot";
 import type { Build } from "../types";
 import type { ImportReport } from "../lib/demo-import";
 
 export type WizardStep = 1 | 2 | 3 | 4;
 
 /** One imported build paired with its coverage report -- what step 4 (and a reopened report)
- *  renders, one tab per entry. */
+ *  renders, one tab per entry. `character`/`loadout` are kept (not just the build/report)
+ *  so `mapUnrecognisedItem` can re-run `buildFromLoadout` later in the session, even after
+ *  the wizard closes and `_snapshot` (below) is cleared. */
 export interface CommittedReport {
+  buildId: string;
   buildName: string;
   report: ImportReport;
+  character: DemoCharacter;
+  loadout: DemoLoadout;
 }
 
 const _open = ref(false);
@@ -181,6 +192,7 @@ export function commit() {
 
   const newBuilds: Build[] = [];
   const newReports: ImportReport[] = [];
+  const newContexts: { character: DemoCharacter; loadout: DemoLoadout }[] = [];
   snap.characters.forEach((character, characterIndex) => {
     for (const loadout of character.loadouts) {
       const key = rowKey(characterIndex, loadout.index);
@@ -190,14 +202,18 @@ export function commit() {
       });
       newBuilds.push(build);
       newReports.push(report);
+      newContexts.push({ character, loadout });
     }
   });
   if (!newBuilds.length) return;
 
   builds.importBuilds(newBuilds, false, layers.enabledOverlays.value);
   _reports.value = newBuilds.map((build, i) => ({
+    buildId: build.id,
     buildName: build.name,
     report: newReports[i],
+    character: newContexts[i].character,
+    loadout: newContexts[i].loadout,
   }));
   _step.value = 4;
 
@@ -211,5 +227,67 @@ export function commit() {
     `Imported ${newBuilds.length} build${newBuilds.length === 1 ? "" : "s"} from game` +
       (total ? ` (${recognised}/${total} items recognised)` : ""),
     { label: "View import report", run: openReport },
+  );
+}
+
+/** Maps one "unrecognised" outcome's game id onto `itemId`'s `gameIds`, in a layer overlay,
+ *  then re-resolves this loadout in place so the row moves to "imported" immediately -- #177,
+ *  "teach new item mappings from the import report". */
+export function mapUnrecognisedItem(
+  reportIndex: number,
+  outcomeIndex: number,
+  itemId: string,
+) {
+  const entry = _reports.value[reportIndex];
+  const outcome = entry?.report.outcomes[outcomeIndex];
+  if (!entry || !outcome || outcome.kind !== "unrecognised") return;
+
+  const composed = db.value.get(itemId);
+  if (!composed) return;
+
+  const layer = layers.ensureTargetLayer();
+  history.snapshot(
+    "layer",
+    layer.id,
+    `map-gameid:${itemId}`,
+    `Map "${outcome.gameId}" → "${composed.name}"`,
+    layer.overlay,
+  );
+  const nextItem = {
+    ...composed,
+    gameIds: [...(composed.gameIds ?? []), outcome.gameId],
+  };
+  layers.updateOverlay(
+    layer.id,
+    catalog.upsert(layer.overlay, "items", itemId, nextItem),
+  );
+
+  // db.value already reflects the new mapping here -- resolved.ts's dependency chain
+  // (enabledOverlays -> overlays -> db) is a plain synchronous computed.
+  const { report: newReport } = buildFromLoadout(
+    entry.character,
+    entry.loadout,
+    db.value,
+    { name: entry.buildName },
+  );
+
+  // Positional diff, not a blanket choices copy -- protects any live edits the user made to
+  // the build elsewhere since commit. buildFromLoadout's per-bag pass is a stable, deterministic
+  // left-to-right greedy match, so re-running it after adding one gameId can only let a
+  // previously-unresolved item newly claim a previously-empty slot; it never disturbs an
+  // already-successful placement (those items are processed earlier in the same pass, both
+  // times).
+  newReport.outcomes.forEach((o, i) => {
+    if (
+      o.kind === "imported" &&
+      entry.report.outcomes[i]?.kind !== "imported"
+    ) {
+      const label = `${db.value.slotById.get(o.slotId)?.label ?? o.slotId} → ${composed.name} (game import)`;
+      builds.setChoiceFor(entry.buildId, o.slotId, o.itemId, label);
+    }
+  });
+
+  _reports.value = _reports.value.map((r, i) =>
+    i === reportIndex ? { ...r, report: newReport } : r,
   );
 }

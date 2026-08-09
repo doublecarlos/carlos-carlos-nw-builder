@@ -36,6 +36,10 @@ export const build = computed(() => {
 
 export const loading = computed(() => _loading.value);
 
+export function get(id: string): Build | undefined {
+  return _builds.value.get(id);
+}
+
 export function isDownloaded(id: string): boolean {
   const b = _builds.value.get(id);
   if (!b?.downloaded?.snapshot) return false;
@@ -144,6 +148,24 @@ export function revertToDownloaded(id: string) {
   history.snapshot("build", id, "revert", "Revert to downloaded", b);
   const restored = storage.revertToDownloaded(b) as Build;
   _builds.value.set(id, restored);
+  markDirty(id);
+}
+
+/** `buildEditor.ts`'s `setChoice` for a build that need not be the active one -- used by the
+ *  game-import report's "map to an item" action, which can patch a build the user isn't
+ *  currently looking at (`importBuilds` only selects the last of several imported builds).
+ *  No-ops if the build was since deleted (`deleteBuild` removes it from `_builds` immediately,
+ *  not a soft delete). */
+export function setChoiceFor(
+  id: string,
+  slotId: string,
+  itemId: string,
+  label: string,
+) {
+  const b = _builds.value.get(id);
+  if (!b) return;
+  history.snapshot("build", id, `choice:${slotId}`, label, b);
+  b.choices[slotId] = itemId;
   markDirty(id);
 }
 

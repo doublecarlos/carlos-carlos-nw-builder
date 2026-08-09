@@ -3,15 +3,31 @@
 // Rendered both as the wizard's own step 4 and reopened later from the post-import notice --
 // both read straight from stores/gameImport.ts's `reports`, which keeps the last commit's data
 // for the session, so this component needs no props of its own.
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import TabStrip from "./ui/TabStrip.vue";
 import TabButton from "./ui/TabButton.vue";
 import BaseButton from "./ui/BaseButton.vue";
+import ItemPicker from "./game/ItemPicker.vue";
 import { db } from "../stores/resolved";
-import { reports } from "../stores/gameImport";
-import { notInDemoGroups, KNOWN_LOSSY_NOTES } from "../lib/demo-slots";
+import * as builds from "../stores/builds";
+import { reports, mapUnrecognisedItem } from "../stores/gameImport";
+import {
+  notInDemoGroups,
+  candidateSlotIds,
+  KNOWN_LOSSY_NOTES,
+} from "../lib/demo-slots";
+import { forSlotAndBuild } from "../data/db";
+import type { Item } from "../types";
 
 const activeIndex = ref(0);
+
+/** Index into `activeReport.outcomes` of the row whose "map to an item" picker is open, if
+ *  any -- outcome position is stable across a re-resolve (buildFromLoadout's per-bag pass is
+ *  deterministic), so it stays valid even once the picked mapping replaces the report below. */
+const openOutcomeIndex = ref<number | null>(null);
+watch(activeIndex, () => {
+  openOutcomeIndex.value = null;
+});
 
 const activeReport = computed(
   () => reports.value[activeIndex.value]?.report ?? null,
@@ -68,6 +84,12 @@ const importedBySection = computed<ImportedSection[]>(() => {
 interface UnrecognisedRow {
   slot: number;
   gameId: string;
+  /** This outcome's index in `report.outcomes` -- doubles as the row's identity for the open
+   *  picker and the argument `mapUnrecognisedItem` re-resolves against. */
+  outcomeIndex: number;
+  /** Whether the bag names any app slot at all -- an unmapped/unknown bag has nothing to map
+   *  to, so "Map to an item…" is hidden rather than offered and failing silently. */
+  canMap: boolean;
 }
 interface UnrecognisedBag {
   bag: string;
@@ -78,13 +100,18 @@ const unrecognisedByBag = computed<UnrecognisedBag[]>(() => {
   const report = activeReport.value;
   if (!report) return [];
   const byBag = new Map<string, UnrecognisedRow[]>();
-  for (const outcome of report.outcomes) {
-    if (outcome.kind !== "unrecognised") continue;
-    const row: UnrecognisedRow = { slot: outcome.slot, gameId: outcome.gameId };
+  report.outcomes.forEach((outcome, outcomeIndex) => {
+    if (outcome.kind !== "unrecognised") return;
+    const row: UnrecognisedRow = {
+      slot: outcome.slot,
+      gameId: outcome.gameId,
+      outcomeIndex,
+      canMap: candidateSlotIds(outcome.bag, outcome.slot).length > 0,
+    };
     const list = byBag.get(outcome.bag);
     if (list) list.push(row);
     else byBag.set(outcome.bag, [row]);
-  }
+  });
   return [...byBag.entries()].map(([bag, rows]) => ({ bag, rows }));
 });
 
@@ -93,6 +120,38 @@ const unrecognisedGameIds = computed(() =>
     group.rows.map((row) => row.gameId),
   ),
 );
+
+/** Candidate items for whichever row's picker is currently open -- the union of every
+ *  candidate app slot's selectable items (filter- and class/race-narrowed against the
+ *  report's own build, not necessarily the active one), deduped by item id. */
+const openCandidates = computed<Item[]>(() => {
+  const report = activeReport.value;
+  const outcome =
+    openOutcomeIndex.value != null
+      ? report?.outcomes[openOutcomeIndex.value]
+      : undefined;
+  if (!outcome || outcome.kind !== "unrecognised") return [];
+  const build = builds.get(reports.value[activeIndex.value]?.buildId ?? "");
+  if (!build) return [];
+  const seen = new Map<string, Item>();
+  for (const slotId of candidateSlotIds(outcome.bag, outcome.slot)) {
+    for (const item of forSlotAndBuild(db.value, slotId, build)) {
+      seen.set(item.id, item);
+    }
+  }
+  return [...seen.values()];
+});
+
+function toggleMapPicker(outcomeIndex: number) {
+  openOutcomeIndex.value =
+    openOutcomeIndex.value === outcomeIndex ? null : outcomeIndex;
+}
+
+function onPick(outcomeIndex: number, itemId: string) {
+  if (!itemId) return; // the picker's empty option
+  mapUnrecognisedItem(activeIndex.value, outcomeIndex, itemId);
+  openOutcomeIndex.value = null;
+}
 
 /** Recognised but every candidate slot for its bag was already full -- a real placement
  *  conflict rather than a catalogue gap, called out as a note instead of its own group. */
@@ -184,14 +243,33 @@ async function copyUnrecognisedIds() {
           >
           <div v-for="group in unrecognisedByBag" :key="group.bag">
             <p class="text-xs font-semibold text-muted">{{ group.bag }}</p>
-            <p
-              v-for="(row, index) in group.rows"
-              :key="index"
-              class="text-sm"
-              data-testid="game-import-report-unrecognised-row"
+            <div
+              v-for="row in group.rows"
+              :key="row.outcomeIndex"
+              class="flex flex-col gap-1"
             >
-              {{ group.bag }}/{{ row.slot }} → {{ row.gameId }}
-            </p>
+              <div class="flex items-center gap-2">
+                <p
+                  class="text-sm"
+                  data-testid="game-import-report-unrecognised-row"
+                >
+                  {{ group.bag }}/{{ row.slot }} → {{ row.gameId }}
+                </p>
+                <BaseButton
+                  v-if="row.canMap"
+                  variant="link"
+                  data-testid="game-import-report-map-item"
+                  @click="toggleMapPicker(row.outcomeIndex)"
+                  >Map to an item…</BaseButton
+                >
+              </div>
+              <ItemPicker
+                v-if="openOutcomeIndex === row.outcomeIndex"
+                :items="openCandidates"
+                data-testid="game-import-report-map-picker"
+                @update:model-value="onPick(row.outcomeIndex, $event)"
+              />
+            </div>
           </div>
         </div>
       </details>

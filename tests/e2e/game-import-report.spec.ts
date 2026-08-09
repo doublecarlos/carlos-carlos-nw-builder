@@ -131,6 +131,52 @@ test("tabs appear for a two-loadout import and switch content", async ({
   ).toHaveText("Not recognised (2)");
 });
 
+test("mapping an unrecognised id via the report moves it to imported and teaches the layer", async ({
+  page,
+}) => {
+  await openBuilder(page);
+  await openImportAndUploadFixture(page);
+  await page.getByTestId("game-import-commit").click();
+
+  const unrecognised = page.getByTestId("game-import-report-unrecognised");
+  const row = unrecognised
+    .locator("div.flex.flex-col.gap-1")
+    .filter({ hasText: "Head_M31_Heavyheal_S-tier" });
+  await row.getByTestId("game-import-report-map-item").click();
+
+  const picker = row.getByTestId("game-import-report-map-picker");
+  await picker.getByTestId("picker-input").click();
+  // Index 0 is the picker's own "empty" option; the first real candidate is index 1.
+  const option = picker.getByTestId("picker-option").nth(1);
+  const itemName = (await option.locator(".font-semibold").innerText()).trim();
+  await option.click();
+
+  await expect(
+    unrecognised
+      .getByTestId("game-import-report-unrecognised-row")
+      .filter({ hasText: "Head_M31_Heavyheal_S-tier" }),
+  ).toHaveCount(0);
+  await expect(unrecognised.locator("summary")).toHaveText(
+    "Not recognised (3)",
+  );
+
+  const imported = page.getByTestId("game-import-report-imported");
+  await expect(imported.locator("summary")).toHaveText("Imported (1)");
+  await expect(
+    imported.getByTestId("game-import-report-imported-row"),
+  ).toHaveText(`Head → ${itemName}`);
+
+  // The mapping landed in a layer overlay ("map to an item" reuses ensureTargetLayer, the
+  // same "no layers yet -> create Layer 1" rule Ctrl+click uses), not the base catalogue.
+  await page.getByTestId("game-import-done").click();
+  await layerRow(page, "Layer 1").locator(".nav-name").click();
+  await page.locator(".editor-search").fill(itemName);
+  await page.locator(".editor-row", { hasText: itemName }).click();
+  await expect(page.getByTestId("item-gameids-input")).toContainText(
+    "Head_M31_Heavyheal_S-tier",
+  );
+});
+
 test("reopening from the notice shows the same report", async ({ page }) => {
   await openBuilder(page);
   await openImportAndUploadFixture(page);

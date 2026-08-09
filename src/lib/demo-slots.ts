@@ -46,6 +46,19 @@ export function bagEntry(bag: string): GameBagEntry | undefined {
   return bagsByName.get(bag);
 }
 
+/** Candidate app slot ids for one `unrecognised` outcome's bag+slot -- the same lookup
+ *  `placeBag` does internally, exposed for the coverage report's "map to an item" picker.
+ *  `slot` is the outcome's own `Islotidx`, only meaningful as a mount index for a `gemSlots`
+ *  bag. An unknown bag or a `notModelled` one (which never produces `unrecognised` anyway)
+ *  has no legal app slot at all. */
+export function candidateSlotIds(bag: string, slot: number): string[] {
+  const entry = bagEntry(bag);
+  if (!entry) return [];
+  if (entry.slots) return entry.slots;
+  if (entry.gemSlots) return entry.gemSlots[slot] ?? [];
+  return [];
+}
+
 // `Ppbuilds/Hclass` -> this app's `options.class` value. Per-character, not per-loadout --
 // every loadout imported off one character gets the same class.
 const HCLASS_TO_CLASS: Record<string, string> = {

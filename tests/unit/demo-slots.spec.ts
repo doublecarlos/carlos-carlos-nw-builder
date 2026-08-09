@@ -8,6 +8,7 @@ import { NW_SLOTS } from "../../src/data/data";
 import {
   GAME_IMPORT_DATA,
   bagEntry,
+  candidateSlotIds,
   classFromHclass,
   placeBag,
   notInDemoSlotIds,
@@ -343,6 +344,33 @@ describe("placeBag: MountEquippedActiveSlots gems, two-dimensional placement", (
     expect(() =>
       placeBag("MountEquippedActiveSlots", [mount], db, new Set()),
     ).not.toThrow();
+  });
+});
+
+describe("candidateSlotIds", () => {
+  it("returns a plain bag's candidate slots", () => {
+    expect(candidateSlotIds("Head", 0)).toEqual(["gear.head"]);
+  });
+
+  it("indexes a gemSlots bag by the outcome's own slot (mount index)", () => {
+    expect(candidateSlotIds("MountEquippedActiveSlots", 0)).toEqual([
+      "insignia.insignia1_1",
+      "insignia.insignia1_2",
+      "insignia.insignia1_3",
+      "insignia.insignia1_4",
+    ]);
+  });
+
+  it("returns nothing for a mount index with no insignia group", () => {
+    expect(candidateSlotIds("MountEquippedActiveSlots", 99)).toEqual([]);
+  });
+
+  it("returns nothing for an unknown bag", () => {
+    expect(candidateSlotIds("TotallyNewBagFromAClientUpdate", 0)).toEqual([]);
+  });
+
+  it("returns nothing for a notModelled bag", () => {
+    expect(candidateSlotIds("FashionHead", 0)).toEqual([]);
   });
 });
 

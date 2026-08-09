@@ -13,6 +13,7 @@ import type {
   Slot,
   Db,
   BonusCandidate,
+  Build,
 } from "../types";
 
 const pushTo = <K>(map: Map<K, string[]>, key: K, value: string) => {
@@ -127,3 +128,18 @@ export function build(
 /** Convenience for tests/tooling: build from the statically-imported data (src/data.ts), no
  * `window` required. */
 export const fromData = () => build(NW_ITEMS, NW_BONUSES, NW_SCHEMA, NW_SLOTS);
+
+/** `db.forSlot(slotId)`, narrowed to what `build.context.class`/`.race` actually allows. An
+ * unset class/race constrains nothing -- with both fields defaulting to empty, a fresh build
+ * would otherwise hide every restricted item with no explanation. */
+export function forSlotAndBuild(db: Db, slotId: string, build: Build): Item[] {
+  const cls = build.context.class;
+  const race = build.context.race;
+  return db
+    .forSlot(slotId)
+    .filter(
+      (item) =>
+        (!item.allowedClass || !cls || item.allowedClass.includes(cls)) &&
+        (!item.allowedRace || !race || item.allowedRace.includes(race)),
+    );
+}

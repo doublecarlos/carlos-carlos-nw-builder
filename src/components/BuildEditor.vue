@@ -17,6 +17,7 @@ import BaseBadge from "./ui/BaseBadge.vue";
 import ComboBox from "./ui/ComboBox.vue";
 import { ChevronsDownUp, ChevronsUpDown, FilterX } from "@lucide/vue";
 import { NW_SCHEMA, NW_SLOTS } from "../data/data";
+import { forSlotAndBuild } from "../data/db";
 import { abbr, signedStat, statPickerOptions } from "../lib/format";
 import { useHoverCard } from "../composables/useHoverCard";
 import {
@@ -378,19 +379,11 @@ const bonusesBySlot = computed(() => {
   return map;
 });
 
+// An unset class/race constrains nothing: with both fields defaulting to empty, a fresh build
+// would otherwise hide every restricted item with no explanation. Equipping one still flags
+// the `requires X` error once a class/race is (not) chosen.
 function itemsFor(slotId: string) {
-  const cls = build.value.context.class;
-  const race = build.value.context.race;
-  // An unset class/race constrains nothing: with both slots defaulting to empty, a
-  // fresh build would otherwise hide every restricted item with no explanation.
-  // Equipping one still flags the `requires X` error once a class/race is (not) chosen.
-  return db.value
-    .forSlot(slotId)
-    .filter(
-      (item) =>
-        (!item.allowedClass || !cls || item.allowedClass.includes(cls)) &&
-        (!item.allowedRace || !race || item.allowedRace.includes(race)),
-    );
+  return forSlotAndBuild(db.value, slotId, build.value);
 }
 
 function errorsFor(slotId: string) {
