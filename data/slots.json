@@ -421,8 +421,36 @@
         {
           "id": "raceLeveling.race",
           "label": "Race",
-          "filter": "race",
-          "type": "item_picker"
+          "type": "build_parameter",
+          "paramType": "list",
+          "path": "race",
+          "default": "",
+          "options": [
+            {
+              "value": "",
+              "label": "— none —"
+            },
+            {
+              "value": "aasimar",
+              "label": "Aasimar",
+              "linkedItem": "race-aasimar"
+            },
+            {
+              "value": "gith",
+              "label": "Gith",
+              "linkedItem": "race-gith"
+            },
+            {
+              "value": "human",
+              "label": "Human",
+              "linkedItem": "human"
+            },
+            {
+              "value": "wood-elf",
+              "label": "Wood Elf",
+              "linkedItem": "race-wood-elf"
+            }
+          ]
         },
         {
           "id": "raceLeveling.raceAttributes1",

@@ -108,7 +108,6 @@
         "mounts.wayfaringCollar": "wayfaring-barbed-collar",
         "overloads.overload1": "slayer-4-5-overall",
         "overloads.overload2": "devil-s-precision",
-        "raceLeveling.race": "race-aasimar",
         "raceLeveling.raceAttributes1": "race-attributes-2-int",
         "raceLeveling.raceAttributes2": "race-attributes-2-dex",
         "reinforcements.armorKit1": "severity-kit",
@@ -159,6 +158,7 @@
         },
         "m32Forte": true,
         "magnitude": 4332,
+        "race": "aasimar",
         "role": "dps",
         "toggles": {
           "artifactCall": true,

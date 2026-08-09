@@ -354,6 +354,52 @@ describe("overlay envelope: layer-kind and bundle-kind", () => {
   });
 });
 
+describe("legacy race migration", () => {
+  // race used to be an item_picker slot ("raceLeveling.race", choice = the race's own item
+  // id) before it became a build_parameter -- normalise() folds an old choice into
+  // context.race once so a build saved before the change keeps its race.
+  it("folds a legacy raceLeveling.race choice into context.race", () => {
+    const raw = {
+      ...storage.defaultBuild(),
+      choices: { "raceLeveling.race": "race-aasimar" },
+    };
+    const build = storage.normalise(raw);
+    expect(build.context.race).toBe("aasimar");
+    expect(build.choices).not.toHaveProperty("raceLeveling.race");
+  });
+
+  it("maps a legacy choice whose item id doesn't match its option's value (human)", () => {
+    const raw = {
+      ...storage.defaultBuild(),
+      choices: { "raceLeveling.race": "human" },
+    };
+    const build = storage.normalise(raw);
+    expect(build.context.race).toBe("human");
+  });
+
+  it("does not override an already-migrated context.race", () => {
+    const raw = {
+      ...storage.defaultBuild(),
+      choices: { "raceLeveling.race": "race-aasimar" },
+      context: { ...storage.defaultBuild().context, race: "gith" },
+    };
+    const build = storage.normalise(raw);
+    expect(build.context.race).toBe("gith");
+  });
+
+  it("drops the stale choice even with no matching option", () => {
+    const raw = {
+      ...storage.defaultBuild(),
+      choices: { "raceLeveling.race": "not-a-real-item" },
+    };
+    const build = storage.normalise(raw);
+    // setPath (build-path.ts) deletes rather than stores an empty-string default, so an
+    // unresolved race reads as absent, same as an unset class.
+    expect(build.context.race).toBeFalsy();
+    expect(build.choices).not.toHaveProperty("raceLeveling.race");
+  });
+});
+
 describe("point_assignment: assignments", () => {
   it("defaultBuild seeds every row's default, keyed by slot then item", () => {
     const build = storage.defaultBuild();

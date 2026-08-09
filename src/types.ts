@@ -368,6 +368,7 @@ export interface ForteSplit {
 
 export interface BuildContext {
   class: string;
+  race: string;
   role: string;
   combatType: string;
   damageType: string;

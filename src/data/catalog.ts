@@ -467,6 +467,7 @@ function checkConditions(
 // under a scalar field ("class.tier") overwrites that scalar with an object.
 const CONTEXT_SCALAR_KEYS = new Set([
   "class",
+  "race",
   "role",
   "combatType",
   "damageType",

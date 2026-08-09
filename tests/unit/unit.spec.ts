@@ -29,6 +29,7 @@ const built = db.fromData();
 // perturb the numbers.
 const BASE_CONTEXT: BuildContext = {
   class: "warlock",
+  race: "",
   role: "dps",
   combatType: "single",
   duration: 60,

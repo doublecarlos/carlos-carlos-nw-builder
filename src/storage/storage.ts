@@ -23,6 +23,7 @@ import pkg from "../../package.json";
 import { showNotice } from "../stores/notice";
 import type {
   Build,
+  BuildParameterSlot,
   Layer,
   CatalogOverlay,
   AppMeta,
@@ -208,6 +209,20 @@ const booleans = (source: unknown): Record<string, boolean> => {
   return out;
 };
 
+// Legacy: race used to be an item_picker slot ("raceLeveling.race", data/slots.json) whose
+// choice was the race's own item id; it's now a build_parameter, resolved through an option's
+// `linkedItem` instead of `choices`. Maps an old choice's item id back to the option value it
+// equals, so a build saved before the change keeps its race rather than silently losing it.
+const RACE_SLOT_ID = "raceLeveling.race";
+function legacyRaceValue(itemId: string | undefined): string | undefined {
+  if (!itemId) return undefined;
+  const slot = NW_SLOTS.slots.find(
+    (s): s is BuildParameterSlot =>
+      s.type === "build_parameter" && s.id === RACE_SLOT_ID,
+  );
+  return slot?.options?.find((option) => option.linkedItem === itemId)?.value;
+}
+
 /** `assignments`' own coercion: a slot id's inner map falls back to `base`'s (each row's
  * seeded default) key by key, rather than replacing the whole inner map, so a raw payload
  * missing one row (an older export, a hand trim) doesn't lose the other rows' defaults. */
@@ -250,13 +265,17 @@ export function normalise(
     ? (raw.downloaded as Build["downloaded"])
     : undefined;
 
+  const choices = strings(raw.choices);
+  const migratedRace = legacyRaceValue(choices[RACE_SLOT_ID]);
+  delete choices[RACE_SLOT_ID];
+
   return {
     ...base,
     ...(perBuild && !catalog.isEmpty(perBuild) ? { catalog: perBuild } : {}),
     id: keepId && typeof raw.id === "string" && raw.id ? raw.id : base.id,
     name:
       typeof raw.name === "string" && raw.name.trim() ? raw.name : base.name,
-    choices: strings(raw.choices),
+    choices,
     values: numbers(raw.values),
     assignments: nestedNumbers(raw.assignments, base.assignments),
     procs: booleans(raw.procs),
@@ -266,6 +285,9 @@ export function normalise(
     context: {
       ...base.context,
       ...context,
+      ...(context.race === undefined && migratedRace !== undefined
+        ? { race: migratedRace }
+        : {}),
       duration: Number.isFinite(Number(context.duration))
         ? Math.max(Number(context.duration), 0)
         : base.context.duration,
