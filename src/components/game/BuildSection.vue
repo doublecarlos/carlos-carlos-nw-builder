@@ -93,10 +93,7 @@ useCursorRowKeys(button, {
       <SectionClearButton :section-id="id" @clear="$emit('clear')" />
     </div>
 
-    <div
-      v-if="expanded"
-      class="bg-surface border-t border-line px-2.5 pb-2 pt-1"
-    >
+    <div v-if="expanded" class="bg-surface border-t border-line pb-2 pt-1">
       <template v-for="slot in slots" :key="slot.id">
         <slot :slot-def="slot" />
       </template>

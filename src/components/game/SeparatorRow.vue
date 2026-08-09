@@ -10,7 +10,11 @@ defineProps<{
 </script>
 
 <template>
-  <div class="py-2" role="separator" :data-testid="'separator:' + slotDef.id">
+  <div
+    class="px-2.5 py-2"
+    role="separator"
+    :data-testid="'separator:' + slotDef.id"
+  >
     <hr class="border-t-2 border-muted/60" />
   </div>
 </template>

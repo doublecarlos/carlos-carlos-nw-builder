@@ -122,7 +122,7 @@ useCursorRowKeys(anchor, {
 
 <template>
   <div
-    class="relative flex justify-center gap-2.5 py-1 focus-within:outline-2 focus-within:-outline-offset-1 focus-within:outline-accent"
+    class="relative flex justify-center gap-2.5 px-2.5 py-1 focus-within:outline-2 focus-within:-outline-offset-1 focus-within:outline-accent"
     :class="[
       noBorder ? 'border-b-0' : 'border-b border-line/45 last:border-b-0',
       isHovered && 'is-hovered bg-accent-soft/40',
