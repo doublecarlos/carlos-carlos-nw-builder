@@ -45,8 +45,8 @@ defineEmits<{
       <span
         class="inline-flex items-center gap-1 text-xs font-semibold uppercase text-muted"
       >
-        <ChevronDown v-if="expanded" class="size-3.5" />
-        <ChevronRight v-else class="size-3.5" />
+        <ChevronDown v-if="expanded" class="size-[14px]" />
+        <ChevronRight v-else class="size-[14px]" />
         Recently deleted ({{ entries.length }})
       </span>
     </div>
@@ -72,7 +72,7 @@ defineEmits<{
           class="inline-flex cursor-pointer items-center gap-1 rounded-md px-1 py-0.5 text-xs text-accent hover:bg-accent-soft"
           @click="$emit('restore', entry)"
         >
-          <RotateCcw class="size-3.5" />
+          <RotateCcw class="size-[14px]" />
           Restore
         </button>
         <div class="nav-menu-wrap relative">
@@ -84,7 +84,7 @@ defineEmits<{
               $emit('menu-open', `${entry.kind}_${entry.item.id}`, $event)
             "
           >
-            <EllipsisVertical class="size-3.5" />
+            <EllipsisVertical class="size-[14px]" />
           </button>
 
           <NavContextMenu

@@ -188,7 +188,7 @@ function moveFocus(dir: 1 | -1) {
             title="Build menu"
             @click="$emit('menu-open', b.id, $event)"
           >
-            <EllipsisVertical class="size-3.5" />
+            <EllipsisVertical class="size-[14px]" />
           </button>
 
           <NavContextMenu

@@ -18,7 +18,7 @@ defineEmits<{ click: [event: MouseEvent] }>();
 <template>
   <button
     type="button"
-    class="[&_svg]:size-3.5 cursor-pointer inline-flex items-center justify-center rounded p-1 text-muted enabled:hover:bg-surface-2 enabled:hover:text-accent disabled:cursor-default disabled:opacity-35"
+    class="[&_svg]:size-[14px] cursor-pointer inline-flex items-center justify-center rounded p-1 text-muted enabled:hover:bg-surface-2 enabled:hover:text-accent disabled:cursor-default disabled:opacity-35"
     :title="title"
     :aria-label="title"
     :disabled="disabled"

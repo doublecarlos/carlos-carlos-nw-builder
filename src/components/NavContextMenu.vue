@@ -72,7 +72,7 @@ whenever(escape, () => emit("close"));
         <component
           :is="item.icon"
           v-if="item.icon"
-          class="size-3.5 flex-none"
+          class="size-[14px] flex-none"
         />
         {{ item.label }}
       </button>

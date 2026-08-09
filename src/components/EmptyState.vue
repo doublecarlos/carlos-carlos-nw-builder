@@ -46,7 +46,7 @@ async function onImportFile(event: Event) {
           data-testid="empty-new-build"
           @click="builds.createBuild()"
         >
-          <Plus class="size-3.5" />
+          <Plus class="size-[14px]" />
           New build
         </button>
         <button
@@ -55,7 +55,7 @@ async function onImportFile(event: Event) {
           data-testid="empty-import"
           @click="triggerImport"
         >
-          <Upload class="size-3.5" />
+          <Upload class="size-[14px]" />
           Import…
         </button>
         <input

@@ -82,7 +82,7 @@ async function onImportFile(event: Event) {
       data-testid="autosave-indicator"
       title="Edits are saved automatically to this browser's storage. That storage can be cleared or lost — use Export to keep a backup elsewhere."
     >
-      <HardDrive class="h-3.5 w-3.5" />
+      <HardDrive class="h-[14px] w-[14px]" />
       Auto-saved to this browser
     </span>
 
