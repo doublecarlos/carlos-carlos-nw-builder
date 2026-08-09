@@ -339,6 +339,42 @@ describe("catalog.validate: point_assignment-referenced items", () => {
   });
 });
 
+describe("catalog.validate: filters not meant to be picked directly", () => {
+  it("an unrecognized filter still warns 'matches no slot'", () => {
+    const items = [{ id: "stray", name: "Stray", filter: "totally_unknown" }];
+    const findings = catalog.validate(items, []);
+    expect(
+      findings.some(
+        (f) => f.name === "stray" && /matches no slot/.test(f.message),
+      ),
+    ).toBe(true);
+  });
+
+  it("a filter naming 'build_param' is exempt from the 'matches no slot' warning", () => {
+    const items = [
+      { id: "param-item", name: "Param Item", filter: "some_build_param_x" },
+    ];
+    const findings = catalog.validate(items, []);
+    expect(findings.some((f) => f.name === "param-item")).toBe(false);
+  });
+
+  it("a filter naming 'hidden' is exempt from the 'matches no slot' warning", () => {
+    const items = [
+      { id: "hidden-item", name: "Hidden Item", filter: "internal_hidden" },
+    ];
+    const findings = catalog.validate(items, []);
+    expect(findings.some((f) => f.name === "hidden-item")).toBe(false);
+  });
+
+  it("the 'matches no slot' warning explains the naming convention that silences it", () => {
+    const items = [{ id: "stray", name: "Stray", filter: "totally_unknown" }];
+    const findings = catalog.validate(items, []);
+    const finding = findings.find((f) => f.name === "stray");
+    expect(finding?.message).toMatch(/build_param/);
+    expect(finding?.message).toMatch(/hidden/);
+  });
+});
+
 describe("catalog.nextId", () => {
   it("slugifies a name with no existing collision", () => {
     expect(catalog.nextId("Brutality (Pref)", [])).toBe("brutality-pref");

@@ -678,6 +678,13 @@ export function validateLinkedItems(
   return findings;
 }
 
+/** A filter naming convention for items that are equipped without going through any slot's
+ *  picker (e.g. resolved directly off a build_parameter, or intentionally hidden) -- these
+ *  are expected to match no slot, so the "matches no slot" warning would just be noise. */
+function isUnpickableFilter(filter: string): boolean {
+  return filter.includes("build_param") || filter.includes("hidden");
+}
+
 /**
  * Lint the composed catalogue. Warnings are things that are probably a mistake; errors are
  * things the engine will misread or silently drop.
@@ -786,10 +793,11 @@ export function validate(
         report("error", "no filter — the item appears in no slot", item.id);
       }
     } else if (!slotFilters.has(item.filter)) {
-      if (!linkedItemIds.has(item.id)) {
+      if (!linkedItemIds.has(item.id) && !isUnpickableFilter(item.filter)) {
         report(
           "warn",
-          `filter "${item.filter}" matches no slot, so nothing can equip it`,
+          `filter "${item.filter}" matches no slot, so nothing can equip it ` +
+            `(name it with "build_param" or "hidden" to silence this)`,
           item.id,
         );
       }
