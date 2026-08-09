@@ -17,6 +17,7 @@ defineSlots<{
     class="cursor-pointer px-2 py-1"
     :class="[highlighted && 'bg-accent-soft', muted && 'italic text-muted']"
     :data-highlighted="highlighted || undefined"
+    data-testid="picker-option"
   >
     <slot />
   </div>

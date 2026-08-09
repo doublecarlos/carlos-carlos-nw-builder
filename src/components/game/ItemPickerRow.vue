@@ -10,11 +10,14 @@ import BaseCheckbox from "../ui/BaseCheckbox.vue";
 import * as buildEditor from "../../stores/buildEditor";
 import { useItemProcs } from "../../composables/useItemProcs";
 import { label as statLabel } from "../../lib/format";
-import type { Build, Item, ItemPickerSlot } from "../../types";
+import type { Build, Db, Item, ItemPickerSlot } from "../../types";
 
 const props = defineProps<{
   slotDef: ItemPickerSlot;
   build: Build;
+  /** The active build's resolved db -- only needed for the picker's bonus-aware preview
+   *  (ItemPicker.vue's `bonusPreview` prop below). */
+  db: Db;
   compareBuild?: Build | null;
   highlightDiff: boolean;
   item?: Item | null;
@@ -50,6 +53,7 @@ const value = () => props.build.values[props.slotDef.id];
       :model-value="choice()"
       :selected-item="item"
       :invalid="invalid"
+      :bonus-preview="{ db, build, slotId: slotDef.id }"
       @update:model-value="buildEditor.setChoice(slotDef.id, $event)"
     />
     <span v-if="item" class="min-w-0 flex-1 truncate text-sm text-text">{{

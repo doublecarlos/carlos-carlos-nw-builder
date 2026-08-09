@@ -435,6 +435,7 @@ function onFocusIn(event: FocusEvent) {
           v-else
           :slot-def="slotDef"
           :build="build"
+          :db="db"
           :compare-build="compareBuild"
           :highlight-diff="highlightDiff"
           :is-hovered="hover?.slotId === slotDef.id"

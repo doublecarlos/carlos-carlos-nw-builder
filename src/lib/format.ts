@@ -43,15 +43,15 @@ export const signedStat = (key: StatKey, value: unknown) => {
 };
 
 /**
- * The one-line stat summary shown under an item in the picker.
- * Returns the pieces rather than a string so the caller can style the overflow hint.
+ * Formats a sparse stat-value lookup into "STAT +N" parts, schema order, capped to `limit`.
+ * Shared by `itemPreview` (an item's own flat fields) and `bonusStatPreview` (a summed bonus
+ * total) so the picker's two preview lines always agree on ordering/formatting.
  */
-export const itemPreview = (item: Item | null | undefined, limit = 4) => {
-  if (!item) return { parts: [], more: 0 };
+const statParts = (get: (key: StatKey) => unknown, limit: number) => {
   const parts: string[] = [];
   for (const key of NW_SCHEMA.statKeys) {
     if (key === "il") continue; // shown separately, as a badge
-    const value = item[key];
+    const value = get(key);
     if (!value) continue;
     parts.push(`${abbr(key)} ${signedStat(key, value as number)}`);
   }
@@ -60,6 +60,24 @@ export const itemPreview = (item: Item | null | undefined, limit = 4) => {
     more: Math.max(parts.length - limit, 0),
   };
 };
+
+/**
+ * The one-line stat summary shown under an item in the picker.
+ * Returns the pieces rather than a string so the caller can style the overflow hint.
+ */
+export const itemPreview = (item: Item | null | undefined, limit = 4) =>
+  item ? statParts((key) => item[key], limit) : { parts: [], more: 0 };
+
+/**
+ * The bonus-derived stats a candidate item would add if it were slotted in -- same shape as
+ * `itemPreview`, summed from active bonuses instead of the item's own fields. `null`/empty
+ * for a candidate with nothing new to show (no live build to resolve against, or no bonus
+ * attributed to that slot).
+ */
+export const bonusStatPreview = (
+  stats: Record<string, number> | null | undefined,
+  limit = 3,
+) => (stats ? statParts((key) => stats[key], limit) : { parts: [], more: 0 });
 
 /** True when the item carries conditional effects worth flagging in the picker. */
 export const hasBonuses = (item: Item | null | undefined) =>

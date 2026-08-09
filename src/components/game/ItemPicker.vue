@@ -1,7 +1,8 @@
 <script setup lang="ts">
 // Searchable item typeahead for one slot -- thin wrapper around ComboBox.vue that maps
 // Item objects to the generic {value, label} options format and renders the item-specific
-// stat preview through ComboBox's `#option` slot.
+// stat preview (plus, given `bonusPreview`, the bonus stats picking it would add) through
+// ComboBox's `#option` slot.
 //
 // A native <datalist> was considered and rejected: it cannot show item level and a stat
 // preview per row, and its keyboard behaviour is not controllable. This is ~120 lines instead.
@@ -10,8 +11,14 @@
 // value is `model` and every change leaves via `update:model`, so the single build document
 // in App.vue stays the only source of truth (undo stack has a single place to hook into).
 import { ref, computed } from "vue";
-import { itemPreview, hasBonuses, int as fmtInt } from "../../lib/format";
-import type { Item } from "../../types";
+import {
+  itemPreview,
+  bonusStatPreview,
+  hasBonuses,
+  int as fmtInt,
+} from "../../lib/format";
+import * as engine from "../../engine/engine";
+import type { Item, Db, Build } from "../../types";
 import ComboBox from "../ui/ComboBox.vue";
 
 const props = withDefaults(
@@ -24,10 +31,17 @@ const props = withDefaults(
      * fallen out of it (e.g. a class/race change narrowing `allowedClass`/`allowedRace`). */
     selectedItem?: Item | null;
     invalid?: boolean;
+    /** Build-editor context for a bonus-aware preview: each candidate is hypothetically
+     * resolved into `slotId` so the dropdown can show the bonus stats it would add, same as
+     * the row's own stat summary would show once it's actually picked (issue #116). Left
+     * unset by callers with no live build to resolve against (PresetForm's item rows, which
+     * pick a default for a slot rather than editing a real build). */
+    bonusPreview?: { db: Db; build: Build; slotId: string };
   }>(),
   {
     selectedItem: null,
     invalid: false,
+    bonusPreview: undefined,
   },
 );
 
@@ -40,16 +54,55 @@ const options = computed(() =>
   props.items.map((item) => ({ value: item.id, label: item.name })),
 );
 
-/** Decorated once per filter change rather than once per render pass. */
+/**
+ * The bonus stats `item` would add if it were slotted into `bonusPreview.slotId` -- resolved
+ * by cloning the active build with just that one slot's choice swapped, then reading which
+ * active bonuses the engine attributes back to that same slot (same attribution `EngineRow`
+ * itself sums into a row's stats, so this matches what the row's own stat summary would show
+ * once the item is actually picked). A bad candidate/build combination fails resolution
+ * rather than crash the whole dropdown -- the preview just stays empty for that one row.
+ */
+function previewBonusStats(item: Item): Record<string, number> | null {
+  const ctx = props.bonusPreview;
+  if (!ctx) return null;
+  try {
+    const hypothetical: Build = {
+      ...ctx.build,
+      choices: { ...ctx.build.choices, [ctx.slotId]: item.id },
+    };
+    const result = engine.resolveBuild(ctx.db, hypothetical);
+    const stats: Record<string, number> = {};
+    for (const bonus of result.bonuses) {
+      if (!bonus.active || bonus.slotId !== ctx.slotId || !bonus.appliedStats)
+        continue;
+      for (const [key, value] of Object.entries(bonus.appliedStats)) {
+        stats[key] = (stats[key] ?? 0) + (value ?? 0);
+      }
+    }
+    return stats;
+  } catch {
+    return null;
+  }
+}
+
+/** Decorated once per filter change rather than once per render pass -- and, since this is a
+ *  lazy `computed` only ever read from the (`v-if="open"`-gated) option list, only while this
+ *  particular dropdown is open, not on every keystroke elsewhere in the build. */
 const matchMap = computed(() => {
   const map = new Map<
     string,
-    { item: Item; preview: ReturnType<typeof itemPreview>; flagged: boolean }
+    {
+      item: Item;
+      preview: ReturnType<typeof itemPreview>;
+      bonusPreview: ReturnType<typeof bonusStatPreview>;
+      flagged: boolean;
+    }
   >();
   for (const item of props.items) {
     map.set(item.id, {
       item,
       preview: itemPreview(item, 3),
+      bonusPreview: bonusStatPreview(previewBonusStats(item)),
       flagged: hasBonuses(item),
     });
   }
@@ -109,6 +162,25 @@ defineExpose({
           >
           <span v-if="matchMap.get(option.value)?.preview?.more" class="italic"
             >+{{ matchMap.get(option.value)?.preview?.more }} more</span
+          >
+        </div>
+        <!-- What picking this item would add via bonuses, e.g. a set piece it would complete --
+             distinct from the item's own stats above (issue #116). -->
+        <div
+          v-if="matchMap.get(option.value)?.bonusPreview?.parts?.length"
+          data-testid="picker-option-bonus-preview"
+          class="flex flex-wrap gap-2 text-sm text-accent"
+        >
+          <span
+            v-for="part in matchMap.get(option.value)?.bonusPreview?.parts ??
+            []"
+            :key="part"
+            >{{ part }}</span
+          >
+          <span
+            v-if="matchMap.get(option.value)?.bonusPreview?.more"
+            class="italic"
+            >+{{ matchMap.get(option.value)?.bonusPreview?.more }} more</span
           >
         </div>
       </template>

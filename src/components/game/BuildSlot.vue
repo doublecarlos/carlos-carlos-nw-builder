@@ -27,6 +27,7 @@ import type {
   Item,
   EngineError,
   Build,
+  Db,
   BuildParameterSlot,
   PointAssignmentSlot,
 } from "../../types";
@@ -34,6 +35,8 @@ import type {
 const props = defineProps<{
   slotDef: RowSlot;
   build: Build;
+  /** Passed straight through to ItemPickerRow for its picker's bonus-aware preview. */
+  db: Db;
   compareBuild?: Build | null;
   highlightDiff: boolean;
   isHovered: boolean;
@@ -163,6 +166,7 @@ useCursorRowKeys(anchor, {
         ref="control"
         :slot-def="slotDef"
         :build="build"
+        :db="db"
         :compare-build="compareBuild"
         :highlight-diff="highlightDiff"
         :item="item"
