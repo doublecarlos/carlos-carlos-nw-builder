@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // Left sidebar: builds, customization layers, and recently deleted. Owns shared state
 // (menus, rename, confirm) and delegates list rendering to NavBuilds / NavLayers / NavTrash.
-import { ref, useTemplateRef } from "vue";
+import { nextTick, ref, useTemplateRef } from "vue";
 import { useEventListener } from "@vueuse/core";
 import { Copy, Download, Pencil, RotateCcw, Trash } from "@lucide/vue";
 import NavBuilds from "./NavBuilds.vue";
@@ -13,6 +13,7 @@ import * as layers from "../stores/layers";
 import * as selection from "../stores/selection";
 import * as buildEditor from "../stores/buildEditor";
 import * as trash from "../stores/trash";
+import { showNotice } from "../stores/notice";
 import type { Build, TrashEntry } from "../types";
 
 const CONFIRM_MS = 4000;
@@ -105,6 +106,33 @@ function runConfirmed(
     run();
     closeMenu();
   }
+}
+
+/** Delete/Backspace on a nav row (`NavBuilds`/`NavLayers`' `delete-request` emit). Reuses the
+ *  same two-step confirm key as the context menu's delete action -- arming it here also arms
+ *  it there, so opening the menu right after mid-confirms as "Really?" instead of resetting.
+ *  There's no menu open to show that state, so the first press surfaces it as a toast instead. */
+function onDeleteRequest(type: "build" | "layer", id: string) {
+  const action = type === "build" ? "delete-build" : "delete-layer";
+  if (!confirm_.run(`${type}:${id}:${action}`)) {
+    const name = (type === "build" ? builds.builds : layers.layers).value.find(
+      (item) => item.id === id,
+    )?.name;
+    showNotice(`Press Delete again to delete "${name}".`);
+    return;
+  }
+  if (type === "build") deleteBuildRow(id);
+  else deleteLayerRow(id);
+  focusSelectedRow(type);
+}
+
+/** After a keyboard delete, the deleted row's button (and the keyboard focus on it) is gone --
+ *  refocus whatever the store auto-selected next so the keyboard cursor isn't dropped. */
+async function focusSelectedRow(type: "build" | "layer") {
+  await nextTick();
+  const sel = selection.selection.value;
+  if (!sel || sel.kind !== type) return;
+  root.value?.querySelector<HTMLElement>(`[data-nav-key="${sel.id}"]`)?.focus();
 }
 
 // --- build actions --------------------------------------------------------------------
@@ -405,6 +433,7 @@ useEventListener(document, "scroll", onScrollCapture, {
       @menu-close="closeMenu"
       @move-up="(id) => moveBuildUp(id)"
       @move-down="(id) => moveBuildDown(id)"
+      @delete-request="(id) => onDeleteRequest('build', id)"
       @create="builds.createBuild()"
       @import="triggerImportBuild"
     />
@@ -442,6 +471,7 @@ useEventListener(document, "scroll", onScrollCapture, {
       @menu-close="closeMenu"
       @move-up="(id) => moveLayerUp(id)"
       @move-down="(id) => moveLayerDown(id)"
+      @delete-request="(id) => onDeleteRequest('layer', id)"
       @create="layers.createLayer()"
       @import="triggerImportLayer"
     />

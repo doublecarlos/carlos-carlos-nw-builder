@@ -366,3 +366,69 @@ test("clicking a different row's kebab switches the menu", async ({ page }) => {
   await expect(menu).toBeVisible();
   await expect(menu.getByRole("button", { name: "Duplicate" })).toBeVisible();
 });
+
+// --- Keyboard navigation --------------------------------------------------------------
+
+test("ArrowDown/ArrowUp move the build selection", async ({ page }) => {
+  await openBuilder(page);
+  await addBuild(page);
+  await expect(buildRow(page, "Build 2")).toHaveClass(/is-active/);
+
+  await buildRow(page, "Build 1").locator(".nav-name").focus();
+  await page.keyboard.press("ArrowDown");
+  await expect(buildRow(page, "Build 2")).toHaveClass(/is-active/);
+  await expect(buildRow(page, "Build 2").locator(".nav-name")).toBeFocused();
+
+  await page.keyboard.press("ArrowUp");
+  await expect(buildRow(page, "Build 1")).toHaveClass(/is-active/);
+  await expect(buildRow(page, "Build 1").locator(".nav-name")).toBeFocused();
+});
+
+test("Ctrl+ArrowUp reorders the focused build like Move up", async ({
+  page,
+}) => {
+  await openBuilder(page);
+  await addBuild(page);
+  await expect(buildRow(page, "Build 2")).toBeVisible();
+
+  await buildRow(page, "Build 2").locator(".nav-name").focus();
+  await page.keyboard.press("Control+ArrowUp");
+
+  const buildRows = page.locator(".nav-row--build");
+  await expect(buildRows.nth(0)).toContainText("Build 2");
+  await expect(buildRows.nth(1)).toContainText("Build 1");
+});
+
+test("F2 on a focused row starts rename", async ({ page }) => {
+  await openBuilder(page);
+  await buildRow(page, "Build 1").locator(".nav-name").focus();
+  await page.keyboard.press("F2");
+
+  const input = page.locator(".nav-rename");
+  await expect(input).toBeFocused();
+  await expect(input).toHaveValue("Build 1");
+});
+
+test("Delete on a focused row arms a confirm notice, and fires on the second press", async ({
+  page,
+}) => {
+  await openBuilder(page);
+  await addBuild(page);
+  await expect(buildRow(page, "Build 2")).toBeVisible();
+
+  await buildRow(page, "Build 2").locator(".nav-name").focus();
+  await page.keyboard.press("Delete");
+
+  // First press only arms the confirm -- the row is still there.
+  await expect(
+    page.getByText('Press Delete again to delete "Build 2".'),
+  ).toBeVisible();
+  await expect(buildRow(page, "Build 2")).toBeVisible();
+
+  await page.keyboard.press("Delete");
+
+  // Second press actually deletes it.
+  await expect(buildRow(page, "Build 2")).toHaveCount(0);
+  const trash = recentlyDeletedHeader(page);
+  await expect(trash).toBeVisible();
+});
