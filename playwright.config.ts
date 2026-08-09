@@ -14,18 +14,11 @@ export default defineConfig({
     trace: "on-first-retry",
     viewport: { width: 1440, height: 900 },
   },
-  projects: [
-    { name: "chromium", use: { ...devices["Desktop Chrome"] } },
-    {
-      name: "firefox",
-      use: { ...devices["Desktop Firefox"] },
-      dependencies: ["chromium"],
-    },
-  ],
+  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: {
     command: `npm run dev -- --port ${DEV_PORT}`,
     url: `http://localhost:${DEV_PORT}`,
     reuseExistingServer: !process.env.CI,
   },
-  workers: 3,
+  workers: 6,
 });
