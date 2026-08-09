@@ -187,6 +187,7 @@ defineExpose({
     :show-empty-option="true"
     :closed-display="selectedItem?.name ?? ''"
     :placeholder="selectedItem?.name || '—'"
+    wide
     @update:model-value="model = $event"
   >
     <template #option="{ option }">
