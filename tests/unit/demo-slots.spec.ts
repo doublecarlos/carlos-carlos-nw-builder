@@ -1,17 +1,19 @@
 // demo-slots.ts: the bag -> app-slot map and its one placement rule. Exercised against the
-// real, shipped game-bags.json + data/slots.json (so these tests double as a sanity check of
-// the shipped table itself), with a small overlay of synthetic items giving controlled gameIds
-// to test against -- the real catalogue has zero gameIds populated yet (#176's job).
+// real, shipped game-import.json + data/slots.json (so these tests double as a sanity check
+// of the shipped table itself), with a small overlay of synthetic items giving controlled
+// gameIds to test against -- the real catalogue has zero gameIds populated yet (#176's job).
 import { describe, it, expect } from "vitest";
 import * as catalog from "../../src/data/catalog";
 import { NW_SLOTS } from "../../src/data/data";
 import {
-  GAME_BAGS,
+  GAME_IMPORT_DATA,
   bagEntry,
   classFromHclass,
   placeBag,
   notInDemoSlotIds,
+  notInDemoGroups,
   validateGameBags,
+  validateNotInDemoReasons,
 } from "../../src/lib/demo-slots";
 import type { DemoItem } from "../../src/lib/demo-snapshot";
 import type { Item } from "../../src/types";
@@ -58,11 +60,25 @@ const demoItem = (
 
 describe("demo-slots: shipped data", () => {
   it("has 39 bags", () => {
-    expect(GAME_BAGS.bags).toHaveLength(39);
+    expect(GAME_IMPORT_DATA.bags).toHaveLength(39);
   });
 
   it("passes its own lint against the real slot list", () => {
-    expect(validateGameBags(GAME_BAGS.bags, NW_SLOTS.slots)).toEqual([]);
+    expect(validateGameBags(GAME_IMPORT_DATA.bags, NW_SLOTS.slots)).toEqual([]);
+  });
+
+  it("has 12 notInDemoReasons groups", () => {
+    expect(GAME_IMPORT_DATA.notInDemoReasons).toHaveLength(12);
+  });
+
+  it("notInDemoReasons passes its own lint against the real slot/section list", () => {
+    expect(
+      validateNotInDemoReasons(
+        GAME_IMPORT_DATA.notInDemoReasons,
+        NW_SLOTS.slots,
+        NW_SLOTS.sections,
+      ),
+    ).toEqual([]);
   });
 });
 
@@ -365,6 +381,50 @@ describe("notInDemoSlotIds", () => {
   });
 });
 
+describe("notInDemoGroups", () => {
+  const missing = notInDemoSlotIds(NW_SLOTS.slots);
+
+  it("rolls a whole missing section up into one authored group", () => {
+    const groups = notInDemoGroups(db, missing);
+    const boons = groups.find((g) => g.label === "Boons");
+    expect(boons?.reason).toMatch(/boon points/);
+    expect(boons?.slotIds).toContain("boons.tier1");
+    expect(boons?.slotIds).toHaveLength(
+      NW_SLOTS.slots.filter(
+        (s) => s.section === "boons" && s.type !== "separator",
+      ).length,
+    );
+  });
+
+  it("only includes options.class as its own group when the loadout actually lacks a class", () => {
+    const withClass = notInDemoGroups(
+      db,
+      missing.filter((id) => id !== "options.class"),
+    );
+    expect(withClass.find((g) => g.label === "Class")).toBeUndefined();
+
+    const withoutClass = notInDemoGroups(db, [...missing, "options.class"]);
+    expect(withoutClass.find((g) => g.label === "Class")).toBeDefined();
+  });
+
+  it("never drops a slot -- everything passed in lands in some group", () => {
+    const groups = notInDemoGroups(db, missing);
+    const covered = new Set(groups.flatMap((g) => g.slotIds));
+    expect(missing.every((id) => covered.has(id))).toBe(true);
+  });
+
+  it("falls back to a section-labelled group for a slot no authored reason names", () => {
+    const groups = notInDemoGroups(db, ["overloads.overload1"]);
+    expect(groups).toEqual([
+      {
+        label: "Overloads",
+        reason: "Not recorded in this demo — set it by hand.",
+        slotIds: ["overloads.overload1"],
+      },
+    ]);
+  });
+});
+
 describe("validateGameBags", () => {
   it("errors on a slot id that doesn't exist", () => {
     const findings = validateGameBags(
@@ -402,5 +462,44 @@ describe("validateGameBags", () => {
     expect(
       findings.filter((f) => /must declare exactly one/.test(f.message)),
     ).toHaveLength(2);
+  });
+});
+
+describe("validateNotInDemoReasons", () => {
+  it("errors on a section id that doesn't exist", () => {
+    const findings = validateNotInDemoReasons(
+      [{ label: "Test", reason: "x", sections: ["not-a-real-section"] }],
+      NW_SLOTS.slots,
+      NW_SLOTS.sections,
+    );
+    expect(
+      findings.some(
+        (f) => f.level === "error" && /does not exist/.test(f.message),
+      ),
+    ).toBe(true);
+  });
+
+  it("errors on a slot id that doesn't exist", () => {
+    const findings = validateNotInDemoReasons(
+      [{ label: "Test", reason: "x", slotIds: ["not.a.real.slot"] }],
+      NW_SLOTS.slots,
+      NW_SLOTS.sections,
+    );
+    expect(
+      findings.some(
+        (f) => f.level === "error" && /does not exist/.test(f.message),
+      ),
+    ).toBe(true);
+  });
+
+  it("errors when an entry declares neither sections nor slotIds", () => {
+    const findings = validateNotInDemoReasons(
+      [{ label: "Empty", reason: "x" }],
+      NW_SLOTS.slots,
+      NW_SLOTS.sections,
+    );
+    expect(
+      findings.some((f) => /must declare at least one/.test(f.message)),
+    ).toBe(true);
   });
 });

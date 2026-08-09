@@ -12,7 +12,7 @@ import { Download, Gamepad2, HardDrive, Upload } from "@lucide/vue";
 import { useUndoRedoKeys } from "../composables/useUndoRedoKeys";
 import * as builds from "../stores/builds";
 import * as layers from "../stores/layers";
-import { notice, showNotice } from "../stores/notice";
+import { notice, noticeAction, showNotice } from "../stores/notice";
 import {
   isOpen as gameImportOpen,
   openWizard as openGameImport,
@@ -96,7 +96,7 @@ async function onImportFile(event: Event) {
       Auto-saved to this browser
     </span>
 
-    <span class="ml-auto">
+    <span class="ml-auto flex items-center gap-1">
       <BaseNotice
         v-if="notice"
         class="inline-block max-w-80 overflow-hidden text-ellipsis whitespace-nowrap"
@@ -105,6 +105,13 @@ async function onImportFile(event: Event) {
       >
         {{ notice }}
       </BaseNotice>
+      <BaseButton
+        v-if="notice && noticeAction"
+        variant="link"
+        data-testid="notice-action"
+        @click="noticeAction.run()"
+        >{{ noticeAction.label }}</BaseButton
+      >
     </span>
 
     <span class="flex-1"></span>

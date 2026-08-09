@@ -4,7 +4,7 @@
 // (its own ticket) only renders what this returns and decides whether to commit it.
 import * as storage from "../storage/storage";
 import {
-  GAME_BAGS,
+  GAME_IMPORT_DATA,
   classFromHclass,
   notInDemoSlotIds,
   placeBag,
@@ -17,7 +17,7 @@ export type SlotOutcome =
   | { kind: "imported"; slotId: string; gameId: string; itemId: string }
   /** Game item present but no catalogue entry claims its `Hitem`. */
   | { kind: "unrecognised"; bag: string; slot: number; gameId: string }
-  /** Bag is `notModelled` in game-bags.json -- ignored on purpose. */
+  /** Bag is `notModelled` in game-import.json -- ignored on purpose. */
   | { kind: "ignored"; bag: string; gameId: string; reason: string }
   /** Recognised, but every candidate app slot for its bag was already full. */
   | { kind: "overflow"; bag: string; gameId: string; itemId: string }
@@ -38,9 +38,9 @@ function loadoutLabel(loadout: DemoLoadout): string {
 }
 
 /** Groups a loadout's items by bag, each group sorted by `Islotidx` -- the order the
- *  placement rule applies within one bag. Bags absent from game-bags.json still appear (under
- *  their own name), sorted alphabetically after every known bag, so an unexpected client
- *  update surfaces as `unrecognised` rather than being silently skipped. */
+ *  placement rule applies within one bag. Bags absent from game-import.json still appear
+ *  (under their own name), sorted alphabetically after every known bag, so an unexpected
+ *  client update surfaces as `unrecognised` rather than being silently skipped. */
 function groupByBag(items: DemoItem[]): Map<string, DemoItem[]> {
   const byBag = new Map<string, DemoItem[]>();
   for (const item of items) {
@@ -50,7 +50,7 @@ function groupByBag(items: DemoItem[]): Map<string, DemoItem[]> {
   }
   for (const list of byBag.values()) list.sort((a, b) => a.slot - b.slot);
 
-  const known = GAME_BAGS.bags.map((entry) => entry.bag);
+  const known = GAME_IMPORT_DATA.bags.map((entry) => entry.bag);
   const extra = [...byBag.keys()].filter((bag) => !known.includes(bag)).sort();
   const ordered = new Map<string, DemoItem[]>();
   for (const bag of [...known, ...extra]) {

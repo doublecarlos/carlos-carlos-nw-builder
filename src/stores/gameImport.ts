@@ -14,7 +14,14 @@ import type { DemoSnapshot } from "../lib/demo-snapshot";
 import type { Build } from "../types";
 import type { ImportReport } from "../lib/demo-import";
 
-export type WizardStep = 1 | 2 | 3;
+export type WizardStep = 1 | 2 | 3 | 4;
+
+/** One imported build paired with its coverage report -- what step 4 (and a reopened report)
+ *  renders, one tab per entry. */
+export interface CommittedReport {
+  buildName: string;
+  report: ImportReport;
+}
 
 const _open = ref(false);
 const _step = ref<WizardStep>(1);
@@ -22,11 +29,15 @@ const _parseError = ref("");
 const _snapshot = ref<DemoSnapshot | null>(null);
 const _selected = ref<Set<string>>(new Set());
 const _names = reactive<Record<string, string>>({});
+/** The last commit's reports -- kept for the session (not `reset()`) so the "View import
+ *  report" notice affordance can reopen step 4 with the same data after the wizard closes. */
+const _reports = ref<CommittedReport[]>([]);
 
 export const isOpen = computed(() => _open.value);
 export const step = computed(() => _step.value);
 export const parseError = computed(() => _parseError.value);
 export const snapshot = computed(() => _snapshot.value);
+export const reports = computed(() => _reports.value);
 
 /** A loadout's identity within the wizard -- `Loadoutname` alone isn't unique (two loadouts,
  *  or two characters, can share one), so every row/selection/name override is keyed by
@@ -116,6 +127,13 @@ export function goToStep(target: WizardStep) {
   _step.value = target;
 }
 
+/** Reopens the wizard straight on the coverage-report step, showing the last commit's reports
+ *  -- the "View import report" affordance on the post-import notice. */
+export function openReport() {
+  _open.value = true;
+  _step.value = 4;
+}
+
 /** The active loadout of the first (recording) character only -- a demo can carry more than
  *  one character, but only one was actually being played when it was captured. */
 function defaultSelection(snap: DemoSnapshot): Set<string> {
@@ -162,7 +180,7 @@ export function commit() {
   if (!snap) return;
 
   const newBuilds: Build[] = [];
-  const reports: ImportReport[] = [];
+  const newReports: ImportReport[] = [];
   snap.characters.forEach((character, characterIndex) => {
     for (const loadout of character.loadouts) {
       const key = rowKey(characterIndex, loadout.index);
@@ -171,15 +189,20 @@ export function commit() {
         name: nameFor(key),
       });
       newBuilds.push(build);
-      reports.push(report);
+      newReports.push(report);
     }
   });
   if (!newBuilds.length) return;
 
   builds.importBuilds(newBuilds, false, layers.enabledOverlays.value);
+  _reports.value = newBuilds.map((build, i) => ({
+    buildName: build.name,
+    report: newReports[i],
+  }));
+  _step.value = 4;
 
-  const recognised = reports.reduce((sum, r) => sum + r.counts.imported, 0);
-  const total = reports.reduce(
+  const recognised = newReports.reduce((sum, r) => sum + r.counts.imported, 0);
+  const total = newReports.reduce(
     (sum, r) =>
       sum + r.counts.imported + r.counts.unrecognised + r.counts.overflow,
     0,
@@ -187,6 +210,6 @@ export function commit() {
   showNotice(
     `Imported ${newBuilds.length} build${newBuilds.length === 1 ? "" : "s"} from game` +
       (total ? ` (${recognised}/${total} items recognised)` : ""),
+    { label: "View import report", run: openReport },
   );
-  close();
 }

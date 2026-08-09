@@ -7,6 +7,7 @@ import { Copy, Upload } from "@lucide/vue";
 import BaseButton from "./ui/BaseButton.vue";
 import BaseCheckbox from "./ui/BaseCheckbox.vue";
 import CodeBlock from "./ui/CodeBlock.vue";
+import GameImportReport from "./GameImportReport.vue";
 import { useEscapeToClose } from "../composables/useEscapeToClose";
 import {
   step,
@@ -82,7 +83,8 @@ useEscapeToClose(() => close());
     @click.self="close()"
   >
     <div
-      class="flex max-h-[85vh] w-[560px] flex-col rounded-lg border border-line bg-surface shadow-xl"
+      class="flex max-h-[85vh] flex-col rounded-lg border border-line bg-surface shadow-xl"
+      :class="step === 4 ? 'w-[680px]' : 'w-[560px]'"
     >
       <div
         class="flex items-center justify-between border-b border-line px-4 py-3"
@@ -186,7 +188,7 @@ useEscapeToClose(() => close());
 
         <!-- Step 3: pick loadouts -->
         <div
-          v-else
+          v-else-if="step === 3"
           class="flex flex-col gap-3"
           data-testid="game-import-step-loadouts"
         >
@@ -236,6 +238,23 @@ useEscapeToClose(() => close());
               data-testid="game-import-commit"
               @click="commit()"
               >Import selected</BaseButton
+            >
+          </div>
+        </div>
+
+        <!-- Step 4: coverage report -->
+        <div
+          v-else
+          class="flex flex-col gap-3"
+          data-testid="game-import-step-report"
+        >
+          <GameImportReport />
+          <div class="flex justify-end">
+            <BaseButton
+              variant="primary"
+              data-testid="game-import-done"
+              @click="close()"
+              >Done</BaseButton
             >
           </div>
         </div>

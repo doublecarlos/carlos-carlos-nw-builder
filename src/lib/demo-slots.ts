@@ -2,7 +2,7 @@
 // one placement rule that covers every bag's awkward cases: for each demo item in a bag, in
 // file order, resolve its `Hitem` through `Db.itemByGameId`, then take the first candidate app
 // slot that's still empty and whose filter accepts the resolved item. No per-slot bookkeeping.
-import gameBagsJson from "../../data/game-bags.json";
+import gameImportJson from "../../data/game-import.json";
 import type { Db, Slot } from "../types";
 import type { DemoItem } from "./demo-snapshot";
 
@@ -18,13 +18,29 @@ export interface GameBagEntry {
   notModelled?: string;
 }
 
-export interface GameBagsFile {
-  bags: GameBagEntry[];
+/** Authored explanation for a group of `notInDemo` slots (see `notInDemoGroups` below) -- either
+ *  a handful of explicit slot ids (a partial section, e.g. only the non-class Options slots) or
+ *  one or more whole `SlotSection` ids, resolved against the live slot list at read time so this
+ *  table doesn't have to be kept in sync by hand when a section's slot count changes. */
+export interface NotInDemoReasonEntry {
+  label: string;
+  reason: string;
+  sections?: string[];
+  slotIds?: string[];
 }
 
-export const GAME_BAGS: GameBagsFile = gameBagsJson as GameBagsFile;
+export interface GameImportDataFile {
+  bags: GameBagEntry[];
+  /** Render order for the coverage report's "Not in the demo" group -- see `notInDemoGroups`. */
+  notInDemoReasons: NotInDemoReasonEntry[];
+}
 
-const bagsByName = new Map(GAME_BAGS.bags.map((entry) => [entry.bag, entry]));
+export const GAME_IMPORT_DATA: GameImportDataFile =
+  gameImportJson as GameImportDataFile;
+
+const bagsByName = new Map(
+  GAME_IMPORT_DATA.bags.map((entry) => [entry.bag, entry]),
+);
 
 export function bagEntry(bag: string): GameBagEntry | undefined {
   return bagsByName.get(bag);
@@ -55,7 +71,7 @@ export type PlacementResult =
   /** Game item present but no catalogue entry claims its `Hitem`. `slot` is the demo's own
    *  `Islotidx` (a mount's, for a gem) -- context for the coverage report, not an app slot. */
   | { kind: "unrecognised"; bag: string; slot: number; gameId: string }
-  /** Bag is `notModelled` in game-bags.json -- ignored on purpose. */
+  /** Bag is `notModelled` in game-import.json -- ignored on purpose. */
   | { kind: "ignored"; bag: string; gameId: string; reason: string }
   /** Recognised, but every candidate app slot for its bag was already full. */
   | { kind: "overflow"; bag: string; gameId: string; itemId: string };
@@ -156,7 +172,7 @@ export function placeBag(
  *  bag names it: it's importable from `Ppbuilds/Hclass`, just not through a bag at all. */
 export function notInDemoSlotIds(slots: Slot[]): string[] {
   const named = new Set<string>(["options.class"]);
-  for (const entry of GAME_BAGS.bags) {
+  for (const entry of GAME_IMPORT_DATA.bags) {
     for (const slotId of entry.slots ?? []) named.add(slotId);
     for (const group of entry.gemSlots ?? []) {
       for (const slotId of group) named.add(slotId);
@@ -167,24 +183,84 @@ export function notInDemoSlotIds(slots: Slot[]): string[] {
     .map((slot) => slot.id);
 }
 
+// --- coverage report copy ---------------------------------------------------------------
+
+export interface NotInDemoGroup {
+  label: string;
+  reason: string;
+  slotIds: string[];
+}
+
+/** One known lossy mapping from the placement rule itself (#172), surfaced as a standing
+ *  caveat rather than tied to any one outcome: mount combat power rarity is a silent
+ *  narrowing of what an imported item actually is. */
+export const KNOWN_LOSSY_NOTES = [
+  "Mount combat power rarity (Celestial or not) isn't recorded — an imported mount combat power may not match the rarity you had equipped.",
+];
+
+/** Rolls a loadout's `notInDemo` slot ids up into `data/game-import.json`'s authored groups
+ *  (only those with at least one id actually missing from this loadout), plus a catch-all per
+ *  real section for any slot the table doesn't name yet -- so a future slot always shows up
+ *  somewhere instead of silently vanishing from the report. */
+export function notInDemoGroups(db: Db, slotIds: string[]): NotInDemoGroup[] {
+  const present = new Set(slotIds);
+  const bySection = new Map<string, string[]>();
+  for (const slot of db.slots) {
+    if (slot.type === "separator") continue;
+    const list = bySection.get(slot.section);
+    if (list) list.push(slot.id);
+    else bySection.set(slot.section, [slot.id]);
+  }
+
+  const covered = new Set<string>();
+  const groups: NotInDemoGroup[] = [];
+  for (const authored of GAME_IMPORT_DATA.notInDemoReasons) {
+    const candidates =
+      authored.slotIds ??
+      (authored.sections ?? []).flatMap((s) => bySection.get(s) ?? []);
+    const ids = candidates.filter((id) => present.has(id));
+    if (!ids.length) continue;
+    for (const id of ids) covered.add(id);
+    groups.push({
+      label: authored.label,
+      reason: authored.reason,
+      slotIds: ids,
+    });
+  }
+
+  const sectionLabel = new Map(db.sections.map((s) => [s.id, s.label]));
+  for (const [sectionId, ids] of bySection) {
+    const leftover = ids.filter((id) => present.has(id) && !covered.has(id));
+    if (!leftover.length) continue;
+    groups.push({
+      label: sectionLabel.get(sectionId) ?? sectionId,
+      reason: "Not recorded in this demo — set it by hand.",
+      slotIds: leftover,
+    });
+  }
+
+  return groups;
+}
+
 // --- lint ------------------------------------------------------------------------------
 
-export interface GameBagsLintFinding {
+export interface GameImportLintFinding {
   level: "error" | "warn";
   message: string;
-  bag?: string;
+  /** The bag name or `notInDemoReasons` label the finding is about. */
+  context?: string;
 }
 
 /**
- * - every slot id named in game-bags.json exists in `slots`
+ * - every slot id named in game-import.json exists in `slots`
  * - no slot id is claimed by two bags
  * - a bag declares exactly one of `slots` / `gemSlots` / `notModelled`
  */
 export function validateGameBags(
   bags: GameBagEntry[],
   slots: Slot[],
-): GameBagsLintFinding[] {
-  const findings: GameBagsLintFinding[] = [];
+): GameImportLintFinding[] {
+  const findings: GameImportLintFinding[] = [];
   const knownSlotIds = new Set(slots.map((slot) => slot.id));
   const owners = new Map<string, string>();
 
@@ -192,7 +268,7 @@ export function validateGameBags(
     if (!knownSlotIds.has(slotId)) {
       findings.push({
         level: "error",
-        bag,
+        context: bag,
         message: `slot "${slotId}" does not exist in data/slots.json`,
       });
     }
@@ -200,7 +276,7 @@ export function validateGameBags(
     if (owner && owner !== bag) {
       findings.push({
         level: "error",
-        bag,
+        context: bag,
         message: `slot "${slotId}" is claimed by both "${owner}" and "${bag}"`,
       });
     } else {
@@ -215,13 +291,58 @@ export function validateGameBags(
     if (shapes.length !== 1) {
       findings.push({
         level: "error",
-        bag: entry.bag,
+        context: entry.bag,
         message: `bag "${entry.bag}" must declare exactly one of slots / gemSlots / notModelled, found ${shapes.length}`,
       });
     }
     for (const slotId of entry.slots ?? []) checkSlotId(slotId, entry.bag);
     for (const group of entry.gemSlots ?? []) {
       for (const slotId of group) checkSlotId(slotId, entry.bag);
+    }
+  }
+
+  return findings;
+}
+
+/**
+ * - every `notInDemoReasons` entry declares at least one of `sections` / `slotIds`
+ * - every section id it names exists in `sections`
+ * - every literal slot id it names exists in `slots`
+ */
+export function validateNotInDemoReasons(
+  reasons: NotInDemoReasonEntry[],
+  slots: Slot[],
+  sections: { id: string }[],
+): GameImportLintFinding[] {
+  const findings: GameImportLintFinding[] = [];
+  const knownSlotIds = new Set(slots.map((slot) => slot.id));
+  const knownSectionIds = new Set(sections.map((section) => section.id));
+
+  for (const entry of reasons) {
+    if (!entry.sections?.length && !entry.slotIds?.length) {
+      findings.push({
+        level: "error",
+        context: entry.label,
+        message: `"${entry.label}" must declare at least one of sections / slotIds`,
+      });
+    }
+    for (const sectionId of entry.sections ?? []) {
+      if (!knownSectionIds.has(sectionId)) {
+        findings.push({
+          level: "error",
+          context: entry.label,
+          message: `section "${sectionId}" does not exist in data/slots.json`,
+        });
+      }
+    }
+    for (const slotId of entry.slotIds ?? []) {
+      if (!knownSlotIds.has(slotId)) {
+        findings.push({
+          level: "error",
+          context: entry.label,
+          message: `slot "${slotId}" does not exist in data/slots.json`,
+        });
+      }
     }
   }
 

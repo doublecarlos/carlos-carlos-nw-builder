@@ -157,5 +157,88 @@
     { "bag": "HeadFX", "notModelled": "Cosmetic head effect." },
     { "bag": "FootstepFX", "notModelled": "Cosmetic footstep effect." },
     { "bag": "TrailFX", "notModelled": "Cosmetic trail effect." }
+  ],
+  "notInDemoReasons": [
+    {
+      "label": "Boons",
+      "reason": "The demo does not record boon points. Set these by hand.",
+      "sections": ["boons"]
+    },
+    {
+      "label": "Race and Leveling",
+      "reason": "Race and levelling points are not in the demo.",
+      "sections": ["raceLeveling"]
+    },
+    {
+      "label": "Role / Forte / Combat type",
+      "reason": "Role, forte and combat/damage type are not recorded; check the Options section.",
+      "slotIds": [
+        "options.role",
+        "options.damageType",
+        "options.magnitude",
+        "options.forte1",
+        "options.forte2a",
+        "options.forte2b",
+        "options.m32Forte",
+        "options.combatType",
+        "options.location",
+        "options.duration",
+        "options.toggleConsumables",
+        "options.toggleParty",
+        "options.toggleCombat",
+        "options.toggleArtifactCall"
+      ]
+    },
+    {
+      "label": "Class",
+      "reason": "This character's class wasn't recognised from the demo.",
+      "slotIds": ["options.class"]
+    },
+    {
+      "label": "Weapon modifications",
+      "reason": "Weapon enchant modifications aren't recorded in the demo.",
+      "slotIds": ["gear.mainhandMod", "gear.offhandMod1", "gear.offhandMod2"]
+    },
+    {
+      "label": "Reinforcements",
+      "reason": "Reinforcement kits aren't recorded in the demo.",
+      "sections": ["reinforcements"]
+    },
+    {
+      "label": "Consumable buffs",
+      "reason": "Active consumable buffs aren't recorded in the demo.",
+      "slotIds": ["buffs.eventFood", "buffs.blessing"]
+    },
+    {
+      "label": "Companion",
+      "reason": "The demo only stores a numeric companion index, not which companion it is.",
+      "slotIds": ["companions.companion"]
+    },
+    {
+      "label": "Insignia bonuses",
+      "reason": "Insignia set-bonus choices aren't recorded in the demo.",
+      "slotIds": [
+        "insignia.bonus1",
+        "insignia.bonus2",
+        "insignia.bonus3",
+        "insignia.bonus4",
+        "insignia.bonus5"
+      ]
+    },
+    {
+      "label": "Attributes and leveling",
+      "reason": "Ability-point leveling and campfire buffs aren't recorded in the demo.",
+      "sections": ["baselineAndAttributes"]
+    },
+    {
+      "label": "Feats and other class/race features",
+      "reason": "Feats, paragon and other per-class/race features aren't recoverable from a demo file.",
+      "sections": ["classRaceStuff"]
+    },
+    {
+      "label": "Group / Artifact Call / Misc",
+      "reason": "Situational modelling that's never in the demo.",
+      "sections": ["group", "artifactCall", "misc"]
+    }
   ]
 }
