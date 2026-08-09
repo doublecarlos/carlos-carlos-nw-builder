@@ -64,28 +64,39 @@ test.describe("slot filter: text", () => {
 });
 
 test.describe("slot filter: stat", () => {
-  test("selecting a stat shows only slots with a selectable item granting it", async ({
+  test("an empty slot never matches, even though a selectable item would grant the stat", async ({
     page,
   }) => {
     await openBuilder(page);
+    // "M33 Runefrost Swift Armguards" is selectable in gear.arms and grants power directly,
+    // but nothing is actually equipped there -- the filter is about what a slot's current
+    // choice is granting, not what it could grant.
+    await chooseCombo(slotFilterStatCombo(page), "Power");
+    await expect(slotRow(page, "gear.arms")).toBeHidden();
+  });
+
+  test("selecting a stat shows only slots whose currently equipped item grants it", async ({
+    page,
+  }) => {
+    await openBuilder(page);
+    await chooseItem(page, "gear.arms", "M33 Runefrost Swift Armguards");
+
     await chooseCombo(slotFilterStatCombo(page), "Power");
 
-    // gear.arms has an item granting power directly; gear.head has none.
+    // gear.arms is now equipped with an item granting power directly; gear.head is empty.
     await expect(slotRow(page, "gear.arms")).toBeVisible();
     await expect(slotRow(page, "gear.head")).toBeHidden();
   });
 
   test("text and stat filters combine", async ({ page }) => {
     await openBuilder(page);
+    await chooseItem(page, "gear.arms", "M33 Runefrost Swift Armguards");
+
     await slotFilterInput(page).fill("Arms");
     await chooseCombo(slotFilterStatCombo(page), "Power");
     await expect(slotRow(page, "gear.arms")).toBeVisible();
 
-    // Head no longer matches the stat filter, so it's gone even though it wouldn't have
-    // matched the text query anyway.
-    await expect(slotRow(page, "gear.head")).toBeHidden();
-
-    // Switch the text query to something that only Head matches -- now nothing in gear
+    // Switch the text query to something only (empty) Head matches -- now nothing in gear
     // satisfies both filters at once, and the whole section disappears.
     await slotFilterInput(page).fill("Head");
     await expect(headerRow(page, "gear")).toBeHidden();

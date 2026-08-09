@@ -99,46 +99,16 @@ function clearFilters() {
   filterStat.value = "";
 }
 
-/** Every currently active bonus's stats, summed by the slotDef that instanced it -- the same
- *  attribution the engine itself uses (`ResolvedBonuses.bonusStatsBySlot`), rebuilt here off
- *  `result.value.bonuses` directly rather than reusing `bonusesBySlot` below: that one credits
- *  a shared bonus to only its first contributing slot (for the row summary's display) and is
- *  itself derived from `sections`, which the stat filter feeds into -- reusing it would make
- *  `sections` depend on its own output. This has no such ordering concern: every slot a bonus
- *  is attributed to should match the filter, shared or not. */
-const activeBonusStatsBySlot = computed(() => {
-  const map = new Map<string, Record<string, number>>();
-  for (const entry of result.value.bonuses) {
-    if (!entry.active || !entry.appliedStats) continue;
-    const totals = map.get(entry.slotId) ?? {};
-    for (const [key, value] of Object.entries(entry.appliedStats)) {
-      totals[key] = (totals[key] ?? 0) + (value ?? 0);
-    }
-    map.set(entry.slotId, totals);
-  }
-  return map;
-});
-
-/** Whether this slotDef currently grants the given stat, directly or through an active bonus.
- *  Checked first against `activeBonusStatsBySlot` -- the build's *actual* resolved state, same
- *  as the row's own stat summary -- then against the slot's own candidate items: item_picker
- *  and point_assignment slots check their selectable item list; a build_parameter checks its
- *  options' linked items (e.g. a race choice's attribute item). A bonus only a *different*
- *  candidate item would unlock (not the one currently equipped) is deliberately out of scope --
- *  that means re-running the engine per candidate item (see ItemPicker.vue's
- *  `previewBonusStats`), far more than a slot filter needs. */
+/** Whether this slotDef's *current choice* grants the given stat -- read straight off the
+ *  engine's own resolved row vector (`rowBySlot`, `EngineRow.stats`), which already sums the
+ *  row's item stats, its point_assignment items' stats (scaled by count), and any active bonus
+ *  attributed to it (engine.ts's `rowVectors`) -- the same numbers the row's own stat summary
+ *  is built from, untouched by any later pipeline stage. Deliberately not "could some other,
+ *  not-yet-chosen candidate item grant this instead" -- that would mean re-running the engine
+ *  per candidate item per slot (see ItemPicker.vue's `previewBonusStats`), and would defeat the
+ *  filter's own point: finding where a stat is actually coming from in *this* build. */
 function slotGrantsStat(slotDef: Slot, statKey: string): boolean {
-  if (activeBonusStatsBySlot.value.get(slotDef.id)?.[statKey]) return true;
-  if (slotDef.type === "item_picker" || slotDef.type === "point_assignment") {
-    return itemsFor(slotDef.id).some((item) => !!item[statKey]);
-  }
-  if (slotDef.type === "build_parameter") {
-    return (slotDef.options ?? []).some((option) => {
-      const item = option.linkedItem ? db.value.get(option.linkedItem) : null;
-      return !!item?.[statKey];
-    });
-  }
-  return false;
+  return !!rowBySlot.value.get(slotDef.id)?.stats[statKey];
 }
 
 /** A slotDef is kept when its own label matches the text query, or when the section's own
