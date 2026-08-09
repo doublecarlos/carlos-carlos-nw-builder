@@ -379,6 +379,13 @@ describe("notInDemoSlotIds", () => {
       .map((s) => s.id);
     expect(missing.some((id) => separatorIds.includes(id))).toBe(false);
   });
+
+  it("never includes a text slot", () => {
+    const textIds = NW_SLOTS.slots
+      .filter((s) => s.type === "text")
+      .map((s) => s.id);
+    expect(missing.some((id) => textIds.includes(id))).toBe(false);
+  });
 });
 
 describe("notInDemoGroups", () => {

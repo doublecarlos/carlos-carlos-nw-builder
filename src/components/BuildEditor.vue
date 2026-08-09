@@ -11,6 +11,7 @@ import BasePopover from "./ui/BasePopover.vue";
 import BuildSection from "./game/BuildSection.vue";
 import BuildSlot from "./game/BuildSlot.vue";
 import SeparatorRow from "./game/SeparatorRow.vue";
+import TextRow from "./game/TextRow.vue";
 import BaseButton from "./ui/BaseButton.vue";
 import BaseBadge from "./ui/BaseBadge.vue";
 import ComboBox from "./ui/ComboBox.vue";
@@ -117,7 +118,7 @@ function slotGrantsStat(slotDef: Slot, statKey: string): boolean {
  *  summary (the text next to the picker, `statSummary`) does. The stat filter is independent
  *  of all of that: it always narrows the result further. */
 function slotMatchesFilters(section: SlotSection, slotDef: Slot): boolean {
-  if (slotDef.type === "separator") return false;
+  if (slotDef.type === "separator" || slotDef.type === "text") return false;
   if (filterStat.value && !slotGrantsStat(slotDef, filterStat.value))
     return false;
   const q = filterText.value.trim().toLowerCase();
@@ -562,6 +563,7 @@ function onFocusIn(event: FocusEvent) {
     >
       <template #default="{ slotDef }: { slotDef: Slot }">
         <SeparatorRow v-if="slotDef.type === 'separator'" :slot-def="slotDef" />
+        <TextRow v-else-if="slotDef.type === 'text'" :slot-def="slotDef" />
         <BuildSlot
           v-else
           :slot-def="slotDef"

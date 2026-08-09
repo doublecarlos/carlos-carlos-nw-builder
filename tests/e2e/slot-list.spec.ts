@@ -451,6 +451,38 @@ test.describe("separator slots", () => {
   });
 });
 
+test.describe("text slots", () => {
+  test("renders visibly before Mount Combat, muted, with no cursor key", async ({
+    page,
+  }) => {
+    await openBuilder(page);
+    const note = page.getByTestId("text:mounts.textMaxBolster");
+    await expect(note).toBeVisible();
+    await expect(note).toHaveText(
+      "Mounts are assumed to have max bolster (125%).",
+    );
+    await expect(note).not.toHaveAttribute("data-cursor-key");
+  });
+
+  test("ArrowDown from the Mounts header skips straight to Mount Combat", async ({
+    page,
+  }) => {
+    await openBuilder(page);
+    await slotRow(page, "mounts.mountCombat").locator(".slot-label").click();
+    await page.keyboard.press("ArrowUp");
+    await expect(cursorRow(page)).toHaveAttribute(
+      "data-cursor-key",
+      "header:mounts",
+    );
+
+    await page.keyboard.press("ArrowDown");
+    await expect(cursorRow(page)).toHaveAttribute(
+      "data-cursor-key",
+      "slot:mounts.mountCombat",
+    );
+  });
+});
+
 // build_parameter rows (in the Options section) share the same keyboard cursor
 // infrastructure as item_picker rows -- Enter-to-focus, type-to-seed, Delete-to-reset --
 // just exercised on a different control type.

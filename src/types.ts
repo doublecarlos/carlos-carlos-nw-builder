@@ -132,8 +132,24 @@ export interface SeparatorSlot {
   label?: string;
 }
 
+/** A purely informational line of muted text in a section's list -- no choice, no cursor stop.
+ * Unlike `SeparatorSlot` it does render its own content (`text`), sized/padded like a real row
+ * so it reads as an inline note rather than a divider. `label` is optional and unused, kept for
+ * the same reason as `SeparatorSlot`'s -- see that type's doc comment. */
+export interface TextSlot {
+  id: string;
+  section: string;
+  type: "text";
+  text: string;
+  label?: string;
+}
+
 export type Slot =
-  ItemPickerSlot | BuildParameterSlot | PointAssignmentSlot | SeparatorSlot;
+  | ItemPickerSlot
+  | BuildParameterSlot
+  | PointAssignmentSlot
+  | SeparatorSlot
+  | TextSlot;
 
 /** A named set of defaults for one section, authored alongside it in `data/slots.json` (see
  * `deriveSlots` in data.ts, which injects `section` the same way it does for a `Slot`). Applying

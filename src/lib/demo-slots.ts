@@ -179,7 +179,12 @@ export function notInDemoSlotIds(slots: Slot[]): string[] {
     }
   }
   return slots
-    .filter((slot) => slot.type !== "separator" && !named.has(slot.id))
+    .filter(
+      (slot) =>
+        slot.type !== "separator" &&
+        slot.type !== "text" &&
+        !named.has(slot.id),
+    )
     .map((slot) => slot.id);
 }
 
@@ -206,7 +211,7 @@ export function notInDemoGroups(db: Db, slotIds: string[]): NotInDemoGroup[] {
   const present = new Set(slotIds);
   const bySection = new Map<string, string[]>();
   for (const slot of db.slots) {
-    if (slot.type === "separator") continue;
+    if (slot.type === "separator" || slot.type === "text") continue;
     const list = bySection.get(slot.section);
     if (list) list.push(slot.id);
     else bySection.set(slot.section, [slot.id]);
