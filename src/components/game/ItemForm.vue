@@ -435,7 +435,7 @@ watch(
 
 <template>
   <div>
-    <FormBar class="-m-3 mb-3">
+    <FormBar class="-mx-3 mb-3">
       <strong>{{ draft.name || "New item" }}</strong>
       <BaseBadge v-if="status !== 'base'" :variant="status as any">{{
         status

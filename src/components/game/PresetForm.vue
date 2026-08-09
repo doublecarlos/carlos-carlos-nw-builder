@@ -330,7 +330,7 @@ watch(
 
 <template>
   <div>
-    <FormBar class="-m-3 mb-3" data-testid="form-bar">
+    <FormBar class="-mx-3 mb-3" data-testid="form-bar">
       <strong>{{ draft.label || "New preset" }}</strong>
       <BaseBadge v-if="status !== 'base'" :variant="status as any">{{
         status
