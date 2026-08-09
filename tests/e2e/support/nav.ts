@@ -56,10 +56,7 @@ export async function filterBuilds(page: Page, text: string) {
 
 /** Enters a filter string in the Layers filter box. */
 export async function filterLayers(page: Page, text: string) {
-  // The layers filter is the only input[placeholder="Filter…"] left in the nav now that the
-  // builds filter's placeholder carries its own "(/)" shortcut hint.
-  const filter = page.locator('input[placeholder="Filter…"]').first();
-  await filter.fill(text);
+  await page.getByTestId("nav-layers-filter").fill(text);
 }
 
 /** Clicks the Move up IconButton on the row directly. */

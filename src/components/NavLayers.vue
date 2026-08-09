@@ -129,6 +129,7 @@ function moveFocus(dir: 1 | -1) {
       :value="filter"
       type="text"
       placeholder="Filter…"
+      data-testid="nav-layers-filter"
       class="mb-1 rounded-md border border-line bg-surface px-2 py-0.5 text-xs focus:outline-accent w-full"
       @input="$emit('update:filter', ($event.target as HTMLInputElement).value)"
     />

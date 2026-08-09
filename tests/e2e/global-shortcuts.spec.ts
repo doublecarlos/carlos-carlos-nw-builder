@@ -1,53 +1,28 @@
-// End-to-end coverage for useGlobalShortcuts: Ctrl+N (new build) and / (focus the
-// context-relevant filter box), plus the guard that keeps both from firing while a form
-// control has focus.
+// End-to-end coverage for useGlobalShortcuts: Ctrl+/ (focus the slot filter box while a build
+// is being edited), plus the guard that keeps it from firing while a form control has focus.
 import { test, expect } from "@playwright/test";
 import { openBuilder, slotFilterInput } from "./support/app";
-import { addLayer, buildRow } from "./support/nav";
+import { buildRow } from "./support/nav";
 
-test("Ctrl+N creates a new build and selects it", async ({ page }) => {
-  await openBuilder(page);
-  // Click the header to move focus off any input first, matching undo.spec's pattern for
-  // reaching the global shortcut instead of a focused field's native behavior.
-  await page.getByTestId("app-header").click();
-
-  await page.keyboard.press("Control+n");
-
-  const created = buildRow(page, "Build 2");
-  await expect(created).toBeVisible();
-  await expect(created).toHaveClass(/is-active/);
-});
-
-test("Ctrl+N does nothing while a form control has focus", async ({ page }) => {
-  await openBuilder(page);
-  await page.getByTestId("nav-builds-filter").click();
-
-  await page.keyboard.press("Control+n");
-
-  await expect(buildRow(page, "Build 2")).toHaveCount(0);
-});
-
-test("/ focuses the slot filter while a build is selected", async ({
+test("Ctrl+/ focuses the slot filter while a build is selected", async ({
   page,
 }) => {
   await openBuilder(page);
   await page.getByTestId("app-header").click();
 
-  await page.keyboard.press("/");
+  await page.keyboard.press("Control+/");
 
   await expect(slotFilterInput(page)).toBeFocused();
 });
 
-test("/ focuses the builds filter while a layer is selected", async ({
-  page,
-}) => {
+test("Ctrl+/ does nothing while a form control has focus", async ({ page }) => {
   await openBuilder(page);
-  await addLayer(page);
-  await page.getByTestId("app-header").click();
+  await page.getByTestId("nav-builds-filter").click();
 
-  await page.keyboard.press("/");
+  await page.keyboard.press("Control+/");
 
   await expect(page.getByTestId("nav-builds-filter")).toBeFocused();
+  await expect(slotFilterInput(page)).not.toBeFocused();
 });
 
 test("/ types a literal slash instead of stealing focus while renaming", async ({
