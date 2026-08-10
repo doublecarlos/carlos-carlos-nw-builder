@@ -266,9 +266,9 @@ async function copyUnrecognisedIds() {
             class="flex flex-col gap-1"
           >
             <p class="text-xs font-semibold text-muted">{{ group.bag }}</p>
-            <div class="overflow-hidden rounded-md border border-line">
+            <div class="rounded-md border border-line">
               <div
-                class="grid grid-cols-[1fr_1fr_auto] gap-x-3 bg-surface-2/70 px-2 py-1 text-xs font-semibold text-muted"
+                class="grid grid-cols-[1fr_1fr_auto] gap-x-3 rounded-t-md bg-surface-2/70 px-2 py-1 text-xs font-semibold text-muted"
               >
                 <span>Item id</span>
                 <span>Mapped to</span>
