@@ -3,6 +3,7 @@
 // base catalogue.
 import { computed, ref } from "vue";
 import { useDebounceFn } from "@vueuse/core";
+import { reorderIndex } from "../composables/useDragAndDrop";
 import * as storage from "../storage/storage";
 import * as history from "./history";
 import * as trash from "./trash";
@@ -130,17 +131,22 @@ export function setLayerEnabled(id: string, on: boolean) {
   }
 }
 
+/** See builds.ts's `moveBuildTo` -- same "index relative to the list before removal" contract. */
+export async function moveLayerTo(id: string, toIndex: number) {
+  const idx = layerOrder.value.indexOf(id);
+  if (idx === -1) return;
+  const clamped = Math.max(0, Math.min(layerOrder.value.length, toIndex));
+  const insertAt = reorderIndex(idx, clamped);
+  if (insertAt === idx) return;
+  layerOrder.value.splice(idx, 1);
+  layerOrder.value.splice(insertAt, 0, id);
+  await persistMeta();
+}
+
 export async function moveLayer(id: string, delta: number) {
   const idx = layerOrder.value.indexOf(id);
   if (idx === -1) return;
-  const newIdx = Math.max(
-    0,
-    Math.min(layerOrder.value.length - 1, idx + delta),
-  );
-  if (newIdx === idx) return;
-  layerOrder.value.splice(idx, 1);
-  layerOrder.value.splice(newIdx, 0, id);
-  await persistMeta();
+  await moveLayerTo(id, idx + delta);
 }
 
 /** The single write path the layer editor uses — replaces the layer's overlay wholesale. */

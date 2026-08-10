@@ -80,6 +80,31 @@ describe("builds store", () => {
     expect(idx).toBeGreaterThanOrEqual(0);
   });
 
+  it("moveBuildTo drops a build at an arbitrary index, not just a neighbour swap", async () => {
+    const { builds } = await freshStores();
+    // Starts with one build ("Build 1"); add three more.
+    builds.createBuild();
+    builds.createBuild();
+    builds.createBuild();
+    const names = builds.builds.value.map((b) => b.name);
+    const firstId = builds.builds.value[0].id;
+
+    // Drag the first build to land right after the third.
+    await builds.moveBuildTo(firstId, 3);
+    const reordered = builds.builds.value.map((b) => b.name);
+    expect(reordered).toEqual([names[1], names[2], names[0], names[3]]);
+  });
+
+  it("moveBuildTo clamps to the list bounds", async () => {
+    const { builds } = await freshStores();
+    builds.createBuild();
+    const firstId = builds.builds.value[0].id;
+    await builds.moveBuildTo(firstId, 999);
+    expect(builds.builds.value[builds.builds.value.length - 1].id).toBe(
+      firstId,
+    );
+  });
+
   it("otherBuilds excludes the active build", async () => {
     const { builds } = await freshStores();
     builds.createBuild();

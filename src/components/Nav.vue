@@ -176,6 +176,10 @@ async function moveBuildDown(id: string) {
   await builds.moveBuild(id, 1);
   focusRow("build", id);
 }
+async function reorderBuild(id: string, toIndex: number) {
+  await builds.moveBuildTo(id, toIndex);
+  focusRow("build", id);
+}
 function revertBuild(id: string) {
   builds.revertToDownloaded(id);
   closeMenu();
@@ -204,6 +208,10 @@ async function moveLayerUp(id: string) {
 }
 async function moveLayerDown(id: string) {
   await layers.moveLayer(id, 1);
+  focusRow("layer", id);
+}
+async function reorderLayer(id: string, toIndex: number) {
+  await layers.moveLayerTo(id, toIndex);
   focusRow("layer", id);
 }
 function duplicateLayerRow(id: string) {
@@ -450,6 +458,7 @@ useEventListener(document, "scroll", onScrollCapture, {
       @menu-close="closeMenu"
       @move-up="(id) => moveBuildUp(id)"
       @move-down="(id) => moveBuildDown(id)"
+      @reorder="(id, toIndex) => reorderBuild(id, toIndex)"
       @delete-request="(id) => onDeleteRequest('build', id)"
       @create="builds.createBuild()"
       @import="triggerImportBuild"
@@ -488,6 +497,7 @@ useEventListener(document, "scroll", onScrollCapture, {
       @menu-close="closeMenu"
       @move-up="(id) => moveLayerUp(id)"
       @move-down="(id) => moveLayerDown(id)"
+      @reorder="(id, toIndex) => reorderLayer(id, toIndex)"
       @delete-request="(id) => onDeleteRequest('layer', id)"
       @create="layers.createLayer()"
       @import="triggerImportLayer"

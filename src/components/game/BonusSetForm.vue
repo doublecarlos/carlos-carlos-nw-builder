@@ -2,7 +2,7 @@
 // Editing form for one bonus set. Hybrid approach:
 // - Existing sets (source != null): live edits, changes emit immediately
 // - New sets (source == null): explicit Save button, draft until name is finalized
-import { ref, computed, watch } from "vue";
+import { ref, computed, watch, inject, onMounted, onUnmounted } from "vue";
 import BonusRows from "./BonusRows.vue";
 import IconButton from "../ui/IconButton.vue";
 import { CirclePlus, Copy, Save, Trash, Undo2 } from "@lucide/vue";
@@ -20,6 +20,7 @@ import * as catalog from "../../data/catalog";
 import { deepEqual } from "../../lib/deep-equal";
 import { useDraftHistory } from "../../composables/useDraftHistory";
 import { BonusDraftStore } from "../../stores/bonus-draft";
+import { bonusDraftRegistryKey } from "../../composables/bonusDraftRegistry";
 import type { BonusSet, Db } from "../../types";
 
 const props = withDefaults(
@@ -39,6 +40,10 @@ const props = withDefaults(
     fixedId?: string | null;
     /** Initial draft for pending slots (BonusGroups embedded case). */
     initialDraft?: bonusDraft.SetDraft | null;
+    /** This instance's stable key in BonusGroups' cross-bonus condition-drag registry (its
+     *  slot key -- see bonusDraftRegistry.ts). Empty on the standalone "Bonus sets" page,
+     *  which isn't embedded in BonusGroups and has no registry to register into. */
+    registryId?: string;
   }>(),
   {
     source: null,
@@ -50,6 +55,7 @@ const props = withDefaults(
     allocatableIds: () => [],
     fixedId: null,
     initialDraft: null,
+    registryId: "",
   },
 );
 
@@ -262,6 +268,21 @@ const draftStore = new BonusDraftStore(
   props.setIds,
 );
 
+// Registers this instance's store for cross-bonus condition dragging (see
+// bonusDraftRegistry.ts). `registryId` is stable for this component's whole lifetime --
+// BonusGroups.vue keys its `v-for` by the same slot key, so a slot whose id changes (a
+// pending bonus's first save) mounts a fresh BonusSetForm instance rather than reusing this
+// one, and there's nothing on the standalone "Bonus sets" page (no registry, no registryId).
+const bonusDraftRegistry = inject(bonusDraftRegistryKey, null);
+if (bonusDraftRegistry && props.registryId) {
+  const registryId = props.registryId;
+  onMounted(() => bonusDraftRegistry.set(registryId, draftStore));
+  onUnmounted(() => {
+    if (bonusDraftRegistry.get(registryId) === draftStore)
+      bonusDraftRegistry.delete(registryId);
+  });
+}
+
 // Rebuild draft when source changes (e.g. after undo/redo reverts the overlay).
 watch(
   () => props.source,
@@ -389,6 +410,7 @@ watch(
       :store="draftStore"
       :set-ids="setIds"
       :tags="tags"
+      :registry-id="registryId"
       @error="error = $event"
     />
   </div>

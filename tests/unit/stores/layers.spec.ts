@@ -91,6 +91,32 @@ describe("layers store", () => {
     expect(layers.layers.value[layers.layers.value.length - 1].name).toBe("B");
   });
 
+  it("moveLayerTo drops a layer at an arbitrary index, not just a neighbour swap", async () => {
+    const { layers } = await freshStores();
+    layers.createLayer("A");
+    layers.createLayer("B");
+    layers.createLayer("C");
+    layers.createLayer("D");
+    const idA = layers.layers.value.find((l) => l.name === "A")!.id;
+
+    // Drag A to land right after C -- same drop-index convention drag-and-drop uses.
+    await layers.moveLayerTo(idA, 3);
+    expect(layers.layers.value.map((l) => l.name)).toEqual([
+      "B",
+      "C",
+      "A",
+      "D",
+    ]);
+  });
+
+  it("moveLayerTo clamps to the list bounds", async () => {
+    const { layers } = await freshStores();
+    layers.createLayer("A");
+    const idA = layers.layers.value.find((l) => l.name === "A")!.id;
+    await layers.moveLayerTo(idA, 999);
+    expect(layers.layers.value[layers.layers.value.length - 1].id).toBe(idA);
+  });
+
   it("setLayerEnabled toggles the enabled flag", async () => {
     const { layers } = await freshStores();
     const l = layers.createLayer();

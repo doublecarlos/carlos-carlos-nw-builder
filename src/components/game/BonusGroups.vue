@@ -14,7 +14,7 @@
 // Name (seeded from the item's own name as a starting point), and that same Save both persists
 // the set and attaches the resulting id to the item, in one step -- there is nothing to decide
 // up front any more.
-import { ref, computed } from "vue";
+import { ref, computed, provide } from "vue";
 import BonusSetForm from "./BonusSetForm.vue";
 import ComboBox from "../ui/ComboBox.vue";
 import IconButton from "../ui/IconButton.vue";
@@ -24,6 +24,13 @@ import BaseBadge from "../ui/BaseBadge.vue";
 import FormSection from "../ui/FormSection.vue";
 import type { Db, BonusSet } from "../../types";
 import type { SetDraft } from "../../engine/bonus-draft";
+import type { BonusDraftStore } from "../../stores/bonus-draft";
+import { bonusDraftRegistryKey } from "../../composables/bonusDraftRegistry";
+
+// Lets a condition be dragged from one bonus's tree straight into another's, both attached to
+// this same item (see bonusDraftRegistry.ts) -- each BonusSetForm below registers its own
+// store under its slot's key.
+provide(bonusDraftRegistryKey, new Map<string, BonusDraftStore>());
 
 const props = withDefaults(
   defineProps<{
@@ -206,6 +213,7 @@ function onSlotDuplicate(slot: Slot) {
         :fixed-id="slot.id"
         :initial-draft="initialDraftFor(slot)"
         :duplicate-from="slot.seed ?? null"
+        :registry-id="slot.key"
         :db="db"
         :set-ids="allSetIds"
         :tags="tags"

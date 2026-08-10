@@ -2,6 +2,7 @@
 // that creates/destroys/reorders them. Build content edits live in buildEditor.ts.
 import { computed, ref, watch } from "vue";
 import { useDebounceFn } from "@vueuse/core";
+import { reorderIndex } from "../composables/useDragAndDrop";
 import * as storage from "../storage/storage";
 import * as history from "./history";
 import * as trash from "./trash";
@@ -129,17 +130,24 @@ export function deleteBuild(id: string) {
   }
 }
 
+/** `toIndex` is relative to the list as it stands now (before `id` is removed) -- callers
+ *  (the delta-based `moveBuild` below, and drag-and-drop's drop-index math) both naturally
+ *  produce indexes in those terms. */
+export async function moveBuildTo(id: string, toIndex: number) {
+  const idx = buildOrder.value.indexOf(id);
+  if (idx === -1) return;
+  const clamped = Math.max(0, Math.min(buildOrder.value.length, toIndex));
+  const insertAt = reorderIndex(idx, clamped);
+  if (insertAt === idx) return;
+  buildOrder.value.splice(idx, 1);
+  buildOrder.value.splice(insertAt, 0, id);
+  await persistMeta();
+}
+
 export async function moveBuild(id: string, delta: number) {
   const idx = buildOrder.value.indexOf(id);
   if (idx === -1) return;
-  const newIdx = Math.max(
-    0,
-    Math.min(buildOrder.value.length - 1, idx + delta),
-  );
-  if (newIdx === idx) return;
-  buildOrder.value.splice(idx, 1);
-  buildOrder.value.splice(newIdx, 0, id);
-  await persistMeta();
+  await moveBuildTo(id, idx + delta);
 }
 
 export function revertToDownloaded(id: string) {

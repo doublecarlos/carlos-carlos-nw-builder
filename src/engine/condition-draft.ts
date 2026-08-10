@@ -328,6 +328,97 @@ function isBranchComplete(branch: ConditionRow[]): boolean {
   return branch.length > 0 && branch.every(isRowComplete);
 }
 
+// --- path addressing (drag-and-drop) ----------------------------------------------------
+// A `path` locates one row from the tree root: it alternates row-index/branch-index and
+// always ends on a row-index -- `[2]` is `rows[2]`; `[2,0,1]` is `rows[2].branches[0][1]`.
+// This is how ConditionRows.vue's drag-and-drop wiring addresses a row regardless of how
+// deep it's nested, including across a group's branches -- the same addressing a dropped
+// row's *destination* uses, where the final number is an insertion index rather than an
+// existing row's index.
+
+/** Resolves the rows list a row-index/branch-index path (minus its final index) points at. */
+function resolveList(
+  rows: ConditionRow[],
+  branchPath: number[],
+): ConditionRow[] | undefined {
+  let list: ConditionRow[] | undefined = rows;
+  for (let i = 0; i < branchPath.length; i += 2) {
+    const branchRow: ConditionRow | undefined = list?.[branchPath[i]];
+    list = branchRow?.branches?.[branchPath[i + 1]];
+  }
+  return list;
+}
+
+export function getConditionAt(
+  rows: ConditionRow[],
+  path: number[],
+): ConditionRow | undefined {
+  if (path.length === 0) return undefined;
+  const list = resolveList(rows, path.slice(0, -1));
+  return list?.[path[path.length - 1]];
+}
+
+/** Splices the row at `path` out of its list and returns it, or `undefined` if the path
+ * doesn't resolve (e.g. it was already moved by a prior operation in the same drop). */
+export function removeConditionAt(
+  rows: ConditionRow[],
+  path: number[],
+): ConditionRow | undefined {
+  if (path.length === 0) return undefined;
+  const list = resolveList(rows, path.slice(0, -1));
+  const index = path[path.length - 1];
+  if (!list || index < 0 || index >= list.length) return undefined;
+  return list.splice(index, 1)[0];
+}
+
+/** Splices `row` into the list at `path` -- the final index is an insertion point, clamped
+ * to the list's bounds (so an insertion index computed before a same-list removal above it
+ * still lands somewhere sane). No-op if the branch path itself doesn't resolve. */
+export function insertConditionAt(
+  rows: ConditionRow[],
+  path: number[],
+  row: ConditionRow,
+): void {
+  if (path.length === 0) return;
+  const list = resolveList(rows, path.slice(0, -1));
+  if (!list) return;
+  const index = Math.max(0, Math.min(list.length, path[path.length - 1]));
+  list.splice(index, 0, row);
+}
+
+/** True when `path` addresses a row at or inside the subtree rooted at `ancestorPath` --
+ * i.e. dropping a group there would nest it inside itself. Guards drag-into-block moves;
+ * same-list reordering never triggers this since a row's siblings never share its prefix. */
+export function isDescendantPath(
+  ancestorPath: number[],
+  path: number[],
+): boolean {
+  if (path.length < ancestorPath.length) return false;
+  return ancestorPath.every((value, i) => path[i] === value);
+}
+
+/** Adjusts `targetPath` for a row having just been removed at `removedPath` -- if both paths
+ * address positions in the *same* list (identical branch-path prefix) and the removed index
+ * came before target's index there, target's index at that depth shifts down by one, the same
+ * way `reorderIndex` adjusts a flat list's index after a removal. Returns `targetPath`
+ * unchanged when the two paths don't share that list (removing a row never shifts indices in
+ * an unrelated branch). Only meaningful when source and target resolve to the very same rows
+ * array -- callers skip this for moves between different arrays (different grants/variants). */
+export function adjustPathAfterRemoval(
+  removedPath: number[],
+  targetPath: number[],
+): number[] {
+  const depth = removedPath.length - 1;
+  if (depth < 0 || targetPath.length <= depth) return targetPath;
+  for (let i = 0; i < depth; i++) {
+    if (removedPath[i] !== targetPath[i]) return targetPath;
+  }
+  if (targetPath[depth] <= removedPath[depth]) return targetPath;
+  const adjusted = targetPath.slice();
+  adjusted[depth] -= 1;
+  return adjusted;
+}
+
 /** Can this `when`-object be edited by the tree, within `MAX_DEPTH` levels of nesting? */
 export function whenIsRepresentable(
   when: ConditionWhen | undefined,

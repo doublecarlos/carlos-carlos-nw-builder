@@ -11,8 +11,25 @@
 // `draft.grants[gi].stats.push(row)` directly — no structural cloning needed.
 
 import * as bonusDraft from "../engine/bonus-draft";
-import type { ConditionRow } from "../engine/condition-draft";
+import {
+  removeConditionAt,
+  insertConditionAt,
+  adjustPathAfterRemoval,
+  type ConditionRow,
+} from "../engine/condition-draft";
 import type { GrantDraft } from "../engine/bonus-draft";
+import { reorderIndex } from "../composables/useDragAndDrop";
+
+/** Addresses one condition row within a `BonusDraftStore`'s condition trees, for drag-and-drop
+ *  transfers between them -- a grant's own "Active when" tree (`scope: "grant"`) or one of its
+ *  variants' "When" trees (`scope: "variant"`). `path` is a condition-draft.ts path within
+ *  that tree (see its "path addressing" section). */
+export interface ConditionLocation {
+  grantIndex: number;
+  scope: "grant" | "variant";
+  variantIndex?: number;
+  path: number[];
+}
 
 // -- GrantStore ========================================================
 // Per-grant: owns all mutations inside a single GrantDraft (payload, stats, tiers, variants,
@@ -126,13 +143,21 @@ export class GrantStore {
     this.store.onChange();
   }
 
-  moveTier(index: number, delta: number): void {
-    const to = index + delta;
-    if (to < 0 || to >= this.grant.tiers.length) return;
+  /** `toIndex` is relative to the tier list as it stands now (before the moved tier is
+   *  removed) -- same contract as `moveTier`'s delta and drag-and-drop's drop-index math. */
+  moveTierTo(index: number, toIndex: number): void {
     const tiers = this.grant.tiers;
+    if (index < 0 || index >= tiers.length) return;
+    const clamped = Math.max(0, Math.min(tiers.length, toIndex));
+    const insertAt = reorderIndex(index, clamped);
+    if (insertAt === index) return;
     const [item] = tiers.splice(index, 1);
-    tiers.splice(to, 0, item);
+    tiers.splice(insertAt, 0, item);
     this.store.onChange();
+  }
+
+  moveTier(index: number, delta: number): void {
+    this.moveTierTo(index, index + delta);
   }
 
   addVariant(): void {
@@ -161,13 +186,20 @@ export class GrantStore {
     this.store.onChange();
   }
 
-  moveVariant(index: number, delta: number): void {
-    const to = index + delta;
-    if (to < 0 || to >= this.grant.variants.length) return;
+  /** See `moveTierTo` -- same "index relative to the list before removal" contract. */
+  moveVariantTo(index: number, toIndex: number): void {
     const variants = this.grant.variants;
+    if (index < 0 || index >= variants.length) return;
+    const clamped = Math.max(0, Math.min(variants.length, toIndex));
+    const insertAt = reorderIndex(index, clamped);
+    if (insertAt === index) return;
     const [item] = variants.splice(index, 1);
-    variants.splice(to, 0, item);
+    variants.splice(insertAt, 0, item);
     this.store.onChange();
+  }
+
+  moveVariant(index: number, delta: number): void {
+    this.moveVariantTo(index, index + delta);
   }
 
   /** Attempt to switch between simple/form and JSON editing.
@@ -236,13 +268,20 @@ export class BonusDraftStore {
     this.onChange();
   }
 
-  moveGrant(index: number, delta: number): void {
-    const to = index + delta;
-    if (to < 0 || to >= this._getGrants().length) return;
+  /** See `GrantStore.moveTierTo` -- same "index relative to the list before removal" contract. */
+  moveGrantTo(index: number, toIndex: number): void {
     const grants = this._getGrants();
+    if (index < 0 || index >= grants.length) return;
+    const clamped = Math.max(0, Math.min(grants.length, toIndex));
+    const insertAt = reorderIndex(index, clamped);
+    if (insertAt === index) return;
     const [item] = grants.splice(index, 1);
-    grants.splice(to, 0, item);
+    grants.splice(insertAt, 0, item);
     this.onChange();
+  }
+
+  moveGrant(index: number, delta: number): void {
+    this.moveGrantTo(index, index + delta);
   }
 
   /** ConditionRows @update handler for grant-level conditions. */
@@ -267,10 +306,63 @@ export class BonusDraftStore {
     this.onChange();
   }
 
+  /** The `ConditionRow[]` a condition-tree drag-and-drop location resolves to -- a grant's
+   *  own "Active when" tree, or one of its variants' "When" trees. */
+  rowsAt(location: ConditionLocation): ConditionRow[] | undefined {
+    const g = this._getGrants()[location.grantIndex];
+    if (!g) return undefined;
+    if (location.scope === "grant") return g.conditions;
+    const v = g.variants[location.variantIndex ?? -1];
+    return v?.conditions;
+  }
+
+  /** Moves a condition row from one location in this store's condition trees to another --
+   *  within one grant's tree, between two grants, or between a grant and a variant. Both
+   *  locations are resolved fresh (not cached), so this is safe to call with a source/target
+   *  pair computed before either tree changed. No-op if either location no longer resolves. */
+  moveCondition(source: ConditionLocation, target: ConditionLocation): void {
+    const sourceRows = this.rowsAt(source);
+    const targetRows = this.rowsAt(target);
+    if (!sourceRows || !targetRows) return;
+    const removed = removeConditionAt(sourceRows, source.path);
+    if (!removed) return;
+    // Removing the source row can shift indices target.path depends on, but only when both
+    // resolve into the *same* array (e.g. dragging a row into a sibling branch of the same
+    // grant's tree) -- see adjustPathAfterRemoval's own doc comment.
+    const targetPath =
+      sourceRows === targetRows
+        ? adjustPathAfterRemoval(source.path, target.path)
+        : target.path;
+    insertConditionAt(targetRows, targetPath, removed);
+    this.onChange();
+  }
+
   /** Returns a store scoped to one grant. */
   grantStore(index: number): GrantStore | undefined {
     const grants = this._getGrants();
     if (index < 0 || index >= grants.length) return undefined;
     return new GrantStore(this, index);
   }
+}
+
+/** Like `BonusDraftStore.moveCondition`, but the source and target locations live in two
+ *  independently-owned stores -- a condition dragged from one bonus's tree into another's
+ *  (BonusGroups.vue's cross-bonus registry). Each store's own `onChange()` fires so both
+ *  bonuses' undo histories see the edit. */
+export function moveConditionAcrossStores(
+  source: { store: BonusDraftStore; location: ConditionLocation },
+  target: { store: BonusDraftStore; location: ConditionLocation },
+): void {
+  const sourceRows = source.store.rowsAt(source.location);
+  const targetRows = target.store.rowsAt(target.location);
+  if (!sourceRows || !targetRows) return;
+  const removed = removeConditionAt(sourceRows, source.location.path);
+  if (!removed) return;
+  const targetPath =
+    sourceRows === targetRows
+      ? adjustPathAfterRemoval(source.location.path, target.location.path)
+      : target.location.path;
+  insertConditionAt(targetRows, targetPath, removed);
+  source.store.onChange();
+  if (target.store !== source.store) target.store.onChange();
 }

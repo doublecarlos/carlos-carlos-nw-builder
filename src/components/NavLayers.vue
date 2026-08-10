@@ -8,12 +8,18 @@ import {
   ArrowDown,
   ArrowUp,
   EllipsisVertical,
+  GripVertical,
   Plus,
   Upload,
 } from "@lucide/vue";
 import NavContextMenu from "./NavContextMenu.vue";
 import { isMac } from "../lib/platform";
 import { matchesQuery } from "../lib/text-filter";
+import {
+  useDragHandle,
+  useDropList,
+  type DragSource,
+} from "../composables/useDragAndDrop";
 import type { Layer } from "../types";
 
 const vRenameFocus: Directive<HTMLInputElement> = {
@@ -53,6 +59,7 @@ const emit = defineEmits<{
   "rename-cancel": [];
   "move-up": [id: string];
   "move-down": [id: string];
+  reorder: [id: string, toIndex: number];
   "delete-request": [id: string];
   "menu-open": [id: string, event: MouseEvent];
   "menu-action": [action: string, id: string];
@@ -67,6 +74,20 @@ const filteredLayers = computed(() => {
 });
 
 const root = useTemplateRef("root");
+
+const dropList = useDropList({
+  containerId: "nav-layers",
+  accepts: (source) => source.kind === "layer",
+  onDrop: (source, index) => emit("reorder", source.key, index),
+});
+function dragHandleProps(id: string, index: number) {
+  return useDragHandle((): DragSource => ({
+    kind: "layer",
+    containerId: "nav-layers",
+    key: id,
+    index,
+  }));
+}
 
 /** Same row-keyboard contract as NavBuilds.vue: ↑/↓ moves selection, Ctrl/Cmd+↑/↓ reorders,
  *  Delete/Backspace requests the parent's two-step delete confirm, F2 starts rename. */
@@ -136,11 +157,24 @@ function moveFocus(dir: 1 | -1) {
 
     <div class="max-h-48 overflow-y-auto">
       <div
-        v-for="l in filteredLayers"
+        v-for="(l, i) in filteredLayers"
         :key="l.id"
-        class="nav-row nav-row--layer relative flex items-center gap-1 rounded-md py-1 pl-5 pr-1"
-        :class="selectedId === l.id && 'is-active bg-accent-soft'"
+        class="nav-row nav-row--layer relative flex items-center gap-1 rounded-md py-1 pl-5 pr-1 border-t-2 border-b-2 border-transparent"
+        :class="[
+          selectedId === l.id && 'is-active bg-accent-soft',
+          dropList.indicatorAt(i) === 'before' && '!border-t-accent',
+          dropList.indicatorAt(i) === 'after' && '!border-b-accent',
+        ]"
+        v-bind="dropList.rowProps(i)"
       >
+        <span
+          data-testid="layer-drag-handle"
+          title="Drag to reorder"
+          class="cursor-grab text-muted hover:text-accent [&_svg]:size-[14px]"
+          v-bind="dragHandleProps(l.id, i)"
+        >
+          <GripVertical />
+        </span>
         <IconButton
           title="Move up (Ctrl+↑)"
           data-testid="move-up"

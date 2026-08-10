@@ -7,10 +7,10 @@
 // writes directly onto `draft.value.grants`. The store's `onChange()` is called after every
 // mutation, which schedules an undo snapshot in BonusSetForm.
 
-import { computed } from "vue";
+import { computed, inject } from "vue";
 import PercentInput from "../ui/PercentInput.vue";
 import ComboBox from "../ui/ComboBox.vue";
-import ConditionRows from "./ConditionRows.vue";
+import ConditionRows, { type ConditionTreeLocation } from "./ConditionRows.vue";
 import IconButton from "../ui/IconButton.vue";
 import {
   ArrowDown,
@@ -18,6 +18,7 @@ import {
   CirclePlus,
   Copy,
   FileJson,
+  GripVertical,
   Plus,
   Trash,
 } from "@lucide/vue";
@@ -25,7 +26,17 @@ import BaseButton from "../ui/BaseButton.vue";
 import FormSection from "../ui/FormSection.vue";
 import { isPercentKind, kindOf, statPickerOptions } from "../../lib/format";
 import { focusNextCombo } from "../../lib/stat-row-nav";
-import { BonusDraftStore } from "../../stores/bonus-draft";
+import {
+  BonusDraftStore,
+  moveConditionAcrossStores,
+  type ConditionLocation,
+} from "../../stores/bonus-draft";
+import { bonusDraftRegistryKey } from "../../composables/bonusDraftRegistry";
+import {
+  useDragHandle,
+  useDropList,
+  type DragSource,
+} from "../../composables/useDragAndDrop";
 
 const emit = defineEmits<{ error: [message: string] }>();
 
@@ -34,8 +45,11 @@ const props = withDefaults(
     store: BonusDraftStore;
     setIds?: string[];
     tags?: string[];
+    /** This bonus's key in BonusGroups' cross-bonus condition-drag registry, forwarded from
+     *  BonusSetForm -- see bonusDraftRegistry.ts. Empty outside BonusGroups. */
+    registryId?: string;
   }>(),
-  { setIds: () => [], tags: () => [] },
+  { setIds: () => [], tags: () => [], registryId: "" },
 );
 
 const statComboOptions = statPickerOptions;
@@ -53,6 +67,143 @@ function gs(index: number) {
   const s = props.store.grantStore(index);
   if (!s) throw new Error(`Grant index out of range: ${index}`);
   return s;
+}
+
+// --- drag-and-drop: grants, and each grant's tiers/variants ----------------------------
+// Grants aren't shared across bonuses (unlike conditions -- see ConditionRows.vue), so
+// reordering is always local to this one BonusDraftStore instance. `instanceId` keeps this
+// component's grant list from accepting a drop dragged out of a *different* BonusRows
+// instance (e.g. another bonus in the same item's BonusGroups) if one happens to be open at
+// the same time. Tiers/variants are scoped to their own grant the same way, via the grant's
+// own uid.
+const instanceId = `bonus-rows:${Math.random().toString(36).slice(2)}`;
+const grantsContainerId = `grants:${instanceId}`;
+
+const grantsDropList = useDropList({
+  containerId: grantsContainerId,
+  accepts: (source) =>
+    source.kind === "grant" && source.containerId === grantsContainerId,
+  onDrop: (source, index) => props.store.moveGrantTo(source.index, index),
+});
+function grantDragHandleProps(index: number) {
+  return useDragHandle((): DragSource => ({
+    kind: "grant",
+    containerId: grantsContainerId,
+    key: props.store.grants[index]?.uid ?? String(index),
+    index,
+  }));
+}
+
+function tierDropList(grantUid: string, gIndex: number) {
+  const containerId = `tiers:${grantUid}`;
+  return useDropList({
+    containerId,
+    accepts: (source) =>
+      source.kind === "tier" && source.containerId === containerId,
+    onDrop: (source, index) => gs(gIndex).moveTierTo(source.index, index),
+  });
+}
+function tierDragHandleProps(grantUid: string, index: number) {
+  return useDragHandle((): DragSource => ({
+    kind: "tier",
+    containerId: `tiers:${grantUid}`,
+    key: String(index),
+    index,
+  }));
+}
+
+function variantDropList(grantUid: string, gIndex: number) {
+  const containerId = `variants:${grantUid}`;
+  return useDropList({
+    containerId,
+    accepts: (source) =>
+      source.kind === "variant" && source.containerId === containerId,
+    onDrop: (source, index) => gs(gIndex).moveVariantTo(source.index, index),
+  });
+}
+function variantDragHandleProps(
+  grantUid: string,
+  variantUid: string,
+  index: number,
+) {
+  return useDragHandle((): DragSource => ({
+    kind: "variant",
+    containerId: `variants:${grantUid}`,
+    key: variantUid,
+    index,
+  }));
+}
+
+// --- drag-and-drop: condition trees, including cross-grant/cross-variant/cross-bonus -------
+// A condition's ConditionRows tree-id encodes which bonus it belongs to (this instance's own
+// `registryId`, e.g. a BonusGroups slot key) ahead of which grant/variant tree within that
+// bonus -- a space separates the two, since registryId values ("id:foo", "pending:3") and the
+// grant/variant tag both already use colons. ConditionRows.vue itself never looks inside a
+// tree-id; only the two parse/build functions below do.
+const TREE_ID_SEP = " ";
+function grantTreeId(gIndex: number) {
+  return `${props.registryId}${TREE_ID_SEP}grant:${gIndex}`;
+}
+function variantTreeId(gIndex: number, vIndex: number) {
+  return `${props.registryId}${TREE_ID_SEP}variant:${gIndex}:${vIndex}`;
+}
+function parseTreeId(treeId: string): {
+  registryId: string;
+  location: Omit<ConditionLocation, "path">;
+} {
+  const [registryId, rest] = treeId.split(TREE_ID_SEP);
+  const parts = rest?.split(":") ?? [];
+  return parts[0] === "variant"
+    ? {
+        registryId,
+        location: {
+          grantIndex: Number(parts[1]),
+          scope: "variant",
+          variantIndex: Number(parts[2]),
+        },
+      }
+    : {
+        registryId,
+        location: { grantIndex: Number(parts[1]), scope: "grant" },
+      };
+}
+
+const bonusDraftRegistry = inject(bonusDraftRegistryKey, null);
+
+/** `ConditionRows.vue`'s `@transfer` handler for both the grant-level and every variant-level
+ *  tree below -- a condition was dropped somewhere other than the rows list it started in.
+ *  Resolves both ends fresh from their tree-ids, then either mutates this one store (same
+ *  bonus, however far apart in its grant/variant trees) or reaches into the registry for a
+ *  different bonus's store entirely (BonusGroups.vue only; standalone forms have no registry,
+ *  so a cross-bonus drop there is silently a no-op -- there's nothing else it could target). */
+function onConditionTransfer(payload: {
+  source: ConditionTreeLocation;
+  target: ConditionTreeLocation;
+}) {
+  const sourceInfo = parseTreeId(payload.source.treeId);
+  const targetInfo = parseTreeId(payload.target.treeId);
+  const targetLocation: ConditionLocation = {
+    ...targetInfo.location,
+    path: payload.target.path,
+  };
+
+  if (sourceInfo.registryId === props.registryId) {
+    props.store.moveCondition(
+      { ...sourceInfo.location, path: payload.source.path },
+      targetLocation,
+    );
+    return;
+  }
+
+  const sourceStore = bonusDraftRegistry?.get(sourceInfo.registryId);
+  if (!sourceStore) return;
+  moveConditionAcrossStores(
+    {
+      store: sourceStore,
+      location: { ...sourceInfo.location, path: payload.source.path },
+    },
+    { store: props.store, location: targetLocation },
+  );
 }
 
 /** Toggle between simple/form and JSON editing for one grant. If the JSON is unparseable or
@@ -85,9 +236,23 @@ function toggleJson(gIndex: number) {
     <div
       v-for="(grant, gIndex) in props.store.grants"
       :key="grant.uid"
-      class="mb-2 rounded-md border border-line bg-surface-2 p-2.5"
+      data-testid="bonus-grant-row"
+      class="mb-2 rounded-md border-2 border-line bg-surface-2 p-2.5"
+      :class="[
+        grantsDropList.indicatorAt(gIndex) === 'before' && '!border-t-accent',
+        grantsDropList.indicatorAt(gIndex) === 'after' && '!border-b-accent',
+      ]"
+      v-bind="grantsDropList.rowProps(gIndex)"
     >
       <div class="flex flex-wrap items-center gap-2">
+        <span
+          data-testid="grant-drag-handle"
+          title="Drag to reorder"
+          class="cursor-grab text-muted hover:text-accent [&_svg]:size-[14px]"
+          v-bind="grantDragHandleProps(gIndex)"
+        >
+          <GripVertical />
+        </span>
         <span class="text-sm text-muted">Grant {{ gIndex + 1 }}</span>
         <div class="flex flex-wrap items-center gap-1.5">
           <IconButton
@@ -144,7 +309,10 @@ function toggleJson(gIndex: number) {
           :rows="grant.conditions"
           :depth="0"
           :set-ids="props.store.setIds"
+          :tree-id="grantTreeId(gIndex)"
+          :path="[]"
           @update="(updated) => props.store.setConditions(gIndex, updated)"
+          @transfer="onConditionTransfer"
         />
 
         <FormSection sub>Description (optional)</FormSection>
@@ -280,9 +448,25 @@ function toggleJson(gIndex: number) {
           <div
             v-for="(tier, tIndex) in grant.tiers"
             :key="tIndex"
-            class="my-1.5 rounded-md border border-line border-l-4 border-l-accent bg-surface px-2.5 py-1.5"
+            data-testid="bonus-tier-row"
+            class="my-1.5 rounded-md border-2 border-l-4 border-line border-l-accent bg-surface px-2.5 py-1.5"
+            :class="[
+              tierDropList(grant.uid, gIndex).indicatorAt(tIndex) ===
+                'before' && '!border-t-accent',
+              tierDropList(grant.uid, gIndex).indicatorAt(tIndex) === 'after' &&
+                '!border-b-accent',
+            ]"
+            v-bind="tierDropList(grant.uid, gIndex).rowProps(tIndex)"
           >
             <div class="mb-1 flex flex-wrap items-center gap-1.5">
+              <span
+                data-testid="tier-drag-handle"
+                title="Drag to reorder"
+                class="cursor-grab text-muted hover:text-accent [&_svg]:size-[14px]"
+                v-bind="tierDragHandleProps(grant.uid, tIndex)"
+              >
+                <GripVertical />
+              </span>
               <IconButton
                 title="Move tier up"
                 :disabled="tIndex === 0"
@@ -388,9 +572,25 @@ function toggleJson(gIndex: number) {
           <div
             v-for="(variant, vIndex) in grant.variants"
             :key="variant.uid"
-            class="my-1.5 rounded-md border border-line border-l-4 border-l-accent bg-surface px-2.5 py-1.5"
+            data-testid="bonus-variant-row"
+            class="my-1.5 rounded-md border-2 border-l-4 border-line border-l-accent bg-surface px-2.5 py-1.5"
+            :class="[
+              variantDropList(grant.uid, gIndex).indicatorAt(vIndex) ===
+                'before' && '!border-t-accent',
+              variantDropList(grant.uid, gIndex).indicatorAt(vIndex) ===
+                'after' && '!border-b-accent',
+            ]"
+            v-bind="variantDropList(grant.uid, gIndex).rowProps(vIndex)"
           >
             <div class="mb-1 flex flex-wrap items-center gap-2">
+              <span
+                data-testid="variant-drag-handle"
+                title="Drag to reorder"
+                class="cursor-grab text-muted hover:text-accent [&_svg]:size-[14px]"
+                v-bind="variantDragHandleProps(grant.uid, variant.uid, vIndex)"
+              >
+                <GripVertical />
+              </span>
               <span class="text-sm text-muted">Variant {{ vIndex + 1 }}</span>
               <div class="flex flex-wrap items-center gap-1.5">
                 <IconButton
@@ -432,10 +632,13 @@ function toggleJson(gIndex: number) {
               :rows="variant.conditions"
               :depth="0"
               :set-ids="props.store.setIds"
+              :tree-id="variantTreeId(gIndex, vIndex)"
+              :path="[]"
               @update="
                 (updated) =>
                   props.store.setVariantConditions(gIndex, vIndex, updated)
               "
+              @transfer="onConditionTransfer"
             />
             <FormSection sub>Grants</FormSection>
             <div
