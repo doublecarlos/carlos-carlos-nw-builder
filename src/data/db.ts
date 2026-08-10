@@ -129,14 +129,53 @@ export function build(
  * `window` required. */
 export const fromData = () => build(NW_ITEMS, NW_BONUSES, NW_SCHEMA, NW_SLOTS);
 
-/** `db.forSlot(slotId)`, narrowed to what `build.context.class` actually allows. An unset
- * class constrains nothing -- defaulting to empty, a fresh build would otherwise hide every
- * class-restricted item with no explanation. */
+/** Every item id's current copy count across the build, tallied the same way `findErrors`
+ * (engine.ts) counts for its `maxCopies` check -- but cheap: no `resolveBuild()` call, just the
+ * raw ids `build.choices`/`build.assignments` already hold. `excludeSlotId`'s own choice is left
+ * out of the tally so an item_picker slot never counts its own currently-equipped item against
+ * itself -- re-selecting it should never read as "would exceed". */
+function copyCounts(
+  db: Db,
+  build: Build,
+  excludeSlotId: string,
+): Map<string, number> {
+  const counts = new Map<string, number>();
+  const bump = (id: string, by: number) =>
+    counts.set(id, (counts.get(id) ?? 0) + by);
+
+  for (const [slotId, itemId] of Object.entries(build.choices ?? {})) {
+    if (slotId !== excludeSlotId && itemId) bump(itemId, 1);
+  }
+  for (const slot of db.slots) {
+    if (slot.type !== "point_assignment") continue;
+    const assigned = build.assignments?.[slot.id] ?? {};
+    for (const item of db.forSlot(slot.id)) {
+      const count = assigned[item.id] ?? item.pointAssignment!.default;
+      if (count > 0) bump(item.id, count);
+    }
+  }
+  return counts;
+}
+
+/** `db.forSlot(slotId)`, narrowed to what `build.context.class` actually allows and, for an
+ * item_picker slot, to what its `maxCopies` cap still has room for (issue #198) -- the same
+ * "succeeds then flagged" gap #196's `hideFromPicker` closed for problem grants, closed here for
+ * the far more common maxCopies case via a dedicated cheap check instead of routing through the
+ * bonus/condition system. An unset class constrains nothing -- defaulting to empty, a fresh
+ * build would otherwise hide every class-restricted item with no explanation. */
 export function forSlotAndBuild(db: Db, slotId: string, build: Build): Item[] {
   const cls = build.context.class;
+  const slot = db.slotById.get(slotId);
+  const counts =
+    slot?.type === "item_picker" ? copyCounts(db, build, slotId) : null;
   return db
     .forSlot(slotId)
     .filter(
       (item) => !item.allowedClass || !cls || item.allowedClass.includes(cls),
-    );
+    )
+    .filter((item) => {
+      if (!counts) return true;
+      const max = db.maxCopies(item);
+      return !max || (counts.get(item.id) ?? 0) < max;
+    });
 }
