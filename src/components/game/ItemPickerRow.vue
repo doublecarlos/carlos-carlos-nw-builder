@@ -64,8 +64,8 @@ const value = () => props.build.values[props.slotDef.id];
       :bonus-preview="{ db, build, slotId: slotDef.id }"
       @update:model-value="buildEditor.setChoice(slotDef.id, $event)"
     />
-    <span v-if="item" class="min-w-0 flex-1 truncate text-sm text-text">{{
-      statSummary
+    <span class="min-w-0 flex-1 truncate text-sm text-text">{{
+      item ? statSummary : ""
     }}</span>
     <IconButton
       title="Create a new item for this slot"
