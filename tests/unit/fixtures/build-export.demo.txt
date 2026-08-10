@@ -92,6 +92,16 @@ Packets
       }
       Busedye  1, 1, 1, 0
     }
+    Entitytypeenum ENTITYPLAYER
+    Costumev5
+    {
+      Peffectivecostume "Bardo Do Carlos"
+      {
+        Skeleton Nw_Male
+        Species Aasimar_Male
+        Costumetype Player
+      }
+    }
   }
 }
 Fovy 100.000000

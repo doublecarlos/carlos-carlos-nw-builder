@@ -166,7 +166,7 @@
     },
     {
       "label": "Race and Leveling",
-      "reason": "Race and levelling points are not in the demo.",
+      "reason": "Levelling points and race attributes are not in the demo. Race itself is read from the character's costume when recognised.",
       "sections": ["raceLeveling"]
     },
     {
@@ -240,5 +240,20 @@
       "reason": "Situational modelling that's never in the demo.",
       "sections": ["group", "artifactCall", "misc"]
     }
-  ]
+  ],
+  "hclassToClass": {
+    "Player_Barbarian": "barbarian",
+    "Player_Bard": "bard",
+    "Player_Cleric": "cleric",
+    "Player_Fighter": "fighter",
+    "Player_Paladin": "paladin",
+    "Player_Ranger": "ranger",
+    "Player_Rogue": "rogue",
+    "Player_Scourge": "warlock",
+    "Player_Wizard": "wizard"
+  },
+  "speciesToRace": {
+    "Aasimar": "aasimar",
+    "Human": "human"
+  }
 }

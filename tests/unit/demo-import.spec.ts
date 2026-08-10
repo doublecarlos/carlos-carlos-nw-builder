@@ -47,8 +47,9 @@ function characterOf(
   name: string,
   gameClass: string | null,
   loadouts: DemoLoadout[],
+  species: string | null = null,
 ): DemoCharacter {
-  return { name, gameClass, loadouts };
+  return { name, gameClass, species, loadouts };
 }
 
 const testItem = (id: string, filter: string, gameIds: string[]): Item => ({
@@ -86,6 +87,13 @@ describe("buildFromLoadout: placement", () => {
     const loadout = loadoutOf([]);
     const { build } = buildFromLoadout(character, loadout, mappedDb);
     expect(build.context.class).toBe("bard");
+  });
+
+  it("sets context.race from the character's Species", () => {
+    const character = characterOf("Carlos", "Player_Bard", [], "Aasimar_Male");
+    const loadout = loadoutOf([]);
+    const { build } = buildFromLoadout(character, loadout, mappedDb);
+    expect(build.context.race).toBe("aasimar");
   });
 
   it("an unrecognised Hitem produces an unrecognised outcome and leaves the slot empty", () => {
@@ -149,6 +157,31 @@ describe("buildFromLoadout: placement", () => {
         (o) => o.kind === "notInDemo" && o.slotId === "options.class",
       ),
     ).toBe(true);
+  });
+
+  it("an unresolvable or absent Species reports raceLeveling.race as notInDemo instead of throwing", () => {
+    const character = characterOf("Carlos", "Player_Bard", [], "Gith_Male");
+    const { build, report } = buildFromLoadout(
+      character,
+      loadoutOf([]),
+      mappedDb,
+    );
+    expect(build.context.race).toBeUndefined();
+    expect(
+      report.outcomes.some(
+        (o) => o.kind === "notInDemo" && o.slotId === "raceLeveling.race",
+      ),
+    ).toBe(true);
+  });
+
+  it("a recognised Species excludes raceLeveling.race from notInDemo", () => {
+    const character = characterOf("Carlos", "Player_Bard", [], "Aasimar_Male");
+    const { report } = buildFromLoadout(character, loadoutOf([]), mappedDb);
+    expect(
+      report.outcomes.some(
+        (o) => o.kind === "notInDemo" && o.slotId === "raceLeveling.race",
+      ),
+    ).toBe(false);
   });
 });
 
@@ -256,6 +289,7 @@ describe("buildFromLoadout: against the shared parser fixture", () => {
     expect(report.character).toBe("Carlos o Bardo");
     expect(report.loadout).toBe("1. DPS ST");
     expect(build.context.class).toBe("bard");
+    expect(build.context.race).toBe("aasimar");
     // No gameIds authored anywhere -- every present item comes back unrecognised, none
     // imported, and the build is still perfectly valid.
     expect(report.counts.imported).toBe(0);

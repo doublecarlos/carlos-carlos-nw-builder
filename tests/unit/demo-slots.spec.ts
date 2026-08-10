@@ -13,8 +13,10 @@ import {
   placeBag,
   notInDemoSlotIds,
   notInDemoGroups,
+  raceFromSpecies,
   validateGameBags,
   validateNotInDemoReasons,
+  validateValueMap,
 } from "../../src/lib/demo-slots";
 import type { DemoItem } from "../../src/lib/demo-snapshot";
 import type { Item } from "../../src/types";
@@ -78,6 +80,69 @@ describe("demo-slots: shipped data", () => {
         GAME_IMPORT_DATA.notInDemoReasons,
         NW_SLOTS.slots,
         NW_SLOTS.sections,
+      ),
+    ).toEqual([]);
+  });
+
+  it("hclassToClass passes its own lint against options.class's own option values", () => {
+    expect(
+      validateValueMap(
+        GAME_IMPORT_DATA.hclassToClass,
+        "options.class",
+        NW_SLOTS.slots,
+        "hclassToClass",
+      ),
+    ).toEqual([]);
+  });
+
+  it("speciesToRace passes its own lint against raceLeveling.race's own option values", () => {
+    expect(
+      validateValueMap(
+        GAME_IMPORT_DATA.speciesToRace,
+        "raceLeveling.race",
+        NW_SLOTS.slots,
+        "speciesToRace",
+      ),
+    ).toEqual([]);
+  });
+});
+
+describe("validateValueMap", () => {
+  it("errors when the target slot doesn't exist as a list build_parameter", () => {
+    const findings = validateValueMap(
+      { X: "y" },
+      "not.a.real.slot",
+      NW_SLOTS.slots,
+      "test",
+    );
+    expect(
+      findings.some(
+        (f) => f.level === "error" && /does not exist/.test(f.message),
+      ),
+    ).toBe(true);
+  });
+
+  it("errors when a mapped value isn't one of the slot's own options", () => {
+    const findings = validateValueMap(
+      { Player_Made_Up: "not-a-real-class" },
+      "options.class",
+      NW_SLOTS.slots,
+      "test",
+    );
+    expect(
+      findings.some(
+        (f) => f.level === "error" && /own option values/.test(f.message),
+      ),
+    ).toBe(true);
+  });
+
+  it("passes for a map whose values are all real options", () => {
+    expect(
+      validateValueMap(
+        { Player_Bard: "bard" },
+        "options.class",
+        NW_SLOTS.slots,
+        "test",
       ),
     ).toEqual([]);
   });
@@ -386,6 +451,20 @@ describe("classFromHclass", () => {
   });
 });
 
+describe("raceFromSpecies", () => {
+  it("maps a confirmed Species token, stripping the gender suffix", () => {
+    expect(raceFromSpecies("Aasimar_Male")).toBe("aasimar");
+    expect(raceFromSpecies("Human_Female")).toBe("human");
+  });
+
+  it("returns null for an unconfirmed or unknown Species, or when absent", () => {
+    expect(raceFromSpecies("Gith_Male")).toBeNull();
+    expect(raceFromSpecies("Wood_Elf_Female")).toBeNull();
+    expect(raceFromSpecies("Something_Unexpected")).toBeNull();
+    expect(raceFromSpecies(null)).toBeNull();
+  });
+});
+
 describe("notInDemoSlotIds", () => {
   const missing = notInDemoSlotIds(NW_SLOTS.slots);
 
@@ -395,6 +474,10 @@ describe("notInDemoSlotIds", () => {
 
   it("excludes options.class even though no bag names it -- it comes from Hclass", () => {
     expect(missing).not.toContain("options.class");
+  });
+
+  it("excludes raceLeveling.race even though no bag names it -- it comes from Species", () => {
+    expect(missing).not.toContain("raceLeveling.race");
   });
 
   it("excludes a slot a bag does name", () => {

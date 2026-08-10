@@ -21,6 +21,10 @@ describe("readSnapshot: fixture", () => {
     expect(character.gameClass).toBe("Player_Bard");
   });
 
+  it("reads the character's species off the sibling Costumev5 block", () => {
+    expect(snapshot.characters[0].species).toBe("Aasimar_Male");
+  });
+
   it("reads both loadouts, in file order, with their (possibly junk) names", () => {
     const { loadouts } = snapshot.characters[0];
     expect(loadouts).toHaveLength(2);
@@ -183,6 +187,79 @@ ${loadout(
     const [partial, full] = snapshot.characters[0].loadouts;
     expect(partial.active).toBe(false);
     expect(full.active).toBe(true);
+  });
+});
+
+describe("readSnapshot: species", () => {
+  const demo = (body: string) => readSnapshot(parseDemo(`{\n${body}\n}\n`));
+
+  // Costumev5 is a sibling of EntityAttach within Createdents, not nested inside it.
+  const entityWithCostume = (costume: string) => `
+Packets
+{
+Createdents
+{
+EntityRef 1
+EntityAttach
+{
+Savedname "P"
+Pentityloadouts
+{
+${loadout("A")}
+}
+}
+${costume}
+}
+}`;
+
+  it("reads Species off a nested Peffectivecostume block with a quoted scalar value", () => {
+    const snapshot = demo(
+      entityWithCostume(`
+Costumev5
+{
+Peffectivecostume "Bardo Do Carlos"
+{
+Species Aasimar_Male
+Costumetype Player
+}
+}`),
+    );
+    expect(snapshot.characters[0].species).toBe("Aasimar_Male");
+  });
+
+  it("reads Species off an unquoted, preset-token-shaped Peffectivecostume scalar value too", () => {
+    const snapshot = demo(
+      entityWithCostume(`
+Costumev5
+{
+Peffectivecostume Species_Aasimar_M_05
+{
+Species Aasimar_Male
+Costumetype Player
+}
+}`),
+    );
+    expect(snapshot.characters[0].species).toBe("Aasimar_Male");
+  });
+
+  it("is null when Costumev5 is absent entirely", () => {
+    const snapshot = demo(entityWithCostume(""));
+    expect(snapshot.characters[0].species).toBeNull();
+  });
+
+  it("is null when Costumetype is not Player (e.g. a companion's own costume)", () => {
+    const snapshot = demo(
+      entityWithCostume(`
+Costumev5
+{
+Peffectivecostume Companion_Diana_01
+{
+Species Human_Female
+Costumetype Unrestricted
+}
+}`),
+    );
+    expect(snapshot.characters[0].species).toBeNull();
   });
 });
 

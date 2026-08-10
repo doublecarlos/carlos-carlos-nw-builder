@@ -36,6 +36,8 @@ export interface DemoCharacter {
   name: string;
   /** `Hclass`, e.g. "Player_Bard". */
   gameClass: string | null;
+  /** `Costumev5/Peffectivecostume/Species`, e.g. "Aasimar_Male" -- gender suffix and all. */
+  species: string | null;
   loadouts: DemoLoadout[];
 }
 
@@ -107,7 +109,24 @@ function findActiveLoadoutIndex(
   return tied ? -1 : bestIndex;
 }
 
-function readCharacter(entityAttach: DemoNode): DemoCharacter {
+/** `Peffectivecostume`'s own scalar value is unreliable (a quoted display name in one
+ *  recording, an unquoted preset token in another) -- always read the nested `Species` key.
+ *  Guarded by `Costumetype === "Player"` so a structural surprise (e.g. this ever matching a
+ *  summoned companion's own `Costumev5`) can't leak a companion's race onto the player. */
+function readSpecies(entity: DemoNode): string | null {
+  const costumev5 = child(entity, "Costumev5");
+  const peffectivecostume = costumev5
+    ? child(costumev5, "Peffectivecostume")
+    : null;
+  if (!peffectivecostume) return null;
+  if (scalar(peffectivecostume, "Costumetype") !== "Player") return null;
+  return scalar(peffectivecostume, "Species");
+}
+
+function readCharacter(
+  entity: DemoNode,
+  entityAttach: DemoNode,
+): DemoCharacter {
   const ppbuilds = child(entityAttach, "Ppbuilds");
   const pentityloadouts = child(entityAttach, "Pentityloadouts");
   const loadouts = pentityloadouts
@@ -120,6 +139,7 @@ function readCharacter(entityAttach: DemoNode): DemoCharacter {
   return {
     name: scalar(entityAttach, "Savedname") ?? "",
     gameClass: ppbuilds ? scalar(ppbuilds, "Hclass") : null,
+    species: readSpecies(entity),
     loadouts,
   };
 }
@@ -135,7 +155,7 @@ export function readSnapshot(root: DemoNode): DemoSnapshot {
     // Not every entity in the zone is a player with saved loadouts -- only those qualify.
     if (!entityAttach || !child(entityAttach, "Pentityloadouts")) continue;
     entries.push({
-      character: readCharacter(entityAttach),
+      character: readCharacter(entity, entityAttach),
       isActivePlayer:
         activePlayerRef != null &&
         scalar(entity, "EntityRef") === activePlayerRef,

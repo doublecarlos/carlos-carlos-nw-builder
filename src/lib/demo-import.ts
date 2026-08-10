@@ -8,6 +8,7 @@ import {
   classFromHclass,
   notInDemoSlotIds,
   placeBag,
+  raceFromSpecies,
 } from "./demo-slots";
 import type { DemoCharacter, DemoItem, DemoLoadout } from "./demo-snapshot";
 import type { Build, Db } from "../types";
@@ -74,6 +75,9 @@ export function buildFromLoadout(
   const gameClass = classFromHclass(character.gameClass);
   if (gameClass) build.context.class = gameClass;
 
+  const race = raceFromSpecies(character.species);
+  if (race) build.context.race = race;
+
   const outcomes: SlotOutcome[] = [];
   const occupied = new Set<string>();
   for (const [bag, items] of groupByBag(loadout.items)) {
@@ -86,6 +90,7 @@ export function buildFromLoadout(
 
   const notInDemo = notInDemoSlotIds(db.slots);
   if (!gameClass) notInDemo.push("options.class");
+  if (!race) notInDemo.push("raceLeveling.race");
   for (const slotId of notInDemo) outcomes.push({ kind: "notInDemo", slotId });
 
   const counts: Record<SlotOutcome["kind"], number> = {

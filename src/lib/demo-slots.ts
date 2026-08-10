@@ -33,6 +33,16 @@ export interface GameImportDataFile {
   bags: GameBagEntry[];
   /** Render order for the coverage report's "Not in the demo" group -- see `notInDemoGroups`. */
   notInDemoReasons: NotInDemoReasonEntry[];
+  /** `Ppbuilds/Hclass` -> this app's `options.class` value. Per-character, not per-loadout --
+   *  every loadout imported off one character gets the same class. */
+  hclassToClass: Record<string, string>;
+  /** `Costumev5/Peffectivecostume/Species`, gender suffix stripped, -> this app's
+   *  `raceLeveling.race` value. Confirmed against real recordings for Aasimar and Human only --
+   *  Gith and Wood Elf tokens are unconfirmed (Neverwinter's Gith subrace naming doesn't
+   *  obviously collapse to one token the way the others do) and are deliberately left out until
+   *  a recording of each turns up, the same gap `hclassToClass` had until a real Warlock
+   *  recording showed "Player_Scourge" rather than the guessable "Player_Warlock". */
+  speciesToRace: Record<string, string>;
 }
 
 export const GAME_IMPORT_DATA: GameImportDataFile =
@@ -59,23 +69,15 @@ export function candidateSlotIds(bag: string, slot: number): string[] {
   return [];
 }
 
-// `Ppbuilds/Hclass` -> this app's `options.class` value. Per-character, not per-loadout --
-// every loadout imported off one character gets the same class.
-const HCLASS_TO_CLASS: Record<string, string> = {
-  Player_Barbarian: "barbarian",
-  Player_Bard: "bard",
-  Player_Cleric: "cleric",
-  Player_Fighter: "fighter",
-  Player_Paladin: "paladin",
-  Player_Ranger: "ranger",
-  Player_Rogue: "rogue",
-  Player_Scourge: "warlock",
-  Player_Wizard: "wizard",
-};
-
 export function classFromHclass(hclass: string | null): string | null {
   if (!hclass) return null;
-  return HCLASS_TO_CLASS[hclass] ?? null;
+  return GAME_IMPORT_DATA.hclassToClass[hclass] ?? null;
+}
+
+export function raceFromSpecies(species: string | null): string | null {
+  if (!species) return null;
+  const race = species.replace(/_(Male|Female)$/, "");
+  return GAME_IMPORT_DATA.speciesToRace[race] ?? null;
 }
 
 export type PlacementResult =
@@ -181,10 +183,11 @@ export function placeBag(
 }
 
 /** Every `item_picker` / `point_assignment` / `build_parameter` slot no bag entry names --
- *  what the coverage report renders as `notInDemo`. `options.class` is excluded even though no
- *  bag names it: it's importable from `Ppbuilds/Hclass`, just not through a bag at all. */
+ *  what the coverage report renders as `notInDemo`. `options.class` and `raceLeveling.race`
+ *  are excluded even though no bag names them: they're importable from `Ppbuilds/Hclass` and
+ *  `Costumev5/Peffectivecostume/Species` respectively, just not through a bag at all. */
 export function notInDemoSlotIds(slots: Slot[]): string[] {
-  const named = new Set<string>(["options.class"]);
+  const named = new Set<string>(["options.class", "raceLeveling.race"]);
   for (const entry of GAME_IMPORT_DATA.bags) {
     for (const slotId of entry.slots ?? []) named.add(slotId);
     for (const group of entry.gemSlots ?? []) {
@@ -319,6 +322,43 @@ export function validateGameBags(
     }
   }
 
+  return findings;
+}
+
+/**
+ * - `slotId` names a `list` `build_parameter` slot that actually exists
+ * - every value the map targets is one of that slot's own option values -- a typo in
+ *   game-import.json (e.g. "warlok") would otherwise silently produce a `Build` with a value
+ *   the slot itself never offers.
+ */
+export function validateValueMap(
+  map: Record<string, string>,
+  slotId: string,
+  slots: Slot[],
+  context: string,
+): GameImportLintFinding[] {
+  const slot = slots.find((s) => s.id === slotId);
+  if (!slot || slot.type !== "build_parameter" || slot.paramType !== "list") {
+    return [
+      {
+        level: "error",
+        context,
+        message: `slot "${slotId}" does not exist as a list build_parameter in data/slots.json`,
+      },
+    ];
+  }
+
+  const knownValues = new Set(slot.options?.map((o) => o.value) ?? []);
+  const findings: GameImportLintFinding[] = [];
+  for (const [key, value] of Object.entries(map)) {
+    if (!knownValues.has(value)) {
+      findings.push({
+        level: "error",
+        context,
+        message: `"${key}" maps to "${value}", not one of "${slotId}"'s own option values`,
+      });
+    }
+  }
   return findings;
 }
 
