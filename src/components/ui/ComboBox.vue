@@ -40,9 +40,17 @@ const props = withDefaults(
   },
 );
 
+const emit = defineEmits<{
+  /** Mirrors `open` outward -- callers that need to know without polling the exposed ref
+   *  (e.g. ItemPicker.vue gating its own expensive per-candidate work to only run while the
+   *  dropdown is actually open, same reasoning as this component's own `filtered` below). */
+  "update:open": [value: boolean];
+}>();
+
 const model = defineModel<string>({ default: "" });
 
 const open = ref(false);
+watch(open, (value) => emit("update:open", value));
 const query = ref("");
 const highlight = ref(0);
 const input = useTemplateRef("input");

@@ -23,6 +23,7 @@ import {
   Trash,
 } from "@lucide/vue";
 import BaseButton from "../ui/BaseButton.vue";
+import BaseCheckbox from "../ui/BaseCheckbox.vue";
 import FormSection from "../ui/FormSection.vue";
 import { isPercentKind, kindOf, statPickerOptions } from "../../lib/format";
 import { focusNextCombo } from "../../lib/stat-row-nav";
@@ -744,10 +745,18 @@ function toggleJson(gIndex: number) {
           <textarea
             v-model="grant.problemMessage"
             data-testid="problem-message"
-            class="w-full resize-y rounded-md border border-line bg-surface p-2"
+            class="mb-1.5 w-full resize-y rounded-md border border-line bg-surface p-2"
             rows="2"
             placeholder="Message shown to the user when this condition matches…"
           ></textarea>
+          <BaseCheckbox
+            v-model="grant.problemHideFromPicker"
+            data-testid="problem-hide-from-picker"
+            inline
+          >
+            Also filter matching items out of item picker dropdowns, not just
+            flag them once picked
+          </BaseCheckbox>
         </template>
       </template>
     </div>

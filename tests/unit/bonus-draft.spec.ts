@@ -53,6 +53,31 @@ describe("bonus-draft problem payload", () => {
     expect(toGrant(toDraft(unlabeled)).problem).not.toHaveProperty("label");
   });
 
+  it("a problem grant's hideFromPicker flag round-trips, and is omitted when unset", () => {
+    const hidden: Grant = {
+      problem: {
+        severity: "error",
+        message: "Not usable while a shard is equipped",
+        hideFromPicker: true,
+      },
+    };
+    const draft = toDraft(hidden);
+    expect(draft.problemHideFromPicker).toBe(true);
+    expect(toGrant(draft)).toEqual(hidden);
+
+    const shown: Grant = {
+      problem: {
+        severity: "error",
+        message: "Not usable while a shard is equipped",
+      },
+    };
+    expect(toDraft(shown).problemHideFromPicker).toBe(false);
+    expect(toGrant(toDraft(shown))).toEqual(shown);
+    expect(toGrant(toDraft(shown)).problem).not.toHaveProperty(
+      "hideFromPicker",
+    );
+  });
+
   it("a grant with no condition still round-trips (always active)", () => {
     const grant: Grant = {
       problem: { severity: "warning", message: "Always shown" },

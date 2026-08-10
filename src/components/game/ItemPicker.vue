@@ -35,8 +35,19 @@ const props = withDefaults(
      * resolved into `slotId` so the dropdown can show the bonus stats it would add, same as
      * the row's own stat summary would show once it's actually picked (issue #116). Left
      * unset by callers with no live build to resolve against (PresetForm's item rows, which
-     * pick a default for a slot rather than editing a real build). */
-    bonusPreview?: { db: Db; build: Build; slotId: string };
+     * pick a default for a slot rather than editing a real build). `filterHidden` (default
+     * true) governs whether a candidate that would activate a `hideFromPicker` problem grant
+     * is dropped from the dropdown entirely -- the resolve already happens per candidate for
+     * the preview below, so this reads off the same result rather than costing anything extra.
+     * Left as a plain field on this same object (rather than its own prop) so a future
+     * "ignore picker filters" what-if toggle only has to change what the caller passes here,
+     * not this component. */
+    bonusPreview?: {
+      db: Db;
+      build: Build;
+      slotId: string;
+      filterHidden?: boolean;
+    };
   }>(),
   {
     selectedItem: null,
@@ -49,10 +60,10 @@ const model = defineModel<string>({ default: "" });
 
 const combobox = ref<InstanceType<typeof ComboBox> | null>(null);
 
-/** Map items to the generic {value, label} format ComboBox expects. */
-const options = computed(() =>
-  props.items.map((item) => ({ value: item.id, label: item.name })),
-);
+/** Mirrors ComboBox's own open state so the filtering/preview work below can stay gated to
+ *  "only while this dropdown is actually open" the same way `matchMap` already was -- see the
+ *  comment on `candidateStats` further down. */
+const isOpen = ref(false);
 
 interface BonusStatsPreview {
   /** What's active if `item` is picked -- same attribution `EngineRow` itself sums into a
@@ -64,6 +75,10 @@ interface BonusStatsPreview {
    *  its own. Sourced from `previewStats`, the same near-miss payload BonusInspector.vue
    *  and ItemCard.vue already show for equipped items' inactive bonuses. */
   potential: Record<string, number>;
+  /** True when picking `item` here would activate a bonus grant flagged
+   *  `hideFromPicker` -- the candidate should be left out of the dropdown entirely rather
+   *  than merely flagged, unless the caller opted out via `bonusPreview.filterHidden`. */
+  filtered: boolean;
 }
 
 /**
@@ -94,24 +109,27 @@ function previewBonusStats(item: Item): BonusStatsPreview | null {
 
     // `db.bonusesFor(item)` -- item's own contribution list -- rather than filtering
     // `result.bonuses` by slotId: an inactive bonus has no "instancing slot" worth trusting,
-    // so membership is what decides whether this candidate is one of its sources at all.
+    // so membership is what decides whether this candidate is one of its sources at all. Also
+    // used for the "hideFromPicker" check below, for the same reason: a problem grant's own
+    // `EvaluatedBonus.slotId` is just whichever contributing slot happened to sort first, not
+    // necessarily this one, so slot attribution can't be trusted to find it.
     const bonusById = new Map(result.bonuses.map((bonus) => [bonus.id, bonus]));
     const potential: Record<string, number> = {};
+    let filtered = false;
     for (const candidate of ctx.db.bonusesFor(item)) {
       const resolved = bonusById.get(candidate.bonus.id);
-      if (
-        !resolved ||
-        resolved.active ||
-        resolved.excluded ||
-        !resolved.previewStats
-      )
+      if (!resolved) continue;
+      if (resolved.active && resolved.problems.some((p) => p.hideFromPicker)) {
+        filtered = true;
+      }
+      if (resolved.active || resolved.excluded || !resolved.previewStats)
         continue;
       for (const [key, value] of Object.entries(resolved.previewStats)) {
         potential[key] = (potential[key] ?? 0) + (value ?? 0);
       }
     }
 
-    return { current, potential };
+    return { current, potential, filtered };
   } catch {
     return null;
   }
@@ -131,8 +149,37 @@ const EMPTY_PREVIEW: ReturnType<typeof bonusStatPreview> = {
   more: 0,
 };
 
-/** Decorated once per filter change rather than once per render pass -- and, since this is a
- *  lazy `computed` only ever read from the (`v-if="open"`-gated) option list, only while this
+/** Per-candidate resolve results, keyed by item id -- computed once per item and shared by
+ *  both `visibleItems` (filtering) and `matchMap` (preview) below, rather than resolving twice.
+ *  `null` while closed, so touching it costs nothing: the `isOpen` guard runs *before* any
+ *  `previewBonusStats` call, so a closed picker's `options`/`matchMap` (both derived from this)
+ *  track only `isOpen`/`props.items` as reactive dependencies, not the deep build state
+ *  `resolveBuild` reads -- same "closed rows never pay the cost" property `matchMap` alone used
+ *  to have, now shared across filtering too. */
+const candidateStats = computed(() => {
+  if (!isOpen.value) return null;
+  const map = new Map<string, BonusStatsPreview | null>();
+  for (const item of props.items) map.set(item.id, previewBonusStats(item));
+  return map;
+});
+
+/** `items` narrowed by any active `hideFromPicker` problem grant a candidate would trigger.
+ *  Filtering is opt-out via `bonusPreview.filterHidden === false`, kept toggleable per-caller
+ *  so a future "ignore picker filters" what-if setting can flip it off without changing this
+ *  component. */
+const visibleItems = computed(() => {
+  const stats = candidateStats.value;
+  if (!stats || props.bonusPreview?.filterHidden === false) return props.items;
+  return props.items.filter((item) => !stats.get(item.id)?.filtered);
+});
+
+/** Map items to the generic {value, label} format ComboBox expects. */
+const options = computed(() =>
+  visibleItems.value.map((item) => ({ value: item.id, label: item.name })),
+);
+
+/** Decorated once per filter change rather than once per render pass -- and, since this reads
+ *  `visibleItems`/`candidateStats`, only pays the per-candidate resolve cost while this
  *  particular dropdown is open, not on every keystroke elsewhere in the build. */
 const matchMap = computed(() => {
   const map = new Map<
@@ -145,8 +192,8 @@ const matchMap = computed(() => {
       flagged: boolean;
     }
   >();
-  for (const item of props.items) {
-    const bonusStats = previewBonusStats(item);
+  for (const item of visibleItems.value) {
+    const bonusStats = candidateStats.value?.get(item.id) ?? null;
     const bonusPreview = bonusStatPreview(bonusStats?.current);
     const potentialPreview = bonusStatPreview(bonusStats?.potential);
     map.set(item.id, {
@@ -189,6 +236,7 @@ defineExpose({
     :placeholder="selectedItem?.name || '—'"
     wide
     @update:model-value="model = $event"
+    @update:open="isOpen = $event"
   >
     <template #option="{ option }">
       <template v-if="matchMap.has(option.value)">

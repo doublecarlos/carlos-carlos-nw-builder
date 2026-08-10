@@ -320,6 +320,11 @@ export interface GrantProblem {
    * to be attributed to, the slot name is misleading as a label. Falls back to the slot's own
    * label when absent. */
   label?: string;
+  /** When true, an item that would make this problem active is left out of that slot's item
+   * picker dropdown entirely, not just flagged once picked -- e.g. a variant that's incompatible
+   * with a class or another equipped piece. Consumers may still choose not to apply this (an
+   * "ignore picker filters" toggle for what-if builds), so it's a request, not a guarantee. */
+  hideFromPicker?: boolean;
 }
 
 /** Anonymous by design -- only the owning `BonusSet.id` is addressable, not the grant itself.

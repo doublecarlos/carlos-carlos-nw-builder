@@ -945,6 +945,28 @@ describe("problem grants (bonus-authored errors/warnings)", () => {
     filter: "test_slot",
     bonuses: ["class-mismatch-check-labeled"],
   };
+  // A `hideFromPicker` problem grant -- signals that a consumer (ItemPicker.vue) should drop
+  // the item from its dropdown while the condition holds, on top of the usual sidebar/inline
+  // warning. The engine itself doesn't act on the flag; it just has to carry it through intact.
+  const hideFromPickerSet: BonusSet = {
+    id: "hide-from-picker-check",
+    grants: [
+      {
+        when: { class: "rogue" },
+        problem: {
+          severity: "warning",
+          message: "Not recommended for Rogue",
+          hideFromPicker: true,
+        },
+      },
+    ],
+  };
+  const hideFromPickerItem: Item = {
+    id: "hide-from-picker-item",
+    name: "Hide From Picker Item",
+    filter: "test_slot",
+    bonuses: ["hide-from-picker-check"],
+  };
   const pickerSlot: ItemPickerSlot = {
     id: "gear.test",
     label: "Test Gear",
@@ -997,8 +1019,14 @@ describe("problem grants (bonus-authored errors/warnings)", () => {
     slots: [pickerSlot, boonSlot],
   };
   const testDb = db.build(
-    [mismatchItem, labeledMismatchItem, tier1Item, tier2Item],
-    [mismatchSet, labeledMismatchSet, tier2Set],
+    [
+      mismatchItem,
+      labeledMismatchItem,
+      tier1Item,
+      tier2Item,
+      hideFromPickerItem,
+    ],
+    [mismatchSet, labeledMismatchSet, tier2Set, hideFromPickerSet],
     schema,
     slotsData,
   );
@@ -1082,6 +1110,39 @@ describe("problem grants (bonus-authored errors/warnings)", () => {
       buildWith({}, { "boons.test": { "boon-tier1": 10, "boon-tier2": 1 } }),
     );
     expect(result.errors.some((e) => e.kind === "bonusRule")).toBe(false);
+  });
+
+  // `hideFromPicker` is only meaningful to a UI consumer (ItemPicker.vue) -- the engine's job
+  // is just to carry the flag through `EvaluatedBonus.problems` intact.
+  it("threads a problem grant's hideFromPicker flag through to the resolved bonus", () => {
+    const result = engine.resolveBuild(
+      testDb,
+      buildWith(
+        { "gear.test": "hide-from-picker-item" },
+        {},
+        { class: "rogue" },
+      ),
+    );
+    const evaluated = result.bonuses.find(
+      (b) => b.setId === "hide-from-picker-check",
+    );
+    expect(evaluated?.active).toBe(true);
+    expect(evaluated?.problems[0]?.hideFromPicker).toBe(true);
+  });
+
+  it("the resolved bonus is inactive, and hideFromPicker moot, when the condition doesn't match", () => {
+    const result = engine.resolveBuild(
+      testDb,
+      buildWith(
+        { "gear.test": "hide-from-picker-item" },
+        {},
+        { class: "fighter" },
+      ),
+    );
+    const evaluated = result.bonuses.find(
+      (b) => b.setId === "hide-from-picker-check",
+    );
+    expect(evaluated?.active).toBe(false);
   });
 
   // Displays that list "bonuses" (ItemCard.vue's hover card, BonusInspector.vue's sidebar
