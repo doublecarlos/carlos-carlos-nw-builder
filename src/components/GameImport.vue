@@ -61,12 +61,23 @@ async function copyCommand() {
   }
 }
 
+/** Loadouts sorted alphabetically (numeric-aware, so "2." sorts before "10.") within each
+ *  character -- #190, matching the order the game's own loadout switcher shows them in,
+ *  rather than the demo file's recording order. */
 const rowsByCharacter = computed(() => {
   const map = new Map<string, LoadoutRow[]>();
   for (const row of rows.value) {
     const list = map.get(row.characterName);
     if (list) list.push(row);
     else map.set(row.characterName, [row]);
+  }
+  for (const list of map.values()) {
+    list.sort((a, b) =>
+      a.loadoutName.localeCompare(b.loadoutName, undefined, {
+        numeric: true,
+        sensitivity: "base",
+      }),
+    );
   }
   return map;
 });

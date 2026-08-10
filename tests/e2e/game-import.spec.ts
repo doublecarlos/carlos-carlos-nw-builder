@@ -10,6 +10,10 @@ import { buildRow } from "./support/nav";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DEMO_FIXTURE = join(__dirname, "../unit/fixtures/build-export.demo.txt");
+const LOADOUT_ORDER_FIXTURE = join(
+  __dirname,
+  "../unit/fixtures/build-export-loadout-order.demo.txt",
+);
 const GARBAGE_FIXTURE = join(__dirname, "fixtures/garbage.txt");
 
 test("header button opens the drawer on the instructions step", async ({
@@ -54,6 +58,24 @@ test("uploading the fixture advances to the loadout list with the right names, a
       .filter({ hasText: "aaaaaa" })
       .getByTestId("game-import-loadout-checkbox"),
   ).not.toBeChecked();
+});
+
+test("loadouts are listed alphabetically, not in recording order (#190)", async ({
+  page,
+}) => {
+  await openBuilder(page);
+  await page.getByTestId("header-import-from-game").click();
+  await page.getByTestId("game-import-next").click();
+  await page
+    .getByTestId("game-import-file-input")
+    .setInputFiles(LOADOUT_ORDER_FIXTURE);
+
+  // The fixture's recording order is "Zulu Solo" then "aaaaaa" -- the game's own loadout
+  // switcher lists them alphabetically instead, so the wizard should match that.
+  const rows = page.getByTestId("game-import-loadout-row");
+  await expect(rows).toHaveCount(2);
+  await expect(rows.nth(0)).toContainText("aaaaaa");
+  await expect(rows.nth(1)).toContainText("Zulu Solo");
 });
 
 test("selecting two loadouts and confirming creates two builds in the nav with the expected names", async ({

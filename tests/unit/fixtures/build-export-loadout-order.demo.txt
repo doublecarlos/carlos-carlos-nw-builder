@@ -1,0 +1,98 @@
+{
+Version 2
+Activeplayerref 100000000000000001
+Notes some free text value with spaces
+Packets
+{
+  Createdents
+  {
+    EntityRef 100000000000000001
+    EntityAttach
+    {
+      Savedname "Carlos o Bardo"
+      Ppbuilds
+      {
+        Achname "Build 1"
+        Hclass Player_Bard
+        Ppitems
+        {
+          Ebagid Head
+          Islot 0
+          Ulitemid 2218087575996877068
+        }
+        Ppitems
+        {
+          Ebagid MainHand
+          Islot 0
+          Ulitemid 2218087575996877070
+        }
+      }
+      Pentityloadouts
+      {
+        Ppentityloadouts
+        {
+          Loadoutname "Zulu Solo"
+          Pploadoutitems
+          {
+            Hitem Head_M31_Heavyheal_S-tier
+            Iitemid 2218087575996877068
+            Ebagid Head
+          }
+          Pploadoutitems
+          {
+            Hitem Weapon_MainHand_Something
+            Iitemid 2218087575996877070
+            Ebagid MainHand
+          }
+          Pploadoutitems
+          {
+            Ebagid FashionAccessory
+          }
+          Pploadoutitems
+          {
+            Hitem Mount_Something_Legendary
+            Ebagid MountEquippedActiveSlots
+            Islotidx 0
+            Pploadoutgems
+            {
+              Hslotteditem Insignia_Barbed_Power_R6
+            }
+            Pploadoutgems
+            {
+              Hslotteditem Insignia_Bile_Power_R5
+            }
+          }
+          Ipowertreebuild 1
+          Eapowerdefrefs
+          Puipowerids
+          Ilastsavetime 132456789
+          Ilastloadtime 132456790
+        }
+
+        Ppentityloadouts
+        {
+          Loadoutname aaaaaa
+          Pploadoutitems
+          {
+            Hitem Head_Other_Item
+            Iitemid 9999999999999999999
+            Ebagid Head
+          }
+          Pploadoutitems
+          {
+            Hitem OffenseGem_Something
+            Iitemid 8888888888888888888
+            Ebagid OffenseGem
+            Islotidx 1
+          }
+          Ipowertreebuild 2
+          Ilastsavetime 132456800
+          Ilastloadtime 132456801
+        }
+      }
+      Busedye  1, 1, 1, 0
+    }
+  }
+}
+Fovy 100.000000
+}

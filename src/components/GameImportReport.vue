@@ -90,6 +90,13 @@ interface UnrecognisedRow {
   /** Whether the bag names any app slot at all -- an unmapped/unknown bag has nothing to map
    *  to, so "Map to an item…" is hidden rather than offered and failing silently. */
   canMap: boolean;
+  /** Set once this row has been manually mapped -- the row keeps its place in the list either
+   *  way (keyed off `unrecognisedOrigin`, not the outcome's current kind) so a wrong pick can
+   *  be corrected instead of the whole row vanishing. */
+  mappedItem: Item | null;
+  /** Mapped, but every candidate slot for it was already filled -- shown as a note rather than
+   *  silently looking unmapped. */
+  overflow: boolean;
 }
 interface UnrecognisedBag {
   bag: string;
@@ -97,27 +104,39 @@ interface UnrecognisedBag {
 }
 
 const unrecognisedByBag = computed<UnrecognisedBag[]>(() => {
+  const entry = reports.value[activeIndex.value];
   const report = activeReport.value;
-  if (!report) return [];
+  if (!entry || !report) return [];
   const byBag = new Map<string, UnrecognisedRow[]>();
-  report.outcomes.forEach((outcome, outcomeIndex) => {
-    if (outcome.kind !== "unrecognised") return;
+  for (const [outcomeIndex, origin] of entry.unrecognisedOrigin) {
+    const outcome = report.outcomes[outcomeIndex];
+    // Every outcome named in `unrecognisedOrigin` started as "unrecognised" and can only have
+    // moved to "imported"/"overflow" since -- this check is for narrowing, not a real case.
+    if (!outcome || outcome.kind === "notInDemo") continue;
+    const mappedItemId =
+      outcome.kind === "imported" || outcome.kind === "overflow"
+        ? outcome.itemId
+        : null;
     const row: UnrecognisedRow = {
-      slot: outcome.slot,
+      slot: origin.slot,
       gameId: outcome.gameId,
       outcomeIndex,
-      canMap: candidateSlotIds(outcome.bag, outcome.slot).length > 0,
+      canMap: candidateSlotIds(origin.bag, origin.slot).length > 0,
+      mappedItem: mappedItemId ? (db.value.get(mappedItemId) ?? null) : null,
+      overflow: outcome.kind === "overflow",
     };
-    const list = byBag.get(outcome.bag);
+    const list = byBag.get(origin.bag);
     if (list) list.push(row);
-    else byBag.set(outcome.bag, [row]);
-  });
+    else byBag.set(origin.bag, [row]);
+  }
   return [...byBag.entries()].map(([bag, rows]) => ({ bag, rows }));
 });
 
+/** Ids still needing a mapping -- excludes rows already mapped, unlike the list below which
+ *  keeps showing those too. */
 const unrecognisedGameIds = computed(() =>
   unrecognisedByBag.value.flatMap((group) =>
-    group.rows.map((row) => row.gameId),
+    group.rows.filter((row) => !row.mappedItem).map((row) => row.gameId),
   ),
 );
 
@@ -125,16 +144,16 @@ const unrecognisedGameIds = computed(() =>
  *  candidate app slot's selectable items (filter- and class/race-narrowed against the
  *  report's own build, not necessarily the active one), deduped by item id. */
 const openCandidates = computed<Item[]>(() => {
-  const report = activeReport.value;
-  const outcome =
+  const entry = reports.value[activeIndex.value];
+  const origin =
     openOutcomeIndex.value != null
-      ? report?.outcomes[openOutcomeIndex.value]
+      ? entry?.unrecognisedOrigin.get(openOutcomeIndex.value)
       : undefined;
-  if (!outcome || outcome.kind !== "unrecognised") return [];
-  const build = builds.get(reports.value[activeIndex.value]?.buildId ?? "");
+  if (!entry || !origin) return [];
+  const build = builds.get(entry.buildId);
   if (!build) return [];
   const seen = new Map<string, Item>();
-  for (const slotId of candidateSlotIds(outcome.bag, outcome.slot)) {
+  for (const slotId of candidateSlotIds(origin.bag, origin.slot)) {
     for (const item of forSlotAndBuild(db.value, slotId, build)) {
       seen.set(item.id, item);
     }
@@ -241,34 +260,57 @@ async function copyUnrecognisedIds() {
             @click="copyUnrecognisedIds"
             >Copy all ids</BaseButton
           >
-          <div v-for="group in unrecognisedByBag" :key="group.bag">
+          <div
+            v-for="group in unrecognisedByBag"
+            :key="group.bag"
+            class="flex flex-col gap-1"
+          >
             <p class="text-xs font-semibold text-muted">{{ group.bag }}</p>
-            <div
-              v-for="row in group.rows"
-              :key="row.outcomeIndex"
-              class="flex flex-col gap-1"
-            >
-              <div class="flex items-center gap-2">
-                <p
-                  class="text-sm"
+            <div class="overflow-hidden rounded-md border border-line">
+              <div
+                class="grid grid-cols-[1fr_1fr_auto] gap-x-3 bg-surface-2/70 px-2 py-1 text-xs font-semibold text-muted"
+              >
+                <span>Item id</span>
+                <span>Mapped to</span>
+                <span></span>
+              </div>
+              <template v-for="row in group.rows" :key="row.outcomeIndex">
+                <div
+                  class="grid grid-cols-[1fr_1fr_auto] items-center gap-x-3 border-t border-line px-2 py-1.5 text-sm"
                   data-testid="game-import-report-unrecognised-row"
                 >
-                  {{ group.bag }}/{{ row.slot }} → {{ row.gameId }}
-                </p>
-                <BaseButton
-                  v-if="row.canMap"
-                  variant="link"
-                  data-testid="game-import-report-map-item"
-                  @click="toggleMapPicker(row.outcomeIndex)"
-                  >Map to an item…</BaseButton
+                  <span>{{ group.bag }}/{{ row.slot }} → {{ row.gameId }}</span>
+                  <span :class="row.mappedItem ? 'text-text' : 'text-muted'">
+                    <template v-if="row.mappedItem">
+                      {{ row.mappedItem.name
+                      }}<span v-if="row.overflow" class="text-muted">
+                        (slot already full)</span
+                      >
+                    </template>
+                    <template v-else>Not mapped</template>
+                  </span>
+                  <BaseButton
+                    v-if="row.canMap"
+                    data-testid="game-import-report-map-item"
+                    @click="toggleMapPicker(row.outcomeIndex)"
+                    >{{
+                      row.mappedItem ? "Change mapping…" : "Map to an item…"
+                    }}</BaseButton
+                  >
+                </div>
+                <div
+                  v-if="openOutcomeIndex === row.outcomeIndex"
+                  class="border-t border-line bg-surface-2/40 px-2 py-2"
                 >
-              </div>
-              <ItemPicker
-                v-if="openOutcomeIndex === row.outcomeIndex"
-                :items="openCandidates"
-                data-testid="game-import-report-map-picker"
-                @update:model-value="onPick(row.outcomeIndex, $event)"
-              />
+                  <ItemPicker
+                    :items="openCandidates"
+                    :selected-item="row.mappedItem"
+                    :model-value="row.mappedItem?.id ?? ''"
+                    data-testid="game-import-report-map-picker"
+                    @update:model-value="onPick(row.outcomeIndex, $event)"
+                  />
+                </div>
+              </template>
             </div>
           </div>
         </div>

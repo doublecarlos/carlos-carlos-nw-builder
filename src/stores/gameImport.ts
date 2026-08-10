@@ -32,6 +32,11 @@ export interface CommittedReport {
   report: ImportReport;
   character: DemoCharacter;
   loadout: DemoLoadout;
+  /** Bag/slot of every outcome that started out "unrecognised" at commit time, keyed by its
+   *  (stable) outcome index -- once an outcome is manually mapped its `kind` flips to
+   *  "imported"/"overflow" and loses that bag/slot, so this is what lets the report keep
+   *  showing (and re-mapping) the row instead of it vanishing the moment it resolves. */
+  unrecognisedOrigin: Map<number, { bag: string; slot: number }>;
 }
 
 const _open = ref(false);
@@ -208,13 +213,23 @@ export function commit() {
   if (!newBuilds.length) return;
 
   builds.importBuilds(newBuilds, false, layers.enabledOverlays.value);
-  _reports.value = newBuilds.map((build, i) => ({
-    buildId: build.id,
-    buildName: build.name,
-    report: newReports[i],
-    character: newContexts[i].character,
-    loadout: newContexts[i].loadout,
-  }));
+  _reports.value = newBuilds.map((build, i) => {
+    const report = newReports[i];
+    const unrecognisedOrigin = new Map<number, { bag: string; slot: number }>();
+    report.outcomes.forEach((outcome, index) => {
+      if (outcome.kind === "unrecognised") {
+        unrecognisedOrigin.set(index, { bag: outcome.bag, slot: outcome.slot });
+      }
+    });
+    return {
+      buildId: build.id,
+      buildName: build.name,
+      report,
+      character: newContexts[i].character,
+      loadout: newContexts[i].loadout,
+      unrecognisedOrigin,
+    };
+  });
   _step.value = 4;
 
   const recognised = newReports.reduce((sum, r) => sum + r.counts.imported, 0);
@@ -231,8 +246,11 @@ export function commit() {
 }
 
 /** Maps one "unrecognised" outcome's game id onto `itemId`'s `gameIds`, in a layer overlay,
- *  then re-resolves this loadout in place so the row moves to "imported" immediately -- #177,
- *  "teach new item mappings from the import report". */
+ *  then re-resolves this loadout in place so the row can flip to "imported" -- #177, "teach
+ *  new item mappings from the import report". Also doubles as *re*-mapping: the report keeps
+ *  showing the row afterwards (keyed by `unrecognisedOrigin`, not the outcome's current kind),
+ *  so picking a different item here first retracts the game id from whatever item it was
+ *  previously stamped onto, keeping exactly one item claiming it. */
 export function mapUnrecognisedItem(
   reportIndex: number,
   outcomeIndex: number,
@@ -240,7 +258,16 @@ export function mapUnrecognisedItem(
 ) {
   const entry = _reports.value[reportIndex];
   const outcome = entry?.report.outcomes[outcomeIndex];
-  if (!entry || !outcome || outcome.kind !== "unrecognised") return;
+  // Every outcome named in `unrecognisedOrigin` started as "unrecognised" and can only have
+  // moved to "imported"/"overflow" since -- the "notInDemo" check is for narrowing, not a real
+  // case; it's what lets every `outcome.gameId` read below skip an unnecessary null check.
+  if (
+    !entry ||
+    !outcome ||
+    outcome.kind === "notInDemo" ||
+    !entry.unrecognisedOrigin.has(outcomeIndex)
+  )
+    return;
 
   const composed = db.value.get(itemId);
   if (!composed) return;
@@ -253,14 +280,29 @@ export function mapUnrecognisedItem(
     `Map "${outcome.gameId}" → "${composed.name}"`,
     layer.overlay,
   );
+
+  let overlay = layer.overlay;
+  const previousItemId =
+    outcome.kind === "imported" || outcome.kind === "overflow"
+      ? outcome.itemId
+      : null;
+  if (previousItemId && previousItemId !== itemId) {
+    const previous = db.value.get(previousItemId);
+    if (previous?.gameIds?.includes(outcome.gameId)) {
+      overlay = catalog.upsert(overlay, "items", previousItemId, {
+        ...previous,
+        gameIds: previous.gameIds.filter((id) => id !== outcome.gameId),
+      });
+    }
+  }
   const nextItem = {
     ...composed,
-    gameIds: [...(composed.gameIds ?? []), outcome.gameId],
+    gameIds: composed.gameIds?.includes(outcome.gameId)
+      ? composed.gameIds
+      : [...(composed.gameIds ?? []), outcome.gameId],
   };
-  layers.updateOverlay(
-    layer.id,
-    catalog.upsert(layer.overlay, "items", itemId, nextItem),
-  );
+  overlay = catalog.upsert(overlay, "items", itemId, nextItem);
+  layers.updateOverlay(layer.id, overlay);
 
   // db.value already reflects the new mapping here -- resolved.ts's dependency chain
   // (enabledOverlays -> overlays -> db) is a plain synchronous computed.
@@ -274,14 +316,13 @@ export function mapUnrecognisedItem(
   // Positional diff, not a blanket choices copy -- protects any live edits the user made to
   // the build elsewhere since commit. buildFromLoadout's per-bag pass is a stable, deterministic
   // left-to-right greedy match, so re-running it after adding one gameId can only let a
-  // previously-unresolved item newly claim a previously-empty slot; it never disturbs an
+  // previously-unresolved item newly claim a previously-empty slot; it never disturbs any other
   // already-successful placement (those items are processed earlier in the same pass, both
-  // times).
+  // times) -- the one exception is `outcomeIndex` itself, which a re-map can walk from one
+  // resolved item straight to another without ever passing through "unresolved".
   newReport.outcomes.forEach((o, i) => {
-    if (
-      o.kind === "imported" &&
-      entry.report.outcomes[i]?.kind !== "imported"
-    ) {
+    const wasImported = entry.report.outcomes[i]?.kind === "imported";
+    if (o.kind === "imported" && (!wasImported || i === outcomeIndex)) {
       const label = `${db.value.slotById.get(o.slotId)?.label ?? o.slotId} → ${composed.name} (game import)`;
       builds.setChoiceFor(entry.buildId, o.slotId, o.itemId, label);
     }

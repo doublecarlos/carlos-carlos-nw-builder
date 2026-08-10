@@ -100,4 +100,44 @@ describe("gameImport store: mapUnrecognisedItem", () => {
     ).toBe("imported");
     expect(builds.get(buildId)).toBeUndefined();
   });
+
+  it("keeps the row's origin around after mapping, so it can be found and re-mapped", async () => {
+    const { gameImport, resolved } = await freshStores();
+    const { reportIndex, outcomeIndex } = commitFixture(gameImport);
+    const itemId = resolved.db.value.forSlot("gear.head")[0].id;
+
+    gameImport.mapUnrecognisedItem(reportIndex, outcomeIndex, itemId);
+
+    expect(
+      gameImport.reports.value[reportIndex].unrecognisedOrigin.get(
+        outcomeIndex,
+      ),
+    ).toEqual({ bag: "Head", slot: expect.any(Number) });
+  });
+
+  it("re-mapping to a different item retracts the game id from the previous one", async () => {
+    const { gameImport, resolved } = await freshStores();
+    const { reportIndex, outcomeIndex } = commitFixture(gameImport);
+    const [firstItemId, secondItemId] = resolved.db.value
+      .forSlot("gear.head")
+      .map((item) => item.id);
+    expect(secondItemId).toBeDefined();
+
+    gameImport.mapUnrecognisedItem(reportIndex, outcomeIndex, firstItemId);
+    expect(resolved.db.value.get(firstItemId)?.gameIds).toContain(
+      "Head_M31_Heavyheal_S-tier",
+    );
+
+    gameImport.mapUnrecognisedItem(reportIndex, outcomeIndex, secondItemId);
+
+    expect(resolved.db.value.get(firstItemId)?.gameIds ?? []).not.toContain(
+      "Head_M31_Heavyheal_S-tier",
+    );
+    expect(resolved.db.value.get(secondItemId)?.gameIds).toContain(
+      "Head_M31_Heavyheal_S-tier",
+    );
+    expect(
+      gameImport.reports.value[reportIndex].report.outcomes[outcomeIndex],
+    ).toMatchObject({ kind: "imported", itemId: secondItemId });
+  });
 });

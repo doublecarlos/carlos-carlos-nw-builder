@@ -131,7 +131,7 @@ test("tabs appear for a two-loadout import and switch content", async ({
   ).toHaveText("Not recognised (2)");
 });
 
-test("mapping an unrecognised id via the report moves it to imported and teaches the layer", async ({
+test("mapping an unrecognised id via the report keeps the row (so it can be re-mapped) and teaches the layer", async ({
   page,
 }) => {
   await openBuilder(page);
@@ -140,22 +140,29 @@ test("mapping an unrecognised id via the report moves it to imported and teaches
 
   const unrecognised = page.getByTestId("game-import-report-unrecognised");
   const row = unrecognised
-    .locator("div.flex.flex-col.gap-1")
+    .getByTestId("game-import-report-unrecognised-row")
     .filter({ hasText: "Head_M31_Heavyheal_S-tier" });
   await row.getByTestId("game-import-report-map-item").click();
 
-  const picker = row.getByTestId("game-import-report-map-picker");
+  const picker = unrecognised.getByTestId("game-import-report-map-picker");
   await picker.getByTestId("picker-input").click();
   // Index 0 is the picker's own "empty" option; the first real candidate is index 1.
-  const option = picker.getByTestId("picker-option").nth(1);
-  const itemName = (await option.locator(".font-semibold").innerText()).trim();
-  await option.click();
+  const firstOption = picker.getByTestId("picker-option").nth(1);
+  const firstItemName = (
+    await firstOption.locator(".font-semibold").innerText()
+  ).trim();
+  await firstOption.click();
 
+  // The row stays put -- issue was it used to disappear the moment it resolved, leaving no
+  // way to fix a wrong pick. It now shows what it resolved to and offers to change it, and
+  // the header count (unlike the row count) drops to reflect the real remainder.
+  await expect(row).toContainText(firstItemName);
+  await expect(row.getByTestId("game-import-report-map-item")).toHaveText(
+    "Change mapping…",
+  );
   await expect(
-    unrecognised
-      .getByTestId("game-import-report-unrecognised-row")
-      .filter({ hasText: "Head_M31_Heavyheal_S-tier" }),
-  ).toHaveCount(0);
+    unrecognised.getByTestId("game-import-report-unrecognised-row"),
+  ).toHaveCount(4);
   await expect(unrecognised.locator("summary")).toHaveText(
     "Not recognised (3)",
   );
@@ -164,15 +171,36 @@ test("mapping an unrecognised id via the report moves it to imported and teaches
   await expect(imported.locator("summary")).toHaveText("Imported (1)");
   await expect(
     imported.getByTestId("game-import-report-imported-row"),
-  ).toHaveText(`Head → ${itemName}`);
+  ).toHaveText(`Head → ${firstItemName}`);
+
+  // Re-mapping to a different item updates the row and the layer -- and retracts the game id
+  // from the first item, so only one item ever claims it.
+  await row.getByTestId("game-import-report-map-item").click();
+  await picker.getByTestId("picker-input").click();
+  const secondOption = picker.getByTestId("picker-option").nth(2);
+  const secondItemName = (
+    await secondOption.locator(".font-semibold").innerText()
+  ).trim();
+  await secondOption.click();
+
+  await expect(row).toContainText(secondItemName);
+  await expect(
+    imported.getByTestId("game-import-report-imported-row"),
+  ).toHaveText(`Head → ${secondItemName}`);
 
   // The mapping landed in a layer overlay ("map to an item" reuses ensureTargetLayer, the
   // same "no layers yet -> create Layer 1" rule Ctrl+click uses), not the base catalogue.
   await page.getByTestId("game-import-done").click();
   await layerRow(page, "Layer 1").locator(".nav-name").click();
-  await page.locator(".editor-search").fill(itemName);
-  await page.locator(".editor-row", { hasText: itemName }).click();
+  await page.locator(".editor-search").fill(secondItemName);
+  await page.locator(".editor-row", { hasText: secondItemName }).click();
   await expect(page.getByTestId("item-gameids-input")).toContainText(
+    "Head_M31_Heavyheal_S-tier",
+  );
+
+  await page.locator(".editor-search").fill(firstItemName);
+  await page.locator(".editor-row", { hasText: firstItemName }).click();
+  await expect(page.getByTestId("item-gameids-input")).not.toContainText(
     "Head_M31_Heavyheal_S-tier",
   );
 });
