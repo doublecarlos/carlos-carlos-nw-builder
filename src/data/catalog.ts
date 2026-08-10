@@ -336,6 +336,7 @@ const ITEM_FIELDS = new Set([
   "shortDescription",
   "longDescription",
   "gameIds",
+  "defaultParams",
 ]);
 
 // A `param` condition addressing one of these paths duplicates a dedicated leaf that already
@@ -735,8 +736,12 @@ export function validate(
   const seenIds = new Set();
   const gameIdOwners = new Map<string, Set<string>>();
   const paramSlots = new Map<string, BuildParameterSlot>();
+  const paramSlotsById = new Map<string, BuildParameterSlot>();
   for (const slot of allSlots) {
-    if (slot.type === "build_parameter") paramSlots.set(slot.path, slot);
+    if (slot.type === "build_parameter") {
+      paramSlots.set(slot.path, slot);
+      paramSlotsById.set(slot.id, slot);
+    }
   }
   const linkedItemIds = collectLinkedItemIds(allSlots);
   findings.push(...validateLinkedItems(allSlots, itemIds));
@@ -859,6 +864,25 @@ export function validate(
     for (const cls of item.allowedClass ?? []) {
       if (!classes.has(cls))
         report("error", `allowedClass "${cls}" is not a class`, item.id);
+    }
+    for (const [slotId, value] of Object.entries(item.defaultParams ?? {})) {
+      const slot = paramSlotsById.get(slotId);
+      if (!slot) {
+        report(
+          "error",
+          `defaultParams "${slotId}" is not a build_parameter slot`,
+          item.id,
+        );
+      } else if (
+        slot.paramType === "list" &&
+        !slot.options?.some((option) => option.value === value)
+      ) {
+        report(
+          "error",
+          `defaultParams "${slotId}": "${value}" is not one of its options`,
+          item.id,
+        );
+      }
     }
     for (const setId of item.bonuses ?? []) {
       if (!setIds.has(setId)) {

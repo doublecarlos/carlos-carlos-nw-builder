@@ -211,6 +211,59 @@ describe("catalog.validate (class lookup after path trim)", () => {
   });
 });
 
+describe("catalog.validate: defaultParams lint", () => {
+  it("reports a defaultParams key that is not a build_parameter slot id", () => {
+    const findings = catalog.validate(
+      [
+        {
+          id: "test-item",
+          name: "Test Item",
+          filter: "paragon",
+          defaultParams: { "not-a-slot": "dps" },
+        },
+      ],
+      [],
+    );
+    expect(
+      findings.some(
+        (f) =>
+          f.name === "test-item" &&
+          /not a build_parameter slot/.test(f.message),
+      ),
+    ).toBe(true);
+  });
+
+  it("reports a defaultParams value that is not one of its slot's options", () => {
+    const findings = catalog.validate(
+      [
+        {
+          id: "test-item",
+          name: "Test Item",
+          filter: "paragon",
+          defaultParams: { "options.role": "not-a-role" },
+        },
+      ],
+      [],
+    );
+    expect(
+      findings.some(
+        (f) =>
+          f.name === "test-item" && /not one of its options/.test(f.message),
+      ),
+    ).toBe(true);
+  });
+
+  it("the shipped Hellbringer paragon's defaultParams pass validation", () => {
+    const findings = catalog.validate(NW_ITEMS, NW_BONUSES);
+    expect(
+      findings.some(
+        (f) =>
+          f.name === "paragon-hellbringer" && /defaultParams/.test(f.message),
+      ),
+    ).toBe(false);
+  });
+});
+
 describe("catalog.validate: item id lint", () => {
   it("reports a missing id, naming the item by its display name", () => {
     const findings = catalog.validate(

@@ -53,7 +53,8 @@ export function setChoice(slotId: string, id: string) {
   const b = builds.build.value;
   if (!b) return;
   const slot = slotLabel(slotId);
-  const label = id ? (db.value.get(id)?.name ?? id) : "";
+  const item = id ? db.value.get(id) : undefined;
+  const label = id ? (item?.name ?? id) : "";
   history.snapshot(
     "build",
     b.id,
@@ -63,6 +64,13 @@ export function setChoice(slotId: string, id: string) {
   );
   if (id) {
     b.choices[slotId] = id;
+    for (const [paramSlotId, value] of Object.entries(
+      item?.defaultParams ?? {},
+    )) {
+      const paramSlot = db.value.slotById.get(paramSlotId);
+      if (paramSlot?.type === "build_parameter")
+        setPath(b.context, paramSlot.path, value);
+    }
   } else {
     delete b.choices[slotId];
     delete b.values[slotId];

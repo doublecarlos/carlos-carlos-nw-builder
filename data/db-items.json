@@ -4547,6 +4547,12 @@
     "id": "paragon-hellbringer",
     "name": "Hellbringer",
     "filter": "paragon",
+    "defaultParams": {
+      "options.role": "dps",
+      "options.forte1": "power_p",
+      "options.forte2a": "strike_p",
+      "options.forte2b": "awareness_p"
+    },
     "allowedClass": ["warlock"]
   },
   {

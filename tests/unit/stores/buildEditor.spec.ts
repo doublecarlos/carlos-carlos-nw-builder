@@ -328,6 +328,65 @@ describe("buildEditor.clearSection", () => {
   });
 });
 
+// The real shipped "paragon-hellbringer" item (data/db-items.json) and its `defaultParams`,
+// picked through the real "options.paragon" item_picker slot -- proves the cascade end to end
+// against shipped data rather than a synthetic fixture.
+describe("buildEditor.setChoice applies the picked item's defaultParams", () => {
+  it("writes each defaultParams entry onto its build_parameter slot's path", async () => {
+    const { builds, buildEditor } = await freshStores();
+    buildEditor.setChoice("options.paragon", "paragon-hellbringer");
+
+    expect(builds.build.value.choices["options.paragon"]).toBe(
+      "paragon-hellbringer",
+    );
+    expect(builds.build.value.context.role).toBe("dps");
+    expect(builds.build.value.context.forte).toEqual({
+      primary: "power_p",
+      secondaryA: "strike_p",
+      secondaryB: "awareness_p",
+    });
+  });
+
+  it("applies the choice and its defaultParams as a single undo step", async () => {
+    const { builds, buildEditor } = await freshStores();
+    buildEditor.setChoice("options.paragon", "paragon-hellbringer");
+    buildEditor.undo();
+
+    expect(builds.build.value.choices["options.paragon"]).toBeUndefined();
+    expect(builds.build.value.context.role).toBeUndefined();
+    // `forte` is a compound field: replaceActive's normalization always gives it an object,
+    // just an empty one once the picks themselves are gone -- unlike the scalar `role` above.
+    expect(builds.build.value.context.forte).toEqual({});
+  });
+
+  it("leaves defaultParams as ordinary editable fields (what-if override)", async () => {
+    const { builds, buildEditor } = await freshStores();
+    buildEditor.setChoice("options.paragon", "paragon-hellbringer");
+    buildEditor.setParam(
+      {
+        id: "options.role",
+        label: "Role",
+        section: "options",
+        type: "build_parameter" as const,
+        paramType: "list" as const,
+        path: "role",
+        default: "",
+      },
+      "healer",
+    );
+
+    expect(builds.build.value.context.role).toBe("healer");
+  });
+
+  it("does nothing extra when the picked item has no defaultParams", async () => {
+    const { builds, buildEditor } = await freshStores();
+    buildEditor.setChoice("ring1", "ItemA");
+
+    expect(builds.build.value.choices.ring1).toBe("ItemA");
+    expect(builds.build.value.context.role).toBeUndefined();
+  });
+});
+
 describe("buildEditor undo labels", () => {
   it("renameBuild includes the new name in the label", async () => {
     const { buildEditor } = await freshStores();

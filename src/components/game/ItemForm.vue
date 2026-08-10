@@ -4,6 +4,7 @@
 // - New items (source == null): explicit Save button, draft until name is finalized
 import { ref, computed, watch } from "vue";
 import BonusGroups from "./BonusGroups.vue";
+import BuildParamInput from "./BuildParamInput.vue";
 import TokenInput from "../ui/TokenInput.vue";
 import CreatableComboBox from "../ui/CreatableComboBox.vue";
 import PercentInput from "../ui/PercentInput.vue";
@@ -24,7 +25,7 @@ import { deepEqual } from "../../lib/deep-equal";
 import { useDraftHistory } from "../../composables/useDraftHistory";
 import { isPercentKind, kindOf, statPickerOptions } from "../../lib/format";
 import { focusNextCombo } from "../../lib/stat-row-nav";
-import type { Item, Db, BonusSet } from "../../types";
+import type { Item, Db, BonusSet, BuildParameterSlot } from "../../types";
 import type { StatRow } from "../../engine/bonus-draft";
 import BaseCheckbox from "../ui/BaseCheckbox.vue";
 
@@ -87,6 +88,7 @@ export interface ItemDraft {
   pointDefault: number | string | null;
   pointPriority: number | string | null;
   stats: StatRow[];
+  defaultParams: { slotId: string; value: string | number | boolean }[];
 }
 
 /** Point assignment fields count as "set" once they hold a real number, not just an
@@ -119,6 +121,9 @@ function buildDraft(item: Item | null | undefined): ItemDraft {
     stats: Object.keys(source)
       .filter((key) => statKeys.has(key))
       .map((key) => ({ key, value: source[key as keyof Item] as number })),
+    defaultParams: Object.entries(source.defaultParams ?? {}).map(
+      ([slotId, value]) => ({ slotId, value }),
+    ),
   };
 }
 
@@ -164,6 +169,8 @@ function diffLabel(oldJson: string, newJson: string): string {
       return "edit point assignment";
     if (JSON.stringify(old.stats) !== JSON.stringify(nw.stats))
       return diffStatsLabel(old.stats ?? [], nw.stats ?? []);
+    if (JSON.stringify(old.defaultParams) !== JSON.stringify(nw.defaultParams))
+      return "edit default build parameters";
   } catch {
     // JSON parse error -- shouldn't happen but be safe.
   }
@@ -248,6 +255,17 @@ const classes = (classSlot?.options ?? []).filter((o) => o.value);
 const statComboOptions = statPickerOptions;
 const dynamicStatOptions = statPickerOptions;
 
+const buildParamSlots = NW_SLOTS.slots.filter(
+  (slot): slot is BuildParameterSlot => slot.type === "build_parameter",
+);
+const defaultParamSlotOptions = buildParamSlots.map((slot) => ({
+  value: slot.id,
+  label: slot.label,
+}));
+function slotForDefaultParam(slotId: string): BuildParameterSlot | undefined {
+  return buildParamSlots.find((slot) => slot.id === slotId);
+}
+
 function toItem(): Item {
   const local = draft.value;
   const id =
@@ -309,6 +327,12 @@ function toItem(): Item {
     };
   }
 
+  const defaultParams: Record<string, string | number | boolean> = {};
+  for (const { slotId, value } of local.defaultParams) {
+    if (slotId) defaultParams[slotId] = value;
+  }
+  if (Object.keys(defaultParams).length) item.defaultParams = defaultParams;
+
   return item;
 }
 
@@ -343,6 +367,13 @@ function removeStat(index: number) {
 }
 function focusNextStat(event: KeyboardEvent) {
   focusNextCombo(event);
+}
+
+function addDefaultParam() {
+  draft.value.defaultParams.push({ slotId: "", value: "" });
+}
+function removeDefaultParam(index: number) {
+  draft.value.defaultParams.splice(index, 1);
 }
 
 // Dynamic modification and point assignment are single field groups rather than arrays,
@@ -553,6 +584,45 @@ watch(
       >
         {{ cls.label }}
       </BaseCheckbox>
+    </div>
+
+    <FormSection
+      >Default build parameters (applied when this item is picked)</FormSection
+    >
+    <div
+      v-for="(row, index) in draft.defaultParams"
+      :key="index"
+      class="default-param-row flex flex-wrap items-center gap-1.5 mb-1"
+    >
+      <IconButton title="Add default build parameter" @click="addDefaultParam"
+        ><Plus
+      /></IconButton>
+      <IconButton
+        title="Remove default build parameter"
+        @click="removeDefaultParam(index)"
+        ><Trash
+      /></IconButton>
+      <ComboBox
+        class="w-52"
+        :model-value="row.slotId"
+        :options="defaultParamSlotOptions"
+        placeholder="— pick a build parameter —"
+        @update:model-value="(v) => (row.slotId = v)"
+      />
+      <BuildParamInput
+        v-if="slotForDefaultParam(row.slotId)"
+        v-model="row.value"
+        :slot-def="slotForDefaultParam(row.slotId)!"
+        >{{ slotForDefaultParam(row.slotId)?.label }}</BuildParamInput
+      >
+    </div>
+    <div
+      v-if="!draft.defaultParams.length"
+      class="default-param-row flex flex-wrap items-center gap-1.5 mb-1"
+    >
+      <IconButton title="Add default build parameter" @click="addDefaultParam"
+        ><Plus
+      /></IconButton>
     </div>
 
     <FormSection>Stats</FormSection>
