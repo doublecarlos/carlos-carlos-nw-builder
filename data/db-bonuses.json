@@ -389,6 +389,26 @@
     ]
   },
   {
+    "id": "boon-advanced-warning",
+    "name": "Advanced Boon Warning",
+    "grants": [
+      {
+        "when": {
+          "not": {
+            "equipped": {
+              "tag": "boon:prereq-advanced",
+              "atLeast": 45
+            }
+          }
+        },
+        "problem": {
+          "severity": "warning",
+          "message": "Advanced boons need at least 45 points spent on previous boons."
+        }
+      }
+    ]
+  },
+  {
     "id": "boon-tier2-warning",
     "name": "Tier 2 Boon Warning",
     "grants": [
@@ -444,96 +464,6 @@
         "problem": {
           "severity": "warning",
           "message": "Tier 4 boons need at least 30 points spent on previous boons."
-        }
-      }
-    ]
-  },
-  {
-    "id": "boon-advanced-warning",
-    "name": "Advanced Boon Warning",
-    "grants": [
-      {
-        "when": {
-          "not": {
-            "equipped": {
-              "tag": "boon:prereq-advanced",
-              "atLeast": 45
-            }
-          }
-        },
-        "problem": {
-          "severity": "warning",
-          "message": "Advanced boons need at least 45 points spent on previous boons."
-        }
-      }
-    ]
-  },
-  {
-    "id": "level-attr-warning",
-    "name": "Leveling Ability Score Warning",
-    "grants": [
-      {
-        "when": {
-          "any": [
-            {
-              "not": {
-                "equipped": {
-                  "tag": "level_attr:3",
-                  "atLeast": 2,
-                  "below": 3
-                }
-              }
-            },
-            {
-              "not": {
-                "equipped": {
-                  "tag": "level_attr:6",
-                  "atLeast": 2,
-                  "below": 3
-                }
-              }
-            },
-            {
-              "not": {
-                "equipped": {
-                  "tag": "level_attr:12",
-                  "atLeast": 2,
-                  "below": 3
-                }
-              }
-            },
-            {
-              "not": {
-                "equipped": {
-                  "tag": "level_attr:14",
-                  "atLeast": 2,
-                  "below": 3
-                }
-              }
-            },
-            {
-              "not": {
-                "equipped": {
-                  "tag": "level_attr:18",
-                  "atLeast": 2,
-                  "below": 3
-                }
-              }
-            },
-            {
-              "not": {
-                "equipped": {
-                  "tag": "level_attr:20",
-                  "atLeast": 2,
-                  "below": 3
-                }
-              }
-            }
-          ]
-        },
-        "problem": {
-          "severity": "warning",
-          "message": "Need to select 2 Ability Score points for each level"
         }
       }
     ]
@@ -849,6 +779,76 @@
         },
         "stats": {
           "severity": 1000
+        }
+      }
+    ]
+  },
+  {
+    "id": "level-attr-warning",
+    "name": "Leveling Ability Score Warning",
+    "grants": [
+      {
+        "when": {
+          "any": [
+            {
+              "not": {
+                "equipped": {
+                  "tag": "level_attr:3",
+                  "atLeast": 2,
+                  "below": 3
+                }
+              }
+            },
+            {
+              "not": {
+                "equipped": {
+                  "tag": "level_attr:6",
+                  "atLeast": 2,
+                  "below": 3
+                }
+              }
+            },
+            {
+              "not": {
+                "equipped": {
+                  "tag": "level_attr:12",
+                  "atLeast": 2,
+                  "below": 3
+                }
+              }
+            },
+            {
+              "not": {
+                "equipped": {
+                  "tag": "level_attr:14",
+                  "atLeast": 2,
+                  "below": 3
+                }
+              }
+            },
+            {
+              "not": {
+                "equipped": {
+                  "tag": "level_attr:18",
+                  "atLeast": 2,
+                  "below": 3
+                }
+              }
+            },
+            {
+              "not": {
+                "equipped": {
+                  "tag": "level_attr:20",
+                  "atLeast": 2,
+                  "below": 3
+                }
+              }
+            }
+          ]
+        },
+        "problem": {
+          "severity": "warning",
+          "message": "Need to select 2 Ability Score points for each level"
         }
       }
     ]

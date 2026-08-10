@@ -76,7 +76,7 @@ export const base = (): {
 });
 
 /**
- * Fold overlays over the base, later layers winning. Output is sorted by name/id so the
+ * Fold overlays over the base, later layers winning. Output is sorted by id so the
  * export is stable and diffs against the generated files stay readable.
  */
 export function compose(overlays: (CatalogOverlay | null | undefined)[] = []) {
@@ -109,7 +109,7 @@ export function compose(overlays: (CatalogOverlay | null | undefined)[] = []) {
   }
 
   return {
-    items: [...items.values()].sort((a, b) => a.name.localeCompare(b.name)),
+    items: [...items.values()].sort((a, b) => a.id.localeCompare(b.id)),
     bonusSets: [...bonusSets.values()].sort((a, b) => a.id.localeCompare(b.id)),
     sectionPresets: [...sectionPresets.values()].sort((a, b) =>
       a.id.localeCompare(b.id),
