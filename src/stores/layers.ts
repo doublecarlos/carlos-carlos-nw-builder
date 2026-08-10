@@ -146,7 +146,7 @@ export async function moveLayerTo(id: string, toIndex: number) {
 export async function moveLayer(id: string, delta: number) {
   const idx = layerOrder.value.indexOf(id);
   if (idx === -1) return;
-  await moveLayerTo(id, idx + delta);
+  await moveLayerTo(id, idx + delta + (delta > 0 ? 1 : 0));
 }
 
 /** The single write path the layer editor uses — replaces the layer's overlay wholesale. */

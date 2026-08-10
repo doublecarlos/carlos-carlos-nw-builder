@@ -80,6 +80,24 @@ describe("builds store", () => {
     expect(idx).toBeGreaterThanOrEqual(0);
   });
 
+  it("moveBuild swaps with the neighbour in both directions", async () => {
+    const { builds } = await freshStores();
+    builds.createBuild();
+    builds.createBuild();
+    const names = builds.builds.value.map((b) => b.name);
+    const firstId = builds.builds.value[0].id;
+
+    await builds.moveBuild(firstId, 1);
+    expect(builds.builds.value.map((b) => b.name)).toEqual([
+      names[1],
+      names[0],
+      names[2],
+    ]);
+
+    await builds.moveBuild(firstId, -1);
+    expect(builds.builds.value.map((b) => b.name)).toEqual(names);
+  });
+
   it("moveBuildTo drops a build at an arbitrary index, not just a neighbour swap", async () => {
     const { builds } = await freshStores();
     // Starts with one build ("Build 1"); add three more.

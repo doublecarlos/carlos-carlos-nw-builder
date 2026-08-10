@@ -147,7 +147,7 @@ export async function moveBuildTo(id: string, toIndex: number) {
 export async function moveBuild(id: string, delta: number) {
   const idx = buildOrder.value.indexOf(id);
   if (idx === -1) return;
-  await moveBuildTo(id, idx + delta);
+  await moveBuildTo(id, idx + delta + (delta > 0 ? 1 : 0));
 }
 
 export function revertToDownloaded(id: string) {

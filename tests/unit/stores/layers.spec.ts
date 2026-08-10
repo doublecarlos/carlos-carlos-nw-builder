@@ -91,6 +91,19 @@ describe("layers store", () => {
     expect(layers.layers.value[layers.layers.value.length - 1].name).toBe("B");
   });
 
+  it("moveLayer swaps with the neighbour in both directions", async () => {
+    const { layers } = await freshStores();
+    layers.createLayer("A");
+    layers.createLayer("B");
+    const idA = layers.layers.value.find((l) => l.name === "A")!.id;
+
+    await layers.moveLayer(idA, 1);
+    expect(layers.layers.value.map((l) => l.name)).toEqual(["B", "A"]);
+
+    await layers.moveLayer(idA, -1);
+    expect(layers.layers.value.map((l) => l.name)).toEqual(["A", "B"]);
+  });
+
   it("moveLayerTo drops a layer at an arbitrary index, not just a neighbour swap", async () => {
     const { layers } = await freshStores();
     layers.createLayer("A");

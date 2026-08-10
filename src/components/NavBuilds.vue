@@ -3,15 +3,7 @@
 // and rename state are provided by the parent (Nav.vue).
 import { computed, useTemplateRef, type Component, type Directive } from "vue";
 import BaseButton from "./ui/BaseButton.vue";
-import IconButton from "./ui/IconButton.vue";
-import {
-  ArrowDown,
-  ArrowUp,
-  EllipsisVertical,
-  GripVertical,
-  Plus,
-  Upload,
-} from "@lucide/vue";
+import { EllipsisVertical, GripVertical, Plus, Upload } from "@lucide/vue";
 import NavContextMenu from "./NavContextMenu.vue";
 import { isMac } from "../lib/platform";
 import { matchesQuery } from "../lib/text-filter";
@@ -168,28 +160,12 @@ function moveFocus(dir: 1 | -1) {
       >
         <span
           data-testid="build-drag-handle"
-          title="Drag to reorder"
+          title="Drag to reorder. Ctrl + ↑ or ↓ to move up/down."
           class="cursor-grab text-muted hover:text-accent [&_svg]:size-[14px]"
           v-bind="dragHandleProps(b.id, i)"
         >
           <GripVertical />
         </span>
-        <IconButton
-          title="Move up (Ctrl+↑)"
-          data-testid="move-up"
-          :disabled="!canMoveUp(b.id)"
-          @click="$emit('move-up', b.id)"
-        >
-          <ArrowUp />
-        </IconButton>
-        <IconButton
-          title="Move down (Ctrl+↓)"
-          data-testid="move-down"
-          :disabled="!canMoveDown(b.id)"
-          @click="$emit('move-down', b.id)"
-        >
-          <ArrowDown />
-        </IconButton>
 
         <input
           v-if="renamingId === b.id"
