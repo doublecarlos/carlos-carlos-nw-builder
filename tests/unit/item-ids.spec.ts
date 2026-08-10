@@ -51,7 +51,6 @@ function testBuild(choices: Record<string, string>): Build {
     procs: {},
     context: {
       class: "",
-      race: "",
       role: "",
       combatType: "",
       damageType: "",

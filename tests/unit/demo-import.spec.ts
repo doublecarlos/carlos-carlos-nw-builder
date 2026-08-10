@@ -89,11 +89,11 @@ describe("buildFromLoadout: placement", () => {
     expect(build.context.class).toBe("bard");
   });
 
-  it("sets context.race from the character's Species", () => {
+  it("sets choices['raceLeveling.race'] from the character's Species", () => {
     const character = characterOf("Carlos", "Player_Bard", [], "Aasimar_Male");
     const loadout = loadoutOf([]);
     const { build } = buildFromLoadout(character, loadout, mappedDb);
-    expect(build.context.race).toBe("aasimar");
+    expect(build.choices["raceLeveling.race"]).toBe("race-aasimar");
   });
 
   it("an unrecognised Hitem produces an unrecognised outcome and leaves the slot empty", () => {
@@ -166,7 +166,7 @@ describe("buildFromLoadout: placement", () => {
       loadoutOf([]),
       mappedDb,
     );
-    expect(build.context.race).toBeUndefined();
+    expect(build.choices["raceLeveling.race"]).toBeUndefined();
     expect(
       report.outcomes.some(
         (o) => o.kind === "notInDemo" && o.slotId === "raceLeveling.race",
@@ -289,7 +289,7 @@ describe("buildFromLoadout: against the shared parser fixture", () => {
     expect(report.character).toBe("Carlos o Bardo");
     expect(report.loadout).toBe("1. DPS ST");
     expect(build.context.class).toBe("bard");
-    expect(build.context.race).toBe("aasimar");
+    expect(build.choices["raceLeveling.race"]).toBe("race-aasimar");
     // No gameIds authored anywhere -- every present item comes back unrecognised, none
     // imported, and the build is still perfectly valid.
     expect(report.counts.imported).toBe(0);

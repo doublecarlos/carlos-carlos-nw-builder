@@ -15,6 +15,7 @@ import {
   notInDemoGroups,
   raceFromSpecies,
   validateGameBags,
+  validateItemValueMap,
   validateNotInDemoReasons,
   validateValueMap,
 } from "../../src/lib/demo-slots";
@@ -95,12 +96,12 @@ describe("demo-slots: shipped data", () => {
     ).toEqual([]);
   });
 
-  it("speciesToRace passes its own lint against raceLeveling.race's own option values", () => {
+  it("speciesToRace passes its own lint against raceLeveling.race's own item ids", () => {
     expect(
-      validateValueMap(
+      validateItemValueMap(
         GAME_IMPORT_DATA.speciesToRace,
         "raceLeveling.race",
-        NW_SLOTS.slots,
+        db,
         "speciesToRace",
       ),
     ).toEqual([]);
@@ -453,7 +454,7 @@ describe("classFromHclass", () => {
 
 describe("raceFromSpecies", () => {
   it("maps a confirmed Species token, stripping the gender suffix", () => {
-    expect(raceFromSpecies("Aasimar_Male")).toBe("aasimar");
+    expect(raceFromSpecies("Aasimar_Male")).toBe("race-aasimar");
     expect(raceFromSpecies("Human_Female")).toBe("human");
   });
 

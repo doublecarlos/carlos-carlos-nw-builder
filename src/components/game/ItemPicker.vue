@@ -28,7 +28,7 @@ const props = withDefaults(
      * slot -- drives the closed box's display text/placeholder. Passed down already-resolved
      * by the caller (BuildSlot.vue already has it) rather than looked up here, since `items`
      * is only this slot's *selectable* list and would miss an equipped item that's since
-     * fallen out of it (e.g. a class/race change narrowing `allowedClass`/`allowedRace`). */
+     * fallen out of it (e.g. a class change narrowing `allowedClass`). */
     selectedItem?: Item | null;
     invalid?: boolean;
     /** Build-editor context for a bonus-aware preview: each candidate is hypothetically

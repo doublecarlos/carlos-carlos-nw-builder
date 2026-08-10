@@ -505,7 +505,7 @@
   {
     "id": "race-aasimar",
     "name": "Aasimar",
-    "filter": "build_param_linked_item",
+    "filter": "race",
     "power_p": 0.02,
     "hit_points_p": 0.02,
     "defense_p": 0.02,
@@ -1661,7 +1661,7 @@
   {
     "id": "race-gith",
     "name": "Gith",
-    "filter": "build_param_linked_item",
+    "filter": "race",
     "ca_p": 0.05,
     "maxCopies": 1
   },
@@ -1807,7 +1807,7 @@
   {
     "id": "human",
     "name": "Human",
-    "filter": "build_param_linked_item",
+    "filter": "race",
     "power_p": 0.01,
     "acc_p": 0.01,
     "ca_p": 0.01,
@@ -4527,7 +4527,7 @@
   {
     "id": "race-wood-elf",
     "name": "Wood Elf",
-    "filter": "build_param_linked_item",
+    "filter": "race",
     "strike_p": 0.05,
     "maxCopies": 1
   },

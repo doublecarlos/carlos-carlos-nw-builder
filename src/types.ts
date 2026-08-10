@@ -200,7 +200,6 @@ export interface Item {
   tags?: string[];
   maxCopies?: number;
   allowedClass?: string[];
-  allowedRace?: string[];
   dynamicStat?: StatKey;
   dynamicMin?: number;
   dynamicMax?: number;
@@ -412,7 +411,6 @@ export interface ForteSplit {
 
 export interface BuildContext {
   class: string;
-  race: string;
   role: string;
   combatType: string;
   damageType: string;
@@ -592,7 +590,7 @@ export interface ResolvedBonuses {
 
 export interface EngineError {
   slotId: string;
-  kind: "class" | "race" | "maxCopies" | "outOfRange" | "missing" | "bonusRule";
+  kind: "class" | "maxCopies" | "outOfRange" | "missing" | "bonusRule";
   choice: string;
   message: string;
   severity: "error" | "warning";

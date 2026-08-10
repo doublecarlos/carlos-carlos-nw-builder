@@ -29,7 +29,6 @@ const built = db.fromData();
 // perturb the numbers.
 const BASE_CONTEXT: BuildContext = {
   class: "warlock",
-  race: "",
   role: "dps",
   combatType: "single",
   duration: 60,
@@ -839,12 +838,46 @@ describe("build_parameter linked items", () => {
     expect(result.errors.some((e) => e.kind === "class")).toBe(true);
   });
 
-  it("a race-restricted item, already picked, flags a race error once its race no longer matches", () => {
+  // Race restrictions are no longer a dedicated `allowedRace`/`kind: "race"` check (issue
+  // #197) -- race is an `item_picker` slot again, and a race-restricted item expresses its
+  // restriction the same way any other conditional problem does: a `hideFromPicker` grant
+  // gated on the generic `equipped` leaf against the race item's own id.
+  it("a race-restricted item flags a bonusRule problem via the generic equipped condition", () => {
+    const halfOrcRaceItem: Item = {
+      id: "race-test-half-orc",
+      name: "Race: Half-Orc (test)",
+      filter: "test_race",
+    };
+    const elfRaceItem: Item = {
+      id: "race-test-elf",
+      name: "Race: Elf (test)",
+      filter: "test_race",
+    };
+    const raceRestrictionSet: BonusSet = {
+      id: "race-restriction-check",
+      grants: [
+        {
+          when: { not: { equipped: { item: "race-test-half-orc" } } },
+          problem: {
+            severity: "error",
+            message: "Trinket requires Half-Orc",
+            hideFromPicker: true,
+          },
+        },
+      ],
+    };
     const raceRestrictedItem: Item = {
       id: "trinket-race-restricted",
       name: "Trinket: Race Restricted",
       filter: "test_trinket",
-      allowedRace: ["half-orc"],
+      bonuses: ["race-restriction-check"],
+    };
+    const raceSlot: ItemPickerSlot = {
+      id: "raceLeveling.race",
+      label: "Race",
+      section: "raceLeveling",
+      type: "item_picker",
+      filter: "test_race",
     };
     const trinketSlot: ItemPickerSlot = {
       id: "gear.trinket",
@@ -853,32 +886,46 @@ describe("build_parameter linked items", () => {
       type: "item_picker",
       filter: "test_trinket",
     };
-    const raceRestrictedDb = db.build([raceRestrictedItem], [], schema, {
-      sections: [{ id: "gear", label: "Gear" }],
-      slots: [trinketSlot],
-    });
+    const raceRestrictedDb = db.build(
+      [halfOrcRaceItem, elfRaceItem, raceRestrictedItem],
+      [raceRestrictionSet],
+      schema,
+      {
+        sections: [
+          { id: "raceLeveling", label: "Race" },
+          { id: "gear", label: "Gear" },
+        ],
+        slots: [raceSlot, trinketSlot],
+      },
+    );
 
     const matchingRace = engine.resolveBuild(raceRestrictedDb, {
       id: "b",
       name: "b",
-      choices: { "gear.trinket": raceRestrictedItem.id },
+      choices: {
+        "raceLeveling.race": halfOrcRaceItem.id,
+        "gear.trinket": raceRestrictedItem.id,
+      },
       values: {},
       assignments: {},
-      context: { ...BASE_CONTEXT, race: "half-orc" },
+      context: BASE_CONTEXT,
       compare: { id: "", highlight: false, onlyDiff: false },
     } as unknown as Build);
-    expect(matchingRace.errors.some((e) => e.kind === "race")).toBe(false);
+    expect(matchingRace.errors.some((e) => e.kind === "bonusRule")).toBe(false);
 
     const wrongRace = engine.resolveBuild(raceRestrictedDb, {
       id: "b",
       name: "b",
-      choices: { "gear.trinket": raceRestrictedItem.id },
+      choices: {
+        "raceLeveling.race": elfRaceItem.id,
+        "gear.trinket": raceRestrictedItem.id,
+      },
       values: {},
       assignments: {},
-      context: { ...BASE_CONTEXT, race: "elf" },
+      context: BASE_CONTEXT,
       compare: { id: "", highlight: false, onlyDiff: false },
     } as unknown as Build);
-    expect(wrongRace.errors.some((e) => e.kind === "race")).toBe(true);
+    expect(wrongRace.errors.some((e) => e.kind === "bonusRule")).toBe(true);
   });
 
   it("a linked item resolves onto its own row, not the item_picker row shape", () => {

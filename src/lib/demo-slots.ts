@@ -36,8 +36,9 @@ export interface GameImportDataFile {
   /** `Ppbuilds/Hclass` -> this app's `options.class` value. Per-character, not per-loadout --
    *  every loadout imported off one character gets the same class. */
   hclassToClass: Record<string, string>;
-  /** `Costumev5/Peffectivecostume/Species`, gender suffix stripped, -> this app's
-   *  `raceLeveling.race` value. Confirmed against real recordings for Aasimar and Human only --
+  /** `Costumev5/Peffectivecostume/Species`, gender suffix stripped, -> the item id
+   *  `raceLeveling.race` (an `item_picker` slot) resolves the choice to. Confirmed against
+   *  real recordings for Aasimar and Human only --
    *  Gith and Wood Elf tokens are unconfirmed (Neverwinter's Gith subrace naming doesn't
    *  obviously collapse to one token the way the others do) and are deliberately left out until
    *  a recording of each turns up, the same gap `hclassToClass` had until a real Warlock
@@ -322,6 +323,43 @@ export function validateGameBags(
     }
   }
 
+  return findings;
+}
+
+/**
+ * - `slotId` names an `item_picker` slot that actually exists
+ * - every value the map targets is one of that slot's own candidate item ids -- a typo in
+ *   game-import.json would otherwise silently produce a `Build` whose choice resolves to
+ *   nothing.
+ */
+export function validateItemValueMap(
+  map: Record<string, string>,
+  slotId: string,
+  db: Db,
+  context: string,
+): GameImportLintFinding[] {
+  const slot = db.slotById.get(slotId);
+  if (!slot || slot.type !== "item_picker") {
+    return [
+      {
+        level: "error",
+        context,
+        message: `slot "${slotId}" does not exist as an item_picker in data/slots.json`,
+      },
+    ];
+  }
+
+  const knownIds = new Set(db.forSlot(slotId).map((item) => item.id));
+  const findings: GameImportLintFinding[] = [];
+  for (const [key, value] of Object.entries(map)) {
+    if (!knownIds.has(value)) {
+      findings.push({
+        level: "error",
+        context,
+        message: `"${key}" maps to "${value}", not one of "${slotId}"'s own item ids`,
+      });
+    }
+  }
   return findings;
 }
 

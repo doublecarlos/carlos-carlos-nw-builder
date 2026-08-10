@@ -76,7 +76,7 @@ export function buildFromLoadout(
   if (gameClass) build.context.class = gameClass;
 
   const race = raceFromSpecies(character.species);
-  if (race) build.context.race = race;
+  if (race) build.choices["raceLeveling.race"] = race;
 
   const outcomes: SlotOutcome[] = [];
   const occupied = new Set<string>();

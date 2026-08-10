@@ -253,7 +253,7 @@
     "Player_Wizard": "wizard"
   },
   "speciesToRace": {
-    "Aasimar": "aasimar",
+    "Aasimar": "race-aasimar",
     "Human": "human"
   }
 }

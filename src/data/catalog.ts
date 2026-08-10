@@ -327,7 +327,6 @@ const ITEM_FIELDS = new Set([
   "tags",
   "maxCopies",
   "allowedClass",
-  "allowedRace",
   "dynamicStat",
   "dynamicMin",
   "dynamicMax",
@@ -471,7 +470,6 @@ function checkConditions(
 // under a scalar field ("class.tier") overwrites that scalar with an object.
 const CONTEXT_SCALAR_KEYS = new Set([
   "class",
-  "race",
   "role",
   "combatType",
   "damageType",
@@ -732,10 +730,6 @@ export function validate(
   const classes = new Set(
     (classSlot?.options?.map((o) => o.value) ?? []).filter(Boolean),
   );
-  const raceSlot = findParamSlot(allSlots, "race");
-  const races = new Set(
-    (raceSlot?.options?.map((o) => o.value) ?? []).filter(Boolean),
-  );
   const setIds = new Set(bonusSets.map((set) => set.id));
   const itemIds = new Set(items.map((item) => item.id).filter(Boolean));
   const seenIds = new Set();
@@ -866,10 +860,6 @@ export function validate(
       if (!classes.has(cls))
         report("error", `allowedClass "${cls}" is not a class`, item.id);
     }
-    for (const race of item.allowedRace ?? []) {
-      if (!races.has(race))
-        report("error", `allowedRace "${race}" is not a race`, item.id);
-    }
     for (const setId of item.bonuses ?? []) {
       if (!setIds.has(setId)) {
         report("warn", `bonus "${setId}" has no definition`, item.id);
@@ -954,7 +944,6 @@ const ITEM_TRAILING_KEYS = [
   "dynamicMin",
   "dynamicMax",
   "allowedClass",
-  "allowedRace",
   "tags",
   "bonuses",
   "excludes",

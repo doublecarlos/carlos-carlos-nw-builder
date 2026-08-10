@@ -314,7 +314,7 @@ function derive(db: Db, build: Build, stages: Stages): DerivedOutputs {
 
 // --- validation ---
 
-/** Class/race-restriction and maxCopies checks for one item occupying one slot -- identical shape
+/** Class-restriction and maxCopies checks for one item occupying one slot -- identical shape
  *  whether the item came from an item_picker's resolved row or a point_assignment's per-item
  *  count, so both loops in `findErrors` share this instead of duplicating the two checks. */
 function checkItemErrors(
@@ -333,17 +333,6 @@ function checkItemErrors(
       kind: "class",
       choice: item.name,
       message: `${item.name} requires ${allowed.join(" or ")}`,
-      severity: "error",
-    });
-  }
-
-  const allowedRace = item.allowedRace;
-  if (allowedRace && !allowedRace.includes(context.race)) {
-    errors.push({
-      slotId,
-      kind: "race",
-      choice: item.name,
-      message: `${item.name} requires ${allowedRace.join(" or ")}`,
       severity: "error",
     });
   }
