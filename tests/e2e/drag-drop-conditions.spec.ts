@@ -23,19 +23,17 @@ test("dragging a condition group reorders it within the same branch", async ({
   await openNewBonusSet(page);
   await page.getByTitle("Add grant").click();
 
-  await page
-    .getByTestId("condition-empty-drop")
-    .getByTitle('Add "Not" condition group')
-    .click();
-
-  // `.first()` throughout: a group row's own toolbar button and its (still-empty) branch's
-  // duplicate "add" button share the same title, and the row's own comes first in DOM order.
-  const rows = page.getByTestId("condition-row");
-  await rows.nth(0).getByTitle('Add "Any of" condition group').first().click();
-  await rows.nth(1).getByTitle('Add "All of" condition group').first().click();
+  // Nested branches get their own (initially empty) `condition-empty-drop` too, but this
+  // grant's own trailing toolbar is always the last one in DOM order -- every nested one is
+  // rendered inside an earlier row, closed before this instance's own trailing div opens.
+  const emptyDrop = page.getByTestId("condition-empty-drop").last();
+  await emptyDrop.getByTitle('Add "Not" condition group').click();
+  await emptyDrop.getByTitle('Add "Any of" condition group').click();
+  await emptyDrop.getByTitle('Add "All of" condition group').click();
 
   // All three branches start empty, so each row's own op-label is the only one under it --
   // safe to read in plain DOM order without scoping per row.
+  const rows = page.getByTestId("condition-row");
   const opLabels = page.getByTestId("condition-op-label");
   await expect(rows).toHaveCount(3);
   await expect(opLabels).toHaveText(["not", "any of", "all of"]);
@@ -56,14 +54,13 @@ test("dragging an existing condition into a freshly-added 'not' block moves it i
   await openNewBonusSet(page);
   await page.getByTitle("Add grant").click();
 
-  await page
-    .getByTestId("condition-empty-drop")
-    .getByTitle("Add condition")
-    .click();
+  // Both the leaf and the "not" group are appended via this grant's own trailing toolbar --
+  // there's no per-row "add" button anymore, only this rows-list-level one.
+  const emptyDrop = page.getByTestId("condition-empty-drop").last();
+  await emptyDrop.getByTitle("Add condition").click();
+  await emptyDrop.getByTitle('Add "Not" condition group').click();
 
   const rows = page.getByTestId("condition-row");
-  await expect(rows).toHaveCount(1);
-  await rows.nth(0).getByTitle('Add "Not" condition group').click();
   await expect(rows).toHaveCount(2);
 
   const notGroupBoxBefore = rows.nth(1).getByTestId("condition-group-box");

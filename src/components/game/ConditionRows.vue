@@ -113,13 +113,6 @@ function addGroup(op: string, index?: number) {
 function removeRow(index: number) {
   replaceRows(props.rows.filter((_, i) => i !== index));
 }
-function insertLeaf(index: number) {
-  replaceRows([
-    ...props.rows.slice(0, index + 1),
-    newLeafRow(),
-    ...props.rows.slice(index + 1),
-  ]);
-}
 function duplicateRow(index: number) {
   replaceRows([
     ...props.rows.slice(0, index + 1),
@@ -129,7 +122,7 @@ function duplicateRow(index: number) {
 }
 
 /** `toIndex` is relative to this rows list as it stands now (before the moved row is
- *  removed) -- same contract as `moveRow`'s delta and drag-and-drop's drop-index math. */
+ *  removed) -- same contract as drag-and-drop's drop-index math. */
 function moveRowTo(index: number, toIndex: number) {
   const clamped = Math.max(0, Math.min(props.rows.length, toIndex));
   const insertAt = reorderIndex(index, clamped);
@@ -140,13 +133,9 @@ function moveRowTo(index: number, toIndex: number) {
   replaceRows(items);
 }
 
-function moveRow(index: number, delta: number) {
-  moveRowTo(index, index + delta);
-}
-
 // --- drag-and-drop: reorder within this rows list, or transfer into a different one --------
-// A drop landing in this same rows list (same treeId + path) is a local reorder, handled the
-// same way the move-up/down buttons are. A drop landing anywhere else -- a sibling branch, a
+// A drop landing in this same rows list (same treeId + path) is a local reorder, handled by
+// drag-and-drop alone (no move-up/down buttons at this level). A drop landing anywhere else -- a
 // different grant/variant's tree, a different bonus entirely -- can't be resolved here (this
 // component only ever sees its own `rows` array, never the tree it's part of), so it's
 // reported upward via `transfer` instead. This is also how dragging a condition into a nested
@@ -358,38 +347,8 @@ function changeParamKey(row: ConditionRow, key: string) {
         >
           <GripVertical />
         </span>
-        <IconButton title="Move up" :disabled="i === 0" @click="moveRow(i, -1)"
-          ><ArrowUp
-        /></IconButton>
-        <IconButton
-          title="Move down"
-          :disabled="i === rows.length - 1"
-          @click="moveRow(i, 1)"
-          ><ArrowDown
-        /></IconButton>
         <IconButton title="Duplicate" @click="duplicateRow(i)"
           ><Copy
-        /></IconButton>
-        <IconButton title="Add condition" @click="insertLeaf(i)"
-          ><Plus
-        /></IconButton>
-        <IconButton
-          v-if="canNest"
-          title='Add "All of" condition group'
-          @click="addGroup('all', i)"
-          ><Ampersand
-        /></IconButton>
-        <IconButton
-          v-if="canNest"
-          title='Add "Any of" condition group'
-          @click="addGroup('any', i)"
-          ><Split
-        /></IconButton>
-        <IconButton
-          v-if="canNest"
-          title='Add "Not" condition group'
-          @click="addGroup('not', i)"
-          ><CircleAlert
         /></IconButton>
         <IconButton title="Remove condition" @click="removeRow(i)"
           ><Trash
@@ -585,51 +544,6 @@ function changeParamKey(row: ConditionRow, key: string) {
       </div>
 
       <div v-else class="flex flex-wrap items-center gap-1.5 mb-1">
-        <span
-          data-testid="condition-drag-handle"
-          title="Drag to reorder or move into a block"
-          class="cursor-grab text-muted hover:text-accent [&_svg]:size-[14px]"
-          v-bind="dragHandleProps(i)"
-        >
-          <GripVertical />
-        </span>
-        <IconButton title="Move up" :disabled="i === 0" @click="moveRow(i, -1)"
-          ><ArrowUp
-        /></IconButton>
-        <IconButton
-          title="Move down"
-          :disabled="i === rows.length - 1"
-          @click="moveRow(i, 1)"
-          ><ArrowDown
-        /></IconButton>
-        <IconButton title="Duplicate" @click="duplicateRow(i)"
-          ><Copy
-        /></IconButton>
-        <IconButton title="Add condition" @click="insertLeaf(i)"
-          ><Plus
-        /></IconButton>
-        <IconButton
-          v-if="canNest"
-          title='Add "All of" condition group'
-          @click="addGroup('all', i)"
-          ><Ampersand
-        /></IconButton>
-        <IconButton
-          v-if="canNest"
-          title='Add "Any of" condition group'
-          @click="addGroup('any', i)"
-          ><Split
-        /></IconButton>
-        <IconButton
-          v-if="canNest"
-          title='Add "Not" condition group'
-          @click="addGroup('not', i)"
-          ><CircleAlert
-        /></IconButton>
-        <IconButton title="Remove condition" @click="removeRow(i)"
-          ><Trash
-        /></IconButton>
-
         <!-- A condition tree can sit on either a plain or already-recessed background
              depending where it's embedded, so the fill mixes in the current text colour at
              low alpha rather than a fixed surface colour -- it reads as a step down from
@@ -640,33 +554,34 @@ function changeParamKey(row: ConditionRow, key: string) {
         >
           <div class="flex flex-wrap items-center gap-1 mb-0.5">
             <span
+              data-testid="condition-drag-handle"
+              title="Drag to reorder or move into a block"
+              class="cursor-grab text-muted hover:text-accent [&_svg]:size-[14px]"
+              v-bind="dragHandleProps(i)"
+            >
+              <GripVertical />
+            </span>
+            <span
               data-testid="condition-op-label"
               class="rounded bg-surface-2 px-1.5 text-sm font-semibold uppercase tracking-wide"
               >{{ opLabel(row.op) }}</span
             >
+            <IconButton title="Duplicate" @click="duplicateRow(i)"
+              ><Copy
+            /></IconButton>
+            <IconButton title="Remove condition" @click="removeRow(i)"
+              ><Trash
+            /></IconButton>
           </div>
           <div class="flex flex-col divide-y divide-dashed divide-line">
             <div v-for="(branch, bi) in row.branches" :key="bi" class="py-0.5">
               <div
-                v-if="row.op !== 'not' && bi > 0"
-                class="my-0.5 text-sm uppercase text-muted"
-              >
-                {{ row.op === "any" ? "or" : "and" }}
-              </div>
-              <ConditionRows
-                :rows="branch"
-                :depth="depth + 1"
-                :set-ids="setIds"
-                :tree-id="treeId"
-                :path="[...path, i, bi]"
-                @update="(updated) => (row.branches![bi] = updated)"
-                @transfer="forwardTransfer"
-              />
-              <div
                 v-if="row.op !== 'not'"
                 class="my-1 flex items-center gap-0.5"
               >
-                <span class="text-sm text-muted">Branch: </span>
+                <span class="my-0.5 text-sm uppercase pr-1">
+                  Condition {{ bi + 1 }}
+                </span>
                 <IconButton
                   title="Move branch up"
                   :disabled="bi === 0"
@@ -693,7 +608,18 @@ function changeParamKey(row: ConditionRow, key: string) {
                   @click="removeBranch(row, bi)"
                   ><Trash
                 /></IconButton>
+                <hr class="flex-1" />
               </div>
+              <ConditionRows
+                :rows="branch"
+                :depth="depth + 1"
+                :set-ids="setIds"
+                :tree-id="treeId"
+                :path="[...path, i, bi]"
+                class="ml-4 border-l-1 border-solid pl-2"
+                @update="(updated) => (row.branches![bi] = updated)"
+                @transfer="forwardTransfer"
+              />
             </div>
           </div>
         </div>
@@ -701,7 +627,6 @@ function changeParamKey(row: ConditionRow, key: string) {
     </div>
 
     <div
-      v-if="!rows.length"
       data-testid="condition-empty-drop"
       class="mt-1 flex flex-wrap items-center gap-1 rounded-md border-2 border-dashed border-transparent p-0.5"
       :class="dropList().isActiveContainer.value && '!border-accent'"
