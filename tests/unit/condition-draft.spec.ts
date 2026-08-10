@@ -12,6 +12,8 @@ import {
   getConditionAt,
   removeConditionAt,
   insertConditionAt,
+  removeBranchAt,
+  insertBranchAt,
   isDescendantPath,
   adjustPathAfterRemoval,
   type ConditionRow,
@@ -264,5 +266,74 @@ describe("condition-draft path addressing", () => {
     expect(rows).toHaveLength(1);
     expect(rows[0].branches![0]).toHaveLength(1);
     expect(rows[0].branches![0][0]).toBe(dragged);
+  });
+
+  describe("branch addressing (whole-branch drag-and-drop)", () => {
+    // rows = [ group(any) [ [leaf(a)], [leaf(b)] ], group(all) [ [leaf(c)], [leaf(d)] ] ]
+    function branchTree(): ConditionRow[] {
+      const any = newGroupRow("any");
+      any.branches = [[leaf("toggle", "a")], [leaf("toggle", "b")]];
+      const all = newGroupRow("all");
+      all.branches = [[leaf("toggle", "c")], [leaf("toggle", "d")]];
+      return [any, all];
+    }
+
+    it("removeBranchAt splices a branch out of its group and renumbers siblings", () => {
+      const rows = branchTree();
+      const removed = removeBranchAt(rows, [0], 0);
+      expect(removed?.[0].value).toBe("a");
+      expect(rows[0].branches).toHaveLength(1);
+      expect(rows[0].branches![0][0].value).toBe("b");
+    });
+
+    it("removeBranchAt is a no-op for an out-of-range branch or non-group path", () => {
+      const rows = branchTree();
+      expect(removeBranchAt(rows, [0], 9)).toBeUndefined();
+      expect(rows[0].branches).toHaveLength(2);
+      // [0, 0, 0] is a leaf inside a branch, not a group row -- has no `branches` of its own.
+      expect(removeBranchAt(rows, [0, 0, 0], 0)).toBeUndefined();
+    });
+
+    it("insertBranchAt splices a branch into the target group at a clamped index", () => {
+      const rows = branchTree();
+      const dragged = removeBranchAt(rows, [0], 0)!;
+      insertBranchAt(rows, [1], 1, dragged);
+      expect(rows[1].branches).toHaveLength(3);
+      expect(rows[1].branches![1][0].value).toBe("a");
+
+      // Out-of-range index clamps to the end, same as insertConditionAt.
+      const another = removeBranchAt(rows, [0], 0)!;
+      insertBranchAt(rows, [1], 999, another);
+      expect(rows[1].branches![rows[1].branches!.length - 1][0].value).toBe(
+        "b",
+      );
+    });
+
+    it("insertBranchAt is a no-op when the group path doesn't resolve to a group row", () => {
+      const rows = branchTree();
+      insertBranchAt(rows, [0, 0, 0], 0, [leaf("toggle", "x")]);
+      expect(rows[0].branches).toHaveLength(2);
+      expect(rows[1].branches).toHaveLength(2);
+    });
+
+    it("a remove-then-insert round trip moves a branch's content across groups intact", () => {
+      const rows = branchTree();
+      const dragged = removeBranchAt(rows, [0], 1)!; // branch [leaf(b)]
+      insertBranchAt(rows, [1], 0, dragged);
+      expect(rows[0].branches).toHaveLength(1);
+      expect(rows[0].branches![0][0].value).toBe("a");
+      expect(rows[1].branches).toHaveLength(3);
+      expect(rows[1].branches![0]).toBe(dragged);
+      expect(rows[1].branches![0][0].value).toBe("b");
+    });
+
+    it("isDescendantPath guards a branch from being dropped into its own nested content", () => {
+      // A group nested inside branch [0, 1]'s own content lives at e.g. [0, 1, 0].
+      const nestedGroupPath = [0, 1, 0];
+      // The branch's own rows-list address is [groupPath..., branchIndex] = [0, 1].
+      expect(isDescendantPath([0, 1], nestedGroupPath)).toBe(true);
+      // An unrelated group elsewhere in the tree is not a descendant.
+      expect(isDescendantPath([0, 1], [1])).toBe(false);
+    });
   });
 });

@@ -10,8 +10,6 @@ import ComboBox from "../ui/ComboBox.vue";
 import IconButton from "../ui/IconButton.vue";
 import {
   Ampersand,
-  ArrowDown,
-  ArrowUp,
   CircleAlert,
   CirclePlus,
   Copy,
@@ -48,6 +46,16 @@ export interface ConditionTreeLocation {
   path: number[];
 }
 
+/** Where one *branch* currently lives, for the same kind of cross-tree drag-and-drop transfer
+ *  as `ConditionTreeLocation`, but addressing a whole branch of a group row rather than a
+ *  single row. `groupPath` is a `ConditionTreeLocation`-style path to the group row itself
+ *  (not one of its branches); `branchIndex` then picks the branch. */
+export interface ConditionBranchTreeLocation {
+  treeId: string;
+  groupPath: number[];
+  branchIndex: number;
+}
+
 const emit = defineEmits<{
   update: [rows: ConditionRow[]];
   /** A condition row was dropped into a different rows-list than the one it came from --
@@ -58,6 +66,14 @@ const emit = defineEmits<{
    *  ConditionRows instance just re-emits its children's `transfer` unchanged. */
   transfer: [
     payload: { source: ConditionTreeLocation; target: ConditionTreeLocation },
+  ];
+  /** Same as `transfer`, but for a whole branch dropped into a different group's branches --
+   *  see `branchesDropList` below. */
+  transferBranch: [
+    payload: {
+      source: ConditionBranchTreeLocation;
+      target: ConditionBranchTreeLocation;
+    },
   ];
 }>();
 
@@ -183,6 +199,12 @@ function forwardTransfer(payload: {
 }) {
   emit("transfer", payload);
 }
+function forwardBranchTransfer(payload: {
+  source: ConditionBranchTreeLocation;
+  target: ConditionBranchTreeLocation;
+}) {
+  emit("transferBranch", payload);
+}
 
 // These four all operate on a group row's `branches` (always set for a `kind: 'group'` row,
 // guaranteed by newGroupRow). We replace the affected row with a new copy that has the
@@ -225,15 +247,74 @@ function duplicateBranch(row: ConditionRow, index: number) {
   ]);
 }
 
-function moveBranch(row: ConditionRow, index: number, delta: number) {
-  const to = index + delta;
-  if (to < 0 || to >= row.branches!.length) return;
+/** `toIndex` is relative to `row.branches` as it stands now, before the moved branch is
+ *  removed -- same contract as `moveRowTo`'s and drag-and-drop's drop-index math. */
+function moveBranchTo(row: ConditionRow, index: number, toIndex: number) {
   const rowIndex = props.rows.indexOf(row);
   if (rowIndex === -1) return;
+  const clamped = Math.max(0, Math.min((row.branches ?? []).length, toIndex));
+  const insertAt = reorderIndex(index, clamped);
+  if (insertAt === index) return;
   const branches = row.branches!.slice();
   const [item] = branches.splice(index, 1);
-  branches.splice(to, 0, item);
+  branches.splice(insertAt, 0, item);
   replaceRowAndUpdateBranches(rowIndex, branches);
+}
+
+// A branch dropped onto its own group's branches list reorders locally (moveBranchTo, same as
+// dropList()'s same-container case for rows). A branch dropped onto a *different* group's
+// branches list -- possibly a different grant/variant's tree, or a different bonus entirely --
+// can't be resolved here (this component only sees the one group's `branches` it's rendering),
+// so it bubbles up via `transferBranch`, mirroring `transfer` above. A `not` group always has
+// exactly one branch (see newGroupRow), so it's never a valid transfer target -- excluded via
+// `accepts` rather than left to fail inside `onDrop`, so it also never shows as a drop target.
+function branchesDropList(row: ConditionRow, groupIndex: number) {
+  const id = `branches:${props.treeId}:${row.uid}`;
+  return useDropList({
+    containerId: id,
+    accepts: (source) => source.kind === "condition-branch" && row.op !== "not",
+    onDrop: (source, index) => {
+      if (source.containerId === id) {
+        moveBranchTo(row, source.index, index);
+        return;
+      }
+      const from = source.data as ConditionBranchTreeLocation | undefined;
+      if (!from) return;
+      const targetGroupPath = [...props.path, groupIndex];
+      // Refuse to drop a branch into (or as a branch of) a group nested inside its own
+      // content -- would nest it inside itself. `from.groupPath`/`branchIndex` together
+      // address the branch's own rows-list, the same way a dragged row's `path` does.
+      if (
+        isDescendantPath([...from.groupPath, from.branchIndex], targetGroupPath)
+      )
+        return;
+      emit("transferBranch", {
+        source: from,
+        target: {
+          treeId: props.treeId,
+          groupPath: targetGroupPath,
+          branchIndex: index,
+        },
+      });
+    },
+  });
+}
+function branchDragHandleProps(
+  row: ConditionRow,
+  groupIndex: number,
+  branchIndex: number,
+) {
+  return useDragHandle((): DragSource => ({
+    kind: "condition-branch",
+    containerId: `branches:${props.treeId}:${row.uid}`,
+    key: String(branchIndex),
+    index: branchIndex,
+    data: {
+      treeId: props.treeId,
+      groupPath: [...props.path, groupIndex],
+      branchIndex,
+    } satisfies ConditionBranchTreeLocation,
+  }));
 }
 
 // Each leaf type carries different fields; reset to the new type's defaults.
@@ -574,26 +655,34 @@ function changeParamKey(row: ConditionRow, key: string) {
             /></IconButton>
           </div>
           <div class="flex flex-col divide-y divide-dashed divide-line">
-            <div v-for="(branch, bi) in row.branches" :key="bi" class="py-0.5">
+            <div
+              v-for="(branch, bi) in row.branches"
+              :key="bi"
+              data-testid="condition-branch"
+              class="py-0.5 border-y-2 border-transparent"
+              :class="[
+                branchesDropList(row, i).indicatorAt(bi) === 'before' &&
+                  '!border-t-accent',
+                branchesDropList(row, i).indicatorAt(bi) === 'after' &&
+                  '!border-b-accent',
+              ]"
+              v-bind="branchesDropList(row, i).rowProps(bi)"
+            >
               <div
                 v-if="row.op !== 'not'"
                 class="my-1 flex items-center gap-0.5"
               >
+                <span
+                  data-testid="condition-branch-drag-handle"
+                  title="Drag to reorder"
+                  class="cursor-grab text-muted hover:text-accent [&_svg]:size-[14px]"
+                  v-bind="branchDragHandleProps(row, i, bi)"
+                >
+                  <GripVertical />
+                </span>
                 <span class="my-0.5 text-sm uppercase pr-1">
                   Condition {{ bi + 1 }}
                 </span>
-                <IconButton
-                  title="Move branch up"
-                  :disabled="bi === 0"
-                  @click="moveBranch(row, bi, -1)"
-                  ><ArrowUp
-                /></IconButton>
-                <IconButton
-                  title="Move branch down"
-                  :disabled="bi === (row.branches ?? []).length - 1"
-                  @click="moveBranch(row, bi, 1)"
-                  ><ArrowDown
-                /></IconButton>
                 <IconButton
                   title="Duplicate branch"
                   @click="duplicateBranch(row, bi)"
@@ -619,6 +708,7 @@ function changeParamKey(row: ConditionRow, key: string) {
                 class="ml-4 border-l-1 border-solid pl-2"
                 @update="(updated) => (row.branches![bi] = updated)"
                 @transfer="forwardTransfer"
+                @transfer-branch="forwardBranchTransfer"
               />
             </div>
           </div>
@@ -629,10 +719,14 @@ function changeParamKey(row: ConditionRow, key: string) {
     <div
       data-testid="condition-empty-drop"
       class="mt-1 flex flex-wrap items-center gap-1 rounded-md border-2 border-dashed border-transparent p-0.5"
-      :class="dropList().isActiveContainer.value && '!border-accent'"
-      v-bind="dropList().emptyProps()"
+      :class="
+        dropList().isActiveContainer.value && !rows.length && '!border-accent'
+      "
+      v-bind="rows.length ? {} : dropList().emptyProps()"
     >
-      <span v-if="dropList().isActiveContainer.value" class="text-sm text-muted"
+      <span
+        v-if="dropList().isActiveContainer.value && !rows.length"
+        class="text-sm text-muted"
         >Drop here</span
       >
       <IconButton title="Add condition" @click="addLeaf"><Plus /></IconButton>

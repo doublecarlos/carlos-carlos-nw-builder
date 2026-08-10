@@ -10,7 +10,10 @@
 import { computed, inject } from "vue";
 import PercentInput from "../ui/PercentInput.vue";
 import ComboBox from "../ui/ComboBox.vue";
-import ConditionRows, { type ConditionTreeLocation } from "./ConditionRows.vue";
+import ConditionRows, {
+  type ConditionTreeLocation,
+  type ConditionBranchTreeLocation,
+} from "./ConditionRows.vue";
 import IconButton from "../ui/IconButton.vue";
 import {
   ArrowDown,
@@ -30,7 +33,9 @@ import { focusNextCombo } from "../../lib/stat-row-nav";
 import {
   BonusDraftStore,
   moveConditionAcrossStores,
+  moveBranchAcrossStores,
   type ConditionLocation,
+  type ConditionBranchLocation,
 } from "../../stores/bonus-draft";
 import { bonusDraftRegistryKey } from "../../composables/bonusDraftRegistry";
 import {
@@ -207,6 +212,46 @@ function onConditionTransfer(payload: {
   );
 }
 
+/** Same as `onConditionTransfer`, but for a whole branch dropped into a different group. */
+function onBranchTransfer(payload: {
+  source: ConditionBranchTreeLocation;
+  target: ConditionBranchTreeLocation;
+}) {
+  const sourceInfo = parseTreeId(payload.source.treeId);
+  const targetInfo = parseTreeId(payload.target.treeId);
+  const targetLocation: ConditionBranchLocation = {
+    ...targetInfo.location,
+    groupPath: payload.target.groupPath,
+    branchIndex: payload.target.branchIndex,
+  };
+
+  if (sourceInfo.registryId === props.registryId) {
+    props.store.moveBranch(
+      {
+        ...sourceInfo.location,
+        groupPath: payload.source.groupPath,
+        branchIndex: payload.source.branchIndex,
+      },
+      targetLocation,
+    );
+    return;
+  }
+
+  const sourceStore = bonusDraftRegistry?.get(sourceInfo.registryId);
+  if (!sourceStore) return;
+  moveBranchAcrossStores(
+    {
+      store: sourceStore,
+      location: {
+        ...sourceInfo.location,
+        groupPath: payload.source.groupPath,
+        branchIndex: payload.source.branchIndex,
+      },
+    },
+    { store: props.store, location: targetLocation },
+  );
+}
+
 /** Toggle between simple/form and JSON editing for one grant. If the JSON is unparseable or
  * the structure is too complex for the form, emit an error from the component. */
 function toggleJson(gIndex: number) {
@@ -314,6 +359,7 @@ function toggleJson(gIndex: number) {
           :path="[]"
           @update="(updated) => props.store.setConditions(gIndex, updated)"
           @transfer="onConditionTransfer"
+          @transfer-branch="onBranchTransfer"
         />
 
         <FormSection sub>Description (optional)</FormSection>
@@ -640,6 +686,7 @@ function toggleJson(gIndex: number) {
                   props.store.setVariantConditions(gIndex, vIndex, updated)
               "
               @transfer="onConditionTransfer"
+              @transfer-branch="onBranchTransfer"
             />
             <FormSection sub>Grants</FormSection>
             <div

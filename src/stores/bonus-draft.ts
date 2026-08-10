@@ -14,21 +14,38 @@ import * as bonusDraft from "../engine/bonus-draft";
 import {
   removeConditionAt,
   insertConditionAt,
+  removeBranchAt,
+  insertBranchAt,
+  getConditionAt,
   adjustPathAfterRemoval,
   type ConditionRow,
 } from "../engine/condition-draft";
 import type { GrantDraft } from "../engine/bonus-draft";
 import { reorderIndex } from "../composables/useDragAndDrop";
 
-/** Addresses one condition row within a `BonusDraftStore`'s condition trees, for drag-and-drop
- *  transfers between them -- a grant's own "Active when" tree (`scope: "grant"`) or one of its
- *  variants' "When" trees (`scope: "variant"`). `path` is a condition-draft.ts path within
- *  that tree (see its "path addressing" section). */
-export interface ConditionLocation {
+/** Which of a `BonusDraftStore`'s condition trees a location lives in -- a grant's own
+ *  "Active when" tree (`scope: "grant"`) or one of its variants' "When" trees (`scope:
+ *  "variant"`). Shared by both `ConditionLocation` (addressing a row) and
+ *  `ConditionBranchLocation` (addressing a branch). */
+export interface ConditionTreeAddress {
   grantIndex: number;
   scope: "grant" | "variant";
   variantIndex?: number;
+}
+
+/** Addresses one condition row within a `BonusDraftStore`'s condition trees, for drag-and-drop
+ *  transfers between them. `path` is a condition-draft.ts path within that tree (see its
+ *  "path addressing" section). */
+export interface ConditionLocation extends ConditionTreeAddress {
   path: number[];
+}
+
+/** Addresses one branch of a group row within a `BonusDraftStore`'s condition trees, for
+ *  drag-and-drop transfers between them. `groupPath` is a condition-draft.ts row path pointing
+ *  at the group row itself (not one of its branches); `branchIndex` then picks the branch. */
+export interface ConditionBranchLocation extends ConditionTreeAddress {
+  groupPath: number[];
+  branchIndex: number;
 }
 
 // -- GrantStore ========================================================
@@ -308,7 +325,7 @@ export class BonusDraftStore {
 
   /** The `ConditionRow[]` a condition-tree drag-and-drop location resolves to -- a grant's
    *  own "Active when" tree, or one of its variants' "When" trees. */
-  rowsAt(location: ConditionLocation): ConditionRow[] | undefined {
+  rowsAt(location: ConditionTreeAddress): ConditionRow[] | undefined {
     const g = this._getGrants()[location.grantIndex];
     if (!g) return undefined;
     if (location.scope === "grant") return g.conditions;
@@ -334,6 +351,42 @@ export class BonusDraftStore {
         ? adjustPathAfterRemoval(source.path, target.path)
         : target.path;
     insertConditionAt(targetRows, targetPath, removed);
+    this.onChange();
+  }
+
+  /** Moves a whole branch of a group row from one location in this store's condition trees to
+   *  another, the branch equivalent of `moveCondition`. A group needs at least one branch, so
+   *  this no-ops if the source group only has the one being dragged away; a `not` group always
+   *  has exactly one branch (never draggable in the first place -- ConditionRows.vue never
+   *  renders it a drag handle), so it can't be a target either. */
+  moveBranch(
+    source: ConditionBranchLocation,
+    target: ConditionBranchLocation,
+  ): void {
+    const sourceRows = this.rowsAt(source);
+    const targetRows = this.rowsAt(target);
+    if (!sourceRows || !targetRows) return;
+    const sourceGroup = getConditionAt(sourceRows, source.groupPath);
+    if (!sourceGroup?.branches || sourceGroup.branches.length <= 1) return;
+    const targetGroup = getConditionAt(targetRows, target.groupPath);
+    if (!targetGroup?.branches || targetGroup.op === "not") return;
+
+    const removed = removeBranchAt(
+      sourceRows,
+      source.groupPath,
+      source.branchIndex,
+    );
+    if (!removed) return;
+    // Same shift-after-removal concern as moveCondition, applied to the group's own row path
+    // (the branch removal's "index" is source.branchIndex within source.groupPath's branches).
+    const targetGroupPath =
+      sourceRows === targetRows
+        ? adjustPathAfterRemoval(
+            [...source.groupPath, source.branchIndex],
+            target.groupPath,
+          )
+        : target.groupPath;
+    insertBranchAt(targetRows, targetGroupPath, target.branchIndex, removed);
     this.onChange();
   }
 
@@ -363,6 +416,36 @@ export function moveConditionAcrossStores(
       ? adjustPathAfterRemoval(source.location.path, target.location.path)
       : target.location.path;
   insertConditionAt(targetRows, targetPath, removed);
+  source.store.onChange();
+  if (target.store !== source.store) target.store.onChange();
+}
+
+/** Like `BonusDraftStore.moveBranch`, but across two independently-owned stores -- see
+ *  `moveConditionAcrossStores`. */
+export function moveBranchAcrossStores(
+  source: { store: BonusDraftStore; location: ConditionBranchLocation },
+  target: { store: BonusDraftStore; location: ConditionBranchLocation },
+): void {
+  const sourceRows = source.store.rowsAt(source.location);
+  const targetRows = target.store.rowsAt(target.location);
+  if (!sourceRows || !targetRows) return;
+  const sourceGroup = getConditionAt(sourceRows, source.location.groupPath);
+  if (!sourceGroup?.branches || sourceGroup.branches.length <= 1) return;
+  const targetGroup = getConditionAt(targetRows, target.location.groupPath);
+  if (!targetGroup?.branches || targetGroup.op === "not") return;
+
+  const removed = removeBranchAt(
+    sourceRows,
+    source.location.groupPath,
+    source.location.branchIndex,
+  );
+  if (!removed) return;
+  insertBranchAt(
+    targetRows,
+    target.location.groupPath,
+    target.location.branchIndex,
+    removed,
+  );
   source.store.onChange();
   if (target.store !== source.store) target.store.onChange();
 }

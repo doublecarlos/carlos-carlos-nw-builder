@@ -48,6 +48,94 @@ test("dragging a condition group reorders it within the same branch", async ({
   await expect(opLabels).toHaveText(["any of", "all of", "not"]);
 });
 
+test("dragging a branch reorders it within its group", async ({ page }) => {
+  await openNewBonusSet(page);
+  await page.getByTitle("Add grant").click();
+
+  await page
+    .getByTestId("condition-empty-drop")
+    .last()
+    .getByTitle('Add "Any of" condition group')
+    .click();
+
+  const branches = page.getByTestId("condition-branch");
+  await expect(branches).toHaveCount(2);
+
+  // Give each branch a distinguishable leaf so the drag's effect on branch *content* (not
+  // just the "Condition N" label, which always reflects plain position) is observable.
+  await branches.nth(0).getByTitle("Add condition").click();
+  await branches.nth(1).getByTitle("Add condition").click();
+
+  const leafType = (bi: number) =>
+    branches
+      .nth(bi)
+      .getByTestId("condition-row")
+      .getByTestId("picker-input")
+      .first();
+  await leafType(0).click();
+  await branches.nth(0).getByText("class", { exact: true }).click();
+  await leafType(1).click();
+  await branches.nth(1).getByText("combatType", { exact: true }).click();
+
+  await expect(leafType(0)).toHaveValue("class");
+  await expect(leafType(1)).toHaveValue("combatType");
+
+  // Drag branch 0 onto branch 1 -- lands after it, so their content swaps places.
+  await dragOnto(
+    branches.nth(0).getByTestId("condition-branch-drag-handle"),
+    branches.nth(1),
+    "after",
+  );
+
+  await expect(leafType(0)).toHaveValue("combatType");
+  await expect(leafType(1)).toHaveValue("class");
+});
+
+test("dragging a branch into a different group moves it there", async ({
+  page,
+}) => {
+  await openNewBonusSet(page);
+  await page.getByTitle("Add grant").click();
+
+  const emptyDrop = page.getByTestId("condition-empty-drop").last();
+  await emptyDrop.getByTitle('Add "Any of" condition group').click();
+  await emptyDrop.getByTitle('Add "All of" condition group').click();
+
+  const groups = page.getByTestId("condition-group-box");
+  await expect(groups).toHaveCount(2);
+  const group1Branches = groups.nth(0).getByTestId("condition-branch");
+  const group2Branches = groups.nth(1).getByTestId("condition-branch");
+  await expect(group1Branches).toHaveCount(2);
+  await expect(group2Branches).toHaveCount(2);
+
+  // Mark the dragged branch's content so we can confirm it -- not just an empty slot --
+  // followed the drag into the other group.
+  await group1Branches.nth(0).getByTitle("Add condition").click();
+  const draggedLeafType = group1Branches
+    .nth(0)
+    .getByTestId("condition-row")
+    .getByTestId("picker-input")
+    .first();
+  await draggedLeafType.click();
+  await group1Branches.nth(0).getByText("class", { exact: true }).click();
+
+  // Drag group 1's marked branch onto group 2's last branch -- lands after it.
+  await dragOnto(
+    group1Branches.nth(0).getByTestId("condition-branch-drag-handle"),
+    group2Branches.nth(1),
+    "after",
+  );
+
+  await expect(group1Branches).toHaveCount(1);
+  await expect(group2Branches).toHaveCount(3);
+  const movedLeafType = group2Branches
+    .nth(2)
+    .getByTestId("condition-row")
+    .getByTestId("picker-input")
+    .first();
+  await expect(movedLeafType).toHaveValue("class");
+});
+
 test("dragging an existing condition into a freshly-added 'not' block moves it inside", async ({
   page,
 }) => {

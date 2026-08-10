@@ -234,6 +234,126 @@ describe("BonusDraftStore.moveCondition", () => {
   });
 });
 
+describe("BonusDraftStore.moveBranch", () => {
+  const leaf = (value: string) => {
+    const row = newLeafRow("toggle");
+    row.value = value;
+    return row;
+  };
+
+  it("moves a branch from one grant's group to another grant's group", () => {
+    const { grants, store, changes } = makeMultiGrantStore(2);
+    const any = newGroupRow("any");
+    any.branches = [[leaf("a")], [leaf("b")]];
+    const all = newGroupRow("all");
+    all.branches = [[leaf("c")]];
+    grants[0].conditions = [any];
+    grants[1].conditions = [all];
+    const before = changes();
+
+    store.moveBranch(
+      { grantIndex: 0, scope: "grant", groupPath: [0], branchIndex: 0 },
+      { grantIndex: 1, scope: "grant", groupPath: [0], branchIndex: 1 },
+    );
+
+    expect(grants[0].conditions[0].branches).toHaveLength(1);
+    expect(grants[0].conditions[0].branches![0][0].value).toBe("b");
+    expect(grants[1].conditions[0].branches).toHaveLength(2);
+    expect(grants[1].conditions[0].branches!.map((b) => b[0].value)).toEqual([
+      "c",
+      "a",
+    ]);
+    expect(changes()).toBe(before + 1);
+  });
+
+  it("adjusts the target group path when moving within one tree shifts a sibling's index", () => {
+    // rows = [ group(any) [ [a], [b] ], group(all) [ [c] ] ] -- dragging branch 0 out of the
+    // first group shifts it from index 0 to nothing, but the second group's own row index
+    // (originally 1) shifts down to 0 once the first group's branch count changes... actually
+    // the group *row* index only shifts when a *row* is removed, not a branch -- this instead
+    // covers a group nested inside a sibling *branch* shifting when an earlier branch of the
+    // same parent group is removed.
+    const { gs, grants, store } = makeStore("flat");
+    const outer = newGroupRow("any");
+    const innerTarget = newGroupRow("all");
+    innerTarget.branches = [[leaf("x")], [leaf("y")]];
+    outer.branches = [[leaf("a")], [innerTarget]];
+    gs.grant.conditions = [outer];
+
+    // Drag outer's branch 0 (the "a" leaf's branch) into innerTarget's own group -- innerTarget
+    // lives at groupPath [0, 1, 0] before the removal (rows[0].branches[1][0]), which shifts
+    // to [0, 0, 0] once branch 0 is spliced out from under it.
+    store.moveBranch(
+      { grantIndex: 0, scope: "grant", groupPath: [0], branchIndex: 0 },
+      { grantIndex: 0, scope: "grant", groupPath: [0, 1, 0], branchIndex: 2 },
+    );
+
+    expect(grants[0].conditions[0].branches).toHaveLength(1);
+    const shiftedInner = grants[0].conditions[0].branches![0][0];
+    expect(shiftedInner.branches).toHaveLength(3);
+    expect(shiftedInner.branches!.map((b) => b[0].value)).toEqual([
+      "x",
+      "y",
+      "a",
+    ]);
+  });
+
+  it("is a no-op when dragging away a group's last remaining branch", () => {
+    const { grants, store, changes } = makeMultiGrantStore(2);
+    const any = newGroupRow("any");
+    any.branches = [[leaf("a")]];
+    const all = newGroupRow("all");
+    all.branches = [[leaf("c")]];
+    grants[0].conditions = [any];
+    grants[1].conditions = [all];
+    const before = changes();
+
+    store.moveBranch(
+      { grantIndex: 0, scope: "grant", groupPath: [0], branchIndex: 0 },
+      { grantIndex: 1, scope: "grant", groupPath: [0], branchIndex: 0 },
+    );
+
+    expect(grants[0].conditions[0].branches).toHaveLength(1);
+    expect(grants[1].conditions[0].branches).toHaveLength(1);
+    expect(changes()).toBe(before);
+  });
+
+  it("is a no-op when the target is a 'not' group (always exactly one branch)", () => {
+    const { grants, store, changes } = makeMultiGrantStore(2);
+    const any = newGroupRow("any");
+    any.branches = [[leaf("a")], [leaf("b")]];
+    const not = newGroupRow("not");
+    grants[0].conditions = [any];
+    grants[1].conditions = [not];
+    const before = changes();
+
+    store.moveBranch(
+      { grantIndex: 0, scope: "grant", groupPath: [0], branchIndex: 0 },
+      { grantIndex: 1, scope: "grant", groupPath: [0], branchIndex: 0 },
+    );
+
+    expect(grants[0].conditions[0].branches).toHaveLength(2);
+    expect(grants[1].conditions[0].branches).toHaveLength(1);
+    expect(changes()).toBe(before);
+  });
+
+  it("is a no-op when either location doesn't resolve (stale grant/variant index)", () => {
+    const { grants, store, changes } = makeMultiGrantStore(1);
+    const any = newGroupRow("any");
+    any.branches = [[leaf("a")], [leaf("b")]];
+    grants[0].conditions = [any];
+    const before = changes();
+
+    store.moveBranch(
+      { grantIndex: 0, scope: "grant", groupPath: [0], branchIndex: 0 },
+      { grantIndex: 5, scope: "grant", groupPath: [0], branchIndex: 0 },
+    );
+
+    expect(grants[0].conditions[0].branches).toHaveLength(2);
+    expect(changes()).toBe(before);
+  });
+});
+
 describe("BonusDraftStore setIds wiring", () => {
   it("setPayload('tiers') seeds the auto-created tier with the first set id", () => {
     const { gs } = makeStore("tiers", ["set-a", "set-b"]);

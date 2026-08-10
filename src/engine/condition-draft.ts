@@ -386,6 +386,34 @@ export function insertConditionAt(
   list.splice(index, 0, row);
 }
 
+/** Splices the branch at `branchIndex` out of the group row at `groupPath` and returns it,
+ *  or `undefined` if either doesn't resolve. `groupPath` uses the same row-path addressing
+ *  as `getConditionAt` -- it points at the group row itself, not one of its branches. */
+export function removeBranchAt(
+  rows: ConditionRow[],
+  groupPath: number[],
+  branchIndex: number,
+): ConditionRow[] | undefined {
+  const branches = getConditionAt(rows, groupPath)?.branches;
+  if (!branches || branchIndex < 0 || branchIndex >= branches.length)
+    return undefined;
+  return branches.splice(branchIndex, 1)[0];
+}
+
+/** Splices `branch` into the group row at `groupPath`'s branches, at a clamped insertion
+ *  index. No-op if `groupPath` doesn't resolve to a group row. */
+export function insertBranchAt(
+  rows: ConditionRow[],
+  groupPath: number[],
+  branchIndex: number,
+  branch: ConditionRow[],
+): void {
+  const branches = getConditionAt(rows, groupPath)?.branches;
+  if (!branches) return;
+  const index = Math.max(0, Math.min(branches.length, branchIndex));
+  branches.splice(index, 0, branch);
+}
+
 /** True when `path` addresses a row at or inside the subtree rooted at `ancestorPath` --
  * i.e. dropping a group there would nest it inside itself. Guards drag-into-block moves;
  * same-list reordering never triggers this since a row's siblings never share its prefix. */
