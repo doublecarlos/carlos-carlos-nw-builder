@@ -59,14 +59,17 @@ export async function filterLayers(page: Page, text: string) {
   await page.getByTestId("nav-layers-filter").fill(text);
 }
 
-/** Clicks the Move up IconButton on the row directly. */
+/** Reorders a row up via Ctrl+↑ -- the row's keyboard-accessible reorder shortcut, now that
+ *  drag-and-drop replaced the old Move up/down buttons. */
 export async function moveUp(row: Locator) {
-  await row.getByTestId("move-up").click();
+  await row.locator(".nav-name").focus();
+  await row.page().keyboard.press("Control+ArrowUp");
 }
 
-/** Clicks the Move down IconButton on the row directly. */
+/** Reorders a row down via Ctrl+↓ -- see `moveUp`. */
 export async function moveDown(row: Locator) {
-  await row.getByTestId("move-down").click();
+  await row.locator(".nav-name").focus();
+  await row.page().keyboard.press("Control+ArrowDown");
 }
 
 /** Toggles the layer checkbox — clicks the checkbox input inside the layer row. */

@@ -1,6 +1,7 @@
 // End-to-end coverage for dragging to reorder builds/layers in the sidebar (issue #182).
-// The existing Move up/down buttons stay in place as the keyboard/screen-reader-accessible
-// path -- see the last test in each section, a regression check that they still work.
+// Ctrl+↑/↓ stays in place as the keyboard/screen-reader-accessible reorder path (the old
+// Move up/down buttons were retired once this shortcut covered the same ground) -- see the
+// last test in each section, a regression check that it still works.
 import { test, expect } from "@playwright/test";
 import { openBuilder } from "./support/app";
 import { buildRow, layerRow, addBuild, addLayer, moveUp } from "./support/nav";

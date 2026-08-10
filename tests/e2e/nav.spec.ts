@@ -130,10 +130,17 @@ test("Move up order survives a reload", async ({ page }) => {
   await expect(buildRows.nth(1)).toContainText("Build 1");
 });
 
-test("Move down is disabled for the last build", async ({ page }) => {
+test("Ctrl+ArrowDown does nothing for the last build", async ({ page }) => {
   await openBuilder(page);
-  const down = buildRow(page, "Build 1").getByTestId("move-down");
-  await expect(down).toBeDisabled();
+  await addBuild(page);
+  await expect(buildRow(page, "Build 2")).toBeVisible();
+
+  await buildRow(page, "Build 2").locator(".nav-name").focus();
+  await page.keyboard.press("Control+ArrowDown");
+
+  const buildRows = page.locator(".nav-row--build");
+  await expect(buildRows.nth(0)).toContainText("Build 1");
+  await expect(buildRows.nth(1)).toContainText("Build 2");
 });
 
 test("Delete moves the build into Recently deleted; Restore puts it back", async ({
@@ -258,17 +265,19 @@ test("the layer filter narrows the list and clearing it restores every row", asy
   await expect(layerRow(page, "Layer 2")).toBeVisible();
 });
 
-test("Move up reorders layers and Move down is disabled at the ends", async ({
+test("Move up reorders layers and Ctrl+ArrowUp does nothing at the top", async ({
   page,
 }) => {
   await openBuilder(page);
   await addLayer(page);
   await addLayer(page);
 
-  // Move up should be disabled for the first layer.
+  // Ctrl+ArrowUp should do nothing for the first layer -- there's no neighbour above it.
   {
-    const up = layerRow(page, "Layer 1").getByTestId("move-up");
-    await expect(up).toBeDisabled();
+    await layerRow(page, "Layer 1").locator(".nav-name").focus();
+    await page.keyboard.press("Control+ArrowUp");
+    const layerRows = page.locator(".nav-row--layer");
+    await expect(layerRows.nth(0)).toContainText("Layer 1");
   }
 
   // Move up on Layer 2 so it becomes first.

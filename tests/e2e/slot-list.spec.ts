@@ -124,13 +124,13 @@ test.describe("section collapse/expand", () => {
     await expect(slotRow(page, "options.class")).toBeVisible();
   });
 
-  test("the Options header's badge only counts its one item_picker slot (Location)", async ({
+  test("the Options header's badge only counts its item_picker slots (Paragon, Location)", async ({
     page,
   }) => {
     await openBuilder(page);
     await expect(
       headerRow(page, "options").locator(".section-count"),
-    ).toHaveText("0/1");
+    ).toHaveText("0/2");
     await expect(headerRow(page, "gear").locator(".section-count")).toHaveText(
       /^\d+\/\d+$/,
     );
@@ -487,7 +487,8 @@ test.describe("text slots", () => {
 // infrastructure as item_picker rows -- Enter-to-focus, type-to-seed, Delete-to-reset --
 // just exercised on a different control type.
 test.describe("keyboard cursor: build_parameter rows", () => {
-  // ArrowDown from the parked Options header: #1 → slot:options.class, #2 → slot:options.role.
+  // ArrowDown from the parked Options header: #1 → slot:options.class, #2 → slot:options.paragon
+  // (an item_picker), #3 → slot:options.role.
   test("Enter on a build_parameter row focuses its control", async ({
     page,
   }) => {
@@ -530,6 +531,7 @@ test.describe("keyboard cursor: build_parameter rows", () => {
   }) => {
     await openBuilder(page);
     await parkOnOptionsHeader(page);
+    await page.keyboard.press("ArrowDown");
     await page.keyboard.press("ArrowDown");
     await page.keyboard.press("ArrowDown");
     await expect(cursorRow(page)).toHaveAttribute(
@@ -581,6 +583,7 @@ test.describe("keyboard cursor: build_parameter rows", () => {
   test("Delete (same as Backspace) resets to default", async ({ page }) => {
     await openBuilder(page);
     await parkOnOptionsHeader(page);
+    await page.keyboard.press("ArrowDown");
     await page.keyboard.press("ArrowDown");
     await page.keyboard.press("ArrowDown");
     await expect(cursorRow(page)).toHaveAttribute(

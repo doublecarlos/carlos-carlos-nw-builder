@@ -1,7 +1,7 @@
 // End-to-end coverage for creating/editing/deleting a section preset through the Layer
 // editor's "Presets" tab (PresetForm.vue), and confirming the result shows up live in the
-// real build editor's "Preset..." menu (section-presets.spec.ts covers applying a *static*,
-// developer-authored preset -- this covers the user-authored path on top of it).
+// real build editor's "Preset..." menu (section-presets.spec.ts covers applying an already-
+// authored preset through that menu -- this covers authoring it in the first place).
 import { test, expect, type Page } from "@playwright/test";
 import {
   openBuilder,
@@ -18,25 +18,28 @@ async function openPresetsTab(page: Page) {
   await page.getByRole("button", { name: /Presets \d+/ }).click();
 }
 
+/** Fills out and saves a new Options-section preset with a single Role parameter. Assumes
+ *  the Presets tab is already open and "New" has already been clicked for this preset. */
+async function saveRolePreset(page: Page, label: string, roleValue: string) {
+  await page.getByTestId("preset-label-input").fill(label);
+  await chooseCombo(page.getByTestId("preset-section-input"), "Options");
+  await page.getByRole("button", { name: "Add a parameter" }).click();
+  const row = page.locator(".preset-row").first();
+  await chooseCombo(
+    row.locator(".relative", { has: page.getByPlaceholder("— pick a slot —") }),
+    "Role",
+  );
+  await chooseCombo(row.locator(".relative").last(), roleValue);
+  await page.getByRole("button", { name: "Save preset" }).click();
+  await expect(page.getByText(`Saved preset "${label}"`)).toBeVisible();
+}
+
 test("creating a preset in a layer makes it available in the build's Preset menu", async ({
   page,
 }) => {
   await openPresetsTab(page);
   await page.getByTestId("new-preset").click();
-
-  await page.getByTestId("preset-label-input").fill("E2E Preset");
-  await chooseCombo(page.getByTestId("preset-section-input"), "Options");
-
-  await page.getByRole("button", { name: "Add a parameter" }).click();
-  const row = page.locator(".preset-row").first();
-  const slotPicker = row.locator(".relative", {
-    has: page.getByPlaceholder("— pick a slot —"),
-  });
-  await chooseCombo(slotPicker, "Role");
-  await chooseCombo(row.locator(".relative").last(), "DPS");
-
-  await page.getByRole("button", { name: "Save preset" }).click();
-  await expect(page.getByText('Saved preset "E2E Preset"')).toBeVisible();
+  await saveRolePreset(page, "E2E Preset", "DPS");
 
   // Back to the build: the new preset shows up in the Options section's menu, and applying
   // it sets role the same way a static preset does (section-presets.spec.ts).
@@ -56,22 +59,18 @@ test("creating a preset in a layer makes it available in the build's Preset menu
   await expect(roleRow.getByTestId("picker-input")).toHaveValue("DPS");
 });
 
-test("deleting a preset removes it from the build's Preset menu", async ({
+test("deleting a preset removes it from the build's Preset menu, leaving the others", async ({
   page,
 }) => {
   await openPresetsTab(page);
+
+  // A second preset stays behind after the delete -- proves the delete removed just the one
+  // preset, not the whole menu (which would also disappear if it were the section's last one).
   await page.getByTestId("new-preset").click();
-  await page.getByTestId("preset-label-input").fill("Temp Preset");
-  await chooseCombo(page.getByTestId("preset-section-input"), "Options");
-  await page.getByRole("button", { name: "Add a parameter" }).click();
-  const row = page.locator(".preset-row").first();
-  await chooseCombo(
-    row.locator(".relative", { has: page.getByPlaceholder("— pick a slot —") }),
-    "Role",
-  );
-  await chooseCombo(row.locator(".relative").last(), "Healer");
-  await page.getByRole("button", { name: "Save preset" }).click();
-  await expect(page.getByText('Saved preset "Temp Preset"')).toBeVisible();
+  await saveRolePreset(page, "Keep Preset", "Tank");
+
+  await page.getByTestId("new-preset").click();
+  await saveRolePreset(page, "Temp Preset", "Healer");
 
   await page.getByRole("button", { name: "Delete" }).click();
   await expect(page.getByText('Removed preset "temp-preset"')).toBeVisible();
@@ -86,4 +85,7 @@ test("deleting a preset removes it from the build's Preset menu", async ({
   await expect(
     popover.getByRole("button", { name: "Temp Preset" }),
   ).toBeHidden();
+  await expect(
+    popover.getByRole("button", { name: "Keep Preset" }),
+  ).toBeVisible();
 });
