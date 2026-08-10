@@ -4,38 +4,6 @@
       "defaultOpen": true,
       "id": "options",
       "label": "Options",
-      "presets": [
-        {
-          "id": "options.dps-magical",
-          "label": "DPS (Magical)",
-          "params": {
-            "options.role": "dps",
-            "options.damageType": "magical"
-          }
-        },
-        {
-          "id": "options.dps-physical",
-          "label": "DPS (Physical)",
-          "params": {
-            "options.role": "dps",
-            "options.damageType": "physical"
-          }
-        },
-        {
-          "id": "options.healer",
-          "label": "Healer",
-          "params": {
-            "options.role": "healer"
-          }
-        },
-        {
-          "id": "options.tank",
-          "label": "Tank",
-          "params": {
-            "options.role": "tank"
-          }
-        }
-      ],
       "slots": [
         {
           "id": "options.class",
@@ -95,6 +63,12 @@
               "linkedItem": "class-to-be-implemented"
             }
           ]
+        },
+        {
+          "id": "options.paragon",
+          "label": "Paragon",
+          "filter": "paragon",
+          "type": "item_picker"
         },
         {
           "id": "options.role",

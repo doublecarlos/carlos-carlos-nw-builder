@@ -4542,5 +4542,41 @@
     "name": "Wildspace",
     "filter": "location",
     "maxCopies": 1
+  },
+  {
+    "id": "paragon-hellbringer",
+    "name": "Hellbringer",
+    "filter": "paragon",
+    "allowedClass": ["warlock"]
+  },
+  {
+    "id": "paragon-soulweaver",
+    "name": "Soulweaver",
+    "filter": "paragon",
+    "allowedClass": ["warlock"]
+  },
+  {
+    "id": "paragon-minstrel",
+    "name": "Minstrel",
+    "filter": "paragon",
+    "allowedClass": ["bard"]
+  },
+  {
+    "id": "paragon-songblade",
+    "name": "Songblade",
+    "filter": "paragon",
+    "allowedClass": ["bard"]
+  },
+  {
+    "id": "paragon-sentinel",
+    "name": "Sentinel",
+    "filter": "paragon",
+    "allowedClass": ["barbarian"]
+  },
+  {
+    "id": "paragon-blademaster",
+    "name": "Blademaster",
+    "filter": "paragon",
+    "allowedClass": ["barbarian"]
   }
 ]
