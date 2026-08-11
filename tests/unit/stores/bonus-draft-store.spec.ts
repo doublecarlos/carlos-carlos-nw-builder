@@ -10,14 +10,14 @@ import { newLeafRow, newGroupRow } from "../../../src/engine/condition-draft";
 /** One-grant store, payload pre-switched when requested, change count tracked. */
 function makeStore(
   payload: "flat" | "tiers" | "variants" | "problem" = "flat",
-  setIds: string[] = [],
+  bonusIds: string[] = [],
 ) {
   const grants = [bonusDraft.toDraft({ when: {}, stats: {} })];
   let changes = 0;
   const store = new BonusDraftStore(
     () => grants,
     () => changes++,
-    setIds,
+    bonusIds,
   );
   const gs = store.grantStore(0)!;
   if (payload !== "flat") gs.setPayload(payload);
@@ -354,10 +354,10 @@ describe("BonusDraftStore.moveBranch", () => {
   });
 });
 
-describe("BonusDraftStore setIds wiring", () => {
-  it("setPayload('tiers') seeds the auto-created tier with the first set id", () => {
+describe("BonusDraftStore bonusIds wiring", () => {
+  it("setPayload('tiers') seeds the auto-created tier with the first bonus id", () => {
     const { gs } = makeStore("tiers", ["set-a", "set-b"]);
-    expect(gs.grant.tiers[0].set).toBe("set-a");
+    expect(gs.grant.tiers[0].bonus).toBe("set-a");
   });
 });
 

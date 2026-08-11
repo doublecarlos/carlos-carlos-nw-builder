@@ -25,7 +25,7 @@ import { deepEqual } from "../../lib/deep-equal";
 import { useDraftHistory } from "../../composables/useDraftHistory";
 import { isPercentKind, kindOf, statPickerOptions } from "../../lib/format";
 import { focusNextCombo } from "../../lib/stat-row-nav";
-import type { Item, Db, BonusSet, BuildParameterSlot } from "../../types";
+import type { Item, Db, Bonus, BuildParameterSlot } from "../../types";
 import type { StatRow } from "../../engine/bonus-draft";
 import BaseCheckbox from "../ui/BaseCheckbox.vue";
 
@@ -64,9 +64,9 @@ const emit = defineEmits<{
   delete: [];
   duplicate: [];
   revert: [];
-  "save-set": [payload: { id: string; set: BonusSet }];
+  "save-set": [payload: { id: string; set: Bonus }];
   "delete-set": [id: string];
-  "update-set": [payload: { id: string; set: BonusSet }];
+  "update-set": [payload: { id: string; set: Bonus }];
 }>();
 
 export interface ItemDraft {

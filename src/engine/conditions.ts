@@ -30,7 +30,7 @@ const countOf = (
 };
 
 /**
- * Range check shared by `duration`, `pieces` and `equipped`.
+ * Range check shared by `duration`, `bonusOccurrences` and `equipped`.
  * `{ atLeast, below }` -- either bound optional, `atLeast` inclusive, `below` exclusive.
  * A bare number is shorthand for `{ atLeast: n }`.
  */
@@ -140,13 +140,13 @@ const LEAVES: Record<
     };
   },
 
-  pieces(spec, ctx) {
-    const s = spec as RangeSpec & { set: string };
-    const have = countOf(ctx.setPieces, s.set);
-    const displayName = ctx.setNames?.get(s.set) ?? s.set;
+  bonusOccurrences(spec, ctx) {
+    const s = spec as RangeSpec & { bonus: string };
+    const have = countOf(ctx.bonusOccurrences, s.bonus);
+    const displayName = ctx.bonusNames?.get(s.bonus) ?? s.bonus;
     return {
       ok: inRange(have, s),
-      label: `${s.atLeast ?? 1} piece(s) of ${displayName}`,
+      label: `${s.atLeast ?? 1} occurrence(s) of ${displayName}`,
       detail: `you have ${have}`,
     };
   },

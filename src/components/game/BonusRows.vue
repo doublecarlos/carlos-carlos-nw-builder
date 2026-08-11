@@ -60,7 +60,7 @@ const props = withDefaults(
 
 const statComboOptions = statPickerOptions;
 const setComboOptions = computed(() =>
-  props.store.setIds.map((s) => ({ value: s, label: s })),
+  props.store.bonusIds.map((s) => ({ value: s, label: s })),
 );
 const isPercent = (key: string) => isPercentKind(kindOf(key));
 
@@ -354,7 +354,7 @@ function toggleJson(gIndex: number) {
         <ConditionRows
           :rows="grant.conditions"
           :depth="0"
-          :set-ids="props.store.setIds"
+          :set-ids="props.store.bonusIds"
           :tree-id="grantTreeId(gIndex)"
           :path="[]"
           @update="(updated) => props.store.setConditions(gIndex, updated)"
@@ -543,10 +543,10 @@ function toggleJson(gIndex: number) {
               /></IconButton>
               <ComboBox
                 class="combo--set w-44"
-                :model-value="tier.set"
+                :model-value="tier.bonus"
                 :options="setComboOptions"
                 placeholder="— set —"
-                @update:model-value="(v) => (tier.set = v)"
+                @update:model-value="(v) => (tier.bonus = v)"
               />
               <input
                 v-model.number="tier.atLeast"
@@ -678,7 +678,7 @@ function toggleJson(gIndex: number) {
             <ConditionRows
               :rows="variant.conditions"
               :depth="0"
-              :set-ids="props.store.setIds"
+              :set-ids="props.store.bonusIds"
               :tree-id="variantTreeId(gIndex, vIndex)"
               :path="[]"
               @update="

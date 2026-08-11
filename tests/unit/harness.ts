@@ -155,7 +155,7 @@ export function format(
   report: {
     db: {
       items: number;
-      bonusSets: number;
+      bonuses: number;
       slots: number;
       duplicates: string[];
     };
@@ -167,7 +167,7 @@ export function format(
   limit = 30,
 ) {
   const lines = [
-    `db: ${report.db.items} items, ${report.db.bonusSets} bonus sets, ` +
+    `db: ${report.db.items} items, ${report.db.bonuses} bonus sets, ` +
       `${report.db.slots} slots` +
       (report.db.duplicates.length
         ? `, DUPLICATES: ${report.db.duplicates}`

@@ -34,7 +34,7 @@ const exportText = computed(() => {
   }
   if (activeTab.value === "bonuses") {
     const allEnabled = catalog.compose(layers.enabledOverlays.value);
-    return catalog.toBonusesFile(allEnabled.bonusSets);
+    return catalog.toBonusesFile(allEnabled.bonuses);
   }
   if (activeTab.value === "slots") {
     // Slots themselves aren't overlay-editable (only presets are), so `NW_SLOTS.sections`/

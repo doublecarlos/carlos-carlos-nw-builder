@@ -122,7 +122,7 @@ function tierLadder(entry: EvaluatedBonus) {
       : null;
   return tiers
     .map((tier) => ({
-      pieces: tier.pieces?.atLeast ?? 1,
+      pieces: tier.bonusOccurrences?.atLeast ?? 1,
       stats: statList(tier.stats),
     }))
     .sort((a, b) => a.pieces - b.pieces)

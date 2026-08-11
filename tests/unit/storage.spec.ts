@@ -20,7 +20,7 @@ describe("overlay localStorage", () => {
       items: {
         "some-id": { id: "some-id", name: "Test", filter: "gear_head" },
       },
-      bonusSets: {},
+      bonuses: {},
       sectionPresets: {},
     };
     storage.saveOverlay(overlay);
@@ -28,11 +28,11 @@ describe("overlay localStorage", () => {
 
     window.localStorage.setItem(
       "nw:catalog-overlay",
-      JSON.stringify({ items: {}, bonusSets: { x: null } }),
+      JSON.stringify({ items: {}, bonuses: { x: null } }),
     );
     expect(storage.loadOverlay()).toEqual({
       items: {},
-      bonusSets: { x: null },
+      bonuses: { x: null },
       sectionPresets: {},
     });
   });
@@ -121,7 +121,7 @@ describe("defaultLayer / normaliseLayer", () => {
       items: {
         "test-id": { id: "test-id", name: "Test", filter: "gear_head" },
       },
-      bonusSets: {},
+      bonuses: {},
       sectionPresets: {},
     };
     const layer = storage.normaliseLayer({ overlay });
@@ -524,14 +524,14 @@ describe("toBuildJson with db (portable files)", () => {
     const db = {
       get: (id: string | null | undefined) =>
         id === "layer-item" ? layerItem : null,
-      bonusSetById: new Map([[layerSet.id, layerSet]]),
+      bonusById: new Map([[layerSet.id, layerSet]]),
       slots: [],
     } as unknown as Db;
 
     const json = JSON.parse(storage.toBuildJson(build, db));
     expect(json.data.catalog).toBeDefined();
     expect(json.data.catalog.items["layer-item"]).toBeDefined();
-    expect(json.data.catalog.bonusSets["layer-set"]).toBeDefined();
+    expect(json.data.catalog.bonuses["layer-set"]).toBeDefined();
   });
 
   it("does not embed catalog when build references only shipped items", () => {
@@ -551,7 +551,7 @@ describe("toBuildJson with db (portable files)", () => {
     const db = {
       get: (id: string | null | undefined) =>
         id === BASE_ITEM_ID ? shippedItem : null,
-      bonusSetById: new Map(),
+      bonusById: new Map(),
       slots: [],
     } as unknown as Db;
 
@@ -579,7 +579,7 @@ describe("toBuildJson with db (portable files)", () => {
     const db = {
       get: (id: string | null | undefined) =>
         id === "layer-item" ? layerItem : null,
-      bonusSetById: new Map([[layerSet.id, layerSet]]),
+      bonusById: new Map([[layerSet.id, layerSet]]),
       slots: [],
     } as unknown as Db;
 
@@ -589,7 +589,7 @@ describe("toBuildJson with db (portable files)", () => {
     // The embedded catalog should survive the parseJson round-trip
     expect(parsed[0].catalog).toBeDefined();
     expect(parsed[0].catalog?.items["layer-item"]).toBeDefined();
-    expect(parsed[0].catalog?.bonusSets["layer-set"]).toBeDefined();
+    expect(parsed[0].catalog?.bonuses["layer-set"]).toBeDefined();
   });
 
   it("a build exported without db does not embed catalog", () => {
@@ -638,7 +638,7 @@ describe("bundle round trip", () => {
       items: {
         "layer-item": { id: "layer-item", name: "Layer", filter: "gear_head" },
       },
-      bonusSets: {},
+      bonuses: {},
       sectionPresets: {},
     };
 

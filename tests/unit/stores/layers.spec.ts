@@ -145,7 +145,7 @@ describe("layers store", () => {
     const l = layers.createLayer();
     layers.updateOverlay(l.id, {
       items: { "custom-item": { id: "custom-item", name: "Test" } },
-      bonusSets: {},
+      bonuses: {},
       sectionPresets: {},
     });
     layers.setLayerEnabled(l.id, false);
@@ -158,7 +158,7 @@ describe("layers store", () => {
     const l = layers.createLayer();
     layers.updateOverlay(l.id, {
       items: {},
-      bonusSets: {},
+      bonuses: {},
       sectionPresets: {
         "custom-preset": {
           id: "custom-preset",

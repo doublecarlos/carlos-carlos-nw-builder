@@ -584,10 +584,6 @@
       {
         "tiers": [
           {
-            "pieces": {
-              "set": "executioner-s-covenant",
-              "atLeast": 1
-            },
             "stats": {
               "acc": 1500,
               "ca": 1500,
@@ -597,13 +593,13 @@
               "awareness": -1500,
               "crit_avoid": -1500,
               "deflect": -1500
+            },
+            "bonusOccurrences": {
+              "bonus": "executioner-s-covenant",
+              "atLeast": 1
             }
           },
           {
-            "pieces": {
-              "set": "executioner-s-covenant",
-              "atLeast": 2
-            },
             "stats": {
               "acc": 2250,
               "ca": 2250,
@@ -613,6 +609,10 @@
               "awareness": -2250,
               "crit_avoid": -2250,
               "deflect": -2250
+            },
+            "bonusOccurrences": {
+              "bonus": "executioner-s-covenant",
+              "atLeast": 2
             }
           }
         ]
@@ -672,23 +672,23 @@
       {
         "tiers": [
           {
-            "pieces": {
-              "set": "gladiator-s-guile",
-              "atLeast": 1
-            },
             "stats": {
               "movement": 0.1,
               "stamina_regen": 0.1
+            },
+            "bonusOccurrences": {
+              "bonus": "gladiator-s-guile",
+              "atLeast": 1
             }
           },
           {
-            "pieces": {
-              "set": "gladiator-s-guile",
-              "atLeast": 2
-            },
             "stats": {
               "movement": 0.15,
               "stamina_regen": 0.15
+            },
+            "bonusOccurrences": {
+              "bonus": "gladiator-s-guile",
+              "atLeast": 2
             }
           }
         ]
@@ -937,8 +937,8 @@
       {
         "when": {
           "toggle": "combat",
-          "pieces": {
-            "set": "m26-masterwork-neck-waist-set",
+          "bonusOccurrences": {
+            "bonus": "m26-masterwork-neck-waist-set",
             "atLeast": 2
           }
         },
@@ -955,8 +955,8 @@
     "grants": [
       {
         "when": {
-          "pieces": {
-            "set": "m28-voidtouched-set",
+          "bonusOccurrences": {
+            "bonus": "m28-voidtouched-set",
             "atLeast": 2
           }
         },
@@ -970,8 +970,8 @@
           "equipped": {
             "item": "location-wildspace"
           },
-          "pieces": {
-            "set": "m28-voidtouched-set",
+          "bonusOccurrences": {
+            "bonus": "m28-voidtouched-set",
             "atLeast": 2
           }
         },
@@ -986,8 +986,8 @@
             "atLeast": 30
           },
           "toggle": "combat",
-          "pieces": {
-            "set": "m28-voidtouched-set",
+          "bonusOccurrences": {
+            "bonus": "m28-voidtouched-set",
             "atLeast": 2
           }
         },
@@ -1028,8 +1028,8 @@
             "item": "location-wildspace"
           },
           "toggle": "combat",
-          "pieces": {
-            "set": "m28-voidtouched-set",
+          "bonusOccurrences": {
+            "bonus": "m28-voidtouched-set",
             "atLeast": 2
           }
         },
@@ -1174,8 +1174,8 @@
     "grants": [
       {
         "when": {
-          "pieces": {
-            "set": "m31-enchanted-advantage",
+          "bonusOccurrences": {
+            "bonus": "m31-enchanted-advantage",
             "atLeast": 2
           }
         },
@@ -1394,8 +1394,8 @@
             "atLeast": 30
           },
           "toggle": "combat",
-          "pieces": {
-            "set": "m32-doomcleaver-celestial",
+          "bonusOccurrences": {
+            "bonus": "m32-doomcleaver-celestial",
             "atLeast": 2
           }
         },
@@ -1411,8 +1411,8 @@
     "grants": [
       {
         "when": {
-          "pieces": {
-            "set": "m32-impending-doom-celestial",
+          "bonusOccurrences": {
+            "bonus": "m32-impending-doom-celestial",
             "atLeast": 2
           }
         },
@@ -1423,14 +1423,14 @@
       },
       {
         "when": {
-          "pieces": {
-            "set": "m32-impending-doom-celestial",
-            "atLeast": 2
-          },
           "duration": {
             "atLeast": 30
           },
-          "toggle": "combat"
+          "toggle": "combat",
+          "bonusOccurrences": {
+            "bonus": "m32-impending-doom-celestial",
+            "atLeast": 2
+          }
         },
         "stats": {
           "outgoing_damage": 0.05
@@ -1444,8 +1444,8 @@
     "grants": [
       {
         "when": {
-          "pieces": {
-            "set": "m32-knot-of-the-bloodhound-celestial",
+          "bonusOccurrences": {
+            "bonus": "m32-knot-of-the-bloodhound-celestial",
             "atLeast": 2
           }
         },
@@ -1462,8 +1462,8 @@
     "grants": [
       {
         "when": {
-          "pieces": {
-            "set": "m32-omen-of-doom-legendary",
+          "bonusOccurrences": {
+            "bonus": "m32-omen-of-doom-legendary",
             "atLeast": 2
           }
         },
@@ -1478,8 +1478,8 @@
             "atLeast": 30
           },
           "toggle": "combat",
-          "pieces": {
-            "set": "m32-omen-of-doom-legendary",
+          "bonusOccurrences": {
+            "bonus": "m32-omen-of-doom-legendary",
             "atLeast": 2
           }
         },
@@ -1495,8 +1495,8 @@
     "grants": [
       {
         "when": {
-          "pieces": {
-            "set": "m32-omen-of-doom-mythic",
+          "bonusOccurrences": {
+            "bonus": "m32-omen-of-doom-mythic",
             "atLeast": 2
           }
         },
@@ -1511,8 +1511,8 @@
             "atLeast": 30
           },
           "toggle": "combat",
-          "pieces": {
-            "set": "m32-omen-of-doom-mythic",
+          "bonusOccurrences": {
+            "bonus": "m32-omen-of-doom-mythic",
             "atLeast": 2
           }
         },
@@ -1701,8 +1701,8 @@
           "duration": {
             "atLeast": 30
           },
-          "pieces": {
-            "set": "m33-chilling-flow-mythic",
+          "bonusOccurrences": {
+            "bonus": "m33-chilling-flow-mythic",
             "atLeast": 2
           }
         },
@@ -1716,8 +1716,8 @@
           "duration": {
             "atLeast": 30
           },
-          "pieces": {
-            "set": "m33-chilling-flow-mythic",
+          "bonusOccurrences": {
+            "bonus": "m33-chilling-flow-mythic",
             "atLeast": 2
           }
         },
@@ -1871,8 +1871,8 @@
     "grants": [
       {
         "when": {
-          "pieces": {
-            "set": "m33-freezing-energy",
+          "bonusOccurrences": {
+            "bonus": "m33-freezing-energy",
             "atLeast": 2
           }
         },
@@ -1888,8 +1888,8 @@
     "grants": [
       {
         "when": {
-          "pieces": {
-            "set": "m33-freezing-grasp",
+          "bonusOccurrences": {
+            "bonus": "m33-freezing-grasp",
             "atLeast": 2
           }
         },
@@ -1905,8 +1905,8 @@
     "grants": [
       {
         "when": {
-          "pieces": {
-            "set": "m33-freezing-rage",
+          "bonusOccurrences": {
+            "bonus": "m33-freezing-rage",
             "atLeast": 2
           }
         },
@@ -2173,10 +2173,6 @@
       {
         "tiers": [
           {
-            "pieces": {
-              "set": "mender-s-covenant",
-              "atLeast": 1
-            },
             "stats": {
               "power": 1500,
               "strike": 1500,
@@ -2186,13 +2182,13 @@
               "crit_avoid": -1500,
               "deflect": -1500,
               "out_healing": 1500
+            },
+            "bonusOccurrences": {
+              "bonus": "mender-s-covenant",
+              "atLeast": 1
             }
           },
           {
-            "pieces": {
-              "set": "mender-s-covenant",
-              "atLeast": 2
-            },
             "stats": {
               "power": 2250,
               "strike": 2250,
@@ -2202,6 +2198,10 @@
               "crit_avoid": -2250,
               "deflect": -2250,
               "out_healing": 2250
+            },
+            "bonusOccurrences": {
+              "bonus": "mender-s-covenant",
+              "atLeast": 2
             }
           }
         ]

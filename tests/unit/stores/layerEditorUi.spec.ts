@@ -9,7 +9,7 @@ describe("layerEditorUi store", () => {
     expect(state).toEqual({
       section: "",
       item: "",
-      set: "",
+      bonus: "",
       preset: "",
       status: "",
       q: "",

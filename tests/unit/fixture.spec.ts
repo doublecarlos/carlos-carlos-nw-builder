@@ -23,7 +23,7 @@ const TOLERANCE = 1e-6;
 describe("golden fixtures", () => {
   const built = db.fromData();
 
-  it(`db loads with no duplicate items (${built.items.length} items, ${built.bonusSets.length} bonus sets, ${built.slots.length} slots)`, () => {
+  it(`db loads with no duplicate items (${built.items.length} items, ${built.bonuses.length} bonus sets, ${built.slots.length} slots)`, () => {
     expect(built.duplicates).toEqual([]);
   });
 
@@ -41,7 +41,7 @@ describe("golden fixtures", () => {
           totalFailures: result.failures.length,
           db: {
             items: built.items.length,
-            bonusSets: built.bonusSets.length,
+            bonuses: built.bonuses.length,
             slots: built.slots.length,
             duplicates: built.duplicates,
           },

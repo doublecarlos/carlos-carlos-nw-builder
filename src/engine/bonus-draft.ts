@@ -1,17 +1,17 @@
 // The draft <-> grant conversion for BonusRows.vue's editor, split out so item-form and
 // set-bonuses can build and read drafts without importing the component.
 //
-// A grant is anonymous -- no `id`/`name` of its own, since a set now resolves as one unit (its
-// final stats are the sum of every active grant) and only the *set* needs to be addressable.
-// What the form covers structurally: the condition tree (leaves plus `all`/`any`/`not`, see
-// condition-draft.ts), a flat stat payload, a *tiered* payload keyed on set pieces, and a
-// *variants* payload (first matching condition wins). Only conditions nested deeper than
-// `MAX_DEPTH`, unrecognized condition keys, complex tiers, or a grant using both `tiers` and
-// `variants` fall through to the JSON escape hatch -- the editor never silently flattens a
-// structure it has no widget for.
+// A grant is anonymous -- no `id`/`name` of its own, since a bonus now resolves as one unit
+// (its final stats are the sum of every active grant) and only the *bonus* needs to be
+// addressable. What the form covers structurally: the condition tree (leaves plus
+// `all`/`any`/`not`, see condition-draft.ts), a flat stat payload, a *tiered* payload keyed on
+// bonus occurrences, and a *variants* payload (first matching condition wins). Only conditions
+// nested deeper than `MAX_DEPTH`, unrecognized condition keys, complex tiers, or a grant using
+// both `tiers` and `variants` fall through to the JSON escape hatch -- the editor never
+// silently flattens a structure it has no widget for.
 //
-// Stacking/`excludes` are a *set*-level property now (one grant among several shouldn't imply
-// the whole bonus stacks), so they're edited once by the caller (BonusSetForm.vue/
+// Stacking/`excludes` are a *bonus*-level property now (one grant among several shouldn't
+// imply the whole bonus stacks), so they're edited once by the caller (BonusSetForm.vue/
 // bonus-groups.js), not per row here.
 
 import {
@@ -26,14 +26,14 @@ import type {
   Grant,
   GrantVariant,
   GrantProblem,
-  BonusSet,
+  Bonus,
   StatValues,
 } from "../types";
 
 // Exactly what the engine reads off a tier (bonus.ts `evaluateBonus`). Anything else on a
 // tier would be dropped by the form, so its presence forces JSON mode instead.
-const TIER_KEYS = new Set(["pieces", "stats"]);
-const PIECES_KEYS = new Set(["set", "atLeast"]);
+const TIER_KEYS = new Set(["bonusOccurrences", "stats"]);
+const OCCURRENCE_KEYS = new Set(["bonus", "atLeast"]);
 const VARIANT_KEYS = new Set(["when", "stats"]);
 const PROBLEM_KEYS = new Set([
   "severity",
@@ -47,9 +47,11 @@ const tiersAreSimple = (tiers: NonNullable<Grant["tiers"]>) =>
   (tiers ?? []).every(
     (tier) =>
       Object.keys(tier).every((key) => TIER_KEYS.has(key)) &&
-      tier.pieces &&
-      typeof tier.pieces === "object" &&
-      Object.keys(tier.pieces).every((key) => PIECES_KEYS.has(key)),
+      tier.bonusOccurrences &&
+      typeof tier.bonusOccurrences === "object" &&
+      Object.keys(tier.bonusOccurrences).every((key) =>
+        OCCURRENCE_KEYS.has(key),
+      ),
   );
 
 const variantsAreSimple = (variants: NonNullable<Grant["variants"]>) =>
@@ -118,7 +120,7 @@ export const newVariant = (): VariantDraft => ({
 });
 
 export interface TierDraft {
-  set: string;
+  bonus: string;
   atLeast: number;
   stats: StatRow[];
 }
@@ -160,8 +162,8 @@ export function toDraft(grant: Grant = {}): GrantDraft {
     tiers: json
       ? []
       : (grant.tiers ?? []).map((tier) => ({
-          set: tier.pieces?.set ?? "",
-          atLeast: tier.pieces?.atLeast ?? 1,
+          bonus: tier.bonusOccurrences?.bonus ?? "",
+          atLeast: tier.bonusOccurrences?.atLeast ?? 1,
           stats: statRows(tier.stats),
         })),
     variants: json
@@ -212,7 +214,10 @@ export function toGrant(draft: GrantDraft): Grant {
     if (draft.problemHideFromPicker) out.problem.hideFromPicker = true;
   } else if (draft.payload === "tiers") {
     out.tiers = draft.tiers.map((tier) => ({
-      pieces: { set: tier.set, atLeast: Number(tier.atLeast) || 1 },
+      bonusOccurrences: {
+        bonus: tier.bonus,
+        atLeast: Number(tier.atLeast) || 1,
+      },
       stats: rowsToStats(tier.stats),
     }));
   } else if (draft.payload === "variants") {
@@ -232,7 +237,7 @@ export function toGrant(draft: GrantDraft): Grant {
   return out;
 }
 
-export interface SetDraft {
+export interface BonusDraft {
   id: string;
   name: string;
   grants: GrantDraft[];
@@ -241,13 +246,13 @@ export interface SetDraft {
   excludes?: string[];
 }
 
-/** Assembles a set-level draft (id/name/grants plus the set-level stacking/excludes fields)
- * back into the JSON shape, the same "only include if present" convention `toGrant` used to
- * apply per-effect -- shared by BonusSetForm.vue and bonus-groups.js so the two editing
+/** Assembles a bonus-level draft (id/name/grants plus the bonus-level stacking/excludes
+ * fields) back into the JSON shape, the same "only include if present" convention `toGrant`
+ * used to apply per-effect -- shared by BonusSetForm.vue and bonus-groups.js so the two editing
  * surfaces can't drift on what counts as "present". Throws if any grant is unparseable JSON. */
-export function toSet(draft: SetDraft): BonusSet {
+export function toBonus(draft: BonusDraft): Bonus {
   const grants = draft.grants.map((g) => toGrant(g));
-  const out: BonusSet = {
+  const out: Bonus = {
     id: draft.id.trim(),
     name: draft.name.trim() || draft.id.trim(),
     grants,

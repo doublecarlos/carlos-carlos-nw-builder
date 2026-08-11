@@ -450,7 +450,7 @@ function bonusProblems(resolved: ResolvedBonuses): EngineError[] {
       errors.push({
         slotId: entry.slotId,
         kind: "bonusRule",
-        choice: entry.bonus.name ?? entry.setId,
+        choice: entry.bonus.name ?? entry.bonusId,
         message: problem.message,
         severity: problem.severity,
         label: problem.label,

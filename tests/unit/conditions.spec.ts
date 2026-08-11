@@ -20,8 +20,8 @@ function ctx(
     toggles: {},
     equipped: new Map(),
     tags: new Map(),
-    setPieces: new Map(),
-    setNames: new Map(),
+    bonusOccurrences: new Map(),
+    bonusNames: new Map(),
     params: new Map(Object.entries(params)),
     ...overrides,
   };
@@ -141,37 +141,41 @@ describe("bonus.ts collect() populates EvalContext.params", () => {
   });
 });
 
-describe("conditions.ts pieces leaf uses setNames for friendly labels", () => {
-  it("shows the set name when available in setNames", () => {
+describe("conditions.ts bonusOccurrences leaf uses bonusNames for friendly labels", () => {
+  it("shows the bonus name when available in bonusNames", () => {
     const c = ctx(
       {},
       {
-        setPieces: new Map([["m32-impending-doom-celestial", 1]]),
-        setNames: new Map([["m32-impending-doom-celestial", "Impending Doom"]]),
+        bonusOccurrences: new Map([["m32-impending-doom-celestial", 1]]),
+        bonusNames: new Map([
+          ["m32-impending-doom-celestial", "Impending Doom"],
+        ]),
       },
     );
     const result = explain(
-      { pieces: { set: "m32-impending-doom-celestial", atLeast: 2 } },
+      {
+        bonusOccurrences: { bonus: "m32-impending-doom-celestial", atLeast: 2 },
+      },
       c,
     );
     expect(result.ok).toBe(false);
-    expect(result.unmet[0].label).toBe("2 piece(s) of Impending Doom");
+    expect(result.unmet[0].label).toBe("2 occurrence(s) of Impending Doom");
   });
 
-  it("falls back to the set id when not in setNames", () => {
+  it("falls back to the bonus id when not in bonusNames", () => {
     const c = ctx(
       {},
       {
-        setPieces: new Map([["m32-unknown-set", 1]]),
-        setNames: new Map(),
+        bonusOccurrences: new Map([["m32-unknown-set", 1]]),
+        bonusNames: new Map(),
       },
     );
     const result = explain(
-      { pieces: { set: "m32-unknown-set", atLeast: 2 } },
+      { bonusOccurrences: { bonus: "m32-unknown-set", atLeast: 2 } },
       c,
     );
     expect(result.ok).toBe(false);
-    expect(result.unmet[0].label).toBe("2 piece(s) of m32-unknown-set");
+    expect(result.unmet[0].label).toBe("2 occurrence(s) of m32-unknown-set");
   });
 });
 

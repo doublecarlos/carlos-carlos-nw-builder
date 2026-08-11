@@ -1,13 +1,13 @@
 // Item database indexing.
 //
 // Consumes the statically-imported data (src/data.ts) and builds the lookups the engine and UI
-// need. Pure: no DOM, no fetch -- `build()` takes items/bonusSets/schema/slots as plain
+// need. Pure: no DOM, no fetch -- `build()` takes items/bonuses/schema/slots as plain
 // arguments so catalog.ts can hand it a composed (base + overlay) catalogue instead.
 
 import { NW_ITEMS, NW_BONUSES, NW_SCHEMA, NW_SLOTS } from "./data";
 import type {
   Item,
-  BonusSet,
+  Bonus,
   Schema,
   SlotsData,
   Slot,
@@ -24,7 +24,7 @@ const pushTo = <K>(map: Map<K, string[]>, key: K, value: string) => {
 
 export function build(
   items: Item[],
-  bonusSets: BonusSet[] = [],
+  bonuses: Bonus[] = [],
   schema: Schema,
   slots: SlotsData,
 ): Db {
@@ -33,7 +33,7 @@ export function build(
   // here under the `undefined` key -- dead weight (`forFilter` is only ever called with a
   // real string) but preserved rather than silently dropped.
   const byFilter = new Map<string | undefined, Item[]>();
-  const setMembers = new Map<string, string[]>(); // setId -> [item id]
+  const bonusMembers = new Map<string, string[]>(); // bonusId -> [item id]
   const itemsByTag = new Map<string, string[]>(); // tag   -> [item id]
   const itemByGameId = new Map<string, string>(); // Hitem -> item id
   const duplicates: string[] = [];
@@ -45,7 +45,8 @@ export function build(
     if (filterList) filterList.push(item);
     else byFilter.set(item.filter, [item]);
 
-    for (const setId of item.bonuses ?? []) pushTo(setMembers, setId, item.id);
+    for (const bonusId of item.bonuses ?? [])
+      pushTo(bonusMembers, bonusId, item.id);
     for (const tag of item.tags ?? []) pushTo(itemsByTag, tag, item.id);
     for (const gameId of item.gameIds ?? []) itemByGameId.set(gameId, item.id);
   }
@@ -54,9 +55,9 @@ export function build(
     list.sort((a, b) => a.name.localeCompare(b.name));
   }
 
-  // Shared bonuses, keyed by set id. Membership is never listed here -- it lives on the
-  // items (`sets: [...]`), so this is the only place the two are joined.
-  const bonusSetById = new Map(bonusSets.map((set) => [set.id, set]));
+  // Shared bonuses, keyed by id. Membership is never listed here -- it lives on the
+  // items (`bonuses: [...]`), so this is the only place the two are joined.
+  const bonusById = new Map(bonuses.map((bonus) => [bonus.id, bonus]));
   const slotList = slots?.slots ?? [];
   const slotById = new Map<string, Slot>(
     slotList.map((slot) => [slot.id, slot]),
@@ -69,9 +70,9 @@ export function build(
     sections: slots?.sections ?? [],
     presets: slots?.presets ?? [],
     slotById,
-    bonusSets,
-    bonusSetById,
-    setMembers,
+    bonuses,
+    bonusById,
+    bonusMembers,
     itemsByTag,
     itemByGameId,
     duplicates,
@@ -112,14 +113,14 @@ export function build(
     maxCopies: (item: Item | null | undefined) => item?.maxCopies ?? 0,
 
     /**
-     * Every bonus an item contributes: every bonus set it belongs to, whether that set has
-     * one member (a bonus that is nobody else's business) or many. One candidate per set --
-     * a set resolves as one unit (bonus.js sums its `grants`), not one candidate per grant.
+     * Every bonus an item contributes: every bonus it belongs to, whether that bonus has
+     * one member (a bonus that is nobody else's business) or many. One candidate per bonus --
+     * a bonus resolves as one unit (bonus.js sums its `grants`), not one candidate per grant.
      */
     bonusesFor(item: Item): BonusCandidate[] {
-      return (item.bonuses ?? []).flatMap((setId: string) => {
-        const set = bonusSetById.get(setId);
-        return set ? [{ bonus: set, setId: set.id, source: item.name }] : [];
+      return (item.bonuses ?? []).flatMap((bonusId: string) => {
+        const bonus = bonusById.get(bonusId);
+        return bonus ? [{ bonus, bonusId: bonus.id, source: item.name }] : [];
       });
     },
   };

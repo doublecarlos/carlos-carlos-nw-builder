@@ -7,7 +7,7 @@
 //
 //     effective = base  <-  workspace overlay  <-  (future) build overlay
 //
-// An overlay is `{ items: { [id]: item|null }, bonusSets: { [id]: set|null } }`, where the
+// An overlay is `{ items: { [id]: item|null }, bonuses: { [id]: bonus|null } }`, where the
 // value replaces whatever the layers below it had and `null` is a tombstone hiding a base
 // entry. That single shape covers add, edit and delete, survives JSON, and composes -- which
 // is what makes the per-build case a matter of passing one more overlay rather than a redesign.
@@ -21,7 +21,7 @@ import { findParamSlot, resolveLinkedItem } from "../lib/build-path";
 import { deepEqual } from "../lib/deep-equal";
 import type {
   Item,
-  BonusSet,
+  Bonus,
   Schema,
   CatalogOverlay,
   CatalogGroup,
@@ -38,28 +38,28 @@ import type {
 
 export const emptyOverlay = (): CatalogOverlay => ({
   items: {},
-  bonusSets: {},
+  bonuses: {},
   sectionPresets: {},
 });
 
 export const isEmpty = (overlay: CatalogOverlay | null | undefined) =>
   !overlay ||
   (Object.keys(overlay.items ?? {}).length === 0 &&
-    Object.keys(overlay.bonusSets ?? {}).length === 0 &&
+    Object.keys(overlay.bonuses ?? {}).length === 0 &&
     Object.keys(overlay.sectionPresets ?? {}).length === 0);
 
 /** Anything persisted or pasted has to survive being wrong. */
 export function normaliseOverlay(raw: unknown): CatalogOverlay {
   const overlay = emptyOverlay();
   if (!raw || typeof raw !== "object") return overlay;
-  for (const group of ["items", "bonusSets", "sectionPresets"] as const) {
+  for (const group of ["items", "bonuses", "sectionPresets"] as const) {
     const source = (raw as Record<string, unknown>)[group];
     if (!source || typeof source !== "object") continue;
     for (const [key, value] of Object.entries(source)) {
       if (value === null)
         overlay[group][key] = null; // tombstone
       else if (value && typeof value === "object")
-        overlay[group][key] = value as Item & BonusSet & SectionPreset;
+        overlay[group][key] = value as Item & Bonus & SectionPreset;
     }
   }
   return overlay;
@@ -67,11 +67,11 @@ export function normaliseOverlay(raw: unknown): CatalogOverlay {
 
 export const base = (): {
   items: Item[];
-  bonusSets: BonusSet[];
+  bonuses: Bonus[];
   sectionPresets: SectionPreset[];
 } => ({
   items: NW_ITEMS ?? [],
-  bonusSets: NW_BONUSES ?? [],
+  bonuses: NW_BONUSES ?? [],
   sectionPresets: NW_SLOTS.presets ?? [],
 });
 
@@ -82,12 +82,12 @@ export const base = (): {
 export function compose(overlays: (CatalogOverlay | null | undefined)[] = []) {
   const {
     items: baseItems,
-    bonusSets: baseSets,
+    bonuses: baseBonuses,
     sectionPresets: basePresets,
   } = base();
 
   const items = new Map(baseItems.map((item) => [item.id, item]));
-  const bonusSets = new Map(baseSets.map((set) => [set.id, set]));
+  const bonuses = new Map(baseBonuses.map((bonus) => [bonus.id, bonus]));
   const sectionPresets = new Map(
     basePresets.map((preset) => [preset.id, preset]),
   );
@@ -98,9 +98,9 @@ export function compose(overlays: (CatalogOverlay | null | undefined)[] = []) {
       if (item === null) items.delete(id);
       else items.set(id, item);
     }
-    for (const [id, set] of Object.entries(overlay.bonusSets ?? {})) {
-      if (set === null) bonusSets.delete(id);
-      else bonusSets.set(id, set);
+    for (const [id, bonus] of Object.entries(overlay.bonuses ?? {})) {
+      if (bonus === null) bonuses.delete(id);
+      else bonuses.set(id, bonus);
     }
     for (const [id, preset] of Object.entries(overlay.sectionPresets ?? {})) {
       if (preset === null) sectionPresets.delete(id);
@@ -110,7 +110,7 @@ export function compose(overlays: (CatalogOverlay | null | undefined)[] = []) {
 
   return {
     items: [...items.values()].sort((a, b) => a.id.localeCompare(b.id)),
-    bonusSets: [...bonusSets.values()].sort((a, b) => a.id.localeCompare(b.id)),
+    bonuses: [...bonuses.values()].sort((a, b) => a.id.localeCompare(b.id)),
     sectionPresets: [...sectionPresets.values()].sort((a, b) =>
       a.id.localeCompare(b.id),
     ),
@@ -119,8 +119,8 @@ export function compose(overlays: (CatalogOverlay | null | undefined)[] = []) {
 
 /** A db the engine accepts, built from the composed catalogue. */
 export function makeDb(overlays: (CatalogOverlay | null | undefined)[] = []) {
-  const { items, bonusSets, sectionPresets } = compose(overlays);
-  return db.build(items, bonusSets, NW_SCHEMA, {
+  const { items, bonuses, sectionPresets } = compose(overlays);
+  return db.build(items, bonuses, NW_SCHEMA, {
     ...NW_SLOTS,
     presets: sectionPresets,
   });
@@ -130,7 +130,7 @@ export function makeDb(overlays: (CatalogOverlay | null | undefined)[] = []) {
 
 const clone = (overlay: CatalogOverlay): CatalogOverlay => ({
   items: { ...overlay.items },
-  bonusSets: { ...overlay.bonusSets },
+  bonuses: { ...overlay.bonuses },
   sectionPresets: { ...overlay.sectionPresets },
 });
 
@@ -138,8 +138,8 @@ const inBase = (group: CatalogGroup, key: string) => {
   const catalogueBase = base();
   if (group === "items")
     return catalogueBase.items.some((item) => item.id === key);
-  if (group === "bonusSets")
-    return catalogueBase.bonusSets.some((set) => set.id === key);
+  if (group === "bonuses")
+    return catalogueBase.bonuses.some((bonus) => bonus.id === key);
   return catalogueBase.sectionPresets.some((preset) => preset.id === key);
 };
 
@@ -150,10 +150,10 @@ export function upsert(
   overlay: CatalogOverlay,
   group: CatalogGroup,
   key: string,
-  value: Item | BonusSet | SectionPreset,
+  value: Item | Bonus | SectionPreset,
 ) {
   const next = clone(overlay);
-  (next[group] as Record<string, Item | BonusSet | SectionPreset | null>)[key] =
+  (next[group] as Record<string, Item | Bonus | SectionPreset | null>)[key] =
     value;
   return next;
 }
@@ -226,7 +226,7 @@ export function statusOf(
  *  provide — what a download has to carry to resolve identically elsewhere. */
 export function referencedOverlay(db: Db, build: Build): CatalogOverlay {
   const itemIds = new Set<string>();
-  const setIds = new Set<string>();
+  const bonusIds = new Set<string>();
 
   // Seed items from choices
   for (const id of Object.values(build.choices)) {
@@ -242,7 +242,7 @@ export function referencedOverlay(db: Db, build: Build): CatalogOverlay {
     if (id) itemIds.add(id);
   }
 
-  // Resolve items to find referenced bonus-set ids
+  // Resolve items to find referenced bonus ids
   const visitedItems = new Set<string>();
   const stack = [...itemIds];
   while (stack.length > 0) {
@@ -251,27 +251,27 @@ export function referencedOverlay(db: Db, build: Build): CatalogOverlay {
     visitedItems.add(id);
     const item = db.get(id);
     if (!item) continue;
-    for (const setId of item.bonuses ?? []) setIds.add(setId);
-    for (const setId of item.excludes ?? []) setIds.add(setId);
+    for (const bonusId of item.bonuses ?? []) bonusIds.add(bonusId);
+    for (const bonusId of item.excludes ?? []) bonusIds.add(bonusId);
   }
 
-  // Follow set excludes transitively — sets can chain through excludes
-  const visitedSets = new Set<string>();
-  const setStack = [...setIds];
-  while (setStack.length > 0) {
-    const id = setStack.pop()!;
-    if (visitedSets.has(id)) continue;
-    visitedSets.add(id);
-    const set = db.bonusSetById.get(id);
-    if (!set) continue;
-    for (const exId of set.excludes ?? []) {
-      if (!visitedSets.has(exId)) setStack.push(exId);
+  // Follow bonus excludes transitively — bonuses can chain through excludes
+  const visitedBonuses = new Set<string>();
+  const bonusStack = [...bonusIds];
+  while (bonusStack.length > 0) {
+    const id = bonusStack.pop()!;
+    if (visitedBonuses.has(id)) continue;
+    visitedBonuses.add(id);
+    const bonus = db.bonusById.get(id);
+    if (!bonus) continue;
+    for (const exId of bonus.excludes ?? []) {
+      if (!visitedBonuses.has(exId)) bonusStack.push(exId);
     }
   }
 
   // Build reference maps for base catalogue
   const baseItems = new Map(base().items.map((i) => [i.id, i]));
-  const baseSets = new Map(base().bonusSets.map((s) => [s.id, s]));
+  const baseBonuses = new Map(base().bonuses.map((b) => [b.id, b]));
 
   const overlay = emptyOverlay();
 
@@ -285,13 +285,13 @@ export function referencedOverlay(db: Db, build: Build): CatalogOverlay {
     }
   }
 
-  // Emit only bonus sets absent from base or not deep-equal to their base counterpart
-  for (const id of visitedSets) {
-    const set = db.bonusSetById.get(id);
-    if (!set) continue;
-    const baseSet = baseSets.get(id);
-    if (!baseSet || !deepEqual(set, baseSet)) {
-      overlay.bonusSets[id] = set;
+  // Emit only bonuses absent from base or not deep-equal to their base counterpart
+  for (const id of visitedBonuses) {
+    const bonus = db.bonusById.get(id);
+    if (!bonus) continue;
+    const baseBonus = baseBonuses.get(id);
+    if (!baseBonus || !deepEqual(bonus, baseBonus)) {
+      overlay.bonuses[id] = bonus;
     }
   }
 
@@ -310,7 +310,7 @@ const CONDITION_KEYS = new Set([
   "combatType",
   "damageType",
   "duration",
-  "pieces",
+  "bonusOccurrences",
   "equipped",
   "param",
   "all",
@@ -693,7 +693,7 @@ function isUnpickableFilter(filter: string): boolean {
  */
 export function validate(
   items: Item[],
-  bonusSets: BonusSet[],
+  bonuses: Bonus[],
   schema: Schema = NW_SCHEMA,
   presets: SectionPreset[] = NW_SLOTS.presets ?? [],
 ): LintFinding[] {
@@ -705,7 +705,7 @@ export function validate(
     level: "error" | "warn",
     message: string,
     name?: string,
-    kind: "item" | "bonusSet" = "item",
+    kind: "item" | "bonus" = "item",
   ) => findings.push({ level, message, name, kind });
 
   const statKeys = new Set(schema.statKeys);
@@ -731,7 +731,7 @@ export function validate(
   const classes = new Set(
     (classSlot?.options?.map((o) => o.value) ?? []).filter(Boolean),
   );
-  const setIds = new Set(bonusSets.map((set) => set.id));
+  const bonusIds = new Set(bonuses.map((bonus) => bonus.id));
   const itemIds = new Set(items.map((item) => item.id).filter(Boolean));
   const seenIds = new Set();
   const gameIdOwners = new Map<string, Set<string>>();
@@ -750,7 +750,7 @@ export function validate(
     stats: Record<string, unknown> | undefined,
     label: string,
     name?: string,
-    kind: "item" | "bonusSet" = "item",
+    kind: "item" | "bonus" = "item",
   ) => {
     for (const [key, value] of Object.entries(stats ?? {})) {
       if (!statKeys.has(key)) {
@@ -884,9 +884,9 @@ export function validate(
         );
       }
     }
-    for (const setId of item.bonuses ?? []) {
-      if (!setIds.has(setId)) {
-        report("warn", `bonus "${setId}" has no definition`, item.id);
+    for (const bonusId of item.bonuses ?? []) {
+      if (!bonusIds.has(bonusId)) {
+        report("warn", `bonus "${bonusId}" has no definition`, item.id);
       }
     }
     if (item.dynamicStat && !statKeys.has(item.dynamicStat)) {
@@ -925,22 +925,22 @@ export function validate(
     }
   }
 
-  for (const set of bonusSets) {
-    if (!set.id) {
-      report("error", "a bonus set has no id");
+  for (const bonus of bonuses) {
+    if (!bonus.id) {
+      report("error", "a bonus has no id");
       continue;
     }
-    set.grants?.forEach((grant, index) => {
+    bonus.grants?.forEach((grant, index) => {
       const label = `grant ${index + 1}`;
       checkConditions(
         grant.when,
         label,
-        (level, message) => report(level, message, set.id, "bonusSet"),
+        (level, message) => report(level, message, bonus.id, "bonus"),
         paramSlots,
       );
-      checkStats(grant.stats, label, set.id, "bonusSet");
+      checkStats(grant.stats, label, bonus.id, "bonus");
       for (const tier of grant.tiers ?? []) {
-        checkStats(tier.stats, `${label} tier`, set.id, "bonusSet");
+        checkStats(tier.stats, `${label} tier`, bonus.id, "bonus");
       }
     });
   }
@@ -989,14 +989,14 @@ export function toItemsFile(items: Item[]): string {
   return `${JSON.stringify(items.map(canonicalItem), null, 2)}\n`;
 }
 
-export function toBonusesFile(bonusSets: BonusSet[]): string {
-  const canonical = bonusSets.map((set) => ({
-    id: set.id,
-    name: set.name ?? set.id,
-    grants: set.grants ?? [],
-    ...(set.excludes !== undefined ? { excludes: set.excludes } : {}),
-    ...(set.stacking !== undefined ? { stacking: set.stacking } : {}),
-    ...(set.maxStacks !== undefined ? { maxStacks: set.maxStacks } : {}),
+export function toBonusesFile(bonuses: Bonus[]): string {
+  const canonical = bonuses.map((bonus) => ({
+    id: bonus.id,
+    name: bonus.name ?? bonus.id,
+    grants: bonus.grants ?? [],
+    ...(bonus.excludes !== undefined ? { excludes: bonus.excludes } : {}),
+    ...(bonus.stacking !== undefined ? { stacking: bonus.stacking } : {}),
+    ...(bonus.maxStacks !== undefined ? { maxStacks: bonus.maxStacks } : {}),
   }));
   return `${JSON.stringify(canonical, null, 2)}\n`;
 }

@@ -21,16 +21,16 @@ import { deepEqual } from "../../lib/deep-equal";
 import { useDraftHistory } from "../../composables/useDraftHistory";
 import { BonusDraftStore } from "../../stores/bonus-draft";
 import { bonusDraftRegistryKey } from "../../composables/bonusDraftRegistry";
-import type { BonusSet, Db } from "../../types";
+import type { Bonus, Db } from "../../types";
 
 const props = withDefaults(
   defineProps<{
     /** The bonus set being edited, or null for a brand-new one. */
-    source?: BonusSet | null;
+    source?: Bonus | null;
     /** Seed values for a brand-new draft, copied from an existing set ("Duplicate").
      *  Ignored once `source` or `initialDraft` is set -- only meaningful while creating
      *  a new top-level set. */
-    duplicateFrom?: BonusSet | null;
+    duplicateFrom?: Bonus | null;
     status?: string;
     db: Db;
     setIds?: string[];
@@ -39,7 +39,7 @@ const props = withDefaults(
     allocatableIds?: string[];
     fixedId?: string | null;
     /** Initial draft for pending slots (BonusGroups embedded case). */
-    initialDraft?: bonusDraft.SetDraft | null;
+    initialDraft?: bonusDraft.BonusDraft | null;
     /** This instance's stable key in BonusGroups' cross-bonus condition-drag registry (its
      *  slot key -- see bonusDraftRegistry.ts). Empty on the standalone "Bonus sets" page,
      *  which isn't embedded in BonusGroups and has no registry to register into. */
@@ -61,16 +61,16 @@ const props = withDefaults(
 
 const emit = defineEmits<{
   /** Emitted on every change for existing sets (debounced). */
-  "update:set": [payload: { id: string; set: BonusSet; label: string }];
+  "update:set": [payload: { id: string; set: Bonus; label: string }];
   /** Emitted on Save click for new sets. */
-  save: [payload: { id: string; set: BonusSet }];
+  save: [payload: { id: string; set: Bonus }];
   delete: [];
   duplicate: [];
   revert: [];
 }>();
 
-function buildDraft(set: BonusSet | null | undefined): bonusDraft.SetDraft {
-  const source = set ?? ({} as Partial<BonusSet>);
+function buildDraft(set: Bonus | null | undefined): bonusDraft.BonusDraft {
+  const source = set ?? ({} as Partial<Bonus>);
   return {
     id: source.id ?? "",
     name: source.name ?? "",
@@ -96,7 +96,7 @@ const error = ref("");
 // Initialize with set JSON for correct comparison on existing sets.
 let lastEmittedJson = JSON.stringify(
   props.source
-    ? bonusDraft.toSet({ ...draft.value, id: props.source.id })
+    ? bonusDraft.toBonus({ ...draft.value, id: props.source.id })
     : draft.value,
 );
 
@@ -159,9 +159,9 @@ function emitChange() {
       props.allocatableIds.length ? props.allocatableIds : props.setIds,
       "bonus-set",
     );
-  let set: BonusSet;
+  let set: Bonus;
   try {
-    set = bonusDraft.toSet({ ...draft.value, id });
+    set = bonusDraft.toBonus({ ...draft.value, id });
   } catch {
     return;
   }
@@ -183,7 +183,7 @@ const { resetDraftHistory, scheduleSnapshot, scheduleEmit } = useDraftHistory({
 
 const members = computed(() => {
   if (!props.source) return [];
-  return (props.db.setMembers.get(props.source.id) ?? []).map(
+  return (props.db.bonusMembers.get(props.source.id) ?? []).map(
     (id) => props.db.get(id)?.name ?? id,
   );
 });
@@ -195,7 +195,7 @@ const stackingOptions = [
 
 const asSet = computed(() => {
   try {
-    return bonusDraft.toSet(draft.value);
+    return bonusDraft.toBonus(draft.value);
   } catch {
     return null;
   }
@@ -252,7 +252,7 @@ function save() {
     );
   let set;
   try {
-    set = bonusDraft.toSet({ ...draft.value, id });
+    set = bonusDraft.toBonus({ ...draft.value, id });
   } catch (err: unknown) {
     error.value = `A grant has invalid JSON: ${err instanceof Error ? err.message : String(err)}`;
     return;
@@ -297,7 +297,7 @@ watch(
     draft.value = buildDraft(value);
     error.value = "";
     lastEmittedJson = JSON.stringify(
-      bonusDraft.toSet({ ...draft.value, id: value?.id ?? "" }),
+      bonusDraft.toBonus({ ...draft.value, id: value?.id ?? "" }),
     );
     resetDraftHistory();
   },

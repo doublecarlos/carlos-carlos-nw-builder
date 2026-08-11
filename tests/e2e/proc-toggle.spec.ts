@@ -39,7 +39,7 @@ function buildWithProcRing(procs: Record<string, boolean> = {}) {
           bonuses: [SET_ID],
         },
       },
-      bonusSets: {
+      bonuses: {
         [SET_ID]: {
           id: SET_ID,
           name: "Test Proc Bonus",
@@ -137,7 +137,7 @@ test.describe("per-item proc checkbox: label/default overrides", () => {
             bonuses: [SET_ID],
           },
         },
-        bonusSets: {
+        bonuses: {
           [SET_ID]: {
             id: SET_ID,
             name: "Test Proc Bonus",

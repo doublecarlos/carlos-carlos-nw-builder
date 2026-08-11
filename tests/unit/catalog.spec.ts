@@ -5,7 +5,7 @@ import { describe, it, expect } from "vitest";
 import * as catalog from "../../src/data/catalog";
 import { NW_SLOTS, NW_ITEMS, NW_BONUSES } from "../../src/data/data";
 import type {
-  BonusSet,
+  Bonus,
   BuildParameterSlot,
   ConditionWhen,
   Item,
@@ -558,7 +558,7 @@ describe("catalog.compose: layer overlay (two layers, same item id)", () => {
           filter: "gear_head",
         },
       },
-      bonusSets: {},
+      bonuses: {},
       sectionPresets: {},
     };
     const later: CatalogOverlay = {
@@ -569,7 +569,7 @@ describe("catalog.compose: layer overlay (two layers, same item id)", () => {
           filter: "gear_head",
         },
       },
-      bonusSets: {},
+      bonuses: {},
       sectionPresets: {},
     };
     const composed = catalog.compose([early, later]);
@@ -586,7 +586,7 @@ describe("catalog.compose: layer overlay (two layers, same item id)", () => {
           filter: "gear_head",
         },
       },
-      bonusSets: {},
+      bonuses: {},
       sectionPresets: {},
     };
     // Disabling the later layer means not passing it to compose
@@ -604,12 +604,12 @@ describe("catalog.compose: layer overlay (two layers, same item id)", () => {
           filter: "gear_head",
         },
       },
-      bonusSets: {},
+      bonuses: {},
       sectionPresets: {},
     };
     const later: CatalogOverlay = {
       items: { "shared-item": null },
-      bonusSets: {},
+      bonuses: {},
       sectionPresets: {},
     };
     const composed = catalog.compose([early, later]);
@@ -620,7 +620,7 @@ describe("catalog.compose: layer overlay (two layers, same item id)", () => {
 describe("catalog.compose: sectionPresets overlay", () => {
   const presetOverlay = (preset: SectionPreset | null): CatalogOverlay => ({
     items: {},
-    bonusSets: {},
+    bonuses: {},
     sectionPresets: { "test-preset": preset },
   });
 
@@ -672,7 +672,7 @@ describe("catalog.compose: sectionPresets overlay", () => {
     const shipped = NW_SLOTS.presets?.[0];
     expect(shipped).toBeDefined();
     const composed = catalog.compose([
-      { items: {}, bonusSets: {}, sectionPresets: { [shipped!.id]: null } },
+      { items: {}, bonuses: {}, sectionPresets: { [shipped!.id]: null } },
     ]);
     expect(
       composed.sectionPresets.find((p) => p.id === shipped!.id),
@@ -714,7 +714,7 @@ describe("catalog.toBonusesFile", () => {
       grants: [],
       name: "Z Set",
       id: "z-set",
-    } as BonusSet;
+    } as Bonus;
     const text = catalog.toBonusesFile([scrambled]);
     expect(JSON.parse(text)).toEqual([scrambled]);
     const positions = ["id", "name", "grants", "maxStacks"].map((key) =>
@@ -724,7 +724,7 @@ describe("catalog.toBonusesFile", () => {
   });
 
   it("defaults a missing name to the set's id", () => {
-    const sets: BonusSet[] = [{ id: "no-name-set", grants: [] }];
+    const sets: Bonus[] = [{ id: "no-name-set", grants: [] }];
     const parsed = JSON.parse(catalog.toBonusesFile(sets));
     expect(parsed).toEqual([
       { id: "no-name-set", name: "no-name-set", grants: [] },
@@ -732,9 +732,7 @@ describe("catalog.toBonusesFile", () => {
   });
 
   it("keeps an explicit name as-is", () => {
-    const sets: BonusSet[] = [
-      { id: "named-set", name: "Named Set", grants: [] },
-    ];
+    const sets: Bonus[] = [{ id: "named-set", name: "Named Set", grants: [] }];
     const parsed = JSON.parse(catalog.toBonusesFile(sets));
     expect(parsed[0].name).toBe("Named Set");
   });
@@ -838,20 +836,20 @@ describe("catalog.toSlotsFile", () => {
 // checks live inside `checkConditions`, keyed on the real slots.json paths -- `class` (list),
 // `duration` (number), `toggles.combat` (a toggle slot, boolean).
 describe("catalog.validate: param condition lint", () => {
-  const setWith = (when: ConditionWhen): BonusSet[] => [
+  const setWith = (when: ConditionWhen): Bonus[] => [
     { id: "test-set", grants: [{ when, stats: {} }] },
   ];
-  // Scoped to `kind === "bonusSet"` so these helpers isolate the condition lint under test
+  // Scoped to `kind === "bonus"` so these helpers isolate the condition lint under test
   // from unrelated findings validate() also produces against the real shipped NW_SLOTS (e.g.
   // linkedItem lint, which items=[] can never satisfy).
   const errorsFor = (when: ConditionWhen) =>
     catalog
       .validate([], setWith(when))
-      .filter((f) => f.level === "error" && f.kind === "bonusSet");
+      .filter((f) => f.level === "error" && f.kind === "bonus");
   const warningsFor = (when: ConditionWhen) =>
     catalog
       .validate([], setWith(when))
-      .filter((f) => f.level === "warn" && f.kind === "bonusSet");
+      .filter((f) => f.level === "warn" && f.kind === "bonus");
 
   it("an unresolvable key is an error -- the condition can never be active", () => {
     const errors = errorsFor({ param: { key: "does-not-exist", is: true } });
@@ -923,13 +921,13 @@ describe("catalog.validate: param condition lint", () => {
 // The `proc` leaf lint -- unlike `param`, both fields are optional refinements on top of the
 // bare-`true` common case, so only an actually-malformed value should ever flag.
 describe("catalog.validate: proc condition lint", () => {
-  const setWith = (when: ConditionWhen): BonusSet[] => [
+  const setWith = (when: ConditionWhen): Bonus[] => [
     { id: "test-set", grants: [{ when, stats: {} }] },
   ];
   const errorsFor = (when: ConditionWhen) =>
     catalog
       .validate([], setWith(when))
-      .filter((f) => f.level === "error" && f.kind === "bonusSet");
+      .filter((f) => f.level === "error" && f.kind === "bonus");
 
   it("bare true is clean", () => {
     expect(errorsFor({ proc: true })).toEqual([]);
@@ -972,7 +970,7 @@ describe("catalog.validate: proc condition lint", () => {
 // The `linkedItem` lint: a list option's or a boolean slot's `linkedItem` referencing a
 // missing item id, or set on a slot type that can never resolve one. `validate()` itself
 // always reads slots from the real shipped `NW_SLOTS` (no injectable parameter, unlike
-// `items`/`bonusSets`), so the standalone helpers it calls -- `collectLinkedItemIds`/
+// `items`/`bonuses`), so the standalone helpers it calls -- `collectLinkedItemIds`/
 // `validateLinkedItems` -- are exercised directly with synthetic slots here, same as
 // `validateSlots`/`validatePresets` are above.
 describe("catalog.validateLinkedItems / collectLinkedItemIds", () => {
@@ -1135,13 +1133,13 @@ describe("catalog.validate: an item referenced only via linkedItem is exempt fro
 
 // --- referencedOverlay -------------------------------------------------------------------
 
-/** Build a minimal Db for testing. Only `get`, `bonusSetById` and `slots` are exercised. */
-function testDb(items: Item[], bonusSets: BonusSet[], slots: Slot[] = []): Db {
-  const byId = new Map(items.map((i) => [i.id, i]));
-  const bySetId = new Map(bonusSets.map((s) => [s.id, s]));
+/** Build a minimal Db for testing. Only `get`, `bonusById` and `slots` are exercised. */
+function testDb(items: Item[], bonuses: Bonus[], slots: Slot[] = []): Db {
+  const itemsById = new Map(items.map((i) => [i.id, i]));
+  const bonusesById = new Map(bonuses.map((s) => [s.id, s]));
   return {
-    get: (id: string | null | undefined) => byId.get(id ?? "") ?? null,
-    bonusSetById: bySetId,
+    get: (id: string | null | undefined) => itemsById.get(id ?? "") ?? null,
+    bonusById: bonusesById,
     slots,
   } as unknown as Db;
 }
@@ -1166,17 +1164,17 @@ const layerItem: Item = {
   bonuses: ["layer-set"],
 };
 
-const layerSet: BonusSet = {
+const layerSet: Bonus = {
   id: "layer-set",
   grants: [{ stats: { power: 100 } }],
 };
 
-const excludedSet: BonusSet = {
+const excludedSet: Bonus = {
   id: "excluded-set",
   grants: [{ stats: { power: 50 } }],
 };
 
-const chainedSet: BonusSet = {
+const chainedSet: Bonus = {
   id: "chained-set",
   grants: [{ stats: { power: 25 } }],
   excludes: ["excluded-set"],
@@ -1217,7 +1215,7 @@ describe("catalog.referencedOverlay", () => {
     const overlay = catalog.referencedOverlay(db, build);
     expect(overlay.items["layer-item"]).toBeDefined();
     expect(overlay.items["layer-item"]?.name).toBe("Layer Item");
-    expect(overlay.bonusSets["layer-set"]).toBeDefined();
+    expect(overlay.bonuses["layer-set"]).toBeDefined();
     // baseItem is in base, so it should NOT be in the overlay
     expect(overlay.items[BASE_ITEM_ID]).toBeUndefined();
   });
@@ -1244,8 +1242,8 @@ describe("catalog.referencedOverlay", () => {
     // chained-set also excludes excluded-set (transitive)
     const overlay = catalog.referencedOverlay(db, build);
     expect(overlay.items["layer-item"]).toBeDefined();
-    expect(overlay.bonusSets["chained-set"]).toBeDefined();
-    expect(overlay.bonusSets["excluded-set"]).toBeDefined();
+    expect(overlay.bonuses["chained-set"]).toBeDefined();
+    expect(overlay.bonuses["excluded-set"]).toBeDefined();
   });
 
   it("excludes layer entries the build does not reference", () => {
@@ -1276,7 +1274,7 @@ describe("catalog.referencedOverlay", () => {
       bonuses: ["1st-pack-tactics-group"],
     };
     // Layer edits the bonus set with different stats.
-    const editedSet: BonusSet = {
+    const editedSet: Bonus = {
       id: "1st-pack-tactics-group",
       name: "1st Pack Tactics (Group)",
       grants: [{ stats: { power: 999 } }], // different from base
@@ -1296,9 +1294,9 @@ describe("catalog.referencedOverlay", () => {
     // The item is unchanged from base, so it should NOT be emitted.
     expect(overlay.items[BASE_SET_ITEM_ID]).toBeUndefined();
     // The bonus set IS different from base, so it SHOULD be emitted.
-    expect(overlay.bonusSets["1st-pack-tactics-group"]).toBeDefined();
+    expect(overlay.bonuses["1st-pack-tactics-group"]).toBeDefined();
     expect(
-      overlay.bonusSets["1st-pack-tactics-group"]?.grants?.[0]?.stats?.power,
+      overlay.bonuses["1st-pack-tactics-group"]?.grants?.[0]?.stats?.power,
     ).toBe(999);
   });
 
@@ -1345,7 +1343,7 @@ describe("catalog.referencedOverlay", () => {
     };
     const overlay = catalog.referencedOverlay(db, build);
     expect(overlay.items["layer-item"]).toBeDefined();
-    expect(overlay.bonusSets["layer-set"]).toBeDefined();
+    expect(overlay.bonuses["layer-set"]).toBeDefined();
   });
 
   it("does not pick up a build_parameter's linkedItem when its value doesn't select it", () => {

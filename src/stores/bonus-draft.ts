@@ -3,7 +3,7 @@
 // BonusRows never has to emit a replaced array back up — it just calls store methods.
 //
 // The store operates directly on `draft.value.grants` (which is the proxied array from a
-// `ref<SetDraft>`), so mutations are picked up by Vue's deep reactivity. `onChange()` is
+// `ref<BonusDraft>`), so mutations are picked up by Vue's deep reactivity. `onChange()` is
 // called after every mutation to trigger the snapshot-scheduling callback in BonusSetForm.
 //
 // This replaces the emit-based pattern where BonusRows had to clone the entire grants array
@@ -70,7 +70,7 @@ export class GrantStore {
     if (payload === "tiers" && grant.tiers.length === 0) {
       const last = grant.tiers[grant.tiers.length - 1];
       grant.tiers.push({
-        set: last?.set ?? this.store.setIds?.[0] ?? "",
+        bonus: last?.bonus ?? this.store.bonusIds?.[0] ?? "",
         atLeast: (last?.atLeast ?? 0) + 1,
         stats: last ? last.stats.map((s) => ({ ...s })) : [],
       });
@@ -127,7 +127,7 @@ export class GrantStore {
     const grant = this.grant;
     const last = grant.tiers[grant.tiers.length - 1];
     grant.tiers.push({
-      set: last?.set ?? this.store.setIds?.[0] ?? "",
+      bonus: last?.bonus ?? this.store.bonusIds?.[0] ?? "",
       atLeast: (last?.atLeast ?? 0) + 1,
       stats: last ? last.stats.map((s) => ({ ...s })) : [],
     });
@@ -143,7 +143,7 @@ export class GrantStore {
     const grant = this.grant;
     const ref = grant.tiers[index];
     grant.tiers.splice(index + 1, 0, {
-      set: ref?.set ?? this.store.setIds?.[0] ?? "",
+      bonus: ref?.bonus ?? this.store.bonusIds?.[0] ?? "",
       atLeast: (ref?.atLeast ?? 0) + 1,
       stats: [],
     });
@@ -253,7 +253,7 @@ export class BonusDraftStore {
   constructor(
     private readonly _getGrants: () => GrantDraft[],
     onChange: () => void,
-    readonly setIds: string[] = [],
+    readonly bonusIds: string[] = [],
   ) {
     this.onChange = onChange;
   }

@@ -463,14 +463,14 @@ function changeParamKey(row: ConditionRow, key: string) {
               type="number"
           /></FormField>
         </template>
-        <template v-else-if="row.type === 'pieces'">
+        <template v-else-if="row.type === 'bonusOccurrences'">
           <FormField label="Set" class="min-w-0">
             <ComboBox
               class="w-44"
-              :model-value="row.set"
+              :model-value="row.bonus"
               :options="setComboOptions"
               placeholder="— set —"
-              @update:model-value="(v) => (row.set = v)"
+              @update:model-value="(v) => (row.bonus = v)"
             />
           </FormField>
           <FormField label="At least (s)" class="min-w-0"

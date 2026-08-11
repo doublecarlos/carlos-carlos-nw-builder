@@ -3,7 +3,7 @@
 import rawSchema from "../../data/schema.json";
 import rawSlots from "../../data/slots.json";
 import rawItems from "../../data/db-items.json";
-import rawBonusSets from "../../data/db-bonuses.json";
+import rawBonuses from "../../data/db-bonuses.json";
 import type {
   Schema,
   StatDef,
@@ -12,7 +12,7 @@ import type {
   Slot,
   SectionPreset,
   Item,
-  BonusSet,
+  Bonus,
 } from "../types";
 
 function deriveSchema(raw: typeof rawSchema): Schema {
@@ -72,7 +72,7 @@ function deriveSlots(raw: typeof rawSlots): SlotsData {
 export const NW_SCHEMA: Schema = deriveSchema(rawSchema);
 export const NW_SLOTS: SlotsData = deriveSlots(rawSlots);
 export const NW_ITEMS: Item[] = rawItems;
-export const NW_BONUSES: BonusSet[] = rawBonusSets as BonusSet[];
+export const NW_BONUSES: Bonus[] = rawBonuses as Bonus[];
 
 /** What a build's stored choices/overlay were authored against -- storage.ts's export/import/
  * share-link envelope carries this so a stale build can warn ("no longer resolves") instead of

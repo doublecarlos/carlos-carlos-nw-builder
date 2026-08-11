@@ -1,6 +1,6 @@
 // The domain model shared across data.ts / db.ts / catalog.ts / bonus.ts / conditions.ts /
 // engine.ts / storage.ts / condition-draft.ts / bonus-draft.ts. Pulled into one place instead
-// of re-declared per file because the same shapes (Item, BonusSet, Grant, Build, Schema) cross
+// of re-declared per file because the same shapes (Item, Bonus, Grant, Build, Schema) cross
 // every one of those module boundaries -- duplicating them per file would just be `any` with
 // extra steps the next time one drifted from the others.
 //
@@ -103,7 +103,7 @@ export interface ItemPickerSlot {
  * same resolution `ItemPickerSlot` uses, except every match becomes its own row instead of one
  * picked choice. Every point spent on a row's item is resolved by the engine exactly as if that
  * item had been picked in that many separate `item_picker` slots (bonus.ts's `collect()` bumps
- * `equipped`/tags/set pieces/bonus candidates by the count instead of by one). No shared point
+ * `equipped`/tags/bonus occurrences/bonus candidates by the count instead of by one). No shared point
  * budget across the row: each item's `pointAssignment.min`/`max` (on the item itself, see
  * `Item`) is its own bound, not a pool split between them. */
 export interface PointAssignmentSlot {
@@ -288,11 +288,11 @@ export interface ConditionWhen {
   combatType?: string | string[];
   damageType?: string | string[];
   duration?: RangeLike;
-  pieces?: RangeSpec & { set: string };
+  bonusOccurrences?: RangeSpec & { bonus: string };
   equipped?: RangeSpec & { tag?: string; item?: string };
   param?: ParamCondition;
   /** Gates the grant on its own per-grant proc toggle (build.procs, keyed by a stable
-   *  `${bonusSetId}:${grantIndex}` -- see bonus.ts's `evaluateBonus`) rather than the build-wide
+   *  `${bonusId}:${grantIndex}` -- see bonus.ts's `evaluateBonus`) rather than the build-wide
    *  `toggles` map, so a build with several proc-conditional items can enable/disable each
    *  independently. Bare `true` is the common case (default label, default-on); the object form
    *  overrides the checkbox's label and/or starting state -- see `ProcCondition`. */
@@ -308,9 +308,10 @@ export interface GrantVariant {
 }
 
 export interface GrantTier {
-  /** `set` is technically optional on the type (mirroring `RangeSpec`'s shape) but a tier
-   * omitting it always evaluates to 0 pieces -- see conditions.ts's `pieces` leaf. */
-  pieces?: RangeSpec & { set?: string };
+  /** `bonus` is technically optional on the type (mirroring `RangeSpec`'s shape) but a tier
+   * omitting it always evaluates to 0 occurrences -- see conditions.ts's `bonusOccurrences`
+   * leaf. */
+  bonusOccurrences?: RangeSpec & { bonus?: string };
   stats: StatValues;
 }
 
@@ -332,7 +333,7 @@ export interface GrantProblem {
   hideFromPicker?: boolean;
 }
 
-/** Anonymous by design -- only the owning `BonusSet.id` is addressable, not the grant itself.
+/** Anonymous by design -- only the owning `Bonus.id` is addressable, not the grant itself.
  * `stats`/`tiers`/`variants`/`problem` are mutually exclusive payloads chosen at authoring
  * time (see bonus-draft.ts's `payload`); only one is ever set on a given grant. */
 export interface Grant {
@@ -348,7 +349,7 @@ export interface Grant {
   longDescription?: string;
 }
 
-export interface BonusSet {
+export interface Bonus {
   id: string;
   name?: string;
   grants?: Grant[];
@@ -357,10 +358,10 @@ export interface BonusSet {
   maxStacks?: number;
 }
 
-/** One item's contribution of one bonus set -- db.ts's `bonusesFor`. */
+/** One item's contribution of one bonus -- db.ts's `bonusesFor`. */
 export interface BonusCandidate {
-  bonus: BonusSet;
-  setId: string;
+  bonus: Bonus;
+  bonusId: string;
   source: string;
 }
 
@@ -373,9 +374,9 @@ export interface Db {
   sections: SlotSection[];
   presets: SectionPreset[];
   slotById: Map<string, Slot>;
-  bonusSets: BonusSet[];
-  bonusSetById: Map<string, BonusSet>;
-  setMembers: Map<string, string[]>;
+  bonuses: Bonus[];
+  bonusById: Map<string, Bonus>;
+  bonusMembers: Map<string, string[]>;
   itemsByTag: Map<string, string[]>;
   /** Game `Hitem` -> catalogue item id. Built from base catalogue + active overlay, so a
    *  layer can add mappings the shipped catalogue does not have. Overlay entries win over
@@ -394,17 +395,17 @@ export interface Db {
 
 export interface CatalogOverlay {
   items: Record<string, Item | null>;
-  bonusSets: Record<string, BonusSet | null>;
+  bonuses: Record<string, Bonus | null>;
   sectionPresets: Record<string, SectionPreset | null>;
 }
 
-export type CatalogGroup = "items" | "bonusSets" | "sectionPresets";
+export type CatalogGroup = "items" | "bonuses" | "sectionPresets";
 
 export interface LintFinding {
   level: "error" | "warn";
   message: string;
   name?: string;
-  kind: "item" | "bonusSet" | "sectionPreset";
+  kind: "item" | "bonus" | "sectionPreset";
 }
 
 // --- builds (storage.ts) ---------------------------------------------------------------------
@@ -443,7 +444,7 @@ export interface Build {
    * `build_parameter` defaults -- so a read never needs an `?? row.default` fallback for a
    * build the app itself produced, only for hand-edited/imported ones. */
   assignments: Record<string, Record<string, number>>;
-  /** Per-grant proc toggles, keyed by `${bonusSetId}:${grantIndex}` (see `EvalContext.procs`).
+  /** Per-grant proc toggles, keyed by `${bonusId}:${grantIndex}` (see `EvalContext.procs`).
    *  A key absent here reads as on -- only ever holds explicit off/on overrides a user made,
    *  not one entry per proc-gated grant that exists. */
   procs: Record<string, boolean>;
@@ -507,15 +508,15 @@ export interface EvalContext {
   toggles: Record<string, boolean>;
   equipped: Map<string, number>;
   tags: Map<string, number>;
-  setPieces: Map<string, number>;
-  /** Friendly names for bonus set IDs, so conditions can display "Gladiator's Guile"
+  bonusOccurrences: Map<string, number>;
+  /** Friendly names for bonus IDs, so conditions can display "Gladiator's Guile"
    *  instead of "m31-gladiators-guile" in their labels. */
-  setNames: Map<string, string>;
+  bonusNames: Map<string, string>;
   /** Every `build_parameter`'s current value, keyed by its (context-relative) `path` -- what
    *  the `param` leaf reads. Built once by bonus.ts's `collect()`. */
   params: Map<string, string | number | boolean>;
   /** Every per-grant proc toggle currently on record (`build.procs`), keyed by
-   *  `${bonusSetId}:${grantIndex}`. A key absent from the map defaults to *on*, mirroring the
+   *  `${bonusId}:${grantIndex}`. A key absent from the map defaults to *on*, mirroring the
    *  old global toggle's default-on behaviour -- see conditions.ts's `proc` leaf. */
   procs?: Record<string, boolean>;
 }
@@ -546,7 +547,7 @@ export interface GrantEvaluation {
   stats: StatValues | null;
   chose: string | null;
   problem: GrantProblem | null;
-  /** Set to this grant's stable `${bonusSetId}:${grantIndex}` key when its `when` is gated by
+  /** Set to this grant's stable `${bonusId}:${grantIndex}` key when its `when` is gated by
    *  `proc` -- null otherwise. The UI uses this both to know a grant needs a per-item proc
    *  checkbox at all, and as the key to read/write in `build.procs`. */
   procKey: string | null;
@@ -566,8 +567,8 @@ export interface BonusEvaluation {
 
 export interface EvaluatedBonus {
   id: string;
-  bonus: BonusSet;
-  setId: string;
+  bonus: Bonus;
+  bonusId: string;
   sources: string[];
   slotId: string;
   active: boolean;

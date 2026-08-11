@@ -18,12 +18,12 @@ const dataDir = path.join(
 
 // No overlays -- this regenerates the *base* catalogue, sorted the same way `compose()`
 // sorts it for the export drawer (by id) so both paths agree on file order.
-const { items, bonusSets, sectionPresets } = catalog.compose([]);
+const { items, bonuses, sectionPresets } = catalog.compose([]);
 
 writeFileSync(path.join(dataDir, "db-items.json"), catalog.toItemsFile(items));
 writeFileSync(
   path.join(dataDir, "db-bonuses.json"),
-  catalog.toBonusesFile(bonusSets),
+  catalog.toBonusesFile(bonuses),
 );
 writeFileSync(
   path.join(dataDir, "slots.json"),

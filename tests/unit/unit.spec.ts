@@ -11,7 +11,7 @@ import type {
   Build,
   BuildContext,
   BuildParameterSlot,
-  BonusSet,
+  Bonus,
   EvaluatedBonus,
   EngineError,
   Grant,
@@ -370,15 +370,15 @@ describe("bonus model semantics", () => {
       walk(grant.when);
       (grant.variants ?? []).forEach((v: Grant) => walk(v.when));
     };
-    // item.bonuses is a string[] of BonusSet ids -- look up the actual sets by id.
-    const setsById = new Map(built.bonusSets.map((s) => [s.id, s]));
+    // item.bonuses is a string[] of Bonus ids -- look up the actual bonuses by id.
+    const setsById = new Map(built.bonuses.map((s) => [s.id, s]));
     for (const item of built.items) {
       for (const setId of item.bonuses ?? []) {
-        const bonusSet = setsById.get(setId);
-        bonusSet?.grants?.forEach(visit);
+        const bonus = setsById.get(setId);
+        bonus?.grants?.forEach(visit);
       }
     }
-    for (const set of built.bonusSets) set.grants?.forEach(visit);
+    for (const set of built.bonuses) set.grants?.forEach(visit);
     const allowed = new Set([
       "toggle",
       "proc",
@@ -387,7 +387,7 @@ describe("bonus model semantics", () => {
       "combatType",
       "damageType",
       "duration",
-      "pieces",
+      "bonusOccurrences",
       "equipped",
     ]);
     const unknown = [...seen].filter((k) => !allowed.has(k));
@@ -421,7 +421,7 @@ describe("point_assignment resolution", () => {
     bonuses: ["boon-power-set"],
     pointAssignment: { min: 0, max: 4, default: 0 },
   };
-  const powerSet: BonusSet = {
+  const powerSet: Bonus = {
     id: "boon-power-set",
     stacking: "perSource",
     grants: [{ stats: { power_p: 0.02 } }],
@@ -507,7 +507,7 @@ describe("point_assignment resolution", () => {
 });
 
 // Per-item procs (#82): each proc-conditional grant reads its own toggle from `build.procs`,
-// keyed by `${bonusSetId}:${grantIndex}` -- independent of any other grant's, and independent
+// keyed by `${bonusId}:${grantIndex}` -- independent of any other grant's, and independent
 // of the old build-wide `toggles` map. A synthetic db isolates the key format and default-on
 // behaviour from the shipped data, which doesn't author any `proc` conditions yet.
 describe("per-item procs", () => {
@@ -529,7 +529,7 @@ describe("per-item procs", () => {
     name: "Proc Ring",
     bonuses: ["proc-ring-set"],
   };
-  const procRingSet: BonusSet = {
+  const procRingSet: Bonus = {
     id: "proc-ring-set",
     grants: [{ when: { proc: true }, stats: { power_p: 0.05 } }],
   };
@@ -541,7 +541,7 @@ describe("per-item procs", () => {
     name: "Double Proc Trinket",
     bonuses: ["double-proc-set"],
   };
-  const doubleProcSet: BonusSet = {
+  const doubleProcSet: Bonus = {
     id: "double-proc-set",
     grants: [
       { when: { proc: true }, stats: { power_p: 0.01 } },
@@ -556,7 +556,7 @@ describe("per-item procs", () => {
     name: "Situational Trinket",
     bonuses: ["situational-trinket-set"],
   };
-  const situationalTrinketSet: BonusSet = {
+  const situationalTrinketSet: Bonus = {
     id: "situational-trinket-set",
     grants: [
       {
@@ -618,7 +618,7 @@ describe("per-item procs", () => {
   });
 
   it("a grant with no proc condition carries a null procKey", () => {
-    const flat: BonusSet = {
+    const flat: Bonus = {
       id: "flat-set",
       grants: [{ stats: { power_p: 0.03 } }],
     };
@@ -713,7 +713,7 @@ describe("build_parameter linked items", () => {
     bonuses: ["half-orc-set"],
     maxCopies: 1,
   };
-  const halfOrcSet: BonusSet = {
+  const halfOrcSet: Bonus = {
     id: "half-orc-set",
     grants: [{ stats: { power_p: 0.02 } }],
   };
@@ -853,7 +853,7 @@ describe("build_parameter linked items", () => {
       name: "Race: Elf (test)",
       filter: "test_race",
     };
-    const raceRestrictionSet: BonusSet = {
+    const raceRestrictionSet: Bonus = {
       id: "race-restriction-check",
       grants: [
         {
@@ -955,7 +955,7 @@ describe("problem grants (bonus-authored errors/warnings)", () => {
 
   // item_picker case: an error grant gated on the build's own class -- stands in for "the
   // chosen race bonus doesn't match the race picked".
-  const mismatchSet: BonusSet = {
+  const mismatchSet: Bonus = {
     id: "class-mismatch-check",
     grants: [
       {
@@ -973,7 +973,7 @@ describe("problem grants (bonus-authored errors/warnings)", () => {
 
   // Same shape as class-mismatch-check, but its problem grant carries its own `label` --
   // issue #95: the sidebar summary should prefer this over the triggering slot's name.
-  const labeledMismatchSet: BonusSet = {
+  const labeledMismatchSet: Bonus = {
     id: "class-mismatch-check-labeled",
     grants: [
       {
@@ -995,7 +995,7 @@ describe("problem grants (bonus-authored errors/warnings)", () => {
   // A `hideFromPicker` problem grant -- signals that a consumer (ItemPicker.vue) should drop
   // the item from its dropdown while the condition holds, on top of the usual sidebar/inline
   // warning. The engine itself doesn't act on the flag; it just has to carry it through intact.
-  const hideFromPickerSet: BonusSet = {
+  const hideFromPickerSet: Bonus = {
     id: "hide-from-picker-check",
     grants: [
       {
@@ -1031,7 +1031,7 @@ describe("problem grants (bonus-authored errors/warnings)", () => {
     tags: ["tier1"],
     pointAssignment: { min: 0, max: 10, default: 0 },
   };
-  const tier2Set: BonusSet = {
+  const tier2Set: Bonus = {
     id: "tier2-requires-tier1",
     grants: [
       {
@@ -1171,7 +1171,7 @@ describe("problem grants (bonus-authored errors/warnings)", () => {
       ),
     );
     const evaluated = result.bonuses.find(
-      (b) => b.setId === "hide-from-picker-check",
+      (b) => b.bonusId === "hide-from-picker-check",
     );
     expect(evaluated?.active).toBe(true);
     expect(evaluated?.problems[0]?.hideFromPicker).toBe(true);
@@ -1187,7 +1187,7 @@ describe("problem grants (bonus-authored errors/warnings)", () => {
       ),
     );
     const evaluated = result.bonuses.find(
-      (b) => b.setId === "hide-from-picker-check",
+      (b) => b.bonusId === "hide-from-picker-check",
     );
     expect(evaluated?.active).toBe(false);
   });
@@ -1202,7 +1202,7 @@ describe("problem grants (bonus-authored errors/warnings)", () => {
     });
 
     it("does not hide a plain stats-only set", () => {
-      const statsOnly: BonusSet = {
+      const statsOnly: Bonus = {
         id: "stats-only",
         grants: [{ stats: { power_p: 1 } }],
       };
@@ -1210,7 +1210,7 @@ describe("problem grants (bonus-authored errors/warnings)", () => {
     });
 
     it("does not hide a set that mixes a problem grant with a stats grant", () => {
-      const mixed: BonusSet = {
+      const mixed: Bonus = {
         id: "mixed",
         grants: [{ stats: { power_p: 1 } }, mismatchSet.grants![0]],
       };

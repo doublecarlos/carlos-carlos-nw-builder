@@ -89,7 +89,7 @@ describe("bonus-draft problem payload", () => {
   it("problem combined with tiers or variants falls through to JSON, same as tiers+variants does", () => {
     const withTiers: Grant = {
       problem: { severity: "error", message: "x" },
-      tiers: [{ pieces: { set: "s", atLeast: 1 }, stats: {} }],
+      tiers: [{ bonusOccurrences: { bonus: "s", atLeast: 1 }, stats: {} }],
     };
     expect(needsJson(withTiers)).toBe(true);
 

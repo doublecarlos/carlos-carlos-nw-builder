@@ -50,8 +50,8 @@ export function findParamSlot(
  * option's for a `list` (whichever the current value selects), the slot's own for a checked
  * `boolean`. `number`/`percent` never have one. Derived from `context` on every call rather
  * than stored anywhere, so there is exactly one source of truth for "what item is this param
- * worth right now" -- bonus.ts's `collect()` (what counts toward equipped/tags/setPieces/
- * bonuses) and catalog.ts's `referencedOverlay` (what a shared/downloaded build needs to
+ * worth right now" -- bonus.ts's `collect()` (what counts toward equipped/tags/bonus
+ * occurrences/bonuses) and catalog.ts's `referencedOverlay` (what a shared/downloaded build needs to
  * carry) both call this instead of keeping their own copy that could drift. */
 export function resolveLinkedItem(
   slot: BuildParameterSlot,

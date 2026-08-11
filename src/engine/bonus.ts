@@ -9,7 +9,7 @@ import { getPath, resolveLinkedItem } from "../lib/build-path";
 import type {
   Db,
   Build,
-  BonusSet,
+  Bonus,
   Grant,
   BonusCandidate,
   EvalContext,
@@ -33,7 +33,7 @@ const bump = (
   map.set(key, (map.get(key) ?? 0) + amount);
 };
 
-/** A `BonusCandidate` (one item's contribution of one bonus set) plus where/when it was
+/** A `BonusCandidate` (one item's contribution of one bonus) plus where/when it was
  * instanced -- collect()'s per-slot bookkeeping, not part of the candidate itself. */
 interface Candidate extends BonusCandidate {
   slotId: string;
@@ -44,7 +44,7 @@ interface Candidate extends BonusCandidate {
 
 /**
  * One point_assignment slot's contribution -- every point behaves exactly like one more
- * item_picker slot choosing that item, so this bumps `equipped`/tags/set pieces by each
+ * item_picker slot choosing that item, so this bumps `equipped`/tags/bonus occurrences by each
  * item's count (into the caller's running maps), sums the row's own stats into a bucket
  * (engine.ts's `rowVectors` adds this alongside `bonusStatsBySlot`), and expands one bonus
  * candidate per point so stacking (`sources.length`) reads the same as an item_picker pick.
@@ -56,7 +56,7 @@ function collectPointAssignment(
   order: number,
   equipped: Map<string, number>,
   tags: Map<string, number>,
-  setPieces: Map<string, number>,
+  bonusOccurrences: Map<string, number>,
 ): {
   row: ResolvedRow;
   statBucket: Map<string, number>;
@@ -72,7 +72,8 @@ function collectPointAssignment(
 
     bump(equipped, item.id, count);
     for (const tag of item.tags ?? []) bump(tags, tag, count);
-    for (const setId of item.bonuses ?? []) bump(setPieces, setId, count);
+    for (const bonusId of item.bonuses ?? [])
+      bump(bonusOccurrences, bonusId, count);
 
     for (const key of db.schema.statKeys) {
       const raw = item[key];
@@ -98,8 +99,8 @@ function collectPointAssignment(
 /**
  * Walk the build's slots once and gather everything a condition can read.
  *
- * Counts are per *contributing slot*, not per distinct item: two rings of a set is two
- * pieces, and the same insignia slotted twice is two pieces. Tags are counted the same way.
+ * Counts are per *contributing slot*, not per distinct item: two rings of a bonus is two
+ * occurrences, and the same insignia slotted twice is two occurrences. Tags are counted the same way.
  * (The legacy engine deduped qualifiers by item name, but since every tag condition is
  * `atLeast: 1` that difference can never be observable.)
  */
@@ -115,7 +116,7 @@ export function collect(
   const context = build.context ?? {};
   const equipped = new Map<string, number>();
   const tags = new Map<string, number>();
-  const setPieces = new Map<string, number>();
+  const bonusOccurrences = new Map<string, number>();
   const rows: ResolvedRow[] = [];
   const candidates: Candidate[] = [];
   const assignmentStatsBySlot = new Map<string, Map<string, number>>();
@@ -132,7 +133,7 @@ export function collect(
         order,
         equipped,
         tags,
-        setPieces,
+        bonusOccurrences,
       );
       rows.push(collected.row);
       candidates.push(...collected.candidates);
@@ -158,7 +159,7 @@ export function collect(
 
     bump(equipped, item.id);
     for (const tag of item.tags ?? []) bump(tags, tag);
-    for (const setId of item.bonuses ?? []) bump(setPieces, setId);
+    for (const bonusId of item.bonuses ?? []) bump(bonusOccurrences, bonusId);
 
     for (const entry of db.bonusesFor(item)) {
       candidates.push({ ...entry, slotId: slot.id, order });
@@ -177,11 +178,11 @@ export function collect(
     if (resolved !== undefined) params.set(slot.path, resolved);
   }
 
-  // Populate set names from the db so conditions can display friendly names
+  // Populate bonus names from the db so conditions can display friendly names
   // instead of internal IDs like "m32-impending-doom-celestial".
-  const setNames = new Map<string, string>();
-  for (const [id, bonusSet] of db.bonusSetById) {
-    if (bonusSet.name) setNames.set(id, bonusSet.name);
+  const bonusNames = new Map<string, string>();
+  for (const [id, bonus] of db.bonusById) {
+    if (bonus.name) bonusNames.set(id, bonus.name);
   }
 
   const ctx: EvalContext = {
@@ -193,8 +194,8 @@ export function collect(
     toggles: context.toggles ?? {},
     equipped,
     tags,
-    setPieces,
-    setNames,
+    bonusOccurrences,
+    bonusNames,
     params,
     procs: build.procs ?? {},
   };
@@ -206,7 +207,7 @@ export function collect(
 
 /** Resolve one grant against the context into a stat payload (or none).
  * A grant carries no `id`/`name` of its own -- `grantKey` (bonus.ts's own
- * `${bonusSetId}:${grantIndex}`) is passed in purely so a `proc` leaf inside `when` can look up
+ * `${bonusId}:${grantIndex}`) is passed in purely so a `proc` leaf inside `when` can look up
  * its own per-grant toggle; it plays no other role in evaluation. */
 function evaluateGrant(
   grant: Grant,
@@ -269,21 +270,24 @@ function evaluateGrant(
         };
   }
 
-  // `tiers`: highest matching piece threshold wins. Payloads are absolute, not cumulative --
-  // the legacy exact-match on piece count made them mutually exclusive.
+  // `tiers`: highest matching occurrence threshold wins. Payloads are absolute, not cumulative
+  // -- the legacy exact-match on occurrence count made them mutually exclusive.
   if (grant.tiers) {
     let best: (typeof grant.tiers)[number] | null = null;
     let bestAt = -1;
     for (const tier of grant.tiers) {
-      const need = tier.pieces?.atLeast ?? 1;
-      // `tier.pieces.set` is optional on the type (GrantTier) but not on `ConditionWhen.pieces`
-      // -- see types.ts: an *actually* setless tier still reaches `conditions.evaluate` and
-      // fails closed there (`pieces.set` undefined -> 0 pieces counted), so this cast changes
-      // nothing at runtime.
+      const need = tier.bonusOccurrences?.atLeast ?? 1;
+      // `tier.bonusOccurrences.bonus` is optional on the type (GrantTier) but not on
+      // `ConditionWhen.bonusOccurrences` -- see types.ts: an *actually* bonusless tier still
+      // reaches `conditions.evaluate` and fails closed there (`bonusOccurrences.bonus`
+      // undefined -> 0 occurrences counted), so this cast changes nothing at runtime.
       if (
         need > bestAt &&
         conditions.evaluate(
-          { pieces: tier.pieces as ConditionWhen["pieces"] },
+          {
+            bonusOccurrences:
+              tier.bonusOccurrences as ConditionWhen["bonusOccurrences"],
+          },
           ctx,
         )
       ) {
@@ -321,32 +325,32 @@ function evaluateGrant(
 }
 
 /**
- * True when a bonus set has no business appearing in a "bonuses" listing (ItemCard.vue,
+ * True when a bonus has no business appearing in a "bonuses" listing (ItemCard.vue,
  * BonusInspector.vue), active or not -- currently just the problem-only case: every grant it
- * carries has a `problem` payload, so the set exists purely to report a build error/warning,
+ * carries has a `problem` payload, so the bonus exists purely to report a build error/warning,
  * never stats. That's already surfaced inline on its slot and in the errors summary
  * (engine.ts's `bonusProblems`), so showing it again as a would-be bonus that never grants
  * anything is just noise. A single predicate rather than one flag per reason, so a future
- * "hide this from listings" case (an internal bookkeeping set, say) has one place to join in.
+ * "hide this from listings" case (an internal bookkeeping bonus, say) has one place to join in.
  */
-export function isHiddenBonus(bonus: BonusSet): boolean {
+export function isHiddenBonus(bonus: Bonus): boolean {
   const grants = bonus.grants ?? [];
   return grants.length > 0 && grants.every((g) => g.problem != null);
 }
 
 /**
- * Resolve a whole bonus set: every grant it carries, summed. A set is one unit -- its final
+ * Resolve a whole bonus: every grant it carries, summed. A bonus is one unit -- its final
  * stats are the sum of every currently-active grant, not one independently-tracked row
  * per grant.
  */
 export function evaluateBonus(
-  set: BonusSet,
+  bonus: Bonus,
   ctx: EvalContext,
   explain = true,
 ): BonusEvaluation {
-  const results = (set.grants ?? []).map((grant, index) => ({
+  const results = (bonus.grants ?? []).map((grant, index) => ({
     raw: grant,
-    ...evaluateGrant(grant, ctx, `${set.id}:${index}`, explain),
+    ...evaluateGrant(grant, ctx, `${bonus.id}:${index}`, explain),
   }));
   const activeResults = results.filter((r) => r.active);
   const active = activeResults.length > 0;
@@ -402,7 +406,7 @@ export function evaluateBonus(
 
 interface Group {
   id: string;
-  bonus: BonusSet;
+  bonus: Bonus;
   sources: Candidate[];
 }
 
@@ -438,7 +442,7 @@ export function resolve(
     return {
       id: group.id,
       bonus: group.bonus,
-      setId: sources[0].setId,
+      bonusId: sources[0].bonusId,
       sources: sources.map((s) => s.source),
       slotId: sources[0].slotId, // instancing slot, used for stat attribution
       active: result.active,

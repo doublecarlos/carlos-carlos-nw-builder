@@ -9,7 +9,7 @@ import { CirclePlus, FilterX, RotateCcw } from "@lucide/vue";
 import BaseButton from "../ui/BaseButton.vue";
 import BaseBadge from "../ui/BaseBadge.vue";
 import ComboBox from "../ui/ComboBox.vue";
-import type { Item, BonusSet, SectionPreset } from "../../types";
+import type { Item, Bonus, SectionPreset } from "../../types";
 
 export interface ItemRow {
   key: string;
@@ -19,13 +19,13 @@ export interface ItemRow {
   status: string;
   kind: "item";
 }
-export interface BonusSetRow {
+export interface BonusRow {
   key: string;
   name: string;
   filter: string;
-  set: BonusSet | null;
+  set: Bonus | null;
   status: string;
-  kind: "bonusSet";
+  kind: "bonus";
 }
 export interface PresetRow {
   key: string;
@@ -35,29 +35,29 @@ export interface PresetRow {
   status: string;
   kind: "sectionPreset";
 }
-export type EditorRow = ItemRow | BonusSetRow | PresetRow;
+export type EditorRow = ItemRow | BonusRow | PresetRow;
 
 const props = defineProps<{
   /** Already filtered by query/status -- this component only renders and navigates them. */
   rows: EditorRow[];
-  section: string; // items | bonusSets | sectionPresets
+  section: string; // items | bonuses | sectionPresets
   selectedKey: string | null;
   statusFilterOptions: { value: string; label: string }[];
   hasUnsavedDraft: (row: EditorRow) => boolean;
 }>();
 
 const CREATE_LABEL: Record<string, string> = {
-  bonusSets: "New bonus set",
+  bonuses: "New bonus set",
   sectionPresets: "New preset",
   items: "New item",
 };
 const SEARCH_PLACEHOLDER: Record<string, string> = {
-  bonusSets: "Filter bonus sets…",
+  bonuses: "Filter bonus sets…",
   sectionPresets: "Filter presets…",
   items: "Filter items…",
 };
 const CREATE_TESTID: Record<string, string> = {
-  bonusSets: "new-bonus-set",
+  bonuses: "new-bonus-set",
   sectionPresets: "new-preset",
   items: "new-item",
 };

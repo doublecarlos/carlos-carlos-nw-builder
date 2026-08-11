@@ -67,8 +67,8 @@ function computeAutoTickedLayers(buildIds: Iterable<string>): Set<string> {
           break;
         }
       }
-      for (const key of Object.keys(overlay.bonusSets ?? {})) {
-        if (layer.overlay.bonusSets?.[key] !== undefined) {
+      for (const key of Object.keys(overlay.bonuses ?? {})) {
+        if (layer.overlay.bonuses?.[key] !== undefined) {
           newAuto.add(layer.id);
           break;
         }

@@ -34,7 +34,7 @@ import type {
   CatalogGroup,
   CatalogOverlay,
   Item,
-  BonusSet,
+  Bonus,
   SectionPreset,
   LintFinding,
   Layer,
@@ -42,7 +42,7 @@ import type {
 import type {
   EditorRow,
   ItemRow,
-  BonusSetRow,
+  BonusRow,
   PresetRow,
 } from "./game/LayerEntryList.vue";
 
@@ -63,7 +63,7 @@ const ui = computed(() => layerEditorUi.getState(props.layer.id));
 
 const query = ref("");
 const statusFilter = ref("all"); // all | changed | added | edited | removed
-const section = ref("items"); // items | bonusSets | sectionPresets
+const section = ref("items"); // items | bonuses | sectionPresets
 const selectedId = ref<string | null>(null);
 const selectedSetId = ref<string | null>(null);
 const selectedPresetId = ref<string | null>(null);
@@ -74,7 +74,7 @@ const newItemCounter = ref(0);
  *  once at that form's mount -- cleared whenever a plain "New" is requested instead so a
  *  stale duplicate doesn't leak into an unrelated blank draft. */
 const duplicateItemSeed = ref<Item | null>(null);
-const duplicateSetSeed = ref<BonusSet | null>(null);
+const duplicateSetSeed = ref<Bonus | null>(null);
 const notice = ref("");
 const confirmReset_ = useConfirm(4000);
 
@@ -113,16 +113,16 @@ const itemRows = computed<ItemRow[]>(() => {
 
 /** Same shape as `itemRows`, one row per bonus set rather than per item -- so the same
  * list/search/keyboard-nav code serves both without knowing which it's showing. */
-const bonusSetRows = computed<BonusSetRow[]>(() => {
-  const rows: BonusSetRow[] = db.value.bonusSets.map((set) => ({
+const bonusRows = computed<BonusRow[]>(() => {
+  const rows: BonusRow[] = db.value.bonuses.map((set) => ({
     key: set.id,
     name: set.name || set.id,
     filter: `${(set.grants ?? []).length} grant(s)`,
     set,
-    status: catalog.statusOf(overlay.value, "bonusSets", set.id),
-    kind: "bonusSet",
+    status: catalog.statusOf(overlay.value, "bonuses", set.id),
+    kind: "bonus",
   }));
-  for (const [id, value] of Object.entries(overlay.value.bonusSets ?? {})) {
+  for (const [id, value] of Object.entries(overlay.value.bonuses ?? {})) {
     if (value === null) {
       rows.push({
         key: id,
@@ -130,14 +130,14 @@ const bonusSetRows = computed<BonusSetRow[]>(() => {
         filter: "—",
         set: null,
         status: "removed",
-        kind: "bonusSet",
+        kind: "bonus",
       });
     }
   }
   return rows.sort((a, b) => a.name.localeCompare(b.name));
 });
 
-/** Same shape as `itemRows`/`bonusSetRows`, one row per section preset. */
+/** Same shape as `itemRows`/`bonusRows`, one row per section preset. */
 const presetRows = computed<PresetRow[]>(() => {
   const rows: PresetRow[] = db.value.presets.map((preset) => ({
     key: preset.id,
@@ -168,7 +168,7 @@ const presetRows = computed<PresetRow[]>(() => {
 });
 
 const rows = computed(() => {
-  if (section.value === "bonusSets") return bonusSetRows.value;
+  if (section.value === "bonuses") return bonusRows.value;
   if (section.value === "sectionPresets") return presetRows.value;
   return itemRows.value;
 });
@@ -206,13 +206,13 @@ const selectedStatus = computed(() =>
 
 const selectedSet = computed(() => {
   if (selectedSetId.value == null) return null;
-  return db.value.bonusSetById.get(selectedSetId.value) ?? null;
+  return db.value.bonusById.get(selectedSetId.value) ?? null;
 });
 
 const selectedSetStatus = computed(() =>
   selectedSetId.value == null
     ? "base"
-    : catalog.statusOf(overlay.value, "bonusSets", selectedSetId.value),
+    : catalog.statusOf(overlay.value, "bonuses", selectedSetId.value),
 );
 
 const selectedPreset = computed(() => {
@@ -237,7 +237,7 @@ const filters = computed<string[]>(() =>
 );
 
 const setIds = computed<string[]>(() =>
-  [...new Set<string>(db.value.bonusSets.map((set) => set.id))].sort(),
+  [...new Set<string>(db.value.bonuses.map((set) => set.id))].sort(),
 );
 
 const tagList = computed<string[]>(() =>
@@ -252,7 +252,7 @@ const bonusIds = computed(() => setIds.value);
 const changedCount = computed(
   () =>
     Object.keys(overlay.value.items ?? {}).length +
-    Object.keys(overlay.value.bonusSets ?? {}).length +
+    Object.keys(overlay.value.bonuses ?? {}).length +
     Object.keys(overlay.value.sectionPresets ?? {}).length,
 );
 
@@ -262,7 +262,7 @@ const entryCount = computed(() => {
   for (const value of Object.values(overlay.value.items ?? {})) {
     if (value !== null) count += 1;
   }
-  for (const value of Object.values(overlay.value.bonusSets ?? {})) {
+  for (const value of Object.values(overlay.value.bonuses ?? {})) {
     if (value !== null) count += 1;
   }
   for (const value of Object.values(overlay.value.sectionPresets ?? {})) {
@@ -272,7 +272,7 @@ const entryCount = computed(() => {
 });
 
 const hasUnsavedDraft = (row: EditorRow) => {
-  if (row.kind === "bonusSet") {
+  if (row.kind === "bonus") {
     if (row.key === selectedSetId.value) return setForm.value?.dirty ?? false;
   }
   if (row.kind === "sectionPreset") {
@@ -295,7 +295,7 @@ const allocatableIds = computed(() => {
 const findings = computed(() =>
   catalog.validate(
     db.value.items,
-    db.value.bonusSets,
+    db.value.bonuses,
     undefined,
     db.value.presets,
   ),
@@ -328,10 +328,10 @@ function onPopState() {
   duplicateItemSeed.value = null;
   duplicateSetSeed.value = null;
   const route = router.parse();
-  if (route.section === "bonusSets") {
-    section.value = "bonusSets";
+  if (route.section === "bonuses") {
+    section.value = "bonuses";
     selectedSetId.value =
-      route.set && db.value.bonusSetById.get(route.set) ? route.set : null;
+      route.set && db.value.bonusById.get(route.set) ? route.set : null;
   } else if (route.section === "sectionPresets") {
     section.value = "sectionPresets";
     selectedPresetId.value =
@@ -350,9 +350,9 @@ function onPopState() {
 function switchSection(target: string) {
   if (section.value === target) return;
   section.value = target;
-  if (target === "bonusSets") {
+  if (target === "bonuses") {
     router.apply({
-      section: "bonusSets",
+      section: "bonuses",
       item: null,
       preset: null,
       set: selectedSetId.value,
@@ -376,7 +376,7 @@ function switchSection(target: string) {
 
 function select(row: EditorRow, { push = true }: { push?: boolean } = {}) {
   if (row.status === "removed") return;
-  if (row.kind === "bonusSet") {
+  if (row.kind === "bonus") {
     selectedSetId.value = row.key;
     router.apply({ set: row.key, item: null, preset: null }, { push });
   } else if (row.kind === "sectionPreset") {
@@ -389,7 +389,7 @@ function select(row: EditorRow, { push = true }: { push?: boolean } = {}) {
 }
 
 const selectedKey = computed(() => {
-  if (section.value === "bonusSets") return selectedSetId.value;
+  if (section.value === "bonuses") return selectedSetId.value;
   if (section.value === "sectionPresets") return selectedPresetId.value;
   return selectedId.value;
 });
@@ -497,8 +497,8 @@ function onRevert() {
 
 function restore(row: EditorRow) {
   const group: CatalogGroup =
-    row.kind === "bonusSet"
-      ? "bonusSets"
+    row.kind === "bonus"
+      ? "bonuses"
       : row.kind === "sectionPreset"
         ? "sectionPresets"
         : "items";
@@ -537,11 +537,11 @@ function resetAll() {
  * findings carry `kind` precisely so this doesn't have to guess from the id/name shape. */
 function selectFinding(finding: LintFinding) {
   if (!finding.name) return;
-  if (finding.kind === "bonusSet") {
-    section.value = "bonusSets";
+  if (finding.kind === "bonus") {
+    section.value = "bonuses";
     selectedSetId.value = finding.name;
     router.apply({
-      section: "bonusSets",
+      section: "bonuses",
       set: finding.name,
       item: null,
       preset: null,
@@ -572,7 +572,7 @@ function selectFinding(finding: LintFinding) {
 // attaches or detaches); `onSaveSetTop`/`onDeleteSetTop`/`onRevertSetTop` are this
 // component's own "Bonus sets" section, browsing and editing a set on its own.
 
-function onSaveSet({ id, set }: { id: string; set: BonusSet }) {
+function onSaveSet({ id, set }: { id: string; set: Bonus }) {
   history.snapshot(
     "layer",
     props.layer.id,
@@ -580,12 +580,12 @@ function onSaveSet({ id, set }: { id: string; set: BonusSet }) {
     `Save bonus "${set.name || id}"`,
     overlay.value,
   );
-  setOverlay(catalog.upsert(overlay.value, "bonusSets", id, set));
+  setOverlay(catalog.upsert(overlay.value, "bonuses", id, set));
   notice.value = `Saved set "${set.name || id}"`;
 }
 
 /** Live-edit handler: debounced changes from existing bonus sets in item editor go here. */
-function onUpdateSet({ id, set }: { id: string; set: BonusSet }) {
+function onUpdateSet({ id, set }: { id: string; set: Bonus }) {
   history.snapshot(
     "layer",
     props.layer.id,
@@ -593,7 +593,7 @@ function onUpdateSet({ id, set }: { id: string; set: BonusSet }) {
     `Edit bonus "${set.name || id}"`,
     overlay.value,
   );
-  setOverlay(catalog.upsert(overlay.value, "bonusSets", id, set));
+  setOverlay(catalog.upsert(overlay.value, "bonuses", id, set));
 }
 
 function onDeleteSet(id: string) {
@@ -604,11 +604,11 @@ function onDeleteSet(id: string) {
     `Delete bonus "${id}"`,
     overlay.value,
   );
-  setOverlay(catalog.remove(overlay.value, "bonusSets", id));
+  setOverlay(catalog.remove(overlay.value, "bonuses", id));
   notice.value = `Removed set "${id}"`;
 }
 
-function onSaveSetTop({ id, set }: { id: string; set: BonusSet }) {
+function onSaveSetTop({ id, set }: { id: string; set: Bonus }) {
   history.snapshot(
     "layer",
     props.layer.id,
@@ -616,7 +616,7 @@ function onSaveSetTop({ id, set }: { id: string; set: BonusSet }) {
     `Save bonus set "${set.name || id}"`,
     overlay.value,
   );
-  setOverlay(catalog.upsert(overlay.value, "bonusSets", id, set));
+  setOverlay(catalog.upsert(overlay.value, "bonuses", id, set));
   selectedSetId.value = id;
   router.apply({ set: id });
   notice.value = `Saved bonus set "${set.name || id}"`;
@@ -629,7 +629,7 @@ function onUpdateSetTop({
   label,
 }: {
   id: string;
-  set: BonusSet;
+  set: Bonus;
   label: string;
 }) {
   history.snapshot(
@@ -639,7 +639,7 @@ function onUpdateSetTop({
     label,
     overlay.value,
   );
-  setOverlay(catalog.upsert(overlay.value, "bonusSets", id, set));
+  setOverlay(catalog.upsert(overlay.value, "bonuses", id, set));
 }
 
 function onDeleteSetTop() {
@@ -651,7 +651,7 @@ function onDeleteSetTop() {
     `Delete bonus set "${id}"`,
     overlay.value,
   );
-  setOverlay(catalog.remove(overlay.value, "bonusSets", id));
+  setOverlay(catalog.remove(overlay.value, "bonuses", id));
   selectedSetId.value = null;
   router.apply({ set: null });
   notice.value = `Removed bonus set "${id}"`;
@@ -666,7 +666,7 @@ function onRevertSetTop() {
     `Revert bonus set "${id}"`,
     overlay.value,
   );
-  setOverlay(catalog.revert(overlay.value, "bonusSets", id));
+  setOverlay(catalog.revert(overlay.value, "bonuses", id));
   notice.value = `Reverted bonus set "${id}" to the shipped version`;
 }
 
@@ -772,7 +772,7 @@ watch(
   ([sec, item, set, preset, status, q]) => {
     ui.value.section = sec;
     ui.value.item = item ?? "";
-    ui.value.set = set ?? "";
+    ui.value.bonus = set ?? "";
     ui.value.preset = preset ?? "";
     ui.value.status = status === "all" ? "" : status;
     ui.value.q = q;
@@ -797,13 +797,17 @@ function hasRoutedLayerState(routed: Record<string, string>) {
 
 onMounted(() => {
   const routed = router.parse();
-  const source = hasRoutedLayerState(routed) ? routed : ui.value;
+  const routedActive = hasRoutedLayerState(routed);
+  const source = routedActive ? routed : ui.value;
+  // The URL still spells this param `set` (issue #209/#210); the per-layer store spells it
+  // `bonus` (this issue's rename) -- read whichever side `source` resolved to.
+  const sourceBonusId = routedActive ? routed.set : ui.value.bonus;
   // When the layer changes, keep the `item` param if the new layer's composed catalogue
   // still has that id, otherwise drop it (phase 6 §2.3).
-  if (source.section === "bonusSets") {
-    section.value = "bonusSets";
-    if (source.set && db.value.bonusSetById.get(source.set))
-      selectedSetId.value = source.set;
+  if (source.section === "bonuses") {
+    section.value = "bonuses";
+    if (sourceBonusId && db.value.bonusById.get(sourceBonusId))
+      selectedSetId.value = sourceBonusId;
   } else if (source.section === "sectionPresets") {
     section.value = "sectionPresets";
     if (source.preset && db.value.presets.some((p) => p.id === source.preset))
@@ -889,12 +893,12 @@ onUnmounted(() => {
           }}</span>
         </TabButton>
         <TabButton
-          :active="section === 'bonusSets'"
-          @click="switchSection('bonusSets')"
+          :active="section === 'bonuses'"
+          @click="switchSection('bonuses')"
         >
           Bonus sets
           <span class="text-sm opacity-75 tabular-nums">{{
-            db.bonusSets.length
+            db.bonuses.length
           }}</span>
         </TabButton>
         <TabButton
@@ -981,7 +985,7 @@ onUnmounted(() => {
         :has-unsaved-draft="hasUnsavedDraft"
         @select="select"
         @create="
-          section === 'bonusSets'
+          section === 'bonuses'
             ? newSet()
             : section === 'sectionPresets'
               ? newPreset()
@@ -1016,7 +1020,7 @@ onUnmounted(() => {
           @update-set="onUpdateSet"
         />
         <BonusSetForm
-          v-else-if="section === 'bonusSets'"
+          v-else-if="section === 'bonuses'"
           ref="setForm"
           :key="selectedSetId ?? `__new__${newItemCounter}`"
           :source="selectedSet"

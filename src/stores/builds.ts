@@ -187,13 +187,13 @@ function overlayOverlapCount(
   for (const overlay of overlays) {
     if (!overlay) continue;
     for (const key of Object.keys(overlay.items ?? {})) ids.add(key);
-    for (const key of Object.keys(overlay.bonusSets ?? {})) ids.add(key);
+    for (const key of Object.keys(overlay.bonuses ?? {})) ids.add(key);
   }
   let count = 0;
   for (const key of Object.keys(build.catalog.items ?? {})) {
     if (ids.has(key)) count++;
   }
-  for (const key of Object.keys(build.catalog.bonusSets ?? {})) {
+  for (const key of Object.keys(build.catalog.bonuses ?? {})) {
     if (ids.has(key)) count++;
   }
   return count;

@@ -18,7 +18,7 @@ export const LEAF_TYPES = [
   "combatType",
   "damageType",
   "duration",
-  "pieces",
+  "bonusOccurrences",
   "equipped",
   "param",
 ];
@@ -38,7 +38,7 @@ export interface ConditionRow {
   branches?: ConditionRow[][];
   atLeast?: string | number | null;
   below?: string | number | null;
-  set?: string;
+  bonus?: string;
   tag?: string;
   item?: string;
   key?: string;
@@ -86,9 +86,9 @@ function leafFromSpec(
     const s = spec as RangeSpec | undefined;
     return { type, atLeast: s?.atLeast ?? null, below: s?.below ?? null };
   }
-  if (type === "pieces") {
-    const s = spec as { set?: string; atLeast?: number } | undefined;
-    return { type, set: s?.set ?? "", atLeast: s?.atLeast ?? 1 };
+  if (type === "bonusOccurrences") {
+    const s = spec as { bonus?: string; atLeast?: number } | undefined;
+    return { type, bonus: s?.bonus ?? "", atLeast: s?.atLeast ?? 1 };
   }
   if (type === "equipped") {
     const s = spec as
@@ -163,9 +163,9 @@ function leafToSpec(
     if (row.below != null && row.below !== "") range.below = Number(row.below);
     return Object.keys(range).length ? range : undefined;
   }
-  if (row.type === "pieces") {
-    return row.set
-      ? { set: row.set, atLeast: Number(row.atLeast) || 1 }
+  if (row.type === "bonusOccurrences") {
+    return row.bonus
+      ? { bonus: row.bonus, atLeast: Number(row.atLeast) || 1 }
       : undefined;
   }
   if (row.type === "equipped") {

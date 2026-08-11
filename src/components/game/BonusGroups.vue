@@ -22,8 +22,8 @@ import { CirclePlus } from "@lucide/vue";
 import BaseButton from "../ui/BaseButton.vue";
 import BaseBadge from "../ui/BaseBadge.vue";
 import FormSection from "../ui/FormSection.vue";
-import type { Db, BonusSet } from "../../types";
-import type { SetDraft } from "../../engine/bonus-draft";
+import type { Db, Bonus } from "../../types";
+import type { BonusDraft } from "../../engine/bonus-draft";
 import type { BonusDraftStore } from "../../stores/bonus-draft";
 import { bonusDraftRegistryKey } from "../../composables/bonusDraftRegistry";
 
@@ -56,11 +56,11 @@ const props = withDefaults(
 );
 
 const emit = defineEmits<{
-  "save-set": [payload: { id: string; set: BonusSet }];
+  "save-set": [payload: { id: string; set: Bonus }];
   "delete-set": [id: string];
   "detach-set": [id: string];
   "attach-set": [id: string];
-  "update-set": [payload: { id: string; set: BonusSet }];
+  "update-set": [payload: { id: string; set: Bonus }];
 }>();
 
 interface Slot {
@@ -68,7 +68,7 @@ interface Slot {
   id: string | null;
   /** Source set copied by "Duplicate" -- seeds a fresh pending slot's draft via
    *  BonusSetForm's `duplicate-from` prop instead of leaving it blank. */
-  seed?: BonusSet | null;
+  seed?: Bonus | null;
 }
 
 let nextPendingKey = 0;
@@ -90,18 +90,18 @@ const attachable = computed(() => {
     .filter((id) => !attached.has(id))
     .map((id) => ({
       value: id,
-      label: props.db.bonusSetById.get(id)?.name ?? id,
+      label: props.db.bonusById.get(id)?.name ?? id,
     }));
 });
 
-function sourceFor(slot: Slot): BonusSet | null {
-  return slot.id ? (props.db.bonusSetById.get(slot.id) ?? null) : null;
+function sourceFor(slot: Slot): Bonus | null {
+  return slot.id ? (props.db.bonusById.get(slot.id) ?? null) : null;
 }
 
 /** A pending slot's id previews from Name, so it's seeded with the item's own name -- the
  * common case is a bonus that's only this item's business. Read once at creation (`initialDraft`
  * is only ever consulted on mount) -- not kept in sync with later edits to the item's own name. */
-function initialDraftFor(slot: Slot): SetDraft | null {
+function initialDraftFor(slot: Slot): BonusDraft | null {
   if (slot.id || slot.seed) return null;
   return {
     id: "",
@@ -131,7 +131,7 @@ function attachExisting(id: string) {
  * lost by letting the real, `props.setIds`-driven instance mount fresh rather than trying to
  * keep this exact component instance alive across the transition. An already-attached slot's
  * save is just a plain re-save, forwarded as-is. */
-function onSlotSave(slot: Slot, payload: { id: string; set: BonusSet }) {
+function onSlotSave(slot: Slot, payload: { id: string; set: Bonus }) {
   emit("save-set", payload);
   if (!slot.id) {
     emit("attach-set", payload.id);
@@ -140,7 +140,7 @@ function onSlotSave(slot: Slot, payload: { id: string; set: BonusSet }) {
 }
 
 /** Live-edit handler: debounced changes from existing bonus sets go here. */
-function onSlotUpdate(slot: Slot, payload: { id: string; set: BonusSet }) {
+function onSlotUpdate(slot: Slot, payload: { id: string; set: Bonus }) {
   if (slot.id) {
     emit("update-set", payload);
   }
