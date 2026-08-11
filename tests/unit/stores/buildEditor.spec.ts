@@ -4,6 +4,7 @@
 // different key, or the window elapsing, doesn't.
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { installWindowShim } from "./window-shim";
+import * as storage from "../../../src/storage/storage";
 
 async function freshStores() {
   vi.resetModules();
@@ -14,10 +15,21 @@ async function freshStores() {
   const selection = await import("../../../src/stores/selection");
   const trash = await import("../../../src/stores/trash");
   const buildEditor = await import("../../../src/stores/buildEditor");
+  const compare = await import("../../../src/stores/compare");
+  const resolved = await import("../../../src/stores/resolved");
   builds._setLoading(false);
   history._setLoading(false);
   layers._setLoading(false);
-  return { builds, history, layers, selection, trash, buildEditor };
+  return {
+    builds,
+    history,
+    layers,
+    selection,
+    trash,
+    buildEditor,
+    compare,
+    resolved,
+  };
 }
 
 describe("buildEditor undo coalescing", () => {
@@ -165,6 +177,135 @@ describe("buildEditor point_assignment edits", () => {
     buildEditor.setAssignment(slot, "boon-tier1-avoidance", 1);
     buildEditor.resetAssignmentsToDefault(slot);
     expect(builds.build.value.assignments["boons.tier1"]).toEqual(seededRows);
+  });
+});
+
+describe("buildEditor.setOccurrenceInput", () => {
+  it("writes the count under the item id, keyed by bonus id", async () => {
+    const { builds, buildEditor } = await freshStores();
+    buildEditor.setOccurrenceInput("test-ring", "test-bonus", 3, "Test Bonus");
+    expect(builds.build.value.occurrenceInputs).toEqual({
+      "test-ring": { "test-bonus": 3 },
+    });
+  });
+
+  it("a second bonus on the same item does not clobber the first", async () => {
+    const { builds, buildEditor } = await freshStores();
+    buildEditor.setOccurrenceInput("test-ring", "bonus-a", 2, "Bonus A");
+    buildEditor.setOccurrenceInput("test-ring", "bonus-b", 1, "Bonus B");
+    expect(builds.build.value.occurrenceInputs).toEqual({
+      "test-ring": { "bonus-a": 2, "bonus-b": 1 },
+    });
+  });
+
+  it("the same bonus on a different item is tracked independently", async () => {
+    const { builds, buildEditor } = await freshStores();
+    buildEditor.setOccurrenceInput("ring-a", "shared-bonus", 2, "Shared Bonus");
+    buildEditor.setOccurrenceInput("ring-b", "shared-bonus", 5, "Shared Bonus");
+    expect(builds.build.value.occurrenceInputs).toEqual({
+      "ring-a": { "shared-bonus": 2 },
+      "ring-b": { "shared-bonus": 5 },
+    });
+  });
+
+  it("undo reverts one bonus's count without touching a sibling's", async () => {
+    const { builds, buildEditor } = await freshStores();
+    buildEditor.setOccurrenceInput("test-ring", "bonus-a", 2, "Bonus A");
+    buildEditor.setOccurrenceInput("test-ring", "bonus-b", 1, "Bonus B");
+    buildEditor.undo();
+    expect(builds.build.value.occurrenceInputs).toEqual({
+      "test-ring": { "bonus-a": 2 },
+    });
+  });
+});
+
+// A custom ring carried by each build's own `catalog` overlay (storage.ts's `Build.catalog`),
+// same mechanism proc-toggle.spec.ts's e2e fixture uses -- both test builds carry an identical
+// copy so the item resolves regardless of which one ends up active (db.ts only folds in the
+// *active* build's own catalog, see resolved.ts's `overlays`).
+describe("buildEditor.applyOccurrenceFromCompare", () => {
+  const RING_ID = "test-occurrence-ring";
+  const STACK_BONUS_ID = "test-occurrence-stack-bonus";
+
+  const catalog = {
+    items: {
+      [RING_ID]: {
+        id: RING_ID,
+        name: "Test Occurrence Ring",
+        filter: "gear_ring",
+        bonuses: [{ bonus: STACK_BONUS_ID, min: 0, max: 5, default: 0 }],
+      },
+    },
+    bonuses: {
+      [STACK_BONUS_ID]: {
+        id: STACK_BONUS_ID,
+        name: "Stack Bonus",
+        grants: [{ stats: { power: 10 } }],
+      },
+    },
+    sectionPresets: {},
+  };
+
+  function buildWithRing(
+    name: string,
+    occurrenceInputs: Record<string, Record<string, number>> = {},
+  ) {
+    return {
+      ...storage.defaultBuild(name),
+      choices: { "gear.ring1": RING_ID },
+      occurrenceInputs,
+      catalog,
+    };
+  }
+
+  it("copies the compare build's counts onto the active build's item", async () => {
+    const { builds, buildEditor, compare } = await freshStores();
+    const active = buildWithRing("Active", {
+      [RING_ID]: { [STACK_BONUS_ID]: 2 },
+    });
+    const other = buildWithRing("Other", {
+      [RING_ID]: { [STACK_BONUS_ID]: 4 },
+    });
+    builds.replaceActive(other);
+    builds.replaceActive(active);
+    compare.setCompareBuild(other.id);
+
+    buildEditor.applyOccurrenceFromCompare(RING_ID);
+
+    expect(builds.build.value.occurrenceInputs[RING_ID]).toEqual({
+      [STACK_BONUS_ID]: 4,
+    });
+  });
+
+  it("falls back to the attachment's own default for a bonus the compare build never touched", async () => {
+    const { builds, buildEditor, compare } = await freshStores();
+    const active = buildWithRing("Active", {
+      [RING_ID]: { [STACK_BONUS_ID]: 2 },
+    });
+    const other = buildWithRing("Other");
+    builds.replaceActive(other);
+    builds.replaceActive(active);
+    compare.setCompareBuild(other.id);
+
+    buildEditor.applyOccurrenceFromCompare(RING_ID);
+
+    expect(builds.build.value.occurrenceInputs[RING_ID]).toEqual({
+      [STACK_BONUS_ID]: 0,
+    });
+  });
+
+  it("does nothing without a compare build selected", async () => {
+    const { builds, buildEditor } = await freshStores();
+    const active = buildWithRing("Active", {
+      [RING_ID]: { [STACK_BONUS_ID]: 2 },
+    });
+    builds.replaceActive(active);
+
+    buildEditor.applyOccurrenceFromCompare(RING_ID);
+
+    expect(builds.build.value.occurrenceInputs[RING_ID]).toEqual({
+      [STACK_BONUS_ID]: 2,
+    });
   });
 });
 

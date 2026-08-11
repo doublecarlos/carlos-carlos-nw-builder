@@ -262,6 +262,58 @@ export function setProc(grantKey: string, value: boolean, label: string) {
   b.procs = { ...b.procs, [grantKey]: value };
 }
 
+/**
+ * Sets one item's typed occurrence count for one BonusOccurrenceConfig attachment -- `label`
+ * is the row's own description of what it's setting (already resolved by the caller, which has
+ * the bonus name this store doesn't).
+ */
+export function setOccurrenceInput(
+  itemId: string,
+  bonusId: string,
+  count: number,
+  label: string,
+) {
+  const b = builds.build.value;
+  if (!b) return;
+  history.snapshot(
+    "build",
+    b.id,
+    `occurrence:${itemId}:${bonusId}`,
+    `${label} → ${count}`,
+    b,
+  );
+  b.occurrenceInputs = {
+    ...b.occurrenceInputs,
+    [itemId]: { ...b.occurrenceInputs[itemId], [bonusId]: count },
+  };
+}
+
+/** Copies every one of this item's BonusOccurrenceConfig counts from the compare build --
+ *  the occurrence counterpart to `applyAssignmentsFromCompare`. */
+export function applyOccurrenceFromCompare(itemId: string) {
+  const other = compare.compareBuild.value;
+  if (!other) return;
+  const b = builds.build.value;
+  if (!b) return;
+  const item = db.value.get(itemId);
+  if (!item) return;
+  const there = other.occurrenceInputs?.[itemId] ?? {};
+  const applied: Record<string, number> = {};
+  for (const attachment of item.bonuses ?? []) {
+    if (typeof attachment === "string" || attachment.min === attachment.max)
+      continue;
+    applied[attachment.bonus] = there[attachment.bonus] ?? attachment.default;
+  }
+  history.snapshot(
+    "build",
+    b.id,
+    `occurrence:${itemId}`,
+    `${item.name} occurrences → values from "${other.name}"`,
+    b,
+  );
+  b.occurrenceInputs = { ...b.occurrenceInputs, [itemId]: applied };
+}
+
 export function renameBuild(name: string) {
   const b = builds.build.value;
   if (!b) return;

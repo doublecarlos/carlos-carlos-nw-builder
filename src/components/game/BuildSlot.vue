@@ -53,6 +53,8 @@ const props = defineProps<{
   otherChoiceLabel?: string;
   valueDiffers?: boolean;
   otherValue?: number | null;
+  occurrenceDiffers?: boolean;
+  otherOccurrenceLabel?: string;
   // item_picker, point_assignment and build_parameter (when it has a linked item)
   errors?: EngineError[];
   // build_parameter only
@@ -132,6 +134,7 @@ useCursorRowKeys(anchor, {
       highlightDiff &&
         (choiceDiffers ||
           valueDiffers ||
+          occurrenceDiffers ||
           paramDiffers ||
           assignmentDiffers ||
           (bonusDiffs?.length ?? 0) > 0) &&
@@ -181,6 +184,8 @@ useCursorRowKeys(anchor, {
         :bonus-diffs="bonusDiffs"
         :value-differs="valueDiffers"
         :other-value="otherValue"
+        :occurrence-differs="occurrenceDiffers"
+        :other-occurrence-label="otherOccurrenceLabel"
         @add-item="emit('addItem', slotDef.filter)"
       />
       <PointAssignmentRow

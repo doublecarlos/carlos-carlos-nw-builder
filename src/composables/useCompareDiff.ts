@@ -5,6 +5,7 @@ import { getPath } from "../lib/build-path";
 import type {
   Build,
   BuildParameterSlot,
+  BonusOccurrenceConfig,
   Db,
   EvaluatedBonus,
   Item,
@@ -88,6 +89,50 @@ export function assignmentDiffTitle(
       return `${item.name} ${there}`;
     })
     .join(", ");
+}
+
+/** True if any of this item's BonusOccurrenceConfig counts differ from the compare build --
+ * parallel to `assignmentDiffers`, but per attachment on a single item_picker item rather than
+ * per row of several point_assignment items, since that's where these attachments live. A fixed
+ * (`min === max`) config is skipped -- it has no player-set count to differ on. */
+export function occurrenceDiffers(
+  item: Item | null,
+  build: Build,
+  compareBuild: Build | null,
+): boolean {
+  if (!compareBuild || !item) return false;
+  const here = build.occurrenceInputs?.[item.id] ?? {};
+  const there = compareBuild.occurrenceInputs?.[item.id] ?? {};
+  return (item.bonuses ?? []).some((attachment) => {
+    if (typeof attachment === "string" || attachment.min === attachment.max)
+      return false;
+    return (
+      (here[attachment.bonus] ?? attachment.default) !==
+      (there[attachment.bonus] ?? attachment.default)
+    );
+  });
+}
+
+/** The compare build's counts for this item's occurrence attachments, "Bonus A 2, Bonus B 0" --
+ * the occurrence counterpart to `assignmentDiffTitle`. Needs `db` (unlike `occurrenceDiffers`)
+ * to resolve each bonus id to a display name. */
+export function occurrenceDiffTitle(
+  db: Db,
+  item: Item | null,
+  compareBuild: Build | null,
+): string | undefined {
+  if (!compareBuild || !item) return undefined;
+  const there = compareBuild.occurrenceInputs?.[item.id] ?? {};
+  const parts = (item.bonuses ?? [])
+    .filter(
+      (attachment): attachment is BonusOccurrenceConfig =>
+        typeof attachment !== "string" && attachment.min !== attachment.max,
+    )
+    .map((attachment) => {
+      const name = db.bonusById.get(attachment.bonus)?.name ?? attachment.bonus;
+      return `${name} ${there[attachment.bonus] ?? attachment.default}`;
+    });
+  return parts.length ? parts.join(", ") : undefined;
 }
 
 export function useCompareDiff(options: {

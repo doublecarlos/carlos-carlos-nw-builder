@@ -68,6 +68,32 @@ export async function stepAssignment(
     .click({ modifiers: options?.modifiers });
 }
 
+/** An item_picker row's stepper input for one BonusOccurrenceConfig attachment, keyed by
+ *  bonus id. */
+export function occurrenceInput(row: Locator, bonusId: string): Locator {
+  return row.getByTestId(`occurrence-input-${bonusId}`);
+}
+
+/** An item_picker row's checkbox for a 0-1 BonusOccurrenceConfig attachment, keyed by
+ *  bonus id. */
+export function occurrenceCheckbox(row: Locator, bonusId: string): Locator {
+  return row.getByTestId(`occurrence-toggle-${bonusId}`);
+}
+
+/** Clicks the -/+ button next to an item_picker row's occurrence stepper. Ctrl/Cmd+click (via
+ *  `modifiers`) jumps straight to that direction's bound instead of stepping by one. */
+export async function stepOccurrence(
+  row: Locator,
+  bonusId: string,
+  dir: "increase" | "decrease",
+  options?: { modifiers?: ("Control" | "Meta")[] },
+) {
+  const wrapper = occurrenceInput(row, bonusId).locator("..");
+  await wrapper
+    .getByTitle(dir === "increase" ? "Increase" : "Decrease")
+    .click({ modifiers: options?.modifiers });
+}
+
 /** The row currently holding real focus -- a header button, a slot row's invisible cursor
  * anchor, or a slot row's picker input all make their row match `:focus-within`, which is the
  * native-focus replacement for the old virtual-cursor `.is-cursor` class. */

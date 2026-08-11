@@ -8,11 +8,18 @@ import ItemPicker from "./ItemPicker.vue";
 import BaseButton from "../ui/BaseButton.vue";
 import BaseCheckbox from "../ui/BaseCheckbox.vue";
 import IconButton from "../ui/IconButton.vue";
-import { Plus } from "@lucide/vue";
+import { Minus, Plus } from "@lucide/vue";
 import * as buildEditor from "../../stores/buildEditor";
 import { useItemProcs } from "../../composables/useItemProcs";
+import {
+  useItemBonusOccurrences,
+  type OccurrenceRow,
+} from "../../composables/useItemBonusOccurrences";
 import { label as statLabel } from "../../lib/format";
+import { isMac } from "../../lib/platform";
 import type { Build, Db, Item, ItemPickerSlot } from "../../types";
+
+const modKey = isMac ? "Cmd" : "Ctrl";
 
 const props = defineProps<{
   slotDef: ItemPickerSlot;
@@ -31,6 +38,8 @@ const props = defineProps<{
   bonusDiffs?: { id: string; message: string }[];
   valueDiffers?: boolean;
   otherValue?: number | null;
+  occurrenceDiffers?: boolean;
+  otherOccurrenceLabel?: string;
 }>();
 
 const emit = defineEmits<{
@@ -42,6 +51,47 @@ const emit = defineEmits<{
 const picker = useTemplateRef<InstanceType<typeof ItemPicker>>("picker");
 
 const procRows = useItemProcs(computed(() => props.item));
+const occurrenceRows = useItemBonusOccurrences(computed(() => props.item));
+
+function onOccurrenceCheckbox(row: OccurrenceRow, checked: boolean) {
+  buildEditor.setOccurrenceInput(
+    props.item!.id,
+    row.bonusId,
+    checked ? 1 : 0,
+    row.label,
+  );
+}
+
+function onOccurrenceInput(row: OccurrenceRow, event: Event) {
+  const raw = Number((event.target as HTMLInputElement).value);
+  buildEditor.setOccurrenceInput(
+    props.item!.id,
+    row.bonusId,
+    Number.isFinite(raw) ? raw : row.defaultValue,
+    row.label,
+  );
+}
+
+/** As PointAssignmentInput.vue's own stepper: a plain click steps by one, Ctrl/Cmd+click jumps
+ *  straight to that direction's bound. Stopped from bubbling: unlike a point_assignment row
+ *  (which has no single `itemIn` resolution of its own, so BuildEditor's row-level Ctrl+click
+ *  handler already no-ops there), an item_picker row's Ctrl+click jumps straight to its one
+ *  item in the layer editor -- a stepper embedded in this row would otherwise trigger that
+ *  navigation on every Ctrl+click instead of stepping. */
+function stepOccurrence(row: OccurrenceRow, dir: 1 | -1, event: MouseEvent) {
+  event.stopPropagation();
+  if (isMac ? event.metaKey : event.ctrlKey) {
+    buildEditor.setOccurrenceInput(
+      props.item!.id,
+      row.bonusId,
+      dir === 1 ? row.max : row.min,
+      row.label,
+    );
+    return;
+  }
+  const next = Math.min(Math.max(row.value + dir, row.min), row.max);
+  buildEditor.setOccurrenceInput(props.item!.id, row.bonusId, next, row.label);
+}
 
 defineExpose({
   focus: () => picker.value?.focus(),
@@ -91,6 +141,57 @@ const value = () => props.build.values[props.slotDef.id];
     >
       {{ row.label }}
     </BaseCheckbox>
+  </div>
+
+  <!-- One row per BonusOccurrenceConfig this item carries -- a 0-1 range reads as a checkbox
+       (visually/behaviorally the same as a proc's), a wider range as a stepper. A fixed
+       (min === max) config never produces a row at all -- see useItemBonusOccurrences.ts. -->
+  <div
+    v-if="occurrenceRows.length"
+    class="mt-1 flex flex-wrap items-center gap-2.5"
+  >
+    <BaseCheckbox
+      v-for="row in occurrenceRows.filter((r) => r.kind === 'checkbox')"
+      :key="row.bonusId"
+      inline
+      :data-testid="`occurrence-toggle-${row.bonusId}`"
+      :model-value="row.value === 1"
+      @update:model-value="onOccurrenceCheckbox(row, $event as boolean)"
+    >
+      {{ row.label }}
+    </BaseCheckbox>
+    <div
+      v-for="row in occurrenceRows.filter((r) => r.kind === 'stepper')"
+      :key="row.bonusId"
+      class="flex items-center gap-1.5"
+    >
+      <span class="text-sm">{{ row.label }}</span>
+      <div class="flex items-center gap-1">
+        <IconButton
+          :title="`Decrease (${modKey}+click for min)`"
+          :disabled="row.value <= row.min"
+          @click="stepOccurrence(row, -1, $event)"
+        >
+          <Minus />
+        </IconButton>
+        <input
+          type="number"
+          class="w-14 rounded-md border border-line bg-surface py-0.5 text-center focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+          :min="row.min"
+          :max="row.max"
+          :value="row.value"
+          :data-testid="`occurrence-input-${row.bonusId}`"
+          @input="onOccurrenceInput(row, $event)"
+        />
+        <IconButton
+          :title="`Increase (${modKey}+click for max)`"
+          :disabled="row.value >= row.max"
+          @click="stepOccurrence(row, 1, $event)"
+        >
+          <Plus />
+        </IconButton>
+      </div>
+    </div>
   </div>
 
   <!-- Dynamic weapon modifications carry a user-typed magnitude. Driven by the item's own
@@ -150,6 +251,20 @@ const value = () => props.build.values[props.slotDef.id];
       variant="link"
       class="ml-0.5 text-accent"
       @click.stop="buildEditor.applyValueFromCompare(slotDef.id)"
+    >
+      apply
+    </BaseButton>
+  </p>
+
+  <p
+    v-if="highlightDiff && occurrenceDiffers"
+    class="slot-diff-note mt-0.5 text-sm text-muted"
+  >
+    {{ compareBuild?.name }}: {{ otherOccurrenceLabel ?? "(none)" }}
+    <BaseButton
+      variant="link"
+      class="ml-0.5 text-accent"
+      @click.stop="buildEditor.applyOccurrenceFromCompare(item!.id)"
     >
       apply
     </BaseButton>

@@ -27,6 +27,8 @@ import {
   paramDiffTitle,
   assignmentDiffers,
   assignmentDiffTitle,
+  occurrenceDiffers,
+  occurrenceDiffTitle,
 } from "../composables/useCompareDiff";
 import * as storage from "../storage/storage";
 import * as router from "../lib/router";
@@ -579,6 +581,12 @@ function onFocusIn(event: FocusEvent) {
           :bonus-diffs="rowDiff(slotDef.id)?.bonuses"
           :value-differs="!!rowDiff(slotDef.id)?.value"
           :other-value="compareBuild?.values?.[slotDef.id]"
+          :occurrence-differs="
+            occurrenceDiffers(itemIn(slotDef.id), build, compareBuild)
+          "
+          :other-occurrence-label="
+            occurrenceDiffTitle(db, itemIn(slotDef.id), compareBuild)
+          "
           :param-differs="
             slotDef.type === 'build_parameter'
               ? paramDiffers(build, compareBuild, slotDef)
