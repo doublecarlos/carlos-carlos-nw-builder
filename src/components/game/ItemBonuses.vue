@@ -1,21 +1,21 @@
 <script setup lang="ts">
 // "Bonuses" -- every bonus group the open item belongs to, editable in place.
 //
-// A thin orchestrator over BonusSetForm.vue: this owns which ids are attached to the item
+// A thin orchestrator over BonusForm.vue: this owns which ids are attached to the item
 // (attach/detach, the "+ Add bonus"/"attach existing" affordances, one pending not-yet-saved
 // slot per in-progress new bonus) and defers all of the actual editing -- name, id preview,
-// stacking, excludes, grants, undo/redo, save/revert/delete -- to BonusSetForm itself, the same
-// component the standalone "Bonus sets" section uses. One bonus-editing surface, not two that
+// stacking, excludes, grants, undo/redo, save/revert/delete -- to BonusForm itself, the same
+// component the standalone "Bonuses" section uses. One bonus-editing surface, not two that
 // can drift apart (the bug this replaced: a hand-rolled id-generation copy here froze the id the
 // instant "+ Add bonus" was clicked, seeded from the *item's* name, instead of previewing it
-// live from whatever the user types into the bonus's own Name field the way BonusSetForm does).
+// live from whatever the user types into the bonus's own Name field the way BonusForm does).
 //
-// A pending slot has no id at all until its first save: BonusSetForm previews one live off
+// A pending slot has no id at all until its first save: BonusForm previews one live off
 // Name (seeded from the item's own name as a starting point), and that same Save both persists
 // the set and attaches the resulting id to the item, in one step -- there is nothing to decide
 // up front any more.
 import { ref, computed, provide } from "vue";
-import BonusSetForm from "./BonusSetForm.vue";
+import BonusForm from "./BonusForm.vue";
 import ComboBox from "../ui/ComboBox.vue";
 import IconButton from "../ui/IconButton.vue";
 import { CirclePlus } from "@lucide/vue";
@@ -28,7 +28,7 @@ import type { BonusDraftStore } from "../../stores/bonus-draft";
 import { bonusDraftRegistryKey } from "../../composables/bonusDraftRegistry";
 
 // Lets a condition be dragged from one bonus's tree straight into another's, both attached to
-// this same item (see bonusDraftRegistry.ts) -- each BonusSetForm below registers its own
+// this same item (see bonusDraftRegistry.ts) -- each BonusForm below registers its own
 // store under its slot's key.
 provide(bonusDraftRegistryKey, new Map<string, BonusDraftStore>());
 
@@ -67,7 +67,7 @@ interface Slot {
   key: string;
   id: string | null;
   /** Source set copied by "Duplicate" -- seeds a fresh pending slot's draft via
-   *  BonusSetForm's `duplicate-from` prop instead of leaving it blank. */
+   *  BonusForm's `duplicate-from` prop instead of leaving it blank. */
   seed?: Bonus | null;
 }
 
@@ -76,7 +76,7 @@ const pending = ref<Slot[]>([]);
 
 /** One slot per attached id, plus however many pending (not-yet-saved, not-yet-attached) ones
  * are in progress. An attached slot is keyed by its id; a pending slot keeps its own key across
- * the save transition (see `onSlotSave`) so its BonusSetForm instance is never remounted --
+ * the save transition (see `onSlotSave`) so its BonusForm instance is never remounted --
  * and so never loses its in-progress draft/undo history -- right at the moment it's saved. */
 const slots = computed<Slot[]>(() => [
   ...props.setIds.map((id): Slot => ({ key: `id:${id}`, id })),
@@ -126,7 +126,7 @@ function attachExisting(id: string) {
 /** A pending slot's first save both persists the set (forwarded as-is) and attaches the
  * resulting id to the item -- see the module comment above. The pending slot itself is then
  * dropped: the id it just got now flows through `props.setIds` instead, same as any other
- * attached bonus, so keeping both around would double-render it. BonusSetForm resets its own
+ * attached bonus, so keeping both around would double-render it. BonusForm resets its own
  * draft/undo history after every save regardless (its own comment on why), so there's nothing
  * lost by letting the real, `props.setIds`-driven instance mount fresh rather than trying to
  * keep this exact component instance alive across the transition. An already-attached slot's
@@ -203,12 +203,12 @@ function onSlotDuplicate(slot: Slot) {
       class="mb-2.5 rounded-md border border-line bg-accent-soft/30 px-2.5 py-2"
     >
       <!-- A dangling reference (attached id with no catalogue entry -- a hand-edited import,
-           typically) has nothing else to signal it: BonusSetForm's own `status` badge needs
+           typically) has nothing else to signal it: BonusForm's own `status` badge needs
            overlay access this component doesn't have, so it stays 'base' here throughout. -->
       <BaseBadge v-if="slot.id && !sourceFor(slot)" variant="warn" class="mb-1"
         >not defined yet</BaseBadge
       >
-      <BonusSetForm
+      <BonusForm
         :source="sourceFor(slot)"
         :fixed-id="slot.id"
         :initial-draft="initialDraftFor(slot)"
@@ -227,7 +227,7 @@ function onSlotDuplicate(slot: Slot) {
         <template #extra-actions>
           <BaseButton @click="onSlotDetach(slot)">Detach</BaseButton>
         </template>
-      </BonusSetForm>
+      </BonusForm>
     </div>
   </div>
 </template>

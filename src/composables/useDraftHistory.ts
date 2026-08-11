@@ -1,4 +1,4 @@
-// Shared engine behind ItemForm.vue / BonusSetForm.vue's "hybrid" editing model:
+// Shared engine behind ItemForm.vue / BonusForm.vue's "hybrid" editing model:
 // - New entries (no committed source yet): edits accumulate into a local undo/redo stack,
 //   coalesced into one step per DEBOUNCE_MS of typing, and registered with the global
 //   formUndo store so the app header's Undo/Redo buttons reach them.

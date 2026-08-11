@@ -25,7 +25,7 @@ test.describe("selecting a layer replaces the build editor", () => {
     ).toBeVisible();
     await expect(page.getByRole("button", { name: /Items \d+/ })).toBeVisible();
     await expect(
-      page.getByRole("button", { name: /Bonus sets \d+/ }),
+      page.getByRole("button", { name: /Bonuses \d+/ }),
     ).toBeVisible();
 
     // The build name input should not be visible (layer editor replaces the editor area).
@@ -263,7 +263,7 @@ test.describe("point_assignment items in the Layer Editor", () => {
   });
 });
 
-test.describe("bonus set grant conditions", () => {
+test.describe("bonus grant conditions", () => {
   test("changing a condition's type mid-edit does not drop the condition", async ({
     page,
   }) => {
@@ -272,14 +272,14 @@ test.describe("bonus set grant conditions", () => {
     const layer = layerRow(page, "Layer 1");
     await layer.locator(".nav-name").click();
 
-    // Open the Bonus sets section and pick a set whose grant has a toggle condition.
-    await page.getByRole("button", { name: /Bonus sets \d+/ }).click();
+    // Open the Bonuses section and pick a bonus whose grant has a toggle condition.
+    await page.getByRole("button", { name: /Bonuses \d+/ }).click();
     await page.locator(".editor-search").fill("1st Pack Tactics (Group)");
-    const setRow = page
+    const bonusRow = page
       .locator(".editor-row")
       .filter({ hasText: "1st Pack Tactics (Group)" })
       .first();
-    await setRow.click();
+    await bonusRow.click();
 
     const typePicker = page
       .getByText("Condition", { exact: true })
@@ -301,12 +301,12 @@ test.describe("bonus set grant conditions", () => {
     await expect(typePicker).toHaveValue("class");
 
     // Wait past the 700ms debounce: the row must still be there and nothing must have
-    // been persisted (no "edited" status badge on the set row -- the "unsaved" badge
+    // been persisted (no "edited" status badge on the bonus row -- the "unsaved" badge
     // for the dirty form is expected).
     await page.waitForTimeout(1500);
     await expect(typePicker).toHaveValue("class");
     await expect(valuePicker).toBeVisible();
-    const statusBadge = setRow
+    const statusBadge = bonusRow
       .getByTestId("badge")
       .filter({ hasText: "edited" });
     await expect(statusBadge).toHaveCount(0);
@@ -321,21 +321,21 @@ test.describe("bonus set grant conditions", () => {
   });
 });
 
-test.describe("bonus set stat payload editing", () => {
-  /** Opens the layer editor's Bonus sets section and selects one set by name. */
-  async function openSet(page: Page, name: string) {
+test.describe("bonus stat payload editing", () => {
+  /** Opens the layer editor's Bonuses section and selects one bonus by name. */
+  async function openBonus(page: Page, name: string) {
     await openBuilder(page);
     await addLayer(page);
     await layerRow(page, "Layer 1").locator(".nav-name").click();
-    await page.getByRole("button", { name: /Bonus sets \d+/ }).click();
+    await page.getByRole("button", { name: /Bonuses \d+/ }).click();
     await page.locator(".editor-search").fill(name);
-    const setRow = page
+    const bonusRow = page
       .locator(".editor-row")
       .filter({ hasText: name })
       .first();
-    await setRow.click();
+    await bonusRow.click();
     await expect(page.locator(".stat-row").first()).toBeVisible();
-    return setRow;
+    return bonusRow;
   }
 
   /** Picks a stat for the row's combo by typing the full label, then selecting it. */
@@ -349,14 +349,14 @@ test.describe("bonus set stat payload editing", () => {
   test("adding a stat to a tiered payload adds it to the tier and survives auto-save", async ({
     page,
   }) => {
-    const setRow = await openSet(page, "Executioner's Covenant");
+    const bonusRow = await openBonus(page, "Executioner's Covenant");
 
     // Two tiers, eight stats each.
     const rowsBefore = await page.locator(".stat-row").count();
     await page.getByRole("button", { name: "Add stat" }).first().click();
     await expect(page.locator(".stat-row")).toHaveCount(rowsBefore + 1);
 
-    // The tier's set combo lists the set ids (they reach the form through the store).
+    // The tier's bonus combo lists the bonus ids (they reach the form through the store).
     await page
       .locator(".combo--set")
       .first()
@@ -370,19 +370,19 @@ test.describe("bonus set stat payload editing", () => {
     await page.keyboard.press("Escape");
 
     // Fill the new row, then wait past the 700ms auto-save debounce: the row must
-    // survive the round-trip and the set must be marked edited.
+    // survive the round-trip and the bonus must be marked edited.
     await pickStat(page.locator(".stat-row").last());
     await page.waitForTimeout(1500);
     await expect(page.locator(".stat-row")).toHaveCount(rowsBefore + 1);
     await expect(
-      setRow.getByTestId("badge").filter({ hasText: "edited" }),
+      bonusRow.getByTestId("badge").filter({ hasText: "edited" }),
     ).toBeVisible();
   });
 
   test("adding a stat to a 'varies by condition' payload adds it to the variant", async ({
     page,
   }) => {
-    const setRow = await openSet(page, "Bard's Truly Inspired (Skill)");
+    const bonusRow = await openBonus(page, "Bard's Truly Inspired (Skill)");
 
     // Two variants, one stat each.
     const rowsBefore = await page.locator(".stat-row").count();
@@ -394,14 +394,14 @@ test.describe("bonus set stat payload editing", () => {
     await page.waitForTimeout(1500);
     await expect(page.locator(".stat-row")).toHaveCount(rowsBefore + 1);
     await expect(
-      setRow.getByTestId("badge").filter({ hasText: "edited" }),
+      bonusRow.getByTestId("badge").filter({ hasText: "edited" }),
     ).toBeVisible();
   });
 
   test("pre-added empty stat rows survive filling one of them", async ({
     page,
   }) => {
-    const setRow = await openSet(page, "1st Pack Tactics (Group)");
+    const bonusRow = await openBonus(page, "1st Pack Tactics (Group)");
 
     // The add-rows-first workflow: add three empty rows, then fill only the first new
     // one. The still-empty rows must not be wiped by the auto-save round-trip.
@@ -415,7 +415,7 @@ test.describe("bonus set stat payload editing", () => {
     await page.waitForTimeout(1500);
     await expect(rows).toHaveCount(5);
     await expect(
-      setRow.getByTestId("badge").filter({ hasText: "edited" }),
+      bonusRow.getByTestId("badge").filter({ hasText: "edited" }),
     ).toBeVisible();
   });
 });

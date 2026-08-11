@@ -4,10 +4,9 @@
 // v-if/v-else), so its local refs are lost on unmount. LayerEditor.vue itself still owns the
 // URL (its own corner of the query string, cleared on unmount to keep a build's URL clean),
 // but a fresh mount needs *something* to fall back on once that URL is gone -- this is that
-// something. Field names mirror the router params (`item`/`preset`/`section`/`status`/`q`) so
-// a mounting component can treat "the URL" and "the stored state" as interchangeable sources
-// -- except `bonus`, which the URL still spells `set` (LayerEditor.vue translates between the
-// two at the sync boundary).
+// something. Field names mirror the router params (`item`/`bonus`/`preset`/`section`/`status`/
+// `q`) so a mounting component can treat "the URL" and "the stored state" as interchangeable
+// sources.
 import { reactive } from "vue";
 
 export interface LayerEditorUiState {

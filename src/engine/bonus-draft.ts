@@ -11,7 +11,7 @@
 // silently flattens a structure it has no widget for.
 //
 // Stacking/`excludes` are a *bonus*-level property now (one grant among several shouldn't
-// imply the whole bonus stacks), so they're edited once by the caller (BonusSetForm.vue/
+// imply the whole bonus stacks), so they're edited once by the caller (BonusForm.vue/
 // bonus-groups.js), not per row here.
 
 import {
@@ -248,7 +248,7 @@ export interface BonusDraft {
 
 /** Assembles a bonus-level draft (id/name/grants plus the bonus-level stacking/excludes
  * fields) back into the JSON shape, the same "only include if present" convention `toGrant`
- * used to apply per-effect -- shared by BonusSetForm.vue and bonus-groups.js so the two editing
+ * used to apply per-effect -- shared by BonusForm.vue and bonus-groups.js so the two editing
  * surfaces can't drift on what counts as "present". Throws if any grant is unparseable JSON. */
 export function toBonus(draft: BonusDraft): Bonus {
   const grants = draft.grants.map((g) => toGrant(g));

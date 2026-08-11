@@ -60,7 +60,7 @@ const emit = defineEmits<{
   update: [rows: ConditionRow[]];
   /** A condition row was dropped into a different rows-list than the one it came from --
    *  possibly a different branch of the same tree, a different grant/variant's tree, or (via
-   *  BonusGroups' cross-bonus registry) a different bonus entirely. The outermost ConditionRows
+   *  ItemBonuses' cross-bonus registry) a different bonus entirely. The outermost ConditionRows
    *  instance can't resolve this alone (removal happens in an array it doesn't own), so it
    *  bubbles all the way up to whichever component owns the store -- every intermediate
    *  ConditionRows instance just re-emits its children's `transfer` unchanged. */

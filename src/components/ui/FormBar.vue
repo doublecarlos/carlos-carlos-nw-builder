@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// Sticky action bar at the top of an editing form (ItemForm/BonusSetForm/PresetForm).
+// Sticky action bar at the top of an editing form (ItemForm/BonusForm/PresetForm).
 // The parent's scroll container carries no top padding, so this bar's own `p-3` sits
 // flush against the container's top edge -- avoids a sticky element needing a negative
 // margin to cancel a fractional-pixel top padding, which rounds to a different device

@@ -65,11 +65,11 @@ test("layer editor keeps its active tab after switching to the build editor and 
   const layer = layerRow(page, "Layer 1");
   await layer.locator(".nav-name").click();
 
-  await page.getByRole("button", { name: /Bonus sets \d+/ }).click();
-  await expect(page.getByTestId("new-bonus-set")).toBeVisible();
+  await page.getByRole("button", { name: /Bonuses \d+/ }).click();
+  await expect(page.getByTestId("new-bonus")).toBeVisible();
 
   await switchToBuild(page);
   await layer.locator(".nav-name").click();
 
-  await expect(page.getByTestId("new-bonus-set")).toBeVisible();
+  await expect(page.getByTestId("new-bonus")).toBeVisible();
 });

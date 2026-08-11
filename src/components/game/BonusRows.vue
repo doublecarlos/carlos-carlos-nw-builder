@@ -3,9 +3,9 @@
 // notes (anonymous grants, flat/tiered/variants payloads, the JSON escape hatch).
 //
 // This component no longer emits a replaced `rows` array when a grant is edited. Instead,
-// all mutations go through the `store` — a `BonusDraftStore` created in BonusSetForm that
+// all mutations go through the `store` — a `BonusDraftStore` created in BonusForm that
 // writes directly onto `draft.value.grants`. The store's `onChange()` is called after every
-// mutation, which schedules an undo snapshot in BonusSetForm.
+// mutation, which schedules an undo snapshot in BonusForm.
 
 import { computed, inject } from "vue";
 import PercentInput from "../ui/PercentInput.vue";
@@ -51,8 +51,8 @@ const props = withDefaults(
     store: BonusDraftStore;
     setIds?: string[];
     tags?: string[];
-    /** This bonus's key in BonusGroups' cross-bonus condition-drag registry, forwarded from
-     *  BonusSetForm -- see bonusDraftRegistry.ts. Empty outside BonusGroups. */
+    /** This bonus's key in ItemBonuses' cross-bonus condition-drag registry, forwarded from
+     *  BonusForm -- see bonusDraftRegistry.ts. Empty outside ItemBonuses. */
     registryId?: string;
   }>(),
   { setIds: () => [], tags: () => [], registryId: "" },
@@ -79,7 +79,7 @@ function gs(index: number) {
 // Grants aren't shared across bonuses (unlike conditions -- see ConditionRows.vue), so
 // reordering is always local to this one BonusDraftStore instance. `instanceId` keeps this
 // component's grant list from accepting a drop dragged out of a *different* BonusRows
-// instance (e.g. another bonus in the same item's BonusGroups) if one happens to be open at
+// instance (e.g. another bonus in the same item's ItemBonuses) if one happens to be open at
 // the same time. Tiers/variants are scoped to their own grant the same way, via the grant's
 // own uid.
 const instanceId = `bonus-rows:${Math.random().toString(36).slice(2)}`;
@@ -142,7 +142,7 @@ function variantDragHandleProps(
 
 // --- drag-and-drop: condition trees, including cross-grant/cross-variant/cross-bonus -------
 // A condition's ConditionRows tree-id encodes which bonus it belongs to (this instance's own
-// `registryId`, e.g. a BonusGroups slot key) ahead of which grant/variant tree within that
+// `registryId`, e.g. a ItemBonuses slot key) ahead of which grant/variant tree within that
 // bonus -- a space separates the two, since registryId values ("id:foo", "pending:3") and the
 // grant/variant tag both already use colons. ConditionRows.vue itself never looks inside a
 // tree-id; only the two parse/build functions below do.
@@ -180,7 +180,7 @@ const bonusDraftRegistry = inject(bonusDraftRegistryKey, null);
  *  tree below -- a condition was dropped somewhere other than the rows list it started in.
  *  Resolves both ends fresh from their tree-ids, then either mutates this one store (same
  *  bonus, however far apart in its grant/variant trees) or reaches into the registry for a
- *  different bonus's store entirely (BonusGroups.vue only; standalone forms have no registry,
+ *  different bonus's store entirely (ItemBonuses.vue only; standalone forms have no registry,
  *  so a cross-bonus drop there is silently a no-op -- there's nothing else it could target). */
 function onConditionTransfer(payload: {
   source: ConditionTreeLocation;
@@ -405,7 +405,7 @@ function toggleJson(gIndex: number) {
               "
               @click="gs(gIndex).setPayload('tiers')"
             >
-              tiered by set pieces
+              tiered by bonus occurrences
             </button>
             <button
               type="button"
@@ -485,8 +485,8 @@ function toggleJson(gIndex: number) {
         <template v-else-if="grant.payload === 'tiers'">
           <p class="text-sm text-muted">
             The highest matching tier wins and <strong>replaces</strong> the
-            lower ones — each tier's stats are the total at that piece count,
-            not an extra on top.
+            lower ones — each tier's stats are the total at that occurrence
+            count, not an extra on top.
           </p>
           <!-- Boxed, not just a rule on the left -- with several tiers stacked back to back a
                thin line alone isn't enough contrast to tell where one ends and the next
@@ -554,7 +554,7 @@ function toggleJson(gIndex: number) {
                 min="1"
                 class="w-16 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
               />
-              <span class="text-sm text-muted">piece(s) or more</span>
+              <span class="text-sm text-muted">occurrence(s) or more</span>
             </div>
             <div
               v-for="(stat, sIndex) in tier.stats"

@@ -1,10 +1,10 @@
-// Stores mutations for BonusRows.vue's grant list. BonusSetForm owns `draft` (undo, dirty);
+// Stores mutations for BonusRows.vue's grant list. BonusForm owns `draft` (undo, dirty);
 // this store sits between the form and the component, providing grant-level operations so
 // BonusRows never has to emit a replaced array back up — it just calls store methods.
 //
 // The store operates directly on `draft.value.grants` (which is the proxied array from a
 // `ref<BonusDraft>`), so mutations are picked up by Vue's deep reactivity. `onChange()` is
-// called after every mutation to trigger the snapshot-scheduling callback in BonusSetForm.
+// called after every mutation to trigger the snapshot-scheduling callback in BonusForm.
 //
 // This replaces the emit-based pattern where BonusRows had to clone the entire grants array
 // on every edit and emit it to the parent. Now `addStat(gi)` mutates
@@ -400,7 +400,7 @@ export class BonusDraftStore {
 
 /** Like `BonusDraftStore.moveCondition`, but the source and target locations live in two
  *  independently-owned stores -- a condition dragged from one bonus's tree into another's
- *  (BonusGroups.vue's cross-bonus registry). Each store's own `onChange()` fires so both
+ *  (ItemBonuses.vue's cross-bonus registry). Each store's own `onChange()` fires so both
  *  bonuses' undo histories see the edit. */
 export function moveConditionAcrossStores(
   source: { store: BonusDraftStore; location: ConditionLocation },

@@ -3,7 +3,7 @@
 // - Existing items (source != null): live edits, changes emit immediately
 // - New items (source == null): explicit Save button, draft until name is finalized
 import { ref, computed, watch } from "vue";
-import BonusGroups from "./BonusGroups.vue";
+import ItemBonuses from "./ItemBonuses.vue";
 import BuildParamInput from "./BuildParamInput.vue";
 import TokenInput from "../ui/TokenInput.vue";
 import CreatableComboBox from "../ui/CreatableComboBox.vue";
@@ -773,7 +773,7 @@ watch(
       equipped, whatever grants them.
     </p>
 
-    <BonusGroups
+    <ItemBonuses
       :set-ids="draft.bonuses"
       :item-name="draft.name"
       :db="db"

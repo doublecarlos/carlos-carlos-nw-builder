@@ -7,20 +7,20 @@ import { openBuilder } from "./support/app";
 import { addLayer, layerRow } from "./support/nav";
 import { dragOnto } from "./support/dragDrop";
 
-/** Opens a fresh layer, switches to its Bonus sets tab, and starts a new (unsaved) set --
+/** Opens a fresh layer, switches to its Bonuses tab, and starts a new (unsaved) bonus --
  *  enough to reach BonusRows.vue's grants list without needing to save anything. */
-async function openNewBonusSet(page: import("@playwright/test").Page) {
+async function openNewBonus(page: import("@playwright/test").Page) {
   await openBuilder(page);
   await addLayer(page);
   await layerRow(page, "Layer 1").locator(".nav-name").click();
-  await page.getByRole("button", { name: /Bonus sets \d+/ }).click();
-  await page.getByTestId("new-bonus-set").click();
+  await page.getByRole("button", { name: /Bonuses \d+/ }).click();
+  await page.getByTestId("new-bonus").click();
 }
 
 test("dragging a grant row onto another reorders the grant list", async ({
   page,
 }) => {
-  await openNewBonusSet(page);
+  await openNewBonus(page);
 
   const addGrant = page.getByTitle("Add grant");
   await addGrant.click();
@@ -49,7 +49,7 @@ test("dragging a grant row onto another reorders the grant list", async ({
 test("Move grant up still works after drag-and-drop is wired in", async ({
   page,
 }) => {
-  await openNewBonusSet(page);
+  await openNewBonus(page);
 
   const addGrant = page.getByTitle("Add grant");
   await addGrant.click();

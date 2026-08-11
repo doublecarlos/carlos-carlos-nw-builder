@@ -1,7 +1,7 @@
 // End-to-end coverage for a `Grant.problem`'s `hideFromPicker` flag: a candidate that would
 // activate such a grant is left out of its slot's item picker dropdown entirely, not just
 // flagged once picked (unlike a plain problem grant, which only shows its warning/error after
-// the fact -- see problem-bonus-visibility.spec.ts). Builds a throwaway item + bonus set
+// the fact -- see problem-bonus-visibility.spec.ts). Builds a throwaway item + bonus
 // through the real layer editor UI rather than editing shipped game data, since the flag has
 // no shipped example yet.
 import { test, expect } from "@playwright/test";
@@ -30,7 +30,7 @@ async function createItemWithProblemGrant(
   if (hideFromPicker) {
     await page.getByTestId("problem-hide-from-picker").click();
   }
-  await page.getByRole("button", { name: "Save bonus set" }).click();
+  await page.getByRole("button", { name: "Save bonus" }).click();
   await page.getByRole("button", { name: "Save item" }).click();
 }
 

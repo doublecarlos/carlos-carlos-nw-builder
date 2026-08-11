@@ -11,7 +11,7 @@ import { ref, computed, watch, onMounted, onUnmounted } from "vue";
 import { useEventListener } from "@vueuse/core";
 import { useConfirm } from "../composables/useConfirm";
 import ItemForm from "./game/ItemForm.vue";
-import BonusSetForm from "./game/BonusSetForm.vue";
+import BonusForm from "./game/BonusForm.vue";
 import PresetForm from "./game/PresetForm.vue";
 import LayerExportDrawer from "./game/LayerExportDrawer.vue";
 import LayerValidationDrawer from "./game/LayerValidationDrawer.vue";
@@ -65,21 +65,21 @@ const query = ref("");
 const statusFilter = ref("all"); // all | changed | added | edited | removed
 const section = ref("items"); // items | bonuses | sectionPresets
 const selectedId = ref<string | null>(null);
-const selectedSetId = ref<string | null>(null);
+const selectedBonusId = ref<string | null>(null);
 const selectedPresetId = ref<string | null>(null);
 const showExport = ref(false);
 const exportTab = ref("items"); // items | bonuses | overlay | slots
 const newItemCounter = ref(0);
-/** Seed values for the next brand-new item/set draft, set by "Duplicate" and consumed
+/** Seed values for the next brand-new item/bonus draft, set by "Duplicate" and consumed
  *  once at that form's mount -- cleared whenever a plain "New" is requested instead so a
  *  stale duplicate doesn't leak into an unrelated blank draft. */
 const duplicateItemSeed = ref<Item | null>(null);
-const duplicateSetSeed = ref<Bonus | null>(null);
+const duplicateBonusSeed = ref<Bonus | null>(null);
 const notice = ref("");
 const confirmReset_ = useConfirm(4000);
 
 const form = ref<InstanceType<typeof ItemForm> | null>(null);
-const setForm = ref<InstanceType<typeof BonusSetForm> | null>(null);
+const bonusForm = ref<InstanceType<typeof BonusForm> | null>(null);
 const presetForm = ref<InstanceType<typeof PresetForm> | null>(null);
 
 // Removed entries are gone from `db`, so the list is built from the composed catalogue
@@ -204,15 +204,15 @@ const selectedStatus = computed(() =>
     : catalog.statusOf(overlay.value, "items", selectedId.value),
 );
 
-const selectedSet = computed(() => {
-  if (selectedSetId.value == null) return null;
-  return db.value.bonusById.get(selectedSetId.value) ?? null;
+const selectedBonus = computed(() => {
+  if (selectedBonusId.value == null) return null;
+  return db.value.bonusById.get(selectedBonusId.value) ?? null;
 });
 
-const selectedSetStatus = computed(() =>
-  selectedSetId.value == null
+const selectedBonusStatus = computed(() =>
+  selectedBonusId.value == null
     ? "base"
-    : catalog.statusOf(overlay.value, "bonuses", selectedSetId.value),
+    : catalog.statusOf(overlay.value, "bonuses", selectedBonusId.value),
 );
 
 const selectedPreset = computed(() => {
@@ -273,7 +273,8 @@ const entryCount = computed(() => {
 
 const hasUnsavedDraft = (row: EditorRow) => {
   if (row.kind === "bonus") {
-    if (row.key === selectedSetId.value) return setForm.value?.dirty ?? false;
+    if (row.key === selectedBonusId.value)
+      return bonusForm.value?.dirty ?? false;
   }
   if (row.kind === "sectionPreset") {
     if (row.key === selectedPresetId.value)
@@ -309,7 +310,7 @@ const warnCount = computed(
 );
 
 // --- routing --------------------------------------------------------------------------
-// `item`/`set`/`section`/`status`/`q` are this component's own corner of the URL --
+// `item`/`bonus`/`section`/`status`/`q` are this component's own corner of the URL --
 // App.vue owns view/build/tab and knows nothing about what's selected in here. `select`'s
 // `push` flag is what keeps arrow-key browsing from filling the back/forward stack with
 // one stop per keystroke: a click is a real "go to this row" navigation, an arrow key is
@@ -320,18 +321,18 @@ function isValidStatusFilter(value: unknown) {
 }
 
 /** Back/forward landed on this component while it was already mounted (still in the
- * editor, just a different item/set/section/status filter/query). A fresh mount reads the
+ * editor, just a different item/bonus/section/status filter/query). A fresh mount reads the
  * same params in `onMounted`. */
 function onPopState() {
   // A duplicate draft's seed is only ever meant for the mount it was set up for -- back/
   // forward must never resurrect it onto an unrelated blank draft.
   duplicateItemSeed.value = null;
-  duplicateSetSeed.value = null;
+  duplicateBonusSeed.value = null;
   const route = router.parse();
   if (route.section === "bonuses") {
     section.value = "bonuses";
-    selectedSetId.value =
-      route.set && db.value.bonusById.get(route.set) ? route.set : null;
+    selectedBonusId.value =
+      route.bonus && db.value.bonusById.get(route.bonus) ? route.bonus : null;
   } else if (route.section === "sectionPresets") {
     section.value = "sectionPresets";
     selectedPresetId.value =
@@ -355,19 +356,19 @@ function switchSection(target: string) {
       section: "bonuses",
       item: null,
       preset: null,
-      set: selectedSetId.value,
+      bonus: selectedBonusId.value,
     });
   } else if (target === "sectionPresets") {
     router.apply({
       section: "sectionPresets",
       item: null,
-      set: null,
+      bonus: null,
       preset: selectedPresetId.value,
     });
   } else {
     router.apply({
       section: null,
-      set: null,
+      bonus: null,
       preset: null,
       item: selectedId.value,
     });
@@ -377,19 +378,19 @@ function switchSection(target: string) {
 function select(row: EditorRow, { push = true }: { push?: boolean } = {}) {
   if (row.status === "removed") return;
   if (row.kind === "bonus") {
-    selectedSetId.value = row.key;
-    router.apply({ set: row.key, item: null, preset: null }, { push });
+    selectedBonusId.value = row.key;
+    router.apply({ bonus: row.key, item: null, preset: null }, { push });
   } else if (row.kind === "sectionPreset") {
     selectedPresetId.value = row.key;
-    router.apply({ preset: row.key, item: null, set: null }, { push });
+    router.apply({ preset: row.key, item: null, bonus: null }, { push });
   } else {
     selectedId.value = row.key;
-    router.apply({ item: row.key, set: null, preset: null }, { push });
+    router.apply({ item: row.key, bonus: null, preset: null }, { push });
   }
 }
 
 const selectedKey = computed(() => {
-  if (section.value === "bonuses") return selectedSetId.value;
+  if (section.value === "bonuses") return selectedBonusId.value;
   if (section.value === "sectionPresets") return selectedPresetId.value;
   return selectedId.value;
 });
@@ -401,11 +402,11 @@ function newItem() {
   router.apply({ item: null });
 }
 
-function newSet() {
-  selectedSetId.value = null;
-  duplicateSetSeed.value = null;
+function newBonus() {
+  selectedBonusId.value = null;
+  duplicateBonusSeed.value = null;
   newItemCounter.value++;
-  router.apply({ set: null });
+  router.apply({ bonus: null });
 }
 
 /** Opens a new item draft pre-filled from the currently selected item -- an explicit Save
@@ -421,14 +422,14 @@ function duplicateItem() {
   notice.value = `Duplicating "${item.name}" — edit and save to create a copy`;
 }
 
-function duplicateSet() {
-  const set = selectedSet.value;
-  if (!set) return;
-  duplicateSetSeed.value = set;
-  selectedSetId.value = null;
+function duplicateBonus() {
+  const bonus = selectedBonus.value;
+  if (!bonus) return;
+  duplicateBonusSeed.value = bonus;
+  selectedBonusId.value = null;
   newItemCounter.value++;
-  router.apply({ set: null });
-  notice.value = `Duplicating "${set.name || set.id}" — edit and save to create a copy`;
+  router.apply({ bonus: null });
+  notice.value = `Duplicating "${bonus.name || bonus.id}" — edit and save to create a copy`;
 }
 
 function newPreset() {
@@ -527,9 +528,9 @@ function resetAll() {
   );
   setOverlay(catalog.emptyOverlay());
   selectedId.value = null;
-  selectedSetId.value = null;
+  selectedBonusId.value = null;
   selectedPresetId.value = null;
-  router.apply({ item: null, set: null, preset: null });
+  router.apply({ item: null, bonus: null, preset: null });
   notice.value = "Discarded every change — back to the shipped data";
 }
 
@@ -539,10 +540,10 @@ function selectFinding(finding: LintFinding) {
   if (!finding.name) return;
   if (finding.kind === "bonus") {
     section.value = "bonuses";
-    selectedSetId.value = finding.name;
+    selectedBonusId.value = finding.name;
     router.apply({
       section: "bonuses",
-      set: finding.name,
+      bonus: finding.name,
       item: null,
       preset: null,
     });
@@ -553,7 +554,7 @@ function selectFinding(finding: LintFinding) {
       section: "sectionPresets",
       preset: finding.name,
       item: null,
-      set: null,
+      bonus: null,
     });
   } else {
     section.value = "items";
@@ -561,18 +562,18 @@ function selectFinding(finding: LintFinding) {
     router.apply({
       section: null,
       item: finding.name,
-      set: null,
+      bonus: null,
       preset: null,
     });
   }
 }
 
-// --- bonus sets -----------------------------------------------------------------------
-// `onSaveSet`/`onDeleteSet` are the sub-editor inside the item form (a bonus this item
-// attaches or detaches); `onSaveSetTop`/`onDeleteSetTop`/`onRevertSetTop` are this
-// component's own "Bonus sets" section, browsing and editing a set on its own.
+// --- bonuses ----------------------------------------------------------------------------
+// `onSaveBonus`/`onDeleteBonus` are the sub-editor inside the item form (a bonus this item
+// attaches or detaches); `onSaveBonusTop`/`onDeleteBonusTop`/`onRevertBonusTop` are this
+// component's own "Bonuses" section, browsing and editing a bonus on its own.
 
-function onSaveSet({ id, set }: { id: string; set: Bonus }) {
+function onSaveBonus({ id, set }: { id: string; set: Bonus }) {
   history.snapshot(
     "layer",
     props.layer.id,
@@ -581,11 +582,11 @@ function onSaveSet({ id, set }: { id: string; set: Bonus }) {
     overlay.value,
   );
   setOverlay(catalog.upsert(overlay.value, "bonuses", id, set));
-  notice.value = `Saved set "${set.name || id}"`;
+  notice.value = `Saved bonus "${set.name || id}"`;
 }
 
-/** Live-edit handler: debounced changes from existing bonus sets in item editor go here. */
-function onUpdateSet({ id, set }: { id: string; set: Bonus }) {
+/** Live-edit handler: debounced changes from existing bonuses in item editor go here. */
+function onUpdateBonus({ id, set }: { id: string; set: Bonus }) {
   history.snapshot(
     "layer",
     props.layer.id,
@@ -596,7 +597,7 @@ function onUpdateSet({ id, set }: { id: string; set: Bonus }) {
   setOverlay(catalog.upsert(overlay.value, "bonuses", id, set));
 }
 
-function onDeleteSet(id: string) {
+function onDeleteBonus(id: string) {
   history.snapshot(
     "layer",
     props.layer.id,
@@ -605,25 +606,25 @@ function onDeleteSet(id: string) {
     overlay.value,
   );
   setOverlay(catalog.remove(overlay.value, "bonuses", id));
-  notice.value = `Removed set "${id}"`;
+  notice.value = `Removed bonus "${id}"`;
 }
 
-function onSaveSetTop({ id, set }: { id: string; set: Bonus }) {
+function onSaveBonusTop({ id, set }: { id: string; set: Bonus }) {
   history.snapshot(
     "layer",
     props.layer.id,
     `save-set:${id}`,
-    `Save bonus set "${set.name || id}"`,
+    `Save bonus "${set.name || id}"`,
     overlay.value,
   );
   setOverlay(catalog.upsert(overlay.value, "bonuses", id, set));
-  selectedSetId.value = id;
-  router.apply({ set: id });
-  notice.value = `Saved bonus set "${set.name || id}"`;
+  selectedBonusId.value = id;
+  router.apply({ bonus: id });
+  notice.value = `Saved bonus "${set.name || id}"`;
 }
 
-/** Live-edit handler: debounced changes from existing bonus sets go here. */
-function onUpdateSetTop({
+/** Live-edit handler: debounced changes from existing bonuses go here. */
+function onUpdateBonusTop({
   id,
   set,
   label,
@@ -642,32 +643,32 @@ function onUpdateSetTop({
   setOverlay(catalog.upsert(overlay.value, "bonuses", id, set));
 }
 
-function onDeleteSetTop() {
-  const id = selectedSetId.value!;
+function onDeleteBonusTop() {
+  const id = selectedBonusId.value!;
   history.snapshot(
     "layer",
     props.layer.id,
     `delete-set:${id}`,
-    `Delete bonus set "${id}"`,
+    `Delete bonus "${id}"`,
     overlay.value,
   );
   setOverlay(catalog.remove(overlay.value, "bonuses", id));
-  selectedSetId.value = null;
-  router.apply({ set: null });
-  notice.value = `Removed bonus set "${id}"`;
+  selectedBonusId.value = null;
+  router.apply({ bonus: null });
+  notice.value = `Removed bonus "${id}"`;
 }
 
-function onRevertSetTop() {
-  const id = selectedSetId.value!;
+function onRevertBonusTop() {
+  const id = selectedBonusId.value!;
   history.snapshot(
     "layer",
     props.layer.id,
     `revert-set:${id}`,
-    `Revert bonus set "${id}"`,
+    `Revert bonus "${id}"`,
     overlay.value,
   );
   setOverlay(catalog.revert(overlay.value, "bonuses", id));
-  notice.value = `Reverted bonus set "${id}" to the shipped version`;
+  notice.value = `Reverted bonus "${id}" to the shipped version`;
 }
 
 // --- section presets ------------------------------------------------------------------
@@ -768,11 +769,11 @@ watch(query, (value) => {
 // round trip through the build editor) has something to restore from once the URL itself
 // has been cleared by `onUnmounted` below.
 watch(
-  [section, selectedId, selectedSetId, selectedPresetId, statusFilter, query],
-  ([sec, item, set, preset, status, q]) => {
+  [section, selectedId, selectedBonusId, selectedPresetId, statusFilter, query],
+  ([sec, item, bonus, preset, status, q]) => {
     ui.value.section = sec;
     ui.value.item = item ?? "";
-    ui.value.bonus = set ?? "";
+    ui.value.bonus = bonus ?? "";
     ui.value.preset = preset ?? "";
     ui.value.status = status === "all" ? "" : status;
     ui.value.q = q;
@@ -786,7 +787,7 @@ watch(
 function hasRoutedLayerState(routed: Record<string, string>) {
   return Boolean(
     routed.item ||
-    routed.set ||
+    routed.bonus ||
     routed.preset ||
     routed.section ||
     routed.status ||
@@ -799,15 +800,12 @@ onMounted(() => {
   const routed = router.parse();
   const routedActive = hasRoutedLayerState(routed);
   const source = routedActive ? routed : ui.value;
-  // The URL still spells this param `set` (issue #209/#210); the per-layer store spells it
-  // `bonus` (this issue's rename) -- read whichever side `source` resolved to.
-  const sourceBonusId = routedActive ? routed.set : ui.value.bonus;
   // When the layer changes, keep the `item` param if the new layer's composed catalogue
   // still has that id, otherwise drop it (phase 6 §2.3).
   if (source.section === "bonuses") {
     section.value = "bonuses";
-    if (sourceBonusId && db.value.bonusById.get(sourceBonusId))
-      selectedSetId.value = sourceBonusId;
+    if (source.bonus && db.value.bonusById.get(source.bonus))
+      selectedBonusId.value = source.bonus;
   } else if (source.section === "sectionPresets") {
     section.value = "sectionPresets";
     if (source.preset && db.value.presets.some((p) => p.id === source.preset))
@@ -816,7 +814,7 @@ onMounted(() => {
     selectedId.value = source.item;
   } else {
     selectedId.value = null;
-    selectedSetId.value = null;
+    selectedBonusId.value = null;
     selectedPresetId.value = null;
     // BuildEditor's per-row "+" button lands here with no item selected -- seed the fresh
     // draft's filter from the row it was clicked on (see BuildEditor.vue's `onAddItem`).
@@ -849,7 +847,7 @@ onUnmounted(() => {
   router.apply(
     {
       item: null,
-      set: null,
+      bonus: null,
       preset: null,
       section: null,
       status: null,
@@ -896,7 +894,7 @@ onUnmounted(() => {
           :active="section === 'bonuses'"
           @click="switchSection('bonuses')"
         >
-          Bonus sets
+          Bonuses
           <span class="text-sm opacity-75 tabular-nums">{{
             db.bonuses.length
           }}</span>
@@ -986,7 +984,7 @@ onUnmounted(() => {
         @select="select"
         @create="
           section === 'bonuses'
-            ? newSet()
+            ? newBonus()
             : section === 'sectionPresets'
               ? newPreset()
               : newItem()
@@ -1015,27 +1013,27 @@ onUnmounted(() => {
           @delete="onDelete"
           @duplicate="duplicateItem"
           @revert="onRevert"
-          @save-set="onSaveSet"
-          @delete-set="onDeleteSet"
-          @update-set="onUpdateSet"
+          @save-set="onSaveBonus"
+          @delete-set="onDeleteBonus"
+          @update-set="onUpdateBonus"
         />
-        <BonusSetForm
+        <BonusForm
           v-else-if="section === 'bonuses'"
-          ref="setForm"
-          :key="selectedSetId ?? `__new__${newItemCounter}`"
-          :source="selectedSet"
-          :duplicate-from="duplicateSetSeed"
-          :status="selectedSetStatus"
+          ref="bonusForm"
+          :key="selectedBonusId ?? `__new__${newItemCounter}`"
+          :source="selectedBonus"
+          :duplicate-from="duplicateBonusSeed"
+          :status="selectedBonusStatus"
           :db="db"
           :set-ids="setIds"
           :tags="tagList"
           :bonus-ids="bonusIds"
           :allocatable-ids="allocatableIds"
-          @save="onSaveSetTop"
-          @update:set="onUpdateSetTop"
-          @delete="onDeleteSetTop"
-          @duplicate="duplicateSet"
-          @revert="onRevertSetTop"
+          @save="onSaveBonusTop"
+          @update:set="onUpdateBonusTop"
+          @delete="onDeleteBonusTop"
+          @duplicate="duplicateBonus"
+          @revert="onRevertBonusTop"
         />
         <PresetForm
           v-else

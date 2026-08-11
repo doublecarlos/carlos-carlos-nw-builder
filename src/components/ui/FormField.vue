@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// Label-above-control stack, the data editor's basic form unit -- ItemForm, BonusSetForm,
+// Label-above-control stack, the data editor's basic form unit -- ItemForm, BonusForm,
 // ConditionRows, BonusRows, Options, QuickOptions.
 defineProps<{ label?: string }>();
 </script>

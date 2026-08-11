@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// Wrapping row of FormField.vue instances -- ItemForm/BonusSetForm/Options/QuickOptions.
+// Wrapping row of FormField.vue instances -- ItemForm/BonusForm/Options/QuickOptions.
 </script>
 
 <template>

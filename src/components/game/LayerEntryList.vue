@@ -47,17 +47,17 @@ const props = defineProps<{
 }>();
 
 const CREATE_LABEL: Record<string, string> = {
-  bonuses: "New bonus set",
+  bonuses: "New bonus",
   sectionPresets: "New preset",
   items: "New item",
 };
 const SEARCH_PLACEHOLDER: Record<string, string> = {
-  bonuses: "Filter bonus sets…",
+  bonuses: "Filter bonuses…",
   sectionPresets: "Filter presets…",
   items: "Filter items…",
 };
 const CREATE_TESTID: Record<string, string> = {
-  bonuses: "new-bonus-set",
+  bonuses: "new-bonus",
   sectionPresets: "new-preset",
   items: "new-item",
 };

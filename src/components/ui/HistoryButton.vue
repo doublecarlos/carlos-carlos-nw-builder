@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // Undo/redo button: fixed-width, single line, with an inline detail label of what the next
-// step would do -- shared by BuildBar, ItemForm, BonusSetForm and DataEditor's own history.
+// step would do -- shared by BuildBar, ItemForm, BonusForm and DataEditor's own history.
 import BaseButton from "./BaseButton.vue";
 import { Redo2, Undo2 } from "@lucide/vue";
 

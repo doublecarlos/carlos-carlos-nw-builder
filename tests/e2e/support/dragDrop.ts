@@ -5,7 +5,7 @@
 // `locator.dispatchEvent()`) rather than relying on `locator.dragTo()`'s real OS-level mouse
 // gesture. `dragTo()` depends on Chromium actually recognizing the simulated mouse movement as
 // a native drag session, which in practice was unreliable once the draggable handle sat several
-// scrollable ancestors deep (e.g. a bonus set's grant list nested inside the layer editor) --
+// scrollable ancestors deep (e.g. a bonus's grant list nested inside the layer editor) --
 // dragstart never fired at all in that case, for reasons that didn't reproduce on the flatter
 // sidebar nav rows. Dispatching the events directly sidesteps that gesture-recognition step
 // entirely: the composable only cares that dragover/drop fire with the right target and

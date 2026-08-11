@@ -1,26 +1,26 @@
 // End-to-end coverage for the new drag-and-drop capability in issue #182: dragging a
 // condition (or condition group) to reorder it, and -- the issue's headline example --
 // dragging an existing condition into a freshly-added "not" block, including across grants,
-// variants, and (via BonusGroups' cross-bonus registry) across bonuses on the same item.
+// variants, and (via ItemBonuses' cross-bonus registry) across bonuses on the same item.
 import { test, expect, type Page } from "@playwright/test";
 import { openBuilder } from "./support/app";
 import { addLayer, layerRow } from "./support/nav";
 import { dragOnto } from "./support/dragDrop";
 
-/** Opens a fresh layer, switches to its Bonus sets tab, and starts a new (unsaved) set --
+/** Opens a fresh layer, switches to its Bonuses tab, and starts a new (unsaved) bonus --
  *  enough to reach BonusRows.vue's grants and their condition trees without saving. */
-async function openNewBonusSet(page: Page) {
+async function openNewBonus(page: Page) {
   await openBuilder(page);
   await addLayer(page);
   await layerRow(page, "Layer 1").locator(".nav-name").click();
-  await page.getByRole("button", { name: /Bonus sets \d+/ }).click();
-  await page.getByTestId("new-bonus-set").click();
+  await page.getByRole("button", { name: /Bonuses \d+/ }).click();
+  await page.getByTestId("new-bonus").click();
 }
 
 test("dragging a condition group reorders it within the same branch", async ({
   page,
 }) => {
-  await openNewBonusSet(page);
+  await openNewBonus(page);
   await page.getByTitle("Add grant").click();
 
   // Nested branches get their own (initially empty) `condition-empty-drop` too, but this
@@ -49,7 +49,7 @@ test("dragging a condition group reorders it within the same branch", async ({
 });
 
 test("dragging a branch reorders it within its group", async ({ page }) => {
-  await openNewBonusSet(page);
+  await openNewBonus(page);
   await page.getByTitle("Add grant").click();
 
   await page
@@ -94,7 +94,7 @@ test("dragging a branch reorders it within its group", async ({ page }) => {
 test("dragging a branch into a different group moves it there", async ({
   page,
 }) => {
-  await openNewBonusSet(page);
+  await openNewBonus(page);
   await page.getByTitle("Add grant").click();
 
   const emptyDrop = page.getByTestId("condition-empty-drop").last();
@@ -139,7 +139,7 @@ test("dragging a branch into a different group moves it there", async ({
 test("dragging an existing condition into a freshly-added 'not' block moves it inside", async ({
   page,
 }) => {
-  await openNewBonusSet(page);
+  await openNewBonus(page);
   await page.getByTitle("Add grant").click();
 
   // Both the leaf and the "not" group are appended via this grant's own trailing toolbar --
@@ -173,7 +173,7 @@ test("dragging an existing condition into a freshly-added 'not' block moves it i
 test("dragging a condition from one grant's Active when to another's moves it across trees", async ({
   page,
 }) => {
-  await openNewBonusSet(page);
+  await openNewBonus(page);
   const addGrant = page.getByTitle("Add grant");
   await addGrant.click();
   await addGrant.click();

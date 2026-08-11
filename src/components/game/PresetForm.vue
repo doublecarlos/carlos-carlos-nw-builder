@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// Editing form for one section preset. Hybrid approach (same as ItemForm.vue/BonusSetForm.vue):
+// Editing form for one section preset. Hybrid approach (same as ItemForm.vue/BonusForm.vue):
 // - Existing presets (source != null): live edits, changes emit immediately
 // - New presets (source == null): explicit Save button, draft until label is finalized
 //
@@ -313,7 +313,7 @@ function save() {
 watch(
   () => props.source,
   (value) => {
-    // Same round-trip-echo guard BonusSetForm.vue uses: a live edit's own update:preset
+    // Same round-trip-echo guard BonusForm.vue uses: a live edit's own update:preset
     // round-trips through the layer overlay back into this prop, and rebuilding from that
     // echo would wipe a half-drawn row (e.g. a slot picked but no value entered yet).
     if (value && lastEmittedJson && JSON.stringify(value) === lastEmittedJson)

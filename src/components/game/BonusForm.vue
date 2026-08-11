@@ -38,11 +38,11 @@ const props = withDefaults(
     bonusIds?: string[];
     allocatableIds?: string[];
     fixedId?: string | null;
-    /** Initial draft for pending slots (BonusGroups embedded case). */
+    /** Initial draft for pending slots (ItemBonuses embedded case). */
     initialDraft?: bonusDraft.BonusDraft | null;
-    /** This instance's stable key in BonusGroups' cross-bonus condition-drag registry (its
-     *  slot key -- see bonusDraftRegistry.ts). Empty on the standalone "Bonus sets" page,
-     *  which isn't embedded in BonusGroups and has no registry to register into. */
+    /** This instance's stable key in ItemBonuses' cross-bonus condition-drag registry (its
+     *  slot key -- see bonusDraftRegistry.ts). Empty on the standalone "Bonuses" page,
+     *  which isn't embedded in ItemBonuses and has no registry to register into. */
     registryId?: string;
   }>(),
   {
@@ -136,7 +136,7 @@ function diffLabel(oldJson: string, newJson: string): string {
   } catch {
     // JSON parse error -- shouldn't happen but be safe.
   }
-  return "edit bonus set";
+  return "edit bonus";
 }
 
 // --- Live edit emit (existing sets) ---------------------------------------------------
@@ -232,7 +232,7 @@ function save() {
   error.value = "";
   const name = draft.value.name.trim();
   if (!name) {
-    error.value = "The bonus set needs a name.";
+    error.value = "The bonus needs a name.";
     return;
   }
   if (
@@ -270,9 +270,9 @@ const draftStore = new BonusDraftStore(
 
 // Registers this instance's store for cross-bonus condition dragging (see
 // bonusDraftRegistry.ts). `registryId` is stable for this component's whole lifetime --
-// BonusGroups.vue keys its `v-for` by the same slot key, so a slot whose id changes (a
-// pending bonus's first save) mounts a fresh BonusSetForm instance rather than reusing this
-// one, and there's nothing on the standalone "Bonus sets" page (no registry, no registryId).
+// ItemBonuses.vue keys its `v-for` by the same slot key, so a slot whose id changes (a
+// pending bonus's first save) mounts a fresh BonusForm instance rather than reusing this
+// one, and there's nothing on the standalone "Bonuses" page (no registry, no registryId).
 const bonusDraftRegistry = inject(bonusDraftRegistryKey, null);
 if (bonusDraftRegistry && props.registryId) {
   const registryId = props.registryId;
@@ -307,7 +307,7 @@ watch(
 <template>
   <div>
     <FormBar class="-mx-3 mb-3">
-      <strong>{{ draft.name || draft.id || "New bonus set" }}</strong>
+      <strong>{{ draft.name || draft.id || "New bonus" }}</strong>
       <BaseBadge v-if="status !== 'base'" :variant="status as any">{{
         status
       }}</BaseBadge>
@@ -319,38 +319,38 @@ watch(
         variant="primary"
         :disabled="!dirty"
         @click="save"
-        ><Save />Save bonus set</BaseButton
+        ><Save />Save bonus</BaseButton
       >
       <BaseButton v-if="status === 'edited'" @click="$emit('revert')"
         ><Undo2 />Revert to shipped</BaseButton
       >
       <BaseButton
         v-if="source"
-        data-testid="duplicate-bonus-set"
+        data-testid="duplicate-bonus"
         @click="$emit('duplicate')"
         ><Copy />Duplicate</BaseButton
       >
       <BaseButton v-if="source" @click="$emit('delete')"
         ><Trash />Delete</BaseButton
       >
-      <!-- BonusGroups.vue's per-item embedding injects its own "Detach" here -->
+      <!-- ItemBonuses.vue's per-item embedding injects its own "Detach" here -->
       <slot name="extra-actions" />
     </FormBar>
 
     <p v-if="error" class="mt-1 text-danger">{{ error }}</p>
 
     <FormGrid class="mb-2">
-      <FormField label="Group name">
+      <FormField label="Name">
         <input
           v-model="draft.name"
           class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
           type="text"
-          data-testid="bonus-set-name-input"
+          data-testid="bonus-name-input"
         />
       </FormField>
       <IdField
         :id="displayId"
-        label="Group id"
+        label="Id"
         :existing="Boolean(source || fixedId)"
       />
     </FormGrid>

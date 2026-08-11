@@ -1,4 +1,4 @@
-// End-to-end coverage for issue #94: a bonus set that only ever reports a build error/warning
+// End-to-end coverage for issue #94: a bonus that only ever reports a build error/warning
 // (`Grant.problem`, never stats) must not show up as a "bonus" in the item hover card
 // (ItemCard.vue) or the sidebar's Bonuses table (BonusInspector.vue) -- it already gets its
 // own inline message on the slot and its own line in the errors summary, so listing it again
