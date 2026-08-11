@@ -372,14 +372,16 @@ watch(
 
     <FormSection sub>Stacking</FormSection>
     <div class="flex flex-wrap items-center gap-1.5 mb-1">
-      <ComboBox
-        class="w-64"
-        :model-value="draft.stacking"
-        :options="stackingOptions"
-        @update:model-value="(v) => (draft.stacking = v)"
-      />
+      <FormField label="Behavior">
+        <ComboBox
+          class="w-64"
+          :model-value="draft.stacking"
+          :options="stackingOptions"
+          @update:model-value="(v) => (draft.stacking = v)"
+        />
+      </FormField>
       <template v-if="draft.stacking === 'perSource'">
-        <FormField label="Max stacks">
+        <FormField label="Max stacks (0 = unlimited)">
           <input
             v-model.number="draft.maxStacks"
             type="number"
@@ -387,9 +389,6 @@ watch(
             class="w-16 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
           />
         </FormField>
-        <span class="text-sm text-muted"
-          >maximum stacks (blank = no limit)</span
-        >
       </template>
     </div>
 
