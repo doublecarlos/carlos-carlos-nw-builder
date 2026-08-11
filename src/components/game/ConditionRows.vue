@@ -579,38 +579,6 @@ function changeParamKey(row: ConditionRow, key: string) {
             /></FormField>
           </template>
         </template>
-        <template v-else-if="row.type === 'proc'">
-          <!-- The per-grant toggle itself is keyed automatically (bonus.ts) -- both fields
-               here are optional refinements, not the condition itself. -->
-          <FormField label="Checkbox label" class="min-w-0">
-            <input
-              v-model="row.procLabel"
-              class="w-56 rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-              type="text"
-              placeholder="defaults to the bonus name"
-            />
-          </FormField>
-          <FormField label="Starts" class="min-w-0">
-            <ComboBox
-              class="w-24"
-              :model-value="
-                row.procDefault === true
-                  ? 'on'
-                  : row.procDefault === false
-                    ? 'off'
-                    : ''
-              "
-              :options="[
-                { value: 'on', label: 'on' },
-                { value: 'off', label: 'off' },
-              ]"
-              placeholder="on"
-              @update:model-value="
-                (v) => (row.procDefault = v === '' ? null : v === 'on')
-              "
-            />
-          </FormField>
-        </template>
         <template v-else>
           <FormField label="Value" class="min-w-0">
             <ComboBox

@@ -1,8 +1,9 @@
 // End-to-end coverage for BonusOccurrenceConfig rows (#218): an item can carry several typed
 // occurrence attachments -- a 0-1 one renders as a checkbox, a wider range as a stepper, and a
 // fixed (min === max) one renders no input at all. Exercised via a build's own catalog overlay
-// (storage.ts's `Build.catalog`) since data/db-bonuses.json ships no BonusOccurrenceConfig
-// attachment yet -- same mechanism proc-toggle.spec.ts uses for its own synthetic fixture.
+// (storage.ts's `Build.catalog`) since data/db-bonuses.json's only checkbox-shaped example
+// (campfire-buff-bonus) exists for the "per-item boolean toggle, formerly proc" describe block
+// below (#222) specifically, not general coverage.
 import { test, expect, type Page } from "@playwright/test";
 import {
   openBuilder,
@@ -230,5 +231,134 @@ test.describe("BonusOccurrenceConfig label override (#227)", () => {
     const row = slotRow(page, RING_SLOT);
     await expect(row).toContainText("Stacks");
     await expect(row).not.toContainText("Test Labeled Bonus");
+  });
+});
+
+// #222: a dedicated `proc` leaf/`build.procs` no longer exists -- a per-item on/off toggle is
+// now a plain `min:0,max:1` BonusOccurrenceConfig, self-referentially gating its own bonus's
+// flat grant with `bonusOccurrences: { bonus: <own id>, atLeast: 1 }` (see types.ts's own note
+// on why that condition is kept even though a 0-count attachment already contributes no
+// candidate either way). Mirrors data/db-bonuses.json's real `campfire-buff-bonus` migration.
+const TOGGLE_BONUS_ID = "test-toggle-bonus";
+const TOGGLE_RING_ID = "test-toggle-ring";
+
+function buildWithToggleRing(
+  configDefault: 0 | 1,
+  occurrenceInputs: Record<string, Record<string, number>> = {},
+) {
+  return {
+    name: "Toggle test",
+    choices: { [RING_SLOT]: TOGGLE_RING_ID },
+    occurrenceInputs,
+    catalog: {
+      items: {
+        [TOGGLE_RING_ID]: {
+          id: TOGGLE_RING_ID,
+          name: "Test Toggle Ring",
+          filter: "gear_ring",
+          bonuses: [
+            {
+              bonus: TOGGLE_BONUS_ID,
+              min: 0,
+              max: 1,
+              default: configDefault,
+              label: "Buff active",
+            },
+          ],
+        },
+      },
+      bonuses: {
+        [TOGGLE_BONUS_ID]: {
+          id: TOGGLE_BONUS_ID,
+          name: "Test Toggle Bonus",
+          grants: [
+            {
+              when: {
+                bonusOccurrences: { bonus: TOGGLE_BONUS_ID, atLeast: 1 },
+              },
+              stats: { power: 500 },
+            },
+          ],
+        },
+      },
+      sectionPresets: {},
+    },
+  };
+}
+
+test.describe("per-item boolean toggle, formerly proc (#222)", () => {
+  test("a default:1 config starts checked, with its stats on the row", async ({
+    page,
+  }) => {
+    await openBuilder(page);
+    await importText(page, JSON.stringify(buildWithToggleRing(1)));
+
+    const row = slotRow(page, RING_SLOT);
+    await expect(occurrenceCheckbox(row, TOGGLE_BONUS_ID)).toContainText(
+      "Buff active",
+    );
+    await expect(
+      occurrenceCheckbox(row, TOGGLE_BONUS_ID).locator("input"),
+    ).toBeChecked();
+    await expect(row).toContainText("Power");
+  });
+
+  test("unchecking it turns the grant off and its stats drop off the row", async ({
+    page,
+  }) => {
+    await openBuilder(page);
+    await importText(page, JSON.stringify(buildWithToggleRing(1)));
+
+    const row = slotRow(page, RING_SLOT);
+    await occurrenceCheckbox(row, TOGGLE_BONUS_ID).locator("input").uncheck();
+
+    await expect(
+      occurrenceCheckbox(row, TOGGLE_BONUS_ID).locator("input"),
+    ).not.toBeChecked();
+    await expect(row).not.toContainText("Power");
+  });
+
+  test("re-checking it turns the grant back on", async ({ page }) => {
+    await openBuilder(page);
+    await importText(page, JSON.stringify(buildWithToggleRing(1)));
+
+    const row = slotRow(page, RING_SLOT);
+    const checkbox = occurrenceCheckbox(row, TOGGLE_BONUS_ID).locator("input");
+    await checkbox.uncheck();
+    await checkbox.check();
+
+    await expect(checkbox).toBeChecked();
+    await expect(row).toContainText("Power");
+  });
+
+  test("a default:0 config starts unchecked with no explicit occurrenceInputs entry", async ({
+    page,
+  }) => {
+    await openBuilder(page);
+    await importText(page, JSON.stringify(buildWithToggleRing(0)));
+
+    const row = slotRow(page, RING_SLOT);
+    await expect(
+      occurrenceCheckbox(row, TOGGLE_BONUS_ID).locator("input"),
+    ).not.toBeChecked();
+    await expect(row).not.toContainText("Power");
+  });
+
+  test("an explicit 1 in the imported build's own occurrenceInputs overrides a default:0 config", async ({
+    page,
+  }) => {
+    await openBuilder(page);
+    await importText(
+      page,
+      JSON.stringify(
+        buildWithToggleRing(0, { [TOGGLE_RING_ID]: { [TOGGLE_BONUS_ID]: 1 } }),
+      ),
+    );
+
+    const row = slotRow(page, RING_SLOT);
+    await expect(
+      occurrenceCheckbox(row, TOGGLE_BONUS_ID).locator("input"),
+    ).toBeChecked();
+    await expect(row).toContainText("Power");
   });
 });

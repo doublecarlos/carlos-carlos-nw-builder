@@ -162,7 +162,6 @@ export function defaultBuild(name = "New build"): Build {
     choices: {},
     values: {},
     assignments,
-    procs: {},
     occurrenceInputs: {},
     context: root.context as unknown as Build["context"],
     // The quick-compare picker (App.vue topbar). Saved with the build -- unlike `tab`, which
@@ -262,7 +261,6 @@ export function normalise(
     choices,
     values: numbers(raw.values),
     assignments: nestedNumbers(raw.assignments, base.assignments),
-    procs: booleans(raw.procs),
     // No seeded defaults to fall back on (unlike `assignments`, which seeds every
     // point_assignment row's every item up front): a `BonusOccurrenceConfig`'s own `default`
     // is read directly by bonus.ts's `collect()` when an item has no entry here at all.

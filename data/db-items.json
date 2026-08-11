@@ -1537,7 +1537,15 @@
     "id": "campfire-buff",
     "name": "Campfire Buff",
     "filter": "attributes_campfire",
-    "bonuses": ["campfire-buff-bonus"]
+    "bonuses": [
+      {
+        "bonus": "campfire-buff-bonus",
+        "min": 0,
+        "max": 1,
+        "default": 1,
+        "label": "Buff active"
+      }
+    ]
   },
   {
     "id": "captain",

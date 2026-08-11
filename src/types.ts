@@ -291,20 +291,6 @@ export interface ParamCondition {
   equals?: string | string[];
 }
 
-/** The object form of a `proc` leaf -- authored when the default label/default-on behaviour
- * (see `ConditionWhen.proc`) isn't enough. Both fields optional, so `{}` is legal (equivalent
- * to bare `true`) though authors should just write `true` in that case. */
-export interface ProcCondition {
-  /** Overrides the per-item checkbox's label, which otherwise falls back to the bonus's own
-   *  `name` -- lets the bonus's `name` stay the in-game-accurate flavor text while the checkbox
-   *  describes the actual trigger (e.g. bonus "Avalanche of Blades", label "10% chance on crit
-   *  to launch an avalanche"). */
-  label?: string;
-  /** Whether this proc starts enabled for a build that has never touched it. Omitted means
-   *  true, matching every other toggle's own default-on behaviour. */
-  default?: boolean;
-}
-
 /** A `when` predicate (conditions.ts). Keys present are ANDed; an absent key is unconstrained.
  * Loose on leaf value types (`string | string[]`) because conditions.ts's `asArray` accepts
  * either uniformly. */
@@ -315,15 +301,18 @@ export interface ConditionWhen {
   combatType?: string | string[];
   damageType?: string | string[];
   duration?: RangeLike;
+  /** How many total occurrences of `bonus` (usually this bonus's own id -- a "self-referential"
+   *  attachment) are currently attached across every equipped item, tallied from each
+   *  contributing item's `BonusOccurrenceConfig` (or 1 per bare-id attachment). A `min:0,max:1`
+   *  attachment gating its own flat grant with `atLeast: 1` is a per-item on/off checkbox --
+   *  what a dedicated `proc` leaf used to be, before #222 folded it into this same mechanism
+   *  instead of keeping a second, less general one. Gating this way is redundant with the
+   *  attachment's count itself for a plain flat grant (a 0-count attachment already contributes
+   *  no candidate at all, so the grant is never reached either way) -- it's kept anyway so the
+   *  bonus inspector's `gate.leaves` has something to explain, the same way `proc` always did. */
   bonusOccurrences?: RangeSpec & { bonus: string };
   equipped?: RangeSpec & { tag?: string; item?: string };
   param?: ParamCondition;
-  /** Gates the grant on its own per-grant proc toggle (build.procs, keyed by a stable
-   *  `${bonusId}:${grantIndex}` -- see bonus.ts's `evaluateBonus`) rather than the build-wide
-   *  `toggles` map, so a build with several proc-conditional items can enable/disable each
-   *  independently. Bare `true` is the common case (default label, default-on); the object form
-   *  overrides the checkbox's label and/or starting state -- see `ProcCondition`. */
-  proc?: boolean | ProcCondition;
   all?: ConditionWhen[];
   any?: ConditionWhen[];
   not?: ConditionWhen;
@@ -471,14 +460,10 @@ export interface Build {
    * `build_parameter` defaults -- so a read never needs an `?? row.default` fallback for a
    * build the app itself produced, only for hand-edited/imported ones. */
   assignments: Record<string, Record<string, number>>;
-  /** Per-grant proc toggles, keyed by `${bonusId}:${grantIndex}` (see `EvalContext.procs`).
-   *  A key absent here reads as on -- only ever holds explicit off/on overrides a user made,
-   *  not one entry per proc-gated grant that exists. */
-  procs: Record<string, boolean>;
   /** Every item's typed `BonusOccurrenceConfig` count(s), by item id then bonus id -- keyed by
    * bonus id (not just item id) since one item may carry several such configs, each needing its
-   * own count (see `Item.bonuses`). A key absent here reads as that config's own `default`,
-   * same "only explicit overrides stored" convention `procs` uses. */
+   * own count (see `Item.bonuses`). A key absent here reads as that config's own `default` --
+   * only explicit overrides a user made are stored. */
   occurrenceInputs: Record<string, Record<string, number>>;
   context: BuildContext;
   compare: BuildCompare;
@@ -547,10 +532,6 @@ export interface EvalContext {
   /** Every `build_parameter`'s current value, keyed by its (context-relative) `path` -- what
    *  the `param` leaf reads. Built once by bonus.ts's `collect()`. */
   params: Map<string, string | number | boolean>;
-  /** Every per-grant proc toggle currently on record (`build.procs`), keyed by
-   *  `${bonusId}:${grantIndex}`. A key absent from the map defaults to *on*, mirroring the
-   *  old global toggle's default-on behaviour -- see conditions.ts's `proc` leaf. */
-  procs?: Record<string, boolean>;
 }
 
 export interface ConditionLeafResult {
@@ -579,10 +560,6 @@ export interface GrantEvaluation {
   stats: StatValues | null;
   chose: string | null;
   problem: GrantProblem | null;
-  /** Set to this grant's stable `${bonusId}:${grantIndex}` key when its `when` is gated by
-   *  `proc` -- null otherwise. The UI uses this both to know a grant needs a per-item proc
-   *  checkbox at all, and as the key to read/write in `build.procs`. */
-  procKey: string | null;
 }
 
 export interface BonusEvaluation {

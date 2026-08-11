@@ -12,10 +12,7 @@
 import { computed, useTemplateRef } from "vue";
 import { Minus, Plus } from "@lucide/vue";
 import IconButton from "../ui/IconButton.vue";
-import BaseCheckbox from "../ui/BaseCheckbox.vue";
 import { db } from "../../stores/resolved";
-import * as buildEditor from "../../stores/buildEditor";
-import { procRowsForItem } from "../../composables/useItemProcs";
 import { isMac } from "../../lib/platform";
 import type { Item, PointAssignmentSlot } from "../../types";
 
@@ -42,13 +39,6 @@ const rows = computed(() => db.value.forSlot(props.slotDef.id));
 
 function valueFor(item: Item) {
   return props.values[item.id] ?? item.pointAssignment!.default;
-}
-
-/** Not a computed -- called once per row inside the template's own reactive render effect
- *  (same as `valueFor` above), since this is one row's worth per item rather than a single
- *  value the whole component shares. */
-function procRows(item: Item) {
-  return procRowsForItem(item);
 }
 
 function onInput(item: Item, event: Event) {
@@ -131,20 +121,10 @@ defineExpose({ focus, focusAndSeed });
         </IconButton>
       </div>
 
-      <!-- One checkbox per proc-gated grant credited to this row's item -- see
-           useItemProcs.ts for why only the shared bonus's first contributor gets one. -->
-      <BaseCheckbox
-        v-for="row in procRows(item)"
-        :key="row.grantKey"
-        inline
-        :data-testid="`proc-toggle-${row.grantKey}`"
-        :model-value="row.checked"
-        @update:model-value="
-          buildEditor.setProc(row.grantKey, $event as boolean, row.label)
-        "
-      >
-        {{ row.label }}
-      </BaseCheckbox>
+      <!-- No BonusOccurrenceConfig row here (unlike ItemPickerRow.vue): bonus.ts's
+           collectPointAssignment doesn't honor a point_assignment item's own occurrence
+           attachments yet (see its own comment), so there's nowhere to read/write a per-item
+           checkbox from for this row's items. -->
     </div>
   </div>
 </template>

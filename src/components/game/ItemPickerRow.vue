@@ -10,7 +10,6 @@ import BaseCheckbox from "../ui/BaseCheckbox.vue";
 import IconButton from "../ui/IconButton.vue";
 import { Minus, Plus } from "@lucide/vue";
 import * as buildEditor from "../../stores/buildEditor";
-import { useItemProcs } from "../../composables/useItemProcs";
 import {
   useItemBonusOccurrences,
   type OccurrenceRow,
@@ -50,7 +49,6 @@ const emit = defineEmits<{
 
 const picker = useTemplateRef<InstanceType<typeof ItemPicker>>("picker");
 
-const procRows = useItemProcs(computed(() => props.item));
 const occurrenceRows = useItemBonusOccurrences(computed(() => props.item));
 
 function onOccurrenceCheckbox(row: OccurrenceRow, checked: boolean) {
@@ -126,25 +124,8 @@ const value = () => props.build.values[props.slotDef.id];
     </IconButton>
   </div>
 
-  <!-- One checkbox per proc-gated grant credited to this item -- see useItemProcs.ts for why
-       only the shared bonus's first-contributing row gets one. -->
-  <div v-if="procRows.length" class="mt-1 flex flex-wrap items-center gap-2.5">
-    <BaseCheckbox
-      v-for="row in procRows"
-      :key="row.grantKey"
-      inline
-      :data-testid="`proc-toggle-${row.grantKey}`"
-      :model-value="row.checked"
-      @update:model-value="
-        buildEditor.setProc(row.grantKey, $event as boolean, row.label)
-      "
-    >
-      {{ row.label }}
-    </BaseCheckbox>
-  </div>
-
   <!-- One row per BonusOccurrenceConfig this item carries -- a 0-1 range reads as a checkbox
-       (visually/behaviorally the same as a proc's), a wider range as a stepper. A fixed
+       (a per-item on/off toggle, e.g. a proc), a wider range as a stepper. A fixed
        (min === max) config never produces a row at all -- see useItemBonusOccurrences.ts. -->
   <div
     v-if="occurrenceRows.length"

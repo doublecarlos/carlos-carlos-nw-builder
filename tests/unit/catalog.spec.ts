@@ -1031,55 +1031,6 @@ describe("catalog.validate: param condition lint", () => {
   });
 });
 
-// The `proc` leaf lint -- unlike `param`, both fields are optional refinements on top of the
-// bare-`true` common case, so only an actually-malformed value should ever flag.
-describe("catalog.validate: proc condition lint", () => {
-  const bonusWith = (when: ConditionWhen): Bonus[] => [
-    { id: "test-bonus", grants: [{ when, stats: {} }] },
-  ];
-  const errorsFor = (when: ConditionWhen) =>
-    catalog
-      .validate([], bonusWith(when))
-      .filter((f) => f.level === "error" && f.kind === "bonus");
-
-  it("bare true is clean", () => {
-    expect(errorsFor({ proc: true })).toEqual([]);
-  });
-
-  it("a well-formed object (label and/or default) is clean", () => {
-    expect(errorsFor({ proc: { label: "Fireball proc" } })).toEqual([]);
-    expect(errorsFor({ proc: { default: false } })).toEqual([]);
-    expect(
-      errorsFor({ proc: { label: "Fireball proc", default: false } }),
-    ).toEqual([]);
-  });
-
-  it("a non-string label is an error", () => {
-    const errors = errorsFor({
-      proc: { label: 5 } as unknown as { label: string },
-    });
-    expect(errors.some((f) => /"label" must be a string/.test(f.message))).toBe(
-      true,
-    );
-  });
-
-  it("a non-boolean default is an error", () => {
-    const errors = errorsFor({
-      proc: { default: "yes" } as unknown as { default: boolean },
-    });
-    expect(
-      errors.some((f) => /"default" must be a boolean/.test(f.message)),
-    ).toBe(true);
-  });
-
-  it("a value that is neither true nor an object is an error", () => {
-    const errors = errorsFor({ proc: "yes" as unknown as boolean });
-    expect(
-      errors.some((f) => /must be "true" or an object/.test(f.message)),
-    ).toBe(true);
-  });
-});
-
 // The `linkedItem` lint: a list option's or a boolean slot's `linkedItem` referencing a
 // missing item id, or set on a slot type that can never resolve one. `validate()` itself
 // always reads slots from the real shipped `NW_SLOTS` (no injectable parameter, unlike
@@ -1302,7 +1253,6 @@ describe("catalog.referencedOverlay", () => {
       choices: { gear_head: BASE_ITEM_ID },
       values: {},
       assignments: {},
-      procs: {},
       occurrenceInputs: {},
       context: {} as Build["context"],
       compare: { id: "", highlight: false, onlyDiff: false },
@@ -1320,7 +1270,6 @@ describe("catalog.referencedOverlay", () => {
       choices: { gear_head: BASE_ITEM_ID, gear_ring: "layer-item" },
       values: {},
       assignments: {},
-      procs: {},
       occurrenceInputs: {},
       context: {} as Build["context"],
       compare: { id: "", highlight: false, onlyDiff: false },
@@ -1353,7 +1302,6 @@ describe("catalog.referencedOverlay", () => {
       choices: { gear_ring: "layer-item" },
       values: {},
       assignments: {},
-      procs: {},
       occurrenceInputs: {},
       context: {} as Build["context"],
       compare: { id: "", highlight: false, onlyDiff: false },
@@ -1374,7 +1322,6 @@ describe("catalog.referencedOverlay", () => {
       choices: { gear_head: BASE_ITEM_ID },
       values: {},
       assignments: {},
-      procs: {},
       occurrenceInputs: {},
       context: {} as Build["context"],
       compare: { id: "", highlight: false, onlyDiff: false },
@@ -1407,7 +1354,6 @@ describe("catalog.referencedOverlay", () => {
       choices: { group_buff: BASE_BONUS_ITEM_ID },
       values: {},
       assignments: {},
-      procs: {},
       occurrenceInputs: {},
       context: {} as Build["context"],
       compare: { id: "", highlight: false, onlyDiff: false },
@@ -1431,7 +1377,6 @@ describe("catalog.referencedOverlay", () => {
       choices: { gear_head: BASE_ITEM_ID },
       values: {},
       assignments: {},
-      procs: {},
       occurrenceInputs: {},
       context: {} as Build["context"],
       compare: { id: "", highlight: false, onlyDiff: false },
@@ -1460,7 +1405,6 @@ describe("catalog.referencedOverlay", () => {
       choices: {},
       values: {},
       assignments: {},
-      procs: {},
       occurrenceInputs: {},
       context: { race: "half-orc" } as unknown as Build["context"],
       compare: { id: "", highlight: false, onlyDiff: false },
@@ -1491,7 +1435,6 @@ describe("catalog.referencedOverlay", () => {
       choices: {},
       values: {},
       assignments: {},
-      procs: {},
       occurrenceInputs: {},
       context: { race: "elf" } as unknown as Build["context"],
       compare: { id: "", highlight: false, onlyDiff: false },

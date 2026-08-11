@@ -245,24 +245,6 @@ export function applyAssignmentsFromCompare(slot: PointAssignmentSlot) {
 }
 
 /**
- * Flips one grant's per-item proc toggle -- `grantKey` is `GrantEvaluation.procKey`
- * (`${bonusId}:${grantIndex}`), `label` is the row's own description of what it's toggling
- * (already resolved by the caller, which has the bonus/item names this store doesn't).
- */
-export function setProc(grantKey: string, value: boolean, label: string) {
-  const b = builds.build.value;
-  if (!b) return;
-  history.snapshot(
-    "build",
-    b.id,
-    `proc:${grantKey}`,
-    `${label} → ${value ? "on" : "off"}`,
-    b,
-  );
-  b.procs = { ...b.procs, [grantKey]: value };
-}
-
-/**
  * Sets one item's typed occurrence count for one BonusOccurrenceConfig attachment -- `label`
  * is the row's own description of what it's setting (already resolved by the caller, which has
  * the bonus name this store doesn't).

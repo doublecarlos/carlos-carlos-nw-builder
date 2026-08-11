@@ -220,9 +220,9 @@ describe("buildEditor.setOccurrenceInput", () => {
 });
 
 // A custom ring carried by each build's own `catalog` overlay (storage.ts's `Build.catalog`),
-// same mechanism proc-toggle.spec.ts's e2e fixture uses -- both test builds carry an identical
-// copy so the item resolves regardless of which one ends up active (db.ts only folds in the
-// *active* build's own catalog, see resolved.ts's `overlays`).
+// same mechanism bonus-occurrence-config.spec.ts's e2e fixtures use -- both test builds carry
+// an identical copy so the item resolves regardless of which one ends up active (db.ts only
+// folds in the *active* build's own catalog, see resolved.ts's `overlays`).
 describe("buildEditor.applyOccurrenceFromCompare", () => {
   const RING_ID = "test-occurrence-ring";
   const STACK_BONUS_ID = "test-occurrence-stack-bonus";

@@ -306,7 +306,6 @@ export { inBase };
 
 const CONDITION_KEYS = new Set([
   "toggle",
-  "proc",
   "role",
   "class",
   "combatType",
@@ -411,33 +410,6 @@ function checkParamCondition(
   }
 }
 
-/** `proc`'s object form (`ProcCondition`) is optional refinement on top of the bare-`true`
- *  common case, so this only flags a value that's actually wrong, not a value that's absent. */
-function checkProcCondition(
-  spec: unknown,
-  path: string,
-  report: (level: "error" | "warn", message: string) => void,
-) {
-  if (spec === true || spec == null) return;
-  if (typeof spec !== "object" || Array.isArray(spec)) {
-    report(
-      "error",
-      `${path}: proc condition must be "true" or an object with "label"/"default"`,
-    );
-    return;
-  }
-  const { label, default: startsOn } = spec as {
-    label?: unknown;
-    default?: unknown;
-  };
-  if (label !== undefined && typeof label !== "string") {
-    report("error", `${path}: proc "label" must be a string`);
-  }
-  if (startsOn !== undefined && typeof startsOn !== "boolean") {
-    report("error", `${path}: proc "default" must be a boolean`);
-  }
-}
-
 function checkConditions(
   when: ConditionWhen | undefined,
   path: string,
@@ -462,8 +434,6 @@ function checkConditions(
       checkConditions(spec as ConditionWhen, path, report, paramSlots);
     } else if (key === "param") {
       checkParamCondition(spec as ParamCondition, path, report, paramSlots);
-    } else if (key === "proc") {
-      checkProcCondition(spec, path, report);
     }
   }
 }

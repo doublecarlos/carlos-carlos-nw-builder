@@ -700,11 +700,12 @@ describe("BonusOccurrenceConfig resolution", () => {
   });
 });
 
-// Per-item procs (#82): each proc-conditional grant reads its own toggle from `build.procs`,
-// keyed by `${bonusId}:${grantIndex}` -- independent of any other grant's, and independent
-// of the old build-wide `toggles` map. A synthetic db isolates the key format and default-on
-// behaviour from the shipped data, which doesn't author any `proc` conditions yet.
-describe("per-item procs", () => {
+// Per-item boolean occurrence attachments, formerly "procs" (#222): a `min:0,max:1`
+// BonusOccurrenceConfig attached to an item gates that same bonus's own grant via a
+// self-referential `bonusOccurrences: { bonus: <own id>, atLeast: 1 }` condition, reading
+// `build.occurrenceInputs` instead of the old dedicated `build.procs`/`proc` leaf. A synthetic
+// db isolates this from the shipped data.
+describe("per-item boolean occurrence attachments (formerly procs)", () => {
   const schema: Schema = {
     stats: [],
     statByKey: {},
@@ -721,40 +722,70 @@ describe("per-item procs", () => {
   const procRing: Item = {
     id: "proc-ring",
     name: "Proc Ring",
-    bonuses: ["proc-ring-bonus"],
+    bonuses: [{ bonus: "proc-ring-bonus", min: 0, max: 1, default: 1 }],
   };
   const procRingBonus: Bonus = {
     id: "proc-ring-bonus",
-    grants: [{ when: { proc: true }, stats: { power_p: 0.05 } }],
-  };
-
-  // Two independent procs modelled as two grants under one bonus, per the issue's own answer:
-  // "any proc will be strictly modelled as a standalone grant".
-  const doubleProcTrinket: Item = {
-    id: "double-proc-trinket",
-    name: "Double Proc Trinket",
-    bonuses: ["double-proc-bonus"],
-  };
-  const doubleProcBonus: Bonus = {
-    id: "double-proc-bonus",
     grants: [
-      { when: { proc: true }, stats: { power_p: 0.01 } },
-      { when: { proc: true }, stats: { crit_p: 0.02 } },
+      {
+        when: { bonusOccurrences: { bonus: "proc-ring-bonus", atLeast: 1 } },
+        stats: { power_p: 0.05 },
+      },
     ],
   };
 
-  // The object form of `proc` -- a custom checkbox label, and a proc that starts off rather
-  // than the usual default-on.
+  // Two independent toggles on one item are two separate bonuses, each with its own occurrence
+  // attachment -- unlike the old grant-index-keyed proc, two grants sharing one bonus id would
+  // now share that one bonus's occurrence count instead of toggling independently.
+  const doubleProcTrinket: Item = {
+    id: "double-proc-trinket",
+    name: "Double Proc Trinket",
+    bonuses: [
+      { bonus: "double-proc-a", min: 0, max: 1, default: 1 },
+      { bonus: "double-proc-b", min: 0, max: 1, default: 1 },
+    ],
+  };
+  const doubleProcABonus: Bonus = {
+    id: "double-proc-a",
+    grants: [
+      {
+        when: { bonusOccurrences: { bonus: "double-proc-a", atLeast: 1 } },
+        stats: { power_p: 0.01 },
+      },
+    ],
+  };
+  const doubleProcBBonus: Bonus = {
+    id: "double-proc-b",
+    grants: [
+      {
+        when: { bonusOccurrences: { bonus: "double-proc-b", atLeast: 1 } },
+        stats: { crit_p: 0.02 },
+      },
+    ],
+  };
+
+  // A custom checkbox label (BonusOccurrenceConfig.label, #227) and a toggle that starts off
+  // rather than the usual default-on.
   const situationalTrinket: Item = {
     id: "situational-trinket",
     name: "Situational Trinket",
-    bonuses: ["situational-trinket-bonus"],
+    bonuses: [
+      {
+        bonus: "situational-trinket-bonus",
+        min: 0,
+        max: 1,
+        default: 0,
+        label: "Only vs. bosses",
+      },
+    ],
   };
   const situationalTrinketBonus: Bonus = {
     id: "situational-trinket-bonus",
     grants: [
       {
-        when: { proc: { label: "Only vs. bosses", default: false } },
+        when: {
+          bonusOccurrences: { bonus: "situational-trinket-bonus", atLeast: 1 },
+        },
         stats: { power_p: 0.07 },
       },
     ],
@@ -773,14 +804,19 @@ describe("per-item procs", () => {
   };
   const testDb = db.build(
     [procRing, doubleProcTrinket, situationalTrinket],
-    [procRingBonus, doubleProcBonus, situationalTrinketBonus],
+    [
+      procRingBonus,
+      doubleProcABonus,
+      doubleProcBBonus,
+      situationalTrinketBonus,
+    ],
     schema,
     slotsData,
   );
 
   function buildWith(
     choice: string,
-    procs: Record<string, boolean> = {},
+    occurrenceInputs: Record<string, Record<string, number>> = {},
   ): Build {
     return {
       id: "b",
@@ -788,50 +824,35 @@ describe("per-item procs", () => {
       choices: { "gear.ring1": choice },
       values: {},
       assignments: {},
-      procs,
+      occurrenceInputs,
       context: BASE_CONTEXT,
       compare: { id: "", highlight: false, onlyDiff: false },
     } as unknown as Build;
   }
 
-  it("defaults on: a grant with no explicit build.procs entry still fires", () => {
+  it("defaults on: a grant with no explicit occurrenceInputs entry still fires", () => {
     const result = engine.resolveBuild(testDb, buildWith("proc-ring"));
-    const bonus = result.bonuses.find((b) => b.id === "proc-ring-bonus");
-    expect(bonus?.active).toBe(true);
-    expect(bonus?.grants[0].procKey).toBe("proc-ring-bonus:0");
+    expect(result.bonuses.find((b) => b.id === "proc-ring-bonus")?.active).toBe(
+      true,
+    );
   });
 
-  it("an explicit false for the grant's key turns it off", () => {
+  // Unlike the old dedicated `proc` leaf (always one candidate, gated separately by `when`),
+  // a self-referential attachment's own count *is* its candidate count (bonus.ts's `collect()`):
+  // 0 occurrences means zero candidates, so the bonus is absent from `result.bonuses` entirely
+  // rather than present-but-inactive. Same behavior a stacking (non-boolean) config's own
+  // 0-occurrence case already has -- a boolean attachment gets no special case.
+  it("an explicit 0 count leaves the bonus out of the resolved list entirely", () => {
     const result = engine.resolveBuild(
       testDb,
-      buildWith("proc-ring", { "proc-ring-bonus:0": false }),
-    );
-    expect(result.bonuses.find((b) => b.id === "proc-ring-bonus")?.active).toBe(
-      false,
-    );
-  });
-
-  it("a grant with no proc condition carries a null procKey", () => {
-    const flat: Bonus = {
-      id: "flat-bonus",
-      grants: [{ stats: { power_p: 0.03 } }],
-    };
-    const flatItem: Item = {
-      id: "flat-ring",
-      name: "Flat Ring",
-      bonuses: ["flat-bonus"],
-    };
-    const flatDb = db.build([flatItem], [flat], schema, slotsData);
-    const result = engine.resolveBuild(
-      flatDb,
-      buildWith("flat-ring") as unknown as Build,
+      buildWith("proc-ring", { "proc-ring": { "proc-ring-bonus": 0 } }),
     );
     expect(
-      result.bonuses.find((b) => b.id === "flat-bonus")?.grants[0].procKey,
-    ).toBeNull();
+      result.bonuses.find((b) => b.id === "proc-ring-bonus"),
+    ).toBeUndefined();
   });
 
-  it("two proc grants in one bonus toggle independently by grant index", () => {
+  it("two independent boolean attachments on one item toggle independently", () => {
     const bothOn = engine.resolveBuild(
       testDb,
       buildWith("double-proc-trinket"),
@@ -841,37 +862,29 @@ describe("per-item procs", () => {
 
     const firstOff = engine.resolveBuild(
       testDb,
-      buildWith("double-proc-trinket", { "double-proc-bonus:0": false }),
+      buildWith("double-proc-trinket", {
+        "double-proc-trinket": { "double-proc-a": 0 },
+      }),
     );
     expect(firstOff.stages.sums.power_p).toBe(0);
     expect(firstOff.stages.sums.crit_p).toBeCloseTo(0.02, 9);
   });
 
-  it("feeds ConditionExplain the same way a toggle does, for the bonus inspector", () => {
-    const off = engine.resolveBuild(
-      testDb,
-      buildWith("proc-ring", { "proc-ring-bonus:0": false }),
-    );
-    const bonus = off.bonuses.find((b) => b.id === "proc-ring-bonus")!;
-    expect(bonus.gate.unmet[0]?.label).toBe("proc");
-    expect(bonus.gate.unmet[0]?.detail).toBe("disabled");
-  });
-
-  it("a spec with default: false starts off with no explicit build.procs entry", () => {
+  it("a default: 0 config starts off (absent from the resolved list) with no explicit occurrenceInputs entry", () => {
     const result = engine.resolveBuild(
       testDb,
       buildWith("situational-trinket"),
     );
     expect(
-      result.bonuses.find((b) => b.id === "situational-trinket-bonus")?.active,
-    ).toBe(false);
+      result.bonuses.find((b) => b.id === "situational-trinket-bonus"),
+    ).toBeUndefined();
   });
 
-  it("an explicit true in build.procs overrides a spec's default: false", () => {
+  it("an explicit 1 count overrides a config's default: 0", () => {
     const result = engine.resolveBuild(
       testDb,
       buildWith("situational-trinket", {
-        "situational-trinket-bonus:0": true,
+        "situational-trinket": { "situational-trinket-bonus": 1 },
       }),
     );
     expect(

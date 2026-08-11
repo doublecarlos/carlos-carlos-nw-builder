@@ -85,41 +85,26 @@ describe("condition-draft whenRowsComplete", () => {
   });
 });
 
-describe("condition-draft proc leaf", () => {
-  it("a fresh proc row is complete (no fields required) and serializes to bare true", () => {
-    const row = newLeafRow("proc");
-    expect(whenRowsComplete([row])).toBe(true);
-    expect(rowsToWhen([row])).toEqual({ proc: true });
+describe("condition-draft whenToRows/rowsToWhen", () => {
+  it("a leaf round-trips through whenToRows/rowsToWhen unchanged", () => {
+    const when = { duration: { atLeast: 10, below: 30 } };
+    expect(rowsToWhen(whenToRows(when))).toEqual(when);
   });
 
-  it("a label without an explicit default still serializes to just the label", () => {
-    const row = newLeafRow("proc");
-    row.procLabel = "Fireball proc";
-    expect(rowsToWhen([row])).toEqual({ proc: { label: "Fireball proc" } });
+  it("a nested all/any/not tree round-trips unchanged", () => {
+    const when = {
+      all: [
+        { toggle: "combat" },
+        { any: [{ class: "fighter" }, { class: "cleric" }] },
+        { not: { duration: { below: 10 } } },
+      ],
+    };
+    expect(rowsToWhen(whenToRows(when))).toEqual(when);
   });
 
-  it("an explicit default (on or off) serializes even with no label", () => {
-    const row = newLeafRow("proc");
-    row.procDefault = false;
-    expect(rowsToWhen([row])).toEqual({ proc: { default: false } });
-
-    row.procDefault = true;
-    expect(rowsToWhen([row])).toEqual({ proc: { default: true } });
-  });
-
-  it("label and default together round-trip through whenToRows", () => {
-    const when = { proc: { label: "Fireball proc", default: false } };
-    const rows = whenToRows(when);
-    expect(rows[0].procLabel).toBe("Fireball proc");
-    expect(rows[0].procDefault).toBe(false);
-    expect(rowsToWhen(rows)).toEqual(when);
-  });
-
-  it("bare true round-trips back to a row with no label and an unset (null) default", () => {
-    const rows = whenToRows({ proc: true });
-    expect(rows[0].procLabel).toBe("");
-    expect(rows[0].procDefault).toBeNull();
-    expect(rowsToWhen(rows)).toEqual({ proc: true });
+  it("an empty when-object round-trips to an empty rows list", () => {
+    expect(whenToRows(undefined)).toEqual([]);
+    expect(rowsToWhen([])).toEqual({});
   });
 });
 

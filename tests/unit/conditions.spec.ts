@@ -1,12 +1,7 @@
 // The generic `param` leaf -- one leaf, three mutually exclusive comparison forms, keyed on a
 // build_parameter's (context-relative) path.
 import { describe, it, expect } from "vitest";
-import {
-  evaluate,
-  explain,
-  procSpec,
-  usesProc,
-} from "../../src/engine/conditions";
+import { evaluate, explain } from "../../src/engine/conditions";
 import * as db from "../../src/data/db";
 import * as bonus from "../../src/engine/bonus";
 import type { EvalContext, SlotsData, Schema, Build } from "../../src/types";
@@ -120,7 +115,6 @@ function testBuild(context: Record<string, unknown>): Build {
     choices: {},
     values: {},
     assignments: {},
-    procs: {},
     occurrenceInputs: {},
     context: context as unknown as Build["context"],
     compare: { id: "", highlight: false, onlyDiff: false },
@@ -177,61 +171,5 @@ describe("conditions.ts bonusOccurrences leaf uses bonusNames for friendly label
     );
     expect(result.ok).toBe(false);
     expect(result.unmet[0].label).toBe("2 occurrence(s) of m32-unknown-bonus");
-  });
-});
-
-describe("conditions.ts proc leaf", () => {
-  it("bare true defaults on, same as no build.procs entry at all", () => {
-    const c = ctx({}, { procs: {} });
-    expect(evaluate({ proc: true }, c, "bonus:0")).toBe(true);
-  });
-
-  it("an object spec's own default: false starts the grant off", () => {
-    const c = ctx({}, { procs: {} });
-    expect(evaluate({ proc: { default: false } }, c, "bonus:0")).toBe(false);
-  });
-
-  it("build.procs always wins over the spec's own default", () => {
-    const off = ctx({}, { procs: { "bonus:0": false } });
-    expect(evaluate({ proc: true }, off, "bonus:0")).toBe(false);
-
-    const on = ctx({}, { procs: { "bonus:0": true } });
-    expect(evaluate({ proc: { default: false } }, on, "bonus:0")).toBe(true);
-  });
-
-  it("with no grantKey (evaluate/explain called without one) a proc leaf always passes", () => {
-    const c = ctx({}, { procs: { "bonus:0": false } });
-    expect(evaluate({ proc: true }, c)).toBe(true);
-  });
-
-  it("feeds ConditionExplain the same shape a toggle does", () => {
-    const c = ctx({}, { procs: { "bonus:0": false } });
-    const result = explain({ proc: true }, c, "bonus:0");
-    expect(result.ok).toBe(false);
-    expect(result.unmet[0].label).toBe("proc");
-    expect(result.unmet[0].detail).toBe("disabled");
-  });
-});
-
-describe("conditions.ts procSpec/usesProc", () => {
-  it("finds a top-level proc leaf", () => {
-    expect(usesProc({ proc: true })).toBe(true);
-    expect(procSpec({ proc: { label: "Fireball" } })).toEqual({
-      label: "Fireball",
-    });
-  });
-
-  it("finds a proc leaf nested inside all/any/not", () => {
-    expect(usesProc({ all: [{ toggle: "combat" }, { proc: true }] })).toBe(
-      true,
-    );
-    expect(usesProc({ any: [{ proc: { default: false } }] })).toBe(true);
-    expect(usesProc({ not: { proc: true } })).toBe(true);
-  });
-
-  it("returns false/undefined when there is no proc leaf anywhere", () => {
-    expect(usesProc({ toggle: "combat" })).toBe(false);
-    expect(usesProc(undefined)).toBe(false);
-    expect(procSpec({ toggle: "combat" })).toBeUndefined();
   });
 });

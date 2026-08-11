@@ -222,7 +222,6 @@ export function collect(
     bonusOccurrences,
     bonusNames,
     params,
-    procs: build.procs ?? {},
   };
 
   return { ctx, rows, candidates, assignmentStatsBySlot };
@@ -230,34 +229,22 @@ export function collect(
 
 // --- pass 2: evaluate ---
 
-/** Resolve one grant against the context into a stat payload (or none).
- * A grant carries no `id`/`name` of its own -- `grantKey` (bonus.ts's own
- * `${bonusId}:${grantIndex}`) is passed in purely so a `proc` leaf inside `when` can look up
- * its own per-grant toggle; it plays no other role in evaluation. */
+/** Resolve one grant against the context into a stat payload (or none). */
 function evaluateGrant(
   grant: Grant,
   ctx: EvalContext,
-  grantKey: string,
   explain = true,
 ): GrantEvaluation {
-  const procKey = conditions.usesProc(grant.when) ? grantKey : null;
   const gate: ConditionExplain = explain
-    ? conditions.explain(grant.when, ctx, grantKey)
+    ? conditions.explain(grant.when, ctx)
     : {
-        ok: conditions.evaluate(grant.when, ctx, grantKey),
+        ok: conditions.evaluate(grant.when, ctx),
         leaves: [],
         unmet: [],
       };
 
   if (!gate.ok)
-    return {
-      active: false,
-      gate,
-      stats: null,
-      chose: null,
-      problem: null,
-      procKey,
-    };
+    return { active: false, gate, stats: null, chose: null, problem: null };
 
   // `problem`: reports a build error/warning instead of granting stats.
   if (grant.problem) {
@@ -267,31 +254,22 @@ function evaluateGrant(
       stats: null,
       chose: "problem",
       problem: grant.problem,
-      procKey,
     };
   }
 
   // `variants`: first match wins (role-dependent payloads).
   if (grant.variants) {
     const index = grant.variants.findIndex((v) =>
-      conditions.evaluate(v.when, ctx, grantKey),
+      conditions.evaluate(v.when, ctx),
     );
     return index === -1
-      ? {
-          active: false,
-          gate,
-          stats: null,
-          chose: null,
-          problem: null,
-          procKey,
-        }
+      ? { active: false, gate, stats: null, chose: null, problem: null }
       : {
           active: true,
           gate,
           stats: grant.variants[index].stats,
           chose: `variant:${index}`,
           problem: null,
-          procKey,
         };
   }
 
@@ -327,16 +305,8 @@ function evaluateGrant(
           stats: best.stats,
           chose: `tier:${bestAt}`,
           problem: null,
-          procKey,
         }
-      : {
-          active: false,
-          gate,
-          stats: null,
-          chose: null,
-          problem: null,
-          procKey,
-        };
+      : { active: false, gate, stats: null, chose: null, problem: null };
   }
 
   return {
@@ -345,7 +315,6 @@ function evaluateGrant(
     stats: grant.stats ?? {},
     chose: "stats",
     problem: null,
-    procKey,
   };
 }
 
@@ -373,9 +342,9 @@ export function evaluateBonus(
   ctx: EvalContext,
   explain = true,
 ): BonusEvaluation {
-  const results = (bonus.grants ?? []).map((grant, index) => ({
+  const results = (bonus.grants ?? []).map((grant) => ({
     raw: grant,
-    ...evaluateGrant(grant, ctx, `${bonus.id}:${index}`, explain),
+    ...evaluateGrant(grant, ctx, explain),
   }));
   const activeResults = results.filter((r) => r.active);
   const active = activeResults.length > 0;

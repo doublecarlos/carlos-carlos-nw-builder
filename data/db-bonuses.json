@@ -474,8 +474,9 @@
     "grants": [
       {
         "when": {
-          "proc": {
-            "label": "Buff active"
+          "bonusOccurrences": {
+            "bonus": "campfire-buff-bonus",
+            "atLeast": 1
           }
         },
         "stats": {

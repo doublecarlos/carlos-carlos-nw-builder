@@ -1,9 +1,7 @@
 // Per-item occurrence rows for BonusOccurrenceConfig attachments (#217): which of an item's
-// `bonuses` entries carry a typed count, and what that count currently is. Mirrors
-// useItemProcs.ts's own `procRowsForItem`/`useItemProcs`, minus the "first contributing source
-// only" dedup that file needs -- a proc toggle is shared by every item contributing the same
-// bonus (one build.procs entry per grant), but build.occurrenceInputs is keyed by item id *and*
-// bonus id, so two items each carrying their own config for the same bonus already get two
+// `bonuses` entries carry a typed count, and what that count currently is. No dedup needed --
+// build.occurrenceInputs is keyed by item id *and* bonus id, so two items each carrying their
+// own config for the same bonus (e.g. a boolean, proc-shaped one, see #222) already get two
 // independent counts with no aliasing to guard against.
 import { computed, type ComputedRef, type Ref } from "vue";
 import * as builds from "../stores/builds";
@@ -18,9 +16,9 @@ export interface OccurrenceRow {
   max: number;
   defaultValue: number;
   /** Derived from the config's own range, no separate authored tag -- see
-   *  `BonusOccurrenceConfig`'s own doc comment: 0-1 reads as a checkbox, same as `proc`'s. A
-   *  `min === max` config never reaches here at all (see below), so this is always one of these
-   *  two once a row exists. */
+   *  `BonusOccurrenceConfig`'s own doc comment: a 0-1 range reads as a checkbox (a per-item
+   *  on/off toggle, e.g. a proc). A `min === max` config never reaches here at all (see below),
+   *  so this is always one of these two once a row exists. */
   kind: "checkbox" | "stepper";
 }
 
