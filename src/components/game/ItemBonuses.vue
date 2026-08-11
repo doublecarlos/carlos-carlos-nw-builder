@@ -18,13 +18,16 @@ import { ref, computed, provide } from "vue";
 import BonusForm from "./BonusForm.vue";
 import ComboBox from "../ui/ComboBox.vue";
 import IconButton from "../ui/IconButton.vue";
-import { CirclePlus } from "@lucide/vue";
+import FormField from "../ui/FormField.vue";
+import FormGrid from "../ui/FormGrid.vue";
+import { CirclePlus, Plus, Trash } from "@lucide/vue";
 import BaseButton from "../ui/BaseButton.vue";
 import BaseBadge from "../ui/BaseBadge.vue";
 import FormSection from "../ui/FormSection.vue";
 import type { Db, Bonus } from "../../types";
 import type { BonusDraft } from "../../engine/bonus-draft";
 import type { BonusDraftStore } from "../../stores/bonus-draft";
+import type { OccurrenceDraft } from "./ItemForm.vue";
 import { bonusDraftRegistryKey } from "../../composables/bonusDraftRegistry";
 
 // Lets a condition be dragged from one bonus's tree straight into another's, both attached to
@@ -36,6 +39,9 @@ const props = withDefaults(
   defineProps<{
     /** Bonus ids the item currently declares. */
     attachedBonusIds?: string[];
+    /** Occurrence config for an attached id upgraded from a plain attachment (always 1
+     *  occurrence) to a typed, player-set count -- absent means plain. Keyed by bonus id. */
+    occurrenceConfigs?: Record<string, OccurrenceDraft>;
     /** Seeds the Name field of a brand-new private bonus. */
     itemName?: string;
     db: Db;
@@ -48,6 +54,7 @@ const props = withDefaults(
   }>(),
   {
     attachedBonusIds: () => [],
+    occurrenceConfigs: () => ({}),
     itemName: "",
     allBonusIds: () => [],
     tags: () => [],
@@ -62,6 +69,9 @@ const emit = defineEmits<{
   "detach-bonus": [id: string];
   "attach-bonus": [id: string];
   "update-bonus": [payload: { id: string; bonus: Bonus }];
+  "update-occurrence": [
+    payload: { id: string; occurrence: OccurrenceDraft | null },
+  ];
 }>();
 
 interface Slot {
@@ -97,6 +107,38 @@ const attachable = computed(() => {
 
 function sourceFor(slot: Slot): Bonus | null {
   return slot.id ? (props.db.bonusById.get(slot.id) ?? null) : null;
+}
+
+/** An occurrence config only makes sense once the attachment has a real bonus id -- a pending
+ *  (not-yet-saved) slot has none yet, so this reads as "no config" for it too. */
+function occurrenceFor(id: string | null): OccurrenceDraft | null {
+  return id ? (props.occurrenceConfigs[id] ?? null) : null;
+}
+
+function addOccurrence(id: string | null) {
+  if (!id) return;
+  emit("update-occurrence", {
+    id,
+    occurrence: { min: null, max: null, default: null },
+  });
+}
+
+function removeOccurrence(id: string | null) {
+  if (!id) return;
+  emit("update-occurrence", { id, occurrence: null });
+}
+
+function updateOccurrenceField(
+  id: string | null,
+  field: keyof OccurrenceDraft,
+  value: number | string | null,
+) {
+  if (!id) return;
+  const current = occurrenceFor(id) ?? { min: null, max: null, default: null };
+  emit("update-occurrence", {
+    id,
+    occurrence: { ...current, [field]: value },
+  });
 }
 
 /** A pending slot's id previews from Name, so it's seeded with the item's own name -- the
@@ -209,6 +251,76 @@ function onSlotDuplicate(slot: Slot) {
       <BaseBadge v-if="slot.id && !sourceFor(slot)" variant="warn" class="mb-1"
         >not defined yet</BaseBadge
       >
+      <div
+        v-if="slot.id"
+        class="mb-1.5 flex flex-wrap items-center gap-1.5"
+        data-testid="occurrence-config-row"
+      >
+        <IconButton
+          v-if="!occurrenceFor(slot.id)"
+          title="Let this item's copy of this bonus vary (stacks) instead of always contributing 1 occurrence"
+          data-testid="add-occurrence-config"
+          @click="addOccurrence(slot.id)"
+          ><Plus
+        /></IconButton>
+        <IconButton
+          v-else
+          title="Back to a plain attachment (always 1 occurrence)"
+          data-testid="remove-occurrence-config"
+          @click="removeOccurrence(slot.id)"
+          ><Trash
+        /></IconButton>
+        <span v-if="!occurrenceFor(slot.id)" class="text-sm text-muted"
+          >Occurrence count: fixed at 1</span
+        >
+        <template v-else>
+          <span class="text-sm text-muted">Occurrence count (stacks):</span>
+          <FormGrid data-testid="occurrence-config-fields">
+            <FormField label="Min">
+              <input
+                class="w-16 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+                type="number"
+                :value="occurrenceFor(slot.id)?.min ?? ''"
+                @input="
+                  updateOccurrenceField(
+                    slot.id,
+                    'min',
+                    ($event.target as HTMLInputElement).value,
+                  )
+                "
+              />
+            </FormField>
+            <FormField label="Max">
+              <input
+                class="w-16 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+                type="number"
+                :value="occurrenceFor(slot.id)?.max ?? ''"
+                @input="
+                  updateOccurrenceField(
+                    slot.id,
+                    'max',
+                    ($event.target as HTMLInputElement).value,
+                  )
+                "
+              />
+            </FormField>
+            <FormField label="Default">
+              <input
+                class="w-16 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+                type="number"
+                :value="occurrenceFor(slot.id)?.default ?? ''"
+                @input="
+                  updateOccurrenceField(
+                    slot.id,
+                    'default',
+                    ($event.target as HTMLInputElement).value,
+                  )
+                "
+              />
+            </FormField>
+          </FormGrid>
+        </template>
+      </div>
       <BonusForm
         :source="sourceFor(slot)"
         :fixed-id="slot.id"

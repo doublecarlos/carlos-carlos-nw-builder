@@ -77,6 +77,15 @@ const emit = defineEmits<{
   "update-bonus": [payload: { id: string; bonus: Bonus }];
 }>();
 
+/** One attached bonus's editable occurrence bounds -- mirrors `BonusOccurrenceConfig`'s
+ *  own `min`/`max`/`default`, just widened to `number | string | null` like every other
+ *  numeric draft field here so a cleared input reads as empty rather than `0`. */
+export interface OccurrenceDraft {
+  min: number | string | null;
+  max: number | string | null;
+  default: number | string | null;
+}
+
 export interface ItemDraft {
   name: string;
   filter: string;
@@ -87,6 +96,11 @@ export interface ItemDraft {
   tags: string[];
   gameIds: string[];
   bonuses: string[];
+  /** Present only for a bonus id upgraded to a `BonusOccurrenceConfig` -- absence means a
+   *  plain-id attachment (always 1 occurrence), same "optional fields" convention `dynamicStat`
+   *  uses for `dynamicMin`/`dynamicMax`. Keyed by bonus id, not array index, since it tracks
+   *  `draft.bonuses` entries by identity. */
+  bonusOccurrences: Record<string, OccurrenceDraft>;
   excludes: string[];
   dynamicStat: string;
   dynamicMin: number | string | null;
@@ -108,6 +122,20 @@ function hasPointField(v: number | string | null): boolean {
 function buildDraft(item: Item | null | undefined): ItemDraft {
   const source = item ?? ({} as Partial<Item>);
   const statKeys = new Set(NW_SCHEMA.statKeys);
+  const bonuses: string[] = [];
+  const bonusOccurrences: Record<string, OccurrenceDraft> = {};
+  for (const entry of source.bonuses ?? []) {
+    if (typeof entry === "string") {
+      bonuses.push(entry);
+    } else {
+      bonuses.push(entry.bonus);
+      bonusOccurrences[entry.bonus] = {
+        min: entry.min,
+        max: entry.max,
+        default: entry.default,
+      };
+    }
+  }
   return {
     name: source.name ?? "",
     filter: source.filter ?? "",
@@ -117,12 +145,8 @@ function buildDraft(item: Item | null | undefined): ItemDraft {
     allowedClass: [...(source.allowedClass ?? [])],
     tags: [...(source.tags ?? [])],
     gameIds: [...(source.gameIds ?? [])],
-    // Plain-id attachments only -- a `BonusOccurrenceConfig` attachment has no editor here yet,
-    // so it's excluded from the draft and carried through untouched by `toItem()` instead of
-    // being silently dropped on save. See `toItem()`'s own note.
-    bonuses: (source.bonuses ?? []).filter(
-      (entry): entry is string => typeof entry === "string",
-    ),
+    bonuses,
+    bonusOccurrences,
     excludes: [...(source.excludes ?? [])],
     dynamicStat: source.dynamicStat ?? "",
     dynamicMin: source.dynamicMin ?? null,
@@ -168,8 +192,23 @@ function diffLabel(oldJson: string, newJson: string): string {
       return diffArrayLabel("tag", old.tags ?? [], nw.tags ?? []);
     if (JSON.stringify(old.gameIds) !== JSON.stringify(nw.gameIds))
       return diffArrayLabel("game id", old.gameIds ?? [], nw.gameIds ?? []);
-    if (JSON.stringify(old.bonuses) !== JSON.stringify(nw.bonuses))
-      return diffArrayLabel("bonus", old.bonuses ?? [], nw.bonuses ?? []);
+    if (
+      JSON.stringify(bonusIdsOf(old.bonuses)) !==
+      JSON.stringify(bonusIdsOf(nw.bonuses))
+    )
+      return diffArrayLabel(
+        "bonus",
+        bonusIdsOf(old.bonuses),
+        bonusIdsOf(nw.bonuses),
+      );
+    if (
+      JSON.stringify(occurrenceConfigsOf(old.bonuses)) !==
+      JSON.stringify(occurrenceConfigsOf(nw.bonuses))
+    )
+      return diffOccurrenceLabel(
+        occurrenceConfigsOf(old.bonuses),
+        occurrenceConfigsOf(nw.bonuses),
+      );
     if (JSON.stringify(old.excludes) !== JSON.stringify(nw.excludes))
       return diffArrayLabel("exclude", old.excludes ?? [], nw.excludes ?? []);
     if (old.dynamicStat !== nw.dynamicStat)
@@ -188,6 +227,48 @@ function diffLabel(oldJson: string, newJson: string): string {
     // JSON parse error -- shouldn't happen but be safe.
   }
   return "edit item";
+}
+
+/** A saved item's `bonuses` entries mix plain ids and `BonusOccurrenceConfig` objects --
+ *  split that into "which bonuses are attached" (id order/membership) and "which attached
+ *  ones carry an occurrence config" so attach/detach and occurrence edits get distinct,
+ *  readable diff labels instead of one opaque "edit bonuses". */
+function bonusIdsOf(entries: unknown): string[] {
+  return Array.isArray(entries)
+    ? entries.map((e) =>
+        typeof e === "string" ? e : (e as { bonus: string }).bonus,
+      )
+    : [];
+}
+function occurrenceConfigsOf(entries: unknown): Record<string, unknown> {
+  const configs: Record<string, unknown> = {};
+  if (Array.isArray(entries)) {
+    for (const e of entries) {
+      if (typeof e !== "string") configs[(e as { bonus: string }).bonus] = e;
+    }
+  }
+  return configs;
+}
+
+/** Label an occurrence-config change with the specific bonus id it touched, same spirit as
+ *  `diffArrayLabel` -- "edit occurrence config" alone wouldn't say which of an item's several
+ *  attachments changed. */
+function diffOccurrenceLabel(
+  oldConfigs: Record<string, unknown>,
+  nwConfigs: Record<string, unknown>,
+): string {
+  const oldKeys = new Set(Object.keys(oldConfigs));
+  const nwKeys = new Set(Object.keys(nwConfigs));
+  const added = [...nwKeys].filter((id) => !oldKeys.has(id));
+  const removed = [...oldKeys].filter((id) => !nwKeys.has(id));
+  if (added.length) return `add occurrence config for "${added[0]}"`;
+  if (removed.length) return `remove occurrence config for "${removed[0]}"`;
+  const changed = [...nwKeys].find(
+    (id) => JSON.stringify(oldConfigs[id]) !== JSON.stringify(nwConfigs[id]),
+  );
+  return changed
+    ? `edit occurrence config for "${changed}"`
+    : "edit occurrence config";
 }
 
 /** Label array mutations as add/remove with the changed entry count. */
@@ -310,14 +391,20 @@ function toItem(): Item {
 
   if (local.tags.length) item.tags = [...local.tags];
   if (local.gameIds.length) item.gameIds = [...local.gameIds];
-  // `local.bonuses` only ever holds plain ids (see `buildDraft`) -- any BonusOccurrenceConfig
-  // attachments the source item carried are passed through unedited rather than dropped, since
-  // this form has no editor for them yet (#219).
-  const preservedOccurrenceConfigs = (props.source?.bonuses ?? []).filter(
-    (entry): entry is BonusOccurrenceConfig => typeof entry !== "string",
-  );
-  if (local.bonuses.length || preservedOccurrenceConfigs.length) {
-    item.bonuses = [...local.bonuses, ...preservedOccurrenceConfigs];
+  if (local.bonuses.length) {
+    const bonuses: (string | BonusOccurrenceConfig)[] = local.bonuses.map(
+      (id) => {
+        const occurrence = local.bonusOccurrences[id];
+        if (!occurrence) return id;
+        return {
+          bonus: id,
+          min: Number(occurrence.min) || 0,
+          max: Number(occurrence.max) || 0,
+          default: Number(occurrence.default) || 0,
+        };
+      },
+    );
+    item.bonuses = bonuses;
   }
   if (local.excludes.length) item.excludes = [...local.excludes];
   if (local.maxCopies) item.maxCopies = Number(local.maxCopies);
@@ -467,6 +554,25 @@ function detachBonus(id: string) {
   draft.value.bonuses = draft.value.bonuses.filter(
     (bonusId: string) => bonusId !== id,
   );
+  if (id in draft.value.bonusOccurrences) {
+    const { [id]: _removed, ...rest } = draft.value.bonusOccurrences;
+    draft.value.bonusOccurrences = rest;
+  }
+}
+
+/** Toggle or edit one attached bonus's occurrence config -- `occurrence: null` drops it back
+ *  to a plain-id attachment (always 1 occurrence), mirroring `removePointAssignment`'s
+ *  clear-back-to-unset behavior. */
+function updateBonusOccurrence(id: string, occurrence: OccurrenceDraft | null) {
+  if (occurrence) {
+    draft.value.bonusOccurrences = {
+      ...draft.value.bonusOccurrences,
+      [id]: occurrence,
+    };
+  } else if (id in draft.value.bonusOccurrences) {
+    const { [id]: _removed, ...rest } = draft.value.bonusOccurrences;
+    draft.value.bonusOccurrences = rest;
+  }
 }
 
 // Rebuild draft when source changes (e.g. after undo/redo reverts the overlay).
@@ -796,6 +902,7 @@ watch(
 
     <ItemBonuses
       :attached-bonus-ids="draft.bonuses"
+      :occurrence-configs="draft.bonusOccurrences"
       :item-name="draft.name"
       :db="db"
       :all-bonus-ids="allBonusIds"
@@ -807,6 +914,7 @@ watch(
       @update-bonus="$emit('update-bonus', $event)"
       @detach-bonus="detachBonus"
       @attach-bonus="attachBonus"
+      @update-occurrence="(e) => updateBonusOccurrence(e.id, e.occurrence)"
     />
   </div>
 </template>
