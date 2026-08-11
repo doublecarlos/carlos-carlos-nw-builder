@@ -163,6 +163,7 @@ export function defaultBuild(name = "New build"): Build {
     values: {},
     assignments,
     procs: {},
+    occurrenceInputs: {},
     context: root.context as unknown as Build["context"],
     // The quick-compare picker (App.vue topbar). Saved with the build -- unlike `tab`, which
     // is pure session state -- so reopening a build remembers what you were sizing it up
@@ -262,6 +263,10 @@ export function normalise(
     values: numbers(raw.values),
     assignments: nestedNumbers(raw.assignments, base.assignments),
     procs: booleans(raw.procs),
+    // No seeded defaults to fall back on (unlike `assignments`, which seeds every
+    // point_assignment row's every item up front): a `BonusOccurrenceConfig`'s own `default`
+    // is read directly by bonus.ts's `collect()` when an item has no entry here at all.
+    occurrenceInputs: nestedNumbers(raw.occurrenceInputs, {}),
     // `context`'s pass-through fields (class/role/combatType/damageType) are not
     // individually validated -- the result is only knowable-safe by construction, not by
     // the type checker; hence the cast.

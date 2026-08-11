@@ -5,6 +5,7 @@
 // arguments so catalog.ts can hand it a composed (base + overlay) catalogue instead.
 
 import { NW_ITEMS, NW_BONUSES, NW_SCHEMA, NW_SLOTS } from "./data";
+import { bonusIdOf } from "../lib/bonus-attachment";
 import type {
   Item,
   Bonus,
@@ -45,8 +46,8 @@ export function build(
     if (filterList) filterList.push(item);
     else byFilter.set(item.filter, [item]);
 
-    for (const bonusId of item.bonuses ?? [])
-      pushTo(bonusMembers, bonusId, item.id);
+    for (const attachment of item.bonuses ?? [])
+      pushTo(bonusMembers, bonusIdOf(attachment), item.id);
     for (const tag of item.tags ?? []) pushTo(itemsByTag, tag, item.id);
     for (const gameId of item.gameIds ?? []) itemByGameId.set(gameId, item.id);
   }
@@ -118,8 +119,8 @@ export function build(
      * a bonus resolves as one unit (bonus.js sums its `grants`), not one candidate per grant.
      */
     bonusesFor(item: Item): BonusCandidate[] {
-      return (item.bonuses ?? []).flatMap((bonusId: string) => {
-        const bonus = bonusById.get(bonusId);
+      return (item.bonuses ?? []).flatMap((attachment) => {
+        const bonus = bonusById.get(bonusIdOf(attachment));
         return bonus ? [{ bonus, bonusId: bonus.id, source: item.name }] : [];
       });
     },

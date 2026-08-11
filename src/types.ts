@@ -206,7 +206,12 @@ export interface Item {
   /** Set only on an item meant to be spent points on via a `point_assignment` slot whose
    * `filter` matches this item's own -- see `PointAssignmentConfig`. */
   pointAssignment?: PointAssignmentConfig;
-  bonuses?: string[];
+  /** A bare id means "always exactly 1 occurrence of this bonus" (the original, still-common
+   * shape). A `BonusOccurrenceConfig` lets the same item instead declare a typed, player-set
+   * count for one bonus -- e.g. one item standing in for 1-5 stacks of a set bonus instead of 5
+   * separate mutually-exclusive items, or a stacking effect that coexists with the item's own
+   * always-on stats. An item may mix both shapes, one entry per bonus it carries. */
+  bonuses?: (string | BonusOccurrenceConfig)[];
   excludes?: string[];
   /** Short blurb shown alongside the item's stat summary in the build editor, for an
    * effect that reads better as text than as a stat (e.g. a proc) -- see
@@ -239,6 +244,22 @@ export interface PointAssignmentConfig {
   max: number;
   default: number;
   priority?: number;
+}
+
+/** One item's typed occurrence count for one bonus it carries -- an `Item.bonuses` entry in
+ * place of a bare id, see `Item.bonuses`'s own doc comment. `bonus` is required (unlike
+ * `PointAssignmentConfig`, which needs none: an item may carry several of these, one per bonus,
+ * so each has to say which bonus it's for). `min === max` needs no player input at all -- the
+ * item always contributes `min` occurrences, same as a bare-id attachment always contributes 1
+ * but with a magnitude other than 1. Deliberately not named/shaped after `PointAssignmentConfig`
+ * even though the bounds match: the two are separate concepts (a point_assignment slot's own
+ * stepper vs. one bonus's occurrence count on an arbitrary item_picker item) that may not stay
+ * structurally identical as either one grows. */
+export interface BonusOccurrenceConfig {
+  bonus: string; // Bonus.id
+  min: number;
+  max: number;
+  default: number;
 }
 
 export interface RangeSpec {
@@ -448,6 +469,11 @@ export interface Build {
    *  A key absent here reads as on -- only ever holds explicit off/on overrides a user made,
    *  not one entry per proc-gated grant that exists. */
   procs: Record<string, boolean>;
+  /** Every item's typed `BonusOccurrenceConfig` count(s), by item id then bonus id -- keyed by
+   * bonus id (not just item id) since one item may carry several such configs, each needing its
+   * own count (see `Item.bonuses`). A key absent here reads as that config's own `default`,
+   * same "only explicit overrides stored" convention `procs` uses. */
+  occurrenceInputs: Record<string, Record<string, number>>;
   context: BuildContext;
   compare: BuildCompare;
   catalog?: CatalogOverlay;

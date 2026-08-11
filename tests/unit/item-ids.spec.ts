@@ -49,6 +49,7 @@ function testBuild(choices: Record<string, string>): Build {
     values: {},
     assignments: {},
     procs: {},
+    occurrenceInputs: {},
     context: {
       class: "",
       role: "",

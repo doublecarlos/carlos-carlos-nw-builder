@@ -19,6 +19,7 @@ import { NW_ITEMS, NW_BONUSES, NW_SCHEMA, NW_SLOTS } from "./data";
 import * as db from "./db";
 import { findParamSlot, resolveLinkedItem } from "../lib/build-path";
 import { deepEqual } from "../lib/deep-equal";
+import { bonusIdOf } from "../lib/bonus-attachment";
 import type {
   Item,
   Bonus,
@@ -251,7 +252,8 @@ export function referencedOverlay(db: Db, build: Build): CatalogOverlay {
     visitedItems.add(id);
     const item = db.get(id);
     if (!item) continue;
-    for (const bonusId of item.bonuses ?? []) bonusIds.add(bonusId);
+    for (const attachment of item.bonuses ?? [])
+      bonusIds.add(bonusIdOf(attachment));
     for (const bonusId of item.excludes ?? []) bonusIds.add(bonusId);
   }
 
@@ -884,9 +886,29 @@ export function validate(
         );
       }
     }
-    for (const bonusId of item.bonuses ?? []) {
+    for (const attachment of item.bonuses ?? []) {
+      const bonusId = bonusIdOf(attachment);
       if (!bonusIds.has(bonusId)) {
         report("warn", `bonus "${bonusId}" has no definition`, item.id);
+      }
+      if (typeof attachment === "string") continue;
+      const { min, max, default: def } = attachment;
+      if (
+        ![min, max, def].every(
+          (n) => typeof n === "number" && Number.isFinite(n),
+        )
+      ) {
+        report(
+          "error",
+          `bonus "${bonusId}" occurrence config has a non-numeric min/max/default`,
+          item.id,
+        );
+      } else if (min > max || def < min || def > max) {
+        report(
+          "error",
+          `bonus "${bonusId}" occurrence config default ${def} is outside ${min}–${max}`,
+          item.id,
+        );
       }
     }
     if (item.dynamicStat && !statKeys.has(item.dynamicStat)) {

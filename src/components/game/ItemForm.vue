@@ -25,7 +25,13 @@ import { deepEqual } from "../../lib/deep-equal";
 import { useDraftHistory } from "../../composables/useDraftHistory";
 import { isPercentKind, kindOf, statPickerOptions } from "../../lib/format";
 import { focusNextCombo } from "../../lib/stat-row-nav";
-import type { Item, Db, Bonus, BuildParameterSlot } from "../../types";
+import type {
+  Item,
+  Db,
+  Bonus,
+  BuildParameterSlot,
+  BonusOccurrenceConfig,
+} from "../../types";
 import type { StatRow } from "../../engine/bonus-draft";
 import BaseCheckbox from "../ui/BaseCheckbox.vue";
 
@@ -111,7 +117,12 @@ function buildDraft(item: Item | null | undefined): ItemDraft {
     allowedClass: [...(source.allowedClass ?? [])],
     tags: [...(source.tags ?? [])],
     gameIds: [...(source.gameIds ?? [])],
-    bonuses: [...(source.bonuses ?? [])],
+    // Plain-id attachments only -- a `BonusOccurrenceConfig` attachment has no editor here yet,
+    // so it's excluded from the draft and carried through untouched by `toItem()` instead of
+    // being silently dropped on save. See `toItem()`'s own note.
+    bonuses: (source.bonuses ?? []).filter(
+      (entry): entry is string => typeof entry === "string",
+    ),
     excludes: [...(source.excludes ?? [])],
     dynamicStat: source.dynamicStat ?? "",
     dynamicMin: source.dynamicMin ?? null,
@@ -299,7 +310,15 @@ function toItem(): Item {
 
   if (local.tags.length) item.tags = [...local.tags];
   if (local.gameIds.length) item.gameIds = [...local.gameIds];
-  if (local.bonuses.length) item.bonuses = [...local.bonuses];
+  // `local.bonuses` only ever holds plain ids (see `buildDraft`) -- any BonusOccurrenceConfig
+  // attachments the source item carried are passed through unedited rather than dropped, since
+  // this form has no editor for them yet (#219).
+  const preservedOccurrenceConfigs = (props.source?.bonuses ?? []).filter(
+    (entry): entry is BonusOccurrenceConfig => typeof entry !== "string",
+  );
+  if (local.bonuses.length || preservedOccurrenceConfigs.length) {
+    item.bonuses = [...local.bonuses, ...preservedOccurrenceConfigs];
+  }
   if (local.excludes.length) item.excludes = [...local.excludes];
   if (local.maxCopies) item.maxCopies = Number(local.maxCopies);
   if (local.allowedClass.length) item.allowedClass = [...local.allowedClass];

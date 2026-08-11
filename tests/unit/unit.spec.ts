@@ -7,6 +7,7 @@ import { describe, it, expect } from "vitest";
 import * as db from "../../src/data/db";
 import * as engine from "../../src/engine/engine";
 import { isHiddenBonus } from "../../src/engine/bonus";
+import { bonusIdOf } from "../../src/lib/bonus-attachment";
 import type {
   Build,
   BuildContext,
@@ -371,11 +372,11 @@ describe("bonus model semantics", () => {
       walk(grant.when);
       (grant.variants ?? []).forEach((v: Grant) => walk(v.when));
     };
-    // item.bonuses is a string[] of Bonus ids -- look up the actual bonuses by id.
+    // item.bonuses is a (string | BonusOccurrenceConfig)[] -- look up the actual bonuses by id.
     const bonusesById = new Map(built.bonuses.map((b) => [b.id, b]));
     for (const item of built.items) {
-      for (const bonusId of item.bonuses ?? []) {
-        const bonus = bonusesById.get(bonusId);
+      for (const attachment of item.bonuses ?? []) {
+        const bonus = bonusesById.get(bonusIdOf(attachment));
         bonus?.grants?.forEach(visit);
       }
     }
@@ -508,6 +509,194 @@ describe("point_assignment resolution", () => {
       buildWith({ "boon-restricted": 1 }),
     );
     expect(result.errors.some((e) => e.kind === "class")).toBe(true);
+  });
+});
+
+// BonusOccurrenceConfig (#217): an item_picker item can attach a typed, player-set occurrence
+// count for one bonus instead of the fixed "1 occurrence per equip" a bare bonus id always
+// means -- e.g. one item standing in for 1-5 stacks of a set bonus, or an item with both an
+// always-on bonus and a separately-variable stacking one. A synthetic db isolates the mechanism
+// from the shipped data, which doesn't author any of these yet.
+describe("BonusOccurrenceConfig resolution", () => {
+  const schema: Schema = {
+    stats: [],
+    statByKey: {},
+    statKeys: ["power_p"],
+    multiplicativeStats: [],
+    ratingStats: [],
+    abilityStats: [],
+    ratingConversion: [],
+    abilityContributions: [],
+    forteSplit: {},
+    roles: { dps: { label: "dps", hpBonus: 1, damageBonus: 1 } },
+  };
+
+  // Mirrors the motivating "Shattered Resolve" example (#216): an always-on bonus (bare id,
+  // always 1 occurrence) plus a separately-variable stacking bonus (BonusOccurrenceConfig,
+  // 0-5), both on one item, alongside the item's own flat stat.
+  const stackItem: Item = {
+    id: "stack-item",
+    name: "Stacking Trinket",
+    filter: "test_slot",
+    power_p: 0.005,
+    bonuses: [
+      "always-bonus",
+      { bonus: "tier-bonus", min: 0, max: 5, default: 0 },
+    ],
+  };
+  // A fixed (min === max) config: the item always contributes 3 occurrences, no player input
+  // needed at all -- e.g. #216's "possible implementation 1" fixed-type attachment.
+  const fixedItem: Item = {
+    id: "fixed-item",
+    name: "Fixed Triplet",
+    filter: "test_slot",
+    bonuses: [{ bonus: "fixed-bonus", min: 3, max: 3, default: 3 }],
+  };
+
+  const alwaysBonus: Bonus = {
+    id: "always-bonus",
+    grants: [{ stats: { power_p: 0.02 } }],
+  };
+  // Absolute, mutually-exclusive tiers -- same "highest matching occurrence threshold wins"
+  // mechanism the shipped Gladiator's Guile bonus already uses, just fed by one item's typed
+  // count instead of by several separately-equipped items.
+  const tierBonus: Bonus = {
+    id: "tier-bonus",
+    grants: [
+      {
+        tiers: [
+          {
+            bonusOccurrences: { bonus: "tier-bonus", atLeast: 1 },
+            stats: { power_p: 0.01 },
+          },
+          {
+            bonusOccurrences: { bonus: "tier-bonus", atLeast: 3 },
+            stats: { power_p: 0.05 },
+          },
+          {
+            bonusOccurrences: { bonus: "tier-bonus", atLeast: 5 },
+            stats: { power_p: 0.1 },
+          },
+        ],
+      },
+    ],
+  };
+  // perSource stacking: with a fixed 3-occurrence attachment, one item alone should produce the
+  // same `stacks: 3` that three separate item_picker picks would.
+  const fixedBonus: Bonus = {
+    id: "fixed-bonus",
+    stacking: "perSource",
+    grants: [{ stats: { power_p: 0.02 } }],
+  };
+
+  const slotsData: SlotsData = {
+    sections: [{ id: "test", label: "Test" }],
+    slots: [
+      {
+        id: "slot1",
+        label: "Slot 1",
+        section: "test",
+        type: "item_picker",
+        filter: "test_slot",
+      },
+      {
+        id: "slot2",
+        label: "Slot 2",
+        section: "test",
+        type: "item_picker",
+        filter: "test_slot",
+      },
+    ],
+  };
+  const testDb = db.build(
+    [stackItem, fixedItem],
+    [alwaysBonus, tierBonus, fixedBonus],
+    schema,
+    slotsData,
+  );
+
+  function buildWith(
+    choices: Record<string, string>,
+    occurrenceInputs: Record<string, Record<string, number>> = {},
+  ): Build {
+    return {
+      id: "b",
+      name: "b",
+      choices,
+      values: {},
+      assignments: {},
+      procs: {},
+      occurrenceInputs,
+      context: BASE_CONTEXT,
+      compare: { id: "", highlight: false, onlyDiff: false },
+    } as unknown as Build;
+  }
+
+  it("a bare string attachment always contributes exactly 1 occurrence, unaffected by a sibling config", () => {
+    const result = engine.resolveBuild(
+      testDb,
+      buildWith({ slot1: "stack-item" }),
+    );
+    const activeById = new Map(
+      result.bonuses.filter((b) => b.active).map((b) => [b.id, b]),
+    );
+    expect(activeById.get("always-bonus")?.stacks).toBe(1);
+    expect(activeById.get("always-bonus")?.stats?.power_p).toBeCloseTo(0.02, 9);
+    // tier-bonus defaults to 0 occurrences (its own `default`) -- no build entry needed, and
+    // not active since no tier matches 0.
+    expect(activeById.has("tier-bonus")).toBe(false);
+    // The item's own flat stat still applies regardless of either bonus.
+    expect(result.stages.sums.power_p).toBeCloseTo(0.005 + 0.02, 9);
+  });
+
+  it("build.occurrenceInputs sets a per-item, per-bonus count that picks the matching tier", () => {
+    const result = engine.resolveBuild(
+      testDb,
+      buildWith({ slot1: "stack-item" }, { "stack-item": { "tier-bonus": 3 } }),
+    );
+    const tier = result.bonuses.find((b) => b.id === "tier-bonus");
+    expect(tier?.active).toBe(true);
+    expect(tier?.chose).toBe("tier:3");
+    expect(tier?.stats?.power_p).toBeCloseTo(0.05, 9);
+    // always-bonus (a bare id, still 1 occurrence) is untouched by tier-bonus's own count.
+    const always = result.bonuses.find((b) => b.id === "always-bonus");
+    expect(always?.active).toBe(true);
+    expect(always?.stats?.power_p).toBeCloseTo(0.02, 9);
+  });
+
+  it("one item's count of 5 reaches the top tier -- the case that used to need 5 separate items", () => {
+    const result = engine.resolveBuild(
+      testDb,
+      buildWith({ slot1: "stack-item" }, { "stack-item": { "tier-bonus": 5 } }),
+    );
+    const tier = result.bonuses.find((b) => b.id === "tier-bonus");
+    expect(tier?.chose).toBe("tier:5");
+    expect(tier?.stats?.power_p).toBeCloseTo(0.1, 9);
+  });
+
+  it("a min === max config contributes its fixed count with no build.occurrenceInputs entry", () => {
+    const result = engine.resolveBuild(
+      testDb,
+      buildWith({ slot1: "fixed-item" }),
+    );
+    const fixed = result.bonuses.find((b) => b.id === "fixed-bonus");
+    expect(fixed?.active).toBe(true);
+    // perSource stacking sees 3 sources from the one item, same as 3 separate picks would.
+    expect(fixed?.stacks).toBe(3);
+    expect(fixed?.appliedStats?.power_p).toBeCloseTo(3 * 0.02, 9);
+  });
+
+  it("a count outside the config's min/max is flagged as outOfRange, not clamped", () => {
+    // Not achievable through a stepper's own clamped +/- buttons (#218), but a hand-edited or
+    // imported build can carry one -- same reasoning as point_assignment's own outOfRange check.
+    const result = engine.resolveBuild(
+      testDb,
+      buildWith({ slot1: "stack-item" }, { "stack-item": { "tier-bonus": 9 } }),
+    );
+    expect(result.errors.some((e) => e.kind === "outOfRange")).toBe(true);
+    // The raw (unclamped) count is still what the engine evaluates against.
+    const tier = result.bonuses.find((b) => b.id === "tier-bonus");
+    expect(tier?.chose).toBe("tier:5");
   });
 });
 

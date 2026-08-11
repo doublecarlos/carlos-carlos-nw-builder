@@ -6,6 +6,7 @@
 
 import * as conditions from "./conditions";
 import { getPath, resolveLinkedItem } from "../lib/build-path";
+import { bonusIdOf, occurrenceCountFor } from "../lib/bonus-attachment";
 import type {
   Db,
   Build,
@@ -72,8 +73,12 @@ function collectPointAssignment(
 
     bump(equipped, item.id, count);
     for (const tag of item.tags ?? []) bump(tags, tag, count);
-    for (const bonusId of item.bonuses ?? [])
-      bump(bonusOccurrences, bonusId, count);
+    // A point_assignment item's own BonusOccurrenceConfig (if any) is not yet honored here --
+    // every attachment just contributes 1 x this row's count, same as a bare id always did. The
+    // row's count already is a per-item typed magnitude; layering a second one on top is out of
+    // scope until a real item needs both.
+    for (const attachment of item.bonuses ?? [])
+      bump(bonusOccurrences, bonusIdOf(attachment), count);
 
     for (const key of db.schema.statKeys) {
       const raw = item[key];
@@ -159,10 +164,30 @@ export function collect(
 
     bump(equipped, item.id);
     for (const tag of item.tags ?? []) bump(tags, tag);
-    for (const bonusId of item.bonuses ?? []) bump(bonusOccurrences, bonusId);
 
-    for (const entry of db.bonusesFor(item)) {
-      candidates.push({ ...entry, slotId: slot.id, order });
+    // Each attachment's occurrence count is its own, not a single count shared by the whole
+    // item (unlike collectPointAssignment's `count`, which does apply uniformly): an item can
+    // carry a plain bare-id bonus (always 1) alongside a BonusOccurrenceConfig for a different
+    // bonus (a player-set count), so the two must be resolved and pushed independently. A
+    // config's count duplicates its candidate that many times, same as collectPointAssignment
+    // does per point, so `stacking: "perSource"` sees N sources from one item exactly as it
+    // would from N separate item_picker picks.
+    const itemInputs = build.occurrenceInputs?.[item.id];
+    for (const attachment of item.bonuses ?? []) {
+      const bonusId = bonusIdOf(attachment);
+      const bonus = db.bonusById.get(bonusId);
+      if (!bonus) continue;
+      const count = occurrenceCountFor(attachment, itemInputs);
+      bump(bonusOccurrences, bonusId, count);
+      for (let i = 0; i < count; i++) {
+        candidates.push({
+          bonus,
+          bonusId,
+          source: item.name,
+          slotId: slot.id,
+          order,
+        });
+      }
     }
   });
 

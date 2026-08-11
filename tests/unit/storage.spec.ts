@@ -411,6 +411,42 @@ describe("point_assignment: assignments", () => {
   });
 });
 
+// BonusOccurrenceConfig (#217): unlike `assignments`, no shipped item has one of these yet, so
+// there is nothing to seed a default from -- an absent entry falls back to the config's own
+// `default` at read time instead (bonus.ts's `collect()`), not to a build-carried value.
+describe("BonusOccurrenceConfig: occurrenceInputs", () => {
+  it("defaultBuild starts with no occurrenceInputs entries at all", () => {
+    const build = storage.defaultBuild();
+    expect(build.occurrenceInputs).toEqual({});
+  });
+
+  it("normalise preserves a valid occurrenceInputs payload", () => {
+    const raw = {
+      ...storage.defaultBuild(),
+      occurrenceInputs: { "some-item": { "some-bonus": 3 } },
+    };
+    const build = storage.normalise(raw);
+    expect(build.occurrenceInputs).toEqual({
+      "some-item": { "some-bonus": 3 },
+    });
+  });
+
+  it("normalise drops a garbage count rather than keeping it", () => {
+    const raw = {
+      ...storage.defaultBuild(),
+      occurrenceInputs: { "some-item": { "some-bonus": "not-a-number" } },
+    };
+    const build = storage.normalise(raw);
+    expect(build.occurrenceInputs).toEqual({ "some-item": {} });
+  });
+
+  it("normalise defaults occurrenceInputs entirely when the payload has none at all", () => {
+    const raw = { ...storage.defaultBuild(), occurrenceInputs: undefined };
+    const build = storage.normalise(raw);
+    expect(build.occurrenceInputs).toEqual({});
+  });
+});
+
 describe("defaultBuild and duplicate no longer carry updated", () => {
   it("defaultBuild does not have an updated field", () => {
     const build = storage.defaultBuild();

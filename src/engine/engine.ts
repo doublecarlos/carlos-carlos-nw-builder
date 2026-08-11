@@ -7,6 +7,7 @@
 // number on current data except where the sheet was demonstrably wrong.
 
 import * as bonus from "./bonus";
+import { occurrenceCountFor } from "../lib/bonus-attachment";
 import type {
   Db,
   Build,
@@ -430,6 +431,24 @@ function findErrors(
           kind: "outOfRange",
           choice: row.item.name,
           message: `${row.item.name}: ${value} is outside ${min}–${max_}`,
+          severity: "error",
+        });
+      }
+    }
+
+    // A BonusOccurrenceConfig's count, same reasoning as dynamicStat's own check above: not
+    // achievable through the stepper's own clamped +/- buttons, but a hand-edited or imported
+    // build can carry one.
+    const itemInputs = build.occurrenceInputs?.[row.item.id];
+    for (const attachment of row.item.bonuses ?? []) {
+      if (typeof attachment === "string") continue;
+      const count = occurrenceCountFor(attachment, itemInputs);
+      if (count < attachment.min || count > attachment.max) {
+        errors.push({
+          slotId: row.slotId,
+          kind: "outOfRange",
+          choice: row.item.name,
+          message: `${row.item.name}: ${count} is outside ${attachment.min}–${attachment.max}`,
           severity: "error",
         });
       }

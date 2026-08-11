@@ -495,6 +495,80 @@ describe("catalog.validate: point_assignment-referenced items", () => {
   });
 });
 
+describe("catalog.validate: BonusOccurrenceConfig attachments", () => {
+  it("a well-formed occurrence config attached to a real bonus passes clean", () => {
+    const items: Item[] = [
+      {
+        id: "stacking-item",
+        name: "Stacking Item",
+        filter: "gear_ring",
+        bonuses: [{ bonus: "real-bonus", min: 0, max: 5, default: 0 }],
+      },
+    ];
+    const bonuses: Bonus[] = [{ id: "real-bonus", grants: [] }];
+    const findings = catalog.validate(items, bonuses);
+    expect(findings.filter((f) => f.name === "stacking-item")).toEqual([]);
+  });
+
+  it("an occurrence config referencing an undefined bonus is a warning, same as a bare id would be", () => {
+    const items: Item[] = [
+      {
+        id: "orphan-attachment",
+        name: "Orphan Attachment",
+        filter: "gear_ring",
+        bonuses: [{ bonus: "no-such-bonus", min: 0, max: 5, default: 0 }],
+      },
+    ];
+    const findings = catalog.validate(items, []);
+    const finding = findings.find((f) => f.name === "orphan-attachment");
+    expect(finding?.level).toBe("warn");
+    expect(finding?.message).toMatch(/no-such-bonus.*has no definition/);
+  });
+
+  it("an occurrence config's default outside its own min/max is an error", () => {
+    const items: Item[] = [
+      {
+        id: "bad-occurrence",
+        name: "Bad Occurrence",
+        filter: "gear_ring",
+        bonuses: [{ bonus: "real-bonus", min: 1, max: 4, default: 0 }],
+      },
+    ];
+    const bonuses: Bonus[] = [{ id: "real-bonus", grants: [] }];
+    const findings = catalog.validate(items, bonuses);
+    expect(
+      findings.some(
+        (f) => f.name === "bad-occurrence" && /is outside/.test(f.message),
+      ),
+    ).toBe(true);
+  });
+
+  it("an occurrence config with a non-numeric bound is an error", () => {
+    const items: Item[] = [
+      {
+        id: "bad-shape",
+        name: "Bad Shape",
+        filter: "gear_ring",
+        bonuses: [
+          {
+            bonus: "real-bonus",
+            min: 0,
+            max: "five" as unknown as number,
+            default: 0,
+          },
+        ],
+      },
+    ];
+    const bonuses: Bonus[] = [{ id: "real-bonus", grants: [] }];
+    const findings = catalog.validate(items, bonuses);
+    expect(
+      findings.some(
+        (f) => f.name === "bad-shape" && /non-numeric/.test(f.message),
+      ),
+    ).toBe(true);
+  });
+});
+
 describe("catalog.validate: filters not meant to be picked directly", () => {
   it("an unrecognized filter still warns 'matches no slot'", () => {
     const items = [{ id: "stray", name: "Stray", filter: "totally_unknown" }];
@@ -1192,6 +1266,7 @@ describe("catalog.referencedOverlay", () => {
       values: {},
       assignments: {},
       procs: {},
+      occurrenceInputs: {},
       context: {} as Build["context"],
       compare: { id: "", highlight: false, onlyDiff: false },
     };
@@ -1209,6 +1284,7 @@ describe("catalog.referencedOverlay", () => {
       values: {},
       assignments: {},
       procs: {},
+      occurrenceInputs: {},
       context: {} as Build["context"],
       compare: { id: "", highlight: false, onlyDiff: false },
     };
@@ -1241,6 +1317,7 @@ describe("catalog.referencedOverlay", () => {
       values: {},
       assignments: {},
       procs: {},
+      occurrenceInputs: {},
       context: {} as Build["context"],
       compare: { id: "", highlight: false, onlyDiff: false },
     };
@@ -1261,6 +1338,7 @@ describe("catalog.referencedOverlay", () => {
       values: {},
       assignments: {},
       procs: {},
+      occurrenceInputs: {},
       context: {} as Build["context"],
       compare: { id: "", highlight: false, onlyDiff: false },
     };
@@ -1293,6 +1371,7 @@ describe("catalog.referencedOverlay", () => {
       values: {},
       assignments: {},
       procs: {},
+      occurrenceInputs: {},
       context: {} as Build["context"],
       compare: { id: "", highlight: false, onlyDiff: false },
     };
@@ -1316,6 +1395,7 @@ describe("catalog.referencedOverlay", () => {
       values: {},
       assignments: {},
       procs: {},
+      occurrenceInputs: {},
       context: {} as Build["context"],
       compare: { id: "", highlight: false, onlyDiff: false },
     };
@@ -1344,6 +1424,7 @@ describe("catalog.referencedOverlay", () => {
       values: {},
       assignments: {},
       procs: {},
+      occurrenceInputs: {},
       context: { race: "half-orc" } as unknown as Build["context"],
       compare: { id: "", highlight: false, onlyDiff: false },
     };
@@ -1374,6 +1455,7 @@ describe("catalog.referencedOverlay", () => {
       values: {},
       assignments: {},
       procs: {},
+      occurrenceInputs: {},
       context: { race: "elf" } as unknown as Build["context"],
       compare: { id: "", highlight: false, onlyDiff: false },
     };
