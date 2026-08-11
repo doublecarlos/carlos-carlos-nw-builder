@@ -100,7 +100,13 @@ const props = withDefaults(
 
 const maxNestDepth = MAX_DEPTH - 1;
 const canNest = computed(() => props.depth < maxNestDepth);
-const typeOptions = LEAF_TYPES.map((t) => ({ value: t, label: t }));
+const labels: Record<string, string> = {
+  bonusOccurrences: "occurrences",
+};
+const typeOptions = LEAF_TYPES.map((t) => ({
+  value: t,
+  label: labels[t] ?? t,
+}));
 const setComboOptions = computed(() =>
   props.setIds.map((s) => ({ value: s, label: s })),
 );
@@ -437,7 +443,7 @@ function changeParamKey(row: ConditionRow, key: string) {
 
         <FormField label="Condition" class="min-w-0">
           <ComboBox
-            class="w-28"
+            class="w-30"
             :model-value="row.type"
             :options="typeOptions"
             @update:model-value="
