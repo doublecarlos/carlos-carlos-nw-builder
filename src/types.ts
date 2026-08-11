@@ -328,7 +328,7 @@ export interface GrantProblem {
   label?: string;
   /** When true, an item that would make this problem active is left out of that slot's item
    * picker dropdown entirely, not just flagged once picked -- e.g. a variant that's incompatible
-   * with a class or another equipped piece. Consumers may still choose not to apply this (an
+   * with a class or another equipped item. Consumers may still choose not to apply this (an
    * "ignore picker filters" toggle for what-if builds), so it's a request, not a guarantee. */
   hideFromPicker?: boolean;
 }

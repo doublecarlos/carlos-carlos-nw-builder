@@ -147,8 +147,8 @@ export function collect(
 
     // A build_parameter row has no entry in `build.choices` -- its "choice" is derived from
     // its current context value instead (`resolveLinkedItem`), so a list/boolean param with a
-    // `linkedItem` resolves through the exact same equip/tag/set-piece/candidate bookkeeping
-    // below as an item_picker pick, with no separate branch needed.
+    // `linkedItem` resolves through the exact same equip/tag/bonus-occurrence/candidate
+    // bookkeeping below as an item_picker pick, with no separate branch needed.
     const choice =
       slot.type === "build_parameter"
         ? resolveLinkedItem(slot, context)

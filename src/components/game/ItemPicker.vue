@@ -71,7 +71,7 @@ interface BonusStatsPreview {
    *  is actually picked. */
   current: Record<string, number>;
   /** The ceiling: bonuses `item` itself contributes to (issue #125) that aren't active in
-   *  this hypothetical build -- e.g. a set piece it would count toward but not complete on
+   *  this hypothetical build -- e.g. a bonus tier it would count toward but not complete on
    *  its own. Sourced from `previewStats`, the same near-miss payload BonusInspector.vue
    *  and ItemCard.vue already show for equipped items' inactive bonuses. */
   potential: Record<string, number>;
@@ -271,7 +271,7 @@ defineExpose({
               >+{{ matchMap.get(option.value)?.preview?.more }} more</span
             >
           </div>
-          <!-- What picking this item would add via bonuses, e.g. a set piece it would
+          <!-- What picking this item would add via bonuses, e.g. a bonus tier it would
                complete -- distinct from the item's own stats above (issue #116). -->
           <div
             v-if="matchMap.get(option.value)?.bonusPreview?.parts?.length"

@@ -200,7 +200,7 @@ const hoveredItem = computed(() =>
 /**
  * Every bonus the hovered item takes part in -- its own inline ones and its sets'.
  * Not `bonuses.filter(b => b.slotId === …)`: a set bonus is attributed to the single
- * slotDef that instanced it, so the other pieces of the set would show nothing.
+ * slotDef that instanced it, so the other items in the set would show nothing.
  */
 const hoveredBonuses = computed(() => {
   const item = hoveredItem.value;
@@ -355,7 +355,7 @@ const noBorderIds = computed(() => {
 /**
  * slotId -> active bonuses to credit to *that* row's inline summary, one row-line per
  * bonus rather than a name attached to raw numbers. A bonus fed by several equipped
- * items (a set piece requirement, or a flat bonus two items both grant) would otherwise
+ * items (an occurrence-count requirement, or a flat bonus two items both grant) would otherwise
  * print on every one of their rows -- read together that looks like each item grants it
  * independently, when really they share credit for one thing. Google Sheets' own
  * summary sidesteps this by crediting a shared bonus to only the first contributing row;

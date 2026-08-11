@@ -8,7 +8,7 @@
 // what it is handed.
 //
 // Near-miss ordering is the useful part: inactive bonuses are sorted by how many conditions
-// they fail, so the ones a single toggle or set piece away float to the top.
+// they fail, so the ones a single toggle or bonus occurrence away float to the top.
 import { ref, reactive, computed } from "vue";
 import { label as statLabel, signedStat } from "../../lib/format";
 import { matchesQuery } from "../../lib/text-filter";
@@ -59,9 +59,9 @@ const open = reactive<Record<string, boolean>>({});
 
 function choseLabel(chose: string | null) {
   if (!chose || chose === "stats") return "";
-  const [kind, index] = chose.split(":");
-  if (kind === "tier") return `${index}-piece`;
-  if (kind === "variant") return `variant ${Number(index) + 1}`;
+  const [kind, value] = chose.split(":");
+  if (kind === "tier") return `${value} equipped`;
+  if (kind === "variant") return `variant ${Number(value) + 1}`;
   return chose;
 }
 

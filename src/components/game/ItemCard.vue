@@ -76,8 +76,9 @@ const notes = computed(() => {
 
 /**
  * A flat, non-stacking bonus can still have more than one contributing item -- e.g. a
- * set effect with no piece requirement at all, granted once as long as *any* piece is
- * worn (M31 Thayan Predator's base +2%, fed by both Runebound Shackle and Sanguine Seal).
+ * set effect with no occurrence-count requirement at all, granted once as long as *any*
+ * one of its items is worn (M31 Thayan Predator's base +2%, fed by both Runebound Shackle
+ * and Sanguine Seal).
  * Every contributing item's own card shows the same resolved total, so owning both reads
  * as "each one gives +2%" when really it is one +2% shared between them. Tiered and
  * per-source-stacking bonuses already explain their own multi-source case (the ladder,
@@ -105,12 +106,12 @@ function tierGrant(entry: EvaluatedBonus) {
 }
 
 /**
- * A tiered set bonus (e.g. Gladiator's Guile: 10% at 1 piece, 15% at 2) has no `when`
- * condition at all -- the piece count is matched directly in bonus.ts, so `gate.leaves`
- * is empty and the card would otherwise show "always" next to a number that quietly
- * depends on how many pieces of the set are equipped. Every piece's own card lists the
- * same shared bonus, so without the ladder each ring reads as granting the full total on
- * its own. Returns null for a bonus with no tiered grant.
+ * A tiered set bonus (e.g. Gladiator's Guile: 10% at 1 occurrence, 15% at 2) has no `when`
+ * condition at all -- the occurrence count is matched directly in bonus.ts, so
+ * `gate.leaves` is empty and the card would otherwise show "always" next to a number that
+ * quietly depends on how many of the set's items are equipped. Every contributing item's
+ * own card lists the same shared bonus, so without the ladder each one reads as granting
+ * the full total on its own. Returns null for a bonus with no tiered grant.
  */
 function tierLadder(entry: EvaluatedBonus) {
   const grant = tierGrant(entry);
@@ -122,11 +123,11 @@ function tierLadder(entry: EvaluatedBonus) {
       : null;
   return tiers
     .map((tier) => ({
-      pieces: tier.bonusOccurrences?.atLeast ?? 1,
+      atLeast: tier.bonusOccurrences?.atLeast ?? 1,
       stats: statList(tier.stats),
     }))
-    .sort((a, b) => a.pieces - b.pieces)
-    .map((tier) => ({ ...tier, active: tier.pieces === activeAt }));
+    .sort((a, b) => a.atLeast - b.atLeast)
+    .map((tier) => ({ ...tier, active: tier.atLeast === activeAt }));
 }
 
 /**
@@ -331,17 +332,15 @@ const rows = computed(() =>
           </template>
           <div v-if="row.tiers" class="pl-3">
             <div class="text-sm leading-snug text-muted">
-              tiered by set pieces, shared by every piece:
+              tiered by count equipped, shared by every one:
             </div>
             <div
               v-for="tier in row.tiers"
-              :key="tier.pieces"
+              :key="tier.atLeast"
               class="text-sm"
               :class="tier.active ? 'font-semibold text-text' : 'text-muted'"
             >
-              <div>
-                {{ tier.pieces }} piece{{ tier.pieces > 1 ? "s" : "" }}:
-              </div>
+              <div>{{ tier.atLeast }} equipped:</div>
               <div class="flex flex-col">
                 <div
                   v-for="s in tier.stats"

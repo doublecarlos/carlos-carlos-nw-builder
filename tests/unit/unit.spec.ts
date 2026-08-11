@@ -687,7 +687,7 @@ describe("per-item procs", () => {
 });
 
 // A build_parameter's `linkedItem` is meant to resolve through the exact same
-// equip/tag/set-piece/bonus-candidate bookkeeping an item_picker pick does (bonus.ts's
+// equip/tag/bonus-occurrence/bonus-candidate bookkeeping an item_picker pick does (bonus.ts's
 // `collect()` derives the row's "choice" from the param's current value instead of
 // `build.choices`, but everything downstream is shared) -- a synthetic db isolates both
 // authoring shapes the issue asked for: a `list` param's per-option item and a `boolean`
