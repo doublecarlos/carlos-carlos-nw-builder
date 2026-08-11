@@ -29,6 +29,9 @@ const props = withDefaults(
     /** Forwarded to ComboBoxMenu -- grows the dropdown past the input's own width for callers
      *  whose row content needs more room than a plain option label does. */
     wide?: boolean;
+    /** Add title properties to input and/or selection rows */
+    titleInput?: boolean;
+    titleRows?: boolean;
   }>(),
   {
     placeholder: "—",
@@ -37,6 +40,8 @@ const props = withDefaults(
     maxRows: 60,
     closedDisplay: "",
     wide: false,
+    titleInput: true,
+    titleRows: true,
   },
 );
 
@@ -234,6 +239,7 @@ onKeyStroke(
       autocomplete="off"
       spellcheck="false"
       :value="open ? query : closedDisplay || (selected ? selected.label : '')"
+      :title="titleInput ? (selected?.label ?? '') : ''"
       :placeholder="placeholder"
       @focus="onFocus"
       @input="onInput"
@@ -260,6 +266,7 @@ onKeyStroke(
       <ComboBoxMenuRow
         v-for="(option, index) in filtered"
         :key="option.value"
+        :title="titleRows && option.label"
         :highlighted="highlight === index + matchOffset"
         @mousedown.prevent="choose(option)"
         @mouseenter="highlight = index + matchOffset"

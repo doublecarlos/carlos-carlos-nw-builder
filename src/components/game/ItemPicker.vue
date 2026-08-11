@@ -234,6 +234,7 @@ defineExpose({
     :show-empty-option="true"
     :closed-display="selectedItem?.name ?? ''"
     :placeholder="selectedItem?.name || '—'"
+    :title-input="false"
     wide
     @update:model-value="model = $event"
     @update:open="isOpen = $event"
