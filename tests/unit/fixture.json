@@ -15,8 +15,6 @@
         "artifacts.artifact3": "demon-skull",
         "artifacts.artifact4": "crimson-calamity",
         "baselineAndAttributes.attributesCampfireBuff": "campfire-buff",
-        "baselineAndAttributes.attributesLeveling1": "ability-scores-int",
-        "baselineAndAttributes.attributesLeveling2": "ability-scores-dex",
         "boons.guildDefense": "boon-defense",
         "boons.guildOffense": "boon-accuracy",
         "boons.guildUtility": "boon-revive-sickness",
@@ -24,10 +22,10 @@
         "buffs.eventFood": "grand-summer-feast",
         "buffs.food": "prime-rib-power",
         "buffs.potion": "flask-of-potency-1-severity",
-        "classRaceStuff.classRaceStuff1": "soul-sparks-average",
-        "classRaceStuff.classRaceStuff2": "warlock-s-curse",
-        "classRaceStuff.classRaceStuff3": "risky-investment",
-        "classRaceStuff.classRaceStuff4": "warlock-s-dust-to-dust",
+        "classStuff.classFeat1": "warlock-s-dust-to-dust",
+        "classStuff.classStuff1": "soul-sparks-average",
+        "classStuff.classStuff2": "warlock-s-curse",
+        "classStuff.classStuff3": "risky-investment",
         "companions.companion": "generic-companion",
         "companions.defense": "the-bigger-they-are-minsc-damage-defense",
         "companions.enchantment": "comp-enchantment-celestial",
@@ -145,6 +143,26 @@
           "boon-advanced-forte": 4,
           "boon-advanced-ap": 4,
           "boon-advance-recharge": 4
+        },
+        "raceLeveling.leveling_dex": {
+          "leveling-dex-3": 1,
+          "leveling-dex-6": 1,
+          "leveling-dex-9": 1,
+          "leveling-dex-12": 1,
+          "leveling-dex-14": 1,
+          "leveling-dex-16": 1,
+          "leveling-dex-18": 1,
+          "leveling-dex-20": 1
+        },
+        "raceLeveling.leveling_int": {
+          "leveling-int-3": 1,
+          "leveling-int-6": 1,
+          "leveling-int-9": 1,
+          "leveling-int-12": 1,
+          "leveling-int-14": 1,
+          "leveling-int-16": 1,
+          "leveling-int-18": 1,
+          "leveling-int-20": 1
         }
       },
       "context": {

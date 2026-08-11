@@ -226,14 +226,14 @@
       ]
     },
     {
-      "label": "Attributes and leveling",
-      "reason": "Ability-point leveling and campfire buffs aren't recorded in the demo.",
-      "sections": ["baselineAndAttributes"]
+      "label": "Campfire buff",
+      "reason": "Campfire buffs aren't recorded in the demo.",
+      "slotIds": ["baselineAndAttributes.attributesCampfireBuff"]
     },
     {
       "label": "Feats and other class/race features",
       "reason": "Feats, paragon and other per-class/race features aren't recoverable from a demo file.",
-      "sections": ["classRaceStuff"]
+      "sections": ["classStuff"]
     },
     {
       "label": "Group / Artifact Call / Misc",

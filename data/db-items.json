@@ -503,30 +503,6 @@
     "maxCopies": 1
   },
   {
-    "id": "ability-scores-cha",
-    "name": "Ability Scores - Cha",
-    "filter": "attributes_level",
-    "cha": 6
-  },
-  {
-    "id": "ability-scores-dex",
-    "name": "Ability Scores - Dex",
-    "filter": "attributes_level",
-    "dex": 6
-  },
-  {
-    "id": "ability-scores-int",
-    "name": "Ability Scores - Int",
-    "filter": "attributes_level",
-    "int": 6
-  },
-  {
-    "id": "ability-scores-str",
-    "name": "Ability Scores - Str",
-    "filter": "attributes_level",
-    "str": 6
-  },
-  {
     "id": "acc-m32-1000-to-5800",
     "name": "Acc (M32+, 1000 to 5800)",
     "filter": "modification_offhand_dynamic",
@@ -1561,12 +1537,7 @@
     "id": "campfire-buff",
     "name": "Campfire Buff",
     "filter": "attributes_campfire",
-    "str": 1,
-    "con": 1,
-    "dex": 1,
-    "int": 1,
-    "wis": 1,
-    "cha": 1
+    "bonuses": ["campfire-buff-bonus"]
   },
   {
     "id": "captain",
@@ -4526,6 +4497,14 @@
     "maxCopies": 1
   },
   {
+    "id": "warlock-s-all-consuming-curse",
+    "name": "All Consuming Curse",
+    "filter": "class_feat",
+    "shortDescription": "At-wills apply curse",
+    "maxCopies": 1,
+    "allowedClass": ["warlock"]
+  },
+  {
     "id": "warlock-s-curse",
     "name": "Warlock's Curse",
     "filter": "class_stuff",
@@ -4535,16 +4514,16 @@
   },
   {
     "id": "warlock-s-dust-to-dust",
-    "name": "Warlock's Dust to Dust",
-    "filter": "class_stuff",
+    "name": "Dust to Dust",
+    "filter": "class_feat",
     "outgoing_damage": 0.05,
     "maxCopies": 1,
     "allowedClass": ["warlock"]
   },
   {
     "id": "warlock-s-shadow-walk",
-    "name": "Warlock's Shadow Walk",
-    "filter": "class_stuff",
+    "name": "Shadow Walk",
+    "filter": "class_feat",
     "strike_p": 0.025,
     "movement": 0.1,
     "maxCopies": 1,

@@ -536,7 +536,7 @@ describe("notInDemoGroups", () => {
     const groups = notInDemoGroups(db, ["overloads.overload1"]);
     expect(groups).toEqual([
       {
-        label: "Overloads",
+        label: "Enchantments",
         reason: "Not recorded in this demo — set it by hand.",
         slotIds: ["overloads.overload1"],
       },

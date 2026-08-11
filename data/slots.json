@@ -650,6 +650,12 @@
           "label": "Blessing",
           "filter": "consumable_blessing",
           "type": "item_picker"
+        },
+        {
+          "id": "baselineAndAttributes.attributesCampfireBuff",
+          "label": "Campfire Buff",
+          "filter": "attributes_campfire",
+          "type": "item_picker"
         }
       ]
     },
@@ -683,17 +689,7 @@
           "type": "item_picker"
         },
         {
-          "id": "enchantments.sepOffenseUtility",
-          "type": "separator"
-        },
-        {
-          "id": "enchantments.utility",
-          "label": "Utility",
-          "filter": "enchantment_utility",
-          "type": "item_picker"
-        },
-        {
-          "id": "enchantments.sepUtilityDefense",
+          "id": "enchantments.sepOffenseDefense",
           "type": "separator"
         },
         {
@@ -745,14 +741,17 @@
           "label": "Bonus",
           "filter": "enchantment_bonus",
           "type": "item_picker"
-        }
-      ]
-    },
-    {
-      "defaultOpen": true,
-      "id": "overloads",
-      "label": "Overloads",
-      "slots": [
+        },
+        {
+          "id": "enchantments.utility",
+          "label": "Utility",
+          "filter": "enchantment_utility",
+          "type": "item_picker"
+        },
+        {
+          "id": "enchantments.sepUtilityOverloads",
+          "type": "separator"
+        },
         {
           "id": "overloads.overload1",
           "label": "Overload 1",
@@ -794,6 +793,123 @@
           "id": "artifacts.artifact4",
           "label": "Artifact 4",
           "filter": "artifact",
+          "type": "item_picker"
+        }
+      ]
+    },
+    {
+      "defaultOpen": true,
+      "id": "classStuff",
+      "label": "Feats, class feats & other class stuff",
+      "slots": [
+        {
+          "id": "classStuff.feat1",
+          "label": "Feat 1",
+          "filter": "feat1",
+          "type": "item_picker"
+        },
+        {
+          "id": "classStuff.feat2",
+          "label": "Feat 2",
+          "filter": "feat2",
+          "type": "item_picker"
+        },
+        {
+          "id": "classStuff.feat3",
+          "label": "Feat 3",
+          "filter": "feat3",
+          "type": "item_picker"
+        },
+        {
+          "id": "classStuff.feat4",
+          "label": "Feat 4",
+          "filter": "feat4",
+          "type": "item_picker"
+        },
+        {
+          "id": "classStuff.feat5",
+          "label": "Feat 5",
+          "filter": "feat5",
+          "type": "item_picker"
+        },
+        {
+          "id": "classStuff.sepFeatClassFeat",
+          "type": "separator"
+        },
+        {
+          "id": "classStuff.classFeat1",
+          "label": "Class Feat 1",
+          "filter": "class_feat",
+          "type": "item_picker"
+        },
+        {
+          "id": "classStuff.classFeat2",
+          "label": "Class Feat 2",
+          "filter": "class_feat",
+          "type": "item_picker"
+        },
+        {
+          "id": "classStuff.sepClassFeatClassStuff",
+          "type": "separator"
+        },
+        {
+          "id": "classStuff.classStuff1",
+          "label": "Class stuff 1",
+          "filter": "class_stuff",
+          "type": "item_picker"
+        },
+        {
+          "id": "classStuff.classStuff2",
+          "label": "Class stuff 2",
+          "filter": "class_stuff",
+          "type": "item_picker"
+        },
+        {
+          "id": "classStuff.classStuff3",
+          "label": "Class stuff 3",
+          "filter": "class_stuff",
+          "type": "item_picker"
+        },
+        {
+          "id": "classStuff.classStuff4",
+          "label": "Class stuff 4",
+          "filter": "class_stuff",
+          "type": "item_picker"
+        },
+        {
+          "id": "classStuff.classStuff5",
+          "label": "Class stuff 5",
+          "filter": "class_stuff",
+          "type": "item_picker"
+        },
+        {
+          "id": "classStuff.classStuff6",
+          "label": "Class stuff 6",
+          "filter": "class_stuff",
+          "type": "item_picker"
+        },
+        {
+          "id": "classStuff.classStuff7",
+          "label": "Class stuff 7",
+          "filter": "class_stuff",
+          "type": "item_picker"
+        },
+        {
+          "id": "classStuff.classStuff8",
+          "label": "Class stuff 8",
+          "filter": "class_stuff",
+          "type": "item_picker"
+        },
+        {
+          "id": "classStuff.classStuff9",
+          "label": "Class stuff 9",
+          "filter": "class_stuff",
+          "type": "item_picker"
+        },
+        {
+          "id": "classStuff.classStuff10",
+          "label": "Class stuff 10",
+          "filter": "class_stuff",
           "type": "item_picker"
         }
       ]
@@ -903,6 +1019,10 @@
           "type": "item_picker"
         },
         {
+          "id": "companions.sep1",
+          "type": "separator"
+        },
+        {
           "id": "companions.equip1",
           "label": "Equip 1",
           "filter": "companion_equip",
@@ -927,10 +1047,18 @@
           "type": "item_picker"
         },
         {
+          "id": "companions.sep2",
+          "type": "separator"
+        },
+        {
           "id": "companions.enhancement",
           "label": "Enhancement",
           "filter": "companion_enhancement",
           "type": "item_picker"
+        },
+        {
+          "id": "companions.sep3",
+          "type": "separator"
         },
         {
           "id": "companions.offense",
@@ -976,15 +1104,19 @@
         },
         {
           "id": "mounts.mountCombat",
-          "label": "Mount Combat",
+          "label": "Mount Combat Power",
           "filter": "mount_combat",
           "type": "item_picker"
         },
         {
           "id": "mounts.mountEquip",
-          "label": "Mount Equip",
+          "label": "Mount Equip Power",
           "filter": "mount_equip",
           "type": "item_picker"
+        },
+        {
+          "id": "mounts.sep1",
+          "type": "separator"
         },
         {
           "id": "mounts.sturdyCollar",
@@ -1054,6 +1186,10 @@
           "type": "item_picker"
         },
         {
+          "id": "insignia.sep1",
+          "type": "separator"
+        },
+        {
           "id": "insignia.insignia2_1",
           "label": "Insignia 2.1",
           "filter": "insignia",
@@ -1082,6 +1218,10 @@
           "label": "Bonus 2",
           "filter": "insignia_bonus",
           "type": "item_picker"
+        },
+        {
+          "id": "insignia.sep2",
+          "type": "separator"
         },
         {
           "id": "insignia.insignia3_1",
@@ -1114,6 +1254,10 @@
           "type": "item_picker"
         },
         {
+          "id": "insignia.sep3",
+          "type": "separator"
+        },
+        {
           "id": "insignia.insignia4_1",
           "label": "Insignia 4.1",
           "filter": "insignia",
@@ -1144,6 +1288,10 @@
           "type": "item_picker"
         },
         {
+          "id": "insignia.sep4",
+          "type": "separator"
+        },
+        {
           "id": "insignia.insignia5_1",
           "label": "Insignia 5.1",
           "filter": "insignia",
@@ -1171,134 +1319,6 @@
           "id": "insignia.bonus5",
           "label": "Bonus 5",
           "filter": "insignia_bonus",
-          "type": "item_picker"
-        }
-      ]
-    },
-    {
-      "defaultOpen": true,
-      "id": "baselineAndAttributes",
-      "label": "Attributes",
-      "slots": [
-        {
-          "id": "baselineAndAttributes.attributesLeveling1",
-          "label": "Attributes - Leveling 1",
-          "filter": "attributes_level",
-          "type": "item_picker"
-        },
-        {
-          "id": "baselineAndAttributes.attributesLeveling2",
-          "label": "Attributes - Leveling 2",
-          "filter": "attributes_level",
-          "type": "item_picker"
-        },
-        {
-          "id": "baselineAndAttributes.attributesCampfireBuff",
-          "label": "Attributes - Campfire Buff",
-          "filter": "attributes_campfire",
-          "type": "item_picker"
-        }
-      ]
-    },
-    {
-      "defaultOpen": true,
-      "id": "classRaceStuff",
-      "label": "Class/Race stuff",
-      "slots": [
-        {
-          "id": "classRaceStuff.classRaceStuff1",
-          "label": "Class/Race stuff 1",
-          "filter": "class_stuff",
-          "type": "item_picker"
-        },
-        {
-          "id": "classRaceStuff.classRaceStuff2",
-          "label": "Class/Race stuff 2",
-          "filter": "class_stuff",
-          "type": "item_picker"
-        },
-        {
-          "id": "classRaceStuff.classRaceStuff3",
-          "label": "Class/Race stuff 3",
-          "filter": "class_stuff",
-          "type": "item_picker"
-        },
-        {
-          "id": "classRaceStuff.classRaceStuff4",
-          "label": "Class/Race stuff 4",
-          "filter": "class_stuff",
-          "type": "item_picker"
-        },
-        {
-          "id": "classRaceStuff.classRaceStuff5",
-          "label": "Class/Race stuff 5",
-          "filter": "class_stuff",
-          "type": "item_picker"
-        },
-        {
-          "id": "classRaceStuff.classRaceStuff6",
-          "label": "Class/Race stuff 6",
-          "filter": "class_stuff",
-          "type": "item_picker"
-        },
-        {
-          "id": "classRaceStuff.classRaceStuff7",
-          "label": "Class/Race stuff 7",
-          "filter": "class_stuff",
-          "type": "item_picker"
-        },
-        {
-          "id": "classRaceStuff.classRaceStuff8",
-          "label": "Class/Race stuff 8",
-          "filter": "class_stuff",
-          "type": "item_picker"
-        },
-        {
-          "id": "classRaceStuff.classRaceStuff9",
-          "label": "Class/Race stuff 9",
-          "filter": "class_stuff",
-          "type": "item_picker"
-        },
-        {
-          "id": "classRaceStuff.classRaceStuff10",
-          "label": "Class/Race stuff 10",
-          "filter": "class_stuff",
-          "type": "item_picker"
-        },
-        {
-          "id": "classRaceStuff.classRaceStuff11",
-          "label": "Class/Race stuff 11",
-          "filter": "class_stuff",
-          "type": "item_picker"
-        },
-        {
-          "id": "classRaceStuff.classRaceStuff12",
-          "label": "Class/Race stuff 12",
-          "filter": "class_stuff",
-          "type": "item_picker"
-        },
-        {
-          "id": "classRaceStuff.classRaceStuff13",
-          "label": "Class/Race stuff 13",
-          "filter": "class_stuff",
-          "type": "item_picker"
-        },
-        {
-          "id": "classRaceStuff.classRaceStuff14",
-          "label": "Class/Race stuff 14",
-          "filter": "class_stuff",
-          "type": "item_picker"
-        },
-        {
-          "id": "classRaceStuff.classRaceStuff15",
-          "label": "Class/Race stuff 15",
-          "filter": "class_stuff",
-          "type": "item_picker"
-        },
-        {
-          "id": "classRaceStuff.classRaceStuff16",
-          "label": "Class/Race stuff 16",
-          "filter": "class_stuff",
           "type": "item_picker"
         }
       ]
@@ -1482,6 +1502,42 @@
       "defaultOpen": true,
       "id": "artifactCall",
       "label": "Artifact Call",
+      "presets": [
+        {
+          "id": "artifacts-dungeon",
+          "label": "Dungeon",
+          "choices": {
+            "artifactCall.artifactCall1": "mount-hag-s-enchanted-cauldroon",
+            "artifactCall.artifactCall2": "arti-scepter",
+            "artifactCall.artifactCall3": "mount-vortex-panther-necrotic",
+            "artifactCall.artifactCall4": "arti-mythalar",
+            "artifactCall.artifactCall5": "arti-demogorgon-s-reach",
+            "artifactCall.artifactCall6": "arti-crystal",
+            "artifactCall.artifactCall7": "arti-censer"
+          }
+        },
+        {
+          "id": "artifacts-trial",
+          "label": "Trial",
+          "choices": {
+            "artifactCall.artifactCall1": "mount-hag-s-enchanted-cauldroon",
+            "artifactCall.artifactCall2": "arti-scepter",
+            "artifactCall.artifactCall3": "mount-vortex-panther-necrotic",
+            "artifactCall.artifactCall4": "arti-mythalar",
+            "artifactCall.artifactCall5": "arti-demogorgon-s-reach",
+            "artifactCall.artifactCall6": "arti-crystal",
+            "artifactCall.artifactCall7": "arti-censer",
+            "artifactCall.artifactCall8": "",
+            "artifactCall.artifactCall9": "mount-pegasus",
+            "artifactCall.artifactCall10": "arti-volcano-heart-of-black-dragon",
+            "artifactCall.artifactCall11": "mount-red-dragon",
+            "artifactCall.artifactCall12": "arti-tentacle-rod",
+            "artifactCall.artifactCall13": "arti-marco",
+            "artifactCall.artifactCall14": "arti-beacon",
+            "artifactCall.artifactCall15": "arti-spelljammer-lantern"
+          }
+        }
+      ],
       "slots": [
         {
           "id": "artifactCall.artifactCall1",

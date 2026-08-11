@@ -469,6 +469,27 @@
     ]
   },
   {
+    "id": "campfire-buff-bonus",
+    "name": "Campfire Buff",
+    "grants": [
+      {
+        "when": {
+          "proc": {
+            "label": "Buff active"
+          }
+        },
+        "stats": {
+          "str": 1,
+          "con": 1,
+          "dex": 1,
+          "int": 1,
+          "wis": 1,
+          "cha": 1
+        }
+      }
+    ]
+  },
+  {
     "id": "captain",
     "name": "Captain",
     "grants": [
