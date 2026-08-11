@@ -26,7 +26,7 @@ export interface StatSourceSection {
   sources: StatSource[];
 }
 
-/** `m31-crimson-march-combat` -> `M31 Crimson March Combat`, for a bonus with no set name --
+/** `m31-crimson-march-combat` -> `M31 Crimson March Combat`, for a bonus with no bonus name --
  * same convention as BonusInspector.vue's own `fromId`, duplicated rather than shared (see
  * that file's note on ItemCard's bonus vocabulary for the same reasoning). */
 const fromId = (id: string) =>

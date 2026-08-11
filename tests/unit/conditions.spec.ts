@@ -166,46 +166,46 @@ describe("conditions.ts bonusOccurrences leaf uses bonusNames for friendly label
     const c = ctx(
       {},
       {
-        bonusOccurrences: new Map([["m32-unknown-set", 1]]),
+        bonusOccurrences: new Map([["m32-unknown-bonus", 1]]),
         bonusNames: new Map(),
       },
     );
     const result = explain(
-      { bonusOccurrences: { bonus: "m32-unknown-set", atLeast: 2 } },
+      { bonusOccurrences: { bonus: "m32-unknown-bonus", atLeast: 2 } },
       c,
     );
     expect(result.ok).toBe(false);
-    expect(result.unmet[0].label).toBe("2 occurrence(s) of m32-unknown-set");
+    expect(result.unmet[0].label).toBe("2 occurrence(s) of m32-unknown-bonus");
   });
 });
 
 describe("conditions.ts proc leaf", () => {
   it("bare true defaults on, same as no build.procs entry at all", () => {
     const c = ctx({}, { procs: {} });
-    expect(evaluate({ proc: true }, c, "set:0")).toBe(true);
+    expect(evaluate({ proc: true }, c, "bonus:0")).toBe(true);
   });
 
   it("an object spec's own default: false starts the grant off", () => {
     const c = ctx({}, { procs: {} });
-    expect(evaluate({ proc: { default: false } }, c, "set:0")).toBe(false);
+    expect(evaluate({ proc: { default: false } }, c, "bonus:0")).toBe(false);
   });
 
   it("build.procs always wins over the spec's own default", () => {
-    const off = ctx({}, { procs: { "set:0": false } });
-    expect(evaluate({ proc: true }, off, "set:0")).toBe(false);
+    const off = ctx({}, { procs: { "bonus:0": false } });
+    expect(evaluate({ proc: true }, off, "bonus:0")).toBe(false);
 
-    const on = ctx({}, { procs: { "set:0": true } });
-    expect(evaluate({ proc: { default: false } }, on, "set:0")).toBe(true);
+    const on = ctx({}, { procs: { "bonus:0": true } });
+    expect(evaluate({ proc: { default: false } }, on, "bonus:0")).toBe(true);
   });
 
   it("with no grantKey (evaluate/explain called without one) a proc leaf always passes", () => {
-    const c = ctx({}, { procs: { "set:0": false } });
+    const c = ctx({}, { procs: { "bonus:0": false } });
     expect(evaluate({ proc: true }, c)).toBe(true);
   });
 
   it("feeds ConditionExplain the same shape a toggle does", () => {
-    const c = ctx({}, { procs: { "set:0": false } });
-    const result = explain({ proc: true }, c, "set:0");
+    const c = ctx({}, { procs: { "bonus:0": false } });
+    const result = explain({ proc: true }, c, "bonus:0");
     expect(result.ok).toBe(false);
     expect(result.unmet[0].label).toBe("proc");
     expect(result.unmet[0].detail).toBe("disabled");

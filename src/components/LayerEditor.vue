@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// The layer editor: browse/add/edit/remove items and shared bonus sets in a single layer,
+// The layer editor: browse/add/edit/remove items and shared bonuses in a single layer,
 // lint the composed catalogue, and export the results.
 //
 // Takes the selected Layer as a prop and writes through `layers.updateOverlay`. When the
@@ -111,15 +111,15 @@ const itemRows = computed<ItemRow[]>(() => {
   return rows.sort((a, b) => a.name.localeCompare(b.name));
 });
 
-/** Same shape as `itemRows`, one row per bonus set rather than per item -- so the same
+/** Same shape as `itemRows`, one row per bonus rather than per item -- so the same
  * list/search/keyboard-nav code serves both without knowing which it's showing. */
 const bonusRows = computed<BonusRow[]>(() => {
-  const rows: BonusRow[] = db.value.bonuses.map((set) => ({
-    key: set.id,
-    name: set.name || set.id,
-    filter: `${(set.grants ?? []).length} grant(s)`,
-    set,
-    status: catalog.statusOf(overlay.value, "bonuses", set.id),
+  const rows: BonusRow[] = db.value.bonuses.map((bonus) => ({
+    key: bonus.id,
+    name: bonus.name || bonus.id,
+    filter: `${(bonus.grants ?? []).length} grant(s)`,
+    bonus,
+    status: catalog.statusOf(overlay.value, "bonuses", bonus.id),
     kind: "bonus",
   }));
   for (const [id, value] of Object.entries(overlay.value.bonuses ?? {})) {
@@ -128,7 +128,7 @@ const bonusRows = computed<BonusRow[]>(() => {
         key: id,
         name: id,
         filter: "—",
-        set: null,
+        bonus: null,
         status: "removed",
         kind: "bonus",
       });
@@ -236,18 +236,20 @@ const filters = computed<string[]>(() =>
   ].sort(),
 );
 
-const setIds = computed<string[]>(() =>
-  [...new Set<string>(db.value.bonuses.map((set) => set.id))].sort(),
+/** Every known bonus id, for id-collision avoidance, "attach an existing bonus", and the
+ * "which bonus does this tier/condition reference" pickers. */
+const allBonusIds = computed<string[]>(() =>
+  [...new Set<string>(db.value.bonuses.map((bonus) => bonus.id))].sort(),
 );
 
 const tagList = computed<string[]>(() =>
   [...db.value.itemsByTag.keys()].sort(),
 );
 
-/** The vocabulary for `excludes`. A set now resolves as one unit, so only sets (not
- * individual grants) are addressable -- same list as `setIds`, kept as its own computed
+/** The vocabulary for `excludes`. A bonus now resolves as one unit, so only bonuses (not
+ * individual grants) are addressable -- same list as `allBonusIds`, kept as its own computed
  * since the two are used for unrelated purposes at the call sites. */
-const bonusIds = computed(() => setIds.value);
+const bonusIds = computed(() => allBonusIds.value);
 
 const changedCount = computed(
   () =>
@@ -573,35 +575,35 @@ function selectFinding(finding: LintFinding) {
 // attaches or detaches); `onSaveBonusTop`/`onDeleteBonusTop`/`onRevertBonusTop` are this
 // component's own "Bonuses" section, browsing and editing a bonus on its own.
 
-function onSaveBonus({ id, set }: { id: string; set: Bonus }) {
+function onSaveBonus({ id, bonus }: { id: string; bonus: Bonus }) {
   history.snapshot(
     "layer",
     props.layer.id,
-    `save-set:${id}`,
-    `Save bonus "${set.name || id}"`,
+    `save-bonus:${id}`,
+    `Save bonus "${bonus.name || id}"`,
     overlay.value,
   );
-  setOverlay(catalog.upsert(overlay.value, "bonuses", id, set));
-  notice.value = `Saved bonus "${set.name || id}"`;
+  setOverlay(catalog.upsert(overlay.value, "bonuses", id, bonus));
+  notice.value = `Saved bonus "${bonus.name || id}"`;
 }
 
 /** Live-edit handler: debounced changes from existing bonuses in item editor go here. */
-function onUpdateBonus({ id, set }: { id: string; set: Bonus }) {
+function onUpdateBonus({ id, bonus }: { id: string; bonus: Bonus }) {
   history.snapshot(
     "layer",
     props.layer.id,
-    `edit-set:${id}`,
-    `Edit bonus "${set.name || id}"`,
+    `edit-bonus:${id}`,
+    `Edit bonus "${bonus.name || id}"`,
     overlay.value,
   );
-  setOverlay(catalog.upsert(overlay.value, "bonuses", id, set));
+  setOverlay(catalog.upsert(overlay.value, "bonuses", id, bonus));
 }
 
 function onDeleteBonus(id: string) {
   history.snapshot(
     "layer",
     props.layer.id,
-    `delete-set:${id}`,
+    `delete-bonus:${id}`,
     `Delete bonus "${id}"`,
     overlay.value,
   );
@@ -609,38 +611,38 @@ function onDeleteBonus(id: string) {
   notice.value = `Removed bonus "${id}"`;
 }
 
-function onSaveBonusTop({ id, set }: { id: string; set: Bonus }) {
+function onSaveBonusTop({ id, bonus }: { id: string; bonus: Bonus }) {
   history.snapshot(
     "layer",
     props.layer.id,
-    `save-set:${id}`,
-    `Save bonus "${set.name || id}"`,
+    `save-bonus:${id}`,
+    `Save bonus "${bonus.name || id}"`,
     overlay.value,
   );
-  setOverlay(catalog.upsert(overlay.value, "bonuses", id, set));
+  setOverlay(catalog.upsert(overlay.value, "bonuses", id, bonus));
   selectedBonusId.value = id;
   router.apply({ bonus: id });
-  notice.value = `Saved bonus "${set.name || id}"`;
+  notice.value = `Saved bonus "${bonus.name || id}"`;
 }
 
 /** Live-edit handler: debounced changes from existing bonuses go here. */
 function onUpdateBonusTop({
   id,
-  set,
+  bonus,
   label,
 }: {
   id: string;
-  set: Bonus;
+  bonus: Bonus;
   label: string;
 }) {
   history.snapshot(
     "layer",
     props.layer.id,
-    `edit-set:${id}`,
+    `edit-bonus:${id}`,
     label,
     overlay.value,
   );
-  setOverlay(catalog.upsert(overlay.value, "bonuses", id, set));
+  setOverlay(catalog.upsert(overlay.value, "bonuses", id, bonus));
 }
 
 function onDeleteBonusTop() {
@@ -648,7 +650,7 @@ function onDeleteBonusTop() {
   history.snapshot(
     "layer",
     props.layer.id,
-    `delete-set:${id}`,
+    `delete-bonus:${id}`,
     `Delete bonus "${id}"`,
     overlay.value,
   );
@@ -663,7 +665,7 @@ function onRevertBonusTop() {
   history.snapshot(
     "layer",
     props.layer.id,
-    `revert-set:${id}`,
+    `revert-bonus:${id}`,
     `Revert bonus "${id}"`,
     overlay.value,
   );
@@ -1004,7 +1006,7 @@ onUnmounted(() => {
           :status="selectedStatus"
           :db="db"
           :filters="filters"
-          :set-ids="setIds"
+          :all-bonus-ids="allBonusIds"
           :tags="tagList"
           :bonus-ids="bonusIds"
           :allocatable-ids="allocatableIds"
@@ -1013,9 +1015,9 @@ onUnmounted(() => {
           @delete="onDelete"
           @duplicate="duplicateItem"
           @revert="onRevert"
-          @save-set="onSaveBonus"
-          @delete-set="onDeleteBonus"
-          @update-set="onUpdateBonus"
+          @save-bonus="onSaveBonus"
+          @delete-bonus="onDeleteBonus"
+          @update-bonus="onUpdateBonus"
         />
         <BonusForm
           v-else-if="section === 'bonuses'"
@@ -1025,12 +1027,12 @@ onUnmounted(() => {
           :duplicate-from="duplicateBonusSeed"
           :status="selectedBonusStatus"
           :db="db"
-          :set-ids="setIds"
+          :all-bonus-ids="allBonusIds"
           :tags="tagList"
           :bonus-ids="bonusIds"
           :allocatable-ids="allocatableIds"
           @save="onSaveBonusTop"
-          @update:set="onUpdateBonusTop"
+          @update:bonus="onUpdateBonusTop"
           @delete="onDeleteBonusTop"
           @duplicate="duplicateBonus"
           @revert="onRevertBonusTop"

@@ -1,5 +1,5 @@
 // The draft <-> grant conversion for BonusRows.vue's editor, split out so item-form and
-// set-bonuses can build and read drafts without importing the component.
+// bonus-form can build and read drafts without importing the component.
 //
 // A grant is anonymous -- no `id`/`name` of its own, since a bonus now resolves as one unit
 // (its final stats are the sum of every active grant) and only the *bonus* needs to be

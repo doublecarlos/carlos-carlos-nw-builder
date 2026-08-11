@@ -82,7 +82,7 @@ const props = withDefaults(
     // Sent as `update:rows` by the component; parent replaces its own array reference.
     rows: ConditionRow[];
     depth?: number;
-    setIds?: string[];
+    bonusIds?: string[];
     /** Identifies which condition tree `path` is root-relative to -- opaque to this component,
      *  interpreted by whichever ancestor owns the store (see `transfer` above). */
     treeId?: string;
@@ -92,7 +92,7 @@ const props = withDefaults(
   }>(),
   {
     depth: 0,
-    setIds: () => [],
+    bonusIds: () => [],
     treeId: "",
     path: () => [],
   },
@@ -107,8 +107,8 @@ const typeOptions = LEAF_TYPES.map((t) => ({
   value: t,
   label: labels[t] ?? t,
 }));
-const setComboOptions = computed(() =>
-  props.setIds.map((s) => ({ value: s, label: s })),
+const bonusComboOptions = computed(() =>
+  props.bonusIds.map((s) => ({ value: s, label: s })),
 );
 
 function opLabel(op?: string) {
@@ -470,12 +470,12 @@ function changeParamKey(row: ConditionRow, key: string) {
           /></FormField>
         </template>
         <template v-else-if="row.type === 'bonusOccurrences'">
-          <FormField label="Set" class="min-w-0">
+          <FormField label="Bonus" class="min-w-0">
             <ComboBox
               class="w-44"
               :model-value="row.bonus"
-              :options="setComboOptions"
-              placeholder="— set —"
+              :options="bonusComboOptions"
+              placeholder="— bonus —"
               @update:model-value="(v) => (row.bonus = v)"
             />
           </FormField>
@@ -708,7 +708,7 @@ function changeParamKey(row: ConditionRow, key: string) {
               <ConditionRows
                 :rows="branch"
                 :depth="depth + 1"
-                :set-ids="setIds"
+                :bonus-ids="bonusIds"
                 :tree-id="treeId"
                 :path="[...path, i, bi]"
                 class="ml-4 border-l-1 border-solid pl-2"

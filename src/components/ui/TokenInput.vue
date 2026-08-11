@@ -2,8 +2,8 @@
 // Token / chip input: committed values become badges, with autocomplete over known options and
 // free text allowed for values that do not exist yet.
 //
-// Used for an item's set membership, where both halves matter: you usually want to attach an
-// existing set (so autocomplete), but creating a brand-new set id by typing it is a normal
+// Used for an item's bonus membership, where both halves matter: you usually want to attach an
+// existing bonus (so autocomplete), but creating a brand-new bonus id by typing it is a normal
 // thing to do (so free text).
 import { ref, computed, watch, nextTick, useTemplateRef } from "vue";
 import { onKeyStroke } from "@vueuse/core";

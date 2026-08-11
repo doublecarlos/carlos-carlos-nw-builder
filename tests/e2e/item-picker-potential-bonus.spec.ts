@@ -1,21 +1,21 @@
 // End-to-end coverage for ItemPicker.vue's "potential" bonus preview (issue #125): a candidate
-// that contributes to a set bonus which isn't active yet shows a "Potentially:" line for what it
-// would add once the rest of the set is in place, sourced from the same per-candidate resolve
+// that contributes to a bonus which isn't active yet shows a "Potentially:" line for what it
+// would add once the rest of the bonus is in place, sourced from the same per-candidate resolve
 // the "current" bonus preview (#116) already runs.
 import { test, expect } from "@playwright/test";
 import { openBuilder, slotRow, pickerInput, chooseItem } from "./support/app";
 
 // M31 Bloodwoven Sigils (CA) carries two bonuses: M31 Reckless Advantage (its own, active on
 // the "combat" toggle alone -- CA +10%/Crit Avoid -7.5%) and half of M31 Enchanted Advantage,
-// a 2-piece set granting `ca_p +0.02` only once both pieces are equipped. That combination is
-// exactly the case #125 is about: an item that's already worth something on its own, *and*
-// a further "Potentially:" ceiling once the rest of the set is in place. The set's other piece lives
-// in gear.shirt.
-const PANTS_PIECE = "M31 Bloodwoven Sigils (CA)";
-const SHIRT_PIECE = "M31 Bloodwoven Signs (Damage)";
+// a 2-occurrence bonus granting `ca_p +0.02` only once both items are equipped. That combination
+// is exactly the case #125 is about: an item that's already worth something on its own, *and*
+// a further "Potentially:" ceiling once the rest of the bonus is in place. The bonus's other
+// item lives in gear.shirt.
+const PANTS_ITEM = "M31 Bloodwoven Sigils (CA)";
+const SHIRT_ITEM = "M31 Bloodwoven Signs (Damage)";
 
 test.describe("item picker potential bonus preview", () => {
-  test("a candidate that would only partially complete a set shows both its own active bonus and an 'Potentially:' ceiling", async ({
+  test("a candidate that would only partially complete a bonus shows both its own active bonus and an 'Potentially:' ceiling", async ({
     page,
   }) => {
     await openBuilder(page);
@@ -25,35 +25,36 @@ test.describe("item picker potential bonus preview", () => {
     const option = row
       .getByTestId("picker-menu")
       .getByTestId("picker-option")
-      .filter({ hasText: PANTS_PIECE });
+      .filter({ hasText: PANTS_ITEM });
 
-    // Its own bonus (not gated on the set) is active the moment it's hypothetically equipped.
+    // Its own bonus (not gated on the occurrence count) is active the moment it's hypothetically
+    // equipped.
     await expect(
       option.getByTestId("picker-option-bonus-preview"),
     ).toContainText("CA +10.00%");
 
-    // Only one piece of the 2-piece set would be equipped -- that half stays a "ceiling".
+    // Only one of the bonus's two occurrences would be equipped -- that half stays a "ceiling".
     const potential = option.getByTestId("picker-option-potential-preview");
     await expect(potential).toContainText("Potentially:");
     await expect(potential).toContainText("CA +2.00%");
   });
 
-  test("once the set would actually complete, the potential line drops (nothing inactive left to show)", async ({
+  test("once the bonus would actually complete, the potential line drops (nothing inactive left to show)", async ({
     page,
   }) => {
     await openBuilder(page);
-    // Equip the other piece for real first, so the pants candidate would complete the set.
-    await chooseItem(page, "gear.shirt", SHIRT_PIECE);
+    // Equip the other item for real first, so the pants candidate would complete the bonus.
+    await chooseItem(page, "gear.shirt", SHIRT_ITEM);
 
     const row = slotRow(page, "gear.pants");
     await pickerInput(row).click();
     const option = row
       .getByTestId("picker-menu")
       .getByTestId("picker-option")
-      .filter({ hasText: PANTS_PIECE });
+      .filter({ hasText: PANTS_ITEM });
 
-    // The near-miss bucket only ever holds *inactive* contributions -- now that the set bonus
-    // is active too (credited to gear.shirt, the set's other/earlier slot -- the engine's own
+    // The near-miss bucket only ever holds *inactive* contributions -- now that the bonus
+    // is active too (credited to gear.shirt, the bonus's other/earlier slot -- the engine's own
     // attribution, unchanged by this feature), there is nothing inactive left for pants to show.
     await expect(
       option.getByTestId("picker-option-potential-preview"),

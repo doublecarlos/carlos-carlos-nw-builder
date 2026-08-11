@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// Editor for a bonus set's list of grants. See stores/bonus-draft.ts for the structural
+// Editor for a bonus's list of grants. See stores/bonus-draft.ts for the structural
 // notes (anonymous grants, flat/tiered/variants payloads, the JSON escape hatch).
 //
 // This component no longer emits a replaced `rows` array when a grant is edited. Instead,
@@ -49,17 +49,16 @@ const emit = defineEmits<{ error: [message: string] }>();
 const props = withDefaults(
   defineProps<{
     store: BonusDraftStore;
-    setIds?: string[];
     tags?: string[];
     /** This bonus's key in ItemBonuses' cross-bonus condition-drag registry, forwarded from
      *  BonusForm -- see bonusDraftRegistry.ts. Empty outside ItemBonuses. */
     registryId?: string;
   }>(),
-  { setIds: () => [], tags: () => [], registryId: "" },
+  { tags: () => [], registryId: "" },
 );
 
 const statComboOptions = statPickerOptions;
-const setComboOptions = computed(() =>
+const bonusComboOptions = computed(() =>
   props.store.bonusIds.map((s) => ({ value: s, label: s })),
 );
 const isPercent = (key: string) => isPercentKind(kindOf(key));
@@ -354,7 +353,7 @@ function toggleJson(gIndex: number) {
         <ConditionRows
           :rows="grant.conditions"
           :depth="0"
-          :set-ids="props.store.bonusIds"
+          :bonus-ids="props.store.bonusIds"
           :tree-id="grantTreeId(gIndex)"
           :path="[]"
           @update="(updated) => props.store.setConditions(gIndex, updated)"
@@ -542,10 +541,10 @@ function toggleJson(gIndex: number) {
                 ><Trash
               /></IconButton>
               <ComboBox
-                class="combo--set w-44"
+                class="combo--bonus w-44"
                 :model-value="tier.bonus"
-                :options="setComboOptions"
-                placeholder="— set —"
+                :options="bonusComboOptions"
+                placeholder="— bonus —"
                 @update:model-value="(v) => (tier.bonus = v)"
               />
               <input
@@ -678,7 +677,7 @@ function toggleJson(gIndex: number) {
             <ConditionRows
               :rows="variant.conditions"
               :depth="0"
-              :set-ids="props.store.bonusIds"
+              :bonus-ids="props.store.bonusIds"
               :tree-id="variantTreeId(gIndex, vIndex)"
               :path="[]"
               @update="

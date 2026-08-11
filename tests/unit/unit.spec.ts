@@ -97,8 +97,8 @@ function runBuild(
 
 describe("bonus model semantics", () => {
   // --- the bug that motivated the redesign -------------------------------------------
-  it("Critical Breaker applies once at one piece, and still once at two", () => {
-    // Legacy enumerated only `::1:2`, so wearing both pieces computed `::2:2`, found no
+  it("Critical Breaker applies once at one occurrence, and still once at two", () => {
+    // Legacy enumerated only `::1:2`, so wearing both copies computed `::2:2`, found no
     // payload row and silently granted nothing. Confirmed 2026-07-26 as a single-item bonus:
     // any number of copies grants it exactly once.
     const ID = "m33-critical-breaker";
@@ -142,7 +142,7 @@ describe("bonus model semantics", () => {
   it("Duration is a continuous axis, and bucket boundaries are half-open", () => {
     // Legacy had four fixed buckets; `-combat_short-` means [10, 30) and
     // `-combat_medium_plus-` means >= 30. Off-bucket values must behave sensibly. Also proves
-    // the grants restructuring (2026-07-27): this set is two mutually-exclusive duration
+    // the grants restructuring (2026-07-27): this bonus is two mutually-exclusive duration
     // grants under one id now, not two separately-tracked bonuses -- they'd better not both
     // fire at once.
     const ID = "m32-deathsilver-ring-of-submission-strike";
@@ -171,7 +171,7 @@ describe("bonus model semantics", () => {
   });
 
   // --- tiers, variants, stacking, exclusion ---------------------------------------------
-  it("Piece tiers are absolute and mutually exclusive, not cumulative", () => {
+  it("Occurrence tiers are absolute and mutually exclusive, not cumulative", () => {
     // Gladiator's Guile grants 10% at one insignia and 15% at two -- not 25%.
     const ID = "gladiator-s-guile";
     const one = runBuild({ "insignia.bonus1": "Gladiator's Guile" });
@@ -185,19 +185,20 @@ describe("bonus model semantics", () => {
     expect(two.activeById.get(ID)!.chose).toBe("tier:2");
   });
 
-  it("Role variants select exactly one payload, summed with the set's other grants", () => {
-    // Grants restructuring (2026-07-27): this set is 4 grants now, not 4 separately-tracked
-    // bonuses -- a flat 2-piece grant (-5% incoming, +5% healing) is active alongside the role
-    // variant whenever 2 pieces are worn, so a role that is not the matching variant still
-    // carries the flat grant's own stats, just not the other roles' variant-specific ones.
+  it("Role variants select exactly one payload, summed with the bonus's other grants", () => {
+    // Grants restructuring (2026-07-27): this bonus is 4 grants now, not 4 separately-tracked
+    // bonuses -- a flat 2-occurrence grant (-5% incoming, +5% healing) is active alongside the
+    // role variant whenever 2 occurrences are equipped, so a role that is not the matching
+    // variant still carries the flat grant's own stats, just not the other roles'
+    // variant-specific ones.
     const ID = "m28-voidtouched-set";
-    const set = {
+    const gear = {
       "gear.mainhand": "M28 Voidtouched Pactblade",
       "gear.offhand": "M28 Voidtouched Tome",
     };
-    const dps = runBuild(set, { role: "dps" });
-    const healer = runBuild(set, { role: "healer" });
-    const tank = runBuild(set, { role: "tank" });
+    const dps = runBuild(gear, { role: "dps" });
+    const healer = runBuild(gear, { role: "healer" });
+    const tank = runBuild(gear, { role: "tank" });
     expect(dps.statOf(ID, "outgoing_damage")).toBeCloseTo(0.06, 9);
     expect(dps.statOf(ID, "overall_healing")).toBeCloseTo(0.05, 9);
     expect(healer.statOf(ID, "overall_healing")).toBeCloseTo(0.05 + 0.06, 9);
@@ -207,7 +208,7 @@ describe("bonus model semantics", () => {
     expect(healerBonus.stats?.outgoing_damage).toBeUndefined();
   });
 
-  it("A two-piece set needs two pieces", () => {
+  it("A bonus needing two occurrences needs both items equipped", () => {
     const ID = "m28-voidtouched-set";
     expect(
       runBuild({ "gear.mainhand": "M28 Voidtouched Pactblade" }).activeById.has(
@@ -223,14 +224,14 @@ describe("bonus model semantics", () => {
   });
 
   it("Location is an item_picker choice, read via an `equipped` condition", () => {
-    const pieces = {
+    const gear = {
       "gear.mainhand": "M28 Voidtouched Pactblade",
       "gear.offhand": "M28 Voidtouched Tome",
     };
     const ID = "m28-voidtouched-set";
-    expect(runBuild(pieces).statOf(ID, "movement")).toBeUndefined();
+    expect(runBuild(gear).statOf(ID, "movement")).toBeUndefined();
     expect(
-      runBuild({ ...pieces, "options.location": "Wildspace" }).statOf(
+      runBuild({ ...gear, "options.location": "Wildspace" }).statOf(
         ID,
         "movement",
       ),
@@ -371,14 +372,14 @@ describe("bonus model semantics", () => {
       (grant.variants ?? []).forEach((v: Grant) => walk(v.when));
     };
     // item.bonuses is a string[] of Bonus ids -- look up the actual bonuses by id.
-    const setsById = new Map(built.bonuses.map((s) => [s.id, s]));
+    const bonusesById = new Map(built.bonuses.map((b) => [b.id, b]));
     for (const item of built.items) {
-      for (const setId of item.bonuses ?? []) {
-        const bonus = setsById.get(setId);
+      for (const bonusId of item.bonuses ?? []) {
+        const bonus = bonusesById.get(bonusId);
         bonus?.grants?.forEach(visit);
       }
     }
-    for (const set of built.bonuses) set.grants?.forEach(visit);
+    for (const bonus of built.bonuses) bonus.grants?.forEach(visit);
     const allowed = new Set([
       "toggle",
       "proc",
@@ -397,7 +398,7 @@ describe("bonus model semantics", () => {
 
 // A point_assignment slot's count is meant to resolve exactly like N separate item_picker
 // picks of the same item -- a synthetic db (not the real shipped one) isolates that claim
-// with a bonus set built specifically to prove stacking scales with the count.
+// with a bonus built specifically to prove stacking scales with the count.
 describe("point_assignment resolution", () => {
   const schema: Schema = {
     stats: [],
@@ -418,11 +419,11 @@ describe("point_assignment resolution", () => {
     filter: "test_boon_tier",
     power_p: 0.01,
     maxCopies: 3,
-    bonuses: ["boon-power-set"],
+    bonuses: ["boon-power-bonus"],
     pointAssignment: { min: 0, max: 4, default: 0 },
   };
-  const powerSet: Bonus = {
-    id: "boon-power-set",
+  const powerBonus: Bonus = {
+    id: "boon-power-bonus",
     stacking: "perSource",
     grants: [{ stats: { power_p: 0.02 } }],
   };
@@ -447,7 +448,7 @@ describe("point_assignment resolution", () => {
   };
   const testDb = db.build(
     [powerItem, restrictedItem],
-    [powerSet],
+    [powerBonus],
     schema,
     slotsData,
   );
@@ -467,7 +468,7 @@ describe("point_assignment resolution", () => {
   it("a count of 0 (the default) contributes nothing", () => {
     const result = engine.resolveBuild(testDb, buildWith({}));
     expect(
-      result.bonuses.find((b) => b.id === "boon-power-set")?.active,
+      result.bonuses.find((b) => b.id === "boon-power-bonus")?.active,
     ).toBeFalsy();
     expect(result.stages.sums.power_p).toBe(0);
   });
@@ -475,8 +476,12 @@ describe("point_assignment resolution", () => {
   it("N points bump stacking the same way N separate item_picker picks would", () => {
     const one = engine.resolveBuild(testDb, buildWith({ "boon-power": 1 }));
     const two = engine.resolveBuild(testDb, buildWith({ "boon-power": 2 }));
-    expect(one.bonuses.find((b) => b.id === "boon-power-set")?.stacks).toBe(1);
-    expect(two.bonuses.find((b) => b.id === "boon-power-set")?.stacks).toBe(2);
+    expect(one.bonuses.find((b) => b.id === "boon-power-bonus")?.stacks).toBe(
+      1,
+    );
+    expect(two.bonuses.find((b) => b.id === "boon-power-bonus")?.stacks).toBe(
+      2,
+    );
   });
 
   it("the item's own stat scales by count, on top of the stacked bonus", () => {
@@ -527,22 +532,22 @@ describe("per-item procs", () => {
   const procRing: Item = {
     id: "proc-ring",
     name: "Proc Ring",
-    bonuses: ["proc-ring-set"],
+    bonuses: ["proc-ring-bonus"],
   };
-  const procRingSet: Bonus = {
-    id: "proc-ring-set",
+  const procRingBonus: Bonus = {
+    id: "proc-ring-bonus",
     grants: [{ when: { proc: true }, stats: { power_p: 0.05 } }],
   };
 
-  // Two independent procs modelled as two grants under one set, per the issue's own answer:
+  // Two independent procs modelled as two grants under one bonus, per the issue's own answer:
   // "any proc will be strictly modelled as a standalone grant".
   const doubleProcTrinket: Item = {
     id: "double-proc-trinket",
     name: "Double Proc Trinket",
-    bonuses: ["double-proc-set"],
+    bonuses: ["double-proc-bonus"],
   };
-  const doubleProcSet: Bonus = {
-    id: "double-proc-set",
+  const doubleProcBonus: Bonus = {
+    id: "double-proc-bonus",
     grants: [
       { when: { proc: true }, stats: { power_p: 0.01 } },
       { when: { proc: true }, stats: { crit_p: 0.02 } },
@@ -554,10 +559,10 @@ describe("per-item procs", () => {
   const situationalTrinket: Item = {
     id: "situational-trinket",
     name: "Situational Trinket",
-    bonuses: ["situational-trinket-set"],
+    bonuses: ["situational-trinket-bonus"],
   };
-  const situationalTrinketSet: Bonus = {
-    id: "situational-trinket-set",
+  const situationalTrinketBonus: Bonus = {
+    id: "situational-trinket-bonus",
     grants: [
       {
         when: { proc: { label: "Only vs. bosses", default: false } },
@@ -579,7 +584,7 @@ describe("per-item procs", () => {
   };
   const testDb = db.build(
     [procRing, doubleProcTrinket, situationalTrinket],
-    [procRingSet, doubleProcSet, situationalTrinketSet],
+    [procRingBonus, doubleProcBonus, situationalTrinketBonus],
     schema,
     slotsData,
   );
@@ -602,30 +607,30 @@ describe("per-item procs", () => {
 
   it("defaults on: a grant with no explicit build.procs entry still fires", () => {
     const result = engine.resolveBuild(testDb, buildWith("proc-ring"));
-    const bonus = result.bonuses.find((b) => b.id === "proc-ring-set");
+    const bonus = result.bonuses.find((b) => b.id === "proc-ring-bonus");
     expect(bonus?.active).toBe(true);
-    expect(bonus?.grants[0].procKey).toBe("proc-ring-set:0");
+    expect(bonus?.grants[0].procKey).toBe("proc-ring-bonus:0");
   });
 
   it("an explicit false for the grant's key turns it off", () => {
     const result = engine.resolveBuild(
       testDb,
-      buildWith("proc-ring", { "proc-ring-set:0": false }),
+      buildWith("proc-ring", { "proc-ring-bonus:0": false }),
     );
-    expect(result.bonuses.find((b) => b.id === "proc-ring-set")?.active).toBe(
+    expect(result.bonuses.find((b) => b.id === "proc-ring-bonus")?.active).toBe(
       false,
     );
   });
 
   it("a grant with no proc condition carries a null procKey", () => {
     const flat: Bonus = {
-      id: "flat-set",
+      id: "flat-bonus",
       grants: [{ stats: { power_p: 0.03 } }],
     };
     const flatItem: Item = {
       id: "flat-ring",
       name: "Flat Ring",
-      bonuses: ["flat-set"],
+      bonuses: ["flat-bonus"],
     };
     const flatDb = db.build([flatItem], [flat], schema, slotsData);
     const result = engine.resolveBuild(
@@ -633,11 +638,11 @@ describe("per-item procs", () => {
       buildWith("flat-ring") as unknown as Build,
     );
     expect(
-      result.bonuses.find((b) => b.id === "flat-set")?.grants[0].procKey,
+      result.bonuses.find((b) => b.id === "flat-bonus")?.grants[0].procKey,
     ).toBeNull();
   });
 
-  it("two proc grants in one set toggle independently by grant index", () => {
+  it("two proc grants in one bonus toggle independently by grant index", () => {
     const bothOn = engine.resolveBuild(
       testDb,
       buildWith("double-proc-trinket"),
@@ -647,7 +652,7 @@ describe("per-item procs", () => {
 
     const firstOff = engine.resolveBuild(
       testDb,
-      buildWith("double-proc-trinket", { "double-proc-set:0": false }),
+      buildWith("double-proc-trinket", { "double-proc-bonus:0": false }),
     );
     expect(firstOff.stages.sums.power_p).toBe(0);
     expect(firstOff.stages.sums.crit_p).toBeCloseTo(0.02, 9);
@@ -656,9 +661,9 @@ describe("per-item procs", () => {
   it("feeds ConditionExplain the same way a toggle does, for the bonus inspector", () => {
     const off = engine.resolveBuild(
       testDb,
-      buildWith("proc-ring", { "proc-ring-set:0": false }),
+      buildWith("proc-ring", { "proc-ring-bonus:0": false }),
     );
-    const bonus = off.bonuses.find((b) => b.id === "proc-ring-set")!;
+    const bonus = off.bonuses.find((b) => b.id === "proc-ring-bonus")!;
     expect(bonus.gate.unmet[0]?.label).toBe("proc");
     expect(bonus.gate.unmet[0]?.detail).toBe("disabled");
   });
@@ -669,7 +674,7 @@ describe("per-item procs", () => {
       buildWith("situational-trinket"),
     );
     expect(
-      result.bonuses.find((b) => b.id === "situational-trinket-set")?.active,
+      result.bonuses.find((b) => b.id === "situational-trinket-bonus")?.active,
     ).toBe(false);
   });
 
@@ -677,11 +682,11 @@ describe("per-item procs", () => {
     const result = engine.resolveBuild(
       testDb,
       buildWith("situational-trinket", {
-        "situational-trinket-set:0": true,
+        "situational-trinket-bonus:0": true,
       }),
     );
     expect(
-      result.bonuses.find((b) => b.id === "situational-trinket-set")?.active,
+      result.bonuses.find((b) => b.id === "situational-trinket-bonus")?.active,
     ).toBe(true);
   });
 });
@@ -710,11 +715,11 @@ describe("build_parameter linked items", () => {
     id: "race-half-orc",
     name: "Race: Half-Orc",
     hit_points: 100,
-    bonuses: ["half-orc-set"],
+    bonuses: ["half-orc-bonus"],
     maxCopies: 1,
   };
-  const halfOrcSet: Bonus = {
-    id: "half-orc-set",
+  const halfOrcBonus: Bonus = {
+    id: "half-orc-bonus",
     grants: [{ stats: { power_p: 0.02 } }],
   };
   const restrictedRaceItem: Item = {
@@ -763,7 +768,7 @@ describe("build_parameter linked items", () => {
   };
   const testDb = db.build(
     [halfOrcItem, restrictedRaceItem, consumableItem],
-    [halfOrcSet],
+    [halfOrcBonus],
     schema,
     slotsData,
   );
@@ -789,7 +794,7 @@ describe("build_parameter linked items", () => {
     const result = engine.resolveBuild(testDb, buildWith());
     expect(result.stages.sums.hit_points).toBe(0);
     expect(
-      result.bonuses.find((b) => b.id === "half-orc-set")?.active,
+      result.bonuses.find((b) => b.id === "half-orc-bonus")?.active,
     ).toBeFalsy();
   });
 
@@ -797,7 +802,7 @@ describe("build_parameter linked items", () => {
     const result = engine.resolveBuild(testDb, buildWith({ race: "half-orc" }));
     expect(result.stages.sums.hit_points).toBeCloseTo(100, 9);
     expect(result.stages.sums.power_p).toBeCloseTo(0.02, 9);
-    expect(result.bonuses.find((b) => b.id === "half-orc-set")?.active).toBe(
+    expect(result.bonuses.find((b) => b.id === "half-orc-bonus")?.active).toBe(
       true,
     );
   });
@@ -853,7 +858,7 @@ describe("build_parameter linked items", () => {
       name: "Race: Elf (test)",
       filter: "test_race",
     };
-    const raceRestrictionSet: Bonus = {
+    const raceRestrictionBonus: Bonus = {
       id: "race-restriction-check",
       grants: [
         {
@@ -888,7 +893,7 @@ describe("build_parameter linked items", () => {
     };
     const raceRestrictedDb = db.build(
       [halfOrcRaceItem, elfRaceItem, raceRestrictedItem],
-      [raceRestrictionSet],
+      [raceRestrictionBonus],
       schema,
       {
         sections: [
@@ -955,7 +960,7 @@ describe("problem grants (bonus-authored errors/warnings)", () => {
 
   // item_picker case: an error grant gated on the build's own class -- stands in for "the
   // chosen race bonus doesn't match the race picked".
-  const mismatchSet: Bonus = {
+  const mismatchBonus: Bonus = {
     id: "class-mismatch-check",
     grants: [
       {
@@ -973,7 +978,7 @@ describe("problem grants (bonus-authored errors/warnings)", () => {
 
   // Same shape as class-mismatch-check, but its problem grant carries its own `label` --
   // issue #95: the sidebar summary should prefer this over the triggering slot's name.
-  const labeledMismatchSet: Bonus = {
+  const labeledMismatchBonus: Bonus = {
     id: "class-mismatch-check-labeled",
     grants: [
       {
@@ -995,7 +1000,7 @@ describe("problem grants (bonus-authored errors/warnings)", () => {
   // A `hideFromPicker` problem grant -- signals that a consumer (ItemPicker.vue) should drop
   // the item from its dropdown while the condition holds, on top of the usual sidebar/inline
   // warning. The engine itself doesn't act on the flag; it just has to carry it through intact.
-  const hideFromPickerSet: Bonus = {
+  const hideFromPickerBonus: Bonus = {
     id: "hide-from-picker-check",
     grants: [
       {
@@ -1031,7 +1036,7 @@ describe("problem grants (bonus-authored errors/warnings)", () => {
     tags: ["tier1"],
     pointAssignment: { min: 0, max: 10, default: 0 },
   };
-  const tier2Set: Bonus = {
+  const tier2Bonus: Bonus = {
     id: "tier2-requires-tier1",
     grants: [
       {
@@ -1073,7 +1078,7 @@ describe("problem grants (bonus-authored errors/warnings)", () => {
       tier2Item,
       hideFromPickerItem,
     ],
-    [mismatchSet, labeledMismatchSet, tier2Set, hideFromPickerSet],
+    [mismatchBonus, labeledMismatchBonus, tier2Bonus, hideFromPickerBonus],
     schema,
     slotsData,
   );
@@ -1193,15 +1198,15 @@ describe("problem grants (bonus-authored errors/warnings)", () => {
   });
 
   // Displays that list "bonuses" (ItemCard.vue's hover card, BonusInspector.vue's sidebar
-  // table) should leave a problem-only set out entirely -- issue #94: it read as an inactive
+  // table) should leave a problem-only bonus out entirely -- issue #94: it read as an inactive
   // (or, worse, active-looking) bonus that never actually grants anything.
   describe("isHiddenBonus", () => {
-    it("hides a set whose only grant reports a problem", () => {
-      expect(isHiddenBonus(mismatchSet)).toBe(true);
-      expect(isHiddenBonus(tier2Set)).toBe(true);
+    it("hides a bonus whose only grant reports a problem", () => {
+      expect(isHiddenBonus(mismatchBonus)).toBe(true);
+      expect(isHiddenBonus(tier2Bonus)).toBe(true);
     });
 
-    it("does not hide a plain stats-only set", () => {
+    it("does not hide a plain stats-only bonus", () => {
       const statsOnly: Bonus = {
         id: "stats-only",
         grants: [{ stats: { power_p: 1 } }],
@@ -1209,15 +1214,15 @@ describe("problem grants (bonus-authored errors/warnings)", () => {
       expect(isHiddenBonus(statsOnly)).toBe(false);
     });
 
-    it("does not hide a set that mixes a problem grant with a stats grant", () => {
+    it("does not hide a bonus that mixes a problem grant with a stats grant", () => {
       const mixed: Bonus = {
         id: "mixed",
-        grants: [{ stats: { power_p: 1 } }, mismatchSet.grants![0]],
+        grants: [{ stats: { power_p: 1 } }, mismatchBonus.grants![0]],
       };
       expect(isHiddenBonus(mixed)).toBe(false);
     });
 
-    it("does not hide a set with no grants", () => {
+    it("does not hide a bonus with no grants", () => {
       expect(isHiddenBonus({ id: "empty" })).toBe(false);
     });
   });

@@ -55,7 +55,7 @@ describe("GrantStore stat mutations", () => {
   });
 
   it("addTierStat targets the selected tier, not grant.stats", () => {
-    const { gs } = makeStore("tiers", ["set-a"]);
+    const { gs } = makeStore("tiers", ["bonus-a"]);
     expect(gs.grant.tiers).toHaveLength(1); // auto-created by setPayload
     gs.addTierStat(0);
     expect(gs.grant.tiers[0].stats).toEqual([{ key: "", value: 0 }]);
@@ -63,7 +63,7 @@ describe("GrantStore stat mutations", () => {
   });
 
   it("removeTierStat removes the right row from the selected tier", () => {
-    const { gs } = makeStore("tiers", ["set-a"]);
+    const { gs } = makeStore("tiers", ["bonus-a"]);
     gs.addTierStat(0);
     gs.addTierStat(0);
     gs.removeTierStat(0, 0);
@@ -71,7 +71,7 @@ describe("GrantStore stat mutations", () => {
   });
 
   it("addTierStat on a missing tier is a no-op (no onChange)", () => {
-    const { gs, changes } = makeStore("tiers", ["set-a"]);
+    const { gs, changes } = makeStore("tiers", ["bonus-a"]);
     const before = changes();
     gs.addTierStat(5);
     expect(changes()).toBe(before);
@@ -133,7 +133,7 @@ describe("GrantStore.moveTierTo / moveVariantTo", () => {
     gs.addTier();
     gs.addTier();
     // Each addTier() carries the previous tier's atLeast+1, so this is a distinguishing
-    // field across all four tiers (unlike `set`, which every tier inherits unchanged).
+    // field across all four tiers (unlike `bonus`, which every tier inherits unchanged).
     const atLeasts = gs.grant.tiers.map((t) => t.atLeast);
     gs.moveTierTo(0, 3);
     expect(gs.grant.tiers.map((t) => t.atLeast)).toEqual([
@@ -356,8 +356,8 @@ describe("BonusDraftStore.moveBranch", () => {
 
 describe("BonusDraftStore bonusIds wiring", () => {
   it("setPayload('tiers') seeds the auto-created tier with the first bonus id", () => {
-    const { gs } = makeStore("tiers", ["set-a", "set-b"]);
-    expect(gs.grant.tiers[0].bonus).toBe("set-a");
+    const { gs } = makeStore("tiers", ["bonus-a", "bonus-b"]);
+    expect(gs.grant.tiers[0].bonus).toBe("bonus-a");
   });
 });
 

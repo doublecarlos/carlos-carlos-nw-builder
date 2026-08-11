@@ -78,5 +78,5 @@ export const NW_BONUSES: Bonus[] = rawBonuses as Bonus[];
  * share-link envelope carries this so a stale build can warn ("no longer resolves") instead of
  * silently loading empty. Bump by hand whenever `data/db-items.json`/`data/db-bonuses.json`
  * change in a way that could invalidate an existing choice or overlay key (an item's id
- * reassigned, an item/bonus set removed) -- not on every data edit, only identity-affecting ones. */
+ * reassigned, an item/bonus removed) -- not on every data edit, only identity-affecting ones. */
 export const NW_CATALOG_VERSION = 1;

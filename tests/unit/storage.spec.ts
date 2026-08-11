@@ -513,10 +513,10 @@ describe("toBuildJson with db (portable files)", () => {
       id: "layer-item",
       name: "Layer Item",
       filter: "gear_head",
-      bonuses: ["layer-set"],
+      bonuses: ["layer-bonus"],
     };
-    const layerSet = {
-      id: "layer-set",
+    const layerBonus = {
+      id: "layer-bonus",
       grants: [
         { stats: { power: 100 } },
       ] as unknown as import("../../src/types").Grant[],
@@ -524,14 +524,14 @@ describe("toBuildJson with db (portable files)", () => {
     const db = {
       get: (id: string | null | undefined) =>
         id === "layer-item" ? layerItem : null,
-      bonusById: new Map([[layerSet.id, layerSet]]),
+      bonusById: new Map([[layerBonus.id, layerBonus]]),
       slots: [],
     } as unknown as Db;
 
     const json = JSON.parse(storage.toBuildJson(build, db));
     expect(json.data.catalog).toBeDefined();
     expect(json.data.catalog.items["layer-item"]).toBeDefined();
-    expect(json.data.catalog.bonuses["layer-set"]).toBeDefined();
+    expect(json.data.catalog.bonuses["layer-bonus"]).toBeDefined();
   });
 
   it("does not embed catalog when build references only shipped items", () => {
@@ -568,10 +568,10 @@ describe("toBuildJson with db (portable files)", () => {
       id: "layer-item",
       name: "Layer Item",
       filter: "gear_head",
-      bonuses: ["layer-set"],
+      bonuses: ["layer-bonus"],
     };
-    const layerSet = {
-      id: "layer-set",
+    const layerBonus = {
+      id: "layer-bonus",
       grants: [
         { stats: { power: 100 } },
       ] as unknown as import("../../src/types").Grant[],
@@ -579,7 +579,7 @@ describe("toBuildJson with db (portable files)", () => {
     const db = {
       get: (id: string | null | undefined) =>
         id === "layer-item" ? layerItem : null,
-      bonusById: new Map([[layerSet.id, layerSet]]),
+      bonusById: new Map([[layerBonus.id, layerBonus]]),
       slots: [],
     } as unknown as Db;
 
@@ -589,7 +589,7 @@ describe("toBuildJson with db (portable files)", () => {
     // The embedded catalog should survive the parseJson round-trip
     expect(parsed[0].catalog).toBeDefined();
     expect(parsed[0].catalog?.items["layer-item"]).toBeDefined();
-    expect(parsed[0].catalog?.bonuses["layer-set"]).toBeDefined();
+    expect(parsed[0].catalog?.bonuses["layer-bonus"]).toBeDefined();
   });
 
   it("a build exported without db does not embed catalog", () => {

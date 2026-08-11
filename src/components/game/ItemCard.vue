@@ -24,7 +24,7 @@ const props = withDefaults(
     /** Resolved bonus entries this item takes part in, from `result.bonuses`. */
     bonuses?: EvaluatedBonus[];
     slotLabel?: string;
-    /** Only for resolving `item.bonuses` group ids to their set names in `notes` below. */
+    /** Only for resolving `item.bonuses` ids to their bonus names in `notes` below. */
     db?: Db | null;
   }>(),
   {
@@ -76,7 +76,7 @@ const notes = computed(() => {
 
 /**
  * A flat, non-stacking bonus can still have more than one contributing item -- e.g. a
- * set effect with no occurrence-count requirement at all, granted once as long as *any*
+ * bonus with no occurrence-count requirement at all, granted once as long as *any*
  * one of its items is worn (M31 Thayan Predator's base +2%, fed by both Runebound Shackle
  * and Sanguine Seal).
  * Every contributing item's own card shows the same resolved total, so owning both reads
@@ -106,10 +106,10 @@ function tierGrant(entry: EvaluatedBonus) {
 }
 
 /**
- * A tiered set bonus (e.g. Gladiator's Guile: 10% at 1 occurrence, 15% at 2) has no `when`
+ * A tiered bonus (e.g. Gladiator's Guile: 10% at 1 occurrence, 15% at 2) has no `when`
  * condition at all -- the occurrence count is matched directly in bonus.ts, so
  * `gate.leaves` is empty and the card would otherwise show "always" next to a number that
- * quietly depends on how many of the set's items are equipped. Every contributing item's
+ * quietly depends on how many of the bonus's items are equipped. Every contributing item's
  * own card lists the same shared bonus, so without the ladder each one reads as granting
  * the full total on its own. Returns null for a bonus with no tiered grant.
  */
@@ -186,8 +186,8 @@ const rows = computed(() =>
           .join(" + "),
         unmet: entry.gate?.unmet ?? [],
         excludedBy: entry.excludedBy,
-        // Every active grant's own longDescription, in grant order -- a set with more than
-        // one descriptive grant shows each (rare: usually only one grant per set bothers).
+        // Every active grant's own longDescription, in grant order -- a bonus with more than
+        // one descriptive grant shows each (rare: usually only one grant per bonus bothers).
         descriptions: (entry.grants ?? [])
           .filter((g) => g.active && g.raw.longDescription)
           .map((g) => g.raw.longDescription as string),

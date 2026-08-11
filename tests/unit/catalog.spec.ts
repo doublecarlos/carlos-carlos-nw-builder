@@ -544,7 +544,7 @@ describe("catalog.nextId", () => {
   });
 
   it("falls back to the given default when the name slugifies to nothing", () => {
-    expect(catalog.nextId("!!!", [], "bonus-set")).toBe("bonus-set");
+    expect(catalog.nextId("!!!", [], "bonus")).toBe("bonus");
   });
 });
 
@@ -712,8 +712,8 @@ describe("catalog.toBonusesFile", () => {
     const scrambled = {
       maxStacks: 2,
       grants: [],
-      name: "Z Set",
-      id: "z-set",
+      name: "Z Bonus",
+      id: "z-bonus",
     } as Bonus;
     const text = catalog.toBonusesFile([scrambled]);
     expect(JSON.parse(text)).toEqual([scrambled]);
@@ -723,23 +723,25 @@ describe("catalog.toBonusesFile", () => {
     expect(positions).toEqual([...positions].sort((a, b) => a - b));
   });
 
-  it("defaults a missing name to the set's id", () => {
-    const sets: Bonus[] = [{ id: "no-name-set", grants: [] }];
-    const parsed = JSON.parse(catalog.toBonusesFile(sets));
+  it("defaults a missing name to the bonus's id", () => {
+    const bonuses: Bonus[] = [{ id: "no-name-bonus", grants: [] }];
+    const parsed = JSON.parse(catalog.toBonusesFile(bonuses));
     expect(parsed).toEqual([
-      { id: "no-name-set", name: "no-name-set", grants: [] },
+      { id: "no-name-bonus", name: "no-name-bonus", grants: [] },
     ]);
   });
 
   it("keeps an explicit name as-is", () => {
-    const sets: Bonus[] = [{ id: "named-set", name: "Named Set", grants: [] }];
-    const parsed = JSON.parse(catalog.toBonusesFile(sets));
-    expect(parsed[0].name).toBe("Named Set");
+    const bonuses: Bonus[] = [
+      { id: "named-bonus", name: "Named Bonus", grants: [] },
+    ];
+    const parsed = JSON.parse(catalog.toBonusesFile(bonuses));
+    expect(parsed[0].name).toBe("Named Bonus");
   });
 
   it("produces valid JSON for the real shipped data", () => {
     expect(JSON.parse(catalog.toBonusesFile(NW_BONUSES))).toEqual(
-      NW_BONUSES.map((set) => ({ ...set, name: set.name ?? set.id })),
+      NW_BONUSES.map((bonus) => ({ ...bonus, name: bonus.name ?? bonus.id })),
     );
   });
 });
@@ -836,19 +838,19 @@ describe("catalog.toSlotsFile", () => {
 // checks live inside `checkConditions`, keyed on the real slots.json paths -- `class` (list),
 // `duration` (number), `toggles.combat` (a toggle slot, boolean).
 describe("catalog.validate: param condition lint", () => {
-  const setWith = (when: ConditionWhen): Bonus[] => [
-    { id: "test-set", grants: [{ when, stats: {} }] },
+  const bonusWith = (when: ConditionWhen): Bonus[] => [
+    { id: "test-bonus", grants: [{ when, stats: {} }] },
   ];
   // Scoped to `kind === "bonus"` so these helpers isolate the condition lint under test
   // from unrelated findings validate() also produces against the real shipped NW_SLOTS (e.g.
   // linkedItem lint, which items=[] can never satisfy).
   const errorsFor = (when: ConditionWhen) =>
     catalog
-      .validate([], setWith(when))
+      .validate([], bonusWith(when))
       .filter((f) => f.level === "error" && f.kind === "bonus");
   const warningsFor = (when: ConditionWhen) =>
     catalog
-      .validate([], setWith(when))
+      .validate([], bonusWith(when))
       .filter((f) => f.level === "warn" && f.kind === "bonus");
 
   it("an unresolvable key is an error -- the condition can never be active", () => {
@@ -921,12 +923,12 @@ describe("catalog.validate: param condition lint", () => {
 // The `proc` leaf lint -- unlike `param`, both fields are optional refinements on top of the
 // bare-`true` common case, so only an actually-malformed value should ever flag.
 describe("catalog.validate: proc condition lint", () => {
-  const setWith = (when: ConditionWhen): Bonus[] => [
-    { id: "test-set", grants: [{ when, stats: {} }] },
+  const bonusWith = (when: ConditionWhen): Bonus[] => [
+    { id: "test-bonus", grants: [{ when, stats: {} }] },
   ];
   const errorsFor = (when: ConditionWhen) =>
     catalog
-      .validate([], setWith(when))
+      .validate([], bonusWith(when))
       .filter((f) => f.level === "error" && f.kind === "bonus");
 
   it("bare true is clean", () => {
@@ -1161,23 +1163,23 @@ const layerItem: Item = {
   id: "layer-item",
   name: "Layer Item",
   filter: "gear_ring",
-  bonuses: ["layer-set"],
+  bonuses: ["layer-bonus"],
 };
 
-const layerSet: Bonus = {
-  id: "layer-set",
+const layerBonus: Bonus = {
+  id: "layer-bonus",
   grants: [{ stats: { power: 100 } }],
 };
 
-const excludedSet: Bonus = {
-  id: "excluded-set",
+const excludedBonus: Bonus = {
+  id: "excluded-bonus",
   grants: [{ stats: { power: 50 } }],
 };
 
-const chainedSet: Bonus = {
-  id: "chained-set",
+const chainedBonus: Bonus = {
+  id: "chained-bonus",
   grants: [{ stats: { power: 25 } }],
-  excludes: ["excluded-set"],
+  excludes: ["excluded-bonus"],
 };
 
 describe("catalog.referencedOverlay", () => {
@@ -1198,8 +1200,8 @@ describe("catalog.referencedOverlay", () => {
     expect(catalog.isEmpty(overlay)).toBe(true);
   });
 
-  it("picks up a layer-defined item and its bonus sets", () => {
-    const db = testDb([baseItem, layerItem], [layerSet]);
+  it("picks up a layer-defined item and its bonuses", () => {
+    const db = testDb([baseItem, layerItem], [layerBonus]);
     const build: Build = {
       id: "b1",
       name: "Test",
@@ -1211,22 +1213,26 @@ describe("catalog.referencedOverlay", () => {
       compare: { id: "", highlight: false, onlyDiff: false },
     };
     // baseItem (BASE_ITEM_ID) is in base, so it should not appear in the overlay.
-    // layer-item is NOT in base, so it should appear along with its bonus set.
+    // layer-item is NOT in base, so it should appear along with its bonus.
     const overlay = catalog.referencedOverlay(db, build);
     expect(overlay.items["layer-item"]).toBeDefined();
     expect(overlay.items["layer-item"]?.name).toBe("Layer Item");
-    expect(overlay.bonuses["layer-set"]).toBeDefined();
+    expect(overlay.bonuses["layer-bonus"]).toBeDefined();
     // baseItem is in base, so it should NOT be in the overlay
     expect(overlay.items[BASE_ITEM_ID]).toBeUndefined();
   });
 
-  it("includes sets reachable through excludes", () => {
+  it("includes bonuses reachable through excludes", () => {
     const db = testDb(
       [
         baseItem,
-        { ...layerItem, bonuses: ["chained-set"], excludes: ["excluded-set"] },
+        {
+          ...layerItem,
+          bonuses: ["chained-bonus"],
+          excludes: ["excluded-bonus"],
+        },
       ],
-      [layerSet, chainedSet, excludedSet],
+      [layerBonus, chainedBonus, excludedBonus],
     );
     const build: Build = {
       id: "b1",
@@ -1238,16 +1244,16 @@ describe("catalog.referencedOverlay", () => {
       context: {} as Build["context"],
       compare: { id: "", highlight: false, onlyDiff: false },
     };
-    // The item has bonuses: ["chained-set"] and excludes: ["excluded-set"]
-    // chained-set also excludes excluded-set (transitive)
+    // The item has bonuses: ["chained-bonus"] and excludes: ["excluded-bonus"]
+    // chained-bonus also excludes excluded-bonus (transitive)
     const overlay = catalog.referencedOverlay(db, build);
     expect(overlay.items["layer-item"]).toBeDefined();
-    expect(overlay.bonuses["chained-set"]).toBeDefined();
-    expect(overlay.bonuses["excluded-set"]).toBeDefined();
+    expect(overlay.bonuses["chained-bonus"]).toBeDefined();
+    expect(overlay.bonuses["excluded-bonus"]).toBeDefined();
   });
 
   it("excludes layer entries the build does not reference", () => {
-    const db = testDb([baseItem, layerItem], [layerSet]);
+    const db = testDb([baseItem, layerItem], [layerBonus]);
     const build: Build = {
       id: "b1",
       name: "Test",
@@ -1263,27 +1269,27 @@ describe("catalog.referencedOverlay", () => {
     expect(catalog.isEmpty(overlay)).toBe(true);
   });
 
-  it("picks up a base item whose bonus set a layer edited", () => {
-    // Use a real base item that references a real base bonus set.
-    const BASE_SET_ITEM_ID = "1st-pack-tactics-group";
-    const baseItemWithSet: Item = {
+  it("picks up a base item whose bonus a layer edited", () => {
+    // Use a real base item that references a real base bonus.
+    const BASE_BONUS_ITEM_ID = "1st-pack-tactics-group";
+    const baseItemWithBonus: Item = {
       id: "1st-pack-tactics-group",
       name: "1st Pack Tactics (Group)",
       filter: "group_buff",
       maxCopies: 1,
       bonuses: ["1st-pack-tactics-group"],
     };
-    // Layer edits the bonus set with different stats.
-    const editedSet: Bonus = {
+    // Layer edits the bonus with different stats.
+    const editedBonus: Bonus = {
       id: "1st-pack-tactics-group",
       name: "1st Pack Tactics (Group)",
       grants: [{ stats: { power: 999 } }], // different from base
     };
-    const db = testDb([baseItemWithSet], [editedSet]);
+    const db = testDb([baseItemWithBonus], [editedBonus]);
     const build: Build = {
       id: "b1",
       name: "Test",
-      choices: { group_buff: BASE_SET_ITEM_ID },
+      choices: { group_buff: BASE_BONUS_ITEM_ID },
       values: {},
       assignments: {},
       procs: {},
@@ -1292,15 +1298,15 @@ describe("catalog.referencedOverlay", () => {
     };
     const overlay = catalog.referencedOverlay(db, build);
     // The item is unchanged from base, so it should NOT be emitted.
-    expect(overlay.items[BASE_SET_ITEM_ID]).toBeUndefined();
-    // The bonus set IS different from base, so it SHOULD be emitted.
+    expect(overlay.items[BASE_BONUS_ITEM_ID]).toBeUndefined();
+    // The bonus IS different from base, so it SHOULD be emitted.
     expect(overlay.bonuses["1st-pack-tactics-group"]).toBeDefined();
     expect(
       overlay.bonuses["1st-pack-tactics-group"]?.grants?.[0]?.stats?.power,
     ).toBe(999);
   });
 
-  it("does not emit a base item or its set when both match base", () => {
+  it("does not emit a base item or its bonus when both match base", () => {
     // Use the actual base item without any bonuses — it should emit nothing.
     const db = testDb([baseItem], []);
     const build: Build = {
@@ -1330,7 +1336,7 @@ describe("catalog.referencedOverlay", () => {
         { value: "half-orc", label: "Half-Orc", linkedItem: "layer-item" },
       ],
     };
-    const db = testDb([baseItem, layerItem], [layerSet], [raceSlot]);
+    const db = testDb([baseItem, layerItem], [layerBonus], [raceSlot]);
     const build: Build = {
       id: "b1",
       name: "Test",
@@ -1343,7 +1349,7 @@ describe("catalog.referencedOverlay", () => {
     };
     const overlay = catalog.referencedOverlay(db, build);
     expect(overlay.items["layer-item"]).toBeDefined();
-    expect(overlay.bonuses["layer-set"]).toBeDefined();
+    expect(overlay.bonuses["layer-bonus"]).toBeDefined();
   });
 
   it("does not pick up a build_parameter's linkedItem when its value doesn't select it", () => {
@@ -1360,7 +1366,7 @@ describe("catalog.referencedOverlay", () => {
         { value: "elf", label: "Elf" },
       ],
     };
-    const db = testDb([baseItem, layerItem], [layerSet], [raceSlot]);
+    const db = testDb([baseItem, layerItem], [layerBonus], [raceSlot]);
     const build: Build = {
       id: "b1",
       name: "Test",

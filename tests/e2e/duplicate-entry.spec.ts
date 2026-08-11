@@ -6,7 +6,7 @@ import { openBuilder } from "./support/app";
 import { addLayer, layerRow } from "./support/nav";
 
 const ITEM_NAME = "ZZZ Test Duplicate Item";
-const BONUS_NAME = "ZZZ Test Duplicate Set";
+const BONUS_NAME = "ZZZ Test Duplicate Bonus";
 
 test("duplicating an item opens a pre-filled draft that saves as a separate item", async ({
   page,
@@ -94,7 +94,7 @@ test("duplicating a bonus attached to an item adds a pre-filled unsaved bonus", 
   page,
 }) => {
   const ITEM = "ZZZ Test Item Bonus Duplicate";
-  const BONUS = "ZZZ Test Item Bonus Duplicate Set";
+  const BONUS = "ZZZ Test Item's Duplicate Bonus";
 
   await openBuilder(page);
   await addLayer(page);

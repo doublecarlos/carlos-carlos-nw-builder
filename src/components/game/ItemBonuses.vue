@@ -12,7 +12,7 @@
 //
 // A pending slot has no id at all until its first save: BonusForm previews one live off
 // Name (seeded from the item's own name as a starting point), and that same Save both persists
-// the set and attaches the resulting id to the item, in one step -- there is nothing to decide
+// the bonus and attaches the resulting id to the item, in one step -- there is nothing to decide
 // up front any more.
 import { ref, computed, provide } from "vue";
 import BonusForm from "./BonusForm.vue";
@@ -34,21 +34,22 @@ provide(bonusDraftRegistryKey, new Map<string, BonusDraftStore>());
 
 const props = withDefaults(
   defineProps<{
-    /** Bonus group ids the item currently declares. */
-    setIds?: string[];
+    /** Bonus ids the item currently declares. */
+    attachedBonusIds?: string[];
     /** Seeds the Name field of a brand-new private bonus. */
     itemName?: string;
     db: Db;
-    allSetIds?: string[];
+    /** Every known bonus id, for "attach an existing bonus" and id-collision avoidance. */
+    allBonusIds?: string[];
     tags?: string[];
     bonusIds?: string[];
     /** All existing ids for collision-free id allocation. */
     allocatableIds?: string[];
   }>(),
   {
-    setIds: () => [],
+    attachedBonusIds: () => [],
     itemName: "",
-    allSetIds: () => [],
+    allBonusIds: () => [],
     tags: () => [],
     bonusIds: () => [],
     allocatableIds: () => [],
@@ -56,17 +57,17 @@ const props = withDefaults(
 );
 
 const emit = defineEmits<{
-  "save-set": [payload: { id: string; set: Bonus }];
-  "delete-set": [id: string];
-  "detach-set": [id: string];
-  "attach-set": [id: string];
-  "update-set": [payload: { id: string; set: Bonus }];
+  "save-bonus": [payload: { id: string; bonus: Bonus }];
+  "delete-bonus": [id: string];
+  "detach-bonus": [id: string];
+  "attach-bonus": [id: string];
+  "update-bonus": [payload: { id: string; bonus: Bonus }];
 }>();
 
 interface Slot {
   key: string;
   id: string | null;
-  /** Source set copied by "Duplicate" -- seeds a fresh pending slot's draft via
+  /** Source bonus copied by "Duplicate" -- seeds a fresh pending slot's draft via
    *  BonusForm's `duplicate-from` prop instead of leaving it blank. */
   seed?: Bonus | null;
 }
@@ -79,14 +80,14 @@ const pending = ref<Slot[]>([]);
  * the save transition (see `onSlotSave`) so its BonusForm instance is never remounted --
  * and so never loses its in-progress draft/undo history -- right at the moment it's saved. */
 const slots = computed<Slot[]>(() => [
-  ...props.setIds.map((id): Slot => ({ key: `id:${id}`, id })),
+  ...props.attachedBonusIds.map((id): Slot => ({ key: `id:${id}`, id })),
   ...pending.value,
 ]);
 
-/** Existing groups not already attached, for "attach an existing bonus". */
+/** Existing bonuses not already attached, for "attach an existing bonus". */
 const attachable = computed(() => {
-  const attached = new Set(props.setIds);
-  return props.allSetIds
+  const attached = new Set(props.attachedBonusIds);
+  return props.allBonusIds
     .filter((id) => !attached.has(id))
     .map((id) => ({
       value: id,
@@ -120,44 +121,44 @@ function addBonus() {
 
 function attachExisting(id: string) {
   if (!id) return;
-  emit("attach-set", id);
+  emit("attach-bonus", id);
 }
 
-/** A pending slot's first save both persists the set (forwarded as-is) and attaches the
+/** A pending slot's first save both persists the bonus (forwarded as-is) and attaches the
  * resulting id to the item -- see the module comment above. The pending slot itself is then
- * dropped: the id it just got now flows through `props.setIds` instead, same as any other
- * attached bonus, so keeping both around would double-render it. BonusForm resets its own
+ * dropped: the id it just got now flows through `props.attachedBonusIds` instead, same as any
+ * other attached bonus, so keeping both around would double-render it. BonusForm resets its own
  * draft/undo history after every save regardless (its own comment on why), so there's nothing
- * lost by letting the real, `props.setIds`-driven instance mount fresh rather than trying to
- * keep this exact component instance alive across the transition. An already-attached slot's
- * save is just a plain re-save, forwarded as-is. */
-function onSlotSave(slot: Slot, payload: { id: string; set: Bonus }) {
-  emit("save-set", payload);
+ * lost by letting the real, `props.attachedBonusIds`-driven instance mount fresh rather than
+ * trying to keep this exact component instance alive across the transition. An already-attached
+ * slot's save is just a plain re-save, forwarded as-is. */
+function onSlotSave(slot: Slot, payload: { id: string; bonus: Bonus }) {
+  emit("save-bonus", payload);
   if (!slot.id) {
-    emit("attach-set", payload.id);
+    emit("attach-bonus", payload.id);
     pending.value = pending.value.filter((s) => s !== slot);
   }
 }
 
-/** Live-edit handler: debounced changes from existing bonus sets go here. */
-function onSlotUpdate(slot: Slot, payload: { id: string; set: Bonus }) {
+/** Live-edit handler: debounced changes from existing bonuses go here. */
+function onSlotUpdate(slot: Slot, payload: { id: string; bonus: Bonus }) {
   if (slot.id) {
-    emit("update-set", payload);
+    emit("update-bonus", payload);
   }
 }
 
-/** Stop this item from listing the set -- always valid, whether or not the set is defined,
+/** Stop this item from listing the bonus -- always valid, whether or not the bonus is defined,
  * shared, or brand-new. A pending slot has nothing attached yet, so this just discards it. */
 function onSlotDetach(slot: Slot) {
-  if (slot.id) emit("detach-set", slot.id);
+  if (slot.id) emit("detach-bonus", slot.id);
   else pending.value = pending.value.filter((s) => s !== slot);
 }
 
 function onSlotDelete(slot: Slot) {
-  if (slot.id) emit("delete-set", slot.id);
+  if (slot.id) emit("delete-bonus", slot.id);
 }
 
-/** "Duplicate" on an attached bonus set adds a new pending slot seeded from it -- same
+/** "Duplicate" on an attached bonus adds a new pending slot seeded from it -- same
  * unsaved-until-Save flow as "Add bonus", just pre-filled instead of blank. */
 function onSlotDuplicate(slot: Slot) {
   const source = sourceFor(slot);
@@ -215,12 +216,12 @@ function onSlotDuplicate(slot: Slot) {
         :duplicate-from="slot.seed ?? null"
         :registry-id="slot.key"
         :db="db"
-        :set-ids="allSetIds"
+        :all-bonus-ids="allBonusIds"
         :tags="tags"
         :bonus-ids="bonusIds"
         :allocatable-ids="props.allocatableIds"
         @save="onSlotSave(slot, $event)"
-        @update:set="onSlotUpdate(slot, $event)"
+        @update:bonus="onSlotUpdate(slot, $event)"
         @delete="onSlotDelete(slot)"
         @duplicate="onSlotDuplicate(slot)"
       >

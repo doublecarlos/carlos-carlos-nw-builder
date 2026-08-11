@@ -50,7 +50,7 @@ test("a problem-only bonus is hidden from the item hover card and the sidebar Bo
   // The sidebar's Bonuses tab agrees: filtering for the warning's own title finds nothing.
   await page.getByRole("button", { name: /^Bonuses/ }).click();
   await page
-    .getByPlaceholder("Filter by bonus, set or item…")
+    .getByPlaceholder("Filter by bonus, id or item…")
     .fill(WARNING_TITLE);
   await expect(page.getByText("Nothing matches that filter.")).toBeVisible();
 });

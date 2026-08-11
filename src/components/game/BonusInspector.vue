@@ -24,7 +24,7 @@ import type {
   StatValues,
 } from "../../types";
 
-/** `m31-crimson-march-combat` -> `M31 Crimson March Combat`, for bonuses with no set name. */
+/** `m31-crimson-march-combat` -> `M31 Crimson March Combat`, for bonuses with no bonus name. */
 const fromId = (id: string) =>
   String(id ?? "")
     .replace(/[-_]+/g, " ")
@@ -102,7 +102,7 @@ const STATE_DOT: Record<string, string> = {
   excluded: "bg-danger",
 };
 
-// Problem-only bonuses (a set that exists purely to report a build error/warning) are
+// Problem-only bonuses (a bonus that exists purely to report a build error/warning) are
 // already surfaced inline on their slot and in the errors summary -- listing them here too,
 // especially while inactive, reads as a bonus that never grants anything.
 const visibleBonuses = computed(() =>
@@ -189,7 +189,7 @@ const counts = computed(() => {
         v-model="query"
         class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
         type="search"
-        placeholder="Filter by bonus, set or item…"
+        placeholder="Filter by bonus, id or item…"
       />
       <div class="flex items-center gap-3 py-2 text-sm text-muted">
         <span>{{ counts.active }}/{{ counts.total }} active</span>

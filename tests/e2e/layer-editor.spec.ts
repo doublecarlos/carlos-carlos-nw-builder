@@ -358,7 +358,7 @@ test.describe("bonus stat payload editing", () => {
 
     // The tier's bonus combo lists the bonus ids (they reach the form through the store).
     await page
-      .locator(".combo--set")
+      .locator(".combo--bonus")
       .first()
       .getByTestId("picker-input")
       .click();

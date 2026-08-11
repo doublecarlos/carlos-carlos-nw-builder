@@ -9,8 +9,8 @@ import { openBuilder, slotRow } from "./support/app";
 
 const RING_SLOT = "gear.ring1";
 const RING_ID = "test-proc-ring";
-const SET_ID = "test-proc-ring-set";
-const GRANT_KEY = `${SET_ID}:0`;
+const BONUS_ID = "test-proc-ring-bonus";
+const GRANT_KEY = `${BONUS_ID}:0`;
 
 async function importText(page: Page, text: string) {
   const fileInput = page
@@ -36,12 +36,12 @@ function buildWithProcRing(procs: Record<string, boolean> = {}) {
           id: RING_ID,
           name: "Test Proc Ring",
           filter: "gear_ring",
-          bonuses: [SET_ID],
+          bonuses: [BONUS_ID],
         },
       },
       bonuses: {
-        [SET_ID]: {
-          id: SET_ID,
+        [BONUS_ID]: {
+          id: BONUS_ID,
           name: "Test Proc Bonus",
           grants: [{ when: { proc: true }, stats: { power: 500 } }],
         },
@@ -134,12 +134,12 @@ test.describe("per-item proc checkbox: label/default overrides", () => {
             id: RING_ID,
             name: "Test Proc Ring",
             filter: "gear_ring",
-            bonuses: [SET_ID],
+            bonuses: [BONUS_ID],
           },
         },
         bonuses: {
-          [SET_ID]: {
-            id: SET_ID,
+          [BONUS_ID]: {
+            id: BONUS_ID,
             name: "Test Proc Bonus",
             grants: [
               {

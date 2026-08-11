@@ -23,7 +23,7 @@ export interface BonusRow {
   key: string;
   name: string;
   filter: string;
-  set: Bonus | null;
+  bonus: Bonus | null;
   status: string;
   kind: "bonus";
 }

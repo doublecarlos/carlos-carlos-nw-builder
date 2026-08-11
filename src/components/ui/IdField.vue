@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// Read-only display for a frozen id (item, bonus set) -- ItemForm.vue, BonusForm.vue and
+// Read-only display for a frozen id (item, bonus) -- ItemForm.vue, BonusForm.vue and
 // ItemBonuses.vue's per-card view all show one next to the entry's name. Never an `<input>`:
 // an id is generator-assigned (catalog.ts's `nextId`) at first save and never user-edited
 // afterwards, so there is nothing here to type into, only to read.

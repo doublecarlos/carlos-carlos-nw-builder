@@ -268,7 +268,7 @@ export interface ParamCondition {
  * (see `ConditionWhen.proc`) isn't enough. Both fields optional, so `{}` is legal (equivalent
  * to bare `true`) though authors should just write `true` in that case. */
 export interface ProcCondition {
-  /** Overrides the per-item checkbox's label, which otherwise falls back to the bonus set's own
+  /** Overrides the per-item checkbox's label, which otherwise falls back to the bonus's own
    *  `name` -- lets the bonus's `name` stay the in-game-accurate flavor text while the checkbox
    *  describes the actual trigger (e.g. bonus "Avalanche of Blades", label "10% chance on crit
    *  to launch an avalanche"). */
@@ -560,7 +560,7 @@ export interface BonusEvaluation {
   chose: string | null;
   previewStats: StatValues | null;
   grants: (GrantEvaluation & { raw: Grant })[];
-  /** Every active grant's `problem` payload, in grant order -- a set mixing stat and problem
+  /** Every active grant's `problem` payload, in grant order -- a bonus mixing stat and problem
    * grants reports both, same as it sums both grants' stats. */
   problems: GrantProblem[];
 }

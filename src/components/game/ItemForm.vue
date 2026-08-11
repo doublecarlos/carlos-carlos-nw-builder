@@ -39,7 +39,9 @@ const props = withDefaults(
     status?: string;
     db: Db;
     filters?: string[];
-    setIds?: string[];
+    /** Every known bonus id, forwarded to ItemBonuses for id-collision avoidance and
+     *  "attach an existing bonus". */
+    allBonusIds?: string[];
     tags?: string[];
     bonusIds?: string[];
     allocatableIds?: string[];
@@ -49,7 +51,7 @@ const props = withDefaults(
     duplicateFrom: null,
     status: "base",
     filters: () => [],
-    setIds: () => [],
+    allBonusIds: () => [],
     tags: () => [],
     bonusIds: () => [],
     allocatableIds: () => [],
@@ -64,9 +66,9 @@ const emit = defineEmits<{
   delete: [];
   duplicate: [];
   revert: [];
-  "save-set": [payload: { id: string; set: Bonus }];
-  "delete-set": [id: string];
-  "update-set": [payload: { id: string; set: Bonus }];
+  "save-bonus": [payload: { id: string; bonus: Bonus }];
+  "delete-bonus": [id: string];
+  "update-bonus": [payload: { id: string; bonus: Bonus }];
 }>();
 
 export interface ItemDraft {
@@ -437,14 +439,14 @@ function removePointAssignment() {
   pointActive.value = false;
 }
 
-function attachSet(id: string) {
+function attachBonus(id: string) {
   if (draft.value.bonuses.includes(id)) return;
   draft.value.bonuses = [...draft.value.bonuses, id];
 }
 
-function detachSet(id: string) {
+function detachBonus(id: string) {
   draft.value.bonuses = draft.value.bonuses.filter(
-    (setId: string) => setId !== id,
+    (bonusId: string) => bonusId !== id,
   );
 }
 
@@ -774,18 +776,18 @@ watch(
     </p>
 
     <ItemBonuses
-      :set-ids="draft.bonuses"
+      :attached-bonus-ids="draft.bonuses"
       :item-name="draft.name"
       :db="db"
-      :all-set-ids="setIds"
+      :all-bonus-ids="allBonusIds"
       :tags="tags"
       :bonus-ids="bonusIds"
       :allocatable-ids="props.allocatableIds"
-      @save-set="$emit('save-set', $event)"
-      @delete-set="$emit('delete-set', $event)"
-      @update-set="$emit('update-set', $event)"
-      @detach-set="detachSet"
-      @attach-set="attachSet"
+      @save-bonus="$emit('save-bonus', $event)"
+      @delete-bonus="$emit('delete-bonus', $event)"
+      @update-bonus="$emit('update-bonus', $event)"
+      @detach-bonus="detachBonus"
+      @attach-bonus="attachBonus"
     />
   </div>
 </template>

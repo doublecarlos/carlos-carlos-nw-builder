@@ -19,8 +19,8 @@ export interface ProcRow {
  * One row per proc-gated grant credited to `item` -- only the row that's the shared bonus's
  * first contributor gets a checkbox (`EvaluatedBonus.sources` is sorted deterministically by
  * bonus.ts, the same ordering ItemCard.vue's own `isFirst` and BuildEditor's `bonusesBySlot`
- * rely on), so a proc-gated set bonus doesn't grow one checkbox per equipped item. An item
- * whose single bonus set carries more than one proc-gated grant (several independent procs on
+ * rely on), so a proc-gated bonus doesn't grow one checkbox per equipped item. An item
+ * whose single bonus carries more than one proc-gated grant (several independent procs on
  * one item) gets one row per grant, numbered, rather than folding them into a single checkbox --
  * each is a standalone chance-to-trigger, not one combined toggle.
  *

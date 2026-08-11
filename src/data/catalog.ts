@@ -166,7 +166,7 @@ const slugify = (text: string) =>
     .replace(/^-+|-+$/g, "");
 
 /**
- * A stable id for a brand-new item or bonus set, derived from its name at the moment of first
+ * A stable id for a brand-new item or bonus, derived from its name at the moment of first
  * save and never regenerated afterwards -- see `Item.id`'s own comment on why. Disambiguates
  * against `existingIds` (every id already in use) by appending `-2`, `-3`, ... so two entries
  * whose names happen to slugify the same still get distinct ids with no user action needed.
@@ -1011,7 +1011,7 @@ function stripSection<T extends { section?: string }>(value: T) {
 
 /**
  * Regenerates the whole `data/slots.json` body from the composed in-memory data -- same "paste
- * back over the file" workflow `toItemsFile`/`toBonusesFile` already give items/bonus sets, just
+ * back over the file" workflow `toItemsFile`/`toBonusesFile` already give items/bonuses, just
  * shaped for slots.json's nested `{ sections: [{ ..., presets?, slots }] }` structure instead of
  * a bare top-level array.
  */

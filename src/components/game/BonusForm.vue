@@ -1,7 +1,7 @@
 <script setup lang="ts">
-// Editing form for one bonus set. Hybrid approach:
-// - Existing sets (source != null): live edits, changes emit immediately
-// - New sets (source == null): explicit Save button, draft until name is finalized
+// Editing form for one bonus. Hybrid approach:
+// - Existing bonuses (source != null): live edits, changes emit immediately
+// - New bonuses (source == null): explicit Save button, draft until name is finalized
 import { ref, computed, watch, inject, onMounted, onUnmounted } from "vue";
 import BonusRows from "./BonusRows.vue";
 import IconButton from "../ui/IconButton.vue";
@@ -25,15 +25,17 @@ import type { Bonus, Db } from "../../types";
 
 const props = withDefaults(
   defineProps<{
-    /** The bonus set being edited, or null for a brand-new one. */
+    /** The bonus being edited, or null for a brand-new one. */
     source?: Bonus | null;
-    /** Seed values for a brand-new draft, copied from an existing set ("Duplicate").
+    /** Seed values for a brand-new draft, copied from an existing bonus ("Duplicate").
      *  Ignored once `source` or `initialDraft` is set -- only meaningful while creating
-     *  a new top-level set. */
+     *  a new top-level bonus. */
     duplicateFrom?: Bonus | null;
     status?: string;
     db: Db;
-    setIds?: string[];
+    /** Every known bonus id, for id-collision avoidance and for the "which bonus does this
+     *  tier/condition reference" pickers below. */
+    allBonusIds?: string[];
     tags?: string[];
     bonusIds?: string[];
     allocatableIds?: string[];
@@ -49,7 +51,7 @@ const props = withDefaults(
     source: null,
     duplicateFrom: null,
     status: "base",
-    setIds: () => [],
+    allBonusIds: () => [],
     tags: () => [],
     bonusIds: () => [],
     allocatableIds: () => [],
@@ -60,17 +62,17 @@ const props = withDefaults(
 );
 
 const emit = defineEmits<{
-  /** Emitted on every change for existing sets (debounced). */
-  "update:set": [payload: { id: string; set: Bonus; label: string }];
-  /** Emitted on Save click for new sets. */
-  save: [payload: { id: string; set: Bonus }];
+  /** Emitted on every change for existing bonuses (debounced). */
+  "update:bonus": [payload: { id: string; bonus: Bonus; label: string }];
+  /** Emitted on Save click for new bonuses. */
+  save: [payload: { id: string; bonus: Bonus }];
   delete: [];
   duplicate: [];
   revert: [];
 }>();
 
-function buildDraft(set: Bonus | null | undefined): bonusDraft.BonusDraft {
-  const source = set ?? ({} as Partial<Bonus>);
+function buildDraft(bonus: Bonus | null | undefined): bonusDraft.BonusDraft {
+  const source = bonus ?? ({} as Partial<Bonus>);
   return {
     id: source.id ?? "",
     name: source.name ?? "",
@@ -81,7 +83,7 @@ function buildDraft(set: Bonus | null | undefined): bonusDraft.BonusDraft {
   };
 }
 
-// Existing sets: live edits. New sets: draft until Save.
+// Existing bonuses: live edits. New bonuses: draft until Save.
 const isNew = computed(() => !props.source && !props.fixedId);
 
 const draft = ref<ReturnType<typeof buildDraft>>(
@@ -93,7 +95,7 @@ const draft = ref<ReturnType<typeof buildDraft>>(
       ),
 );
 const error = ref("");
-// Initialize with set JSON for correct comparison on existing sets.
+// Initialize with bonus JSON for correct comparison on existing bonuses.
 let lastEmittedJson = JSON.stringify(
   props.source
     ? bonusDraft.toBonus({ ...draft.value, id: props.source.id })
@@ -139,7 +141,7 @@ function diffLabel(oldJson: string, newJson: string): string {
   return "edit bonus";
 }
 
-// --- Live edit emit (existing sets) ---------------------------------------------------
+// --- Live edit emit (existing bonuses) --------------------------------------------------
 
 function emitChange() {
   const name = draft.value.name.trim();
@@ -156,20 +158,20 @@ function emitChange() {
     props.fixedId ??
     catalog.nextId(
       name,
-      props.allocatableIds.length ? props.allocatableIds : props.setIds,
-      "bonus-set",
+      props.allocatableIds.length ? props.allocatableIds : props.allBonusIds,
+      "bonus",
     );
-  let set: Bonus;
+  let bonus: Bonus;
   try {
-    set = bonusDraft.toBonus({ ...draft.value, id });
+    bonus = bonusDraft.toBonus({ ...draft.value, id });
   } catch {
     return;
   }
-  const currentJson = JSON.stringify(set);
+  const currentJson = JSON.stringify(bonus);
   if (currentJson === lastEmittedJson) return;
   const label = diffLabel(lastEmittedJson, currentJson);
   lastEmittedJson = currentJson;
-  emit("update:set", { id, set, label });
+  emit("update:bonus", { id, bonus, label });
 }
 
 const { resetDraftHistory, scheduleSnapshot, scheduleEmit } = useDraftHistory({
@@ -193,7 +195,7 @@ const stackingOptions = [
   { value: "perSource", label: "once per contributing slot" },
 ];
 
-const asSet = computed(() => {
+const asBonus = computed(() => {
   try {
     return bonusDraft.toBonus(draft.value);
   } catch {
@@ -205,8 +207,8 @@ const dirty = computed(() => {
   if (!props.source) {
     return Boolean(draft.value.name || draft.value.grants.length);
   }
-  const set = asSet.value;
-  return !set || !deepEqual(set, props.source);
+  const bonus = asBonus.value;
+  return !bonus || !deepEqual(bonus, props.source);
 });
 
 defineExpose({ draft, dirty });
@@ -218,8 +220,10 @@ const displayId = computed(
     (draft.value.name.trim()
       ? catalog.nextId(
           draft.value.name.trim(),
-          props.allocatableIds.length ? props.allocatableIds : props.setIds,
-          "bonus-set",
+          props.allocatableIds.length
+            ? props.allocatableIds
+            : props.allBonusIds,
+          "bonus",
         )
       : ""),
 );
@@ -247,17 +251,17 @@ function save() {
     props.fixedId ??
     catalog.nextId(
       name,
-      props.allocatableIds.length ? props.allocatableIds : props.setIds,
-      "bonus-set",
+      props.allocatableIds.length ? props.allocatableIds : props.allBonusIds,
+      "bonus",
     );
-  let set;
+  let bonus;
   try {
-    set = bonusDraft.toBonus({ ...draft.value, id });
+    bonus = bonusDraft.toBonus({ ...draft.value, id });
   } catch (err: unknown) {
     error.value = `A grant has invalid JSON: ${err instanceof Error ? err.message : String(err)}`;
     return;
   }
-  emit("save", { id, set });
+  emit("save", { id, bonus });
 }
 
 // The store drives all grant-list mutations — BonusRows calls store methods instead of
@@ -265,7 +269,7 @@ function save() {
 const draftStore = new BonusDraftStore(
   () => draft.value.grants,
   isNew.value ? scheduleSnapshot : scheduleEmit,
-  props.setIds,
+  props.allBonusIds,
 );
 
 // Registers this instance's store for cross-bonus condition dragging (see
@@ -313,7 +317,7 @@ watch(
       }}</BaseBadge>
       <BaseBadge v-if="dirty && isNew">unsaved</BaseBadge>
       <span class="flex-1"></span>
-      <!-- Save button only for new sets -->
+      <!-- Save button only for new bonuses -->
       <BaseButton
         v-if="isNew"
         variant="primary"
@@ -408,7 +412,6 @@ watch(
 
     <BonusRows
       :store="draftStore"
-      :set-ids="setIds"
       :tags="tags"
       :registry-id="registryId"
       @error="error = $event"

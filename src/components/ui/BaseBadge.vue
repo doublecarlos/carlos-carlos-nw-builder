@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // One small vocabulary reused everywhere a row needs a status/count chip: the build slot list,
-// the data editor's changed-row list and its item/bonus-set forms, the bonus inspector's
+// the data editor's changed-row list and its item/bonus forms, the bonus inspector's
 // near-miss flag. `unsaved` and `removed` share a look -- a row's overlay *status*
 // (added/edited/removed) and its form having an in-progress draft are different facts that can
 // both be true at once, so they stay separate variants rather than collapsing into one.
