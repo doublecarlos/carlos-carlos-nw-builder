@@ -88,4 +88,17 @@ describe("occurrenceDiffTitle", () => {
     const there = build({});
     expect(occurrenceDiffTitle(db, unnamed, there)).toBe("unnamed-bonus 0");
   });
+
+  it("prefers the attachment's own label over the bonus name (#227)", () => {
+    const labeled: Item = {
+      id: "labeled-ring",
+      name: "Labeled Ring",
+      filter: "gear_ring",
+      bonuses: [
+        { bonus: "stack-bonus", min: 0, max: 5, default: 0, label: "Stacks" },
+      ],
+    };
+    const there = build({ "labeled-ring": { "stack-bonus": 2 } });
+    expect(occurrenceDiffTitle(db, labeled, there)).toBe("Stacks 2");
+  });
 });

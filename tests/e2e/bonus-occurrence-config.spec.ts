@@ -183,3 +183,52 @@ test.describe("BonusOccurrenceConfig rows", () => {
     await expect(occurrenceInput(row, STEPPER_BONUS_ID)).toHaveValue("4");
   });
 });
+
+// #227: a BonusOccurrenceConfig's optional `label` overrides the bonus name on its own row
+// (checkbox/stepper text and the compare-diff title) without renaming the bonus itself.
+const LABELED_BONUS_ID = "test-occurrence-labeled-bonus";
+
+test.describe("BonusOccurrenceConfig label override (#227)", () => {
+  test("a labeled config shows its label instead of the bonus name", async ({
+    page,
+  }) => {
+    await openBuilder(page);
+    await importText(
+      page,
+      JSON.stringify({
+        name: "Occurrence label test",
+        choices: { [RING_SLOT]: RING_ID },
+        catalog: {
+          items: {
+            [RING_ID]: {
+              id: RING_ID,
+              name: "Test Occurrence Ring",
+              filter: "gear_ring",
+              bonuses: [
+                {
+                  bonus: LABELED_BONUS_ID,
+                  min: 0,
+                  max: 5,
+                  default: 0,
+                  label: "Stacks",
+                },
+              ],
+            },
+          },
+          bonuses: {
+            [LABELED_BONUS_ID]: {
+              id: LABELED_BONUS_ID,
+              name: "Test Labeled Bonus",
+              grants: [{ stats: { power: 10 } }],
+            },
+          },
+          sectionPresets: {},
+        },
+      }),
+    );
+
+    const row = slotRow(page, RING_SLOT);
+    await expect(row).toContainText("Stacks");
+    await expect(row).not.toContainText("Test Labeled Bonus");
+  });
+});

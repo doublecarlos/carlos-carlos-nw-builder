@@ -4,6 +4,8 @@
 // convention item-editor-groups.spec.ts already covers for dynamic modification/point
 // assignment. The occurrence editor only appears once the bonus itself has a real id -- a
 // brand-new, not-yet-saved bonus is still a "pending" slot with nothing to attach a config to.
+// Also covers the optional `label` field (#227), which overrides the bonus name on this
+// attachment's build-editor row.
 import { test, expect, type Page } from "@playwright/test";
 import { openBuilder } from "./support/app";
 import { addLayer, layerRow } from "./support/nav";
@@ -59,7 +61,7 @@ test("occurrence config is hidden until added, then fully removable", async ({
   await expect(numberInputs.nth(2)).toHaveValue("");
 });
 
-test("a saved occurrence config survives a save and reopen", async ({
+test("a saved occurrence config, including its label, survives a save and reopen", async ({
   page,
 }) => {
   await openItemFormWithAttachedBonus(page);
@@ -71,6 +73,7 @@ test("a saved occurrence config survives a save and reopen", async ({
   await numberInputs.nth(0).fill("0");
   await numberInputs.nth(1).fill("5");
   await numberInputs.nth(2).fill("2");
+  await fields.getByTestId("occurrence-config-label-input").fill("Stacks");
 
   await page.getByRole("button", { name: "Save item" }).click();
 
@@ -84,4 +87,28 @@ test("a saved occurrence config survives a save and reopen", async ({
   await expect(reopenedInputs.nth(0)).toHaveValue("0");
   await expect(reopenedInputs.nth(1)).toHaveValue("5");
   await expect(reopenedInputs.nth(2)).toHaveValue("2");
+  await expect(
+    reopenedFields.getByTestId("occurrence-config-label-input"),
+  ).toHaveValue("Stacks");
+});
+
+test("an empty label is not persisted as a saved field", async ({ page }) => {
+  await openItemFormWithAttachedBonus(page);
+
+  const row = page.getByTestId("occurrence-config-row");
+  await row.getByTestId("add-occurrence-config").click();
+  const fields = row.getByTestId("occurrence-config-fields");
+  await fields.locator('input[type="number"]').nth(1).fill("5"); // Max
+
+  await page.getByRole("button", { name: "Save item" }).click();
+
+  await page.locator(".editor-search").fill(UNIQUE_ITEM);
+  await page.locator(".editor-row", { hasText: UNIQUE_ITEM }).click();
+
+  const reopenedFields = page
+    .getByTestId("occurrence-config-row")
+    .getByTestId("occurrence-config-fields");
+  await expect(
+    reopenedFields.getByTestId("occurrence-config-label-input"),
+  ).toHaveValue("");
 });

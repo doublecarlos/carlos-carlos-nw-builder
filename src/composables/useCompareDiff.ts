@@ -129,7 +129,10 @@ export function occurrenceDiffTitle(
         typeof attachment !== "string" && attachment.min !== attachment.max,
     )
     .map((attachment) => {
-      const name = db.bonusById.get(attachment.bonus)?.name ?? attachment.bonus;
+      const name =
+        attachment.label ??
+        db.bonusById.get(attachment.bonus)?.name ??
+        attachment.bonus;
       return `${name} ${there[attachment.bonus] ?? attachment.default}`;
     });
   return parts.length ? parts.join(", ") : undefined;

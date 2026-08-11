@@ -567,6 +567,43 @@ describe("catalog.validate: BonusOccurrenceConfig attachments", () => {
       ),
     ).toBe(true);
   });
+
+  it("a well-formed label passes clean (#227)", () => {
+    const items: Item[] = [
+      {
+        id: "labeled-item",
+        name: "Labeled Item",
+        filter: "gear_ring",
+        bonuses: [
+          { bonus: "real-bonus", min: 0, max: 5, default: 0, label: "Stacks" },
+        ],
+      },
+    ];
+    const bonuses: Bonus[] = [{ id: "real-bonus", grants: [] }];
+    const findings = catalog.validate(items, bonuses);
+    expect(findings.filter((f) => f.name === "labeled-item")).toEqual([]);
+  });
+
+  it("a present but blank label is an error (#227)", () => {
+    const items: Item[] = [
+      {
+        id: "blank-label",
+        name: "Blank Label",
+        filter: "gear_ring",
+        bonuses: [
+          { bonus: "real-bonus", min: 0, max: 5, default: 0, label: "   " },
+        ],
+      },
+    ];
+    const bonuses: Bonus[] = [{ id: "real-bonus", grants: [] }];
+    const findings = catalog.validate(items, bonuses);
+    expect(
+      findings.some(
+        (f) =>
+          f.name === "blank-label" && /label.*non-empty string/.test(f.message),
+      ),
+    ).toBe(true);
+  });
 });
 
 describe("catalog.validate: filters not meant to be picked directly", () => {

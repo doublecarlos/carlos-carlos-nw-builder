@@ -79,11 +79,14 @@ const emit = defineEmits<{
 
 /** One attached bonus's editable occurrence bounds -- mirrors `BonusOccurrenceConfig`'s
  *  own `min`/`max`/`default`, just widened to `number | string | null` like every other
- *  numeric draft field here so a cleared input reads as empty rather than `0`. */
+ *  numeric draft field here so a cleared input reads as empty rather than `0`. `label` mirrors
+ *  the config's own optional field directly (always a string here -- "" reads as unset, same
+ *  as `dynamicStat`). */
 export interface OccurrenceDraft {
   min: number | string | null;
   max: number | string | null;
   default: number | string | null;
+  label: string;
 }
 
 export interface ItemDraft {
@@ -133,6 +136,7 @@ function buildDraft(item: Item | null | undefined): ItemDraft {
         min: entry.min,
         max: entry.max,
         default: entry.default,
+        label: entry.label ?? "",
       };
     }
   }
@@ -401,6 +405,9 @@ function toItem(): Item {
           min: Number(occurrence.min) || 0,
           max: Number(occurrence.max) || 0,
           default: Number(occurrence.default) || 0,
+          ...(occurrence.label.trim()
+            ? { label: occurrence.label.trim() }
+            : {}),
         };
       },
     );

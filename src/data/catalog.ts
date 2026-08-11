@@ -910,6 +910,16 @@ export function validate(
           item.id,
         );
       }
+      if (
+        attachment.label !== undefined &&
+        (typeof attachment.label !== "string" || !attachment.label.trim())
+      ) {
+        report(
+          "error",
+          `bonus "${bonusId}" occurrence config label is present but not a non-empty string`,
+          item.id,
+        );
+      }
     }
     if (item.dynamicStat && !statKeys.has(item.dynamicStat)) {
       report(

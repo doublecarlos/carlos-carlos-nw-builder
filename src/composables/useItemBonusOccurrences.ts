@@ -44,7 +44,10 @@ export function occurrenceRowsForItem(
 
     rows.push({
       bonusId: attachment.bonus,
-      label: db.value.bonusById.get(attachment.bonus)?.name ?? attachment.bonus,
+      label:
+        attachment.label ??
+        db.value.bonusById.get(attachment.bonus)?.name ??
+        attachment.bonus,
       value: itemInputs?.[attachment.bonus] ?? attachment.default,
       min: attachment.min,
       max: attachment.max,

@@ -115,12 +115,16 @@ function occurrenceFor(id: string | null): OccurrenceDraft | null {
   return id ? (props.occurrenceConfigs[id] ?? null) : null;
 }
 
+const emptyOccurrence: OccurrenceDraft = {
+  min: null,
+  max: null,
+  default: null,
+  label: "",
+};
+
 function addOccurrence(id: string | null) {
   if (!id) return;
-  emit("update-occurrence", {
-    id,
-    occurrence: { min: null, max: null, default: null },
-  });
+  emit("update-occurrence", { id, occurrence: { ...emptyOccurrence } });
 }
 
 function removeOccurrence(id: string | null) {
@@ -134,7 +138,7 @@ function updateOccurrenceField(
   value: number | string | null,
 ) {
   if (!id) return;
-  const current = occurrenceFor(id) ?? { min: null, max: null, default: null };
+  const current = occurrenceFor(id) ?? emptyOccurrence;
   emit("update-occurrence", {
     id,
     occurrence: { ...current, [field]: value },
@@ -313,6 +317,23 @@ function onSlotDuplicate(slot: Slot) {
                   updateOccurrenceField(
                     slot.id,
                     'default',
+                    ($event.target as HTMLInputElement).value,
+                  )
+                "
+              />
+            </FormField>
+            <FormField
+              label="Label (optional, overrides the bonus name on this row)"
+            >
+              <input
+                class="w-40 rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+                type="text"
+                data-testid="occurrence-config-label-input"
+                :value="occurrenceFor(slot.id)?.label ?? ''"
+                @input="
+                  updateOccurrenceField(
+                    slot.id,
+                    'label',
                     ($event.target as HTMLInputElement).value,
                   )
                 "

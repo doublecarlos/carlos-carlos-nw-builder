@@ -260,6 +260,12 @@ export interface BonusOccurrenceConfig {
   min: number;
   max: number;
   default: number;
+  /** Overrides the bonus's own `name` for this attachment's row only -- the checkbox/stepper
+   *  `useItemBonusOccurrences.ts` builds for the build editor, and the matching compare-diff
+   *  title in `useCompareDiff.ts`. Everywhere else (bonus lists, hover cards, etc.) still shows
+   *  the bonus's real name; this only reads differently on this one item's own input, e.g. a
+   *  bonus named for its overall effect whose per-item stepper should read "Stacks" instead. */
+  label?: string;
 }
 
 export interface RangeSpec {
