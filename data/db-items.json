@@ -4278,6 +4278,23 @@
     "severity": 880
   },
   {
+    "id": "shattered-resolve",
+    "name": "Shattered Resolve",
+    "filter": "combat_enchant_defense",
+    "il": 7000,
+    "incoming_damage": -0.12,
+    "mult_hit_points": 0.15,
+    "bonuses": [
+      {
+        "bonus": "shattered-resolve-stacks",
+        "min": 0,
+        "max": 5,
+        "default": 5,
+        "label": "Stacks"
+      }
+    ]
+  },
+  {
     "id": "slayer-2-5-overall",
     "name": "Slayer (2.5% overall)",
     "filter": "overload",

@@ -2613,6 +2613,21 @@
     ]
   },
   {
+    "id": "shattered-resolve-stacks",
+    "name": "Shattered Resolve Stacks",
+    "grants": [
+      {
+        "stats": {
+          "defense_p": 0.036,
+          "awareness_p": 0.036,
+          "deflect_p": 0.036
+        }
+      }
+    ],
+    "stacking": "perSource",
+    "maxStacks": 5
+  },
+  {
     "id": "soul-sparks-average",
     "name": "Soul Sparks (average)",
     "grants": [
