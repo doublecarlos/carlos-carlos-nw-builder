@@ -1,7 +1,8 @@
 <script setup lang="ts">
 // Teleported overlay shell for tooltips, hover cards, and click-triggered popovers.
-// Takes a `width` (px) for horizontal flip detection and exposes `place(anchor, pointerX?)`
-// plus `close()` so callers control positioning without duplicating viewport-flip logic.
+// Takes a `width` (px, fixes the card's size and doubles as the horizontal flip-detection
+// bound) and exposes `place(anchor, pointerX?)` plus `close()` so callers control positioning
+// without duplicating viewport-flip logic.
 //
 // Content scrolls independently via an inner wrapper; the measurement for the vertical flip
 // uses the real rendered height, not a CSS max-height, so a short tooltip near the viewport
@@ -10,7 +11,10 @@ import { ref, nextTick, useTemplateRef } from "vue";
 
 const props = withDefaults(
   defineProps<{
-    /** px, for horizontal viewport-edge detection. */
+    /** px. Used as both a min- and max-width (clamped to 90vw on narrow viewports) -- a
+     *  fixed size per caller so e.g. every ItemCard hover reads at the same width regardless
+     *  of how little that particular item/bonus list happens to need, not for horizontal
+     *  viewport-edge detection alone. */
     width?: number;
   }>(),
   { width: 256 },
@@ -60,12 +64,13 @@ defineExpose({ place, close });
     <div
       v-if="pos"
       ref="el"
-      class="fixed z-40"
+      class="fixed z-40 flex"
       :style="{
         left: pos.left + 'px',
         top: pos.top + 'px',
+        minWidth: 'min(' + width + 'px, 90vw)',
         maxWidth: 'min(' + width + 'px, 90vw)',
-        maxHeight: '24rem',
+        maxHeight: '32rem',
       }"
     >
       <slot />

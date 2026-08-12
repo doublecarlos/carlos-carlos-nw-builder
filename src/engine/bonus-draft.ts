@@ -1,9 +1,11 @@
 // The draft <-> grant conversion for BonusRows.vue's editor, split out so item-form and
 // bonus-form can build and read drafts without importing the component.
 //
-// A grant is anonymous -- no `id`/`name` of its own, since a bonus now resolves as one unit
-// (its final stats are the sum of every active grant) and only the *bonus* needs to be
-// addressable. What the form covers structurally: the condition tree (leaves plus
+// A grant has no `id` of its own, since a bonus now resolves as one unit (its final stats
+// are the sum of every active grant) and only the *bonus* needs to be addressable for
+// stacking/exclusion/everything mechanical. `name` is the one exception -- purely a display
+// label (ItemCard.vue's hover card), optional, for telling a multi-grant bonus's parts apart.
+// What the form covers structurally: the condition tree (leaves plus
 // `all`/`any`/`not`, see condition-draft.ts), a flat stat payload, a *tiered* payload keyed on
 // bonus occurrences, and a *variants* payload (first matching condition wins). Only conditions
 // nested deeper than `MAX_DEPTH`, unrecognized condition keys, complex tiers, or a grant using
@@ -139,7 +141,8 @@ export interface GrantDraft {
   problemLabel: string;
   problemHideFromPicker: boolean;
   /** Same across every payload, unlike the payload-specific fields above -- see
-   * `Grant.shortDescription`/`longDescription`. */
+   * `Grant.name`/`shortDescription`/`longDescription`. */
+  name: string;
   shortDescription: string;
   longDescription: string;
 }
@@ -179,6 +182,7 @@ export function toDraft(grant: Grant = {}): GrantDraft {
     problemHideFromPicker: json
       ? false
       : (grant.problem?.hideFromPicker ?? false),
+    name: json ? "" : (grant.name ?? ""),
     shortDescription: json ? "" : (grant.shortDescription ?? ""),
     longDescription: json ? "" : (grant.longDescription ?? ""),
   };
@@ -231,6 +235,7 @@ export function toGrant(draft: GrantDraft): Grant {
     out.stats = rowsToStats(draft.stats);
   }
 
+  if (draft.name) out.name = draft.name;
   if (draft.shortDescription) out.shortDescription = draft.shortDescription;
   if (draft.longDescription) out.longDescription = draft.longDescription;
 

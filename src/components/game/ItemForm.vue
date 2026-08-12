@@ -497,9 +497,12 @@ function removeDefaultParam(index: number) {
   draft.value.defaultParams.splice(index, 1);
 }
 
-// Dynamic modification and inline repetition are single field groups rather than arrays,
-// so "added"/"removed" is tracked as its own flag instead of splicing a list. Both start
-// active whenever the source item already carries values for them.
+// Description, dynamic modification, and inline repetition are single field groups rather
+// than arrays, so "added"/"removed" is tracked as its own flag instead of splicing a list.
+// All three start active whenever the source item already carries values for them.
+function hasDescription(d: ItemDraft): boolean {
+  return d.shortDescription !== "" || d.longDescription !== "";
+}
 function hasDynamicModification(d: ItemDraft): boolean {
   return d.dynamicStat !== "";
 }
@@ -512,6 +515,7 @@ function hasInlineRepetition(d: ItemDraft): boolean {
   );
 }
 
+const descriptionActive = ref(hasDescription(draft.value));
 const dynamicModActive = ref(hasDynamicModification(draft.value));
 const repetitionActive = ref(hasInlineRepetition(draft.value));
 
@@ -519,6 +523,12 @@ const repetitionActive = ref(hasInlineRepetition(draft.value));
 // add/remove handlers below -- resurface the group automatically whenever its fields come
 // back populated so a redo of "add" doesn't leave the fields hidden behind a stale flag.
 // Never flips a flag to false itself; only the explicit remove handlers do that.
+watch(
+  () => [draft.value.shortDescription, draft.value.longDescription],
+  () => {
+    if (hasDescription(draft.value)) descriptionActive.value = true;
+  },
+);
 watch(
   () => draft.value.dynamicStat,
   (stat) => {
@@ -536,6 +546,15 @@ watch(
     if (hasInlineRepetition(draft.value)) repetitionActive.value = true;
   },
 );
+
+function addDescription() {
+  descriptionActive.value = true;
+}
+function removeDescription() {
+  draft.value.shortDescription = "";
+  draft.value.longDescription = "";
+  descriptionActive.value = false;
+}
 
 function addDynamicModification() {
   dynamicModActive.value = true;
@@ -594,6 +613,7 @@ watch(
   () => props.source,
   (value) => {
     draft.value = buildDraft(value);
+    descriptionActive.value = hasDescription(draft.value);
     dynamicModActive.value = hasDynamicModification(draft.value);
     repetitionActive.value = hasInlineRepetition(draft.value);
     error.value = "";
@@ -687,31 +707,6 @@ watch(
           placeholder="Add a game id…"
           data-testid="item-gameids-input"
         />
-      </FormField>
-    </FormGrid>
-
-    <FormSection>Description (optional)</FormSection>
-    <FormGrid class="mb-2">
-      <FormField
-        label="Short (shown next to the stat summary)"
-        class="min-w-80 flex-1"
-      >
-        <input
-          v-model="draft.shortDescription"
-          class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-          type="text"
-          data-testid="item-short-description-input"
-          placeholder="e.g. AP when killing mobs"
-        />
-      </FormField>
-      <FormField label="Long (shown on the hover card)" class="min-w-80 flex-1">
-        <textarea
-          v-model="draft.longDescription"
-          class="w-full resize-y rounded-md border border-line bg-surface p-2"
-          rows="2"
-          data-testid="item-long-description-input"
-          placeholder="e.g. When you kill an enemy, gain 3% Action Points."
-        ></textarea>
       </FormField>
     </FormGrid>
 
@@ -921,6 +916,50 @@ watch(
       Item-level override: those bonuses go inactive whenever this item is
       equipped, whatever grants them.
     </p>
+
+    <FormSection>Description (optional)</FormSection>
+    <div class="flex flex-wrap items-center gap-1.5 mb-2">
+      <IconButton
+        v-if="!descriptionActive"
+        title="Add description"
+        data-testid="add-item-description"
+        @click="addDescription"
+        ><Plus
+      /></IconButton>
+      <IconButton
+        v-else
+        title="Remove description"
+        data-testid="remove-item-description"
+        @click="removeDescription"
+        ><Trash
+      /></IconButton>
+      <FormGrid v-if="descriptionActive" data-testid="item-description-fields">
+        <FormField
+          label="Short (shown next to the stat summary)"
+          class="min-w-80 flex-1"
+        >
+          <input
+            v-model="draft.shortDescription"
+            class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+            type="text"
+            data-testid="item-short-description-input"
+            placeholder="e.g. AP when killing mobs"
+          />
+        </FormField>
+        <FormField
+          label="Long (shown on the hover card)"
+          class="min-w-80 flex-1"
+        >
+          <textarea
+            v-model="draft.longDescription"
+            class="w-full resize-y rounded-md border border-line bg-surface p-2"
+            rows="2"
+            data-testid="item-long-description-input"
+            placeholder="e.g. When you kill an enemy, gain 3% Action Points."
+          ></textarea>
+        </FormField>
+      </FormGrid>
+    </div>
 
     <ItemBonuses
       :attached-bonus-ids="draft.bonuses"

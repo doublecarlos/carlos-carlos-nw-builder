@@ -271,19 +271,32 @@ function evaluateGrant(
     };
   }
 
-  // `variants`: first match wins (role-dependent payloads).
+  // `variants`: first match wins (role-dependent payloads). When explaining, every branch is
+  // evaluated (not just up to the first match) so the hover card can show why the *other*
+  // branches didn't apply too, not only the one that won.
   if (grant.variants) {
-    const index = grant.variants.findIndex((v) =>
-      conditions.evaluate(v.when, ctx),
-    );
+    const variantBranches = explain
+      ? grant.variants.map((v) => conditions.explain(v.when, ctx))
+      : undefined;
+    const index = variantBranches
+      ? variantBranches.findIndex((b) => b.ok)
+      : grant.variants.findIndex((v) => conditions.evaluate(v.when, ctx));
     return index === -1
-      ? { active: false, gate, stats: null, chose: null, problem: null }
+      ? {
+          active: false,
+          gate,
+          stats: null,
+          chose: null,
+          problem: null,
+          variantBranches,
+        }
       : {
           active: true,
           gate,
           stats: grant.variants[index].stats,
           chose: `variant:${index}`,
           problem: null,
+          variantBranches,
         };
   }
 

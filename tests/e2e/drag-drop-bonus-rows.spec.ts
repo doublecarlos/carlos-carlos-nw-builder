@@ -27,6 +27,13 @@ test("dragging a grant row onto another reorders the grant list", async ({
   await addGrant.click();
   await addGrant.click();
 
+  // Name/description starts collapsed behind a "+" per grant -- expand all three before
+  // filling. `.first()` re-queries each time, so clicking it repeatedly walks through every
+  // grant's own add button regardless of how the "add" pool shrinks as each one opens.
+  for (let i = 0; i < 3; i++) {
+    await page.getByTestId("add-grant-name-description").first().click();
+  }
+
   const descriptions = page.getByTestId("grant-short-description");
   await expect(descriptions).toHaveCount(3);
   await descriptions.nth(0).fill("First");
@@ -54,6 +61,10 @@ test("Move grant up still works after drag-and-drop is wired in", async ({
   const addGrant = page.getByTitle("Add grant");
   await addGrant.click();
   await addGrant.click();
+
+  for (let i = 0; i < 2; i++) {
+    await page.getByTestId("add-grant-name-description").first().click();
+  }
 
   const descriptions = page.getByTestId("grant-short-description");
   await descriptions.nth(0).fill("First");

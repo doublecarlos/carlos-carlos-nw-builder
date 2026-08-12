@@ -7,7 +7,7 @@
 // writes directly onto `draft.value.grants`. The store's `onChange()` is called after every
 // mutation, which schedules an undo snapshot in BonusForm.
 
-import { computed, inject } from "vue";
+import { computed, inject, ref } from "vue";
 import PercentInput from "../ui/PercentInput.vue";
 import ComboBox from "../ui/ComboBox.vue";
 import ConditionRows, {
@@ -37,6 +37,7 @@ import {
   type ConditionLocation,
   type ConditionBranchLocation,
 } from "../../stores/bonus-draft";
+import type { GrantDraft } from "../../engine/bonus-draft";
 import { bonusDraftRegistryKey } from "../../composables/bonusDraftRegistry";
 import {
   useDragHandle,
@@ -72,6 +73,32 @@ function gs(index: number) {
   const s = props.store.grantStore(index);
   if (!s) throw new Error(`Grant index out of range: ${index}`);
   return s;
+}
+
+// Name/description is a per-grant collapsed-behind-a-"+" group, same idea as ItemForm.vue's
+// dynamic-modification/inline-repetition toggles -- but there's one of *those* per item and
+// N of *these* (one per grant), so a single boolean ref won't do. `expandedNameDescUids` only
+// has to remember which grants the user explicitly opened *this session*: a grant already
+// carrying a name/description shows open on its own via `hasNameDescription`, and removing
+// clears the fields (so `hasNameDescription` goes false) *and* drops the uid (so the explicit
+// override goes away too) -- both have to give way for the group to collapse back down.
+const expandedNameDescUids = ref(new Set<string>());
+function hasNameDescription(grant: GrantDraft): boolean {
+  return Boolean(grant.name || grant.shortDescription || grant.longDescription);
+}
+function nameDescriptionActive(grant: GrantDraft): boolean {
+  return hasNameDescription(grant) || expandedNameDescUids.value.has(grant.uid);
+}
+function addNameDescription(grant: GrantDraft) {
+  expandedNameDescUids.value.add(grant.uid);
+}
+function removeNameDescription(gIndex: number) {
+  const grant = props.store.grants[gIndex];
+  if (!grant) return;
+  grant.name = "";
+  grant.shortDescription = "";
+  grant.longDescription = "";
+  expandedNameDescUids.value.delete(grant.uid);
 }
 
 // --- drag-and-drop: grants, and each grant's tiers/variants ----------------------------
@@ -360,24 +387,6 @@ function toggleJson(gIndex: number) {
           @transfer="onConditionTransfer"
           @transfer-branch="onBranchTransfer"
         />
-
-        <FormSection sub>Description (optional)</FormSection>
-        <div class="mb-1.5 flex flex-col gap-1.5">
-          <input
-            v-model="grant.shortDescription"
-            data-testid="grant-short-description"
-            type="text"
-            class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-            placeholder="Short description, shown next to the item's stat summary when active…"
-          />
-          <textarea
-            v-model="grant.longDescription"
-            data-testid="grant-long-description"
-            class="w-full resize-y rounded-md border border-line bg-surface p-2"
-            rows="2"
-            placeholder="Long description, shown on the item's hover card when active…"
-          ></textarea>
-        </div>
 
         <FormSection sub>
           Payload
@@ -804,6 +813,51 @@ function toggleJson(gIndex: number) {
             flag them once picked
           </BaseCheckbox>
         </template>
+
+        <FormSection sub>Name and description (optional)</FormSection>
+        <div class="mb-1.5 flex flex-wrap items-start gap-1.5">
+          <IconButton
+            v-if="!nameDescriptionActive(grant)"
+            title="Add name and description"
+            data-testid="add-grant-name-description"
+            @click="addNameDescription(grant)"
+            ><Plus
+          /></IconButton>
+          <IconButton
+            v-else
+            title="Remove name and description"
+            data-testid="remove-grant-name-description"
+            @click="removeNameDescription(gIndex)"
+            ><Trash
+          /></IconButton>
+          <div
+            v-if="nameDescriptionActive(grant)"
+            class="flex min-w-0 flex-1 flex-col gap-1.5"
+            data-testid="grant-name-description-fields"
+          >
+            <input
+              v-model="grant.name"
+              data-testid="grant-name"
+              type="text"
+              class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+              placeholder="Name, distinguishes this grant from the bonus's other grants on the hover card…"
+            />
+            <input
+              v-model="grant.shortDescription"
+              data-testid="grant-short-description"
+              type="text"
+              class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+              placeholder="Short description, shown next to the item's stat summary when active…"
+            />
+            <textarea
+              v-model="grant.longDescription"
+              data-testid="grant-long-description"
+              class="w-full resize-y rounded-md border border-line bg-surface p-2"
+              rows="2"
+              placeholder="Long description, shown on the item's hover card when active…"
+            ></textarea>
+          </div>
+        </div>
       </template>
     </div>
   </div>

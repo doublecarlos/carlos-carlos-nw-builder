@@ -19,6 +19,7 @@ async function createAndEquipDescribedItem(page: Page, name: string) {
   await page.getByTestId("new-item").click();
   await page.getByTestId("item-name-input").fill(name);
   await page.getByTestId("item-filter-input").fill("gear_head");
+  await page.getByTestId("add-item-description").click();
   await page
     .getByTestId("item-short-description-input")
     .fill(SHORT_DESCRIPTION);
@@ -58,13 +59,15 @@ test("an item's short/long description round-trip through the item editor", asyn
   await page.getByTestId("new-item").click();
   await page.getByTestId("item-name-input").fill(uniqueName);
   await page.getByTestId("item-filter-input").fill("gear_head");
+  await page.getByTestId("add-item-description").click();
   await page
     .getByTestId("item-short-description-input")
     .fill(SHORT_DESCRIPTION);
   await page.getByTestId("item-long-description-input").fill(LONG_DESCRIPTION);
   await page.getByRole("button", { name: "Save item" }).click();
 
-  // Re-open the saved item and confirm both fields carried through.
+  // Re-open the saved item -- description already has values, so the fields show open on
+  // their own, no need to click "+" again -- and confirm both carried through.
   await page.locator(".editor-search").fill(uniqueName);
   await page.locator(".editor-row", { hasText: uniqueName }).click();
   await expect(page.getByTestId("item-short-description-input")).toHaveValue(

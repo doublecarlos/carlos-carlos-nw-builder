@@ -5,14 +5,23 @@
 // Pure presentation -- the caller resolves which bonuses belong to the item and positions the
 // card. Rendered once by BuildEditor.vue, not once per row: 180 slots must not mean 180 cards.
 //
-// Interactive (see this file's own <style> block): a long card scrolls, so it must accept
-// the pointer. BuildEditor
-// keeps it open while the pointer is over it and closes it on leave.
+// Interactive: a long card scrolls internally (BaseCardBody, capped by BasePopover's
+// max-height), so it must accept the pointer -- the root carries `.itemcard` so
+// useHoverCard's window-level scroll listener can tell a scroll inside the card apart from
+// one outside it that should close the card. BuildEditor keeps it open while the pointer is
+// over it and closes it on leave.
 import { computed } from "vue";
 import { NW_SCHEMA } from "../../data/data";
 import { label as statLabel, signedStat } from "../../lib/format";
 import { isHiddenBonus } from "../../engine/bonus";
-import type { Item, Db, EvaluatedBonus, StatValues } from "../../types";
+import type {
+  Item,
+  Db,
+  EvaluatedBonus,
+  GrantEvaluation,
+  Grant,
+  StatValues,
+} from "../../types";
 import BaseBadge from "../ui/BaseBadge.vue";
 import BaseCard from "../ui/BaseCard.vue";
 import BaseCardHeader from "../ui/BaseCardHeader.vue";
@@ -36,12 +45,16 @@ const props = withDefaults(
 
 /** Same {key, label, value} shape as the `stats` computed, for one-per-line rendering
  *  anywhere a bonus payload is shown -- the tooltip should read the same way whether it's
- *  the item's own stats or a bonus's. */
-function statList(stats: StatValues | null | undefined) {
+ *  the item's own stats or a bonus's. `multiplier` scales for stacking sources (see
+ *  `grantRows`'s own doc comment) without needing a separate scaled copy of the stats object. */
+function statList(stats: StatValues | null | undefined, multiplier = 1) {
   return Object.entries(stats ?? {}).map(([key, value]) => ({
     key,
     label: statLabel(key),
-    value: signedStat(key, value),
+    value: signedStat(
+      key,
+      multiplier === 1 ? value : (value ?? 0) * multiplier,
+    ),
   }));
 }
 
@@ -82,7 +95,7 @@ const notes = computed(() => {
  * Every contributing item's own card shows the same resolved total, so owning both reads
  * as "each one gives +2%" when really it is one +2% shared between them. Tiered and
  * per-source-stacking bonuses already explain their own multi-source case (the ladder,
- * and `payload().each`), so this only fires for the plain leftover case.
+ * and `grantRows`'s own stacking multiplier), so this only fires for the plain leftover case.
  */
 function sharedSources(entry: EvaluatedBonus) {
   if (
@@ -98,6 +111,8 @@ function sharedSources(entry: EvaluatedBonus) {
   return others.length ? others : null;
 }
 
+type ResolvedGrant = GrantEvaluation & { raw: Grant };
+
 /** The one grant (if any) of this bonus that carries a `tiers` ladder. A bonus is a sum
  * of several independent grants now, so "is this bonus tiered" means "does any one of its
  * grants happen to be", not a property of the whole thing. */
@@ -111,10 +126,9 @@ function tierGrant(entry: EvaluatedBonus) {
  * `gate.leaves` is empty and the card would otherwise show "always" next to a number that
  * quietly depends on how many of the bonus's items are equipped. Every contributing item's
  * own card lists the same shared bonus, so without the ladder each one reads as granting
- * the full total on its own. Returns null for a bonus with no tiered grant.
+ * the full total on its own. Returns null for a grant with no `tiers`.
  */
-function tierLadder(entry: EvaluatedBonus) {
-  const grant = tierGrant(entry);
+function tierLadderFor(grant: ResolvedGrant | null) {
   const tiers = grant?.raw.tiers;
   if (!tiers?.length) return null;
   const activeAt =
@@ -129,27 +143,33 @@ function tierLadder(entry: EvaluatedBonus) {
     .sort((a, b) => a.atLeast - b.atLeast)
     .map((tier) => ({ ...tier, active: tier.atLeast === activeAt }));
 }
-
 /**
- * Active bonuses report what actually reached the pipeline (`appliedStats`); inactive
- * ones can only offer a preview of the grant closest to unlocking (`previewStats`, null
- * for a tiered/varied one that hasn't chosen a branch at all).
- *
- * When several sources stack (e.g. two rings of the same item), `appliedStats` is the
- * combined total and `entry.stats` (the resolved sum of active grants, pre-stacking) is
- * what one copy grants. Showing only the total on *each* ring's own card reads as "this
- * ring alone gives +15%" -- when really the two rings share credit for it. `each` carries
- * the per-copy figure so the template can spell that out; it is null whenever there is
- * nothing to disambiguate (stacks === 1).
+ * A varied bonus (e.g. role-dependent payloads) picks its first matching branch and, unlike
+ * tiers, had no ladder of its own before -- the card only ever showed the winning branch's
+ * numbers, with no way to see what the other branches needed or would have granted. This
+ * mirrors `tierLadderFor`, using `variantBranches` (bonus.ts's per-branch `explain`, run for
+ * every branch, not just up to the first match) so an unmatched branch can show *why* it
+ * didn't apply, not just that it didn't. Returns null for a grant with no `variants`.
  */
-function payload(entry: EvaluatedBonus) {
-  const stats = entry.active ? entry.appliedStats : entry.previewStats;
-  if (!stats)
-    return tierGrant(entry) ? { total: null, each: null, tiered: true } : null;
-
-  const stacks = entry.stacks ?? 1;
-  const each = entry.active && stacks > 1 ? statList(entry.stats) : null;
-  return { total: statList(stats), each, tiered: false };
+function variantLadderFor(grant: ResolvedGrant | null) {
+  const variants = grant?.raw.variants;
+  if (!variants?.length) return null;
+  const activeIndex =
+    grant!.active && grant!.chose?.startsWith("variant:")
+      ? Number(grant!.chose.slice("variant:".length))
+      : null;
+  const branches = grant!.variantBranches ?? [];
+  return variants.map((variant, index) => ({
+    key: index,
+    label:
+      (branches[index]?.leaves ?? [])
+        .map((leaf) => leaf.label)
+        .filter(Boolean)
+        .join(" + ") || "always",
+    stats: statList(variant.stats),
+    active: index === activeIndex,
+    unmet: branches[index]?.unmet ?? [],
+  }));
 }
 
 // Bonus state -> dot colour + whether its title/numbers read muted (an inactive/excluded
@@ -159,6 +179,51 @@ const STATE_DOT: Record<string, string> = {
   inactive: "bg-muted opacity-50",
   excluded: "bg-danger",
 };
+
+/** Falls back to the grant's own `when` (same label text `entry.gate`/`row.conditions`
+ * already use at the bonus level) so an unnamed grant still reads as *something* other than
+ * a bare position in the list. Only shown by the template when the bonus has more than one
+ * grant -- for the (overwhelmingly common) single-grant case this would just repeat the
+ * bonus-level "Conditions: ..." line right above it. */
+function grantLabel(grant: ResolvedGrant, index: number) {
+  if (grant.raw.name) return grant.raw.name;
+  const fromConditions = (grant.gate?.leaves ?? [])
+    .map((leaf) => leaf.label)
+    .filter(Boolean)
+    .join(" + ");
+  return fromConditions || `Part ${index + 1}`;
+}
+
+/**
+ * Every grant of this bonus, one row each -- a bonus is a sum of independent grants, and the
+ * bonus-level `conditions`/`unmet`/`stats` fields above collapse that down to one
+ * representative grant (evaluateBonus's "closest to unlocking" pick), which hides why every
+ * *other* grant is or isn't active. Always has at least one entry; the template only draws
+ * the per-grant label/border chrome when there's more than one to distinguish.
+ *
+ * `stacks` scales an active grant's own stats for perSource stacking (e.g. two rings of the
+ * same item) -- `entry.appliedStats` is the already-multiplied bonus total, but a single
+ * grant's own `stats` is pre-stacking (bonus.ts multiplies the *summed* grant stats, not each
+ * grant individually), so without this a stacking bonus's card would show one copy's worth.
+ */
+function grantRows(entry: EvaluatedBonus) {
+  const stacks = entry.stacks ?? 1;
+  return (entry.grants ?? []).map((grant, index) => ({
+    key: index,
+    label: grantLabel(grant, index),
+    active: grant.active,
+    unmet: grant.gate?.unmet ?? [],
+    problem: grant.problem,
+    tiers: tierLadderFor(grant),
+    variants: variantLadderFor(grant),
+    stats:
+      grant.active && grant.stats
+        ? statList(grant.stats, stacks)
+        : !grant.raw.tiers && !grant.raw.variants && grant.raw.stats
+          ? statList(grant.raw.stats)
+          : null,
+  }));
+}
 
 const rows = computed(() =>
   props.bonuses
@@ -184,16 +249,14 @@ const rows = computed(() =>
           .map((leaf) => leaf.label)
           .filter(Boolean)
           .join(" + "),
-        unmet: entry.gate?.unmet ?? [],
         excludedBy: entry.excludedBy,
         // Every active grant's own longDescription, in grant order -- a bonus with more than
         // one descriptive grant shows each (rare: usually only one grant per bonus bothers).
         descriptions: (entry.grants ?? [])
           .filter((g) => g.active && g.raw.longDescription)
           .map((g) => g.raw.longDescription as string),
-        stats: payload(entry),
         stacks: entry.stacks ?? 1,
-        tiers: tierLadder(entry),
+        grants: grantRows(entry),
         sharedWith,
         // A shared bonus is real numbers on exactly one card and a pointer everywhere else
         // -- showing the same total on every contributing card reads as each one granting
@@ -208,7 +271,7 @@ const rows = computed(() =>
 <template>
   <!-- Content inside the tooltip -- positioning, z-index, scroll, and max dimensions
        are handled by BasePopover. Internal structure uses BaseCard for the visual frame. -->
-  <BaseCard>
+  <BaseCard class="itemcard">
     <BaseCardHeader sticky>
       <span class="flex-1 font-semibold" data-testid="item-card-name">{{
         item.name
@@ -228,11 +291,11 @@ const rows = computed(() =>
       >
         {{ item.longDescription }}
       </div>
-      <div class="flex flex-col">
+      <div class="flex flex-col divide-y divide-line">
         <div
           v-for="stat in stats"
           :key="stat.key"
-          class="flex justify-between gap-2 border-b border-line py-0.5 text-sm last:border-b-0"
+          class="flex justify-between gap-2 py-0.5 text-sm"
         >
           <span>{{ stat.label }}</span
           ><span class="tabular-nums">{{ stat.value }}</span>
@@ -242,12 +305,12 @@ const rows = computed(() =>
 
       <div
         v-if="notes.length"
-        class="mt-1.5 border-t border-line pt-1 text-sm text-muted"
+        class="mt-1.5 border-y border-line py-1 text-sm text-muted"
       >
         <div v-for="note in notes" :key="note">{{ note }}</div>
       </div>
 
-      <div v-if="rows.length" class="mt-1.5 border-t border-line pt-1">
+      <div v-if="rows.length" class="mt-1.5">
         <div class="text-sm uppercase tracking-wide text-muted">Bonuses</div>
         <div v-for="row in rows" :key="row.id" class="mt-1">
           <div class="flex items-center gap-1.5">
@@ -288,67 +351,111 @@ const rows = computed(() =>
             >
               Other parts: {{ row.sharedWith.join(", ") }}
             </div>
-            <div
-              v-if="row.stats && row.stats.tiered"
-              class="pl-3 text-sm text-muted"
-            >
-              (tiered)
-            </div>
-            <div
-              v-else-if="row.stats"
-              class="pl-3 text-sm"
-              :class="row.muted && 'text-muted'"
-            >
+
+            <!-- One block per grant -- own label, own active state, own ladder/unmet. The
+                 label/border chrome only appears once there's more than one grant to tell
+                 apart; a single grant already reads fine under the bonus's own name/dot and
+                 "Conditions: ..." line above, so repeating that here would just be noise. -->
+            <div class="pl-3">
               <div
-                v-if="row.stacks > 1"
-                class="text-sm leading-snug text-muted"
+                v-for="g in row.grants"
+                :key="g.key"
+                :class="
+                  row.grants.length > 1 &&
+                  'mt-1.5 border-l-2 border-t-2 border-b-2 border-line pl-2 pt-1.5'
+                "
               >
-                total, from {{ row.stacks }} stacking sources
-              </div>
-              <div class="flex flex-col">
                 <div
-                  v-for="s in row.stats.total"
-                  :key="s.key"
-                  class="flex justify-between gap-2 border-b border-line py-0.5 last:border-b-0"
+                  v-if="row.grants.length > 1"
+                  class="flex items-center gap-1.5 text-sm"
+                  :class="!g.active && 'text-muted'"
                 >
-                  <span>{{ s.label }}</span
-                  ><span class="tabular-nums">{{ s.value }}</span>
+                  <span
+                    class="size-1.5 flex-none rounded-full"
+                    :class="g.active ? 'bg-ok' : 'bg-muted opacity-50'"
+                  ></span>
+                  <span class="min-w-0 flex-1">{{ g.label }}</span>
+                </div>
+                <div v-if="g.problem" class="text-sm text-warn">
+                  {{ g.problem.message }}
+                </div>
+                <template v-else-if="g.tiers">
+                  <div
+                    v-for="tier in g.tiers"
+                    :key="tier.atLeast"
+                    class="text-sm"
+                    :class="
+                      tier.active ? 'font-semibold text-text' : 'text-muted'
+                    "
+                  >
+                    <div>{{ tier.atLeast }} equipped:</div>
+                    <div class="flex flex-col">
+                      <div
+                        v-for="s in tier.stats"
+                        :key="s.key"
+                        class="flex justify-between gap-2 py-0.5"
+                      >
+                        <span>{{ s.label }}</span
+                        ><span class="tabular-nums">{{ s.value }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </template>
+                <template v-else-if="g.variants">
+                  <div class="divide-y divide-line divide-y-2">
+                    <div
+                      v-for="v in g.variants"
+                      :key="v.key"
+                      class="text-sm py-1"
+                      :class="
+                        v.active ? 'font-semibold text-text' : 'text-muted'
+                      "
+                    >
+                      <div>{{ v.label }}:</div>
+                      <div class="flex flex-col divide-y divide-line">
+                        <div
+                          v-for="s in v.stats"
+                          :key="s.key"
+                          class="flex justify-between gap-2 py-0.5"
+                        >
+                          <span>{{ s.label }}</span
+                          ><span class="tabular-nums">{{ s.value }}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </template>
+                <div
+                  v-else-if="g.stats"
+                  class="flex flex-col text-sm divide-y divide-line"
+                  :class="!g.active && 'text-muted'"
+                >
+                  <div
+                    v-if="row.stacks > 1 && g.active"
+                    class="text-sm leading-snug text-muted"
+                  >
+                    total, from {{ row.stacks }} stacking sources
+                  </div>
+                  <div
+                    v-for="s in g.stats"
+                    :key="s.key"
+                    class="flex justify-between gap-2 py-0.5"
+                  >
+                    <span>{{ s.label }}</span
+                    ><span class="tabular-nums">{{ s.value }}</span>
+                  </div>
+                </div>
+                <div
+                  v-for="(leaf, i) in g.unmet"
+                  :key="i"
+                  class="text-sm text-warn"
+                >
+                  needs {{ leaf.label
+                  }}<span v-if="leaf.detail"> — {{ leaf.detail }}</span>
                 </div>
               </div>
             </div>
           </template>
-          <div v-if="row.tiers" class="pl-3">
-            <div class="text-sm leading-snug text-muted">
-              tiered by count equipped, shared by every one:
-            </div>
-            <div
-              v-for="tier in row.tiers"
-              :key="tier.atLeast"
-              class="text-sm"
-              :class="tier.active ? 'font-semibold text-text' : 'text-muted'"
-            >
-              <div>{{ tier.atLeast }} equipped:</div>
-              <div class="flex flex-col">
-                <div
-                  v-for="s in tier.stats"
-                  :key="s.key"
-                  class="flex justify-between gap-2 py-0.5"
-                >
-                  <span>{{ s.label }}</span
-                  ><span class="tabular-nums">{{ s.value }}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div
-            v-for="(leaf, i) in row.unmet"
-            :key="i"
-            class="pl-3 text-sm text-warn"
-          >
-            needs {{ leaf.label
-            }}<span v-if="leaf.detail"> — {{ leaf.detail }}</span>
-          </div>
           <div v-if="row.excludedBy" class="pl-3 text-sm text-warn">
             overridden by {{ row.excludedBy }}
           </div>

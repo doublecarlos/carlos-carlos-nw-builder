@@ -358,10 +358,14 @@ export interface GrantProblem {
   hideFromPicker?: boolean;
 }
 
-/** Anonymous by design -- only the owning `Bonus.id` is addressable, not the grant itself.
+/** Grants are not addressable by the engine -- only the owning `Bonus.id` is (stacking,
+ * exclusion, everything else keys off that). `name` is display-only, for a bonus whose
+ * several grants need distinguishing in the hover card (ItemCard.vue); leave it unset and
+ * the card falls back to a label derived from the grant's own `when`.
  * `stats`/`tiers`/`variants`/`problem` are mutually exclusive payloads chosen at authoring
  * time (see bonus-draft.ts's `payload`); only one is ever set on a given grant. */
 export interface Grant {
+  name?: string;
   when?: ConditionWhen;
   stats?: StatValues;
   variants?: GrantVariant[];
@@ -569,6 +573,10 @@ export interface GrantEvaluation {
   stats: StatValues | null;
   chose: string | null;
   problem: GrantProblem | null;
+  /** One `ConditionExplain` per entry of `raw.variants`, in order -- lets the hover card
+   * show every branch (met or not), not just the one that won. Only populated when `explain`
+   * is on and the grant actually carries `variants`. */
+  variantBranches?: ConditionExplain[];
 }
 
 export interface BonusEvaluation {
