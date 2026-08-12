@@ -145,7 +145,7 @@ useCursorRowKeys(anchor, {
     @mouseleave="emit('leave')"
     @click="onRowClick"
   >
-    <div class="flex w-36 shrink-0 items-center justify-between min-w-0">
+    <div class="flex w-40 shrink-0 items-center justify-between min-w-0">
       <label
         class="slot-label min-w-0 flex-1 truncate text-muted"
         :for="slotDef.id"

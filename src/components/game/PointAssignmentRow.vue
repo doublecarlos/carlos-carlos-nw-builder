@@ -41,7 +41,7 @@ const values = () => props.build.assignments[props.slotDef.id] ?? {};
 </script>
 
 <template>
-  <div class="flex flex-wrap items-end gap-2.5">
+  <div class="flex flex-wrap items-center gap-2.5">
     <PointAssignmentInput
       ref="assignment"
       class="min-w-0 flex-1"

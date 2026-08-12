@@ -149,7 +149,7 @@ defineExpose({ focus, focusAndSeed });
 </script>
 
 <template>
-  <div ref="root" class="flex flex-wrap items-end gap-4">
+  <div ref="root" class="flex flex-wrap gap-4">
     <div
       v-for="item in rows"
       :key="item.id"

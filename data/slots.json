@@ -473,13 +473,13 @@
         },
         {
           "id": "gear.mainhand",
-          "label": "Mainhand",
+          "label": "Weapon Mainhand",
           "filter": "gear_weapon_mainhand",
           "type": "item_picker"
         },
         {
           "id": "gear.offhand",
-          "label": "Offhand",
+          "label": "Weapon Offhand",
           "filter": "gear_weapon_offhand",
           "type": "item_picker"
         },
@@ -722,13 +722,13 @@
         },
         {
           "id": "enchantments.combatOffense",
-          "label": "Combat (Offense)",
+          "label": "Strike Enchantment",
           "filter": "combat_enchant_offense",
           "type": "item_picker"
         },
         {
           "id": "enchantments.combatDefense",
-          "label": "Combat (Defense)",
+          "label": "Guard Enchantment",
           "filter": "combat_enchant_defense",
           "type": "item_picker"
         },

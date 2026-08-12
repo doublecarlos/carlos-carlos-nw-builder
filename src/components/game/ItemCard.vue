@@ -315,19 +315,6 @@ const rows = computed(() =>
                   ><span class="tabular-nums">{{ s.value }}</span>
                 </div>
               </div>
-              <template v-if="row.stats.each">
-                <div class="text-sm leading-snug text-muted">each:</div>
-                <div class="flex flex-col">
-                  <div
-                    v-for="s in row.stats.each"
-                    :key="s.key"
-                    class="flex justify-between gap-2 border-b border-line py-0.5 last:border-b-0"
-                  >
-                    <span>{{ s.label }}</span
-                    ><span class="tabular-nums">{{ s.value }}</span>
-                  </div>
-                </div>
-              </template>
             </div>
           </template>
           <div v-if="row.tiers" class="pl-3">
