@@ -1,9 +1,9 @@
 <script setup lang="ts">
-// LayerEditor's export drawer: three modes -- the composed db-items/db-bonuses files (for
-// regenerating the shipped data, across every enabled layer) and this layer's own raw
-// overlay JSON. Self-contained aside from which tab is active, which the parent keeps so
+// LayerEditor's export drawer: this layer's own raw overlay JSON, plus -- dev builds only --
+// the composed db-items/db-bonuses/slots files for regenerating the shipped data across every
+// enabled layer. Self-contained aside from which tab is active, which the parent keeps so
 // reopening the drawer remembers the last tab.
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { Copy, Download } from "@lucide/vue";
 import BaseButton from "../ui/BaseButton.vue";
 import BaseDrawer from "../ui/BaseDrawer.vue";
@@ -26,22 +26,46 @@ const emit = defineEmits<{
 
 const activeTab = defineModel<string>({ default: "items" }); // items | bonuses | slots | overlay
 
+// The maintainer tabs (items/bonuses/slots) regenerate the shipped db-*.json files -- only
+// useful with the source repo on hand, so they're dev-only. `import.meta.env.DEV` is
+// statically replaced by Vite, so this branch is dead-code-eliminated from the production
+// build entirely -- including the dynamic import below, which means `catalogExport.ts`
+// (the module that actually composes those files) is never even fetched in production.
+const maintainerTabsEnabled = import.meta.env.DEV;
+
+type CatalogExportModule = typeof import("../../data/catalogExport");
+const catalogExport = ref<CatalogExportModule | null>(null);
+if (maintainerTabsEnabled) {
+  import("../../data/catalogExport").then((mod) => {
+    catalogExport.value = mod;
+  });
+}
+
+/** The tab actually in effect: the maintainer tabs collapse to "overlay" in production,
+ *  even if `activeTab` was left pointing at one of them (e.g. restored from a stale URL). */
+const effectiveTab = computed(() =>
+  maintainerTabsEnabled ? activeTab.value : "overlay",
+);
+
 const exportText = computed(() => {
-  if (activeTab.value === "items") {
+  if (effectiveTab.value === "items") {
+    if (!catalogExport.value) return "Loading…";
     // Composed across all enabled layers for the maintainer path.
     const allEnabled = catalog.compose(layers.enabledOverlays.value);
-    return catalog.toItemsFile(allEnabled.items);
+    return catalogExport.value.toItemsFile(allEnabled.items);
   }
-  if (activeTab.value === "bonuses") {
+  if (effectiveTab.value === "bonuses") {
+    if (!catalogExport.value) return "Loading…";
     const allEnabled = catalog.compose(layers.enabledOverlays.value);
-    return catalog.toBonusesFile(allEnabled.bonuses);
+    return catalogExport.value.toBonusesFile(allEnabled.bonuses);
   }
-  if (activeTab.value === "slots") {
+  if (effectiveTab.value === "slots") {
+    if (!catalogExport.value) return "Loading…";
     // Slots themselves aren't overlay-editable (only presets are), so `NW_SLOTS.sections`/
     // `.slots` are the static shipped ones -- only `sectionPresets` is folded across every
     // enabled layer, same "maintainer path" as items/bonuses above.
     const allEnabled = catalog.compose(layers.enabledOverlays.value);
-    return catalog.toSlotsFile(
+    return catalogExport.value.toSlotsFile(
       NW_SLOTS.sections,
       NW_SLOTS.slots,
       allEnabled.sectionPresets,
@@ -52,9 +76,9 @@ const exportText = computed(() => {
 });
 
 const exportName = computed(() => {
-  if (activeTab.value === "items") return "db-items.json";
-  if (activeTab.value === "bonuses") return "db-bonuses.json";
-  if (activeTab.value === "slots") return "slots.json";
+  if (effectiveTab.value === "items") return "db-items.json";
+  if (effectiveTab.value === "bonuses") return "db-bonuses.json";
+  if (effectiveTab.value === "slots") return "slots.json";
   return "catalog-overlay.json";
 });
 
@@ -82,19 +106,25 @@ function downloadExport() {
   <BaseDrawer>
     <div class="mb-1.5 flex flex-wrap items-end gap-2">
       <TabStrip>
-        <TabButton :active="activeTab === 'items'" @click="activeTab = 'items'"
-          >db-items.json</TabButton
-        >
+        <template v-if="maintainerTabsEnabled">
+          <TabButton
+            :active="effectiveTab === 'items'"
+            @click="activeTab = 'items'"
+            >db-items.json</TabButton
+          >
+          <TabButton
+            :active="effectiveTab === 'bonuses'"
+            @click="activeTab = 'bonuses'"
+            >db-bonuses.json</TabButton
+          >
+          <TabButton
+            :active="effectiveTab === 'slots'"
+            @click="activeTab = 'slots'"
+            >slots.json</TabButton
+          >
+        </template>
         <TabButton
-          :active="activeTab === 'bonuses'"
-          @click="activeTab = 'bonuses'"
-          >db-bonuses.json</TabButton
-        >
-        <TabButton :active="activeTab === 'slots'" @click="activeTab = 'slots'"
-          >slots.json</TabButton
-        >
-        <TabButton
-          :active="activeTab === 'overlay'"
+          :active="effectiveTab === 'overlay'"
           @click="activeTab = 'overlay'"
           >This layer</TabButton
         >
@@ -107,15 +137,15 @@ function downloadExport() {
     </div>
     <CodeBlock :value="exportText" :rows="12" class="w-full" />
     <p class="mt-1 text-sm text-muted">
-      <template v-if="activeTab === 'items'">
+      <template v-if="effectiveTab === 'items'">
         Composed from all enabled layers — for regenerating the shipped data
         files.
       </template>
-      <template v-else-if="activeTab === 'bonuses'">
+      <template v-else-if="effectiveTab === 'bonuses'">
         Composed from all enabled layers — for regenerating the shipped data
         files.
       </template>
-      <template v-else-if="activeTab === 'slots'">
+      <template v-else-if="effectiveTab === 'slots'">
         Composed from all enabled layers' presets — for regenerating
         <code>data/slots.json</code>.
       </template>
