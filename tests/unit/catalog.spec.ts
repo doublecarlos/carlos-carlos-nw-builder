@@ -430,9 +430,9 @@ describe("catalog.validate: point_assignment-referenced items", () => {
     const item = NW_ITEMS.find((i) => i.id === "boon-tier1-power");
     expect(item?.filter).toBe("boon_tier1");
     // Bounds themselves are game data, free to tune -- only the shape matters here.
-    expect(item?.pointAssignment?.min).toBeTypeOf("number");
-    expect(item?.pointAssignment?.max).toBeTypeOf("number");
-    expect(item?.pointAssignment?.default).toBeTypeOf("number");
+    expect(item?.inlineRepetition?.min).toBeTypeOf("number");
+    expect(item?.inlineRepetition?.max).toBeTypeOf("number");
+    expect(item?.inlineRepetition?.default).toBeTypeOf("number");
   });
 
   it("a point_assignment slot's filter passes the 'matches no slot' check", () => {
@@ -463,13 +463,13 @@ describe("catalog.validate: point_assignment-referenced items", () => {
     ).toBe(false);
   });
 
-  it("an item's pointAssignment default outside its own min/max is an error", () => {
+  it("an item's inlineRepetition default outside its own min/max is an error", () => {
     const items: Item[] = [
       {
         id: "bad-boon",
         name: "Bad Boon",
         filter: "boon_tier1",
-        pointAssignment: { min: 1, max: 4, default: 0 },
+        inlineRepetition: { min: 1, max: 4, default: 0 },
       },
     ];
     const findings = catalog.validate(items, []);
@@ -480,7 +480,7 @@ describe("catalog.validate: point_assignment-referenced items", () => {
     ).toBe(true);
   });
 
-  it("a point_assignment filter with no pointAssignment config on the item is a warning", () => {
+  it("a point_assignment filter with no inlineRepetition config on the item is a warning", () => {
     const items: Item[] = [
       {
         id: "unconfigured-boon",
@@ -491,7 +491,7 @@ describe("catalog.validate: point_assignment-referenced items", () => {
     const findings = catalog.validate(items, []);
     const finding = findings.find((f) => f.name === "unconfigured-boon");
     expect(finding?.level).toBe("warn");
-    expect(finding?.message).toMatch(/no pointAssignment config/);
+    expect(finding?.message).toMatch(/no inlineRepetition config/);
   });
 });
 

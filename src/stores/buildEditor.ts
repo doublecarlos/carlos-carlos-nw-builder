@@ -197,7 +197,8 @@ export function setAssignment(
 ) {
   const b = builds.build.value;
   if (!b) return;
-  const label = db.value.get(itemId)?.name ?? itemId;
+  const item = db.value.get(itemId);
+  const label = item?.inlineRepetition?.label ?? item?.name ?? itemId;
   history.snapshot(
     "build",
     b.id,
@@ -220,7 +221,7 @@ export function resetAssignmentsToDefault(slot: PointAssignmentSlot) {
   );
   const reset: Record<string, number> = {};
   for (const item of db.value.forSlot(slot.id))
-    reset[item.id] = item.pointAssignment!.default;
+    reset[item.id] = item.inlineRepetition!.default;
   b.assignments[slot.id] = reset;
 }
 
@@ -239,7 +240,7 @@ export function applyAssignmentsFromCompare(slot: PointAssignmentSlot) {
   const applied: Record<string, number> = {};
   for (const item of db.value.forSlot(slot.id)) {
     applied[item.id] =
-      other.assignments?.[slot.id]?.[item.id] ?? item.pointAssignment!.default;
+      other.assignments?.[slot.id]?.[item.id] ?? item.inlineRepetition!.default;
   }
   b.assignments[slot.id] = applied;
 }
@@ -360,7 +361,7 @@ export function copySection(fromId: string, sectionIds: string[]) {
       for (const item of db.value.forSlot(slot.id)) {
         rows[item.id] =
           source.assignments?.[slot.id]?.[item.id] ??
-          item.pointAssignment!.default;
+          item.inlineRepetition!.default;
       }
       b.assignments[slot.id] = rows;
       continue;

@@ -68,7 +68,7 @@ function assignmentSources(
     if (slot.type !== "point_assignment") continue;
     const counts = build.assignments?.[slot.id] ?? {};
     for (const item of db.forSlot(slot.id)) {
-      const count = counts[item.id] ?? item.pointAssignment!.default;
+      const count = counts[item.id] ?? item.inlineRepetition!.default;
       if (count <= 0) continue;
       const raw = item[key];
       if (!raw) continue;

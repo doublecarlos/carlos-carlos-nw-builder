@@ -770,7 +770,7 @@
     "recharge": 0.01,
     "tags": ["boon:prereq-master"],
     "bonuses": ["boon-advanced-warning"],
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 0,
       "max": 4,
       "default": 0,
@@ -784,7 +784,7 @@
     "ap_gain": 0.01,
     "tags": ["boon:prereq-master"],
     "bonuses": ["boon-advanced-warning"],
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 0,
       "max": 4,
       "default": 0,
@@ -798,7 +798,7 @@
     "control_bonus_p": 0.01,
     "tags": ["boon:prereq-master"],
     "bonuses": ["boon-advanced-warning"],
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 0,
       "max": 4,
       "default": 0,
@@ -812,7 +812,7 @@
     "forte_p": 0.01,
     "tags": ["boon:prereq-master"],
     "bonuses": ["boon-advanced-warning"],
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 0,
       "max": 4,
       "default": 0,
@@ -826,7 +826,7 @@
     "inc_healing_p": 0.01,
     "tags": ["boon:prereq-master"],
     "bonuses": ["boon-advanced-warning"],
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 0,
       "max": 4,
       "default": 0,
@@ -840,7 +840,7 @@
     "out_healing_p": 0.01,
     "tags": ["boon:prereq-master"],
     "bonuses": ["boon-advanced-warning"],
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 0,
       "max": 4,
       "default": 0,
@@ -854,7 +854,7 @@
     "stamina_regen": 0.01,
     "tags": ["boon:prereq-master"],
     "bonuses": ["boon-advanced-warning"],
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 0,
       "max": 4,
       "default": 0,
@@ -903,7 +903,7 @@
     "id": "boon-master-blessed-advantage",
     "name": "Blessed Advantage",
     "filter": "boon_tier_master",
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 0,
       "max": 3,
       "default": 0,
@@ -914,7 +914,7 @@
     "id": "boon-master-blessed-resilience",
     "name": "Blessed Resilience",
     "filter": "boon_tier_master",
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 0,
       "max": 3,
       "default": 0,
@@ -925,7 +925,7 @@
     "id": "boon-master-blood-lust",
     "name": "Blood Lust",
     "filter": "boon_tier_master",
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 0,
       "max": 3,
       "default": 0,
@@ -936,7 +936,7 @@
     "id": "boon-master-death-s-bulwark",
     "name": "Death's Bulwark",
     "filter": "boon_tier_master",
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 0,
       "max": 3,
       "default": 0,
@@ -947,7 +947,7 @@
     "id": "boon-master-deathly-rage",
     "name": "Deathly Rage",
     "filter": "boon_tier_master",
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 0,
       "max": 3,
       "default": 0,
@@ -958,7 +958,7 @@
     "id": "boon-master-enhanced-application",
     "name": "Enhanced Application",
     "filter": "boon_tier_master",
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 0,
       "max": 3,
       "default": 0,
@@ -969,7 +969,7 @@
     "id": "boon-master-focused-retaliation",
     "name": "Focused Retaliation",
     "filter": "boon_tier_master",
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 0,
       "max": 3,
       "default": 0,
@@ -980,7 +980,7 @@
     "id": "boon-master-life-lessons",
     "name": "Life Lessons",
     "filter": "boon_tier_master",
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 0,
       "max": 3,
       "default": 0,
@@ -1038,7 +1038,7 @@
       "boon:prereq-advanced",
       "boon:prereq-master"
     ],
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 0,
       "max": 5,
       "default": 0,
@@ -1056,7 +1056,7 @@
       "boon:prereq-advanced",
       "boon:prereq-master"
     ],
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 0,
       "max": 5,
       "default": 0,
@@ -1075,7 +1075,7 @@
       "boon:prereq-advanced",
       "boon:prereq-master"
     ],
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 0,
       "max": 5,
       "default": 0,
@@ -1094,7 +1094,7 @@
       "boon:prereq-advanced",
       "boon:prereq-master"
     ],
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 0,
       "max": 5,
       "default": 0,
@@ -1112,7 +1112,7 @@
       "boon:prereq-advanced",
       "boon:prereq-master"
     ],
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 0,
       "max": 5,
       "default": 0,
@@ -1131,7 +1131,7 @@
       "boon:prereq-advanced",
       "boon:prereq-master"
     ],
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 0,
       "max": 5,
       "default": 0,
@@ -1150,7 +1150,7 @@
       "boon:prereq-advanced",
       "boon:prereq-master"
     ],
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 0,
       "max": 5,
       "default": 0,
@@ -1168,7 +1168,7 @@
       "boon:prereq-advanced",
       "boon:prereq-master"
     ],
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 0,
       "max": 5,
       "default": 0,
@@ -1185,7 +1185,7 @@
       "boon:prereq-advanced",
       "boon:prereq-master"
     ],
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 0,
       "max": 5,
       "default": 0,
@@ -1203,7 +1203,7 @@
       "boon:prereq-advanced",
       "boon:prereq-master"
     ],
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 0,
       "max": 5,
       "default": 0,
@@ -1220,7 +1220,7 @@
       "boon:prereq-advanced",
       "boon:prereq-master"
     ],
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 0,
       "max": 5,
       "default": 0,
@@ -1239,7 +1239,7 @@
       "boon:prereq-master"
     ],
     "bonuses": ["boon-tier2-warning"],
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 0,
       "max": 5,
       "default": 0,
@@ -1258,7 +1258,7 @@
       "boon:prereq-master"
     ],
     "bonuses": ["boon-tier2-warning"],
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 0,
       "max": 5,
       "default": 0,
@@ -1277,7 +1277,7 @@
       "boon:prereq-master"
     ],
     "bonuses": ["boon-tier2-warning"],
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 0,
       "max": 5,
       "default": 0,
@@ -1295,7 +1295,7 @@
       "boon:prereq-master"
     ],
     "bonuses": ["boon-tier3-warning"],
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 0,
       "max": 5,
       "default": 0,
@@ -1313,7 +1313,7 @@
       "boon:prereq-master"
     ],
     "bonuses": ["boon-tier3-warning"],
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 0,
       "max": 5,
       "default": 0,
@@ -1331,7 +1331,7 @@
       "boon:prereq-master"
     ],
     "bonuses": ["boon-tier3-warning"],
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 0,
       "max": 5,
       "default": 0,
@@ -1348,7 +1348,7 @@
       "boon:prereq-master"
     ],
     "bonuses": ["boon-tier3-warning"],
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 0,
       "max": 5,
       "default": 0,
@@ -1366,7 +1366,7 @@
       "boon:prereq-master"
     ],
     "bonuses": ["boon-tier3-warning"],
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 0,
       "max": 5,
       "default": 0,
@@ -1383,7 +1383,7 @@
       "boon:prereq-master"
     ],
     "bonuses": ["boon-tier3-warning"],
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 0,
       "max": 5,
       "default": 0,
@@ -1401,7 +1401,7 @@
       "boon:prereq-master"
     ],
     "bonuses": ["boon-tier3-warning"],
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 0,
       "max": 5,
       "default": 0,
@@ -1415,7 +1415,7 @@
     "acc_p": 0.002,
     "tags": ["boon:prereq-advanced", "boon:prereq-master"],
     "bonuses": ["boon-tier4-warning"],
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 0,
       "max": 5,
       "default": 0,
@@ -1430,7 +1430,7 @@
     "dynamicStat": "power_p",
     "tags": ["boon:prereq-advanced", "boon:prereq-master"],
     "bonuses": ["boon-tier4-warning"],
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 0,
       "max": 5,
       "default": 0,
@@ -1445,7 +1445,7 @@
     "dynamicStat": "il",
     "tags": ["boon:prereq-advanced", "boon:prereq-master"],
     "bonuses": ["boon-tier4-warning"],
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 0,
       "max": 5,
       "default": 0,
@@ -1459,7 +1459,7 @@
     "hit_points_p": 0.002,
     "tags": ["boon:prereq-advanced", "boon:prereq-master"],
     "bonuses": ["boon-tier4-warning"],
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 0,
       "max": 5,
       "default": 0,
@@ -1472,7 +1472,7 @@
     "filter": "boon_tier4",
     "tags": ["boon:prereq-advanced", "boon:prereq-master"],
     "bonuses": ["boon-tier4-warning"],
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 0,
       "max": 5,
       "default": 0,
@@ -1485,7 +1485,7 @@
     "filter": "boon_tier4",
     "tags": ["boon:prereq-advanced", "boon:prereq-master"],
     "bonuses": ["boon-tier4-warning"],
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 0,
       "max": 5,
       "default": 0,
@@ -1500,7 +1500,7 @@
     "dynamicStat": "il",
     "tags": ["boon:prereq-advanced", "boon:prereq-master"],
     "bonuses": ["boon-tier4-warning"],
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 0,
       "max": 5,
       "default": 0,
@@ -2050,7 +2050,7 @@
     "cha": 1,
     "tags": ["level_attr:12"],
     "bonuses": ["level-attr-warning"],
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 0,
       "max": 1,
       "default": 0,
@@ -2064,7 +2064,7 @@
     "cha": 1,
     "tags": ["level_attr:14"],
     "bonuses": ["level-attr-warning"],
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 0,
       "max": 1,
       "default": 0,
@@ -2078,7 +2078,7 @@
     "cha": 1,
     "tags": ["level_attr:16"],
     "bonuses": ["level-attr-warning"],
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 1,
       "max": 1,
       "default": 1,
@@ -2092,7 +2092,7 @@
     "cha": 1,
     "tags": ["level_attr:18"],
     "bonuses": ["level-attr-warning"],
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 0,
       "max": 1,
       "default": 0,
@@ -2106,7 +2106,7 @@
     "cha": 1,
     "tags": ["level_attr:20"],
     "bonuses": ["level-attr-warning"],
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 0,
       "max": 1,
       "default": 0,
@@ -2120,7 +2120,7 @@
     "cha": 1,
     "tags": ["level_attr:3"],
     "bonuses": ["level-attr-warning"],
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 0,
       "max": 1,
       "default": 0,
@@ -2134,7 +2134,7 @@
     "cha": 1,
     "tags": ["level_attr:6"],
     "bonuses": ["level-attr-warning"],
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 0,
       "max": 1,
       "default": 0,
@@ -2148,7 +2148,7 @@
     "cha": 1,
     "tags": ["level_attr:9"],
     "bonuses": ["level-attr-warning"],
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 1,
       "max": 1,
       "default": 1,
@@ -2162,7 +2162,7 @@
     "con": 1,
     "tags": ["level_attr:12"],
     "bonuses": ["level-attr-warning"],
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 0,
       "max": 1,
       "default": 0,
@@ -2176,7 +2176,7 @@
     "con": 1,
     "tags": ["level_attr:14"],
     "bonuses": ["level-attr-warning"],
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 0,
       "max": 1,
       "default": 0,
@@ -2190,7 +2190,7 @@
     "con": 1,
     "tags": ["level_attr:16"],
     "bonuses": ["level-attr-warning"],
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 1,
       "max": 1,
       "default": 1,
@@ -2204,7 +2204,7 @@
     "con": 1,
     "tags": ["level_attr:18"],
     "bonuses": ["level-attr-warning"],
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 0,
       "max": 1,
       "default": 0,
@@ -2218,7 +2218,7 @@
     "con": 1,
     "tags": ["level_attr:20"],
     "bonuses": ["level-attr-warning"],
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 0,
       "max": 1,
       "default": 0,
@@ -2232,7 +2232,7 @@
     "con": 1,
     "tags": ["level_attr:3"],
     "bonuses": ["level-attr-warning"],
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 0,
       "max": 1,
       "default": 0,
@@ -2246,7 +2246,7 @@
     "con": 1,
     "tags": ["level_attr:6"],
     "bonuses": ["level-attr-warning"],
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 0,
       "max": 1,
       "default": 0,
@@ -2260,7 +2260,7 @@
     "con": 1,
     "tags": ["level_attr:9"],
     "bonuses": ["level-attr-warning"],
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 1,
       "max": 1,
       "default": 1,
@@ -2274,7 +2274,7 @@
     "dex": 1,
     "tags": ["level_attr:12"],
     "bonuses": ["level-attr-warning"],
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 0,
       "max": 1,
       "default": 0,
@@ -2288,7 +2288,7 @@
     "dex": 1,
     "tags": ["level_attr:14"],
     "bonuses": ["level-attr-warning"],
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 0,
       "max": 1,
       "default": 0,
@@ -2302,7 +2302,7 @@
     "dex": 1,
     "tags": ["level_attr:16"],
     "bonuses": ["level-attr-warning"],
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 1,
       "max": 1,
       "default": 1,
@@ -2316,7 +2316,7 @@
     "dex": 1,
     "tags": ["level_attr:18"],
     "bonuses": ["level-attr-warning"],
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 0,
       "max": 1,
       "default": 0,
@@ -2330,7 +2330,7 @@
     "dex": 1,
     "tags": ["level_attr:20"],
     "bonuses": ["level-attr-warning"],
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 0,
       "max": 1,
       "default": 0,
@@ -2344,7 +2344,7 @@
     "dex": 1,
     "tags": ["level_attr:3"],
     "bonuses": ["level-attr-warning"],
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 0,
       "max": 1,
       "default": 0,
@@ -2358,7 +2358,7 @@
     "dex": 1,
     "tags": ["level_attr:6"],
     "bonuses": ["level-attr-warning"],
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 0,
       "max": 1,
       "default": 0,
@@ -2372,7 +2372,7 @@
     "dex": 1,
     "tags": ["level_attr:9"],
     "bonuses": ["level-attr-warning"],
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 1,
       "max": 1,
       "default": 1,
@@ -2386,7 +2386,7 @@
     "int": 1,
     "tags": ["level_attr:12"],
     "bonuses": ["level-attr-warning"],
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 0,
       "max": 1,
       "default": 0,
@@ -2400,7 +2400,7 @@
     "int": 1,
     "tags": ["level_attr:14"],
     "bonuses": ["level-attr-warning"],
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 0,
       "max": 1,
       "default": 0,
@@ -2414,7 +2414,7 @@
     "int": 1,
     "tags": ["level_attr:16"],
     "bonuses": ["level-attr-warning"],
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 1,
       "max": 1,
       "default": 1,
@@ -2428,7 +2428,7 @@
     "int": 1,
     "tags": ["level_attr:18"],
     "bonuses": ["level-attr-warning"],
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 0,
       "max": 1,
       "default": 0,
@@ -2442,7 +2442,7 @@
     "int": 1,
     "tags": ["level_attr:20"],
     "bonuses": ["level-attr-warning"],
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 0,
       "max": 1,
       "default": 0,
@@ -2456,7 +2456,7 @@
     "int": 1,
     "tags": ["level_attr:3"],
     "bonuses": ["level-attr-warning"],
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 0,
       "max": 1,
       "default": 0,
@@ -2470,7 +2470,7 @@
     "int": 1,
     "tags": ["level_attr:6"],
     "bonuses": ["level-attr-warning"],
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 0,
       "max": 1,
       "default": 0,
@@ -2484,7 +2484,7 @@
     "int": 1,
     "tags": ["level_attr:9"],
     "bonuses": ["level-attr-warning"],
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 1,
       "max": 1,
       "default": 1,
@@ -2498,7 +2498,7 @@
     "str": 1,
     "tags": ["level_attr:12"],
     "bonuses": ["level-attr-warning"],
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 0,
       "max": 1,
       "default": 0,
@@ -2512,7 +2512,7 @@
     "str": 1,
     "tags": ["level_attr:14"],
     "bonuses": ["level-attr-warning"],
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 0,
       "max": 1,
       "default": 0,
@@ -2526,7 +2526,7 @@
     "str": 1,
     "tags": ["level_attr:16"],
     "bonuses": ["level-attr-warning"],
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 1,
       "max": 1,
       "default": 1,
@@ -2540,7 +2540,7 @@
     "str": 1,
     "tags": ["level_attr:18"],
     "bonuses": ["level-attr-warning"],
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 0,
       "max": 1,
       "default": 0,
@@ -2554,7 +2554,7 @@
     "str": 1,
     "tags": ["level_attr:20"],
     "bonuses": ["level-attr-warning"],
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 0,
       "max": 1,
       "default": 0,
@@ -2568,7 +2568,7 @@
     "str": 1,
     "tags": ["level_attr:3"],
     "bonuses": ["level-attr-warning"],
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 0,
       "max": 1,
       "default": 0,
@@ -2582,7 +2582,7 @@
     "str": 1,
     "tags": ["level_attr:6"],
     "bonuses": ["level-attr-warning"],
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 0,
       "max": 1,
       "default": 0,
@@ -2596,7 +2596,7 @@
     "str": 1,
     "tags": ["level_attr:9"],
     "bonuses": ["level-attr-warning"],
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 1,
       "max": 1,
       "default": 1,
@@ -2610,7 +2610,7 @@
     "wis": 1,
     "tags": ["level_attr:12"],
     "bonuses": ["level-attr-warning"],
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 0,
       "max": 1,
       "default": 0,
@@ -2624,7 +2624,7 @@
     "wis": 1,
     "tags": ["level_attr:14"],
     "bonuses": ["level-attr-warning"],
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 0,
       "max": 1,
       "default": 0,
@@ -2638,7 +2638,7 @@
     "wis": 1,
     "tags": ["level_attr:16"],
     "bonuses": ["level-attr-warning"],
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 1,
       "max": 1,
       "default": 1,
@@ -2652,7 +2652,7 @@
     "wis": 1,
     "tags": ["level_attr:18"],
     "bonuses": ["level-attr-warning"],
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 0,
       "max": 1,
       "default": 0,
@@ -2666,7 +2666,7 @@
     "wis": 1,
     "tags": ["level_attr:20"],
     "bonuses": ["level-attr-warning"],
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 0,
       "max": 1,
       "default": 0,
@@ -2680,7 +2680,7 @@
     "wis": 1,
     "tags": ["level_attr:3"],
     "bonuses": ["level-attr-warning"],
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 0,
       "max": 1,
       "default": 0,
@@ -2694,7 +2694,7 @@
     "wis": 1,
     "tags": ["level_attr:6"],
     "bonuses": ["level-attr-warning"],
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 0,
       "max": 1,
       "default": 0,
@@ -2708,7 +2708,7 @@
     "wis": 1,
     "tags": ["level_attr:9"],
     "bonuses": ["level-attr-warning"],
-    "pointAssignment": {
+    "inlineRepetition": {
       "min": 1,
       "max": 1,
       "default": 1,

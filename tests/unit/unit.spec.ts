@@ -421,7 +421,7 @@ describe("point_assignment resolution", () => {
     power_p: 0.01,
     maxCopies: 3,
     bonuses: ["boon-power-bonus"],
-    pointAssignment: { min: 0, max: 4, default: 0 },
+    inlineRepetition: { min: 0, max: 4, default: 0 },
   };
   const powerBonus: Bonus = {
     id: "boon-power-bonus",
@@ -433,7 +433,22 @@ describe("point_assignment resolution", () => {
     name: "Boon Restricted",
     filter: "test_boon_tier",
     allowedClass: ["fighter"],
-    pointAssignment: { min: 0, max: 2, default: 0 },
+    inlineRepetition: { min: 0, max: 2, default: 0 },
+  };
+  // #232: an item on a point_assignment row can also carry a BonusOccurrenceConfig attachment,
+  // whose count is independent of the row's own repetition count -- unlike a bare-id
+  // attachment (boon-power-bonus above), which scales with it.
+  const configBonus: Bonus = {
+    id: "boon-config-bonus",
+    stacking: "perSource",
+    grants: [{ stats: { power_p: 0.05 } }],
+  };
+  const configItem: Item = {
+    id: "boon-config",
+    name: "Boon Config",
+    filter: "test_boon_tier",
+    bonuses: [{ bonus: "boon-config-bonus", min: 0, max: 5, default: 0 }],
+    inlineRepetition: { min: 0, max: 4, default: 0 },
   };
 
   const pointSlot: PointAssignmentSlot = {
@@ -448,19 +463,23 @@ describe("point_assignment resolution", () => {
     slots: [pointSlot],
   };
   const testDb = db.build(
-    [powerItem, restrictedItem],
-    [powerBonus],
+    [powerItem, restrictedItem, configItem],
+    [powerBonus, configBonus],
     schema,
     slotsData,
   );
 
-  function buildWith(counts: Record<string, number>): Build {
+  function buildWith(
+    counts: Record<string, number>,
+    occurrenceInputs: Record<string, Record<string, number>> = {},
+  ): Build {
     return {
       id: "b",
       name: "b",
       choices: {},
       values: {},
       assignments: { "boons.tier1": counts },
+      occurrenceInputs,
       context: BASE_CONTEXT,
       compare: { id: "", highlight: false, onlyDiff: false },
     } as unknown as Build;
@@ -509,6 +528,28 @@ describe("point_assignment resolution", () => {
       buildWith({ "boon-restricted": 1 }),
     );
     expect(result.errors.some((e) => e.kind === "class")).toBe(true);
+  });
+
+  it("a BonusOccurrenceConfig attachment's count is independent of the row's own repetition count", () => {
+    // The row's own count (3) would apply to a bare-id bonus, but boon-config-bonus carries a
+    // BonusOccurrenceConfig of its own -- its count comes from occurrenceInputs instead.
+    const result = engine.resolveBuild(
+      testDb,
+      buildWith(
+        { "boon-config": 3 },
+        { "boon-config": { "boon-config-bonus": 5 } },
+      ),
+    );
+    expect(
+      result.bonuses.find((b) => b.id === "boon-config-bonus")?.stacks,
+    ).toBe(5);
+  });
+
+  it("a BonusOccurrenceConfig attachment with no explicit input falls back to its own default, not the row's count", () => {
+    const result = engine.resolveBuild(testDb, buildWith({ "boon-config": 3 }));
+    expect(
+      result.bonuses.find((b) => b.id === "boon-config-bonus")?.active,
+    ).toBeFalsy();
   });
 });
 
@@ -1236,7 +1277,7 @@ describe("problem grants (bonus-authored errors/warnings)", () => {
     name: "Boon Tier 1",
     filter: "test_boon",
     tags: ["tier1"],
-    pointAssignment: { min: 0, max: 10, default: 0 },
+    inlineRepetition: { min: 0, max: 10, default: 0 },
   };
   const tier2Bonus: Bonus = {
     id: "tier2-requires-tier1",
@@ -1255,7 +1296,7 @@ describe("problem grants (bonus-authored errors/warnings)", () => {
     name: "Boon Tier 2",
     filter: "test_boon",
     bonuses: ["tier2-requires-tier1"],
-    pointAssignment: { min: 0, max: 4, default: 0 },
+    inlineRepetition: { min: 0, max: 4, default: 0 },
   };
   const boonSlot: PointAssignmentSlot = {
     id: "boons.test",

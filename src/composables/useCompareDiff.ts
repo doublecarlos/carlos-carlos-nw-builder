@@ -64,7 +64,7 @@ export function assignmentDiffers(
 ) {
   if (!compareBuild) return false;
   return db.forSlot(slot.id).some((item) => {
-    const def = item.pointAssignment!.default;
+    const def = item.inlineRepetition!.default;
     const here = build.assignments?.[slot.id]?.[item.id] ?? def;
     const there = compareBuild.assignments?.[slot.id]?.[item.id] ?? def;
     return here !== there;
@@ -85,8 +85,8 @@ export function assignmentDiffTitle(
     .map((item) => {
       const there =
         compareBuild.assignments?.[slot.id]?.[item.id] ??
-        item.pointAssignment!.default;
-      return `${item.name} ${there}`;
+        item.inlineRepetition!.default;
+      return `${item.inlineRepetition!.label ?? item.name} ${there}`;
     })
     .join(", ");
 }

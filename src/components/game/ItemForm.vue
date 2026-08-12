@@ -108,17 +108,18 @@ export interface ItemDraft {
   dynamicStat: string;
   dynamicMin: number | string | null;
   dynamicMax: number | string | null;
-  pointMin: number | string | null;
-  pointMax: number | string | null;
-  pointDefault: number | string | null;
-  pointPriority: number | string | null;
+  repetitionMin: number | string | null;
+  repetitionMax: number | string | null;
+  repetitionDefault: number | string | null;
+  repetitionPriority: number | string | null;
+  repetitionLabel: string;
   stats: StatRow[];
   defaultParams: { slotId: string; value: string | number | boolean }[];
 }
 
-/** Point assignment fields count as "set" once they hold a real number, not just an
+/** Inline-repetition numeric fields count as "set" once they hold a real number, not just an
  *  empty string left behind by a cleared number input. */
-function hasPointField(v: number | string | null): boolean {
+function hasRepetitionField(v: number | string | null): boolean {
   return v != null && v !== "";
 }
 
@@ -155,10 +156,11 @@ function buildDraft(item: Item | null | undefined): ItemDraft {
     dynamicStat: source.dynamicStat ?? "",
     dynamicMin: source.dynamicMin ?? null,
     dynamicMax: source.dynamicMax ?? null,
-    pointMin: source.pointAssignment?.min ?? null,
-    pointMax: source.pointAssignment?.max ?? null,
-    pointDefault: source.pointAssignment?.default ?? null,
-    pointPriority: source.pointAssignment?.priority ?? null,
+    repetitionMin: source.inlineRepetition?.min ?? null,
+    repetitionMax: source.inlineRepetition?.max ?? null,
+    repetitionDefault: source.inlineRepetition?.default ?? null,
+    repetitionPriority: source.inlineRepetition?.priority ?? null,
+    repetitionLabel: source.inlineRepetition?.label ?? "",
     stats: Object.keys(source)
       .filter((key) => statKeys.has(key))
       .map((key) => ({ key, value: source[key as keyof Item] as number })),
@@ -220,9 +222,10 @@ function diffLabel(oldJson: string, newJson: string): string {
     if (old.dynamicMin !== nw.dynamicMin || old.dynamicMax !== nw.dynamicMax)
       return `edit dynamic range → ${nw.dynamicMin ?? "_"}–${nw.dynamicMax ?? "_"}`;
     if (
-      JSON.stringify(old.pointAssignment) !== JSON.stringify(nw.pointAssignment)
+      JSON.stringify(old.inlineRepetition) !==
+      JSON.stringify(nw.inlineRepetition)
     )
-      return "edit point assignment";
+      return "edit inline repetition";
     if (JSON.stringify(old.stats) !== JSON.stringify(nw.stats))
       return diffStatsLabel(old.stats ?? [], nw.stats ?? []);
     if (JSON.stringify(old.defaultParams) !== JSON.stringify(nw.defaultParams))
@@ -428,16 +431,19 @@ function toItem(): Item {
   }
 
   if (
-    hasPointField(local.pointMin) ||
-    hasPointField(local.pointMax) ||
-    hasPointField(local.pointDefault)
+    hasRepetitionField(local.repetitionMin) ||
+    hasRepetitionField(local.repetitionMax) ||
+    hasRepetitionField(local.repetitionDefault)
   ) {
-    item.pointAssignment = {
-      min: Number(local.pointMin) || 0,
-      max: Number(local.pointMax) || 0,
-      default: Number(local.pointDefault) || 0,
-      ...(hasPointField(local.pointPriority)
-        ? { priority: Number(local.pointPriority) }
+    item.inlineRepetition = {
+      min: Number(local.repetitionMin) || 0,
+      max: Number(local.repetitionMax) || 0,
+      default: Number(local.repetitionDefault) || 0,
+      ...(hasRepetitionField(local.repetitionPriority)
+        ? { priority: Number(local.repetitionPriority) }
+        : {}),
+      ...(local.repetitionLabel.trim()
+        ? { label: local.repetitionLabel.trim() }
         : {}),
     };
   }
@@ -491,23 +497,23 @@ function removeDefaultParam(index: number) {
   draft.value.defaultParams.splice(index, 1);
 }
 
-// Dynamic modification and point assignment are single field groups rather than arrays,
+// Dynamic modification and inline repetition are single field groups rather than arrays,
 // so "added"/"removed" is tracked as its own flag instead of splicing a list. Both start
 // active whenever the source item already carries values for them.
 function hasDynamicModification(d: ItemDraft): boolean {
   return d.dynamicStat !== "";
 }
-function hasPointAssignment(d: ItemDraft): boolean {
+function hasInlineRepetition(d: ItemDraft): boolean {
   return (
-    hasPointField(d.pointMin) ||
-    hasPointField(d.pointMax) ||
-    hasPointField(d.pointDefault) ||
-    hasPointField(d.pointPriority)
+    hasRepetitionField(d.repetitionMin) ||
+    hasRepetitionField(d.repetitionMax) ||
+    hasRepetitionField(d.repetitionDefault) ||
+    hasRepetitionField(d.repetitionPriority)
   );
 }
 
 const dynamicModActive = ref(hasDynamicModification(draft.value));
-const pointActive = ref(hasPointAssignment(draft.value));
+const repetitionActive = ref(hasInlineRepetition(draft.value));
 
 // Draft undo/redo (new-item history) replaces `draft.value` wholesale, bypassing the
 // add/remove handlers below -- resurface the group automatically whenever its fields come
@@ -521,13 +527,13 @@ watch(
 );
 watch(
   () => [
-    draft.value.pointMin,
-    draft.value.pointMax,
-    draft.value.pointDefault,
-    draft.value.pointPriority,
+    draft.value.repetitionMin,
+    draft.value.repetitionMax,
+    draft.value.repetitionDefault,
+    draft.value.repetitionPriority,
   ],
   () => {
-    if (hasPointAssignment(draft.value)) pointActive.value = true;
+    if (hasInlineRepetition(draft.value)) repetitionActive.value = true;
   },
 );
 
@@ -541,15 +547,16 @@ function removeDynamicModification() {
   dynamicModActive.value = false;
 }
 
-function addPointAssignment() {
-  pointActive.value = true;
+function addInlineRepetition() {
+  repetitionActive.value = true;
 }
-function removePointAssignment() {
-  draft.value.pointMin = null;
-  draft.value.pointMax = null;
-  draft.value.pointDefault = null;
-  draft.value.pointPriority = null;
-  pointActive.value = false;
+function removeInlineRepetition() {
+  draft.value.repetitionMin = null;
+  draft.value.repetitionMax = null;
+  draft.value.repetitionDefault = null;
+  draft.value.repetitionPriority = null;
+  draft.value.repetitionLabel = "";
+  repetitionActive.value = false;
 }
 
 function attachBonus(id: string) {
@@ -568,7 +575,7 @@ function detachBonus(id: string) {
 }
 
 /** Toggle or edit one attached bonus's occurrence config -- `occurrence: null` drops it back
- *  to a plain-id attachment (always 1 occurrence), mirroring `removePointAssignment`'s
+ *  to a plain-id attachment (always 1 occurrence), mirroring `removeInlineRepetition`'s
  *  clear-back-to-unset behavior. */
 function updateBonusOccurrence(id: string, occurrence: OccurrenceDraft | null) {
   if (occurrence) {
@@ -588,7 +595,7 @@ watch(
   (value) => {
     draft.value = buildDraft(value);
     dynamicModActive.value = hasDynamicModification(draft.value);
-    pointActive.value = hasPointAssignment(draft.value);
+    repetitionActive.value = hasInlineRepetition(draft.value);
     error.value = "";
     lastEmittedJson = JSON.stringify(toItem());
     resetDraftHistory();
@@ -846,51 +853,59 @@ watch(
     </div>
 
     <FormSection
-      >Point assignment (boons, attributes, other point_assignment slots
+      >Inline repetition (boons, attributes, other point_assignment slots
       filter)</FormSection
     >
     <div class="flex flex-wrap items-center gap-1.5 mb-2">
       <IconButton
-        v-if="!pointActive"
-        title="Add point assignment"
-        data-testid="add-point-assignment"
-        @click="addPointAssignment"
+        v-if="!repetitionActive"
+        title="Add inline repetition"
+        data-testid="add-inline-repetition"
+        @click="addInlineRepetition"
         ><Plus
       /></IconButton>
       <IconButton
         v-else
-        title="Remove point assignment"
-        data-testid="remove-point-assignment"
-        @click="removePointAssignment"
+        title="Remove inline repetition"
+        data-testid="remove-inline-repetition"
+        @click="removeInlineRepetition"
         ><Trash
       /></IconButton>
-      <FormGrid v-if="pointActive" data-testid="point-assignment-fields">
+      <FormGrid v-if="repetitionActive" data-testid="inline-repetition-fields">
         <FormField label="Min">
           <input
-            v-model.number="draft.pointMin"
+            v-model.number="draft.repetitionMin"
             class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
             type="number"
           />
         </FormField>
         <FormField label="Max">
           <input
-            v-model.number="draft.pointMax"
+            v-model.number="draft.repetitionMax"
             class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
             type="number"
           />
         </FormField>
         <FormField label="Default">
           <input
-            v-model.number="draft.pointDefault"
+            v-model.number="draft.repetitionDefault"
             class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
             type="number"
           />
         </FormField>
         <FormField label="Priority">
           <input
-            v-model.number="draft.pointPriority"
+            v-model.number="draft.repetitionPriority"
             class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
             type="number"
+          />
+        </FormField>
+        <FormField label="Label (optional, overrides the item name on its row)">
+          <input
+            v-model="draft.repetitionLabel"
+            class="w-40 rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+            type="text"
+            data-testid="inline-repetition-label-input"
           />
         </FormField>
       </FormGrid>

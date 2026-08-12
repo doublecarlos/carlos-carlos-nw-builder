@@ -152,7 +152,7 @@ export function defaultBuild(name = "New build"): Build {
     } else if (slot.type === "point_assignment") {
       const row: Record<string, number> = {};
       for (const item of db.forSlot(slot.id))
-        row[item.id] = item.pointAssignment!.default;
+        row[item.id] = item.inlineRepetition!.default;
       assignments[slot.id] = row;
     }
   }

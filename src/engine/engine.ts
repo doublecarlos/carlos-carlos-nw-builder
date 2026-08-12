@@ -372,7 +372,7 @@ function findErrors(
     if (slot.type !== "point_assignment") continue;
     const assigned = build.assignments?.[slot.id] ?? {};
     for (const item of db.forSlot(slot.id)) {
-      const count = assigned[item.id] ?? item.pointAssignment!.default;
+      const count = assigned[item.id] ?? item.inlineRepetition!.default;
       if (count > 0) counts.set(item.id, (counts.get(item.id) ?? 0) + count);
     }
   }
@@ -381,7 +381,7 @@ function findErrors(
     if (slot.type !== "point_assignment") continue;
     const assigned = build.assignments?.[slot.id] ?? {};
     for (const item of db.forSlot(slot.id)) {
-      const { min, max: rowMax, default: def } = item.pointAssignment!;
+      const { min, max: rowMax, default: def } = item.inlineRepetition!;
       const count = assigned[item.id] ?? def;
       if (count <= 0) continue;
 

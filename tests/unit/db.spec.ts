@@ -156,7 +156,7 @@ describe("forSlotAndBuild maxCopies filtering", () => {
     name: "Shared Item",
     filter: "test_shared",
     maxCopies: 1,
-    pointAssignment: { min: 0, max: 3, default: 0 },
+    inlineRepetition: { min: 0, max: 3, default: 0 },
   };
 
   const testDb = db.build(

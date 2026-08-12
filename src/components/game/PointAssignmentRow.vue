@@ -50,6 +50,10 @@ const values = () => props.build.assignments[props.slotDef.id] ?? {};
       @change="
         (itemId, count) => buildEditor.setAssignment(slotDef, itemId, count)
       "
+      @occurrence-change="
+        (itemId, bonusId, count, label) =>
+          buildEditor.setOccurrenceInput(itemId, bonusId, count, label)
+      "
       @item-enter="(event, itemId) => emit('itemEnter', event, itemId)"
       @item-leave="emit('itemLeave')"
     />

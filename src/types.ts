@@ -104,7 +104,7 @@ export interface ItemPickerSlot {
  * picked choice. Every point spent on a row's item is resolved by the engine exactly as if that
  * item had been picked in that many separate `item_picker` slots (bonus.ts's `collect()` bumps
  * `equipped`/tags/bonus occurrences/bonus candidates by the count instead of by one). No shared point
- * budget across the row: each item's `pointAssignment.min`/`max` (on the item itself, see
+ * budget across the row: each item's `inlineRepetition.min`/`max` (on the item itself, see
  * `Item`) is its own bound, not a pool split between them. */
 export interface PointAssignmentSlot {
   id: string;
@@ -203,9 +203,12 @@ export interface Item {
   dynamicStat?: StatKey;
   dynamicMin?: number;
   dynamicMax?: number;
-  /** Set only on an item meant to be spent points on via a `point_assignment` slot whose
-   * `filter` matches this item's own -- see `PointAssignmentConfig`. */
-  pointAssignment?: PointAssignmentConfig;
+  /** Declares that this item can repeat "inline" N times wherever it's chosen -- today only
+   * consumed by a `point_assignment` slot whose `filter` matches this item's own (each point
+   * spent is one more repetition), see `InlineRepetitionConfig`. Named apart from that slot type
+   * deliberately: this is the item's own property, not a fact about any particular slot, so a
+   * future consumer (e.g. an `item_picker` pick repeating inline) can read it the same way. */
+  inlineRepetition?: InlineRepetitionConfig;
   /** A bare id means "always exactly 1 occurrence of this bonus" (the original, still-common
    * shape). A `BonusOccurrenceConfig` lets the same item instead declare a typed, player-set
    * count for one bonus -- e.g. one item standing in for 1-5 stacks of a set bonus instead of 5
@@ -234,27 +237,33 @@ export interface Item {
   [key: string]: unknown;
 }
 
-/** Bounds for one item's stepper in whichever `PointAssignmentSlot` matches this item's
- * `filter` -- presence of this object is what makes an item selectable there at all (see
- * `Db.forSlot`'s point_assignment branch), same role `dynamicStat` plays in gating
- * `dynamicMin`/`dynamicMax`. `priority` breaks ties in display order (lower first); items
- * sharing one priority (or omitting it, default 0) fall back to name order. */
-export interface PointAssignmentConfig {
+/** Bounds for one item's repetition count -- today read by whichever `PointAssignmentSlot`
+ * matches this item's `filter`, presence of this object being what makes an item selectable
+ * there at all (see `Db.forSlot`'s point_assignment branch), same role `dynamicStat` plays in
+ * gating `dynamicMin`/`dynamicMax`. `priority` breaks ties in that slot's display order (lower
+ * first); items sharing one priority (or omitting it, default 0) fall back to name order. */
+export interface InlineRepetitionConfig {
   min: number;
   max: number;
   default: number;
   priority?: number;
+  /** Overrides the item's own `name` on its point-assignment row and that row's compare-diff
+   *  title only -- same "per-attachment display override" pattern `BonusOccurrenceConfig.label`
+   *  uses for its stepper row (see `useCompareDiff.ts`'s `assignmentDiffTitle`). Everywhere
+   *  else (item lists, hover cards, etc.) still shows the item's real name. */
+  label?: string;
 }
 
 /** One item's typed occurrence count for one bonus it carries -- an `Item.bonuses` entry in
  * place of a bare id, see `Item.bonuses`'s own doc comment. `bonus` is required (unlike
- * `PointAssignmentConfig`, which needs none: an item may carry several of these, one per bonus,
+ * `InlineRepetitionConfig`, which needs none: an item may carry several of these, one per bonus,
  * so each has to say which bonus it's for). `min === max` needs no player input at all -- the
  * item always contributes `min` occurrences, same as a bare-id attachment always contributes 1
- * but with a magnitude other than 1. Deliberately not named/shaped after `PointAssignmentConfig`
- * even though the bounds match: the two are separate concepts (a point_assignment slot's own
- * stepper vs. one bonus's occurrence count on an arbitrary item_picker item) that may not stay
- * structurally identical as either one grows. */
+ * but with a magnitude other than 1. Deliberately not named/shaped after `InlineRepetitionConfig`
+ * even though the bounds match: the two are independent counts (see bonus.ts's
+ * `collectInlineRepetition` -- a plain-id bonus scales with the item's own inline-repetition
+ * count, but a `BonusOccurrenceConfig`-carrying one does not) that may not stay structurally
+ * identical as either one grows. */
 export interface BonusOccurrenceConfig {
   bonus: string; // Bonus.id
   min: number;

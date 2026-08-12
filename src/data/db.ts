@@ -89,9 +89,9 @@ export function build(
 
     /** Items selectable in a given slot id -- empty for a build_parameter slot, which has no
      * `filter` to look up (it isn't an item choice at all). For a point_assignment slot, only
-     * items that also carry `pointAssignment` bounds qualify (an item merely sharing the
+     * items that also carry `inlineRepetition` bounds qualify (an item merely sharing the
      * filter but missing that config could never render a valid stepper), sorted by
-     * `pointAssignment.priority` (default 0) then name -- item_picker's own name-only order
+     * `inlineRepetition.priority` (default 0) then name -- item_picker's own name-only order
      * doesn't apply here since a priority is how a point_assignment row's author controls
      * display order without an explicit list to reorder (slots.json used to hold one). */
     forSlot(slotId: string) {
@@ -99,11 +99,11 @@ export function build(
       if (slot?.type === "item_picker") return byFilter.get(slot.filter) ?? [];
       if (slot?.type === "point_assignment") {
         return (byFilter.get(slot.filter) ?? [])
-          .filter((item) => item.pointAssignment)
+          .filter((item) => item.inlineRepetition)
           .sort((a, b) => {
             const diff =
-              (a.pointAssignment!.priority ?? 0) -
-              (b.pointAssignment!.priority ?? 0);
+              (a.inlineRepetition!.priority ?? 0) -
+              (b.inlineRepetition!.priority ?? 0);
             return diff !== 0 ? diff : a.name.localeCompare(b.name);
           });
       }
@@ -152,7 +152,7 @@ function copyCounts(
     if (slot.type !== "point_assignment") continue;
     const assigned = build.assignments?.[slot.id] ?? {};
     for (const item of db.forSlot(slot.id)) {
-      const count = assigned[item.id] ?? item.pointAssignment!.default;
+      const count = assigned[item.id] ?? item.inlineRepetition!.default;
       if (count > 0) bump(item.id, count);
     }
   }

@@ -45,12 +45,18 @@ interface Candidate extends BonusCandidate {
 
 /**
  * One point_assignment slot's contribution -- every point behaves exactly like one more
- * item_picker slot choosing that item, so this bumps `equipped`/tags/bonus occurrences by each
- * item's count (into the caller's running maps), sums the row's own stats into a bucket
- * (engine.ts's `rowVectors` adds this alongside `bonusStatsBySlot`), and expands one bonus
- * candidate per point so stacking (`sources.length`) reads the same as an item_picker pick.
+ * item_picker slot choosing that item, so this bumps `equipped`/tags by each item's own
+ * `inlineRepetition` count (into the caller's running maps) and sums the row's own stats into a
+ * bucket (engine.ts's `rowVectors` adds this alongside `bonusStatsBySlot`).
+ *
+ * A bonus attachment's own occurrence count follows the same split `collect()`'s item_picker
+ * branch would if a single item could carry both shapes: a bare-id attachment scales with the
+ * item's own repetition count (N repetitions read as N picks of that bonus, same as N picks of
+ * the item itself), while a `BonusOccurrenceConfig` attachment carries its own typed, independent
+ * count (`build.occurrenceInputs`, the same per-item storage an item_picker item's occurrence
+ * stepper already uses) -- see #232.
  */
-function collectPointAssignment(
+function collectInlineRepetition(
   slot: PointAssignmentSlot,
   build: Build,
   db: Db,
@@ -68,17 +74,11 @@ function collectPointAssignment(
   const candidates: Candidate[] = [];
 
   for (const item of db.forSlot(slot.id)) {
-    const count = counts[item.id] ?? item.pointAssignment!.default;
+    const count = counts[item.id] ?? item.inlineRepetition!.default;
     if (count <= 0) continue;
 
     bump(equipped, item.id, count);
     for (const tag of item.tags ?? []) bump(tags, tag, count);
-    // A point_assignment item's own BonusOccurrenceConfig (if any) is not yet honored here --
-    // every attachment just contributes 1 x this row's count, same as a bare id always did. The
-    // row's count already is a per-item typed magnitude; layering a second one on top is out of
-    // scope until a real item needs both.
-    for (const attachment of item.bonuses ?? [])
-      bump(bonusOccurrences, bonusIdOf(attachment), count);
 
     for (const key of db.schema.statKeys) {
       const raw = item[key];
@@ -86,10 +86,24 @@ function collectPointAssignment(
       statBucket.set(key, (statBucket.get(key) ?? 0) + (raw as number) * count);
     }
 
-    const perPoint = db.bonusesFor(item);
-    for (let i = 0; i < count; i++) {
-      for (const entry of perPoint) {
-        candidates.push({ ...entry, slotId: slot.id, order });
+    const itemInputs = build.occurrenceInputs?.[item.id];
+    for (const attachment of item.bonuses ?? []) {
+      const bonusId = bonusIdOf(attachment);
+      const bonus = db.bonusById.get(bonusId);
+      if (!bonus) continue;
+      const attachmentCount =
+        typeof attachment === "string"
+          ? count
+          : occurrenceCountFor(attachment, itemInputs);
+      bump(bonusOccurrences, bonusId, attachmentCount);
+      for (let i = 0; i < attachmentCount; i++) {
+        candidates.push({
+          bonus,
+          bonusId,
+          source: item.name,
+          slotId: slot.id,
+          order,
+        });
       }
     }
   }
@@ -131,7 +145,7 @@ export function collect(
     if (slot.type === "separator" || slot.type === "text") return;
 
     if (slot.type === "point_assignment") {
-      const collected = collectPointAssignment(
+      const collected = collectInlineRepetition(
         slot,
         build,
         db,
@@ -166,12 +180,12 @@ export function collect(
     for (const tag of item.tags ?? []) bump(tags, tag);
 
     // Each attachment's occurrence count is its own, not a single count shared by the whole
-    // item (unlike collectPointAssignment's `count`, which does apply uniformly): an item can
-    // carry a plain bare-id bonus (always 1) alongside a BonusOccurrenceConfig for a different
+    // item: an item can carry a plain bare-id bonus (always 1 here -- no repetition concept
+    // applies to a single item_picker pick) alongside a BonusOccurrenceConfig for a different
     // bonus (a player-set count), so the two must be resolved and pushed independently. A
-    // config's count duplicates its candidate that many times, same as collectPointAssignment
-    // does per point, so `stacking: "perSource"` sees N sources from one item exactly as it
-    // would from N separate item_picker picks.
+    // config's count duplicates its candidate that many times, same as collectInlineRepetition
+    // does for its own BonusOccurrenceConfig attachments, so `stacking: "perSource"` sees N
+    // sources from one item exactly as it would from N separate item_picker picks.
     const itemInputs = build.occurrenceInputs?.[item.id];
     for (const attachment of item.bonuses ?? []) {
       const bonusId = bonusIdOf(attachment);

@@ -1,4 +1,4 @@
-// End-to-end coverage for removing an item's dynamic modification / point assignment
+// End-to-end coverage for removing an item's dynamic modification / inline repetition
 // groups in the item editor: both start hidden behind an "add" button, like Stats, and a
 // trash button clears the whole group back to unset rather than leaving stale values
 // behind that a disabled/empty-looking field can't fully clean up.
@@ -60,21 +60,21 @@ test("dynamic modification group is hidden until added, then fully removable", a
   await expect(numberInputs.nth(1)).toHaveValue("");
 });
 
-test("point assignment group is hidden until added, then fully removable", async ({
+test("inline repetition group is hidden until added, then fully removable", async ({
   page,
 }) => {
   await openNewItemForm(page);
 
   await expect(
-    page.getByRole("button", { name: "Add point assignment" }),
+    page.getByRole("button", { name: "Add inline repetition" }),
   ).toBeVisible();
-  await expect(page.getByTestId("point-assignment-fields")).toBeHidden();
+  await expect(page.getByTestId("inline-repetition-fields")).toBeHidden();
 
-  await page.getByRole("button", { name: "Add point assignment" }).click();
-  const fields = page.getByTestId("point-assignment-fields");
+  await page.getByRole("button", { name: "Add inline repetition" }).click();
+  const fields = page.getByTestId("inline-repetition-fields");
   await expect(fields).toBeVisible();
   await expect(
-    page.getByRole("button", { name: "Remove point assignment" }),
+    page.getByRole("button", { name: "Remove inline repetition" }),
   ).toBeVisible();
 
   const numberInputs = fields.locator('input[type="number"]');
@@ -82,40 +82,40 @@ test("point assignment group is hidden until added, then fully removable", async
   await numberInputs.nth(1).fill("100"); // Max
   await numberInputs.nth(2).fill("50"); // Default
 
-  await page.getByRole("button", { name: "Remove point assignment" }).click();
+  await page.getByRole("button", { name: "Remove inline repetition" }).click();
 
   await expect(fields).toBeHidden();
   await expect(
-    page.getByRole("button", { name: "Add point assignment" }),
+    page.getByRole("button", { name: "Add inline repetition" }),
   ).toBeVisible();
 
   // Re-adding must not resurrect the values that were just cleared.
-  await page.getByRole("button", { name: "Add point assignment" }).click();
+  await page.getByRole("button", { name: "Add inline repetition" }).click();
   await expect(numberInputs.nth(0)).toHaveValue("");
   await expect(numberInputs.nth(1)).toHaveValue("");
   await expect(numberInputs.nth(2)).toHaveValue("");
 });
 
-test("removing point assignment on an existing item omits it from the saved item", async ({
+test("removing inline repetition on an existing item omits it from the saved item", async ({
   page,
 }) => {
   await openNewItemForm(page);
 
-  await page.getByRole("button", { name: "Add point assignment" }).click();
-  const fields = page.getByTestId("point-assignment-fields");
+  await page.getByRole("button", { name: "Add inline repetition" }).click();
+  const fields = page.getByTestId("inline-repetition-fields");
   const numberInputs = fields.locator('input[type="number"]');
   await numberInputs.nth(0).fill("0");
   await numberInputs.nth(1).fill("100");
   await numberInputs.nth(2).fill("50");
 
-  await page.getByRole("button", { name: "Remove point assignment" }).click();
+  await page.getByRole("button", { name: "Remove inline repetition" }).click();
   await page.getByRole("button", { name: "Save item" }).click();
 
-  // Re-open the saved item and confirm no point assignment group carried through.
+  // Re-open the saved item and confirm no inline repetition group carried through.
   await page.locator(".editor-search").fill(UNIQUE_ITEM);
   await page.locator(".editor-row", { hasText: UNIQUE_ITEM }).click();
   await expect(
-    page.getByRole("button", { name: "Add point assignment" }),
+    page.getByRole("button", { name: "Add inline repetition" }),
   ).toBeVisible();
-  await expect(page.getByTestId("point-assignment-fields")).toBeHidden();
+  await expect(page.getByTestId("inline-repetition-fields")).toBeHidden();
 });

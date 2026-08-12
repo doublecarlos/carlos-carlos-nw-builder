@@ -331,7 +331,7 @@ const ITEM_FIELDS = new Set([
   "dynamicStat",
   "dynamicMin",
   "dynamicMax",
-  "pointAssignment",
+  "inlineRepetition",
   "bonuses",
   "excludes",
   "shortDescription",
@@ -788,18 +788,18 @@ export function validate(
       );
     } else if (
       pointAssignmentFilters.has(item.filter) &&
-      !item.pointAssignment
+      !item.inlineRepetition
     ) {
       report(
         "warn",
         `filter "${item.filter}" is a point_assignment slot's filter, but this ` +
-          "item has no pointAssignment config, so it never appears as a row",
+          "item has no inlineRepetition config, so it never appears as a row",
         item.id,
       );
     }
 
-    if (item.pointAssignment) {
-      const { min, max, default: def } = item.pointAssignment;
+    if (item.inlineRepetition) {
+      const { min, max, default: def } = item.inlineRepetition;
       if (
         ![min, max, def].every(
           (n) => typeof n === "number" && Number.isFinite(n),
@@ -807,13 +807,13 @@ export function validate(
       ) {
         report(
           "error",
-          "pointAssignment has a non-numeric min/max/default",
+          "inlineRepetition has a non-numeric min/max/default",
           item.id,
         );
       } else if (min > max || def < min || def > max) {
         report(
           "error",
-          `pointAssignment default ${def} is outside ${min}–${max}`,
+          `inlineRepetition default ${def} is outside ${min}–${max}`,
           item.id,
         );
       }
@@ -973,7 +973,7 @@ const ITEM_TRAILING_KEYS = [
   "tags",
   "bonuses",
   "excludes",
-  "pointAssignment",
+  "inlineRepetition",
 ] as const;
 
 function canonicalItem(item: Item): Item {
