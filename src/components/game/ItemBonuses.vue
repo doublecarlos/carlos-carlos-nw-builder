@@ -262,23 +262,23 @@ function onSlotDuplicate(slot: Slot) {
       >
         <IconButton
           v-if="!occurrenceFor(slot.id)"
-          title="Let this item's copy of this bonus vary (stacks) instead of always contributing 1 occurrence"
+          title="Add custom occurence count"
           data-testid="add-occurrence-config"
           @click="addOccurrence(slot.id)"
           ><Plus
         /></IconButton>
         <IconButton
           v-else
-          title="Back to a plain attachment (always 1 occurrence)"
+          title="Back to default occurence count"
           data-testid="remove-occurrence-config"
           @click="removeOccurrence(slot.id)"
           ><Trash
         /></IconButton>
         <span v-if="!occurrenceFor(slot.id)" class="text-sm text-muted"
-          >Occurrence count: fixed at 1</span
+          >Occurrence count: default (1 per item copy)</span
         >
         <template v-else>
-          <span class="text-sm text-muted">Occurrence count (stacks):</span>
+          <span class="text-sm text-muted">Occurrence count:</span>
           <FormGrid data-testid="occurrence-config-fields">
             <FormField label="Min">
               <input

@@ -35,7 +35,7 @@ test("occurrence config is hidden until added, then fully removable", async ({
 
   const row = page.getByTestId("occurrence-config-row");
   await expect(row).toBeVisible();
-  await expect(row).toContainText("fixed at 1");
+  await expect(row).toContainText("default (1 per item copy)");
   await expect(row.getByTestId("occurrence-config-fields")).toBeHidden();
 
   await row.getByTestId("add-occurrence-config").click();
@@ -51,7 +51,7 @@ test("occurrence config is hidden until added, then fully removable", async ({
   await row.getByTestId("remove-occurrence-config").click();
 
   await expect(fields).toBeHidden();
-  await expect(row).toContainText("fixed at 1");
+  await expect(row).toContainText("default (1 per item copy)");
   await expect(row.getByTestId("add-occurrence-config")).toBeVisible();
 
   // Re-adding must not resurrect the values that were just cleared.
