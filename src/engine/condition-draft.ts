@@ -37,6 +37,11 @@ export interface ConditionRow {
   branches?: ConditionRow[][];
   atLeast?: string | number | null;
   below?: string | number | null;
+  /** Single-value alternative to `atLeast`/`below`, on the leaves that support both -- which
+   *  one is live is picked by `rangeMode`, not by which field happens to be non-null (so
+   *  switching modes in the UI doesn't have to guess at intent from stale values). */
+  exactly?: string | number | null;
+  rangeMode?: "range" | "exact";
   bonus?: string;
   tag?: string;
   item?: string;
@@ -53,6 +58,12 @@ const fromCsv = (text: unknown): string[] =>
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean);
+/** `undefined` when a numeric field has no real value -- the "blank input serializes to
+ *  nothing" convention every numeric leaf field follows. */
+const numberOrUndefined = (
+  value: string | number | null | undefined,
+): number | undefined =>
+  value != null && value !== "" ? Number(value) : undefined;
 
 // --- leaf <-> row --------------------------------------------------------------------
 
@@ -66,23 +77,47 @@ function leafFromSpec(
   // each branch narrows spec to the shape it expects.
   if (type === "duration") {
     if (typeof spec === "number") {
-      return { type, atLeast: spec, below: null };
+      return {
+        type,
+        atLeast: spec,
+        below: null,
+        exactly: null,
+        rangeMode: "range",
+      };
     }
     const s = spec as RangeSpec | undefined;
-    return { type, atLeast: s?.atLeast ?? null, below: s?.below ?? null };
+    const exact = s?.exactly != null;
+    return {
+      type,
+      atLeast: exact ? null : (s?.atLeast ?? null),
+      below: exact ? null : (s?.below ?? null),
+      exactly: s?.exactly ?? null,
+      rangeMode: exact ? "exact" : "range",
+    };
   }
   if (type === "bonusOccurrences") {
-    const s = spec as { bonus?: string; atLeast?: number } | undefined;
-    return { type, bonus: s?.bonus ?? "", atLeast: s?.atLeast ?? 1 };
+    const s = spec as (RangeSpec & { bonus?: string }) | undefined;
+    const exact = s?.exactly != null;
+    return {
+      type,
+      bonus: s?.bonus ?? "",
+      atLeast: exact ? null : (s?.atLeast ?? 1),
+      below: exact ? null : (s?.below ?? null),
+      exactly: s?.exactly ?? null,
+      rangeMode: exact ? "exact" : "range",
+    };
   }
   if (type === "equipped") {
-    const s = spec as
-      { tag?: string; item?: string; atLeast?: number } | undefined;
+    const s = spec as (RangeSpec & { tag?: string; item?: string }) | undefined;
+    const exact = s?.exactly != null;
     return {
       type,
       tag: s?.tag ?? "",
       item: s?.item ?? "",
-      atLeast: s?.atLeast ?? 1,
+      atLeast: exact ? null : (s?.atLeast ?? 1),
+      below: exact ? null : (s?.below ?? null),
+      exactly: s?.exactly ?? null,
+      rangeMode: exact ? "exact" : "range",
     };
   }
   if (type === "param") {
@@ -95,6 +130,7 @@ function leafFromSpec(
           key?: string;
           atLeast?: number;
           below?: number;
+          exactly?: number;
           is?: boolean;
           equals?: string | string[];
         }
@@ -102,12 +138,15 @@ function leafFromSpec(
     let form: "number" | "boolean" | "string" = "number";
     if (s?.is !== undefined) form = "boolean";
     else if (s?.equals !== undefined) form = "string";
+    const exact = s?.exactly != null;
     return {
       type,
       key: s?.key ?? "",
       form,
-      atLeast: s?.atLeast ?? null,
-      below: s?.below ?? null,
+      atLeast: exact ? null : (s?.atLeast ?? null),
+      below: exact ? null : (s?.below ?? null),
+      exactly: s?.exactly ?? null,
+      rangeMode: exact ? "exact" : "range",
       is: s?.is ?? null,
       equals: Array.isArray(s?.equals)
         ? s.equals.join(", ")
@@ -131,6 +170,10 @@ function leafToSpec(
   | ({ key: string } & Record<string, unknown>)
   | undefined {
   if (row.type === "duration") {
+    if (row.rangeMode === "exact") {
+      const exactly = numberOrUndefined(row.exactly);
+      return exactly !== undefined ? { exactly } : undefined;
+    }
     const range: RangeSpec = {};
     if (row.atLeast != null && row.atLeast !== "")
       range.atLeast = Number(row.atLeast);
@@ -138,14 +181,32 @@ function leafToSpec(
     return Object.keys(range).length ? range : undefined;
   }
   if (row.type === "bonusOccurrences") {
-    return row.bonus
-      ? { bonus: row.bonus, atLeast: Number(row.atLeast) || 1 }
-      : undefined;
+    if (!row.bonus) return undefined;
+    if (row.rangeMode === "exact") {
+      const exactly = numberOrUndefined(row.exactly);
+      return exactly !== undefined ? { bonus: row.bonus, exactly } : undefined;
+    }
+    const range: RangeSpec & { bonus: string } = {
+      bonus: row.bonus,
+      atLeast: Number(row.atLeast) || 1,
+    };
+    if (row.below != null && row.below !== "") range.below = Number(row.below);
+    return range;
   }
   if (row.type === "equipped") {
-    if (row.tag) return { tag: row.tag, atLeast: Number(row.atLeast) || 1 };
-    if (row.item) return { item: row.item, atLeast: Number(row.atLeast) || 1 };
-    return undefined;
+    const target = row.tag
+      ? { tag: row.tag }
+      : row.item
+        ? { item: row.item }
+        : null;
+    if (!target) return undefined;
+    if (row.rangeMode === "exact") {
+      const exactly = numberOrUndefined(row.exactly);
+      return exactly !== undefined ? { ...target, exactly } : undefined;
+    }
+    const range: RangeSpec = { atLeast: Number(row.atLeast) || 1 };
+    if (row.below != null && row.below !== "") range.below = Number(row.below);
+    return { ...target, ...range };
   }
   if (row.type === "param") {
     if (!row.key) return undefined;
@@ -159,6 +220,10 @@ function leafToSpec(
       return values.length
         ? { key: row.key, equals: values.length === 1 ? values[0] : values }
         : undefined;
+    }
+    if (row.rangeMode === "exact") {
+      const exactly = numberOrUndefined(row.exactly);
+      return exactly !== undefined ? { key: row.key, exactly } : undefined;
     }
     const range: { atLeast?: number; below?: number } = {};
     if (row.atLeast != null && row.atLeast !== "")
@@ -421,6 +486,27 @@ export function adjustPathAfterRemoval(
   return adjusted;
 }
 
+// Object-shaped leaf keys `leafFromSpec`/`leafToSpec` actually read and write -- a key outside
+// this set would round-trip through the row model and silently vanish (e.g. before this file
+// supported it, an `equipped` leaf's `below` bound), so `whenIsRepresentable` treats it as
+// "needs JSON" instead, same "drop to JSON rather than silently flatten" rule bonus-draft.ts's
+// TIER_KEYS/VARIANT_KEYS/PROBLEM_KEYS already apply to grants/variants/problems.
+const RANGE_LEAF_KEYS: Record<string, Set<string>> = {
+  duration: new Set(["atLeast", "below", "exactly"]),
+  bonusOccurrences: new Set(["bonus", "atLeast", "below", "exactly"]),
+  equipped: new Set(["tag", "item", "atLeast", "below", "exactly"]),
+  param: new Set(["key", "atLeast", "below", "exactly", "is", "equals"]),
+};
+
+function leafSpecIsRepresentable(key: string, spec: unknown): boolean {
+  if (key === "duration" && typeof spec === "number") return true; // bare-number shorthand
+  const allowed = RANGE_LEAF_KEYS[key];
+  if (!allowed) return true; // toggle/role/class/combatType/damageType: plain string|string[]
+  if (spec == null) return true;
+  if (typeof spec !== "object" || Array.isArray(spec)) return false;
+  return Object.keys(spec).every((k) => allowed.has(k));
+}
+
 /** Can this `when`-object be edited by the tree, within `MAX_DEPTH` levels of nesting? */
 export function whenIsRepresentable(
   when: ConditionWhen | undefined,
@@ -440,6 +526,6 @@ export function whenIsRepresentable(
         )
       );
     }
-    return LEAF_TYPES.includes(key);
+    return LEAF_TYPES.includes(key) && leafSpecIsRepresentable(key, spec);
   });
 }

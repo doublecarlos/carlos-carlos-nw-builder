@@ -239,3 +239,26 @@ describe("bonus-draft dynamic stats", () => {
     expect(needsJson(grant)).toBe(true);
   });
 });
+
+describe("bonus-draft grant with an equipped.below condition", () => {
+  // Regression for a real shipped bonus (db-bonuses.json's "Leveling Ability Score Warning"),
+  // whose `when` uses `equipped: { tag, atLeast, below }` -- previously representable enough
+  // to open in the form, but `condition-draft.ts` only ever read/wrote `atLeast`, so the
+  // `below` bound silently vanished on the next round-trip.
+  it("round-trips the below bound through the full grant conversion", () => {
+    const grant: Grant = {
+      when: {
+        any: [
+          { not: { equipped: { tag: "level_attr:3", atLeast: 2, below: 3 } } },
+          { not: { equipped: { tag: "level_attr:6", atLeast: 2, below: 3 } } },
+        ],
+      },
+      problem: {
+        severity: "warning",
+        message: "Need to select 2 Ability Score points for each level",
+      },
+    };
+    expect(needsJson(grant)).toBe(false);
+    expect(toGrant(toDraft(grant))).toEqual(grant);
+  });
+});

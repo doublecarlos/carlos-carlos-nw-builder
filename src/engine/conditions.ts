@@ -124,15 +124,15 @@ const LEAVES: Record<
     const displayName = ctx.bonusNames?.get(s.bonus) ?? s.bonus;
     return {
       ok: inRange(have, s),
-      label: `${s.atLeast ?? 1} occurrence(s) of ${displayName}`,
+      label: `${s.exactly ?? s.atLeast ?? 1} occurrence(s) of ${displayName}`,
       detail: `you have ${have}`,
     };
   },
 
   /** Reads any build_parameter by `key` (a slot's `path`) from `ctx.params`. The three
    * comparison forms are mutually exclusive -- chosen by whichever of `is`/`equals`/
-   * `atLeast`+`below` the spec carries, not by looking up the slot's `paramType` (catalog.ts's
-   * linter is what keeps the two in sync at data time). */
+   * `atLeast`+`below`+`exactly` the spec carries, not by looking up the slot's `paramType`
+   * (catalog.ts's linter is what keeps the two in sync at data time). */
   param(spec, ctx) {
     const s = spec as ParamCondition;
     // Fails closed on a key with no resolved value. Checked with `.has`, not a falsy `value`
@@ -162,9 +162,10 @@ const LEAVES: Record<
       };
     }
     const numeric = typeof value === "number" ? value : 0;
+    const range = { atLeast: s.atLeast, below: s.below, exactly: s.exactly };
     return {
-      ok: inRange(numeric, { atLeast: s.atLeast, below: s.below }),
-      label: `${s.key} ${describeRange({ atLeast: s.atLeast, below: s.below })}`,
+      ok: inRange(numeric, range),
+      label: `${s.key} ${describeRange(range)}`,
       detail: `you have ${value ?? 0}`,
     };
   },
@@ -176,10 +177,13 @@ const LEAVES: Record<
     const s = spec as RangeSpec & { tag?: string; item?: string };
     const have =
       s.tag != null ? countOf(ctx.tags, s.tag) : countOf(ctx.equipped, s.item);
-    const range = s.atLeast != null || s.below != null ? s : { atLeast: 1 };
+    const range =
+      s.atLeast != null || s.below != null || s.exactly != null
+        ? s
+        : { atLeast: 1 };
     return {
       ok: inRange(have, range),
-      label: `${range.atLeast ?? 1}× ${s.tag ?? s.item}`,
+      label: `${range.exactly ?? range.atLeast ?? 1}× ${s.tag ?? s.item}`,
       detail: `you have ${have}`,
     };
   },

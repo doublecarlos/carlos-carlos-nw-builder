@@ -19,6 +19,7 @@ import {
   Trash,
 } from "@lucide/vue";
 import FormField from "../ui/FormField.vue";
+import RangeOrExactFields from "./RangeOrExactFields.vue";
 import { NW_SLOTS } from "../../data/data";
 import {
   LEAF_TYPES,
@@ -402,6 +403,8 @@ function changeParamKey(row: ConditionRow, key: string) {
         : "number";
   row.atLeast = null;
   row.below = null;
+  row.exactly = null;
+  row.rangeMode = "range";
   row.is = null;
   row.equals = "";
 }
@@ -456,18 +459,13 @@ function changeParamKey(row: ConditionRow, key: string) {
         </FormField>
 
         <template v-if="row.type === 'duration'">
-          <FormField label="At least (s)" class="min-w-0"
-            ><input
-              v-model.number="row.atLeast"
-              class="w-24 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-              type="number"
-          /></FormField>
-          <FormField label="Below (s)" class="min-w-0"
-            ><input
-              v-model.number="row.below"
-              class="w-24 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-              type="number"
-          /></FormField>
+          <RangeOrExactFields
+            v-model:at-least="row.atLeast"
+            v-model:below="row.below"
+            v-model:exactly="row.exactly"
+            v-model:range-mode="row.rangeMode"
+            unit-suffix=" (s)"
+          />
         </template>
         <template v-else-if="row.type === 'bonusOccurrences'">
           <FormField label="Bonus" class="min-w-0">
@@ -479,18 +477,12 @@ function changeParamKey(row: ConditionRow, key: string) {
               @update:model-value="(v) => (row.bonus = v)"
             />
           </FormField>
-          <FormField label="At least (s)" class="min-w-0"
-            ><input
-              v-model.number="row.atLeast"
-              class="w-24 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-              type="number"
-          /></FormField>
-          <FormField label="Below (s)" class="min-w-0"
-            ><input
-              v-model.number="row.below"
-              class="w-24 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-              type="number"
-          /></FormField>
+          <RangeOrExactFields
+            v-model:at-least="row.atLeast"
+            v-model:below="row.below"
+            v-model:exactly="row.exactly"
+            v-model:range-mode="row.rangeMode"
+          />
         </template>
         <template v-else-if="row.type === 'equipped'">
           <FormField label="Tag" class="min-w-0"
@@ -506,18 +498,12 @@ function changeParamKey(row: ConditionRow, key: string) {
               class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
               type="text"
           /></FormField>
-          <FormField label="At least (s)" class="min-w-0"
-            ><input
-              v-model.number="row.atLeast"
-              class="w-24 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-              type="number"
-          /></FormField>
-          <FormField label="Below (s)" class="min-w-0"
-            ><input
-              v-model.number="row.below"
-              class="w-24 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-              type="number"
-          /></FormField>
+          <RangeOrExactFields
+            v-model:at-least="row.atLeast"
+            v-model:below="row.below"
+            v-model:exactly="row.exactly"
+            v-model:range-mode="row.rangeMode"
+          />
         </template>
         <template v-else-if="row.type === 'param'">
           <FormField label="Parameter" class="min-w-0">
@@ -563,20 +549,12 @@ function changeParamKey(row: ConditionRow, key: string) {
             </FormField>
           </template>
           <template v-else>
-            <FormField label="At least" class="min-w-0"
-              ><input
-                v-model.number="row.atLeast"
-                class="w-24 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-                type="number"
-                step="any"
-            /></FormField>
-            <FormField label="Below" class="min-w-0"
-              ><input
-                v-model.number="row.below"
-                class="w-24 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-                type="number"
-                step="any"
-            /></FormField>
+            <RangeOrExactFields
+              v-model:at-least="row.atLeast"
+              v-model:below="row.below"
+              v-model:exactly="row.exactly"
+              v-model:range-mode="row.rangeMode"
+            />
           </template>
         </template>
         <template v-else>

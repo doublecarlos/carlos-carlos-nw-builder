@@ -382,10 +382,15 @@ function checkParamCondition(
   }
 
   const numeric = slot.paramType === "number" || slot.paramType === "percent";
-  if (numeric && spec.atLeast === undefined && spec.below === undefined) {
+  if (
+    numeric &&
+    spec.atLeast === undefined &&
+    spec.below === undefined &&
+    spec.exactly === undefined
+  ) {
     report(
       "error",
-      `${path}: param "${spec.key}" is a number — use atLeast/below`,
+      `${path}: param "${spec.key}" is a number — use atLeast/below/exactly`,
     );
   } else if (slot.paramType === "boolean" && spec.is === undefined) {
     report("error", `${path}: param "${spec.key}" is a boolean — use "is"`);

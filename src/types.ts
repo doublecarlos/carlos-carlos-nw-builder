@@ -316,13 +316,14 @@ export type RangeLike = number | RangeSpec;
 /** Reads any `build_parameter` by its (context-relative) path -- the escape hatch for a
  * parameter with no dedicated leaf. `key` is a path, e.g. `bolster` or `toggles.combat`, not a
  * slot id. The three comparison forms are mutually exclusive, chosen by the addressed
- * parameter's `paramType`: `atLeast`/`below` for `number`/`percent` (half-open, same as
- * `duration`'s range), `is` for `boolean`, `equals` for `list` (a scalar or array -- an array
- * means "is one of", same as `role`/`class`/`combatType`). */
+ * parameter's `paramType`: `atLeast`/`below`/`exactly` for `number`/`percent` (half-open range,
+ * same as `duration`'s, or a single exact match), `is` for `boolean`, `equals` for `list` (a
+ * scalar or array -- an array means "is one of", same as `role`/`class`/`combatType`). */
 export interface ParamCondition {
   key: string;
   atLeast?: number;
   below?: number;
+  exactly?: number;
   is?: boolean;
   equals?: string | string[];
 }

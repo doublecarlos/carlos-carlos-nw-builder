@@ -76,6 +76,14 @@ describe("conditions.ts param leaf", () => {
     expect(result.unmet).toHaveLength(1);
     expect(result.unmet[0].detail).toContain("0.2");
   });
+
+  it("number form: exactly, a single-value alternative to atLeast/below", () => {
+    const c = ctx({ bolster: 0.5 });
+    expect(evaluate({ param: { key: "bolster", exactly: 0.5 } }, c)).toBe(true);
+    expect(evaluate({ param: { key: "bolster", exactly: 0.6 } }, c)).toBe(
+      false,
+    );
+  });
 });
 
 // --- bonus.ts's collect(): populating EvalContext.params ------------------------------------
@@ -171,5 +179,37 @@ describe("conditions.ts bonusOccurrences leaf uses bonusNames for friendly label
     );
     expect(result.ok).toBe(false);
     expect(result.unmet[0].label).toBe("2 occurrence(s) of m32-unknown-bonus");
+  });
+});
+
+describe("conditions.ts equipped/bonusOccurrences leaves support exactly", () => {
+  it("equipped: exactly matches only the exact count, not >=1 (regression -- used to ignore exactly entirely)", () => {
+    const zero = ctx({}, { tags: new Map() });
+    const two = ctx({}, { tags: new Map([["ring_of_x", 2]]) });
+    const three = ctx({}, { tags: new Map([["ring_of_x", 3]]) });
+    const cond = { equipped: { tag: "ring_of_x", exactly: 2 } };
+    expect(evaluate(cond, zero)).toBe(false);
+    expect(evaluate(cond, two)).toBe(true);
+    expect(evaluate(cond, three)).toBe(false);
+  });
+
+  it("equipped: exactly appears in the explain label instead of a stale atLeast default", () => {
+    const c = ctx({}, { tags: new Map([["ring_of_x", 1]]) });
+    const result = explain({ equipped: { tag: "ring_of_x", exactly: 2 } }, c);
+    expect(result.unmet[0].label).toBe("2× ring_of_x");
+  });
+
+  it("bonusOccurrences: exactly matches only the exact count", () => {
+    const one = ctx({}, { bonusOccurrences: new Map([["b", 1]]) });
+    const two = ctx({}, { bonusOccurrences: new Map([["b", 2]]) });
+    const cond = { bonusOccurrences: { bonus: "b", exactly: 2 } };
+    expect(evaluate(cond, one)).toBe(false);
+    expect(evaluate(cond, two)).toBe(true);
+  });
+
+  it("bonusOccurrences: exactly appears in the explain label instead of a stale atLeast default", () => {
+    const c = ctx({}, { bonusOccurrences: new Map([["b", 1]]) });
+    const result = explain({ bonusOccurrences: { bonus: "b", exactly: 3 } }, c);
+    expect(result.unmet[0].label).toBe("3 occurrence(s) of b");
   });
 });

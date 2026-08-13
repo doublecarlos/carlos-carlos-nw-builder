@@ -5,6 +5,7 @@
 import { describe, it, expect } from "vitest";
 import {
   whenRowsComplete,
+  whenIsRepresentable,
   newLeafRow,
   newGroupRow,
   whenToRows,
@@ -105,6 +106,129 @@ describe("condition-draft whenToRows/rowsToWhen", () => {
   it("an empty when-object round-trips to an empty rows list", () => {
     expect(whenToRows(undefined)).toEqual([]);
     expect(rowsToWhen([])).toEqual({});
+  });
+});
+
+describe("condition-draft range/exact leaves", () => {
+  it("an equipped leaf's below bound round-trips -- it used to be silently dropped", () => {
+    const when = { equipped: { tag: "level_attr:3", atLeast: 2, below: 3 } };
+    const rows = whenToRows(when);
+    expect(rows[0].rangeMode).toBe("range");
+    expect(rows[0].below).toBe(3);
+    expect(rowsToWhen(rows)).toEqual(when);
+  });
+
+  it("a bonusOccurrences leaf's below bound round-trips the same way", () => {
+    const when = {
+      bonusOccurrences: { bonus: "vitality", atLeast: 1, below: 4 },
+    };
+    expect(rowsToWhen(whenToRows(when))).toEqual(when);
+  });
+
+  it("an equipped leaf using exactly instead of a range round-trips in exact mode", () => {
+    const when = { equipped: { tag: "level_attr:3", exactly: 2 } };
+    const rows = whenToRows(when);
+    expect(rows[0].rangeMode).toBe("exact");
+    expect(rows[0].atLeast).toBeNull();
+    expect(rows[0].below).toBeNull();
+    expect(rowsToWhen(rows)).toEqual(when);
+  });
+
+  it("a bonusOccurrences leaf using exactly round-trips in exact mode", () => {
+    const when = { bonusOccurrences: { bonus: "vitality", exactly: 2 } };
+    expect(rowsToWhen(whenToRows(when))).toEqual(when);
+  });
+
+  it("a duration leaf using exactly round-trips in exact mode", () => {
+    const when = { duration: { exactly: 15 } };
+    const rows = whenToRows(when);
+    expect(rows[0].rangeMode).toBe("exact");
+    expect(rowsToWhen(rows)).toEqual(when);
+  });
+
+  it("a param leaf using exactly round-trips in exact mode", () => {
+    const when = { param: { key: "bolster", exactly: 3 } };
+    const rows = whenToRows(when);
+    expect(rows[0].rangeMode).toBe("exact");
+    expect(rowsToWhen(rows)).toEqual(when);
+  });
+
+  it("an exact-mode leaf with no value yet is incomplete, same as an empty range", () => {
+    const row = newLeafRow("equipped");
+    row.tag = "level_attr:3";
+    row.rangeMode = "exact";
+    expect(whenRowsComplete([row])).toBe(false);
+    row.exactly = 2;
+    expect(whenRowsComplete([row])).toBe(true);
+  });
+
+  it("bonusOccurrences still defaults atLeast to 1 in range mode when left blank", () => {
+    const row = newLeafRow("bonusOccurrences");
+    row.bonus = "vitality";
+    expect(rowsToWhen([row])).toEqual({
+      bonusOccurrences: { bonus: "vitality", atLeast: 1 },
+    });
+  });
+});
+
+describe("condition-draft whenIsRepresentable", () => {
+  it("accepts the recognized range/exact keys for duration/bonusOccurrences/equipped/param", () => {
+    expect(
+      whenIsRepresentable({ duration: { atLeast: 1, below: 2, exactly: 3 } }),
+    ).toBe(true);
+    expect(
+      whenIsRepresentable({
+        bonusOccurrences: { bonus: "x", atLeast: 1, below: 2, exactly: 3 },
+      }),
+    ).toBe(true);
+    expect(
+      whenIsRepresentable({
+        equipped: { tag: "x", item: "y", atLeast: 1, below: 2, exactly: 3 },
+      }),
+    ).toBe(true);
+    expect(
+      whenIsRepresentable({
+        param: {
+          key: "x",
+          atLeast: 1,
+          below: 2,
+          exactly: 3,
+          is: true,
+          equals: "y",
+        },
+      }),
+    ).toBe(true);
+  });
+
+  it("accepts duration's bare-number shorthand", () => {
+    expect(whenIsRepresentable({ duration: 30 })).toBe(true);
+  });
+
+  it("rejects an unrecognized key on a range-shaped leaf instead of silently dropping it", () => {
+    expect(
+      whenIsRepresentable({
+        equipped: { tag: "x", atLeast: 1, unknownField: true } as never,
+      }),
+    ).toBe(false);
+    expect(
+      whenIsRepresentable({
+        bonusOccurrences: { bonus: "x", weight: 2 } as never,
+      }),
+    ).toBe(false);
+    expect(
+      whenIsRepresentable({
+        duration: { atLeast: 1, unit: "minutes" } as never,
+      }),
+    ).toBe(false);
+    expect(
+      whenIsRepresentable({ param: { key: "x", scale: 2 } as never }),
+    ).toBe(false);
+  });
+
+  it("still rejects an unrecognized top-level condition key", () => {
+    expect(whenIsRepresentable({ notARealCondition: "x" } as never)).toBe(
+      false,
+    );
   });
 });
 
