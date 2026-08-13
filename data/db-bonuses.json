@@ -1,22 +1,7 @@
 [
   {
-    "id": "1st-pack-tactics-group",
-    "name": "1st Pack Tactics (Group)",
-    "grants": [
-      {
-        "when": {
-          "toggle": "party"
-        },
-        "stats": {
-          "ca": 2250,
-          "awareness": 2250
-        }
-      }
-    ]
-  },
-  {
     "id": "1st-pack-tactics-group-celestial",
-    "name": "1st Pack Tactics (Group) (Celestial)",
+    "name": "1st Pack Tactics (Group)",
     "grants": [
       {
         "when": {
@@ -30,23 +15,8 @@
     ]
   },
   {
-    "id": "2nd-pack-tactics-group",
-    "name": "2nd Pack Tactics (Group)",
-    "grants": [
-      {
-        "when": {
-          "toggle": "party"
-        },
-        "stats": {
-          "ca": 1125,
-          "awareness": 1125
-        }
-      }
-    ]
-  },
-  {
     "id": "2nd-pack-tactics-group-celestial",
-    "name": "2nd Pack Tactics (Group) (Celestial)",
+    "name": "2nd Pack Tactics (Group)",
     "grants": [
       {
         "when": {
@@ -244,22 +214,8 @@
     ]
   },
   {
-    "id": "avian-aura-group",
-    "name": "Avian Aura (Group)",
-    "grants": [
-      {
-        "when": {
-          "toggle": "party"
-        },
-        "stats": {
-          "power": 1600
-        }
-      }
-    ]
-  },
-  {
     "id": "avian-aura-group-celestial",
-    "name": "Avian Aura (Group) (Celestial)",
+    "name": "Avian Aura (Group)",
     "grants": [
       {
         "when": {
@@ -2325,23 +2281,8 @@
     "stacking": "perSource"
   },
   {
-    "id": "mystic-aura-group",
-    "name": "Mystic Aura (Group)",
-    "grants": [
-      {
-        "when": {
-          "toggle": "party"
-        },
-        "stats": {
-          "power": 2250,
-          "acc": 2250
-        }
-      }
-    ]
-  },
-  {
     "id": "mystic-aura-group-celestial",
-    "name": "Mystic Aura (Group) (Celestial)",
+    "name": "Mystic Aura (Group)",
     "grants": [
       {
         "when": {
@@ -2527,7 +2468,7 @@
   },
   {
     "id": "runic-aura-group-celestial",
-    "name": "Runic Aura (Group) (Celestial)",
+    "name": "Runic Aura (Group)",
     "grants": [
       {
         "when": {

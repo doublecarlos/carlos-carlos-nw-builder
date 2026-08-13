@@ -163,7 +163,7 @@ test.describe("slot filter: stat", () => {
     await expect(slotRow(page, "buffs.food")).toBeHidden();
 
     await slotFilterClearButton(page).click();
-    await chooseItem(page, "buffs.food", "Prime Rib (Power)");
+    await chooseItem(page, "buffs.food", "Prime Rib");
 
     await chooseCombo(slotFilterStatCombo(page), "Power");
     await expect(slotRow(page, "buffs.food")).toBeVisible();

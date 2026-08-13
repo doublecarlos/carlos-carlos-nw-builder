@@ -11,9 +11,9 @@ withDefaults(
      *  -- for callers (ItemPicker) whose row content (stat/bonus preview) needs more room than
      *  a plain option label does. Anchored to the input's left edge, so it only ever grows
      *  rightward. */
-    wide?: boolean;
+    menuClass?: string;
   }>(),
-  { wide: false },
+  { menuClass: "inset-x-0" },
 );
 
 const el = useTemplateRef("el");
@@ -38,7 +38,7 @@ defineSlots<{
     ref="el"
     data-testid="picker-menu"
     class="absolute top-full z-30 mt-0.5 max-h-80 overflow-y-auto rounded-md border border-line bg-surface shadow-lg"
-    :class="wide ? 'left-0 w-[min(28rem,90vw)]' : 'inset-x-0'"
+    :class="menuClass"
   >
     <slot />
   </div>

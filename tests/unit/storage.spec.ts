@@ -577,7 +577,7 @@ describe("toBuildJson with db (portable files)", () => {
     build.choices = { gear_head: BASE_ITEM_ID };
     const shippedItem = {
       id: "1-amethyst-awareness",
-      name: "1) Amethyst (Awareness)",
+      name: "Celestial Amethyst",
       filter: "enchantment_defense",
       il: 1800,
       combined_rating: 1620,

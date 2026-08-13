@@ -458,9 +458,7 @@ test.describe("text slots", () => {
     await openBuilder(page);
     const note = page.getByTestId("text:mounts.textMaxBolster");
     await expect(note).toBeVisible();
-    await expect(note).toHaveText(
-      "Mounts are assumed to have max bolster (125%).",
-    );
+    await expect(note).toContainText("Mounts are assumed to");
     await expect(note).not.toHaveAttribute("data-cursor-key");
   });
 

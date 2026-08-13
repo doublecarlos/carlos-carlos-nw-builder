@@ -198,7 +198,7 @@ const matchMap = computed(() => {
     const potentialPreview = bonusStatPreview(bonusStats?.potential);
     map.set(item.id, {
       item,
-      preview: itemPreview(item, 3),
+      preview: itemPreview(item, 4),
       bonusPreview,
       // "Potentially" is only worth showing when it says something "current" doesn't already.
       potentialPreview: sameParts(bonusPreview, potentialPreview)
@@ -235,7 +235,7 @@ defineExpose({
     :closed-display="selectedItem?.name ?? ''"
     :placeholder="selectedItem?.name || '—'"
     :title-input="false"
-    wide
+    menu-class="left-0 w-[min(32rem,90vw)]"
     @update:model-value="model = $event"
     @update:open="isOpen = $event"
   >

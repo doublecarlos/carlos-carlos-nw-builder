@@ -76,7 +76,7 @@ export const itemPreview = (item: Item | null | undefined, limit = 4) =>
  */
 export const bonusStatPreview = (
   stats: Record<string, number> | null | undefined,
-  limit = 3,
+  limit = 4,
 ) => (stats ? statParts((key) => stats[key], limit) : { parts: [], more: 0 });
 
 /** True when the item carries conditional effects worth flagging in the picker. */

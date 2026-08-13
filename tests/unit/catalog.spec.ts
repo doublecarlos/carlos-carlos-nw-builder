@@ -1061,7 +1061,7 @@ const BASE_ITEM_ID = "1-amethyst-awareness";
 
 const baseItem: Item = {
   id: "1-amethyst-awareness",
-  name: "1) Amethyst (Awareness)",
+  name: "Celestial Amethyst",
   filter: "enchantment_defense",
   il: 1800,
   combined_rating: 1620,
@@ -1181,17 +1181,17 @@ describe("catalog.referencedOverlay", () => {
 
   it("picks up a base item whose bonus a layer edited", () => {
     // Use a real base item that references a real base bonus.
-    const BASE_BONUS_ITEM_ID = "1st-pack-tactics-group";
+    const BASE_BONUS_ITEM_ID = "1st-pack-tactics-group-celestial";
     const baseItemWithBonus: Item = {
-      id: "1st-pack-tactics-group",
+      id: "1st-pack-tactics-group-celestial",
       name: "1st Pack Tactics (Group)",
       filter: "group_buff",
       maxCopies: 1,
-      bonuses: ["1st-pack-tactics-group"],
+      bonuses: ["1st-pack-tactics-group-celestial"],
     };
     // Layer edits the bonus with different stats.
     const editedBonus: Bonus = {
-      id: "1st-pack-tactics-group",
+      id: "1st-pack-tactics-group-celestial",
       name: "1st Pack Tactics (Group)",
       grants: [{ stats: { power: 999 } }], // different from base
     };
@@ -1210,9 +1210,10 @@ describe("catalog.referencedOverlay", () => {
     // The item is unchanged from base, so it should NOT be emitted.
     expect(overlay.items[BASE_BONUS_ITEM_ID]).toBeUndefined();
     // The bonus IS different from base, so it SHOULD be emitted.
-    expect(overlay.bonuses["1st-pack-tactics-group"]).toBeDefined();
+    expect(overlay.bonuses["1st-pack-tactics-group-celestial"]).toBeDefined();
     expect(
-      overlay.bonuses["1st-pack-tactics-group"]?.grants?.[0]?.stats?.power,
+      overlay.bonuses["1st-pack-tactics-group-celestial"]?.grants?.[0]?.stats
+        ?.power,
     ).toBe(999);
   });
 

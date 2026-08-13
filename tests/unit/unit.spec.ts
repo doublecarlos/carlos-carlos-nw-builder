@@ -126,13 +126,13 @@ describe("bonus model semantics", () => {
     const none = runBuild(ring);
     const one = runBuild({
       ...ring,
-      "enchantments.offense1": "1) Amethyst (CA)",
+      "enchantments.offense1": "Celestial Amethyst",
     });
     const three = runBuild({
       ...ring,
-      "enchantments.offense1": "1) Amethyst (CA)",
-      "enchantments.offense2": "1) Amethyst (Awareness)",
-      "enchantments.defense1": "1) Amethyst (Awareness)",
+      "enchantments.offense1": "Celestial Amethyst",
+      "enchantments.offense2": "Celestial Amethyst",
+      "enchantments.defense1": "Celestial Amethyst",
     });
     expect(none.activeById.has(ID)).toBe(false);
     expect(one.statOf(ID, "ca_p")).toBeCloseTo(0.03, 9);

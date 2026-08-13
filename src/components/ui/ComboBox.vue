@@ -26,9 +26,8 @@ const props = withDefaults(
     /** Override the closed-box display when the model value doesn't match any option
      *  (e.g. the equipped item was removed from the catalogue). */
     closedDisplay?: string;
-    /** Forwarded to ComboBoxMenu -- grows the dropdown past the input's own width for callers
-     *  whose row content needs more room than a plain option label does. */
-    wide?: boolean;
+    /** Forwarded to ComboBoxMenu*/
+    menuClass?: string;
     /** Add title properties to input and/or selection rows */
     titleInput?: boolean;
     titleRows?: boolean;
@@ -39,7 +38,7 @@ const props = withDefaults(
     showEmptyOption: false,
     maxRows: 60,
     closedDisplay: "",
-    wide: false,
+    menuClass: "inset-x-0",
     titleInput: true,
     titleRows: true,
   },
@@ -252,7 +251,7 @@ onKeyStroke(
       >▾</span
     >
 
-    <ComboBoxMenu v-if="open" ref="list" :wide="wide">
+    <ComboBoxMenu v-if="open" ref="list" :menu-class="menuClass">
       <ComboBoxMenuRow
         v-if="showEmpty"
         muted

@@ -1013,6 +1013,11 @@
       "label": "Companions",
       "slots": [
         {
+          "id": "companions.textMaxBolster",
+          "text": "Companions are assumed to be Celestial and have max bolster (120%).",
+          "type": "text"
+        },
+        {
           "id": "companions.companion",
           "label": "Companion",
           "filter": "companion",
@@ -1099,7 +1104,7 @@
       "slots": [
         {
           "id": "mounts.textMaxBolster",
-          "text": "Mounts are assumed to have max bolster (125%).",
+          "text": "Mounts are assumed to be Celestial and have max bolster (125%).",
           "type": "text"
         },
         {

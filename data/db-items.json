@@ -1,7 +1,7 @@
 [
   {
     "id": "1-amethyst-awareness",
-    "name": "1) Amethyst (Awareness)",
+    "name": "Celestial Amethyst",
     "filter": "enchantment_defense",
     "il": 1800,
     "combined_rating": 1620,
@@ -10,7 +10,7 @@
   },
   {
     "id": "1-amethyst-ca",
-    "name": "1) Amethyst (CA)",
+    "name": "Celestial Amethyst",
     "filter": "enchantment_offense",
     "il": 1800,
     "combined_rating": 1620,
@@ -19,7 +19,7 @@
   },
   {
     "id": "1-citrine-acc",
-    "name": "1) Citrine (Acc)",
+    "name": "Celestial Citrine",
     "filter": "enchantment_offense",
     "il": 1800,
     "combined_rating": 1620,
@@ -28,7 +28,7 @@
   },
   {
     "id": "1-citrine-deflect",
-    "name": "1) Citrine (Deflect)",
+    "name": "Celestial Citrine",
     "filter": "enchantment_defense",
     "il": 1800,
     "combined_rating": 1620,
@@ -37,7 +37,7 @@
   },
   {
     "id": "1-cobalt-deflect-severity",
-    "name": "1) Cobalt (Deflect Severity)",
+    "name": "Celestial Cobalt",
     "filter": "enchantment_defense",
     "il": 1800,
     "combined_rating": 1620,
@@ -45,7 +45,7 @@
   },
   {
     "id": "1-cobalt-severity",
-    "name": "1) Cobalt (Severity)",
+    "name": "Celestial Cobalt",
     "filter": "enchantment_offense",
     "il": 1800,
     "combined_rating": 1620,
@@ -53,7 +53,7 @@
   },
   {
     "id": "1-garnet-defense",
-    "name": "1) Garnet (Defense)",
+    "name": "Celestial Garnet",
     "filter": "enchantment_defense",
     "il": 1800,
     "combined_rating": 1620,
@@ -61,7 +61,7 @@
   },
   {
     "id": "1-garnet-forte",
-    "name": "1) Garnet (Forte)",
+    "name": "Celestial Garnet",
     "filter": "enchantment_utility",
     "il": 1800,
     "combined_rating": 1620,
@@ -69,7 +69,7 @@
   },
   {
     "id": "1-garnet-power",
-    "name": "1) Garnet (Power)",
+    "name": "Celestial Garnet",
     "filter": "enchantment_offense",
     "il": 1800,
     "combined_rating": 1620,
@@ -77,7 +77,7 @@
   },
   {
     "id": "1-jade-crit",
-    "name": "1) Jade (Crit)",
+    "name": "Celestial Jade",
     "filter": "enchantment_offense",
     "il": 1800,
     "combined_rating": 1620,
@@ -86,7 +86,7 @@
   },
   {
     "id": "1-jade-crit-avoid",
-    "name": "1) Jade (Crit Avoid)",
+    "name": "Celestial Jade",
     "filter": "enchantment_defense",
     "il": 1800,
     "combined_rating": 1620,
@@ -94,15 +94,8 @@
     "tags": ["gem:jade"]
   },
   {
-    "id": "1st-pack-tactics-group",
-    "name": "1st Pack Tactics (Group)",
-    "filter": "group_buff",
-    "maxCopies": 1,
-    "bonuses": ["1st-pack-tactics-group"]
-  },
-  {
     "id": "1st-pack-tactics-group-celestial",
-    "name": "1st Pack Tactics (Group) (Celestial)",
+    "name": "1st Pack Tactics (Group)",
     "filter": "group_buff",
     "maxCopies": 1,
     "bonuses": ["1st-pack-tactics-group-celestial"]
@@ -116,7 +109,7 @@
   },
   {
     "id": "2-aquamarine-accuracy-severity",
-    "name": "2) Aquamarine (Accuracy/Severity)",
+    "name": "Celestial Aquamarine",
     "filter": "enchantment_offense",
     "il": 1800,
     "combined_rating": 1620,
@@ -126,7 +119,7 @@
   },
   {
     "id": "2-aquamarine-crit-avoid-deflect",
-    "name": "2) Aquamarine (Crit Avoid/Deflect)",
+    "name": "Celestial Aquamarine",
     "filter": "enchantment_defense",
     "il": 1800,
     "combined_rating": 1620,
@@ -136,7 +129,7 @@
   },
   {
     "id": "2-bloodstone-deflect-deflect-severity",
-    "name": "2) Bloodstone (Deflect/Deflect Severity)",
+    "name": "Celestial Bloodstone",
     "filter": "enchantment_defense",
     "il": 1800,
     "combined_rating": 1620,
@@ -146,7 +139,7 @@
   },
   {
     "id": "2-bloodstone-power-ca",
-    "name": "2) Bloodstone (Power/CA)",
+    "name": "Celestial Bloodstone",
     "filter": "enchantment_offense",
     "il": 1800,
     "combined_rating": 1620,
@@ -156,7 +149,7 @@
   },
   {
     "id": "2-diamond-ca-severity",
-    "name": "2) Diamond (CA/Severity)",
+    "name": "Celestial Diamond",
     "filter": "enchantment_offense",
     "il": 1800,
     "combined_rating": 1620,
@@ -165,7 +158,7 @@
   },
   {
     "id": "2-diamond-defense-crit-avoid",
-    "name": "2) Diamond (Defense/Crit Avoid)",
+    "name": "Celestial Diamond",
     "filter": "enchantment_defense",
     "il": 1800,
     "combined_rating": 1620,
@@ -174,7 +167,7 @@
   },
   {
     "id": "2-kyanite-awareness-crit-avoid",
-    "name": "2) Kyanite (Awareness/Crit Avoid)",
+    "name": "Celestial Kyanite",
     "filter": "enchantment_defense",
     "il": 1800,
     "combined_rating": 1620,
@@ -183,7 +176,7 @@
   },
   {
     "id": "2-kyanite-strike-severity",
-    "name": "2) Kyanite (Strike/Severity)",
+    "name": "Celestial Kyanite",
     "filter": "enchantment_offense",
     "il": 1800,
     "combined_rating": 1620,
@@ -192,7 +185,7 @@
   },
   {
     "id": "2-moonstone-defense-awareness",
-    "name": "2) Moonstone (Defense/Awareness)",
+    "name": "Celestial Moonstone",
     "filter": "enchantment_defense",
     "il": 1800,
     "combined_rating": 1620,
@@ -201,7 +194,7 @@
   },
   {
     "id": "2-moonstone-power-ca",
-    "name": "2) Moonstone (Power/CA)",
+    "name": "Celestial Moonstone",
     "filter": "enchantment_offense",
     "il": 1800,
     "combined_rating": 1620,
@@ -210,7 +203,7 @@
   },
   {
     "id": "2-onyx-ca-severity",
-    "name": "2) Onyx (CA/Severity)",
+    "name": "Celestial Onyx",
     "filter": "enchantment_offense",
     "il": 1800,
     "combined_rating": 1620,
@@ -219,7 +212,7 @@
   },
   {
     "id": "2-onyx-crit-avoid-deflect-severity",
-    "name": "2) Onyx (Crit Avoid/Deflect Severity)",
+    "name": "Celestial Onyx",
     "filter": "enchantment_defense",
     "il": 1800,
     "combined_rating": 1620,
@@ -228,7 +221,7 @@
   },
   {
     "id": "2-opal-awareness-deflect",
-    "name": "2) Opal (Awareness/Deflect)",
+    "name": "Celestial Opal",
     "filter": "enchantment_defense",
     "il": 1800,
     "combined_rating": 1620,
@@ -237,7 +230,7 @@
   },
   {
     "id": "2-opal-power-strike",
-    "name": "2) Opal (Power/Strike)",
+    "name": "Celestial Opal",
     "filter": "enchantment_offense",
     "il": 1800,
     "combined_rating": 1620,
@@ -246,7 +239,7 @@
   },
   {
     "id": "2-peridot-acc-strike",
-    "name": "2) Peridot (Acc/Strike)",
+    "name": "Celestial Peridot",
     "filter": "enchantment_offense",
     "il": 1800,
     "combined_rating": 1620,
@@ -255,7 +248,7 @@
   },
   {
     "id": "2-peridot-defense-deflect-severity",
-    "name": "2) Peridot (Defense/Deflect Severity)",
+    "name": "Celestial Peridot",
     "filter": "enchantment_defense",
     "il": 1800,
     "combined_rating": 1620,
@@ -264,7 +257,7 @@
   },
   {
     "id": "2-ruby-defense-deflect",
-    "name": "2) Ruby (Defense/Deflect)",
+    "name": "Celestial Ruby",
     "filter": "enchantment_defense",
     "il": 1800,
     "combined_rating": 1620,
@@ -273,7 +266,7 @@
   },
   {
     "id": "2-ruby-power-accuracy",
-    "name": "2) Ruby (Power/Accuracy)",
+    "name": "Celestial Ruby",
     "filter": "enchantment_offense",
     "il": 1800,
     "combined_rating": 1620,
@@ -282,7 +275,7 @@
   },
   {
     "id": "2-sapphire-awareness-deflect-severity",
-    "name": "2) Sapphire (Awareness/Deflect Severity)",
+    "name": "Celestial Sapphire",
     "filter": "enchantment_defense",
     "il": 1800,
     "combined_rating": 1620,
@@ -291,7 +284,7 @@
   },
   {
     "id": "2-sapphire-ca-strike",
-    "name": "2) Sapphire (CA/Strike)",
+    "name": "Celestial Sapphire",
     "filter": "enchantment_offense",
     "il": 1800,
     "combined_rating": 1620,
@@ -299,15 +292,8 @@
     "strike": 1485
   },
   {
-    "id": "2nd-pack-tactics-group",
-    "name": "2nd Pack Tactics (Group)",
-    "filter": "group_buff",
-    "maxCopies": 1,
-    "bonuses": ["2nd-pack-tactics-group"]
-  },
-  {
     "id": "2nd-pack-tactics-group-celestial",
-    "name": "2nd Pack Tactics (Group) (Celestial)",
+    "name": "2nd Pack Tactics (Group)",
     "filter": "group_buff",
     "maxCopies": 1,
     "bonuses": ["2nd-pack-tactics-group-celestial"]
@@ -321,7 +307,7 @@
   },
   {
     "id": "3-ammolite-defense-awareness-crit-avoid",
-    "name": "3) Ammolite (Defense/Awareness/Crit Avoid)",
+    "name": "Celestial Ammolite",
     "filter": "enchantment_defense",
     "il": 1800,
     "combined_rating": 1620,
@@ -331,7 +317,7 @@
   },
   {
     "id": "3-ammolite-power-ca-strike",
-    "name": "3) Ammolite (Power/CA/Strike)",
+    "name": "Celestial Ammolite",
     "filter": "enchantment_offense",
     "il": 1800,
     "combined_rating": 1620,
@@ -341,7 +327,7 @@
   },
   {
     "id": "3-bismuth-acc-ca-severity",
-    "name": "3) Bismuth (Acc/CA/Severity)",
+    "name": "Celestial Bismuth",
     "filter": "enchantment_offense",
     "il": 1800,
     "combined_rating": 1620,
@@ -351,7 +337,7 @@
   },
   {
     "id": "3-bismuth-defense-awareness-deflect",
-    "name": "3) Bismuth (Defense/Awareness/Deflect)",
+    "name": "Celestial Bismuth",
     "filter": "enchantment_defense",
     "il": 1800,
     "combined_rating": 1620,
@@ -361,7 +347,7 @@
   },
   {
     "id": "3-bone-filligree-acc-ca-strike",
-    "name": "3) Bone Filligree (Acc/CA/Strike)",
+    "name": "Celestial Bone Filligree",
     "filter": "enchantment_offense",
     "il": 1800,
     "combined_rating": 1620,
@@ -371,7 +357,7 @@
   },
   {
     "id": "3-bone-filligree-awareness-deflect-deflect-severity",
-    "name": "3) Bone Filligree (Awareness/Deflect/Deflect Severity)",
+    "name": "Celestial Bone Filligree",
     "filter": "enchantment_defense",
     "il": 1800,
     "combined_rating": 1620,
@@ -381,7 +367,7 @@
   },
   {
     "id": "3-fire-agate-awareness-crit-avoid-deflect",
-    "name": "3) Fire Agate (Awareness/Crit Avoid/Deflect)",
+    "name": "Celestial Fire Agate",
     "filter": "enchantment_defense",
     "il": 1800,
     "combined_rating": 1620,
@@ -392,7 +378,7 @@
   },
   {
     "id": "3-fire-agate-power-strike-severity",
-    "name": "3) Fire Agate (Power/Strike/Severity)",
+    "name": "Celestial Fire Agate",
     "filter": "enchantment_offense",
     "il": 1800,
     "combined_rating": 1620,
@@ -403,7 +389,7 @@
   },
   {
     "id": "3-mother-of-pearl-acc-strike-severity",
-    "name": "3) Mother of Pearl (Acc/Strike/Severity)",
+    "name": "Celestial Mother of Pearl",
     "filter": "enchantment_offense",
     "il": 1800,
     "combined_rating": 1620,
@@ -413,7 +399,7 @@
   },
   {
     "id": "3-mother-of-pearl-awareness-crit-avoid-deflect-severity",
-    "name": "3) Mother of Pearl (Awareness/Crit Avoid/Deflect Severity)",
+    "name": "Celestial Mother of Pearl",
     "filter": "enchantment_defense",
     "il": 1800,
     "combined_rating": 1620,
@@ -423,7 +409,7 @@
   },
   {
     "id": "3-netherite-defense-deflect-deflect-severity",
-    "name": "3) Netherite (Defense/Deflect/Deflect Severity)",
+    "name": "Celestial Netherite",
     "filter": "enchantment_defense",
     "il": 1800,
     "combined_rating": 1620,
@@ -433,7 +419,7 @@
   },
   {
     "id": "3-netherite-power-acc-ca",
-    "name": "3) Netherite (Power/Acc/CA)",
+    "name": "Celestial Netherite",
     "filter": "enchantment_offense",
     "il": 1800,
     "combined_rating": 1620,
@@ -443,7 +429,7 @@
   },
   {
     "id": "3-rubellite-tourmaline-defense-crit-avoid-deflect-severity",
-    "name": "3) Rubellite Tourmaline (Defense/Crit Avoid/Deflect Severity)",
+    "name": "Celestial Rubellite Tourmaline",
     "filter": "enchantment_defense",
     "il": 1800,
     "combined_rating": 1620,
@@ -453,7 +439,7 @@
   },
   {
     "id": "3-rubellite-tourmaline-power-ca-severity",
-    "name": "3) Rubellite Tourmaline (Power/CA/Severity)",
+    "name": "Celestial Rubellite Tourmaline",
     "filter": "enchantment_offense",
     "il": 1800,
     "combined_rating": 1620,
@@ -463,7 +449,7 @@
   },
   {
     "id": "3-skullite-defense-crit-avoid-deflect",
-    "name": "3) Skullite (Defense/Crit Avoid/Deflect)",
+    "name": "Celestial Skullite",
     "filter": "enchantment_defense",
     "il": 1800,
     "combined_rating": 1620,
@@ -473,7 +459,7 @@
   },
   {
     "id": "3-skullite-power-accuracy-strike",
-    "name": "3) Skullite (Power/Accuracy/Strike)",
+    "name": "Celestial Skullite",
     "filter": "enchantment_offense",
     "il": 1800,
     "combined_rating": 1620,
@@ -559,16 +545,8 @@
     "maxCopies": 1
   },
   {
-    "id": "armor-breaker-severity",
-    "name": "Armor Breaker (Severity)",
-    "filter": "mount_equip",
-    "il": 3000,
-    "combined_rating": 2700,
-    "severity": 4500
-  },
-  {
     "id": "armor-breaker-severity-celestial",
-    "name": "Armor Breaker (Severity) (Celestial)",
+    "name": "Armor Breaker",
     "filter": "mount_equip",
     "il": 3937,
     "combined_rating": 3544,
@@ -671,7 +649,7 @@
   },
   {
     "id": "avian-aura-celestial",
-    "name": "Avian Aura (Celestial)",
+    "name": "Avian Aura",
     "filter": "mount_equip",
     "il": 3937,
     "combined_rating": 3544,
@@ -687,7 +665,7 @@
   },
   {
     "id": "avian-aura-group-celestial",
-    "name": "Avian Aura (Group) (Celestial)",
+    "name": "Avian Aura (Group)",
     "filter": "group_buff",
     "maxCopies": 1,
     "bonuses": ["avian-aura-group-celestial"]
@@ -720,17 +698,8 @@
     "maxCopies": 1
   },
   {
-    "id": "blazing-oportunity-ca-severity-bestial-fire-archon",
-    "name": "Blazing Oportunity (CA/Severity - Bestial Fire Archon)",
-    "filter": "mount_equip",
-    "il": 3000,
-    "combined_rating": 2700,
-    "ca": 2250,
-    "severity": 2250
-  },
-  {
     "id": "blazing-oportunity-ca-severity-bestial-fire-archon-celestial",
-    "name": "Blazing Oportunity (CA/Severity - Bestial Fire Archon) (Celestial)",
+    "name": "Blazing Oportunity",
     "filter": "mount_equip",
     "il": 3937,
     "combined_rating": 3544,
@@ -1509,7 +1478,7 @@
   },
   {
     "id": "brutality",
-    "name": "Brutality",
+    "name": "Celestial Brutality",
     "filter": "insignia",
     "il": 750,
     "combined_rating": 600,
@@ -1518,7 +1487,7 @@
   },
   {
     "id": "brutality-pref",
-    "name": "Brutality (Pref)",
+    "name": "Celestial Brutality (Pref)",
     "filter": "insignia",
     "il": 900,
     "combined_rating": 720,
@@ -1583,7 +1552,7 @@
   },
   {
     "id": "cha-lua-accuracy-severity",
-    "name": "Cha Lua (Accuracy/Severity)",
+    "name": "Cha Lua",
     "filter": "consumable_event_food",
     "bonuses": ["cha-lua-accuracy-severity"]
   },
@@ -1662,7 +1631,7 @@
   },
   {
     "id": "comp-enchantment-celestial",
-    "name": "Comp Enchantment (Celestial)",
+    "name": "Celestial Companion Enchantment",
     "filter": "companion_enchantment",
     "il": 1800
   },
@@ -1752,13 +1721,13 @@
   },
   {
     "id": "diamond-blessing-damage",
-    "name": "Diamond Blessing (Damage)",
+    "name": "Diamond Blessing",
     "filter": "consumable_blessing",
     "bonuses": ["diamond-blessing-damage"]
   },
   {
     "id": "dominance",
-    "name": "Dominance",
+    "name": "Celestial Dominance",
     "filter": "insignia",
     "il": 750,
     "combined_rating": 600,
@@ -1767,7 +1736,7 @@
   },
   {
     "id": "dominance-pref",
-    "name": "Dominance (Pref)",
+    "name": "Celestial Dominance (Pref)",
     "filter": "insignia",
     "il": 900,
     "combined_rating": 720,
@@ -1775,16 +1744,8 @@
     "forte": 1350
   },
   {
-    "id": "dominant-force-power",
-    "name": "Dominant Force (Power)",
-    "filter": "mount_equip",
-    "il": 3000,
-    "combined_rating": 2700,
-    "power": 4500
-  },
-  {
     "id": "dominant-force-power-celestial",
-    "name": "Dominant Force (Power) (Celestial)",
+    "name": "Dominant Force",
     "filter": "mount_equip",
     "il": 3937,
     "combined_rating": 3544,
@@ -1852,17 +1813,8 @@
     "maxCopies": 1
   },
   {
-    "id": "ferocious-predator-power-severity",
-    "name": "Ferocious Predator (Power/Severity)",
-    "filter": "mount_equip",
-    "il": 3000,
-    "combined_rating": 2700,
-    "power": 2250,
-    "severity": 2250
-  },
-  {
     "id": "ferocious-predator-power-severity-celestial",
-    "name": "Ferocious Predator (Power/Severity) (Celestial)",
+    "name": "Ferocious Predator",
     "filter": "mount_equip",
     "il": 3937,
     "combined_rating": 3544,
@@ -1870,46 +1822,23 @@
     "severity": 2953
   },
   {
-    "id": "ferocity-0",
-    "name": "Ferocity (0%)",
-    "filter": "mount_equip",
-    "il": 3000,
-    "combined_rating": 2700
-  },
-  {
     "id": "ferocity-0-celestial",
-    "name": "Ferocity (0%) (Celestial)",
+    "name": "Ferocity (0%)",
     "filter": "mount_equip",
     "il": 3937,
     "combined_rating": 3544
   },
   {
-    "id": "ferocity-1",
-    "name": "Ferocity (1%)",
-    "filter": "mount_equip",
-    "il": 3000,
-    "combined_rating": 2700,
-    "overall_damage": 0.01
-  },
-  {
     "id": "ferocity-1-celestial",
-    "name": "Ferocity (1%) (Celestial)",
+    "name": "Ferocity (1%)",
     "filter": "mount_equip",
     "il": 3937,
     "combined_rating": 3544,
     "overall_damage": 0.01
   },
   {
-    "id": "ferocity-2",
-    "name": "Ferocity (2%)",
-    "filter": "mount_equip",
-    "il": 3000,
-    "combined_rating": 2700,
-    "overall_damage": 0.02
-  },
-  {
     "id": "ferocity-2-celestial",
-    "name": "Ferocity (2%) (Celestial)",
+    "name": "Ferocity (2%)",
     "filter": "mount_equip",
     "il": 3937,
     "combined_rating": 3544,
@@ -1931,7 +1860,7 @@
   },
   {
     "id": "flask-of-potency-1-severity",
-    "name": "Flask of Potency +1 (Severity)",
+    "name": "Flask of Potency +1",
     "filter": "consumable_potion",
     "bonuses": ["flask-of-potency-1-severity"]
   },
@@ -1988,7 +1917,7 @@
   },
   {
     "id": "hero-soul-forte-celestial",
-    "name": "Hero Soul (Forte) (Celestial)",
+    "name": "Hero Soul",
     "filter": "mount_equip",
     "il": 3937,
     "combined_rating": 3544,
@@ -1996,7 +1925,7 @@
   },
   {
     "id": "hot-wings-accuracy-severity",
-    "name": "Hot Wings (Accuracy/Severity)",
+    "name": "Hot Wings",
     "filter": "consumable_event_food",
     "bonuses": ["hot-wings-accuracy-severity"]
   },
@@ -2717,7 +2646,7 @@
   },
   {
     "id": "lightning-flash",
-    "name": "Lightning Flash",
+    "name": "Celestial Lightning Flash",
     "filter": "combat_enchant_offense",
     "il": 6000,
     "mult_damage": 0.12,
@@ -3082,6 +3011,34 @@
     "bonuses": ["m31-thayan-predator"]
   },
   {
+    "id": "m31-thayan-ring-acc-sev",
+    "name": "M31 Thayan Ring of the Companion",
+    "filter": "companion_equip",
+    "il": 2600,
+    "combined_rating": 2340,
+    "acc": 2535,
+    "severity": 2340
+  },
+  {
+    "id": "m31-thayan-sword-knot-acc-ca-forte",
+    "name": "M31 Thayan Sword Knot of the Companion",
+    "filter": "companion_equip",
+    "il": 2600,
+    "combined_rating": 2340,
+    "acc": 1268,
+    "ca": 1248,
+    "forte": 1228
+  },
+  {
+    "id": "m31-thayan-talisman-ca-strike",
+    "name": "M31 Thayan Talisman of the Companion",
+    "filter": "companion_equip",
+    "il": 2600,
+    "combined_rating": 2340,
+    "ca": 1950,
+    "strike": 2340
+  },
+  {
     "id": "m31-threads-of-the-arch-thrall-power-strike-severity",
     "name": "M31 Threads of the Arch-Thrall (Power/Strike/Severity)",
     "filter": "gear_boots",
@@ -3442,7 +3399,7 @@
   },
   {
     "id": "m33-frostforged-ring-of-the-companion-strike-sev",
-    "name": "M33 Frostforged Ring of the Companion (Strike/Sev)",
+    "name": "M33 Frostforged Ring of the Companion",
     "filter": "companion_equip",
     "il": 2850,
     "combined_rating": 2565,
@@ -3451,7 +3408,7 @@
   },
   {
     "id": "m33-frostforged-sword-knot-of-the-companion-acc-ca-forte",
-    "name": "M33 Frostforged Sword Knot of the Companion (Acc/CA/Forte)",
+    "name": "M33 Frostforged Sword Knot of the Companion",
     "filter": "companion_equip",
     "il": 2850,
     "combined_rating": 2565,
@@ -3461,7 +3418,7 @@
   },
   {
     "id": "m33-frostforged-talisman-of-the-companion-ca-sev",
-    "name": "M33 Frostforged Talisman of the Companion (CA/Sev)",
+    "name": "M33 Frostforged Talisman of the Companion",
     "filter": "companion_equip",
     "il": 2850,
     "combined_rating": 2565,
@@ -3550,7 +3507,7 @@
   },
   {
     "id": "m33-true-ice-icon-of-the-companion-forte-ogh",
-    "name": "M33 True Ice Icon of the Companion (Forte/OGH)",
+    "name": "M33 True Ice Icon of the Companion",
     "filter": "companion_equip",
     "il": 3000,
     "combined_rating": 2700,
@@ -3559,7 +3516,7 @@
   },
   {
     "id": "m33-true-ice-ring-of-the-companion-strike-sev",
-    "name": "M33 True Ice Ring of the Companion (Strike/Sev)",
+    "name": "M33 True Ice Ring of the Companion",
     "filter": "companion_equip",
     "il": 3000,
     "combined_rating": 2700,
@@ -3568,7 +3525,7 @@
   },
   {
     "id": "m33-true-ice-sword-knot-of-the-companion-acc-ca-forte",
-    "name": "M33 True Ice Sword Knot of the Companion (Acc/CA/Forte)",
+    "name": "M33 True Ice Sword Knot of the Companion",
     "filter": "companion_equip",
     "il": 3000,
     "combined_rating": 2700,
@@ -3578,7 +3535,7 @@
   },
   {
     "id": "m33-true-ice-talisman-of-the-companion-ca-sev",
-    "name": "M33 True Ice Talisman of the Companion (CA/Sev)",
+    "name": "M33 True Ice Talisman of the Companion",
     "filter": "companion_equip",
     "il": 3000,
     "combined_rating": 2700,
@@ -3726,25 +3683,6 @@
     "severity": 1400
   },
   {
-    "id": "molten-sword-knot-acc-ca-forte",
-    "name": "Molten Sword Knot (Acc/CA/Forte)",
-    "filter": "companion_equip",
-    "il": 2200,
-    "combined_rating": 1980,
-    "acc": 825,
-    "ca": 1650,
-    "forte": 825
-  },
-  {
-    "id": "molten-talisman-ca-severity",
-    "name": "Molten Talisman (CA/Severity)",
-    "filter": "companion_equip",
-    "il": 2200,
-    "combined_rating": 1980,
-    "ca": 1650,
-    "severity": 1650
-  },
-  {
     "id": "mount-combat-power",
     "name": "Mount Combat Power",
     "filter": "mount_combat",
@@ -3752,7 +3690,7 @@
   },
   {
     "id": "mount-combat-power-celestial",
-    "name": "Mount Combat Power (Celestial)",
+    "name": "Generic Mount Combat Power",
     "filter": "mount_combat",
     "il": 3937
   },
@@ -3798,15 +3736,8 @@
     "movement": 0.18
   },
   {
-    "id": "mystic-aura-group",
-    "name": "Mystic Aura (Group)",
-    "filter": "group_buff",
-    "maxCopies": 1,
-    "bonuses": ["mystic-aura-group"]
-  },
-  {
     "id": "mystic-aura-group-celestial",
-    "name": "Mystic Aura (Group) (Celestial)",
+    "name": "Mystic Aura (Group)",
     "filter": "group_buff",
     "maxCopies": 1,
     "bonuses": ["mystic-aura-group-celestial"]
@@ -3841,16 +3772,8 @@
     "maxCopies": 1
   },
   {
-    "id": "opportunistic-ca",
-    "name": "Opportunistic (CA)",
-    "filter": "mount_equip",
-    "il": 3000,
-    "combined_rating": 2700,
-    "ca": 4500
-  },
-  {
     "id": "opportunistic-ca-celestial",
-    "name": "Opportunistic (CA) (Celestial)",
+    "name": "Opportunistic",
     "filter": "mount_equip",
     "il": 3937,
     "combined_rating": 3544,
@@ -3970,17 +3893,8 @@
     "combined_rating": 1000
   },
   {
-    "id": "precision-strike-severity-worgs",
-    "name": "Precision (Strike/Severity - Worgs)",
-    "filter": "mount_equip",
-    "il": 3000,
-    "combined_rating": 2700,
-    "strike": 2250,
-    "severity": 2250
-  },
-  {
     "id": "precision-strike-severity-worgs-celestial",
-    "name": "Precision (Strike/Severity - Worgs) (Celestial)",
+    "name": "Precision",
     "filter": "mount_equip",
     "il": 3937,
     "combined_rating": 3544,
@@ -3988,17 +3902,8 @@
     "severity": 2953
   },
   {
-    "id": "predator-s-focus-strike-ca-golden-armored-griffon",
-    "name": "Predator's Focus (Strike/CA - Golden Armored Griffon)",
-    "filter": "mount_equip",
-    "il": 3000,
-    "combined_rating": 2700,
-    "ca": 2250,
-    "strike": 2250
-  },
-  {
     "id": "predator-s-focus-strike-ca-golden-armored-griffon-celestial",
-    "name": "Predator's Focus (Strike/CA - Golden Armored Griffon) (Celestial)",
+    "name": "Predator's Focus",
     "filter": "mount_equip",
     "il": 3937,
     "combined_rating": 3544,
@@ -4007,35 +3912,20 @@
   },
   {
     "id": "prime-rib-power",
-    "name": "Prime Rib (Power)",
+    "name": "Prime Rib",
     "filter": "consumable_food",
     "bonuses": ["prime-rib-power"]
   },
   {
-    "id": "providence-0",
-    "name": "Providence (0%)",
-    "filter": "mount_equip",
-    "il": 3000,
-    "combined_rating": 2700
-  },
-  {
     "id": "providence-0-celestial",
-    "name": "Providence (0%) (Celestial)",
+    "name": "Providence (0%)",
     "filter": "mount_equip",
     "il": 3937,
     "combined_rating": 3544
   },
   {
-    "id": "providence-3",
-    "name": "Providence (3%)",
-    "filter": "mount_equip",
-    "il": 3000,
-    "combined_rating": 2700,
-    "overall_damage": 0.03
-  },
-  {
     "id": "providence-3-celestial",
-    "name": "Providence (3%) (Celestial)",
+    "name": "Providence (3%)",
     "filter": "mount_equip",
     "il": 3937,
     "combined_rating": 3544,
@@ -4070,15 +3960,8 @@
     "maxCopies": 1
   },
   {
-    "id": "quick-action",
-    "name": "Quick Action",
-    "filter": "mount_equip",
-    "il": 3000,
-    "combined_rating": 2700
-  },
-  {
     "id": "quick-action-celestial",
-    "name": "Quick Action (Celestial)",
+    "name": "Quick Action",
     "filter": "mount_equip",
     "il": 3937,
     "combined_rating": 3544
@@ -4145,16 +4028,8 @@
     "outgoing_damage": 0.05
   },
   {
-    "id": "rapid-accuracy-accuracy",
-    "name": "Rapid Accuracy (Accuracy)",
-    "filter": "mount_equip",
-    "il": 3000,
-    "combined_rating": 2700,
-    "acc": 4500
-  },
-  {
     "id": "rapid-accuracy-accuracy-celestial",
-    "name": "Rapid Accuracy (Accuracy) (Celestial)",
+    "name": "Rapid Accuracy",
     "filter": "mount_equip",
     "il": 3937,
     "combined_rating": 3544,
@@ -4172,7 +4047,7 @@
   },
   {
     "id": "rattatoule-accuracy",
-    "name": "Rattatoule (Accuracy)",
+    "name": "Rattatoule",
     "filter": "consumable_food",
     "bonuses": ["rattatoule-accuracy"]
   },
@@ -4184,7 +4059,7 @@
   },
   {
     "id": "rime-temper",
-    "name": "Rime Temper",
+    "name": "Celestial Rime Temper",
     "filter": "combat_enchant_defense",
     "il": 7000,
     "incoming_damage": -0.12,
@@ -4199,30 +4074,15 @@
     "bonuses": ["risky-investment"]
   },
   {
-    "id": "runic-aura-group",
-    "name": "Runic Aura (Group)",
-    "filter": "group_buff",
-    "maxCopies": 1,
-    "bonuses": ["runic-aura-group"]
-  },
-  {
     "id": "runic-aura-group-celestial",
-    "name": "Runic Aura (Group) (Celestial)",
+    "name": "Runic Aura (Group)",
     "filter": "group_buff",
     "maxCopies": 1,
     "bonuses": ["runic-aura-group-celestial"]
   },
   {
-    "id": "ruthless-efficiency-strike",
-    "name": "Ruthless Efficiency (Strike)",
-    "filter": "mount_equip",
-    "il": 3000,
-    "combined_rating": 2700,
-    "strike": 4500
-  },
-  {
     "id": "ruthless-efficiency-strike-celestial",
-    "name": "Ruthless Efficiency (Strike) (Celestial)",
+    "name": "Ruthless Efficiency",
     "filter": "mount_equip",
     "il": 3937,
     "combined_rating": 3544,
@@ -4230,7 +4090,7 @@
   },
   {
     "id": "sambocade-movement",
-    "name": "Sambocade (Movement)",
+    "name": "Sambocade",
     "filter": "consumable_food",
     "bonuses": ["sambocade-movement"]
   },
@@ -4266,7 +4126,7 @@
   },
   {
     "id": "seared-tuna-strike",
-    "name": "Seared Tuna (Strike)",
+    "name": "Seared Tuna",
     "filter": "consumable_food",
     "bonuses": ["seared-tuna-strike"]
   },
@@ -4279,7 +4139,7 @@
   },
   {
     "id": "shattered-resolve",
-    "name": "Shattered Resolve",
+    "name": "Celestial Shattered Resolve",
     "filter": "combat_enchant_defense",
     "il": 7000,
     "incoming_damage": -0.12,
@@ -4372,7 +4232,7 @@
   },
   {
     "id": "squash-soup-strike-severity",
-    "name": "Squash Soup (Strike/Severity)",
+    "name": "Squash Soup",
     "filter": "consumable_event_food",
     "bonuses": ["squash-soup-strike-severity"]
   },
@@ -4394,7 +4254,7 @@
   },
   {
     "id": "sunlord-ca",
-    "name": "Sunlord (CA)",
+    "name": "Sunlord's Gift Elixir",
     "filter": "consumable_elixir",
     "bonuses": ["sunlord-ca"]
   },
@@ -4408,7 +4268,7 @@
   },
   {
     "id": "swift-synergy",
-    "name": "Swift Synergy",
+    "name": "Celestial Swift Synergy",
     "filter": "combat_enchant_offense",
     "il": 7000,
     "mult_damage": 0.12,
@@ -4422,34 +4282,6 @@
     "ca_p": 0.05
   },
   {
-    "id": "thayan-ring-acc-sev",
-    "name": "Thayan Ring (Acc/Sev)",
-    "filter": "companion_equip",
-    "il": 2600,
-    "combined_rating": 2340,
-    "acc": 2535,
-    "severity": 2340
-  },
-  {
-    "id": "thayan-sword-knot-acc-ca-forte",
-    "name": "Thayan Sword Knot (Acc/CA/Forte)",
-    "filter": "companion_equip",
-    "il": 2600,
-    "combined_rating": 2340,
-    "acc": 1268,
-    "ca": 1248,
-    "forte": 1228
-  },
-  {
-    "id": "thayan-talisman-ca-strike",
-    "name": "Thayan Talisman (CA/Strike)",
-    "filter": "companion_equip",
-    "il": 2600,
-    "combined_rating": 2340,
-    "ca": 1950,
-    "strike": 2340
-  },
-  {
     "id": "the-bigger-they-are-minsc-damage-defense",
     "name": "The Bigger They Are [Minsc] (Damage) <Defense>",
     "filter": "companion_power",
@@ -4460,7 +4292,7 @@
   },
   {
     "id": "tranquility",
-    "name": "Tranquility",
+    "name": "Celestial Tranquility",
     "filter": "insignia",
     "il": 750,
     "combined_rating": 600,
@@ -4469,7 +4301,7 @@
   },
   {
     "id": "tranquility-pref",
-    "name": "Tranquility (Pref)",
+    "name": "Celestial Tranquility (Pref)",
     "filter": "insignia",
     "il": 900,
     "combined_rating": 720,
@@ -4484,17 +4316,8 @@
     "bonuses": ["tutor"]
   },
   {
-    "id": "uncanny-precision-accuracy-ca-deadly-driderform",
-    "name": "Uncanny Precision (Accuracy/CA - Deadly Driderform)",
-    "filter": "mount_equip",
-    "il": 3000,
-    "combined_rating": 2700,
-    "acc": 2250,
-    "ca": 2250
-  },
-  {
     "id": "uncanny-precision-accuracy-ca-deadly-driderform-celestial",
-    "name": "Uncanny Precision (Accuracy/CA - Deadly Driderform) (Celestial)",
+    "name": "Uncanny Precision",
     "filter": "mount_equip",
     "il": 3937,
     "combined_rating": 3544,
@@ -4556,13 +4379,13 @@
   },
   {
     "id": "watermelon-sorbet-power-accuracy",
-    "name": "Watermelon Sorbet (Power/Accuracy)",
+    "name": "Watermelon Sorbet",
     "filter": "consumable_event_food",
     "bonuses": ["watermelon-sorbet-power-accuracy"]
   },
   {
     "id": "watermelon-sorbet-power-accuracy-legacy",
-    "name": "Watermelon Sorbet (Power/Accuracy) (Legacy)",
+    "name": "Watermelon Sorbet (Legacy)",
     "filter": "consumable_event_food",
     "bonuses": ["watermelon-sorbet-power-accuracy-legacy"]
   },
@@ -4576,7 +4399,7 @@
   },
   {
     "id": "wild-storm-severity",
-    "name": "Wild Storm (Severity)",
+    "name": "Wild Storm Elixir",
     "filter": "consumable_elixir",
     "bonuses": ["wild-storm-severity"]
   },
