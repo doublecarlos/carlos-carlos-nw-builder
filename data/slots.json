@@ -1068,31 +1068,39 @@
         {
           "id": "companions.offense",
           "label": "Offense",
-          "filter": "companion_power",
+          "tags": ["companion_power:offense"],
           "type": "item_picker"
         },
         {
           "id": "companions.defense",
           "label": "Defense",
-          "filter": "companion_power",
+          "tags": ["companion_power:defense"],
           "type": "item_picker"
         },
         {
           "id": "companions.universal1",
           "label": "Universal 1",
-          "filter": "companion_power",
+          "tags": [
+            "companion_power:offense",
+            "companion_power:defense",
+            "companion_power:utility"
+          ],
           "type": "item_picker"
         },
         {
           "id": "companions.universal2",
           "label": "Universal 2",
-          "filter": "companion_power",
+          "tags": [
+            "companion_power:offense",
+            "companion_power:defense",
+            "companion_power:utility"
+          ],
           "type": "item_picker"
         },
         {
           "id": "companions.utility",
           "label": "Utility",
-          "filter": "companion_power",
+          "tags": ["companion_power:utility"],
           "type": "item_picker"
         }
       ]

@@ -310,7 +310,7 @@
   },
   {
     "id": "batiri-s-wisdom-batiri-damage-offense",
-    "name": "Batiri's Wisdom [Batiri] (Damage) <Offense>",
+    "name": "Batiri's Wisdom",
     "grants": [
       {
         "when": {
@@ -2411,7 +2411,7 @@
   },
   {
     "id": "raptor-s-instincts-tamed-velociraptor-power-offense",
-    "name": "Raptor's Instincts [Tamed Velociraptor] (Power) <Offense>",
+    "name": "Raptor's Instincts",
     "grants": [
       {
         "when": {
@@ -2657,7 +2657,7 @@
   },
   {
     "id": "spined-devil-s-influence-6-spined-devil-damage-offense",
-    "name": "Spined Devil's Influence 6% [Spined Devil] (Damage) <Offense>",
+    "name": "Spined Devil's Influence 6%",
     "grants": [
       {
         "when": {
@@ -2725,7 +2725,7 @@
   },
   {
     "id": "the-bigger-they-are-minsc-damage-defense",
-    "name": "The Bigger They Are [Minsc] (Damage) <Defense>",
+    "name": "The Bigger They Are",
     "grants": [
       {
         "when": {

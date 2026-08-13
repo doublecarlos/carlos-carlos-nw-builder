@@ -518,13 +518,15 @@
   },
   {
     "id": "alchemist-s-discipline-alchemist-strike-ca-offense-utility",
-    "name": "Alchemist's Discipline [Alchemist] (Strike/CA) <Offense/Utility>",
+    "name": "Alchemist's Discipline",
     "filter": "companion_power",
     "il": 900,
     "combined_rating": 900,
     "ca_p": 0.045,
     "strike_p": 0.045,
-    "maxCopies": 1
+    "longDescription": "Alchemist companion power. Role: Offense, Utility.",
+    "maxCopies": 1,
+    "tags": ["companion_power:offense", "companion_power:utility"]
   },
   {
     "id": "apocalipse-set",
@@ -679,11 +681,13 @@
   },
   {
     "id": "batiri-s-wisdom-batiri-damage-offense",
-    "name": "Batiri's Wisdom [Batiri] (Damage) <Offense>",
+    "name": "Batiri's Wisdom",
     "filter": "companion_power",
     "il": 900,
     "combined_rating": 900,
+    "longDescription": "Batiri companion power. Role: Offense.",
     "maxCopies": 1,
+    "tags": ["companion_power:offense"],
     "bonuses": ["batiri-s-wisdom-batiri-damage-offense"]
   },
   {
@@ -1525,30 +1529,36 @@
   },
   {
     "id": "celestial-lion-s-presence-2-stalwart-golden-lion-damage-utility",
-    "name": "Celestial Lion's Presence 2% [Stalwart Golden Lion] (Damage) <Utility>",
+    "name": "Celestial Lion's Presence 2%",
     "filter": "companion_power",
     "il": 900,
     "combined_rating": 900,
     "overall_damage": 0.02,
-    "maxCopies": 1
+    "longDescription": "Stalwart Golden Lion companion power. Role: Utility.",
+    "maxCopies": 1,
+    "tags": ["companion_power:utility"]
   },
   {
     "id": "celestial-lion-s-presence-3-stalwart-golden-lion-damage-utility",
-    "name": "Celestial Lion's Presence 3% [Stalwart Golden Lion] (Damage) <Utility>",
+    "name": "Celestial Lion's Presence 3%",
     "filter": "companion_power",
     "il": 900,
     "combined_rating": 900,
     "overall_damage": 0.03,
-    "maxCopies": 1
+    "longDescription": "Stalwart Golden Lion companion power. Role: Utility.",
+    "maxCopies": 1,
+    "tags": ["companion_power:utility"]
   },
   {
     "id": "celestial-lion-s-presence-4-stalwart-golden-lion-damage-utility",
-    "name": "Celestial Lion's Presence 4% [Stalwart Golden Lion] (Damage) <Utility>",
+    "name": "Celestial Lion's Presence 4%",
     "filter": "companion_power",
     "il": 900,
     "combined_rating": 900,
     "overall_damage": 0.04,
-    "maxCopies": 1
+    "longDescription": "Stalwart Golden Lion companion power. Role: Utility.",
+    "maxCopies": 1,
+    "tags": ["companion_power:utility"]
   },
   {
     "id": "cha-lua-accuracy-severity",
@@ -1614,13 +1624,15 @@
   },
   {
     "id": "coldlight-walker-s-gaze-coldlight-walker-strike-severity-utility",
-    "name": "Coldlight Walker's Gaze [Coldlight Walker] (Strike/Severity) <Utility>",
+    "name": "Coldlight Walker's Gaze",
     "filter": "companion_power",
     "il": 900,
     "combined_rating": 900,
     "strike_p": 0.045,
     "sev_p": 0.045,
-    "maxCopies": 1
+    "longDescription": "Coldlight Walker companion power. Role: Utility.",
+    "maxCopies": 1,
+    "tags": ["companion_power:utility"]
   },
   {
     "id": "combat-advantage-jewel",
@@ -1637,12 +1649,14 @@
   },
   {
     "id": "compy-s-instincts-alpha-compy-power-utility",
-    "name": "Compy's Instincts [Alpha Compy] (Power) <Utility>",
+    "name": "Compy's Instincts",
     "filter": "companion_power",
     "il": 900,
     "combined_rating": 900,
     "power_p": 0.09,
-    "maxCopies": 1
+    "longDescription": "Alpha Compy companion power. Role: Utility.",
+    "maxCopies": 1,
+    "tags": ["companion_power:utility"]
   },
   {
     "id": "crimson-calamity",
@@ -1676,13 +1690,15 @@
   },
   {
     "id": "dark-dealings-dark-dealer-accuracy-ca-utility",
-    "name": "Dark Dealings [Dark Dealer] (Accuracy/CA) <Utility>",
+    "name": "Dark Dealings",
     "filter": "companion_power",
     "il": 900,
     "combined_rating": 900,
     "acc_p": 0.045,
     "ca_p": 0.045,
-    "maxCopies": 1
+    "longDescription": "Dark Dealer companion power. Role: Utility.",
+    "maxCopies": 1,
+    "tags": ["companion_power:utility"]
   },
   {
     "id": "debuff-enhancement",
@@ -1804,13 +1820,15 @@
   },
   {
     "id": "fawn-s-instincts-fawn-of-shiallia-power-strike-offense-utility",
-    "name": "Fawn's Instincts [Fawn of Shiallia] (Power/Strike) <Offense/Utility>",
+    "name": "Fawn's Instincts",
     "filter": "companion_power",
     "il": 900,
     "combined_rating": 900,
     "power_p": 0.045,
     "strike_p": 0.045,
-    "maxCopies": 1
+    "longDescription": "Fawn of Shiallia companion power. Role: Offense, Utility.",
+    "maxCopies": 1,
+    "tags": ["companion_power:offense", "companion_power:utility"]
   },
   {
     "id": "ferocious-predator-power-severity-celestial",
@@ -1887,12 +1905,18 @@
   },
   {
     "id": "golden-cat-s-instincts-golden-cat-ca-any",
-    "name": "Golden Cat's Instincts [Golden Cat] (CA) <Any>",
+    "name": "Golden Cat's Instincts",
     "filter": "companion_power",
     "il": 900,
     "combined_rating": 900,
     "ca_p": 0.09,
-    "maxCopies": 1
+    "longDescription": "Golden Cat companion power. Role: Any (Offense, Defense, or Utility).",
+    "maxCopies": 1,
+    "tags": [
+      "companion_power:offense",
+      "companion_power:defense",
+      "companion_power:utility"
+    ]
   },
   {
     "id": "grace-ring",
@@ -3753,12 +3777,14 @@
   },
   {
     "id": "neverwinter-knight-s-discipline-neverwinter-knight-damage-offense",
-    "name": "Neverwinter Knight's Discipline [Neverwinter Knight] (Damage) <Offense>",
+    "name": "Neverwinter Knight's Discipline",
     "filter": "companion_power",
     "il": 900,
     "combined_rating": 900,
     "outgoing_damage": 0.09,
-    "maxCopies": 1
+    "longDescription": "Neverwinter Knight companion power. Role: Offense.",
+    "maxCopies": 1,
+    "tags": ["companion_power:offense"]
   },
   {
     "id": "nightflame",
@@ -4037,12 +4063,14 @@
   },
   {
     "id": "raptor-s-instincts-tamed-velociraptor-power-offense",
-    "name": "Raptor's Instincts [Tamed Velociraptor] (Power) <Offense>",
+    "name": "Raptor's Instincts",
     "filter": "companion_power",
     "il": 900,
     "combined_rating": 900,
     "power_p": 0.045,
+    "longDescription": "Tamed Velociraptor companion power. Role: Offense.",
     "maxCopies": 1,
+    "tags": ["companion_power:offense"],
     "bonuses": ["raptor-s-instincts-tamed-velociraptor-power-offense"]
   },
   {
@@ -4223,11 +4251,13 @@
   },
   {
     "id": "spined-devil-s-influence-6-spined-devil-damage-offense",
-    "name": "Spined Devil's Influence 6% [Spined Devil] (Damage) <Offense>",
+    "name": "Spined Devil's Influence 6%",
     "filter": "companion_power",
     "il": 900,
     "combined_rating": 900,
+    "longDescription": "Spined Devil companion power. Role: Offense.",
     "maxCopies": 1,
+    "tags": ["companion_power:offense"],
     "bonuses": ["spined-devil-s-influence-6-spined-devil-damage-offense"]
   },
   {
@@ -4283,11 +4313,13 @@
   },
   {
     "id": "the-bigger-they-are-minsc-damage-defense",
-    "name": "The Bigger They Are [Minsc] (Damage) <Defense>",
+    "name": "The Bigger They Are",
     "filter": "companion_power",
     "il": 900,
     "combined_rating": 900,
+    "longDescription": "Minsc companion power. Role: Defense.",
     "maxCopies": 1,
+    "tags": ["companion_power:defense"],
     "bonuses": ["the-bigger-they-are-minsc-damage-defense"]
   },
   {
@@ -4405,11 +4437,13 @@
   },
   {
     "id": "wolf-s-instincts-wolf-severity-offense-utility",
-    "name": "Wolf's Instincts [Wolf] (Severity) <Offense/Utility>",
+    "name": "Wolf's Instincts",
     "filter": "companion_power",
     "il": 900,
     "combined_rating": 900,
     "sev_p": 0.09,
-    "maxCopies": 1
+    "longDescription": "Wolf companion power. Role: Offense, Utility.",
+    "maxCopies": 1,
+    "tags": ["companion_power:offense", "companion_power:utility"]
   }
 ]

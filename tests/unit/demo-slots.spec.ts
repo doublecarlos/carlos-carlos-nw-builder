@@ -22,11 +22,17 @@ import {
 import type { DemoItem } from "../../src/lib/demo-snapshot";
 import type { Item } from "../../src/types";
 
-const testItem = (id: string, filter: string, gameIds: string[]): Item => ({
+const testItem = (
+  id: string,
+  filter: string,
+  gameIds: string[],
+  extra: Partial<Item> = {},
+): Item => ({
   id,
   name: id,
   filter,
   gameIds,
+  ...extra,
 });
 
 let overlay = catalog.emptyOverlay();
@@ -36,7 +42,11 @@ for (const item of [
   testItem("test-offhand", "gear_weapon_offhand", ["Secondary_Test"]),
   testItem("test-combat-off", "combat_enchant_offense", ["CombatGem_Off_Test"]),
   testItem("test-combat-def", "combat_enchant_defense", ["CombatGem_Def_Test"]),
-  testItem("test-companion-power", "companion_power", ["Pet_Bonus_Test"]),
+  // companions.offense now selects by tag, not by filter (#247) -- this item needs the
+  // matching tag to still land in the "first open power slot" this describe block tests.
+  testItem("test-companion-power", "companion_power", ["Pet_Bonus_Test"], {
+    tags: ["companion_power:offense"],
+  }),
   testItem("test-companion-enh", "companion_enhancement", ["Pet_Enh_Test"]),
   testItem("test-collar-sturdy", "sturdy_collar", ["Collar_Sturdy_Test"]),
   testItem("test-collar-supportive", "supportive_collar", [
