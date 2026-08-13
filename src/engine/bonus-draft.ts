@@ -6,8 +6,9 @@
 // stacking/exclusion/everything mechanical. `name` is the one exception -- purely a display
 // label (ItemCard.vue's hover card), optional, for telling a multi-grant bonus's parts apart.
 // What the form covers structurally: the condition tree (leaves plus
-// `all`/`any`/`not`, see condition-draft.ts), a flat stat payload, a *tiered* payload keyed on
-// bonus occurrences, and a *variants* payload (first matching condition wins). Only conditions
+// `all`/`any`/`not`, see condition-draft.ts), a flat stat payload (optionally with its own
+// dynamic stats), a *tiered* payload keyed on bonus occurrences, and a *variants* payload
+// (first matching condition wins, each with its own optional dynamic stats). Only conditions
 // nested deeper than `MAX_DEPTH`, unrecognized condition keys, complex tiers, or a grant using
 // both `tiers` and `variants` fall through to the JSON escape hatch -- the editor never
 // silently flattens a structure it has no widget for.
@@ -30,13 +31,14 @@ import type {
   GrantProblem,
   Bonus,
   StatValues,
+  DynamicStatConfig,
 } from "../types";
 
 // Exactly what the engine reads off a tier (bonus.ts `evaluateBonus`). Anything else on a
 // tier would be dropped by the form, so its presence forces JSON mode instead.
 const TIER_KEYS = new Set(["bonusOccurrences", "stats"]);
 const OCCURRENCE_KEYS = new Set(["bonus", "atLeast"]);
-const VARIANT_KEYS = new Set(["when", "stats"]);
+const VARIANT_KEYS = new Set(["when", "stats", "dynamicStats"]);
 const PROBLEM_KEYS = new Set([
   "severity",
   "message",
@@ -62,6 +64,8 @@ const variantsAreSimple = (variants: NonNullable<Grant["variants"]>) =>
       Object.keys(variant).every((key) => VARIANT_KEYS.has(key)) &&
       variant.stats &&
       typeof variant.stats === "object" &&
+      (variant.dynamicStats === undefined ||
+        Array.isArray(variant.dynamicStats)) &&
       whenIsRepresentable(variant.when),
   );
 
@@ -70,12 +74,12 @@ const problemIsSimple = (problem: GrantProblem) =>
   PROBLEM_SEVERITIES.has(problem.severity) &&
   typeof problem.message === "string";
 
-/** Structures the form cannot represent without losing something. `dynamicStats` on the flat
- *  payload has no dedicated widget (issue #251's grant-level dynamic stats are new and rare
- *  enough not to warrant one yet) -- same "drop to JSON rather than silently flatten" rule
- *  `tiers`/`variants`/`problem` already follow. A `dynamicStats` entry *inside* a variant is
- *  already caught by `variantsAreSimple`'s own key check below, since `dynamicStats` isn't in
- *  `VARIANT_KEYS`. */
+/** Structures the form cannot represent without losing something. `dynamicStats` has a
+ *  dedicated widget on the flat payload and on each variant's own payload (mirroring
+ *  `ItemForm.vue`'s "Dynamic stats" section) -- but `Grant.dynamicStats` only ever applies
+ *  alongside the flat payload, so pairing it with `tiers`/`variants`/`problem` on the same
+ *  grant has no widget and falls to JSON, same "drop to JSON rather than silently flatten"
+ *  rule `tiers`/`variants`/`problem` already follow. */
 export const needsJson = (grant: Grant) =>
   Boolean(
     !whenIsRepresentable(grant.when) ||
@@ -83,7 +87,8 @@ export const needsJson = (grant: Grant) =>
     (grant.variants && (grant.tiers || !variantsAreSimple(grant.variants))) ||
     (grant.problem &&
       (grant.tiers || grant.variants || !problemIsSimple(grant.problem))) ||
-    Boolean(grant.dynamicStats?.length),
+    (grant.dynamicStats?.length &&
+      (grant.tiers || grant.variants || grant.problem)),
   );
 
 export interface StatRow {
@@ -115,16 +120,54 @@ export const rowsToStats = (
   return stats;
 };
 
+/** One `DynamicStatConfig` row -- widened to `number | string | null` like every other
+ *  numeric draft field so a cleared input reads as empty rather than `0`. Shared by the item
+ *  editor (`Item.dynamicStats`) and the grant/variant "Dynamic stats" sections below, since
+ *  both edit the same underlying shape. */
+export interface DynamicStatDraft {
+  stat: string;
+  min: number | string | null;
+  max: number | string | null;
+  default: number | string | null;
+  label: string;
+}
+
+export const dynamicStatRows = (
+  configs: DynamicStatConfig[] | undefined,
+): DynamicStatDraft[] =>
+  (configs ?? []).map((d) => ({
+    stat: d.stat,
+    min: d.min,
+    max: d.max,
+    default: d.default,
+    label: d.label ?? "",
+  }));
+
+export const rowsToDynamicStats = (
+  rows: DynamicStatDraft[] | undefined,
+): DynamicStatConfig[] =>
+  (rows ?? [])
+    .filter((d) => d.stat)
+    .map((d) => ({
+      stat: d.stat,
+      min: Number(d.min) || 0,
+      max: Number(d.max) || 0,
+      default: Number(d.default) || 0,
+      ...(d.label.trim() ? { label: d.label.trim() } : {}),
+    }));
+
 export interface VariantDraft {
   uid: string;
   conditions: ConditionRow[];
   stats: StatRow[];
+  dynamicStats: DynamicStatDraft[];
 }
 
 export const newVariant = (): VariantDraft => ({
   uid: `v${Math.random().toString(36).slice(2, 8)}`,
   conditions: [],
   stats: [],
+  dynamicStats: [],
 });
 
 export interface TierDraft {
@@ -140,6 +183,7 @@ export interface GrantDraft {
   conditions: ConditionRow[];
   payload: "flat" | "tiers" | "variants" | "problem";
   stats: StatRow[];
+  dynamicStats: DynamicStatDraft[];
   tiers: TierDraft[];
   variants: VariantDraft[];
   problemSeverity: "error" | "warning";
@@ -168,6 +212,7 @@ export function toDraft(grant: Grant = {}): GrantDraft {
           ? "tiers"
           : "flat",
     stats: json ? [] : statRows(grant.stats),
+    dynamicStats: json ? [] : dynamicStatRows(grant.dynamicStats),
     tiers: json
       ? []
       : (grant.tiers ?? []).map((tier) => ({
@@ -181,6 +226,7 @@ export function toDraft(grant: Grant = {}): GrantDraft {
           ...newVariant(),
           conditions: whenToRows(variant.when),
           stats: statRows(variant.stats),
+          dynamicStats: dynamicStatRows(variant.dynamicStats),
         })),
     problemSeverity: json ? "warning" : (grant.problem?.severity ?? "warning"),
     problemMessage: json ? "" : (grant.problem?.message ?? ""),
@@ -235,10 +281,14 @@ export function toGrant(draft: GrantDraft): Grant {
       const vWhen = rowsToWhen(variant.conditions);
       const entry: GrantVariant = { stats: rowsToStats(variant.stats) };
       if (Object.keys(vWhen).length) entry.when = vWhen;
+      const vDynamicStats = rowsToDynamicStats(variant.dynamicStats);
+      if (vDynamicStats.length) entry.dynamicStats = vDynamicStats;
       return entry;
     });
   } else {
     out.stats = rowsToStats(draft.stats);
+    const dynamicStats = rowsToDynamicStats(draft.dynamicStats);
+    if (dynamicStats.length) out.dynamicStats = dynamicStats;
   }
 
   if (draft.name) out.name = draft.name;
@@ -281,6 +331,7 @@ export function duplicateDraft(draft: GrantDraft): GrantDraft {
     uid: `b${Math.random().toString(36).slice(2, 8)}`,
     conditions: draft.conditions.map(cloneRow),
     stats: draft.stats.map((s) => ({ ...s })),
+    dynamicStats: draft.dynamicStats.map((d) => ({ ...d })),
     tiers: draft.tiers.map((tier) => ({
       ...tier,
       stats: tier.stats.map((s) => ({ ...s })),
@@ -289,6 +340,7 @@ export function duplicateDraft(draft: GrantDraft): GrantDraft {
       ...newVariant(),
       conditions: variant.conditions.map(cloneRow),
       stats: variant.stats.map((s) => ({ ...s })),
+      dynamicStats: variant.dynamicStats.map((d) => ({ ...d })),
     })),
   };
 }

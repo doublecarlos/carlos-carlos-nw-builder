@@ -99,6 +99,47 @@ describe("GrantStore stat mutations", () => {
     gs.addVariantStat(5);
     expect(changes()).toBe(before);
   });
+
+  it("addDynamicStat targets the flat payload's own dynamicStats", () => {
+    const { gs, changes } = makeStore("flat");
+    gs.addDynamicStat();
+    expect(gs.grant.dynamicStats).toEqual([
+      { stat: "", min: null, max: null, default: null, label: "" },
+    ]);
+    expect(changes()).toBe(1);
+  });
+
+  it("removeDynamicStat removes from the flat payload's dynamicStats", () => {
+    const { gs } = makeStore("flat");
+    gs.addDynamicStat();
+    gs.addDynamicStat();
+    gs.removeDynamicStat(0);
+    expect(gs.grant.dynamicStats).toHaveLength(1);
+  });
+
+  it("addVariantDynamicStat targets the selected variant, not grant.dynamicStats", () => {
+    const { gs } = makeStore("variants");
+    gs.addVariantDynamicStat(0);
+    expect(gs.grant.variants[0].dynamicStats).toEqual([
+      { stat: "", min: null, max: null, default: null, label: "" },
+    ]);
+    expect(gs.grant.dynamicStats).toHaveLength(0);
+  });
+
+  it("removeVariantDynamicStat removes the right row from the selected variant", () => {
+    const { gs } = makeStore("variants");
+    gs.addVariantDynamicStat(0);
+    gs.addVariantDynamicStat(0);
+    gs.removeVariantDynamicStat(1, 0);
+    expect(gs.grant.variants[0].dynamicStats).toHaveLength(1);
+  });
+
+  it("addVariantDynamicStat on a missing variant is a no-op (no onChange)", () => {
+    const { gs, changes } = makeStore("variants");
+    const before = changes();
+    gs.addVariantDynamicStat(5);
+    expect(changes()).toBe(before);
+  });
 });
 
 describe("BonusDraftStore.moveGrantTo", () => {

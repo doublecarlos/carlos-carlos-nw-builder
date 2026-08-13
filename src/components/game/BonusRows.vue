@@ -27,6 +27,7 @@ import {
 } from "@lucide/vue";
 import BaseButton from "../ui/BaseButton.vue";
 import BaseCheckbox from "../ui/BaseCheckbox.vue";
+import FormField from "../ui/FormField.vue";
 import FormSection from "../ui/FormSection.vue";
 import { isPercentKind, kindOf, statPickerOptions } from "../../lib/format";
 import { focusNextCombo } from "../../lib/stat-row-nav";
@@ -487,6 +488,95 @@ function toggleJson(gIndex: number) {
               ><Plus
             /></IconButton>
           </div>
+
+          <FormSection sub
+            >Dynamic stats (player types the value; default applies until they
+            do)</FormSection
+          >
+          <div
+            v-for="(row, dIndex) in grant.dynamicStats"
+            :key="dIndex"
+            class="dynamic-stat-row flex flex-wrap items-center gap-1.5 mb-1"
+          >
+            <IconButton
+              title="Add dynamic stat"
+              @click="gs(gIndex).addDynamicStat()"
+              ><Plus
+            /></IconButton>
+            <IconButton
+              title="Remove dynamic stat"
+              @click="gs(gIndex).removeDynamicStat(dIndex)"
+              ><Trash
+            /></IconButton>
+            <FormField label="Stat">
+              <ComboBox
+                class="combo--stat w-52"
+                :model-value="row.stat"
+                :options="statComboOptions"
+                placeholder="— pick a stat —"
+                @update:model-value="(v) => (row.stat = v)"
+              />
+            </FormField>
+            <FormField label="Min">
+              <PercentInput
+                v-if="isPercent(row.stat)"
+                :model-value="row.min ?? ''"
+                class="w-24"
+                @update:model-value="(v) => (row.min = v)"
+              />
+              <input
+                v-else
+                v-model.number="row.min"
+                class="w-24 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+                type="number"
+              />
+            </FormField>
+            <FormField label="Max">
+              <PercentInput
+                v-if="isPercent(row.stat)"
+                :model-value="row.max ?? ''"
+                class="w-24"
+                @update:model-value="(v) => (row.max = v)"
+              />
+              <input
+                v-else
+                v-model.number="row.max"
+                class="w-24 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+                type="number"
+              />
+            </FormField>
+            <FormField label="Default">
+              <PercentInput
+                v-if="isPercent(row.stat)"
+                :model-value="row.default ?? ''"
+                class="w-24"
+                @update:model-value="(v) => (row.default = v)"
+              />
+              <input
+                v-else
+                v-model.number="row.default"
+                class="w-24 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+                type="number"
+              />
+            </FormField>
+            <FormField label="Label (optional)">
+              <input
+                v-model="row.label"
+                class="w-40 rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+                type="text"
+              />
+            </FormField>
+          </div>
+          <div
+            v-if="!grant.dynamicStats.length"
+            class="dynamic-stat-row flex flex-wrap items-center gap-1.5 mb-1"
+          >
+            <IconButton
+              title="Add dynamic stat"
+              @click="gs(gIndex).addDynamicStat()"
+              ><Plus
+            /></IconButton>
+          </div>
         </template>
 
         <!-- tiered payload -->
@@ -741,6 +831,95 @@ function toggleJson(gIndex: number) {
               <IconButton
                 title="Add stat"
                 @click="gs(gIndex).addVariantStat(vIndex)"
+                ><Plus
+              /></IconButton>
+            </div>
+
+            <FormSection sub
+              >Dynamic stats (player types the value; default applies until they
+              do)</FormSection
+            >
+            <div
+              v-for="(row, dIndex) in variant.dynamicStats"
+              :key="dIndex"
+              class="dynamic-stat-row flex flex-wrap items-center gap-1.5 mb-1"
+            >
+              <IconButton
+                title="Add dynamic stat"
+                @click="gs(gIndex).addVariantDynamicStat(vIndex)"
+                ><Plus
+              /></IconButton>
+              <IconButton
+                title="Remove dynamic stat"
+                @click="gs(gIndex).removeVariantDynamicStat(dIndex, vIndex)"
+                ><Trash
+              /></IconButton>
+              <FormField label="Stat">
+                <ComboBox
+                  class="combo--stat w-52"
+                  :model-value="row.stat"
+                  :options="statComboOptions"
+                  placeholder="— pick a stat —"
+                  @update:model-value="(v) => (row.stat = v)"
+                />
+              </FormField>
+              <FormField label="Min">
+                <PercentInput
+                  v-if="isPercent(row.stat)"
+                  :model-value="row.min ?? ''"
+                  class="w-24"
+                  @update:model-value="(v) => (row.min = v)"
+                />
+                <input
+                  v-else
+                  v-model.number="row.min"
+                  class="w-24 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+                  type="number"
+                />
+              </FormField>
+              <FormField label="Max">
+                <PercentInput
+                  v-if="isPercent(row.stat)"
+                  :model-value="row.max ?? ''"
+                  class="w-24"
+                  @update:model-value="(v) => (row.max = v)"
+                />
+                <input
+                  v-else
+                  v-model.number="row.max"
+                  class="w-24 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+                  type="number"
+                />
+              </FormField>
+              <FormField label="Default">
+                <PercentInput
+                  v-if="isPercent(row.stat)"
+                  :model-value="row.default ?? ''"
+                  class="w-24"
+                  @update:model-value="(v) => (row.default = v)"
+                />
+                <input
+                  v-else
+                  v-model.number="row.default"
+                  class="w-24 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+                  type="number"
+                />
+              </FormField>
+              <FormField label="Label (optional)">
+                <input
+                  v-model="row.label"
+                  class="w-40 rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+                  type="text"
+                />
+              </FormField>
+            </div>
+            <div
+              v-if="!variant.dynamicStats.length"
+              class="dynamic-stat-row flex flex-wrap items-center gap-1.5 mb-1"
+            >
+              <IconButton
+                title="Add dynamic stat"
+                @click="gs(gIndex).addVariantDynamicStat(vIndex)"
                 ><Plus
               /></IconButton>
             </div>

@@ -156,3 +156,86 @@ describe("bonus-draft short/long description", () => {
     expect(toGrant(toDraft(grant))).toEqual(grant);
   });
 });
+
+describe("bonus-draft dynamic stats", () => {
+  it("a flat grant with dynamicStats round-trips through the form, not JSON", () => {
+    const grant: Grant = {
+      stats: { power: 100 },
+      dynamicStats: [{ stat: "critChance", min: 0, max: 5, default: 3 }],
+    };
+    expect(needsJson(grant)).toBe(false);
+
+    const draft = toDraft(grant);
+    expect(draft.mode).toBe("simple");
+    expect(draft.payload).toBe("flat");
+    expect(draft.dynamicStats).toEqual([
+      { stat: "critChance", min: 0, max: 5, default: 3, label: "" },
+    ]);
+
+    expect(toGrant(draft)).toEqual(grant);
+  });
+
+  it("a dynamicStats label round-trips, and is omitted entirely when blank", () => {
+    const grant: Grant = {
+      stats: {},
+      dynamicStats: [
+        { stat: "power", min: 0, max: 10, default: 5, label: "Custom label" },
+      ],
+    };
+    const draft = toDraft(grant);
+    expect(draft.dynamicStats[0].label).toBe("Custom label");
+    expect(toGrant(draft)).toEqual(grant);
+
+    const unlabeled = toGrant(toDraft({ stats: {}, dynamicStats: [] }));
+    expect(unlabeled).not.toHaveProperty("dynamicStats");
+  });
+
+  it("a variant's own dynamicStats round-trips independently of the grant's", () => {
+    const grant: Grant = {
+      variants: [
+        {
+          when: { class: "fighter" },
+          stats: { power: 50 },
+          dynamicStats: [{ stat: "ap", min: 0, max: 3, default: 1 }],
+        },
+        { stats: { power: 25 } },
+      ],
+    };
+    expect(needsJson(grant)).toBe(false);
+
+    const draft = toDraft(grant);
+    expect(draft.variants[0].dynamicStats).toEqual([
+      { stat: "ap", min: 0, max: 3, default: 1, label: "" },
+    ]);
+    expect(draft.variants[1].dynamicStats).toEqual([]);
+
+    expect(toGrant(draft)).toEqual(grant);
+  });
+
+  it("dynamicStats combined with tiers, variants, or problem on the same grant forces JSON", () => {
+    const withTiers: Grant = {
+      dynamicStats: [{ stat: "power", min: 0, max: 5, default: 1 }],
+      tiers: [{ bonusOccurrences: { bonus: "s", atLeast: 1 }, stats: {} }],
+    };
+    expect(needsJson(withTiers)).toBe(true);
+
+    const withVariants: Grant = {
+      dynamicStats: [{ stat: "power", min: 0, max: 5, default: 1 }],
+      variants: [{ stats: {} }],
+    };
+    expect(needsJson(withVariants)).toBe(true);
+
+    const withProblem: Grant = {
+      dynamicStats: [{ stat: "power", min: 0, max: 5, default: 1 }],
+      problem: { severity: "warning", message: "x" },
+    };
+    expect(needsJson(withProblem)).toBe(true);
+  });
+
+  it("an unrecognized key on a variant (other than when/stats/dynamicStats) forces JSON", () => {
+    const grant = {
+      variants: [{ stats: {}, icon: "boom" }],
+    } as unknown as Grant;
+    expect(needsJson(grant)).toBe(true);
+  });
+});

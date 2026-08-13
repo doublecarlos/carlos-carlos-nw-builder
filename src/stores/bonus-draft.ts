@@ -123,6 +123,44 @@ export class GrantStore {
     this.store.onChange();
   }
 
+  /** Add a dynamic-stat row to the flat payload's own list -- see `Grant.dynamicStats`. */
+  addDynamicStat(): void {
+    this.grant.dynamicStats.push({
+      stat: "",
+      min: null,
+      max: null,
+      default: null,
+      label: "",
+    });
+    this.store.onChange();
+  }
+
+  removeDynamicStat(index: number): void {
+    this.grant.dynamicStats.splice(index, 1);
+    this.store.onChange();
+  }
+
+  /** Add a dynamic-stat row to one variant's own list -- see `GrantVariant.dynamicStats`. */
+  addVariantDynamicStat(variantIndex: number): void {
+    const variant = this.grant.variants[variantIndex];
+    if (!variant) return;
+    variant.dynamicStats.push({
+      stat: "",
+      min: null,
+      max: null,
+      default: null,
+      label: "",
+    });
+    this.store.onChange();
+  }
+
+  removeVariantDynamicStat(statIndex: number, variantIndex: number): void {
+    const variant = this.grant.variants[variantIndex];
+    if (!variant) return;
+    variant.dynamicStats.splice(statIndex, 1);
+    this.store.onChange();
+  }
+
   addTier(): void {
     const grant = this.grant;
     const last = grant.tiers[grant.tiers.length - 1];
@@ -199,6 +237,7 @@ export class GrantStore {
       ...bonusDraft.newVariant(),
       conditions: variant.conditions.map((r) => ({ ...r })),
       stats: variant.stats.map((s) => ({ ...s })),
+      dynamicStats: variant.dynamicStats.map((d) => ({ ...d })),
     });
     this.store.onChange();
   }
