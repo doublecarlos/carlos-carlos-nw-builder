@@ -81,8 +81,18 @@ const emit = defineEmits<{
  *  own `min`/`max`/`default`, just widened to `number | string | null` like every other
  *  numeric draft field here so a cleared input reads as empty rather than `0`. `label` mirrors
  *  the config's own optional field directly (always a string here -- "" reads as unset, same
- *  as `dynamicStat`). */
+ *  as `DynamicStatDraft.label`). */
 export interface OccurrenceDraft {
+  min: number | string | null;
+  max: number | string | null;
+  default: number | string | null;
+  label: string;
+}
+
+/** One `DynamicStatConfig` row -- widened to `number | string | null` like every other
+ *  numeric draft field here so a cleared input reads as empty rather than `0`. */
+export interface DynamicStatDraft {
+  stat: string;
   min: number | string | null;
   max: number | string | null;
   default: number | string | null;
@@ -100,14 +110,12 @@ export interface ItemDraft {
   gameIds: string[];
   bonuses: string[];
   /** Present only for a bonus id upgraded to a `BonusOccurrenceConfig` -- absence means a
-   *  plain-id attachment (always 1 occurrence), same "optional fields" convention `dynamicStat`
-   *  uses for `dynamicMin`/`dynamicMax`. Keyed by bonus id, not array index, since it tracks
+   *  plain-id attachment (always 1 occurrence), same "optional fields" convention
+   *  `DynamicStatDraft` uses. Keyed by bonus id, not array index, since it tracks
    *  `draft.bonuses` entries by identity. */
   bonusOccurrences: Record<string, OccurrenceDraft>;
   excludes: string[];
-  dynamicStat: string;
-  dynamicMin: number | string | null;
-  dynamicMax: number | string | null;
+  dynamicStats: DynamicStatDraft[];
   repetitionMin: number | string | null;
   repetitionMax: number | string | null;
   repetitionDefault: number | string | null;
@@ -153,9 +161,13 @@ function buildDraft(item: Item | null | undefined): ItemDraft {
     bonuses,
     bonusOccurrences,
     excludes: [...(source.excludes ?? [])],
-    dynamicStat: source.dynamicStat ?? "",
-    dynamicMin: source.dynamicMin ?? null,
-    dynamicMax: source.dynamicMax ?? null,
+    dynamicStats: (source.dynamicStats ?? []).map((d) => ({
+      stat: d.stat,
+      min: d.min,
+      max: d.max,
+      default: d.default,
+      label: d.label ?? "",
+    })),
     repetitionMin: source.inlineRepetition?.min ?? null,
     repetitionMax: source.inlineRepetition?.max ?? null,
     repetitionDefault: source.inlineRepetition?.default ?? null,
@@ -217,10 +229,11 @@ function diffLabel(oldJson: string, newJson: string): string {
       );
     if (JSON.stringify(old.excludes) !== JSON.stringify(nw.excludes))
       return diffArrayLabel("exclude", old.excludes ?? [], nw.excludes ?? []);
-    if (old.dynamicStat !== nw.dynamicStat)
-      return `edit dynamic stat → "${nw.dynamicStat || "(none)"}"`;
-    if (old.dynamicMin !== nw.dynamicMin || old.dynamicMax !== nw.dynamicMax)
-      return `edit dynamic range → ${nw.dynamicMin ?? "_"}–${nw.dynamicMax ?? "_"}`;
+    if (JSON.stringify(old.dynamicStats) !== JSON.stringify(nw.dynamicStats))
+      return diffDynamicStatsLabel(
+        old.dynamicStats ?? [],
+        nw.dynamicStats ?? [],
+      );
     if (
       JSON.stringify(old.inlineRepetition) !==
       JSON.stringify(nw.inlineRepetition)
@@ -312,6 +325,19 @@ function diffStatsLabel(
   if (changed.length === 1) return `edit stat: ${changed[0]}`;
   if (changed.length <= 3) return `edit stats: ${changed.join(", ")}`;
   return `edit stats (${changed.length} changed)`;
+}
+
+/** Label a `dynamicStats` array change with the specific stat(s) added/removed/changed --
+ *  same spirit as `diffStatsLabel`, over `Item.dynamicStats` entries instead. */
+function diffDynamicStatsLabel(
+  oldRows: { stat: string }[],
+  newRows: { stat: string }[],
+): string {
+  const oldStats = oldRows.map((r) => r.stat).filter(Boolean);
+  const newStats = newRows.map((r) => r.stat).filter(Boolean);
+  if (JSON.stringify(oldStats) !== JSON.stringify(newStats))
+    return diffArrayLabel("dynamic stat", oldStats, newStats);
+  return "edit dynamic stat range";
 }
 
 // --- Live edit emit (existing items) ---------------------------------------------------
@@ -420,15 +446,16 @@ function toItem(): Item {
   if (local.maxCopies) item.maxCopies = Number(local.maxCopies);
   if (local.allowedClass.length) item.allowedClass = [...local.allowedClass];
 
-  if (local.dynamicStat) {
-    item.dynamicStat = local.dynamicStat;
-    if (local.dynamicMin != null && local.dynamicMin !== "") {
-      item.dynamicMin = Number(local.dynamicMin);
-    }
-    if (local.dynamicMax != null && local.dynamicMax !== "") {
-      item.dynamicMax = Number(local.dynamicMax);
-    }
-  }
+  const dynamicStats = local.dynamicStats
+    .filter((d) => d.stat)
+    .map((d) => ({
+      stat: d.stat,
+      min: Number(d.min) || 0,
+      max: Number(d.max) || 0,
+      default: Number(d.default) || 0,
+      ...(d.label.trim() ? { label: d.label.trim() } : {}),
+    }));
+  if (dynamicStats.length) item.dynamicStats = dynamicStats;
 
   if (
     hasRepetitionField(local.repetitionMin) ||
@@ -490,6 +517,19 @@ function focusNextStat(event: KeyboardEvent) {
   focusNextCombo(event);
 }
 
+function addDynamicStat() {
+  draft.value.dynamicStats.push({
+    stat: "",
+    min: null,
+    max: null,
+    default: null,
+    label: "",
+  });
+}
+function removeDynamicStat(index: number) {
+  draft.value.dynamicStats.splice(index, 1);
+}
+
 function addDefaultParam() {
   draft.value.defaultParams.push({ slotId: "", value: "" });
 }
@@ -497,14 +537,12 @@ function removeDefaultParam(index: number) {
   draft.value.defaultParams.splice(index, 1);
 }
 
-// Description, dynamic modification, and inline repetition are single field groups rather
-// than arrays, so "added"/"removed" is tracked as its own flag instead of splicing a list.
-// All three start active whenever the source item already carries values for them.
+// Description and inline repetition are single field groups rather than arrays, so
+// "added"/"removed" is tracked as its own flag instead of splicing a list. Both start active
+// whenever the source item already carries values for them. Dynamic stats, like Stats below,
+// are a plain repeatable list instead -- no separate group toggle.
 function hasDescription(d: ItemDraft): boolean {
   return d.shortDescription !== "" || d.longDescription !== "";
-}
-function hasDynamicModification(d: ItemDraft): boolean {
-  return d.dynamicStat !== "";
 }
 function hasInlineRepetition(d: ItemDraft): boolean {
   return (
@@ -516,7 +554,6 @@ function hasInlineRepetition(d: ItemDraft): boolean {
 }
 
 const descriptionActive = ref(hasDescription(draft.value));
-const dynamicModActive = ref(hasDynamicModification(draft.value));
 const repetitionActive = ref(hasInlineRepetition(draft.value));
 
 // Draft undo/redo (new-item history) replaces `draft.value` wholesale, bypassing the
@@ -527,12 +564,6 @@ watch(
   () => [draft.value.shortDescription, draft.value.longDescription],
   () => {
     if (hasDescription(draft.value)) descriptionActive.value = true;
-  },
-);
-watch(
-  () => draft.value.dynamicStat,
-  (stat) => {
-    if (stat !== "") dynamicModActive.value = true;
   },
 );
 watch(
@@ -554,16 +585,6 @@ function removeDescription() {
   draft.value.shortDescription = "";
   draft.value.longDescription = "";
   descriptionActive.value = false;
-}
-
-function addDynamicModification() {
-  dynamicModActive.value = true;
-}
-function removeDynamicModification() {
-  draft.value.dynamicStat = "";
-  draft.value.dynamicMin = null;
-  draft.value.dynamicMax = null;
-  dynamicModActive.value = false;
 }
 
 function addInlineRepetition() {
@@ -614,7 +635,6 @@ watch(
   (value) => {
     draft.value = buildDraft(value);
     descriptionActive.value = hasDescription(draft.value);
-    dynamicModActive.value = hasDynamicModification(draft.value);
     repetitionActive.value = hasInlineRepetition(draft.value);
     error.value = "";
     lastEmittedJson = JSON.stringify(toItem());
@@ -800,51 +820,87 @@ watch(
       <IconButton title="Add stat" @click="addStat"><Plus /></IconButton>
     </div>
 
-    <FormSection>Dynamic modification (user types the value)</FormSection>
-    <div class="flex flex-wrap items-center gap-1.5 mb-2">
-      <IconButton
-        v-if="!dynamicModActive"
-        title="Add dynamic modification"
-        data-testid="add-dynamic-modification"
-        @click="addDynamicModification"
+    <FormSection
+      >Dynamic stats (player types the value; default applies until they
+      do)</FormSection
+    >
+    <div
+      v-for="(row, index) in draft.dynamicStats"
+      :key="index"
+      class="dynamic-stat-row flex flex-wrap items-center gap-1.5 mb-1"
+    >
+      <IconButton title="Add dynamic stat" @click="addDynamicStat"
         ><Plus
       /></IconButton>
-      <IconButton
-        v-else
-        title="Remove dynamic modification"
-        data-testid="remove-dynamic-modification"
-        @click="removeDynamicModification"
+      <IconButton title="Remove dynamic stat" @click="removeDynamicStat(index)"
         ><Trash
       /></IconButton>
-      <FormGrid
-        v-if="dynamicModActive"
-        data-testid="dynamic-modification-fields"
-      >
-        <FormField label="Stat">
-          <ComboBox
-            :model-value="draft.dynamicStat"
-            :options="dynamicStatOptions"
-            placeholder="— none —"
-            @update:model-value="(v) => (draft.dynamicStat = v)"
-          />
-        </FormField>
-        <FormField label="Min">
-          <input
-            v-model.number="draft.dynamicMin"
-            class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent disabled:opacity-50"
-            type="number"
-            :disabled="!draft.dynamicStat"
-          />
-        </FormField>
-        <FormField label="Max">
-          <input
-            v-model.number="draft.dynamicMax"
-            class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent disabled:opacity-50"
-            type="number"
-            :disabled="!draft.dynamicStat"
-          />
-        </FormField>
-      </FormGrid>
+      <FormField label="Stat">
+        <ComboBox
+          class="combo--stat w-52"
+          :model-value="row.stat"
+          :options="dynamicStatOptions"
+          placeholder="— pick a stat —"
+          @update:model-value="(v) => (row.stat = v)"
+        />
+      </FormField>
+      <FormField label="Min">
+        <PercentInput
+          v-if="isPercent(row.stat)"
+          :model-value="row.min ?? ''"
+          class="w-24"
+          @update:model-value="(v) => (row.min = v)"
+        />
+        <input
+          v-else
+          v-model.number="row.min"
+          class="w-24 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+          type="number"
+        />
+      </FormField>
+      <FormField label="Max">
+        <PercentInput
+          v-if="isPercent(row.stat)"
+          :model-value="row.max ?? ''"
+          class="w-24"
+          @update:model-value="(v) => (row.max = v)"
+        />
+        <input
+          v-else
+          v-model.number="row.max"
+          class="w-24 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+          type="number"
+        />
+      </FormField>
+      <FormField label="Default">
+        <PercentInput
+          v-if="isPercent(row.stat)"
+          :model-value="row.default ?? ''"
+          class="w-24"
+          @update:model-value="(v) => (row.default = v)"
+        />
+        <input
+          v-else
+          v-model.number="row.default"
+          class="w-24 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+          type="number"
+        />
+      </FormField>
+      <FormField label="Label (optional)">
+        <input
+          v-model="row.label"
+          class="w-40 rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+          type="text"
+        />
+      </FormField>
+    </div>
+    <div
+      v-if="!draft.dynamicStats.length"
+      class="dynamic-stat-row flex flex-wrap items-center gap-1.5 mb-1"
+    >
+      <IconButton title="Add dynamic stat" @click="addDynamicStat"
+        ><Plus
+      /></IconButton>
     </div>
 
     <FormSection

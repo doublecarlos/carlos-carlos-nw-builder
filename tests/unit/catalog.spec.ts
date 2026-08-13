@@ -175,7 +175,7 @@ describe("catalog.validatePresets", () => {
           id: "gear-preset",
           section: "gear",
           choices: { "gear.head": "some-item" },
-          values: { "gear.head": 500 },
+          values: { "gear.head": { power: 500 } },
         }),
         preset({
           id: "boons-preset",

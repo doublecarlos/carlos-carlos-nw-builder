@@ -492,9 +492,14 @@
     "id": "acc-m32-1000-to-5800",
     "name": "Acc (M32+, 1000 to 5800)",
     "filter": "modification_offhand_dynamic",
-    "dynamicStat": "acc",
-    "dynamicMin": 1000,
-    "dynamicMax": 5800
+    "dynamicStats": [
+      {
+        "stat": "acc",
+        "min": 1000,
+        "max": 5800,
+        "default": 1000
+      }
+    ]
   },
   {
     "id": "accuracy-kit",
@@ -1400,7 +1405,6 @@
     "name": "Control Res",
     "filter": "boon_tier4",
     "control_resist_p": 0.002,
-    "dynamicStat": "power_p",
     "tags": ["boon:prereq-advanced", "boon:prereq-master"],
     "bonuses": ["boon-tier4-warning"],
     "inlineRepetition": {
@@ -1415,7 +1419,6 @@
     "name": "Deflect",
     "filter": "boon_tier4",
     "deflect_p": 0.002,
-    "dynamicStat": "il",
     "tags": ["boon:prereq-advanced", "boon:prereq-master"],
     "bonuses": ["boon-tier4-warning"],
     "inlineRepetition": {
@@ -1470,7 +1473,6 @@
     "name": "Power",
     "filter": "boon_tier4",
     "power_p": 0.002,
-    "dynamicStat": "il",
     "tags": ["boon:prereq-advanced", "boon:prereq-master"],
     "bonuses": ["boon-tier4-warning"],
     "inlineRepetition": {
@@ -1502,9 +1504,14 @@
     "id": "ca-m32-600-to-3600",
     "name": "CA (M32+, 600 to 3600)",
     "filter": "modification_offhand_dynamic",
-    "dynamicStat": "ca",
-    "dynamicMin": 600,
-    "dynamicMax": 3600
+    "dynamicStats": [
+      {
+        "stat": "ca",
+        "min": 600,
+        "max": 3600,
+        "default": 600
+      }
+    ]
   },
   {
     "id": "campfire-buff",
@@ -1840,27 +1847,19 @@
     "severity": 2953
   },
   {
-    "id": "ferocity-0-celestial",
-    "name": "Ferocity (0%)",
-    "filter": "mount_equip",
-    "il": 3937,
-    "combined_rating": 3544
-  },
-  {
-    "id": "ferocity-1-celestial",
-    "name": "Ferocity (1%)",
+    "id": "ferocity-celestial",
+    "name": "Ferocity",
     "filter": "mount_equip",
     "il": 3937,
     "combined_rating": 3544,
-    "overall_damage": 0.01
-  },
-  {
-    "id": "ferocity-2-celestial",
-    "name": "Ferocity (2%)",
-    "filter": "mount_equip",
-    "il": 3937,
-    "combined_rating": 3544,
-    "overall_damage": 0.02
+    "dynamicStats": [
+      {
+        "stat": "overall_damage",
+        "min": 0,
+        "max": 0.05,
+        "default": 0.02
+      }
+    ]
   },
   {
     "id": "fighter-s-enforced-threat",
@@ -3907,9 +3906,14 @@
     "id": "power-m32-600-to-3200",
     "name": "Power (M32+, 600 to 3200)",
     "filter": "modification_offhand_dynamic",
-    "dynamicStat": "power",
-    "dynamicMin": 600,
-    "dynamicMax": 3200
+    "dynamicStats": [
+      {
+        "stat": "power",
+        "min": 600,
+        "max": 3200,
+        "default": 600
+      }
+    ]
   },
   {
     "id": "practical-regal-collar",
@@ -3943,19 +3947,19 @@
     "bonuses": ["prime-rib-power"]
   },
   {
-    "id": "providence-0-celestial",
-    "name": "Providence (0%)",
-    "filter": "mount_equip",
-    "il": 3937,
-    "combined_rating": 3544
-  },
-  {
-    "id": "providence-3-celestial",
-    "name": "Providence (3%)",
+    "id": "providence-celestial",
+    "name": "Providence",
     "filter": "mount_equip",
     "il": 3937,
     "combined_rating": 3544,
-    "overall_damage": 0.03
+    "dynamicStats": [
+      {
+        "stat": "overall_damage",
+        "min": 0,
+        "max": 0.05,
+        "default": 0.03
+      }
+    ]
   },
   {
     "id": "purple-armor-break",
@@ -4250,15 +4254,15 @@
     "bonuses": ["spider-totem-strike"]
   },
   {
-    "id": "spined-devil-s-influence-6-spined-devil-damage-offense",
-    "name": "Spined Devil's Influence 6%",
+    "id": "spined-devil-s-influence-spined-devil-damage-offense",
+    "name": "Spined Devil's Influence",
     "filter": "companion_power",
     "il": 900,
     "combined_rating": 900,
     "longDescription": "Spined Devil companion power. Role: Offense.",
     "maxCopies": 1,
     "tags": ["companion_power:offense"],
-    "bonuses": ["spined-devil-s-influence-6-spined-devil-damage-offense"]
+    "bonuses": ["spined-devil-s-influence-spined-devil-damage-offense"]
   },
   {
     "id": "squash-soup-strike-severity",
@@ -4270,9 +4274,14 @@
     "id": "strike-m32-900-to-5400",
     "name": "Strike (M32+, 900 to 5400)",
     "filter": "modification_offhand_dynamic",
-    "dynamicStat": "strike",
-    "dynamicMin": 900,
-    "dynamicMax": 5400
+    "dynamicStats": [
+      {
+        "stat": "strike",
+        "min": 900,
+        "max": 5400,
+        "default": 900
+      }
+    ]
   },
   {
     "id": "sturdy-crescent-collar",

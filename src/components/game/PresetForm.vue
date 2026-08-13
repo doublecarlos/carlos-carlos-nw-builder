@@ -28,6 +28,7 @@ import { NW_SLOTS } from "../../data/data";
 import * as catalog from "../../data/catalog";
 import { deepEqual } from "../../lib/deep-equal";
 import { useDraftHistory } from "../../composables/useDraftHistory";
+import { dynamicValueKey } from "../../lib/dynamic-stats";
 import type {
   SectionPreset,
   Db,
@@ -67,7 +68,9 @@ interface ParamRow {
 interface ItemRow {
   slotId: string;
   choice: string;
-  value: number | string | null;
+  /** One entry per dynamic-stat config the chosen item declares, keyed by `dynamicValueKey`
+   *  -- same shape `Build.values[slotId]` stores, since a preset just seeds that. */
+  values: Record<string, number | string | null>;
 }
 interface AssignmentRow {
   slotId: string;
@@ -94,7 +97,7 @@ function buildDraft(preset: SectionPreset | null | undefined): PresetDraft {
     itemRows: Object.entries(source.choices ?? {}).map(([slotId, choice]) => ({
       slotId,
       choice,
-      value: source.values?.[slotId] ?? null,
+      values: { ...(source.values?.[slotId] ?? {}) },
     })),
     assignmentRows: Object.entries(source.assignments ?? {}).map(
       ([slotId, counts]) => ({ slotId, counts: { ...counts } }),
@@ -126,14 +129,17 @@ function toPreset(): SectionPreset {
   if (Object.keys(params).length) preset.params = params;
 
   const choices: Record<string, string> = {};
-  const values: Record<string, number> = {};
+  const values: Record<string, Record<string, number>> = {};
   for (const row of draft.value.itemRows) {
     if (!row.slotId || !row.choice) continue;
     choices[row.slotId] = row.choice;
-    if (row.value != null && row.value !== "") {
-      const number = Number(row.value);
-      if (Number.isFinite(number)) values[row.slotId] = number;
+    const rowValues: Record<string, number> = {};
+    for (const [key, raw] of Object.entries(row.values)) {
+      if (raw == null || raw === "") continue;
+      const number = Number(raw);
+      if (Number.isFinite(number)) rowValues[key] = number;
     }
+    if (Object.keys(rowValues).length) values[row.slotId] = rowValues;
   }
   if (Object.keys(choices).length) preset.choices = choices;
   if (Object.keys(values).length) preset.values = values;
@@ -251,7 +257,7 @@ function removeParamRow(index: number) {
 }
 
 function addItemRow() {
-  draft.value.itemRows.push({ slotId: "", choice: "", value: null });
+  draft.value.itemRows.push({ slotId: "", choice: "", values: {} });
 }
 function removeItemRow(index: number) {
   draft.value.itemRows.splice(index, 1);
@@ -438,13 +444,21 @@ watch(
           :items="db.forSlot(row.slotId)"
           :selected-item="db.get(row.choice)"
         />
-        <input
-          v-if="db.get(row.choice)?.dynamicStat"
-          v-model.number="row.value"
-          class="w-24 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-          type="number"
-          placeholder="value"
-        />
+        <span
+          v-for="config in db.get(row.choice)?.dynamicStats ?? []"
+          :key="config.stat"
+          class="flex items-center gap-1"
+        >
+          <input
+            v-model.number="row.values[dynamicValueKey(config.stat)]"
+            class="w-24 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+            type="number"
+            :placeholder="String(config.default)"
+          />
+          <span class="text-sm text-muted">{{
+            config.label ?? config.stat
+          }}</span>
+        </span>
       </div>
 
       <FormSection

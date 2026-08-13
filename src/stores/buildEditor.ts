@@ -77,19 +77,29 @@ export function setChoice(slotId: string, id: string) {
   }
 }
 
-export function setValue(slotId: string, raw: string) {
+/** Sets one dynamic-stat value at one slot -- `key` is a `dynamicValueKey` (dynamic-stats.ts),
+ *  since a slot can carry more than one (an item with several `dynamicStats` entries, or an
+ *  item's own entry alongside a bonus's). Clearing the last key at a slot drops the slot's
+ *  whole entry rather than leaving an empty object behind. */
+export function setDynamicValue(slotId: string, key: string, raw: string) {
   const b = builds.build.value;
   if (!b) return;
   const shown = raw === "" || raw == null ? "(none)" : raw;
   history.snapshot(
     "build",
     b.id,
-    `value:${slotId}`,
-    `${slotLabel(slotId)} value → ${shown}`,
+    `value:${slotId}:${key}`,
+    `${slotLabel(slotId)} ${key} → ${shown}`,
     b,
   );
-  if (raw === "" || raw == null) delete b.values[slotId];
-  else b.values[slotId] = Number(raw);
+  if (raw === "" || raw == null) {
+    if (!b.values[slotId]) return;
+    const { [key]: _removed, ...rest } = b.values[slotId];
+    if (Object.keys(rest).length) b.values[slotId] = rest;
+    else delete b.values[slotId];
+  } else {
+    b.values[slotId] = { ...b.values[slotId], [key]: Number(raw) };
+  }
 }
 
 export function applyFromCompare(slotId: string) {
@@ -112,7 +122,7 @@ export function applyFromCompare(slotId: string) {
   if (id) {
     b.choices[slotId] = id;
     const value = other.values?.[slotId];
-    if (value != null) b.values[slotId] = value;
+    if (value != null) b.values[slotId] = { ...value };
     else delete b.values[slotId];
   } else {
     delete b.choices[slotId];
@@ -120,22 +130,30 @@ export function applyFromCompare(slotId: string) {
   }
 }
 
-export function applyValueFromCompare(slotId: string) {
+/** Copies one dynamic-stat value (`key`, a `dynamicValueKey`) from the compare build --
+ *  per-key rather than whole-slot, since a slot can carry several independent values now
+ *  (see `setDynamicValue`). */
+export function applyValueFromCompare(slotId: string, key: string) {
   const other = compare.compareBuild.value;
   if (!other) return;
   const b = builds.build.value;
   if (!b) return;
   const slot = slotLabel(slotId);
-  const value = other.values?.[slotId];
+  const value = other.values?.[slotId]?.[key];
   history.snapshot(
     "build",
     b.id,
-    `value:${slotId}`,
-    `${slot} value → ${value ?? "(none)"} (from "${other.name}")`,
+    `value:${slotId}:${key}`,
+    `${slot} ${key} → ${value ?? "(none)"} (from "${other.name}")`,
     b,
   );
-  if (value != null) b.values[slotId] = value;
-  else delete b.values[slotId];
+  if (value != null) {
+    b.values[slotId] = { ...b.values[slotId], [key]: value };
+  } else if (b.values[slotId]) {
+    const { [key]: _removed, ...rest } = b.values[slotId];
+    if (Object.keys(rest).length) b.values[slotId] = rest;
+    else delete b.values[slotId];
+  }
 }
 
 export function setParam(
@@ -372,7 +390,7 @@ export function copySection(fromId: string, sectionIds: string[]) {
     else delete b.choices[slot.id];
 
     const value = source.values[slot.id];
-    if (value != null) b.values[slot.id] = value;
+    if (value != null) b.values[slot.id] = { ...value };
     else delete b.values[slot.id];
   }
 }
@@ -425,7 +443,7 @@ export function applyPreset(preset: SectionPreset) {
   }
 
   for (const [slotId, value] of Object.entries(preset.values ?? {})) {
-    b.values[slotId] = value;
+    b.values[slotId] = { ...b.values[slotId], ...value };
   }
 
   for (const [slotId, rows] of Object.entries(preset.assignments ?? {})) {

@@ -12,8 +12,13 @@
 // over it and closes it on leave.
 import { computed } from "vue";
 import { NW_SCHEMA } from "../../data/data";
-import { label as statLabel, signedStat } from "../../lib/format";
+import {
+  label as statLabel,
+  signedStat,
+  stat as formatStat,
+} from "../../lib/format";
 import { isHiddenBonus } from "../../engine/bonus";
+import type { DynamicStatConfig } from "../../types";
 import type {
   Item,
   Db,
@@ -72,17 +77,21 @@ const stats = computed(() => {
   return out;
 });
 
+/** One line per `DynamicStatConfig` -- shared between an item's own `dynamicStats` (below)
+ *  and a grant's (`grantRows`'s preview), same "you choose" phrasing either way. */
+function dynamicStatNote(config: DynamicStatConfig): string {
+  const lbl = config.label ?? statLabel(config.stat);
+  return `${lbl} ${formatStat(config.stat, config.min)}–${formatStat(config.stat, config.max)}, you choose`;
+}
+
 /** Notes that are not stats but change whether the item is legal or what it grants. */
 const notes = computed(() => {
   const out: string[] = [];
   if (props.item.allowedClass)
     out.push(`${props.item.allowedClass.join(" or ")} only`);
   if (props.item.maxCopies) out.push(`max ${props.item.maxCopies} equipped`);
-  if (props.item.dynamicStat) {
-    const lbl = statLabel(props.item.dynamicStat);
-    out.push(
-      `${lbl} ${props.item.dynamicMin}–${props.item.dynamicMax}, you choose`,
-    );
+  for (const config of props.item.dynamicStats ?? []) {
+    out.push(dynamicStatNote(config));
   }
   return out;
 });
@@ -206,6 +215,22 @@ function grantLabel(grant: ResolvedGrant, index: number) {
  * grant's own `stats` is pre-stacking (bonus.ts multiplies the *summed* grant stats, not each
  * grant individually), so without this a stacking bonus's card would show one copy's worth.
  */
+/** A flat grant's preview payload for the inactive/near-miss branch below -- `raw.stats` plus
+ *  each `dynamicStats` config's own `default`, same merge `bonus.ts`'s `withDynamicStats`
+ *  applies at evaluation time (using the config's default rather than a resolved player value,
+ *  since there is nothing resolved to show for a grant that isn't active). `null` for a grant
+ *  with neither, or one using `tiers`/`variants` instead (those preview through their own
+ *  ladder helpers above). */
+function previewStatsFor(raw: Grant): StatValues | null {
+  if (raw.tiers || raw.variants) return null;
+  if (!raw.stats && !raw.dynamicStats?.length) return null;
+  const merged: StatValues = { ...(raw.stats ?? {}) };
+  for (const config of raw.dynamicStats ?? []) {
+    merged[config.stat] = (merged[config.stat] ?? 0) + config.default;
+  }
+  return merged;
+}
+
 function grantRows(entry: EvaluatedBonus) {
   const stacks = entry.stacks ?? 1;
   return (entry.grants ?? []).map((grant, index) => ({
@@ -219,8 +244,8 @@ function grantRows(entry: EvaluatedBonus) {
     stats:
       grant.active && grant.stats
         ? statList(grant.stats, stacks)
-        : !grant.raw.tiers && !grant.raw.variants && grant.raw.stats
-          ? statList(grant.raw.stats)
+        : previewStatsFor(grant.raw)
+          ? statList(previewStatsFor(grant.raw))
           : null,
   }));
 }

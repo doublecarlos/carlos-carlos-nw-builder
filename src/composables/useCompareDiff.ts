@@ -2,6 +2,8 @@
 // bonus it takes part in differs from the compare build.
 import { computed, type Ref } from "vue";
 import { getPath } from "../lib/build-path";
+import { dynamicValueKey } from "../lib/dynamic-stats";
+import { label as statLabel } from "../lib/format";
 import type {
   Build,
   BuildParameterSlot,
@@ -14,9 +16,15 @@ import type {
   StatValues,
 } from "../types";
 
+export interface ValueDiff {
+  key: string;
+  label: string;
+  other: number | null;
+}
+
 export interface SlotDiff {
   choice: boolean;
-  value: boolean;
+  values: ValueDiff[];
   bonuses: { id: string; message: string }[];
 }
 
@@ -167,17 +175,34 @@ export function useCompareDiff(options: {
     );
   }
 
-  /** True if this slot's typed dynamic-modification magnitude differs from the compare
-   * build's -- only meaningful when the same item occupies the slot in both (a differing
-   * item already gets its own note via `differs` above, and the two magnitudes would not be
-   * comparable if the items' `dynamicStat` ranges don't even match). */
-  function valueDiffers(slotId: string) {
-    if (!compareBuild.value || differs(slotId)) return false;
-    if (!itemIn(slotId)?.dynamicStat) return false;
-    return (
-      (build.value.values[slotId] ?? null) !==
-      (compareBuild.value.values?.[slotId] ?? null)
-    );
+  /** Every one of this slot's item-level dynamic-stat values that differs from the compare
+   * build's -- only meaningful when the same item occupies the slot in both (a differing item
+   * already gets its own note via `differs` above, and the two magnitudes would not be
+   * comparable if the items' `dynamicStats` configs don't even match). Grant/variant-level
+   * dynamic values (bonus.ts's `resolveDynamicValues`) are not diffed here -- which grant/
+   * variant is active can itself depend on build context that differs between the two builds,
+   * so there is no single config to compare against without re-resolving the compare build's
+   * bonuses too. */
+  function valueDiffs(slotId: string): ValueDiff[] {
+    if (!compareBuild.value || differs(slotId)) return [];
+    const item = itemIn(slotId);
+    if (!item?.dynamicStats?.length) return [];
+    const mine = build.value.values[slotId] ?? {};
+    const other = compareBuild.value.values?.[slotId] ?? {};
+    const out: ValueDiff[] = [];
+    for (const config of item.dynamicStats) {
+      const key = dynamicValueKey(config.stat);
+      const mineValue = mine[key] ?? null;
+      const otherValue = other[key] ?? null;
+      if (mineValue !== otherValue) {
+        out.push({
+          key,
+          label: config.label ?? statLabel(config.stat),
+          other: otherValue,
+        });
+      }
+    }
+    return out;
   }
 
   function statsEqual(a?: StatValues | null, b?: StatValues | null) {
@@ -269,10 +294,10 @@ export function useCompareDiff(options: {
     if (!compareBuild.value) return map;
     for (const slot of db.value.slots) {
       const choice = differs(slot.id);
-      const value = !choice && valueDiffers(slot.id);
+      const values = choice ? [] : valueDiffs(slot.id);
       const bonuses = choice ? [] : bonusDiffsFor(slot.id);
-      if (choice || value || bonuses.length)
-        map.set(slot.id, { choice, value, bonuses });
+      if (choice || values.length || bonuses.length)
+        map.set(slot.id, { choice, values, bonuses });
     }
     return map;
   });
@@ -303,7 +328,7 @@ export function useCompareDiff(options: {
     otherChoice,
     otherChoiceLabel,
     differs,
-    valueDiffers,
+    valueDiffs,
     rowDiff,
     rowHasDiff,
     optionsDiffCount,

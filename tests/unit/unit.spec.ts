@@ -66,7 +66,7 @@ type RunResult = ReturnType<typeof engine.resolveBuild> & {
 function runBuild(
   choicesByName: Record<string, string>,
   contextOverrides: Partial<BuildContext> = {},
-  values: Record<string, number> = {},
+  values: Record<string, Record<string, number>> = {},
 ): RunResult {
   const choices = Object.fromEntries(
     Object.entries(choicesByName).map(([slot, name]) => [slot, idOf(name)]),
@@ -312,27 +312,27 @@ describe("bonus model semantics", () => {
   });
 
   // --- validation ---------------------------------------------------------------------
-  it("Dynamic weapon mods use the typed value and warn when out of range", () => {
+  it("Dynamic stats use the typed value and warn when out of range", () => {
     // FIX #6. Clamping silently rewrites the number the user typed, and would make the engine
     // disagree with the sheet for no stated reason.
     const inRange = runBuild(
       { "gear.offhandMod2": "CA (M32+, 600 to 3600)" },
       {},
-      { "gear.offhandMod2": 2000 },
+      { "gear.offhandMod2": { ca: 2000 } },
     );
     const over = runBuild(
       { "gear.offhandMod2": "CA (M32+, 600 to 3600)" },
       {},
-      { "gear.offhandMod2": 5800 },
+      { "gear.offhandMod2": { ca: 5800 } },
     );
-    expect(inRange.stages.weaponMods.ca).toBeCloseTo(2000, 9);
+    expect(inRange.stages.dynamicStatMods.ca).toBeCloseTo(2000, 9);
     // Not errors.length === 0: BASE_CONTEXT leaves every leveling ability-score slot at its
     // default (unassigned), which trips the unrelated "level-attr-warning" bonusRule -- this
     // assertion only cares that an in-range typed value raises no outOfRange error.
     expect(
       inRange.errors.some((e: EngineError) => e.kind === "outOfRange"),
     ).toBe(false);
-    expect(over.stages.weaponMods.ca).toBeCloseTo(5800, 9);
+    expect(over.stages.dynamicStatMods.ca).toBeCloseTo(5800, 9);
     expect(over.errors.some((e: EngineError) => e.kind === "outOfRange")).toBe(
       true,
     );

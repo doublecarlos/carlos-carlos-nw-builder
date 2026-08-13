@@ -63,7 +63,7 @@ export interface SlotSection {
  *
  * Fields below `quick` are a loose union of what each `paramType` needs (`options` for `list`,
  * `min`/`max`/`step`/`presets` for `number`/`percent`) -- same "optional fields, no separate
- * type per variant" convention `Item`'s `dynamicStat`/`dynamicMin`/`dynamicMax` already uses.
+ * type per variant" convention `DynamicStatConfig` already uses.
  *
  * `linkedItem` (an `Item.id`) is how a `list`/`boolean` param "equips" an item through its
  * current value -- a `list` option picks its own via `options[].linkedItem`, a `boolean`
@@ -174,9 +174,10 @@ export interface SectionPreset {
   params?: Record<string, string | number | boolean>;
   /** `item_picker` slots -- slot id to item id. */
   choices?: Record<string, string>;
-  /** An `item_picker` slot's dynamic-stat magnitude, paired with `choices` the same way
-   * `Build.values` pairs with `Build.choices`. */
-  values?: Record<string, number>;
+  /** An `item_picker` slot's dynamic-stat magnitude(s), paired with `choices` the same way
+   * `Build.values` pairs with `Build.choices` -- see `Build.values`'s own doc comment for the
+   * inner key. */
+  values?: Record<string, Record<string, number>>;
   /** `point_assignment` slots -- slot id to `{ itemId: count }`, merged into the existing row
    * rather than replacing it (matches `setAssignment`'s own per-item merge). */
   assignments?: Record<string, Record<string, number>>;
@@ -209,9 +210,12 @@ export interface Item {
   tags?: string[];
   maxCopies?: number;
   allowedClass?: string[];
-  dynamicStat?: StatKey;
-  dynamicMin?: number;
-  dynamicMax?: number;
+  /** Zero or more player-typed magnitudes this item carries -- e.g. a weapon enchant whose
+   *  rank the player picks, or (once a matching `Grant`/`GrantVariant` declares its own) a
+   *  companion power whose percentage the player dials in. Each entry's stored value lives in
+   *  `Build.values[slotId]`, keyed by `dynamicValueKey` (dynamic-stats.ts) -- an item's own
+   *  entries key by `stat` alone, so two entries on one item must target different stats. */
+  dynamicStats?: DynamicStatConfig[];
   /** Declares that this item can repeat "inline" N times wherever it's chosen -- today only
    * consumed by a `point_assignment` slot whose `filter` matches this item's own (each point
    * spent is one more repetition), see `InlineRepetitionConfig`. Named apart from that slot type
@@ -248,8 +252,8 @@ export interface Item {
 
 /** Bounds for one item's repetition count -- today read by whichever `PointAssignmentSlot`
  * matches this item's `filter`, presence of this object being what makes an item selectable
- * there at all (see `Db.forSlot`'s point_assignment branch), same role `dynamicStat` plays in
- * gating `dynamicMin`/`dynamicMax`. `priority` breaks ties in that slot's display order (lower
+ * there at all (see `Db.forSlot`'s point_assignment branch), same role a `DynamicStatConfig`
+ * entry plays in gating its own input. `priority` breaks ties in that slot's display order (lower
  * first); items sharing one priority (or omitting it, default 0) fall back to name order. */
 export interface InlineRepetitionConfig {
   min: number;
@@ -283,6 +287,20 @@ export interface BonusOccurrenceConfig {
    *  title in `useCompareDiff.ts`. Everywhere else (bonus lists, hover cards, etc.) still shows
    *  the bonus's real name; this only reads differently on this one item's own input, e.g. a
    *  bonus named for its overall effect whose per-item stepper should read "Stacks" instead. */
+  label?: string;
+}
+
+/** One player-typed magnitude an item or a grant/variant declares -- `Item.dynamicStats`,
+ *  `Grant.dynamicStats`, `GrantVariant.dynamicStats`. Same `min`/`max`/`default` shape as
+ *  `BonusOccurrenceConfig` (a `default` is what makes an unset value read as something other
+ *  than 0), just addressing a stat directly instead of a bonus's occurrence count. */
+export interface DynamicStatConfig {
+  stat: StatKey;
+  min: number;
+  max: number;
+  default: number;
+  /** Overrides the stat's own label for this one input, same convention
+   *  `BonusOccurrenceConfig.label`/`InlineRepetitionConfig.label` already use. */
   label?: string;
 }
 
@@ -339,6 +357,9 @@ export interface ConditionWhen {
 export interface GrantVariant {
   when?: ConditionWhen;
   stats: StatValues;
+  /** Same role as `Grant.dynamicStats`, scoped to this one variant's payload -- a different
+   *  variant of the same grant may declare its own, unrelated set. */
+  dynamicStats?: DynamicStatConfig[];
 }
 
 export interface GrantTier {
@@ -377,6 +398,14 @@ export interface Grant {
   name?: string;
   when?: ConditionWhen;
   stats?: StatValues;
+  /** Player-typed magnitudes added into `stats` when this grant is active -- resolved from
+   *  the first slot contributing to the bonus (bonus.ts's `resolve`, same "instancing slot"
+   *  `EvaluatedBonus.slotId` already uses for stat attribution), stored under a bonus-id-
+   *  qualified key so it can't collide with an item's own `dynamicStats` entry on that same
+   *  slot. Applies only to the flat `stats` payload -- a grant using `variants`/`tiers`/
+   *  `problem` instead declares its own per-branch dynamic stats where relevant
+   *  (`GrantVariant.dynamicStats`). */
+  dynamicStats?: DynamicStatConfig[];
   variants?: GrantVariant[];
   tiers?: GrantTier[];
   problem?: GrantProblem;
@@ -476,7 +505,12 @@ export interface Build {
   id: string;
   name: string;
   choices: Record<string, string>;
-  values: Record<string, number>;
+  /** Every slot's typed `DynamicStatConfig` value(s), by slot id then a `dynamicValueKey`
+   * (dynamic-stats.ts) -- an item's own entry keys by its stat alone, a grant/variant's by
+   * its bonus id plus stat, so the two (and two different bonuses) can't collide on one slot.
+   * A key absent here reads as that config's own `default` -- only explicit overrides a user
+   * made are stored, same convention `occurrenceInputs` below uses. */
+  values: Record<string, Record<string, number>>;
   /** Every `point_assignment` slot's current counts, by slot id then item id. Seeded from each
    * row's `default` (storage.ts's `defaultBuild`), same as `context` is seeded from
    * `build_parameter` defaults -- so a read never needs an `?? row.default` fallback for a

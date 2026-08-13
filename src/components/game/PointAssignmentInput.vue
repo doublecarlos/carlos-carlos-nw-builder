@@ -6,7 +6,7 @@
 //
 // Each stepper's count is read by the engine as "N copies of that item id" (bonus.ts's
 // collect()), so typing a value outside [min, max] is let through here -- same reasoning
-// engine.ts gives for not clamping a dynamicStat magnitude -- and flagged by findErrors'
+// engine.ts gives for not clamping a dynamic-stat magnitude -- and flagged by findErrors'
 // outOfRange check instead of being silently rewritten. Only the -/+ buttons themselves clamp,
 // since they're app-driven rather than typed.
 import { computed, useTemplateRef } from "vue";

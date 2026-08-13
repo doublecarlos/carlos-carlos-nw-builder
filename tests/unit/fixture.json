@@ -98,7 +98,7 @@
         "insignia.insignia5_4": "brutality-pref",
         "misc.misc1": "vip-hp-bonus-self",
         "mounts.mountCombat": "mount-combat-power-celestial",
-        "mounts.mountEquip": "ferocity-2-celestial",
+        "mounts.mountEquip": "ferocity-celestial",
         "mounts.practicalCollar": "practical-regal-collar",
         "mounts.sturdyCollar": "sturdy-crescent-collar",
         "mounts.supportiveCollar": "supportive-regal-collar",
@@ -187,7 +187,7 @@
         }
       },
       "values": {
-        "gear.offhandMod2": 3589
+        "gear.offhandMod2": { "ca": 3589 }
       }
     },
     "expected": {
@@ -432,7 +432,7 @@
           "strike_p": 0.77,
           "wis": 11
         },
-        "afterWeaponMods": {
+        "afterDynamicStatMods": {
           "acc": 35407,
           "acc_p": 0.4,
           "ap_gain": 0.08499999999999999,
@@ -783,7 +783,7 @@
           "out_healing": 0,
           "out_healing_p": 0.07,
           "outgoing_damage": 0.8059999999999999,
-          "overall_damage": 0.065,
+          "overall_damage": 0.045,
           "overall_healing": 0,
           "physical_damage_boost": 0,
           "power": 35946,

@@ -8,6 +8,7 @@
 
 import * as bonus from "./bonus";
 import { occurrenceCountFor } from "../lib/bonus-attachment";
+import { dynamicValueKey, readDynamicValue } from "../lib/dynamic-stats";
 import type {
   Db,
   Build,
@@ -108,25 +109,31 @@ function run(
   }
   for (const [key, product] of products) sums[key] = product - 1;
 
-  // --- stage 2: dynamic weapon modification --------------------------------------------
+  // --- stage 2: dynamic stat resolution --------------------------------------------------
   // FIX #6: the sheet matched the target stat by searching the item's *display name*. The
-  // item now declares `dynamicStat` outright, so renaming one cannot silently move the value.
+  // item now declares `dynamicStats` outright, so renaming one cannot silently move the value.
   //
   // The declared range is NOT clamped here. Silently rewriting a number the user typed is
   // worse than showing it and flagging it -- and it would make the engine disagree with the
-  // sheet for no stated reason. `findErrors` reports out-of-range values instead.
-  const weaponMods = zeros(keys);
+  // sheet for no stated reason. `findErrors` reports out-of-range values instead. An unset
+  // value reads as its config's own `default` (`readDynamicValue`), unlike a bare `?? 0` --
+  // that's what makes a declared default actually apply.
+  const dynamicStatMods = zeros(keys);
   for (const row of rows) {
-    const stat = row.item?.dynamicStat;
-    if (!stat) continue;
-    const typed = build.values?.[row.slotId];
-    if (typed == null) continue;
-    weaponMods[stat] += Number(typed) || 0;
+    for (const config of row.item?.dynamicStats ?? []) {
+      dynamicStatMods[config.stat] += readDynamicValue(
+        build,
+        row.slotId,
+        config,
+      );
+    }
   }
-  const afterWeaponMods = addVectors(sums, weaponMods, keys);
+  const afterDynamicStatMods = addVectors(sums, dynamicStatMods, keys);
 
   // --- stage 3: combined rating --------------------------------------------------------
-  const afterCombinedRating: Record<StatKey, number> = { ...afterWeaponMods };
+  const afterCombinedRating: Record<StatKey, number> = {
+    ...afterDynamicStatMods,
+  };
   for (const key of schema.ratingStats) {
     afterCombinedRating[key] += sums.combined_rating;
   }
@@ -199,8 +206,8 @@ function run(
     rows,
     stages: {
       sums,
-      weaponMods,
-      afterWeaponMods,
+      dynamicStatMods,
+      afterDynamicStatMods,
       afterCombinedRating,
       ratingPct,
       afterRatingPct,
@@ -415,28 +422,27 @@ function findErrors(
     }
     errors.push(...checkItemErrors(row.slotId, row.item, db, context, counts));
 
-    // Dynamic weapon modifications carry a declared range. The value is used as typed
-    // (see stage 2); flagging it here is what makes that safe.
-    if (row.item.dynamicStat) {
-      const typed = build.values?.[row.slotId];
+    // Dynamic stats carry a declared range. The value is used as typed (see stage 2);
+    // flagging it here is what makes that safe.
+    for (const config of row.item.dynamicStats ?? []) {
+      const typed = build.values?.[row.slotId]?.[dynamicValueKey(config.stat)];
       const value = Number(typed);
-      const { dynamicMin: min, dynamicMax: max_ } = row.item;
       if (
         typed != null &&
         Number.isFinite(value) &&
-        ((min != null && value < min) || (max_ != null && value > max_))
+        (value < config.min || value > config.max)
       ) {
         errors.push({
           slotId: row.slotId,
           kind: "outOfRange",
           choice: row.item.name,
-          message: `${row.item.name}: ${value} is outside ${min}–${max_}`,
+          message: `${row.item.name}: ${value} is outside ${config.min}–${config.max}`,
           severity: "error",
         });
       }
     }
 
-    // A BonusOccurrenceConfig's count, same reasoning as dynamicStat's own check above: not
+    // A BonusOccurrenceConfig's count, same reasoning as dynamicStats' own check above: not
     // achievable through the stepper's own clamped +/- buttons, but a hand-edited or imported
     // build can carry one.
     const itemInputs = build.occurrenceInputs?.[row.item.id];
@@ -454,7 +460,67 @@ function findErrors(
       }
     }
   }
+
+  // A grant/variant's dynamic stat, same reasoning as an item's own dynamicStats check above --
+  // resolved against the bonus's first contributing slot (bonus.ts's `resolve`), regardless of
+  // whether the bonus is currently active (a hand-edited/imported value can be stale but should
+  // still be flagged once it would matter again).
+  for (const entry of resolved.bonuses) {
+    for (const grant of entry.grants) {
+      for (const config of grant.raw.dynamicStats ?? []) {
+        errors.push(
+          ...dynamicStatRangeError(
+            entry.slotId,
+            entry.bonusId,
+            entry.bonus.name ?? entry.bonusId,
+            config,
+            build,
+          ),
+        );
+      }
+      for (const variant of grant.raw.variants ?? []) {
+        for (const config of variant.dynamicStats ?? []) {
+          errors.push(
+            ...dynamicStatRangeError(
+              entry.slotId,
+              entry.bonusId,
+              entry.bonus.name ?? entry.bonusId,
+              config,
+              build,
+            ),
+          );
+        }
+      }
+    }
+  }
+
   return errors;
+}
+
+function dynamicStatRangeError(
+  slotId: string,
+  bonusId: string,
+  name: string,
+  config: { stat: StatKey; min: number; max: number },
+  build: Build,
+): EngineError[] {
+  const typed = build.values?.[slotId]?.[dynamicValueKey(config.stat, bonusId)];
+  const value = Number(typed);
+  if (
+    typed == null ||
+    !Number.isFinite(value) ||
+    (value >= config.min && value <= config.max)
+  )
+    return [];
+  return [
+    {
+      slotId,
+      kind: "outOfRange",
+      choice: name,
+      message: `${name}: ${value} is outside ${config.min}–${config.max}`,
+      severity: "error",
+    },
+  ];
 }
 
 /** Data-authored errors/warnings: any active bonus grant carrying a `problem` payload

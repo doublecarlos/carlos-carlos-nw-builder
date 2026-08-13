@@ -2656,16 +2656,21 @@
     ]
   },
   {
-    "id": "spined-devil-s-influence-6-spined-devil-damage-offense",
-    "name": "Spined Devil's Influence 6%",
+    "id": "spined-devil-s-influence-spined-devil-damage-offense",
+    "name": "Spined Devil's Influence",
     "grants": [
       {
         "when": {
           "toggle": "combat"
         },
-        "stats": {
-          "overall_damage": 0.06
-        }
+        "dynamicStats": [
+          {
+            "stat": "overall_damage",
+            "min": 0,
+            "max": 0.15,
+            "default": 0.06
+          }
+        ]
       }
     ]
   },

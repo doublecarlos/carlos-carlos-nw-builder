@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // One row inside a BuildSection: an item_picker slot (today's picker + stat summary + typed
-// dynamicStat mod), a point_assignment slot (a row of numeric steppers, one per item), or a
+// dynamic-stat magnitude(s)), a point_assignment slot (a row of numeric steppers, one per item), or a
 // build_parameter slot (a generic control over BuildParamInput). Row chrome (hover/diff
 // highlighting, the click-to-cursor/ctrl-click-to-edit behaviour, the cursor anchor, the
 // errors list) is identical across all three and lives here; each type's own control + diff
@@ -31,6 +31,7 @@ import type {
   BuildParameterSlot,
   PointAssignmentSlot,
 } from "../../types";
+import type { ValueDiff } from "../../composables/useCompareDiff";
 
 const props = defineProps<{
   slotDef: RowSlot;
@@ -51,8 +52,7 @@ const props = defineProps<{
   items?: Item[];
   choiceDiffers?: boolean;
   otherChoiceLabel?: string;
-  valueDiffers?: boolean;
-  otherValue?: number | null;
+  valueDiffs?: ValueDiff[];
   occurrenceDiffers?: boolean;
   otherOccurrenceLabel?: string;
   // item_picker, point_assignment and build_parameter (when it has a linked item)
@@ -135,7 +135,7 @@ useCursorRowKeys(anchor, {
       isHovered && 'is-hovered bg-accent-soft/40',
       highlightDiff &&
         (choiceDiffers ||
-          valueDiffers ||
+          (valueDiffs?.length ?? 0) > 0 ||
           occurrenceDiffers ||
           paramDiffers ||
           assignmentDiffers ||
@@ -184,8 +184,7 @@ useCursorRowKeys(anchor, {
         :choice-differs="choiceDiffers"
         :other-choice-label="otherChoiceLabel"
         :bonus-diffs="bonusDiffs"
-        :value-differs="valueDiffers"
-        :other-value="otherValue"
+        :value-diffs="valueDiffs"
         :occurrence-differs="occurrenceDiffers"
         :other-occurrence-label="otherOccurrenceLabel"
         @add-item="emit('addItem', slotDef.filter ?? '')"

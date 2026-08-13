@@ -8,6 +8,7 @@
 // (a resolved build's `stages.*`) rather than recomputing its math, so this can never drift
 // from what the panel actually displays.
 import { NW_SCHEMA } from "../data/data";
+import { readDynamicValue } from "../lib/dynamic-stats";
 import type {
   ResolvedBuild,
   Build,
@@ -91,19 +92,22 @@ function bonusSources(result: ResolvedBuild, key: StatKey): StatSource[] {
   return out;
 }
 
-/** Stage 2: a typed dynamic weapon modification, attributed to the item that carries it. */
-function weaponModSources(
+/** Stage 2: every typed dynamic-stat value targeting this key, attributed to the item that
+ *  carries it -- an item with several `dynamicStats` entries can contribute more than one
+ *  line here, one per matching config. */
+function dynamicStatSources(
   result: ResolvedBuild,
   build: Build | null | undefined,
   key: StatKey,
 ): StatSource[] {
   const out: StatSource[] = [];
+  if (!build) return out;
   for (const row of result.rows) {
-    if (row.item?.dynamicStat !== key) continue;
-    const typed = build?.values?.[row.slotId];
-    if (typed == null) continue;
-    const value = Number(typed) || 0;
-    if (value) out.push({ name: `${row.item.name} (weapon mod)`, value });
+    for (const config of row.item?.dynamicStats ?? []) {
+      if (config.stat !== key) continue;
+      const value = readDynamicValue(build, row.slotId, config);
+      if (value) out.push({ name: `${row.item!.name} (dynamic stat)`, value });
+    }
   }
   return out;
 }
@@ -175,7 +179,7 @@ function sourcesFor(
     ...itemSources(result, key),
     ...assignmentSources(db, build, key),
     ...bonusSources(result, key),
-    ...weaponModSources(result, build, key),
+    ...dynamicStatSources(result, build, key),
     ...combinedRatingSource(result, key),
     ...abilitySource(result, key),
     ...forteSource(result, build, key),

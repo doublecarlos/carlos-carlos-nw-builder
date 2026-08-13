@@ -1,7 +1,7 @@
-// End-to-end coverage for removing an item's dynamic modification / inline repetition
-// groups in the item editor: both start hidden behind an "add" button, like Stats, and a
-// trash button clears the whole group back to unset rather than leaving stale values
-// behind that a disabled/empty-looking field can't fully clean up.
+// End-to-end coverage for the item editor's dynamic stats (a repeatable row list, like
+// Stats) and inline repetition (a single group hidden behind an "add" button, with a trash
+// button that clears it back to unset rather than leaving stale values behind that a
+// disabled/empty-looking field can't fully clean up).
 import { test, expect, type Page } from "@playwright/test";
 import { openBuilder } from "./support/app";
 import { addLayer, layerRow } from "./support/nav";
@@ -19,45 +19,36 @@ async function openNewItemForm(page: Page) {
   await page.getByTestId("item-filter-input").fill("gear_head");
 }
 
-test("dynamic modification group is hidden until added, then fully removable", async ({
+test("dynamic stat rows can be added and removed, like Stats", async ({
   page,
 }) => {
   await openNewItemForm(page);
 
+  const rows = page.locator(".dynamic-stat-row");
+  await expect(rows).toHaveCount(1); // the empty "Add" row
   await expect(
-    page.getByRole("button", { name: "Add dynamic modification" }),
-  ).toBeVisible();
-  await expect(page.getByTestId("dynamic-modification-fields")).toBeHidden();
-
-  await page.getByRole("button", { name: "Add dynamic modification" }).click();
-  const fields = page.getByTestId("dynamic-modification-fields");
-  await expect(fields).toBeVisible();
-  await expect(
-    page.getByRole("button", { name: "Remove dynamic modification" }),
+    page.getByRole("button", { name: "Add dynamic stat" }).first(),
   ).toBeVisible();
 
-  const statPicker = fields.getByTestId("picker-input");
-  const numberInputs = fields.locator('input[type="number"]');
+  await page.getByRole("button", { name: "Add dynamic stat" }).first().click();
+  await expect(rows).toHaveCount(1);
+
+  const row = rows.last();
+  const statPicker = row.getByTestId("picker-input");
+  const numberInputs = row.locator('input[type="number"]');
   await statPicker.click();
   await statPicker.fill("Item Level");
-  await fields.getByText("Item Level", { exact: true }).click();
+  await row.getByText("Item Level", { exact: true }).click();
   await numberInputs.nth(0).fill("10"); // Min
   await numberInputs.nth(1).fill("20"); // Max
+  await numberInputs.nth(2).fill("15"); // Default
 
-  await page
-    .getByRole("button", { name: "Remove dynamic modification" })
-    .click();
+  await row.getByRole("button", { name: "Remove dynamic stat" }).click();
 
-  await expect(fields).toBeHidden();
-  await expect(
-    page.getByRole("button", { name: "Add dynamic modification" }),
-  ).toBeVisible();
-
-  // Re-adding must not resurrect the values that were just cleared.
-  await page.getByRole("button", { name: "Add dynamic modification" }).click();
-  await expect(statPicker).toHaveValue("");
-  await expect(numberInputs.nth(0)).toHaveValue("");
-  await expect(numberInputs.nth(1)).toHaveValue("");
+  // Removing the only row leaves the empty "Add" row behind, with no stale values.
+  await expect(rows).toHaveCount(1);
+  await page.getByRole("button", { name: "Add dynamic stat" }).first().click();
+  await expect(rows.last().getByTestId("picker-input")).toHaveValue("");
 });
 
 test("inline repetition group is hidden until added, then fully removable", async ({

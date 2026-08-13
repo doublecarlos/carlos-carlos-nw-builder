@@ -316,7 +316,7 @@
         "enemy_outgoing_damage": 0.0,
         "mult_hit_points": -0.2799999999999999
       },
-      "afterWeaponMods": {
+      "afterDynamicStatMods": {
         "il": 143586.0,
         "combined_rating": 109745.0,
         "power_p": 0.42500000000000004,

@@ -93,7 +93,7 @@ const result = computed(() => {
 const compareResult = computed(() =>
   engine.compareResolved.value?.ok ? engine.compareResolved.value.result : null,
 );
-// Only needed for the stat source popover's forte picks and dynamic weapon mod values -- the
+// Only needed for the stat source popover's forte picks and dynamic-stat values -- the
 // rest of the panel reads entirely off `result`.
 const build = builds.build;
 

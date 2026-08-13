@@ -1,10 +1,11 @@
 <script setup lang="ts">
-// The item_picker case of BuildSlot.vue's row content: the picker itself, its typed
-// dynamicStat magnitude (when the chosen item has one), and this type's diff notes
-// (choice/bonus/value). Row chrome (label, cursor anchor, hover/diff highlighting, the
+// The item_picker case of BuildSlot.vue's row content: the picker itself, its dynamic-stat
+// magnitude(s) (item-level and/or bonus-level -- useDynamicStats.ts), and this type's diff
+// notes (choice/bonus/value). Row chrome (label, cursor anchor, hover/diff highlighting, the
 // errors list) stays in BuildSlot.vue since it's identical across every slot type.
 import { computed, useTemplateRef } from "vue";
 import ItemPicker from "./ItemPicker.vue";
+import PercentInput from "../ui/PercentInput.vue";
 import BaseButton from "../ui/BaseButton.vue";
 import BaseCheckbox from "../ui/BaseCheckbox.vue";
 import IconButton from "../ui/IconButton.vue";
@@ -14,9 +15,14 @@ import {
   useItemBonusOccurrences,
   type OccurrenceRow,
 } from "../../composables/useItemBonusOccurrences";
-import { label as statLabel } from "../../lib/format";
+import {
+  useSlotDynamicStats,
+  type DynamicStatRow,
+} from "../../composables/useDynamicStats";
+import { isPercentKind, kindOf, stat as formatStat } from "../../lib/format";
 import { isMac } from "../../lib/platform";
 import type { Build, Db, Item, ItemPickerSlot } from "../../types";
+import type { ValueDiff } from "../../composables/useCompareDiff";
 
 const modKey = isMac ? "Cmd" : "Ctrl";
 
@@ -35,8 +41,7 @@ const props = defineProps<{
   choiceDiffers?: boolean;
   otherChoiceLabel?: string;
   bonusDiffs?: { id: string; message: string }[];
-  valueDiffers?: boolean;
-  otherValue?: number | null;
+  valueDiffs?: ValueDiff[];
   occurrenceDiffers?: boolean;
   otherOccurrenceLabel?: string;
 }>();
@@ -97,7 +102,25 @@ defineExpose({
 });
 
 const choice = () => props.build.choices[props.slotDef.id] ?? "";
-const value = () => props.build.values[props.slotDef.id];
+
+const dynamicStatRows = useSlotDynamicStats(
+  props.slotDef.id,
+  computed(() => props.item),
+);
+
+const isPercent = (stat: string) => isPercentKind(kindOf(stat));
+
+function setDynamic(row: DynamicStatRow, raw: string | number) {
+  buildEditor.setDynamicValue(
+    props.slotDef.id,
+    row.key,
+    raw === "" ? "" : String(raw),
+  );
+}
+
+function rangeLabel(row: DynamicStatRow) {
+  return `${row.label} ${formatStat(row.stat, row.min)}–${formatStat(row.stat, row.max)}`;
+}
 </script>
 
 <template>
@@ -175,28 +198,35 @@ const value = () => props.build.values[props.slotDef.id];
     </div>
   </div>
 
-  <!-- Dynamic weapon modifications carry a user-typed magnitude. Driven by the item's own
-       `dynamicStat`, not by a hard-coded slot id, so a second one would work with no UI
-       change -- item-local params (later phase) generalize this further. -->
-  <div v-if="item?.dynamicStat" class="mt-1 flex items-center gap-1.5">
-    <input
-      type="number"
-      class="w-20 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-      :min="item?.dynamicMin"
-      :max="item?.dynamicMax"
-      :value="value() ?? ''"
-      :placeholder="String(item?.dynamicMin ?? '')"
-      @input="
-        buildEditor.setValue(
-          slotDef.id,
-          ($event.target as HTMLInputElement).value,
-        )
-      "
-    />
-    <span class="text-sm text-muted">
-      {{ statLabel(item?.dynamicStat as string) }}
-      {{ item?.dynamicMin }}–{{ item?.dynamicMax }}
-    </span>
+  <!-- Every dynamic-stat magnitude this slot's pick carries -- item-level and/or bonus-level
+       (useDynamicStats.ts), one input per row, driven entirely by the item/bonus's own
+       declared configs so a second (or third) one works with no UI change. -->
+  <div
+    v-if="dynamicStatRows.length"
+    class="mt-1 flex flex-wrap items-center gap-2.5"
+  >
+    <div
+      v-for="row in dynamicStatRows"
+      :key="row.key"
+      class="flex items-center gap-1.5"
+    >
+      <PercentInput
+        v-if="isPercent(row.stat)"
+        :model-value="row.value"
+        class="w-20"
+        @update:model-value="setDynamic(row, $event)"
+      />
+      <input
+        v-else
+        type="number"
+        class="w-20 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+        :min="row.min"
+        :max="row.max"
+        :value="row.value"
+        @input="setDynamic(row, ($event.target as HTMLInputElement).value)"
+      />
+      <span class="text-sm text-muted">{{ rangeLabel(row) }}</span>
+    </div>
   </div>
 
   <p
@@ -223,19 +253,22 @@ const value = () => props.build.values[props.slotDef.id];
     </p>
   </template>
 
-  <p
-    v-if="highlightDiff && valueDiffers"
-    class="slot-diff-note mt-0.5 text-sm text-muted"
-  >
-    {{ compareBuild?.name }}: {{ otherValue ?? "(none)" }}
-    <BaseButton
-      variant="link"
-      class="ml-0.5 text-accent"
-      @click.stop="buildEditor.applyValueFromCompare(slotDef.id)"
+  <template v-if="highlightDiff">
+    <p
+      v-for="diff in valueDiffs ?? []"
+      :key="diff.key"
+      class="slot-diff-note mt-0.5 text-sm text-muted"
     >
-      apply
-    </BaseButton>
-  </p>
+      {{ compareBuild?.name }}: {{ diff.label }} {{ diff.other ?? "(none)" }}
+      <BaseButton
+        variant="link"
+        class="ml-0.5 text-accent"
+        @click.stop="buildEditor.applyValueFromCompare(slotDef.id, diff.key)"
+      >
+        apply
+      </BaseButton>
+    </p>
+  </template>
 
   <p
     v-if="highlightDiff && occurrenceDiffers"

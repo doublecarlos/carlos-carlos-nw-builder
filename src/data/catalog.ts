@@ -328,9 +328,7 @@ const ITEM_FIELDS = new Set([
   "tags",
   "maxCopies",
   "allowedClass",
-  "dynamicStat",
-  "dynamicMin",
-  "dynamicMax",
+  "dynamicStats",
   "inlineRepetition",
   "bonuses",
   "excludes",
@@ -785,6 +783,55 @@ export function validate(
     }
   };
 
+  /** Same shape as an occurrence config's own check (`bonus "x" occurrence config ...` below)
+   *  -- stat exists, min/max/default are finite numbers, default falls within min–max. Shared
+   *  by an item's own `dynamicStats` and a grant/variant's, since both use the identical
+   *  `DynamicStatConfig` shape. */
+  const checkDynamicStats = (
+    configs:
+      | { stat: string; min: unknown; max: unknown; default: unknown }[]
+      | undefined,
+    label: string,
+    name?: string,
+    kind: "item" | "bonus" = "item",
+  ) => {
+    for (const config of configs ?? []) {
+      if (!statKeys.has(config.stat)) {
+        report(
+          "error",
+          `${label} stat "${config.stat}" is not a stat`,
+          name,
+          kind,
+        );
+        continue;
+      }
+      const { min, max, default: def } = config;
+      if (
+        ![min, max, def].every(
+          (n) => typeof n === "number" && Number.isFinite(n),
+        )
+      ) {
+        report(
+          "error",
+          `${label} "${config.stat}" has a non-numeric min/max/default`,
+          name,
+          kind,
+        );
+      } else if (
+        (min as number) > (max as number) ||
+        (def as number) < (min as number) ||
+        (def as number) > (max as number)
+      ) {
+        report(
+          "error",
+          `${label} "${config.stat}" default ${def} is outside ${min}–${max}`,
+          name,
+          kind,
+        );
+      }
+    }
+  };
+
   for (const item of items) {
     if (!item.id) {
       report("error", "an item has no id", item.name);
@@ -935,13 +982,7 @@ export function validate(
         );
       }
     }
-    if (item.dynamicStat && !statKeys.has(item.dynamicStat)) {
-      report(
-        "error",
-        `dynamicStat "${item.dynamicStat}" is not a stat`,
-        item.id,
-      );
-    }
+    checkDynamicStats(item.dynamicStats, "dynamicStats", item.id);
 
     if (item.gameIds) {
       const seenInItem = new Set<string>();
@@ -985,8 +1026,22 @@ export function validate(
         paramSlots,
       );
       checkStats(grant.stats, label, bonus.id, "bonus");
+      checkDynamicStats(
+        grant.dynamicStats,
+        `${label} dynamicStats`,
+        bonus.id,
+        "bonus",
+      );
       for (const tier of grant.tiers ?? []) {
         checkStats(tier.stats, `${label} tier`, bonus.id, "bonus");
+      }
+      for (const variant of grant.variants ?? []) {
+        checkDynamicStats(
+          variant.dynamicStats,
+          `${label} variant dynamicStats`,
+          bonus.id,
+          "bonus",
+        );
       }
     });
   }

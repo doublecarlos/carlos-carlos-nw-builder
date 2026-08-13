@@ -13,7 +13,7 @@ export const IGNORED_STATS = new Set([
 // Stages the sheet exposes and the engine reproduces, by name.
 export const STAGES = [
   "sums",
-  "afterWeaponMods",
+  "afterDynamicStatMods",
   "afterCombinedRating",
   "afterRatingPct",
   "afterAbilityScores",

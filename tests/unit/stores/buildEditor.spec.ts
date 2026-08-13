@@ -321,7 +321,7 @@ describe("buildEditor.applyPreset", () => {
     section: "options",
     params: { "options.role": "dps" },
     choices: { ring1: "ItemA" },
-    values: { ring1: 42 },
+    values: { ring1: { power: 42 } },
     assignments: { "boons.tier1": { "boon-tier1-power": 3 } },
   };
 
@@ -339,7 +339,7 @@ describe("buildEditor.applyPreset", () => {
 
     expect(builds.build.value.context.role).toBe("dps");
     expect(builds.build.value.choices.ring1).toBe("ItemA");
-    expect(builds.build.value.values.ring1).toBe(42);
+    expect(builds.build.value.values.ring1).toEqual({ power: 42 });
     expect(builds.build.value.assignments["boons.tier1"]).toEqual({
       ...seededRows,
       "boon-tier1-power": 3,
@@ -429,7 +429,7 @@ describe("buildEditor.clearSection", () => {
   it("clears an item_picker slot's choice and value", async () => {
     const { builds, buildEditor } = await freshStores();
     buildEditor.setChoice("gear.head", "ItemA");
-    buildEditor.setValue("gear.head", "5");
+    buildEditor.setDynamicValue("gear.head", "power", "5");
 
     buildEditor.clearSection("gear", "Gear");
     expect(builds.build.value.choices["gear.head"]).toBeUndefined();
@@ -535,15 +535,15 @@ describe("buildEditor undo labels", () => {
     expect(buildEditor.undoLabel.value).toBe('rename build → "My Warlock"');
   });
 
-  it("setValue includes the new value in the label", async () => {
+  it("setDynamicValue includes the new value in the label", async () => {
     const { buildEditor } = await freshStores();
-    buildEditor.setValue("ring1", "42");
+    buildEditor.setDynamicValue("ring1", "power", "42");
     expect(buildEditor.undoLabel.value).toContain("→ 42");
   });
 
-  it("setValue shows (none) when clearing", async () => {
+  it("setDynamicValue shows (none) when clearing", async () => {
     const { buildEditor } = await freshStores();
-    buildEditor.setValue("ring1", "");
+    buildEditor.setDynamicValue("ring1", "power", "");
     expect(buildEditor.undoLabel.value).toContain("→ (none)");
   });
 });

@@ -70,14 +70,20 @@ const problemIsSimple = (problem: GrantProblem) =>
   PROBLEM_SEVERITIES.has(problem.severity) &&
   typeof problem.message === "string";
 
-/** Structures the form cannot represent without losing something. */
+/** Structures the form cannot represent without losing something. `dynamicStats` on the flat
+ *  payload has no dedicated widget (issue #251's grant-level dynamic stats are new and rare
+ *  enough not to warrant one yet) -- same "drop to JSON rather than silently flatten" rule
+ *  `tiers`/`variants`/`problem` already follow. A `dynamicStats` entry *inside* a variant is
+ *  already caught by `variantsAreSimple`'s own key check below, since `dynamicStats` isn't in
+ *  `VARIANT_KEYS`. */
 export const needsJson = (grant: Grant) =>
   Boolean(
     !whenIsRepresentable(grant.when) ||
     (grant.tiers && !tiersAreSimple(grant.tiers)) ||
     (grant.variants && (grant.tiers || !variantsAreSimple(grant.variants))) ||
     (grant.problem &&
-      (grant.tiers || grant.variants || !problemIsSimple(grant.problem))),
+      (grant.tiers || grant.variants || !problemIsSimple(grant.problem))) ||
+    Boolean(grant.dynamicStats?.length),
   );
 
 export interface StatRow {

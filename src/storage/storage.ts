@@ -259,11 +259,12 @@ export function normalise(
     name:
       typeof raw.name === "string" && raw.name.trim() ? raw.name : base.name,
     choices,
-    values: numbers(raw.values),
-    assignments: nestedNumbers(raw.assignments, base.assignments),
     // No seeded defaults to fall back on (unlike `assignments`, which seeds every
-    // point_assignment row's every item up front): a `BonusOccurrenceConfig`'s own `default`
-    // is read directly by bonus.ts's `collect()` when an item has no entry here at all.
+    // point_assignment row's every item up front): a `DynamicStatConfig`'s own `default` is
+    // read directly wherever the value is used (`readDynamicValue`) when a slot has no entry
+    // here at all, same reasoning `occurrenceInputs` below already documents.
+    values: nestedNumbers(raw.values, {}),
+    assignments: nestedNumbers(raw.assignments, base.assignments),
     occurrenceInputs: nestedNumbers(raw.occurrenceInputs, {}),
     // `context`'s pass-through fields (class/role/combatType/damageType) are not
     // individually validated -- the result is only knowable-safe by construction, not by

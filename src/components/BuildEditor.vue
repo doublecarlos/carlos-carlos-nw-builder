@@ -579,8 +579,7 @@ function onFocusIn(event: FocusEvent) {
           :choice-differs="differs(slotDef.id)"
           :other-choice-label="otherChoiceLabel(slotDef.id)"
           :bonus-diffs="rowDiff(slotDef.id)?.bonuses"
-          :value-differs="!!rowDiff(slotDef.id)?.value"
-          :other-value="compareBuild?.values?.[slotDef.id]"
+          :value-diffs="rowDiff(slotDef.id)?.values ?? []"
           :occurrence-differs="
             occurrenceDiffers(itemIn(slotDef.id), build, compareBuild)
           "

@@ -7,12 +7,14 @@
 import * as conditions from "./conditions";
 import { getPath, resolveLinkedItem } from "../lib/build-path";
 import { bonusIdOf, occurrenceCountFor } from "../lib/bonus-attachment";
+import { readDynamicValue } from "../lib/dynamic-stats";
 import type {
   Db,
   Build,
   Bonus,
   Grant,
   BonusCandidate,
+  DynamicStatConfig,
   EvalContext,
   ConditionExplain,
   ConditionWhen,
@@ -243,11 +245,32 @@ export function collect(
 
 // --- pass 2: evaluate ---
 
-/** Resolve one grant against the context into a stat payload (or none). */
+/** Merges resolved dynamic-stat values into a base stat payload -- `dynamicValues` is keyed by
+ *  stat (see `resolveDynamicValues` below), already defaulted, so this is a plain sum. Returns
+ *  `stats` unchanged (same reference) when `configs` is empty, so a grant with no dynamic
+ *  stats never allocates a new object here. */
+function withDynamicStats(
+  stats: StatValues,
+  configs: DynamicStatConfig[] | undefined,
+  dynamicValues: Record<string, number>,
+): StatValues {
+  if (!configs?.length) return stats;
+  const out: StatValues = { ...stats };
+  for (const config of configs) {
+    out[config.stat] =
+      (out[config.stat] ?? 0) + (dynamicValues[config.stat] ?? config.default);
+  }
+  return out;
+}
+
+/** Resolve one grant against the context into a stat payload (or none). `dynamicValues` is
+ *  this grant's owning bonus's resolved dynamic-stat values (bonus.ts's `resolve`), already
+ *  keyed by stat and defaulted -- see `resolveDynamicValues`. */
 function evaluateGrant(
   grant: Grant,
   ctx: EvalContext,
   explain = true,
+  dynamicValues: Record<string, number> = {},
 ): GrantEvaluation {
   const gate: ConditionExplain = explain
     ? conditions.explain(grant.when, ctx)
@@ -293,7 +316,11 @@ function evaluateGrant(
       : {
           active: true,
           gate,
-          stats: grant.variants[index].stats,
+          stats: withDynamicStats(
+            grant.variants[index].stats,
+            grant.variants[index].dynamicStats,
+            dynamicValues,
+          ),
           chose: `variant:${index}`,
           problem: null,
           variantBranches,
@@ -339,7 +366,11 @@ function evaluateGrant(
   return {
     active: true,
     gate,
-    stats: grant.stats ?? {},
+    stats: withDynamicStats(
+      grant.stats ?? {},
+      grant.dynamicStats,
+      dynamicValues,
+    ),
     chose: "stats",
     problem: null,
   };
@@ -368,10 +399,11 @@ export function evaluateBonus(
   bonus: Bonus,
   ctx: EvalContext,
   explain = true,
+  dynamicValues: Record<string, number> = {},
 ): BonusEvaluation {
   const results = (bonus.grants ?? []).map((grant) => ({
     raw: grant,
-    ...evaluateGrant(grant, ctx, explain),
+    ...evaluateGrant(grant, ctx, explain, dynamicValues),
   }));
   const activeResults = results.filter((r) => r.active);
   const active = activeResults.length > 0;
@@ -431,6 +463,30 @@ interface Group {
   sources: Candidate[];
 }
 
+/** Every dynamic-stat value this bonus's grants/variants declare, resolved against `slotId`
+ *  (the bonus's first contributing source by build order -- see the "instancing slot" comment
+ *  below) and defaulted, keyed by stat. Two configs across different grants/variants of the
+ *  same bonus targeting the same stat share one stored value -- there is only one slot this
+ *  bonus resolves its dynamic values against, regardless of which of its grants asks. */
+function resolveDynamicValues(
+  bonus: Bonus,
+  build: Build,
+  slotId: string,
+): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const grant of bonus.grants ?? []) {
+    for (const config of grant.dynamicStats ?? []) {
+      out[config.stat] = readDynamicValue(build, slotId, config, bonus.id);
+    }
+    for (const variant of grant.variants ?? []) {
+      for (const config of variant.dynamicStats ?? []) {
+        out[config.stat] = readDynamicValue(build, slotId, config, bonus.id);
+      }
+    }
+  }
+  return out;
+}
+
 export function resolve(
   db: Db,
   build: Build,
@@ -450,8 +506,16 @@ export function resolve(
   // Evaluate everything before applying any exclusion, so exclusion never cascades and the
   // outcome cannot depend on evaluation order.
   const evaluated: EvaluatedBonus[] = [...groups.values()].map((group) => {
-    const result = evaluateBonus(group.bonus, ctx, explain);
+    // Sorted before evaluating (not after, as a plain stat-attribution readout could afford
+    // to) -- resolving this bonus's dynamic values needs its first slot up front, since that
+    // resolution feeds straight into `evaluateBonus`'s stats, not just `EvaluatedBonus.slotId`.
     const sources = [...group.sources].sort((a, b) => a.order - b.order);
+    const dynamicValues = resolveDynamicValues(
+      group.bonus,
+      build,
+      sources[0].slotId,
+    );
+    const result = evaluateBonus(group.bonus, ctx, explain, dynamicValues);
 
     let stacks = 1;
     if (group.bonus.stacking === "perSource") {
