@@ -241,6 +241,128 @@ describe("forSlotAndBuild maxCopies filtering", () => {
   });
 });
 
+// forSlot's tag-based resolution (#246): an item_picker slot with `tags` instead of `filter`
+// selects every item carrying at least one of those tags, OR-matched via itemsByTag, letting one
+// item serve several slots at once (e.g. a companion power that's both offense and utility).
+describe("forSlot tag-based item_picker resolution", () => {
+  const slotsData: SlotsData = {
+    sections: [{ id: "companions", label: "Companions" }],
+    slots: [
+      {
+        id: "companions.offense",
+        label: "Offense",
+        section: "companions",
+        type: "item_picker",
+        tags: ["companion_power:offense"],
+      },
+      {
+        id: "companions.universal",
+        label: "Universal",
+        section: "companions",
+        type: "item_picker",
+        tags: [
+          "companion_power:offense",
+          "companion_power:defense",
+          "companion_power:utility",
+        ],
+      },
+      {
+        id: "companions.equip1",
+        label: "Equip 1",
+        section: "companions",
+        type: "item_picker",
+        filter: "companion_equip",
+      },
+    ],
+  };
+
+  const offensePower: Item = {
+    id: "offense-power",
+    name: "Offense Power",
+    filter: "companion_power",
+    tags: ["companion_power:offense"],
+  };
+  const dualRolePower: Item = {
+    id: "dual-role-power",
+    name: "Dual Role Power",
+    filter: "companion_power",
+    tags: ["companion_power:offense", "companion_power:utility"],
+  };
+  const defensePower: Item = {
+    id: "defense-power",
+    name: "Defense Power",
+    filter: "companion_power",
+    tags: ["companion_power:defense"],
+  };
+  const untaggedEquip: Item = {
+    id: "untagged-equip",
+    name: "Untagged Equip",
+    filter: "companion_equip",
+  };
+
+  const testDb = db.build(
+    [offensePower, dualRolePower, defensePower, untaggedEquip],
+    [],
+    NW_SCHEMA,
+    slotsData,
+  );
+
+  it("resolves a single-tag slot to only items carrying that tag", () => {
+    const ids = testDb.forSlot("companions.offense").map((i) => i.id);
+    expect(ids.sort()).toEqual(["dual-role-power", "offense-power"]);
+  });
+
+  it("OR-matches a multi-tag slot, de-duplicating an item that matches more than one tag", () => {
+    const ids = testDb.forSlot("companions.universal").map((i) => i.id);
+    expect(ids.sort()).toEqual([
+      "defense-power",
+      "dual-role-power",
+      "offense-power",
+    ]);
+    // Each item appears exactly once even though dual-role-power matches two of the slot's tags.
+    expect(ids).toHaveLength(3);
+  });
+
+  it("sorts tag-resolved candidates by name, same as a filter-resolved slot", () => {
+    const names = testDb.forSlot("companions.universal").map((i) => i.name);
+    expect(names).toEqual([...names].sort((a, b) => a.localeCompare(b)));
+  });
+
+  it("leaves a filter-only slot resolving exactly as before", () => {
+    const ids = testDb.forSlot("companions.equip1").map((i) => i.id);
+    expect(ids).toEqual(["untagged-equip"]);
+  });
+
+  it("forSlotAndBuild still applies maxCopies/allowedClass on top of tag-resolved candidates", () => {
+    const cappedOffensePower: Item = {
+      ...offensePower,
+      id: "capped-offense-power",
+      maxCopies: 1,
+    };
+    const capDb = db.build(
+      [cappedOffensePower, dualRolePower],
+      [],
+      NW_SCHEMA,
+      slotsData,
+    );
+    const build = {
+      id: "b",
+      name: "b",
+      choices: { "companions.universal": "capped-offense-power" },
+      values: {},
+      assignments: {},
+      procs: {},
+      context: { class: "" },
+      compare: { id: "", highlight: false, onlyDiff: false },
+    } as unknown as Build;
+
+    const ids = db
+      .forSlotAndBuild(capDb, "companions.offense", build)
+      .map((i) => i.id);
+    expect(ids).not.toContain("capped-offense-power");
+  });
+});
+
 // An Item.bonuses entry can now be a bare id or a BonusOccurrenceConfig (#217) -- every join
 // point that reads item.bonuses (bonusesFor, bonusMembers) has to resolve either shape to the
 // same bonus id.

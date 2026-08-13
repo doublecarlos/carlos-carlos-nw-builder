@@ -72,7 +72,7 @@ describe("catalog.validateSlots", () => {
     expect(findings).toEqual([]);
   });
 
-  it("item_picker slots are ignored entirely (no path to check)", () => {
+  it("accepts a well-formed item_picker slot using filter", () => {
     const findings = catalog.validateSlots([
       {
         id: "gear.head",
@@ -83,6 +83,49 @@ describe("catalog.validateSlots", () => {
       },
     ]);
     expect(findings).toEqual([]);
+  });
+
+  it("accepts a well-formed item_picker slot using tags", () => {
+    const findings = catalog.validateSlots([
+      {
+        id: "companions.offense",
+        label: "Offense",
+        section: "companions",
+        type: "item_picker",
+        tags: ["companion_power:offense"],
+      },
+    ]);
+    expect(findings).toEqual([]);
+  });
+
+  it("reports an item_picker slot with neither filter nor tags", () => {
+    const findings = catalog.validateSlots([
+      {
+        id: "a",
+        label: "a",
+        section: "gear",
+        type: "item_picker",
+      },
+    ]);
+    expect(
+      findings.some((f) => /neither a filter nor tags/.test(f.message)),
+    ).toBe(true);
+  });
+
+  it("reports an item_picker slot with both filter and tags", () => {
+    const findings = catalog.validateSlots([
+      {
+        id: "a",
+        label: "a",
+        section: "gear",
+        type: "item_picker",
+        filter: "gear_head",
+        tags: ["gear:head"],
+      },
+    ]);
+    expect(findings.some((f) => /both a filter and tags/.test(f.message))).toBe(
+      true,
+    );
   });
 
   it("accepts a well-formed point_assignment slot", () => {

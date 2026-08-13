@@ -88,15 +88,32 @@ export function build(
     forFilter: (filter: string) => byFilter.get(filter) ?? [],
 
     /** Items selectable in a given slot id -- empty for a build_parameter slot, which has no
-     * `filter` to look up (it isn't an item choice at all). For a point_assignment slot, only
-     * items that also carry `inlineRepetition` bounds qualify (an item merely sharing the
-     * filter but missing that config could never render a valid stepper), sorted by
-     * `inlineRepetition.priority` (default 0) then name -- item_picker's own name-only order
-     * doesn't apply here since a priority is how a point_assignment row's author controls
-     * display order without an explicit list to reorder (slots.json used to hold one). */
+     * `filter` to look up (it isn't an item choice at all). An item_picker slot resolves by
+     * `tags` when set (union across every listed tag, de-duplicated, via `itemsByTag`) or by
+     * `filter` otherwise -- `types.ts`'s `ItemPickerSlot` treats the two as mutually exclusive.
+     * For a point_assignment slot, only items that also carry `inlineRepetition` bounds qualify
+     * (an item merely sharing the filter but missing that config could never render a valid
+     * stepper), sorted by `inlineRepetition.priority` (default 0) then name -- item_picker's own
+     * name-only order doesn't apply here since a priority is how a point_assignment row's author
+     * controls display order without an explicit list to reorder (slots.json used to hold one). */
     forSlot(slotId: string) {
       const slot = slotById.get(slotId);
-      if (slot?.type === "item_picker") return byFilter.get(slot.filter) ?? [];
+      if (slot?.type === "item_picker") {
+        if (slot.tags?.length) {
+          const seen = new Set<string>();
+          const matches: Item[] = [];
+          for (const tag of slot.tags) {
+            for (const id of itemsByTag.get(tag) ?? []) {
+              if (seen.has(id)) continue;
+              seen.add(id);
+              const item = byId.get(id);
+              if (item) matches.push(item);
+            }
+          }
+          return matches.sort((a, b) => a.name.localeCompare(b.name));
+        }
+        return byFilter.get(slot.filter) ?? [];
+      }
       if (slot?.type === "point_assignment") {
         return (byFilter.get(slot.filter) ?? [])
           .filter((item) => item.inlineRepetition)

@@ -32,6 +32,7 @@ import type {
   Slot,
   SectionPreset,
   BuildParameterSlot,
+  ItemPickerSlot,
   Db,
   Build,
 } from "../types";
@@ -459,9 +460,10 @@ function shadowsBuildContext(path: string): boolean {
 }
 
 /**
- * Lint every `build_parameter` slot's `path`: empty, duplicated (two slots silently fighting
- * over one value), or shadowing a `BuildContext` field outright. Standalone from `validate()`
- * below since it needs only the slot list, not a composed catalogue.
+ * Lint every `build_parameter` slot's `path` (empty, duplicated -- two slots silently fighting
+ * over one value -- or shadowing a `BuildContext` field outright), every `point_assignment`
+ * slot's `filter`, and every `item_picker` slot's `filter`/`tags` selector. Standalone from
+ * `validate()` below since it needs only the slot list, not a composed catalogue.
  */
 export function validateSlots(slots: Slot[]): LintFinding[] {
   const findings: LintFinding[] = [];
@@ -473,6 +475,24 @@ export function validateSlots(slots: Slot[]): LintFinding[] {
           level: "error",
           kind: "item",
           message: `${slot.id}: point_assignment slot has no filter`,
+        });
+      }
+      continue;
+    }
+    if (slot.type === "item_picker") {
+      const hasFilter = !!slot.filter;
+      const hasTags = !!slot.tags?.length;
+      if (!hasFilter && !hasTags) {
+        findings.push({
+          level: "error",
+          kind: "item",
+          message: `${slot.id}: item_picker slot has neither a filter nor tags`,
+        });
+      } else if (hasFilter && hasTags) {
+        findings.push({
+          level: "error",
+          kind: "item",
+          message: `${slot.id}: item_picker slot has both a filter and tags -- pick one, resolving both is ambiguous`,
         });
       }
       continue;
@@ -684,8 +704,19 @@ export function validate(
   const allSlots = NW_SLOTS?.slots ?? [];
   const itemPickerFilters = new Set<string>(
     allSlots
-      .filter((slot) => slot.type === "item_picker")
+      .filter(
+        (slot): slot is ItemPickerSlot & { filter: string } =>
+          slot.type === "item_picker" && !!slot.filter,
+      )
       .map((slot) => slot.filter),
+  );
+  // Tags claimed by an item_picker slot instead of a filter -- an item carrying one of these
+  // resolves into a slot the same way a matching `filter` would, so it counts as "in a slot"
+  // for the checks below even though it has no `filter` of its own.
+  const itemPickerTags = new Set<string>(
+    allSlots
+      .filter((slot) => slot.type === "item_picker")
+      .flatMap((slot) => slot.tags ?? []),
   );
   const pointAssignmentFilters = new Set<string>(
     allSlots
@@ -762,12 +793,26 @@ export function validate(
     if (seenIds.has(item.id)) report("error", "duplicate item id", item.id);
     seenIds.add(item.id);
 
+    // A tag-selected item_picker slot needs no `filter` at all -- an item matching one of its
+    // tags is just as "in a slot" as one matching a `filter` exactly.
+    const matchesPickerTag = (item.tags ?? []).some((tag) =>
+      itemPickerTags.has(tag),
+    );
+
     if (!item.filter) {
-      if (!linkedItemIds.has(item.id)) {
-        report("error", "no filter — the item appears in no slot", item.id);
+      if (!matchesPickerTag && !linkedItemIds.has(item.id)) {
+        report(
+          "error",
+          "no filter or tag — the item appears in no slot",
+          item.id,
+        );
       }
     } else if (!slotFilters.has(item.filter)) {
-      if (!linkedItemIds.has(item.id) && !isUnpickableFilter(item.filter)) {
+      if (
+        !matchesPickerTag &&
+        !linkedItemIds.has(item.id) &&
+        !isUnpickableFilter(item.filter)
+      ) {
         report(
           "warn",
           `filter "${item.filter}" matches no slot, so nothing can equip it ` +

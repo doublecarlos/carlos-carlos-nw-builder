@@ -75,7 +75,9 @@ const emit = defineEmits<{
   leave: [];
   rowclick: [event: MouseEvent, itemId?: string];
   /** This row's "new item" shortcut (ItemPickerRow/PointAssignmentRow's own `add-item`),
-   *  carrying the slot's own `filter` so the item editor opens pre-filtered to it. */
+   *  carrying the slot's own `filter` so the item editor opens pre-filtered to it. Empty for a
+   *  tag-selected item_picker slot -- it has no single `filter` to pre-fill, so the new item
+   *  opens unfiltered and the author adds its tags by hand. */
   addItem: [filter: string];
 }>();
 
@@ -186,7 +188,7 @@ useCursorRowKeys(anchor, {
         :other-value="otherValue"
         :occurrence-differs="occurrenceDiffers"
         :other-occurrence-label="otherOccurrenceLabel"
-        @add-item="emit('addItem', slotDef.filter)"
+        @add-item="emit('addItem', slotDef.filter ?? '')"
       />
       <PointAssignmentRow
         v-else-if="slotDef.type === 'point_assignment'"

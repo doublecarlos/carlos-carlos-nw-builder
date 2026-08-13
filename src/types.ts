@@ -96,7 +96,16 @@ export interface ItemPickerSlot {
   label: string;
   section: string;
   type: "item_picker";
-  filter: string;
+  /** Exact-match category key into `Db.forFilter`/`byFilter`. Mutually exclusive with `tags` --
+   * `catalog.ts`'s `validateSlots` requires exactly one of the two, since a slot resolves its
+   * candidates one way or the other, never both. */
+  filter?: string;
+  /** Alternative to `filter`: selects every item carrying at least one of these tags, OR-matched
+   * (`Db.itemsByTag`), instead of one exact-match category. Lets a single item serve several
+   * slots at once -- e.g. a companion power tagged both `companion_power:offense` and
+   * `companion_power:utility` is a candidate in both slots -- without a dedicated `filter` value
+   * per combination. */
+  tags?: string[];
 }
 
 /** A row of independent numeric steppers sharing one label, one per item matching `filter` --
