@@ -43,32 +43,34 @@ function setRangeMode(mode: "range" | "exact") {
 </script>
 
 <template>
-  <div class="inline-flex">
-    <button
-      type="button"
-      class="border border-line px-2 py-0.5 text-sm first:rounded-l-md last:rounded-r-md last:border-l-0"
-      :class="
-        rangeMode === 'range'
-          ? 'border-accent bg-accent-soft text-text'
-          : 'bg-surface text-muted'
-      "
-      @click="setRangeMode('range')"
-    >
-      range
-    </button>
-    <button
-      type="button"
-      class="border border-line px-2 py-0.5 text-sm first:rounded-l-md last:rounded-r-md last:border-l-0"
-      :class="
-        rangeMode === 'exact'
-          ? 'border-accent bg-accent-soft text-text'
-          : 'bg-surface text-muted'
-      "
-      @click="setRangeMode('exact')"
-    >
-      exact
-    </button>
-  </div>
+  <FormField :label="'&nbsp'" class="min-w-0">
+    <div class="inline-flex">
+      <button
+        type="button"
+        class="border border-line px-2 py-0.5 text-sm first:rounded-l-md last:rounded-r-md last:border-l-0"
+        :class="
+          rangeMode === 'range'
+            ? 'border-accent bg-accent-soft text-text'
+            : 'bg-surface text-muted'
+        "
+        @click="setRangeMode('range')"
+      >
+        range
+      </button>
+      <button
+        type="button"
+        class="border border-line px-2 py-0.5 text-sm first:rounded-l-md last:rounded-r-md last:border-l-0"
+        :class="
+          rangeMode === 'exact'
+            ? 'border-accent bg-accent-soft text-text'
+            : 'bg-surface text-muted'
+        "
+        @click="setRangeMode('exact')"
+      >
+        exact
+      </button>
+    </div>
+  </FormField>
   <template v-if="rangeMode === 'range'">
     <FormField :label="`At least${unitSuffix}`" class="min-w-0"
       ><input
