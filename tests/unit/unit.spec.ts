@@ -741,6 +741,130 @@ describe("BonusOccurrenceConfig resolution", () => {
   });
 });
 
+// A bonus whose only source anywhere is currently a 0-valued BonusOccurrenceConfig still
+// resolves -- inactive, via a sources-less "anchor" group (bonus.ts's `collectAttachments`/
+// `resolve()`) -- rather than being absent from `result.bonuses` entirely. The anchor must never
+// be counted as a real source anywhere stacking/attribution reads `sources`, which the
+// mixed-source tests below exist to pin down.
+describe("a bonus reachable only through a currently-zero occurrence count (#255)", () => {
+  const schema: Schema = {
+    stats: [],
+    statByKey: {},
+    statKeys: ["power_p"],
+    multiplicativeStats: [],
+    ratingStats: [],
+    abilityStats: [],
+    ratingConversion: [],
+    abilityContributions: [],
+    forteSplit: {},
+    roles: { dps: { label: "dps", hpBonus: 1, damageBonus: 1 } },
+  };
+
+  const stackingBonus: Bonus = {
+    id: "stacking-bonus",
+    stacking: "perSource",
+    grants: [
+      {
+        when: { bonusOccurrences: { bonus: "stacking-bonus", atLeast: 1 } },
+        stats: { power_p: 0.02 },
+      },
+    ],
+  };
+  const dialItem: Item = {
+    id: "dial-item",
+    name: "Dial Item",
+    filter: "test_slot",
+    bonuses: [{ bonus: "stacking-bonus", min: 0, max: 3, default: 0 }],
+  };
+  const otherDialItem: Item = {
+    id: "other-dial-item",
+    name: "Other Dial Item",
+    filter: "test_slot",
+    bonuses: [{ bonus: "stacking-bonus", min: 0, max: 3, default: 0 }],
+  };
+
+  const slotsData: SlotsData = {
+    sections: [{ id: "test", label: "Test" }],
+    slots: [
+      {
+        id: "slot1",
+        label: "Slot 1",
+        section: "test",
+        type: "item_picker",
+        filter: "test_slot",
+      },
+      {
+        id: "slot2",
+        label: "Slot 2",
+        section: "test",
+        type: "item_picker",
+        filter: "test_slot",
+      },
+    ],
+  };
+  const testDb = db.build(
+    [dialItem, otherDialItem],
+    [stackingBonus],
+    schema,
+    slotsData,
+  );
+
+  function buildWith(
+    choices: Record<string, string>,
+    occurrenceInputs: Record<string, Record<string, number>> = {},
+  ): Build {
+    return {
+      id: "b",
+      name: "b",
+      choices,
+      values: {},
+      assignments: {},
+      occurrenceInputs,
+      context: BASE_CONTEXT,
+      compare: { id: "", highlight: false, onlyDiff: false },
+    } as unknown as Build;
+  }
+
+  it("the only equipped item's dial at 0 still resolves the bonus, inactive with no sources", () => {
+    const result = engine.resolveBuild(
+      testDb,
+      buildWith({ slot1: "dial-item" }),
+    );
+    const entry = result.bonuses.find((b) => b.id === "stacking-bonus");
+    expect(entry?.active).toBe(false);
+    expect(entry?.sources).toEqual([]);
+    expect(entry?.stacks).toBe(0);
+  });
+
+  it("a sibling item's dial at 0 doesn't inflate perSource stacking for the real contributor", () => {
+    const result = engine.resolveBuild(
+      testDb,
+      buildWith(
+        { slot1: "dial-item", slot2: "other-dial-item" },
+        { "dial-item": { "stacking-bonus": 2 } },
+      ),
+    );
+    const entry = result.bonuses.find((b) => b.id === "stacking-bonus");
+    expect(entry?.active).toBe(true);
+    // Only dial-item's 2 real occurrences count -- other-dial-item's 0 contributes nothing to
+    // stacks, sources, or the applied stats, even though it's equipped in the same build.
+    expect(entry?.stacks).toBe(2);
+    expect(entry?.sources).toEqual(["Dial Item", "Dial Item"]);
+    expect(entry?.appliedStats?.power_p).toBeCloseTo(2 * 0.02, 9);
+  });
+
+  it("both equipped items' dials at 0 still resolves one inactive entry, not two", () => {
+    const result = engine.resolveBuild(
+      testDb,
+      buildWith({ slot1: "dial-item", slot2: "other-dial-item" }),
+    );
+    const entries = result.bonuses.filter((b) => b.id === "stacking-bonus");
+    expect(entries).toHaveLength(1);
+    expect(entries[0].active).toBe(false);
+    expect(entries[0].sources).toEqual([]);
+  });
+});
+
 // Per-item boolean occurrence attachments, formerly "procs" (#222): a `min:0,max:1`
 // BonusOccurrenceConfig attached to an item gates that same bonus's own grant via a
 // self-referential `bonusOccurrences: { bonus: <own id>, atLeast: 1 }` condition, reading
@@ -878,19 +1002,22 @@ describe("per-item boolean occurrence attachments (formerly procs)", () => {
     );
   });
 
-  // Unlike the old dedicated `proc` leaf (always one candidate, gated separately by `when`),
-  // a self-referential attachment's own count *is* its candidate count (bonus.ts's `collect()`):
-  // 0 occurrences means zero candidates, so the bonus is absent from `result.bonuses` entirely
-  // rather than present-but-inactive. Same behavior a stacking (non-boolean) config's own
-  // 0-occurrence case already has -- a boolean attachment gets no special case.
-  it("an explicit 0 count leaves the bonus out of the resolved list entirely", () => {
+  // A self-referential attachment's own count *is* its candidate count (bonus.ts's
+  // `collect()`): 0 occurrences means zero real candidates. The bonus still resolves --
+  // inactive, with a preview of what it would grant -- rather than vanishing from
+  // `result.bonuses` entirely, so a hover card/inspector can tell "typed to 0" apart from
+  // "doesn't carry this bonus at all" (#255). Same behavior a stacking (non-boolean) config's
+  // own 0-occurrence case already has -- a boolean attachment gets no special case.
+  it("an explicit 0 count resolves the bonus as inactive, with a preview of what it would grant", () => {
     const result = engine.resolveBuild(
       testDb,
       buildWith("proc-ring", { "proc-ring": { "proc-ring-bonus": 0 } }),
     );
-    expect(
-      result.bonuses.find((b) => b.id === "proc-ring-bonus"),
-    ).toBeUndefined();
+    const entry = result.bonuses.find((b) => b.id === "proc-ring-bonus");
+    expect(entry?.active).toBe(false);
+    expect(entry?.stats).toBeNull();
+    expect(entry?.previewStats).toEqual({ power_p: 0.05 });
+    expect(entry?.sources).toEqual([]);
   });
 
   it("two independent boolean attachments on one item toggle independently", () => {
@@ -911,14 +1038,16 @@ describe("per-item boolean occurrence attachments (formerly procs)", () => {
     expect(firstOff.stages.sums.crit_p).toBeCloseTo(0.02, 9);
   });
 
-  it("a default: 0 config starts off (absent from the resolved list) with no explicit occurrenceInputs entry", () => {
+  it("a default: 0 config starts off (resolved but inactive) with no explicit occurrenceInputs entry", () => {
     const result = engine.resolveBuild(
       testDb,
       buildWith("situational-trinket"),
     );
-    expect(
-      result.bonuses.find((b) => b.id === "situational-trinket-bonus"),
-    ).toBeUndefined();
+    const entry = result.bonuses.find(
+      (b) => b.id === "situational-trinket-bonus",
+    );
+    expect(entry?.active).toBe(false);
+    expect(entry?.previewStats).toEqual({ power_p: 0.07 });
   });
 
   it("an explicit 1 count overrides a config's default: 0", () => {

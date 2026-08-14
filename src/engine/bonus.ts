@@ -13,6 +13,7 @@ import type {
   Build,
   Bonus,
   Grant,
+  Item,
   BonusCandidate,
   DynamicStatConfig,
   EvalContext,
@@ -46,6 +47,59 @@ interface Candidate extends BonusCandidate {
 // --- pass 1: collect ---
 
 /**
+ * Pushes one `Candidate` per occurrence of one item's bonus attachment -- shared between the
+ * item_picker/build_parameter branch and `collectInlineRepetition`'s point_assignment items,
+ * the only difference being what `repetitions` (a bare-id attachment's count) resolves to.
+ *
+ * A typed (`BonusOccurrenceConfig`) attachment currently resolved to 0 occurrences has no real
+ * candidate to push -- but dropping it silently leaves its bonus completely unreachable in
+ * `resolve()`'s evaluate pass whenever nothing else contributes it either, so a hover
+ * card/inspector can't tell "typed to 0" apart from "doesn't carry this bonus at all" (#255). An
+ * anchor-only entry goes to `zeroCandidates` instead, just to make the bonus reachable -- it is
+ * never counted as a source (stacking, attribution), only used as a fallback slot/order to
+ * resolve against when a bonus has no real source anywhere. A bare-id attachment's count is
+ * always `repetitions` (>= 1 by the time either caller reaches this point), so it never needs one.
+ */
+function collectAttachments(
+  item: Item,
+  build: Build,
+  bonusById: Map<string, Bonus>,
+  slotId: string,
+  order: number,
+  bonusOccurrences: Map<string, number>,
+  candidates: Candidate[],
+  zeroCandidates: Candidate[],
+  repetitions = 1,
+) {
+  const itemInputs = build.occurrenceInputs?.[item.id];
+  for (const attachment of item.bonuses ?? []) {
+    const bonusId = bonusIdOf(attachment);
+    const bonus = bonusById.get(bonusId);
+    if (!bonus) continue;
+    const count =
+      typeof attachment === "string"
+        ? repetitions
+        : occurrenceCountFor(attachment, itemInputs);
+    bump(bonusOccurrences, bonusId, count);
+    if (count === 0) {
+      if (typeof attachment !== "string") {
+        zeroCandidates.push({
+          bonus,
+          bonusId,
+          source: item.name,
+          slotId,
+          order,
+        });
+      }
+      continue;
+    }
+    for (let i = 0; i < count; i++) {
+      candidates.push({ bonus, bonusId, source: item.name, slotId, order });
+    }
+  }
+}
+
+/**
  * One point_assignment slot's contribution -- every point behaves exactly like one more
  * item_picker slot choosing that item, so this bumps `equipped`/tags by each item's own
  * `inlineRepetition` count (into the caller's running maps) and sums the row's own stats into a
@@ -70,10 +124,12 @@ function collectInlineRepetition(
   row: ResolvedRow;
   statBucket: Map<string, number>;
   candidates: Candidate[];
+  zeroCandidates: Candidate[];
 } {
   const counts = build.assignments?.[slot.id] ?? {};
   const statBucket = new Map<string, number>();
   const candidates: Candidate[] = [];
+  const zeroCandidates: Candidate[] = [];
 
   for (const item of db.forSlot(slot.id)) {
     const count = counts[item.id] ?? item.inlineRepetition!.default;
@@ -88,32 +144,24 @@ function collectInlineRepetition(
       statBucket.set(key, (statBucket.get(key) ?? 0) + (raw as number) * count);
     }
 
-    const itemInputs = build.occurrenceInputs?.[item.id];
-    for (const attachment of item.bonuses ?? []) {
-      const bonusId = bonusIdOf(attachment);
-      const bonus = db.bonusById.get(bonusId);
-      if (!bonus) continue;
-      const attachmentCount =
-        typeof attachment === "string"
-          ? count
-          : occurrenceCountFor(attachment, itemInputs);
-      bump(bonusOccurrences, bonusId, attachmentCount);
-      for (let i = 0; i < attachmentCount; i++) {
-        candidates.push({
-          bonus,
-          bonusId,
-          source: item.name,
-          slotId: slot.id,
-          order,
-        });
-      }
-    }
+    collectAttachments(
+      item,
+      build,
+      db.bonusById,
+      slot.id,
+      order,
+      bonusOccurrences,
+      candidates,
+      zeroCandidates,
+      count,
+    );
   }
 
   return {
     row: { slotId: slot.id, slot, choice: undefined, item: null },
     statBucket,
     candidates,
+    zeroCandidates,
   };
 }
 
@@ -132,6 +180,7 @@ export function collect(
   ctx: EvalContext;
   rows: ResolvedRow[];
   candidates: Candidate[];
+  zeroCandidates: Candidate[];
   assignmentStatsBySlot: Map<string, Map<string, number>>;
 } {
   const context = build.context ?? {};
@@ -140,6 +189,7 @@ export function collect(
   const bonusOccurrences = new Map<string, number>();
   const rows: ResolvedRow[] = [];
   const candidates: Candidate[] = [];
+  const zeroCandidates: Candidate[] = [];
   const assignmentStatsBySlot = new Map<string, Map<string, number>>();
 
   db.slots.forEach((slot, order) => {
@@ -158,6 +208,7 @@ export function collect(
       );
       rows.push(collected.row);
       candidates.push(...collected.candidates);
+      zeroCandidates.push(...collected.zeroCandidates);
       // No single `item` to attribute this row to -- its stats land in
       // `assignmentStatsBySlot` instead (engine.ts's `rowVectors` adds both alongside
       // `bonusStatsBySlot`).
@@ -188,23 +239,16 @@ export function collect(
     // config's count duplicates its candidate that many times, same as collectInlineRepetition
     // does for its own BonusOccurrenceConfig attachments, so `stacking: "perSource"` sees N
     // sources from one item exactly as it would from N separate item_picker picks.
-    const itemInputs = build.occurrenceInputs?.[item.id];
-    for (const attachment of item.bonuses ?? []) {
-      const bonusId = bonusIdOf(attachment);
-      const bonus = db.bonusById.get(bonusId);
-      if (!bonus) continue;
-      const count = occurrenceCountFor(attachment, itemInputs);
-      bump(bonusOccurrences, bonusId, count);
-      for (let i = 0; i < count; i++) {
-        candidates.push({
-          bonus,
-          bonusId,
-          source: item.name,
-          slotId: slot.id,
-          order,
-        });
-      }
-    }
+    collectAttachments(
+      item,
+      build,
+      db.bonusById,
+      slot.id,
+      order,
+      bonusOccurrences,
+      candidates,
+      zeroCandidates,
+    );
   });
 
   // Every build_parameter's current value, by its path -- what the `param` leaf reads. A slot
@@ -240,7 +284,7 @@ export function collect(
     params,
   };
 
-  return { ctx, rows, candidates, assignmentStatsBySlot };
+  return { ctx, rows, candidates, zeroCandidates, assignmentStatsBySlot };
 }
 
 // --- pass 2: evaluate ---
@@ -400,12 +444,17 @@ export function evaluateBonus(
   ctx: EvalContext,
   explain = true,
   dynamicValues: Record<string, number> = {},
+  { hasSources = true }: { hasSources?: boolean } = {},
 ): BonusEvaluation {
   const results = (bonus.grants ?? []).map((grant) => ({
     raw: grant,
     ...evaluateGrant(grant, ctx, explain, dynamicValues),
   }));
-  const activeResults = results.filter((r) => r.active);
+  // `hasSources: false` (resolve()'s zero-sources group) forces this bonus inactive regardless
+  // of what an individual grant's own `when` resolves to -- there is nothing occurring to grant
+  // it for. Every grant is still evaluated above so the near-miss branch below has real
+  // gate/unmet data to show.
+  const activeResults = hasSources ? results.filter((r) => r.active) : [];
   const active = activeResults.length > 0;
 
   const stats: Record<string, number> = {};
@@ -461,6 +510,11 @@ interface Group {
   id: string;
   bonus: Bonus;
   sources: Candidate[];
+  /** Only set for a zero-sources group (resolve(), from `zeroCandidates`) -- the candidate
+   *  that made this bonus reachable despite contributing no real occurrence, used as a
+   *  slotId/order/bonusId fallback wherever `sources[0]` would otherwise be read. Absent for
+   *  any group with at least one real source. */
+  anchor?: Candidate;
 }
 
 /** Every dynamic-stat value this bonus's grants/variants declare, resolved against `slotId`
@@ -492,7 +546,8 @@ export function resolve(
   build: Build,
   { explain = true }: { explain?: boolean } = {},
 ): ResolvedBonuses {
-  const { ctx, rows, candidates, assignmentStatsBySlot } = collect(db, build);
+  const { ctx, rows, candidates, zeroCandidates, assignmentStatsBySlot } =
+    collect(db, build);
 
   // Group by bonus id so stacking is decided once per bonus, not once per contributing slot.
   const groups = new Map<string, Group>();
@@ -502,6 +557,19 @@ export function resolve(
     if (group) group.sources.push(candidate);
     else groups.set(id, { id, bonus: candidate.bonus, sources: [candidate] });
   }
+  // Seed a sources-less group for each zero-only attachment collectAttachments() flagged --
+  // see its doc comment for why -- but only where nothing real already reached this bonus; a
+  // group with at least one real source is untouched.
+  for (const anchor of zeroCandidates) {
+    if (!groups.has(anchor.bonus.id)) {
+      groups.set(anchor.bonus.id, {
+        id: anchor.bonus.id,
+        bonus: anchor.bonus,
+        sources: [],
+        anchor,
+      });
+    }
+  }
 
   // Evaluate everything before applying any exclusion, so exclusion never cascades and the
   // outcome cannot depend on evaluation order.
@@ -509,13 +577,18 @@ export function resolve(
     // Sorted before evaluating (not after, as a plain stat-attribution readout could afford
     // to) -- resolving this bonus's dynamic values needs its first slot up front, since that
     // resolution feeds straight into `evaluateBonus`'s stats, not just `EvaluatedBonus.slotId`.
+    // A zero-sources group has no real candidate to sort/read here, so it falls back to the
+    // anchor that made it reachable in the first place (always set in that case).
     const sources = [...group.sources].sort((a, b) => a.order - b.order);
+    const anchor = sources[0] ?? group.anchor!;
     const dynamicValues = resolveDynamicValues(
       group.bonus,
       build,
-      sources[0].slotId,
+      anchor.slotId,
     );
-    const result = evaluateBonus(group.bonus, ctx, explain, dynamicValues);
+    const result = evaluateBonus(group.bonus, ctx, explain, dynamicValues, {
+      hasSources: sources.length > 0,
+    });
 
     let stacks = 1;
     if (group.bonus.stacking === "perSource") {
@@ -527,9 +600,9 @@ export function resolve(
     return {
       id: group.id,
       bonus: group.bonus,
-      bonusId: sources[0].bonusId,
+      bonusId: anchor.bonusId,
       sources: sources.map((s) => s.source),
-      slotId: sources[0].slotId, // instancing slot, used for stat attribution
+      slotId: anchor.slotId, // instancing slot, used for stat attribution
       active: result.active,
       gate: result.gate,
       chose: result.chose,
