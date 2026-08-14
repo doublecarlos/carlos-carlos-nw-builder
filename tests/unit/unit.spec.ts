@@ -865,6 +865,111 @@ describe("a bonus reachable only through a currently-zero occurrence count (#255
   });
 });
 
+// Unlike every fixture above (a self-referential `bonusOccurrences` gate, which naturally
+// fails at 0 real occurrences on its own), this grant has no `when` at all -- e.g. Shattered
+// Resolve's flat per-stack payload. Without `evaluateBonus` also forcing the grant's own
+// `.active` false, it stays `true` on its own and gets multiplied by `entry.stacks` (0 while
+// inactive) instead of falling through to the near-miss preview -- showing 0 instead of what
+// one stack would actually give.
+describe("an unconditional stacking grant reachable only through a currently-zero count", () => {
+  const schema: Schema = {
+    stats: [],
+    statByKey: {},
+    statKeys: ["power_p"],
+    multiplicativeStats: [],
+    ratingStats: [],
+    abilityStats: [],
+    ratingConversion: [],
+    abilityContributions: [],
+    forteSplit: {},
+    roles: { dps: { label: "dps", hpBonus: 1, damageBonus: 1 } },
+  };
+
+  const unconditionalStackingBonus: Bonus = {
+    id: "unconditional-stacking-bonus",
+    stacking: "perSource",
+    maxStacks: 5,
+    grants: [{ stats: { power_p: 0.036 } }],
+  };
+  const stackItem: Item = {
+    id: "stack-item",
+    name: "Stack Item",
+    filter: "test_slot",
+    bonuses: [
+      { bonus: "unconditional-stacking-bonus", min: 0, max: 5, default: 5 },
+    ],
+  };
+
+  const slotsData: SlotsData = {
+    sections: [{ id: "test", label: "Test" }],
+    slots: [
+      {
+        id: "slot1",
+        label: "Slot 1",
+        section: "test",
+        type: "item_picker",
+        filter: "test_slot",
+      },
+    ],
+  };
+  const testDb = db.build(
+    [stackItem],
+    [unconditionalStackingBonus],
+    schema,
+    slotsData,
+  );
+
+  function buildWith(
+    occurrenceInputs: Record<string, Record<string, number>>,
+  ): Build {
+    return {
+      id: "b",
+      name: "b",
+      choices: { slot1: "stack-item" },
+      values: {},
+      assignments: {},
+      occurrenceInputs,
+      context: BASE_CONTEXT,
+      compare: { id: "", highlight: false, onlyDiff: false },
+    } as unknown as Build;
+  }
+
+  it("at 0 stacks, both the bonus and its own (only) grant read inactive", () => {
+    const result = engine.resolveBuild(
+      testDb,
+      buildWith({ "stack-item": { "unconditional-stacking-bonus": 0 } }),
+    );
+    const entry = result.bonuses.find(
+      (b) => b.id === "unconditional-stacking-bonus",
+    );
+    expect(entry?.active).toBe(false);
+    expect(entry?.grants?.[0]?.active).toBe(false);
+    expect(entry?.grants?.[0]?.stats).toBeNull();
+  });
+
+  it("at 0 stacks, the preview is what one stack would give, not zero", () => {
+    const result = engine.resolveBuild(
+      testDb,
+      buildWith({ "stack-item": { "unconditional-stacking-bonus": 0 } }),
+    );
+    const entry = result.bonuses.find(
+      (b) => b.id === "unconditional-stacking-bonus",
+    );
+    expect(entry?.previewStats?.power_p).toBeCloseTo(0.036, 9);
+  });
+
+  it("at 5 stacks, the bonus and its grant are both active with the totaled stats", () => {
+    const result = engine.resolveBuild(testDb, buildWith({}));
+    const entry = result.bonuses.find(
+      (b) => b.id === "unconditional-stacking-bonus",
+    );
+    expect(entry?.active).toBe(true);
+    expect(entry?.grants?.[0]?.active).toBe(true);
+    expect(entry?.stacks).toBe(5);
+    expect(entry?.appliedStats?.power_p).toBeCloseTo(5 * 0.036, 9);
+  });
+});
+
 // Per-item boolean occurrence attachments, formerly "procs" (#222): a `min:0,max:1`
 // BonusOccurrenceConfig attached to an item gates that same bonus's own grant via a
 // self-referential `bonusOccurrences: { bonus: <own id>, atLeast: 1 }` condition, reading

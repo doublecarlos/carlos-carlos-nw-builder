@@ -256,21 +256,29 @@ function previewStatsFor(raw: Grant): StatValues | null {
 
 function grantRows(entry: EvaluatedBonus) {
   const stacks = entry.stacks ?? 1;
-  return (entry.grants ?? []).map((grant, index) => ({
-    key: index,
-    label: grantLabel(grant, index),
-    active: grant.active,
-    unmet: grant.gate?.unmet ?? [],
-    problem: grant.problem,
-    tiers: tierLadderFor(grant),
-    variants: variantLadderFor(grant),
-    stats:
-      grant.active && grant.stats
-        ? statList(grant.stats, stacks)
-        : previewStatsFor(grant.raw)
-          ? statList(previewStatsFor(grant.raw))
-          : null,
-  }));
+  // A `perSource`-stacking bonus's preview (no active stack to total up) is what *one* stack
+  // would grant, not a flat always-on number -- label it as such so it doesn't read like the
+  // bonus already grants this regardless of stack count.
+  const stacking = entry.bonus?.stacking === "perSource";
+  return (entry.grants ?? []).map((grant, index) => {
+    const preview = grant.active ? null : previewStatsFor(grant.raw);
+    return {
+      key: index,
+      label: grantLabel(grant, index),
+      active: grant.active,
+      unmet: grant.gate?.unmet ?? [],
+      problem: grant.problem,
+      tiers: tierLadderFor(grant),
+      variants: variantLadderFor(grant),
+      eachStack: stacking && preview != null,
+      stats:
+        grant.active && grant.stats
+          ? statList(grant.stats, stacks)
+          : preview
+            ? statList(preview)
+            : null,
+    };
+  });
 }
 
 const rows = computed(() =>
@@ -496,6 +504,12 @@ const rows = computed(() =>
                     class="text-sm leading-snug text-muted"
                   >
                     total, from {{ row.stacks }} stacking sources
+                  </div>
+                  <div
+                    v-if="g.eachStack"
+                    class="text-sm leading-snug text-muted"
+                  >
+                    each stack would give:
                   </div>
                   <div
                     v-for="s in g.stats"

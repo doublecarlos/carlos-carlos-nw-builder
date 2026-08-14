@@ -415,3 +415,114 @@ test.describe("per-item boolean toggle, formerly proc (#222)", () => {
     await expect(row).toContainText("Power");
   });
 });
+
+// A `stacking: "perSource"` bonus with an unconditional grant (no `when` at all -- e.g. the
+// shipped "Shattered Resolve Stacks") has nothing to naturally fail its own gate at 0 real
+// occurrences, unlike every other config in this file's self-referential `bonusOccurrences`
+// gate. At 0 stacks its preview must read as what *one* stack would give, muted, not as a flat
+// (and previously wrong: multiplied by 0 stacks) number.
+const STACKING_BONUS_ID = "test-stacking-bonus";
+const STACKING_RING_ID = "test-stacking-ring";
+
+test.describe("a simple perSource-stacking bonus's zero-stack preview", () => {
+  test("reads as what one stack would give, muted", async ({ page }) => {
+    await openBuilder(page);
+    await importText(
+      page,
+      JSON.stringify({
+        name: "Stacking preview test",
+        choices: { [RING_SLOT]: STACKING_RING_ID },
+        catalog: {
+          items: {
+            [STACKING_RING_ID]: {
+              id: STACKING_RING_ID,
+              name: "Test Stacking Ring",
+              filter: "gear_ring",
+              bonuses: [
+                {
+                  bonus: STACKING_BONUS_ID,
+                  min: 0,
+                  max: 5,
+                  default: 0,
+                  label: "Stacks",
+                },
+              ],
+            },
+          },
+          bonuses: {
+            [STACKING_BONUS_ID]: {
+              id: STACKING_BONUS_ID,
+              name: "Test Stacking Bonus",
+              stacking: "perSource",
+              maxStacks: 5,
+              grants: [{ stats: { power: 20 } }],
+            },
+          },
+          sectionPresets: {},
+        },
+      }),
+    );
+
+    const row = slotRow(page, RING_SLOT);
+    await row.scrollIntoViewIfNeeded();
+    await row.hover();
+    const card = page.locator(".fixed.z-40");
+    await expect(card).toContainText("Test Stacking Bonus");
+    await expect(card).toContainText("Stacks: 0 on this item");
+    await expect(card).toContainText("each stack would give:");
+    // The raw per-stack value (20), not 0 (5 stacks × 0) and not a total.
+    await expect(card).toContainText("Power+20");
+  });
+
+  test("once stacks are set, shows the totaled, unmuted value instead", async ({
+    page,
+  }) => {
+    await openBuilder(page);
+    await importText(
+      page,
+      JSON.stringify({
+        name: "Stacking preview test",
+        choices: { [RING_SLOT]: STACKING_RING_ID },
+        occurrenceInputs: { [STACKING_RING_ID]: { [STACKING_BONUS_ID]: 3 } },
+        catalog: {
+          items: {
+            [STACKING_RING_ID]: {
+              id: STACKING_RING_ID,
+              name: "Test Stacking Ring",
+              filter: "gear_ring",
+              bonuses: [
+                {
+                  bonus: STACKING_BONUS_ID,
+                  min: 0,
+                  max: 5,
+                  default: 0,
+                  label: "Stacks",
+                },
+              ],
+            },
+          },
+          bonuses: {
+            [STACKING_BONUS_ID]: {
+              id: STACKING_BONUS_ID,
+              name: "Test Stacking Bonus",
+              stacking: "perSource",
+              maxStacks: 5,
+              grants: [{ stats: { power: 20 } }],
+            },
+          },
+          sectionPresets: {},
+        },
+      }),
+    );
+
+    const row = slotRow(page, RING_SLOT);
+    await row.scrollIntoViewIfNeeded();
+    await row.hover();
+    const card = page.locator(".fixed.z-40");
+    await expect(card).toContainText("Test Stacking Bonus");
+    await expect(card).toContainText("total, from 3 stacking sources");
+    await expect(card).not.toContainText("each stack would give:");
+    // 3 stacks × 20 = 60, the totaled (not per-stack) value.
+    await expect(card).toContainText("Power+60");
+  });
+});

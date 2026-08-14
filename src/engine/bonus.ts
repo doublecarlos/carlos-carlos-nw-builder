@@ -446,15 +446,20 @@ export function evaluateBonus(
   dynamicValues: Record<string, number> = {},
   { hasSources = true }: { hasSources?: boolean } = {},
 ): BonusEvaluation {
-  const results = (bonus.grants ?? []).map((grant) => ({
+  const evaluated = (bonus.grants ?? []).map((grant) => ({
     raw: grant,
     ...evaluateGrant(grant, ctx, explain, dynamicValues),
   }));
-  // `hasSources: false` (resolve()'s zero-sources group) forces this bonus inactive regardless
-  // of what an individual grant's own `when` resolves to -- there is nothing occurring to grant
-  // it for. Every grant is still evaluated above so the near-miss branch below has real
-  // gate/unmet data to show.
-  const activeResults = hasSources ? results.filter((r) => r.active) : [];
+  // `hasSources: false` (resolve()'s zero-sources group) forces every grant inactive regardless
+  // of what its own `when` resolves to -- there is nothing occurring to grant it for. Not just
+  // the bonus-level `active` below: an unconditional grant (no `when` at all, e.g. Shattered
+  // Resolve's flat per-stack payload) would otherwise stay `active: true` on its own, and some
+  // consumers (ItemCard.vue, useDynamicStats.ts) read each grant's own `.active` directly rather
+  // than the bonus-level one. `gate`/`raw` stay real either way, for the near-miss branch.
+  const results = hasSources
+    ? evaluated
+    : evaluated.map((r) => ({ ...r, active: false, stats: null, chose: null }));
+  const activeResults = results.filter((r) => r.active);
   const active = activeResults.length > 0;
 
   const stats: Record<string, number> = {};
