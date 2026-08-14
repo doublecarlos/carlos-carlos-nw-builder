@@ -16,6 +16,7 @@ You are **required** to:
 - Run `npm run fix` to perform formatting and linting
 - Run `npm run typecheck` to perform typechecking
 - Run `npm run test` and `npm run test:ui` to run the tests
+- Check if code comments follow the practices outlined below
 
 # Do not
 
