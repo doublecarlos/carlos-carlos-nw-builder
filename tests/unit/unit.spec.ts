@@ -553,6 +553,116 @@ describe("point_assignment resolution", () => {
   });
 });
 
+// A point_assignment item at 0 points is now reachable (an anchor, same as #255's item_picker
+// case) rather than skipped entirely -- but reachable must not mean "resolved for real": a
+// checked-but-inactive typed config (e.g. a proc checkbox left on from a previous count) must
+// not leak through as a real occurrence just because the item itself is still walked for
+// reachability. A synthetic db mirrors the shipped "Deathly Rage" shape: a bare-id bonus gated
+// on a sibling BonusOccurrenceConfig attachment on the same item.
+describe("a point_assignment item's own config stays 0 while the item itself is at 0 points", () => {
+  const schema: Schema = {
+    stats: [],
+    statByKey: {},
+    statKeys: ["power_p"],
+    multiplicativeStats: [],
+    ratingStats: [],
+    abilityStats: [],
+    ratingConversion: [],
+    abilityContributions: [],
+    forteSplit: {},
+    roles: { dps: { label: "dps", hpBonus: 1, damageBonus: 1 } },
+  };
+
+  const procBonus: Bonus = { id: "boon-master-proc", grants: [] };
+  const statsBonus: Bonus = {
+    id: "boon-master-stats",
+    grants: [
+      {
+        when: { bonusOccurrences: { bonus: "boon-master-proc", exactly: 1 } },
+        stats: { power_p: 0.1 },
+      },
+    ],
+  };
+  const masterItem: Item = {
+    id: "boon-master",
+    name: "Boon Master",
+    filter: "test_boon_master",
+    bonuses: [
+      "boon-master-stats",
+      { bonus: "boon-master-proc", min: 0, max: 1, default: 0, label: "proc" },
+    ],
+    inlineRepetition: { min: 0, max: 3, default: 0 },
+  };
+
+  const pointSlot: PointAssignmentSlot = {
+    id: "boons.master",
+    label: "Master boons",
+    section: "boons",
+    type: "point_assignment",
+    filter: "test_boon_master",
+  };
+  const slotsData: SlotsData = {
+    sections: [{ id: "boons", label: "Boons" }],
+    slots: [pointSlot],
+  };
+  const testDb = db.build(
+    [masterItem],
+    [procBonus, statsBonus],
+    schema,
+    slotsData,
+  );
+
+  function buildWith(
+    counts: Record<string, number>,
+    occurrenceInputs: Record<string, Record<string, number>> = {},
+  ): Build {
+    return {
+      id: "b",
+      name: "b",
+      choices: {},
+      values: {},
+      assignments: { "boons.master": counts },
+      occurrenceInputs,
+      context: BASE_CONTEXT,
+      compare: { id: "", highlight: false, onlyDiff: false },
+    } as unknown as Build;
+  }
+
+  it("a checked proc doesn't activate the stats bonus while the item has 0 points", () => {
+    const result = engine.resolveBuild(
+      testDb,
+      buildWith({}, { "boon-master": { "boon-master-proc": 1 } }),
+    );
+    const entry = result.bonuses.find((b) => b.id === "boon-master-stats");
+    expect(entry?.active).toBe(false);
+    expect(entry?.gate?.unmet?.[0]?.detail).toBe("you have 0");
+    expect(result.stages.sums.power_p).toBe(0);
+  });
+
+  it("still reaches the resolved list, inactive with no sources, rather than vanishing", () => {
+    const result = engine.resolveBuild(
+      testDb,
+      buildWith({}, { "boon-master": { "boon-master-proc": 1 } }),
+    );
+    const entry = result.bonuses.find((b) => b.id === "boon-master-stats");
+    expect(entry).toBeDefined();
+    expect(entry?.sources).toEqual([]);
+  });
+
+  it("once real points are spent, the same checked proc activates it for real", () => {
+    const result = engine.resolveBuild(
+      testDb,
+      buildWith(
+        { "boon-master": 1 },
+        { "boon-master": { "boon-master-proc": 1 } },
+      ),
+    );
+    const entry = result.bonuses.find((b) => b.id === "boon-master-stats");
+    expect(entry?.active).toBe(true);
+    expect(result.stages.sums.power_p).toBeCloseTo(0.1, 9);
+  });
+});
+
 // BonusOccurrenceConfig (#217): an item_picker item can attach a typed, player-set occurrence
 // count for one bonus instead of the fixed "1 occurrence per equip" a bare bonus id always
 // means -- e.g. one item standing in for 1-5 stacks of a set bonus, or an item with both an

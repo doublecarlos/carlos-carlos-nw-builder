@@ -201,18 +201,19 @@ test.describe("point_assignment hover card", () => {
   });
 });
 
-// collect() (bonus.ts's collectInlineRepetition) skips a point_assignment candidate entirely
-// while it has 0 points spent, so a real resolve has nothing to show for its bonuses -- even
-// though hovering an unselected candidate to preview it is supported (see
-// BuildEditor.vue's `itemForHover`). The hover card falls back to a hypothetical resolve (one
-// point spent, same "swap in this one candidate" pattern ItemPicker.vue's own dropdown preview
-// already uses) so a candidate's bonuses -- and their own zero-valued occurrence notes -- still
-// show before any points are actually spent on it.
+// bonus.ts's collectInlineRepetition walks every point_assignment candidate for reachability
+// regardless of its own count, same as an item_picker item's zero-valued BonusOccurrenceConfig
+// already does -- so hovering an unselected candidate (0 points spent) still shows its bonuses,
+// inactive with their own zero-occurrence notes, instead of nothing at all.
 test.describe("point_assignment hover card for an unselected candidate", () => {
   const DIAL_ITEM_ID = "test-tier1-dial-item";
   const DIAL_BONUS_ID = "test-tier1-dial-bonus";
+  // Mirrors the shipped "Deathly Rage" shape: a bare-id bonus gated on a sibling
+  // BonusOccurrenceConfig attachment on the same item.
+  const PROC_BONUS_ID = "test-tier1-proc-bonus";
+  const STATS_BONUS_ID = "test-tier1-stats-bonus";
 
-  async function importDialBoon(page: Page) {
+  async function importBoons(page: Page) {
     const fileInput = page
       .getByTestId("app-header")
       .locator('input[type="file"]');
@@ -239,12 +240,45 @@ test.describe("point_assignment hover card for an unselected candidate", () => {
                   },
                 ],
               },
+              "test-tier1-master-item": {
+                id: "test-tier1-master-item",
+                name: "Test Master Boon",
+                filter: "boon_tier1",
+                inlineRepetition: { min: 0, max: 3, default: 0 },
+                bonuses: [
+                  STATS_BONUS_ID,
+                  {
+                    bonus: PROC_BONUS_ID,
+                    min: 0,
+                    max: 1,
+                    default: 0,
+                    label: "proc",
+                  },
+                ],
+              },
             },
             bonuses: {
               [DIAL_BONUS_ID]: {
                 id: DIAL_BONUS_ID,
                 name: "Test Dial Bonus",
                 grants: [{ stats: { power: 5 } }],
+              },
+              [PROC_BONUS_ID]: {
+                id: PROC_BONUS_ID,
+                name: "Test Proc",
+                grants: [],
+              },
+              [STATS_BONUS_ID]: {
+                id: STATS_BONUS_ID,
+                name: "Test Master Stats",
+                grants: [
+                  {
+                    when: {
+                      bonusOccurrences: { bonus: PROC_BONUS_ID, exactly: 1 },
+                    },
+                    stats: { power: 100 },
+                  },
+                ],
               },
             },
             sectionPresets: {},
@@ -260,7 +294,7 @@ test.describe("point_assignment hover card for an unselected candidate", () => {
     page,
   }) => {
     await openBuilder(page);
-    await importDialBoon(page);
+    await importBoons(page);
 
     const row = slotRow(page, SLOT_ID);
     await row.scrollIntoViewIfNeeded();
@@ -277,11 +311,11 @@ test.describe("point_assignment hover card for an unselected candidate", () => {
     ).toContainText("Proc: off on this item");
   });
 
-  test("once points are actually spent, the card shows the real (active) resolve, not the hypothetical one", async ({
+  test("once points are actually spent, its own config still independently gates the bonus", async ({
     page,
   }) => {
     await openBuilder(page);
-    await importDialBoon(page);
+    await importBoons(page);
 
     const row = slotRow(page, SLOT_ID);
     await row.scrollIntoViewIfNeeded();
@@ -296,6 +330,39 @@ test.describe("point_assignment hover card for an unselected candidate", () => {
     await expect(
       card.getByTestId("item-card-bonus-zero-occurrence"),
     ).toContainText("Proc: off on this item");
+  });
+
+  test("a checked proc left over from before doesn't falsely activate its bonus while the item is at 0 points", async ({
+    page,
+  }) => {
+    await openBuilder(page);
+    await importBoons(page);
+
+    const row = slotRow(page, SLOT_ID);
+    await row.scrollIntoViewIfNeeded();
+    // A point_assignment item's own occurrence checkbox/stepper testids are keyed by item id
+    // *and* bonus id (PointAssignmentInput.vue) -- an item_picker row's own `occurrenceCheckbox`
+    // helper only keys by bonus id, since a picker row has just the one item.
+    await row
+      .getByTestId(
+        `assignment-occurrence-toggle-test-tier1-master-item-${PROC_BONUS_ID}`,
+      )
+      .locator("input")
+      .check();
+    // The checkbox keeps real focus after `.check()`, which useHoverCard.ts's own
+    // onFocusIn/onFocusOut treats as "editing" and suppresses the next hover for -- blur it
+    // explicitly rather than just moving the pointer away.
+    await page.keyboard.press("Escape");
+    await row.locator(".slot-label").click();
+
+    await assignmentLabel(row, "test-tier1-master-item").hover();
+    const card = page.locator(".fixed.z-40");
+    await expect(card).toContainText("Test Master Stats");
+    // Reads inactive, with the real "you have 0" reason -- not as if the checked proc made it
+    // active, and not multiplied down to a wrong "0" preview either.
+    await expect(card).toContainText("needs 1 occurrence(s) of Test Proc");
+    await expect(card).toContainText("you have 0");
+    await expect(card.locator(".bg-ok")).toHaveCount(0);
   });
 });
 

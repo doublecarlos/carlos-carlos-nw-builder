@@ -22,7 +22,6 @@ import { abbr, signedStat, statPickerOptions } from "../lib/format";
 import { matchesQuery } from "../lib/text-filter";
 import { useHoverCard } from "../composables/useHoverCard";
 import { occurrenceRowsForItem } from "../composables/useItemBonusOccurrences";
-import { resolveBuild } from "../engine/engine";
 import {
   useCompareDiff,
   paramDiffers,
@@ -202,48 +201,20 @@ const hoveredItem = computed(() =>
 );
 
 /**
- * A point_assignment candidate at 0 points is skipped entirely by `collect()` (bonus.ts's
- * `collectInlineRepetition`), so the real build has nothing to preview for it -- not even an
- * inactive entry. Hovering it anyway is a supported preview (`itemForHover`'s own comment), so
- * it gets its own hypothetical resolve here, the same "swap in this one candidate" pattern
- * ItemPicker.vue's `previewBonusStats` already uses for its own dropdown. `null` (the common
- * case) whenever the real build already covers it.
- */
-const hoveredHypotheticalBonusById = computed(() => {
-  const h = hover.value;
-  const item = hoveredItem.value;
-  if (!h?.itemId || !item) return null;
-  const slot = db.value.slotById.get(h.slotId);
-  if (slot?.type !== "point_assignment") return null;
-  const current =
-    build.value.assignments?.[h.slotId]?.[h.itemId] ??
-    item.inlineRepetition?.default ??
-    0;
-  if (current > 0) return null;
-  const hypothetical = {
-    ...build.value,
-    assignments: {
-      ...build.value.assignments,
-      [h.slotId]: { ...build.value.assignments?.[h.slotId], [h.itemId]: 1 },
-    },
-  };
-  const hypotheticalResult = resolveBuild(db.value, hypothetical);
-  return new Map(hypotheticalResult.bonuses.map((bonus) => [bonus.id, bonus]));
-});
-
-/**
  * Every bonus the hovered item takes part in -- its own inline ones and its sets'.
  * Not `bonuses.filter(b => b.slotId === …)`: a set bonus is attributed to the single
- * slotDef that instanced it, so the other items in the set would show nothing.
+ * slotDef that instanced it, so the other items in the set would show nothing. A
+ * point_assignment candidate at 0 points still has a (reachable, inactive) entry here --
+ * `collect()`'s `collectAttachments` walks every candidate in the slot regardless of its own
+ * count, not just the ones with points spent (bonus.ts's own comment on why).
  */
 const hoveredBonuses = computed(() => {
   const item = hoveredItem.value;
   if (!item) return [];
-  const byId = hoveredHypotheticalBonusById.value ?? bonusById.value;
   const seen = new Set<string>();
   const out: EvaluatedBonus[] = [];
   for (const entry of db.value.bonusesFor(item)) {
-    const resolved = byId.get(entry.bonus.id);
+    const resolved = bonusById.value.get(entry.bonus.id);
     if (resolved && !seen.has(resolved.id)) {
       seen.add(resolved.id);
       out.push(resolved);

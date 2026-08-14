@@ -51,14 +51,21 @@ interface Candidate extends BonusCandidate {
  * item_picker/build_parameter branch and `collectInlineRepetition`'s point_assignment items,
  * the only difference being what `repetitions` (a bare-id attachment's count) resolves to.
  *
- * A typed (`BonusOccurrenceConfig`) attachment currently resolved to 0 occurrences has no real
- * candidate to push -- but dropping it silently leaves its bonus completely unreachable in
- * `resolve()`'s evaluate pass whenever nothing else contributes it either, so a hover
- * card/inspector can't tell "typed to 0" apart from "doesn't carry this bonus at all" (#255). An
- * anchor-only entry goes to `zeroCandidates` instead, just to make the bonus reachable -- it is
- * never counted as a source (stacking, attribution), only used as a fallback slot/order to
- * resolve against when a bonus has no real source anywhere. A bare-id attachment's count is
- * always `repetitions` (>= 1 by the time either caller reaches this point), so it never needs one.
+ * `repetitions === 0` means the *item itself* has zero real occurrences right now -- a
+ * point_assignment candidate with nothing spent on it, still walked so its bonuses stay
+ * reachable for a hover/inspector preview (see below), not actually "in" the build. Every
+ * attachment reads as 0 then, including a typed (`BonusOccurrenceConfig`) one's own stored
+ * value -- there's nothing here to independently resolve one against. The item_picker/
+ * build_parameter caller never passes 0 (an unchosen candidate is never walked at all), so this
+ * only ever applies to `collectInlineRepetition`'s own items.
+ *
+ * Either way, a 0-count attachment has no real candidate to push -- but dropping it silently
+ * leaves its bonus completely unreachable in `resolve()`'s evaluate pass whenever nothing else
+ * contributes it either, so a hover card/inspector can't tell "typed to 0" (or "0 points spent")
+ * apart from "doesn't carry this bonus at all" (#255). An anchor-only entry goes to
+ * `zeroCandidates` instead, just to make the bonus reachable -- it is never counted as a source
+ * (stacking, attribution), only used as a fallback slot/order to resolve against when a bonus
+ * has no real source anywhere.
  */
 function collectAttachments(
   item: Item,
@@ -77,20 +84,14 @@ function collectAttachments(
     const bonus = bonusById.get(bonusId);
     if (!bonus) continue;
     const count =
-      typeof attachment === "string"
-        ? repetitions
-        : occurrenceCountFor(attachment, itemInputs);
+      repetitions === 0
+        ? 0
+        : typeof attachment === "string"
+          ? repetitions
+          : occurrenceCountFor(attachment, itemInputs);
     bump(bonusOccurrences, bonusId, count);
     if (count === 0) {
-      if (typeof attachment !== "string") {
-        zeroCandidates.push({
-          bonus,
-          bonusId,
-          source: item.name,
-          slotId,
-          order,
-        });
-      }
+      zeroCandidates.push({ bonus, bonusId, source: item.name, slotId, order });
       continue;
     }
     for (let i = 0; i < count; i++) {
@@ -133,15 +134,21 @@ function collectInlineRepetition(
 
   for (const item of db.forSlot(slot.id)) {
     const count = counts[item.id] ?? item.inlineRepetition!.default;
-    if (count <= 0) continue;
 
-    bump(equipped, item.id, count);
-    for (const tag of item.tags ?? []) bump(tags, tag, count);
+    // At 0 points the item contributes no stats/tags of its own -- only its bonus attachments
+    // still need walking, for reachability (see collectAttachments's own doc comment).
+    if (count > 0) {
+      bump(equipped, item.id, count);
+      for (const tag of item.tags ?? []) bump(tags, tag, count);
 
-    for (const key of db.schema.statKeys) {
-      const raw = item[key];
-      if (!raw) continue;
-      statBucket.set(key, (statBucket.get(key) ?? 0) + (raw as number) * count);
+      for (const key of db.schema.statKeys) {
+        const raw = item[key];
+        if (!raw) continue;
+        statBucket.set(
+          key,
+          (statBucket.get(key) ?? 0) + (raw as number) * count,
+        );
+      }
     }
 
     collectAttachments(
