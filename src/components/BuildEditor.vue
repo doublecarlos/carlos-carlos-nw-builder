@@ -4,7 +4,7 @@
 // Sections start collapsed except Gear. That keeps the mounted DOM at ~15 rows
 // on load; expanding everything is ~180 rows, which the browser handles fine -- only one
 // dropdown is ever open, and that is where the per-row cost actually lives. No virtualisation.
-import { computed, reactive, ref, watch, useTemplateRef } from "vue";
+import { computed, reactive, ref, watch, useTemplateRef, nextTick } from "vue";
 import { useActiveElement } from "@vueuse/core";
 import ItemCard from "./game/ItemCard.vue";
 import BasePopover from "./ui/BasePopover.vue";
@@ -15,6 +15,7 @@ import TextRow from "./game/TextRow.vue";
 import BaseButton from "./ui/BaseButton.vue";
 import BaseBadge from "./ui/BaseBadge.vue";
 import ComboBox from "./ui/ComboBox.vue";
+import QuickOptions from "./game/QuickOptions.vue";
 import { ChevronsDownUp, ChevronsUpDown, FilterX } from "@lucide/vue";
 import { NW_SCHEMA, NW_SLOTS } from "../data/data";
 import { forSlotAndBuild } from "../data/db";
@@ -37,6 +38,7 @@ import * as builds from "../stores/builds";
 import * as buildEditor from "../stores/buildEditor";
 import * as compare from "../stores/compare";
 import * as engine from "../stores/resolved";
+import * as editorScroll from "../stores/editorScroll";
 import * as selection from "../stores/selection";
 import * as layers from "../stores/layers";
 import { isMac } from "../lib/platform";
@@ -55,6 +57,8 @@ const tooltip = ref<InstanceType<typeof BasePopover> | null>(null);
 
 const db = engine.db;
 const build = builds.build;
+const resolved = engine.resolved;
+
 // Only ever mounted when `engine.resolved.value.ok` -- the throw documents that invariant
 // instead of a defensive fallback for a state that can't happen.
 const result = computed(() => {
@@ -497,146 +501,195 @@ function moveCursor(dir: 1 | -1) {
 function onFocusIn(event: FocusEvent) {
   onHoverFocusIn(event);
 }
+
+// --- build editor scroll position ------------------------------------------------------
+// Selecting a layer unmounts this element (the layer editor takes over columns 2-3), so
+// restoring scrollTop on mount is what makes switching back to the build feel like it never
+// left, instead of snapping back to the top of the list.
+const buildScrollEl = useTemplateRef<HTMLElement>("buildScrollEl");
+
+watch(buildScrollEl, async (el) => {
+  if (!el) return;
+  await nextTick();
+  el.scrollTop = editorScroll.buildScrollTop.value;
+});
+
+function onBuildScroll(event: Event) {
+  editorScroll.buildScrollTop.value = (event.target as HTMLElement).scrollTop;
+}
 </script>
 
 <template>
-  <section
-    ref="root"
-    class="flex flex-col gap-1.5"
-    data-testid="builder-content"
-    @focusin="onFocusIn"
-    @focusout="onFocusOut"
-  >
-    <div class="flex flex-wrap items-center gap-1.5">
-      <BaseButton @click="setAll(true)"
-        ><ChevronsUpDown />expand all</BaseButton
-      >
-      <BaseButton @click="setAll(false)"
-        ><ChevronsDownUp />collapse all</BaseButton
-      >
-      <input
-        v-model="filterText"
-        type="search"
-        data-testid="slot-filter-text"
-        class="slot-filter-text min-w-40 rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-        :placeholder="`Filter slots… (${modKey}+/)`"
-      />
-      <ComboBox
-        class="w-52"
-        data-testid="slot-filter-stat"
-        :options="statFilterOptions"
-        :model-value="filterStat"
-        @update:model-value="(v) => (filterStat = v)"
-      />
-      <BaseButton
-        :disabled="!filterActive"
-        data-testid="slot-filter-clear"
-        @click="clearFilters"
-        ><FilterX />clear filters</BaseButton
-      >
-      <BaseBadge
-        v-if="filterActive"
-        variant="near"
-        data-testid="slot-filter-count"
-        >{{ filteredSlotCount }} match{{
-          filteredSlotCount === 1 ? "" : "es"
-        }}</BaseBadge
-      >
-      <span class="flex-1"></span>
-      <span class="text-sm text-muted"
-        >{{ isMac ? "Cmd" : "Ctrl" }}+click a filled slot to edit in a
-        layer</span
-      >
+  <div class="flex min-w-0 flex-1 flex-col min-h-0">
+    <div
+      class="sticky top-0 z-10 flex flex-col flex-wrap gap-3 border-b border-line bg-surface px-3.5 py-2"
+    >
+      <QuickOptions class="flex-1" />
+      <div class="flex flex-wrap items-center gap-1.5">
+        <BaseButton @click="setAll(true)"
+          ><ChevronsUpDown />expand all</BaseButton
+        >
+        <BaseButton @click="setAll(false)"
+          ><ChevronsDownUp />collapse all</BaseButton
+        >
+        <input
+          v-model="filterText"
+          type="search"
+          data-testid="slot-filter-text"
+          class="slot-filter-text min-w-40 rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+          :placeholder="`Filter slots… (${modKey}+/)`"
+        />
+        <ComboBox
+          class="w-52"
+          data-testid="slot-filter-stat"
+          :options="statFilterOptions"
+          :model-value="filterStat"
+          @update:model-value="(v) => (filterStat = v)"
+        />
+        <BaseButton
+          :disabled="!filterActive"
+          data-testid="slot-filter-clear"
+          @click="clearFilters"
+          ><FilterX />clear filters</BaseButton
+        >
+        <BaseBadge
+          v-if="filterActive"
+          variant="near"
+          data-testid="slot-filter-count"
+          >{{ filteredSlotCount }} match{{
+            filteredSlotCount === 1 ? "" : "es"
+          }}</BaseBadge
+        >
+        <span class="flex-1"></span>
+        <span class="text-sm text-muted"
+          >{{ isMac ? "Cmd" : "Ctrl" }}+click a filled slot to edit in a
+          layer</span
+        >
+      </div>
     </div>
 
-    <BuildSection
-      v-for="section in sections"
-      :id="section.id"
-      :key="section.id"
-      :label="section.label"
-      :slots="section.slots"
-      :filled="section.filled"
-      :total="section.total"
-      :errors="section.errors"
-      :warnings="section.warnings"
-      :diffs="section.diffs"
-      :expanded="sectionExpanded(section.id)"
-      :on-arrow="moveCursor"
-      :highlight-diff="highlightDiff"
-      :other-builds="otherBuilds"
-      :presets="section.presets"
-      @toggle="toggle(section.id)"
-      @copy="(fromId) => buildEditor.copySection(fromId, [section.id])"
-      @apply-preset="(preset) => buildEditor.applyPreset(preset)"
-      @clear="buildEditor.clearSection(section.id, section.label)"
+    <!-- Engine error -->
+    <main
+      v-if="!resolved.ok"
+      class="flex-1 min-h-0 overflow-y-auto p-6 text-danger"
     >
-      <template #default="{ slotDef }: { slotDef: Slot }">
-        <SeparatorRow v-if="slotDef.type === 'separator'" :slot-def="slotDef" />
-        <TextRow v-else-if="slotDef.type === 'text'" :slot-def="slotDef" />
-        <BuildSlot
-          v-else
-          :slot-def="slotDef"
-          :build="build"
-          :db="db"
-          :compare-build="compareBuild"
-          :highlight-diff="highlightDiff"
-          :is-hovered="hover?.slotId === slotDef.id"
-          :no-border="noBorderIds.has(slotDef.id)"
-          :on-arrow="moveCursor"
-          :item="itemIn(slotDef.id)"
-          :items="itemsFor(slotDef.id)"
-          :errors="errorsFor(slotDef.id)"
-          :stat-summary="statSummary(slotDef.id)"
-          :choice-differs="differs(slotDef.id)"
-          :other-choice-label="otherChoiceLabel(slotDef.id)"
-          :bonus-diffs="rowDiff(slotDef.id)?.bonuses"
-          :value-diffs="rowDiff(slotDef.id)?.values ?? []"
-          :occurrence-differs="
-            occurrenceDiffers(itemIn(slotDef.id), build, compareBuild)
-          "
-          :other-occurrence-label="
-            occurrenceDiffTitle(db, itemIn(slotDef.id), compareBuild)
-          "
-          :param-differs="
-            slotDef.type === 'build_parameter'
-              ? paramDiffers(build, compareBuild, slotDef)
-              : false
-          "
-          :other-param-label="
-            slotDef.type === 'build_parameter'
-              ? paramDiffTitle(compareBuild, slotDef)
-              : undefined
-          "
-          :assignment-differs="
-            slotDef.type === 'point_assignment'
-              ? assignmentDiffers(db, build, compareBuild, slotDef)
-              : false
-          "
-          :other-assignment-label="
-            slotDef.type === 'point_assignment'
-              ? assignmentDiffTitle(db, compareBuild, slotDef)
-              : undefined
-          "
-          @enter="(event, itemId) => onRowEnter(event, slotDef.id, itemId)"
-          @leave="onRowLeave"
-          @rowclick="(event, itemId) => onRowClick(event, slotDef.id, itemId)"
-          @add-item="(filter) => onAddItem(filter)"
-        />
-      </template>
-    </BuildSection>
+      <h2 class="text-lg font-semibold">The engine threw</h2>
+      <p>{{ resolved.message }}</p>
+      <pre class="overflow-x-auto rounded-md bg-surface p-3">{{
+        resolved.stack
+      }}</pre>
+    </main>
 
-    <!-- One card for the whole list, moved and refilled on hover. -->
-    <BasePopover ref="tooltip" :width="320">
-      <ItemCard
-        v-if="hover && hoveredItem"
-        :item="hoveredItem"
-        :bonuses="hoveredBonuses"
-        :occurrence-rows="hoveredOccurrenceRows"
-        :db="db"
-        :slot-label="db.slotById.get(hover.slotId)?.label ?? ''"
-        @mouseenter="onCardEnter"
-        @mouseleave="onCardLeave"
-      />
-    </BasePopover>
-  </section>
+    <!-- Build editor -->
+    <main
+      v-else
+      ref="buildScrollEl"
+      class="flex-1 min-h-0 p-3.5 overflow-y-auto"
+      data-testid="editor-column"
+      @scroll="onBuildScroll"
+    >
+      <section
+        ref="root"
+        class="flex flex-col gap-1.5"
+        data-testid="builder-content"
+        @focusin="onFocusIn"
+        @focusout="onFocusOut"
+      >
+        <BuildSection
+          v-for="section in sections"
+          :id="section.id"
+          :key="section.id"
+          :label="section.label"
+          :slots="section.slots"
+          :filled="section.filled"
+          :total="section.total"
+          :errors="section.errors"
+          :warnings="section.warnings"
+          :diffs="section.diffs"
+          :expanded="sectionExpanded(section.id)"
+          :on-arrow="moveCursor"
+          :highlight-diff="highlightDiff"
+          :other-builds="otherBuilds"
+          :presets="section.presets"
+          @toggle="toggle(section.id)"
+          @copy="(fromId) => buildEditor.copySection(fromId, [section.id])"
+          @apply-preset="(preset) => buildEditor.applyPreset(preset)"
+          @clear="buildEditor.clearSection(section.id, section.label)"
+        >
+          <template #default="{ slotDef }: { slotDef: Slot }">
+            <SeparatorRow
+              v-if="slotDef.type === 'separator'"
+              :slot-def="slotDef"
+            />
+            <TextRow v-else-if="slotDef.type === 'text'" :slot-def="slotDef" />
+            <BuildSlot
+              v-else
+              :slot-def="slotDef"
+              :build="build"
+              :db="db"
+              :compare-build="compareBuild"
+              :highlight-diff="highlightDiff"
+              :is-hovered="hover?.slotId === slotDef.id"
+              :no-border="noBorderIds.has(slotDef.id)"
+              :on-arrow="moveCursor"
+              :item="itemIn(slotDef.id)"
+              :items="itemsFor(slotDef.id)"
+              :errors="errorsFor(slotDef.id)"
+              :stat-summary="statSummary(slotDef.id)"
+              :choice-differs="differs(slotDef.id)"
+              :other-choice-label="otherChoiceLabel(slotDef.id)"
+              :bonus-diffs="rowDiff(slotDef.id)?.bonuses"
+              :value-diffs="rowDiff(slotDef.id)?.values ?? []"
+              :occurrence-differs="
+                occurrenceDiffers(itemIn(slotDef.id), build, compareBuild)
+              "
+              :other-occurrence-label="
+                occurrenceDiffTitle(db, itemIn(slotDef.id), compareBuild)
+              "
+              :param-differs="
+                slotDef.type === 'build_parameter'
+                  ? paramDiffers(build, compareBuild, slotDef)
+                  : false
+              "
+              :other-param-label="
+                slotDef.type === 'build_parameter'
+                  ? paramDiffTitle(compareBuild, slotDef)
+                  : undefined
+              "
+              :assignment-differs="
+                slotDef.type === 'point_assignment'
+                  ? assignmentDiffers(db, build, compareBuild, slotDef)
+                  : false
+              "
+              :other-assignment-label="
+                slotDef.type === 'point_assignment'
+                  ? assignmentDiffTitle(db, compareBuild, slotDef)
+                  : undefined
+              "
+              @enter="(event, itemId) => onRowEnter(event, slotDef.id, itemId)"
+              @leave="onRowLeave"
+              @rowclick="
+                (event, itemId) => onRowClick(event, slotDef.id, itemId)
+              "
+              @add-item="(filter) => onAddItem(filter)"
+            />
+          </template>
+        </BuildSection>
+
+        <!-- One card for the whole list, moved and refilled on hover. -->
+        <BasePopover ref="tooltip" :width="320">
+          <ItemCard
+            v-if="hover && hoveredItem"
+            :item="hoveredItem"
+            :bonuses="hoveredBonuses"
+            :occurrence-rows="hoveredOccurrenceRows"
+            :db="db"
+            :slot-label="db.slotById.get(hover.slotId)?.label ?? ''"
+            @mouseenter="onCardEnter"
+            @mouseleave="onCardLeave"
+          />
+        </BasePopover>
+      </section>
+    </main>
+  </div>
 </template>

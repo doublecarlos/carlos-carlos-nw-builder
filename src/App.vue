@@ -3,14 +3,13 @@
 //
 // Layout: header (always visible), then either a loading skeleton, an empty state, or the
 // three-column builder (nav, editor area with sticky header, stat panel).
-import { watch, computed, nextTick, useTemplateRef } from "vue";
+import { watch, computed } from "vue";
 import { useEventListener } from "@vueuse/core";
 import Nav from "./components/Nav.vue";
 import AppHeader from "./components/AppHeader.vue";
 import EmptyState from "./components/EmptyState.vue";
 import BuildEditor from "./components/BuildEditor.vue";
 import BuildDetails from "./components/BuildDetails.vue";
-import QuickOptions from "./components/game/QuickOptions.vue";
 import LayerEditor from "./components/LayerEditor.vue";
 import * as router from "./lib/router";
 import * as engine from "./stores/resolved";
@@ -18,7 +17,6 @@ import * as details from "./stores/details";
 import * as selection from "./stores/selection";
 import * as builds from "./stores/builds";
 import * as layers from "./stores/layers";
-import * as editorScroll from "./stores/editorScroll";
 import { useGlobalShortcuts } from "./composables/useGlobalShortcuts";
 
 const resolved = engine.resolved;
@@ -77,22 +75,6 @@ watch(details.tab, () => syncRoute({ push: false }));
 useEventListener(window, "popstate", onPopState);
 
 syncRoute({ push: false });
-
-// --- build editor scroll position ------------------------------------------------------
-// Selecting a layer unmounts this element (the layer editor takes over columns 2-3), so
-// restoring scrollTop on mount is what makes switching back to the build feel like it never
-// left, instead of snapping back to the top of the list.
-const buildScrollEl = useTemplateRef<HTMLElement>("buildScrollEl");
-
-watch(buildScrollEl, async (el) => {
-  if (!el) return;
-  await nextTick();
-  el.scrollTop = editorScroll.buildScrollTop.value;
-});
-
-function onBuildScroll(event: Event) {
-  editorScroll.buildScrollTop.value = (event.target as HTMLElement).scrollTop;
-}
 </script>
 
 <template>
@@ -124,39 +106,11 @@ function onBuildScroll(event: Event) {
           </div>
         </template>
 
-        <!-- Build selected: sticky header + BuildEditor + StatPanel -->
+        <!-- Build selected: BuildEditor + StatPanel -->
         <template v-else>
           <!-- Column 2: Editor area -->
           <div class="flex min-w-0 flex-1 flex-col">
-            <!-- Sticky editor header -->
-            <div
-              class="sticky top-0 z-10 flex flex-wrap items-center gap-3 border-b border-line bg-surface px-3.5 py-2"
-            >
-              <QuickOptions class="flex-1" />
-            </div>
-
-            <!-- Engine error -->
-            <main
-              v-if="!resolved.ok"
-              class="flex-1 min-h-0 overflow-y-auto p-6 text-danger"
-            >
-              <h2 class="text-lg font-semibold">The engine threw</h2>
-              <p>{{ resolved.message }}</p>
-              <pre class="overflow-x-auto rounded-md bg-surface p-3">{{
-                resolved.stack
-              }}</pre>
-            </main>
-
-            <!-- Build editor -->
-            <main
-              v-else
-              ref="buildScrollEl"
-              class="flex-1 min-h-0 overflow-y-auto p-3.5"
-              data-testid="editor-column"
-              @scroll="onBuildScroll"
-            >
-              <BuildEditor />
-            </main>
+            <BuildEditor />
           </div>
 
           <!-- Column 3: Stat panel -->
