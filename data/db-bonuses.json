@@ -359,7 +359,8 @@
         },
         "problem": {
           "severity": "warning",
-          "message": "Advanced boons need at least 45 points spent on previous boons."
+          "message": "Advanced boons need at least 45 points spent on previous boons.",
+          "label": "Boons"
         }
       }
     ]
@@ -379,7 +380,8 @@
         },
         "problem": {
           "severity": "warning",
-          "message": "Tier 2 boons need at least 10 points spent on previous boons."
+          "message": "Tier 2 boons need at least 10 points spent on previous boons.",
+          "label": "Boons"
         }
       }
     ]
@@ -399,7 +401,8 @@
         },
         "problem": {
           "severity": "warning",
-          "message": "Tier 3 boons need at least 20 points spent on previous boons."
+          "message": "Tier 3 boons need at least 20 points spent on previous boons.",
+          "label": "Boons"
         }
       }
     ]
@@ -419,7 +422,8 @@
         },
         "problem": {
           "severity": "warning",
-          "message": "Tier 4 boons need at least 30 points spent on previous boons."
+          "message": "Tier 4 boons need at least 30 points spent on previous boons.",
+          "label": "Boons"
         }
       }
     ]
@@ -472,6 +476,119 @@
           "acc_p": 0.1,
           "sev_p": 0.03
         }
+      }
+    ]
+  },
+  {
+    "id": "death-s-bulwark-proc",
+    "name": "Death's Bulwark Proc",
+    "grants": []
+  },
+  {
+    "id": "death-s-bulwark-stats",
+    "name": "Death's Bulwark Stats",
+    "grants": [
+      {
+        "when": {
+          "bonusOccurrences": {
+            "bonus": "death-s-bulwark-proc",
+            "exactly": 1
+          }
+        },
+        "variants": [
+          {
+            "stats": {
+              "defense_p": 0.02
+            },
+            "when": {
+              "bonusOccurrences": {
+                "bonus": "death-s-bulwark-stats",
+                "exactly": 1
+              }
+            }
+          },
+          {
+            "stats": {
+              "defense_p": 0.04,
+              "crit_avoid_p": 0.04
+            },
+            "when": {
+              "bonusOccurrences": {
+                "bonus": "death-s-bulwark-stats",
+                "exactly": 2
+              }
+            }
+          },
+          {
+            "stats": {
+              "defense_p": 0.06,
+              "crit_avoid_p": 0.06
+            },
+            "when": {
+              "bonusOccurrences": {
+                "bonus": "death-s-bulwark-stats",
+                "exactly": 3
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "deathly-rage-proc",
+    "name": "Deathly Rage Proc",
+    "grants": []
+  },
+  {
+    "id": "deathly-rage-stats",
+    "name": "Deathly Rage Stats",
+    "grants": [
+      {
+        "when": {
+          "bonusOccurrences": {
+            "bonus": "deathly-rage-proc",
+            "exactly": 1
+          }
+        },
+        "variants": [
+          {
+            "stats": {
+              "ca_p": 0.02
+            },
+            "when": {
+              "bonusOccurrences": {
+                "bonus": "deathly-rage-stats",
+                "exactly": 1
+              }
+            }
+          },
+          {
+            "stats": {
+              "ca_p": 0.04,
+              "power_p": 0.04
+            },
+            "when": {
+              "bonusOccurrences": {
+                "bonus": "deathly-rage-stats",
+                "exactly": 2
+              }
+            }
+          },
+          {
+            "stats": {
+              "ca_p": 0.06,
+              "power_p": 0.06,
+              "sev_p": 0.06
+            },
+            "when": {
+              "bonusOccurrences": {
+                "bonus": "deathly-rage-stats",
+                "exactly": 3
+              }
+            }
+          }
+        ]
       }
     ]
   },
@@ -769,64 +886,131 @@
         "when": {
           "any": [
             {
-              "not": {
-                "equipped": {
-                  "tag": "level_attr:3",
-                  "atLeast": 2,
-                  "below": 3
-                }
+              "equipped": {
+                "tag": "level_attr:3",
+                "atLeast": 3
               }
             },
             {
-              "not": {
-                "equipped": {
-                  "tag": "level_attr:6",
-                  "atLeast": 2,
-                  "below": 3
-                }
+              "equipped": {
+                "tag": "level_attr:6",
+                "atLeast": 3
               }
             },
             {
-              "not": {
-                "equipped": {
-                  "tag": "level_attr:12",
-                  "atLeast": 2,
-                  "below": 3
-                }
+              "equipped": {
+                "tag": "level_attr:14",
+                "atLeast": 3
               }
             },
             {
-              "not": {
-                "equipped": {
-                  "tag": "level_attr:14",
-                  "atLeast": 2,
-                  "below": 3
-                }
+              "equipped": {
+                "tag": "level_attr:18",
+                "atLeast": 3
               }
             },
             {
-              "not": {
-                "equipped": {
-                  "tag": "level_attr:18",
-                  "atLeast": 2,
-                  "below": 3
-                }
+              "equipped": {
+                "tag": "level_attr:20",
+                "atLeast": 3
               }
             },
             {
-              "not": {
-                "equipped": {
-                  "tag": "level_attr:20",
-                  "atLeast": 2,
-                  "below": 3
+              "all": [
+                {
+                  "equipped": {
+                    "tag": "level_attr:6",
+                    "atLeast": 1
+                  }
+                },
+                {
+                  "not": {
+                    "equipped": {
+                      "tag": "level_attr:3",
+                      "exactly": 2
+                    }
+                  }
                 }
-              }
+              ]
+            },
+            {
+              "all": [
+                {
+                  "equipped": {
+                    "tag": "level_attr:12",
+                    "atLeast": 1
+                  }
+                },
+                {
+                  "not": {
+                    "equipped": {
+                      "tag": "level_attr:6",
+                      "exactly": 2
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "all": [
+                {
+                  "equipped": {
+                    "tag": "level_attr:14",
+                    "atLeast": 1
+                  }
+                },
+                {
+                  "not": {
+                    "equipped": {
+                      "tag": "level_attr:12",
+                      "exactly": 2
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "all": [
+                {
+                  "equipped": {
+                    "tag": "level_attr:18",
+                    "atLeast": 1
+                  }
+                },
+                {
+                  "not": {
+                    "equipped": {
+                      "tag": "level_attr:14",
+                      "exactly": 2
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "all": [
+                {
+                  "equipped": {
+                    "tag": "level_attr:20",
+                    "atLeast": 1
+                  }
+                },
+                {
+                  "not": {
+                    "equipped": {
+                      "tag": "level_attr:18",
+                      "exactly": 2
+                    }
+                  }
+                }
+              ]
             }
           ]
         },
         "problem": {
           "severity": "warning",
-          "message": "Need to select 2 Ability Score points for each level"
+          "message": "Invalid Ability Score distribution",
+          "label": "Leveling Ability Scores"
         }
       }
     ]

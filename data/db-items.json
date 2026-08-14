@@ -664,13 +664,6 @@
     "forte": 5906
   },
   {
-    "id": "avian-aura-group",
-    "name": "Avian Aura (Group)",
-    "filter": "group_buff",
-    "maxCopies": 1,
-    "bonuses": ["avian-aura-group"]
-  },
-  {
     "id": "avian-aura-group-celestial",
     "name": "Avian Aura (Group)",
     "filter": "group_buff",
@@ -743,7 +736,7 @@
   },
   {
     "id": "boon-advance-recharge",
-    "name": "Recharge",
+    "name": "Boon: Recharge Speed",
     "filter": "boon_tier_advanced",
     "recharge": 0.01,
     "tags": ["boon:prereq-master"],
@@ -752,12 +745,13 @@
       "min": 0,
       "max": 4,
       "default": 0,
-      "priority": 5
+      "priority": 5,
+      "label": "Recharge"
     }
   },
   {
     "id": "boon-advanced-ap",
-    "name": "AP Gain",
+    "name": "Boon: AP Gain",
     "filter": "boon_tier_advanced",
     "ap_gain": 0.01,
     "tags": ["boon:prereq-master"],
@@ -766,12 +760,13 @@
       "min": 0,
       "max": 4,
       "default": 0,
-      "priority": 4
+      "priority": 4,
+      "label": "AP"
     }
   },
   {
     "id": "boon-advanced-control-bonus",
-    "name": "Control Bonus",
+    "name": "Boon: Control Bonus",
     "filter": "boon_tier_advanced",
     "control_bonus_p": 0.01,
     "tags": ["boon:prereq-master"],
@@ -780,12 +775,13 @@
       "min": 0,
       "max": 4,
       "default": 0,
-      "priority": 6
+      "priority": 6,
+      "label": "Control Bonus"
     }
   },
   {
     "id": "boon-advanced-forte",
-    "name": "Forte",
+    "name": "Boon: Forte",
     "filter": "boon_tier_advanced",
     "forte_p": 0.01,
     "tags": ["boon:prereq-master"],
@@ -794,12 +790,13 @@
       "min": 0,
       "max": 4,
       "default": 0,
-      "priority": 1
+      "priority": 1,
+      "label": "Forte"
     }
   },
   {
     "id": "boon-advanced-incoming-healing",
-    "name": "Inc. Heal",
+    "name": "Boon: Incoming Healing",
     "filter": "boon_tier_advanced",
     "inc_healing_p": 0.01,
     "tags": ["boon:prereq-master"],
@@ -808,12 +805,13 @@
       "min": 0,
       "max": 4,
       "default": 0,
-      "priority": 0
+      "priority": 0,
+      "label": "Inc Heal"
     }
   },
   {
     "id": "boon-advanced-outgoing-healing",
-    "name": "Out. Heal",
+    "name": "Boon: Outgoing Healing",
     "filter": "boon_tier_advanced",
     "out_healing_p": 0.01,
     "tags": ["boon:prereq-master"],
@@ -822,12 +820,13 @@
       "min": 0,
       "max": 4,
       "default": 0,
-      "priority": 3
+      "priority": 3,
+      "label": "Out. Heal"
     }
   },
   {
     "id": "boon-advanced-stamina",
-    "name": "Stamina",
+    "name": "Boon: Stamina Regeneration",
     "filter": "boon_tier_advanced",
     "stamina_regen": 0.01,
     "tags": ["boon:prereq-master"],
@@ -836,7 +835,8 @@
       "min": 0,
       "max": 4,
       "default": 0,
-      "priority": 2
+      "priority": 2,
+      "label": "Stamina"
     }
   },
   {
@@ -914,6 +914,17 @@
     "id": "boon-master-death-s-bulwark",
     "name": "Death's Bulwark",
     "filter": "boon_tier_master",
+    "longDescription": "Change to get stats and shield when killing enemies or taking damage.",
+    "bonuses": [
+      {
+        "bonus": "death-s-bulwark-proc",
+        "min": 0,
+        "max": 1,
+        "default": 0,
+        "label": "proc"
+      },
+      "death-s-bulwark-stats"
+    ],
     "inlineRepetition": {
       "min": 0,
       "max": 3,
@@ -925,6 +936,17 @@
     "id": "boon-master-deathly-rage",
     "name": "Deathly Rage",
     "filter": "boon_tier_master",
+    "longDescription": "Change to get stats when killing enemies or taking damage.",
+    "bonuses": [
+      "deathly-rage-stats",
+      {
+        "bonus": "deathly-rage-proc",
+        "min": 0,
+        "max": 1,
+        "default": 0,
+        "label": "proc"
+      }
+    ],
     "inlineRepetition": {
       "min": 0,
       "max": 3,
@@ -975,7 +997,7 @@
   },
   {
     "id": "boon-power",
-    "name": "Boon: Power",
+    "name": "Guild Boon: Power",
     "filter": "guild_boon_off",
     "il": 1000,
     "combined_rating": 800,
@@ -983,14 +1005,14 @@
   },
   {
     "id": "boon-revive-sickness",
-    "name": "Boon: Revive Sickness",
+    "name": "Guild Boon: Revive Sickness",
     "filter": "guild_boon_util",
     "il": 1000,
     "combined_rating": 800
   },
   {
     "id": "boon-severity",
-    "name": "Boon: Severity",
+    "name": "Guild Boon: Critical Severity",
     "filter": "guild_boon_off",
     "il": 1000,
     "combined_rating": 800,
@@ -998,7 +1020,7 @@
   },
   {
     "id": "boon-strike",
-    "name": "Boon: Strike",
+    "name": "Guild Boon: Critical Strike",
     "filter": "guild_boon_off",
     "il": 1000,
     "combined_rating": 800,
@@ -1099,7 +1121,7 @@
   },
   {
     "id": "boon-tier1-power",
-    "name": "Power",
+    "name": "Boon: Power",
     "filter": "boon_tier1",
     "power_p": 0.002,
     "tags": [
@@ -1113,12 +1135,13 @@
       "min": 0,
       "max": 5,
       "default": 0,
-      "priority": 0
+      "priority": 0,
+      "label": "Power"
     }
   },
   {
     "id": "boon-tier1-strike",
-    "name": "Critical Strike",
+    "name": "Boon: Critical Strike",
     "filter": "boon_tier1",
     "strike_p": 0.002,
     "tags": [
@@ -1132,12 +1155,13 @@
       "min": 0,
       "max": 5,
       "default": 0,
-      "priority": 1
+      "priority": 1,
+      "label": "Crit Strike"
     }
   },
   {
     "id": "boon-tier2-defense",
-    "name": "Defense",
+    "name": "Boon: Defense",
     "filter": "boon_tier2",
     "defense_p": 0.002,
     "tags": [
@@ -1155,7 +1179,7 @@
   },
   {
     "id": "boon-tier2-demonic",
-    "name": "Demonic",
+    "name": "Boon: Demonic",
     "filter": "boon_tier2",
     "tags": [
       "boon:prereq-tier-3",
@@ -1167,12 +1191,13 @@
       "min": 0,
       "max": 5,
       "default": 0,
-      "priority": 4
+      "priority": 4,
+      "label": "Demonic"
     }
   },
   {
     "id": "boon-tier2-hp",
-    "name": "HP",
+    "name": "Boon: HP",
     "filter": "boon_tier2",
     "hit_points_p": 0.002,
     "tags": [
@@ -1185,12 +1210,13 @@
       "min": 0,
       "max": 5,
       "default": 0,
-      "priority": 3
+      "priority": 3,
+      "label": "HP"
     }
   },
   {
     "id": "boon-tier2-lingering-medicine",
-    "name": "Lingering",
+    "name": "Boon: Lingering Medicine",
     "filter": "boon_tier2",
     "tags": [
       "boon:prereq-tier-3",
@@ -1202,12 +1228,13 @@
       "min": 0,
       "max": 5,
       "default": 0,
-      "priority": 6
+      "priority": 6,
+      "label": "Lingering"
     }
   },
   {
     "id": "boon-tier2-movement",
-    "name": "Movement Speed",
+    "name": "Boon: Movement Speed",
     "filter": "boon_tier2",
     "movement": 0.025,
     "tags": [
@@ -1221,12 +1248,13 @@
       "min": 0,
       "max": 5,
       "default": 0,
-      "priority": 5
+      "priority": 5,
+      "label": "Mov. Speed"
     }
   },
   {
     "id": "boon-tier2-power",
-    "name": "Power",
+    "name": "Boon: Power",
     "filter": "boon_tier2",
     "power_p": 0.002,
     "tags": [
@@ -1240,12 +1268,13 @@
       "min": 0,
       "max": 5,
       "default": 0,
-      "priority": 0
+      "priority": 0,
+      "label": "Power"
     }
   },
   {
     "id": "boon-tier2-severity",
-    "name": "Critical Severity",
+    "name": "Boon: Critical Severity",
     "filter": "boon_tier2",
     "sev_p": 0.002,
     "tags": [
@@ -1259,12 +1288,13 @@
       "min": 0,
       "max": 5,
       "default": 0,
-      "priority": 1
+      "priority": 1,
+      "label": "Crit Sev"
     }
   },
   {
     "id": "boon-tier3-awareness",
-    "name": "Awareness",
+    "name": "Boon: Awareness",
     "filter": "boon_tier3",
     "awareness_p": 0.002,
     "tags": [
@@ -1277,12 +1307,13 @@
       "min": 0,
       "max": 5,
       "default": 0,
-      "priority": 2
+      "priority": 2,
+      "label": "Awareness"
     }
   },
   {
     "id": "boon-tier3-ca",
-    "name": "Combat Adv",
+    "name": "Boon: Combat Advantage",
     "filter": "boon_tier3",
     "ca_p": 0.002,
     "tags": [
@@ -1295,12 +1326,13 @@
       "min": 0,
       "max": 5,
       "default": 0,
-      "priority": 1
+      "priority": 1,
+      "label": "Combat Adv"
     }
   },
   {
     "id": "boon-tier3-deflect-sev",
-    "name": "Deflect Severity",
+    "name": "Boon: Deflect Severity",
     "filter": "boon_tier3",
     "deflect_sev_p": 0.002,
     "tags": [
@@ -1313,12 +1345,13 @@
       "min": 0,
       "max": 5,
       "default": 0,
-      "priority": 5
+      "priority": 5,
+      "label": "Deflect Sev"
     }
   },
   {
     "id": "boon-tier3-dino",
-    "name": "Dino",
+    "name": "Boon: Dino",
     "filter": "boon_tier3",
     "tags": [
       "boon:prereq-tier-4",
@@ -1330,12 +1363,13 @@
       "min": 0,
       "max": 5,
       "default": 0,
-      "priority": 4
+      "priority": 4,
+      "label": "Dino"
     }
   },
   {
     "id": "boon-tier3-hp",
-    "name": "HP",
+    "name": "Boon: HP",
     "filter": "boon_tier3",
     "hit_points_p": 0.002,
     "tags": [
@@ -1348,12 +1382,13 @@
       "min": 0,
       "max": 5,
       "default": 0,
-      "priority": 3
+      "priority": 3,
+      "label": "HP"
     }
   },
   {
     "id": "boon-tier3-lingering-fortification",
-    "name": "Lingering",
+    "name": "Boon: Lingering Fortification",
     "filter": "boon_tier3",
     "tags": [
       "boon:prereq-tier-4",
@@ -1365,12 +1400,13 @@
       "min": 0,
       "max": 5,
       "default": 0,
-      "priority": 6
+      "priority": 6,
+      "label": "Lingering"
     }
   },
   {
     "id": "boon-tier3-power",
-    "name": "Power",
+    "name": "Boon: Power",
     "filter": "boon_tier3",
     "power_p": 0.002,
     "tags": [
@@ -1383,12 +1419,13 @@
       "min": 0,
       "max": 5,
       "default": 0,
-      "priority": 0
+      "priority": 0,
+      "label": "Power"
     }
   },
   {
     "id": "boon-tier4-accuracy",
-    "name": "Accuracy",
+    "name": "Boon: Accuracy",
     "filter": "boon_tier4",
     "acc_p": 0.002,
     "tags": ["boon:prereq-advanced", "boon:prereq-master"],
@@ -1397,12 +1434,13 @@
       "min": 0,
       "max": 5,
       "default": 0,
-      "priority": 1
+      "priority": 1,
+      "label": "Accuracy"
     }
   },
   {
     "id": "boon-tier4-control-resist",
-    "name": "Control Res",
+    "name": "Boon: Control Resistance",
     "filter": "boon_tier4",
     "control_resist_p": 0.002,
     "tags": ["boon:prereq-advanced", "boon:prereq-master"],
@@ -1411,12 +1449,13 @@
       "min": 0,
       "max": 5,
       "default": 0,
-      "priority": 5
+      "priority": 5,
+      "label": "Control Res"
     }
   },
   {
     "id": "boon-tier4-deflect",
-    "name": "Deflect",
+    "name": "Boon: Deflect",
     "filter": "boon_tier4",
     "deflect_p": 0.002,
     "tags": ["boon:prereq-advanced", "boon:prereq-master"],
@@ -1425,12 +1464,13 @@
       "min": 0,
       "max": 5,
       "default": 0,
-      "priority": 2
+      "priority": 2,
+      "label": "Deflect"
     }
   },
   {
     "id": "boon-tier4-hp",
-    "name": "HP",
+    "name": "Boon: HP",
     "filter": "boon_tier4",
     "hit_points_p": 0.002,
     "tags": ["boon:prereq-advanced", "boon:prereq-master"],
@@ -1439,12 +1479,13 @@
       "min": 0,
       "max": 5,
       "default": 0,
-      "priority": 3
+      "priority": 3,
+      "label": "HP"
     }
   },
   {
     "id": "boon-tier4-lingering-power",
-    "name": "Lingering",
+    "name": "Boon: Lingering Power",
     "filter": "boon_tier4",
     "tags": ["boon:prereq-advanced", "boon:prereq-master"],
     "bonuses": ["boon-tier4-warning"],
@@ -1452,12 +1493,13 @@
       "min": 0,
       "max": 5,
       "default": 0,
-      "priority": 6
+      "priority": 6,
+      "label": "Lingering"
     }
   },
   {
     "id": "boon-tier4-necrotic",
-    "name": "Necrotic",
+    "name": "Boon: Necrotic Mastery",
     "filter": "boon_tier4",
     "tags": ["boon:prereq-advanced", "boon:prereq-master"],
     "bonuses": ["boon-tier4-warning"],
@@ -1465,12 +1507,13 @@
       "min": 0,
       "max": 5,
       "default": 0,
-      "priority": 4
+      "priority": 4,
+      "label": "Necrotic"
     }
   },
   {
     "id": "boon-tier4-power",
-    "name": "Power",
+    "name": "Boon: Power",
     "filter": "boon_tier4",
     "power_p": 0.002,
     "tags": ["boon:prereq-advanced", "boon:prereq-master"],
@@ -1479,7 +1522,8 @@
       "min": 0,
       "max": 5,
       "default": 0,
-      "priority": 0
+      "priority": 0,
+      "label": "Power"
     }
   },
   {
