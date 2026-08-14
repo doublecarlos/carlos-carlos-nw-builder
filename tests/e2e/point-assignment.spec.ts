@@ -2,7 +2,7 @@
 // PointAssignmentInput.vue) -- the shipped "boons.tier1" example slot (data/slots.json)
 // resolves several rows, including "Power" and "Critical Avoidance" (data/db-items.json's
 // "boon_tier1" filter), each starting at their own default of 0.
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 import {
   openBuilder,
   slotRow,
@@ -198,6 +198,104 @@ test.describe("point_assignment hover card", () => {
 
     await page.mouse.move(0, 0);
     await expect(card).toBeHidden();
+  });
+});
+
+// collect() (bonus.ts's collectInlineRepetition) skips a point_assignment candidate entirely
+// while it has 0 points spent, so a real resolve has nothing to show for its bonuses -- even
+// though hovering an unselected candidate to preview it is supported (see
+// BuildEditor.vue's `itemForHover`). The hover card falls back to a hypothetical resolve (one
+// point spent, same "swap in this one candidate" pattern ItemPicker.vue's own dropdown preview
+// already uses) so a candidate's bonuses -- and their own zero-valued occurrence notes -- still
+// show before any points are actually spent on it.
+test.describe("point_assignment hover card for an unselected candidate", () => {
+  const DIAL_ITEM_ID = "test-tier1-dial-item";
+  const DIAL_BONUS_ID = "test-tier1-dial-bonus";
+
+  async function importDialBoon(page: Page) {
+    const fileInput = page
+      .getByTestId("app-header")
+      .locator('input[type="file"]');
+    await fileInput.setInputFiles({
+      name: "import.json",
+      mimeType: "application/json",
+      buffer: Buffer.from(
+        JSON.stringify({
+          name: "Point assignment hover test",
+          catalog: {
+            items: {
+              [DIAL_ITEM_ID]: {
+                id: DIAL_ITEM_ID,
+                name: "Test Dial Boon",
+                filter: "boon_tier1",
+                inlineRepetition: { min: 0, max: 3, default: 0 },
+                bonuses: [
+                  {
+                    bonus: DIAL_BONUS_ID,
+                    min: 0,
+                    max: 1,
+                    default: 0,
+                    label: "Proc",
+                  },
+                ],
+              },
+            },
+            bonuses: {
+              [DIAL_BONUS_ID]: {
+                id: DIAL_BONUS_ID,
+                name: "Test Dial Bonus",
+                grants: [{ stats: { power: 5 } }],
+              },
+            },
+            sectionPresets: {},
+          },
+        }),
+        "utf-8",
+      ),
+    });
+    await expect(page.getByTestId("app-header")).toContainText(/imported/i);
+  }
+
+  test("at 0 points, still shows the candidate's own bonus, explained by its own zero-valued config", async ({
+    page,
+  }) => {
+    await openBuilder(page);
+    await importDialBoon(page);
+
+    const row = slotRow(page, SLOT_ID);
+    await row.scrollIntoViewIfNeeded();
+    await expect(assignmentInput(row, DIAL_ITEM_ID)).toHaveValue("0");
+
+    await assignmentLabel(row, DIAL_ITEM_ID).hover();
+    const card = page.locator(".fixed.z-40");
+    await expect(card.getByTestId("item-card-name")).toHaveText(
+      "Test Dial Boon",
+    );
+    await expect(card).toContainText("Test Dial Bonus");
+    await expect(
+      card.getByTestId("item-card-bonus-zero-occurrence"),
+    ).toContainText("Proc: off on this item");
+  });
+
+  test("once points are actually spent, the card shows the real (active) resolve, not the hypothetical one", async ({
+    page,
+  }) => {
+    await openBuilder(page);
+    await importDialBoon(page);
+
+    const row = slotRow(page, SLOT_ID);
+    await row.scrollIntoViewIfNeeded();
+    await stepAssignment(row, DIAL_ITEM_ID, "increase");
+    await expect(assignmentInput(row, DIAL_ITEM_ID)).toHaveValue("1");
+
+    await assignmentLabel(row, DIAL_ITEM_ID).hover();
+    const card = page.locator(".fixed.z-40");
+    await expect(card).toContainText("Test Dial Bonus");
+    // The bonus attachment is still its own independent 0-valued config -- spending points on
+    // the item itself doesn't turn it on.
+    await expect(
+      card.getByTestId("item-card-bonus-zero-occurrence"),
+    ).toContainText("Proc: off on this item");
   });
 });
 
