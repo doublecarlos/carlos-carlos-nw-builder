@@ -21,6 +21,7 @@ import { forSlotAndBuild } from "../data/db";
 import { abbr, signedStat, statPickerOptions } from "../lib/format";
 import { matchesQuery } from "../lib/text-filter";
 import { useHoverCard } from "../composables/useHoverCard";
+import { occurrenceRowsForItem } from "../composables/useItemBonusOccurrences";
 import {
   useCompareDiff,
   paramDiffers,
@@ -218,6 +219,13 @@ const hoveredBonuses = computed(() => {
   }
   return out;
 });
+
+/** The hovered item's own BonusOccurrenceConfig rows -- lets ItemCard.vue's inactive-bonus
+ *  rendering explain a row that's inactive because *this* item's own count is 0, the same
+ *  data ItemPickerRow.vue's checkbox/stepper inputs already read (#256). */
+const hoveredOccurrenceRows = computed(() =>
+  occurrenceRowsForItem(hoveredItem.value),
+);
 
 // --- quick compare ---------------------------------------------------------------------
 
@@ -620,6 +628,7 @@ function onFocusIn(event: FocusEvent) {
         v-if="hover && hoveredItem"
         :item="hoveredItem"
         :bonuses="hoveredBonuses"
+        :occurrence-rows="hoveredOccurrenceRows"
         :db="db"
         :slot-label="db.slotById.get(hover.slotId)?.label ?? ''"
         @mouseenter="onCardEnter"

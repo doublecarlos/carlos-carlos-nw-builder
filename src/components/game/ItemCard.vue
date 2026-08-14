@@ -18,6 +18,7 @@ import {
   stat as formatStat,
 } from "../../lib/format";
 import { isHiddenBonus } from "../../engine/bonus";
+import type { OccurrenceRow } from "../../composables/useItemBonusOccurrences";
 import type { DynamicStatConfig } from "../../types";
 import type {
   Item,
@@ -40,13 +41,35 @@ const props = withDefaults(
     slotLabel?: string;
     /** Only for resolving `item.bonuses` ids to their bonus names in `notes` below. */
     db?: Db | null;
+    /** `item`'s own BonusOccurrenceConfig rows (useItemBonusOccurrences.ts) -- same data
+     *  ItemPickerRow.vue's checkbox/stepper inputs read, resolved by the caller rather than
+     *  here so this component stays prop-driven. Lets an inactive row that's `item`'s own
+     *  count-of-0 explain that directly (#256) instead of only through a generic unmet-gate
+     *  leaf, which reads oddly for a bonus gated on its own occurrence count. */
+    occurrenceRows?: OccurrenceRow[];
   }>(),
   {
     bonuses: () => [],
     slotLabel: "",
     db: null,
+    occurrenceRows: () => [],
   },
 );
+
+const occurrenceRowByBonusId = computed(
+  () => new Map(props.occurrenceRows.map((row) => [row.bonusId, row])),
+);
+
+/** `item`'s own BonusOccurrenceConfig row for `bonusId`, only when it's the reason this
+ *  (inactive) row has nothing to show: at `value: 0`. An active bonus never needs this --
+ *  its numbers already speak for themselves -- and a row this item doesn't itself have a
+ *  config for (contributed only by other items, or gated on something else entirely) has none
+ *  to show either. */
+function zeroOccurrenceNote(bonusId: string, active: boolean) {
+  if (active) return null;
+  const row = occurrenceRowByBonusId.value.get(bonusId);
+  return row && row.value === 0 ? row : null;
+}
 
 /** Same {key, label, value} shape as the `stats` computed, for one-per-line rendering
  *  anywhere a bonus payload is shown -- the tooltip should read the same way whether it's
@@ -274,6 +297,7 @@ const rows = computed(() =>
           .map((leaf) => leaf.label)
           .filter(Boolean)
           .join(" + "),
+        zeroOccurrence: zeroOccurrenceNote(entry.id, entry.active),
         excludedBy: entry.excludedBy,
         // Every active grant's own longDescription, in grant order -- a bonus with more than
         // one descriptive grant shows each (rare: usually only one grant per bonus bothers).
@@ -355,6 +379,18 @@ const rows = computed(() =>
             class="pl-3 text-sm leading-snug text-muted"
           >
             Conditions: {{ row.conditions }}
+          </div>
+          <div
+            v-if="row.zeroOccurrence"
+            class="pl-3 text-sm leading-snug text-muted"
+            data-testid="item-card-bonus-zero-occurrence"
+          >
+            {{ row.zeroOccurrence.label }}:
+            {{
+              row.zeroOccurrence.kind === "checkbox"
+                ? "off on this item"
+                : "0 on this item"
+            }}
           </div>
           <div
             v-for="desc in row.descriptions"

@@ -107,6 +107,41 @@ test.describe("BonusOccurrenceConfig rows", () => {
     await expect(row).toContainText("Power");
   });
 
+  // #256: a bonus reachable only through this item's own 0-valued config shows in the hover
+  // card and sidebar -- inactive, explained by its own input's current value -- rather than
+  // being indistinguishable from an item that doesn't carry the bonus at all.
+  test("a 0-valued stepper's bonus still shows in the item's hover card and the sidebar's Bonuses list", async ({
+    page,
+  }) => {
+    await openBuilder(page);
+    await importText(page, JSON.stringify(buildWithOccurrenceRing()));
+
+    const row = slotRow(page, RING_SLOT);
+    await row.scrollIntoViewIfNeeded();
+    await row.hover();
+    const card = page.locator(".fixed.z-40");
+    await expect(card).toContainText("Test Stepper Bonus");
+    // The same ring's checkbox-shaped config (also default 0) has its own zero-occurrence
+    // note too -- match this one specifically by its text, not just the testid.
+    await expect(
+      card
+        .getByTestId("item-card-bonus-zero-occurrence")
+        .filter({ hasText: "Test Stepper Bonus: 0 on this item" }),
+    ).toBeVisible();
+    await page.mouse.move(0, 0);
+    await expect(card).toBeHidden();
+
+    await page.getByRole("button", { name: /^Bonuses/ }).click();
+    const sidebar = page.locator("aside.sidebar");
+    await sidebar
+      .getByPlaceholder("Filter by bonus, id or item…")
+      .fill("Test Stepper Bonus");
+    await expect(sidebar.getByText("Test Stepper Bonus")).toBeVisible();
+    await expect(sidebar.getByText("Nothing matches that filter.")).toHaveCount(
+      0,
+    );
+  });
+
   test("checking the checkbox activates its bonus without touching the stepper's count", async ({
     page,
   }) => {
@@ -342,6 +377,24 @@ test.describe("per-item boolean toggle, formerly proc (#222)", () => {
       occurrenceCheckbox(row, TOGGLE_BONUS_ID).locator("input"),
     ).not.toBeChecked();
     await expect(row).not.toContainText("Power");
+  });
+
+  // #256: same as the stepper case above, for the checkbox-shaped config -- the item's hover
+  // card explains the off state via its own label, not the generic condition-unmet wording.
+  test("an unchecked config's bonus still shows in the item's hover card, explained by its own input", async ({
+    page,
+  }) => {
+    await openBuilder(page);
+    await importText(page, JSON.stringify(buildWithToggleRing(0)));
+
+    const row = slotRow(page, RING_SLOT);
+    await row.scrollIntoViewIfNeeded();
+    await row.hover();
+    const card = page.locator(".fixed.z-40");
+    await expect(card).toContainText("Test Toggle Bonus");
+    await expect(
+      card.getByTestId("item-card-bonus-zero-occurrence"),
+    ).toContainText("Buff active: off on this item");
   });
 
   test("an explicit 1 in the imported build's own occurrenceInputs overrides a default:0 config", async ({
