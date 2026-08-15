@@ -1,7 +1,9 @@
 // End-to-end coverage for a point_assignment slot's row of steppers (BuildSlot.vue via
 // PointAssignmentInput.vue) -- the shipped "boons.tier1" example slot (data/slots.json)
-// resolves several rows, including "Power" and "Critical Avoidance" (data/db-items.json's
-// "boon_tier1" filter), each starting at their own default of 0.
+// resolves several rows, including "boon-tier1-power" and "boon-tier1-avoidance"
+// (data/db-items.json's "boon_tier1" filter), each starting at their own default of 0.
+// Item display names are read from shipped data at test time (support/shippedData.ts) rather
+// than hardcoded, so renaming a shipped item doesn't break these.
 import { test, expect, type Page } from "@playwright/test";
 import {
   openBuilder,
@@ -10,6 +12,7 @@ import {
   assignmentLabel,
   stepAssignment,
 } from "./support/app";
+import { shippedItemName as itemName } from "./support/shippedData";
 
 const SLOT_ID = "boons.tier1";
 const POWER_ID = "boon-tier1-power";
@@ -151,7 +154,9 @@ test.describe("point_assignment hover card", () => {
     await assignmentLabel(row, POWER_ID).hover();
 
     const card = page.locator(".fixed.z-40");
-    await expect(card.getByTestId("item-card-name")).toHaveText("Power");
+    await expect(card.getByTestId("item-card-name")).toHaveText(
+      itemName(POWER_ID),
+    );
     await expect(card.getByText("Tier 1")).toBeVisible();
   });
 
@@ -167,7 +172,7 @@ test.describe("point_assignment hover card", () => {
 
     await expect(
       page.locator(".fixed.z-40").getByTestId("item-card-name"),
-    ).toHaveText("Power");
+    ).toHaveText(itemName(POWER_ID));
   });
 
   test("hovering a different item's label in the same row swaps the card", async ({
@@ -179,11 +184,13 @@ test.describe("point_assignment hover card", () => {
     const card = page.locator(".fixed.z-40");
 
     await assignmentLabel(row, POWER_ID).hover();
-    await expect(card.getByTestId("item-card-name")).toHaveText("Power");
+    await expect(card.getByTestId("item-card-name")).toHaveText(
+      itemName(POWER_ID),
+    );
 
     await assignmentLabel(row, AVOIDANCE_ID).hover();
     await expect(card.getByTestId("item-card-name")).toHaveText(
-      "Critical Avoidance",
+      itemName(AVOIDANCE_ID),
     );
   });
 
@@ -382,7 +389,7 @@ test.describe("point_assignment Ctrl+click", () => {
 
     await expect(page.getByTestId("builder-content")).toBeHidden();
     await expect(page.locator(".editor-row.is-on .editor-row-name")).toHaveText(
-      "Power",
+      itemName(POWER_ID),
     );
   });
 

@@ -15,12 +15,14 @@ import {
   assignmentLabel,
   stepAssignment,
 } from "./support/app";
+import { shippedItemName } from "./support/shippedData";
 
 const SLOT_ID = "boons.tier2";
 const SEVERITY_ID = "boon-tier2-severity";
 const WARNING_MESSAGE =
   "Tier 2 boons need at least 10 points spent on previous boons.";
 const WARNING_TITLE = "Tier 2 Boon Warning";
+const SEVERITY_NAME = shippedItemName(SEVERITY_ID);
 
 test("a problem-only bonus is hidden from the item hover card and the sidebar Bonuses table", async ({
   page,
@@ -35,12 +37,10 @@ test("a problem-only bonus is hidden from the item hover card and the sidebar Bo
   await expect(row.getByText(WARNING_MESSAGE)).toBeVisible();
 
   // The item's hover card shows the item, but no "Bonuses" section at all -- the warning bonus
-  // is Critical Severity's only bonus, and it is hidden.
+  // is this item's only bonus, and it is hidden.
   await assignmentLabel(row, SEVERITY_ID).hover();
   const card = page.locator(".fixed.z-40");
-  await expect(card.getByTestId("item-card-name")).toHaveText(
-    "Critical Severity",
-  );
+  await expect(card.getByTestId("item-card-name")).toHaveText(SEVERITY_NAME);
   await expect(card.getByText(WARNING_TITLE)).toHaveCount(0);
   await expect(card.getByText("Bonuses", { exact: true })).toHaveCount(0);
 
