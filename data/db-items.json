@@ -1997,25 +1997,6 @@
     "bonuses": ["hot-wings-accuracy-severity"]
   },
   {
-    "id": "human",
-    "name": "Human",
-    "filter": "race",
-    "power_p": 0.01,
-    "acc_p": 0.01,
-    "ca_p": 0.01,
-    "strike_p": 0.01,
-    "sev_p": 0.01,
-    "forte_p": 0.01,
-    "defense_p": 0.01,
-    "awareness_p": 0.01,
-    "crit_avoid_p": 0.01,
-    "deflect_p": 0.01,
-    "deflect_sev_p": 0.01,
-    "inc_healing_p": 0.01,
-    "out_healing_p": 0.01,
-    "maxCopies": 1
-  },
-  {
     "id": "invocation-accuracy",
     "name": "Invocation: Accuracy",
     "filter": "consumable_blessing",
@@ -4053,39 +4034,163 @@
   },
   {
     "id": "race-attributes-2-cha",
-    "name": "Race Attributes +2 Cha",
+    "name": "+2 CHA",
     "filter": "race_attributes",
-    "cha": 2
+    "cha": 2,
+    "maxCopies": 1,
+    "tags": ["race-ability-score", "race-ability-score:aasimar"],
+    "bonuses": ["race-ability-score-warning"]
+  },
+  {
+    "id": "race-attributes-2-con",
+    "name": "+2 CON",
+    "filter": "race_attributes",
+    "con": 2,
+    "maxCopies": 1,
+    "tags": [
+      "race-ability-score",
+      "race-ability-score:aasimar",
+      "race-ability-score:half-orc"
+    ],
+    "bonuses": ["race-ability-score-warning"]
   },
   {
     "id": "race-attributes-2-dex",
-    "name": "Race Attributes +2 Dex",
+    "name": "+2 DEX",
     "filter": "race_attributes",
-    "dex": 2
+    "dex": 2,
+    "maxCopies": 1,
+    "tags": ["race-ability-score", "race-ability-score:aasimar"],
+    "bonuses": ["race-ability-score-warning"]
   },
   {
     "id": "race-attributes-2-int",
-    "name": "Race Attributes +2 Int",
+    "name": "+2 INT",
     "filter": "race_attributes",
-    "int": 2
+    "int": 2,
+    "maxCopies": 1,
+    "tags": [
+      "race-ability-score",
+      "race-ability-score:aasimar",
+      "race-ability-score:gith",
+      "race-ability-score:wood-elf"
+    ],
+    "bonuses": ["race-ability-score-warning"]
   },
   {
     "id": "race-attributes-2-str",
-    "name": "Race Attributes +2 Str",
+    "name": "+2 STR",
     "filter": "race_attributes",
-    "str": 2
+    "str": 2,
+    "maxCopies": 1,
+    "tags": [
+      "race-ability-score",
+      "race-ability-score:aasimar",
+      "race-ability-score:gith",
+      "race-ability-score:half-orc"
+    ],
+    "bonuses": ["race-ability-score-warning"]
+  },
+  {
+    "id": "race-attributes-2-wis",
+    "name": "+2 WIS",
+    "filter": "race_attributes",
+    "wis": 2,
+    "maxCopies": 1,
+    "tags": [
+      "race-ability-score",
+      "race-ability-score:aasimar",
+      "race-ability-score:wood-elf"
+    ],
+    "bonuses": ["race-ability-score-warning"]
+  },
+  {
+    "id": "race-attributes-3-cha",
+    "name": "+3 CHA",
+    "filter": "race_attributes",
+    "cha": 3,
+    "maxCopies": 1,
+    "tags": ["race-ability-score", "race-ability-score:human"],
+    "bonuses": ["race-ability-score-warning"]
+  },
+  {
+    "id": "race-attributes-3-con",
+    "name": "+3 CON",
+    "filter": "race_attributes",
+    "con": 3,
+    "maxCopies": 1,
+    "tags": ["race-ability-score", "race-ability-score:human"],
+    "bonuses": ["race-ability-score-warning"]
+  },
+  {
+    "id": "race-attributes-3-dex",
+    "name": "+3 DEX",
+    "filter": "race_attributes",
+    "dex": 3,
+    "maxCopies": 1,
+    "tags": ["race-ability-score", "race-ability-score:human"],
+    "bonuses": ["race-ability-score-warning"]
+  },
+  {
+    "id": "race-attributes-3-int",
+    "name": "+3 INT",
+    "filter": "race_attributes",
+    "int": 3,
+    "maxCopies": 1,
+    "tags": ["race-ability-score", "race-ability-score:human"],
+    "bonuses": ["race-ability-score-warning"]
   },
   {
     "id": "race-attributes-3-str",
-    "name": "Race Attributes +3 Str",
+    "name": "+3 STR",
     "filter": "race_attributes",
-    "str": 3
+    "str": 3,
+    "maxCopies": 1,
+    "tags": ["race-ability-score", "race-ability-score:human"],
+    "bonuses": ["race-ability-score-warning"]
+  },
+  {
+    "id": "race-attributes-3-wis",
+    "name": "+3 WIS",
+    "filter": "race_attributes",
+    "wis": 3,
+    "maxCopies": 1,
+    "tags": ["race-ability-score", "race-ability-score:human"],
+    "bonuses": ["race-ability-score-warning"]
   },
   {
     "id": "race-gith",
     "name": "Gith",
     "filter": "race",
     "ca_p": 0.05,
+    "dex": 2,
+    "stamina_regen": 0.05,
+    "maxCopies": 1
+  },
+  {
+    "id": "race-half-orc",
+    "name": "Half Orc",
+    "filter": "race",
+    "dex": 2,
+    "sev_p": 0.05
+  },
+  {
+    "id": "race-human",
+    "name": "Human",
+    "filter": "race",
+    "power_p": 0.01,
+    "acc_p": 0.01,
+    "ca_p": 0.01,
+    "strike_p": 0.01,
+    "sev_p": 0.01,
+    "forte_p": 0.01,
+    "defense_p": 0.01,
+    "awareness_p": 0.01,
+    "crit_avoid_p": 0.01,
+    "deflect_p": 0.01,
+    "deflect_sev_p": 0.01,
+    "inc_healing_p": 0.01,
+    "out_healing_p": 0.01,
     "maxCopies": 1
   },
   {
@@ -4093,6 +4198,7 @@
     "name": "Wood Elf",
     "filter": "race",
     "strike_p": 0.05,
+    "dex": 2,
     "maxCopies": 1
   },
   {

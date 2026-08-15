@@ -465,7 +465,7 @@ describe("classFromHclass", () => {
 describe("raceFromSpecies", () => {
   it("maps a confirmed Species token, stripping the gender suffix", () => {
     expect(raceFromSpecies("Aasimar_Male")).toBe("race-aasimar");
-    expect(raceFromSpecies("Human_Female")).toBe("human");
+    expect(raceFromSpecies("Human_Female")).toBe("race-human");
   });
 
   it("returns null for an unconfirmed or unknown Species, or when absent", () => {

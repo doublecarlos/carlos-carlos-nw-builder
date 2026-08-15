@@ -2594,6 +2594,155 @@
     ]
   },
   {
+    "id": "race-ability-score-warning",
+    "name": "Race Ability Score Warning",
+    "grants": [
+      {
+        "when": {
+          "any": [
+            {
+              "equipped": {
+                "item": "race-human"
+              },
+              "any": [
+                {
+                  "equipped": {
+                    "tag": "race-ability-score",
+                    "exactly": 1
+                  },
+                  "not": {
+                    "equipped": {
+                      "tag": "race-ability-score:human",
+                      "exactly": 1
+                    }
+                  }
+                },
+                {
+                  "equipped": {
+                    "tag": "race-ability-score",
+                    "atLeast": 2
+                  }
+                }
+              ]
+            },
+            {
+              "equipped": {
+                "item": "race-aasimar"
+              },
+              "any": [
+                {
+                  "equipped": {
+                    "tag": "race-ability-score",
+                    "exactly": 1
+                  },
+                  "not": {
+                    "equipped": {
+                      "tag": "race-ability-score:aasimar",
+                      "exactly": 1
+                    }
+                  }
+                },
+                {
+                  "equipped": {
+                    "tag": "race-ability-score",
+                    "exactly": 2
+                  },
+                  "not": {
+                    "equipped": {
+                      "tag": "race-ability-score:aasimar",
+                      "exactly": 2
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "equipped": {
+                "item": "race-half-orc"
+              },
+              "any": [
+                {
+                  "equipped": {
+                    "tag": "race-ability-score",
+                    "exactly": 1
+                  },
+                  "not": {
+                    "equipped": {
+                      "tag": "race-ability-score:half-orc",
+                      "exactly": 1
+                    }
+                  }
+                },
+                {
+                  "equipped": {
+                    "tag": "race-ability-score",
+                    "atLeast": 2
+                  }
+                }
+              ]
+            },
+            {
+              "equipped": {
+                "item": "race-gith"
+              },
+              "any": [
+                {
+                  "equipped": {
+                    "tag": "race-ability-score",
+                    "exactly": 1
+                  },
+                  "not": {
+                    "equipped": {
+                      "tag": "race-ability-score:gith",
+                      "exactly": 1
+                    }
+                  }
+                },
+                {
+                  "equipped": {
+                    "tag": "race-ability-score",
+                    "atLeast": 2
+                  }
+                }
+              ]
+            },
+            {
+              "equipped": {
+                "item": "race-wood-elf"
+              },
+              "any": [
+                {
+                  "equipped": {
+                    "tag": "race-ability-score",
+                    "exactly": 1
+                  },
+                  "not": {
+                    "equipped": {
+                      "tag": "race-ability-score:wood-elf",
+                      "exactly": 1
+                    }
+                  }
+                },
+                {
+                  "equipped": {
+                    "tag": "race-ability-score",
+                    "atLeast": 2
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "problem": {
+          "severity": "error",
+          "message": "Invalid for chosen race",
+          "label": "Race Ability Scores",
+          "hideFromPicker": true
+        }
+      }
+    ]
+  },
+  {
     "id": "raptor-s-instincts-tamed-velociraptor-power-offense",
     "name": "Raptor's Instincts",
     "grants": [

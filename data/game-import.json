@@ -254,6 +254,6 @@
   },
   "speciesToRace": {
     "Aasimar": "race-aasimar",
-    "Human": "human"
+    "Human": "race-human"
   }
 }
