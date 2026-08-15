@@ -75,10 +75,10 @@ test("dragging a branch reorders it within its group", async ({ page }) => {
   await leafType(0).click();
   await branches.nth(0).getByText("class", { exact: true }).click();
   await leafType(1).click();
-  await branches.nth(1).getByText("combatType", { exact: true }).click();
+  await branches.nth(1).getByText("enemies", { exact: true }).click();
 
   await expect(leafType(0)).toHaveValue("class");
-  await expect(leafType(1)).toHaveValue("combatType");
+  await expect(leafType(1)).toHaveValue("enemies");
 
   // Drag branch 0 onto branch 1 -- lands after it, so their content swaps places.
   await dragOnto(
@@ -87,7 +87,7 @@ test("dragging a branch reorders it within its group", async ({ page }) => {
     "after",
   );
 
-  await expect(leafType(0)).toHaveValue("combatType");
+  await expect(leafType(0)).toHaveValue("enemies");
   await expect(leafType(1)).toHaveValue("class");
 });
 

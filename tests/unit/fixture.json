@@ -104,6 +104,7 @@
         "mounts.supportiveCollar": "supportive-regal-collar",
         "mounts.unifiedCollar": "unified-crescent-collar",
         "mounts.wayfaringCollar": "wayfaring-barbed-collar",
+        "options.enemyType": "enemy-type-boss",
         "overloads.overload1": "slayer-4-5-overall",
         "overloads.overload2": "devil-s-precision",
         "raceLeveling.race": "race-aasimar",
@@ -167,9 +168,9 @@
       },
       "context": {
         "class": "warlock",
-        "combatType": "single",
         "damageType": "magical",
         "duration": 60,
+        "enemies": 1,
         "forte": {
           "primary": "power_p",
           "secondaryA": "strike_p",

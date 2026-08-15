@@ -340,7 +340,6 @@ function changeType(row: ConditionRow) {
 const PATH_FOR_TYPE: Record<string, string> = {
   role: "role",
   class: "class",
-  combatType: "combatType",
   damageType: "damageType",
 };
 
@@ -465,6 +464,14 @@ function changeParamKey(row: ConditionRow, key: string) {
             v-model:exactly="row.exactly"
             v-model:range-mode="row.rangeMode"
             unit-suffix=" (s)"
+          />
+        </template>
+        <template v-else-if="row.type === 'enemies'">
+          <RangeOrExactFields
+            v-model:at-least="row.atLeast"
+            v-model:below="row.below"
+            v-model:exactly="row.exactly"
+            v-model:range-mode="row.rangeMode"
           />
         </template>
         <template v-else-if="row.type === 'bonusOccurrences'">

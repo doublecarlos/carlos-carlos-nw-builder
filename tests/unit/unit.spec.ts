@@ -31,8 +31,8 @@ const built = db.fromData();
 const BASE_CONTEXT: BuildContext = {
   class: "warlock",
   role: "dps",
-  combatType: "single",
   duration: 60,
+  enemies: 1,
   damageType: "magical",
   magnitude: 100,
   m32Forte: false,
@@ -386,9 +386,9 @@ describe("bonus model semantics", () => {
       "proc",
       "role",
       "class",
-      "combatType",
       "damageType",
       "duration",
+      "enemies",
       "bonusOccurrences",
       "equipped",
     ]);

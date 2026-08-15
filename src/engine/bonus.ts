@@ -280,9 +280,9 @@ export function collect(
   const ctx: EvalContext = {
     class: context.class,
     role: context.role,
-    combatType: context.combatType,
     damageType: context.damageType,
     duration: context.duration ?? 0,
+    enemies: context.enemies ?? 0,
     toggles: context.toggles ?? {},
     equipped,
     tags,

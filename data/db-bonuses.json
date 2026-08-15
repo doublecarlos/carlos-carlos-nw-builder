@@ -315,14 +315,9 @@
       {
         "when": {
           "toggle": "combat",
-          "any": [
-            {
-              "combatType": "single"
-            },
-            {
-              "combatType": "mixed"
-            }
-          ]
+          "equipped": {
+            "item": "enemy-type-boss"
+          }
         },
         "stats": {
           "outgoing_damage": 0.135
@@ -1056,14 +1051,9 @@
       },
       {
         "when": {
-          "any": [
-            {
-              "combatType": "aoe"
-            },
-            {
-              "combatType": "mixed"
-            }
-          ]
+          "enemies": {
+            "atLeast": 2
+          }
         },
         "stats": {
           "power_p": 0.025
@@ -1122,7 +1112,9 @@
       },
       {
         "when": {
-          "combatType": "single",
+          "enemies": {
+            "exactly": 1
+          },
           "duration": {
             "atLeast": 30
           },
@@ -1161,7 +1153,9 @@
       },
       {
         "when": {
-          "combatType": "single",
+          "enemies": {
+            "exactly": 1
+          },
           "duration": {
             "atLeast": 30
           },
@@ -1243,14 +1237,10 @@
               "outgoing_damage": 0.036
             },
             "when": {
-              "all": [
-                {
-                  "toggle": "combat"
-                },
-                {
-                  "combatType": "aoe"
-                }
-              ]
+              "toggle": "combat",
+              "enemies": {
+                "atLeast": 2
+              }
             }
           },
           {
@@ -1364,7 +1354,9 @@
           "duration": {
             "atLeast": 10
           },
-          "combatType": "single"
+          "enemies": {
+            "exactly": 1
+          }
         },
         "stats": {
           "acc_p": 0.08
@@ -2198,14 +2190,9 @@
       },
       {
         "when": {
-          "any": [
-            {
-              "combatType": "mixed"
-            },
-            {
-              "combatType": "aoe"
-            }
-          ]
+          "enemies": {
+            "atLeast": 2
+          }
         },
         "stats": {
           "power_p": 0.0325

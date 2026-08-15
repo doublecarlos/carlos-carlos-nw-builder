@@ -310,32 +310,26 @@
           "default": true
         },
         {
-          "id": "options.combatType",
-          "label": "Combat type",
+          "id": "options.enemies",
+          "label": "Number of enemies",
           "type": "build_parameter",
-          "paramType": "list",
-          "path": "combatType",
-          "default": "single",
+          "paramType": "number",
+          "path": "enemies",
+          "default": 1,
+          "min": 1,
           "quick": true,
-          "options": [
-            {
-              "value": "single",
-              "label": "Single Target"
-            },
-            {
-              "value": "aoe",
-              "label": "AoE"
-            },
-            {
-              "value": "mixed",
-              "label": "Mixed"
-            }
-          ]
+          "presets": [1, 3, 5, 10]
         },
         {
           "id": "options.location",
           "label": "Location",
           "filter": "location",
+          "type": "item_picker"
+        },
+        {
+          "id": "options.enemyType",
+          "label": "Enemy Type",
+          "filter": "enemy_type",
           "type": "item_picker"
         },
         {

@@ -12,6 +12,7 @@ function ctx(
 ): EvalContext {
   return {
     duration: 0,
+    enemies: 0,
     toggles: {},
     equipped: new Map(),
     tags: new Map(),

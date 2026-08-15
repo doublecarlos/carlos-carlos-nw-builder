@@ -170,8 +170,8 @@
       "sections": ["raceLeveling"]
     },
     {
-      "label": "Role / Forte / Combat type",
-      "reason": "Role, forte and combat/damage type are not recorded; check the Options section.",
+      "label": "Role / Forte / Damage type",
+      "reason": "Role, forte and damage type are not recorded; check the Options section.",
       "slotIds": [
         "options.role",
         "options.damageType",
@@ -180,8 +180,9 @@
         "options.forte2a",
         "options.forte2b",
         "options.m32Forte",
-        "options.combatType",
+        "options.enemies",
         "options.location",
+        "options.enemyType",
         "options.duration",
         "options.toggleConsumables",
         "options.toggleParty",

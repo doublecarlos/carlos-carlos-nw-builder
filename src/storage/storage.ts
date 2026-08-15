@@ -266,15 +266,18 @@ export function normalise(
     values: nestedNumbers(raw.values, {}),
     assignments: nestedNumbers(raw.assignments, base.assignments),
     occurrenceInputs: nestedNumbers(raw.occurrenceInputs, {}),
-    // `context`'s pass-through fields (class/role/combatType/damageType) are not
-    // individually validated -- the result is only knowable-safe by construction, not by
-    // the type checker; hence the cast.
+    // `context`'s pass-through fields (class/role/damageType) are not individually
+    // validated -- the result is only knowable-safe by construction, not by the type
+    // checker; hence the cast.
     context: {
       ...base.context,
       ...context,
       duration: Number.isFinite(Number(context.duration))
         ? Math.max(Number(context.duration), 0)
         : base.context.duration,
+      enemies: Number.isFinite(Number(context.enemies))
+        ? Math.max(Number(context.enemies), 0)
+        : base.context.enemies,
       magnitude: Number.isFinite(Number(context.magnitude))
         ? Number(context.magnitude)
         : base.context.magnitude,

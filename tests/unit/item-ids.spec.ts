@@ -52,9 +52,9 @@ function testBuild(choices: Record<string, string>): Build {
     context: {
       class: "",
       role: "",
-      combatType: "",
       damageType: "",
       duration: 0,
+      enemies: 0,
       magnitude: 0,
       m32Forte: false,
       forte: {},

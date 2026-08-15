@@ -14,9 +14,9 @@ export const LEAF_TYPES = [
   "toggle",
   "role",
   "class",
-  "combatType",
   "damageType",
   "duration",
+  "enemies",
   "bonusOccurrences",
   "equipped",
   "param",
@@ -75,7 +75,7 @@ function leafFromSpec(
 ): Omit<ConditionRow, "uid" | "kind"> {
   // spec comes from the when-object (validated by catalog.ts at load time);
   // each branch narrows spec to the shape it expects.
-  if (type === "duration") {
+  if (type === "duration" || type === "enemies") {
     if (typeof spec === "number") {
       return {
         type,
@@ -169,7 +169,7 @@ function leafToSpec(
   | RangeSpec
   | ({ key: string } & Record<string, unknown>)
   | undefined {
-  if (row.type === "duration") {
+  if (row.type === "duration" || row.type === "enemies") {
     if (row.rangeMode === "exact") {
       const exactly = numberOrUndefined(row.exactly);
       return exactly !== undefined ? { exactly } : undefined;
@@ -493,6 +493,7 @@ export function adjustPathAfterRemoval(
 // TIER_KEYS/VARIANT_KEYS/PROBLEM_KEYS already apply to grants/variants/problems.
 const RANGE_LEAF_KEYS: Record<string, Set<string>> = {
   duration: new Set(["atLeast", "below", "exactly"]),
+  enemies: new Set(["atLeast", "below", "exactly"]),
   bonusOccurrences: new Set(["bonus", "atLeast", "below", "exactly"]),
   equipped: new Set(["tag", "item", "atLeast", "below", "exactly"]),
   param: new Set(["key", "atLeast", "below", "exactly", "is", "equals"]),
@@ -501,7 +502,7 @@ const RANGE_LEAF_KEYS: Record<string, Set<string>> = {
 function leafSpecIsRepresentable(key: string, spec: unknown): boolean {
   if (key === "duration" && typeof spec === "number") return true; // bare-number shorthand
   const allowed = RANGE_LEAF_KEYS[key];
-  if (!allowed) return true; // toggle/role/class/combatType/damageType: plain string|string[]
+  if (!allowed) return true; // toggle/role/class/damageType: plain string|string[]
   if (spec == null) return true;
   if (typeof spec !== "object" || Array.isArray(spec)) return false;
   return Object.keys(spec).every((k) => allowed.has(k));

@@ -61,7 +61,7 @@ export const describeRange = (spec: RangeLike | null | undefined): string => {
 // "needs duration ≥ 30s (you have 10s)" rather than just a missing row.
 
 const matchOneOf =
-  (field: "role" | "class" | "combatType" | "damageType", label: string) =>
+  (field: "role" | "class" | "damageType", label: string) =>
   (spec: string | string[], ctx: EvalContext): ConditionLeafResult => {
     const wanted = asArray(spec);
     return {
@@ -95,12 +95,6 @@ const LEAVES: Record<
   class(spec, ctx) {
     return matchOneOf("class", "Class")(spec as string | string[], ctx);
   },
-  combatType(spec, ctx) {
-    return matchOneOf("combatType", "Combat type")(
-      spec as string | string[],
-      ctx,
-    );
-  },
   damageType(spec, ctx) {
     return matchOneOf("damageType", "Damage type")(
       spec as string | string[],
@@ -115,6 +109,16 @@ const LEAVES: Record<
       ok: inRange(value, s),
       label: `duration ${describeRange(s)}s`,
       detail: `you have ${value}s`,
+    };
+  },
+
+  enemies(spec, ctx) {
+    const s = spec as RangeLike;
+    const value = ctx.enemies ?? 0;
+    return {
+      ok: inRange(value, s),
+      label: `enemies ${describeRange(s)}`,
+      detail: `you have ${value}`,
     };
   },
 

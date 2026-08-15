@@ -1837,6 +1837,18 @@
     "allowedClass": ["bard", "warlock"]
   },
   {
+    "id": "enemy-type-boss",
+    "name": "Boss",
+    "filter": "enemy_type",
+    "maxCopies": 1
+  },
+  {
+    "id": "enemy-type-non-boss",
+    "name": "Non Boss",
+    "filter": "enemy_type",
+    "maxCopies": 1
+  },
+  {
     "id": "envenomed-storyteller-s-journal",
     "name": "Envenomed Storyteller's Journal",
     "filter": "artifact",

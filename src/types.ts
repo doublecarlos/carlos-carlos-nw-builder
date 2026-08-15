@@ -318,7 +318,7 @@ export type RangeLike = number | RangeSpec;
  * slot id. The three comparison forms are mutually exclusive, chosen by the addressed
  * parameter's `paramType`: `atLeast`/`below`/`exactly` for `number`/`percent` (half-open range,
  * same as `duration`'s, or a single exact match), `is` for `boolean`, `equals` for `list` (a
- * scalar or array -- an array means "is one of", same as `role`/`class`/`combatType`). */
+ * scalar or array -- an array means "is one of", same as `role`/`class`/`damageType`). */
 export interface ParamCondition {
   key: string;
   atLeast?: number;
@@ -335,9 +335,9 @@ export interface ConditionWhen {
   toggle?: string | string[];
   role?: string | string[];
   class?: string | string[];
-  combatType?: string | string[];
   damageType?: string | string[];
   duration?: RangeLike;
+  enemies?: RangeLike;
   /** How many total occurrences of `bonus` (usually this bonus's own id -- a "self-referential"
    *  attachment) are currently attached across every equipped item, tallied from each
    *  contributing item's `BonusOccurrenceConfig` (or 1 per bare-id attachment). A `min:0,max:1`
@@ -487,9 +487,9 @@ export interface ForteSplit {
 export interface BuildContext {
   class: string;
   role: string;
-  combatType: string;
   damageType: string;
   duration: number;
+  enemies: number;
   magnitude: number;
   m32Forte: boolean;
   forte: ForteSplit;
@@ -576,9 +576,9 @@ export interface TrashEntry {
 export interface EvalContext {
   class?: string;
   role?: string;
-  combatType?: string;
   damageType?: string;
   duration: number;
+  enemies: number;
   toggles: Record<string, boolean>;
   equipped: Map<string, number>;
   tags: Map<string, number>;

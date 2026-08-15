@@ -308,9 +308,9 @@ const CONDITION_KEYS = new Set([
   "toggle",
   "role",
   "class",
-  "combatType",
   "damageType",
   "duration",
+  "enemies",
   "bonusOccurrences",
   "equipped",
   "param",
@@ -344,9 +344,9 @@ const ITEM_FIELDS = new Set([
 const DEDICATED_LEAF_FOR_PATH: Record<string, string> = {
   role: "role",
   class: "class",
-  combatType: "combatType",
   damageType: "damageType",
   duration: "duration",
+  enemies: "enemies",
 };
 
 function checkParamCondition(
@@ -447,9 +447,9 @@ function checkConditions(
 const CONTEXT_SCALAR_KEYS = new Set([
   "class",
   "role",
-  "combatType",
   "damageType",
   "duration",
+  "enemies",
   "magnitude",
   "m32Forte",
 ]);
