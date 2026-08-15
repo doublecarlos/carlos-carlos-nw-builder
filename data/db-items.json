@@ -3731,12 +3731,6 @@
     "severity": 1400
   },
   {
-    "id": "mount-combat-power",
-    "name": "Mount Combat Power",
-    "filter": "mount_combat",
-    "il": 3000
-  },
-  {
     "id": "mount-combat-power-celestial",
     "name": "Generic Mount Combat Power",
     "filter": "mount_combat",
