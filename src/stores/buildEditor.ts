@@ -449,4 +449,11 @@ export function applyPreset(preset: SectionPreset) {
   for (const [slotId, rows] of Object.entries(preset.assignments ?? {})) {
     b.assignments[slotId] = { ...b.assignments[slotId], ...rows };
   }
+
+  // Per-item, not per-slot (see `SectionPreset.occurrences`), and merged per item so a preset
+  // naming one of an item's several occurrence configs leaves the others at their current
+  // counts -- same per-key merge `values`/`assignments` above already do.
+  for (const [itemId, counts] of Object.entries(preset.occurrences ?? {})) {
+    b.occurrenceInputs[itemId] = { ...b.occurrenceInputs[itemId], ...counts };
+  }
 }

@@ -32,8 +32,21 @@ export function occurrenceRowsForItem(
 ): OccurrenceRow[] {
   const b = builds.build.value;
   if (!item || !b) return [];
+  return occurrenceRows(item, b.occurrenceInputs[item.id]);
+}
 
-  const itemInputs = b.occurrenceInputs[item.id];
+/**
+ * `occurrenceRowsForItem` read against an explicit counts record (one item's slice of a
+ * `Build.occurrenceInputs`) rather than the active build's -- for an editor authoring counts
+ * that belong to something other than the current build, e.g. a `SectionPreset`'s own
+ * (PresetForm.vue).
+ */
+export function occurrenceRows(
+  item: Item | null | undefined,
+  itemInputs: Record<string, number> | undefined,
+): OccurrenceRow[] {
+  if (!item) return [];
+
   const rows: OccurrenceRow[] = [];
 
   for (const attachment of item.bonuses ?? []) {

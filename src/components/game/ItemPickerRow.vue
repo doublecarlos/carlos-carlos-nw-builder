@@ -5,26 +5,20 @@
 // errors list) stays in BuildSlot.vue since it's identical across every slot type.
 import { computed, useTemplateRef } from "vue";
 import ItemPicker from "./ItemPicker.vue";
+import BonusOccurrenceInputs from "./BonusOccurrenceInputs.vue";
 import PercentInput from "../ui/PercentInput.vue";
 import BaseButton from "../ui/BaseButton.vue";
-import BaseCheckbox from "../ui/BaseCheckbox.vue";
 import IconButton from "../ui/IconButton.vue";
-import { Minus, Plus } from "@lucide/vue";
+import { Plus } from "@lucide/vue";
 import * as buildEditor from "../../stores/buildEditor";
-import {
-  useItemBonusOccurrences,
-  type OccurrenceRow,
-} from "../../composables/useItemBonusOccurrences";
+import { useItemBonusOccurrences } from "../../composables/useItemBonusOccurrences";
 import {
   useSlotDynamicStats,
   type DynamicStatRow,
 } from "../../composables/useDynamicStats";
 import { isPercentKind, kindOf, stat as formatStat } from "../../lib/format";
-import { isMac } from "../../lib/platform";
 import type { Build, Db, Item, ItemPickerSlot } from "../../types";
 import type { ValueDiff } from "../../composables/useCompareDiff";
-
-const modKey = isMac ? "Cmd" : "Ctrl";
 
 const props = defineProps<{
   slotDef: ItemPickerSlot;
@@ -56,44 +50,8 @@ const picker = useTemplateRef<InstanceType<typeof ItemPicker>>("picker");
 
 const occurrenceRows = useItemBonusOccurrences(computed(() => props.item));
 
-function onOccurrenceCheckbox(row: OccurrenceRow, checked: boolean) {
-  buildEditor.setOccurrenceInput(
-    props.item!.id,
-    row.bonusId,
-    checked ? 1 : 0,
-    row.label,
-  );
-}
-
-function onOccurrenceInput(row: OccurrenceRow, event: Event) {
-  const raw = Number((event.target as HTMLInputElement).value);
-  buildEditor.setOccurrenceInput(
-    props.item!.id,
-    row.bonusId,
-    Number.isFinite(raw) ? raw : row.defaultValue,
-    row.label,
-  );
-}
-
-/** As PointAssignmentInput.vue's own stepper: a plain click steps by one, Ctrl/Cmd+click jumps
- *  straight to that direction's bound. Stopped from bubbling: unlike a point_assignment row
- *  (which has no single `itemIn` resolution of its own, so BuildEditor's row-level Ctrl+click
- *  handler already no-ops there), an item_picker row's Ctrl+click jumps straight to its one
- *  item in the layer editor -- a stepper embedded in this row would otherwise trigger that
- *  navigation on every Ctrl+click instead of stepping. */
-function stepOccurrence(row: OccurrenceRow, dir: 1 | -1, event: MouseEvent) {
-  event.stopPropagation();
-  if (isMac ? event.metaKey : event.ctrlKey) {
-    buildEditor.setOccurrenceInput(
-      props.item!.id,
-      row.bonusId,
-      dir === 1 ? row.max : row.min,
-      row.label,
-    );
-    return;
-  }
-  const next = Math.min(Math.max(row.value + dir, row.min), row.max);
-  buildEditor.setOccurrenceInput(props.item!.id, row.bonusId, next, row.label);
+function setOccurrence(bonusId: string, count: number, label: string) {
+  buildEditor.setOccurrenceInput(props.item!.id, bonusId, count, label);
 }
 
 defineExpose({
@@ -147,55 +105,17 @@ function rangeLabel(row: DynamicStatRow) {
     </IconButton>
   </div>
 
-  <!-- One row per BonusOccurrenceConfig this item carries -- a 0-1 range reads as a checkbox
-       (a per-item on/off toggle, e.g. a proc), a wider range as a stepper. A fixed
-       (min === max) config never produces a row at all -- see useItemBonusOccurrences.ts. -->
+  <!-- This item's BonusOccurrenceConfig inputs, if it carries any -- see
+       BonusOccurrenceInputs.vue for what each config's range renders as. -->
   <div
     v-if="occurrenceRows.length"
     class="mt-1 flex flex-wrap items-center gap-2.5"
   >
-    <BaseCheckbox
-      v-for="row in occurrenceRows.filter((r) => r.kind === 'checkbox')"
-      :key="row.bonusId"
-      inline
-      :data-testid="`occurrence-toggle-${row.bonusId}`"
-      :model-value="row.value === 1"
-      @update:model-value="onOccurrenceCheckbox(row, $event as boolean)"
-    >
-      {{ row.label }}
-    </BaseCheckbox>
-    <div
-      v-for="row in occurrenceRows.filter((r) => r.kind === 'stepper')"
-      :key="row.bonusId"
-      class="flex items-center gap-1.5"
-    >
-      <span class="text-sm">{{ row.label }}</span>
-      <div class="flex items-center gap-1">
-        <IconButton
-          :title="`Decrease (${modKey}+click for min)`"
-          :disabled="row.value <= row.min"
-          @click="stepOccurrence(row, -1, $event)"
-        >
-          <Minus />
-        </IconButton>
-        <input
-          type="number"
-          class="w-14 rounded-md border border-line bg-surface py-0.5 text-center focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-          :min="row.min"
-          :max="row.max"
-          :value="row.value"
-          :data-testid="`occurrence-input-${row.bonusId}`"
-          @input="onOccurrenceInput(row, $event)"
-        />
-        <IconButton
-          :title="`Increase (${modKey}+click for max)`"
-          :disabled="row.value >= row.max"
-          @click="stepOccurrence(row, 1, $event)"
-        >
-          <Plus />
-        </IconButton>
-      </div>
-    </div>
+    <BonusOccurrenceInputs
+      :rows="occurrenceRows"
+      testid-prefix="occurrence"
+      @change="setOccurrence"
+    />
   </div>
 
   <!-- Every dynamic-stat magnitude this slot's pick carries -- item-level and/or bonus-level

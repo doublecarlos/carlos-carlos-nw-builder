@@ -11,10 +11,11 @@
 // since they're app-driven rather than typed.
 import { computed, useTemplateRef } from "vue";
 import { Minus, Plus } from "@lucide/vue";
-import BaseCheckbox from "../ui/BaseCheckbox.vue";
+import BonusOccurrenceInputs from "./BonusOccurrenceInputs.vue";
 import IconButton from "../ui/IconButton.vue";
 import { db } from "../../stores/resolved";
 import {
+  occurrenceRows,
   occurrenceRowsForItem,
   type OccurrenceRow,
 } from "../../composables/useItemBonusOccurrences";
@@ -28,6 +29,11 @@ const props = defineProps<{
   /** itemId -> current count, sparse -- a row missing from this object reads as its own
    *  `default` (mirrors how a missing `build_parameter` value falls back to `slot.default`). */
   values: Record<string, number>;
+  /** itemId -> bonusId -> occurrence count, same shape as `Build.occurrenceInputs`. Omitted in
+   *  the build editor, where those counts *are* the active build's; supplied by an editor whose
+   *  rows author counts of their own (PresetForm.vue), so the steppers below show and write that
+   *  editor's values instead of the current build's. */
+  occurrenceValues?: Record<string, Record<string, number>>;
 }>();
 
 const emit = defineEmits<{
@@ -88,47 +94,9 @@ function step(item: Item, dir: 1 | -1, event: MouseEvent) {
 // single picked item, one set per row here since a point_assignment row has many items at once.
 
 function occurrenceRowsFor(item: Item): OccurrenceRow[] {
-  return occurrenceRowsForItem(item);
-}
-
-function onOccurrenceCheckbox(
-  item: Item,
-  row: OccurrenceRow,
-  checked: boolean,
-) {
-  emit("occurrenceChange", item.id, row.bonusId, checked ? 1 : 0, row.label);
-}
-
-function onOccurrenceInput(item: Item, row: OccurrenceRow, event: Event) {
-  const raw = Number((event.target as HTMLInputElement).value);
-  emit(
-    "occurrenceChange",
-    item.id,
-    row.bonusId,
-    Number.isFinite(raw) ? raw : row.defaultValue,
-    row.label,
-  );
-}
-
-function stepOccurrence(
-  item: Item,
-  row: OccurrenceRow,
-  dir: 1 | -1,
-  event: MouseEvent,
-) {
-  event.stopPropagation();
-  if (isMac ? event.metaKey : event.ctrlKey) {
-    emit(
-      "occurrenceChange",
-      item.id,
-      row.bonusId,
-      dir === 1 ? row.max : row.min,
-      row.label,
-    );
-    return;
-  }
-  const next = Math.min(Math.max(row.value + dir, row.min), row.max);
-  emit("occurrenceChange", item.id, row.bonusId, next, row.label);
+  return props.occurrenceValues
+    ? occurrenceRows(item, props.occurrenceValues[item.id])
+    : occurrenceRowsForItem(item);
 }
 
 // --- keyboard cursor integration ---------------------------------------------------------
@@ -189,60 +157,20 @@ defineExpose({ focus, focusAndSeed });
         </IconButton>
       </div>
 
-      <!-- One row per BonusOccurrenceConfig this item carries, independent of the stepper
-           above -- same rendering ItemPickerRow.vue uses for a single picked item. -->
+      <!-- One item's own BonusOccurrenceConfig inputs, independent of the stepper above --
+           one set per row here, since a point_assignment row has many items at once. -->
       <div
         v-if="occurrenceRowsFor(item).length"
         class="flex flex-wrap items-center justify-center gap-2"
       >
-        <BaseCheckbox
-          v-for="row in occurrenceRowsFor(item).filter(
-            (r) => r.kind === 'checkbox',
-          )"
-          :key="row.bonusId"
-          inline
-          :data-testid="`assignment-occurrence-toggle-${item.id}-${row.bonusId}`"
-          :model-value="row.value === 1"
-          @update:model-value="
-            onOccurrenceCheckbox(item, row, $event as boolean)
+        <BonusOccurrenceInputs
+          :rows="occurrenceRowsFor(item)"
+          :testid-prefix="`assignment-occurrence-${item.id}`"
+          @change="
+            (bonusId, count, label) =>
+              emit('occurrenceChange', item.id, bonusId, count, label)
           "
-        >
-          {{ row.label }}
-        </BaseCheckbox>
-        <div
-          v-for="row in occurrenceRowsFor(item).filter(
-            (r) => r.kind === 'stepper',
-          )"
-          :key="row.bonusId"
-          class="flex items-center gap-1.5"
-        >
-          <span class="text-sm">{{ row.label }}</span>
-          <div class="flex items-center gap-1">
-            <IconButton
-              :title="`Decrease (${modKey}+click for min)`"
-              :disabled="row.value <= row.min"
-              @click="stepOccurrence(item, row, -1, $event)"
-            >
-              <Minus />
-            </IconButton>
-            <input
-              type="number"
-              class="w-14 rounded-md border border-line bg-surface py-0.5 text-center focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-              :min="row.min"
-              :max="row.max"
-              :value="row.value"
-              :data-testid="`assignment-occurrence-input-${item.id}-${row.bonusId}`"
-              @input="onOccurrenceInput(item, row, $event)"
-            />
-            <IconButton
-              :title="`Increase (${modKey}+click for max)`"
-              :disabled="row.value >= row.max"
-              @click="stepOccurrence(item, row, 1, $event)"
-            >
-              <Plus />
-            </IconButton>
-          </div>
-        </div>
+        />
       </div>
     </div>
   </div>

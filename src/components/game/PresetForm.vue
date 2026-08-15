@@ -3,15 +3,22 @@
 // - Existing presets (source != null): live edits, changes emit immediately
 // - New presets (source == null): explicit Save button, draft until label is finalized
 //
-// Each of a preset's four value fields (params/choices/values/assignments) is edited as a
+// Each of a preset's slot-keyed value fields (params/choices/values/assignments) is edited as a
 // small add/remove row list -- the same "pick a key, then enter a type-appropriate value"
 // pattern ItemForm.vue's stat-row editor already uses -- except the value control for each row
 // is not a generic number input: it's the *actual* control the real build editor uses for that
 // slot type (BuildParamInput/ItemPicker/PointAssignmentInput), reused as-is via its existing
 // slotDef + v-model contract. That reuse is what keeps this form from needing any new
 // per-paramType/per-slot-type value editing code.
+//
+// `occurrences` is the one field with no row list of its own: it is keyed by item, not by slot
+// (see `SectionPreset.occurrences`), so it is authored inline on whichever row put that item on
+// screen -- an item row's own pick, or a point_assignment row's items -- into one draft-wide
+// map. Only entries still reachable from a row survive `toPreset`, so re-picking a row's item
+// doesn't leave counts behind for an item the preset no longer mentions.
 import { ref, computed, watch } from "vue";
 import { Plus, Save, Trash, Undo2 } from "@lucide/vue";
+import BonusOccurrenceInputs from "./BonusOccurrenceInputs.vue";
 import BuildParamInput from "./BuildParamInput.vue";
 import ItemPicker from "./ItemPicker.vue";
 import PointAssignmentInput from "./PointAssignmentInput.vue";
@@ -28,6 +35,7 @@ import { NW_SLOTS } from "../../data/data";
 import * as catalog from "../../data/catalog";
 import { deepEqual } from "../../lib/deep-equal";
 import { useDraftHistory } from "../../composables/useDraftHistory";
+import { occurrenceRows } from "../../composables/useItemBonusOccurrences";
 import { dynamicValueKey } from "../../lib/dynamic-stats";
 import type {
   SectionPreset,
@@ -83,6 +91,9 @@ interface PresetDraft {
   paramRows: ParamRow[];
   itemRows: ItemRow[];
   assignmentRows: AssignmentRow[];
+  /** Item id to bonus id to count -- draft-wide rather than per row, mirroring the field it
+   *  writes (see the module comment). */
+  occurrences: Record<string, Record<string, number>>;
 }
 
 function buildDraft(preset: SectionPreset | null | undefined): PresetDraft {
@@ -102,6 +113,12 @@ function buildDraft(preset: SectionPreset | null | undefined): PresetDraft {
     assignmentRows: Object.entries(source.assignments ?? {}).map(
       ([slotId, counts]) => ({ slotId, counts: { ...counts } }),
     ),
+    occurrences: Object.fromEntries(
+      Object.entries(source.occurrences ?? {}).map(([itemId, counts]) => [
+        itemId,
+        { ...counts },
+      ]),
+    ),
   };
 }
 
@@ -110,6 +127,30 @@ const isNew = computed(() => !props.source);
 
 const draft = ref<PresetDraft>(buildDraft(props.source));
 const error = ref("");
+
+/** Every item the form currently offers occurrence inputs for: each item row's own pick, plus
+ *  every item a point_assignment row lists (that row renders a set of inputs per item, the same
+ *  as the build editor's own). What `toPreset` keeps `occurrences` entries for. */
+const authoredItemIds = computed(() => {
+  const ids = new Set<string>();
+  for (const row of draft.value.itemRows) if (row.choice) ids.add(row.choice);
+  for (const row of draft.value.assignmentRows) {
+    if (!row.slotId) continue;
+    for (const item of props.db.forSlot(row.slotId)) ids.add(item.id);
+  }
+  return ids;
+});
+
+function occurrenceRowsFor(itemId: string) {
+  return occurrenceRows(props.db.get(itemId), draft.value.occurrences[itemId]);
+}
+
+function setOccurrence(itemId: string, bonusId: string, count: number) {
+  draft.value.occurrences[itemId] = {
+    ...draft.value.occurrences[itemId],
+    [bonusId]: count,
+  };
+}
 
 function toPreset(): SectionPreset {
   const label = draft.value.label.trim();
@@ -151,6 +192,17 @@ function toPreset(): SectionPreset {
   }
   if (Object.keys(assignments).length) preset.assignments = assignments;
 
+  const occurrences: Record<string, Record<string, number>> = {};
+  for (const itemId of authoredItemIds.value) {
+    const counts = draft.value.occurrences[itemId];
+    if (!counts) continue;
+    const kept = Object.fromEntries(
+      Object.entries(counts).filter(([, count]) => Number.isFinite(count)),
+    );
+    if (Object.keys(kept).length) occurrences[itemId] = kept;
+  }
+  if (Object.keys(occurrences).length) preset.occurrences = occurrences;
+
   return preset;
 }
 
@@ -172,6 +224,8 @@ function diffLabel(oldJson: string, newJson: string): string {
       return "edit item choices";
     if (JSON.stringify(old.assignments) !== JSON.stringify(nw.assignments))
       return "edit point assignments";
+    if (JSON.stringify(old.occurrences) !== JSON.stringify(nw.occurrences))
+      return "edit bonus occurrences";
   } catch {
     // JSON parse error -- shouldn't happen but be safe.
   }
@@ -247,6 +301,7 @@ function chooseSection(section: string) {
   draft.value.paramRows = [];
   draft.value.itemRows = [];
   draft.value.assignmentRows = [];
+  draft.value.occurrences = {};
 }
 
 function addParamRow() {
@@ -459,6 +514,15 @@ watch(
             config.label ?? config.stat
           }}</span>
         </span>
+        <!-- The picked item's own occurrence inputs, written into the draft-wide map keyed by
+             that item rather than by this row's slot. -->
+        <BonusOccurrenceInputs
+          :rows="occurrenceRowsFor(row.choice)"
+          :testid-prefix="`preset-occurrence-${row.choice}`"
+          @change="
+            (bonusId, count) => setOccurrence(row.choice, bonusId, count)
+          "
+        />
       </div>
 
       <FormSection
@@ -489,8 +553,12 @@ watch(
           v-if="assignmentSlotDef(row.slotId)"
           :slot-def="assignmentSlotDef(row.slotId)!"
           :values="row.counts"
+          :occurrence-values="draft.occurrences"
           @change="
             (itemId, count) => (row.counts = { ...row.counts, [itemId]: count })
+          "
+          @occurrence-change="
+            (itemId, bonusId, count) => setOccurrence(itemId, bonusId, count)
           "
         />
       </div>

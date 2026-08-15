@@ -309,11 +309,12 @@ describe("buildEditor.applyOccurrenceFromCompare", () => {
   });
 });
 
-// A preset touching all four fields at once: `options.role` (a real build_parameter),
+// A preset touching every field at once: `options.role` (a real build_parameter),
 // `ring1`/`ring1` (a fictitious item_picker slot, same test-only convention the rest of this
-// file uses for choices/values), and the real shipped `boons.tier1` point_assignment slot
+// file uses for choices/values), the real shipped `boons.tier1` point_assignment slot
 // (same rationale as the describe block above -- exercising the merge against real seeded
-// data rather than a synthetic row).
+// data rather than a synthetic row), and one occurrence count for the item that row picks
+// (keyed by item id, not slot id -- see `SectionPreset.occurrences`).
 describe("buildEditor.applyPreset", () => {
   const preset = {
     id: "test-preset",
@@ -323,6 +324,7 @@ describe("buildEditor.applyPreset", () => {
     choices: { ring1: "ItemA" },
     values: { ring1: { power: 42 } },
     assignments: { "boons.tier1": { "boon-tier1-power": 3 } },
+    occurrences: { ItemA: { "stack-bonus": 4 } },
   };
 
   const tier1Slot = {
@@ -333,7 +335,7 @@ describe("buildEditor.applyPreset", () => {
     filter: "boon_tier1",
   };
 
-  it("writes params/choices/values/assignments in one call", async () => {
+  it("writes params/choices/values/assignments/occurrences in one call", async () => {
     const { builds, buildEditor } = await freshStores();
     buildEditor.applyPreset(preset);
 
@@ -343,6 +345,31 @@ describe("buildEditor.applyPreset", () => {
     expect(builds.build.value.assignments["boons.tier1"]).toEqual({
       ...seededRows,
       "boon-tier1-power": 3,
+    });
+    expect(builds.build.value.occurrenceInputs.ItemA).toEqual({
+      "stack-bonus": 4,
+    });
+  });
+
+  it("merges into an item's occurrence counts without clobbering its other bonus", async () => {
+    const { builds, buildEditor } = await freshStores();
+    buildEditor.setOccurrenceInput("ItemA", "other-bonus", 2, "Other Bonus");
+    buildEditor.setOccurrenceInput("ItemA", "stack-bonus", 1, "Stack Bonus");
+    buildEditor.applyPreset(preset);
+
+    expect(builds.build.value.occurrenceInputs.ItemA).toEqual({
+      "other-bonus": 2,
+      "stack-bonus": 4,
+    });
+  });
+
+  it("leaves another item's occurrence counts untouched", async () => {
+    const { builds, buildEditor } = await freshStores();
+    buildEditor.setOccurrenceInput("ItemB", "stack-bonus", 5, "Stack Bonus");
+    buildEditor.applyPreset(preset);
+
+    expect(builds.build.value.occurrenceInputs.ItemB).toEqual({
+      "stack-bonus": 5,
     });
   });
 
@@ -373,6 +400,7 @@ describe("buildEditor.applyPreset", () => {
     expect(builds.build.value.context.role).toBeUndefined();
     expect(builds.build.value.choices.ring1).toBeUndefined();
     expect(builds.build.value.assignments["boons.tier1"]).toEqual(seededRows);
+    expect(builds.build.value.occurrenceInputs.ItemA).toBeUndefined();
   });
 
   it("ignores a params entry whose slot id is not a build_parameter", async () => {

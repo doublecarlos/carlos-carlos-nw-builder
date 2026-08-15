@@ -181,6 +181,13 @@ export interface SectionPreset {
   /** `point_assignment` slots -- slot id to `{ itemId: count }`, merged into the existing row
    * rather than replacing it (matches `setAssignment`'s own per-item merge). */
   assignments?: Record<string, Record<string, number>>;
+  /** Each item's `BonusOccurrenceConfig` count(s), item id then bonus id -- keyed by item, not
+   * by slot, because `Build.occurrenceInputs` (the field this writes into) is itself per-item:
+   * an item's count follows the item wherever it is picked, so a slot key here would have
+   * nothing to address. Reaches items picked through `choices` and items stepped on a
+   * `point_assignment` row alike, which is also why this is the one field a preset carries that
+   * the section's slot ids don't scope. */
+  occurrences?: Record<string, Record<string, number>>;
 }
 
 export interface SlotsData {

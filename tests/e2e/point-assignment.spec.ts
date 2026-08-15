@@ -352,7 +352,7 @@ test.describe("point_assignment hover card for an unselected candidate", () => {
     // helper only keys by bonus id, since a picker row has just the one item.
     await row
       .getByTestId(
-        `assignment-occurrence-toggle-test-tier1-master-item-${PROC_BONUS_ID}`,
+        `assignment-occurrence-test-tier1-master-item-toggle-${PROC_BONUS_ID}`,
       )
       .locator("input")
       .check();
