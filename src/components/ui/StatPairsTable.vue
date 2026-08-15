@@ -23,7 +23,7 @@ defineProps<{
       <tr
         v-for="row in rows"
         :key="row.key"
-        class="even:bg-surface-2/55"
+        class="even:bg-surface-2/55 hover:outline hover:outline-2 hover:outline-accent"
         :class="row.lead && 'font-semibold'"
       >
         <td

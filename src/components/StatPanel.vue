@@ -204,15 +204,15 @@ function capCell(key: string, redOver = Infinity) {
     over,
     primaryCls:
       over > redOver
-        ? "bg-warn/15 font-semibold"
+        ? "text-overcapped font-semibold"
         : over > -1e-9
-          ? "bg-ok/15"
+          ? "text-capped font-semibold"
           : "",
     overCls:
       over > 1e-9
-        ? "bg-warn/15 font-semibold"
+        ? "text-overcapped font-semibold"
         : over < -1e-9
-          ? "bg-accent/10"
+          ? "text-capped font-semibold"
           : "",
   };
 }
@@ -491,41 +491,57 @@ const {
         <tr
           v-for="row in capRows"
           :key="row.key"
-          class="even:bg-surface-2/55"
-          :class="row.sepAfter && 'border-b-2 border-b-line'"
+          class="even:bg-surface-2/55 group hover:outline hover:outline-2 hover:outline-accent"
         >
-          <td class="flex items-center gap-0.5 border border-line px-1 py-0.5">
-            <IconButton
-              title="Show contributing sources"
-              class="stat-info-btn flex-none"
-              :data-stat-key="row.key"
-              @click="toggleCard($event, row.key)"
-            >
-              <CircleAlert />
-            </IconButton>
-            <span>{{ row.label }}</span>
+          <td
+            class="border border-line px-1 py-0.5"
+            :class="row.sepAfter && 'border-b-2 border-b-line'"
+          >
+            <div class="flex items-center">
+              <IconButton
+                title="Show contributing sources"
+                class="stat-info-btn"
+                :data-stat-key="row.key"
+                @click="toggleCard($event, row.key)"
+              >
+                <CircleAlert />
+              </IconButton>
+              <span>{{ row.label }}</span>
+            </div>
           </td>
           <td
-            class="border border-line px-1 py-0.5 text-right tabular-nums"
-            :class="row.rating.primaryCls"
+            class="border border-line px-1 py-0.5 text-right tabular-nums gap-0.5"
+            :class="[
+              row.rating.primaryCls,
+              row.sepAfter && 'border-b-2 border-b-line',
+            ]"
           >
             {{ int(row.rating.total) }}
           </td>
           <td
             class="border border-line px-1 py-0.5 text-right tabular-nums"
-            :class="row.percent.primaryCls"
+            :class="[
+              row.percent.primaryCls,
+              row.sepAfter && 'border-b-2 border-b-line',
+            ]"
           >
             {{ pct(row.percent.capped) }}
           </td>
           <td
             class="border border-line px-1 py-0.5 text-right tabular-nums text-muted"
-            :class="row.percent.overCls"
+            :class="[
+              row.percent.overCls,
+              row.sepAfter && 'border-b-2 border-b-line',
+            ]"
           >
             {{ signedPct(row.percent.over) }}
           </td>
           <td
             class="border border-line px-1 py-0.5 text-right tabular-nums text-muted"
-            :class="row.rating.overCls"
+            :class="[
+              row.rating.overCls,
+              row.sepAfter && 'border-b-2 border-b-line',
+            ]"
           >
             {{ signedInt(row.rating.over) }}
           </td>
@@ -551,7 +567,7 @@ const {
     <PanelHead>Effective hit points</PanelHead>
     <StatPairsTable :rows="ehpTableRows" />
 
-    <BasePopover ref="tooltip" :width="256">
+    <BasePopover ref="tooltip" :width="320">
       <StatSourceCard
         v-if="openCard"
         :label="openLabel"

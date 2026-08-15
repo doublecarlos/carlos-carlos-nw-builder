@@ -27,6 +27,9 @@
   --ok: #087443;
   --diff: #ab9000;
   --radius: 6px;
+
+  --capped: #00831c;
+  --overcapped: #ff6600;
 }
 
 .dark {
@@ -34,9 +37,9 @@
   --bg: #14171c;
   --surface: #1b1f26;
   --surface-2: #232830;
-  --line: #333a45;
-  --text: #e6e9ef;
-  --muted: #97a0b0;
+  --line: #464e5c;
+  --text: #ffffff;
+  --muted: #b0b7c2;
   --accent: #7ea2ff;
   --accent-soft: #24304d;
   --danger: #ff9b90;
@@ -44,6 +47,9 @@
   --warn: #f0a868;
   --ok: #6edaa6;
   --diff: #e0c53f;
+
+  --capped: #00da2f;
+  --overcapped: #ff7300;
 }
 
 @theme {
@@ -60,7 +66,8 @@
   --color-warn: var(--warn);
   --color-ok: var(--ok);
   --color-diff: var(--diff);
-
+  --color-capped: var(--capped);
+  --color-overcapped: var(--overcapped);
   --radius-md: var(--radius);
 
   --font-sans:
