@@ -258,10 +258,10 @@
         "strike": 36648.0,
         "severity": 43684.0,
         "forte": 32206.0,
-        "flat_damage": 200.0,
+        "base_damage_flat": 200.0,
         "outgoing_damage": 0.8059999999999999,
         "dmg_enchant": 0.0,
-        "mult_damage": 0.17667200000000016,
+        "outgoing_damage_mult": 0.17667200000000016,
         "overall_damage": 0.065,
         "magical_damage_boost": 0.0,
         "physical_damage_boost": 0.0,
@@ -314,7 +314,7 @@
         "gold": 0.0,
         "glory": 0.0,
         "enemy_outgoing_damage": 0.0,
-        "mult_hit_points": -0.2799999999999999
+        "hit_points_mult": -0.2799999999999999
       },
       "afterDynamicStatMods": {
         "il": 143586.0,
@@ -331,10 +331,10 @@
         "strike": 36648.0,
         "severity": 43684.0,
         "forte": 32206.0,
-        "flat_damage": 200.0,
+        "base_damage_flat": 200.0,
         "outgoing_damage": 0.8059999999999999,
         "dmg_enchant": 0.0,
-        "mult_damage": 0.17667200000000016,
+        "outgoing_damage_mult": 0.17667200000000016,
         "overall_damage": 0.065,
         "magical_damage_boost": 0.0,
         "physical_damage_boost": 0.0,
@@ -387,7 +387,7 @@
         "gold": 0.0,
         "glory": 0.0,
         "enemy_outgoing_damage": 0.0,
-        "mult_hit_points": -0.2799999999999999
+        "hit_points_mult": -0.2799999999999999
       },
       "afterCombinedRating": {
         "il": 143586.0,
@@ -404,10 +404,10 @@
         "strike": 146393.0,
         "severity": 153429.0,
         "forte": 141951.0,
-        "flat_damage": 200.0,
+        "base_damage_flat": 200.0,
         "outgoing_damage": 0.8059999999999999,
         "dmg_enchant": 0.0,
-        "mult_damage": 0.17667200000000016,
+        "outgoing_damage_mult": 0.17667200000000016,
         "overall_damage": 0.065,
         "magical_damage_boost": 0.0,
         "physical_damage_boost": 0.0,
@@ -460,7 +460,7 @@
         "gold": 0.0,
         "glory": 0.0,
         "enemy_outgoing_damage": 0.0,
-        "mult_hit_points": -0.2799999999999999
+        "hit_points_mult": -0.2799999999999999
       },
       "afterRatingPct": {
         "il": 143586.0,
@@ -477,10 +477,10 @@
         "strike": 146393.0,
         "severity": 153429.0,
         "forte": 141951.0,
-        "flat_damage": 200.0,
+        "base_damage_flat": 200.0,
         "outgoing_damage": 0.8059999999999999,
         "dmg_enchant": 0.0,
-        "mult_damage": 0.17667200000000016,
+        "outgoing_damage_mult": 0.17667200000000016,
         "overall_damage": 0.065,
         "magical_damage_boost": 0.0,
         "physical_damage_boost": 0.0,
@@ -533,7 +533,7 @@
         "gold": 0.0,
         "glory": 0.0,
         "enemy_outgoing_damage": 0.0,
-        "mult_hit_points": -0.2799999999999999
+        "hit_points_mult": -0.2799999999999999
       },
       "afterAbilityScores": {
         "il": 143586.0,
@@ -550,10 +550,10 @@
         "strike": 146393.0,
         "severity": 153429.0,
         "forte": 141951.0,
-        "flat_damage": 200.0,
+        "base_damage_flat": 200.0,
         "outgoing_damage": 0.8059999999999999,
         "dmg_enchant": 0.0,
-        "mult_damage": 0.17667200000000016,
+        "outgoing_damage_mult": 0.17667200000000016,
         "overall_damage": 0.065,
         "magical_damage_boost": 0.09,
         "physical_damage_boost": 0.0275,
@@ -606,7 +606,7 @@
         "gold": 0.0,
         "glory": 0.0,
         "enemy_outgoing_damage": 0.0,
-        "mult_hit_points": -0.21879999999999988
+        "hit_points_mult": -0.21879999999999988
       },
       "totals": {
         "il": 143586.0,
@@ -623,10 +623,10 @@
         "strike": 146393.0,
         "severity": 153429.0,
         "forte": 141951.0,
-        "flat_damage": 200.0,
+        "base_damage_flat": 200.0,
         "outgoing_damage": 0.8059999999999999,
         "dmg_enchant": 0.0,
-        "mult_damage": 0.17667200000000016,
+        "outgoing_damage_mult": 0.17667200000000016,
         "overall_damage": 0.065,
         "magical_damage_boost": 0.09,
         "physical_damage_boost": 0.0275,
@@ -679,7 +679,7 @@
         "gold": 0.0,
         "glory": 0.0,
         "enemy_outgoing_damage": 0.0,
-        "mult_hit_points": -0.21879999999999988
+        "hit_points_mult": -0.21879999999999988
       },
       "caps": {
         "il": 0.0,
@@ -696,10 +696,10 @@
         "strike": 143586.0,
         "severity": 153586.0,
         "forte": 153586.0,
-        "flat_damage": 0.0,
+        "base_damage_flat": 0.0,
         "outgoing_damage": 0.0,
         "dmg_enchant": 0.0,
-        "mult_damage": 0.0,
+        "outgoing_damage_mult": 0.0,
         "overall_damage": 0.0,
         "magical_damage_boost": 0.0,
         "physical_damage_boost": 0.0,
@@ -752,7 +752,7 @@
         "gold": 0.0,
         "glory": 0.0,
         "enemy_outgoing_damage": 0.0,
-        "mult_hit_points": 0.0
+        "hit_points_mult": 0.0
       },
       "capped": {
         "il": 143586.0,
@@ -769,10 +769,10 @@
         "strike": 143586.0,
         "severity": 153429.0,
         "forte": 141951.0,
-        "flat_damage": 200.0,
+        "base_damage_flat": 200.0,
         "outgoing_damage": 0.8059999999999999,
         "dmg_enchant": 0.0,
-        "mult_damage": 0.17667200000000016,
+        "outgoing_damage_mult": 0.17667200000000016,
         "overall_damage": 0.065,
         "magical_damage_boost": 0.09,
         "physical_damage_boost": 0.0275,
@@ -825,7 +825,7 @@
         "gold": 0.0,
         "glory": 0.0,
         "enemy_outgoing_damage": 0.0,
-        "mult_hit_points": -0.21879999999999988
+        "hit_points_mult": -0.21879999999999988
       },
       "overcap": {
         "il": 0.0,
@@ -842,10 +842,10 @@
         "strike": 2807.0,
         "severity": -157.0,
         "forte": -11635.0,
-        "flat_damage": 0.0,
+        "base_damage_flat": 0.0,
         "outgoing_damage": 0.0,
         "dmg_enchant": 0.0,
-        "mult_damage": 0.0,
+        "outgoing_damage_mult": 0.0,
         "overall_damage": 0.0,
         "magical_damage_boost": 0.0,
         "physical_damage_boost": 0.0,
@@ -898,7 +898,7 @@
         "gold": 0.0,
         "glory": 0.0,
         "enemy_outgoing_damage": 0.0,
-        "mult_hit_points": 0.0
+        "hit_points_mult": 0.0
       }
     },
     "derived": {

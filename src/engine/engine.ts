@@ -151,7 +151,7 @@ function run(
   const afterRatingPct = addVectors(afterCombinedRating, ratingPct, keys);
 
   // --- stage 5: ability scores ---------------------------------------------------------
-  // FIX #5: `mult_hit_points` is a multiplicative stat, so con/200 is simply another factor
+  // FIX #5: `hit_points_mult` is a multiplicative stat, so con/200 is simply another factor
   // rather than the sheet's `(1+cur)*(1+con/200)-1-cur` hack. Algebraically identical.
   const abilities = zeros(keys);
   for (const rule of schema.abilityContributions) {
@@ -239,12 +239,11 @@ function derive(db: Db, build: Build, stages: Stages): DerivedOutputs {
     (itemLevel * 10 + capped.hit_points) *
     role.hpBonus *
     (1 + capped.hit_points_p) *
-    (1 + capped.mult_hit_points);
+    (1 + capped.hit_points_mult);
 
-  // FIX #1: reads the capped stage like every other derived value. `flat_damage` has no cap
-  // and no later stage touches it, so this is a no-op today -- but it removes a trap where a
-  // future bonus feeding `flat_damage` through a later stage would be silently dropped.
-  const baseDamage = capped.flat_damage + (itemLevel / 10) * role.damageBonus;
+  const baseDamage =
+    (capped.base_damage_flat + (itemLevel / 10) * role.damageBonus) *
+    (1 + capped.base_damage_mult);
 
   const effMagPhys = magical
     ? capped.magical_damage_boost
@@ -262,7 +261,7 @@ function derive(db: Db, build: Build, stages: Stages): DerivedOutputs {
       (1 + enemyEff) *
       (1 + capped.outgoing_damage) *
       (1 + capped.enemy_incoming_damage) *
-      (1 + capped.mult_damage);
+      (1 + capped.outgoing_damage_mult);
     const value =
       baseDamage *
       (magnitude / 100) *

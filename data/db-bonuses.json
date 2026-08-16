@@ -580,7 +580,7 @@
           "toggle": "party"
         },
         "stats": {
-          "mult_damage": 0.03
+          "outgoing_damage_mult": 0.03
         }
       }
     ]
@@ -1256,7 +1256,7 @@
         },
         "stats": {
           "outgoing_damage": 0.09,
-          "mult_hit_points": -0.2
+          "hit_points_mult": -0.2
         }
       }
     ]
@@ -1794,7 +1794,7 @@
         },
         "stats": {
           "outgoing_damage": 0.035,
-          "mult_hit_points": -0.1
+          "hit_points_mult": -0.1
         }
       }
     ],
@@ -1810,7 +1810,7 @@
         },
         "stats": {
           "outgoing_damage": 0.05,
-          "mult_hit_points": -0.1
+          "hit_points_mult": -0.1
         }
       }
     ]

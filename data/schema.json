@@ -71,9 +71,18 @@
     },
     { "key": "forte", "label": "Forte", "kind": "rating" },
 
-    { "key": "flat_damage", "label": "Flat Damage", "kind": "flat" },
+    { "key": "base_damage_flat", "label": "Base Damage", "kind": "flat" },
+    {
+      "key": "base_damage_mult",
+      "label": "Base Damage (Mult)",
+      "kind": "mult"
+    },
     { "key": "outgoing_damage", "label": "Outgoing Damage", "kind": "percent" },
-    { "key": "mult_damage", "label": "Mult Damage", "kind": "mult" },
+    {
+      "key": "outgoing_damage_mult",
+      "label": "Outgoing Damage (Mult)",
+      "kind": "mult"
+    },
     { "key": "overall_damage", "label": "Overall Damage", "kind": "percent" },
     {
       "key": "magical_damage_boost",
@@ -88,7 +97,7 @@
     { "key": "incoming_damage", "label": "Incoming Damage", "kind": "mult" },
 
     { "key": "hit_points_p", "label": "HP Bonus", "kind": "percent" },
-    { "key": "mult_hit_points", "label": "HP Multiplier", "kind": "mult" },
+    { "key": "hit_points_mult", "label": "HP (Mult)", "kind": "mult" },
     { "key": "hit_points", "label": "Hit Points", "kind": "flat" },
 
     {
@@ -410,7 +419,7 @@
     { "ability": "str", "stat": "stamina_regen", "divisor": 200 },
     { "ability": "int", "stat": "control_bonus_p", "divisor": 200 },
     { "ability": "wis", "stat": "control_resist_p", "divisor": 200 },
-    { "ability": "con", "stat": "mult_hit_points", "divisor": 200 }
+    { "ability": "con", "stat": "hit_points_mult", "divisor": 200 }
   ],
 
   "forteSplit": { "primary": 2, "secondaryA": 4, "secondaryB": 4 },

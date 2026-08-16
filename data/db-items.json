@@ -2688,7 +2688,7 @@
     "name": "Celestial Lightning Flash",
     "filter": "combat_enchant_offense",
     "il": 6000,
-    "mult_damage": 0.12,
+    "outgoing_damage_mult": 0.12,
     "bonuses": ["lightning-flash"]
   },
   {
@@ -2821,7 +2821,7 @@
     "combined_rating": 2700,
     "ca": 2250,
     "strike": 2250,
-    "flat_damage": 275,
+    "base_damage_flat": 275,
     "allowedClass": ["barbarian"],
     "bonuses": ["m28-voidtouched-set"]
   },
@@ -2833,7 +2833,7 @@
     "combined_rating": 2700,
     "severity": 2250,
     "forte": 2250,
-    "flat_damage": 275,
+    "base_damage_flat": 275,
     "allowedClass": ["warlock"],
     "bonuses": ["m28-voidtouched-set"]
   },
@@ -3206,7 +3206,7 @@
     "combined_rating": 4725,
     "strike": 3150,
     "severity": 3150,
-    "flat_damage": 200,
+    "base_damage_flat": 200,
     "deflect": 3937,
     "allowedClass": ["barbarian"],
     "bonuses": [
@@ -3238,7 +3238,7 @@
     "acc": 3412,
     "strike": 3150,
     "severity": 3150,
-    "flat_damage": 200,
+    "base_damage_flat": 200,
     "allowedClass": ["warlock"],
     "bonuses": ["m32-impending-doom-celestial"]
   },
@@ -3251,7 +3251,7 @@
     "acc": 2892,
     "strike": 2670,
     "severity": 2670,
-    "flat_damage": 50,
+    "base_damage_flat": 50,
     "allowedClass": ["warlock"],
     "bonuses": ["m32-omen-of-doom-legendary"]
   },
@@ -3264,7 +3264,7 @@
     "acc": 3120,
     "strike": 2880,
     "severity": 2880,
-    "flat_damage": 100,
+    "base_damage_flat": 100,
     "allowedClass": ["warlock"],
     "bonuses": ["m32-omen-of-doom-mythic"]
   },
@@ -3624,7 +3624,7 @@
     "power": 2030,
     "acc": 3770,
     "strike": 3480,
-    "flat_damage": 100,
+    "base_damage_flat": 100,
     "allowedClass": ["bard"],
     "bonuses": ["m33-chilling-flow-mythic"]
   },
@@ -4295,7 +4295,7 @@
     "filter": "combat_enchant_defense",
     "il": 7000,
     "incoming_damage": -0.12,
-    "mult_hit_points": 0.15
+    "hit_points_mult": 0.15
   },
   {
     "id": "risky-investment",
@@ -4383,7 +4383,7 @@
     "filter": "combat_enchant_defense",
     "il": 7000,
     "incoming_damage": -0.12,
-    "mult_hit_points": 0.15,
+    "hit_points_mult": 0.15,
     "bonuses": [
       {
         "bonus": "shattered-resolve-stacks",
@@ -4506,7 +4506,7 @@
     "filter": "sturdy_collar",
     "il": 1000,
     "combined_rating": 900,
-    "mult_damage": 0.02
+    "outgoing_damage_mult": 0.02
   },
   {
     "id": "sunlord-ca",
@@ -4527,7 +4527,7 @@
     "name": "Celestial Swift Synergy",
     "filter": "combat_enchant_offense",
     "il": 7000,
-    "mult_damage": 0.12,
+    "outgoing_damage_mult": 0.12,
     "bonuses": ["swift-synergy"]
   },
   {
