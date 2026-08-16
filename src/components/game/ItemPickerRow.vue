@@ -77,7 +77,7 @@ function setDynamic(row: DynamicStatRow, raw: string | number) {
 }
 
 function rangeLabel(row: DynamicStatRow) {
-  return `${row.label} ${formatStat(row.stat, row.min)}–${formatStat(row.stat, row.max)}`;
+  return `${row.label} (${formatStat(row.stat, row.min)} - ${formatStat(row.stat, row.max)})`;
 }
 </script>
 
@@ -130,6 +130,7 @@ function rangeLabel(row: DynamicStatRow) {
       :key="row.key"
       class="flex items-center gap-1.5"
     >
+      <span>{{ rangeLabel(row) }}</span>
       <PercentInput
         v-if="isPercent(row.stat)"
         :model-value="row.value"
@@ -145,7 +146,6 @@ function rangeLabel(row: DynamicStatRow) {
         :value="row.value"
         @input="setDynamic(row, ($event.target as HTMLInputElement).value)"
       />
-      <span class="text-muted">{{ rangeLabel(row) }}</span>
     </div>
   </div>
 

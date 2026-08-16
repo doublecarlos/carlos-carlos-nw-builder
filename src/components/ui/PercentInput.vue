@@ -99,7 +99,7 @@ function nudge(direction: number, event: KeyboardEvent) {
   <span class="relative inline-block">
     <input
       ref="input"
-      class="w-full border border-line rounded-md pr-5 text-right tabular-nums text-accent focus:text-text"
+      class="peer w-full border border-line rounded-md pr-5 text-right tabular-nums text-accent focus:text-text bg-surface"
       type="text"
       inputmode="decimal"
       autocomplete="off"
@@ -112,7 +112,7 @@ function nudge(direction: number, event: KeyboardEvent) {
       @keydown.down="nudge(-1, $event)"
     />
     <span
-      class="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-muted"
+      class="pointer-events-none absolute inset-y-0 right-1.5 flex items-center text-accent peer-focus:text-text"
       >%</span
     >
   </span>
