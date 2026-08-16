@@ -94,20 +94,6 @@
     "tags": ["gem:jade"]
   },
   {
-    "id": "1st-pack-tactics-group-celestial",
-    "name": "1st Pack Tactics (Group)",
-    "filter": "group_buff",
-    "maxCopies": 1,
-    "bonuses": ["1st-pack-tactics-group-celestial"]
-  },
-  {
-    "id": "1x-mw-set",
-    "name": "1x MW set",
-    "filter": "group_buff",
-    "outgoing_damage": 0.02,
-    "maxCopies": 1
-  },
-  {
     "id": "2-aquamarine-accuracy-severity",
     "name": "Celestial Aquamarine",
     "filter": "enchantment_offense",
@@ -292,20 +278,6 @@
     "strike": 1485
   },
   {
-    "id": "2nd-pack-tactics-group-celestial",
-    "name": "2nd Pack Tactics (Group)",
-    "filter": "group_buff",
-    "maxCopies": 1,
-    "bonuses": ["2nd-pack-tactics-group-celestial"]
-  },
-  {
-    "id": "2x-mw-set",
-    "name": "2x MW set",
-    "filter": "group_buff",
-    "outgoing_damage": 0.04,
-    "maxCopies": 1
-  },
-  {
     "id": "3-ammolite-defense-awareness-crit-avoid",
     "name": "Celestial Ammolite",
     "filter": "enchantment_defense",
@@ -466,27 +438,6 @@
     "power": 1080,
     "acc": 1080,
     "strike": 1080
-  },
-  {
-    "id": "3x-mw-set",
-    "name": "3x MW set",
-    "filter": "group_buff",
-    "outgoing_damage": 0.06,
-    "maxCopies": 1
-  },
-  {
-    "id": "4x-mw-set",
-    "name": "4x MW set",
-    "filter": "group_buff",
-    "outgoing_damage": 0.08,
-    "maxCopies": 1
-  },
-  {
-    "id": "5x-mw-set",
-    "name": "5x MW set",
-    "filter": "group_buff",
-    "outgoing_damage": 0.1,
-    "maxCopies": 1
   },
   {
     "id": "acc-m32-1000-to-5800",
@@ -700,6 +651,12 @@
     "maxCopies": 1
   },
   {
+    "id": "black-death-scorpion",
+    "name": "Black Death Scorpion",
+    "filter": "group_buff",
+    "maxCopies": 1
+  },
+  {
     "id": "blazing-oportunity-ca-severity-bestial-fire-archon-celestial",
     "name": "Blazing Oportunity",
     "filter": "mount_equip",
@@ -728,7 +685,7 @@
   },
   {
     "id": "boon-accuracy",
-    "name": "Boon: Accuracy",
+    "name": "Guild Boon: Accuracy",
     "filter": "guild_boon_off",
     "il": 1000,
     "combined_rating": 800,
@@ -841,7 +798,7 @@
   },
   {
     "id": "boon-awareness",
-    "name": "Boon: Awareness",
+    "name": "Guild Boon: Awareness",
     "filter": "guild_boon_def",
     "il": 1000,
     "combined_rating": 800,
@@ -855,7 +812,7 @@
   },
   {
     "id": "boon-critical-avoidance",
-    "name": "Boon: Critical Avoidance",
+    "name": "Guild Boon: Critical Avoidance",
     "filter": "guild_boon_def",
     "il": 1000,
     "combined_rating": 800,
@@ -863,7 +820,7 @@
   },
   {
     "id": "boon-defense",
-    "name": "Boon: Defense",
+    "name": "Guild Boon: Defense",
     "filter": "guild_boon_def",
     "il": 1000,
     "combined_rating": 800,
@@ -871,7 +828,7 @@
   },
   {
     "id": "boon-incoming-healing",
-    "name": "Boon: Incoming Healing",
+    "name": "Guild Boon: Incoming Healing",
     "filter": "guild_boon_def",
     "il": 1000,
     "combined_rating": 800,
@@ -989,7 +946,7 @@
   },
   {
     "id": "boon-movement-speed",
-    "name": "Boon: Movement Speed",
+    "name": "Guild Boon: Movement Speed",
     "filter": "guild_boon_util",
     "il": 1000,
     "combined_rating": 800,
@@ -1710,6 +1667,13 @@
     "tags": ["companion_power:utility"]
   },
   {
+    "id": "creeping-death",
+    "name": "Creeping Death",
+    "filter": "feat4",
+    "allowedClass": ["warlock"],
+    "bonuses": ["hellbringer-exclusive"]
+  },
+  {
     "id": "crimson-calamity",
     "name": "Crimson Calamity",
     "filter": "artifact",
@@ -1819,6 +1783,14 @@
     "power": 5906
   },
   {
+    "id": "double-scorch",
+    "name": "Double Scorch",
+    "filter": "feat1",
+    "longDescription": "Doubles damage from Soul Scorch",
+    "allowedClass": ["warlock"],
+    "bonuses": ["hellbringer-exclusive"]
+  },
+  {
     "id": "drizzt",
     "name": "Drizzt",
     "filter": "group_buff",
@@ -1873,6 +1845,13 @@
     "filter": "insignia_bonus",
     "maxCopies": 2,
     "bonuses": ["executioner-s-covenant"]
+  },
+  {
+    "id": "executioner-s-gift",
+    "name": "Executioner's Gift",
+    "filter": "feat4",
+    "allowedClass": ["warlock"],
+    "bonuses": ["hellbringer-exclusive"]
   },
   {
     "id": "exploit-weakness-strike-sev-blaspheme",
@@ -3689,6 +3668,20 @@
     "maxCopies": 1
   },
   {
+    "id": "masterwork-sets-2",
+    "name": "Masterwork Weapon Sets (Others)",
+    "filter": "group_buff",
+    "bonuses": [
+      {
+        "bonus": "masterwork-sets",
+        "min": 0,
+        "max": 4,
+        "default": 0,
+        "label": "Stacks"
+      }
+    ]
+  },
+  {
     "id": "max-crit-strike-and-severity",
     "name": "Max Crit Strike And Severity",
     "filter": "gear_ring",
@@ -3797,6 +3790,14 @@
     "bonuses": ["mystic-aura-group-celestial"]
   },
   {
+    "id": "mystic-aura-self",
+    "name": "Mystic Aura",
+    "filter": "mount_equip",
+    "il": 3937,
+    "combined_rating": 3544,
+    "bonuses": ["mystic-aura-group-celestial"]
+  },
+  {
     "id": "mythic-bregan-chest",
     "name": "Mythic Bregan Chest",
     "filter": "group_buff",
@@ -3841,6 +3842,27 @@
     "filter": "artifact_call",
     "maxCopies": 1,
     "bonuses": ["other-bard-s-lore"]
+  },
+  {
+    "id": "pack-tactics-group",
+    "name": "Pack Tactics (Others)",
+    "filter": "group_buff",
+    "bonuses": [
+      {
+        "bonus": "pack-tactics",
+        "min": 0,
+        "max": 4,
+        "default": 1
+      }
+    ]
+  },
+  {
+    "id": "pack-tactics-self",
+    "name": "Pack Tactics (Self)",
+    "filter": "mount_equip",
+    "il": 3937,
+    "combined_rating": 3544,
+    "bonuses": ["pack-tactics"]
   },
   {
     "id": "paladin-aura",
@@ -3890,6 +3912,13 @@
     "name": "Soulweaver",
     "filter": "paragon",
     "allowedClass": ["warlock"]
+  },
+  {
+    "id": "parting-blasphemy",
+    "name": "Parting Blasphemy",
+    "filter": "feat2",
+    "allowedClass": ["warlock"],
+    "bonuses": ["hellbringer-exclusive"]
   },
   {
     "id": "perfect-vision-acc",
@@ -3947,6 +3976,13 @@
     ]
   },
   {
+    "id": "power-of-the-nine-hells",
+    "name": "Power of the Nine Hells",
+    "filter": "feat1",
+    "allowedClass": ["warlock"],
+    "bonuses": ["hellbringer-exclusive"]
+  },
+  {
     "id": "practical-regal-collar",
     "name": "Practical Regal Collar",
     "filter": "pratical_collar",
@@ -3994,28 +4030,28 @@
   },
   {
     "id": "purple-armor-break",
-    "name": "Purple: Armor Break",
+    "name": "Armor Break",
     "filter": "group_buff",
     "enemy_defense": -0.09,
     "maxCopies": 1
   },
   {
     "id": "purple-dulled-senses",
-    "name": "Purple: Dulled Senses",
+    "name": "Dulled Senses",
     "filter": "group_buff",
     "enemy_awareness": -0.09,
     "maxCopies": 1
   },
   {
     "id": "purple-slowed-reactions",
-    "name": "Purple: Slowed Reactions",
+    "name": "Slowed Reactions",
     "filter": "group_buff",
     "enemy_deflect": -0.09,
     "maxCopies": 1
   },
   {
     "id": "purple-vulnerability",
-    "name": "Purple: Vulnerability",
+    "name": "Vulnerability",
     "filter": "group_buff",
     "enemy_crit_avoid": -0.09,
     "maxCopies": 1
@@ -4231,7 +4267,15 @@
     "longDescription": "Tamed Velociraptor companion power. Role: Offense.",
     "maxCopies": 1,
     "tags": ["companion_power:offense"],
-    "bonuses": ["raptor-s-instincts-tamed-velociraptor-power-offense"]
+    "bonuses": [
+      {
+        "bonus": "raptor-s-instincts-tamed-velociraptor-power-offense",
+        "min": 0,
+        "max": 4,
+        "default": 4,
+        "label": "Other raptors in party"
+      }
+    ]
   },
   {
     "id": "rattatoule-accuracy",
@@ -4256,10 +4300,18 @@
   {
     "id": "risky-investment",
     "name": "Risky Investment",
-    "filter": "class_stuff",
+    "filter": "feat3",
     "maxCopies": 1,
     "allowedClass": ["warlock"],
-    "bonuses": ["risky-investment"]
+    "bonuses": ["risky-investment", "hellbringer-exclusive"]
+  },
+  {
+    "id": "runic-aura",
+    "name": "Runic Aura",
+    "filter": "mount_equip",
+    "il": 3937,
+    "combined_rating": 3544,
+    "bonuses": ["runic-aura-group-celestial"]
   },
   {
     "id": "runic-aura-group-celestial",
@@ -4343,30 +4395,33 @@
     ]
   },
   {
-    "id": "slayer-2-5-overall",
-    "name": "Slayer (2.5% overall)",
+    "id": "slayer-overload",
+    "name": "Slayer Overload",
     "filter": "overload",
-    "overall_damage": 0.025
+    "longDescription": "If using multiple Slayer overloads, type the total overall damage on the first.",
+    "bonuses": ["slayer-overload"]
   },
   {
-    "id": "slayer-4-5-overall",
-    "name": "Slayer (4.5% overall)",
-    "filter": "overload",
-    "overall_damage": 0.045
+    "id": "soul-desecration",
+    "name": "Soul Desecration",
+    "filter": "feat3",
+    "allowedClass": ["warlock"],
+    "bonuses": ["hellbringer-exclusive"]
   },
   {
-    "id": "slayer-5-0-overall",
-    "name": "Slayer (5.0% overall)",
-    "filter": "overload",
-    "overall_damage": 0.05
-  },
-  {
-    "id": "soul-investiture",
-    "name": "Soul Investiture",
+    "id": "soul-puppet",
+    "name": "Soul Puppet",
     "filter": "class_stuff",
-    "overall_damage": 0.04,
+    "overall_damage": 0.03,
     "maxCopies": 1,
     "allowedClass": ["warlock"]
+  },
+  {
+    "id": "soul-spark-recovery",
+    "name": "Soul Spark Recovery",
+    "filter": "feat5",
+    "allowedClass": ["warlock"],
+    "bonuses": ["hellbringer-exclusive"]
   },
   {
     "id": "soul-sparks-average",
@@ -4408,6 +4463,12 @@
     "name": "Spider Totem (+Strike)",
     "filter": "trinket",
     "bonuses": ["spider-totem-strike"]
+  },
+  {
+    "id": "spined-devil",
+    "name": "Spined Devil",
+    "filter": "group_buff",
+    "maxCopies": 1
   },
   {
     "id": "spined-devil-s-influence-spined-devil-damage-offense",
@@ -4547,15 +4608,16 @@
     "filter": "class_feat",
     "shortDescription": "At-wills apply curse",
     "maxCopies": 1,
-    "allowedClass": ["warlock"]
+    "allowedClass": ["warlock"],
+    "bonuses": ["hellbringer-exclusive"]
   },
   {
     "id": "warlock-s-curse",
     "name": "Warlock's Curse",
-    "filter": "class_stuff",
+    "filter": "feat2",
     "maxCopies": 1,
     "allowedClass": ["warlock"],
-    "bonuses": ["warlock-s-curse"]
+    "bonuses": ["warlock-s-curse", "hellbringer-exclusive"]
   },
   {
     "id": "warlock-s-dust-to-dust",
@@ -4610,5 +4672,12 @@
     "longDescription": "Wolf companion power. Role: Offense, Utility.",
     "maxCopies": 1,
     "tags": ["companion_power:offense", "companion_power:utility"]
+  },
+  {
+    "id": "wrathful-souls",
+    "name": "Wrathful Souls",
+    "filter": "feat5",
+    "allowedClass": ["warlock"],
+    "bonuses": ["hellbringer-exclusive"]
   }
 ]

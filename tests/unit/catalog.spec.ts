@@ -1099,6 +1099,17 @@ function testDb(items: Item[], bonuses: Bonus[], slots: Slot[] = []): Db {
   } as unknown as Db;
 }
 
+/** The first shipped item that attaches a shipped bonus by bare id, with that bonus. */
+function shippedItemWithBonus(): { item: Item; bonus: Bonus } {
+  for (const item of NW_ITEMS) {
+    const attachment = item.bonuses?.[0];
+    if (typeof attachment !== "string") continue;
+    const bonus = NW_BONUSES.find((b) => b.id === attachment);
+    if (bonus) return { item, bonus };
+  }
+  throw new Error("no shipped item attaches a shipped bonus by id");
+}
+
 // A real item that exists in the shipped base catalogue — referencedOverlay should not emit it.
 const BASE_ITEM_ID = "1-amethyst-awareness";
 
@@ -1223,26 +1234,21 @@ describe("catalog.referencedOverlay", () => {
   });
 
   it("picks up a base item whose bonus a layer edited", () => {
-    // Use a real base item that references a real base bonus.
-    const BASE_BONUS_ITEM_ID = "1st-pack-tactics-group-celestial";
-    const baseItemWithBonus: Item = {
-      id: "1st-pack-tactics-group-celestial",
-      name: "1st Pack Tactics (Group)",
-      filter: "group_buff",
-      maxCopies: 1,
-      bonuses: ["1st-pack-tactics-group-celestial"],
-    };
+    // referencedOverlay diffs against the shipped base catalogue, so this case needs a real
+    // base item carrying a real base bonus -- picked out of the shipped data rather than
+    // hardcoded, so renaming any one entry cannot break the test.
+    const shippedPair = shippedItemWithBonus();
+    const baseItemWithBonus: Item = structuredClone(shippedPair.item);
     // Layer edits the bonus with different stats.
     const editedBonus: Bonus = {
-      id: "1st-pack-tactics-group-celestial",
-      name: "1st Pack Tactics (Group)",
+      ...structuredClone(shippedPair.bonus),
       grants: [{ stats: { power: 999 } }], // different from base
     };
     const db = testDb([baseItemWithBonus], [editedBonus]);
     const build: Build = {
       id: "b1",
       name: "Test",
-      choices: { group_buff: BASE_BONUS_ITEM_ID },
+      choices: { group_buff: baseItemWithBonus.id },
       values: {},
       assignments: {},
       occurrenceInputs: {},
@@ -1251,13 +1257,12 @@ describe("catalog.referencedOverlay", () => {
     };
     const overlay = catalog.referencedOverlay(db, build);
     // The item is unchanged from base, so it should NOT be emitted.
-    expect(overlay.items[BASE_BONUS_ITEM_ID]).toBeUndefined();
+    expect(overlay.items[baseItemWithBonus.id]).toBeUndefined();
     // The bonus IS different from base, so it SHOULD be emitted.
-    expect(overlay.bonuses["1st-pack-tactics-group-celestial"]).toBeDefined();
-    expect(
-      overlay.bonuses["1st-pack-tactics-group-celestial"]?.grants?.[0]?.stats
-        ?.power,
-    ).toBe(999);
+    expect(overlay.bonuses[editedBonus.id]).toBeDefined();
+    expect(overlay.bonuses[editedBonus.id]?.grants?.[0]?.stats?.power).toBe(
+      999,
+    );
   });
 
   it("does not emit a base item or its bonus when both match base", () => {

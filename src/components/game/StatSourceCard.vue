@@ -65,7 +65,7 @@ useEscapeToClose(() => emit("close"));
           <div
             v-for="src in section.sources"
             :key="src.name"
-            class="statcard-row flex justify-between gap-2 border-b border-line py-0.5 text-sm last:border-b-0"
+            class="statcard-row flex justify-between gap-2 border-b border-line py-0.5 text-sm last:border-b-0 hover:shadow-[inset_0_1px_0_var(--color-accent),inset_0_-1px_0_var(--color-accent)]"
             data-testid="stat-card-row"
           >
             <span>{{ src.name }}</span>

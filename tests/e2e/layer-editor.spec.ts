@@ -274,10 +274,10 @@ test.describe("bonus grant conditions", () => {
 
     // Open the Bonuses section and pick a bonus whose grant has a toggle condition.
     await page.getByRole("button", { name: /Bonuses \d+/ }).click();
-    await page.locator(".editor-search").fill("1st Pack Tactics (Group)");
+    await page.locator(".editor-search").fill("Portobello");
     const bonusRow = page
       .locator(".editor-row")
-      .filter({ hasText: "1st Pack Tactics (Group)" })
+      .filter({ hasText: "Portobello" })
       .first();
     await bonusRow.click();
 
@@ -401,19 +401,20 @@ test.describe("bonus stat payload editing", () => {
   test("pre-added empty stat rows survive filling one of them", async ({
     page,
   }) => {
-    const bonusRow = await openBonus(page, "1st Pack Tactics (Group)");
+    const bonusRow = await openBonus(page, "Portobello");
 
     // The add-rows-first workflow: add three empty rows, then fill only the first new
     // one. The still-empty rows must not be wiped by the auto-save round-trip.
+    const rows = page.locator(".stat-row");
+    const rowsBefore = await rows.count();
     for (let i = 0; i < 3; i++) {
       await page.getByRole("button", { name: "Add stat" }).first().click();
     }
-    const rows = page.locator(".stat-row");
-    await expect(rows).toHaveCount(5); // 2 existing + 3 added
-    await pickStat(rows.nth(2));
+    await expect(rows).toHaveCount(rowsBefore + 3);
+    await pickStat(rows.nth(rowsBefore));
 
     await page.waitForTimeout(1500);
-    await expect(rows).toHaveCount(5);
+    await expect(rows).toHaveCount(rowsBefore + 3);
     await expect(
       bonusRow.getByTestId("badge").filter({ hasText: "edited" }),
     ).toBeVisible();

@@ -1,35 +1,5 @@
 [
   {
-    "id": "1st-pack-tactics-group-celestial",
-    "name": "1st Pack Tactics (Group)",
-    "grants": [
-      {
-        "when": {
-          "toggle": "party"
-        },
-        "stats": {
-          "ca": 2953,
-          "awareness": 2953
-        }
-      }
-    ]
-  },
-  {
-    "id": "2nd-pack-tactics-group-celestial",
-    "name": "2nd Pack Tactics (Group)",
-    "grants": [
-      {
-        "when": {
-          "toggle": "party"
-        },
-        "stats": {
-          "ca": 1476,
-          "awareness": 1476
-        }
-      }
-    ]
-  },
-  {
     "id": "acute-senses-ca",
     "name": "Acute Senses (CA)",
     "grants": [
@@ -798,6 +768,27 @@
           "sev_p": 0.025,
           "hit_points_p": 0.025,
           "deflect_p": 0.015
+        }
+      }
+    ]
+  },
+  {
+    "id": "hellbringer-exclusive",
+    "name": "Hellbringer Exclusive",
+    "grants": [
+      {
+        "when": {
+          "not": {
+            "equipped": {
+              "item": "paragon-hellbringer",
+              "exactly": 1
+            }
+          }
+        },
+        "problem": {
+          "severity": "error",
+          "message": "Only valid for Hellbringer",
+          "hideFromPicker": true
         }
       }
     ]
@@ -2295,6 +2286,21 @@
     ]
   },
   {
+    "id": "masterwork-sets",
+    "name": "Masterwork Sets",
+    "grants": [
+      {
+        "stats": {
+          "outgoing_damage": 0.02,
+          "overall_healing": 0.02,
+          "incoming_damage": -0.02
+        }
+      }
+    ],
+    "stacking": "perSource",
+    "maxStacks": 4
+  },
+  {
     "id": "mender-s-covenant",
     "name": "Mender's Covenant",
     "grants": [
@@ -2457,7 +2463,17 @@
     "grants": [
       {
         "when": {
-          "toggle": "party"
+          "any": [
+            {
+              "toggle": "party"
+            },
+            {
+              "equipped": {
+                "item": "mystic-aura-self",
+                "atLeast": 1
+              }
+            }
+          ]
         },
         "stats": {
           "power": 2953,
@@ -2476,6 +2492,84 @@
         },
         "stats": {
           "enemy_crit_avoid": -0.2
+        }
+      }
+    ]
+  },
+  {
+    "id": "pack-tactics",
+    "name": "Pack Tactics",
+    "grants": [
+      {
+        "when": {
+          "toggle": "party"
+        },
+        "tiers": [
+          {
+            "bonusOccurrences": {
+              "bonus": "pack-tactics",
+              "atLeast": 1
+            },
+            "stats": {
+              "ca": 2953,
+              "awareness": 2953
+            }
+          },
+          {
+            "bonusOccurrences": {
+              "bonus": "pack-tactics",
+              "atLeast": 2
+            },
+            "stats": {
+              "ca": 4429,
+              "awareness": 4429
+            }
+          },
+          {
+            "bonusOccurrences": {
+              "bonus": "pack-tactics",
+              "atLeast": 3
+            },
+            "stats": {
+              "ca": 5167,
+              "awareness": 5167
+            }
+          },
+          {
+            "bonusOccurrences": {
+              "bonus": "pack-tactics",
+              "atLeast": 4
+            },
+            "stats": {
+              "ca": 5536,
+              "awareness": 5536
+            }
+          },
+          {
+            "bonusOccurrences": {
+              "bonus": "pack-tactics",
+              "atLeast": 5
+            },
+            "stats": {
+              "ca": 5721,
+              "awareness": 5721
+            }
+          }
+        ]
+      },
+      {
+        "when": {
+          "equipped": {
+            "item": "pack-tactics-self",
+            "atLeast": 1
+          },
+          "not": {
+            "toggle": "party"
+          }
+        },
+        "stats": {
+          "ca": 2953,
+          "awareness": 2953
         }
       }
     ]
@@ -2738,10 +2832,11 @@
           "toggle": "party"
         },
         "stats": {
-          "power_p": 0.18
+          "power_p": 0.045
         }
       }
-    ]
+    ],
+    "stacking": "perSource"
   },
   {
     "id": "rattatoule-accuracy",
@@ -2773,26 +2868,22 @@
     ]
   },
   {
-    "id": "runic-aura-group",
-    "name": "Runic Aura (Group)",
-    "grants": [
-      {
-        "when": {
-          "toggle": "party"
-        },
-        "stats": {
-          "power": 2250
-        }
-      }
-    ]
-  },
-  {
     "id": "runic-aura-group-celestial",
     "name": "Runic Aura (Group)",
     "grants": [
       {
         "when": {
-          "toggle": "party"
+          "any": [
+            {
+              "toggle": "party"
+            },
+            {
+              "equipped": {
+                "item": "runic-aura",
+                "atLeast": 1
+              }
+            }
+          ]
         },
         "stats": {
           "power": 2953,
@@ -2887,6 +2978,26 @@
     ],
     "stacking": "perSource",
     "maxStacks": 5
+  },
+  {
+    "id": "slayer-overload",
+    "name": "Slayer Overload",
+    "grants": [
+      {
+        "when": {
+          "toggle": "combat"
+        },
+        "stats": {},
+        "dynamicStats": [
+          {
+            "stat": "overall_damage",
+            "min": 0,
+            "max": 0.15,
+            "default": 0.045
+          }
+        ]
+      }
+    ]
   },
   {
     "id": "soul-sparks-average",

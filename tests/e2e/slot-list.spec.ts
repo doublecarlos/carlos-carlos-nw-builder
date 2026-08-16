@@ -124,13 +124,13 @@ test.describe("section collapse/expand", () => {
     await expect(slotRow(page, "options.class")).toBeVisible();
   });
 
-  test("the Options header's badge only counts its item_picker slots (Paragon, Location)", async ({
+  test("the Options header's badge only counts its item_picker slots (Paragon, Location, Enemy Type)", async ({
     page,
   }) => {
     await openBuilder(page);
     await expect(
       headerRow(page, "options").locator(".section-count"),
-    ).toHaveText("0/2");
+    ).toHaveText("0/3");
     await expect(headerRow(page, "gear").locator(".section-count")).toHaveText(
       /^\d+\/\d+$/,
     );

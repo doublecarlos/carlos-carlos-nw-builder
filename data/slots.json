@@ -1334,6 +1334,19 @@
       "defaultOpen": true,
       "id": "group",
       "label": "Group",
+      "presets": [
+        {
+          "id": "group-dungeon",
+          "label": "Dungeon Companions and Auras",
+          "choices": {
+            "group.group1": "portobello",
+            "group.group2": "tutor",
+            "group.group3": "flapjack",
+            "group.group4": "drizzt",
+            "group.group5": "black-death-scorpion"
+          }
+        }
+      ],
       "slots": [
         {
           "id": "group.group1",

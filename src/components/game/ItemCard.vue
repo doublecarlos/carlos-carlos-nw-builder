@@ -352,7 +352,7 @@ const rows = computed(() =>
         <div
           v-for="stat in stats"
           :key="stat.key"
-          class="flex justify-between gap-2 py-0.5 text-sm"
+          class="flex justify-between gap-2 py-0.5 text-sm hover:shadow-[inset_0_1px_0_var(--color-accent),inset_0_-1px_0_var(--color-accent)]"
         >
           <span>{{ stat.label }}</span
           ><span class="tabular-nums">{{ stat.value }}</span>
@@ -458,11 +458,11 @@ const rows = computed(() =>
                     "
                   >
                     <div>{{ tier.atLeast }} equipped:</div>
-                    <div class="flex flex-col">
+                    <div class="flex flex-col divide-y divide-line">
                       <div
                         v-for="s in tier.stats"
                         :key="s.key"
-                        class="flex justify-between gap-2 py-0.5"
+                        class="flex justify-between gap-2 py-0.5 ml-4 hover:shadow-[inset_0_1px_0_var(--color-accent),inset_0_-1px_0_var(--color-accent)]"
                       >
                         <span>{{ s.label }}</span
                         ><span class="tabular-nums">{{ s.value }}</span>
@@ -485,7 +485,7 @@ const rows = computed(() =>
                         <div
                           v-for="s in v.stats"
                           :key="s.key"
-                          class="flex justify-between gap-2 py-0.5"
+                          class="flex justify-between gap-2 py-0.5 hover:shadow-[inset_0_1px_0_var(--color-accent),inset_0_-1px_0_var(--color-accent)]"
                         >
                           <span>{{ s.label }}</span
                           ><span class="tabular-nums">{{ s.value }}</span>
@@ -514,7 +514,7 @@ const rows = computed(() =>
                   <div
                     v-for="s in g.stats"
                     :key="s.key"
-                    class="flex justify-between gap-2 py-0.5"
+                    class="flex justify-between gap-2 py-0.5 hover:shadow-[inset_0_1px_0_var(--color-accent),inset_0_-1px_0_var(--color-accent)]"
                   >
                     <span>{{ s.label }}</span
                     ><span class="tabular-nums">{{ s.value }}</span>
