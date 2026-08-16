@@ -127,7 +127,7 @@ defineExpose({ focus: focusControl, focusAndSeed });
           v-for="preset in slotDef.presets"
           :key="preset"
           type="button"
-          class="rounded-md border px-1.5 py-0.5 text-sm"
+          class="rounded-md border px-1.5 py-0.5"
           :class="
             Number(model) === preset
               ? 'border-accent bg-accent-soft text-text'

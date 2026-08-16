@@ -43,7 +43,7 @@ defineEmits<{
       @click="$emit('toggle-expand')"
     >
       <span
-        class="inline-flex items-center gap-1 text-xs font-semibold uppercase text-muted"
+        class="inline-flex items-center gap-1 text-sm font-semibold uppercase text-muted"
       >
         <ChevronDown v-if="expanded" class="size-[14px]" />
         <ChevronRight v-else class="size-[14px]" />
@@ -58,7 +58,7 @@ defineEmits<{
         class="nav-row relative flex items-center gap-1 rounded-md py-1 pl-5 pr-1"
       >
         <span
-          class="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-xs text-muted"
+          class="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-sm text-muted"
         >
           <span class="text-[10px] uppercase">{{
             entry.kind === "build" ? "B" : "L"
@@ -69,7 +69,7 @@ defineEmits<{
 
         <button
           type="button"
-          class="inline-flex cursor-pointer items-center gap-1 rounded-md px-1 py-0.5 text-xs text-accent hover:bg-accent-soft"
+          class="inline-flex cursor-pointer items-center gap-1 rounded-md px-1 py-0.5 text-sm text-accent hover:bg-accent-soft"
           @click="$emit('restore', entry)"
         >
           <RotateCcw class="size-[14px]" />

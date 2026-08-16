@@ -159,7 +159,7 @@ onKeyStroke(
           >
           <span
             v-if="entry === freeValue"
-            class="ml-auto rounded bg-ok/25 px-1.5 text-sm text-ok"
+            class="ml-auto rounded bg-ok/25 px-1.5 text-ok"
             >new</span
           >
         </span>

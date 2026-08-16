@@ -52,7 +52,7 @@ useEscapeToClose(() => emit("close"));
       <template v-for="(section, i) in sections" :key="section.key">
         <div
           v-if="sections.length > 1"
-          class="statcard-section mt-1.5 text-sm uppercase tracking-wide text-muted"
+          class="statcard-section mt-1.5 uppercase tracking-wide text-muted"
           data-testid="stat-card-section"
         >
           {{ section.title }}
@@ -65,7 +65,7 @@ useEscapeToClose(() => emit("close"));
           <div
             v-for="src in section.sources"
             :key="src.name"
-            class="statcard-row flex justify-between gap-2 border-b border-line py-0.5 text-sm last:border-b-0 hover:shadow-[inset_0_1px_0_var(--color-accent),inset_0_-1px_0_var(--color-accent)]"
+            class="statcard-row flex justify-between gap-2 border-b border-line py-0.5 last:border-b-0 hover:shadow-[inset_0_1px_0_var(--color-accent),inset_0_-1px_0_var(--color-accent)]"
             data-testid="stat-card-row"
           >
             <span>{{ src.name }}</span>
@@ -76,7 +76,7 @@ useEscapeToClose(() => emit("close"));
         </div>
         <div
           v-else
-          class="statcard-empty py-0.5 text-sm text-muted"
+          class="statcard-empty py-0.5 text-muted"
           data-testid="stat-card-empty"
         >
           no contributing sources

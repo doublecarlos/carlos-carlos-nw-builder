@@ -19,7 +19,7 @@ defineProps<{
 <template>
   <FormField :label="label">
     <span
-      class="flex w-full items-center rounded-md bg-surface-2 px-1.5 py-0.5 text-sm text-muted"
+      class="flex w-full items-center rounded-md bg-surface-2 px-1.5 py-0.5 text-muted"
       :title="
         existing
           ? 'Frozen -- renaming does not change it'

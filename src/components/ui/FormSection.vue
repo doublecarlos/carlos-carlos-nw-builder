@@ -7,8 +7,8 @@ const props = withDefaults(defineProps<{ sub?: boolean }>(), { sub: false });
 
 const sizeClasses = computed(() =>
   props.sub
-    ? "mt-2 mb-1 text-sm"
-    : "mt-3 mb-1.5 border-b border-line pb-1 text-sm uppercase tracking-wide",
+    ? "mt-2 mb-1 "
+    : "mt-3 mb-1.5 border-b border-line pb-1  uppercase tracking-wide",
 );
 </script>
 

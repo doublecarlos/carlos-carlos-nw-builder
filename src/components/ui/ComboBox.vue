@@ -247,7 +247,7 @@ onKeyStroke(
     <!-- Sits in the same right-hand gutter the input's padding reserves -- the only hint
          this text input is actually a fixed-choice dropdown. -->
     <span
-      class="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-sm text-muted"
+      class="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-muted"
       >▾</span
     >
 

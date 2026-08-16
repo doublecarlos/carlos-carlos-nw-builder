@@ -45,14 +45,14 @@ const paramValue = () =>
       :model-value="paramValue()"
       @update:model-value="buildEditor.setParam(slotDef, $event!)"
     />
-    <span v-if="item" class="min-w-0 flex-1 truncate text-sm text-text">{{
+    <span v-if="item" class="min-w-0 flex-1 truncate text-text">{{
       statSummary
     }}</span>
   </div>
 
   <p
     v-if="highlightDiff && paramDiffers"
-    class="slot-diff-note mt-0.5 text-sm text-muted"
+    class="slot-diff-note mt-0.5 text-muted"
   >
     {{ compareBuild?.name }}: {{ otherParamLabel }}
     <BaseButton
@@ -68,7 +68,7 @@ const paramValue = () =>
     <p
       v-for="bonusDiff in bonusDiffs ?? []"
       :key="bonusDiff.id"
-      class="mt-0.5 text-sm font-semibold text-diff"
+      class="mt-0.5 font-semibold text-diff"
     >
       {{ bonusDiff.message }}
     </p>

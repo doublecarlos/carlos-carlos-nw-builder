@@ -35,7 +35,7 @@ const variants: Record<string, string> = {
 
 <template>
   <span
-    class="rounded-full px-1.5 text-sm font-semibold"
+    class="rounded-full px-1.5 font-semibold"
     :class="variants[variant]"
     data-testid="badge"
     :data-variant="variant"

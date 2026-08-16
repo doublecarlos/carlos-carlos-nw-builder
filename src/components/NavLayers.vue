@@ -121,7 +121,7 @@ function moveFocus(dir: 1 | -1) {
   <div ref="root" class="border-t border-line pt-1.5">
     <div class="mb-1 flex items-center justify-between px-1 py-0.5">
       <span
-        class="flex items-center gap-1 text-xs font-semibold uppercase text-muted"
+        class="flex items-center gap-1 text-sm font-semibold uppercase text-muted"
         title="Layers apply top to bottom — a lower layer overrides the ones above it."
       >
         Layers
@@ -143,7 +143,7 @@ function moveFocus(dir: 1 | -1) {
       type="text"
       placeholder="Filter…"
       data-testid="nav-layers-filter"
-      class="mb-1 rounded-md border border-line bg-surface px-2 py-0.5 text-xs focus:outline-accent w-full"
+      class="mb-1 rounded-md border border-line bg-surface px-2 py-0.5 text-sm focus:outline-accent w-full"
       @input="$emit('update:filter', ($event.target as HTMLInputElement).value)"
     />
 

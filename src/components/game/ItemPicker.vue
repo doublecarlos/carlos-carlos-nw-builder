@@ -248,19 +248,19 @@ defineExpose({
           >
           <span
             v-if="matchMap.get(option.value)?.flagged"
-            class="text-sm text-accent"
+            class="text-accent"
             title="has conditional bonuses"
             >◈</span
           >
           <span
             v-if="matchMap.get(option.value)?.item?.il"
-            class="text-sm text-muted tabular-nums"
+            class="text-muted tabular-nums"
             >iL {{ int(matchMap.get(option.value)?.item?.il) }}</span
           >
         </div>
         <!-- Indented under the name, so the row reads as "item, then what it's worth". -->
         <div class="flex flex-col gap-0.5 pl-2">
-          <div class="flex flex-wrap gap-2 text-sm text-text">
+          <div class="flex flex-wrap gap-2 text-text">
             <span
               v-for="part in matchMap.get(option.value)?.preview?.parts ?? []"
               :key="part"
@@ -277,7 +277,7 @@ defineExpose({
           <div
             v-if="matchMap.get(option.value)?.bonusPreview?.parts?.length"
             data-testid="picker-option-bonus-preview"
-            class="flex flex-wrap gap-2 text-sm text-accent"
+            class="flex flex-wrap gap-2 text-accent"
           >
             <span
               v-for="part in matchMap.get(option.value)?.bonusPreview?.parts ??
@@ -296,7 +296,7 @@ defineExpose({
           <div
             v-if="matchMap.get(option.value)?.potentialPreview?.parts?.length"
             data-testid="picker-option-potential-preview"
-            class="flex flex-wrap items-baseline gap-2 text-sm text-muted"
+            class="flex flex-wrap items-baseline gap-2 text-muted"
           >
             <span class="italic">Potentially:</span>
             <span

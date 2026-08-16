@@ -968,7 +968,7 @@ watch(
       :options="bonusIds"
       placeholder="bonus id this item overrides…"
     />
-    <p class="text-sm text-muted">
+    <p class="text-muted">
       Item-level override: those bonuses go inactive whenever this item is
       equipped, whatever grants them.
     </p>

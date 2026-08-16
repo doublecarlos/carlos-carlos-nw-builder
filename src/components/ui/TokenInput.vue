@@ -144,7 +144,7 @@ function onPaste(event: ClipboardEvent) {
     <span
       v-for="(token, index) in model"
       :key="token"
-      class="inline-flex items-center gap-1 rounded-full bg-accent-soft py-0.5 pl-2 pr-1 text-sm text-text"
+      class="inline-flex items-center gap-1 rounded-full bg-accent-soft py-0.5 pl-2 pr-1 text-text"
     >
       {{ token }}
       <button
@@ -190,7 +190,7 @@ function onPaste(event: ClipboardEvent) {
         <span>{{ entry }}</span>
         <span
           v-if="entry === freeValue"
-          class="ml-auto rounded bg-ok/25 px-1.5 text-sm text-ok"
+          class="ml-auto rounded bg-ok/25 px-1.5 text-ok"
           >new</span
         >
       </div>

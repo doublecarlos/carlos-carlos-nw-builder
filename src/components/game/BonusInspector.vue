@@ -191,7 +191,7 @@ const counts = computed(() => {
         type="search"
         placeholder="Filter by bonus, id or item…"
       />
-      <div class="flex items-center gap-3 py-2 text-sm text-muted">
+      <div class="flex items-center gap-3 py-2 text-muted">
         <span>{{ counts.active }}/{{ counts.total }} active</span>
         <BaseCheckbox v-model="nearMissOnly" inline class="ml-auto"
           >near misses only ({{ counts.nearMiss }})</BaseCheckbox
@@ -226,7 +226,7 @@ const counts = computed(() => {
           >
           <span
             v-if="entry.qualifier"
-            class="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-sm text-muted"
+            class="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-muted"
             :title="entry.qualifier"
           >
             {{ entry.qualifier }}
@@ -236,12 +236,12 @@ const counts = computed(() => {
           >
           <span
             v-if="entry.stacks > 1"
-            class="flex-none rounded-full bg-surface-2 px-1.5 text-sm font-semibold text-muted"
+            class="flex-none rounded-full bg-surface-2 px-1.5 font-semibold text-muted"
             >×{{ entry.stacks }}</span
           >
           <span
             v-if="entry.chose"
-            class="flex-none rounded-full bg-surface-2 px-1.5 text-sm font-semibold text-muted"
+            class="flex-none rounded-full bg-surface-2 px-1.5 font-semibold text-muted"
             >{{ entry.chose }}</span
           >
         </button>
@@ -249,11 +249,7 @@ const counts = computed(() => {
         <!-- The payoff: for an inactive bonus, exactly which conditions failed and what
              they would need. Rendered verbatim from the engine. -->
         <ul v-if="entry.unmet.length" class="mt-1 list-none pl-3.5">
-          <li
-            v-for="(leaf, i) in entry.unmet"
-            :key="i"
-            class="text-sm text-muted"
-          >
+          <li v-for="(leaf, i) in entry.unmet" :key="i" class="text-muted">
             <span class="text-warn">{{ leaf.label }}</span>
             <span v-if="leaf.detail" class="ml-1 text-muted"
               >— {{ leaf.detail }}</span
@@ -273,13 +269,13 @@ const counts = computed(() => {
           </li>
         </ul>
 
-        <p v-if="entry.raw.excluded" class="mt-1 pl-3.5 text-sm text-muted">
+        <p v-if="entry.raw.excluded" class="mt-1 pl-3.5 text-muted">
           <span class="text-warn">overridden by</span>
           <span class="ml-1 text-muted">{{ entry.raw.excludedBy }}</span>
         </p>
 
         <div v-if="open[entry.id]" class="pb-0.5 pl-3.5 pt-1">
-          <div class="flex flex-wrap gap-x-2.5 gap-y-1 text-sm">
+          <div class="flex flex-wrap gap-x-2.5 gap-y-1">
             <span v-for="part in statList(entry.payload)" :key="part">{{
               part
             }}</span>
@@ -287,13 +283,13 @@ const counts = computed(() => {
               >no stat payload</span
             >
           </div>
-          <p v-if="entry.perStack" class="mt-1 block text-sm text-muted">
+          <p v-if="entry.perStack" class="mt-1 block text-muted">
             per stack: {{ statList(entry.perStack).join(", ") }}
           </p>
-          <p class="mt-1 block text-sm text-muted">
+          <p class="mt-1 block text-muted">
             slot {{ entry.slot }} · from {{ entry.sources.join(", ") || "—" }}
           </p>
-          <p class="mt-1 block font-mono text-sm text-muted">{{ entry.id }}</p>
+          <p class="mt-1 block font-mono text-muted">{{ entry.id }}</p>
         </div>
       </div>
     </template>

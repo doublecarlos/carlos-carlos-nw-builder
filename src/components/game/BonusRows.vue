@@ -326,7 +326,7 @@ function toggleJson(gIndex: number) {
         >
           <GripVertical />
         </span>
-        <span class="text-sm text-muted">Grant {{ gIndex + 1 }}</span>
+        <span class="text-muted">Grant {{ gIndex + 1 }}</span>
         <div class="flex flex-wrap items-center gap-1.5">
           <IconButton
             title="Move grant up"
@@ -394,7 +394,7 @@ function toggleJson(gIndex: number) {
           <div class="inline-flex">
             <button
               type="button"
-              class="border border-line px-2 py-0.5 text-sm first:rounded-l-md last:rounded-r-md last:border-l-0"
+              class="border border-line px-2 py-0.5 first:rounded-l-md last:rounded-r-md last:border-l-0"
               :class="
                 grant.payload === 'flat'
                   ? 'border-accent bg-accent-soft text-text'
@@ -406,7 +406,7 @@ function toggleJson(gIndex: number) {
             </button>
             <button
               type="button"
-              class="border border-line px-2 py-0.5 text-sm first:rounded-l-md last:rounded-r-md last:border-l-0"
+              class="border border-line px-2 py-0.5 first:rounded-l-md last:rounded-r-md last:border-l-0"
               :class="
                 grant.payload === 'tiers'
                   ? 'border-accent bg-accent-soft text-text'
@@ -418,7 +418,7 @@ function toggleJson(gIndex: number) {
             </button>
             <button
               type="button"
-              class="border border-line px-2 py-0.5 text-sm first:rounded-l-md last:rounded-r-md last:border-l-0"
+              class="border border-line px-2 py-0.5 first:rounded-l-md last:rounded-r-md last:border-l-0"
               :class="
                 grant.payload === 'variants'
                   ? 'border-accent bg-accent-soft text-text'
@@ -430,7 +430,7 @@ function toggleJson(gIndex: number) {
             </button>
             <button
               type="button"
-              class="border border-line px-2 py-0.5 text-sm first:rounded-l-md last:rounded-r-md last:border-l-0"
+              class="border border-line px-2 py-0.5 first:rounded-l-md last:rounded-r-md last:border-l-0"
               :class="
                 grant.payload === 'problem'
                   ? 'border-accent bg-accent-soft text-text'
@@ -581,7 +581,7 @@ function toggleJson(gIndex: number) {
 
         <!-- tiered payload -->
         <template v-else-if="grant.payload === 'tiers'">
-          <p class="text-sm text-muted">
+          <p class="text-muted">
             The highest matching tier wins and <strong>replaces</strong> the
             lower ones — each tier's stats are the total at that occurrence
             count, not an extra on top.
@@ -652,7 +652,7 @@ function toggleJson(gIndex: number) {
                 min="1"
                 class="w-16 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
               />
-              <span class="text-sm text-muted">occurrence(s) or more</span>
+              <span class="text-muted">occurrence(s) or more</span>
             </div>
             <div
               v-for="(stat, sIndex) in tier.stats"
@@ -709,7 +709,7 @@ function toggleJson(gIndex: number) {
 
         <!-- variant payload -->
         <template v-else-if="grant.payload === 'variants'">
-          <p class="text-sm text-muted">
+          <p class="text-muted">
             The first variant whose own condition matches wins -- order them
             most-specific first. Each variant's payload replaces the others, it
             does not add to them.
@@ -736,7 +736,7 @@ function toggleJson(gIndex: number) {
               >
                 <GripVertical />
               </span>
-              <span class="text-sm text-muted">Variant {{ vIndex + 1 }}</span>
+              <span class="text-muted">Variant {{ vIndex + 1 }}</span>
               <div class="flex flex-wrap items-center gap-1.5">
                 <IconButton
                   title="Move variant up"
@@ -934,17 +934,17 @@ function toggleJson(gIndex: number) {
 
         <!-- problem payload: reports a build error/warning instead of granting stats -->
         <template v-else-if="grant.payload === 'problem'">
-          <p class="text-sm text-muted">
+          <p class="text-muted">
             Shown inline on the slot and in the sidebar's problem summary
             whenever "Active when" matches -- it grants no stats.
           </p>
           <div class="mb-1.5 flex flex-wrap items-center gap-1.5">
-            <span class="text-sm text-muted">Severity</span>
+            <span class="text-muted">Severity</span>
             <div class="inline-flex">
               <button
                 type="button"
                 data-testid="problem-severity-error"
-                class="border border-line px-2 py-0.5 text-sm first:rounded-l-md last:rounded-r-md last:border-l-0"
+                class="border border-line px-2 py-0.5 first:rounded-l-md last:rounded-r-md last:border-l-0"
                 :class="
                   grant.problemSeverity === 'error'
                     ? 'border-danger bg-danger-soft text-danger'
@@ -957,7 +957,7 @@ function toggleJson(gIndex: number) {
               <button
                 type="button"
                 data-testid="problem-severity-warning"
-                class="border border-line px-2 py-0.5 text-sm first:rounded-l-md last:rounded-r-md last:border-l-0"
+                class="border border-line px-2 py-0.5 first:rounded-l-md last:rounded-r-md last:border-l-0"
                 :class="
                   grant.problemSeverity === 'warning'
                     ? 'border-warn bg-warn/25 text-warn'

@@ -93,7 +93,7 @@ function rangeLabel(row: DynamicStatRow) {
       :bonus-preview="{ db, build, slotId: slotDef.id }"
       @update:model-value="buildEditor.setChoice(slotDef.id, $event)"
     />
-    <span class="min-w-0 flex-1 truncate text-sm text-text">{{
+    <span class="min-w-0 flex-1 truncate text-text">{{
       item ? statSummary : ""
     }}</span>
     <IconButton
@@ -145,13 +145,13 @@ function rangeLabel(row: DynamicStatRow) {
         :value="row.value"
         @input="setDynamic(row, ($event.target as HTMLInputElement).value)"
       />
-      <span class="text-sm text-muted">{{ rangeLabel(row) }}</span>
+      <span class="text-muted">{{ rangeLabel(row) }}</span>
     </div>
   </div>
 
   <p
     v-if="highlightDiff && choiceDiffers"
-    class="slot-diff-note mt-0.5 text-sm text-muted"
+    class="slot-diff-note mt-0.5 text-muted"
   >
     {{ compareBuild?.name }}: {{ otherChoiceLabel || "(empty)" }}
     <BaseButton
@@ -167,7 +167,7 @@ function rangeLabel(row: DynamicStatRow) {
     <p
       v-for="bonusDiff in bonusDiffs ?? []"
       :key="bonusDiff.id"
-      class="mt-0.5 text-sm font-semibold text-diff"
+      class="mt-0.5 font-semibold text-diff"
     >
       {{ bonusDiff.message }}
     </p>
@@ -177,7 +177,7 @@ function rangeLabel(row: DynamicStatRow) {
     <p
       v-for="diff in valueDiffs ?? []"
       :key="diff.key"
-      class="slot-diff-note mt-0.5 text-sm text-muted"
+      class="slot-diff-note mt-0.5 text-muted"
     >
       {{ compareBuild?.name }}: {{ diff.label }} {{ diff.other ?? "(none)" }}
       <BaseButton
@@ -192,7 +192,7 @@ function rangeLabel(row: DynamicStatRow) {
 
   <p
     v-if="highlightDiff && occurrenceDiffers"
-    class="slot-diff-note mt-0.5 text-sm text-muted"
+    class="slot-diff-note mt-0.5 text-muted"
   >
     {{ compareBuild?.name }}: {{ otherOccurrenceLabel ?? "(none)" }}
     <BaseButton

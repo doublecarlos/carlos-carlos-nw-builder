@@ -124,7 +124,7 @@ defineExpose({ focus, focusAndSeed });
       class="flex flex-col items-center gap-1"
     >
       <span
-        class="truncate text-sm text-center"
+        class="truncate text-center"
         :data-testid="`assignment-label-${item.id}`"
         :data-item-id="item.id"
         @mouseenter="emit('itemEnter', $event, item.id)"

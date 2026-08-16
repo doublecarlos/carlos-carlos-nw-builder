@@ -68,7 +68,7 @@ export function useStatSourcePopover(
    * the card itself (`.statcard`) and on other stat info buttons (`.stat-info-btn`),
    * so a click on a different row's trigger reaches `toggleCard` and switches the card
    * over instead of closing it first. */
-  onClickOutside(root, () => closeCard(), {
+  onClickOutside(tooltip, () => closeCard(), {
     ignore: [".statcard", ".stat-info-btn"],
     capture: false,
   });

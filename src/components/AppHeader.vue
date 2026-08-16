@@ -56,7 +56,7 @@ async function onImportFile(event: Event) {
 
 <template>
   <header
-    class="flex items-center gap-3 border-b border-line bg-surface px-2 py-2 text-sm"
+    class="flex items-center gap-3 border-b border-line bg-surface px-2 py-2"
     data-testid="app-header"
   >
     <h1 class="text-base font-semibold tracking-wide whitespace-nowrap">

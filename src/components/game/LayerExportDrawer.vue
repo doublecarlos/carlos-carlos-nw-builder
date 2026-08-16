@@ -136,7 +136,7 @@ function downloadExport() {
       >
     </div>
     <CodeBlock :value="exportText" :rows="12" class="w-full" />
-    <p class="mt-1 text-sm text-muted">
+    <p class="mt-1 text-muted">
       <template v-if="effectiveTab === 'items'">
         Composed from all enabled layers — for regenerating the shipped data
         files.

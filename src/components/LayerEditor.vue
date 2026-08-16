@@ -875,7 +875,7 @@ onUnmounted(() => {
           "
         />
         <strong>{{ props.layer.name }}</strong>
-        <span class="text-sm text-muted tabular-nums"
+        <span class="text-muted tabular-nums"
           >{{ entryCount }} entr{{ entryCount === 1 ? "y" : "ies" }}</span
         >
       </div>
@@ -888,27 +888,21 @@ onUnmounted(() => {
           @click="switchSection('items')"
         >
           Items
-          <span class="text-sm opacity-75 tabular-nums">{{
-            db.items.length
-          }}</span>
+          <span class="opacity-75 tabular-nums">{{ db.items.length }}</span>
         </TabButton>
         <TabButton
           :active="section === 'bonuses'"
           @click="switchSection('bonuses')"
         >
           Bonuses
-          <span class="text-sm opacity-75 tabular-nums">{{
-            db.bonuses.length
-          }}</span>
+          <span class="opacity-75 tabular-nums">{{ db.bonuses.length }}</span>
         </TabButton>
         <TabButton
           :active="section === 'sectionPresets'"
           @click="switchSection('sectionPresets')"
         >
           Presets
-          <span class="text-sm opacity-75 tabular-nums">{{
-            db.presets.length
-          }}</span>
+          <span class="opacity-75 tabular-nums">{{ db.presets.length }}</span>
         </TabButton>
       </TabStrip>
 
@@ -950,7 +944,7 @@ onUnmounted(() => {
     <!-- Disabled layer banner -->
     <div
       v-if="!props.layer.enabled"
-      class="mb-2 rounded-md border border-warn/40 bg-warn/10 px-3 py-1.5 text-sm text-warn"
+      class="mb-2 rounded-md border border-warn/40 bg-warn/10 px-3 py-1.5 text-warn"
     >
       This layer is disabled — its changes are not currently applied to the
       build. Enable it to see its effects.

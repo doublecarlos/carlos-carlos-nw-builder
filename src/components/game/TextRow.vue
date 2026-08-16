@@ -11,7 +11,7 @@ defineProps<{
 
 <template>
   <div
-    class="border-b border-line/45 px-2.5 py-1 text-left text-sm text-muted last:border-b-0"
+    class="border-b border-line/45 px-2.5 py-1 text-left text-muted last:border-b-0"
     :data-testid="'text:' + slotDef.id"
   >
     {{ slotDef.text }}

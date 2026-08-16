@@ -423,7 +423,7 @@ useEventListener(document, "scroll", onScrollCapture, {
 <template>
   <nav
     ref="root"
-    class="flex flex-col gap-0.5 bg-surface p-2 text-sm"
+    class="flex flex-col gap-0.5 bg-surface p-2"
     data-testid="library"
   >
     <NavBuilds

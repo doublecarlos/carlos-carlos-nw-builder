@@ -68,7 +68,7 @@ const values = () => props.build.assignments[props.slotDef.id] ?? {};
 
   <p
     v-if="highlightDiff && assignmentDiffers"
-    class="slot-diff-note mt-0.5 text-sm text-muted"
+    class="slot-diff-note mt-0.5 text-muted"
   >
     {{ compareBuild?.name }}: {{ otherAssignmentLabel }}
     <BaseButton

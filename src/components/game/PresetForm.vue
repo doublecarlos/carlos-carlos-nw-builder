@@ -510,9 +510,7 @@ watch(
             type="number"
             :placeholder="String(config.default)"
           />
-          <span class="text-sm text-muted">{{
-            config.label ?? config.stat
-          }}</span>
+          <span class="text-muted">{{ config.label ?? config.stat }}</span>
         </span>
         <!-- The picked item's own occurrence inputs, written into the draft-wide map keyed by
              that item rather than by this row's slot. -->
@@ -563,7 +561,7 @@ watch(
         />
       </div>
     </template>
-    <p v-else class="text-sm text-muted">
+    <p v-else class="text-muted">
       Pick a section above to start adding slot values.
     </p>
   </div>

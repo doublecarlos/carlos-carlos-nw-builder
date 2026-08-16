@@ -73,7 +73,7 @@ function linkedItemSummary(slot: BuildParameterSlot): string | undefined {
 
       <div
         v-if="slot.paramType !== 'boolean'"
-        class="flex items-center gap-1.5 whitespace-nowrap text-sm"
+        class="flex items-center gap-1.5 whitespace-nowrap"
       >
         <span
           :class="differs(slot) ? 'cursor-help font-bold text-diff' : ''"

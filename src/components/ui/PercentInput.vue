@@ -112,7 +112,7 @@ function nudge(direction: number, event: KeyboardEvent) {
       @keydown.down="nudge(-1, $event)"
     />
     <span
-      class="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-sm text-muted"
+      class="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-muted"
       >%</span
     >
   </span>

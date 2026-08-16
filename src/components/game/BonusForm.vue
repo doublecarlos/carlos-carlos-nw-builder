@@ -359,7 +359,7 @@ watch(
       />
     </FormGrid>
 
-    <p class="text-sm text-muted">
+    <p class="text-muted">
       <template v-if="members.length">
         Granted by <strong>{{ members.length }}</strong> item(s) —
         {{ members.join(", ") }}.
@@ -404,9 +404,7 @@ watch(
       <IconButton title="Add grant" @click="addGrant"
         ><CirclePlus
       /></IconButton>
-      <span v-if="!draft.grants.length" class="text-sm text-muted"
-        >none yet</span
-      >
+      <span v-if="!draft.grants.length" class="text-muted">none yet</span>
     </FormSection>
 
     <BonusRows

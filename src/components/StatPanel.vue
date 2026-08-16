@@ -471,7 +471,7 @@ const {
       </table>
     </div>
 
-    <div class="flex items-center gap-3 py-2 text-sm text-muted">
+    <div class="flex items-center gap-3 py-2 text-muted">
       <span
         >{{ bonusSummary.active }}/{{ bonusSummary.total }} bonuses active</span
       >

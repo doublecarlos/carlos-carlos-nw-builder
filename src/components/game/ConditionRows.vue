@@ -603,7 +603,7 @@ function changeParamKey(row: ConditionRow, key: string) {
             </span>
             <span
               data-testid="condition-op-label"
-              class="rounded bg-surface-2 px-1.5 text-sm font-semibold uppercase tracking-wide"
+              class="rounded bg-surface-2 px-1.5 font-semibold uppercase tracking-wide"
               >{{ opLabel(row.op) }}</span
             >
             <IconButton title="Duplicate" @click="duplicateRow(i)"
@@ -639,7 +639,7 @@ function changeParamKey(row: ConditionRow, key: string) {
                 >
                   <GripVertical />
                 </span>
-                <span class="my-0.5 text-sm uppercase pr-1">
+                <span class="my-0.5 uppercase pr-1">
                   Condition {{ bi + 1 }}
                 </span>
                 <IconButton
@@ -685,7 +685,7 @@ function changeParamKey(row: ConditionRow, key: string) {
     >
       <span
         v-if="dropList().isActiveContainer.value && !rows.length"
-        class="text-sm text-muted"
+        class="text-muted"
         >Drop here</span
       >
       <IconButton title="Add condition" @click="addLeaf"><Plus /></IconButton>

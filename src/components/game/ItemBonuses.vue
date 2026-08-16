@@ -237,7 +237,7 @@ function onSlotDuplicate(slot: Slot) {
       </span>
     </FormSection>
 
-    <p v-if="!slots.length" class="text-sm text-muted">
+    <p v-if="!slots.length" class="text-muted">
       This item has no bonuses yet. Add one above -- most are private to a
       single item; attaching an existing bonus id shares it with whatever else
       already lists it.
@@ -274,11 +274,11 @@ function onSlotDuplicate(slot: Slot) {
           @click="removeOccurrence(slot.id)"
           ><Trash
         /></IconButton>
-        <span v-if="!occurrenceFor(slot.id)" class="text-sm text-muted"
+        <span v-if="!occurrenceFor(slot.id)" class="text-muted"
           >Occurrence count: default (1 per item copy)</span
         >
         <template v-else>
-          <span class="text-sm text-muted">Occurrence count:</span>
+          <span class="text-muted">Occurrence count:</span>
           <FormGrid data-testid="occurrence-config-fields">
             <FormField label="Min">
               <input

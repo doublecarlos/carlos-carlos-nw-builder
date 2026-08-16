@@ -197,7 +197,7 @@ async function copyUnrecognisedIds() {
 
 <template>
   <div class="flex flex-col gap-3" data-testid="game-import-report">
-    <p class="text-sm text-muted" data-testid="game-import-report-summary">
+    <p class="text-muted" data-testid="game-import-report-summary">
       {{ combined.recognised }}/{{ combined.total }} items recognised across
       {{ reports.length }} build{{ reports.length === 1 ? "" : "s" }}
     </p>
@@ -218,18 +218,18 @@ async function copyUnrecognisedIds() {
       class="flex flex-col gap-3 rounded-md border border-line p-3"
     >
       <details data-testid="game-import-report-imported">
-        <summary class="cursor-pointer text-sm font-semibold">
+        <summary class="cursor-pointer font-semibold">
           Imported ({{ activeReport.counts.imported }})
         </summary>
         <div class="mt-2 flex flex-col gap-2">
           <div v-for="section in importedBySection" :key="section.sectionLabel">
-            <p class="text-xs font-semibold text-muted">
+            <p class="text-sm font-semibold text-muted">
               {{ section.sectionLabel }}
             </p>
             <p
               v-for="(row, index) in section.rows"
               :key="index"
-              class="text-sm"
+              class=""
               data-testid="game-import-report-imported-row"
             >
               {{ row.slotLabel }} → {{ row.itemName }}
@@ -239,15 +239,15 @@ async function copyUnrecognisedIds() {
       </details>
 
       <details open data-testid="game-import-report-unrecognised">
-        <summary class="cursor-pointer text-sm font-semibold">
+        <summary class="cursor-pointer font-semibold">
           Not recognised ({{ activeReport.counts.unrecognised }})
         </summary>
         <div class="mt-2 flex flex-col gap-2">
-          <p class="text-sm text-muted">
+          <p class="text-muted">
             The catalogue models a curated subset of the game's items — an
             unrecognised id means "not modelled yet", not "your file is broken".
           </p>
-          <p v-if="overflowCount" class="text-sm text-muted">
+          <p v-if="overflowCount" class="text-muted">
             {{ overflowCount }} more item{{
               overflowCount === 1 ? " was" : "s were"
             }}
@@ -265,10 +265,10 @@ async function copyUnrecognisedIds() {
             :key="group.bag"
             class="flex flex-col gap-1"
           >
-            <p class="text-xs font-semibold text-muted">{{ group.bag }}</p>
+            <p class="text-sm font-semibold text-muted">{{ group.bag }}</p>
             <div class="rounded-md border border-line">
               <div
-                class="grid grid-cols-[1fr_1fr_auto] gap-x-3 rounded-t-md bg-surface-2/70 px-2 py-1 text-xs font-semibold text-muted"
+                class="grid grid-cols-[1fr_1fr_auto] gap-x-3 rounded-t-md bg-surface-2/70 px-2 py-1 text-sm font-semibold text-muted"
               >
                 <span>Item id</span>
                 <span>Mapped to</span>
@@ -276,7 +276,7 @@ async function copyUnrecognisedIds() {
               </div>
               <template v-for="row in group.rows" :key="row.outcomeIndex">
                 <div
-                  class="grid grid-cols-[1fr_1fr_auto] items-center gap-x-3 border-t border-line px-2 py-1.5 text-sm"
+                  class="grid grid-cols-[1fr_1fr_auto] items-center gap-x-3 border-t border-line px-2 py-1.5"
                   data-testid="game-import-report-unrecognised-row"
                 >
                   <span>{{ group.bag }}/{{ row.slot }} → {{ row.gameId }}</span>
@@ -317,14 +317,14 @@ async function copyUnrecognisedIds() {
       </details>
 
       <details open data-testid="game-import-report-not-in-demo">
-        <summary class="cursor-pointer text-sm font-semibold">
+        <summary class="cursor-pointer font-semibold">
           Not in the demo ({{ notInDemoRows.length }})
         </summary>
         <div class="mt-2 flex flex-col gap-1.5">
           <p
             v-for="group in notInDemoRows"
             :key="group.label"
-            class="text-sm"
+            class=""
             data-testid="game-import-report-notindemo-row"
           >
             <strong>{{ group.label }}</strong> — {{ group.reason }}
@@ -332,7 +332,7 @@ async function copyUnrecognisedIds() {
           <p
             v-for="note in KNOWN_LOSSY_NOTES"
             :key="note"
-            class="text-xs text-muted"
+            class="text-sm text-muted"
           >
             {{ note }}
           </p>

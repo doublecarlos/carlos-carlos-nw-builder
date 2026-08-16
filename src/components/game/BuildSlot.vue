@@ -239,7 +239,7 @@ useCursorRowKeys(anchor, {
       <p
         v-for="error in errors ?? []"
         :key="error.kind + error.choice"
-        class="mt-0.5 text-sm"
+        class="mt-0.5"
         :class="error.severity === 'warning' ? 'text-warn' : 'text-danger'"
       >
         {{ error.message }}

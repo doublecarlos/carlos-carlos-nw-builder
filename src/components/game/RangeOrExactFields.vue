@@ -47,7 +47,7 @@ function setRangeMode(mode: "range" | "exact") {
     <div class="inline-flex">
       <button
         type="button"
-        class="border border-line px-2 py-0.5 text-sm first:rounded-l-md last:rounded-r-md last:border-l-0"
+        class="border border-line px-2 py-0.5 first:rounded-l-md last:rounded-r-md last:border-l-0"
         :class="
           rangeMode === 'range'
             ? 'border-accent bg-accent-soft text-text'
@@ -59,7 +59,7 @@ function setRangeMode(mode: "range" | "exact") {
       </button>
       <button
         type="button"
-        class="border border-line px-2 py-0.5 text-sm first:rounded-l-md last:rounded-r-md last:border-l-0"
+        class="border border-line px-2 py-0.5 first:rounded-l-md last:rounded-r-md last:border-l-0"
         :class="
           rangeMode === 'exact'
             ? 'border-accent bg-accent-soft text-text'

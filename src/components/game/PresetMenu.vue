@@ -79,7 +79,7 @@ useEscapeToClose(() => {
         v-for="preset in presets"
         :key="preset.id"
         type="button"
-        class="rounded px-2 py-1 text-left text-sm hover:bg-surface-2"
+        class="rounded px-2 py-1 text-left hover:bg-surface-2"
         @click="choose(preset)"
       >
         {{ preset.label }}

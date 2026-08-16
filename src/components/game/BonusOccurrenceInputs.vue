@@ -77,7 +77,7 @@ function step(row: OccurrenceRow, dir: 1 | -1, event: MouseEvent) {
     :key="row.bonusId"
     class="flex items-center gap-1.5"
   >
-    <span class="text-sm">{{ row.label }}</span>
+    <span class="">{{ row.label }}</span>
     <div class="flex items-center gap-1">
       <IconButton
         :title="`Decrease (${modKey}+click for min)`"

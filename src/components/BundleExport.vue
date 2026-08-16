@@ -174,19 +174,19 @@ useEscapeToClose(() => emit("close"));
       <div class="flex flex-1 gap-4 overflow-y-auto p-4">
         <!-- Builds column -->
         <div class="flex-1">
-          <h3 class="mb-2 text-sm font-medium">Builds</h3>
+          <h3 class="mb-2 font-medium">Builds</h3>
           <input
             v-model="buildFilter"
             type="text"
             placeholder="Filter builds…"
-            class="mb-2 w-full rounded border border-line bg-surface px-2 py-1 text-sm"
+            class="mb-2 w-full rounded border border-line bg-surface px-2 py-1"
             data-testid="bundle-build-filter"
           />
           <div class="max-h-48 space-y-1 overflow-y-auto">
             <label
               v-for="b in filteredBuilds"
               :key="b.id"
-              class="flex cursor-pointer items-center gap-2 text-sm"
+              class="flex cursor-pointer items-center gap-2"
             >
               <input
                 type="checkbox"
@@ -199,7 +199,7 @@ useEscapeToClose(() => emit("close"));
           </div>
           <button
             type="button"
-            class="mt-2 cursor-pointer text-xs text-accent hover:underline"
+            class="mt-2 cursor-pointer text-sm text-accent hover:underline"
             @click="selectAllBuilds"
           >
             Select all
@@ -208,19 +208,19 @@ useEscapeToClose(() => emit("close"));
 
         <!-- Layers column -->
         <div class="flex-1">
-          <h3 class="mb-2 text-sm font-medium">Layers</h3>
+          <h3 class="mb-2 font-medium">Layers</h3>
           <input
             v-model="layerFilter"
             type="text"
             placeholder="Filter layers…"
-            class="mb-2 w-full rounded border border-line bg-surface px-2 py-1 text-sm"
+            class="mb-2 w-full rounded border border-line bg-surface px-2 py-1"
             data-testid="bundle-layer-filter"
           />
           <div class="max-h-48 space-y-1 overflow-y-auto">
             <label
               v-for="l in filteredLayers"
               :key="l.id"
-              class="flex cursor-pointer items-center gap-2 text-sm"
+              class="flex cursor-pointer items-center gap-2"
               :class="{
                 'text-accent':
                   autoTickedLayerIds.has(l.id) && selectedLayerIds.has(l.id),
@@ -237,14 +237,14 @@ useEscapeToClose(() => emit("close"));
                 v-if="
                   autoTickedLayerIds.has(l.id) && selectedLayerIds.has(l.id)
                 "
-                class="text-xs text-muted"
+                class="text-sm text-muted"
                 >(auto)</span
               >
             </label>
           </div>
           <button
             type="button"
-            class="mt-2 cursor-pointer text-xs text-accent hover:underline"
+            class="mt-2 cursor-pointer text-sm text-accent hover:underline"
             @click="selectAllLayers"
           >
             Select all
@@ -257,7 +257,7 @@ useEscapeToClose(() => emit("close"));
         <p
           v-for="(w, i) in warnings"
           :key="i"
-          class="text-xs text-warning"
+          class="text-sm text-warning"
           data-testid="bundle-warning"
         >
           ⚠ {{ w }}

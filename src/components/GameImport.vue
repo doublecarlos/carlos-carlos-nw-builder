@@ -119,7 +119,7 @@ useEscapeToClose(() => close());
           data-testid="game-import-step-instructions"
         >
           <div>
-            <p class="mb-1 text-sm font-medium">1. In game, run this command</p>
+            <p class="mb-1 font-medium">1. In game, run this command</p>
             <div class="flex items-start gap-2">
               <CodeBlock
                 :value="DEMO_COMMAND"
@@ -130,21 +130,21 @@ useEscapeToClose(() => close());
               <BaseButton @click="copyCommand"><Copy />Copy</BaseButton>
             </div>
           </div>
-          <p class="text-sm">
+          <p class="">
             <strong>2.</strong> The file appears at
             <code>&lt;game install path&gt;\demos\build_export.demo</code>.
             Steam installs put it under
             <code>steamapps\common\Neverwinter\</code>; the Arc/standalone
             client uses its own install directory.
           </p>
-          <p class="text-sm">
+          <p class="">
             <strong>3.</strong> The recording captures whatever character you're
             logged in as, and includes
             <strong>all of that character's saved loadouts</strong> — switch
             loadouts first only if you want the "currently equipped" marker on a
             particular one.
           </p>
-          <p class="text-sm text-muted">
+          <p class="text-muted">
             <strong>4.</strong> The file is plain text and contains the
             character name; nothing is uploaded — parsing happens in your
             browser.
@@ -174,7 +174,7 @@ useEscapeToClose(() => close());
             @drop="onDrop"
           >
             <Upload class="size-6 text-muted" />
-            <p class="text-sm">Drag a demo file here, or</p>
+            <p class="">Drag a demo file here, or</p>
             <BaseButton @click="triggerFilePick">Choose file…</BaseButton>
             <input
               ref="fileInput"
@@ -187,7 +187,7 @@ useEscapeToClose(() => close());
           </div>
           <p
             v-if="parseError"
-            class="text-sm text-danger"
+            class="text-danger"
             data-testid="game-import-error"
           >
             {{ parseError }}
@@ -207,7 +207,7 @@ useEscapeToClose(() => close());
             v-for="[characterName, characterRows] in rowsByCharacter"
             :key="characterName"
           >
-            <p class="mb-1 text-sm font-semibold">{{ characterName }}</p>
+            <p class="mb-1 font-semibold">{{ characterName }}</p>
             <div
               v-for="row in characterRows"
               :key="row.key"
@@ -223,17 +223,17 @@ useEscapeToClose(() => close());
               </BaseCheckbox>
               <span
                 v-if="row.active"
-                class="rounded-full bg-accent-soft px-2 py-0.5 text-xs text-accent"
+                class="rounded-full bg-accent-soft px-2 py-0.5 text-sm text-accent"
                 data-testid="game-import-active-badge"
                 >currently equipped</span
               >
-              <span class="text-xs text-muted"
+              <span class="text-sm text-muted"
                 >{{ row.recognisedCount }}/{{ row.itemCount }} recognised</span
               >
               <span class="flex-1"></span>
               <input
                 :value="nameFor(row.key)"
-                class="w-56 rounded-md border border-line bg-surface px-1.5 py-0.5 text-sm"
+                class="w-56 rounded-md border border-line bg-surface px-1.5 py-0.5"
                 data-testid="game-import-name-input"
                 @input="
                   setName(row.key, ($event.target as HTMLInputElement).value)

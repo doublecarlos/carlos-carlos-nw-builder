@@ -184,7 +184,7 @@ onKeyStroke(["ArrowDown", "ArrowUp", "Enter"], (event) => {
           @click.stop="emit('restore', row)"
           ><RotateCcw />restore</BaseButton
         >
-        <span v-else class="text-sm text-muted">{{ row.filter }}</span>
+        <span v-else class="text-muted">{{ row.filter }}</span>
       </div>
       <p v-if="!rows.length" class="p-2 text-muted">Nothing matches.</p>
     </div>

@@ -82,7 +82,7 @@ useEscapeToClose(() => {
       v-if="isOpen()"
       class="copy-popover absolute right-full top-1/2 z-30 mr-1.5 flex -translate-y-1/2 items-center gap-1.5 whitespace-nowrap rounded-md border border-line bg-surface px-2 py-1.5 shadow-lg"
     >
-      <span class="text-sm text-muted">Copy section from</span>
+      <span class="text-muted">Copy section from</span>
       <ComboBox
         class="copy-popover-select w-44"
         :model-value="chosen"

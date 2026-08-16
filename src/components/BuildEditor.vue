@@ -561,7 +561,7 @@ function onBuildScroll(event: Event) {
           }}</BaseBadge
         >
         <span class="flex-1"></span>
-        <span class="text-sm text-muted"
+        <span class="text-muted"
           >{{ isMac ? "Cmd" : "Ctrl" }}+click a filled slot to edit in a
           layer</span
         >

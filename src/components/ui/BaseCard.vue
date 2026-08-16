@@ -5,7 +5,7 @@
 
 <template>
   <div
-    class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-md border border-line bg-surface shadow-lg"
+    class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-md border border-text bg-surface shadow-xl"
   >
     <slot />
   </div>

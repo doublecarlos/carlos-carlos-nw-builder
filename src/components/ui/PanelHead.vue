@@ -5,7 +5,7 @@
 
 <template>
   <div
-    class="mt-3.5 mb-0.5 border-b border-line pb-1 text-sm uppercase tracking-wide text-muted"
+    class="mt-3.5 mb-0.5 border-b border-line pb-1 uppercase tracking-wide text-muted"
   >
     <slot />
   </div>
