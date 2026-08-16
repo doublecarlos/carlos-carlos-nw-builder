@@ -793,8 +793,7 @@ function hasRoutedLayerState(routed: Record<string, string>) {
     routed.preset ||
     routed.section ||
     routed.status ||
-    routed.q ||
-    routed.newItemFilter,
+    routed.q,
   );
 }
 
@@ -818,29 +817,9 @@ onMounted(() => {
     selectedId.value = null;
     selectedBonusId.value = null;
     selectedPresetId.value = null;
-    // BuildEditor's per-row "+" button lands here with no item selected -- seed the fresh
-    // draft's filter from the row it was clicked on (see BuildEditor.vue's `onAddItem`).
-    // One-shot, so read straight off the URL rather than `source`: this is never part of
-    // the per-layer store's own remembered state (`LayerEditorUiState` has no such field).
-    if (routed.newItemFilter) {
-      duplicateItemSeed.value = {
-        id: "",
-        name: "",
-        filter: routed.newItemFilter,
-      };
-      // ItemForm's `:key` already resolved for this mount by the time this handler runs
-      // (onMounted fires post-render) -- bump the counter so it remounts and picks up the
-      // seed, same as `duplicateItem()` does for its own seed below.
-      newItemCounter.value++;
-      notice.value = `New item — filter pre-filled from "${routed.newItemFilter}"`;
-    }
   }
   if (isValidStatusFilter(source.status)) statusFilter.value = source.status;
   if (source.q) query.value = source.q;
-  // One-shot: consumed above, and a stale value must not resurrect on a later back/forward
-  // navigation or reload of this same URL.
-  if (routed.newItemFilter)
-    router.apply({ newItemFilter: null }, { push: false });
 });
 
 useEventListener(window, "popstate", onPopState);
@@ -854,7 +833,6 @@ onUnmounted(() => {
       section: null,
       status: null,
       q: null,
-      newItemFilter: null,
     },
     { push: false },
   );

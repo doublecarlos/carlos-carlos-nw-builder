@@ -22,9 +22,6 @@ const emit = defineEmits<{
    *  PointAssignmentInput's own `item-enter`/`item-leave`. */
   itemEnter: [event: MouseEvent, itemId: string];
   itemLeave: [];
-  /** The row's own "new item" shortcut -- BuildSlot.vue forwards it up with this row's
-   *  `filter`, so the item editor can open with a fresh draft pre-filtered to this slot. */
-  addItem: [];
 }>();
 
 const assignment =

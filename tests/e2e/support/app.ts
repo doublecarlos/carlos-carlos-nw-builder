@@ -48,12 +48,6 @@ export function assignmentLabel(row: Locator, itemId: string): Locator {
   return row.getByTestId(`assignment-label-${itemId}`);
 }
 
-/** A row's own "new item" shortcut -- present on item_picker and point_assignment rows only
- *  (see BuildSlot.vue/ItemPickerRow.vue/PointAssignmentRow.vue). */
-export function addItemButton(row: Locator): Locator {
-  return row.getByTestId("add-item-for-slot");
-}
-
 /** Clicks the -/+ button next to a point_assignment row's stepper input. Ctrl/Cmd+click (via
  *  `modifiers`) jumps straight to that direction's bound instead of stepping by one. */
 export async function stepAssignment(
