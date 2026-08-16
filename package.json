@@ -1,7 +1,7 @@
 {
   "name": "neverwinter-web-builder",
   "version": "1.0.0",
-  "description": "Neverwinter build planner",
+  "description": "Carlos' NW Build Planner",
   "private": true,
   "type": "module",
   "scripts": {

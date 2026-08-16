@@ -395,10 +395,7 @@ const {
       </ul>
     </div>
 
-    <!-- The one number the sheet keeps most visible: pick a damage calculation, see its
-         value here. A comparison table below shows the other build's value and the gap
-         between them, with the compare-build selector and display toggles embedded in
-         the table itself. -->
+    <!-- Comparison table -->
     <div class="flex flex-col gap-1 rounded-md bg-surface-2 px-2.5 py-2">
       <ComboBox
         v-model="summaryCalcKey"
@@ -473,6 +470,28 @@ const {
 
     <PanelHead>Ratings</PanelHead>
     <table class="w-full border-collapse border border-line">
+      <thead>
+        <tr>
+          <td
+            colspan="1"
+            class="border border-line text-center font-semibold px-1 py-0.5 bg-surface-2/55"
+          >
+            Stat
+          </td>
+          <td
+            colspan="2"
+            class="border border-line text-center font-semibold px-1 py-0.5 bg-surface-2/55"
+          >
+            Value
+          </td>
+          <td
+            colspan="2"
+            class="border border-line text-center font-semibold px-1 py-0.5 bg-surface-2/55"
+          >
+            Overcap
+          </td>
+        </tr>
+      </thead>
       <tbody>
         <!-- Each cell coloured off its own column's 'over', not the row: rating and
              percentage cap independently, so one can read green while the other reads

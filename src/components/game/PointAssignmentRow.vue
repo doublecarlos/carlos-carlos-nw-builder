@@ -5,8 +5,6 @@
 import { useTemplateRef } from "vue";
 import PointAssignmentInput from "./PointAssignmentInput.vue";
 import BaseButton from "../ui/BaseButton.vue";
-import IconButton from "../ui/IconButton.vue";
-import { Plus } from "@lucide/vue";
 import * as buildEditor from "../../stores/buildEditor";
 import type { Build, PointAssignmentSlot } from "../../types";
 
@@ -57,13 +55,6 @@ const values = () => props.build.assignments[props.slotDef.id] ?? {};
       @item-enter="(event, itemId) => emit('itemEnter', event, itemId)"
       @item-leave="emit('itemLeave')"
     />
-    <IconButton
-      title="Create a new item for this slot"
-      data-testid="add-item-for-slot"
-      @click="emit('addItem')"
-    >
-      <Plus />
-    </IconButton>
   </div>
 
   <p

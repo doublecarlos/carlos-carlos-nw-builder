@@ -8,8 +8,6 @@ import ItemPicker from "./ItemPicker.vue";
 import BonusOccurrenceInputs from "./BonusOccurrenceInputs.vue";
 import PercentInput from "../ui/PercentInput.vue";
 import BaseButton from "../ui/BaseButton.vue";
-import IconButton from "../ui/IconButton.vue";
-import { Plus } from "@lucide/vue";
 import * as buildEditor from "../../stores/buildEditor";
 import { useItemBonusOccurrences } from "../../composables/useItemBonusOccurrences";
 import {
@@ -38,12 +36,6 @@ const props = defineProps<{
   valueDiffs?: ValueDiff[];
   occurrenceDiffers?: boolean;
   otherOccurrenceLabel?: string;
-}>();
-
-const emit = defineEmits<{
-  /** The row's own "new item" shortcut -- BuildSlot.vue forwards it up with this row's
-   *  `filter`, so the item editor can open with a fresh draft pre-filtered to this slot. */
-  addItem: [];
 }>();
 
 const picker = useTemplateRef<InstanceType<typeof ItemPicker>>("picker");
@@ -96,13 +88,6 @@ function rangeLabel(row: DynamicStatRow) {
     <span class="min-w-0 flex-1 truncate text-text">{{
       item ? statSummary : ""
     }}</span>
-    <IconButton
-      title="Create a new item for this slot"
-      data-testid="add-item-for-slot"
-      @click="emit('addItem')"
-    >
-      <Plus />
-    </IconButton>
   </div>
 
   <!-- This item's BonusOccurrenceConfig inputs, if it carries any -- see
