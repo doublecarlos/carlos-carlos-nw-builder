@@ -280,8 +280,15 @@ const ilHpRows = computed(() => [
     label: "Item level",
     value: int(derived.value.itemLevel),
     lead: true,
+    onInfo: (event: MouseEvent) => toggleCard(event, "il"),
   },
   { key: "hp", label: "Hit points", value: int(derived.value.hp), lead: true },
+  {
+    key: "baseDamage",
+    label: "Damage",
+    value: int(derived.value.baseDamage),
+    lead: true,
+  },
 ]);
 
 const damageTableRows = computed(() => [
@@ -330,15 +337,6 @@ const ehpTableRows = computed(() =>
     lead: key === "average",
   })),
 );
-
-const bonusSummary = computed(() => {
-  const all = result.value.bonuses;
-  return {
-    total: all.length,
-    active: all.filter((bonus) => bonus.active).length,
-    excluded: all.filter((bonus) => bonus.excluded).length,
-  };
-});
 
 function fmtPctSigned(value: number | null) {
   if (value == null || Math.abs(value) < 1e-9) return "—";
@@ -471,16 +469,7 @@ const {
       </table>
     </div>
 
-    <div class="flex items-center gap-3 py-2 text-muted">
-      <span
-        >{{ bonusSummary.active }}/{{ bonusSummary.total }} bonuses active</span
-      >
-      <span v-if="bonusSummary.excluded"
-        >{{ bonusSummary.excluded }} excluded</span
-      >
-    </div>
-
-    <StatPairsTable :rows="ilHpRows" />
+    <StatPairsTable class="my-4" :rows="ilHpRows" />
 
     <PanelHead>Ratings</PanelHead>
     <table class="w-full border-collapse border border-line">
@@ -495,7 +484,7 @@ const {
         >
           <td
             class="border border-line px-1 py-0.5"
-            :class="row.sepAfter && 'border-b-2 border-b-line'"
+            :class="row.sepAfter && 'border-b-2 border-b-text/50'"
           >
             <div class="flex items-center">
               <IconButton
@@ -513,7 +502,7 @@ const {
             class="border border-line px-1 py-0.5 text-right tabular-nums gap-0.5"
             :class="[
               row.rating.primaryCls,
-              row.sepAfter && 'border-b-2 border-b-line',
+              row.sepAfter && 'border-b-2 border-b-text/50',
             ]"
           >
             {{ int(row.rating.total) }}
@@ -522,7 +511,7 @@ const {
             class="border border-line px-1 py-0.5 text-right tabular-nums"
             :class="[
               row.percent.primaryCls,
-              row.sepAfter && 'border-b-2 border-b-line',
+              row.sepAfter && 'border-b-2 border-b-text/50',
             ]"
           >
             {{ pct(row.percent.capped) }}
@@ -531,7 +520,7 @@ const {
             class="border border-line px-1 py-0.5 text-right tabular-nums text-muted"
             :class="[
               row.percent.overCls,
-              row.sepAfter && 'border-b-2 border-b-line',
+              row.sepAfter && 'border-b-2 border-b-text/50',
             ]"
           >
             {{ signedPct(row.percent.over) }}
@@ -540,7 +529,7 @@ const {
             class="border border-line px-1 py-0.5 text-right tabular-nums text-muted"
             :class="[
               row.rating.overCls,
-              row.sepAfter && 'border-b-2 border-b-line',
+              row.sepAfter && 'border-b-2 border-b-text/50',
             ]"
           >
             {{ signedInt(row.rating.over) }}
