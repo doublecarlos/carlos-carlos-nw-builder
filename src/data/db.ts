@@ -23,6 +23,19 @@ const pushTo = <K>(map: Map<K, string[]>, key: K, value: string) => {
   else map.set(key, [value]);
 };
 
+/**
+ * Presentation order for a picker's candidates: highest item level first, name as tiebreak.
+ *
+ * `il` leads because it is the number players already rank gear by and the picker renders it on
+ * every row, so the resulting order is verifiable on screen rather than being an opaque score.
+ * The tiebreak carries more weight than it looks: only about half the catalogue has an `il` at
+ * all (boons, group buffs, powers and leveling entries carry none) and several large categories
+ * share a single value across every member, so for those slots the name comparison *is* the
+ * sort -- it has to be deterministic, not incidental.
+ */
+const byItemLevel = (a: Item, b: Item) =>
+  (Number(b.il) || 0) - (Number(a.il) || 0) || a.name.localeCompare(b.name);
+
 export function build(
   items: Item[],
   bonuses: Bonus[] = [],
@@ -53,7 +66,7 @@ export function build(
   }
 
   for (const list of byFilter.values()) {
-    list.sort((a, b) => a.name.localeCompare(b.name));
+    list.sort(byItemLevel);
   }
 
   // Shared bonuses, keyed by id. Membership is never listed here -- it lives on the
@@ -84,7 +97,7 @@ export function build(
       return byId.get(id) ?? null;
     },
 
-    /** Items selectable in a filter category, sorted by name. */
+    /** Items selectable in a filter category, in `byItemLevel` order. */
     forFilter: (filter: string) => byFilter.get(filter) ?? [],
 
     /** Items selectable in a given slot id -- empty for a build_parameter slot, which has no
@@ -94,8 +107,9 @@ export function build(
      * For a point_assignment slot, only items that also carry `inlineRepetition` bounds qualify
      * (an item merely sharing the filter but missing that config could never render a valid
      * stepper), sorted by `inlineRepetition.priority` (default 0) then name -- item_picker's own
-     * name-only order doesn't apply here since a priority is how a point_assignment row's author
-     * controls display order without an explicit list to reorder (slots.json used to hold one). */
+     * `byItemLevel` order doesn't apply here since a priority is how a point_assignment row's
+     * author controls display order without an explicit list to reorder (slots.json used to hold
+     * one), and these rows are all visible at once rather than being scanned in a dropdown. */
     forSlot(slotId: string) {
       const slot = slotById.get(slotId);
       if (slot?.type === "item_picker") {
@@ -110,7 +124,7 @@ export function build(
               if (item) matches.push(item);
             }
           }
-          return matches.sort((a, b) => a.name.localeCompare(b.name));
+          return matches.sort(byItemLevel);
         }
         return byFilter.get(slot.filter) ?? [];
       }

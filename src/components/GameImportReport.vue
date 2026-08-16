@@ -305,6 +305,7 @@ async function copyUnrecognisedIds() {
                   <ItemPicker
                     :items="openCandidates"
                     :selected-item="row.mappedItem"
+                    :db="db"
                     :model-value="row.mappedItem?.id ?? ''"
                     data-testid="game-import-report-map-picker"
                     @update:model-value="onPick(row.outcomeIndex, $event)"

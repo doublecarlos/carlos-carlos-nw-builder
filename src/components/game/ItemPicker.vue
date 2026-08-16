@@ -18,6 +18,7 @@ import {
   int as fmtInt,
 } from "../../lib/format";
 import * as engine from "../../engine/engine";
+import { itemSearchText } from "../../lib/item-search";
 import type { Item, Db, Build } from "../../types";
 import ComboBox from "../ui/ComboBox.vue";
 
@@ -31,6 +32,11 @@ const props = withDefaults(
      * fallen out of it (e.g. a class change narrowing `allowedClass`). */
     selectedItem?: Item | null;
     invalid?: boolean;
+    /** Catalogue the candidates came from, used only to widen what a typed query matches
+     * (stats and bonus names, via `itemSearchText`). Separate from `bonusPreview.db` because
+     * it is useful without a live build -- PresetForm has a catalogue but no build to resolve
+     * against. Omit it and the dropdown filters on item names alone, as it always did. */
+    db?: Db | null;
     /** Build-editor context for a bonus-aware preview: each candidate is hypothetically
      * resolved into `slotId` so the dropdown can show the bonus stats it would add, same as
      * the row's own stat summary would show once it's actually picked (issue #116). Left
@@ -52,6 +58,7 @@ const props = withDefaults(
   {
     selectedItem: null,
     invalid: false,
+    db: null,
     bonusPreview: undefined,
   },
 );
@@ -173,10 +180,17 @@ const visibleItems = computed(() => {
   return props.items.filter((item) => !stats.get(item.id)?.filtered);
 });
 
-/** Map items to the generic {value, label} format ComboBox expects. */
-const options = computed(() =>
-  visibleItems.value.map((item) => ({ value: item.id, label: item.name })),
-);
+/** Map items to the generic {value, label} format ComboBox expects, plus the off-screen
+ *  `search` blob that lets a query match an item by what it grants rather than only by name.
+ *  `itemSearchText` memoizes per catalogue, so re-mapping here is a lookup, not a rebuild. */
+const options = computed(() => {
+  const db = props.db;
+  return visibleItems.value.map((item) => ({
+    value: item.id,
+    label: item.name,
+    search: db ? itemSearchText(db, item) : undefined,
+  }));
+});
 
 /** Decorated once per filter change rather than once per render pass -- and, since this reads
  *  `visibleItems`/`candidateStats`, only pays the per-candidate resolve cost while this

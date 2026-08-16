@@ -19,11 +19,21 @@ withDefaults(
 const el = useTemplateRef("el");
 
 /** Scroll the `[data-highlighted]` row into view. Called by the parent picker's
- * `watch(highlight, ...)` instead of reaching into `$el`. */
+ * `watch(highlight, ...)` instead of reaching into `$el`.
+ *
+ * Adjusts this menu's own `scrollTop` rather than calling `scrollIntoView`: that scrolls every
+ * scrollable ancestor, the document included, so opening a picker whose selected row sits far
+ * down the list would yank the page out from under the input the user just clicked. The maths
+ * below is `block: "nearest"`, scoped to the menu box. */
 function scrollToHighlighted() {
-  el.value
-    ?.querySelector("[data-highlighted]")
-    ?.scrollIntoView({ block: "nearest" });
+  const menu = el.value;
+  const row = menu?.querySelector("[data-highlighted]");
+  if (!menu || !row) return;
+  const menuBox = menu.getBoundingClientRect();
+  const rowBox = row.getBoundingClientRect();
+  if (rowBox.top < menuBox.top) menu.scrollTop -= menuBox.top - rowBox.top;
+  else if (rowBox.bottom > menuBox.bottom)
+    menu.scrollTop += rowBox.bottom - menuBox.bottom;
 }
 
 defineExpose({ scrollToHighlighted });

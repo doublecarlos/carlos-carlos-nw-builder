@@ -48,6 +48,24 @@ test.describe("choosing and clearing an item", () => {
     await expect(pickerInput(row)).toHaveValue("");
   });
 
+  test("opening a picker scrolls the menu to the current pick without scrolling the page", async ({
+    page,
+  }) => {
+    // Reopening highlights whatever is already selected and scrolls it into view. That scroll
+    // has to stay inside the menu: moving the document instead pulls the input out from under
+    // the pointer mid-click, which left the picker unopenable for any selection far enough down
+    // its list -- HEAD_ITEM is the lowest item level in this slot, so it sits at the bottom.
+    await openBuilder(page);
+    await chooseItem(page, "gear.head", HEAD_ITEM);
+    const row = slotRow(page, "gear.head");
+
+    const scrollBefore = await page.evaluate(() => window.scrollY);
+    await pickerInput(row).click();
+
+    await expect(page.getByTestId("picker-menu").first()).toBeVisible();
+    expect(await page.evaluate(() => window.scrollY)).toBe(scrollBefore);
+  });
+
   test("clearing a slot via Backspace on the keyboard cursor removes the item", async ({
     page,
   }) => {

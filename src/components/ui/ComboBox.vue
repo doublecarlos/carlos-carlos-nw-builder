@@ -13,8 +13,11 @@ import ComboBoxMenuRow from "./ComboBoxMenuRow.vue";
 
 const props = withDefaults(
   defineProps<{
-    /** [{ value, label }], in the order they should list. */
-    options: { value: string; label: string }[];
+    /** [{ value, label }], in the order they should list. `search` is optional extra haystack
+     *  a query may match on besides the visible label -- ItemPicker fills it with an item's
+     *  stats and bonuses so "severity" finds gear that never spells it in the name. Matched
+     *  against, never displayed. */
+    options: { value: string; label: string; search?: string }[];
     placeholder?: string;
     /** Red border while the current choice fails validation. */
     invalid?: boolean;
@@ -67,7 +70,10 @@ const selected = computed(
 const filtered = computed(() => {
   if (!open.value) return [];
   const source = props.options.filter((option) =>
-    matchesQuery(option.label, query.value),
+    matchesQuery(
+      option.search ? [option.label, option.search] : option.label,
+      query.value,
+    ),
   );
   return source.slice(0, props.maxRows);
 });

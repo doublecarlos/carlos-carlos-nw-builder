@@ -82,6 +82,7 @@ function rangeLabel(row: DynamicStatRow) {
       :model-value="choice()"
       :selected-item="item"
       :invalid="invalid"
+      :db="db"
       :bonus-preview="{ db, build, slotId: slotDef.id }"
       @update:model-value="buildEditor.setChoice(slotDef.id, $event)"
     />

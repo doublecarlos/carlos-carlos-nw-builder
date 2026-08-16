@@ -323,7 +323,9 @@ describe("forSlot tag-based item_picker resolution", () => {
     expect(ids).toHaveLength(3);
   });
 
-  it("sorts tag-resolved candidates by name, same as a filter-resolved slot", () => {
+  it("orders tag-resolved candidates the same way a filter-resolved slot does", () => {
+    // None of these fixtures carry an `il`, so they all tie there and fall through to the name
+    // tiebreak -- which is the common case in this catalogue, not an edge one.
     const names = testDb.forSlot("companions.universal").map((i) => i.name);
     expect(names).toEqual([...names].sort((a, b) => a.localeCompare(b)));
   });
@@ -360,6 +362,89 @@ describe("forSlot tag-based item_picker resolution", () => {
       .forSlotAndBuild(capDb, "companions.offense", build)
       .map((i) => i.id);
     expect(ids).not.toContain("capped-offense-power");
+  });
+});
+
+// Picker candidate order: item level descending, name ascending as tiebreak. iL leads because
+// it is what the picker already renders per row; the name tiebreak matters more than it looks,
+// since large parts of this catalogue carry no `il` at all or share one value across a whole
+// category, leaving name to do the entire sort there.
+describe("forSlot candidate ordering", () => {
+  const slotsData: SlotsData = {
+    sections: [{ id: "gear", label: "Gear" }],
+    slots: [
+      {
+        id: "gear.ring1",
+        label: "Ring 1",
+        section: "gear",
+        type: "item_picker",
+        filter: "gear_ring",
+      },
+    ],
+  };
+  const ring = (id: string, name: string, il?: number): Item => ({
+    id,
+    name,
+    filter: "gear_ring",
+    ...(il === undefined ? {} : { il }),
+  });
+
+  it("puts the highest item level first regardless of authored order", () => {
+    const built = db.build(
+      [ring("low", "Alpha", 900), ring("high", "Zulu", 1200)],
+      [],
+      NW_SCHEMA,
+      slotsData,
+    );
+    expect(built.forSlot("gear.ring1").map((i) => i.id)).toEqual([
+      "high",
+      "low",
+    ]);
+  });
+
+  it("falls back to name order within one item level", () => {
+    const built = db.build(
+      [
+        ring("c", "Charlie", 1000),
+        ring("a", "Alpha", 1000),
+        ring("b", "Bravo", 1000),
+      ],
+      [],
+      NW_SCHEMA,
+      slotsData,
+    );
+    expect(built.forSlot("gear.ring1").map((i) => i.id)).toEqual([
+      "a",
+      "b",
+      "c",
+    ]);
+  });
+
+  it("sorts an il-less category purely by name rather than leaving it unordered", () => {
+    const built = db.build(
+      [ring("z", "Zulu"), ring("m", "Mike"), ring("a", "Alpha")],
+      [],
+      NW_SCHEMA,
+      slotsData,
+    );
+    expect(built.forSlot("gear.ring1").map((i) => i.id)).toEqual([
+      "a",
+      "m",
+      "z",
+    ]);
+  });
+
+  it("ranks an item with no il below one that has it", () => {
+    const built = db.build(
+      [ring("none", "Alpha"), ring("some", "Zulu", 800)],
+      [],
+      NW_SCHEMA,
+      slotsData,
+    );
+    expect(built.forSlot("gear.ring1").map((i) => i.id)).toEqual([
+      "some",
+      "none",
+    ]);
   });
 });
 

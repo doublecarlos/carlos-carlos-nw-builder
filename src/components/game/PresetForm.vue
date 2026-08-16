@@ -498,6 +498,7 @@ watch(
           class="w-64"
           :items="db.forSlot(row.slotId)"
           :selected-item="db.get(row.choice)"
+          :db="db"
         />
         <span
           v-for="config in db.get(row.choice)?.dynamicStats ?? []"
