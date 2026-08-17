@@ -87,7 +87,7 @@ test.describe("selecting a layer replaces the build editor", () => {
   });
 });
 
-test.describe("Ctrl+click on a filled slot", () => {
+test.describe("Ctrl+click on a slot row", () => {
   test("Ctrl+click on a filled slot with no layers creates Layer 1, selects it, and opens the item form", async ({
     page,
   }) => {
@@ -108,7 +108,9 @@ test.describe("Ctrl+click on a filled slot", () => {
     await expect(page.getByTestId("form-bar").first()).toBeVisible();
   });
 
-  test("Ctrl+click on an empty slot does nothing", async ({ page }) => {
+  test("Ctrl+click on an empty slot creates Layer 1 too, landing on a draft for that slot", async ({
+    page,
+  }) => {
     await openBuilder(page);
 
     // Ctrl+click on an empty slot (boots is empty by default).
@@ -116,8 +118,14 @@ test.describe("Ctrl+click on a filled slot", () => {
       modifiers: ["Control"],
     });
 
-    // The build editor should still be visible (no layer editor).
-    await expect(page.getByTestId("builder-content")).toBeVisible();
+    await expect(
+      page.locator("strong").filter({ hasText: "Layer 1" }),
+    ).toBeVisible();
+    // A brand-new item, narrowed to what that slot can hold.
+    await expect(page.getByTestId("item-name-input")).toHaveValue("");
+    await expect(page.getByTestId("item-filter-input")).toHaveValue(
+      "gear_boots",
+    );
   });
 
   test("Ctrl+click twice on different slots targets the same layer the second time", async ({

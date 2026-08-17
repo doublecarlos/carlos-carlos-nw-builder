@@ -5,6 +5,7 @@ import { test, expect, type Page } from "@playwright/test";
 import {
   openBuilder,
   headerRow,
+  ensureSectionExpanded,
   slotRow,
   pickerInput,
   cursorRow,
@@ -108,6 +109,63 @@ test.describe("row click behaviour", () => {
     await expect(page.locator(".editor-row.is-on .editor-row-name")).toHaveText(
       HEAD_ITEM,
     );
+  });
+
+  test("Ctrl+click on an empty slot opens a new item draft pre-filled with that slot's filter", async ({
+    page,
+  }) => {
+    await openBuilder(page);
+    const row = slotRow(page, "gear.head");
+
+    await row.locator(".slot-label").click({ modifiers: ["Control"] });
+
+    await expect(page.getByTestId("builder-content")).toBeHidden();
+    await expect(page.getByTestId("item-name-input")).toHaveValue("");
+    await expect(page.getByTestId("item-filter-input")).toHaveValue(
+      "gear_head",
+    );
+  });
+
+  test("Ctrl+click on an empty tag-selected slot pre-fills the draft's tags as well", async ({
+    page,
+  }) => {
+    await openBuilder(page);
+    await ensureSectionExpanded(page, "companions");
+    const row = slotRow(page, "companions.offense");
+    await row.scrollIntoViewIfNeeded();
+
+    await row.locator(".slot-label").click({ modifiers: ["Control"] });
+
+    await expect(page.getByTestId("builder-content")).toBeHidden();
+    // The tags are what makes an item a candidate in a tag-selected slot; the filter is
+    // borrowed from the candidates already there, since the form cannot save without one.
+    await expect(page.getByTestId("item-tags-input")).toContainText(
+      "companion_power:offense",
+    );
+    await expect(page.getByTestId("item-filter-input")).toHaveValue(
+      "companion_power",
+    );
+  });
+
+  test("the pre-filled draft is one-shot: coming back to the layer opens a blank one", async ({
+    page,
+  }) => {
+    await openBuilder(page);
+    await slotRow(page, "gear.head")
+      .locator(".slot-label")
+      .click({ modifiers: ["Control"] });
+    await expect(page.getByTestId("item-filter-input")).toHaveValue(
+      "gear_head",
+    );
+
+    // Back to the build, then into the same layer again -- the seed belonged to that one jump,
+    // so the second visit gets an ordinary blank draft.
+    await page.locator(".nav-row--build .nav-name").first().click();
+    await expect(page.getByTestId("builder-content")).toBeVisible();
+    await page.locator(".nav-row--layer .nav-name").first().click();
+
+    await expect(page.getByTestId("builder-content")).toBeHidden();
+    await expect(page.getByTestId("item-filter-input")).toHaveValue("");
   });
 });
 

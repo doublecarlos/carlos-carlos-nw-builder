@@ -713,6 +713,7 @@ watch(
           v-model="draft.tags"
           :options="tags"
           placeholder="Add a tag…"
+          data-testid="item-tags-input"
         />
       </FormField>
     </FormGrid>

@@ -72,8 +72,14 @@ const exportTab = ref("items"); // items | bonuses | overlay | slots
 const newItemCounter = ref(0);
 /** Seed values for the next brand-new item/bonus draft, set by "Duplicate" and consumed
  *  once at that form's mount -- cleared whenever a plain "New" is requested instead so a
- *  stale duplicate doesn't leak into an unrelated blank draft. */
-const duplicateItemSeed = ref<Item | null>(null);
+ *  stale duplicate doesn't leak into an unrelated blank draft.
+ *
+ *  An item seed can also arrive from outside: BuildEditor's Ctrl/Cmd+click on an empty slot
+ *  row leaves a blank item pre-narrowed to that row for this mount to pick up. Taken here at
+ *  setup rather than in `onMounted` so ItemForm's very first render already builds its draft
+ *  from it, with no remount needed to notice it. */
+const newItemSeed = layerEditorUi.takeNewItemSeed();
+const duplicateItemSeed = ref<Item | null>(newItemSeed);
 const duplicateBonusSeed = ref<Bonus | null>(null);
 const notice = ref("");
 const confirmReset_ = useConfirm(4000);
@@ -801,9 +807,21 @@ onMounted(() => {
   const routed = router.parse();
   const routedActive = hasRoutedLayerState(routed);
   const source = routedActive ? routed : ui.value;
+  // Restore what this layer had open, unless a new-item seed outranks it (first branch).
   // When the layer changes, keep the `item` param if the new layer's composed catalogue
   // still has that id, otherwise drop it (phase 6 §2.3).
-  if (source.section === "bonuses") {
+  if (newItemSeed) {
+    // BuildEditor's Ctrl/Cmd+click on an empty slot row: the blank draft *is* the point of the
+    // jump, so restoring whatever this layer had open before would throw it away. The per-layer
+    // memory is rewritten to match, since that is what a later remount restores from.
+    section.value = "items";
+    ui.value.section = "items";
+    ui.value.item = "";
+    const narrowedTo = [newItemSeed.filter, ...(newItemSeed.tags ?? [])]
+      .filter(Boolean)
+      .join(", ");
+    notice.value = `New item — pre-filled for "${narrowedTo}"`;
+  } else if (source.section === "bonuses") {
     section.value = "bonuses";
     if (source.bonus && db.value.bonusById.get(source.bonus))
       selectedBonusId.value = source.bonus;

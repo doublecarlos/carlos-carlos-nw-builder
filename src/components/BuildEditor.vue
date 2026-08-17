@@ -41,6 +41,7 @@ import * as engine from "../stores/resolved";
 import * as editorScroll from "../stores/editorScroll";
 import * as selection from "../stores/selection";
 import * as layers from "../stores/layers";
+import * as layerEditorUi from "../stores/layerEditorUi";
 import { isMac } from "../lib/platform";
 import type {
   Item,
@@ -418,17 +419,44 @@ function setAll(open: boolean) {
   for (const section of db.value.sections) expanded[section.id] = open;
 }
 
-/** A plain click parks the cursor via BuildSlot's own anchor focus; Ctrl/Cmd+click on a
- *  filled slot jumps straight to that item in the layer editor -- a no-op on an empty slot,
- *  since there is nothing there to edit. The platform's own modifier exclusively (decision 46).
+/** What a brand-new item would need to become a candidate for this row: its `filter`, or its
+ *  `tags` when the slot selects by tag instead (`ItemPickerSlot`'s own doc comment on why the
+ *  two are exclusive). Only an item_picker offers one -- a build_parameter has neither field to
+ *  pre-fill, and a point_assignment row is never actually empty (every one of them ships with
+ *  candidate items) while Ctrl/Cmd+click already means "jump to this stepper's bound" across
+ *  most of its width.
+ *
+ *  A tag-selected slot names no filter of its own, yet ItemForm requires one to save at all --
+ *  so the seed borrows whatever filter this slot's existing candidates already share, a new one
+ *  having no reason to differ. Blank when the slot has no candidates to learn from. */
+function newItemSeedFor(slotId: string): Item | null {
+  const slotDef = db.value.slotById.get(slotId);
+  if (slotDef?.type !== "item_picker") return null;
+  if (slotDef.filter) return { id: "", name: "", filter: slotDef.filter };
+  if (!slotDef.tags?.length) return null;
+  return {
+    id: "",
+    name: "",
+    filter: db.value.forSlot(slotId)[0]?.filter ?? "",
+    tags: [...slotDef.tags],
+  };
+}
+
+/** A plain click parks the cursor via BuildSlot's own anchor focus; Ctrl/Cmd+click jumps into
+ *  the layer editor -- straight to the row's item when it has one, and otherwise to a fresh
+ *  item draft already narrowed to what the row can hold (`newItemSeedFor`), making an empty row
+ *  the way into authoring the item that belongs there. The platform's own modifier exclusively
+ *  (decision 46).
  *  `itemId` names which stepper was clicked on a point_assignment row, which has no single
  *  `itemIn` resolution of its own (BuildSlot.vue's own doc comment on `onRowClick`). */
 function onRowClick(event: MouseEvent, slotId: string, itemId?: string) {
   if (!(isMac ? event.metaKey : event.ctrlKey)) return;
   const item = itemId ? db.value.get(itemId) : itemIn(slotId);
-  if (!item) return;
+  const seed = item ? null : newItemSeedFor(slotId);
+  if (!item && !seed) return;
+  if (seed) layerEditorUi.seedNewItem(seed);
   const layer = layers.ensureTargetLayer();
-  router.apply({ item: item.id });
+  router.apply({ item: item?.id ?? null });
   selection.selectLayer(layer.id);
 }
 
