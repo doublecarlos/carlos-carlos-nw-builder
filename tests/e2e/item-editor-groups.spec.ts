@@ -87,6 +87,34 @@ test("inline repetition group is hidden until added, then fully removable", asyn
   await expect(numberInputs.nth(2)).toHaveValue("");
 });
 
+test("pre-added empty stat rows on a saved item survive filling one of them", async ({
+  page,
+}) => {
+  await openNewItemForm(page);
+  await page.getByRole("button", { name: "Save item" }).click();
+
+  // The item is saved from here on, so every edit auto-saves and round-trips back into the
+  // form. The add-rows-first workflow: add five empty rows, fill only the first one, and
+  // the four still-empty ones must survive that round-trip.
+  const rows = page.locator(".stat-row");
+  await expect(rows).toHaveCount(1); // the empty "Add" row
+  for (let i = 0; i < 5; i++) {
+    await page.getByRole("button", { name: "Add stat" }).first().click();
+  }
+  await expect(rows).toHaveCount(5);
+
+  const picker = rows.first().getByTestId("picker-input");
+  await picker.click();
+  await picker.fill("Power");
+  await rows.first().getByText("Power", { exact: true }).click();
+
+  // Past the 700ms auto-save debounce.
+  await page.waitForTimeout(1500);
+  await expect(rows).toHaveCount(5);
+  await expect(picker).toHaveValue("Power");
+  await expect(rows.nth(1).getByTestId("picker-input")).toHaveValue("");
+});
+
 test("removing inline repetition on an existing item omits it from the saved item", async ({
   page,
 }) => {

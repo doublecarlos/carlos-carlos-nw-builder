@@ -633,6 +633,13 @@ function updateBonusOccurrence(id: string, occurrence: OccurrenceDraft | null) {
 watch(
   () => props.source,
   (value) => {
+    // Same round-trip-echo guard BonusForm.vue uses: a live edit's own update:item goes
+    // out through the layer overlay and comes straight back as this prop. Rebuilding from
+    // that echo would wipe half-drawn rows — `toItem` drops stat, dynamic-stat and
+    // default-param rows with nothing picked yet, so an "add the rows first, fill them one
+    // by one" session would lose every row still empty when the first one is filled.
+    if (value && lastEmittedJson && JSON.stringify(value) === lastEmittedJson)
+      return;
     draft.value = buildDraft(value);
     descriptionActive.value = hasDescription(draft.value);
     repetitionActive.value = hasInlineRepetition(draft.value);
