@@ -1607,6 +1607,20 @@
     ]
   },
   {
+    "id": "class-cleric",
+    "name": "Cleric",
+    "filter": "build_param_linked_item",
+    "str": 10,
+    "con": 10,
+    "dex": 10,
+    "int": 15,
+    "wis": 16,
+    "cha": 13,
+    "acc_p": 0.05,
+    "crit_avoid_p": 0.05,
+    "bonuses": ["baseline-character", "baseline-enemy-stats"]
+  },
+  {
     "id": "class-to-be-implemented",
     "name": "Class: Not implemented yet",
     "filter": "build_param_linked_item",
@@ -2814,6 +2828,17 @@
     "bonuses": ["m26-masterwork-neck-waist-set"]
   },
   {
+    "id": "m28-ultraviolet-elven-gloves",
+    "name": "M28 Ultraviolet Elven Gloves",
+    "filter": "gear_arms",
+    "il": 2900,
+    "combined_rating": 2610,
+    "strike": 2175,
+    "severity": 2175,
+    "forte_p": 0.025,
+    "allowedClass": ["cleric", "paladin"]
+  },
+  {
     "id": "m28-voidtouched-greatsword",
     "name": "M28 Voidtouched Greatsword",
     "filter": "gear_weapon_mainhand",
@@ -3305,6 +3330,30 @@
     "bonuses": ["m32-rotsteel-ring-of-spores-strike"]
   },
   {
+    "id": "m32-sigil-of-the-abyss",
+    "name": "M32 Sigil of the Abyss (Legendary)",
+    "filter": "gear_weapon_offhand",
+    "il": 4450,
+    "combined_rating": 4005,
+    "acc": 4339,
+    "strike": 4005,
+    "allowedClass": ["cleric"],
+    "bonuses": ["m32-cleric-s-impending-doom-legendary"]
+  },
+  {
+    "id": "m32-warden-of-the-last-rite-legendary",
+    "name": "M32 Warden of the Last Rite (Legendary)",
+    "filter": "gear_weapon_mainhand",
+    "il": 4450,
+    "combined_rating": 4005,
+    "base_damage_flat": 50,
+    "power": 1557,
+    "severity": 2670,
+    "out_healing": 1780,
+    "allowedClass": ["cleric"],
+    "bonuses": ["m32-cleric-s-impending-doom-legendary"]
+  },
+  {
     "id": "m33-coldsilver-coil-of-wrath",
     "name": "M33 Coldsilver Coil of Wrath",
     "filter": "gear_ring",
@@ -3523,6 +3572,17 @@
     "forte": 3645
   },
   {
+    "id": "m33-runefrost-skirmisher-barbute",
+    "name": "M33 Runefrost Skirmisher Barbute",
+    "filter": "gear_head",
+    "power": 2835,
+    "forte": 3645,
+    "combined_rating": 4860,
+    "il": 5400,
+    "allowedClass": ["bard", "cleric", "ranger", "rogue"],
+    "bonuses": ["m33-strategist-s-advantage"]
+  },
+  {
     "id": "m33-runefrost-skirmisher-s-breastplate",
     "name": "M33 Runefrost Skirmisher's Breastplate",
     "filter": "gear_armor",
@@ -3614,6 +3674,31 @@
     "severity": 5130,
     "allowedClass": ["bard", "cleric", "ranger", "rogue"],
     "bonuses": ["m33-critical-breaker"]
+  },
+  {
+    "id": "m33-wintermarked-rimecrook",
+    "name": "M33 Wintermarked Rimecrook",
+    "filter": "gear_weapon_mainhand",
+    "il": 5800,
+    "combined_rating": 5220,
+    "base_damage_flat": 100,
+    "strike": 3480,
+    "power": 2030,
+    "severity": 3480,
+    "allowedClass": ["cleric"],
+    "bonuses": ["m33-chilling-flow-mythic"]
+  },
+  {
+    "id": "m33-wintermarked-sanctum-emblem",
+    "name": "M33 Wintermarked Sanctum Emblem",
+    "filter": "gear_weapon_offhand",
+    "il": 5800,
+    "combined_rating": 5220,
+    "strike": 3480,
+    "power": 2030,
+    "forte": 2610,
+    "allowedClass": ["cleric"],
+    "bonuses": ["m33-chilling-flow-mythic"]
   },
   {
     "id": "m33-wintermarked-skaldblade",
@@ -3872,6 +3957,18 @@
     "bonuses": ["paladin-aura"]
   },
   {
+    "id": "paragon-arbiter",
+    "name": "Arbiter",
+    "filter": "paragon",
+    "defaultParams": {
+      "options.role": "dps",
+      "options.forte1": "power_p",
+      "options.forte2a": "sev_p",
+      "options.forte2b": "deflect_p"
+    },
+    "allowedClass": ["cleric"]
+  },
+  {
     "id": "paragon-blademaster",
     "name": "Blademaster",
     "filter": "paragon",
@@ -4080,7 +4177,11 @@
     "filter": "race_attributes",
     "cha": 2,
     "maxCopies": 1,
-    "tags": ["race-ability-score", "race-ability-score:aasimar"],
+    "tags": [
+      "race-ability-score",
+      "race-ability-score:aasimar",
+      "race-ability-score:sun-elf"
+    ],
     "bonuses": ["race-ability-score-warning"]
   },
   {
@@ -4102,7 +4203,11 @@
     "filter": "race_attributes",
     "dex": 2,
     "maxCopies": 1,
-    "tags": ["race-ability-score", "race-ability-score:aasimar"],
+    "tags": [
+      "race-ability-score",
+      "race-ability-score:aasimar",
+      "race-ability-score:sun-elf"
+    ],
     "bonuses": ["race-ability-score-warning"]
   },
   {
@@ -4233,6 +4338,15 @@
     "deflect_sev_p": 0.01,
     "inc_healing_p": 0.01,
     "out_healing_p": 0.01,
+    "maxCopies": 1
+  },
+  {
+    "id": "race-sun-elf",
+    "name": "Sun Elf",
+    "filter": "race",
+    "ap_gain": 0.05,
+    "int": 2,
+    "control_resist_p": 0.25,
     "maxCopies": 1
   },
   {
@@ -4527,7 +4641,7 @@
     "name": "Celestial Swift Synergy",
     "filter": "combat_enchant_offense",
     "il": 7000,
-    "outgoing_damage_mult": 0.12,
+    "base_damage_mult": 0.12,
     "bonuses": ["swift-synergy"]
   },
   {

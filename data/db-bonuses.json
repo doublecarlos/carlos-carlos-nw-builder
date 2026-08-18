@@ -1465,6 +1465,39 @@
     ]
   },
   {
+    "id": "m32-cleric-s-impending-doom-legendary",
+    "name": "M32 Cleric's Impending Doom (Legendary)",
+    "grants": [
+      {
+        "when": {
+          "bonusOccurrences": {
+            "bonus": "m32-cleric-s-impending-doom-legendary",
+            "atLeast": 2
+          }
+        },
+        "stats": {
+          "forte_p": 0.07,
+          "strike_p": 0.037
+        }
+      },
+      {
+        "when": {
+          "duration": {
+            "atLeast": 30
+          },
+          "toggle": "combat",
+          "bonusOccurrences": {
+            "bonus": "m32-cleric-s-impending-doom-legendary",
+            "atLeast": 2
+          }
+        },
+        "stats": {
+          "outgoing_damage": 0.04
+        }
+      }
+    ]
+  },
+  {
     "id": "m32-deathsilver-coil-of-dominion-acc-strike",
     "name": "M32 Deathsilver Coil of Dominion (Acc/Strike)",
     "grants": [
@@ -2274,6 +2307,49 @@
     ]
   },
   {
+    "id": "m33-strategist-s-advantage",
+    "name": "M33 Strategist's Advantage",
+    "grants": [
+      {
+        "when": {
+          "toggle": "combat"
+        },
+        "variants": [
+          {
+            "stats": {
+              "ca_p": 0.07
+            },
+            "when": {
+              "duration": {
+                "atLeast": 50
+              }
+            }
+          },
+          {
+            "stats": {
+              "ca_p": 0.042
+            },
+            "when": {
+              "duration": {
+                "atLeast": 30
+              }
+            }
+          },
+          {
+            "stats": {
+              "ca_p": 0.014
+            },
+            "when": {
+              "duration": {
+                "atLeast": 10
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
     "id": "m33-survivor-s-gift-celestial",
     "name": "M33 Survivor's Gift (Celestial)",
     "grants": [
@@ -2683,7 +2759,8 @@
           "any": [
             {
               "equipped": {
-                "item": "race-human"
+                "item": "race-human",
+                "atLeast": 1
               },
               "any": [
                 {
@@ -2708,7 +2785,8 @@
             },
             {
               "equipped": {
-                "item": "race-aasimar"
+                "item": "race-aasimar",
+                "atLeast": 1
               },
               "any": [
                 {
@@ -2739,7 +2817,8 @@
             },
             {
               "equipped": {
-                "item": "race-half-orc"
+                "item": "race-half-orc",
+                "atLeast": 1
               },
               "any": [
                 {
@@ -2764,7 +2843,8 @@
             },
             {
               "equipped": {
-                "item": "race-gith"
+                "item": "race-gith",
+                "atLeast": 1
               },
               "any": [
                 {
@@ -2789,7 +2869,8 @@
             },
             {
               "equipped": {
-                "item": "race-wood-elf"
+                "item": "race-wood-elf",
+                "atLeast": 1
               },
               "any": [
                 {
@@ -2800,6 +2881,32 @@
                   "not": {
                     "equipped": {
                       "tag": "race-ability-score:wood-elf",
+                      "exactly": 1
+                    }
+                  }
+                },
+                {
+                  "equipped": {
+                    "tag": "race-ability-score",
+                    "atLeast": 2
+                  }
+                }
+              ]
+            },
+            {
+              "equipped": {
+                "item": "race-sun-elf",
+                "atLeast": 1
+              },
+              "any": [
+                {
+                  "equipped": {
+                    "tag": "race-ability-score",
+                    "exactly": 1
+                  },
+                  "not": {
+                    "equipped": {
+                      "tag": "race-ability-score:sun-elf",
                       "exactly": 1
                     }
                   }

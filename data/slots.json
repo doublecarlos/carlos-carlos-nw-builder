@@ -30,27 +30,27 @@
             {
               "value": "cleric",
               "label": "Cleric",
-              "linkedItem": "class-to-be-implemented"
+              "linkedItem": "class-cleric"
             },
             {
               "value": "fighter",
               "label": "Fighter",
-              "linkedItem": "class-to-be-implemented"
+              "linkedItem": "class-fighter"
             },
             {
               "value": "paladin",
               "label": "Paladin",
-              "linkedItem": "class-to-be-implemented"
+              "linkedItem": "class-paladin"
             },
             {
               "value": "ranger",
               "label": "Ranger",
-              "linkedItem": "class-to-be-implemented"
+              "linkedItem": "class-ranger"
             },
             {
               "value": "rogue",
               "label": "Rogue",
-              "linkedItem": "class-to-be-implemented"
+              "linkedItem": "class-rogue"
             },
             {
               "value": "warlock",
@@ -60,7 +60,7 @@
             {
               "value": "wizard",
               "label": "Wizard",
-              "linkedItem": "class-to-be-implemented"
+              "linkedItem": "class-wizard"
             }
           ]
         },
