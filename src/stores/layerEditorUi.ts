@@ -6,7 +6,7 @@
 // but a fresh mount needs *something* to fall back on once that URL is gone -- this is that
 // something. Field names mirror the router params (`item`/`bonus`/`preset`/`section`/`status`/
 // `q`) so a mounting component can treat "the URL" and "the stored state" as interchangeable
-// sources.
+// sources. `slot` is the build_parameter slot selected in the Slots section (issue #271).
 import { reactive } from "vue";
 import type { Item } from "../types";
 
@@ -15,12 +15,21 @@ export interface LayerEditorUiState {
   item: string;
   bonus: string;
   preset: string;
+  slot: string;
   status: string;
   q: string;
 }
 
 function defaults(): LayerEditorUiState {
-  return { section: "", item: "", bonus: "", preset: "", status: "", q: "" };
+  return {
+    section: "",
+    item: "",
+    bonus: "",
+    preset: "",
+    slot: "",
+    status: "",
+    q: "",
+  };
 }
 
 const states = new Map<string, LayerEditorUiState>();

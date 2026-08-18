@@ -15,6 +15,7 @@ describe("layerEditorUi store", () => {
       item: "",
       bonus: "",
       preset: "",
+      slot: "",
       status: "",
       q: "",
     });

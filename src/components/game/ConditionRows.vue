@@ -20,7 +20,7 @@ import {
 } from "@lucide/vue";
 import FormField from "../ui/FormField.vue";
 import RangeOrExactFields from "./RangeOrExactFields.vue";
-import { NW_SLOTS } from "../../data/data";
+import * as engine from "../../stores/resolved";
 import {
   LEAF_TYPES,
   MAX_DEPTH,
@@ -345,43 +345,52 @@ const PATH_FOR_TYPE: Record<string, string> = {
 
 function optionsForCombo(type?: string) {
   if (type === "toggle") {
-    return NW_SLOTS.slots
-      .filter(
-        (slot): slot is BuildParameterSlot =>
-          slot.type === "build_parameter" && slot.path.startsWith("toggles."),
-      )
+    return paramSlots.value
+      .filter((slot) => slot.path.startsWith("toggles."))
       .map((slot) => ({
         value: slot.path.slice("toggles.".length),
         label: slot.label,
       }));
   }
   const path = type ? PATH_FOR_TYPE[type] : undefined;
-  const slot = path
-    ? NW_SLOTS.slots.find(
-        (s) => s.type === "build_parameter" && s.path === path,
-      )
-    : undefined;
+  if (!path) return [];
+  const slot = paramSlots.value.find((s) => s.path === path);
   // Drop a slot's own "— none —" row: "" is a build-editor value, not a condition
   // value -- a `class: ""` leaf would serialise to nothing anyway (`fromCsv`).
-  return ((slot as BuildParameterSlot | undefined)?.options ?? []).filter(
-    (o) => o.value,
-  );
+  const fromSlot = (slot?.options ?? []).filter((o) => o.value);
+  if (fromSlot.length) return fromSlot;
+  // No parameter declares this path, so the vocabulary is whatever items publish at it --
+  // which is where `class` lives since #273. Labelled by the publishing item, and deduped
+  // since several items may legitimately assert the same value.
+  const byValue = new Map<string, string>();
+  for (const item of engine.db.value.items) {
+    const value = item.publishes?.[path];
+    if (typeof value === "string" && value && !byValue.has(value))
+      byValue.set(value, item.name);
+  }
+  return [...byValue].map(([value, label]) => ({ value, label }));
 }
 
 // --- the generic `param` leaf -----------------------------------------------------------
 // Every build_parameter slot is a candidate key; the comparison control shown depends on the
 // selected one's `paramType`, same source of truth `optionsForCombo` above already uses for the
 // dedicated leaves.
-const paramSlots = NW_SLOTS.slots.filter(
-  (slot): slot is BuildParameterSlot => slot.type === "build_parameter",
+// Off the composed catalogue: a layer-authored param is as gateable as a shipped one, so it
+// has to appear in this picker the moment it exists.
+const paramSlots = computed(() =>
+  engine.db.value.slots.filter(
+    (slot): slot is BuildParameterSlot => slot.type === "build_parameter",
+  ),
 );
-const paramKeyOptions = paramSlots.map((slot) => ({
-  value: slot.path,
-  label: `${slot.label} (${slot.path})`,
-}));
+const paramKeyOptions = computed(() =>
+  paramSlots.value.map((slot) => ({
+    value: slot.path,
+    label: `${slot.label} (${slot.path})`,
+  })),
+);
 
 function paramSlotFor(key?: string) {
-  return paramSlots.find((slot) => slot.path === key);
+  return paramSlots.value.find((slot) => slot.path === key);
 }
 
 /** Options for a `param` leaf's "equals" combo, when the addressed slot is a `list`. */

@@ -1576,7 +1576,7 @@
   },
   {
     "id": "class-barbarian",
-    "name": "Class: Barbarian",
+    "name": "Barbarian",
     "filter": "build_param_linked_item",
     "str": 18,
     "con": 14,
@@ -1585,11 +1585,15 @@
     "wis": 10,
     "cha": 10,
     "allowedClass": ["barbarian"],
-    "bonuses": ["baseline-character", "baseline-enemy-stats"]
+    "tags": ["class"],
+    "bonuses": ["baseline-character", "baseline-enemy-stats"],
+    "publishes": {
+      "class": "barbarian"
+    }
   },
   {
     "id": "class-bard",
-    "name": "Class: Bard",
+    "name": "Bard",
     "filter": "build_param_linked_item",
     "str": 13,
     "con": 13,
@@ -1598,13 +1602,17 @@
     "wis": 10,
     "cha": 18,
     "allowedClass": ["bard"],
+    "tags": ["class"],
     "bonuses": [
       "baseline-character",
       "baseline-enemy-stats",
       "bard-s-critical-tuning",
       "bard-s-harmonize",
       "bard-s-truly-inspired-skill"
-    ]
+    ],
+    "publishes": {
+      "class": "bard"
+    }
   },
   {
     "id": "class-cleric",
@@ -1618,35 +1626,55 @@
     "cha": 13,
     "acc_p": 0.05,
     "crit_avoid_p": 0.05,
-    "bonuses": ["baseline-character", "baseline-enemy-stats"]
+    "tags": ["class"],
+    "bonuses": ["baseline-character", "baseline-enemy-stats"],
+    "publishes": {
+      "class": "cleric"
+    }
   },
   {
     "id": "class-fighter",
     "name": "Fighter Placeholer",
     "filter": "build_param_linked_item",
-    "bonuses": ["baseline-character", "baseline-enemy-stats"]
+    "tags": ["class"],
+    "bonuses": ["baseline-character", "baseline-enemy-stats"],
+    "publishes": {
+      "class": "fighter"
+    }
   },
   {
     "id": "class-paladin",
     "name": "Paladin Placeholer",
     "filter": "build_param_linked_item",
-    "bonuses": ["baseline-character", "baseline-enemy-stats"]
+    "tags": ["class"],
+    "bonuses": ["baseline-character", "baseline-enemy-stats"],
+    "publishes": {
+      "class": "paladin"
+    }
   },
   {
     "id": "class-ranger",
     "name": "Ranger Placeholer",
     "filter": "build_param_linked_item",
-    "bonuses": ["baseline-character", "baseline-enemy-stats"]
+    "tags": ["class"],
+    "bonuses": ["baseline-character", "baseline-enemy-stats"],
+    "publishes": {
+      "class": "ranger"
+    }
   },
   {
     "id": "class-rogue",
     "name": "Rogue Placeholer",
     "filter": "build_param_linked_item",
-    "bonuses": ["baseline-character", "baseline-enemy-stats"]
+    "tags": ["class"],
+    "bonuses": ["baseline-character", "baseline-enemy-stats"],
+    "publishes": {
+      "class": "rogue"
+    }
   },
   {
     "id": "class-warlock",
-    "name": "Class: Warlock",
+    "name": "Warlock",
     "filter": "build_param_linked_item",
     "str": 8,
     "con": 14,
@@ -1655,18 +1683,26 @@
     "wis": 8,
     "cha": 16,
     "allowedClass": ["warlock"],
+    "tags": ["class"],
     "bonuses": [
       "baseline-character",
       "baseline-enemy-stats",
       "warlock-s-demonic-vision",
       "warlock-s-devastating-critical"
-    ]
+    ],
+    "publishes": {
+      "class": "warlock"
+    }
   },
   {
     "id": "class-wizard",
     "name": "Wizard Placeholer",
     "filter": "build_param_linked_item",
-    "bonuses": ["baseline-character", "baseline-enemy-stats"]
+    "tags": ["class"],
+    "bonuses": ["baseline-character", "baseline-enemy-stats"],
+    "publishes": {
+      "class": "wizard"
+    }
   },
   {
     "id": "coldlight-walker-s-gaze-coldlight-walker-strike-severity-utility",
@@ -3996,7 +4032,8 @@
     "id": "paragon-blademaster",
     "name": "Blademaster",
     "filter": "paragon",
-    "allowedClass": ["barbarian"]
+    "allowedClass": ["barbarian"],
+    "tags": ["paragon"]
   },
   {
     "id": "paragon-hellbringer",
@@ -4008,31 +4045,36 @@
       "options.forte2a": "strike_p",
       "options.forte2b": "awareness_p"
     },
-    "allowedClass": ["warlock"]
+    "allowedClass": ["warlock"],
+    "tags": ["paragon"]
   },
   {
     "id": "paragon-minstrel",
     "name": "Minstrel",
     "filter": "paragon",
-    "allowedClass": ["bard"]
+    "allowedClass": ["bard"],
+    "tags": ["paragon"]
   },
   {
     "id": "paragon-sentinel",
     "name": "Sentinel",
     "filter": "paragon",
-    "allowedClass": ["barbarian"]
+    "allowedClass": ["barbarian"],
+    "tags": ["paragon"]
   },
   {
     "id": "paragon-songblade",
     "name": "Songblade",
     "filter": "paragon",
-    "allowedClass": ["bard"]
+    "allowedClass": ["bard"],
+    "tags": ["paragon"]
   },
   {
     "id": "paragon-soulweaver",
     "name": "Soulweaver",
     "filter": "paragon",
-    "allowedClass": ["warlock"]
+    "allowedClass": ["warlock"],
+    "tags": ["paragon"]
   },
   {
     "id": "parting-blasphemy",

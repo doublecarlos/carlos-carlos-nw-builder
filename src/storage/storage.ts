@@ -15,7 +15,7 @@
 
 import { NW_SLOTS, NW_CATALOG_VERSION } from "../data/data";
 import * as catalog from "../data/catalog";
-import { fromData as baseDb } from "../data/db";
+import { fromData as baseDb, itemPublishing } from "../data/db";
 import * as idb from "./idb";
 import { setPath } from "../lib/build-path";
 import { deepEqual } from "../lib/deep-equal";
@@ -224,6 +224,27 @@ const nestedNumbers = (
 };
 
 /**
+ * Builds saved before `options.class` became an `item_picker` (#273) stored the class as a
+ * bare `context.class` string. The value lives in `choices` like any other pick now, and is
+ * published back into the context by the equipped class item -- so an old build migrates by
+ * looking up whichever item publishes the class it used to name.
+ *
+ * Leaves `context.class` in place rather than deleting it: it is inert (nothing reads it any
+ * more, and a published value wins regardless), and dropping it would make the migration lossy
+ * for a stored class that has no item to resolve to.
+ */
+function migrateClassToChoice(
+  choices: Record<string, string>,
+  context: Record<string, unknown>,
+): Record<string, string> {
+  const stored = context.class;
+  if (choices["options.class"] || typeof stored !== "string" || !stored)
+    return choices;
+  const itemId = itemPublishing(baseDb(), "class", stored);
+  return itemId ? { ...choices, "options.class": itemId } : choices;
+}
+
+/**
  * Coerce anything build-shaped into a valid build. Tolerates a truncated write, an older
  * shape, a hand-edited export, or a user who pasted nonsense: unknown keys survive, missing
  * ones fall back to defaults, and the wrong type anywhere is replaced rather than thrown on.
@@ -250,7 +271,7 @@ export function normalise(
     ? (raw.downloaded as Build["downloaded"])
     : undefined;
 
-  const choices = strings(raw.choices);
+  const choices = migrateClassToChoice(strings(raw.choices), context);
 
   return {
     ...base,

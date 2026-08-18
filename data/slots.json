@@ -8,61 +8,8 @@
         {
           "id": "options.class",
           "label": "Class",
-          "type": "build_parameter",
-          "paramType": "list",
-          "path": "class",
-          "default": "",
-          "options": [
-            {
-              "value": "",
-              "label": "— none —"
-            },
-            {
-              "value": "barbarian",
-              "label": "Barbarian",
-              "linkedItem": "class-barbarian"
-            },
-            {
-              "value": "bard",
-              "label": "Bard",
-              "linkedItem": "class-bard"
-            },
-            {
-              "value": "cleric",
-              "label": "Cleric",
-              "linkedItem": "class-cleric"
-            },
-            {
-              "value": "fighter",
-              "label": "Fighter",
-              "linkedItem": "class-fighter"
-            },
-            {
-              "value": "paladin",
-              "label": "Paladin",
-              "linkedItem": "class-paladin"
-            },
-            {
-              "value": "ranger",
-              "label": "Ranger",
-              "linkedItem": "class-ranger"
-            },
-            {
-              "value": "rogue",
-              "label": "Rogue",
-              "linkedItem": "class-rogue"
-            },
-            {
-              "value": "warlock",
-              "label": "Warlock",
-              "linkedItem": "class-warlock"
-            },
-            {
-              "value": "wizard",
-              "label": "Wizard",
-              "linkedItem": "class-wizard"
-            }
-          ]
+          "type": "item_picker",
+          "tags": ["class"]
         },
         {
           "id": "options.paragon",
@@ -183,7 +130,12 @@
               "value": "mana_regen",
               "label": "Mana Regen"
             }
-          ]
+          ],
+          "visibleWhen": {
+            "equipped": {
+              "tag": "paragon"
+            }
+          }
         },
         {
           "id": "options.forte2a",
@@ -241,7 +193,12 @@
               "value": "mana_regen",
               "label": "Mana Regen"
             }
-          ]
+          ],
+          "visibleWhen": {
+            "equipped": {
+              "tag": "paragon"
+            }
+          }
         },
         {
           "id": "options.forte2b",
@@ -299,7 +256,12 @@
               "value": "mana_regen",
               "label": "Mana Regen"
             }
-          ]
+          ],
+          "visibleWhen": {
+            "equipped": {
+              "tag": "paragon"
+            }
+          }
         },
         {
           "id": "options.m32Forte",

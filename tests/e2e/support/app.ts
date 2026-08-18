@@ -2,6 +2,7 @@
 // spec needs -- selectors that lean on BuildEditor's own `data-cursor-key` attributes, since those
 // are the same hooks the keyboard cursor itself relies on, and a stable choose-item flow.
 import { expect, type Locator, type Page } from "@playwright/test";
+import { shippedItemName } from "./shippedData";
 
 /** Loads the app into a fresh browser context and creates a build so the builder is
  * visible. With storage on IndexedDB, a fresh context has no data, so the empty state
@@ -107,6 +108,18 @@ export async function chooseItem(page: Page, slotId: string, itemName: string) {
   await input.click();
   await input.fill(itemName);
   await row.getByText(itemName, { exact: true }).click();
+}
+
+/** Picks a class in `options.class`, which is an ordinary item_picker over `class`-tagged
+ * items since #273 -- the visible label is the class *item's* name, so it is read from the
+ * shipped table rather than hardcoded. `classId` is the bare class ("warlock"). */
+export async function chooseClass(page: Page, classId: string) {
+  await chooseItem(page, "options.class", shippedItemName(`class-${classId}`));
+}
+
+/** The class item's own display name, for asserting what a picked class row shows. */
+export function className(classId: string): string {
+  return shippedItemName(`class-${classId}`);
 }
 
 /** Picks an option from a ComboBox.vue instance (the compare picker, a section's "copy from"

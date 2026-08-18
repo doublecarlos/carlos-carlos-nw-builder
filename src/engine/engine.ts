@@ -12,7 +12,6 @@ import { dynamicValueKey, readDynamicValue } from "../lib/dynamic-stats";
 import type {
   Db,
   Build,
-  BuildContext,
   Item,
   StatKey,
   ResolvedBonuses,
@@ -328,13 +327,15 @@ function checkItemErrors(
   slotId: string,
   item: Item,
   db: Db,
-  context: BuildContext,
+  /** The build's resolved class (`EvalContext.class`), published by whatever class item is
+   *  equipped -- not read off `build.context`, which no longer carries one. */
+  cls: string | undefined,
   counts: Map<string, number>,
 ): EngineError[] {
   const errors: EngineError[] = [];
 
   const allowed = item.allowedClass;
-  if (allowed && !allowed.includes(context.class)) {
+  if (allowed && (!cls || !allowed.includes(cls))) {
     errors.push({
       slotId,
       kind: "class",
@@ -365,7 +366,6 @@ function findErrors(
   resolved: ResolvedBonuses,
 ): EngineError[] {
   const errors: EngineError[] = [];
-  const context = build.context ?? {};
   const counts = new Map<string, number>();
 
   for (const row of resolved.rows) {
@@ -391,7 +391,9 @@ function findErrors(
       const count = assigned[item.id] ?? def;
       if (count <= 0) continue;
 
-      errors.push(...checkItemErrors(slot.id, item, db, context, counts));
+      errors.push(
+        ...checkItemErrors(slot.id, item, db, resolved.ctx.class, counts),
+      );
 
       if (count < min || count > rowMax) {
         errors.push({
@@ -419,7 +421,9 @@ function findErrors(
       }
       continue;
     }
-    errors.push(...checkItemErrors(row.slotId, row.item, db, context, counts));
+    errors.push(
+      ...checkItemErrors(row.slotId, row.item, db, resolved.ctx.class, counts),
+    );
 
     // Dynamic stats carry a declared range. The value is used as typed (see stage 2);
     // flagging it here is what makes that safe.
@@ -544,6 +548,37 @@ function bonusProblems(resolved: ResolvedBonuses): EngineError[] {
   return errors;
 }
 
+/** One error per path two equipped items published different values for (`Item.publishes`).
+ * Attributed to each contributing slot, not just one, since either of them is an equally
+ * valid place to fix it -- the point is that the build has no defensible answer for that path,
+ * so `collect()` deliberately left it out of `ctx.params` rather than picking a winner. */
+function publishConflicts(db: Db, resolved: ResolvedBonuses): EngineError[] {
+  const errors: EngineError[] = [];
+  for (const conflict of resolved.publishConflicts) {
+    for (const contributor of conflict.contributors) {
+      const others = conflict.contributors.filter(
+        (entry) => entry.slotId !== contributor.slotId,
+      );
+      errors.push({
+        slotId: contributor.slotId,
+        kind: "publishConflict",
+        choice: db.get(contributor.itemId)?.name ?? contributor.itemId,
+        message:
+          `sets ${conflict.path} to "${contributor.value}", but ` +
+          others
+            .map(
+              (entry) =>
+                `${db.get(entry.itemId)?.name ?? entry.itemId} sets it to "${entry.value}"`,
+            )
+            .join(", ") +
+          ` — unequip one, or ${conflict.path} has no value at all`,
+        severity: "error",
+      });
+    }
+  }
+  return errors;
+}
+
 // --- entry point ---
 
 export function resolveBuild(
@@ -559,7 +594,11 @@ export function resolveBuild(
     bonuses: resolved.bonuses,
     stages,
     derived: derive(db, build, stages),
-    errors: [...findErrors(db, build, resolved), ...bonusProblems(resolved)],
+    errors: [
+      ...findErrors(db, build, resolved),
+      ...bonusProblems(resolved),
+      ...publishConflicts(db, resolved),
+    ],
   };
 }
 

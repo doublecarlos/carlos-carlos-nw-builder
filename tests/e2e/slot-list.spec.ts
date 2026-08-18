@@ -200,13 +200,15 @@ test.describe("section collapse/expand", () => {
     await expect(slotRow(page, "options.class")).toBeVisible();
   });
 
-  test("the Options header's badge only counts its item_picker slots (Paragon, Location, Enemy Type)", async ({
+  test("the Options header's badge only counts its item_picker slots (Class, Paragon, Location, Enemy Type)", async ({
     page,
   }) => {
     await openBuilder(page);
+    // Four since #273 made Class an item_picker; the build_parameter rows still don't count,
+    // which is what this asserts.
     await expect(
       headerRow(page, "options").locator(".section-count"),
-    ).toHaveText("0/3");
+    ).toHaveText("0/4");
     await expect(headerRow(page, "gear").locator(".section-count")).toHaveText(
       /^\d+\/\d+$/,
     );
@@ -584,20 +586,24 @@ test.describe("keyboard cursor: build_parameter rows", () => {
   }) => {
     await openBuilder(page);
     await parkOnOptionsHeader(page);
+    // Three rows down: class and paragon are item_picker rows (class became one in #273), and
+    // this block is about a build_parameter's own control.
+    await page.keyboard.press("ArrowDown");
+    await page.keyboard.press("ArrowDown");
     await page.keyboard.press("ArrowDown");
     await expect(cursorRow(page)).toHaveAttribute(
       "data-cursor-key",
-      "slot:options.class",
+      "slot:options.role",
     );
 
-    const row = slotRow(page, "options.class");
-    await page.keyboard.press("p");
+    const row = slotRow(page, "options.role");
+    await page.keyboard.press("t");
 
     await expect(row.getByTestId("picker-input")).toBeFocused();
-    await expect(row.getByTestId("picker-input")).toHaveValue("p");
+    await expect(row.getByTestId("picker-input")).toHaveValue("t");
     await expect(row.getByTestId("picker-menu")).toBeVisible();
-    // The class list should be filtered to Paladin only
-    await expect(row.getByText("Paladin", { exact: true })).toBeVisible();
+    // The role list should be filtered to Tank only
+    await expect(row.getByText("Tank", { exact: true })).toBeVisible();
   });
 
   test("Backspace on a build_parameter row resets to its default", async ({

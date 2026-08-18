@@ -61,13 +61,14 @@ const exportText = computed(() => {
   }
   if (effectiveTab.value === "slots") {
     if (!catalogExport.value) return "Loading…";
-    // Slots themselves aren't overlay-editable (only presets are), so `NW_SLOTS.sections`/
-    // `.slots` are the static shipped ones -- only `sectionPresets` is folded across every
-    // enabled layer, same "maintainer path" as items/bonuses above.
+    // `slots` and `sectionPresets` both fold across every enabled layer, same "maintainer
+    // path" as items/bonuses above. Sections are still the static shipped ones -- an overlay
+    // carries build_parameter slots, not the section structure they hang off (see
+    // `CatalogOverlay.slots`).
     const allEnabled = catalog.compose(layers.enabledOverlays.value);
     return catalogExport.value.toSlotsFile(
       NW_SLOTS.sections,
-      NW_SLOTS.slots,
+      allEnabled.slots,
       allEnabled.sectionPresets,
     );
   }

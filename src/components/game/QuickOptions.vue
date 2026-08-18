@@ -8,10 +8,10 @@
 // of eating width here. No field list is hardcoded in either place any more -- `quick` on the
 // slot itself is what decides where a field renders, not this component's own knowledge of
 // which fields exist.
+import { computed } from "vue";
 import BuildParamInput from "./BuildParamInput.vue";
-import { NW_SCHEMA, NW_SLOTS } from "../../data/data";
 import { getPath } from "../../lib/build-path";
-import { abbr, signedStat } from "../../lib/format";
+import { slotVisible } from "../../lib/slot-visibility";
 import { paramDiffers, paramDiffTitle } from "../../composables/useCompareDiff";
 import * as builds from "../../stores/builds";
 import * as compare from "../../stores/compare";
@@ -23,42 +23,46 @@ const build = builds.build;
 const compareBuild = compare.compareBuild;
 const highlightDiff = () => build.value.compare.highlight;
 
-const quickSlots = NW_SLOTS.slots.filter(
-  (slot): slot is BuildParameterSlot =>
-    slot.type === "build_parameter" && !!slot.quick,
+/** Off the composed catalogue, not the shipped file: a layer can add, edit or remove a
+ * `quick` param, and this strip has to show what the build editor is actually resolving. */
+const allQuickSlots = computed(() =>
+  engine.db.value.slots.filter(
+    (slot): slot is BuildParameterSlot =>
+      slot.type === "build_parameter" && !!slot.quick,
+  ),
+);
+
+/** Same `visibleWhen` pass BuildEditor runs over its section lists -- a `quick` param renders
+ * here *instead of* in its section, so without this the two would disagree about whether a
+ * scoped param exists. */
+const quickSlots = computed(() =>
+  allQuickSlots.value.filter((slot) =>
+    slotVisible(
+      slot,
+      engine.resolved.value.ok ? engine.resolved.value.result.context : null,
+    ),
+  ),
 );
 
 function differs(slot: BuildParameterSlot) {
   return highlightDiff() && paramDiffers(build.value, compareBuild.value, slot);
 }
 
-/** `getPath` returns `unknown`; cast to the non-boolean union used by non-boolean slots. */
-function asStrNum(slot: BuildParameterSlot): string | number {
-  return getPath(build.value.context, slot.path) as string | number;
+/** `getPath` returns `unknown`; cast to the non-boolean union used by non-boolean slots.
+ * Falls back to the slot's own `default` for the same reason BuildParameterRow does -- see
+ * its `paramValue`. */
+function paramValue(slot: BuildParameterSlot): unknown {
+  return getPath(build.value.context, slot.path) ?? slot.default;
 }
 
-/** A plain-text stat summary for a `quick` slot's resolved `linkedItem`, shown as a native
- * tooltip -- this strip is deliberately compact (see the file-level comment), so it gets the
- * text-only version of what BuildEditor's own rows show with a full hover card. Reads the
- * engine's own resolved row rather than resolving the item itself, so this already reflects
- * any bonuses attributed to the slot, not just the item's own stats. */
-function linkedItemSummary(slot: BuildParameterSlot): string | undefined {
-  if (!engine.resolved.value.ok) return undefined;
-  const row = engine.resolved.value.result.rows.find(
-    (r) => r.slotId === slot.id,
-  );
-  if (!row?.item) return undefined;
-  const parts: string[] = [];
-  for (const key of NW_SCHEMA.statKeys) {
-    if (row.stats[key])
-      parts.push(`${abbr(key)} ${signedStat(key, row.stats[key])}`);
-  }
-  return parts.length ? parts.join(" • ") : undefined;
+function asStrNum(slot: BuildParameterSlot): string | number {
+  return paramValue(slot) as string | number;
 }
 </script>
 
 <template>
   <div
+    data-testid="quick-options"
     class="flex flex-1 flex-wrap items-center gap-x-4 gap-y-1.5 rounded-md border border-line px-2.5 py-1.5"
   >
     <template v-for="(slot, index) in quickSlots" :key="slot.id">
@@ -78,9 +82,7 @@ function linkedItemSummary(slot: BuildParameterSlot): string | undefined {
         <span
           :class="differs(slot) ? 'cursor-help font-bold text-diff' : ''"
           :title="
-            differs(slot)
-              ? paramDiffTitle(compareBuild, slot)
-              : linkedItemSummary(slot)
+            differs(slot) ? paramDiffTitle(compareBuild, slot) : undefined
           "
         >
           {{ slot.label }}<template v-if="differs(slot)"> ●</template>
@@ -95,15 +97,13 @@ function linkedItemSummary(slot: BuildParameterSlot): string | undefined {
       <BuildParamInput
         v-else
         :slot-def="slot"
-        :model-value="getPath(build.context, slot.path) as boolean"
+        :model-value="paramValue(slot) as boolean"
         @update:model-value="buildEditor.setParam(slot, $event!)"
       >
         <span
           :class="differs(slot) ? 'font-bold text-diff' : ''"
           :title="
-            differs(slot)
-              ? paramDiffTitle(compareBuild, slot)
-              : linkedItemSummary(slot)
+            differs(slot) ? paramDiffTitle(compareBuild, slot) : undefined
           "
         >
           {{ slot.label }}<template v-if="differs(slot)"> ●</template>

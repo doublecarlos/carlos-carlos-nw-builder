@@ -55,23 +55,22 @@ export interface SlotSection {
   defaultOpen?: boolean;
 }
 
-/** A build-wide value with no item of its own -- today's build-context fields (class, role,
- * duration, toggles, ...), and later mount/companion bolster, boon points, etc. `path` is a
- * dotted path into `build.context` (`role`, `forte.primary`, `toggles.combat`), resolved by
- * build-path.ts's `getPath`/`setPath` against `build.context` (not `build` itself, so a path
- * cannot address a sibling of `context` like `choices` or `id`).
+/** A build-wide value with no item of its own -- the engine-coupled build-context fields
+ * (role, damageType, forte, duration, magnitude, toggles, ...). `path` is a dotted path into
+ * `build.context` (`role`, `forte.primary`, `toggles.combat`), resolved by build-path.ts's
+ * `getPath`/`setPath` against `build.context` (not `build` itself, so a path cannot address a
+ * sibling of `context` like `choices` or `id`).
  *
  * Fields below `quick` are a loose union of what each `paramType` needs (`options` for `list`,
  * `min`/`max`/`step`/`presets` for `number`/`percent`) -- same "optional fields, no separate
  * type per variant" convention `DynamicStatConfig` already uses.
  *
- * `linkedItem` (an `Item.id`) is how a `list`/`boolean` param "equips" an item through its
- * current value -- a `list` option picks its own via `options[].linkedItem`, a `boolean`
- * shares the one on the slot itself, checked or not. `number`/`percent` never have one: there
- * is no single moment a numeric value starts/stops being "equipped". Resolved by
- * build-path.ts's `resolveLinkedItem`, which bonus.ts's `collect()` and catalog.ts's
- * `referencedOverlay` both call so a param's item is derived the same way everywhere rather
- * than stored -- see `resolveLinkedItem`'s own comment for why. */
+ * A parameter never equips an item. It used to: a `list`/`boolean` param could name a
+ * `linkedItem` that came and went with its value, which is how `class` behaved before #273
+ * made it an ordinary `item_picker`. `Item.publishes` inverts that relationship -- an equipped
+ * item asserts the value, instead of a value conjuring an item -- so anything that needs to
+ * both carry stats and set a context value is an item picker now, and a parameter is only ever
+ * the scalar itself. */
 export interface BuildParameterSlot {
   id: string;
   label: string;
@@ -82,13 +81,40 @@ export interface BuildParameterSlot {
   /** Shown in the always-visible QuickOptions strip instead of its section's slot list. */
   quick?: boolean;
   default?: string | number | boolean;
-  options?: { value: string; label: string; linkedItem?: string }[];
+  options?: { value: string; label: string }[];
+  /** `list` only: derive the option set from the item catalogue instead of enumerating it
+   * inline, so "add a value" becomes "add an item" and happens entirely in the item editor.
+   * Same `filter` XOR `tags` selector `ItemPickerSlot` uses, resolved by db.ts's `build()`
+   * against the *composed* catalogue -- an overlay-added item carrying the tag becomes an
+   * option with no slot edit at all.
+   *
+   * Mutually exclusive with `options` (catalog.ts's `validateSlots` enforces all three rules).
+   * A derived option takes its `value` and `linkedItem` from the item id and its `label` from
+   * the item name, so `options[].linkedItem` structurally cannot dangle the way a hand-written
+   * one can -- the option *is* the item. Ordered by name: an option set is a vocabulary to
+   * pick a known value out of, not a ranking, so `Db.forSlot`'s item-level-first order (which
+   * answers "which of these is best") would be the wrong question here. */
+  optionsFrom?: { filter?: string; tags?: string[] };
+  /** `optionsFrom` only: prepend the empty "— none —" row. Explicit rather than automatic
+   * because a derived option set has no other way to say whether "no value" is legal, and
+   * silently prepending it would make a genuinely required parameter unexpressible. An inline
+   * `options` list just authors the empty row itself, as every shipped one does. */
+  allowEmpty?: boolean;
   min?: number;
   max?: number;
   step?: number;
   presets?: number[];
-  /** Only meaningful when `paramType` is `"boolean"` -- see the class doc comment above. */
-  linkedItem?: string;
+  /** Renders this slot's row only while the condition holds, evaluated against the *resolved*
+   * build (`ResolvedBuild.context`) -- "forte only matters once a paragon is picked", "this
+   * toggle is module-specific". Purely a display filter: the value is never cleared, reset or
+   * hidden from the engine, and bonus.ts's `collect()` still populates `ctx.params` from
+   * `getPath(context, path) ?? default` whether or not the row is on screen. That ordering is
+   * deliberate -- a param whose presence in `ctx.params` depended on what happened to be
+   * rendered would make every condition reading it depend on scroll state and filter state,
+   * and the `param` leaf fails closed, so bonuses would silently switch off rather than error.
+   * Evaluating against the already-resolved context also means a param cannot influence its
+   * own visibility mid-resolution. */
+  visibleWhen?: ConditionWhen;
 }
 
 export interface ItemPickerSlot {
@@ -254,6 +280,22 @@ export interface Item {
    * (`buildEditor.ts`'s `setChoice`); the fields stay ordinary editable params afterward, so a
    * player can still override them for a "what-if" build. */
   defaultParams?: Record<string, string | number | boolean>;
+  /** Context path to the value this item asserts *while it is equipped* -- e.g. a class item
+   * publishing `{ "class": "bard" }`. Continuous and derived: never stored on the build, never
+   * user-editable, and gone the moment the item is unequipped. bonus.ts's `collect()` folds it
+   * into `ctx.params` and the derived context after the equipped set is known, so the result
+   * does not depend on slot order.
+   *
+   * The counterpart to `defaultParams`, and deliberately not a replacement for it -- they
+   * answer different questions. `defaultParams` seeds a *suggestion* at pick time that the
+   * player may then override; `publishes` states a fact that the player cannot edit at all.
+   *
+   * Keyed by path (`class`), not by slot id -- unlike `defaultParams` -- because a published
+   * value has no slot: it is what lets a selector-only build_parameter become an ordinary
+   * `item_picker`. Two equipped items publishing *different* values for one path is a build
+   * error (engine.ts's `publishConflicts`), not a race; the same value twice is fine, which is
+   * what makes equipping two copies of one item harmless. */
+  publishes?: Record<string, string | number | boolean>;
   [key: string]: unknown;
 }
 
@@ -445,7 +487,16 @@ export interface BonusCandidate {
 export interface Db {
   items: Item[];
   schema: Schema;
+  /** The slot list as everything downstream should read it: a `list` param's `optionsFrom` has
+   * already been resolved into a concrete `options` array (db.ts's `build`), so no consumer
+   * needs to know whether an option set was authored inline or derived. */
   slots: Slot[];
+  /** The same list *before* that resolution. Anything that writes a slot back out reads this
+   * instead: the editor's form (which must not turn derived options into inline ones on save),
+   * `validateSlots` (whose `options` XOR `optionsFrom` rule only means anything pre-resolution)
+   * and `referencedOverlay` (which would otherwise see every derived slot as differing from
+   * base and embed a frozen copy of it into every download). */
+  authoredSlots: Slot[];
   sections: SlotSection[];
   presets: SectionPreset[];
   slotById: Map<string, Slot>;
@@ -472,15 +523,21 @@ export interface CatalogOverlay {
   items: Record<string, Item | null>;
   bonuses: Record<string, Bonus | null>;
   sectionPresets: Record<string, SectionPreset | null>;
+  /** Build-parameter slots, same add/edit/tombstone shape as the three above. Only
+   * `build_parameter` slots are authorable (SlotForm.vue) -- the other four `Slot` variants
+   * carry layout structure (`section` membership, ordering, separators) that an overlay's
+   * flat id->value map cannot express, so they stay base-only. Composed slots keep base's
+   * declaration order with overlay-added ones appended per section; see `compose`. */
+  slots: Record<string, Slot | null>;
 }
 
-export type CatalogGroup = "items" | "bonuses" | "sectionPresets";
+export type CatalogGroup = "items" | "bonuses" | "sectionPresets" | "slots";
 
 export interface LintFinding {
   level: "error" | "warn";
   message: string;
   name?: string;
-  kind: "item" | "bonus" | "sectionPreset";
+  kind: "item" | "bonus" | "sectionPreset" | "slot";
 }
 
 // --- builds (storage.ts) ---------------------------------------------------------------------
@@ -664,6 +721,10 @@ export interface EvaluatedBonus {
 export interface ResolvedBonuses {
   ctx: EvalContext;
   rows: ResolvedRow[];
+  /** Paths two equipped items published different values for -- see `Item.publishes`. Carried
+   * out of `collect()` rather than reported there, so error surfacing stays in engine.ts with
+   * every other build error. */
+  publishConflicts: PublishConflict[];
   bonuses: EvaluatedBonus[];
   bonusStatsBySlot: Map<string, Map<StatKey, number>>;
   /** A `point_assignment` slot's own item stats (each row's item stats × its count, summed) --
@@ -672,9 +733,26 @@ export interface ResolvedBonuses {
   assignmentStatsBySlot: Map<string, Map<StatKey, number>>;
 }
 
+/** One path with two equipped items asserting different values for it. */
+export interface PublishConflict {
+  path: string;
+  /** Item id to the value it published, for every contributor -- at least two entries. */
+  contributors: {
+    itemId: string;
+    slotId: string;
+    value: string | number | boolean;
+  }[];
+}
+
 export interface EngineError {
   slotId: string;
-  kind: "class" | "maxCopies" | "outOfRange" | "missing" | "bonusRule";
+  kind:
+    | "class"
+    | "maxCopies"
+    | "outOfRange"
+    | "missing"
+    | "bonusRule"
+    | "publishConflict";
   choice: string;
   message: string;
   severity: "error" | "warning";

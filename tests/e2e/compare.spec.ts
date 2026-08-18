@@ -59,13 +59,15 @@ test.describe("build_parameter compare diff apply", () => {
   test("a changed build_parameter row shows a diff note with an apply button", async ({
     page,
   }) => {
-    // Build 1: set class to paladin via direct combobox click
+    // Build 1: set role to Tank via direct combobox click. `options.role` is used rather than
+    // `options.class` because this block is about a *build_parameter* row -- class became an
+    // ordinary item_picker in #273, and the item_picker case is covered above.
     await openBuilder(page);
-    const classRow = slotRow(page, "options.class");
-    await classRow.getByTestId("picker-input").click();
-    await classRow.getByText("Paladin", { exact: true }).click();
+    const roleRow = slotRow(page, "options.role");
+    await roleRow.getByTestId("picker-input").click();
+    await roleRow.getByText("Tank", { exact: true }).click();
 
-    // Build 2: default warlock, compared against build 1
+    // Build 2: role unset, compared against build 1
     await page.getByTestId("nav-add-build").click();
     await chooseCombo(page.locator(".compare-select"), "Build 1");
     await page.getByRole("checkbox", { name: "Highlight changes" }).check();
@@ -73,39 +75,41 @@ test.describe("build_parameter compare diff apply", () => {
 
     // Park the cursor on the class row (native focus: nothing is focused yet, so the first
     // arrow key would have nowhere to start from -- a click parks it instead).
-    await slotRow(page, "options.class").locator(".slot-label").click();
+    await slotRow(page, "options.role").locator(".slot-label").click();
     await expect(cursorRow(page)).toHaveAttribute(
       "data-cursor-key",
-      "slot:options.class",
+      "slot:options.role",
     );
 
-    const row = slotRow(page, "options.class");
+    const row = slotRow(page, "options.role");
     await expect(row).toHaveClass(/is-diff/);
 
     // The diff note should show build 1's value and have an apply button
-    await expect(row.locator(".slot-diff-note")).toContainText("Paladin");
+    await expect(row.locator(".slot-diff-note")).toContainText("Tank");
     await expect(row.getByRole("button", { name: "apply" })).toBeVisible();
   });
 
   test("applying from compare copies the build_parameter value", async ({
     page,
   }) => {
-    // Build 1: set class to paladin via direct combobox click
+    // Build 1: set role to Tank via direct combobox click. `options.role` is used rather than
+    // `options.class` because this block is about a *build_parameter* row -- class became an
+    // ordinary item_picker in #273, and the item_picker case is covered above.
     await openBuilder(page);
-    const classRow = slotRow(page, "options.class");
-    await classRow.getByTestId("picker-input").click();
-    await classRow.getByText("Paladin", { exact: true }).click();
+    const roleRow = slotRow(page, "options.role");
+    await roleRow.getByTestId("picker-input").click();
+    await roleRow.getByText("Tank", { exact: true }).click();
 
-    // Build 2: default warlock, compared against build 1
+    // Build 2: role unset, compared against build 1
     await page.getByTestId("nav-add-build").click();
     await chooseCombo(page.locator(".compare-select"), "Build 1");
     await page.getByRole("checkbox", { name: "Highlight changes" }).check();
     await ensureSectionExpanded(page, "options");
 
-    // Park the cursor on the class row, same as the sibling test above.
-    await slotRow(page, "options.class").locator(".slot-label").click();
+    // Park the cursor on the role row, same as the sibling test above.
+    await slotRow(page, "options.role").locator(".slot-label").click();
 
-    const row = slotRow(page, "options.class");
+    const row = slotRow(page, "options.role");
     await expect(row).toHaveClass(/is-diff/);
     await expect(row.getByRole("button", { name: "apply" })).toBeVisible();
 
@@ -113,7 +117,7 @@ test.describe("build_parameter compare diff apply", () => {
     await row.getByRole("button", { name: "apply" }).click();
 
     // Should now match the compare build's value
-    await expect(row.getByTestId("picker-input")).toHaveValue("Paladin");
+    await expect(row.getByTestId("picker-input")).toHaveValue("Tank");
     await expect(row).not.toHaveClass(/is-diff/);
   });
 });

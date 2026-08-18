@@ -8,7 +8,8 @@ import {
   ensureSectionExpanded,
   slotRow,
   pickerInput,
-  chooseCombo,
+  chooseClass,
+  className,
   undoButton,
 } from "./support/app";
 
@@ -23,38 +24,38 @@ test("clearing a section requires a second click to confirm", async ({
 }) => {
   await openBuilder(page);
   await ensureSectionExpanded(page, "options");
-  await chooseCombo(slotRow(page, "options.class"), "Wizard");
+  await chooseClass(page, "wizard");
   await expect(pickerInput(slotRow(page, "options.class"))).toHaveValue(
-    "Wizard",
+    className("wizard"),
   );
 
   const button = clearButton(page, "options");
   await button.click();
   await expect(button).toHaveText("Really?");
   await expect(pickerInput(slotRow(page, "options.class"))).toHaveValue(
-    "Wizard",
+    className("wizard"),
   );
 
   await button.click();
-  await expect(pickerInput(slotRow(page, "options.class"))).toHaveValue(
-    "— none —",
-  );
+  // Empty, not "— none —": class is an item_picker since #273, and a cleared picker shows
+  // nothing rather than a named empty option.
+  await expect(pickerInput(slotRow(page, "options.class"))).toHaveValue("");
 });
 
 test("clearing a section is a single undo step", async ({ page }) => {
   await openBuilder(page);
   await ensureSectionExpanded(page, "options");
-  await chooseCombo(slotRow(page, "options.class"), "Wizard");
+  await chooseClass(page, "wizard");
 
   const button = clearButton(page, "options");
   await button.click();
   await button.click();
-  await expect(pickerInput(slotRow(page, "options.class"))).toHaveValue(
-    "— none —",
-  );
+  // Empty, not "— none —": class is an item_picker since #273, and a cleared picker shows
+  // nothing rather than a named empty option.
+  await expect(pickerInput(slotRow(page, "options.class"))).toHaveValue("");
 
   await undoButton(page).click();
   await expect(pickerInput(slotRow(page, "options.class"))).toHaveValue(
-    "Wizard",
+    className("wizard"),
   );
 });

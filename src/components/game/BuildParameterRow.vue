@@ -7,17 +7,13 @@ import BuildParamInput from "./BuildParamInput.vue";
 import BaseButton from "../ui/BaseButton.vue";
 import * as buildEditor from "../../stores/buildEditor";
 import { getPath } from "../../lib/build-path";
-import type { Build, BuildParameterSlot, Item } from "../../types";
+import type { Build, BuildParameterSlot } from "../../types";
 
 const props = defineProps<{
   slotDef: BuildParameterSlot;
   build: Build;
   compareBuild?: Build | null;
   highlightDiff: boolean;
-  /** The slot's resolved `linkedItem`, if it has one -- see build-path.ts's
-   * `resolveLinkedItem`. Only a list/boolean param's current value ever resolves one. */
-  item?: Item | null;
-  statSummary?: string;
   bonusDiffs?: { id: string; message: string }[];
   paramDiffers?: boolean;
   otherParamLabel?: string;
@@ -30,9 +26,14 @@ defineExpose({
   focusAndSeed: (char: string) => param.value?.focusAndSeed(char),
 });
 
+/** Falls back to the slot's own `default`, the same way bonus.ts's `collect()` does when it
+ * fills `ctx.params`. Without it an overlay-added param renders blank until it is first
+ * touched, while the engine is already resolving it at its default -- the control and the
+ * numbers would disagree. `defaultBuild` only seeds `context` from the *base* slot list, so
+ * this is the read that has to cover the gap, not a reseed of stored state. */
 const paramValue = () =>
-  getPath(props.build.context, props.slotDef.path) as
-    string | number | boolean | undefined;
+  (getPath(props.build.context, props.slotDef.path) ??
+    props.slotDef.default) as string | number | boolean | undefined;
 </script>
 
 <template>
@@ -45,9 +46,6 @@ const paramValue = () =>
       :model-value="paramValue()"
       @update:model-value="buildEditor.setParam(slotDef, $event!)"
     />
-    <span v-if="item" class="min-w-0 flex-1 truncate text-text">{{
-      statSummary
-    }}</span>
   </div>
 
   <p

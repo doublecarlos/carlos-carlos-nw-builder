@@ -244,6 +244,7 @@ describe("buildEditor.applyOccurrenceFromCompare", () => {
       },
     },
     sectionPresets: {},
+    slots: {},
   };
 
   function buildWithRing(

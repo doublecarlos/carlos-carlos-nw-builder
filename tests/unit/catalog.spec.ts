@@ -72,6 +72,82 @@ describe("catalog.validateSlots", () => {
     expect(findings).toEqual([]);
   });
 
+  it("accepts a visibleWhen gating one param on another", () => {
+    const findings = catalog.validateSlots([
+      paramSlot("a", "toggles.myFeature"),
+      {
+        ...(paramSlot("b", "bolster") as BuildParameterSlot),
+        visibleWhen: { param: { key: "toggles.myFeature", is: true } },
+      },
+    ]);
+    // Only the "prefer the dedicated toggle leaf" nudge -- nothing structural.
+    expect(findings.map((f) => f.level)).toEqual(["warn"]);
+  });
+
+  it("resolves a visibleWhen against a param declared later in the list", () => {
+    const findings = catalog.validateSlots([
+      {
+        ...(paramSlot("b", "bolster") as BuildParameterSlot),
+        visibleWhen: { param: { key: "myLater", is: true } },
+      },
+      paramSlot("a", "myLater"),
+    ]);
+    expect(findings).toEqual([]);
+  });
+
+  it("reports a visibleWhen naming a param that does not exist", () => {
+    const findings = catalog.validateSlots([
+      {
+        ...(paramSlot("a", "bolster") as BuildParameterSlot),
+        visibleWhen: { param: { key: "nope", is: true } },
+      },
+    ]);
+    expect(
+      findings.some((f) => /is not a build_parameter's path/.test(f.message)),
+    ).toBe(true);
+  });
+
+  it("reports a visibleWhen reading the slot's own path", () => {
+    const findings = catalog.validateSlots([
+      {
+        ...(paramSlot("a", "bolster") as BuildParameterSlot),
+        visibleWhen: { param: { key: "bolster", is: true } },
+      },
+    ]);
+    expect(findings.some((f) => /reads its own path/.test(f.message))).toBe(
+      true,
+    );
+  });
+
+  it("reports a self-referential visibleWhen through a dedicated leaf", () => {
+    const findings = catalog.validateSlots([
+      {
+        ...(paramSlot("a", "toggles.combat") as BuildParameterSlot),
+        visibleWhen: { not: { toggle: "combat" } },
+      },
+    ]);
+    expect(findings.some((f) => /reads its own path/.test(f.message))).toBe(
+      true,
+    );
+  });
+
+  it("reports a self-referential visibleWhen nested inside a combinator", () => {
+    const findings = catalog.validateSlots([
+      {
+        ...(paramSlot("a", "bolster") as BuildParameterSlot),
+        visibleWhen: {
+          any: [
+            { equipped: { tag: "paragon" } },
+            { all: [{ param: { key: "bolster", is: true } }] },
+          ],
+        },
+      },
+    ]);
+    expect(findings.some((f) => /reads its own path/.test(f.message))).toBe(
+      true,
+    );
+  });
+
   it("accepts a well-formed item_picker slot using filter", () => {
     const findings = catalog.validateSlots([
       {
@@ -713,6 +789,7 @@ describe("catalog.compose: layer overlay (two layers, same item id)", () => {
       },
       bonuses: {},
       sectionPresets: {},
+      slots: {},
     };
     const later: CatalogOverlay = {
       items: {
@@ -724,6 +801,7 @@ describe("catalog.compose: layer overlay (two layers, same item id)", () => {
       },
       bonuses: {},
       sectionPresets: {},
+      slots: {},
     };
     const composed = catalog.compose([early, later]);
     const item = composed.items.find((i) => i.id === "shared-item");
@@ -741,6 +819,7 @@ describe("catalog.compose: layer overlay (two layers, same item id)", () => {
       },
       bonuses: {},
       sectionPresets: {},
+      slots: {},
     };
     // Disabling the later layer means not passing it to compose
     const composed = catalog.compose([early]);
@@ -759,11 +838,13 @@ describe("catalog.compose: layer overlay (two layers, same item id)", () => {
       },
       bonuses: {},
       sectionPresets: {},
+      slots: {},
     };
     const later: CatalogOverlay = {
       items: { "shared-item": null },
       bonuses: {},
       sectionPresets: {},
+      slots: {},
     };
     const composed = catalog.compose([early, later]);
     expect(composed.items.find((i) => i.id === "shared-item")).toBeUndefined();
@@ -775,6 +856,7 @@ describe("catalog.compose: sectionPresets overlay", () => {
     items: {},
     bonuses: {},
     sectionPresets: { "test-preset": preset },
+    slots: {},
   });
 
   it("a layer-added preset appears in the composed list", () => {
@@ -825,7 +907,12 @@ describe("catalog.compose: sectionPresets overlay", () => {
     const shipped = NW_SLOTS.presets?.[0];
     expect(shipped).toBeDefined();
     const composed = catalog.compose([
-      { items: {}, bonuses: {}, sectionPresets: { [shipped!.id]: null } },
+      {
+        items: {},
+        bonuses: {},
+        sectionPresets: { [shipped!.id]: null },
+        slots: {},
+      },
     ]);
     expect(
       composed.sectionPresets.find((p) => p.id === shipped!.id),
@@ -878,13 +965,13 @@ describe("catalog.validate: param condition lint", () => {
   });
 
   it('a list slot requires "equals"', () => {
-    const errors = errorsFor({ param: { key: "class", atLeast: 1 } });
+    const errors = errorsFor({ param: { key: "role", atLeast: 1 } });
     expect(errors.some((f) => /is a list/.test(f.message))).toBe(true);
   });
 
   it('a list slot\'s "equals" must be one of its declared options', () => {
     const errors = errorsFor({
-      param: { key: "class", equals: "not-a-class" },
+      param: { key: "role", equals: "not-a-role" },
     });
     expect(
       errors.some((f) => /not one of its declared options/.test(f.message)),
@@ -896,11 +983,11 @@ describe("catalog.validate: param condition lint", () => {
   });
 
   it("warns (not errors) when a param duplicates a dedicated leaf", () => {
-    const when = { param: { key: "class", equals: "warlock" } };
+    const when = { param: { key: "role", equals: "dps" } };
     expect(errorsFor(when)).toEqual([]);
     expect(
       warningsFor(when).some((f) =>
-        /dedicated "class" condition/.test(f.message),
+        /dedicated "role" condition/.test(f.message),
       ),
     ).toBe(true);
   });
@@ -922,160 +1009,12 @@ describe("catalog.validate: param condition lint", () => {
   });
 });
 
-// The `linkedItem` lint: a list option's or a boolean slot's `linkedItem` referencing a
-// missing item id, or set on a slot type that can never resolve one. `validate()` itself
-// always reads slots from the real shipped `NW_SLOTS` (no injectable parameter, unlike
-// `items`/`bonuses`), so the standalone helpers it calls -- `collectLinkedItemIds`/
-// `validateLinkedItems` -- are exercised directly with synthetic slots here, same as
-// `validateSlots`/`validatePresets` are above.
-describe("catalog.validateLinkedItems / collectLinkedItemIds", () => {
-  const listSlotWith = (linkedItem: string): BuildParameterSlot => ({
-    id: "options.race",
-    label: "Race",
-    section: "options",
-    type: "build_parameter",
-    paramType: "list",
-    path: "race",
-    options: [{ value: "half-orc", label: "Half-Orc", linkedItem }],
-  });
-
-  it("warns when a list option's linkedItem has no definition", () => {
-    const findings = catalog.validateLinkedItems(
-      [listSlotWith("does-not-exist")],
-      new Set(),
-    );
-    expect(findings).toHaveLength(1);
-    expect(findings[0].level).toBe("warn");
-    expect(findings[0].name).toBe("options.race");
-    expect(findings[0].message).toMatch(/no definition/);
-  });
-
-  it("is clean when a list option's linkedItem resolves to a real item id", () => {
-    const findings = catalog.validateLinkedItems(
-      [listSlotWith("race-half-orc")],
-      new Set(["race-half-orc"]),
-    );
-    expect(findings).toEqual([]);
-  });
-
-  it("warns when a boolean slot's linkedItem has no definition", () => {
-    const boolSlot: BuildParameterSlot = {
-      id: "options.consumable",
-      label: "Consumable",
-      section: "options",
-      type: "build_parameter",
-      paramType: "boolean",
-      path: "toggles.consumableBuff",
-      linkedItem: "does-not-exist",
-    };
-    const findings = catalog.validateLinkedItems([boolSlot], new Set());
-    expect(findings).toHaveLength(1);
-    expect(findings[0].level).toBe("warn");
-    expect(findings[0].name).toBe("options.consumable");
-  });
-
-  it("is clean when a boolean slot's linkedItem resolves to a real item id", () => {
-    const boolSlot: BuildParameterSlot = {
-      id: "options.consumable",
-      label: "Consumable",
-      section: "options",
-      type: "build_parameter",
-      paramType: "boolean",
-      path: "toggles.consumableBuff",
-      linkedItem: "consumable-buff",
-    };
-    expect(
-      catalog.validateLinkedItems([boolSlot], new Set(["consumable-buff"])),
-    ).toEqual([]);
-  });
-
-  it("errors when linkedItem is set on a number/percent param", () => {
-    const numberSlot: BuildParameterSlot = {
-      id: "options.magnitude2",
-      label: "Magnitude",
-      section: "options",
-      type: "build_parameter",
-      paramType: "number",
-      path: "magnitude2",
-      linkedItem: "some-item",
-    };
-    const findings = catalog.validateLinkedItems(
-      [numberSlot],
-      new Set(["some-item"]),
-    );
-    expect(findings).toHaveLength(1);
-    expect(findings[0].level).toBe("error");
-    expect(findings[0].message).toMatch(/only meaningful on a list or boolean/);
-  });
-
-  it("item_picker and point_assignment slots are ignored entirely", () => {
-    const findings = catalog.validateLinkedItems(
-      [
-        {
-          id: "gear.head",
-          label: "Head",
-          section: "gear",
-          type: "item_picker",
-          filter: "gear_head",
-        },
-        {
-          id: "boons.tier1",
-          label: "Boons",
-          section: "boons",
-          type: "point_assignment",
-          filter: "boon_tier1",
-        },
-      ],
-      new Set(),
-    );
-    expect(findings).toEqual([]);
-  });
-
-  it("collectLinkedItemIds gathers every list option's and boolean slot's linkedItem", () => {
-    const boolSlot: BuildParameterSlot = {
-      id: "options.consumable",
-      label: "Consumable",
-      section: "options",
-      type: "build_parameter",
-      paramType: "boolean",
-      path: "toggles.consumableBuff",
-      linkedItem: "consumable-buff",
-    };
-    const ids = catalog.collectLinkedItemIds([
-      listSlotWith("race-half-orc"),
-      boolSlot,
-    ]);
-    expect(ids).toEqual(new Set(["race-half-orc", "consumable-buff"]));
-  });
-
-  it("the shipped catalogue has no dangling linkedItem references", () => {
-    const findings = catalog.validate(NW_ITEMS, NW_BONUSES);
-    expect(
-      findings.some((f) => /linkedItem.*no definition/.test(f.message)),
-    ).toBe(false);
-  });
-});
-
-describe("catalog.validate: an item referenced only via linkedItem is exempt from filter checks", () => {
-  // validate() reads slots from the real shipped NW_SLOTS, so this exercises the exemption
-  // through collectLinkedItemIds directly rather than a synthetic slot passed to validate().
-  it("collectLinkedItemIds is what validate() consults to exempt a linked-only item", () => {
-    const linkedIds = catalog.collectLinkedItemIds([
-      {
-        id: "options.race",
-        label: "Race",
-        section: "options",
-        type: "build_parameter",
-        paramType: "list",
-        path: "race",
-        options: [
-          { value: "half-orc", label: "Half-Orc", linkedItem: "race-half-orc" },
-        ],
-      },
-    ]);
-    expect(linkedIds.has("race-half-orc")).toBe(true);
-    // An item with no filter that is NOT in this set is still flagged (existing behaviour,
-    // unaffected by linkedItem).
+// An item reaches a build through a slot: an `item_picker`'s `filter` or `tags`, or a
+// `point_assignment`'s filter. There used to be a fourth way in -- a build_parameter's
+// `linkedItem` -- and items reached only that way were exempt from this check. #273 removed
+// the mechanism, so the exemption went with it.
+describe("catalog.validate: an item in no slot is still flagged", () => {
+  it("an item with no filter and no picker tag has no way to be equipped", () => {
     const findings = catalog.validate(
       [{ id: "orphan", name: "Orphan", filter: "" }],
       [],
@@ -1088,7 +1027,9 @@ describe("catalog.validate: an item referenced only via linkedItem is exempt fro
 
 // --- referencedOverlay -------------------------------------------------------------------
 
-/** Build a minimal Db for testing. Only `get`, `bonusById` and `slots` are exercised. */
+/** Build a minimal Db for testing. Only `get`, `bonusById`, `slots` and `authoredSlots` are
+ * exercised. The two slot lists are the same here: nothing in these fixtures uses
+ * `optionsFrom`, which is the only thing that makes them differ. */
 function testDb(items: Item[], bonuses: Bonus[], slots: Slot[] = []): Db {
   const itemsById = new Map(items.map((i) => [i.id, i]));
   const bonusesById = new Map(bonuses.map((s) => [s.id, s]));
@@ -1096,6 +1037,7 @@ function testDb(items: Item[], bonuses: Bonus[], slots: Slot[] = []): Db {
     get: (id: string | null | undefined) => itemsById.get(id ?? "") ?? null,
     bonusById: bonusesById,
     slots,
+    authoredSlots: slots,
   } as unknown as Db;
 }
 
@@ -1282,7 +1224,7 @@ describe("catalog.referencedOverlay", () => {
     expect(catalog.isEmpty(overlay)).toBe(true);
   });
 
-  it("picks up a build_parameter's resolved linkedItem, same as a picked item", () => {
+  it("carries a custom build_parameter even though no choice references it", () => {
     const raceSlot: BuildParameterSlot = {
       id: "options.race",
       label: "Race",
@@ -1292,36 +1234,7 @@ describe("catalog.referencedOverlay", () => {
       path: "race",
       default: "",
       options: [
-        { value: "half-orc", label: "Half-Orc", linkedItem: "layer-item" },
-      ],
-    };
-    const db = testDb([baseItem, layerItem], [layerBonus], [raceSlot]);
-    const build: Build = {
-      id: "b1",
-      name: "Test",
-      choices: {},
-      values: {},
-      assignments: {},
-      occurrenceInputs: {},
-      context: { race: "half-orc" } as unknown as Build["context"],
-      compare: { id: "", highlight: false, onlyDiff: false },
-    };
-    const overlay = catalog.referencedOverlay(db, build);
-    expect(overlay.items["layer-item"]).toBeDefined();
-    expect(overlay.bonuses["layer-bonus"]).toBeDefined();
-  });
-
-  it("does not pick up a build_parameter's linkedItem when its value doesn't select it", () => {
-    const raceSlot: BuildParameterSlot = {
-      id: "options.race",
-      label: "Race",
-      section: "options",
-      type: "build_parameter",
-      paramType: "list",
-      path: "race",
-      default: "",
-      options: [
-        { value: "half-orc", label: "Half-Orc", linkedItem: "layer-item" },
+        { value: "half-orc", label: "Half-Orc" },
         { value: "elf", label: "Elf" },
       ],
     };
@@ -1337,6 +1250,12 @@ describe("catalog.referencedOverlay", () => {
       compare: { id: "", highlight: false, onlyDiff: false },
     };
     const overlay = catalog.referencedOverlay(db, build);
-    expect(catalog.isEmpty(overlay)).toBe(true);
+    // A parameter equips nothing since #273, so nothing rides along on its account -- but the
+    // slot itself still travels, since every build_parameter reaches `ctx.params`.
+    expect(overlay.items).toEqual({});
+    expect(overlay.bonuses).toEqual({});
+    // The slot itself still travels -- it is not in base, and every build_parameter reaches
+    // `ctx.params` whether or not its current value selects a linked item.
+    expect(overlay.slots).toEqual({ "options.race": raceSlot });
   });
 });

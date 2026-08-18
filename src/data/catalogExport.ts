@@ -27,6 +27,7 @@ const ITEM_TRAILING_KEYS = [
   "bonuses",
   "excludes",
   "inlineRepetition",
+  "publishes",
 ] as const;
 
 function canonicalItem(item: Item): Item {

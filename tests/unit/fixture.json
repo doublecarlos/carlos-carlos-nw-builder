@@ -117,7 +117,8 @@
         "reinforcements.jewel1": "combat-advantage-jewel",
         "reinforcements.jewel2": "combat-advantage-jewel",
         "reinforcements.jewel3": "combat-advantage-jewel",
-        "reinforcements.jewel4": "combat-advantage-jewel"
+        "reinforcements.jewel4": "combat-advantage-jewel",
+        "options.class": "class-warlock"
       },
       "assignments": {
         "boons.tier1": {
@@ -188,7 +189,9 @@
         }
       },
       "values": {
-        "gear.offhandMod2": { "ca": 3589 }
+        "gear.offhandMod2": {
+          "ca": 3589
+        }
       }
     },
     "expected": {

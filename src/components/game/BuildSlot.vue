@@ -43,8 +43,7 @@ const props = defineProps<{
   isHovered: boolean;
   /** Arrow keys on this row's cursor anchor: BuildEditor moves focus to the next/previous row. */
   onArrow: (dir: 1 | -1) => void;
-  // item_picker and build_parameter (a build_parameter row's item is its resolved
-  // `linkedItem`, if it has one -- see build-path.ts's `resolveLinkedItem`)
+  // item_picker only -- a build_parameter row has no item of its own (#273).
   item?: Item | null;
   statSummary?: string;
   bonusDiffs?: { id: string; message: string }[];
@@ -202,8 +201,6 @@ useCursorRowKeys(anchor, {
         :build="build"
         :compare-build="compareBuild"
         :highlight-diff="highlightDiff"
-        :item="item"
-        :stat-summary="statSummary"
         :bonus-diffs="bonusDiffs"
         :param-differs="paramDiffers"
         :other-param-label="otherParamLabel"

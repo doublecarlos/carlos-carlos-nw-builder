@@ -21,6 +21,7 @@ import { NW_SCHEMA, NW_SLOTS } from "../data/data";
 import { forSlotAndBuild } from "../data/db";
 import { abbr, signedStat, statPickerOptions } from "../lib/format";
 import { matchesQuery } from "../lib/text-filter";
+import { slotVisible } from "../lib/slot-visibility";
 import { useHoverCard } from "../composables/useHoverCard";
 import { occurrenceRowsForItem } from "../composables/useItemBonusOccurrences";
 import {
@@ -276,14 +277,20 @@ function rowDiffers(slotDef: Slot) {
  *  text/stat filter or the only-diff toggle, unlike `sections.value`'s own per-section lists.
  *  `sections` and `bonusesBySlot` both read their slot lists off this rather than off each
  *  other: `slotMatchesFilters` (used by `sections`) matches against `statSummary`, which reads
- *  `bonusesBySlot` -- if that read `sections.value` back, the two computeds would cycle. */
+ *  `bonusesBySlot` -- if that read `sections.value` back, the two computeds would cycle.
+ *
+ *  `visibleWhen` is applied here rather than alongside the text/stat filter below so that
+ *  everything downstream agrees a hidden param is not on screen: the section's own diff and
+ *  error badges stop counting it, and `bonusesBySlot` stops crediting a shared bonus to a row
+ *  nobody can see (which would hide the bonus from the summary entirely). */
 const allSlotsBySection = computed(() =>
   db.value.sections.map((section) => ({
     section,
     slots: db.value.slots.filter(
       (slotDef) =>
         slotDef.section === section.id &&
-        !(slotDef.type === "build_parameter" && slotDef.quick),
+        !(slotDef.type === "build_parameter" && slotDef.quick) &&
+        slotVisible(slotDef, result.value.context),
     ),
   })),
 );

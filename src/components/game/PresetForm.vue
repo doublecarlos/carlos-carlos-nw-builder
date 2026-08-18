@@ -31,7 +31,6 @@ import FormField from "../ui/FormField.vue";
 import FormGrid from "../ui/FormGrid.vue";
 import FormSection from "../ui/FormSection.vue";
 import IdField from "../ui/IdField.vue";
-import { NW_SLOTS } from "../../data/data";
 import * as catalog from "../../data/catalog";
 import { deepEqual } from "../../lib/deep-equal";
 import { useDraftHistory } from "../../composables/useDraftHistory";
@@ -254,13 +253,15 @@ const { resetDraftHistory } = useDraftHistory({
 
 // --- Common ---------------------------------------------------------------------------
 
-const sectionOptions = NW_SLOTS.sections.map((s) => ({
-  value: s.id,
-  label: s.label,
-}));
+const sectionOptions = computed(() =>
+  props.db.sections.map((s) => ({ value: s.id, label: s.label })),
+);
 
+/** Off the composed catalogue rather than the shipped file, so a layer-authored param is
+ * offered here the same as a shipped one -- a preset seeding a custom param is the whole
+ * point of both being overlayable. */
 const slotsInSection = computed(() =>
-  NW_SLOTS.slots.filter((slot) => slot.section === draft.value.section),
+  props.db.slots.filter((slot) => slot.section === draft.value.section),
 );
 
 const paramSlotOptions = computed(() =>
@@ -280,15 +281,15 @@ const assignmentSlotOptions = computed(() =>
 );
 
 function paramSlotDef(slotId: string): BuildParameterSlot | undefined {
-  const slot = NW_SLOTS.slots.find((s) => s.id === slotId);
+  const slot = props.db.slotById.get(slotId);
   return slot?.type === "build_parameter" ? slot : undefined;
 }
 function itemSlotDef(slotId: string): ItemPickerSlot | undefined {
-  const slot = NW_SLOTS.slots.find((s) => s.id === slotId);
+  const slot = props.db.slotById.get(slotId);
   return slot?.type === "item_picker" ? slot : undefined;
 }
 function assignmentSlotDef(slotId: string): PointAssignmentSlot | undefined {
-  const slot = NW_SLOTS.slots.find((s) => s.id === slotId);
+  const slot = props.db.slotById.get(slotId);
   return slot?.type === "point_assignment" ? slot : undefined;
 }
 

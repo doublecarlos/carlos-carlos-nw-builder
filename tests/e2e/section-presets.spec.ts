@@ -10,6 +10,8 @@ import {
   ensureSectionExpanded,
   slotRow,
   pickerInput,
+  chooseClass,
+  className,
   undoButton,
 } from "./support/app";
 import { addLayer, layerRow } from "./support/nav";
@@ -81,9 +83,9 @@ test("applying a preset leaves a slot it doesn't mention untouched", async ({
 
   // The "Healer" preset only sets role, not class -- set class first so we can prove it
   // survives the apply.
-  await chooseCombo(slotRow(page, "options.class"), "Wizard");
+  await chooseClass(page, "wizard");
   await expect(pickerInput(slotRow(page, "options.class"))).toHaveValue(
-    "Wizard",
+    className("wizard"),
   );
 
   await presetMenu(page, "options").click();
@@ -96,7 +98,7 @@ test("applying a preset leaves a slot it doesn't mention untouched", async ({
     "Healer",
   );
   await expect(pickerInput(slotRow(page, "options.class"))).toHaveValue(
-    "Wizard",
+    className("wizard"),
   );
 });
 

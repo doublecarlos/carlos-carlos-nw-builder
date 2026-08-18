@@ -13,6 +13,7 @@ import { useConfirm } from "../composables/useConfirm";
 import ItemForm from "./game/ItemForm.vue";
 import BonusForm from "./game/BonusForm.vue";
 import PresetForm from "./game/PresetForm.vue";
+import SlotForm from "./game/SlotForm.vue";
 import LayerExportDrawer from "./game/LayerExportDrawer.vue";
 import LayerValidationDrawer from "./game/LayerValidationDrawer.vue";
 import LayerEntryList from "./game/LayerEntryList.vue";
@@ -35,6 +36,7 @@ import type {
   CatalogOverlay,
   Item,
   Bonus,
+  BuildParameterSlot,
   SectionPreset,
   LintFinding,
   Layer,
@@ -44,6 +46,7 @@ import type {
   ItemRow,
   BonusRow,
   PresetRow,
+  SlotRow,
 } from "./game/LayerEntryList.vue";
 
 const db = engine.db;
@@ -63,10 +66,11 @@ const ui = computed(() => layerEditorUi.getState(props.layer.id));
 
 const query = ref("");
 const statusFilter = ref("all"); // all | changed | added | edited | removed
-const section = ref("items"); // items | bonuses | sectionPresets
+const section = ref("items"); // items | bonuses | sectionPresets | slots
 const selectedId = ref<string | null>(null);
 const selectedBonusId = ref<string | null>(null);
 const selectedPresetId = ref<string | null>(null);
+const selectedSlotId = ref<string | null>(null);
 const showExport = ref(false);
 const exportTab = ref("items"); // items | bonuses | overlay | slots
 const newItemCounter = ref(0);
@@ -87,6 +91,7 @@ const confirmReset_ = useConfirm(4000);
 const form = ref<InstanceType<typeof ItemForm> | null>(null);
 const bonusForm = ref<InstanceType<typeof BonusForm> | null>(null);
 const presetForm = ref<InstanceType<typeof PresetForm> | null>(null);
+const slotForm = ref<InstanceType<typeof SlotForm> | null>(null);
 
 // Removed entries are gone from `db`, so the list is built from the composed catalogue
 // plus the overlay's tombstones -- otherwise a deletion would vanish with no way back.
@@ -173,9 +178,42 @@ const presetRows = computed<PresetRow[]>(() => {
   return rows.sort((a, b) => a.name.localeCompare(b.name));
 });
 
+/** Same shape again, one row per authorable slot. Only `build_parameter` slots are listed:
+ * the other four variants aren't overlay-editable (see `CatalogOverlay.slots`), so showing
+ * them would offer an edit that cannot be saved. */
+const slotRows = computed<SlotRow[]>(() => {
+  // Authored, not resolved: SlotForm edits what was written, so a slot deriving its options
+  // from items must not arrive at the form with those options baked in as inline rows.
+  const rows: SlotRow[] = db.value.authoredSlots
+    .filter((slot) => slot.type === "build_parameter")
+    .map((slot) => ({
+      key: slot.id,
+      name: slot.label || slot.id,
+      filter: slot.path,
+      slot,
+      status: catalog.statusOf(overlay.value, "slots", slot.id),
+      kind: "slot",
+    }));
+  for (const [id, value] of Object.entries(overlay.value.slots ?? {})) {
+    if (value === null) {
+      const shipped = catalog.base().slots.find((slot) => slot.id === id);
+      rows.push({
+        key: id,
+        name: shipped?.label ?? id,
+        filter: "—",
+        slot: null,
+        status: "removed",
+        kind: "slot",
+      });
+    }
+  }
+  return rows.sort((a, b) => a.name.localeCompare(b.name));
+});
+
 const rows = computed(() => {
   if (section.value === "bonuses") return bonusRows.value;
   if (section.value === "sectionPresets") return presetRows.value;
+  if (section.value === "slots") return slotRows.value;
   return itemRows.value;
 });
 
@@ -232,6 +270,20 @@ const selectedPresetStatus = computed(() =>
     : catalog.statusOf(overlay.value, "sectionPresets", selectedPresetId.value),
 );
 
+const selectedSlot = computed(() => {
+  if (selectedSlotId.value == null) return null;
+  const slot = db.value.authoredSlots.find(
+    (candidate) => candidate.id === selectedSlotId.value,
+  );
+  return slot?.type === "build_parameter" ? slot : null;
+});
+
+const selectedSlotStatus = computed(() =>
+  selectedSlotId.value == null
+    ? "base"
+    : catalog.statusOf(overlay.value, "slots", selectedSlotId.value),
+);
+
 const filters = computed<string[]>(() =>
   [
     ...new Set<string>(
@@ -261,7 +313,8 @@ const changedCount = computed(
   () =>
     Object.keys(overlay.value.items ?? {}).length +
     Object.keys(overlay.value.bonuses ?? {}).length +
-    Object.keys(overlay.value.sectionPresets ?? {}).length,
+    Object.keys(overlay.value.sectionPresets ?? {}).length +
+    Object.keys(overlay.value.slots ?? {}).length,
 );
 
 /** Entry count badge: non-tombstone entries in the overlay. */
@@ -276,6 +329,9 @@ const entryCount = computed(() => {
   for (const value of Object.values(overlay.value.sectionPresets ?? {})) {
     if (value !== null) count += 1;
   }
+  for (const value of Object.values(overlay.value.slots ?? {})) {
+    if (value !== null) count += 1;
+  }
   return count;
 });
 
@@ -288,6 +344,9 @@ const hasUnsavedDraft = (row: EditorRow) => {
     if (row.key === selectedPresetId.value)
       return presetForm.value?.dirty ?? false;
   }
+  if (row.kind === "slot") {
+    if (row.key === selectedSlotId.value) return slotForm.value?.dirty ?? false;
+  }
   return false;
 };
 
@@ -298,6 +357,7 @@ const allocatableIds = computed(() => {
   const build = engine.db.value.items.map((item) => item.id);
   for (const id of build) ids.add(id);
   for (const preset of engine.db.value.presets) ids.add(preset.id);
+  for (const slot of engine.db.value.slots) ids.add(slot.id);
   return [...ids];
 });
 
@@ -307,6 +367,7 @@ const findings = computed(() =>
     db.value.bonuses,
     undefined,
     db.value.presets,
+    db.value.authoredSlots,
   ),
 );
 
@@ -373,6 +434,14 @@ function switchSection(target: string) {
       bonus: null,
       preset: selectedPresetId.value,
     });
+  } else if (target === "slots") {
+    router.apply({
+      section: "slots",
+      item: null,
+      bonus: null,
+      preset: null,
+      slot: selectedSlotId.value,
+    });
   } else {
     router.apply({
       section: null,
@@ -391,6 +460,14 @@ function select(row: EditorRow, { push = true }: { push?: boolean } = {}) {
   } else if (row.kind === "sectionPreset") {
     selectedPresetId.value = row.key;
     router.apply({ preset: row.key, item: null, bonus: null }, { push });
+  } else if (row.kind === "slot") {
+    selectedSlotId.value = row.key;
+    router.apply(
+      { slot: row.key, item: null, bonus: null, preset: null },
+      {
+        push,
+      },
+    );
   } else {
     selectedId.value = row.key;
     router.apply({ item: row.key, bonus: null, preset: null }, { push });
@@ -400,6 +477,7 @@ function select(row: EditorRow, { push = true }: { push?: boolean } = {}) {
 const selectedKey = computed(() => {
   if (section.value === "bonuses") return selectedBonusId.value;
   if (section.value === "sectionPresets") return selectedPresetId.value;
+  if (section.value === "slots") return selectedSlotId.value;
   return selectedId.value;
 });
 
@@ -444,6 +522,12 @@ function newPreset() {
   selectedPresetId.value = null;
   newItemCounter.value++;
   router.apply({ preset: null });
+}
+
+function newSlot() {
+  selectedSlotId.value = null;
+  newItemCounter.value++;
+  router.apply({ slot: null });
 }
 
 function onSave({ item }: { item: Item }) {
@@ -510,7 +594,9 @@ function restore(row: EditorRow) {
       ? "bonuses"
       : row.kind === "sectionPreset"
         ? "sectionPresets"
-        : "items";
+        : row.kind === "slot"
+          ? "slots"
+          : "items";
   history.snapshot(
     "layer",
     props.layer.id,
@@ -538,7 +624,8 @@ function resetAll() {
   selectedId.value = null;
   selectedBonusId.value = null;
   selectedPresetId.value = null;
-  router.apply({ item: null, bonus: null, preset: null });
+  selectedSlotId.value = null;
+  router.apply({ item: null, bonus: null, preset: null, slot: null });
   notice.value = "Discarded every change — back to the shipped data";
 }
 
@@ -563,6 +650,16 @@ function selectFinding(finding: LintFinding) {
       preset: finding.name,
       item: null,
       bonus: null,
+    });
+  } else if (finding.kind === "slot") {
+    section.value = "slots";
+    selectedSlotId.value = finding.name;
+    router.apply({
+      section: "slots",
+      slot: finding.name,
+      item: null,
+      bonus: null,
+      preset: null,
     });
   } else {
     section.value = "items";
@@ -732,6 +829,71 @@ function onDeletePreset() {
   notice.value = `Removed preset "${id}"`;
 }
 
+// --- build parameter slots -------------------------------------------------------------
+// Mechanically identical to the preset handlers above -- a slot is just a fourth overlay
+// group. What makes it different lives in SlotForm.vue and in `validateSlots`, not here.
+
+function onSaveSlot({ slot }: { slot: BuildParameterSlot }) {
+  history.snapshot(
+    "layer",
+    props.layer.id,
+    `save-slot:${slot.id}`,
+    `Save parameter "${slot.label || slot.id}"`,
+    overlay.value,
+  );
+  setOverlay(catalog.upsert(overlay.value, "slots", slot.id, slot));
+  selectedSlotId.value = slot.id;
+  router.apply({ slot: slot.id });
+  notice.value = `Saved parameter "${slot.label || slot.id}"`;
+}
+
+/** Live-edit handler: debounced changes from an existing slot go here. */
+function onUpdateSlot({
+  slot,
+  label,
+}: {
+  slot: BuildParameterSlot;
+  label: string;
+}) {
+  history.snapshot(
+    "layer",
+    props.layer.id,
+    `edit-slot:${slot.id}`,
+    label,
+    overlay.value,
+  );
+  setOverlay(catalog.upsert(overlay.value, "slots", slot.id, slot));
+}
+
+function onDeleteSlot() {
+  const id = selectedSlotId.value!;
+  const label = selectedSlot.value?.label ?? id;
+  history.snapshot(
+    "layer",
+    props.layer.id,
+    `delete-slot:${id}`,
+    `Delete parameter "${label}"`,
+    overlay.value,
+  );
+  setOverlay(catalog.remove(overlay.value, "slots", id));
+  selectedSlotId.value = null;
+  router.apply({ slot: null });
+  notice.value = `Removed parameter "${label}"`;
+}
+
+function onRevertSlot() {
+  const id = selectedSlotId.value!;
+  history.snapshot(
+    "layer",
+    props.layer.id,
+    `revert-slot:${id}`,
+    `Revert parameter "${id}"`,
+    overlay.value,
+  );
+  setOverlay(catalog.revert(overlay.value, "slots", id));
+  notice.value = `Reverted parameter "${id}" to the shipped version`;
+}
+
 function onRevertPreset() {
   const id = selectedPresetId.value!;
   history.snapshot(
@@ -777,12 +939,21 @@ watch(query, (value) => {
 // round trip through the build editor) has something to restore from once the URL itself
 // has been cleared by `onUnmounted` below.
 watch(
-  [section, selectedId, selectedBonusId, selectedPresetId, statusFilter, query],
-  ([sec, item, bonus, preset, status, q]) => {
+  [
+    section,
+    selectedId,
+    selectedBonusId,
+    selectedPresetId,
+    selectedSlotId,
+    statusFilter,
+    query,
+  ],
+  ([sec, item, bonus, preset, slot, status, q]) => {
     ui.value.section = sec;
     ui.value.item = item ?? "";
     ui.value.bonus = bonus ?? "";
     ui.value.preset = preset ?? "";
+    ui.value.slot = slot ?? "";
     ui.value.status = status === "all" ? "" : status;
     ui.value.q = q;
   },
@@ -797,6 +968,7 @@ function hasRoutedLayerState(routed: Record<string, string>) {
     routed.item ||
     routed.bonus ||
     routed.preset ||
+    routed.slot ||
     routed.section ||
     routed.status ||
     routed.q,
@@ -829,12 +1001,17 @@ onMounted(() => {
     section.value = "sectionPresets";
     if (source.preset && db.value.presets.some((p) => p.id === source.preset))
       selectedPresetId.value = source.preset;
+  } else if (source.section === "slots") {
+    section.value = "slots";
+    if (source.slot && db.value.slotById.has(source.slot))
+      selectedSlotId.value = source.slot;
   } else if (source.item && db.value.get(source.item)) {
     selectedId.value = source.item;
   } else {
     selectedId.value = null;
     selectedBonusId.value = null;
     selectedPresetId.value = null;
+    selectedSlotId.value = null;
   }
   if (isValidStatusFilter(source.status)) statusFilter.value = source.status;
   if (source.q) query.value = source.q;
@@ -848,6 +1025,7 @@ onUnmounted(() => {
       item: null,
       bonus: null,
       preset: null,
+      slot: null,
       section: null,
       status: null,
       q: null,
@@ -899,6 +1077,14 @@ onUnmounted(() => {
         >
           Presets
           <span class="opacity-75 tabular-nums">{{ db.presets.length }}</span>
+        </TabButton>
+        <TabButton
+          :active="section === 'slots'"
+          data-testid="tab-slots"
+          @click="switchSection('slots')"
+        >
+          Parameters
+          <span class="opacity-75 tabular-nums">{{ slotRows.length }}</span>
         </TabButton>
       </TabStrip>
 
@@ -979,7 +1165,9 @@ onUnmounted(() => {
             ? newBonus()
             : section === 'sectionPresets'
               ? newPreset()
-              : newItem()
+              : section === 'slots'
+                ? newSlot()
+                : newItem()
         "
         @restore="restore"
       />
@@ -1026,6 +1214,19 @@ onUnmounted(() => {
           @delete="onDeleteBonusTop"
           @duplicate="duplicateBonus"
           @revert="onRevertBonusTop"
+        />
+        <SlotForm
+          v-else-if="section === 'slots'"
+          ref="slotForm"
+          :key="selectedSlotId ?? `__new__${newItemCounter}`"
+          :source="selectedSlot"
+          :status="selectedSlotStatus"
+          :db="db"
+          :allocatable-ids="allocatableIds"
+          @save="onSaveSlot"
+          @update:slot="onUpdateSlot"
+          @delete="onDeleteSlot"
+          @revert="onRevertSlot"
         />
         <PresetForm
           v-else

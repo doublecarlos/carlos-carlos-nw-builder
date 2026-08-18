@@ -18,7 +18,7 @@ import FormField from "../ui/FormField.vue";
 import FormGrid from "../ui/FormGrid.vue";
 import IdField from "../ui/IdField.vue";
 import FormSection from "../ui/FormSection.vue";
-import { NW_SCHEMA, NW_SLOTS } from "../../data/data";
+import { NW_SCHEMA } from "../../data/data";
 import { findParamSlot } from "../../lib/build-path";
 import * as catalog from "../../data/catalog";
 import { deepEqual } from "../../lib/deep-equal";
@@ -123,6 +123,9 @@ export interface ItemDraft {
   repetitionLabel: string;
   stats: StatRow[];
   defaultParams: { slotId: string; value: string | number | boolean }[];
+  /** Keyed by context *path*, not slot id -- a published value has no slot (see
+   *  `Item.publishes`), which is the whole reason it can replace one. */
+  publishes: { path: string; value: string }[];
 }
 
 /** Inline-repetition numeric fields count as "set" once they hold a real number, not just an
@@ -176,6 +179,10 @@ function buildDraft(item: Item | null | undefined): ItemDraft {
     stats: Object.keys(source)
       .filter((key) => statKeys.has(key))
       .map((key) => ({ key, value: source[key as keyof Item] as number })),
+    publishes: Object.entries(source.publishes ?? {}).map(([path, value]) => ({
+      path,
+      value: String(value),
+    })),
     defaultParams: Object.entries(source.defaultParams ?? {}).map(
       ([slotId, value]) => ({ slotId, value }),
     ),
@@ -241,6 +248,8 @@ function diffLabel(oldJson: string, newJson: string): string {
       return "edit inline repetition";
     if (JSON.stringify(old.stats) !== JSON.stringify(nw.stats))
       return diffStatsLabel(old.stats ?? [], nw.stats ?? []);
+    if (JSON.stringify(old.publishes) !== JSON.stringify(nw.publishes))
+      return "edit published values";
     if (JSON.stringify(old.defaultParams) !== JSON.stringify(nw.defaultParams))
       return "edit default build parameters";
   } catch {
@@ -374,23 +383,41 @@ const displayId = computed(
       : ""),
 );
 
-const classSlot = findParamSlot(NW_SLOTS.slots, "class");
-// The class slot's own "— none —" row is for the build editor, not for restricting an
-// item to no class at all -- drop the empty value from the checkbox list.
-const classes = (classSlot?.options ?? []).filter((o) => o.value);
+/** The class vocabulary these checkboxes offer: every distinct value the catalogue publishes
+ * at `class` (#273), labelled by the item that publishes it. A class param's options are still
+ * honoured as a fallback, so an overlay declaring the pre-#273 shape keeps working.
+ * Blank values are dropped either way -- "no class at all" is not a restriction. */
+const classSlot = computed(() => findParamSlot(props.db.slots, "class"));
+const classes = computed(() => {
+  const byValue = new Map<string, string>();
+  for (const option of classSlot.value?.options ?? []) {
+    if (option.value) byValue.set(option.value, option.label);
+  }
+  for (const item of props.db.items) {
+    const value = item.publishes?.class;
+    if (typeof value === "string" && value) byValue.set(value, item.name);
+  }
+  return [...byValue].map(([value, label]) => ({ value, label }));
+});
 
 const statComboOptions = statPickerOptions;
 const dynamicStatOptions = statPickerOptions;
 
-const buildParamSlots = NW_SLOTS.slots.filter(
-  (slot): slot is BuildParameterSlot => slot.type === "build_parameter",
+// Off the composed catalogue, so a layer-authored param can be seeded by `defaultParams`
+// exactly like a shipped one.
+const buildParamSlots = computed(() =>
+  props.db.slots.filter(
+    (slot): slot is BuildParameterSlot => slot.type === "build_parameter",
+  ),
 );
-const defaultParamSlotOptions = buildParamSlots.map((slot) => ({
-  value: slot.id,
-  label: slot.label,
-}));
+const defaultParamSlotOptions = computed(() =>
+  buildParamSlots.value.map((slot) => ({
+    value: slot.id,
+    label: slot.label,
+  })),
+);
 function slotForDefaultParam(slotId: string): BuildParameterSlot | undefined {
-  return buildParamSlots.find((slot) => slot.id === slotId);
+  return buildParamSlots.value.find((slot) => slot.id === slotId);
 }
 
 function toItem(): Item {
@@ -475,6 +502,12 @@ function toItem(): Item {
     };
   }
 
+  const publishes: Record<string, string | number | boolean> = {};
+  for (const { path, value } of local.publishes) {
+    if (path.trim()) publishes[path.trim()] = value;
+  }
+  if (Object.keys(publishes).length) item.publishes = publishes;
+
   const defaultParams: Record<string, string | number | boolean> = {};
   for (const { slotId, value } of local.defaultParams) {
     if (slotId) defaultParams[slotId] = value;
@@ -528,6 +561,13 @@ function addDynamicStat() {
 }
 function removeDynamicStat(index: number) {
   draft.value.dynamicStats.splice(index, 1);
+}
+
+function addPublishes() {
+  draft.value.publishes.push({ path: "", value: "" });
+}
+function removePublishes(index: number) {
+  draft.value.publishes.splice(index, 1);
 }
 
 function addDefaultParam() {
@@ -748,6 +788,42 @@ watch(
       >
         {{ cls.label }}
       </BaseCheckbox>
+    </div>
+
+    <FormSection>Publishes (asserted while this item is equipped)</FormSection>
+    <div
+      v-for="(row, index) in draft.publishes"
+      :key="index"
+      class="publishes-row flex flex-wrap items-center gap-1.5 mb-1"
+    >
+      <IconButton title="Add published value" @click="addPublishes"
+        ><Plus
+      /></IconButton>
+      <IconButton title="Remove published value" @click="removePublishes(index)"
+        ><Trash
+      /></IconButton>
+      <input
+        v-model="row.path"
+        class="w-52 rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+        type="text"
+        placeholder="Context path, e.g. class"
+        :data-testid="`publishes-path-${index}`"
+      />
+      <input
+        v-model="row.value"
+        class="w-52 rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+        type="text"
+        placeholder="Value"
+        :data-testid="`publishes-value-${index}`"
+      />
+    </div>
+    <div
+      v-if="!draft.publishes.length"
+      class="publishes-row flex flex-wrap items-center gap-1.5 mb-1"
+    >
+      <IconButton title="Add published value" @click="addPublishes"
+        ><Plus
+      /></IconButton>
     </div>
 
     <FormSection

@@ -3,6 +3,7 @@
 // stores, no IndexedDB -- so the whole resolve step is testable without a browser; the wizard
 // (its own ticket) only renders what this returns and decides whether to commit it.
 import * as storage from "../storage/storage";
+import { itemPublishing } from "../data/db";
 import {
   GAME_IMPORT_DATA,
   classFromHclass,
@@ -72,8 +73,13 @@ export function buildFromLoadout(
     options?.name ?? `${character.name} — ${label}`,
   );
 
+  // `hclassToClass` still maps to the bare class value ("bard"); the class is picked as an
+  // item now, so resolve that value to whichever item publishes it (#273).
   const gameClass = classFromHclass(character.gameClass);
-  if (gameClass) build.context.class = gameClass;
+  const classItem = gameClass
+    ? itemPublishing(db, "class", gameClass)
+    : undefined;
+  if (classItem) build.choices["options.class"] = classItem;
 
   const race = raceFromSpecies(character.species);
   if (race) build.choices["raceLeveling.race"] = race;
@@ -89,7 +95,7 @@ export function buildFromLoadout(
   }
 
   const notInDemo = notInDemoSlotIds(db.slots);
-  if (!gameClass) notInDemo.push("options.class");
+  if (!classItem) notInDemo.push("options.class");
   if (!race) notInDemo.push("raceLeveling.race");
   for (const slotId of notInDemo) outcomes.push({ kind: "notInDemo", slotId });
 

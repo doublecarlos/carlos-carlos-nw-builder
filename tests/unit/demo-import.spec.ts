@@ -82,11 +82,13 @@ describe("buildFromLoadout: placement", () => {
     expect(build.choices["gear.mainhand"]).toBe("test-mainhand");
   });
 
-  it("sets context.class from the character's Hclass", () => {
+  it("picks the class item its Hclass maps to", () => {
+    // `hclassToClass` still yields the bare class value; the importer resolves that through
+    // whichever item publishes it, since the class is an ordinary pick now (#273).
     const character = characterOf("Carlos", "Player_Bard", []);
     const loadout = loadoutOf([]);
     const { build } = buildFromLoadout(character, loadout, mappedDb);
-    expect(build.context.class).toBe("bard");
+    expect(build.choices["options.class"]).toBe("class-bard");
   });
 
   it("sets choices['raceLeveling.race'] from the character's Species", () => {
@@ -148,10 +150,10 @@ describe("buildFromLoadout: placement", () => {
       loadoutOf([]),
       mappedDb,
     );
-    // Same as any other freshly created build (builds.createBuild() included) --
-    // storage.defaultBuild() leaves an unresolved build_parameter's context field unset
-    // rather than forcing a value, so this is the ordinary "nothing chosen yet" state.
-    expect(build.context.class).toBeUndefined();
+    // Same as any other freshly created build (builds.createBuild() included): an
+    // unresolvable class simply leaves the slot empty, the ordinary "nothing chosen yet"
+    // state, rather than forcing a value.
+    expect(build.choices["options.class"]).toBeUndefined();
     expect(
       report.outcomes.some(
         (o) => o.kind === "notInDemo" && o.slotId === "options.class",
@@ -200,7 +202,9 @@ describe("buildFromLoadout: zero mappings", () => {
       loadout,
       zeroMappingsDb,
     );
-    expect(build.choices).toEqual({});
+    // The class still resolves -- it comes from the character's Hclass, not from any gameId
+    // mapping, so it is unaffected by this db having none.
+    expect(build.choices).toEqual({ "options.class": "class-bard" });
     expect(build.id).toBeTruthy();
     expect(report.counts.imported).toBe(0);
     expect(report.counts.unrecognised).toBe(2);
@@ -246,8 +250,15 @@ describe("buildFromLoadout: naming and independence", () => {
       mappedDb,
     );
     expect(a.build.id).not.toBe(b.build.id);
-    expect(a.build.choices).toEqual({ "gear.head": "test-head" });
-    expect(b.build.choices).toEqual({ "gear.mainhand": "test-mainhand" });
+    // Both carry the character's own class pick; only the per-loadout gear differs.
+    expect(a.build.choices).toEqual({
+      "options.class": "class-bard",
+      "gear.head": "test-head",
+    });
+    expect(b.build.choices).toEqual({
+      "options.class": "class-bard",
+      "gear.mainhand": "test-mainhand",
+    });
   });
 });
 
@@ -288,7 +299,7 @@ describe("buildFromLoadout: against the shared parser fixture", () => {
 
     expect(report.character).toBe("Carlos o Bardo");
     expect(report.loadout).toBe("1. DPS ST");
-    expect(build.context.class).toBe("bard");
+    expect(build.choices["options.class"]).toBe("class-bard");
     expect(build.choices["raceLeveling.race"]).toBe("race-aasimar");
     // No gameIds authored anywhere -- every present item comes back unrecognised, none
     // imported, and the build is still perfectly valid.

@@ -5,10 +5,11 @@
 // overrides against *all* rows, so its results could depend on slot ordering. Nothing here does.
 
 import * as conditions from "./conditions";
-import { getPath, resolveLinkedItem } from "../lib/build-path";
+import { getPath } from "../lib/build-path";
 import { bonusIdOf, occurrenceCountFor } from "../lib/bonus-attachment";
 import { readDynamicValue } from "../lib/dynamic-stats";
 import type {
+  PublishConflict,
   Db,
   Build,
   Bonus,
@@ -189,6 +190,7 @@ export function collect(
   candidates: Candidate[];
   zeroCandidates: Candidate[];
   assignmentStatsBySlot: Map<string, Map<string, number>>;
+  publishConflicts: PublishConflict[];
 } {
   const context = build.context ?? {};
   const equipped = new Map<string, number>();
@@ -198,6 +200,13 @@ export function collect(
   const candidates: Candidate[] = [];
   const zeroCandidates: Candidate[] = [];
   const assignmentStatsBySlot = new Map<string, Map<string, number>>();
+  /** path -> every equipped item asserting a value for it (`Item.publishes`). Collected during
+   *  the slot walk purely because that is where the equipped items are already in hand; nothing
+   *  is decided from it until the walk is over, so slot order cannot affect the outcome. */
+  const publishedBy = new Map<
+    string,
+    { itemId: string; slotId: string; value: string | number | boolean }[]
+  >();
 
   db.slots.forEach((slot, order) => {
     // A visual-only row: no choice, no item, nothing to attribute a bonus to.
@@ -224,20 +233,22 @@ export function collect(
       return;
     }
 
-    // A build_parameter row has no entry in `build.choices` -- its "choice" is derived from
-    // its current context value instead (`resolveLinkedItem`), so a list/boolean param with a
-    // `linkedItem` resolves through the exact same equip/tag/bonus-occurrence/candidate
-    // bookkeeping below as an item_picker pick, with no separate branch needed.
-    const choice =
-      slot.type === "build_parameter"
-        ? resolveLinkedItem(slot, context)
-        : build.choices?.[slot.id];
+    // A build_parameter never equips anything: it is the scalar itself. Anything that needs
+    // to both carry stats and set a context value is an `item_picker` whose item publishes the
+    // value (#273), so there is one path into the bookkeeping below rather than two.
+    const choice = build.choices?.[slot.id];
     const item = db.get(choice);
     rows.push({ slotId: slot.id, slot, choice, item });
     if (!item) return;
 
     bump(equipped, item.id);
     for (const tag of item.tags ?? []) bump(tags, tag);
+    for (const [path, value] of Object.entries(item.publishes ?? {})) {
+      const contributors = publishedBy.get(path);
+      if (contributors)
+        contributors.push({ itemId: item.id, slotId: slot.id, value });
+      else publishedBy.set(path, [{ itemId: item.id, slotId: slot.id, value }]);
+    }
 
     // Each attachment's occurrence count is its own, not a single count shared by the whole
     // item: an item can carry a plain bare-id bonus (always 1 here -- no repetition concept
@@ -270,6 +281,24 @@ export function collect(
     if (resolved !== undefined) params.set(slot.path, resolved);
   }
 
+  // Every equipped item's `publishes`, folded in over the slot-derived values above. A path
+  // several items agree on is not a conflict -- that is what equipping two copies of one item
+  // looks like -- so only *differing* values are reported, and a conflicted path is left out of
+  // `params` entirely rather than resolved to an arbitrary winner.
+  const publishConflicts: PublishConflict[] = [];
+  const published = new Map<string, string | number | boolean>();
+  for (const [path, contributors] of publishedBy) {
+    const distinct = new Set(contributors.map((entry) => entry.value));
+    if (distinct.size > 1) {
+      publishConflicts.push({ path, contributors });
+      params.delete(path);
+      continue;
+    }
+    const value = contributors[0].value;
+    params.set(path, value);
+    published.set(path, value);
+  }
+
   // Populate bonus names from the db so conditions can display friendly names
   // instead of internal IDs like "m32-impending-doom-celestial".
   const bonusNames = new Map<string, string>();
@@ -277,10 +306,17 @@ export function collect(
     if (bonus.name) bonusNames.set(id, bonus.name);
   }
 
+  // The three dedicated leaves read their own `EvalContext` field rather than `params`, so a
+  // published value has to reach both -- `class` is the one that actually travels this way
+  // today (its param slot is an `item_picker` now), but the fallback keeps the two in step for
+  // any path that later moves the same way.
+  const scalar = (path: string, stored: string | undefined) =>
+    (published.get(path) as string | undefined) ?? stored;
+
   const ctx: EvalContext = {
-    class: context.class,
-    role: context.role,
-    damageType: context.damageType,
+    class: scalar("class", context.class),
+    role: scalar("role", context.role),
+    damageType: scalar("damageType", context.damageType),
     duration: context.duration ?? 0,
     enemies: context.enemies ?? 0,
     toggles: context.toggles ?? {},
@@ -291,7 +327,14 @@ export function collect(
     params,
   };
 
-  return { ctx, rows, candidates, zeroCandidates, assignmentStatsBySlot };
+  return {
+    ctx,
+    rows,
+    candidates,
+    zeroCandidates,
+    assignmentStatsBySlot,
+    publishConflicts,
+  };
 }
 
 // --- pass 2: evaluate ---
@@ -558,8 +601,14 @@ export function resolve(
   build: Build,
   { explain = true }: { explain?: boolean } = {},
 ): ResolvedBonuses {
-  const { ctx, rows, candidates, zeroCandidates, assignmentStatsBySlot } =
-    collect(db, build);
+  const {
+    ctx,
+    rows,
+    candidates,
+    zeroCandidates,
+    assignmentStatsBySlot,
+    publishConflicts,
+  } = collect(db, build);
 
   // Group by bonus id so stacking is decided once per bonus, not once per contributing slot.
   const groups = new Map<string, Group>();
@@ -682,5 +731,6 @@ export function resolve(
     bonuses: evaluated,
     bonusStatsBySlot,
     assignmentStatsBySlot,
+    publishConflicts,
   };
 }

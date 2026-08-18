@@ -6,6 +6,7 @@
 
 import { NW_ITEMS, NW_BONUSES, NW_SCHEMA, NW_SLOTS } from "./data";
 import { bonusIdOf } from "../lib/bonus-attachment";
+import { resolvedOptions } from "../lib/param-options";
 import type {
   Item,
   Bonus,
@@ -72,7 +73,17 @@ export function build(
   // Shared bonuses, keyed by id. Membership is never listed here -- it lives on the
   // items (`bonuses: [...]`), so this is the only place the two are joined.
   const bonusById = new Map(bonuses.map((bonus) => [bonus.id, bonus]));
-  const slotList = slots?.slots ?? [];
+
+  // A `list` param declaring `optionsFrom` gets its `options` resolved here, once, so every
+  // consumer downstream (the build editor's control, the compare-diff label) reads one
+  // `options` array and never has to know whether it was authored inline or derived.
+  // `authoredSlots` keeps the pre-resolution form for the write side -- see `Db`.
+  const authoredSlots = slots?.slots ?? [];
+  const slotList = authoredSlots.map((slot) =>
+    slot.type === "build_parameter" && slot.optionsFrom
+      ? { ...slot, options: resolvedOptions(slot, items) }
+      : slot,
+  );
   const slotById = new Map<string, Slot>(
     slotList.map((slot) => [slot.id, slot]),
   );
@@ -81,6 +92,7 @@ export function build(
     items,
     schema,
     slots: slotList,
+    authoredSlots,
     sections: slots?.sections ?? [],
     presets: slots?.presets ?? [],
     slotById,
@@ -190,14 +202,49 @@ function copyCounts(
   return counts;
 }
 
-/** `db.forSlot(slotId)`, narrowed to what `build.context.class` actually allows and, for an
+/**
+ * The value this build currently publishes at `path`, from whatever it has equipped
+ * (`Item.publishes`). The `Db`-level counterpart to bonus.ts's fold in `collect()`, for the
+ * call sites that need one published value without resolving the whole build -- picker
+ * filtering runs on every keystroke, and resolving a build to answer "which class is this"
+ * would be absurd. Conflicts are the engine's business (`publishConflicts`); this just takes
+ * the first, since a conflicted build is already reporting an error of its own.
+ */
+export function publishedValue(
+  db: Db,
+  build: Build,
+  path: string,
+): string | number | boolean | undefined {
+  for (const id of Object.values(build.choices ?? {})) {
+    const value = db.get(id)?.publishes?.[path];
+    if (value !== undefined) return value;
+  }
+  return undefined;
+}
+
+/**
+ * The id of the item that publishes `value` at `path` -- the inverse lookup, for translating
+ * an outside identifier into the item that now stands for it: a game import's class name, or
+ * a pre-migration build's stored `context.class` (storage.ts's `migrateClassToChoice`).
+ */
+export function itemPublishing(
+  db: Db,
+  path: string,
+  value: string | number | boolean,
+): string | undefined {
+  return db.items.find((item) => item.publishes?.[path] === value)?.id;
+}
+
+/** `db.forSlot(slotId)`, narrowed to what the build's published class actually allows and, for an
  * item_picker slot, to what its `maxCopies` cap still has room for (issue #198) -- the same
  * "succeeds then flagged" gap #196's `hideFromPicker` closed for problem grants, closed here for
  * the far more common maxCopies case via a dedicated cheap check instead of routing through the
  * bonus/condition system. An unset class constrains nothing -- defaulting to empty, a fresh
  * build would otherwise hide every class-restricted item with no explanation. */
 export function forSlotAndBuild(db: Db, slotId: string, build: Build): Item[] {
-  const cls = build.context.class;
+  // Published by the equipped class item rather than stored on the build -- `options.class` is
+  // an ordinary item_picker now, so `context.class` no longer exists.
+  const cls = publishedValue(db, build, "class") as string | undefined;
   const slot = db.slotById.get(slotId);
   const counts =
     slot?.type === "item_picker" ? copyCounts(db, build, slotId) : null;

@@ -3,7 +3,7 @@
 // file order, resolve its `Hitem` through `Db.itemByGameId`, then take the first candidate app
 // slot that's still empty and whose filter accepts the resolved item. No per-slot bookkeeping.
 import gameImportJson from "../../data/game-import.json";
-import type { Db, Slot } from "../types";
+import type { Db, Item, Slot } from "../types";
 import type { DemoItem } from "./demo-snapshot";
 
 export interface GameBagEntry {
@@ -364,36 +364,42 @@ export function validateItemValueMap(
 }
 
 /**
- * - `slotId` names a `list` `build_parameter` slot that actually exists
- * - every value the map targets is one of that slot's own option values -- a typo in
- *   game-import.json (e.g. "warlok") would otherwise silently produce a `Build` with a value
- *   the slot itself never offers.
+ * Every value the map targets is one some item actually publishes at `path` (`Item.publishes`)
+ * -- a typo in game-import.json (e.g. "warlok") would otherwise silently produce a `Build`
+ * whose class resolves to nothing at all.
+ *
+ * Checked against published values rather than a list param's options because that is where
+ * this vocabulary lives now (#273): `options.class` is an ordinary `item_picker`, and the bare
+ * class name a demo carries is resolved through the item publishing it.
  */
 export function validateValueMap(
   map: Record<string, string>,
-  slotId: string,
-  slots: Slot[],
+  path: string,
+  items: Item[],
   context: string,
 ): GameImportLintFinding[] {
-  const slot = slots.find((s) => s.id === slotId);
-  if (!slot || slot.type !== "build_parameter" || slot.paramType !== "list") {
+  const knownValues = new Set(
+    items
+      .map((item) => item.publishes?.[path])
+      .filter((value): value is string => typeof value === "string" && !!value),
+  );
+  if (!knownValues.size) {
     return [
       {
         level: "error",
         context,
-        message: `slot "${slotId}" does not exist as a list build_parameter in data/slots.json`,
+        message: `no item publishes "${path}" — nothing in this map could ever resolve`,
       },
     ];
   }
 
-  const knownValues = new Set(slot.options?.map((o) => o.value) ?? []);
   const findings: GameImportLintFinding[] = [];
   for (const [key, value] of Object.entries(map)) {
     if (!knownValues.has(value)) {
       findings.push({
         level: "error",
         context,
-        message: `"${key}" maps to "${value}", not one of "${slotId}"'s own option values`,
+        message: `"${key}" maps to "${value}", which no item publishes at "${path}"`,
       });
     }
   }

@@ -23,7 +23,9 @@ test.describe("item picker menu width", () => {
     page,
   }) => {
     await openBuilder(page);
-    const row = slotRow(page, "options.class");
+    // A build_parameter's own ComboBox, not an ItemPicker -- `options.class` became an item
+    // picker in #273, which is the *other* case this file contrasts against.
+    const row = slotRow(page, "options.role");
     await pickerInput(row).click();
 
     const inputBox = await pickerInput(row).boundingBox();

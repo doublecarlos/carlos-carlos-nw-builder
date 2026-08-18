@@ -1,12 +1,7 @@
 // build_parameter paths are resolved against `build.context`, not `build` itself, so a path
 // structurally cannot address a sibling of `context` (`choices`, `id`, `catalog`, ...).
 import { describe, it, expect } from "vitest";
-import {
-  getPath,
-  setPath,
-  findParamSlot,
-  resolveLinkedItem,
-} from "../../src/lib/build-path";
+import { getPath, setPath, findParamSlot } from "../../src/lib/build-path";
 import { defaultBuild } from "../../src/storage/storage";
 import { NW_SLOTS, NW_SCHEMA } from "../../src/data/data";
 import type { BuildParameterSlot } from "../../src/types";
@@ -27,8 +22,8 @@ describe("build-path", () => {
   });
 
   it("findParamSlot finds the build_parameter slot owning a given path", () => {
-    const slot = findParamSlot(NW_SLOTS.slots, "class");
-    expect(slot?.id).toBe("options.class");
+    const slot = findParamSlot(NW_SLOTS.slots, "role");
+    expect(slot?.id).toBe("options.role");
     expect(findParamSlot(NW_SLOTS.slots, "nope")).toBeUndefined();
   });
 
@@ -79,77 +74,5 @@ describe("build-path", () => {
       const name = slot.path.slice("toggles.".length);
       expect(build.context.toggles[name]).toBe(slot.default);
     }
-  });
-
-  // --- resolveLinkedItem -----------------------------------------------------------------
-
-  describe("resolveLinkedItem", () => {
-    const listSlot: BuildParameterSlot = {
-      id: "options.race",
-      label: "Race",
-      section: "options",
-      type: "build_parameter",
-      paramType: "list",
-      path: "race",
-      default: "",
-      options: [
-        { value: "", label: "— none —" },
-        { value: "half-orc", label: "Half-Orc", linkedItem: "race-half-orc" },
-        { value: "elf", label: "Elf" },
-      ],
-    };
-    const boolSlot: BuildParameterSlot = {
-      id: "options.consumable",
-      label: "Consumable buff",
-      section: "options",
-      type: "build_parameter",
-      paramType: "boolean",
-      path: "toggles.consumableBuff",
-      default: false,
-      linkedItem: "consumable-buff-item",
-    };
-    const numberSlot: BuildParameterSlot = {
-      id: "options.magnitude2",
-      label: "Magnitude",
-      section: "options",
-      type: "build_parameter",
-      paramType: "number",
-      path: "magnitude2",
-      default: 100,
-    };
-
-    it("a list param resolves the selected option's linkedItem", () => {
-      expect(resolveLinkedItem(listSlot, { race: "half-orc" })).toBe(
-        "race-half-orc",
-      );
-    });
-
-    it("a list param with no linkedItem on the selected option resolves undefined", () => {
-      expect(resolveLinkedItem(listSlot, { race: "elf" })).toBeUndefined();
-    });
-
-    it("a list param with no value in context falls back to the slot's default", () => {
-      expect(resolveLinkedItem(listSlot, {})).toBeUndefined(); // default "" has no linkedItem
-    });
-
-    it("a boolean param resolves its slot's linkedItem only when checked", () => {
-      expect(
-        resolveLinkedItem(boolSlot, { toggles: { consumableBuff: true } }),
-      ).toBe("consumable-buff-item");
-      expect(
-        resolveLinkedItem(boolSlot, { toggles: { consumableBuff: false } }),
-      ).toBeUndefined();
-    });
-
-    it("a boolean param with no value in context falls back to the slot's default", () => {
-      expect(resolveLinkedItem(boolSlot, {})).toBeUndefined(); // default is false
-    });
-
-    it("number/percent params never resolve a linkedItem, even if one is set", () => {
-      const withLinked = { ...numberSlot, linkedItem: "should-be-ignored" };
-      expect(
-        resolveLinkedItem(withLinked, { magnitude2: 150 }),
-      ).toBeUndefined();
-    });
   });
 });

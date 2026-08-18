@@ -2,13 +2,19 @@
 // `defaultParams` (data/db-items.json) auto-fills Role and Forte in the build editor, and
 // those fields stay ordinary editable controls afterward so a "what-if" override still works.
 import { test, expect } from "@playwright/test";
-import { openBuilder, slotRow, pickerInput, chooseItem } from "./support/app";
+import {
+  openBuilder,
+  slotRow,
+  pickerInput,
+  chooseItem,
+  chooseClass,
+} from "./support/app";
 
 test("choosing the Hellbringer paragon auto-fills Role and Forte", async ({
   page,
 }) => {
   await openBuilder(page);
-  await chooseItem(page, "options.class", "Warlock");
+  await chooseClass(page, "warlock");
   await chooseItem(page, "options.paragon", "Hellbringer");
 
   await expect(pickerInput(slotRow(page, "options.role"))).toHaveValue("DPS");
@@ -27,7 +33,7 @@ test("Role and Forte stay editable after the auto-fill (what-if override)", asyn
   page,
 }) => {
   await openBuilder(page);
-  await chooseItem(page, "options.class", "Warlock");
+  await chooseClass(page, "warlock");
   await chooseItem(page, "options.paragon", "Hellbringer");
   await expect(pickerInput(slotRow(page, "options.role"))).toHaveValue("DPS");
 

@@ -95,12 +95,12 @@ describe("demo-slots: shipped data", () => {
     ).toEqual([]);
   });
 
-  it("hclassToClass passes its own lint against options.class's own option values", () => {
+  it("hclassToClass passes its own lint against the classes items publish", () => {
     expect(
       validateValueMap(
         GAME_IMPORT_DATA.hclassToClass,
-        "options.class",
-        NW_SLOTS.slots,
+        "class",
+        db.items,
         "hclassToClass",
       ),
     ).toEqual([]);
@@ -119,42 +119,37 @@ describe("demo-slots: shipped data", () => {
 });
 
 describe("validateValueMap", () => {
-  it("errors when the target slot doesn't exist as a list build_parameter", () => {
+  it("errors when nothing publishes the target path at all", () => {
     const findings = validateValueMap(
       { X: "y" },
-      "not.a.real.slot",
-      NW_SLOTS.slots,
+      "not.a.real.path",
+      db.items,
       "test",
     );
     expect(
       findings.some(
-        (f) => f.level === "error" && /does not exist/.test(f.message),
+        (f) => f.level === "error" && /no item publishes/.test(f.message),
       ),
     ).toBe(true);
   });
 
-  it("errors when a mapped value isn't one of the slot's own options", () => {
+  it("errors when a mapped value is one no item publishes", () => {
     const findings = validateValueMap(
       { Player_Made_Up: "not-a-real-class" },
-      "options.class",
-      NW_SLOTS.slots,
+      "class",
+      db.items,
       "test",
     );
     expect(
       findings.some(
-        (f) => f.level === "error" && /own option values/.test(f.message),
+        (f) => f.level === "error" && /which no item publishes/.test(f.message),
       ),
     ).toBe(true);
   });
 
-  it("passes for a map whose values are all real options", () => {
+  it("passes for a map whose values are all published", () => {
     expect(
-      validateValueMap(
-        { Player_Bard: "bard" },
-        "options.class",
-        NW_SLOTS.slots,
-        "test",
-      ),
+      validateValueMap({ Player_Bard: "bard" }, "class", db.items, "test"),
     ).toEqual([]);
   });
 });

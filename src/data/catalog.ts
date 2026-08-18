@@ -17,7 +17,8 @@
 
 import { NW_ITEMS, NW_BONUSES, NW_SCHEMA, NW_SLOTS } from "./data";
 import * as db from "./db";
-import { findParamSlot, resolveLinkedItem } from "../lib/build-path";
+import { findParamSlot } from "../lib/build-path";
+import { resolvedOptions } from "../lib/param-options";
 import { deepEqual } from "../lib/deep-equal";
 import { bonusIdOf } from "../lib/bonus-attachment";
 import type {
@@ -41,26 +42,29 @@ export const emptyOverlay = (): CatalogOverlay => ({
   items: {},
   bonuses: {},
   sectionPresets: {},
+  slots: {},
 });
+
+/** Every group an overlay carries, in one place -- the loops below iterate this rather than
+ * spelling the four names out, so adding a fifth group is one edit here. */
+const GROUPS = ["items", "bonuses", "sectionPresets", "slots"] as const;
 
 export const isEmpty = (overlay: CatalogOverlay | null | undefined) =>
   !overlay ||
-  (Object.keys(overlay.items ?? {}).length === 0 &&
-    Object.keys(overlay.bonuses ?? {}).length === 0 &&
-    Object.keys(overlay.sectionPresets ?? {}).length === 0);
+  GROUPS.every((group) => !Object.keys(overlay[group] ?? {}).length);
 
 /** Anything persisted or pasted has to survive being wrong. */
 export function normaliseOverlay(raw: unknown): CatalogOverlay {
   const overlay = emptyOverlay();
   if (!raw || typeof raw !== "object") return overlay;
-  for (const group of ["items", "bonuses", "sectionPresets"] as const) {
+  for (const group of GROUPS) {
     const source = (raw as Record<string, unknown>)[group];
     if (!source || typeof source !== "object") continue;
     for (const [key, value] of Object.entries(source)) {
       if (value === null)
         overlay[group][key] = null; // tombstone
       else if (value && typeof value === "object")
-        overlay[group][key] = value as Item & Bonus & SectionPreset;
+        overlay[group][key] = value as Item & Bonus & SectionPreset & Slot;
     }
   }
   return overlay;
@@ -70,21 +74,30 @@ export const base = (): {
   items: Item[];
   bonuses: Bonus[];
   sectionPresets: SectionPreset[];
+  slots: Slot[];
 } => ({
   items: NW_ITEMS ?? [],
   bonuses: NW_BONUSES ?? [],
   sectionPresets: NW_SLOTS.presets ?? [],
+  slots: NW_SLOTS.slots ?? [],
 });
 
 /**
- * Fold overlays over the base, later layers winning. Output is sorted by id so the
- * export is stable and diffs against the generated files stay readable.
+ * Fold overlays over the base, later layers winning. Items, bonuses and presets come out
+ * sorted by id so the export is stable and diffs against the generated files stay readable.
+ *
+ * Slots deliberately do not sort: a slot list *is* its render order, hand-authored in
+ * slots.json, and sorting it by id would reshuffle every section on load. They come out in
+ * base order instead, with an overlay-added slot appended -- a `Map` keyed by id gives exactly
+ * that, since re-`set`ting an existing key keeps its original position. Appending globally is
+ * the same as appending within a section, because every consumer groups by `slot.section`.
  */
 export function compose(overlays: (CatalogOverlay | null | undefined)[] = []) {
   const {
     items: baseItems,
     bonuses: baseBonuses,
     sectionPresets: basePresets,
+    slots: baseSlots,
   } = base();
 
   const items = new Map(baseItems.map((item) => [item.id, item]));
@@ -92,6 +105,7 @@ export function compose(overlays: (CatalogOverlay | null | undefined)[] = []) {
   const sectionPresets = new Map(
     basePresets.map((preset) => [preset.id, preset]),
   );
+  const slots = new Map(baseSlots.map((slot) => [slot.id, slot]));
 
   for (const overlay of overlays) {
     if (!overlay) continue;
@@ -107,6 +121,10 @@ export function compose(overlays: (CatalogOverlay | null | undefined)[] = []) {
       if (preset === null) sectionPresets.delete(id);
       else sectionPresets.set(id, preset);
     }
+    for (const [id, slot] of Object.entries(overlay.slots ?? {})) {
+      if (slot === null) slots.delete(id);
+      else slots.set(id, slot);
+    }
   }
 
   return {
@@ -115,14 +133,16 @@ export function compose(overlays: (CatalogOverlay | null | undefined)[] = []) {
     sectionPresets: [...sectionPresets.values()].sort((a, b) =>
       a.id.localeCompare(b.id),
     ),
+    slots: [...slots.values()],
   };
 }
 
 /** A db the engine accepts, built from the composed catalogue. */
 export function makeDb(overlays: (CatalogOverlay | null | undefined)[] = []) {
-  const { items, bonuses, sectionPresets } = compose(overlays);
+  const { items, bonuses, sectionPresets, slots } = compose(overlays);
   return db.build(items, bonuses, NW_SCHEMA, {
-    ...NW_SLOTS,
+    sections: NW_SLOTS.sections,
+    slots,
     presets: sectionPresets,
   });
 }
@@ -133,6 +153,7 @@ const clone = (overlay: CatalogOverlay): CatalogOverlay => ({
   items: { ...overlay.items },
   bonuses: { ...overlay.bonuses },
   sectionPresets: { ...overlay.sectionPresets },
+  slots: { ...overlay.slots },
 });
 
 const inBase = (group: CatalogGroup, key: string) => {
@@ -141,6 +162,8 @@ const inBase = (group: CatalogGroup, key: string) => {
     return catalogueBase.items.some((item) => item.id === key);
   if (group === "bonuses")
     return catalogueBase.bonuses.some((bonus) => bonus.id === key);
+  if (group === "slots")
+    return catalogueBase.slots.some((slot) => slot.id === key);
   return catalogueBase.sectionPresets.some((preset) => preset.id === key);
 };
 
@@ -151,11 +174,12 @@ export function upsert(
   overlay: CatalogOverlay,
   group: CatalogGroup,
   key: string,
-  value: Item | Bonus | SectionPreset,
+  value: Item | Bonus | SectionPreset | Slot,
 ) {
   const next = clone(overlay);
-  (next[group] as Record<string, Item | Bonus | SectionPreset | null>)[key] =
-    value;
+  (next[group] as Record<string, Item | Bonus | SectionPreset | Slot | null>)[
+    key
+  ] = value;
   return next;
 }
 
@@ -183,6 +207,26 @@ export function nextId(
   let n = 2;
   while (taken.has(`${base}-${n}`)) n += 1;
   return `${base}-${n}`;
+}
+
+/**
+ * A new `build_parameter` slot's id. Slot ids are namespaced by their section
+ * (`options.magnitude`, `gear.head`), unlike item/bonus ids, so this prefixes rather than
+ * calling `nextId` directly -- disambiguating against the prefixed form, since that is what
+ * actually has to be unique.
+ */
+export function nextSlotId(
+  section: string,
+  label: string,
+  existingIds: string[],
+): string {
+  const prefix = section ? `${section}.` : "";
+  const stem = slugify(label) || "param";
+  const taken = new Set(existingIds);
+  if (!taken.has(`${prefix}${stem}`)) return `${prefix}${stem}`;
+  let n = 2;
+  while (taken.has(`${prefix}${stem}-${n}`)) n += 1;
+  return `${prefix}${stem}-${n}`;
 }
 
 /** Hide a base entry, or drop an added one outright. */
@@ -232,15 +276,6 @@ export function referencedOverlay(db: Db, build: Build): CatalogOverlay {
   // Seed items from choices
   for (const id of Object.values(build.choices)) {
     if (id && id !== "-" && id !== "") itemIds.add(id);
-  }
-
-  // Seed items from build_parameter slots' linkedItem -- the item a list/boolean param
-  // currently resolves to is just as much "part of the build" as a picked one, so a download
-  // needs to carry it too if it's not already in base.
-  for (const slot of db.slots) {
-    if (slot.type !== "build_parameter") continue;
-    const id = resolveLinkedItem(slot, build.context);
-    if (id) itemIds.add(id);
   }
 
   // Resolve items to find referenced bonus ids
@@ -297,6 +332,31 @@ export function referencedOverlay(db: Db, build: Build): CatalogOverlay {
     }
   }
 
+  // Every build_parameter slot that differs from base, whether or not this build ever set it.
+  // Unlike an item, a param needs no reference to matter: bonus.ts's `collect()` walks the
+  // *whole* slot list and puts each param in `ctx.params` at its stored value or its `default`,
+  // so an added slot and an edited default both change what conditions see. Carrying only the
+  // ones the build happens to have a stored value for would let the same build resolve
+  // differently on the other machine -- which is the one thing a download must not do.
+  //
+  // Added/edited only, the same deep-equal test items use. A *removed* shipped param does not
+  // travel: "not in `db.slots`" cannot be told apart from "this db was never built from base"
+  // here, and tombstoning on that guess would embed a full set of them into every ordinary
+  // download. Same limitation items and presets already have.
+  //
+  // Restricted to `build_parameter` because that is all an overlay can carry (see
+  // `CatalogOverlay.slots`), so nothing else can have diverged.
+  const baseParamSlots = new Map(
+    base()
+      .slots.filter((slot) => slot.type === "build_parameter")
+      .map((slot) => [slot.id, slot]),
+  );
+  for (const slot of db.authoredSlots) {
+    if (slot.type !== "build_parameter") continue;
+    const baseSlot = baseParamSlots.get(slot.id);
+    if (!baseSlot || !deepEqual(slot, baseSlot)) overlay.slots[slot.id] = slot;
+  }
+
   return overlay;
 }
 
@@ -336,6 +396,7 @@ const ITEM_FIELDS = new Set([
   "longDescription",
   "gameIds",
   "defaultParams",
+  "publishes",
 ]);
 
 // A `param` condition addressing one of these paths duplicates a dedicated leaf that already
@@ -462,15 +523,49 @@ function shadowsBuildContext(path: string): boolean {
     : CONTEXT_SCALAR_KEYS.has(head);
 }
 
+/** Every path a `visibleWhen` reads, flattened out of its combinators -- the `param` leaf's
+ * `key` plus the dedicated leaves that are really a param under another name. Used only to
+ * catch a slot gating itself; the conditions themselves are linted by `checkConditions`. */
+function conditionPaths(when: ConditionWhen | undefined, out: Set<string>) {
+  if (!when || typeof when !== "object") return;
+  for (const [key, spec] of Object.entries(when)) {
+    if (key === "all" || key === "any") {
+      if (Array.isArray(spec))
+        for (const sub of spec) conditionPaths(sub as ConditionWhen, out);
+    } else if (key === "not") {
+      conditionPaths(spec as ConditionWhen, out);
+    } else if (key === "param") {
+      const paramKey = (spec as ParamCondition)?.key;
+      if (paramKey) out.add(paramKey);
+    } else if (key === "toggle") {
+      for (const name of Array.isArray(spec) ? spec : [spec])
+        out.add(`toggles.${name}`);
+    } else if (DEDICATED_LEAF_FOR_PATH[key] === key) {
+      // `role`/`class`/`damageType`/`duration`/`enemies`: leaves whose name *is* the path they
+      // read, so the key doubles as the param path. The `toggle` leaf above is the one that
+      // isn't, hence its own branch.
+      out.add(key);
+    }
+  }
+}
+
 /**
  * Lint every `build_parameter` slot's `path` (empty, duplicated -- two slots silently fighting
- * over one value -- or shadowing a `BuildContext` field outright), every `point_assignment`
- * slot's `filter`, and every `item_picker` slot's `filter`/`tags` selector. Standalone from
- * `validate()` below since it needs only the slot list, not a composed catalogue.
+ * over one value -- or shadowing a `BuildContext` field outright) and its `visibleWhen`, every
+ * `point_assignment` slot's `filter`, and every `item_picker` slot's `filter`/`tags` selector.
+ * Standalone from `validate()` below since it needs only the slot list, not a composed
+ * catalogue.
  */
 export function validateSlots(slots: Slot[]): LintFinding[] {
   const findings: LintFinding[] = [];
   const seenPaths = new Map<string, string>();
+  // Built up front rather than during the loop below: a `visibleWhen` may legitimately read a
+  // param declared further down the list, and `checkConditions` errors on a key it can't resolve.
+  const paramSlots = new Map<string, BuildParameterSlot>();
+  for (const slot of slots) {
+    if (slot.type === "build_parameter" && slot.path)
+      paramSlots.set(slot.path, slot);
+  }
   for (const slot of slots) {
     if (slot.type === "point_assignment") {
       if (!slot.filter) {
@@ -525,6 +620,63 @@ export function validateSlots(slots: Slot[]): LintFinding[] {
         kind: "item",
         message: `${slot.id}: path "${slot.path}" shadows a BuildContext field`,
       });
+    }
+    if (slot.optionsFrom) {
+      if (slot.paramType !== "list") {
+        findings.push({
+          level: "error",
+          kind: "slot",
+          name: slot.id,
+          message: `${slot.id}: optionsFrom is only meaningful on a list param — this is a ${slot.paramType}`,
+        });
+      }
+      if (slot.options) {
+        findings.push({
+          level: "error",
+          kind: "slot",
+          name: slot.id,
+          message: `${slot.id}: has both options and optionsFrom -- pick one, resolving both is ambiguous`,
+        });
+      }
+      // Same "exactly one selector" rule `item_picker` has had since #245/#246: a slot
+      // resolves its candidates one way or the other, never both.
+      const hasFilter = !!slot.optionsFrom.filter;
+      const hasTags = !!slot.optionsFrom.tags?.length;
+      if (!hasFilter && !hasTags) {
+        findings.push({
+          level: "error",
+          kind: "slot",
+          name: slot.id,
+          message: `${slot.id}: optionsFrom has neither a filter nor tags`,
+        });
+      } else if (hasFilter && hasTags) {
+        findings.push({
+          level: "error",
+          kind: "slot",
+          name: slot.id,
+          message: `${slot.id}: optionsFrom has both a filter and tags -- pick one, resolving both is ambiguous`,
+        });
+      }
+    }
+    if (slot.visibleWhen) {
+      checkConditions(
+        slot.visibleWhen,
+        `${slot.id} visibleWhen`,
+        (level, message) => findings.push({ level, kind: "item", message }),
+        paramSlots,
+      );
+      // Harmless at runtime -- `visibleWhen` is evaluated against the already-resolved context,
+      // so the row would just disappear at whichever values fail -- but a param that hides
+      // itself can never be set back, which is never what the author meant.
+      const read = new Set<string>();
+      conditionPaths(slot.visibleWhen, read);
+      if (read.has(slot.path)) {
+        findings.push({
+          level: "error",
+          kind: "item",
+          message: `${slot.id}: visibleWhen reads its own path "${slot.path}" -- the param would hide itself at some values, with no way to change it back`,
+        });
+      }
     }
   }
   return findings;
@@ -608,77 +760,106 @@ export function validatePresets(
   return findings;
 }
 
-/** Every item id a `build_parameter` slot "equips" through its `linkedItem` -- a list option's
- * or a checked boolean's own. Standalone from `validate()` below, same as `validateSlots`/
- * `validatePresets`, since `validate()` uses it only to exempt these items from the "no
- * filter" checks (such an item is never meant to appear in an item_picker/point_assignment
- * row, so it has no filter to match one). */
-export function collectLinkedItemIds(slots: Slot[]): Set<string> {
-  const linkedItemIds = new Set<string>();
-  for (const slot of slots) {
-    if (slot.type !== "build_parameter") continue;
-    if (slot.paramType === "list") {
-      for (const option of slot.options ?? []) {
-        if (option.linkedItem) linkedItemIds.add(option.linkedItem);
-      }
-    } else if (slot.linkedItem) {
-      linkedItemIds.add(slot.linkedItem);
-    }
-  }
-  return linkedItemIds;
-}
-
-/**
- * Lint every `build_parameter` slot's `linkedItem`: a reference to an item id with no
- * definition, or one set on a slot type (`number`/`percent`) that can never resolve one.
- * Standalone from `validate()` below, same as `validateSlots`/`validatePresets`, since it
- * needs only the slot list and the catalogue's item ids, not the rest of the composed
- * catalogue.
- */
-export function validateLinkedItems(
-  slots: Slot[],
-  itemIds: Set<string>,
-): LintFinding[] {
-  const findings: LintFinding[] = [];
-  for (const slot of slots) {
-    if (slot.type !== "build_parameter") continue;
-    if (slot.paramType === "list") {
-      for (const option of slot.options ?? []) {
-        if (option.linkedItem && !itemIds.has(option.linkedItem)) {
-          findings.push({
-            level: "warn",
-            kind: "item",
-            name: slot.id,
-            message: `linkedItem "${option.linkedItem}" (option "${option.value}") has no definition`,
-          });
-        }
-      }
-    } else if (slot.linkedItem) {
-      if (slot.paramType !== "boolean") {
-        findings.push({
-          level: "error",
-          kind: "item",
-          name: slot.id,
-          message: `linkedItem is only meaningful on a list or boolean param — this is a ${slot.paramType}`,
-        });
-      } else if (!itemIds.has(slot.linkedItem)) {
-        findings.push({
-          level: "warn",
-          kind: "item",
-          name: slot.id,
-          message: `linkedItem "${slot.linkedItem}" has no definition`,
-        });
-      }
-    }
-  }
-  return findings;
-}
-
 /** A filter naming convention for items that are equipped without going through any slot's
  *  picker (e.g. resolved directly off a build_parameter, or intentionally hidden) -- these
  *  are expected to match no slot, so the "matches no slot" warning would just be noise. */
 function isUnpickableFilter(filter: string): boolean {
   return filter.includes("build_param") || filter.includes("hidden");
+}
+
+// Engine-coupled list params whose option set is fixed by data/schema.json, not by the slot.
+// `schema.json` is not overlayable, so an option the schema does not know resolves through a
+// silent fallback (`?? schema.roles.dps`, or a stat key the vector simply has no column for) --
+// wrong numbers, no error. The `allowedClass` lint below is the same shape: validate authored
+// values against the vocabulary that actually decides them.
+const SCHEMA_BACKED_PARAM_PATHS: Record<string, "role" | "statKey"> = {
+  role: "role",
+  "forte.primary": "statKey",
+  "forte.secondaryA": "statKey",
+  "forte.secondaryB": "statKey",
+};
+
+/**
+ * Every option an engine-coupled list param offers has to be a value `schema.json` knows --
+ * a real `schema.roles` key, or a real `StatKey`. Empty is always allowed: it is the
+ * "— none —" row every one of these slots carries.
+ */
+export function validateParamSchema(
+  slots: Slot[],
+  schema: Schema = NW_SCHEMA,
+): LintFinding[] {
+  const findings: LintFinding[] = [];
+  const vocabulary = {
+    role: new Set(Object.keys(schema.roles ?? {})),
+    statKey: new Set(schema.statKeys ?? []),
+  };
+  for (const slot of slots) {
+    if (slot.type !== "build_parameter" || slot.paramType !== "list") continue;
+    const kind = SCHEMA_BACKED_PARAM_PATHS[slot.path];
+    if (!kind) continue;
+    for (const option of slot.options ?? []) {
+      if (!option.value || vocabulary[kind].has(option.value)) continue;
+      findings.push({
+        level: "error",
+        kind: "slot",
+        name: slot.id,
+        message:
+          `${slot.id}: option "${option.value}" is not a ` +
+          `${kind === "role" ? "role in schema.roles" : "stat key in schema.statKeys"} — ` +
+          `the engine would fall back silently and compute the wrong numbers`,
+      });
+    }
+  }
+  return findings;
+}
+
+/**
+ * A shipped `build_parameter` removed by an overlay, while a bonus still gates on its path.
+ * conditions.ts's `param` leaf fails closed on a key it cannot resolve, so the bonus does not
+ * error -- it just quietly stops applying, which is the hardest kind of data bug to notice.
+ * A warning rather than an error: removing the param may well be the point, and the fix
+ * (dropping the condition too) is the author's call.
+ */
+export function validateParamReaders(
+  slots: Slot[],
+  bonuses: Bonus[],
+): LintFinding[] {
+  const livePaths = new Set(
+    slots
+      .filter((slot) => slot.type === "build_parameter")
+      .map((slot) => slot.path),
+  );
+  const missing = new Map<string, string>(); // path -> the shipped slot id that had it
+  for (const slot of base().slots) {
+    if (slot.type !== "build_parameter") continue;
+    if (!livePaths.has(slot.path)) missing.set(slot.path, slot.id);
+  }
+  if (!missing.size) return [];
+
+  const findings: LintFinding[] = [];
+  for (const bonus of bonuses) {
+    const read = new Set<string>();
+    for (const grant of bonus.grants ?? []) {
+      conditionPaths(grant.when, read);
+      // Only `when` carries a condition -- a tier gates on `bonusOccurrences` alone, and a
+      // `problem` rides on its grant's own `when`.
+      for (const variant of grant.variants ?? [])
+        conditionPaths(variant.when, read);
+    }
+    for (const path of read) {
+      const slotId = missing.get(path);
+      if (!slotId) continue;
+      findings.push({
+        level: "warn",
+        kind: "bonus",
+        name: bonus.id,
+        message:
+          `reads parameter "${path}", but ${slotId} has been removed — the condition ` +
+          `fails closed, so this bonus silently never applies`,
+      });
+    }
+  }
+  return findings;
 }
 
 /**
@@ -690,10 +871,13 @@ export function validate(
   bonuses: Bonus[],
   schema: Schema = NW_SCHEMA,
   presets: SectionPreset[] = NW_SLOTS.presets ?? [],
+  slots: Slot[] = NW_SLOTS?.slots ?? [],
 ): LintFinding[] {
   const findings: LintFinding[] = [
-    ...validateSlots(NW_SLOTS?.slots ?? []),
-    ...validatePresets(presets, NW_SLOTS?.slots ?? []),
+    ...validateSlots(slots),
+    ...validatePresets(presets, slots),
+    ...validateParamSchema(slots, schema),
+    ...validateParamReaders(slots, bonuses),
   ];
   const report = (
     level: "error" | "warn",
@@ -704,7 +888,7 @@ export function validate(
 
   const statKeys = new Set(schema.statKeys);
   const percentKinds = new Set(["percent", "mult"]);
-  const allSlots = NW_SLOTS?.slots ?? [];
+  const allSlots = slots;
   const itemPickerFilters = new Set<string>(
     allSlots
       .filter(
@@ -730,14 +914,21 @@ export function validate(
     ...itemPickerFilters,
     ...pointAssignmentFilters,
   ]);
+  // The class vocabulary is whatever the catalogue publishes at `class` (#273) -- there is no
+  // class param to read options off any more. Falls back to a class *param*'s options when one
+  // exists, so an overlay that still declares the old shape keeps linting sensibly.
+  // Blank values are excluded either way: "" is not a class an item may be restricted to, and
+  // accepting it would let a typo'd allowedClass pass silently.
   const classSlot = findParamSlot(allSlots, "class");
-  // Exclude the class slot's own "— none —" row: "" is not a class an item may be
-  // restricted to, and accepting it would let a typo'd allowedClass pass silently.
   const classes = new Set(
-    (classSlot?.options?.map((o) => o.value) ?? []).filter(Boolean),
+    [
+      ...items.map((item) => item.publishes?.class),
+      ...(classSlot ? (resolvedOptions(classSlot, items) ?? []) : []).map(
+        (option) => option.value,
+      ),
+    ].filter((value): value is string => typeof value === "string" && !!value),
   );
   const bonusIds = new Set(bonuses.map((bonus) => bonus.id));
-  const itemIds = new Set(items.map((item) => item.id).filter(Boolean));
   const seenIds = new Set();
   const gameIdOwners = new Map<string, Set<string>>();
   const paramSlots = new Map<string, BuildParameterSlot>();
@@ -748,9 +939,6 @@ export function validate(
       paramSlotsById.set(slot.id, slot);
     }
   }
-  const linkedItemIds = collectLinkedItemIds(allSlots);
-  findings.push(...validateLinkedItems(allSlots, itemIds));
-
   const checkStats = (
     stats: Record<string, unknown> | undefined,
     label: string,
@@ -852,7 +1040,7 @@ export function validate(
     );
 
     if (!item.filter) {
-      if (!matchesPickerTag && !linkedItemIds.has(item.id)) {
+      if (!matchesPickerTag) {
         report(
           "error",
           "no filter or tag — the item appears in no slot",
@@ -860,11 +1048,7 @@ export function validate(
         );
       }
     } else if (!slotFilters.has(item.filter)) {
-      if (
-        !matchesPickerTag &&
-        !linkedItemIds.has(item.id) &&
-        !isUnpickableFilter(item.filter)
-      ) {
+      if (!matchesPickerTag && !isUnpickableFilter(item.filter)) {
         report(
           "warn",
           `filter "${item.filter}" matches no slot, so nothing can equip it ` +
@@ -932,6 +1116,26 @@ export function validate(
     for (const cls of item.allowedClass ?? []) {
       if (!classes.has(cls))
         report("error", `allowedClass "${cls}" is not a class`, item.id);
+    }
+    for (const [path, value] of Object.entries(item.publishes ?? {})) {
+      if (!path) {
+        report("error", "publishes has an empty path", item.id);
+      } else if (paramSlots.has(path)) {
+        // Two declarations of one value: the param's own control would show a value the
+        // engine then overwrote from this item, with no hint on screen that it had.
+        report(
+          "error",
+          `publishes "${path}" is already a build_parameter's path (${paramSlots.get(path)!.id}) — the parameter's own value would be silently overridden`,
+          item.id,
+        );
+      }
+      if (value !== null && typeof value === "object") {
+        report(
+          "error",
+          `publishes "${path}" must be a string, number or boolean`,
+          item.id,
+        );
+      }
     }
     for (const [slotId, value] of Object.entries(item.defaultParams ?? {})) {
       const slot = paramSlotsById.get(slotId);

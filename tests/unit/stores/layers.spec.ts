@@ -147,6 +147,7 @@ describe("layers store", () => {
       items: { "custom-item": { id: "custom-item", name: "Test" } },
       bonuses: {},
       sectionPresets: {},
+      slots: {},
     });
     layers.setLayerEnabled(l.id, false);
     const ids = layers.allocatableIds();
@@ -166,6 +167,7 @@ describe("layers store", () => {
           section: "options",
         },
       },
+      slots: {},
     });
     expect(layers.allocatableIds()).toContain("custom-preset");
   });
