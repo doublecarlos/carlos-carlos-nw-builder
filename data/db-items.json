@@ -1621,8 +1621,26 @@
     "bonuses": ["baseline-character", "baseline-enemy-stats"]
   },
   {
-    "id": "class-to-be-implemented",
-    "name": "Class: Not implemented yet",
+    "id": "class-fighter",
+    "name": "Fighter Placeholer",
+    "filter": "build_param_linked_item",
+    "bonuses": ["baseline-character", "baseline-enemy-stats"]
+  },
+  {
+    "id": "class-paladin",
+    "name": "Paladin Placeholer",
+    "filter": "build_param_linked_item",
+    "bonuses": ["baseline-character", "baseline-enemy-stats"]
+  },
+  {
+    "id": "class-ranger",
+    "name": "Ranger Placeholer",
+    "filter": "build_param_linked_item",
+    "bonuses": ["baseline-character", "baseline-enemy-stats"]
+  },
+  {
+    "id": "class-rogue",
+    "name": "Rogue Placeholer",
     "filter": "build_param_linked_item",
     "bonuses": ["baseline-character", "baseline-enemy-stats"]
   },
@@ -1643,6 +1661,12 @@
       "warlock-s-demonic-vision",
       "warlock-s-devastating-critical"
     ]
+  },
+  {
+    "id": "class-wizard",
+    "name": "Wizard Placeholer",
+    "filter": "build_param_linked_item",
+    "bonuses": ["baseline-character", "baseline-enemy-stats"]
   },
   {
     "id": "coldlight-walker-s-gaze-coldlight-walker-strike-severity-utility",
@@ -4641,7 +4665,7 @@
     "name": "Celestial Swift Synergy",
     "filter": "combat_enchant_offense",
     "il": 7000,
-    "base_damage_mult": 0.12,
+    "outgoing_damage_mult": 0.12,
     "bonuses": ["swift-synergy"]
   },
   {
