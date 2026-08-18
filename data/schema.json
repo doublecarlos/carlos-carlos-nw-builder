@@ -299,6 +299,21 @@
     { "key": "glory", "label": "Glory", "kind": "percent" }
   ],
 
+  "statScalers": [
+    {
+      "id": "mount_bolster",
+      "label": "Mount bolster",
+      "param": "mountBolster",
+      "applies": { "filter": ["mount_combat", "mount_equip"] }
+    },
+    {
+      "id": "companion_bolster",
+      "label": "Companion bolster",
+      "param": "companionBolster",
+      "applies": { "filter": ["companion"] }
+    }
+  ],
+
   "ratingConversion": [
     {
       "percent": "power_p",

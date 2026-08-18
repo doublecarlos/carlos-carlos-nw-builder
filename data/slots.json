@@ -970,8 +970,20 @@
       "label": "Companions",
       "slots": [
         {
-          "id": "companions.textMaxBolster",
-          "text": "Companions are assumed to be Celestial and have max bolster (120%).",
+          "id": "companions.bolster",
+          "label": "Companion bolster",
+          "type": "build_parameter",
+          "paramType": "percent",
+          "path": "companionBolster",
+          "default": 1.2,
+          "min": 0,
+          "max": 1.2,
+          "step": 5,
+          "presets": [0, 0.6, 1.2]
+        },
+        {
+          "id": "companions.textCelestial",
+          "text": "Companions are assumed to be Celestial.",
           "type": "text"
         },
         {
@@ -1068,8 +1080,20 @@
       "label": "Mounts",
       "slots": [
         {
-          "id": "mounts.textMaxBolster",
-          "text": "Mounts are assumed to be Celestial and have max bolster (125%).",
+          "id": "mounts.bolster",
+          "label": "Mount bolster",
+          "type": "build_parameter",
+          "paramType": "percent",
+          "path": "mountBolster",
+          "default": 1.25,
+          "min": 0,
+          "max": 1.25,
+          "step": 5,
+          "presets": [0, 0.625, 1.25]
+        },
+        {
+          "id": "mounts.textCelestial",
+          "text": "Mounts are assumed to be Celestial.",
           "type": "text"
         },
         {

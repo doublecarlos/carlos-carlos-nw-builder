@@ -7,12 +7,14 @@
 // number on current data except where the sheet was demonstrably wrong.
 
 import * as bonus from "./bonus";
+import { scaleFactorFor, scaledStat } from "./scaling";
 import { occurrenceCountFor } from "../lib/bonus-attachment";
 import { dynamicValueKey, readDynamicValue } from "../lib/dynamic-stats";
 import type {
   Db,
   Build,
   Item,
+  Schema,
   StatKey,
   ResolvedBonuses,
   EngineRow,
@@ -56,13 +58,24 @@ const sheetRound = (value: number, digits = 2) => {
 /**
  * Per-slot stat vectors: the item's own stats plus the bonuses attributed to that slot.
  * Kept as rows because multiplicative stats combine per row, not per source.
+ *
+ * `scaleFactorFor` applies to the item's own fields only -- mount/companion bolster scales what
+ * the item itself carries, while the assignment and bonus stats merged in below reached this
+ * row by attribution (bonus.ts's `anchor.slotId`) rather than by belonging to the item, and are
+ * not the granting item's to scale. Issue #287 covers the bonuses that genuinely should.
  */
-function rowVectors(resolved: ResolvedBonuses, keys: StatKey[]): EngineRow[] {
+function rowVectors(
+  schema: Schema,
+  resolved: ResolvedBonuses,
+  keys: StatKey[],
+): EngineRow[] {
   return resolved.rows.map((row) => {
     const stats = zeros(keys);
     if (row.item) {
+      const factor = scaleFactorFor(schema, resolved.ctx, row.item);
       for (const key of keys) {
-        if (row.item[key]) stats[key] = row.item[key] as number;
+        if (row.item[key])
+          stats[key] = scaledStat(schema, row.item, key, factor);
       }
     }
     // A point_assignment row has no single item to read stats off of -- its assignments'
@@ -90,7 +103,7 @@ function run(
   const keys: StatKey[] = schema.statKeys;
   const context = build.context ?? {};
   const multiplicative = new Set(schema.multiplicativeStats);
-  const rows = rowVectors(resolved, keys);
+  const rows = rowVectors(schema, resolved, keys);
 
   // --- stage 1: initial sums -----------------------------------------------------------
   const sums = zeros(keys);
@@ -380,6 +393,39 @@ function findErrors(
     for (const item of db.forSlot(slot.id)) {
       const count = assigned[item.id] ?? item.inlineRepetition!.default;
       if (count > 0) counts.set(item.id, (counts.get(item.id) ?? 0) + count);
+    }
+  }
+
+  // A numeric build_parameter's declared bounds. Nothing clamps the control -- silently
+  // rewriting a number someone typed is worse than showing it -- so this is what keeps an
+  // out-of-range value visible rather than quietly producing nonsense downstream. Matters most
+  // for a parameter that multiplies whole stat lines (`Schema.statScalers`): a 1000% bolster
+  // computes perfectly happily and is meaningless.
+  for (const slot of db.slots) {
+    if (slot.type !== "build_parameter") continue;
+    if (slot.paramType !== "number" && slot.paramType !== "percent") continue;
+    if (slot.min === undefined && slot.max === undefined) continue;
+    const value = Number(resolved.ctx.params.get(slot.path));
+    if (!Number.isFinite(value)) continue;
+    if (
+      (slot.min !== undefined && value < slot.min) ||
+      (slot.max !== undefined && value > slot.max)
+    ) {
+      // Percent params are stored as decimals but read and typed as percentages, so the
+      // message has to speak the same units the control does.
+      const show = (n: number) =>
+        slot.paramType === "percent"
+          ? `${Math.round(n * 10000) / 100}%`
+          : String(n);
+      const low = slot.min === undefined ? "" : show(slot.min);
+      const high = slot.max === undefined ? "" : show(slot.max);
+      errors.push({
+        slotId: slot.id,
+        kind: "outOfRange",
+        choice: slot.label,
+        message: `${slot.label}: ${show(value)} is outside ${low}–${high}`,
+        severity: "error",
+      });
     }
   }
 

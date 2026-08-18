@@ -87,9 +87,11 @@ function rangeLabel(row: DynamicStatRow) {
       :hide-preview="slotDef.hidePreview"
       @update:model-value="buildEditor.setChoice(slotDef.id, $event)"
     />
-    <span class="min-w-0 flex-1 truncate text-text">{{
-      item ? statSummary : ""
-    }}</span>
+    <span
+      class="min-w-0 flex-1 truncate text-text"
+      data-testid="slot-stat-summary"
+      >{{ item ? statSummary : "" }}</span
+    >
   </div>
 
   <!-- This item's BonusOccurrenceConfig inputs, if it carries any -- see

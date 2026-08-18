@@ -25,6 +25,7 @@ defineProps<{
         :key="row.key"
         class="even:bg-surface-2/55 hover:outline hover:outline-2 hover:outline-accent"
         :class="row.lead && 'font-semibold'"
+        :data-stat-row="row.key"
       >
         <td
           class="flex items-center gap-0.5 px-1 py-0.5"
@@ -44,6 +45,7 @@ defineProps<{
         <td
           class="px-1 py-0.5 text-right tabular-nums"
           :class="row.muted && 'text-muted'"
+          data-testid="stat-value"
         >
           {{ row.value }}
         </td>

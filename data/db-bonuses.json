@@ -2539,17 +2539,13 @@
     "grants": [
       {
         "when": {
-          "any": [
-            {
-              "toggle": "party"
-            },
-            {
-              "equipped": {
-                "item": "mystic-aura-self",
-                "atLeast": 1
-              }
+          "toggle": "party",
+          "not": {
+            "equipped": {
+              "item": "mystic-aura-self",
+              "atLeast": 1
             }
-          ]
+          }
         },
         "stats": {
           "power": 2953,
@@ -2578,7 +2574,13 @@
     "grants": [
       {
         "when": {
-          "toggle": "party"
+          "toggle": "party",
+          "not": {
+            "equipped": {
+              "item": "pack-tactics-self",
+              "atLeast": 1
+            }
+          }
         },
         "tiers": [
           {
@@ -2635,18 +2637,54 @@
       },
       {
         "when": {
+          "toggle": "party",
           "equipped": {
             "item": "pack-tactics-self",
             "atLeast": 1
-          },
-          "not": {
-            "toggle": "party"
           }
         },
-        "stats": {
-          "ca": 2953,
-          "awareness": 2953
-        }
+        "tiers": [
+          {
+            "bonusOccurrences": {
+              "bonus": "pack-tactics",
+              "atLeast": 1
+            },
+            "stats": {
+              "ca": 1476,
+              "awareness": 1476
+            }
+          },
+          {
+            "bonusOccurrences": {
+              "bonus": "pack-tactics",
+              "atLeast": 2
+            },
+            "stats": {
+              "ca": 2214,
+              "awareness": 2214
+            }
+          },
+          {
+            "bonusOccurrences": {
+              "bonus": "pack-tactics",
+              "atLeast": 3
+            },
+            "stats": {
+              "ca": 2583,
+              "awareness": 2583
+            }
+          },
+          {
+            "bonusOccurrences": {
+              "bonus": "pack-tactics",
+              "atLeast": 4
+            },
+            "stats": {
+              "ca": 2768,
+              "awareness": 2768
+            }
+          }
+        ]
       }
     ]
   },
@@ -2980,17 +3018,13 @@
     "grants": [
       {
         "when": {
-          "any": [
-            {
-              "toggle": "party"
-            },
-            {
-              "equipped": {
-                "item": "runic-aura",
-                "atLeast": 1
-              }
+          "toggle": "party",
+          "not": {
+            "equipped": {
+              "item": "runic-aura",
+              "atLeast": 1
             }
-          ]
+          }
         },
         "stats": {
           "power": 2953,

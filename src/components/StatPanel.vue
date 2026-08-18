@@ -500,6 +500,7 @@ const {
           v-for="row in capRows"
           :key="row.key"
           class="even:bg-surface-2/55 group hover:outline hover:outline-2 hover:outline-accent"
+          :data-stat-row="row.key"
         >
           <td
             class="border border-line px-1 py-0.5"
@@ -523,6 +524,7 @@ const {
               row.rating.primaryCls,
               row.sepAfter && 'border-b-2 border-b-text/50',
             ]"
+            data-testid="stat-value"
           >
             {{ int(row.rating.total) }}
           </td>

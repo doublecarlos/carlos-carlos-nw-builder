@@ -4,6 +4,7 @@
 // rounding happens here, at the edge, exactly once.
 
 import { NW_SCHEMA } from "../data/data";
+import { scaledStat } from "../engine/scaling";
 import type { Item, StatKey } from "../types";
 
 const GROUPED = new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 });
@@ -64,9 +65,24 @@ const statParts = (get: (key: StatKey) => unknown, limit: number) => {
 /**
  * The one-line stat summary shown under an item in the picker.
  * Returns the pieces rather than a string so the caller can style the overflow hint.
+ *
+ * `factor` is the caller's `itemScaleFactor` (mount/companion bolster), so a candidate row
+ * previews what the item would actually contribute to *this* build rather than its unscaled
+ * catalogue line -- otherwise comparing two mounts in the picker would rank them by numbers
+ * neither one ends up having.
  */
-export const itemPreview = (item: Item | null | undefined, limit = 4) =>
-  item ? statParts((key) => item[key], limit) : { parts: [], more: 0 };
+export const itemPreview = (
+  item: Item | null | undefined,
+  limit = 4,
+  factor = 1,
+) =>
+  item
+    ? statParts(
+        (key) =>
+          factor === 1 ? item[key] : scaledStat(NW_SCHEMA, item, key, factor),
+        limit,
+      )
+    : { parts: [], more: 0 };
 
 /**
  * The bonus-derived stats a candidate item would add if it were slotted in -- same shape as

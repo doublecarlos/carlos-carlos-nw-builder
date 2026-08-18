@@ -114,6 +114,7 @@ const emptySchema: Schema = {
   abilityContributions: [],
   forteSplit: {},
   roles: {},
+  statScalers: [],
 };
 const testDb = db.build([], [], emptySchema, testSlots);
 

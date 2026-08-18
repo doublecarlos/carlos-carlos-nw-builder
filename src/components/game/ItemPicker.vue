@@ -19,6 +19,9 @@ import {
   int as fmtInt,
 } from "../../lib/format";
 import * as engine from "../../engine/engine";
+import { itemScaleFactor } from "../../composables/useItemScale";
+import { scaledStat } from "../../engine/scaling";
+import { NW_SCHEMA } from "../../data/data";
 import { itemSearchText } from "../../lib/item-search";
 import type { Item, Db, Build } from "../../types";
 import ComboBox from "../ui/ComboBox.vue";
@@ -210,6 +213,7 @@ const matchMap = computed(() => {
     {
       item: Item;
       preview: ReturnType<typeof itemPreview>;
+      il: number;
       bonusPreview: ReturnType<typeof bonusStatPreview>;
       potentialPreview: ReturnType<typeof bonusStatPreview>;
       flagged: boolean;
@@ -221,9 +225,14 @@ const matchMap = computed(() => {
     const bonusStats = candidateStats.value?.get(item.id) ?? null;
     const bonusPreview = bonusStatPreview(bonusStats?.current);
     const potentialPreview = bonusStatPreview(bonusStats?.potential);
+    // One factor per candidate, shared by the row's item level and its stat preview -- ranking
+    // mounts by an unscaled item level while the preview under it is scaled would be worse
+    // than showing neither.
+    const factor = itemScaleFactor(item);
     map.set(item.id, {
       item,
-      preview: itemPreview(item, 4),
+      il: scaledStat(NW_SCHEMA, item, "il", factor),
+      preview: itemPreview(item, 4, factor),
       bonusPreview,
       // "Potentially" is only worth showing when it says something "current" doesn't already.
       potentialPreview: sameParts(bonusPreview, potentialPreview)
@@ -279,9 +288,9 @@ defineExpose({
             >◈</span
           >
           <span
-            v-if="matchMap.get(option.value)?.item?.il"
+            v-if="matchMap.get(option.value)?.il"
             class="text-muted tabular-nums"
-            >iL {{ int(matchMap.get(option.value)?.item?.il) }}</span
+            >iL {{ int(matchMap.get(option.value)?.il) }}</span
           >
         </template>
       </div>

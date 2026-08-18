@@ -19,6 +19,7 @@ const schema: Schema = {
   abilityContributions: [],
   forteSplit: {},
   roles: { dps: { label: "DPS", hpBonus: 1, damageBonus: 1 } },
+  statScalers: [],
 };
 
 const slots: SlotsData = {
@@ -57,6 +58,8 @@ function testBuild(choices: Record<string, string>): Build {
       enemies: 0,
       magnitude: 0,
       m32Forte: false,
+      mountBolster: 1.25,
+      companionBolster: 1.2,
       forte: {},
       toggles: {},
     },

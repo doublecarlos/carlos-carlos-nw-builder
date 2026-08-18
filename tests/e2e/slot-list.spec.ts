@@ -534,23 +534,36 @@ test.describe("text slots", () => {
     page,
   }) => {
     await openBuilder(page);
-    const note = page.getByTestId("text:mounts.textMaxBolster");
+    const note = page.getByTestId("text:mounts.textCelestial");
     await expect(note).toBeVisible();
     await expect(note).toContainText("Mounts are assumed to");
     await expect(note).not.toHaveAttribute("data-cursor-key");
   });
 
-  test("ArrowDown from the Mounts header skips straight to Mount Combat", async ({
+  test("ArrowDown past the Mounts bolster param skips the note", async ({
     page,
   }) => {
     await openBuilder(page);
     await slotRow(page, "mounts.mountCombat").locator(".slot-label").click();
+    await page.keyboard.press("ArrowUp");
+    // The bolster param is a real row and takes the cursor; the note between it and Mount
+    // Combat does not.
+    await expect(cursorRow(page)).toHaveAttribute(
+      "data-cursor-key",
+      "slot:mounts.bolster",
+    );
+
     await page.keyboard.press("ArrowUp");
     await expect(cursorRow(page)).toHaveAttribute(
       "data-cursor-key",
       "header:mounts",
     );
 
+    await page.keyboard.press("ArrowDown");
+    await expect(cursorRow(page)).toHaveAttribute(
+      "data-cursor-key",
+      "slot:mounts.bolster",
+    );
     await page.keyboard.press("ArrowDown");
     await expect(cursorRow(page)).toHaveAttribute(
       "data-cursor-key",

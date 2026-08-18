@@ -33,8 +33,12 @@ const BASE_CONTEXT: BuildContext = {
   duration: 60,
   enemies: 1,
   damageType: "magical",
+  // The shipped maxima, matching what `defaultBuild` seeds -- an item scaled by bolster
+  // should read here the way a real build reads it, not as if the collection were empty.
   magnitude: 100,
   m32Forte: false,
+  mountBolster: 1.25,
+  companionBolster: 1.2,
   forte: {},
   toggles: {
     combat: true,
@@ -411,6 +415,7 @@ describe("point_assignment resolution", () => {
     abilityContributions: [],
     forteSplit: {},
     roles: { dps: { label: "dps", hpBonus: 1, damageBonus: 1 } },
+    statScalers: [],
   };
 
   const powerItem: Item = {
@@ -570,6 +575,7 @@ describe("a point_assignment item's own config stays 0 while the item itself is 
     abilityContributions: [],
     forteSplit: {},
     roles: { dps: { label: "dps", hpBonus: 1, damageBonus: 1 } },
+    statScalers: [],
   };
 
   const procBonus: Bonus = { id: "boon-master-proc", grants: [] };
@@ -679,6 +685,7 @@ describe("BonusOccurrenceConfig resolution", () => {
     abilityContributions: [],
     forteSplit: {},
     roles: { dps: { label: "dps", hpBonus: 1, damageBonus: 1 } },
+    statScalers: [],
   };
 
   // Mirrors the motivating "Shattered Resolve" example (#216): an always-on bonus (bare id,
@@ -867,6 +874,7 @@ describe("a bonus reachable only through a currently-zero occurrence count (#255
     abilityContributions: [],
     forteSplit: {},
     roles: { dps: { label: "dps", hpBonus: 1, damageBonus: 1 } },
+    statScalers: [],
   };
 
   const stackingBonus: Bonus = {
@@ -992,6 +1000,7 @@ describe("an unconditional stacking grant reachable only through a currently-zer
     abilityContributions: [],
     forteSplit: {},
     roles: { dps: { label: "dps", hpBonus: 1, damageBonus: 1 } },
+    statScalers: [],
   };
 
   const unconditionalStackingBonus: Bonus = {
@@ -1096,6 +1105,7 @@ describe("per-item boolean occurrence attachments (formerly procs)", () => {
     abilityContributions: [],
     forteSplit: {},
     roles: { dps: { label: "dps", hpBonus: 1, damageBonus: 1 } },
+    statScalers: [],
   };
 
   const procRing: Item = {
@@ -1295,6 +1305,7 @@ describe("race restrictions ride on the generic equipped condition", () => {
     abilityContributions: [],
     forteSplit: {},
     roles: { dps: { label: "dps", hpBonus: 1, damageBonus: 1 } },
+    statScalers: [],
   };
 
   // Race restrictions are no longer a dedicated `allowedRace`/`kind: "race"` check (issue
@@ -1401,6 +1412,7 @@ describe("problem grants (bonus-authored errors/warnings)", () => {
     abilityContributions: [],
     forteSplit: {},
     roles: { dps: { label: "dps", hpBonus: 1, damageBonus: 1 } },
+    statScalers: [],
   };
 
   // item_picker case: an error grant gated on the build's own class -- stands in for "the

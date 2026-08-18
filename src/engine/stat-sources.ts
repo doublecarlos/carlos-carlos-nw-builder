@@ -9,6 +9,7 @@
 // from what the panel actually displays.
 import { NW_SCHEMA } from "../data/data";
 import { readDynamicValue } from "../lib/dynamic-stats";
+import { scaleFactorFor, scaledStat } from "./scaling";
 import type {
   ResolvedBuild,
   Build,
@@ -39,16 +40,21 @@ function bonusTitle(entry: EvaluatedBonus) {
   return entry.bonus?.name ?? entry.sources?.[0] ?? fromId(entry.id);
 }
 
-/** Every equipped item's own raw stat (pre-bonus, pre-pipeline) -- summed by item name, since
- * the same item in two slots (two rings) contributes twice under one line, not two. */
+/** Every equipped item's own stat (pre-bonus, pre-pipeline) -- summed by item name, since the
+ * same item in two slots (two rings) contributes twice under one line, not two.
+ *
+ * Scaled by the same `scaleFactorFor` the pipeline applies, so a bolstered mount reports the
+ * number it actually contributed rather than its unscaled catalogue value -- this popover
+ * exists to explain the panel's total, and an unscaled line here would not add up to it. */
 function itemSources(result: ResolvedBuild, key: StatKey): StatSource[] {
   const totals = new Map<string, number>();
   for (const row of result.rows) {
-    const raw = row.item?.[key];
-    if (!row.item || !raw) continue;
+    if (!row.item || !row.item[key]) continue;
+    const factor = scaleFactorFor(NW_SCHEMA, result.context, row.item);
     totals.set(
       row.item.name,
-      (totals.get(row.item.name) ?? 0) + (raw as number),
+      (totals.get(row.item.name) ?? 0) +
+        scaledStat(NW_SCHEMA, row.item, key, factor),
     );
   }
   return [...totals].map(([name, value]) => ({ name, value }));

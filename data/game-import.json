@@ -1,15 +1,45 @@
 {
   "bags": [
-    { "bag": "Head", "slots": ["gear.head"] },
-    { "bag": "Armor", "slots": ["gear.armor"] },
-    { "bag": "Arms", "slots": ["gear.arms"] },
-    { "bag": "Feet", "slots": ["gear.boots"] },
-    { "bag": "Melee", "slots": ["gear.mainhand", "gear.offhand"] },
-    { "bag": "Neck", "slots": ["gear.neck"] },
-    { "bag": "Waist", "slots": ["gear.waist"] },
-    { "bag": "Shirt", "slots": ["gear.shirt"] },
-    { "bag": "Pants", "slots": ["gear.pants"] },
-    { "bag": "Ring", "slots": ["gear.ring1", "gear.ring2"] },
+    {
+      "bag": "Head",
+      "slots": ["gear.head"]
+    },
+    {
+      "bag": "Armor",
+      "slots": ["gear.armor"]
+    },
+    {
+      "bag": "Arms",
+      "slots": ["gear.arms"]
+    },
+    {
+      "bag": "Feet",
+      "slots": ["gear.boots"]
+    },
+    {
+      "bag": "Melee",
+      "slots": ["gear.mainhand", "gear.offhand"]
+    },
+    {
+      "bag": "Neck",
+      "slots": ["gear.neck"]
+    },
+    {
+      "bag": "Waist",
+      "slots": ["gear.waist"]
+    },
+    {
+      "bag": "Shirt",
+      "slots": ["gear.shirt"]
+    },
+    {
+      "bag": "Pants",
+      "slots": ["gear.pants"]
+    },
+    {
+      "bag": "Ring",
+      "slots": ["gear.ring1", "gear.ring2"]
+    },
     {
       "bag": "OffenseGem",
       "slots": [
@@ -28,8 +58,14 @@
         "enchantments.defense4"
       ]
     },
-    { "bag": "UtilityGem", "slots": ["enchantments.utility"] },
-    { "bag": "BonusGem", "slots": ["enchantments.bonus"] },
+    {
+      "bag": "UtilityGem",
+      "slots": ["enchantments.utility"]
+    },
+    {
+      "bag": "BonusGem",
+      "slots": ["enchantments.bonus"]
+    },
     {
       "bag": "CombatGem",
       "slots": ["enchantments.combatOffense", "enchantments.combatDefense"]
@@ -38,7 +74,10 @@
       "bag": "OverloadGem",
       "slots": ["overloads.overload1", "overloads.overload2"]
     },
-    { "bag": "ArtifactPrimary", "slots": ["artifacts.artifact1"] },
+    {
+      "bag": "ArtifactPrimary",
+      "slots": ["artifacts.artifact1"]
+    },
     {
       "bag": "ArtifactSecondary",
       "slots": [
@@ -51,7 +90,10 @@
       "bag": "PetEquip",
       "slots": ["companions.equip1", "companions.equip2", "companions.equip3"]
     },
-    { "bag": "PetGem", "slots": ["companions.enchantment"] },
+    {
+      "bag": "PetGem",
+      "slots": ["companions.enchantment"]
+    },
     {
       "bag": "PetEquippedActiveBonus",
       "slots": [
@@ -73,8 +115,14 @@
         "mounts.practicalCollar"
       ]
     },
-    { "bag": "MountEquippedPassivePower", "slots": ["mounts.mountEquip"] },
-    { "bag": "MountEquippedActivePower", "slots": ["mounts.mountCombat"] },
+    {
+      "bag": "MountEquippedPassivePower",
+      "slots": ["mounts.mountEquip"]
+    },
+    {
+      "bag": "MountEquippedActivePower",
+      "slots": ["mounts.mountCombat"]
+    },
     {
       "bag": "MountEquippedActiveSlots",
       "gemSlots": [
@@ -152,11 +200,26 @@
       "bag": "VanityPetEquip",
       "notModelled": "Cosmetic vanity pet, no stat effect."
     },
-    { "bag": "WeaponFX", "notModelled": "Cosmetic weapon effect." },
-    { "bag": "ArmorFX", "notModelled": "Cosmetic armor effect." },
-    { "bag": "HeadFX", "notModelled": "Cosmetic head effect." },
-    { "bag": "FootstepFX", "notModelled": "Cosmetic footstep effect." },
-    { "bag": "TrailFX", "notModelled": "Cosmetic trail effect." }
+    {
+      "bag": "WeaponFX",
+      "notModelled": "Cosmetic weapon effect."
+    },
+    {
+      "bag": "ArmorFX",
+      "notModelled": "Cosmetic armor effect."
+    },
+    {
+      "bag": "HeadFX",
+      "notModelled": "Cosmetic head effect."
+    },
+    {
+      "bag": "FootstepFX",
+      "notModelled": "Cosmetic footstep effect."
+    },
+    {
+      "bag": "TrailFX",
+      "notModelled": "Cosmetic trail effect."
+    }
   ],
   "notInDemoReasons": [
     {
@@ -214,6 +277,11 @@
       "label": "Companion",
       "reason": "The demo only stores a numeric companion index, not which companion it is.",
       "slotIds": ["companions.companion"]
+    },
+    {
+      "label": "Mount and companion bolster",
+      "reason": "Bolster comes from your whole stable and companion collection, not from the equipped loadout, so a loadout export has nothing to read it from. Both default to the maximum; set them by hand if your collection is not complete.",
+      "slotIds": ["mounts.bolster", "companions.bolster"]
     },
     {
       "label": "Insignia bonuses",

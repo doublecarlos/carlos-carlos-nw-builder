@@ -13,11 +13,13 @@
 import { computed } from "vue";
 import { NW_SCHEMA } from "../../data/data";
 import {
+  int,
   label as statLabel,
   signedStat,
   stat as formatStat,
 } from "../../lib/format";
 import { isHiddenBonus } from "../../engine/bonus";
+import { scaledStat } from "../../engine/scaling";
 import type { OccurrenceRow } from "../../composables/useItemBonusOccurrences";
 import type { DynamicStatConfig } from "../../types";
 import type {
@@ -47,12 +49,22 @@ const props = withDefaults(
      *  count-of-0 explain that directly (#256) instead of only through a generic unmet-gate
      *  leaf, which reads oddly for a bonus gated on its own occurrence count. */
     occurrenceRows?: OccurrenceRow[];
+    /** Mount/companion bolster acting on this item (`itemScaleFactor`), resolved by the caller
+     *  rather than read from the store here so this component stays prop-driven. Scales the
+     *  item's own stat line only -- the bonus payloads below are attributed to a slot, not
+     *  owned by the item (issue #287). */
+    scale?: number;
+    /** Lines naming what `scale` came from (`itemScaleNotes`), listed among `notes` so the
+     *  card never shows numbers that silently disagree with the catalogue. */
+    scaleNotes?: string[];
   }>(),
   {
     bonuses: () => [],
     slotLabel: "",
     db: null,
     occurrenceRows: () => [],
+    scale: 1,
+    scaleNotes: () => [],
   },
 );
 
@@ -86,6 +98,12 @@ function statList(stats: StatValues | null | undefined, multiplier = 1) {
   }));
 }
 
+/** The header badge, scaled like the stat lines below it -- an unscaled figure next to scaled
+ *  rows reads as a contradiction rather than as two different numbers. */
+const scaledIl = computed(() =>
+  int(scaledStat(NW_SCHEMA, props.item, "il", props.scale)),
+);
+
 const stats = computed(() => {
   const out: { key: string; label: string; value: string }[] = [];
   for (const key of NW_SCHEMA.statKeys) {
@@ -94,7 +112,10 @@ const stats = computed(() => {
     out.push({
       key,
       label: statLabel(key),
-      value: signedStat(key, value as number),
+      value: signedStat(
+        key,
+        scaledStat(NW_SCHEMA, props.item, key, props.scale),
+      ),
     });
   }
   return out;
@@ -109,7 +130,7 @@ function dynamicStatNote(config: DynamicStatConfig): string {
 
 /** Notes that are not stats but change whether the item is legal or what it grants. */
 const notes = computed(() => {
-  const out: string[] = [];
+  const out: string[] = [...props.scaleNotes];
   if (props.item.allowedClass)
     out.push(`${props.item.allowedClass.join(" or ")} only`);
   if (props.item.maxCopies) out.push(`max ${props.item.maxCopies} equipped`);
@@ -334,7 +355,7 @@ const rows = computed(() =>
         item.name
       }}</span>
       <span v-if="item.il" class="tabular-nums text-muted"
-        >iL {{ item.il.toLocaleString() }}</span
+        >iL {{ scaledIl }}</span
       >
     </BaseCardHeader>
     <BaseCardBody>

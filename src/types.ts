@@ -35,6 +35,26 @@ export interface RoleDef {
   damageBonus: number;
 }
 
+/** A whole category of items whose own stat line is scaled by a build parameter -- mount and
+ * companion bolster, where the game multiplies the item's every stat by `1 + bolster`.
+ *
+ * Declared as data so "which items scale" is a catalogue question rather than a hardcoded
+ * filter list in the engine: `applies` is the same `{ filter, tags }` selector `optionsFrom`
+ * uses, so an overlay item opts in by carrying a tag, with no code or schema edit. The factor
+ * is read from the `build_parameter` at `param`, which is where the value's range, default and
+ * UI live -- a scaler declares only *what* it scales, never how much.
+ *
+ * Applies to an item's own stat vector alone. Bonuses an item grants are attributed to a slot
+ * rather than to the item that granted them (bonus.ts's `anchor.slotId`), so they are
+ * deliberately out of scope -- issue #287. */
+export interface StatScaler {
+  id: string;
+  label: string;
+  /** A `BuildParameterSlot.path`, read out of `EvalContext.params`. */
+  param: string;
+  applies: { filter?: string[]; tags?: string[] };
+}
+
 export interface Schema {
   stats: StatDef[];
   statByKey: Record<StatKey, StatDef>;
@@ -46,6 +66,7 @@ export interface Schema {
   abilityContributions: AbilityContribution[];
   forteSplit: Record<string, number>;
   roles: Record<string, RoleDef>;
+  statScalers: StatScaler[];
 }
 
 export interface SlotSection {
@@ -564,6 +585,12 @@ export interface BuildContext {
   m32Forte: boolean;
   forte: ForteSplit;
   toggles: Record<string, boolean>;
+  /** Collection-wide bolster, as decimal fractions (1.25 === 125%) -- what `Schema.statScalers`
+   * multiplies the matching items' stat lines by. Character-wide values from the stable and
+   * companion collection, not properties of the equipped mount/companion, which is why they are
+   * context and not item fields. */
+  mountBolster: number;
+  companionBolster: number;
 }
 
 export interface BuildCompare {

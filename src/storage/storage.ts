@@ -302,6 +302,15 @@ export function normalise(
       magnitude: Number.isFinite(Number(context.magnitude))
         ? Number(context.magnitude)
         : base.context.magnitude,
+      // Validated rather than passed through like class/role: these multiply whole stat lines
+      // (`Schema.statScalers`), so a `NaN` from a truncated write or hand-edited export would
+      // spread to every downstream stage instead of staying in one field.
+      mountBolster: Number.isFinite(Number(context.mountBolster))
+        ? Math.max(Number(context.mountBolster), 0)
+        : base.context.mountBolster,
+      companionBolster: Number.isFinite(Number(context.companionBolster))
+        ? Math.max(Number(context.companionBolster), 0)
+        : base.context.companionBolster,
       toggles: {
         ...base.context.toggles,
         ...(isPlain(context.toggles) ? context.toggles : {}),

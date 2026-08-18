@@ -24,6 +24,8 @@ import { matchesQuery } from "../lib/text-filter";
 import { slotVisible } from "../lib/slot-visibility";
 import { useHoverCard } from "../composables/useHoverCard";
 import { occurrenceRowsForItem } from "../composables/useItemBonusOccurrences";
+import { scaledStat } from "../engine/scaling";
+import { itemScaleFactor, itemScaleNotes } from "../composables/useItemScale";
 import {
   useCompareDiff,
   paramDiffers,
@@ -476,8 +478,13 @@ function statSummary(slotId: string) {
   const item = itemIn(slotId);
   if (!item) return "";
   const totals: Record<string, number> = {};
+  // Scaled the same way the pipeline scales it, so the row's summary and the panel's totals
+  // never disagree. The bonus stats folded in below are not the item's to scale (#287).
+  const factor = itemScaleFactor(item);
   for (const key of NW_SCHEMA.statKeys) {
-    if (item[key]) totals[key] = (totals[key] ?? 0) + (item[key] as number);
+    if (item[key])
+      totals[key] =
+        (totals[key] ?? 0) + scaledStat(NW_SCHEMA, item, key, factor);
   }
   // The item's own shortDescription leads, followed by every active grant crediting this
   // row that carries one -- same "attributed to the first contributing row" set the stats
@@ -707,6 +714,8 @@ function onBuildScroll(event: Event) {
             :item="hoveredItem"
             :bonuses="hoveredBonuses"
             :occurrence-rows="hoveredOccurrenceRows"
+            :scale="itemScaleFactor(hoveredItem)"
+            :scale-notes="itemScaleNotes(hoveredItem)"
             :db="db"
             :slot-label="db.slotById.get(hover.slotId)?.label ?? ''"
             @mouseenter="onCardEnter"

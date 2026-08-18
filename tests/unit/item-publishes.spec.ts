@@ -25,6 +25,7 @@ const emptySchema: Schema = {
   // `derive()` indexes this with `context.role`, falling back to `dps` -- an empty map makes
   // any full `resolveBuild` throw, so the fallback has to exist even here.
   roles: { dps: { label: "DPS", hpBonus: 1, damageBonus: 1.2 } },
+  statScalers: [],
 };
 
 const bard: Item = {

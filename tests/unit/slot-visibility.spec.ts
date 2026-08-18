@@ -27,6 +27,7 @@ const emptySchema: Schema = {
   abilityContributions: [],
   forteSplit: {},
   roles: {},
+  statScalers: [],
 };
 
 function ctx(overrides: Partial<EvalContext> = {}): EvalContext {

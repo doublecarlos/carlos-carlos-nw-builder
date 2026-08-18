@@ -506,9 +506,9 @@
     "id": "armor-breaker-severity-celestial",
     "name": "Armor Breaker",
     "filter": "mount_equip",
-    "il": 3937,
-    "combined_rating": 3544,
-    "severity": 5906
+    "il": 1750,
+    "combined_rating": 1575,
+    "severity": 2625
   },
   {
     "id": "arti-assasin-s-dice",
@@ -609,10 +609,10 @@
     "id": "avian-aura-celestial",
     "name": "Avian Aura",
     "filter": "mount_equip",
-    "il": 3937,
-    "combined_rating": 3544,
-    "power": 2100,
-    "forte": 5906
+    "il": 1750,
+    "combined_rating": 1575,
+    "power": 933.3333333333334,
+    "forte": 2625
   },
   {
     "id": "avian-aura-group-celestial",
@@ -660,10 +660,10 @@
     "id": "blazing-oportunity-ca-severity-bestial-fire-archon-celestial",
     "name": "Blazing Oportunity",
     "filter": "mount_equip",
-    "il": 3937,
-    "combined_rating": 3544,
-    "ca": 2953,
-    "severity": 2953
+    "il": 1750,
+    "combined_rating": 1575,
+    "ca": 1312.5,
+    "severity": 1312.5
   },
   {
     "id": "bloodbrass-pistol",
@@ -1852,9 +1852,9 @@
     "id": "dominant-force-power-celestial",
     "name": "Dominant Force",
     "filter": "mount_equip",
-    "il": 3937,
-    "combined_rating": 3544,
-    "power": 5906
+    "il": 1750,
+    "combined_rating": 1575,
+    "power": 2625
   },
   {
     "id": "double-scorch",
@@ -1950,17 +1950,17 @@
     "id": "ferocious-predator-power-severity-celestial",
     "name": "Ferocious Predator",
     "filter": "mount_equip",
-    "il": 3937,
-    "combined_rating": 3544,
-    "power": 2953,
-    "severity": 2953
+    "il": 1750,
+    "combined_rating": 1575,
+    "power": 1312.5,
+    "severity": 1312.5
   },
   {
     "id": "ferocity-celestial",
     "name": "Ferocity",
     "filter": "mount_equip",
-    "il": 3937,
-    "combined_rating": 3544,
+    "il": 1750,
+    "combined_rating": 1575,
     "dynamicStats": [
       {
         "stat": "overall_damage",
@@ -1994,8 +1994,8 @@
     "id": "generic-companion",
     "name": "Generic Companion",
     "filter": "companion",
-    "il": 3960,
-    "combined_rating": 3366
+    "il": 1800,
+    "combined_rating": 1530
   },
   {
     "id": "generic-defense",
@@ -2051,9 +2051,9 @@
     "id": "hero-soul-forte-celestial",
     "name": "Hero Soul",
     "filter": "mount_equip",
-    "il": 3937,
-    "combined_rating": 3544,
-    "forte": 5906
+    "il": 1750,
+    "combined_rating": 1575,
+    "forte": 2625
   },
   {
     "id": "hot-wings-accuracy-severity",
@@ -3884,7 +3884,7 @@
     "id": "mount-combat-power-celestial",
     "name": "Generic Mount Combat Power",
     "filter": "mount_combat",
-    "il": 3937
+    "il": 1750
   },
   {
     "id": "mount-hag-s-enchanted-cauldroon",
@@ -3938,9 +3938,10 @@
     "id": "mystic-aura-self",
     "name": "Mystic Aura",
     "filter": "mount_equip",
-    "il": 3937,
-    "combined_rating": 3544,
-    "bonuses": ["mystic-aura-group-celestial"]
+    "il": 1750,
+    "combined_rating": 1575,
+    "power": 1312.5,
+    "acc": 1312.5
   },
   {
     "id": "mythic-bregan-chest",
@@ -3977,9 +3978,9 @@
     "id": "opportunistic-ca-celestial",
     "name": "Opportunistic",
     "filter": "mount_equip",
-    "il": 3937,
-    "combined_rating": 3544,
-    "ca": 5906
+    "il": 1750,
+    "combined_rating": 1575,
+    "ca": 2625
   },
   {
     "id": "other-bard-s-lore",
@@ -4005,9 +4006,10 @@
     "id": "pack-tactics-self",
     "name": "Pack Tactics (Self)",
     "filter": "mount_equip",
-    "il": 3937,
-    "combined_rating": 3544,
-    "bonuses": ["pack-tactics"]
+    "il": 1750,
+    "combined_rating": 1575,
+    "ca": 1312.5,
+    "awareness": 1312.5
   },
   {
     "id": "paladin-aura",
@@ -4156,19 +4158,19 @@
     "id": "precision-strike-severity-worgs-celestial",
     "name": "Precision",
     "filter": "mount_equip",
-    "il": 3937,
-    "combined_rating": 3544,
-    "strike": 2953,
-    "severity": 2953
+    "il": 1750,
+    "combined_rating": 1575,
+    "strike": 1312.5,
+    "severity": 1312.5
   },
   {
     "id": "predator-s-focus-strike-ca-golden-armored-griffon-celestial",
     "name": "Predator's Focus",
     "filter": "mount_equip",
-    "il": 3937,
-    "combined_rating": 3544,
-    "ca": 2953,
-    "strike": 2953
+    "il": 1750,
+    "combined_rating": 1575,
+    "ca": 1312.5,
+    "strike": 1312.5
   },
   {
     "id": "prime-rib-power",
@@ -4180,8 +4182,8 @@
     "id": "providence-celestial",
     "name": "Providence",
     "filter": "mount_equip",
-    "il": 3937,
-    "combined_rating": 3544,
+    "il": 1750,
+    "combined_rating": 1575,
     "dynamicStats": [
       {
         "stat": "overall_damage",
@@ -4223,8 +4225,8 @@
     "id": "quick-action-celestial",
     "name": "Quick Action",
     "filter": "mount_equip",
-    "il": 3937,
-    "combined_rating": 3544
+    "il": 1750,
+    "combined_rating": 1575
   },
   {
     "id": "race-aasimar",
@@ -4433,9 +4435,9 @@
     "id": "rapid-accuracy-accuracy-celestial",
     "name": "Rapid Accuracy",
     "filter": "mount_equip",
-    "il": 3937,
-    "combined_rating": 3544,
-    "acc": 5906
+    "il": 1750,
+    "combined_rating": 1575,
+    "acc": 2625
   },
   {
     "id": "raptor-s-instincts-tamed-velociraptor-power-offense",
@@ -4489,9 +4491,10 @@
     "id": "runic-aura",
     "name": "Runic Aura",
     "filter": "mount_equip",
-    "il": 3937,
-    "combined_rating": 3544,
-    "bonuses": ["runic-aura-group-celestial"]
+    "il": 1750,
+    "combined_rating": 1575,
+    "power": 1312.5,
+    "defense": 1312.5
   },
   {
     "id": "runic-aura-group-celestial",
@@ -4504,9 +4507,9 @@
     "id": "ruthless-efficiency-strike-celestial",
     "name": "Ruthless Efficiency",
     "filter": "mount_equip",
-    "il": 3937,
-    "combined_rating": 3544,
-    "strike": 5906
+    "il": 1750,
+    "combined_rating": 1575,
+    "strike": 2625
   },
   {
     "id": "sambocade-movement",
@@ -4757,10 +4760,10 @@
     "id": "uncanny-precision-accuracy-ca-deadly-driderform-celestial",
     "name": "Uncanny Precision",
     "filter": "mount_equip",
-    "il": 3937,
-    "combined_rating": 3544,
-    "acc": 2953,
-    "ca": 2953
+    "il": 1750,
+    "combined_rating": 1575,
+    "acc": 1312.5,
+    "ca": 1312.5
   },
   {
     "id": "unified-crescent-collar",
