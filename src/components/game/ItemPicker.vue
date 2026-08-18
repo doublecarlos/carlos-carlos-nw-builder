@@ -2,7 +2,8 @@
 // Searchable item typeahead for one slot -- thin wrapper around ComboBox.vue that maps
 // Item objects to the generic {value, label} options format and renders the item-specific
 // stat preview (plus, given `bonusPreview`, the bonus stats picking it would add now, and
-// the ones it's a step toward but hasn't unlocked yet) through ComboBox's `#option` slot.
+// the ones it's a step toward but hasn't unlocked yet) through ComboBox's `#option` slot --
+// or, with `hidePreview`, nothing but the name.
 //
 // A native <datalist> was considered and rejected: it cannot show item level and a stat
 // preview per row, and its keyboard behaviour is not controllable. This is ~120 lines instead.
@@ -54,12 +55,20 @@ const props = withDefaults(
       slotId: string;
       filterHidden?: boolean;
     };
+    /** Render bare item names -- no item level, no conditional-bonus marker, no stat/bonus
+     * preview lines -- and let the menu match the input's width instead of widening to make
+     * room for them. For candidate lists that read as identities rather than gear (the class
+     * picker), where a stat comparison between rows is meaningless noise. Affects display
+     * only: `hideFromPicker` filtering still runs, since which candidates are *legal* is not
+     * a presentation question. */
+    hidePreview?: boolean;
   }>(),
   {
     selectedItem: null,
     invalid: false,
     db: null,
     bonusPreview: undefined,
+    hidePreview: false,
   },
 );
 
@@ -206,6 +215,8 @@ const matchMap = computed(() => {
       flagged: boolean;
     }
   >();
+  // Nothing in the template reads it while `hidePreview` is set, so skip the formatting work.
+  if (props.hidePreview) return map;
   for (const item of visibleItems.value) {
     const bonusStats = candidateStats.value?.get(item.id) ?? null;
     const bonusPreview = bonusStatPreview(bonusStats?.current);
@@ -249,17 +260,18 @@ defineExpose({
     :closed-display="selectedItem?.name ?? ''"
     :placeholder="selectedItem?.name || '—'"
     :title-input="false"
-    menu-class="left-0 w-[min(32rem,90vw)]"
+    :menu-class="hidePreview ? 'inset-x-0' : 'left-0 w-[min(32rem,90vw)]'"
     @update:model-value="model = $event"
     @update:open="isOpen = $event"
   >
     <template #option="{ option }">
-      <template v-if="matchMap.has(option.value)">
-        <div class="flex items-baseline gap-1.5">
-          <span
-            class="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap font-semibold"
-            >{{ option.label }}</span
-          >
+      <div class="flex items-baseline gap-1.5">
+        <span
+          class="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap font-semibold"
+          >{{ option.label }}</span
+        >
+        <!-- Both markers describe the item as gear, so they go with the preview lines. -->
+        <template v-if="!hidePreview">
           <span
             v-if="matchMap.get(option.value)?.flagged"
             class="text-accent"
@@ -271,7 +283,9 @@ defineExpose({
             class="text-muted tabular-nums"
             >iL {{ int(matchMap.get(option.value)?.item?.il) }}</span
           >
-        </div>
+        </template>
+      </div>
+      <template v-if="!hidePreview && matchMap.has(option.value)">
         <!-- Indented under the name, so the row reads as "item, then what it's worth". -->
         <div class="flex flex-col gap-0.5 pl-2">
           <div class="flex flex-wrap gap-2 text-text">

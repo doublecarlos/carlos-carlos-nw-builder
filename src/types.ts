@@ -132,6 +132,12 @@ export interface ItemPickerSlot {
    * `companion_power:utility` is a candidate in both slots -- without a dedicated `filter` value
    * per combination. */
   tags?: string[];
+  /** Strips the dropdown down to bare item names -- no item level, no conditional-bonus marker,
+   * no stat/bonus preview lines. For slots whose candidates are identities rather than gear
+   * (the class picker), where the preview is noise: what a class "grants" is the whole build,
+   * not a stat line worth comparing rows by. Purely presentational -- candidate filtering
+   * (`hideFromPicker`) is unaffected. */
+  hidePreview?: boolean;
 }
 
 /** A row of independent numeric steppers sharing one label, one per item matching `filter` --

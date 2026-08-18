@@ -84,6 +84,7 @@ function rangeLabel(row: DynamicStatRow) {
       :invalid="invalid"
       :db="db"
       :bonus-preview="{ db, build, slotId: slotDef.id }"
+      :hide-preview="slotDef.hidePreview"
       @update:model-value="buildEditor.setChoice(slotDef.id, $event)"
     />
     <span class="min-w-0 flex-1 truncate text-text">{{

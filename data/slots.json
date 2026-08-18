@@ -9,7 +9,8 @@
           "id": "options.class",
           "label": "Class",
           "type": "item_picker",
-          "tags": ["class"]
+          "tags": ["class"],
+          "hidePreview": true
         },
         {
           "id": "options.paragon",
