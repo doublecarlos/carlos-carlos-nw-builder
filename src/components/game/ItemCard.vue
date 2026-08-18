@@ -404,6 +404,7 @@ const rows = computed(() =>
           <div
             v-if="row.name && row.conditions"
             class="pl-3 leading-snug text-muted"
+            data-testid="item-card-bonus-conditions"
           >
             Conditions: {{ row.conditions }}
           </div>
@@ -530,7 +531,12 @@ const rows = computed(() =>
                     ><span class="tabular-nums">{{ s.value }}</span>
                   </div>
                 </div>
-                <div v-for="(leaf, i) in g.unmet" :key="i" class="text-warn">
+                <div
+                  v-for="(leaf, i) in g.unmet"
+                  :key="i"
+                  class="text-warn"
+                  data-testid="item-card-bonus-unmet"
+                >
                   needs {{ leaf.label
                   }}<span v-if="leaf.detail"> — {{ leaf.detail }}</span>
                 </div>

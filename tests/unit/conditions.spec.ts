@@ -215,3 +215,107 @@ describe("conditions.ts equipped/bonusOccurrences leaves support exactly", () =>
     expect(result.unmet[0].label).toBe("3 occurrence(s) of b");
   });
 });
+
+// The two one-line summaries (the item card's "Conditions: ..." line and the "needs ..."
+// list) render `label` alone, so a compound's label has to explain itself without the tree.
+describe("conditions.ts compound operators explain themselves in one line", () => {
+  it("not: negates the child's own text instead of saying just 'not'", () => {
+    const c = ctx({}, { toggles: { party: true } });
+    const result = explain({ not: { toggle: "party" } }, c);
+    expect(result.ok).toBe(false);
+    expect(result.leaves[0].label).toBe("not party enabled");
+    expect(result.unmet[0].label).toBe("not party enabled");
+  });
+
+  it("not: keeps its children tree, so the expandable detail is unchanged", () => {
+    const c = ctx({}, { equipped: new Map([["mystic-aura-self", 1]]) });
+    const result = explain(
+      { not: { equipped: { item: "mystic-aura-self", atLeast: 1 } } },
+      c,
+    );
+    expect(result.leaves[0].label).toBe("not 1× mystic-aura-self");
+    expect(result.leaves[0].children?.map((child) => child.label)).toEqual([
+      "1× mystic-aura-self",
+    ]);
+  });
+
+  it("not: an ANDed group is negated as a whole, parenthesised", () => {
+    const c = ctx({}, { toggles: { party: true }, enemies: 5 });
+    const result = explain({ not: { toggle: "party", enemies: 3 } }, c);
+    expect(result.leaves[0].label).toBe("not (party enabled + enemies ≥ 3)");
+  });
+
+  it("any: names its alternatives rather than counting them", () => {
+    const c = ctx({}, { toggles: {}, tags: new Map() });
+    const result = explain(
+      { any: [{ toggle: "party" }, { equipped: { tag: "seal" } }] },
+      c,
+    );
+    expect(result.ok).toBe(false);
+    expect(result.unmet[0].label).toBe("party enabled or 1× seal");
+  });
+
+  it("any: an alternative with several conditions reads as one group, not as more alternatives", () => {
+    const c = ctx({}, { toggles: {}, enemies: 0 });
+    const result = explain(
+      { any: [{ toggle: "party", enemies: 3 }, { toggle: "solo" }] },
+      c,
+    );
+    expect(result.leaves[0].label).toBe(
+      "(party enabled + enemies ≥ 3) or solo enabled",
+    );
+  });
+
+  it("any: falls back to a count once the joined text would run away", () => {
+    const c = ctx({});
+    const result = explain(
+      {
+        any: [
+          { toggle: "a-fairly-long-toggle-name-here" },
+          { toggle: "another-fairly-long-toggle-name" },
+          { toggle: "and-a-third-long-toggle-name" },
+        ],
+      },
+      c,
+    );
+    expect(result.leaves[0].label).toBe("any of 3");
+  });
+
+  it("nested: an `any` inside a `not` is parenthesised, not left ambiguous", () => {
+    const c = ctx({}, { toggles: { party: true } });
+    const result = explain(
+      { not: { any: [{ toggle: "party" }, { toggle: "solo" }] } },
+      c,
+    );
+    expect(result.ok).toBe(false);
+    expect(result.leaves[0].label).toBe("not (party enabled or solo enabled)");
+  });
+
+  it("nested: past two levels of compound the text defers to the expandable tree", () => {
+    const c = ctx({}, { toggles: {} });
+    const result = explain(
+      {
+        any: [
+          { toggle: "solo" },
+          { not: { any: [{ toggle: "party" }, { toggle: "raid" }] } },
+        ],
+      },
+      c,
+    );
+    // The innermost `any` sits at depth 2 and counts itself; everything above it still reads.
+    expect(result.leaves[0].label).toBe("solo enabled or not any of 2");
+  });
+
+  it("all: flattens into the surrounding conjunction, nested case included", () => {
+    const c = ctx({}, { toggles: { party: true }, enemies: 5 });
+    const result = explain(
+      {
+        any: [{ all: [{ toggle: "party" }, { enemies: 3 }] }, { toggle: "x" }],
+      },
+      c,
+    );
+    expect(result.leaves[0].label).toBe(
+      "(party enabled + enemies ≥ 3) or x enabled",
+    );
+  });
+});

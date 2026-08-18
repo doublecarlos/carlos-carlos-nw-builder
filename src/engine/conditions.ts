@@ -193,44 +193,122 @@ const LEAVES: Record<
   },
 };
 
+// --- inline summary text ---------------------------------------------------------------
+// `any`/`not` also have to read as one self-contained line, because the two places that
+// summarise a gate (the item card's "Conditions: ..." line and the "needs ..." list) render
+// `label` alone and never descend into `children`. So each compound builds its text out of
+// its own children's labels, and falls back to a bounded phrase -- deferring to the
+// expandable tree -- once that text would get long or deeply nested.
+
+/** Past this many nested compounds, a compound stops spelling its children out. */
+const MAX_INLINE_DEPTH = 2;
+/** Past this many characters, likewise -- one summary line must not run away. */
+const MAX_INLINE_LENGTH = 72;
+
+/** Leaves whose label is an `or`-joined phrase, which has to be parenthesised before it can
+ * sit inside a wider phrase (`not (a or b)`, not `not a or b`). Tracked here rather than on
+ * the result, so the `ConditionLeafResult` shape the UI renders verbatim stays unchanged. */
+const orPhrases = new WeakSet<ConditionLeafResult>();
+
+/** Sibling leaves are ANDed; the whole thing is parenthesised when more than one has to sit
+ * inside a wider `or`/`not` phrase. */
+const conjoin = (leaves: ConditionLeafResult[]): string => {
+  const parts = leaves
+    .filter((leaf) => leaf.label)
+    .map((leaf) => (orPhrases.has(leaf) ? `(${leaf.label})` : leaf.label));
+  if (!parts.length) return "";
+  return parts.length > 1 ? `(${parts.join(" + ")})` : parts[0];
+};
+
+const tooBig = (text: string, depth: number) =>
+  depth >= MAX_INLINE_DEPTH || text.length > MAX_INLINE_LENGTH;
+
+/** Text for `not`: the negation of what it negates. A single child always spells itself out
+ * (its own label is already self-contained and bounded); a group defers once it gets big. */
+function describeNot(inner: ConditionLeafResult[], depth: number): string {
+  const text = conjoin(inner);
+  if (!text) return "never"; // not(nothing constrained) -- vacuously unsatisfiable
+  if (inner.length > 1 && tooBig(text, depth))
+    return `not (${inner.length} conditions)`;
+  return `not ${text}`;
+}
+
+/** Text for `any`: name the alternatives, or count them when that would run long. `joined`
+ * reports which of the two it is, since only the joined form needs parenthesising above. */
+function describeAny(
+  alternatives: string[],
+  depth: number,
+): { label: string; joined: boolean } {
+  const joined = alternatives.map((text) => text || "always").join(" or ");
+  if (tooBig(joined, depth))
+    return { label: `any of ${alternatives.length}`, joined: false };
+  return { label: joined, joined: alternatives.length > 1 };
+}
+
 // --- combinators -----------------------------------------------------------------------
 
-/** Evaluate `when`, pushing per-leaf results into `out` when explaining. */
+/** Evaluate `when`, pushing per-leaf results into `out` when explaining. `depth` counts the
+ * compounds already entered, and only shapes the summary text -- never the verdict. */
 function walk(
   when: ConditionWhen | undefined,
   ctx: EvalContext,
   out: ConditionLeafResult[] | null,
+  depth = 0,
 ): boolean {
   if (!when) return true;
   let ok = true;
 
   for (const [key, spec] of Object.entries(when)) {
     if (key === "all") {
+      // No wrapper leaf of its own: `all` flattens into the surrounding conjunction, which
+      // is exactly how both summaries already join siblings.
       for (const sub of spec as ConditionWhen[]) {
-        if (!walk(sub, ctx, out)) ok = false;
+        if (!walk(sub, ctx, out, depth)) ok = false;
       }
       continue;
     }
 
     if (key === "any") {
-      const branch: ConditionLeafResult[] = [];
       const alternatives = spec as ConditionWhen[];
-      // Evaluate every alternative so the UI can show what each one needed.
-      const results = alternatives.map((sub) => walk(sub, ctx, branch));
-      const anyOk = results.some(Boolean);
-      out?.push({
-        ok: anyOk,
-        label: `any of ${alternatives.length}`,
-        children: branch,
-      });
+      const branch: ConditionLeafResult[] = [];
+      const texts: string[] = [];
+      let anyOk = false;
+      // Evaluate every alternative so the UI can show what each one needed. Each gets its
+      // own array first, so the summary can tell "a AND b" (one alternative) apart from two
+      // alternatives, then flattens into the shared `children` tree.
+      for (const sub of alternatives) {
+        const own: ConditionLeafResult[] = [];
+        if (walk(sub, ctx, out ? own : null, depth + 1)) anyOk = true;
+        texts.push(conjoin(own));
+        branch.push(...own);
+      }
+      if (out) {
+        const summary = describeAny(texts, depth);
+        const result: ConditionLeafResult = {
+          ok: anyOk,
+          label: summary.label,
+          children: branch,
+        };
+        if (summary.joined) orPhrases.add(result);
+        out.push(result);
+      }
       if (!anyOk) ok = false;
       continue;
     }
 
     if (key === "not") {
       const inner: ConditionLeafResult[] = [];
-      const innerOk = walk(spec as ConditionWhen, ctx, inner);
-      out?.push({ ok: !innerOk, label: "not", children: inner });
+      const innerOk = walk(
+        spec as ConditionWhen,
+        ctx,
+        out ? inner : null,
+        depth + 1,
+      );
+      out?.push({
+        ok: !innerOk,
+        label: describeNot(inner, depth),
+        children: inner,
+      });
       if (innerOk) ok = false;
       continue;
     }
