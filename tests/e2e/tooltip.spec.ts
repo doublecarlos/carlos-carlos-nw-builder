@@ -116,3 +116,50 @@ test("wrapping a control leaves its layout and classes alone", async ({
     ),
   ).toBe(true);
 });
+
+/** Horizontal overlap between two boxes, in px. */
+function overlap(
+  a: { x: number; width: number },
+  b: { x: number; width: number },
+) {
+  return Math.min(a.x + a.width, b.x + b.width) - Math.max(a.x, b.x);
+}
+
+test("a tooltip sits under its trigger, not beside it", async ({ page }) => {
+  await openBuilder(page);
+  // A trigger with room on both sides, so this measures the placement rather than the
+  // viewport clamp -- the edge case has its own test below.
+  const button = page.getByRole("button", { name: "Clear section" }).first();
+
+  await button.hover();
+  await expect(tooltip(page)).toBeVisible();
+
+  const trigger = (await button.boundingBox())!;
+  const bubble = (await tooltip(page).boundingBox())!;
+
+  // Centred on the trigger, within a pixel of rounding.
+  const triggerCentre = trigger.x + trigger.width / 2;
+  const bubbleCentre = bubble.x + bubble.width / 2;
+  expect(Math.abs(bubbleCentre - triggerCentre)).toBeLessThanOrEqual(1);
+  expect(bubble.y).toBeGreaterThan(trigger.y);
+});
+
+test("a tooltip near the window edge stays on screen and still overlaps its trigger", async ({
+  page,
+}) => {
+  await openBuilder(page);
+  // The header's rightmost controls are the case that exposed this: placed beside their
+  // anchor, the bubble flipped clear of the button and read as belonging to nothing.
+  const button = page.getByTestId("header-shortcuts");
+
+  await button.hover();
+  await expect(tooltip(page)).toBeVisible();
+
+  const trigger = (await button.boundingBox())!;
+  const bubble = (await tooltip(page).boundingBox())!;
+  const viewport = page.viewportSize()!;
+
+  expect(bubble.x).toBeGreaterThanOrEqual(0);
+  expect(bubble.x + bubble.width).toBeLessThanOrEqual(viewport.width);
+  expect(overlap(trigger, bubble)).toBeGreaterThan(0);
+});

@@ -54,7 +54,11 @@ async function reveal() {
   // The popover only mounts once `open` flips, so its rect has to be handed over after the
   // render rather than in the same tick.
   await nextTick();
-  popover.value?.place(trigger.value.getBoundingClientRect());
+  popover.value?.place(
+    trigger.value.getBoundingClientRect(),
+    undefined,
+    "center",
+  );
 }
 
 function dismiss() {
