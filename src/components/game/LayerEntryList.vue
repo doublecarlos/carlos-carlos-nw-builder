@@ -8,6 +8,7 @@ import { onKeyStroke } from "@vueuse/core";
 import { CirclePlus, FilterX, RotateCcw } from "@lucide/vue";
 import BaseButton from "../ui/BaseButton.vue";
 import BaseBadge from "../ui/BaseBadge.vue";
+import BaseTooltip from "../ui/BaseTooltip.vue";
 import ComboBox from "../ui/ComboBox.vue";
 import type {
   Item,
@@ -188,12 +189,11 @@ onKeyStroke(["ArrowDown", "ArrowUp", "Enter"], (event) => {
         <BaseBadge v-if="row.status !== 'base'" :variant="row.status as any">{{
           row.status
         }}</BaseBadge>
-        <BaseBadge
-          v-if="hasUnsavedDraft(row)"
-          variant="unsaved"
-          title="Unsaved edits in the form"
-          >unsaved</BaseBadge
-        >
+        <BaseTooltip text="Unsaved edits in the form">
+          <BaseBadge v-if="hasUnsavedDraft(row)" variant="unsaved"
+            >unsaved</BaseBadge
+          >
+        </BaseTooltip>
         <BaseButton
           v-if="row.status === 'removed'"
           variant="link"

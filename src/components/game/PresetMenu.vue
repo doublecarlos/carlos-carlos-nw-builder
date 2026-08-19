@@ -14,6 +14,7 @@ const openSectionId = ref<string | null>(null);
 // preset is already the fully-specified target.
 import { onMounted, onUnmounted } from "vue";
 import BaseButton from "../ui/BaseButton.vue";
+import BaseTooltip from "../ui/BaseTooltip.vue";
 import { LayoutTemplate } from "@lucide/vue";
 import { useEscapeToClose } from "../../composables/useEscapeToClose";
 import type { SectionPreset } from "../../types";
@@ -64,13 +65,11 @@ useEscapeToClose(() => {
 
 <template>
   <div class="relative mr-0.5 flex-none">
-    <BaseButton
-      title="Apply a preset to this section"
-      class="section-preset-btn"
-      @click="toggle"
-    >
-      <LayoutTemplate />Presets…
-    </BaseButton>
+    <BaseTooltip text="Apply a preset to this section">
+      <BaseButton class="section-preset-btn" @click="toggle">
+        <LayoutTemplate />Presets…
+      </BaseButton>
+    </BaseTooltip>
     <div
       v-if="isOpen()"
       class="preset-popover absolute right-full top-1/2 z-30 mr-1.5 flex max-h-64 min-w-40 -translate-y-1/2 flex-col gap-0.5 overflow-y-auto whitespace-nowrap rounded-md border border-line bg-surface p-1 shadow-lg"

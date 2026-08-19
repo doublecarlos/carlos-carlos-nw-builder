@@ -1,6 +1,7 @@
 <script setup lang="ts">
 // Recently-deleted section inside the left sidebar. Pure presentation.
 import NavContextMenu from "./NavContextMenu.vue";
+import BaseTooltip from "./ui/BaseTooltip.vue";
 import {
   ChevronDown,
   ChevronRight,
@@ -76,16 +77,18 @@ defineEmits<{
           Restore
         </button>
         <div class="nav-menu-wrap relative">
-          <button
-            type="button"
-            class="nav-kebab flex-none cursor-pointer rounded-md px-1.5 leading-none text-muted hover:bg-surface-2 hover:text-text"
-            title="Trash menu"
-            @click="
-              $emit('menu-open', `${entry.kind}_${entry.item.id}`, $event)
-            "
-          >
-            <EllipsisVertical class="size-[14px]" />
-          </button>
+          <BaseTooltip text="Trash menu">
+            <button
+              type="button"
+              class="nav-kebab flex-none cursor-pointer rounded-md px-1.5 leading-none text-muted hover:bg-surface-2 hover:text-text"
+              aria-label="Trash menu"
+              @click="
+                $emit('menu-open', `${entry.kind}_${entry.item.id}`, $event)
+              "
+            >
+              <EllipsisVertical class="size-[14px]" />
+            </button>
+          </BaseTooltip>
 
           <NavContextMenu
             v-if="menuOpenId === `${entry.kind}_${entry.item.id}`"

@@ -21,15 +21,15 @@ test("dragging a condition group reorders it within the same branch", async ({
   page,
 }) => {
   await openNewBonus(page);
-  await page.getByTitle("Add grant").click();
+  await page.getByLabel("Add grant").click();
 
   // Nested branches get their own (initially empty) `condition-empty-drop` too, but this
   // grant's own trailing toolbar is always the last one in DOM order -- every nested one is
   // rendered inside an earlier row, closed before this instance's own trailing div opens.
   const emptyDrop = page.getByTestId("condition-empty-drop").last();
-  await emptyDrop.getByTitle('Add "Not" condition group').click();
-  await emptyDrop.getByTitle('Add "Any of" condition group').click();
-  await emptyDrop.getByTitle('Add "All of" condition group').click();
+  await emptyDrop.getByLabel('Add "Not" condition group').click();
+  await emptyDrop.getByLabel('Add "Any of" condition group').click();
+  await emptyDrop.getByLabel('Add "All of" condition group').click();
 
   // All three branches start empty, so each row's own op-label is the only one under it --
   // safe to read in plain DOM order without scoping per row.
@@ -50,12 +50,12 @@ test("dragging a condition group reorders it within the same branch", async ({
 
 test("dragging a branch reorders it within its group", async ({ page }) => {
   await openNewBonus(page);
-  await page.getByTitle("Add grant").click();
+  await page.getByLabel("Add grant").click();
 
   await page
     .getByTestId("condition-empty-drop")
     .last()
-    .getByTitle('Add "Any of" condition group')
+    .getByLabel('Add "Any of" condition group')
     .click();
 
   const branches = page.getByTestId("condition-branch");
@@ -63,8 +63,8 @@ test("dragging a branch reorders it within its group", async ({ page }) => {
 
   // Give each branch a distinguishable leaf so the drag's effect on branch *content* (not
   // just the "Condition N" label, which always reflects plain position) is observable.
-  await branches.nth(0).getByTitle("Add condition").click();
-  await branches.nth(1).getByTitle("Add condition").click();
+  await branches.nth(0).getByLabel("Add condition").click();
+  await branches.nth(1).getByLabel("Add condition").click();
 
   const leafType = (bi: number) =>
     branches
@@ -95,11 +95,11 @@ test("dragging a branch into a different group moves it there", async ({
   page,
 }) => {
   await openNewBonus(page);
-  await page.getByTitle("Add grant").click();
+  await page.getByLabel("Add grant").click();
 
   const emptyDrop = page.getByTestId("condition-empty-drop").last();
-  await emptyDrop.getByTitle('Add "Any of" condition group').click();
-  await emptyDrop.getByTitle('Add "All of" condition group').click();
+  await emptyDrop.getByLabel('Add "Any of" condition group').click();
+  await emptyDrop.getByLabel('Add "All of" condition group').click();
 
   const groups = page.getByTestId("condition-group-box");
   await expect(groups).toHaveCount(2);
@@ -110,7 +110,7 @@ test("dragging a branch into a different group moves it there", async ({
 
   // Mark the dragged branch's content so we can confirm it -- not just an empty slot --
   // followed the drag into the other group.
-  await group1Branches.nth(0).getByTitle("Add condition").click();
+  await group1Branches.nth(0).getByLabel("Add condition").click();
   const draggedLeafType = group1Branches
     .nth(0)
     .getByTestId("condition-row")
@@ -140,13 +140,13 @@ test("dragging an existing condition into a freshly-added 'not' block moves it i
   page,
 }) => {
   await openNewBonus(page);
-  await page.getByTitle("Add grant").click();
+  await page.getByLabel("Add grant").click();
 
   // Both the leaf and the "not" group are appended via this grant's own trailing toolbar --
   // there's no per-row "add" button anymore, only this rows-list-level one.
   const emptyDrop = page.getByTestId("condition-empty-drop").last();
-  await emptyDrop.getByTitle("Add condition").click();
-  await emptyDrop.getByTitle('Add "Not" condition group').click();
+  await emptyDrop.getByLabel("Add condition").click();
+  await emptyDrop.getByLabel('Add "Not" condition group').click();
 
   const rows = page.getByTestId("condition-row");
   await expect(rows).toHaveCount(2);
@@ -174,7 +174,7 @@ test("dragging a condition from one grant's Active when to another's moves it ac
   page,
 }) => {
   await openNewBonus(page);
-  const addGrant = page.getByTitle("Add grant");
+  const addGrant = page.getByLabel("Add grant");
   await addGrant.click();
   await addGrant.click();
 
@@ -184,7 +184,7 @@ test("dragging a condition from one grant's Active when to another's moves it ac
   await grantRows
     .nth(0)
     .getByTestId("condition-empty-drop")
-    .getByTitle("Add condition")
+    .getByLabel("Add condition")
     .click();
 
   const grant1Rows = grantRows.nth(0).getByTestId("condition-row");
@@ -210,20 +210,20 @@ test("dragging a condition between two bonuses on the same item moves it across 
   await page.getByTestId("item-name-input").fill("ZZZ Cross Bonus Drag Item");
   await page.getByTestId("item-filter-input").fill("gear_head");
 
-  const addBonus = page.getByTitle("Add bonus");
+  const addBonus = page.getByLabel("Add bonus");
   await addBonus.click();
   await addBonus.click();
 
   const bonusCards = page.getByTestId("bonus-card");
   await expect(bonusCards).toHaveCount(2);
 
-  await bonusCards.nth(0).getByTitle("Add grant").click();
-  await bonusCards.nth(1).getByTitle("Add grant").click();
+  await bonusCards.nth(0).getByLabel("Add grant").click();
+  await bonusCards.nth(1).getByLabel("Add grant").click();
 
   await bonusCards
     .nth(0)
     .getByTestId("condition-empty-drop")
-    .getByTitle("Add condition")
+    .getByLabel("Add condition")
     .click();
 
   const bonus1Rows = bonusCards.nth(0).getByTestId("condition-row");

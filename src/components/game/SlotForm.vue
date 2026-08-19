@@ -520,6 +520,8 @@ watch(
           label="Item tags"
           hint="comma-separated; one option per matching item"
         >
+          <!-- Stays a native `title`: it previews the value this expression resolves to, and
+               a bubble opening on focus would sit over the field while it is being typed in. -->
           <input
             v-model="draft.optionsFromTags"
             class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"

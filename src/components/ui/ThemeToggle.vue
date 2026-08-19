@@ -2,6 +2,7 @@
 // System -> Light -> Dark -> System, one click at a time. Icon mirrors the current preference
 // (monitor for system, sun for light, moon for dark).
 import BaseButton from "./BaseButton.vue";
+import BaseTooltip from "./BaseTooltip.vue";
 import { Monitor, Moon, Sun } from "@lucide/vue";
 import { preference, cyclePreference } from "../../stores/theme";
 
@@ -19,11 +20,10 @@ const icon = {
 </script>
 
 <template>
-  <BaseButton
-    :title="`${labels[preference]} (click to change)`"
-    @click="cyclePreference"
-  >
-    <component :is="icon[preference]" />
-    <span class="capitalize">{{ preference }}</span>
-  </BaseButton>
+  <BaseTooltip :text="`${labels[preference]} (click to change)`">
+    <BaseButton @click="cyclePreference">
+      <component :is="icon[preference]" />
+      <span class="capitalize">{{ preference }}</span>
+    </BaseButton>
+  </BaseTooltip>
 </template>

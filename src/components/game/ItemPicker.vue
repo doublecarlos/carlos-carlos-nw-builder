@@ -286,6 +286,8 @@ defineExpose({
         >
         <!-- Both markers describe the item as gear, so they go with the preview lines. -->
         <template v-if="!hidePreview">
+          <!-- Stays a native `title`: this marker lives inside an already-open dropdown, and
+               a BaseTooltip here would be a second floating layer stacked over the first. -->
           <span
             v-if="matchMap.get(option.value)?.flagged"
             class="text-accent"

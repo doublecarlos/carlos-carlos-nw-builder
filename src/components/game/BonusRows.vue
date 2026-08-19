@@ -15,6 +15,7 @@ import ConditionRows, {
   type ConditionBranchTreeLocation,
 } from "./ConditionRows.vue";
 import IconButton from "../ui/IconButton.vue";
+import BaseTooltip from "../ui/BaseTooltip.vue";
 import {
   ArrowDown,
   ArrowUp,
@@ -318,14 +319,15 @@ function toggleJson(gIndex: number) {
       v-bind="grantsDropList.rowProps(gIndex)"
     >
       <div class="flex flex-wrap items-center gap-2">
-        <span
-          data-testid="grant-drag-handle"
-          title="Drag to reorder"
-          class="cursor-grab text-muted hover:text-accent [&_svg]:size-[14px]"
-          v-bind="grantDragHandleProps(gIndex)"
-        >
-          <GripVertical />
-        </span>
+        <BaseTooltip text="Drag to reorder">
+          <span
+            data-testid="grant-drag-handle"
+            class="cursor-grab text-muted hover:text-accent [&_svg]:size-[14px]"
+            v-bind="grantDragHandleProps(gIndex)"
+          >
+            <GripVertical />
+          </span>
+        </BaseTooltip>
         <span class="text-muted">Grant {{ gIndex + 1 }}</span>
         <div class="flex flex-wrap items-center gap-1.5">
           <IconButton
@@ -604,14 +606,15 @@ function toggleJson(gIndex: number) {
             v-bind="tierDropList(grant.uid, gIndex).rowProps(tIndex)"
           >
             <div class="mb-1 flex flex-wrap items-center gap-1.5">
-              <span
-                data-testid="tier-drag-handle"
-                title="Drag to reorder"
-                class="cursor-grab text-muted hover:text-accent [&_svg]:size-[14px]"
-                v-bind="tierDragHandleProps(grant.uid, tIndex)"
-              >
-                <GripVertical />
-              </span>
+              <BaseTooltip text="Drag to reorder">
+                <span
+                  data-testid="tier-drag-handle"
+                  class="cursor-grab text-muted hover:text-accent [&_svg]:size-[14px]"
+                  v-bind="tierDragHandleProps(grant.uid, tIndex)"
+                >
+                  <GripVertical />
+                </span>
+              </BaseTooltip>
               <IconButton
                 title="Move tier up"
                 :disabled="tIndex === 0"
@@ -731,14 +734,17 @@ function toggleJson(gIndex: number) {
             v-bind="variantDropList(grant.uid, gIndex).rowProps(vIndex)"
           >
             <div class="mb-1 flex flex-wrap items-center gap-2">
-              <span
-                data-testid="variant-drag-handle"
-                title="Drag to reorder"
-                class="cursor-grab text-muted hover:text-accent [&_svg]:size-[14px]"
-                v-bind="variantDragHandleProps(grant.uid, variant.uid, vIndex)"
-              >
-                <GripVertical />
-              </span>
+              <BaseTooltip text="Drag to reorder">
+                <span
+                  data-testid="variant-drag-handle"
+                  class="cursor-grab text-muted hover:text-accent [&_svg]:size-[14px]"
+                  v-bind="
+                    variantDragHandleProps(grant.uid, variant.uid, vIndex)
+                  "
+                >
+                  <GripVertical />
+                </span>
+              </BaseTooltip>
               <span class="text-muted">Variant {{ vIndex + 1 }}</span>
               <div class="flex flex-wrap items-center gap-1.5">
                 <IconButton

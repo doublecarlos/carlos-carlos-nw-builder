@@ -6,6 +6,7 @@ import ThemeToggle from "./ui/ThemeToggle.vue";
 import HistoryButton from "./ui/HistoryButton.vue";
 import BaseButton from "./ui/BaseButton.vue";
 import BaseNotice from "./ui/BaseNotice.vue";
+import BaseTooltip from "./ui/BaseTooltip.vue";
 import BundleExport from "./BundleExport.vue";
 import GameImport from "./GameImport.vue";
 import { Download, Gamepad2, HardDrive, Upload } from "@lucide/vue";
@@ -87,14 +88,19 @@ async function onImportFile(event: Event) {
 
     <span class="h-4 w-px bg-line" />
 
-    <span
-      class="flex items-center gap-1 whitespace-nowrap text-muted"
-      data-testid="autosave-indicator"
-      title="Edits are saved automatically to this browser's storage. That storage can be cleared or lost — use Export to keep a backup elsewhere."
+    <BaseTooltip
+      text="Edits are saved automatically to this browser's storage. That storage can be cleared or lost — use Export to keep a backup elsewhere."
+      :width="300"
     >
-      <HardDrive class="h-[14px] w-[14px]" />
-      Auto-saved to this browser
-    </span>
+      <span
+        class="flex items-center gap-1 whitespace-nowrap text-muted"
+        data-testid="autosave-indicator"
+        tabindex="0"
+      >
+        <HardDrive class="h-[14px] w-[14px]" />
+        Auto-saved to this browser
+      </span>
+    </BaseTooltip>
 
     <span class="ml-auto flex items-center gap-1">
       <BaseNotice
@@ -118,26 +124,30 @@ async function onImportFile(event: Event) {
 
     <span class="h-4 w-px bg-line" />
 
-    <HistoryButton
-      type="undo"
-      :disabled="!canUndo"
-      :detail="canUndo ? undoLabel : ''"
-      :title="canUndo ? `Undo: ${undoLabel} (Ctrl+Z)` : 'Nothing to undo'"
-      data-testid="header-undo"
-      @click="undo()"
-    >
-      Undo
-    </HistoryButton>
-    <HistoryButton
-      type="redo"
-      :disabled="!canRedo"
-      :detail="canRedo ? redoLabel : ''"
-      :title="canRedo ? `Redo: ${redoLabel} (Ctrl+Shift+Z)` : 'Nothing to redo'"
-      data-testid="header-redo"
-      @click="redo()"
-    >
-      Redo
-    </HistoryButton>
+    <!-- A disabled button fires no pointer events, so the "nothing to undo" wording has no
+         way to show; it said nothing the greyed-out button did not already. -->
+    <BaseTooltip :text="canUndo ? `Undo: ${undoLabel} (Ctrl+Z)` : ''">
+      <HistoryButton
+        type="undo"
+        :disabled="!canUndo"
+        :detail="canUndo ? undoLabel : ''"
+        data-testid="header-undo"
+        @click="undo()"
+      >
+        Undo
+      </HistoryButton>
+    </BaseTooltip>
+    <BaseTooltip :text="canRedo ? `Redo: ${redoLabel} (Ctrl+Shift+Z)` : ''">
+      <HistoryButton
+        type="redo"
+        :disabled="!canRedo"
+        :detail="canRedo ? redoLabel : ''"
+        data-testid="header-redo"
+        @click="redo()"
+      >
+        Redo
+      </HistoryButton>
+    </BaseTooltip>
 
     <span class="h-4 w-px bg-line" />
 

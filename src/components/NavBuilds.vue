@@ -3,6 +3,7 @@
 // and rename state are provided by the parent (Nav.vue).
 import { computed, useTemplateRef, type Component, type Directive } from "vue";
 import BaseButton from "./ui/BaseButton.vue";
+import BaseTooltip from "./ui/BaseTooltip.vue";
 import { EllipsisVertical, GripVertical, Plus, Upload } from "@lucide/vue";
 import NavContextMenu from "./NavContextMenu.vue";
 import { isMac } from "../lib/platform";
@@ -158,14 +159,15 @@ function moveFocus(dir: 1 | -1) {
         ]"
         v-bind="dropList.rowProps(i)"
       >
-        <span
-          data-testid="build-drag-handle"
-          title="Drag to reorder. Ctrl + ↑ or ↓ to move up/down."
-          class="cursor-grab text-muted hover:text-accent [&_svg]:size-[14px]"
-          v-bind="dragHandleProps(b.id, i)"
-        >
-          <GripVertical />
-        </span>
+        <BaseTooltip text="Drag to reorder. Ctrl + ↑ or ↓ to move up/down.">
+          <span
+            data-testid="build-drag-handle"
+            class="cursor-grab text-muted hover:text-accent [&_svg]:size-[14px]"
+            v-bind="dragHandleProps(b.id, i)"
+          >
+            <GripVertical />
+          </span>
+        </BaseTooltip>
 
         <input
           v-if="renamingId === b.id"
@@ -197,14 +199,16 @@ function moveFocus(dir: 1 | -1) {
         </button>
 
         <div class="nav-menu-wrap relative">
-          <button
-            type="button"
-            class="nav-kebab flex-none cursor-pointer rounded-md px-1.5 leading-none text-muted hover:bg-surface-2 hover:text-text"
-            title="Build menu"
-            @click="$emit('menu-open', b.id, $event)"
-          >
-            <EllipsisVertical class="size-[14px]" />
-          </button>
+          <BaseTooltip text="Build menu">
+            <button
+              type="button"
+              class="nav-kebab flex-none cursor-pointer rounded-md px-1.5 leading-none text-muted hover:bg-surface-2 hover:text-text"
+              aria-label="Build menu"
+              @click="$emit('menu-open', b.id, $event)"
+            >
+              <EllipsisVertical class="size-[14px]" />
+            </button>
+          </BaseTooltip>
 
           <NavContextMenu
             v-if="menuOpenId === b.id"

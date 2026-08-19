@@ -4,6 +4,7 @@
 // an id is generator-assigned (catalog.ts's `nextId`) at first save and never user-edited
 // afterwards, so there is nothing here to type into, only to read.
 import FormField from "./FormField.vue";
+import BaseTooltip from "./BaseTooltip.vue";
 
 defineProps<{
   label: string;
@@ -18,15 +19,18 @@ defineProps<{
 
 <template>
   <FormField :label="label">
-    <span
-      class="flex w-full items-center rounded-md bg-surface-2 px-1.5 py-0.5 text-muted"
-      :title="
+    <BaseTooltip
+      :text="
         existing
           ? 'Frozen -- renaming does not change it'
           : 'Assigned when first saved'
       "
     >
-      {{ id || "(assigned on save)" }}
-    </span>
+      <span
+        class="flex w-full items-center rounded-md bg-surface-2 px-1.5 py-0.5 text-muted"
+      >
+        {{ id || "(assigned on save)" }}
+      </span>
+    </BaseTooltip>
   </FormField>
 </template>

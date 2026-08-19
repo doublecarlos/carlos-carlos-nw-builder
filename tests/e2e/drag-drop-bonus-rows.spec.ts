@@ -22,7 +22,7 @@ test("dragging a grant row onto another reorders the grant list", async ({
 }) => {
   await openNewBonus(page);
 
-  const addGrant = page.getByTitle("Add grant");
+  const addGrant = page.getByLabel("Add grant");
   await addGrant.click();
   await addGrant.click();
   await addGrant.click();
@@ -58,7 +58,7 @@ test("Move grant up still works after drag-and-drop is wired in", async ({
 }) => {
   await openNewBonus(page);
 
-  const addGrant = page.getByTitle("Add grant");
+  const addGrant = page.getByLabel("Add grant");
   await addGrant.click();
   await addGrant.click();
 
@@ -73,7 +73,7 @@ test("Move grant up still works after drag-and-drop is wired in", async ({
   await page
     .getByTestId("bonus-grant-row")
     .nth(1)
-    .getByTitle("Move grant up")
+    .getByLabel("Move grant up")
     .click();
 
   await expect(descriptions.nth(0)).toHaveValue("Second");

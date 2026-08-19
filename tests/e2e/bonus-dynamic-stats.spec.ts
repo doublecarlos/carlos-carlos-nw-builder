@@ -21,7 +21,7 @@ test("a flat grant's dynamic stat rows can be added and removed without forcing 
 }) => {
   await openNewBonus(page);
   await page.getByTestId("bonus-name-input").fill("ZZZ Test Dynamic Bonus");
-  await page.getByTitle("Add grant").click();
+  await page.getByLabel("Add grant").click();
 
   const grant = page.getByTestId("bonus-grant-row").first();
   const rows = grant.locator(".dynamic-stat-row");
@@ -42,7 +42,7 @@ test("a flat grant's dynamic stat rows can be added and removed without forcing 
 
   // The grant stays in the form -- the JSON toggle still offers to switch *into* JSON, it
   // hasn't already switched there on its own.
-  await expect(grant.getByTitle("Edit as JSON")).toBeVisible();
+  await expect(grant.getByLabel("Edit as JSON")).toBeVisible();
 
   await row.getByRole("button", { name: "Remove dynamic stat" }).click();
   await expect(rows).toHaveCount(1);
@@ -55,7 +55,7 @@ test("a variant's own dynamic stat rows are independent of the grant's flat ones
 }) => {
   await openNewBonus(page);
   await page.getByTestId("bonus-name-input").fill("ZZZ Test Variant Dynamic");
-  await page.getByTitle("Add grant").click();
+  await page.getByLabel("Add grant").click();
 
   const grant = page.getByTestId("bonus-grant-row").first();
   await grant.getByText("varies by condition").click();
@@ -76,6 +76,6 @@ test("a variant's own dynamic stat rows are independent of the grant's flat ones
   await row.locator('input[type="number"]').nth(2).fill("2"); // Default
 
   // Still form-editable, not forced to JSON.
-  await expect(grant.getByTitle("Edit as JSON")).toBeVisible();
+  await expect(grant.getByLabel("Edit as JSON")).toBeVisible();
   await expect(row.getByTestId("picker-input")).toHaveValue("Item Level");
 });

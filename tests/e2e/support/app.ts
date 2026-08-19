@@ -77,7 +77,7 @@ export async function stepAssignment(
 ) {
   const wrapper = assignmentInput(row, itemId).locator("..");
   await wrapper
-    .getByTitle(dir === "increase" ? "Increase" : "Decrease")
+    .getByLabel(dir === "increase" ? "Increase" : "Decrease")
     .click({ modifiers: options?.modifiers });
 }
 
@@ -103,7 +103,7 @@ export async function stepOccurrence(
 ) {
   const wrapper = occurrenceInput(row, bonusId).locator("..");
   await wrapper
-    .getByTitle(dir === "increase" ? "Increase" : "Decrease")
+    .getByLabel(dir === "increase" ? "Increase" : "Decrease")
     .click({ modifiers: options?.modifiers });
 }
 

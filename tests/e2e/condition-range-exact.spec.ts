@@ -15,8 +15,8 @@ async function openNewConditionLeaf(page: Page) {
   await layerRow(page, "Layer 1").locator(".nav-name").click();
   await page.getByRole("button", { name: /Bonuses \d+/ }).click();
   await page.getByTestId("new-bonus").click();
-  await page.getByTitle("Add grant").click();
-  await page.getByTitle("Add condition").click();
+  await page.getByLabel("Add grant").click();
+  await page.getByLabel("Add condition").click();
   return page.getByTestId("condition-row").first();
 }
 
@@ -49,11 +49,11 @@ test("an equipped leaf's below bound is actually saved, not silently dropped", a
 
   // Never forced into the JSON escape hatch by this leaf shape.
   const grant = page.getByTestId("bonus-grant-row").first();
-  await expect(grant.getByTitle("Edit as JSON")).toBeVisible();
+  await expect(grant.getByLabel("Edit as JSON")).toBeVisible();
 
   // Flip to JSON and read the serialized shape directly -- the most direct proof the "Below"
   // value actually made it into the saved condition instead of vanishing.
-  await grant.getByTitle("Edit as JSON").click();
+  await grant.getByLabel("Edit as JSON").click();
   const json = await grant.locator("textarea").inputValue();
   expect(json).toContain('"tag": "ring_of_x"');
   expect(json).toContain('"atLeast": 2');

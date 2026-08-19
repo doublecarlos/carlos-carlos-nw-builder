@@ -108,12 +108,17 @@ test.describe("point_assignment Ctrl+click steppers", () => {
     const row = slotRow(page, SLOT_ID);
     const wrapper = assignmentInput(row, POWER_ID).locator("..");
 
+    // The hint is the button's accessible name now, and BaseTooltip shows that same text on
+    // hover or focus -- so this checks the name, then that the bubble really carries it.
     await expect(
-      wrapper.getByTitle("Increase", { exact: false }),
-    ).toHaveAttribute("title", /Ctrl\+click for max/);
+      wrapper.getByLabel("Increase", { exact: false }),
+    ).toHaveAccessibleName(/Ctrl\+click for max/);
     await expect(
-      wrapper.getByTitle("Decrease", { exact: false }),
-    ).toHaveAttribute("title", /Ctrl\+click for min/);
+      wrapper.getByLabel("Decrease", { exact: false }),
+    ).toHaveAccessibleName(/Ctrl\+click for min/);
+
+    await wrapper.getByLabel("Increase", { exact: false }).hover();
+    await expect(page.getByTestId("tooltip")).toHaveText(/Ctrl\+click for max/);
   });
 
   test("Ctrl+click on - jumps straight to the row's min", async ({ page }) => {

@@ -41,7 +41,7 @@ useEscapeToClose(() => emit("close"));
       <button
         type="button"
         class="statcard-close flex-none pl-2 leading-none text-muted hover:text-text"
-        title="Close"
+        aria-label="Close"
         data-testid="stat-card-close"
         @click="$emit('close')"
       >

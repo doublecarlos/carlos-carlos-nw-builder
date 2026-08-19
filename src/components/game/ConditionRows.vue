@@ -8,6 +8,7 @@
 import { computed } from "vue";
 import ComboBox from "../ui/ComboBox.vue";
 import IconButton from "../ui/IconButton.vue";
+import BaseTooltip from "../ui/BaseTooltip.vue";
 import {
   Ampersand,
   CircleAlert,
@@ -437,14 +438,15 @@ function changeParamKey(row: ConditionRow, key: string) {
         v-if="row.kind === 'leaf'"
         class="flex flex-wrap items-center gap-1.5"
       >
-        <span
-          data-testid="condition-drag-handle"
-          title="Drag to reorder or move into a block"
-          class="cursor-grab text-muted hover:text-accent [&_svg]:size-[14px]"
-          v-bind="dragHandleProps(i)"
-        >
-          <GripVertical />
-        </span>
+        <BaseTooltip text="Drag to reorder or move into a block">
+          <span
+            data-testid="condition-drag-handle"
+            class="cursor-grab text-muted hover:text-accent [&_svg]:size-[14px]"
+            v-bind="dragHandleProps(i)"
+          >
+            <GripVertical />
+          </span>
+        </BaseTooltip>
         <IconButton title="Duplicate" @click="duplicateRow(i)"
           ><Copy
         /></IconButton>
@@ -602,14 +604,15 @@ function changeParamKey(row: ConditionRow, key: string) {
           class="w-full rounded-md border border-line border-l-4 border-l-muted bg-text/5 my-0.5 px-2 pb-0.5 pt-1"
         >
           <div class="flex flex-wrap items-center gap-1 mb-0.5">
-            <span
-              data-testid="condition-drag-handle"
-              title="Drag to reorder or move into a block"
-              class="cursor-grab text-muted hover:text-accent [&_svg]:size-[14px]"
-              v-bind="dragHandleProps(i)"
-            >
-              <GripVertical />
-            </span>
+            <BaseTooltip text="Drag to reorder or move into a block">
+              <span
+                data-testid="condition-drag-handle"
+                class="cursor-grab text-muted hover:text-accent [&_svg]:size-[14px]"
+                v-bind="dragHandleProps(i)"
+              >
+                <GripVertical />
+              </span>
+            </BaseTooltip>
             <span
               data-testid="condition-op-label"
               class="rounded bg-surface-2 px-1.5 font-semibold uppercase tracking-wide"
@@ -640,14 +643,15 @@ function changeParamKey(row: ConditionRow, key: string) {
                 v-if="row.op !== 'not'"
                 class="my-1 flex items-center gap-0.5"
               >
-                <span
-                  data-testid="condition-branch-drag-handle"
-                  title="Drag to reorder"
-                  class="cursor-grab text-muted hover:text-accent [&_svg]:size-[14px]"
-                  v-bind="branchDragHandleProps(row, i, bi)"
-                >
-                  <GripVertical />
-                </span>
+                <BaseTooltip text="Drag to reorder">
+                  <span
+                    data-testid="condition-branch-drag-handle"
+                    class="cursor-grab text-muted hover:text-accent [&_svg]:size-[14px]"
+                    v-bind="branchDragHandleProps(row, i, bi)"
+                  >
+                    <GripVertical />
+                  </span>
+                </BaseTooltip>
                 <span class="my-0.5 uppercase pr-1">
                   Condition {{ bi + 1 }}
                 </span>

@@ -2,6 +2,7 @@
 // Layer list section inside the left sidebar. Pure presentation.
 import { computed, useTemplateRef, type Component, type Directive } from "vue";
 import BaseButton from "./ui/BaseButton.vue";
+import BaseTooltip from "./ui/BaseTooltip.vue";
 import BaseCheckbox from "./ui/BaseCheckbox.vue";
 import { EllipsisVertical, GripVertical, Plus, Upload } from "@lucide/vue";
 import NavContextMenu from "./NavContextMenu.vue";
@@ -120,12 +121,15 @@ function moveFocus(dir: 1 | -1) {
 <template>
   <div ref="root" class="border-t border-line pt-1.5">
     <div class="mb-1 flex items-center justify-between px-1 py-0.5">
-      <span
-        class="flex items-center gap-1 text-sm font-semibold uppercase text-muted"
-        title="Layers apply top to bottom — a lower layer overrides the ones above it."
+      <BaseTooltip
+        text="Layers apply top to bottom — a lower layer overrides the ones above it."
       >
-        Layers
-      </span>
+        <span
+          class="flex items-center gap-1 text-sm font-semibold uppercase text-muted"
+        >
+          Layers
+        </span>
+      </BaseTooltip>
       <div class="flex items-center gap-1">
         <BaseButton @click="$emit('import')"><Upload />Import</BaseButton>
         <BaseButton data-testid="nav-add-layer" @click="$emit('create')"
@@ -159,14 +163,15 @@ function moveFocus(dir: 1 | -1) {
         ]"
         v-bind="dropList.rowProps(i)"
       >
-        <span
-          data-testid="layer-drag-handle"
-          title="Drag to reorder. Ctrl + ↑ or ↓ to move up/down."
-          class="cursor-grab text-muted hover:text-accent [&_svg]:size-[14px]"
-          v-bind="dragHandleProps(l.id, i)"
-        >
-          <GripVertical />
-        </span>
+        <BaseTooltip text="Drag to reorder. Ctrl + ↑ or ↓ to move up/down.">
+          <span
+            data-testid="layer-drag-handle"
+            class="cursor-grab text-muted hover:text-accent [&_svg]:size-[14px]"
+            v-bind="dragHandleProps(l.id, i)"
+          >
+            <GripVertical />
+          </span>
+        </BaseTooltip>
 
         <div @click.stop>
           <BaseCheckbox
@@ -206,14 +211,16 @@ function moveFocus(dir: 1 | -1) {
         </button>
 
         <div class="nav-menu-wrap relative">
-          <button
-            type="button"
-            class="nav-kebab flex-none cursor-pointer rounded-md px-1.5 leading-none text-muted hover:bg-surface-2 hover:text-text"
-            title="Layer menu"
-            @click="$emit('menu-open', l.id, $event)"
-          >
-            <EllipsisVertical class="size-[14px]" />
-          </button>
+          <BaseTooltip text="Layer menu">
+            <button
+              type="button"
+              class="nav-kebab flex-none cursor-pointer rounded-md px-1.5 leading-none text-muted hover:bg-surface-2 hover:text-text"
+              aria-label="Layer menu"
+              @click="$emit('menu-open', l.id, $event)"
+            >
+              <EllipsisVertical class="size-[14px]" />
+            </button>
+          </BaseTooltip>
 
           <NavContextMenu
             v-if="menuOpenId === l.id"

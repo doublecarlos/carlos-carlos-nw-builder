@@ -23,7 +23,7 @@ async function openItemFormWithAttachedBonus(page: Page) {
   await page.getByTestId("item-name-input").fill(UNIQUE_ITEM);
   await page.getByTestId("item-filter-input").fill("gear_head");
 
-  await page.getByTitle("Add bonus").click();
+  await page.getByLabel("Add bonus").click();
   await page.getByTestId("bonus-name-input").fill(UNIQUE_BONUS);
   await page.getByRole("button", { name: "Save bonus" }).click();
 }

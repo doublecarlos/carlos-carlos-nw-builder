@@ -23,8 +23,8 @@ async function createItemWithProblemGrant(
   await page.getByTestId("item-name-input").fill(name);
   await page.getByTestId("item-filter-input").fill("gear_head");
 
-  await page.getByTitle("Add bonus").click();
-  await page.getByTitle("Add grant").click();
+  await page.getByLabel("Add bonus").click();
+  await page.getByLabel("Add grant").click();
   await page.getByRole("button", { name: "reports a problem" }).click();
   await page.getByTestId("problem-message").fill("Always active for this test");
   if (hideFromPicker) {

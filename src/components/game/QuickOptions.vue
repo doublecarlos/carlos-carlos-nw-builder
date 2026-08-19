@@ -10,6 +10,7 @@
 // which fields exist.
 import { computed } from "vue";
 import BuildParamInput from "./BuildParamInput.vue";
+import BaseTooltip from "../ui/BaseTooltip.vue";
 import { getPath } from "../../lib/build-path";
 import { slotVisible } from "../../lib/slot-visibility";
 import { paramDiffers, paramDiffTitle } from "../../composables/useCompareDiff";
@@ -79,14 +80,16 @@ function asStrNum(slot: BuildParameterSlot): string | number {
         v-if="slot.paramType !== 'boolean'"
         class="flex items-center gap-1.5 whitespace-nowrap"
       >
-        <span
-          :class="differs(slot) ? 'cursor-help font-bold text-diff' : ''"
-          :title="
-            differs(slot) ? paramDiffTitle(compareBuild, slot) : undefined
-          "
+        <BaseTooltip
+          :text="differs(slot) ? paramDiffTitle(compareBuild, slot) : ''"
         >
-          {{ slot.label }}<template v-if="differs(slot)"> ●</template>
-        </span>
+          <span
+            :class="differs(slot) ? 'cursor-help font-bold text-diff' : ''"
+            :tabindex="differs(slot) ? 0 : undefined"
+          >
+            {{ slot.label }}<template v-if="differs(slot)"> ●</template>
+          </span>
+        </BaseTooltip>
         <BuildParamInput
           :slot-def="slot"
           :model-value="asStrNum(slot)"
@@ -100,14 +103,16 @@ function asStrNum(slot: BuildParameterSlot): string | number {
         :model-value="paramValue(slot) as boolean"
         @update:model-value="buildEditor.setParam(slot, $event!)"
       >
-        <span
-          :class="differs(slot) ? 'font-bold text-diff' : ''"
-          :title="
-            differs(slot) ? paramDiffTitle(compareBuild, slot) : undefined
-          "
+        <BaseTooltip
+          :text="differs(slot) ? paramDiffTitle(compareBuild, slot) : ''"
         >
-          {{ slot.label }}<template v-if="differs(slot)"> ●</template>
-        </span>
+          <span
+            :class="differs(slot) ? 'font-bold text-diff' : ''"
+            :tabindex="differs(slot) ? 0 : undefined"
+          >
+            {{ slot.label }}<template v-if="differs(slot)"> ●</template>
+          </span>
+        </BaseTooltip>
       </BuildParamInput>
     </template>
   </div>

@@ -150,7 +150,7 @@ function onPaste(event: ClipboardEvent) {
       <button
         type="button"
         class="cursor-pointer border-0 bg-transparent px-1 leading-none text-muted hover:text-danger"
-        title="Remove"
+        aria-label="Remove"
         @mousedown.prevent="removeAt(index)"
       >
         ×

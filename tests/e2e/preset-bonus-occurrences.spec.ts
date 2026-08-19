@@ -125,7 +125,7 @@ async function authorRingWithOccurrenceConfig(page: Page) {
   await page.getByTestId("item-name-input").fill(AUTHORED_ITEM);
   await page.getByTestId("item-filter-input").fill("gear_ring");
 
-  await page.getByTitle("Add bonus").click();
+  await page.getByLabel("Add bonus").click();
   await page.getByTestId("bonus-name-input").fill(AUTHORED_BONUS);
   await page.getByRole("button", { name: "Save bonus" }).click();
 
