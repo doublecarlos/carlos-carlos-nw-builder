@@ -28,6 +28,11 @@ const countOf = (
   return map.get(key) ?? 0;
 };
 
+/** Counted noun for a label the user reads. Kept local rather than pulled from lib/format,
+ *  which loads the stat schema -- this module deliberately depends on nothing but types. */
+const plural = (count: number, noun: string) =>
+  count === 1 ? noun : `${noun}s`;
+
 /**
  * Range check shared by `duration`, `bonusOccurrences` and `equipped`.
  * `{ atLeast, below }` -- either bound optional, `atLeast` inclusive, `below` exclusive.
@@ -126,9 +131,10 @@ const LEAVES: Record<
     const s = spec as RangeSpec & { bonus: string };
     const have = countOf(ctx.bonusOccurrences, s.bonus);
     const displayName = ctx.bonusNames?.get(s.bonus) ?? s.bonus;
+    const wanted = s.exactly ?? s.atLeast ?? 1;
     return {
       ok: inRange(have, s),
-      label: `${s.exactly ?? s.atLeast ?? 1} occurrence(s) of ${displayName}`,
+      label: `${wanted} ${plural(wanted, "occurrence")} of ${displayName}`,
       detail: `you have ${have}`,
     };
   },

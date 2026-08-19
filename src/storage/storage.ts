@@ -1,17 +1,13 @@
-// Build persistence, import/export and share links.
+// Build and layer persistence, plus import/export.
 //
-// Owns the shape of a stored build so `App.vue` never has to reason about it: anything that
-// comes back from localStorage, a pasted JSON blob or a URL hash goes through `normalise`
+// Owns the shape of a stored build so the rest of the app never has to reason about it:
+// anything that comes back from storage or from a pasted JSON blob goes through `normalise`
 // first, and anything `normalise` returns is safe to hand straight to the engine.
 //
-// The saved library lives under `nw:builds`, written only when the user explicitly saves (or
-// by a structural change that has nothing pending to lose -- see App.vue's `saveActive`). The
-// live, possibly-unsaved draft lives separately under `nw:builds-draft`, autosaved continuously
-// so a reload never loses work in progress. The old single-build key `nw:current-build` is
-// migrated into the saved library on first load and then removed.
-//
-// Phase 2a adds layer storage and the IndexedDB wrapper alongside the existing localStorage
-// functions. The collection/library functions stay until 2b deletes them.
+// Two backing stores. The user's documents -- builds, layers, history, trash and app meta --
+// live in IndexedDB, behind `idb.ts`, so every function that touches them is async. The
+// catalogue overlay (`nw:catalog-overlay`) and the UI preferences (`nw:ui`) are small, single
+// values read synchronously, and stay in localStorage.
 
 import { NW_SLOTS, NW_CATALOG_VERSION } from "../data/data";
 import * as catalog from "../data/catalog";
@@ -36,16 +32,16 @@ const OVERLAY_KEY = "nw:catalog-overlay";
 const UI_KEY = "nw:ui";
 
 // --- versioned envelope ------------------------------------------------------------------
-// Wraps every build/collection payload this module reads or writes (localStorage, JSON
-// export/import, share links) with what it needs to be read back safely: the shape version of
-// `data` (`v`), which of the payload shapes this module owns it is (`kind`), and what item
-// catalogue it was authored against (`catalog`). Without this, a shape-breaking change (like
-// swapping item names for ids) fails silently -- a build loads looking fine with every slot
-// quietly empty. With it, that becomes a real refusal with a message.
+// Wraps every payload this module reads or writes (stored state, JSON export/import) with what
+// it needs to be read back safely: the shape version of `data` (`v`), which of the payload
+// shapes this module owns it is (`kind`), and what item catalogue it was authored against
+// (`catalog`). Without this, a shape-breaking change (like swapping item names for ids) fails
+// silently -- a build loads looking fine with every slot quietly empty. With it, that becomes
+// a real refusal with a message.
 //
 // Un-enveloped data (everything saved/exported before this existed) is deliberately NOT
 // refused: `unwrap` only throws on a *mismatched* `v`/`kind`, so today's un-enveloped
-// localStorage and already-issued exports/links keep working exactly as before. The refuse
+// stored state and already-issued exports keep working exactly as before. The refuse
 // behaviour only starts biting the next time `SCHEMA_VERSION` actually moves -- which is the
 // point: this doesn't retroactively invalidate anything, it just makes the *next* breaking
 // change honest instead of silent.
@@ -392,7 +388,7 @@ export function saveUiState(state: UiState) {
 
 export type ThemePreference = "light" | "dark" | "system";
 
-// --- layer storage (new in phase 2a) -----------------------------------------------------
+// --- layer storage -----------------------------------------------------------------------
 
 /** A brand-new layer with an empty overlay. */
 export function defaultLayer(name = "Layer"): Layer {
@@ -421,7 +417,7 @@ export function normaliseLayer(raw: unknown): Layer {
   };
 }
 
-// --- IDB persistence (new in phase 2a) ---------------------------------------------------
+// --- IDB persistence ---------------------------------------------------------------------
 
 /** Load every record from every IDB store, repairing `meta` against what actually exists. */
 export async function loadAll(): Promise<{

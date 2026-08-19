@@ -164,7 +164,7 @@ describe("conditions.ts bonusOccurrences leaf uses bonusNames for friendly label
       c,
     );
     expect(result.ok).toBe(false);
-    expect(result.unmet[0].label).toBe("2 occurrence(s) of Impending Doom");
+    expect(result.unmet[0].label).toBe("2 occurrences of Impending Doom");
   });
 
   it("falls back to the bonus id when not in bonusNames", () => {
@@ -180,7 +180,7 @@ describe("conditions.ts bonusOccurrences leaf uses bonusNames for friendly label
       c,
     );
     expect(result.ok).toBe(false);
-    expect(result.unmet[0].label).toBe("2 occurrence(s) of m32-unknown-bonus");
+    expect(result.unmet[0].label).toBe("2 occurrences of m32-unknown-bonus");
   });
 });
 
@@ -212,7 +212,13 @@ describe("conditions.ts equipped/bonusOccurrences leaves support exactly", () =>
   it("bonusOccurrences: exactly appears in the explain label instead of a stale atLeast default", () => {
     const c = ctx({}, { bonusOccurrences: new Map([["b", 1]]) });
     const result = explain({ bonusOccurrences: { bonus: "b", exactly: 3 } }, c);
-    expect(result.unmet[0].label).toBe("3 occurrence(s) of b");
+    expect(result.unmet[0].label).toBe("3 occurrences of b");
+  });
+
+  it("bonusOccurrences: counts the noun rather than hedging with occurrence(s)", () => {
+    const c = ctx({}, { bonusOccurrences: new Map() });
+    const result = explain({ bonusOccurrences: { bonus: "b", atLeast: 1 } }, c);
+    expect(result.unmet[0].label).toBe("1 occurrence of b");
   });
 });
 

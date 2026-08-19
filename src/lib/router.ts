@@ -5,8 +5,8 @@
 //
 // Query string, not a path: any static host serves `index.html` by path only, so a route like
 // `/builds/abc` would 404 on refresh. `?build=abc` always resolves, because the path never
-// changes. The hash is left alone -- `storage.ts` already uses `#b=<payload>` for share links,
-// consumed once on load.
+// changes. The hash is carried through untouched: nothing in the app puts anything there, and
+// dropping it would be a side effect this module has no reason to cause.
 
 export const parse = (): Record<string, string> =>
   Object.fromEntries(new URLSearchParams(window.location.search));

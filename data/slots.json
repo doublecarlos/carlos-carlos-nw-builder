@@ -72,7 +72,7 @@
           "type": "build_parameter",
           "paramType": "number",
           "path": "magnitude",
-          "default": "",
+          "default": 4332,
           "min": 0
         },
         {

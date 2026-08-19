@@ -367,7 +367,7 @@ test.describe("point_assignment hover card for an unselected candidate", () => {
     await expect(card).toContainText("Test Master Stats");
     // Reads inactive, with the real "you have 0" reason -- not as if the checked proc made it
     // active, and not multiplied down to a wrong "0" preview either.
-    await expect(card).toContainText("needs 1 occurrence(s) of Test Proc");
+    await expect(card).toContainText("needs 1 occurrence of Test Proc");
     await expect(card).toContainText("you have 0");
     await expect(card.locator(".bg-ok")).toHaveCount(0);
   });

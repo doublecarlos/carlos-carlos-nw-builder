@@ -652,7 +652,10 @@ function toggleJson(gIndex: number) {
                 min="1"
                 class="w-16 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
               />
-              <span class="text-muted">occurrence(s) or more</span>
+              <span class="text-muted"
+                >{{ tier.atLeast === 1 ? "occurrence" : "occurrences" }} or
+                more</span
+              >
             </div>
             <div
               v-for="(stat, sIndex) in tier.stats"
