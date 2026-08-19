@@ -3414,6 +3414,46 @@
     "bonuses": ["m32-cleric-s-impending-doom-legendary"]
   },
   {
+    "id": "m33-5-laughing-void",
+    "name": "M33.5 Laughing Void",
+    "filter": "artifact",
+    "il": 2600,
+    "combined_rating": 2600,
+    "strike": 2340,
+    "severity": 2340,
+    "ca": 1560,
+    "stamina_regen": 0.15,
+    "bonuses": ["m33-5-evolving-form"]
+  },
+  {
+    "id": "m33-5-voidbound-belt",
+    "name": "M33.5 Voidbound Belt",
+    "filter": "gear_waist",
+    "str": 3,
+    "dex": 3,
+    "int": 3,
+    "acc": 1974,
+    "power": 2126,
+    "severity": 1823,
+    "il": 4050,
+    "combined_rating": 3645,
+    "bonuses": ["m33-5-evolving-form"]
+  },
+  {
+    "id": "m33-5-voidbound-necklace",
+    "name": "M33.5 Voidbound Necklace",
+    "filter": "gear_neck",
+    "str": 3,
+    "dex": 3,
+    "int": 3,
+    "ca": 1215,
+    "severity": 3645,
+    "forte": 2734,
+    "il": 4050,
+    "combined_rating": 3645,
+    "bonuses": ["m33-5-evolving-form"]
+  },
+  {
     "id": "m33-coldsilver-coil-of-wrath",
     "name": "M33 Coldsilver Coil of Wrath",
     "filter": "gear_ring",

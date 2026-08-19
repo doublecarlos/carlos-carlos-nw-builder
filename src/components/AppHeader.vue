@@ -60,7 +60,7 @@ async function onImportFile(event: Event) {
     data-testid="app-header"
   >
     <h1 class="text-base font-semibold tracking-wide whitespace-nowrap">
-      Carlos' NW Build Planner
+      Carlos Carlos' NW Build Planner
     </h1>
 
     <BaseButton data-testid="header-export-bundle" @click="triggerExportBundle"

@@ -1750,6 +1750,25 @@
     ]
   },
   {
+    "id": "m33-5-evolving-form",
+    "name": "M33.5 Evolving Form",
+    "grants": [
+      {
+        "when": {
+          "bonusOccurrences": {
+            "bonus": "m33-5-evolving-form",
+            "exactly": 3
+          }
+        },
+        "stats": {
+          "ca_p": 0.02,
+          "movement": 0.075,
+          "strike_p": 0.02
+        }
+      }
+    ]
+  },
+  {
     "id": "m33-accumulating-precision",
     "name": "M33 Accumulating Precision",
     "grants": [
