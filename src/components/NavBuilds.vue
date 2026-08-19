@@ -134,10 +134,6 @@ function moveFocus(dir: 1 | -1) {
       </div>
     </div>
 
-    <p class="mb-1 px-1 text-[11px] text-muted">
-      ↑/↓ select · F2 rename · Delete remove
-    </p>
-
     <input
       :value="filter"
       type="text"

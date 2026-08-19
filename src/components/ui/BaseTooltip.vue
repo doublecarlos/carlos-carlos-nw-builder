@@ -74,9 +74,19 @@ useEventListener(trigger, "focusout", dismiss);
 // A click usually opens something -- a menu, a dialog, a drawer -- and a tooltip left hanging
 // over it would cover the thing the click just produced.
 useEventListener(trigger, "click", dismiss);
-// Same reasoning as the hover card's own scroll handling: the bubble is fixed-positioned
-// against a rect captured once, so any scroll leaves it pointing at nothing.
-useEventListener(window, "scroll", dismiss, true);
+// A scroll while the bubble is up leaves it pointing at where the trigger used to be, so it
+// closes -- same reasoning as the hover card's own scroll handling. A scroll during the open
+// delay is a different case and deliberately does not cancel it: often that scroll is what
+// brought the trigger into view to be hovered at all, and `reveal` reads a fresh rect when the
+// timer fires anyway.
+useEventListener(
+  window,
+  "scroll",
+  () => {
+    if (open.value) hide();
+  },
+  true,
+);
 
 /** Described-by rather than labelled-by: the tooltip explains the control, it does not name
  *  it. Only wired while the bubble exists -- pointing at a removed element says nothing. */

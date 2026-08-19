@@ -1,32 +1,38 @@
-// App-wide shortcut with no natural home in a single component: Ctrl+/ (⌘+/ on Mac) focuses
-// the slot filter box while a build is being edited. Plain `/` isn't used -- typing it while a
-// slot filter or other field already has focus should just type the character, not steal focus
-// -- so the guard below skips both the preventDefault and the focus jump while a form control
-// is active, following the same guard as useUndoRedoKeys.
-import { computed } from "vue";
-import { useMagicKeys, whenever } from "@vueuse/core";
+// App-wide shortcuts with no natural home in a single component:
+//
+//   Ctrl+/ (⌘+/ on Mac) focuses the slot filter box while a build is being edited.
+//   ?                   opens the keyboard shortcut overlay.
+//
+// Both are guarded the same way: typing `/` or `?` while a slot filter or any other field has
+// focus should produce the character, not run a command, so the handler bails while a form
+// control is active -- the same guard useUndoRedoKeys follows.
+//
+// A plain `keydown` listener rather than `useMagicKeys`: VueUse registers that one passively,
+// which makes `preventDefault` a no-op ("Unable to preventDefault inside passive event listener
+// invocation") -- and preventing the default is the point for both of these. Firefox opens its
+// quick-find on `/`, and `?` is Shift+/ on most layouts, so both reach that same feature.
+import { useEventListener } from "@vueuse/core";
 import { isFormControl } from "./focus";
 import { isMac } from "../lib/platform";
+import * as shortcutHelp from "../stores/shortcutHelp";
 
 export function useGlobalShortcuts() {
-  const keys = useMagicKeys({
-    onEventFired(event) {
-      if (event.type !== "keydown" || isFormControl(document.activeElement))
-        return;
-      const isSlotFilterCombo =
-        event.key === "/" && (isMac ? event.metaKey : event.ctrlKey);
-      if (isSlotFilterCombo) event.preventDefault();
-    },
-  });
-
-  const slotFilterPressed = computed(() =>
-    isMac ? keys["meta_/"].value : keys["ctrl_/"].value,
-  );
-
-  whenever(slotFilterPressed, () => {
+  useEventListener(window, "keydown", (event: KeyboardEvent) => {
     if (isFormControl(document.activeElement)) return;
-    document
-      .querySelector<HTMLInputElement>('[data-testid="slot-filter-text"]')
-      ?.focus();
+
+    if (event.key === "/" && (isMac ? event.metaKey : event.ctrlKey)) {
+      event.preventDefault();
+      document
+        .querySelector<HTMLInputElement>('[data-testid="slot-filter-text"]')
+        ?.focus();
+      return;
+    }
+
+    // Matched on the character rather than Shift plus a key, so layouts that put `?` somewhere
+    // other than Shift+/ still reach it.
+    if (event.key === "?") {
+      event.preventDefault();
+      shortcutHelp.open();
+    }
   });
 }

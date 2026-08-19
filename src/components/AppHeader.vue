@@ -9,7 +9,8 @@ import BaseNotice from "./ui/BaseNotice.vue";
 import BaseTooltip from "./ui/BaseTooltip.vue";
 import BundleExport from "./BundleExport.vue";
 import GameImport from "./GameImport.vue";
-import { Download, Gamepad2, HardDrive, Upload } from "@lucide/vue";
+import ShortcutHelp from "./ShortcutHelp.vue";
+import { Download, Gamepad2, HardDrive, Keyboard, Upload } from "@lucide/vue";
 import { useUndoRedoKeys } from "../composables/useUndoRedoKeys";
 import * as builds from "../stores/builds";
 import * as layers from "../stores/layers";
@@ -18,6 +19,7 @@ import {
   isOpen as gameImportOpen,
   openWizard as openGameImport,
 } from "../stores/gameImport";
+import * as shortcutHelp from "../stores/shortcutHelp";
 
 const importFileInput = useTemplateRef("importFileInput");
 const showBundleExport = ref(false);
@@ -151,6 +153,17 @@ async function onImportFile(event: Event) {
 
     <span class="h-4 w-px bg-line" />
 
+    <BaseTooltip text="Keyboard shortcuts (?)">
+      <BaseButton
+        data-testid="header-shortcuts"
+        aria-label="Keyboard shortcuts"
+        @click="shortcutHelp.toggle()"
+        ><Keyboard
+      /></BaseButton>
+    </BaseTooltip>
+
     <ThemeToggle class="w-30 justify-center" />
+
+    <ShortcutHelp v-if="shortcutHelp.isOpen.value" />
   </header>
 </template>

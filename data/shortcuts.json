@@ -1,0 +1,105 @@
+{
+  "groups": [
+    {
+      "id": "global",
+      "label": "Anywhere",
+      "shortcuts": [
+        { "keys": ["?"], "description": "Show this list" },
+        { "keys": ["Mod+Z"], "description": "Undo the last edit" },
+        { "keys": ["Mod+Shift+Z", "Ctrl+Y"], "description": "Redo" },
+        { "keys": ["Mod+/"], "description": "Jump to the slot filter box" },
+        {
+          "keys": ["Esc"],
+          "description": "Close whatever is open — a dropdown, a tooltip, a menu"
+        }
+      ]
+    },
+    {
+      "id": "nav",
+      "label": "Builds and layers list",
+      "shortcuts": [
+        { "keys": ["↑", "↓"], "description": "Move the selection" },
+        {
+          "keys": ["Mod+↑", "Mod+↓"],
+          "description": "Reorder the selected row"
+        },
+        {
+          "keys": ["F2"],
+          "description": "Rename (double-click does the same)"
+        },
+        {
+          "keys": ["Delete", "Backspace"],
+          "description": "Delete — press twice to confirm"
+        },
+        { "keys": ["Right-click"], "description": "Open the row's menu" }
+      ]
+    },
+    {
+      "id": "slots",
+      "label": "Slot rows",
+      "shortcuts": [
+        { "keys": ["↑", "↓"], "description": "Move the cursor between rows" },
+        { "keys": ["Enter"], "description": "Open the row's picker" },
+        {
+          "keys": ["Any letter"],
+          "description": "Open the picker and start filtering with it"
+        },
+        {
+          "keys": ["Backspace", "Delete"],
+          "description": "Clear the slot, or reset the field to its default"
+        },
+        {
+          "keys": ["Mod+Click"],
+          "description": "Edit the row's item in a layer"
+        }
+      ]
+    },
+    {
+      "id": "pickers",
+      "label": "Pickers",
+      "shortcuts": [
+        { "keys": ["↑", "↓"], "description": "Move the highlight" },
+        { "keys": ["Enter"], "description": "Choose the highlighted option" },
+        {
+          "keys": ["Tab"],
+          "description": "Choose it and move to the next field"
+        },
+        {
+          "keys": ["Esc"],
+          "description": "Close without choosing, keeping the row cursor"
+        }
+      ]
+    },
+    {
+      "id": "steppers",
+      "label": "Number steppers",
+      "shortcuts": [
+        {
+          "keys": ["Mod+Click"],
+          "description": "Jump straight to the minimum or maximum"
+        },
+        { "keys": ["↑", "↓"], "description": "Nudge a percentage field" },
+        { "keys": ["Shift+↑", "Shift+↓"], "description": "Nudge it by ten" }
+      ]
+    },
+    {
+      "id": "layer-editor",
+      "label": "Layer editor",
+      "shortcuts": [
+        { "keys": ["↑", "↓"], "description": "Move between entries" },
+        { "keys": ["Enter"], "description": "Open the selected entry" }
+      ]
+    },
+    {
+      "id": "tags",
+      "label": "Tag fields",
+      "shortcuts": [
+        { "keys": ["Enter", ","], "description": "Commit the tag being typed" },
+        {
+          "keys": ["Backspace"],
+          "description": "Remove the last tag, when the field is empty"
+        }
+      ]
+    }
+  ]
+}

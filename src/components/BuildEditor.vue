@@ -592,11 +592,6 @@ function onBuildScroll(event: Event) {
             filteredSlotCount === 1 ? "" : "es"
           }}</BaseBadge
         >
-        <span class="flex-1"></span>
-        <span class="text-muted"
-          >{{ isMac ? "Cmd" : "Ctrl" }}+click a filled slot to edit in a
-          layer</span
-        >
       </div>
     </div>
 
