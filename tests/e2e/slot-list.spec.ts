@@ -3,6 +3,7 @@
 // copy-section are covered separately; this file sticks to the base single-build experience.
 import { test, expect, type Page } from "@playwright/test";
 import {
+  parkCursorOnRow,
   openBuilder,
   headerRow,
   ensureSectionExpanded,
@@ -76,7 +77,7 @@ test.describe("choosing and clearing an item", () => {
 
     // A plain click on the row (not its input) parks the keyboard cursor there without
     // reopening the picker.
-    await row.locator(".slot-label").click();
+    await parkCursorOnRow(page, "gear.head");
     await expect(cursorRow(page)).toHaveAttribute(
       "data-cursor-key",
       "slot:gear.head",
@@ -95,7 +96,7 @@ test.describe("row click behaviour", () => {
     await chooseItem(page, "gear.head", HEAD_ITEM);
     const row = slotRow(page, "gear.head");
 
-    await row.locator(".slot-label").click();
+    await parkCursorOnRow(page, "gear.head");
     await expect(cursorRow(page)).toHaveAttribute(
       "data-cursor-key",
       "slot:gear.head",
@@ -252,7 +253,7 @@ test.describe("section collapse/expand", () => {
  * header button itself.
  */
 async function parkOnOptionsHeader(page: Page) {
-  await slotRow(page, "options.class").locator(".slot-label").click();
+  await parkCursorOnRow(page, "options.class");
   await page.keyboard.press("ArrowUp");
   await expect(cursorRow(page)).toHaveAttribute(
     "data-cursor-key",
@@ -443,7 +444,7 @@ test.describe("keyboard cursor", () => {
   test("Escape from an open picker keeps the row cursor", async ({ page }) => {
     await openBuilder(page);
     // Park the cursor directly on a row (click its label, not the input).
-    await slotRow(page, "gear.head").locator(".slot-label").click();
+    await parkCursorOnRow(page, "gear.head");
     await expect(cursorRow(page)).toHaveAttribute(
       "data-cursor-key",
       "slot:gear.head",
@@ -468,7 +469,7 @@ test.describe("keyboard cursor", () => {
 
   test("choosing with Enter keeps the row cursor", async ({ page }) => {
     await openBuilder(page);
-    await slotRow(page, "gear.head").locator(".slot-label").click();
+    await parkCursorOnRow(page, "gear.head");
     const row = slotRow(page, "gear.head");
 
     // Type-ahead seeds the picker, Enter chooses the highlighted option -- the picker then
@@ -499,7 +500,7 @@ test.describe("separator slots", () => {
 
   test("ArrowDown from Boots skips straight to Neck", async ({ page }) => {
     await openBuilder(page);
-    await slotRow(page, "gear.boots").locator(".slot-label").click();
+    await parkCursorOnRow(page, "gear.boots");
     await expect(cursorRow(page)).toHaveAttribute(
       "data-cursor-key",
       "slot:gear.boots",
@@ -544,7 +545,7 @@ test.describe("text slots", () => {
     page,
   }) => {
     await openBuilder(page);
-    await slotRow(page, "mounts.mountCombat").locator(".slot-label").click();
+    await parkCursorOnRow(page, "mounts.mountCombat");
     await page.keyboard.press("ArrowUp");
     // The bolster param is a real row and takes the cursor; the note between it and Mount
     // Combat does not.
@@ -641,7 +642,7 @@ test.describe("keyboard cursor: build_parameter rows", () => {
     await expect(row.getByTestId("picker-input")).toHaveValue("Healer");
 
     // Move cursor back to the row and press Backspace
-    await row.locator(".slot-label").click();
+    await parkCursorOnRow(page, "options.role");
     await page.keyboard.press("Backspace");
 
     // Backspace clears the slot, same as an item row -- the empty option is the default.
@@ -692,7 +693,7 @@ test.describe("keyboard cursor: build_parameter rows", () => {
     await expect(row.getByTestId("picker-input")).toHaveValue("Tank");
 
     // Move cursor back and press Delete
-    await row.locator(".slot-label").click();
+    await parkCursorOnRow(page, "options.role");
     await page.keyboard.press("Delete");
 
     // Delete clears the slot, same as an item row -- the empty option is the default.

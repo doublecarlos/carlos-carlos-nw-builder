@@ -33,10 +33,13 @@ const props = withDefaults(
   defineProps<{
     placeholder?: string;
     step?: number; // percentage points per arrow press
+    /** The input's own DOM id, for a `<label for>` written by an ancestor. */
+    inputId?: string;
   }>(),
   {
     placeholder: "",
     step: 1,
+    inputId: undefined,
   },
 );
 
@@ -98,6 +101,7 @@ function nudge(direction: number, event: KeyboardEvent) {
 <template>
   <span class="relative inline-block">
     <input
+      :id="inputId"
       ref="input"
       class="peer w-full border border-line rounded-md pr-5 text-right tabular-nums text-accent focus:text-text bg-surface"
       type="text"

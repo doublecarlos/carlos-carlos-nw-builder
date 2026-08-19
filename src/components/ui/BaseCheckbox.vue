@@ -11,11 +11,16 @@ withDefaults(
     disabled?: boolean;
     inline?: boolean;
     value?: string;
+    /** The checkbox's own DOM id. The wrapping `<label>` below already associates the two, so
+     *  this exists for an *additional* label an ancestor writes -- BuildSlot's row label, which
+     *  sits in its own column outside this component and would otherwise point at nothing. */
+    inputId?: string;
   }>(),
   {
     disabled: false,
     inline: false,
     value: "",
+    inputId: undefined,
   },
 );
 
@@ -30,6 +35,7 @@ const model = defineModel<boolean | string[]>({ required: true });
     :class="inline && 'text-muted'"
   >
     <input
+      :id="inputId"
       v-model="model"
       type="checkbox"
       :value="value"

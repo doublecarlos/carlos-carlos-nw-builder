@@ -7,7 +7,7 @@
 // already-filled field still browses the full option list) and the committed `model` once
 // closed. Unlike ComboBox, committing isn't limited to picking a listed option -- typing
 // something new and blurring or pressing Enter/Tab commits the typed text itself.
-import { ref, computed, watch, nextTick, useTemplateRef } from "vue";
+import { ref, computed, watch, nextTick, useId, useTemplateRef } from "vue";
 import { onKeyStroke } from "@vueuse/core";
 import { matchesQuery } from "../../lib/text-filter";
 import ComboBoxMenu from "./ComboBoxMenu.vue";
@@ -52,6 +52,15 @@ const freeValue = computed(() => {
 
 const entries = computed(() =>
   freeValue.value ? [freeValue.value, ...suggestions.value] : suggestions.value,
+);
+
+// Same accessible-combobox wiring as ComboBox.vue: focus stays on the input while `highlight`
+// moves, so the active row is named by `aria-activedescendant` rather than focused.
+const listboxId = useId();
+const optionId = (index: number) => `${listboxId}-option-${index}`;
+const menuOpen = computed(() => open.value && entries.value.length > 0);
+const activeDescendant = computed(() =>
+  menuOpen.value ? optionId(highlight.value) : undefined,
 );
 
 watch(highlight, () => {
@@ -134,6 +143,11 @@ onKeyStroke(
       ref="input"
       class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
       type="text"
+      role="combobox"
+      aria-autocomplete="list"
+      :aria-expanded="menuOpen ? 'true' : 'false'"
+      :aria-controls="menuOpen ? listboxId : undefined"
+      :aria-activedescendant="activeDescendant"
       autocomplete="off"
       spellcheck="false"
       :value="open ? query : model"
@@ -144,11 +158,13 @@ onKeyStroke(
       @blur="onBlur"
     />
 
-    <ComboBoxMenu v-if="open && entries.length" ref="menu">
+    <ComboBoxMenu v-if="menuOpen" ref="menu" :listbox-id="listboxId">
       <ComboBoxMenuRow
         v-for="(entry, index) in entries"
+        :id="optionId(index)"
         :key="entry"
         :highlighted="index === highlight"
+        :selected="entry === model"
         @mousedown.prevent="commit(entry)"
         @mouseenter="highlight = index"
       >

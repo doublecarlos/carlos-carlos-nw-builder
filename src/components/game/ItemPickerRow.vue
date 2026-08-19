@@ -36,6 +36,8 @@ const props = defineProps<{
   valueDiffs?: ValueDiff[];
   occurrenceDiffers?: boolean;
   otherOccurrenceLabel?: string;
+  /** DOM id for the picker input, so BuildSlot's row label can point at it. */
+  inputId?: string;
 }>();
 
 const picker = useTemplateRef<InstanceType<typeof ItemPicker>>("picker");
@@ -79,6 +81,7 @@ function rangeLabel(row: DynamicStatRow) {
       ref="picker"
       class="grow-0 basis-80 min-w-40"
       :items="items ?? []"
+      :input-id="inputId"
       :model-value="choice()"
       :selected-item="item"
       :invalid="invalid"

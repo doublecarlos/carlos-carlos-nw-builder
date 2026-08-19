@@ -12,8 +12,12 @@ withDefaults(
      *  a plain option label does. Anchored to the input's left edge, so it only ever grows
      *  rightward. */
     menuClass?: string;
+    /** The listbox's own id, so the input driving it can point `aria-controls` here and its
+     *  `aria-activedescendant` at one of the rows inside. Omitted by callers that have not
+     *  been wired for it yet -- the role still applies, only the association is missing. */
+    listboxId?: string;
   }>(),
-  { menuClass: "inset-x-0" },
+  { menuClass: "inset-x-0", listboxId: undefined },
 );
 
 const el = useTemplateRef("el");
@@ -45,7 +49,9 @@ defineSlots<{
 
 <template>
   <div
+    :id="listboxId"
     ref="el"
+    role="listbox"
     data-testid="picker-menu"
     class="absolute top-full z-30 mt-0.5 max-h-80 overflow-y-auto rounded-md border border-line bg-surface shadow-lg"
     :class="menuClass"

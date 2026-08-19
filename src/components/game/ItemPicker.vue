@@ -65,6 +65,9 @@ const props = withDefaults(
      * only: `hideFromPicker` filtering still runs, since which candidates are *legal* is not
      * a presentation question. */
     hidePreview?: boolean;
+    /** DOM id for the underlying input, so a `<label for>` written by an ancestor
+     *  (BuildSlot's row label) points at something real. */
+    inputId?: string;
   }>(),
   {
     selectedItem: null,
@@ -72,6 +75,7 @@ const props = withDefaults(
     db: null,
     bonusPreview: undefined,
     hidePreview: false,
+    inputId: undefined,
   },
 );
 
@@ -263,6 +267,7 @@ defineExpose({
   <ComboBox
     ref="combobox"
     :options="options"
+    :input-id="inputId"
     :model-value="model"
     :invalid="invalid"
     :show-empty-option="true"

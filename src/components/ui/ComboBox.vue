@@ -4,7 +4,7 @@
 // damage type, forte picks).
 //
 // Reuses ComboBoxMenu/ComboBoxMenuRow primitives for the floating dropdown.
-import { ref, computed, watch, nextTick, useTemplateRef } from "vue";
+import { ref, computed, watch, nextTick, useId, useTemplateRef } from "vue";
 import { onKeyStroke } from "@vueuse/core";
 import { blurToRowAnchor } from "../../lib/row-cursor";
 import { matchesQuery } from "../../lib/text-filter";
@@ -34,6 +34,9 @@ const props = withDefaults(
     /** Add title properties to input and/or selection rows */
     titleInput?: boolean;
     titleRows?: boolean;
+    /** The input's own DOM id, so a `<label for>` written by an ancestor can point at it.
+     *  Passed in rather than generated here, since that ancestor needs the same value. */
+    inputId?: string;
   }>(),
   {
     placeholder: "—",
@@ -44,6 +47,7 @@ const props = withDefaults(
     menuClass: "inset-x-0",
     titleInput: true,
     titleRows: true,
+    inputId: undefined,
   },
 );
 
@@ -97,6 +101,22 @@ const rowOptions = computed(() =>
 /** How far a `filtered` index sits from its `rowOptions`/`highlight` index -- 1 while "clear
  * the slot" occupies slot 0, 0 once it's hidden. */
 const matchOffset = computed(() => (showEmpty.value ? 1 : 0));
+
+// --- accessible combobox wiring ----------------------------------------------------------
+// The input is a real text box that happens to drive a list, so it carries the combobox role
+// itself and the menu below is its listbox. Focus never leaves the input -- arrow keys move
+// `highlight`, not focus -- which is exactly the case `aria-activedescendant` exists for:
+// it names the row the cursor is on without moving the focus ring off the input.
+
+const listboxId = useId();
+
+/** Row ids share `highlight`'s index space, "clear the slot" at 0 included, so the id under
+ *  `aria-activedescendant` and the row wearing `data-highlighted` can never drift apart. */
+const optionId = (index: number) => `${listboxId}-option-${index}`;
+
+const activeDescendant = computed(() =>
+  open.value && rowOptions.value.length ? optionId(highlight.value) : undefined,
+);
 
 watch(highlight, () => {
   nextTick(() => list.value?.scrollToHighlighted());
@@ -236,11 +256,18 @@ onKeyStroke(
 <template>
   <div class="relative">
     <input
+      :id="inputId"
       ref="input"
       data-testid="picker-input"
       class="w-full rounded-md border bg-surface py-0.5 pl-1.5 pr-6 placeholder:text-muted focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
       :class="invalid ? 'border-danger' : 'border-line'"
       type="text"
+      role="combobox"
+      aria-autocomplete="list"
+      :aria-expanded="open ? 'true' : 'false'"
+      :aria-controls="open ? listboxId : undefined"
+      :aria-activedescendant="activeDescendant"
+      :aria-invalid="invalid ? 'true' : undefined"
       autocomplete="off"
       spellcheck="false"
       :value="open ? query : closedDisplay || (selected ? selected.label : '')"
@@ -257,11 +284,18 @@ onKeyStroke(
       >▾</span
     >
 
-    <ComboBoxMenu v-if="open" ref="list" :menu-class="menuClass">
+    <ComboBoxMenu
+      v-if="open"
+      ref="list"
+      :menu-class="menuClass"
+      :listbox-id="listboxId"
+    >
       <ComboBoxMenuRow
         v-if="showEmpty"
+        :id="optionId(0)"
         muted
         :highlighted="highlight === 0"
+        :selected="model === ''"
         @mousedown.prevent="choose(null)"
         @mouseenter="highlight = 0"
       >
@@ -270,9 +304,11 @@ onKeyStroke(
 
       <ComboBoxMenuRow
         v-for="(option, index) in filtered"
+        :id="optionId(index + matchOffset)"
         :key="option.value"
         :title="titleRows && option.label"
         :highlighted="highlight === index + matchOffset"
+        :selected="option.value === model"
         @mousedown.prevent="choose(option)"
         @mouseenter="highlight = index + matchOffset"
       >
@@ -290,10 +326,10 @@ onKeyStroke(
         </div>
       </ComboBoxMenuRow>
 
-      <ComboBoxMenuRow v-if="!filtered.length" muted>
+      <ComboBoxMenuRow v-if="!filtered.length" muted presentational>
         <slot name="no-match">no match</slot>
       </ComboBoxMenuRow>
-      <ComboBoxMenuRow v-if="hiddenCount" muted>
+      <ComboBoxMenuRow v-if="hiddenCount" muted presentational>
         <slot name="more" :count="hiddenCount"
           >{{ hiddenCount }} more — keep typing</slot
         >

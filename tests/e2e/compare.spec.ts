@@ -13,6 +13,7 @@ import {
   cursorRow,
   assignmentInput,
   stepAssignment,
+  parkCursorOnRow,
 } from "./support/app";
 
 const HEAD_ITEM = "M29 Enchanted Depthweave Cap (CA)";
@@ -75,7 +76,7 @@ test.describe("build_parameter compare diff apply", () => {
 
     // Park the cursor on the class row (native focus: nothing is focused yet, so the first
     // arrow key would have nowhere to start from -- a click parks it instead).
-    await slotRow(page, "options.role").locator(".slot-label").click();
+    await parkCursorOnRow(page, "options.role");
     await expect(cursorRow(page)).toHaveAttribute(
       "data-cursor-key",
       "slot:options.role",
@@ -107,7 +108,7 @@ test.describe("build_parameter compare diff apply", () => {
     await ensureSectionExpanded(page, "options");
 
     // Park the cursor on the role row, same as the sibling test above.
-    await slotRow(page, "options.role").locator(".slot-label").click();
+    await parkCursorOnRow(page, "options.role");
 
     const row = slotRow(page, "options.role");
     await expect(row).toHaveClass(/is-diff/);

@@ -35,6 +35,24 @@ export function slotRow(page: Page, slotId: string): Locator {
   return page.locator(`[data-cursor-key="slot:${slotId}"]`);
 }
 
+/**
+ * Parks the keyboard cursor on a row without focusing the control it holds -- the starting
+ * point for any arrow-key assertion, since real focus *is* the cursor and arrows need
+ * somewhere to start from.
+ *
+ * Clicks the row's right-hand gutter, past whatever control sits on its left. The row's label
+ * used to serve as this target, back when its `for` named an id no control claimed; now that
+ * the association works, clicking a label focuses (and opens) that row's control, which is the
+ * opposite of parking.
+ */
+export async function parkCursorOnRow(page: Page, slotId: string) {
+  const row = slotRow(page, slotId);
+  const box = await row.boundingBox();
+  if (!box) throw new Error(`slot row "${slotId}" has no layout box`);
+  await row.click({ position: { x: box.width - 8, y: box.height / 2 } });
+  await expect(row).toHaveAttribute("data-cursor-key", `slot:${slotId}`);
+}
+
 export function pickerInput(row: Locator): Locator {
   return row.getByTestId("picker-input");
 }

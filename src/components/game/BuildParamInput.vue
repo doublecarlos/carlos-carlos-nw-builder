@@ -23,9 +23,14 @@ const props = withDefaults(
     /** When true, constrains control widths for uniform row alignment in section rows.
      *  QuickOptions (the horizontal strip) never passes `wide` -- it has its own layout. */
     wide?: boolean;
+    /** DOM id for whichever control this paramType renders, so a `<label for>` written by an
+     *  ancestor (BuildSlot's row label) points at something real. Left unset by QuickOptions,
+     *  whose params label themselves inside the control. */
+    inputId?: string;
   }>(),
   {
     wide: false,
+    inputId: undefined,
   },
 );
 
@@ -87,6 +92,7 @@ defineExpose({ focus: focusControl, focusAndSeed });
       ref="comboboxInstance"
       :class="wide && 'w-full'"
       class="w-30"
+      :input-id="inputId"
       :model-value="(model as string) ?? ''"
       :options="slotDef.options ?? []"
       @update:model-value="model = $event as string"
@@ -96,6 +102,7 @@ defineExpose({ focus: focusControl, focusAndSeed });
       v-else-if="slotDef.paramType === 'percent'"
       :class="wide && 'w-full'"
       class="w-30"
+      :input-id="inputId"
       :model-value="(model as number) ?? ''"
       @update:model-value="model = $event as number | string"
     />
@@ -103,6 +110,7 @@ defineExpose({ focus: focusControl, focusAndSeed });
     <BaseCheckbox
       v-else-if="slotDef.paramType === 'boolean'"
       :class="wide && 'w-full'"
+      :input-id="inputId"
       :model-value="!!model"
       @update:model-value="model = $event as boolean"
     >
@@ -111,6 +119,7 @@ defineExpose({ focus: focusControl, focusAndSeed });
 
     <div v-else class="flex items-center gap-1.5">
       <input
+        :id="inputId"
         type="number"
         :class="[
           widthCls(slotDef),

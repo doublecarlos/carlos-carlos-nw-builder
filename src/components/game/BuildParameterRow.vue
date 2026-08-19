@@ -17,6 +17,8 @@ const props = defineProps<{
   bonusDiffs?: { id: string; message: string }[];
   paramDiffers?: boolean;
   otherParamLabel?: string;
+  /** DOM id for this row's control, so BuildSlot's label can point at it. */
+  inputId?: string;
 }>();
 
 const param = useTemplateRef<InstanceType<typeof BuildParamInput>>("param");
@@ -43,6 +45,7 @@ const paramValue = () =>
       class="grow-0 basis-80 min-w-40"
       :slot-def="slotDef"
       :wide="true"
+      :input-id="inputId"
       :model-value="paramValue()"
       @update:model-value="buildEditor.setParam(slotDef, $event!)"
     />

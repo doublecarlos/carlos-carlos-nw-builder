@@ -21,7 +21,7 @@ import PointAssignmentRow from "./PointAssignmentRow.vue";
 import * as buildEditor from "../../stores/buildEditor";
 import { isFormControl } from "../../composables/focus";
 import { useCursorRowKeys } from "../../composables/useCursorRowKeys";
-import { useTemplateRef } from "vue";
+import { computed, useTemplateRef } from "vue";
 import type {
   RowSlot,
   Item,
@@ -102,6 +102,20 @@ function onRowClick(event: MouseEvent) {
   emit("rowclick", event, itemId);
 }
 
+// --- row label wiring ---------------------------------------------------------------------
+// An item_picker or build_parameter row has exactly one control, so its label is a real
+// `<label for>` pointing at it -- clicking the label focuses the control, and assistive tech
+// reads the two as a pair. A point_assignment row has one control *per item*, so there is no
+// single target a `for` could honestly name; it labels the controls' container as a group
+// instead. `slot-` prefixes the slot id because these ids land in a document-wide namespace
+// that slot ids alone (`options.class`) do not own.
+
+const labelsOneControl = computed(
+  () => props.slotDef.type !== "point_assignment",
+);
+const controlId = computed(() => `slot-${props.slotDef.id}`);
+const labelId = computed(() => `slot-${props.slotDef.id}-label`);
+
 useCursorRowKeys(anchor, {
   // Wrappers read props at call time so they stay current across re-renders.
   onArrow: (dir) => props.onArrow(dir),
@@ -142,14 +156,23 @@ useCursorRowKeys(anchor, {
     @click="onRowClick"
   >
     <div class="flex w-40 shrink-0 items-center justify-between min-w-0">
-      <label
+      <!-- A point_assignment row has no single control to point `for` at (it is a row of
+           steppers, one per item), so it labels the group instead -- see `aria-labelledby`
+           below. Clicking it still parks the row cursor, via this row's own `onRowClick`. -->
+      <component
+        :is="labelsOneControl ? 'label' : 'span'"
+        :id="labelId"
         class="slot-label min-w-0 flex-1 truncate text-muted"
-        :for="slotDef.id"
-        >{{ slotDef.label }}</label
+        :for="labelsOneControl ? controlId : undefined"
+        >{{ slotDef.label }}</component
       >
     </div>
 
-    <div class="min-w-0 flex-1">
+    <div
+      class="min-w-0 flex-1"
+      :role="labelsOneControl ? undefined : 'group'"
+      :aria-labelledby="labelsOneControl ? undefined : labelId"
+    >
       <!-- The keyboard cursor anchor, point_assignment case: placed before the row's controls
            here specifically, since a point_assignment row has several real tab stops (a
            -/+/input trio per item) instead of one -- a parked cursor's Tab should step into
@@ -166,6 +189,7 @@ useCursorRowKeys(anchor, {
       <ItemPickerRow
         v-if="slotDef.type === 'item_picker'"
         ref="control"
+        :input-id="controlId"
         :slot-def="slotDef"
         :build="build"
         :db="db"
@@ -197,6 +221,7 @@ useCursorRowKeys(anchor, {
       <BuildParameterRow
         v-else
         ref="control"
+        :input-id="controlId"
         :slot-def="slotDef"
         :build="build"
         :compare-build="compareBuild"
