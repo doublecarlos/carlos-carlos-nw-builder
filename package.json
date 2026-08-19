@@ -11,6 +11,7 @@
     "port": "tsx ports.ts",
     "fix": "npm run regen-data && prettier --write . && eslint . --fix --cache",
     "regen-data": "tsx scripts/regen-data.ts",
+    "icons": "tsx scripts/generate-icons.ts",
     "test": "vitest run",
     "test:ui": "playwright test",
     "test:watch": "vitest",
