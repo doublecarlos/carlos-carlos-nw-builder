@@ -143,13 +143,16 @@ onKeyStroke(["ArrowDown", "ArrowUp", "Enter"], (event) => {
   <div
     class="flex min-h-0 flex-none flex-col rounded-md border border-line bg-surface lg:w-96"
   >
-    <div class="p-2">
+    <div class="flex items-center gap-1 p-2">
       <input
         v-model="query"
         type="search"
         class="editor-search w-full min-w-0 rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
         :placeholder="searchPlaceholder"
       />
+      <!-- The owner supplies the collapse control, since this component knows nothing about
+           the rail it happens to be rendered as. -->
+      <slot name="toggle" />
     </div>
     <div class="flex flex-none gap-1.5 px-2">
       <ComboBox

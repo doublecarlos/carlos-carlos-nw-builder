@@ -17,9 +17,31 @@ import * as details from "./stores/details";
 import * as selection from "./stores/selection";
 import * as builds from "./stores/builds";
 import * as layers from "./stores/layers";
+import RailToggle from "./components/ui/RailToggle.vue";
+import * as rails from "./stores/rails";
 import { useGlobalShortcuts } from "./composables/useGlobalShortcuts";
 
 const resolved = engine.resolved;
+
+// --- side rails ---------------------------------------------------------------------------
+// Collapsing a rail hands its width back to the editor column. The page's own minimum shrinks
+// with it, which is the point: at 1100px the three columns already squeeze, and below that the
+// whole page scrolls sideways with the stat panel's last column cut off.
+
+/** What the editor column itself needs -- today's 1100px floor less the two open rails. */
+const EDITOR_MIN_PX = 324;
+const NAV_PX = { open: 256, closed: 28 };
+const DETAILS_PX = { open: 520, closed: 28 };
+
+const navCollapsed = rails.collapsed("nav");
+const detailsCollapsed = rails.collapsed("details");
+
+const minWidthPx = computed(
+  () =>
+    EDITOR_MIN_PX +
+    (navCollapsed.value ? NAV_PX.closed : NAV_PX.open) +
+    (detailsCollapsed.value ? DETAILS_PX.closed : DETAILS_PX.open),
+);
 
 useGlobalShortcuts();
 
@@ -78,7 +100,7 @@ syncRoute({ push: false });
 </script>
 
 <template>
-  <div class="flex h-screen flex-col min-w-[1100px]">
+  <div class="flex h-screen flex-col" :style="{ minWidth: minWidthPx + 'px' }">
     <AppHeader class="flex-none" />
 
     <!-- Loading skeleton: header stays visible, rest is a muted panel -->
@@ -96,8 +118,24 @@ syncRoute({ push: false });
     <!-- Three-column builder -->
     <template v-else>
       <div class="flex min-h-0 flex-1">
-        <!-- Column 1: Nav -->
-        <Nav class="w-64 flex-none overflow-y-auto border-r border-line" />
+        <!-- Column 1: Nav. The toggle gets its own strip rather than floating over the
+             content: the rail's top corner is already full (Import / New), and a strip is
+             also all that is left to render once the rail collapses. -->
+        <div
+          class="flex flex-none flex-col border-r border-line"
+          :class="navCollapsed ? 'w-7' : 'w-64'"
+          data-testid="nav-column"
+        >
+          <div class="flex flex-none justify-end px-0.5 pt-1">
+            <RailToggle
+              side="left"
+              label="builds and layers"
+              :collapsed="navCollapsed"
+              @toggle="rails.toggle('nav')"
+            />
+          </div>
+          <Nav v-if="!navCollapsed" class="min-h-0 flex-1 overflow-y-auto" />
+        </div>
 
         <!-- Layer selected: editor spans columns 2 and 3 -->
         <template v-if="selectedLayer">
@@ -113,13 +151,27 @@ syncRoute({ push: false });
             <BuildEditor />
           </div>
 
-          <!-- Column 3: Stat panel -->
+          <!-- Column 3: Stat panel. Same strip treatment as the nav, mirrored. -->
           <div
-            class="w-130 flex-none overflow-y-auto border-l border-line"
+            class="flex flex-none flex-col border-l border-line"
+            :class="detailsCollapsed ? 'w-7' : 'w-130'"
             data-testid="stat-panel-column"
           >
-            <BuildDetails v-if="resolved.ok" />
-            <div v-else class="p-6 text-muted">No build selected</div>
+            <div class="flex flex-none justify-start px-0.5 pt-1">
+              <RailToggle
+                side="right"
+                label="stats"
+                :collapsed="detailsCollapsed"
+                @toggle="rails.toggle('details')"
+              />
+            </div>
+            <div
+              v-if="!detailsCollapsed"
+              class="min-h-0 flex-1 overflow-y-auto"
+            >
+              <BuildDetails v-if="resolved.ok" />
+              <div v-else class="p-6 text-muted">No build selected</div>
+            </div>
           </div>
         </template>
       </div>

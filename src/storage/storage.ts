@@ -363,21 +363,37 @@ export function saveOverlay(overlay: CatalogOverlay) {
 // supplies its own defaults for anything missing here, so this only has to carry what's set.
 
 export interface UiState {
+  /** Which BuildEditor sections are open, by section id. */
   expanded: Record<string, boolean>;
+  /** Which side rails are collapsed, by rail id -- see stores/rails.ts. */
+  collapsed: Record<string, boolean>;
 }
 
 export function loadUiState(): Partial<UiState> {
   try {
     const stored = JSON.parse(window.localStorage.getItem(UI_KEY) ?? "null");
-    return isPlain(stored) ? { expanded: booleans(stored.expanded) } : {};
+    return isPlain(stored)
+      ? {
+          expanded: booleans(stored.expanded),
+          collapsed: booleans(stored.collapsed),
+        }
+      : {};
   } catch {
     return {};
   }
 }
 
-export function saveUiState(state: UiState) {
+/**
+ * Merges `state` onto whatever is already stored rather than replacing it.
+ *
+ * These fields have independent owners -- BuildEditor writes `expanded`, stores/rails.ts
+ * writes `collapsed` -- and each knows only its own. Writing the whole object would mean
+ * whichever saved last silently erased the other's preference.
+ */
+export function saveUiState(state: Partial<UiState>) {
   try {
-    window.localStorage.setItem(UI_KEY, JSON.stringify(state));
+    const merged = { ...loadUiState(), ...state };
+    window.localStorage.setItem(UI_KEY, JSON.stringify(merged));
     return true;
   } catch {
     return false;

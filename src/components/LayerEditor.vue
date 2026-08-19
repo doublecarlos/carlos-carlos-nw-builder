@@ -18,6 +18,7 @@ import LayerExportDrawer from "./game/LayerExportDrawer.vue";
 import LayerValidationDrawer from "./game/LayerValidationDrawer.vue";
 import LayerEntryList from "./game/LayerEntryList.vue";
 import BaseButton from "./ui/BaseButton.vue";
+import RailToggle from "./ui/RailToggle.vue";
 import BaseCheckbox from "./ui/BaseCheckbox.vue";
 import BaseBadge from "./ui/BaseBadge.vue";
 import BaseNotice from "./ui/BaseNotice.vue";
@@ -30,6 +31,7 @@ import * as engine from "../stores/resolved";
 import * as history from "../stores/history";
 import * as layers from "../stores/layers";
 import * as layerEditorUi from "../stores/layerEditorUi";
+import * as rails from "../stores/rails";
 import { matchesQuery } from "../lib/text-filter";
 import type {
   CatalogGroup,
@@ -50,6 +52,8 @@ import type {
 } from "./game/LayerEntryList.vue";
 
 const db = engine.db;
+
+const entriesCollapsed = rails.collapsed("layerEntries");
 
 const props = defineProps<{ layer: Layer }>();
 
@@ -1151,7 +1155,24 @@ onUnmounted(() => {
     />
 
     <div class="flex min-h-0 flex-1 flex-col items-stretch gap-3 lg:flex-row">
+      <!-- Collapsed, the list hands its width to the form beside it -- the same trade the
+           build editor's rails offer. The toggle stays in the strip either way. -->
+      <div
+        v-if="entriesCollapsed"
+        class="relative w-7 flex-none rounded-md border border-line bg-surface"
+        data-testid="layer-entries-collapsed"
+      >
+        <RailToggle
+          class="absolute left-0.5 top-1"
+          side="left"
+          label="the entry list"
+          :collapsed="true"
+          @toggle="rails.toggle('layerEntries')"
+        />
+      </div>
+
       <LayerEntryList
+        v-else
         v-model:query="query"
         v-model:status-filter="statusFilter"
         :rows="filtered"
@@ -1170,7 +1191,16 @@ onUnmounted(() => {
                 : newItem()
         "
         @restore="restore"
-      />
+      >
+        <template #toggle>
+          <RailToggle
+            side="left"
+            label="the entry list"
+            :collapsed="false"
+            @toggle="rails.toggle('layerEntries')"
+          />
+        </template>
+      </LayerEntryList>
 
       <div
         class="min-w-0 flex-1 overflow-y-auto rounded-md border border-line bg-surface px-3 pb-3"
