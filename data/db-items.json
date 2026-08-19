@@ -1624,8 +1624,20 @@
     "int": 15,
     "wis": 16,
     "cha": 13,
-    "acc_p": 0.05,
-    "crit_avoid_p": 0.05,
+    "dynamicStats": [
+      {
+        "stat": "acc_p",
+        "min": 0,
+        "max": 0.1,
+        "default": 0.05
+      },
+      {
+        "stat": "crit_avoid_p",
+        "min": 0,
+        "max": 0.1,
+        "default": 0.05
+      }
+    ],
     "tags": ["class"],
     "bonuses": ["baseline-character", "baseline-enemy-stats"],
     "publishes": {

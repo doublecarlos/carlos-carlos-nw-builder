@@ -115,13 +115,9 @@ function rangeLabel(row: DynamicStatRow) {
        declared configs so a second (or third) one works with no UI change. -->
   <div
     v-if="dynamicStatRows.length"
-    class="mt-1 flex flex-wrap items-center gap-2.5"
+    class="mt-1 flex flex-col flex-wrap gap-2.5"
   >
-    <div
-      v-for="row in dynamicStatRows"
-      :key="row.key"
-      class="flex items-center gap-1.5"
-    >
+    <div v-for="row in dynamicStatRows" :key="row.key" class="flex gap-1.5">
       <span>{{ rangeLabel(row) }}</span>
       <PercentInput
         v-if="isPercent(row.stat)"
