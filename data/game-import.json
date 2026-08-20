@@ -229,7 +229,7 @@
     },
     {
       "label": "Race and Leveling",
-      "reason": "Levelling points and race attributes are not in the demo. Race itself is read from the character's costume when recognised.",
+      "reason": "Levelling points and race Ability Scores are not in the demo. Race itself is read from the character's costume when recognised.",
       "sections": ["raceLeveling"]
     },
     {

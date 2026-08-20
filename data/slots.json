@@ -357,13 +357,13 @@
         },
         {
           "id": "raceLeveling.raceAttributes1",
-          "label": "Race Attributes 1",
+          "label": "Race Ability Score 1",
           "filter": "race_attributes",
           "type": "item_picker"
         },
         {
           "id": "raceLeveling.raceAttributes2",
-          "label": "Race Attributes 2",
+          "label": "Race Ability Score 2",
           "filter": "race_attributes",
           "type": "item_picker"
         },
