@@ -164,7 +164,7 @@ export function defaultBuild(name = "New build"): Build {
     // is pure session state -- so reopening a build remembers what you were sizing it up
     // against. `id` is another build's id, resolved (and gracefully dropped if it no longer
     // exists) by App.vue's own `compareBuild` computed, not here.
-    compare: { id: "", highlight: false, onlyDiff: false },
+    compare: { id: "", highlight: false, onlyDiff: false, statLines: false },
   };
 }
 
@@ -320,6 +320,7 @@ export function normalise(
       id: typeof compare.id === "string" ? compare.id : base.compare.id,
       highlight: Boolean(compare.highlight),
       onlyDiff: Boolean(compare.onlyDiff),
+      statLines: Boolean(compare.statLines),
     },
     ...(downloaded ? { downloaded } : {}),
   };

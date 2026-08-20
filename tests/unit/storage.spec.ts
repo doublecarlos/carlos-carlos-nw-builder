@@ -414,6 +414,33 @@ describe("point_assignment: assignments", () => {
   });
 });
 
+describe("BuildCompare: statLines", () => {
+  it("defaultBuild starts with the stat panel's compare lines off", () => {
+    expect(storage.defaultBuild().compare.statLines).toBe(false);
+  });
+
+  it("normalise preserves an explicit statLines: true", () => {
+    const raw = {
+      ...storage.defaultBuild(),
+      compare: {
+        id: "other",
+        highlight: false,
+        onlyDiff: false,
+        statLines: true,
+      },
+    };
+    expect(storage.normalise(raw).compare.statLines).toBe(true);
+  });
+
+  it("normalise defaults statLines to false for a build saved before it existed", () => {
+    const raw = {
+      ...storage.defaultBuild(),
+      compare: { id: "other", highlight: true, onlyDiff: true },
+    };
+    expect(storage.normalise(raw).compare.statLines).toBe(false);
+  });
+});
+
 // BonusOccurrenceConfig (#217): unlike `assignments`, no shipped item has one of these yet, so
 // there is nothing to seed a default from -- an absent entry falls back to the config's own
 // `default` at read time instead (bonus.ts's `collect()`), not to a build-carried value.
@@ -539,6 +566,7 @@ describe("toBuildJson with db (portable files)", () => {
       id: "some-other-build",
       highlight: true,
       onlyDiff: false,
+      statLines: false,
     };
     const json = JSON.parse(storage.toBuildJson(build));
     expect(json.data.compare).toBeUndefined();

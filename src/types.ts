@@ -597,6 +597,9 @@ export interface BuildCompare {
   id: string;
   highlight: boolean;
   onlyDiff: boolean;
+  /** Stat panel: stack the compare build's own number under each stat that differs from
+   *  this one. Independent of `highlight`/`onlyDiff` above, which drive the editor's rows. */
+  statLines: boolean;
 }
 
 export interface Build {

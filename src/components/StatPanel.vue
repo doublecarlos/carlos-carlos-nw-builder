@@ -15,13 +15,14 @@ import BasePopover from "./ui/BasePopover.vue";
 import BasePanel from "./ui/BasePanel.vue";
 import PanelHead from "./ui/PanelHead.vue";
 import StatPairsTable from "./ui/StatPairsTable.vue";
+import CompareLine from "./ui/CompareLine.vue";
 import { useStatSourcePopover } from "../composables/useStatSourcePopover";
 import { NW_SCHEMA } from "../data/data";
 import { int as fmtInt, pct as fmtPct, stat as fmtStat } from "../lib/format";
 import * as builds from "../stores/builds";
 import * as compare from "../stores/compare";
 import * as engine from "../stores/resolved";
-import type { EngineError } from "../types";
+import type { EngineError, ResolvedBuild } from "../types";
 
 // Display order only -- data/schema.json stays untouched. Forte sits with the defensive
 // ratings rather than right after Severity, per the user's re-grouping.
@@ -96,6 +97,16 @@ const compareResult = computed(() =>
 // Only needed for the stat source popover's forte picks and dynamic-stat values -- the
 // rest of the panel reads entirely off `result`.
 const build = builds.build;
+
+// The compare build's own numbers, stacked under this build's inside the same cell (see
+// CompareLine.vue). Off unless the user asked for them *and* there is a compare build
+// resolved to read from.
+const statLines = computed(
+  () => build.value.compare.statLines && Boolean(compareResult.value),
+);
+const compareName = computed(() => compare.compareBuild.value?.name ?? "");
+const compareStages = computed(() => compareResult.value?.stages ?? null);
+const compareDerived = computed(() => compareResult.value?.derived ?? null);
 
 const summaryCalcKey = ref("damage:average");
 
@@ -191,8 +202,12 @@ const fmt = (key: string, value: unknown) => fmtStat(key, value);
  * isn't itself a problem -- while the excess, red when wasted / blue when there's room to
  * spare, lives in the Overcap columns. `redOver` is the one exception: rating alone turns
  * red once its own overcap passes it, to match the game client's own display. */
-function capCell(key: string, redOver = Infinity) {
-  const { totals, caps, capped } = stages.value;
+function capCell(
+  source: ResolvedBuild["stages"],
+  key: string,
+  redOver = Infinity,
+) {
+  const { totals, caps, capped } = source;
   const total = totals[key] ?? 0;
   const cap = caps[key] ?? 0;
   const over = total - cap;
@@ -222,15 +237,20 @@ const capRows = computed(() =>
   NW_SCHEMA.ratingConversion
     .slice()
     .sort((a, b) => orderIndex(a.rating) - orderIndex(b.rating))
-    .map((rule) => ({
-      key: rule.rating,
-      label: NW_SCHEMA.statByKey[rule.rating]?.label ?? rule.rating,
+    .map((rule) => {
       // Rating goes red once its overcap passes RATING_OVER_WARN, matching the game's own
       // in-client display -- percentage has no such threshold, it's green-or-default.
-      rating: capCell(rule.rating, RATING_OVER_WARN),
-      percent: capCell(rule.percent),
-      sepAfter: SEPARATOR_AFTER.has(rule.rating),
-    })),
+      const rating = capCell(stages.value, rule.rating, RATING_OVER_WARN);
+      const percent = capCell(stages.value, rule.percent);
+      return {
+        key: rule.rating,
+        label: NW_SCHEMA.statByKey[rule.rating]?.label ?? rule.rating,
+        rating,
+        percent,
+        compare: capCompare(rule, rating, percent),
+        sepAfter: SEPARATOR_AFTER.has(rule.rating),
+      };
+    }),
 );
 
 /** Everything with no cap of its own: flats, mults and uncapped percents. */
@@ -246,6 +266,11 @@ const otherRows = computed(() => {
       key: stat.key,
       label: stat.label,
       value: fmt(stat.key, stages.value.totals[stat.key] ?? 0),
+      compare: statCompare(
+        stat.key,
+        stages.value.totals[stat.key] ?? 0,
+        compareStages.value?.totals[stat.key] ?? 0,
+      ),
       onInfo: (event: MouseEvent) => toggleCard(event, stat.key),
     }));
 });
@@ -257,6 +282,11 @@ const abilityRows = computed(() =>
       key: stat.key,
       label: stat.label,
       value: int(stages.value.totals[stat.key] ?? 0),
+      compare: pairCompare(
+        stages.value.totals[stat.key] ?? 0,
+        compareStages.value?.totals[stat.key] ?? 0,
+        int,
+      ),
       onInfo: (event: MouseEvent) => toggleCard(event, stat.key),
     })),
 );
@@ -270,6 +300,11 @@ const enemyRows = computed(() =>
       key: stat.key,
       label: stat.label.replace(/^Enemy /, ""),
       value: fmt(stat.key, stages.value.totals[stat.key] ?? 0),
+      compare: statCompare(
+        stat.key,
+        stages.value.totals[stat.key] ?? 0,
+        compareStages.value?.totals[stat.key] ?? 0,
+      ),
       onInfo: (event: MouseEvent) => toggleCard(event, stat.key),
     })),
 );
@@ -279,14 +314,28 @@ const ilHpRows = computed(() => [
     key: "itemLevel",
     label: "Item level",
     value: int(derived.value.itemLevel),
+    compare: intCompare(
+      derived.value.itemLevel,
+      compareDerived.value?.itemLevel,
+    ),
     lead: true,
     onInfo: (event: MouseEvent) => toggleCard(event, "il"),
   },
-  { key: "hp", label: "Hit points", value: int(derived.value.hp), lead: true },
+  {
+    key: "hp",
+    label: "Hit points",
+    value: int(derived.value.hp),
+    compare: intCompare(derived.value.hp, compareDerived.value?.hp),
+    lead: true,
+  },
   {
     key: "baseDamage",
     label: "Damage",
     value: int(derived.value.baseDamage),
+    compare: intCompare(
+      derived.value.baseDamage,
+      compareDerived.value?.baseDamage,
+    ),
     lead: true,
   },
 ]);
@@ -296,18 +345,31 @@ const damageTableRows = computed(() => [
     key,
     label,
     value: int(derived.value.damage[key as keyof typeof derived.value.damage]),
+    compare: intCompare(
+      derived.value.damage[key as keyof typeof derived.value.damage],
+      compareDerived.value?.damage[key as keyof typeof derived.value.damage],
+    ),
     lead: key === "average",
   })),
   {
     key: "baseDamage",
     label: "Base damage",
     value: int(derived.value.baseDamage),
+    compare: intCompare(
+      derived.value.baseDamage,
+      compareDerived.value?.baseDamage,
+    ),
     muted: true,
   },
   {
     key: "effectiveMagPhys",
     label: "Effective magical/physical",
     value: pct(derived.value.effectiveMagPhys),
+    compare: pairCompare(
+      derived.value.effectiveMagPhys,
+      compareDerived.value?.effectiveMagPhys,
+      pct,
+    ),
     muted: true,
   },
 ]);
@@ -319,12 +381,21 @@ const healingTableRows = computed(() => [
     value: int(
       derived.value.healing[key as keyof typeof derived.value.healing],
     ),
+    compare: intCompare(
+      derived.value.healing[key as keyof typeof derived.value.healing],
+      compareDerived.value?.healing[key as keyof typeof derived.value.healing],
+    ),
     lead: key === "average",
   })),
   {
     key: "overallHealing",
     label: "Overall outgoing healing",
     value: pct(derived.value.overallHealing),
+    compare: pairCompare(
+      derived.value.overallHealing,
+      compareDerived.value?.overallHealing,
+      pct,
+    ),
     muted: true,
   },
 ]);
@@ -334,6 +405,10 @@ const ehpTableRows = computed(() =>
     key,
     label,
     value: int(derived.value.ehp[key as keyof typeof derived.value.ehp]),
+    compare: intCompare(
+      derived.value.ehp[key as keyof typeof derived.value.ehp],
+      compareDerived.value?.ehp[key as keyof typeof derived.value.ehp],
+    ),
     lead: key === "average",
   })),
 );
@@ -352,6 +427,74 @@ function signedPct(value: number) {
 function signedInt(value: number) {
   if (Math.abs(value) < 1e-9) return "—";
   return (value > 0 ? "+" : "") + int(value);
+}
+
+/** A `StatPairsTable` row's compare line, or `null` for no second line at all -- when the
+ * panel isn't comparing, or when the two builds agree and there is nothing worth the height.
+ *
+ * The compare build's plain value, with no signed delta beside it: a "(-11,709)" suffix is
+ * wide enough to drive the whole column wider than this build's own numbers need, which
+ * shifts the table's layout the moment the lines are switched on. The two numbers sit one
+ * above the other, so the direction is readable without spelling it out. */
+function pairCompare(
+  mine: number,
+  other: number | null | undefined,
+  format: (value: number) => string,
+) {
+  if (!statLines.value || other == null || Math.abs(other - mine) < 1e-9)
+    return null;
+  return format(other);
+}
+
+/** As `pairCompare`, for the whole-number `derived` outputs (item level, HP, damage, EHP). */
+function intCompare(mine: number, other: number | null | undefined) {
+  return pairCompare(mine, other, int);
+}
+
+/** As `pairCompare`, for a schema stat -- formatting follows the stat's own kind. */
+function statCompare(
+  key: string,
+  mine: number,
+  other: number | null | undefined,
+) {
+  return pairCompare(mine, other, (value) => fmt(key, value));
+}
+
+/** A ratings row's compare pair, or `null` when the two builds agree on both columns. Gated
+ * per row rather than per cell: once a row is showing a second line, the column that didn't
+ * move still repeats its value, so the line reads as the compare build's whole row instead
+ * of a lone number floating under one column.
+ *
+ * `cls` is run through `capCell` against the *compare* build's own totals and caps, not
+ * inherited from the cell above: the colour means "this number is capped/overcapped", so
+ * borrowing this build's would state something untrue about the other build. `text-text`
+ * resets it when the compare build has headroom and the cell above does not. */
+function capCompare(
+  rule: { rating: string; percent: string },
+  rating: { total: number },
+  percent: { capped: number },
+) {
+  const source = compareStages.value;
+  if (!statLines.value || !source) return null;
+  const other = {
+    rating: capCell(source, rule.rating, RATING_OVER_WARN),
+    percent: capCell(source, rule.percent),
+  };
+  if (
+    Math.abs(other.rating.total - rating.total) < 1e-9 &&
+    Math.abs(other.percent.capped - percent.capped) < 1e-9
+  )
+    return null;
+  return {
+    rating: {
+      text: int(other.rating.total),
+      cls: other.rating.primaryCls || "text-text",
+    },
+    percent: {
+      text: pct(other.percent.capped),
+      cls: other.percent.primaryCls || "text-text",
+    },
+  };
 }
 
 // The stat source popover ("why is this number what it is", per stat) -- source attribution
@@ -462,11 +605,27 @@ const {
               >
             </td>
           </tr>
+          <tr class="border border-line">
+            <td colspan="3" class="px-1 py-0.5">
+              <BaseCheckbox
+                :model-value="build.compare.statLines"
+                :disabled="!compareResult"
+                @update:model-value="
+                  (v) => compare.setCompareFlag('statLines', v as boolean)
+                "
+                >Compare stats</BaseCheckbox
+              >
+            </td>
+          </tr>
         </tbody>
       </table>
     </div>
 
-    <StatPairsTable class="my-4" :rows="ilHpRows" />
+    <StatPairsTable
+      class="my-4"
+      :rows="ilHpRows"
+      :compare-label="compareName"
+    />
 
     <PanelHead>Ratings</PanelHead>
     <table class="w-full border-collapse border border-line">
@@ -503,7 +662,7 @@ const {
           :data-stat-row="row.key"
         >
           <td
-            class="border border-line px-1 py-0.5"
+            class="border border-line px-1 py-0.5 align-top"
             :class="row.sepAfter && 'border-b-2 border-b-text/50'"
           >
             <div class="flex items-center">
@@ -517,9 +676,15 @@ const {
               </IconButton>
               <span>{{ row.label }}</span>
             </div>
+            <CompareLine
+              v-if="row.compare"
+              :text="`↳ ${compareName}`"
+              :title="compareName"
+              fit-right
+            />
           </td>
           <td
-            class="border border-line px-1 py-0.5 text-right tabular-nums gap-0.5"
+            class="border border-line px-1 py-0.5 text-right align-top tabular-nums gap-0.5"
             :class="[
               row.rating.primaryCls,
               row.sepAfter && 'border-b-2 border-b-text/50',
@@ -527,18 +692,30 @@ const {
             data-testid="stat-value"
           >
             {{ int(row.rating.total) }}
+            <CompareLine
+              v-if="row.compare"
+              class="tabular-nums"
+              :class="row.compare.rating.cls"
+              :text="row.compare.rating.text"
+            />
           </td>
           <td
-            class="border border-line px-1 py-0.5 text-right tabular-nums"
+            class="border border-line px-1 py-0.5 text-right align-top tabular-nums"
             :class="[
               row.percent.primaryCls,
               row.sepAfter && 'border-b-2 border-b-text/50',
             ]"
           >
             {{ pct(row.percent.capped) }}
+            <CompareLine
+              v-if="row.compare"
+              class="tabular-nums"
+              :class="row.compare.percent.cls"
+              :text="row.compare.percent.text"
+            />
           </td>
           <td
-            class="border border-line px-1 py-0.5 text-right tabular-nums text-muted"
+            class="border border-line px-1 py-0.5 text-right align-top tabular-nums text-muted"
             :class="[
               row.percent.overCls,
               row.sepAfter && 'border-b-2 border-b-text/50',
@@ -547,7 +724,7 @@ const {
             {{ signedPct(row.percent.over) }}
           </td>
           <td
-            class="border border-line px-1 py-0.5 text-right tabular-nums text-muted"
+            class="border border-line px-1 py-0.5 text-right align-top tabular-nums text-muted"
             :class="[
               row.rating.overCls,
               row.sepAfter && 'border-b-2 border-b-text/50',
@@ -560,22 +737,22 @@ const {
     </table>
 
     <PanelHead>Other stats</PanelHead>
-    <StatPairsTable :rows="otherRows" />
+    <StatPairsTable :rows="otherRows" :compare-label="compareName" />
 
     <PanelHead>Ability scores</PanelHead>
-    <StatPairsTable :rows="abilityRows" />
+    <StatPairsTable :rows="abilityRows" :compare-label="compareName" />
 
     <PanelHead>Enemy</PanelHead>
-    <StatPairsTable :rows="enemyRows" />
+    <StatPairsTable :rows="enemyRows" :compare-label="compareName" />
 
     <PanelHead>Damage</PanelHead>
-    <StatPairsTable :rows="damageTableRows" />
+    <StatPairsTable :rows="damageTableRows" :compare-label="compareName" />
 
     <PanelHead>Healing</PanelHead>
-    <StatPairsTable :rows="healingTableRows" />
+    <StatPairsTable :rows="healingTableRows" :compare-label="compareName" />
 
     <PanelHead>Effective hit points</PanelHead>
-    <StatPairsTable :rows="ehpTableRows" />
+    <StatPairsTable :rows="ehpTableRows" :compare-label="compareName" />
 
     <BasePopover ref="tooltip" :width="320">
       <StatSourceCard

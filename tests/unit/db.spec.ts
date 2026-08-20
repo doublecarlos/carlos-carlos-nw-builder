@@ -178,7 +178,7 @@ describe("forSlotAndBuild maxCopies filtering", () => {
       assignments,
       procs: {},
       context: { class: "" },
-      compare: { id: "", highlight: false, onlyDiff: false },
+      compare: { id: "", highlight: false, onlyDiff: false, statLines: false },
     } as unknown as Build;
   }
 
@@ -355,7 +355,7 @@ describe("forSlot tag-based item_picker resolution", () => {
       assignments: {},
       procs: {},
       context: { class: "" },
-      compare: { id: "", highlight: false, onlyDiff: false },
+      compare: { id: "", highlight: false, onlyDiff: false, statLines: false },
     } as unknown as Build;
 
     const ids = db

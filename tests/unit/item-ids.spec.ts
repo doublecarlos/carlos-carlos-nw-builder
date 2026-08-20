@@ -63,7 +63,7 @@ function testBuild(choices: Record<string, string>): Build {
       forte: {},
       toggles: {},
     },
-    compare: { id: "", highlight: false, onlyDiff: false },
+    compare: { id: "", highlight: false, onlyDiff: false, statLines: false },
   };
 }
 

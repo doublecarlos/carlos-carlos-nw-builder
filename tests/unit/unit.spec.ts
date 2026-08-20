@@ -485,7 +485,7 @@ describe("point_assignment resolution", () => {
       assignments: { "boons.tier1": counts },
       occurrenceInputs,
       context: BASE_CONTEXT,
-      compare: { id: "", highlight: false, onlyDiff: false },
+      compare: { id: "", highlight: false, onlyDiff: false, statLines: false },
     } as unknown as Build;
   }
 
@@ -629,7 +629,7 @@ describe("a point_assignment item's own config stays 0 while the item itself is 
       assignments: { "boons.master": counts },
       occurrenceInputs,
       context: BASE_CONTEXT,
-      compare: { id: "", highlight: false, onlyDiff: false },
+      compare: { id: "", highlight: false, onlyDiff: false, statLines: false },
     } as unknown as Build;
   }
 
@@ -785,7 +785,7 @@ describe("BonusOccurrenceConfig resolution", () => {
       procs: {},
       occurrenceInputs,
       context: BASE_CONTEXT,
-      compare: { id: "", highlight: false, onlyDiff: false },
+      compare: { id: "", highlight: false, onlyDiff: false, statLines: false },
     } as unknown as Build;
   }
 
@@ -938,7 +938,7 @@ describe("a bonus reachable only through a currently-zero occurrence count (#255
       assignments: {},
       occurrenceInputs,
       context: BASE_CONTEXT,
-      compare: { id: "", highlight: false, onlyDiff: false },
+      compare: { id: "", highlight: false, onlyDiff: false, statLines: false },
     } as unknown as Build;
   }
 
@@ -1048,7 +1048,7 @@ describe("an unconditional stacking grant reachable only through a currently-zer
       assignments: {},
       occurrenceInputs,
       context: BASE_CONTEXT,
-      compare: { id: "", highlight: false, onlyDiff: false },
+      compare: { id: "", highlight: false, onlyDiff: false, statLines: false },
     } as unknown as Build;
   }
 
@@ -1215,7 +1215,7 @@ describe("per-item boolean occurrence attachments (formerly procs)", () => {
       assignments: {},
       occurrenceInputs,
       context: BASE_CONTEXT,
-      compare: { id: "", highlight: false, onlyDiff: false },
+      compare: { id: "", highlight: false, onlyDiff: false, statLines: false },
     } as unknown as Build;
   }
 
@@ -1379,7 +1379,7 @@ describe("race restrictions ride on the generic equipped condition", () => {
       values: {},
       assignments: {},
       context: BASE_CONTEXT,
-      compare: { id: "", highlight: false, onlyDiff: false },
+      compare: { id: "", highlight: false, onlyDiff: false, statLines: false },
     } as unknown as Build);
     expect(matchingRace.errors.some((e) => e.kind === "bonusRule")).toBe(false);
 
@@ -1393,7 +1393,7 @@ describe("race restrictions ride on the generic equipped condition", () => {
       values: {},
       assignments: {},
       context: BASE_CONTEXT,
-      compare: { id: "", highlight: false, onlyDiff: false },
+      compare: { id: "", highlight: false, onlyDiff: false, statLines: false },
     } as unknown as Build);
     expect(wrongRace.errors.some((e) => e.kind === "bonusRule")).toBe(true);
   });
@@ -1552,7 +1552,7 @@ describe("problem grants (bonus-authored errors/warnings)", () => {
       values: {},
       assignments,
       context: { ...BASE_CONTEXT, ...contextOverrides },
-      compare: { id: "", highlight: false, onlyDiff: false },
+      compare: { id: "", highlight: false, onlyDiff: false, statLines: false },
     } as unknown as Build;
   }
 

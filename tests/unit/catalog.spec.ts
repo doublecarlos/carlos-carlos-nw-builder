@@ -1099,7 +1099,7 @@ describe("catalog.referencedOverlay", () => {
       assignments: {},
       occurrenceInputs: {},
       context: {} as Build["context"],
-      compare: { id: "", highlight: false, onlyDiff: false },
+      compare: { id: "", highlight: false, onlyDiff: false, statLines: false },
     };
     const overlay = catalog.referencedOverlay(db, build);
     // baseItem matches a real shipped item, so nothing should be emitted
@@ -1116,7 +1116,7 @@ describe("catalog.referencedOverlay", () => {
       assignments: {},
       occurrenceInputs: {},
       context: {} as Build["context"],
-      compare: { id: "", highlight: false, onlyDiff: false },
+      compare: { id: "", highlight: false, onlyDiff: false, statLines: false },
     };
     // baseItem (BASE_ITEM_ID) is in base, so it should not appear in the overlay.
     // layer-item is NOT in base, so it should appear along with its bonus.
@@ -1148,7 +1148,7 @@ describe("catalog.referencedOverlay", () => {
       assignments: {},
       occurrenceInputs: {},
       context: {} as Build["context"],
-      compare: { id: "", highlight: false, onlyDiff: false },
+      compare: { id: "", highlight: false, onlyDiff: false, statLines: false },
     };
     // The item has bonuses: ["chained-bonus"] and excludes: ["excluded-bonus"]
     // chained-bonus also excludes excluded-bonus (transitive)
@@ -1168,7 +1168,7 @@ describe("catalog.referencedOverlay", () => {
       assignments: {},
       occurrenceInputs: {},
       context: {} as Build["context"],
-      compare: { id: "", highlight: false, onlyDiff: false },
+      compare: { id: "", highlight: false, onlyDiff: false, statLines: false },
     };
     // build only references baseItem, not layerItem
     const overlay = catalog.referencedOverlay(db, build);
@@ -1195,7 +1195,7 @@ describe("catalog.referencedOverlay", () => {
       assignments: {},
       occurrenceInputs: {},
       context: {} as Build["context"],
-      compare: { id: "", highlight: false, onlyDiff: false },
+      compare: { id: "", highlight: false, onlyDiff: false, statLines: false },
     };
     const overlay = catalog.referencedOverlay(db, build);
     // The item is unchanged from base, so it should NOT be emitted.
@@ -1218,7 +1218,7 @@ describe("catalog.referencedOverlay", () => {
       assignments: {},
       occurrenceInputs: {},
       context: {} as Build["context"],
-      compare: { id: "", highlight: false, onlyDiff: false },
+      compare: { id: "", highlight: false, onlyDiff: false, statLines: false },
     };
     const overlay = catalog.referencedOverlay(db, build);
     expect(catalog.isEmpty(overlay)).toBe(true);
@@ -1247,7 +1247,7 @@ describe("catalog.referencedOverlay", () => {
       assignments: {},
       occurrenceInputs: {},
       context: { race: "elf" } as unknown as Build["context"],
-      compare: { id: "", highlight: false, onlyDiff: false },
+      compare: { id: "", highlight: false, onlyDiff: false, statLines: false },
     };
     const overlay = catalog.referencedOverlay(db, build);
     // A parameter equips nothing since #273, so nothing rides along on its account -- but the

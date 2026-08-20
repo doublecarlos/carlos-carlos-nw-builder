@@ -24,7 +24,10 @@ export function setCompareBuild(id: string) {
   if (b) b.compare.id = id;
 }
 
-export function setCompareFlag(key: "highlight" | "onlyDiff", value: boolean) {
+export function setCompareFlag(
+  key: "highlight" | "onlyDiff" | "statLines",
+  value: boolean,
+) {
   const b = builds.build.value;
   if (b) b.compare[key] = value;
 }

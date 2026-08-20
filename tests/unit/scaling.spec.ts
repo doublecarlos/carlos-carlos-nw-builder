@@ -157,7 +157,7 @@ function buildWith(
     assignments: {},
     occurrenceInputs: {},
     context: { ...CONTEXT, ...context },
-    compare: { id: "", highlight: false, onlyDiff: false },
+    compare: { id: "", highlight: false, onlyDiff: false, statLines: false },
   } as unknown as Build;
 }
 
@@ -379,7 +379,7 @@ describe("aura mount equips carry their own payload", () => {
         companionBolster: 1.2,
         ...context,
       },
-      compare: { id: "", highlight: false, onlyDiff: false },
+      compare: { id: "", highlight: false, onlyDiff: false, statLines: false },
     } as unknown as Build);
   }
 
