@@ -21,6 +21,7 @@ import { NW_SCHEMA, NW_SLOTS } from "../data/data";
 import { forSlotAndBuild } from "../data/db";
 import { abbr, signedStat, statPickerOptions } from "../lib/format";
 import { matchesQuery } from "../lib/text-filter";
+import { slotsSupplying } from "../lib/bonus-slots";
 import { slotVisible } from "../lib/slot-visibility";
 import { useHoverCard } from "../composables/useHoverCard";
 import { occurrenceRowsForItem } from "../composables/useItemBonusOccurrences";
@@ -40,6 +41,7 @@ import * as router from "../lib/router";
 import * as builds from "../stores/builds";
 import * as buildEditor from "../stores/buildEditor";
 import * as compare from "../stores/compare";
+import * as slotFilter from "../stores/slotFilter";
 import * as engine from "../stores/resolved";
 import * as editorScroll from "../stores/editorScroll";
 import * as selection from "../stores/selection";
@@ -98,21 +100,26 @@ watch(
 // --- slot filter -------------------------------------------------------------------------
 
 const modKey = isMac ? "Cmd" : "Ctrl";
-const filterText = ref("");
-const filterStat = ref("");
-const filterActive = computed(
-  () => !!filterText.value.trim() || !!filterStat.value,
-);
+
+// The filter lives in a store because the Bonuses tab, in the other column, is a second author
+// for it -- clicking a near miss narrows this list to the slots that could supply that bonus.
+const filterText = slotFilter.text;
+const filterStat = slotFilter.stat;
+const filterActive = slotFilter.isActive;
 
 const statFilterOptions = [
   { value: "", label: "All stats" },
   ...statPickerOptions,
 ];
 
-function clearFilters() {
-  filterText.value = "";
-  filterStat.value = "";
-}
+/** Slots that could supply the bonus being filtered on, or null when none is. Off the
+ *  catalogue, memoised per db+bonus -- see lib/bonus-slots.ts on why this can afford to ask
+ *  about candidates when the stat filter below cannot. */
+const bonusSupplierSlots = computed(() =>
+  slotFilter.bonusId.value
+    ? slotsSupplying(db.value, slotFilter.bonusId.value)
+    : null,
+);
 
 /** Whether this slotDef's *current choice* grants the given stat -- read straight off the
  *  engine's own resolved row vector (`rowBySlot`, `EngineRow.stats`), which already sums the
@@ -134,6 +141,10 @@ function slotGrantsStat(slotDef: Slot, statKey: string): boolean {
 function slotMatchesFilters(section: SlotSection, slotDef: Slot): boolean {
   if (slotDef.type === "separator" || slotDef.type === "text") return false;
   if (filterStat.value && !slotGrantsStat(slotDef, filterStat.value))
+    return false;
+  // Narrows the same way the stat filter does, and for the same reason: it answers "where
+  // could this come from", so it must survive the text query rather than widen it.
+  if (bonusSupplierSlots.value && !bonusSupplierSlots.value.has(slotDef.id))
     return false;
   return matchesQuery(
     [
@@ -581,9 +592,27 @@ function onBuildScroll(event: Event) {
         <BaseButton
           :disabled="!filterActive"
           data-testid="slot-filter-clear"
-          @click="clearFilters"
+          @click="slotFilter.clear()"
           ><FilterX />clear filters</BaseButton
         >
+        <!-- The bonus filter has no control of its own here -- it is set from the Bonuses
+             tab -- so it needs something on screen saying it is on and how to drop it. -->
+        <BaseBadge
+          v-if="slotFilter.bonusId.value"
+          variant="near"
+          data-testid="slot-filter-bonus"
+        >
+          could supply {{ slotFilter.bonusLabel.value }}
+          <button
+            type="button"
+            class="ml-1 cursor-pointer font-semibold"
+            aria-label="Clear the bonus filter"
+            data-testid="slot-filter-bonus-clear"
+            @click="slotFilter.clearBonus()"
+          >
+            ✕
+          </button>
+        </BaseBadge>
         <BaseBadge
           v-if="filterActive"
           variant="near"

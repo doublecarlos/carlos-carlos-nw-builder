@@ -13,11 +13,15 @@ import { ref, reactive, computed } from "vue";
 import { label as statLabel, signedStat } from "../../lib/format";
 import { matchesQuery } from "../../lib/text-filter";
 import { isHiddenBonus } from "../../engine/bonus";
+import { hasSuppliers } from "../../lib/bonus-slots";
 import * as engine from "../../stores/resolved";
+import * as slotFilter from "../../stores/slotFilter";
 import BasePanel from "../ui/BasePanel.vue";
 import PanelHead from "../ui/PanelHead.vue";
 import BaseBadge from "../ui/BaseBadge.vue";
 import BaseCheckbox from "../ui/BaseCheckbox.vue";
+import IconButton from "../ui/IconButton.vue";
+import { Crosshair } from "@lucide/vue";
 import type {
   EvaluatedBonus,
   ConditionLeafResult,
@@ -65,6 +69,12 @@ function choseLabel(chose: string | null) {
   return chose;
 }
 
+/** Narrows the build editor's slot list to the rows that could supply this bonus. The list is
+ *  in the next column over, already on screen, so there is nothing to navigate to. */
+function locate(entry: Entry) {
+  slotFilter.showSuppliersOf(entry.id, entry.title);
+}
+
 function statList(stats: StatValues | null | undefined) {
   if (!stats) return [];
   return Object.entries(stats).map(
@@ -89,6 +99,9 @@ interface Entry {
   perStack: StatValues | null;
   unmet: ConditionLeafResult[];
   nearMiss: boolean;
+  /** Whether anything in the catalogue could supply this, so the "where?" action leads
+   *  somewhere. Always false for an already-active bonus: the answer is "where it is". */
+  canLocate: boolean;
   state: "excluded" | "active" | "inactive";
   dotClass: string;
   muted: boolean;
@@ -140,6 +153,7 @@ const entries = computed<Entry[]>(() => {
       perStack: entry.stacks > 1 ? entry.stats : null,
       unmet,
       nearMiss: !entry.active && !entry.excluded && unmet.length === 1,
+      canLocate: !entry.active && hasSuppliers(db.value, entry.id),
       state,
       dotClass: STATE_DOT[state],
       muted: state !== "active",
@@ -210,41 +224,56 @@ const counts = computed(() => {
         :key="entry.id"
         class="border-b border-line/50 py-1.5 last:border-b-0"
       >
-        <button
-          type="button"
-          class="group flex w-full items-center gap-1.5 text-left cursor-pointer"
-          @click="toggle(entry.id)"
-        >
-          <span
-            class="size-1.5 flex-none rounded-full"
-            :class="entry.dotClass"
-          ></span>
-          <span
-            class="max-w-3/5 flex-none overflow-hidden text-ellipsis whitespace-nowrap group-hover:underline"
-            :class="entry.muted && 'text-muted'"
-            >{{ entry.title }}</span
+        <div class="flex w-full items-center gap-1.5">
+          <button
+            type="button"
+            class="group flex min-w-0 flex-1 items-center gap-1.5 text-left cursor-pointer"
+            @click="toggle(entry.id)"
           >
-          <span
-            v-if="entry.qualifier"
-            class="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-muted"
-            :title="entry.qualifier"
+            <span
+              class="size-1.5 flex-none rounded-full"
+              :class="entry.dotClass"
+            ></span>
+            <span
+              class="max-w-3/5 flex-none overflow-hidden text-ellipsis whitespace-nowrap group-hover:underline"
+              :class="entry.muted && 'text-muted'"
+              >{{ entry.title }}</span
+            >
+            <span
+              v-if="entry.qualifier"
+              class="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-muted"
+              :title="entry.qualifier"
+            >
+              {{ entry.qualifier }}
+            </span>
+            <BaseBadge v-if="entry.nearMiss" class="ml-auto flex-none"
+              >1 away</BaseBadge
+            >
+            <span
+              v-if="entry.stacks > 1"
+              class="flex-none rounded-full bg-surface-2 px-1.5 font-semibold text-muted"
+              >×{{ entry.stacks }}</span
+            >
+            <span
+              v-if="entry.chose"
+              class="flex-none rounded-full bg-surface-2 px-1.5 font-semibold text-muted"
+              >{{ entry.chose }}</span
+            >
+          </button>
+
+          <!-- Sibling of the expand button rather than inside it: nesting a button in a button
+             is invalid, and these are two different questions -- "what is failing" and
+             "where would I get it". -->
+          <IconButton
+            v-if="entry.canLocate"
+            class="flex-none"
+            title="Show the slots that could supply this"
+            :data-testid="`bonus-locate-${entry.id}`"
+            @click="locate(entry)"
           >
-            {{ entry.qualifier }}
-          </span>
-          <BaseBadge v-if="entry.nearMiss" class="ml-auto flex-none"
-            >1 away</BaseBadge
-          >
-          <span
-            v-if="entry.stacks > 1"
-            class="flex-none rounded-full bg-surface-2 px-1.5 font-semibold text-muted"
-            >×{{ entry.stacks }}</span
-          >
-          <span
-            v-if="entry.chose"
-            class="flex-none rounded-full bg-surface-2 px-1.5 font-semibold text-muted"
-            >{{ entry.chose }}</span
-          >
-        </button>
+            <Crosshair />
+          </IconButton>
+        </div>
 
         <!-- The payoff: for an inactive bonus, exactly which conditions failed and what
              they would need. Rendered verbatim from the engine. -->
