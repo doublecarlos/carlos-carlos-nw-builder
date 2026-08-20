@@ -18,7 +18,7 @@ const props = withDefaults(
     /** Tooltip body. Empty disables the tooltip entirely, so a caller can pass a conditional
      *  string without branching on it. */
     text?: string;
-    /** px, forwarded to BasePopover as both min and max width. */
+    /** px. A maximum for the bubble, which otherwise sizes to its text. */
     width?: number;
     /** Hover open delay. Focus opens with no delay -- a keyboard user has already committed
      *  to the control by the time they land on it, and a delay there just reads as lag. */
@@ -105,7 +105,7 @@ watch([open, trigger], ([isOpen, el]) => {
   <span ref="wrapper" class="contents">
     <slot />
 
-    <BasePopover v-if="open" ref="popover" :width="width">
+    <BasePopover v-if="open" ref="popover" :width="width" fit-content>
       <div
         :id="tooltipId"
         role="tooltip"

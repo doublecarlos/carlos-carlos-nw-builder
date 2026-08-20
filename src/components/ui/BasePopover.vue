@@ -1,24 +1,28 @@
 <script setup lang="ts">
 // Teleported overlay shell for tooltips, hover cards, and click-triggered popovers.
-// Takes a `width` (px, fixes the card's size and doubles as the horizontal flip-detection
-// bound) and exposes `place(anchor, pointerX?, align?)` plus `close()` so callers control
-// positioning
-// without duplicating viewport-flip logic. See `PopoverAlign` for the two horizontal modes.
+// Takes a `width` (px) and exposes `place(anchor, pointerX?, align?)` plus `close()`, so
+// callers control positioning without duplicating viewport-flip logic. See `PopoverAlign` for
+// the two horizontal modes and `fitContent` for the two sizing ones.
 //
-// Content scrolls independently via an inner wrapper; the measurement for the vertical flip
-// uses the real rendered height, not a CSS max-height, so a short tooltip near the viewport
-// bottom does not flip unnecessarily.
+// Content scrolls independently via an inner wrapper; the measurements for the vertical flip
+// and for centring use the real rendered box, not the CSS bounds, so a short panel near an
+// edge is placed by what it actually is rather than what it was allowed to be.
 import { ref, nextTick, useTemplateRef } from "vue";
 
 const props = withDefaults(
   defineProps<{
-    /** px. Used as both a min- and max-width (clamped to 90vw on narrow viewports) -- a
-     *  fixed size per caller so e.g. every ItemCard hover reads at the same width regardless
-     *  of how little that particular item/bonus list happens to need, not for horizontal
-     *  viewport-edge detection alone. */
+    /** px, clamped to 90vw on narrow viewports. A max-width always; also a min-width unless
+     *  `fitContent` is set. */
     width?: number;
+    /** Let the panel shrink to its content instead of always filling `width`.
+     *
+     *  Off (the default) is what a hover card wants: every ItemCard reads at the same width
+     *  regardless of how little that particular item needs, so sweeping a list doesn't make
+     *  the card jump about. On is what a tooltip wants -- "Build menu" in a 240px box centred
+     *  on a 20px kebab would hang off both sides of it and read as belonging to nothing. */
+    fitContent?: boolean;
   }>(),
-  { width: 256 },
+  { width: 256, fitContent: false },
 );
 
 const el = useTemplateRef("el");
@@ -41,6 +45,13 @@ const GAP = 8;
  */
 type PopoverAlign = "beside" | "center";
 
+/** Centres `width` on the anchor, kept inside the viewport. */
+function centredLeft(anchor: DOMRect, width: number) {
+  const left = anchor.left + anchor.width / 2 - width / 2;
+  // Clamped rather than flipped: the panel stays over its anchor either way.
+  return Math.max(Math.min(left, window.innerWidth - width - MARGIN), MARGIN);
+}
+
 function place(
   anchor: DOMRect,
   pointerX?: number,
@@ -48,9 +59,9 @@ function place(
 ) {
   let left: number;
   if (align === "center") {
-    left = anchor.left + anchor.width / 2 - props.width / 2;
-    // Clamped rather than flipped: the panel stays over its anchor either way.
-    left = Math.min(left, window.innerWidth - props.width - MARGIN);
+    // `props.width` is only an opening guess when the panel sizes to its content; the pass
+    // below re-centres on the width it actually rendered at.
+    left = centredLeft(anchor, props.width);
   } else {
     // Horizontal: from pointer if given, else from anchor's right edge.
     const originX = pointerX ?? anchor.right + GAP;
@@ -58,23 +69,28 @@ function place(
     if (left + props.width > window.innerWidth - MARGIN) {
       left = (pointerX ?? anchor.right) - props.width - GAP;
     }
+    left = Math.max(left, MARGIN);
   }
-  left = Math.max(left, MARGIN);
 
   pos.value = {
     left,
     top: anchor.bottom + 6,
   };
 
-  // Vertical flip after layout so offsetHeight is real.
+  // Re-measure after layout, so both axes are placed by the real box.
   nextTick(() => {
     if (!el.value || !pos.value) return;
-    const height = el.value.offsetHeight;
-    if (pos.value.top + height <= window.innerHeight - MARGIN) return;
-    pos.value = {
-      ...pos.value,
-      top: Math.max(anchor.top - height - 6, MARGIN),
-    };
+    const { offsetWidth, offsetHeight } = el.value;
+
+    const nextLeft =
+      align === "center" ? centredLeft(anchor, offsetWidth) : pos.value.left;
+    const nextTop =
+      pos.value.top + offsetHeight > window.innerHeight - MARGIN
+        ? Math.max(anchor.top - offsetHeight - 6, MARGIN)
+        : pos.value.top;
+
+    if (nextLeft === pos.value.left && nextTop === pos.value.top) return;
+    pos.value = { left: nextLeft, top: nextTop };
   });
 }
 
@@ -94,7 +110,7 @@ defineExpose({ place, close });
       :style="{
         left: pos.left + 'px',
         top: pos.top + 'px',
-        minWidth: 'min(' + width + 'px, 90vw)',
+        minWidth: fitContent ? undefined : 'min(' + width + 'px, 90vw)',
         maxWidth: 'min(' + width + 'px, 90vw)',
         maxHeight: '32rem',
       }"
