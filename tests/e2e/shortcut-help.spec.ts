@@ -1,14 +1,14 @@
 // The shortcut overlay: how it opens, how it gives focus back, and the guard that keeps `?`
 // from hijacking a keystroke meant for a text field.
 import { test, expect } from "@playwright/test";
-import { openBuilder, slotFilterInput } from "./support/app";
+import { openBuilder, slotFilterInput, blurToHeader } from "./support/app";
 
 const overlay = (page: import("@playwright/test").Page) =>
   page.getByTestId("shortcut-help");
 
 test("? opens the overlay", async ({ page }) => {
   await openBuilder(page);
-  await page.getByTestId("app-header").click();
+  await blurToHeader(page);
 
   await page.keyboard.press("Shift+Slash");
 

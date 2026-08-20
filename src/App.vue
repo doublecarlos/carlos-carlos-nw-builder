@@ -36,13 +36,6 @@ const DETAILS_PX = { open: 520, closed: 28 };
 const navCollapsed = rails.collapsed("nav");
 const detailsCollapsed = rails.collapsed("details");
 
-const minWidthPx = computed(
-  () =>
-    EDITOR_MIN_PX +
-    (navCollapsed.value ? NAV_PX.closed : NAV_PX.open) +
-    (detailsCollapsed.value ? DETAILS_PX.closed : DETAILS_PX.open),
-);
-
 useGlobalShortcuts();
 
 // --- loading state ------------------------------------------------------------------------
@@ -59,6 +52,13 @@ const selectedLayer = computed(() => {
   if (sel?.kind !== "layer") return null;
   return layers.layers.value.find((l) => l.id === sel.id) ?? null;
 });
+
+const minWidthPx = computed(
+  () =>
+    EDITOR_MIN_PX +
+    (navCollapsed.value ? NAV_PX.closed : NAV_PX.open) +
+    (detailsCollapsed.value ? DETAILS_PX.closed : DETAILS_PX.open),
+);
 
 // --- routing --------------------------------------------------------------------------
 

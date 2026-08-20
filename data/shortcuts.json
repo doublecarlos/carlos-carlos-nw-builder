@@ -7,6 +7,10 @@
         { "keys": ["?"], "description": "Show this list" },
         { "keys": ["Mod+Z"], "description": "Undo the last edit" },
         { "keys": ["Mod+Shift+Z", "Ctrl+Y"], "description": "Redo" },
+        {
+          "keys": ["Mod+K"],
+          "description": "Go to a section, slot, build or layer"
+        },
         { "keys": ["Mod+/"], "description": "Jump to the slot filter box" },
         {
           "keys": ["Esc"],
@@ -39,6 +43,10 @@
       "label": "Slot rows",
       "shortcuts": [
         { "keys": ["↑", "↓"], "description": "Move the cursor between rows" },
+        {
+          "keys": ["Mod+↑", "Mod+↓"],
+          "description": "Jump to the previous / next section"
+        },
         { "keys": ["Enter"], "description": "Open the row's picker" },
         {
           "keys": ["Any letter"],

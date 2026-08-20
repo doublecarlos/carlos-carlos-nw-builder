@@ -10,7 +10,14 @@ import BaseTooltip from "./ui/BaseTooltip.vue";
 import BundleExport from "./BundleExport.vue";
 import GameImport from "./GameImport.vue";
 import ShortcutHelp from "./ShortcutHelp.vue";
-import { Download, Gamepad2, HardDrive, Keyboard, Upload } from "@lucide/vue";
+import {
+  Download,
+  Gamepad2,
+  HardDrive,
+  Keyboard,
+  Search,
+  Upload,
+} from "@lucide/vue";
 import { useUndoRedoKeys } from "../composables/useUndoRedoKeys";
 import * as builds from "../stores/builds";
 import * as layers from "../stores/layers";
@@ -20,8 +27,12 @@ import {
   openWizard as openGameImport,
 } from "../stores/gameImport";
 import * as shortcutHelp from "../stores/shortcutHelp";
+import * as goTo from "../stores/goTo";
+import GoToPalette from "./GoToPalette.vue";
+import { isMac } from "../lib/platform";
 
 const importFileInput = useTemplateRef("importFileInput");
+const modKey = isMac ? "⌘" : "Ctrl";
 const showBundleExport = ref(false);
 
 const { canUndo, canRedo, undoLabel, redoLabel, undo, redo } =
@@ -62,7 +73,11 @@ async function onImportFile(event: Event) {
     class="flex items-center gap-3 border-b border-line bg-surface px-2 py-2"
     data-testid="app-header"
   >
-    <h1 class="text-base font-semibold tracking-wide whitespace-nowrap">
+    <!-- The one item here that may shrink. Every other child is a control with a fixed
+         intrinsic width, so without this the bar's own minimum grows with each one added and
+         a narrow window scrolls sideways -- and of everything up here, the title is what a
+         narrow window can most afford to lose the tail of. -->
+    <h1 class="min-w-0 truncate text-base font-semibold tracking-wide">
       Carlos Carlos' NW Build Planner
     </h1>
 
@@ -87,6 +102,26 @@ async function onImportFile(event: Event) {
       class="hidden"
       @change="onImportFile"
     />
+
+    <span class="h-4 w-px bg-line" />
+
+    <!-- Shaped like the search box it opens, rather than an icon button: a palette nobody
+         knows the shortcut for is a palette nobody uses, so the affordance states the binding
+         it is standing in for. -->
+    <button
+      type="button"
+      class="flex flex-none cursor-pointer items-center gap-1.5 rounded-md border border-line bg-surface px-1.5 py-0.5 text-muted hover:border-accent hover:text-text"
+      data-testid="header-go-to"
+      @click="goTo.open()"
+    >
+      <Search class="h-[14px] w-[14px]" />
+      <span>Go to…</span>
+      <kbd
+        class="rounded border border-line bg-surface-2 px-1 text-xs whitespace-nowrap"
+        >{{ modKey }}+K</kbd
+      >
+    </button>
+    <GoToPalette v-if="goTo.isOpen.value" />
 
     <span class="h-4 w-px bg-line" />
 

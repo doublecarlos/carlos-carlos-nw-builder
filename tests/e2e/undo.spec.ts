@@ -1,7 +1,7 @@
 // End-to-end coverage for undo/redo: edit a slot, undo, redo, and verify the undo/redo
 // button states follow along.
 import { test, expect } from "@playwright/test";
-import { openBuilder, chooseItem } from "./support/app";
+import { openBuilder, chooseItem, blurToHeader } from "./support/app";
 
 const HEAD_ITEM = "M29 Enchanted Depthweave Cap (CA)";
 
@@ -20,7 +20,7 @@ test("Ctrl+Z undoes a build slot edit", async ({ page }) => {
   await chooseItem(page, "gear.head", HEAD_ITEM);
   await expect(undo).toBeEnabled();
   await expect(redo).toBeDisabled();
-  await page.getByTestId("app-header").click();
+  await blurToHeader(page);
 
   // Ctrl+Z to undo
   await page.keyboard.press("Control+z");
@@ -37,7 +37,7 @@ test.fixme("Ctrl+Shift+Z redoes after undo", async ({ page }) => {
 
   await chooseItem(page, "gear.head", HEAD_ITEM);
   await expect(undo).toBeEnabled();
-  await page.getByTestId("app-header").click();
+  await blurToHeader(page);
 
   await page.keyboard.press("Control+z");
   await expect(undo).toBeDisabled();
@@ -55,7 +55,7 @@ test.fixme("Ctrl+Y redoes after undo", async ({ page }) => {
 
   await chooseItem(page, "gear.head", HEAD_ITEM);
   await expect(undo).toBeEnabled();
-  await page.getByTestId("app-header").click();
+  await blurToHeader(page);
 
   await page.keyboard.press("Control+z");
   await expect(undo).toBeDisabled();

@@ -53,6 +53,15 @@ export async function parkCursorOnRow(page: Page, slotId: string) {
   await expect(row).toHaveAttribute("data-cursor-key", `slot:${slotId}`);
 }
 
+/**
+ * Moves focus off whatever field or row holds it, the precondition for any shortcut guarded by
+ * `isFormControl`. Clicks the header's top-left corner rather than its centre: the bar is a row
+ * of controls, and its middle is whichever one happens to land there at the current width.
+ */
+export async function blurToHeader(page: Page) {
+  await page.getByTestId("app-header").click({ position: { x: 4, y: 4 } });
+}
+
 export function pickerInput(row: Locator): Locator {
   return row.getByTestId("picker-input");
 }

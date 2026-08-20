@@ -47,6 +47,7 @@ import * as editorScroll from "../stores/editorScroll";
 import * as selection from "../stores/selection";
 import * as layers from "../stores/layers";
 import * as layerEditorUi from "../stores/layerEditorUi";
+import * as goTo from "../stores/goTo";
 import { isMac } from "../lib/platform";
 import type {
   Item,
@@ -525,17 +526,55 @@ function statSummary(slotId: string) {
  * "move" means focusing the next/previous row's focus target: a header's own button, or a
  * slot row's invisible cursor anchor (BuildSlot.vue). Collapsed and only-diff sections
  * simply don't render their rows, so DOM order equals what's visible.
+ *
+ * Held with the platform modifier, the same arrows step a whole section per press instead.
  */
-function moveCursor(dir: 1 | -1) {
+function moveCursor(dir: 1 | -1, bySection = false) {
+  if (bySection) moveCursorBySection(dir);
+  else moveCursorByRow(dir);
+}
+
+/** Focuses a cursor row: its invisible anchor when it has one, the row itself otherwise.
+ *  `preventScroll` is for callers that place the scroll themselves -- letting focus do its own
+ *  minimal scroll first would show a jump, then the real one. */
+function focusRow(row: Element, preventScroll = false) {
+  const target =
+    row.querySelector<HTMLElement>("[data-cursor-anchor]") ??
+    (row as HTMLElement);
+  target.focus({ preventScroll });
+}
+
+function moveCursorByRow(dir: 1 | -1) {
   const rows = root.value?.querySelectorAll("[data-cursor-key]");
   if (!rows?.length) return;
   const current = activeElement.value?.closest("[data-cursor-key]");
   const idx = current ? Array.from(rows).indexOf(current) : -1;
-  const next = rows[Math.min(Math.max(idx + dir, 0), rows.length - 1)];
+  focusRow(rows[Math.min(Math.max(idx + dir, 0), rows.length - 1)]);
+}
+
+/**
+ * Mod+arrow: one whole section per press, landing on the section's first slot -- or on its
+ * header when the section is collapsed and has no slot to land on. The header is a cursor row
+ * in its own right and Enter on it expands, so a collapsed section reads as a stop with an
+ * obvious next step rather than something the cursor silently skipped over.
+ *
+ * Strictly the previous/next section, even from the middle of a long one: pressing back and
+ * forth then always lands in the same two places, which "top of this section first, then the
+ * previous one" does not.
+ */
+function moveCursorBySection(dir: 1 | -1) {
+  const sectionEls = Array.from(
+    root.value?.querySelectorAll("[data-section-id]") ?? [],
+  );
+  if (!sectionEls.length) return;
+  const current = activeElement.value?.closest("[data-section-id]");
+  const idx = current ? sectionEls.indexOf(current) : -1;
   const target =
-    next.querySelector<HTMLElement>("[data-cursor-anchor]") ??
-    (next as HTMLElement);
-  target.focus();
+    sectionEls[Math.min(Math.max(idx + dir, 0), sectionEls.length - 1)];
+  // A section's own cursor rows in order: its header first, then whatever slots it renders.
+  const rows = target.querySelectorAll("[data-cursor-key]");
+  const row = rows[1] ?? rows[0];
+  if (row) focusRow(row);
 }
 
 /** Forwards the list's own `focusin` to the hover card -- see `useHoverCard`'s own doc
@@ -560,6 +599,90 @@ watch(buildScrollEl, async (el) => {
 function onBuildScroll(event: Event) {
   editorScroll.buildScrollTop.value = (event.target as HTMLElement).scrollTop;
 }
+
+// --- "go to" jumps -----------------------------------------------------------------------
+
+/** How far below the scroll area's top edge a jumped-to target comes to rest, so it does not
+ *  sit flush against the border. */
+const SECTION_TOP_GAP = 6;
+
+/**
+ * Scrolls `el` to rest just inside the editor's top edge. `clearance` is what has to stay above
+ * it -- the section's own sticky header, when the target is a row underneath one.
+ *
+ * Measured against the scroll area's content edge rather than its border box: the list is
+ * padded, and a sticky header comes to rest past that padding, so anything landing at the
+ * border box top would end up underneath it.
+ *
+ * Never animated. Smooth scrolling is duration-by-distance and the list is ~8000px tall, so end
+ * to end takes about two seconds -- which is latency, for somewhere reached by typing its name.
+ */
+function scrollIntoEditor(el: HTMLElement, clearance = 0) {
+  const container = buildScrollEl.value;
+  if (!container) return;
+  const style = getComputedStyle(container);
+  const inset =
+    (parseFloat(style.borderTopWidth) || 0) +
+    (parseFloat(style.paddingTop) || 0);
+  container.scrollTop +=
+    el.getBoundingClientRect().top -
+    container.getBoundingClientRect().top -
+    inset -
+    clearance -
+    SECTION_TOP_GAP;
+}
+
+function sectionEl(sectionId: string) {
+  return buildScrollEl.value?.querySelector<HTMLElement>(
+    `[data-section-id="${CSS.escape(sectionId)}"]`,
+  );
+}
+
+/**
+ * The "go to" palette's destination, once it is this editor's turn to act on it (the palette
+ * can be used while the Layer editor holds the columns, in which case the request waits in the
+ * store until this mounts).
+ *
+ * A slot target *does* open its section first -- the one place navigation here rewrites the
+ * open/closed layout, and deliberately so: Mod+arrow lands on a section header, which exists
+ * either way, but a row inside a collapsed section has nothing to land on at all.
+ */
+async function runJump(target: goTo.JumpTarget) {
+  goTo.consumeJump();
+  if (target.slotId && !expanded[target.sectionId]) {
+    expanded[target.sectionId] = true;
+    await nextTick();
+  }
+  const section = sectionEl(target.sectionId);
+  if (!section) return;
+  const header = section.querySelector<HTMLElement>(
+    "[data-cursor-key^='header:']",
+  );
+  const row = target.slotId
+    ? section.querySelector<HTMLElement>(
+        `[data-cursor-key="slot:${CSS.escape(target.slotId)}"]`,
+      )
+    : null;
+  // Every jump parks the keyboard cursor, not just scrolls: the palette dismisses itself, so
+  // it has to hand focus to the destination or leave it on <body>. A slot lands on its own
+  // row, ready for Enter/type-ahead; a whole-section jump lands on the header, which is a
+  // cursor row in its own right and is there whether the section is open or not -- the same
+  // place Mod+arrow lands for a collapsed section.
+  const cursorTarget = row ?? header;
+  if (cursorTarget) focusRow(cursorTarget, true);
+  if (row) scrollIntoEditor(row, header?.offsetHeight ?? 0);
+  else scrollIntoEditor(section);
+}
+
+watch(
+  () => goTo.jump.value,
+  async (target) => {
+    if (!target) return;
+    await nextTick();
+    await runJump(target);
+  },
+  { immediate: true, flush: "post" },
+);
 </script>
 
 <template>
@@ -640,13 +763,16 @@ function onBuildScroll(event: Event) {
     <main
       v-else
       ref="buildScrollEl"
-      class="flex-1 min-h-0 p-3.5 overflow-y-auto"
+      class="flex-1 min-h-0 overflow-y-auto"
       data-testid="editor-column"
       @scroll="onBuildScroll"
     >
+      <!-- The list's padding lives here rather than on the scroll container: a scroll
+             container does not clip inside its own padding, so section headers sticking at
+             `top: 0` would have rows scrolling visibly through the band above them. -->
       <section
         ref="root"
-        class="flex flex-col gap-1.5"
+        class="flex flex-col gap-1.5 p-3.5"
         data-testid="builder-content"
         @focusin="onFocusIn"
         @focusout="onFocusOut"

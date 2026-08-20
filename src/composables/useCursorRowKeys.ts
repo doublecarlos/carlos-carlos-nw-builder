@@ -1,11 +1,13 @@
 import { onKeyStroke } from "@vueuse/core";
 import type { Ref } from "vue";
+import { isMac } from "../lib/platform";
 
 /** What a cursor row does with each key group. Headers only need `onArrow` -- their Enter and
  *  Space are native button clicks (the toggle), and clearing/seeding is a slot-row concept. */
 export interface CursorRowKeyHandlers {
-  /** Arrow keys: move focus to the neighbouring row. */
-  onArrow: (dir: 1 | -1) => void;
+  /** Arrow keys: move focus to the neighbouring row, or -- held with the platform modifier
+   *  -- to the neighbouring section. */
+  onArrow: (dir: 1 | -1, bySection: boolean) => void;
   /** Enter: focus the row's control (opens it, same as a click). */
   onEnter?: () => void;
   /** Backspace/Delete: clear an item choice or reset a build_parameter to its default. */
@@ -34,7 +36,10 @@ export function useCursorRowKeys(
     ["ArrowDown", "ArrowUp"],
     (event) => {
       event.preventDefault();
-      onArrow(event.key === "ArrowDown" ? 1 : -1);
+      onArrow(
+        event.key === "ArrowDown" ? 1 : -1,
+        isMac ? event.metaKey : event.ctrlKey,
+      );
     },
     { target, dedupe: true },
   );

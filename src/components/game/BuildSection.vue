@@ -26,8 +26,9 @@ const props = defineProps<{
   warnings: number;
   diffs: number;
   expanded: boolean;
-  /** Arrow keys on the focused header: BuildEditor moves focus to the next/previous row. */
-  onArrow: (dir: 1 | -1) => void;
+  /** Arrow keys on the focused header: BuildEditor moves focus to the next/previous row,
+   *  or to the next/previous section when the platform modifier is held. */
+  onArrow: (dir: 1 | -1, bySection: boolean) => void;
   highlightDiff: boolean;
   otherBuilds: { value: string; label: string }[];
   presets: SectionPreset[];
@@ -49,14 +50,23 @@ defineSlots<{
  *  button's native click already fires the toggle. */
 const button = useTemplateRef("button");
 useCursorRowKeys(button, {
-  onArrow: (dir) => props.onArrow(dir),
+  onArrow: (dir, bySection) => props.onArrow(dir, bySection),
 });
 </script>
 
 <template>
-  <section class="rounded-md border border-line">
+  <!-- `data-section-id` is what BuildEditor's section-at-a-time cursor and the section rail's
+       scroll spy both navigate by, the same way `data-cursor-key` marks a row. -->
+  <section class="rounded-md border border-line" :data-section-id="id">
+    <!-- Sticky within its own section, so a long one (Group is 28 rows, Artifact Call 26)
+         still says which section you are reading once its top has scrolled away. The editor's
+         `<main>` is the scroll container and the toolbar above it is a sibling, not an
+         ancestor, so `top-0` pins to the top of the visible list with nothing over it. The
+         divider moves here from the body below: sticking detaches the header from the body,
+         which would take the body's own top border with it. -->
     <div
-      class="bg-surface-2 flex items-center pr-1.5 focus-within:outline-2 focus-within:-outline-offset-1 focus-within:outline-accent"
+      class="bg-surface-2 sticky top-0 z-10 flex items-center pr-1.5 focus-within:outline-2 focus-within:-outline-offset-1 focus-within:outline-accent"
+      :class="expanded && 'border-b border-line'"
     >
       <button
         ref="button"
@@ -93,7 +103,7 @@ useCursorRowKeys(button, {
       <SectionClearButton :section-id="id" @clear="$emit('clear')" />
     </div>
 
-    <div v-if="expanded" class="bg-surface border-t border-line pb-2 pt-1">
+    <div v-if="expanded" class="bg-surface pb-2 pt-1">
       <template v-for="slot in slots" :key="slot.id">
         <slot :slot-def="slot" />
       </template>

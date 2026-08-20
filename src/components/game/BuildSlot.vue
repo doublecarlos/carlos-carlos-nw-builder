@@ -42,7 +42,7 @@ const props = defineProps<{
   highlightDiff: boolean;
   isHovered: boolean;
   /** Arrow keys on this row's cursor anchor: BuildEditor moves focus to the next/previous row. */
-  onArrow: (dir: 1 | -1) => void;
+  onArrow: (dir: 1 | -1, bySection: boolean) => void;
   // item_picker only -- a build_parameter row has no item of its own (#273).
   item?: Item | null;
   statSummary?: string;
@@ -118,7 +118,7 @@ const labelId = computed(() => `slot-${props.slotDef.id}-label`);
 
 useCursorRowKeys(anchor, {
   // Wrappers read props at call time so they stay current across re-renders.
-  onArrow: (dir) => props.onArrow(dir),
+  onArrow: (dir, bySection) => props.onArrow(dir, bySection),
   onEnter: () => control.value?.focus(),
   onClear: () => {
     if (props.slotDef.type === "item_picker") {

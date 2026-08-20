@@ -1,14 +1,14 @@
 // End-to-end coverage for useGlobalShortcuts: Ctrl+/ (focus the slot filter box while a build
 // is being edited), plus the guard that keeps it from firing while a form control has focus.
 import { test, expect } from "@playwright/test";
-import { openBuilder, slotFilterInput } from "./support/app";
+import { openBuilder, slotFilterInput, blurToHeader } from "./support/app";
 import { buildRow } from "./support/nav";
 
 test("Ctrl+/ focuses the slot filter while a build is selected", async ({
   page,
 }) => {
   await openBuilder(page);
-  await page.getByTestId("app-header").click();
+  await blurToHeader(page);
 
   await page.keyboard.press("Control+/");
 
