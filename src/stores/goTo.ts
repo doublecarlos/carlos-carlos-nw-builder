@@ -12,28 +12,16 @@ import { readonly, ref } from "vue";
 
 const _isOpen = ref(false);
 
-/** Whatever had focus when the palette opened, so dismissing it hands focus back rather than
- *  dropping the user at the top of the document. A chosen destination overrides this -- see
- *  `close({ keepFocus })`. */
-let restoreFocusTo: HTMLElement | null = null;
-
 export const isOpen = readonly(_isOpen);
 
 export function open() {
-  if (_isOpen.value) return;
-  restoreFocusTo = document.activeElement as HTMLElement | null;
   _isOpen.value = true;
 }
 
-/**
- * `keepFocus` closes without handing focus back: choosing a slot parks the keyboard cursor on
- * its row, and restoring the pre-palette focus would immediately undo that.
- */
-export function close({ keepFocus = false } = {}) {
-  if (!_isOpen.value) return;
+// Handing focus back on close is BaseModal's job -- see `releaseFocus` there for the one case
+// (choosing a destination) that deliberately opts out of it.
+export function close() {
   _isOpen.value = false;
-  if (!keepFocus) restoreFocusTo?.focus?.();
-  restoreFocusTo = null;
 }
 
 export function toggle() {

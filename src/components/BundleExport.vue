@@ -12,7 +12,7 @@ import { showNotice } from "../stores/notice";
 import { matchesQuery } from "../lib/text-filter";
 import { Download } from "@lucide/vue";
 import BaseButton from "./ui/BaseButton.vue";
-import { useEscapeToClose } from "../composables/useEscapeToClose";
+import BaseModal from "./ui/BaseModal.vue";
 
 const emit = defineEmits<{
   close: [];
@@ -143,139 +143,117 @@ function selectAllBuilds() {
 function selectAllLayers() {
   selectedLayerIds.value = new Set(layers.layers.value.map((l) => l.id));
 }
-
-useEscapeToClose(() => emit("close"));
 </script>
 
 <template>
-  <div
-    class="fixed inset-0 z-50 flex items-center justify-center bg-black/30"
-    @click.self="emit('close')"
+  <BaseModal
+    title="Export bundle"
+    panel-class="max-h-[80vh] w-[520px]"
+    data-testid="bundle-export-picker"
+    @close="emit('close')"
   >
-    <div
-      class="flex max-h-[80vh] w-[520px] flex-col rounded-lg border border-line bg-surface shadow-xl"
-      data-testid="bundle-export-picker"
-    >
-      <!-- Header -->
-      <div
-        class="flex items-center justify-between border-b border-line px-4 py-3"
-      >
-        <h2 class="text-base font-semibold">Export bundle</h2>
+    <div class="flex flex-1 gap-4 overflow-y-auto p-4">
+      <!-- Builds column -->
+      <div class="flex-1">
+        <h3 class="mb-2 font-medium">Builds</h3>
+        <input
+          v-model="buildFilter"
+          type="text"
+          placeholder="Filter builds…"
+          class="mb-2 w-full rounded border border-line bg-surface px-2 py-1"
+          data-testid="bundle-build-filter"
+        />
+        <div class="max-h-48 space-y-1 overflow-y-auto">
+          <label
+            v-for="b in filteredBuilds"
+            :key="b.id"
+            class="flex cursor-pointer items-center gap-2"
+          >
+            <input
+              type="checkbox"
+              :checked="selectedBuildIds.has(b.id)"
+              data-testid="bundle-build-checkbox"
+              @change="toggleBuild(b.id)"
+            />
+            {{ b.name }}
+          </label>
+        </div>
         <button
           type="button"
-          class="cursor-pointer text-muted hover:text-text"
-          data-testid="bundle-export-close"
-          @click="emit('close')"
+          class="mt-2 cursor-pointer text-sm text-accent hover:underline"
+          @click="selectAllBuilds"
         >
-          ✕
+          Select all
         </button>
       </div>
 
-      <div class="flex flex-1 gap-4 overflow-y-auto p-4">
-        <!-- Builds column -->
-        <div class="flex-1">
-          <h3 class="mb-2 font-medium">Builds</h3>
-          <input
-            v-model="buildFilter"
-            type="text"
-            placeholder="Filter builds…"
-            class="mb-2 w-full rounded border border-line bg-surface px-2 py-1"
-            data-testid="bundle-build-filter"
-          />
-          <div class="max-h-48 space-y-1 overflow-y-auto">
-            <label
-              v-for="b in filteredBuilds"
-              :key="b.id"
-              class="flex cursor-pointer items-center gap-2"
-            >
-              <input
-                type="checkbox"
-                :checked="selectedBuildIds.has(b.id)"
-                data-testid="bundle-build-checkbox"
-                @change="toggleBuild(b.id)"
-              />
-              {{ b.name }}
-            </label>
-          </div>
-          <button
-            type="button"
-            class="mt-2 cursor-pointer text-sm text-accent hover:underline"
-            @click="selectAllBuilds"
+      <!-- Layers column -->
+      <div class="flex-1">
+        <h3 class="mb-2 font-medium">Layers</h3>
+        <input
+          v-model="layerFilter"
+          type="text"
+          placeholder="Filter layers…"
+          class="mb-2 w-full rounded border border-line bg-surface px-2 py-1"
+          data-testid="bundle-layer-filter"
+        />
+        <div class="max-h-48 space-y-1 overflow-y-auto">
+          <label
+            v-for="l in filteredLayers"
+            :key="l.id"
+            class="flex cursor-pointer items-center gap-2"
+            :class="{
+              'text-accent':
+                autoTickedLayerIds.has(l.id) && selectedLayerIds.has(l.id),
+            }"
           >
-            Select all
-          </button>
-        </div>
-
-        <!-- Layers column -->
-        <div class="flex-1">
-          <h3 class="mb-2 font-medium">Layers</h3>
-          <input
-            v-model="layerFilter"
-            type="text"
-            placeholder="Filter layers…"
-            class="mb-2 w-full rounded border border-line bg-surface px-2 py-1"
-            data-testid="bundle-layer-filter"
-          />
-          <div class="max-h-48 space-y-1 overflow-y-auto">
-            <label
-              v-for="l in filteredLayers"
-              :key="l.id"
-              class="flex cursor-pointer items-center gap-2"
-              :class="{
-                'text-accent':
-                  autoTickedLayerIds.has(l.id) && selectedLayerIds.has(l.id),
-              }"
+            <input
+              type="checkbox"
+              :checked="selectedLayerIds.has(l.id)"
+              data-testid="bundle-layer-checkbox"
+              @change="toggleLayer(l.id)"
+            />
+            {{ l.name }}
+            <span
+              v-if="autoTickedLayerIds.has(l.id) && selectedLayerIds.has(l.id)"
+              class="text-sm text-muted"
+              >(auto)</span
             >
-              <input
-                type="checkbox"
-                :checked="selectedLayerIds.has(l.id)"
-                data-testid="bundle-layer-checkbox"
-                @change="toggleLayer(l.id)"
-              />
-              {{ l.name }}
-              <span
-                v-if="
-                  autoTickedLayerIds.has(l.id) && selectedLayerIds.has(l.id)
-                "
-                class="text-sm text-muted"
-                >(auto)</span
-              >
-            </label>
-          </div>
-          <button
-            type="button"
-            class="mt-2 cursor-pointer text-sm text-accent hover:underline"
-            @click="selectAllLayers"
-          >
-            Select all
-          </button>
+          </label>
         </div>
-      </div>
-
-      <!-- Warnings -->
-      <div v-if="warnings.length" class="px-4 pb-2">
-        <p
-          v-for="(w, i) in warnings"
-          :key="i"
-          class="text-sm text-warning"
-          data-testid="bundle-warning"
+        <button
+          type="button"
+          class="mt-2 cursor-pointer text-sm text-accent hover:underline"
+          @click="selectAllLayers"
         >
-          ⚠ {{ w }}
-        </p>
-      </div>
-
-      <!-- Footer -->
-      <div class="flex justify-end gap-2 border-t border-line px-4 py-3">
-        <BaseButton @click="emit('close')"> Cancel </BaseButton>
-        <BaseButton
-          data-testid="bundle-export-button"
-          variant="primary"
-          @click="exportBundle"
-        >
-          <Download />
-          Export
-        </BaseButton>
+          Select all
+        </button>
       </div>
     </div>
-  </div>
+
+    <!-- Warnings -->
+    <div v-if="warnings.length" class="px-4 pb-2">
+      <p
+        v-for="(w, i) in warnings"
+        :key="i"
+        class="text-sm text-warning"
+        data-testid="bundle-warning"
+      >
+        ⚠ {{ w }}
+      </p>
+    </div>
+
+    <!-- Footer -->
+    <div class="flex justify-end gap-2 border-t border-line px-4 py-3">
+      <BaseButton @click="emit('close')"> Cancel </BaseButton>
+      <BaseButton
+        data-testid="bundle-export-button"
+        variant="primary"
+        @click="exportBundle"
+      >
+        <Download />
+        Export
+      </BaseButton>
+    </div>
+  </BaseModal>
 </template>

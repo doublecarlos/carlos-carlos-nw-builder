@@ -212,10 +212,10 @@ test("reopening from the notice shows the same report", async ({ page }) => {
   await expect(page.getByTestId("game-import-step-report")).toBeVisible();
 
   await page.getByTestId("game-import-done").click();
-  await expect(page.getByTestId("game-import-drawer")).toBeHidden();
+  await expect(page.getByTestId("game-import-modal")).toBeHidden();
 
   await page.getByTestId("notice-action").click();
-  await expect(page.getByTestId("game-import-drawer")).toBeVisible();
+  await expect(page.getByTestId("game-import-modal")).toBeVisible();
   await expect(page.getByTestId("game-import-step-report")).toBeVisible();
   await expect(
     page.getByTestId("game-import-report-unrecognised").locator("summary"),

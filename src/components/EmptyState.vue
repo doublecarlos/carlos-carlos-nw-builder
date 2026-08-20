@@ -4,11 +4,8 @@ import { useTemplateRef } from "vue";
 import { Gamepad2, Plus, Upload } from "@lucide/vue";
 import * as builds from "../stores/builds";
 import * as layers from "../stores/layers";
-import GameImport from "./GameImport.vue";
-import {
-  isOpen as gameImportOpen,
-  openWizard as openGameImport,
-} from "../stores/gameImport";
+// Only asks for the wizard: it is mounted once, in AppHeader, for every entry point.
+import { openWizard as openGameImport } from "../stores/gameImport";
 
 const importFileInput = useTemplateRef("importFileInput");
 
@@ -81,6 +78,5 @@ async function onImportFile(event: Event) {
         />
       </div>
     </div>
-    <GameImport v-if="gameImportOpen" />
   </div>
 </template>

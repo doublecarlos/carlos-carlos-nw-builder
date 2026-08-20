@@ -8,10 +8,15 @@
 //
 // Nothing is written to the catalog: "Create item" seeds an ordinary new draft in ItemForm,
 // which still needs an explicit Save.
+//
+// Modal rather than in-flow: pasting is the whole point, and a paste only reaches a handler
+// bound to an element once focus is already inside it. Owning the screen is what lets the
+// screenshot land wherever the cursor happens to be when the window opens.
 import { computed, ref } from "vue";
+import { useEventListener } from "@vueuse/core";
 import { CirclePlus, LoaderCircle } from "@lucide/vue";
 import BaseButton from "../ui/BaseButton.vue";
-import BaseDrawer from "../ui/BaseDrawer.vue";
+import BaseModal from "../ui/BaseModal.vue";
 import { parseTooltip } from "../../lib/tooltip-parser";
 import { label, signedStat } from "../../lib/format";
 import type { Item } from "../../types";
@@ -46,7 +51,7 @@ async function read(image: Blob) {
   error.value = "";
   try {
     // Loaded on demand: the engine and its model are several megabytes that nobody who
-    // never opens this drawer should have to fetch.
+    // never opens this window should have to fetch.
     const { readTooltip } = await import("../../lib/ocr");
     text.value = await readTooltip(image);
     if (!text.value.trim()) error.value = "No text was found in that image.";
@@ -75,19 +80,24 @@ function onPick(event: Event) {
   const file = (event.target as HTMLInputElement).files?.[0];
   if (file) void read(file);
 }
+
+// Document-level, not on the panel: Ctrl+V is the primary interaction, and it has to work the
+// instant the window opens rather than after a click lands focus inside it. A plain text paste
+// still falls through to whatever is focused -- `onPaste` only acts on an image.
+useEventListener(document, "paste", onPaste);
 </script>
 
 <template>
-  <BaseDrawer>
-    <div
-      class="flex flex-col gap-2.5"
-      data-testid="tooltip-import"
-      @paste="onPaste"
-      @dragover.prevent
-      @drop="onDrop"
-    >
+  <BaseModal
+    title="Create an item from a tooltip"
+    panel-class="max-h-[85vh] w-[760px] max-w-[92vw]"
+    data-testid="tooltip-import"
+    @close="emit('close')"
+    @dragover.prevent
+    @drop="onDrop"
+  >
+    <div class="flex min-h-0 flex-1 flex-col gap-2.5 overflow-y-auto p-4">
       <div class="flex flex-wrap items-baseline gap-2">
-        <span class="font-medium">Create an item from a tooltip</span>
         <span class="text-muted"
           >Paste or drop a screenshot. Base stats are filled in; bonuses stay
           yours to author.</span
@@ -115,16 +125,11 @@ function onPick(event: Event) {
         v-model="text"
         rows="8"
         data-testid="tooltip-import-text"
-        class="w-full resize-y rounded-md border border-line bg-surface px-2 py-1.5 font-mono"
+        class="w-full flex-none resize-y rounded-md border border-line bg-surface px-2 py-1.5 font-mono"
         placeholder="Paste a screenshot here — the recognised text appears in this box, where you can correct it before creating the item."
       ></textarea>
 
-      <!-- Bounded: a long tooltip produces enough unmatched lines to push the actions below
-           the fold, and the drawer itself is not a scroll container. -->
-      <div
-        v-if="text.trim()"
-        class="flex max-h-64 flex-col gap-2 overflow-y-auto lg:flex-row"
-      >
+      <div v-if="text.trim()" class="flex flex-col gap-2 lg:flex-row">
         <section class="min-w-0 flex-1">
           <h4 class="mb-1 text-muted">
             Will be filled ({{ result.stats.length }})
@@ -178,17 +183,17 @@ function onPick(event: Event) {
           </ul>
         </section>
       </div>
-
-      <div class="flex gap-1.5">
-        <BaseButton
-          variant="primary"
-          :disabled="!hasStats || busy"
-          data-testid="tooltip-import-create"
-          @click="emit('create', result.draft)"
-          ><CirclePlus />Create item</BaseButton
-        >
-        <BaseButton @click="emit('close')">Cancel</BaseButton>
-      </div>
     </div>
-  </BaseDrawer>
+
+    <div class="flex flex-none gap-1.5 border-t border-line px-4 py-3">
+      <BaseButton
+        variant="primary"
+        :disabled="!hasStats || busy"
+        data-testid="tooltip-import-create"
+        @click="emit('create', result.draft)"
+        ><CirclePlus />Create item</BaseButton
+      >
+      <BaseButton @click="emit('close')">Cancel</BaseButton>
+    </div>
+  </BaseModal>
 </template>

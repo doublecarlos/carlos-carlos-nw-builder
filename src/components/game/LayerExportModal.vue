@@ -1,12 +1,15 @@
 <script setup lang="ts">
-// LayerEditor's export drawer: this layer's own raw overlay JSON, plus -- dev builds only --
+// LayerEditor's export window: this layer's own raw overlay JSON, plus -- dev builds only --
 // the composed db-items/db-bonuses/slots files for regenerating the shipped data across every
 // enabled layer. Self-contained aside from which tab is active, which the parent keeps so
-// reopening the drawer remembers the last tab.
+// reopening it remembers the last tab.
+//
+// Modal rather than in-flow: you come here to copy or download a file and then leave, so
+// nothing behind it matters meanwhile, and the tabs want the room.
 import { computed, ref } from "vue";
 import { Copy, Download } from "@lucide/vue";
 import BaseButton from "../ui/BaseButton.vue";
-import BaseDrawer from "../ui/BaseDrawer.vue";
+import BaseModal from "../ui/BaseModal.vue";
 import CodeBlock from "../ui/CodeBlock.vue";
 import TabStrip from "../ui/TabStrip.vue";
 import TabButton from "../ui/TabButton.vue";
@@ -22,6 +25,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   notice: [message: string];
+  close: [];
 }>();
 
 const activeTab = defineModel<string>({ default: "items" }); // items | bonuses | slots | overlay
@@ -104,53 +108,60 @@ function downloadExport() {
 </script>
 
 <template>
-  <BaseDrawer>
-    <div class="mb-1.5 flex flex-wrap items-end gap-2">
-      <TabStrip>
-        <template v-if="maintainerTabsEnabled">
+  <BaseModal
+    title="Export"
+    panel-class="max-h-[85vh] w-[880px] max-w-[92vw]"
+    data-testid="layer-export"
+    @close="emit('close')"
+  >
+    <div class="flex min-h-0 flex-1 flex-col overflow-y-auto p-4">
+      <div class="mb-1.5 flex flex-wrap items-end gap-2">
+        <TabStrip>
+          <template v-if="maintainerTabsEnabled">
+            <TabButton
+              :active="effectiveTab === 'items'"
+              @click="activeTab = 'items'"
+              >db-items.json</TabButton
+            >
+            <TabButton
+              :active="effectiveTab === 'bonuses'"
+              @click="activeTab = 'bonuses'"
+              >db-bonuses.json</TabButton
+            >
+            <TabButton
+              :active="effectiveTab === 'slots'"
+              @click="activeTab = 'slots'"
+              >slots.json</TabButton
+            >
+          </template>
           <TabButton
-            :active="effectiveTab === 'items'"
-            @click="activeTab = 'items'"
-            >db-items.json</TabButton
+            :active="effectiveTab === 'overlay'"
+            @click="activeTab = 'overlay'"
+            >This layer</TabButton
           >
-          <TabButton
-            :active="effectiveTab === 'bonuses'"
-            @click="activeTab = 'bonuses'"
-            >db-bonuses.json</TabButton
-          >
-          <TabButton
-            :active="effectiveTab === 'slots'"
-            @click="activeTab = 'slots'"
-            >slots.json</TabButton
-          >
-        </template>
-        <TabButton
-          :active="effectiveTab === 'overlay'"
-          @click="activeTab = 'overlay'"
-          >This layer</TabButton
+        </TabStrip>
+        <span class="flex-1"></span>
+        <BaseButton @click="copyExport"><Copy />Copy</BaseButton>
+        <BaseButton @click="downloadExport"
+          ><Download />Download {{ exportName }}</BaseButton
         >
-      </TabStrip>
-      <span class="flex-1"></span>
-      <BaseButton @click="copyExport"><Copy />Copy</BaseButton>
-      <BaseButton @click="downloadExport"
-        ><Download />Download {{ exportName }}</BaseButton
-      >
+      </div>
+      <CodeBlock :value="exportText" :rows="20" class="w-full" />
+      <p class="mt-1 text-muted">
+        <template v-if="effectiveTab === 'items'">
+          Composed from all enabled layers — for regenerating the shipped data
+          files.
+        </template>
+        <template v-else-if="effectiveTab === 'bonuses'">
+          Composed from all enabled layers — for regenerating the shipped data
+          files.
+        </template>
+        <template v-else-if="effectiveTab === 'slots'">
+          Composed from all enabled layers' presets — for regenerating
+          <code>data/slots.json</code>.
+        </template>
+        <template v-else> Just this layer's raw overlay JSON. </template>
+      </p>
     </div>
-    <CodeBlock :value="exportText" :rows="12" class="w-full" />
-    <p class="mt-1 text-muted">
-      <template v-if="effectiveTab === 'items'">
-        Composed from all enabled layers — for regenerating the shipped data
-        files.
-      </template>
-      <template v-else-if="effectiveTab === 'bonuses'">
-        Composed from all enabled layers — for regenerating the shipped data
-        files.
-      </template>
-      <template v-else-if="effectiveTab === 'slots'">
-        Composed from all enabled layers' presets — for regenerating
-        <code>data/slots.json</code>.
-      </template>
-      <template v-else> Just this layer's raw overlay JSON. </template>
-    </p>
-  </BaseDrawer>
+  </BaseModal>
 </template>

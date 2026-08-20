@@ -13,7 +13,7 @@ const TOOLTIP = fileURLToPath(
   new URL("./fixtures/m32-omen-of-doom-celestial.png", import.meta.url),
 );
 
-async function openImportDrawer(page: import("@playwright/test").Page) {
+async function openImportModal(page: import("@playwright/test").Page) {
   await openBuilder(page);
   await addLayer(page);
   await layerRow(page, "Layer 1").locator(".nav-name").click();
@@ -32,7 +32,7 @@ test.describe("creating an item from a tooltip screenshot", () => {
   test("reads a screenshot and fills in the item's base stats", async ({
     page,
   }) => {
-    await openImportDrawer(page);
+    await openImportModal(page);
 
     await page.getByTestId("tooltip-import-file").setInputFiles(TOOLTIP);
 
@@ -53,7 +53,7 @@ test.describe("creating an item from a tooltip screenshot", () => {
   test("creates a new item draft carrying the parsed values", async ({
     page,
   }) => {
-    await openImportDrawer(page);
+    await openImportModal(page);
     await page.getByTestId("tooltip-import-file").setInputFiles(TOOLTIP);
     await expect(page.getByTestId("tooltip-import-text")).not.toBeEmpty({
       timeout: 120_000,
@@ -61,7 +61,7 @@ test.describe("creating an item from a tooltip screenshot", () => {
 
     await page.getByTestId("tooltip-import-create").click();
 
-    // The drawer closes and an ordinary new-item draft opens, pre-filled but unsaved.
+    // The window closes and an ordinary new-item draft opens, pre-filled but unsaved.
     await expect(page.getByTestId("tooltip-import")).toBeHidden();
     await expect(page.getByTestId("item-name-input")).toHaveValue(
       /Omen of Doom/i,
@@ -71,7 +71,7 @@ test.describe("creating an item from a tooltip screenshot", () => {
   test("parses corrections typed into the recognised text", async ({
     page,
   }) => {
-    await openImportDrawer(page);
+    await openImportModal(page);
 
     // No OCR involved: the text box is editable precisely so a missed line can be added.
     await page
@@ -84,7 +84,7 @@ test.describe("creating an item from a tooltip screenshot", () => {
   });
 
   test("keeps Create disabled until something parses", async ({ page }) => {
-    await openImportDrawer(page);
+    await openImportModal(page);
     await expect(page.getByTestId("tooltip-import-create")).toBeDisabled();
 
     await page
@@ -92,4 +92,29 @@ test.describe("creating an item from a tooltip screenshot", () => {
       .fill("Just some prose with no stat lines in it at all.");
     await expect(page.getByTestId("tooltip-import-create")).toBeDisabled();
   });
+});
+
+test("a pasted screenshot lands without clicking into the window first", async ({
+  page,
+}) => {
+  await openImportModal(page);
+
+  // Dispatched at the document, which is where the browser delivers Ctrl+V when nothing
+  // inside the window has been clicked -- the case an in-flow panel drops entirely.
+  await page.evaluate(() => {
+    const PIXEL =
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
+    const bytes = Uint8Array.from(atob(PIXEL), (c) => c.charCodeAt(0));
+    const data = new DataTransfer();
+    data.items.add(new File([bytes], "tooltip.png", { type: "image/png" }));
+    document.dispatchEvent(
+      new ClipboardEvent("paste", { clipboardData: data, bubbles: true }),
+    );
+  });
+
+  // Any of these is the paste having been received: it reads, then either finds no text in a
+  // 1x1 pixel or fails to load the engine. Never getting this far is the defect.
+  await expect(page.getByTestId("tooltip-import")).toContainText(
+    /Reading the screenshot|No text was found|Could not read/,
+  );
 });

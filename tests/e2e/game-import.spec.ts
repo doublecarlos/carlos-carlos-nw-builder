@@ -16,12 +16,12 @@ const LOADOUT_ORDER_FIXTURE = join(
 );
 const GARBAGE_FIXTURE = join(__dirname, "fixtures/garbage.txt");
 
-test("header button opens the drawer on the instructions step", async ({
+test("header button opens the wizard on the instructions step", async ({
   page,
 }) => {
   await openBuilder(page);
   await page.getByTestId("header-import-from-game").click();
-  await expect(page.getByTestId("game-import-drawer")).toBeVisible();
+  await expect(page.getByTestId("game-import-modal")).toBeVisible();
   await expect(page.getByTestId("game-import-step-instructions")).toBeVisible();
 });
 
@@ -97,10 +97,10 @@ test("selecting two loadouts and confirming creates two builds in the nav with t
   await expect(buildRow(page, "Carlos o Bardo — 1. DPS ST")).toBeVisible();
   await expect(buildRow(page, "Carlos o Bardo — aaaaaa")).toBeVisible();
 
-  // Commit lands on the coverage report step, not a closed drawer -- see #175.
+  // Commit lands on the coverage report step, not a closed wizard -- see #175.
   await expect(page.getByTestId("game-import-step-report")).toBeVisible();
   await page.getByTestId("game-import-done").click();
-  await expect(page.getByTestId("game-import-drawer")).toBeHidden();
+  await expect(page.getByTestId("game-import-modal")).toBeHidden();
 });
 
 test("a garbage file shows the 'not a demo file' message and does not create a build", async ({
@@ -127,6 +127,6 @@ test("Escape closes the wizard without committing", async ({ page }) => {
 
   await page.keyboard.press("Escape");
 
-  await expect(page.getByTestId("game-import-drawer")).toBeHidden();
+  await expect(page.getByTestId("game-import-modal")).toBeHidden();
   await expect(buildRow(page, "Carlos o Bardo")).toBeHidden();
 });

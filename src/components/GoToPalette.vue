@@ -8,11 +8,11 @@
 //
 // It does not duplicate the slot filter (Mod+/): that narrows the list *in place* and stays
 // on, answering "show me only these". This takes you somewhere and gets out of the way.
-import { computed, nextTick, ref, useTemplateRef, watch } from "vue";
+import { computed, nextTick, onMounted, ref, useTemplateRef, watch } from "vue";
 import { onKeyStroke } from "@vueuse/core";
+import BaseModal from "./ui/BaseModal.vue";
 import { rankEntries, type GoToEntry } from "../lib/go-to";
 import { useGoToEntries } from "../composables/useGoToEntries";
-import { useEscapeToClose } from "../composables/useEscapeToClose";
 import * as goTo from "../stores/goTo";
 import * as selection from "../stores/selection";
 import * as builds from "../stores/builds";
@@ -24,6 +24,7 @@ const KIND_LABEL: Record<GoToEntry["kind"], string> = {
   layer: "Layer",
 };
 
+const modal = useTemplateRef<InstanceType<typeof BaseModal>>("modal");
 const input = useTemplateRef<HTMLInputElement>("input");
 const list = useTemplateRef<HTMLElement>("list");
 const query = ref("");
@@ -43,17 +44,10 @@ watch(highlight, async () => {
     ?.scrollIntoView({ block: "nearest" });
 });
 
-// The palette is mounted only while open (`v-if` in AppHeader), so this runs once per opening.
-// Focusing the input is what makes Mod+K straight into typing.
-watch(
-  input,
-  (el) => {
-    query.value = "";
-    highlight.value = 0;
-    el?.focus();
-  },
-  { immediate: true, flush: "post" },
-);
+// The palette is mounted only while open (`v-if` in AppHeader), so this runs once per opening,
+// after BaseModal has focused its panel -- taking the focus here is what makes Mod+K straight
+// into typing.
+onMounted(() => input.value?.focus());
 
 function move(delta: number) {
   const count = results.value.length;
@@ -88,7 +82,8 @@ function choose(entry: GoToEntry) {
   });
   // The destination takes the focus -- a slot jump parks the keyboard cursor on its row, and
   // handing focus back to whatever opened the palette would undo that immediately.
-  goTo.close({ keepFocus: true });
+  modal.value?.releaseFocus();
+  goTo.close();
 }
 
 onKeyStroke("ArrowDown", (event) => {
@@ -104,73 +99,67 @@ onKeyStroke("Enter", (event) => {
   const entry = results.value[highlight.value];
   if (entry) choose(entry);
 });
-
-useEscapeToClose(() => goTo.close());
 </script>
 
 <template>
-  <div
-    class="fixed inset-0 z-50 flex items-start justify-center bg-black/30 pt-[12vh]"
+  <BaseModal
+    ref="modal"
+    label="Go to"
+    align="top"
+    panel-class="max-h-[70vh] w-[520px]"
     data-testid="go-to-palette"
-    @click.self="goTo.close()"
+    @close="goTo.close()"
   >
-    <div
-      class="flex max-h-[70vh] w-[520px] flex-col overflow-hidden rounded-lg border border-line bg-surface shadow-xl"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Go to"
-    >
-      <input
-        ref="input"
-        v-model="query"
-        type="text"
-        role="combobox"
-        aria-expanded="true"
-        aria-controls="go-to-list"
-        :aria-activedescendant="
-          results[highlight] ? `go-to-${results[highlight].key}` : undefined
-        "
-        aria-label="Go to a section, slot, build or layer"
-        data-testid="go-to-input"
-        class="w-full border-b border-line bg-surface px-3 py-2.5 focus:outline-none"
-        placeholder="Go to a section, slot, build or layer…"
-      />
+    <input
+      ref="input"
+      v-model="query"
+      type="text"
+      role="combobox"
+      aria-expanded="true"
+      aria-controls="go-to-list"
+      :aria-activedescendant="
+        results[highlight] ? `go-to-${results[highlight].key}` : undefined
+      "
+      aria-label="Go to a section, slot, build or layer"
+      data-testid="go-to-input"
+      class="w-full border-b border-line bg-surface px-3 py-2.5 focus:outline-none"
+      placeholder="Go to a section, slot, build or layer…"
+    />
 
+    <div
+      id="go-to-list"
+      ref="list"
+      role="listbox"
+      aria-label="Destinations"
+      class="min-h-0 flex-1 overflow-y-auto py-1"
+    >
+      <!-- Rows are spelled out here rather than reusing ComboBoxMenuRow: that row carries
+           the pickers' own `picker-option` test id, and a palette result answering to it
+           would quietly widen every picker assertion in the suite. -->
+      <div v-if="!results.length" class="px-3 py-1 italic text-muted">
+        Nothing matches “{{ query }}”
+      </div>
       <div
-        id="go-to-list"
-        ref="list"
-        role="listbox"
-        aria-label="Destinations"
-        class="min-h-0 flex-1 overflow-y-auto py-1"
+        v-for="(entry, index) in results"
+        :id="`go-to-${entry.key}`"
+        :key="entry.key"
+        role="option"
+        :aria-selected="index === highlight ? 'true' : 'false'"
+        class="flex cursor-pointer items-baseline gap-2 px-3 py-1"
+        :class="index === highlight && 'bg-accent-soft'"
+        :data-highlighted="index === highlight || undefined"
+        :data-testid="`go-to-option-${entry.key}`"
+        @mousemove="highlight = index"
+        @click="choose(entry)"
       >
-        <!-- Rows are spelled out here rather than reusing ComboBoxMenuRow: that row carries
-             the pickers' own `picker-option` test id, and a palette result answering to it
-             would quietly widen every picker assertion in the suite. -->
-        <div v-if="!results.length" class="px-3 py-1 italic text-muted">
-          Nothing matches “{{ query }}”
-        </div>
-        <div
-          v-for="(entry, index) in results"
-          :id="`go-to-${entry.key}`"
-          :key="entry.key"
-          role="option"
-          :aria-selected="index === highlight ? 'true' : 'false'"
-          class="flex cursor-pointer items-baseline gap-2 px-3 py-1"
-          :class="index === highlight && 'bg-accent-soft'"
-          :data-highlighted="index === highlight || undefined"
-          :data-testid="`go-to-option-${entry.key}`"
-          @mousemove="highlight = index"
-          @click="choose(entry)"
-        >
-          <span class="flex-none">{{ entry.label }}</span>
-          <span v-if="entry.detail" class="min-w-0 truncate text-muted">{{
-            entry.detail
-          }}</span>
-          <span class="ml-auto flex-none text-xs uppercase text-muted">{{
-            KIND_LABEL[entry.kind]
-          }}</span>
-        </div>
+        <span class="flex-none">{{ entry.label }}</span>
+        <span v-if="entry.detail" class="min-w-0 truncate text-muted">{{
+          entry.detail
+        }}</span>
+        <span class="ml-auto flex-none text-xs uppercase text-muted">{{
+          KIND_LABEL[entry.kind]
+        }}</span>
       </div>
     </div>
-  </div>
+  </BaseModal>
 </template>

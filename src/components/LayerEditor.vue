@@ -16,23 +16,31 @@ import {
   ref,
   watch,
 } from "vue";
-import BaseDrawer from "./ui/BaseDrawer.vue";
+import BaseModal from "./ui/BaseModal.vue";
 import { useEventListener } from "@vueuse/core";
 import { useConfirm } from "../composables/useConfirm";
 import ItemForm from "./game/ItemForm.vue";
 import BonusForm from "./game/BonusForm.vue";
 import PresetForm from "./game/PresetForm.vue";
 import SlotForm from "./game/SlotForm.vue";
-import LayerExportDrawer from "./game/LayerExportDrawer.vue";
-/** Async so the drawer -- and the tooltip parser it pulls in -- stays out of the main chunk
+import LayerExportModal from "./game/LayerExportModal.vue";
+/** Async so the window -- and the tooltip parser it pulls in -- stays out of the main chunk
  *  alongside the OCR engine it loads. It only ever renders behind a `v-if`.
  *
  *  `delay: 0` and a placeholder because otherwise the button appears to do nothing at all
  *  until the chunk arrives. */
-const TooltipImportDrawer = defineAsyncComponent({
-  loader: () => import("./game/TooltipImportDrawer.vue"),
+const TooltipImportModal = defineAsyncComponent({
+  loader: () => import("./game/TooltipImportModal.vue"),
   loadingComponent: () =>
-    h(BaseDrawer, null, () => h("p", { class: "text-muted" }, "Loading…")),
+    h(
+      BaseModal,
+      {
+        title: "Create an item from a tooltip",
+        panelClass: "w-[760px] max-w-[92vw]",
+        onClose: () => (showTooltipImport.value = false),
+      },
+      () => h("p", { class: "p-4 text-muted" }, "Loading…"),
+    ),
   delay: 0,
 });
 import LayerValidationDrawer from "./game/LayerValidationDrawer.vue";
@@ -1180,17 +1188,16 @@ onUnmounted(() => {
       notice
     }}</BaseNotice>
 
-    <LayerExportDrawer
+    <LayerExportModal
       v-if="showExport"
       v-model="exportTab"
       :overlay="overlay"
-      class="mb-2"
       @notice="notice = $event"
+      @close="showExport = false"
     />
 
-    <TooltipImportDrawer
+    <TooltipImportModal
       v-if="showTooltipImport"
-      class="mb-2"
       @create="createFromTooltip"
       @close="showTooltipImport = false"
     />

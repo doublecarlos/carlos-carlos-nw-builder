@@ -1,5 +1,7 @@
 <script setup lang="ts">
-// Generic expandable panel -- DataEditor's export/findings panels, BuildBar's io/share panels.
+// Generic in-flow panel: a surface that stays in the layout because it is worked *alongside*
+// what is beneath it -- the layer editor's findings list, which you act on while editing.
+// Anything you open, use and leave is a BaseModal instead.
 </script>
 
 <template>
