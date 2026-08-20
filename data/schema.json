@@ -71,7 +71,12 @@
     },
     { "key": "forte", "label": "Forte", "kind": "rating" },
 
-    { "key": "base_damage_flat", "label": "Base Damage", "kind": "flat" },
+    {
+      "key": "base_damage_flat",
+      "label": "Base Damage",
+      "kind": "flat",
+      "aliases": ["Damage"]
+    },
     {
       "key": "base_damage_mult",
       "label": "Base Damage (Mult)",
@@ -96,9 +101,19 @@
     },
     { "key": "incoming_damage", "label": "Incoming Damage", "kind": "mult" },
 
-    { "key": "hit_points_p", "label": "HP Bonus", "kind": "percent" },
+    {
+      "key": "hit_points_p",
+      "label": "HP Bonus",
+      "kind": "percent",
+      "aliases": ["Maximum Hit Points", "Max Hit Points"]
+    },
     { "key": "hit_points_mult", "label": "HP (Mult)", "kind": "mult" },
-    { "key": "hit_points", "label": "Hit Points", "kind": "flat" },
+    {
+      "key": "hit_points",
+      "label": "Hit Points",
+      "kind": "flat",
+      "aliases": ["Maximum Hit Points", "Max Hit Points"]
+    },
 
     {
       "key": "defense_p",
@@ -122,7 +137,8 @@
       "key": "deflect_p",
       "label": "Deflect",
       "kind": "percent",
-      "rating": "deflect"
+      "rating": "deflect",
+      "aliases": ["Deflect Chance"]
     },
     {
       "key": "deflect_sev_p",
@@ -146,17 +162,47 @@
     { "key": "defense", "label": "Defense", "kind": "rating" },
     { "key": "awareness", "label": "Awareness", "kind": "rating" },
     { "key": "crit_avoid", "label": "Critical Avoidance", "kind": "rating" },
-    { "key": "deflect", "label": "Deflect", "kind": "rating" },
+    {
+      "key": "deflect",
+      "label": "Deflect",
+      "kind": "rating",
+      "aliases": ["Deflect Chance"]
+    },
     { "key": "deflect_sev", "label": "Deflect Severity", "kind": "rating" },
     { "key": "inc_healing", "label": "Incoming Healing", "kind": "rating" },
     { "key": "out_healing", "label": "Outgoing Healing", "kind": "rating" },
     { "key": "overall_healing", "label": "Overall Healing", "kind": "percent" },
 
-    { "key": "ap_gain", "label": "AP Gain", "kind": "percent" },
-    { "key": "recharge", "label": "Recharge", "kind": "percent" },
-    { "key": "movement", "label": "Movement", "kind": "percent" },
-    { "key": "mana_regen", "label": "Mana Regen", "kind": "percent" },
-    { "key": "stamina_regen", "label": "Stamina Regen", "kind": "percent" },
+    {
+      "key": "ap_gain",
+      "label": "AP Gain",
+      "kind": "percent",
+      "aliases": ["Action Point Gain", "Action Points"]
+    },
+    {
+      "key": "recharge",
+      "label": "Recharge",
+      "kind": "percent",
+      "aliases": ["Recharge Speed"]
+    },
+    {
+      "key": "movement",
+      "label": "Movement",
+      "kind": "percent",
+      "aliases": ["Movement Speed"]
+    },
+    {
+      "key": "mana_regen",
+      "label": "Mana Regen",
+      "kind": "percent",
+      "aliases": ["Mana Regeneration"]
+    },
+    {
+      "key": "stamina_regen",
+      "label": "Stamina Regen",
+      "kind": "percent",
+      "aliases": ["Stamina Regeneration"]
+    },
 
     {
       "key": "control_bonus_p",
@@ -169,9 +215,15 @@
       "key": "control_resist_p",
       "label": "Control Resist",
       "kind": "percent",
-      "rating": "control_resist"
+      "rating": "control_resist",
+      "aliases": ["Control Resistance"]
     },
-    { "key": "control_resist", "label": "Control Resist", "kind": "rating" },
+    {
+      "key": "control_resist",
+      "label": "Control Resist",
+      "kind": "rating",
+      "aliases": ["Control Resistance"]
+    },
 
     {
       "key": "str",

@@ -7,7 +7,16 @@
 //
 // The editor never writes to disk -- it cannot, this is a static client app. It edits the
 // layer's overlay (see catalog.ts) and hands you the file contents to paste back.
-import { ref, computed, watch, onMounted, onUnmounted } from "vue";
+import {
+  computed,
+  defineAsyncComponent,
+  h,
+  onMounted,
+  onUnmounted,
+  ref,
+  watch,
+} from "vue";
+import BaseDrawer from "./ui/BaseDrawer.vue";
 import { useEventListener } from "@vueuse/core";
 import { useConfirm } from "../composables/useConfirm";
 import ItemForm from "./game/ItemForm.vue";
@@ -15,6 +24,17 @@ import BonusForm from "./game/BonusForm.vue";
 import PresetForm from "./game/PresetForm.vue";
 import SlotForm from "./game/SlotForm.vue";
 import LayerExportDrawer from "./game/LayerExportDrawer.vue";
+/** Async so the drawer -- and the tooltip parser it pulls in -- stays out of the main chunk
+ *  alongside the OCR engine it loads. It only ever renders behind a `v-if`.
+ *
+ *  `delay: 0` and a placeholder because otherwise the button appears to do nothing at all
+ *  until the chunk arrives. */
+const TooltipImportDrawer = defineAsyncComponent({
+  loader: () => import("./game/TooltipImportDrawer.vue"),
+  loadingComponent: () =>
+    h(BaseDrawer, null, () => h("p", { class: "text-muted" }, "Loading…")),
+  delay: 0,
+});
 import LayerValidationDrawer from "./game/LayerValidationDrawer.vue";
 import LayerEntryList from "./game/LayerEntryList.vue";
 import BaseButton from "./ui/BaseButton.vue";
@@ -24,7 +44,7 @@ import BaseBadge from "./ui/BaseBadge.vue";
 import BaseNotice from "./ui/BaseNotice.vue";
 import TabStrip from "./ui/TabStrip.vue";
 import TabButton from "./ui/TabButton.vue";
-import { Download, RotateCcw, Upload } from "@lucide/vue";
+import { ClipboardPaste, Download, RotateCcw, Upload } from "@lucide/vue";
 import * as catalog from "../data/catalog";
 import * as router from "../lib/router";
 import * as engine from "../stores/resolved";
@@ -76,6 +96,7 @@ const selectedBonusId = ref<string | null>(null);
 const selectedPresetId = ref<string | null>(null);
 const selectedSlotId = ref<string | null>(null);
 const showExport = ref(false);
+const showTooltipImport = ref(false);
 const exportTab = ref("items"); // items | bonuses | overlay | slots
 const newItemCounter = ref(0);
 /** Seed values for the next brand-new item/bonus draft, set by "Duplicate" and consumed
@@ -510,6 +531,19 @@ function duplicateItem() {
   newItemCounter.value++;
   router.apply({ item: null });
   notice.value = `Duplicating "${item.name}" — edit and save to create a copy`;
+}
+
+/** Opens a new item draft seeded from a pasted tooltip. Like "Duplicate", the seed is only
+ *  a draft -- an explicit Save is what mints the item, so every parsed value stays editable
+ *  and anything the parser could not read is simply an empty field. */
+function createFromTooltip(draft: Partial<Item>) {
+  section.value = "items";
+  selectedId.value = null;
+  duplicateItemSeed.value = { id: "", name: "", ...draft } as Item;
+  newItemCounter.value++;
+  router.apply({ item: null });
+  showTooltipImport.value = false;
+  notice.value = `Filled ${Object.keys(draft).length - 1} field(s) from the tooltip — review and save to create the item`;
 }
 
 function duplicateBonus() {
@@ -1107,6 +1141,12 @@ onUnmounted(() => {
       <BaseButton :active="showExport" @click="showExport = !showExport"
         ><Download />Export…</BaseButton
       >
+      <BaseButton
+        :active="showTooltipImport"
+        data-testid="tooltip-import-toggle"
+        @click="showTooltipImport = !showTooltipImport"
+        ><ClipboardPaste />From screenshot…</BaseButton
+      >
       <BaseButton as="label"
         ><Upload />Import overlay
         <input type="file" accept=".json" hidden @change="importOverlay"
@@ -1146,6 +1186,13 @@ onUnmounted(() => {
       :overlay="overlay"
       class="mb-2"
       @notice="notice = $event"
+    />
+
+    <TooltipImportDrawer
+      v-if="showTooltipImport"
+      class="mb-2"
+      @create="createFromTooltip"
+      @close="showTooltipImport = false"
     />
 
     <LayerValidationDrawer
