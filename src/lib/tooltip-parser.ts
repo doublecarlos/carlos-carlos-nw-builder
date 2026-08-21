@@ -1,4 +1,5 @@
-// Parses a Neverwinter item tooltip's text into an item draft carrying only its *base* stats.
+// Parses a Neverwinter item tooltip's text into an item draft carrying its *base* stats, plus
+// the internal item id when the tooltip prints one.
 //
 // Bonuses and conditions are deliberately not attempted: the tooltip text describing them is
 // prose, and reproducing a condition tree from it is not something this parser tries to do.
@@ -19,9 +20,11 @@ export interface ParsedStat {
 }
 
 export interface TooltipParseResult {
-  /** Item-shaped draft: `name`/`il` plus one entry per recognised stat line. */
+  /** Item-shaped draft: `name`/`il`/`gameIds` plus one entry per recognised stat line. */
   draft: Partial<Item>;
   stats: ParsedStat[];
+  /** The internal item id the tooltip printed, if it carried one. */
+  gameId?: string;
   /** Lines granting a stat through an enchantment or armour kit rather than the item itself. */
   bonusLines: string[];
   /** Lines that carry a number but matched no stat -- set bonuses, procs, flavour text. */
@@ -33,6 +36,13 @@ const SLOT_PREFIX = /^(offense|defense|utility|insignia slot)\s*[:.]\s*/i;
 
 /** Prefixes marking a stat that comes from an enchantment or kit, not the item's own base. */
 const BONUS_PREFIX = /^(equip|reinforced|use|set|modification)\s*[:.]\s*/i;
+
+/**
+ * "Def: Head_M33_Lightdps_S-tier" -- the game's internal item id, which the tooltip prints on
+ * a line of its own. Anchored on the whole line so prose mentioning a defence stat cannot
+ * match; "Defense:" cannot either, since the colon has to follow "Def" directly.
+ */
+const GAME_ID = /^def\s*[:.]\s*([A-Za-z0-9][A-Za-z0-9_-]{2,})\s*$/i;
 
 /** "Item Level: 5,250" is `key: value`, unlike every other stat line. */
 const ITEM_LEVEL = /^item\s*level\s*[:.]?\s*([\d,]+)\s*$/i;
@@ -86,10 +96,20 @@ export function parseTooltip(text: string): TooltipParseResult {
   const draft: Partial<Item> = {};
   const seen = new Set<StatKey>();
   const index = statIndex();
+  let gameId: string | undefined;
 
   for (const raw of text.split("\n")) {
     const line = raw.trim();
     if (!line) continue;
+
+    // First wins, as for stats: an attached enchantment printing its own id after the item's
+    // must not replace it. A later one is reported so the reviewer sees it was not applied.
+    const id = line.match(GAME_ID);
+    if (id) {
+      if (gameId === undefined) gameId = id[1];
+      else unmatched.push(line);
+      continue;
+    }
 
     const itemLevel = line.match(ITEM_LEVEL);
     if (itemLevel) {
@@ -135,11 +155,12 @@ export function parseTooltip(text: string): TooltipParseResult {
   }
 
   for (const { key, value } of stats) draft[key] = value;
+  if (gameId) draft.gameIds = [gameId];
 
   const name = findName(text);
   if (name) draft.name = name;
 
-  return { draft, stats, bonusLines, unmatched };
+  return { draft, stats, gameId, bonusLines, unmatched };
 }
 
 /**
@@ -160,6 +181,7 @@ function findName(text: string): string | undefined {
     // Two letters or fewer is never a name, and is what icon noise usually reads as.
     if (line.length < 3 || !/[A-Za-z]{3}/.test(line)) continue;
     if (CHROME_ANYWHERE.test(line) || ITEM_LEVEL.test(line)) continue;
+    if (GAME_ID.test(line)) continue;
     if (STAT_LINE.test(line.replace(SLOT_PREFIX, ""))) continue;
     if (/^[-=#]{2,}/.test(line)) continue;
     return line;

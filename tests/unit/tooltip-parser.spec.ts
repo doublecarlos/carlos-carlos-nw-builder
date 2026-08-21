@@ -137,6 +137,58 @@ describe("parseTooltip", () => {
     expect(draft.name).toBe("Omen of Doom");
   });
 
+  it("reads the internal item id the tooltip prints on its own line", () => {
+    const { draft, gameId } = parseTooltip(
+      [
+        "Wintermarked Hunter Hood",
+        "Item Level: 5,700",
+        "Def: Head_M33_Lightdps_S-tier_Boe",
+      ].join("\n"),
+    );
+    expect(gameId).toBe("Head_M33_Lightdps_S-tier_Boe");
+    expect(draft.gameIds).toEqual(["Head_M33_Lightdps_S-tier_Boe"]);
+  });
+
+  it("never mistakes the game id line for the item name", () => {
+    // The id can be printed above the name, where `findName` would otherwise take it.
+    const { draft } = parseTooltip(
+      ["Def: Artifact_Soulflight_R5", "Soulflight Bow", "+6,300 Power"].join(
+        "\n",
+      ),
+    );
+    expect(draft.name).toBe("Soulflight Bow");
+  });
+
+  it("keeps the item's own id when an attached enchantment prints one too", () => {
+    const { draft, unmatched } = parseTooltip(
+      [
+        "Scintillant Amulet",
+        "Def: Neck_M26_Artifact_Crafted_Masterwork_Dps_Magical_R1",
+        "Reinforced: Major Combat Advantage Jewel +1",
+        "Def: Enchantment_Standard_B_V2_R6_Account",
+      ].join("\n"),
+    );
+    expect(draft.gameIds).toEqual([
+      "Neck_M26_Artifact_Crafted_Masterwork_Dps_Magical_R1",
+    ]);
+    expect(unmatched).toContain("Def: Enchantment_Standard_B_V2_R6_Account");
+  });
+
+  it("does not read a Defense stat line as a game id", () => {
+    const { draft } = parseTooltip(
+      ["Ring", "Defense: +2,700 Awareness", "+1,200 Defense"].join("\n"),
+    );
+    expect(draft.gameIds).toBeUndefined();
+    expect(draft.awareness).toBe(2700);
+    expect(draft.defense).toBe(1200);
+  });
+
+  it("leaves gameIds off a draft whose tooltip printed no id", () => {
+    const { draft, gameId } = parseTooltip("Ring\n+6,300 Power");
+    expect(gameId).toBeUndefined();
+    expect(draft.gameIds).toBeUndefined();
+  });
+
   it("returns an empty draft for text carrying no stats at all", () => {
     const { stats, draft } = parseTooltip("Seen last before the strike.");
     expect(stats).toEqual([]);

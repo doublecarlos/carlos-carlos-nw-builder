@@ -83,6 +83,34 @@ test.describe("creating an item from a tooltip screenshot", () => {
     await expect(stats).toContainText("999");
   });
 
+  test("carries the game id the tooltip prints into the new item draft", async ({
+    page,
+  }) => {
+    await openImportModal(page);
+
+    await page
+      .getByTestId("tooltip-import-text")
+      .fill(
+        [
+          "Hand Typed Hood",
+          "Item Level: 5,700",
+          "+999 Power",
+          "Def: Head_M33_Lightdps_S-tier_Boe",
+        ].join("\n"),
+      );
+
+    await expect(page.getByTestId("tooltip-import-game-id")).toContainText(
+      "Head_M33_Lightdps_S-tier_Boe",
+    );
+
+    await page.getByTestId("tooltip-import-create").click();
+
+    // The game id lands in the item's own field, ready to be saved with the rest.
+    await expect(page.getByTestId("item-gameids-input")).toContainText(
+      "Head_M33_Lightdps_S-tier_Boe",
+    );
+  });
+
   test("keeps Create disabled until something parses", async ({ page }) => {
     await openImportModal(page);
     await expect(page.getByTestId("tooltip-import-create")).toBeDisabled();

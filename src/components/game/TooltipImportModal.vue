@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // Create an item from a tooltip screenshot: paste or drop the image, OCR reads it, the text
-// stays editable, and the parser fills in the item's base stats.
+// stays editable, and the parser fills in the item's base stats and its game id.
 //
 // The recognised text is shown and editable on purpose. OCR here omits fields rather than
 // getting them wrong, so the useful correction is usually "it missed a line", which is far
@@ -44,7 +44,11 @@ const text = ref("");
 const busy = ref(false);
 const error = ref("");
 const result = computed(() => parseTooltip(text.value));
-const hasStats = computed(() => result.value.stats.length > 0);
+/** The game id is a field of the draft like any stat, so it counts towards -- and on its own
+ *  can satisfy -- "there is something here worth creating an item from". */
+const filled = computed(
+  () => result.value.stats.length + (result.value.gameId ? 1 : 0),
+);
 
 async function read(image: Blob) {
   busy.value = true;
@@ -131,13 +135,19 @@ useEventListener(document, "paste", onPaste);
 
       <div v-if="text.trim()" class="flex flex-col gap-2 lg:flex-row">
         <section class="min-w-0 flex-1">
-          <h4 class="mb-1 text-muted">
-            Will be filled ({{ result.stats.length }})
-          </h4>
-          <p v-if="!hasStats" class="text-muted">
-            No stat lines recognised yet.
-          </p>
+          <h4 class="mb-1 text-muted">Will be filled ({{ filled }})</h4>
+          <p v-if="!filled" class="text-muted">No stat lines recognised yet.</p>
           <ul v-else data-testid="tooltip-import-stats" class="flex flex-col">
+            <li
+              v-if="result.gameId"
+              data-testid="tooltip-import-game-id"
+              class="flex justify-between gap-3 border-b border-line/45 py-0.5"
+            >
+              <span class="truncate">Game ID</span>
+              <span class="min-w-0 truncate font-mono">{{
+                result.gameId
+              }}</span>
+            </li>
             <li
               v-for="s in result.stats"
               :key="s.key"
@@ -188,7 +198,7 @@ useEventListener(document, "paste", onPaste);
     <div class="flex flex-none gap-1.5 border-t border-line px-4 py-3">
       <BaseButton
         variant="primary"
-        :disabled="!hasStats || busy"
+        :disabled="!filled || busy"
         data-testid="tooltip-import-create"
         @click="emit('create', result.draft)"
         ><CirclePlus />Create item</BaseButton
