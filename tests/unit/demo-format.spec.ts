@@ -176,8 +176,8 @@ describe("parseDemo: fixture", () => {
     // The mount item carries its insignia as nested Pploadoutgems, in order.
     const gems = childrenOf(items[3], "Pploadoutgems");
     expect(gems.map((g) => scalar(g, "Hslotteditem"))).toEqual([
-      "Insignia_Barbed_Power_R6",
-      "Insignia_Bile_Power_R5",
+      "Insignia_Barbed_Test",
+      "Insignia_Bile_Test",
     ]);
   });
 });

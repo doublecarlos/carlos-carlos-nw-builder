@@ -34,7 +34,7 @@ Packets
           Loadoutname "Zulu Solo"
           Pploadoutitems
           {
-            Hitem Head_M31_Heavyheal_S-tier
+            Hitem Head_Heavyheal_Test
             Iitemid 2218087575996877068
             Ebagid Head
           }
@@ -55,11 +55,11 @@ Packets
             Islotidx 0
             Pploadoutgems
             {
-              Hslotteditem Insignia_Barbed_Power_R6
+              Hslotteditem Insignia_Barbed_Test
             }
             Pploadoutgems
             {
-              Hslotteditem Insignia_Bile_Power_R5
+              Hslotteditem Insignia_Bile_Test
             }
           }
           Ipowertreebuild 1

@@ -18,13 +18,13 @@ test("gameIds persist after saving and reopening the item", async ({
 
   const gameIdsField = page.getByTestId("item-gameids-input");
   const gameIdsInput = gameIdsField.locator("input");
-  await gameIdsInput.fill("Head_M31_Heavyheal_S-tier");
+  await gameIdsInput.fill("Head_Heavyheal_Test");
   await gameIdsInput.press("Enter");
-  await gameIdsInput.fill("Insignia_Barbed_Power_R6");
+  await gameIdsInput.fill("Insignia_Barbed_Test");
   await gameIdsInput.press("Enter");
 
-  await expect(gameIdsField).toContainText("Head_M31_Heavyheal_S-tier");
-  await expect(gameIdsField).toContainText("Insignia_Barbed_Power_R6");
+  await expect(gameIdsField).toContainText("Head_Heavyheal_Test");
+  await expect(gameIdsField).toContainText("Insignia_Barbed_Test");
 
   await page.getByRole("button", { name: "Save item" }).click();
 
@@ -32,6 +32,6 @@ test("gameIds persist after saving and reopening the item", async ({
   await page.locator(".editor-row", { hasText: UNIQUE_ITEM }).click();
 
   const persisted = page.getByTestId("item-gameids-input");
-  await expect(persisted).toContainText("Head_M31_Heavyheal_S-tier");
-  await expect(persisted).toContainText("Insignia_Barbed_Power_R6");
+  await expect(persisted).toContainText("Head_Heavyheal_Test");
+  await expect(persisted).toContainText("Insignia_Barbed_Test");
 });

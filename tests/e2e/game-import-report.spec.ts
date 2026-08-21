@@ -10,10 +10,11 @@ import { addLayer, layerRow } from "./support/nav";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DEMO_FIXTURE = join(__dirname, "../unit/fixtures/build-export.demo.txt");
 
-/** The shipped catalogue has no `gameIds` populated yet (#176 is a separate ticket), so the
- *  fixture demo recognises nothing out of the box. Teaching one mapping through a layer -- the
- *  real mechanism #171/#177 rely on -- gives the report an actual "imported" row to assert on,
- *  the same way a player would fix an "unrecognised" id after reading the report. */
+/** The fixture's `Hitem`s are deliberately synthetic, so no shipped `gameIds` claim them and
+ *  the demo recognises nothing out of the box however far the catalogue's own mappings grow.
+ *  Teaching one mapping through a layer -- the real mechanism #171/#177 rely on -- gives the
+ *  report an actual "imported" row to assert on, the same way a player would fix an
+ *  "unrecognised" id after reading the report. */
 async function mapFixtureHeadItem(page: Page) {
   await addLayer(page);
   await layerRow(page, "Layer 1").locator(".nav-name").click();
@@ -21,7 +22,7 @@ async function mapFixtureHeadItem(page: Page) {
   await page.getByTestId("item-name-input").fill("ZZZ Test Heavyheal Hood");
   await page.getByTestId("item-filter-input").fill("gear_head");
   const gameIdsInput = page.getByTestId("item-gameids-input").locator("input");
-  await gameIdsInput.fill("Head_M31_Heavyheal_S-tier");
+  await gameIdsInput.fill("Head_Heavyheal_Test");
   await gameIdsInput.press("Enter");
   await page.getByRole("button", { name: "Save item" }).click();
 }
@@ -76,7 +77,7 @@ test("unrecognised ids are listed and the copy button puts them on the clipboard
   await expect(
     unrecognised.getByTestId("game-import-report-unrecognised-row"),
   ).toHaveCount(4);
-  await expect(unrecognised).toContainText("Head_M31_Heavyheal_S-tier");
+  await expect(unrecognised).toContainText("Head_Heavyheal_Test");
 
   await page.getByTestId("game-import-report-copy-unrecognised").click();
   const clipboard = await page.evaluate(() => navigator.clipboard.readText());
@@ -84,9 +85,9 @@ test("unrecognised ids are listed and the copy button puts them on the clipboard
   // here, the real bag is "Melee" -- alphabetically after), not by demo file order. Split on
   // \r?\n -- the OS clipboard normalises the joined \n text to CRLF on Windows.
   expect(clipboard.split(/\r?\n/)).toEqual([
-    "Head_M31_Heavyheal_S-tier",
-    "Insignia_Barbed_Power_R6",
-    "Insignia_Bile_Power_R5",
+    "Head_Heavyheal_Test",
+    "Insignia_Barbed_Test",
+    "Insignia_Bile_Test",
     "Weapon_MainHand_Something",
   ]);
 });
@@ -141,7 +142,7 @@ test("mapping an unrecognised id via the report keeps the row (so it can be re-m
   const unrecognised = page.getByTestId("game-import-report-unrecognised");
   const row = unrecognised
     .getByTestId("game-import-report-unrecognised-row")
-    .filter({ hasText: "Head_M31_Heavyheal_S-tier" });
+    .filter({ hasText: "Head_Heavyheal_Test" });
   await row.getByTestId("game-import-report-map-item").click();
 
   const picker = unrecognised.getByTestId("game-import-report-map-picker");
@@ -195,13 +196,13 @@ test("mapping an unrecognised id via the report keeps the row (so it can be re-m
   await page.locator(".editor-search").fill(secondItemName);
   await page.locator(".editor-row", { hasText: secondItemName }).click();
   await expect(page.getByTestId("item-gameids-input")).toContainText(
-    "Head_M31_Heavyheal_S-tier",
+    "Head_Heavyheal_Test",
   );
 
   await page.locator(".editor-search").fill(firstItemName);
   await page.locator(".editor-row", { hasText: firstItemName }).click();
   await expect(page.getByTestId("item-gameids-input")).not.toContainText(
-    "Head_M31_Heavyheal_S-tier",
+    "Head_Heavyheal_Test",
   );
 });
 

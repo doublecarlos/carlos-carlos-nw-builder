@@ -7,7 +7,7 @@ import { describe, expect, it, beforeEach } from "vitest";
 import { installWindowShim, installIdbShim } from "./stores/window-shim";
 import * as storage from "../../src/storage/storage";
 import * as catalog from "../../src/data/catalog";
-import { NW_CATALOG_VERSION } from "../../src/data/data";
+import { NW_CATALOG_VERSION, NW_ITEMS } from "../../src/data/data";
 import type { CatalogOverlay, Build, Db } from "../../src/types";
 
 beforeEach(() => {
@@ -603,19 +603,15 @@ describe("toBuildJson with db (portable files)", () => {
   });
 
   it("does not embed catalog when build references only shipped items", () => {
-    // Use a real base item id that exists in the shipped data.
+    // A real base item id that exists in the shipped data, with the entry cloned straight out
+    // of the shipped list: the embed decision is a diff against base, so a retyped literal
+    // would start looking layer-defined as soon as the shipped entry gained a field.
     const BASE_ITEM_ID = "1-amethyst-awareness";
     const build = storage.defaultBuild("Shipped gear");
     build.choices = { gear_head: BASE_ITEM_ID };
-    const shippedItem = {
-      id: "1-amethyst-awareness",
-      name: "Celestial Amethyst",
-      filter: "enchantment_defense",
-      il: 1800,
-      combined_rating: 1620,
-      awareness: 2700,
-      tags: ["gem:amethyst"],
-    };
+    const inBase = NW_ITEMS.find((item) => item.id === BASE_ITEM_ID);
+    if (!inBase) throw new Error(`no shipped item with id ${BASE_ITEM_ID}`);
+    const shippedItem = structuredClone(inBase);
     const db = {
       get: (id: string | null | undefined) =>
         id === BASE_ITEM_ID ? shippedItem : null,

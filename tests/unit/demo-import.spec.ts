@@ -14,7 +14,7 @@ import type {
   DemoItem,
   DemoLoadout,
 } from "../../src/lib/demo-snapshot";
-import type { Item } from "../../src/types";
+import type { CatalogOverlay, Item } from "../../src/types";
 
 const fixture = readFileSync(
   join(__dirname, "fixtures/build-export.demo.txt"),
@@ -59,7 +59,24 @@ const testItem = (id: string, filter: string, gameIds: string[]): Item => ({
   gameIds,
 });
 
-let overlay = catalog.emptyOverlay();
+/** The shipped catalogue authors gameIds of its own, which would resolve items these tests
+ *  never asked for. Every db here is composed over this overlay instead, so the only mappings
+ *  in play are the ones the test itself authors -- and adding a gameId to the shipped data
+ *  cannot change what any of them assert. */
+const noShippedGameIds: CatalogOverlay = {
+  ...catalog.emptyOverlay(),
+  items: Object.fromEntries(
+    catalog
+      .base()
+      .items.filter((item) => item.gameIds?.length)
+      .map((item) => {
+        const { gameIds: _dropped, ...rest } = item;
+        return [item.id, rest];
+      }),
+  ),
+};
+
+let overlay = noShippedGameIds;
 for (const item of [
   testItem("test-head", "gear_head", ["Head_Test"]),
   testItem("test-mainhand", "gear_weapon_mainhand", ["Primary_Test"]),
@@ -68,7 +85,7 @@ for (const item of [
   overlay = catalog.upsert(overlay, "items", item.id, item);
 }
 const mappedDb = catalog.makeDb([overlay]);
-const zeroMappingsDb = catalog.makeDb([]);
+const zeroMappingsDb = catalog.makeDb([noShippedGameIds]);
 
 describe("buildFromLoadout: placement", () => {
   it("a fully-mapped loadout produces the expected choices", () => {

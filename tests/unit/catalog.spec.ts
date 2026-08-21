@@ -446,7 +446,7 @@ describe("catalog.validate: gameIds lint", () => {
         id: "some-item",
         name: "Some Item",
         filter: "gear_head",
-        gameIds: ["Head_M31_Heavyheal_S-tier"],
+        gameIds: ["Head_Heavyheal_Test"],
       },
     ];
     const findings = catalog
@@ -1115,15 +1115,15 @@ function shippedItemWithBonus(): { item: Item; bonus: Bonus } {
 // A real item that exists in the shipped base catalogue — referencedOverlay should not emit it.
 const BASE_ITEM_ID = "1-amethyst-awareness";
 
-const baseItem: Item = {
-  id: "1-amethyst-awareness",
-  name: "Celestial Amethyst",
-  filter: "enchantment_defense",
-  il: 1800,
-  combined_rating: 1620,
-  awareness: 2700,
-  tags: ["gem:amethyst"],
-};
+/** Cloned out of the shipped list rather than retyped: referencedOverlay diffs against base,
+ *  so a hand-copied literal starts being emitted the moment the shipped entry gains a field. */
+function shippedItem(id: string): Item {
+  const item = NW_ITEMS.find((candidate) => candidate.id === id);
+  if (!item) throw new Error(`no shipped item with id ${id}`);
+  return structuredClone(item);
+}
+
+const baseItem: Item = shippedItem(BASE_ITEM_ID);
 
 const layerItem: Item = {
   id: "layer-item",

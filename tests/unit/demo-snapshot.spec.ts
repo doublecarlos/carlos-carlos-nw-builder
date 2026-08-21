@@ -68,10 +68,7 @@ describe("readSnapshot: fixture", () => {
 
   it("attaches gems to the right mount item, in file order", () => {
     const mount = snapshot.characters[0].loadouts[0].items[3];
-    expect(mount.gems).toEqual([
-      "Insignia_Barbed_Power_R6",
-      "Insignia_Bile_Power_R5",
-    ]);
+    expect(mount.gems).toEqual(["Insignia_Barbed_Test", "Insignia_Bile_Test"]);
     // No other item in the loadout carries gems.
     const others = snapshot.characters[0].loadouts[0].items.slice(0, 3);
     expect(others.every((i) => i.gems.length === 0)).toBe(true);
@@ -79,7 +76,7 @@ describe("readSnapshot: fixture", () => {
 
   it("round-trips 64-bit ids as exact strings", () => {
     const head = snapshot.characters[0].loadouts[0].items[0];
-    expect(head.gameId).toBe("Head_M31_Heavyheal_S-tier");
+    expect(head.gameId).toBe("Head_Heavyheal_Test");
     expect(head.inventoryId).toBe("2218087575996877068");
     const junkLoadoutHead = snapshot.characters[0].loadouts[1].items[0];
     expect(junkLoadoutHead.inventoryId).toBe("9999999999999999999");

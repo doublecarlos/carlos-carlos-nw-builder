@@ -30,7 +30,8 @@ async function freshStores() {
 }
 
 /** Imports the shared fixture's active loadout ("1. DPS ST") and returns the committed report
- *  index plus the outcome index of its `Head_M31_Heavyheal_S-tier` unrecognised row. */
+ *  index plus the outcome index of its `Head_Heavyheal_Test` unrecognised row -- the fixture's
+ *  game ids are synthetic, so no shipped mapping resolves that row out from under the test. */
 function commitFixture(
   gameImport: Awaited<ReturnType<typeof freshStores>>["gameImport"],
 ) {
@@ -38,8 +39,7 @@ function commitFixture(
   gameImport.commit();
   const report = gameImport.reports.value[0].report;
   const outcomeIndex = report.outcomes.findIndex(
-    (o) =>
-      o.kind === "unrecognised" && o.gameId === "Head_M31_Heavyheal_S-tier",
+    (o) => o.kind === "unrecognised" && o.gameId === "Head_Heavyheal_Test",
   );
   return { reportIndex: 0, outcomeIndex };
 }
@@ -60,20 +60,20 @@ describe("gameImport store: mapUnrecognisedItem", () => {
       kind: "imported",
       slotId: "gear.head",
       itemId,
-      gameId: "Head_M31_Heavyheal_S-tier",
+      gameId: "Head_Heavyheal_Test",
     });
     expect(updated.counts.imported).toBeGreaterThanOrEqual(1);
 
     expect(builds.get(buildId)?.choices["gear.head"]).toBe(itemId);
     expect(resolved.db.value.get(itemId)?.gameIds).toContain(
-      "Head_M31_Heavyheal_S-tier",
+      "Head_Heavyheal_Test",
     );
 
     const layer = layers.layers.value.find(
       (l) => l.overlay.items[itemId] != null,
     );
     expect(layer?.overlay.items[itemId]?.gameIds).toContain(
-      "Head_M31_Heavyheal_S-tier",
+      "Head_Heavyheal_Test",
     );
   });
 
@@ -132,16 +132,16 @@ describe("gameImport store: mapUnrecognisedItem", () => {
 
     gameImport.mapUnrecognisedItem(reportIndex, outcomeIndex, firstItemId);
     expect(resolved.db.value.get(firstItemId)?.gameIds).toContain(
-      "Head_M31_Heavyheal_S-tier",
+      "Head_Heavyheal_Test",
     );
 
     gameImport.mapUnrecognisedItem(reportIndex, outcomeIndex, secondItemId);
 
     expect(resolved.db.value.get(firstItemId)?.gameIds ?? []).not.toContain(
-      "Head_M31_Heavyheal_S-tier",
+      "Head_Heavyheal_Test",
     );
     expect(resolved.db.value.get(secondItemId)?.gameIds).toContain(
-      "Head_M31_Heavyheal_S-tier",
+      "Head_Heavyheal_Test",
     );
     expect(
       gameImport.reports.value[reportIndex].report.outcomes[outcomeIndex],

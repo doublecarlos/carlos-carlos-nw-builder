@@ -20,7 +20,14 @@ describe("Db.itemByGameId", () => {
   });
 
   it("is empty when nothing in the composed catalogue carries gameIds", () => {
-    const built = catalog.makeDb([]);
+    // Spelled out as an explicit item list rather than `catalog.makeDb([])`: the shipped
+    // catalogue authors gameIds of its own now, so base is no longer an example of "nothing".
+    const built = db.build(
+      [{ id: "a", name: "A", filter: "gear_ring" }],
+      [],
+      NW_SCHEMA,
+      NW_SLOTS,
+    );
     expect(built.itemByGameId.size).toBe(0);
   });
 

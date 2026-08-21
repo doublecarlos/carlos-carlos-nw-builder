@@ -6,6 +6,7 @@
     "il": 1800,
     "combined_rating": 1620,
     "awareness": 2700,
+    "gameIds": ["Enchantment_Standard_E_V2_R6_Account"],
     "tags": ["gem:amethyst"]
   },
   {
@@ -15,6 +16,7 @@
     "il": 1800,
     "combined_rating": 1620,
     "ca": 2700,
+    "gameIds": ["Enchantment_Standard_E_V2_R6_Account"],
     "tags": ["gem:amethyst"]
   },
   {
@@ -24,6 +26,7 @@
     "il": 1800,
     "combined_rating": 1620,
     "acc": 2700,
+    "gameIds": ["Enchantment_Standard_C_V2_R6_Account"],
     "tags": ["gem:citrine"]
   },
   {
@@ -33,6 +36,7 @@
     "il": 1800,
     "combined_rating": 1620,
     "deflect": 2700,
+    "gameIds": ["Enchantment_Standard_C_V2_R6_Account"],
     "tags": ["gem:citrine"]
   },
   {
@@ -41,7 +45,8 @@
     "filter": "enchantment_defense",
     "il": 1800,
     "combined_rating": 1620,
-    "deflect_sev": 2700
+    "deflect_sev": 2700,
+    "gameIds": ["Enchantment_Standard_A_V2_R6_Account"]
   },
   {
     "id": "1-cobalt-severity",
@@ -49,7 +54,8 @@
     "filter": "enchantment_offense",
     "il": 1800,
     "combined_rating": 1620,
-    "severity": 2700
+    "severity": 2700,
+    "gameIds": ["Enchantment_Standard_A_V2_R6_Account"]
   },
   {
     "id": "1-garnet-defense",
@@ -57,7 +63,8 @@
     "filter": "enchantment_defense",
     "il": 1800,
     "combined_rating": 1620,
-    "defense": 2700
+    "defense": 2700,
+    "gameIds": ["Enchantment_Standard_B_V2_R6_Account"]
   },
   {
     "id": "1-garnet-forte",
@@ -65,7 +72,8 @@
     "filter": "enchantment_utility",
     "il": 1800,
     "combined_rating": 1620,
-    "forte": 2700
+    "forte": 2700,
+    "gameIds": ["Enchantment_Standard_B_V2_R6_Account"]
   },
   {
     "id": "1-garnet-power",
@@ -73,7 +81,8 @@
     "filter": "enchantment_offense",
     "il": 1800,
     "combined_rating": 1620,
-    "power": 2700
+    "power": 2700,
+    "gameIds": ["Enchantment_Standard_B_V2_R6_Account"]
   },
   {
     "id": "1-jade-crit",
@@ -82,6 +91,7 @@
     "il": 1800,
     "combined_rating": 1620,
     "strike": 2700,
+    "gameIds": ["Enchantment_Standard_D_V2_R6_Account"],
     "tags": ["gem:jade"]
   },
   {
@@ -91,6 +101,7 @@
     "il": 1800,
     "combined_rating": 1620,
     "crit_avoid": 2700,
+    "gameIds": ["Enchantment_Standard_D_V2_R6_Account"],
     "tags": ["gem:jade"]
   },
   {
@@ -101,6 +112,7 @@
     "combined_rating": 1620,
     "acc": 1485,
     "severity": 1485,
+    "gameIds": ["Enchantment_Standard_F_V2_R6_Account"],
     "tags": ["gem:aquamarine"]
   },
   {
@@ -111,6 +123,7 @@
     "combined_rating": 1620,
     "crit_avoid": 1485,
     "deflect": 1485,
+    "gameIds": ["Enchantment_Standard_F_V2_R6_Account"],
     "tags": ["gem:aquamarine"]
   },
   {
@@ -121,6 +134,7 @@
     "combined_rating": 1620,
     "deflect": 1485,
     "deflect_sev": 1485,
+    "gameIds": ["Enchantment_Standard_N_V2_R6_Account"],
     "tags": ["gem:bloodstone"]
   },
   {
@@ -131,6 +145,7 @@
     "combined_rating": 1620,
     "power": 1485,
     "ca": 1485,
+    "gameIds": ["Enchantment_Standard_N_V2_R6_Account"],
     "tags": ["gem:bloodstone"]
   },
   {
@@ -140,7 +155,8 @@
     "il": 1800,
     "combined_rating": 1620,
     "ca": 1485,
-    "severity": 1485
+    "severity": 1485,
+    "gameIds": ["Enchantment_Standard_J_V2_R6_Account"]
   },
   {
     "id": "2-diamond-defense-crit-avoid",
@@ -149,7 +165,8 @@
     "il": 1800,
     "combined_rating": 1620,
     "defense": 1485,
-    "crit_avoid": 1485
+    "crit_avoid": 1485,
+    "gameIds": ["Enchantment_Standard_J_V2_R6_Account"]
   },
   {
     "id": "2-kyanite-awareness-crit-avoid",
@@ -158,7 +175,8 @@
     "il": 1800,
     "combined_rating": 1620,
     "awareness": 1485,
-    "crit_avoid": 1485
+    "crit_avoid": 1485,
+    "gameIds": ["Enchantment_Standard_O_V2_R6_Account"]
   },
   {
     "id": "2-kyanite-strike-severity",
@@ -167,7 +185,8 @@
     "il": 1800,
     "combined_rating": 1620,
     "strike": 1485,
-    "severity": 1485
+    "severity": 1485,
+    "gameIds": ["Enchantment_Standard_O_V2_R6_Account"]
   },
   {
     "id": "2-moonstone-defense-awareness",
@@ -176,7 +195,8 @@
     "il": 1800,
     "combined_rating": 1620,
     "defense": 1485,
-    "awareness": 1485
+    "awareness": 1485,
+    "gameIds": ["Enchantment_Standard_L_V2_R6_Account"]
   },
   {
     "id": "2-moonstone-power-ca",
@@ -185,7 +205,8 @@
     "il": 1800,
     "combined_rating": 1620,
     "power": 1485,
-    "ca": 1485
+    "ca": 1485,
+    "gameIds": ["Enchantment_Standard_L_V2_R6_Account"]
   },
   {
     "id": "2-onyx-ca-severity",
@@ -194,7 +215,8 @@
     "il": 1800,
     "combined_rating": 1620,
     "ca": 1485,
-    "severity": 1485
+    "severity": 1485,
+    "gameIds": ["Enchantment_Standard_M_V2_R6_Account"]
   },
   {
     "id": "2-onyx-crit-avoid-deflect-severity",
@@ -203,7 +225,8 @@
     "il": 1800,
     "combined_rating": 1620,
     "crit_avoid": 1485,
-    "deflect_sev": 1485
+    "deflect_sev": 1485,
+    "gameIds": ["Enchantment_Standard_M_V2_R6_Account"]
   },
   {
     "id": "2-opal-awareness-deflect",
@@ -212,7 +235,8 @@
     "il": 1800,
     "combined_rating": 1620,
     "awareness": 1485,
-    "deflect": 1485
+    "deflect": 1485,
+    "gameIds": ["Enchantment_Standard_K_V2_R6_Account"]
   },
   {
     "id": "2-opal-power-strike",
@@ -221,7 +245,8 @@
     "il": 1800,
     "combined_rating": 1620,
     "power": 1485,
-    "strike": 1485
+    "strike": 1485,
+    "gameIds": ["Enchantment_Standard_K_V2_R6_Account"]
   },
   {
     "id": "2-peridot-acc-strike",
@@ -230,7 +255,8 @@
     "il": 1800,
     "combined_rating": 1620,
     "acc": 1485,
-    "strike": 1485
+    "strike": 1485,
+    "gameIds": ["Enchantment_Standard_I_V2_R6_Account"]
   },
   {
     "id": "2-peridot-defense-deflect-severity",
@@ -239,7 +265,8 @@
     "il": 1800,
     "combined_rating": 1620,
     "defense": 1485,
-    "deflect_sev": 1485
+    "deflect_sev": 1485,
+    "gameIds": ["Enchantment_Standard_I_V2_R6_Account"]
   },
   {
     "id": "2-ruby-defense-deflect",
@@ -248,7 +275,8 @@
     "il": 1800,
     "combined_rating": 1620,
     "defense": 1485,
-    "deflect": 1485
+    "deflect": 1485,
+    "gameIds": ["Enchantment_Standard_H_V2_R6_Account"]
   },
   {
     "id": "2-ruby-power-accuracy",
@@ -257,7 +285,8 @@
     "il": 1800,
     "combined_rating": 1620,
     "power": 1485,
-    "acc": 1485
+    "acc": 1485,
+    "gameIds": ["Enchantment_Standard_H_V2_R6_Account"]
   },
   {
     "id": "2-sapphire-awareness-deflect-severity",
@@ -266,7 +295,8 @@
     "il": 1800,
     "combined_rating": 1620,
     "awareness": 1485,
-    "deflect_sev": 1485
+    "deflect_sev": 1485,
+    "gameIds": ["Enchantment_Standard_G_V2_R6_Account"]
   },
   {
     "id": "2-sapphire-ca-strike",
@@ -275,7 +305,8 @@
     "il": 1800,
     "combined_rating": 1620,
     "ca": 1485,
-    "strike": 1485
+    "strike": 1485,
+    "gameIds": ["Enchantment_Standard_G_V2_R6_Account"]
   },
   {
     "id": "3-ammolite-defense-awareness-crit-avoid",
@@ -285,7 +316,8 @@
     "combined_rating": 1620,
     "defense": 1080,
     "awareness": 1080,
-    "crit_avoid": 1080
+    "crit_avoid": 1080,
+    "gameIds": ["Enchantment_Standard_P_V2_R6_Account"]
   },
   {
     "id": "3-ammolite-power-ca-strike",
@@ -295,7 +327,8 @@
     "combined_rating": 1620,
     "power": 1080,
     "ca": 1080,
-    "strike": 1080
+    "strike": 1080,
+    "gameIds": ["Enchantment_Standard_P_V2_R6_Account"]
   },
   {
     "id": "3-bismuth-acc-ca-severity",
@@ -305,7 +338,8 @@
     "combined_rating": 1620,
     "acc": 1080,
     "ca": 1080,
-    "severity": 1080
+    "severity": 1080,
+    "gameIds": ["Enchantment_Standard_S_V2_R6_Account"]
   },
   {
     "id": "3-bismuth-defense-awareness-deflect",
@@ -315,7 +349,8 @@
     "combined_rating": 1620,
     "defense": 1080,
     "awareness": 1080,
-    "deflect": 1080
+    "deflect": 1080,
+    "gameIds": ["Enchantment_Standard_S_V2_R6_Account"]
   },
   {
     "id": "3-bone-filligree-acc-ca-strike",
@@ -325,7 +360,8 @@
     "combined_rating": 1620,
     "acc": 1080,
     "ca": 1080,
-    "strike": 1080
+    "strike": 1080,
+    "gameIds": ["Enchantment_Standard_U_V2_R6_Account"]
   },
   {
     "id": "3-bone-filligree-awareness-deflect-deflect-severity",
@@ -335,7 +371,8 @@
     "combined_rating": 1620,
     "awareness": 1080,
     "deflect": 1080,
-    "deflect_sev": 1080
+    "deflect_sev": 1080,
+    "gameIds": ["Enchantment_Standard_U_V2_R6_Account"]
   },
   {
     "id": "3-fire-agate-awareness-crit-avoid-deflect",
@@ -346,6 +383,7 @@
     "awareness": 1080,
     "crit_avoid": 1080,
     "deflect": 1080,
+    "gameIds": ["Enchantment_Standard_Q_V2_R6_Account"],
     "tags": ["gem:fire_agate"]
   },
   {
@@ -357,6 +395,7 @@
     "power": 1080,
     "strike": 1080,
     "severity": 1080,
+    "gameIds": ["Enchantment_Standard_Q_V2_R6_Account"],
     "tags": ["gem:fire_agate"]
   },
   {
@@ -367,7 +406,8 @@
     "combined_rating": 1620,
     "acc": 1080,
     "strike": 1080,
-    "severity": 1080
+    "severity": 1080,
+    "gameIds": ["Enchantment_Standard_R_V2_R6_Account"]
   },
   {
     "id": "3-mother-of-pearl-awareness-crit-avoid-deflect-severity",
@@ -377,7 +417,8 @@
     "combined_rating": 1620,
     "awareness": 1080,
     "crit_avoid": 1080,
-    "deflect_sev": 1080
+    "deflect_sev": 1080,
+    "gameIds": ["Enchantment_Standard_R_V2_R6_Account"]
   },
   {
     "id": "3-netherite-defense-deflect-deflect-severity",
@@ -387,7 +428,8 @@
     "combined_rating": 1620,
     "defense": 1080,
     "deflect": 1080,
-    "deflect_sev": 1080
+    "deflect_sev": 1080,
+    "gameIds": ["Enchantment_Standard_V_V2_R6_Account"]
   },
   {
     "id": "3-netherite-power-acc-ca",
@@ -397,7 +439,8 @@
     "combined_rating": 1620,
     "power": 1080,
     "acc": 1080,
-    "ca": 1080
+    "ca": 1080,
+    "gameIds": ["Enchantment_Standard_V_V2_R6_Account"]
   },
   {
     "id": "3-rubellite-tourmaline-defense-crit-avoid-deflect-severity",
@@ -407,7 +450,8 @@
     "combined_rating": 1620,
     "defense": 1080,
     "crit_avoid": 1080,
-    "deflect_sev": 1080
+    "deflect_sev": 1080,
+    "gameIds": ["Enchantment_Standard_T_V2_R6_Account"]
   },
   {
     "id": "3-rubellite-tourmaline-power-ca-severity",
@@ -417,7 +461,8 @@
     "combined_rating": 1620,
     "power": 1080,
     "ca": 1080,
-    "severity": 1080
+    "severity": 1080,
+    "gameIds": ["Enchantment_Standard_T_V2_R6_Account"]
   },
   {
     "id": "3-skullite-defense-crit-avoid-deflect",
@@ -427,7 +472,8 @@
     "combined_rating": 1620,
     "defense": 1080,
     "crit_avoid": 1080,
-    "deflect": 1080
+    "deflect": 1080,
+    "gameIds": ["Enchantment_Standard_W_V2_R6_Account"]
   },
   {
     "id": "3-skullite-power-accuracy-strike",
@@ -437,7 +483,8 @@
     "combined_rating": 1620,
     "power": 1080,
     "acc": 1080,
-    "strike": 1080
+    "strike": 1080,
+    "gameIds": ["Enchantment_Standard_W_V2_R6_Account"]
   },
   {
     "id": "acc-m32-1000-to-5800",
@@ -461,9 +508,10 @@
   },
   {
     "id": "action-bonus",
-    "name": "Action Bonus",
+    "name": "Celestial Action Bonus",
     "filter": "enchantment_bonus",
-    "ap_gain": 0.06
+    "ap_gain": 0.06,
+    "gameIds": ["Enchantment_Bonus_A_V2_R6_Account"]
   },
   {
     "id": "acute-senses-ca",
@@ -480,6 +528,7 @@
     "combined_rating": 900,
     "ca_p": 0.045,
     "strike_p": 0.045,
+    "gameIds": ["Pet_Alchemist_Player_Bonus"],
     "longDescription": "Alchemist companion power. Role: Offense, Utility.",
     "maxCopies": 1,
     "tags": ["companion_power:offense", "companion_power:utility"]
@@ -500,6 +549,7 @@
     "acc": 2535,
     "ca": 1560,
     "severity": 2340,
+    "gameIds": ["Artifact_M31_April_Fowls_Artifact_R5"],
     "maxCopies": 1
   },
   {
@@ -603,6 +653,7 @@
     "acc": 1950,
     "ca": 1200,
     "severity": 1800,
+    "gameIds": ["Artifact_M31_All_Zone_Artifact_R5"],
     "maxCopies": 1
   },
   {
@@ -634,6 +685,7 @@
     "filter": "companion_power",
     "il": 900,
     "combined_rating": 900,
+    "gameIds": ["Pet_Batiri_Player_Bonus"],
     "longDescription": "Batiri companion power. Role: Offense.",
     "maxCopies": 1,
     "tags": ["companion_power:offense"],
@@ -641,13 +693,14 @@
   },
   {
     "id": "beacon",
-    "name": "Beacon",
+    "name": "Beacon of Meteor Swarm",
     "filter": "artifact",
     "il": 1500,
     "combined_rating": 1275,
     "ca": 1125,
     "strike": 1125,
     "severity": 1125,
+    "gameIds": ["Artifact_M28_Meteorswarm_R5"],
     "maxCopies": 1
   },
   {
@@ -674,6 +727,7 @@
     "acc": 1500,
     "ca": 1500,
     "severity": 1500,
+    "gameIds": ["Artifact_M30_All_Zone_Artifact_R5"],
     "maxCopies": 1
   },
   {
@@ -1490,7 +1544,11 @@
     "il": 750,
     "combined_rating": 600,
     "power": 1125,
-    "severity": 1125
+    "severity": 1125,
+    "gameIds": [
+      "Insignia_Enlightened_Power_Recovery_R6",
+      "Insignia_Crescent_Power_Recovery_R6"
+    ]
   },
   {
     "id": "brutality-pref",
@@ -1739,7 +1797,8 @@
     "id": "comp-enchantment-celestial",
     "name": "Celestial Companion Enchantment",
     "filter": "companion_enchantment",
-    "il": 1800
+    "il": 1800,
+    "gameIds": ["Enchantment_Companion_V2_R6_Account"]
   },
   {
     "id": "compy-s-instincts-alpha-compy-power-utility",
@@ -1769,6 +1828,7 @@
     "defense": 1365,
     "deflect_sev": 2925,
     "stamina_regen": 0.15,
+    "gameIds": ["Artifact_M31_All_Bp_Artifact_R5"],
     "maxCopies": 1
   },
   {
@@ -1780,13 +1840,14 @@
   },
   {
     "id": "crystal",
-    "name": "Crystal",
+    "name": "Crystal of Soul's Flight",
     "filter": "artifact",
     "il": 1500,
     "combined_rating": 1275,
     "power": 1125,
     "acc": 1125,
     "ca": 1125,
+    "gameIds": ["Artifact_Soulflight_R5"],
     "maxCopies": 1
   },
   {
@@ -1805,7 +1866,8 @@
     "id": "debuff-enhancement",
     "name": "Debuff Enhancement",
     "filter": "companion_enhancement",
-    "il": 900
+    "il": 900,
+    "gameIds": ["Pet_Enhancement_Defense_Down"]
   },
   {
     "id": "demogorgon-s-reach",
@@ -1816,17 +1878,19 @@
     "power": 900,
     "forte": 900,
     "hit_points": 3600,
+    "gameIds": ["Artifact_Demogorgon_Revamp_R5"],
     "maxCopies": 1
   },
   {
     "id": "demon-skull",
-    "name": "Demon Skull",
+    "name": "M32 Demon Skull",
     "filter": "artifact",
     "il": 2600,
     "combined_rating": 2600,
     "power": 2184,
     "ca": 2496,
     "severity": 1825,
+    "gameIds": ["Artifact_M32_All_Lockbox_Artifact_R5"],
     "maxCopies": 1
   },
   {
@@ -1834,7 +1898,8 @@
     "name": "Devil's precision",
     "filter": "overload",
     "acc_p": 0.05,
-    "strike_p": 0.05
+    "strike_p": 0.05,
+    "gameIds": ["Enchantment_Overload_Crit_Accuracy"]
   },
   {
     "id": "diamond-blessing-damage",
@@ -1846,6 +1911,11 @@
     "id": "dominance",
     "name": "Celestial Dominance",
     "filter": "insignia",
+    "gameIds": [
+      "Insignia_Barbed_Power_R6",
+      "Insignia_Regal_Power_R6",
+      "Insignia_Illuminated_Power_R6"
+    ],
     "il": 750,
     "combined_rating": 600,
     "power": 1125,
@@ -1885,13 +1955,14 @@
   },
   {
     "id": "enchanted-bregan-d-aerthe-expert-s-cloth",
-    "name": "Enchanted Bregan D'aerthe Expert's Cloth",
+    "name": "M25 Enchanted Bregan D'aerthe Expert's Cloth",
     "filter": "gear_armor",
     "il": 2050,
     "combined_rating": 1845,
     "strike": 1538,
     "severity": 923,
     "crit_avoid": 615,
+    "gameIds": ["Body_M25_Mediumheal_Chase_R2"],
     "allowedClass": ["bard", "warlock"]
   },
   {
@@ -1904,18 +1975,6 @@
     "id": "enemy-type-non-boss",
     "name": "Non Boss",
     "filter": "enemy_type",
-    "maxCopies": 1
-  },
-  {
-    "id": "envenomed-storyteller-s-journal",
-    "name": "Envenomed Storyteller's Journal",
-    "filter": "artifact",
-    "il": 600,
-    "combined_rating": 480,
-    "power": 450,
-    "ca": 450,
-    "strike": 450,
-    "defense": 450,
     "maxCopies": 1
   },
   {
@@ -2775,6 +2834,7 @@
     "filter": "combat_enchant_offense",
     "il": 6000,
     "outgoing_damage_mult": 0.12,
+    "gameIds": ["Enchantment_Combat_G_V2_R6_Account"],
     "bonuses": ["lightning-flash"]
   },
   {
@@ -2790,6 +2850,19 @@
     "maxCopies": 1
   },
   {
+    "id": "m15-envenomed-storyteller-s-journal",
+    "name": "M15 Envenomed Storyteller's Journal",
+    "filter": "artifact",
+    "il": 600,
+    "combined_rating": 480,
+    "power": 450,
+    "ca": 450,
+    "strike": 450,
+    "defense": 450,
+    "gameIds": ["Artifact_Storytellers_Journal_Y1_RS"],
+    "maxCopies": 1
+  },
+  {
     "id": "m16-burnished-sword-knot-epic",
     "name": "M16 Burnished Sword Knot Epic",
     "filter": "gear_weapon_offhand",
@@ -2799,6 +2872,7 @@
     "ca": 638,
     "strike": 638,
     "severity": 500,
+    "gameIds": ["Secondary_Greatweapon_Artifact_M16capseal _L80_R3"],
     "allowedClass": ["barbarian"]
   },
   {
@@ -2811,6 +2885,7 @@
     "strike": 852,
     "severity": 849,
     "int": 6,
+    "gameIds": ["Neck_M26_Artifact_Crafted_Masterwork_Dps_Magical_R1"],
     "bonuses": ["m26-masterwork-neck-waist-set"]
   },
   {
@@ -2823,6 +2898,7 @@
     "strike": 902,
     "severity": 899,
     "int": 6,
+    "gameIds": ["Neck_M26_Artifact_Crafted_Masterwork_Dps_Magical_R1_Hq"],
     "bonuses": ["m26-masterwork-neck-waist-set"]
   },
   {
@@ -2836,6 +2912,7 @@
     "strike": 852,
     "int": 3,
     "cha": 3,
+    "gameIds": ["Waist_M26_Artifact_Crafted_Masterwork_Dps_Magical_R1"],
     "bonuses": ["m26-masterwork-neck-waist-set"]
   },
   {
@@ -2849,6 +2926,7 @@
     "strike": 902,
     "int": 3,
     "cha": 3,
+    "gameIds": ["Waist_M26_Artifact_Crafted_Masterwork_Dps_Magical_R1_Hq"],
     "bonuses": ["m26-masterwork-neck-waist-set"]
   },
   {
@@ -2860,6 +2938,7 @@
     "ca": 1698,
     "strike": 852,
     "str": 6,
+    "gameIds": ["Neck_M26_Artifact_Crafted_Masterwork_Dps_Physical_R1"],
     "bonuses": ["m26-masterwork-neck-waist-set"]
   },
   {
@@ -2871,6 +2950,7 @@
     "ca": 1798,
     "strike": 902,
     "str": 6,
+    "gameIds": ["Neck_M26_Artifact_Crafted_Masterwork_Dps_Physical_R1_Hq"],
     "bonuses": ["m26-masterwork-neck-waist-set"]
   },
   {
@@ -2884,6 +2964,7 @@
     "severity": 849,
     "str": 3,
     "dex": 3,
+    "gameIds": ["Waist_M26_Artifact_Crafted_Masterwork_Dps_Physical_R1"],
     "bonuses": ["m26-masterwork-neck-waist-set"]
   },
   {
@@ -2897,6 +2978,7 @@
     "severity": 899,
     "str": 3,
     "dex": 3,
+    "gameIds": ["Waist_M26_Artifact_Crafted_Masterwork_Dps_Physical_R1_Hq"],
     "bonuses": ["m26-masterwork-neck-waist-set"]
   },
   {
@@ -2908,6 +2990,7 @@
     "strike": 2175,
     "severity": 2175,
     "forte_p": 0.025,
+    "gameIds": ["Arms_M28_Heavyheal_Chase_T2"],
     "allowedClass": ["cleric", "paladin"]
   },
   {
@@ -2919,6 +3002,7 @@
     "ca": 2250,
     "strike": 2250,
     "base_damage_flat": 275,
+    "gameIds": ["Primary_M28_Greatweapon_Chase_T2"],
     "allowedClass": ["barbarian"],
     "bonuses": ["m28-voidtouched-set"]
   },
@@ -2931,6 +3015,7 @@
     "severity": 2250,
     "forte": 2250,
     "base_damage_flat": 275,
+    "gameIds": ["Primary_M28_Scourge_Chase_T2"],
     "allowedClass": ["warlock"],
     "bonuses": ["m28-voidtouched-set"]
   },
@@ -2942,6 +3027,7 @@
     "combined_rating": 2700,
     "acc": 2250,
     "ca": 2250,
+    "gameIds": ["Secondary_M28_Scourge_Chase_T2"],
     "allowedClass": ["warlock"],
     "bonuses": ["m28-voidtouched-set"]
   },
@@ -2953,6 +3039,7 @@
     "combined_rating": 2880,
     "strike": 2400,
     "forte": 2400,
+    "gameIds": ["Head_M29_Lightdps_Chase_T2"],
     "allowedClass": ["warlock", "wizard"],
     "bonuses": ["m29-enchanted-depthweave-cap-ca"]
   },
@@ -2965,18 +3052,20 @@
     "acc": 1200,
     "ca": 2400,
     "forte": 1200,
+    "gameIds": ["Body_M29_Lightdps_Chase_T2"],
     "allowedClass": ["warlock", "wizard"],
     "bonuses": ["m29-ruthless-advantage"]
   },
   {
     "id": "m29-enchanted-depthweave-vest-acc-ca",
-    "name": "M29 Enchanted Depthweave Vest (Acc/CA)",
+    "name": "M29 Enchanted Depthcured Vest",
     "filter": "gear_armor",
     "il": 3200,
     "combined_rating": 2880,
     "acc": 1200,
     "ca": 2400,
     "forte": 1200,
+    "gameIds": ["Body_M29_Mediumdps_Chase_T2"],
     "allowedClass": ["bard", "cleric", "ranger", "rogue"],
     "bonuses": ["m29-ruthless-advantage"]
   },
@@ -2988,7 +3077,8 @@
     "combined_rating": 3645,
     "ca": 1215,
     "defense": 2126,
-    "crit_avoid": 1671
+    "crit_avoid": 1671,
+    "gameIds": ["Neck_M32_All_Bp_Artifact"]
   },
   {
     "id": "m31-5-ritualistic-strap",
@@ -2998,7 +3088,8 @@
     "combined_rating": 3645,
     "forte": 1367,
     "awareness": 2430,
-    "deflect": 2278
+    "deflect": 2278,
+    "gameIds": ["Waist_M32_All_Bp_Artifact"]
   },
   {
     "id": "m31-belt-of-the-forsaken",
@@ -3008,7 +3099,8 @@
     "combined_rating": 3645,
     "strike": 3645,
     "dex": 3,
-    "int": 3
+    "int": 3,
+    "gameIds": ["Waist_M31_All_Dungeon_Artifact"]
   },
   {
     "id": "m31-bindings-of-the-death-pact-damage",
@@ -3018,6 +3110,7 @@
     "combined_rating": 3870,
     "acc": 4612,
     "severity": 3483,
+    "gameIds": ["Arms_M31_Lightdps_S-tier"],
     "bonuses": ["m31-berserking-might-greater"]
   },
   {
@@ -3028,6 +3121,7 @@
     "combined_rating": 3320,
     "acc": 8092,
     "severity": 7470,
+    "gameIds": ["Ring_M31_Mediumdps_S-tier"],
     "maxCopies": 1,
     "bonuses": ["m24-maiden-s-advantage"]
   },
@@ -3040,7 +3134,8 @@
     "severity": 2268,
     "forte": 1276,
     "out_healing": 1134,
-    "recharge": 0.015
+    "recharge": 0.015,
+    "gameIds": ["Shirt_M31_Mediumheal_S-tier"]
   },
   {
     "id": "m31-bloodwoven-sigils-ca",
@@ -3050,6 +3145,7 @@
     "combined_rating": 2835,
     "ca": 1134,
     "strike": 2268,
+    "gameIds": ["Pants_M31_Heavydps_S-tier"],
     "bonuses": ["m31-reckless-advantage", "m31-enchanted-advantage"]
   },
   {
@@ -3060,6 +3156,7 @@
     "combined_rating": 2835,
     "acc": 2457,
     "forte": 1276,
+    "gameIds": ["Shirt_M31_Lightdps_S-tier"],
     "bonuses": ["m31-enchanted-advantage", "m31-critical-empowerment"]
   },
   {
@@ -3071,6 +3168,7 @@
     "forte": 2612,
     "deflect_sev": 4354,
     "control_bonus": 3548,
+    "gameIds": ["Body_M31_Heavytank_S-tier"],
     "bonuses": ["m19-ruthless-might"]
   },
   {
@@ -3083,6 +3181,7 @@
     "forte": 2150,
     "defense": 2628,
     "inc_healing": 3686,
+    "gameIds": ["Body_M31_Heavyall_Sss-tier"],
     "bonuses": ["m31-ruthless-might-ascendant"]
   },
   {
@@ -3093,6 +3192,7 @@
     "combined_rating": 4095,
     "strike": 4505,
     "forte": 2764,
+    "gameIds": ["Head_M31_Heavydps_S-tier"],
     "bonuses": ["m31-enduring-avantage-ascendant"]
   },
   {
@@ -3103,6 +3203,7 @@
     "combined_rating": 4095,
     "acc": 3993,
     "severity": 3686,
+    "gameIds": ["Arms_M31_Heavydps_S-tier"],
     "bonuses": ["m31-enveloped-rage-ascendant"]
   },
   {
@@ -3113,6 +3214,7 @@
     "combined_rating": 4095,
     "ca": 2457,
     "severity": 4505,
+    "gameIds": ["Feet_M31_Heavyall_Sss-tier"],
     "bonuses": ["m31-bloodletting-ascendant"]
   },
   {
@@ -3121,7 +3223,8 @@
     "filter": "gear_neck",
     "il": 4050,
     "combined_rating": 3645,
-    "ca": 1215
+    "ca": 1215,
+    "gameIds": ["Neck_M31_All_Dungeon_Artifact"]
   },
   {
     "id": "m31-runebound-shackle-damage",
@@ -3132,6 +3235,7 @@
     "strike": 8532,
     "severity": 5688,
     "ap_gain": 0.015,
+    "gameIds": ["Ring_M31_Lightdps_A-tier"],
     "maxCopies": 1,
     "bonuses": ["m31-thayan-predator"]
   },
@@ -3143,6 +3247,7 @@
     "combined_rating": 3160,
     "ca": 3792,
     "severity": 8532,
+    "gameIds": ["Ring_M31_Mediumdps_A-tier"],
     "maxCopies": 1,
     "bonuses": ["m31-thayan-predator"]
   },
@@ -3182,6 +3287,7 @@
     "combined_rating": 3870,
     "ca": 2838,
     "forte": 2612,
+    "gameIds": ["Feet_M31_Lightdps_S-tier"],
     "bonuses": ["eagle-s-mastery-greater"]
   },
   {
@@ -3192,6 +3298,7 @@
     "combined_rating": 3320,
     "strike": 8964,
     "forte": 4482,
+    "gameIds": ["Ring_M31_Mediumheal_S-tier"],
     "maxCopies": 1,
     "bonuses": ["m31-enduring-critical"]
   },
@@ -3203,6 +3310,7 @@
     "combined_rating": 4095,
     "severity": 4505,
     "out_healing": 2457,
+    "gameIds": ["Head_M31_Heavyheal_S-tier"],
     "bonuses": ["m31-ruthless-resources-ascendant"]
   },
   {
@@ -3212,7 +3320,8 @@
     "il": 4600,
     "combined_rating": 4140,
     "ca": 3146,
-    "forte": 3291
+    "forte": 3291,
+    "gameIds": ["Head_M32_5_Lightdps_Ab-tier"]
   },
   {
     "id": "m32-bracers-of-the-infernal-tempest-strike",
@@ -3222,6 +3331,7 @@
     "combined_rating": 4500,
     "strike": 4050,
     "forte": 3712,
+    "gameIds": ["Arms_M32_Lightdps_S-tier"],
     "allowedClass": ["warlock", "wizard"],
     "bonuses": ["m32-bracers-of-the-infernal-tempest-strike"]
   },
@@ -3233,6 +3343,7 @@
     "combined_rating": 4500,
     "strike": 4050,
     "forte": 3712,
+    "gameIds": ["Head_M32_Lightdps_S-tier"],
     "allowedClass": ["warlock", "wizard"],
     "bonuses": ["m32-circlet-of-the-infernal-tempest-strike-sev"]
   },
@@ -3245,6 +3356,7 @@
     "acc": 3412,
     "strike": 3150,
     "severity": 3150,
+    "gameIds": ["Secondary_M32_Warlock_All_R6"],
     "allowedClass": ["warlock"],
     "bonuses": ["m32-impending-doom-celestial"]
   },
@@ -3256,6 +3368,7 @@
     "combined_rating": 4005,
     "strike": 4005,
     "severity": 4005,
+    "gameIds": ["Secondary_M32_Warlock_All_R4"],
     "allowedClass": ["warlock"],
     "bonuses": ["m32-omen-of-doom-legendary"]
   },
@@ -3268,6 +3381,7 @@
     "acc": 3120,
     "strike": 2880,
     "severity": 2880,
+    "gameIds": ["Secondary_M32_Warlock_All_R5"],
     "allowedClass": ["warlock"],
     "bonuses": ["m32-omen-of-doom-mythic"]
   },
@@ -3280,6 +3394,7 @@
     "strike": 8820,
     "severity": 8820,
     "ap_gain": 0.015,
+    "gameIds": ["Ring_M32_Heavydps_S-tier"],
     "maxCopies": 1,
     "bonuses": ["m32-deathsilver-coil-of-dominion-acc-strike"]
   },
@@ -3292,6 +3407,7 @@
     "acc": 9555,
     "ca": 5880,
     "ap_gain": 0.015,
+    "gameIds": ["Ring_M32_Mediumdps_S-tier"],
     "maxCopies": 1,
     "bonuses": ["m32-deathsilver-ring-of-submission-strike"]
   },
@@ -3305,6 +3421,7 @@
     "severity": 3150,
     "base_damage_flat": 200,
     "deflect": 3937,
+    "gameIds": ["Primary_M32_Barbarian_All_R6"],
     "allowedClass": ["barbarian"],
     "bonuses": [
       "m32-doomcleaver-celestial",
@@ -3320,6 +3437,7 @@
     "ca": 2100,
     "strike": 3150,
     "defense": 1837,
+    "gameIds": ["Secondary_M32_Barbarian_All_R6"],
     "allowedClass": ["barbarian"],
     "bonuses": [
       "m32-doomcleaver-celestial",
@@ -3336,6 +3454,7 @@
     "strike": 3150,
     "severity": 3150,
     "base_damage_flat": 200,
+    "gameIds": ["Primary_M32_Warlock_All_R6"],
     "allowedClass": ["warlock"],
     "bonuses": ["m32-impending-doom-celestial"]
   },
@@ -3349,6 +3468,7 @@
     "strike": 2670,
     "severity": 2670,
     "base_damage_flat": 50,
+    "gameIds": ["Primary_M32_Warlock_All_R4"],
     "allowedClass": ["warlock"],
     "bonuses": ["m32-omen-of-doom-legendary"]
   },
@@ -3362,6 +3482,7 @@
     "strike": 2880,
     "severity": 2880,
     "base_damage_flat": 100,
+    "gameIds": ["Primary_M32_Warlock_All_R5"],
     "allowedClass": ["warlock"],
     "bonuses": ["m32-omen-of-doom-mythic"]
   },
@@ -3374,12 +3495,13 @@
     "strike": 8370,
     "severity": 8370,
     "ap_gain": 0.015,
+    "gameIds": ["Ring_M32_Lightdps_A-tier"],
     "maxCopies": 1,
     "bonuses": ["m32-rotsteel-loop-of-ash-ca"]
   },
   {
     "id": "m32-rotsteel-ring-of-blight-severity",
-    "name": "M32 Rotsteel Ring of Blight (Severity)",
+    "name": "M32 Rotsteel Coil of Blight",
     "filter": "gear_ring",
     "il": 4650,
     "combined_rating": 3720,
@@ -3387,6 +3509,7 @@
     "ca": 5580,
     "strike": 8370,
     "ap_gain": 0.015,
+    "gameIds": ["Ring_M32_Heavydps_A-tier"],
     "maxCopies": 1
   },
   {
@@ -3398,6 +3521,7 @@
     "ca": 5580,
     "severity": 8370,
     "ap_gain": 0.015,
+    "gameIds": ["Ring_M32_Mediumdps_A-tier"],
     "maxCopies": 1,
     "bonuses": ["m32-rotsteel-ring-of-spores-strike"]
   },
@@ -3409,6 +3533,7 @@
     "combined_rating": 4005,
     "acc": 4339,
     "strike": 4005,
+    "gameIds": ["Secondary_M32_Cleric_All_R4"],
     "allowedClass": ["cleric"],
     "bonuses": ["m32-cleric-s-impending-doom-legendary"]
   },
@@ -3422,6 +3547,7 @@
     "power": 1557,
     "severity": 2670,
     "out_healing": 1780,
+    "gameIds": ["Primary_M32_Cleric_All_R4"],
     "allowedClass": ["cleric"],
     "bonuses": ["m32-cleric-s-impending-doom-legendary"]
   },
@@ -3435,6 +3561,7 @@
     "severity": 2340,
     "ca": 1560,
     "stamina_regen": 0.15,
+    "gameIds": ["Artifact_M33_5_All_Bp_Artifact_R5"],
     "bonuses": ["m33-5-evolving-form"]
   },
   {
@@ -3449,6 +3576,7 @@
     "severity": 1823,
     "il": 4050,
     "combined_rating": 3645,
+    "gameIds": ["Waist_M33_5_All_Bp_Artifact"],
     "bonuses": ["m33-5-evolving-form"]
   },
   {
@@ -3463,6 +3591,7 @@
     "forte": 2734,
     "il": 4050,
     "combined_rating": 3645,
+    "gameIds": ["Neck_M33_5_All_Bp_Artifact"],
     "bonuses": ["m33-5-evolving-form"]
   },
   {
@@ -3474,6 +3603,7 @@
     "strike": 10260,
     "severity": 10260,
     "ap_gain": 0.015,
+    "gameIds": ["Ring_M33_Heavydps_R5"],
     "maxCopies": 1,
     "bonuses": ["m33-accumulating-precision"]
   },
@@ -3486,6 +3616,7 @@
     "ca": 6840,
     "strike": 10260,
     "ap_gain": 0.015,
+    "gameIds": ["Ring_M33_Lightdps_R5"],
     "maxCopies": 1,
     "bonuses": ["m33-dashing-ranger"]
   },
@@ -3498,6 +3629,7 @@
     "acc": 11115,
     "ca": 6840,
     "ap_gain": 0.015,
+    "gameIds": ["Ring_M33_Mediumdps_R5"],
     "maxCopies": 1,
     "bonuses": ["m24-maiden-s-advantage"]
   },
@@ -3511,6 +3643,7 @@
     "ca": 1380,
     "strike": 3312,
     "ap_gain": 0.015,
+    "gameIds": ["Pants_M33_Mediumdps_S-tier"],
     "bonuses": ["m33-reckless-advantage"]
   },
   {
@@ -3523,6 +3656,7 @@
     "ca": 1746,
     "strike": 3492,
     "recharge": 0.015,
+    "gameIds": ["Shirt_M33_Mediumdps_S-tier"],
     "bonuses": ["m33-bloodletting"]
   },
   {
@@ -3535,6 +3669,7 @@
     "strike": 2182,
     "forte": 2619,
     "stamina_regen": 0.015,
+    "gameIds": ["Pants_M33_Mediumheal_Sss-tier"],
     "bonuses": ["m33-freezing-energy", "m33-survivor-s-gift-celestial"]
   },
   {
@@ -3547,6 +3682,7 @@
     "ca": 1455,
     "strike": 3492,
     "ap_gain": 0.015,
+    "gameIds": ["Pants_M33_Mediumdps_Sss-tier"],
     "bonuses": ["m33-freezing-grasp", "m33-reckless-advantage-celestial"]
   },
   {
@@ -3559,6 +3695,7 @@
     "ca": 2328,
     "severity": 2182,
     "ap_gain": 0.015,
+    "gameIds": ["Pants_M33_Heavydps_Sss-tier"],
     "bonuses": ["m33-corrupt-power-celestial", "m33-freezing-rage"]
   },
   {
@@ -3571,6 +3708,7 @@
     "forte": 1964,
     "out_healing": 1746,
     "ap_gain": 0.015,
+    "gameIds": ["Shirt_M33_Mediumheal_Sss-tier"],
     "bonuses": ["m33-freezing-energy", "m33-graceful-harmony-celestial"]
   },
   {
@@ -3583,6 +3721,7 @@
     "ca": 1746,
     "strike": 3492,
     "recharge": 0.015,
+    "gameIds": ["Shirt_M33_Mediumdps_Sss-tier"],
     "bonuses": ["m33-freezing-grasp", "m33-bloodletting-celestial"]
   },
   {
@@ -3595,6 +3734,7 @@
     "ca": 2328,
     "strike": 2619,
     "recharge": 0.015,
+    "gameIds": ["Shirt_M33_Heavydps_Sss-tier"],
     "bonuses": ["m33-freezing-rage", "m33-corrupt-power"]
   },
   {
@@ -3623,7 +3763,8 @@
     "il": 2850,
     "combined_rating": 2565,
     "ca": 1710,
-    "severity": 2565
+    "severity": 2565,
+    "gameIds": ["Companion_Equipment_M33_Alldps_Stat_1"]
   },
   {
     "id": "m33-frostsilver-coil-of-wrath",
@@ -3634,6 +3775,7 @@
     "strike": 10800,
     "severity": 10800,
     "ap_gain": 0.015,
+    "gameIds": ["Ring_M33_Heavydps_R6"],
     "maxCopies": 1,
     "bonuses": [
       "m33-frostsilver-coil-of-wrath-accuracy",
@@ -3651,6 +3793,7 @@
     "ca": 7200,
     "strike": 10800,
     "ap_gain": 0.015,
+    "gameIds": ["Ring_M33_Lightdps_R6"],
     "maxCopies": 1,
     "bonuses": [
       "m33-frostsilver-loop-of-the-arcane-accuracy",
@@ -3667,6 +3810,7 @@
     "acc": 11700,
     "ca": 7200,
     "ap_gain": 0.015,
+    "gameIds": ["Ring_M33_Mediumdps_R6"],
     "maxCopies": 1,
     "bonuses": [
       "m33-frostsilver-ring-of-initiative-strike",
@@ -3681,7 +3825,9 @@
     "il": 5400,
     "combined_rating": 4860,
     "strike": 4860,
-    "forte": 3645
+    "forte": 3645,
+    "gameIds": ["Arms_M33_Mediumdps_A-tier"],
+    "allowedClass": ["cleric", "bard", "rogue", "ranger"]
   },
   {
     "id": "m33-runefrost-skirmisher-barbute",
@@ -3691,6 +3837,7 @@
     "forte": 3645,
     "combined_rating": 4860,
     "il": 5400,
+    "gameIds": ["Head_M33_Mediumdps_A-tier"],
     "allowedClass": ["bard", "cleric", "ranger", "rogue"],
     "bonuses": ["m33-strategist-s-advantage"]
   },
@@ -3702,6 +3849,7 @@
     "combined_rating": 4860,
     "strike": 4860,
     "forte": 3645,
+    "gameIds": ["Body_M33_Mediumdps_A-tier"],
     "allowedClass": ["bard", "cleric", "ranger", "rogue"],
     "bonuses": ["m33-ruthless-advantage-legendary"]
   },
@@ -3713,6 +3861,7 @@
     "combined_rating": 4860,
     "power": 2835,
     "acc": 5265,
+    "gameIds": ["Arms_M33_Lightdps_A-tier"],
     "allowedClass": ["warlock", "wizard"],
     "bonuses": ["m33-runefrost-swift-armguards"]
   },
@@ -3751,7 +3900,8 @@
     "il": 3000,
     "combined_rating": 2700,
     "ca": 1800,
-    "severity": 2700
+    "severity": 2700,
+    "gameIds": ["Companion_Equipment_M33_Alldps_Stat_1_R5"]
   },
   {
     "id": "m33-wintermarked-frostlute",
@@ -3762,6 +3912,7 @@
     "power": 2030,
     "strike": 3480,
     "forte": 2610,
+    "gameIds": ["Secondary_M33_Bard_S-tier"],
     "allowedClass": ["bard"],
     "bonuses": ["m33-chilling-flow-mythic"]
   },
@@ -3773,6 +3924,7 @@
     "combined_rating": 5130,
     "strike": 5130,
     "forte": 3848,
+    "gameIds": ["Head_M33_Lightdps_S-tier_Boe"],
     "allowedClass": ["warlock", "wizard"],
     "bonuses": ["m33-critical-breaker"]
   },
@@ -3784,6 +3936,7 @@
     "combined_rating": 5130,
     "ca": 3420,
     "severity": 5130,
+    "gameIds": ["Feet_M33_Mediumdps_S-tier"],
     "allowedClass": ["bard", "cleric", "ranger", "rogue"],
     "bonuses": ["m33-critical-breaker"]
   },
@@ -3797,6 +3950,7 @@
     "strike": 3480,
     "power": 2030,
     "severity": 3480,
+    "gameIds": ["Primary_M33_Devoted_S-tier"],
     "allowedClass": ["cleric"],
     "bonuses": ["m33-chilling-flow-mythic"]
   },
@@ -3809,6 +3963,7 @@
     "strike": 3480,
     "power": 2030,
     "forte": 2610,
+    "gameIds": ["Secondary_M33_Devoted_S-tier"],
     "allowedClass": ["cleric"],
     "bonuses": ["m33-chilling-flow-mythic"]
   },
@@ -3822,6 +3977,7 @@
     "acc": 3770,
     "strike": 3480,
     "base_damage_flat": 100,
+    "gameIds": ["Primary_M33_Bard_S-tier"],
     "allowedClass": ["bard"],
     "bonuses": ["m33-chilling-flow-mythic"]
   },
@@ -3833,6 +3989,7 @@
     "combined_rating": 5130,
     "ca": 3420,
     "severity": 5130,
+    "gameIds": ["Arms_M33_Mediumdps_S-tier"],
     "allowedClass": ["bard", "cleric", "ranger", "rogue"],
     "bonuses": ["m33-relentless-reserves"]
   },
@@ -3844,17 +4001,19 @@
     "combined_rating": 5130,
     "strike": 5130,
     "forte": 3848,
+    "gameIds": ["Arms_M33_Lightdps_S-tier"],
     "allowedClass": ["warlock", "wizard"],
     "bonuses": ["m33-eagle-s-mastery-lesser"]
   },
   {
     "id": "marco-s",
-    "name": "Marco's",
+    "name": "M27 Marco's Mystic Marker",
     "filter": "artifact",
     "il": 1500,
     "combined_rating": 1275,
     "acc": 2250,
     "severity": 1125,
+    "gameIds": ["Artifact_M27_Marcosmissiles_R5"],
     "maxCopies": 1
   },
   {
@@ -3884,6 +4043,7 @@
     "filter": "gear_ring",
     "strike_p": 1,
     "sev_p": 1,
+    "gameIds": ["Test_Stat_Ring_Max_Crit_Critsev"],
     "maxCopies": 1
   },
   {
@@ -3975,9 +4135,10 @@
   },
   {
     "id": "movement-bonus",
-    "name": "Movement Bonus",
+    "name": "Celestial Movement Bonus",
     "filter": "enchantment_bonus",
-    "movement": 0.18
+    "movement": 0.18,
+    "gameIds": ["Enchantment_Bonus_C_V2_R6_Account"]
   },
   {
     "id": "mystic-aura-group-celestial",
@@ -4011,19 +4172,21 @@
     "il": 900,
     "combined_rating": 900,
     "outgoing_damage": 0.09,
+    "gameIds": ["Pet_Neverwinter_Knight_Player_Bonus"],
     "longDescription": "Neverwinter Knight companion power. Role: Offense.",
     "maxCopies": 1,
     "tags": ["companion_power:offense"]
   },
   {
     "id": "nightflame",
-    "name": "Nightflame",
+    "name": "Nightflame Censer",
     "filter": "artifact",
     "il": 2600,
     "combined_rating": 2080,
     "power": 2184,
     "ca": 2496,
     "forte": 3510,
+    "gameIds": ["Artifact_M31_All_Lockbox_Artifact_R5"],
     "maxCopies": 1
   },
   {
@@ -4204,7 +4367,8 @@
     "name": "Practical Regal Collar",
     "filter": "pratical_collar",
     "il": 1000,
-    "combined_rating": 1000
+    "combined_rating": 1000,
+    "gameIds": ["Collar_Practical_Regal_R5"]
   },
   {
     "id": "precision-strike-severity-worgs-celestial",
@@ -4236,6 +4400,7 @@
     "filter": "mount_equip",
     "il": 1750,
     "combined_rating": 1575,
+    "gameIds": ["Mount_Passive_Providence"],
     "dynamicStats": [
       {
         "stat": "overall_damage",
@@ -4498,6 +4663,7 @@
     "il": 900,
     "combined_rating": 900,
     "power_p": 0.045,
+    "gameIds": ["Pet_Raptor_Player_Bonus"],
     "longDescription": "Tamed Velociraptor companion power. Role: Offense.",
     "maxCopies": 1,
     "tags": ["companion_power:offense"],
@@ -4519,9 +4685,10 @@
   },
   {
     "id": "recharge-bonus",
-    "name": "Recharge Bonus",
+    "name": "Celestial Recharge Bonus",
     "filter": "enchantment_bonus",
-    "recharge": 0.06
+    "recharge": 0.06,
+    "gameIds": ["Enchantment_Bonus_E_V2_R6_Account"]
   },
   {
     "id": "rime-temper",
@@ -4529,7 +4696,8 @@
     "filter": "combat_enchant_defense",
     "il": 7000,
     "incoming_damage": -0.12,
-    "hit_points_mult": 0.15
+    "hit_points_mult": 0.15,
+    "gameIds": ["Enchantment_Combat_L_V2_R6_Account"]
   },
   {
     "id": "risky-investment",
@@ -4597,6 +4765,7 @@
     "defense": 1365,
     "awareness": 1560,
     "stamina_regen": 0.15,
+    "gameIds": ["Artifact_M32_All_Bp_Artifact_R5"],
     "maxCopies": 1
   },
   {
@@ -4619,6 +4788,7 @@
     "il": 7000,
     "incoming_damage": -0.12,
     "hit_points_mult": 0.15,
+    "gameIds": ["Enchantment_Combat_Q_V2_R6_Account"],
     "bonuses": [
       {
         "bonus": "shattered-resolve-stacks",
@@ -4633,6 +4803,7 @@
     "id": "slayer-overload",
     "name": "Slayer Overload",
     "filter": "overload",
+    "gameIds": ["Enchantment_Strongholds_Slayer_Giant_T2"],
     "longDescription": "If using multiple Slayer overloads, type the total overall damage on the first.",
     "bonuses": ["slayer-overload"]
   },
@@ -4741,7 +4912,8 @@
     "filter": "sturdy_collar",
     "il": 1000,
     "combined_rating": 900,
-    "outgoing_damage_mult": 0.02
+    "outgoing_damage_mult": 0.02,
+    "gameIds": ["Collar_Sturdy_Crescent_R5"]
   },
   {
     "id": "sunlord-ca",
@@ -4755,7 +4927,8 @@
     "filter": "supportive_collar",
     "il": 1000,
     "combined_rating": 900,
-    "out_healing_p": 0.05
+    "out_healing_p": 0.05,
+    "gameIds": ["Collar_Supportive_Regal_R5"]
   },
   {
     "id": "swift-synergy",
@@ -4763,6 +4936,7 @@
     "filter": "combat_enchant_offense",
     "il": 7000,
     "outgoing_damage_mult": 0.12,
+    "gameIds": ["Enchantment_Combat_M_V2_R6_Account"],
     "bonuses": ["swift-synergy"]
   },
   {
@@ -4778,6 +4952,7 @@
     "filter": "companion_power",
     "il": 900,
     "combined_rating": 900,
+    "gameIds": ["Pet_Minsc_Player_Bonus"],
     "longDescription": "Minsc companion power. Role: Defense.",
     "maxCopies": 1,
     "tags": ["companion_power:defense"],
@@ -4822,7 +4997,8 @@
     "name": "Unified Crescent Collar",
     "filter": "unified_collar",
     "il": 1000,
-    "combined_rating": 1000
+    "combined_rating": 1000,
+    "gameIds": ["Collar_Unified_Crescent_R5"]
   },
   {
     "id": "vip-hp-bonus-self",
@@ -4889,7 +5065,8 @@
     "filter": "wayfaring_collar",
     "il": 1000,
     "combined_rating": 900,
-    "sev_p": 0.05
+    "sev_p": 0.05,
+    "gameIds": ["Collar_Wayfaring_Barbed_R5"]
   },
   {
     "id": "wild-storm-severity",
