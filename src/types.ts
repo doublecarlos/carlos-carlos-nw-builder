@@ -297,9 +297,12 @@ export interface Item {
    * `ItemCard.vue`. */
   longDescription?: string;
   /** In-game internal item identifiers (`Hitem` in a demo record) that this catalogue entry
-   * stands for. Several game items routinely collapse onto one entry -- different ranks of
-   * the same enchantment, or a mount's four rarity tiers. Consumed only by the game importer;
-   * the engine ignores it. */
+   * stands for. The relation is many-to-many. Several game items routinely collapse onto one
+   * entry -- different ranks of the same enchantment, or a mount's four rarity tiers. One game
+   * item also spreads across several entries when its stats depend on where it is slotted: a
+   * Celestial Garnet is one `Hitem` in game but an offense, a defense and a utility entry
+   * here, all three carrying it. Entries sharing a game id must differ by `filter` so the
+   * importer can tell them apart. Consumed only by the game importer; the engine ignores it. */
   gameIds?: string[];
   /** `build_parameter` slot id to the value it should take on whenever this item gets picked
    * through an `item_picker` slot -- e.g. a Paragon item defaulting Role and Forte to its
@@ -531,11 +534,15 @@ export interface Db {
   bonusById: Map<string, Bonus>;
   bonusMembers: Map<string, string[]>;
   itemsByTag: Map<string, string[]>;
-  /** Game `Hitem` -> catalogue item id. Built from base catalogue + active overlay, so a
-   *  layer can add mappings the shipped catalogue does not have. Overlay entries win over
-   *  base entries for the same game id, matching how overlays already win for the item
-   *  itself -- see catalog.ts's `compose`. */
-  itemByGameId: Map<string, string>;
+  /** Game `Hitem` -> every catalogue item id claiming it, in catalogue order. Built from base
+   *  catalogue + active overlay, so a layer can add mappings the shipped catalogue does not
+   *  have. Usually one claimant, but one in-game item is modelled as several entries whenever
+   *  its stats depend on where it is slotted -- an enchantment grants power in an offense slot,
+   *  defense in a defense slot and forte in the utility slot, so all three entries claim the
+   *  one `Hitem` the game records. Claimants must therefore differ by `filter`, which is what
+   *  lets the importer tell them apart by the slot that accepts them (see demo-slots.ts);
+   *  catalog.ts's validate rejects two claimants sharing a filter as genuinely ambiguous. */
+  itemByGameId: Map<string, string[]>;
   duplicates: string[];
   get(id: string | null | undefined): Item | null;
   forFilter(filter: string): Item[];

@@ -10,6 +10,13 @@ const fixture = readFileSync(
   "utf-8",
 );
 
+/** One loadout carrying the same `Hitem` in the OffenseGem and DefenseGem bags -- the shape an
+ *  in-game enchantment takes when its stats depend on the slot it sits in. */
+const sharedGameIdFixture = readFileSync(
+  join(__dirname, "../fixtures/build-export-shared-gameid.demo.txt"),
+  "utf-8",
+);
+
 async function freshStores() {
   vi.resetModules();
   installWindowShim();
@@ -139,5 +146,50 @@ describe("gameImport store: mapUnrecognisedItem", () => {
     expect(
       gameImport.reports.value[reportIndex].report.outcomes[outcomeIndex],
     ).toMatchObject({ kind: "imported", itemId: secondItemId });
+  });
+
+  it("mapping one game id onto a second filter's form leaves the first form's claim alone", async () => {
+    // Retraction is scoped to the new item's own filter: the offense and defense forms of one
+    // in-game enchantment are both legitimate claimants, not a mapping being corrected.
+    const { gameImport, resolved } = await freshStores();
+    gameImport.parseFile(sharedGameIdFixture);
+    gameImport.commit();
+
+    const report = gameImport.reports.value[0].report;
+    const rowFor = (bag: string) =>
+      report.outcomes.findIndex(
+        (o) => o.kind === "unrecognised" && o.bag === bag,
+      );
+    const offenseRow = rowFor("OffenseGem");
+    const defenseRow = rowFor("DefenseGem");
+    expect(offenseRow).toBeGreaterThanOrEqual(0);
+    expect(defenseRow).toBeGreaterThanOrEqual(0);
+
+    const offenseItem = resolved.db.value.forSlot("enchantments.offense1")[0]
+      .id;
+    const defenseItem = resolved.db.value.forSlot("enchantments.defense1")[0]
+      .id;
+
+    gameImport.mapUnrecognisedItem(0, offenseRow, offenseItem);
+    gameImport.mapUnrecognisedItem(0, defenseRow, defenseItem);
+
+    expect(resolved.db.value.get(offenseItem)?.gameIds).toContain(
+      "Enchantment_Shared_Test",
+    );
+    expect(resolved.db.value.get(defenseItem)?.gameIds).toContain(
+      "Enchantment_Shared_Test",
+    );
+
+    const updated = gameImport.reports.value[0].report;
+    expect(updated.outcomes[offenseRow]).toMatchObject({
+      kind: "imported",
+      slotId: "enchantments.offense1",
+      itemId: offenseItem,
+    });
+    expect(updated.outcomes[defenseRow]).toMatchObject({
+      kind: "imported",
+      slotId: "enchantments.defense1",
+      itemId: defenseItem,
+    });
   });
 });

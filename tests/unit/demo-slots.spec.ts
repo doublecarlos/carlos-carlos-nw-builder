@@ -53,6 +53,12 @@ for (const item of [
     "Collar_Supportive_Test",
   ]),
   testItem("test-offense-gem", "enchantment_offense", ["OffenseGem_Test"]),
+  // One in-game enchantment, three catalogue forms, one shared `Hitem` -- what the gem bags
+  // below disambiguate by slot. Listed offense-first so the tests can tell "the form this bag
+  // accepts" apart from "whichever claimant the catalogue lists first".
+  testItem("test-garnet-power", "enchantment_offense", ["Garnet_Test"]),
+  testItem("test-garnet-defense", "enchantment_defense", ["Garnet_Test"]),
+  testItem("test-garnet-forte", "enchantment_utility", ["Garnet_Test"]),
   testItem("test-insignia", "insignia", [
     "Insignia_A",
     "Insignia_B",
@@ -368,6 +374,105 @@ describe("placeBag: overflow", () => {
         bag: "Head",
         gameId: "Head_Test",
         itemId: "test-head",
+      },
+    ]);
+  });
+});
+
+describe("placeBag: one game id shared by several slot-dependent forms", () => {
+  // Pins the catalogue order the disambiguation has to beat, so the placements below can't
+  // pass by accidentally agreeing with the index: offense is the *last* claimant here.
+  it("indexes all three forms under the one game id", () => {
+    expect(db.itemByGameId.get("Garnet_Test")).toEqual([
+      "test-garnet-defense",
+      "test-garnet-forte",
+      "test-garnet-power",
+    ]);
+  });
+
+  it.each([
+    ["OffenseGem", "enchantments.offense1", "test-garnet-power"],
+    ["DefenseGem", "enchantments.defense1", "test-garnet-defense"],
+    ["UtilityGem", "enchantments.utility", "test-garnet-forte"],
+  ])("%s resolves it to the form its slots accept", (bag, slotId, itemId) => {
+    const results = placeBag(
+      bag,
+      [demoItem(bag, 0, "Garnet_Test")],
+      db,
+      new Set(),
+    );
+    expect(results).toEqual([
+      { kind: "imported", slotId, gameId: "Garnet_Test", itemId },
+    ]);
+  });
+
+  it("the same game id in all three bags fills all three, sharing one occupied set", () => {
+    const occupied = new Set<string>();
+    const results = ["OffenseGem", "DefenseGem", "UtilityGem"].flatMap((bag) =>
+      placeBag(bag, [demoItem(bag, 0, "Garnet_Test")], db, occupied),
+    );
+    expect(
+      results.map((r) => (r.kind === "imported" ? r.itemId : r.kind)),
+    ).toEqual([
+      "test-garnet-power",
+      "test-garnet-defense",
+      "test-garnet-forte",
+    ]);
+    expect([...occupied]).toEqual([
+      "enchantments.offense1",
+      "enchantments.defense1",
+      "enchantments.utility",
+    ]);
+  });
+
+  it("repeats within one bag all resolve to that bag's form, in slot order", () => {
+    const items = Array.from({ length: 3 }, (_, i) =>
+      demoItem("DefenseGem", i, "Garnet_Test"),
+    );
+    const results = placeBag("DefenseGem", items, db, new Set());
+    expect(results).toEqual(
+      [
+        "enchantments.defense1",
+        "enchantments.defense2",
+        "enchantments.defense3",
+      ].map((slotId) => ({
+        kind: "imported",
+        slotId,
+        gameId: "Garnet_Test",
+        itemId: "test-garnet-defense",
+      })),
+    );
+  });
+
+  it("an overflowing shared id reports the form the bag would have used", () => {
+    // Not `claimants[0]` (the defense form) -- a full OffenseGem bag still read the item as
+    // the offense form, which is what the report has to show.
+    const items = Array.from({ length: 5 }, (_, i) =>
+      demoItem("OffenseGem", i, "Garnet_Test"),
+    );
+    const results = placeBag("OffenseGem", items, db, new Set());
+    expect(results.filter((r) => r.kind === "imported")).toHaveLength(4);
+    expect(results.at(-1)).toEqual({
+      kind: "overflow",
+      bag: "OffenseGem",
+      gameId: "Garnet_Test",
+      itemId: "test-garnet-power",
+    });
+  });
+
+  it("a game id no item claims is still unrecognised, not an empty-claimant overflow", () => {
+    const results = placeBag(
+      "OffenseGem",
+      [demoItem("OffenseGem", 0, "Nothing_Claims_This")],
+      db,
+      new Set(),
+    );
+    expect(results).toEqual([
+      {
+        kind: "unrecognised",
+        bag: "OffenseGem",
+        slot: 0,
+        gameId: "Nothing_Claims_This",
       },
     ]);
   });

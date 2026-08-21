@@ -1,7 +1,9 @@
 // Maps a demo's equipment bags (`Ebagid` + `Islotidx`) to this app's slot ids, and applies the
 // one placement rule that covers every bag's awkward cases: for each demo item in a bag, in
-// file order, resolve its `Hitem` through `Db.itemByGameId`, then take the first candidate app
-// slot that's still empty and whose filter accepts the resolved item. No per-slot bookkeeping.
+// file order, resolve its `Hitem` through `Db.itemByGameId` to the entries claiming it, then
+// take the first candidate app slot that's still empty and whose filter accepts one of them.
+// No per-slot bookkeeping. Searching slots and claimants together is also what disambiguates
+// an in-game item modelled here as several entries -- see `resolveAt`.
 import gameImportJson from "../../data/game-import.json";
 import type { Db, Item, Slot } from "../types";
 import type { DemoItem } from "./demo-snapshot";
@@ -92,28 +94,42 @@ export type PlacementResult =
   /** Recognised, but every candidate app slot for its bag was already full. */
   | { kind: "overflow"; bag: string; gameId: string; itemId: string };
 
-/** Resolves one game id against `db`, and -- if a `slotId` candidate is given -- checks it's
- *  still empty and accepts the resolved item. Shared by both placement shapes below; `bag`/
- *  `slot` are only stamped onto the non-"imported" variants, matching `PlacementResult`. */
+/**
+ * Resolves one game id against `db` and places it in the first of `candidates` that will take
+ * it. Shared by both placement shapes below; `bag`/`slot` are only stamped onto the
+ * non-"imported" variants, matching `PlacementResult`.
+ *
+ * A game id can have several claiming entries -- the offense / defense / utility forms of one
+ * in-game enchantment -- and which one the demo meant is decided here, by which candidate slot
+ * accepts which entry. That needs no extra data: a bag's slots already carve the catalogue by
+ * `filter` (`OffenseGem` reaches only `enchantment_offense` slots, and so on), so the bag the
+ * game recorded the item in *is* the disambiguator.
+ */
 function resolveAt(
   gameId: string,
-  slotId: string | undefined,
+  candidates: readonly string[],
   db: Db,
   occupied: Set<string>,
   bag: string,
   slot: number,
 ): PlacementResult {
-  const itemId = db.itemByGameId.get(gameId);
-  if (!itemId) return { kind: "unrecognised", bag, slot, gameId };
-  if (
-    !slotId ||
-    occupied.has(slotId) ||
-    !db.forSlot(slotId).some((i) => i.id === itemId)
-  ) {
-    return { kind: "overflow", bag, gameId, itemId };
+  const claimants = db.itemByGameId.get(gameId) ?? [];
+  if (!claimants.length) return { kind: "unrecognised", bag, slot, gameId };
+
+  // `fallback` is the entry the bag *would* have used had a slot been free -- so a full bag
+  // reports the reading the player actually had, not whichever claimant the catalogue happens
+  // to list first (which for a shared game id may be a form this bag can't even hold).
+  let fallback: string | null = null;
+  for (const slotId of candidates) {
+    const accepted = db.forSlot(slotId);
+    const itemId = claimants.find((id) => accepted.some((i) => i.id === id));
+    if (!itemId) continue;
+    fallback ??= itemId;
+    if (occupied.has(slotId)) continue;
+    occupied.add(slotId);
+    return { kind: "imported", slotId, gameId, itemId };
   }
-  occupied.add(slotId);
-  return { kind: "imported", slotId, gameId, itemId };
+  return { kind: "overflow", bag, gameId, itemId: fallback ?? claimants[0] };
 }
 
 /**
@@ -159,8 +175,16 @@ export function placeBag(
       const mountSlots = entry.gemSlots[item.slot];
       if (!mountSlots) continue; // more equipped mounts than we have insignia groups for
       item.gems.forEach((gameId, gemIndex) => {
+        const target = mountSlots[gemIndex];
         results.push(
-          resolveAt(gameId, mountSlots[gemIndex], db, occupied, bag, item.slot),
+          resolveAt(
+            gameId,
+            target ? [target] : [],
+            db,
+            occupied,
+            bag,
+            item.slot,
+          ),
         );
       });
     }
@@ -171,14 +195,9 @@ export function placeBag(
   const results: PlacementResult[] = [];
   for (const item of items) {
     if (item.gameId == null) continue; // an empty demo slot is not a finding
-    const itemId = db.itemByGameId.get(item.gameId);
-    const slotId = itemId
-      ? candidates.find(
-          (id) =>
-            !occupied.has(id) && db.forSlot(id).some((i) => i.id === itemId),
-        )
-      : undefined;
-    results.push(resolveAt(item.gameId, slotId, db, occupied, bag, item.slot));
+    results.push(
+      resolveAt(item.gameId, candidates, db, occupied, bag, item.slot),
+    );
   }
   return results;
 }

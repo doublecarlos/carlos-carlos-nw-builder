@@ -504,7 +504,7 @@ describe("catalog.validate: gameIds lint", () => {
     expect(finding?.message).toMatch(/duplicate entry/);
   });
 
-  it("errors when two different items claim the same game id, naming both", () => {
+  it("errors when two items of the same filter claim one game id, naming both", () => {
     const items = [
       {
         id: "item-a",
@@ -521,10 +521,70 @@ describe("catalog.validate: gameIds lint", () => {
     ];
     const finding = catalog
       .validate(items, [])
-      .find((f) => /claimed by multiple items/.test(f.message));
+      .find((f) => /claimed by multiple/.test(f.message));
     expect(finding?.level).toBe("error");
     expect(finding?.message).toContain("item-a");
     expect(finding?.message).toContain("item-b");
+  });
+
+  it("allows one game id across items of different filters -- an enchantment's slot forms", () => {
+    // One in-game Celestial Garnet, three catalogue entries; the importer tells them apart by
+    // which slot accepts which, so this is legitimate data, not an ambiguity.
+    const items = [
+      {
+        id: "garnet-power",
+        name: "Celestial Garnet",
+        filter: "enchantment_offense",
+        gameIds: ["Enchantment_Standard_D_V2_R6_Account"],
+      },
+      {
+        id: "garnet-defense",
+        name: "Celestial Garnet",
+        filter: "enchantment_defense",
+        gameIds: ["Enchantment_Standard_D_V2_R6_Account"],
+      },
+      {
+        id: "garnet-forte",
+        name: "Celestial Garnet",
+        filter: "enchantment_utility",
+        gameIds: ["Enchantment_Standard_D_V2_R6_Account"],
+      },
+    ];
+    expect(
+      catalog
+        .validate(items, [])
+        .some((f) => /claimed by multiple/.test(f.message)),
+    ).toBe(false);
+  });
+
+  it("still errors on the third same-filter claimant among otherwise legitimate forms", () => {
+    const items = [
+      {
+        id: "garnet-power",
+        name: "Celestial Garnet",
+        filter: "enchantment_offense",
+        gameIds: ["Shared_Gid"],
+      },
+      {
+        id: "garnet-defense",
+        name: "Celestial Garnet",
+        filter: "enchantment_defense",
+        gameIds: ["Shared_Gid"],
+      },
+      {
+        id: "garnet-defense-copy",
+        name: "Celestial Garnet (copy)",
+        filter: "enchantment_defense",
+        gameIds: ["Shared_Gid"],
+      },
+    ];
+    const findings = catalog
+      .validate(items, [])
+      .filter((f) => /claimed by multiple/.test(f.message));
+    expect(findings).toHaveLength(1);
+    expect(findings[0].message).toContain("garnet-defense");
+    expect(findings[0].message).toContain("garnet-defense-copy");
+    expect(findings[0].message).not.toContain("garnet-power");
   });
 
   it("the same item listing one game id twice is not also reported as a cross-item conflict", () => {
@@ -537,9 +597,9 @@ describe("catalog.validate: gameIds lint", () => {
       },
     ];
     const findings = catalog.validate(items, []);
-    expect(
-      findings.some((f) => /claimed by multiple items/.test(f.message)),
-    ).toBe(false);
+    expect(findings.some((f) => /claimed by multiple/.test(f.message))).toBe(
+      false,
+    );
   });
 });
 

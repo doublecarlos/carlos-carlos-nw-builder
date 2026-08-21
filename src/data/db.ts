@@ -50,7 +50,7 @@ export function build(
   const byFilter = new Map<string | undefined, Item[]>();
   const bonusMembers = new Map<string, string[]>(); // bonusId -> [item id]
   const itemsByTag = new Map<string, string[]>(); // tag   -> [item id]
-  const itemByGameId = new Map<string, string>(); // Hitem -> item id
+  const itemByGameId = new Map<string, string[]>(); // Hitem -> [item id]
   const duplicates: string[] = [];
 
   for (const item of items) {
@@ -63,7 +63,8 @@ export function build(
     for (const attachment of item.bonuses ?? [])
       pushTo(bonusMembers, bonusIdOf(attachment), item.id);
     for (const tag of item.tags ?? []) pushTo(itemsByTag, tag, item.id);
-    for (const gameId of item.gameIds ?? []) itemByGameId.set(gameId, item.id);
+    for (const gameId of item.gameIds ?? [])
+      pushTo(itemByGameId, gameId, item.id);
   }
 
   for (const list of byFilter.values()) {

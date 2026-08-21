@@ -1,5 +1,5 @@
-// db.ts's `itemByGameId`: the game `Hitem` -> catalogue item id index the game importer will
-// resolve against. Exercised through catalog.makeDb so "base"/"overlay" mean what the ticket
+// db.ts's `itemByGameId`: the game `Hitem` -> claiming catalogue item ids index the game
+// importer will resolve against. Exercised through catalog.makeDb so "base"/"overlay" mean what the ticket
 // means by those words -- db.build() itself has no concept of either, it just indexes
 // whatever composed item list it's handed.
 import { describe, it, expect } from "vitest";
@@ -16,7 +16,7 @@ describe("Db.itemByGameId", () => {
       NW_SCHEMA,
       NW_SLOTS,
     );
-    expect(built.itemByGameId.get("Base_Gid")).toBe("a");
+    expect(built.itemByGameId.get("Base_Gid")).toEqual(["a"]);
   });
 
   it("is empty when nothing in the composed catalogue carries gameIds", () => {
@@ -37,7 +37,9 @@ describe("Db.itemByGameId", () => {
       } as Item,
     );
     const built = catalog.makeDb([overlay]);
-    expect(built.itemByGameId.get("Test_Overlay_Only_Gid")).toBe("new-item");
+    expect(built.itemByGameId.get("Test_Overlay_Only_Gid")).toEqual([
+      "new-item",
+    ]);
   });
 
   it("reflects an overlay's edit to a base item's gameIds", () => {
@@ -49,9 +51,9 @@ describe("Db.itemByGameId", () => {
       { ...baseItem, gameIds: ["Test_Overlay_Override_Gid"] },
     );
     const built = catalog.makeDb([overlay]);
-    expect(built.itemByGameId.get("Test_Overlay_Override_Gid")).toBe(
+    expect(built.itemByGameId.get("Test_Overlay_Override_Gid")).toEqual([
       baseItem.id,
-    );
+    ]);
   });
 
   it("one item can claim several game ids", () => {
@@ -62,26 +64,49 @@ describe("Db.itemByGameId", () => {
       gameIds: ["Gid_One", "Gid_Two"],
     } as Item);
     const built = catalog.makeDb([overlay]);
-    expect(built.itemByGameId.get("Gid_One")).toBe("multi");
-    expect(built.itemByGameId.get("Gid_Two")).toBe("multi");
+    expect(built.itemByGameId.get("Gid_One")).toEqual(["multi"]);
+    expect(built.itemByGameId.get("Gid_Two")).toEqual(["multi"]);
   });
 
-  it("two different items claiming the same game id resolve deterministically, not by throwing", () => {
-    // catalog.validate flags this data as ambiguous (an error) -- this only proves the index
-    // itself degrades gracefully rather than erroring at lookup time.
+  it("keeps every item claiming one game id, in catalogue order", () => {
+    // One in-game enchantment is modelled here as its offense and defense forms; both carry
+    // the `Hitem` the game records, and demo-slots.ts picks between them by slot.
+    const overlay = catalog.upsert(
+      catalog.upsert(catalog.emptyOverlay(), "items", "a", {
+        id: "a",
+        name: "A",
+        filter: "enchantment_offense",
+        gameIds: ["Shared_Gid"],
+      } as Item),
+      "items",
+      "b",
+      {
+        id: "b",
+        name: "B",
+        filter: "enchantment_defense",
+        gameIds: ["Shared_Gid"],
+      },
+    );
+    const built = catalog.makeDb([overlay]);
+    expect(built.itemByGameId.get("Shared_Gid")).toEqual(["a", "b"]);
+  });
+
+  it("keeps both claimants even when they share a filter -- validate's job, not the index's", () => {
+    // catalog.validate flags same-filter claimants as ambiguous (an error); the index itself
+    // still degrades gracefully rather than dropping one silently.
     const overlay = catalog.upsert(
       catalog.upsert(catalog.emptyOverlay(), "items", "a", {
         id: "a",
         name: "A",
         filter: "gear_ring",
-        gameIds: ["Shared_Gid"],
+        gameIds: ["Ambiguous_Gid"],
       } as Item),
       "items",
       "b",
-      { id: "b", name: "B", filter: "gear_ring", gameIds: ["Shared_Gid"] },
+      { id: "b", name: "B", filter: "gear_ring", gameIds: ["Ambiguous_Gid"] },
     );
     const built = catalog.makeDb([overlay]);
-    expect(["a", "b"]).toContain(built.itemByGameId.get("Shared_Gid"));
+    expect(built.itemByGameId.get("Ambiguous_Gid")).toEqual(["a", "b"]);
   });
 });
 

@@ -249,8 +249,10 @@ export function commit() {
  *  then re-resolves this loadout in place so the row can flip to "imported" -- #177, "teach
  *  new item mappings from the import report". Also doubles as *re*-mapping: the report keeps
  *  showing the row afterwards (keyed by `unrecognisedOrigin`, not the outcome's current kind),
- *  so picking a different item here first retracts the game id from whatever item it was
- *  previously stamped onto, keeping exactly one item claiming it. */
+ *  so picking a different item here first retracts the game id from any item claiming it that
+ *  shares the new item's `filter` -- the invariant catalog.ts's validate enforces. Claimants
+ *  under *other* filters are left alone: they are the same in-game item's other slot-dependent
+ *  forms (an enchantment's offense and defense entries), not a mapping being corrected. */
 export function mapUnrecognisedItem(
   reportIndex: number,
   outcomeIndex: number,
@@ -282,18 +284,15 @@ export function mapUnrecognisedItem(
   );
 
   let overlay = layer.overlay;
-  const previousItemId =
-    outcome.kind === "imported" || outcome.kind === "overflow"
-      ? outcome.itemId
-      : null;
-  if (previousItemId && previousItemId !== itemId) {
-    const previous = db.value.get(previousItemId);
-    if (previous?.gameIds?.includes(outcome.gameId)) {
-      overlay = catalog.upsert(overlay, "items", previousItemId, {
-        ...previous,
-        gameIds: previous.gameIds.filter((id) => id !== outcome.gameId),
-      });
-    }
+  for (const claimantId of db.value.itemByGameId.get(outcome.gameId) ?? []) {
+    if (claimantId === itemId) continue;
+    const previous = db.value.get(claimantId);
+    if (!previous || previous.filter !== composed.filter) continue;
+    if (!previous.gameIds?.includes(outcome.gameId)) continue;
+    overlay = catalog.upsert(overlay, "items", claimantId, {
+      ...previous,
+      gameIds: previous.gameIds.filter((id) => id !== outcome.gameId),
+    });
   }
   const nextItem = {
     ...composed,

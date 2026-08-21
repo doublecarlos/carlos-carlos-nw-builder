@@ -1211,12 +1211,26 @@ export function validate(
     }
   }
 
+  // Several items may claim one game id -- that is how an in-game item whose stats depend on
+  // its slot is modelled (an enchantment's offense / defense / utility forms are three entries
+  // but one `Hitem`). The importer tells them apart by which slot accepts which item, so the
+  // claimants have to differ by `filter`; two sharing one is the case nothing can resolve.
+  const filterOf = new Map(items.map((item) => [item.id, item.filter]));
   for (const [gameId, owners] of gameIdOwners) {
-    if (owners.size > 1) {
+    if (owners.size < 2) continue;
+    const byFilter = new Map<string | undefined, string[]>();
+    for (const owner of owners) {
+      const key = filterOf.get(owner);
+      const list = byFilter.get(key);
+      if (list) list.push(owner);
+      else byFilter.set(key, [owner]);
+    }
+    for (const [filter, clash] of byFilter) {
+      if (clash.length < 2) continue;
       report(
         "error",
-        `gameId "${gameId}" is claimed by multiple items: ` +
-          `${[...owners].join(", ")} — the map would be ambiguous`,
+        `gameId "${gameId}" is claimed by multiple "${filter ?? "(no filter)"}" items: ` +
+          `${clash.join(", ")} — no slot could tell them apart, so the map would be ambiguous`,
       );
     }
   }

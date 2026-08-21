@@ -1,0 +1,53 @@
+{
+Version 2
+Activeplayerref 100000000000000001
+Packets
+{
+  Createdents
+  {
+    EntityRef 100000000000000001
+    EntityAttach
+    {
+      Savedname "Carlos o Bardo"
+      Ppbuilds
+      {
+        Achname "Build 1"
+        Hclass Player_Bard
+        Ppitems
+        {
+          Ebagid OffenseGem
+          Ulitemid 2218087575996870001
+        }
+        Ppitems
+        {
+          Ebagid DefenseGem
+          Ulitemid 2218087575996870002
+        }
+      }
+      Pentityloadouts
+      {
+        Ppentityloadouts
+        {
+          Loadoutname "1. Gems"
+          Pploadoutitems
+          {
+            Hitem Enchantment_Shared_Test
+            Iitemid 2218087575996870001
+            Ebagid OffenseGem
+          }
+          Pploadoutitems
+          {
+            Hitem Enchantment_Shared_Test
+            Iitemid 2218087575996870002
+            Ebagid DefenseGem
+          }
+          Ipowertreebuild 1
+          Ilastsavetime 132456789
+          Ilastloadtime 132456790
+        }
+      }
+    }
+    Entitytypeenum ENTITYPLAYER
+  }
+}
+}
