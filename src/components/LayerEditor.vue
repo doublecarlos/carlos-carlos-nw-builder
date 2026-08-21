@@ -35,7 +35,7 @@ const TooltipImportModal = defineAsyncComponent({
     h(
       BaseModal,
       {
-        title: "Create an item from a tooltip",
+        title: "Read an item from a tooltip",
         panelClass: "w-[760px] max-w-[92vw]",
         onClose: () => (showTooltipImport.value = false),
       },
@@ -551,7 +551,29 @@ function createFromTooltip(draft: Partial<Item>) {
   newItemCounter.value++;
   router.apply({ item: null });
   showTooltipImport.value = false;
-  notice.value = `Filled ${Object.keys(draft).length - 1} field(s) from the tooltip — review and save to create the item`;
+  notice.value = `Filled ${Object.keys(draft).length} field(s) from the tooltip — review and save to create the item`;
+}
+
+/** How the tooltip window should name the item its "apply" buttons write into, or null when
+ *  no item form is on screen to receive them. A new unsaved draft counts: applying is how a
+ *  draft started from one screenshot picks up a value read off the next. */
+const applyTarget = computed(() => {
+  if (section.value !== "items") return null;
+  return selected.value ? `"${selected.value.name}"` : "the new item";
+});
+
+/** Sends values read off a tooltip into the item form beside the window. The form merges them
+ *  into its own draft, which means an existing item takes them as an ordinary live edit --
+ *  covered by the layer's history like any other -- and a new draft simply gains them. */
+function applyFromTooltip({
+  patch,
+  label,
+}: {
+  patch: Partial<Item>;
+  label: string;
+}) {
+  form.value?.applyPatch(patch);
+  notice.value = `Applied ${label} from the tooltip to ${applyTarget.value}`;
 }
 
 function duplicateBonus() {
@@ -1198,7 +1220,9 @@ onUnmounted(() => {
 
     <TooltipImportModal
       v-if="showTooltipImport"
+      :apply-target="applyTarget"
       @create="createFromTooltip"
+      @apply="applyFromTooltip"
       @close="showTooltipImport = false"
     />
 

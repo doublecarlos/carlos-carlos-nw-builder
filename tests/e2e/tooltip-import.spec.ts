@@ -1,5 +1,6 @@
-// Screenshot to reviewed item draft, end to end: OCR reads a real tooltip capture, the parser
-// fills in the base stats, and "Create item" opens an ordinary new draft in ItemForm.
+// Screenshot to reviewed item, end to end: OCR reads a real tooltip capture, the parser turns
+// it into a list of recognised fields, and those reach an item either through "Create item"
+// (a new draft in ItemForm) or field by field into the item the editor already has open.
 //
 // The OCR assertions are deliberately about the numbers that matter (item level, the rating
 // lines) rather than the whole transcription -- the engine omits fields rather than corrupting
@@ -99,9 +100,9 @@ test.describe("creating an item from a tooltip screenshot", () => {
         ].join("\n"),
       );
 
-    await expect(page.getByTestId("tooltip-import-game-id")).toContainText(
-      "Head_M33_Lightdps_S-tier_Boe",
-    );
+    await expect(
+      page.getByTestId("tooltip-import-field-game-id"),
+    ).toContainText("Head_M33_Lightdps_S-tier_Boe");
 
     await page.getByTestId("tooltip-import-create").click();
 
@@ -145,4 +146,147 @@ test("a pasted screenshot lands without clicking into the window first", async (
   await expect(page.getByTestId("tooltip-import")).toContainText(
     /Reading the screenshot|No text was found|Could not read/,
   );
+});
+
+// The window's other exit: instead of creating an item, send a recognised value into whatever
+// item the editor already has open. No OCR here -- the text box is filled by hand, which is
+// the same input the parser sees either way and keeps these fast.
+test.describe("applying tooltip values to the item being edited", () => {
+  const TOOLTIP_TEXT = [
+    "ZZZ Typed Test Helm",
+    "Item Level: 5,700",
+    "+999 Power",
+    "Def: Head_M33_Typed_Test",
+  ].join("\n");
+
+  /** Opens Layer 1's editor with a blank new-item draft in the form. */
+  async function openLayerEditor(page: import("@playwright/test").Page) {
+    await openBuilder(page);
+    await addLayer(page);
+    await layerRow(page, "Layer 1").locator(".nav-name").click();
+    await page.getByTestId("new-item").click();
+  }
+
+  async function openImportWithText(page: import("@playwright/test").Page) {
+    await page.getByTestId("tooltip-import-toggle").click();
+    await expect(page.getByTestId("tooltip-import")).toBeVisible();
+    await page.getByTestId("tooltip-import-text").fill(TOOLTIP_TEXT);
+  }
+
+  async function closeImport(page: import("@playwright/test").Page) {
+    await page
+      .getByTestId("tooltip-import")
+      .getByRole("button", { name: "Cancel" })
+      .click();
+    await expect(page.getByTestId("tooltip-import")).toBeHidden();
+  }
+
+  test("sends one stat into a saved item without touching its other fields", async ({
+    page,
+  }) => {
+    await openLayerEditor(page);
+    await page.getByTestId("item-name-input").fill("ZZZ Apply Target");
+    await page.getByTestId("item-filter-input").fill("gear_head");
+    await page.getByRole("button", { name: "Save item" }).click();
+
+    await openImportWithText(page);
+    await page.getByTestId("tooltip-import-apply-stat-power").click();
+
+    // The row swaps its button for a tick, so a long list shows what has already gone across.
+    await expect(
+      page.getByTestId("tooltip-import-apply-stat-power"),
+    ).toBeHidden();
+    await expect(
+      page.getByTestId("tooltip-import-field-stat-power"),
+    ).toContainText("999");
+
+    await closeImport(page);
+
+    // Only Power crossed: the item keeps its own name, and gained no other stat row.
+    await expect(page.getByTestId("item-name-input")).toHaveValue(
+      "ZZZ Apply Target",
+    );
+    const rows = page.locator(".stat-row");
+    await expect(rows).toHaveCount(1);
+    await expect(rows.getByTestId("picker-input")).toHaveValue("Power");
+    await expect(rows.locator('input[type="number"]')).toHaveValue("999");
+
+    // An applied value is an ordinary live edit, so it reaches the layer through the same
+    // auto-save the form's own inputs use: wait past the debounce, leave, and come back.
+    await page.waitForTimeout(1500);
+    await page.getByTestId("new-item").click();
+    await page.locator(".editor-search").fill("ZZZ Apply Target");
+    await page
+      .locator(".editor-row")
+      .filter({ hasText: "ZZZ Apply Target" })
+      .click();
+    await expect(
+      page.locator(".stat-row").locator('input[type="number"]'),
+    ).toHaveValue("999");
+  });
+
+  test("sends every recognised value into an unsaved new draft", async ({
+    page,
+  }) => {
+    await openLayerEditor(page);
+    await openImportWithText(page);
+
+    await page.getByTestId("tooltip-import-apply-all").click();
+    await closeImport(page);
+
+    await expect(page.getByTestId("item-name-input")).toHaveValue(
+      "ZZZ Typed Test Helm",
+    );
+    await expect(page.getByTestId("item-gameids-input")).toContainText(
+      "Head_M33_Typed_Test",
+    );
+    const rows = page.locator(".stat-row");
+    await expect(rows).toHaveCount(2);
+    await expect(rows.nth(0).getByTestId("picker-input")).toHaveValue(
+      "Item Level",
+    );
+    await expect(rows.nth(0).locator('input[type="number"]')).toHaveValue(
+      "5700",
+    );
+    await expect(rows.nth(1).getByTestId("picker-input")).toHaveValue("Power");
+  });
+
+  test("overwrites a stat the item already carries", async ({ page }) => {
+    await openLayerEditor(page);
+    await page.getByTestId("item-name-input").fill("ZZZ Overwrite Target");
+    await page.getByTestId("item-filter-input").fill("gear_head");
+    await openImportWithText(page);
+    await page.getByTestId("tooltip-import-apply-stat-power").click();
+    await closeImport(page);
+    await expect(
+      page.locator(".stat-row").locator('input[type="number"]'),
+    ).toHaveValue("999");
+
+    // A second screenshot of the same slot is the reason this feature exists: the newer
+    // number replaces the older one rather than adding a second Power row.
+    await page.getByTestId("tooltip-import-toggle").click();
+    await page.getByTestId("tooltip-import-text").fill("+1,234 Power");
+    await page.getByTestId("tooltip-import-apply-stat-power").click();
+    await closeImport(page);
+
+    const rows = page.locator(".stat-row");
+    await expect(rows).toHaveCount(1);
+    await expect(rows.locator('input[type="number"]')).toHaveValue("1234");
+  });
+
+  test("offers no apply buttons when no item form is open", async ({
+    page,
+  }) => {
+    await openLayerEditor(page);
+    await page.getByRole("button", { name: /Bonuses \d+/ }).click();
+
+    await openImportWithText(page);
+    await expect(
+      page.getByTestId("tooltip-import-apply-stat-power"),
+    ).toBeDisabled();
+    await expect(page.getByTestId("tooltip-import-apply-all")).toBeDisabled();
+
+    // Creating an item is still on the table -- it does not need a form to be open already.
+    await expect(page.getByTestId("tooltip-import-create")).toBeEnabled();
+  });
 });

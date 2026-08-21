@@ -540,6 +540,35 @@ function save() {
   emit("save", { item });
 }
 
+/** Merge item-shaped values -- currently the ones read off a tooltip screenshot -- into the
+ *  open draft. Imperative rather than a prop: the tooltip window is a sibling of this form, and
+ *  routing its values through the layer overlay would reach a saved item but never an unsaved
+ *  new draft, which is exactly the state the screenshot flow starts from. The draft watcher
+ *  takes it from here, so the merge debounces out as an ordinary edit and joins undo like one.
+ *
+ *  The name and stats overwrite what is there -- taking the screenshot's value is the point.
+ *  `gameIds` appends instead, since one item legitimately carries several (#326). */
+function applyPatch(patch: Partial<Item>) {
+  const statKeys = new Set<string>(NW_SCHEMA.statKeys);
+  for (const [key, value] of Object.entries(patch)) {
+    if (key === "name") {
+      draft.value.name = String(value);
+    } else if (key === "gameIds") {
+      const added = (value as string[]).filter(
+        (id) => !draft.value.gameIds.includes(id),
+      );
+      if (added.length)
+        draft.value.gameIds = [...draft.value.gameIds, ...added];
+    } else if (statKeys.has(key)) {
+      const row = draft.value.stats.find((stat) => stat.key === key);
+      if (row) row.value = value as number;
+      else draft.value.stats.push({ key, value: value as number });
+    }
+  }
+}
+
+defineExpose({ applyPatch });
+
 function addStat() {
   draft.value.stats.push({ key: "", value: 0 });
 }
