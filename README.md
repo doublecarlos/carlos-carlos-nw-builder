@@ -1,4 +1,4 @@
-# YANWB - Yet Another NW Builder
+# Carlos Carlos' NW Builder
 
 Web app to plan builds for the game Neverwinter.
 Areas of focus:

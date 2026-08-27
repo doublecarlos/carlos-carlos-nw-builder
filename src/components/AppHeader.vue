@@ -78,7 +78,7 @@ async function onImportFile(event: Event) {
          a narrow window scrolls sideways -- and of everything up here, the title is what a
          narrow window can most afford to lose the tail of. -->
     <h1 class="min-w-0 truncate text-base font-semibold tracking-wide">
-      Carlos Carlos' NW Build Planner
+      Carlos Carlos' NW Builder
     </h1>
 
     <BaseButton data-testid="header-export-bundle" @click="triggerExportBundle"
