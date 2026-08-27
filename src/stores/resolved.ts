@@ -17,8 +17,9 @@ type Resolution =
  * Catalogue layers, lowest priority first. The shipped data is the base (inside
  * `catalog.makeDb`); everything here is folded over it.
  *
- * Enabled layers come first, then the active build's per-build catalog. Order matters:
- * a layer earlier in the list can be overridden by a later layer or the build catalog.
+ * Enabled layers come first (already reversed by the store, so the topmost layer folds
+ * last), then the active build's per-build catalog. Order matters: an overlay earlier in
+ * this list can be overridden by a later one, and the build catalog beats every layer.
  */
 const overlays = computed(() => {
   const result = [...layers.enabledOverlays.value];

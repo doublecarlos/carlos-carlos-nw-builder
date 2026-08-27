@@ -126,12 +126,6 @@ function moveFocus(dir: 1 | -1) {
   <div ref="root" class="flex min-h-0 flex-1 flex-col">
     <div class="mb-1 flex items-center justify-between px-1 py-0.5">
       <span class="text-sm font-semibold uppercase text-muted">Builds</span>
-      <div class="flex items-center gap-1">
-        <BaseButton @click="$emit('import')"><Upload />Import</BaseButton>
-        <BaseButton data-testid="nav-add-build" @click="$emit('create')"
-          ><Plus />New</BaseButton
-        >
-      </div>
     </div>
 
     <input
@@ -143,7 +137,7 @@ function moveFocus(dir: 1 | -1) {
       @input="$emit('update:filter', ($event.target as HTMLInputElement).value)"
     />
 
-    <div class="flex-1 overflow-y-auto">
+    <div class="overflow-y-auto">
       <div
         v-for="(b, i) in filteredBuilds"
         :key="b.id"
@@ -181,18 +175,20 @@ function moveFocus(dir: 1 | -1) {
           @keydown.esc="$emit('rename-cancel')"
           @blur="$emit('rename-commit')"
         />
-        <button
-          v-else
-          type="button"
-          class="nav-name min-w-0 flex-1 cursor-pointer overflow-hidden text-ellipsis whitespace-nowrap py-0.5 text-left"
-          :data-nav-key="b.id"
-          @click="$emit('select', b.id)"
-          @dblclick="$emit('rename-start', b.id, b.name)"
-          @contextmenu.prevent="$emit('menu-open', b.id, $event)"
-          @keydown="onRowKeydown($event, b.id, b.name)"
-        >
-          {{ b.name }}
-        </button>
+
+        <BaseTooltip v-else :text="b.name">
+          <button
+            type="button"
+            class="nav-name min-w-0 flex-1 cursor-pointer overflow-hidden text-ellipsis whitespace-nowrap py-0.5 text-left"
+            :data-nav-key="b.id"
+            @click="$emit('select', b.id)"
+            @dblclick="$emit('rename-start', b.id, b.name)"
+            @contextmenu.prevent="$emit('menu-open', b.id, $event)"
+            @keydown="onRowKeydown($event, b.id, b.name)"
+          >
+            {{ b.name }}
+          </button>
+        </BaseTooltip>
 
         <div class="nav-menu-wrap relative">
           <BaseTooltip text="Build menu">
@@ -215,6 +211,12 @@ function moveFocus(dir: 1 | -1) {
             @close="$emit('menu-close')"
           />
         </div>
+      </div>
+      <div class="flex items-center justify-center gap-1 mt-2">
+        <BaseButton data-testid="nav-add-build" @click="$emit('create')"
+          ><Plus />New</BaseButton
+        >
+        <BaseButton @click="$emit('import')"><Upload />Import</BaseButton>
       </div>
     </div>
   </div>

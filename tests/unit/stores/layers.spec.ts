@@ -187,7 +187,7 @@ describe("layers store", () => {
     expect(target.id).toBe(b.id);
   });
 
-  it("ensureTargetLayer falls back to the last layer after the selected one is deleted", async () => {
+  it("ensureTargetLayer falls back to the top layer after the selected one is deleted", async () => {
     const { layers } = await freshStores();
     layers.createLayer("A");
     layers.createLayer("B");
@@ -195,12 +195,12 @@ describe("layers store", () => {
     // Delete the selected layer (B).
     layers.deleteLayer(layers.layers.value[layers.layers.value.length - 1].id);
 
-    // ensureTargetLayer should fall back to the last remaining layer (A).
+    // ensureTargetLayer should fall back to the top remaining layer (A).
     const target = layers.ensureTargetLayer();
     expect(target.name).toBe("A");
   });
 
-  it("enabledOverlays returns only enabled layers in order", async () => {
+  it("enabledOverlays returns only enabled layers", async () => {
     const { layers } = await freshStores();
     layers.createLayer("A");
     const b = layers.createLayer("B");
@@ -209,5 +209,23 @@ describe("layers store", () => {
 
     const overlays = layers.enabledOverlays.value;
     expect(overlays.length).toBe(2);
+  });
+
+  it("enabledOverlays folds top-last so the topmost layer wins", async () => {
+    const { layers } = await freshStores();
+    const a = layers.createLayer("A");
+    const b = layers.createLayer("B");
+    const overlayNaming = (name: string) => ({
+      items: { i_x: { id: "i_x", name } },
+      bonuses: {},
+      sectionPresets: {},
+      slots: {},
+    });
+    layers.updateOverlay(a.id, overlayNaming("from A"));
+    layers.updateOverlay(b.id, overlayNaming("from B"));
+
+    // Displayed order is [A, B]; A is on top, so it must be folded last.
+    const names = layers.enabledOverlays.value.map((o) => o.items.i_x?.name);
+    expect(names).toEqual(["from B", "from A"]);
   });
 });

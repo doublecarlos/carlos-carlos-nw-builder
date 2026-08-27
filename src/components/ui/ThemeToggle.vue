@@ -23,7 +23,7 @@ const icon = {
   <BaseTooltip :text="`${labels[preference]} (click to change)`">
     <BaseButton @click="cyclePreference">
       <component :is="icon[preference]" />
-      <span class="capitalize">{{ preference }}</span>
+      Theme: <span class="capitalize">{{ preference }}</span>
     </BaseButton>
   </BaseTooltip>
 </template>

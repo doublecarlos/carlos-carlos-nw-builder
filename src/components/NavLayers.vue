@@ -122,20 +122,14 @@ function moveFocus(dir: 1 | -1) {
   <div ref="root" class="border-t border-line pt-1.5">
     <div class="mb-1 flex items-center justify-between px-1 py-0.5">
       <BaseTooltip
-        text="Layers apply top to bottom — a lower layer overrides the ones above it."
+        text="Layers apply bottom to top — a higher layer overrides the ones below it."
       >
         <span
           class="flex items-center gap-1 text-sm font-semibold uppercase text-muted"
         >
-          Layers
+          Customization Layers
         </span>
       </BaseTooltip>
-      <div class="flex items-center gap-1">
-        <BaseButton @click="$emit('import')"><Upload />Import</BaseButton>
-        <BaseButton data-testid="nav-add-layer" @click="$emit('create')"
-          ><Plus />New</BaseButton
-        >
-      </div>
     </div>
 
     <input
@@ -227,6 +221,13 @@ function moveFocus(dir: 1 | -1) {
             @close="$emit('menu-close')"
           />
         </div>
+      </div>
+
+      <div class="flex items-center justify-center gap-1">
+        <BaseButton data-testid="nav-add-layer" @click="$emit('create')"
+          ><Plus />New</BaseButton
+        >
+        <BaseButton @click="$emit('import')"><Upload />Import</BaseButton>
       </div>
     </div>
   </div>

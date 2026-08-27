@@ -1,6 +1,6 @@
 // Layers: named catalogue overlays that can be toggled on/off independently. The engine
 // folds every enabled layer's overlay (plus the active build's catalog) on top of the
-// base catalogue.
+// base catalogue. The list reads highest-priority first: the topmost layer wins.
 import { computed, ref } from "vue";
 import { useDebounceFn } from "@vueuse/core";
 import { reorderIndex } from "../composables/useDragAndDrop";
@@ -21,22 +21,27 @@ export const layers = computed(() =>
   layerOrder.value.map((id) => _layers.value.get(id)!).filter(Boolean),
 );
 
-/** Enabled layers in order, for the engine to fold over the base catalogue. */
+/** Enabled layers in fold order, for the engine to fold over the base catalogue. Reversed
+ * against the displayed order: folding last is what wins, and the top layer has priority. */
 export const enabledOverlays = computed(() =>
-  layers.value.filter((l) => l.enabled).map((l) => l.overlay),
+  layers.value
+    .filter((l) => l.enabled)
+    .map((l) => l.overlay)
+    .reverse(),
 );
 
 /** The id of the last layer the user selected, for ensureTargetLayer. */
 let _lastLayerId: string | null = null;
 
-/** Returns a layer guaranteed to exist: the last-selected one, the last in the list,
- * or a freshly-created "Layer 1". Used by Ctrl/Cmd-click to target a layer. */
+/** Returns a layer guaranteed to exist: the last-selected one, the top (highest-priority)
+ * one, or a freshly-created "Layer 1". Used by Ctrl/Cmd-click to target a layer -- the top
+ * one so the edit written there is not shadowed by another layer. */
 export function ensureTargetLayer(): Layer {
   if (_lastLayerId && _layers.value.has(_lastLayerId)) {
     return _layers.value.get(_lastLayerId)!;
   }
   if (layerOrder.value.length) {
-    return _layers.value.get(layerOrder.value[layerOrder.value.length - 1])!;
+    return _layers.value.get(layerOrder.value[0])!;
   }
   return createLayer();
 }
