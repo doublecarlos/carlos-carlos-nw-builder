@@ -607,7 +607,14 @@
     "grants": [
       {
         "when": {
-          "toggle": ["combat", "party"]
+          "all": [
+            {
+              "toggle": "combat"
+            },
+            {
+              "toggle": "party"
+            }
+          ]
         },
         "stats": {
           "power_p": 0.02,
@@ -1435,6 +1442,48 @@
     ]
   },
   {
+    "id": "m32-artifact-mainhand-modification-validation",
+    "name": "M32+ Artifact Mainhand Modification Validation",
+    "grants": [
+      {
+        "when": {
+          "not": {
+            "equipped": {
+              "tag": "artifact:mainhand",
+              "atLeast": 1
+            }
+          }
+        },
+        "problem": {
+          "severity": "error",
+          "message": "This modification is not valid for the equipped weapon.",
+          "hideFromPicker": true
+        }
+      }
+    ]
+  },
+  {
+    "id": "m32-artifact-offhand-modification-validation",
+    "name": "M32+ Artifact Offhand Modification Validation",
+    "grants": [
+      {
+        "when": {
+          "not": {
+            "equipped": {
+              "tag": "artifact:offhand",
+              "atLeast": 1
+            }
+          }
+        },
+        "problem": {
+          "severity": "error",
+          "message": "This modification is not valid for the equipped weapon.",
+          "hideFromPicker": true
+        }
+      }
+    ]
+  },
+  {
     "id": "m32-bracers-of-the-infernal-tempest-strike",
     "name": "M32 Bracers of the Infernal Tempest (Strike)",
     "grants": [
@@ -1460,6 +1509,39 @@
         "stats": {
           "strike_p": 0.05,
           "sev_p": 0.05
+        }
+      }
+    ]
+  },
+  {
+    "id": "m32-cleric-s-impending-doom-celestial",
+    "name": "M32 Cleric's Impending Doom (Celestial)",
+    "grants": [
+      {
+        "when": {
+          "bonusOccurrences": {
+            "bonus": "m32-cleric-s-impending-doom-celestial",
+            "atLeast": 2
+          }
+        },
+        "stats": {
+          "forte_p": 0.08,
+          "strike_p": 0.075
+        }
+      },
+      {
+        "when": {
+          "duration": {
+            "atLeast": 30
+          },
+          "toggle": "combat",
+          "bonusOccurrences": {
+            "bonus": "m32-cleric-s-impending-doom-celestial",
+            "atLeast": 2
+          }
+        },
+        "stats": {
+          "outgoing_damage": 0.05
         }
       }
     ]
@@ -1493,6 +1575,39 @@
         },
         "stats": {
           "outgoing_damage": 0.04
+        }
+      }
+    ]
+  },
+  {
+    "id": "m32-cleric-s-impending-doom-mythic",
+    "name": "M32 Cleric's Impending Doom (Mythic)",
+    "grants": [
+      {
+        "when": {
+          "bonusOccurrences": {
+            "bonus": "m32-cleric-s-impending-doom-mythic",
+            "atLeast": 2
+          }
+        },
+        "stats": {
+          "forte_p": 0.07,
+          "strike_p": 0.037
+        }
+      },
+      {
+        "when": {
+          "duration": {
+            "atLeast": 30
+          },
+          "toggle": "combat",
+          "bonusOccurrences": {
+            "bonus": "m32-cleric-s-impending-doom-mythic",
+            "atLeast": 2
+          }
+        },
+        "stats": {
+          "outgoing_damage": 0.045
         }
       }
     ]
@@ -2793,6 +2908,20 @@
     ]
   },
   {
+    "id": "precision-2",
+    "name": "Precision",
+    "grants": [
+      {
+        "when": {
+          "toggle": "combat"
+        },
+        "stats": {
+          "strike_p": 0.09
+        }
+      }
+    ]
+  },
+  {
     "id": "prime-rib-power",
     "name": "Prime Rib (Power)",
     "grants": [
@@ -3310,7 +3439,14 @@
       },
       {
         "when": {
-          "toggle": ["combat", "party"]
+          "all": [
+            {
+              "toggle": "combat"
+            },
+            {
+              "toggle": "party"
+            }
+          ]
         },
         "stats": {
           "ca_p": 0.054000000000000006,

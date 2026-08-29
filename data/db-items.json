@@ -497,7 +497,8 @@
         "max": 5800,
         "default": 1000
       }
-    ]
+    ],
+    "bonuses": ["m32-artifact-offhand-modification-validation"]
   },
   {
     "id": "accuracy-kit",
@@ -1570,7 +1571,8 @@
         "max": 3600,
         "default": 600
       }
-    ]
+    ],
+    "bonuses": ["m32-artifact-offhand-modification-validation"]
   },
   {
     "id": "campfire-buff",
@@ -2832,8 +2834,8 @@
     "id": "lightning-flash",
     "name": "Celestial Lightning Flash",
     "filter": "combat_enchant_offense",
-    "il": 6000,
-    "outgoing_damage_mult": 0.12,
+    "il": 3000,
+    "outgoing_damage": 0.12,
     "gameIds": ["Enchantment_Combat_G_V2_R6_Account"],
     "bonuses": ["lightning-flash"]
   },
@@ -3358,6 +3360,7 @@
     "severity": 3150,
     "gameIds": ["Secondary_M32_Warlock_All_R6"],
     "allowedClass": ["warlock"],
+    "tags": ["artifact:offhand"],
     "bonuses": ["m32-impending-doom-celestial"]
   },
   {
@@ -3370,6 +3373,7 @@
     "severity": 4005,
     "gameIds": ["Secondary_M32_Warlock_All_R4"],
     "allowedClass": ["warlock"],
+    "tags": ["artifact:offhand"],
     "bonuses": ["m32-omen-of-doom-legendary"]
   },
   {
@@ -3383,6 +3387,7 @@
     "severity": 2880,
     "gameIds": ["Secondary_M32_Warlock_All_R5"],
     "allowedClass": ["warlock"],
+    "tags": ["artifact:offhand"],
     "bonuses": ["m32-omen-of-doom-mythic"]
   },
   {
@@ -3423,6 +3428,7 @@
     "deflect": 3937,
     "gameIds": ["Primary_M32_Barbarian_All_R6"],
     "allowedClass": ["barbarian"],
+    "tags": ["artifact:mainhand"],
     "bonuses": [
       "m32-doomcleaver-celestial",
       "m32-knot-of-the-bloodhound-celestial"
@@ -3439,6 +3445,7 @@
     "defense": 1837,
     "gameIds": ["Secondary_M32_Barbarian_All_R6"],
     "allowedClass": ["barbarian"],
+    "tags": ["artifact:offhand"],
     "bonuses": [
       "m32-doomcleaver-celestial",
       "m32-knot-of-the-bloodhound-celestial"
@@ -3456,6 +3463,7 @@
     "base_damage_flat": 200,
     "gameIds": ["Primary_M32_Warlock_All_R6"],
     "allowedClass": ["warlock"],
+    "tags": ["artifact:mainhand"],
     "bonuses": ["m32-impending-doom-celestial"]
   },
   {
@@ -3470,6 +3478,7 @@
     "base_damage_flat": 50,
     "gameIds": ["Primary_M32_Warlock_All_R4"],
     "allowedClass": ["warlock"],
+    "tags": ["artifact:mainhand"],
     "bonuses": ["m32-omen-of-doom-legendary"]
   },
   {
@@ -3484,6 +3493,7 @@
     "base_damage_flat": 100,
     "gameIds": ["Primary_M32_Warlock_All_R5"],
     "allowedClass": ["warlock"],
+    "tags": ["artifact:mainhand"],
     "bonuses": ["m32-omen-of-doom-mythic"]
   },
   {
@@ -3535,7 +3545,35 @@
     "strike": 4005,
     "gameIds": ["Secondary_M32_Cleric_All_R4"],
     "allowedClass": ["cleric"],
+    "tags": ["artifact:offhand"],
     "bonuses": ["m32-cleric-s-impending-doom-legendary"]
+  },
+  {
+    "id": "m32-sigil-of-the-abyss-celestial",
+    "name": "M32 Sigil of the Abyss (Celestial)",
+    "filter": "gear_weapon_offhand",
+    "il": 5250,
+    "acc": 3412,
+    "strike": 3150,
+    "forte": 2362,
+    "combined_rating": 4725,
+    "allowedClass": ["cleric"],
+    "tags": ["artifact:offhand"],
+    "bonuses": ["m32-cleric-s-impending-doom-celestial"]
+  },
+  {
+    "id": "m32-warden-of-the-last-rite-celestial",
+    "name": "M32 Warden of the Last Rite (Celestial)",
+    "filter": "gear_weapon_mainhand",
+    "il": 5250,
+    "base_damage_flat": 200,
+    "power": 1837,
+    "severity": 3150,
+    "out_healing": 2100,
+    "combined_rating": 4725,
+    "allowedClass": ["cleric"],
+    "tags": ["artifact:mainhand"],
+    "bonuses": ["m32-cleric-s-impending-doom-celestial"]
   },
   {
     "id": "m32-warden-of-the-last-rite-legendary",
@@ -3549,7 +3587,22 @@
     "out_healing": 1780,
     "gameIds": ["Primary_M32_Cleric_All_R4"],
     "allowedClass": ["cleric"],
+    "tags": ["artifact:mainhand"],
     "bonuses": ["m32-cleric-s-impending-doom-legendary"]
+  },
+  {
+    "id": "m32-warden-of-the-last-rite-mythic",
+    "name": "M32 Warden of the Last Rite (Mythic)",
+    "filter": "gear_weapon_mainhand",
+    "il": 4800,
+    "base_damage_flat": 100,
+    "power": 1680,
+    "severity": 2880,
+    "out_healing": 1920,
+    "combined_rating": 4320,
+    "allowedClass": ["cleric"],
+    "tags": ["artifact:mainhand"],
+    "bonuses": ["m32-cleric-s-impending-doom-mythic"]
   },
   {
     "id": "m33-5-laughing-void",
@@ -3866,6 +3919,19 @@
     "bonuses": ["m33-runefrost-swift-armguards"]
   },
   {
+    "id": "m33-sigil-of-the-abyss-mythic",
+    "name": "M33 Sigil of the Abyss (Mythic)",
+    "filter": "gear_weapon_offhand",
+    "il": 4800,
+    "acc": 3120,
+    "strike": 2880,
+    "forte": 2160,
+    "combined_rating": 4320,
+    "allowedClass": ["cleric"],
+    "tags": ["artifact:offhand"],
+    "bonuses": ["m32-cleric-s-impending-doom-mythic"]
+  },
+  {
     "id": "m33-true-ice-icon-of-the-companion-forte-ogh",
     "name": "M33 True Ice Icon of the Companion",
     "filter": "companion_equip",
@@ -3914,6 +3980,7 @@
     "forte": 2610,
     "gameIds": ["Secondary_M33_Bard_S-tier"],
     "allowedClass": ["bard"],
+    "tags": ["artifact:offhand"],
     "bonuses": ["m33-chilling-flow-mythic"]
   },
   {
@@ -3952,6 +4019,7 @@
     "severity": 3480,
     "gameIds": ["Primary_M33_Devoted_S-tier"],
     "allowedClass": ["cleric"],
+    "tags": ["artifact:mainhand"],
     "bonuses": ["m33-chilling-flow-mythic"]
   },
   {
@@ -3965,6 +4033,7 @@
     "forte": 2610,
     "gameIds": ["Secondary_M33_Devoted_S-tier"],
     "allowedClass": ["cleric"],
+    "tags": ["artifact:offhand"],
     "bonuses": ["m33-chilling-flow-mythic"]
   },
   {
@@ -3979,6 +4048,7 @@
     "base_damage_flat": 100,
     "gameIds": ["Primary_M33_Bard_S-tier"],
     "allowedClass": ["bard"],
+    "tags": ["artifact:mainhand"],
     "bonuses": ["m33-chilling-flow-mythic"]
   },
   {
@@ -4065,32 +4135,41 @@
     "name": "Modification: Dark Spiral",
     "filter": "modification_mainhand",
     "allowedClass": ["warlock"],
-    "bonuses": ["modification-dark-spiral"]
+    "bonuses": [
+      "modification-dark-spiral",
+      "m32-artifact-mainhand-modification-validation"
+    ]
   },
   {
     "id": "modification-forte-m32",
     "name": "Modification: Forte (M32+)",
     "filter": "modification_offhand_static",
-    "forte": 1100
+    "forte": 1100,
+    "bonuses": ["m32-artifact-offhand-modification-validation"]
   },
   {
     "id": "modification-hellish-rebuke",
     "name": "Modification: Hellish Rebuke",
     "filter": "modification_mainhand",
     "allowedClass": ["warlock"],
-    "bonuses": ["modification-hellish-rebuke"]
+    "bonuses": [
+      "modification-hellish-rebuke",
+      "m32-artifact-mainhand-modification-validation"
+    ]
   },
   {
     "id": "modification-recharge-speed-m32",
     "name": "Modification: Recharge Speed (M32+)",
     "filter": "modification_offhand_static",
-    "recharge": 0.025
+    "recharge": 0.025,
+    "bonuses": ["m32-artifact-offhand-modification-validation"]
   },
   {
     "id": "modification-severity-m32",
     "name": "Modification: Severity (M32+)",
     "filter": "modification_offhand_static",
-    "severity": 1400
+    "severity": 1400,
+    "bonuses": ["m32-artifact-offhand-modification-validation"]
   },
   {
     "id": "mount-combat-power-celestial",
@@ -4353,7 +4432,8 @@
         "max": 3200,
         "default": 600
       }
-    ]
+    ],
+    "bonuses": ["m32-artifact-offhand-modification-validation"]
   },
   {
     "id": "power-of-the-nine-hells",
@@ -4369,6 +4449,12 @@
     "il": 1000,
     "combined_rating": 1000,
     "gameIds": ["Collar_Practical_Regal_R5"]
+  },
+  {
+    "id": "precision",
+    "name": "Precision",
+    "filter": "companion_enhancement",
+    "bonuses": ["precision-2"]
   },
   {
     "id": "precision-strike-severity-worgs-celestial",
@@ -4694,7 +4780,7 @@
     "id": "rime-temper",
     "name": "Celestial Rime Temper",
     "filter": "combat_enchant_defense",
-    "il": 7000,
+    "il": 3500,
     "incoming_damage": -0.12,
     "hit_points_mult": 0.15,
     "gameIds": ["Enchantment_Combat_L_V2_R6_Account"]
@@ -4785,7 +4871,7 @@
     "id": "shattered-resolve",
     "name": "Celestial Shattered Resolve",
     "filter": "combat_enchant_defense",
-    "il": 7000,
+    "il": 3500,
     "incoming_damage": -0.12,
     "hit_points_mult": 0.15,
     "gameIds": ["Enchantment_Combat_Q_V2_R6_Account"],
@@ -4904,7 +4990,8 @@
         "max": 5400,
         "default": 900
       }
-    ]
+    ],
+    "bonuses": ["m32-artifact-offhand-modification-validation"]
   },
   {
     "id": "sturdy-crescent-collar",
@@ -4934,8 +5021,8 @@
     "id": "swift-synergy",
     "name": "Celestial Swift Synergy",
     "filter": "combat_enchant_offense",
-    "il": 7000,
-    "outgoing_damage_mult": 0.12,
+    "il": 3500,
+    "outgoing_damage": 0.12,
     "gameIds": ["Enchantment_Combat_M_V2_R6_Account"],
     "bonuses": ["swift-synergy"]
   },
@@ -5067,6 +5154,15 @@
     "combined_rating": 900,
     "sev_p": 0.05,
     "gameIds": ["Collar_Wayfaring_Barbed_R5"]
+  },
+  {
+    "id": "wayfaring-crescent-collar",
+    "name": "Wayfaring Crescent Collar",
+    "filter": "wayfaring_collar",
+    "il": 1000,
+    "combined_rating": 900,
+    "recharge": 0.05,
+    "gameIds": ["Collar_Wayfaring_Crescent_R5"]
   },
   {
     "id": "wild-storm-severity",
