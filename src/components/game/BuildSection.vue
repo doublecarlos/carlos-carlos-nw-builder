@@ -39,6 +39,7 @@ defineEmits<{
   copy: [fromId: string];
   "apply-preset": [preset: SectionPreset];
   "create-preset": [];
+  "update-preset": [preset: SectionPreset];
   clear: [];
 }>();
 
@@ -96,6 +97,7 @@ useCursorRowKeys(button, {
         :presets="presets"
         @apply="(preset) => $emit('apply-preset', preset)"
         @create="$emit('create-preset')"
+        @update="(preset) => $emit('update-preset', preset)"
       />
       <SectionCopyMenu
         v-if="otherBuilds.length"

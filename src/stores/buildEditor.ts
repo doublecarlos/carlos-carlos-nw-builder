@@ -552,3 +552,10 @@ export function presetFromSection(
 
   return preset;
 }
+
+/** `presetFromSection` re-taken into an existing preset's identity: same id, label and section,
+ *  contents replaced wholesale by the section as it stands now. What the preset menu's
+ *  per-preset "Update from current" writes back. */
+export function presetUpdatedFromSection(preset: SectionPreset): SectionPreset {
+  return { ...presetFromSection(preset.section, preset.label), id: preset.id };
+}

@@ -482,6 +482,14 @@ function onCreatePreset(sectionId: string, sectionLabel: string) {
   selection.selectLayer(layer.id);
 }
 
+/** "Update from current" on one preset in a section's menu: re-snapshots the section into that
+ *  preset's identity and writes it back to the layer that defines it (or, for a shipped preset,
+ *  an overlay edit over it). PresetMenu confirms before this fires -- see its own comment on
+ *  why an overwrite here needs one. */
+function onUpdatePreset(preset: SectionPreset) {
+  layers.updatePreset(buildEditor.presetUpdatedFromSection(preset));
+}
+
 function onRowClick(event: MouseEvent, slotId: string, itemId?: string) {
   if (!(isMac ? event.metaKey : event.ctrlKey)) return;
   const item = itemId ? db.value.get(itemId) : itemIn(slotId);
@@ -809,6 +817,7 @@ watch(
           @copy="(fromId) => buildEditor.copySection(fromId, [section.id])"
           @apply-preset="(preset) => buildEditor.applyPreset(preset)"
           @create-preset="onCreatePreset(section.id, section.label)"
+          @update-preset="onUpdatePreset"
           @clear="buildEditor.clearSection(section.id, section.label)"
         >
           <template #default="{ slotDef }: { slotDef: Slot }">

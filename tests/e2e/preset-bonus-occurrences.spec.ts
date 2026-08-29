@@ -79,7 +79,8 @@ async function applyGearPreset(page: Page, label: string) {
     .click();
   const popover = page.locator(".preset-popover");
   await expect(popover).toBeVisible();
-  await popover.getByRole("button", { name: label }).click();
+  // Exact: the row's "update from current" button names the preset in its own label too.
+  await popover.getByRole("button", { name: label, exact: true }).click();
 }
 
 test("applying a preset seeds the item's occurrence count alongside its choice", async ({

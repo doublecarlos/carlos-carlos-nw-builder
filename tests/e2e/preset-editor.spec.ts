@@ -2,6 +2,9 @@
 // editor's "Presets" tab (PresetForm.vue), and confirming the result shows up live in the
 // real build editor's "Preset..." menu (section-presets.spec.ts covers applying an already-
 // authored preset through that menu -- this covers authoring it in the first place).
+//
+// Preset lookups in that menu are `exact` because each row's "update from current" button
+// carries the preset's own name inside its label -- a substring match hits both.
 import { test, expect, type Page } from "@playwright/test";
 import {
   openBuilder,
@@ -51,9 +54,11 @@ test("creating a preset in a layer makes it available in the build's Preset menu
   await presetBtn.click();
   const popover = page.locator(".preset-popover");
   await expect(
-    popover.getByRole("button", { name: "E2E Preset" }),
+    popover.getByRole("button", { name: "E2E Preset", exact: true }),
   ).toBeVisible();
-  await popover.getByRole("button", { name: "E2E Preset" }).click();
+  await popover
+    .getByRole("button", { name: "E2E Preset", exact: true })
+    .click();
 
   const roleRow = page.locator('[data-cursor-key="slot:options.role"]');
   await expect(roleRow.getByTestId("picker-input")).toHaveValue("DPS");
@@ -83,9 +88,9 @@ test("deleting a preset removes it from the build's Preset menu, leaving the oth
   await presetBtn.click();
   const popover = page.locator(".preset-popover");
   await expect(
-    popover.getByRole("button", { name: "Temp Preset" }),
+    popover.getByRole("button", { name: "Temp Preset", exact: true }),
   ).toBeHidden();
   await expect(
-    popover.getByRole("button", { name: "Keep Preset" }),
+    popover.getByRole("button", { name: "Keep Preset", exact: true }),
   ).toBeVisible();
 });

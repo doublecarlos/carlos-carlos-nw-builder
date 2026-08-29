@@ -577,6 +577,26 @@ describe("buildEditor.presetFromSection", () => {
     expect(preset.clears).not.toContain("options.role");
   });
 
+  it("presetUpdatedFromSection re-snapshots into an existing preset's identity", async () => {
+    const { buildEditor } = await freshStores();
+    buildEditor.setChoice("gear.head", "ItemA");
+
+    const updated = buildEditor.presetUpdatedFromSection({
+      id: "kept-id",
+      label: "Kept Label",
+      section: "gear",
+      choices: { "gear.arms": "Stale" },
+    });
+
+    expect(updated.id).toBe("kept-id");
+    expect(updated.label).toBe("Kept Label");
+    expect(updated.section).toBe("gear");
+    // Contents are replaced wholesale, not merged -- the stale pick is gone, and the slot it
+    // named comes back under `clears` because the section leaves it empty now.
+    expect(updated.choices).toEqual({ "gear.head": "ItemA" });
+    expect(updated.clears).toContain("gear.arms");
+  });
+
   it("round-trips: applying the snapshot reproduces the section it came from", async () => {
     const { builds, buildEditor } = await freshStores();
     buildEditor.setChoice("gear.head", "ItemA");

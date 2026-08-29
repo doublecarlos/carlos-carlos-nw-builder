@@ -25,6 +25,7 @@ function click() {
   <BaseTooltip text="Reset every slot in this section to its default">
     <BaseButton
       class="mr-0.5 w-36 flex-none justify-center whitespace-nowrap"
+      :data-testid="`clear-section-${sectionId}`"
       @click="click"
     >
       <RotateCcw />{{ confirm_.label(sectionId, "Clear section") }}

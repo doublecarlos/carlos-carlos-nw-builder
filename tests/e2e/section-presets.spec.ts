@@ -2,6 +2,10 @@
 // The `options` section ships with no developer-authored presets (data/slots.json), so each
 // test authors its own through the Layer editor's "Presets" tab first -- the same
 // user-authored path preset-editor.spec.ts covers in more depth.
+//
+// Picking a preset out of that popover is an `exact` name match throughout: each row's
+// "update from current" button names the preset in its own label, so a substring match would
+// hit both buttons in the row.
 import { test, expect, type Page } from "@playwright/test";
 import {
   openBuilder,
@@ -75,7 +79,9 @@ test("applying a preset fills the slots it defines", async ({ page }) => {
   await presetMenu(page, "options").click();
   const popover = page.locator(".preset-popover");
   await expect(popover).toBeVisible();
-  await popover.getByRole("button", { name: "DPS (Magical)" }).click();
+  await popover
+    .getByRole("button", { name: "DPS (Magical)", exact: true })
+    .click();
 
   await expect(pickerInput(slotRow(page, "options.role"))).toHaveValue("DPS");
   await expect(pickerInput(slotRow(page, "options.damageType"))).toHaveValue(
@@ -100,7 +106,7 @@ test("applying a preset leaves a slot it doesn't mention untouched", async ({
   await presetMenu(page, "options").click();
   await page
     .locator(".preset-popover")
-    .getByRole("button", { name: "Healer" })
+    .getByRole("button", { name: "Healer", exact: true })
     .click();
 
   await expect(pickerInput(slotRow(page, "options.role"))).toHaveValue(
@@ -121,7 +127,7 @@ test("applying a preset is a single undo step", async ({ page }) => {
   await presetMenu(page, "options").click();
   await page
     .locator(".preset-popover")
-    .getByRole("button", { name: "DPS (Physical)" })
+    .getByRole("button", { name: "DPS (Physical)", exact: true })
     .click();
 
   await expect(pickerInput(slotRow(page, "options.role"))).toHaveValue("DPS");
@@ -159,7 +165,7 @@ test("applying a preset empties the slots it lists as cleared", async ({
   await presetMenu(page, "options").click();
   await page
     .locator(".preset-popover")
-    .getByRole("button", { name: "Classless DPS" })
+    .getByRole("button", { name: "Classless DPS", exact: true })
     .click();
 
   await expect(pickerInput(slotRow(page, "options.role"))).toHaveValue("DPS");
@@ -178,7 +184,7 @@ test("clearing a slot through a preset is part of the same undo step", async ({
   await presetMenu(page, "options").click();
   await page
     .locator(".preset-popover")
-    .getByRole("button", { name: "Wipe Class" })
+    .getByRole("button", { name: "Wipe Class", exact: true })
     .click();
   await expect(pickerInput(slotRow(page, "options.class"))).toHaveValue("");
 
@@ -242,7 +248,7 @@ test("'Create new from current' opens a preset draft holding the section's state
   await presetMenu(page, "options").click();
   await page
     .locator(".preset-popover")
-    .getByRole("button", { name: "Snapshot A" })
+    .getByRole("button", { name: "Snapshot A", exact: true })
     .click();
 
   await expect(pickerInput(slotRow(page, "options.role"))).toHaveValue("Tank");
@@ -252,5 +258,77 @@ test("'Create new from current' opens a preset draft holding the section's state
   // Snapshotted while it sat at its default, so it came across as a cleared slot.
   await expect(pickerInput(slotRow(page, "options.damageType"))).toHaveValue(
     "— none —",
+  );
+});
+
+// The third direction the menu offers: overwriting an existing preset with the section as it
+// stands, rather than applying it or authoring a new one.
+test("'update from current' overwrites a preset with the section's current values", async ({
+  page,
+}) => {
+  await openBuilder(page);
+  await createOptionsPreset(page, "Snapshot", [["Role", "DPS"]]);
+
+  // Move the section somewhere the preset does not describe.
+  const roleRow = slotRow(page, "options.role");
+  await roleRow.getByTestId("picker-input").click();
+  await roleRow.getByText("Tank", { exact: true }).click();
+  await chooseClass(page, "wizard");
+
+  await presetMenu(page, "options").click();
+  const updateBtn = page.getByTestId("preset-update-snapshot");
+
+  // First click only arms the confirm -- the preset is untouched and the popover stays open.
+  await updateBtn.click();
+  await expect(updateBtn).toContainText("Really?");
+  await expect(page.locator(".preset-popover")).toBeVisible();
+
+  await updateBtn.click();
+  // Written back into the layer that already defined it, not a fresh one.
+  await expect(page.getByText("Updated “Snapshot” in “Layer 1”")).toBeVisible();
+  // Still in the build editor -- the write is not supposed to navigate anywhere.
+  await expect(headerRow(page, "options")).toBeVisible();
+
+  // Reset the section, then re-apply: what comes back is the *new* contents. Two clicks --
+  // "Clear section" is itself two-step confirmed.
+  const clearBtn = page.getByTestId("clear-section-options");
+  await clearBtn.click();
+  await clearBtn.click();
+  await expect(pickerInput(slotRow(page, "options.class"))).toHaveValue("");
+
+  await presetMenu(page, "options").click();
+  await page
+    .locator(".preset-popover")
+    .getByRole("button", { name: "Snapshot", exact: true })
+    .click();
+
+  await expect(pickerInput(slotRow(page, "options.role"))).toHaveValue("Tank");
+  await expect(pickerInput(slotRow(page, "options.class"))).toHaveValue(
+    className("wizard"),
+  );
+});
+
+test("'update from current' leaves the other presets in the section alone", async ({
+  page,
+}) => {
+  await openBuilder(page);
+  await createOptionsPreset(page, "Keep Me", [["Role", "Healer"]]);
+  await createOptionsPreset(page, "Overwrite Me", [["Role", "DPS"]]);
+
+  const roleRow = slotRow(page, "options.role");
+  await roleRow.getByTestId("picker-input").click();
+  await roleRow.getByText("Tank", { exact: true }).click();
+
+  await presetMenu(page, "options").click();
+  await page.getByTestId("preset-update-overwrite-me").click();
+  await page.getByTestId("preset-update-overwrite-me").click();
+
+  await presetMenu(page, "options").click();
+  await page
+    .locator(".preset-popover")
+    .getByRole("button", { name: "Keep Me", exact: true })
+    .click();
+  await expect(pickerInput(slotRow(page, "options.role"))).toHaveValue(
+    "Healer",
   );
 });

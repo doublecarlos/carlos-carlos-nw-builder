@@ -2,6 +2,7 @@
 // ensureTargetLayer, allocatableIds, persistence.
 import { describe, expect, it, vi } from "vitest";
 import { installWindowShim } from "./window-shim";
+import type { SectionPreset } from "../../../src/types";
 
 async function freshStores() {
   vi.resetModules();
@@ -227,5 +228,86 @@ describe("layers store", () => {
     // Displayed order is [A, B]; A is on top, so it must be folded last.
     const names = layers.enabledOverlays.value.map((o) => o.items.i_x?.name);
     expect(names).toEqual(["from B", "from A"]);
+  });
+});
+
+// `updatePreset` is called from the *build* editor, so which layer it picks is the whole
+// question: writing anywhere below the layer a preset actually comes from would be shadowed
+// by that layer and look like nothing happened.
+describe("layers.updatePreset", () => {
+  const preset = (fields: Partial<SectionPreset> = {}): SectionPreset => ({
+    id: "p1",
+    label: "P1",
+    section: "options",
+    params: { "options.role": "dps" },
+    ...fields,
+  });
+
+  const overlayWith = (value: SectionPreset) => ({
+    items: {},
+    bonuses: {},
+    sectionPresets: { [value.id]: value },
+    slots: {},
+  });
+
+  it("writes into the layer that already defines the preset", async () => {
+    const { layers } = await freshStores();
+    const owner = layers.createLayer("Owner");
+    const other = layers.createLayer("Other");
+    layers.updateOverlay(owner.id, overlayWith(preset()));
+
+    layers.updatePreset(preset({ params: { "options.role": "tank" } }));
+
+    expect(owner.overlay.sectionPresets.p1).toEqual(
+      preset({ params: { "options.role": "tank" } }),
+    );
+    expect(other.overlay.sectionPresets.p1).toBeUndefined();
+  });
+
+  it("picks the highest-priority owner when two layers define the same preset", async () => {
+    const { layers } = await freshStores();
+    // Displayed order is [top, bottom] and the topmost layer wins the fold, so the edit has
+    // to land on `top` -- writing to `bottom` would be invisible.
+    const top = layers.createLayer("Top");
+    const bottom = layers.createLayer("Bottom");
+    layers.updateOverlay(top.id, overlayWith(preset()));
+    layers.updateOverlay(bottom.id, overlayWith(preset()));
+
+    layers.updatePreset(preset({ label: "Renamed" }));
+
+    expect(top.overlay.sectionPresets.p1?.label).toBe("Renamed");
+    expect(bottom.overlay.sectionPresets.p1?.label).toBe("P1");
+  });
+
+  it("skips a disabled layer, which can't have contributed the preset", async () => {
+    const { layers } = await freshStores();
+    const off = layers.createLayer("Off");
+    const on = layers.createLayer("On");
+    layers.updateOverlay(off.id, overlayWith(preset()));
+    layers.setLayerEnabled(off.id, false);
+
+    const landed = layers.updatePreset(preset({ label: "Renamed" }));
+
+    expect(landed.id).toBe(on.id);
+    expect(off.overlay.sectionPresets.p1?.label).toBe("P1");
+  });
+
+  it("falls back to a target layer for a preset no layer defines", async () => {
+    const { layers } = await freshStores();
+    const landed = layers.updatePreset(preset());
+
+    expect(layers.layers.value.length).toBe(1);
+    expect(landed.overlay.sectionPresets.p1).toEqual(preset());
+  });
+
+  // The fallback above goes through `ensureTargetLayer`, which creates *and selects* a layer
+  // when there is none -- from the build editor that would silently navigate away.
+  it("leaves the selection where it was when it has to create a layer", async () => {
+    const { layers, selection } = await freshStores();
+    selection.selectBuild("b1");
+
+    layers.updatePreset(preset());
+
+    expect(selection.selection.value).toEqual({ kind: "build", id: "b1" });
   });
 });

@@ -11,7 +11,8 @@ import * as selection from "./selection";
 import { layerOrder, persistMeta } from "./meta";
 import { flagStorageFailed, showNotice } from "./notice";
 import * as builds from "./builds";
-import type { Layer, CatalogOverlay } from "../types";
+import * as catalog from "../data/catalog";
+import type { Layer, CatalogOverlay, SectionPreset } from "../types";
 
 const SAVE_DEBOUNCE_MS = 250;
 
@@ -161,6 +162,54 @@ export function updateOverlay(id: string, overlay: CatalogOverlay) {
     layer.overlay = overlay;
     markDirty(id);
   }
+}
+
+/** The enabled layer whose overlay already defines this preset, highest priority first -- the
+ * one the composed catalogue actually took it from, and so the only one an edit can land in
+ * and still be visible. Null for a shipped preset no layer has touched yet. */
+function presetOwner(id: string): Layer | null {
+  return (
+    layers.value.find(
+      (layer) => layer.enabled && layer.overlay.sectionPresets?.[id],
+    ) ?? null
+  );
+}
+
+/**
+ * Writes a section preset into the layer that already defines it, falling back to
+ * `ensureTargetLayer()` for a shipped one -- where it becomes an overlay edit over the shipped
+ * entry, exactly what the layer editor's own Presets tab would produce. Returns the layer it
+ * landed in, which the notice names: the write is invisible from the build editor otherwise.
+ *
+ * Snapshotted on that layer's undo stack, since that is the stack it belongs to -- the build
+ * editor's own undo button drives the *build's*, so taking this back means selecting the layer
+ * first. That asymmetry is why the control invoking this confirms before firing.
+ */
+export function updatePreset(preset: SectionPreset): Layer {
+  const name = preset.label || preset.id;
+  const selected = selection.selection.value;
+  const layer = presetOwner(preset.id) ?? ensureTargetLayer();
+  // `ensureTargetLayer` creates *and selects* a layer when there is none. Called from the
+  // build editor, where being thrown into a brand-new layer is not what was asked for, so
+  // whatever was selected goes back.
+  if (selected && selection.selection.value?.id !== selected.id) {
+    if (selected.kind === "build") selection.selectBuild(selected.id);
+    else selection.selectLayer(selected.id);
+  }
+
+  history.snapshot(
+    "layer",
+    layer.id,
+    null,
+    `update preset "${name}"`,
+    layer.overlay,
+  );
+  updateOverlay(
+    layer.id,
+    catalog.upsert(layer.overlay, "sectionPresets", preset.id, preset),
+  );
+  showNotice(`Updated “${name}” in “${layer.name}”`);
+  return layer;
 }
 
 export function revertToDownloaded(id: string) {
