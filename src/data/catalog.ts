@@ -692,6 +692,14 @@ const PRESET_FIELD_SLOT_TYPE = {
   assignments: "point_assignment",
 } as const;
 
+// The slot types `clears` can reset -- the three that hold a build value. A `separator`/`text`
+// slot has nothing to clear, so naming one is an authoring mistake rather than a no-op.
+const CLEARABLE_SLOT_TYPES: readonly Slot["type"][] = [
+  "build_parameter",
+  "item_picker",
+  "point_assignment",
+];
+
 /**
  * Lint every `SectionPreset`: a duplicate id, a reference to a slot id that doesn't exist, a
  * reference that exists but belongs to a different section (a preset can only touch its own
@@ -754,6 +762,34 @@ export function validatePresets(
             message: `preset "${preset.id}" (section "${preset.section}"): "${slotId}" belongs to section "${slot.section}"`,
           });
         }
+      }
+    }
+
+    // `clears` is a bare list rather than a keyed map, and it accepts any of the three
+    // value-holding slot types, so it can't ride the PRESET_FIELD_SLOT_TYPE loop above.
+    for (const slotId of preset.clears ?? []) {
+      const slot = slotById.get(slotId);
+      if (!slot) {
+        findings.push({
+          level: "error",
+          kind: "sectionPreset",
+          name: preset.id,
+          message: `preset "${preset.id}": "${slotId}" (in clears) is not a known slot`,
+        });
+      } else if (!CLEARABLE_SLOT_TYPES.includes(slot.type)) {
+        findings.push({
+          level: "error",
+          kind: "sectionPreset",
+          name: preset.id,
+          message: `preset "${preset.id}": "${slotId}" is a ${slot.type} slot, which holds no value to clear`,
+        });
+      } else if (slot.section !== preset.section) {
+        findings.push({
+          level: "error",
+          kind: "sectionPreset",
+          name: preset.id,
+          message: `preset "${preset.id}" (section "${preset.section}"): "${slotId}" belongs to section "${slot.section}"`,
+        });
       }
     }
   }

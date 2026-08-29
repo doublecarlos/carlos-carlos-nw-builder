@@ -16,6 +16,9 @@
 // screen -- an item row's own pick, or a point_assignment row's items -- into one draft-wide
 // map. Only entries still reachable from a row survive `toPreset`, so re-picking a row's item
 // doesn't leave counts behind for an item the preset no longer mentions.
+//
+// `clears` is the mirror image: a row list whose rows carry only a slot, no value at all, since
+// the whole point is resetting that slot to its built-in default.
 import { ref, computed, watch } from "vue";
 import { Plus, Save, Trash, Undo2 } from "@lucide/vue";
 import BonusOccurrenceInputs from "./BonusOccurrenceInputs.vue";
@@ -48,12 +51,17 @@ const props = withDefaults(
   defineProps<{
     /** The preset being edited, or null for a brand-new one. */
     source?: SectionPreset | null;
+    /** Seeds a brand-new draft (`source == null`) from an existing preset shape -- how
+     *  BuildEditor's "Create new from current" hands over a section's live state. Ignored once
+     *  `source` is set, same contract ItemForm/BonusForm's own `duplicateFrom` has. */
+    duplicateFrom?: SectionPreset | null;
     status?: string;
     db: Db;
     allocatableIds?: string[];
   }>(),
   {
     source: null,
+    duplicateFrom: null,
     status: "base",
     allocatableIds: () => [],
   },
@@ -83,6 +91,9 @@ interface AssignmentRow {
   slotId: string;
   counts: Record<string, number>;
 }
+interface ClearRow {
+  slotId: string;
+}
 
 interface PresetDraft {
   label: string;
@@ -90,6 +101,7 @@ interface PresetDraft {
   paramRows: ParamRow[];
   itemRows: ItemRow[];
   assignmentRows: AssignmentRow[];
+  clearRows: ClearRow[];
   /** Item id to bonus id to count -- draft-wide rather than per row, mirroring the field it
    *  writes (see the module comment). */
   occurrences: Record<string, Record<string, number>>;
@@ -112,6 +124,7 @@ function buildDraft(preset: SectionPreset | null | undefined): PresetDraft {
     assignmentRows: Object.entries(source.assignments ?? {}).map(
       ([slotId, counts]) => ({ slotId, counts: { ...counts } }),
     ),
+    clearRows: (source.clears ?? []).map((slotId) => ({ slotId })),
     occurrences: Object.fromEntries(
       Object.entries(source.occurrences ?? {}).map(([itemId, counts]) => [
         itemId,
@@ -124,7 +137,7 @@ function buildDraft(preset: SectionPreset | null | undefined): PresetDraft {
 // Existing presets: live edits. New presets: draft until Save.
 const isNew = computed(() => !props.source);
 
-const draft = ref<PresetDraft>(buildDraft(props.source));
+const draft = ref<PresetDraft>(buildDraft(props.source ?? props.duplicateFrom));
 const error = ref("");
 
 /** Every item the form currently offers occurrence inputs for: each item row's own pick, plus
@@ -202,6 +215,11 @@ function toPreset(): SectionPreset {
   }
   if (Object.keys(occurrences).length) preset.occurrences = occurrences;
 
+  const clears = [
+    ...new Set(draft.value.clearRows.map((row) => row.slotId).filter(Boolean)),
+  ];
+  if (clears.length) preset.clears = clears;
+
   return preset;
 }
 
@@ -225,6 +243,8 @@ function diffLabel(oldJson: string, newJson: string): string {
       return "edit point assignments";
     if (JSON.stringify(old.occurrences) !== JSON.stringify(nw.occurrences))
       return "edit bonus occurrences";
+    if (JSON.stringify(old.clears) !== JSON.stringify(nw.clears))
+      return "edit cleared slots";
   } catch {
     // JSON parse error -- shouldn't happen but be safe.
   }
@@ -280,6 +300,19 @@ const assignmentSlotOptions = computed(() =>
     .map((slot) => ({ value: slot.id, label: slot.label })),
 );
 
+/** Every value-holding slot in the section, whatever its type -- `clears` resets a slot rather
+ *  than writing a typed value into it, so it isn't restricted to one of them. */
+const clearableSlotOptions = computed(() =>
+  slotsInSection.value
+    .filter(
+      (slot) =>
+        slot.type === "build_parameter" ||
+        slot.type === "item_picker" ||
+        slot.type === "point_assignment",
+    )
+    .map((slot) => ({ value: slot.id, label: slot.label })),
+);
+
 function paramSlotDef(slotId: string): BuildParameterSlot | undefined {
   const slot = props.db.slotById.get(slotId);
   return slot?.type === "build_parameter" ? slot : undefined;
@@ -302,6 +335,7 @@ function chooseSection(section: string) {
   draft.value.paramRows = [];
   draft.value.itemRows = [];
   draft.value.assignmentRows = [];
+  draft.value.clearRows = [];
   draft.value.occurrences = {};
 }
 
@@ -326,13 +360,21 @@ function removeAssignmentRow(index: number) {
   draft.value.assignmentRows.splice(index, 1);
 }
 
+function addClearRow() {
+  draft.value.clearRows.push({ slotId: "" });
+}
+function removeClearRow(index: number) {
+  draft.value.clearRows.splice(index, 1);
+}
+
 const dirty = computed(() => {
   if (!props.source) {
     return Boolean(
       draft.value.label ||
       draft.value.paramRows.length ||
       draft.value.itemRows.length ||
-      draft.value.assignmentRows.length,
+      draft.value.assignmentRows.length ||
+      draft.value.clearRows.length,
     );
   }
   return !deepEqual(toPreset(), props.source);
@@ -363,7 +405,8 @@ function save() {
     draft.value.itemRows.some((r) => r.slotId && r.choice) ||
     draft.value.assignmentRows.some(
       (r) => r.slotId && Object.keys(r.counts).length,
-    );
+    ) ||
+    draft.value.clearRows.some((r) => r.slotId);
   if (!hasRow) {
     error.value = "Add at least one slot value.";
     return;
@@ -560,6 +603,35 @@ watch(
           @occurrence-change="
             (itemId, bonusId, count) => setOccurrence(itemId, bonusId, count)
           "
+        />
+      </div>
+      <FormSection
+        >Cleared slots
+        <IconButton
+          title="Add a slot to clear"
+          :disabled="!clearableSlotOptions.length"
+          @click="addClearRow"
+          ><Plus
+        /></IconButton>
+      </FormSection>
+      <p class="mb-1 text-muted">
+        Applying the preset resets these slots to their default instead of
+        setting a value.
+      </p>
+      <div
+        v-for="(row, index) in draft.clearRows"
+        :key="index"
+        class="preset-clear-row mb-1 flex flex-wrap items-center gap-1.5"
+      >
+        <IconButton title="Remove" @click="removeClearRow(index)"
+          ><Trash
+        /></IconButton>
+        <ComboBox
+          class="w-52"
+          :model-value="row.slotId"
+          :options="clearableSlotOptions"
+          placeholder="— pick a slot —"
+          @update:model-value="(v) => (row.slotId = v)"
         />
       </div>
     </template>

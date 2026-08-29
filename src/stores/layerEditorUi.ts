@@ -8,7 +8,7 @@
 // `q`) so a mounting component can treat "the URL" and "the stored state" as interchangeable
 // sources. `slot` is the build_parameter slot selected in the Slots section (issue #271).
 import { reactive } from "vue";
-import type { Item } from "../types";
+import type { Item, SectionPreset } from "../types";
 
 export interface LayerEditorUiState {
   section: string;
@@ -63,5 +63,25 @@ export function seedNewItem(seed: Item) {
 export function takeNewItemSeed(): Item | null {
   const seed = pendingNewItem;
   pendingNewItem = null;
+  return seed;
+}
+
+// --- pending new-preset seed ---------------------------------------------------------------
+// The same one-shot handoff for BuildSection's "Create new from current": the build editor
+// snapshots a section into a preset shape, and whichever LayerEditor mounts next opens the
+// Presets tab on an unsaved draft already holding it.
+
+let pendingNewPreset: SectionPreset | null = null;
+
+/** Hands the next mounting LayerEditor a preset to build a brand-new draft from. */
+export function seedNewPreset(seed: SectionPreset) {
+  pendingNewPreset = seed;
+}
+
+/** Reads the pending preset seed and clears it -- same one-mount contract as
+ * `takeNewItemSeed`. */
+export function takeNewPresetSeed(): SectionPreset | null {
+  const seed = pendingNewPreset;
+  pendingNewPreset = null;
   return seed;
 }

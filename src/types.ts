@@ -241,6 +241,15 @@ export interface SectionPreset {
    * `point_assignment` row alike, which is also why this is the one field a preset carries that
    * the section's slot ids don't scope. */
   occurrences?: Record<string, Record<string, number>>;
+  /** Slot ids the preset resets to their built-in default instead of setting -- the one field
+   * that *removes* rather than writes, so a preset can say "this section has no ring" rather
+   * than only ever adding to whatever was already there. Same per-slot-type handling
+   * `clearSection` uses: an `item_picker` loses its choice and values, a `build_parameter`
+   * goes back to its `default`, a `point_assignment` row back to every item's
+   * `inlineRepetition.default`. Applied before the writing fields, so naming a slot in both
+   * (as `Create new from current` never does, but a hand-authored preset may) still ends with
+   * the written value. */
+  clears?: string[];
 }
 
 export interface SlotsData {

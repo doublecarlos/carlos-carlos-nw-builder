@@ -416,6 +416,184 @@ describe("buildEditor.applyPreset", () => {
   });
 });
 
+// `clears` is the one preset field that removes rather than writes -- the same per-slot-type
+// reset `clearSection` does, addressed one slot at a time.
+describe("buildEditor.applyPreset clears", () => {
+  const tier1Slot = {
+    id: "boons.tier1",
+    label: "Tier 1",
+    section: "boons",
+    type: "point_assignment" as const,
+    filter: "boon_tier1",
+  };
+  const roleSlot = {
+    id: "options.role",
+    label: "Role",
+    section: "options",
+    type: "build_parameter" as const,
+    paramType: "list" as const,
+    path: "role",
+    default: "",
+  };
+
+  it("resets each named slot to its default, per slot type", async () => {
+    const { builds, buildEditor } = await freshStores();
+    buildEditor.setParam(roleSlot, "dps");
+    buildEditor.setChoice("gear.head", "ItemA");
+    buildEditor.setDynamicValue("gear.head", "power", "5");
+    buildEditor.setAssignment(tier1Slot, "boon-tier1-power", 3);
+
+    buildEditor.applyPreset({
+      id: "wipe",
+      label: "Wipe",
+      section: "gear",
+      clears: ["options.role", "gear.head", "boons.tier1"],
+    });
+
+    expect(builds.build.value.context.role).toBeUndefined();
+    expect(builds.build.value.choices["gear.head"]).toBeUndefined();
+    expect(builds.build.value.values["gear.head"]).toBeUndefined();
+    expect(builds.build.value.assignments["boons.tier1"]).toEqual(seededRows);
+  });
+
+  it("leaves a slot it doesn't name untouched", async () => {
+    const { builds, buildEditor } = await freshStores();
+    buildEditor.setChoice("gear.head", "ItemA");
+    buildEditor.setChoice("gear.arms", "ItemB");
+
+    buildEditor.applyPreset({
+      id: "wipe-head",
+      label: "Wipe head",
+      section: "gear",
+      clears: ["gear.head"],
+    });
+
+    expect(builds.build.value.choices["gear.head"]).toBeUndefined();
+    expect(builds.build.value.choices["gear.arms"]).toBe("ItemB");
+  });
+
+  // Order matters: clearing runs first so a hand-authored preset naming one slot in both
+  // fields still ends up with the written value rather than an empty slot.
+  it("lets a writing field win over a clear of the same slot", async () => {
+    const { builds, buildEditor } = await freshStores();
+    buildEditor.setChoice("gear.head", "ItemA");
+
+    buildEditor.applyPreset({
+      id: "both",
+      label: "Both",
+      section: "gear",
+      clears: ["gear.head"],
+      choices: { "gear.head": "ItemB" },
+    });
+
+    expect(builds.build.value.choices["gear.head"]).toBe("ItemB");
+  });
+
+  it("ignores an unknown slot id", async () => {
+    const { builds, buildEditor } = await freshStores();
+    buildEditor.setChoice("gear.head", "ItemA");
+
+    buildEditor.applyPreset({
+      id: "nonsense",
+      label: "Nonsense",
+      section: "gear",
+      clears: ["not.a.slot"],
+    });
+
+    expect(builds.build.value.choices["gear.head"]).toBe("ItemA");
+  });
+
+  it("applies as a single undo step alongside the rest of the preset", async () => {
+    const { builds, buildEditor } = await freshStores();
+    buildEditor.setChoice("gear.head", "ItemA");
+
+    buildEditor.applyPreset({
+      id: "mixed",
+      label: "Mixed",
+      section: "gear",
+      clears: ["gear.head"],
+      choices: { "gear.arms": "ItemB" },
+    });
+    buildEditor.undo();
+
+    expect(builds.build.value.choices["gear.head"]).toBe("ItemA");
+    expect(builds.build.value.choices["gear.arms"]).toBeUndefined();
+  });
+});
+
+// The inverse direction: snapshotting a live section back into a preset shape. Round-tripping
+// it through `applyPreset` from a *different* starting state is the real contract -- a
+// faithful snapshot has to reproduce the section, not merge into whatever was there.
+describe("buildEditor.presetFromSection", () => {
+  it("captures a section's picks, values and occurrence counts", async () => {
+    const { buildEditor } = await freshStores();
+    buildEditor.setChoice("gear.head", "ItemA");
+    buildEditor.setDynamicValue("gear.head", "power", "5");
+    buildEditor.setOccurrenceInput("ItemA", "stack-bonus", 2, "Stack Bonus");
+
+    const preset = buildEditor.presetFromSection("gear", "My Gear");
+
+    expect(preset.label).toBe("My Gear");
+    expect(preset.section).toBe("gear");
+    expect(preset.choices?.["gear.head"]).toBe("ItemA");
+    expect(preset.values?.["gear.head"]).toEqual({ power: 5 });
+    expect(preset.occurrences?.ItemA).toEqual({ "stack-bonus": 2 });
+  });
+
+  it("lists a slot sitting at its default under clears", async () => {
+    const { buildEditor } = await freshStores();
+    buildEditor.setChoice("gear.head", "ItemA");
+
+    const preset = buildEditor.presetFromSection("gear");
+
+    expect(preset.clears).toContain("gear.arms");
+    expect(preset.clears).not.toContain("gear.head");
+  });
+
+  it("leaves the id blank for the layer editor to allocate", async () => {
+    const { buildEditor } = await freshStores();
+    expect(buildEditor.presetFromSection("gear").id).toBe("");
+  });
+
+  it("captures only the named section", async () => {
+    const { buildEditor } = await freshStores();
+    buildEditor.setChoice("gear.head", "ItemA");
+    buildEditor.setParam(
+      {
+        id: "options.role",
+        label: "Role",
+        section: "options",
+        type: "build_parameter" as const,
+        paramType: "list" as const,
+        path: "role",
+        default: "",
+      },
+      "dps",
+    );
+
+    const preset = buildEditor.presetFromSection("gear");
+
+    expect(preset.params).toBeUndefined();
+    expect(preset.clears).not.toContain("options.role");
+  });
+
+  it("round-trips: applying the snapshot reproduces the section it came from", async () => {
+    const { builds, buildEditor } = await freshStores();
+    buildEditor.setChoice("gear.head", "ItemA");
+    const preset = buildEditor.presetFromSection("gear", "Snapshot");
+
+    // A different starting state: the snapshot has to clear `gear.arms` back out, not just
+    // re-set `gear.head`.
+    buildEditor.setChoice("gear.head", "ItemB");
+    buildEditor.setChoice("gear.arms", "ItemC");
+
+    buildEditor.applyPreset(preset);
+
+    expect(builds.build.value.choices["gear.head"]).toBe("ItemA");
+    expect(builds.build.value.choices["gear.arms"]).toBeUndefined();
+  });
+});
+
 // Real shipped slots spanning all three types, chosen to also cover two different
 // sections ("options" and "boons"/"gear") so clearSection's section filter is exercised,
 // not just its per-type reset.

@@ -16,6 +16,12 @@ import {
 } from "./support/app";
 import { addLayer, layerRow } from "./support/nav";
 
+/** Adds a "Cleared slots" row naming `slotLabel` to the preset draft on screen. */
+async function addClearRow(page: Page, slotLabel: string) {
+  await page.getByRole("button", { name: "Add a slot to clear" }).click();
+  await chooseCombo(page.locator(".preset-clear-row").last(), slotLabel);
+}
+
 function presetMenu(page: Page, sectionId: string) {
   return headerRow(page, sectionId)
     .locator("..")
@@ -28,6 +34,7 @@ async function createOptionsPreset(
   page: Page,
   label: string,
   params: [slotLabel: string, valueLabel: string][],
+  clears: string[] = [],
 ) {
   await addLayer(page);
   await layerRow(page, "Layer 1").locator(".nav-name").click();
@@ -48,6 +55,8 @@ async function createOptionsPreset(
     );
     await chooseCombo(row.locator(".relative").last(), valueLabel);
   }
+
+  for (const slotLabel of clears) await addClearRow(page, slotLabel);
 
   await page.getByRole("button", { name: "Save preset" }).click();
   await expect(page.getByText(`Saved preset "${label}"`)).toBeVisible();
@@ -126,6 +135,121 @@ test("applying a preset is a single undo step", async ({ page }) => {
   await expect(pickerInput(slotRow(page, "options.role"))).toHaveValue(
     "— none —",
   );
+  await expect(pickerInput(slotRow(page, "options.damageType"))).toHaveValue(
+    "— none —",
+  );
+});
+
+test("applying a preset empties the slots it lists as cleared", async ({
+  page,
+}) => {
+  await openBuilder(page);
+  await createOptionsPreset(
+    page,
+    "Classless DPS",
+    [["Role", "DPS"]],
+    ["Class"],
+  );
+
+  await chooseClass(page, "wizard");
+  await expect(pickerInput(slotRow(page, "options.class"))).toHaveValue(
+    className("wizard"),
+  );
+
+  await presetMenu(page, "options").click();
+  await page
+    .locator(".preset-popover")
+    .getByRole("button", { name: "Classless DPS" })
+    .click();
+
+  await expect(pickerInput(slotRow(page, "options.role"))).toHaveValue("DPS");
+  // An emptied item_picker shows a blank input -- unlike a build_parameter, whose own
+  // "— none —" option has a label to display.
+  await expect(pickerInput(slotRow(page, "options.class"))).toHaveValue("");
+});
+
+test("clearing a slot through a preset is part of the same undo step", async ({
+  page,
+}) => {
+  await openBuilder(page);
+  await createOptionsPreset(page, "Wipe Class", [["Role", "Tank"]], ["Class"]);
+
+  await chooseClass(page, "wizard");
+  await presetMenu(page, "options").click();
+  await page
+    .locator(".preset-popover")
+    .getByRole("button", { name: "Wipe Class" })
+    .click();
+  await expect(pickerInput(slotRow(page, "options.class"))).toHaveValue("");
+
+  await undoButton(page).click();
+
+  await expect(pickerInput(slotRow(page, "options.class"))).toHaveValue(
+    className("wizard"),
+  );
+  await expect(pickerInput(slotRow(page, "options.role"))).toHaveValue(
+    "— none —",
+  );
+});
+
+// The menu's other direction: a section's live state becomes a brand-new preset draft in the
+// layer editor, which the user names and saves like any other.
+test("'Create new from current' opens a preset draft holding the section's state", async ({
+  page,
+}) => {
+  await openBuilder(page);
+  await ensureSectionExpanded(page, "options");
+  await chooseClass(page, "wizard");
+  const roleRow = slotRow(page, "options.role");
+  await roleRow.getByTestId("picker-input").click();
+  await roleRow.getByText("Tank", { exact: true }).click();
+
+  await presetMenu(page, "options").click();
+  await page.getByTestId("preset-create-from-current").click();
+
+  // Landed in the layer editor's Presets tab on an unsaved draft, pre-filled from the section.
+  await expect(page.getByTestId("preset-label-input")).toHaveValue(
+    "Options preset",
+  );
+  await expect(
+    pickerInput(page.getByTestId("preset-section-input")),
+  ).toHaveValue("Options");
+  // Params first, then item pickers -- the section's own slot order. Role is the only param
+  // this build moved off its default, so it is the whole param list.
+  const paramRow = page.locator(".preset-row").first();
+  await expect(paramRow.getByTestId("picker-input").first()).toHaveValue(
+    "Role",
+  );
+  await expect(paramRow.getByTestId("picker-input").last()).toHaveValue("Tank");
+  // Everything the section leaves at its default came across as a cleared slot.
+  await expect(page.locator(".preset-clear-row").first()).toBeVisible();
+
+  await page.getByTestId("preset-label-input").fill("Snapshot A");
+  await page.getByRole("button", { name: "Save preset" }).click();
+  await expect(page.getByText('Saved preset "Snapshot A"')).toBeVisible();
+
+  // Applying it reproduces what it was snapshotted from, on a section that has since moved
+  // on: the params and picks it captured, and the slots it captured as `clears`.
+  await page.getByRole("button", { name: "Build 1" }).click();
+  await ensureSectionExpanded(page, "options");
+  const changedRole = slotRow(page, "options.role");
+  await changedRole.getByTestId("picker-input").click();
+  await changedRole.getByText("Healer", { exact: true }).click();
+  const damageRow = slotRow(page, "options.damageType");
+  await damageRow.getByTestId("picker-input").click();
+  await damageRow.getByText("Magical", { exact: true }).click();
+
+  await presetMenu(page, "options").click();
+  await page
+    .locator(".preset-popover")
+    .getByRole("button", { name: "Snapshot A" })
+    .click();
+
+  await expect(pickerInput(slotRow(page, "options.role"))).toHaveValue("Tank");
+  await expect(pickerInput(slotRow(page, "options.class"))).toHaveValue(
+    className("wizard"),
+  );
+  // Snapshotted while it sat at its default, so it came across as a cleared slot.
   await expect(pickerInput(slotRow(page, "options.damageType"))).toHaveValue(
     "— none —",
   );

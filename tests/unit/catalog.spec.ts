@@ -306,6 +306,55 @@ describe("catalog.validatePresets", () => {
       true,
     );
   });
+
+  it("accepts a clears entry for any of the three value-holding slot types", () => {
+    const findings = catalog.validatePresets(
+      [
+        preset({ section: "options", clears: ["options.role"] }),
+        preset({ id: "gear-clear", section: "gear", clears: ["gear.head"] }),
+        preset({
+          id: "boons-clear",
+          section: "boons",
+          clears: ["boons.tier1"],
+        }),
+      ],
+      slots,
+    );
+    expect(findings).toEqual([]);
+  });
+
+  it("reports a clears entry naming an unknown slot", () => {
+    const findings = catalog.validatePresets(
+      [preset({ clears: ["options.nope"] })],
+      slots,
+    );
+    expect(
+      findings.some((f) => /\(in clears\) is not a known slot/.test(f.message)),
+    ).toBe(true);
+  });
+
+  it("reports a clears entry naming a slot in another section", () => {
+    const findings = catalog.validatePresets(
+      [preset({ section: "options", clears: ["gear.head"] })],
+      slots,
+    );
+    expect(
+      findings.some((f) => /belongs to section "gear"/.test(f.message)),
+    ).toBe(true);
+  });
+
+  it("reports a clears entry naming a slot type that holds no value", () => {
+    const findings = catalog.validatePresets(
+      [preset({ section: "options", clears: ["options.sep"] })],
+      [
+        ...slots,
+        { id: "options.sep", section: "options", type: "separator" as const },
+      ],
+    );
+    expect(
+      findings.some((f) => /holds no value to clear/.test(f.message)),
+    ).toBe(true);
+  });
 });
 
 describe("catalog.validate (class lookup after path trim)", () => {

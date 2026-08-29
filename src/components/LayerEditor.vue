@@ -118,6 +118,9 @@ const newItemCounter = ref(0);
 const newItemSeed = layerEditorUi.takeNewItemSeed();
 const duplicateItemSeed = ref<Item | null>(newItemSeed);
 const duplicateBonusSeed = ref<Bonus | null>(null);
+/** Same one-shot handoff as `newItemSeed`, from BuildSection's "Create new from current". */
+const newPresetSeed = layerEditorUi.takeNewPresetSeed();
+const duplicatePresetSeed = ref<SectionPreset | null>(newPresetSeed);
 const notice = ref("");
 const confirmReset_ = useConfirm(4000);
 
@@ -430,6 +433,7 @@ function onPopState() {
   // forward must never resurrect it onto an unrelated blank draft.
   duplicateItemSeed.value = null;
   duplicateBonusSeed.value = null;
+  duplicatePresetSeed.value = null;
   const route = router.parse();
   if (route.section === "bonuses") {
     section.value = "bonuses";
@@ -587,6 +591,7 @@ function duplicateBonus() {
 }
 
 function newPreset() {
+  duplicatePresetSeed.value = null;
   selectedPresetId.value = null;
   newItemCounter.value++;
   router.apply({ preset: null });
@@ -1050,7 +1055,15 @@ onMounted(() => {
   // Restore what this layer had open, unless a new-item seed outranks it (first branch).
   // When the layer changes, keep the `item` param if the new layer's composed catalogue
   // still has that id, otherwise drop it (phase 6 §2.3).
-  if (newItemSeed) {
+  if (newPresetSeed) {
+    // BuildSection's "Create new from current": the pre-filled draft *is* the point of the
+    // jump, so it outranks whatever this layer had open -- same reasoning as `newItemSeed`.
+    section.value = "sectionPresets";
+    selectedPresetId.value = null;
+    ui.value.section = "sectionPresets";
+    ui.value.preset = "";
+    notice.value = "New preset from the current build — name it and save";
+  } else if (newItemSeed) {
     // BuildEditor's Ctrl/Cmd+click on an empty slot row: the blank draft *is* the point of the
     // jump, so restoring whatever this layer had open before would throw it away. The per-layer
     // memory is rewritten to match, since that is what a later remount restores from.
@@ -1341,6 +1354,7 @@ onUnmounted(() => {
           ref="presetForm"
           :key="selectedPresetId ?? `__new__${newItemCounter}`"
           :source="selectedPreset"
+          :duplicate-from="duplicatePresetSeed"
           :status="selectedPresetStatus"
           :db="db"
           :allocatable-ids="allocatableIds"

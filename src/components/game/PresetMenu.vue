@@ -12,10 +12,15 @@ const openSectionId = ref<string | null>(null);
 // A section header's "apply a preset" control. Choosing a preset applies it immediately --
 // unlike SectionCopyMenu, there's no separate "pick a target, then confirm" step, since a
 // preset is already the fully-specified target.
+//
+// The list is followed by "Create new from current", which goes the other way: it hands the
+// section's live state to the layer editor as an unsaved preset draft. That entry is why the
+// menu still renders for a section with no presets at all -- it is the only way to author the
+// first one from the build editor.
 import { onMounted, onUnmounted } from "vue";
 import BaseButton from "../ui/BaseButton.vue";
 import BaseTooltip from "../ui/BaseTooltip.vue";
-import { LayoutTemplate } from "@lucide/vue";
+import { LayoutTemplate, Plus } from "@lucide/vue";
 import { useEscapeToClose } from "../../composables/useEscapeToClose";
 import type { SectionPreset } from "../../types";
 
@@ -26,6 +31,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   apply: [preset: SectionPreset];
+  create: [];
 }>();
 
 const isOpen = () => openSectionId.value === props.sectionId;
@@ -36,6 +42,11 @@ function toggle() {
 
 function choose(preset: SectionPreset) {
   emit("apply", preset);
+  openSectionId.value = null;
+}
+
+function create() {
+  emit("create");
   openSectionId.value = null;
 }
 
@@ -65,7 +76,7 @@ useEscapeToClose(() => {
 
 <template>
   <div class="relative mr-0.5 flex-none">
-    <BaseTooltip text="Apply a preset to this section">
+    <BaseTooltip text="Apply a preset to this section, or save one from it">
       <BaseButton class="section-preset-btn" @click="toggle">
         <LayoutTemplate />Presets…
       </BaseButton>
@@ -82,6 +93,15 @@ useEscapeToClose(() => {
         @click="choose(preset)"
       >
         {{ preset.label }}
+      </button>
+      <div v-if="presets.length" class="my-0.5 border-t border-line"></div>
+      <button
+        type="button"
+        class="preset-create-btn flex items-center gap-1.5 rounded px-2 py-1 text-left hover:bg-surface-2"
+        data-testid="preset-create-from-current"
+        @click="create"
+      >
+        <Plus class="size-3.5" />Create new from current
       </button>
     </div>
   </div>

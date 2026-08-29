@@ -38,6 +38,7 @@ defineEmits<{
   toggle: [];
   copy: [fromId: string];
   "apply-preset": [preset: SectionPreset];
+  "create-preset": [];
   clear: [];
 }>();
 
@@ -88,11 +89,13 @@ useCursorRowKeys(button, {
           diffs
         }}</BaseBadge>
       </button>
+      <!-- Always rendered, even with no presets: its "Create new from current" entry is how a
+           section's first preset gets authored. -->
       <PresetMenu
-        v-if="presets.length"
         :section-id="id"
         :presets="presets"
         @apply="(preset) => $emit('apply-preset', preset)"
+        @create="$emit('create-preset')"
       />
       <SectionCopyMenu
         v-if="otherBuilds.length"

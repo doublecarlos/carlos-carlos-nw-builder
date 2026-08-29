@@ -470,6 +470,18 @@ function newItemSeedFor(slotId: string): Item | null {
  *  (decision 46).
  *  `itemId` names which stepper was clicked on a point_assignment row, which has no single
  *  `itemIn` resolution of its own (BuildSlot.vue's own doc comment on `onRowClick`). */
+/** "Create new from current" in a section's preset menu: snapshots the section into a preset
+ *  shape and jumps to the layer editor holding it as an unsaved draft, so the user names it and
+ *  saves it there. Deliberately not a silent save -- a preset needs a label to be worth
+ *  anything, and the draft form is where every other preset field is edited anyway. */
+function onCreatePreset(sectionId: string, sectionLabel: string) {
+  layerEditorUi.seedNewPreset(
+    buildEditor.presetFromSection(sectionId, `${sectionLabel} preset`),
+  );
+  const layer = layers.ensureTargetLayer();
+  selection.selectLayer(layer.id);
+}
+
 function onRowClick(event: MouseEvent, slotId: string, itemId?: string) {
   if (!(isMac ? event.metaKey : event.ctrlKey)) return;
   const item = itemId ? db.value.get(itemId) : itemIn(slotId);
@@ -796,6 +808,7 @@ watch(
           @toggle="toggle(section.id)"
           @copy="(fromId) => buildEditor.copySection(fromId, [section.id])"
           @apply-preset="(preset) => buildEditor.applyPreset(preset)"
+          @create-preset="onCreatePreset(section.id, section.label)"
           @clear="buildEditor.clearSection(section.id, section.label)"
         >
           <template #default="{ slotDef }: { slotDef: Slot }">

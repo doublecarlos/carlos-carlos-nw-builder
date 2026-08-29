@@ -7,10 +7,13 @@ import * as compare from "./compare";
 import * as history from "./history";
 import { db } from "./resolved";
 import { getPath, setPath } from "../lib/build-path";
+import { deepEqual } from "../lib/deep-equal";
 import type {
+  Build,
   BuildParameterSlot,
   PointAssignmentSlot,
   SectionPreset,
+  Slot,
 } from "../types";
 
 // Re-export computed accessors so BuildBar.vue etc. can keep importing from buildEditor.
@@ -395,8 +398,25 @@ export function copySection(fromId: string, sectionIds: string[]) {
   }
 }
 
-/** Resets every slot in a section to `defaultBuild()`'s value -- same per-type handling as
- *  `copySection`, just sourced from the built-in defaults instead of another build. */
+/** Resets one slot to `defaultBuild()`'s value -- same per-type handling as `copySection`,
+ *  just sourced from the built-in defaults instead of another build. `fresh` is passed in so a
+ *  caller clearing several slots pays for one `defaultBuild()` rather than one per slot. */
+function clearSlot(b: Build, slot: Slot, fresh: Build) {
+  if (slot.type === "build_parameter") {
+    setPath(b.context, slot.path, getPath(fresh.context, slot.path));
+    return;
+  }
+
+  if (slot.type === "point_assignment") {
+    b.assignments[slot.id] = fresh.assignments[slot.id];
+    return;
+  }
+
+  delete b.choices[slot.id];
+  delete b.values[slot.id];
+}
+
+/** Resets every slot in a section to `defaultBuild()`'s value. */
 export function clearSection(sectionId: string, label: string) {
   const b = builds.build.value;
   if (!b) return;
@@ -404,20 +424,7 @@ export function clearSection(sectionId: string, label: string) {
   history.snapshot("build", b.id, null, `clear section "${label}"`, b);
   const fresh = storage.defaultBuild();
   for (const slot of db.value.slots) {
-    if (slot.section !== sectionId) continue;
-
-    if (slot.type === "build_parameter") {
-      setPath(b.context, slot.path, getPath(fresh.context, slot.path));
-      continue;
-    }
-
-    if (slot.type === "point_assignment") {
-      b.assignments[slot.id] = fresh.assignments[slot.id];
-      continue;
-    }
-
-    delete b.choices[slot.id];
-    delete b.values[slot.id];
+    if (slot.section === sectionId) clearSlot(b, slot, fresh);
   }
 }
 
@@ -432,6 +439,15 @@ export function applyPreset(preset: SectionPreset) {
   if (!b) return;
 
   history.snapshot("build", b.id, null, `apply preset "${preset.label}"`, b);
+
+  // First, so a slot named by both `clears` and a writing field below still ends up written.
+  if (preset.clears?.length) {
+    const fresh = storage.defaultBuild();
+    for (const slotId of preset.clears) {
+      const slot = db.value.slotById.get(slotId);
+      if (slot) clearSlot(b, slot, fresh);
+    }
+  }
 
   for (const [slotId, value] of Object.entries(preset.params ?? {})) {
     const slot = db.value.slotById.get(slotId);
@@ -456,4 +472,83 @@ export function applyPreset(preset: SectionPreset) {
   for (const [itemId, counts] of Object.entries(preset.occurrences ?? {})) {
     b.occurrenceInputs[itemId] = { ...b.occurrenceInputs[itemId], ...counts };
   }
+}
+
+/**
+ * The inverse of `applyPreset`: snapshots one section of the active build into a
+ * `SectionPreset` shape, for BuildSection's "Create new from current" to hand the layer editor
+ * as an unsaved draft. Faithful rather than additive -- a slot sitting at its built-in default
+ * lands in `clears` instead of being left out, so applying the result reproduces the section as
+ * it stands now rather than merging into whatever happened to be there.
+ *
+ * `id` is left blank: the layer editor allocates one off the label the user finally types.
+ */
+export function presetFromSection(
+  sectionId: string,
+  label = "",
+): SectionPreset {
+  const preset: SectionPreset = { id: "", label, section: sectionId };
+  const b = builds.build.value;
+  if (!b) return preset;
+
+  const fresh = storage.defaultBuild();
+  const params: Record<string, string | number | boolean> = {};
+  const choices: Record<string, string> = {};
+  const values: Record<string, Record<string, number>> = {};
+  const assignments: Record<string, Record<string, number>> = {};
+  const occurrences: Record<string, Record<string, number>> = {};
+  const clears: string[] = [];
+
+  /** An item the snapshot references carries its own occurrence counts along -- those are
+   *  per-item state (see `SectionPreset.occurrences`), so they'd otherwise be lost. */
+  function carryOccurrences(itemId: string) {
+    const counts = b!.occurrenceInputs[itemId];
+    if (counts && Object.keys(counts).length)
+      occurrences[itemId] = { ...counts };
+  }
+
+  for (const slot of db.value.slots) {
+    if (slot.section !== sectionId) continue;
+
+    if (slot.type === "build_parameter") {
+      const value = getPath(b.context, slot.path);
+      if (value === undefined || value === "") clears.push(slot.id);
+      else if (deepEqual(value, getPath(fresh.context, slot.path)))
+        clears.push(slot.id);
+      else params[slot.id] = value as string | number | boolean;
+      continue;
+    }
+
+    if (slot.type === "point_assignment") {
+      const row = b.assignments[slot.id];
+      if (!row || deepEqual(row, fresh.assignments[slot.id])) {
+        clears.push(slot.id);
+        continue;
+      }
+      assignments[slot.id] = { ...row };
+      for (const itemId of Object.keys(row)) carryOccurrences(itemId);
+      continue;
+    }
+
+    if (slot.type !== "item_picker") continue;
+
+    const choice = b.choices[slot.id];
+    if (!choice) {
+      clears.push(slot.id);
+      continue;
+    }
+    choices[slot.id] = choice;
+    carryOccurrences(choice);
+    const value = b.values[slot.id];
+    if (value && Object.keys(value).length) values[slot.id] = { ...value };
+  }
+
+  if (Object.keys(params).length) preset.params = params;
+  if (Object.keys(choices).length) preset.choices = choices;
+  if (Object.keys(values).length) preset.values = values;
+  if (Object.keys(assignments).length) preset.assignments = assignments;
+  if (Object.keys(occurrences).length) preset.occurrences = occurrences;
+  if (clears.length) preset.clears = clears;
+
+  return preset;
 }
