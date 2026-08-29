@@ -26,9 +26,9 @@ export type RailId = (typeof RAILS)[keyof typeof RAILS];
  * beside it keeps the width it had before the gutter existed.
  */
 export const RAIL_DEFAULTS: Record<RailId, number> = {
-  nav: 276,
-  details: 540,
-  layerEntries: 404,
+  nav: 268,
+  details: 532,
+  layerEntries: 396,
 };
 
 /** The strip a collapsed rail leaves behind -- RailGutter's `w-7`. */

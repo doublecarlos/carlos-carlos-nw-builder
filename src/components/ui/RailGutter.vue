@@ -45,7 +45,7 @@ const max = rails.maxWidth(props.rail);
   <div
     class="relative flex-none"
     :class="[
-      collapsed ? 'w-7' : 'w-5',
+      collapsed ? 'w-7' : 'w-3',
       draggable &&
         'cursor-col-resize touch-none select-none hover:bg-surface-2 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent',
       dragging && 'bg-surface-2',
@@ -65,7 +65,9 @@ const max = rails.maxWidth(props.rail);
     @keydown="draggable && onKeydown($event)"
     @dblclick="draggable && reset()"
   >
-    <!-- `.stop` so pressing the button never also starts a drag or resets the width. -->
+    <!-- Wider than the gutter it sits on, so the strip can stay a thin seam: the button
+         straddles the rail's edge like a knob rather than setting the gutter's width.
+         `.stop` so pressing it never also starts a drag or resets the width. -->
     <RailToggle
       class="absolute top-1 left-1/2 z-10 -translate-x-1/2 border border-line bg-surface"
       :side="side"

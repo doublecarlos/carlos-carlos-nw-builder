@@ -194,7 +194,12 @@ test.describe("point_assignment hover card", () => {
       itemName(POWER_ID),
     );
 
-    await assignmentLabel(row, AVOIDANCE_ID).hover();
+    // Aim at the label's leading edge rather than its centre: the open card is placed just
+    // right of the label it came from, and in a row this wide it can reach over the middle of
+    // the next label along -- a hover there would land on the card instead of the label.
+    await assignmentLabel(row, AVOIDANCE_ID).hover({
+      position: { x: 4, y: 10 },
+    });
     await expect(card.getByTestId("item-card-name")).toHaveText(
       itemName(AVOIDANCE_ID),
     );
