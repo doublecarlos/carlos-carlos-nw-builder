@@ -135,6 +135,22 @@ export async function chooseItem(page: Page, slotId: string, itemName: string) {
   await input.click();
   await input.fill(itemName);
   await row.getByText(itemName, { exact: true }).click();
+  // Park the pointer clear of the row. The option just clicked can sit inside the row's own
+  // box, and the item card opens on `mouseenter` -- a later `.hover()` on a row the pointer
+  // never left would fire nothing.
+  await page.mouse.move(0, 0);
+}
+
+/**
+ * Hovers something that opens the shared item card, with the card's own preconditions met: the
+ * target scrolled into view first, since the card closes on any scroll and a hover that has to
+ * scroll would close what it just opened, and the pointer parked outside beforehand, since the
+ * card opens on `mouseenter` and a pointer a previous click left inside would fire nothing.
+ */
+export async function hoverForCard(page: Page, target: Locator) {
+  await target.scrollIntoViewIfNeeded();
+  await page.mouse.move(0, 0);
+  await target.hover();
 }
 
 /** Picks a class in `options.class`, which is an ordinary item_picker over `class`-tagged

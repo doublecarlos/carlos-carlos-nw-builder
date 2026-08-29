@@ -8,6 +8,7 @@ import {
   slotRow,
   pickerInput,
   chooseItem,
+  hoverForCard,
 } from "./support/app";
 import { statInfoButton, statCard, statCardClose } from "./support/stats";
 
@@ -144,7 +145,7 @@ test.describe("bolster is reflected everywhere an item's numbers appear", () => 
     await chooseItem(page, "mounts.mountEquip", MOUNT_EQUIP);
 
     const label = slotRow(page, "mounts.mountEquip").locator(".slot-label");
-    await label.hover();
+    await hoverForCard(page, label);
     const card = page.locator(".itemcard");
     await expect(card).toBeVisible();
     // At max bolster the scaled item level is 3937.5, so this is also the check that the badge
@@ -154,7 +155,7 @@ test.describe("bolster is reflected everywhere an item's numbers appear", () => 
 
     await page.mouse.move(0, 0);
     await setBolster(page, "mounts.bolster", 0);
-    await label.hover();
+    await hoverForCard(page, label);
     // Badge and body agree, and neither shows the max-bolster figure.
     await expect(card).toContainText("iL 1,750");
     await expect(card).not.toContainText("3,938");

@@ -11,6 +11,7 @@ import {
   assignmentInput,
   assignmentLabel,
   stepAssignment,
+  hoverForCard,
 } from "./support/app";
 import { shippedItemName as itemName } from "./support/shippedData";
 
@@ -188,7 +189,7 @@ test.describe("point_assignment hover card", () => {
     await row.scrollIntoViewIfNeeded();
     const card = page.locator(".fixed.z-40");
 
-    await assignmentLabel(row, POWER_ID).hover();
+    await hoverForCard(page, assignmentLabel(row, POWER_ID));
     await expect(card.getByTestId("item-card-name")).toHaveText(
       itemName(POWER_ID),
     );

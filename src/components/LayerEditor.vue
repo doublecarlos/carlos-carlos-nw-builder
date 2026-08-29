@@ -17,7 +17,7 @@ import {
   watch,
 } from "vue";
 import BaseModal from "./ui/BaseModal.vue";
-import { useEventListener } from "@vueuse/core";
+import { useEventListener, useMediaQuery } from "@vueuse/core";
 import { useConfirm } from "../composables/useConfirm";
 import ItemForm from "./game/ItemForm.vue";
 import BonusForm from "./game/BonusForm.vue";
@@ -46,7 +46,7 @@ const TooltipImportModal = defineAsyncComponent({
 import LayerValidationDrawer from "./game/LayerValidationDrawer.vue";
 import LayerEntryList from "./game/LayerEntryList.vue";
 import BaseButton from "./ui/BaseButton.vue";
-import RailToggle from "./ui/RailToggle.vue";
+import RailGutter from "./ui/RailGutter.vue";
 import BaseCheckbox from "./ui/BaseCheckbox.vue";
 import BaseBadge from "./ui/BaseBadge.vue";
 import BaseNotice from "./ui/BaseNotice.vue";
@@ -82,6 +82,18 @@ import type {
 const db = engine.db;
 
 const entriesCollapsed = rails.collapsed("layerEntries");
+const entriesWidth = rails.width("layerEntries");
+
+// The two panes only sit side by side from `lg` up; below it they stack, and a pinned width
+// would be a width on a full-bleed row. Matches the `lg:flex-row` on their container.
+const sideBySide = useMediaQuery("(min-width: 64rem)");
+
+/** Only an open rail in a side-by-side layout gets a width of its own. */
+const entriesStyle = computed(() =>
+  sideBySide.value && !entriesCollapsed.value
+    ? { width: `${entriesWidth.value}px` }
+    : undefined,
+);
 
 const props = defineProps<{ layer: Layer }>();
 
@@ -1246,52 +1258,46 @@ onUnmounted(() => {
     />
 
     <div class="flex min-h-0 flex-1 flex-col items-stretch gap-3 lg:flex-row">
-      <!-- Collapsed, the list hands its width to the form beside it -- the same trade the
-           build editor's rails offer. The toggle stays in the strip either way. -->
+      <!-- Narrowed or collapsed, the list hands its width to the form beside it -- the same
+           trade the build editor's rails offer. The gutter holds the toggle either way. -->
       <div
-        v-if="entriesCollapsed"
-        class="relative w-7 flex-none rounded-md border border-line bg-surface"
-        data-testid="layer-entries-collapsed"
+        class="flex min-h-0 flex-none items-stretch"
+        :class="entriesCollapsed && 'rounded-md border border-line bg-surface'"
+        :style="entriesStyle"
+        :data-testid="
+          entriesCollapsed ? 'layer-entries-collapsed' : 'layer-entries-column'
+        "
       >
-        <RailToggle
-          class="absolute left-0.5 top-1"
+        <LayerEntryList
+          v-if="!entriesCollapsed"
+          v-model:query="query"
+          v-model:status-filter="statusFilter"
+          class="min-w-0 flex-1"
+          :rows="filtered"
+          :section="section"
+          :selected-key="selectedKey"
+          :status-filter-options="statusFilterOptions"
+          :has-unsaved-draft="hasUnsavedDraft"
+          @select="select"
+          @create="
+            section === 'bonuses'
+              ? newBonus()
+              : section === 'sectionPresets'
+                ? newPreset()
+                : section === 'slots'
+                  ? newSlot()
+                  : newItem()
+          "
+          @restore="restore"
+        />
+        <RailGutter
+          rail="layerEntries"
           side="left"
           label="the entry list"
-          :collapsed="true"
-          @toggle="rails.toggle('layerEntries')"
+          :collapsed="entriesCollapsed"
+          :resizable="sideBySide"
         />
       </div>
-
-      <LayerEntryList
-        v-else
-        v-model:query="query"
-        v-model:status-filter="statusFilter"
-        :rows="filtered"
-        :section="section"
-        :selected-key="selectedKey"
-        :status-filter-options="statusFilterOptions"
-        :has-unsaved-draft="hasUnsavedDraft"
-        @select="select"
-        @create="
-          section === 'bonuses'
-            ? newBonus()
-            : section === 'sectionPresets'
-              ? newPreset()
-              : section === 'slots'
-                ? newSlot()
-                : newItem()
-        "
-        @restore="restore"
-      >
-        <template #toggle>
-          <RailToggle
-            side="left"
-            label="the entry list"
-            :collapsed="false"
-            @toggle="rails.toggle('layerEntries')"
-          />
-        </template>
-      </LayerEntryList>
 
       <div
         class="min-w-0 flex-1 overflow-y-auto rounded-md border border-line bg-surface px-3 pb-3"

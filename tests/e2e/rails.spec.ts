@@ -17,6 +17,21 @@ async function widthOf(locator: import("@playwright/test").Locator) {
   return (await locator.boundingBox())!.width;
 }
 
+/** Drags a rail's gutter horizontally, from its middle so the toggle button is nowhere near. */
+async function dragGutter(
+  page: import("@playwright/test").Page,
+  rail: string,
+  dx: number,
+) {
+  const box = (await page.getByTestId(`rail-gutter-${rail}`).boundingBox())!;
+  const x = box.x + box.width / 2;
+  const y = box.y + box.height / 2;
+  await page.mouse.move(x, y);
+  await page.mouse.down();
+  await page.mouse.move(x + dx, y, { steps: 8 });
+  await page.mouse.up();
+}
+
 test("collapsing the nav hides its content and narrows the column", async ({
   page,
 }) => {
@@ -96,4 +111,112 @@ test("the layer editor's entry list collapses too", async ({ page }) => {
   await expect(
     page.getByRole("button", { name: "Show the entry list" }),
   ).toBeVisible();
+});
+
+test("dragging the nav's gutter widens the rail", async ({ page }) => {
+  await openBuilder(page);
+  const before = await widthOf(navColumn(page));
+
+  await dragGutter(page, "nav", 80);
+
+  expect(await widthOf(navColumn(page))).toBeCloseTo(before + 80, -1);
+});
+
+test("dragging the stat panel's gutter widens it the other way", async ({
+  page,
+}) => {
+  await openBuilder(page);
+  const before = await widthOf(statColumn(page));
+
+  // A right-hand rail grows as its edge moves left.
+  await dragGutter(page, "details", -80);
+
+  expect(await widthOf(statColumn(page))).toBeCloseTo(before + 80, -1);
+});
+
+test("a rail cannot be dragged narrower than its minimum", async ({ page }) => {
+  await openBuilder(page);
+
+  await dragGutter(page, "nav", -600);
+
+  // Narrow enough to be worth dragging to, wide enough to still show something.
+  expect(await widthOf(navColumn(page))).toBe(180);
+  await expect(page.getByTestId("library")).toBeVisible();
+});
+
+test("double-clicking a gutter restores the default width", async ({
+  page,
+}) => {
+  await openBuilder(page);
+  const original = await widthOf(navColumn(page));
+  await dragGutter(page, "nav", 120);
+  expect(await widthOf(navColumn(page))).toBeGreaterThan(original);
+
+  await page.getByTestId("rail-gutter-nav").dblclick();
+
+  expect(await widthOf(navColumn(page))).toBe(original);
+});
+
+test("the gutter resizes from the keyboard", async ({ page }) => {
+  await openBuilder(page);
+  const before = await widthOf(navColumn(page));
+
+  await page.getByTestId("rail-gutter-nav").focus();
+  await page.keyboard.press("ArrowRight");
+  await page.keyboard.press("ArrowRight");
+
+  expect(await widthOf(navColumn(page))).toBe(before + 32);
+});
+
+test("a dragged width survives a reload", async ({ page }) => {
+  await openBuilder(page);
+  await dragGutter(page, "nav", 60);
+  const dragged = await widthOf(navColumn(page));
+
+  await page.reload();
+  await expect(page.getByTestId("library")).toBeVisible();
+
+  expect(await widthOf(navColumn(page))).toBe(dragged);
+});
+
+test("a width dragged out on a wide window is reined in on a narrow one", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1600, height: 900 });
+  await openBuilder(page);
+  await dragGutter(page, "details", -400);
+  const wide = await widthOf(statColumn(page));
+
+  await page.setViewportSize({ width: 1024, height: 900 });
+
+  // The editor's floor and the nav's strip have to survive whatever the rail was dragged to.
+  expect(await widthOf(statColumn(page))).toBeLessThan(wide);
+  expect(await widthOf(statColumn(page))).toBeLessThanOrEqual(1024 - 380);
+});
+
+test("the toggle sits in the gutter rather than a row of its own", async ({
+  page,
+}) => {
+  await openBuilder(page);
+
+  // Both states put the button on the rail's inner edge, so it is where the user left it.
+  const gutter = (await page.getByTestId("rail-gutter-nav").boundingBox())!;
+  const toggle = (await navToggle(page).boundingBox())!;
+  expect(toggle.x).toBeGreaterThan(gutter.x - toggle.width);
+  expect(toggle.x).toBeLessThan(gutter.x + gutter.width);
+
+  // And the list starts at the top of the rail: no strip above it any more.
+  const list = (await page.getByTestId("library").boundingBox())!;
+  expect(list.y).toBeLessThanOrEqual(gutter.y + 4);
+});
+
+test("the layer editor's entry list resizes too", async ({ page }) => {
+  await openBuilder(page);
+  await page.getByTestId("nav-add-layer").click();
+  const list = page.getByTestId("layer-entries-column");
+  const before = await widthOf(list);
+
+  await dragGutter(page, "layerEntries", 90);
+
+  expect(await widthOf(list)).toBeCloseTo(before + 90, -1);
 });

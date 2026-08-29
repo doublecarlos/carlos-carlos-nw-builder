@@ -368,6 +368,8 @@ export interface UiState {
   expanded: Record<string, boolean>;
   /** Which side rails are collapsed, by rail id -- see stores/rails.ts. */
   collapsed: Record<string, boolean>;
+  /** How wide each open rail is, in px, by rail id -- see stores/rails.ts. */
+  railWidths: Record<string, number>;
 }
 
 export function loadUiState(): Partial<UiState> {
@@ -377,6 +379,7 @@ export function loadUiState(): Partial<UiState> {
       ? {
           expanded: booleans(stored.expanded),
           collapsed: booleans(stored.collapsed),
+          railWidths: numbers(stored.railWidths),
         }
       : {};
   } catch {
@@ -388,7 +391,8 @@ export function loadUiState(): Partial<UiState> {
  * Merges `state` onto whatever is already stored rather than replacing it.
  *
  * These fields have independent owners -- BuildEditor writes `expanded`, stores/rails.ts
- * writes `collapsed` -- and each knows only its own. Writing the whole object would mean
+ * writes `collapsed` and `railWidths` -- and each knows only its own. Writing the whole object
+ * would mean
  * whichever saved last silently erased the other's preference.
  */
 export function saveUiState(state: Partial<UiState>) {
