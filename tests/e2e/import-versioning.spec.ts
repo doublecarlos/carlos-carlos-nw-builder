@@ -66,13 +66,15 @@ test("a mismatched schema version is refused with a clear message", async ({
   );
 });
 
-test("a collection bundle imported as a single build is refused as the wrong kind", async ({
-  page,
-}) => {
+test("an envelope kind the app does not know is refused", async ({ page }) => {
   await openBuilder(page);
   const envelope = await exportedEnvelope(page);
   envelope.kind = "collection";
 
+  // The header import routes by kind rather than assuming one, so an unknown kind is
+  // reported as such instead of being pushed through the build importer.
   await importText(page, JSON.stringify(envelope));
-  await expect(page.getByTestId("app-header")).toContainText(/not a "build"/i);
+  await expect(page.getByTestId("app-header")).toContainText(
+    /not a build, layer, bundle or overlay export/i,
+  );
 });

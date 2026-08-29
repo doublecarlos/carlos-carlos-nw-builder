@@ -19,8 +19,7 @@ import {
   Upload,
 } from "@lucide/vue";
 import { useUndoRedoKeys } from "../composables/useUndoRedoKeys";
-import * as builds from "../stores/builds";
-import * as layers from "../stores/layers";
+import { importFileText } from "../stores/importFile";
 import { notice, noticeAction, showNotice } from "../stores/notice";
 import {
   isOpen as gameImportOpen,
@@ -51,20 +50,7 @@ async function onImportFile(event: Event) {
   const file = input.files?.[0];
   input.value = "";
   if (!file) return;
-  const text = await file.text();
-  // Sniff the envelope kind — routes to build, layer or bundle.
-  try {
-    const parsed = JSON.parse(text);
-    if (parsed?.kind === "layer") {
-      layers.importLayerText(text);
-    } else if (parsed?.kind === "bundle") {
-      layers.importBundleText(text);
-    } else {
-      builds.importBuildText(text);
-    }
-  } catch {
-    builds.importBuildText(text);
-  }
+  importFileText(await file.text(), file.name);
 }
 </script>
 
@@ -86,9 +72,13 @@ async function onImportFile(event: Event) {
     >
     <BundleExport v-if="showBundleExport" @close="showBundleExport = false" />
 
-    <BaseButton data-testid="header-import" @click="triggerImport"
-      ><Upload />Import</BaseButton
-    >
+    <!-- The app's only file entry point, so it says what it takes: `importFileText` sniffs
+         the file and routes it, rather than the caller picking a kind up front. -->
+    <BaseTooltip text="Import a build, layer or bundle file.">
+      <BaseButton data-testid="header-import" @click="triggerImport"
+        ><Upload />Import</BaseButton
+      >
+    </BaseTooltip>
 
     <BaseButton data-testid="header-import-from-game" @click="openGameImport"
       ><Gamepad2 />Import from game</BaseButton
