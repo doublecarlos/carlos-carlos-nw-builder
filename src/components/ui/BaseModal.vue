@@ -111,7 +111,7 @@ useEscapeToClose(() => emit("close"));
   <!-- Teleported so stacking never depends on where the modal was mounted. -->
   <Teleport to="body">
     <div
-      class="fixed inset-0 z-50 flex justify-center bg-black/30"
+      class="fixed inset-0 z-50 flex justify-center bg-scrim"
       :class="align === 'top' ? 'items-start pt-[12vh]' : 'items-center'"
       v-bind="$attrs"
       @click.self="emit('close')"
