@@ -4,12 +4,18 @@ import * as storage from "../storage/storage";
 import * as router from "../lib/router";
 import * as builds from "./builds";
 import * as history from "./history";
+import * as landing from "./landing";
 import * as layers from "./layers";
 import * as selection from "./selection";
 import * as trash from "./trash";
 
 export async function hydrate() {
   const data = await storage.loadAll();
+
+  // Asked here, of the raw load, rather than of the builds store: that store keeps one build
+  // alive at all times, so by the first render there is always a "Build 1" and an emptiness
+  // question asked any later always answers no.
+  if (data.builds.length === 0 && data.layers.length === 0) landing.show();
 
   const buildsMap = new Map(data.builds.map((b) => [b.id, b]));
   builds._init(buildsMap, data.meta.buildOrder);

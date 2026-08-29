@@ -2,6 +2,7 @@
 // different items. A fresh tab seeds from meta.lastSelection; every change writes
 // both meta and sessionStorage.
 import { computed, ref } from "vue";
+import * as landing from "./landing";
 import { persistMeta as persistMetaOrder } from "./meta";
 import type { Selection } from "../types";
 
@@ -43,14 +44,22 @@ function persistMeta() {
   persistMetaOrder(_selection.value);
 }
 
+// Picking something to look at is the one thing every way off the landing screen has in
+// common -- a build created, a file imported, a loadout read out of the game, a restore from
+// trash -- so the builder is revealed here rather than at each of those call sites. The
+// `_restore*` seeds below deliberately do not: they run during boot, before the landing
+// screen has had its say.
+
 export function selectBuild(id: string) {
   _selection.value = { kind: "build", id };
+  landing.enterBuilder();
   writeSession(_selection.value);
   persistMeta();
 }
 
 export function selectLayer(id: string) {
   _selection.value = { kind: "layer", id };
+  landing.enterBuilder();
   writeSession(_selection.value);
   persistMeta();
 }

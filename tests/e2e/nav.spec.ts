@@ -332,7 +332,7 @@ test("duplicating a build creates a copy and switches to it", async ({
 
 // --- Delete last build --------------------------------------------------------------
 
-test("deleting the last build replaces it with an empty one", async ({
+test("deleting the last build drops back to the landing screen", async ({
   page,
 }) => {
   await openBuilder(page);
@@ -341,10 +341,11 @@ test("deleting the last build replaces it with an empty one", async ({
   const menu = await openRowMenu(buildRow(page, "Build 1"));
   await confirmDangerAction(menu, "Delete");
 
-  // A fresh "Build 1" should replace it.
-  await expect(buildRow(page, "Build 1")).toBeVisible();
+  // With nothing left to edit, the landing screen takes the builder's place -- and with it
+  // the whole nav, so the trash has to be checked from the other side of the trip back.
+  await expect(page.getByTestId("landing")).toBeVisible();
 
-  // The old build should be in the trash.
+  await page.getByTestId("landing-new-build").click();
   const trash = recentlyDeletedHeader(page);
   await expect(trash).toBeVisible();
 });

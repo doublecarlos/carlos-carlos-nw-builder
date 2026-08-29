@@ -5,6 +5,7 @@ import { useDebounceFn } from "@vueuse/core";
 import { reorderIndex } from "../composables/useDragAndDrop";
 import * as storage from "../storage/storage";
 import * as history from "./history";
+import * as landing from "./landing";
 import * as trash from "./trash";
 import * as selection from "./selection";
 import { buildOrder, persistMeta } from "./meta";
@@ -71,6 +72,16 @@ export function replaceActive(newBuild: Build) {
   selection.selectBuild(newBuild.id);
 }
 
+/** Persists the build this store keeps alive, and selects it. What the landing screen's
+ *  "New build" does: an empty "Build 1" is always already waiting there, but nothing has
+ *  written it yet, so without this it would be gone again on the next load. */
+export function commitActive() {
+  const b = build.value;
+  if (!b) return;
+  markDirty(b.id);
+  selection.selectBuild(b.id);
+}
+
 export function createBuild() {
   const b = storage.defaultBuild(`Build ${_builds.value.size + 1}`);
   _builds.value.set(b.id, b);
@@ -95,7 +106,9 @@ export function deleteBuild(id: string) {
   const b = _builds.value.get(id);
   if (!b) return;
 
-  // If this is the last build, replace it with a fresh empty build.
+  // Deleting the last build drops back to the landing screen. A fresh build still takes its
+  // place underneath -- unwritten, exactly as on a first visit -- so the landing's "New build"
+  // has something to commit and every reader of `build.value` still finds one.
   if (_builds.value.size < 2) {
     clearDirty(id);
     _builds.value.delete(id);
@@ -108,8 +121,8 @@ export function deleteBuild(id: string) {
     const replacement = storage.defaultBuild("Build 1");
     _builds.value.set(replacement.id, replacement);
     buildOrder.value.push(replacement.id);
-    markDirty(replacement.id);
     selection.selectBuild(replacement.id);
+    landing.show();
     return;
   }
 
@@ -305,11 +318,13 @@ function clearDirty(id: string) {
 }
 
 // Deep-watch the active build so buildEditor.ts content edits (which mutate build.value in
-// place) trigger persistence of just that build's record.
+// place) trigger persistence of just that build's record. Never while the landing screen is
+// up: the build waiting behind it is a placeholder nobody has asked for yet, and writing it
+// would turn every visit that got as far as the landing into stored content.
 watch(
   () => build.value,
   (b) => {
-    if (b && !_loading.value) markDirty(b.id);
+    if (b && !_loading.value && !landing.showing.value) markDirty(b.id);
   },
   { deep: true },
 );

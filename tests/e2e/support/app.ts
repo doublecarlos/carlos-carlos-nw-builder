@@ -4,17 +4,26 @@
 import { expect, type Locator, type Page } from "@playwright/test";
 import { shippedItemName } from "./shippedData";
 
-/** Loads the app into a fresh browser context and creates a build so the builder is
- * visible. With storage on IndexedDB, a fresh context has no data, so the empty state
- * shows first — clicking "+ New build" gets us into the builder. */
+/** Loads the app into a fresh browser context and gets into the builder. With storage on
+ * IndexedDB, a fresh context has no data, so the landing screen shows first — clicking
+ * "New build" steps past it. */
 export async function openBuilder(page: Page) {
   await page.goto("/");
-  // Wait for hydration to finish, then create a build if we see the empty state.
-  const newBuildBtn = page.getByTestId("empty-new-build");
-  if (await newBuildBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
+  // Wait for hydration to settle on one of the two things it can show, then step past the
+  // landing screen if that is the one. Waiting for either -- rather than probing for the
+  // button on a timeout -- is what keeps a slow hydration under parallel load from quietly
+  // skipping the click and stranding the test on the landing.
+  const newBuildBtn = page.getByTestId("landing-new-build");
+  await expect(newBuildBtn.or(headerRow(page, "gear")).first()).toBeVisible({
+    timeout: 15000,
+  });
+  if (await newBuildBtn.isVisible()) {
     await newBuildBtn.click();
+    // Park the pointer out of the way: the button sits mid-viewport, and a later `hover()`
+    // that lands on the same point fires no mousemove, so hover cards never open.
+    await page.mouse.move(0, 0);
   }
-  await expect(headerRow(page, "gear")).toBeVisible({ timeout: 5000 });
+  await expect(headerRow(page, "gear")).toBeVisible({ timeout: 10000 });
 }
 
 export function headerRow(page: Page, sectionId: string): Locator {

@@ -1,13 +1,13 @@
 <script setup lang="ts">
 // Root component: page shell, URL sync.
 //
-// Layout: header (always visible), then either a loading skeleton, an empty state, or the
-// three-column builder (nav, editor area with sticky header, stat panel).
+// Layout: header (always visible), then either a loading skeleton, the first-run landing
+// screen, or the three-column builder (nav, editor area with sticky header, stat panel).
 import { watch, computed } from "vue";
 import { useEventListener } from "@vueuse/core";
 import Nav from "./components/Nav.vue";
 import AppHeader from "./components/AppHeader.vue";
-import EmptyState from "./components/EmptyState.vue";
+import LandingScreen from "./components/LandingScreen.vue";
 import BuildEditor from "./components/BuildEditor.vue";
 import BuildDetails from "./components/BuildDetails.vue";
 import LayerEditor from "./components/LayerEditor.vue";
@@ -16,6 +16,7 @@ import * as engine from "./stores/resolved";
 import * as details from "./stores/details";
 import * as selection from "./stores/selection";
 import * as builds from "./stores/builds";
+import * as landing from "./stores/landing";
 import * as layers from "./stores/layers";
 import RailGutter from "./components/ui/RailGutter.vue";
 import * as rails from "./stores/rails";
@@ -50,10 +51,10 @@ useGlobalShortcuts();
 // --- loading state ------------------------------------------------------------------------
 const loading = builds.loading;
 
-// --- empty state (no builds and no layers) ------------------------------------------------
-const hasContent = computed(
-  () => builds.builds.value.length > 0 || layers.layers.value.length > 0,
-);
+// --- landing screen -----------------------------------------------------------------------
+// Stands in front of the builder for a browser with nothing stored, and again once the last
+// build is deleted.
+const showLanding = landing.showing;
 
 /** The selected layer object, for the LayerEditor prop. */
 const selectedLayer = computed(() => {
@@ -118,8 +119,8 @@ syncRoute({ push: false });
       <div class="h-48 w-96 rounded-md bg-surface-2/50"></div>
     </div>
 
-    <!-- Empty state: no builds and no layers -->
-    <EmptyState v-else-if="!hasContent" />
+    <!-- Landing: first visit, nothing stored yet -->
+    <LandingScreen v-else-if="showLanding" />
 
     <!-- Three-column builder -->
     <template v-else>
