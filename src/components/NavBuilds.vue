@@ -4,7 +4,7 @@
 import { computed, useTemplateRef, type Component, type Directive } from "vue";
 import BaseButton from "./ui/BaseButton.vue";
 import BaseTooltip from "./ui/BaseTooltip.vue";
-import { EllipsisVertical, GripVertical, Plus, Upload } from "@lucide/vue";
+import { EllipsisVertical, GripVertical, Plus } from "@lucide/vue";
 import NavContextMenu from "./NavContextMenu.vue";
 import { isMac } from "../lib/platform";
 import { matchesQuery } from "../lib/text-filter";
@@ -60,7 +60,6 @@ const emit = defineEmits<{
   "menu-action": [action: string, id: string];
   "menu-close": [];
   create: [];
-  import: [];
 }>();
 
 const filteredBuilds = computed(() => {
@@ -216,7 +215,6 @@ function moveFocus(dir: 1 | -1) {
         <BaseButton data-testid="nav-add-build" @click="$emit('create')"
           ><Plus />New</BaseButton
         >
-        <BaseButton @click="$emit('import')"><Upload />Import</BaseButton>
       </div>
     </div>
   </div>

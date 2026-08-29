@@ -25,9 +25,6 @@ const renaming = ref<{ type: string; id: string } | null>(null);
 const renameText = ref("");
 const confirm_ = useConfirm(CONFIRM_MS);
 
-const buildFileInput = useTemplateRef("buildFileInput");
-const layerFileInput = useTemplateRef("layerFileInput");
-
 const buildFilter = ref("");
 const layerFilter = ref("");
 const trashExpanded = ref(false);
@@ -242,31 +239,6 @@ function layerIndex(id: string) {
   return layers.layers.value.findIndex((l) => l.id === id);
 }
 
-// --- import ---------------------------------------------------------------------------
-
-function triggerImportBuild() {
-  buildFileInput.value?.click();
-}
-function triggerImportLayer() {
-  layerFileInput.value?.click();
-}
-
-async function onImportBuildFile(event: Event) {
-  const input = event.target as HTMLInputElement;
-  const file = input.files?.[0];
-  input.value = "";
-  if (!file) return;
-  builds.importBuildText(await file.text());
-}
-
-async function onImportLayerFile(event: Event) {
-  const input = event.target as HTMLInputElement;
-  const file = input.files?.[0];
-  input.value = "";
-  if (!file) return;
-  layers.importLayerText(await file.text());
-}
-
 // --- trash actions --------------------------------------------------------------------
 
 function restoreTrashEntry(entry: TrashEntry) {
@@ -461,7 +433,6 @@ useEventListener(document, "scroll", onScrollCapture, {
       @reorder="(id, toIndex) => reorderBuild(id, toIndex)"
       @delete-request="(id) => onDeleteRequest('build', id)"
       @create="builds.createBuild()"
-      @import="triggerImportBuild"
     />
 
     <NavLayers
@@ -500,7 +471,6 @@ useEventListener(document, "scroll", onScrollCapture, {
       @reorder="(id, toIndex) => reorderLayer(id, toIndex)"
       @delete-request="(id) => onDeleteRequest('layer', id)"
       @create="layers.createLayer()"
-      @import="triggerImportLayer"
     />
 
     <NavTrash
@@ -517,21 +487,6 @@ useEventListener(document, "scroll", onScrollCapture, {
       @menu-open="(id, ev) => openMenuFor('trash', id, ev)"
       @menu-action="(a, id) => onTrashMenuAction(a, id)"
       @menu-close="closeMenu"
-    />
-
-    <input
-      ref="buildFileInput"
-      type="file"
-      accept=".json,application/json"
-      class="hidden"
-      @change="onImportBuildFile"
-    />
-    <input
-      ref="layerFileInput"
-      type="file"
-      accept=".json,application/json"
-      class="hidden"
-      @change="onImportLayerFile"
     />
   </nav>
 </template>

@@ -20,13 +20,13 @@ async function exportedBuildJson(page: Page): Promise<Record<string, unknown>> {
   return JSON.parse(text);
 }
 
-/** Import a JSON file via the header's Import… button. */
-async function importText(page: Page, text: string) {
+/** Import a JSON file via the header's Import… button — the app's only file entry point. */
+async function importText(page: Page, text: string, name = "import.json") {
   const fileInput = page
     .getByTestId("app-header")
     .locator('input[type="file"]');
   await fileInput.setInputFiles({
-    name: "import.json",
+    name,
     mimeType: "application/json",
     buffer: Buffer.from(text, "utf-8"),
   });
@@ -119,5 +119,37 @@ test.describe("portable files", () => {
     // Import via the file input — should handle bundle kind
     await importText(page, text);
     await expect(page.getByTestId("app-header")).toContainText(/imported/i);
+  });
+
+  test("the header import takes a bare catalog overlay as a layer", async ({
+    page,
+  }) => {
+    await openBuilder(page);
+
+    // What LayerEditor's export window hands out on its "This layer" tab: a raw
+    // `CatalogOverlay`, no envelope and no layer wrapper around it.
+    const overlay = {
+      items: { itm_e2e: { id: "itm_e2e", name: "E2E item" } },
+      bonuses: {},
+      sectionPresets: {},
+      slots: {},
+    };
+    await importText(page, JSON.stringify(overlay), "my-overlay.json");
+
+    await expect(
+      page.getByTestId("library").locator(".nav-row--layer"),
+    ).toContainText("my-overlay");
+  });
+
+  test("import lives only in the header", async ({ page }) => {
+    await openBuilder(page);
+
+    await expect(page.getByTestId("header-import")).toBeVisible();
+    await expect(
+      page.getByTestId("library").getByRole("button", { name: "Import" }),
+    ).toHaveCount(0);
+    await expect(
+      page.getByTestId("library").locator('input[type="file"]'),
+    ).toHaveCount(0);
   });
 });

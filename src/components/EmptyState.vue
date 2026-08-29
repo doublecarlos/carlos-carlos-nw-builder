@@ -3,7 +3,7 @@
 import { useTemplateRef } from "vue";
 import { Gamepad2, Plus, Upload } from "@lucide/vue";
 import * as builds from "../stores/builds";
-import * as layers from "../stores/layers";
+import { importFileText } from "../stores/importFile";
 // Only asks for the wizard: it is mounted once, in AppHeader, for every entry point.
 import { openWizard as openGameImport } from "../stores/gameImport";
 
@@ -18,17 +18,7 @@ async function onImportFile(event: Event) {
   const file = input.files?.[0];
   input.value = "";
   if (!file) return;
-  const text = await file.text();
-  try {
-    const parsed = JSON.parse(text);
-    if (parsed?.kind === "layer") {
-      layers.importLayerText(text);
-    } else {
-      builds.importBuildText(text);
-    }
-  } catch {
-    builds.importBuildText(text);
-  }
+  importFileText(await file.text(), file.name);
 }
 </script>
 
