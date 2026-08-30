@@ -26,8 +26,8 @@ export type RailId = (typeof RAILS)[keyof typeof RAILS];
  * beside it keeps the width it had before the gutter existed.
  */
 export const RAIL_DEFAULTS: Record<RailId, number> = {
-  nav: 268,
-  details: 532,
+  nav: 230,
+  details: 430,
   layerEntries: 396,
 };
 
