@@ -7,11 +7,39 @@ import * as folders from "./folders";
 import * as history from "./history";
 import * as landing from "./landing";
 import * as layers from "./layers";
+import { flagStorageFailed } from "./notice";
 import * as selection from "./selection";
 import * as trash from "./trash";
 
+type LoadedState = Awaited<ReturnType<typeof storage.loadAll>>;
+
+/** What a browser with nothing stored loads as. The failure path below reuses it so there is
+ *  one way for the app to start empty, not two. */
+const emptyState = (): LoadedState => ({
+  builds: [],
+  layers: [],
+  meta: { buildOrder: [], folders: [], layerOrder: [], lastSelection: null },
+  trash: [],
+  history: new Map(),
+});
+
+/** Must not reject: this runs before the app is mounted, so anything thrown here leaves the
+ *  page on index.html's boot screen with no way forward. A browser that refuses IndexedDB
+ *  gets an empty, in-memory builder instead. */
+async function load(): Promise<LoadedState> {
+  try {
+    return await storage.loadAll();
+  } catch (error: unknown) {
+    console.warn("This browser's storage is unavailable:", error);
+    flagStorageFailed(
+      "Could not open this browser's storage - nothing will be saved. Use Export to keep a copy.",
+    );
+    return emptyState();
+  }
+}
+
 export async function hydrate() {
-  const data = await storage.loadAll();
+  const data = await load();
 
   // Asked here, of the raw load, rather than of the builds store: that store keeps one build
   // alive at all times, so by the first render there is always a "Build 1" and an emptiness

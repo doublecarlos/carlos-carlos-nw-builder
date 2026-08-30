@@ -37,3 +37,12 @@ npm run preview # Preview final static web-app
 ```
 
 After running `npm run build`, the built web app is saved under `dist/` and the files can be served statically by any web server.
+
+## License
+
+Released under the [MIT License](LICENSE).
+
+## Disclaimer
+
+Unofficial fan-made tool, not affiliated with or endorsed by the developers or publishers of Neverwinter.
+Game names and trademarks belong to their respective owners.

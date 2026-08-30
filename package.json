@@ -25,7 +25,7 @@
     "type": "git",
     "url": "git+https://github.com/doublecarlos/carlos-carlos-nw-builder.git"
   },
-  "license": "UNLICENSED",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/doublecarlos/carlos-carlos-nw-builder/issues"
   },

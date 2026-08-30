@@ -5,6 +5,7 @@
 import { useTemplateRef } from "vue";
 import { Gamepad2, Plus, Upload } from "@lucide/vue";
 import * as builds from "../stores/builds";
+import { DISCLAIMER } from "../lib/app-info";
 import { importFileText } from "../stores/importFile";
 // Only asks for the wizard: it is mounted once, in AppHeader, for every entry point.
 import { openWizard as openGameImport } from "../stores/gameImport";
@@ -106,6 +107,11 @@ async function onImportFile(event: Event) {
           @change="onImportFile"
         />
       </div>
+
+      <!-- Also in the About dialog, which is the only place a returning user would see it. -->
+      <p class="text-xs text-muted" data-testid="landing-disclaimer">
+        {{ DISCLAIMER }}
+      </p>
     </div>
   </div>
 </template>

@@ -1,19 +1,21 @@
 <script setup lang="ts">
 // Full-width header bar: app title, export/import, an auto-save indicator, undo/redo, theme
-// toggle, and notice.
+// toggle, notice, and the About/shortcut overlays.
 import { ref, useTemplateRef } from "vue";
 import ThemeToggle from "./ui/ThemeToggle.vue";
 import HistoryButton from "./ui/HistoryButton.vue";
 import BaseButton from "./ui/BaseButton.vue";
 import BaseNotice from "./ui/BaseNotice.vue";
 import BaseTooltip from "./ui/BaseTooltip.vue";
+import AboutDialog from "./AboutDialog.vue";
+import AutosaveIndicator from "./AutosaveIndicator.vue";
 import BundleExport from "./BundleExport.vue";
 import GameImport from "./GameImport.vue";
 import ShortcutHelp from "./ShortcutHelp.vue";
 import {
   Download,
   Gamepad2,
-  HardDrive,
+  Info,
   Keyboard,
   Search,
   Upload,
@@ -33,6 +35,7 @@ import { isMac } from "../lib/platform";
 const importFileInput = useTemplateRef("importFileInput");
 const modKey = isMac ? "⌘" : "Ctrl";
 const showBundleExport = ref(false);
+const showAbout = ref(false);
 
 const { canUndo, canRedo, undoLabel, redoLabel, undo, redo } =
   useUndoRedoKeys();
@@ -115,19 +118,7 @@ async function onImportFile(event: Event) {
 
     <span class="h-4 w-px bg-line" />
 
-    <BaseTooltip
-      text="Edits are saved automatically to this browser's storage. That storage can be cleared or lost - use Export to keep a backup elsewhere."
-      :width="300"
-    >
-      <span
-        class="flex items-center gap-1 whitespace-nowrap text-muted"
-        data-testid="autosave-indicator"
-        tabindex="0"
-      >
-        <HardDrive class="h-[14px] w-[14px]" />
-        Auto-saved to this browser
-      </span>
-    </BaseTooltip>
+    <AutosaveIndicator />
 
     <span class="ml-auto flex items-center gap-1">
       <BaseNotice
@@ -187,8 +178,18 @@ async function onImportFile(event: Event) {
       /></BaseButton>
     </BaseTooltip>
 
+    <BaseTooltip text="About this app, and where to report a problem">
+      <BaseButton
+        data-testid="header-about"
+        aria-label="About"
+        @click="showAbout = true"
+        ><Info
+      /></BaseButton>
+    </BaseTooltip>
+
     <ThemeToggle class="w-30 justify-center" />
 
     <ShortcutHelp v-if="shortcutHelp.isOpen.value" />
+    <AboutDialog v-if="showAbout" @close="showAbout = false" />
   </header>
 </template>
