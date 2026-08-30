@@ -3,7 +3,60 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Carlos Carlos' NW Builder</title>
+    <title>Carlos Carlos' NW Builder — Neverwinter build planner</title>
+
+    <!-- One description, reused verbatim by Open Graph and Twitter below. Kept under ~160
+         characters so search results show it whole rather than clipping mid-sentence. -->
+    <meta
+      name="description"
+      content="Browser-based build planner for Neverwinter. Compare builds side by side, add your own items and bonuses with layers, and watch the stat maths update live."
+    />
+
+    <!-- The page's own chrome colour, per scheme. Matches --bg in src/base.css, so the
+         browser UI and the app agree on first paint. -->
+    <meta
+      name="theme-color"
+      media="(prefers-color-scheme: light)"
+      content="#f6f7f9"
+    />
+    <meta
+      name="theme-color"
+      media="(prefers-color-scheme: dark)"
+      content="#0f1217"
+    />
+
+    <!-- Link previews. There is no canonical origin to point `og:url` and `og:image` at yet,
+         so the image is left relative: unfurlers that resolve it against the page URL get the
+         app icon, and the rest fall back to a text-only card. Add `og:url`, a canonical link
+         and a Sitemap line in public/robots.txt once the app has a deployed domain. -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Carlos Carlos' NW Builder" />
+    <meta
+      property="og:title"
+      content="Carlos Carlos' NW Builder — Neverwinter build planner"
+    />
+    <meta
+      property="og:description"
+      content="Browser-based build planner for Neverwinter. Compare builds side by side, add your own items and bonuses with layers, and watch the stat maths update live."
+    />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:image" content="/icon-512.png" />
+    <meta property="og:image:width" content="512" />
+    <meta property="og:image:height" content="512" />
+    <meta property="og:image:alt" content="Carlos Carlos' NW Builder icon" />
+
+    <!-- `summary`, not `summary_large_image`: the only artwork is a square icon, and the wide
+         card would letterbox it. -->
+    <meta name="twitter:card" content="summary" />
+    <meta
+      name="twitter:title"
+      content="Carlos Carlos' NW Builder — Neverwinter build planner"
+    />
+    <meta
+      name="twitter:description"
+      content="Browser-based build planner for Neverwinter. Compare builds side by side, add your own items and bonuses with layers, and watch the stat maths update live."
+    />
+    <meta name="twitter:image" content="/icon-512.png" />
 
     <!-- All generated from public/icon-512.png by `npm run icons`. The .ico is listed first
          so it also answers the browser's own unprompted /favicon.ico request. -->
@@ -11,9 +64,137 @@
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
     <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+    <!-- Tells a search engine what kind of thing this page is, which a body of gear tables
+         cannot: a free web app, about the game, that needs a browser and nothing else. -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "Carlos Carlos' NW Builder",
+        "applicationCategory": "GameApplication",
+        "operatingSystem": "Any modern web browser",
+        "browserRequirements": "Requires JavaScript.",
+        "description": "Browser-based build planner for Neverwinter. Compare builds side by side, add your own items and bonuses with layers, and watch the stat maths update live.",
+        "isAccessibleForFree": true,
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        },
+        "about": {
+          "@type": "VideoGame",
+          "name": "Neverwinter"
+        }
+      }
+    </script>
+
+    <!-- Styles for the boot screen below, and only for it. src/base.css arrives with the
+         module bundle, which by definition has not run yet while this is on screen, so these
+         few rules have to stand alone. Colours are the light and dark --bg/--text/--muted from
+         src/base.css; the stored theme preference is not readable from static CSS, so this
+         follows the system setting, which is that preference's own default. -->
+    <style>
+      body {
+        margin: 0;
+      }
+
+      .boot {
+        display: flex;
+        min-height: 100vh;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.75rem;
+        padding: 1.5rem;
+        box-sizing: border-box;
+        background: #f6f7f9;
+        color: #14181f;
+        font-family: ui-sans-serif, system-ui, sans-serif;
+        text-align: center;
+      }
+
+      .boot-mark {
+        width: min(40vh, 12rem);
+        height: auto;
+        opacity: 0.07;
+        /* Out of flow so the copy sits centred on the viewport rather than below the mark,
+           matching the watermark on the app's own landing screen. */
+        position: absolute;
+        pointer-events: none;
+      }
+
+      .boot-title {
+        position: relative;
+        margin: 0;
+        font-size: 1.875rem;
+        font-weight: 600;
+        letter-spacing: 0.025em;
+      }
+
+      .boot-tagline {
+        position: relative;
+        margin: 0;
+        font-size: 1.125rem;
+        color: #667085;
+      }
+
+      .boot-copy {
+        position: relative;
+        margin: 0;
+        max-width: 36rem;
+        color: #667085;
+        line-height: 1.5;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        .boot {
+          background: #0f1217;
+          color: #e7ebf2;
+        }
+
+        .boot-mark {
+          opacity: 0.1;
+        }
+
+        .boot-tagline,
+        .boot-copy {
+          color: #8d96a5;
+        }
+      }
+    </style>
   </head>
   <body>
-    <div id="app">Loading…</div>
+    <!-- Vue clears this container when it mounts, so what is written here is the first frame
+         and nothing more. It says what the app is rather than "Loading…" because a crawler or
+         link unfurler that never runs the bundle sees exactly this and no further. -->
+    <div id="app">
+      <div class="boot" data-testid="boot-screen">
+        <img
+          class="boot-mark"
+          src="/icon-512.png"
+          alt=""
+          width="512"
+          height="512"
+        />
+        <h1 class="boot-title">Carlos Carlos' NW Builder</h1>
+        <p class="boot-tagline">Create and compare Neverwinter builds.</p>
+        <p class="boot-copy">
+          Plan a Neverwinter character build in your browser: fill the gear
+          slots, assign boons and enchantments, and read the resulting stats
+          back. Put two builds side by side to see which choice moved which
+          number. Items, bonuses and set bonuses you define yourself live in
+          customization layers, and everything stays in your own browser until
+          you export it.
+        </p>
+        <noscript>
+          <p class="boot-copy">
+            The builder runs entirely in the browser and needs JavaScript
+            enabled.
+          </p>
+        </noscript>
+      </div>
+    </div>
 
     <script type="module" src="/src/main.ts"></script>
   </body>

@@ -1,0 +1,11 @@
+# The app is one client-rendered page, so there is nothing here to keep a crawler out of --
+# except the OCR runtime, whose language model alone is tens of megabytes of binary a crawler
+# would download and index nothing from. Those paths are served by the `tesseract-assets`
+# plugin in vite.config.ts.
+User-agent: *
+Allow: /
+Disallow: /tessdata/
+Disallow: /tesseract/
+
+# No `Sitemap:` line: it has to be an absolute URL, and the app has no deployed origin yet.
+# Add one here alongside the canonical link and `og:url` in index.html once it does.
