@@ -1,5 +1,5 @@
 {
-  "name": "neverwinter-web-builder",
+  "name": "carlos-carlos-nw-builder",
   "version": "1.0.0",
   "description": "Carlos Carlos' NW Builder",
   "private": true,
@@ -23,13 +23,13 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/doublecarlos/yet-another-nw-builder.git"
+    "url": "git+https://github.com/doublecarlos/carlos-carlos-nw-builder.git"
   },
   "license": "UNLICENSED",
   "bugs": {
-    "url": "https://github.com/doublecarlos/yet-another-nw-builder/issues"
+    "url": "https://github.com/doublecarlos/carlos-carlos-nw-builder/issues"
   },
-  "homepage": "https://github.com/doublecarlos/yet-another-nw-builder#readme",
+  "homepage": "https://carloscarlosnwbuilder.pages.dev",
   "dependencies": {
     "@lucide/vue": "^1.28.0",
     "@vueuse/core": "^14.4.0",
