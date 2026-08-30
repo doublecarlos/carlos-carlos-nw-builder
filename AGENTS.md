@@ -27,10 +27,7 @@ You **MUST NOT**:
 
 - Use these prefixes when creating new branches: `feature/`, `bugfix/`, `chore/`
 - Use data-testid for reliable test locators whenever possible. You are free to add this attribute to components if they don't already have it as needed.
-- Code comments:
-  - Should be concise, direct and describe the design intent of what the code is doing now.
-  - They should not reference plan files (as plans are discarded after some time)
-  - Should not compare the code with an old implementation that doesn't exist anymore.
+- Code comments should be concise, direct and describe the design intent of what the code is doing now instead of comparing the code with an old implementation or refering to a github issue ID.
 
 # Code layout
 
