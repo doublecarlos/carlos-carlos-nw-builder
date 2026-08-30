@@ -147,6 +147,11 @@
         line-height: 1.5;
       }
 
+      .boot-loading-message {
+        font-weight: 600;
+        font-size: 1.25em;
+      }
+
       @media (prefers-color-scheme: dark) {
         .boot {
           background: #0f1217;
@@ -178,14 +183,15 @@
           height="512"
         />
         <h1 class="boot-title">Carlos Carlos' NW Builder</h1>
+        <p class="boot-loading-message">Loading...</p>
         <p class="boot-tagline">Create and compare Neverwinter builds.</p>
         <p class="boot-copy">
-          Plan a Neverwinter character build in your browser: fill the gear
-          slots, assign boons and enchantments, and read the resulting stats
-          back. Put two builds side by side to see which choice moved which
-          number. Items, bonuses and set bonuses you define yourself live in
-          customization layers, and everything stays in your own browser until
-          you export it.
+          You can define your own items and bonuses using customization layers.
+          <br />
+          Built-in database contains recent gear for Hellbringer and Arbiter.
+          <br />
+          Everything is saved on your browser - export to download a permanent
+          copy.
         </p>
         <noscript>
           <p class="boot-copy">

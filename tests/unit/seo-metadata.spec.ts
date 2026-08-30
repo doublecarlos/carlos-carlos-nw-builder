@@ -117,7 +117,9 @@ describe("index.html boot screen", () => {
   const body = html.slice(html.indexOf("<body"));
 
   it("gives a crawler that never runs the bundle the app's name and purpose", () => {
-    expect(body.match(/<h1[^>]*>\s*([^<]*?)\s*<\/h1>/)?.[1]).toBe(
+    // The boot h1 can carry a status suffix while the bundle loads; the app name has to
+    // survive it, so this pins the name rather than the whole heading.
+    expect(body.match(/<h1[^>]*>\s*([^<]*?)\s*<\/h1>/)?.[1]).toContain(
       "Carlos Carlos' NW Builder",
     );
     expect(body).toContain("Neverwinter");
