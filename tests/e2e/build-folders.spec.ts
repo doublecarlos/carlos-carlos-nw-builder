@@ -7,6 +7,7 @@ import {
   addBuild,
   addFolder,
   buildRow,
+  buildRowNesting,
   folderRow,
   filterBuilds,
   openRowMenu,
@@ -47,15 +48,17 @@ test("dragging a build onto a folder puts it inside, and it survives a reload", 
   // The folder row reports how many builds it holds.
   await expect(folderRow(page, "Alts")).toContainText("1");
   // Build 2 stays at the top level, so the folder's own build is the indented one.
-  await expect(buildRow(page, "Build 1")).toHaveClass(/nav-row--nested/);
-  await expect(buildRow(page, "Build 2")).not.toHaveClass(/nav-row--nested/);
+  await expect(buildRowNesting(page, "Build 1")).toHaveClass(/nav-row--nested/);
+  await expect(buildRowNesting(page, "Build 2")).not.toHaveClass(
+    /nav-row--nested/,
+  );
 
   // eslint-disable-next-line playwright/no-wait-for-timeout -- No DOM event to observe for IDB flush
   await page.waitForTimeout(500);
   await page.reload();
   await page.getByTestId("library").waitFor({ state: "visible" });
 
-  await expect(buildRow(page, "Build 1")).toHaveClass(/nav-row--nested/);
+  await expect(buildRowNesting(page, "Build 1")).toHaveClass(/nav-row--nested/);
 });
 
 test("collapsing a folder hides its builds and the state survives a reload", async ({
@@ -112,11 +115,13 @@ test("the build menu moves a build into a folder and back out", async ({
 
   let menu = await openRowMenu(buildRow(page, "Build 1"));
   await menu.getByRole("button", { name: "Move to “Alts”" }).click();
-  await expect(buildRow(page, "Build 1")).toHaveClass(/nav-row--nested/);
+  await expect(buildRowNesting(page, "Build 1")).toHaveClass(/nav-row--nested/);
 
   menu = await openRowMenu(buildRow(page, "Build 1"));
   await menu.getByRole("button", { name: "Move to top level" }).click();
-  await expect(buildRow(page, "Build 1")).not.toHaveClass(/nav-row--nested/);
+  await expect(buildRowNesting(page, "Build 1")).not.toHaveClass(
+    /nav-row--nested/,
+  );
 });
 
 test("dragging a build out of a folder returns it to the top level", async ({
@@ -127,12 +132,14 @@ test("dragging a build out of a folder returns it to the top level", async ({
   await addFolder(page);
   await renameViaSidebar(page, folderRow(page, "Folder 1"), "Alts");
   await dropIntoFolder(buildRow(page, "Build 1"), folderRow(page, "Alts"));
-  await expect(buildRow(page, "Build 1")).toHaveClass(/nav-row--nested/);
+  await expect(buildRowNesting(page, "Build 1")).toHaveClass(/nav-row--nested/);
 
   // Build 2 is a top-level row, so landing after it means leaving the folder.
   await dragOnto(buildRow(page, "Build 1"), buildRow(page, "Build 2"));
 
-  await expect(buildRow(page, "Build 1")).not.toHaveClass(/nav-row--nested/);
+  await expect(buildRowNesting(page, "Build 1")).not.toHaveClass(
+    /nav-row--nested/,
+  );
   await expect(folderRow(page, "Alts")).toContainText("0");
 });
 
@@ -179,7 +186,9 @@ test("deleting a folder keeps its builds, at the top level", async ({
 
   await expect(folderRow(page, "Folder 1")).toHaveCount(0);
   await expect(buildRow(page, "Build 2")).toBeVisible();
-  await expect(buildRow(page, "Build 2")).not.toHaveClass(/nav-row--nested/);
+  await expect(buildRowNesting(page, "Build 2")).not.toHaveClass(
+    /nav-row--nested/,
+  );
 });
 
 test("a bundle export carries the folders of the builds it exports", async ({
@@ -245,7 +254,7 @@ test("a build drags out of a folder that is the last row in the list", async ({
   await openBuilder(page);
   await addFolder(page);
   await dropIntoFolder(buildRow(page, "Build 1"), folderRow(page, "Folder 1"));
-  await expect(buildRow(page, "Build 1")).toHaveClass(/nav-row--nested/);
+  await expect(buildRowNesting(page, "Build 1")).toHaveClass(/nav-row--nested/);
 
   // The folder is now the only top-level row, and its contents render below it -- the trailing
   // strip is the only spot left that means "out of the folder, at the end".
@@ -254,6 +263,8 @@ test("a build drags out of a folder that is the last row in the list", async ({
   await expect(tail).toContainText("Move to the end");
   await drag.dropOn(tail);
 
-  await expect(buildRow(page, "Build 1")).not.toHaveClass(/nav-row--nested/);
+  await expect(buildRowNesting(page, "Build 1")).not.toHaveClass(
+    /nav-row--nested/,
+  );
   await expect(folderRow(page, "Folder 1")).toContainText("0");
 });

@@ -10,6 +10,12 @@ export function folderRow(page: Page, name: string): Locator {
   return page.locator(".nav-row--folder").filter({ hasText: name });
 }
 
+/** The wrapper a build row sits in, which carries the folder-nesting marker and the indent
+ *  it draws -- one level up from `.nav-row--build` itself. */
+export function buildRowNesting(page: Page, name: string): Locator {
+  return buildRow(page, name).locator("xpath=..");
+}
+
 export function layerRow(page: Page, name: string): Locator {
   return page.locator(".nav-row--layer").filter({ hasText: name });
 }

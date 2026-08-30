@@ -530,9 +530,7 @@ async function centreOffset(row: Locator, childSelector: string) {
 test("kebab icons sit on their row's vertical centre", async ({ page }) => {
   await openBuilder(page);
   await addFolder(page);
-  await page.locator(".nav-rename").press("Enter");
   await addLayer(page);
-  await page.locator(".nav-rename").press("Enter");
 
   for (const row of [
     buildRow(page, "Build 1"),
@@ -547,7 +545,6 @@ test("kebab icons sit on their row's vertical centre", async ({ page }) => {
 test("a top-level build name lines up with a folder name", async ({ page }) => {
   await openBuilder(page);
   await addFolder(page);
-  await page.locator(".nav-rename").press("Enter");
 
   const build = await buildRow(page, "Build 1")
     .locator(".nav-name")
