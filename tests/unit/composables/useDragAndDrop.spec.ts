@@ -4,6 +4,7 @@
 import { describe, it, expect } from "vitest";
 import {
   resolveDropEdge,
+  resolveDropZone,
   reorderIndex,
 } from "../../../src/composables/useDragAndDrop";
 
@@ -44,5 +45,22 @@ describe("reorderIndex", () => {
 
   it("a target equal to the source index is unaffected (caller should treat this as a no-op)", () => {
     expect(reorderIndex(2, 2)).toBe(2);
+  });
+});
+
+describe("resolveDropZone", () => {
+  // The three-way split a row opts into when something can be dropped *inside* it (a build
+  // folder's header). The outer quarters keep the plain reorder gesture reachable.
+  it("the outer quarters still resolve to before/after", () => {
+    expect(resolveDropZone(0)).toBe("before");
+    expect(resolveDropZone(0.24)).toBe("before");
+    expect(resolveDropZone(0.75)).toBe("after");
+    expect(resolveDropZone(1)).toBe("after");
+  });
+
+  it("the middle half resolves to 'into'", () => {
+    expect(resolveDropZone(0.25)).toBe("into");
+    expect(resolveDropZone(0.5)).toBe("into");
+    expect(resolveDropZone(0.74)).toBe("into");
   });
 });

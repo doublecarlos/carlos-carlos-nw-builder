@@ -3,6 +3,7 @@
 import * as storage from "../storage/storage";
 import * as router from "../lib/router";
 import * as builds from "./builds";
+import * as folders from "./folders";
 import * as history from "./history";
 import * as landing from "./landing";
 import * as layers from "./layers";
@@ -18,6 +19,7 @@ export async function hydrate() {
   if (data.builds.length === 0 && data.layers.length === 0) landing.show();
 
   const buildsMap = new Map(data.builds.map((b) => [b.id, b]));
+  folders._init(data.meta.folders);
   builds._init(buildsMap, data.meta.buildOrder);
 
   const layersMap = new Map(data.layers.map((l) => [l.id, l]));

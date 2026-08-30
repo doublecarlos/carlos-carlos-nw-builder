@@ -1,26 +1,52 @@
-// The flat pool of builds: id→Build map, order, loading, selectors, and every mutation
-// that creates/destroys/reorders them. Build content edits live in buildEditor.ts.
+// The pool of builds: id→Build map, loading, selectors, and every mutation that
+// creates/destroys them. Where each one sits in the sidebar -- top level or inside a folder --
+// is folders.ts's business, which this file delegates every ordering call to. Build content
+// edits live in buildEditor.ts.
 import { computed, ref, watch } from "vue";
 import { useDebounceFn } from "@vueuse/core";
-import { reorderIndex } from "../composables/useDragAndDrop";
 import * as storage from "../storage/storage";
 import * as history from "./history";
 import * as landing from "./landing";
 import * as trash from "./trash";
 import * as selection from "./selection";
-import { buildOrder, persistMeta } from "./meta";
+import * as folders from "./folders";
+import { buildOrder } from "./meta";
 import { flagStorageFailed, showNotice } from "./notice";
 import * as layers from "./layers";
 import { db as engineDb } from "./resolved";
-import type { Build } from "../types";
+import type { Build, BuildNavEntry } from "../types";
 
 const SAVE_DEBOUNCE_MS = 250;
 
 const _builds = ref<Map<string, Build>>(new Map());
 const _loading = ref(true);
 
+/** Every build in sidebar order -- folder contents expanded in place, so the flat list the
+ *  rest of the app reads (compare pickers, bundle export, the Go To palette) is unchanged by
+ *  grouping. `folders.entries` is what the sidebar itself renders. */
 export const builds = computed(() =>
-  buildOrder.value.map((id) => _builds.value.get(id)!).filter(Boolean),
+  folders.orderedBuildIds.value
+    .map((id) => _builds.value.get(id)!)
+    .filter(Boolean),
+);
+
+/** The sidebar tree: top-level builds and folders in order, each folder with its builds. */
+export const navEntries = computed<BuildNavEntry[]>(() =>
+  folders.entries.value.flatMap<BuildNavEntry>((entry) => {
+    if (entry.kind === "folder") {
+      return [
+        {
+          kind: "folder" as const,
+          folder: entry.folder,
+          builds: entry.folder.builds
+            .map((id) => _builds.value.get(id)!)
+            .filter(Boolean),
+        },
+      ];
+    }
+    const b = _builds.value.get(entry.id);
+    return b ? [{ kind: "build" as const, build: b }] : [];
+  }),
 );
 
 export const build = computed(() => {
@@ -28,7 +54,8 @@ export const build = computed(() => {
   if (sel?.kind === "build" && _builds.value.has(sel.id)) {
     return _builds.value.get(sel.id)!;
   }
-  if (buildOrder.value.length) return _builds.value.get(buildOrder.value[0])!;
+  const first = folders.orderedBuildIds.value[0];
+  if (first) return _builds.value.get(first)!;
   // Guarantee at least one build exists.
   const b = storage.defaultBuild("Build 1");
   _builds.value.set(b.id, b);
@@ -66,8 +93,8 @@ export const otherBuilds = computed(() => {
 
 export function replaceActive(newBuild: Build) {
   _builds.value.set(newBuild.id, newBuild);
-  if (!buildOrder.value.includes(newBuild.id))
-    buildOrder.value.push(newBuild.id);
+  if (!folders.orderedBuildIds.value.includes(newBuild.id))
+    folders.appendBuild(newBuild.id);
   markDirty(newBuild.id);
   selection.selectBuild(newBuild.id);
 }
@@ -82,10 +109,11 @@ export function commitActive() {
   selection.selectBuild(b.id);
 }
 
-export function createBuild() {
+export function createBuild(folderId: string | null = null) {
   const b = storage.defaultBuild(`Build ${_builds.value.size + 1}`);
   _builds.value.set(b.id, b);
-  buildOrder.value.push(b.id);
+  if (folderId) folders.placeBuild(b.id, folderId);
+  else folders.appendBuild(b.id);
   markDirty(b.id);
   selection.selectBuild(b.id);
   showNotice(`Created “${b.name}”`);
@@ -96,7 +124,7 @@ export function duplicateBuild() {
   if (!source) return;
   const copy = storage.duplicate(source);
   _builds.value.set(copy.id, copy);
-  buildOrder.value.push(copy.id);
+  folders.insertBuildAfter(source.id, copy.id);
   markDirty(copy.id);
   selection.selectBuild(copy.id);
   showNotice(`Duplicated as “${copy.name}”`);
@@ -112,7 +140,7 @@ export function deleteBuild(id: string) {
   if (_builds.value.size < 2) {
     clearDirty(id);
     _builds.value.delete(id);
-    buildOrder.value = [];
+    folders.removeBuild(id);
     storage.deleteBuildRecord(id).catch(() => {});
 
     trash._add("build", b);
@@ -120,7 +148,7 @@ export function deleteBuild(id: string) {
 
     const replacement = storage.defaultBuild("Build 1");
     _builds.value.set(replacement.id, replacement);
-    buildOrder.value.push(replacement.id);
+    folders.appendBuild(replacement.id);
     selection.selectBuild(replacement.id);
     landing.show();
     return;
@@ -128,7 +156,7 @@ export function deleteBuild(id: string) {
 
   clearDirty(id);
   _builds.value.delete(id);
-  buildOrder.value = buildOrder.value.filter((oid) => oid !== id);
+  folders.removeBuild(id);
   storage.deleteBuildRecord(id).catch(() => {});
 
   trash._add("build", b);
@@ -138,29 +166,32 @@ export function deleteBuild(id: string) {
     selection.selection.value?.kind === "build" &&
     selection.selection.value.id === id
   ) {
-    const next = buildOrder.value[0];
+    const next = folders.orderedBuildIds.value[0];
     if (next) selection.selectBuild(next);
   }
 }
 
-/** `toIndex` is relative to the list as it stands now (before `id` is removed) -- callers
- *  (the delta-based `moveBuild` below, and drag-and-drop's drop-index math) both naturally
- *  produce indexes in those terms. */
-export async function moveBuildTo(id: string, toIndex: number) {
-  const idx = buildOrder.value.indexOf(id);
-  if (idx === -1) return;
-  const clamped = Math.max(0, Math.min(buildOrder.value.length, toIndex));
-  const insertAt = reorderIndex(idx, clamped);
-  if (insertAt === idx) return;
-  buildOrder.value.splice(idx, 1);
-  buildOrder.value.splice(insertAt, 0, id);
-  await persistMeta();
+/** Moves a build to `toIndex` inside `folderId` (the top level when null, the default).
+ *  `toIndex` is relative to the target list as it stands now, before `id` is removed --
+ *  callers (the delta-based `moveBuild` below, and drag-and-drop's drop-index math) both
+ *  naturally produce indexes in those terms. See `folders.placeBuild`. */
+export function moveBuildTo(
+  id: string,
+  toIndex: number,
+  folderId: string | null = null,
+) {
+  folders.placeBuild(id, folderId, toIndex);
 }
 
-export async function moveBuild(id: string, delta: number) {
-  const idx = buildOrder.value.indexOf(id);
-  if (idx === -1) return;
-  await moveBuildTo(id, idx + delta + (delta > 0 ? 1 : 0));
+/** Nudges a build one step up/down, staying inside its own folder (or the top level). */
+export function moveBuild(id: string, delta: number) {
+  const at = folders.rowPosition(id);
+  if (!at) return;
+  folders.placeBuild(
+    id,
+    folders.folderOf(id)?.id ?? null,
+    at.index + delta + (delta > 0 ? 1 : 0),
+  );
 }
 
 export function revertToDownloaded(id: string) {
@@ -219,7 +250,7 @@ export function importBuilds(
 ) {
   for (const b of newBuilds) {
     _builds.value.set(b.id, b);
-    buildOrder.value.push(b.id);
+    folders.appendBuild(b.id);
     markDirty(b.id);
   }
   if (newBuilds.length) {

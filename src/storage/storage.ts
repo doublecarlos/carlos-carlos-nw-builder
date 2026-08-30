@@ -19,6 +19,7 @@ import pkg from "../../package.json";
 import { showNotice } from "../stores/notice";
 import type {
   Build,
+  BuildFolder,
   Layer,
   CatalogOverlay,
   AppMeta,
@@ -440,6 +441,59 @@ export function normaliseLayer(raw: unknown): Layer {
 
 // --- IDB persistence ---------------------------------------------------------------------
 
+/** Reads back the stored folder set, keeping only members that still exist and refusing to
+ *  let two folders claim the same build (last writer of a duplicate loses). */
+function normaliseFolders(raw: unknown, buildIds: Set<string>): BuildFolder[] {
+  if (!Array.isArray(raw)) return [];
+  const claimed = new Set<string>();
+  const folders: BuildFolder[] = [];
+  for (const entry of raw) {
+    if (!isPlain(entry) || typeof entry.id !== "string" || !entry.id) continue;
+    const members = (Array.isArray(entry.builds) ? entry.builds : []).filter(
+      (id: unknown): id is string =>
+        typeof id === "string" && buildIds.has(id) && !claimed.has(id),
+    );
+    for (const id of members) claimed.add(id);
+    folders.push({
+      id: entry.id,
+      name:
+        typeof entry.name === "string" && entry.name.trim()
+          ? entry.name
+          : "Folder",
+      collapsed: entry.collapsed === true,
+      builds: members,
+    });
+  }
+  return folders;
+}
+
+/** The top-level row order: stored entries that still name a live folder or an unfoldered
+ *  build, then whatever exists but went unlisted. Pre-folder data is a plain list of build
+ *  ids, which passes through unchanged. */
+function repairBuildOrder(
+  raw: unknown,
+  buildIds: Set<string>,
+  folders: BuildFolder[],
+): string[] {
+  const folderIds = new Set(folders.map((f) => f.id));
+  const foldered = new Set(folders.flatMap((f) => f.builds));
+  const seen = new Set<string>();
+  const order = (Array.isArray(raw) ? (raw as unknown[]) : []).filter(
+    (id: unknown): id is string => {
+      if (typeof id !== "string" || seen.has(id)) return false;
+      if (!folderIds.has(id) && (!buildIds.has(id) || foldered.has(id)))
+        return false;
+      seen.add(id);
+      return true;
+    },
+  );
+  for (const f of folders) if (!seen.has(f.id)) order.push(f.id);
+  for (const id of buildIds) {
+    if (!seen.has(id) && !foldered.has(id)) order.push(id);
+  }
+  return order;
+}
+
 /** Load every record from every IDB store, repairing `meta` against what actually exists. */
 export async function loadAll(): Promise<{
   builds: Build[];
@@ -480,13 +534,11 @@ export async function loadAll(): Promise<{
   // Repair meta: drop dangling ids, append unlisted ones.
   const rawMetaObj =
     rawMeta && isPlain(rawMeta) ? (rawMeta as Record<string, unknown>) : null;
+  const folders = normaliseFolders(rawMetaObj?.folders, buildIds);
   const meta: AppMeta = rawMetaObj
     ? {
-        buildOrder: Array.isArray(rawMetaObj.buildOrder)
-          ? (rawMetaObj.buildOrder as string[]).filter((id: string) =>
-              buildIds.has(id),
-            )
-          : [],
+        buildOrder: repairBuildOrder(rawMetaObj.buildOrder, buildIds, folders),
+        folders,
         layerOrder: Array.isArray(rawMetaObj.layerOrder)
           ? (rawMetaObj.layerOrder as string[]).filter((id: string) =>
               layerIds.has(id),
@@ -497,11 +549,13 @@ export async function loadAll(): Promise<{
             ? (rawMetaObj.lastSelection as Selection)
             : null,
       }
-    : { buildOrder: [], layerOrder: [], lastSelection: null };
+    : {
+        buildOrder: [...buildIds],
+        folders: [],
+        layerOrder: [],
+        lastSelection: null,
+      };
 
-  for (const id of buildIds) {
-    if (!meta.buildOrder.includes(id)) meta.buildOrder.push(id);
-  }
   for (const id of layerIds) {
     if (!meta.layerOrder.includes(id)) meta.layerOrder.push(id);
   }
@@ -611,10 +665,13 @@ export function toBuildJson(build: Build, db?: Db): string {
 /** A single layer's export. */
 export const toLayerJson = (layer: Layer) => toJson(wrap("layer", layer));
 
-/** A combined bundle of builds + layers for export. */
+/** A combined bundle of builds + layers for export. `folders` carries the sidebar grouping
+ *  of the exported builds only -- a folder appears with the members that made it into the
+ *  bundle, and one whose builds were all left out does not travel at all. */
 export interface Bundle {
   builds: Build[];
   layers: Layer[];
+  folders?: BuildFolder[];
 }
 
 export const toBundleJson = (bundle: Bundle) => toJson(wrap("bundle", bundle));
@@ -656,9 +713,14 @@ export function parseBundleJson(text: string): {
 } {
   const parsed = JSON.parse(text);
   const { data, catalogStale } = unwrap<unknown>(parsed, "bundle");
-  const bundle = data as { builds?: unknown[]; layers?: unknown[] };
+  const bundle = data as {
+    builds?: unknown[];
+    layers?: unknown[];
+    folders?: unknown;
+  };
 
-  const rawBuilds = (bundle.builds ?? []).map((b: unknown) =>
+  const rawBuildList = bundle.builds ?? [];
+  const rawBuilds = rawBuildList.map((b: unknown) =>
     normalise(b, { keepId: false }),
   );
   const rawLayers = (bundle.layers ?? []).map((l: unknown) =>
@@ -682,5 +744,26 @@ export function parseBundleJson(text: string): {
     return { ...l, id: newId("l"), name };
   });
 
-  return { bundle: { builds, layers }, catalogStale };
+  // Folder membership is by build id, and every build just got a fresh one -- so remap
+  // through the id the file was written with, taken from the raw entries (`normalise` has
+  // already discarded it by this point). A folder left with no members is dropped.
+  const remap = new Map<string, string>();
+  rawBuildList.forEach((raw: unknown, i: number) => {
+    if (isPlain(raw) && typeof raw.id === "string" && builds[i])
+      remap.set(raw.id, builds[i].id);
+  });
+  const folders = (Array.isArray(bundle.folders) ? bundle.folders : [])
+    .filter(isPlain)
+    .map((raw) => ({
+      id: newId("f"),
+      name:
+        typeof raw.name === "string" && raw.name.trim() ? raw.name : "Folder",
+      collapsed: raw.collapsed === true,
+      builds: (Array.isArray(raw.builds) ? (raw.builds as unknown[]) : [])
+        .map((id) => (typeof id === "string" ? remap.get(id) : undefined))
+        .filter((id): id is string => id !== undefined),
+    }))
+    .filter((f) => f.builds.length > 0);
+
+  return { bundle: { builds, layers, folders }, catalogStale };
 }

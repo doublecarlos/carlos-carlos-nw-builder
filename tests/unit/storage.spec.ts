@@ -8,7 +8,7 @@ import { installWindowShim, installIdbShim } from "./stores/window-shim";
 import * as storage from "../../src/storage/storage";
 import * as catalog from "../../src/data/catalog";
 import { NW_CATALOG_VERSION, NW_ITEMS } from "../../src/data/data";
-import type { CatalogOverlay, Build, Db } from "../../src/types";
+import type { AppMeta, CatalogOverlay, Build, Db } from "../../src/types";
 
 beforeEach(() => {
   installWindowShim();
@@ -162,6 +162,7 @@ describe("loadAll (IDB)", () => {
     await storage.putBuild(build);
     await storage.putMeta({
       buildOrder: [build.id, "b_dangling"],
+      folders: [],
       layerOrder: [],
       lastSelection: null,
     });
@@ -174,6 +175,7 @@ describe("loadAll (IDB)", () => {
     await storage.putBuild(build);
     await storage.putMeta({
       buildOrder: [],
+      folders: [],
       layerOrder: [],
       lastSelection: null,
     });
@@ -186,6 +188,7 @@ describe("loadAll (IDB)", () => {
     await storage.putLayer(layer);
     await storage.putMeta({
       buildOrder: [],
+      folders: [],
       layerOrder: [layer.id, "l_dangling"],
       lastSelection: null,
     });
@@ -198,6 +201,7 @@ describe("loadAll (IDB)", () => {
     await storage.putLayer(layer);
     await storage.putMeta({
       buildOrder: [],
+      folders: [],
       layerOrder: [],
       lastSelection: null,
     });
@@ -210,6 +214,7 @@ describe("loadAll (IDB)", () => {
     await storage.putBuild(build);
     await storage.putMeta({
       buildOrder: [build.id],
+      folders: [],
       layerOrder: [],
       lastSelection: { kind: "build", id: build.id },
     });
@@ -725,5 +730,128 @@ describe("bundle round trip", () => {
     const { bundle } = storage.parseBundleJson(json);
     expect(bundle.builds[0].name).toBe("Same Name");
     expect(bundle.builds[1].name).toBe("Same Name (2)");
+  });
+});
+
+describe("build folders", () => {
+  beforeEach(() => {
+    installIdbShim();
+  });
+
+  it("loadAll keeps folder membership out of the top-level order", async () => {
+    const inside = storage.defaultBuild("Inside");
+    const loose = storage.defaultBuild("Loose");
+    await storage.putBuild(inside);
+    await storage.putBuild(loose);
+    await storage.putMeta({
+      buildOrder: ["f_1", loose.id],
+      folders: [
+        { id: "f_1", name: "Alts", collapsed: true, builds: [inside.id] },
+      ],
+      layerOrder: [],
+      lastSelection: null,
+    });
+
+    const { meta } = await storage.loadAll();
+    expect(meta.buildOrder).toEqual(["f_1", loose.id]);
+    expect(meta.folders).toEqual([
+      { id: "f_1", name: "Alts", collapsed: true, builds: [inside.id] },
+    ]);
+  });
+
+  it("loadAll drops a folder member that no longer exists", async () => {
+    const build = storage.defaultBuild("Only");
+    await storage.putBuild(build);
+    await storage.putMeta({
+      buildOrder: ["f_1"],
+      folders: [
+        {
+          id: "f_1",
+          name: "Alts",
+          collapsed: false,
+          builds: ["gone", build.id],
+        },
+      ],
+      layerOrder: [],
+      lastSelection: null,
+    });
+
+    const { meta } = await storage.loadAll();
+    expect(meta.folders[0].builds).toEqual([build.id]);
+  });
+
+  it("loadAll refuses to let two folders claim the same build", async () => {
+    const build = storage.defaultBuild("Contested");
+    await storage.putBuild(build);
+    await storage.putMeta({
+      buildOrder: ["f_1", "f_2"],
+      folders: [
+        { id: "f_1", name: "One", collapsed: false, builds: [build.id] },
+        { id: "f_2", name: "Two", collapsed: false, builds: [build.id] },
+      ],
+      layerOrder: [],
+      lastSelection: null,
+    });
+
+    const { meta } = await storage.loadAll();
+    expect(meta.folders[0].builds).toEqual([build.id]);
+    expect(meta.folders[1].builds).toEqual([]);
+    // Still not re-appended to the top level - it already has a home.
+    expect(meta.buildOrder).toEqual(["f_1", "f_2"]);
+  });
+
+  it("meta written before folders existed still loads, as loose builds", async () => {
+    const build = storage.defaultBuild("Legacy");
+    await storage.putBuild(build);
+    await storage.putMeta({
+      buildOrder: [build.id],
+      layerOrder: [],
+      lastSelection: null,
+    } as unknown as AppMeta);
+
+    const { meta } = await storage.loadAll();
+    expect(meta.buildOrder).toEqual([build.id]);
+    expect(meta.folders).toEqual([]);
+  });
+
+  it("a bundle carries the folders of the builds it exports, remapped to their fresh ids", () => {
+    const inside = storage.defaultBuild("Grouped");
+    const loose = storage.defaultBuild("Loose");
+    const json = storage.toBundleJson({
+      builds: [inside, loose],
+      layers: [],
+      folders: [
+        { id: "f_1", name: "Alts", collapsed: true, builds: [inside.id] },
+      ],
+    });
+
+    const { bundle } = storage.parseBundleJson(json);
+    const imported = bundle.builds.find((b) => b.name === "Grouped")!;
+    expect(imported.id).not.toBe(inside.id);
+    expect(bundle.folders).toHaveLength(1);
+    expect(bundle.folders![0].name).toBe("Alts");
+    expect(bundle.folders![0].collapsed).toBe(true);
+    expect(bundle.folders![0].builds).toEqual([imported.id]);
+  });
+
+  it("a folder whose builds were all left out of the bundle does not travel", () => {
+    const left = storage.defaultBuild("Left out");
+    const json = storage.toBundleJson({
+      builds: [],
+      layers: [],
+      folders: [
+        { id: "f_1", name: "Alts", collapsed: false, builds: [left.id] },
+      ],
+    });
+
+    expect(storage.parseBundleJson(json).bundle.folders).toEqual([]);
+  });
+
+  it("a bundle without folders parses to none", () => {
+    const json = storage.toBundleJson({
+      builds: [storage.defaultBuild("Solo")],
+      layers: [],
+    });
+    expect(storage.parseBundleJson(json).bundle.folders).toEqual([]);
   });
 });

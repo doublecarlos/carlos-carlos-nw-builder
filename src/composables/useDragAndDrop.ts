@@ -41,11 +41,16 @@ export interface DragSource {
 
 export type DropEdge = "before" | "after";
 
+/** Where a drop lands relative to the row under the cursor: between rows (`before`/`after`),
+ *  or inside the row itself -- only offered by rows that opt in (`rowProps`'s `into`), such
+ *  as a build folder's header in the sidebar. */
+export type DropZone = DropEdge | "into";
+
 interface DragBusState {
   source: DragSource | null;
   overContainerId: string | null;
   overIndex: number | null;
-  overEdge: DropEdge | null;
+  overEdge: DropZone | null;
 }
 
 const state = reactive<DragBusState>({
@@ -88,6 +93,19 @@ export function resolveDropEdge(offsetYRatio: number): DropEdge {
   return offsetYRatio < 0.5 ? "before" : "after";
 }
 
+/** Pure -- the three-way split for a row that can also be dropped *into*. The middle half of
+ *  the row's height means "inside"; the outer quarters keep the before/after reorder gesture
+ *  reachable, so a row can still be dropped next to a folder rather than in it. */
+export function resolveDropZone(offsetYRatio: number): DropZone {
+  if (offsetYRatio < 0.25) return "before";
+  if (offsetYRatio >= 0.75) return "after";
+  return "into";
+}
+
+/** What is currently in flight, for call sites whose drop affordances depend on it -- a
+ *  folder header accepts a build dropped into it, but not another folder. */
+export const dragSource = computed<DragSource | null>(() => state.source);
+
 /** Pure -- the index a dragged item lands at once it's spliced out of `fromIndex`, given a
  *  target index computed against the list *before* that removal (which is what dragover
  *  math naturally produces, since the list hasn't been mutated yet while hovering). Only
@@ -96,12 +114,25 @@ export function reorderIndex(fromIndex: number, toIndex: number): number {
   return toIndex > fromIndex ? toIndex - 1 : toIndex;
 }
 
+/** What `useDragHandle` returns and `useDropList`'s `rowProps` returns -- named so a component
+ *  can take them as props and forward them to the element that actually carries the gesture. */
+export interface DragHandleProps {
+  draggable: boolean;
+  onDragstart: (event: DragEvent) => void;
+  onDragend: () => void;
+}
+
+export interface DropRowProps {
+  onDragover: (event: DragEvent) => void;
+  onDrop: (event: DragEvent) => void;
+}
+
 /** Binds a drag handle element (typically a grip icon, never a whole row -- so text inputs
  *  and comboboxes inside a row don't fight the browser's own drag-to-select-text gesture).
  *  Safe to call dynamically (e.g. once per row from a template helper, not just from real
  *  `<script setup>` setup scope) since it's a plain function with no Vue lifecycle hooks of
  *  its own. */
-export function useDragHandle(getSource: () => DragSource) {
+export function useDragHandle(getSource: () => DragSource): DragHandleProps {
   armGlobalCleanup();
   return {
     draggable: true,
@@ -124,7 +155,9 @@ export function useDragHandle(getSource: () => DragSource) {
 export function useDropList(options: {
   containerId: string;
   accepts: (source: DragSource) => boolean;
-  onDrop: (source: DragSource, index: number) => void;
+  /** `zone` is `"into"` only for rows that opted in via `rowProps(index, { into: true })`,
+   *  in which case `index` is that row's own index rather than a gap between rows. */
+  onDrop: (source: DragSource, index: number, zone: DropZone) => void;
 }) {
   armGlobalCleanup();
 
@@ -135,7 +168,7 @@ export function useDropList(options: {
       options.accepts(state.source),
   );
 
-  function indicatorAt(index: number): DropEdge | null {
+  function indicatorAt(index: number): DropZone | null {
     if (!isActiveContainer.value || state.overIndex !== index) return null;
     return state.overEdge;
   }
@@ -143,7 +176,7 @@ export function useDropList(options: {
   function handleDragover(
     event: DragEvent,
     index: number,
-    edge: DropEdge | null,
+    edge: DropZone | null,
   ) {
     if (!state.source || !options.accepts(state.source)) return;
     event.preventDefault();
@@ -153,40 +186,44 @@ export function useDropList(options: {
     state.overEdge = edge;
   }
 
-  function handleDrop(event: DragEvent, dropIndex: number) {
+  function handleDrop(event: DragEvent, dropIndex: number, zone: DropZone) {
     if (!state.source || !options.accepts(state.source)) return;
     event.preventDefault();
     event.stopPropagation();
     const source = state.source;
     clearDrag();
-    options.onDrop(source, dropIndex);
+    options.onDrop(source, dropIndex, zone);
   }
 
-  /** Bind on each row -- reports which half of the row the cursor is over so the drop lands
-   *  before or after it. */
-  function rowProps(index: number) {
+  /** Bind on each row -- reports which part of the row the cursor is over so the drop lands
+   *  before or after it, or (for a row that passes `into`) inside it. */
+  function rowProps(index: number, opts?: { into?: boolean }): DropRowProps {
     return {
       onDragover(event: DragEvent) {
         const target = event.currentTarget as HTMLElement;
         const rect = target.getBoundingClientRect();
         const ratio = (event.clientY - rect.top) / (rect.height || 1);
-        handleDragover(event, index, resolveDropEdge(ratio));
+        handleDragover(
+          event,
+          index,
+          opts?.into ? resolveDropZone(ratio) : resolveDropEdge(ratio),
+        );
       },
       onDrop(event: DragEvent) {
-        const dropIndex = state.overEdge === "after" ? index + 1 : index;
-        handleDrop(event, dropIndex);
+        const zone = state.overEdge ?? "before";
+        handleDrop(event, zone === "after" ? index + 1 : index, zone);
       },
     };
   }
 
   /** Bind on the list's empty-state placeholder so an empty list is still a valid target. */
-  function emptyProps() {
+  function emptyProps(): DropRowProps {
     return {
       onDragover(event: DragEvent) {
         handleDragover(event, 0, null);
       },
       onDrop(event: DragEvent) {
-        handleDrop(event, 0);
+        handleDrop(event, 0, "before");
       },
     };
   }

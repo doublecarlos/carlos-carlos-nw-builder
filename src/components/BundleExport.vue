@@ -4,13 +4,15 @@
 // unticked, but doing so shows an inline warning.
 import { ref, computed } from "vue";
 import * as builds from "../stores/builds";
+import * as folders from "../stores/folders";
 import * as layers from "../stores/layers";
 import * as storage from "../storage/storage";
 import { db } from "../stores/resolved";
 import * as catalog from "../data/catalog";
 import { showNotice } from "../stores/notice";
 import { matchesQuery } from "../lib/text-filter";
-import { Download } from "@lucide/vue";
+import type { BuildNavEntry } from "../types";
+import { Download, Folder } from "@lucide/vue";
 import BaseButton from "./ui/BaseButton.vue";
 import BaseModal from "./ui/BaseModal.vue";
 
@@ -25,9 +27,17 @@ const selectedBuildIds = ref<Set<string>>(new Set());
 const selectedLayerIds = ref<Set<string>>(new Set());
 const autoTickedLayerIds = ref<Set<string>>(new Set());
 
-// All builds, filtered by name.
-const filteredBuilds = computed(() =>
-  builds.builds.value.filter((b) => matchesQuery(b.name, buildFilter.value)),
+// The build column mirrors the sidebar's own grouping, so what a folder holds is visible
+// while picking. Filtering matches build names only, and a folder with no match drops out.
+const filteredEntries = computed(() =>
+  builds.navEntries.value.flatMap<BuildNavEntry>((entry) => {
+    if (entry.kind === "build")
+      return matchesQuery(entry.build.name, buildFilter.value) ? [entry] : [];
+    const kept = entry.builds.filter((b) =>
+      matchesQuery(b.name, buildFilter.value),
+    );
+    return kept.length ? [{ ...entry, builds: kept }] : [];
+  }),
 );
 
 // All layers, filtered by name.
@@ -118,9 +128,20 @@ function exportBundle() {
     return;
   }
 
+  // Only the grouping the picked builds actually came in: each folder travels with the
+  // members that made it into the bundle, and one that contributed nothing is left out.
+  const selectedIds = new Set(selectedBuilds.map((b) => b.id));
+  const selectedFolders = folders.orderedFolders.value
+    .map((f) => ({
+      ...f,
+      builds: f.builds.filter((id) => selectedIds.has(id)),
+    }))
+    .filter((f) => f.builds.length > 0);
+
   const json = storage.toBundleJson({
     builds: selectedBuilds,
     layers: selectedLayers,
+    folders: selectedFolders,
   });
   const blob = new Blob([json], { type: "application/json" });
   const url = URL.createObjectURL(blob);
@@ -164,19 +185,45 @@ function selectAllLayers() {
           data-testid="bundle-build-filter"
         />
         <div class="max-h-48 space-y-1 overflow-y-auto">
-          <label
-            v-for="b in filteredBuilds"
-            :key="b.id"
-            class="flex cursor-pointer items-center gap-2"
+          <template
+            v-for="entry in filteredEntries"
+            :key="entry.kind === 'build' ? entry.build.id : entry.folder.id"
           >
-            <input
-              type="checkbox"
-              :checked="selectedBuildIds.has(b.id)"
-              data-testid="bundle-build-checkbox"
-              @change="toggleBuild(b.id)"
-            />
-            {{ b.name }}
-          </label>
+            <label
+              v-if="entry.kind === 'build'"
+              class="flex cursor-pointer items-center gap-2"
+            >
+              <input
+                type="checkbox"
+                :checked="selectedBuildIds.has(entry.build.id)"
+                data-testid="bundle-build-checkbox"
+                @change="toggleBuild(entry.build.id)"
+              />
+              {{ entry.build.name }}
+            </label>
+            <template v-else>
+              <p
+                class="flex items-center gap-1.5 pt-1 text-sm text-muted"
+                data-testid="bundle-folder-label"
+              >
+                <Folder class="size-[14px] flex-none" />
+                {{ entry.folder.name }}
+              </p>
+              <label
+                v-for="b in entry.builds"
+                :key="b.id"
+                class="flex cursor-pointer items-center gap-2 pl-4"
+              >
+                <input
+                  type="checkbox"
+                  :checked="selectedBuildIds.has(b.id)"
+                  data-testid="bundle-build-checkbox"
+                  @change="toggleBuild(b.id)"
+                />
+                {{ b.name }}
+              </label>
+            </template>
+          </template>
         </div>
         <button
           type="button"

@@ -11,6 +11,7 @@ import * as selection from "./selection";
 import { layerOrder, persistMeta } from "./meta";
 import { flagStorageFailed, showNotice } from "./notice";
 import * as builds from "./builds";
+import * as folders from "./folders";
 import * as catalog from "../data/catalog";
 import type { Layer, CatalogOverlay, SectionPreset } from "../types";
 
@@ -260,6 +261,15 @@ export function importBundleText(text: string) {
     // Import builds first
     for (const b of newBuilds) {
       builds.importBuilds([b], catalogStale);
+    }
+
+    // Then recreate the folders those builds came in, now that the builds exist under
+    // their fresh ids (`parseBundleJson` already remapped the membership).
+    for (const folder of bundle.folders ?? []) {
+      const folderId = folders.createFolder(folder.name, folder.collapsed);
+      for (const buildId of folder.builds) {
+        folders.placeBuild(buildId, folderId);
+      }
     }
 
     // Then import layers

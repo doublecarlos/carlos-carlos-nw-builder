@@ -6,6 +6,10 @@ export function buildRow(page: Page, name: string): Locator {
   return page.locator(".nav-row--build").filter({ hasText: name });
 }
 
+export function folderRow(page: Page, name: string): Locator {
+  return page.locator(".nav-row--folder").filter({ hasText: name });
+}
+
 export function layerRow(page: Page, name: string): Locator {
   return page.locator(".nav-row--layer").filter({ hasText: name });
 }
@@ -42,6 +46,11 @@ export async function renameViaSidebar(page: Page, row: Locator, name: string) {
 /** Clicks the "New" (plus-icon) button under the Builds section heading. */
 export async function addBuild(page: Page) {
   await page.getByTestId("nav-add-build").click();
+}
+
+/** Clicks the "Folder" button under the Builds section heading. */
+export async function addFolder(page: Page) {
+  await page.getByTestId("nav-add-folder").click();
 }
 
 /** Clicks the "New" (plus-icon) button under the Customization Layers section heading. */

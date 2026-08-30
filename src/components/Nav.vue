@@ -1,14 +1,25 @@
 <script setup lang="ts">
-// Left sidebar: builds, customization layers, and recently deleted. Owns shared state
-// (menus, rename, confirm) and delegates list rendering to NavBuilds / NavLayers / NavTrash.
+// Left sidebar: builds (optionally grouped into folders), customization layers, and recently
+// deleted. Owns shared state (menus, rename, confirm) and delegates list rendering to
+// NavBuilds / NavLayers / NavTrash.
 import { nextTick, ref, useTemplateRef } from "vue";
 import { useEventListener } from "@vueuse/core";
-import { Copy, Download, Pencil, RotateCcw, Trash } from "@lucide/vue";
+import {
+  Copy,
+  Download,
+  FolderInput,
+  FolderOutput,
+  Pencil,
+  Plus,
+  RotateCcw,
+  Trash,
+} from "@lucide/vue";
 import NavBuilds from "./NavBuilds.vue";
 import NavLayers from "./NavLayers.vue";
 import NavTrash from "./NavTrash.vue";
 import { useConfirm } from "../composables/useConfirm";
 import * as builds from "../stores/builds";
+import * as folders from "../stores/folders";
 import * as layers from "../stores/layers";
 import * as selection from "../stores/selection";
 import * as buildEditor from "../stores/buildEditor";
@@ -40,7 +51,14 @@ function timeAgo(ms: number): string {
   return days === 1 ? "1 day ago" : `${days} days ago`;
 }
 
-// --- selection helpers ----------------------------------------------------------------
+// --- nav row kinds --------------------------------------------------------------------
+
+/** Builds and folders share one row id space in the Builds section, so every handler that
+ *  NavBuilds routes through (menu, rename, delete, move) asks which kind it is dealing with
+ *  rather than taking a second set of props/emits for folders. */
+function rowType(id: string): "build" | "folder" {
+  return folders.byId(id) ? "folder" : "build";
+}
 
 // --- menus ---------------------------------------------------------------------------
 
@@ -82,20 +100,21 @@ function commitRename() {
     if (type === "build") {
       selection.selectBuild(id);
       buildEditor.renameBuild(name);
+    } else if (type === "folder") {
+      folders.renameFolder(id, name);
     } else {
       layers.renameLayer(id, name);
     }
   }
   // The rename <input> unmounts as soon as `renaming` clears, taking focus with it --
   // land back on the row's own button so keyboard nav (arrows, F2, Delete) can continue.
-  if (type === "build" || type === "layer") focusRow(type, id);
+  focusRow(id);
 }
 
 function cancelRename() {
   const cancelled = renaming.value;
   renaming.value = null;
-  if (cancelled && (cancelled.type === "build" || cancelled.type === "layer"))
-    focusRow(cancelled.type, cancelled.id);
+  if (cancelled) focusRow(cancelled.id);
 }
 
 // --- two-step confirm (delegates to useConfirm composable) ---------------------------
@@ -120,27 +139,35 @@ function runConfirmed(
  *  same two-step confirm key as the context menu's delete action -- arming it here also arms
  *  it there, so opening the menu right after mid-confirms as "Really?" instead of resetting.
  *  There's no menu open to show that state, so the first press surfaces it as a toast instead. */
-function onDeleteRequest(type: "build" | "layer", id: string) {
-  const action = type === "build" ? "delete-build" : "delete-layer";
-  if (!confirm_.run(`${type}:${id}:${action}`)) {
-    const name = (type === "build" ? builds.builds : layers.layers).value.find(
-      (item) => item.id === id,
-    )?.name;
-    showNotice(`Press Delete again to delete "${name}".`);
+function onDeleteRequest(type: "build" | "folder" | "layer", id: string) {
+  if (!confirm_.run(`${type}:${id}:delete-${type}`)) {
+    const name =
+      type === "folder"
+        ? folders.byId(id)?.name
+        : (type === "build" ? builds.builds : layers.layers).value.find(
+            (item) => item.id === id,
+          )?.name;
+    showNotice(
+      type === "folder"
+        ? `Press Delete again to delete the folder "${name}".`
+        : `Press Delete again to delete "${name}".`,
+    );
     return;
   }
   if (type === "build") deleteBuildRow(id);
+  else if (type === "folder") deleteFolderRow(id);
   else deleteLayerRow(id);
   // The deleted row's button (and the keyboard focus on it) is gone -- refocus whatever the
-  // store auto-selected next so the keyboard cursor isn't dropped.
+  // store auto-selected next so the keyboard cursor isn't dropped. A deleted folder selects
+  // nothing: its builds only moved up to the top level.
   const next = selection.selection.value;
-  if (next && next.kind === type) focusRow(type, next.id);
+  if (type !== "folder" && next && next.kind === type) focusRow(next.id);
 }
 
 /** Focuses a nav row's own button by id, once Vue has applied whatever DOM change (reorder,
  *  rename exit, re-selection after delete) is in flight. Used everywhere a keyboard-driven
  *  action would otherwise drop focus to <body> and strand the keyboard cursor. */
-async function focusRow(type: "build" | "layer", id: string) {
+async function focusRow(id: string) {
   await nextTick();
   root.value?.querySelector<HTMLElement>(`[data-nav-key="${id}"]`)?.focus();
 }
@@ -165,17 +192,41 @@ function resetBuild(id: string) {
   buildEditor.resetAll();
   closeMenu();
 }
-async function moveBuildUp(id: string) {
-  await builds.moveBuild(id, -1);
-  focusRow("build", id);
+/** The reorder shortcut on any Builds-section row: a folder moves among the top-level rows,
+ *  a build moves inside whichever container it is already in. */
+function moveRowUp(id: string) {
+  if (rowType(id) === "folder") folders.moveFolder(id, -1);
+  else builds.moveBuild(id, -1);
+  focusRow(id);
 }
-async function moveBuildDown(id: string) {
-  await builds.moveBuild(id, 1);
-  focusRow("build", id);
+function moveRowDown(id: string) {
+  if (rowType(id) === "folder") folders.moveFolder(id, 1);
+  else builds.moveBuild(id, 1);
+  focusRow(id);
 }
-async function reorderBuild(id: string, toIndex: number) {
-  await builds.moveBuildTo(id, toIndex);
-  focusRow("build", id);
+function reorderBuild(id: string, toIndex: number, folderId: string | null) {
+  builds.moveBuildTo(id, toIndex, folderId);
+  focusRow(id);
+}
+function reorderFolder(id: string, toIndex: number) {
+  folders.moveFolderTo(id, toIndex);
+  focusRow(id);
+}
+
+// --- folder actions -------------------------------------------------------------------
+
+function moveBuildToFolder(id: string, folderId: string | null) {
+  folders.placeBuild(id, folderId);
+  closeMenu();
+  focusRow(id);
+}
+function deleteFolderRow(id: string) {
+  folders.deleteFolder(id);
+  closeMenu();
+}
+function newBuildInFolder(id: string) {
+  builds.createBuild(id);
+  closeMenu();
 }
 function revertBuild(id: string) {
   builds.revertToDownloaded(id);
@@ -188,10 +239,6 @@ function isBuildRevertable(id: string): boolean {
   return !builds.isDownloaded(id);
 }
 
-function buildIndex(id: string) {
-  return builds.builds.value.findIndex((b) => b.id === id);
-}
-
 // --- layer actions --------------------------------------------------------------------
 
 function toggleLayerEnabled(id: string) {
@@ -201,15 +248,15 @@ function toggleLayerEnabled(id: string) {
 
 async function moveLayerUp(id: string) {
   await layers.moveLayer(id, -1);
-  focusRow("layer", id);
+  focusRow(id);
 }
 async function moveLayerDown(id: string) {
   await layers.moveLayer(id, 1);
-  focusRow("layer", id);
+  focusRow(id);
 }
 async function reorderLayer(id: string, toIndex: number) {
   await layers.moveLayerTo(id, toIndex);
-  focusRow("layer", id);
+  focusRow(id);
 }
 function duplicateLayerRow(id: string) {
   layers.duplicateLayer(id);
@@ -256,10 +303,36 @@ function purgeTrash(entry: TrashEntry) {
 
 // --- menu items computed --------------------------------------------------------------
 
+/** "Move to …" rows, one per folder this build is not already in, plus a way back out to
+ *  the top level. The flat list keeps the menu component free of submenus and is the
+ *  keyboard-reachable counterpart to dragging a row onto a folder. */
+const moveToItems = (id: string) => {
+  const current = folders.folderOf(id);
+  return [
+    ...(current
+      ? [
+          {
+            action: "move-to:",
+            label: "Move to top level",
+            icon: FolderOutput,
+          },
+        ]
+      : []),
+    ...folders.orderedFolders.value
+      .filter((f) => f.id !== current?.id)
+      .map((f) => ({
+        action: `move-to:${f.id}`,
+        label: `Move to “${f.name}”`,
+        icon: FolderInput,
+      })),
+  ];
+};
+
 const buildMenuItems = (id: string) => [
   { action: "rename", label: "Rename (F2)", icon: Pencil },
   { action: "duplicate", label: "Duplicate", icon: Copy },
   { action: "download", label: "Download…", icon: Download },
+  ...moveToItems(id),
   {
     action: "revert",
     label: confirmLabel(
@@ -283,6 +356,30 @@ const buildMenuItems = (id: string) => [
     icon: Trash,
   },
 ];
+
+const folderMenuItems = (id: string) => [
+  { action: "rename", label: "Rename (F2)", icon: Pencil },
+  { action: "new-build", label: "New build here", icon: Plus },
+  {
+    action: "delete",
+    label: confirmLabel(
+      "folder",
+      id,
+      "delete-folder",
+      "Delete folder (keeps builds)",
+    ),
+    danger: true,
+    icon: Trash,
+  },
+];
+
+/** The Builds section renders one menu for whichever row is open, build or folder. */
+function navMenuItems() {
+  const open = openMenu.value;
+  if (open?.type === "folder") return folderMenuItems(open.id);
+  if (open?.type === "build") return buildMenuItems(open.id);
+  return [];
+}
 
 const layerMenuItems = (id: string) => [
   { action: "rename", label: "Rename (F2)", icon: Pencil },
@@ -319,7 +416,31 @@ const trashMenuItems = (key: string) => [
 
 // --- menu action dispatchers ----------------------------------------------------------
 
+/** One dispatcher for both row kinds in the Builds section - see `rowType`. */
+function onNavMenuAction(action: string, id: string) {
+  if (rowType(id) === "folder") onFolderMenuAction(action, id);
+  else onBuildMenuAction(action, id);
+}
+
+function onFolderMenuAction(action: string, id: string) {
+  switch (action) {
+    case "rename":
+      startRename("folder", id, folders.byId(id)?.name ?? "");
+      break;
+    case "new-build":
+      newBuildInFolder(id);
+      break;
+    case "delete":
+      runConfirmed("folder", id, "delete-folder", () => deleteFolderRow(id));
+      break;
+  }
+}
+
 function onBuildMenuAction(action: string, id: string) {
+  if (action.startsWith("move-to:")) {
+    moveBuildToFolder(id, action.slice("move-to:".length) || null);
+    return;
+  }
   switch (action) {
     case "rename":
       startRename(
@@ -399,40 +520,48 @@ useEventListener(document, "scroll", onScrollCapture, {
     data-testid="library"
   >
     <NavBuilds
-      :builds="builds.builds.value"
+      :entries="builds.navEntries.value"
       :selected-id="
         selection.selection.value?.kind === 'build'
           ? selection.selection.value.id
           : null
       "
       :filter="buildFilter"
-      :renaming-id="renaming?.type === 'build' ? renaming.id : null"
-      :rename-text="renameText"
-      :menu-open-id="openMenu?.type === 'build' ? openMenu.id : null"
-      :menu-items="
-        openMenu?.type === 'build' ? buildMenuItems(openMenu.id) : []
+      :renaming-id="
+        renaming?.type === 'build' || renaming?.type === 'folder'
+          ? renaming.id
+          : null
       "
+      :rename-text="renameText"
+      :menu-open-id="
+        openMenu?.type === 'build' || openMenu?.type === 'folder'
+          ? openMenu.id
+          : null
+      "
+      :menu-items="navMenuItems()"
       :menu-anchor="menuAnchor"
-      :can-move-up="(id) => buildIndex(id) !== 0"
-      :can-move-down="(id) => buildIndex(id) !== builds.builds.value.length - 1"
       @update:filter="(v) => (buildFilter = v)"
       @select="(id) => selection.selectBuild(id)"
       @rename-start="
         (id, name) => {
-          renaming = { type: 'build', id };
+          renaming = { type: rowType(id), id };
           renameText = name;
         }
       "
       @rename-commit="commitRename"
       @rename-cancel="cancelRename"
-      @menu-open="(id, ev) => openMenuFor('build', id, ev)"
-      @menu-action="(a, id) => onBuildMenuAction(a, id)"
+      @menu-open="(id, ev) => openMenuFor(rowType(id), id, ev)"
+      @menu-action="(a, id) => onNavMenuAction(a, id)"
       @menu-close="closeMenu"
-      @move-up="(id) => moveBuildUp(id)"
-      @move-down="(id) => moveBuildDown(id)"
-      @reorder="(id, toIndex) => reorderBuild(id, toIndex)"
-      @delete-request="(id) => onDeleteRequest('build', id)"
+      @move-up="(id) => moveRowUp(id)"
+      @move-down="(id) => moveRowDown(id)"
+      @reorder="(id, toIndex, folderId) => reorderBuild(id, toIndex, folderId)"
+      @reorder-folder="(id, toIndex) => reorderFolder(id, toIndex)"
+      @move-into-folder="(id, folderId) => moveBuildToFolder(id, folderId)"
+      @folder-toggle="(id) => folders.toggleCollapsed(id)"
+      @delete-request="(id) => onDeleteRequest(rowType(id), id)"
       @create="builds.createBuild()"
+      @create-folder="folders.createFolder()"
     />
 
     <NavLayers

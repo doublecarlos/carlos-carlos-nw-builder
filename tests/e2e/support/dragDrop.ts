@@ -12,20 +12,22 @@
 // coordinates, not how they got there.
 import type { Locator } from "@playwright/test";
 
-/** Drags a drag-handle element onto `target`, landing in the requested half so the row lands
- *  immediately before or after `target` (see useDragAndDrop's before/after edge split).
- *  Defaults to "after", the more common reordering gesture. */
+/** Drags a drag-handle element onto `target`, landing in the requested band of the target's
+ *  own height so the row lands immediately before or after it (see useDragAndDrop's
+ *  before/after edge split), or -- for a row that accepts drops inside it, like a build
+ *  folder's header -- within it ("into", the middle half). Defaults to "after", the more
+ *  common reordering gesture. */
 export async function dragOnto(
   handle: Locator,
   target: Locator,
-  edge: "before" | "after" = "after",
+  edge: "before" | "after" | "into" = "after",
 ) {
   const page = handle.page();
   const box = await target.boundingBox();
   if (!box) throw new Error("Drop target is not visible");
   const clientX = box.x + box.width / 2;
-  const clientY =
-    box.y + (edge === "before" ? box.height / 4 : (box.height * 3) / 4);
+  const bandOffset = { before: 0.125, into: 0.5, after: 0.875 }[edge];
+  const clientY = box.y + box.height * bandOffset;
 
   // Resolved to a concrete element up front, rather than dispatched on via the live `handle`
   // locator throughout: a successful drop can move the dragged row's DOM node somewhere else

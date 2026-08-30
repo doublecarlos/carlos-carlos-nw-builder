@@ -658,9 +658,31 @@ export interface Layer {
 
 export type LayerSnapshot = Omit<Layer, "downloaded">;
 
+/** A named group of builds in the sidebar. Exactly one level deep -- a folder holds builds
+ * and never another folder -- so `builds` is a plain id list rather than a tree of entries.
+ * The folder's own position in the sidebar comes from `AppMeta.buildOrder`, not from this
+ * array's order, so a folder is described in exactly one place. */
+export interface BuildFolder {
+  id: string;
+  name: string;
+  collapsed: boolean;
+  /** Build ids inside, in display order. A build id appears in at most one folder. */
+  builds: string[];
+}
+
+/** One row-group under the sidebar's Builds heading: a build sitting at the top level, or a
+ * folder together with the builds it holds. What `NavBuilds.vue` renders. */
+export type BuildNavEntry =
+  | { kind: "build"; build: Build }
+  | { kind: "folder"; folder: BuildFolder; builds: Build[] };
+
 /** App-level state that belongs to no single item. */
 export interface AppMeta {
+  /** Top-level sidebar order under Builds: build ids and folder ids interleaved. A build id
+   * claimed by a folder lives in that folder's `builds` instead of here. Data written before
+   * folders existed is a list of build ids alone, which is already a valid value. */
   buildOrder: string[];
+  folders: BuildFolder[];
   layerOrder: string[];
   lastSelection: Selection | null;
 }
