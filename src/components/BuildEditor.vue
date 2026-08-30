@@ -707,8 +707,11 @@ watch(
 
 <template>
   <div class="flex min-w-0 flex-1 flex-col min-h-0">
+    <!-- Above the section headers below, which are sticky at `z-10` of their own: this bar is
+         positioned, so its dropdowns are stacked within it and cannot outrank a later sibling
+         on their own -- the bar has to win the comparison for them. -->
     <div
-      class="sticky top-0 z-10 flex flex-col flex-wrap gap-3 border-b border-line bg-surface px-3.5 py-2"
+      class="sticky top-0 z-20 flex flex-col flex-wrap gap-3 border-b border-line bg-surface px-3.5 py-2"
     >
       <QuickOptions class="flex-1" />
       <div class="flex flex-wrap items-center gap-1.5">

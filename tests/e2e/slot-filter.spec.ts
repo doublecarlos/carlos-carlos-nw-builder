@@ -193,3 +193,33 @@ test.describe("clear filters button", () => {
     await expect(page.getByTestId("slot-filter-count")).toHaveText("1 match");
   });
 });
+
+test.describe("stat filter menu stacking", () => {
+  test("the open menu paints over everything under it", async ({ page }) => {
+    await openBuilder(page);
+    await slotFilterStatCombo(page).getByTestId("picker-input").click();
+
+    const menu = slotFilterStatCombo(page).getByTestId("picker-menu");
+    await expect(menu).toBeVisible();
+
+    // The menu drops out of the sticky toolbar and over the section list, whose own headers
+    // are sticky too. Hit-test straight down the menu: every point has to land inside it, or
+    // a header is painting on top and swallowing the clicks meant for an option.
+    const box = await menu.boundingBox();
+    expect(box).not.toBeNull();
+    const x = box!.x + box!.width / 2;
+    const ys = [0.1, 0.3, 0.5, 0.7, 0.9].map((f) => box!.y + box!.height * f);
+
+    const covered = await page.evaluate(
+      ([px, pys]) =>
+        (pys as number[]).filter(
+          (py) =>
+            !document
+              .elementFromPoint(px as number, py)
+              ?.closest('[data-testid="picker-menu"]'),
+        ),
+      [x, ys] as [number, number[]],
+    );
+    expect(covered).toEqual([]);
+  });
+});
