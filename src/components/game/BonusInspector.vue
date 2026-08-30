@@ -1,14 +1,4 @@
 <script setup lang="ts">
-// The bonus inspector -- the thing the spreadsheet could not do.
-//
-// The sheet could tell you a bonus was not applying. It could never tell you *why*, because
-// its conditions were string matches evaluated inline with no record of what failed. The
-// engine keeps `gate.leaves` / `gate.unmet` per bonus, each leaf already carrying a human
-// `label` and `detail` ("duration ≥ 30s" / "you have 10s"), so this component mostly renders
-// what it is handed.
-//
-// Near-miss ordering is the useful part: inactive bonuses are sorted by how many conditions
-// they fail, so the ones a single toggle or bonus occurrence away float to the top.
 import { ref, reactive, computed } from "vue";
 import { label as statLabel, signedStat } from "../../lib/format";
 import { matchesQuery } from "../../lib/text-filter";

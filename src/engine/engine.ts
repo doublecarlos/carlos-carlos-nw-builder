@@ -1,7 +1,7 @@
 // The calculation pipeline and derived outputs.
 //
 // Every intermediate stage is kept, which is what makes the "why is my Power that number?"
-// inspector possible -- something the spreadsheet cannot do.
+// inspector possible.
 //
 // Deviations from the sheet are marked `FIX #n` and justified where they occur. None changes a
 // number on current data except where the sheet was demonstrably wrong.

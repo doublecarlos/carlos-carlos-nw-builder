@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// Percent field, in the spirit of a percent-formatted spreadsheet cell.
+// Percent input field
 //
 // The engine stores percentages as decimals (0.09 === 9%), which is right for the maths and
 // awful to type: `0.09` is easy to enter as `9`, and `catalog.validate` exists partly to catch
@@ -59,8 +59,7 @@ function onFocus(event: FocusEvent) {
     value === "" || value == null || !Number.isFinite(Number(value))
       ? ""
       : String(toPercent(value));
-  // Select the whole value, so typing replaces rather than appends -- the spreadsheet
-  // behaviour, and the reason retyping a rate is not fiddly.
+  // Select the whole value, so typing replaces rather than appends
   nextTick(() => (event.target as HTMLInputElement).select());
 }
 
