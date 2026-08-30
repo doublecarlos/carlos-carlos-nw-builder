@@ -29,9 +29,11 @@ npm install # Install dependencies
 
 npm run dev # Dev server with auto-reload
 
-npm run build # Build final static web-app, save to dist/
-npm run preview # Preview final static web-app
-
 npm run test # Run tests
 npm run typecheck # Run type-checking
+
+npm run build # Build final static web-app
+npm run preview # Preview final static web-app
 ```
+
+After running `npm run build`, the built web app is saved under `dist/` and the files can be served statically by any web server.
