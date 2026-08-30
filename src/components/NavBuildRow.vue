@@ -101,71 +101,78 @@ function onRowKeydown(event: KeyboardEvent) {
 
 <template>
   <div
-    class="nav-row nav-row--build relative flex cursor-grab items-center gap-1 rounded-md border-b-2 border-t-2 border-transparent py-1 pr-1"
     :class="[
-      nested ? 'nav-row--nested pl-7' : 'pl-1',
-      active && 'is-active bg-accent-soft',
-      indicator === 'before' && '!border-t-accent',
-      indicator === 'after' && '!border-b-accent',
+      nested
+        ? 'nav-row--nested ml-6 pl-1 border-l-1 border-solid border-line'
+        : 'pl-1 my-1',
     ]"
-    v-bind="rowProps"
   >
-    <!-- Stands in for a folder header's chevron so build names line up with folder names:
+    <div
+      class="nav-row nav-row--build relative flex cursor-grab items-center gap-1 rounded-md border-b-2 border-t-2 border-transparent py-1 pr-1"
+      :class="[
+        active && 'is-active bg-accent-soft',
+        indicator === 'before' && '!border-t-accent',
+        indicator === 'after' && '!border-b-accent',
+      ]"
+      v-bind="rowProps"
+    >
+      <!-- Stands in for a folder header's chevron so build names line up with folder names:
          same icon size, and a margin standing in for the toggle button's padding. -->
-    <span class="m-0.5 size-[14px] flex-none" aria-hidden="true" />
+      <span class="m-0.5 size-[14px] flex-none" aria-hidden="true" />
 
-    <input
-      v-if="renaming"
-      v-rename-focus
-      :value="renameText"
-      class="nav-rename min-w-0 flex-1 rounded-md border border-line bg-surface px-1 py-0.5"
-      @input="
-        emit(
-          'rename-start',
-          build.id,
-          ($event.target as HTMLInputElement).value,
-        )
-      "
-      @keydown.enter="emit('rename-commit')"
-      @keydown.esc="emit('rename-cancel')"
-      @blur="emit('rename-commit')"
-    />
+      <input
+        v-if="renaming"
+        v-rename-focus
+        :value="renameText"
+        class="nav-rename min-w-0 flex-1 rounded-md border border-line bg-surface px-1 py-0.5"
+        @input="
+          emit(
+            'rename-start',
+            build.id,
+            ($event.target as HTMLInputElement).value,
+          )
+        "
+        @keydown.enter="emit('rename-commit')"
+        @keydown.esc="emit('rename-cancel')"
+        @blur="emit('rename-commit')"
+      />
 
-    <BaseTooltip v-else :text="build.name">
-      <button
-        type="button"
-        class="nav-name min-w-0 flex-1 cursor-pointer overflow-hidden text-ellipsis whitespace-nowrap py-0.5 text-left"
-        :data-nav-key="build.id"
-        data-nav-kind="build"
-        @click="emit('select', build.id)"
-        @dblclick="emit('rename-start', build.id, build.name)"
-        @contextmenu.prevent="emit('menu-open', build.id, $event)"
-        @keydown="onRowKeydown"
-      >
-        {{ build.name }}
-      </button>
-    </BaseTooltip>
-
-    <div class="nav-menu-wrap relative flex items-center">
-      <BaseTooltip text="Build menu">
+      <BaseTooltip v-else :text="build.name">
         <button
           type="button"
-          class="nav-kebab flex flex-none cursor-pointer items-center rounded-md px-1.5 py-1 text-muted hover:bg-surface-2 hover:text-text"
-          aria-label="Build menu"
-          @click="emit('menu-open', build.id, $event)"
+          class="nav-name min-w-0 flex-1 cursor-pointer overflow-hidden text-ellipsis whitespace-nowrap py-0.5 text-left"
+          :data-nav-key="build.id"
+          data-nav-kind="build"
+          @click="emit('select', build.id)"
+          @dblclick="emit('rename-start', build.id, build.name)"
+          @contextmenu.prevent="emit('menu-open', build.id, $event)"
+          @keydown="onRowKeydown"
         >
-          <EllipsisVertical class="size-[14px]" />
+          {{ build.name }}
         </button>
       </BaseTooltip>
 
-      <NavContextMenu
-        v-if="menuOpen"
-        :anchor="menuAnchor"
-        :items="menuItems"
-        :ignore="['.nav-kebab']"
-        @action="(a) => emit('menu-action', a, build.id)"
-        @close="emit('menu-close')"
-      />
+      <div class="nav-menu-wrap relative flex items-center">
+        <BaseTooltip text="Build menu">
+          <button
+            type="button"
+            class="nav-kebab flex flex-none cursor-pointer items-center rounded-md px-1.5 py-1 text-muted hover:bg-surface-2 hover:text-text"
+            aria-label="Build menu"
+            @click="emit('menu-open', build.id, $event)"
+          >
+            <EllipsisVertical class="size-[14px]" />
+          </button>
+        </BaseTooltip>
+
+        <NavContextMenu
+          v-if="menuOpen"
+          :anchor="menuAnchor"
+          :items="menuItems"
+          :ignore="['.nav-kebab']"
+          @action="(a) => emit('menu-action', a, build.id)"
+          @close="emit('menu-close')"
+        />
+      </div>
     </div>
   </div>
 </template>
