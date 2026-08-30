@@ -229,18 +229,18 @@ describe("buildFromLoadout: zero mappings", () => {
 });
 
 describe("buildFromLoadout: naming and independence", () => {
-  it("defaults the name to '<character> — <loadout>'", () => {
+  it("defaults the name to '<character> - <loadout>'", () => {
     const character = characterOf("Carlos", "Player_Bard", []);
     const loadout = loadoutOf([], { name: "1. DPS ST" });
     const { build } = buildFromLoadout(character, loadout, mappedDb);
-    expect(build.name).toBe("Carlos — 1. DPS ST");
+    expect(build.name).toBe("Carlos - 1. DPS ST");
   });
 
   it("falls back to 'loadout <n>' when Loadoutname is blank", () => {
     const character = characterOf("Carlos", "Player_Bard", []);
     const loadout = loadoutOf([], { name: "", index: 2 });
     const { build } = buildFromLoadout(character, loadout, mappedDb);
-    expect(build.name).toBe("Carlos — loadout 3");
+    expect(build.name).toBe("Carlos - loadout 3");
   });
 
   it("an explicit name option overrides the default", () => {

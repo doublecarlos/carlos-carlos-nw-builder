@@ -9,8 +9,7 @@ Areas of focus:
 ## Current status
 
 - Build calculation engine: works fairly well.
-- Gear database: very incomplete, was done mostly on the go to calculate my current builds.
-- UI usability: not great, not terrible. Definitly can use a lot of work.
+- Gear database: very incomplete, created on the go to calculate my current builds.
 
 ## History
 
@@ -19,13 +18,9 @@ Initially, this project was a hand-crafted Google Sheets spreadsheet, abusing LA
 So I decided to ask a clanker to create a web app for the same purpose, and use the spreadsheet results to compare against.
 And here we are!
 
-## hey-clanker issues
-
-Github issues are being used to coordinate/request stuff to clankers.
-These are tagged "hey-clanker" to differentiate them from "real" issues.
-To hide all of them in the issue list, add "-label:hey-clanker" on the search bar.
-
 ## Development
+
+The app works entirely client-side and is made with VueJS 3.
 
 ```sh
 npm install # Install dependencies

@@ -91,7 +91,7 @@ describe("resolvedOptions", () => {
       { ...derivedSlot, allowEmpty: true },
       items,
     );
-    expect(withEmpty?.[0]).toEqual({ value: "", label: "— none —" });
+    expect(withEmpty?.[0]).toEqual({ value: "", label: "- none -" });
     expect(resolvedOptions(derivedSlot, items)?.[0].value).toBe("cls-archer");
   });
 

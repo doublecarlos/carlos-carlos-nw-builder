@@ -1,5 +1,5 @@
 // Tests for stores/bonus-draft.ts: the grant/stat/tier/variant mutations the editor's
-// stat rows call. Regression coverage for issue #65 — the "+"/"−" buttons in tiered and
+// stat rows call. Regression coverage for issue #65 - the "+"/"−" buttons in tiered and
 // variant payloads used to target the hidden flat `grant.stats` array, so clicks appeared
 // to do nothing.
 import { describe, expect, it } from "vitest";

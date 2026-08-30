@@ -3,7 +3,7 @@
 // notes (anonymous grants, flat/tiered/variants payloads, the JSON escape hatch).
 //
 // This component no longer emits a replaced `rows` array when a grant is edited. Instead,
-// all mutations go through the `store` — a `BonusDraftStore` created in BonusForm that
+// all mutations go through the `store` - a `BonusDraftStore` created in BonusForm that
 // writes directly onto `draft.value.grants`. The store's `onChange()` is called after every
 // mutation, which schedules an undo snapshot in BonusForm.
 
@@ -287,7 +287,7 @@ function toggleJson(gIndex: number) {
   if (!s) return;
   const result = s.toggleJson();
   if (result === 1) {
-    // entered JSON mode — no error to emit
+    // entered JSON mode - no error to emit
     return;
   }
   // result === -1: invalid JSON
@@ -464,7 +464,7 @@ function toggleJson(gIndex: number) {
               class="combo--stat w-52"
               :model-value="stat.key"
               :options="statComboOptions"
-              placeholder="— pick a stat —"
+              placeholder="- pick a stat -"
               @update:model-value="(v) => (stat.key = v)"
             />
             <PercentInput
@@ -515,7 +515,7 @@ function toggleJson(gIndex: number) {
                 class="combo--stat w-52"
                 :model-value="row.stat"
                 :options="statComboOptions"
-                placeholder="— pick a stat —"
+                placeholder="- pick a stat -"
                 @update:model-value="(v) => (row.stat = v)"
               />
             </FormField>
@@ -585,7 +585,7 @@ function toggleJson(gIndex: number) {
         <template v-else-if="grant.payload === 'tiers'">
           <p class="text-muted">
             The highest matching tier wins and <strong>replaces</strong> the
-            lower ones — each tier's stats are the total at that occurrence
+            lower ones - each tier's stats are the total at that occurrence
             count, not an extra on top.
           </p>
           <!-- Boxed, not just a rule on the left -- with several tiers stacked back to back a
@@ -646,7 +646,7 @@ function toggleJson(gIndex: number) {
                 class="combo--bonus w-44"
                 :model-value="tier.bonus"
                 :options="bonusComboOptions"
-                placeholder="— bonus —"
+                placeholder="- bonus -"
                 @update:model-value="(v) => (tier.bonus = v)"
               />
               <input
@@ -679,7 +679,7 @@ function toggleJson(gIndex: number) {
                 class="combo--stat w-52"
                 :model-value="stat.key"
                 :options="statComboOptions"
-                placeholder="— pick a stat —"
+                placeholder="- pick a stat -"
                 @update:model-value="(v) => (stat.key = v)"
               />
               <PercentInput
@@ -815,7 +815,7 @@ function toggleJson(gIndex: number) {
                 class="combo--stat w-52"
                 :model-value="stat.key"
                 :options="statComboOptions"
-                placeholder="— pick a stat —"
+                placeholder="- pick a stat -"
                 @update:model-value="(v) => (stat.key = v)"
               />
               <PercentInput
@@ -868,7 +868,7 @@ function toggleJson(gIndex: number) {
                   class="combo--stat w-52"
                   :model-value="row.stat"
                   :options="statComboOptions"
-                  placeholder="— pick a stat —"
+                  placeholder="- pick a stat -"
                   @update:model-value="(v) => (row.stat = v)"
                 />
               </FormField>

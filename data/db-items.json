@@ -488,7 +488,7 @@
   },
   {
     "id": "acc-m32-1000-to-5800",
-    "name": "Acc (M32+, 1000 to 5800)",
+    "name": "Accuracy (M32+, 1000 to 5800)",
     "filter": "modification_offhand_dynamic",
     "dynamicStats": [
       {
@@ -897,7 +897,8 @@
       "min": 0,
       "max": 3,
       "default": 0,
-      "priority": 6
+      "priority": 6,
+      "label": "B. Advantage"
     }
   },
   {
@@ -908,7 +909,8 @@
       "min": 0,
       "max": 3,
       "default": 0,
-      "priority": 7
+      "priority": 7,
+      "label": "B. Resilience"
     }
   },
   {
@@ -941,7 +943,8 @@
       "min": 0,
       "max": 3,
       "default": 0,
-      "priority": 1
+      "priority": 1,
+      "label": "D. Bulwark"
     }
   },
   {
@@ -963,7 +966,8 @@
       "min": 0,
       "max": 3,
       "default": 0,
-      "priority": 0
+      "priority": 0,
+      "label": "D. Rage"
     }
   },
   {
@@ -974,7 +978,8 @@
       "min": 0,
       "max": 3,
       "default": 0,
-      "priority": 5
+      "priority": 5,
+      "label": "E. Application"
     }
   },
   {
@@ -985,7 +990,8 @@
       "min": 0,
       "max": 3,
       "default": 0,
-      "priority": 3
+      "priority": 3,
+      "label": "F. Retaliation"
     }
   },
   {
@@ -1644,7 +1650,6 @@
     "int": 8,
     "wis": 10,
     "cha": 10,
-    "allowedClass": ["barbarian"],
     "tags": ["class"],
     "bonuses": ["baseline-character", "baseline-enemy-stats"],
     "publishes": {
@@ -1661,7 +1666,6 @@
     "int": 8,
     "wis": 10,
     "cha": 18,
-    "allowedClass": ["bard"],
     "tags": ["class"],
     "bonuses": [
       "baseline-character",
@@ -1689,13 +1693,13 @@
         "stat": "acc_p",
         "min": 0,
         "max": 0.1,
-        "default": 0.05
+        "default": 0.1
       },
       {
         "stat": "crit_avoid_p",
         "min": 0,
         "max": 0.1,
-        "default": 0.05
+        "default": 0.1
       }
     ],
     "tags": ["class"],
@@ -1754,7 +1758,6 @@
     "int": 16,
     "wis": 8,
     "cha": 16,
-    "allowedClass": ["warlock"],
     "tags": ["class"],
     "bonuses": [
       "baseline-character",
@@ -3217,7 +3220,15 @@
     "ca": 2457,
     "severity": 4505,
     "gameIds": ["Feet_M31_Heavyall_Sss-tier"],
-    "bonuses": ["m31-bloodletting-ascendant"]
+    "bonuses": [
+      {
+        "bonus": "m31-bloodletting-ascendant",
+        "min": 0,
+        "max": 1,
+        "default": 1,
+        "label": "Proc"
+      }
+    ]
   },
   {
     "id": "m31-necklace-of-the-forsaken",
@@ -3710,7 +3721,15 @@
     "strike": 3492,
     "recharge": 0.015,
     "gameIds": ["Shirt_M33_Mediumdps_S-tier"],
-    "bonuses": ["m33-bloodletting"]
+    "bonuses": [
+      {
+        "bonus": "m33-bloodletting",
+        "min": 0,
+        "max": 1,
+        "default": 1,
+        "label": "Proc"
+      }
+    ]
   },
   {
     "id": "m33-deep-riven-lifebraid-vestment",
@@ -3775,7 +3794,16 @@
     "strike": 3492,
     "recharge": 0.015,
     "gameIds": ["Shirt_M33_Mediumdps_Sss-tier"],
-    "bonuses": ["m33-freezing-grasp", "m33-bloodletting-celestial"]
+    "bonuses": [
+      "m33-freezing-grasp",
+      {
+        "bonus": "m33-bloodletting-celestial",
+        "min": 0,
+        "max": 1,
+        "default": 1,
+        "label": "Proc"
+      }
+    ]
   },
   {
     "id": "m33-frost-riven-titanweave-harness",
@@ -4322,7 +4350,8 @@
       "options.forte2a": "sev_p",
       "options.forte2b": "deflect_p"
     },
-    "allowedClass": ["cleric"]
+    "allowedClass": ["cleric"],
+    "tags": ["paragon"]
   },
   {
     "id": "paragon-blademaster",
@@ -4789,6 +4818,7 @@
     "id": "risky-investment",
     "name": "Risky Investment",
     "filter": "feat3",
+    "longDescription": "Rough estimation based on 1 stack + encounters being generally 40% of Hellbringer's Damage.",
     "maxCopies": 1,
     "allowedClass": ["warlock"],
     "bonuses": ["risky-investment", "hellbringer-exclusive"]
@@ -5113,9 +5143,18 @@
     "id": "warlock-s-curse",
     "name": "Warlock's Curse",
     "filter": "feat2",
+    "longDescription": "Rough estimation based on Powers being generally 50% of Hellbringer's Damage.",
     "maxCopies": 1,
     "allowedClass": ["warlock"],
     "bonuses": ["warlock-s-curse", "hellbringer-exclusive"]
+  },
+  {
+    "id": "warlock-s-dark-prayers",
+    "name": "Dark Prayers",
+    "filter": "class_feat",
+    "maxCopies": 1,
+    "allowedClass": ["warlock"],
+    "bonuses": ["hellbringer-exclusive"]
   },
   {
     "id": "warlock-s-dust-to-dust",
@@ -5124,6 +5163,14 @@
     "outgoing_damage": 0.05,
     "maxCopies": 1,
     "allowedClass": ["warlock"]
+  },
+  {
+    "id": "warlock-s-no-pity-no-mercy",
+    "name": "No Pity No Mercy",
+    "filter": "class_feat",
+    "maxCopies": 1,
+    "allowedClass": ["warlock"],
+    "bonuses": ["hellbringer-exclusive"]
   },
   {
     "id": "warlock-s-shadow-walk",

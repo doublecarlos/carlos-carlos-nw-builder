@@ -137,7 +137,7 @@ function applyAll() {
 const applyHint = computed(() =>
   props.applyTarget
     ? `to ${props.applyTarget}`
-    : "— open an item in the layer editor to apply values to it",
+    : "- open an item in the layer editor to apply values to it",
 );
 
 async function read(image: Blob) {
@@ -193,8 +193,9 @@ useEventListener(document, "paste", onPaste);
     <div class="flex min-h-0 flex-1 flex-col gap-2.5 overflow-y-auto p-4">
       <div class="flex flex-wrap items-baseline gap-2">
         <span class="text-muted"
-          >Paste or drop a screenshot. Base stats are filled in; bonuses stay
-          yours to author.</span
+          >Paste or drop a screenshot. <br />
+          Name and base stats are filled in; bonuses must be created
+          manually.</span
         >
         <span class="flex-1"></span>
         <BaseButton as="label" :disabled="busy"
@@ -220,7 +221,7 @@ useEventListener(document, "paste", onPaste);
         rows="8"
         data-testid="tooltip-import-text"
         class="w-full flex-none resize-y rounded-md border border-line bg-surface px-2 py-1.5 font-mono"
-        placeholder="Paste a screenshot here — the recognised text appears in this box, where you can correct it before creating the item."
+        placeholder="Paste a screenshot here - the recognised text appears in this box, where you can correct it before creating the item."
       ></textarea>
 
       <div v-if="text.trim()" class="flex flex-col gap-2 lg:flex-row">
@@ -267,7 +268,7 @@ useEventListener(document, "paste", onPaste);
 
         <section v-if="result.bonusLines.length" class="min-w-0 flex-1">
           <h4 class="mb-1 text-muted">
-            Not applied — granted by an enchantment or kit ({{
+            Not applied - granted by an enchantment or kit ({{
               result.bonusLines.length
             }})
           </h4>

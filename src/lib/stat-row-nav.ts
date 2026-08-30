@@ -8,9 +8,9 @@
 // stat's kind.
 
 export function focusNextCombo(event: KeyboardEvent) {
-  // Only Tab (forward) and Enter trigger the jump — other keys are ignored.
+  // Only Tab (forward) and Enter trigger the jump - other keys are ignored.
   if (event.key !== "Tab" && event.key !== "Enter") return;
-  // Shift+Tab navigates backward — leave the browser's default Tab handling alone.
+  // Shift+Tab navigates backward - leave the browser's default Tab handling alone.
   if (event.key === "Tab" && event.shiftKey) return;
   const target = event.target as HTMLElement;
   const row = target.closest(".stat-row");

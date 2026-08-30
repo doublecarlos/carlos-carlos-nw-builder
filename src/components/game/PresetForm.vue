@@ -473,7 +473,7 @@ watch(
         <ComboBox
           :model-value="draft.section"
           :options="sectionOptions"
-          placeholder="— pick a section —"
+          placeholder="- pick a section -"
           data-testid="preset-section-input"
           @update:model-value="chooseSection"
         />
@@ -502,7 +502,7 @@ watch(
           class="w-52"
           :model-value="row.slotId"
           :options="paramSlotOptions"
-          placeholder="— pick a slot —"
+          placeholder="- pick a slot -"
           @update:model-value="(v) => (row.slotId = v)"
         />
         <BuildParamInput
@@ -533,7 +533,7 @@ watch(
           class="w-52"
           :model-value="row.slotId"
           :options="itemSlotOptions"
-          placeholder="— pick a slot —"
+          placeholder="- pick a slot -"
           @update:model-value="(v) => (row.slotId = v)"
         />
         <ItemPicker
@@ -589,7 +589,7 @@ watch(
           class="w-52"
           :model-value="row.slotId"
           :options="assignmentSlotOptions"
-          placeholder="— pick a slot —"
+          placeholder="- pick a slot -"
           @update:model-value="(v) => (row.slotId = v)"
         />
         <PointAssignmentInput
@@ -630,7 +630,7 @@ watch(
           class="w-52"
           :model-value="row.slotId"
           :options="clearableSlotOptions"
-          placeholder="— pick a slot —"
+          placeholder="- pick a slot -"
           @update:model-value="(v) => (row.slotId = v)"
         />
       </div>

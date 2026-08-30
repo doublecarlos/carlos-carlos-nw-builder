@@ -1,4 +1,4 @@
-// Per-item persisted undo stack — unit tests for coalescing, limit, selection, trash
+// Per-item persisted undo stack - unit tests for coalescing, limit, selection, trash
 // interaction, and survival across a simulated reload.
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { Backend, StoreName } from "../../../src/storage/idb";
@@ -99,7 +99,7 @@ describe("history store", () => {
     history.snapshot("build", b2.id, "choice:ring1", "ring1 → B", curB2);
     curB2.choices.ring1 = "B";
 
-    // Undo b2 — should only affect b2
+    // Undo b2 - should only affect b2
     const json2 = history.undo("build", b2.id, curB2);
     expect(json2).not.toBeNull();
     const restored2 = JSON.parse(json2!);
@@ -146,7 +146,7 @@ describe("history store", () => {
     expect(layer).toBeDefined();
     selection.selectLayer(layer.id);
 
-    // Undo the build — should switch selection back to the build
+    // Undo the build - should switch selection back to the build
     const json = history.undo("build", b.id, b);
     expect(json).not.toBeNull();
     expect(selection.selection.value?.kind).toBe("build");
@@ -167,7 +167,7 @@ describe("history store", () => {
     const b = builds.build.value;
     selection.selectBuild(b.id);
 
-    // Undo the layer — should switch selection back to the layer
+    // Undo the layer - should switch selection back to the layer
     const json = history.undo("layer", layer.id, overlay);
     expect(json).not.toBeNull();
     expect(selection.selection.value?.kind).toBe("layer");

@@ -281,7 +281,7 @@ const counts = computed(() => {
           <li v-for="(leaf, i) in entry.unmet" :key="i" class="text-muted">
             <span class="text-warn">{{ leaf.label }}</span>
             <span v-if="leaf.detail" class="ml-1 text-muted"
-              >— {{ leaf.detail }}</span
+              >- {{ leaf.detail }}</span
             >
             <ul v-if="leaf.children?.length" class="list-none pl-3">
               <li
@@ -291,7 +291,7 @@ const counts = computed(() => {
               >
                 {{ child.ok ? "✓" : "✗" }} {{ child.label }}
                 <span v-if="child.detail" class="ml-1 text-muted"
-                  >— {{ child.detail }}</span
+                  >- {{ child.detail }}</span
                 >
               </li>
             </ul>
@@ -316,7 +316,7 @@ const counts = computed(() => {
             per stack: {{ statList(entry.perStack).join(", ") }}
           </p>
           <p class="mt-1 block text-muted">
-            slot {{ entry.slot }} · from {{ entry.sources.join(", ") || "—" }}
+            slot {{ entry.slot }} · from {{ entry.sources.join(", ") || "-" }}
           </p>
           <p class="mt-1 block font-mono text-muted">{{ entry.id }}</p>
         </div>

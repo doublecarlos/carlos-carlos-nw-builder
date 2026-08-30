@@ -19,6 +19,6 @@ export function persistMeta(lastSelection: Selection | null = null) {
     })
     .catch((e) => {
       console.error("persistMeta failed:", e);
-      // non-critical — meta is a convenience for the next fresh tab
+      // non-critical - meta is a convenience for the next fresh tab
     });
 }

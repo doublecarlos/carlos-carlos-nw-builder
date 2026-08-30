@@ -1,5 +1,5 @@
 // Layer editing operations: undo/redo and mutation helpers. Mirrors the buildEditor pattern
-// for consistency — the history store owns the undo stack, this store wraps it for layers.
+// for consistency - the history store owns the undo stack, this store wraps it for layers.
 import * as history from "./history";
 import * as layers from "./layers";
 import * as selection from "./selection";

@@ -2576,7 +2576,8 @@
         },
         "stats": {
           "outgoing_damage": 0.005000000000000001
-        }
+        },
+        "longDescription": "Rough estimation based on Dark Helix being around 5% of Hellbringer's damage."
       }
     ]
   },
@@ -3298,7 +3299,8 @@
         },
         "stats": {
           "outgoing_damage": 0.05
-        }
+        },
+        "longDescription": "Estimate based on 16 sparks. Probably not accurate due to full sparks in artifact calls."
       }
     ]
   },

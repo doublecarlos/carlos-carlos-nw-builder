@@ -45,7 +45,7 @@ test.describe("choosing and clearing an item", () => {
     const row = slotRow(page, "gear.head");
 
     await pickerInput(row).click();
-    await row.getByText("— empty —", { exact: true }).click();
+    await row.getByText("- empty -", { exact: true }).click();
 
     await expect(pickerInput(row)).toHaveValue("");
   });
@@ -646,7 +646,7 @@ test.describe("keyboard cursor: build_parameter rows", () => {
     await page.keyboard.press("Backspace");
 
     // Backspace clears the slot, same as an item row -- the empty option is the default.
-    await expect(row.getByTestId("picker-input")).toHaveValue("— none —");
+    await expect(row.getByTestId("picker-input")).toHaveValue("- none -");
   });
 
   test("typing a character while the list is focused does not change rows", async ({
@@ -697,6 +697,6 @@ test.describe("keyboard cursor: build_parameter rows", () => {
     await page.keyboard.press("Delete");
 
     // Delete clears the slot, same as an item row -- the empty option is the default.
-    await expect(row.getByTestId("picker-input")).toHaveValue("— none —");
+    await expect(row.getByTestId("picker-input")).toHaveValue("- none -");
   });
 });

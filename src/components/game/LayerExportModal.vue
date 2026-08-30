@@ -28,7 +28,7 @@ const emit = defineEmits<{
   close: [];
 }>();
 
-const activeTab = defineModel<string>({ default: "items" }); // items | bonuses | slots | overlay
+const activeTab = defineModel<string>({ default: "overlay" }); // items | bonuses | slots | overlay
 
 // The maintainer tabs (items/bonuses/slots) regenerate the shipped db-*.json files -- only
 // useful with the source repo on hand, so they're dev-only. `import.meta.env.DEV` is
@@ -92,7 +92,7 @@ async function copyExport() {
     await navigator.clipboard.writeText(exportText.value);
     emit("notice", `Copied ${exportName.value} to the clipboard`);
   } catch {
-    emit("notice", "Clipboard blocked — select the text and copy it manually");
+    emit("notice", "Clipboard blocked - select the text and copy it manually");
   }
 }
 
@@ -117,6 +117,11 @@ function downloadExport() {
     <div class="flex min-h-0 flex-1 flex-col overflow-y-auto p-4">
       <div class="mb-1.5 flex flex-wrap items-end gap-2">
         <TabStrip>
+          <TabButton
+            :active="effectiveTab === 'overlay'"
+            @click="activeTab = 'overlay'"
+            >This layer</TabButton
+          >
           <template v-if="maintainerTabsEnabled">
             <TabButton
               :active="effectiveTab === 'items'"
@@ -134,11 +139,6 @@ function downloadExport() {
               >slots.json</TabButton
             >
           </template>
-          <TabButton
-            :active="effectiveTab === 'overlay'"
-            @click="activeTab = 'overlay'"
-            >This layer</TabButton
-          >
         </TabStrip>
         <span class="flex-1"></span>
         <BaseButton @click="copyExport"><Copy />Copy</BaseButton>
@@ -149,15 +149,15 @@ function downloadExport() {
       <CodeBlock :value="exportText" :rows="20" class="w-full" />
       <p class="mt-1 text-muted">
         <template v-if="effectiveTab === 'items'">
-          Composed from all enabled layers — for regenerating the shipped data
+          Composed from all enabled layers - for regenerating the shipped data
           files.
         </template>
         <template v-else-if="effectiveTab === 'bonuses'">
-          Composed from all enabled layers — for regenerating the shipped data
+          Composed from all enabled layers - for regenerating the shipped data
           files.
         </template>
         <template v-else-if="effectiveTab === 'slots'">
-          Composed from all enabled layers' presets — for regenerating
+          Composed from all enabled layers' presets - for regenerating
           <code>data/slots.json</code>.
         </template>
         <template v-else> Just this layer's raw overlay JSON. </template>

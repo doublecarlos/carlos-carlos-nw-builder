@@ -72,7 +72,7 @@ export async function moveDown(row: Locator) {
   await row.page().keyboard.press("Control+ArrowDown");
 }
 
-/** Toggles the layer checkbox — clicks the checkbox input inside the layer row. */
+/** Toggles the layer checkbox - clicks the checkbox input inside the layer row. */
 export async function toggleLayerCheckbox(row: Locator) {
   await row.locator('input[type="checkbox"]').click();
 }

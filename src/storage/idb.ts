@@ -1,4 +1,4 @@
-// Minimal IndexedDB wrapper — one database, five object stores, a `setBackend()` seam for
+// Minimal IndexedDB wrapper - one database, five object stores, a `setBackend()` seam for
 // unit tests. No wrapper library: get/getAll/put/remove on five keyed stores is too small
 // for a library to earn its keep, and the transaction-lifetime footgun (see below) means
 // we own an interface layer either way.
@@ -6,7 +6,7 @@
 // ## Transaction lifetime
 // An IDB transaction auto-commits once the microtask queue drains, so `await`ing anything
 // non-IDB between opening a transaction and using it kills it. `withStore` takes the
-// request-building callback synchronously — one operation per transaction.
+// request-building callback synchronously - one operation per transaction.
 //
 // ## onupgradeneeded must be additive
 // Create each store only if `db.objectStoreNames.contains(name)` is false, so a later

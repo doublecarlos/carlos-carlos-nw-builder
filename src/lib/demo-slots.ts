@@ -236,7 +236,7 @@ export interface NotInDemoGroup {
  *  caveat rather than tied to any one outcome: mount combat power rarity is a silent
  *  narrowing of what an imported item actually is. */
 export const KNOWN_LOSSY_NOTES = [
-  "Mount combat power rarity (Celestial or not) isn't recorded — an imported mount combat power may not match the rarity you had equipped.",
+  "Mount combat power rarity (Celestial or not) isn't recorded - an imported mount combat power may not match the rarity you had equipped.",
 ];
 
 /** Rolls a loadout's `notInDemo` slot ids up into `data/game-import.json`'s authored groups
@@ -275,7 +275,7 @@ export function notInDemoGroups(db: Db, slotIds: string[]): NotInDemoGroup[] {
     if (!leftover.length) continue;
     groups.push({
       label: sectionLabel.get(sectionId) ?? sectionId,
-      reason: "Not recorded in this demo — set it by hand.",
+      reason: "Not recorded in this demo - set it by hand.",
       slotIds: leftover,
     });
   }
@@ -407,7 +407,7 @@ export function validateValueMap(
       {
         level: "error",
         context,
-        message: `no item publishes "${path}" — nothing in this map could ever resolve`,
+        message: `no item publishes "${path}" - nothing in this map could ever resolve`,
       },
     ];
   }

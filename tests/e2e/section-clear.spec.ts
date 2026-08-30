@@ -37,7 +37,7 @@ test("clearing a section requires a second click to confirm", async ({
   );
 
   await button.click();
-  // Empty, not "— none —": class is an item_picker since #273, and a cleared picker shows
+  // Empty, not "- none -": class is an item_picker since #273, and a cleared picker shows
   // nothing rather than a named empty option.
   await expect(pickerInput(slotRow(page, "options.class"))).toHaveValue("");
 });
@@ -50,7 +50,7 @@ test("clearing a section is a single undo step", async ({ page }) => {
   const button = clearButton(page, "options");
   await button.click();
   await button.click();
-  // Empty, not "— none —": class is an item_picker since #273, and a cleared picker shows
+  // Empty, not "- none -": class is an item_picker since #273, and a cleared picker shows
   // nothing rather than a named empty option.
   await expect(pickerInput(slotRow(page, "options.class"))).toHaveValue("");
 

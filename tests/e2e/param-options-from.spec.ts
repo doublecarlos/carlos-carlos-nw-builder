@@ -112,5 +112,5 @@ test("the empty row appears only when the parameter asks for it", async ({
 
   const row = slotRow(page, "options.preferred-paragon");
   await pickerInput(row).click();
-  await expect(row.getByText("— none —", { exact: true })).toBeVisible();
+  await expect(row.getByText("- none -", { exact: true })).toBeVisible();
 });

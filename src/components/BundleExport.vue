@@ -46,7 +46,7 @@ const warnings = computed(() => {
         .map((bid) => builds.builds.value.find((b) => b.id === bid)?.name)
         .filter(Boolean);
       result.push(
-        `“${layer.name}” is required by ${buildNames.join(", ")} — imported builds will have missing items.`,
+        `“${layer.name}” is required by ${buildNames.join(", ")} - imported builds will have missing items.`,
       );
     }
   }

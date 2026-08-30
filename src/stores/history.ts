@@ -54,7 +54,7 @@ async function flushSave() {
         // Store the key inside the value so it's recoverable via getAll.
         await idb.put("history", key, { id: key, data: h });
       } catch {
-        // non-critical — next save will retry
+        // non-critical - next save will retry
       }
     }
   }
@@ -132,7 +132,7 @@ export const redoLabel = computed(() => {
  * Records the current state **before** a change. `key` drives coalescing (700 ms window,
  * unchanged key collapses); `null` forces a distinct step. Clears `future`.
  *
- * `current` is the state to serialize — for builds the full build object, for layers the
+ * `current` is the state to serialize - for builds the full build object, for layers the
  * overlay. The caller passes it in so this module doesn't need to import builds/layers.
  */
 export function snapshot(

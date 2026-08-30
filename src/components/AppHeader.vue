@@ -116,7 +116,7 @@ async function onImportFile(event: Event) {
     <span class="h-4 w-px bg-line" />
 
     <BaseTooltip
-      text="Edits are saved automatically to this browser's storage. That storage can be cleared or lost — use Export to keep a backup elsewhere."
+      text="Edits are saved automatically to this browser's storage. That storage can be cleared or lost - use Export to keep a backup elsewhere."
       :width="300"
     >
       <span

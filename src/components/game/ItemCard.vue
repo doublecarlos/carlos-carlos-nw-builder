@@ -538,7 +538,7 @@ const rows = computed(() =>
                   data-testid="item-card-bonus-unmet"
                 >
                   needs {{ leaf.label
-                  }}<span v-if="leaf.detail"> — {{ leaf.detail }}</span>
+                  }}<span v-if="leaf.detail"> - {{ leaf.detail }}</span>
                 </div>
               </div>
             </div>

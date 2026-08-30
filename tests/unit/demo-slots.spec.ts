@@ -647,7 +647,7 @@ describe("notInDemoGroups", () => {
     expect(groups).toEqual([
       {
         label: "Enchantments",
-        reason: "Not recorded in this demo — set it by hand.",
+        reason: "Not recorded in this demo - set it by hand.",
         slotIds: ["overloads.overload1"],
       },
     ]);

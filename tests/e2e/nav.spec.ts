@@ -62,7 +62,7 @@ test("rename input auto-focuses and selects all text", async ({ page }) => {
   const input = page.locator(".nav-rename");
   await expect(input).toBeFocused();
 
-  // Type a character without clearing first — the existing text was selected,
+  // Type a character without clearing first - the existing text was selected,
   // so the character replaces it entirely.
   await input.press("x");
   await expect(input).toHaveValue("x");
@@ -239,7 +239,7 @@ test("unchecking a layer checkbox does not change which panel the editor area sh
   const row = layerRow(page, "Layer 1");
   await expect(row).toHaveClass(/is-active/);
 
-  // Toggle the checkbox off — the layer should stay selected.
+  // Toggle the checkbox off - the layer should stay selected.
   const checkbox = row.locator('input[type="checkbox"]');
   await checkbox.click();
 

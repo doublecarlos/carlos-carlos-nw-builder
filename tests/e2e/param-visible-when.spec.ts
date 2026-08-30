@@ -13,14 +13,14 @@ import {
 
 const FORTE_SLOTS = ["options.forte1", "options.forte2a", "options.forte2b"];
 
-/** Clears an item_picker slot through its own "— empty —" option, the way a user would. */
+/** Clears an item_picker slot through its own "- empty -" option, the way a user would. */
 async function clearSlot(
   page: import("@playwright/test").Page,
   slotId: string,
 ) {
   const row = slotRow(page, slotId);
   await pickerInput(row).click();
-  await row.getByText("— empty —", { exact: true }).click();
+  await row.getByText("- empty -", { exact: true }).click();
 }
 
 test("a scoped param appears only while its condition holds", async ({

@@ -14,7 +14,7 @@
         { "keys": ["Mod+/"], "description": "Jump to the slot filter box" },
         {
           "keys": ["Esc"],
-          "description": "Close whatever is open — a dropdown, a tooltip, a menu"
+          "description": "Close whatever is open - a dropdown, a tooltip, a menu"
         }
       ]
     },
@@ -33,7 +33,7 @@
         },
         {
           "keys": ["Delete", "Backspace"],
-          "description": "Delete — press twice to confirm"
+          "description": "Delete - press twice to confirm"
         },
         { "keys": ["Right-click"], "description": "Open the row's menu" }
       ]

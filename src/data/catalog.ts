@@ -268,7 +268,7 @@ export function statusOf(
 // --- portable files (phase 7) -------------------------------------------------------------
 
 /** Everything in the composed catalogue this build depends on that base does not already
- *  provide — what a download has to carry to resolve identically elsewhere. */
+ *  provide - what a download has to carry to resolve identically elsewhere. */
 export function referencedOverlay(db: Db, build: Build): CatalogOverlay {
   const itemIds = new Set<string>();
   const bonusIds = new Set<string>();
@@ -292,7 +292,7 @@ export function referencedOverlay(db: Db, build: Build): CatalogOverlay {
     for (const bonusId of item.excludes ?? []) bonusIds.add(bonusId);
   }
 
-  // Follow bonus excludes transitively — bonuses can chain through excludes
+  // Follow bonus excludes transitively - bonuses can chain through excludes
   const visitedBonuses = new Set<string>();
   const bonusStack = [...bonusIds];
   while (bonusStack.length > 0) {
@@ -437,7 +437,7 @@ function checkParamCondition(
     // condition key -- the bonus would silently never apply.
     report(
       "error",
-      `${path}: param "${spec.key}" is not a build_parameter's path — the condition can never be active`,
+      `${path}: param "${spec.key}" is not a build_parameter's path - the condition can never be active`,
     );
     return;
   }
@@ -451,12 +451,12 @@ function checkParamCondition(
   ) {
     report(
       "error",
-      `${path}: param "${spec.key}" is a number — use atLeast/below/exactly`,
+      `${path}: param "${spec.key}" is a number - use atLeast/below/exactly`,
     );
   } else if (slot.paramType === "boolean" && spec.is === undefined) {
-    report("error", `${path}: param "${spec.key}" is a boolean — use "is"`);
+    report("error", `${path}: param "${spec.key}" is a boolean - use "is"`);
   } else if (slot.paramType === "list" && spec.equals === undefined) {
-    report("error", `${path}: param "${spec.key}" is a list — use "equals"`);
+    report("error", `${path}: param "${spec.key}" is a list - use "equals"`);
   }
 
   if (slot.paramType === "list" && spec.equals !== undefined) {
@@ -486,7 +486,7 @@ function checkConditions(
       // conditions.ts fails closed on an unknown key, so this would silently never apply.
       report(
         "error",
-        `${path}: unknown condition "${key}" — the bonus can never be active`,
+        `${path}: unknown condition "${key}" - the bonus can never be active`,
       );
       continue;
     }
@@ -627,7 +627,7 @@ export function validateSlots(slots: Slot[]): LintFinding[] {
           level: "error",
           kind: "slot",
           name: slot.id,
-          message: `${slot.id}: optionsFrom is only meaningful on a list param — this is a ${slot.paramType}`,
+          message: `${slot.id}: optionsFrom is only meaningful on a list param - this is a ${slot.paramType}`,
         });
       }
       if (slot.options) {
@@ -818,7 +818,7 @@ const SCHEMA_BACKED_PARAM_PATHS: Record<string, "role" | "statKey"> = {
 /**
  * Every option an engine-coupled list param offers has to be a value `schema.json` knows --
  * a real `schema.roles` key, or a real `StatKey`. Empty is always allowed: it is the
- * "— none —" row every one of these slots carries.
+ * "- none -" row every one of these slots carries.
  */
 export function validateParamSchema(
   slots: Slot[],
@@ -841,7 +841,7 @@ export function validateParamSchema(
         name: slot.id,
         message:
           `${slot.id}: option "${option.value}" is not a ` +
-          `${kind === "role" ? "role in schema.roles" : "stat key in schema.statKeys"} — ` +
+          `${kind === "role" ? "role in schema.roles" : "stat key in schema.statKeys"} - ` +
           `the engine would fall back silently and compute the wrong numbers`,
       });
     }
@@ -890,7 +890,7 @@ export function validateParamReaders(
         kind: "bonus",
         name: bonus.id,
         message:
-          `reads parameter "${path}", but ${slotId} has been removed — the condition ` +
+          `reads parameter "${path}", but ${slotId} has been removed - the condition ` +
           `fails closed, so this bonus silently never applies`,
       });
     }
@@ -1003,7 +1003,7 @@ export function validate(
       ) {
         report(
           "warn",
-          `${label}: ${key} = ${value} means ${value * 100}% — decimals here ` +
+          `${label}: ${key} = ${value} means ${value * 100}% - decimals here ` +
             "(0.09 is 9%)",
           name,
           kind,
@@ -1079,7 +1079,7 @@ export function validate(
       if (!matchesPickerTag) {
         report(
           "error",
-          "no filter or tag — the item appears in no slot",
+          "no filter or tag - the item appears in no slot",
           item.id,
         );
       }
@@ -1099,7 +1099,7 @@ export function validate(
       report(
         "error",
         `filter "${item.filter}" is claimed by both an item_picker slot and a ` +
-          "point_assignment slot — which one resolves it is ambiguous",
+          "point_assignment slot - which one resolves it is ambiguous",
         item.id,
       );
     } else if (
@@ -1141,7 +1141,7 @@ export function validate(
       else if (!ITEM_FIELDS.has(key)) {
         report(
           "error",
-          `"${key}" is neither a stat nor an item field — it is ignored ` +
+          `"${key}" is neither a stat nor an item field - it is ignored ` +
             "entirely, so a misspelled stat name silently does nothing",
           item.id,
         );
@@ -1161,7 +1161,7 @@ export function validate(
         // engine then overwrote from this item, with no hint on screen that it had.
         report(
           "error",
-          `publishes "${path}" is already a build_parameter's path (${paramSlots.get(path)!.id}) — the parameter's own value would be silently overridden`,
+          `publishes "${path}" is already a build_parameter's path (${paramSlots.get(path)!.id}) - the parameter's own value would be silently overridden`,
           item.id,
         );
       }
@@ -1266,7 +1266,7 @@ export function validate(
       report(
         "error",
         `gameId "${gameId}" is claimed by multiple "${filter ?? "(no filter)"}" items: ` +
-          `${clash.join(", ")} — no slot could tell them apart, so the map would be ambiguous`,
+          `${clash.join(", ")} - no slot could tell them apart, so the map would be ambiguous`,
       );
     }
   }

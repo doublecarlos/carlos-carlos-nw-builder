@@ -28,7 +28,7 @@
           "options": [
             {
               "value": "",
-              "label": "— none —"
+              "label": "- none -"
             },
             {
               "value": "dps",
@@ -54,7 +54,7 @@
           "options": [
             {
               "value": "",
-              "label": "— none —"
+              "label": "- none -"
             },
             {
               "value": "magical",
@@ -85,7 +85,7 @@
           "options": [
             {
               "value": "",
-              "label": "— none —"
+              "label": "- none -"
             },
             {
               "value": "power_p",
@@ -148,7 +148,7 @@
           "options": [
             {
               "value": "",
-              "label": "— none —"
+              "label": "- none -"
             },
             {
               "value": "power_p",
@@ -211,7 +211,7 @@
           "options": [
             {
               "value": "",
-              "label": "— none —"
+              "label": "- none -"
             },
             {
               "value": "power_p",
@@ -1324,7 +1324,7 @@
       "presets": [
         {
           "id": "group-dungeon",
-          "label": "Dungeon Companions and Auras",
+          "label": "Dungeon Companions",
           "choices": {
             "group.group1": "portobello",
             "group.group2": "tutor",
@@ -1512,7 +1512,7 @@
       "presets": [
         {
           "id": "artifacts-dungeon",
-          "label": "Dungeon",
+          "label": "Artifacts - Dungeon",
           "choices": {
             "artifactCall.artifactCall1": "mount-hag-s-enchanted-cauldroon",
             "artifactCall.artifactCall2": "arti-scepter",
@@ -1525,7 +1525,7 @@
         },
         {
           "id": "artifacts-trial",
-          "label": "Trial",
+          "label": "Artifacts - Trial",
           "choices": {
             "artifactCall.artifactCall1": "mount-hag-s-enchanted-cauldroon",
             "artifactCall.artifactCall2": "arti-scepter",

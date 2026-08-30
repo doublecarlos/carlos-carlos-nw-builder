@@ -94,8 +94,8 @@ test("selecting two loadouts and confirming creates two builds in the nav with t
 
   await page.getByTestId("game-import-commit").click();
 
-  await expect(buildRow(page, "Carlos o Bardo — 1. DPS ST")).toBeVisible();
-  await expect(buildRow(page, "Carlos o Bardo — aaaaaa")).toBeVisible();
+  await expect(buildRow(page, "Carlos o Bardo - 1. DPS ST")).toBeVisible();
+  await expect(buildRow(page, "Carlos o Bardo - aaaaaa")).toBeVisible();
 
   // Commit lands on the coverage report step, not a closed wizard -- see #175.
   await expect(page.getByTestId("game-import-step-report")).toBeVisible();

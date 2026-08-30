@@ -5,7 +5,7 @@ import { computed } from "vue";
 import * as builds from "./builds";
 
 export const compareOptions = computed(() => [
-  { value: "", label: "— none —" },
+  { value: "", label: "- none -" },
   ...builds.builds.value
     .filter((b) => b.id !== builds.build.value?.id)
     .map((b) => ({ value: b.id, label: b.name })),

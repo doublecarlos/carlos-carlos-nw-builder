@@ -1,6 +1,6 @@
 // Stores mutations for BonusRows.vue's grant list. BonusForm owns `draft` (undo, dirty);
 // this store sits between the form and the component, providing grant-level operations so
-// BonusRows never has to emit a replaced array back up — it just calls store methods.
+// BonusRows never has to emit a replaced array back up - it just calls store methods.
 //
 // The store operates directly on `draft.value.grants` (which is the proxied array from a
 // `ref<BonusDraft>`), so mutations are picked up by Vue's deep reactivity. `onChange()` is
@@ -8,7 +8,7 @@
 //
 // This replaces the emit-based pattern where BonusRows had to clone the entire grants array
 // on every edit and emit it to the parent. Now `addStat(gi)` mutates
-// `draft.grants[gi].stats.push(row)` directly — no structural cloning needed.
+// `draft.grants[gi].stats.push(row)` directly - no structural cloning needed.
 
 import * as bonusDraft from "../engine/bonus-draft";
 import {
@@ -259,7 +259,7 @@ export class GrantStore {
   }
 
   /** Attempt to switch between simple/form and JSON editing.
-   *  Returns false when the grant is already in JSON mode and the JSON is unparseable — the
+   *  Returns false when the grant is already in JSON mode and the JSON is unparseable - the
    *  caller should report the error. Returns false when the structure is too complex for the
    *  form (stays in JSON mode with an informative message). */
   toggleJson(): -1 | 0 | 1 {
@@ -275,7 +275,7 @@ export class GrantStore {
       if (bonusDraft.needsJson(parsed)) return 0; // stay JSON: too complex
       Object.assign(grant, bonusDraft.toDraft(parsed), { uid: grant.uid });
     } catch {
-      return -1; // invalid JSON — stay JSON, caller reports error
+      return -1; // invalid JSON - stay JSON, caller reports error
     }
     this.store.onChange();
     return 0; // entered simple/form mode

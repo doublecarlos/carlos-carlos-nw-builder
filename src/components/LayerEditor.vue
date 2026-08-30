@@ -117,7 +117,7 @@ const selectedPresetId = ref<string | null>(null);
 const selectedSlotId = ref<string | null>(null);
 const showExport = ref(false);
 const showTooltipImport = ref(false);
-const exportTab = ref("items"); // items | bonuses | overlay | slots
+const exportTab = ref("overlay"); // items | bonuses | overlay | slots
 const newItemCounter = ref(0);
 /** Seed values for the next brand-new item/bonus draft, set by "Duplicate" and consumed
  *  once at that form's mount -- cleared whenever a plain "New" is requested instead so a
@@ -160,7 +160,7 @@ const itemRows = computed<ItemRow[]>(() => {
       rows.push({
         key: id,
         name,
-        filter: "—",
+        filter: "-",
         item: null,
         status: "removed",
         kind: "item",
@@ -186,7 +186,7 @@ const bonusRows = computed<BonusRow[]>(() => {
       rows.push({
         key: id,
         name: id,
-        filter: "—",
+        filter: "-",
         bonus: null,
         status: "removed",
         kind: "bonus",
@@ -216,7 +216,7 @@ const presetRows = computed<PresetRow[]>(() => {
       rows.push({
         key: id,
         name: shipped?.label ?? id,
-        filter: shipped?.section ?? "—",
+        filter: shipped?.section ?? "-",
         preset: null,
         status: "removed",
         kind: "sectionPreset",
@@ -248,7 +248,7 @@ const slotRows = computed<SlotRow[]>(() => {
       rows.push({
         key: id,
         name: shipped?.label ?? id,
-        filter: "—",
+        filter: "-",
         slot: null,
         status: "removed",
         kind: "slot",
@@ -554,7 +554,7 @@ function duplicateItem() {
   selectedId.value = null;
   newItemCounter.value++;
   router.apply({ item: null });
-  notice.value = `Duplicating "${item.name}" — edit and save to create a copy`;
+  notice.value = `Duplicating "${item.name}" - edit and save to create a copy`;
 }
 
 /** Opens a new item draft seeded from a pasted tooltip. Like "Duplicate", the seed is only
@@ -567,7 +567,7 @@ function createFromTooltip(draft: Partial<Item>) {
   newItemCounter.value++;
   router.apply({ item: null });
   showTooltipImport.value = false;
-  notice.value = `Filled ${Object.keys(draft).length} field(s) from the tooltip — review and save to create the item`;
+  notice.value = `Filled ${Object.keys(draft).length} field(s) from the tooltip - review and save to create the item`;
 }
 
 /** How the tooltip window should name the item its "apply" buttons write into, or null when
@@ -599,7 +599,7 @@ function duplicateBonus() {
   selectedBonusId.value = null;
   newItemCounter.value++;
   router.apply({ bonus: null });
-  notice.value = `Duplicating "${bonus.name || bonus.id}" — edit and save to create a copy`;
+  notice.value = `Duplicating "${bonus.name || bonus.id}" - edit and save to create a copy`;
 }
 
 function newPreset() {
@@ -711,7 +711,7 @@ function resetAll() {
   selectedPresetId.value = null;
   selectedSlotId.value = null;
   router.apply({ item: null, bonus: null, preset: null, slot: null });
-  notice.value = "Discarded every change — back to the shipped data";
+  notice.value = "Discarded every change - back to the shipped data";
 }
 
 /** Jump to whatever a validation finding points at, switching section if needed --
@@ -1074,7 +1074,7 @@ onMounted(() => {
     selectedPresetId.value = null;
     ui.value.section = "sectionPresets";
     ui.value.preset = "";
-    notice.value = "New preset from the current build — name it and save";
+    notice.value = "New preset from the current build - name it and save";
   } else if (newItemSeed) {
     // BuildEditor's Ctrl/Cmd+click on an empty slot row: the blank draft *is* the point of the
     // jump, so restoring whatever this layer had open before would throw it away. The per-layer
@@ -1085,7 +1085,7 @@ onMounted(() => {
     const narrowedTo = [newItemSeed.filter, ...(newItemSeed.tags ?? [])]
       .filter(Boolean)
       .join(", ");
-    notice.value = `New item — pre-filled for "${narrowedTo}"`;
+    notice.value = `New item - pre-filled for "${narrowedTo}"`;
   } else if (source.section === "bonuses") {
     section.value = "bonuses";
     if (source.bonus && db.value.bonusById.get(source.bonus))
@@ -1196,16 +1196,17 @@ onUnmounted(() => {
       <BaseButton :active="showExport" @click="showExport = !showExport"
         ><Download />Export…</BaseButton
       >
+      <BaseButton as="label"
+        ><Upload />Import
+        <input type="file" accept=".json" hidden @change="importOverlay"
+      /></BaseButton>
       <BaseButton
         :active="showTooltipImport"
         data-testid="tooltip-import-toggle"
         @click="showTooltipImport = !showTooltipImport"
-        ><ClipboardPaste />From screenshot…</BaseButton
+        ><ClipboardPaste />From screenshot...</BaseButton
       >
-      <BaseButton as="label"
-        ><Upload />Import overlay
-        <input type="file" accept=".json" hidden @change="importOverlay"
-      /></BaseButton>
+
       <BaseButton
         :danger="confirmReset_.isConfirming('reset')"
         :disabled="!changedCount"
@@ -1227,7 +1228,7 @@ onUnmounted(() => {
       v-if="!props.layer.enabled"
       class="mb-2 rounded-md border border-warn/40 bg-warn/10 px-3 py-1.5 text-warn"
     >
-      This layer is disabled — its changes are not currently applied to the
+      This layer is disabled - its changes are not currently applied to the
       build. Enable it to see its effects.
     </div>
 

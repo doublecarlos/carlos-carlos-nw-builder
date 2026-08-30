@@ -5,7 +5,7 @@ import { expect, type Locator, type Page } from "@playwright/test";
 import { shippedItemName } from "./shippedData";
 
 /** Loads the app into a fresh browser context and gets into the builder. With storage on
- * IndexedDB, a fresh context has no data, so the landing screen shows first — clicking
+ * IndexedDB, a fresh context has no data, so the landing screen shows first - clicking
  * "New build" steps past it. */
 export async function openBuilder(page: Page) {
   await page.goto("/");

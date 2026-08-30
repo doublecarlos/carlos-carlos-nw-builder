@@ -704,7 +704,7 @@ watch(
   (value) => {
     // Same round-trip-echo guard BonusForm.vue uses: a live edit's own update:item goes
     // out through the layer overlay and comes straight back as this prop. Rebuilding from
-    // that echo would wipe half-drawn rows — `toItem` drops stat, dynamic-stat and
+    // that echo would wipe half-drawn rows - `toItem` drops stat, dynamic-stat and
     // default-param rows with nothing picked yet, so an "add the rows first, fill them one
     // by one" session would lose every row still empty when the first one is filled.
     if (value && lastEmittedJson && JSON.stringify(value) === lastEmittedJson)
@@ -819,81 +819,6 @@ watch(
       </BaseCheckbox>
     </div>
 
-    <FormSection>Publishes (asserted while this item is equipped)</FormSection>
-    <div
-      v-for="(row, index) in draft.publishes"
-      :key="index"
-      class="publishes-row flex flex-wrap items-center gap-1.5 mb-1"
-    >
-      <IconButton title="Add published value" @click="addPublishes"
-        ><Plus
-      /></IconButton>
-      <IconButton title="Remove published value" @click="removePublishes(index)"
-        ><Trash
-      /></IconButton>
-      <input
-        v-model="row.path"
-        class="w-52 rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-        type="text"
-        placeholder="Context path, e.g. class"
-        :data-testid="`publishes-path-${index}`"
-      />
-      <input
-        v-model="row.value"
-        class="w-52 rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-        type="text"
-        placeholder="Value"
-        :data-testid="`publishes-value-${index}`"
-      />
-    </div>
-    <div
-      v-if="!draft.publishes.length"
-      class="publishes-row flex flex-wrap items-center gap-1.5 mb-1"
-    >
-      <IconButton title="Add published value" @click="addPublishes"
-        ><Plus
-      /></IconButton>
-    </div>
-
-    <FormSection
-      >Default build parameters (applied when this item is picked)</FormSection
-    >
-    <div
-      v-for="(row, index) in draft.defaultParams"
-      :key="index"
-      class="default-param-row flex flex-wrap items-center gap-1.5 mb-1"
-    >
-      <IconButton title="Add default build parameter" @click="addDefaultParam"
-        ><Plus
-      /></IconButton>
-      <IconButton
-        title="Remove default build parameter"
-        @click="removeDefaultParam(index)"
-        ><Trash
-      /></IconButton>
-      <ComboBox
-        class="w-52"
-        :model-value="row.slotId"
-        :options="defaultParamSlotOptions"
-        placeholder="— pick a build parameter —"
-        @update:model-value="(v) => (row.slotId = v)"
-      />
-      <BuildParamInput
-        v-if="slotForDefaultParam(row.slotId)"
-        v-model="row.value"
-        :slot-def="slotForDefaultParam(row.slotId)!"
-        >{{ slotForDefaultParam(row.slotId)?.label }}</BuildParamInput
-      >
-    </div>
-    <div
-      v-if="!draft.defaultParams.length"
-      class="default-param-row flex flex-wrap items-center gap-1.5 mb-1"
-    >
-      <IconButton title="Add default build parameter" @click="addDefaultParam"
-        ><Plus
-      /></IconButton>
-    </div>
-
     <FormSection>Stats</FormSection>
     <div
       v-for="(stat, index) in draft.stats"
@@ -908,7 +833,7 @@ watch(
         class="combo--stat w-52"
         :model-value="stat.key"
         :options="statComboOptions"
-        placeholder="— pick a stat —"
+        placeholder="- pick a stat -"
         @update:model-value="(v) => (stat.key = v)"
       />
       <PercentInput
@@ -953,7 +878,7 @@ watch(
           class="combo--stat w-52"
           :model-value="row.stat"
           :options="dynamicStatOptions"
-          placeholder="— pick a stat —"
+          placeholder="- pick a stat -"
           @update:model-value="(v) => (row.stat = v)"
         />
       </FormField>
@@ -1128,6 +1053,84 @@ watch(
           ></textarea>
         </FormField>
       </FormGrid>
+    </div>
+
+    <FormSection
+      >Default build parameters (applied when this item is picked)</FormSection
+    >
+    <div
+      v-for="(row, index) in draft.defaultParams"
+      :key="index"
+      class="default-param-row flex flex-wrap items-center gap-1.5 mb-1"
+    >
+      <IconButton title="Add default build parameter" @click="addDefaultParam"
+        ><Plus
+      /></IconButton>
+      <IconButton
+        title="Remove default build parameter"
+        @click="removeDefaultParam(index)"
+        ><Trash
+      /></IconButton>
+      <ComboBox
+        class="w-52"
+        :model-value="row.slotId"
+        :options="defaultParamSlotOptions"
+        placeholder="- pick a build parameter -"
+        @update:model-value="(v) => (row.slotId = v)"
+      />
+      <BuildParamInput
+        v-if="slotForDefaultParam(row.slotId)"
+        v-model="row.value"
+        :slot-def="slotForDefaultParam(row.slotId)!"
+        >{{ slotForDefaultParam(row.slotId)?.label }}</BuildParamInput
+      >
+    </div>
+    <div
+      v-if="!draft.defaultParams.length"
+      class="default-param-row flex flex-wrap items-center gap-1.5 mb-1"
+    >
+      <IconButton title="Add default build parameter" @click="addDefaultParam"
+        ><Plus
+      /></IconButton>
+    </div>
+
+    <FormSection
+      >Published build parameters (applied while this item is
+      equipped)</FormSection
+    >
+    <div
+      v-for="(row, index) in draft.publishes"
+      :key="index"
+      class="publishes-row flex flex-wrap items-center gap-1.5 mb-1"
+    >
+      <IconButton title="Add published value" @click="addPublishes"
+        ><Plus
+      /></IconButton>
+      <IconButton title="Remove published value" @click="removePublishes(index)"
+        ><Trash
+      /></IconButton>
+      <input
+        v-model="row.path"
+        class="w-52 rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+        type="text"
+        placeholder="Context path, e.g. class"
+        :data-testid="`publishes-path-${index}`"
+      />
+      <input
+        v-model="row.value"
+        class="w-52 rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+        type="text"
+        placeholder="Value"
+        :data-testid="`publishes-value-${index}`"
+      />
+    </div>
+    <div
+      v-if="!draft.publishes.length"
+      class="publishes-row flex flex-wrap items-center gap-1.5 mb-1"
+    >
+      <IconButton title="Add published value" @click="addPublishes"
+        ><Plus
+      /></IconButton>
     </div>
 
     <ItemBonuses

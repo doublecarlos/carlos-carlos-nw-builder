@@ -39,7 +39,7 @@ const props = withDefaults(
     inputId?: string;
   }>(),
   {
-    placeholder: "—",
+    placeholder: "-",
     invalid: false,
     showEmptyOption: false,
     maxRows: 60,
@@ -299,7 +299,7 @@ onKeyStroke(
         @mousedown.prevent="choose(null)"
         @mouseenter="highlight = 0"
       >
-        <slot name="empty">— empty —</slot>
+        <slot name="empty">- empty -</slot>
       </ComboBoxMenuRow>
 
       <ComboBoxMenuRow
@@ -331,7 +331,7 @@ onKeyStroke(
       </ComboBoxMenuRow>
       <ComboBoxMenuRow v-if="hiddenCount" muted presentational>
         <slot name="more" :count="hiddenCount"
-          >{{ hiddenCount }} more — keep typing</slot
+          >{{ hiddenCount }} more - keep typing</slot
         >
       </ComboBoxMenuRow>
     </ComboBoxMenu>

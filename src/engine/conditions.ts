@@ -72,7 +72,7 @@ const matchOneOf =
     return {
       ok: wanted.includes(ctx[field] as string),
       label: `${label}: ${wanted.join(" or ")}`,
-      detail: `you have ${ctx[field] ?? "—"}`,
+      detail: `you have ${ctx[field] ?? "-"}`,
     };
   };
 
@@ -160,7 +160,7 @@ const LEAVES: Record<
       return {
         ok: value === s.is,
         label: `${s.key} is ${s.is ? "on" : "off"}`,
-        detail: `you have ${value === undefined ? "—" : value ? "on" : "off"}`,
+        detail: `you have ${value === undefined ? "-" : value ? "on" : "off"}`,
       };
     }
     if (s.equals !== undefined) {
@@ -168,7 +168,7 @@ const LEAVES: Record<
       return {
         ok: wanted.includes(value as string),
         label: `${s.key}: ${wanted.join(" or ")}`,
-        detail: `you have ${value ?? "—"}`,
+        detail: `you have ${value ?? "-"}`,
       };
     }
     const numeric = typeof value === "number" ? value : 0;

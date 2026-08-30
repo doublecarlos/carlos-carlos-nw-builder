@@ -120,13 +120,13 @@ const hasSelection = computed(() => selected.value.size > 0);
         <p class="">
           <strong>3.</strong> The recording captures whatever character you're
           logged in as, and includes
-          <strong>all of that character's saved loadouts</strong> — switch
+          <strong>all of that character's saved loadouts</strong> - switch
           loadouts first only if you want the "currently equipped" marker on a
           particular one.
         </p>
         <p class="text-muted">
           <strong>4.</strong> The file is plain text and contains the character
-          name; nothing is uploaded — parsing happens in your browser.
+          name; nothing is uploaded - parsing happens in your browser.
         </p>
         <div class="flex justify-end">
           <BaseButton

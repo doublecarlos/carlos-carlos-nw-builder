@@ -9,7 +9,7 @@ import { showNotice } from "./notice";
 const isPlain = (value: unknown): value is Record<string, unknown> =>
   !!value && typeof value === "object" && !Array.isArray(value);
 
-/** Shapes this module can route. `unknown` means "no idea" — reported, not guessed at. */
+/** Shapes this module can route. `unknown` means "no idea" - reported, not guessed at. */
 type FileShape = "build" | "layer" | "bundle" | "overlay" | "unknown";
 
 const OVERLAY_GROUPS = ["items", "bonuses", "sectionPresets", "slots"] as const;
@@ -43,7 +43,7 @@ function shapeOf(parsed: unknown): FileShape {
 }
 
 /** Wraps a bare overlay in a layer so the existing layer importer can take it. No id, so
- *  `normaliseLayer` mints a fresh one — importing the same overlay twice gives two layers. */
+ *  `normaliseLayer` mints a fresh one - importing the same overlay twice gives two layers. */
 function overlayAsLayerText(overlay: unknown, name: string) {
   return JSON.stringify({ name, enabled: true, overlay });
 }

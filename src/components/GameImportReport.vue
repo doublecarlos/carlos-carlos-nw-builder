@@ -244,7 +244,7 @@ async function copyUnrecognisedIds() {
         </summary>
         <div class="mt-2 flex flex-col gap-2">
           <p class="text-muted">
-            The catalogue models a curated subset of the game's items — an
+            The catalogue models a curated subset of the game's items - an
             unrecognised id means "not modelled yet", not "your file is broken".
           </p>
           <p v-if="overflowCount" class="text-muted">
@@ -328,7 +328,7 @@ async function copyUnrecognisedIds() {
             class=""
             data-testid="game-import-report-notindemo-row"
           >
-            <strong>{{ group.label }}</strong> — {{ group.reason }}
+            <strong>{{ group.label }}</strong> - {{ group.reason }}
           </p>
           <p
             v-for="note in KNOWN_LOSSY_NOTES"

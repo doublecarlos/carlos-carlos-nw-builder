@@ -288,7 +288,7 @@ describe("revertToDownloaded", () => {
       ...afterFirstDownload,
       downloaded: { snapshot: snap2, at: 2000 },
     };
-    // The snapshot should be flat — no nested 'downloaded' inside it
+    // The snapshot should be flat - no nested 'downloaded' inside it
     expect(afterSecondDownload.downloaded?.snapshot).not.toHaveProperty(
       "downloaded",
     );
@@ -713,7 +713,7 @@ describe("bundle round trip", () => {
     const { bundle } = storage.parseBundleJson(json);
     // Decision 22: builds inside a bundle do NOT carry embedded catalog
     // (required layers travel as real layers instead).
-    // But toBundleJson doesn't strip catalog — it's parseBundleJson that re-ids builds.
+    // But toBundleJson doesn't strip catalog - it's parseBundleJson that re-ids builds.
     // The catalog is preserved through normalise. Let's verify the current behaviour.
     expect(bundle.builds[0].catalog).toBeDefined();
   });

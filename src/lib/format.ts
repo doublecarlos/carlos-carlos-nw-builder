@@ -13,13 +13,13 @@ const finite = (value: unknown): value is number =>
 
 const statByKey = () => NW_SCHEMA.statByKey;
 
-/** Whole number with thousands separators. `—` for anything non-numeric. */
+/** Whole number with thousands separators. `-` for anything non-numeric. */
 export const int = (value: unknown) =>
-  finite(value) ? GROUPED.format(Math.round(value)) : "—";
+  finite(value) ? GROUPED.format(Math.round(value)) : "-";
 
 /** A decimal fraction as a percentage: 0.09 -> "9.00%". */
 export const pct = (value: unknown, digits = 2) =>
-  finite(value) ? `${(value * 100).toFixed(digits)}%` : "—";
+  finite(value) ? `${(value * 100).toFixed(digits)}%` : "-";
 
 /** Percent-flavoured stats are the ones stored as fractions. */
 export const isPercentKind = (kind: string) =>
@@ -39,7 +39,7 @@ export const stat = (key: StatKey, value: unknown) =>
 
 /** As `stat`, with an explicit `+` on positive values -- for deltas and item previews. */
 export const signedStat = (key: StatKey, value: unknown) => {
-  if (!finite(value)) return "—";
+  if (!finite(value)) return "-";
   return (value > 0 ? "+" : "") + stat(key, value);
 };
 

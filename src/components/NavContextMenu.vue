@@ -33,7 +33,7 @@ const emit = defineEmits<{
 const popover = ref<InstanceType<typeof BasePopover> | null>(null);
 const menuEl = ref<HTMLElement | null>(null);
 
-// Place the popover after mount — the component is v-if-gated so it mounts fresh each
+// Place the popover after mount - the component is v-if-gated so it mounts fresh each
 // time a menu opens. nextTick gives BasePopover's Teleport a chance to render.
 onMounted(async () => {
   await nextTick();

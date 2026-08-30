@@ -3,15 +3,14 @@
 1. **npm + Vite.** `npm run dev`/`build`/`preview`. Real ES modules throughout.
 2. **Vue 3 SFCs**, Composition API, `<script setup lang="ts">` everywhere.
 3. **TypeScript, `strict: true`, real types, not `any`.**
-4. **Modern JS/TS is expected** — `const`/`let`, arrows, classes, `?.`, `??`.
+4. **Modern JS/TS is expected** - `const`/`let`, arrows, classes, `?.`, `??`.
 5. **Vitest + Playwright** - test stack
 
 # Requirements
 
 You are **required** to:
 
-- Follow Vue JS best practices, checking all vue-related skills if available
-- Make good use of Vue JS builtins, as well as functionality provided by VueUse
+- Follow Vue JS best practices, checking vue-related skills if available
 - Implement tests as needed, both UI and unit tests
 - Run `npm run fix` to perform formatting and linting
 - Run `npm run typecheck` to perform typechecking
@@ -23,7 +22,6 @@ You are **required** to:
 You **MUST NOT**:
 
 - Workaround Git commit hooks with flags to disable them
-- Use the `npx` command. Use only already globally installed packages directly by their simple name, or `npm run` targets.
 
 # Good practices
 
@@ -51,15 +49,10 @@ You **MUST NOT**:
 
 # Dev server port
 
-Each worktree gets its own dev/Playwright port, derived from `ports.ts` (see there for details). To find the port for the current worktree — e.g. to open the dev server in a browser or curl it — run:
+Each worktree gets its own dev/Playwright port, derived from `ports.ts` (see there for details). To find the port for the current worktree - e.g. to open the dev server in a browser or curl it - run:
 
 ```sh
 npm run port --silent
 ```
 
 The `--silent` flag is required to suppress npm's own script-header output, leaving only the port number on stdout.
-
-# Other
-
-When running git commands that may invoke an editor, remember to set GIT_EDITOR to avoid getting stuck waiting for an interactive editor.
-Specially useful for rebase operations.

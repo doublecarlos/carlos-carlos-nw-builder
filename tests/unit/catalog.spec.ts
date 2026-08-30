@@ -1161,7 +1161,7 @@ function shippedItemWithBonus(): { item: Item; bonus: Bonus } {
   throw new Error("no shipped item attaches a shipped bonus by id");
 }
 
-// A real item that exists in the shipped base catalogue — referencedOverlay should not emit it.
+// A real item that exists in the shipped base catalogue - referencedOverlay should not emit it.
 const BASE_ITEM_ID = "1-amethyst-awareness";
 
 /** Cloned out of the shipped list rather than retyped: referencedOverlay diffs against base,
@@ -1317,7 +1317,7 @@ describe("catalog.referencedOverlay", () => {
   });
 
   it("does not emit a base item or its bonus when both match base", () => {
-    // Use the actual base item without any bonuses — it should emit nothing.
+    // Use the actual base item without any bonuses - it should emit nothing.
     const db = testDb([baseItem], []);
     const build: Build = {
       id: "b1",

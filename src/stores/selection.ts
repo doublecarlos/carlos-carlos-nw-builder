@@ -32,7 +32,7 @@ function writeSession(sel: Selection | null) {
     if (sel) sessionStorage.setItem(SESSION_KEY, JSON.stringify(sel));
     else sessionStorage.removeItem(SESSION_KEY);
   } catch {
-    // quota / private browsing — non-critical
+    // quota / private browsing - non-critical
   }
 }
 
@@ -70,7 +70,7 @@ export function clearSelection() {
   persistMeta();
 }
 
-/** Seed from meta on first load — called by bootstrap. Does not overwrite a value that
+/** Seed from meta on first load - called by bootstrap. Does not overwrite a value that
  * already exists in sessionStorage (survives a page reload in the same tab). */
 export function _restoreFromMeta(fallback: Selection | null) {
   if (_selection.value) return;
@@ -80,7 +80,7 @@ export function _restoreFromMeta(fallback: Selection | null) {
   }
 }
 
-/** Apply a route after stores are populated — called by bootstrap. */
+/** Apply a route after stores are populated - called by bootstrap. */
 export function _restoreFromRoute(buildId?: string, layerId?: string) {
   if (buildId) {
     _selection.value = { kind: "build", id: buildId };

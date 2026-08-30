@@ -284,7 +284,7 @@ export function _setLoading(value: boolean) {
   _loading.value = value;
 }
 
-// --- persistence (incremental — only dirty ids are written) -----------------------------
+// --- persistence (incremental - only dirty ids are written) -----------------------------
 
 const _dirtyIds = new Set<string>();
 
@@ -298,7 +298,7 @@ async function flushSave() {
         await storage.putBuild(b);
       } catch {
         flagStorageFailed(
-          "Could not save to storage — export your build to keep it.",
+          "Could not save to storage - export your build to keep it.",
         );
       }
     }

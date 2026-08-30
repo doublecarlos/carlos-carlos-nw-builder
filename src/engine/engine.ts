@@ -617,7 +617,7 @@ function publishConflicts(db: Db, resolved: ResolvedBonuses): EngineError[] {
                 `${db.get(entry.itemId)?.name ?? entry.itemId} sets it to "${entry.value}"`,
             )
             .join(", ") +
-          ` — unequip one, or ${conflict.path} has no value at all`,
+          ` - unequip one, or ${conflict.path} has no value at all`,
         severity: "error",
       });
     }

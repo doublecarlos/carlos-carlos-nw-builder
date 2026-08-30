@@ -56,7 +56,7 @@ export function useHoverCard(
     hoverArgs.value = null;
   }, HOVER_DELAY_MS);
 
-  // Immediate variant for the "resume" fast path — sweeping down a list should feel
+  // Immediate variant for the "resume" fast path - sweeping down a list should feel
   // like one continuous hover, not a fresh delay per row.
   const { start: startHoverTimerNow, stop: stopHoverTimerNow } = useTimeoutFn(
     () => {
@@ -117,7 +117,7 @@ export function useHoverCard(
 
   /**
    * Close on any scroll outside the card itself. With Teleport the card lives under
-   * `<body>`, so `.itemcard` is checked globally — no need for a `root` ref.
+   * `<body>`, so `.itemcard` is checked globally - no need for a `root` ref.
    */
   function onScroll(event: Event) {
     if ((event.target as HTMLElement)?.closest?.(".itemcard")) return;

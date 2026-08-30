@@ -20,7 +20,7 @@ async function exportedBuildJson(page: Page): Promise<Record<string, unknown>> {
   return JSON.parse(text);
 }
 
-/** Import a JSON file via the header's Import… button — the app's only file entry point. */
+/** Import a JSON file via the header's Import… button - the app's only file entry point. */
 async function importText(page: Page, text: string, name = "import.json") {
   const fileInput = page
     .getByTestId("app-header")
@@ -116,7 +116,7 @@ test.describe("portable files", () => {
       .toArray()
       .then((chunks) => Buffer.concat(chunks).toString("utf-8"));
 
-    // Import via the file input — should handle bundle kind
+    // Import via the file input - should handle bundle kind
     await importText(page, text);
     await expect(page.getByTestId("app-header")).toContainText(/imported/i);
   });

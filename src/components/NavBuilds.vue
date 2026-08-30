@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// Build list section inside the left sidebar. Pure presentation — actions, menu items,
+// Build list section inside the left sidebar. Pure presentation - actions, menu items,
 // and rename state are provided by the parent (Nav.vue).
 import { computed, useTemplateRef, type Component, type Directive } from "vue";
 import BaseButton from "./ui/BaseButton.vue";

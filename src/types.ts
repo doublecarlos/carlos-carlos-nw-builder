@@ -116,7 +116,7 @@ export interface BuildParameterSlot {
    * pick a known value out of, not a ranking, so `Db.forSlot`'s item-level-first order (which
    * answers "which of these is best") would be the wrong question here. */
   optionsFrom?: { filter?: string; tags?: string[] };
-  /** `optionsFrom` only: prepend the empty "— none —" row. Explicit rather than automatic
+  /** `optionsFrom` only: prepend the empty "- none -" row. Explicit rather than automatic
    * because a derived option set has no other way to say whether "no value" is legal, and
    * silently prepending it would make a genuinely required parameter unexpressible. An inline
    * `options` list just authors the empty row itself, as every shipped one does. */
@@ -652,7 +652,7 @@ export interface Layer {
   /** Travels with the layer in a download. */
   enabled: boolean;
   overlay: CatalogOverlay;
-  /** Full content as last downloaded or imported — decision 15. */
+  /** Full content as last downloaded or imported - decision 15. */
   downloaded?: { snapshot: LayerSnapshot; at: number };
 }
 

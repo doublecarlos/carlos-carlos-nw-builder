@@ -356,7 +356,7 @@ function optionsForCombo(type?: string) {
   const path = type ? PATH_FOR_TYPE[type] : undefined;
   if (!path) return [];
   const slot = paramSlots.value.find((s) => s.path === path);
-  // Drop a slot's own "— none —" row: "" is a build-editor value, not a condition
+  // Drop a slot's own "- none -" row: "" is a build-editor value, not a condition
   // value -- a `class: ""` leaf would serialise to nothing anyway (`fromCsv`).
   const fromSlot = (slot?.options ?? []).filter((o) => o.value);
   if (fromSlot.length) return fromSlot;
@@ -491,7 +491,7 @@ function changeParamKey(row: ConditionRow, key: string) {
               class="w-44"
               :model-value="row.bonus"
               :options="bonusComboOptions"
-              placeholder="— bonus —"
+              placeholder="- bonus -"
               @update:model-value="(v) => (row.bonus = v)"
             />
           </FormField>
@@ -529,7 +529,7 @@ function changeParamKey(row: ConditionRow, key: string) {
               class="w-48"
               :model-value="row.key"
               :options="paramKeyOptions"
-              placeholder="— parameter —"
+              placeholder="- parameter -"
               @update:model-value="(v) => changeParamKey(row, v)"
             />
           </FormField>
@@ -544,7 +544,7 @@ function changeParamKey(row: ConditionRow, key: string) {
                   { value: 'on', label: 'on' },
                   { value: 'off', label: 'off' },
                 ]"
-                placeholder="— is —"
+                placeholder="- is -"
                 @update:model-value="(v) => (row.is = v === 'on')"
               />
             </FormField>

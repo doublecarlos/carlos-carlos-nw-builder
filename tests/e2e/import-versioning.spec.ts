@@ -39,7 +39,7 @@ test("a real export round-trips through import", async ({ page }) => {
   const envelope = await exportedEnvelope(page);
   expect(envelope.kind).toBe("build");
 
-  // Import back — this creates a new build alongside the existing one.
+  // Import back - this creates a new build alongside the existing one.
   await importText(page, JSON.stringify(envelope));
   // A notice should appear for the imported build.
   await expect(page.getByTestId("app-header")).toContainText(/imported/i);

@@ -65,7 +65,7 @@ defineEmits<{
             entry.kind === "build" ? "B" : "L"
           }}</span>
           {{ entry.item.name }}
-          <span class="text-[10px]">— {{ timeAgo(entry.deletedAt) }}</span>
+          <span class="text-[10px]">- {{ timeAgo(entry.deletedAt) }}</span>
         </span>
 
         <button

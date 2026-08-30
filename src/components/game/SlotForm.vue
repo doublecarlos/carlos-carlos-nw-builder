@@ -338,7 +338,7 @@ function save() {
     return;
   }
   if (pathConflict.value) {
-    error.value = `Path "${draft.value.path.trim()}" is already used by ${pathConflict.value} — the two would silently share one value.`;
+    error.value = `Path "${draft.value.path.trim()}" is already used by ${pathConflict.value} - the two would silently share one value.`;
     return;
   }
   emit("save", { slot: toSlot() });
@@ -446,7 +446,7 @@ watch(
       class="mb-2 text-danger"
       data-testid="slot-path-clash"
     >
-      Path "{{ draft.path.trim() }}" is already used by {{ pathConflict }} — the
+      Path "{{ draft.path.trim() }}" is already used by {{ pathConflict }} - the
       two would silently share one value.
     </p>
 
@@ -547,7 +547,7 @@ watch(
             v-model="draft.allowEmpty"
             data-testid="slot-allow-empty-input"
           >
-            offer “— none —”
+            offer “- none -”
           </BaseCheckbox>
         </FormField>
       </FormGrid>

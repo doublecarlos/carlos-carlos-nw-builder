@@ -29,7 +29,7 @@ async function saveRolePreset(page: Page, label: string, roleValue: string) {
   await page.getByRole("button", { name: "Add a parameter" }).click();
   const row = page.locator(".preset-row").first();
   await chooseCombo(
-    row.locator(".relative", { has: page.getByPlaceholder("— pick a slot —") }),
+    row.locator(".relative", { has: page.getByPlaceholder("- pick a slot -") }),
     "Role",
   );
   await chooseCombo(row.locator(".relative").last(), roleValue);

@@ -155,7 +155,7 @@ export async function moveLayer(id: string, delta: number) {
   await moveLayerTo(id, idx + delta + (delta > 0 ? 1 : 0));
 }
 
-/** The single write path the layer editor uses — replaces the layer's overlay wholesale. */
+/** The single write path the layer editor uses - replaces the layer's overlay wholesale. */
 export function updateOverlay(id: string, overlay: CatalogOverlay) {
   const layer = _layers.value.get(id);
   if (layer) {
@@ -242,7 +242,7 @@ export function importLayerText(text: string) {
     markDirty(layer.id);
     selection.selectLayer(layer.id);
     const stale = catalogStale
-      ? " — made against an older item catalogue; some items may no longer resolve"
+      ? " - made against an older item catalogue; some items may no longer resolve"
       : "";
     showNotice(`Imported “${layer.name}”${stale}`);
   } catch (error: unknown) {
@@ -274,7 +274,7 @@ export function importBundleText(text: string) {
     }
 
     const stale = catalogStale
-      ? " — made against an older item catalogue; some items may no longer resolve"
+      ? " - made against an older item catalogue; some items may no longer resolve"
       : "";
     showNotice(
       `Imported ${newBuilds.length} build(s) and ${newLayers.length} layer(s)${stale}`,
@@ -293,7 +293,7 @@ export function _init(layersMap: Map<string, Layer>, order: string[]) {
   layerOrder.value = order;
 }
 
-// --- persistence (incremental — only dirty ids are written) -----------------------------
+// --- persistence (incremental - only dirty ids are written) -----------------------------
 
 const _dirtyIds = new Set<string>();
 let _loading = true;
@@ -308,7 +308,7 @@ async function flushSave() {
         await storage.putLayer(layer);
       } catch {
         flagStorageFailed(
-          "Could not save to storage — export your layers to keep them.",
+          "Could not save to storage - export your layers to keep them.",
         );
       }
     }

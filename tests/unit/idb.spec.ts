@@ -1,4 +1,4 @@
-// idb.ts — the IndexedDB wrapper. Unit tests use the in-memory Map backend so no DOM is
+// idb.ts - the IndexedDB wrapper. Unit tests use the in-memory Map backend so no DOM is
 // needed. Verifies get/getAll/put/remove round trips and that a rejected write surfaces as
 // a rejection rather than a throw.
 import { describe, it, expect, beforeEach } from "vitest";
@@ -77,7 +77,7 @@ describe("idb backend", () => {
     installIdbShim();
   });
 
-  it("stores are independent — put in one does not appear in another", async () => {
+  it("stores are independent - put in one does not appear in another", async () => {
     await idb.put("builds", "shared", { from: "builds" });
     await idb.put("layers", "shared", { from: "layers" });
     expect(await idb.get("builds", "shared")).toEqual({ from: "builds" });

@@ -264,7 +264,7 @@ function save() {
   emit("save", { id, bonus });
 }
 
-// The store drives all grant-list mutations — BonusRows calls store methods instead of
+// The store drives all grant-list mutations - BonusRows calls store methods instead of
 // emitting replaced arrays. It writes directly onto `draft.value.grants`.
 const draftStore = new BonusDraftStore(
   () => draft.value.grants,
@@ -292,7 +292,7 @@ watch(
   () => props.source,
   (value) => {
     // Live edits round-trip through the layer overlay: emitChange → updateOverlay → db
-    // recompute → this prop. Rebuilding from that echo would wipe half-drawn rows —
+    // recompute → this prop. Rebuilding from that echo would wipe half-drawn rows -
     // rowsToStats drops empty stat rows on serialize, so an "add the rows first, fill
     // them later" session would lose the still-empty ones. Skip the rebuild when the
     // new source is byte-identical to what this form last emitted.
@@ -361,7 +361,7 @@ watch(
 
     <p class="text-muted">
       <template v-if="members.length">
-        Granted by <strong>{{ members.length }}</strong> item(s) —
+        Granted by <strong>{{ members.length }}</strong> item(s) -
         {{ members.join(", ") }}.
       </template>
       <template v-else>

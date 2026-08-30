@@ -1,6 +1,6 @@
 // ports.ts
 //
-// Run directly with `npm run port` to print this worktree's dev port to stdout —
+// Run directly with `npm run port` to print this worktree's dev port to stdout -
 // useful for agents that need the port without importing this module (e.g. to
 // curl the dev server or open it in a browser).
 import crypto from "node:crypto";

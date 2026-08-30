@@ -272,7 +272,7 @@ defineExpose({
     :invalid="invalid"
     :show-empty-option="true"
     :closed-display="selectedItem?.name ?? ''"
-    :placeholder="selectedItem?.name || '—'"
+    :placeholder="selectedItem?.name || '-'"
     :title-input="false"
     :menu-class="hidePreview ? 'inset-x-0' : 'left-0 w-[min(32rem,90vw)]'"
     @update:model-value="model = $event"

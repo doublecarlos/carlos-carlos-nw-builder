@@ -9,7 +9,7 @@ import type { BuildParameterSlot, Item } from "../types";
 export type ParamOption = { value: string; label: string };
 
 /** The label of the empty row, matching what every inline-authored list param already uses. */
-export const EMPTY_OPTION: ParamOption = { value: "", label: "— none —" };
+export const EMPTY_OPTION: ParamOption = { value: "", label: "- none -" };
 
 /**
  * The items an `optionsFrom` selector picks out, ordered by name.

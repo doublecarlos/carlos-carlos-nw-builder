@@ -161,7 +161,7 @@ test("a count typed into the preset form is what applying the preset writes", as
   const presetRow = page.locator(".preset-row").first();
   await chooseCombo(
     presetRow.locator(".relative", {
-      has: page.getByPlaceholder("— pick a slot —"),
+      has: page.getByPlaceholder("- pick a slot -"),
     }),
     "Ring 1",
   );

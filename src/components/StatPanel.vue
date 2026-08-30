@@ -414,18 +414,18 @@ const ehpTableRows = computed(() =>
 );
 
 function fmtPctSigned(value: number | null) {
-  if (value == null || Math.abs(value) < 1e-9) return "—";
+  if (value == null || Math.abs(value) < 1e-9) return "-";
   return (value > 0 ? "+" : "") + pct(value);
 }
 
-/** Signed display for a merged overcap/headroom cell: `—` exactly on the cap, otherwise
+/** Signed display for a merged overcap/headroom cell: `-` exactly on the cap, otherwise
  * an explicit `+`/`-` since these columns have no other cue for direction. */
 function signedPct(value: number) {
-  if (Math.abs(value) < 1e-9) return "—";
+  if (Math.abs(value) < 1e-9) return "-";
   return (value > 0 ? "+" : "") + pct(value);
 }
 function signedInt(value: number) {
-  if (Math.abs(value) < 1e-9) return "—";
+  if (Math.abs(value) < 1e-9) return "-";
   return (value > 0 ? "+" : "") + int(value);
 }
 
@@ -575,10 +575,10 @@ const {
             <td
               class="px-1 py-0.5 text-right text-xl font-semibold tabular-nums"
             >
-              {{ compareResult ? int(compareSummaryValue) : "—" }}
+              {{ compareResult ? int(compareSummaryValue) : "-" }}
             </td>
             <td class="px-1 py-0.5 text-right tabular-nums text-muted">
-              {{ compareResult ? fmtPctSigned(otherVsThisPct) : "—" }}
+              {{ compareResult ? fmtPctSigned(otherVsThisPct) : "-" }}
             </td>
           </tr>
           <tr class="border border-line">

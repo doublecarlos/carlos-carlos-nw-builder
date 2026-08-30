@@ -207,7 +207,7 @@ describe("bonus model semantics", () => {
     expect(dps.statOf(ID, "overall_healing")).toBeCloseTo(0.05, 9);
     expect(healer.statOf(ID, "overall_healing")).toBeCloseTo(0.05 + 0.06, 9);
     expect(tank.statOf(ID, "incoming_damage")).toBeCloseTo(-0.05 - 0.06, 9);
-    // healer's variant doesn't grant outgoing_damage — verify its stats don't include it
+    // healer's variant doesn't grant outgoing_damage - verify its stats don't include it
     const healerBonus = healer.activeById.get(ID)!;
     expect(healerBonus.stats?.outgoing_damage).toBeUndefined();
   });

@@ -70,7 +70,7 @@ export function buildFromLoadout(
 ): { build: Build; report: ImportReport } {
   const label = loadoutLabel(loadout);
   const build = storage.defaultBuild(
-    options?.name ?? `${character.name} — ${label}`,
+    options?.name ?? `${character.name} - ${label}`,
   );
 
   // `hclassToClass` still maps to the bare class value ("bard"); the class is picked as an

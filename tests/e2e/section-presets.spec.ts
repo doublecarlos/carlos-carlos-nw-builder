@@ -53,7 +53,7 @@ async function createOptionsPreset(
     const row = page.locator(".preset-row").last();
     await chooseCombo(
       row.locator(".relative", {
-        has: page.getByPlaceholder("— pick a slot —"),
+        has: page.getByPlaceholder("- pick a slot -"),
       }),
       slotLabel,
     );
@@ -139,10 +139,10 @@ test("applying a preset is a single undo step", async ({ page }) => {
 
   // "" is the empty choice, displayed as its own option's label, not a blank input.
   await expect(pickerInput(slotRow(page, "options.role"))).toHaveValue(
-    "— none —",
+    "- none -",
   );
   await expect(pickerInput(slotRow(page, "options.damageType"))).toHaveValue(
-    "— none —",
+    "- none -",
   );
 });
 
@@ -170,7 +170,7 @@ test("applying a preset empties the slots it lists as cleared", async ({
 
   await expect(pickerInput(slotRow(page, "options.role"))).toHaveValue("DPS");
   // An emptied item_picker shows a blank input -- unlike a build_parameter, whose own
-  // "— none —" option has a label to display.
+  // "- none -" option has a label to display.
   await expect(pickerInput(slotRow(page, "options.class"))).toHaveValue("");
 });
 
@@ -194,7 +194,7 @@ test("clearing a slot through a preset is part of the same undo step", async ({
     className("wizard"),
   );
   await expect(pickerInput(slotRow(page, "options.role"))).toHaveValue(
-    "— none —",
+    "- none -",
   );
 });
 
@@ -257,7 +257,7 @@ test("'Create new from current' opens a preset draft holding the section's state
   );
   // Snapshotted while it sat at its default, so it came across as a cleared slot.
   await expect(pickerInput(slotRow(page, "options.damageType"))).toHaveValue(
-    "— none —",
+    "- none -",
   );
 });
 
