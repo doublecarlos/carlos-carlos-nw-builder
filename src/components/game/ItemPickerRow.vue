@@ -6,6 +6,7 @@
 import { computed, useTemplateRef } from "vue";
 import ItemPicker from "./ItemPicker.vue";
 import BonusOccurrenceInputs from "./BonusOccurrenceInputs.vue";
+import InlineRepetitionStepper from "./InlineRepetitionStepper.vue";
 import PercentInput from "../ui/PercentInput.vue";
 import BaseButton from "../ui/BaseButton.vue";
 import * as buildEditor from "../../stores/buildEditor";
@@ -15,6 +16,7 @@ import {
   type DynamicStatRow,
 } from "../../composables/useDynamicStats";
 import { isPercentKind, kindOf, stat as formatStat } from "../../lib/format";
+import { inlineRepetitionCount } from "../../lib/inline-repetition";
 import type { Build, Db, Item, ItemPickerSlot } from "../../types";
 import type { ValueDiff } from "../../composables/useCompareDiff";
 
@@ -36,6 +38,10 @@ const props = defineProps<{
   valueDiffs?: ValueDiff[];
   occurrenceDiffers?: boolean;
   otherOccurrenceLabel?: string;
+  /** The pick's inline-repetition count against the compare build -- same pair of props a
+   *  point_assignment row takes, since it is the same stored value. */
+  assignmentDiffers?: boolean;
+  otherAssignmentLabel?: string;
   /** DOM id for the picker input, so BuildSlot's row label can point at it. */
   inputId?: string;
 }>();
@@ -73,6 +79,22 @@ function setDynamic(row: DynamicStatRow, raw: string | number) {
 function rangeLabel(row: DynamicStatRow) {
   return `${row.label} (${formatStat(row.stat, row.min)} - ${formatStat(row.stat, row.max)})`;
 }
+
+// --- the pick's own inline repetition -------------------------------------------------------
+// The item's own config turns the stepper on, exactly as `dynamicStats` and
+// `BonusOccurrenceConfig` do for their inputs above. The slot says nothing about it.
+
+const repetitions = computed(() =>
+  props.item
+    ? inlineRepetitionCount(props.build, props.slotDef.id, props.item)
+    : 0,
+);
+
+/** Not the item name the shared control defaults to -- the picker above already says that, so
+ *  the caption says what the number means. `InlineRepetitionConfig.label` overrides it. */
+const repetitionLabel = computed(
+  () => props.item?.inlineRepetition?.label ?? "Copies",
+);
 </script>
 
 <template>
@@ -88,8 +110,18 @@ function rangeLabel(row: DynamicStatRow) {
       :db="db"
       :bonus-preview="{ db, build, slotId: slotDef.id }"
       :hide-preview="slotDef.hidePreview"
+      :allow-empty="!slotDef.disallowEmpty"
       @update:model-value="buildEditor.setChoice(slotDef.id, $event)"
     />
+    <InlineRepetitionStepper
+      v-if="item?.inlineRepetition"
+      :item="item"
+      :value="repetitions"
+      testid-prefix="repetition"
+      @change="(count) => buildEditor.setAssignment(slotDef, item!.id, count)"
+    >
+      <template #label>{{ repetitionLabel }}</template>
+    </InlineRepetitionStepper>
     <span
       class="min-w-0 flex-1 truncate text-text"
       data-testid="slot-stat-summary"
@@ -177,6 +209,20 @@ function rangeLabel(row: DynamicStatRow) {
       </BaseButton>
     </p>
   </template>
+
+  <p
+    v-if="highlightDiff && assignmentDiffers"
+    class="slot-diff-note mt-0.5 text-muted"
+  >
+    {{ compareBuild?.name }}: {{ otherAssignmentLabel }}
+    <BaseButton
+      variant="link"
+      class="ml-0.5 text-accent"
+      @click.stop="buildEditor.applyAssignmentsFromCompare(slotDef)"
+    >
+      apply
+    </BaseButton>
+  </p>
 
   <p
     v-if="highlightDiff && occurrenceDiffers"

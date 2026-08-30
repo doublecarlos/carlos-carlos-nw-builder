@@ -76,6 +76,18 @@ export interface SlotSection {
   defaultOpen?: boolean;
 }
 
+/** The one field every `Slot` variant carries, whatever it renders. */
+export interface SlotVisibility {
+  /** Renders this slot's row only while the condition holds, evaluated against the *resolved*
+   * build (`ResolvedBuild.context`).
+   *
+   * Display only: a hidden row's value still reaches the engine untouched -- a param resolves,
+   * a pick stays equipped, points stay spent. Anything else would make every condition reading
+   * a slot depend on what happened to be rendered. Evaluating against the resolved context
+   * also means a slot cannot influence its own visibility mid-resolution. */
+  visibleWhen?: ConditionWhen;
+}
+
 /** A build-wide value with no item of its own -- the engine-coupled build-context fields
  * (role, damageType, forte, duration, magnitude, toggles, ...). `path` is a dotted path into
  * `build.context` (`role`, `forte.primary`, `toggles.combat`), resolved by build-path.ts's
@@ -92,7 +104,7 @@ export interface SlotSection {
  * item asserts the value, instead of a value conjuring an item -- so anything that needs to
  * both carry stats and set a context value is an item picker now, and a parameter is only ever
  * the scalar itself. */
-export interface BuildParameterSlot {
+export interface BuildParameterSlot extends SlotVisibility {
   id: string;
   label: string;
   section: string;
@@ -125,24 +137,25 @@ export interface BuildParameterSlot {
   max?: number;
   step?: number;
   presets?: number[];
-  /** Renders this slot's row only while the condition holds, evaluated against the *resolved*
-   * build (`ResolvedBuild.context`) -- "forte only matters once a paragon is picked", "this
-   * toggle is module-specific". Purely a display filter: the value is never cleared, reset or
-   * hidden from the engine, and bonus.ts's `collect()` still populates `ctx.params` from
-   * `getPath(context, path) ?? default` whether or not the row is on screen. That ordering is
-   * deliberate -- a param whose presence in `ctx.params` depended on what happened to be
-   * rendered would make every condition reading it depend on scroll state and filter state,
-   * and the `param` leaf fails closed, so bonuses would silently switch off rather than error.
-   * Evaluating against the already-resolved context also means a param cannot influence its
-   * own visibility mid-resolution. */
-  visibleWhen?: ConditionWhen;
 }
 
-export interface ItemPickerSlot {
+export interface ItemPickerSlot extends SlotVisibility {
   id: string;
   label: string;
   section: string;
   type: "item_picker";
+  /** Shown in the always-visible QuickOptions strip instead of its section's slot list, for a
+   * pick that reads as an option rather than as gear (the location picker). Rendered bare-name
+   * there whatever `hidePreview` says: the strip has no room for a stat preview. */
+  quick?: boolean;
+  /** Item id a fresh build starts on, and returns to when cleared -- for a slot whose empty
+   * state is not a sensible build. Seeds `Build.choices`, so a read is an ordinary stored
+   * choice needing no `?? slot.default` fallback. A default that is not one of this slot's own
+   * candidates is an authoring error (`validateSlotDefaults`), not a silently empty slot. */
+  default?: string;
+  /** Drops the empty "- none -" row from this slot's picker, so a pick can be changed but not
+   * taken back. Needs a `default`, or a fresh build starts in the state it forbids. */
+  disallowEmpty?: boolean;
   /** Exact-match category key into `Db.forFilter`/`byFilter`. Mutually exclusive with `tags` --
    * `catalog.ts`'s `validateSlots` requires exactly one of the two, since a slot resolves its
    * candidates one way or the other, never both. */
@@ -168,7 +181,7 @@ export interface ItemPickerSlot {
  * `equipped`/tags/bonus occurrences/bonus candidates by the count instead of by one). No shared point
  * budget across the row: each item's `inlineRepetition.min`/`max` (on the item itself, see
  * `Item`) is its own bound, not a pool split between them. */
-export interface PointAssignmentSlot {
+export interface PointAssignmentSlot extends SlotVisibility {
   id: string;
   label: string;
   section: string;
@@ -187,7 +200,7 @@ export type RowSlot = ItemPickerSlot | BuildParameterSlot | PointAssignmentSlot;
  * and unused by `SeparatorRow.vue` itself -- it only exists so the handful of call sites that
  * look up any `Slot` by id (`slotById.get(id)?.label`) keep compiling without special-casing a
  * type they'll never actually see a separator's id come through. */
-export interface SeparatorSlot {
+export interface SeparatorSlot extends SlotVisibility {
   id: string;
   section: string;
   type: "separator";
@@ -198,7 +211,7 @@ export interface SeparatorSlot {
  * Unlike `SeparatorSlot` it does render its own content (`text`), sized/padded like a real row
  * so it reads as an inline note rather than a divider. `label` is optional and unused, kept for
  * the same reason as `SeparatorSlot`'s -- see that type's doc comment. */
-export interface TextSlot {
+export interface TextSlot extends SlotVisibility {
   id: string;
   section: string;
   type: "text";
@@ -285,11 +298,10 @@ export interface Item {
    *  `Build.values[slotId]`, keyed by `dynamicValueKey` (dynamic-stats.ts) -- an item's own
    *  entries key by `stat` alone, so two entries on one item must target different stats. */
   dynamicStats?: DynamicStatConfig[];
-  /** Declares that this item can repeat "inline" N times wherever it's chosen -- today only
-   * consumed by a `point_assignment` slot whose `filter` matches this item's own (each point
-   * spent is one more repetition), see `InlineRepetitionConfig`. Named apart from that slot type
-   * deliberately: this is the item's own property, not a fact about any particular slot, so a
-   * future consumer (e.g. an `item_picker` pick repeating inline) can read it the same way. */
+  /** Declares that this item repeats "inline" N times wherever it's chosen: a
+   * `point_assignment` row (one repetition per point spent) or an `item_picker` pick (the row
+   * grows a stepper). Named apart from either slot type deliberately -- it is the item's own
+   * property, so both consumers read the same declaration. */
   inlineRepetition?: InlineRepetitionConfig;
   /** A bare id means "always exactly 1 occurrence of this bonus" (the original, still-common
    * shape). A `BonusOccurrenceConfig` lets the same item instead declare a typed, player-set
@@ -338,20 +350,21 @@ export interface Item {
   [key: string]: unknown;
 }
 
-/** Bounds for one item's repetition count -- today read by whichever `PointAssignmentSlot`
- * matches this item's `filter`, presence of this object being what makes an item selectable
- * there at all (see `Db.forSlot`'s point_assignment branch), same role a `DynamicStatConfig`
- * entry plays in gating its own input. `priority` breaks ties in that slot's display order (lower
- * first); items sharing one priority (or omitting it, default 0) fall back to name order. */
+/** Bounds for one item's repetition count. Its presence is what gates the input, the role a
+ * `DynamicStatConfig` entry plays for its own: on a `PointAssignmentSlot` matching this item's
+ * `filter` it also decides whether the item is offered there at all (`Db.forSlot`), and on an
+ * `ItemPickerSlot` it adds a stepper beside the picker.
+ *
+ * `priority` orders a point_assignment slot's rows (lower first, then by name). It means
+ * nothing to an `item_picker`, which shows one item at a time. */
 export interface InlineRepetitionConfig {
   min: number;
   max: number;
   default: number;
   priority?: number;
-  /** Overrides the item's own `name` on its point-assignment row and that row's compare-diff
-   *  title only -- same "per-attachment display override" pattern `BonusOccurrenceConfig.label`
-   *  uses for its stepper row (see `useCompareDiff.ts`'s `assignmentDiffTitle`). Everywhere
-   *  else (item lists, hover cards, etc.) still shows the item's real name. */
+  /** Overrides this item's repetition stepper caption -- its own `name` on a point-assignment
+   *  row, the default "Copies" on an `item_picker` row. Same per-attachment display override
+   *  `BonusOccurrenceConfig.label` makes; item lists and hover cards still show the real name. */
   label?: string;
 }
 
@@ -628,10 +641,11 @@ export interface Build {
    * A key absent here reads as that config's own `default` -- only explicit overrides a user
    * made are stored, same convention `occurrenceInputs` below uses. */
   values: Record<string, Record<string, number>>;
-  /** Every `point_assignment` slot's current counts, by slot id then item id. Seeded from each
-   * row's `default` (storage.ts's `defaultBuild`), same as `context` is seeded from
-   * `build_parameter` defaults -- so a read never needs an `?? row.default` fallback for a
-   * build the app itself produced, only for hand-edited/imported ones. */
+  /** Every inline-repetition count, by slot id then item id -- a `point_assignment` slot's
+   * rows and an `item_picker` whose pick declares an `inlineRepetition`. One field for both,
+   * since the stored fact is the same: "item X repeats N times at slot Y". A point_assignment
+   * slot's rows are seeded up front (`defaultBuild`); an item_picker's cannot be (the pick
+   * changes), so that one falls back to the config's own `default` on read. */
   assignments: Record<string, Record<string, number>>;
   /** Every item's typed `BonusOccurrenceConfig` count(s), by item id then bonus id -- keyed by
    * bonus id (not just item id) since one item may carry several such configs, each needing its
@@ -747,6 +761,11 @@ export interface ResolvedRow {
   slot: Slot;
   choice: string | undefined;
   item: Item | null;
+  /** How many times this row's `item` is in the build: 1 for an ordinary pick, its
+   * `inlineRepetition` count for one that repeats inline, 0 for a row with no item (a
+   * `point_assignment` row included -- its per-item counts never collapse to one number).
+   * `rowVectors`' stat sum and `findErrors`' maxCopies tally both multiply by it. */
+  repetitions: number;
 }
 
 export interface GrantEvaluation {
@@ -841,6 +860,9 @@ export interface EngineRow {
   choice: string | undefined;
   item: Item | null;
   stats: Record<StatKey, number>;
+  /** Carried through from the row's `ResolvedRow`. `stats` above is already multiplied by it;
+   * the count itself is here for the stages that need it (maxCopies, dynamic stats). */
+  repetitions: number;
 }
 
 /** Every stage of the pipeline (engine.ts's `run`), each a full stat vector. Kept as a

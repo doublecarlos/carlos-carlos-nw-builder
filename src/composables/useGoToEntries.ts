@@ -10,10 +10,9 @@ import * as layers from "../stores/layers";
  * typed: sections, then their slots, then builds, then layers.
  *
  * The slot list mirrors what BuildEditor.vue actually renders (`allSlotsBySection`): no
- * separators or text rows, since neither is a place the cursor can land, no `quick`
- * build_parameter (it lives in the always-visible QuickOptions strip, not in a section), and
- * nothing hidden by its own `visibleWhen`. Offering a target the editor has no row for is
- * worse than not offering it.
+ * separators or text rows, since neither is a place the cursor can land, no `quick` slot (it
+ * lives in the QuickOptions strip, not in a section), and nothing hidden by its own
+ * `visibleWhen`. Offering a target the editor has no row for is worse than not offering it.
  */
 export function useGoToEntries() {
   return computed<GoToEntry[]>(() => {
@@ -36,7 +35,12 @@ export function useGoToEntries() {
         for (const slotDef of db.slots) {
           if (slotDef.section !== section.id) continue;
           if (slotDef.type === "separator" || slotDef.type === "text") continue;
-          if (slotDef.type === "build_parameter" && slotDef.quick) continue;
+          if (
+            (slotDef.type === "build_parameter" ||
+              slotDef.type === "item_picker") &&
+            slotDef.quick
+          )
+            continue;
           if (!slotVisible(slotDef, resolved.result.context)) continue;
           const item = itemBySlot.get(slotDef.id);
           entries.push({

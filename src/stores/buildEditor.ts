@@ -8,9 +8,11 @@ import * as history from "./history";
 import { db } from "./resolved";
 import { getPath, setPath } from "../lib/build-path";
 import { deepEqual } from "../lib/deep-equal";
+import { repetitionRows } from "../lib/inline-repetition";
 import type {
   Build,
   BuildParameterSlot,
+  ItemPickerSlot,
   PointAssignmentSlot,
   SectionPreset,
   Slot,
@@ -77,6 +79,8 @@ export function setChoice(slotId: string, id: string) {
   } else {
     delete b.choices[slotId];
     delete b.values[slotId];
+    // Same reasoning as `values`: an emptied slot keeps nothing of what was picked there.
+    delete b.assignments[slotId];
   }
 }
 
@@ -211,8 +215,10 @@ export function applyParamFromCompare(slot: BuildParameterSlot) {
   setPath(b.context, slot.path, fromVal);
 }
 
+/** One item's inline-repetition count at one slot. One function for both slot types, since
+ *  `Build.assignments` stores them identically -- only their item lists differ. */
 export function setAssignment(
-  slot: PointAssignmentSlot,
+  slot: PointAssignmentSlot | ItemPickerSlot,
   itemId: string,
   count: number,
 ) {
@@ -230,7 +236,9 @@ export function setAssignment(
   b.assignments[slot.id] = { ...b.assignments[slot.id], [itemId]: count };
 }
 
-export function resetAssignmentsToDefault(slot: PointAssignmentSlot) {
+export function resetAssignmentsToDefault(
+  slot: PointAssignmentSlot | ItemPickerSlot,
+) {
   const b = builds.build.value;
   if (!b) return;
   history.snapshot(
@@ -241,12 +249,14 @@ export function resetAssignmentsToDefault(slot: PointAssignmentSlot) {
     b,
   );
   const reset: Record<string, number> = {};
-  for (const item of db.value.forSlot(slot.id))
+  for (const item of repetitionRows(db.value, b, slot))
     reset[item.id] = item.inlineRepetition!.default;
   b.assignments[slot.id] = reset;
 }
 
-export function applyAssignmentsFromCompare(slot: PointAssignmentSlot) {
+export function applyAssignmentsFromCompare(
+  slot: PointAssignmentSlot | ItemPickerSlot,
+) {
   const other = compare.compareBuild.value;
   if (!other) return;
   const b = builds.build.value;
@@ -259,7 +269,9 @@ export function applyAssignmentsFromCompare(slot: PointAssignmentSlot) {
     b,
   );
   const applied: Record<string, number> = {};
-  for (const item of db.value.forSlot(slot.id)) {
+  // Rows come from *this* build: an item_picker's counts only apply while both builds hold
+  // the same pick (`assignmentDiffers`), so every row here exists on the other side too.
+  for (const item of repetitionRows(db.value, b, slot)) {
     applied[item.id] =
       other.assignments?.[slot.id]?.[item.id] ?? item.inlineRepetition!.default;
   }
@@ -340,9 +352,12 @@ export function clearSlots() {
     `clear all ${filledSlots.value} slots`,
     b,
   );
-  b.choices = {};
+  const fresh = storage.defaultBuild();
+  // Not `{}`: a slot with a `default` is "cleared" back to that default, exactly as a
+  // build_parameter is.
+  b.choices = fresh.choices;
   b.values = {};
-  b.assignments = storage.defaultBuild().assignments;
+  b.assignments = fresh.assignments;
 }
 
 export function resetAll() {
@@ -395,6 +410,10 @@ export function copySection(fromId: string, sectionIds: string[]) {
     const value = source.values[slot.id];
     if (value != null) b.values[slot.id] = { ...value };
     else delete b.values[slot.id];
+
+    const repetitions = source.assignments?.[slot.id];
+    if (repetitions != null) b.assignments[slot.id] = { ...repetitions };
+    else delete b.assignments[slot.id];
   }
 }
 
@@ -412,8 +431,11 @@ function clearSlot(b: Build, slot: Slot, fresh: Build) {
     return;
   }
 
-  delete b.choices[slot.id];
+  const seeded = fresh.choices[slot.id];
+  if (seeded) b.choices[slot.id] = seeded;
+  else delete b.choices[slot.id];
   delete b.values[slot.id];
+  delete b.assignments[slot.id];
 }
 
 /** Resets every slot in a section to `defaultBuild()`'s value. */
@@ -533,14 +555,29 @@ export function presetFromSection(
     if (slot.type !== "item_picker") continue;
 
     const choice = b.choices[slot.id];
+    const value = b.values[slot.id];
+    const repetitions = b.assignments[slot.id];
+    const atDefault =
+      choice === (fresh.choices[slot.id] ?? "") &&
+      !Object.keys(value ?? {}).length &&
+      !Object.keys(repetitions ?? {}).length;
+    // Only when nothing hangs off the pick: `clears` would drop a magnitude or repetition
+    // count the player did set.
+    if (atDefault) {
+      clears.push(slot.id);
+      continue;
+    }
     if (!choice) {
       clears.push(slot.id);
       continue;
     }
     choices[slot.id] = choice;
     carryOccurrences(choice);
-    const value = b.values[slot.id];
     if (value && Object.keys(value).length) values[slot.id] = { ...value };
+    // An `item_picker` pick that repeats inline carries its count the same way a
+    // point_assignment row does -- same field, same shape.
+    if (repetitions && Object.keys(repetitions).length)
+      assignments[slot.id] = { ...repetitions };
   }
 
   if (Object.keys(params).length) preset.params = params;

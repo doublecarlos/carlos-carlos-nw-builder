@@ -7,6 +7,7 @@
 import * as conditions from "./conditions";
 import { getPath } from "../lib/build-path";
 import { bonusIdOf, occurrenceCountFor } from "../lib/bonus-attachment";
+import { inlineRepetitionCount } from "../lib/inline-repetition";
 import { readDynamicValue } from "../lib/dynamic-stats";
 import type {
   PublishConflict,
@@ -53,12 +54,12 @@ interface Candidate extends BonusCandidate {
  * the only difference being what `repetitions` (a bare-id attachment's count) resolves to.
  *
  * `repetitions === 0` means the *item itself* has zero real occurrences right now -- a
- * point_assignment candidate with nothing spent on it, still walked so its bonuses stay
- * reachable for a hover/inspector preview (see below), not actually "in" the build. Every
- * attachment reads as 0 then, including a typed (`BonusOccurrenceConfig`) one's own stored
- * value -- there's nothing here to independently resolve one against. The item_picker/
- * build_parameter caller never passes 0 (an unchosen candidate is never walked at all), so this
- * only ever applies to `collectInlineRepetition`'s own items.
+ * point_assignment candidate with nothing spent on it, or an item_picker pick whose
+ * own `inlineRepetition` sits at 0 -- still walked so its bonuses stay reachable for a
+ * hover/inspector preview (see below), not actually "in" the build. Every attachment reads as 0
+ * then, including a typed (`BonusOccurrenceConfig`) one's own stored value -- there's nothing
+ * here to independently resolve one against. An item with no `inlineRepetition` at all never
+ * reaches 0 (an unchosen slot is not walked, and a chosen one is worth exactly 1).
  *
  * Either way, a 0-count attachment has no real candidate to push -- but dropping it silently
  * leaves its bonus completely unreachable in `resolve()`'s evaluate pass whenever nothing else
@@ -166,7 +167,13 @@ function collectInlineRepetition(
   }
 
   return {
-    row: { slotId: slot.id, slot, choice: undefined, item: null },
+    row: {
+      slotId: slot.id,
+      slot,
+      choice: undefined,
+      item: null,
+      repetitions: 0,
+    },
     statBucket,
     candidates,
     zeroCandidates,
@@ -238,21 +245,29 @@ export function collect(
     // value (#273), so there is one path into the bookkeeping below rather than two.
     const choice = build.choices?.[slot.id];
     const item = db.get(choice);
-    rows.push({ slotId: slot.id, slot, choice, item });
+    // A pick declaring an `inlineRepetition` is in the build that many times over, read from
+    // the same `build.assignments` store a point_assignment row uses. Anything else is in once.
+    const repetitions = item ? inlineRepetitionCount(build, slot.id, item) : 0;
+    rows.push({ slotId: slot.id, slot, choice, item, repetitions });
     if (!item) return;
 
-    bump(equipped, item.id);
-    for (const tag of item.tags ?? []) bump(tags, tag);
-    for (const [path, value] of Object.entries(item.publishes ?? {})) {
-      const contributors = publishedBy.get(path);
-      if (contributors)
-        contributors.push({ itemId: item.id, slotId: slot.id, value });
-      else publishedBy.set(path, [{ itemId: item.id, slotId: slot.id, value }]);
+    // At 0 the pick contributes nothing of its own, but its attachments are still walked below
+    // -- same reachability reason `collectInlineRepetition` gives.
+    if (repetitions > 0) {
+      bump(equipped, item.id, repetitions);
+      for (const tag of item.tags ?? []) bump(tags, tag, repetitions);
+      for (const [path, value] of Object.entries(item.publishes ?? {})) {
+        const contributors = publishedBy.get(path);
+        if (contributors)
+          contributors.push({ itemId: item.id, slotId: slot.id, value });
+        else
+          publishedBy.set(path, [{ itemId: item.id, slotId: slot.id, value }]);
+      }
     }
 
     // Each attachment's occurrence count is its own, not a single count shared by the whole
-    // item: an item can carry a plain bare-id bonus (always 1 here -- no repetition concept
-    // applies to a single item_picker pick) alongside a BonusOccurrenceConfig for a different
+    // item: an item can carry a plain bare-id bonus (`repetitions` -- 1 for an ordinary pick,
+    // N for one repeating inline) alongside a BonusOccurrenceConfig for a different
     // bonus (a player-set count), so the two must be resolved and pushed independently. A
     // config's count duplicates its candidate that many times, same as collectInlineRepetition
     // does for its own BonusOccurrenceConfig attachments, so `stacking: "perSource"` sees N
@@ -266,6 +281,7 @@ export function collect(
       bonusOccurrences,
       candidates,
       zeroCandidates,
+      repetitions,
     );
   });
 

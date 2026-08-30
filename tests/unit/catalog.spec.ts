@@ -215,6 +215,182 @@ describe("catalog.validateSlots", () => {
     const findings = catalog.validateSlots([pointAssignmentSlot("a", "")]);
     expect(findings.some((f) => /no filter/.test(f.message))).toBe(true);
   });
+
+  // `visibleWhen` is checked for every slot type, not only `build_parameter`: a condition that
+  // cannot resolve is exactly as broken wherever it is authored.
+  const scopedOnMissingParam: ConditionWhen = {
+    param: { key: "nope", is: true },
+  };
+
+  it("reports a visibleWhen naming a missing param on an item_picker slot", () => {
+    const findings = catalog.validateSlots([
+      {
+        id: "gear.head",
+        label: "Head",
+        section: "gear",
+        type: "item_picker",
+        filter: "gear_head",
+        visibleWhen: scopedOnMissingParam,
+      },
+    ]);
+    expect(
+      findings.some((f) => /is not a build_parameter's path/.test(f.message)),
+    ).toBe(true);
+  });
+
+  it("reports a visibleWhen naming a missing param on a point_assignment slot", () => {
+    const findings = catalog.validateSlots([
+      {
+        ...(pointAssignmentSlot("boons.tier1", "boon_tier1") as Slot),
+        visibleWhen: scopedOnMissingParam,
+      } as Slot,
+    ]);
+    expect(
+      findings.some((f) => /is not a build_parameter's path/.test(f.message)),
+    ).toBe(true);
+  });
+
+  it("reports a visibleWhen naming a missing param on separator and text slots", () => {
+    const findings = catalog.validateSlots([
+      {
+        id: "gear.divider",
+        section: "gear",
+        type: "separator",
+        visibleWhen: scopedOnMissingParam,
+      },
+      {
+        id: "gear.note",
+        section: "gear",
+        type: "text",
+        text: "a note",
+        visibleWhen: scopedOnMissingParam,
+      },
+    ]);
+    expect(
+      findings.filter((f) => /is not a build_parameter's path/.test(f.message)),
+    ).toHaveLength(2);
+  });
+
+  it("accepts a visibleWhen on a non-param slot that resolves", () => {
+    const findings = catalog.validateSlots([
+      paramSlot("options.myFlag", "toggles.myFlag"),
+      {
+        id: "gear.head",
+        label: "Head",
+        section: "gear",
+        type: "item_picker",
+        filter: "gear_head",
+        visibleWhen: { param: { key: "toggles.myFlag", is: true } },
+      },
+    ]);
+    // Only the "prefer the dedicated toggle leaf" nudge -- nothing structural.
+    expect(findings.map((f) => f.level)).toEqual(["warn"]);
+  });
+
+  // An item_picker slot's `default`/`disallowEmpty` pair.
+  it("accepts an item_picker slot with a default and disallowEmpty", () => {
+    const findings = catalog.validateSlots([
+      {
+        id: "gear.head",
+        label: "Head",
+        section: "gear",
+        type: "item_picker",
+        filter: "gear_head",
+        default: "helm-of-testing",
+        disallowEmpty: true,
+      },
+    ]);
+    expect(findings).toEqual([]);
+  });
+
+  it("reports disallowEmpty without a default", () => {
+    const findings = catalog.validateSlots([
+      {
+        id: "gear.head",
+        label: "Head",
+        section: "gear",
+        type: "item_picker",
+        filter: "gear_head",
+        disallowEmpty: true,
+      },
+    ]);
+    expect(
+      findings.some((f) => /disallowEmpty needs a default/.test(f.message)),
+    ).toBe(true);
+  });
+});
+
+describe("catalog.validateSlotDefaults", () => {
+  const item = (id: string, fields: Partial<Item> = {}): Item => ({
+    id,
+    name: id,
+    filter: "gear_head",
+    ...fields,
+  });
+
+  const headSlot = (fields: Partial<Slot> = {}): Slot =>
+    ({
+      id: "gear.head",
+      label: "Head",
+      section: "gear",
+      type: "item_picker",
+      filter: "gear_head",
+      ...fields,
+    }) as Slot;
+
+  it("the shipped slots.json defaults all resolve", () => {
+    expect(catalog.validateSlotDefaults(NW_SLOTS.slots, NW_ITEMS)).toEqual([]);
+  });
+
+  it("accepts a default that is one of the slot's own candidates", () => {
+    expect(
+      catalog.validateSlotDefaults(
+        [headSlot({ default: "helm" })],
+        [item("helm")],
+      ),
+    ).toEqual([]);
+  });
+
+  it("reports a default naming an item that does not exist", () => {
+    const findings = catalog.validateSlotDefaults(
+      [headSlot({ default: "ghost" })],
+      [item("helm")],
+    );
+    expect(
+      findings.some((f) => /is not an item in the catalogue/.test(f.message)),
+    ).toBe(true);
+  });
+
+  it("reports a default the slot itself would never offer", () => {
+    const findings = catalog.validateSlotDefaults(
+      [headSlot({ default: "boots" })],
+      [item("boots", { filter: "gear_feet" })],
+    );
+    expect(
+      findings.some((f) =>
+        /not one of this slot's own candidates/.test(f.message),
+      ),
+    ).toBe(true);
+  });
+
+  it("resolves a tag-selected slot's default against its tags", () => {
+    const tagSlot = headSlot({
+      filter: undefined,
+      tags: ["companion:offense"],
+    });
+    expect(
+      catalog.validateSlotDefaults(
+        [{ ...tagSlot, default: "pet" } as Slot],
+        [item("pet", { filter: "companion", tags: ["companion:offense"] })],
+      ),
+    ).toEqual([]);
+    expect(
+      catalog.validateSlotDefaults(
+        [{ ...tagSlot, default: "pet" } as Slot],
+        [item("pet", { filter: "companion", tags: ["companion:defense"] })],
+      ),
+    ).toHaveLength(1);
+  });
 });
 
 describe("catalog.validatePresets", () => {

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 // One row inside a BuildSection: an item_picker slot (today's picker + stat summary + typed
-// dynamic-stat magnitude(s)), a point_assignment slot (a row of numeric steppers, one per item), or a
+// dynamic-stat magnitude(s) + an inline-repetition stepper when the pick declares one), a
+// point_assignment slot (a row of numeric steppers, one per item), or a
 // build_parameter slot (a generic control over BuildParamInput). Row chrome (hover/diff
 // highlighting, the click-to-cursor/ctrl-click-to-edit behaviour, the cursor anchor, the
 // errors list) is identical across all three and lives here; each type's own control + diff
@@ -59,7 +60,8 @@ const props = defineProps<{
   // build_parameter only
   paramDiffers?: boolean;
   otherParamLabel?: string;
-  // point_assignment only
+  // point_assignment, and an item_picker whose pick repeats inline -- the same stored counts,
+  // so one pair of props covers both.
   assignmentDiffers?: boolean;
   otherAssignmentLabel?: string;
   /** True for the row immediately above a separator -- its own bottom border would otherwise
@@ -122,7 +124,8 @@ useCursorRowKeys(anchor, {
   onEnter: () => control.value?.focus(),
   onClear: () => {
     if (props.slotDef.type === "item_picker") {
-      buildEditor.setChoice(props.slotDef.id, "");
+      // To the slot's `default` where it has one: clearing means "as a fresh build has it".
+      buildEditor.setChoice(props.slotDef.id, props.slotDef.default ?? "");
     } else if (props.slotDef.type === "point_assignment") {
       buildEditor.resetAssignmentsToDefault(
         props.slotDef as PointAssignmentSlot,
@@ -205,6 +208,8 @@ useCursorRowKeys(anchor, {
         :value-diffs="valueDiffs"
         :occurrence-differs="occurrenceDiffers"
         :other-occurrence-label="otherOccurrenceLabel"
+        :assignment-differs="assignmentDiffers"
+        :other-assignment-label="otherAssignmentLabel"
       />
       <PointAssignmentRow
         v-else-if="slotDef.type === 'point_assignment'"

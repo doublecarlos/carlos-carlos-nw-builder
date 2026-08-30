@@ -4,6 +4,7 @@ import { computed, type Ref } from "vue";
 import { getPath } from "../lib/build-path";
 import { dynamicValueKey } from "../lib/dynamic-stats";
 import { label as statLabel } from "../lib/format";
+import { repetitionRows } from "../lib/inline-repetition";
 import type {
   Build,
   BuildParameterSlot,
@@ -11,6 +12,7 @@ import type {
   Db,
   EvaluatedBonus,
   Item,
+  ItemPickerSlot,
   PointAssignmentSlot,
   ResolvedBuild,
   StatValues,
@@ -61,17 +63,25 @@ export function paramDiffTitle(
   return `${paramLabel(slot, getPath(compareBuild.context, slot.path))}`;
 }
 
-/** True if any row of this point_assignment slot differs from the compare build -- needs `db`
- * (unlike `paramDiffers`) since the row list is resolved by the slot's `filter`, not carried on
- * the slot itself. */
+/** True if any of this slot's inline-repetition counts differs from the compare build -- every
+ * row of a `point_assignment` slot, or an `item_picker`'s own repeating pick. Needs `db`
+ * (unlike `paramDiffers`) since neither slot carries its item list on itself.
+ *
+ * Two builds holding different picks report no difference here: the choice note covers that,
+ * and two items' counts aren't comparable -- same reasoning `valueDiffs` gives. */
 export function assignmentDiffers(
   db: Db,
   build: Build,
   compareBuild: Build | null,
-  slot: PointAssignmentSlot,
+  slot: PointAssignmentSlot | ItemPickerSlot,
 ) {
   if (!compareBuild) return false;
-  return db.forSlot(slot.id).some((item) => {
+  if (
+    slot.type === "item_picker" &&
+    (build.choices?.[slot.id] ?? "") !== (compareBuild.choices?.[slot.id] ?? "")
+  )
+    return false;
+  return repetitionRows(db, build, slot).some((item) => {
     const def = item.inlineRepetition!.default;
     const here = build.assignments?.[slot.id]?.[item.id] ?? def;
     const there = compareBuild.assignments?.[slot.id]?.[item.id] ?? def;
@@ -80,16 +90,16 @@ export function assignmentDiffers(
 }
 
 /** The compare build's counts for every row of this slot, "Item A 2, Item B 0" -- the
- * point_assignment counterpart to `paramDiffTitle`. Needs `db` (unlike `paramDiffTitle`) to
- * resolve the slot's filter to its rows and each row's item id to a display name. */
+ * inline-repetition counterpart to `paramDiffTitle`. Needs `db` to resolve the slot's rows and
+ * their names, and `build` to say which item an `item_picker`'s single row holds. */
 export function assignmentDiffTitle(
   db: Db,
+  build: Build | null,
   compareBuild: Build | null,
-  slot: PointAssignmentSlot,
+  slot: PointAssignmentSlot | ItemPickerSlot,
 ) {
   if (!compareBuild) return undefined;
-  return db
-    .forSlot(slot.id)
+  return repetitionRows(db, build, slot)
     .map((item) => {
       const there =
         compareBuild.assignments?.[slot.id]?.[item.id] ??

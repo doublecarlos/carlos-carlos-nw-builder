@@ -567,6 +567,16 @@ export function validateSlots(slots: Slot[]): LintFinding[] {
       paramSlots.set(slot.path, slot);
   }
   for (const slot of slots) {
+    // Every slot type carries `visibleWhen`, so this runs ahead of the per-type branches
+    // below: a mistyped condition on a separator is as broken as one on a param.
+    if (slot.visibleWhen) {
+      checkConditions(
+        slot.visibleWhen,
+        `${slot.id} visibleWhen`,
+        (level, message) => findings.push({ level, kind: "item", message }),
+        paramSlots,
+      );
+    }
     if (slot.type === "point_assignment") {
       if (!slot.filter) {
         findings.push({
@@ -591,6 +601,15 @@ export function validateSlots(slots: Slot[]): LintFinding[] {
           level: "error",
           kind: "item",
           message: `${slot.id}: item_picker slot has both a filter and tags -- pick one, resolving both is ambiguous`,
+        });
+      }
+      // With no `default` the only state `disallowEmpty` forbids is the one every fresh build
+      // starts in.
+      if (slot.disallowEmpty && !slot.default) {
+        findings.push({
+          level: "error",
+          kind: "item",
+          message: `${slot.id}: disallowEmpty needs a default -- without one every fresh build starts in the state it forbids`,
         });
       }
       continue;
@@ -659,15 +678,9 @@ export function validateSlots(slots: Slot[]): LintFinding[] {
       }
     }
     if (slot.visibleWhen) {
-      checkConditions(
-        slot.visibleWhen,
-        `${slot.id} visibleWhen`,
-        (level, message) => findings.push({ level, kind: "item", message }),
-        paramSlots,
-      );
-      // Harmless at runtime -- `visibleWhen` is evaluated against the already-resolved context,
-      // so the row would just disappear at whichever values fail -- but a param that hides
-      // itself can never be set back, which is never what the author meant.
+      // The condition itself is checked at the top of the loop; this is the one rule only a
+      // `build_parameter` can break. Harmless at runtime -- the row just disappears at
+      // whichever values fail -- but a param that hides itself can never be set back.
       const read = new Set<string>();
       conditionPaths(slot.visibleWhen, read);
       if (read.has(slot.path)) {
@@ -682,14 +695,15 @@ export function validateSlots(slots: Slot[]): LintFinding[] {
   return findings;
 }
 
-// A preset field's declared slot type -- `validatePresets`' own check that e.g. `choices`
-// only ever references an `item_picker` slot, not a `build_parameter` one wearing the wrong
-// hat and silently doing nothing when applied.
+// The slot types a preset field may reference -- `validatePresets`' own check that e.g.
+// `choices` only ever names an `item_picker` slot, not a `build_parameter` one wearing the
+// wrong hat and silently doing nothing when applied. A list rather than one type because
+// `assignments` addresses inline-repetition counts, which both instancing slot types carry.
 const PRESET_FIELD_SLOT_TYPE = {
-  params: "build_parameter",
-  choices: "item_picker",
-  values: "item_picker",
-  assignments: "point_assignment",
+  params: ["build_parameter"],
+  choices: ["item_picker"],
+  values: ["item_picker"],
+  assignments: ["point_assignment", "item_picker"],
 } as const;
 
 // The slot types `clears` can reset -- the three that hold a build value. A `separator`/`text`
@@ -733,9 +747,9 @@ export function validatePresets(
       seenIds.add(preset.id);
     }
 
-    for (const [field, expectedType] of Object.entries(
+    for (const [field, expectedTypes] of Object.entries(
       PRESET_FIELD_SLOT_TYPE,
-    )) {
+    ) as [keyof typeof PRESET_FIELD_SLOT_TYPE, readonly Slot["type"][]][]) {
       for (const slotId of Object.keys(
         preset[field as keyof typeof PRESET_FIELD_SLOT_TYPE] ?? {},
       )) {
@@ -747,12 +761,12 @@ export function validatePresets(
             name: preset.id,
             message: `preset "${preset.id}": "${slotId}" (in ${field}) is not a known slot`,
           });
-        } else if (slot.type !== expectedType) {
+        } else if (!expectedTypes.includes(slot.type)) {
           findings.push({
             level: "error",
             kind: "sectionPreset",
             name: preset.id,
-            message: `preset "${preset.id}": "${slotId}" is a ${slot.type} slot, but ${field} only applies to a ${expectedType} slot`,
+            message: `preset "${preset.id}": "${slotId}" is a ${slot.type} slot, but ${field} only applies to ${expectedTypes.map((type) => `a ${type}`).join(" or ")} slot`,
           });
         } else if (slot.section !== preset.section) {
           findings.push({
@@ -902,6 +916,48 @@ export function validateParamReaders(
  * Lint the composed catalogue. Warnings are things that are probably a mistake; errors are
  * things the engine will misread or silently drop.
  */
+/**
+ * Lint every `ItemPickerSlot.default` against the catalogue: an id that does not exist, or is
+ * not one of that slot's own candidates, leaves the slot quietly empty in every fresh build.
+ * Split out of `validateSlots` because it is the one slot rule needing the item list too.
+ */
+export function validateSlotDefaults(
+  slots: Slot[],
+  items: Item[],
+): LintFinding[] {
+  const findings: LintFinding[] = [];
+  const byId = new Map(items.map((item) => [item.id, item]));
+
+  for (const slot of slots) {
+    if (slot.type !== "item_picker" || !slot.default) continue;
+    const item = byId.get(slot.default);
+    if (!item) {
+      findings.push({
+        level: "error",
+        kind: "slot",
+        name: slot.id,
+        message: `${slot.id}: default "${slot.default}" is not an item in the catalogue`,
+      });
+      continue;
+    }
+    // Same `filter` XOR `tags` resolution `Db.forSlot` does: a default the slot would never
+    // offer is silently no default at all.
+    const candidate = slot.tags?.length
+      ? (item.tags ?? []).some((tag) => slot.tags!.includes(tag))
+      : item.filter === slot.filter;
+    if (!candidate) {
+      findings.push({
+        level: "error",
+        kind: "slot",
+        name: slot.id,
+        message: `${slot.id}: default "${slot.default}" is not one of this slot's own candidates`,
+      });
+    }
+  }
+
+  return findings;
+}
+
 export function validate(
   items: Item[],
   bonuses: Bonus[],
@@ -911,6 +967,7 @@ export function validate(
 ): LintFinding[] {
   const findings: LintFinding[] = [
     ...validateSlots(slots),
+    ...validateSlotDefaults(slots, items),
     ...validatePresets(presets, slots),
     ...validateParamSchema(slots, schema),
     ...validateParamReaders(slots, bonuses),

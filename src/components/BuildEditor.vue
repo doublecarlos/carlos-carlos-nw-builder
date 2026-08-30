@@ -271,9 +271,15 @@ interface SectionRow extends SlotSection {
   presets: SectionPreset[];
 }
 
-/** True for a slotDef the section body actually renders -- a `quick` build_parameter slotDef lives
- * in the always-visible QuickOptions strip instead, so it never counts toward this section's
- * badge/diff/unsaved state (it's never hidden by a collapse the way a real row can be). */
+/** True for a slotDef that renders in the always-visible QuickOptions strip instead of its own
+ * section body, and so never counts toward that section's badge/diff/unsaved state. */
+function isQuick(slotDef: Slot) {
+  return (
+    (slotDef.type === "build_parameter" || slotDef.type === "item_picker") &&
+    !!slotDef.quick
+  );
+}
+
 function rowDiffers(slotDef: Slot) {
   if (slotDef.type === "build_parameter")
     return paramDiffers(build.value, compareBuild.value, slotDef);
@@ -283,6 +289,13 @@ function rowDiffers(slotDef: Slot) {
       build.value,
       compareBuild.value,
       slotDef,
+    );
+  // An item_picker's pick can repeat inline -- a count `rowHasDiff` (choice/value/bonus) knows
+  // nothing about.
+  if (slotDef.type === "item_picker")
+    return (
+      rowHasDiff(slotDef.id) ||
+      assignmentDiffers(db.value, build.value, compareBuild.value, slotDef)
     );
   return rowHasDiff(slotDef.id);
 }
@@ -303,7 +316,7 @@ const allSlotsBySection = computed(() =>
     slots: db.value.slots.filter(
       (slotDef) =>
         slotDef.section === section.id &&
-        !(slotDef.type === "build_parameter" && slotDef.quick) &&
+        !isQuick(slotDef) &&
         slotVisible(slotDef, result.value.context),
     ),
   })),
@@ -864,13 +877,13 @@ watch(
                   : undefined
               "
               :assignment-differs="
-                slotDef.type === 'point_assignment'
+                slotDef.type !== 'build_parameter'
                   ? assignmentDiffers(db, build, compareBuild, slotDef)
                   : false
               "
               :other-assignment-label="
-                slotDef.type === 'point_assignment'
-                  ? assignmentDiffTitle(db, compareBuild, slotDef)
+                slotDef.type !== 'build_parameter'
+                  ? assignmentDiffTitle(db, build, compareBuild, slotDef)
                   : undefined
               "
               @enter="(event, itemId) => onRowEnter(event, slotDef.id, itemId)"

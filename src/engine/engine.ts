@@ -74,8 +74,12 @@ function rowVectors(
     if (row.item) {
       const factor = scaleFactorFor(schema, resolved.ctx, row.item);
       for (const key of keys) {
+        // `repetitions` is 1 for an ordinary pick, so this only bites for an item that
+        // declares an `inlineRepetition`: N repetitions carry N times the stat line, exactly as
+        // N separate picks of the item would.
         if (row.item[key])
-          stats[key] = scaledStat(schema, row.item, key, factor);
+          stats[key] =
+            scaledStat(schema, row.item, key, factor) * row.repetitions;
       }
     }
     // A point_assignment row has no single item to read stats off of -- its assignments'
@@ -90,7 +94,13 @@ function rowVectors(
       for (const [key, value] of bonusStats)
         stats[key] = (stats[key] ?? 0) + value;
     }
-    return { slotId: row.slotId, choice: row.choice, item: row.item, stats };
+    return {
+      slotId: row.slotId,
+      choice: row.choice,
+      item: row.item,
+      stats,
+      repetitions: row.repetitions,
+    };
   });
 }
 
@@ -133,11 +143,10 @@ function run(
   const dynamicStatMods = zeros(keys);
   for (const row of rows) {
     for (const config of row.item?.dynamicStats ?? []) {
-      dynamicStatMods[config.stat] += readDynamicValue(
-        build,
-        row.slotId,
-        config,
-      );
+      // Scaled by the row's repetition count for the same reason its plain stats are: one
+      // magnitude typed against an item that is in the build N times describes each of those N.
+      dynamicStatMods[config.stat] +=
+        readDynamicValue(build, row.slotId, config) * row.repetitions;
     }
   }
   const afterDynamicStatMods = addVectors(sums, dynamicStatMods, keys);
@@ -382,7 +391,10 @@ function findErrors(
   const counts = new Map<string, number>();
 
   for (const row of resolved.rows) {
-    if (row.item) counts.set(row.item.id, (counts.get(row.item.id) ?? 0) + 1);
+    // By `repetitions`, not by 1: a pick that repeats inline is that many copies for maxCopies'
+    // purposes, same as the same count spent on a point_assignment row below.
+    if (row.item)
+      counts.set(row.item.id, (counts.get(row.item.id) ?? 0) + row.repetitions);
   }
   // point_assignment slots contribute to the same maxCopies count as an item_picker pick would
   // (each point is "one more copy"), but they have no ResolvedRow.item to have been counted by
@@ -489,6 +501,23 @@ function findErrors(
           severity: "error",
         });
       }
+    }
+
+    // An item_picker pick's own inline-repetition count, same reasoning as the checks around
+    // it. A point_assignment row's counts are checked in their own loop above, against the
+    // slot's item list rather than a single pick.
+    const repetition = row.item.inlineRepetition;
+    if (
+      repetition &&
+      (row.repetitions < repetition.min || row.repetitions > repetition.max)
+    ) {
+      errors.push({
+        slotId: row.slotId,
+        kind: "outOfRange",
+        choice: row.item.name,
+        message: `${row.item.name}: ${row.repetitions} is outside ${repetition.min}–${repetition.max}`,
+        severity: "error",
+      });
     }
 
     // A BonusOccurrenceConfig's count, same reasoning as dynamicStats' own check above: not

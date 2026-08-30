@@ -27,6 +27,7 @@ import type {
   TrashEntry,
   ItemHistory,
   Db,
+  Slot,
 } from "../types";
 
 const OVERLAY_KEY = "nw:catalog-overlay";
@@ -137,15 +138,25 @@ export const newId = (prefix = "b") =>
  * slots' own `default` -- no separate defaults object to keep in sync with the slot list, and
  * no forte-specific special case (its 3 picks are just 3 more `default`s on 3 more slots).
  */
-export function defaultBuild(name = "New build"): Build {
+/**
+ * The stored values a fresh build starts with, read off `slots`' declared defaults: a
+ * `build_parameter`'s written to its path, an `item_picker`'s as an ordinary choice, and every
+ * `point_assignment` row from its item's own `inlineRepetition.default` (`db` resolves those
+ * item lists). Seeded values are ordinary stored ones, so nothing downstream needs an
+ * `?? slot.default` fallback for a build the app itself produced.
+ */
+export function seededDefaults(
+  slots: Slot[],
+  db: Db,
+): Pick<Build, "context" | "choices" | "assignments"> {
   const root: { context: Record<string, unknown> } = { context: {} };
   const assignments: Build["assignments"] = {};
-  // Base catalogue only (no workspace overlay) -- same reach every other pure helper in this
-  // file has, and enough to seed every shipped point_assignment row's default.
-  const db = baseDb();
-  for (const slot of NW_SLOTS.slots) {
+  const choices: Build["choices"] = {};
+  for (const slot of slots) {
     if (slot.type === "build_parameter" && slot.default !== undefined) {
       setPath(root.context, slot.path, slot.default);
+    } else if (slot.type === "item_picker") {
+      if (slot.default) choices[slot.id] = slot.default;
     } else if (slot.type === "point_assignment") {
       const row: Record<string, number> = {};
       for (const item of db.forSlot(slot.id))
@@ -154,13 +165,28 @@ export function defaultBuild(name = "New build"): Build {
     }
   }
   return {
+    context: root.context as unknown as Build["context"],
+    choices,
+    assignments,
+  };
+}
+
+export function defaultBuild(name = "New build"): Build {
+  // Base catalogue only (no workspace overlay) -- same reach every other pure helper in this
+  // file has, and enough to seed every shipped default. A default on an *overlay-added* slot
+  // is not seeded here.
+  const { context, choices, assignments } = seededDefaults(
+    NW_SLOTS.slots,
+    baseDb(),
+  );
+  return {
     id: newId(),
     name,
-    choices: {},
+    choices,
     values: {},
     assignments,
     occurrenceInputs: {},
-    context: root.context as unknown as Build["context"],
+    context,
     // The quick-compare picker (App.vue topbar). Saved with the build -- unlike `tab`, which
     // is pure session state -- so reopening a build remembers what you were sizing it up
     // against. `id` is another build's id, resolved (and gracefully dropped if it no longer

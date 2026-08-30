@@ -1,7 +1,8 @@
-// `BuildParameterSlot.visibleWhen` (issue #270): a param's row can be scoped to when it is
-// relevant. The rule the whole design rests on -- and what most of this file is about -- is
-// that hiding is *purely* a display concern: a hidden param still resolves to its stored value
-// (or its `default`), so nothing a condition reads depends on what is currently on screen.
+// `SlotVisibility.visibleWhen`: a slot's row can be scoped to when it is relevant, and every
+// slot type carries the field. The rule the whole design rests on -- and what most of this file
+// is about -- is that hiding is *purely* a display concern: a hidden param still resolves to its
+// stored value (or its `default`), a hidden item_picker stays equipped, so nothing a condition
+// reads depends on what is on screen.
 import { describe, it, expect } from "vitest";
 import { slotVisible } from "../../src/lib/slot-visibility";
 import * as db from "../../src/data/db";
@@ -106,7 +107,7 @@ describe("slotVisible", () => {
     expect(slotVisible(unscoped, ctx())).toBe(true);
   });
 
-  it("shows every non-build_parameter slot -- visibleWhen is a param-only field", () => {
+  it("shows a slot of any other type that declares no visibleWhen", () => {
     expect(slotVisible(testSlots.slots[0], ctx())).toBe(true);
   });
 
@@ -156,5 +157,82 @@ describe("a hidden param still resolves", () => {
     const gate = { param: { key: "forte.primary", equals: "sev_p" } };
     expect(evaluate(gate, hidden)).toBe(true);
     expect(evaluate(gate, shown)).toBe(true);
+  });
+});
+
+// Every variant of `Slot` carries the field, and `slotVisible` decides on the condition alone
+// rather than on the slot's type.
+describe("visibleWhen on the other slot types", () => {
+  const scoped = { equipped: { tag: "test:paragon" } };
+  const withParagon = ctx({ tags: new Map([["test:paragon", 1]]) });
+
+  const others: Slot[] = [
+    {
+      id: "options.scopedPicker",
+      label: "Scoped picker",
+      section: "options",
+      type: "item_picker",
+      filter: "test_paragon",
+      visibleWhen: scoped,
+    },
+    {
+      id: "boons.scopedPoints",
+      label: "Scoped points",
+      section: "options",
+      type: "point_assignment",
+      filter: "test_boon",
+      visibleWhen: scoped,
+    },
+    {
+      id: "options.scopedSeparator",
+      section: "options",
+      type: "separator",
+      visibleWhen: scoped,
+    },
+    {
+      id: "options.scopedText",
+      section: "options",
+      type: "text",
+      text: "only while a paragon is equipped",
+      visibleWhen: scoped,
+    },
+  ];
+
+  for (const slot of others) {
+    it(`hides and shows a ${slot.type} slot on its own condition`, () => {
+      expect(slotVisible(slot, ctx())).toBe(false);
+      expect(slotVisible(slot, withParagon)).toBe(true);
+      expect(slotVisible(slot, null)).toBe(true);
+    });
+  }
+});
+
+// The same "display only" guarantee the param case rests on, for the slot type that actually
+// carries stats: hiding an item_picker's row must not unequip what is in it.
+describe("a hidden item_picker still equips", () => {
+  const hiddenPicker: Slot = {
+    id: "options.hiddenPicker",
+    label: "Hidden picker",
+    section: "options",
+    type: "item_picker",
+    filter: "test_paragon",
+    // Scoped to a tag nothing in this fixture ever carries, so the row is always hidden.
+    visibleWhen: { equipped: { tag: "test:never" } },
+  };
+  const hiddenDb = db.build([paragonItem], [], emptySchema, {
+    sections: testSlots.sections,
+    slots: [hiddenPicker],
+  });
+
+  it("counts its item in ctx.equipped and its tags while the row is off screen", () => {
+    const build = {
+      ...testBuild(),
+      choices: { "options.hiddenPicker": paragonItem.id },
+    };
+    const { ctx: resolved } = bonus.collect(hiddenDb, build);
+
+    expect(slotVisible(hiddenPicker, resolved)).toBe(false);
+    expect(resolved.equipped.get(paragonItem.id)).toBe(1);
+    expect(resolved.tags.get("test:paragon")).toBe(1);
   });
 });
