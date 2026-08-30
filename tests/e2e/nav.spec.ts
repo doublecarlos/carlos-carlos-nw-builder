@@ -1,14 +1,16 @@
 // End-to-end coverage for Nav.vue's sidebar: builds, customization layers, recently
 // deleted, filtering, ordering, and the layer checkbox.
-import { test, expect } from "@playwright/test";
+import { test, expect, type Locator } from "@playwright/test";
 import { openBuilder } from "./support/app";
 import {
   buildRow,
+  folderRow,
   layerRow,
   openRowMenu,
   confirmDangerAction,
   renameViaSidebar,
   addBuild,
+  addFolder,
   addLayer,
   filterBuilds,
   filterLayers,
@@ -510,4 +512,48 @@ test("Delete on a focused row arms a confirm notice, and fires on the second pre
   await expect(buildRow(page, "Build 2")).toHaveCount(0);
   const trash = recentlyDeletedHeader(page);
   await expect(trash).toBeVisible();
+});
+
+// --- Row alignment ------------------------------------------------------------------
+
+/** How far a child's vertical centre sits from its row's, in px. */
+async function centreOffset(row: Locator, childSelector: string) {
+  const rowBox = await row.boundingBox();
+  const childBox = await row.locator(childSelector).boundingBox();
+  if (!rowBox || !childBox)
+    throw new Error(`no layout box for ${childSelector}`);
+  return Math.abs(
+    rowBox.y + rowBox.height / 2 - (childBox.y + childBox.height / 2),
+  );
+}
+
+test("kebab icons sit on their row's vertical centre", async ({ page }) => {
+  await openBuilder(page);
+  await addFolder(page);
+  await page.locator(".nav-rename").press("Enter");
+  await addLayer(page);
+  await page.locator(".nav-rename").press("Enter");
+
+  for (const row of [
+    buildRow(page, "Build 1"),
+    folderRow(page, "Folder 1"),
+    layerRow(page, "Layer 1"),
+  ]) {
+    // Sub-pixel rather than exact: row heights land on half pixels at this font size.
+    expect(await centreOffset(row, ".nav-kebab svg")).toBeLessThan(1);
+  }
+});
+
+test("a top-level build name lines up with a folder name", async ({ page }) => {
+  await openBuilder(page);
+  await addFolder(page);
+  await page.locator(".nav-rename").press("Enter");
+
+  const build = await buildRow(page, "Build 1")
+    .locator(".nav-name")
+    .boundingBox();
+  const folder = await folderRow(page, "Folder 1")
+    .locator(".nav-name")
+    .boundingBox();
+  expect(build!.x).toBeCloseTo(folder!.x, 0);
 });

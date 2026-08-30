@@ -110,8 +110,9 @@ function onRowKeydown(event: KeyboardEvent) {
     ]"
     v-bind="rowProps"
   >
-    <!-- Stands in for a folder header's chevron so build names line up with folder names. -->
-    <span class="size-[18px] flex-none" aria-hidden="true" />
+    <!-- Stands in for a folder header's chevron so build names line up with folder names:
+         same icon size, and a margin standing in for the toggle button's padding. -->
+    <span class="m-0.5 size-[14px] flex-none" aria-hidden="true" />
 
     <input
       v-if="renaming"
@@ -145,11 +146,11 @@ function onRowKeydown(event: KeyboardEvent) {
       </button>
     </BaseTooltip>
 
-    <div class="nav-menu-wrap relative">
+    <div class="nav-menu-wrap relative flex items-center">
       <BaseTooltip text="Build menu">
         <button
           type="button"
-          class="nav-kebab flex-none cursor-pointer rounded-md px-1.5 leading-none text-muted hover:bg-surface-2 hover:text-text"
+          class="nav-kebab flex flex-none cursor-pointer items-center rounded-md px-1.5 py-1 text-muted hover:bg-surface-2 hover:text-text"
           aria-label="Build menu"
           @click="emit('menu-open', build.id, $event)"
         >

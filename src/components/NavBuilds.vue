@@ -364,11 +364,11 @@ function moveFocus(dir: 1 | -1) {
               row.folder.builds.length
             }}</span>
 
-            <div class="nav-menu-wrap relative">
+            <div class="nav-menu-wrap relative flex items-center">
               <BaseTooltip text="Folder menu">
                 <button
                   type="button"
-                  class="nav-kebab flex-none cursor-pointer rounded-md px-1.5 leading-none text-muted hover:bg-surface-2 hover:text-text"
+                  class="nav-kebab flex flex-none cursor-pointer items-center rounded-md px-1.5 py-1 text-muted hover:bg-surface-2 hover:text-text"
                   aria-label="Folder menu"
                   @click="$emit('menu-open', row.folder.id, $event)"
                 >
