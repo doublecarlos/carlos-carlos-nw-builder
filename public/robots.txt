@@ -7,5 +7,6 @@ Allow: /
 Disallow: /tessdata/
 Disallow: /tesseract/
 
-# No `Sitemap:` line: it has to be an absolute URL, and the app has no deployed origin yet.
-# Add one here alongside the canonical link and `og:url` in index.html once it does.
+# One page means a one-URL sitemap, but the line still names the canonical origin to a crawler
+# that has not fetched the page yet. Same origin as the canonical link in index.html.
+Sitemap: https://carloscarlosnwbuilder.pages.dev/sitemap.xml

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- One entry, and there is unlikely to be a second: routing lives in the query string, so
+     every deep link is this page with local state attached and canonicalises back to it.
+     No <lastmod>: nothing in the build would keep it honest, and a stale date is worse than
+     none at all. -->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://carloscarlosnwbuilder.pages.dev/</loc>
+    <changefreq>weekly</changefreq>
+  </url>
+</urlset>

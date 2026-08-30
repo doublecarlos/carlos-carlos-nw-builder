@@ -47,7 +47,10 @@ const HASHED_PREFIX = new URL("assets/", INDEX).pathname;
 const shellUrls = (html) =>
   [...html.matchAll(/(?:src|href)="([^"]+)"/g)]
     .map(([, value]) => new URL(value, INDEX))
-    .filter((url) => url.origin === self.location.origin)
+    // Same-origin only, and never the page itself: index.html's canonical link points at the
+    // deploy root, which install has already cached by hand -- following it here would just
+    // fetch the page a second time.
+    .filter((url) => url.origin === self.location.origin && url.href !== INDEX)
     .map((url) => url.href);
 
 /**
