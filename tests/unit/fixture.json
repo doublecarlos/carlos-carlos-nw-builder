@@ -877,6 +877,6 @@
       }
     },
     "name": "default",
-    "note": "test-dev as found: Warlock DPS, single target, 60s, all effects on. Mount figures were retargeted for #286: the sheet stored them pre-multiplied by max bolster and rounded inconsistently at source (item level 1750*2.25 = 3937.5 truncated to 3937, combined rating 1575*2.25 = 3543.75 rounded up to 3544). The engine scales unrounded base values and lands on the exact products, so the expectations here are those products -- the sheet's own arithmetic, carried out without its rounding. Only values that actually disagreed were touched, and every one was within the offset those two source roundings can account for; the companion values, which divide exactly by 2.2, needed no change at all. Everything still has to reproduce to 1e-6. Expectations were later rebased onto the engine after the combat enchantment item levels were halved and their outgoing damage moved from a multiplicative to an additive stat: item level feeds the rating-to-percent conversion, so every percentage stat, cap, overcap and derived total shifted with it. The same rebase was applied again when the two overload enchantments in this build gained an item level of 1 each: +2 item level moves every rating-derived percentage by 2e-5 and every cap by 2, and damage, EHP, healing and HP follow."
+    "note": "Port of a spredsheet-made build: Warlock DPS, single target, 60s, all effects on."
   }
 ]
