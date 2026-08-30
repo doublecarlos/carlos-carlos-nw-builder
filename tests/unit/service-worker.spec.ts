@@ -34,6 +34,7 @@ const indexHtml = (hash: string) => `<!doctype html>
   <head>
     <link rel="canonical" href="${ORIGIN}/" />
     <link rel="icon" href="/favicon.ico" sizes="32x32" />
+    <link rel="manifest" href="/manifest.webmanifest" />
     <script type="module" crossorigin src="/assets/index-${hash}.js"></script>
     <link rel="stylesheet" crossorigin href="/assets/index-${hash}.css">
   </head>
@@ -92,6 +93,7 @@ function createWorker() {
     [`${ORIGIN}/assets/index-v2.js`, "// entry v2"],
     [`${ORIGIN}/assets/index-v2.css`, ":root{--v2:1}"],
     [`${ORIGIN}/favicon.ico`, "icon-bytes"],
+    [`${ORIGIN}/manifest.webmanifest`, "{}"],
     [`${ORIGIN}/icon-512.png`, "logo-bytes"],
     [`${ORIGIN}/tesseract/worker.min.js`, "// ocr worker"],
   ]);
@@ -191,6 +193,12 @@ describe("install", () => {
     // The canonical link is a same-origin `href` like any other, so the manifest parser sees
     // it; priming has already cached the page under that URL by then.
     expect(worker.fetched.filter((url) => url === INDEX)).toHaveLength(1);
+  });
+
+  it("primes the manifest, so an installed copy still starts offline", async () => {
+    await worker.install();
+
+    expect(worker.cached()).toContain(`${ORIGIN}/manifest.webmanifest`);
   });
 
   it("primes the landing logo, which the entry page never mentions", async () => {

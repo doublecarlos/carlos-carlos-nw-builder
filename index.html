@@ -81,6 +81,13 @@
     <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 
+    <!-- What a browser reads to offer "install": the app's name, its icons and the colours to
+         paint the window chrome and the launch splash with. It is a plain JSON file with no
+         room for comments of its own, so the reasoning for what is in it -- and the assertions
+         holding it to this head and to src/base.css -- live in tests/unit/manifest.spec.ts.
+         The service worker precaches it along with everything else this page links to. -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+
     <!-- Tells a search engine what kind of thing this page is, which a body of gear tables
          cannot: a free web app, about the game, that needs a browser and nothing else. -->
     <script type="application/ld+json">
