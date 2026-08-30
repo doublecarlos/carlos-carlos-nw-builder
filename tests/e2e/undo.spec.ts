@@ -3,7 +3,7 @@
 import { test, expect } from "@playwright/test";
 import { openBuilder, chooseItem, blurToHeader } from "./support/app";
 
-const HEAD_ITEM = "M29 Enchanted Depthweave Cap (CA)";
+const HEAD_ITEM = "M29 Enchanted Depthweave Cap";
 
 test("Ctrl+Z undoes a build slot edit", async ({ page }) => {
   await openBuilder(page);

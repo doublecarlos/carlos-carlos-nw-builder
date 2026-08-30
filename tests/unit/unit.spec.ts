@@ -151,7 +151,7 @@ describe("bonus model semantics", () => {
     // fire at once.
     const ID = "m32-deathsilver-ring-of-submission-strike";
     const ring = {
-      "gear.ring1": "M32 Deathsilver Ring of  Submission (Strike)",
+      "gear.ring1": "M32 Deathsilver Ring of Submission",
     };
     const at = (duration: number) => runBuild(ring, { duration });
 
@@ -166,7 +166,7 @@ describe("bonus model semantics", () => {
   it("Toggles gate bonuses, and a two-toggle condition needs both", () => {
     const ID = "m32-deathsilver-ring-of-submission-strike";
     const ring = {
-      "gear.ring1": "M32 Deathsilver Ring of  Submission (Strike)",
+      "gear.ring1": "M32 Deathsilver Ring of Submission",
     };
     expect(runBuild(ring).activeById.has(ID)).toBe(true);
     expect(
@@ -242,7 +242,7 @@ describe("bonus model semantics", () => {
     ).toBeCloseTo(0.12, 9);
 
     const predatorId = "m31-thayan-predator";
-    const ring = { "gear.ring1": "M31 Runebound Shackle (Damage)" };
+    const ring = { "gear.ring1": "M31 Runebound Shackle" };
     expect(runBuild(ring).statOf(predatorId, "outgoing_damage")).toBeCloseTo(
       0.02,
       9,
@@ -286,10 +286,10 @@ describe("bonus model semantics", () => {
     // Replaces legacy `bonus_overrides`.
     const ID = "m31-bloodletting-ascendant";
     const alone = runBuild({
-      "gear.boots": "M31 Greaves of the Crimson March (Damage)",
+      "gear.boots": "M31 Greaves of the Crimson March",
     });
     const suppressed = runBuild({
-      "gear.boots": "M31 Greaves of the Crimson March (Damage)",
+      "gear.boots": "M31 Greaves of the Crimson March",
       "gear.shirt": "M33 Cracked Stormbind Tunic Shirt",
     });
     expect(alone.activeById.has(ID)).toBe(true);

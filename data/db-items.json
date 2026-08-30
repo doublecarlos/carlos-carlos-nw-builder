@@ -516,7 +516,7 @@
   },
   {
     "id": "acute-senses-ca",
-    "name": "Acute Senses (CA)",
+    "name": "Acute Senses",
     "filter": "companion_enhancement",
     "il": 900,
     "bonuses": ["acute-senses-ca"]
@@ -668,7 +668,7 @@
   },
   {
     "id": "avian-aura-group-celestial",
-    "name": "Avian Aura (Group)",
+    "name": "Avian Aura",
     "filter": "group_buff",
     "maxCopies": 1,
     "bonuses": ["avian-aura-group-celestial"]
@@ -2006,7 +2006,7 @@
   },
   {
     "id": "exploit-weakness-strike-sev-blaspheme",
-    "name": "Exploit Weakness (Strike/Sev - Blaspheme)",
+    "name": "Exploit Weakness",
     "filter": "companion_enhancement",
     "il": 900,
     "bonuses": ["exploit-weakness-strike-sev-blaspheme"]
@@ -3039,7 +3039,7 @@
   },
   {
     "id": "m29-enchanted-depthweave-cap-ca",
-    "name": "M29 Enchanted Depthweave Cap (CA)",
+    "name": "M29 Enchanted Depthweave Cap",
     "filter": "gear_head",
     "il": 3200,
     "combined_rating": 2880,
@@ -3051,7 +3051,7 @@
   },
   {
     "id": "m29-enchanted-depthweave-coat-acc-ca",
-    "name": "M29 Enchanted Depthweave Coat (Acc/CA)",
+    "name": "M29 Enchanted Depthweave Coat",
     "filter": "gear_armor",
     "il": 3200,
     "combined_rating": 2880,
@@ -3110,7 +3110,7 @@
   },
   {
     "id": "m31-bindings-of-the-death-pact-damage",
-    "name": "M31 Bindings of the Death Pact (Damage)",
+    "name": "M31 Bindings of the Death Pact",
     "filter": "gear_arms",
     "il": 4300,
     "combined_rating": 3870,
@@ -3121,7 +3121,7 @@
   },
   {
     "id": "m31-bloodlit-veil-ca-power",
-    "name": "M31 Bloodlit Veil (CA/Power)",
+    "name": "M31 Bloodlit Veil",
     "filter": "gear_ring",
     "il": 4150,
     "combined_rating": 3320,
@@ -3133,7 +3133,7 @@
   },
   {
     "id": "m31-bloodwoven-ink-ap",
-    "name": "M31 Bloodwoven Ink (AP)",
+    "name": "M31 Bloodwoven Ink",
     "filter": "gear_shirt",
     "il": 3150,
     "combined_rating": 2835,
@@ -3145,7 +3145,7 @@
   },
   {
     "id": "m31-bloodwoven-sigils-ca",
-    "name": "M31 Bloodwoven Sigils (CA)",
+    "name": "M31 Bloodwoven Sigils",
     "filter": "gear_pants",
     "il": 3150,
     "combined_rating": 2835,
@@ -3156,7 +3156,7 @@
   },
   {
     "id": "m31-bloodwoven-signs-damage",
-    "name": "M31 Bloodwoven Signs (Damage)",
+    "name": "M31 Bloodwoven Signs",
     "filter": "gear_shirt",
     "il": 3150,
     "combined_rating": 2835,
@@ -3167,7 +3167,7 @@
   },
   {
     "id": "m31-bulwark-of-the-eternal-zulkirate-strike-severity",
-    "name": "M31 Bulwark of the Eternal Zulkirate (Strike/Severity)",
+    "name": "M31 Bulwark of the Eternal Zulkirate",
     "filter": "gear_armor",
     "il": 4300,
     "combined_rating": 3870,
@@ -3179,7 +3179,7 @@
   },
   {
     "id": "m31-bulwark-of-the-zulkir-s-decree-power-acc-strike",
-    "name": "M31 Bulwark of the Zulkir's Decree (Power/Acc/Strike)",
+    "name": "M31 Bulwark of the Zulkir's Decree",
     "filter": "gear_armor",
     "il": 4550,
     "combined_rating": 4095,
@@ -3192,7 +3192,7 @@
   },
   {
     "id": "m31-crown-of-the-everscourge-ca",
-    "name": "M31 Crown of the Everscourge (CA)",
+    "name": "M31 Crown of the Everscourge",
     "filter": "gear_head",
     "il": 4550,
     "combined_rating": 4095,
@@ -3203,7 +3203,7 @@
   },
   {
     "id": "m31-gauntlets-of-the-wrathborn-acc-ca",
-    "name": "M31 Gauntlets of the Wrathborn (Acc/CA)",
+    "name": "M31 Gauntlets of the Wrathborn",
     "filter": "gear_arms",
     "il": 4550,
     "combined_rating": 4095,
@@ -3214,7 +3214,7 @@
   },
   {
     "id": "m31-greaves-of-the-crimson-march-damage",
-    "name": "M31 Greaves of the Crimson March (Damage)",
+    "name": "M31 Greaves of the Crimson March",
     "filter": "gear_boots",
     "il": 4550,
     "combined_rating": 4095,
@@ -3242,7 +3242,7 @@
   },
   {
     "id": "m31-runebound-shackle-damage",
-    "name": "M31 Runebound Shackle (Damage)",
+    "name": "M31 Runebound Shackle",
     "filter": "gear_ring",
     "il": 3950,
     "combined_rating": 3160,
@@ -3255,7 +3255,7 @@
   },
   {
     "id": "m31-sanguine-seal-damage",
-    "name": "M31 Sanguine Seal (Damage)",
+    "name": "M31 Sanguine Seal",
     "filter": "gear_ring",
     "il": 3950,
     "combined_rating": 3160,
@@ -3295,7 +3295,7 @@
   },
   {
     "id": "m31-threads-of-the-arch-thrall-power-strike-severity",
-    "name": "M31 Threads of the Arch-Thrall (Power/Strike/Severity)",
+    "name": "M31 Threads of the Arch-Thrall",
     "filter": "gear_boots",
     "il": 4300,
     "combined_rating": 3870,
@@ -3306,7 +3306,7 @@
   },
   {
     "id": "m31-twisted-pact-severity",
-    "name": "M31 Twisted Pact (Severity)",
+    "name": "M31 Twisted Pact",
     "filter": "gear_ring",
     "il": 4150,
     "combined_rating": 3320,
@@ -3329,7 +3329,7 @@
   },
   {
     "id": "m32-5-cindersilk-hood-ap-on-mobs",
-    "name": "M32.5 Cindersilk Hood (AP on mobs)",
+    "name": "M32.5 Cindersilk Hood",
     "filter": "gear_head",
     "il": 4600,
     "combined_rating": 4140,
@@ -3339,7 +3339,7 @@
   },
   {
     "id": "m32-bracers-of-the-infernal-tempest-strike",
-    "name": "M32 Bracers of the Infernal Tempest (Strike)",
+    "name": "M32 Bracers of the Infernal Tempest",
     "filter": "gear_arms",
     "il": 5000,
     "combined_rating": 4500,
@@ -3351,7 +3351,7 @@
   },
   {
     "id": "m32-circlet-of-the-infernal-tempest-strike-sev",
-    "name": "M32 Circlet of the Infernal Tempest (Strike/Sev)",
+    "name": "M32 Circlet of the Infernal Tempest",
     "filter": "gear_head",
     "il": 5000,
     "combined_rating": 4500,
@@ -3404,7 +3404,7 @@
   },
   {
     "id": "m32-deathsilver-coil-of-dominion-acc-strike",
-    "name": "M32 Deathsilver Coil of Dominion (Acc/Strike)",
+    "name": "M32 Deathsilver Coil of Dominion",
     "filter": "gear_ring",
     "il": 4900,
     "combined_rating": 3920,
@@ -3417,7 +3417,7 @@
   },
   {
     "id": "m32-deathsilver-ring-of-submission-strike",
-    "name": "M32 Deathsilver Ring of  Submission (Strike)",
+    "name": "M32 Deathsilver Ring of Submission",
     "filter": "gear_ring",
     "il": 4900,
     "combined_rating": 3920,
@@ -3510,7 +3510,7 @@
   },
   {
     "id": "m32-rotsteel-loop-of-ash-ca",
-    "name": "M32 Rotsteel Loop of Ash (CA)",
+    "name": "M32 Rotsteel Loop of Ash",
     "filter": "gear_ring",
     "il": 4650,
     "combined_rating": 3720,
@@ -3536,7 +3536,7 @@
   },
   {
     "id": "m32-rotsteel-ring-of-spores-strike",
-    "name": "M32 Rotsteel Ring of Spores (Strike)",
+    "name": "M32 Rotsteel Ring of Spores",
     "filter": "gear_ring",
     "il": 4650,
     "combined_rating": 3720,
@@ -4126,7 +4126,7 @@
   },
   {
     "id": "masterwork-sets-2",
-    "name": "Masterwork Weapon Sets (Others)",
+    "name": "Masterwork Weapon Sets",
     "filter": "group_buff",
     "bonuses": [
       {
@@ -4253,7 +4253,7 @@
   },
   {
     "id": "mystic-aura-group-celestial",
-    "name": "Mystic Aura (Group)",
+    "name": "Mystic Aura",
     "filter": "group_buff",
     "maxCopies": 1,
     "bonuses": ["mystic-aura-group-celestial"]
@@ -4317,7 +4317,7 @@
   },
   {
     "id": "pack-tactics-group",
-    "name": "Pack Tactics (Others)",
+    "name": "Pack Tactics",
     "filter": "group_buff",
     "bonuses": [
       {
@@ -4330,7 +4330,7 @@
   },
   {
     "id": "pack-tactics-self",
-    "name": "Pack Tactics (Self)",
+    "name": "Pack Tactics",
     "filter": "mount_equip",
     "il": 1750,
     "combined_rating": 1575,
@@ -4414,7 +4414,7 @@
   },
   {
     "id": "perfect-vision-acc",
-    "name": "Perfect Vision (Acc)",
+    "name": "Perfect Vision",
     "filter": "companion_enhancement",
     "il": 900,
     "bonuses": ["perfect-vision-acc"]
@@ -4436,14 +4436,14 @@
   },
   {
     "id": "potency-power",
-    "name": "Potency (Power)",
+    "name": "Potency",
     "filter": "companion_enhancement",
     "il": 900,
     "bonuses": ["potency-power"]
   },
   {
     "id": "potent-precision-severity",
-    "name": "Potent Precision (Severity)",
+    "name": "Potent Precision",
     "filter": "companion_enhancement",
     "il": 900,
     "bonuses": ["potent-precision-severity"]
@@ -4843,7 +4843,7 @@
   },
   {
     "id": "runic-aura-group-celestial",
-    "name": "Runic Aura (Group)",
+    "name": "Runic Aura",
     "filter": "group_buff",
     "maxCopies": 1,
     "bonuses": ["runic-aura-group-celestial"]
@@ -5134,7 +5134,7 @@
   },
   {
     "id": "vip-hp-bonus-self",
-    "name": "VIP HP Bonus (Self)",
+    "name": "VIP HP Bonus",
     "filter": "misc",
     "hit_points_p": 0.01
   },

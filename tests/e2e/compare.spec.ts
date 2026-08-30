@@ -16,7 +16,7 @@ import {
   parkCursorOnRow,
 } from "./support/app";
 
-const HEAD_ITEM = "M29 Enchanted Depthweave Cap (CA)";
+const HEAD_ITEM = "M29 Enchanted Depthweave Cap";
 
 test("highlighting a diff and applying it copies the compare build's choice", async ({
   page,

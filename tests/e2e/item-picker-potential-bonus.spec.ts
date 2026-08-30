@@ -5,14 +5,14 @@
 import { test, expect } from "@playwright/test";
 import { openBuilder, slotRow, pickerInput, chooseItem } from "./support/app";
 
-// M31 Bloodwoven Sigils (CA) carries two bonuses: M31 Reckless Advantage (its own, active on
+// M31 Bloodwoven Sigils carries two bonuses: M31 Reckless Advantage (its own, active on
 // the "combat" toggle alone -- CA +10%/Crit Avoid -7.5%) and half of M31 Enchanted Advantage,
 // a 2-occurrence bonus granting `ca_p +0.02` only once both items are equipped. That combination
 // is exactly the case here: an item that's already worth something on its own, *and*
 // a further "Potentially:" ceiling once the rest of the bonus is in place. The bonus's other
 // item lives in gear.shirt.
-const PANTS_ITEM = "M31 Bloodwoven Sigils (CA)";
-const SHIRT_ITEM = "M31 Bloodwoven Signs (Damage)";
+const PANTS_ITEM = "M31 Bloodwoven Sigils";
+const SHIRT_ITEM = "M31 Bloodwoven Signs";
 
 test.describe("item picker potential bonus preview", () => {
   test("a candidate that would only partially complete a bonus shows both its own active bonus and an 'Potentially:' ceiling", async ({
@@ -64,7 +64,7 @@ test.describe("item picker potential bonus preview", () => {
 
 // Same fixture slot-list.spec.ts/stat-panel.spec.ts already rely on: has an `il` badge and
 // several flat item stats to show as the innate-stat line.
-const HEAD_ITEM = "M29 Enchanted Depthweave Cap (CA)";
+const HEAD_ITEM = "M29 Enchanted Depthweave Cap";
 
 test.describe("item picker option row layout", () => {
   test("the item name is bold, and innate stats are no longer muted text", async ({

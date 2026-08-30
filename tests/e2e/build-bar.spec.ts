@@ -10,7 +10,7 @@ import {
   redoButton,
 } from "./support/app";
 
-const HEAD_ITEM = "M29 Enchanted Depthweave Cap (CA)";
+const HEAD_ITEM = "M29 Enchanted Depthweave Cap";
 
 test("Undo/redo walk the history back and forth", async ({ page }) => {
   await openBuilder(page);

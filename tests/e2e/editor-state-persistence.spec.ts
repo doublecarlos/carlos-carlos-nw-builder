@@ -5,7 +5,7 @@ import { test, expect } from "@playwright/test";
 import { openBuilder } from "./support/app";
 import { addLayer, layerRow } from "./support/nav";
 
-const HEAD_ITEM = "M29 Enchanted Depthweave Cap (CA)";
+const HEAD_ITEM = "M29 Enchanted Depthweave Cap";
 
 /** Clicks the first build row in the library, switching back from the layer editor. */
 async function switchToBuild(page: import("@playwright/test").Page) {

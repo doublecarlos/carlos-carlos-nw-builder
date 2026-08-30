@@ -16,7 +16,7 @@ import {
 
 // Unique across the whole item table (grep-checked) and allowed for the default "warlock"
 // class, so it always shows up in the Head slot's own filtered picker list.
-const HEAD_ITEM = "M29 Enchanted Depthweave Cap (CA)";
+const HEAD_ITEM = "M29 Enchanted Depthweave Cap";
 
 test.describe("choosing and clearing an item", () => {
   test("choosing an item fills the slot and updates the section's filled count", async ({

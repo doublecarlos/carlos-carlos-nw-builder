@@ -1,7 +1,7 @@
 [
   {
     "id": "acute-senses-ca",
-    "name": "Acute Senses (CA)",
+    "name": "Acute Senses",
     "grants": [
       {
         "when": {
@@ -185,7 +185,7 @@
   },
   {
     "id": "avian-aura-group-celestial",
-    "name": "Avian Aura (Group)",
+    "name": "Avian Aura",
     "grants": [
       {
         "when": {
@@ -431,7 +431,7 @@
   },
   {
     "id": "cha-lua-accuracy-severity",
-    "name": "Cha Lua (Accuracy/Severity)",
+    "name": "Cha Lua",
     "grants": [
       {
         "when": {
@@ -559,7 +559,7 @@
   },
   {
     "id": "diamond-blessing-damage",
-    "name": "Diamond Blessing (Damage)",
+    "name": "Diamond Blessing",
     "grants": [
       {
         "when": {
@@ -667,7 +667,7 @@
   },
   {
     "id": "exploit-weakness-strike-sev-blaspheme",
-    "name": "Exploit Weakness (Strike/Sev - Blaspheme)",
+    "name": "Exploit Weakness",
     "grants": [
       {
         "when": {
@@ -696,7 +696,7 @@
   },
   {
     "id": "flask-of-potency-1-severity",
-    "name": "Flask of Potency +1 (Severity)",
+    "name": "Flask of Potency +1",
     "grants": [
       {
         "when": {
@@ -802,7 +802,7 @@
   },
   {
     "id": "hot-wings-accuracy-severity",
-    "name": "Hot Wings (Accuracy/Severity)",
+    "name": "Hot Wings",
     "grants": [
       {
         "when": {
@@ -1197,7 +1197,7 @@
   },
   {
     "id": "m29-enchanted-depthweave-cap-ca",
-    "name": "M29 Enchanted Depthweave Cap (CA)",
+    "name": "M29 Enchanted Depthweave Cap",
     "grants": [
       {
         "when": {
@@ -1485,7 +1485,7 @@
   },
   {
     "id": "m32-bracers-of-the-infernal-tempest-strike",
-    "name": "M32 Bracers of the Infernal Tempest (Strike)",
+    "name": "M32 Bracers of the Infernal Tempest",
     "grants": [
       {
         "when": {
@@ -1500,7 +1500,7 @@
   },
   {
     "id": "m32-circlet-of-the-infernal-tempest-strike-sev",
-    "name": "M32 Circlet of the Infernal Tempest (Strike/Sev)",
+    "name": "M32 Circlet of the Infernal Tempest",
     "grants": [
       {
         "when": {
@@ -1614,7 +1614,7 @@
   },
   {
     "id": "m32-deathsilver-coil-of-dominion-acc-strike",
-    "name": "M32 Deathsilver Coil of Dominion (Acc/Strike)",
+    "name": "M32 Deathsilver Coil of Dominion",
     "grants": [
       {
         "when": {
@@ -1629,7 +1629,7 @@
   },
   {
     "id": "m32-deathsilver-ring-of-submission-strike",
-    "name": "M32 Deathsilver Ring of  Submission (Strike)",
+    "name": "M32 Deathsilver Ring of  Submission",
     "grants": [
       {
         "when": {
@@ -1796,7 +1796,7 @@
   },
   {
     "id": "m32-rotsteel-loop-of-ash-ca",
-    "name": "M32 Rotsteel Loop of Ash (CA)",
+    "name": "M32 Rotsteel Loop of Ash",
     "grants": [
       {
         "when": {
@@ -1825,7 +1825,7 @@
   },
   {
     "id": "m32-rotsteel-ring-of-spores-strike",
-    "name": "M32 Rotsteel Ring of Spores (Strike)",
+    "name": "M32 Rotsteel Ring of Spores",
     "grants": [
       {
         "when": {
@@ -2670,7 +2670,7 @@
   },
   {
     "id": "mystic-aura-group-celestial",
-    "name": "Mystic Aura (Group)",
+    "name": "Mystic Aura",
     "grants": [
       {
         "when": {
@@ -2839,7 +2839,7 @@
   },
   {
     "id": "perfect-vision-acc",
-    "name": "Perfect Vision (Acc)",
+    "name": "Perfect Vision",
     "grants": [
       {
         "when": {
@@ -2882,7 +2882,7 @@
   },
   {
     "id": "potency-power",
-    "name": "Potency (Power)",
+    "name": "Potency",
     "grants": [
       {
         "when": {
@@ -2896,7 +2896,7 @@
   },
   {
     "id": "potent-precision-severity",
-    "name": "Potent Precision (Severity)",
+    "name": "Potent Precision",
     "grants": [
       {
         "when": {
@@ -2924,7 +2924,7 @@
   },
   {
     "id": "prime-rib-power",
-    "name": "Prime Rib (Power)",
+    "name": "Prime Rib",
     "grants": [
       {
         "when": {
@@ -3134,7 +3134,7 @@
   },
   {
     "id": "rattatoule-accuracy",
-    "name": "Rattatoule (Accuracy)",
+    "name": "Rattatoule",
     "grants": [
       {
         "when": {
@@ -3163,7 +3163,7 @@
   },
   {
     "id": "runic-aura-group-celestial",
-    "name": "Runic Aura (Group)",
+    "name": "Runic Aura",
     "grants": [
       {
         "when": {
@@ -3184,7 +3184,7 @@
   },
   {
     "id": "sambocade-movement",
-    "name": "Sambocade (Movement)",
+    "name": "Sambocade",
     "grants": [
       {
         "when": {
@@ -3241,7 +3241,7 @@
   },
   {
     "id": "seared-tuna-strike",
-    "name": "Seared Tuna (Strike)",
+    "name": "Seared Tuna",
     "grants": [
       {
         "when": {
@@ -3398,7 +3398,7 @@
   },
   {
     "id": "squash-soup-strike-severity",
-    "name": "Squash Soup (Strike/Severity)",
+    "name": "Squash Soup",
     "grants": [
       {
         "when": {
@@ -3413,7 +3413,7 @@
   },
   {
     "id": "sunlord-ca",
-    "name": "Sunlord (CA)",
+    "name": "Sunlord's Gift Elixir",
     "grants": [
       {
         "when": {
@@ -3523,7 +3523,7 @@
   },
   {
     "id": "watermelon-sorbet-power-accuracy",
-    "name": "Watermelon Sorbet (Power/Accuracy)",
+    "name": "Watermelon Sorbet",
     "grants": [
       {
         "when": {
@@ -3538,7 +3538,7 @@
   },
   {
     "id": "watermelon-sorbet-power-accuracy-legacy",
-    "name": "Watermelon Sorbet (Power/Accuracy) (Legacy)",
+    "name": "Watermelon Sorbet (Legacy)",
     "grants": [
       {
         "when": {
@@ -3553,7 +3553,7 @@
   },
   {
     "id": "wild-storm-severity",
-    "name": "Wild Storm (Severity)",
+    "name": "Wild Storm Elixir",
     "grants": [
       {
         "when": {

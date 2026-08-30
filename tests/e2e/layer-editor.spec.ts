@@ -5,8 +5,8 @@ import { test, expect, type Locator, type Page } from "@playwright/test";
 import { openBuilder, chooseItem } from "./support/app";
 import { addLayer, layerRow } from "./support/nav";
 
-const HEAD_ITEM = "M29 Enchanted Depthweave Cap (CA)";
-const ARMS_ITEM = "M31 Bindings of the Death Pact (Damage)";
+const HEAD_ITEM = "M29 Enchanted Depthweave Cap";
+const ARMS_ITEM = "M31 Bindings of the Death Pact";
 
 test.describe("selecting a layer replaces the build editor", () => {
   test("selecting a layer hides the build name input and shows the layer editor", async ({

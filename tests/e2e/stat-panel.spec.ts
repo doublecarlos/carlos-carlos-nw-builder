@@ -14,7 +14,7 @@ import {
 // grants `strike`/`forte`/`combined_rating` directly (an item-stat trio, not by a bonus)
 // and carries an active bonus of its own granting Combat Advantage -- useful precisely
 // because its Rating/Percentage sources come from two different mechanisms.
-const HEAD_ITEM = "M29 Enchanted Depthweave Cap (CA)";
+const HEAD_ITEM = "M29 Enchanted Depthweave Cap";
 
 test.describe("stat source popover", () => {
   test('clicking a rating stat\'s button opens its card, led by an empty Rating section and a Percentage section led by "Rating contribution"', async ({

@@ -8,7 +8,7 @@ import { openBuilder, slotRow, pickerInput } from "./support/app";
 // table, allowed for every class picked by default, and carries its own bonus (gated only on
 // the "combat" toggle, which defaults on) granting Combat Advantage -- so the bonus is active
 // the moment it's hypothetically equipped, with nothing else needed.
-const HEAD_ITEM_WITH_BONUS = "M29 Enchanted Depthweave Cap (CA)";
+const HEAD_ITEM_WITH_BONUS = "M29 Enchanted Depthweave Cap";
 // Same gear_head list, but carries no `bonuses` at all -- the negative control.
 const HEAD_ITEM_WITHOUT_BONUS = "M32.5 Cindersilk Hood (AP on mobs)";
 
