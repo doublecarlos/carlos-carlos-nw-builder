@@ -1292,6 +1292,18 @@ describe("catalog.validate: param condition lint", () => {
     const warnings = warningsFor({ param: { key: "magnitude", atLeast: 10 } });
     expect(warnings).toEqual([]);
   });
+
+  // Every leaf that takes a list matches it as "one of", `toggle` included, so both
+  // spellings of a multi-toggle gate are well-formed data.
+  it("the list-taking leaves accept one value or several", () => {
+    expect(errorsFor({ toggle: "combat" })).toEqual([]);
+    expect(errorsFor({ toggle: ["combat", "party"] })).toEqual([]);
+    expect(errorsFor({ role: ["dps", "healer"] })).toEqual([]);
+    expect(errorsFor({ damageType: ["fire", "cold"] })).toEqual([]);
+    expect(
+      errorsFor({ all: [{ toggle: "combat" }, { toggle: "party" }] }),
+    ).toEqual([]);
+  });
 });
 
 // An item reaches a build through a slot: an `item_picker`'s `filter` or `tags`, or a

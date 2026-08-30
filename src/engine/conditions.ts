@@ -84,13 +84,15 @@ const LEAVES: Record<
   string,
   (spec: unknown, ctx: EvalContext) => ConditionLeafResult
 > = {
+  // A list is "one of", matching every other list-taking leaf. Requiring several toggles at
+  // once is `all`, where the join is written out rather than implied.
   toggle(spec, ctx) {
     const wanted = asArray(spec as string | string[]);
-    const missing = wanted.filter((name) => !ctx.toggles?.[name]);
+    const on = wanted.filter((name) => ctx.toggles?.[name]);
     return {
-      ok: missing.length === 0,
-      label: `${wanted.join(" + ")} enabled`,
-      detail: missing.length ? `off: ${missing.join(", ")}` : "",
+      ok: on.length > 0,
+      label: `${wanted.join(" or ")} enabled`,
+      detail: on.length ? "" : `off: ${wanted.join(", ")}`,
     };
   },
 

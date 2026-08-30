@@ -293,12 +293,11 @@ test.describe("bonus grant conditions", () => {
       .getByText("Condition", { exact: true })
       .locator("..")
       .getByTestId("picker-input");
-    const valuePicker = page
-      .getByText("Value", { exact: true })
-      .locator("..")
-      .getByTestId("picker-input");
+    // Every list-taking leaf edits its values as chips, so the value control is the same
+    // one before and after the type change.
+    const values = page.getByTestId("condition-values");
     await expect(typePicker).toHaveValue("toggle");
-    await expect(valuePicker).toHaveValue("Party");
+    await expect(values.getByTestId("token-chip")).toHaveText(/Party/);
 
     // Switch the condition from toggle to class. Changing the type resets the value, so
     // the condition is momentarily incomplete -- the debounced auto-save must not fire
@@ -313,7 +312,8 @@ test.describe("bonus grant conditions", () => {
     // for the dirty form is expected).
     await page.waitForTimeout(1500);
     await expect(typePicker).toHaveValue("class");
-    await expect(valuePicker).toBeVisible();
+    await expect(values).toBeVisible();
+    await expect(values.getByTestId("token-chip")).toHaveCount(0);
     const statusBadge = bonusRow
       .getByTestId("badge")
       .filter({ hasText: "edited" });
@@ -321,10 +321,10 @@ test.describe("bonus grant conditions", () => {
 
     // Now complete the condition by picking a class value. The next auto-save carries
     // the full tree, and the row still survives the round-trip.
-    await valuePicker.click();
-    await page.getByText("Cleric", { exact: true }).click();
+    await values.getByTestId("token-query").fill("Cleric");
+    await values.getByTestId("token-option").first().click();
     await expect(typePicker).toHaveValue("class");
-    await expect(valuePicker).toHaveValue("Cleric");
+    await expect(values.getByTestId("token-chip")).toHaveText(/Cleric/);
     await expect(statusBadge).toBeVisible();
   });
 });

@@ -4,7 +4,9 @@
 //
 // Used for an item's bonus membership, where both halves matter: you usually want to attach an
 // existing bonus (so autocomplete), but creating a brand-new bonus id by typing it is a normal
-// thing to do (so free text).
+// thing to do (so free text). `allowFree` turns the second half off for the closed
+// vocabularies -- a condition's toggle/role/class/damage-type values -- that autocomplete
+// alone covers.
 import { ref, computed, watch, nextTick, useTemplateRef } from "vue";
 import { onKeyStroke } from "@vueuse/core";
 import { matchesQuery } from "../../lib/text-filter";
@@ -14,15 +16,22 @@ const MAX_SUGGESTIONS = 40;
 const props = withDefaults(
   defineProps<{
     options?: string[];
+    /** Display text per option value, for vocabularies whose stored value is not what a
+     *  reader recognises (a role's `dps` against its "DPS" label). Values without an entry
+     *  show as themselves. */
+    labels?: Record<string, string>;
     placeholder?: string;
     allowFree?: boolean;
   }>(),
   {
     options: () => [],
+    labels: () => ({}),
     placeholder: "Type to search…",
     allowFree: true,
   },
 );
+
+const labelFor = (value: string) => props.labels[value] ?? value;
 
 const model = defineModel<string[]>({ default: () => [] });
 
@@ -37,7 +46,9 @@ const suggestions = computed(() => {
   const chosen = new Set(model.value);
   return props.options
     .filter(
-      (option) => !chosen.has(option) && matchesQuery(option, query.value),
+      (option) =>
+        !chosen.has(option) &&
+        matchesQuery([option, labelFor(option)], query.value),
     )
     .slice(0, MAX_SUGGESTIONS);
 });
@@ -144,9 +155,11 @@ function onPaste(event: ClipboardEvent) {
     <span
       v-for="(token, index) in model"
       :key="token"
+      data-testid="token-chip"
+      :data-value="token"
       class="inline-flex items-center gap-1 rounded-full bg-accent-soft py-0.5 pl-2 pr-1 text-text"
     >
-      {{ token }}
+      {{ labelFor(token) }}
       <button
         type="button"
         class="cursor-pointer border-0 bg-transparent px-1 leading-none text-muted hover:text-danger"
@@ -160,6 +173,7 @@ function onPaste(event: ClipboardEvent) {
     <input
       ref="input"
       v-model="query"
+      data-testid="token-query"
       class="min-w-20 flex-1 border-0 bg-transparent px-0.5 py-0.5 outline-none"
       type="text"
       autocomplete="off"
@@ -181,13 +195,14 @@ function onPaste(event: ClipboardEvent) {
       <div
         v-for="(entry, index) in entries"
         :key="entry"
+        data-testid="token-option"
         class="flex cursor-pointer gap-2 px-2 py-1"
         :class="index === highlight && 'bg-accent-soft'"
         :data-highlighted="index === highlight || undefined"
         @mousedown.prevent="add(entry)"
         @mouseenter="highlight = index"
       >
-        <span>{{ entry }}</span>
+        <span>{{ labelFor(entry) }}</span>
         <span
           v-if="entry === freeValue"
           class="ml-auto rounded bg-ok/25 px-1.5 text-ok"

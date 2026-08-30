@@ -26,6 +26,10 @@ export const LEAF_TYPES = [
 // against runaway trees -- conditions.ts itself has no such limit.
 export const MAX_DEPTH = 5;
 
+// Leaves whose spec may be a list, which conditions.ts matches as "one of". Requiring several
+// values at once is `all`, so a list never has to be read two ways.
+export const MULTI_VALUE_LEAF_TYPES = ["toggle", "role", "class", "damageType"];
+
 // A leaf's fields vary by `type` (see `leafFromSpec`/`leafToSpec`), so a flat interface
 // with all possible leaf properties is simpler than a discriminated union -- each producer
 // (leafFromSpec) sets just the fields its type needs, and consumers read what they care about.
@@ -53,7 +57,9 @@ export interface ConditionRow {
 }
 
 const uid = () => `c${Math.random().toString(36).slice(2, 8)}`;
-const fromCsv = (text: unknown): string[] =>
+/** Splits a multi-value leaf's draft `value` -- comma-separated in the row model, a list in
+ *  the `when` object -- into its individual values. */
+export const fromCsv = (text: unknown): string[] =>
   String(text ?? "")
     .split(",")
     .map((s) => s.trim())
@@ -486,11 +492,10 @@ export function adjustPathAfterRemoval(
   return adjusted;
 }
 
-// Object-shaped leaf keys `leafFromSpec`/`leafToSpec` actually read and write -- a key outside
-// this set would round-trip through the row model and silently vanish (e.g. before this file
-// supported it, an `equipped` leaf's `below` bound), so `whenIsRepresentable` treats it as
-// "needs JSON" instead, same "drop to JSON rather than silently flatten" rule bonus-draft.ts's
-// TIER_KEYS/VARIANT_KEYS/PROBLEM_KEYS already apply to grants/variants/problems.
+// Object-shaped leaf keys `leafFromSpec`/`leafToSpec` actually read and write. A key outside
+// this set would round-trip through the row model and silently vanish, so `whenIsRepresentable`
+// treats it as "needs JSON" instead -- the same "drop to JSON rather than silently flatten"
+// rule bonus-draft.ts's TIER_KEYS/VARIANT_KEYS/PROBLEM_KEYS apply to grants/variants/problems.
 const RANGE_LEAF_KEYS: Record<string, Set<string>> = {
   duration: new Set(["atLeast", "below", "exactly"]),
   enemies: new Set(["atLeast", "below", "exactly"]),
@@ -502,7 +507,8 @@ const RANGE_LEAF_KEYS: Record<string, Set<string>> = {
 function leafSpecIsRepresentable(key: string, spec: unknown): boolean {
   if (key === "duration" && typeof spec === "number") return true; // bare-number shorthand
   const allowed = RANGE_LEAF_KEYS[key];
-  if (!allowed) return true; // toggle/role/class/damageType: plain string|string[]
+  // toggle/role/class/damageType: one value or a list of them, both editable as chips.
+  if (!allowed) return true;
   if (spec == null) return true;
   if (typeof spec !== "object" || Array.isArray(spec)) return false;
   return Object.keys(spec).every((k) => allowed.has(k));

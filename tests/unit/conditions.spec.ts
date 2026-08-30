@@ -222,6 +222,40 @@ describe("conditions.ts equipped/bonusOccurrences leaves support exactly", () =>
   });
 });
 
+// Every list-taking leaf matches its list as "one of". Requiring several toggles at once is
+// `all`, so the list never has to be read two ways.
+describe("conditions.ts toggle leaf", () => {
+  it("one name: on when that toggle is on", () => {
+    expect(evaluate({ toggle: "party" }, ctx({}, { toggles: {} }))).toBe(false);
+    expect(
+      evaluate({ toggle: "party" }, ctx({}, { toggles: { party: true } })),
+    ).toBe(true);
+  });
+
+  it("a list holds when any one of them is on", () => {
+    const when = { toggle: ["combat", "party"] };
+    expect(evaluate(when, ctx({}, { toggles: {} }))).toBe(false);
+    expect(evaluate(when, ctx({}, { toggles: { party: true } }))).toBe(true);
+    expect(
+      evaluate(when, ctx({}, { toggles: { combat: true, party: true } })),
+    ).toBe(true);
+  });
+
+  it("`all` is how several toggles are required at once", () => {
+    const when = { all: [{ toggle: "combat" }, { toggle: "party" }] };
+    expect(evaluate(when, ctx({}, { toggles: { party: true } }))).toBe(false);
+    expect(
+      evaluate(when, ctx({}, { toggles: { combat: true, party: true } })),
+    ).toBe(true);
+  });
+
+  it("explains a list as the choice it is, and names what is off", () => {
+    const result = explain({ toggle: ["combat", "party"] }, ctx({}));
+    expect(result.leaves[0].label).toBe("combat or party enabled");
+    expect(result.leaves[0].detail).toBe("off: combat, party");
+  });
+});
+
 // The two one-line summaries (the item card's "Conditions: ..." line and the "needs ..."
 // list) render `label` alone, so a compound's label has to explain itself without the tree.
 describe("conditions.ts compound operators explain themselves in one line", () => {

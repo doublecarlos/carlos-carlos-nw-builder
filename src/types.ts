@@ -433,6 +433,8 @@ export interface ParamCondition {
  * Loose on leaf value types (`string | string[]`) because conditions.ts's `asArray` accepts
  * either uniformly. */
 export interface ConditionWhen {
+  /** A toggle's name, or several matched as "one of" -- the same join every list-taking leaf
+   *  uses. Requiring more than one at once is spelled with `all`. */
   toggle?: string | string[];
   role?: string | string[];
   class?: string | string[];

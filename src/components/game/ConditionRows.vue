@@ -20,11 +20,14 @@ import {
   Trash,
 } from "@lucide/vue";
 import FormField from "../ui/FormField.vue";
+import TokenInput from "../ui/TokenInput.vue";
 import RangeOrExactFields from "./RangeOrExactFields.vue";
 import * as engine from "../../stores/resolved";
 import {
   LEAF_TYPES,
   MAX_DEPTH,
+  MULTI_VALUE_LEAF_TYPES,
+  fromCsv,
   newLeafRow,
   newGroupRow,
   cloneRow,
@@ -374,6 +377,15 @@ function optionsForCombo(type?: string) {
   return [...byValue].map(([value, label]) => ({ value, label }));
 }
 
+// A list-valued leaf is matched as "one of", so its values are edited as a set of chips rather
+// than one pick. The row model keeps them comma-separated; the control speaks arrays.
+const isMultiValue = (type?: string) =>
+  MULTI_VALUE_LEAF_TYPES.includes(type ?? "");
+const optionValues = (options: { value: string }[]) =>
+  options.map((option) => option.value);
+const optionLabels = (options: { value: string; label: string }[]) =>
+  Object.fromEntries(options.map((option) => [option.value, option.label]));
+
 // --- the generic `param` leaf -----------------------------------------------------------
 // Every build_parameter slot is a candidate key; the comparison control shown depends on the
 // selected one's `paramType`, same source of truth `optionsForCombo` above already uses for the
@@ -552,19 +564,16 @@ function changeParamKey(row: ConditionRow, key: string) {
             </FormField>
           </template>
           <template v-else-if="row.form === 'string'">
-            <FormField label="Equals" class="min-w-0">
-              <ComboBox
-                v-if="paramValueOptions(row.key).length"
-                class="w-38"
-                :model-value="row.equals"
-                :options="paramValueOptions(row.key)"
-                @update:model-value="(v) => (row.equals = v)"
-              />
-              <input
-                v-else
-                v-model="row.equals"
-                class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-                type="text"
+            <FormField label="Any of" class="min-w-0">
+              <TokenInput
+                class="w-56"
+                data-testid="condition-values"
+                :model-value="fromCsv(row.equals)"
+                :options="optionValues(paramValueOptions(row.key))"
+                :labels="optionLabels(paramValueOptions(row.key))"
+                :allow-free="!paramValueOptions(row.key).length"
+                placeholder="- value -"
+                @update:model-value="(v) => (row.equals = v.join(', '))"
               />
             </FormField>
           </template>
@@ -578,9 +587,23 @@ function changeParamKey(row: ConditionRow, key: string) {
           </template>
         </template>
         <template v-else>
-          <FormField label="Value" class="min-w-0">
+          <FormField
+            :label="isMultiValue(row.type) ? 'Any of' : 'Value'"
+            class="min-w-0"
+          >
+            <TokenInput
+              v-if="isMultiValue(row.type)"
+              class="w-56"
+              data-testid="condition-values"
+              :model-value="fromCsv(row.value)"
+              :options="optionValues(optionsForCombo(row.type))"
+              :labels="optionLabels(optionsForCombo(row.type))"
+              :allow-free="!optionsForCombo(row.type).length"
+              placeholder="- value -"
+              @update:model-value="(v) => (row.value = v.join(', '))"
+            />
             <ComboBox
-              v-if="optionsForCombo(row.type).length"
+              v-else-if="optionsForCombo(row.type).length"
               class="w-38"
               :model-value="row.value"
               :options="optionsForCombo(row.type)"

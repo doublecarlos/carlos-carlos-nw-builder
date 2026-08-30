@@ -230,6 +230,55 @@ describe("condition-draft whenIsRepresentable", () => {
       false,
     );
   });
+
+  it('accepts a list on the leaves matched as "one of"', () => {
+    expect(whenIsRepresentable({ toggle: ["combat", "party"] })).toBe(true);
+    expect(whenIsRepresentable({ role: ["dps", "healer"] })).toBe(true);
+    expect(whenIsRepresentable({ class: ["cleric", "fighter"] })).toBe(true);
+    expect(whenIsRepresentable({ damageType: ["fire", "cold"] })).toBe(true);
+    expect(
+      whenIsRepresentable({ param: { key: "x", equals: ["a", "b"] } }),
+    ).toBe(true);
+  });
+
+  it("keeps both spellings of a multi-toggle gate in the form", () => {
+    // "either toggle" is the list; "both toggles" is `all`. Neither needs the JSON escape.
+    expect(whenIsRepresentable({ toggle: ["combat", "party"] })).toBe(true);
+    expect(
+      whenIsRepresentable({
+        all: [{ toggle: "combat" }, { toggle: "party" }],
+      }),
+    ).toBe(true);
+  });
+});
+
+describe("condition-draft list values", () => {
+  it("round-trips a list leaf through the comma-separated row model", () => {
+    const rows = whenToRows({ role: ["dps", "healer"] });
+    expect(rows).toHaveLength(1);
+    expect(rows[0].value).toBe("dps, healer");
+    expect(rowsToWhen(rows)).toEqual({ role: ["dps", "healer"] });
+  });
+
+  it("collapses a one-value list back to a bare string", () => {
+    const rows = whenToRows({ damageType: ["fire"] });
+    expect(rows[0].value).toBe("fire");
+    expect(rowsToWhen(rows)).toEqual({ damageType: "fire" });
+  });
+
+  it("round-trips a list of toggles", () => {
+    const rows = whenToRows({ toggle: ["combat", "party"] });
+    expect(rows[0].value).toBe("combat, party");
+    expect(rowsToWhen(rows)).toEqual({ toggle: ["combat", "party"] });
+  });
+
+  it("round-trips a param's list of accepted values", () => {
+    const rows = whenToRows({ param: { key: "mount", equals: ["a", "b"] } });
+    expect(rows[0].equals).toBe("a, b");
+    expect(rowsToWhen(rows)).toEqual({
+      param: { key: "mount", equals: ["a", "b"] },
+    });
+  });
 });
 
 describe("condition-draft path addressing", () => {
