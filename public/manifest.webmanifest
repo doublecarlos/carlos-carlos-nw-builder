@@ -3,7 +3,7 @@
   "lang": "en",
   "name": "Carlos Carlos' NW Builder",
   "short_name": "NW Builder",
-  "description": "Browser-based build planner for Neverwinter. Compare builds side by side, add your own items and bonuses with layers, and watch the stat maths update live.",
+  "description": "Build planner for Neverwinter. Create and compare Neverwinter builds, create and edit new items/bonuses as needed.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
