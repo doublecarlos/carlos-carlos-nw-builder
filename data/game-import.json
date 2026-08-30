@@ -313,7 +313,7 @@
   "hclassToClass": {
     "Player_Barbarian": "barbarian",
     "Player_Bard": "bard",
-    "Player_Cleric": "cleric",
+    "Player_Devoted": "cleric",
     "Player_Fighter": "fighter",
     "Player_Paladin": "paladin",
     "Player_Ranger": "ranger",

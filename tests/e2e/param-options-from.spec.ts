@@ -1,18 +1,13 @@
 // End-to-end coverage for issue #272: a list parameter authored with `optionsFrom` derives its
 // options from the item catalogue, so extending the option set is an item edit rather than a
-// slot edit. Driven through the `paragon` tag, which has six distinctly-named items.
+// slot edit. Driven through the `paragon` tag, whose option set is read from the shipped
+// catalogue so adding a paragon item doesn't outdate this spec.
 import { test, expect, type Page } from "@playwright/test";
 import { openBuilder, slotRow, pickerInput } from "./support/app";
 import { addLayer, layerRow } from "./support/nav";
+import { shippedItemNamesByTag } from "./support/shippedData";
 
-const PARAGONS = [
-  "Blademaster",
-  "Hellbringer",
-  "Minstrel",
-  "Sentinel",
-  "Songblade",
-  "Soulweaver",
-];
+const PARAGONS = shippedItemNamesByTag("paragon");
 
 /** Creates a layer, selects it, and opens the Parameters tab. */
 async function openParametersTab(page: Page) {
@@ -60,7 +55,7 @@ test("the form previews how many items the selector matches", async ({
 
   await page.getByTestId("slot-options-tags-input").fill("paragon");
   await expect(page.getByTestId("slot-derived-preview")).toContainText(
-    "6 option(s)",
+    `${PARAGONS.length} option(s)`,
   );
   await expect(page.getByTestId("slot-derived-preview")).toContainText(
     PARAGONS.join(", "),

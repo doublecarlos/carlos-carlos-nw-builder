@@ -1904,6 +1904,7 @@
     "filter": "overload",
     "acc_p": 0.05,
     "strike_p": 0.05,
+    "il": 1,
     "gameIds": ["Enchantment_Overload_Crit_Accuracy"]
   },
   {
@@ -3611,6 +3612,7 @@
     "severity": 2880,
     "out_healing": 1920,
     "combined_rating": 4320,
+    "gameIds": ["Primary_M32_Cleric_All_R5"],
     "allowedClass": ["cleric"],
     "tags": ["artifact:mainhand"],
     "bonuses": ["m32-cleric-s-impending-doom-mythic"]
@@ -3955,6 +3957,7 @@
     "strike": 2880,
     "forte": 2160,
     "combined_rating": 4320,
+    "gameIds": ["Secondary_M32_Cleric_All_R5"],
     "allowedClass": ["cleric"],
     "tags": ["artifact:offhand"],
     "bonuses": ["m32-cleric-s-impending-doom-mythic"]
@@ -4203,7 +4206,8 @@
     "id": "mount-combat-power-celestial",
     "name": "Generic Mount Combat Power",
     "filter": "mount_combat",
-    "il": 1750
+    "il": 1750,
+    "gameIds": ["Mount_M32_Demonic_Gravehound_Mythic_Activepower"]
   },
   {
     "id": "mount-hag-s-enchanted-cauldroon",
@@ -4434,6 +4438,7 @@
     "id": "potency-power",
     "name": "Potency (Power)",
     "filter": "companion_enhancement",
+    "il": 900,
     "bonuses": ["potency-power"]
   },
   {
@@ -4483,6 +4488,8 @@
     "id": "precision",
     "name": "Precision",
     "filter": "companion_enhancement",
+    "il": 900,
+    "gameIds": ["Pet_Enhancement_Crit_Chance_Up"],
     "bonuses": ["precision-2"]
   },
   {
@@ -4558,7 +4565,8 @@
     "name": "Quick Action",
     "filter": "mount_equip",
     "il": 1750,
-    "combined_rating": 1575
+    "combined_rating": 1575,
+    "gameIds": ["Mount_Passive_Daily_Recovery"]
   },
   {
     "id": "race-aasimar",
@@ -4761,7 +4769,8 @@
     "id": "rage-of-flames",
     "name": "Rage of Flames",
     "filter": "overload",
-    "outgoing_damage": 0.05
+    "outgoing_damage": 0.05,
+    "il": 1
   },
   {
     "id": "rapid-accuracy-accuracy-celestial",
@@ -4919,7 +4928,12 @@
     "id": "slayer-overload",
     "name": "Slayer Overload",
     "filter": "overload",
-    "gameIds": ["Enchantment_Strongholds_Slayer_Giant_T2"],
+    "il": 1,
+    "gameIds": [
+      "Enchantment_Strongholds_Slayer_Giant_T2",
+      "Enchantment_Strongholds_Slayer_Demon_T2",
+      "Enchantment_Overload_Slayer_Demon_T2"
+    ],
     "longDescription": "If using multiple Slayer overloads, type the total overall damage on the first.",
     "bonuses": ["slayer-overload"]
   },
@@ -5061,7 +5075,8 @@
     "name": "Sword Coast Tactician",
     "filter": "overload",
     "power_p": 0.05,
-    "ca_p": 0.05
+    "ca_p": 0.05,
+    "il": 1
   },
   {
     "id": "the-bigger-they-are-minsc-damage-defense",
