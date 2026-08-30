@@ -127,11 +127,12 @@ export interface DropRowProps {
   onDrop: (event: DragEvent) => void;
 }
 
-/** Binds a drag handle element (typically a grip icon, never a whole row -- so text inputs
- *  and comboboxes inside a row don't fight the browser's own drag-to-select-text gesture).
- *  Safe to call dynamically (e.g. once per row from a template helper, not just from real
- *  `<script setup>` setup scope) since it's a plain function with no Vue lifecycle hooks of
- *  its own. */
+/** Binds the element that starts a drag. That is a grip icon in the editor's dense rows, whose
+ *  text inputs and comboboxes would otherwise lose the browser's own drag-to-select-text
+ *  gesture to the drag; the sidebar's nav rows have no such fields (only a rename input, which
+ *  turns `draggable` off while it is up) and so drag by the whole row instead. Safe to call
+ *  dynamically (e.g. once per row from a template helper, not just from real `<script setup>`
+ *  setup scope) since it's a plain function with no Vue lifecycle hooks of its own. */
 export function useDragHandle(getSource: () => DragSource): DragHandleProps {
   armGlobalCleanup();
   return {
@@ -154,6 +155,13 @@ export function useDragHandle(getSource: () => DragSource): DragHandleProps {
  *  scoped to their own grant), `source.containerId === containerId` too. */
 export function useDropList(options: {
   containerId: string;
+  /** How many rows the list renders right now. Indicators are resolved against the *gaps*
+   *  between rows, so where the list ends decides which row (or trailing strip) owns the
+   *  last gap. */
+  size: () => number;
+  /** The list renders its own trailing drop strip (`tailProps`), which then owns the gap past
+   *  the last row instead of it being drawn under that row. */
+  tail?: boolean;
   accepts: (source: DragSource) => boolean;
   /** `zone` is `"into"` only for rows that opted in via `rowProps(index, { into: true })`,
    *  in which case `index` is that row's own index rather than a gap between rows. */
@@ -168,10 +176,36 @@ export function useDropList(options: {
       options.accepts(state.source),
   );
 
+  /** The insertion point a drop would land at, as an index in `0..size`, or null when the
+   *  pointer is over a row's "into" band or over some other list. Both halves of a gap -- the
+   *  bottom of one row and the top of the next -- resolve to the same number, so a gap is one
+   *  drop position rather than two adjacent ones. */
+  const dropGap = computed<number | null>(() => {
+    if (!isActiveContainer.value || state.overIndex === null) return null;
+    if (state.overEdge === "into") return null;
+    return state.overEdge === "after" ? state.overIndex + 1 : state.overIndex;
+  });
+
   function indicatorAt(index: number): DropZone | null {
-    if (!isActiveContainer.value || state.overIndex !== index) return null;
-    return state.overEdge;
+    if (state.overEdge === "into")
+      return isActiveContainer.value && state.overIndex === index
+        ? "into"
+        : null;
+    const gap = dropGap.value;
+    if (gap === null) return null;
+    // A gap is drawn above the row that would follow the drop. The gap past the last row has
+    // no such row, so it falls back to a line under the last one -- unless a trailing strip
+    // owns it.
+    if (gap === index) return "before";
+    if (!options.tail && gap >= options.size() && index === options.size() - 1)
+      return "after";
+    return null;
   }
+
+  /** True while the drop would land past the last row -- what a trailing strip highlights. */
+  const tailActive = computed(
+    () => dropGap.value !== null && dropGap.value >= options.size(),
+  );
 
   function handleDragover(
     event: DragEvent,
@@ -216,6 +250,21 @@ export function useDropList(options: {
     };
   }
 
+  /** Bind on a strip rendered after the last row, so "at the end of this list" has a target
+   *  of its own. Needed where the last row is not the last thing on screen -- a build folder
+   *  renders its contents *below* its own row, which would otherwise leave no reachable spot
+   *  to drop a build back out at the top level. */
+  function tailProps(): DropRowProps {
+    return {
+      onDragover(event: DragEvent) {
+        handleDragover(event, options.size(), "before");
+      },
+      onDrop(event: DragEvent) {
+        handleDrop(event, options.size(), "before");
+      },
+    };
+  }
+
   /** Bind on the list's empty-state placeholder so an empty list is still a valid target. */
   function emptyProps(): DropRowProps {
     return {
@@ -228,5 +277,12 @@ export function useDropList(options: {
     };
   }
 
-  return { isActiveContainer, indicatorAt, rowProps, emptyProps };
+  return {
+    isActiveContainer,
+    indicatorAt,
+    tailActive,
+    rowProps,
+    tailProps,
+    emptyProps,
+  };
 }

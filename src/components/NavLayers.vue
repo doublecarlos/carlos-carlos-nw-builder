@@ -4,7 +4,7 @@ import { computed, useTemplateRef, type Component, type Directive } from "vue";
 import BaseButton from "./ui/BaseButton.vue";
 import BaseTooltip from "./ui/BaseTooltip.vue";
 import BaseCheckbox from "./ui/BaseCheckbox.vue";
-import { EllipsisVertical, GripVertical, Plus } from "@lucide/vue";
+import { EllipsisVertical, Plus } from "@lucide/vue";
 import NavContextMenu from "./NavContextMenu.vue";
 import { isMac } from "../lib/platform";
 import { matchesQuery } from "../lib/text-filter";
@@ -69,6 +69,7 @@ const root = useTemplateRef("root");
 
 const dropList = useDropList({
   containerId: "nav-layers",
+  size: () => props.layers.length,
   accepts: (source) => source.kind === "layer",
   onDrop: (source, index) => emit("reorder", source.key, index),
 });
@@ -79,6 +80,17 @@ function dragHandleProps(id: string, index: number) {
     key: id,
     index,
   }));
+}
+
+/** A layer row drags by itself rather than by a grip, so the one element carries both the
+ *  drag source and the drop target. Dragging is off while the row is a rename input, which
+ *  needs the browser's own drag-to-select-text gesture. */
+function rowProps(id: string, index: number) {
+  return {
+    ...dropList.rowProps(index),
+    ...dragHandleProps(id, index),
+    draggable: props.renamingId !== id,
+  };
 }
 
 /** Same row-keyboard contract as NavBuilds.vue: ↑/↓ moves selection, Ctrl/Cmd+↑/↓ reorders,
@@ -144,24 +156,14 @@ function moveFocus(dir: 1 | -1) {
       <div
         v-for="(l, i) in filteredLayers"
         :key="l.id"
-        class="nav-row nav-row--layer relative flex items-center gap-1 rounded-md py-1 pl-5 pr-1 border-t-2 border-b-2 border-transparent"
+        class="nav-row nav-row--layer relative flex cursor-grab items-center gap-1 rounded-md py-1 pl-1.5 pr-1 border-t-2 border-b-2 border-transparent"
         :class="[
           selectedId === l.id && 'is-active bg-accent-soft',
           dropList.indicatorAt(i) === 'before' && '!border-t-accent',
           dropList.indicatorAt(i) === 'after' && '!border-b-accent',
         ]"
-        v-bind="dropList.rowProps(i)"
+        v-bind="rowProps(l.id, i)"
       >
-        <BaseTooltip text="Drag to reorder. Ctrl + ↑ or ↓ to move up/down.">
-          <span
-            data-testid="layer-drag-handle"
-            class="cursor-grab text-muted hover:text-accent [&_svg]:size-[14px]"
-            v-bind="dragHandleProps(l.id, i)"
-          >
-            <GripVertical />
-          </span>
-        </BaseTooltip>
-
         <div @click.stop>
           <BaseCheckbox
             :model-value="l.enabled"

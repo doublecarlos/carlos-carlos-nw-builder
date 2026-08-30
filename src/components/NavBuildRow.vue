@@ -3,9 +3,9 @@
 // call sites -- the top level and inside a folder -- that differ in indent and in which drop
 // list the row belongs to, and in nothing else. Pure presentation, like NavBuilds itself:
 // every action is an emit the parent chain resolves.
-import type { Component, Directive } from "vue";
+import { computed, type Component, type Directive } from "vue";
 import BaseTooltip from "./ui/BaseTooltip.vue";
-import { EllipsisVertical, GripVertical } from "@lucide/vue";
+import { EllipsisVertical } from "@lucide/vue";
 import NavContextMenu from "./NavContextMenu.vue";
 import { isMac } from "../lib/platform";
 import type {
@@ -38,7 +38,7 @@ const props = defineProps<{
   }[];
   /** Bounding rect of the row that opened the menu, for popover anchoring. */
   menuAnchor: DOMRect | null;
-  /** `useDragHandle`'s bindings, for the grip. */
+  /** `useDragHandle`'s bindings -- carried by the whole row, which is what drags. */
   handleProps: DragHandleProps;
   /** `useDropList`'s `rowProps` for whichever list this row sits in. */
   dropProps: DropRowProps;
@@ -60,6 +60,15 @@ const emit = defineEmits<{
   "menu-action": [action: string, id: string];
   "menu-close": [];
 }>();
+
+/** The row itself is the drag handle, so while it is being renamed the input inside it would
+ *  lose the browser's drag-to-select-text gesture to the row's drag. Dragging is off for as
+ *  long as the rename input is up. */
+const rowProps = computed(() => ({
+  ...props.dropProps,
+  ...props.handleProps,
+  draggable: !props.renaming,
+}));
 
 /** ↑/↓ moves the list selection; Ctrl/Cmd+↑/↓ reorders instead, within this row's own folder
  *  (or the top level). Delete/Backspace asks for the parent's two-step delete confirm. F2
@@ -92,26 +101,17 @@ function onRowKeydown(event: KeyboardEvent) {
 
 <template>
   <div
-    class="nav-row nav-row--build relative flex items-center gap-1 rounded-md py-1 pr-1 border-t-2 border-b-2 border-transparent"
+    class="nav-row nav-row--build relative flex cursor-grab items-center gap-1 rounded-md border-b-2 border-t-2 border-transparent py-1 pr-1"
     :class="[
-      nested ? 'pl-9' : 'pl-5',
+      nested ? 'nav-row--nested pl-7' : 'pl-1',
       active && 'is-active bg-accent-soft',
       indicator === 'before' && '!border-t-accent',
       indicator === 'after' && '!border-b-accent',
     ]"
-    v-bind="dropProps"
+    v-bind="rowProps"
   >
-    <BaseTooltip
-      text="Drag to reorder or drop onto a folder. Ctrl + ↑ or ↓ to move up/down."
-    >
-      <span
-        data-testid="build-drag-handle"
-        class="cursor-grab text-muted hover:text-accent [&_svg]:size-[14px]"
-        v-bind="handleProps"
-      >
-        <GripVertical />
-      </span>
-    </BaseTooltip>
+    <!-- Stands in for a folder header's chevron so build names line up with folder names. -->
+    <span class="size-[18px] flex-none" aria-hidden="true" />
 
     <input
       v-if="renaming"

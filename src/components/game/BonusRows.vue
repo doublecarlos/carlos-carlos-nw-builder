@@ -115,6 +115,7 @@ const grantsContainerId = `grants:${instanceId}`;
 
 const grantsDropList = useDropList({
   containerId: grantsContainerId,
+  size: () => props.store.grants.length,
   accepts: (source) =>
     source.kind === "grant" && source.containerId === grantsContainerId,
   onDrop: (source, index) => props.store.moveGrantTo(source.index, index),
@@ -132,6 +133,7 @@ function tierDropList(grantUid: string, gIndex: number) {
   const containerId = `tiers:${grantUid}`;
   return useDropList({
     containerId,
+    size: () => props.store.grants[gIndex]?.tiers.length ?? 0,
     accepts: (source) =>
       source.kind === "tier" && source.containerId === containerId,
     onDrop: (source, index) => gs(gIndex).moveTierTo(source.index, index),
@@ -150,6 +152,7 @@ function variantDropList(grantUid: string, gIndex: number) {
   const containerId = `variants:${grantUid}`;
   return useDropList({
     containerId,
+    size: () => props.store.grants[gIndex]?.variants.length ?? 0,
     accepts: (source) =>
       source.kind === "variant" && source.containerId === containerId,
     onDrop: (source, index) => gs(gIndex).moveVariantTo(source.index, index),

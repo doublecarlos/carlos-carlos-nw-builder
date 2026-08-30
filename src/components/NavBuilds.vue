@@ -12,7 +12,6 @@ import {
   ChevronRight,
   EllipsisVertical,
   FolderPlus,
-  GripVertical,
   Plus,
 } from "@lucide/vue";
 import NavContextMenu from "./NavContextMenu.vue";
@@ -125,6 +124,8 @@ const root = useTemplateRef("root");
 
 const rootDrop = useDropList({
   containerId: "nav-builds",
+  size: () => props.entries.length,
+  tail: true,
   accepts: (source) => source.kind === "build" || source.kind === "folder",
   onDrop: (source, index, zone) => {
     if (zone === "into") {
@@ -138,6 +139,13 @@ const rootDrop = useDropList({
   },
 });
 
+function folderBuildCount(id: string) {
+  const entry = props.entries.find(
+    (e) => e.kind === "folder" && e.folder.id === id,
+  );
+  return entry?.kind === "folder" ? entry.builds.length : 0;
+}
+
 // One drop list per folder, cached by id. `useDropList` is a plain function with no lifecycle
 // hooks of its own, so calling it per row is safe, but it does own a `computed` -- caching
 // keeps a re-render from building a fresh one for every folder every time. Entries for
@@ -148,6 +156,7 @@ function folderDrop(id: string) {
   if (!list) {
     list = useDropList({
       containerId: `nav-folder:${id}`,
+      size: () => folderBuildCount(id),
       accepts: (source) => source.kind === "build",
       onDrop: (source, index) => emit("reorder", source.key, index, id),
     });
@@ -173,6 +182,23 @@ function folderHandleProps(id: string, index: number) {
     index,
   }));
 }
+
+/** Rows drag by themselves rather than by a grip, so a folder header carries the drag source,
+ *  the drop target and the "drop a build in here" zone all at once. Dragging is off while the
+ *  header is a rename input, which needs the browser's own drag-to-select-text gesture. */
+function folderRowProps(id: string, index: number) {
+  return {
+    ...rootDrop.rowProps(index, { into: canDropInto.value }),
+    ...folderHandleProps(id, index),
+    draggable: props.renamingId !== id,
+  };
+}
+
+/** The trailing drop strip only earns its space while something droppable is in flight. */
+const tailVisible = computed(
+  () =>
+    dragSource.value?.kind === "build" || dragSource.value?.kind === "folder",
+);
 
 /** The folder header's own keyboard handling. Enter/Space are left to the native button
  *  (= expand/collapse); the rest mirrors a build row's, minus selection - a folder has no
@@ -270,7 +296,7 @@ function moveFocus(dir: 1 | -1) {
 
         <template v-else>
           <div
-            class="nav-row nav-row--folder relative flex items-center gap-1 rounded-md border-b-2 border-t-2 border-transparent py-1 pl-1 pr-1"
+            class="nav-row nav-row--folder relative flex cursor-grab items-center gap-1 rounded-md border-b-2 border-t-2 border-transparent py-1 pl-1 pr-1"
             :class="[
               rootDrop.indicatorAt(row.index) === 'before' &&
                 '!border-t-accent',
@@ -278,22 +304,26 @@ function moveFocus(dir: 1 | -1) {
               rootDrop.indicatorAt(row.index) === 'into' &&
                 'is-drop-into bg-accent-soft !border-b-accent !border-t-accent',
             ]"
-            v-bind="rootDrop.rowProps(row.index, { into: canDropInto })"
+            v-bind="folderRowProps(row.folder.id, row.index)"
           >
-            <BaseTooltip text="Drag to reorder. Ctrl + ↑ or ↓ to move up/down.">
-              <span
-                data-testid="folder-drag-handle"
-                class="cursor-grab text-muted hover:text-accent [&_svg]:size-[14px]"
-                v-bind="folderHandleProps(row.folder.id, row.index)"
-              >
-                <GripVertical />
-              </span>
-            </BaseTooltip>
-
-            <component
-              :is="isOpen(row.folder) ? ChevronDown : ChevronRight"
-              class="size-[14px] flex-none text-muted"
-            />
+            <!-- The chevron toggles too: reaching for it and hitting dead space, when the
+                 name right next to it expands the folder, reads as broken. Kept out of the
+                 tab order so the row still has the one keyboard stop the name button is. -->
+            <button
+              type="button"
+              tabindex="-1"
+              data-testid="folder-toggle"
+              class="nav-folder-toggle flex-none cursor-pointer rounded-md p-0.5 leading-none text-muted hover:bg-surface-2 hover:text-text"
+              :aria-label="
+                isOpen(row.folder) ? 'Collapse folder' : 'Expand folder'
+              "
+              @click="$emit('folder-toggle', row.folder.id)"
+            >
+              <component
+                :is="isOpen(row.folder) ? ChevronDown : ChevronRight"
+                class="size-[14px]"
+              />
+            </button>
 
             <input
               v-if="renamingId === row.folder.id"
@@ -389,7 +419,7 @@ function moveFocus(dir: 1 | -1) {
 
             <div
               v-if="!row.builds.length"
-              class="nav-folder-empty ml-9 mr-1 rounded-md border border-dashed px-2 py-1 text-sm text-muted"
+              class="nav-folder-empty ml-11 mr-1 rounded-md border border-dashed px-2 py-1 text-sm text-muted"
               :class="
                 folderDrop(row.folder.id).isActiveContainer.value
                   ? 'border-accent'
@@ -403,6 +433,27 @@ function moveFocus(dir: 1 | -1) {
           </template>
         </template>
       </template>
+
+      <!-- A standing target for "the end of the top level". An expanded folder renders its
+           builds *below* its own row, so a build inside the last folder would otherwise have
+           nowhere past it to be dropped back out to. -->
+      <div
+        data-testid="nav-root-tail"
+        class="nav-root-tail mx-1 rounded-md border border-dashed text-sm"
+        :class="
+          tailVisible
+            ? [
+                'mt-1 px-2 py-1',
+                rootDrop.tailActive.value
+                  ? 'border-accent text-accent'
+                  : 'border-line text-muted',
+              ]
+            : 'h-2 border-transparent'
+        "
+        v-bind="rootDrop.tailProps()"
+      >
+        <template v-if="tailVisible">Move to the end</template>
+      </div>
 
       <div class="mt-2 flex items-center justify-center gap-1">
         <BaseButton data-testid="nav-add-build" @click="$emit('create')"

@@ -190,7 +190,8 @@ test("a long tooltip still wraps at the cap instead of running off", async ({
 }) => {
   await openBuilder(page);
 
-  await page.getByTestId("build-drag-handle").hover();
+  // The Customization Layers heading explains the bottom-to-top ordering in a full sentence.
+  await page.getByText("Customization Layers").hover();
   await expect(tooltip(page)).toBeVisible();
 
   const bubble = (await tooltip(page).locator("..").boundingBox())!;

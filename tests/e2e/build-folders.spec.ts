@@ -13,14 +13,14 @@ import {
   confirmDangerAction,
   renameViaSidebar,
 } from "./support/nav";
-import { dragOnto } from "./support/dragDrop";
+import { beginDrag, dragOnto } from "./support/dragDrop";
 
 /** Drags a build row onto a folder header's middle band, which is "put it in this folder". */
 async function dropIntoFolder(
   build: ReturnType<typeof buildRow>,
   folder: ReturnType<typeof folderRow>,
 ) {
-  await dragOnto(build.getByTestId("build-drag-handle"), folder, "into");
+  await dragOnto(build, folder, "into");
 }
 
 test("the Folder button adds an empty folder", async ({ page }) => {
@@ -47,15 +47,15 @@ test("dragging a build onto a folder puts it inside, and it survives a reload", 
   // The folder row reports how many builds it holds.
   await expect(folderRow(page, "Alts")).toContainText("1");
   // Build 2 stays at the top level, so the folder's own build is the indented one.
-  await expect(buildRow(page, "Build 1")).toHaveClass(/pl-9/);
-  await expect(buildRow(page, "Build 2")).not.toHaveClass(/pl-9/);
+  await expect(buildRow(page, "Build 1")).toHaveClass(/nav-row--nested/);
+  await expect(buildRow(page, "Build 2")).not.toHaveClass(/nav-row--nested/);
 
   // eslint-disable-next-line playwright/no-wait-for-timeout -- No DOM event to observe for IDB flush
   await page.waitForTimeout(500);
   await page.reload();
   await page.getByTestId("library").waitFor({ state: "visible" });
 
-  await expect(buildRow(page, "Build 1")).toHaveClass(/pl-9/);
+  await expect(buildRow(page, "Build 1")).toHaveClass(/nav-row--nested/);
 });
 
 test("collapsing a folder hides its builds and the state survives a reload", async ({
@@ -112,11 +112,11 @@ test("the build menu moves a build into a folder and back out", async ({
 
   let menu = await openRowMenu(buildRow(page, "Build 1"));
   await menu.getByRole("button", { name: "Move to “Alts”" }).click();
-  await expect(buildRow(page, "Build 1")).toHaveClass(/pl-9/);
+  await expect(buildRow(page, "Build 1")).toHaveClass(/nav-row--nested/);
 
   menu = await openRowMenu(buildRow(page, "Build 1"));
   await menu.getByRole("button", { name: "Move to top level" }).click();
-  await expect(buildRow(page, "Build 1")).not.toHaveClass(/pl-9/);
+  await expect(buildRow(page, "Build 1")).not.toHaveClass(/nav-row--nested/);
 });
 
 test("dragging a build out of a folder returns it to the top level", async ({
@@ -127,15 +127,12 @@ test("dragging a build out of a folder returns it to the top level", async ({
   await addFolder(page);
   await renameViaSidebar(page, folderRow(page, "Folder 1"), "Alts");
   await dropIntoFolder(buildRow(page, "Build 1"), folderRow(page, "Alts"));
-  await expect(buildRow(page, "Build 1")).toHaveClass(/pl-9/);
+  await expect(buildRow(page, "Build 1")).toHaveClass(/nav-row--nested/);
 
   // Build 2 is a top-level row, so landing after it means leaving the folder.
-  await dragOnto(
-    buildRow(page, "Build 1").getByTestId("build-drag-handle"),
-    buildRow(page, "Build 2"),
-  );
+  await dragOnto(buildRow(page, "Build 1"), buildRow(page, "Build 2"));
 
-  await expect(buildRow(page, "Build 1")).not.toHaveClass(/pl-9/);
+  await expect(buildRow(page, "Build 1")).not.toHaveClass(/nav-row--nested/);
   await expect(folderRow(page, "Alts")).toContainText("0");
 });
 
@@ -149,10 +146,7 @@ test("builds reorder within a folder", async ({ page }) => {
   const rows = page.locator(".nav-row--build");
   await expect(rows.nth(0)).toContainText("Build 1");
 
-  await dragOnto(
-    buildRow(page, "Build 1").getByTestId("build-drag-handle"),
-    buildRow(page, "Build 2"),
-  );
+  await dragOnto(buildRow(page, "Build 1"), buildRow(page, "Build 2"));
 
   await expect(rows.nth(0)).toContainText("Build 2");
   await expect(rows.nth(1)).toContainText("Build 1");
@@ -166,10 +160,7 @@ test("a folder reorders among the top-level rows", async ({ page }) => {
   const folderRows = page.locator(".nav-row--folder");
   await expect(folderRows.nth(0)).toContainText("Folder 1");
 
-  await dragOnto(
-    folderRow(page, "Folder 1").getByTestId("folder-drag-handle"),
-    folderRow(page, "Folder 2"),
-  );
+  await dragOnto(folderRow(page, "Folder 1"), folderRow(page, "Folder 2"));
 
   await expect(folderRows.nth(0)).toContainText("Folder 2");
   await expect(folderRows.nth(1)).toContainText("Folder 1");
@@ -188,7 +179,7 @@ test("deleting a folder keeps its builds, at the top level", async ({
 
   await expect(folderRow(page, "Folder 1")).toHaveCount(0);
   await expect(buildRow(page, "Build 2")).toBeVisible();
-  await expect(buildRow(page, "Build 2")).not.toHaveClass(/pl-9/);
+  await expect(buildRow(page, "Build 2")).not.toHaveClass(/nav-row--nested/);
 });
 
 test("a bundle export carries the folders of the builds it exports", async ({
@@ -230,4 +221,39 @@ test("a bundle export carries the folders of the builds it exports", async ({
   expect(bundle.data.folders).toHaveLength(1);
   expect(bundle.data.folders[0].name).toBe("Alts");
   expect(bundle.data.folders[0].builds).toEqual([bundle.data.builds[0].id]);
+});
+
+test("the chevron left of a folder name expands and collapses it", async ({
+  page,
+}) => {
+  await openBuilder(page);
+  await addBuild(page);
+  await addFolder(page);
+  await dropIntoFolder(buildRow(page, "Build 2"), folderRow(page, "Folder 1"));
+
+  const chevron = folderRow(page, "Folder 1").getByTestId("folder-toggle");
+  await chevron.click();
+  await expect(buildRow(page, "Build 2")).toHaveCount(0);
+
+  await chevron.click();
+  await expect(buildRow(page, "Build 2")).toBeVisible();
+});
+
+test("a build drags out of a folder that is the last row in the list", async ({
+  page,
+}) => {
+  await openBuilder(page);
+  await addFolder(page);
+  await dropIntoFolder(buildRow(page, "Build 1"), folderRow(page, "Folder 1"));
+  await expect(buildRow(page, "Build 1")).toHaveClass(/nav-row--nested/);
+
+  // The folder is now the only top-level row, and its contents render below it -- the trailing
+  // strip is the only spot left that means "out of the folder, at the end".
+  const drag = await beginDrag(buildRow(page, "Build 1"));
+  const tail = page.getByTestId("nav-root-tail");
+  await expect(tail).toContainText("Move to the end");
+  await drag.dropOn(tail);
+
+  await expect(buildRow(page, "Build 1")).not.toHaveClass(/nav-row--nested/);
+  await expect(folderRow(page, "Folder 1")).toContainText("0");
 });

@@ -14,6 +14,14 @@ export function layerRow(page: Page, name: string): Locator {
   return page.locator(".nav-row--layer").filter({ hasText: name });
 }
 
+/** The sidebar rows currently drawing a drop line. Tailwind's `!` important prefix is matched
+ *  as a class substring, so the selector needs no CSS escaping. */
+export function dropIndicators(page: Page): Locator {
+  return page
+    .getByTestId("library")
+    .locator('[class*="!border-t-accent"], [class*="!border-b-accent"]');
+}
+
 /** Opens a row's kebab menu and returns it (`.navmenu`), scoped so `getByText` only ever
  * matches within this one open menu. BasePopover teleports the menu to <body>, so the
  * menu is found globally rather than as a descendant of the row. */

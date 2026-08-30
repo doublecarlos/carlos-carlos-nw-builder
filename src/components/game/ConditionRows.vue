@@ -172,6 +172,7 @@ function dropList() {
   const id = containerId.value;
   return useDropList({
     containerId: id,
+    size: () => props.rows.length,
     accepts: (source) => source.kind === "condition-row",
     onDrop: (source, index) => {
       if (source.containerId === id) {
@@ -280,6 +281,7 @@ function branchesDropList(row: ConditionRow, groupIndex: number) {
   const id = `branches:${props.treeId}:${row.uid}`;
   return useDropList({
     containerId: id,
+    size: () => row.branches?.length ?? 0,
     accepts: (source) => source.kind === "condition-branch" && row.op !== "not",
     onDrop: (source, index) => {
       if (source.containerId === id) {
