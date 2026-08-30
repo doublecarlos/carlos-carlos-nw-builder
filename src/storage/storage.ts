@@ -171,6 +171,14 @@ export function seededDefaults(
   };
 }
 
+/** A build that is not being compared against anything. */
+const noCompare = (): Build["compare"] => ({
+  id: "",
+  highlight: false,
+  onlyDiff: false,
+  statLines: false,
+});
+
 export function defaultBuild(name = "New build"): Build {
   // Base catalogue only (no workspace overlay) -- same reach every other pure helper in this
   // file has, and enough to seed every shipped default. A default on an *overlay-added* slot
@@ -191,7 +199,7 @@ export function defaultBuild(name = "New build"): Build {
     // is pure session state -- so reopening a build remembers what you were sizing it up
     // against. `id` is another build's id, resolved (and gracefully dropped if it no longer
     // exists) by App.vue's own `compareBuild` computed, not here.
-    compare: { id: "", highlight: false, onlyDiff: false, statLines: false },
+    compare: noCompare(),
   };
 }
 
@@ -700,7 +708,21 @@ export interface Bundle {
   folders?: BuildFolder[];
 }
 
-export const toBundleJson = (bundle: Bundle) => toJson(wrap("bundle", bundle));
+/**
+ * A bundle keeps each build's quick-compare settings, but only where they still mean
+ * something on the other side: `compare.id` names a sibling build, so a comparison whose
+ * target was left out of the selection travels as no comparison at all rather than as a
+ * dangling id. (A single build's export drops `compare` outright -- see `toBuildJson`.)
+ */
+export function toBundleJson(bundle: Bundle): string {
+  const exportedIds = new Set(bundle.builds.map((b) => b.id));
+  const builds = bundle.builds.map((build) =>
+    exportedIds.has(build.compare.id)
+      ? build
+      : { ...build, compare: noCompare() },
+  );
+  return toJson(wrap("bundle", { ...bundle, builds }));
+}
 
 /**
  * Accepts a single (enveloped) build, or -- for backward compatibility with anything saved
@@ -755,7 +777,7 @@ export function parseBundleJson(text: string): {
 
   // Fresh ids throughout, name collisions suffixed `(2)`
   const seenBuildNames = new Set<string>();
-  const builds = rawBuilds.map((b) => {
+  const renamed = rawBuilds.map((b) => {
     let name = b.name;
     while (seenBuildNames.has(name)) name = `${name} (2)`;
     seenBuildNames.add(name);
@@ -775,9 +797,21 @@ export function parseBundleJson(text: string): {
   // already discarded it by this point). A folder left with no members is dropped.
   const remap = new Map<string, string>();
   rawBuildList.forEach((raw: unknown, i: number) => {
-    if (isPlain(raw) && typeof raw.id === "string" && builds[i])
-      remap.set(raw.id, builds[i].id);
+    if (isPlain(raw) && typeof raw.id === "string" && renamed[i])
+      remap.set(raw.id, renamed[i].id);
   });
+
+  // `compare.id` points at a sibling build by the id the file was written with, so it needs
+  // the same remap the folder membership gets. One naming a build that is not in the bundle
+  // (a hand-edited file, or one written before the export scrubbed those) drops back to no
+  // comparison rather than leaving the picker on a build that does not exist.
+  const builds = renamed.map((b) => {
+    const target = remap.get(b.compare.id);
+    return target
+      ? { ...b, compare: { ...b.compare, id: target } }
+      : { ...b, compare: noCompare() };
+  });
+
   const folders = (Array.isArray(bundle.folders) ? bundle.folders : [])
     .filter(isPlain)
     .map((raw) => ({

@@ -347,6 +347,88 @@ describe("bundle JSON round trip", () => {
     expect(bundle.builds).toEqual([]);
     expect(bundle.layers).toEqual([]);
   });
+
+  it("keeps a comparison whose target travels in the same bundle, remapped to its fresh id", () => {
+    const target = storage.defaultBuild("Target");
+    const source = storage.defaultBuild("Source");
+    source.compare = {
+      id: target.id,
+      highlight: true,
+      onlyDiff: true,
+      statLines: true,
+    };
+
+    const json = storage.toBundleJson({
+      builds: [source, target],
+      layers: [],
+    });
+    const { bundle } = storage.parseBundleJson(json);
+    const imported = bundle.builds.find((b) => b.name === "Source")!;
+    const importedTarget = bundle.builds.find((b) => b.name === "Target")!;
+
+    expect(importedTarget.id).not.toBe(target.id);
+    expect(imported.compare).toEqual({
+      id: importedTarget.id,
+      highlight: true,
+      onlyDiff: true,
+      statLines: true,
+    });
+  });
+
+  it("drops a comparison whose target was left out of the bundle", () => {
+    const target = storage.defaultBuild("Left out");
+    const source = storage.defaultBuild("Source");
+    source.compare = {
+      id: target.id,
+      highlight: true,
+      onlyDiff: true,
+      statLines: true,
+    };
+
+    const json = storage.toBundleJson({ builds: [source], layers: [] });
+    const exported = JSON.parse(json) as {
+      data: { builds: { compare: unknown }[] };
+    };
+    expect(exported.data.builds[0].compare).toEqual({
+      id: "",
+      highlight: false,
+      onlyDiff: false,
+      statLines: false,
+    });
+
+    const { bundle } = storage.parseBundleJson(json);
+    expect(bundle.builds[0].compare).toEqual({
+      id: "",
+      highlight: false,
+      onlyDiff: false,
+      statLines: false,
+    });
+  });
+
+  it("drops a comparison naming a build the bundle does not carry", () => {
+    const source = storage.defaultBuild("Source");
+    source.compare = {
+      id: "b_missing",
+      highlight: true,
+      onlyDiff: false,
+      statLines: true,
+    };
+    // Hand-written envelope: `toBundleJson` would have scrubbed this on the way out, so the
+    // import side has to stand on its own for files written before it did.
+    const json = JSON.stringify({
+      v: storage.SCHEMA_VERSION,
+      kind: "bundle",
+      data: { builds: [source], layers: [] },
+    });
+
+    const { bundle } = storage.parseBundleJson(json);
+    expect(bundle.builds[0].compare).toEqual({
+      id: "",
+      highlight: false,
+      onlyDiff: false,
+      statLines: false,
+    });
+  });
 });
 
 describe("overlay envelope: layer-kind and bundle-kind", () => {
