@@ -32,6 +32,7 @@ const urlOf = (request: string | FakeRequest) =>
 const indexHtml = (hash: string) => `<!doctype html>
 <html lang="en">
   <head>
+    <link rel="canonical" href="${ORIGIN}/" />
     <link rel="icon" href="/favicon.ico" sizes="32x32" />
     <script type="module" crossorigin src="/assets/index-${hash}.js"></script>
     <link rel="stylesheet" crossorigin href="/assets/index-${hash}.css">
@@ -182,6 +183,14 @@ describe("install", () => {
         `${ORIGIN}/assets/index-v1.css`,
       ]),
     );
+  });
+
+  it("does not follow the entry page's canonical link back to itself", async () => {
+    await worker.install();
+
+    // The canonical link is a same-origin `href` like any other, so the manifest parser sees
+    // it; priming has already cached the page under that URL by then.
+    expect(worker.fetched.filter((url) => url === INDEX)).toHaveLength(1);
   });
 
   it("primes the landing logo, which the entry page never mentions", async () => {

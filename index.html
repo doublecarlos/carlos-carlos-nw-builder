@@ -5,6 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Carlos Carlos' NW Builder — Neverwinter build planner</title>
 
+    <!-- Routing lives in the query string, so every deep link -- `?build=...` and the rest --
+         is this same page with private, local state attached. Pointing them all at the bare
+         origin keeps a shared build link from being indexed as a page of its own. -->
+    <link rel="canonical" href="https://carloscarlosnwbuilder.pages.dev/" />
+
     <!-- One description, reused verbatim by Open Graph and Twitter below. Kept under ~160
          characters so search results show it whole rather than clipping mid-sentence. -->
     <meta
@@ -25,11 +30,16 @@
       content="#0f1217"
     />
 
-    <!-- Link previews. There is no canonical origin to point `og:url` and `og:image` at yet,
-         so the image is left relative: unfurlers that resolve it against the page URL get the
-         app icon, and the rest fall back to a text-only card. Add `og:url`, a canonical link
-         and a Sitemap line in public/robots.txt once the app has a deployed domain. -->
+    <!-- Link previews. The URLs here are absolute on purpose: unfurlers fetch these tags out
+         of context and many will not resolve a relative image against the page they came from,
+         so a relative path costs the card its picture. Same origin as the canonical link above
+         and the Sitemap line in public/robots.txt; tests/unit/seo-metadata.spec.ts pins them
+         to each other. -->
     <meta property="og:type" content="website" />
+    <meta
+      property="og:url"
+      content="https://carloscarlosnwbuilder.pages.dev/"
+    />
     <meta property="og:site_name" content="Carlos Carlos' NW Builder" />
     <meta
       property="og:title"
@@ -40,7 +50,10 @@
       content="Browser-based build planner for Neverwinter. Compare builds side by side, add your own items and bonuses with layers, and watch the stat maths update live."
     />
     <meta property="og:locale" content="en_US" />
-    <meta property="og:image" content="/icon-512.png" />
+    <meta
+      property="og:image"
+      content="https://carloscarlosnwbuilder.pages.dev/icon-512.png"
+    />
     <meta property="og:image:width" content="512" />
     <meta property="og:image:height" content="512" />
     <meta property="og:image:alt" content="Carlos Carlos' NW Builder icon" />
@@ -56,7 +69,10 @@
       name="twitter:description"
       content="Browser-based build planner for Neverwinter. Compare builds side by side, add your own items and bonuses with layers, and watch the stat maths update live."
     />
-    <meta name="twitter:image" content="/icon-512.png" />
+    <meta
+      name="twitter:image"
+      content="https://carloscarlosnwbuilder.pages.dev/icon-512.png"
+    />
 
     <!-- All generated from public/icon-512.png by `npm run icons`. The .ico is listed first
          so it also answers the browser's own unprompted /favicon.ico request. -->
@@ -72,6 +88,7 @@
         "@context": "https://schema.org",
         "@type": "WebApplication",
         "name": "Carlos Carlos' NW Builder",
+        "url": "https://carloscarlosnwbuilder.pages.dev/",
         "applicationCategory": "GameApplication",
         "operatingSystem": "Any modern web browser",
         "browserRequirements": "Requires JavaScript.",

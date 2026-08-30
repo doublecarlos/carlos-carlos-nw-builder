@@ -17,6 +17,7 @@ test("the served HTML carries the app's name and purpose before any script runs"
   expect(html).toContain("Neverwinter");
   expect(html).toContain('name="description"');
   expect(html).toContain('property="og:title"');
+  expect(html).toMatch(/<link rel="canonical" href="https:\/\/[^"]+"/);
   expect(html).toContain('type="application/ld+json"');
   expect(html).toMatch(/<h1[^>]*>/);
 });
@@ -30,6 +31,18 @@ test("robots.txt is served and keeps crawlers off the OCR assets", async ({
   const body = await response.text();
   expect(body).toContain("User-agent: *");
   expect(body).toContain("Disallow: /tessdata/");
+  // Absolute by spec, so it names the deployed origin rather than wherever this ran.
+  expect(body).toMatch(/^Sitemap: https:\/\/\S+\/sitemap\.xml$/m);
+});
+
+test("the sitemap is served as XML a crawler can parse", async ({ page }) => {
+  const response = await page.request.get("/sitemap.xml");
+  expect(response.status()).toBe(200);
+  expect(response.headers()["content-type"]).toContain("xml");
+
+  const body = await response.text();
+  expect(body).toContain("http://www.sitemaps.org/schemas/sitemap/0.9");
+  expect(body).toMatch(/<loc>https:\/\/\S+<\/loc>/);
 });
 
 test("the boot screen is what the page opens on, and the app replaces it", async ({

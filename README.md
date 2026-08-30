@@ -1,6 +1,8 @@
 # Carlos Carlos' NW Builder
 
 Web app to plan builds for the game Neverwinter.
+Live at <https://carloscarlosnwbuilder.pages.dev/>.
+
 Areas of focus:
 
 - Ability to easily compare multiple builds and see the differences between them, both item-wise and with damage calculations.

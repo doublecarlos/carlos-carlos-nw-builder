@@ -18,6 +18,7 @@ const read = (file: string) => readFileSync(path.join(root, file), "utf8");
 
 const html = read("index.html");
 const robots = read("public/robots.txt");
+const sitemap = read("public/sitemap.xml");
 const baseCss = read("src/base.css");
 const viteConfig = read("vite.config.ts");
 
@@ -37,6 +38,15 @@ function metaContent(key: string): string | undefined {
 
 const title = html.match(/<title>([^<]*)<\/title>/)?.[1] ?? "";
 const description = metaContent("description") ?? "";
+
+/** The deployed origin, taken from the canonical link. Every other absolute URL in the repo is
+ *  checked against this rather than against a literal repeated here, so moving the site means
+ *  changing index.html and watching the rest of these assertions say what else has to follow. */
+const canonical = html.match(/<link rel="canonical" href="([^"]+)"/)?.[1] ?? "";
+
+const jsonLd = html.match(
+  /<script type="application\/ld\+json">(.*?)<\/script>/s,
+)?.[1];
 
 /** The `--bg` token each theme declares in src/base.css. */
 const themeBg = {
@@ -68,8 +78,11 @@ describe("index.html head", () => {
     for (const key of ["og:image", "twitter:image"]) {
       const src = metaContent(key);
       expect(src).toBeTruthy();
+      // Absolute, because an unfurler reads these tags out of context and may not resolve a
+      // relative path -- but it still has to name a file this repo actually ships.
+      expect(src!.startsWith(canonical)).toBe(true);
       expect(
-        existsSync(path.join(root, "public", src!.replace(/^\//, ""))),
+        existsSync(path.join(root, "public", src!.slice(canonical.length))),
       ).toBe(true);
     }
     // A card built from an image needs the alt text as much as the page does.
@@ -91,9 +104,7 @@ describe("index.html head", () => {
 });
 
 describe("index.html structured data", () => {
-  const raw = html.match(
-    /<script type="application\/ld\+json">(.*?)<\/script>/s,
-  )?.[1];
+  const raw = jsonLd;
 
   it("is present and is valid JSON", () => {
     expect(raw).toBeTruthy();
@@ -110,6 +121,33 @@ describe("index.html structured data", () => {
       "@type": "VideoGame",
       name: "Neverwinter",
     });
+  });
+});
+
+// The site's absolute URL is written out in four files, and nothing but agreement between them
+// makes it right: a canonical link that disagrees with `og:url` splits the page's identity, and
+// a Sitemap line pointing at the wrong host is simply ignored.
+describe("the deployed origin", () => {
+  it("is declared once, canonically, as the site root", () => {
+    // Routing lives in the query string, so the root is the only address the site really has.
+    expect(canonical).toMatch(/^https:\/\/[^/]+\/$/);
+  });
+
+  it("is the URL link previews and structured data both name", () => {
+    expect(metaContent("og:url")).toBe(canonical);
+    expect(JSON.parse(jsonLd!).url).toBe(canonical);
+  });
+
+  it("is where robots.txt sends a crawler for the sitemap", () => {
+    expect(robots.match(/^Sitemap: (\S+)$/m)?.[1]).toBe(
+      new URL("sitemap.xml", canonical).href,
+    );
+  });
+
+  it("is the single URL the sitemap lists", () => {
+    expect(
+      [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]),
+    ).toEqual([canonical]);
   });
 });
 
