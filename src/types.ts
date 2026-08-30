@@ -46,7 +46,7 @@ export interface RoleDef {
  *
  * Applies to an item's own stat vector alone. Bonuses an item grants are attributed to a slot
  * rather than to the item that granted them (bonus.ts's `anchor.slotId`), so they are
- * deliberately out of scope -- issue #287. */
+ * deliberately out of scope. */
 export interface StatScaler {
   id: string;
   label: string;
@@ -99,8 +99,8 @@ export interface SlotVisibility {
  * type per variant" convention `DynamicStatConfig` already uses.
  *
  * A parameter never equips an item. It used to: a `list`/`boolean` param could name a
- * `linkedItem` that came and went with its value, which is how `class` behaved before #273
- * made it an ordinary `item_picker`. `Item.publishes` inverts that relationship -- an equipped
+ * `linkedItem` that came and went with its value, which is how `class` behaved before it
+ * became an ordinary `item_picker`. `Item.publishes` inverts that relationship -- an equipped
  * item asserts the value, instead of a value conjuring an item -- so anything that needs to
  * both carry stats and set a context value is an item picker now, and a parameter is only ever
  * the scalar itself. */
@@ -445,7 +445,7 @@ export interface ConditionWhen {
    *  attachment) are currently attached across every equipped item, tallied from each
    *  contributing item's `BonusOccurrenceConfig` (or 1 per bare-id attachment). A `min:0,max:1`
    *  attachment gating its own flat grant with `atLeast: 1` is a per-item on/off checkbox --
-   *  what a dedicated `proc` leaf used to be, before #222 folded it into this same mechanism
+   *  what a dedicated `proc` leaf used to be, before it was folded into this same mechanism
    *  instead of keeping a second, less general one. Gating this way is redundant with the
    *  attachment's count itself for a plain flat grant (a 0-count attachment already contributes
    *  no candidate at all, so the grant is never reached either way) -- it's kept anyway so the

@@ -1,4 +1,4 @@
-// End-to-end coverage for the "Import from game" coverage report (#175): the three groups
+// End-to-end coverage for the "Import from game" coverage report: the three groups
 // (imported / not recognised / not in the demo), the copy-all affordance, multi-loadout tabs,
 // and reopening from the post-import notice.
 import { test, expect, type Page } from "@playwright/test";
@@ -12,7 +12,7 @@ const DEMO_FIXTURE = join(__dirname, "../unit/fixtures/build-export.demo.txt");
 
 /** The fixture's `Hitem`s are deliberately synthetic, so no shipped `gameIds` claim them and
  *  the demo recognises nothing out of the box however far the catalogue's own mappings grow.
- *  Teaching one mapping through a layer -- the real mechanism #171/#177 rely on -- gives the
+ *  Teaching one mapping through a layer -- the real mechanism the report relies on -- gives
  *  report an actual "imported" row to assert on, the same way a player would fix an
  *  "unrecognised" id after reading the report. */
 async function mapFixtureHeadItem(page: Page) {
@@ -102,7 +102,7 @@ test("'not in demo' is rolled up to sections, not individual slots", async ({
   const notInDemo = page.getByTestId("game-import-report-not-in-demo");
   const rows = notInDemo.getByTestId("game-import-report-notindemo-row");
   // 13 authored groups roll up well over 100 individual missing slots -- a raw per-slot list
-  // would be unreadable, which is the whole point of #175.
+  // would be unreadable, which is the whole point of the roll-up.
   await expect(rows).toHaveCount(13);
   await expect(rows.filter({ hasText: "Boons" })).toContainText("boon points");
 });

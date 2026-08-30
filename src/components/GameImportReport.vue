@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// Coverage report for "Import from game" (#175): what came across, what didn't, and why.
+// Coverage report for "Import from game": what came across, what didn't, and why.
 // Rendered both as the wizard's own step 4 and reopened later from the post-import notice --
 // both read straight from stores/gameImport.ts's `reports`, which keeps the last commit's data
 // for the session, so this component needs no props of its own.

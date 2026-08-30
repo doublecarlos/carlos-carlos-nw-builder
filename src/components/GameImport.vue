@@ -62,7 +62,7 @@ async function copyCommand() {
 }
 
 /** Loadouts sorted alphabetically (numeric-aware, so "2." sorts before "10.") within each
- *  character -- #190, matching the order the game's own loadout switcher shows them in,
+ *  character, matching the order the game's own loadout switcher shows them in,
  *  rather than the demo file's recording order. */
 const rowsByCharacter = computed(() => {
   const map = new Map<string, LoadoutRow[]>();

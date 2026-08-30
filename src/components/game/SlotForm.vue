@@ -3,7 +3,7 @@
 // PresetForm: an existing slot live-edits on every change, a brand-new one is a draft until
 // Save.
 //
-// Deliberately narrow (issue #271): `build_parameter` only, appended to an existing section.
+// Deliberately narrow: `build_parameter` only, appended to an existing section.
 // The other four `Slot` variants carry layout structure -- section membership, ordering,
 // separators -- that an overlay's flat id->value map cannot express, so they stay base-only
 // and never reach this form.

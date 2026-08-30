@@ -366,7 +366,7 @@ function optionsForCombo(type?: string) {
   const fromSlot = (slot?.options ?? []).filter((o) => o.value);
   if (fromSlot.length) return fromSlot;
   // No parameter declares this path, so the vocabulary is whatever items publish at it --
-  // which is where `class` lives since #273. Labelled by the publishing item, and deduped
+  // which is where `class` lives. Labelled by the publishing item, and deduped
   // since several items may legitimately assert the same value.
   const byValue = new Map<string, string>();
   for (const item of engine.db.value.items) {

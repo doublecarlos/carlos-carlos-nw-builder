@@ -1,14 +1,14 @@
-// End-to-end coverage for ItemPicker.vue's "potential" bonus preview (issue #125): a candidate
+// End-to-end coverage for ItemPicker.vue's "potential" bonus preview: a candidate
 // that contributes to a bonus which isn't active yet shows a "Potentially:" line for what it
 // would add once the rest of the bonus is in place, sourced from the same per-candidate resolve
-// the "current" bonus preview (#116) already runs.
+// the "current" bonus preview already runs.
 import { test, expect } from "@playwright/test";
 import { openBuilder, slotRow, pickerInput, chooseItem } from "./support/app";
 
 // M31 Bloodwoven Sigils (CA) carries two bonuses: M31 Reckless Advantage (its own, active on
 // the "combat" toggle alone -- CA +10%/Crit Avoid -7.5%) and half of M31 Enchanted Advantage,
 // a 2-occurrence bonus granting `ca_p +0.02` only once both items are equipped. That combination
-// is exactly the case #125 is about: an item that's already worth something on its own, *and*
+// is exactly the case here: an item that's already worth something on its own, *and*
 // a further "Potentially:" ceiling once the rest of the bonus is in place. The bonus's other
 // item lives in gear.shirt.
 const PANTS_ITEM = "M31 Bloodwoven Sigils (CA)";

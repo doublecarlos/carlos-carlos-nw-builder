@@ -1,10 +1,10 @@
-// End-to-end coverage for authoring a `BonusOccurrenceConfig` attachment in the item editor
-// (#219): an attached bonus starts as a plain id (always 1 occurrence) and can be upgraded to
+// End-to-end coverage for authoring a `BonusOccurrenceConfig` attachment in the item editor:
+// an attached bonus starts as a plain id (always 1 occurrence) and can be upgraded to
 // a typed min/max/default occurrence count, same "hidden until added, fully removable"
 // convention item-editor-groups.spec.ts already covers for dynamic modification/point
 // assignment. The occurrence editor only appears once the bonus itself has a real id -- a
 // brand-new, not-yet-saved bonus is still a "pending" slot with nothing to attach a config to.
-// Also covers the optional `label` field (#227), which overrides the bonus name on this
+// Also covers the optional `label` field, which overrides the bonus name on this
 // attachment's build-editor row.
 import { test, expect, type Page } from "@playwright/test";
 import { openBuilder } from "./support/app";

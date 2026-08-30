@@ -1,4 +1,4 @@
-// End-to-end coverage for issue #288: the item card's one-line condition summaries have to
+// End-to-end coverage for the item card's one-line condition summaries: they have to
 // explain compound conditions, not just name the operator. Mystic Aura (Group) is gated on
 // `party AND NOT equipped(mystic-aura-self)`, which used to read "party enabled + not".
 import { test, expect, type Page } from "@playwright/test";

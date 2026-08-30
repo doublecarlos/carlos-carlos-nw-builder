@@ -1,4 +1,4 @@
-// End-to-end coverage for issue #132: ItemPicker.vue's dropdown grows past the input's own
+// End-to-end coverage for ItemPicker.vue's dropdown width: it grows past the input's own
 // width so its stat/bonus preview lines have room, while a plain ComboBox.vue select (no
 // preview content to make room for) keeps matching its input exactly.
 import { test, expect } from "@playwright/test";
@@ -24,7 +24,7 @@ test.describe("item picker menu width", () => {
   }) => {
     await openBuilder(page);
     // A build_parameter's own ComboBox, not an ItemPicker -- `options.class` became an item
-    // picker in #273, which is the *other* case this file contrasts against.
+    // picker, which is the *other* case this file contrasts against.
     const row = slotRow(page, "options.role");
     await pickerInput(row).click();
 

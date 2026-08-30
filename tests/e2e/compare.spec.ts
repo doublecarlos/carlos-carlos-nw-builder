@@ -62,7 +62,7 @@ test.describe("build_parameter compare diff apply", () => {
   }) => {
     // Build 1: set role to Tank via direct combobox click. `options.role` is used rather than
     // `options.class` because this block is about a *build_parameter* row -- class became an
-    // ordinary item_picker in #273, and the item_picker case is covered above.
+    // ordinary item_picker, and the item_picker case is covered above.
     await openBuilder(page);
     const roleRow = slotRow(page, "options.role");
     await roleRow.getByTestId("picker-input").click();
@@ -95,7 +95,7 @@ test.describe("build_parameter compare diff apply", () => {
   }) => {
     // Build 1: set role to Tank via direct combobox click. `options.role` is used rather than
     // `options.class` because this block is about a *build_parameter* row -- class became an
-    // ordinary item_picker in #273, and the item_picker case is covered above.
+    // ordinary item_picker, and the item_picker case is covered above.
     await openBuilder(page);
     const roleRow = slotRow(page, "options.role");
     await roleRow.getByTestId("picker-input").click();

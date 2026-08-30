@@ -446,7 +446,7 @@ describe("BuildCompare: statLines", () => {
   });
 });
 
-// BonusOccurrenceConfig (#217): unlike `assignments`, no shipped item has one of these yet, so
+// BonusOccurrenceConfig: unlike `assignments`, no shipped item has one of these yet, so
 // there is nothing to seed a default from -- an absent entry falls back to the config's own
 // `default` at read time instead (bonus.ts's `collect()`), not to a build-carried value.
 describe("BonusOccurrenceConfig: occurrenceInputs", () => {

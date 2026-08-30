@@ -1,7 +1,7 @@
-// End-to-end coverage for issue #270: `BuildParameterSlot.visibleWhen` scopes a param's row to
+// End-to-end coverage for `BuildParameterSlot.visibleWhen`: it scopes a param's row to
 // when it is relevant. Driven through the shipped scoping this shipped with -- the three forte
 // params are hidden until a paragon is equipped -- since that is the only path a user has to
-// flip one today (authoring a slot arrives with #271).
+// flip one today (authoring a slot is slot-overlay.spec.ts's own coverage).
 import { test, expect } from "@playwright/test";
 import {
   openBuilder,

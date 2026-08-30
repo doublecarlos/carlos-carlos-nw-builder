@@ -207,7 +207,7 @@ test.describe("switching items mid-edit", () => {
 
     // Open the head item and rename it, but switch away immediately -- well before the
     // 700ms auto-save debounce fires. The pending edit must still be flushed and saved
-    // (issue #86: it used to be silently dropped when the form unmounted).
+    // (it used to be silently dropped when the form unmounted).
     await page.locator(".editor-search").fill(HEAD_ITEM);
     const headRow = page
       .locator(".editor-row")

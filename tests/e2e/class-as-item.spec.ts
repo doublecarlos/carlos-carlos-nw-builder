@@ -1,4 +1,4 @@
-// End-to-end coverage for the `options.class` migration (issue #273): the class is an ordinary
+// End-to-end coverage for the `options.class` migration: the class is an ordinary
 // item_picker over `class`-tagged items, and the class item publishes the value everything that
 // reads a class already expected. Nothing downstream was supposed to notice -- these are the
 // four places that would break loudly if it had.

@@ -1,4 +1,4 @@
-// End-to-end coverage for issue #286: mount and companion bolster scale the item's own stat
+// End-to-end coverage for mount and companion bolster: they scale the item's own stat
 // line. Driven through the shipped data, since the two parameters and the three filters they
 // claim are the whole feature -- there is nothing to author.
 import { test, expect, type Page } from "@playwright/test";

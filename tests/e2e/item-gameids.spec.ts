@@ -1,4 +1,4 @@
-// End-to-end coverage for the gameIds field (game-import ticket #171): a TokenInput on the
+// End-to-end coverage for the gameIds field: a TokenInput on the
 // item form that lets a layer teach the importer new Hitem mappings with no code change.
 import { test, expect } from "@playwright/test";
 import { openBuilder } from "./support/app";

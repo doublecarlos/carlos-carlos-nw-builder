@@ -246,8 +246,8 @@ export function commit() {
 }
 
 /** Maps one "unrecognised" outcome's game id onto `itemId`'s `gameIds`, in a layer overlay,
- *  then re-resolves this loadout in place so the row can flip to "imported" -- #177, "teach
- *  new item mappings from the import report". Also doubles as *re*-mapping: the report keeps
+ *  then re-resolves this loadout in place so the row can flip to "imported", teaching new
+ *  item mappings from the import report. Also doubles as *re*-mapping: the report keeps
  *  showing the row afterwards (keyed by `unrecognisedOrigin`, not the outcome's current kind),
  *  so picking a different item here first retracts the game id from any item claiming it that
  *  shares the new item's `filter` -- the invariant catalog.ts's validate enforces. Claimants

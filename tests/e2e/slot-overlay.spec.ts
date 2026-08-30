@@ -1,5 +1,5 @@
-// End-to-end coverage for issue #271: build_parameter slots are authorable in a layer, and a
-// layer-defined parameter is a real parameter everywhere else -- it renders in the build
+// End-to-end coverage for authoring slots in a layer: build_parameter slots are authorable,
+// and a layer-defined parameter is a real parameter everywhere else -- it renders in the build
 // editor, resolves at its default with no seeding step, and can be reverted or removed again.
 import { test, expect, type Page } from "@playwright/test";
 import { openBuilder, slotRow } from "./support/app";
@@ -145,7 +145,7 @@ test("editing a shipped parameter's label keeps its visibleWhen scoping", async 
   await openBuilder(page);
   await openParametersTab(page);
 
-  // options.forte1 ships scoped to "a paragon is equipped" (issue #270). The form has no
+  // options.forte1 ships scoped to "a paragon is equipped". The form has no
   // visibleWhen editor, so this is really a test that it carries unedited fields through
   // rather than dropping them on save.
   await page.locator(".editor-search").fill("Forte 1");

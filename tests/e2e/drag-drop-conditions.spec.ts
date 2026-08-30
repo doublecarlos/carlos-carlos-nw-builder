@@ -1,5 +1,5 @@
-// End-to-end coverage for the new drag-and-drop capability in issue #182: dragging a
-// condition (or condition group) to reorder it, and -- the issue's headline example --
+// End-to-end coverage for the drag-and-drop capability: dragging a
+// condition (or condition group) to reorder it, and -- the headline example --
 // dragging an existing condition into a freshly-added "not" block, including across grants,
 // variants, and (via ItemBonuses' cross-bonus registry) across bonuses on the same item.
 import { test, expect, type Page } from "@playwright/test";

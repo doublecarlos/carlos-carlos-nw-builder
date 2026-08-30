@@ -46,13 +46,13 @@ const props = withDefaults(
     /** `item`'s own BonusOccurrenceConfig rows (useItemBonusOccurrences.ts) -- same data
      *  ItemPickerRow.vue's checkbox/stepper inputs read, resolved by the caller rather than
      *  here so this component stays prop-driven. Lets an inactive row that's `item`'s own
-     *  count-of-0 explain that directly (#256) instead of only through a generic unmet-gate
+     *  count-of-0 explain that directly instead of only through a generic unmet-gate
      *  leaf, which reads oddly for a bonus gated on its own occurrence count. */
     occurrenceRows?: OccurrenceRow[];
     /** Mount/companion bolster acting on this item (`itemScaleFactor`), resolved by the caller
      *  rather than read from the store here so this component stays prop-driven. Scales the
      *  item's own stat line only -- the bonus payloads below are attributed to a slot, not
-     *  owned by the item (issue #287). */
+     *  owned by the item. */
     scale?: number;
     /** Lines naming what `scale` came from (`itemScaleNotes`), listed among `notes` so the
      *  card never shows numbers that silently disagree with the catalogue. */

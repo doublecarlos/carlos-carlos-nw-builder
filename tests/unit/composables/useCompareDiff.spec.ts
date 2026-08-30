@@ -1,4 +1,4 @@
-// occurrenceDiffers/occurrenceDiffTitle (#218): whether an item's BonusOccurrenceConfig counts
+// occurrenceDiffers/occurrenceDiffTitle: whether an item's BonusOccurrenceConfig counts
 // differ from the compare build, and a display string for what the compare build's counts are.
 // Pure functions, so exercised directly rather than through the full useCompareDiff() setup
 // (db/build/result/compareBuild/compareResult/itemIn) the rest of that module needs.
@@ -89,7 +89,7 @@ describe("occurrenceDiffTitle", () => {
     expect(occurrenceDiffTitle(db, unnamed, there)).toBe("unnamed-bonus 0");
   });
 
-  it("prefers the attachment's own label over the bonus name (#227)", () => {
+  it("prefers the attachment's own label over the bonus name", () => {
     const labeled: Item = {
       id: "labeled-ring",
       name: "Labeled Ring",

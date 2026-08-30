@@ -1,4 +1,4 @@
-// End-to-end coverage for issue #282: an item_picker slot authored `hidePreview` renders bare
+// End-to-end coverage for `hidePreview`: an item_picker slot authored with it renders bare
 // names in its dropdown -- no item level, no conditional-bonus marker, no stat/bonus preview
 // lines -- and its menu stays as narrow as its input, since there is nothing to make room for.
 // `options.class` is the slot that asks for it: class items carry ability scores and baseline

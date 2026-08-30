@@ -245,7 +245,7 @@ const hoveredBonuses = computed(() => {
 
 /** The hovered item's own BonusOccurrenceConfig rows -- lets ItemCard.vue's inactive-bonus
  *  rendering explain a row that's inactive because *this* item's own count is 0, the same
- *  data ItemPickerRow.vue's checkbox/stepper inputs already read (#256). */
+ *  data ItemPickerRow.vue's checkbox/stepper inputs already read. */
 const hoveredOccurrenceRows = computed(() =>
   occurrenceRowsForItem(hoveredItem.value),
 );
@@ -524,7 +524,7 @@ function statSummary(slotId: string) {
   if (!item) return "";
   const totals: Record<string, number> = {};
   // Scaled the same way the pipeline scales it, so the row's summary and the panel's totals
-  // never disagree. The bonus stats folded in below are not the item's to scale (#287).
+  // never disagree. The bonus stats folded in below are not the item's to scale.
   const factor = itemScaleFactor(item);
   for (const key of NW_SCHEMA.statKeys) {
     if (item[key])

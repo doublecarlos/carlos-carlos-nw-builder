@@ -101,7 +101,7 @@ describe("buildFromLoadout: placement", () => {
 
   it("picks the class item its Hclass maps to", () => {
     // `hclassToClass` still yields the bare class value; the importer resolves that through
-    // whichever item publishes it, since the class is an ordinary pick now (#273).
+    // whichever item publishes it, since the class is an ordinary pick now.
     const character = characterOf("Carlos", "Player_Bard", []);
     const loadout = loadoutOf([]);
     const { build } = buildFromLoadout(character, loadout, mappedDb);

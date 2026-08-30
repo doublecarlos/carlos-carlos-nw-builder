@@ -1,5 +1,5 @@
 // End-to-end coverage for the range ("at least"/"below") vs "exact" comparison toggle on
-// duration/bonusOccurrences/equipped/param conditions (issue found while investigating #253).
+// duration/bonusOccurrences/equipped/param conditions.
 // `equipped`/`bonusOccurrences` already showed a "Below" field before this, but
 // condition-draft.ts never read or wrote it -- typing into it silently did nothing. This
 // spec exercises that field for real, plus the newly added "exact" comparison mode.

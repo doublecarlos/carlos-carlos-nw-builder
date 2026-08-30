@@ -3,7 +3,7 @@
 // Every intermediate stage is kept, which is what makes the "why is my Power that number?"
 // inspector possible -- something the spreadsheet cannot do.
 //
-// Deviations from the sheet are marked `FIX #n` and justified in the issue tracker. None changes a
+// Deviations from the sheet are marked `FIX #n` and justified where they occur. None changes a
 // number on current data except where the sheet was demonstrably wrong.
 
 import * as bonus from "./bonus";
@@ -62,7 +62,7 @@ const sheetRound = (value: number, digits = 2) => {
  * `scaleFactorFor` applies to the item's own fields only -- mount/companion bolster scales what
  * the item itself carries, while the assignment and bonus stats merged in below reached this
  * row by attribution (bonus.ts's `anchor.slotId`) rather than by belonging to the item, and are
- * not the granting item's to scale. Issue #287 covers the bonuses that genuinely should.
+ * not the granting item's to scale. Scaling the bonuses that genuinely should is separate work.
  */
 function rowVectors(
   schema: Schema,

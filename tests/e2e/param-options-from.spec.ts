@@ -1,4 +1,4 @@
-// End-to-end coverage for issue #272: a list parameter authored with `optionsFrom` derives its
+// End-to-end coverage for `optionsFrom`: a list parameter authored with it derives its
 // options from the item catalogue, so extending the option set is an item edit rather than a
 // slot edit. Driven through the `paragon` tag, whose option set is read from the shipped
 // catalogue so adding a paragon item doesn't outdate this spec.

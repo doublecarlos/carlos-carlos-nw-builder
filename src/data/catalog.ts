@@ -657,7 +657,7 @@ export function validateSlots(slots: Slot[]): LintFinding[] {
           message: `${slot.id}: has both options and optionsFrom -- pick one, resolving both is ambiguous`,
         });
       }
-      // Same "exactly one selector" rule `item_picker` has had since #245/#246: a slot
+      // Same "exactly one selector" rule `item_picker` has: a slot
       // resolves its candidates one way or the other, never both.
       const hasFilter = !!slot.optionsFrom.filter;
       const hasTags = !!slot.optionsFrom.tags?.length;
@@ -1007,7 +1007,7 @@ export function validate(
     ...itemPickerFilters,
     ...pointAssignmentFilters,
   ]);
-  // The class vocabulary is whatever the catalogue publishes at `class` (#273) -- there is no
+  // The class vocabulary is whatever the catalogue publishes at `class` -- there is no
   // class param to read options off any more. Falls back to a class *param*'s options when one
   // exists, so an overlay that still declares the old shape keeps linting sensibly.
   // Blank values are excluded either way: "" is not a class an item may be restricted to, and

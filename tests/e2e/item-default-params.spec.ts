@@ -1,4 +1,4 @@
-// End-to-end coverage for the item editor's "Default build parameters" section (issue #200):
+// End-to-end coverage for the item editor's "Default build parameters" section:
 // like Stats, it's a repeatable list of rows hidden behind a single "+" until used, so most
 // items' forms show no extra clutter. Each row pairs a build_parameter slot picker with that
 // slot's own control (BuildParamInput), reused as-is from the build editor.

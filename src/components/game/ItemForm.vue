@@ -384,8 +384,8 @@ const displayId = computed(
 );
 
 /** The class vocabulary these checkboxes offer: every distinct value the catalogue publishes
- * at `class` (#273), labelled by the item that publishes it. A class param's options are still
- * honoured as a fallback, so an overlay declaring the pre-#273 shape keeps working.
+ * at `class`, labelled by the item that publishes it. A class param's options are still
+ * honoured as a fallback, so an overlay declaring the older param-based shape keeps working.
  * Blank values are dropped either way -- "no class at all" is not a restriction. */
 const classSlot = computed(() => findParamSlot(props.db.slots, "class"));
 const classes = computed(() => {
@@ -547,7 +547,7 @@ function save() {
  *  takes it from here, so the merge debounces out as an ordinary edit and joins undo like one.
  *
  *  The name and stats overwrite what is there -- taking the screenshot's value is the point.
- *  `gameIds` appends instead, since one item legitimately carries several (#326). */
+ *  `gameIds` appends instead, since one item legitimately carries several. */
 function applyPatch(patch: Partial<Item>) {
   const statKeys = new Set<string>(NW_SCHEMA.statKeys);
   for (const [key, value] of Object.entries(patch)) {

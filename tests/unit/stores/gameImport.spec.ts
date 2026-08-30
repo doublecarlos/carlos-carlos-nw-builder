@@ -1,4 +1,4 @@
-// Tests for stores/gameImport.ts's mapUnrecognisedItem (#177): mapping an unrecognised game id
+// Tests for stores/gameImport.ts's mapUnrecognisedItem: mapping an unrecognised game id
 // onto a catalogue item, in a layer overlay, and re-resolving the committed build in place.
 import { describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";

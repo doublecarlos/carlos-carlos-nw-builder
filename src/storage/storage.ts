@@ -247,7 +247,7 @@ const nestedNumbers = (
 };
 
 /**
- * Builds saved before `options.class` became an `item_picker` (#273) stored the class as a
+ * Builds saved before `options.class` became an `item_picker` stored the class as a
  * bare `context.class` string. The value lives in `choices` like any other pick now, and is
  * published back into the context by the equipped class item -- so an old build migrates by
  * looking up whichever item publishes the class it used to name.

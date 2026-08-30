@@ -74,7 +74,7 @@ export function buildFromLoadout(
   );
 
   // `hclassToClass` still maps to the bare class value ("bard"); the class is picked as an
-  // item now, so resolve that value to whichever item publishes it (#273).
+  // item now, so resolve that value to whichever item publishes it.
   const gameClass = classFromHclass(character.gameClass);
   const classItem = gameClass
     ? itemPublishing(db, "class", gameClass)

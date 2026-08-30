@@ -1,4 +1,4 @@
-// Getting between build sections without scrolling for it (#306, #308): headers that stay put
+// Getting between build sections without scrolling for it: headers that stay put
 // while you read a long section, and Mod+arrow stepping a whole section per press. Reaching a
 // section by name is the "go to" palette's job -- tests/e2e/go-to-palette.spec.ts.
 import { test, expect, type Page } from "@playwright/test";

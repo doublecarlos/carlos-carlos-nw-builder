@@ -1,4 +1,4 @@
-// End-to-end coverage for "Duplicate" on items and bonuses (issue #68): it opens an
+// End-to-end coverage for "Duplicate" on items and bonuses: it opens an
 // editable draft pre-filled from the selected entry, saved only on explicit confirmation --
 // never overwrites the original, and Save mints a fresh id since the name is still taken.
 import { test, expect } from "@playwright/test";

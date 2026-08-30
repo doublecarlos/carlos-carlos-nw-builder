@@ -1,4 +1,4 @@
-// `optionsFrom` (issue #272): a `list` build_parameter derives its option set from the item
+// `optionsFrom`: a `list` build_parameter derives its option set from the item
 // catalogue instead of enumerating it inline, so "add a value" becomes "add an item" and
 // happens entirely in the item editor -- including for items an overlay added.
 import { describe, it, expect } from "vitest";

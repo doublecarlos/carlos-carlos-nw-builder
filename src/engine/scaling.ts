@@ -14,7 +14,7 @@
 //
 // Scope is the item's *own* vector. Stats a bonus contributes are attributed to a slot, not to
 // the item that granted them (bonus.ts's `anchor.slotId`), so a bonus reaching the same row is
-// left alone -- see issue #287 for what scaling those properly would take.
+// left alone; scaling those properly is separate work.
 import type { EvalContext, Item, Schema, StatKey, StatScaler } from "../types";
 
 /** Whether `item` is in a scaler's declared category. `filter` and `tags` are OR-matched, the

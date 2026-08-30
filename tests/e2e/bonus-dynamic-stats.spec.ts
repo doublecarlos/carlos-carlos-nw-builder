@@ -1,5 +1,5 @@
-// End-to-end coverage for the bonus editor's own "Dynamic stats" sections (issue #251's
-// grant/variant-level dynamic stats), mirroring item-editor-groups.spec.ts's item-level
+// End-to-end coverage for the bonus editor's own "Dynamic stats" sections (grant- and
+// variant-level dynamic stats), mirroring item-editor-groups.spec.ts's item-level
 // coverage. Before this, a grant or variant carrying `dynamicStats` had no widget and was
 // always forced into the JSON escape hatch.
 import { test, expect, type Page } from "@playwright/test";

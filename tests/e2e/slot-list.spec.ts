@@ -205,7 +205,7 @@ test.describe("section collapse/expand", () => {
     page,
   }) => {
     await openBuilder(page);
-    // Four since #273 made Class an item_picker; the build_parameter rows still don't count,
+    // Four, since Class is an item_picker; the build_parameter rows still don't count,
     // which is what this asserts.
     await expect(
       headerRow(page, "options").locator(".section-count"),
@@ -600,7 +600,7 @@ test.describe("keyboard cursor: build_parameter rows", () => {
   }) => {
     await openBuilder(page);
     await parkOnOptionsHeader(page);
-    // Three rows down: class and paragon are item_picker rows (class became one in #273), and
+    // Three rows down: class and paragon are item_picker rows, and
     // this block is about a build_parameter's own control.
     await page.keyboard.press("ArrowDown");
     await page.keyboard.press("ArrowDown");

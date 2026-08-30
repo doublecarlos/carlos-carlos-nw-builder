@@ -1,7 +1,7 @@
 // demo-slots.ts: the bag -> app-slot map and its one placement rule. Exercised against the
 // real, shipped game-import.json + data/slots.json (so these tests double as a sanity check
 // of the shipped table itself), with a small overlay of synthetic items giving controlled
-// gameIds to test against -- the real catalogue has zero gameIds populated yet (#176's job).
+// gameIds to test against -- the real catalogue has zero gameIds populated yet.
 import { describe, it, expect } from "vitest";
 import * as catalog from "../../src/data/catalog";
 import { NW_SLOTS } from "../../src/data/data";
@@ -42,7 +42,7 @@ for (const item of [
   testItem("test-offhand", "gear_weapon_offhand", ["Secondary_Test"]),
   testItem("test-combat-off", "combat_enchant_offense", ["CombatGem_Off_Test"]),
   testItem("test-combat-def", "combat_enchant_defense", ["CombatGem_Def_Test"]),
-  // companions.offense now selects by tag, not by filter (#247) -- this item needs the
+  // companions.offense selects by tag, not by filter -- this item needs the
   // matching tag to still land in the "first open power slot" this describe block tests.
   testItem("test-companion-power", "companion_power", ["Pet_Bonus_Test"], {
     tags: ["companion_power:offense"],

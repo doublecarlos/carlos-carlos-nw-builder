@@ -64,7 +64,7 @@ interface Candidate extends BonusCandidate {
  * Either way, a 0-count attachment has no real candidate to push -- but dropping it silently
  * leaves its bonus completely unreachable in `resolve()`'s evaluate pass whenever nothing else
  * contributes it either, so a hover card/inspector can't tell "typed to 0" (or "0 points spent")
- * apart from "doesn't carry this bonus at all" (#255). An anchor-only entry goes to
+ * apart from "doesn't carry this bonus at all". An anchor-only entry goes to
  * `zeroCandidates` instead, just to make the bonus reachable -- it is never counted as a source
  * (stacking, attribution), only used as a fallback slot/order to resolve against when a bonus
  * has no real source anywhere.
@@ -113,7 +113,7 @@ function collectAttachments(
  * item's own repetition count (N repetitions read as N picks of that bonus, same as N picks of
  * the item itself), while a `BonusOccurrenceConfig` attachment carries its own typed, independent
  * count (`build.occurrenceInputs`, the same per-item storage an item_picker item's occurrence
- * stepper already uses) -- see #232.
+ * stepper already uses).
  */
 function collectInlineRepetition(
   slot: PointAssignmentSlot,
@@ -242,7 +242,7 @@ export function collect(
 
     // A build_parameter never equips anything: it is the scalar itself. Anything that needs
     // to both carry stats and set a context value is an `item_picker` whose item publishes the
-    // value (#273), so there is one path into the bookkeeping below rather than two.
+    // value, so there is one path into the bookkeeping below rather than two.
     const choice = build.choices?.[slot.id];
     const item = db.get(choice);
     // A pick declaring an `inlineRepetition` is in the build that many times over, read from

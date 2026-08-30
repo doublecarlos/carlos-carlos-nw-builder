@@ -185,7 +185,7 @@ defineExpose({ focusAndSeed });
 
 /**
  * Every branch here except plain Tab stops propagation so the picker's keys stay isolated
- * from whatever else is listening further up the tree. With the native-focus cursor (#62)
+ * from whatever else is listening further up the tree. With the native-focus cursor
  * this is purely defensive -- the row's cursor anchor is a *sibling* of this input, not an
  * ancestor, so its keydown listeners can't receive these events anyway -- but no other
  * window-level listener should see Enter/arrows that belong to an open dropdown either.

@@ -1,4 +1,4 @@
-// End-to-end coverage for dragging to reorder builds/layers in the sidebar (issue #182).
+// End-to-end coverage for dragging to reorder builds/layers in the sidebar.
 // Ctrl+↑/↓ stays in place as the keyboard/screen-reader-accessible reorder path (the old
 // Move up/down buttons were retired once this shortcut covered the same ground) -- see the
 // last test in each section, a regression check that it still works.

@@ -237,8 +237,8 @@ export function itemPublishing(
 }
 
 /** `db.forSlot(slotId)`, narrowed to what the build's published class actually allows and, for an
- * item_picker slot, to what its `maxCopies` cap still has room for (issue #198) -- the same
- * "succeeds then flagged" gap #196's `hideFromPicker` closed for problem grants, closed here for
+ * item_picker slot, to what its `maxCopies` cap still has room for -- the same
+ * "succeeds then flagged" gap `hideFromPicker` closed for problem grants, closed here for
  * the far more common maxCopies case via a dedicated cheap check instead of routing through the
  * bonus/condition system. An unset class constrains nothing -- defaulting to empty, a fresh
  * build would otherwise hide every class-restricted item with no explanation. */

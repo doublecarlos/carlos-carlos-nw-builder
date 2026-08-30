@@ -1,4 +1,4 @@
-// End-to-end coverage for issue #200: picking a Paragon whose item data carries
+// End-to-end coverage for `defaultParams`: picking a Paragon whose item data carries
 // `defaultParams` (data/db-items.json) auto-fills Role and Forte in the build editor, and
 // those fields stay ordinary editable controls afterward so a "what-if" override still works.
 import { test, expect } from "@playwright/test";

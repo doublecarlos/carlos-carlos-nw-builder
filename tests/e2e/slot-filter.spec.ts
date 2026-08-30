@@ -1,7 +1,7 @@
-// End-to-end coverage for BuildEditor.vue's text/stat slot filter (issue #130): narrowing the
+// End-to-end coverage for BuildEditor.vue's text/stat slot filter: narrowing the
 // visible slots and sections, the section-header-match override, forcing a matching but
 // manually-collapsed section back open, and the clear-filters affordance. Also covers matching
-// on a slot's current choice and its rendered stat summary (issue #139).
+// on a slot's current choice and its rendered stat summary.
 import { test, expect } from "@playwright/test";
 import {
   openBuilder,

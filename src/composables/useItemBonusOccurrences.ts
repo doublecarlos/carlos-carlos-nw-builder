@@ -1,7 +1,7 @@
-// Per-item occurrence rows for BonusOccurrenceConfig attachments (#217): which of an item's
+// Per-item occurrence rows for BonusOccurrenceConfig attachments: which of an item's
 // `bonuses` entries carry a typed count, and what that count currently is. No dedup needed --
 // build.occurrenceInputs is keyed by item id *and* bonus id, so two items each carrying their
-// own config for the same bonus (e.g. a boolean, proc-shaped one, see #222) already get two
+// own config for the same bonus (e.g. a boolean, proc-shaped one) already get two
 // independent counts with no aliasing to guard against.
 import { computed, type ComputedRef, type Ref } from "vue";
 import * as builds from "../stores/builds";

@@ -1,4 +1,4 @@
-// Item stat scaling (mount/companion bolster) -- issue #286.
+// Item stat scaling (mount/companion bolster).
 //
 // A synthetic catalogue rather than the shipped one, so each claim is isolated from whatever
 // the real mount data happens to be today. The shipped wiring gets its own check at the bottom.
@@ -65,7 +65,7 @@ const mount: Item = {
   il: 1000,
   power: 200,
   // The mount's aura: granted, not carried. Attributed to this slot but not the item's to
-  // scale -- issue #287.
+  // scale.
   bonuses: ["mount-aura"],
 };
 const mountAura: Bonus = {
@@ -332,7 +332,7 @@ describe("shipped bolster wiring", () => {
   });
 
   it("holds unscaled base values in the catalogue", () => {
-    // The db was normalised (#286): a mount equip is 1750 IL, not the 3937 the sheet stored
+    // The db was normalised: a mount equip is 1750 IL, not the 3937 the sheet stored
     // pre-multiplied by max bolster.
     const equips = shipped.forFilter("mount_equip");
     expect(equips.length).toBeGreaterThan(0);
@@ -342,8 +342,8 @@ describe("shipped bolster wiring", () => {
 });
 
 // The mount equip powers whose whole effect used to be a granted aura now carry that payload
-// as their own stat line, leaving the bonus to stand for a *party member's* copy alone
-// (#287, folded into #286). What makes that work is the gate: the group bonus is suppressed
+// as their own stat line, leaving the bonus to stand for a *party member's* copy alone.
+// What makes that work is the gate: the group bonus is suppressed
 // while you have the self item, so the two can never double-count -- and because it only ever
 // represents someone else's mount, its payload stays at max bolster, which is the most anyone
 // can know about a stranger's collection.

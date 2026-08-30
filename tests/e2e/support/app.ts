@@ -163,7 +163,7 @@ export async function hoverForCard(page: Page, target: Locator) {
 }
 
 /** Picks a class in `options.class`, which is an ordinary item_picker over `class`-tagged
- * items since #273 -- the visible label is the class *item's* name, so it is read from the
+ * items -- the visible label is the class *item's* name, so it is read from the
  * shipped table rather than hardcoded. `classId` is the bare class ("warlock"). */
 export async function chooseClass(page: Page, classId: string) {
   await chooseItem(page, "options.class", shippedItemName(`class-${classId}`));

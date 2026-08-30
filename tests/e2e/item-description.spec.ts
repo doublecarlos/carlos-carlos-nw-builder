@@ -1,4 +1,4 @@
-// End-to-end coverage for issue #138: an item can author a short description, shown next to
+// End-to-end coverage for item descriptions: an item can author a short one, shown next to
 // the row's stat summary, and a long description, shown on the item's hover card -- for an
 // effect that reads better as text than as a stat (e.g. a proc).
 import { test, expect, type Page } from "@playwright/test";

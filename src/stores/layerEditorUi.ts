@@ -6,7 +6,7 @@
 // but a fresh mount needs *something* to fall back on once that URL is gone -- this is that
 // something. Field names mirror the router params (`item`/`bonus`/`preset`/`section`/`status`/
 // `q`) so a mounting component can treat "the URL" and "the stored state" as interchangeable
-// sources. `slot` is the build_parameter slot selected in the Slots section (issue #271).
+// sources. `slot` is the build_parameter slot selected in the Slots section.
 import { reactive } from "vue";
 import type { Item, SectionPreset } from "../types";
 

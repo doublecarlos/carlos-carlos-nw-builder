@@ -1,4 +1,4 @@
-// `build_parameter` slots as a fourth CatalogOverlay group (issue #271): composing, editing,
+// `build_parameter` slots as a fourth CatalogOverlay group: composing, editing,
 // linting, and -- the half that matters most -- travelling with a downloaded build, so a
 // user-defined parameter resolves identically on someone else's machine instead of being
 // trapped in the browser that authored it.
@@ -228,7 +228,7 @@ describe("makeDb with an overlay-added parameter", () => {
   });
 
   it("reaches ctx.params at its default, so a bonus can gate on it immediately", () => {
-    // The point of the whole issue: define a param in a layer, gate a bonus on it, and the
+    // The point of the whole feature: define a param in a layer, gate a bonus on it, and the
     // engine resolves it with no seeding step. `defaultBuild` only seeds from base, so the
     // build's own `context` is empty here on purpose.
     const db = catalog.makeDb([overlayWith({ [customParam.id]: customParam })]);

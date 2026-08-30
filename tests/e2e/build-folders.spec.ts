@@ -1,4 +1,4 @@
-// End-to-end coverage for grouping builds into folders in the sidebar (issue #337): one level
+// End-to-end coverage for grouping builds into folders in the sidebar: one level
 // deep, drag-and-drop in and out, the keyboard/menu equivalents, and what a bundle export
 // carries with it.
 import { test, expect } from "@playwright/test";

@@ -1,4 +1,4 @@
-// `Item.publishes` (issue #273): an equipped item asserts a value into the build context,
+// `Item.publishes`: an equipped item asserts a value into the build context,
 // inverting the direction a build parameter and an item relate. Params resolve *to* items via
 // `linkedItem`; this makes items resolve *to* params -- which is what lets one abstraction
 // absorb the other instead of the two permanently shadowing each other.

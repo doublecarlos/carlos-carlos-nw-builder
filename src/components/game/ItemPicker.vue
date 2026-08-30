@@ -43,7 +43,7 @@ const props = withDefaults(
     db?: Db | null;
     /** Build-editor context for a bonus-aware preview: each candidate is hypothetically
      * resolved into `slotId` so the dropdown can show the bonus stats it would add, same as
-     * the row's own stat summary would show once it's actually picked (issue #116). Left
+     * the row's own stat summary would show once it's actually picked. Left
      * unset by callers with no live build to resolve against (PresetForm's item rows, which
      * pick a default for a slot rather than editing a real build). `filterHidden` (default
      * true) governs whether a candidate that would activate a `hideFromPicker` problem grant
@@ -97,7 +97,7 @@ interface BonusStatsPreview {
    *  row's stats, so this matches what the row's own stat summary would show once the item
    *  is actually picked. */
   current: Record<string, number>;
-  /** The ceiling: bonuses `item` itself contributes to (issue #125) that aren't active in
+  /** The ceiling: bonuses `item` itself contributes to that aren't active in
    *  this hypothetical build -- e.g. a bonus tier it would count toward but not complete on
    *  its own. Sourced from `previewStats`, the same near-miss payload BonusInspector.vue
    *  and ItemCard.vue already show for equipped items' inactive bonuses. */
@@ -321,7 +321,7 @@ defineExpose({
             >
           </div>
           <!-- What picking this item would add via bonuses, e.g. a bonus tier it would
-               complete -- distinct from the item's own stats above (issue #116). -->
+               complete -- distinct from the item's own stats above. -->
           <div
             v-if="matchMap.get(option.value)?.bonusPreview?.parts?.length"
             data-testid="picker-option-bonus-preview"
@@ -340,7 +340,7 @@ defineExpose({
             >
           </div>
           <!-- The ceiling: bonuses this item contributes to that aren't active yet -- hidden
-               whenever it would just repeat the "current" line above (issue #125). -->
+               whenever it would just repeat the "current" line above. -->
           <div
             v-if="matchMap.get(option.value)?.potentialPreview?.parts?.length"
             data-testid="picker-option-potential-preview"

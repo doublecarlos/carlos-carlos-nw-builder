@@ -1,4 +1,4 @@
-// End-to-end coverage for ItemPicker.vue's bonus-aware preview (issue #116): a candidate row
+// End-to-end coverage for ItemPicker.vue's bonus-aware preview: a candidate row
 // shows not just its own stats but the stats a bonus it carries would add, resolved as if it
 // were actually picked -- so the dropdown reflects what the summary panel would show.
 import { test, expect } from "@playwright/test";

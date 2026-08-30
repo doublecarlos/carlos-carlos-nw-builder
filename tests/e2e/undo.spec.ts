@@ -29,7 +29,7 @@ test("Ctrl+Z undoes a build slot edit", async ({ page }) => {
 });
 
 // FIXME: redo shortcut silently swallowed when focus lands on the slot picker input after
-// an undo -- see https://github.com/doublecarlos/yet-another-nw-builder/issues/61
+// an undo.
 test.fixme("Ctrl+Shift+Z redoes after undo", async ({ page }) => {
   await openBuilder(page);
   const undo = page.getByTestId("history-undo");

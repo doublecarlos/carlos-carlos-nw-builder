@@ -117,9 +117,9 @@ describe("Db.itemByGameId", () => {
   });
 });
 
-// forSlotAndBuild's maxCopies filtering (issue #198): an item_picker candidate already at its
+// forSlotAndBuild's maxCopies filtering: an item_picker candidate already at its
 // cap elsewhere in the build should never appear in that picker's dropdown, the same "hide
-// rather than pick-then-flag" outcome #196's hideFromPicker gives problem grants -- but via a
+// rather than pick-then-flag" outcome hideFromPicker gives problem grants -- but via a
 // dedicated cheap tally of build.choices/build.assignments, not a per-candidate engine resolve.
 describe("forSlotAndBuild maxCopies filtering", () => {
   const slotsData: SlotsData = {
@@ -273,7 +273,7 @@ describe("forSlotAndBuild maxCopies filtering", () => {
   });
 });
 
-// forSlot's tag-based resolution (#246): an item_picker slot with `tags` instead of `filter`
+// forSlot's tag-based resolution: an item_picker slot with `tags` instead of `filter`
 // selects every item carrying at least one of those tags, OR-matched via itemsByTag, letting one
 // item serve several slots at once (e.g. a companion power that's both offense and utility).
 describe("forSlot tag-based item_picker resolution", () => {
@@ -480,7 +480,7 @@ describe("forSlot candidate ordering", () => {
   });
 });
 
-// An Item.bonuses entry can now be a bare id or a BonusOccurrenceConfig (#217) -- every join
+// An Item.bonuses entry can now be a bare id or a BonusOccurrenceConfig -- every join
 // point that reads item.bonuses (bonusesFor, bonusMembers) has to resolve either shape to the
 // same bonus id.
 describe("Db.bonusesFor / bonusMembers with mixed bonus attachments", () => {

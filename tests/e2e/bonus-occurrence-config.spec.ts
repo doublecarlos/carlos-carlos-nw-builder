@@ -1,9 +1,9 @@
-// End-to-end coverage for BonusOccurrenceConfig rows (#218): an item can carry several typed
+// End-to-end coverage for BonusOccurrenceConfig rows: an item can carry several typed
 // occurrence attachments -- a 0-1 one renders as a checkbox, a wider range as a stepper, and a
 // fixed (min === max) one renders no input at all. Exercised via a build's own catalog overlay
 // (storage.ts's `Build.catalog`) since data/db-bonuses.json's only checkbox-shaped example
 // (campfire-buff-bonus) exists for the "per-item boolean toggle, formerly proc" describe block
-// below (#222) specifically, not general coverage.
+// below specifically, not general coverage.
 import { test, expect, type Page } from "@playwright/test";
 import {
   openBuilder,
@@ -107,7 +107,7 @@ test.describe("BonusOccurrenceConfig rows", () => {
     await expect(row).toContainText("Power");
   });
 
-  // #256: a bonus reachable only through this item's own 0-valued config shows in the hover
+  // A bonus reachable only through this item's own 0-valued config shows in the hover
   // card and sidebar -- inactive, explained by its own input's current value -- rather than
   // being indistinguishable from an item that doesn't carry the bonus at all.
   test("a 0-valued stepper's bonus still shows in the item's hover card and the sidebar's Bonuses list", async ({
@@ -220,11 +220,11 @@ test.describe("BonusOccurrenceConfig rows", () => {
   });
 });
 
-// #227: a BonusOccurrenceConfig's optional `label` overrides the bonus name on its own row
+// A BonusOccurrenceConfig's optional `label` overrides the bonus name on its own row
 // (checkbox/stepper text and the compare-diff title) without renaming the bonus itself.
 const LABELED_BONUS_ID = "test-occurrence-labeled-bonus";
 
-test.describe("BonusOccurrenceConfig label override (#227)", () => {
+test.describe("BonusOccurrenceConfig label override", () => {
   test("a labeled config shows its label instead of the bonus name", async ({
     page,
   }) => {
@@ -269,7 +269,7 @@ test.describe("BonusOccurrenceConfig label override (#227)", () => {
   });
 });
 
-// #222: a dedicated `proc` leaf/`build.procs` no longer exists -- a per-item on/off toggle is
+// A dedicated `proc` leaf/`build.procs` no longer exists -- a per-item on/off toggle is
 // now a plain `min:0,max:1` BonusOccurrenceConfig, self-referentially gating its own bonus's
 // flat grant with `bonusOccurrences: { bonus: <own id>, atLeast: 1 }` (see types.ts's own note
 // on why that condition is kept even though a 0-count attachment already contributes no
@@ -321,7 +321,7 @@ function buildWithToggleRing(
   };
 }
 
-test.describe("per-item boolean toggle, formerly proc (#222)", () => {
+test.describe("per-item boolean toggle, formerly proc", () => {
   test("a default:1 config starts checked, with its stats on the row", async ({
     page,
   }) => {
@@ -379,7 +379,7 @@ test.describe("per-item boolean toggle, formerly proc (#222)", () => {
     await expect(row).not.toContainText("Power");
   });
 
-  // #256: same as the stepper case above, for the checkbox-shaped config -- the item's hover
+  // Same as the stepper case above, for the checkbox-shaped config -- the item's hover
   // card explains the off state via its own label, not the generic condition-unmet wording.
   test("an unchecked config's bonus still shows in the item's hover card, explained by its own input", async ({
     page,

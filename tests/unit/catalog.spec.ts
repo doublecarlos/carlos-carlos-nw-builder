@@ -971,7 +971,7 @@ describe("catalog.validate: BonusOccurrenceConfig attachments", () => {
     ).toBe(true);
   });
 
-  it("a well-formed label passes clean (#227)", () => {
+  it("a well-formed label passes clean", () => {
     const items: Item[] = [
       {
         id: "labeled-item",
@@ -987,7 +987,7 @@ describe("catalog.validate: BonusOccurrenceConfig attachments", () => {
     expect(findings.filter((f) => f.name === "labeled-item")).toEqual([]);
   });
 
-  it("a present but blank label is an error (#227)", () => {
+  it("a present but blank label is an error", () => {
     const items: Item[] = [
       {
         id: "blank-label",
@@ -1308,8 +1308,8 @@ describe("catalog.validate: param condition lint", () => {
 
 // An item reaches a build through a slot: an `item_picker`'s `filter` or `tags`, or a
 // `point_assignment`'s filter. There used to be a fourth way in -- a build_parameter's
-// `linkedItem` -- and items reached only that way were exempt from this check. #273 removed
-// the mechanism, so the exemption went with it.
+// `linkedItem` -- and items reached only that way were exempt from this check. That
+// mechanism is gone, so the exemption went with it.
 describe("catalog.validate: an item in no slot is still flagged", () => {
   it("an item with no filter and no picker tag has no way to be equipped", () => {
     const findings = catalog.validate(
@@ -1547,7 +1547,7 @@ describe("catalog.referencedOverlay", () => {
       compare: { id: "", highlight: false, onlyDiff: false, statLines: false },
     };
     const overlay = catalog.referencedOverlay(db, build);
-    // A parameter equips nothing since #273, so nothing rides along on its account -- but the
+    // A parameter equips nothing, so nothing rides along on its account -- but the
     // slot itself still travels, since every build_parameter reaches `ctx.params`.
     expect(overlay.items).toEqual({});
     expect(overlay.bonuses).toEqual({});

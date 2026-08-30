@@ -1,6 +1,6 @@
-// End-to-end coverage for the "Import from game" wizard (#174): header entry point,
+// End-to-end coverage for the "Import from game" wizard: header entry point,
 // instructions, file parsing (success and failure paths), loadout selection, and committing
-// through builds.importBuilds. The coverage report shown on commit (#175) has its own spec,
+// through builds.importBuilds. The coverage report shown on commit has its own spec,
 // game-import-report.spec.ts.
 import { test, expect } from "@playwright/test";
 import { dirname, join } from "node:path";
@@ -60,7 +60,7 @@ test("uploading the fixture advances to the loadout list with the right names, a
   ).not.toBeChecked();
 });
 
-test("loadouts are listed alphabetically, not in recording order (#190)", async ({
+test("loadouts are listed alphabetically, not in recording order", async ({
   page,
 }) => {
   await openBuilder(page);
@@ -97,7 +97,7 @@ test("selecting two loadouts and confirming creates two builds in the nav with t
   await expect(buildRow(page, "Carlos o Bardo - 1. DPS ST")).toBeVisible();
   await expect(buildRow(page, "Carlos o Bardo - aaaaaa")).toBeVisible();
 
-  // Commit lands on the coverage report step, not a closed wizard -- see #175.
+  // Commit lands on the coverage report step, not a closed wizard.
   await expect(page.getByTestId("game-import-step-report")).toBeVisible();
   await page.getByTestId("game-import-done").click();
   await expect(page.getByTestId("game-import-modal")).toBeHidden();

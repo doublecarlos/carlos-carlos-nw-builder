@@ -439,7 +439,7 @@ describe("point_assignment resolution", () => {
     allowedClass: ["fighter"],
     inlineRepetition: { min: 0, max: 2, default: 0 },
   };
-  // #232: an item on a point_assignment row can also carry a BonusOccurrenceConfig attachment,
+  // An item on a point_assignment row can also carry a BonusOccurrenceConfig attachment,
   // whose count is independent of the row's own repetition count -- unlike a bare-id
   // attachment (boon-power-bonus above), which scales with it.
   const configBonus: Bonus = {
@@ -557,7 +557,7 @@ describe("point_assignment resolution", () => {
   });
 });
 
-// A point_assignment item at 0 points is now reachable (an anchor, same as #255's item_picker
+// A point_assignment item at 0 points is now reachable (an anchor, same as the item_picker
 // case) rather than skipped entirely -- but reachable must not mean "resolved for real": a
 // checked-but-inactive typed config (e.g. a proc checkbox left on from a previous count) must
 // not leak through as a real occurrence just because the item itself is still walked for
@@ -668,7 +668,7 @@ describe("a point_assignment item's own config stays 0 while the item itself is 
   });
 });
 
-// BonusOccurrenceConfig (#217): an item_picker item can attach a typed, player-set occurrence
+// BonusOccurrenceConfig: an item_picker item can attach a typed, player-set occurrence
 // count for one bonus instead of the fixed "1 occurrence per equip" a bare bonus id always
 // means -- e.g. one item standing in for 1-5 stacks of a set bonus, or an item with both an
 // always-on bonus and a separately-variable stacking one. A synthetic db isolates the mechanism
@@ -688,7 +688,7 @@ describe("BonusOccurrenceConfig resolution", () => {
     statScalers: [],
   };
 
-  // Mirrors the motivating "Shattered Resolve" example (#216): an always-on bonus (bare id,
+  // Mirrors the motivating "Shattered Resolve" example: an always-on bonus (bare id,
   // always 1 occurrence) plus a separately-variable stacking bonus (BonusOccurrenceConfig,
   // 0-5), both on one item, alongside the item's own flat stat.
   const stackItem: Item = {
@@ -702,7 +702,7 @@ describe("BonusOccurrenceConfig resolution", () => {
     ],
   };
   // A fixed (min === max) config: the item always contributes 3 occurrences, no player input
-  // needed at all -- e.g. #216's "possible implementation 1" fixed-type attachment.
+  // needed at all.
   const fixedItem: Item = {
     id: "fixed-item",
     name: "Fixed Triplet",
@@ -844,7 +844,7 @@ describe("BonusOccurrenceConfig resolution", () => {
   });
 
   it("a count outside the config's min/max is flagged as outOfRange, not clamped", () => {
-    // Not achievable through a stepper's own clamped +/- buttons (#218), but a hand-edited or
+    // Not achievable through a stepper's own clamped +/- buttons, but a hand-edited or
     // imported build can carry one -- same reasoning as point_assignment's own outOfRange check.
     const result = engine.resolveBuild(
       testDb,
@@ -862,7 +862,7 @@ describe("BonusOccurrenceConfig resolution", () => {
 // `resolve()`) -- rather than being absent from `result.bonuses` entirely. The anchor must never
 // be counted as a real source anywhere stacking/attribution reads `sources`, which the
 // mixed-source tests below exist to pin down.
-describe("a bonus reachable only through a currently-zero occurrence count (#255)", () => {
+describe("a bonus reachable only through a currently-zero occurrence count", () => {
   const schema: Schema = {
     stats: [],
     statByKey: {},
@@ -1088,7 +1088,7 @@ describe("an unconditional stacking grant reachable only through a currently-zer
   });
 });
 
-// Per-item boolean occurrence attachments, formerly "procs" (#222): a `min:0,max:1`
+// Per-item boolean occurrence attachments, formerly "procs": a `min:0,max:1`
 // BonusOccurrenceConfig attached to an item gates that same bonus's own grant via a
 // self-referential `bonusOccurrences: { bonus: <own id>, atLeast: 1 }` condition, reading
 // `build.occurrenceInputs` instead of the old dedicated `build.procs`/`proc` leaf. A synthetic
@@ -1153,7 +1153,7 @@ describe("per-item boolean occurrence attachments (formerly procs)", () => {
     ],
   };
 
-  // A custom checkbox label (BonusOccurrenceConfig.label, #227) and a toggle that starts off
+  // A custom checkbox label (BonusOccurrenceConfig.label) and a toggle that starts off
   // rather than the usual default-on.
   const situationalTrinket: Item = {
     id: "situational-trinket",
@@ -1230,7 +1230,7 @@ describe("per-item boolean occurrence attachments (formerly procs)", () => {
   // `collect()`): 0 occurrences means zero real candidates. The bonus still resolves --
   // inactive, with a preview of what it would grant -- rather than vanishing from
   // `result.bonuses` entirely, so a hover card/inspector can tell "typed to 0" apart from
-  // "doesn't carry this bonus at all" (#255). Same behavior a stacking (non-boolean) config's
+  // "doesn't carry this bonus at all". Same behavior a stacking (non-boolean) config's
   // own 0-occurrence case already has -- a boolean attachment gets no special case.
   it("an explicit 0 count resolves the bonus as inactive, with a preview of what it would grant", () => {
     const result = engine.resolveBuild(
@@ -1291,7 +1291,7 @@ describe("per-item boolean occurrence attachments (formerly procs)", () => {
 // equip/tag/bonus-occurrence/bonus-candidate bookkeeping an item_picker pick does (bonus.ts's
 // `collect()` derives the row's "choice" from the param's current value instead of
 // `build.choices`, but everything downstream is shared) -- a synthetic db isolates both
-// authoring shapes the issue asked for: a `list` param's per-option item and a `boolean`
+// authoring shapes: a `list` param's per-option item and a `boolean`
 // param's single item.
 describe("race restrictions ride on the generic equipped condition", () => {
   const schema: Schema = {
@@ -1308,8 +1308,8 @@ describe("race restrictions ride on the generic equipped condition", () => {
     statScalers: [],
   };
 
-  // Race restrictions are no longer a dedicated `allowedRace`/`kind: "race"` check (issue
-  // #197) -- race is an `item_picker` slot again, and a race-restricted item expresses its
+  // Race restrictions are no longer a dedicated `allowedRace`/`kind: "race"` check -- race
+  // is an `item_picker` slot again, and a race-restricted item expresses its
   // restriction the same way any other conditional problem does: a `hideFromPicker` grant
   // gated on the generic `equipped` leaf against the race item's own id.
   it("a race-restricted item flags a bonusRule problem via the generic equipped condition", () => {
@@ -1398,7 +1398,7 @@ describe("race restrictions ride on the generic equipped condition", () => {
     expect(wrongRace.errors.some((e) => e.kind === "bonusRule")).toBe(true);
   });
 });
-// (item_picker and point_assignment) the issue asked for: an item-level mismatch check and a
+// Both slot kinds (item_picker and point_assignment): an item-level mismatch check and a
 // point-threshold check.
 describe("problem grants (bonus-authored errors/warnings)", () => {
   const schema: Schema = {
@@ -1433,8 +1433,8 @@ describe("problem grants (bonus-authored errors/warnings)", () => {
     bonuses: ["class-mismatch-check"],
   };
 
-  // Same shape as class-mismatch-check, but its problem grant carries its own `label` --
-  // issue #95: the sidebar summary should prefer this over the triggering slot's name.
+  // Same shape as class-mismatch-check, but its problem grant carries its own `label`: the
+  // sidebar summary should prefer this over the triggering slot's name.
   const labeledMismatchBonus: Bonus = {
     id: "class-mismatch-check-labeled",
     grants: [
@@ -1655,8 +1655,8 @@ describe("problem grants (bonus-authored errors/warnings)", () => {
   });
 
   // Displays that list "bonuses" (ItemCard.vue's hover card, BonusInspector.vue's sidebar
-  // table) should leave a problem-only bonus out entirely -- issue #94: it read as an inactive
-  // (or, worse, active-looking) bonus that never actually grants anything.
+  // table) should leave a problem-only bonus out entirely: it would otherwise read as an
+  // inactive (or, worse, active-looking) bonus that never actually grants anything.
   describe("isHiddenBonus", () => {
     it("hides a bonus whose only grant reports a problem", () => {
       expect(isHiddenBonus(mismatchBonus)).toBe(true);

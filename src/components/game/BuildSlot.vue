@@ -44,7 +44,7 @@ const props = defineProps<{
   isHovered: boolean;
   /** Arrow keys on this row's cursor anchor: BuildEditor moves focus to the next/previous row. */
   onArrow: (dir: 1 | -1, bySection: boolean) => void;
-  // item_picker only -- a build_parameter row has no item of its own (#273).
+  // item_picker only -- a build_parameter row has no item of its own.
   item?: Item | null;
   statSummary?: string;
   bonusDiffs?: { id: string; message: string }[];

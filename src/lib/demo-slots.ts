@@ -232,7 +232,7 @@ export interface NotInDemoGroup {
   slotIds: string[];
 }
 
-/** One known lossy mapping from the placement rule itself (#172), surfaced as a standing
+/** One known lossy mapping from the placement rule itself, surfaced as a standing
  *  caveat rather than tied to any one outcome: mount combat power rarity is a silent
  *  narrowing of what an imported item actually is. */
 export const KNOWN_LOSSY_NOTES = [
@@ -388,7 +388,7 @@ export function validateItemValueMap(
  * whose class resolves to nothing at all.
  *
  * Checked against published values rather than a list param's options because that is where
- * this vocabulary lives now (#273): `options.class` is an ordinary `item_picker`, and the bare
+ * this vocabulary lives now: `options.class` is an ordinary `item_picker`, and the bare
  * class name a demo carries is resolved through the item publishing it.
  */
 export function validateValueMap(
