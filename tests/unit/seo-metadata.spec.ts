@@ -174,6 +174,58 @@ describe("index.html boot screen", () => {
   });
 });
 
+// The inline script that themes the boot screen is a third party to an agreement between
+// src/stores/theme.ts (which owns the key) and src/base.css (which owns the class). It cannot
+// import either, so nothing but these assertions would notice it being left behind.
+describe("index.html's pre-paint theme script", () => {
+  const head = html.slice(0, html.indexOf("<body"));
+  const themeStore = read("src/stores/theme.ts");
+
+  it("pins the root font size src/base.css sets, so nothing resizes when it lands", () => {
+    // The boot screen is sized in rem and paints before that stylesheet exists. Left to the
+    // browser default of 16px it renders 14% too big and then snaps down mid-load.
+    const rootSize = /html\s*\{[^}]*font-size:\s*([^;]+);/;
+    const inApp = baseCss.match(rootSize)?.[1].trim();
+    expect(inApp).toBeTruthy();
+    expect(head.match(rootSize)?.[1].trim()).toBe(inApp);
+  });
+
+  it("pins a line height too, which Tailwind's preflight would otherwise change", () => {
+    // Its value comes from preflight rather than any file here, so only the e2e run can check
+    // the two agree -- but a missing declaration is the whole failure, and that is visible.
+    expect(head).toMatch(/html\s*\{[^}]*line-height:\s*[^;]+;/);
+  });
+
+  it("reads the key the theme store writes", () => {
+    const key = themeStore.match(/useStorage<[^>]*>\(\s*"([^"]+)"/)?.[1];
+    expect(key).toBeTruthy();
+    expect(head).toContain(`localStorage.getItem("${key}")`);
+  });
+
+  it("sets the class base.css themes on, and boots dark from it", () => {
+    expect(baseCss).toMatch(/^\.dark\s*\{/m);
+    expect(head).toContain('classList.add("dark")');
+    expect(head).toMatch(/\.dark \.boot\s*\{/);
+  });
+
+  it("paints the boot screen in the app's own two backgrounds", () => {
+    const bootBg = (selector: string) =>
+      head
+        .match(
+          new RegExp(`${selector}\\s*\\{[^}]*background:\\s*([^;]+);`),
+        )?.[1]
+        .trim();
+
+    expect(bootBg("\\.boot")).toBe(themeBg.light);
+    expect(bootBg("\\.dark \\.boot")).toBe(themeBg.dark);
+  });
+
+  it("survives a browser that refuses localStorage", () => {
+    // Site data blocked makes the getter itself throw, which would take the page with it.
+    expect(head).toMatch(/try\s*\{[\s\S]*localStorage[\s\S]*\}\s*catch/);
+  });
+});
+
 describe("public/robots.txt", () => {
   it("lets crawlers have the app itself", () => {
     expect(robots).toMatch(/^User-agent: \*$/m);

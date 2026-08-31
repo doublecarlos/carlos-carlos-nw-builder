@@ -113,14 +113,46 @@
       }
     </script>
 
+    <!-- The stored theme, resolved before the first paint.
+         `nw:theme` is the key src/stores/theme.ts writes and `.dark` is the class src/base.css
+         keys off, so this makes exactly the decision the app makes on load -- only early
+         enough to matter. Without it the boot screen below paints in the default theme and the
+         bundle repaints it a moment later, which is a flash on every single visit.
+         Deliberately inline and synchronous: an external file would be a round-trip, and a
+         deferred one would run after the paint it exists to get in front of. localStorage
+         throws outright when a browser is set to block site data, and a theme is not worth
+         taking the page down for, so a failure here just leaves the default. -->
+    <script>
+      try {
+        const pref = localStorage.getItem("nw:theme") ?? "system";
+        const dark =
+          pref === "dark" ||
+          (pref === "system" &&
+            window.matchMedia("(prefers-color-scheme: dark)").matches);
+        if (dark) document.documentElement.classList.add("dark");
+      } catch {
+        // Storage is unreadable; the light default below stands.
+      }
+    </script>
+
     <!-- Styles for the boot screen below, and only for it. src/base.css arrives with the
          module bundle, which by definition has not run yet while this is on screen, so these
          few rules have to stand alone. Colours are the light and dark --bg/--text/--muted from
-         src/base.css; the stored theme preference is not readable from static CSS, so this
-         follows the system setting, which is that preference's own default. -->
+         src/base.css, and the dark rules hang off the same `.dark` class the script above
+         sets, so the two themes are chosen the same way here as in the app. -->
     <style>
       body {
         margin: 0;
+      }
+
+      /* Both of these restate what the bundle's stylesheet will set on this same element --
+         the size from src/base.css, the line height from Tailwind's preflight -- and that is
+         the point. Every metric on this screen derives from the two, so leaving either to the
+         browser default means the whole splash resizes the moment that stylesheet lands: the
+         rem scale steps down from 16px, and every line of text loosens from `normal` to 1.5. */
+      html {
+        font-size: 14px;
+        line-height: 1.5;
       }
 
       .boot {
@@ -129,7 +161,7 @@
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        gap: 0.75rem;
+        gap: 1rem;
         padding: 1.5rem;
         box-sizing: border-box;
         background: #f6f7f9;
@@ -138,65 +170,67 @@
         text-align: center;
       }
 
+      /* The mark itself, at a size a splash wears. It deliberately does not imitate the
+         landing screen's watermark: this screen is not that screen, and dressing it up as one
+         only promises a layout the app then has to break -- for anyone with saved builds, what
+         follows is the builder, not the landing. */
       .boot-mark {
-        width: min(40vh, 12rem);
+        width: 5rem;
         height: auto;
-        opacity: 0.07;
-        /* Out of flow so the copy sits centred on the viewport rather than below the mark,
-           matching the watermark on the app's own landing screen. */
-        position: absolute;
-        pointer-events: none;
       }
 
       .boot-title {
-        position: relative;
         margin: 0;
-        font-size: 1.875rem;
+        font-size: 1.5rem;
         font-weight: 600;
         letter-spacing: 0.025em;
       }
 
-      .boot-tagline {
-        position: relative;
+      .boot-loading-message {
         margin: 0;
-        font-size: 1.125rem;
         color: #667085;
+      }
+
+      /* What a crawler or unfurler that never runs the bundle reads. Quiet, because the app
+         states all of it properly a second later -- but genuinely rendered, since text served
+         only to crawlers is cloaking. */
+      .boot-about {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+        margin-top: 1rem;
+        color: #667085;
+      }
+
+      .boot-tagline {
+        margin: 0;
       }
 
       .boot-copy {
-        position: relative;
         margin: 0;
-        max-width: 36rem;
-        color: #667085;
-        line-height: 1.5;
+        max-width: 34rem;
+        font-size: 0.875rem;
       }
 
-      .boot-loading-message {
-        font-weight: 600;
-        font-size: 1.25em;
+      .dark .boot {
+        background: #0f1217;
+        color: #e7ebf2;
       }
 
-      @media (prefers-color-scheme: dark) {
-        .boot {
-          background: #0f1217;
-          color: #e7ebf2;
-        }
-
-        .boot-mark {
-          opacity: 0.1;
-        }
-
-        .boot-tagline,
-        .boot-copy {
-          color: #8d96a5;
-        }
+      .dark .boot-loading-message,
+      .dark .boot-about {
+        color: #8d96a5;
       }
     </style>
   </head>
   <body>
     <!-- Vue clears this container when it mounts, so what is written here is the first frame
-         and nothing more. It says what the app is rather than "Loading…" because a crawler or
-         link unfurler that never runs the bundle sees exactly this and no further. -->
+         and nothing more. It reads as a splash rather than a copy of the landing screen: what
+         replaces it is the landing screen only on a first visit, and the builder itself for
+         anyone with saved builds, so there is no one layout it could hand over to seamlessly.
+         The description below it is what a crawler or link unfurler that never runs the bundle
+         sees, so it stays in the markup and stays rendered. -->
     <div id="app">
       <div class="boot" data-testid="boot-screen">
         <img
@@ -208,21 +242,24 @@
         />
         <h1 class="boot-title">Carlos Carlos' NW Builder</h1>
         <p class="boot-loading-message">Loading...</p>
-        <p class="boot-tagline">Create and compare Neverwinter builds.</p>
-        <p class="boot-copy">
-          You can define your own items and bonuses using customization layers.
-          <br />
-          Built-in database contains recent gear for Hellbringer and Arbiter.
-          <br />
-          Everything is saved on your browser - export to download a permanent
-          copy.
-        </p>
-        <noscript>
+        <div class="boot-about">
+          <p class="boot-tagline">Create and compare Neverwinter builds.</p>
           <p class="boot-copy">
-            The builder runs entirely in the browser and needs JavaScript
-            enabled.
+            You can define your own items and bonuses using customization
+            layers.
+            <br />
+            Built-in database contains recent gear for Hellbringer and Arbiter.
+            <br />
+            Everything is saved on your browser - export to download a permanent
+            copy.
           </p>
-        </noscript>
+          <noscript>
+            <p class="boot-copy">
+              The builder runs entirely in the browser and needs JavaScript
+              enabled.
+            </p>
+          </noscript>
+        </div>
       </div>
     </div>
 
