@@ -11,6 +11,7 @@ import AboutDialog from "./AboutDialog.vue";
 import AutosaveIndicator from "./AutosaveIndicator.vue";
 import BundleExport from "./BundleExport.vue";
 import GameImport from "./GameImport.vue";
+import ImportPicker from "./ImportPicker.vue";
 import ShortcutHelp from "./ShortcutHelp.vue";
 import {
   Download,
@@ -21,7 +22,7 @@ import {
   Upload,
 } from "@lucide/vue";
 import { useUndoRedoKeys } from "../composables/useUndoRedoKeys";
-import { importFileText } from "../stores/importFile";
+import { importFileText, pending as pendingImport } from "../stores/importFile";
 import { notice, noticeAction, showNotice } from "../stores/notice";
 import {
   isOpen as gameImportOpen,
@@ -82,6 +83,9 @@ async function onImportFile(event: Event) {
         ><Upload />Import</BaseButton
       >
     </BaseTooltip>
+
+    <!-- Mounted here for every entry point, as the game-import wizard is. -->
+    <ImportPicker v-if="pendingImport" :plan="pendingImport" />
 
     <BaseButton data-testid="header-import-from-game" @click="openGameImport"
       ><Gamepad2 />Import from game</BaseButton

@@ -10,8 +10,6 @@ import * as trash from "./trash";
 import * as selection from "./selection";
 import { layerOrder, persistMeta } from "./meta";
 import { flagStorageFailed, showNotice } from "./notice";
-import * as builds from "./builds";
-import * as folders from "./folders";
 import * as catalog from "../data/catalog";
 import type { Layer, CatalogOverlay, SectionPreset } from "../types";
 
@@ -253,47 +251,20 @@ export function importLayerText(text: string) {
   }
 }
 
-export function importBundleText(text: string) {
-  try {
-    const { bundle, catalogStale } = storage.parseBundleJson(text);
-    const { builds: newBuilds, layers: newLayers } = bundle;
+/** Writes one imported layer into the pool. `replacing` takes over the fold position of the
+ *  layer whose id it carries, which goes to the trash; anything else is appended at the
+ *  bottom. `importFile.ts` decides which of the two an entry is. */
+export function upsertImported(layer: Layer, replacing: boolean) {
+  const existing = _layers.value.get(layer.id);
+  if (replacing && existing) trash._add("layer", existing);
+  else if (!existing) layerOrder.value.push(layer.id);
+  _layers.value.set(layer.id, layer);
+  markDirty(layer.id);
+}
 
-    // Import builds first
-    for (const b of newBuilds) {
-      builds.importBuilds([b], catalogStale);
-    }
-
-    // Then recreate the folders those builds came in, now that the builds exist under
-    // their fresh ids (`parseBundleJson` already remapped the membership).
-    for (const folder of bundle.folders ?? []) {
-      const folderId = folders.createFolder(folder.name, folder.collapsed);
-      for (const buildId of folder.builds) {
-        folders.placeBuild(buildId, folderId);
-      }
-    }
-
-    // Then import layers
-    for (const layer of newLayers) {
-      _layers.value.set(layer.id, layer);
-      layerOrder.value.push(layer.id);
-      markDirty(layer.id);
-    }
-
-    if (newLayers.length) {
-      selection.selectLayer(newLayers[newLayers.length - 1].id);
-    }
-
-    const stale = catalogStale
-      ? " - made against an older item catalogue; some items may no longer resolve"
-      : "";
-    showNotice(
-      `Imported ${newBuilds.length} build(s) and ${newLayers.length} layer(s)${stale}`,
-    );
-  } catch (error: unknown) {
-    showNotice(
-      `That file could not be read: ${error instanceof Error ? error.message : String(error)}`,
-    );
-  }
+/** Selects an imported layer, once the whole file has been written. */
+export function selectImported(id: string) {
+  if (_layers.value.has(id)) selection.selectLayer(id);
 }
 
 // --- bootstrap --------------------------------------------------------------------------

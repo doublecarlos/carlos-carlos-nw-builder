@@ -8,6 +8,7 @@
 // build's own overlay below, a layer-authored item further down).
 import { test, expect, type Page } from "@playwright/test";
 import {
+  confirmImport,
   openBuilder,
   chooseCombo,
   headerRow,
@@ -68,6 +69,7 @@ async function importText(page: Page, text: string) {
     mimeType: "application/json",
     buffer: Buffer.from(text, "utf-8"),
   });
+  await confirmImport(page);
   await expect(page.getByTestId("app-header")).toContainText(/imported/i);
 }
 

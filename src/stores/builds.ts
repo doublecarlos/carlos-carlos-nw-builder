@@ -12,7 +12,6 @@ import * as selection from "./selection";
 import * as folders from "./folders";
 import { buildOrder } from "./meta";
 import { flagStorageFailed, showNotice } from "./notice";
-import * as layers from "./layers";
 import { db as engineDb } from "./resolved";
 import type { Build, BuildNavEntry } from "../types";
 
@@ -222,7 +221,7 @@ export function setChoiceFor(
 }
 
 /** Count of custom entries in `build.catalog` that overlap with ids enabled layers define. */
-function overlayOverlapCount(
+export function overlayOverlapCount(
   build: Build,
   overlays: import("../types").CatalogOverlay[],
 ): number {
@@ -280,15 +279,33 @@ export function importBuilds(
   showNotice(parts.join(". "));
 }
 
-export function importBuildText(text: string) {
-  try {
-    const { builds: newBuilds, catalogStale } = storage.parseJson(text);
-    importBuilds(newBuilds, catalogStale, layers.enabledOverlays.value);
-  } catch (error: unknown) {
-    showNotice(
-      `That file could not be read: ${error instanceof Error ? error.message : String(error)}`,
-    );
+/** Writes one imported build into the pool. `replacing` takes over the row (and folder) of the
+ *  build whose id it carries, which goes to the trash; anything else is appended.
+ *  `importFile.ts` decides which of the two an entry is. */
+export function upsertImported(build: Build, replacing: boolean) {
+  const existing = _builds.value.get(build.id);
+  if (replacing && existing) trash._add("build", existing);
+  else if (!existing) folders.appendBuild(build.id);
+  _builds.value.set(build.id, build);
+  markDirty(build.id);
+}
+
+/** Drops the placeholder build the landing screen keeps alive (see `build`, and the watcher
+ *  at the foot of this file), so builds arriving from a file do not land beside an empty
+ *  "Build 1" nobody asked for. No-op once anything has been committed: the landing screen
+ *  standing is what says the pool holds nothing but the placeholder. */
+export function discardPlaceholder() {
+  if (!landing.showing.value) return;
+  for (const id of [..._builds.value.keys()]) {
+    clearDirty(id);
+    _builds.value.delete(id);
+    folders.removeBuild(id);
   }
+}
+
+/** Selects an imported build, once the whole file has been written. */
+export function selectImported(id: string) {
+  if (_builds.value.has(id)) selection.selectBuild(id);
 }
 
 export function downloadBuild(id: string) {

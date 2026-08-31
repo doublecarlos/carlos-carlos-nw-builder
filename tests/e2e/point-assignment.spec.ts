@@ -6,6 +6,7 @@
 // than hardcoded, so renaming a shipped item doesn't break these.
 import { test, expect, type Page } from "@playwright/test";
 import {
+  confirmImport,
   openBuilder,
   slotRow,
   assignmentInput,
@@ -305,6 +306,7 @@ test.describe("point_assignment hover card for an unselected candidate", () => {
         "utf-8",
       ),
     });
+    await confirmImport(page);
     await expect(page.getByTestId("app-header")).toContainText(/imported/i);
   }
 

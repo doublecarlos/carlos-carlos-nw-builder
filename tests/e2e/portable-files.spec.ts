@@ -1,7 +1,13 @@
 // End-to-end coverage for portable files (phase 7): builds carry their layer dependencies,
 // bundles export builds + layers together, and the bundle picker auto-ticks required layers.
 import { test, expect, type Page } from "@playwright/test";
-import { openBuilder, chooseCombo, pickerInput } from "./support/app";
+import {
+  chooseCombo,
+  confirmImport,
+  importText,
+  openBuilder,
+  pickerInput,
+} from "./support/app";
 import { addBuild, buildRow, renameViaSidebar } from "./support/nav";
 
 /** Export the first build's JSON via the header's "Export bundle…" button. Since we need a
@@ -58,18 +64,6 @@ async function twoComparedBuilds(page: Page) {
   await renameViaSidebar(page, buildRow(page, "Build 2"), "Beta");
   await chooseCombo(page.locator(".compare-select"), "Alpha");
   await page.getByRole("checkbox", { name: "Highlight changes" }).check();
-}
-
-/** Import a JSON file via the header's Import… button - the app's only file entry point. */
-async function importText(page: Page, text: string, name = "import.json") {
-  const fileInput = page
-    .getByTestId("app-header")
-    .locator('input[type="file"]');
-  await fileInput.setInputFiles({
-    name,
-    mimeType: "application/json",
-    buffer: Buffer.from(text, "utf-8"),
-  });
 }
 
 test.describe("portable files", () => {
@@ -138,6 +132,7 @@ test.describe("portable files", () => {
 
     // Import back
     await importText(page, JSON.stringify(bundle));
+    await confirmImport(page);
     await expect(page.getByTestId("app-header")).toContainText(/imported/i);
   });
 
@@ -160,6 +155,7 @@ test.describe("portable files", () => {
     // rather than at the build the id in the file still names.
     await renameViaSidebar(page, buildRow(page, "Alpha"), "Old Alpha");
     await importText(page, JSON.stringify(bundle));
+    await confirmImport(page);
     await expect(comparePicker(page)).toHaveValue("Alpha");
   });
 
@@ -179,6 +175,7 @@ test.describe("portable files", () => {
     expect(bundle.data.builds[0].compare.highlight).toBe(false);
 
     await importText(page, JSON.stringify(bundle));
+    await confirmImport(page);
     await expect(comparePicker(page)).toHaveValue("- none -");
   });
 
@@ -199,6 +196,7 @@ test.describe("portable files", () => {
 
     // Import via the file input - should handle bundle kind
     await importText(page, text);
+    await confirmImport(page);
     await expect(page.getByTestId("app-header")).toContainText(/imported/i);
   });
 
@@ -216,6 +214,7 @@ test.describe("portable files", () => {
       slots: {},
     };
     await importText(page, JSON.stringify(overlay), "my-overlay.json");
+    await confirmImport(page);
 
     await expect(
       page.getByTestId("library").locator(".nav-row--layer"),
