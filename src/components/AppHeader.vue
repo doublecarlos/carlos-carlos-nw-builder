@@ -67,8 +67,11 @@ async function onImportFile(event: Event) {
          intrinsic width, so without this the bar's own minimum grows with each one added and
          a narrow window scrolls sideways -- and of everything up here, the title is what a
          narrow window can most afford to lose the tail of. -->
-    <h1 class="min-w-0 truncate text-base font-semibold tracking-wide">
-      Carlos Carlos' NW Builder
+    <h1
+      class="min-w-0 truncate text-base font-semibold tracking-wide flex items-center"
+    >
+      <img class="inline" src="/icon-512.png" alt="" width="32" height="32" />
+      <span class="flex-1">Carlos Carlos' NW Builder</span>
     </h1>
 
     <BaseButton data-testid="header-export-bundle" @click="triggerExportBundle"
