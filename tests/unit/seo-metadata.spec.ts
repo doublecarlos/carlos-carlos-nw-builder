@@ -144,10 +144,12 @@ describe("the deployed origin", () => {
     );
   });
 
-  it("is the single URL the sitemap lists", () => {
+  it("heads the sitemap, which lists it and the privacy notice and nothing else", () => {
+    // A second entry only because privacy.html is its own file rather than a view of the app;
+    // anything reachable by query string still canonicalises back to the root above.
     expect(
       [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]),
-    ).toEqual([canonical]);
+    ).toEqual([canonical, new URL("privacy.html", canonical).href]);
   });
 });
 

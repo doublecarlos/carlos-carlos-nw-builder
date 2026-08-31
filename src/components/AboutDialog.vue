@@ -46,6 +46,18 @@ defineEmits<{ close: [] }>();
           <ExternalLink class="size-[14px]" />
           Report a problem
         </a>
+        <!-- A plain file in public/, not a route: it has to stay readable when the bundle
+             does not, and a new tab keeps the builder open behind it. -->
+        <a
+          class="inline-flex w-fit items-center gap-1.5 text-accent hover:underline"
+          href="/privacy.html"
+          target="_blank"
+          rel="noopener noreferrer"
+          data-testid="about-privacy-link"
+        >
+          <ExternalLink class="size-[14px]" />
+          Privacy
+        </a>
       </div>
 
       <p

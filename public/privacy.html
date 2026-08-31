@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Privacy - Carlos Carlos' NW Builder</title>
+    <meta
+      name="description"
+      content="Your builds stay in your browser. No cookies, no analytics, no accounts."
+    />
+    <link
+      rel="canonical"
+      href="https://carloscarlosnwbuilder.pages.dev/privacy.html"
+    />
+    <link rel="icon" href="/favicon.ico" sizes="32x32" />
+    <meta
+      name="theme-color"
+      media="(prefers-color-scheme: light)"
+      content="#f6f7f9"
+    />
+    <meta
+      name="theme-color"
+      media="(prefers-color-scheme: dark)"
+      content="#0f1217"
+    />
+
+    <!-- Standalone on purpose: this should stay readable when the bundle does not, so it shares
+         nothing with the app. Colours are copied from src/base.css, which static CSS cannot
+         read; tests/unit/privacy-page.spec.ts pins them back to it. The app picks dark by a
+         class its script sets, so this follows the system setting instead. -->
+    <style>
+      :root {
+        --bg: #f6f7f9;
+        --text: #14181f;
+        --muted: #667085;
+        --accent: #2f5bd7;
+        --line: #d8dce3;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #0f1217;
+          --text: #e7ebf2;
+          --muted: #8d96a5;
+          --accent: #7fa0f0;
+          --line: #2c323c;
+        }
+      }
+
+      body {
+        margin: 0 auto;
+        max-width: 40rem;
+        padding: 3rem 1.5rem 4rem;
+        background: var(--bg);
+        color: var(--text);
+        font-family: ui-sans-serif, system-ui, sans-serif;
+        line-height: 1.6;
+      }
+
+      h1 {
+        margin: 0 0 0.25rem;
+        font-size: 1.6rem;
+      }
+
+      h2 {
+        margin: 1.75rem 0 0.5rem;
+        font-size: 1.05rem;
+      }
+
+      p,
+      ul {
+        margin: 0 0 0.75rem;
+      }
+
+      ul {
+        padding-left: 1.25rem;
+      }
+
+      a {
+        color: var(--accent);
+      }
+
+      .updated,
+      .back {
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+
+      .back {
+        display: block;
+        margin-top: 2.5rem;
+        border-top: 1px solid var(--line);
+        padding-top: 1.5rem;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Privacy</h1>
+    <p class="updated">Carlos Carlos' NW Builder - updated 30 August 2026</p>
+
+    <h2>Your builds</h2>
+    <p>
+      Builds, layers, custom items and settings are saved by your own browser,
+      in IndexedDB and a few keys beginning with <code>nw:</code>. Nothing is
+      uploaded - there is no server and no account. Export is the only way data
+      leaves your machine, and you do that yourself.
+    </p>
+    <p>
+      "Import from game" reads tooltips out of a screenshot. That happens in
+      your browser; the image is never uploaded.
+    </p>
+
+    <h2>What the host sees</h2>
+    <p>
+      Cloudflare Pages serves the site and keeps ordinary request logs - IP
+      address, time, page, user-agent - to deliver it and stop abuse. Browsers
+      may also report failed requests to Cloudflare. I have no analytics and
+      never look at individual visitors.
+    </p>
+
+    <h2>What is not here</h2>
+    <ul>
+      <li>No cookies, so nothing to consent to.</li>
+      <li>No analytics, ads, accounts or tracking.</li>
+      <li>No third-party services - everything loads from this site.</li>
+      <li>Nothing sold or shared.</li>
+    </ul>
+
+    <h2>Deleting it</h2>
+    <p>
+      Delete builds in the app, or clear this site's data in your browser
+      settings. Export anything you want to keep first.
+    </p>
+
+    <h2>Questions</h2>
+    <p>
+      If something here is wrong or unclear, open an issue on
+      <a
+        href="https://github.com/doublecarlos/carlos-carlos-nw-builder/issues"
+        target="_blank"
+        rel="noopener noreferrer"
+        >the project's tracker</a
+      >.
+    </p>
+
+    <a class="back" href="/">&larr; Back to the builder</a>
+  </body>
+</html>

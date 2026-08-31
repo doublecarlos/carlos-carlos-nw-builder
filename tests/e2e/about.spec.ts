@@ -45,6 +45,16 @@ test("About links out to the source and the issue tracker", async ({
   await expect(issues).toHaveAttribute("href", /\/issues$/);
 });
 
+test("About reaches the privacy notice", async ({ page }) => {
+  await openBuilder(page);
+  await page.getByTestId("header-about").click();
+
+  await expect(page.getByTestId("about-privacy-link")).toHaveAttribute(
+    "href",
+    "/privacy.html",
+  );
+});
+
 test("About carries the disclaimer for anyone past the landing screen", async ({
   page,
 }) => {
