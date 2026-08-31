@@ -348,7 +348,7 @@ describe("bundle JSON round trip", () => {
     expect(bundle.layers).toEqual([]);
   });
 
-  it("keeps a comparison whose target travels in the same bundle, remapped to its fresh id", () => {
+  it("keeps a comparison whose target travels in the same bundle, still by the file's id", () => {
     const target = storage.defaultBuild("Target");
     const source = storage.defaultBuild("Source");
     source.compare = {
@@ -364,11 +364,11 @@ describe("bundle JSON round trip", () => {
     });
     const { bundle } = storage.parseBundleJson(json);
     const imported = bundle.builds.find((b) => b.name === "Source")!;
-    const importedTarget = bundle.builds.find((b) => b.name === "Target")!;
 
-    expect(importedTarget.id).not.toBe(target.id);
+    // Final ids, and the remapping they imply, are import-plan.ts's to assign.
+    expect(bundle.builds.find((b) => b.name === "Target")!.id).toBe(target.id);
     expect(imported.compare).toEqual({
-      id: importedTarget.id,
+      id: target.id,
       highlight: true,
       onlyDiff: true,
       statLines: true,
@@ -405,7 +405,7 @@ describe("bundle JSON round trip", () => {
     });
   });
 
-  it("drops a comparison naming a build the bundle does not carry", () => {
+  it("passes a comparison naming a build the bundle does not carry straight through", () => {
     const source = storage.defaultBuild("Source");
     source.compare = {
       id: "b_missing",
@@ -413,8 +413,8 @@ describe("bundle JSON round trip", () => {
       onlyDiff: false,
       statLines: true,
     };
-    // Hand-written envelope: `toBundleJson` would have scrubbed this on the way out, so the
-    // import side has to stand on its own for files written before it did.
+    // Hand-written envelope: `toBundleJson` would have scrubbed this on the way out. Dropping
+    // a dangling target is import-plan.ts's call, once it knows what else is being imported.
     const json = JSON.stringify({
       v: storage.SCHEMA_VERSION,
       kind: "bundle",
@@ -422,12 +422,7 @@ describe("bundle JSON round trip", () => {
     });
 
     const { bundle } = storage.parseBundleJson(json);
-    expect(bundle.builds[0].compare).toEqual({
-      id: "",
-      highlight: false,
-      onlyDiff: false,
-      statLines: false,
-    });
+    expect(bundle.builds[0].compare.id).toBe("b_missing");
   });
 });
 
@@ -754,21 +749,19 @@ describe("toBuildJson with db (portable files)", () => {
 });
 
 describe("bundle round trip", () => {
-  it("every id differs, every name and value matches", () => {
+  it("every id, name and value comes back as the file wrote it", () => {
     const build = storage.defaultBuild("Original");
     const layer = storage.defaultLayer("Original Layer");
     const json = storage.toBundleJson({ builds: [build], layers: [layer] });
     const { bundle } = storage.parseBundleJson(json);
 
-    // Ids should differ
-    expect(bundle.builds[0].id).not.toBe(build.id);
-    expect(bundle.layers[0].id).not.toBe(layer.id);
+    // Ids survive so the importer can match them against the workspace.
+    expect(bundle.builds[0].id).toBe(build.id);
+    expect(bundle.layers[0].id).toBe(layer.id);
 
-    // Names should match
     expect(bundle.builds[0].name).toBe("Original");
     expect(bundle.layers[0].name).toBe("Original Layer");
 
-    // Values should match
     expect(bundle.builds[0].choices).toEqual(build.choices);
     expect(bundle.layers[0].enabled).toBe(true);
   });
@@ -805,13 +798,15 @@ describe("bundle round trip", () => {
     expect(bundle.builds[0].catalog).toBeDefined();
   });
 
-  it("name collisions are suffixed with (2)", () => {
+  it("leaves colliding names alone - suffixing them is the importer's job", () => {
     const build1 = storage.defaultBuild("Same Name");
     const build2 = storage.defaultBuild("Same Name");
     const json = storage.toBundleJson({ builds: [build1, build2], layers: [] });
     const { bundle } = storage.parseBundleJson(json);
-    expect(bundle.builds[0].name).toBe("Same Name");
-    expect(bundle.builds[1].name).toBe("Same Name (2)");
+    expect(bundle.builds.map((b) => b.name)).toEqual([
+      "Same Name",
+      "Same Name",
+    ]);
   });
 });
 
@@ -896,7 +891,7 @@ describe("build folders", () => {
     expect(meta.folders).toEqual([]);
   });
 
-  it("a bundle carries the folders of the builds it exports, remapped to their fresh ids", () => {
+  it("a bundle carries the folders of the builds it exports, by the ids in the file", () => {
     const inside = storage.defaultBuild("Grouped");
     const loose = storage.defaultBuild("Loose");
     const json = storage.toBundleJson({
@@ -908,25 +903,11 @@ describe("build folders", () => {
     });
 
     const { bundle } = storage.parseBundleJson(json);
-    const imported = bundle.builds.find((b) => b.name === "Grouped")!;
-    expect(imported.id).not.toBe(inside.id);
+    expect(bundle.builds.find((b) => b.name === "Grouped")!.id).toBe(inside.id);
     expect(bundle.folders).toHaveLength(1);
     expect(bundle.folders![0].name).toBe("Alts");
     expect(bundle.folders![0].collapsed).toBe(true);
-    expect(bundle.folders![0].builds).toEqual([imported.id]);
-  });
-
-  it("a folder whose builds were all left out of the bundle does not travel", () => {
-    const left = storage.defaultBuild("Left out");
-    const json = storage.toBundleJson({
-      builds: [],
-      layers: [],
-      folders: [
-        { id: "f_1", name: "Alts", collapsed: false, builds: [left.id] },
-      ],
-    });
-
-    expect(storage.parseBundleJson(json).bundle.folders).toEqual([]);
+    expect(bundle.folders![0].builds).toEqual([inside.id]);
   });
 
   it("a bundle without folders parses to none", () => {

@@ -2,7 +2,7 @@
 // a real export round-trips through import, an un-enveloped (legacy) build still works, and a
 // version or kind mismatch is refused with a clear message instead of silently mis-normalised.
 import { test, expect, type Page } from "@playwright/test";
-import { openBuilder } from "./support/app";
+import { confirmImport, importText, openBuilder } from "./support/app";
 
 /** Export the first build via the sidebar menu (⋮ → Export…). Returns the parsed JSON. */
 async function exportedEnvelope(page: Page) {
@@ -22,26 +22,15 @@ async function exportedEnvelope(page: Page) {
   return JSON.parse(text);
 }
 
-/** Import via the "Import…" button in the header. Creates a file and triggers the file input. */
-async function importText(page: Page, text: string) {
-  const fileInput = page
-    .getByTestId("app-header")
-    .locator('input[type="file"]');
-  await fileInput.setInputFiles({
-    name: "import.json",
-    mimeType: "application/json",
-    buffer: Buffer.from(text, "utf-8"),
-  });
-}
-
 test("a real export round-trips through import", async ({ page }) => {
   await openBuilder(page);
   const envelope = await exportedEnvelope(page);
   expect(envelope.kind).toBe("build");
 
-  // Import back - this creates a new build alongside the existing one.
+  // The export carries the id of the build still open, so importing it back is a conflict:
+  // the picker offers to keep both or replace, and keeping both is what it opens on.
   await importText(page, JSON.stringify(envelope));
-  // A notice should appear for the imported build.
+  await confirmImport(page);
   await expect(page.getByTestId("app-header")).toContainText(/imported/i);
 });
 
@@ -50,6 +39,7 @@ test("an un-enveloped (legacy) build still imports", async ({ page }) => {
   const envelope = await exportedEnvelope(page);
 
   await importText(page, JSON.stringify(envelope.data));
+  await confirmImport(page);
   await expect(page.getByTestId("app-header")).toContainText(/imported/i);
 });
 
