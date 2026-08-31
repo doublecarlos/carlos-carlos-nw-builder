@@ -41,11 +41,6 @@ async function load(): Promise<LoadedState> {
 export async function hydrate() {
   const data = await load();
 
-  // Asked here, of the raw load, rather than of the builds store: that store keeps one build
-  // alive at all times, so by the first render there is always a "Build 1" and an emptiness
-  // question asked any later always answers no.
-  if (data.builds.length === 0 && data.layers.length === 0) landing.show();
-
   const buildsMap = new Map(data.builds.map((b) => [b.id, b]));
   folders._init(data.meta.folders);
   builds._init(buildsMap, data.meta.buildOrder);
@@ -54,6 +49,18 @@ export async function hydrate() {
   layers._init(layersMap, data.meta.layerOrder);
 
   trash._init(data.trash);
+
+  // Builds and layers are counted from the raw load rather than from their stores: the builds
+  // store keeps one build alive at all times, so an emptiness question asked of it always
+  // answers no. The trash is asked of its store instead, which has just dropped the entries
+  // past their purge age -- expired deletions must not keep the landing screen down.
+  if (
+    data.builds.length === 0 &&
+    data.layers.length === 0 &&
+    trash.trashed.value.length === 0
+  ) {
+    landing.show();
+  }
 
   history._init(data.history);
 

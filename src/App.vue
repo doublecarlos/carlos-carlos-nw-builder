@@ -52,8 +52,7 @@ useGlobalShortcuts();
 const loading = builds.loading;
 
 // --- landing screen -----------------------------------------------------------------------
-// Stands in front of the builder for a browser with nothing stored, and again once the last
-// build is deleted.
+// Stands in front of the builder whenever the app holds nothing at all.
 const showLanding = landing.showing;
 
 /** The selected layer object, for the LayerEditor prop. */

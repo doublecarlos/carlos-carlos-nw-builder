@@ -1,7 +1,7 @@
 <script setup lang="ts">
-// Landing screen: what stands in front of the builder for a browser with nothing stored, and
-// again once the last build is deleted. Says what the app is for and offers the three ways in
-// -- start fresh, import a file, or read a build back out of the game.
+// Landing screen: what stands in front of the builder whenever the app holds nothing at all.
+// Says what the app is for and offers the three ways in -- start fresh, import a file, or
+// read a build back out of the game.
 import { useTemplateRef } from "vue";
 import { Gamepad2, Plus, Upload } from "@lucide/vue";
 import * as builds from "../stores/builds";
