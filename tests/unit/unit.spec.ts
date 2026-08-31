@@ -8,6 +8,7 @@ import * as db from "../../src/data/db";
 import * as engine from "../../src/engine/engine";
 import { isHiddenBonus } from "../../src/engine/bonus";
 import { bonusIdOf } from "../../src/lib/bonus-attachment";
+import { storedListRows } from "../../src/lib/item-picker-list";
 import type {
   Build,
   BuildContext,
@@ -84,6 +85,7 @@ function runBuild(
     choices,
     values,
     context,
+    listRows: storedListRows({ choices, values, assignments: {} }),
   } as unknown as Build) as RunResult;
   result.activeById = new Map(
     result.bonuses
@@ -235,7 +237,7 @@ describe("bonus model semantics", () => {
     const ID = "m28-voidtouched-set";
     expect(runBuild(gear).statOf(ID, "movement")).toBeUndefined();
     expect(
-      runBuild({ ...gear, "options.location": "Wildspace" }).statOf(
+      runBuild({ ...gear, "options.scenario#1": "Location: Wildspace" }).statOf(
         ID,
         "movement",
       ),
@@ -248,7 +250,7 @@ describe("bonus model semantics", () => {
       9,
     );
     expect(
-      runBuild({ ...ring, "options.location": "Thay" }).statOf(
+      runBuild({ ...ring, "options.scenario#1": "Location: Thay" }).statOf(
         predatorId,
         "outgoing_damage",
       ),
@@ -259,11 +261,11 @@ describe("bonus model semantics", () => {
     // Replaces legacy `bonus_max_instances: 100` + `max_copies: 3`.
     const ID = "mount-vortex-panther-necrotic";
     const one = runBuild({
-      "artifactCall.artifactCall1": "Mount: Vortex/Panther/Necrotic",
+      "artifactCall.artifactCall#1": "Mount: Vortex/Panther/Necrotic",
     });
     const two = runBuild({
-      "artifactCall.artifactCall1": "Mount: Vortex/Panther/Necrotic",
-      "artifactCall.artifactCall2": "Mount: Vortex/Panther/Necrotic",
+      "artifactCall.artifactCall#1": "Mount: Vortex/Panther/Necrotic",
+      "artifactCall.artifactCall#2": "Mount: Vortex/Panther/Necrotic",
     });
     const oneBonus = one.activeById.get(ID)!;
     const twoBonus = two.activeById.get(ID)!;

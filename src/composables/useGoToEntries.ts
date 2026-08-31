@@ -1,5 +1,6 @@
 import { computed } from "vue";
 import { slotVisible } from "../lib/slot-visibility";
+import { expandSlots } from "../lib/item-picker-list";
 import type { GoToEntry } from "../lib/go-to";
 import * as engine from "../stores/resolved";
 import * as builds from "../stores/builds";
@@ -32,9 +33,14 @@ export function useGoToEntries() {
         });
       }
       for (const section of db.sections) {
-        for (const slotDef of db.slots) {
+        for (const slotDef of expandSlots(db.slots, builds.build.value)) {
           if (slotDef.section !== section.id) continue;
-          if (slotDef.type === "separator" || slotDef.type === "text") continue;
+          if (
+            slotDef.type === "separator" ||
+            slotDef.type === "text" ||
+            slotDef.type === "item_picker_list"
+          )
+            continue;
           if (
             (slotDef.type === "build_parameter" ||
               slotDef.type === "item_picker") &&

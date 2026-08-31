@@ -96,6 +96,7 @@ function testBuild(overrides: Partial<Build> = {}): Build {
     values: {},
     assignments: {},
     occurrenceInputs: {},
+    listRows: {},
     context: { role: "dps" } as Build["context"],
     compare: { id: "", highlight: false, onlyDiff: false, statLines: false },
     ...overrides,

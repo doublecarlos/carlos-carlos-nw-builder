@@ -8,10 +8,14 @@
 // assert instead of riding on whatever data/slots.json happens to say.
 import { test, expect, type Page } from "@playwright/test";
 import { openBuilder, slotRow, pickerInput, chooseItem } from "./support/app";
+import { shippedItemName } from "./support/shippedData";
 
-const SLOT_ID = "options.enemyType";
+/** A shipped `scenario_flag` candidate, by id -- its display name is data, not a fixture. */
+const BOSS = shippedItemName("enemy-type-boss");
 
-/** Imports a build whose overlay redefines `options.enemyType` and adds the items it needs. */
+const SLOT_ID = "options.testPicker";
+
+/** Imports a build whose overlay declares `SLOT_ID` and adds the items it needs. */
 async function importOverlay(
   page: Page,
   slot: Record<string, unknown>,
@@ -34,7 +38,7 @@ async function importOverlay(
               label: "Enemy Type",
               section: "options",
               type: "item_picker",
-              filter: "enemy_type",
+              filter: "scenario_flag",
               ...slot,
             },
           },
@@ -69,14 +73,15 @@ test.describe("quick", () => {
     const input = pickerInput(picker);
 
     await input.click();
-    await input.fill("Boss");
-    await picker.getByText("Boss", { exact: true }).click();
+    await input.fill(BOSS);
+    await picker.getByText(BOSS, { exact: true }).click();
 
-    await expect(input).toHaveValue("Boss");
+    await expect(input).toHaveValue(BOSS);
   });
 
   test("a non-quick item_picker keeps its section row", async ({ page }) => {
     await openBuilder(page);
+    await importOverlay(page, {});
     await expect(slotRow(page, SLOT_ID)).toBeVisible();
     await expect(
       page.getByTestId("quick-options").getByTestId(`quick-picker-${SLOT_ID}`),
@@ -87,6 +92,7 @@ test.describe("quick", () => {
 test.describe("disallowEmpty", () => {
   test("an ordinary item_picker offers the empty row", async ({ page }) => {
     await openBuilder(page);
+    await importOverlay(page, {});
     const row = slotRow(page, SLOT_ID);
     await pickerInput(row).click();
     await expect(row.getByText("- empty -", { exact: true })).toBeVisible();
@@ -103,7 +109,7 @@ test.describe("disallowEmpty", () => {
     await row.scrollIntoViewIfNeeded();
     await pickerInput(row).click();
     // The candidates are still all there -- only the "no value" row is gone.
-    await expect(row.getByText("Boss", { exact: true })).toBeVisible();
+    await expect(row.getByText(BOSS, { exact: true })).toBeVisible();
     await expect(row.getByText("- empty -", { exact: true })).toHaveCount(0);
   });
 });
@@ -136,27 +142,27 @@ test.describe("visibleWhen", () => {
     const combat = page
       .getByTestId("quick-options")
       .getByLabel("Combat", { exact: true });
-    await chooseItem(page, SLOT_ID, "Boss");
+    await chooseItem(page, SLOT_ID, BOSS);
 
     await combat.uncheck();
     await expect(slotRow(page, SLOT_ID)).toHaveCount(0);
 
     // Still the same pick when the row comes back -- hiding is a display filter, nothing more.
     await combat.check();
-    await expect(pickerInput(slotRow(page, SLOT_ID))).toHaveValue("Boss");
+    await expect(pickerInput(slotRow(page, SLOT_ID))).toHaveValue(BOSS);
   });
 });
 
 test.describe("inline repetition", () => {
   const REPEATER_ID = "test-repeating-enemy";
 
-  /** An `enemy_type` candidate that declares an `inlineRepetition`, so picking it grows a
+  /** A `scenario_flag` candidate that declares an `inlineRepetition`, so picking it grows a
    *  stepper. The slot itself says nothing about repetition -- the item's own config does. */
   const repeater = {
     [REPEATER_ID]: {
       id: REPEATER_ID,
       name: "Test Repeating Enemy",
-      filter: "enemy_type",
+      filter: "scenario_flag",
       power: 100,
       inlineRepetition: { min: 0, max: 4, default: 1 },
     },
@@ -165,7 +171,7 @@ test.describe("inline repetition", () => {
   test("a pick with no config has no stepper", async ({ page }) => {
     await openBuilder(page);
     await importOverlay(page, {}, repeater);
-    await chooseItem(page, SLOT_ID, "Boss");
+    await chooseItem(page, SLOT_ID, BOSS);
 
     await expect(
       slotRow(page, SLOT_ID).getByTestId(/^repetition-input-/),
@@ -200,7 +206,7 @@ test.describe("inline repetition", () => {
     await input.blur();
     await expect(input).toHaveValue("3");
 
-    await chooseItem(page, SLOT_ID, "Boss");
+    await chooseItem(page, SLOT_ID, BOSS);
     await expect(row.getByTestId(/^repetition-input-/)).toHaveCount(0);
   });
 });

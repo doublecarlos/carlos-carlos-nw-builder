@@ -201,15 +201,15 @@ test.describe("section collapse/expand", () => {
     await expect(slotRow(page, "options.class")).toBeVisible();
   });
 
-  test("the Options header's badge only counts its item_picker slots (Class, Paragon, Location, Enemy Type)", async ({
+  test("the Options header's badge only counts its item_picker slots (Class, Paragon)", async ({
     page,
   }) => {
     await openBuilder(page);
-    // Four, since Class is an item_picker; the build_parameter rows still don't count,
-    // which is what this asserts.
+    // Two, since Class is an item_picker; the build_parameter rows still don't count, and
+    // Scenario flags is an item_picker_list with no rows yet, which is what this asserts.
     await expect(
       headerRow(page, "options").locator(".section-count"),
-    ).toHaveText("0/4");
+    ).toHaveText("0/2");
     await expect(headerRow(page, "gear").locator(".section-count")).toHaveText(
       /^\d+\/\d+$/,
     );

@@ -50,6 +50,7 @@ function testBuild(choices: Record<string, string>): Build {
     values: {},
     assignments: {},
     occurrenceInputs: {},
+    listRows: {},
     context: {
       class: "",
       role: "",

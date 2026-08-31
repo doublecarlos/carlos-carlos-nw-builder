@@ -11,6 +11,7 @@ import BasePopover from "./ui/BasePopover.vue";
 import BuildSection from "./game/BuildSection.vue";
 import BuildSlot from "./game/BuildSlot.vue";
 import SeparatorRow from "./game/SeparatorRow.vue";
+import ItemPickerListRow from "./game/ItemPickerListRow.vue";
 import TextRow from "./game/TextRow.vue";
 import BaseButton from "./ui/BaseButton.vue";
 import BaseBadge from "./ui/BaseBadge.vue";
@@ -23,6 +24,7 @@ import { abbr, signedStat, statPickerOptions } from "../lib/format";
 import { matchesQuery } from "../lib/text-filter";
 import { slotsSupplying } from "../lib/bonus-slots";
 import { slotVisible } from "../lib/slot-visibility";
+import { expandSlots } from "../lib/item-picker-list";
 import { useHoverCard } from "../composables/useHoverCard";
 import { occurrenceRowsForItem } from "../composables/useItemBonusOccurrences";
 import { scaledStat } from "../engine/scaling";
@@ -140,12 +142,24 @@ function slotGrantsStat(slotDef: Slot, statKey: string): boolean {
  *  summary (the text next to the picker, `statSummary`) does. The stat filter is independent
  *  of all of that: it always narrows the result further. */
 function slotMatchesFilters(section: SlotSection, slotDef: Slot): boolean {
-  if (slotDef.type === "separator" || slotDef.type === "text") return false;
+  if (
+    slotDef.type === "separator" ||
+    slotDef.type === "text" ||
+    slotDef.type === "item_picker_list"
+  )
+    return false;
   if (filterStat.value && !slotGrantsStat(slotDef, filterStat.value))
     return false;
   // Narrows the same way the stat filter does, and for the same reason: it answers "where
-  // could this come from", so it must survive the text query rather than widen it.
-  if (bonusSupplierSlots.value && !bonusSupplierSlots.value.has(slotDef.id))
+  // could this come from", so it must survive the text query rather than widen it. A list's
+  // rows are indexed under the container (lib/bonus-slots.ts), not under each row.
+  if (
+    bonusSupplierSlots.value &&
+    !bonusSupplierSlots.value.has(slotDef.id) &&
+    !(slotDef.type === "item_picker" && slotDef.list
+      ? bonusSupplierSlots.value.has(slotDef.list)
+      : false)
+  )
     return false;
   return matchesQuery(
     [
@@ -281,6 +295,7 @@ function isQuick(slotDef: Slot) {
 }
 
 function rowDiffers(slotDef: Slot) {
+  if (slotDef.type === "item_picker_list") return false;
   if (slotDef.type === "build_parameter")
     return paramDiffers(build.value, compareBuild.value, slotDef);
   if (slotDef.type === "point_assignment")
@@ -310,10 +325,12 @@ function rowDiffers(slotDef: Slot) {
  *  everything downstream agrees a hidden param is not on screen: the section's own diff and
  *  error badges stop counting it, and `bonusesBySlot` stops crediting a shared bonus to a row
  *  nobody can see (which would hide the bonus from the summary entirely). */
+const editorSlots = computed(() => expandSlots(db.value.slots, build.value));
+
 const allSlotsBySection = computed(() =>
   db.value.sections.map((section) => ({
     section,
-    slots: db.value.slots.filter(
+    slots: editorSlots.value.filter(
       (slotDef) =>
         slotDef.section === section.id &&
         !isQuick(slotDef) &&
@@ -464,7 +481,7 @@ function setAll(open: boolean) {
  *  so the seed borrows whatever filter this slot's existing candidates already share, a new one
  *  having no reason to differ. Blank when the slot has no candidates to learn from. */
 function newItemSeedFor(slotId: string): Item | null {
-  const slotDef = db.value.slotById.get(slotId);
+  const slotDef = db.value.slotFor(slotId);
   if (slotDef?.type !== "item_picker") return null;
   if (slotDef.filter) return { id: "", name: "", filter: slotDef.filter };
   if (!slotDef.tags?.length) return null;
@@ -842,6 +859,11 @@ watch(
               :slot-def="slotDef"
             />
             <TextRow v-else-if="slotDef.type === 'text'" :slot-def="slotDef" />
+            <ItemPickerListRow
+              v-else-if="slotDef.type === 'item_picker_list'"
+              :slot-def="slotDef"
+              :on-arrow="moveCursor"
+            />
             <BuildSlot
               v-else
               :slot-def="slotDef"
@@ -877,12 +899,14 @@ watch(
                   : undefined
               "
               :assignment-differs="
-                slotDef.type !== 'build_parameter'
+                slotDef.type === 'item_picker' ||
+                slotDef.type === 'point_assignment'
                   ? assignmentDiffers(db, build, compareBuild, slotDef)
                   : false
               "
               :other-assignment-label="
-                slotDef.type !== 'build_parameter'
+                slotDef.type === 'item_picker' ||
+                slotDef.type === 'point_assignment'
                   ? assignmentDiffTitle(db, build, compareBuild, slotDef)
                   : undefined
               "
@@ -905,7 +929,7 @@ watch(
             :scale="itemScaleFactor(hoveredItem)"
             :scale-notes="itemScaleNotes(hoveredItem)"
             :db="db"
-            :slot-label="db.slotById.get(hover.slotId)?.label ?? ''"
+            :slot-label="db.slotFor(hover.slotId)?.label ?? ''"
             @mouseenter="onCardEnter"
             @mouseleave="onCardLeave"
           />

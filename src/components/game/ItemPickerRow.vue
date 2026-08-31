@@ -9,6 +9,8 @@ import BonusOccurrenceInputs from "./BonusOccurrenceInputs.vue";
 import InlineRepetitionStepper from "./InlineRepetitionStepper.vue";
 import PercentInput from "../ui/PercentInput.vue";
 import BaseButton from "../ui/BaseButton.vue";
+import IconButton from "../ui/IconButton.vue";
+import { Trash } from "@lucide/vue";
 import * as buildEditor from "../../stores/buildEditor";
 import { useItemBonusOccurrences } from "../../composables/useItemBonusOccurrences";
 import {
@@ -113,6 +115,16 @@ const repetitionLabel = computed(
       :allow-empty="!slotDef.disallowEmpty"
       @update:model-value="buildEditor.setChoice(slotDef.id, $event)"
     />
+    <!-- Rows of an item_picker_list are the only removable ones; a hand-authored slot has no
+         `list` and so no button. -->
+    <IconButton
+      v-if="slotDef.list"
+      :title="`Remove ${slotDef.label}`"
+      :data-testid="'list-remove:' + slotDef.id"
+      @click.stop="buildEditor.removeListRow(slotDef.id)"
+    >
+      <Trash />
+    </IconButton>
     <InlineRepetitionStepper
       v-if="item?.inlineRepetition"
       :item="item"

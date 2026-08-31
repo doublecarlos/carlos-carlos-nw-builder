@@ -136,9 +136,10 @@ test.describe("Mod+arrow section cursor", () => {
     for (let i = 0; i < sectionCount + 2; i += 1)
       await page.keyboard.press("ControlOrMeta+ArrowDown");
 
+    // Misc is an item_picker_list, so the last section's only row is its add button.
     await expect(cursorRow(page)).toHaveAttribute(
       "data-cursor-key",
-      "slot:misc.misc1",
+      "slot:misc.misc",
     );
   });
 

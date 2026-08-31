@@ -26,6 +26,20 @@ export function shippedItemName(itemId: string): string {
   return item.name;
 }
 
+const sections: { slots: { id: string; label?: string }[] }[] = JSON.parse(
+  readFileSync(path.join(dataDir, "slots.json"), "utf-8"),
+).sections;
+
+/** The shipped slot's own `label`, straight from data/slots.json -- the same reason
+ *  `shippedItemName` exists, for a spec asserting on what a row is called. */
+export function shippedSlotLabel(slotId: string): string {
+  const slot = sections
+    .flatMap((section) => section.slots)
+    .find((s) => s.id === slotId);
+  if (!slot?.label) throw new Error(`No shipped slot with id "${slotId}"`);
+  return slot.label;
+}
+
 /**
  * The names a `tags` option selector would derive, in the order the app lists them --
  * `optionsFromItems`' rule: pickable items carrying the tag, sorted by name.

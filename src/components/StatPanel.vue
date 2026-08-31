@@ -124,7 +124,7 @@ const warningList = computed(() =>
 // `GrantProblem.label`) takes precedence when set, since the slot it's attributed to is often
 // incidental to what the problem is actually about (e.g. a boon-progression warning).
 const slotLabel = (slotId: string) =>
-  engine.db.value.slotById.get(slotId)?.label ?? slotId;
+  engine.db.value.slotFor(slotId)?.label ?? slotId;
 const errorLabel = (error: EngineError) =>
   error.label ?? slotLabel(error.slotId);
 

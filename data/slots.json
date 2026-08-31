@@ -284,16 +284,11 @@
           "presets": [1, 3, 5, 10]
         },
         {
-          "id": "options.location",
-          "label": "Location",
-          "filter": "location",
-          "type": "item_picker"
-        },
-        {
-          "id": "options.enemyType",
-          "label": "Enemy Type",
-          "filter": "enemy_type",
-          "type": "item_picker"
+          "id": "options.scenario",
+          "label": "Flags",
+          "filter": "scenario_flag",
+          "type": "item_picker_list",
+          "defaultRows": 0
         },
         {
           "id": "options.duration",
@@ -810,64 +805,11 @@
           "type": "separator"
         },
         {
-          "id": "classStuff.classStuff1",
-          "label": "Class stuff 1",
+          "id": "classStuff.classStuff",
+          "label": "Class stuff",
           "filter": "class_stuff",
-          "type": "item_picker"
-        },
-        {
-          "id": "classStuff.classStuff2",
-          "label": "Class stuff 2",
-          "filter": "class_stuff",
-          "type": "item_picker"
-        },
-        {
-          "id": "classStuff.classStuff3",
-          "label": "Class stuff 3",
-          "filter": "class_stuff",
-          "type": "item_picker"
-        },
-        {
-          "id": "classStuff.classStuff4",
-          "label": "Class stuff 4",
-          "filter": "class_stuff",
-          "type": "item_picker"
-        },
-        {
-          "id": "classStuff.classStuff5",
-          "label": "Class stuff 5",
-          "filter": "class_stuff",
-          "type": "item_picker"
-        },
-        {
-          "id": "classStuff.classStuff6",
-          "label": "Class stuff 6",
-          "filter": "class_stuff",
-          "type": "item_picker"
-        },
-        {
-          "id": "classStuff.classStuff7",
-          "label": "Class stuff 7",
-          "filter": "class_stuff",
-          "type": "item_picker"
-        },
-        {
-          "id": "classStuff.classStuff8",
-          "label": "Class stuff 8",
-          "filter": "class_stuff",
-          "type": "item_picker"
-        },
-        {
-          "id": "classStuff.classStuff9",
-          "label": "Class stuff 9",
-          "filter": "class_stuff",
-          "type": "item_picker"
-        },
-        {
-          "id": "classStuff.classStuff10",
-          "label": "Class stuff 10",
-          "filter": "class_stuff",
-          "type": "item_picker"
+          "type": "item_picker_list",
+          "defaultRows": 0
         }
       ]
     },
@@ -1326,182 +1268,21 @@
           "id": "group-dungeon",
           "label": "Dungeon Companions",
           "choices": {
-            "group.group1": "portobello",
-            "group.group2": "tutor",
-            "group.group3": "flapjack",
-            "group.group4": "drizzt",
-            "group.group5": "black-death-scorpion"
+            "group.group#1": "portobello",
+            "group.group#2": "tutor",
+            "group.group#3": "flapjack",
+            "group.group#4": "drizzt",
+            "group.group#5": "black-death-scorpion"
           }
         }
       ],
       "slots": [
         {
-          "id": "group.group1",
-          "label": "Group 1",
+          "id": "group.group",
+          "label": "Group buff",
           "filter": "group_buff",
-          "type": "item_picker"
-        },
-        {
-          "id": "group.group2",
-          "label": "Group 2",
-          "filter": "group_buff",
-          "type": "item_picker"
-        },
-        {
-          "id": "group.group3",
-          "label": "Group 3",
-          "filter": "group_buff",
-          "type": "item_picker"
-        },
-        {
-          "id": "group.group4",
-          "label": "Group 4",
-          "filter": "group_buff",
-          "type": "item_picker"
-        },
-        {
-          "id": "group.group5",
-          "label": "Group 5",
-          "filter": "group_buff",
-          "type": "item_picker"
-        },
-        {
-          "id": "group.group6",
-          "label": "Group 6",
-          "filter": "group_buff",
-          "type": "item_picker"
-        },
-        {
-          "id": "group.group7",
-          "label": "Group 7",
-          "filter": "group_buff",
-          "type": "item_picker"
-        },
-        {
-          "id": "group.group8",
-          "label": "Group 8",
-          "filter": "group_buff",
-          "type": "item_picker"
-        },
-        {
-          "id": "group.group9",
-          "label": "Group 9",
-          "filter": "group_buff",
-          "type": "item_picker"
-        },
-        {
-          "id": "group.group10",
-          "label": "Group 10",
-          "filter": "group_buff",
-          "type": "item_picker"
-        },
-        {
-          "id": "group.group11",
-          "label": "Group 11",
-          "filter": "group_buff",
-          "type": "item_picker"
-        },
-        {
-          "id": "group.group12",
-          "label": "Group 12",
-          "filter": "group_buff",
-          "type": "item_picker"
-        },
-        {
-          "id": "group.group13",
-          "label": "Group 13",
-          "filter": "group_buff",
-          "type": "item_picker"
-        },
-        {
-          "id": "group.group14",
-          "label": "Group 14",
-          "filter": "group_buff",
-          "type": "item_picker"
-        },
-        {
-          "id": "group.group15",
-          "label": "Group 15",
-          "filter": "group_buff",
-          "type": "item_picker"
-        },
-        {
-          "id": "group.group16",
-          "label": "Group 16",
-          "filter": "group_buff",
-          "type": "item_picker"
-        },
-        {
-          "id": "group.group17",
-          "label": "Group 17",
-          "filter": "group_buff",
-          "type": "item_picker"
-        },
-        {
-          "id": "group.group18",
-          "label": "Group 18",
-          "filter": "group_buff",
-          "type": "item_picker"
-        },
-        {
-          "id": "group.group19",
-          "label": "Group 19",
-          "filter": "group_buff",
-          "type": "item_picker"
-        },
-        {
-          "id": "group.group20",
-          "label": "Group 20",
-          "filter": "group_buff",
-          "type": "item_picker"
-        },
-        {
-          "id": "group.group21",
-          "label": "Group 21",
-          "filter": "group_buff",
-          "type": "item_picker"
-        },
-        {
-          "id": "group.group22",
-          "label": "Group 22",
-          "filter": "group_buff",
-          "type": "item_picker"
-        },
-        {
-          "id": "group.group23",
-          "label": "Group 23",
-          "filter": "group_buff",
-          "type": "item_picker"
-        },
-        {
-          "id": "group.group24",
-          "label": "Group 24",
-          "filter": "group_buff",
-          "type": "item_picker"
-        },
-        {
-          "id": "group.group25",
-          "label": "Group 25",
-          "filter": "group_buff",
-          "type": "item_picker"
-        },
-        {
-          "id": "group.group26",
-          "label": "Group 26",
-          "filter": "group_buff",
-          "type": "item_picker"
-        },
-        {
-          "id": "group.group27",
-          "label": "Group 27",
-          "filter": "group_buff",
-          "type": "item_picker"
-        },
-        {
-          "id": "group.group28",
-          "label": "Group 28",
-          "filter": "group_buff",
-          "type": "item_picker"
+          "type": "item_picker_list",
+          "defaultRows": 0
         }
       ]
     },
@@ -1514,193 +1295,44 @@
           "id": "artifacts-dungeon",
           "label": "Artifacts - Dungeon",
           "choices": {
-            "artifactCall.artifactCall1": "mount-hag-s-enchanted-cauldroon",
-            "artifactCall.artifactCall2": "arti-scepter",
-            "artifactCall.artifactCall3": "mount-vortex-panther-necrotic",
-            "artifactCall.artifactCall4": "arti-mythalar",
-            "artifactCall.artifactCall5": "arti-demogorgon-s-reach",
-            "artifactCall.artifactCall6": "arti-crystal",
-            "artifactCall.artifactCall7": "arti-censer"
+            "artifactCall.artifactCall#1": "mount-hag-s-enchanted-cauldroon",
+            "artifactCall.artifactCall#2": "arti-scepter",
+            "artifactCall.artifactCall#3": "mount-vortex-panther-necrotic",
+            "artifactCall.artifactCall#4": "arti-mythalar",
+            "artifactCall.artifactCall#5": "arti-demogorgon-s-reach",
+            "artifactCall.artifactCall#6": "arti-crystal",
+            "artifactCall.artifactCall#7": "arti-censer"
           }
         },
         {
           "id": "artifacts-trial",
           "label": "Artifacts - Trial",
           "choices": {
-            "artifactCall.artifactCall1": "mount-hag-s-enchanted-cauldroon",
-            "artifactCall.artifactCall2": "arti-scepter",
-            "artifactCall.artifactCall3": "mount-vortex-panther-necrotic",
-            "artifactCall.artifactCall4": "arti-mythalar",
-            "artifactCall.artifactCall5": "arti-demogorgon-s-reach",
-            "artifactCall.artifactCall6": "arti-crystal",
-            "artifactCall.artifactCall7": "arti-censer",
-            "artifactCall.artifactCall8": "",
-            "artifactCall.artifactCall9": "mount-pegasus",
-            "artifactCall.artifactCall10": "arti-volcano-heart-of-black-dragon",
-            "artifactCall.artifactCall11": "mount-red-dragon",
-            "artifactCall.artifactCall12": "arti-tentacle-rod",
-            "artifactCall.artifactCall13": "arti-marco",
-            "artifactCall.artifactCall14": "arti-beacon",
-            "artifactCall.artifactCall15": "arti-spelljammer-lantern"
+            "artifactCall.artifactCall#1": "mount-hag-s-enchanted-cauldroon",
+            "artifactCall.artifactCall#2": "arti-scepter",
+            "artifactCall.artifactCall#3": "mount-vortex-panther-necrotic",
+            "artifactCall.artifactCall#4": "arti-mythalar",
+            "artifactCall.artifactCall#5": "arti-demogorgon-s-reach",
+            "artifactCall.artifactCall#6": "arti-crystal",
+            "artifactCall.artifactCall#7": "arti-censer",
+            "artifactCall.artifactCall#8": "",
+            "artifactCall.artifactCall#9": "mount-pegasus",
+            "artifactCall.artifactCall#10": "arti-volcano-heart-of-black-dragon",
+            "artifactCall.artifactCall#11": "mount-red-dragon",
+            "artifactCall.artifactCall#12": "arti-tentacle-rod",
+            "artifactCall.artifactCall#13": "arti-marco",
+            "artifactCall.artifactCall#14": "arti-beacon",
+            "artifactCall.artifactCall#15": "arti-spelljammer-lantern"
           }
         }
       ],
       "slots": [
         {
-          "id": "artifactCall.artifactCall1",
-          "label": "Artifact call 1",
+          "id": "artifactCall.artifactCall",
+          "label": "Artifact call buff",
           "filter": "artifact_call",
-          "type": "item_picker"
-        },
-        {
-          "id": "artifactCall.artifactCall2",
-          "label": "Artifact call 2",
-          "filter": "artifact_call",
-          "type": "item_picker"
-        },
-        {
-          "id": "artifactCall.artifactCall3",
-          "label": "Artifact call 3",
-          "filter": "artifact_call",
-          "type": "item_picker"
-        },
-        {
-          "id": "artifactCall.artifactCall4",
-          "label": "Artifact call 4",
-          "filter": "artifact_call",
-          "type": "item_picker"
-        },
-        {
-          "id": "artifactCall.artifactCall5",
-          "label": "Artifact call 5",
-          "filter": "artifact_call",
-          "type": "item_picker"
-        },
-        {
-          "id": "artifactCall.artifactCall6",
-          "label": "Artifact call 6",
-          "filter": "artifact_call",
-          "type": "item_picker"
-        },
-        {
-          "id": "artifactCall.artifactCall7",
-          "label": "Artifact call 7",
-          "filter": "artifact_call",
-          "type": "item_picker"
-        },
-        {
-          "id": "artifactCall.artifactCall8",
-          "label": "Artifact call 8",
-          "filter": "artifact_call",
-          "type": "item_picker"
-        },
-        {
-          "id": "artifactCall.artifactCall9",
-          "label": "Artifact call 9",
-          "filter": "artifact_call",
-          "type": "item_picker"
-        },
-        {
-          "id": "artifactCall.artifactCall10",
-          "label": "Artifact call 10",
-          "filter": "artifact_call",
-          "type": "item_picker"
-        },
-        {
-          "id": "artifactCall.artifactCall11",
-          "label": "Artifact call 11",
-          "filter": "artifact_call",
-          "type": "item_picker"
-        },
-        {
-          "id": "artifactCall.artifactCall12",
-          "label": "Artifact call 12",
-          "filter": "artifact_call",
-          "type": "item_picker"
-        },
-        {
-          "id": "artifactCall.artifactCall13",
-          "label": "Artifact call 13",
-          "filter": "artifact_call",
-          "type": "item_picker"
-        },
-        {
-          "id": "artifactCall.artifactCall14",
-          "label": "Artifact call 14",
-          "filter": "artifact_call",
-          "type": "item_picker"
-        },
-        {
-          "id": "artifactCall.artifactCall15",
-          "label": "Artifact call 15",
-          "filter": "artifact_call",
-          "type": "item_picker"
-        },
-        {
-          "id": "artifactCall.artifactCall16",
-          "label": "Artifact call 16",
-          "filter": "artifact_call",
-          "type": "item_picker"
-        },
-        {
-          "id": "artifactCall.artifactCall17",
-          "label": "Artifact call 17",
-          "filter": "artifact_call",
-          "type": "item_picker"
-        },
-        {
-          "id": "artifactCall.artifactCall18",
-          "label": "Artifact call 18",
-          "filter": "artifact_call",
-          "type": "item_picker"
-        },
-        {
-          "id": "artifactCall.artifactCall19",
-          "label": "Artifact call 19",
-          "filter": "artifact_call",
-          "type": "item_picker"
-        },
-        {
-          "id": "artifactCall.artifactCall20",
-          "label": "Artifact call 20",
-          "filter": "artifact_call",
-          "type": "item_picker"
-        },
-        {
-          "id": "artifactCall.artifactCall21",
-          "label": "Artifact call 21",
-          "filter": "artifact_call",
-          "type": "item_picker"
-        },
-        {
-          "id": "artifactCall.artifactCall22",
-          "label": "Artifact call 22",
-          "filter": "artifact_call",
-          "type": "item_picker"
-        },
-        {
-          "id": "artifactCall.artifactCall23",
-          "label": "Artifact call 23",
-          "filter": "artifact_call",
-          "type": "item_picker"
-        },
-        {
-          "id": "artifactCall.artifactCall24",
-          "label": "Artifact call 24",
-          "filter": "artifact_call",
-          "type": "item_picker"
-        },
-        {
-          "id": "artifactCall.artifactCall25",
-          "label": "Artifact call 25",
-          "filter": "artifact_call",
-          "type": "item_picker"
-        },
-        {
-          "id": "artifactCall.artifactCall26",
-          "label": "Artifact call 26",
-          "filter": "artifact_call",
-          "type": "item_picker"
+          "type": "item_picker_list",
+          "defaultRows": 0
         }
       ]
     },
@@ -1710,52 +1342,11 @@
       "label": "Misc",
       "slots": [
         {
-          "id": "misc.misc1",
-          "label": "Misc 1",
+          "id": "misc.misc",
+          "label": "Misc bonus",
           "filter": "misc",
-          "type": "item_picker"
-        },
-        {
-          "id": "misc.misc2",
-          "label": "Misc 2",
-          "filter": "misc",
-          "type": "item_picker"
-        },
-        {
-          "id": "misc.misc3",
-          "label": "Misc 3",
-          "filter": "misc",
-          "type": "item_picker"
-        },
-        {
-          "id": "misc.misc4",
-          "label": "Misc 4",
-          "filter": "misc",
-          "type": "item_picker"
-        },
-        {
-          "id": "misc.misc5",
-          "label": "Misc 5",
-          "filter": "misc",
-          "type": "item_picker"
-        },
-        {
-          "id": "misc.misc6",
-          "label": "Misc 6",
-          "filter": "misc",
-          "type": "item_picker"
-        },
-        {
-          "id": "misc.misc7",
-          "label": "Misc 7",
-          "filter": "misc",
-          "type": "item_picker"
-        },
-        {
-          "id": "misc.misc8",
-          "label": "Misc 8",
-          "filter": "misc",
-          "type": "item_picker"
+          "type": "item_picker_list",
+          "defaultRows": 0
         }
       ]
     }

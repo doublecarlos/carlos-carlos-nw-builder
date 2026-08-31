@@ -5,6 +5,7 @@ import { getPath } from "../lib/build-path";
 import { dynamicValueKey } from "../lib/dynamic-stats";
 import { label as statLabel } from "../lib/format";
 import { repetitionRows } from "../lib/inline-repetition";
+import { expandSlots } from "../lib/item-picker-list";
 import type {
   Build,
   BuildParameterSlot,
@@ -302,7 +303,7 @@ export function useCompareDiff(options: {
   const rowDiffsBySlot = computed(() => {
     const map = new Map<string, SlotDiff>();
     if (!compareBuild.value) return map;
-    for (const slot of db.value.slots) {
+    for (const slot of expandSlots(db.value.slots, build.value)) {
       const choice = differs(slot.id);
       const values = choice ? [] : valueDiffs(slot.id);
       const bonuses = choice ? [] : bonusDiffsFor(slot.id);

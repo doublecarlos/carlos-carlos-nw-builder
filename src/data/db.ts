@@ -7,6 +7,7 @@
 import { NW_ITEMS, NW_BONUSES, NW_SCHEMA, NW_SLOTS } from "./data";
 import { bonusIdOf } from "../lib/bonus-attachment";
 import { resolvedOptions } from "../lib/param-options";
+import { parseRowSlotId, rowSlot } from "../lib/item-picker-list";
 import type {
   Item,
   Bonus,
@@ -89,6 +90,19 @@ export function build(
     slotList.map((slot) => [slot.id, slot]),
   );
 
+  /** An authored slot, or the row an `item_picker_list` id addresses -- rows are not in
+   * `slotById`, since how many exist is a property of the build, not the catalogue. */
+  const slotFor = (slotId: string): Slot | undefined => {
+    const authored = slotById.get(slotId);
+    if (authored) return authored;
+    const row = parseRowSlotId(slotId);
+    if (!row) return undefined;
+    const list = slotById.get(row.listId);
+    return list?.type === "item_picker_list"
+      ? rowSlot(list, row.index)
+      : undefined;
+  };
+
   return {
     items,
     schema,
@@ -97,6 +111,7 @@ export function build(
     sections: slots?.sections ?? [],
     presets: slots?.presets ?? [],
     slotById,
+    slotFor,
     bonuses,
     bonusById,
     bonusMembers,
@@ -117,6 +132,8 @@ export function build(
      * `filter` to look up (it isn't an item choice at all). An item_picker slot resolves by
      * `tags` when set (union across every listed tag, de-duplicated, via `itemsByTag`) or by
      * `filter` otherwise -- `types.ts`'s `ItemPickerSlot` treats the two as mutually exclusive.
+     * An `item_picker_list` container answers with what its rows offer, resolved the same way,
+     * so a caller holding only the container needs no row to ask through.
      * For a point_assignment slot, only items that also carry `inlineRepetition` bounds qualify
      * (an item merely sharing the filter but missing that config could never render a valid
      * stepper), sorted by `inlineRepetition.priority` (default 0) then name -- item_picker's own
@@ -124,8 +141,8 @@ export function build(
      * author controls display order without an explicit list to reorder (slots.json used to hold
      * one), and these rows are all visible at once rather than being scanned in a dropdown. */
     forSlot(slotId: string) {
-      const slot = slotById.get(slotId);
-      if (slot?.type === "item_picker") {
+      const slot = slotFor(slotId);
+      if (slot?.type === "item_picker" || slot?.type === "item_picker_list") {
         if (slot.tags?.length) {
           const seen = new Set<string>();
           const matches: Item[] = [];
@@ -246,7 +263,7 @@ export function forSlotAndBuild(db: Db, slotId: string, build: Build): Item[] {
   // Published by the equipped class item rather than stored on the build -- `options.class` is
   // an ordinary item_picker now, so `context.class` no longer exists.
   const cls = publishedValue(db, build, "class") as string | undefined;
-  const slot = db.slotById.get(slotId);
+  const slot = db.slotFor(slotId);
   const counts =
     slot?.type === "item_picker" ? copyCounts(db, build, slotId) : null;
   return db
