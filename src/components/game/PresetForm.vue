@@ -39,11 +39,13 @@ import { deepEqual } from "../../lib/deep-equal";
 import { useDraftHistory } from "../../composables/useDraftHistory";
 import { occurrenceRows } from "../../composables/useItemBonusOccurrences";
 import { dynamicValueKey } from "../../lib/dynamic-stats";
+import { parseRowSlotId, rowSlot } from "../../lib/item-picker-list";
 import type {
   SectionPreset,
   Db,
   BuildParameterSlot,
   ItemPickerSlot,
+  ItemPickerListSlot,
   PointAssignmentSlot,
 } from "../../types";
 
@@ -289,10 +291,31 @@ const paramSlotOptions = computed(() =>
     .filter((slot) => slot.type === "build_parameter")
     .map((slot) => ({ value: slot.id, label: slot.label })),
 );
+/** An `item_picker_list`'s rows as pickable options: every row the draft already names, plus
+ *  one more so a preset can be extended a row at a time. A preset has no build to read a row
+ *  count off, so the draft's own reach is the count. */
+function listRowOptions(slot: ItemPickerListSlot, named: string[]) {
+  const highest = named.reduce((max, slotId) => {
+    const row = parseRowSlotId(slotId);
+    return row?.listId === slot.id ? Math.max(max, row.index) : max;
+  }, 0);
+  return Array.from({ length: highest + 1 }, (_, index) => {
+    const row = rowSlot(slot, index + 1);
+    return { value: row.id, label: row.label };
+  });
+}
+
 const itemSlotOptions = computed(() =>
-  slotsInSection.value
-    .filter((slot) => slot.type === "item_picker")
-    .map((slot) => ({ value: slot.id, label: slot.label })),
+  slotsInSection.value.flatMap((slot) => {
+    if (slot.type === "item_picker")
+      return [{ value: slot.id, label: slot.label }];
+    if (slot.type === "item_picker_list")
+      return listRowOptions(
+        slot,
+        draft.value.itemRows.map((row) => row.slotId),
+      );
+    return [];
+  }),
 );
 const assignmentSlotOptions = computed(() =>
   slotsInSection.value
@@ -303,14 +326,24 @@ const assignmentSlotOptions = computed(() =>
 /** Every value-holding slot in the section, whatever its type -- `clears` resets a slot rather
  *  than writing a typed value into it, so it isn't restricted to one of them. */
 const clearableSlotOptions = computed(() =>
-  slotsInSection.value
-    .filter(
-      (slot) =>
-        slot.type === "build_parameter" ||
-        slot.type === "item_picker" ||
-        slot.type === "point_assignment",
+  slotsInSection.value.flatMap((slot) => {
+    if (
+      slot.type === "build_parameter" ||
+      slot.type === "item_picker" ||
+      slot.type === "point_assignment"
     )
-    .map((slot) => ({ value: slot.id, label: slot.label })),
+      return [{ value: slot.id, label: slot.label }];
+    // A list offers both: the container, which resets every row, and each row on its own.
+    if (slot.type === "item_picker_list")
+      return [
+        { value: slot.id, label: slot.label },
+        ...listRowOptions(
+          slot,
+          draft.value.clearRows.map((row) => row.slotId),
+        ),
+      ];
+    return [];
+  }),
 );
 
 function paramSlotDef(slotId: string): BuildParameterSlot | undefined {
@@ -318,7 +351,7 @@ function paramSlotDef(slotId: string): BuildParameterSlot | undefined {
   return slot?.type === "build_parameter" ? slot : undefined;
 }
 function itemSlotDef(slotId: string): ItemPickerSlot | undefined {
-  const slot = props.db.slotById.get(slotId);
+  const slot = props.db.slotFor(slotId);
   return slot?.type === "item_picker" ? slot : undefined;
 }
 function assignmentSlotDef(slotId: string): PointAssignmentSlot | undefined {

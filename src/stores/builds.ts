@@ -7,6 +7,7 @@ import { useDebounceFn } from "@vueuse/core";
 import * as storage from "../storage/storage";
 import * as history from "./history";
 import * as landing from "./landing";
+import * as layers from "./layers";
 import * as trash from "./trash";
 import * as selection from "./selection";
 import * as folders from "./folders";

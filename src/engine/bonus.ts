@@ -8,6 +8,7 @@ import * as conditions from "./conditions";
 import { getPath } from "../lib/build-path";
 import { bonusIdOf, occurrenceCountFor } from "../lib/bonus-attachment";
 import { inlineRepetitionCount } from "../lib/inline-repetition";
+import { expandSlots } from "../lib/item-picker-list";
 import { readDynamicValue } from "../lib/dynamic-stats";
 import type {
   PublishConflict,
@@ -215,9 +216,17 @@ export function collect(
     { itemId: string; slotId: string; value: string | number | boolean }[]
   >();
 
-  db.slots.forEach((slot, order) => {
-    // A visual-only row: no choice, no item, nothing to attribute a bonus to.
-    if (slot.type === "separator" || slot.type === "text") return;
+  // Expanded, not `db.slots`: a list's rows are ordinary picks the engine has to resolve, and
+  // `order` is the expanded position, which is the order the editor renders in.
+  expandSlots(db.slots, build).forEach((slot, order) => {
+    // No choice, no item, nothing to attribute a bonus to -- a list container included, its
+    // rows carry the picks.
+    if (
+      slot.type === "separator" ||
+      slot.type === "text" ||
+      slot.type === "item_picker_list"
+    )
+      return;
 
     if (slot.type === "point_assignment") {
       const collected = collectInlineRepetition(

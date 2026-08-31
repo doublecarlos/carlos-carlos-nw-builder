@@ -8,6 +8,7 @@ import * as db from "../../src/data/db";
 import * as engine from "../../src/engine/engine";
 import { NW_SCHEMA } from "../../src/data/data";
 import { fromData } from "../../src/data/db";
+import { storedListRows } from "../../src/lib/item-picker-list";
 import type {
   Build,
   BuildContext,
@@ -156,6 +157,7 @@ function buildWith(
     values: {},
     assignments: {},
     occurrenceInputs: {},
+    listRows: storedListRows({ choices, values: {}, assignments: {} }),
     context: { ...CONTEXT, ...context },
     compare: { id: "", highlight: false, onlyDiff: false, statLines: false },
   } as unknown as Build;
@@ -351,7 +353,7 @@ describe("aura mount equips carry their own payload", () => {
   const shipped = fromData();
 
   const SELF_SLOT = "mounts.mountEquip";
-  const GROUP_SLOT = "group.group1";
+  const GROUP_SLOT = "group.group#1";
 
   function run(
     choices: Record<string, string>,
@@ -365,6 +367,7 @@ describe("aura mount equips carry their own payload", () => {
       values: {},
       assignments: {},
       occurrenceInputs,
+      listRows: storedListRows({ choices, values: {}, assignments: {} }),
       context: {
         class: "",
         role: "dps",

@@ -21,6 +21,7 @@ import { findParamSlot } from "../lib/build-path";
 import { resolvedOptions } from "../lib/param-options";
 import { deepEqual } from "../lib/deep-equal";
 import { bonusIdOf } from "../lib/bonus-attachment";
+import { parseRowSlotId, rowSlot } from "../lib/item-picker-list";
 import type {
   Item,
   Bonus,
@@ -34,6 +35,7 @@ import type {
   SectionPreset,
   BuildParameterSlot,
   ItemPickerSlot,
+  ItemPickerListSlot,
   Db,
   Build,
 } from "../types";
@@ -587,21 +589,32 @@ export function validateSlots(slots: Slot[]): LintFinding[] {
       }
       continue;
     }
-    if (slot.type === "item_picker") {
+    if (slot.type === "item_picker" || slot.type === "item_picker_list") {
       const hasFilter = !!slot.filter;
       const hasTags = !!slot.tags?.length;
       if (!hasFilter && !hasTags) {
         findings.push({
           level: "error",
           kind: "item",
-          message: `${slot.id}: item_picker slot has neither a filter nor tags`,
+          message: `${slot.id}: ${slot.type} slot has neither a filter nor tags`,
         });
       } else if (hasFilter && hasTags) {
         findings.push({
           level: "error",
           kind: "item",
-          message: `${slot.id}: item_picker slot has both a filter and tags -- pick one, resolving both is ambiguous`,
+          message: `${slot.id}: ${slot.type} slot has both a filter and tags -- pick one, resolving both is ambiguous`,
         });
+      }
+      if (slot.type === "item_picker_list") {
+        const rows = slot.defaultRows;
+        if (rows !== undefined && (!Number.isInteger(rows) || rows < 0)) {
+          findings.push({
+            level: "error",
+            kind: "item",
+            message: `${slot.id}: defaultRows must be a whole number of rows, got ${rows}`,
+          });
+        }
+        continue;
       }
       // With no `default` the only state `disallowEmpty` forbids is the one every fresh build
       // starts in.
@@ -706,13 +719,30 @@ const PRESET_FIELD_SLOT_TYPE = {
   assignments: ["point_assignment", "item_picker"],
 } as const;
 
-// The slot types `clears` can reset -- the three that hold a build value. A `separator`/`text`
-// slot has nothing to clear, so naming one is an authoring mistake rather than a no-op.
+// The slot types `clears` can reset -- those that hold a build value, an `item_picker_list`
+// included (naming the container resets every row it holds). A `separator`/`text` slot has
+// nothing to clear, so naming one is an authoring mistake rather than a no-op.
 const CLEARABLE_SLOT_TYPES: readonly Slot["type"][] = [
   "build_parameter",
   "item_picker",
+  "item_picker_list",
   "point_assignment",
 ];
+
+/** `slots` as a lookup that also answers for the row ids an `item_picker_list` expands into --
+ *  db.ts's `slotFor`, for the validators, which have a slot list but no `Db`. */
+function slotResolver(slots: Slot[]): (slotId: string) => Slot | undefined {
+  const byId = new Map(slots.map((slot) => [slot.id, slot]));
+  return (slotId) => {
+    const authored = byId.get(slotId);
+    if (authored) return authored;
+    const row = parseRowSlotId(slotId);
+    const list = row ? byId.get(row.listId) : undefined;
+    return list?.type === "item_picker_list"
+      ? rowSlot(list, row!.index)
+      : undefined;
+  };
+}
 
 /**
  * Lint every `SectionPreset`: a duplicate id, a reference to a slot id that doesn't exist, a
@@ -726,7 +756,7 @@ export function validatePresets(
   slots: Slot[],
 ): LintFinding[] {
   const findings: LintFinding[] = [];
-  const slotById = new Map(slots.map((slot) => [slot.id, slot]));
+  const resolve = slotResolver(slots);
   const seenIds = new Set<string>();
 
   for (const preset of presets) {
@@ -753,7 +783,7 @@ export function validatePresets(
       for (const slotId of Object.keys(
         preset[field as keyof typeof PRESET_FIELD_SLOT_TYPE] ?? {},
       )) {
-        const slot = slotById.get(slotId);
+        const slot = resolve(slotId);
         if (!slot) {
           findings.push({
             level: "error",
@@ -782,7 +812,7 @@ export function validatePresets(
     // `clears` is a bare list rather than a keyed map, and it accepts any of the three
     // value-holding slot types, so it can't ride the PRESET_FIELD_SLOT_TYPE loop above.
     for (const slotId of preset.clears ?? []) {
-      const slot = slotById.get(slotId);
+      const slot = resolve(slotId);
       if (!slot) {
         findings.push({
           level: "error",
@@ -985,8 +1015,13 @@ export function validate(
   const itemPickerFilters = new Set<string>(
     allSlots
       .filter(
-        (slot): slot is ItemPickerSlot & { filter: string } =>
-          slot.type === "item_picker" && !!slot.filter,
+        (
+          slot,
+        ): slot is (ItemPickerSlot | ItemPickerListSlot) & {
+          filter: string;
+        } =>
+          (slot.type === "item_picker" || slot.type === "item_picker_list") &&
+          !!slot.filter,
       )
       .map((slot) => slot.filter),
   );
@@ -995,7 +1030,10 @@ export function validate(
   // for the checks below even though it has no `filter` of its own.
   const itemPickerTags = new Set<string>(
     allSlots
-      .filter((slot) => slot.type === "item_picker")
+      .filter(
+        (slot) =>
+          slot.type === "item_picker" || slot.type === "item_picker_list",
+      )
       .flatMap((slot) => slot.tags ?? []),
   );
   const pointAssignmentFilters = new Set<string>(

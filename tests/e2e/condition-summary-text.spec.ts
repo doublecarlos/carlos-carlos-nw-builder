@@ -2,10 +2,10 @@
 // explain compound conditions, not just name the operator. Mystic Aura (Group) is gated on
 // `party AND NOT equipped(mystic-aura-self)`, which used to read "party enabled + not".
 import { test, expect, type Page } from "@playwright/test";
-import { openBuilder, slotRow, chooseItem } from "./support/app";
+import { openBuilder, slotRow, chooseItem, addListRows } from "./support/app";
 import { shippedItemName } from "./support/shippedData";
 
-const GROUP_SLOT = "group.group1";
+const GROUP_SLOT = "group.group#1";
 const MOUNT_SLOT = "mounts.mountEquip";
 
 /** Equips the group aura and the self aura the group aura's `not` gate excludes, then hovers
@@ -13,6 +13,8 @@ const MOUNT_SLOT = "mounts.mountEquip";
  *  which is exactly what equipping the self aura makes it. */
 async function openBlockedGroupAuraCard(page: Page) {
   await openBuilder(page);
+  // Group is an item_picker_list: a fresh build has no rows until one is added.
+  await addListRows(page, "group.group");
   await chooseItem(
     page,
     GROUP_SLOT,

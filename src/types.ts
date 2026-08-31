@@ -172,6 +172,9 @@ export interface ItemPickerSlot extends SlotVisibility {
    * not a stat line worth comparing rows by. Purely presentational -- candidate filtering
    * (`hideFromPicker`) is unaffected. */
   hidePreview?: boolean;
+  /** Set only on a row expanded from an `ItemPickerListSlot`: the container's id, which is
+   * what the row's remove button acts on. */
+  list?: string;
 }
 
 /** A row of independent numeric steppers sharing one label, one per item matching `filter` --
@@ -219,8 +222,32 @@ export interface TextSlot extends SlotVisibility {
   label?: string;
 }
 
+/**
+ * A variable-length run of item pickers over one selector. item-picker-list.ts expands it into
+ * that many ordinary `ItemPickerSlot`s, so everything downstream sees plain picks.
+ *
+ * Row ids are positional (`misc.misc#3`, 1-based to match the label), which is what lets a
+ * `SectionPreset` address rows through the same `choices`/`values`/`assignments` fields every
+ * other slot uses; removing a row therefore re-keys the ones below it.
+ *
+ * The container holds no value -- `Build.listRows` has its row count -- and renders only the
+ * row that adds another.
+ */
+export interface ItemPickerListSlot extends SlotVisibility {
+  id: string;
+  label: string;
+  section: string;
+  type: "item_picker_list";
+  /** Rows an empty build starts with. Usually 0. */
+  defaultRows?: number;
+  /** The exclusive `filter` XOR `tags` selector `ItemPickerSlot` carries, handed to every row. */
+  filter?: string;
+  tags?: string[];
+}
+
 export type Slot =
   | ItemPickerSlot
+  | ItemPickerListSlot
   | BuildParameterSlot
   | PointAssignmentSlot
   | SeparatorSlot
@@ -571,6 +598,9 @@ export interface Db {
   get(id: string | null | undefined): Item | null;
   forFilter(filter: string): Item[];
   forSlot(slotId: string): Item[];
+  /** `slotById.get`, extended to the row ids an `item_picker_list` expands into -- those exist
+   * per build, so they are never in the map, but their id alone names the row. */
+  slotFor(slotId: string): Slot | undefined;
   maxCopies(item: Item | null | undefined): number;
   bonusesFor(item: Item): BonusCandidate[];
 }
@@ -654,6 +684,9 @@ export interface Build {
    * own count (see `Item.bonuses`). A key absent here reads as that config's own `default` --
    * only explicit overrides a user made are stored. */
   occurrenceInputs: Record<string, Record<string, number>>;
+  /** Each `item_picker_list`'s row count, by container slot id. Stored rather than derived
+   * from `choices` so a row left empty is still a row. Absent reads as `defaultRows`. */
+  listRows: Record<string, number>;
   context: BuildContext;
   compare: BuildCompare;
   catalog?: CatalogOverlay;

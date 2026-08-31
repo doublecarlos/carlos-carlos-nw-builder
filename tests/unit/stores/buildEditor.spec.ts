@@ -774,3 +774,103 @@ describe("buildEditor undo labels", () => {
     expect(buildEditor.undoLabel.value).toContain("→ (none)");
   });
 });
+
+/**
+ * `misc.misc` is a shipped `item_picker_list`; `removeListRow` resolves its container off the
+ * composed catalogue, so these need a real slot rather than a local fixture.
+ */
+describe("buildEditor item_picker_list rows", () => {
+  const LIST = "misc.misc";
+  const row = (index: number) => `${LIST}#${index}`;
+
+  it("adds an empty row, and starts from the slot's own default count", async () => {
+    const { builds, buildEditor, resolved } = await freshStores();
+    const slot = resolved.db.value.slotById.get(LIST)!;
+    if (slot.type !== "item_picker_list") throw new Error("not a list slot");
+
+    expect(builds.build.value.listRows[LIST]).toBe(slot.defaultRows ?? 0);
+    buildEditor.addListRow(slot);
+    buildEditor.addListRow(slot);
+    expect(builds.build.value.listRows[LIST]).toBe((slot.defaultRows ?? 0) + 2);
+    expect(builds.build.value.choices[row(1)]).toBeUndefined();
+  });
+
+  it("closes the gap when a row in the middle is removed", async () => {
+    const { builds, buildEditor, resolved } = await freshStores();
+    const slot = resolved.db.value.slotById.get(LIST)!;
+    if (slot.type !== "item_picker_list") throw new Error("not a list slot");
+    for (let i = 0; i < 3; i += 1) buildEditor.addListRow(slot);
+
+    buildEditor.setChoice(row(1), "ItemA");
+    buildEditor.setChoice(row(2), "ItemB");
+    buildEditor.setChoice(row(3), "ItemC");
+    buildEditor.setDynamicValue(row(3), "power", "42");
+
+    buildEditor.removeListRow(row(2));
+
+    const build = builds.build.value;
+    expect(build.listRows[LIST]).toBe(2);
+    expect(build.choices[row(1)]).toBe("ItemA");
+    expect(build.choices[row(2)]).toBe("ItemC");
+    expect(build.choices[row(3)]).toBeUndefined();
+    expect(build.values[row(2)]).toEqual({ power: 42 });
+    expect(build.values[row(3)]).toBeUndefined();
+  });
+
+  it("undoes a removal as one step, rows and count together", async () => {
+    const { builds, buildEditor, resolved } = await freshStores();
+    const slot = resolved.db.value.slotById.get(LIST)!;
+    if (slot.type !== "item_picker_list") throw new Error("not a list slot");
+    buildEditor.addListRow(slot);
+    buildEditor.addListRow(slot);
+    buildEditor.setChoice(row(2), "ItemB");
+
+    buildEditor.removeListRow(row(1));
+    expect(builds.build.value.choices[row(1)]).toBe("ItemB");
+
+    buildEditor.undo();
+    expect(builds.build.value.listRows[LIST]).toBe(2);
+    expect(builds.build.value.choices[row(2)]).toBe("ItemB");
+    expect(builds.build.value.choices[row(1)]).toBeUndefined();
+  });
+
+  it("ignores a row that is past the end of the list", async () => {
+    const { builds, buildEditor, resolved } = await freshStores();
+    const slot = resolved.db.value.slotById.get(LIST)!;
+    if (slot.type !== "item_picker_list") throw new Error("not a list slot");
+    buildEditor.addListRow(slot);
+
+    buildEditor.removeListRow(row(4));
+    expect(builds.build.value.listRows[LIST]).toBe(1);
+  });
+
+  it("clearSection drops every row the list held", async () => {
+    const { builds, buildEditor, resolved } = await freshStores();
+    const slot = resolved.db.value.slotById.get(LIST)!;
+    if (slot.type !== "item_picker_list") throw new Error("not a list slot");
+    buildEditor.addListRow(slot);
+    buildEditor.addListRow(slot);
+    buildEditor.setChoice(row(2), "ItemB");
+
+    buildEditor.clearSection(slot.section, "Misc");
+
+    expect(builds.build.value.listRows[LIST]).toBe(slot.defaultRows ?? 0);
+    expect(builds.build.value.choices[row(2)]).toBeUndefined();
+  });
+
+  it("applyPreset grows a list to cover the rows it names", async () => {
+    const { builds, buildEditor, resolved } = await freshStores();
+    const slot = resolved.db.value.slotById.get(LIST)!;
+    if (slot.type !== "item_picker_list") throw new Error("not a list slot");
+
+    buildEditor.applyPreset({
+      id: "p",
+      label: "Preset",
+      section: slot.section,
+      choices: { [row(3)]: "ItemC" },
+    });
+
+    expect(builds.build.value.listRows[LIST]).toBe(3);
+    expect(builds.build.value.choices[row(3)]).toBe("ItemC");
+  });
+});

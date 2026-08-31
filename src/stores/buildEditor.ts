@@ -9,9 +9,16 @@ import { db } from "./resolved";
 import { getPath, setPath } from "../lib/build-path";
 import { deepEqual } from "../lib/deep-equal";
 import { repetitionRows } from "../lib/inline-repetition";
+import {
+  expandSlots,
+  listRowCount,
+  parseRowSlotId,
+  rowSlotId,
+} from "../lib/item-picker-list";
 import type {
   Build,
   BuildParameterSlot,
+  ItemPickerListSlot,
   ItemPickerSlot,
   PointAssignmentSlot,
   SectionPreset,
@@ -35,7 +42,14 @@ watch(
 );
 
 function slotLabel(slotId: string) {
-  return db.value.slotById.get(slotId)?.label ?? slotId;
+  return db.value.slotFor(slotId)?.label ?? slotId;
+}
+
+/** The active build's slot list with every `item_picker_list` expanded into the rows it holds
+ *  -- what every section-wide walk below iterates, so a list's rows are handled as the ordinary
+ *  picks they are. */
+function buildSlots(source?: Build | null) {
+  return expandSlots(db.value.slots, source ?? builds.build.value);
 }
 
 export function undo() {
@@ -82,6 +96,62 @@ export function setChoice(slotId: string, id: string) {
     // Same reasoning as `values`: an emptied slot keeps nothing of what was picked there.
     delete b.assignments[slotId];
   }
+}
+
+/** Every row id of `listId` this build stores anything under -- what a clear has to drop, and
+ *  not derivable from the row count alone once a stale key outlives a shortened list. */
+function listRowIds(b: Build, listId: string): string[] {
+  const ids = new Set<string>();
+  for (const field of [b.choices, b.values, b.assignments]) {
+    for (const key of Object.keys(field ?? {})) {
+      if (parseRowSlotId(key)?.listId === listId) ids.add(key);
+    }
+  }
+  return [...ids];
+}
+
+/** Everything a row stores, moved from one row id to another (or dropped, with no `to`). */
+function moveRow(b: Build, from: string, to?: string) {
+  const choice = b.choices[from];
+  const value = b.values[from];
+  const repetitions = b.assignments[from];
+  delete b.choices[from];
+  delete b.values[from];
+  delete b.assignments[from];
+  if (!to) return;
+  if (choice) b.choices[to] = choice;
+  if (value) b.values[to] = value;
+  if (repetitions) b.assignments[to] = repetitions;
+}
+
+/** Appends an empty row to an `item_picker_list`. */
+export function addListRow(slot: ItemPickerListSlot) {
+  const b = builds.build.value;
+  if (!b) return;
+  history.snapshot("build", b.id, null, `add ${slot.label} row`, b);
+  b.listRows[slot.id] = listRowCount(b, slot) + 1;
+}
+
+/**
+ * Drops one row of an `item_picker_list`, closing the gap: row ids are positional, so every
+ * row below the removed one shifts up by one and takes its stored pick, magnitudes and
+ * repetition counts with it.
+ */
+export function removeListRow(rowId: string) {
+  const b = builds.build.value;
+  if (!b) return;
+  const row = parseRowSlotId(rowId);
+  const slot = row ? db.value.slotById.get(row.listId) : undefined;
+  if (!row || slot?.type !== "item_picker_list") return;
+  const count = listRowCount(b, slot);
+  if (row.index > count) return;
+
+  history.snapshot("build", b.id, null, `remove ${slotLabel(rowId)}`, b);
+  for (let index = row.index; index < count; index += 1) {
+    moveRow(b, rowSlotId(row.listId, index + 1), rowSlotId(row.listId, index));
+  }
+  moveRow(b, rowSlotId(row.listId, count));
+  b.listRows[row.listId] = count - 1;
 }
 
 /** Sets one dynamic-stat value at one slot -- `key` is a `dynamicValueKey` (dynamic-stats.ts),
@@ -358,6 +428,7 @@ export function clearSlots() {
   b.choices = fresh.choices;
   b.values = {};
   b.assignments = fresh.assignments;
+  b.listRows = fresh.listRows;
 }
 
 export function resetAll() {
@@ -384,7 +455,13 @@ export function copySection(fromId: string, sectionIds: string[]) {
     b,
   );
   const wanted = new Set(sectionIds);
+  // Row counts first: the walk below is over the *source's* rows, so this build has to be as
+  // long as it before any of them can be copied across.
   for (const slot of db.value.slots) {
+    if (wanted.has(slot.section) && slot.type === "item_picker_list")
+      b.listRows[slot.id] = listRowCount(source, slot);
+  }
+  for (const slot of buildSlots(source)) {
     if (!wanted.has(slot.section)) continue;
 
     if (slot.type === "build_parameter") {
@@ -402,6 +479,8 @@ export function copySection(fromId: string, sectionIds: string[]) {
       b.assignments[slot.id] = rows;
       continue;
     }
+
+    if (slot.type !== "item_picker") continue;
 
     const choice = source.choices[slot.id];
     if (choice) b.choices[slot.id] = choice;
@@ -431,6 +510,14 @@ function clearSlot(b: Build, slot: Slot, fresh: Build) {
     return;
   }
 
+  if (slot.type === "item_picker_list") {
+    for (const rowId of listRowIds(b, slot.id)) moveRow(b, rowId);
+    b.listRows[slot.id] = fresh.listRows[slot.id] ?? 0;
+    return;
+  }
+
+  if (slot.type !== "item_picker") return;
+
   const seeded = fresh.choices[slot.id];
   if (seeded) b.choices[slot.id] = seeded;
   else delete b.choices[slot.id];
@@ -445,7 +532,7 @@ export function clearSection(sectionId: string, label: string) {
 
   history.snapshot("build", b.id, null, `clear section "${label}"`, b);
   const fresh = storage.defaultBuild();
-  for (const slot of db.value.slots) {
+  for (const slot of buildSlots()) {
     if (slot.section === sectionId) clearSlot(b, slot, fresh);
   }
 }
@@ -456,17 +543,40 @@ export function clearSection(sectionId: string, label: string) {
  * the section (and, within a `point_assignment` row, every item the preset doesn't name) is
  * left exactly as it was. One `history.snapshot` covers the whole apply as a single undo step.
  */
+/**
+ * Grows every `item_picker_list` the preset addresses to cover the highest row it names, so a
+ * preset authored against 15 rows applies whole to a build holding none. Growth only: a list
+ * already longer keeps its extra rows, the same way every other field of a preset merges.
+ */
+function growListsFor(b: Build, preset: SectionPreset) {
+  const named = [
+    ...(preset.clears ?? []),
+    ...Object.keys(preset.params ?? {}),
+    ...Object.keys(preset.choices ?? {}),
+    ...Object.keys(preset.values ?? {}),
+    ...Object.keys(preset.assignments ?? {}),
+  ];
+  for (const slotId of named) {
+    const row = parseRowSlotId(slotId);
+    const slot = row ? db.value.slotById.get(row.listId) : undefined;
+    if (!row || slot?.type !== "item_picker_list") continue;
+    b.listRows[row.listId] = Math.max(listRowCount(b, slot), row.index);
+  }
+}
+
 export function applyPreset(preset: SectionPreset) {
   const b = builds.build.value;
   if (!b) return;
 
   history.snapshot("build", b.id, null, `apply preset "${preset.label}"`, b);
 
+  growListsFor(b, preset);
+
   // First, so a slot named by both `clears` and a writing field below still ends up written.
   if (preset.clears?.length) {
     const fresh = storage.defaultBuild();
     for (const slotId of preset.clears) {
-      const slot = db.value.slotById.get(slotId);
+      const slot = db.value.slotFor(slotId);
       if (slot) clearSlot(b, slot, fresh);
     }
   }
@@ -529,7 +639,7 @@ export function presetFromSection(
       occurrences[itemId] = { ...counts };
   }
 
-  for (const slot of db.value.slots) {
+  for (const slot of buildSlots()) {
     if (slot.section !== sectionId) continue;
 
     if (slot.type === "build_parameter") {

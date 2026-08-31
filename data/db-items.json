@@ -1973,14 +1973,14 @@
   },
   {
     "id": "enemy-type-boss",
-    "name": "Boss",
-    "filter": "enemy_type",
+    "name": "Enemy: Boss",
+    "filter": "scenario_flag",
     "maxCopies": 1
   },
   {
     "id": "enemy-type-non-boss",
-    "name": "Non Boss",
-    "filter": "enemy_type",
+    "name": "Enemy: Non Boss",
+    "filter": "scenario_flag",
     "maxCopies": 1
   },
   {
@@ -2845,14 +2845,14 @@
   },
   {
     "id": "location-thay",
-    "name": "Thay",
-    "filter": "location",
+    "name": "Location: Thay",
+    "filter": "scenario_flag",
     "maxCopies": 1
   },
   {
     "id": "location-wildspace",
-    "name": "Wildspace",
-    "filter": "location",
+    "name": "Location: Wildspace",
+    "filter": "scenario_flag",
     "maxCopies": 1
   },
   {

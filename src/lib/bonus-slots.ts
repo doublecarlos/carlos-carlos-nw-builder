@@ -24,6 +24,10 @@ const cache = new WeakMap<Db, Map<string, Set<string>>>();
  * of each of its ~40 rows to decide which ones can offer the filter at all, and answering
  * them one at a time would walk the whole slot list once per row.
  *
+ * An `item_picker_list` is indexed under the container's id, not its rows' -- row count is not
+ * a catalogue fact, and this index is memoised per `Db`. Callers testing a rendered row against
+ * it check the row's `list` alongside its own id.
+ *
  * Candidates come from `db.forSlot`, not `forSlotAndBuild`: a slot the current class or a
  * `maxCopies` cap rules out is still where that bonus would come from, and hiding it would
  * answer a different question than the one asked.
@@ -34,7 +38,11 @@ function index(db: Db): Map<string, Set<string>> {
 
   const bySlot = new Map<string, Set<string>>();
   for (const slot of db.slots) {
-    if (slot.type !== "item_picker" && slot.type !== "point_assignment") {
+    if (
+      slot.type !== "item_picker" &&
+      slot.type !== "item_picker_list" &&
+      slot.type !== "point_assignment"
+    ) {
       continue;
     }
     for (const item of db.forSlot(slot.id)) {

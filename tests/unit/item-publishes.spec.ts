@@ -84,6 +84,7 @@ function testBuild(choices: Record<string, string> = {}): Build {
     values: {},
     assignments: {},
     occurrenceInputs: {},
+    listRows: {},
     context: {} as Build["context"],
     compare: { id: "", highlight: false, onlyDiff: false, statLines: false },
   };

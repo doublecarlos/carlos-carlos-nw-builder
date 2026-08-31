@@ -404,6 +404,13 @@ describe("catalog.validatePresets", () => {
       filter: "gear_head",
     },
     pointAssignmentSlot("boons.tier1", "boon_tier1"),
+    {
+      id: "misc.misc",
+      label: "Misc",
+      section: "misc",
+      type: "item_picker_list",
+      filter: "misc",
+    },
   ];
 
   const preset = (fields: Partial<SectionPreset>): SectionPreset => ({
@@ -443,6 +450,22 @@ describe("catalog.validatePresets", () => {
   it("reports a reference to an unknown slot id", () => {
     const findings = catalog.validatePresets(
       [preset({ params: { "options.nope": "x" } })],
+      slots,
+    );
+    expect(findings.some((f) => /not a known slot/.test(f.message))).toBe(true);
+  });
+
+  it("accepts a row of an item_picker_list under choices", () => {
+    const findings = catalog.validatePresets(
+      [preset({ section: "misc", choices: { "misc.misc#3": "x" } })],
+      slots,
+    );
+    expect(findings).toEqual([]);
+  });
+
+  it("reports a row id whose list does not exist", () => {
+    const findings = catalog.validatePresets(
+      [preset({ section: "misc", choices: { "misc.nope#3": "x" } })],
       slots,
     );
     expect(findings.some((f) => /not a known slot/.test(f.message))).toBe(true);
@@ -1395,6 +1418,7 @@ describe("catalog.referencedOverlay", () => {
       values: {},
       assignments: {},
       occurrenceInputs: {},
+      listRows: {},
       context: {} as Build["context"],
       compare: { id: "", highlight: false, onlyDiff: false, statLines: false },
     };
@@ -1412,6 +1436,7 @@ describe("catalog.referencedOverlay", () => {
       values: {},
       assignments: {},
       occurrenceInputs: {},
+      listRows: {},
       context: {} as Build["context"],
       compare: { id: "", highlight: false, onlyDiff: false, statLines: false },
     };
@@ -1444,6 +1469,7 @@ describe("catalog.referencedOverlay", () => {
       values: {},
       assignments: {},
       occurrenceInputs: {},
+      listRows: {},
       context: {} as Build["context"],
       compare: { id: "", highlight: false, onlyDiff: false, statLines: false },
     };
@@ -1464,6 +1490,7 @@ describe("catalog.referencedOverlay", () => {
       values: {},
       assignments: {},
       occurrenceInputs: {},
+      listRows: {},
       context: {} as Build["context"],
       compare: { id: "", highlight: false, onlyDiff: false, statLines: false },
     };
@@ -1491,6 +1518,7 @@ describe("catalog.referencedOverlay", () => {
       values: {},
       assignments: {},
       occurrenceInputs: {},
+      listRows: {},
       context: {} as Build["context"],
       compare: { id: "", highlight: false, onlyDiff: false, statLines: false },
     };
@@ -1514,6 +1542,7 @@ describe("catalog.referencedOverlay", () => {
       values: {},
       assignments: {},
       occurrenceInputs: {},
+      listRows: {},
       context: {} as Build["context"],
       compare: { id: "", highlight: false, onlyDiff: false, statLines: false },
     };
@@ -1543,6 +1572,7 @@ describe("catalog.referencedOverlay", () => {
       values: {},
       assignments: {},
       occurrenceInputs: {},
+      listRows: {},
       context: { race: "elf" } as unknown as Build["context"],
       compare: { id: "", highlight: false, onlyDiff: false, statLines: false },
     };

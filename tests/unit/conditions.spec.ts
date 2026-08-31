@@ -126,6 +126,7 @@ function testBuild(context: Record<string, unknown>): Build {
     values: {},
     assignments: {},
     occurrenceInputs: {},
+    listRows: {},
     context: context as unknown as Build["context"],
     compare: { id: "", highlight: false, onlyDiff: false, statLines: false },
   };

@@ -71,6 +71,20 @@ export async function blurToHeader(page: Page) {
   await page.getByTestId("app-header").click({ position: { x: 4, y: 4 } });
 }
 
+/** An `item_picker_list`'s add-a-row button, and the rows it grows. */
+export function listAddButton(page: Page, listId: string): Locator {
+  return page.getByTestId(`list-add:${listId}`);
+}
+
+/** Grows an `item_picker_list` by `count` rows and returns the last row added. */
+export async function addListRows(page: Page, listId: string, count = 1) {
+  const before = await slotRow(page, `${listId}#1`).count();
+  for (let i = 0; i < count; i += 1) await listAddButton(page, listId).click();
+  const last = before + count;
+  await expect(slotRow(page, `${listId}#${last}`)).toBeVisible();
+  return slotRow(page, `${listId}#${last}`);
+}
+
 export function pickerInput(row: Locator): Locator {
   return row.getByTestId("picker-input");
 }

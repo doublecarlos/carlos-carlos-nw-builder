@@ -15,6 +15,11 @@ import { fromData as baseDb, itemPublishing } from "../data/db";
 import * as idb from "./idb";
 import { setPath } from "../lib/build-path";
 import { deepEqual } from "../lib/deep-equal";
+import { storedListRows } from "../lib/item-picker-list";
+import {
+  migrateListSlots,
+  migrateOverlayListSlots,
+} from "./migrate-list-slots";
 import pkg from "../../package.json";
 import { showNotice } from "../stores/notice";
 import type {
@@ -148,15 +153,18 @@ export const newId = (prefix = "b") =>
 export function seededDefaults(
   slots: Slot[],
   db: Db,
-): Pick<Build, "context" | "choices" | "assignments"> {
+): Pick<Build, "context" | "choices" | "assignments" | "listRows"> {
   const root: { context: Record<string, unknown> } = { context: {} };
   const assignments: Build["assignments"] = {};
   const choices: Build["choices"] = {};
+  const listRows: Build["listRows"] = {};
   for (const slot of slots) {
     if (slot.type === "build_parameter" && slot.default !== undefined) {
       setPath(root.context, slot.path, slot.default);
     } else if (slot.type === "item_picker") {
       if (slot.default) choices[slot.id] = slot.default;
+    } else if (slot.type === "item_picker_list") {
+      listRows[slot.id] = slot.defaultRows ?? 0;
     } else if (slot.type === "point_assignment") {
       const row: Record<string, number> = {};
       for (const item of db.forSlot(slot.id))
@@ -168,6 +176,7 @@ export function seededDefaults(
     context: root.context as unknown as Build["context"],
     choices,
     assignments,
+    listRows,
   };
 }
 
@@ -183,7 +192,7 @@ export function defaultBuild(name = "New build"): Build {
   // Base catalogue only (no workspace overlay) -- same reach every other pure helper in this
   // file has, and enough to seed every shipped default. A default on an *overlay-added* slot
   // is not seeded here.
-  const { context, choices, assignments } = seededDefaults(
+  const { context, choices, assignments, listRows } = seededDefaults(
     NW_SLOTS.slots,
     baseDb(),
   );
@@ -194,6 +203,7 @@ export function defaultBuild(name = "New build"): Build {
     values: {},
     assignments,
     occurrenceInputs: {},
+    listRows,
     context,
     // The quick-compare picker (App.vue topbar). Saved with the build -- unlike `tab`, which
     // is pure session state -- so reopening a build remembers what you were sizing it up
@@ -254,6 +264,24 @@ const nestedNumbers = (
   return out;
 };
 
+/** `listRows`' own coercion: whole counts of 0 or more, falling back to each list's seeded
+ * default for a slot the payload doesn't mention, then grown to cover any row the payload
+ * actually stores something under -- a pick with no row would otherwise vanish silently. */
+const rowCounts = (
+  source: unknown,
+  base: Record<string, number>,
+  stored: Pick<Build, "choices" | "values" | "assignments">,
+): Record<string, number> => {
+  const out = { ...base };
+  for (const [slotId, value] of Object.entries(numbers(source))) {
+    out[slotId] = Math.max(Math.trunc(value), 0);
+  }
+  for (const [slotId, count] of Object.entries(storedListRows(stored))) {
+    out[slotId] = Math.max(out[slotId] ?? 0, count);
+  }
+  return out;
+};
+
 /**
  * Builds saved before `options.class` became an `item_picker` stored the class as a
  * bare `context.class` string. The value lives in `choices` like any other pick now, and is
@@ -295,14 +323,24 @@ export function normalise(
   // a save/reload/share round trip, so turning the feature on is a UI change and not a
   // migration. `App.vue` already folds `build.catalog` in as a catalogue layer.
   const perBuild: CatalogOverlay | null = isPlain(raw.catalog)
-    ? catalog.normaliseOverlay(raw.catalog)
+    ? migrateOverlayListSlots(catalog.normaliseOverlay(raw.catalog))
     : null;
 
+  // The snapshot is migrated too, or `sameContent` would read every migrated build as having
+  // diverged from its download the moment it loaded.
   const downloaded = isPlain(raw.downloaded)
-    ? (raw.downloaded as Build["downloaded"])
+    ? (migrateDownloaded(raw.downloaded, (snapshot) =>
+        normalise(snapshot, { keepId: true }),
+      ) as Build["downloaded"])
     : undefined;
 
-  const choices = migrateClassToChoice(strings(raw.choices), context);
+  // Both migrations run over the coerced maps, and this one over all three at once: renaming a
+  // pick onto its list row has to take that row's magnitudes and repetition counts with it.
+  const stored = migrateListSlots({
+    choices: migrateClassToChoice(strings(raw.choices), context),
+    values: nestedNumbers(raw.values, {}),
+    assignments: nestedNumbers(raw.assignments, base.assignments),
+  });
 
   return {
     ...base,
@@ -310,14 +348,15 @@ export function normalise(
     id: keepId && typeof raw.id === "string" && raw.id ? raw.id : base.id,
     name:
       typeof raw.name === "string" && raw.name.trim() ? raw.name : base.name,
-    choices,
+    choices: stored.choices,
     // No seeded defaults to fall back on (unlike `assignments`, which seeds every
     // point_assignment row's every item up front): a `DynamicStatConfig`'s own `default` is
     // read directly wherever the value is used (`readDynamicValue`) when a slot has no entry
     // here at all, same reasoning `occurrenceInputs` below already documents.
-    values: nestedNumbers(raw.values, {}),
-    assignments: nestedNumbers(raw.assignments, base.assignments),
+    values: stored.values,
+    assignments: stored.assignments,
     occurrenceInputs: nestedNumbers(raw.occurrenceInputs, {}),
+    listRows: rowCounts(raw.listRows, base.listRows, stored),
     // `context`'s pass-through fields (class/role/damageType) are not individually
     // validated -- the result is only knowable-safe by construction, not by the type
     // checker; hence the cast.
@@ -456,19 +495,32 @@ export function defaultLayer(name = "Layer"): Layer {
   };
 }
 
+/** A `downloaded` record with its snapshot put through the same coercion the live item gets,
+ *  so the two stay comparable (`sameContent`) across a migration. */
+function migrateDownloaded(
+  raw: Record<string, unknown>,
+  coerce: (snapshot: unknown) => unknown,
+): unknown {
+  if (!isPlain(raw.snapshot)) return raw;
+  return { ...raw, snapshot: coerce(raw.snapshot) };
+}
+
 /** Tolerant coercion, same spirit as `normalise`. */
 export function normaliseLayer(raw: unknown): Layer {
   const base = defaultLayer("Layer");
   if (!isPlain(raw)) return base;
   const downloaded = isPlain(raw.downloaded)
-    ? (raw.downloaded as Layer["downloaded"])
+    ? (migrateDownloaded(raw.downloaded, (snapshot) => {
+        const { downloaded: _nested, ...rest } = normaliseLayer(snapshot);
+        return rest;
+      }) as Layer["downloaded"])
     : undefined;
   return {
     id: typeof raw.id === "string" && raw.id ? raw.id : base.id,
     name:
       typeof raw.name === "string" && raw.name.trim() ? raw.name : base.name,
     enabled: typeof raw.enabled === "boolean" ? raw.enabled : true,
-    overlay: catalog.normaliseOverlay(raw.overlay),
+    overlay: migrateOverlayListSlots(catalog.normaliseOverlay(raw.overlay)),
     ...(downloaded ? { downloaded } : {}),
   };
 }
