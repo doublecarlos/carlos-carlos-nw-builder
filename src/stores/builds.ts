@@ -20,6 +20,11 @@ const SAVE_DEBOUNCE_MS = 250;
 const _builds = ref<Map<string, Build>>(new Map());
 const _loading = ref(true);
 
+/** The build this store keeps alive without anyone having asked for it -- minted below when
+ *  the pool would otherwise be empty, and unwritten until an edit or `commitActive` marks it
+ *  dirty. It is the one build that does not count as content: see `showLandingIfEmptied`. */
+let _placeholderId: string | null = null;
+
 /** Every build in sidebar order -- folder contents expanded in place, so the flat list the
  *  rest of the app reads (compare pickers, bundle export, the Go To palette) is unchanged by
  *  grouping. `folders.entries` is what the sidebar itself renders. */
@@ -59,6 +64,7 @@ export const build = computed(() => {
   const b = storage.defaultBuild("Build 1");
   _builds.value.set(b.id, b);
   buildOrder.value.push(b.id);
+  _placeholderId = b.id;
   return b;
 });
 
@@ -133,25 +139,8 @@ export function deleteBuild(id: string) {
   const b = _builds.value.get(id);
   if (!b) return;
 
-  // Deleting the last build drops back to the landing screen. A fresh build still takes its
-  // place underneath -- unwritten, exactly as on a first visit -- so the landing's "New build"
-  // has something to commit and every reader of `build.value` still finds one.
-  if (_builds.value.size < 2) {
-    clearDirty(id);
-    _builds.value.delete(id);
-    folders.removeBuild(id);
-    storage.deleteBuildRecord(id).catch(() => {});
-
-    trash._add("build", b);
-    showNotice(`Deleted "${b.name}"`);
-
-    const replacement = storage.defaultBuild("Build 1");
-    _builds.value.set(replacement.id, replacement);
-    folders.appendBuild(replacement.id);
-    selection.selectBuild(replacement.id);
-    landing.show();
-    return;
-  }
+  const wasLast = _builds.value.size < 2;
+  if (_placeholderId === id) _placeholderId = null;
 
   clearDirty(id);
   _builds.value.delete(id);
@@ -161,6 +150,19 @@ export function deleteBuild(id: string) {
   trash._add("build", b);
   showNotice(`Deleted "${b.name}"`);
 
+  // Deleting the last build hands a fresh one its place, so every reader of `build.value`
+  // still finds one. The builder stays up rather than dropping back to the landing screen:
+  // the build just deleted is sitting in the trash, and the landing would hide the nav that
+  // is the only way to restore it.
+  if (wasLast) {
+    const replacement = storage.defaultBuild("Build 1");
+    _builds.value.set(replacement.id, replacement);
+    folders.appendBuild(replacement.id);
+    _placeholderId = replacement.id;
+    selection.selectBuild(replacement.id);
+    return;
+  }
+
   if (
     selection.selection.value?.kind === "build" &&
     selection.selection.value.id === id
@@ -168,6 +170,18 @@ export function deleteBuild(id: string) {
     const next = folders.orderedBuildIds.value[0];
     if (next) selection.selectBuild(next);
   }
+}
+
+/** Raises the landing screen again if emptying the trash left the app with nothing at all:
+ *  no build anyone has written, no layers, and nothing else to restore. Lives here rather
+ *  than in trash.ts, which builds and layers both import, and it is this store that knows
+ *  which build is only a placeholder. */
+export function showLandingIfEmptied() {
+  const written = builds.value.some((b) => b.id !== _placeholderId);
+  if (written) return;
+  if (layers.layers.value.length > 0) return;
+  if (trash.trashed.value.length > 0) return;
+  landing.show();
 }
 
 /** Moves a build to `toIndex` inside `folderId` (the top level when null, the default).
@@ -357,6 +371,7 @@ const flushSaveDebounced = useDebounceFn(flushSave, SAVE_DEBOUNCE_MS);
 
 function markDirty(id: string) {
   if (_loading.value) return;
+  if (id === _placeholderId) _placeholderId = null;
   _dirtyIds.add(id);
   flushSaveDebounced();
 }
@@ -366,13 +381,16 @@ function clearDirty(id: string) {
 }
 
 // Deep-watch the active build so buildEditor.ts content edits (which mutate build.value in
-// place) trigger persistence of just that build's record. Never while the landing screen is
-// up: the build waiting behind it is a placeholder nobody has asked for yet, and writing it
-// would turn every visit that got as far as the landing into stored content.
+// place) trigger persistence of just that build's record. Only edits: a swap to a different
+// build is either one already stored or a placeholder nobody has asked for yet, and writing
+// that would turn "deleted my last build" into stored content. The mutations that mint real
+// builds all mark their own dirt. Never while the landing screen is up either, for the same
+// reason -- nothing behind it has been asked for.
 watch(
   () => build.value,
-  (b) => {
-    if (b && !_loading.value && !landing.showing.value) markDirty(b.id);
+  (b, prev) => {
+    if (b && b.id === prev?.id && !_loading.value && !landing.showing.value)
+      markDirty(b.id);
   },
   { deep: true },
 );

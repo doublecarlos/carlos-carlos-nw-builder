@@ -18,6 +18,17 @@ const working: Backend = {
   remove: async () => {},
 };
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** A store holding nothing but one deleted build, sitting in the trash since `deletedAt`. */
+const trashOnly = (deletedAt: number): Backend => ({
+  ...working,
+  getAll: async (store) =>
+    store === "trash"
+      ? [{ kind: "build", item: { id: "b1", name: "Build 1" }, deletedAt }]
+      : [],
+});
+
 /** Boots the stores from scratch against `backend`. Modules are reset first because every
  *  store here is a singleton, and the notice store deliberately latches its failure flag. */
 async function boot(backend: Backend) {
@@ -41,6 +52,25 @@ describe("hydrate", () => {
 
     expect(builds.loading.value).toBe(false);
     expect(notice.storageFailed.value).toBe(false);
+  });
+
+  it("raises the landing screen when nothing at all is stored", async () => {
+    const { landing } = await boot(working);
+
+    expect(landing.showing.value).toBe(true);
+  });
+
+  it("leaves the landing screen down when the trash still holds a deletion", async () => {
+    const { landing } = await boot(trashOnly(Date.now()));
+
+    // The landing screen covers the nav, which is the only way back to a deleted build.
+    expect(landing.showing.value).toBe(false);
+  });
+
+  it("raises the landing screen when the only deletions are past purging", async () => {
+    const { landing } = await boot(trashOnly(Date.now() - 8 * DAY_MS));
+
+    expect(landing.showing.value).toBe(true);
   });
 
   it("still finishes loading when storage refuses to open", async () => {

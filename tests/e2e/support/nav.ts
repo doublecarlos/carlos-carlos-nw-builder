@@ -105,6 +105,15 @@ export function recentlyDeletedHeader(page: Page): Locator {
   return page.locator("text=Recently deleted").locator("..");
 }
 
+/** Expands Recently deleted and permanently deletes its first entry. */
+export async function purgeFirstTrashEntry(page: Page) {
+  await recentlyDeletedHeader(page).click();
+  const menu = await openRowMenu(
+    page.getByTestId("nav-trash").locator(".nav-row").first(),
+  );
+  await confirmDangerAction(menu, "Delete permanently");
+}
+
 /** Clicks the Restore button on a trash entry. */
 export async function restoreTrash(page: Page) {
   await page

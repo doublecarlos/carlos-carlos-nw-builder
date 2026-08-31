@@ -298,6 +298,8 @@ function restoreTrashEntry(entry: TrashEntry) {
 
 function purgeTrash(entry: TrashEntry) {
   trash.purge(entry);
+  // Purging the last thing the app held puts it back where a first visit starts.
+  builds.showLandingIfEmptied();
   closeMenu();
 }
 
