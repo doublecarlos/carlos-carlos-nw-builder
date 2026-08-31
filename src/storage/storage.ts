@@ -781,6 +781,9 @@ export function toBundleJson(bundle: Bundle): string {
  * before the envelope existed -- an un-enveloped single build or array of them, and returns an
  * array either way. Throws only on unparseable text or a version/kind mismatch; structural
  * problems within a build are absorbed by `normalise`.
+ *
+ * Ids come back as the file wrote them; what happens to one already in use is
+ * `lib/import-plan.ts`'s decision.
  */
 export function parseJson(text: string): {
   builds: Build[];
@@ -791,7 +794,7 @@ export function parseJson(text: string): {
   const list = Array.isArray(data) ? data : [data];
   if (!list.length) throw new Error("no builds in that JSON");
   return {
-    builds: list.map((build) => normalise(build, { keepId: false })),
+    builds: list.map((build) => normalise(build)),
     catalogStale,
   };
 }
@@ -806,7 +809,11 @@ export function parseLayerJson(text: string): {
   return { layer: normaliseLayer(data), catalogStale };
 }
 
-/** Parse a bundle export. */
+/**
+ * Parse a bundle export. Builds, layers, folder membership and `compare.id` come back as the
+ * file wrote them; assigning final ids and remapping what names them is
+ * `lib/import-plan.ts`'s job, which needs the file's own ids to match against the workspace.
+ */
 export function parseBundleJson(text: string): {
   bundle: Bundle;
   catalogStale: boolean;
@@ -819,63 +826,21 @@ export function parseBundleJson(text: string): {
     folders?: unknown;
   };
 
-  const rawBuildList = bundle.builds ?? [];
-  const rawBuilds = rawBuildList.map((b: unknown) =>
-    normalise(b, { keepId: false }),
-  );
-  const rawLayers = (bundle.layers ?? []).map((l: unknown) =>
-    normaliseLayer(l),
-  );
-
-  // Fresh ids throughout, name collisions suffixed `(2)`
-  const seenBuildNames = new Set<string>();
-  const renamed = rawBuilds.map((b) => {
-    let name = b.name;
-    while (seenBuildNames.has(name)) name = `${name} (2)`;
-    seenBuildNames.add(name);
-    return { ...b, id: newId("b"), name };
-  });
-
-  const seenLayerNames = new Set<string>();
-  const layers = rawLayers.map((l) => {
-    let name = l.name;
-    while (seenLayerNames.has(name)) name = `${name} (2)`;
-    seenLayerNames.add(name);
-    return { ...l, id: newId("l"), name };
-  });
-
-  // Folder membership is by build id, and every build just got a fresh one -- so remap
-  // through the id the file was written with, taken from the raw entries (`normalise` has
-  // already discarded it by this point). A folder left with no members is dropped.
-  const remap = new Map<string, string>();
-  rawBuildList.forEach((raw: unknown, i: number) => {
-    if (isPlain(raw) && typeof raw.id === "string" && renamed[i])
-      remap.set(raw.id, renamed[i].id);
-  });
-
-  // `compare.id` points at a sibling build by the id the file was written with, so it needs
-  // the same remap the folder membership gets. One naming a build that is not in the bundle
-  // (a hand-edited file, or one written before the export scrubbed those) drops back to no
-  // comparison rather than leaving the picker on a build that does not exist.
-  const builds = renamed.map((b) => {
-    const target = remap.get(b.compare.id);
-    return target
-      ? { ...b, compare: { ...b.compare, id: target } }
-      : { ...b, compare: noCompare() };
-  });
+  const builds = (bundle.builds ?? []).map((b: unknown) => normalise(b));
+  const layers = (bundle.layers ?? []).map((l: unknown) => normaliseLayer(l));
 
   const folders = (Array.isArray(bundle.folders) ? bundle.folders : [])
     .filter(isPlain)
     .map((raw) => ({
-      id: newId("f"),
+      id: typeof raw.id === "string" && raw.id ? raw.id : newId("f"),
       name:
         typeof raw.name === "string" && raw.name.trim() ? raw.name : "Folder",
       collapsed: raw.collapsed === true,
-      builds: (Array.isArray(raw.builds) ? (raw.builds as unknown[]) : [])
-        .map((id) => (typeof id === "string" ? remap.get(id) : undefined))
-        .filter((id): id is string => id !== undefined),
-    }))
-    .filter((f) => f.builds.length > 0);
+      builds: (Array.isArray(raw.builds)
+        ? (raw.builds as unknown[])
+        : []
+      ).filter((id): id is string => typeof id === "string"),
+    }));
 
   return { bundle: { builds, layers, folders }, catalogStale };
 }

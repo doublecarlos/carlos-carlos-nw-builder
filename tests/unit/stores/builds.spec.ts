@@ -7,13 +7,14 @@ async function freshStores() {
   vi.resetModules();
   installWindowShim();
   const builds = await import("../../../src/stores/builds");
+  const landing = await import("../../../src/stores/landing");
   const layers = await import("../../../src/stores/layers");
   const selection = await import("../../../src/stores/selection");
   const trash = await import("../../../src/stores/trash");
   const buildEditor = await import("../../../src/stores/buildEditor");
   builds._setLoading(false);
   layers._setLoading(false);
-  return { builds, layers, selection, trash, buildEditor };
+  return { builds, landing, layers, selection, trash, buildEditor };
 }
 
 describe("builds store", () => {
@@ -54,7 +55,7 @@ describe("builds store", () => {
   });
 
   it("deleteBuild replaces the last build with an empty one", async () => {
-    const { builds, trash } = await freshStores();
+    const { builds, landing, trash } = await freshStores();
 
     // There should be exactly one build initially.
     expect(builds.builds.value.length).toBe(1);
@@ -69,6 +70,46 @@ describe("builds store", () => {
     expect(builds.builds.value.length).toBe(1);
     expect(builds.build.value.id).not.toBe(oldId);
     expect(builds.build.value.name).toBe("Build 1");
+
+    // The builder stays up: the landing screen would hide the trash the build just went to.
+    expect(landing.showing.value).toBe(false);
+  });
+
+  it("showLandingIfEmptied raises the landing once the last deletion is purged", async () => {
+    const { builds, landing, trash } = await freshStores();
+
+    builds.deleteBuild(builds.build.value.id);
+    expect(landing.showing.value).toBe(false);
+
+    trash.purge(trash.trashed.value[0]);
+    builds.showLandingIfEmptied();
+
+    // The build left standing is the placeholder this store keeps alive, which nobody wrote.
+    expect(builds.builds.value.length).toBe(1);
+    expect(landing.showing.value).toBe(true);
+  });
+
+  it("showLandingIfEmptied leaves the builder up while a layer remains", async () => {
+    const { builds, layers, landing, trash } = await freshStores();
+    layers.createLayer();
+
+    builds.deleteBuild(builds.build.value.id);
+    trash.purge(trash.trashed.value.find((e) => e.kind === "build")!);
+    builds.showLandingIfEmptied();
+
+    expect(landing.showing.value).toBe(false);
+  });
+
+  it("showLandingIfEmptied leaves the builder up for a build someone wrote", async () => {
+    const { builds, landing, trash } = await freshStores();
+    builds.createBuild();
+    const kept = builds.build.value.id;
+
+    builds.deleteBuild(builds.builds.value.find((b) => b.id !== kept)!.id);
+    trash.purge(trash.trashed.value[0]);
+    builds.showLandingIfEmptied();
+
+    expect(landing.showing.value).toBe(false);
   });
 
   it("moveBuild reorders within bounds", async () => {

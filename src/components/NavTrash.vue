@@ -38,7 +38,11 @@ defineEmits<{
 </script>
 
 <template>
-  <div v-if="entries.length" class="border-t border-line pt-1.5">
+  <div
+    v-if="entries.length"
+    class="border-t border-line pt-1.5"
+    data-testid="nav-trash"
+  >
     <div
       class="flex cursor-pointer select-none items-center justify-between px-1 py-0.5"
       @click="$emit('toggle-expand')"

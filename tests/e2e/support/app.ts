@@ -225,3 +225,28 @@ export function redoButton(page: Page): Locator {
 export function draftIndicator(page: Page): Locator {
   return page.getByTestId("draft-indicator");
 }
+
+/** Hands a JSON file to the header's Import button - the app's only file entry point. */
+export async function importText(
+  page: Page,
+  text: string,
+  name = "import.json",
+) {
+  await page
+    .getByTestId("app-header")
+    .locator('input[type="file"]')
+    .setInputFiles({
+      name,
+      mimeType: "application/json",
+      buffer: Buffer.from(text, "utf-8"),
+    });
+}
+
+/** Takes everything the import picker offers, as it stands. Only for files that raise it --
+ *  one with nothing to decide imports without ever showing it. */
+export async function confirmImport(page: Page) {
+  const picker = page.getByTestId("import-picker");
+  await expect(picker).toBeVisible();
+  await page.getByTestId("import-confirm").click();
+  await expect(picker).toBeHidden();
+}

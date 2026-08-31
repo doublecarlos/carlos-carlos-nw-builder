@@ -6,6 +6,7 @@
 // below specifically, not general coverage.
 import { test, expect, type Page } from "@playwright/test";
 import {
+  confirmImport,
   openBuilder,
   slotRow,
   occurrenceInput,
@@ -28,6 +29,7 @@ async function importText(page: Page, text: string) {
     mimeType: "application/json",
     buffer: Buffer.from(text, "utf-8"),
   });
+  await confirmImport(page);
   await expect(page.getByTestId("app-header")).toContainText(/imported/i);
 }
 

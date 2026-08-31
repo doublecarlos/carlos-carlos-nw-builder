@@ -7,7 +7,13 @@
 // overlay: an overlay re-declares a shipped slot by id, so the fixtures here own what they
 // assert instead of riding on whatever data/slots.json happens to say.
 import { test, expect, type Page } from "@playwright/test";
-import { openBuilder, slotRow, pickerInput, chooseItem } from "./support/app";
+import {
+  chooseItem,
+  confirmImport,
+  openBuilder,
+  pickerInput,
+  slotRow,
+} from "./support/app";
 import { shippedItemName } from "./support/shippedData";
 
 /** A shipped `scenario_flag` candidate, by id -- its display name is data, not a fixture. */
@@ -46,6 +52,7 @@ async function importOverlay(
       }),
     ),
   });
+  await confirmImport(page);
   await expect(page.getByTestId("quick-options")).toBeVisible();
 }
 
