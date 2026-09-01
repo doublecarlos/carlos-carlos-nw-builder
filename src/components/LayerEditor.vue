@@ -1193,7 +1193,10 @@ onUnmounted(() => {
         >{{ warnCount }} warning(s)</BaseBadge
       >
 
-      <BaseButton :active="showExport" @click="showExport = !showExport"
+      <BaseButton
+        :active="showExport"
+        data-testid="layer-export-toggle"
+        @click="showExport = !showExport"
         ><Download />Export…</BaseButton
       >
       <BaseButton as="label"
