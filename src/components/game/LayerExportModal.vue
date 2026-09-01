@@ -1,12 +1,12 @@
 <script setup lang="ts">
-// LayerEditor's export window: this layer's own raw overlay JSON, plus -- dev builds only --
-// the composed db-items/db-bonuses/slots files for regenerating the shipped data across every
-// enabled layer. Self-contained aside from which tab is active, which the parent keeps so
-// reopening it remembers the last tab.
+// LayerEditor's export window: this layer's own raw overlay JSON, plus -- for anyone who has
+// turned maintainer mode on -- the composed db-items/db-bonuses/slots files for regenerating
+// the shipped data across every enabled layer. Self-contained aside from which tab is active,
+// which the parent keeps so reopening it remembers the last tab.
 //
 // Modal rather than in-flow: you come here to copy or download a file and then leave, so
 // nothing behind it matters meanwhile, and the tabs want the room.
-import { computed, ref } from "vue";
+import { computed, ref, watchEffect } from "vue";
 import { Copy, Download } from "@lucide/vue";
 import BaseButton from "../ui/BaseButton.vue";
 import BaseModal from "../ui/BaseModal.vue";
@@ -15,6 +15,7 @@ import TabStrip from "../ui/TabStrip.vue";
 import TabButton from "../ui/TabButton.vue";
 import * as catalog from "../../data/catalog";
 import * as layers from "../../stores/layers";
+import * as maintainer from "../../stores/maintainer";
 import { NW_SLOTS } from "../../data/data";
 import type { CatalogOverlay } from "../../types";
 
@@ -31,25 +32,27 @@ const emit = defineEmits<{
 const activeTab = defineModel<string>({ default: "overlay" }); // items | bonuses | slots | overlay
 
 // The maintainer tabs (items/bonuses/slots) regenerate the shipped db-*.json files -- only
-// useful with the source repo on hand, so they're dev-only. `import.meta.env.DEV` is
-// statically replaced by Vite, so this branch is dead-code-eliminated from the production
-// build entirely -- including the dynamic import below, which means `catalogExport.ts`
-// (the module that actually composes those files) is never even fetched in production.
-const maintainerTabsEnabled = import.meta.env.DEV;
+// useful with the source repo on hand, so they stay behind an opt-in (stores/maintainer.ts).
+const maintainerTabsEnabled = maintainer.enabled;
 
+/** The tab actually in effect: the maintainer tabs collapse to "overlay" while the flag is
+ *  off, even if `activeTab` was left pointing at one of them (e.g. remembered from an
+ *  earlier session, or restored from a stale URL). */
+const effectiveTab = computed(() =>
+  maintainerTabsEnabled.value ? activeTab.value : "overlay",
+);
+
+// Fetched only once a maintainer tab is actually in effect, so a reader who never turns the
+// flag on never pays for `catalogExport.ts`: it stays a chunk of its own that the page does
+// not request.
 type CatalogExportModule = typeof import("../../data/catalogExport");
 const catalogExport = ref<CatalogExportModule | null>(null);
-if (maintainerTabsEnabled) {
+watchEffect(() => {
+  if (effectiveTab.value === "overlay" || catalogExport.value) return;
   import("../../data/catalogExport").then((mod) => {
     catalogExport.value = mod;
   });
-}
-
-/** The tab actually in effect: the maintainer tabs collapse to "overlay" in production,
- *  even if `activeTab` was left pointing at one of them (e.g. restored from a stale URL). */
-const effectiveTab = computed(() =>
-  maintainerTabsEnabled ? activeTab.value : "overlay",
-);
+});
 
 const exportText = computed(() => {
   if (effectiveTab.value === "items") {

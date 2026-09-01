@@ -2,10 +2,12 @@ import { createApp } from "vue";
 import App from "./App.vue";
 import "./base.css";
 import { initTheme } from "./stores/theme";
+import { initMaintainer } from "./stores/maintainer";
 import { hydrate } from "./stores/bootstrap";
 import { registerServiceWorker } from "./lib/service-worker";
 
 initTheme();
+initMaintainer();
 
 declare global {
   interface Window {

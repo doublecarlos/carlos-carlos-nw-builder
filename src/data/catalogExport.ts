@@ -1,8 +1,8 @@
 // Regenerates the shipped data/db-items.json, data/db-bonuses.json, and data/slots.json
 // bodies from the composed in-memory catalogue -- the maintainer path for pasting edits
 // made in the layer editor back into the repo. Kept in its own module, separate from
-// catalog.ts's core compose/upsert/etc, so LayerExportDrawer.vue can dynamic-import it and
-// keep this dev-only code out of the production bundle (see its `maintainerTabsEnabled`).
+// catalog.ts's core compose/upsert/etc, so LayerExportModal.vue can dynamic-import it and
+// leave it a chunk the page never requests unless maintainer mode is on.
 //
 // Produces valid JSON, so the result can replace db-items.json / db-bonuses.json wholesale
 // with no further editing (JSON has no comment syntax, so unlike the pre-JSON export there

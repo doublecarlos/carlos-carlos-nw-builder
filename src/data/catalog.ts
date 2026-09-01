@@ -1405,5 +1405,5 @@ export function validate(
 
 // `toItemsFile`/`toBonusesFile`/`toSlotsFile` -- regenerating the shipped data/*.json files
 // from the composed catalogue -- live in `catalogExport.ts`, not here: that keeps this
-// module free of the maintainer-only export code so it can be dynamic-imported and kept out
-// of the production bundle (see LayerExportDrawer.vue).
+// module free of the maintainer-only export code so it can be dynamic-imported and left
+// unfetched unless maintainer mode is on (see LayerExportModal.vue).

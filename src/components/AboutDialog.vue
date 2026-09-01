@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import BaseModal from "./ui/BaseModal.vue";
+import BaseCheckbox from "./ui/BaseCheckbox.vue";
 import { ExternalLink } from "@lucide/vue";
 import { APP_VERSION, DISCLAIMER, ISSUES_URL, REPO_URL } from "../lib/app-info";
+import { enabled as maintainerEnabled } from "../stores/maintainer";
 
 defineEmits<{ close: [] }>();
 </script>
@@ -58,6 +60,22 @@ defineEmits<{ close: [] }>();
           <ExternalLink class="size-[14px]" />
           Privacy
         </a>
+      </div>
+
+      <!-- The one place the maintainer flag can be turned back off: `?maintainer=1` sets it
+           but does not stay in the URL, so without this it would be unreachable to anyone
+           who had not memorised the param. -->
+      <div class="flex flex-col gap-1 border-t border-line pt-3">
+        <BaseCheckbox
+          v-model="maintainerEnabled"
+          data-testid="about-maintainer"
+        >
+          Maintainer tools
+        </BaseCheckbox>
+        <p class="text-xs text-muted">
+          Adds tabs to a layer's export window for regenerating this app's JSON
+          data files. Only useful alongside a checkout of the source.
+        </p>
       </div>
 
       <p
