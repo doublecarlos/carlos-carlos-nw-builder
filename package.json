@@ -9,6 +9,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "port": "tsx ports.ts",
+    "data-server": "tsx scripts/data-server.ts",
     "fix": "npm run regen-data && prettier --write . && eslint . --fix --cache",
     "regen-data": "tsx scripts/regen-data.ts",
     "icons": "tsx scripts/generate-icons.ts",

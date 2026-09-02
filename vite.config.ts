@@ -5,6 +5,7 @@ import { createRequire } from "node:module";
 import { readFile } from "node:fs/promises";
 import { DEV_PORT } from "./ports";
 import { APP_DEFINES } from "./build-info";
+import { writebackPlugin } from "./scripts/writeback";
 
 const require_ = createRequire(import.meta.url);
 
@@ -69,7 +70,7 @@ const tesseractAssets = (): Plugin => {
 };
 
 export default defineConfig({
-  plugins: [vue(), tailwindcss(), tesseractAssets()],
+  plugins: [vue(), tailwindcss(), tesseractAssets(), writebackPlugin()],
   define: APP_DEFINES,
   server: {
     port: DEV_PORT,
