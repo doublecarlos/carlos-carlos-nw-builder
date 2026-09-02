@@ -13,6 +13,7 @@ import { NW_SLOTS, NW_CATALOG_VERSION } from "../data/data";
 import * as catalog from "../data/catalog";
 import { fromData as baseDb, itemPublishing } from "../data/db";
 import * as idb from "./idb";
+import { APP_COMMIT } from "../lib/app-info";
 import { setPath } from "../lib/build-path";
 import { deepEqual } from "../lib/deep-equal";
 import { storedListRows } from "../lib/item-picker-list";
@@ -62,6 +63,7 @@ export interface Envelope<T> {
   kind: EnvelopeKind;
   catalog: number;
   app?: string;
+  commit?: string;
   exported?: number;
   data: T;
 }
@@ -72,6 +74,7 @@ function wrap<T>(kind: EnvelopeKind, data: T): Envelope<T> {
     kind,
     catalog: NW_CATALOG_VERSION,
     app: pkg.version,
+    commit: APP_COMMIT,
     exported: Date.now(),
     data,
   };

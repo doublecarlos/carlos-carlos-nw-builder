@@ -6,6 +6,7 @@
 import { describe, expect, it, beforeEach } from "vitest";
 import { installWindowShim, installIdbShim } from "./stores/window-shim";
 import * as storage from "../../src/storage/storage";
+import { APP_COMMIT } from "../../src/lib/app-info";
 import * as catalog from "../../src/data/catalog";
 import { NW_CATALOG_VERSION, NW_ITEMS } from "../../src/data/data";
 import type { AppMeta, CatalogOverlay, Build, Db } from "../../src/types";
@@ -49,6 +50,13 @@ describe("parseJson (single-build import)", () => {
     expect(builds).toHaveLength(1);
     expect(builds[0].name).toBe("Exported");
     expect(catalogStale).toBe(false);
+  });
+
+  it("stamps the build it was exported from onto the envelope", () => {
+    const envelope = JSON.parse(
+      storage.toBuildJson(storage.defaultBuild("Stamped")),
+    ) as { commit?: string };
+    expect(envelope.commit).toBe(APP_COMMIT);
   });
 
   it("still accepts an un-enveloped single build or array (backward compatibility)", () => {

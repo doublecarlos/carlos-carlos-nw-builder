@@ -2,6 +2,7 @@
 // build-info.ts.
 
 export const APP_VERSION = __APP_VERSION__;
+export const APP_COMMIT = __APP_COMMIT__;
 export const REPO_URL = __APP_REPO_URL__;
 export const ISSUES_URL = __APP_ISSUES_URL__;
 

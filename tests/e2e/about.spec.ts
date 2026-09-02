@@ -77,3 +77,13 @@ test("About closes on Escape and hands focus back", async ({ page }) => {
   await expect(page.getByTestId("about-dialog")).toHaveCount(0);
   await expect(page.getByTestId("header-about")).toBeFocused();
 });
+
+test("About names the commit this build came from", async ({ page }) => {
+  await openBuilder(page);
+  await page.getByTestId("header-about").click();
+
+  // A checkout without git history builds as "unknown".
+  await expect(page.getByTestId("about-build")).toHaveText(
+    /^\s*Build ([0-9a-f]{7}|unknown)\s*$/,
+  );
+});

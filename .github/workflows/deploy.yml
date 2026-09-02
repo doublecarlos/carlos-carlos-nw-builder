@@ -1,0 +1,36 @@
+name: deploy
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      # The Search Console file is kept out of the repo, so the deploy is the only place it
+      # can be added. An unset secret fails here rather than quietly unverifying the site.
+      - name: Add the Search Console verification file
+        env:
+          GSC_FILE: ${{ secrets.GSC_VERIFICATION_FILE }}
+          GSC_TOKEN: ${{ secrets.GSC_VERIFICATION_TOKEN }}
+        run: |
+          test -n "$GSC_FILE" && test -n "$GSC_TOKEN"
+          printf '%s' "$GSC_TOKEN" > "dist/$GSC_FILE"
+      - uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy dist --project-name=carloscarlosnwbuilder --branch=main
