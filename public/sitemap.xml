@@ -1,9 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Two entries: the app, and the privacy notice that is a real file rather than a view of it.
-     Nothing else earns a line -- routing lives in the query string, so every deep link is the
-     app with local state attached and canonicalises back to it.
-     No <lastmod>: nothing in the build would keep it honest, and a stale date is worse than
-     none at all. -->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://carloscarlosnwbuilder.pages.dev/</loc>
