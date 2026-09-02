@@ -2,7 +2,13 @@
 import BaseModal from "./ui/BaseModal.vue";
 import BaseCheckbox from "./ui/BaseCheckbox.vue";
 import { ExternalLink } from "@lucide/vue";
-import { APP_VERSION, DISCLAIMER, ISSUES_URL, REPO_URL } from "../lib/app-info";
+import {
+  APP_COMMIT,
+  APP_VERSION,
+  DISCLAIMER,
+  ISSUES_URL,
+  REPO_URL,
+} from "../lib/app-info";
 import { enabled as maintainerEnabled } from "../stores/maintainer";
 
 defineEmits<{ close: [] }>();
@@ -20,6 +26,9 @@ defineEmits<{ close: [] }>();
         <p class="font-semibold">Carlos Carlos' NW Builder</p>
         <p class="text-muted" data-testid="about-version">
           Version {{ APP_VERSION }}
+        </p>
+        <p class="text-xs text-muted" data-testid="about-build">
+          Build {{ APP_COMMIT }}
         </p>
         <p class="text-muted">
           A build planner for Neverwinter. Everything runs in your browser -- no

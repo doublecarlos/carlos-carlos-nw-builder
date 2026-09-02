@@ -3,6 +3,7 @@
 import { describe, expect, it } from "vitest";
 import { createRequire } from "node:module";
 import {
+  APP_COMMIT,
   APP_VERSION,
   DISCLAIMER,
   ISSUES_URL,
@@ -18,6 +19,10 @@ const pkg = createRequire(import.meta.url)("../../package.json") as {
 describe("app info", () => {
   it("reports the published package version", () => {
     expect(APP_VERSION).toBe(pkg.version);
+  });
+
+  it("identifies the commit the bundle was built from", () => {
+    expect(APP_COMMIT).toMatch(/^([0-9a-f]{7}|unknown)$/);
   });
 
   it("links to pages a browser can open, not clone URLs", () => {

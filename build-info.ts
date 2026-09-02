@@ -4,6 +4,7 @@
 // and vitest.config.ts -- code that reads them has to compile under the unit suite too, where
 // there is no Vite build to supply them.
 import { createRequire } from "node:module";
+import { execFileSync } from "node:child_process";
 
 const pkg = createRequire(import.meta.url)("./package.json") as {
   version: string;
@@ -17,8 +18,24 @@ const browsableRepoUrl = pkg.repository.url
   .replace(/^git\+/, "")
   .replace(/\.git$/, "");
 
+/** CI exports GITHUB_SHA; a local build asks the checkout. Neither is available when the
+ *  source is built from an archive. */
+const buildCommit = (): string => {
+  const fromCi = process.env.GITHUB_SHA;
+  if (fromCi != null && fromCi !== "") return fromCi.slice(0, 7);
+  try {
+    return execFileSync("git", ["rev-parse", "--short=7", "HEAD"], {
+      encoding: "utf-8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim();
+  } catch {
+    return "unknown";
+  }
+};
+
 export const APP_DEFINES = {
   __APP_VERSION__: JSON.stringify(pkg.version),
+  __APP_COMMIT__: JSON.stringify(buildCommit()),
   __APP_REPO_URL__: JSON.stringify(browsableRepoUrl),
   __APP_ISSUES_URL__: JSON.stringify(pkg.bugs.url),
 };
