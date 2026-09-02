@@ -356,8 +356,12 @@ export interface Item {
    * through an `item_picker` slot -- e.g. a Paragon item defaulting Role and Forte to its
    * canonical spec. Same shape as `SectionPreset.params`. Applied once at pick time
    * (`buildEditor.ts`'s `setChoice`); the fields stay ordinary editable params afterward, so a
-   * player can still override them for a "what-if" build. */
-  defaultParams?: Record<string, string | number | boolean>;
+   * player can still override them for a "what-if" build.
+   *
+   * Values are optional because entries declare different key sets: the shipped JSON's
+   * inferred type gives an absent key `?: undefined` on entries whose siblings do declare
+   * it, which a bare index signature rejects. No entry ever holds an explicit undefined. */
+  defaultParams?: Record<string, string | number | boolean | undefined>;
   /** Context path to the value this item asserts *while it is equipped* -- e.g. a class item
    * publishing `{ "class": "bard" }`. Continuous and derived: never stored on the build, never
    * user-editable, and gone the moment the item is unequipped. bonus.ts's `collect()` folds it
