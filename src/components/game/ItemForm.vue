@@ -17,6 +17,7 @@ import FormBar from "../ui/FormBar.vue";
 import FormField from "../ui/FormField.vue";
 import FormGrid from "../ui/FormGrid.vue";
 import IdField from "../ui/IdField.vue";
+import OcrTextField from "../ui/OcrTextField.vue";
 import FormSection from "../ui/FormSection.vue";
 import { NW_SCHEMA } from "../../data/data";
 import { findParamSlot } from "../../lib/build-path";
@@ -1032,10 +1033,10 @@ watch(
           label="Short (shown next to the stat summary)"
           class="min-w-80 flex-1"
         >
-          <input
+          <OcrTextField
             v-model="draft.shortDescription"
-            class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-            type="text"
+            single-line
+            :rows="2"
             data-testid="item-short-description-input"
             placeholder="e.g. AP when killing mobs"
           />
@@ -1044,13 +1045,12 @@ watch(
           label="Long (shown on the hover card)"
           class="min-w-80 flex-1"
         >
-          <textarea
+          <OcrTextField
             v-model="draft.longDescription"
-            class="w-full resize-y rounded-md border border-line bg-surface p-2"
-            rows="2"
+            :rows="2"
             data-testid="item-long-description-input"
             placeholder="e.g. When you kill an enemy, gain 3% Action Points."
-          ></textarea>
+          />
         </FormField>
       </FormGrid>
     </div>
