@@ -11,8 +11,9 @@
 // `boolean` is the one case with a default slot: BaseCheckbox's clickable label is *inside* the
 // control (a bigger, more natural click target), so the caller passes its label as slot content
 // instead of rendering a separate label element the way the other three paramTypes need.
-import { ref, nextTick, useTemplateRef } from "vue";
+import { ref, useTemplateRef } from "vue";
 import ComboBox from "../ui/ComboBox.vue";
+import type { ComboBoxExposed } from "../ui/ComboBox.vue";
 import PercentInput from "../ui/PercentInput.vue";
 import BaseCheckbox from "../ui/BaseCheckbox.vue";
 import type { BuildParameterSlot } from "../../types";
@@ -51,14 +52,15 @@ function onNumber(event: Event) {
 
 // --- keyboard cursor integration ---------------------------------------------------------
 
-const comboboxInstance = ref<InstanceType<typeof ComboBox> | null>(null);
+const comboboxInstance = ref<ComboBoxExposed | null>(null);
 const root = useTemplateRef("root");
 
 /** Focus the underlying input. For a list-type this opens the combobox and positions the
- *  cursor inside its input; for other types it just focuses the control. */
+ *  cursor inside its input; for other types it just focuses the control -- which is a plain
+ *  input this component owns, so it is the one case that still looks the element up itself. */
 function focusControl() {
   if (comboboxInstance.value) {
-    comboboxInstance.value.$el?.querySelector("input")?.focus();
+    comboboxInstance.value.focusInput();
     return;
   }
   root.value?.querySelector("input")?.focus();
@@ -66,20 +68,8 @@ function focusControl() {
 
 /** Open a list-type control and seed its query with `char`. No-op for other types. */
 function focusAndSeed(char: string) {
-  if (props.slotDef.paramType === "list") {
-    focusControl();
-    nextTick(() => {
-      const input = comboboxInstance.value?.$el?.querySelector(
-        "input",
-      ) as HTMLInputElement | null;
-      if (input) {
-        input.value = char;
-        input.dispatchEvent(new Event("input", { bubbles: true }));
-      }
-    });
-  } else {
-    focusControl();
-  }
+  if (comboboxInstance.value) comboboxInstance.value.focusAndSeed(char);
+  else focusControl();
 }
 
 defineExpose({ focus: focusControl, focusAndSeed });

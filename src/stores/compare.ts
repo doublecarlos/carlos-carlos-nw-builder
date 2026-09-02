@@ -3,12 +3,11 @@
 // what it was being compared against -- but deliberately not undo-tracked.
 import { computed } from "vue";
 import * as builds from "./builds";
+import type { BuildOption } from "../types";
 
-export const compareOptions = computed(() => [
+export const compareOptions = computed<BuildOption[]>(() => [
   { value: "", label: "- none -" },
-  ...builds.builds.value
-    .filter((b) => b.id !== builds.build.value?.id)
-    .map((b) => ({ value: b.id, label: b.name })),
+  ...builds.otherBuilds.value,
 ]);
 
 export const compareBuild = computed(() => {

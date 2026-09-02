@@ -723,6 +723,16 @@ export interface BuildFolder {
   builds: string[];
 }
 
+/** A build offered as a picker choice, outside the sidebar that shows the grouping. `folder`
+ * is what keeps two same-named builds in different folders apart; absent for a build sitting
+ * at the top level. `BuildComboBox.vue` renders these, in sidebar order -- which is what lets
+ * it draw one heading per folder rather than repeating the name on every row. */
+export interface BuildOption {
+  value: string;
+  label: string;
+  folder?: string;
+}
+
 /** One row-group under the sidebar's Builds heading: a build sitting at the top level, or a
  * folder together with the builds it holds. What `NavBuilds.vue` renders. */
 export type BuildNavEntry =

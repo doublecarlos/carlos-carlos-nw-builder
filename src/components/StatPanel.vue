@@ -7,6 +7,7 @@
 // over the cap, negative is spare headroom), coloured independently since they cap separately.
 import { ref, computed } from "vue";
 import ComboBox from "./ui/ComboBox.vue";
+import BuildComboBox from "./game/BuildComboBox.vue";
 import BaseCheckbox from "./ui/BaseCheckbox.vue";
 import IconButton from "./ui/IconButton.vue";
 import { CircleAlert } from "@lucide/vue";
@@ -565,7 +566,7 @@ const {
           </tr>
           <tr class="border border-line">
             <td class="px-1 py-0.5">
-              <ComboBox
+              <BuildComboBox
                 class="compare-select"
                 :model-value="build.compare.id"
                 :options="compare.compareOptions.value"

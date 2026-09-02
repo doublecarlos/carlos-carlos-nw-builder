@@ -4,6 +4,7 @@ import { expandSlots } from "../lib/item-picker-list";
 import type { GoToEntry } from "../lib/go-to";
 import * as engine from "../stores/resolved";
 import * as builds from "../stores/builds";
+import * as folders from "../stores/folders";
 import * as layers from "../stores/layers";
 
 /**
@@ -67,6 +68,9 @@ export function useGoToEntries() {
         kind: "build",
         id: build.id,
         label: build.name,
+        // Same disambiguation the build pickers show: two builds can share a name across
+        // folders, and the palette lists them with nothing else to tell them apart.
+        detail: folders.folderOf(build.id)?.name,
       });
     }
     for (const layer of layers.layers.value) {

@@ -3,7 +3,14 @@
 // the header affordance that tells anyone it exists.
 import { test, expect, type Page } from "@playwright/test";
 import { openBuilder, headerRow, cursorRow, slotRow } from "./support/app";
-import { addBuild, buildRow } from "./support/nav";
+import {
+  addBuild,
+  addFolder,
+  buildRow,
+  folderRow,
+  openRowMenu,
+  renameViaSidebar,
+} from "./support/nav";
 
 const palette = (page: Page) => page.getByTestId("go-to-palette");
 const input = (page: Page) => page.getByTestId("go-to-input");
@@ -235,6 +242,22 @@ test.describe("choosing a destination", () => {
 
     await expect(buildRow(page, "Build 1")).toHaveClass(/is-active/);
     await expect(palette(page)).toBeHidden();
+  });
+
+  test("a build row names the folder holding it", async ({ page }) => {
+    await openBuilder(page);
+    await addBuild(page);
+    await addFolder(page);
+    await renameViaSidebar(page, folderRow(page, "Folder 1"), "Alts");
+    const menu = await openRowMenu(buildRow(page, "Build 1"));
+    await menu.getByRole("button", { name: "Move to “Alts”" }).click();
+
+    await openPalette(page, "Build");
+
+    // Same disambiguation the build pickers show: two builds can share a name across folders.
+    const rows = page.getByTestId(/^go-to-option-build:/);
+    await expect(rows.filter({ hasText: "Build 1" })).toContainText("Alts");
+    await expect(rows.filter({ hasText: "Build 2" })).not.toContainText("Alts");
   });
 
   test("a slot chosen while a layer is open brings the build editor back with it", async ({

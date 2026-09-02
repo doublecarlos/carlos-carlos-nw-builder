@@ -9,14 +9,15 @@ const openSectionId = ref<string | null>(null);
 // A section header's "copy this section from another build" control.
 import { onMounted, onUnmounted } from "vue";
 import { Copy } from "@lucide/vue";
-import ComboBox from "../ui/ComboBox.vue";
+import BuildComboBox from "./BuildComboBox.vue";
 import BaseButton from "../ui/BaseButton.vue";
 import BaseTooltip from "../ui/BaseTooltip.vue";
 import { useEscapeToClose } from "../../composables/useEscapeToClose";
+import type { BuildOption } from "../../types";
 
 const props = defineProps<{
   sectionId: string;
-  otherBuilds: { value: string; label: string }[];
+  otherBuilds: BuildOption[];
 }>();
 
 const emit = defineEmits<{
@@ -82,12 +83,11 @@ useEscapeToClose(() => {
       class="copy-popover absolute right-full top-1/2 z-30 mr-1.5 flex -translate-y-1/2 items-center gap-1.5 whitespace-nowrap rounded-md border border-line bg-surface px-2 py-1.5 shadow-lg"
     >
       <span class="text-muted">Copy section from</span>
-      <ComboBox
-        class="copy-popover-select w-44"
-        :model-value="chosen"
+      <BuildComboBox
+        v-model="chosen"
+        class="copy-popover-select w-56"
         :options="otherBuilds"
         placeholder="choose a build…"
-        @update:model-value="chosen = $event"
       />
       <BaseButton variant="primary" :disabled="!chosen" @click="confirm"
         >Copy</BaseButton

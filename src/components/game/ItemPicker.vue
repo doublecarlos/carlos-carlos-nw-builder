@@ -25,6 +25,7 @@ import { NW_SCHEMA } from "../../data/data";
 import { itemSearchText } from "../../lib/item-search";
 import type { Item, Db, Build } from "../../types";
 import ComboBox from "../ui/ComboBox.vue";
+import type { ComboBoxExposed } from "../ui/ComboBox.vue";
 
 const props = withDefaults(
   defineProps<{
@@ -85,7 +86,7 @@ const props = withDefaults(
 
 const model = defineModel<string>({ default: "" });
 
-const combobox = ref<InstanceType<typeof ComboBox> | null>(null);
+const combobox = ref<ComboBoxExposed | null>(null);
 
 /** Mirrors ComboBox's own open state so the filtering/preview work below can stay gated to
  *  "only while this dropdown is actually open" the same way `matchMap` already was -- see the
@@ -258,7 +259,7 @@ defineExpose({
   /** Focus the underlying input -- same open/clear behavior as a direct click (ComboBox's
    *  own `onFocus` opens the list and starts a fresh query). */
   focus() {
-    combobox.value?.$el?.querySelector("input")?.focus();
+    combobox.value?.focusInput();
   },
   /** Delegates to ComboBox's focusAndSeed. */
   focusAndSeed(char: string) {
