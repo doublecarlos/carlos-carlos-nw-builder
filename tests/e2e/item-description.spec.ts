@@ -77,3 +77,84 @@ test("an item's short/long description round-trip through the item editor", asyn
     LONG_DESCRIPTION,
   );
 });
+
+// Descriptions break the way markdown breaks: a lone newline is a wrap the author did not ask
+// for -- OCR leaves one wherever the tooltip wrapped -- and a blank line is the break they did.
+test.describe("paragraphs in a description", () => {
+  const WRAPPED_SHORT = "AP on kill\nand on crit";
+  const BROKEN_SHORT = "AP on kill\n\nStamina on dodge";
+  const BROKEN_LONG = "First effect.\n\nSecond effect.";
+
+  test("a blank line splits the short description across summary parts", async ({
+    page,
+  }) => {
+    const name = "ZZZ Test Short Description Paragraphs";
+    await openBuilder(page);
+    await addLayer(page);
+    await layerRow(page, "Layer 1").locator(".nav-name").click();
+    await page.getByTestId("new-item").click();
+    await page.getByTestId("item-name-input").fill(name);
+    await page.getByTestId("item-filter-input").fill("gear_head");
+    await page.getByTestId("add-item-description").click();
+    await page.getByTestId("item-short-description-input").fill(BROKEN_SHORT);
+    await page.getByRole("button", { name: "Save item" }).click();
+
+    await page.getByRole("button", { name: "Build 1" }).click();
+    await chooseItem(page, SLOT_ID, name);
+
+    // Each half is its own part, divided by the separator the summary already puts between
+    // stats rather than by anything of its own.
+    await expect(slotRow(page, SLOT_ID)).toContainText(
+      "AP on kill • Stamina on dodge",
+    );
+  });
+
+  test("a single newline in the short description is only a wrap", async ({
+    page,
+  }) => {
+    const name = "ZZZ Test Short Description Wrap";
+    await openBuilder(page);
+    await addLayer(page);
+    await layerRow(page, "Layer 1").locator(".nav-name").click();
+    await page.getByTestId("new-item").click();
+    await page.getByTestId("item-name-input").fill(name);
+    await page.getByTestId("item-filter-input").fill("gear_head");
+    await page.getByTestId("add-item-description").click();
+    await page.getByTestId("item-short-description-input").fill(WRAPPED_SHORT);
+    await page.getByRole("button", { name: "Save item" }).click();
+
+    await page.getByRole("button", { name: "Build 1" }).click();
+    await chooseItem(page, SLOT_ID, name);
+
+    const row = slotRow(page, SLOT_ID);
+    await expect(row).toContainText("AP on kill and on crit");
+    await expect(row).not.toContainText("AP on kill • and on crit");
+  });
+
+  test("a blank line breaks the long description into paragraphs", async ({
+    page,
+  }) => {
+    const name = "ZZZ Test Long Description Paragraphs";
+    await openBuilder(page);
+    await addLayer(page);
+    await layerRow(page, "Layer 1").locator(".nav-name").click();
+    await page.getByTestId("new-item").click();
+    await page.getByTestId("item-name-input").fill(name);
+    await page.getByTestId("item-filter-input").fill("gear_head");
+    await page.getByTestId("add-item-description").click();
+    await page.getByTestId("item-long-description-input").fill(BROKEN_LONG);
+    await page.getByRole("button", { name: "Save item" }).click();
+
+    await page.getByRole("button", { name: "Build 1" }).click();
+    await chooseItem(page, SLOT_ID, name);
+    await slotRow(page, SLOT_ID).hover();
+
+    const card = page.locator(".fixed.z-40");
+    const paragraphs = card
+      .getByTestId("item-card-long-description")
+      .locator("p");
+    await expect(paragraphs).toHaveCount(2);
+    await expect(paragraphs.nth(0)).toHaveText("First effect.");
+    await expect(paragraphs.nth(1)).toHaveText("Second effect.");
+  });
+});

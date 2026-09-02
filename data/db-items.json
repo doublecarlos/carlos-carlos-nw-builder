@@ -2032,7 +2032,7 @@
     "id": "doomsayer",
     "name": "Doomsayer",
     "filter": "class_feat",
-    "longDescription": "Whenever you use an encounter power that inflicts a\nnegative condition on an enemy, you gain the effect\nof Doomsayer, increasing damage dealt by 10%.\nDuration: 10s.",
+    "longDescription": "Whenever you use an encounter power that inflicts a\nnegative condition on an enemy, you gain the effect\nof Doomsayer, increasing damage dealt by 10%.\n\nDuration: 10s.",
     "maxCopies": 1,
     "allowedClass": ["cleric"],
     "tags": ["exclusive:arbiter"],
