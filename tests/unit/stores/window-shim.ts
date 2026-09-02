@@ -31,12 +31,14 @@ export function installWindowShim() {
   // Inert, but they have to exist for VueUse's `useStorage`, which stores that persist a
   // preference are built on. Without a `document` it decides this is not a browser and hands
   // the store no storage at all -- silently, so every stored preference reads back as unset.
-  // Past that it narrows the backend with `storage instanceof Storage` and subscribes to
-  // storage events, which need the constructor and the listener pair to be present.
+  // Past that it narrows the backend with `storage instanceof Storage`, subscribes to storage
+  // events, and dispatches one on every write -- so the constructor, the listener pair and
+  // `dispatchEvent` all have to be present.
   win.document = { addEventListener: () => {}, removeEventListener: () => {} };
   win.Storage = class Storage {};
   win.addEventListener = () => {};
   win.removeEventListener = () => {};
+  win.dispatchEvent = () => true;
 }
 
 /** An in-memory Map-based IDB backend for unit tests. Each store is a Map<string, unknown>. */
