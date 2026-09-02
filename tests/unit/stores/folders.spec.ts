@@ -1,11 +1,15 @@
 // Tests for stores/folders.ts: the one-level-deep grouping under the sidebar's Builds
 // heading, and the way builds.ts's own mutations keep it consistent.
 import { describe, expect, it, vi } from "vitest";
-import { installWindowShim } from "./window-shim";
 
 async function freshStores() {
   vi.resetModules();
+  // The stores get a fresh `storage/idb` from `resetModules`, so the shims are loaded after
+  // it: a `setBackend` bound to this file's own import would land on the stale instance and
+  // leave the stores reaching for an IndexedDB the node environment has not got.
+  const { installWindowShim, installIdbShim } = await import("./window-shim");
   installWindowShim();
+  installIdbShim();
   const builds = await import("../../../src/stores/builds");
   const folders = await import("../../../src/stores/folders");
   const layers = await import("../../../src/stores/layers");

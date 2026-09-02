@@ -3,12 +3,16 @@
 // coalescing behaviour directly: same key within the window collapses to one undo step: a
 // different key, or the window elapsing, doesn't.
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { installWindowShim } from "./window-shim";
 import * as storage from "../../../src/storage/storage";
 
 async function freshStores() {
   vi.resetModules();
+  // The stores get a fresh `storage/idb` from `resetModules`, so the shims are loaded after
+  // it: a `setBackend` bound to this file's own import would land on the stale instance and
+  // leave the stores reaching for an IndexedDB the node environment has not got.
+  const { installWindowShim, installIdbShim } = await import("./window-shim");
   installWindowShim();
+  const idb = installIdbShim();
   const builds = await import("../../../src/stores/builds");
   const history = await import("../../../src/stores/history");
   const layers = await import("../../../src/stores/layers");
@@ -17,6 +21,7 @@ async function freshStores() {
   const buildEditor = await import("../../../src/stores/buildEditor");
   const compare = await import("../../../src/stores/compare");
   const resolved = await import("../../../src/stores/resolved");
+  const meta = await import("../../../src/stores/meta");
   builds._setLoading(false);
   history._setLoading(false);
   layers._setLoading(false);
@@ -29,6 +34,8 @@ async function freshStores() {
     buildEditor,
     compare,
     resolved,
+    meta,
+    idb,
   };
 }
 
@@ -872,5 +879,17 @@ describe("buildEditor item_picker_list rows", () => {
 
     expect(builds.build.value.listRows[LIST]).toBe(3);
     expect(builds.build.value.choices[row(3)]).toBe("ItemC");
+  });
+});
+
+describe("buildEditor storage wiring", () => {
+  it("writes the meta record through to the backend", async () => {
+    const { meta, idb } = await freshStores();
+
+    await meta.persistMeta();
+
+    expect(idb.stores.get("meta")?.get("app")).toMatchObject({
+      buildOrder: expect.any(Array),
+    });
   });
 });

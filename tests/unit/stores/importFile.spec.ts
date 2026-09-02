@@ -2,12 +2,16 @@
 // point, so every shape the app can hand out has to reach the picker as the right plan, and
 // land in the right store once that plan is applied.
 import { describe, expect, it, vi } from "vitest";
-import { installWindowShim } from "./window-shim";
 import { acceptAll } from "../../../src/lib/import-plan";
 
 async function freshStores() {
   vi.resetModules();
+  // The stores get a fresh `storage/idb` from `resetModules`, so the shims are loaded after
+  // it: a `setBackend` bound to this file's own import would land on the stale instance and
+  // leave the stores reaching for an IndexedDB the node environment has not got.
+  const { installWindowShim, installIdbShim } = await import("./window-shim");
   installWindowShim();
+  installIdbShim();
   const builds = await import("../../../src/stores/builds");
   const layers = await import("../../../src/stores/layers");
   const notice = await import("../../../src/stores/notice");
