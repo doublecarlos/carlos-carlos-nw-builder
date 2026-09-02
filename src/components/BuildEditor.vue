@@ -21,6 +21,7 @@ import { ChevronsDownUp, ChevronsUpDown, FilterX } from "@lucide/vue";
 import { NW_SCHEMA, NW_SLOTS } from "../data/data";
 import { forSlotAndBuild } from "../data/db";
 import { abbr, signedStat, statPickerOptions } from "../lib/format";
+import { descriptionParagraphs } from "../lib/description";
 import { matchesQuery } from "../lib/text-filter";
 import { slotsSupplying } from "../lib/bonus-slots";
 import { slotVisible } from "../lib/slot-visibility";
@@ -551,15 +552,18 @@ function statSummary(slotId: string) {
   // The item's own shortDescription leads, followed by every active grant crediting this
   // row that carries one -- same "attributed to the first contributing row" set the stats
   // above already dedupe through (bonusesBySlot).
+  //
+  // A description's paragraphs join the summary as separate parts, so the break an author
+  // typed reads here as the same separator that already divides one stat from the next.
   const descriptions: string[] = [];
-  if (item.shortDescription) descriptions.push(item.shortDescription as string);
+  descriptions.push(...descriptionParagraphs(item.shortDescription));
   for (const entry of bonusesBySlot.value.get(slotId) ?? []) {
     for (const [key, value] of Object.entries(entry.appliedStats ?? {})) {
       totals[key] = (totals[key] ?? 0) + (value as number);
     }
     for (const grant of entry.grants ?? []) {
-      if (grant.active && grant.raw.shortDescription) {
-        descriptions.push(grant.raw.shortDescription);
+      if (grant.active) {
+        descriptions.push(...descriptionParagraphs(grant.raw.shortDescription));
       }
     }
   }

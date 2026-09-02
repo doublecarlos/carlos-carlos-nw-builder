@@ -18,6 +18,7 @@ import {
   signedStat,
   stat as formatStat,
 } from "../../lib/format";
+import { descriptionParagraphs } from "../../lib/description";
 import { isHiddenBonus } from "../../engine/bonus";
 import { scaledStat } from "../../engine/scaling";
 import type { OccurrenceRow } from "../../composables/useItemBonusOccurrences";
@@ -102,6 +103,10 @@ function statList(stats: StatValues | null | undefined, multiplier = 1) {
  *  rows reads as a contradiction rather than as two different numbers. */
 const scaledIl = computed(() =>
   int(scaledStat(NW_SCHEMA, props.item, "il", props.scale)),
+);
+
+const longDescription = computed(() =>
+  descriptionParagraphs(props.item.longDescription),
 );
 
 const stats = computed(() => {
@@ -330,9 +335,11 @@ const rows = computed(() =>
         excludedBy: entry.excludedBy,
         // Every active grant's own longDescription, in grant order -- a bonus with more than
         // one descriptive grant shows each (rare: usually only one grant per bonus bothers).
+        // Flattened to paragraphs: each already renders as its own line, so a grant that
+        // breaks its description needs nothing else to tell the halves apart.
         descriptions: (entry.grants ?? [])
-          .filter((g) => g.active && g.raw.longDescription)
-          .map((g) => g.raw.longDescription as string),
+          .filter((g) => g.active)
+          .flatMap((g) => descriptionParagraphs(g.raw.longDescription)),
         stacks: entry.stacks ?? 1,
         grants: grantRows(entry),
         sharedWith,
@@ -363,11 +370,17 @@ const rows = computed(() =>
         {{ slotLabel }}
       </div>
       <div
-        v-if="item.longDescription"
+        v-if="longDescription.length"
         class="mb-1.5"
         data-testid="item-card-long-description"
       >
-        {{ item.longDescription }}
+        <p
+          v-for="(paragraph, index) in longDescription"
+          :key="index"
+          class="mt-1 first:mt-0"
+        >
+          {{ paragraph }}
+        </p>
       </div>
       <div class="flex flex-col divide-y divide-line">
         <div
@@ -421,8 +434,8 @@ const rows = computed(() =>
             }}
           </div>
           <div
-            v-for="desc in row.descriptions"
-            :key="desc"
+            v-for="(desc, index) in row.descriptions"
+            :key="index"
             class="pl-3 leading-snug"
           >
             {{ desc }}
