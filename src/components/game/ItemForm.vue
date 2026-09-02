@@ -183,8 +183,8 @@ function buildDraft(item: Item | null | undefined): ItemDraft {
       path,
       value: String(value),
     })),
-    defaultParams: Object.entries(source.defaultParams ?? {}).map(
-      ([slotId, value]) => ({ slotId, value }),
+    defaultParams: Object.entries(source.defaultParams ?? {}).flatMap(
+      ([slotId, value]) => (value === undefined ? [] : [{ slotId, value }]),
     ),
   };
 }

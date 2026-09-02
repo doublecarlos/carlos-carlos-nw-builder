@@ -487,6 +487,15 @@
     "gameIds": ["Enchantment_Standard_W_V2_R6_Account"]
   },
   {
+    "id": "a-due",
+    "name": "A Due",
+    "filter": "feat3",
+    "maxCopies": 1,
+    "allowedClass": ["bard"],
+    "tags": ["exclusive:songblade"],
+    "bonuses": ["paragon-exclusive"]
+  },
+  {
     "id": "acc-m32-1000-to-5800",
     "name": "Accuracy (M32+, 1000 to 5800)",
     "filter": "modification_offhand_dynamic",
@@ -533,6 +542,15 @@
     "longDescription": "Alchemist companion power. Role: Offense, Utility.",
     "maxCopies": 1,
     "tags": ["companion_power:offense", "companion_power:utility"]
+  },
+  {
+    "id": "angel-of-death",
+    "name": "Angel of Death",
+    "filter": "feat5",
+    "maxCopies": 1,
+    "allowedClass": ["cleric"],
+    "tags": ["exclusive:arbiter"],
+    "bonuses": ["paragon-exclusive"]
   },
   {
     "id": "apocalipse-set",
@@ -674,6 +692,24 @@
     "bonuses": ["avian-aura-group-celestial"]
   },
   {
+    "id": "backup-performer",
+    "name": "Backup Performer",
+    "filter": "feat1",
+    "maxCopies": 1,
+    "allowedClass": ["bard"],
+    "tags": ["exclusive:songblade"],
+    "bonuses": ["paragon-exclusive"]
+  },
+  {
+    "id": "ballad-colla-voce",
+    "name": "Ballad Colla Voce",
+    "filter": "feat3",
+    "maxCopies": 1,
+    "allowedClass": ["bard"],
+    "tags": ["exclusive:songblade"],
+    "bonuses": ["paragon-exclusive"]
+  },
+  {
     "id": "bard-s-storyteller-flamingo",
     "name": "Bard's Storyteller + Flamingo",
     "filter": "group_buff",
@@ -691,6 +727,15 @@
     "maxCopies": 1,
     "tags": ["companion_power:offense"],
     "bonuses": ["batiri-s-wisdom-batiri-damage-offense"]
+  },
+  {
+    "id": "battlefield-ostinato",
+    "name": "Battlefield Ostinato",
+    "filter": "feat2",
+    "maxCopies": 1,
+    "allowedClass": ["bard"],
+    "tags": ["exclusive:songblade"],
+    "bonuses": ["paragon-exclusive"]
   },
   {
     "id": "beacon",
@@ -1567,6 +1612,15 @@
     "severity": 1350
   },
   {
+    "id": "burning-patch",
+    "name": "Burning Patch",
+    "filter": "feat4",
+    "maxCopies": 1,
+    "allowedClass": ["cleric"],
+    "tags": ["exclusive:arbiter"],
+    "bonuses": ["paragon-exclusive"]
+  },
+  {
     "id": "ca-m32-600-to-3600",
     "name": "CA (M32+, 600 to 3600)",
     "filter": "modification_offhand_dynamic",
@@ -1600,6 +1654,17 @@
     "filter": "group_buff",
     "maxCopies": 1,
     "bonuses": ["captain"]
+  },
+  {
+    "id": "celestial-fluid-aurora",
+    "name": "Celestial Fluid Aurora",
+    "filter": "combat_enchant_defense",
+    "il": 3500,
+    "mana_regen": 0.1,
+    "overall_healing": 0.09,
+    "gameIds": ["Enchantment_Combat_O_R6_Account"],
+    "shortDescription": "Max Mana +10%",
+    "longDescription": "Max Mana +10%"
   },
   {
     "id": "celestial-lion-s-presence-2-stalwart-golden-lion-damage-utility",
@@ -1821,7 +1886,8 @@
     "name": "Creeping Death",
     "filter": "feat4",
     "allowedClass": ["warlock"],
-    "bonuses": ["hellbringer-exclusive"]
+    "tags": ["exclusive:hellbringer"],
+    "bonuses": ["paragon-exclusive"]
   },
   {
     "id": "crimson-calamity",
@@ -1842,6 +1908,15 @@
     "filter": "reinforcement_armor_kit",
     "il": 44,
     "strike": 880
+  },
+  {
+    "id": "critical-sun",
+    "name": "Critical Sun",
+    "filter": "feat4",
+    "maxCopies": 1,
+    "allowedClass": ["cleric"],
+    "tags": ["exclusive:arbiter"],
+    "bonuses": ["paragon-exclusive"]
   },
   {
     "id": "crystal",
@@ -1914,6 +1989,15 @@
     "bonuses": ["diamond-blessing-damage"]
   },
   {
+    "id": "divine-equilibrium",
+    "name": "Divine Equilibrium",
+    "filter": "class_feat",
+    "longDescription": "Increases your damage dealt by 15% whenever your\ncurrent divinity is exactly half of your maximum\ndivinity. This effect decreases as your divinity\nbecomes further away from this point.",
+    "allowedClass": ["cleric"],
+    "tags": ["exclusive:arbiter"],
+    "bonuses": ["paragon-exclusive"]
+  },
+  {
     "id": "dominance",
     "name": "Celestial Dominance",
     "filter": "insignia",
@@ -1945,12 +2029,23 @@
     "power": 2625
   },
   {
+    "id": "doomsayer",
+    "name": "Doomsayer",
+    "filter": "class_feat",
+    "longDescription": "Whenever you use an encounter power that inflicts a\nnegative condition on an enemy, you gain the effect\nof Doomsayer, increasing damage dealt by 10%.\nDuration: 10s.",
+    "maxCopies": 1,
+    "allowedClass": ["cleric"],
+    "tags": ["exclusive:arbiter"],
+    "bonuses": ["paragon-exclusive"]
+  },
+  {
     "id": "double-scorch",
     "name": "Double Scorch",
     "filter": "feat1",
     "longDescription": "Doubles damage from Soul Scorch",
     "allowedClass": ["warlock"],
-    "bonuses": ["hellbringer-exclusive"]
+    "tags": ["exclusive:hellbringer"],
+    "bonuses": ["paragon-exclusive"]
   },
   {
     "id": "drizzt",
@@ -1958,6 +2053,15 @@
     "filter": "group_buff",
     "maxCopies": 1,
     "bonuses": ["drizzt"]
+  },
+  {
+    "id": "elemental-medley",
+    "name": "Elemental Medley",
+    "filter": "feat2",
+    "maxCopies": 1,
+    "allowedClass": ["bard"],
+    "tags": ["exclusive:songblade"],
+    "bonuses": ["paragon-exclusive"]
   },
   {
     "id": "enchanted-bregan-d-aerthe-expert-s-cloth",
@@ -2002,7 +2106,19 @@
     "name": "Executioner's Gift",
     "filter": "feat4",
     "allowedClass": ["warlock"],
-    "bonuses": ["hellbringer-exclusive"]
+    "tags": ["exclusive:hellbringer"],
+    "bonuses": ["paragon-exclusive"]
+  },
+  {
+    "id": "expanded-faith",
+    "name": "Expanded Faith",
+    "filter": "class_feat",
+    "shortDescription": "Max Divinity +150",
+    "longDescription": "Max Divinity +150",
+    "maxCopies": 1,
+    "allowedClass": ["cleric"],
+    "tags": ["exclusive:arbiter"],
+    "bonuses": ["paragon-exclusive"]
   },
   {
     "id": "exploit-weakness-strike-sev-blaspheme",
@@ -2066,6 +2182,15 @@
     "name": "Flask of Potency +1",
     "filter": "consumable_potion",
     "bonuses": ["flask-of-potency-1-severity"]
+  },
+  {
+    "id": "focused-light",
+    "name": "Focused Light",
+    "filter": "feat2",
+    "maxCopies": 1,
+    "allowedClass": ["cleric"],
+    "tags": ["exclusive:arbiter"],
+    "bonuses": ["paragon-exclusive"]
   },
   {
     "id": "generic-companion",
@@ -2137,6 +2262,15 @@
     "name": "Hot Wings",
     "filter": "consumable_event_food",
     "bonuses": ["hot-wings-accuracy-severity"]
+  },
+  {
+    "id": "inner-balance",
+    "name": "Inner Balance",
+    "filter": "feat3",
+    "maxCopies": 1,
+    "allowedClass": ["cleric"],
+    "tags": ["exclusive:arbiter"],
+    "bonuses": ["paragon-exclusive"]
   },
   {
     "id": "invocation-accuracy",
@@ -2844,6 +2978,15 @@
     "bonuses": ["lightning-flash"]
   },
   {
+    "id": "lightspeed",
+    "name": "Lightspeed",
+    "filter": "feat1",
+    "maxCopies": 1,
+    "allowedClass": ["cleric"],
+    "tags": ["exclusive:arbiter"],
+    "bonuses": ["paragon-exclusive"]
+  },
+  {
     "id": "location-thay",
     "name": "Location: Thay",
     "filter": "scenario_flag",
@@ -2854,6 +2997,15 @@
     "name": "Location: Wildspace",
     "filter": "scenario_flag",
     "maxCopies": 1
+  },
+  {
+    "id": "loremaster",
+    "name": "Loremaster",
+    "filter": "feat5",
+    "maxCopies": 1,
+    "allowedClass": ["bard"],
+    "tags": ["exclusive:songblade"],
+    "bonuses": ["paragon-exclusive"]
   },
   {
     "id": "m15-envenomed-storyteller-s-journal",
@@ -2997,6 +3149,8 @@
     "severity": 2175,
     "forte_p": 0.025,
     "gameIds": ["Arms_M28_Heavyheal_Chase_T2"],
+    "shortDescription": "Max Divinity +25%",
+    "longDescription": "Max Divinity +25%",
     "allowedClass": ["cleric", "paladin"]
   },
   {
@@ -4125,6 +4279,15 @@
     "maxCopies": 1
   },
   {
+    "id": "martial-performance",
+    "name": "Martial Performance",
+    "filter": "feat4",
+    "maxCopies": 1,
+    "allowedClass": ["bard"],
+    "tags": ["exclusive:songblade"],
+    "bonuses": ["paragon-exclusive"]
+  },
+  {
     "id": "masterwork-sets-2",
     "name": "Masterwork Weapon Sets",
     "filter": "group_buff",
@@ -4361,7 +4524,20 @@
     "id": "paragon-blademaster",
     "name": "Blademaster",
     "filter": "paragon",
+    "defaultParams": {
+      "options.role": "dps"
+    },
     "allowedClass": ["barbarian"],
+    "tags": ["paragon"]
+  },
+  {
+    "id": "paragon-devout",
+    "name": "Devout",
+    "filter": "paragon",
+    "defaultParams": {
+      "options.role": "healer"
+    },
+    "allowedClass": ["cleric"],
     "tags": ["paragon"]
   },
   {
@@ -4381,6 +4557,9 @@
     "id": "paragon-minstrel",
     "name": "Minstrel",
     "filter": "paragon",
+    "defaultParams": {
+      "options.role": "healer"
+    },
     "allowedClass": ["bard"],
     "tags": ["paragon"]
   },
@@ -4388,6 +4567,9 @@
     "id": "paragon-sentinel",
     "name": "Sentinel",
     "filter": "paragon",
+    "defaultParams": {
+      "options.role": "tank"
+    },
     "allowedClass": ["barbarian"],
     "tags": ["paragon"]
   },
@@ -4395,6 +4577,9 @@
     "id": "paragon-songblade",
     "name": "Songblade",
     "filter": "paragon",
+    "defaultParams": {
+      "options.role": "dps"
+    },
     "allowedClass": ["bard"],
     "tags": ["paragon"]
   },
@@ -4402,6 +4587,9 @@
     "id": "paragon-soulweaver",
     "name": "Soulweaver",
     "filter": "paragon",
+    "defaultParams": {
+      "options.role": "healer"
+    },
     "allowedClass": ["warlock"],
     "tags": ["paragon"]
   },
@@ -4410,7 +4598,17 @@
     "name": "Parting Blasphemy",
     "filter": "feat2",
     "allowedClass": ["warlock"],
-    "bonuses": ["hellbringer-exclusive"]
+    "tags": ["exclusive:hellbringer"],
+    "bonuses": ["paragon-exclusive"]
+  },
+  {
+    "id": "perfect-balance",
+    "name": "Perfect Balance",
+    "filter": "feat5",
+    "maxCopies": 1,
+    "allowedClass": ["cleric"],
+    "tags": ["exclusive:arbiter"],
+    "bonuses": ["paragon-exclusive"]
   },
   {
     "id": "perfect-vision-acc",
@@ -4420,12 +4618,30 @@
     "bonuses": ["perfect-vision-acc"]
   },
   {
+    "id": "performer",
+    "name": "Performer",
+    "filter": "feat5",
+    "maxCopies": 1,
+    "allowedClass": ["bard"],
+    "tags": ["exclusive:songblade"],
+    "bonuses": ["paragon-exclusive"]
+  },
+  {
     "id": "personal-warlock-s-tyrannical-curse",
     "name": "Personal: Warlock's Tyrannical Curse",
     "filter": "artifact_call",
     "maxCopies": 1,
     "allowedClass": ["warlock"],
     "bonuses": ["personal-warlock-s-tyrannical-curse"]
+  },
+  {
+    "id": "piercing-javelin",
+    "name": "Piercing Javelin",
+    "filter": "feat1",
+    "maxCopies": 1,
+    "allowedClass": ["cleric"],
+    "tags": ["exclusive:arbiter"],
+    "bonuses": ["paragon-exclusive"]
   },
   {
     "id": "portobello",
@@ -4474,7 +4690,8 @@
     "name": "Power of the Nine Hells",
     "filter": "feat1",
     "allowedClass": ["warlock"],
-    "bonuses": ["hellbringer-exclusive"]
+    "tags": ["exclusive:hellbringer"],
+    "bonuses": ["paragon-exclusive"]
   },
   {
     "id": "practical-regal-collar",
@@ -4815,6 +5032,15 @@
     "gameIds": ["Enchantment_Bonus_E_V2_R6_Account"]
   },
   {
+    "id": "redoublement",
+    "name": "Redoublement",
+    "filter": "feat4",
+    "maxCopies": 1,
+    "allowedClass": ["bard"],
+    "tags": ["exclusive:songblade"],
+    "bonuses": ["paragon-exclusive"]
+  },
+  {
     "id": "rime-temper",
     "name": "Celestial Rime Temper",
     "filter": "combat_enchant_defense",
@@ -4830,7 +5056,8 @@
     "longDescription": "Rough estimation based on 1 stack + encounters being generally 40% of Hellbringer's Damage.",
     "maxCopies": 1,
     "allowedClass": ["warlock"],
-    "bonuses": ["risky-investment", "hellbringer-exclusive"]
+    "tags": ["exclusive:hellbringer"],
+    "bonuses": ["risky-investment", "paragon-exclusive"]
   },
   {
     "id": "runic-aura",
@@ -4942,7 +5169,8 @@
     "name": "Soul Desecration",
     "filter": "feat3",
     "allowedClass": ["warlock"],
-    "bonuses": ["hellbringer-exclusive"]
+    "tags": ["exclusive:hellbringer"],
+    "bonuses": ["paragon-exclusive"]
   },
   {
     "id": "soul-puppet",
@@ -4950,14 +5178,17 @@
     "filter": "class_stuff",
     "overall_damage": 0.03,
     "maxCopies": 1,
-    "allowedClass": ["warlock"]
+    "allowedClass": ["warlock"],
+    "tags": ["exclusive:hellbringer"],
+    "bonuses": ["paragon-exclusive"]
   },
   {
     "id": "soul-spark-recovery",
     "name": "Soul Spark Recovery",
     "filter": "feat5",
     "allowedClass": ["warlock"],
-    "bonuses": ["hellbringer-exclusive"]
+    "tags": ["exclusive:hellbringer"],
+    "bonuses": ["paragon-exclusive"]
   },
   {
     "id": "soul-sparks-average",
@@ -4966,7 +5197,7 @@
     "outgoing_damage": 0.03,
     "maxCopies": 1,
     "allowedClass": ["warlock"],
-    "bonuses": ["soul-sparks-average"]
+    "bonuses": ["soul-sparks-average", "paragon-exclusive"]
   },
   {
     "id": "soul-sparks-max",
@@ -4974,7 +5205,8 @@
     "filter": "class_stuff",
     "maxCopies": 1,
     "allowedClass": ["warlock"],
-    "bonuses": ["soul-sparks-max"]
+    "tags": ["exclusive:hellbringer"],
+    "bonuses": ["soul-sparks-max", "paragon-exclusive"]
   },
   {
     "id": "spider-totem",
@@ -5047,6 +5279,15 @@
     "gameIds": ["Collar_Sturdy_Crescent_R5"]
   },
   {
+    "id": "sudden-veredict",
+    "name": "Sudden Veredict",
+    "filter": "feat3",
+    "maxCopies": 1,
+    "allowedClass": ["cleric"],
+    "tags": ["exclusive:arbiter"],
+    "bonuses": ["paragon-exclusive"]
+  },
+  {
     "id": "sunlord-ca",
     "name": "Sunlord's Gift Elixir",
     "filter": "consumable_elixir",
@@ -5089,6 +5330,15 @@
     "maxCopies": 1,
     "tags": ["companion_power:defense"],
     "bonuses": ["the-bigger-they-are-minsc-damage-defense"]
+  },
+  {
+    "id": "tipping-scales",
+    "name": "Tipping Scales",
+    "filter": "feat2",
+    "maxCopies": 1,
+    "allowedClass": ["cleric"],
+    "tags": ["exclusive:arbiter"],
+    "bonuses": ["paragon-exclusive"]
   },
   {
     "id": "tranquility",
@@ -5146,13 +5396,23 @@
     "maxCopies": 1
   },
   {
+    "id": "voice-throw",
+    "name": "Voice Throw",
+    "filter": "feat1",
+    "maxCopies": 1,
+    "allowedClass": ["bard"],
+    "tags": ["exclusive:songblade"],
+    "bonuses": ["paragon-exclusive"]
+  },
+  {
     "id": "warlock-s-all-consuming-curse",
     "name": "All Consuming Curse",
     "filter": "class_feat",
     "shortDescription": "At-wills apply curse",
     "maxCopies": 1,
     "allowedClass": ["warlock"],
-    "bonuses": ["hellbringer-exclusive"]
+    "tags": ["exclusive:hellbringer"],
+    "bonuses": ["paragon-exclusive"]
   },
   {
     "id": "warlock-s-curse",
@@ -5161,7 +5421,8 @@
     "longDescription": "Rough estimation based on Powers being generally 50% of Hellbringer's Damage.",
     "maxCopies": 1,
     "allowedClass": ["warlock"],
-    "bonuses": ["warlock-s-curse", "hellbringer-exclusive"]
+    "tags": ["exclusive:hellbringer"],
+    "bonuses": ["warlock-s-curse", "paragon-exclusive"]
   },
   {
     "id": "warlock-s-dark-prayers",
@@ -5169,7 +5430,8 @@
     "filter": "class_feat",
     "maxCopies": 1,
     "allowedClass": ["warlock"],
-    "bonuses": ["hellbringer-exclusive"]
+    "tags": ["exclusive:hellbringer"],
+    "bonuses": ["paragon-exclusive"]
   },
   {
     "id": "warlock-s-dust-to-dust",
@@ -5177,7 +5439,9 @@
     "filter": "class_feat",
     "outgoing_damage": 0.05,
     "maxCopies": 1,
-    "allowedClass": ["warlock"]
+    "allowedClass": ["warlock"],
+    "tags": ["exclusive:hellbringer"],
+    "bonuses": ["paragon-exclusive"]
   },
   {
     "id": "warlock-s-no-pity-no-mercy",
@@ -5185,7 +5449,8 @@
     "filter": "class_feat",
     "maxCopies": 1,
     "allowedClass": ["warlock"],
-    "bonuses": ["hellbringer-exclusive"]
+    "tags": ["exclusive:hellbringer"],
+    "bonuses": ["paragon-exclusive"]
   },
   {
     "id": "warlock-s-shadow-walk",
@@ -5248,6 +5513,7 @@
     "name": "Wrathful Souls",
     "filter": "feat5",
     "allowedClass": ["warlock"],
-    "bonuses": ["hellbringer-exclusive"]
+    "tags": ["exclusive:hellbringer"],
+    "bonuses": ["paragon-exclusive"]
   }
 ]

@@ -780,27 +780,6 @@
     ]
   },
   {
-    "id": "hellbringer-exclusive",
-    "name": "Hellbringer Exclusive",
-    "grants": [
-      {
-        "when": {
-          "not": {
-            "equipped": {
-              "item": "paragon-hellbringer",
-              "exactly": 1
-            }
-          }
-        },
-        "problem": {
-          "severity": "error",
-          "message": "Only valid for Hellbringer",
-          "hideFromPicker": true
-        }
-      }
-    ]
-  },
-  {
     "id": "hot-wings-accuracy-severity",
     "name": "Hot Wings",
     "grants": [
@@ -2833,6 +2812,119 @@
         },
         "stats": {
           "strike_p": 0.04
+        }
+      }
+    ]
+  },
+  {
+    "id": "paragon-exclusive",
+    "name": "Paragon Exclusive",
+    "grants": [
+      {
+        "when": {
+          "any": [
+            {
+              "not": {
+                "equipped": {
+                  "item": "paragon-hellbringer",
+                  "exactly": 1
+                }
+              },
+              "equipped": {
+                "tag": "exclusive:hellbringer",
+                "atLeast": 1
+              }
+            },
+            {
+              "not": {
+                "equipped": {
+                  "item": "paragon-soulweaver",
+                  "exactly": 1
+                }
+              },
+              "equipped": {
+                "tag": "exclusive:soulweaver",
+                "atLeast": 1
+              }
+            },
+            {
+              "not": {
+                "equipped": {
+                  "item": "paragon-arbiter",
+                  "exactly": 1
+                }
+              },
+              "equipped": {
+                "tag": "exclusive:arbiter",
+                "atLeast": 1
+              }
+            },
+            {
+              "not": {
+                "equipped": {
+                  "item": "paragon-devout",
+                  "exactly": 1
+                }
+              },
+              "equipped": {
+                "tag": "exclusive:devout",
+                "atLeast": 1
+              }
+            },
+            {
+              "not": {
+                "equipped": {
+                  "item": "paragon-songblade",
+                  "exactly": 1
+                }
+              },
+              "equipped": {
+                "tag": "exclusive:songblade",
+                "atLeast": 1
+              }
+            },
+            {
+              "not": {
+                "equipped": {
+                  "item": "paragon-minstrel",
+                  "exactly": 1
+                }
+              },
+              "equipped": {
+                "tag": "exclusive:minstrel",
+                "atLeast": 1
+              }
+            },
+            {
+              "not": {
+                "equipped": {
+                  "item": "paragon-sentinel",
+                  "exactly": 1
+                }
+              },
+              "equipped": {
+                "tag": "exclusive:sentinel",
+                "atLeast": 1
+              }
+            },
+            {
+              "not": {
+                "equipped": {
+                  "item": "paragon-blademaster",
+                  "exactly": 1
+                }
+              },
+              "equipped": {
+                "tag": "exclusive:blademaster",
+                "atLeast": 1
+              }
+            }
+          ]
+        },
+        "problem": {
+          "severity": "error",
+          "message": "Invalid choice for the current paragon.",
+          "hideFromPicker": true
         }
       }
     ]
