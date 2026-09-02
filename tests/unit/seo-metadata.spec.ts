@@ -48,6 +48,17 @@ const jsonLd = html.match(
   /<script type="application\/ld\+json">(.*?)<\/script>/s,
 )?.[1];
 
+/** The nodes of that block's graph, and a node of a given type from it. */
+const graph: Record<string, unknown>[] = jsonLd
+  ? (JSON.parse(jsonLd)["@graph"] ?? [])
+  : [];
+
+function node(type: string): Record<string, unknown> {
+  const found = graph.find((entry) => entry["@type"] === type);
+  expect(found, `no ${type} node`).toBeTruthy();
+  return found!;
+}
+
 /** The `--bg` token each theme declares in src/base.css. */
 const themeBg = {
   light: baseCss.match(/:root\s*\{[^}]*--bg:\s*([^;]+);/)?.[1].trim(),
@@ -111,16 +122,38 @@ describe("index.html structured data", () => {
     expect(() => JSON.parse(raw!)).not.toThrow();
   });
 
+  it("is a single graph, since a second block would compete with this one", () => {
+    expect(html.match(/application\/ld\+json/g)).toHaveLength(1);
+    expect(JSON.parse(raw!)["@context"]).toBe("https://schema.org");
+    expect(graph.length).toBeGreaterThan(0);
+  });
+
   it("describes a free web app about Neverwinter, in the page's own words", () => {
-    const data = JSON.parse(raw!);
-    expect(data["@context"]).toBe("https://schema.org");
-    expect(data["@type"]).toBe("WebApplication");
-    expect(data.description).toBe(description);
-    expect(data.isAccessibleForFree).toBe(true);
-    expect(data.about).toMatchObject({
+    const app = node("WebApplication");
+    expect(app.description).toBe(description);
+    expect(app.isAccessibleForFree).toBe(true);
+    expect(app.about).toMatchObject({
       "@type": "VideoGame",
       name: "Neverwinter",
     });
+  });
+
+  // A site name contradicted elsewhere on its own home page is weighed against.
+  it("names the site, in the same words every other name on the page uses", () => {
+    const name = node("WebSite").name as string;
+    expect(name).toBe(metaContent("og:site_name"));
+    expect(title).toContain(name);
+    expect(html.match(/<h1[^>]*>\s*([^<]*?)\s*<\/h1>/)?.[1]).toContain(name);
+  });
+
+  it("falls back through shorter names to the host, never past it", () => {
+    const alternates = node("WebSite").alternateName as string[];
+    const host = new URL(canonical).host;
+
+    expect(alternates.at(-1)).toBe(host);
+    // Only a lowercase host is read as a name preference.
+    expect(host).toBe(host.toLowerCase());
+    expect(alternates.length).toBeGreaterThan(1);
   });
 });
 
@@ -135,7 +168,8 @@ describe("the deployed origin", () => {
 
   it("is the URL link previews and structured data both name", () => {
     expect(metaContent("og:url")).toBe(canonical);
-    expect(JSON.parse(jsonLd!).url).toBe(canonical);
+    // A WebSite url off the home page is not read for a site name at all.
+    for (const entry of graph) expect(entry.url).toBe(canonical);
   });
 
   it("is where robots.txt sends a crawler for the sitemap", () => {

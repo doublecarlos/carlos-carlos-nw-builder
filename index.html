@@ -89,27 +89,39 @@
     <link rel="manifest" href="/manifest.webmanifest" />
 
     <!-- Tells a search engine what kind of thing this page is, which a body of gear tables
-         cannot: a free web app, about the game, that needs a browser and nothing else. -->
+         cannot: a free web app, about the game, that needs a browser and nothing else.
+         WebSite names the site: without it a subdomain takes the site name of pages.dev.
+         alternateName is tried in order, so the lowercased host is the last name available. -->
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
-        "@type": "WebApplication",
-        "name": "Carlos Carlos' NW Builder",
-        "url": "https://carloscarlosnwbuilder.pages.dev/",
-        "applicationCategory": "GameApplication",
-        "operatingSystem": "Any modern web browser",
-        "browserRequirements": "Requires JavaScript.",
-        "description": "Build planner for Neverwinter. Create and compare Neverwinter builds, create and edit new items/bonuses as needed.",
-        "isAccessibleForFree": true,
-        "offers": {
-          "@type": "Offer",
-          "price": "0",
-          "priceCurrency": "USD"
-        },
-        "about": {
-          "@type": "VideoGame",
-          "name": "Neverwinter"
-        }
+        "@graph": [
+          {
+            "@type": "WebSite",
+            "name": "Carlos Carlos' NW Builder",
+            "alternateName": ["NW Builder", "carloscarlosnwbuilder.pages.dev"],
+            "url": "https://carloscarlosnwbuilder.pages.dev/"
+          },
+          {
+            "@type": "WebApplication",
+            "name": "Carlos Carlos' NW Builder",
+            "url": "https://carloscarlosnwbuilder.pages.dev/",
+            "applicationCategory": "GameApplication",
+            "operatingSystem": "Any modern web browser",
+            "browserRequirements": "Requires JavaScript.",
+            "description": "Build planner for Neverwinter. Create and compare Neverwinter builds, create and edit new items/bonuses as needed.",
+            "isAccessibleForFree": true,
+            "offers": {
+              "@type": "Offer",
+              "price": "0",
+              "priceCurrency": "USD"
+            },
+            "about": {
+              "@type": "VideoGame",
+              "name": "Neverwinter"
+            }
+          }
+        ]
       }
     </script>
 
