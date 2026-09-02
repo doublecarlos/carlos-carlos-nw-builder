@@ -12,6 +12,10 @@ import { installWindowShim } from "./window-shim";
  */
 const load = async (search: string, { dev = false } = {}) => {
   vi.resetModules();
+  // Loaded after `resetModules` so `setBackend` lands on the same `storage/idb` the store
+  // under test imports, not the instance the reset discarded.
+  const { installIdbShim } = await import("./window-shim");
+  installIdbShim();
   vi.stubEnv("DEV", dev);
   const win = globalThis as unknown as Record<string, unknown>;
   const replaced: string[] = [];

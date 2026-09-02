@@ -1,12 +1,16 @@
 // Tests for stores/layers.ts: create/duplicate/delete/reorder, enable/disable,
 // ensureTargetLayer, allocatableIds, persistence.
 import { describe, expect, it, vi } from "vitest";
-import { installWindowShim } from "./window-shim";
 import type { SectionPreset } from "../../../src/types";
 
 async function freshStores() {
   vi.resetModules();
+  // The stores get a fresh `storage/idb` from `resetModules`, so the shims are loaded after
+  // it: a `setBackend` bound to this file's own import would land on the stale instance and
+  // leave the stores reaching for an IndexedDB the node environment has not got.
+  const { installWindowShim, installIdbShim } = await import("./window-shim");
   installWindowShim();
+  installIdbShim();
   const layers = await import("../../../src/stores/layers");
   const selection = await import("../../../src/stores/selection");
   const trash = await import("../../../src/stores/trash");

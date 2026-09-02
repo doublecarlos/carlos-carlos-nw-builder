@@ -1,11 +1,15 @@
 // Tests for stores/builds.ts: create/duplicate/delete/reorder, trash integration,
 // bootstrap from empty, and persistence.
 import { describe, expect, it, vi } from "vitest";
-import { installWindowShim } from "./window-shim";
 
 async function freshStores() {
   vi.resetModules();
+  // The stores get a fresh `storage/idb` from `resetModules`, so the shims are loaded after
+  // it: a `setBackend` bound to this file's own import would land on the stale instance and
+  // leave the stores reaching for an IndexedDB the node environment has not got.
+  const { installWindowShim, installIdbShim } = await import("./window-shim");
   installWindowShim();
+  installIdbShim();
   const builds = await import("../../../src/stores/builds");
   const landing = await import("../../../src/stores/landing");
   const layers = await import("../../../src/stores/layers");
