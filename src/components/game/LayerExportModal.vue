@@ -4,10 +4,12 @@
 // the shipped data across every enabled layer. Self-contained aside from which tab is active,
 // which the parent keeps so reopening it remembers the last tab.
 //
-// Modal rather than in-flow: you come here to copy or download a file and then leave, so
+// The maintainer tabs can also write their file straight into the repo (data/writeback.ts).
+//
+// Modal rather than in-flow: you come here to take a file somewhere and then leave, so
 // nothing behind it matters meanwhile, and the tabs want the room.
-import { computed, ref, watchEffect } from "vue";
-import { Copy, Download } from "@lucide/vue";
+import { computed, ref, watch, watchEffect } from "vue";
+import { Copy, Download, Save } from "@lucide/vue";
 import BaseButton from "../ui/BaseButton.vue";
 import BaseModal from "../ui/BaseModal.vue";
 import CodeBlock from "../ui/CodeBlock.vue";
@@ -46,11 +48,16 @@ const effectiveTab = computed(() =>
 // flag on never pays for `catalogExport.ts`: it stays a chunk of its own that the page does
 // not request.
 type CatalogExportModule = typeof import("../../data/catalogExport");
+type WritebackModule = typeof import("../../data/writeback");
 const catalogExport = ref<CatalogExportModule | null>(null);
+const writeback = ref<WritebackModule | null>(null);
 watchEffect(() => {
   if (effectiveTab.value === "overlay" || catalogExport.value) return;
   import("../../data/catalogExport").then((mod) => {
     catalogExport.value = mod;
+  });
+  import("../../data/writeback").then((mod) => {
+    writeback.value = mod;
   });
 });
 
@@ -96,6 +103,43 @@ async function copyExport() {
     emit("notice", `Copied ${exportName.value} to the clipboard`);
   } catch {
     emit("notice", "Clipboard blocked - select the text and copy it manually");
+  }
+}
+
+/** Outcome of the last "Save to repo". Shown in the modal rather than as a notice behind it,
+ *  since an unreachable server is started and retried from here. Cleared on a tab change so
+ *  it can never describe a file other than the one on screen. */
+const saveStatus = ref<{ ok: boolean; message: string } | null>(null);
+const saving = ref(false);
+
+watch(effectiveTab, () => {
+  saveStatus.value = null;
+});
+
+async function saveToRepo() {
+  const module = writeback.value;
+  if (!module || saving.value) return;
+  saving.value = true;
+  saveStatus.value = null;
+  try {
+    const { repo } = await module.writeDataFile(
+      exportName.value,
+      exportText.value,
+    );
+    saveStatus.value = {
+      ok: true,
+      message: `Wrote ${exportName.value} to ${repo}`,
+    };
+  } catch (error) {
+    saveStatus.value = {
+      ok: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : `Writing ${exportName.value} failed`,
+    };
+  } finally {
+    saving.value = false;
   }
 }
 
@@ -148,8 +192,23 @@ function downloadExport() {
         <BaseButton @click="downloadExport"
           ><Download />Download {{ exportName }}</BaseButton
         >
+        <BaseButton
+          v-if="effectiveTab !== 'overlay'"
+          :disabled="saving || !writeback"
+          data-testid="layer-export-save"
+          @click="saveToRepo"
+          ><Save />{{ saving ? "Saving…" : "Save to repo" }}</BaseButton
+        >
       </div>
       <CodeBlock :value="exportText" :rows="20" class="w-full" />
+      <p
+        v-if="saveStatus"
+        class="mt-1"
+        :class="saveStatus.ok ? 'text-muted' : 'text-danger'"
+        data-testid="layer-export-save-status"
+      >
+        {{ saveStatus.message }}
+      </p>
       <p class="mt-1 text-muted">
         <template v-if="effectiveTab === 'items'">
           Composed from all enabled layers - for regenerating the shipped data
