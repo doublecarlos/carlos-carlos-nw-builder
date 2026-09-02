@@ -23,6 +23,7 @@ import BaseButton from "../ui/BaseButton.vue";
 import BaseModal from "../ui/BaseModal.vue";
 import IconButton from "../ui/IconButton.vue";
 import { parseTooltip } from "../../lib/tooltip-parser";
+import { imageFrom } from "../../lib/ocr-paste";
 import { label, signedStat } from "../../lib/format";
 import type { Item } from "../../types";
 
@@ -44,20 +45,6 @@ const emit = defineEmits<{
   apply: [payload: { patch: Partial<Item>; label: string }];
   close: [];
 }>();
-
-/** The first image on a paste or drop, if there is one. Kept out of `ocr.ts` so that module
- *  -- and the OCR engine it pulls in -- stays behind the dynamic import in `read`. */
-function imageFrom(
-  items: DataTransferItemList | null | undefined,
-): File | null {
-  for (const item of items ?? []) {
-    if (item.kind === "file" && item.type.startsWith("image/")) {
-      const file = item.getAsFile();
-      if (file) return file;
-    }
-  }
-  return null;
-}
 
 const text = ref("");
 const busy = ref(false);

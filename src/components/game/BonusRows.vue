@@ -29,6 +29,7 @@ import {
 import BaseButton from "../ui/BaseButton.vue";
 import BaseCheckbox from "../ui/BaseCheckbox.vue";
 import FormField from "../ui/FormField.vue";
+import OcrTextField from "../ui/OcrTextField.vue";
 import FormSection from "../ui/FormSection.vue";
 import { isPercentKind, kindOf, statPickerOptions } from "../../lib/format";
 import { focusNextCombo } from "../../lib/stat-row-nav";
@@ -1033,20 +1034,19 @@ function toggleJson(gIndex: number) {
               class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
               placeholder="Name, distinguishes this grant from the bonus's other grants on the hover card…"
             />
-            <input
+            <OcrTextField
               v-model="grant.shortDescription"
+              single-line
+              :rows="2"
               data-testid="grant-short-description"
-              type="text"
-              class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
               placeholder="Short description, shown next to the item's stat summary when active…"
             />
-            <textarea
+            <OcrTextField
               v-model="grant.longDescription"
+              :rows="2"
               data-testid="grant-long-description"
-              class="w-full resize-y rounded-md border border-line bg-surface p-2"
-              rows="2"
               placeholder="Long description, shown on the item's hover card when active…"
-            ></textarea>
+            />
           </div>
         </div>
       </template>
