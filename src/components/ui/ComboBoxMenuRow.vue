@@ -18,6 +18,9 @@ withDefaults(
      *  its options, and being counted as one ("option 4 of 4") would misreport how many
      *  choices there actually are. */
     presentational?: boolean;
+    /** Overridden by rows that are not choices at all -- a group heading -- so a spec asking
+     *  for `picker-option` never has to filter them back out. */
+    testid?: string;
   }>(),
   {
     highlighted: false,
@@ -25,6 +28,7 @@ withDefaults(
     id: undefined,
     selected: false,
     presentational: false,
+    testid: "picker-option",
   },
 );
 
@@ -41,7 +45,7 @@ defineSlots<{
     class="cursor-pointer px-2 py-1"
     :class="[highlighted && 'bg-accent-soft', muted && 'italic text-muted']"
     :data-highlighted="highlighted || undefined"
-    data-testid="picker-option"
+    :data-testid="testid"
   >
     <slot />
   </div>

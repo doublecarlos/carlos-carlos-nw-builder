@@ -14,7 +14,7 @@ import PresetMenu from "./PresetMenu.vue";
 import SectionClearButton from "./SectionClearButton.vue";
 import { useCursorRowKeys } from "../../composables/useCursorRowKeys";
 import { useTemplateRef } from "vue";
-import type { Slot, SectionPreset } from "../../types";
+import type { Slot, SectionPreset, BuildOption } from "../../types";
 
 const props = defineProps<{
   id: string;
@@ -30,7 +30,7 @@ const props = defineProps<{
    *  or to the next/previous section when the platform modifier is held. */
   onArrow: (dir: 1 | -1, bySection: boolean) => void;
   highlightDiff: boolean;
-  otherBuilds: { value: string; label: string }[];
+  otherBuilds: BuildOption[];
   presets: SectionPreset[];
 }>();
 

@@ -11,6 +11,7 @@ async function freshStores() {
   installWindowShim();
   installIdbShim();
   const builds = await import("../../../src/stores/builds");
+  const folders = await import("../../../src/stores/folders");
   const landing = await import("../../../src/stores/landing");
   const layers = await import("../../../src/stores/layers");
   const selection = await import("../../../src/stores/selection");
@@ -18,7 +19,7 @@ async function freshStores() {
   const buildEditor = await import("../../../src/stores/buildEditor");
   builds._setLoading(false);
   layers._setLoading(false);
-  return { builds, landing, layers, selection, trash, buildEditor };
+  return { builds, folders, landing, layers, selection, trash, buildEditor };
 }
 
 describe("builds store", () => {
@@ -175,6 +176,46 @@ describe("builds store", () => {
     expect(builds.otherBuilds.value.every((o) => o.value !== activeId)).toBe(
       true,
     );
+  });
+
+  it("otherBuilds names the folder holding each build", async () => {
+    const { builds, folders } = await freshStores();
+    const topLevelId = builds.build.value.id;
+    builds.createBuild();
+    const filedId = builds.build.value.id;
+    const folderId = folders.createFolder("Alts");
+    folders.placeBuild(filedId, folderId);
+
+    // The active build is left out, so pick a third one to look from.
+    builds.createBuild();
+    const options = builds.otherBuilds.value;
+
+    expect(options.find((o) => o.value === filedId)?.folder).toBe("Alts");
+    expect(options.find((o) => o.value === topLevelId)?.folder).toBeUndefined();
+  });
+
+  it("otherBuilds lists in sidebar order, so a folder's builds stay together", async () => {
+    const { builds, folders } = await freshStores();
+    const firstId = builds.build.value.id;
+    builds.createBuild();
+    const secondId = builds.build.value.id;
+    builds.createBuild();
+    const thirdId = builds.build.value.id;
+    const folderId = folders.createFolder("Alts");
+    // The two filed builds start out either side of the third, so only the sidebar's own
+    // ordering can bring them back together -- which is what lets the picker head them once.
+    folders.placeBuild(firstId, folderId);
+    folders.placeBuild(secondId, folderId);
+
+    builds.createBuild();
+    const listed = builds.otherBuilds.value.map((o) => o.folder);
+    const filed = builds.otherBuilds.value.map((o) => o.value);
+
+    expect(filed.indexOf(secondId)).toBe(filed.indexOf(firstId) + 1);
+    expect(listed.filter((f) => f === "Alts")).toHaveLength(2);
+    expect(
+      builds.otherBuilds.value.find((o) => o.value === thirdId)?.folder,
+    ).toBeUndefined();
   });
 });
 

@@ -14,7 +14,7 @@ import * as folders from "./folders";
 import { buildOrder } from "./meta";
 import { flagStorageFailed, showNotice } from "./notice";
 import { db as engineDb } from "./resolved";
-import type { Build, BuildNavEntry } from "../types";
+import type { Build, BuildNavEntry, BuildOption } from "../types";
 
 const SAVE_DEBOUNCE_MS = 250;
 
@@ -88,11 +88,21 @@ export function downloadedAt(id: string): number | null {
   return _builds.value.get(id)?.downloaded?.at ?? null;
 }
 
+/** Builds as picker options, each tagged with the folder holding it. Every surface listing
+ *  builds outside the sidebar goes through this, so the grouping that tells two same-named
+ *  builds apart travels with them. `list` is expected in sidebar order, which `builds` already
+ *  is -- that is what puts each folder's builds together for the picker to head them. */
+export function toOptions(list: Build[]): BuildOption[] {
+  return list.map((b) => ({
+    value: b.id,
+    label: b.name,
+    folder: folders.folderOf(b.id)?.name,
+  }));
+}
+
 export const otherBuilds = computed(() => {
   const active = build.value;
-  return builds.value
-    .filter((b) => !active || b.id !== active.id)
-    .map((b) => ({ value: b.id, label: b.name }));
+  return toOptions(builds.value.filter((b) => !active || b.id !== active.id));
 });
 
 // --- mutations --------------------------------------------------------------------------

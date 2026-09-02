@@ -1,7 +1,7 @@
 // End-to-end coverage for the quick-compare picker (App.vue's top bar) and the per-section
 // "copy from another build" popover (SectionCopyMenu.vue) -- both need a second build in the
 // picture, which slot-list.spec.ts deliberately stays away from.
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 import {
   openBuilder,
   chooseItem,
@@ -15,6 +15,14 @@ import {
   stepAssignment,
   parkCursorOnRow,
 } from "./support/app";
+import {
+  addBuild,
+  addFolder,
+  buildRow,
+  folderRow,
+  openRowMenu,
+  renameViaSidebar,
+} from "./support/nav";
 
 const HEAD_ITEM = "M29 Enchanted Depthweave Cap";
 
@@ -163,5 +171,125 @@ test.describe("point_assignment compare diff apply", () => {
 
     await expect(assignmentInput(row, POWER_ID)).toHaveValue("1");
     await expect(row).not.toHaveClass(/is-diff/);
+  });
+});
+
+test.describe("folder names in the build pickers", () => {
+  /** Two builds, "Build 1" filed under an "Alts" folder and "Build 2" active at the top
+   *  level -- the sidebar is the only place that grouping normally shows. */
+  async function buildInAFolder(page: Page) {
+    await openBuilder(page);
+    await addBuild(page);
+    await addFolder(page);
+    await renameViaSidebar(page, folderRow(page, "Folder 1"), "Alts");
+    const menu = await openRowMenu(buildRow(page, "Build 1"));
+    await menu.getByRole("button", { name: "Move to “Alts”" }).click();
+    await expect(buildRow(page, "Build 1")).toBeVisible();
+  }
+
+  test("the compare picker heads a folder's builds, and keeps the folder once chosen", async ({
+    page,
+  }) => {
+    await buildInAFolder(page);
+    const combo = page.locator(".compare-select");
+
+    await pickerInput(combo).click();
+    await expect(combo.getByTestId("picker-group")).toHaveText("Alts");
+    // The heading carries the folder, so the row itself is just the name.
+    const row = combo
+      .getByTestId("picker-option")
+      .filter({ hasText: "Build 1" });
+    await expect(row).toHaveText("Build 1");
+
+    await row.click();
+    // Closing the list must not throw the disambiguation away.
+    await expect(pickerInput(combo)).toHaveValue("Alts · Build 1");
+  });
+
+  test("a top-level build is listed under no heading at all", async ({
+    page,
+  }) => {
+    await buildInAFolder(page);
+    // Look from the filed build, so the top-level one is what the picker offers.
+    await buildRow(page, "Build 1").click();
+    const combo = page.locator(".compare-select");
+
+    await pickerInput(combo).click();
+
+    await expect(
+      combo.getByTestId("picker-option").filter({ hasText: "Build 2" }),
+    ).toBeVisible();
+    await expect(combo.getByTestId("picker-group")).toHaveCount(0);
+  });
+
+  test("a heading is passed over rather than landed on", async ({ page }) => {
+    await buildInAFolder(page);
+    const combo = page.locator(".compare-select");
+
+    await pickerInput(combo).click();
+    // Rows are "- none -", the "Alts" heading, then "Build 1": one step down has to reach
+    // the build, not stop on a heading Enter would do nothing with.
+    await pickerInput(combo).press("ArrowDown");
+    await pickerInput(combo).press("Enter");
+
+    await expect(pickerInput(combo)).toHaveValue("Alts · Build 1");
+  });
+
+  test("typing a folder name narrows the picker to its builds", async ({
+    page,
+  }) => {
+    await buildInAFolder(page);
+    const combo = page.locator(".compare-select");
+
+    await pickerInput(combo).click();
+    await pickerInput(combo).fill("Alts");
+
+    await expect(
+      combo.getByTestId("picker-option").filter({ hasText: "Build 1" }),
+    ).toBeVisible();
+    // The heading only appears above builds that survived the filter.
+    await expect(combo.getByTestId("picker-group")).toHaveText("Alts");
+  });
+
+  test("a name too long for the field widens the dropdown, into the panel", async ({
+    page,
+  }) => {
+    await buildInAFolder(page);
+    await renameViaSidebar(
+      page,
+      buildRow(page, "Build 1"),
+      "ST Jotunskar Hellbringer M33",
+    );
+    await buildRow(page, "Build 2").click();
+    const combo = page.locator(".compare-select");
+    await pickerInput(combo).click();
+
+    // The compare picker's field is a narrow stat-panel table cell, so the menu takes its
+    // own width rather than truncating every name to the cell.
+    const inputBox = await pickerInput(combo).boundingBox();
+    const menuBox = await combo.getByTestId("picker-menu").boundingBox();
+    expect(menuBox!.width).toBeGreaterThan(inputBox!.width);
+
+    // The stat panel is a rail whose scroller clips horizontally, so the menu has to grow
+    // rightward into it: growing leftward would put the rows' text outside the clip.
+    const panelBox = await page.getByTestId("stat-panel-column").boundingBox();
+    expect(menuBox!.x).toBeGreaterThanOrEqual(panelBox!.x);
+    expect(menuBox!.x + menuBox!.width).toBeLessThanOrEqual(
+      panelBox!.x + panelBox!.width,
+    );
+  });
+
+  test("the section copy popover groups by folder too", async ({ page }) => {
+    await buildInAFolder(page);
+    const gearHeader = headerRow(page, "gear");
+    await gearHeader.locator("..").locator(".section-copy-btn").click();
+
+    const combo = page.locator(".copy-popover").locator(".copy-popover-select");
+    await pickerInput(combo).click();
+
+    await expect(combo.getByTestId("picker-group")).toHaveText("Alts");
+    await expect(
+      combo.getByTestId("picker-option").filter({ hasText: "Build 1" }),
+    ).toHaveText("Build 1");
   });
 });
