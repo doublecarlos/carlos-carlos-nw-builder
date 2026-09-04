@@ -6,6 +6,7 @@
 
 import { NW_ITEMS, NW_BONUSES, NW_SCHEMA, NW_SLOTS } from "./data";
 import { bonusIdOf } from "../lib/bonus-attachment";
+import { replacementIdOf, replacementValuesOf } from "../lib/item-replacement";
 import { resolvedOptions } from "../lib/param-options";
 import { parseRowSlotId, rowSlot } from "../lib/item-picker-list";
 import type {
@@ -37,6 +38,61 @@ const pushTo = <K>(map: Map<K, string[]>, key: K, value: string) => {
  */
 const byItemLevel = (a: Item, b: Item) =>
   (Number(b.il) || 0) - (Number(a.il) || 0) || a.name.localeCompare(b.name);
+
+/** Cap on `replacedBy` hops: a longer chain is authoring damage, not a real case. */
+const REPLACEMENT_DEPTH = 8;
+
+/**
+ * The item a retired id would migrate to, or null when there is none.
+ *
+ * Not consulted by `Db.get`: a retirement is an offer, so a build keeps reading as the item it
+ * holds until the player accepts. A cycle, dangle or over-long chain stops on the last entry
+ * that resolved; `validateReplacements` reports all three.
+ */
+function endOfChain(byId: Map<string, Item>, id: string): Item | null {
+  let item = byId.get(id) ?? null;
+  const seen = new Set<string>([id]);
+  for (let hop = 0; hop < REPLACEMENT_DEPTH; hop++) {
+    if (!item?.replacedBy) break;
+    const next = replacementIdOf(item.replacedBy);
+    if (seen.has(next)) break;
+    const replacement = byId.get(next);
+    if (!replacement) break;
+    seen.add(next);
+    item = replacement;
+  }
+  return item && item.id !== id ? item : null;
+}
+
+/** Values a retired id carries forward, merged along the chain with a later hop winning. */
+function collectSeeds(
+  byId: Map<string, Item>,
+  id: string,
+): Record<string, number> {
+  const seeds: Record<string, number> = {};
+  let item = byId.get(id) ?? null;
+  const seen = new Set<string>([id]);
+  for (let hop = 0; hop < REPLACEMENT_DEPTH; hop++) {
+    if (!item?.replacedBy) break;
+    const next = replacementIdOf(item.replacedBy);
+    if (seen.has(next)) break;
+    const replacement = byId.get(next);
+    if (!replacement) break;
+    for (const [stat, value] of Object.entries(
+      replacementValuesOf(item.replacedBy),
+    )) {
+      if (value !== undefined) seeds[stat] = value;
+    }
+    seen.add(next);
+    item = replacement;
+  }
+  return seeds;
+}
+
+/** Whether a slot still offers `item`. `inUse` exempts what the build already holds, so a
+ *  hidden pick can be cleared and re-selected rather than being a one-way door. */
+export const stillOffered = (item: Item, inUse: boolean) =>
+  inUse || !item.hideFromPicker;
 
 export function build(
   items: Item[],
@@ -119,10 +175,23 @@ export function build(
     itemByGameId,
     duplicates,
 
-    /** Look up an item by id. `-`, blank and nullish all mean "empty slot". */
+    /** Look up an item by id. `-`, blank and nullish all mean "empty slot". Never follows
+     * `replacedBy` -- see `endOfChain`. */
     get(id: string | null | undefined) {
       if (id == null || id === "" || id === "-") return null;
       return byId.get(id) ?? null;
+    },
+
+    /** See `Db.replacementFor`. */
+    replacementFor(id: string | null | undefined) {
+      if (id == null || id === "" || id === "-") return null;
+      return endOfChain(byId, id);
+    },
+
+    /** See `Db.replacementSeeds`. */
+    replacementSeeds(id: string | null | undefined) {
+      if (id == null || id === "" || id === "-") return {};
+      return collectSeeds(byId, id);
     },
 
     /** Items selectable in a filter category, in `byItemLevel` order. */
@@ -266,8 +335,10 @@ export function forSlotAndBuild(db: Db, slotId: string, build: Build): Item[] {
   const slot = db.slotFor(slotId);
   const counts =
     slot?.type === "item_picker" ? copyCounts(db, build, slotId) : null;
+  const equipped = build.choices?.[slotId];
   return db
     .forSlot(slotId)
+    .filter((item) => stillOffered(item, item.id === equipped))
     .filter(
       (item) => !item.allowedClass || !cls || item.allowedClass.includes(cls),
     )
@@ -276,4 +347,25 @@ export function forSlotAndBuild(db: Db, slotId: string, build: Build): Item[] {
       const max = db.maxCopies(item);
       return !max || (counts.get(item.id) ?? 0) < max;
     });
+}
+
+/** One slot whose stored item id has been superseded, and what it now resolves to. */
+export interface RetiredChoice {
+  slotId: string;
+  /** The id the build still holds. */
+  from: string;
+  /** The item `from` resolves to now. */
+  to: Item;
+}
+
+/** Every `item_picker` choice naming a superseded item. Drives the offer only; the build
+ *  holds and calculates as the saved item until someone accepts. */
+export function retiredChoices(db: Db, build: Build): RetiredChoice[] {
+  const retired: RetiredChoice[] = [];
+  for (const [slotId, itemId] of Object.entries(build.choices ?? {})) {
+    if (!itemId) continue;
+    const to = db.replacementFor(itemId);
+    if (to) retired.push({ slotId, from: itemId, to });
+  }
+  return retired;
 }

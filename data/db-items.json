@@ -1667,12 +1667,37 @@
     "longDescription": "Max Mana +10%"
   },
   {
+    "id": "celestial-lion-s-presence",
+    "name": "Celestial Lion's Presence",
+    "filter": "companion_power",
+    "il": 900,
+    "combined_rating": 900,
+    "longDescription": "Stalwart Golden Lion companion power. Role: Utility.",
+    "maxCopies": 1,
+    "dynamicStats": [
+      {
+        "stat": "overall_damage",
+        "min": 0,
+        "max": 0.08,
+        "default": 0.04
+      }
+    ],
+    "tags": ["companion_power:utility"]
+  },
+  {
     "id": "celestial-lion-s-presence-2-stalwart-golden-lion-damage-utility",
     "name": "Celestial Lion's Presence 2%",
     "filter": "companion_power",
     "il": 900,
     "combined_rating": 900,
     "overall_damage": 0.02,
+    "hideFromPicker": true,
+    "replacedBy": {
+      "item": "celestial-lion-s-presence",
+      "values": {
+        "overall_damage": 0.02
+      }
+    },
     "longDescription": "Stalwart Golden Lion companion power. Role: Utility.",
     "maxCopies": 1,
     "tags": ["companion_power:utility"]
@@ -1684,6 +1709,13 @@
     "il": 900,
     "combined_rating": 900,
     "overall_damage": 0.03,
+    "hideFromPicker": true,
+    "replacedBy": {
+      "item": "celestial-lion-s-presence",
+      "values": {
+        "overall_damage": 0.03
+      }
+    },
     "longDescription": "Stalwart Golden Lion companion power. Role: Utility.",
     "maxCopies": 1,
     "tags": ["companion_power:utility"]
@@ -1695,6 +1727,13 @@
     "il": 900,
     "combined_rating": 900,
     "overall_damage": 0.04,
+    "hideFromPicker": true,
+    "replacedBy": {
+      "item": "celestial-lion-s-presence",
+      "values": {
+        "overall_damage": 0.04
+      }
+    },
     "longDescription": "Stalwart Golden Lion companion power. Role: Utility.",
     "maxCopies": 1,
     "tags": ["companion_power:utility"]

@@ -32,7 +32,13 @@ import type {
   Bonus,
   BuildParameterSlot,
   BonusOccurrenceConfig,
+  ItemReplacement,
+  StatValues,
 } from "../../types";
+import {
+  replacementIdOf,
+  replacementValuesOf,
+} from "../../lib/item-replacement";
 import type { StatRow } from "../../engine/bonus-draft";
 import BaseCheckbox from "../ui/BaseCheckbox.vue";
 
@@ -106,6 +112,11 @@ export interface ItemDraft {
   shortDescription: string;
   longDescription: string;
   maxCopies: number | string | null;
+  /** Both halves optional and independent -- see `Item.hideFromPicker` / `Item.replacedBy`. */
+  hideFromPicker: boolean;
+  replacedBy: string;
+  /** `ItemReplacement.values` as rows; empty writes the bare-id form back out. */
+  replacedByValues: { stat: string; value: number | string | null }[];
   allowedClass: string[];
   tags: string[];
   gameIds: string[];
@@ -159,6 +170,11 @@ function buildDraft(item: Item | null | undefined): ItemDraft {
     shortDescription: source.shortDescription ?? "",
     longDescription: source.longDescription ?? "",
     maxCopies: source.maxCopies ?? null,
+    hideFromPicker: source.hideFromPicker ?? false,
+    replacedBy: source.replacedBy ? replacementIdOf(source.replacedBy) : "",
+    replacedByValues: Object.entries(
+      source.replacedBy ? replacementValuesOf(source.replacedBy) : {},
+    ).map(([stat, value]) => ({ stat, value: value ?? null })),
     allowedClass: [...(source.allowedClass ?? [])],
     tags: [...(source.tags ?? [])],
     gameIds: [...(source.gameIds ?? [])],
@@ -212,6 +228,13 @@ function diffLabel(oldJson: string, newJson: string): string {
       return "edit long description";
     if (old.maxCopies !== nw.maxCopies)
       return `edit max copies → ${nw.maxCopies ?? "(none)"}`;
+    if (old.hideFromPicker !== nw.hideFromPicker)
+      return nw.hideFromPicker ? "hide from pickers" : "offer in pickers again";
+    if (
+      JSON.stringify(replacementOf(old.replacedBy)) !==
+      JSON.stringify(replacementOf(nw.replacedBy))
+    )
+      return `edit replaced by → ${replacementOf(nw.replacedBy)?.item ?? "(none)"}`;
     if (JSON.stringify(old.allowedClass) !== JSON.stringify(nw.allowedClass))
       return "edit classes";
     if (JSON.stringify(old.tags) !== JSON.stringify(nw.tags))
@@ -389,6 +412,15 @@ const displayId = computed(
  * honoured as a fallback, so an overlay declaring the older param-based shape keeps working.
  * Blank values are dropped either way -- "no class at all" is not a restriction. */
 const classSlot = computed(() => findParamSlot(props.db.slots, "class"));
+/** `replacedBy` candidates. This item is left out -- a self-reference is a lint error. */
+const replacementOptions = computed(() => [
+  { value: "", label: "- not replaced -" },
+  ...props.db.items
+    .filter((item) => item.id !== props.source?.id)
+    .map((item) => ({ value: item.id, label: `${item.name} (${item.id})` }))
+    .sort((a, b) => a.label.localeCompare(b.label)),
+]);
+
 const classes = computed(() => {
   const byValue = new Map<string, string>();
   for (const option of classSlot.value?.options ?? []) {
@@ -472,6 +504,19 @@ function toItem(): Item {
   }
   if (local.excludes.length) item.excludes = [...local.excludes];
   if (local.maxCopies) item.maxCopies = Number(local.maxCopies);
+  if (local.hideFromPicker) item.hideFromPicker = true;
+  if (local.replacedBy.trim()) {
+    const target = local.replacedBy.trim();
+    // Bare string unless a seed is set, so the simple case stays simple in the JSON.
+    const values: StatValues = {};
+    for (const row of local.replacedByValues) {
+      if (row.stat && row.value !== null && row.value !== "")
+        values[row.stat] = Number(row.value);
+    }
+    item.replacedBy = Object.keys(values).length
+      ? { item: target, values }
+      : target;
+  }
   if (local.allowedClass.length) item.allowedClass = [...local.allowedClass];
 
   const dynamicStats = local.dynamicStats
@@ -578,6 +623,22 @@ function removeStat(index: number) {
 }
 function focusNextStat(event: KeyboardEvent) {
   focusNextCombo(event);
+}
+
+/** A draft's `replacedBy` in the shape `Item` stores, for the change label above. */
+function replacementOf(value: unknown): ItemReplacement | null {
+  if (!value) return null;
+  return typeof value === "string"
+    ? { item: value }
+    : (value as ItemReplacement);
+}
+
+function addReplacedByValue() {
+  draft.value.replacedByValues.push({ stat: "", value: null });
+}
+
+function removeReplacedByValue(index: number) {
+  draft.value.replacedByValues.splice(index, 1);
 }
 
 function addDynamicStat() {
@@ -1149,5 +1210,88 @@ watch(
       @attach-bonus="attachBonus"
       @update-occurrence="(e) => updateBonusOccurrence(e.id, e.occurrence)"
     />
+
+    <FormSection>Retirement</FormSection>
+    <div class="mb-1.5 flex flex-wrap items-center gap-x-4 gap-y-1.5">
+      <BaseCheckbox
+        v-model="draft.hideFromPicker"
+        data-testid="item-hide-from-picker"
+      >
+        Hide from pickers
+      </BaseCheckbox>
+      <div class="flex min-w-80 flex-1 items-center gap-1.5">
+        <span class="whitespace-nowrap text-muted">Replaced by</span>
+        <ComboBox
+          class="min-w-0 flex-1"
+          data-testid="item-replaced-by"
+          :options="replacementOptions"
+          :model-value="draft.replacedBy"
+          @update:model-value="(v) => (draft.replacedBy = v)"
+        />
+      </div>
+    </div>
+    <p class="mb-1.5 text-muted">
+      Hidden items are no longer offered as a new pick, but a build already
+      using one keeps calculating it. A replacement is followed everywhere an
+      item is looked up, and builds still holding the old id are offered the
+      rewrite.
+    </p>
+
+    <template v-if="draft.replacedBy">
+      <div
+        v-for="(row, index) in draft.replacedByValues"
+        :key="index"
+        class="replaced-by-value-row flex flex-wrap items-center gap-1.5 mb-1"
+      >
+        <IconButton title="Add carried value" @click="addReplacedByValue"
+          ><Plus
+        /></IconButton>
+        <IconButton
+          title="Remove carried value"
+          @click="removeReplacedByValue(index)"
+          ><Trash
+        /></IconButton>
+        <FormField label="Carry stat">
+          <ComboBox
+            class="combo--stat w-52"
+            :model-value="row.stat"
+            :options="dynamicStatOptions"
+            placeholder="- pick a stat -"
+            @update:model-value="(v) => (row.stat = v)"
+          />
+        </FormField>
+        <FormField label="Value on the replacement">
+          <PercentInput
+            v-if="isPercent(row.stat)"
+            :model-value="row.value ?? ''"
+            class="w-24"
+            @update:model-value="(v) => (row.value = v)"
+          />
+          <input
+            v-else
+            v-model.number="row.value"
+            class="w-24 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+            type="number"
+            step="any"
+          />
+        </FormField>
+      </div>
+      <div
+        v-if="!draft.replacedByValues.length"
+        class="replaced-by-value-row flex flex-wrap items-center gap-1.5 mb-1"
+      >
+        <IconButton
+          title="Add carried value"
+          data-testid="item-add-carried-value"
+          @click="addReplacedByValue"
+          ><Plus
+        /></IconButton>
+        <span class="text-muted">
+          Carry a value onto the replacement's dynamic stat, so a build moving
+          off this item keeps its number instead of taking the new item's
+          default.
+        </span>
+      </div>
+    </template>
   </div>
 </template>

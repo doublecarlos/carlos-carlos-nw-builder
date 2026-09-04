@@ -1355,6 +1355,8 @@ function testDb(items: Item[], bonuses: Bonus[], slots: Slot[] = []): Db {
   const bonusesById = new Map(bonuses.map((s) => [s.id, s]));
   return {
     get: (id: string | null | undefined) => itemsById.get(id ?? "") ?? null,
+    // No fixture here declares `replacedBy`, so nothing is superseded.
+    replacementFor: () => null,
     bonusById: bonusesById,
     slots,
     authoredSlots: slots,

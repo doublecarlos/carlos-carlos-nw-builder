@@ -31,6 +31,7 @@ import type {
   Grant,
   StatValues,
 } from "../../types";
+import { TriangleAlert } from "@lucide/vue";
 import BaseBadge from "../ui/BaseBadge.vue";
 import BaseCard from "../ui/BaseCard.vue";
 import BaseCardHeader from "../ui/BaseCardHeader.vue";
@@ -67,6 +68,11 @@ const props = withDefaults(
     scale: 1,
     scaleNotes: () => [],
   },
+);
+
+/** What this item would be swapped for, when the card has a catalogue to ask. */
+const replacement = computed(
+  () => props.db?.replacementFor(props.item.id) ?? null,
 );
 
 const occurrenceRowByBonusId = computed(
@@ -368,6 +374,22 @@ const rows = computed(() =>
     <BaseCardBody>
       <div v-if="slotLabel" class="mb-1 text-muted">
         {{ slotLabel }}
+      </div>
+      <!-- The one fact on this card the player has to act on, so it outweighs the stats. -->
+      <div
+        v-if="item.hideFromPicker || replacement"
+        class="mb-1.5 flex items-start gap-1.5 rounded-md border border-warn bg-warn/25 px-1.5 py-1 font-semibold text-warn"
+        data-testid="item-card-retired"
+      >
+        <TriangleAlert class="mt-0.5 h-[14px] w-[14px] shrink-0" />
+        <span>
+          <template v-if="item.hideFromPicker"
+            >Retired: no longer offered as a new pick.</template
+          >
+          <template v-if="replacement">
+            Replaced by {{ replacement.name }}.
+          </template>
+        </span>
       </div>
       <div
         v-if="longDescription.length"

@@ -681,6 +681,7 @@ describe("toBuildJson with db (portable files)", () => {
     const db = {
       get: (id: string | null | undefined) =>
         id === "layer-item" ? layerItem : null,
+      replacementFor: () => null,
       bonusById: new Map([[layerBonus.id, layerBonus]]),
       slots: [],
       authoredSlots: [],
@@ -705,6 +706,7 @@ describe("toBuildJson with db (portable files)", () => {
     const db = {
       get: (id: string | null | undefined) =>
         id === BASE_ITEM_ID ? shippedItem : null,
+      replacementFor: () => null,
       bonusById: new Map(),
       slots: [],
       authoredSlots: [],
@@ -734,6 +736,7 @@ describe("toBuildJson with db (portable files)", () => {
     const db = {
       get: (id: string | null | undefined) =>
         id === "layer-item" ? layerItem : null,
+      replacementFor: () => null,
       bonusById: new Map([[layerBonus.id, layerBonus]]),
       slots: [],
       authoredSlots: [],

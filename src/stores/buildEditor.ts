@@ -6,6 +6,11 @@ import * as builds from "./builds";
 import * as compare from "./compare";
 import * as history from "./history";
 import { db } from "./resolved";
+import {
+  migrateItemIds,
+  migrateSlotItem,
+  replacements,
+} from "../storage/migrate-item-ids";
 import { getPath, setPath } from "../lib/build-path";
 import { deepEqual } from "../lib/deep-equal";
 import { repetitionRows } from "../lib/inline-repetition";
@@ -283,6 +288,53 @@ export function applyParamFromCompare(slot: BuildParameterSlot) {
     b,
   );
   setPath(b.context, slot.path, fromVal);
+}
+
+/** Every superseded item id the active build stores, old name to new. Off `replacements`, not
+ *  `retiredChoices`, so a retirement reaching the build only through a point-assignment count
+ *  is offered too. */
+export const retired = computed(() => {
+  const b = builds.build.value;
+  if (!b) return [];
+  return [...replacements(db.value, b)].map(([from, to]) => ({
+    from: db.value.get(from)?.name ?? from,
+    to: db.value.get(to)?.name ?? to,
+  }));
+});
+
+/** Swaps every retired item the active build holds. One undoable step; the seeds keep the
+ *  build's numbers where they were. */
+export function applyRetiredItems() {
+  const b = builds.build.value;
+  if (!b) return;
+  const migrated = migrateItemIds(db.value, b);
+  if (migrated === b) return;
+  const count = retired.value.length;
+  history.snapshot(
+    "build",
+    b.id,
+    null,
+    `update ${count} retired item${count === 1 ? "" : "s"}`,
+    b,
+  );
+  builds.replaceActive(migrated);
+}
+
+/** One slot's retired pick swapped, leaving the rest alone -- the per-row counterpart. */
+export function applyRetiredItem(slotId: string) {
+  const b = builds.build.value;
+  if (!b) return;
+  const from = b.choices?.[slotId];
+  const to = from ? db.value.replacementFor(from) : null;
+  if (!to) return;
+  history.snapshot(
+    "build",
+    b.id,
+    `retired:${slotId}`,
+    `${slotLabel(slotId)} → ${to.name}`,
+    b,
+  );
+  builds.replaceActive(migrateSlotItem(db.value, b, slotId));
 }
 
 /** One item's inline-repetition count at one slot. One function for both slot types, since
