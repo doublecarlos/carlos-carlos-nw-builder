@@ -21,6 +21,7 @@ import { findParamSlot } from "../lib/build-path";
 import { resolvedOptions } from "../lib/param-options";
 import { deepEqual } from "../lib/deep-equal";
 import { bonusIdOf } from "../lib/bonus-attachment";
+import { replacementIdOf, replacementValuesOf } from "../lib/item-replacement";
 import { parseRowSlotId, rowSlot } from "../lib/item-picker-list";
 import type {
   Item,
@@ -280,6 +281,13 @@ export function referencedOverlay(db: Db, build: Build): CatalogOverlay {
     if (id && id !== "-" && id !== "") itemIds.add(id);
   }
 
+  // Both ends of a `replacedBy` travel: without the stored id the choice dangles on the other
+  // side, without the replacement the offer points at nothing.
+  for (const id of [...itemIds]) {
+    const replacement = db.replacementFor(id);
+    if (replacement) itemIds.add(replacement.id);
+  }
+
   // Resolve items to find referenced bonus ids
   const visitedItems = new Set<string>();
   const stack = [...itemIds];
@@ -314,7 +322,9 @@ export function referencedOverlay(db: Db, build: Build): CatalogOverlay {
 
   const overlay = emptyOverlay();
 
-  // Emit only items absent from base or not deep-equal to their base counterpart
+  // Emit only items absent from base or not deep-equal to it. An overlay entry is keyed by the
+  // id it is stored under and db.ts re-indexes it by the entry's own `id`, so the two must
+  // agree: one emitted under someone else's id vanishes from the catalogue on import.
   for (const id of itemIds) {
     const item = db.get(id);
     if (!item) continue;
@@ -399,6 +409,8 @@ const ITEM_FIELDS = new Set([
   "gameIds",
   "defaultParams",
   "publishes",
+  "hideFromPicker",
+  "replacedBy",
 ]);
 
 // A `param` condition addressing one of these paths duplicates a dedicated leaf that already
@@ -988,6 +1000,110 @@ export function validateSlotDefaults(
   return findings;
 }
 
+/**
+ * Every `Item.replacedBy` chain has to end somewhere real. A broken one never crashes -- it
+ * just silently leaves builds on an item they were meant to move off, which only a lint finds.
+ * Errors throughout: no reading of a self-reference, cycle or dangling target is intentional.
+ */
+export function validateReplacements(
+  items: Item[],
+  schema: Schema = NW_SCHEMA,
+): LintFinding[] {
+  const findings: LintFinding[] = [];
+  const byId = new Map(items.map((item) => [item.id, item]));
+  const statKeys = new Set(schema.statKeys);
+
+  for (const item of items) {
+    if (!item.replacedBy) continue;
+    const target = replacementIdOf(item.replacedBy);
+    if (target === item.id) {
+      findings.push({
+        level: "error",
+        kind: "item",
+        name: item.id,
+        message: "replacedBy points at itself",
+      });
+      continue;
+    }
+    if (!byId.has(target)) {
+      findings.push({
+        level: "error",
+        kind: "item",
+        name: item.id,
+        message: `replacedBy "${target}" is not an item in the catalogue`,
+      });
+      continue;
+    }
+    // A seed reaches `Build.values` only through a `dynamicStats` entry on the item ending the
+    // chain, so one naming a stat that item lacks is silently dropped at migration.
+    const seeds = Object.entries(replacementValuesOf(item.replacedBy));
+    if (seeds.length) {
+      const final = endOfChain(byId, item);
+      const declared = new Set(
+        (final?.dynamicStats ?? []).map((config) => config.stat),
+      );
+      for (const [stat, value] of seeds) {
+        if (!statKeys.has(stat)) {
+          findings.push({
+            level: "error",
+            kind: "item",
+            name: item.id,
+            message: `replacedBy seeds "${stat}", which is not a stat in the schema`,
+          });
+        } else if (typeof value !== "number" || !Number.isFinite(value)) {
+          findings.push({
+            level: "error",
+            kind: "item",
+            name: item.id,
+            message: `replacedBy seeds ${stat} with a non-finite value`,
+          });
+        } else if (final && !declared.has(stat)) {
+          findings.push({
+            level: "error",
+            kind: "item",
+            name: item.id,
+            message:
+              `replacedBy seeds ${stat}, but "${final.id}" declares no dynamicStats ` +
+              "entry for it - the value would be dropped on migration",
+          });
+        }
+      }
+    }
+
+    // One finding per cycle member: each is an item whose `replacedBy` needs fixing.
+    const seen = new Set<string>([item.id]);
+    let cursor: string | undefined = target;
+    while (cursor && !seen.has(cursor)) {
+      seen.add(cursor);
+      const next: Item["replacedBy"] = byId.get(cursor)?.replacedBy;
+      cursor = next ? replacementIdOf(next) : undefined;
+    }
+    if (cursor) {
+      findings.push({
+        level: "error",
+        kind: "item",
+        name: item.id,
+        message: `replacedBy chain loops back to "${cursor}"`,
+      });
+    }
+  }
+  return findings;
+}
+
+/** The item a chain ends on, or undefined if it cycles or dangles (reported separately). */
+function endOfChain(byId: Map<string, Item>, start: Item): Item | undefined {
+  const seen = new Set<string>([start.id]);
+  let item: Item | undefined = start;
+  while (item?.replacedBy) {
+    const next = replacementIdOf(item.replacedBy);
+    if (seen.has(next)) return undefined;
+    seen.add(next);
+    item = byId.get(next);
+    if (!item) return undefined;
+  }
+  return item;
+}
+
 export function validate(
   items: Item[],
   bonuses: Bonus[],
@@ -1001,6 +1117,7 @@ export function validate(
     ...validatePresets(presets, slots),
     ...validateParamSchema(slots, schema),
     ...validateParamReaders(slots, bonuses),
+    ...validateReplacements(items, schema),
   ];
   const report = (
     level: "error" | "warn",

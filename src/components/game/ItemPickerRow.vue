@@ -8,9 +8,10 @@ import ItemPicker from "./ItemPicker.vue";
 import BonusOccurrenceInputs from "./BonusOccurrenceInputs.vue";
 import InlineRepetitionStepper from "./InlineRepetitionStepper.vue";
 import PercentInput from "../ui/PercentInput.vue";
+import BaseBadge from "../ui/BaseBadge.vue";
 import BaseButton from "../ui/BaseButton.vue";
 import IconButton from "../ui/IconButton.vue";
-import { Trash } from "@lucide/vue";
+import { Replace, Trash } from "@lucide/vue";
 import * as buildEditor from "../../stores/buildEditor";
 import { useItemBonusOccurrences } from "../../composables/useItemBonusOccurrences";
 import {
@@ -51,6 +52,11 @@ const props = defineProps<{
 const picker = useTemplateRef<InstanceType<typeof ItemPicker>>("picker");
 
 const occurrenceRows = useItemBonusOccurrences(computed(() => props.item));
+
+/** The item this slot's pick would migrate to, or null when it is not retired. */
+const replacement = computed(() =>
+  props.db.replacementFor(props.build.choices?.[props.slotDef.id]),
+);
 
 function setOccurrence(bonusId: string, count: number, label: string) {
   buildEditor.setOccurrenceInput(props.item!.id, bonusId, count, label);
@@ -134,6 +140,20 @@ const repetitionLabel = computed(
     >
       <template #label>{{ repetitionLabel }}</template>
     </InlineRepetitionStepper>
+    <!-- The build-wide notice's offer, scoped to this row. -->
+    <span
+      v-if="replacement"
+      class="flex shrink-0 items-center gap-1"
+      :data-testid="'slot-retired:' + slotDef.id"
+    >
+      <BaseBadge variant="warn">retired</BaseBadge>
+      <IconButton
+        :title="`Replace with ${replacement.name}`"
+        :data-testid="'slot-retired-apply:' + slotDef.id"
+        @click="buildEditor.applyRetiredItem(slotDef.id)"
+        ><Replace
+      /></IconButton>
+    </span>
     <span
       class="min-w-0 flex-1 truncate text-text"
       data-testid="slot-stat-summary"
@@ -167,6 +187,7 @@ const repetitionLabel = computed(
         v-if="isPercent(row.stat)"
         :model-value="row.value"
         class="w-20"
+        :data-testid="'slot-dynamic:' + row.stat"
         @update:model-value="setDynamic(row, $event)"
       />
       <input
@@ -176,6 +197,7 @@ const repetitionLabel = computed(
         :min="row.min"
         :max="row.max"
         :value="row.value"
+        :data-testid="'slot-dynamic:' + row.stat"
         @input="setDynamic(row, ($event.target as HTMLInputElement).value)"
       />
     </div>

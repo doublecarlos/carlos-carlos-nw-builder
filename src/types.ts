@@ -344,6 +344,24 @@ export interface Item {
   /** Longer flavor/explanation shown on the item's hover card, below its stats -- see
    * `ItemCard.vue`. */
   longDescription?: string;
+  /** Drops this item from every list offering a *new* pick: an item_picker dropdown, an
+   * `optionsFrom` option set, a point_assignment row at count 0. A build already using it keeps
+   * calculating it unchanged. The item-level counterpart to `GrantProblem.hideFromPicker`.
+   *
+   * Never hides what the build already holds (db.ts's `stillOffered`), or clearing a pick would
+   * be a one-way door. */
+  hideFromPicker?: boolean;
+  /** The item that supersedes this one: an offer, not a redirect. A build holding this id
+   * keeps reading and calculating as *this* item until the player accepts the swap, so lookups
+   * never forward (db.ts's `endOfChain`).
+   *
+   * A bare id is the plain case; an `ItemReplacement` adds `values` to seed the replacement's
+   * dynamic stats, which is what makes accepting change ids without changing stats. Read
+   * through item-replacement.ts, same convention `Item.bonuses` uses.
+   *
+   * Independent of `hideFromPicker`; setting both is the ordinary retirement.
+   * `validateReplacements` reports cycles and dangling ids. */
+  replacedBy?: string | ItemReplacement;
   /** In-game internal item identifiers (`Hitem` in a demo record) that this catalogue entry
    * stands for. The relation is many-to-many. Several game items routinely collapse onto one
    * entry -- different ranks of the same enchantment, or a mount's four rarity tiers. One game
@@ -379,6 +397,19 @@ export interface Item {
    * what makes equipping two copies of one item harmless. */
   publishes?: Record<string, string | number | boolean>;
   [key: string]: unknown;
+}
+
+/**
+ * A replacement that carries values forward, not just identity.
+ *
+ * `values` seeds the replacement's `dynamicStats` at migration (`migrateItemIds`). It exists
+ * for the shape this mechanism is for: several fixed-value items collapsing onto one with a
+ * player-typed magnitude, where migrating on identity alone would move every old build onto
+ * the new `default` and silently change its numbers.
+ */
+export interface ItemReplacement {
+  item: string;
+  values?: StatValues;
 }
 
 /** Bounds for one item's repetition count. Its presence is what gates the input, the role a
@@ -599,7 +630,13 @@ export interface Db {
    *  catalog.ts's validate rejects two claimants sharing a filter as genuinely ambiguous. */
   itemByGameId: Map<string, string[]>;
   duplicates: string[];
+  /** Look up an item by the id given. Never forwards through `Item.replacedBy`. */
   get(id: string | null | undefined): Item | null;
+  /** The item `id` would migrate to, or null. Drives the offer; never resolves a build. */
+  replacementFor(id: string | null | undefined): Item | null;
+  /** Values `id` carries forward when migrated, merged along the chain, later hops winning.
+   * Consumed by `migrateItemIds`, the only place a seed lands. */
+  replacementSeeds(id: string | null | undefined): StatValues;
   forFilter(filter: string): Item[];
   forSlot(slotId: string): Item[];
   /** `slotById.get`, extended to the row ids an `item_picker_list` expands into -- those exist

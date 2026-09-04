@@ -8,6 +8,7 @@ import { computed, useTemplateRef } from "vue";
 import BonusOccurrenceInputs from "./BonusOccurrenceInputs.vue";
 import InlineRepetitionStepper from "./InlineRepetitionStepper.vue";
 import { db } from "../../stores/resolved";
+import { stillOffered } from "../../data/db";
 import {
   occurrenceRows,
   occurrenceRowsForItem,
@@ -45,8 +46,15 @@ const emit = defineEmits<{
 }>();
 
 /** Every item matching the slot's filter with an `inlineRepetition` config -- one row each,
- *  already sorted by priority (db.ts's `forSlot`). */
-const rows = computed(() => db.value.forSlot(props.slotDef.id));
+ *  already sorted by priority (db.ts's `forSlot`).
+ *
+ *  A `hideFromPicker` item keeps its row while it still holds points: these all render at once,
+ *  so dropping an assigned one would strand points the engine still counts. */
+const rows = computed(() =>
+  db.value
+    .forSlot(props.slotDef.id)
+    .filter((item) => stillOffered(item, valueFor(item) > 0)),
+);
 
 function valueFor(item: Item) {
   return props.values[item.id] ?? item.inlineRepetition!.default;

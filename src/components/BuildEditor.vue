@@ -69,6 +69,11 @@ const db = engine.db;
 const build = builds.build;
 const resolved = engine.resolved;
 
+/** The swaps "update" would make, one per line. */
+const retiredTitle = computed(() =>
+  buildEditor.retired.value.map(({ from, to }) => `${from} → ${to}`).join("\n"),
+);
+
 // Only ever mounted when `engine.resolved.value.ok` -- the throw documents that invariant
 // instead of a defensive fallback for a state that can't happen.
 const result = computed(() => {
@@ -791,6 +796,24 @@ watch(
             @click="slotFilter.clearBonus()"
           >
             ✕
+          </button>
+        </BaseBadge>
+        <BaseBadge
+          v-if="buildEditor.retired.value.length"
+          variant="near"
+          data-testid="retired-items"
+          :title="retiredTitle"
+        >
+          {{ buildEditor.retired.value.length }} retired item{{
+            buildEditor.retired.value.length === 1 ? "" : "s"
+          }}
+          <button
+            type="button"
+            class="ml-1 cursor-pointer font-semibold underline"
+            data-testid="retired-items-apply"
+            @click="buildEditor.applyRetiredItems()"
+          >
+            update
           </button>
         </BaseBadge>
         <BaseBadge
