@@ -1571,7 +1571,15 @@
     "severity": 1125,
     "gameIds": [
       "Insignia_Enlightened_Power_Recovery_R6",
-      "Insignia_Crescent_Power_Recovery_R6"
+      "Insignia_Crescent_Power_Recovery_R6",
+      "Insignia_Regal_Power_Recovery_R6",
+      "Insignia_Illuminated_Power_Recovery_R6",
+      "Insignia_Barbed_Power_Recovery_R6",
+      "Insignia_Enlightened_Power_Recovery_Account_R6",
+      "Insignia_Crescent_Power_Recovery_Account_R6",
+      "Insignia_Regal_Power_Recovery_Account_R6",
+      "Insignia_llluminated_Power_Recovery_Account_R6",
+      "Insignia_Barbed_Power_Recovery_Account_R6"
     ]
   },
   {
@@ -1703,6 +1711,32 @@
     },
     "longDescription": "Stalwart Golden Lion companion power. Role: Utility.",
     "tags": ["companion_power:utility"]
+  },
+  {
+    "id": "celestial-skill",
+    "name": "Celestial Skill",
+    "filter": "insignia",
+    "il": 750,
+    "combined_rating": 600,
+    "ca": 1125,
+    "strike": 1125,
+    "gameIds": [
+      "Insignia_Enlightened_Crit_R6",
+      "Insignia_Crescent_Crit_R6",
+      "Insignia_Barbed_Crit_R6",
+      "Insignia_Enlightened_Crit_Account_R6",
+      "Insignia_Crescent_Crit_Account_R6",
+      "Insignia_Barbed_Crit_Account_R6"
+    ]
+  },
+  {
+    "id": "celestial-skill-pref",
+    "name": "Celestial Skill (Pref)",
+    "filter": "insignia",
+    "il": 900,
+    "combined_rating": 720,
+    "ca": 1350,
+    "strike": 1350
   },
   {
     "id": "cha-lua-accuracy-severity",
@@ -2001,7 +2035,10 @@
     "gameIds": [
       "Insignia_Barbed_Power_R6",
       "Insignia_Regal_Power_R6",
-      "Insignia_Illuminated_Power_R6"
+      "Insignia_Illuminated_Power_R6",
+      "Insignia_Barbed_Power_Account_R6",
+      "Insignia_Regal_Power_Account_R6",
+      "Insignia_Illuminated_Power_Account_R6"
     ],
     "il": 750,
     "combined_rating": 600,
@@ -5256,7 +5293,11 @@
     "il": 750,
     "combined_rating": 600,
     "strike": 1125,
-    "forte": 1125
+    "forte": 1125,
+    "gameIds": [
+      "Insignia_Crescent_Outheal_Forte_R5",
+      "Insignia_Crescent_Outheal_Forte_Account_R5"
+    ]
   },
   {
     "id": "tranquility-pref",
