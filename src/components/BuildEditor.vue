@@ -15,11 +15,18 @@ import ItemPickerListRow from "./game/ItemPickerListRow.vue";
 import TextRow from "./game/TextRow.vue";
 import BaseButton from "./ui/BaseButton.vue";
 import BaseBadge from "./ui/BaseBadge.vue";
+import IconButton from "./ui/IconButton.vue";
 import ComboBox from "./ui/ComboBox.vue";
 import QuickOptions from "./game/QuickOptions.vue";
-import { ChevronsDownUp, ChevronsUpDown, FilterX } from "@lucide/vue";
+import {
+  ChevronsDownUp,
+  ChevronsUpDown,
+  Eye,
+  EyeOff,
+  FilterX,
+} from "@lucide/vue";
 import { NW_SCHEMA, NW_SLOTS } from "../data/data";
-import { forSlotAndBuild } from "../data/db";
+import { forSlotAndBuild, hiddenReasons } from "../data/db";
 import { abbr, signedStat, statPickerOptions } from "../lib/format";
 import { descriptionParagraphs } from "../lib/description";
 import { matchesQuery } from "../lib/text-filter";
@@ -45,6 +52,7 @@ import * as builds from "../stores/builds";
 import * as buildEditor from "../stores/buildEditor";
 import * as compare from "../stores/compare";
 import * as slotFilter from "../stores/slotFilter";
+import * as pickerLens from "../stores/pickerLens";
 import * as engine from "../stores/resolved";
 import * as editorScroll from "../stores/editorScroll";
 import * as selection from "../stores/selection";
@@ -115,6 +123,12 @@ const modKey = isMac ? "Cmd" : "Ctrl";
 const filterText = slotFilter.text;
 const filterStat = slotFilter.stat;
 const filterActive = slotFilter.isActive;
+
+const lensTitle = computed(() =>
+  pickerLens.showHidden.value
+    ? "Hide unavailable items"
+    : "Show unavailable items",
+);
 
 const statFilterOptions = [
   { value: "", label: "All stats" },
@@ -461,7 +475,17 @@ const bonusesBySlot = computed(() => {
 // would otherwise hide every restricted item with no explanation. Equipping one still flags
 // the `requires X` error once a class/race is (not) chosen.
 function itemsFor(slotId: string) {
-  return forSlotAndBuild(db.value, slotId, build.value);
+  return forSlotAndBuild(db.value, slotId, build.value, {
+    includeHidden: pickerLens.showHidden.value,
+  });
+}
+
+/** Only computed while the lens is on: with it off nothing is re-shown, so nothing needs a
+ *  reason and the second pass over the candidates is pure cost. */
+function hiddenReasonsFor(slotId: string) {
+  return pickerLens.showHidden.value
+    ? hiddenReasons(db.value, slotId, build.value)
+    : null;
 }
 
 function errorsFor(slotId: string) {
@@ -824,6 +848,20 @@ watch(
             filteredSlotCount === 1 ? "" : "es"
           }}</BaseBadge
         >
+        <!-- Last and pushed to the far edge: a lens, not a filter -- it widens what the
+             pickers offer rather than narrowing the slot list the rest of this bar acts on,
+             and "clear filters" leaves it alone. -->
+        <IconButton
+          class="ml-auto"
+          :class="pickerLens.showHidden.value && 'bg-accent-soft text-accent'"
+          :title="lensTitle"
+          :aria-pressed="pickerLens.showHidden.value"
+          data-testid="show-hidden-toggle"
+          @click="pickerLens.toggle()"
+        >
+          <Eye v-if="pickerLens.showHidden.value" />
+          <EyeOff v-else />
+        </IconButton>
       </div>
     </div>
 
@@ -903,6 +941,7 @@ watch(
               :on-arrow="moveCursor"
               :item="itemIn(slotDef.id)"
               :items="itemsFor(slotDef.id)"
+              :hidden-reasons="hiddenReasonsFor(slotDef.id)"
               :errors="errorsFor(slotDef.id)"
               :stat-summary="statSummary(slotDef.id)"
               :choice-differs="differs(slotDef.id)"

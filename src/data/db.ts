@@ -322,13 +322,40 @@ export function itemPublishing(
   return db.items.find((item) => item.publishes?.[path] === value)?.id;
 }
 
-/** `db.forSlot(slotId)`, narrowed to what the build's published class actually allows and, for an
- * item_picker slot, to what its `maxCopies` cap still has room for -- the same
- * "succeeds then flagged" gap `hideFromPicker` closed for problem grants, closed here for
- * the far more common maxCopies case via a dedicated cheap check instead of routing through the
- * bonus/condition system. An unset class constrains nothing -- defaulting to empty, a fresh
- * build would otherwise hide every class-restricted item with no explanation. */
-export function forSlotAndBuild(db: Db, slotId: string, build: Build): Item[] {
+/** A slot's candidate and, when the picker would normally withhold it, the reason it gives.
+ * `null` for a candidate offered as usual. */
+export interface SlotCandidate {
+  item: Item;
+  hidden: string | null;
+}
+
+/** Display name per published class value, so a reason can read "Wizard only" instead of
+ * repeating the raw published id. Built once per candidate list rather than per candidate. */
+function classNames(db: Db): Map<string, string> {
+  const names = new Map<string, string>();
+  for (const item of db.items) {
+    const value = item.publishes?.class;
+    if (typeof value === "string" && !names.has(value))
+      names.set(value, item.name);
+  }
+  return names;
+}
+
+/**
+ * Every candidate `db.forSlot(slotId)` offers, each tagged with why the picker withholds it:
+ * retired (`Item.hideFromPicker`), restricted to another class, or already at its `maxCopies`
+ * cap. All three are states the engine can already describe once reached (`checkItemErrors`),
+ * so the filters exist only to close the "succeeds then flagged" gap -- which is why a caller
+ * can ask for the withheld ones back and get a reason to show beside each.
+ *
+ * An unset class constrains nothing -- defaulting to empty, a fresh build would otherwise
+ * withhold every class-restricted item.
+ */
+export function slotCandidates(
+  db: Db,
+  slotId: string,
+  build: Build,
+): SlotCandidate[] {
   // Published by the equipped class item rather than stored on the build -- `options.class` is
   // an ordinary item_picker now, so `context.class` no longer exists.
   const cls = publishedValue(db, build, "class") as string | undefined;
@@ -336,17 +363,50 @@ export function forSlotAndBuild(db: Db, slotId: string, build: Build): Item[] {
   const counts =
     slot?.type === "item_picker" ? copyCounts(db, build, slotId) : null;
   const equipped = build.choices?.[slotId];
-  return db
-    .forSlot(slotId)
-    .filter((item) => stillOffered(item, item.id === equipped))
-    .filter(
-      (item) => !item.allowedClass || !cls || item.allowedClass.includes(cls),
-    )
-    .filter((item) => {
-      if (!counts) return true;
+  let names: Map<string, string> | null = null;
+
+  return db.forSlot(slotId).map((item) => {
+    let hidden: string | null = null;
+    if (!stillOffered(item, item.id === equipped)) {
+      hidden = "retired";
+    } else if (item.allowedClass && cls && !item.allowedClass.includes(cls)) {
+      names ??= classNames(db);
+      hidden = `${item.allowedClass.map((id) => names!.get(id) ?? id).join(" or ")} only`;
+    } else if (counts) {
       const max = db.maxCopies(item);
-      return !max || (counts.get(item.id) ?? 0) < max;
-    });
+      const used = counts.get(item.id) ?? 0;
+      if (max && used >= max) hidden = `${used}/${max} copies`;
+    }
+    return { item, hidden };
+  });
+}
+
+/** `slotCandidates` narrowed to what the slot actually offers. `includeHidden` re-admits the
+ * withheld ones, for the build editor's "show unavailable" lens. */
+export function forSlotAndBuild(
+  db: Db,
+  slotId: string,
+  build: Build,
+  { includeHidden = false }: { includeHidden?: boolean } = {},
+): Item[] {
+  const candidates = slotCandidates(db, slotId, build);
+  return (includeHidden ? candidates : candidates.filter((c) => !c.hidden)).map(
+    (c) => c.item,
+  );
+}
+
+/** Reason per withheld candidate, keyed by item id -- what a picker showing them needs to say
+ * why each is there. */
+export function hiddenReasons(
+  db: Db,
+  slotId: string,
+  build: Build,
+): Map<string, string> {
+  const reasons = new Map<string, string>();
+  for (const { item, hidden } of slotCandidates(db, slotId, build)) {
+    if (hidden) reasons.set(item.id, hidden);
+  }
+  return reasons;
 }
 
 /** One slot whose stored item id has been superseded, and what it now resolves to. */

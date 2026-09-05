@@ -50,6 +50,8 @@ const props = defineProps<{
   bonusDiffs?: { id: string; message: string }[];
   // item_picker only
   items?: Item[];
+  /** Reason per withheld candidate, forwarded to the picker (db.ts's `hiddenReasons`). */
+  hiddenReasons?: ReadonlyMap<string, string> | null;
   choiceDiffers?: boolean;
   otherChoiceLabel?: string;
   valueDiffs?: ValueDiff[];
@@ -200,6 +202,7 @@ useCursorRowKeys(anchor, {
         :highlight-diff="highlightDiff"
         :item="item"
         :items="items"
+        :hidden-reasons="hiddenReasons"
         :stat-summary="statSummary"
         :invalid="errors?.some((e) => e.severity !== 'warning') ?? false"
         :choice-differs="choiceDiffers"

@@ -835,6 +835,7 @@ watch(
         <input
           v-model.number="draft.maxCopies"
           class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+          data-testid="item-max-copies"
           type="number"
           min="0"
         />
