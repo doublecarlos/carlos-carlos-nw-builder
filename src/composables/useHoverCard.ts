@@ -149,5 +149,6 @@ export function useHoverCard(
     onCardLeave,
     onFocusIn,
     onFocusOut,
+    closeCard: close,
   };
 }

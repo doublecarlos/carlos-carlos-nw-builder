@@ -245,6 +245,7 @@ const {
   onCardLeave,
   onFocusIn: onHoverFocusIn,
   onFocusOut,
+  closeCard,
 } = useHoverCard(
   tooltip,
   (slotId, itemId) => itemForHover(slotId, itemId) !== null,
@@ -556,10 +557,31 @@ function onRowClick(event: MouseEvent, slotId: string, itemId?: string) {
   const seed = item ? null : newItemSeedFor(slotId);
   if (!item && !seed) return;
   if (seed) layerEditorUi.seedNewItem(seed);
+  openInLayerEditor(item?.id ?? null);
+}
+
+/** `itemId` null means the editor opens whatever draft the caller seeded instead. */
+function openInLayerEditor(itemId: string | null) {
   const layer = layers.ensureTargetLayer();
-  router.apply({ item: item?.id ?? null });
+  router.apply({ item: itemId });
   selection.selectLayer(layer.id);
 }
+
+/** The card is dismissed first: it would otherwise hang over the editor it just opened. */
+function onCardEdit() {
+  const item = hoveredItem.value;
+  if (!item) return;
+  closeCard();
+  openInLayerEditor(item.id);
+}
+
+/** Names the destination off the same resolution `ensureTargetLayer` commits to, so the two
+ *  cannot drift. Unnamed when there is no layer yet: it gets its name only once created. */
+const editLabel = computed(() => {
+  const target = layers.targetLayer.value;
+  const where = target ? `“${target.name}”` : "a new layer";
+  return `Edit this item in ${where} (${modKey}+Click the row)`;
+});
 
 /**
  * Condensed, single-line stat summary for a row: the item's own stats plus whatever
@@ -996,6 +1018,8 @@ watch(
             :scale-notes="itemScaleNotes(hoveredItem)"
             :db="db"
             :slot-label="db.slotFor(hover.slotId)?.label ?? ''"
+            :edit-label="editLabel"
+            @edit="onCardEdit"
             @mouseenter="onCardEnter"
             @mouseleave="onCardLeave"
           />
