@@ -50,9 +50,8 @@ const props = withDefaults(
      * true) governs whether a candidate that would activate a `hideFromPicker` problem grant
      * is dropped from the dropdown entirely -- the resolve already happens per candidate for
      * the preview below, so this reads off the same result rather than costing anything extra.
-     * Left as a plain field on this same object (rather than its own prop) so a future
-     * "ignore picker filters" what-if toggle only has to change what the caller passes here,
-     * not this component. */
+     * Turned off, the candidate is listed with the conflict named beside it instead, the same
+     * way `hiddenReasons` labels the filters the caller resolved. */
     bonusPreview?: {
       db: Db;
       build: Build;
@@ -72,6 +71,11 @@ const props = withDefaults(
     /** Whether the dropdown offers the empty "- none -" row (`ItemPickerSlot.disallowEmpty`).
      *  Stops an empty value being *chosen*; says nothing about a build already holding one. */
     allowEmpty?: boolean;
+    /** Why each candidate in `items` would normally be withheld, keyed by item id
+     *  (`db.ts`'s `hiddenReasons`). Set only by a caller that asked for the withheld ones
+     *  back: a listed candidate has to say what is wrong with it, or the wider list is just a
+     *  longer list. Candidates named here sort below the freely available ones. */
+    hiddenReasons?: ReadonlyMap<string, string> | null;
   }>(),
   {
     selectedItem: null,
@@ -81,6 +85,7 @@ const props = withDefaults(
     hidePreview: false,
     inputId: undefined,
     allowEmpty: true,
+    hiddenReasons: null,
   },
 );
 
@@ -103,10 +108,11 @@ interface BonusStatsPreview {
    *  its own. Sourced from `previewStats`, the same near-miss payload BonusInspector.vue
    *  and ItemCard.vue already show for equipped items' inactive bonuses. */
   potential: Record<string, number>;
-  /** True when picking `item` here would activate a bonus grant flagged
-   *  `hideFromPicker` -- the candidate should be left out of the dropdown entirely rather
-   *  than merely flagged, unless the caller opted out via `bonusPreview.filterHidden`. */
-  filtered: boolean;
+  /** Names the bonus whose `hideFromPicker` problem grant picking `item` here would
+   *  activate, or null when there is none -- the candidate is left out of the dropdown
+   *  entirely unless the caller opted out via `bonusPreview.filterHidden`, in which case this
+   *  is the reason shown on its row. */
+  conflict: string | null;
 }
 
 /**
@@ -143,12 +149,15 @@ function previewBonusStats(item: Item): BonusStatsPreview | null {
     // necessarily this one, so slot attribution can't be trusted to find it.
     const bonusById = new Map(result.bonuses.map((bonus) => [bonus.id, bonus]));
     const potential: Record<string, number> = {};
-    let filtered = false;
+    let conflict: string | null = null;
     for (const candidate of ctx.db.bonusesFor(item)) {
       const resolved = bonusById.get(candidate.bonus.id);
       if (!resolved) continue;
-      if (resolved.active && resolved.problems.some((p) => p.hideFromPicker)) {
-        filtered = true;
+      const problem = resolved.active
+        ? resolved.problems.find((p) => p.hideFromPicker)
+        : undefined;
+      if (problem) {
+        conflict ??= `conflicts with ${problem.label ?? candidate.bonus.name}`;
       }
       if (resolved.active || resolved.excluded || !resolved.previewStats)
         continue;
@@ -157,7 +166,7 @@ function previewBonusStats(item: Item): BonusStatsPreview | null {
       }
     }
 
-    return { current, potential, filtered };
+    return { current, potential, conflict };
   } catch {
     return null;
   }
@@ -191,14 +200,33 @@ const candidateStats = computed(() => {
   return map;
 });
 
-/** `items` narrowed by any active `hideFromPicker` problem grant a candidate would trigger.
- *  Filtering is opt-out via `bonusPreview.filterHidden === false`, kept toggleable per-caller
- *  so a future "ignore picker filters" what-if setting can flip it off without changing this
- *  component. */
+/** Why each listed candidate would normally be withheld: the caller's own `hiddenReasons` for
+ *  the filters it resolved, plus this component's per-candidate conflict check. Empty unless
+ *  something is being re-shown. */
+const withheld = computed(() => {
+  const map = new Map<string, string>(props.hiddenReasons ?? []);
+  if (props.bonusPreview?.filterHidden === false) {
+    for (const [id, stats] of candidateStats.value ?? []) {
+      if (stats?.conflict && !map.has(id)) map.set(id, stats.conflict);
+    }
+  }
+  return map;
+});
+
+/** `items` narrowed by any active `hideFromPicker` problem grant a candidate would trigger,
+ *  opt-out via `bonusPreview.filterHidden === false`. Re-shown candidates sort last, so
+ *  turning the lens on appends to the list a player was already reading instead of
+ *  reshuffling it. */
 const visibleItems = computed(() => {
   const stats = candidateStats.value;
-  if (!stats || props.bonusPreview?.filterHidden === false) return props.items;
-  return props.items.filter((item) => !stats.get(item.id)?.filtered);
+  if (!stats) return props.items;
+  if (props.bonusPreview?.filterHidden === false) {
+    const reasons = withheld.value;
+    return [...props.items].sort(
+      (a, b) => Number(reasons.has(a.id)) - Number(reasons.has(b.id)),
+    );
+  }
+  return props.items.filter((item) => !stats.get(item.id)?.conflict);
 });
 
 /** Map items to the generic {value, label} format ComboBox expects, plus the off-screen
@@ -288,6 +316,15 @@ defineExpose({
         <span
           class="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap font-semibold"
           >{{ option.label }}</span
+        >
+        <!-- Why this row is here at all when it would normally be withheld. Outside the
+             `hidePreview` block below: which candidates are legal is not a presentation
+             question. -->
+        <span
+          v-if="withheld.get(option.value)"
+          class="shrink-0 text-warn"
+          data-testid="picker-option-hidden-reason"
+          >{{ withheld.get(option.value) }}</span
         >
         <!-- Both markers describe the item as gear, so they go with the preview lines. -->
         <template v-if="!hidePreview">

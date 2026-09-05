@@ -13,6 +13,7 @@ import BaseButton from "../ui/BaseButton.vue";
 import IconButton from "../ui/IconButton.vue";
 import { Replace, Trash } from "@lucide/vue";
 import * as buildEditor from "../../stores/buildEditor";
+import * as pickerLens from "../../stores/pickerLens";
 import { useItemBonusOccurrences } from "../../composables/useItemBonusOccurrences";
 import {
   useSlotDynamicStats,
@@ -33,6 +34,9 @@ const props = defineProps<{
   highlightDiff: boolean;
   item?: Item | null;
   items?: Item[];
+  /** Why each of `items` would normally be withheld, when the editor's lens is re-showing
+   *  them -- passed straight to the picker. */
+  hiddenReasons?: ReadonlyMap<string, string> | null;
   statSummary?: string;
   invalid?: boolean;
   choiceDiffers?: boolean;
@@ -116,7 +120,13 @@ const repetitionLabel = computed(
       :selected-item="item"
       :invalid="invalid"
       :db="db"
-      :bonus-preview="{ db, build, slotId: slotDef.id }"
+      :hidden-reasons="hiddenReasons"
+      :bonus-preview="{
+        db,
+        build,
+        slotId: slotDef.id,
+        filterHidden: !pickerLens.showHidden.value,
+      }"
       :hide-preview="slotDef.hidePreview"
       :allow-empty="!slotDef.disallowEmpty"
       @update:model-value="buildEditor.setChoice(slotDef.id, $event)"
