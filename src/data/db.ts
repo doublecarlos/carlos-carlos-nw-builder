@@ -100,6 +100,7 @@ export function build(
   schema: Schema,
   slots: SlotsData,
 ): Db {
+  const filterDefaults = slots?.filterDefaults ?? {};
   const byId = new Map<string, Item>();
   // Keyed by `string | undefined` (not just `string`): an item with no `filter` still lands
   // here under the `undefined` key -- dead weight (`forFilter` is only ever called with a
@@ -174,6 +175,7 @@ export function build(
     itemsByTag,
     itemByGameId,
     duplicates,
+    filterDefaults,
 
     /** Look up an item by id. `-`, blank and nullish all mean "empty slot". Never follows
      * `replacedBy` -- see `endOfChain`. */
@@ -240,8 +242,11 @@ export function build(
       return [];
     },
 
-    /** 0 or absent means unlimited. */
-    maxCopies: (item: Item | null | undefined) => item?.maxCopies ?? 0,
+    /** 0 or absent means unlimited. An item with no cap of its own inherits its filter's
+     *  default; an explicit 0 opts back out. */
+    maxCopies: (item: Item | null | undefined) =>
+      item?.maxCopies ??
+      (item?.filter ? (filterDefaults[item.filter]?.maxCopies ?? 0) : 0),
 
     /**
      * Every bonus an item contributes: every bonus it belongs to, whether that bonus has

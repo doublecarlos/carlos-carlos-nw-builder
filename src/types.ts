@@ -292,12 +292,22 @@ export interface SectionPreset {
   clears?: string[];
 }
 
+/** Defaults a whole item category shares, declared once against the filter. An item's own
+ * field always wins, so an explicit `maxCopies: 0` opts one member back out. */
+export interface FilterDefaults {
+  maxCopies?: number;
+}
+
+export type FilterDefaultsMap = Record<string, FilterDefaults>;
+
 export interface SlotsData {
   sections: SlotSection[];
   slots: Slot[];
   /** Optional: several unit-test fixtures build a minimal `SlotsData` with no presets of
    * their own -- `db.ts`'s `build()` already defaults a missing one to `[]`. */
   presets?: SectionPreset[];
+  /** Optional like `presets`: without it every item is capped by its own field alone. */
+  filterDefaults?: FilterDefaultsMap;
 }
 
 // --- items / bonuses -----------------------------------------------------------------------
@@ -630,6 +640,8 @@ export interface Db {
    *  catalog.ts's validate rejects two claimants sharing a filter as genuinely ambiguous. */
   itemByGameId: Map<string, string[]>;
   duplicates: string[];
+  /** Carried here so a consumer can show what an item's blank field resolves to. */
+  filterDefaults: FilterDefaultsMap;
   /** Look up an item by the id given. Never forwards through `Item.replacedBy`. */
   get(id: string | null | undefined): Item | null;
   /** The item `id` would migrate to, or null. Drives the offer; never resolves a build. */

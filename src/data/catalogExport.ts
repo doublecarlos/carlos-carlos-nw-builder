@@ -14,7 +14,14 @@
 // forever. Stats (whatever is left over) keep their existing relative order: there is no
 // canonical order among them worth enforcing, and their number/names vary per item.
 
-import type { Item, Bonus, Slot, SectionPreset, SlotSection } from "../types";
+import type {
+  Item,
+  Bonus,
+  Slot,
+  SectionPreset,
+  SlotSection,
+  FilterDefaultsMap,
+} from "../types";
 
 const ITEM_LEADING_KEYS = ["id", "name", "filter"] as const;
 const ITEM_TRAILING_KEYS = [
@@ -75,8 +82,10 @@ export function toSlotsFile(
   sections: SlotSection[],
   slots: Slot[],
   presets: SectionPreset[],
+  filterDefaults: FilterDefaultsMap = {},
 ): string {
   const body = {
+    filterDefaults,
     sections: sections.map((section) => {
       const sectionSlots = slots
         .filter((slot) => slot.section === section.id)

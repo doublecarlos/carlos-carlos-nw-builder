@@ -31,5 +31,10 @@ writeFileSync(
 );
 writeFileSync(
   path.join(dataDir, "slots.json"),
-  catalogExport.toSlotsFile(NW_SLOTS.sections, NW_SLOTS.slots, sectionPresets),
+  catalogExport.toSlotsFile(
+    NW_SLOTS.sections,
+    NW_SLOTS.slots,
+    sectionPresets,
+    NW_SLOTS.filterDefaults,
+  ),
 );

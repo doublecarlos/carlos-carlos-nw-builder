@@ -490,7 +490,6 @@
     "id": "a-due",
     "name": "A Due",
     "filter": "feat3",
-    "maxCopies": 1,
     "allowedClass": ["bard"],
     "tags": ["exclusive:songblade"],
     "bonuses": ["paragon-exclusive"]
@@ -540,14 +539,12 @@
     "strike_p": 0.045,
     "gameIds": ["Pet_Alchemist_Player_Bonus"],
     "longDescription": "Alchemist companion power. Role: Offense, Utility.",
-    "maxCopies": 1,
     "tags": ["companion_power:offense", "companion_power:utility"]
   },
   {
     "id": "angel-of-death",
     "name": "Angel of Death",
     "filter": "feat5",
-    "maxCopies": 1,
     "allowedClass": ["cleric"],
     "tags": ["exclusive:arbiter"],
     "bonuses": ["paragon-exclusive"]
@@ -556,8 +553,7 @@
     "id": "apocalipse-set",
     "name": "Apocalipse Set",
     "filter": "group_buff",
-    "enemy_incoming_damage": 0.05,
-    "maxCopies": 1
+    "enemy_incoming_damage": 0.05
   },
   {
     "id": "arma-egg-on",
@@ -568,8 +564,7 @@
     "acc": 2535,
     "ca": 1560,
     "severity": 2340,
-    "gameIds": ["Artifact_M31_April_Fowls_Artifact_R5"],
-    "maxCopies": 1
+    "gameIds": ["Artifact_M31_April_Fowls_Artifact_R5"]
   },
   {
     "id": "armor-breaker-severity-celestial",
@@ -583,84 +578,72 @@
     "id": "arti-assasin-s-dice",
     "name": "Arti: Assasin's Dice",
     "filter": "artifact_call",
-    "maxCopies": 1,
     "bonuses": ["arti-assasin-s-dice"]
   },
   {
     "id": "arti-beacon",
     "name": "Arti: Beacon",
     "filter": "artifact_call",
-    "maxCopies": 1,
     "bonuses": ["arti-beacon"]
   },
   {
     "id": "arti-blades-wyvern",
     "name": "Arti: Blades/Wyvern",
     "filter": "artifact_call",
-    "maxCopies": 1,
     "bonuses": ["arti-blades-wyvern"]
   },
   {
     "id": "arti-censer",
     "name": "Arti: Censer",
     "filter": "artifact_call",
-    "maxCopies": 1,
     "bonuses": ["arti-censer"]
   },
   {
     "id": "arti-crystal",
     "name": "Arti: Crystal",
     "filter": "artifact_call",
-    "maxCopies": 1,
     "bonuses": ["arti-crystal"]
   },
   {
     "id": "arti-demogorgon-s-reach",
     "name": "Arti: Demogorgon's Reach",
     "filter": "artifact_call",
-    "maxCopies": 1,
     "bonuses": ["arti-demogorgon"]
   },
   {
     "id": "arti-marco",
     "name": "Arti: Marco",
     "filter": "artifact_call",
-    "maxCopies": 1,
     "bonuses": ["arti-marco"]
   },
   {
     "id": "arti-mythalar",
     "name": "Arti: Mythalar",
     "filter": "artifact_call",
-    "maxCopies": 1,
     "bonuses": ["arti-mythalar"]
   },
   {
     "id": "arti-scepter",
     "name": "Arti: Scepter",
     "filter": "artifact_call",
-    "maxCopies": 1,
     "bonuses": ["arti-scepter"]
   },
   {
     "id": "arti-spelljammer-lantern",
     "name": "Arti: Spelljammer/Lantern",
     "filter": "artifact_call",
-    "maxCopies": 1,
     "bonuses": ["arti-spelljammer-lantern"]
   },
   {
     "id": "arti-tentacle-rod",
     "name": "Arti: Tentacle Rod",
     "filter": "artifact_call",
-    "maxCopies": 1,
     "bonuses": ["arti-tentacle-rod"]
   },
   {
     "id": "arti-volcano-heart-of-black-dragon",
     "name": "Arti: Volcano/Heart of Black Dragon",
     "filter": "artifact_call",
-    "maxCopies": 1,
     "bonuses": ["arti-volcano-heart-of-black-dragon"]
   },
   {
@@ -672,8 +655,7 @@
     "acc": 1950,
     "ca": 1200,
     "severity": 1800,
-    "gameIds": ["Artifact_M31_All_Zone_Artifact_R5"],
-    "maxCopies": 1
+    "gameIds": ["Artifact_M31_All_Zone_Artifact_R5"]
   },
   {
     "id": "avian-aura-celestial",
@@ -688,14 +670,12 @@
     "id": "avian-aura-group-celestial",
     "name": "Avian Aura",
     "filter": "group_buff",
-    "maxCopies": 1,
     "bonuses": ["avian-aura-group-celestial"]
   },
   {
     "id": "backup-performer",
     "name": "Backup Performer",
     "filter": "feat1",
-    "maxCopies": 1,
     "allowedClass": ["bard"],
     "tags": ["exclusive:songblade"],
     "bonuses": ["paragon-exclusive"]
@@ -704,7 +684,6 @@
     "id": "ballad-colla-voce",
     "name": "Ballad Colla Voce",
     "filter": "feat3",
-    "maxCopies": 1,
     "allowedClass": ["bard"],
     "tags": ["exclusive:songblade"],
     "bonuses": ["paragon-exclusive"]
@@ -713,8 +692,7 @@
     "id": "bard-s-storyteller-flamingo",
     "name": "Bard's Storyteller + Flamingo",
     "filter": "group_buff",
-    "outgoing_damage": 0.17,
-    "maxCopies": 1
+    "outgoing_damage": 0.17
   },
   {
     "id": "batiri-s-wisdom-batiri-damage-offense",
@@ -724,7 +702,6 @@
     "combined_rating": 900,
     "gameIds": ["Pet_Batiri_Player_Bonus"],
     "longDescription": "Batiri companion power. Role: Offense.",
-    "maxCopies": 1,
     "tags": ["companion_power:offense"],
     "bonuses": ["batiri-s-wisdom-batiri-damage-offense"]
   },
@@ -732,7 +709,6 @@
     "id": "battlefield-ostinato",
     "name": "Battlefield Ostinato",
     "filter": "feat2",
-    "maxCopies": 1,
     "allowedClass": ["bard"],
     "tags": ["exclusive:songblade"],
     "bonuses": ["paragon-exclusive"]
@@ -746,14 +722,12 @@
     "ca": 1125,
     "strike": 1125,
     "severity": 1125,
-    "gameIds": ["Artifact_M28_Meteorswarm_R5"],
-    "maxCopies": 1
+    "gameIds": ["Artifact_M28_Meteorswarm_R5"]
   },
   {
     "id": "black-death-scorpion",
     "name": "Black Death Scorpion",
-    "filter": "group_buff",
-    "maxCopies": 1
+    "filter": "group_buff"
   },
   {
     "id": "blazing-oportunity-ca-severity-bestial-fire-archon-celestial",
@@ -773,14 +747,12 @@
     "acc": 1500,
     "ca": 1500,
     "severity": 1500,
-    "gameIds": ["Artifact_M30_All_Zone_Artifact_R5"],
-    "maxCopies": 1
+    "gameIds": ["Artifact_M30_All_Zone_Artifact_R5"]
   },
   {
     "id": "blue-fire-eye",
     "name": "Blue Fire Eye",
     "filter": "group_buff",
-    "maxCopies": 1,
     "bonuses": ["blue-fire-eye"]
   },
   {
@@ -1615,7 +1587,6 @@
     "id": "burning-patch",
     "name": "Burning Patch",
     "filter": "feat4",
-    "maxCopies": 1,
     "allowedClass": ["cleric"],
     "tags": ["exclusive:arbiter"],
     "bonuses": ["paragon-exclusive"]
@@ -1652,7 +1623,6 @@
     "id": "captain",
     "name": "Captain",
     "filter": "group_buff",
-    "maxCopies": 1,
     "bonuses": ["captain"]
   },
   {
@@ -1673,7 +1643,6 @@
     "il": 900,
     "combined_rating": 900,
     "longDescription": "Stalwart Golden Lion companion power. Role: Utility.",
-    "maxCopies": 1,
     "dynamicStats": [
       {
         "stat": "overall_damage",
@@ -1699,7 +1668,6 @@
       }
     },
     "longDescription": "Stalwart Golden Lion companion power. Role: Utility.",
-    "maxCopies": 1,
     "tags": ["companion_power:utility"]
   },
   {
@@ -1717,7 +1685,6 @@
       }
     },
     "longDescription": "Stalwart Golden Lion companion power. Role: Utility.",
-    "maxCopies": 1,
     "tags": ["companion_power:utility"]
   },
   {
@@ -1735,7 +1702,6 @@
       }
     },
     "longDescription": "Stalwart Golden Lion companion power. Role: Utility.",
-    "maxCopies": 1,
     "tags": ["companion_power:utility"]
   },
   {
@@ -1892,7 +1858,6 @@
     "strike_p": 0.045,
     "sev_p": 0.045,
     "longDescription": "Coldlight Walker companion power. Role: Utility.",
-    "maxCopies": 1,
     "tags": ["companion_power:utility"]
   },
   {
@@ -1917,7 +1882,6 @@
     "combined_rating": 900,
     "power_p": 0.09,
     "longDescription": "Alpha Compy companion power. Role: Utility.",
-    "maxCopies": 1,
     "tags": ["companion_power:utility"]
   },
   {
@@ -1938,8 +1902,7 @@
     "defense": 1365,
     "deflect_sev": 2925,
     "stamina_regen": 0.15,
-    "gameIds": ["Artifact_M31_All_Bp_Artifact_R5"],
-    "maxCopies": 1
+    "gameIds": ["Artifact_M31_All_Bp_Artifact_R5"]
   },
   {
     "id": "crit-strike-kit",
@@ -1952,7 +1915,6 @@
     "id": "critical-sun",
     "name": "Critical Sun",
     "filter": "feat4",
-    "maxCopies": 1,
     "allowedClass": ["cleric"],
     "tags": ["exclusive:arbiter"],
     "bonuses": ["paragon-exclusive"]
@@ -1966,8 +1928,7 @@
     "power": 1125,
     "acc": 1125,
     "ca": 1125,
-    "gameIds": ["Artifact_Soulflight_R5"],
-    "maxCopies": 1
+    "gameIds": ["Artifact_Soulflight_R5"]
   },
   {
     "id": "dark-dealings-dark-dealer-accuracy-ca-utility",
@@ -1978,7 +1939,6 @@
     "acc_p": 0.045,
     "ca_p": 0.045,
     "longDescription": "Dark Dealer companion power. Role: Utility.",
-    "maxCopies": 1,
     "tags": ["companion_power:utility"]
   },
   {
@@ -1997,8 +1957,7 @@
     "power": 900,
     "forte": 900,
     "hit_points": 3600,
-    "gameIds": ["Artifact_Demogorgon_Revamp_R5"],
-    "maxCopies": 1
+    "gameIds": ["Artifact_Demogorgon_Revamp_R5"]
   },
   {
     "id": "demon-skull",
@@ -2009,8 +1968,7 @@
     "power": 2184,
     "ca": 2496,
     "severity": 1825,
-    "gameIds": ["Artifact_M32_All_Lockbox_Artifact_R5"],
-    "maxCopies": 1
+    "gameIds": ["Artifact_M32_All_Lockbox_Artifact_R5"]
   },
   {
     "id": "devil-s-precision",
@@ -2072,7 +2030,6 @@
     "name": "Doomsayer",
     "filter": "class_feat",
     "longDescription": "Whenever you use an encounter power that inflicts a\nnegative condition on an enemy, you gain the effect\nof Doomsayer, increasing damage dealt by 10%.\n\nDuration: 10s.",
-    "maxCopies": 1,
     "allowedClass": ["cleric"],
     "tags": ["exclusive:arbiter"],
     "bonuses": ["paragon-exclusive"]
@@ -2090,14 +2047,12 @@
     "id": "drizzt",
     "name": "Drizzt",
     "filter": "group_buff",
-    "maxCopies": 1,
     "bonuses": ["drizzt"]
   },
   {
     "id": "elemental-medley",
     "name": "Elemental Medley",
     "filter": "feat2",
-    "maxCopies": 1,
     "allowedClass": ["bard"],
     "tags": ["exclusive:songblade"],
     "bonuses": ["paragon-exclusive"]
@@ -2117,20 +2072,17 @@
   {
     "id": "enemy-type-boss",
     "name": "Enemy: Boss",
-    "filter": "scenario_flag",
-    "maxCopies": 1
+    "filter": "scenario_flag"
   },
   {
     "id": "enemy-type-non-boss",
     "name": "Enemy: Non Boss",
-    "filter": "scenario_flag",
-    "maxCopies": 1
+    "filter": "scenario_flag"
   },
   {
     "id": "etrien",
     "name": "Etrien",
     "filter": "group_buff",
-    "maxCopies": 1,
     "bonuses": ["etrien"]
   },
   {
@@ -2154,7 +2106,6 @@
     "filter": "class_feat",
     "shortDescription": "Max Divinity +150",
     "longDescription": "Max Divinity +150",
-    "maxCopies": 1,
     "allowedClass": ["cleric"],
     "tags": ["exclusive:arbiter"],
     "bonuses": ["paragon-exclusive"]
@@ -2175,7 +2126,6 @@
     "power_p": 0.045,
     "strike_p": 0.045,
     "longDescription": "Fawn of Shiallia companion power. Role: Offense, Utility.",
-    "maxCopies": 1,
     "tags": ["companion_power:offense", "companion_power:utility"]
   },
   {
@@ -2206,14 +2156,12 @@
     "id": "fighter-s-enforced-threat",
     "name": "Fighter's Enforced Threat",
     "filter": "group_buff",
-    "enemy_awareness": -0.1,
-    "maxCopies": 1
+    "enemy_awareness": -0.1
   },
   {
     "id": "flapjack",
     "name": "Flapjack",
     "filter": "group_buff",
-    "maxCopies": 1,
     "bonuses": ["flapjack"]
   },
   {
@@ -2226,7 +2174,6 @@
     "id": "focused-light",
     "name": "Focused Light",
     "filter": "feat2",
-    "maxCopies": 1,
     "allowedClass": ["cleric"],
     "tags": ["exclusive:arbiter"],
     "bonuses": ["paragon-exclusive"]
@@ -2260,7 +2207,6 @@
     "combined_rating": 900,
     "ca_p": 0.09,
     "longDescription": "Golden Cat companion power. Role: Any (Offense, Defense, or Utility).",
-    "maxCopies": 1,
     "tags": [
       "companion_power:offense",
       "companion_power:defense",
@@ -2273,8 +2219,7 @@
     "filter": "group_buff",
     "enemy_defense": -0.035,
     "enemy_awareness": -0.035,
-    "enemy_crit_avoid": -0.035,
-    "maxCopies": 1
+    "enemy_crit_avoid": -0.035
   },
   {
     "id": "grand-summer-feast",
@@ -2306,7 +2251,6 @@
     "id": "inner-balance",
     "name": "Inner Balance",
     "filter": "feat3",
-    "maxCopies": 1,
     "allowedClass": ["cleric"],
     "tags": ["exclusive:arbiter"],
     "bonuses": ["paragon-exclusive"]
@@ -3020,7 +2964,6 @@
     "id": "lightspeed",
     "name": "Lightspeed",
     "filter": "feat1",
-    "maxCopies": 1,
     "allowedClass": ["cleric"],
     "tags": ["exclusive:arbiter"],
     "bonuses": ["paragon-exclusive"]
@@ -3028,20 +2971,17 @@
   {
     "id": "location-thay",
     "name": "Location: Thay",
-    "filter": "scenario_flag",
-    "maxCopies": 1
+    "filter": "scenario_flag"
   },
   {
     "id": "location-wildspace",
     "name": "Location: Wildspace",
-    "filter": "scenario_flag",
-    "maxCopies": 1
+    "filter": "scenario_flag"
   },
   {
     "id": "loremaster",
     "name": "Loremaster",
     "filter": "feat5",
-    "maxCopies": 1,
     "allowedClass": ["bard"],
     "tags": ["exclusive:songblade"],
     "bonuses": ["paragon-exclusive"]
@@ -3056,8 +2996,7 @@
     "ca": 450,
     "strike": 450,
     "defense": 450,
-    "gameIds": ["Artifact_Storytellers_Journal_Y1_RS"],
-    "maxCopies": 1
+    "gameIds": ["Artifact_Storytellers_Journal_Y1_RS"]
   },
   {
     "id": "m16-burnished-sword-knot-epic",
@@ -3321,7 +3260,6 @@
     "acc": 8092,
     "severity": 7470,
     "gameIds": ["Ring_M31_Mediumdps_S-tier"],
-    "maxCopies": 1,
     "bonuses": ["m24-maiden-s-advantage"]
   },
   {
@@ -3443,7 +3381,6 @@
     "severity": 5688,
     "ap_gain": 0.015,
     "gameIds": ["Ring_M31_Lightdps_A-tier"],
-    "maxCopies": 1,
     "bonuses": ["m31-thayan-predator"]
   },
   {
@@ -3455,7 +3392,6 @@
     "ca": 3792,
     "severity": 8532,
     "gameIds": ["Ring_M31_Mediumdps_A-tier"],
-    "maxCopies": 1,
     "bonuses": ["m31-thayan-predator"]
   },
   {
@@ -3506,7 +3442,6 @@
     "strike": 8964,
     "forte": 4482,
     "gameIds": ["Ring_M31_Mediumheal_S-tier"],
-    "maxCopies": 1,
     "bonuses": ["m31-enduring-critical"]
   },
   {
@@ -3605,7 +3540,6 @@
     "severity": 8820,
     "ap_gain": 0.015,
     "gameIds": ["Ring_M32_Heavydps_S-tier"],
-    "maxCopies": 1,
     "bonuses": ["m32-deathsilver-coil-of-dominion-acc-strike"]
   },
   {
@@ -3618,7 +3552,6 @@
     "ca": 5880,
     "ap_gain": 0.015,
     "gameIds": ["Ring_M32_Mediumdps_S-tier"],
-    "maxCopies": 1,
     "bonuses": ["m32-deathsilver-ring-of-submission-strike"]
   },
   {
@@ -3711,7 +3644,6 @@
     "severity": 8370,
     "ap_gain": 0.015,
     "gameIds": ["Ring_M32_Lightdps_A-tier"],
-    "maxCopies": 1,
     "bonuses": ["m32-rotsteel-loop-of-ash-ca"]
   },
   {
@@ -3724,8 +3656,7 @@
     "ca": 5580,
     "strike": 8370,
     "ap_gain": 0.015,
-    "gameIds": ["Ring_M32_Heavydps_A-tier"],
-    "maxCopies": 1
+    "gameIds": ["Ring_M32_Heavydps_A-tier"]
   },
   {
     "id": "m32-rotsteel-ring-of-spores-strike",
@@ -3737,7 +3668,6 @@
     "severity": 8370,
     "ap_gain": 0.015,
     "gameIds": ["Ring_M32_Mediumdps_A-tier"],
-    "maxCopies": 1,
     "bonuses": ["m32-rotsteel-ring-of-spores-strike"]
   },
   {
@@ -3863,7 +3793,6 @@
     "severity": 10260,
     "ap_gain": 0.015,
     "gameIds": ["Ring_M33_Heavydps_R5"],
-    "maxCopies": 1,
     "bonuses": ["m33-accumulating-precision"]
   },
   {
@@ -3876,7 +3805,6 @@
     "strike": 10260,
     "ap_gain": 0.015,
     "gameIds": ["Ring_M33_Lightdps_R5"],
-    "maxCopies": 1,
     "bonuses": ["m33-dashing-ranger"]
   },
   {
@@ -3889,7 +3817,6 @@
     "ca": 6840,
     "ap_gain": 0.015,
     "gameIds": ["Ring_M33_Mediumdps_R5"],
-    "maxCopies": 1,
     "bonuses": ["m24-maiden-s-advantage"]
   },
   {
@@ -4052,7 +3979,6 @@
     "severity": 10800,
     "ap_gain": 0.015,
     "gameIds": ["Ring_M33_Heavydps_R6"],
-    "maxCopies": 1,
     "bonuses": [
       "m33-frostsilver-coil-of-wrath-accuracy",
       "m33-frostsilver-coil-of-wrath-ca",
@@ -4070,7 +3996,6 @@
     "strike": 10800,
     "ap_gain": 0.015,
     "gameIds": ["Ring_M33_Lightdps_R6"],
-    "maxCopies": 1,
     "bonuses": [
       "m33-frostsilver-loop-of-the-arcane-accuracy",
       "m33-frostsilver-loop-of-the-arcane-power",
@@ -4087,7 +4012,6 @@
     "ca": 7200,
     "ap_gain": 0.015,
     "gameIds": ["Ring_M33_Mediumdps_R6"],
-    "maxCopies": 1,
     "bonuses": [
       "m33-frostsilver-ring-of-initiative-strike",
       "m33-frostsilver-ring-of-initiative-severity",
@@ -4307,21 +4231,18 @@
     "combined_rating": 1275,
     "acc": 2250,
     "severity": 1125,
-    "gameIds": ["Artifact_M27_Marcosmissiles_R5"],
-    "maxCopies": 1
+    "gameIds": ["Artifact_M27_Marcosmissiles_R5"]
   },
   {
     "id": "marilith-set",
     "name": "Marilith Set",
     "filter": "group_buff",
-    "enemy_incoming_damage": 0.05,
-    "maxCopies": 1
+    "enemy_incoming_damage": 0.05
   },
   {
     "id": "martial-performance",
     "name": "Martial Performance",
     "filter": "feat4",
-    "maxCopies": 1,
     "allowedClass": ["bard"],
     "tags": ["exclusive:songblade"],
     "bonuses": ["paragon-exclusive"]
@@ -4346,8 +4267,7 @@
     "filter": "gear_ring",
     "strike_p": 1,
     "sev_p": 1,
-    "gameIds": ["Test_Stat_Ring_Max_Crit_Critsev"],
-    "maxCopies": 1
+    "gameIds": ["Test_Stat_Ring_Max_Crit_Critsev"]
   },
   {
     "id": "mender-s-covenant",
@@ -4360,7 +4280,6 @@
     "id": "misnc",
     "name": "Misnc",
     "filter": "group_buff",
-    "maxCopies": 1,
     "bonuses": ["misnc"]
   },
   {
@@ -4415,28 +4334,24 @@
     "id": "mount-hag-s-enchanted-cauldroon",
     "name": "Mount: Hag's Enchanted Cauldroon",
     "filter": "artifact_call",
-    "maxCopies": 1,
     "bonuses": ["mount-hag-s-enchanted-cauldroon"]
   },
   {
     "id": "mount-pegasus",
     "name": "Mount: Pegasus",
     "filter": "artifact_call",
-    "maxCopies": 1,
     "bonuses": ["mount-pegasus"]
   },
   {
     "id": "mount-red-dragon",
     "name": "Mount: Red Dragon",
     "filter": "artifact_call",
-    "maxCopies": 1,
     "bonuses": ["mount-red-dragon"]
   },
   {
     "id": "mount-swarm-eclipse-rex-bestial",
     "name": "Mount: Swarm/Eclipse/Rex/Bestial",
     "filter": "artifact_call",
-    "maxCopies": 1,
     "bonuses": ["mount-swarm-eclipse-rex-bestial"]
   },
   {
@@ -4457,7 +4372,6 @@
     "id": "mystic-aura-group-celestial",
     "name": "Mystic Aura",
     "filter": "group_buff",
-    "maxCopies": 1,
     "bonuses": ["mystic-aura-group-celestial"]
   },
   {
@@ -4475,8 +4389,7 @@
     "filter": "group_buff",
     "enemy_defense": -0.05,
     "enemy_awareness": -0.05,
-    "enemy_crit_avoid": -0.05,
-    "maxCopies": 1
+    "enemy_crit_avoid": -0.05
   },
   {
     "id": "neverwinter-knight-s-discipline-neverwinter-knight-damage-offense",
@@ -4487,7 +4400,6 @@
     "outgoing_damage": 0.09,
     "gameIds": ["Pet_Neverwinter_Knight_Player_Bonus"],
     "longDescription": "Neverwinter Knight companion power. Role: Offense.",
-    "maxCopies": 1,
     "tags": ["companion_power:offense"]
   },
   {
@@ -4499,8 +4411,7 @@
     "power": 2184,
     "ca": 2496,
     "forte": 3510,
-    "gameIds": ["Artifact_M31_All_Lockbox_Artifact_R5"],
-    "maxCopies": 1
+    "gameIds": ["Artifact_M31_All_Lockbox_Artifact_R5"]
   },
   {
     "id": "opportunistic-ca-celestial",
@@ -4514,7 +4425,6 @@
     "id": "other-bard-s-lore",
     "name": "Other: Bard's Lore",
     "filter": "artifact_call",
-    "maxCopies": 1,
     "bonuses": ["other-bard-s-lore"]
   },
   {
@@ -4543,7 +4453,6 @@
     "id": "paladin-aura",
     "name": "Paladin Aura",
     "filter": "group_buff",
-    "maxCopies": 1,
     "bonuses": ["paladin-aura"]
   },
   {
@@ -4644,7 +4553,6 @@
     "id": "perfect-balance",
     "name": "Perfect Balance",
     "filter": "feat5",
-    "maxCopies": 1,
     "allowedClass": ["cleric"],
     "tags": ["exclusive:arbiter"],
     "bonuses": ["paragon-exclusive"]
@@ -4660,7 +4568,6 @@
     "id": "performer",
     "name": "Performer",
     "filter": "feat5",
-    "maxCopies": 1,
     "allowedClass": ["bard"],
     "tags": ["exclusive:songblade"],
     "bonuses": ["paragon-exclusive"]
@@ -4669,7 +4576,6 @@
     "id": "personal-warlock-s-tyrannical-curse",
     "name": "Personal: Warlock's Tyrannical Curse",
     "filter": "artifact_call",
-    "maxCopies": 1,
     "allowedClass": ["warlock"],
     "bonuses": ["personal-warlock-s-tyrannical-curse"]
   },
@@ -4677,7 +4583,6 @@
     "id": "piercing-javelin",
     "name": "Piercing Javelin",
     "filter": "feat1",
-    "maxCopies": 1,
     "allowedClass": ["cleric"],
     "tags": ["exclusive:arbiter"],
     "bonuses": ["paragon-exclusive"]
@@ -4686,7 +4591,6 @@
     "id": "portobello",
     "name": "Portobello",
     "filter": "group_buff",
-    "maxCopies": 1,
     "bonuses": ["portobello"]
   },
   {
@@ -4792,29 +4696,25 @@
     "id": "purple-armor-break",
     "name": "Armor Break",
     "filter": "group_buff",
-    "enemy_defense": -0.09,
-    "maxCopies": 1
+    "enemy_defense": -0.09
   },
   {
     "id": "purple-dulled-senses",
     "name": "Dulled Senses",
     "filter": "group_buff",
-    "enemy_awareness": -0.09,
-    "maxCopies": 1
+    "enemy_awareness": -0.09
   },
   {
     "id": "purple-slowed-reactions",
     "name": "Slowed Reactions",
     "filter": "group_buff",
-    "enemy_deflect": -0.09,
-    "maxCopies": 1
+    "enemy_deflect": -0.09
   },
   {
     "id": "purple-vulnerability",
     "name": "Vulnerability",
     "filter": "group_buff",
-    "enemy_crit_avoid": -0.09,
-    "maxCopies": 1
+    "enemy_crit_avoid": -0.09
   },
   {
     "id": "quick-action-celestial",
@@ -4832,15 +4732,13 @@
     "hit_points_p": 0.02,
     "defense_p": 0.02,
     "inc_healing_p": 0.02,
-    "out_healing_p": 0.02,
-    "maxCopies": 1
+    "out_healing_p": 0.02
   },
   {
     "id": "race-attributes-2-cha",
     "name": "+2 CHA",
     "filter": "race_attributes",
     "cha": 2,
-    "maxCopies": 1,
     "tags": [
       "race-ability-score",
       "race-ability-score:aasimar",
@@ -4853,7 +4751,6 @@
     "name": "+2 CON",
     "filter": "race_attributes",
     "con": 2,
-    "maxCopies": 1,
     "tags": [
       "race-ability-score",
       "race-ability-score:aasimar",
@@ -4866,7 +4763,6 @@
     "name": "+2 DEX",
     "filter": "race_attributes",
     "dex": 2,
-    "maxCopies": 1,
     "tags": [
       "race-ability-score",
       "race-ability-score:aasimar",
@@ -4879,7 +4775,6 @@
     "name": "+2 INT",
     "filter": "race_attributes",
     "int": 2,
-    "maxCopies": 1,
     "tags": [
       "race-ability-score",
       "race-ability-score:aasimar",
@@ -4893,7 +4788,6 @@
     "name": "+2 STR",
     "filter": "race_attributes",
     "str": 2,
-    "maxCopies": 1,
     "tags": [
       "race-ability-score",
       "race-ability-score:aasimar",
@@ -4907,7 +4801,6 @@
     "name": "+2 WIS",
     "filter": "race_attributes",
     "wis": 2,
-    "maxCopies": 1,
     "tags": [
       "race-ability-score",
       "race-ability-score:aasimar",
@@ -4920,7 +4813,6 @@
     "name": "+3 CHA",
     "filter": "race_attributes",
     "cha": 3,
-    "maxCopies": 1,
     "tags": ["race-ability-score", "race-ability-score:human"],
     "bonuses": ["race-ability-score-warning"]
   },
@@ -4929,7 +4821,6 @@
     "name": "+3 CON",
     "filter": "race_attributes",
     "con": 3,
-    "maxCopies": 1,
     "tags": ["race-ability-score", "race-ability-score:human"],
     "bonuses": ["race-ability-score-warning"]
   },
@@ -4938,7 +4829,6 @@
     "name": "+3 DEX",
     "filter": "race_attributes",
     "dex": 3,
-    "maxCopies": 1,
     "tags": ["race-ability-score", "race-ability-score:human"],
     "bonuses": ["race-ability-score-warning"]
   },
@@ -4947,7 +4837,6 @@
     "name": "+3 INT",
     "filter": "race_attributes",
     "int": 3,
-    "maxCopies": 1,
     "tags": ["race-ability-score", "race-ability-score:human"],
     "bonuses": ["race-ability-score-warning"]
   },
@@ -4956,7 +4845,6 @@
     "name": "+3 STR",
     "filter": "race_attributes",
     "str": 3,
-    "maxCopies": 1,
     "tags": ["race-ability-score", "race-ability-score:human"],
     "bonuses": ["race-ability-score-warning"]
   },
@@ -4965,7 +4853,6 @@
     "name": "+3 WIS",
     "filter": "race_attributes",
     "wis": 3,
-    "maxCopies": 1,
     "tags": ["race-ability-score", "race-ability-score:human"],
     "bonuses": ["race-ability-score-warning"]
   },
@@ -4975,8 +4862,7 @@
     "filter": "race",
     "ca_p": 0.05,
     "dex": 2,
-    "stamina_regen": 0.05,
-    "maxCopies": 1
+    "stamina_regen": 0.05
   },
   {
     "id": "race-half-orc",
@@ -5001,8 +4887,7 @@
     "deflect_p": 0.01,
     "deflect_sev_p": 0.01,
     "inc_healing_p": 0.01,
-    "out_healing_p": 0.01,
-    "maxCopies": 1
+    "out_healing_p": 0.01
   },
   {
     "id": "race-sun-elf",
@@ -5010,16 +4895,14 @@
     "filter": "race",
     "ap_gain": 0.05,
     "int": 2,
-    "control_resist_p": 0.25,
-    "maxCopies": 1
+    "control_resist_p": 0.25
   },
   {
     "id": "race-wood-elf",
     "name": "Wood Elf",
     "filter": "race",
     "strike_p": 0.05,
-    "dex": 2,
-    "maxCopies": 1
+    "dex": 2
   },
   {
     "id": "rage-of-flames",
@@ -5045,7 +4928,6 @@
     "power_p": 0.045,
     "gameIds": ["Pet_Raptor_Player_Bonus"],
     "longDescription": "Tamed Velociraptor companion power. Role: Offense.",
-    "maxCopies": 1,
     "tags": ["companion_power:offense"],
     "bonuses": [
       {
@@ -5074,7 +4956,6 @@
     "id": "redoublement",
     "name": "Redoublement",
     "filter": "feat4",
-    "maxCopies": 1,
     "allowedClass": ["bard"],
     "tags": ["exclusive:songblade"],
     "bonuses": ["paragon-exclusive"]
@@ -5093,7 +4974,6 @@
     "name": "Risky Investment",
     "filter": "feat3",
     "longDescription": "Rough estimation based on 1 stack + encounters being generally 40% of Hellbringer's Damage.",
-    "maxCopies": 1,
     "allowedClass": ["warlock"],
     "tags": ["exclusive:hellbringer"],
     "bonuses": ["risky-investment", "paragon-exclusive"]
@@ -5111,7 +4991,6 @@
     "id": "runic-aura-group-celestial",
     "name": "Runic Aura",
     "filter": "group_buff",
-    "maxCopies": 1,
     "bonuses": ["runic-aura-group-celestial"]
   },
   {
@@ -5156,8 +5035,7 @@
     "defense": 1365,
     "awareness": 1560,
     "stamina_regen": 0.15,
-    "gameIds": ["Artifact_M32_All_Bp_Artifact_R5"],
-    "maxCopies": 1
+    "gameIds": ["Artifact_M32_All_Bp_Artifact_R5"]
   },
   {
     "id": "seared-tuna-strike",
@@ -5216,7 +5094,6 @@
     "name": "Soul Puppet",
     "filter": "class_stuff",
     "overall_damage": 0.03,
-    "maxCopies": 1,
     "allowedClass": ["warlock"],
     "tags": ["exclusive:hellbringer"],
     "bonuses": ["paragon-exclusive"]
@@ -5234,7 +5111,6 @@
     "name": "Soul Sparks (average)",
     "filter": "class_stuff",
     "outgoing_damage": 0.03,
-    "maxCopies": 1,
     "allowedClass": ["warlock"],
     "bonuses": ["soul-sparks-average", "paragon-exclusive"]
   },
@@ -5242,7 +5118,6 @@
     "id": "soul-sparks-max",
     "name": "Soul Sparks (max)",
     "filter": "class_stuff",
-    "maxCopies": 1,
     "allowedClass": ["warlock"],
     "tags": ["exclusive:hellbringer"],
     "bonuses": ["soul-sparks-max", "paragon-exclusive"]
@@ -5274,8 +5149,7 @@
   {
     "id": "spined-devil",
     "name": "Spined Devil",
-    "filter": "group_buff",
-    "maxCopies": 1
+    "filter": "group_buff"
   },
   {
     "id": "spined-devil-s-influence-spined-devil-damage-offense",
@@ -5284,7 +5158,6 @@
     "il": 900,
     "combined_rating": 900,
     "longDescription": "Spined Devil companion power. Role: Offense.",
-    "maxCopies": 1,
     "tags": ["companion_power:offense"],
     "bonuses": ["spined-devil-s-influence-spined-devil-damage-offense"]
   },
@@ -5321,7 +5194,6 @@
     "id": "sudden-veredict",
     "name": "Sudden Veredict",
     "filter": "feat3",
-    "maxCopies": 1,
     "allowedClass": ["cleric"],
     "tags": ["exclusive:arbiter"],
     "bonuses": ["paragon-exclusive"]
@@ -5366,7 +5238,6 @@
     "combined_rating": 900,
     "gameIds": ["Pet_Minsc_Player_Bonus"],
     "longDescription": "Minsc companion power. Role: Defense.",
-    "maxCopies": 1,
     "tags": ["companion_power:defense"],
     "bonuses": ["the-bigger-they-are-minsc-damage-defense"]
   },
@@ -5374,7 +5245,6 @@
     "id": "tipping-scales",
     "name": "Tipping Scales",
     "filter": "feat2",
-    "maxCopies": 1,
     "allowedClass": ["cleric"],
     "tags": ["exclusive:arbiter"],
     "bonuses": ["paragon-exclusive"]
@@ -5401,7 +5271,6 @@
     "id": "tutor",
     "name": "Tutor",
     "filter": "group_buff",
-    "maxCopies": 1,
     "bonuses": ["tutor"]
   },
   {
@@ -5431,14 +5300,12 @@
     "id": "vistani-set",
     "name": "Vistani Set",
     "filter": "group_buff",
-    "enemy_incoming_damage": 0.05,
-    "maxCopies": 1
+    "enemy_incoming_damage": 0.05
   },
   {
     "id": "voice-throw",
     "name": "Voice Throw",
     "filter": "feat1",
-    "maxCopies": 1,
     "allowedClass": ["bard"],
     "tags": ["exclusive:songblade"],
     "bonuses": ["paragon-exclusive"]
@@ -5448,7 +5315,6 @@
     "name": "All Consuming Curse",
     "filter": "class_feat",
     "shortDescription": "At-wills apply curse",
-    "maxCopies": 1,
     "allowedClass": ["warlock"],
     "tags": ["exclusive:hellbringer"],
     "bonuses": ["paragon-exclusive"]
@@ -5458,7 +5324,6 @@
     "name": "Warlock's Curse",
     "filter": "feat2",
     "longDescription": "Rough estimation based on Powers being generally 50% of Hellbringer's Damage.",
-    "maxCopies": 1,
     "allowedClass": ["warlock"],
     "tags": ["exclusive:hellbringer"],
     "bonuses": ["warlock-s-curse", "paragon-exclusive"]
@@ -5467,7 +5332,6 @@
     "id": "warlock-s-dark-prayers",
     "name": "Dark Prayers",
     "filter": "class_feat",
-    "maxCopies": 1,
     "allowedClass": ["warlock"],
     "tags": ["exclusive:hellbringer"],
     "bonuses": ["paragon-exclusive"]
@@ -5477,7 +5341,6 @@
     "name": "Dust to Dust",
     "filter": "class_feat",
     "outgoing_damage": 0.05,
-    "maxCopies": 1,
     "allowedClass": ["warlock"],
     "tags": ["exclusive:hellbringer"],
     "bonuses": ["paragon-exclusive"]
@@ -5486,7 +5349,6 @@
     "id": "warlock-s-no-pity-no-mercy",
     "name": "No Pity No Mercy",
     "filter": "class_feat",
-    "maxCopies": 1,
     "allowedClass": ["warlock"],
     "tags": ["exclusive:hellbringer"],
     "bonuses": ["paragon-exclusive"]
@@ -5497,7 +5359,6 @@
     "filter": "class_feat",
     "strike_p": 0.025,
     "movement": 0.1,
-    "maxCopies": 1,
     "allowedClass": ["warlock"]
   },
   {
@@ -5544,7 +5405,6 @@
     "combined_rating": 900,
     "sev_p": 0.09,
     "longDescription": "Wolf companion power. Role: Offense, Utility.",
-    "maxCopies": 1,
     "tags": ["companion_power:offense", "companion_power:utility"]
   },
   {

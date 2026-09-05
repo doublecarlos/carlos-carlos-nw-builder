@@ -144,7 +144,11 @@ const notes = computed(() => {
   const out: string[] = [...props.scaleNotes];
   if (props.item.allowedClass)
     out.push(`${props.item.allowedClass.join(" or ")} only`);
-  if (props.item.maxCopies) out.push(`max ${props.item.maxCopies} equipped`);
+  // The effective cap, so an item inheriting its filter's default still states one.
+  const cap = props.db
+    ? props.db.maxCopies(props.item)
+    : (props.item.maxCopies ?? 0);
+  if (cap) out.push(`max ${cap} equipped`);
   for (const config of props.item.dynamicStats ?? []) {
     out.push(dynamicStatNote(config));
   }

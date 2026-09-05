@@ -1,4 +1,51 @@
 {
+  "filterDefaults": {
+    "artifact": {
+      "maxCopies": 1
+    },
+    "artifact_call": {
+      "maxCopies": 1
+    },
+    "class_feat": {
+      "maxCopies": 1
+    },
+    "class_stuff": {
+      "maxCopies": 1
+    },
+    "companion_power": {
+      "maxCopies": 1
+    },
+    "feat1": {
+      "maxCopies": 1
+    },
+    "feat2": {
+      "maxCopies": 1
+    },
+    "feat3": {
+      "maxCopies": 1
+    },
+    "feat4": {
+      "maxCopies": 1
+    },
+    "feat5": {
+      "maxCopies": 1
+    },
+    "gear_ring": {
+      "maxCopies": 1
+    },
+    "group_buff": {
+      "maxCopies": 1
+    },
+    "race": {
+      "maxCopies": 1
+    },
+    "race_attributes": {
+      "maxCopies": 1
+    },
+    "scenario_flag": {
+      "maxCopies": 1
+    }
+  },
   "sections": [
     {
       "defaultOpen": true,

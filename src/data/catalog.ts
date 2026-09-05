@@ -39,6 +39,7 @@ import type {
   ItemPickerListSlot,
   Db,
   Build,
+  FilterDefaultsMap,
 } from "../types";
 
 export const emptyOverlay = (): CatalogOverlay => ({
@@ -147,6 +148,7 @@ export function makeDb(overlays: (CatalogOverlay | null | undefined)[] = []) {
     sections: NW_SLOTS.sections,
     slots,
     presets: sectionPresets,
+    filterDefaults: NW_SLOTS.filterDefaults,
   });
 }
 
@@ -1104,12 +1106,77 @@ function endOfChain(byId: Map<string, Item>, start: Item): Item | undefined {
   return item;
 }
 
+/** Rows that could hold `item` at once: one per `item_picker` offering it, unbounded for an
+ *  `item_picker_list` or a `point_assignment`. Resolves candidates as `Db.forSlot` does. */
+function rowsOffering(item: Item, slots: Slot[]): number {
+  let rows = 0;
+  for (const slot of slots) {
+    if (slot.type === "item_picker" || slot.type === "item_picker_list") {
+      const candidate = slot.tags?.length
+        ? (item.tags ?? []).some((tag) => slot.tags!.includes(tag))
+        : !!slot.filter && slot.filter === item.filter;
+      if (!candidate) continue;
+      rows += slot.type === "item_picker" ? 1 : Number.POSITIVE_INFINITY;
+    } else if (
+      slot.type === "point_assignment" &&
+      slot.filter === item.filter
+    ) {
+      rows += Number.POSITIVE_INFINITY;
+    }
+  }
+  return rows;
+}
+
+/**
+ * Within one filter a cap is either a category-wide fact or nobody's, so members carrying
+ * `maxCopies` beside members that don't is an oversight. Quiet where a cap could never bind
+ * (a filter one row alone can hold) or where a `filterDefaults` entry already answers for
+ * every member. Warns rather than errors: unlimited is right for some categories, and an
+ * item that means it says so with `maxCopies: 0`.
+ */
+export function validateMaxCopies(
+  items: Item[],
+  slots: Slot[] = NW_SLOTS?.slots ?? [],
+  filterDefaults: FilterDefaultsMap = NW_SLOTS.filterDefaults ?? {},
+): LintFinding[] {
+  const findings: LintFinding[] = [];
+  const byFilter = new Map<string, Item[]>();
+
+  for (const item of items) {
+    if (!item.filter) continue;
+    if (filterDefaults[item.filter]?.maxCopies !== undefined) continue;
+    if (rowsOffering(item, slots) < 2) continue;
+    const group = byFilter.get(item.filter);
+    if (group) group.push(item);
+    else byFilter.set(item.filter, [item]);
+  }
+
+  for (const [filter, group] of byFilter) {
+    const capped = group.filter((item) => item.maxCopies !== undefined);
+    if (!capped.length || capped.length === group.length) continue;
+    for (const item of group) {
+      if (item.maxCopies !== undefined) continue;
+      findings.push({
+        level: "warn",
+        kind: "item",
+        name: item.id,
+        message:
+          `${capped.length} of ${group.length} "${filter}" items cap how many copies a ` +
+          "build may hold and this one does not - set a max, or 0 to say it may repeat",
+      });
+    }
+  }
+
+  return findings;
+}
+
 export function validate(
   items: Item[],
   bonuses: Bonus[],
   schema: Schema = NW_SCHEMA,
   presets: SectionPreset[] = NW_SLOTS.presets ?? [],
   slots: Slot[] = NW_SLOTS?.slots ?? [],
+  filterDefaults: FilterDefaultsMap = NW_SLOTS.filterDefaults ?? {},
 ): LintFinding[] {
   const findings: LintFinding[] = [
     ...validateSlots(slots),
@@ -1118,6 +1185,7 @@ export function validate(
     ...validateParamSchema(slots, schema),
     ...validateParamReaders(slots, bonuses),
     ...validateReplacements(items, schema),
+    ...validateMaxCopies(items, slots, filterDefaults),
   ];
   const report = (
     level: "error" | "warn",
