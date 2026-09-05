@@ -16,7 +16,10 @@ defineEmits<{
 </script>
 
 <template>
-  <BaseDrawer class="mb-2 max-h-48 flex-none overflow-y-auto">
+  <BaseDrawer
+    data-testid="validation-drawer"
+    class="mb-2 max-h-48 flex-none overflow-y-auto"
+  >
     <div class="uppercase text-muted">Validation</div>
     <ul class="mt-1 list-none">
       <li

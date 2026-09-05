@@ -21,7 +21,7 @@ type Resolution =
  * last), then the active build's per-build catalog. Order matters: an overlay earlier in
  * this list can be overridden by a later one, and the build catalog beats every layer.
  */
-const overlays = computed(() => {
+export const overlays = computed(() => {
   const result = [...layers.enabledOverlays.value];
   if (builds.build.value?.catalog) result.push(builds.build.value.catalog);
   return result;
