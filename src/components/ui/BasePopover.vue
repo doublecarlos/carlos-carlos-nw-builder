@@ -7,6 +7,8 @@
 // Content scrolls independently via an inner wrapper; the measurements for the vertical flip
 // and for centring use the real rendered box, not the CSS bounds, so a short panel near an
 // edge is placed by what it actually is rather than what it was allowed to be.
+//
+// Sits above BaseModal's z-50, so a control inside a modal can still have a tooltip.
 import { ref, nextTick, useTemplateRef } from "vue";
 
 const props = withDefaults(
@@ -106,7 +108,7 @@ defineExpose({ place, close });
     <div
       v-if="pos"
       ref="el"
-      class="fixed z-40 flex"
+      class="fixed z-60 flex"
       :style="{
         left: pos.left + 'px',
         top: pos.top + 'px',

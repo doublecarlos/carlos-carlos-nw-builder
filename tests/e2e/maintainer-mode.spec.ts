@@ -73,9 +73,30 @@ test("the tab composes its file rather than only appearing", async ({
   // The module behind the tab is fetched on demand, so a build that dropped that chunk would
   // still render the tab itself.
   await maintainerTab(page).click();
-  await expect(page.getByTestId("layer-export")).toContainText(
-    "Download db-items.json",
-  );
+  const output = page.getByTestId("layer-export").locator("textarea");
+  await expect(output).not.toHaveValue("Loading…");
+  expect(JSON.parse(await output.inputValue()).length).toBeGreaterThan(0);
+});
+
+test("the slots.json tab carries filterDefaults, not just the sections", async ({
+  page,
+}) => {
+  await bootAt(page, "/");
+  await openLayer(page);
+  await openExport(page);
+
+  await page
+    .getByTestId("layer-export")
+    .getByRole("button", { name: "slots.json" })
+    .click();
+
+  const output = page.getByTestId("layer-export").locator("textarea");
+  await expect(output).not.toHaveValue("Loading…");
+
+  const parsed = JSON.parse(await output.inputValue()) as {
+    filterDefaults: Record<string, unknown>;
+  };
+  expect(Object.keys(parsed.filterDefaults).length).toBeGreaterThan(0);
 });
 
 test("?maintainer=0 puts the data-file tabs away and leaves the URL", async ({

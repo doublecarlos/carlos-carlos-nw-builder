@@ -43,7 +43,7 @@ test("an item's longDescription shows on its hover card", async ({ page }) => {
   await createAndEquipDescribedItem(page, name);
   await slotRow(page, SLOT_ID).hover();
 
-  const card = page.locator(".fixed.z-40");
+  const card = page.getByTestId("item-card");
   await expect(card.getByTestId("item-card-name")).toHaveText(name);
   await expect(card).toContainText(LONG_DESCRIPTION);
 });
@@ -149,7 +149,7 @@ test.describe("paragraphs in a description", () => {
     await chooseItem(page, SLOT_ID, name);
     await slotRow(page, SLOT_ID).hover();
 
-    const card = page.locator(".fixed.z-40");
+    const card = page.getByTestId("item-card");
     const paragraphs = card
       .getByTestId("item-card-long-description")
       .locator("p");

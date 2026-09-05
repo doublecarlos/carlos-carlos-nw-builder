@@ -7,6 +7,7 @@ import type {
   Slot,
   SectionPreset,
   SlotSection,
+  FilterDefaultsMap,
 } from "../../src/types";
 
 describe("catalogExport.toItemsFile", () => {
@@ -105,7 +106,7 @@ describe("catalogExport.toSlotsFile", () => {
     ];
 
     const parsed = JSON.parse(
-      catalogExport.toSlotsFile(sections, slots, presets),
+      catalogExport.toSlotsFile(sections, slots, presets, {}),
     );
 
     expect(parsed.sections).toEqual([
@@ -146,8 +147,19 @@ describe("catalogExport.toSlotsFile", () => {
     const sections: SlotSection[] = [
       { defaultOpen: true, id: "a", label: "A" },
     ];
-    const parsed = JSON.parse(catalogExport.toSlotsFile(sections, [], []));
+    const parsed = JSON.parse(catalogExport.toSlotsFile(sections, [], [], {}));
     expect(Object.hasOwn(parsed.sections[0], "presets")).toBe(false);
+  });
+
+  it("carries filterDefaults through unchanged", () => {
+    const filterDefaults: FilterDefaultsMap = {
+      artifact: { maxCopies: 1 },
+      gear_head: { maxCopies: 2 },
+    };
+    const parsed = JSON.parse(
+      catalogExport.toSlotsFile([], [], [], filterDefaults),
+    );
+    expect(parsed.filterDefaults).toEqual(filterDefaults);
   });
 
   it("produces valid JSON for the real shipped data", () => {
@@ -156,8 +168,10 @@ describe("catalogExport.toSlotsFile", () => {
         NW_SLOTS.sections,
         NW_SLOTS.slots,
         NW_SLOTS.presets ?? [],
+        NW_SLOTS.filterDefaults ?? {},
       ),
     );
     expect(parsed.sections.length).toBe(NW_SLOTS.sections.length);
+    expect(parsed.filterDefaults).toEqual(NW_SLOTS.filterDefaults);
   });
 });

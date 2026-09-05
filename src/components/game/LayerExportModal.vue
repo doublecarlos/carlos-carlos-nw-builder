@@ -4,7 +4,7 @@
 // the shipped data across every enabled layer. Self-contained aside from which tab is active,
 // which the parent keeps so reopening it remembers the last tab.
 //
-// The maintainer tabs can also write their file straight into the repo (data/writeback.ts).
+// The maintainer tabs can also send their file to the local server (data/writeback.ts).
 //
 // Modal rather than in-flow: you come here to take a file somewhere and then leave, so
 // nothing behind it matters meanwhile, and the tabs want the room.
@@ -12,6 +12,7 @@ import { computed, ref, watch, watchEffect } from "vue";
 import { Copy, Download, Save } from "@lucide/vue";
 import BaseButton from "../ui/BaseButton.vue";
 import BaseModal from "../ui/BaseModal.vue";
+import BaseTooltip from "../ui/BaseTooltip.vue";
 import CodeBlock from "../ui/CodeBlock.vue";
 import TabStrip from "../ui/TabStrip.vue";
 import TabButton from "../ui/TabButton.vue";
@@ -76,14 +77,15 @@ const exportText = computed(() => {
   if (effectiveTab.value === "slots") {
     if (!catalogExport.value) return "Loading…";
     // `slots` and `sectionPresets` both fold across every enabled layer, same "maintainer
-    // path" as items/bonuses above. Sections are still the static shipped ones -- an overlay
-    // carries build_parameter slots, not the section structure they hang off (see
-    // `CatalogOverlay.slots`).
+    // path" as items/bonuses above. Sections and `filterDefaults` are still the static shipped
+    // ones -- an overlay carries build_parameter slots, not the section structure they hang off
+    // (see `CatalogOverlay.slots`) nor the per-filter defaults.
     const allEnabled = catalog.compose(layers.enabledOverlays.value);
     return catalogExport.value.toSlotsFile(
       NW_SLOTS.sections,
       allEnabled.slots,
       allEnabled.sectionPresets,
+      NW_SLOTS.filterDefaults ?? {},
     );
   }
   // "This layer": raw overlay JSON.
@@ -106,7 +108,7 @@ async function copyExport() {
   }
 }
 
-/** Outcome of the last "Save to repo". Shown in the modal rather than as a notice behind it,
+/** Outcome of the last send. Shown in the modal rather than as a notice behind it,
  *  since an unreachable server is started and retried from here. Cleared on a tab change so
  *  it can never describe a file other than the one on screen. */
 const saveStatus = ref<{ ok: boolean; message: string } | null>(null);
@@ -116,7 +118,7 @@ watch(effectiveTab, () => {
   saveStatus.value = null;
 });
 
-async function saveToRepo() {
+async function sendToLocalServer() {
   const module = writeback.value;
   if (!module || saving.value) return;
   saving.value = true;
@@ -189,16 +191,20 @@ function downloadExport() {
         </TabStrip>
         <span class="flex-1"></span>
         <BaseButton @click="copyExport"><Copy />Copy</BaseButton>
-        <BaseButton @click="downloadExport"
-          ><Download />Download {{ exportName }}</BaseButton
-        >
-        <BaseButton
+        <BaseButton @click="downloadExport"><Download />Download</BaseButton>
+        <BaseTooltip
           v-if="effectiveTab !== 'overlay'"
-          :disabled="saving || !writeback"
-          data-testid="layer-export-save"
-          @click="saveToRepo"
-          ><Save />{{ saving ? "Saving…" : "Save to repo" }}</BaseButton
+          :text="`Writes ${exportName} into the repo through the local server started by \`npm run dev\` or \`npm run data-server\`.`"
         >
+          <BaseButton
+            :disabled="saving || !writeback"
+            data-testid="layer-export-save"
+            @click="sendToLocalServer"
+            ><Save />{{
+              saving ? "Sending…" : "Send to local server"
+            }}</BaseButton
+          >
+        </BaseTooltip>
       </div>
       <CodeBlock :value="exportText" :rows="20" class="w-full" />
       <p
@@ -220,7 +226,7 @@ function downloadExport() {
         </template>
         <template v-else-if="effectiveTab === 'slots'">
           Composed from all enabled layers' presets - for regenerating
-          <code>data/slots.json</code>.
+          data/slots.json.
         </template>
         <template v-else> Just this layer's raw overlay JSON. </template>
       </p>

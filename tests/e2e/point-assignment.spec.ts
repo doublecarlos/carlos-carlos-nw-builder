@@ -160,7 +160,7 @@ test.describe("point_assignment hover card", () => {
 
     await assignmentLabel(row, POWER_ID).hover();
 
-    const card = page.locator(".fixed.z-40");
+    const card = page.getByTestId("item-card");
     await expect(card.getByTestId("item-card-name")).toHaveText(
       itemName(POWER_ID),
     );
@@ -178,7 +178,7 @@ test.describe("point_assignment hover card", () => {
     await assignmentLabel(row, POWER_ID).hover();
 
     await expect(
-      page.locator(".fixed.z-40").getByTestId("item-card-name"),
+      page.getByTestId("item-card").getByTestId("item-card-name"),
     ).toHaveText(itemName(POWER_ID));
   });
 
@@ -188,7 +188,7 @@ test.describe("point_assignment hover card", () => {
     await openBuilder(page);
     const row = slotRow(page, SLOT_ID);
     await row.scrollIntoViewIfNeeded();
-    const card = page.locator(".fixed.z-40");
+    const card = page.getByTestId("item-card");
 
     await hoverForCard(page, assignmentLabel(row, POWER_ID));
     await expect(card.getByTestId("item-card-name")).toHaveText(
@@ -210,7 +210,7 @@ test.describe("point_assignment hover card", () => {
     await openBuilder(page);
     const row = slotRow(page, SLOT_ID);
     await row.scrollIntoViewIfNeeded();
-    const card = page.locator(".fixed.z-40");
+    const card = page.getByTestId("item-card");
 
     await assignmentLabel(row, POWER_ID).hover();
     await expect(card).toBeVisible();
@@ -321,7 +321,7 @@ test.describe("point_assignment hover card for an unselected candidate", () => {
     await expect(assignmentInput(row, DIAL_ITEM_ID)).toHaveValue("0");
 
     await assignmentLabel(row, DIAL_ITEM_ID).hover();
-    const card = page.locator(".fixed.z-40");
+    const card = page.getByTestId("item-card");
     await expect(card.getByTestId("item-card-name")).toHaveText(
       "Test Dial Boon",
     );
@@ -343,7 +343,7 @@ test.describe("point_assignment hover card for an unselected candidate", () => {
     await expect(assignmentInput(row, DIAL_ITEM_ID)).toHaveValue("1");
 
     await assignmentLabel(row, DIAL_ITEM_ID).hover();
-    const card = page.locator(".fixed.z-40");
+    const card = page.getByTestId("item-card");
     await expect(card).toContainText("Test Dial Bonus");
     // The bonus attachment is still its own independent 0-valued config -- spending points on
     // the item itself doesn't turn it on.
@@ -376,7 +376,7 @@ test.describe("point_assignment hover card for an unselected candidate", () => {
     await row.locator(".slot-label").click();
 
     await assignmentLabel(row, "test-tier1-master-item").hover();
-    const card = page.locator(".fixed.z-40");
+    const card = page.getByTestId("item-card");
     await expect(card).toContainText("Test Master Stats");
     // Reads inactive, with the real "you have 0" reason -- not as if the checked proc made it
     // active, and not multiplied down to a wrong "0" preview either.

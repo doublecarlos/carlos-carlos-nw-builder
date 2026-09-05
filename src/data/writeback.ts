@@ -1,5 +1,5 @@
-// Browser half of "Save to repo": POSTs a composed data file to the local writeback endpoint
-// (scripts/writeback.ts).
+// Browser half of "Send to local server": POSTs a composed data file to the local
+// writeback endpoint (scripts/writeback.ts).
 //
 // A locally served page keeps the request same-origin -- no CORS, no port to know, and it
 // targets whichever worktree served it even when ports.ts has moved that off 5173. Only the

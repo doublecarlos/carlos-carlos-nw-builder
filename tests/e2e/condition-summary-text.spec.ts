@@ -25,7 +25,7 @@ async function openBlockedGroupAuraCard(page: Page) {
   // hover that has to scroll the row into view first would cancel itself.
   await slotRow(page, GROUP_SLOT).scrollIntoViewIfNeeded();
   await slotRow(page, GROUP_SLOT).hover();
-  return page.locator(".fixed.z-40"); // the floating hover card
+  return page.getByTestId("item-card"); // the floating hover card
 }
 
 test("the Conditions line names what the `not` negates, not just the operator", async ({
