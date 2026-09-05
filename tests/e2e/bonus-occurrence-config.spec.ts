@@ -121,7 +121,7 @@ test.describe("BonusOccurrenceConfig rows", () => {
     const row = slotRow(page, RING_SLOT);
     await row.scrollIntoViewIfNeeded();
     await row.hover();
-    const card = page.locator(".fixed.z-40");
+    const card = page.getByTestId("item-card");
     await expect(card).toContainText("Test Stepper Bonus");
     // The same ring's checkbox-shaped config (also default 0) has its own zero-occurrence
     // note too -- match this one specifically by its text, not just the testid.
@@ -392,7 +392,7 @@ test.describe("per-item boolean toggle, formerly proc", () => {
     const row = slotRow(page, RING_SLOT);
     await row.scrollIntoViewIfNeeded();
     await row.hover();
-    const card = page.locator(".fixed.z-40");
+    const card = page.getByTestId("item-card");
     await expect(card).toContainText("Test Toggle Bonus");
     await expect(
       card.getByTestId("item-card-bonus-zero-occurrence"),
@@ -468,7 +468,7 @@ test.describe("a simple perSource-stacking bonus's zero-stack preview", () => {
     const row = slotRow(page, RING_SLOT);
     await row.scrollIntoViewIfNeeded();
     await row.hover();
-    const card = page.locator(".fixed.z-40");
+    const card = page.getByTestId("item-card");
     await expect(card).toContainText("Test Stacking Bonus");
     await expect(card).toContainText("Stacks: 0 on this item");
     await expect(card).toContainText("each stack would give:");
@@ -520,7 +520,7 @@ test.describe("a simple perSource-stacking bonus's zero-stack preview", () => {
     const row = slotRow(page, RING_SLOT);
     await row.scrollIntoViewIfNeeded();
     await row.hover();
-    const card = page.locator(".fixed.z-40");
+    const card = page.getByTestId("item-card");
     await expect(card).toContainText("Test Stacking Bonus");
     await expect(card).toContainText("total, from 3 stacking sources");
     await expect(card).not.toContainText("each stack would give:");

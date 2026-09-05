@@ -39,7 +39,7 @@ test("a problem-only bonus is hidden from the item hover card and the sidebar Bo
   // The item's hover card shows the item, but no "Bonuses" section at all -- the warning bonus
   // is this item's only bonus, and it is hidden.
   await assignmentLabel(row, SEVERITY_ID).hover();
-  const card = page.locator(".fixed.z-40");
+  const card = page.getByTestId("item-card");
   await expect(card.getByTestId("item-card-name")).toHaveText(SEVERITY_NAME);
   await expect(card.getByText(WARNING_TITLE)).toHaveCount(0);
   await expect(card.getByText("Bonuses", { exact: true })).toHaveCount(0);

@@ -366,7 +366,7 @@ const rows = computed(() =>
 <template>
   <!-- Content inside the tooltip -- positioning, z-index, scroll, and max dimensions
        are handled by BasePopover. Internal structure uses BaseCard for the visual frame. -->
-  <BaseCard class="itemcard">
+  <BaseCard class="itemcard" data-testid="item-card">
     <BaseCardHeader sticky>
       <span class="flex-1 font-semibold" data-testid="item-card-name">{{
         item.name

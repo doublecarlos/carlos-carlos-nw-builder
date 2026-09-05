@@ -1,4 +1,4 @@
-// Both halves of "Save to repo": the endpoint that writes the file, and the browser client
+// Both halves of "Send to local server": the endpoint that writes the file, and the browser client
 // that decides where to send it and how to describe what came back.
 //
 // The endpoint runs against a real `node:http` server rather than fake req/res objects --

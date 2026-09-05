@@ -1,4 +1,4 @@
-// "Save to repo" wiring, from the export modal to the request that leaves the page.
+// "Send to local server" wiring, from the export modal to the request that leaves the page.
 //
 // Every test here intercepts the endpoint. The dev server Playwright drives does mount it, so
 // an unintercepted click would rewrite this worktree's own data/db-items.json with whatever
@@ -83,6 +83,32 @@ test("passes the endpoint's own refusal straight through", async ({ page }) => {
   await expect(saveStatus(page)).toHaveText(
     "catalog.ts is not one of the writable files",
   );
+});
+
+test("names the local server it sends to, in the label and the tooltip", async ({
+  page,
+}) => {
+  await openExport(page);
+  await openItemsTab(page);
+
+  await expect(saveButton(page)).toHaveText("Send to local server");
+
+  await saveButton(page).hover();
+  const tooltip = page.getByTestId("tooltip");
+  await expect(tooltip).toContainText("npm run dev");
+
+  // Both teleport to <body>, so only the z-order keeps the bubble in front of the modal.
+  await expect(
+    tooltip.evaluate((tip) => {
+      const box = tip.getBoundingClientRect();
+      return tip.contains(
+        document.elementFromPoint(
+          box.x + box.width / 2,
+          box.y + box.height / 2,
+        ),
+      );
+    }),
+  ).resolves.toBe(true);
 });
 
 test("offers no save on the tab that is not a repo file", async ({ page }) => {

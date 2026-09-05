@@ -35,6 +35,6 @@ writeFileSync(
     NW_SLOTS.sections,
     NW_SLOTS.slots,
     sectionPresets,
-    NW_SLOTS.filterDefaults,
+    NW_SLOTS.filterDefaults ?? {},
   ),
 );

@@ -75,14 +75,15 @@ function stripSection<T extends { section?: string }>(value: T) {
 /**
  * Regenerates the whole `data/slots.json` body from the composed in-memory data -- same "paste
  * back over the file" workflow `toItemsFile`/`toBonusesFile` already give items/bonuses, just
- * shaped for slots.json's nested `{ sections: [{ ..., presets?, slots }] }` structure instead of
- * a bare top-level array.
+ * shaped for slots.json's nested `{ filterDefaults, sections: [{ ..., presets?, slots }] }`
+ * structure instead of a bare top-level array. `filterDefaults` is required rather than
+ * defaulted: it is not composed from the layers, so a caller that omits it drops the block.
  */
 export function toSlotsFile(
   sections: SlotSection[],
   slots: Slot[],
   presets: SectionPreset[],
-  filterDefaults: FilterDefaultsMap = {},
+  filterDefaults: FilterDefaultsMap,
 ): string {
   const body = {
     filterDefaults,
