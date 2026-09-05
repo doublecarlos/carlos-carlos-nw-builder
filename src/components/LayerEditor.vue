@@ -11,6 +11,7 @@ import {
   computed,
   defineAsyncComponent,
   h,
+  markRaw,
   onMounted,
   onUnmounted,
   ref,
@@ -79,8 +80,6 @@ import type {
   SlotRow,
 } from "./game/LayerEntryList.vue";
 
-const db = engine.db;
-
 const entriesCollapsed = rails.collapsed("layerEntries");
 const entriesWidth = rails.width("layerEntries");
 
@@ -101,6 +100,19 @@ const overlay = computed(() => props.layer.overlay);
 function setOverlay(newValue: CatalogOverlay) {
   layers.updateOverlay(props.layer.id, newValue);
 }
+
+/** The editor's own catalogue: the layer under edit folds last whatever its `enabled` flag
+ * says, so its entries reach the lists, forms and lint even while switched off. Dropped from
+ * the engine's fold order first, so an enabled layer folds once and on top. `markRaw` as in
+ * `engine.db`. */
+const db = computed(() =>
+  markRaw(
+    catalog.makeDb([
+      ...engine.overlays.value.filter((o) => o !== overlay.value),
+      overlay.value,
+    ]),
+  ),
+);
 
 /** This layer's own remembered section/filter/selection -- see the store's own doc comment.
  *  A computed, not a plain const: the nav can switch `props.layer` directly from one layer
@@ -1134,6 +1146,7 @@ onUnmounted(() => {
     <div class="mb-2 flex flex-none flex-wrap items-center gap-1.5">
       <div class="flex items-center gap-1.5">
         <BaseCheckbox
+          data-testid="layer-enabled"
           :model-value="props.layer.enabled"
           @update:model-value="
             (v) =>
