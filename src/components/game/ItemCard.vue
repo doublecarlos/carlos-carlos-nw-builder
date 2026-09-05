@@ -31,11 +31,12 @@ import type {
   Grant,
   StatValues,
 } from "../../types";
-import { TriangleAlert } from "@lucide/vue";
+import { SquarePen, TriangleAlert } from "@lucide/vue";
 import BaseBadge from "../ui/BaseBadge.vue";
 import BaseCard from "../ui/BaseCard.vue";
 import BaseCardHeader from "../ui/BaseCardHeader.vue";
 import BaseCardBody from "../ui/BaseCardBody.vue";
+import IconButton from "../ui/IconButton.vue";
 
 const props = withDefaults(
   defineProps<{
@@ -59,6 +60,9 @@ const props = withDefaults(
     /** Lines naming what `scale` came from (`itemScaleNotes`), listed among `notes` so the
      *  card never shows numbers that silently disagree with the catalogue. */
     scaleNotes?: string[];
+    /** Tooltip for the header's edit button, naming the layer the edit lands in -- which is
+     *  not necessarily the one on screen. Empty hides the button. */
+    editLabel?: string;
   }>(),
   {
     bonuses: () => [],
@@ -67,8 +71,11 @@ const props = withDefaults(
     occurrenceRows: () => [],
     scale: 1,
     scaleNotes: () => [],
+    editLabel: "",
   },
 );
+
+defineEmits<{ edit: [] }>();
 
 /** What this item would be swapped for, when the card has a catalogue to ask. */
 const replacement = computed(
@@ -374,6 +381,15 @@ const rows = computed(() =>
       <span v-if="item.il" class="tabular-nums text-muted"
         >iL {{ scaledIl }}</span
       >
+      <IconButton
+        v-if="editLabel"
+        :title="editLabel"
+        class="-my-1 -mr-1"
+        data-testid="item-card-edit"
+        @click="$emit('edit')"
+      >
+        <SquarePen />
+      </IconButton>
     </BaseCardHeader>
     <BaseCardBody>
       <div v-if="slotLabel" class="mb-1 text-muted">

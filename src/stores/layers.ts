@@ -31,19 +31,23 @@ export const enabledOverlays = computed(() =>
 );
 
 /** The id of the last layer the user selected, for ensureTargetLayer. */
-let _lastLayerId: string | null = null;
+const _lastLayerId = ref<string | null>(null);
 
-/** Returns a layer guaranteed to exist: the last-selected one, the top (highest-priority)
- * one, or a freshly-created "Layer 1". Used by Ctrl/Cmd-click to target a layer -- the top
- * one so the edit written there is not shadowed by another layer. */
+/** The layer an edit would be written to, or null when one would have to be created: the
+ * last-selected one, else the top (highest-priority) one -- the top so the edit written there
+ * is not shadowed by another layer. Side-effect free, so the UI can name it before the edit
+ * commits to creating one. */
+export const targetLayer = computed<Layer | null>(() => {
+  const id = _lastLayerId.value;
+  if (id && _layers.value.has(id)) return _layers.value.get(id)!;
+  return layerOrder.value.length
+    ? (_layers.value.get(layerOrder.value[0]) ?? null)
+    : null;
+});
+
+/** `targetLayer`, guaranteed to exist: creates a "Layer 1" when there is nothing to target. */
 export function ensureTargetLayer(): Layer {
-  if (_lastLayerId && _layers.value.has(_lastLayerId)) {
-    return _layers.value.get(_lastLayerId)!;
-  }
-  if (layerOrder.value.length) {
-    return _layers.value.get(layerOrder.value[0])!;
-  }
-  return createLayer();
+  return targetLayer.value ?? createLayer();
 }
 
 /** Every id across base catalogue, every layer (enabled or not), and the selected build's
@@ -70,7 +74,7 @@ export function createLayer(name?: string): Layer {
   layerOrder.value.push(layer.id);
   markDirty(layer.id);
   selection.selectLayer(layer.id);
-  _lastLayerId = layer.id;
+  _lastLayerId.value = layer.id;
   showNotice(`Created “${layer.name}”`);
   return layer;
 }
@@ -117,7 +121,7 @@ export function deleteLayer(id: string) {
   ) {
     const next = layerOrder.value[layerOrder.value.length - 1];
     if (next) selection.selectLayer(next);
-    else _lastLayerId = null;
+    else _lastLayerId.value = null;
   }
 }
 
