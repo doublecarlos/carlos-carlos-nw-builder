@@ -18,6 +18,8 @@ async function createItem(page: Page, name: string) {
   await page.getByTestId("new-item").click();
   await page.getByTestId("item-name-input").fill(name);
   await page.getByTestId("item-filter-input").fill("gear_ring");
+  // Opts out of the copy cap gear_ring declares: the flows below hold one item in both rings.
+  await page.getByTestId("item-max-copies").fill("0");
   await page.getByRole("button", { name: "Save item" }).click();
 }
 

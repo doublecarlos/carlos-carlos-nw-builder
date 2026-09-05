@@ -453,6 +453,13 @@ function slotForDefaultParam(slotId: string): BuildParameterSlot | undefined {
   return buildParamSlots.value.find((slot) => slot.id === slotId);
 }
 
+/** What a blank field resolves to: the filter's own default, or unlimited. */
+const maxCopiesHint = computed(() => {
+  const fallback =
+    props.db.filterDefaults[draft.value.filter.trim()]?.maxCopies;
+  return fallback === undefined ? "unlimited" : `${fallback} for this filter`;
+});
+
 function toItem(): Item {
   const local = draft.value;
   const id =
@@ -503,7 +510,11 @@ function toItem(): Item {
     item.bonuses = bonuses;
   }
   if (local.excludes.length) item.excludes = [...local.excludes];
-  if (local.maxCopies) item.maxCopies = Number(local.maxCopies);
+  // A typed 0 is a deliberate "unlimited even so", so emptiness decides here, not truthiness.
+  if (local.maxCopies !== null && local.maxCopies !== "") {
+    const copies = Number(local.maxCopies);
+    if (Number.isFinite(copies)) item.maxCopies = copies;
+  }
   if (local.hideFromPicker) item.hideFromPicker = true;
   if (local.replacedBy.trim()) {
     const target = local.replacedBy.trim();
@@ -834,6 +845,7 @@ watch(
       <FormField label="Max copies (0 = unlimited)">
         <input
           v-model.number="draft.maxCopies"
+          :placeholder="maxCopiesHint"
           class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
           data-testid="item-max-copies"
           type="number"
