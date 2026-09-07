@@ -5956,8 +5956,7 @@
         "universal": true,
         "preferred": "illuminated"
       }
-    ],
-    "shortDescription": "Insignia slots: crescent, crescent, regal, universal (prefers illuminated)."
+    ]
   },
   {
     "id": "stable-balgora",
@@ -5977,8 +5976,7 @@
         "universal": true,
         "preferred": "regal"
       }
-    ],
-    "shortDescription": "Insignia slots: illuminated, crescent, universal, universal (prefers regal)."
+    ]
   },
   {
     "id": "stable-beholder-rune-board",
@@ -5998,8 +5996,7 @@
         "universal": true,
         "preferred": "enlightened"
       }
-    ],
-    "shortDescription": "Insignia slots: crescent, regal, universal, universal (prefers enlightened)."
+    ]
   },
   {
     "id": "stable-bestial-fire-archon",
@@ -6020,8 +6017,7 @@
         "universal": true,
         "preferred": "barbed"
       }
-    ],
-    "shortDescription": "Insignia slots: illuminated, regal, universal, universal (prefers barbed)."
+    ]
   },
   {
     "id": "stable-brain-stealer-dragon",
@@ -6041,8 +6037,7 @@
         "universal": true,
         "preferred": "regal"
       }
-    ],
-    "shortDescription": "Insignia slots: crescent, regal, universal, universal (prefers regal)."
+    ]
   },
   {
     "id": "stable-cactus-the-hedgehog",
@@ -6062,8 +6057,7 @@
         "universal": true,
         "preferred": "illuminated"
       }
-    ],
-    "shortDescription": "Insignia slots: regal, barbed, universal, universal (prefers illuminated)."
+    ]
   },
   {
     "id": "stable-crimson-crystal-horse",
@@ -6084,8 +6078,7 @@
       {
         "universal": true
       }
-    ],
-    "shortDescription": "Insignia slots: crescent, universal (prefers regal), universal (prefers regal), universal."
+    ]
   },
   {
     "id": "stable-dark-butterfly-wings",
@@ -6106,8 +6099,7 @@
         "universal": true,
         "preferred": "barbed"
       }
-    ],
-    "shortDescription": "Insignia slots: regal, illuminated, universal, universal (prefers barbed)."
+    ]
   },
   {
     "id": "stable-deadly-driderform",
@@ -6128,8 +6120,7 @@
         "universal": true,
         "preferred": "illuminated"
       }
-    ],
-    "shortDescription": "Insignia slots: regal, barbed, universal, universal (prefers illuminated)."
+    ]
   },
   {
     "id": "stable-demon-wings",
@@ -6150,8 +6141,7 @@
         "universal": true,
         "preferred": "barbed"
       }
-    ],
-    "shortDescription": "Insignia slots: enlightened, regal, universal, universal (prefers barbed)."
+    ]
   },
   {
     "id": "stable-demonic-gravehound",
@@ -6172,8 +6162,7 @@
         "universal": true,
         "preferred": "crescent"
       }
-    ],
-    "shortDescription": "Insignia slots: enlightened, barbed, universal, universal (prefers crescent)."
+    ]
   },
   {
     "id": "stable-dragon-chick",
@@ -6193,8 +6182,7 @@
         "universal": true,
         "preferred": "enlightened"
       }
-    ],
-    "shortDescription": "Insignia slots: regal, regal, barbed, universal (prefers enlightened)."
+    ]
   },
   {
     "id": "stable-dragon-chicken",
@@ -6214,8 +6202,7 @@
         "universal": true,
         "preferred": "illuminated"
       }
-    ],
-    "shortDescription": "Insignia slots: barbed, enlightened, universal, universal (prefers illuminated)."
+    ]
   },
   {
     "id": "stable-ebon-riding-lizard",
@@ -6236,8 +6223,7 @@
         "universal": true,
         "preferred": "enlightened"
       }
-    ],
-    "shortDescription": "Insignia slots: crescent, barbed, universal, universal (prefers enlightened)."
+    ]
   },
   {
     "id": "stable-forever-familiar",
@@ -6257,8 +6243,7 @@
         "universal": true,
         "preferred": "crescent"
       }
-    ],
-    "shortDescription": "Insignia slots: enlightened, barbed, regal, universal (prefers crescent)."
+    ]
   },
   {
     "id": "stable-giant-space-hamster",
@@ -6278,8 +6263,7 @@
         "universal": true,
         "preferred": "regal"
       }
-    ],
-    "shortDescription": "Insignia slots: crescent, enlightened, universal, universal (prefers regal)."
+    ]
   },
   {
     "id": "stable-gilded-goose",
@@ -6299,8 +6283,7 @@
         "universal": true,
         "preferred": "crescent"
       }
-    ],
-    "shortDescription": "Insignia slots: barbed, enlightened, enlightened, universal (prefers crescent)."
+    ]
   },
   {
     "id": "stable-glacier-prowler",
@@ -6320,8 +6303,7 @@
         "universal": true,
         "preferred": "enlightened"
       }
-    ],
-    "shortDescription": "Insignia slots: crescent, illuminated, universal, universal (prefers enlightened)."
+    ]
   },
   {
     "id": "stable-glorious-undead-lion",
@@ -6341,8 +6323,7 @@
         "universal": true,
         "preferred": "barbed"
       }
-    ],
-    "shortDescription": "Insignia slots: barbed, enlightened, universal, universal (prefers barbed)."
+    ]
   },
   {
     "id": "stable-golden-armored-griffon",
@@ -6363,8 +6344,7 @@
         "universal": true,
         "preferred": "enlightened"
       }
-    ],
-    "shortDescription": "Insignia slots: crescent, illuminated, universal, universal (prefers enlightened)."
+    ]
   },
   {
     "id": "stable-golden-goose",
@@ -6384,8 +6364,7 @@
         "universal": true,
         "preferred": "enlightened"
       }
-    ],
-    "shortDescription": "Insignia slots: regal, regal, barbed, universal (prefers enlightened)."
+    ]
   },
   {
     "id": "stable-golden-rage-drake",
@@ -6405,8 +6384,7 @@
         "universal": true,
         "preferred": "enlightened"
       }
-    ],
-    "shortDescription": "Insignia slots: crescent, barbed, enlightened, universal (prefers enlightened)."
+    ]
   },
   {
     "id": "stable-gravewake",
@@ -6426,8 +6404,7 @@
         "universal": true,
         "preferred": "crescent"
       }
-    ],
-    "shortDescription": "Insignia slots: barbed, enlightened, crescent, universal (prefers crescent)."
+    ]
   },
   {
     "id": "stable-grubshank-the-burdened",
@@ -6448,8 +6425,7 @@
         "universal": true,
         "preferred": "enlightened"
       }
-    ],
-    "shortDescription": "Insignia slots: enlightened, illuminated, universal, universal (prefers enlightened)."
+    ]
   },
   {
     "id": "stable-hag-s-enchanted-cauldron",
@@ -6470,8 +6446,7 @@
         "universal": true,
         "preferred": "illuminated"
       }
-    ],
-    "shortDescription": "Insignia slots: crescent, regal, universal, universal (prefers illuminated)."
+    ]
   },
   {
     "id": "stable-hemovore-gelatinous-cube",
@@ -6490,8 +6465,7 @@
       {
         "universal": true
       }
-    ],
-    "shortDescription": "Insignia slots: regal, barbed, universal, universal."
+    ]
   },
   {
     "id": "stable-hotenow-rune-board",
@@ -6511,8 +6485,7 @@
         "universal": true,
         "preferred": "enlightened"
       }
-    ],
-    "shortDescription": "Insignia slots: regal, crescent, illuminated, universal (prefers enlightened)."
+    ]
   },
   {
     "id": "stable-immortal-jade-horse",
@@ -6531,8 +6504,7 @@
       {
         "universal": true
       }
-    ],
-    "shortDescription": "Insignia slots: barbed, regal, universal, universal."
+    ]
   },
   {
     "id": "stable-maltese-tiger",
@@ -6552,8 +6524,7 @@
         "universal": true,
         "preferred": "crescent"
       }
-    ],
-    "shortDescription": "Insignia slots: regal, barbed, enlightened, universal (prefers crescent)."
+    ]
   },
   {
     "id": "stable-mechanical-goose",
@@ -6573,8 +6544,7 @@
         "universal": true,
         "preferred": "enlightened"
       }
-    ],
-    "shortDescription": "Insignia slots: regal, regal, crescent, universal (prefers enlightened)."
+    ]
   },
   {
     "id": "stable-midnight-s-plume",
@@ -6594,8 +6564,7 @@
         "universal": true,
         "preferred": "illuminated"
       }
-    ],
-    "shortDescription": "Insignia slots: regal, enlightened, crescent, universal (prefers illuminated)."
+    ]
   },
   {
     "id": "stable-mystical-butterfly-wings",
@@ -6615,8 +6584,7 @@
         "universal": true,
         "preferred": "enlightened"
       }
-    ],
-    "shortDescription": "Insignia slots: crescent, barbed, universal, universal (prefers enlightened)."
+    ]
   },
   {
     "id": "stable-neo-eclipse-lion",
@@ -6636,8 +6604,7 @@
         "universal": true,
         "preferred": "illuminated"
       }
-    ],
-    "shortDescription": "Insignia slots: crescent, regal, universal, universal (prefers illuminated)."
+    ]
   },
   {
     "id": "stable-neverwinter-s-hand",
@@ -6658,8 +6625,7 @@
         "universal": true,
         "preferred": "crescent"
       }
-    ],
-    "shortDescription": "Insignia slots: enlightened, illuminated, universal, universal (prefers crescent)."
+    ]
   },
   {
     "id": "stable-new-year-s-dragonnel",
@@ -6680,8 +6646,7 @@
         "universal": true,
         "preferred": "enlightened"
       }
-    ],
-    "shortDescription": "Insignia slots: regal, barbed, barbed, universal (prefers enlightened)."
+    ]
   },
   {
     "id": "stable-ollie-the-octie",
@@ -6701,8 +6666,7 @@
         "universal": true,
         "preferred": "barbed"
       }
-    ],
-    "shortDescription": "Insignia slots: barbed, enlightened, universal, universal (prefers barbed)."
+    ]
   },
   {
     "id": "stable-phantom-panther",
@@ -6723,8 +6687,7 @@
         "universal": true,
         "preferred": "barbed"
       }
-    ],
-    "shortDescription": "Insignia slots: barbed, enlightened, universal, universal (prefers barbed)."
+    ]
   },
   {
     "id": "stable-pink-sylph-wings",
@@ -6744,8 +6707,7 @@
         "universal": true,
         "preferred": "barbed"
       }
-    ],
-    "shortDescription": "Insignia slots: regal, barbed, universal, universal (prefers barbed)."
+    ]
   },
   {
     "id": "stable-protective-pink-yeti",
@@ -6765,8 +6727,7 @@
         "universal": true,
         "preferred": "enlightened"
       }
-    ],
-    "shortDescription": "Insignia slots: crescent, illuminated, illuminated, universal (prefers enlightened)."
+    ]
   },
   {
     "id": "stable-reanimated-chariot",
@@ -6786,8 +6747,7 @@
         "universal": true,
         "preferred": "enlightened"
       }
-    ],
-    "shortDescription": "Insignia slots: barbed, enlightened, regal, universal (prefers enlightened)."
+    ]
   },
   {
     "id": "stable-reclusive-rothe",
@@ -6807,8 +6767,7 @@
         "universal": true,
         "preferred": "illuminated"
       }
-    ],
-    "shortDescription": "Insignia slots: crescent, regal, barbed, universal (prefers illuminated)."
+    ]
   },
   {
     "id": "stable-red-dragon",
@@ -6829,8 +6788,7 @@
         "universal": true,
         "preferred": "enlightened"
       }
-    ],
-    "shortDescription": "Insignia slots: barbed, illuminated, universal, universal (prefers enlightened)."
+    ]
   },
   {
     "id": "stable-red-dragon-wings",
@@ -6850,8 +6808,7 @@
         "universal": true,
         "preferred": "barbed"
       }
-    ],
-    "shortDescription": "Insignia slots: regal, barbed, illuminated, universal (prefers barbed)."
+    ]
   },
   {
     "id": "stable-red-mountain-fox",
@@ -6871,8 +6828,7 @@
         "universal": true,
         "preferred": "regal"
       }
-    ],
-    "shortDescription": "Insignia slots: enlightened, barbed, universal, universal (prefers regal)."
+    ]
   },
   {
     "id": "stable-regal-cobra",
@@ -6891,8 +6847,7 @@
       {
         "universal": true
       }
-    ],
-    "shortDescription": "Insignia slots: enlightened, regal, universal, universal."
+    ]
   },
   {
     "id": "stable-rothe-traveler",
@@ -6912,8 +6867,7 @@
         "universal": true,
         "preferred": "enlightened"
       }
-    ],
-    "shortDescription": "Insignia slots: crescent, illuminated, universal, universal (prefers enlightened)."
+    ]
   },
   {
     "id": "stable-silvanite-blossom-bear",
@@ -6953,8 +6907,7 @@
         "universal": true,
         "preferred": "illuminated"
       }
-    ],
-    "shortDescription": "Insignia slots: barbed, illuminated, universal, universal (prefers illuminated)."
+    ]
   },
   {
     "id": "stable-skyhold-throne",
@@ -6974,8 +6927,7 @@
         "universal": true,
         "preferred": "crescent"
       }
-    ],
-    "shortDescription": "Insignia slots: regal, enlightened, universal, universal (prefers crescent)."
+    ]
   },
   {
     "id": "stable-slab-of-vecna",
@@ -6996,8 +6948,7 @@
         "universal": true,
         "preferred": "barbed"
       }
-    ],
-    "shortDescription": "Insignia slots: regal, barbed, illuminated, universal (prefers barbed)."
+    ]
   },
   {
     "id": "stable-snowtusk",
@@ -7018,8 +6969,7 @@
         "universal": true,
         "preferred": "illuminated"
       }
-    ],
-    "shortDescription": "Insignia slots: regal, enlightened, universal, universal (prefers illuminated)."
+    ]
   },
   {
     "id": "stable-space-guppy-school",
@@ -7040,8 +6990,7 @@
         "universal": true,
         "preferred": "regal"
       }
-    ],
-    "shortDescription": "Insignia slots: regal, barbed, universal, universal (prefers regal)."
+    ]
   },
   {
     "id": "stable-star-angler",
@@ -7081,8 +7030,7 @@
         "universal": true,
         "preferred": "crescent"
       }
-    ],
-    "shortDescription": "Insignia slots: regal, crescent, illuminated, universal (prefers crescent)."
+    ]
   },
   {
     "id": "stable-the-ebon-herald",
@@ -7102,8 +7050,7 @@
         "universal": true,
         "preferred": "illuminated"
       }
-    ],
-    "shortDescription": "Insignia slots: crescent, barbed, illuminated, universal (prefers illuminated)."
+    ]
   },
   {
     "id": "stable-twice-pale-alder",
@@ -7124,8 +7071,7 @@
         "universal": true,
         "preferred": "barbed"
       }
-    ],
-    "shortDescription": "Insignia slots: illuminated, regal, universal, universal (prefers barbed)."
+    ]
   },
   {
     "id": "stable-umbral-widow",
@@ -7165,8 +7111,7 @@
         "universal": true,
         "preferred": "barbed"
       }
-    ],
-    "shortDescription": "Insignia slots: crescent, enlightened, universal, universal (prefers barbed)."
+    ]
   },
   {
     "id": "stable-zodar-armor",
@@ -7187,8 +7132,7 @@
         "universal": true,
         "preferred": "regal"
       }
-    ],
-    "shortDescription": "Insignia slots: barbed, enlightened, universal, universal (prefers regal)."
+    ]
   },
   {
     "id": "strike-m32-900-to-5400",

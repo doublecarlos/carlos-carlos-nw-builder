@@ -665,6 +665,8 @@ function statSummary(slotId: string) {
   // A description's paragraphs join the summary as separate parts, so the break an author
   // typed reads here as the same separator that already divides one stat from the next.
   const descriptions: string[] = [];
+  const slots = insignia.slotSummary(item);
+  if (slots) descriptions.push(slots);
   descriptions.push(...descriptionParagraphs(item.shortDescription));
   for (const entry of bonusesBySlot.value.get(slotId) ?? []) {
     for (const [key, value] of Object.entries(entry.appliedStats ?? {})) {

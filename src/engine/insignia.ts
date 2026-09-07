@@ -126,7 +126,12 @@ export function describeSlotSpec(spec: InsigniaSlotSpec): string {
 
 /** A whole mount's slots in one line. */
 export const slotLine = (mount: Item) =>
-  (mount.insigniaSlots ?? []).map(describeSlotSpec).join(" · ");
+  (mount.insigniaSlots ?? []).map(describeSlotSpec).join(", ");
+
+/** `slotLine` labelled, for the surfaces that show it beside other text. Empty for anything
+ * that is not a mount. */
+export const slotSummary = (item: Item) =>
+  item.insigniaSlots ? `Slots: ${slotLine(item)}` : "";
 
 /** Multiset equality: a recipe names shapes, not which slot each goes in. */
 function sameShapes(a: readonly string[], b: readonly string[]) {

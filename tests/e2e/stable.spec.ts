@@ -197,6 +197,16 @@ test("an insignia row is labelled with the shape its mount's slot takes", async 
   await expect(label("insignia.insignia2_1")).toHaveText("Insignia 2.1");
 });
 
+test("a mount's row summarises the slots it offers", async ({ page }) => {
+  await openStable(page);
+  await chooseItem(page, "insignia.mount1", MOUNT);
+
+  // Derived from insigniaSlots, so no mount authors this text.
+  await expect(
+    slotRow(page, "insignia.mount1").getByTestId("slot-stat-summary"),
+  ).toHaveText("Slots: crescent, regal, universal, universal (enlightened)");
+});
+
 test("a universal slot heads its insignia with the bonus each leads to", async ({
   page,
 }) => {
@@ -259,7 +269,9 @@ test("a mount's hover card lists the bonuses it reaches, and a bonus lists its m
   await expect(card.getByTestId("item-card-stable")).toContainText(
     "Insignia bonuses",
   );
-  await expect(card.getByTestId("item-card-stable")).toContainText("Slots:");
+  await expect(card.getByTestId("item-card-slots")).toHaveText(
+    "Slots: crescent, regal, universal, universal (enlightened)",
+  );
   await expect(card.getByTestId("item-card-stable-row").first()).toContainText(
     "★",
   );

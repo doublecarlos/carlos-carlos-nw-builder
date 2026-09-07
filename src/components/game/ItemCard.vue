@@ -24,7 +24,7 @@ import {
   itemDisplay,
   mountsFor,
   reachableBonuses,
-  slotLine,
+  slotSummary,
 } from "../../engine/insignia";
 import { isHiddenBonus } from "../../engine/bonus";
 import { scaledStat } from "../../engine/scaling";
@@ -162,7 +162,7 @@ const stableReach = computed(() => {
   };
 });
 
-const slots = computed(() => slotLine(props.item));
+const slots = computed(() => slotSummary(props.item));
 
 const shown = computed(() => itemDisplay(props.db, props.item));
 
@@ -656,12 +656,14 @@ const rows = computed(() =>
           </div>
         </div>
       </div>
+      <div v-if="slots" class="mt-2 text-muted" data-testid="item-card-slots">
+        {{ slots }}
+      </div>
       <div
         v-if="stableReach"
         class="mt-2 border-t border-line pt-1.5"
         data-testid="item-card-stable"
       >
-        <div v-if="slots" class="mb-1 text-muted">Slots: {{ slots }}</div>
         <div class="mb-0.5 font-semibold">
           {{ stableReach.title }}
           <span class="font-normal text-muted"
