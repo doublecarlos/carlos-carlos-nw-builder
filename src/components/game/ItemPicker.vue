@@ -407,7 +407,10 @@ defineExpose({
       </div>
       <template v-if="!hidePreview && matchMap.has(option.value)">
         <!-- Indented under the name, so the row reads as "item, then what it's worth". -->
-        <div class="flex flex-col gap-0.5 pl-2" :class="option.group && 'pl-5'">
+        <div
+          class="flex flex-col gap-0.5"
+          :class="option.group ? 'pl-5' : 'pl-2'"
+        >
           <div class="flex flex-wrap gap-2 text-text">
             <span
               v-for="part in matchMap.get(option.value)?.preview?.parts ?? []"

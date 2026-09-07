@@ -236,6 +236,7 @@ function focusInput() {
  *  overwriting a cell. Exposed explicitly -- `<script setup>` components are closed by
  *  default. */
 function focusAndSeed(char: string) {
+  if (props.readonly) return;
   open.value = true;
   query.value = char;
   highlight.value = firstStop();

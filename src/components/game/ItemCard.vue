@@ -138,9 +138,9 @@ const longDescription = computed(() =>
   ),
 );
 
-/** Empty without a catalogue, as on the layer editor's preview card. */
 const STABLE_ROWS = 8;
 
+/** Null without a catalogue, as on the layer editor's preview card. */
 const stableReach = computed(() => {
   const db = props.db;
   if (!db) return null;
@@ -682,7 +682,7 @@ const rows = computed(() =>
           ><span
             v-if="row.preferred"
             class="ml-1 whitespace-nowrap text-accent"
-            >{{ "★".repeat(row.preferred) }}</span
+            >{{ PREFERRED_MARK.repeat(row.preferred) }}</span
           >
         </div>
         <BaseButton

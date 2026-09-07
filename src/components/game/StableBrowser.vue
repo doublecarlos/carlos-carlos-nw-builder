@@ -12,6 +12,7 @@ import { descriptionParagraphs } from "../../lib/description";
 import { X } from "@lucide/vue";
 import IconButton from "../ui/IconButton.vue";
 import {
+  PREFERRED_MARK,
   allBonuses,
   allMounts,
   mountsFor,
@@ -184,7 +185,7 @@ function apply(mount: Item) {
                 v-if="reach.preferred"
                 class="ml-1 whitespace-nowrap text-accent"
                 :title="preferredTitle(reach.preferred)"
-                >{{ "★".repeat(reach.preferred) }}</span
+                >{{ PREFERRED_MARK.repeat(reach.preferred) }}</span
               ></span
             >
             <BaseButton

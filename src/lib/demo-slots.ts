@@ -343,9 +343,8 @@ export function validateGameBags(
     // `slots` and `gemSlots` pair up on a bag holding mounts and their insignia at once;
     // `notModelled` is the whole bag's answer and pairs with neither.
     const placed = entry.slots !== undefined || entry.gemSlots !== undefined;
-    const shapes =
-      entry.notModelled !== undefined ? (placed ? 2 : 1) : placed ? 1 : 0;
-    if (shapes !== 1) {
+    const notModelled = entry.notModelled !== undefined;
+    if (placed === notModelled) {
       findings.push({
         level: "error",
         context: entry.bag,
