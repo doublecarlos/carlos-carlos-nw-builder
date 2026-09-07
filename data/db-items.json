@@ -5730,6 +5730,7 @@
     "id": "stable-bestial-fire-archon",
     "name": "Bestial Fire Archon",
     "filter": "mount",
+    "gameIds": ["Mount_M29_Bestial_Fire_Archon_Slots"],
     "insigniaSlots": [
       {
         "shape": "illuminated"
@@ -5815,6 +5816,7 @@
     "id": "stable-dark-butterfly-wings",
     "name": "Dark Butterfly Wings",
     "filter": "mount",
+    "gameIds": ["Mount_Butterfly_Wings_Dark_Slots"],
     "insigniaSlots": [
       {
         "shape": "regal"
@@ -5836,6 +5838,7 @@
     "id": "stable-deadly-driderform",
     "name": "Deadly Driderform",
     "filter": "mount",
+    "gameIds": ["Mount_Driderform_Mythic_Slots"],
     "insigniaSlots": [
       {
         "shape": "regal"
@@ -5857,6 +5860,7 @@
     "id": "stable-demon-wings",
     "name": "Demon Wings",
     "filter": "mount",
+    "gameIds": ["Mount_Demonwings_Mythic_Slots"],
     "insigniaSlots": [
       {
         "shape": "enlightened"
@@ -5878,6 +5882,7 @@
     "id": "stable-demonic-gravehound",
     "name": "Demonic Gravehound",
     "filter": "mount",
+    "gameIds": ["Mount_M32_Demonic_Gravehound_Mythic_Slots"],
     "insigniaSlots": [
       {
         "shape": "enlightened"
@@ -5941,6 +5946,7 @@
     "id": "stable-ebon-riding-lizard",
     "name": "Ebon Riding Lizard",
     "filter": "mount",
+    "gameIds": ["Mount_Riding_Lizard_Mythic_Slots"],
     "insigniaSlots": [
       {
         "shape": "crescent"
@@ -6067,6 +6073,7 @@
     "id": "stable-golden-armored-griffon",
     "name": "Golden Armored Griffon",
     "filter": "mount",
+    "gameIds": ["Mount_M27_Griffon_Armored_Golden_Slots"],
     "insigniaSlots": [
       {
         "shape": "crescent"
@@ -6151,6 +6158,7 @@
     "id": "stable-grubshank-the-burdened",
     "name": "Grubshank the Burdened",
     "filter": "mount",
+    "gameIds": ["Mount_M32_Grubshank_Slots"],
     "insigniaSlots": [
       {
         "shape": "enlightened"
@@ -6172,6 +6180,7 @@
     "id": "stable-hag-s-enchanted-cauldron",
     "name": "Hag's Enchanted Cauldron",
     "filter": "mount",
+    "gameIds": ["Mount_M31_Enchanted_Cauldron_Slots"],
     "insigniaSlots": [
       {
         "shape": "crescent"
@@ -6359,6 +6368,7 @@
     "id": "stable-neverwinter-s-hand",
     "name": "Neverwinter's Hand",
     "filter": "mount",
+    "gameIds": ["Mount_M25_Anniversary_Slots"],
     "insigniaSlots": [
       {
         "shape": "enlightened"
@@ -6380,6 +6390,7 @@
     "id": "stable-new-year-s-dragonnel",
     "name": "New Year's Dragonnel",
     "filter": "mount",
+    "gameIds": ["Mount_Dragon_Event_Lunar_New_Year_Slots"],
     "insigniaSlots": [
       {
         "shape": "regal"
@@ -6422,6 +6433,7 @@
     "id": "stable-phantom-panther",
     "name": "Phantom Panther",
     "filter": "mount",
+    "gameIds": ["Mount_M31_Ghostly_Panther_Slots"],
     "insigniaSlots": [
       {
         "shape": "barbed"
@@ -6527,6 +6539,7 @@
     "id": "stable-red-dragon",
     "name": "Red Dragon",
     "filter": "mount",
+    "gameIds": ["Mount_M28_Anniversary_Red_Dragon_Slots"],
     "insigniaSlots": [
       {
         "shape": "barbed"
@@ -6673,6 +6686,7 @@
     "id": "stable-slab-of-vecna",
     "name": "Slab of Vecna",
     "filter": "mount",
+    "gameIds": ["Mount_M23_Summer_Wb_Slots"],
     "insigniaSlots": [
       {
         "shape": "regal"
@@ -6694,6 +6708,7 @@
     "id": "stable-snowtusk",
     "name": "Snowtusk",
     "filter": "mount",
+    "gameIds": ["Mount_M33_Snowtusk_Slots"],
     "insigniaSlots": [
       {
         "shape": "regal"
@@ -6715,6 +6730,7 @@
     "id": "stable-space-guppy-school",
     "name": "Space Guppy School",
     "filter": "mount",
+    "gameIds": ["Mount_M28_Spaceguppy_Slots"],
     "insigniaSlots": [
       {
         "shape": "regal"
@@ -6778,6 +6794,7 @@
     "id": "stable-twice-pale-alder",
     "name": "Twice-Pale Alder",
     "filter": "mount",
+    "gameIds": ["Mount_M31_5_Oneiric_Sovereign_Slots"],
     "insigniaSlots": [
       {
         "shape": "illuminated"
@@ -6820,6 +6837,7 @@
     "id": "stable-zodar-armor",
     "name": "Zodar Armor",
     "filter": "mount",
+    "gameIds": ["Mount_M28_Zodar_Slots"],
     "insigniaSlots": [
       {
         "shape": "barbed"

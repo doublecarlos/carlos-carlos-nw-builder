@@ -544,17 +544,15 @@ function toItem(): Item {
   }
   if (local.allowedClass.length) item.allowedClass = [...local.allowedClass];
 
-  // A row with neither a shape nor a preference was started and left blank, so it is dropped.
-  const insigniaSlots = local.insigniaSlots
-    .filter((row) => row.shape || row.preferred)
-    .map((row) =>
-      row.shape
-        ? { shape: row.shape }
-        : {
-            universal: true as const,
-            ...(row.preferred ? { preferred: row.preferred } : {}),
-          },
-    );
+  // Every row is a slot: an empty shape means universal, so there is no blank row to discard.
+  const insigniaSlots = local.insigniaSlots.map((row) =>
+    row.shape
+      ? { shape: row.shape }
+      : {
+          universal: true as const,
+          ...(row.preferred ? { preferred: row.preferred } : {}),
+        },
+  );
   if (insigniaSlots.length) item.insigniaSlots = insigniaSlots;
   if (local.insigniaShape) item.insigniaShape = local.insigniaShape;
   if (local.preferredVariant.trim())
