@@ -8,11 +8,13 @@ import BaseModal from "../ui/BaseModal.vue";
 import BaseButton from "../ui/BaseButton.vue";
 import TabStrip from "../ui/TabStrip.vue";
 import TabButton from "../ui/TabButton.vue";
+import { descriptionParagraphs } from "../../lib/description";
+import { X } from "@lucide/vue";
+import IconButton from "../ui/IconButton.vue";
 import {
   allBonuses,
   allMounts,
   mountsFor,
-  planFor,
   reachableBonuses,
   readGroup,
   slotLine,
@@ -22,14 +24,16 @@ import type { Db, Build, Item } from "../../types";
 
 const props = defineProps<{
   db: Db;
-  build: Build;
-  group: number;
+  /** Null on the landing screen, where the reference still reads fine. */
+  build?: Build | null;
+  /** The group a pick applies to. Null opens the same tables with nothing to set. */
+  group: number | null;
   focus?: StableFocus | null;
 }>();
 
 const emit = defineEmits<{
   close: [];
-  apply: [payload: { group: number; mount: string; insignia: string[] }];
+  apply: [payload: { group: number; mount: string }];
 }>();
 
 const tab = ref<"mount" | "bonus">(props.focus?.tab ?? "mount");
@@ -44,6 +48,8 @@ const byMount = computed(() =>
     .sort((a, b) => a.name.localeCompare(b.name))
     .map((mount) => ({
       head: mount,
+      // A mount's card is headed by its slot line, which says more here than prose would.
+      description: [] as string[],
       reaches: reachableBonuses(props.db, mount),
     })),
 );
@@ -52,10 +58,17 @@ const byBonus = computed(() =>
   allBonuses(props.db)
     .filter((bonus) => matches(bonus.name))
     .sort((a, b) => a.name.localeCompare(b.name))
-    .map((bonus) => ({ head: bonus, reaches: mountsFor(props.db, bonus) })),
+    .map((bonus) => ({
+      head: bonus,
+      description: descriptionParagraphs(
+        bonus.longDescription || bonus.shortDescription,
+      ),
+      reaches: mountsFor(props.db, bonus),
+    })),
 );
 
 const occupied = computed(() => {
+  if (props.group === null || !props.build) return null;
   const state = readGroup(props.db, props.build, props.group);
   const held = state.insignia.filter(Boolean).length;
   if (!state.mount && !held) return null;
@@ -63,22 +76,23 @@ const occupied = computed(() => {
 });
 
 const preferredTitle = (count: number) =>
-  count === 0
-    ? "No preferred slot is satisfied by this combination"
-    : `${count} preferred slot${count === 1 ? "" : "s"} satisfied`;
+  `${count} preferred slot${count === 1 ? "" : "s"} satisfied`;
 
-function apply(mount: Item, bonus: Item) {
-  const insignia = planFor(props.db, mount, bonus);
-  if (!insignia) return;
-  emit("apply", { group: props.group, mount: mount.id, insignia });
+/** The mount only: which insignia go in its slots is the picker's job, and a group filled from
+ * here would be four picks the player never made. */
+function apply(mount: Item) {
+  if (props.group === null) return;
+  emit("apply", { group: props.group, mount: mount.id });
   emit("close");
 }
 </script>
 
 <template>
   <BaseModal
-    :title="`Browse stable for Mount ${group}`"
-    panel-class="max-h-[80vh] w-[720px]"
+    :title="
+      group === null ? 'Stable reference' : `Browse stable for Mount ${group}`
+    "
+    panel-class="h-[80vh] w-[720px]"
     data-testid="stable-browser"
     @close="emit('close')"
   >
@@ -97,25 +111,25 @@ function apply(mount: Item, bonus: Item) {
           >By bonus</TabButton
         >
       </TabStrip>
-      <input
-        v-model="query"
-        type="text"
-        placeholder="Filter…"
-        class="ml-auto w-52 rounded border border-line bg-surface px-2 py-1"
-        data-testid="stable-filter"
-      />
+      <div class="relative ml-auto">
+        <input
+          v-model="query"
+          type="text"
+          placeholder="Filter…"
+          class="w-52 rounded border border-line bg-surface py-1 pl-2 pr-7"
+          data-testid="stable-filter"
+        />
+        <IconButton
+          v-if="query"
+          class="absolute right-1 top-1/2 -translate-y-1/2"
+          title="Clear filter"
+          data-testid="stable-filter-clear"
+          @click="query = ''"
+        >
+          <X />
+        </IconButton>
+      </div>
     </div>
-
-    <p
-      v-if="occupied"
-      class="flex-none px-4 pt-2 text-muted"
-      data-testid="stable-overwrite-warning"
-    >
-      Mount {{ group }} already holds
-      {{ occupied.mount ? occupied.mount.name : "no mount" }}
-      <template v-if="occupied.held">and {{ occupied.held }} insignia</template
-      >. Applying replaces it.
-    </p>
 
     <div class="flex-1 overflow-y-auto p-4">
       <div
@@ -135,6 +149,22 @@ function apply(mount: Item, bonus: Item) {
             (entry.head.insigniaRecipe ?? []).join(" · ")
           }}</span>
           <span class="ml-auto text-muted">{{ entry.reaches.length }}</span>
+          <!-- One mount per card on this side, so the pick belongs to the card, not to each
+               bonus under it. -->
+          <BaseButton
+            v-if="tab === 'mount' && group !== null"
+            data-testid="stable-apply"
+            :title="`Set Mount ${group} to ${entry.head.name}`"
+            @click="apply(entry.head)"
+            >Use mount</BaseButton
+          >
+        </div>
+        <div
+          v-if="entry.description.length"
+          class="border-b border-line px-2.5 py-1.5 text-muted"
+          data-testid="stable-head-description"
+        >
+          <p v-for="line in entry.description" :key="line">{{ line }}</p>
         </div>
         <p v-if="!entry.reaches.length" class="px-2.5 py-1.5 text-muted">
           Nothing reaches this.
@@ -147,22 +177,39 @@ function apply(mount: Item, bonus: Item) {
             data-testid="stable-reach-row"
           >
             <span
-              class="w-12 whitespace-nowrap text-accent"
-              :title="preferredTitle(reach.preferred)"
-              >{{ "★".repeat(reach.preferred) }}</span
+              ><span>{{
+                tab === "mount" ? reach.bonus.name : reach.mount.name
+              }}</span
+              ><span
+                v-if="reach.preferred"
+                class="ml-1 whitespace-nowrap text-accent"
+                :title="preferredTitle(reach.preferred)"
+                >{{ "★".repeat(reach.preferred) }}</span
+              ></span
             >
-            <span>{{
-              tab === "mount" ? reach.bonus.name : reach.mount.name
-            }}</span>
             <BaseButton
+              v-if="tab === 'bonus' && group !== null"
               class="ml-auto"
               data-testid="stable-apply"
-              @click="apply(reach.mount, reach.bonus)"
-              >Use</BaseButton
+              :title="`Set Mount ${group} to ${reach.mount.name}`"
+              @click="apply(reach.mount)"
+              >Use mount</BaseButton
             >
           </li>
         </ul>
       </div>
     </div>
+
+    <p
+      v-if="occupied"
+      class="flex-none border-t border-line px-4 py-2 text-muted"
+      data-testid="stable-overwrite-warning"
+    >
+      Mount {{ group }} already holds
+      {{ occupied.mount ? occupied.mount.name : "no mount" }}
+      <template v-if="occupied.held">and {{ occupied.held }} insignia</template
+      >. Using another replaces the mount and drops any insignia its slots do
+      not take.
+    </p>
   </BaseModal>
 </template>

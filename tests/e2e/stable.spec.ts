@@ -9,7 +9,9 @@ import {
   pickerInput,
   chooseItem,
   chooseCombo,
+  confirmImport,
   hoverForCard,
+  importText,
   occurrenceCheckbox,
   undoButton,
 } from "./support/app";
@@ -20,11 +22,26 @@ import { addBuild } from "./support/nav";
 const MOUNT = "Beholder Rune Board";
 // Two preferences, and more bonuses than a hover card lists.
 const CRIMSON = "Crimson Crystal Horse";
+/** Fixed to regal then barbed, so it takes neither of the first two shapes MOUNT holds. */
+const CACTUS = "Cactus the Hedgehog";
 const CRESCENT = "Celestial Crescent Insignia of Brutality";
 const REGAL = "Celestial Regal Insignia of Dominance";
 const BARBED = "Celestial Barbed Insignia of Brutality";
 const ENLIGHTENED = "Celestial Enlightened Insignia of Brutality";
-const ENLIGHTENED_PREF = `${ENLIGHTENED} (Pref)`;
+
+/** The open build's own export, the starting point for a build the app could not have made. */
+async function exportedBuild(page: Page) {
+  const firstBuild = page.locator(".nav-row--build").first();
+  await firstBuild.locator(".nav-kebab").click();
+  const download = page.waitForEvent("download");
+  await page
+    .locator(".navmenu")
+    .getByRole("button", { name: "Download…" })
+    .click();
+  const stream = await (await download).createReadStream();
+  const chunks = await stream.toArray();
+  return JSON.parse(Buffer.concat(chunks).toString("utf-8"));
+}
 
 async function openStable(page: Page) {
   await openBuilder(page);
@@ -37,8 +54,9 @@ async function fillGroupOne(page: Page) {
   await chooseItem(page, "insignia.insignia1_1", CRESCENT);
   await chooseItem(page, "insignia.insignia1_2", REGAL);
   await chooseItem(page, "insignia.insignia1_3", BARBED);
-  // Slot 4 prefers enlightened, so the upgraded half is the only one it offers.
-  await chooseItem(page, "insignia.insignia1_4", ENLIGHTENED_PREF);
+  // Slot 4 prefers enlightened, so the upgraded half is the only one it offers, under the
+  // ordinary name with a star.
+  await chooseItem(page, "insignia.insignia1_4", ENLIGHTENED);
 }
 
 test("a mount's fixed slot only offers insignia of its own shape", async ({
@@ -46,12 +64,15 @@ test("a mount's fixed slot only offers insignia of its own shape", async ({
 }) => {
   await openStable(page);
 
-  // With no mount the group is in its manual fallback and every shape is on offer.
+  // With no mount the group is in its manual fallback and both halves of each pair are on
+  // offer, differing by the star rather than by the name.
   const first = pickerInput(slotRow(page, "insignia.insignia1_1"));
   await first.click();
   await first.fill("Insignia of");
   await expect(
-    slotRow(page, "insignia.insignia1_1").getByText(BARBED, { exact: true }),
+    slotRow(page, "insignia.insignia1_1")
+      .getByText(BARBED, { exact: true })
+      .first(),
   ).toBeVisible();
   await page.keyboard.press("Escape");
 
@@ -68,12 +89,14 @@ test("a mount's fixed slot only offers insignia of its own shape", async ({
   ).toHaveCount(0);
   await page.keyboard.press("Escape");
 
-  // Slot 3 is universal, so it still takes anything.
+  // Slot 3 is universal, so it still takes anything, listed under every bonus it leads to.
   const third = pickerInput(slotRow(page, "insignia.insignia1_3"));
   await third.click();
   await third.fill("Insignia of");
   await expect(
-    slotRow(page, "insignia.insignia1_3").getByText(BARBED, { exact: true }),
+    slotRow(page, "insignia.insignia1_3")
+      .getByText(BARBED, { exact: true })
+      .first(),
   ).toBeVisible();
 });
 
@@ -88,12 +111,17 @@ test("a slot offers only the half of a pair that belongs in it", async ({
   await fourth.click();
   await fourth.fill(ENLIGHTENED);
   const fourthRow = slotRow(page, "insignia.insignia1_4");
-  await expect(
-    fourthRow.getByText(ENLIGHTENED_PREF, { exact: true }),
-  ).toBeVisible();
-  await expect(fourthRow.getByText(ENLIGHTENED, { exact: true })).toHaveCount(
-    0,
+  const offered = await fourthRow
+    .getByText(ENLIGHTENED, { exact: true })
+    .count();
+  expect(offered).toBeGreaterThan(0);
+  // Every row on offer is starred, which is what says the ordinary half is not among them.
+  await expect(fourthRow.getByTestId("picker-option-preferred")).toHaveCount(
+    offered,
   );
+  await expect(
+    fourthRow.getByText(`${ENLIGHTENED} (Pref)`, { exact: true }),
+  ).toHaveCount(0);
   await page.keyboard.press("Escape");
 
   // Slot 3 is universal with no preference, so the ordinary half is the one offered.
@@ -101,10 +129,10 @@ test("a slot offers only the half of a pair that belongs in it", async ({
   await third.click();
   await third.fill(BARBED);
   const thirdRow = slotRow(page, "insignia.insignia1_3");
-  await expect(thirdRow.getByText(BARBED, { exact: true })).toBeVisible();
   await expect(
-    thirdRow.getByText(`${BARBED} (Pref)`, { exact: true }),
-  ).toHaveCount(0);
+    thirdRow.getByText(BARBED, { exact: true }).first(),
+  ).toBeVisible();
+  await expect(thirdRow.getByTestId("picker-option-preferred")).toHaveCount(0);
 });
 
 test("clearing the mount hands the group back to manual and drops the preferred variant", async ({
@@ -112,9 +140,9 @@ test("clearing the mount hands the group back to manual and drops the preferred 
 }) => {
   await openStable(page);
   await chooseItem(page, "insignia.mount1", MOUNT);
-  await chooseItem(page, "insignia.insignia1_4", ENLIGHTENED_PREF);
+  await chooseItem(page, "insignia.insignia1_4", ENLIGHTENED);
   await expect(pickerInput(slotRow(page, "insignia.insignia1_4"))).toHaveValue(
-    ENLIGHTENED_PREF,
+    ENLIGHTENED,
   );
 
   const mount = pickerInput(slotRow(page, "insignia.mount1"));
@@ -130,12 +158,15 @@ test("clearing the mount hands the group back to manual and drops the preferred 
   );
 });
 
-test("an empty insignia row says what its mount's slot takes", async ({
+test("an insignia row is labelled with the shape its mount's slot takes", async ({
   page,
 }) => {
   await openStable(page);
+  const label = (slotId: string) =>
+    slotRow(page, slotId).locator(".slot-label");
 
-  // Without a mount nothing constrains the row, so it stays a bare dash.
+  // Without a mount nothing constrains the row, so the authored label stands.
+  await expect(label("insignia.insignia1_1")).toHaveText("Insignia 1.1");
   await expect(
     pickerInput(slotRow(page, "insignia.insignia1_1")),
   ).toHaveAttribute("placeholder", "-");
@@ -143,36 +174,75 @@ test("an empty insignia row says what its mount's slot takes", async ({
   await chooseItem(page, "insignia.mount1", MOUNT);
 
   // Beholder Rune Board: crescent, regal, universal, universal preferring enlightened.
+  await expect(label("insignia.insignia1_1")).toHaveText("crescent");
+  await expect(label("insignia.insignia1_3")).toHaveText("universal");
+  await expect(label("insignia.insignia1_4")).toHaveText(
+    "universal (enlightened)",
+  );
+
+  // The label is where the rule lives, so filling the row does not take it away.
+  await chooseItem(page, "insignia.insignia1_4", ENLIGHTENED);
+  const fourth = slotRow(page, "insignia.insignia1_4");
+  // The box carries the name, and the star sits out beside the summary where it has room.
+  await expect(pickerInput(fourth)).toHaveValue(ENLIGHTENED);
+  await expect(fourth.getByTestId("slot-preferred")).toHaveCount(1);
   await expect(
-    pickerInput(slotRow(page, "insignia.insignia1_1")),
-  ).toHaveAttribute("placeholder", "crescent");
-  await expect(
-    pickerInput(slotRow(page, "insignia.insignia1_3")),
-  ).toHaveAttribute("placeholder", "universal");
-  await expect(
-    pickerInput(slotRow(page, "insignia.insignia1_4")),
-  ).toHaveAttribute("placeholder", "universal, prefers enlightened");
+    slotRow(page, "insignia.insignia1_1").getByTestId("slot-preferred"),
+  ).toHaveCount(0);
+  await expect(label("insignia.insignia1_4")).toHaveText(
+    "universal (enlightened)",
+  );
+
+  // Another group's mount is still unset, so that one keeps its authored label.
+  await expect(label("insignia.insignia2_1")).toHaveText("Insignia 2.1");
 });
 
-test("a filled insignia row still says what slot it is", async ({ page }) => {
+test("a universal slot heads its insignia with the bonus each leads to", async ({
+  page,
+}) => {
   await openStable(page);
   await chooseItem(page, "insignia.mount1", MOUNT);
+  await chooseItem(page, "insignia.insignia1_1", CRESCENT);
+  await chooseItem(page, "insignia.insignia1_2", REGAL);
 
-  // A filled row hides its placeholder, so the label note carries the rule.
-  const fourth = slotRow(page, "insignia.insignia1_4");
-  await expect(fourth.getByTestId("slot-label-note")).toHaveText(
-    "universal, prefers enlightened",
+  // A fixed slot's candidates all share one shape, so every heading would list the same rows.
+  const first = slotRow(page, "insignia.insignia1_1");
+  await pickerInput(first).click();
+  await expect(first.getByTestId("picker-group")).toHaveCount(0);
+  await page.keyboard.press("Escape");
+
+  // Crescent and regal are down, so Accursed Resolve is the nearest thing left.
+  const third = slotRow(page, "insignia.insignia1_3");
+  await pickerInput(third).click();
+  await expect(third.getByTestId("picker-group").first()).toHaveText(
+    "Accursed Resolve (4 insignia)",
   );
-  await chooseItem(page, "insignia.insignia1_4", ENLIGHTENED_PREF);
-  await expect(pickerInput(fourth)).toHaveValue(ENLIGHTENED_PREF);
-  await expect(fourth.getByTestId("slot-label-note")).toHaveText(
-    "universal, prefers enlightened",
+  // One insignia, several headings: a barbed one is a step toward more than one bonus.
+  expect(
+    await third.getByText(BARBED, { exact: true }).count(),
+  ).toBeGreaterThan(1);
+});
+
+test("the bonus row says what its group is one insignia short of", async ({
+  page,
+}) => {
+  await openStable(page);
+  await chooseItem(page, "insignia.mount1", MOUNT);
+  await chooseItem(page, "insignia.insignia1_1", CRESCENT);
+  await chooseItem(page, "insignia.insignia1_2", REGAL);
+  await chooseItem(page, "insignia.insignia1_4", ENLIGHTENED);
+
+  // Three shapes down, one slot open: the row names what filling it would derive.
+  await expect(pickerInput(slotRow(page, "insignia.bonus1"))).toHaveAttribute(
+    "placeholder",
+    /^1 short of Accursed Resolve \+\d+ more$/,
   );
 
-  // No mount, no rule to state.
-  await expect(
-    slotRow(page, "insignia.insignia2_1").getByTestId("slot-label-note"),
-  ).toHaveCount(0);
+  await chooseItem(page, "insignia.insignia1_3", BARBED);
+  await expect(pickerInput(slotRow(page, "insignia.bonus1"))).toHaveAttribute(
+    "placeholder",
+    "Accursed Resolve",
+  );
 });
 
 test("a mount's hover card lists the bonuses it reaches, and a bonus lists its mounts", async ({
@@ -196,7 +266,6 @@ test("a mount's hover card lists the bonuses it reaches, and a bonus lists its m
 
   // The other direction, from the bonus this group derives.
   await fillGroupOne(page);
-  await chooseItem(page, "insignia.bonus1", "Accursed Resolve");
   await hoverForCard(
     page,
     slotRow(page, "insignia.bonus1").locator(".slot-label"),
@@ -230,7 +299,7 @@ test("the hover card's 'more' opens the browser on what the card was showing", a
   );
 });
 
-test("the bonus row derives itself and an explicit pick overrides it", async ({
+test("the bonus row derives itself and cannot be picked by hand", async ({
   page,
 }) => {
   await openStable(page);
@@ -238,7 +307,7 @@ test("the bonus row derives itself and an explicit pick overrides it", async ({
 
   const row = slotRow(page, "insignia.bonus1");
   const bonus = pickerInput(row);
-  await expect(bonus).toHaveAttribute("placeholder", "auto: Accursed Resolve");
+  await expect(bonus).toHaveAttribute("placeholder", "Accursed Resolve");
   await expect(bonus).toHaveValue("");
 
   // The picker is empty but the row is still about that bonus.
@@ -254,11 +323,38 @@ test("the bonus row derives itself and an explicit pick overrides it", async ({
   await occurrenceCheckbox(row, "accursed-resolve").check();
   await expect(row.getByTestId("slot-stat-summary")).toContainText("Power");
 
-  await chooseItem(page, "insignia.bonus1", "Gladiator's Guile");
-  await expect(bonus).toHaveValue("Gladiator's Guile");
+  // The group is what gets edited, so the row states its result and opens no list.
+  await expect(bonus).toHaveJSProperty("readOnly", true);
+  await bonus.click();
+  await expect(row.getByTestId("picker-option-hidden-reason")).toHaveCount(0);
+  await expect(row.getByTestId("unpin-bonus:insignia.bonus1")).toHaveCount(0);
 });
 
-test("the browser applies a mount and its insignia as one undoable step", async ({
+test("a bonus pinned by an imported build stays until it is unpinned", async ({
+  page,
+}) => {
+  await openStable(page);
+  await fillGroupOne(page);
+
+  // Stands in for a build made before the row became derived-only.
+  const envelope = await exportedBuild(page);
+  envelope.data.choices["insignia.bonus1"] = "gladiator-s-guile";
+  await importText(page, JSON.stringify(envelope));
+  await confirmImport(page);
+  await ensureSectionExpanded(page, "insignia");
+
+  const row = slotRow(page, "insignia.bonus1");
+  await expect(pickerInput(row)).toHaveValue("Gladiator's Guile");
+
+  await row.getByTestId("unpin-bonus:insignia.bonus1").click();
+  await expect(pickerInput(row)).toHaveValue("");
+  await expect(pickerInput(row)).toHaveAttribute(
+    "placeholder",
+    "Accursed Resolve",
+  );
+});
+
+test("the browser sets the mount and leaves the insignia to the picker", async ({
   page,
 }) => {
   await openStable(page);
@@ -279,16 +375,156 @@ test("the browser applies a mount and its insignia as one undoable step", async 
   await expect(pickerInput(slotRow(page, "insignia.mount1"))).not.toHaveValue(
     "",
   );
-  await expect(pickerInput(slotRow(page, "insignia.bonus1"))).toHaveAttribute(
-    "placeholder",
-    "auto: Accursed Resolve",
-  );
-
-  // One step, not five: a single undo puts the whole group back.
-  await undoButton(page).click();
-  await expect(pickerInput(slotRow(page, "insignia.mount1"))).toHaveValue("");
+  // The slots it opens up are the player's to fill.
   await expect(pickerInput(slotRow(page, "insignia.insignia1_1"))).toHaveValue(
     "",
+  );
+
+  await undoButton(page).click();
+  await expect(pickerInput(slotRow(page, "insignia.mount1"))).toHaveValue("");
+});
+
+test("the by-mount side offers the pick once, on the mount it is about", async ({
+  page,
+}) => {
+  await openStable(page);
+  await page.getByTestId("open-stable-browser:insignia.mount1").click();
+  await page.getByTestId("stable-filter").fill(MOUNT);
+
+  // One mount heads the card, so one button, and none on the bonuses under it.
+  const card = page.getByTestId("stable-group-card").first();
+  await expect(card.getByTestId("stable-apply")).toHaveCount(1);
+  await expect(
+    card.getByTestId("stable-reach-row").first().getByTestId("stable-apply"),
+  ).toHaveCount(0);
+
+  await card.getByTestId("stable-apply").click();
+  await expect(pickerInput(slotRow(page, "insignia.mount1"))).toHaveValue(
+    MOUNT,
+  );
+});
+
+test("the by-bonus side says what each bonus does before listing its mounts", async ({
+  page,
+}) => {
+  await openStable(page);
+  await page.getByTestId("open-stable-browser:insignia.mount1").click();
+
+  // The by-mount side heads its cards with a mount, whose slots the header already states.
+  await page.getByTestId("stable-filter").fill(MOUNT);
+  await expect(page.getByTestId("stable-head-description")).toHaveCount(0);
+
+  await page.getByTestId("stable-tab-bonus").click();
+  await page.getByTestId("stable-filter").fill("Accursed Resolve");
+  const card = page.getByTestId("stable-group-card").first();
+  await expect(card.getByTestId("stable-head-description")).toContainText(
+    "You gain 3500 Power and Deflect while inflicted with any debuff.",
+  );
+
+  // Ally's Resilience carries only a short description, which stands in for the long one.
+  await page.getByTestId("stable-filter").fill("Ally's Resilience");
+  await expect(
+    page.getByTestId("stable-head-description").first(),
+  ).toContainText("Whenever you receive damage");
+});
+
+test("an imported build whose insignia no longer fit is warned about, not corrected", async ({
+  page,
+}) => {
+  await openStable(page);
+  await fillGroupOne(page);
+
+  // Slot 1 is fixed to crescent, so a barbed insignia there is only reachable from outside.
+  const envelope = await exportedBuild(page);
+  envelope.data.choices["insignia.insignia1_1"] = "brutality-barbed";
+  await importText(page, JSON.stringify(envelope));
+  await confirmImport(page);
+  await ensureSectionExpanded(page, "insignia");
+
+  const row = slotRow(page, "insignia.insignia1_1");
+  await expect(row).toContainText("does not fit a crescent slot");
+  // A warning, so the pick stays put and still carries its stats.
+  await expect(pickerInput(row)).toHaveValue(BARBED);
+  await expect(row.getByTestId("slot-stat-summary")).toContainText("IL");
+});
+
+test("the header opens the reference on its own, with nothing to set", async ({
+  page,
+}) => {
+  await openBuilder(page);
+  await page.getByTestId("header-tools").click();
+  await page.getByRole("button", { name: "Mount stable reference" }).click();
+
+  const browser = page.getByTestId("stable-browser");
+  await expect(browser).toContainText("Stable reference");
+  // No group behind it, so no mount to replace and nothing to warn about replacing.
+  await expect(browser.getByTestId("stable-apply")).toHaveCount(0);
+  await expect(page.getByTestId("stable-overwrite-warning")).toHaveCount(0);
+
+  // Still the same tables: both directions are there to read.
+  await expect(page.getByTestId("stable-group-card").first()).toBeVisible();
+  await page.getByTestId("stable-tab-bonus").click();
+  await page.getByTestId("stable-filter").fill("Accursed Resolve");
+  await expect(page.getByTestId("stable-head-description")).toContainText(
+    "You gain 3500 Power",
+  );
+
+  // A row's own button still opens it bound to that group.
+  await page.getByTestId("modal-close").click();
+  await ensureSectionExpanded(page, "insignia");
+  await page.getByTestId("open-stable-browser:insignia.mount1").click();
+  await expect(page.getByTestId("stable-browser")).toContainText("Mount 1");
+  expect(await page.getByTestId("stable-apply").count()).toBeGreaterThan(0);
+});
+
+test("the filter has a clear button, which puts every row back", async ({
+  page,
+}) => {
+  await openStable(page);
+  await page.getByTestId("open-stable-browser:insignia.mount1").click();
+
+  const clear = page.getByTestId("stable-filter-clear");
+  await expect(clear).toHaveCount(0);
+
+  await page.getByTestId("stable-filter").fill(MOUNT);
+  await expect(page.getByTestId("stable-group-card")).toHaveCount(1);
+  await clear.click();
+
+  await expect(page.getByTestId("stable-filter")).toHaveValue("");
+  expect(await page.getByTestId("stable-group-card").count()).toBeGreaterThan(
+    1,
+  );
+});
+
+test("swapping the mount drops the insignia its slots do not take", async ({
+  page,
+}) => {
+  await openStable(page);
+  await fillGroupOne(page);
+
+  // Cactus the Hedgehog: regal, barbed, universal, universal preferring illuminated.
+  await chooseItem(page, "insignia.mount1", CACTUS);
+
+  // Slots 1 and 2 are fixed to shapes the old picks are not, so those go.
+  await expect(pickerInput(slotRow(page, "insignia.insignia1_1"))).toHaveValue(
+    "",
+  );
+  await expect(pickerInput(slotRow(page, "insignia.insignia1_2"))).toHaveValue(
+    "",
+  );
+  // Slot 3 is universal on both mounts, so its pick stays put.
+  await expect(pickerInput(slotRow(page, "insignia.insignia1_3"))).toHaveValue(
+    BARBED,
+  );
+  // Slot 4 still takes it, but no longer prefers it, so the upgrade is handed back.
+  await expect(pickerInput(slotRow(page, "insignia.insignia1_4"))).toHaveValue(
+    ENLIGHTENED,
+  );
+
+  // One step: the swap and its evictions undo together.
+  await undoButton(page).click();
+  await expect(pickerInput(slotRow(page, "insignia.insignia1_1"))).toHaveValue(
+    CRESCENT,
   );
 });
 
@@ -331,7 +567,7 @@ test("the browser applies to the mount row it was opened from", async ({
   );
 });
 
-test("a derived bonus compares against a build that pins one, and against one deriving none", async ({
+test("a derived bonus compares against a build deriving a different one", async ({
   page,
 }) => {
   await openBuilder(page);
@@ -352,7 +588,7 @@ test("a derived bonus compares against a build that pins one, and against one de
     "Accursed Resolve",
   );
 
-  // Auto on one side and a manual pick on the other are the same build.
-  await chooseItem(page, "insignia.bonus1", "Accursed Resolve");
+  // Deriving the same bonus on both sides is the same build, stored value or not.
+  await fillGroupOne(page);
   await expect(row).not.toHaveClass(/is-diff/);
 });

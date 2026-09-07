@@ -9,7 +9,12 @@ import { bonusIdOf } from "../lib/bonus-attachment";
 import { replacementIdOf, replacementValuesOf } from "../lib/item-replacement";
 import { resolvedOptions } from "../lib/param-options";
 import { parseRowSlotId, rowSlot } from "../lib/item-picker-list";
-import { isPreferredSlot, slotAccepts, specForSlot } from "../engine/insignia";
+import {
+  isPreferredSlot,
+  preferredVariantIds,
+  slotAccepts,
+  specForSlot,
+} from "../engine/insignia";
 import type {
   Item,
   Bonus,
@@ -94,14 +99,6 @@ function collectSeeds(
  *  hidden pick can be cleared and re-selected rather than being a one-way door. */
 export const stillOffered = (item: Item, inUse: boolean) =>
   inUse || !item.hideFromPicker;
-
-/** The upgraded half of every pair, which is exactly what `preferredVariant` points at. */
-const upgradedInsignia = (db: Db) =>
-  new Set(
-    db.items
-      .map((item) => item.preferredVariant)
-      .filter((id): id is string => !!id),
-  );
 
 export function build(
   items: Item[],
@@ -378,7 +375,7 @@ export function slotCandidates(
     slot?.type === "item_picker" ? copyCounts(db, build, slotId) : null;
   const equipped = build.choices?.[slotId];
   let names: Map<string, string> | null = null;
-  let preferredHalves: Set<string> | null = null;
+  let preferredHalves: ReadonlySet<string> | null = null;
   const spec = specForSlot(db, build, slotId);
 
   return db.forSlot(slotId).map((item) => {
@@ -397,7 +394,7 @@ export function slotCandidates(
       } else if (isPreferredSlot(spec, item.insigniaShape)) {
         if (item.preferredVariant) hidden = "this slot upgrades it";
       } else {
-        preferredHalves ??= upgradedInsignia(db);
+        preferredHalves ??= preferredVariantIds(db);
         if (preferredHalves.has(item.id))
           hidden = `only in a slot preferring ${item.insigniaShape}`;
       }

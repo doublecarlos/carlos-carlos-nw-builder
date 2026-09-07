@@ -9,7 +9,7 @@
 import * as bonus from "./bonus";
 import { scaleFactorFor, scaledStat } from "./scaling";
 import { occurrenceCountFor } from "../lib/bonus-attachment";
-import { withDerivedBonuses } from "./insignia";
+import { misplacedInsignia, withDerivedBonuses } from "./insignia";
 import { dynamicValueKey, readDynamicValue } from "../lib/dynamic-stats";
 import type {
   Db,
@@ -464,6 +464,17 @@ function findErrors(
         });
       }
     }
+  }
+
+  // A warning, not an error: the pick still counts, it just should not be where it is.
+  for (const misplaced of misplacedInsignia(db, build)) {
+    errors.push({
+      slotId: misplaced.slotId,
+      kind: "insigniaSlot",
+      choice: misplaced.item.name,
+      message: misplaced.message,
+      severity: "warning",
+    });
   }
 
   for (const row of resolved.rows) {

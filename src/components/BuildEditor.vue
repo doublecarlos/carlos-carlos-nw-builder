@@ -18,7 +18,6 @@ import BaseBadge from "./ui/BaseBadge.vue";
 import IconButton from "./ui/IconButton.vue";
 import ComboBox from "./ui/ComboBox.vue";
 import QuickOptions from "./game/QuickOptions.vue";
-import StableBrowser from "./game/StableBrowser.vue";
 import {
   ChevronsDownUp,
   ChevronsUpDown,
@@ -504,9 +503,6 @@ const derivedBonuses = computed(() => {
   return map;
 });
 
-/** What an empty stable row reads as: which shapes an insignia slot takes, or which bonus a
- * group already derives. A match past the bonus's cap is labelled rather than dropped. */
-/** On the label rather than only the placeholder, which a filled row hides. */
 /** Gates the card's way into the browser, which has nothing to apply to without a group. */
 const hoveredStableGroup = computed(() => {
   const slotId = hover.value?.slotId;
@@ -524,26 +520,35 @@ function openStableFromCard() {
   });
 }
 
-function stableLabelNote(slotId: string): string | undefined {
+/** What an insignia row reads as instead of "Insignia N.M": the shape its mount's slot takes. */
+function stableLabel(slotId: string): string | undefined {
   if (insignia.stableRef(db.value, slotId)?.role !== "insignia")
     return undefined;
   const spec = insignia.specForSlot(db.value, build.value, slotId);
   return spec ? insignia.describeSlotSpec(spec) : undefined;
 }
 
+/** How many near misses a bonus row names before it settles for a count. One, because the row
+ * is an input's width and a second name only ever arrives half-cut. */
+const NEAR_MISSES_NAMED = 1;
+
+/** The bonus row's text: what its group derives, or what it is one insignia short of. A match
+ * past the bonus's cap is labelled rather than dropped. */
 function stablePlaceholder(slotId: string): string | undefined {
   const ref = insignia.stableRef(db.value, slotId);
-  if (!ref) return undefined;
-  if (ref.role === "insignia") {
-    const spec = insignia.specForSlot(db.value, build.value, slotId);
-    return spec ? insignia.describeSlotSpec(spec) : undefined;
-  }
-  if (ref.role !== "bonus") return undefined;
+  if (ref?.role !== "bonus") return undefined;
   const derived = derivedBonuses.value.get(ref.group);
-  if (!derived) return undefined;
-  return derived.counted
-    ? `auto: ${derived.name}`
-    : `auto: ${derived.name} (at cap)`;
+  if (derived) {
+    return derived.counted ? derived.name : `${derived.name} (at cap)`;
+  }
+  const near = insignia.oneShortOf(db.value, build.value, ref.group);
+  if (!near.length) return undefined;
+  const named = near
+    .slice(0, NEAR_MISSES_NAMED)
+    .map((item) => item.name)
+    .join(", ");
+  const rest = near.length - NEAR_MISSES_NAMED;
+  return rest > 0 ? `1 short of ${named} +${rest} more` : `1 short of ${named}`;
 }
 
 function toggle(sectionId: string) {
@@ -1020,7 +1025,7 @@ watch(
               :errors="errorsFor(slotDef.id)"
               :stat-summary="statSummary(slotDef.id)"
               :placeholder="stablePlaceholder(slotDef.id)"
-              :label-note="stableLabelNote(slotDef.id)"
+              :label-override="stableLabel(slotDef.id)"
               :choice-differs="differs(slotDef.id)"
               :other-choice-label="otherChoiceLabel(slotDef.id)"
               :bonus-diffs="rowDiff(slotDef.id)?.bonuses"
@@ -1061,19 +1066,6 @@ watch(
             />
           </template>
         </BuildSection>
-
-        <StableBrowser
-          v-if="stableBrowser.group.value"
-          :db="db"
-          :build="build"
-          :group="stableBrowser.group.value"
-          :focus="stableBrowser.focus.value"
-          @close="stableBrowser.close()"
-          @apply="
-            (plan) =>
-              buildEditor.applyStablePlan(plan.group, plan.mount, plan.insignia)
-          "
-        />
 
         <!-- One card for the whole list, moved and refilled on hover. -->
         <BasePopover ref="tooltip" :width="320">

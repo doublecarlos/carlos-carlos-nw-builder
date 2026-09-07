@@ -19,7 +19,13 @@ import {
   stat as formatStat,
 } from "../../lib/format";
 import { descriptionParagraphs } from "../../lib/description";
-import { mountsFor, reachableBonuses, slotLine } from "../../engine/insignia";
+import {
+  PREFERRED_MARK,
+  itemDisplay,
+  mountsFor,
+  reachableBonuses,
+  slotLine,
+} from "../../engine/insignia";
 import { isHiddenBonus } from "../../engine/bonus";
 import { scaledStat } from "../../engine/scaling";
 import type { OccurrenceRow } from "../../composables/useItemBonusOccurrences";
@@ -157,6 +163,8 @@ const stableReach = computed(() => {
 });
 
 const slots = computed(() => slotLine(props.item));
+
+const shown = computed(() => itemDisplay(props.db, props.item));
 
 const stats = computed(() => {
   const out: { key: string; label: string; value: string }[] = [];
@@ -413,9 +421,16 @@ const rows = computed(() =>
        are handled by BasePopover. Internal structure uses BaseCard for the visual frame. -->
   <BaseCard class="itemcard" data-testid="item-card">
     <BaseCardHeader sticky>
-      <span class="flex-1 font-semibold" data-testid="item-card-name">{{
-        item.name
-      }}</span>
+      <!-- Inline, so a name that wraps carries the star along on its last line. -->
+      <span class="flex-1 font-semibold"
+        ><span data-testid="item-card-name">{{ shown.name }}</span
+        ><span
+          v-if="shown.preferred"
+          class="ml-1 text-accent"
+          title="the upgraded half, which only a slot preferring its shape takes"
+          >{{ PREFERRED_MARK }}</span
+        ></span
+      >
       <span v-if="item.il" class="tabular-nums text-muted"
         >iL {{ scaledIl }}</span
       >
@@ -660,13 +675,15 @@ const rows = computed(() =>
         <div
           v-for="row in stableReach.rows"
           :key="row.id"
-          class="flex justify-between gap-2 py-0.5 hover:shadow-[inset_0_1px_0_var(--color-accent),inset_0_-1px_0_var(--color-accent)]"
+          class="py-0.5 hover:shadow-[inset_0_1px_0_var(--color-accent),inset_0_-1px_0_var(--color-accent)]"
           data-testid="item-card-stable-row"
         >
-          <span class="min-w-0 truncate">{{ row.name }}</span>
-          <span class="shrink-0 whitespace-nowrap text-accent">{{
-            "★".repeat(row.preferred)
-          }}</span>
+          <span>{{ row.name }}</span
+          ><span
+            v-if="row.preferred"
+            class="ml-1 whitespace-nowrap text-accent"
+            >{{ "★".repeat(row.preferred) }}</span
+          >
         </div>
         <BaseButton
           v-if="stableReach.more && stableGroup"

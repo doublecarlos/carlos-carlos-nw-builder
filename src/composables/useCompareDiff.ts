@@ -6,7 +6,7 @@ import { dynamicValueKey } from "../lib/dynamic-stats";
 import { label as statLabel } from "../lib/format";
 import { repetitionRows } from "../lib/inline-repetition";
 import { expandSlots } from "../lib/item-picker-list";
-import { stableRef } from "../engine/insignia";
+import { itemLabel, stableRef } from "../engine/insignia";
 import type {
   Build,
   BuildParameterSlot,
@@ -198,7 +198,9 @@ export function useCompareDiff(options: {
    * "apply" tooltip/diff note. */
   function otherChoiceLabel(slotId: string) {
     const id = otherChoice(slotId);
-    return id ? (db.value.get(id)?.name ?? id) : "";
+    if (!id) return "";
+    const item = db.value.get(id);
+    return item ? itemLabel(db.value, item) : id;
   }
 
   function differs(slotId: string) {

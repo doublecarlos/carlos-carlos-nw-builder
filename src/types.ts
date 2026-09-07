@@ -989,6 +989,7 @@ export interface EngineError {
     | "outOfRange"
     | "missing"
     | "bonusRule"
+    | "insigniaSlot"
     | "publishConflict";
   choice: string;
   message: string;

@@ -21,8 +21,11 @@ const props = withDefaults(
     }[];
     /** CSS selectors for elements that should NOT trigger close (e.g. the kebab button). */
     ignore?: string[];
+    /** Which edge of the trigger the menu lines up with. `right` suits a kebab at the end of a
+     *  row; `left` a trigger at the start of a bar, where a right-aligned menu would run off. */
+    align?: "left" | "right";
   }>(),
-  { ignore: () => [] },
+  { ignore: () => [], align: "right" },
 );
 
 const emit = defineEmits<{
@@ -35,9 +38,16 @@ const menuEl = ref<HTMLElement | null>(null);
 
 // Place the popover after mount - the component is v-if-gated so it mounts fresh each
 // time a menu opens. nextTick gives BasePopover's Teleport a chance to render.
+// A left-aligned menu passes the trigger's left edge as the origin: `place` starts at the
+// anchor's right edge, which only the `-translate-x-full` case pulls back over the trigger.
 onMounted(async () => {
   await nextTick();
-  if (props.anchor) popover.value?.place(props.anchor);
+  const anchor = props.anchor;
+  if (anchor)
+    popover.value?.place(
+      anchor,
+      props.align === "left" ? anchor.left : undefined,
+    );
 });
 
 // Close when clicking outside the menu, ignoring the trigger buttons.
@@ -52,7 +62,8 @@ useEscapeToClose(() => emit("close"));
   <BasePopover ref="popover" :width="192">
     <div
       ref="menuEl"
-      class="navmenu flex min-w-48 -translate-x-full flex-col rounded-md border border-line bg-surface p-1 shadow-lg"
+      class="navmenu flex min-w-48 flex-col rounded-md border border-line bg-surface p-1 shadow-lg"
+      :class="align === 'right' && '-translate-x-full'"
     >
       <button
         v-for="item in items"

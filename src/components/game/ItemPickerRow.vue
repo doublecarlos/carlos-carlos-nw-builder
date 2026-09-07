@@ -11,11 +11,16 @@ import PercentInput from "../ui/PercentInput.vue";
 import BaseBadge from "../ui/BaseBadge.vue";
 import BaseButton from "../ui/BaseButton.vue";
 import IconButton from "../ui/IconButton.vue";
-import { Replace, Table, Trash } from "@lucide/vue";
+import { PinOff, Replace, Table, Trash } from "@lucide/vue";
 import * as buildEditor from "../../stores/buildEditor";
 import * as pickerLens from "../../stores/pickerLens";
 import * as stableBrowser from "../../stores/stableBrowser";
-import { stableRef } from "../../engine/insignia";
+import {
+  PREFERRED_MARK,
+  bonusGroupsFor,
+  itemDisplay,
+  stableRef,
+} from "../../engine/insignia";
 import { useItemBonusOccurrences } from "../../composables/useItemBonusOccurrences";
 import {
   useSlotDynamicStats,
@@ -78,7 +83,7 @@ defineExpose({
 const choice = () => props.build.choices[props.slotDef.id] ?? "";
 
 /** Not always the row's item: an unpinned stable bonus row is about the derived bonus, but the
- * picker holds nothing, which is what lets its placeholder read `auto: <bonus>`. */
+ * picker holds nothing, which is what lets its placeholder name the derived bonus. */
 const pickedItem = computed(() => (choice() ? props.item : null));
 
 const dynamicStatRows = useSlotDynamicStats(
@@ -116,6 +121,21 @@ const repetitionLabel = computed(
   () => props.item?.inlineRepetition?.label ?? "Copies",
 );
 
+/** The picker's own box is a fixed width, so the star sits out here with the summary. */
+const preferredPick = computed(
+  () => !!props.item && itemDisplay(props.db, props.item).preferred,
+);
+
+/** A stable bonus row states what its group derives; the group is what the player edits. A
+ * stored pick still shows, so a build carrying one from elsewhere keeps it until unpinned. */
+const derivedBonusRow = computed(
+  () => stableRef(props.db, props.slotDef.id)?.role === "bonus",
+);
+
+const insigniaGroups = computed(() =>
+  bonusGroupsFor(props.db, props.build, props.slotDef.id, props.items ?? []),
+);
+
 /** The group a mount row heads, which the browse button opens onto. */
 const stableGroup = computed(() => {
   const ref = stableRef(props.db, props.slotDef.id);
@@ -136,6 +156,8 @@ const stableGroup = computed(() => {
       :invalid="invalid"
       :db="db"
       :hidden-reasons="hiddenReasons"
+      :readonly="derivedBonusRow"
+      :groups="insigniaGroups"
       :bonus-preview="{
         db,
         build,
@@ -146,6 +168,14 @@ const stableGroup = computed(() => {
       :allow-empty="!slotDef.disallowEmpty"
       @update:model-value="buildEditor.setChoice(slotDef.id, $event)"
     />
+    <IconButton
+      v-if="derivedBonusRow && choice()"
+      title="Unpin, and go back to the bonus this group derives"
+      :data-testid="'unpin-bonus:' + slotDef.id"
+      @click.stop="buildEditor.setChoice(slotDef.id, '')"
+    >
+      <PinOff />
+    </IconButton>
     <IconButton
       v-if="stableGroup"
       title="Browse stable"
@@ -192,6 +222,13 @@ const stableGroup = computed(() => {
         ><Replace
       /></IconButton>
     </span>
+    <span
+      v-if="preferredPick"
+      class="shrink-0 text-accent"
+      data-testid="slot-preferred"
+      title="the upgraded half, which only a slot preferring its shape takes"
+      >{{ PREFERRED_MARK }}</span
+    >
     <span
       class="min-w-0 flex-1 truncate text-text"
       data-testid="slot-stat-summary"

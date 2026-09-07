@@ -118,10 +118,10 @@ export const slotAccepts = (
   return spec.shape === shape;
 };
 
-/** One slot's rule in words, for a row that has to say what it takes while empty. */
+/** One slot's rule in words, short enough to stand in for a row's label. */
 export function describeSlotSpec(spec: InsigniaSlotSpec): string {
   if (!spec.universal) return String(spec.shape);
-  return spec.preferred ? `universal, prefers ${spec.preferred}` : "universal";
+  return spec.preferred ? `universal (${spec.preferred})` : "universal";
 }
 
 /** A whole mount's slots in one line. */
@@ -256,7 +256,7 @@ export function bestArrangement(
         ? [undefined]
         : [
             undefined,
-            // Only shapes the catalogue supplies, or `planFor` fails on a workable pairing.
+            // Only shapes the catalogue supplies, so a pairing counts as reachable in practice.
             ...INSIGNIA_SHAPES.filter(
               (shape) =>
                 slotAccepts(specs[spare], shape) &&
@@ -286,8 +286,23 @@ const reachFor = (db: Db, mount: Item, bonus: Item): Reach | null => {
   return best ? { mount, bonus, preferred: best.preferred } : null;
 };
 
-export const allMounts = (db: Db) => db.items.filter((i) => i.insigniaSlots);
-export const allBonuses = (db: Db) => db.items.filter((i) => i.insigniaRecipe);
+const catalogueCache = new WeakMap<Db, { mounts: Item[]; bonuses: Item[] }>();
+
+/** Memoised per `Db`: a picker row asks on every build change, and both are a full scan. */
+function stableCatalogue(db: Db) {
+  let split = catalogueCache.get(db);
+  if (!split) {
+    split = {
+      mounts: db.items.filter((item) => item.insigniaSlots),
+      bonuses: db.items.filter((item) => item.insigniaRecipe),
+    };
+    catalogueCache.set(db, split);
+  }
+  return split;
+}
+
+export const allMounts = (db: Db) => stableCatalogue(db).mounts;
+export const allBonuses = (db: Db) => stableCatalogue(db).bonuses;
 
 /** Best-preferred first, then by name. */
 export function reachableBonuses(db: Db, mount: Item): Reach[] {
@@ -309,21 +324,6 @@ export function mountsFor(db: Db, bonus: Item): Reach[] {
       (a, b) =>
         b.preferred - a.preferred || a.mount.name.localeCompare(b.mount.name),
     );
-}
-
-/**
- * Insignia ids producing `bonus` on `mount`, or null. An empty string leaves that slot empty.
- *
- * Fills ordinary insignia, not `(Pref)`: the editor's normalisation upgrades the ones whose
- * slots earn it, so both paths end in the same state.
- */
-export function planFor(db: Db, mount: Item, bonus: Item): string[] | null {
-  const best = bestArrangement(db, mount, bonus);
-  if (!best) return null;
-  const ids = best.shapes.map((shape) =>
-    shape ? (insigniaOfShape(db, shape)?.id ?? "") : "",
-  );
-  return best.shapes.every((shape, i) => !shape || ids[i]) ? ids : null;
 }
 
 /** The ordinary half of a pair, highest item level first, name as a stable tiebreak. Built for
@@ -351,6 +351,54 @@ function insigniaOfShape(db: Db, shape: string): Item | null {
     bestByShape.set(db, byShape);
   }
   return byShape.get(shape) ?? null;
+}
+
+export interface MisplacedInsignia {
+  slotId: string;
+  item: Item;
+  message: string;
+}
+
+/**
+ * Picks that do not belong where they sit: a build edited outside the app, or one whose mount
+ * was re-authored under it. Reported rather than corrected, so nothing a player cannot see
+ * changes their build's numbers.
+ */
+export function misplacedInsignia(db: Db, build: Build): MisplacedInsignia[] {
+  const found: MisplacedInsignia[] = [];
+  for (const { group } of stableGroups(db)) {
+    const mount = mountOf(db, build, group);
+    const specs = mount?.insigniaSlots;
+    if (!mount || !specs) continue;
+    insigniaSlotIds(db, group).forEach((slotId, position) => {
+      const item = db.get(build.choices?.[slotId]);
+      if (!item?.insigniaShape) return;
+      const spec = specs[position];
+      if (!spec) {
+        found.push({
+          slotId,
+          item,
+          message: `${mount.name} has only ${specs.length} insignia slots`,
+        });
+      } else if (!slotAccepts(spec, item.insigniaShape)) {
+        found.push({
+          slotId,
+          item,
+          message: `${item.name} does not fit a ${describeSlotSpec(spec)} slot`,
+        });
+      } else if (
+        preferredVariantIds(db).has(item.id) &&
+        !isPreferredSlot(spec, item.insigniaShape)
+      ) {
+        found.push({
+          slotId,
+          item,
+          message: `${item.name} only belongs in a slot preferring ${item.insigniaShape}`,
+        });
+      }
+    });
+  }
+  return found;
 }
 
 /** What a group currently holds, as against `StableGroup`, which is its slots. `mount` is null
@@ -396,7 +444,203 @@ export function readGroup(
 const readStable = (db: Db, build: Build) =>
   stableGroups(db).map(({ group }) => readGroup(db, build, group));
 
+// --- what a slot's candidates lead to ----------------------------------------------------------
+
+/** Per slot, the shape it holds; `undefined` where it is empty. */
+type Held = (InsigniaShape | undefined)[];
+
+/**
+ * How many empty slots `recipe` would still need on `specs`, or null when `held` rules it out.
+ *
+ * `matchBonus`'s rule read forwards: a recipe takes the first `recipe.length` slots, and a
+ * spare holding a shape that completes a four-shape recipe displaces the three-shape one.
+ */
+export function missingFor(
+  db: Db,
+  specs: InsigniaSlotSpec[],
+  held: Held,
+  recipe: readonly InsigniaShape[],
+): number | null {
+  if (specs.length < recipe.length) return null;
+
+  const used: boolean[] = Array(recipe.length).fill(false);
+  const walk = (k: number): boolean => {
+    if (k === recipe.length) return true;
+    for (let slot = 0; slot < recipe.length; slot++) {
+      if (used[slot]) continue;
+      if (!slotAccepts(specs[slot], recipe[k])) continue;
+      if (held[slot] !== undefined && held[slot] !== recipe[k]) continue;
+      used[slot] = true;
+      if (walk(k + 1)) return true;
+      used[slot] = false;
+    }
+    return false;
+  };
+  if (!walk(0)) return null;
+
+  const spare = specs.length > recipe.length ? held[recipe.length] : undefined;
+  if (
+    spare &&
+    recipes(db).four.some((item) =>
+      sameShapes(item.insigniaRecipe!, [...recipe, spare]),
+    )
+  ) {
+    return null;
+  }
+
+  let missing = 0;
+  for (let slot = 0; slot < recipe.length; slot++) {
+    if (held[slot] === undefined) missing++;
+  }
+  return missing;
+}
+
+/** What each of a group's insignia slots holds, with `skip` read as empty. */
+function heldShapes(db: Db, build: Build, group: number, skip?: string): Held {
+  return insigniaSlotIds(db, group).map((slotId) =>
+    slotId === skip
+      ? undefined
+      : db.get(build.choices?.[slotId])?.insigniaShape,
+  );
+}
+
+/** One heading in a universal slot's picker: the bonus, and the candidates advancing it. */
+export interface InsigniaGroup {
+  label: string;
+  ids: string[];
+}
+
+/** The heading candidates advancing nothing sit under, kept last. */
+export const NO_BONUS_GROUP = "no bonus";
+
+/**
+ * `candidates` split by the bonus each would leave reachable, closest to complete first, one
+ * candidate under every bonus it advances.
+ *
+ * Null unless the slot is a universal one on a mount: a fixed slot's candidates all share one
+ * shape, which would list the same rows under every heading.
+ */
+export function bonusGroupsFor(
+  db: Db,
+  build: Build,
+  slotId: string,
+  candidates: Item[],
+): InsigniaGroup[] | null {
+  const ref = stableRef(db, slotId);
+  if (ref?.role !== "insignia") return null;
+  const spec = specForSlot(db, build, slotId);
+  if (!spec?.universal) return null;
+  const specs = mountOf(db, build, ref.group)?.insigniaSlots;
+  const position = insigniaSlotIds(db, ref.group).indexOf(slotId);
+  if (!specs || position < 0) return null;
+
+  const held = heldShapes(db, build, ref.group, slotId);
+  const bonuses = allBonuses(db);
+
+  /** Bonus ids each shape advances. A shape outside the recipe's own slots advances nothing. */
+  const byShape = new Map<InsigniaShape, Set<string>>();
+  for (const shape of INSIGNIA_SHAPES) {
+    if (!slotAccepts(spec, shape)) continue;
+    const trial = [...held];
+    trial[position] = shape;
+    const hits = new Set<string>();
+    for (const bonus of bonuses) {
+      const recipe = bonus.insigniaRecipe!;
+      if (position >= recipe.length) continue;
+      if (missingFor(db, specs, trial, recipe) !== null) hits.add(bonus.id);
+    }
+    byShape.set(shape, hits);
+  }
+
+  const advanced = new Set([...byShape.values()].flatMap((hits) => [...hits]));
+  const ordered = bonuses
+    .filter((bonus) => advanced.has(bonus.id))
+    .map((bonus) => ({
+      bonus,
+      missing: missingFor(db, specs, held, bonus.insigniaRecipe!) ?? Infinity,
+    }))
+    .sort(
+      (a, b) =>
+        a.missing - b.missing || a.bonus.name.localeCompare(b.bonus.name),
+    );
+
+  const groups: InsigniaGroup[] = [];
+  const placed = new Set<string>();
+  for (const { bonus } of ordered) {
+    const ids = candidates
+      .filter((item) => byShape.get(item.insigniaShape!)?.has(bonus.id))
+      .map((item) => item.id);
+    if (!ids.length) continue;
+    for (const id of ids) placed.add(id);
+    groups.push({
+      label: `${bonus.name} (${bonus.insigniaRecipe!.length} insignia)`,
+      ids,
+    });
+  }
+
+  const rest = candidates.filter((item) => !placed.has(item.id));
+  if (rest.length) {
+    groups.push({ label: NO_BONUS_GROUP, ids: rest.map((item) => item.id) });
+  }
+  return groups.length ? groups : null;
+}
+
+/** Bonuses one insignia short of matching, for a group deriving nothing yet. */
+export function oneShortOf(db: Db, build: Build, group: number): Item[] {
+  const state = readGroup(db, build, group);
+  const specs = state.mount?.insigniaSlots;
+  if (!specs || state.bonus) return [];
+  const held = heldShapes(db, build, group);
+  return allBonuses(db)
+    .filter((bonus) => missingFor(db, specs, held, bonus.insigniaRecipe!) === 1)
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
+
 // --- preferred variants -----------------------------------------------------------------------
+
+const upgradedIds = new WeakMap<Db, Set<string>>();
+
+/** The upgraded half of every pair, which is exactly what `preferredVariant` points at. */
+export function preferredVariantIds(db: Db): ReadonlySet<string> {
+  let ids = upgradedIds.get(db);
+  if (!ids) {
+    ids = new Set(
+      db.items
+        .map((item) => item.preferredVariant)
+        .filter((id): id is string => !!id),
+    );
+    upgradedIds.set(db, ids);
+  }
+  return ids;
+}
+
+export const PREFERRED_MARK = "★";
+
+const PREF_SUFFIX = /\s*\(Pref\)$/;
+
+export interface ItemDisplay {
+  name: string;
+  preferred: boolean;
+}
+
+/** How an item's name reads on screen: an upgraded insignia's `(Pref)` suffix becomes a star,
+ * everything else keeps its own name. */
+export function itemDisplay(
+  db: Db | null | undefined,
+  item: Item,
+): ItemDisplay {
+  const preferred = !!db && preferredVariantIds(db).has(item.id);
+  return {
+    name: preferred ? item.name.replace(PREF_SUFFIX, "") : item.name,
+    preferred,
+  };
+}
+
+/** `itemDisplay` as one string, for the places that cannot carry markup. */
+export function itemLabel(db: Db | null | undefined, item: Item): string {
+  const shown = itemDisplay(db, item);
+  return shown.preferred ? `${shown.name} ${PREFERRED_MARK}` : shown.name;
+}
 
 /** The ordinary half of a pair, given either half. */
 function baseVariant(db: Db, item: Item | null): Item | null {
@@ -418,7 +662,10 @@ function variantFor(
   return (base.preferredVariant && db.get(base.preferredVariant)) || base;
 }
 
-/** Slots whose pick disagrees with whether that slot is preferred, and what belongs there. */
+/**
+ * Slots whose pick disagrees with the slot it sits in, and what belongs there. An empty string
+ * means the slot's mount does not take that shape at all, so the pick has to go.
+ */
 export function normaliseGroup(
   db: Db,
   build: Build,
@@ -426,9 +673,14 @@ export function normaliseGroup(
 ): Record<string, string> {
   const state = readGroup(db, build, group);
   const slotIds = insigniaSlotIds(db, group);
+  const specs = state.mount?.insigniaSlots ?? [];
   const changes: Record<string, string> = {};
   state.insignia.forEach((item, i) => {
     if (!item) return;
+    if (!slotAccepts(specs[i], item.insigniaShape)) {
+      changes[slotIds[i]] = "";
+      return;
+    }
     const wanted = variantFor(db, item, state.preferred[i]);
     if (wanted && wanted.id !== item.id) changes[slotIds[i]] = wanted.id;
   });

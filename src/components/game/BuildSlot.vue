@@ -49,9 +49,9 @@ const props = defineProps<{
   statSummary?: string;
   /** item_picker only: what the row reads as while empty. */
   placeholder?: string;
-  /** Muted text after the row's label. The stable says what an insignia slot takes here, since
-   *  the authored label cannot vary with the mount and a filled row hides its placeholder. */
-  labelNote?: string;
+  /** Stands in for the row's authored label, which stays in slots.json for go-to and every
+   *  other by-label lookup. */
+  labelOverride?: string;
   bonusDiffs?: { id: string; message: string }[];
   // item_picker only
   items?: Item[];
@@ -173,14 +173,9 @@ useCursorRowKeys(anchor, {
         :is="labelsOneControl ? 'label' : 'span'"
         :id="labelId"
         class="slot-label min-w-0 flex-1 truncate text-muted"
+        :class="labelOverride ? 'capitalize' : undefined"
         :for="labelsOneControl ? controlId : undefined"
-        >{{ slotDef.label
-        }}<span
-          v-if="labelNote"
-          class="ml-1.5 opacity-70"
-          data-testid="slot-label-note"
-          >{{ labelNote }}</span
-        ></component
+        >{{ labelOverride || slotDef.label }}</component
       >
     </div>
 

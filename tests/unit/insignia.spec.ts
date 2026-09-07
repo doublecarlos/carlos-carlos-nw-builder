@@ -360,8 +360,178 @@ describe("describing a slot", () => {
       "crescent",
       "regal",
       "universal",
-      "universal, prefers enlightened",
+      "universal (enlightened)",
     ]);
+  });
+});
+
+describe("naming an insignia", () => {
+  it("folds the (Pref) suffix into a star", () => {
+    expect(insignia.itemDisplay(made, made.get("regal-pref")!)).toEqual({
+      name: "regal",
+      preferred: true,
+    });
+    expect(insignia.itemLabel(made, made.get("regal-pref")!)).toBe(
+      `regal ${insignia.PREFERRED_MARK}`,
+    );
+  });
+
+  it("leaves an ordinary insignia, and anything that is not one, alone", () => {
+    expect(insignia.itemLabel(made, made.get("regal")!)).toBe("regal");
+    expect(insignia.itemLabel(made, made.get("fixed-mount")!)).toBe(
+      "Fixed Mount",
+    );
+  });
+
+  it("says nothing about a pairing without a catalogue to ask", () => {
+    expect(insignia.itemDisplay(null, made.get("regal-pref")!)).toEqual({
+      name: "regal (Pref)",
+      preferred: false,
+    });
+  });
+});
+
+describe("how far a bonus still is", () => {
+  const specs = (id: string) => made.get(id)!.insigniaSlots!;
+  const recipe = (id: string) => made.get(id)!.insigniaRecipe!;
+
+  it("counts the slots still to fill", () => {
+    expect(
+      insignia.missingFor(made, specs("fixed-mount"), [], recipe("four-bonus")),
+    ).toBe(4);
+    expect(
+      insignia.missingFor(
+        made,
+        specs("fixed-mount"),
+        ["crescent", "regal", undefined, undefined],
+        recipe("four-bonus"),
+      ),
+    ).toBe(2);
+  });
+
+  it("rules out a recipe a held shape contradicts", () => {
+    expect(
+      insignia.missingFor(
+        made,
+        specs("fixed-mount"),
+        [undefined, undefined, "barbed", "barbed"],
+        recipe("four-bonus"),
+      ),
+    ).toBeNull();
+  });
+
+  it("ignores the spare slot a three-shape recipe leaves", () => {
+    expect(
+      insignia.missingFor(
+        made,
+        specs("fixed-mount"),
+        ["crescent", "regal", "barbed", "regal"],
+        recipe("three-bonus"),
+      ),
+    ).toBe(0);
+  });
+
+  it("rules out a three-shape recipe the spare slot would displace", () => {
+    // crescent+regal+barbed+enlightened is Four Bonus, which wins over Three Bonus.
+    expect(
+      insignia.missingFor(
+        made,
+        specs("fixed-mount"),
+        ["crescent", "regal", "barbed", "enlightened"],
+        recipe("three-bonus"),
+      ),
+    ).toBeNull();
+  });
+});
+
+describe("grouping a universal slot's candidates", () => {
+  const candidates = (shapes: string[]) =>
+    shapes.map((id) => made.get(id)!) as Item[];
+
+  it("heads each candidate with the bonuses it would still leave reachable", () => {
+    const build = testBuild(
+      group(1, ["crescent", "regal", null, null], "fixed-mount"),
+    );
+    const groups = insignia.bonusGroupsFor(
+      made,
+      build,
+      insigniaSlot(1, 3),
+      candidates(["barbed", "regal", "enlightened", "crescent"]),
+    );
+    // Closest to complete first, then the shape no recipe can use from here.
+    expect(groups?.map((g) => g.label)).toEqual([
+      "Three Bonus (3 insignia)",
+      "Four Bonus (4 insignia)",
+      "Two Regal Bonus (4 insignia)",
+      insignia.NO_BONUS_GROUP,
+    ]);
+    expect(groups?.[0].ids).toEqual(["barbed"]);
+    // Either shape here, the other in the last slot.
+    expect(groups?.[1].ids).toEqual(["barbed", "enlightened"]);
+    expect(groups?.[2].ids).toEqual(["regal", "enlightened"]);
+    expect(groups?.[3].ids).toEqual(["crescent"]);
+  });
+
+  it("lists one candidate under every bonus it advances", () => {
+    const build = testBuild(group(1, [null, null, null, null], "fixed-mount"));
+    const groups = insignia.bonusGroupsFor(
+      made,
+      build,
+      insigniaSlot(1, 3),
+      candidates(["barbed"]),
+    );
+    // Other Bonus wants four barbed and slot 1 is fixed to crescent, so it is not a heading.
+    expect(
+      groups?.filter((g) => g.ids.includes("barbed")).map((g) => g.label),
+    ).toEqual(["Three Bonus (3 insignia)", "Four Bonus (4 insignia)"]);
+  });
+
+  it("leaves a fixed slot, and a group with no mount, ungrouped", () => {
+    const build = testBuild(
+      group(1, ["crescent", "regal", null, null], "fixed-mount"),
+    );
+    expect(
+      insignia.bonusGroupsFor(
+        made,
+        build,
+        insigniaSlot(1, 1),
+        candidates(["crescent"]),
+      ),
+    ).toBeNull();
+    expect(
+      insignia.bonusGroupsFor(
+        made,
+        testBuild({}),
+        insigniaSlot(1, 3),
+        candidates(["barbed"]),
+      ),
+    ).toBeNull();
+  });
+});
+
+describe("a group one insignia short", () => {
+  it("names what filling the last slot would derive", () => {
+    const build = testBuild(
+      group(1, ["crescent", "regal", "barbed", null], "fixed-mount"),
+    );
+    // Three Bonus already matches on the first three, so nothing is outstanding.
+    expect(insignia.oneShortOf(made, build, 1)).toEqual([]);
+
+    const other = testBuild(
+      group(1, ["crescent", "regal", null, "enlightened-pref"], "fixed-mount"),
+    );
+    // Both four-shape recipes fit around what the group already holds.
+    expect(insignia.oneShortOf(made, other, 1).map((b) => b.id)).toEqual([
+      "four-bonus",
+      "two-regal-bonus",
+    ]);
+  });
+
+  it("says nothing while more than one slot is open", () => {
+    const build = testBuild(
+      group(1, ["crescent", null, null, null], "fixed-mount"),
+    );
+    expect(insignia.oneShortOf(made, build, 1)).toEqual([]);
   });
 });
 
@@ -532,67 +702,128 @@ describe("the reference the browser renders", () => {
     ]);
   });
 
-  it("plans insignia that actually produce the bonus it was asked for", () => {
+  it("arranges a recipe into slots that take it", () => {
     const mount = made.get("fixed-mount")!;
-    const plan = insignia.planFor(made, mount, made.get("four-bonus")!)!;
-    expect(plan).toHaveLength(4);
-    const build = testBuild({
-      [mountSlot(1)]: mount.id,
-      ...Object.fromEntries(plan.map((id, i) => [insigniaSlot(1, i + 1), id])),
-    });
-    const state = insignia.readGroup(made, build, 1);
-    expect(state.bonus?.id).toBe("four-bonus");
-    // The planner fills ordinary insignia and lets normalisation do the upgrading, so the
-    // preferred slot is still waiting for its swap at this point.
-    expect(state.preferred).toEqual([false, false, false, true]);
-    expect(insignia.normaliseGroup(made, build, 1)).toEqual({
-      [insigniaSlot(1, 4)]: "enlightened-pref",
-    });
+    const best = insignia.bestArrangement(
+      made,
+      mount,
+      made.get("four-bonus")!,
+    )!;
+    expect(best.shapes).toEqual(["crescent", "regal", "barbed", "enlightened"]);
+    expect(best.preferred).toBe(1);
   });
 
-  it("fills the spare slot of a three-shape bonus rather than wasting it", () => {
+  it("uses the spare slot of a three-shape bonus rather than wasting it", () => {
     const mount = made.get("fixed-mount")!;
-    const plan = insignia.planFor(made, mount, made.get("three-bonus")!)!;
-    expect(plan[3]).toBeTruthy();
+    const best = insignia.bestArrangement(
+      made,
+      mount,
+      made.get("three-bonus")!,
+    )!;
+    expect(best.shapes[3]).toBeTruthy();
     // Slot 4 prefers enlightened, but enlightened there would complete `four-bonus` and displace
-    // the bonus being aimed at, so the preference cannot be met and something else goes in.
-    expect(made.get(plan[3])!.insigniaShape).not.toBe("enlightened");
-    const build = testBuild({
-      [mountSlot(1)]: mount.id,
-      ...Object.fromEntries(plan.map((id, i) => [insigniaSlot(1, i + 1), id])),
-    });
-    expect(insignia.readGroup(made, build, 1).bonus?.id).toBe("three-bonus");
+    // the bonus being aimed at, so the preference cannot be met.
+    expect(best.shapes[3]).not.toBe("enlightened");
+    expect(best.preferred).toBe(0);
   });
 
   it("meets a spare slot's preference when that shape completes no four-shape recipe", () => {
-    // The Grubshank case: the fourth slot's preferred shape leaves the three-shape bonus intact,
-    // so the pairing is preferred even though the recipe only names three shapes.
+    // The Grubshank case: the fourth slot's preferred shape leaves the three-shape bonus intact.
     const mount = made.get("spare-preferred-mount")!;
-    const bonus = made.get("three-bonus")!;
-    expect(insignia.bestArrangement(made, mount, bonus)?.preferred).toBe(1);
-
-    const plan = insignia.planFor(made, mount, bonus)!;
-    const build = testBuild({
-      [mountSlot(1)]: mount.id,
-      ...Object.fromEntries(plan.map((id, i) => [insigniaSlot(1, i + 1), id])),
-    });
-    const state = insignia.readGroup(made, build, 1);
-    // The three-shape bonus survives the filled fourth slot, and that slot is the preferred one.
-    expect(state.bonus?.id).toBe("three-bonus");
-    expect(state.preferred).toEqual([false, false, false, true]);
+    const best = insignia.bestArrangement(
+      made,
+      mount,
+      made.get("three-bonus")!,
+    )!;
+    expect(best.shapes[3]).toBe("regal");
+    expect(best.preferred).toBe(1);
   });
 
   it("leaves the spare slot empty when the only shape it takes would displace the bonus", () => {
     // The fourth slot is fixed to enlightened, and enlightened on top of `three-bonus` completes
-    // `four-bonus`. Filling it would swap the bonus out from under the player, so it stays empty.
+    // `four-bonus`, which would swap the bonus out from under the player.
     const mount = made.get("blocked-spare-mount")!;
-    const plan = insignia.planFor(made, mount, made.get("three-bonus")!)!;
-    expect(plan[3]).toBe("");
-    const build = testBuild({
-      [mountSlot(1)]: mount.id,
-      ...Object.fromEntries(plan.map((id, i) => [insigniaSlot(1, i + 1), id])),
+    const best = insignia.bestArrangement(
+      made,
+      mount,
+      made.get("three-bonus")!,
+    )!;
+    expect(best.shapes[3]).toBeUndefined();
+  });
+});
+
+describe("insignia sitting where their mount does not take them", () => {
+  it("names a shape the slot does not accept", () => {
+    const build = testBuild(
+      group(1, ["barbed", "regal", "barbed", "regal"], "fixed-mount"),
+    );
+    const found = insignia.misplacedInsignia(made, build);
+    expect(found.map((f) => f.slotId)).toEqual([insigniaSlot(1, 1)]);
+    expect(found[0].message).toBe("barbed does not fit a crescent slot");
+  });
+
+  it("names an upgraded half in a slot that does not prefer it", () => {
+    // Slot 3 is plain universal, so it takes the shape but never upgrades it.
+    const build = testBuild(
+      group(1, ["crescent", "regal", "barbed-pref", null], "fixed-mount"),
+    );
+    expect(insignia.misplacedInsignia(made, build)).toEqual([
+      {
+        slotId: insigniaSlot(1, 3),
+        item: made.get("barbed-pref"),
+        message: "barbed (Pref) only belongs in a slot preferring barbed",
+      },
+    ]);
+  });
+
+  it("says nothing about a group that is in order, or one with no mount", () => {
+    const ok = testBuild(
+      group(
+        1,
+        ["crescent", "regal", "barbed", "enlightened-pref"],
+        "fixed-mount",
+      ),
+    );
+    expect(insignia.misplacedInsignia(made, ok)).toEqual([]);
+    // With no mount nothing constrains the slots, so nothing is out of place.
+    expect(
+      insignia.misplacedInsignia(
+        made,
+        testBuild(group(1, ["barbed", "barbed", "barbed", "barbed"])),
+      ),
+    ).toEqual([]);
+  });
+
+  it("reaches the engine as a warning, which leaves the stats alone", () => {
+    const build = testBuild(
+      group(1, ["barbed", "regal", "barbed", "regal"], "fixed-mount"),
+    );
+    const result = engineRun(made, build);
+    const warning = result.errors.find((e) => e.kind === "insigniaSlot");
+    expect(warning?.severity).toBe("warning");
+    expect(warning?.slotId).toBe(insigniaSlot(1, 1));
+    // The misplaced insignia still carries its item level into the build.
+    const row = result.rows.find((r) => r.slotId === insigniaSlot(1, 1));
+    expect(row?.item?.id).toBe("barbed");
+  });
+});
+
+describe("re-pairing a group with its mount", () => {
+  it("evicts an insignia the mount's slot does not take", () => {
+    // Greedy Mount's slot 4 is universal preferring regal; Fixed Mount's takes anything too,
+    // but slot 3 stays universal in both, so only a shaped slot can reject anything.
+    const build = testBuild(
+      group(1, ["barbed", "regal", "barbed", "regal"], "fixed-mount"),
+    );
+    expect(insignia.normaliseGroup(made, build, 1)).toEqual({
+      // Slot 1 is fixed to crescent, so the barbed insignia sitting there has to go.
+      [insigniaSlot(1, 1)]: "",
     });
-    expect(insignia.readGroup(made, build, 1).bonus?.id).toBe("three-bonus");
+  });
+
+  it("says nothing about a group with no mount, which constrains nothing", () => {
+    const build = testBuild(group(1, ["barbed", "regal", "barbed", "regal"]));
+    expect(insignia.normaliseGroup(made, build, 1)).toEqual({});
   });
 });
 

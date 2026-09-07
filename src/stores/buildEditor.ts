@@ -14,12 +14,7 @@ import {
 import { getPath, setPath } from "../lib/build-path";
 import { deepEqual } from "../lib/deep-equal";
 import { repetitionRows } from "../lib/inline-repetition";
-import {
-  insigniaSlotIds,
-  mountSlotId,
-  normaliseGroup,
-  stableRef,
-} from "../engine/insignia";
+import { itemLabel, normaliseGroup, stableRef } from "../engine/insignia";
 import {
   expandSlots,
   listRowCount,
@@ -84,7 +79,7 @@ export function setChoice(slotId: string, id: string) {
   if (!b) return;
   const slot = slotLabel(slotId);
   const item = id ? db.value.get(id) : undefined;
-  const label = id ? (item?.name ?? id) : "";
+  const label = id ? (item ? itemLabel(db.value, item) : id) : "";
   history.snapshot(
     "build",
     b.id,
@@ -111,12 +106,12 @@ export function setChoice(slotId: string, id: string) {
 }
 
 /**
- * Re-pair a group's insignia with the slots they sit in, upgrading the ones whose slot prefers
- * their shape.
+ * Re-pair a group's insignia with the slots they sit in: upgrade the ones whose slot prefers
+ * their shape, drop the ones their slot does not take.
  *
  * Called from the action, not a watcher: a watcher would re-apply itself to the state an undo
  * had just restored. Changing a mount re-pairs the whole group, changing one insignia only its
- * own slot.
+ * own slot. It rides the caller's snapshot, so a mount swap and its evictions undo as one step.
  */
 function normaliseStable(b: Build, slotId: string) {
   const ref = stableRef(db.value, slotId);
@@ -125,48 +120,13 @@ function normaliseStable(b: Build, slotId: string) {
     normaliseGroup(db.value, b, ref.group),
   )) {
     if (ref.role === "insignia" && target !== slotId) continue;
-    b.choices[target] = id;
-  }
-}
-
-/**
- * Set a group's mount and insignia together, under one snapshot so it undoes as one action.
- *
- * A short `insignia` empties the remaining slots, which is what leaves a three-shape bonus
- * matched.
- */
-export function applyStablePlan(
-  group: number,
-  mountId: string,
-  insignia: string[],
-) {
-  const b = builds.build.value;
-  if (!b) return;
-  const mount = db.value.get(mountId);
-  history.snapshot(
-    "build",
-    b.id,
-    `stable:${group}`,
-    `Mount ${group} → ${mount?.name ?? mountId}`,
-    b,
-  );
-  const mountSlot = mountSlotId(db.value, group);
-  if (mountSlot) b.choices[mountSlot] = mountId;
-  insigniaSlotIds(db.value, group).forEach((slotId, i) => {
-    const id = insignia[i];
     if (id) {
-      b.choices[slotId] = id;
+      b.choices[target] = id;
     } else {
-      delete b.choices[slotId];
-      delete b.values[slotId];
-      delete b.assignments[slotId];
+      delete b.choices[target];
+      delete b.values[target];
+      delete b.assignments[target];
     }
-  });
-  // The plan fills ordinary insignia; this upgrades the ones whose slot earns it.
-  for (const [target, id] of Object.entries(
-    normaliseGroup(db.value, b, group),
-  )) {
-    b.choices[target] = id;
   }
 }
 
