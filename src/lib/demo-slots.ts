@@ -12,8 +12,10 @@ export interface GameBagEntry {
   bag: string;
   /** Ordered candidate app slots, resolved by the placement rule below. */
   slots?: string[];
-  /** `MountEquippedActiveSlots` only: `gemSlots[mountIndex][gemIndex]` -- the two-dimensional
-   *  case the generic rule can't express (a mount at `Islotidx` n has up to 4 insignia). */
+  /** `MountEquippedActiveSlots` only: `gemSlots[mountIndex][gemIndex]`, the two-dimensional
+   *  case the generic rule cannot express (a mount at `Islotidx` n has up to 4 insignia).
+   *  Pairs with `slots`, which then takes the bag's own items positionally: the mount at
+   *  `Islotidx` n is `slots[n]` and its insignia are `gemSlots[n]`. */
   gemSlots?: string[][];
   /** Present in the demo but deliberately unmodelled (cosmetics, movement speed, ...); the
    *  reason surfaces in the coverage report as "ignored on purpose" rather than "unrecognised". */
@@ -67,8 +69,13 @@ export function bagEntry(bag: string): GameBagEntry | undefined {
 export function candidateSlotIds(bag: string, slot: number): string[] {
   const entry = bagEntry(bag);
   if (!entry) return [];
+  // A gem bag carrying `slots` holds two kinds of item at one index, and an `unrecognised`
+  // outcome records only that index, so both are offered and the names tell them apart.
+  if (entry.gemSlots) {
+    const mount = entry.slots?.[slot];
+    return [...(mount ? [mount] : []), ...(entry.gemSlots[slot] ?? [])];
+  }
   if (entry.slots) return entry.slots;
-  if (entry.gemSlots) return entry.gemSlots[slot] ?? [];
   return [];
 }
 
@@ -174,6 +181,13 @@ export function placeBag(
     for (const item of items) {
       const mountSlots = entry.gemSlots[item.slot];
       if (!mountSlots) continue; // more equipped mounts than we have insignia groups for
+      // The bag's own item is the mount holding these gems, placed at the same index.
+      const mountSlot = entry.slots?.[item.slot];
+      if (mountSlot && item.gameId != null) {
+        results.push(
+          resolveAt(item.gameId, [mountSlot], db, occupied, bag, item.slot),
+        );
+      }
       item.gems.forEach((gameId, gemIndex) => {
         const target = mountSlots[gemIndex];
         results.push(
@@ -326,14 +340,16 @@ export function validateGameBags(
   };
 
   for (const entry of bags) {
-    const shapes = [entry.slots, entry.gemSlots, entry.notModelled].filter(
-      (shape) => shape !== undefined,
-    );
-    if (shapes.length !== 1) {
+    // `slots` and `gemSlots` pair up on a bag holding mounts and their insignia at once;
+    // `notModelled` is the whole bag's answer and pairs with neither.
+    const placed = entry.slots !== undefined || entry.gemSlots !== undefined;
+    const shapes =
+      entry.notModelled !== undefined ? (placed ? 2 : 1) : placed ? 1 : 0;
+    if (shapes !== 1) {
       findings.push({
         level: "error",
         context: entry.bag,
-        message: `bag "${entry.bag}" must declare exactly one of slots / gemSlots / notModelled, found ${shapes.length}`,
+        message: `bag "${entry.bag}" must declare either notModelled or at least one of slots / gemSlots, not both`,
       });
     }
     for (const slotId of entry.slots ?? []) checkSlotId(slotId, entry.bag);

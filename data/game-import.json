@@ -125,6 +125,13 @@
     },
     {
       "bag": "MountEquippedActiveSlots",
+      "slots": [
+        "insignia.mount1",
+        "insignia.mount2",
+        "insignia.mount3",
+        "insignia.mount4",
+        "insignia.mount5"
+      ],
       "gemSlots": [
         [
           "insignia.insignia1_1",
@@ -307,17 +314,6 @@
       "label": "Group / Artifact Call / Misc",
       "reason": "Situational modelling that's never in the demo.",
       "sections": ["group", "artifactCall", "misc"]
-    },
-    {
-      "label": "Stable mounts",
-      "reason": "The demo records which mount sits in each stable slot, but the catalogue has no game ids for the mounts yet, so they cannot be matched. Pick each mount by hand; its insignia are imported either way, and the bonus follows from them once the mount is set.",
-      "slotIds": [
-        "insignia.mount1",
-        "insignia.mount2",
-        "insignia.mount3",
-        "insignia.mount4",
-        "insignia.mount5"
-      ]
     }
   ],
   "hclassToClass": {

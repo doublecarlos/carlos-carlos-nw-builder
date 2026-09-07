@@ -69,7 +69,7 @@ function stableIndex(db: Db): StableIndex {
   return built;
 }
 
-const stableGroups = (db: Db) => stableIndex(db).groups;
+export const stableGroups = (db: Db) => stableIndex(db).groups;
 
 export const stableRef = (db: Db, slotId: string): StableSlotRef | null =>
   stableIndex(db).byId.get(slotId) ?? null;
