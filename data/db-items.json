@@ -546,6 +546,81 @@
     "bonuses": ["acute-senses-ca"]
   },
   {
+    "id": "aggression-barbed",
+    "name": "Celestial Barbed Insignia of Aggression",
+    "filter": "insignia",
+    "insigniaShape": "barbed",
+    "preferredVariant": "aggression-barbed-pref",
+    "il": 750,
+    "combined_rating": 600,
+    "strike": 1125,
+    "severity": 1125,
+    "gameIds": [
+      "Insignia_Barbed_Armorpen_Account_R6",
+      "Insignia_Barbed_Armorpen_R6"
+    ]
+  },
+  {
+    "id": "aggression-barbed-pref",
+    "name": "Celestial Barbed Insignia of Aggression (Pref)",
+    "filter": "insignia",
+    "insigniaShape": "barbed",
+    "il": 900,
+    "combined_rating": 720,
+    "strike": 1350,
+    "severity": 1350
+  },
+  {
+    "id": "aggression-illuminated",
+    "name": "Celestial Illuminated Insignia of Aggression",
+    "filter": "insignia",
+    "insigniaShape": "illuminated",
+    "preferredVariant": "aggression-illuminated-pref",
+    "il": 750,
+    "combined_rating": 600,
+    "strike": 1125,
+    "severity": 1125,
+    "gameIds": [
+      "Insignia_Illuminated_Armorpen_Account_R6",
+      "Insignia_Illuminated_Armorpen_R6"
+    ]
+  },
+  {
+    "id": "aggression-illuminated-pref",
+    "name": "Celestial Illuminated Insignia of Aggression (Pref)",
+    "filter": "insignia",
+    "insigniaShape": "illuminated",
+    "il": 900,
+    "combined_rating": 720,
+    "strike": 1350,
+    "severity": 1350
+  },
+  {
+    "id": "aggression-regal",
+    "name": "Celestial Regal Insignia of Aggression",
+    "filter": "insignia",
+    "insigniaShape": "regal",
+    "preferredVariant": "aggression-regal-pref",
+    "il": 750,
+    "combined_rating": 600,
+    "strike": 1125,
+    "severity": 1125,
+    "gameIds": [
+      "Insignia_Regal_Armorpen_Account_R6",
+      "Insignia_Regal_Armorpen_R6"
+    ]
+  },
+  {
+    "id": "aggression-regal-pref",
+    "name": "Celestial Regal Insignia of Aggression (Pref)",
+    "filter": "insignia",
+    "insigniaShape": "regal",
+    "il": 900,
+    "combined_rating": 720,
+    "strike": 1350,
+    "severity": 1350
+  },
+  {
     "id": "alchemist-s-discipline-alchemist-strike-ca-offense-utility",
     "name": "Alchemist's Discipline",
     "filter": "companion_power",
@@ -2547,6 +2622,131 @@
     "allowedClass": ["cleric"],
     "tags": ["exclusive:arbiter"],
     "bonuses": ["paragon-exclusive"]
+  },
+  {
+    "id": "fortitude-barbed",
+    "name": "Celestial Barbed Insignia of Fortitude",
+    "filter": "insignia",
+    "insigniaShape": "barbed",
+    "preferredVariant": "fortitude-barbed-pref",
+    "il": 750,
+    "combined_rating": 600,
+    "defense": 1125,
+    "hit_points": 4500,
+    "gameIds": [
+      "Insignia_Barbed_Hitpoints_Defense_Account_R6",
+      "Insignia_Barbed_Hitpoints_Defense_R6"
+    ]
+  },
+  {
+    "id": "fortitude-barbed-pref",
+    "name": "Celestial Barbed Insignia of Fortitude (Pref)",
+    "filter": "insignia",
+    "insigniaShape": "barbed",
+    "il": 900,
+    "combined_rating": 720,
+    "defense": 1350,
+    "hit_points": 5400
+  },
+  {
+    "id": "fortitude-crescent",
+    "name": "Celestial Crescent Insignia of Fortitude",
+    "filter": "insignia",
+    "insigniaShape": "crescent",
+    "preferredVariant": "fortitude-crescent-pref",
+    "il": 750,
+    "combined_rating": 600,
+    "defense": 1125,
+    "hit_points": 4500,
+    "gameIds": [
+      "Insignia_Crescent_Hitpoints_Defense_Account_R6",
+      "Insignia_Crescent_Hitpoints_Defense_R6"
+    ]
+  },
+  {
+    "id": "fortitude-crescent-pref",
+    "name": "Celestial Crescent Insignia of Fortitude (Pref)",
+    "filter": "insignia",
+    "insigniaShape": "crescent",
+    "il": 900,
+    "combined_rating": 720,
+    "defense": 1350,
+    "hit_points": 5400
+  },
+  {
+    "id": "fortitude-enlightened",
+    "name": "Celestial Enlightened Insignia of Fortitude",
+    "filter": "insignia",
+    "insigniaShape": "enlightened",
+    "preferredVariant": "fortitude-enlightened-pref",
+    "il": 750,
+    "combined_rating": 600,
+    "defense": 1125,
+    "hit_points": 4500,
+    "gameIds": [
+      "Insignia_Enlightened_Hitpoints_Defense_Account_R6",
+      "Insignia_Enlightened_Hitpoints_Defense_R6"
+    ]
+  },
+  {
+    "id": "fortitude-enlightened-pref",
+    "name": "Celestial Enlightened Insignia of Fortitude (Pref)",
+    "filter": "insignia",
+    "insigniaShape": "enlightened",
+    "il": 900,
+    "combined_rating": 720,
+    "defense": 1350,
+    "hit_points": 5400
+  },
+  {
+    "id": "fortitude-illuminated",
+    "name": "Celestial Illuminated Insignia of Fortitude",
+    "filter": "insignia",
+    "insigniaShape": "illuminated",
+    "preferredVariant": "fortitude-illuminated-pref",
+    "il": 750,
+    "combined_rating": 600,
+    "defense": 1125,
+    "hit_points": 4500,
+    "gameIds": [
+      "Insignia_Illuminated_Hitpoints_Defense_Account_R6",
+      "Insignia_Illuminated_Hitpoints_Defense_R6"
+    ]
+  },
+  {
+    "id": "fortitude-illuminated-pref",
+    "name": "Celestial Illuminated Insignia of Fortitude (Pref)",
+    "filter": "insignia",
+    "insigniaShape": "illuminated",
+    "il": 900,
+    "combined_rating": 720,
+    "defense": 1350,
+    "hit_points": 5400
+  },
+  {
+    "id": "fortitude-regal",
+    "name": "Celestial Regal Insignia of Fortitude",
+    "filter": "insignia",
+    "insigniaShape": "regal",
+    "preferredVariant": "fortitude-regal-pref",
+    "il": 750,
+    "combined_rating": 600,
+    "defense": 1125,
+    "hit_points": 4500,
+    "gameIds": [
+      "Insignia_Regal_Hitpoints_Defense_Account_R6",
+      "Insignia_Regal_Hitpoints_Defense_R6"
+    ]
+  },
+  {
+    "id": "fortitude-regal-pref",
+    "name": "Celestial Regal Insignia of Fortitude (Pref)",
+    "filter": "insignia",
+    "insigniaShape": "regal",
+    "il": 900,
+    "combined_rating": 720,
+    "defense": 1350,
+    "hit_points": 5400
   },
   {
     "id": "generic-companion",
@@ -5109,6 +5309,56 @@
     "bonuses": ["precision-2"]
   },
   {
+    "id": "precision-enlightened",
+    "name": "Celestial Enlightened Insignia of Precision",
+    "filter": "insignia",
+    "insigniaShape": "enlightened",
+    "preferredVariant": "precision-enlightened-pref",
+    "il": 750,
+    "combined_rating": 600,
+    "acc": 1125,
+    "strike": 1125,
+    "gameIds": [
+      "Insignia_Enlightened_Precision_Accuracy_Crit_Account_R6",
+      "Insignia_Enlightened_Precision_Accuracy_Crit_R6"
+    ]
+  },
+  {
+    "id": "precision-enlightened-pref",
+    "name": "Celestial Enlightened Insignia of Precision (Pref)",
+    "filter": "insignia",
+    "insigniaShape": "enlightened",
+    "il": 900,
+    "combined_rating": 720,
+    "acc": 1350,
+    "strike": 1350
+  },
+  {
+    "id": "precision-regal",
+    "name": "Celestial Regal Insignia of Precision",
+    "filter": "insignia",
+    "insigniaShape": "regal",
+    "preferredVariant": "precision-regal-pref",
+    "il": 750,
+    "combined_rating": 600,
+    "acc": 1125,
+    "strike": 1125,
+    "gameIds": [
+      "Insignia_Regal_Accuracy_Crit_Account_R6",
+      "Insignia_Regal_Accuracy_Crit_R6"
+    ]
+  },
+  {
+    "id": "precision-regal-pref",
+    "name": "Celestial Regal Insignia of Precision (Pref)",
+    "filter": "insignia",
+    "insigniaShape": "regal",
+    "il": 900,
+    "combined_rating": 720,
+    "acc": 1350,
+    "strike": 1350
+  },
+  {
     "id": "precision-strike-severity-worgs-celestial",
     "name": "Precision",
     "filter": "mount_equip",
@@ -5439,6 +5689,31 @@
     "allowedClass": ["bard"],
     "tags": ["exclusive:songblade"],
     "bonuses": ["paragon-exclusive"]
+  },
+  {
+    "id": "rhythm-illuminated",
+    "name": "Celestial Illuminated Insignia of Rhythm",
+    "filter": "insignia",
+    "insigniaShape": "illuminated",
+    "preferredVariant": "rhythm-illuminated-pref",
+    "il": 750,
+    "combined_rating": 600,
+    "out_healing": 1125,
+    "severity": 1125,
+    "gameIds": [
+      "Insignia_Illuminated_Rhythm_Critsev_Outheal_Account_R6",
+      "Insignia_Illuminated_Rhythm_Critsev_Outheal_R6"
+    ]
+  },
+  {
+    "id": "rhythm-illuminated-pref",
+    "name": "Celestial Illuminated Insignia of Rhythm (Pref)",
+    "filter": "insignia",
+    "insigniaShape": "illuminated",
+    "il": 900,
+    "combined_rating": 720,
+    "out_healing": 1350,
+    "severity": 1350
   },
   {
     "id": "rime-temper",
@@ -7050,8 +7325,8 @@
     "strike": 1125,
     "forte": 1125,
     "gameIds": [
-      "Insignia_Crescent_Outheal_Forte_Account_R5",
-      "Insignia_Crescent_Outheal_Forte_R5"
+      "Insignia_Crescent_Outheal_Forte_Account_R6",
+      "Insignia_Crescent_Outheal_Forte_R6"
     ]
   },
   {
