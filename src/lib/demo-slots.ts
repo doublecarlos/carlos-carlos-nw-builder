@@ -219,7 +219,8 @@ export function placeBag(
 /** Every `item_picker` / `point_assignment` / `build_parameter` slot no bag entry names --
  *  what the coverage report renders as `notInDemo`. `options.class` and `raceLeveling.race`
  *  are excluded even though no bag names them: they're importable from `Ppbuilds/Hclass` and
- *  `Costumev5/Peffectivecostume/Species` respectively, just not through a bag at all. */
+ *  `Costumev5/Peffectivecostume/Species` respectively, just not through a bag at all. A stable
+ *  bonus row is excluded because it derives from the insignia the demo does record. */
 export function notInDemoSlotIds(slots: Slot[]): string[] {
   const named = new Set<string>(["options.class", "raceLeveling.race"]);
   for (const entry of GAME_IMPORT_DATA.bags) {
@@ -233,7 +234,8 @@ export function notInDemoSlotIds(slots: Slot[]): string[] {
       (slot) =>
         slot.type !== "separator" &&
         slot.type !== "text" &&
-        !named.has(slot.id),
+        !named.has(slot.id) &&
+        !(slot.type === "item_picker" && slot.stable?.role === "bonus"),
     )
     .map((slot) => slot.id);
 }
@@ -309,7 +311,7 @@ export interface GameImportLintFinding {
 /**
  * - every slot id named in game-import.json exists in `slots`
  * - no slot id is claimed by two bags
- * - a bag declares exactly one of `slots` / `gemSlots` / `notModelled`
+ * - a bag declares `notModelled`, or at least one of `slots` / `gemSlots`, never both
  */
 export function validateGameBags(
   bags: GameBagEntry[],

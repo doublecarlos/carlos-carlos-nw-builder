@@ -290,17 +290,6 @@
       "slotIds": ["mounts.bolster", "companions.bolster"]
     },
     {
-      "label": "Insignia bonuses",
-      "reason": "Insignia set-bonus choices aren't recorded in the demo.",
-      "slotIds": [
-        "insignia.bonus1",
-        "insignia.bonus2",
-        "insignia.bonus3",
-        "insignia.bonus4",
-        "insignia.bonus5"
-      ]
-    },
-    {
       "label": "Campfire buff",
       "reason": "Campfire buffs aren't recorded in the demo.",
       "slotIds": ["baselineAndAttributes.attributesCampfireBuff"]
