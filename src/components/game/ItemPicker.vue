@@ -23,6 +23,8 @@ import { itemScaleFactor } from "../../composables/useItemScale";
 import { scaledStat } from "../../engine/scaling";
 import { NW_SCHEMA } from "../../data/data";
 import { itemSearchText } from "../../lib/item-search";
+import { PREFERRED_MARK, itemDisplay } from "../../engine/insignia";
+import type { InsigniaGroup } from "../../engine/insignia";
 import type { Item, Db, Build } from "../../types";
 import ComboBox from "../ui/ComboBox.vue";
 import type { ComboBoxExposed } from "../ui/ComboBox.vue";
@@ -68,6 +70,9 @@ const props = withDefaults(
     /** DOM id for the underlying input, so a `<label for>` written by an ancestor
      *  (BuildSlot's row label) points at something real. */
     inputId?: string;
+    /** What an empty row reads as instead of a bare dash. Display only: the row is still
+     * empty. */
+    placeholder?: string;
     /** Whether the dropdown offers the empty "- none -" row (`ItemPickerSlot.disallowEmpty`).
      *  Stops an empty value being *chosen*; says nothing about a build already holding one. */
     allowEmpty?: boolean;
@@ -76,6 +81,12 @@ const props = withDefaults(
      *  back: a listed candidate has to say what is wrong with it, or the wider list is just a
      *  longer list. Candidates named here sort below the freely available ones. */
     hiddenReasons?: ReadonlyMap<string, string> | null;
+    /** Display the current value and never open, for a derived row. */
+    readonly?: boolean;
+    /** Headings to list the candidates under, in order (`insignia.ts`'s `bonusGroupsFor`).
+     *  One id may appear under several. Anything the groups miss is appended ungrouped, so a
+     *  stale grouping narrows the headings rather than losing a candidate. */
+    groups?: readonly InsigniaGroup[] | null;
   }>(),
   {
     selectedItem: null,
@@ -84,8 +95,11 @@ const props = withDefaults(
     bonusPreview: undefined,
     hidePreview: false,
     inputId: undefined,
+    placeholder: undefined,
     allowEmpty: true,
     hiddenReasons: null,
+    readonly: false,
+    groups: null,
   },
 );
 
@@ -229,17 +243,50 @@ const visibleItems = computed(() => {
   return props.items.filter((item) => !stats.get(item.id)?.conflict);
 });
 
+/** Kept off `matchMap`, which `hidePreview` skips: which name a row shows is not a preview. */
+const displayMap = computed(
+  () =>
+    new Map(
+      visibleItems.value.map((item) => [item.id, itemDisplay(props.db, item)]),
+    ),
+);
+
 /** Map items to the generic {value, label} format ComboBox expects, plus the off-screen
  *  `search` blob that lets a query match an item by what it grants rather than only by name.
- *  `itemSearchText` memoizes per catalogue, so re-mapping here is a lookup, not a rebuild. */
+ *  `itemSearchText` memoizes per catalogue, so re-mapping here is a lookup, not a rebuild.
+ *  `label` stays the catalogue name even where the row draws a shortened one: it is what the
+ *  query matches against. */
 const options = computed(() => {
   const db = props.db;
-  return visibleItems.value.map((item) => ({
+  const optionFor = (item: Item, group?: string) => ({
     value: item.id,
     label: item.name,
     search: db ? itemSearchText(db, item) : undefined,
-  }));
+    group,
+  });
+  const items = visibleItems.value;
+  if (!props.groups) return items.map((item) => optionFor(item));
+
+  const byId = new Map(items.map((item) => [item.id, item]));
+  const out: ReturnType<typeof optionFor>[] = [];
+  const placed = new Set<string>();
+  for (const group of props.groups) {
+    for (const id of group.ids) {
+      const item = byId.get(id);
+      if (!item) continue;
+      placed.add(id);
+      out.push(optionFor(item, group.label));
+    }
+  }
+  for (const item of items) {
+    if (!placed.has(item.id)) out.push(optionFor(item));
+  }
+  return out;
 });
+
+/** Grouping lists a candidate once per heading, so a budget sized for one row per item would
+ *  cut the list mid-heading. */
+const maxRows = computed(() => (props.groups ? 240 : 60));
 
 /** Decorated once per filter change rather than once per render pass -- and, since this reads
  *  `visibleItems`/`candidateStats`, only pays the per-candidate resolve cost while this
@@ -283,6 +330,11 @@ const matchMap = computed(() => {
 
 const int = (value: unknown) => fmtInt(value);
 
+/** Name only: the box is a fixed width, and the row states the star beside it. */
+const selectedLabel = computed(() =>
+  props.selectedItem ? itemDisplay(props.db, props.selectedItem).name : "",
+);
+
 defineExpose({
   /** Focus the underlying input -- same open/clear behavior as a direct click (ComboBox's
    *  own `onFocus` opens the list and starts a fresh query). */
@@ -304,19 +356,29 @@ defineExpose({
     :model-value="model"
     :invalid="invalid"
     :show-empty-option="allowEmpty"
-    :closed-display="selectedItem?.name ?? ''"
-    :placeholder="selectedItem?.name || '-'"
+    :closed-display="selectedLabel"
+    :placeholder="selectedLabel || placeholder || '-'"
     :title-input="false"
+    :readonly="readonly"
+    :max-rows="maxRows"
     :menu-class="hidePreview ? 'inset-x-0' : 'left-0 w-[min(32rem,90vw)]'"
     @update:model-value="model = $event"
     @update:open="isOpen = $event"
   >
     <template #option="{ option }">
-      <div class="flex items-baseline gap-1.5">
-        <span
-          class="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap font-semibold"
-          >{{ option.label }}</span
-        >
+      <div class="flex items-baseline gap-1.5" :class="option.group && 'pl-3'">
+        <span class="flex min-w-0 flex-1 items-baseline font-semibold">
+          <span class="overflow-hidden text-ellipsis whitespace-nowrap">{{
+            displayMap.get(option.value)?.name ?? option.label
+          }}</span>
+          <span
+            v-if="displayMap.get(option.value)?.preferred"
+            class="ml-1 shrink-0 text-accent"
+            data-testid="picker-option-preferred"
+            title="the upgraded half, which only a slot preferring its shape takes"
+            >{{ PREFERRED_MARK }}</span
+          >
+        </span>
         <!-- Why this row is here at all when it would normally be withheld. Outside the
              `hidePreview` block below: which candidates are legal is not a presentation
              question. -->
@@ -345,7 +407,10 @@ defineExpose({
       </div>
       <template v-if="!hidePreview && matchMap.has(option.value)">
         <!-- Indented under the name, so the row reads as "item, then what it's worth". -->
-        <div class="flex flex-col gap-0.5 pl-2">
+        <div
+          class="flex flex-col gap-0.5"
+          :class="option.group ? 'pl-5' : 'pl-2'"
+        >
           <div class="flex flex-wrap gap-2 text-text">
             <span
               v-for="part in matchMap.get(option.value)?.preview?.parts ?? []"

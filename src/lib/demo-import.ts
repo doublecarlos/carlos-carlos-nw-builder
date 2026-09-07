@@ -4,6 +4,7 @@
 // (its own ticket) only renders what this returns and decides whether to commit it.
 import * as storage from "../storage/storage";
 import { itemPublishing } from "../data/db";
+import { normaliseGroup, stableGroups } from "../engine/insignia";
 import {
   GAME_IMPORT_DATA,
   classFromHclass,
@@ -91,6 +92,21 @@ export function buildFromLoadout(
       if (result.kind === "imported")
         build.choices[result.slotId] = result.itemId;
       outcomes.push(result);
+    }
+  }
+
+  // The importer writes choices directly rather than through the editor's actions, so the
+  // preferred swap `setChoice` would have applied runs here, once the whole stable is placed.
+  // A demo records the ordinary insignia either way: the `(Pref)` twins carry no game ids.
+  const swaps: Record<string, string> = {};
+  for (const { group } of stableGroups(db)) {
+    Object.assign(swaps, normaliseGroup(db, build, group));
+  }
+  for (const [slotId, itemId] of Object.entries(swaps)) {
+    build.choices[slotId] = itemId;
+    for (const outcome of outcomes) {
+      if (outcome.kind === "imported" && outcome.slotId === slotId)
+        outcome.itemId = itemId;
     }
   }
 

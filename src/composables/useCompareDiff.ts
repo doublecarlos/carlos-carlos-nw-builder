@@ -6,6 +6,7 @@ import { dynamicValueKey } from "../lib/dynamic-stats";
 import { label as statLabel } from "../lib/format";
 import { repetitionRows } from "../lib/inline-repetition";
 import { expandSlots } from "../lib/item-picker-list";
+import { itemLabel, stableRef } from "../engine/insignia";
 import type {
   Build,
   BuildParameterSlot,
@@ -167,8 +168,29 @@ export function useCompareDiff(options: {
 }) {
   const { db, build, result, compareBuild, compareResult, itemIn } = options;
 
+  /**
+   * What a row effectively holds, which is not always what the build stored.
+   *
+   * Two unpinned stable bonus rows both store nothing yet differ when their mounts derive
+   * different bonuses, so comparing the stored value would call them equal. Read off the
+   * resolved row, where the derivation already landed.
+   */
+  function effectiveChoice(
+    slotId: string,
+    source: Build | null,
+    resolved: ResolvedBuild | null,
+  ) {
+    const stored = source?.choices?.[slotId] || "";
+    if (stored || stableRef(db.value, slotId)?.role !== "bonus") return stored;
+    return resolved?.rows.find((row) => row.slotId === slotId)?.item?.id ?? "";
+  }
+
   function otherChoice(slotId: string) {
-    return compareBuild.value?.choices?.[slotId] || "";
+    return effectiveChoice(slotId, compareBuild.value, compareResult.value);
+  }
+
+  function ownChoice(slotId: string) {
+    return effectiveChoice(slotId, build.value, result.value);
   }
 
   /** Display text for the compare build's choice -- `otherChoice` above stays id-based (it
@@ -176,13 +198,14 @@ export function useCompareDiff(options: {
    * "apply" tooltip/diff note. */
   function otherChoiceLabel(slotId: string) {
     const id = otherChoice(slotId);
-    return id ? (db.value.get(id)?.name ?? id) : "";
+    if (!id) return "";
+    const item = db.value.get(id);
+    return item ? itemLabel(db.value, item) : id;
   }
 
   function differs(slotId: string) {
     return (
-      Boolean(compareBuild.value) &&
-      (build.value.choices[slotId] || "") !== otherChoice(slotId)
+      Boolean(compareBuild.value) && ownChoice(slotId) !== otherChoice(slotId)
     );
   }
 
@@ -247,8 +270,9 @@ export function useCompareDiff(options: {
     name: string,
   ) {
     const otherName = compareBuild.value?.name ?? "the compare build";
-    if (!here || !there)
-      return `${name} could not be compared with “${otherName}”.`;
+    // Both absent never reaches here: `bonusStatusEqual` calls that equal and skips the row.
+    if (!there) return `${name} is not in “${otherName}” at all.`;
+    if (!here) return `${name} is only in “${otherName}”.`;
     if (here.active !== there.active) {
       return here.active
         ? `${name} is active here but not in “${otherName}”.`

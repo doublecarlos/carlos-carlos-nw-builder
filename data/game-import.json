@@ -125,6 +125,13 @@
     },
     {
       "bag": "MountEquippedActiveSlots",
+      "slots": [
+        "insignia.mount1",
+        "insignia.mount2",
+        "insignia.mount3",
+        "insignia.mount4",
+        "insignia.mount5"
+      ],
       "gemSlots": [
         [
           "insignia.insignia1_1",
@@ -281,17 +288,6 @@
       "label": "Mount and companion bolster",
       "reason": "Bolster comes from your whole stable and companion collection, not from the equipped loadout, so a loadout export has nothing to read it from. Both default to the maximum; set them by hand if your collection is not complete.",
       "slotIds": ["mounts.bolster", "companions.bolster"]
-    },
-    {
-      "label": "Insignia bonuses",
-      "reason": "Insignia set-bonus choices aren't recorded in the demo.",
-      "slotIds": [
-        "insignia.bonus1",
-        "insignia.bonus2",
-        "insignia.bonus3",
-        "insignia.bonus4",
-        "insignia.bonus5"
-      ]
     },
     {
       "label": "Campfire buff",

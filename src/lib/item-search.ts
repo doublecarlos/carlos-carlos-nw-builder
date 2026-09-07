@@ -10,6 +10,7 @@
 //
 // Matching itself stays in text-filter.ts -- this only assembles the haystack.
 
+import { slotLine } from "../engine/insignia";
 import type { Bonus, Db, Item, Schema, StatKey, StatValues } from "../types";
 
 /** Every way a user might name one stat: its schema label, its short form, and the raw key
@@ -68,6 +69,7 @@ export function itemSearchText(db: Db, item: Item): string {
 
   const terms: string[] = [];
   if (item.shortDescription) terms.push(item.shortDescription);
+  if (item.insigniaSlots) terms.push(slotLine(item));
   for (const key of db.schema.statKeys) {
     if (!item[key]) continue;
     pushStatTerms(db.schema, key, terms);

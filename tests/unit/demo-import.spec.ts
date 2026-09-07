@@ -326,3 +326,84 @@ describe("buildFromLoadout: against the shared parser fixture", () => {
     expect(total).toBe(report.outcomes.length);
   });
 });
+
+describe("buildFromLoadout: the stable", () => {
+  // A mount whose fourth slot prefers enlightened, and one insignia of each shape it needs.
+  const stableOverlay = [
+    testItem("test-stable-mount", "mount", ["Mount_Test"]),
+    testItem("test-crescent", "insignia", ["Insignia_Crescent_Test"]),
+    testItem("test-regal", "insignia", ["Insignia_Regal_Test"]),
+    testItem("test-barbed", "insignia", ["Insignia_Barbed_Test"]),
+    testItem("test-enlightened", "insignia", ["Insignia_Enlightened_Test"]),
+  ].reduce((acc, item) => catalog.upsert(acc, "items", item.id, item), overlay);
+
+  const withShapes = [
+    {
+      id: "test-stable-mount",
+      insigniaSlots: [
+        { shape: "crescent" },
+        { shape: "regal" },
+        { universal: true },
+        { universal: true, preferred: "enlightened" },
+      ],
+    },
+    { id: "test-crescent", insigniaShape: "crescent" },
+    { id: "test-regal", insigniaShape: "regal" },
+    { id: "test-barbed", insigniaShape: "barbed" },
+    {
+      id: "test-enlightened",
+      insigniaShape: "enlightened",
+      preferredVariant: "test-enlightened-pref",
+    },
+    {
+      id: "test-enlightened-pref",
+      name: "test-enlightened-pref",
+      filter: "insignia",
+      insigniaShape: "enlightened",
+    },
+  ].reduce(
+    (acc, patch) =>
+      catalog.upsert(acc, "items", patch.id, {
+        ...(acc.items[patch.id] as Item),
+        ...patch,
+      } as Item),
+    stableOverlay,
+  );
+
+  const stableDb = catalog.makeDb([withShapes]);
+
+  const loadout = loadoutOf([
+    demoItem("MountEquippedActiveSlots", 0, "Mount_Test", [
+      "Insignia_Crescent_Test",
+      "Insignia_Regal_Test",
+      "Insignia_Barbed_Test",
+      "Insignia_Enlightened_Test",
+    ]),
+  ]);
+
+  it("imports the mount alongside its insignia", () => {
+    const { build } = buildFromLoadout(
+      characterOf("Tester", null, [loadout]),
+      loadout,
+      stableDb,
+    );
+    expect(build.choices["insignia.mount1"]).toBe("test-stable-mount");
+    expect(build.choices["insignia.insignia1_1"]).toBe("test-crescent");
+    expect(build.choices["insignia.insignia1_3"]).toBe("test-barbed");
+  });
+
+  it("upgrades an imported insignia whose slot prefers its shape", () => {
+    // A demo only ever records the ordinary insignia, so the swap has to happen on import.
+    const { build, report } = buildFromLoadout(
+      characterOf("Tester", null, [loadout]),
+      loadout,
+      stableDb,
+    );
+    expect(build.choices["insignia.insignia1_4"]).toBe("test-enlightened-pref");
+    const imported = report.outcomes.find(
+      (o) => o.kind === "imported" && o.slotId === "insignia.insignia1_4",
+    );
+    // The report names what the build actually holds, not the pre-swap pick.
+    expect(imported).toMatchObject({ itemId: "test-enlightened-pref" });
+  });
+});

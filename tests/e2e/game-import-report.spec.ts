@@ -49,18 +49,18 @@ test("all three groups render with correct counts", async ({ page }) => {
     imported.getByTestId("game-import-report-imported-row"),
   ).toHaveText("Head → ZZZ Test Heavyheal Hood");
 
-  // 4 items in the loadout are equipped-and-namable; one is now recognised above, leaving 3
-  // (the mainhand weapon and the mount's two insignia gems).
+  // 5 items in the loadout are equipped-and-namable; one is now recognised above, leaving 4
+  // (the mainhand weapon, the stable mount and its two insignia gems).
   const unrecognised = page.getByTestId("game-import-report-unrecognised");
   await expect(unrecognised.locator("summary")).toHaveText(
-    "Not recognised (3)",
+    "Not recognised (4)",
   );
   await expect(
     unrecognised.getByTestId("game-import-report-unrecognised-row"),
-  ).toHaveCount(3);
+  ).toHaveCount(4);
 
   const notInDemo = page.getByTestId("game-import-report-not-in-demo");
-  await expect(notInDemo.locator("summary")).toHaveText("Not in the demo (13)");
+  await expect(notInDemo.locator("summary")).toHaveText("Not in the demo (12)");
 });
 
 test("unrecognised ids are listed and the copy button puts them on the clipboard", async ({
@@ -76,7 +76,7 @@ test("unrecognised ids are listed and the copy button puts them on the clipboard
   const unrecognised = page.getByTestId("game-import-report-unrecognised");
   await expect(
     unrecognised.getByTestId("game-import-report-unrecognised-row"),
-  ).toHaveCount(4);
+  ).toHaveCount(5);
   await expect(unrecognised).toContainText("Head_Heavyheal_Test");
 
   await page.getByTestId("game-import-report-copy-unrecognised").click();
@@ -86,6 +86,7 @@ test("unrecognised ids are listed and the copy button puts them on the clipboard
   // \r?\n -- the OS clipboard normalises the joined \n text to CRLF on Windows.
   expect(clipboard.split(/\r?\n/)).toEqual([
     "Head_Heavyheal_Test",
+    "Mount_Something_Legendary",
     "Insignia_Barbed_Test",
     "Insignia_Bile_Test",
     "Weapon_MainHand_Something",
@@ -101,9 +102,9 @@ test("'not in demo' is rolled up to sections, not individual slots", async ({
 
   const notInDemo = page.getByTestId("game-import-report-not-in-demo");
   const rows = notInDemo.getByTestId("game-import-report-notindemo-row");
-  // 13 authored groups roll up well over 100 individual missing slots -- a raw per-slot list
+  // 12 authored groups roll up well over 100 individual missing slots -- a raw per-slot list
   // would be unreadable, which is the whole point of the roll-up.
-  await expect(rows).toHaveCount(13);
+  await expect(rows).toHaveCount(12);
   await expect(rows.filter({ hasText: "Boons" })).toContainText("boon points");
 });
 
@@ -124,7 +125,7 @@ test("tabs appear for a two-loadout import and switch content", async ({
   await expect(tabs).toHaveCount(2);
   await expect(
     page.getByTestId("game-import-report-unrecognised").locator("summary"),
-  ).toHaveText("Not recognised (4)");
+  ).toHaveText("Not recognised (5)");
 
   await tabs.filter({ hasText: "aaaaaa" }).click();
   await expect(
@@ -163,9 +164,9 @@ test("mapping an unrecognised id via the report keeps the row (so it can be re-m
   );
   await expect(
     unrecognised.getByTestId("game-import-report-unrecognised-row"),
-  ).toHaveCount(4);
+  ).toHaveCount(5);
   await expect(unrecognised.locator("summary")).toHaveText(
-    "Not recognised (3)",
+    "Not recognised (4)",
   );
 
   const imported = page.getByTestId("game-import-report-imported");
@@ -220,5 +221,5 @@ test("reopening from the notice shows the same report", async ({ page }) => {
   await expect(page.getByTestId("game-import-step-report")).toBeVisible();
   await expect(
     page.getByTestId("game-import-report-unrecognised").locator("summary"),
-  ).toHaveText("Not recognised (4)");
+  ).toHaveText("Not recognised (5)");
 });

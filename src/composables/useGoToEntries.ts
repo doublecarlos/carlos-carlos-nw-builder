@@ -1,6 +1,7 @@
 import { computed } from "vue";
 import { slotVisible } from "../lib/slot-visibility";
 import { expandSlots } from "../lib/item-picker-list";
+import { itemLabel } from "../engine/insignia";
 import type { GoToEntry } from "../lib/go-to";
 import * as engine from "../stores/resolved";
 import * as builds from "../stores/builds";
@@ -57,7 +58,9 @@ export function useGoToEntries() {
             sectionId: section.id,
             label: slotDef.label ?? slotDef.id,
             // What the row itself shows, so the palette doubles as "what have I got in there".
-            detail: item ? `${section.label} · ${item.name}` : section.label,
+            detail: item
+              ? `${section.label} · ${itemLabel(db, item)}`
+              : section.label,
           });
         }
       }

@@ -1,5 +1,21 @@
 [
   {
+    "id": "accursed-resolve",
+    "name": "Accursed Resolve",
+    "grants": [
+      {
+        "bonusOccurrences": {
+          "bonus": "accursed-resolve",
+          "atLeast": 1
+        },
+        "stats": {
+          "power": 3500,
+          "deflect": 3500
+        }
+      }
+    ]
+  },
+  {
     "id": "acute-senses-ca",
     "name": "Acute Senses",
     "grants": [
@@ -180,6 +196,64 @@
         "stats": {
           "enemy_incoming_damage": 0.1
         }
+      }
+    ]
+  },
+  {
+    "id": "assassin-s-covenant",
+    "name": "Assassin's Covenant",
+    "grants": [
+      {
+        "tiers": [
+          {
+            "stats": {
+              "acc": 1000,
+              "severity": 1000,
+              "strike": 1000,
+              "ca": 1000,
+              "defense": -1000,
+              "deflect": -1000,
+              "crit_avoid": -1000,
+              "awareness": -1000
+            },
+            "bonusOccurrences": {
+              "bonus": "assassin-s-covenant",
+              "atLeast": 1
+            }
+          },
+          {
+            "stats": {
+              "acc": 1500,
+              "severity": 1500,
+              "strike": 1500,
+              "ca": 1500,
+              "defense": -1500,
+              "deflect": -1500,
+              "crit_avoid": -1500,
+              "awareness": -1500
+            },
+            "bonusOccurrences": {
+              "bonus": "assassin-s-covenant",
+              "atLeast": 2
+            }
+          },
+          {
+            "stats": {
+              "acc": 1750,
+              "severity": 1750,
+              "strike": 1750,
+              "ca": 1750,
+              "defense": -1750,
+              "deflect": -1750,
+              "crit_avoid": -1750,
+              "awareness": -1750
+            },
+            "bonusOccurrences": {
+              "bonus": "assassin-s-covenant",
+              "atLeast": 3
+            }
+          }
+        ]
       }
     ]
   },
@@ -430,6 +504,61 @@
     ]
   },
   {
+    "id": "cautious-devotion",
+    "name": "Cautious Devotion",
+    "grants": [
+      {
+        "tiers": [
+          {
+            "stats": {
+              "out_healing_p": 0.05,
+              "forte": 2500
+            },
+            "bonusOccurrences": {
+              "bonus": "cautious-devotion",
+              "atLeast": 1
+            }
+          },
+          {
+            "stats": {
+              "out_healing_p": 0.075,
+              "forte": 3750
+            },
+            "bonusOccurrences": {
+              "bonus": "cautious-devotion",
+              "atLeast": 2
+            }
+          },
+          {
+            "stats": {
+              "out_healing_p": 0.0875,
+              "forte": 4375
+            },
+            "bonusOccurrences": {
+              "bonus": "cautious-devotion",
+              "atLeast": 3
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "cavalry-s-alarm",
+    "name": "Cavalry's Alarm",
+    "grants": [
+      {
+        "bonusOccurrences": {
+          "bonus": "cavalry-s-alarm",
+          "atLeast": 1
+        },
+        "stats": {
+          "combined_rating": 3000
+        }
+      }
+    ]
+  },
+  {
     "id": "cha-lua-accuracy-severity",
     "name": "Cha Lua",
     "grants": [
@@ -660,6 +789,22 @@
               "bonus": "executioner-s-covenant",
               "atLeast": 2
             }
+          },
+          {
+            "stats": {
+              "acc": 2625,
+              "ca": 2625,
+              "strike": 2625,
+              "severity": 2625,
+              "defense": -2625,
+              "awareness": -2625,
+              "crit_avoid": -2625,
+              "deflect": -2625
+            },
+            "bonusOccurrences": {
+              "bonus": "executioner-s-covenant",
+              "atLeast": 3
+            }
           }
         ]
       }
@@ -736,6 +881,16 @@
               "bonus": "gladiator-s-guile",
               "atLeast": 2
             }
+          },
+          {
+            "stats": {
+              "movement": 0.175,
+              "stamina_regen": 0.175
+            },
+            "bonusOccurrences": {
+              "bonus": "gladiator-s-guile",
+              "atLeast": 3
+            }
           }
         ]
       }
@@ -780,6 +935,46 @@
     ]
   },
   {
+    "id": "guardian-s-spirit",
+    "name": "Guardian's Spirit",
+    "grants": [
+      {
+        "tiers": [
+          {
+            "stats": {
+              "defense": 2500,
+              "hit_points_p": 0.08
+            },
+            "bonusOccurrences": {
+              "bonus": "guardian-s-spirit",
+              "atLeast": 1
+            }
+          },
+          {
+            "stats": {
+              "defense": 3000,
+              "hit_points_p": 0.12
+            },
+            "bonusOccurrences": {
+              "bonus": "guardian-s-spirit",
+              "atLeast": 2
+            }
+          },
+          {
+            "stats": {
+              "defense": 3500,
+              "hit_points_p": 0.15
+            },
+            "bonusOccurrences": {
+              "bonus": "guardian-s-spirit",
+              "atLeast": 3
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
     "id": "hot-wings-accuracy-severity",
     "name": "Hot Wings",
     "grants": [
@@ -790,6 +985,108 @@
         "stats": {
           "acc_p": 0.05,
           "sev_p": 0.05
+        }
+      }
+    ]
+  },
+  {
+    "id": "ice-cold-aggression",
+    "name": "Ice Cold Aggression",
+    "grants": [
+      {
+        "tiers": [
+          {
+            "stats": {
+              "power": 2000,
+              "strike": 1500,
+              "severity": 1500,
+              "inc_healing": -1000
+            },
+            "bonusOccurrences": {
+              "bonus": "ice-cold-aggression",
+              "atLeast": 1
+            }
+          },
+          {
+            "stats": {
+              "power": 3500,
+              "strike": 2750,
+              "severity": 2750,
+              "inc_healing": -2000
+            },
+            "bonusOccurrences": {
+              "bonus": "ice-cold-aggression",
+              "atLeast": 2
+            }
+          },
+          {
+            "stats": {
+              "power": 4500,
+              "strike": 3750,
+              "severity": 3750,
+              "inc_healing": -3000
+            },
+            "bonusOccurrences": {
+              "bonus": "ice-cold-aggression",
+              "atLeast": 3
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ice-cold-resolve",
+    "name": "Ice Cold Resolve",
+    "grants": [
+      {
+        "tiers": [
+          {
+            "stats": {
+              "power": 2500,
+              "defense": 2500,
+              "inc_healing": -1000
+            },
+            "bonusOccurrences": {
+              "bonus": "ice-cold-resolve",
+              "atLeast": 1
+            }
+          },
+          {
+            "stats": {
+              "power": 4500,
+              "defense": 4500,
+              "inc_healing": -2000
+            },
+            "bonusOccurrences": {
+              "bonus": "ice-cold-resolve",
+              "atLeast": 2
+            }
+          },
+          {
+            "stats": {
+              "power": 6000,
+              "defense": 6000,
+              "inc_healing": -3000
+            },
+            "bonusOccurrences": {
+              "bonus": "ice-cold-resolve",
+              "atLeast": 3
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "insignia-shape-unknown",
+    "name": "Insignia shape not set",
+    "grants": [
+      {
+        "problem": {
+          "severity": "warning",
+          "message": "This insignia predates insignia shapes. Replace it with the shaped insignia you actually have equipped, so the mount's slots and its bonus can be worked out.",
+          "label": "Insignia"
         }
       }
     ]
@@ -2475,6 +2772,73 @@
     ]
   },
   {
+    "id": "magistrate-patience",
+    "name": "Magistrate Patience",
+    "grants": [
+      {
+        "bonusOccurrences": {
+          "bonus": "magistrate-patience",
+          "atLeast": 1
+        },
+        "stats": {
+          "crit_avoid": 2500
+        }
+      }
+    ]
+  },
+  {
+    "id": "master-cruelty",
+    "name": "Master Cruelty",
+    "grants": [
+      {
+        "tiers": [
+          {
+            "stats": {
+              "severity": 5000
+            },
+            "bonusOccurrences": {
+              "bonus": "master-cruelty",
+              "atLeast": 1
+            }
+          },
+          {
+            "stats": {
+              "severity": 7500
+            },
+            "bonusOccurrences": {
+              "bonus": "master-cruelty",
+              "atLeast": 2
+            }
+          },
+          {
+            "stats": {
+              "severity": 8750
+            },
+            "bonusOccurrences": {
+              "bonus": "master-cruelty",
+              "atLeast": 3
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "master-s-precision",
+    "name": "Master's Precision",
+    "grants": [
+      {
+        "bonusOccurrences": {
+          "bonus": "master-s-precision",
+          "atLeast": 1
+        },
+        "stats": {
+          "strike": 5000
+        }
+      }
+    ]
+  },
+  {
     "id": "masterwork-sets",
     "name": "Masterwork Sets",
     "grants": [
@@ -2525,6 +2889,22 @@
             "bonusOccurrences": {
               "bonus": "mender-s-covenant",
               "atLeast": 2
+            }
+          },
+          {
+            "stats": {
+              "power": 2625,
+              "strike": 2625,
+              "severity": 2625,
+              "defense": -2625,
+              "awareness": -2625,
+              "crit_avoid": -2625,
+              "deflect": -2625,
+              "out_healing": 2625
+            },
+            "bonusOccurrences": {
+              "bonus": "mender-s-covenant",
+              "atLeast": 3
             }
           }
         ]
@@ -3015,6 +3395,24 @@
     ]
   },
   {
+    "id": "predator-s-instinct",
+    "name": "Predator's Instinct",
+    "grants": [
+      {
+        "bonusOccurrences": {
+          "bonus": "predator-s-instinct",
+          "atLeast": 1
+        },
+        "stats": {
+          "acc": 3000,
+          "ca": 3000,
+          "strike": 3000,
+          "severity": 3000
+        }
+      }
+    ]
+  },
+  {
     "id": "prime-rib-power",
     "name": "Prime Rib",
     "grants": [
@@ -3025,6 +3423,24 @@
         "stats": {
           "power": 4000,
           "hit_points": 20000
+        }
+      }
+    ]
+  },
+  {
+    "id": "protector-s-covenant",
+    "name": "Protector's Covenant",
+    "grants": [
+      {
+        "stats": {
+          "defense": 1500,
+          "crit_avoid": 1500,
+          "deflect": 1500,
+          "awareness": 1500,
+          "severity": -1500,
+          "strike": -1500,
+          "ca": -1500,
+          "power": -1500
         }
       }
     ]
@@ -3362,6 +3778,21 @@
     "maxStacks": 5
   },
   {
+    "id": "shepherd-s-devotion",
+    "name": "Shepherd's Devotion",
+    "grants": [
+      {
+        "bonusOccurrences": {
+          "bonus": "shepherd-s-devotion",
+          "atLeast": 1
+        },
+        "stats": {
+          "defense": 1500
+        }
+      }
+    ]
+  },
+  {
     "id": "slayer-overload",
     "name": "Slayer Overload",
     "grants": [
@@ -3519,6 +3950,17 @@
     ]
   },
   {
+    "id": "survivalist-s-expertise",
+    "name": "Survivalist's Expertise",
+    "grants": [
+      {
+        "stats": {
+          "forte": 5000
+        }
+      }
+    ]
+  },
+  {
     "id": "swift-synergy",
     "name": "Swift Synergy",
     "grants": [
@@ -3559,6 +4001,22 @@
         },
         "stats": {
           "outgoing_damage": 0.098
+        }
+      }
+    ]
+  },
+  {
+    "id": "trainer-s-restoration",
+    "name": "Trainer's Restoration",
+    "grants": [
+      {
+        "bonusOccurrences": {
+          "bonus": "trainer-s-restoration",
+          "atLeast": 1
+        },
+        "stats": {
+          "inc_healing": 3500,
+          "out_healing": 3500
         }
       }
     ]

@@ -157,7 +157,9 @@ export async function chooseItem(page: Page, slotId: string, itemName: string) {
   const input = pickerInput(row);
   await input.click();
   await input.fill(itemName);
-  await row.getByText(itemName, { exact: true }).click();
+  // A universal insignia slot lists one candidate under every bonus heading it belongs to, so
+  // an exact-name match is not always a single row.
+  await row.getByText(itemName, { exact: true }).first().click();
   // Park the pointer clear of the row. The option just clicked can sit inside the row's own
   // box, and the item card opens on `mouseenter` -- a later `.hover()` on a row the pointer
   // never left would fire nothing.

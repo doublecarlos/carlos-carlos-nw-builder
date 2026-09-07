@@ -14,6 +14,7 @@ import {
 import { getPath, setPath } from "../lib/build-path";
 import { deepEqual } from "../lib/deep-equal";
 import { repetitionRows } from "../lib/inline-repetition";
+import { itemLabel, normaliseGroup, stableRef } from "../engine/insignia";
 import {
   expandSlots,
   listRowCount,
@@ -78,7 +79,7 @@ export function setChoice(slotId: string, id: string) {
   if (!b) return;
   const slot = slotLabel(slotId);
   const item = id ? db.value.get(id) : undefined;
-  const label = id ? (item?.name ?? id) : "";
+  const label = id ? (item ? itemLabel(db.value, item) : id) : "";
   history.snapshot(
     "build",
     b.id,
@@ -100,6 +101,32 @@ export function setChoice(slotId: string, id: string) {
     delete b.values[slotId];
     // Same reasoning as `values`: an emptied slot keeps nothing of what was picked there.
     delete b.assignments[slotId];
+  }
+  normaliseStable(b, slotId);
+}
+
+/**
+ * Re-pair a group's insignia with the slots they sit in: upgrade the ones whose slot prefers
+ * their shape, drop the ones their slot does not take.
+ *
+ * Called from the action, not a watcher: a watcher would re-apply itself to the state an undo
+ * had just restored. Changing a mount re-pairs the whole group, changing one insignia only its
+ * own slot. It rides the caller's snapshot, so a mount swap and its evictions undo as one step.
+ */
+function normaliseStable(b: Build, slotId: string) {
+  const ref = stableRef(db.value, slotId);
+  if (!ref || ref.role === "bonus") return;
+  for (const [target, id] of Object.entries(
+    normaliseGroup(db.value, b, ref.group),
+  )) {
+    if (ref.role === "insignia" && target !== slotId) continue;
+    if (id) {
+      b.choices[target] = id;
+    } else {
+      delete b.choices[target];
+      delete b.values[target];
+      delete b.assignments[target];
+    }
   }
 }
 

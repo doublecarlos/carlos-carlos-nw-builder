@@ -36,6 +36,12 @@
     "group_buff": {
       "maxCopies": 1
     },
+    "insignia_bonus": {
+      "maxCopies": 3
+    },
+    "mount": {
+      "maxCopies": 1
+    },
     "race": {
       "maxCopies": 1
     },
@@ -1139,170 +1145,340 @@
       "label": "Insignia",
       "slots": [
         {
+          "id": "insignia.mount1",
+          "label": "Mount 1",
+          "filter": "mount",
+          "type": "item_picker",
+          "stable": {
+            "group": 1,
+            "role": "mount"
+          }
+        },
+        {
           "id": "insignia.insignia1_1",
           "label": "Insignia 1.1",
           "filter": "insignia",
-          "type": "item_picker"
+          "type": "item_picker",
+          "stable": {
+            "group": 1,
+            "role": "insignia",
+            "index": 1
+          }
         },
         {
           "id": "insignia.insignia1_2",
           "label": "Insignia 1.2",
           "filter": "insignia",
-          "type": "item_picker"
+          "type": "item_picker",
+          "stable": {
+            "group": 1,
+            "role": "insignia",
+            "index": 2
+          }
         },
         {
           "id": "insignia.insignia1_3",
           "label": "Insignia 1.3",
           "filter": "insignia",
-          "type": "item_picker"
+          "type": "item_picker",
+          "stable": {
+            "group": 1,
+            "role": "insignia",
+            "index": 3
+          }
         },
         {
           "id": "insignia.insignia1_4",
           "label": "Insignia 1.4",
           "filter": "insignia",
-          "type": "item_picker"
+          "type": "item_picker",
+          "stable": {
+            "group": 1,
+            "role": "insignia",
+            "index": 4
+          }
         },
         {
           "id": "insignia.bonus1",
           "label": "Bonus 1",
           "filter": "insignia_bonus",
-          "type": "item_picker"
+          "type": "item_picker",
+          "stable": {
+            "group": 1,
+            "role": "bonus"
+          }
         },
         {
           "id": "insignia.sep1",
           "type": "separator"
         },
         {
+          "id": "insignia.mount2",
+          "label": "Mount 2",
+          "filter": "mount",
+          "type": "item_picker",
+          "stable": {
+            "group": 2,
+            "role": "mount"
+          }
+        },
+        {
           "id": "insignia.insignia2_1",
           "label": "Insignia 2.1",
           "filter": "insignia",
-          "type": "item_picker"
+          "type": "item_picker",
+          "stable": {
+            "group": 2,
+            "role": "insignia",
+            "index": 1
+          }
         },
         {
           "id": "insignia.insignia2_2",
           "label": "Insignia 2.2",
           "filter": "insignia",
-          "type": "item_picker"
+          "type": "item_picker",
+          "stable": {
+            "group": 2,
+            "role": "insignia",
+            "index": 2
+          }
         },
         {
           "id": "insignia.insignia2_3",
           "label": "Insignia 2.3",
           "filter": "insignia",
-          "type": "item_picker"
+          "type": "item_picker",
+          "stable": {
+            "group": 2,
+            "role": "insignia",
+            "index": 3
+          }
         },
         {
           "id": "insignia.insignia2_4",
           "label": "Insignia 2.4",
           "filter": "insignia",
-          "type": "item_picker"
+          "type": "item_picker",
+          "stable": {
+            "group": 2,
+            "role": "insignia",
+            "index": 4
+          }
         },
         {
           "id": "insignia.bonus2",
           "label": "Bonus 2",
           "filter": "insignia_bonus",
-          "type": "item_picker"
+          "type": "item_picker",
+          "stable": {
+            "group": 2,
+            "role": "bonus"
+          }
         },
         {
           "id": "insignia.sep2",
           "type": "separator"
         },
         {
+          "id": "insignia.mount3",
+          "label": "Mount 3",
+          "filter": "mount",
+          "type": "item_picker",
+          "stable": {
+            "group": 3,
+            "role": "mount"
+          }
+        },
+        {
           "id": "insignia.insignia3_1",
           "label": "Insignia 3.1",
           "filter": "insignia",
-          "type": "item_picker"
+          "type": "item_picker",
+          "stable": {
+            "group": 3,
+            "role": "insignia",
+            "index": 1
+          }
         },
         {
           "id": "insignia.insignia3_2",
           "label": "Insignia 3.2",
           "filter": "insignia",
-          "type": "item_picker"
+          "type": "item_picker",
+          "stable": {
+            "group": 3,
+            "role": "insignia",
+            "index": 2
+          }
         },
         {
           "id": "insignia.insignia3_3",
           "label": "Insignia 3.3",
           "filter": "insignia",
-          "type": "item_picker"
+          "type": "item_picker",
+          "stable": {
+            "group": 3,
+            "role": "insignia",
+            "index": 3
+          }
         },
         {
           "id": "insignia.insignia3_4",
           "label": "Insignia 3.4",
           "filter": "insignia",
-          "type": "item_picker"
+          "type": "item_picker",
+          "stable": {
+            "group": 3,
+            "role": "insignia",
+            "index": 4
+          }
         },
         {
           "id": "insignia.bonus3",
           "label": "Bonus 3",
           "filter": "insignia_bonus",
-          "type": "item_picker"
+          "type": "item_picker",
+          "stable": {
+            "group": 3,
+            "role": "bonus"
+          }
         },
         {
           "id": "insignia.sep3",
           "type": "separator"
         },
         {
+          "id": "insignia.mount4",
+          "label": "Mount 4",
+          "filter": "mount",
+          "type": "item_picker",
+          "stable": {
+            "group": 4,
+            "role": "mount"
+          }
+        },
+        {
           "id": "insignia.insignia4_1",
           "label": "Insignia 4.1",
           "filter": "insignia",
-          "type": "item_picker"
+          "type": "item_picker",
+          "stable": {
+            "group": 4,
+            "role": "insignia",
+            "index": 1
+          }
         },
         {
           "id": "insignia.insignia4_2",
           "label": "Insignia 4.2",
           "filter": "insignia",
-          "type": "item_picker"
+          "type": "item_picker",
+          "stable": {
+            "group": 4,
+            "role": "insignia",
+            "index": 2
+          }
         },
         {
           "id": "insignia.insignia4_3",
           "label": "Insignia 4.3",
           "filter": "insignia",
-          "type": "item_picker"
+          "type": "item_picker",
+          "stable": {
+            "group": 4,
+            "role": "insignia",
+            "index": 3
+          }
         },
         {
           "id": "insignia.insignia4_4",
           "label": "Insignia 4.4",
           "filter": "insignia",
-          "type": "item_picker"
+          "type": "item_picker",
+          "stable": {
+            "group": 4,
+            "role": "insignia",
+            "index": 4
+          }
         },
         {
           "id": "insignia.bonus4",
           "label": "Bonus 4",
           "filter": "insignia_bonus",
-          "type": "item_picker"
+          "type": "item_picker",
+          "stable": {
+            "group": 4,
+            "role": "bonus"
+          }
         },
         {
           "id": "insignia.sep4",
           "type": "separator"
         },
         {
+          "id": "insignia.mount5",
+          "label": "Mount 5",
+          "filter": "mount",
+          "type": "item_picker",
+          "stable": {
+            "group": 5,
+            "role": "mount"
+          }
+        },
+        {
           "id": "insignia.insignia5_1",
           "label": "Insignia 5.1",
           "filter": "insignia",
-          "type": "item_picker"
+          "type": "item_picker",
+          "stable": {
+            "group": 5,
+            "role": "insignia",
+            "index": 1
+          }
         },
         {
           "id": "insignia.insignia5_2",
           "label": "Insignia 5.2",
           "filter": "insignia",
-          "type": "item_picker"
+          "type": "item_picker",
+          "stable": {
+            "group": 5,
+            "role": "insignia",
+            "index": 2
+          }
         },
         {
           "id": "insignia.insignia5_3",
           "label": "Insignia 5.3",
           "filter": "insignia",
-          "type": "item_picker"
+          "type": "item_picker",
+          "stable": {
+            "group": 5,
+            "role": "insignia",
+            "index": 3
+          }
         },
         {
           "id": "insignia.insignia5_4",
           "label": "Insignia 5.4",
           "filter": "insignia",
-          "type": "item_picker"
+          "type": "item_picker",
+          "stable": {
+            "group": 5,
+            "role": "insignia",
+            "index": 4
+          }
         },
         {
           "id": "insignia.bonus5",
           "label": "Bonus 5",
           "filter": "insignia_bonus",
-          "type": "item_picker"
+          "type": "item_picker",
+          "stable": {
+            "group": 5,
+            "role": "bonus"
+          }
         }
       ]
     },

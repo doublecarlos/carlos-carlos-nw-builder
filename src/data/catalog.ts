@@ -23,6 +23,8 @@ import { deepEqual } from "../lib/deep-equal";
 import { bonusIdOf } from "../lib/bonus-attachment";
 import { replacementIdOf, replacementValuesOf } from "../lib/item-replacement";
 import { parseRowSlotId, rowSlot } from "../lib/item-picker-list";
+import { INSIGNIA_SHAPES } from "../types";
+
 import type {
   Item,
   Bonus,
@@ -33,6 +35,7 @@ import type {
   ParamCondition,
   LintFinding,
   Slot,
+  StableRole,
   SectionPreset,
   BuildParameterSlot,
   ItemPickerSlot,
@@ -413,7 +416,15 @@ const ITEM_FIELDS = new Set([
   "publishes",
   "hideFromPicker",
   "replacedBy",
+  "insigniaSlots",
+  "insigniaShape",
+  "preferredVariant",
+  "insigniaRecipe",
 ]);
+
+const SHAPES = new Set<string>(INSIGNIA_SHAPES);
+const isShape = (value: unknown) =>
+  typeof value === "string" && SHAPES.has(value);
 
 // A `param` condition addressing one of these paths duplicates a dedicated leaf that already
 // exists for it -- not wrong (conditions.ts happily evaluates either), but worth steering
@@ -1170,6 +1181,102 @@ export function validateMaxCopies(
   return findings;
 }
 
+/**
+ * The stable's slot declarations are coherent.
+ *
+ * A group missing its mount row, two insignia claiming one position, or a row pointed at the
+ * wrong filter all leave the resolver quietly doing nothing rather than failing.
+ */
+export function validateStableSlots(
+  slots: Slot[] = NW_SLOTS?.slots ?? [],
+): LintFinding[] {
+  const findings: LintFinding[] = [];
+  const report = (name: string, message: string) =>
+    findings.push({ level: "error", kind: "slot", name, message });
+
+  const FILTER_FOR: Record<StableRole, string> = {
+    mount: "mount",
+    insignia: "insignia",
+    bonus: "insignia_bonus",
+  };
+
+  const groups = new Map<
+    number,
+    {
+      mounts: string[];
+      bonuses: string[];
+      insignia: { id: string; index?: number }[];
+    }
+  >();
+
+  for (const slot of slots) {
+    if (slot.type !== "item_picker" || !slot.stable) continue;
+    const { group, role, index } = slot.stable;
+    if (!FILTER_FOR[role]) {
+      report(slot.id, `stable.role "${role}" is not a stable role`);
+      continue;
+    }
+    if (!Number.isInteger(group)) {
+      report(slot.id, `stable.group must be a whole number, got ${group}`);
+      continue;
+    }
+    if (slot.filter !== FILTER_FOR[role]) {
+      report(
+        slot.id,
+        `a stable "${role}" row must select "${FILTER_FOR[role]}", not "${slot.filter ?? "nothing"}"`,
+      );
+    }
+    let entry = groups.get(group);
+    if (!entry) {
+      entry = { mounts: [], bonuses: [], insignia: [] };
+      groups.set(group, entry);
+    }
+    if (role === "mount") entry.mounts.push(slot.id);
+    else if (role === "bonus") entry.bonuses.push(slot.id);
+    else entry.insignia.push({ id: slot.id, index });
+  }
+
+  for (const [group, entry] of groups) {
+    const at = `stable group ${group}`;
+    if (entry.mounts.length !== 1)
+      report(
+        entry.mounts[0] ?? at,
+        `${at} declares ${entry.mounts.length} mount rows, needs 1`,
+      );
+    if (entry.bonuses.length !== 1)
+      report(
+        entry.bonuses[0] ?? at,
+        `${at} declares ${entry.bonuses.length} bonus rows, needs 1`,
+      );
+
+    // Three or four, matching what a mount can offer.
+    if (entry.insignia.length < 3 || entry.insignia.length > 4) {
+      report(
+        at,
+        `${at} declares ${entry.insignia.length} insignia rows, needs 3 or 4`,
+      );
+    }
+    // A gap or repeat shifts every slot after it onto the wrong shape.
+    const seen = new Set<number>();
+    for (const { id, index } of entry.insignia) {
+      if (index === undefined) {
+        report(id, "a stable insignia row needs a stable.index");
+      } else if (index < 1 || index > entry.insignia.length) {
+        report(
+          id,
+          `stable.index ${index} is outside 1-${entry.insignia.length}`,
+        );
+      } else if (seen.has(index)) {
+        report(id, `stable.index ${index} is already taken in ${at}`);
+      } else {
+        seen.add(index);
+      }
+    }
+  }
+
+  return findings;
+}
+
 export function validate(
   items: Item[],
   bonuses: Bonus[],
@@ -1186,6 +1293,7 @@ export function validate(
     ...validateParamReaders(slots, bonuses),
     ...validateReplacements(items, schema),
     ...validateMaxCopies(items, slots, filterDefaults),
+    ...validateStableSlots(slots),
   ];
   const report = (
     level: "error" | "warn",
@@ -1195,6 +1303,7 @@ export function validate(
   ) => findings.push({ level, message, name, kind });
 
   const statKeys = new Set(schema.statKeys);
+  const byId = new Map(items.map((item) => [item.id, item]));
   const percentKinds = new Set(["percent", "mult"]);
   const allSlots = slots;
   const itemPickerFilters = new Set<string>(
@@ -1412,6 +1521,98 @@ export function validate(
           `inlineRepetition default ${def} is outside ${min}–${max}`,
           item.id,
         );
+      }
+    }
+
+    // A typo in any of these fails silently: the resolver simply never matches.
+    if (item.insigniaShape && !isShape(item.insigniaShape))
+      report(
+        "error",
+        `insigniaShape "${item.insigniaShape}" is not a shape`,
+        item.id,
+      );
+
+    if (item.insigniaSlots) {
+      if (item.insigniaSlots.length < 3 || item.insigniaSlots.length > 4) {
+        report(
+          "error",
+          `insigniaSlots has ${item.insigniaSlots.length} entries - a mount has 3 or 4`,
+          item.id,
+        );
+      }
+      item.insigniaSlots.forEach((spec, i) => {
+        const where = `insigniaSlots[${i}]`;
+        if (spec.universal) {
+          if (spec.shape)
+            report(
+              "error",
+              `${where} is universal and also names a shape`,
+              item.id,
+            );
+          if (spec.preferred && !isShape(spec.preferred))
+            report(
+              "error",
+              `${where} preferred "${spec.preferred}" is not a shape`,
+              item.id,
+            );
+        } else if (!spec.shape) {
+          report("error", `${where} is neither universal nor shaped`, item.id);
+        } else {
+          if (!isShape(spec.shape))
+            report(
+              "error",
+              `${where} shape "${spec.shape}" is not a shape`,
+              item.id,
+            );
+          if (spec.preferred)
+            report(
+              "error",
+              `${where} is a fixed slot, so its preferred shape does nothing`,
+              item.id,
+            );
+        }
+      });
+    }
+
+    if (item.insigniaRecipe) {
+      if (item.insigniaRecipe.length < 3 || item.insigniaRecipe.length > 4) {
+        report(
+          "error",
+          `insigniaRecipe has ${item.insigniaRecipe.length} shapes - a bonus takes 3 or 4`,
+          item.id,
+        );
+      }
+      for (const shape of item.insigniaRecipe) {
+        if (!isShape(shape))
+          report(
+            "error",
+            `insigniaRecipe shape "${shape}" is not a shape`,
+            item.id,
+          );
+      }
+    }
+
+    if (item.preferredVariant) {
+      const twin = byId.get(item.preferredVariant);
+      if (!twin) {
+        report(
+          "error",
+          `preferredVariant "${item.preferredVariant}" is not an item`,
+          item.id,
+        );
+      } else {
+        if (twin.insigniaShape !== item.insigniaShape)
+          report(
+            "error",
+            `preferredVariant "${twin.id}" is ${twin.insigniaShape ?? "shapeless"}, not ${item.insigniaShape ?? "shapeless"}`,
+            item.id,
+          );
+        if (twin.preferredVariant)
+          report(
+            "error",
+            `preferredVariant "${twin.id}" declares one of its own`,
+            item.id,
+          );
       }
     }
 

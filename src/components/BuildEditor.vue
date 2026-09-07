@@ -31,6 +31,8 @@ import { abbr, signedStat, statPickerOptions } from "../lib/format";
 import { descriptionParagraphs } from "../lib/description";
 import { matchesQuery } from "../lib/text-filter";
 import { slotsSupplying } from "../lib/bonus-slots";
+import * as insignia from "../engine/insignia";
+import * as stableBrowser from "../stores/stableBrowser";
 import { slotVisible } from "../lib/slot-visibility";
 import { expandSlots } from "../lib/item-picker-list";
 import { useHoverCard } from "../composables/useHoverCard";
@@ -493,6 +495,62 @@ function errorsFor(slotId: string) {
   return errorsBySlot.value.get(slotId) ?? [];
 }
 
+const derivedBonuses = computed(() => {
+  const map = new Map<number, { name: string; counted: boolean }>();
+  for (const entry of insignia.derivedBonuses(db.value, build.value)) {
+    map.set(entry.group, { name: entry.item.name, counted: entry.counted });
+  }
+  return map;
+});
+
+/** Gates the card's way into the browser, which has nothing to apply to without a group. */
+const hoveredStableGroup = computed(() => {
+  const slotId = hover.value?.slotId;
+  return slotId ? (insignia.stableRef(db.value, slotId)?.group ?? null) : null;
+});
+
+/** Lands on the side the card was already showing, filtered to the item it was about. */
+function openStableFromCard() {
+  const group = hoveredStableGroup.value;
+  const item = hoveredItem.value;
+  if (!group || !item) return;
+  stableBrowser.openFor(group, {
+    tab: item.insigniaSlots ? "mount" : "bonus",
+    query: item.name,
+  });
+}
+
+/** What an insignia row reads as instead of "Insignia N.M": the shape its mount's slot takes. */
+function stableLabel(slotId: string): string | undefined {
+  if (insignia.stableRef(db.value, slotId)?.role !== "insignia")
+    return undefined;
+  const spec = insignia.specForSlot(db.value, build.value, slotId);
+  return spec ? insignia.describeSlotSpec(spec) : undefined;
+}
+
+/** How many near misses a bonus row names before it settles for a count. One, because the row
+ * is an input's width and a second name only ever arrives half-cut. */
+const NEAR_MISSES_NAMED = 1;
+
+/** The bonus row's text: what its group derives, or what it is one insignia short of. A match
+ * past the bonus's cap is labelled rather than dropped. */
+function stablePlaceholder(slotId: string): string | undefined {
+  const ref = insignia.stableRef(db.value, slotId);
+  if (ref?.role !== "bonus") return undefined;
+  const derived = derivedBonuses.value.get(ref.group);
+  if (derived) {
+    return derived.counted ? derived.name : `${derived.name} (at cap)`;
+  }
+  const near = insignia.oneShortOf(db.value, build.value, ref.group);
+  if (!near.length) return undefined;
+  const named = near
+    .slice(0, NEAR_MISSES_NAMED)
+    .map((item) => item.name)
+    .join(", ");
+  const rest = near.length - NEAR_MISSES_NAMED;
+  return rest > 0 ? `1 short of ${named} +${rest} more` : `1 short of ${named}`;
+}
+
 function toggle(sectionId: string) {
   expanded[sectionId] = !expanded[sectionId];
 }
@@ -607,6 +665,8 @@ function statSummary(slotId: string) {
   // A description's paragraphs join the summary as separate parts, so the break an author
   // typed reads here as the same separator that already divides one stat from the next.
   const descriptions: string[] = [];
+  const slots = insignia.slotSummary(item);
+  if (slots) descriptions.push(slots);
   descriptions.push(...descriptionParagraphs(item.shortDescription));
   for (const entry of bonusesBySlot.value.get(slotId) ?? []) {
     for (const [key, value] of Object.entries(entry.appliedStats ?? {})) {
@@ -966,6 +1026,8 @@ watch(
               :hidden-reasons="hiddenReasonsFor(slotDef.id)"
               :errors="errorsFor(slotDef.id)"
               :stat-summary="statSummary(slotDef.id)"
+              :placeholder="stablePlaceholder(slotDef.id)"
+              :label-override="stableLabel(slotDef.id)"
               :choice-differs="differs(slotDef.id)"
               :other-choice-label="otherChoiceLabel(slotDef.id)"
               :bonus-diffs="rowDiff(slotDef.id)?.bonuses"
@@ -1019,7 +1081,9 @@ watch(
             :db="db"
             :slot-label="db.slotFor(hover.slotId)?.label ?? ''"
             :edit-label="editLabel"
+            :stable-group="hoveredStableGroup"
             @edit="onCardEdit"
+            @open-stable="openStableFromCard"
             @mouseenter="onCardEnter"
             @mouseleave="onCardLeave"
           />

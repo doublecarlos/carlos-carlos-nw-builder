@@ -66,6 +66,7 @@ for (const item of [
     "Insignia_D",
     "Insignia_E",
   ]),
+  testItem("test-mount", "mount", ["Mount_Test"]),
 ]) {
   overlay = catalog.upsert(overlay, "items", item.id, item);
 }
@@ -87,8 +88,8 @@ describe("demo-slots: shipped data", () => {
     expect(validateGameBags(GAME_IMPORT_DATA.bags, NW_SLOTS.slots)).toEqual([]);
   });
 
-  it("has 13 notInDemoReasons groups", () => {
-    expect(GAME_IMPORT_DATA.notInDemoReasons).toHaveLength(13);
+  it("has 12 notInDemoReasons groups", () => {
+    expect(GAME_IMPORT_DATA.notInDemoReasons).toHaveLength(12);
   });
 
   it("notInDemoReasons passes its own lint against the real slot/section list", () => {
@@ -492,6 +493,12 @@ describe("placeBag: MountEquippedActiveSlots gems, two-dimensional placement", (
     );
     expect(results).toEqual([
       {
+        kind: "unrecognised",
+        bag: "MountEquippedActiveSlots",
+        slot: 2,
+        gameId: "Mount_Whatever",
+      },
+      {
         kind: "imported",
         slotId: "insignia.insignia3_1",
         gameId: "Insignia_A",
@@ -506,11 +513,18 @@ describe("placeBag: MountEquippedActiveSlots gems, two-dimensional placement", (
     ]);
   });
 
-  it("the mount item itself produces no outcome -- only its gems do", () => {
-    const mount = demoItem("MountEquippedActiveSlots", 0, "Mount_Whatever", []);
+  it("places the bag's own item as that group's mount", () => {
+    const mount = demoItem("MountEquippedActiveSlots", 0, "Mount_Test", []);
     expect(
       placeBag("MountEquippedActiveSlots", [mount], db, new Set()),
-    ).toEqual([]);
+    ).toEqual([
+      {
+        kind: "imported",
+        slotId: "insignia.mount1",
+        gameId: "Mount_Test",
+        itemId: "test-mount",
+      },
+    ]);
   });
 
   it("more equipped mounts than insignia groups modelled are skipped, not thrown", () => {
@@ -529,7 +543,10 @@ describe("candidateSlotIds", () => {
   });
 
   it("indexes a gemSlots bag by the outcome's own slot (mount index)", () => {
+    // An outcome records only the mount index, so both kinds of item at that index are
+    // offered: the mount row first, then its insignia.
     expect(candidateSlotIds("MountEquippedActiveSlots", 0)).toEqual([
+      "insignia.mount1",
       "insignia.insignia1_1",
       "insignia.insignia1_2",
       "insignia.insignia1_3",
@@ -680,7 +697,7 @@ describe("validateGameBags", () => {
     ).toBe(true);
   });
 
-  it("errors when a bag declares zero or more than one of slots/gemSlots/notModelled", () => {
+  it("errors when a bag places nothing, or places and is notModelled at once", () => {
     const findings = validateGameBags(
       [
         { bag: "Neither" },
@@ -689,8 +706,22 @@ describe("validateGameBags", () => {
       NW_SLOTS.slots,
     );
     expect(
-      findings.filter((f) => /must declare exactly one/.test(f.message)),
+      findings.filter((f) => /must declare either notModelled/.test(f.message)),
     ).toHaveLength(2);
+  });
+
+  it("accepts a bag pairing slots with gemSlots, as the stable's does", () => {
+    const findings = validateGameBags(
+      [
+        {
+          bag: "MountEquippedActiveSlots",
+          slots: ["insignia.mount1"],
+          gemSlots: [["insignia.insignia1_1"]],
+        },
+      ],
+      NW_SLOTS.slots,
+    );
+    expect(findings).toEqual([]);
   });
 });
 

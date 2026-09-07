@@ -9,6 +9,12 @@ import { bonusIdOf } from "../lib/bonus-attachment";
 import { replacementIdOf, replacementValuesOf } from "../lib/item-replacement";
 import { resolvedOptions } from "../lib/param-options";
 import { parseRowSlotId, rowSlot } from "../lib/item-picker-list";
+import {
+  isPreferredSlot,
+  preferredVariantIds,
+  slotAccepts,
+  specForSlot,
+} from "../engine/insignia";
 import type {
   Item,
   Bonus,
@@ -369,6 +375,8 @@ export function slotCandidates(
     slot?.type === "item_picker" ? copyCounts(db, build, slotId) : null;
   const equipped = build.choices?.[slotId];
   let names: Map<string, string> | null = null;
+  let preferredHalves: ReadonlySet<string> | null = null;
+  const spec = specForSlot(db, build, slotId);
 
   return db.forSlot(slotId).map((item) => {
     let hidden: string | null = null;
@@ -377,10 +385,28 @@ export function slotCandidates(
     } else if (item.allowedClass && cls && !item.allowedClass.includes(cls)) {
       names ??= classNames(db);
       hidden = `${item.allowedClass.map((id) => names!.get(id) ?? id).join(" or ")} only`;
-    } else if (counts) {
-      const max = db.maxCopies(item);
-      const used = counts.get(item.id) ?? 0;
-      if (max && used >= max) hidden = `${used}/${max} copies`;
+    } else {
+      if (spec && item.insigniaShape && item.id !== equipped) {
+        // A mount decides both which shape a slot takes and whether it upgrades what goes in
+        // it, so the other half of a pair would only be swapped away on pick. Never withholds
+        // what the slot already holds, or a mount swap would strand it.
+        if (!slotAccepts(spec, item.insigniaShape)) {
+          hidden = `slot takes ${spec.shape}`;
+        } else if (isPreferredSlot(spec, item.insigniaShape)) {
+          if (item.preferredVariant) hidden = "this slot upgrades it";
+        } else {
+          preferredHalves ??= preferredVariantIds(db);
+          if (preferredHalves.has(item.id))
+            hidden = `only in a slot preferring ${item.insigniaShape}`;
+        }
+      }
+      // Not chained after the shape rules: an insignia the slot happily takes is still
+      // subject to its own copy cap.
+      if (!hidden && counts) {
+        const max = db.maxCopies(item);
+        const used = counts.get(item.id) ?? 0;
+        if (max && used >= max) hidden = `${used}/${max} copies`;
+      }
     }
     return { item, hidden };
   });

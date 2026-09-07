@@ -12,8 +12,10 @@ export interface GameBagEntry {
   bag: string;
   /** Ordered candidate app slots, resolved by the placement rule below. */
   slots?: string[];
-  /** `MountEquippedActiveSlots` only: `gemSlots[mountIndex][gemIndex]` -- the two-dimensional
-   *  case the generic rule can't express (a mount at `Islotidx` n has up to 4 insignia). */
+  /** `MountEquippedActiveSlots` only: `gemSlots[mountIndex][gemIndex]`, the two-dimensional
+   *  case the generic rule cannot express (a mount at `Islotidx` n has up to 4 insignia).
+   *  Pairs with `slots`, which then takes the bag's own items positionally: the mount at
+   *  `Islotidx` n is `slots[n]` and its insignia are `gemSlots[n]`. */
   gemSlots?: string[][];
   /** Present in the demo but deliberately unmodelled (cosmetics, movement speed, ...); the
    *  reason surfaces in the coverage report as "ignored on purpose" rather than "unrecognised". */
@@ -67,8 +69,13 @@ export function bagEntry(bag: string): GameBagEntry | undefined {
 export function candidateSlotIds(bag: string, slot: number): string[] {
   const entry = bagEntry(bag);
   if (!entry) return [];
+  // A gem bag carrying `slots` holds two kinds of item at one index, and an `unrecognised`
+  // outcome records only that index, so both are offered and the names tell them apart.
+  if (entry.gemSlots) {
+    const mount = entry.slots?.[slot];
+    return [...(mount ? [mount] : []), ...(entry.gemSlots[slot] ?? [])];
+  }
   if (entry.slots) return entry.slots;
-  if (entry.gemSlots) return entry.gemSlots[slot] ?? [];
   return [];
 }
 
@@ -174,6 +181,13 @@ export function placeBag(
     for (const item of items) {
       const mountSlots = entry.gemSlots[item.slot];
       if (!mountSlots) continue; // more equipped mounts than we have insignia groups for
+      // The bag's own item is the mount holding these gems, placed at the same index.
+      const mountSlot = entry.slots?.[item.slot];
+      if (mountSlot && item.gameId != null) {
+        results.push(
+          resolveAt(item.gameId, [mountSlot], db, occupied, bag, item.slot),
+        );
+      }
       item.gems.forEach((gameId, gemIndex) => {
         const target = mountSlots[gemIndex];
         results.push(
@@ -205,7 +219,8 @@ export function placeBag(
 /** Every `item_picker` / `point_assignment` / `build_parameter` slot no bag entry names --
  *  what the coverage report renders as `notInDemo`. `options.class` and `raceLeveling.race`
  *  are excluded even though no bag names them: they're importable from `Ppbuilds/Hclass` and
- *  `Costumev5/Peffectivecostume/Species` respectively, just not through a bag at all. */
+ *  `Costumev5/Peffectivecostume/Species` respectively, just not through a bag at all. A stable
+ *  bonus row is excluded because it derives from the insignia the demo does record. */
 export function notInDemoSlotIds(slots: Slot[]): string[] {
   const named = new Set<string>(["options.class", "raceLeveling.race"]);
   for (const entry of GAME_IMPORT_DATA.bags) {
@@ -219,7 +234,8 @@ export function notInDemoSlotIds(slots: Slot[]): string[] {
       (slot) =>
         slot.type !== "separator" &&
         slot.type !== "text" &&
-        !named.has(slot.id),
+        !named.has(slot.id) &&
+        !(slot.type === "item_picker" && slot.stable?.role === "bonus"),
     )
     .map((slot) => slot.id);
 }
@@ -295,7 +311,7 @@ export interface GameImportLintFinding {
 /**
  * - every slot id named in game-import.json exists in `slots`
  * - no slot id is claimed by two bags
- * - a bag declares exactly one of `slots` / `gemSlots` / `notModelled`
+ * - a bag declares `notModelled`, or at least one of `slots` / `gemSlots`, never both
  */
 export function validateGameBags(
   bags: GameBagEntry[],
@@ -326,14 +342,15 @@ export function validateGameBags(
   };
 
   for (const entry of bags) {
-    const shapes = [entry.slots, entry.gemSlots, entry.notModelled].filter(
-      (shape) => shape !== undefined,
-    );
-    if (shapes.length !== 1) {
+    // `slots` and `gemSlots` pair up on a bag holding mounts and their insignia at once;
+    // `notModelled` is the whole bag's answer and pairs with neither.
+    const placed = entry.slots !== undefined || entry.gemSlots !== undefined;
+    const notModelled = entry.notModelled !== undefined;
+    if (placed === notModelled) {
       findings.push({
         level: "error",
         context: entry.bag,
-        message: `bag "${entry.bag}" must declare exactly one of slots / gemSlots / notModelled, found ${shapes.length}`,
+        message: `bag "${entry.bag}" must declare either notModelled or at least one of slots / gemSlots, not both`,
       });
     }
     for (const slotId of entry.slots ?? []) checkSlotId(slotId, entry.bag);

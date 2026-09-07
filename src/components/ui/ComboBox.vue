@@ -7,7 +7,8 @@ export interface ComboBoxOption {
    *  one listed option to the next, so options must arrive already grouped -- which lets a
    *  caller keep its own order (BuildComboBox lists builds in sidebar order, folders and
    *  ungrouped builds interleaved exactly as the sidebar draws them). Matched by the query
-   *  like `search` is, so typing a group's name narrows the list to it. */
+   *  like `search` is, so typing a group's name narrows the list to it. One option may be
+   *  listed under several headings. */
   group?: string;
 }
 
@@ -59,6 +60,9 @@ const props = withDefaults(
     /** The input's own DOM id, so a `<label for>` written by an ancestor can point at it.
      *  Passed in rather than generated here, since that ancestor needs the same value. */
     inputId?: string;
+    /** Display the current value and never open. For a row whose content is derived, where a
+     *  disabled control would drop out of the tab order and take its text with it. */
+    readonly?: boolean;
   }>(),
   {
     placeholder: "-",
@@ -70,6 +74,7 @@ const props = withDefaults(
     titleInput: true,
     titleRows: true,
     inputId: undefined,
+    readonly: false,
   },
 );
 
@@ -174,7 +179,7 @@ const firstStop = () => stops.value[0] ?? 0;
 /** Skips the reset when already open: `focusAndSeed` below pre-sets `open` before the
  *  native focus event fires, and this must not stomp the query it just seeded. */
 function onFocus() {
-  if (open.value) return;
+  if (props.readonly || open.value) return;
   open.value = true;
   query.value = "";
   // Start on whatever is already selected, not on "empty" -- `rows` reflects the
@@ -231,6 +236,7 @@ function focusInput() {
  *  overwriting a cell. Exposed explicitly -- `<script setup>` components are closed by
  *  default. */
 function focusAndSeed(char: string) {
+  if (props.readonly) return;
   open.value = true;
   query.value = char;
   highlight.value = firstStop();
@@ -326,9 +332,10 @@ onKeyStroke(
       class="w-full rounded-md border bg-surface py-0.5 pl-1.5 pr-6 placeholder:text-muted focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
       :class="invalid ? 'border-danger' : 'border-line'"
       type="text"
-      role="combobox"
-      aria-autocomplete="list"
-      :aria-expanded="open ? 'true' : 'false'"
+      :readonly="readonly"
+      :role="readonly ? undefined : 'combobox'"
+      :aria-autocomplete="readonly ? undefined : 'list'"
+      :aria-expanded="readonly ? undefined : open ? 'true' : 'false'"
       :aria-controls="open ? listboxId : undefined"
       :aria-activedescendant="activeDescendant"
       :aria-invalid="invalid ? 'true' : undefined"
@@ -344,6 +351,7 @@ onKeyStroke(
     <!-- Sits in the same right-hand gutter the input's padding reserves -- the only hint
          this text input is actually a fixed-choice dropdown. -->
     <span
+      v-if="!readonly"
       class="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-muted"
       >▾</span
     >
@@ -354,10 +362,9 @@ onKeyStroke(
       :menu-class="menuClass"
       :listbox-id="listboxId"
     >
-      <template
-        v-for="(row, index) in rows"
-        :key="row.kind === 'option' ? row.option.value : `${row.kind}:${index}`"
-      >
+      <!-- Keyed by position: one option may be listed under several headings, so two rows can
+           share a value. -->
+      <template v-for="(row, index) in rows" :key="index">
         <!-- A heading: named for assistive tech, but not an option and never a cursor stop. -->
         <ComboBoxMenuRow
           v-if="row.kind === 'group'"

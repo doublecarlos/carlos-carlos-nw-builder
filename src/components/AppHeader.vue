@@ -13,13 +13,17 @@ import BundleExport from "./BundleExport.vue";
 import GameImport from "./GameImport.vue";
 import ImportPicker from "./ImportPicker.vue";
 import ShortcutHelp from "./ShortcutHelp.vue";
+import StableBrowser from "./game/StableBrowser.vue";
+import NavContextMenu from "./NavContextMenu.vue";
 import {
   Download,
   Gamepad2,
   Info,
   Keyboard,
   Search,
+  Table,
   Upload,
+  Wrench,
 } from "@lucide/vue";
 import { useUndoRedoKeys } from "../composables/useUndoRedoKeys";
 import { importFileText, pending as pendingImport } from "../stores/importFile";
@@ -30,6 +34,11 @@ import {
 } from "../stores/gameImport";
 import * as shortcutHelp from "../stores/shortcutHelp";
 import * as goTo from "../stores/goTo";
+import * as stableBrowser from "../stores/stableBrowser";
+import * as builds from "../stores/builds";
+import * as engine from "../stores/resolved";
+import { mountSlotId } from "../engine/insignia";
+import * as buildEditor from "../stores/buildEditor";
 import GoToPalette from "./GoToPalette.vue";
 import { isMac } from "../lib/platform";
 
@@ -49,6 +58,28 @@ function triggerImport() {
   importFileInput.value?.click();
 }
 
+const toolsAnchor = ref<DOMRect | null>(null);
+
+const TOOLS = [
+  { action: "stable", label: "Mount stable reference", icon: Table },
+];
+
+function toggleTools(event: MouseEvent) {
+  toolsAnchor.value = toolsAnchor.value
+    ? null
+    : (event.currentTarget as HTMLElement).getBoundingClientRect();
+}
+
+function onTool(action: string) {
+  toolsAnchor.value = null;
+  if (action === "stable") stableBrowser.openReference();
+}
+
+function applyStableMount(applied: { group: number; mount: string }) {
+  const slotId = mountSlotId(engine.db.value, applied.group);
+  if (slotId) buildEditor.setChoice(slotId, applied.mount);
+}
+
 async function onImportFile(event: Event) {
   const input = event.target as HTMLInputElement;
   const file = input.files?.[0];
@@ -60,18 +91,16 @@ async function onImportFile(event: Event) {
 
 <template>
   <header
-    class="flex items-center gap-3 border-b border-line bg-surface px-2 py-2"
+    class="flex items-center gap-2.5 border-b border-line bg-surface px-2 py-2"
     data-testid="app-header"
   >
     <!-- The one item here that may shrink. Every other child is a control with a fixed
          intrinsic width, so without this the bar's own minimum grows with each one added and
          a narrow window scrolls sideways -- and of everything up here, the title is what a
          narrow window can most afford to lose the tail of. -->
-    <h1
-      class="min-w-0 truncate text-base font-semibold tracking-wide flex items-center"
-    >
+    <h1 class="flex min-w-0 items-center text-base font-semibold tracking-wide">
       <img class="inline" src="/icon-512.png" alt="" width="32" height="32" />
-      <span class="flex-1">Carlos Carlos' NW Builder</span>
+      <span class="min-w-0 flex-1 truncate">Carlos Carlos' NW Builder</span>
     </h1>
 
     <BaseButton data-testid="header-export-bundle" @click="triggerExportBundle"
@@ -94,6 +123,30 @@ async function onImportFile(event: Event) {
       ><Gamepad2 />Import from game</BaseButton
     >
     <GameImport v-if="gameImportOpen" />
+
+    <BaseButton data-testid="header-tools" @click="toggleTools"
+      ><Wrench />Tools</BaseButton
+    >
+    <NavContextMenu
+      v-if="toolsAnchor"
+      :anchor="toolsAnchor"
+      align="left"
+      :items="TOOLS"
+      :ignore="['[data-testid=header-tools]']"
+      @action="onTool"
+      @close="toolsAnchor = null"
+    />
+    <!-- Mounted here rather than in the editor: the reference is worth reading with no build
+         open, and one instance serves both ways in. -->
+    <StableBrowser
+      v-if="stableBrowser.isOpen.value"
+      :db="engine.db.value"
+      :build="builds.build.value"
+      :group="stableBrowser.group.value"
+      :focus="stableBrowser.focus.value"
+      @close="stableBrowser.close()"
+      @apply="applyStableMount"
+    />
 
     <input
       ref="importFileInput"

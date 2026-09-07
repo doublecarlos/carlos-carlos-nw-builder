@@ -175,6 +175,8 @@ export interface ItemPickerSlot extends SlotVisibility {
   /** Set only on a row expanded from an `ItemPickerListSlot`: the container's id, which is
    * what the row's remove button acts on. */
   list?: string;
+  /** See `StableSlotRef`. Absent on every slot outside the stable. */
+  stable?: StableSlotRef;
 }
 
 /** A row of independent numeric steppers sharing one label, one per item matching `filter` --
@@ -300,6 +302,39 @@ export interface FilterDefaults {
 
 export type FilterDefaultsMap = Record<string, FilterDefaults>;
 
+// --- the stable (mounts and insignia) --------------------------------------------------------
+
+export const INSIGNIA_SHAPES = [
+  "barbed",
+  "crescent",
+  "enlightened",
+  "illuminated",
+  "regal",
+] as const;
+
+/** Documentation-only, as `StatKey` is: read off `data/db-items.json`, which TS widens to
+ * `string`. `INSIGNIA_SHAPES` is the vocabulary, enforced by catalog.ts. */
+export type InsigniaShape = string;
+
+/** One insignia slot on a mount. `preferred` applies only to a universal slot; a fixed slot
+ * grants no preferred bonus however well the shape matches. */
+export interface InsigniaSlotSpec {
+  shape?: InsigniaShape;
+  universal?: boolean;
+  preferred?: InsigniaShape;
+}
+
+export type StableRole = "mount" | "insignia" | "bonus";
+
+/** A slot's place in the stable, declared in `data/slots.json` so the resolver finds these rows
+ * by role rather than by slot id. `index` orders the insignia within a group and is what a
+ * mount's `insigniaSlots` line up against; it means nothing on a mount or bonus row. */
+export interface StableSlotRef {
+  group: number;
+  role: StableRole;
+  index?: number;
+}
+
 export interface SlotsData {
   sections: SlotSection[];
   slots: Slot[];
@@ -380,6 +415,17 @@ export interface Item {
    * here, all three carrying it. Entries sharing a game id must differ by `filter` so the
    * importer can tell them apart. Consumed only by the game importer; the engine ignores it. */
   gameIds?: string[];
+  /** A mount's insignia slots, in game order. Three or four; carrying this is what makes an
+   * item a mount to the stable resolver. */
+  insigniaSlots?: InsigniaSlotSpec[];
+  /** An insignia's shape, carried by both halves of a preferred pair. */
+  insigniaShape?: InsigniaShape;
+  /** The stronger `(Pref)` twin of this insignia. Only the ordinary half declares it, so the
+   * pairing has one direction and db.ts can build the reverse lookup. */
+  preferredVariant?: string;
+  /** The three or four shapes producing an insignia bonus, matched as a multiset. A 3-shape
+   * recipe matches a mount's first three slots only. */
+  insigniaRecipe?: InsigniaShape[];
   /** `build_parameter` slot id to the value it should take on whenever this item gets picked
    * through an `item_picker` slot -- e.g. a Paragon item defaulting Role and Forte to its
    * canonical spec. Same shape as `SectionPreset.params`. Applied once at pick time
@@ -943,6 +989,7 @@ export interface EngineError {
     | "outOfRange"
     | "missing"
     | "bonusRule"
+    | "insigniaSlot"
     | "publishConflict";
   choice: string;
   message: string;

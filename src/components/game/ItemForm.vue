@@ -39,6 +39,7 @@ import {
   replacementIdOf,
   replacementValuesOf,
 } from "../../lib/item-replacement";
+import { INSIGNIA_SHAPES } from "../../types";
 import type { StatRow } from "../../engine/bonus-draft";
 import BaseCheckbox from "../ui/BaseCheckbox.vue";
 
@@ -138,6 +139,12 @@ export interface ItemDraft {
   /** Keyed by context *path*, not slot id -- a published value has no slot (see
    *  `Item.publishes`), which is the whole reason it can replace one. */
   publishes: { path: string; value: string }[];
+  /** An empty `shape` means universal, so one picker cannot contradict a separate checkbox. */
+  insigniaSlots: { shape: string; preferred: string }[];
+  insigniaShape: string;
+  preferredVariant: string;
+  /** A bonus recipe as three or four shapes; empty rows are dropped on save. */
+  insigniaRecipe: string[];
 }
 
 /** Inline-repetition numeric fields count as "set" once they hold a real number, not just an
@@ -203,6 +210,13 @@ function buildDraft(item: Item | null | undefined): ItemDraft {
     defaultParams: Object.entries(source.defaultParams ?? {}).flatMap(
       ([slotId, value]) => (value === undefined ? [] : [{ slotId, value }]),
     ),
+    insigniaSlots: (source.insigniaSlots ?? []).map((spec) => ({
+      shape: spec.universal ? "" : (spec.shape ?? ""),
+      preferred: spec.preferred ?? "",
+    })),
+    insigniaShape: source.insigniaShape ?? "",
+    preferredVariant: source.preferredVariant ?? "",
+    insigniaRecipe: [...(source.insigniaRecipe ?? [])],
   };
 }
 
@@ -530,6 +544,22 @@ function toItem(): Item {
   }
   if (local.allowedClass.length) item.allowedClass = [...local.allowedClass];
 
+  // Every row is a slot: an empty shape means universal, so there is no blank row to discard.
+  const insigniaSlots = local.insigniaSlots.map((row) =>
+    row.shape
+      ? { shape: row.shape }
+      : {
+          universal: true as const,
+          ...(row.preferred ? { preferred: row.preferred } : {}),
+        },
+  );
+  if (insigniaSlots.length) item.insigniaSlots = insigniaSlots;
+  if (local.insigniaShape) item.insigniaShape = local.insigniaShape;
+  if (local.preferredVariant.trim())
+    item.preferredVariant = local.preferredVariant.trim();
+  const insigniaRecipe = local.insigniaRecipe.filter(Boolean);
+  if (insigniaRecipe.length) item.insigniaRecipe = insigniaRecipe;
+
   const dynamicStats = local.dynamicStats
     .filter((d) => d.stat)
     .map((d) => ({
@@ -642,6 +672,58 @@ function replacementOf(value: unknown): ItemReplacement | null {
   return typeof value === "string"
     ? { item: value }
     : (value as ItemReplacement);
+}
+
+const shapeOptions = INSIGNIA_SHAPES.map((shape) => ({
+  value: shape,
+  label: shape,
+}));
+
+/** The empty row is "universal", so a slot cannot be both universal and shaped. */
+const slotShapeOptions = [{ value: "", label: "universal" }, ...shapeOptions];
+
+/** A universal slot's preference. A fixed slot grants no preferred bonus. */
+const preferredOptions = [
+  { value: "", label: "- no preference -" },
+  ...shapeOptions,
+];
+
+const recipeOptions = [
+  { value: "", label: "- pick a shape -" },
+  ...shapeOptions,
+];
+
+/** Insignia that do not themselves declare a pairing, narrowed to this item's shape once one
+ *  is chosen. A pairing across shapes is an authoring error `validate` rejects. */
+const preferredVariantOptions = computed(() => [
+  { value: "", label: "- no preferred item -" },
+  ...props.db.items
+    .filter(
+      (item) =>
+        item.insigniaShape &&
+        !item.preferredVariant &&
+        item.id !== props.source?.id &&
+        (!draft.value.insigniaShape ||
+          item.insigniaShape === draft.value.insigniaShape),
+    )
+    .map((item) => ({ value: item.id, label: `${item.name} (${item.id})` }))
+    .sort((a, b) => a.label.localeCompare(b.label)),
+]);
+
+function addInsigniaSlot() {
+  draft.value.insigniaSlots.push({ shape: "", preferred: "" });
+}
+
+function removeInsigniaSlot(index: number) {
+  draft.value.insigniaSlots.splice(index, 1);
+}
+
+function addRecipeShape() {
+  draft.value.insigniaRecipe.push("");
+}
+
+function removeRecipeShape(index: number) {
+  draft.value.insigniaRecipe.splice(index, 1);
 }
 
 function addReplacedByValue() {
@@ -1306,5 +1388,123 @@ watch(
         </span>
       </div>
     </template>
+
+    <FormSection>Insignia</FormSection>
+    <p class="mb-1.5 text-muted">
+      An insignia's shape is what a mount's slot is matched against. A slot that
+      prefers that shape swaps in the stronger item named here instead, so only
+      the ordinary one names a preferred item; the preferred one names none.
+    </p>
+    <div class="mb-1.5 flex flex-wrap items-center gap-x-4 gap-y-1.5">
+      <FormField label="Insignia shape">
+        <ComboBox
+          class="w-44"
+          data-testid="item-insignia-shape"
+          :options="recipeOptions"
+          :model-value="draft.insigniaShape"
+          @update:model-value="(v) => (draft.insigniaShape = v)"
+        />
+      </FormField>
+      <FormField label="Preferred item">
+        <ComboBox
+          class="w-80"
+          data-testid="item-preferred-variant"
+          :options="preferredVariantOptions"
+          :model-value="draft.preferredVariant"
+          @update:model-value="(v) => (draft.preferredVariant = v)"
+        />
+      </FormField>
+    </div>
+
+    <FormSection>Mount insignia slots</FormSection>
+
+    <div
+      v-for="(row, index) in draft.insigniaSlots"
+      :key="'slot' + index"
+      class="insignia-slot-row mb-1 flex flex-wrap items-center gap-1.5"
+    >
+      <IconButton title="Add insignia slot" @click="addInsigniaSlot"
+        ><Plus
+      /></IconButton>
+      <IconButton
+        title="Remove insignia slot"
+        @click="removeInsigniaSlot(index)"
+        ><Trash
+      /></IconButton>
+      <FormField :label="`Slot ${index + 1} shape`">
+        <ComboBox
+          class="w-44"
+          :data-testid="`item-insignia-slot-${index}`"
+          :options="slotShapeOptions"
+          :model-value="row.shape"
+          @update:model-value="(v) => (row.shape = v)"
+        />
+      </FormField>
+      <FormField v-if="!row.shape || row.preferred" label="Prefers">
+        <ComboBox
+          class="w-44"
+          :data-testid="`item-insignia-slot-preferred-${index}`"
+          :options="preferredOptions"
+          :model-value="row.preferred"
+          @update:model-value="(v) => (row.preferred = v)"
+        />
+      </FormField>
+      <span v-if="row.shape && row.preferred" class="text-danger">
+        A fixed slot grants no preferred bonus. Clear one of the two.
+      </span>
+    </div>
+    <div
+      v-if="!draft.insigniaSlots.length"
+      class="insignia-slot-row mb-1 flex flex-wrap items-center gap-1.5"
+    >
+      <IconButton
+        title="Add insignia slot"
+        data-testid="item-add-insignia-slot"
+        @click="addInsigniaSlot"
+        ><Plus
+      /></IconButton>
+      <span class="text-muted">
+        A mount's insignia slots, in the order the game shows them. A slot with
+        no shape is universal and may name the shape it prefers.
+      </span>
+    </div>
+
+    <FormSection>Insignia bonus recipe</FormSection>
+    <div
+      v-for="(shape, index) in draft.insigniaRecipe"
+      :key="'recipe' + index"
+      class="insignia-recipe-row mb-1 flex flex-wrap items-center gap-1.5"
+    >
+      <IconButton title="Add recipe shape" @click="addRecipeShape"
+        ><Plus
+      /></IconButton>
+      <IconButton title="Remove recipe shape" @click="removeRecipeShape(index)"
+        ><Trash
+      /></IconButton>
+      <FormField :label="`Recipe shape ${index + 1}`">
+        <ComboBox
+          class="w-44"
+          :data-testid="`item-insignia-recipe-${index}`"
+          :options="recipeOptions"
+          :model-value="shape"
+          @update:model-value="(v) => (draft.insigniaRecipe[index] = v)"
+        />
+      </FormField>
+    </div>
+    <div
+      v-if="!draft.insigniaRecipe.length"
+      class="insignia-recipe-row mb-1 flex flex-wrap items-center gap-1.5"
+    >
+      <IconButton
+        title="Add recipe shape"
+        data-testid="item-add-recipe-shape"
+        @click="addRecipeShape"
+        ><Plus
+      /></IconButton>
+      <span class="text-muted">
+        The three or four shapes an insignia bonus is made of, matched whatever
+        order they end up slotted in.
+      </span>
+    </div>
   </div>
 </template>

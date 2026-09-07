@@ -47,6 +47,11 @@ const props = defineProps<{
   // item_picker only -- a build_parameter row has no item of its own.
   item?: Item | null;
   statSummary?: string;
+  /** item_picker only: what the row reads as while empty. */
+  placeholder?: string;
+  /** Stands in for the row's authored label, which stays in slots.json for go-to and every
+   *  other by-label lookup. */
+  labelOverride?: string;
   bonusDiffs?: { id: string; message: string }[];
   // item_picker only
   items?: Item[];
@@ -168,8 +173,9 @@ useCursorRowKeys(anchor, {
         :is="labelsOneControl ? 'label' : 'span'"
         :id="labelId"
         class="slot-label min-w-0 flex-1 truncate text-muted"
+        :class="labelOverride ? 'capitalize' : undefined"
         :for="labelsOneControl ? controlId : undefined"
-        >{{ slotDef.label }}</component
+        >{{ labelOverride || slotDef.label }}</component
       >
     </div>
 
@@ -204,6 +210,7 @@ useCursorRowKeys(anchor, {
         :items="items"
         :hidden-reasons="hiddenReasons"
         :stat-summary="statSummary"
+        :placeholder="placeholder"
         :invalid="errors?.some((e) => e.severity !== 'warning') ?? false"
         :choice-differs="choiceDiffers"
         :other-choice-label="otherChoiceLabel"
