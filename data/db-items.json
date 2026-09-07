@@ -5565,6 +5565,26 @@
     ]
   },
   {
+    "id": "stable-silvanite-blossom-bear",
+    "name": "Silvanite Blossom Bear",
+    "filter": "mount",
+    "insigniaSlots": [
+      {
+        "shape": "crescent"
+      },
+      {
+        "shape": "enlightened"
+      },
+      {
+        "shape": "regal"
+      },
+      {
+        "universal": true,
+        "preferred": "barbed"
+      }
+    ]
+  },
+  {
     "id": "slayer-overload",
     "name": "Slayer Overload",
     "filter": "overload",
@@ -6813,6 +6833,26 @@
     "shortDescription": "Insignia slots: illuminated, regal, universal, universal (prefers barbed)."
   },
   {
+    "id": "stable-umbral-widow",
+    "name": "Umbral Widow",
+    "filter": "mount",
+    "insigniaSlots": [
+      {
+        "shape": "illuminated"
+      },
+      {
+        "shape": "crescent"
+      },
+      {
+        "shape": "regal"
+      },
+      {
+        "universal": true,
+        "preferred": "enlightened"
+      }
+    ]
+  },
+  {
     "id": "stable-uni-the-unicorn",
     "name": "Uni the Unicorn",
     "filter": "mount",
@@ -6854,6 +6894,26 @@
       }
     ],
     "shortDescription": "Insignia slots: barbed, enlightened, universal, universal (prefers regal)."
+  },
+  {
+    "id": "stable-star-angler",
+    "name": "Star Angler",
+    "filter": "mount",
+    "insigniaSlots": [
+      {
+        "shape": "regal"
+      },
+      {
+        "shape": "crescent"
+      },
+      {
+        "universal": true
+      },
+      {
+        "universal": true,
+        "preferred": "enlightened"
+      }
+    ]
   },
   {
     "id": "strike-m32-900-to-5400",
