@@ -344,10 +344,12 @@ describe("bonus model semantics", () => {
   });
 
   it("maxCopies and class restrictions are reported", () => {
+    // Four groups: an insignia bonus caps at 3, so three copies is a legal stable.
     const tooMany = runBuild({
       "insignia.bonus1": "Gladiator's Guile",
       "insignia.bonus2": "Gladiator's Guile",
       "insignia.bonus3": "Gladiator's Guile",
+      "insignia.bonus4": "Gladiator's Guile",
     });
     expect(
       tooMany.errors.some((e: EngineError) => e.kind === "maxCopies"),

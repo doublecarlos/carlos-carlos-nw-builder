@@ -19,6 +19,7 @@ import {
   stat as formatStat,
 } from "../../lib/format";
 import { descriptionParagraphs } from "../../lib/description";
+import { mountsFor, reachableBonuses, slotLine } from "../../engine/insignia";
 import { isHiddenBonus } from "../../engine/bonus";
 import { scaledStat } from "../../engine/scaling";
 import type { OccurrenceRow } from "../../composables/useItemBonusOccurrences";
@@ -31,12 +32,13 @@ import type {
   Grant,
   StatValues,
 } from "../../types";
-import { SquarePen, TriangleAlert } from "@lucide/vue";
+import { SquarePen, Table, TriangleAlert } from "@lucide/vue";
 import BaseBadge from "../ui/BaseBadge.vue";
 import BaseCard from "../ui/BaseCard.vue";
 import BaseCardHeader from "../ui/BaseCardHeader.vue";
 import BaseCardBody from "../ui/BaseCardBody.vue";
 import IconButton from "../ui/IconButton.vue";
+import BaseButton from "../ui/BaseButton.vue";
 
 const props = withDefaults(
   defineProps<{
@@ -63,6 +65,9 @@ const props = withDefaults(
     /** Tooltip for the header's edit button, naming the layer the edit lands in -- which is
      *  not necessarily the one on screen. Empty hides the button. */
     editLabel?: string;
+    /** Set when the card is shown over a stable row. Without one the browser has nothing to
+     *  apply to, so "and N more" stays plain text. */
+    stableGroup?: number | null;
   }>(),
   {
     bonuses: () => [],
@@ -72,10 +77,11 @@ const props = withDefaults(
     scale: 1,
     scaleNotes: () => [],
     editLabel: "",
+    stableGroup: null,
   },
 );
 
-defineEmits<{ edit: [] }>();
+const emit = defineEmits<{ edit: []; "open-stable": [] }>();
 
 /** What this item would be swapped for, when the card has a catalogue to ask. */
 const replacement = computed(
@@ -118,9 +124,39 @@ const scaledIl = computed(() =>
   int(scaledStat(NW_SCHEMA, props.item, "il", props.scale)),
 );
 
+/** Falls back to the short description, so an item carrying only that still says something on
+ * its card rather than nothing. */
 const longDescription = computed(() =>
-  descriptionParagraphs(props.item.longDescription),
+  descriptionParagraphs(
+    props.item.longDescription || props.item.shortDescription,
+  ),
 );
+
+/** Empty without a catalogue, as on the layer editor's preview card. */
+const STABLE_ROWS = 8;
+
+const stableReach = computed(() => {
+  const db = props.db;
+  if (!db) return null;
+  const isMount = !!props.item.insigniaSlots;
+  if (!isMount && !props.item.insigniaRecipe) return null;
+  const rows = isMount
+    ? reachableBonuses(db, props.item)
+    : mountsFor(db, props.item);
+  return {
+    title: isMount ? "Insignia bonuses" : "Mounts",
+    rows: rows.slice(0, STABLE_ROWS).map((reach) => ({
+      id: isMount ? reach.bonus.id : reach.mount.id,
+      name: isMount ? reach.bonus.name : reach.mount.name,
+      preferred: reach.preferred,
+    })),
+    more: Math.max(0, rows.length - STABLE_ROWS),
+    preferred: rows.filter((reach) => reach.preferred > 0).length,
+    total: rows.length,
+  };
+});
+
+const slots = computed(() => slotLine(props.item));
 
 const stats = computed(() => {
   const out: { key: string; label: string; value: string }[] = [];
@@ -350,13 +386,15 @@ const rows = computed(() =>
           .join(" + "),
         zeroOccurrence: zeroOccurrenceNote(entry.id, entry.active),
         excludedBy: entry.excludedBy,
-        // Every active grant's own longDescription, in grant order -- a bonus with more than
-        // one descriptive grant shows each (rare: usually only one grant per bonus bothers).
-        // Flattened to paragraphs: each already renders as its own line, so a grant that
-        // breaks its description needs nothing else to tell the halves apart.
+        // Every active grant's own description, in grant order, falling back to its short one
+        // the same way an item's does so a grant carrying only that still says something here.
         descriptions: (entry.grants ?? [])
           .filter((g) => g.active)
-          .flatMap((g) => descriptionParagraphs(g.raw.longDescription)),
+          .flatMap((g) =>
+            descriptionParagraphs(
+              g.raw.longDescription || g.raw.shortDescription,
+            ),
+          ),
         stacks: entry.stacks ?? 1,
         grants: grantRows(entry),
         sharedWith,
@@ -601,6 +639,45 @@ const rows = computed(() =>
           <div v-if="row.excludedBy" class="pl-3 text-warn">
             overridden by {{ row.excludedBy }}
           </div>
+        </div>
+      </div>
+      <div
+        v-if="stableReach"
+        class="mt-2 border-t border-line pt-1.5"
+        data-testid="item-card-stable"
+      >
+        <div v-if="slots" class="mb-1 text-muted">Slots: {{ slots }}</div>
+        <div class="mb-0.5 font-semibold">
+          {{ stableReach.title }}
+          <span class="font-normal text-muted"
+            >({{ stableReach.total }},
+            {{ stableReach.preferred }} preferred)</span
+          >
+        </div>
+        <p v-if="!stableReach.rows.length" class="text-muted">
+          Nothing reaches this.
+        </p>
+        <div
+          v-for="row in stableReach.rows"
+          :key="row.id"
+          class="flex justify-between gap-2 py-0.5 hover:shadow-[inset_0_1px_0_var(--color-accent),inset_0_-1px_0_var(--color-accent)]"
+          data-testid="item-card-stable-row"
+        >
+          <span class="min-w-0 truncate">{{ row.name }}</span>
+          <span class="shrink-0 whitespace-nowrap text-accent">{{
+            "★".repeat(row.preferred)
+          }}</span>
+        </div>
+        <BaseButton
+          v-if="stableReach.more && stableGroup"
+          variant="link"
+          class="mt-0.5"
+          data-testid="item-card-stable-more"
+          @click="emit('open-stable')"
+          >and {{ stableReach.more }} more<Table
+        /></BaseButton>
+        <div v-else-if="stableReach.more" class="text-muted">
+          and {{ stableReach.more }} more
         </div>
       </div>
     </BaseCardBody>

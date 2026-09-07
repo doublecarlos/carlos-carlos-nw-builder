@@ -60,7 +60,7 @@ test("all three groups render with correct counts", async ({ page }) => {
   ).toHaveCount(3);
 
   const notInDemo = page.getByTestId("game-import-report-not-in-demo");
-  await expect(notInDemo.locator("summary")).toHaveText("Not in the demo (13)");
+  await expect(notInDemo.locator("summary")).toHaveText("Not in the demo (14)");
 });
 
 test("unrecognised ids are listed and the copy button puts them on the clipboard", async ({
@@ -101,9 +101,9 @@ test("'not in demo' is rolled up to sections, not individual slots", async ({
 
   const notInDemo = page.getByTestId("game-import-report-not-in-demo");
   const rows = notInDemo.getByTestId("game-import-report-notindemo-row");
-  // 13 authored groups roll up well over 100 individual missing slots -- a raw per-slot list
+  // 14 authored groups roll up well over 100 individual missing slots -- a raw per-slot list
   // would be unreadable, which is the whole point of the roll-up.
-  await expect(rows).toHaveCount(13);
+  await expect(rows).toHaveCount(14);
   await expect(rows.filter({ hasText: "Boons" })).toContainText("boon points");
 });
 

@@ -516,6 +516,22 @@
     "acc": 880
   },
   {
+    "id": "accursed-resolve",
+    "name": "Accursed Resolve",
+    "filter": "insignia_bonus",
+    "insigniaRecipe": ["crescent", "regal", "barbed", "enlightened"],
+    "longDescription": "You gain 3500 Power and Deflect while inflicted with any debuff.",
+    "bonuses": [
+      {
+        "bonus": "accursed-resolve",
+        "min": 0,
+        "max": 1,
+        "default": 0,
+        "label": "Proc"
+      }
+    ]
+  },
+  {
     "id": "action-bonus",
     "name": "Celestial Action Bonus",
     "filter": "enchantment_bonus",
@@ -540,6 +556,13 @@
     "gameIds": ["Pet_Alchemist_Player_Bonus"],
     "longDescription": "Alchemist companion power. Role: Offense, Utility.",
     "tags": ["companion_power:offense", "companion_power:utility"]
+  },
+  {
+    "id": "ally-s-resilience",
+    "name": "Ally's Resilience",
+    "filter": "insignia_bonus",
+    "insigniaRecipe": ["regal", "regal", "barbed", "barbed"],
+    "shortDescription": "Whenever you receive damage you grant stacks of Ally's Resilience to all nearby teammates. Each stack gives 0.25% Defense and Deflect. Max 20 stacks from all sources. 10s duration."
   },
   {
     "id": "angel-of-death",
@@ -645,6 +668,21 @@
     "name": "Arti: Volcano/Heart of Black Dragon",
     "filter": "artifact_call",
     "bonuses": ["arti-volcano-heart-of-black-dragon"]
+  },
+  {
+    "id": "artificer-s-enticement",
+    "name": "Artificer's Enticement",
+    "filter": "insignia_bonus",
+    "insigniaRecipe": ["crescent", "barbed", "illuminated", "barbed"],
+    "shortDescription": "Whenever you use an Artifact power, your cooldowns are reduced by 3 seconds. This effect overwrites Artificer's Persuasion."
+  },
+  {
+    "id": "assassin-s-covenant",
+    "name": "Assassin's Covenant",
+    "filter": "insignia_bonus",
+    "insigniaRecipe": ["regal", "enlightened", "enlightened"],
+    "longDescription": "You lose 1000 of your Defense, Deflect, Critical Avoidance, and Awareness. You gain 1000 Accuracy, Critical Severity, Critical Strike, and Combat Advantage.",
+    "bonuses": ["assassin-s-covenant"]
   },
   {
     "id": "assassin-s-knife",
@@ -1569,23 +1607,140 @@
     "combined_rating": 600,
     "power": 1125,
     "severity": 1125,
+    "hideFromPicker": true,
+    "bonuses": ["insignia-shape-unknown"]
+  },
+  {
+    "id": "brutality-barbed",
+    "name": "Celestial Barbed Insignia of Brutality",
+    "filter": "insignia",
+    "insigniaShape": "barbed",
+    "preferredVariant": "brutality-barbed-pref",
+    "il": 750,
+    "combined_rating": 600,
+    "power": 1125,
+    "severity": 1125,
     "gameIds": [
-      "Insignia_Enlightened_Power_Recovery_R6",
-      "Insignia_Crescent_Power_Recovery_R6",
-      "Insignia_Regal_Power_Recovery_R6",
-      "Insignia_Illuminated_Power_Recovery_R6",
-      "Insignia_Barbed_Power_Recovery_R6",
-      "Insignia_Enlightened_Power_Recovery_Account_R6",
-      "Insignia_Crescent_Power_Recovery_Account_R6",
-      "Insignia_Regal_Power_Recovery_Account_R6",
-      "Insignia_llluminated_Power_Recovery_Account_R6",
-      "Insignia_Barbed_Power_Recovery_Account_R6"
+      "Insignia_Barbed_Power_Recovery_Account_R6",
+      "Insignia_Barbed_Power_Recovery_R6"
     ]
+  },
+  {
+    "id": "brutality-barbed-pref",
+    "name": "Celestial Barbed Insignia of Brutality (Pref)",
+    "filter": "insignia",
+    "insigniaShape": "barbed",
+    "il": 900,
+    "combined_rating": 720,
+    "power": 1350,
+    "severity": 1350
+  },
+  {
+    "id": "brutality-crescent",
+    "name": "Celestial Crescent Insignia of Brutality",
+    "filter": "insignia",
+    "insigniaShape": "crescent",
+    "preferredVariant": "brutality-crescent-pref",
+    "il": 750,
+    "combined_rating": 600,
+    "power": 1125,
+    "severity": 1125,
+    "gameIds": [
+      "Insignia_Crescent_Power_Recovery_Account_R6",
+      "Insignia_Crescent_Power_Recovery_R6"
+    ]
+  },
+  {
+    "id": "brutality-crescent-pref",
+    "name": "Celestial Crescent Insignia of Brutality (Pref)",
+    "filter": "insignia",
+    "insigniaShape": "crescent",
+    "il": 900,
+    "combined_rating": 720,
+    "power": 1350,
+    "severity": 1350
+  },
+  {
+    "id": "brutality-enlightened",
+    "name": "Celestial Enlightened Insignia of Brutality",
+    "filter": "insignia",
+    "insigniaShape": "enlightened",
+    "preferredVariant": "brutality-enlightened-pref",
+    "il": 750,
+    "combined_rating": 600,
+    "power": 1125,
+    "severity": 1125,
+    "gameIds": [
+      "Insignia_Enlightened_Power_Recovery_Account_R6",
+      "Insignia_Enlightened_Power_Recovery_R6"
+    ]
+  },
+  {
+    "id": "brutality-enlightened-pref",
+    "name": "Celestial Enlightened Insignia of Brutality (Pref)",
+    "filter": "insignia",
+    "insigniaShape": "enlightened",
+    "il": 900,
+    "combined_rating": 720,
+    "power": 1350,
+    "severity": 1350
+  },
+  {
+    "id": "brutality-illuminated",
+    "name": "Celestial Illuminated Insignia of Brutality",
+    "filter": "insignia",
+    "insigniaShape": "illuminated",
+    "preferredVariant": "brutality-illuminated-pref",
+    "il": 750,
+    "combined_rating": 600,
+    "power": 1125,
+    "severity": 1125,
+    "gameIds": [
+      "Insignia_Illuminated_Power_Recovery_R6",
+      "Insignia_llluminated_Power_Recovery_Account_R6"
+    ]
+  },
+  {
+    "id": "brutality-illuminated-pref",
+    "name": "Celestial Illuminated Insignia of Brutality (Pref)",
+    "filter": "insignia",
+    "insigniaShape": "illuminated",
+    "il": 900,
+    "combined_rating": 720,
+    "power": 1350,
+    "severity": 1350
   },
   {
     "id": "brutality-pref",
     "name": "Celestial Brutality (Pref)",
     "filter": "insignia",
+    "il": 900,
+    "combined_rating": 720,
+    "power": 1350,
+    "severity": 1350,
+    "hideFromPicker": true,
+    "bonuses": ["insignia-shape-unknown"]
+  },
+  {
+    "id": "brutality-regal",
+    "name": "Celestial Regal Insignia of Brutality",
+    "filter": "insignia",
+    "insigniaShape": "regal",
+    "preferredVariant": "brutality-regal-pref",
+    "il": 750,
+    "combined_rating": 600,
+    "power": 1125,
+    "severity": 1125,
+    "gameIds": [
+      "Insignia_Regal_Power_Recovery_Account_R6",
+      "Insignia_Regal_Power_Recovery_R6"
+    ]
+  },
+  {
+    "id": "brutality-regal-pref",
+    "name": "Celestial Regal Insignia of Brutality (Pref)",
+    "filter": "insignia",
+    "insigniaShape": "regal",
     "il": 900,
     "combined_rating": 720,
     "power": 1350,
@@ -1632,6 +1787,37 @@
     "name": "Captain",
     "filter": "group_buff",
     "bonuses": ["captain"]
+  },
+  {
+    "id": "cautious-devotion",
+    "name": "Cautious Devotion",
+    "filter": "insignia_bonus",
+    "insigniaRecipe": ["crescent", "regal", "regal", "illuminated"],
+    "longDescription": "While at full health the player gets 1% outgoing healing and 500 Forte boost. Stacks up to 5 times.",
+    "bonuses": ["cautious-devotion"]
+  },
+  {
+    "id": "cavalry-s-alarm",
+    "name": "Cavalry's Alarm",
+    "filter": "insignia_bonus",
+    "insigniaRecipe": ["crescent", "crescent", "barbed", "enlightened"],
+    "longDescription": "Whenever you activate a Mount Combat Power, you gain 3000 to all of your ratings for 20 seconds. This effect overwrites Cavalry's Warning.",
+    "bonuses": [
+      {
+        "bonus": "cavalry-s-alarm",
+        "min": 0,
+        "max": 1,
+        "default": 0,
+        "label": "Proc"
+      }
+    ]
+  },
+  {
+    "id": "cavalry-s-haste",
+    "name": "Cavalry's Haste",
+    "filter": "insignia_bonus",
+    "insigniaRecipe": ["barbed", "enlightened", "regal", "barbed"],
+    "shortDescription": "Activating mount combat power reduces encounter power cooldowns by 4 seconds."
   },
   {
     "id": "celestial-fluid-aurora",
@@ -1720,14 +1906,80 @@
     "combined_rating": 600,
     "ca": 1125,
     "strike": 1125,
+    "hideFromPicker": true,
+    "bonuses": ["insignia-shape-unknown"]
+  },
+  {
+    "id": "celestial-skill-barbed",
+    "name": "Celestial Barbed Insignia of Skill",
+    "filter": "insignia",
+    "insigniaShape": "barbed",
+    "preferredVariant": "celestial-skill-barbed-pref",
+    "il": 750,
+    "combined_rating": 600,
+    "ca": 1125,
+    "strike": 1125,
+    "gameIds": ["Insignia_Barbed_Crit_Account_R6", "Insignia_Barbed_Crit_R6"]
+  },
+  {
+    "id": "celestial-skill-barbed-pref",
+    "name": "Celestial Barbed Insignia of Skill (Pref)",
+    "filter": "insignia",
+    "insigniaShape": "barbed",
+    "il": 900,
+    "combined_rating": 720,
+    "ca": 1350,
+    "strike": 1350
+  },
+  {
+    "id": "celestial-skill-crescent",
+    "name": "Celestial Crescent Insignia of Skill",
+    "filter": "insignia",
+    "insigniaShape": "crescent",
+    "preferredVariant": "celestial-skill-crescent-pref",
+    "il": 750,
+    "combined_rating": 600,
+    "ca": 1125,
+    "strike": 1125,
     "gameIds": [
-      "Insignia_Enlightened_Crit_R6",
-      "Insignia_Crescent_Crit_R6",
-      "Insignia_Barbed_Crit_R6",
-      "Insignia_Enlightened_Crit_Account_R6",
       "Insignia_Crescent_Crit_Account_R6",
-      "Insignia_Barbed_Crit_Account_R6"
+      "Insignia_Crescent_Crit_R6"
     ]
+  },
+  {
+    "id": "celestial-skill-crescent-pref",
+    "name": "Celestial Crescent Insignia of Skill (Pref)",
+    "filter": "insignia",
+    "insigniaShape": "crescent",
+    "il": 900,
+    "combined_rating": 720,
+    "ca": 1350,
+    "strike": 1350
+  },
+  {
+    "id": "celestial-skill-enlightened",
+    "name": "Celestial Enlightened Insignia of Skill",
+    "filter": "insignia",
+    "insigniaShape": "enlightened",
+    "preferredVariant": "celestial-skill-enlightened-pref",
+    "il": 750,
+    "combined_rating": 600,
+    "ca": 1125,
+    "strike": 1125,
+    "gameIds": [
+      "Insignia_Enlightened_Crit_Account_R6",
+      "Insignia_Enlightened_Crit_R6"
+    ]
+  },
+  {
+    "id": "celestial-skill-enlightened-pref",
+    "name": "Celestial Enlightened Insignia of Skill (Pref)",
+    "filter": "insignia",
+    "insigniaShape": "enlightened",
+    "il": 900,
+    "combined_rating": 720,
+    "ca": 1350,
+    "strike": 1350
   },
   {
     "id": "celestial-skill-pref",
@@ -1736,7 +1988,9 @@
     "il": 900,
     "combined_rating": 720,
     "ca": 1350,
-    "strike": 1350
+    "strike": 1350,
+    "hideFromPicker": true,
+    "bonuses": ["insignia-shape-unknown"]
   },
   {
     "id": "cha-lua-accuracy-severity",
@@ -1983,6 +2237,13 @@
     "gameIds": ["Pet_Enhancement_Defense_Down"]
   },
   {
+    "id": "defender-s-retort",
+    "name": "Defender's Retort",
+    "filter": "insignia_bonus",
+    "insigniaRecipe": ["barbed", "illuminated", "enlightened", "enlightened"],
+    "shortDescription": "Whenever you receive damage, explode in a 15' radius, dealing 200 magnitude damage to foes. This effect can only trigger once every 10 seconds."
+  },
+  {
     "id": "demogorgon-s-reach",
     "name": "Demogorgon's Reach",
     "filter": "artifact",
@@ -2032,23 +2293,88 @@
     "id": "dominance",
     "name": "Celestial Dominance",
     "filter": "insignia",
-    "gameIds": [
-      "Insignia_Barbed_Power_R6",
-      "Insignia_Regal_Power_R6",
-      "Insignia_Illuminated_Power_R6",
-      "Insignia_Barbed_Power_Account_R6",
-      "Insignia_Regal_Power_Account_R6",
-      "Insignia_Illuminated_Power_Account_R6"
-    ],
     "il": 750,
     "combined_rating": 600,
     "power": 1125,
-    "forte": 1125
+    "forte": 1125,
+    "hideFromPicker": true,
+    "bonuses": ["insignia-shape-unknown"]
+  },
+  {
+    "id": "dominance-barbed",
+    "name": "Celestial Barbed Insignia of Dominance",
+    "filter": "insignia",
+    "insigniaShape": "barbed",
+    "preferredVariant": "dominance-barbed-pref",
+    "il": 750,
+    "combined_rating": 600,
+    "power": 1125,
+    "forte": 1125,
+    "gameIds": ["Insignia_Barbed_Power_Account_R6", "Insignia_Barbed_Power_R6"]
+  },
+  {
+    "id": "dominance-barbed-pref",
+    "name": "Celestial Barbed Insignia of Dominance (Pref)",
+    "filter": "insignia",
+    "insigniaShape": "barbed",
+    "il": 900,
+    "combined_rating": 720,
+    "power": 1350,
+    "forte": 1350
+  },
+  {
+    "id": "dominance-illuminated",
+    "name": "Celestial Illuminated Insignia of Dominance",
+    "filter": "insignia",
+    "insigniaShape": "illuminated",
+    "preferredVariant": "dominance-illuminated-pref",
+    "il": 750,
+    "combined_rating": 600,
+    "power": 1125,
+    "forte": 1125,
+    "gameIds": [
+      "Insignia_Illuminated_Power_Account_R6",
+      "Insignia_Illuminated_Power_R6"
+    ]
+  },
+  {
+    "id": "dominance-illuminated-pref",
+    "name": "Celestial Illuminated Insignia of Dominance (Pref)",
+    "filter": "insignia",
+    "insigniaShape": "illuminated",
+    "il": 900,
+    "combined_rating": 720,
+    "power": 1350,
+    "forte": 1350
   },
   {
     "id": "dominance-pref",
     "name": "Celestial Dominance (Pref)",
     "filter": "insignia",
+    "il": 900,
+    "combined_rating": 720,
+    "power": 1350,
+    "forte": 1350,
+    "hideFromPicker": true,
+    "bonuses": ["insignia-shape-unknown"]
+  },
+  {
+    "id": "dominance-regal",
+    "name": "Celestial Regal Insignia of Dominance",
+    "filter": "insignia",
+    "insigniaShape": "regal",
+    "preferredVariant": "dominance-regal-pref",
+    "il": 750,
+    "combined_rating": 600,
+    "power": 1125,
+    "forte": 1125,
+    "gameIds": ["Insignia_Regal_Power_Account_R6", "Insignia_Regal_Power_R6"]
+  },
+  {
+    "id": "dominance-regal-pref",
+    "name": "Celestial Regal Insignia of Dominance (Pref)",
+    "filter": "insignia",
+    "insigniaShape": "regal",
     "il": 900,
     "combined_rating": 720,
     "power": 1350,
@@ -2107,6 +2433,13 @@
     "allowedClass": ["bard", "warlock"]
   },
   {
+    "id": "enchanter-s-hex",
+    "name": "Enchanter's Hex",
+    "filter": "insignia_bonus",
+    "insigniaRecipe": ["regal", "barbed", "enlightened", "enlightened"],
+    "shortDescription": "When you use an Encounter or Daily power with a control effect on a target, deal an extra 50 magnitude damage to that target. This effect does not stack."
+  },
+  {
     "id": "enemy-type-boss",
     "name": "Enemy: Boss",
     "filter": "scenario_flag"
@@ -2126,7 +2459,7 @@
     "id": "executioner-s-covenant",
     "name": "Executioner's Covenant",
     "filter": "insignia_bonus",
-    "maxCopies": 2,
+    "insigniaRecipe": ["crescent", "regal", "enlightened", "illuminated"],
     "bonuses": ["executioner-s-covenant"]
   },
   {
@@ -2233,7 +2566,7 @@
     "id": "gladiator-s-guile",
     "name": "Gladiator's Guile",
     "filter": "insignia_bonus",
-    "maxCopies": 2,
+    "insigniaRecipe": ["regal", "illuminated", "enlightened"],
     "bonuses": ["gladiator-s-guile"]
   },
   {
@@ -2271,6 +2604,14 @@
     "bonuses": ["grand-summer-feast-legacy"]
   },
   {
+    "id": "guardian-s-spirit",
+    "name": "Guardian's Spirit",
+    "filter": "insignia_bonus",
+    "insigniaRecipe": ["crescent", "regal", "barbed", "illuminated"],
+    "longDescription": "Your gain 2500 / 3000 / 3500 additional defense and 8% / 12% / 15% additional maximum health if 1 / 2 / 3 instances of this set bonus are active.",
+    "bonuses": ["guardian-s-spirit"]
+  },
+  {
     "id": "hero-soul-forte-celestial",
     "name": "Hero Soul",
     "filter": "mount_equip",
@@ -2283,6 +2624,22 @@
     "name": "Hot Wings",
     "filter": "consumable_event_food",
     "bonuses": ["hot-wings-accuracy-severity"]
+  },
+  {
+    "id": "ice-cold-aggression",
+    "name": "Ice Cold Aggression",
+    "filter": "insignia_bonus",
+    "insigniaRecipe": ["regal", "enlightened", "enlightened", "enlightened"],
+    "longDescription": "You gain 2000 / 3500 / 4500 Power, you gain 1500 / 2750 / 3750 Critical Strike and Critical Severity but you lose 1000 / 2000 / 3000 Incoming Healing if 1/2 / 3 instances of this set bonus are active.",
+    "bonuses": ["ice-cold-aggression"]
+  },
+  {
+    "id": "ice-cold-resolve",
+    "name": "Ice Cold Resolve",
+    "filter": "insignia_bonus",
+    "insigniaRecipe": ["crescent", "barbed", "illuminated", "illuminated"],
+    "longDescription": "You gain 2500 / 4500 / 6000 Power and Defense but lose 1000 / 2000 / 3000 Incoming Healing if 1 / 2 / 3 instances of this set bonus are active.",
+    "bonuses": ["ice-cold-resolve"]
   },
   {
     "id": "inner-balance",
@@ -2315,6 +2672,13 @@
     "name": "Invocation: Severity",
     "filter": "consumable_blessing",
     "bonuses": ["invocation-severity"]
+  },
+  {
+    "id": "knight-s-condemnation",
+    "name": "Knight's Condemnation",
+    "filter": "insignia_bonus",
+    "insigniaRecipe": ["crescent", "crescent", "regal", "barbed"],
+    "shortDescription": "Whenever you receive Combat Advantage damage from an attack, you are healed for 7.5% of your Maximum Hit Points over 6s. Cooldown 10s This effect overwrites Knight's Rebuke."
   },
   {
     "id": "leveling-cha-12",
@@ -3004,6 +3368,13 @@
     "allowedClass": ["cleric"],
     "tags": ["exclusive:arbiter"],
     "bonuses": ["paragon-exclusive"]
+  },
+  {
+    "id": "lionheart-s-perserverance",
+    "name": "Lionheart's Perserverance",
+    "filter": "insignia_bonus",
+    "insigniaRecipe": ["regal", "barbed", "illuminated", "enlightened"],
+    "shortDescription": "Whenever you are below 30% of your Maximum Hit Points, you instantly recover 10% of your Stamina and 20% of your Maximum Hit Points. This effect can only occur once every 30 seconds."
   },
   {
     "id": "location-thay",
@@ -4261,6 +4632,22 @@
     "bonuses": ["m33-eagle-s-mastery-lesser"]
   },
   {
+    "id": "magistrate-patience",
+    "name": "Magistrate Patience",
+    "filter": "insignia_bonus",
+    "insigniaRecipe": ["barbed", "barbed", "enlightened"],
+    "longDescription": "Whenever you receive damage from a Critical Strike, you gain 2500 Critical Avoidance and up to 4 teammates receive 2500 Defense for 5 seconds. This can trigger once every 10 seconds.",
+    "bonuses": [
+      {
+        "bonus": "magistrate-patience",
+        "min": 0,
+        "max": 1,
+        "default": 0,
+        "label": "Proc"
+      }
+    ]
+  },
+  {
     "id": "marco-s",
     "name": "M27 Marco's Mystic Marker",
     "filter": "artifact",
@@ -4283,6 +4670,38 @@
     "allowedClass": ["bard"],
     "tags": ["exclusive:songblade"],
     "bonuses": ["paragon-exclusive"]
+  },
+  {
+    "id": "master-cruelty",
+    "name": "Master's Cruelty",
+    "filter": "insignia_bonus",
+    "insigniaRecipe": ["crescent", "illuminated", "enlightened", "enlightened"],
+    "longDescription": "When your Stamina is less than 25% or over 75%, gain 5000 Critical Severity. Stacks up to 3 times with diminishing returns after the 1st.",
+    "bonuses": [
+      {
+        "bonus": "master-cruelty",
+        "min": 0,
+        "max": 1,
+        "default": 1,
+        "label": "Proc"
+      }
+    ]
+  },
+  {
+    "id": "master-s-precision",
+    "name": "Master's Precision",
+    "filter": "insignia_bonus",
+    "insigniaRecipe": ["crescent", "barbed", "enlightened", "enlightened"],
+    "longDescription": "When your Stamina is between 25% and 75%, gain 5000 Critical Strike.",
+    "bonuses": [
+      {
+        "bonus": "master-s-precision",
+        "min": 0,
+        "max": 1,
+        "default": 0,
+        "label": "Proc"
+      }
+    ]
   },
   {
     "id": "masterwork-sets-2",
@@ -4310,7 +4729,7 @@
     "id": "mender-s-covenant",
     "name": "Mender's Covenant",
     "filter": "insignia_bonus",
-    "maxCopies": 2,
+    "insigniaRecipe": ["crescent", "barbed", "illuminated", "enlightened"],
     "bonuses": ["mender-s-covenant"]
   },
   {
@@ -4708,10 +5127,34 @@
     "strike": 1312.5
   },
   {
+    "id": "predator-s-instinct",
+    "name": "Predator's Instinct",
+    "filter": "insignia_bonus",
+    "insigniaRecipe": ["crescent", "regal", "regal", "enlightened"],
+    "longDescription": "Whenever you activate a Mount Combat Power, you gain 3000 to Accuracy, Combat Advantage, Critical Strike and Critical Severity for 20 seconds.",
+    "bonuses": [
+      {
+        "bonus": "predator-s-instinct",
+        "min": 0,
+        "max": 1,
+        "default": 0,
+        "label": "Proc"
+      }
+    ]
+  },
+  {
     "id": "prime-rib-power",
     "name": "Prime Rib",
     "filter": "consumable_food",
     "bonuses": ["prime-rib-power"]
+  },
+  {
+    "id": "protector-s-covenant",
+    "name": "Protector's Covenant",
+    "filter": "insignia_bonus",
+    "insigniaRecipe": ["regal", "barbed", "barbed", "illuminated"],
+    "longDescription": "You lose 1500 of your Critical Severity, Critical Strike, Combat Advantage, and Power. You gain 1500 Defense, Critical Avoidance, Deflect, and Awareness.",
+    "bonuses": ["protector-s-covenant"]
   },
   {
     "id": "providence-celestial",
@@ -5106,6 +5549,22 @@
     ]
   },
   {
+    "id": "shepherd-s-devotion",
+    "name": "Shepherd's Devotion",
+    "filter": "insignia_bonus",
+    "insigniaRecipe": ["regal", "barbed", "illuminated"],
+    "longDescription": "Whenever you use a Daily power, you and your teammates’ Defense is increased by 1500, and their Movement Speed is increased by 10%.",
+    "bonuses": [
+      {
+        "bonus": "shepherd-s-devotion",
+        "min": 0,
+        "max": 1,
+        "default": 0,
+        "label": "Proc"
+      }
+    ]
+  },
+  {
     "id": "slayer-overload",
     "name": "Slayer Overload",
     "filter": "overload",
@@ -5205,6 +5664,1180 @@
     "bonuses": ["squash-soup-strike-severity"]
   },
   {
+    "id": "stable-armored-pale-horse",
+    "name": "Armored Pale Horse",
+    "filter": "mount",
+    "insigniaSlots": [
+      {
+        "shape": "crescent"
+      },
+      {
+        "shape": "crescent"
+      },
+      {
+        "shape": "regal"
+      },
+      {
+        "universal": true,
+        "preferred": "illuminated"
+      }
+    ],
+    "shortDescription": "Insignia slots: crescent, crescent, regal, universal (prefers illuminated)."
+  },
+  {
+    "id": "stable-balgora",
+    "name": "Balgora",
+    "filter": "mount",
+    "insigniaSlots": [
+      {
+        "shape": "illuminated"
+      },
+      {
+        "shape": "crescent"
+      },
+      {
+        "universal": true
+      },
+      {
+        "universal": true,
+        "preferred": "regal"
+      }
+    ],
+    "shortDescription": "Insignia slots: illuminated, crescent, universal, universal (prefers regal)."
+  },
+  {
+    "id": "stable-beholder-rune-board",
+    "name": "Beholder Rune Board",
+    "filter": "mount",
+    "insigniaSlots": [
+      {
+        "shape": "crescent"
+      },
+      {
+        "shape": "regal"
+      },
+      {
+        "universal": true
+      },
+      {
+        "universal": true,
+        "preferred": "enlightened"
+      }
+    ],
+    "shortDescription": "Insignia slots: crescent, regal, universal, universal (prefers enlightened)."
+  },
+  {
+    "id": "stable-bestial-fire-archon",
+    "name": "Bestial Fire Archon",
+    "filter": "mount",
+    "insigniaSlots": [
+      {
+        "shape": "illuminated"
+      },
+      {
+        "shape": "regal"
+      },
+      {
+        "universal": true
+      },
+      {
+        "universal": true,
+        "preferred": "barbed"
+      }
+    ],
+    "shortDescription": "Insignia slots: illuminated, regal, universal, universal (prefers barbed)."
+  },
+  {
+    "id": "stable-brain-stealer-dragon",
+    "name": "Brain Stealer Dragon",
+    "filter": "mount",
+    "insigniaSlots": [
+      {
+        "shape": "crescent"
+      },
+      {
+        "shape": "regal"
+      },
+      {
+        "universal": true
+      },
+      {
+        "universal": true,
+        "preferred": "regal"
+      }
+    ],
+    "shortDescription": "Insignia slots: crescent, regal, universal, universal (prefers regal)."
+  },
+  {
+    "id": "stable-cactus-the-hedgehog",
+    "name": "Cactus the Hedgehog",
+    "filter": "mount",
+    "insigniaSlots": [
+      {
+        "shape": "regal"
+      },
+      {
+        "shape": "barbed"
+      },
+      {
+        "universal": true
+      },
+      {
+        "universal": true,
+        "preferred": "illuminated"
+      }
+    ],
+    "shortDescription": "Insignia slots: regal, barbed, universal, universal (prefers illuminated)."
+  },
+  {
+    "id": "stable-crimson-crystal-horse",
+    "name": "Crimson Crystal Horse",
+    "filter": "mount",
+    "insigniaSlots": [
+      {
+        "shape": "crescent"
+      },
+      {
+        "universal": true,
+        "preferred": "regal"
+      },
+      {
+        "universal": true,
+        "preferred": "regal"
+      },
+      {
+        "universal": true
+      }
+    ],
+    "shortDescription": "Insignia slots: crescent, universal (prefers regal), universal (prefers regal), universal."
+  },
+  {
+    "id": "stable-dark-butterfly-wings",
+    "name": "Dark Butterfly Wings",
+    "filter": "mount",
+    "insigniaSlots": [
+      {
+        "shape": "regal"
+      },
+      {
+        "shape": "illuminated"
+      },
+      {
+        "universal": true
+      },
+      {
+        "universal": true,
+        "preferred": "barbed"
+      }
+    ],
+    "shortDescription": "Insignia slots: regal, illuminated, universal, universal (prefers barbed)."
+  },
+  {
+    "id": "stable-deadly-driderform",
+    "name": "Deadly Driderform",
+    "filter": "mount",
+    "insigniaSlots": [
+      {
+        "shape": "regal"
+      },
+      {
+        "shape": "barbed"
+      },
+      {
+        "universal": true
+      },
+      {
+        "universal": true,
+        "preferred": "illuminated"
+      }
+    ],
+    "shortDescription": "Insignia slots: regal, barbed, universal, universal (prefers illuminated)."
+  },
+  {
+    "id": "stable-demon-wings",
+    "name": "Demon Wings",
+    "filter": "mount",
+    "insigniaSlots": [
+      {
+        "shape": "enlightened"
+      },
+      {
+        "shape": "regal"
+      },
+      {
+        "universal": true
+      },
+      {
+        "universal": true,
+        "preferred": "barbed"
+      }
+    ],
+    "shortDescription": "Insignia slots: enlightened, regal, universal, universal (prefers barbed)."
+  },
+  {
+    "id": "stable-demonic-gravehound",
+    "name": "Demonic Gravehound",
+    "filter": "mount",
+    "insigniaSlots": [
+      {
+        "shape": "enlightened"
+      },
+      {
+        "shape": "barbed"
+      },
+      {
+        "universal": true
+      },
+      {
+        "universal": true,
+        "preferred": "crescent"
+      }
+    ],
+    "shortDescription": "Insignia slots: enlightened, barbed, universal, universal (prefers crescent)."
+  },
+  {
+    "id": "stable-dragon-chick",
+    "name": "Dragon Chick",
+    "filter": "mount",
+    "insigniaSlots": [
+      {
+        "shape": "regal"
+      },
+      {
+        "shape": "regal"
+      },
+      {
+        "shape": "barbed"
+      },
+      {
+        "universal": true,
+        "preferred": "enlightened"
+      }
+    ],
+    "shortDescription": "Insignia slots: regal, regal, barbed, universal (prefers enlightened)."
+  },
+  {
+    "id": "stable-dragon-chicken",
+    "name": "Dragon Chicken",
+    "filter": "mount",
+    "insigniaSlots": [
+      {
+        "shape": "barbed"
+      },
+      {
+        "shape": "enlightened"
+      },
+      {
+        "universal": true
+      },
+      {
+        "universal": true,
+        "preferred": "illuminated"
+      }
+    ],
+    "shortDescription": "Insignia slots: barbed, enlightened, universal, universal (prefers illuminated)."
+  },
+  {
+    "id": "stable-ebon-riding-lizard",
+    "name": "Ebon Riding Lizard",
+    "filter": "mount",
+    "insigniaSlots": [
+      {
+        "shape": "crescent"
+      },
+      {
+        "shape": "barbed"
+      },
+      {
+        "universal": true
+      },
+      {
+        "universal": true,
+        "preferred": "enlightened"
+      }
+    ],
+    "shortDescription": "Insignia slots: crescent, barbed, universal, universal (prefers enlightened)."
+  },
+  {
+    "id": "stable-forever-familiar",
+    "name": "Forever Familiar",
+    "filter": "mount",
+    "insigniaSlots": [
+      {
+        "shape": "enlightened"
+      },
+      {
+        "shape": "barbed"
+      },
+      {
+        "shape": "regal"
+      },
+      {
+        "universal": true,
+        "preferred": "crescent"
+      }
+    ],
+    "shortDescription": "Insignia slots: enlightened, barbed, regal, universal (prefers crescent)."
+  },
+  {
+    "id": "stable-giant-space-hamster",
+    "name": "Giant Space Hamster",
+    "filter": "mount",
+    "insigniaSlots": [
+      {
+        "shape": "crescent"
+      },
+      {
+        "shape": "enlightened"
+      },
+      {
+        "universal": true
+      },
+      {
+        "universal": true,
+        "preferred": "regal"
+      }
+    ],
+    "shortDescription": "Insignia slots: crescent, enlightened, universal, universal (prefers regal)."
+  },
+  {
+    "id": "stable-gilded-goose",
+    "name": "Gilded Goose",
+    "filter": "mount",
+    "insigniaSlots": [
+      {
+        "shape": "barbed"
+      },
+      {
+        "shape": "enlightened"
+      },
+      {
+        "shape": "enlightened"
+      },
+      {
+        "universal": true,
+        "preferred": "crescent"
+      }
+    ],
+    "shortDescription": "Insignia slots: barbed, enlightened, enlightened, universal (prefers crescent)."
+  },
+  {
+    "id": "stable-glacier-prowler",
+    "name": "Glacier Prowler",
+    "filter": "mount",
+    "insigniaSlots": [
+      {
+        "shape": "crescent"
+      },
+      {
+        "shape": "illuminated"
+      },
+      {
+        "universal": true
+      },
+      {
+        "universal": true,
+        "preferred": "enlightened"
+      }
+    ],
+    "shortDescription": "Insignia slots: crescent, illuminated, universal, universal (prefers enlightened)."
+  },
+  {
+    "id": "stable-glorious-undead-lion",
+    "name": "Glorious Undead Lion",
+    "filter": "mount",
+    "insigniaSlots": [
+      {
+        "shape": "barbed"
+      },
+      {
+        "shape": "enlightened"
+      },
+      {
+        "universal": true
+      },
+      {
+        "universal": true,
+        "preferred": "barbed"
+      }
+    ],
+    "shortDescription": "Insignia slots: barbed, enlightened, universal, universal (prefers barbed)."
+  },
+  {
+    "id": "stable-golden-armored-griffon",
+    "name": "Golden Armored Griffon",
+    "filter": "mount",
+    "insigniaSlots": [
+      {
+        "shape": "crescent"
+      },
+      {
+        "shape": "illuminated"
+      },
+      {
+        "universal": true
+      },
+      {
+        "universal": true,
+        "preferred": "enlightened"
+      }
+    ],
+    "shortDescription": "Insignia slots: crescent, illuminated, universal, universal (prefers enlightened)."
+  },
+  {
+    "id": "stable-golden-goose",
+    "name": "Golden Goose",
+    "filter": "mount",
+    "insigniaSlots": [
+      {
+        "shape": "regal"
+      },
+      {
+        "shape": "regal"
+      },
+      {
+        "shape": "barbed"
+      },
+      {
+        "universal": true,
+        "preferred": "enlightened"
+      }
+    ],
+    "shortDescription": "Insignia slots: regal, regal, barbed, universal (prefers enlightened)."
+  },
+  {
+    "id": "stable-golden-rage-drake",
+    "name": "Golden Rage Drake",
+    "filter": "mount",
+    "insigniaSlots": [
+      {
+        "shape": "crescent"
+      },
+      {
+        "shape": "barbed"
+      },
+      {
+        "shape": "enlightened"
+      },
+      {
+        "universal": true,
+        "preferred": "enlightened"
+      }
+    ],
+    "shortDescription": "Insignia slots: crescent, barbed, enlightened, universal (prefers enlightened)."
+  },
+  {
+    "id": "stable-gravewake",
+    "name": "Gravewake",
+    "filter": "mount",
+    "insigniaSlots": [
+      {
+        "shape": "barbed"
+      },
+      {
+        "shape": "enlightened"
+      },
+      {
+        "shape": "crescent"
+      },
+      {
+        "universal": true,
+        "preferred": "crescent"
+      }
+    ],
+    "shortDescription": "Insignia slots: barbed, enlightened, crescent, universal (prefers crescent)."
+  },
+  {
+    "id": "stable-grubshank-the-burdened",
+    "name": "Grubshank the Burdened",
+    "filter": "mount",
+    "insigniaSlots": [
+      {
+        "shape": "enlightened"
+      },
+      {
+        "shape": "illuminated"
+      },
+      {
+        "universal": true
+      },
+      {
+        "universal": true,
+        "preferred": "enlightened"
+      }
+    ],
+    "shortDescription": "Insignia slots: enlightened, illuminated, universal, universal (prefers enlightened)."
+  },
+  {
+    "id": "stable-hag-s-enchanted-cauldron",
+    "name": "Hag's Enchanted Cauldron",
+    "filter": "mount",
+    "insigniaSlots": [
+      {
+        "shape": "crescent"
+      },
+      {
+        "shape": "regal"
+      },
+      {
+        "universal": true
+      },
+      {
+        "universal": true,
+        "preferred": "illuminated"
+      }
+    ],
+    "shortDescription": "Insignia slots: crescent, regal, universal, universal (prefers illuminated)."
+  },
+  {
+    "id": "stable-hemovore-gelatinous-cube",
+    "name": "Hemovore Gelatinous Cube",
+    "filter": "mount",
+    "insigniaSlots": [
+      {
+        "shape": "regal"
+      },
+      {
+        "shape": "barbed"
+      },
+      {
+        "universal": true
+      },
+      {
+        "universal": true
+      }
+    ],
+    "shortDescription": "Insignia slots: regal, barbed, universal, universal."
+  },
+  {
+    "id": "stable-hotenow-rune-board",
+    "name": "Hotenow Rune Board",
+    "filter": "mount",
+    "insigniaSlots": [
+      {
+        "shape": "regal"
+      },
+      {
+        "shape": "crescent"
+      },
+      {
+        "shape": "illuminated"
+      },
+      {
+        "universal": true,
+        "preferred": "enlightened"
+      }
+    ],
+    "shortDescription": "Insignia slots: regal, crescent, illuminated, universal (prefers enlightened)."
+  },
+  {
+    "id": "stable-immortal-jade-horse",
+    "name": "Immortal Jade Horse",
+    "filter": "mount",
+    "insigniaSlots": [
+      {
+        "shape": "barbed"
+      },
+      {
+        "shape": "regal"
+      },
+      {
+        "universal": true
+      },
+      {
+        "universal": true
+      }
+    ],
+    "shortDescription": "Insignia slots: barbed, regal, universal, universal."
+  },
+  {
+    "id": "stable-maltese-tiger",
+    "name": "Maltese Tiger",
+    "filter": "mount",
+    "insigniaSlots": [
+      {
+        "shape": "regal"
+      },
+      {
+        "shape": "barbed"
+      },
+      {
+        "shape": "enlightened"
+      },
+      {
+        "universal": true,
+        "preferred": "crescent"
+      }
+    ],
+    "shortDescription": "Insignia slots: regal, barbed, enlightened, universal (prefers crescent)."
+  },
+  {
+    "id": "stable-mechanical-goose",
+    "name": "Mechanical Goose",
+    "filter": "mount",
+    "insigniaSlots": [
+      {
+        "shape": "regal"
+      },
+      {
+        "shape": "regal"
+      },
+      {
+        "shape": "crescent"
+      },
+      {
+        "universal": true,
+        "preferred": "enlightened"
+      }
+    ],
+    "shortDescription": "Insignia slots: regal, regal, crescent, universal (prefers enlightened)."
+  },
+  {
+    "id": "stable-midnight-s-plume",
+    "name": "Midnight's Plume",
+    "filter": "mount",
+    "insigniaSlots": [
+      {
+        "shape": "regal"
+      },
+      {
+        "shape": "enlightened"
+      },
+      {
+        "shape": "crescent"
+      },
+      {
+        "universal": true,
+        "preferred": "illuminated"
+      }
+    ],
+    "shortDescription": "Insignia slots: regal, enlightened, crescent, universal (prefers illuminated)."
+  },
+  {
+    "id": "stable-mystical-butterfly-wings",
+    "name": "Mystical Butterfly Wings",
+    "filter": "mount",
+    "insigniaSlots": [
+      {
+        "shape": "crescent"
+      },
+      {
+        "shape": "barbed"
+      },
+      {
+        "universal": true
+      },
+      {
+        "universal": true,
+        "preferred": "enlightened"
+      }
+    ],
+    "shortDescription": "Insignia slots: crescent, barbed, universal, universal (prefers enlightened)."
+  },
+  {
+    "id": "stable-neo-eclipse-lion",
+    "name": "Neo Eclipse Lion",
+    "filter": "mount",
+    "insigniaSlots": [
+      {
+        "shape": "crescent"
+      },
+      {
+        "shape": "regal"
+      },
+      {
+        "universal": true
+      },
+      {
+        "universal": true,
+        "preferred": "illuminated"
+      }
+    ],
+    "shortDescription": "Insignia slots: crescent, regal, universal, universal (prefers illuminated)."
+  },
+  {
+    "id": "stable-neverwinter-s-hand",
+    "name": "Neverwinter's Hand",
+    "filter": "mount",
+    "insigniaSlots": [
+      {
+        "shape": "enlightened"
+      },
+      {
+        "shape": "illuminated"
+      },
+      {
+        "universal": true
+      },
+      {
+        "universal": true,
+        "preferred": "crescent"
+      }
+    ],
+    "shortDescription": "Insignia slots: enlightened, illuminated, universal, universal (prefers crescent)."
+  },
+  {
+    "id": "stable-new-year-s-dragonnel",
+    "name": "New Year's Dragonnel",
+    "filter": "mount",
+    "insigniaSlots": [
+      {
+        "shape": "regal"
+      },
+      {
+        "shape": "barbed"
+      },
+      {
+        "shape": "barbed"
+      },
+      {
+        "universal": true,
+        "preferred": "enlightened"
+      }
+    ],
+    "shortDescription": "Insignia slots: regal, barbed, barbed, universal (prefers enlightened)."
+  },
+  {
+    "id": "stable-ollie-the-octie",
+    "name": "Ollie the Octie",
+    "filter": "mount",
+    "insigniaSlots": [
+      {
+        "shape": "barbed"
+      },
+      {
+        "shape": "enlightened"
+      },
+      {
+        "universal": true
+      },
+      {
+        "universal": true,
+        "preferred": "barbed"
+      }
+    ],
+    "shortDescription": "Insignia slots: barbed, enlightened, universal, universal (prefers barbed)."
+  },
+  {
+    "id": "stable-phantom-panther",
+    "name": "Phantom Panther",
+    "filter": "mount",
+    "insigniaSlots": [
+      {
+        "shape": "barbed"
+      },
+      {
+        "shape": "enlightened"
+      },
+      {
+        "universal": true
+      },
+      {
+        "universal": true,
+        "preferred": "barbed"
+      }
+    ],
+    "shortDescription": "Insignia slots: barbed, enlightened, universal, universal (prefers barbed)."
+  },
+  {
+    "id": "stable-pink-sylph-wings",
+    "name": "Pink Sylph Wings",
+    "filter": "mount",
+    "insigniaSlots": [
+      {
+        "shape": "regal"
+      },
+      {
+        "shape": "barbed"
+      },
+      {
+        "universal": true
+      },
+      {
+        "universal": true,
+        "preferred": "barbed"
+      }
+    ],
+    "shortDescription": "Insignia slots: regal, barbed, universal, universal (prefers barbed)."
+  },
+  {
+    "id": "stable-protective-pink-yeti",
+    "name": "Protective Pink Yeti",
+    "filter": "mount",
+    "insigniaSlots": [
+      {
+        "shape": "crescent"
+      },
+      {
+        "shape": "illuminated"
+      },
+      {
+        "shape": "illuminated"
+      },
+      {
+        "universal": true,
+        "preferred": "enlightened"
+      }
+    ],
+    "shortDescription": "Insignia slots: crescent, illuminated, illuminated, universal (prefers enlightened)."
+  },
+  {
+    "id": "stable-reanimated-chariot",
+    "name": "Reanimated Chariot",
+    "filter": "mount",
+    "insigniaSlots": [
+      {
+        "shape": "barbed"
+      },
+      {
+        "shape": "enlightened"
+      },
+      {
+        "shape": "regal"
+      },
+      {
+        "universal": true,
+        "preferred": "enlightened"
+      }
+    ],
+    "shortDescription": "Insignia slots: barbed, enlightened, regal, universal (prefers enlightened)."
+  },
+  {
+    "id": "stable-reclusive-rothe",
+    "name": "Reclusive Rothe",
+    "filter": "mount",
+    "insigniaSlots": [
+      {
+        "shape": "crescent"
+      },
+      {
+        "shape": "regal"
+      },
+      {
+        "shape": "barbed"
+      },
+      {
+        "universal": true,
+        "preferred": "illuminated"
+      }
+    ],
+    "shortDescription": "Insignia slots: crescent, regal, barbed, universal (prefers illuminated)."
+  },
+  {
+    "id": "stable-red-dragon",
+    "name": "Red Dragon",
+    "filter": "mount",
+    "insigniaSlots": [
+      {
+        "shape": "barbed"
+      },
+      {
+        "shape": "illuminated"
+      },
+      {
+        "universal": true
+      },
+      {
+        "universal": true,
+        "preferred": "enlightened"
+      }
+    ],
+    "shortDescription": "Insignia slots: barbed, illuminated, universal, universal (prefers enlightened)."
+  },
+  {
+    "id": "stable-red-dragon-wings",
+    "name": "Red Dragon Wings",
+    "filter": "mount",
+    "insigniaSlots": [
+      {
+        "shape": "regal"
+      },
+      {
+        "shape": "barbed"
+      },
+      {
+        "shape": "illuminated"
+      },
+      {
+        "universal": true,
+        "preferred": "barbed"
+      }
+    ],
+    "shortDescription": "Insignia slots: regal, barbed, illuminated, universal (prefers barbed)."
+  },
+  {
+    "id": "stable-red-mountain-fox",
+    "name": "Red Mountain Fox",
+    "filter": "mount",
+    "insigniaSlots": [
+      {
+        "shape": "enlightened"
+      },
+      {
+        "shape": "barbed"
+      },
+      {
+        "universal": true
+      },
+      {
+        "universal": true,
+        "preferred": "regal"
+      }
+    ],
+    "shortDescription": "Insignia slots: enlightened, barbed, universal, universal (prefers regal)."
+  },
+  {
+    "id": "stable-regal-cobra",
+    "name": "Regal Cobra",
+    "filter": "mount",
+    "insigniaSlots": [
+      {
+        "shape": "enlightened"
+      },
+      {
+        "shape": "regal"
+      },
+      {
+        "universal": true
+      },
+      {
+        "universal": true
+      }
+    ],
+    "shortDescription": "Insignia slots: enlightened, regal, universal, universal."
+  },
+  {
+    "id": "stable-rothe-traveler",
+    "name": "Rothe Traveler",
+    "filter": "mount",
+    "insigniaSlots": [
+      {
+        "shape": "crescent"
+      },
+      {
+        "shape": "illuminated"
+      },
+      {
+        "universal": true
+      },
+      {
+        "universal": true,
+        "preferred": "enlightened"
+      }
+    ],
+    "shortDescription": "Insignia slots: crescent, illuminated, universal, universal (prefers enlightened)."
+  },
+  {
+    "id": "stable-skyhold-alligator",
+    "name": "Skyhold Alligator",
+    "filter": "mount",
+    "insigniaSlots": [
+      {
+        "shape": "barbed"
+      },
+      {
+        "shape": "illuminated"
+      },
+      {
+        "universal": true
+      },
+      {
+        "universal": true,
+        "preferred": "illuminated"
+      }
+    ],
+    "shortDescription": "Insignia slots: barbed, illuminated, universal, universal (prefers illuminated)."
+  },
+  {
+    "id": "stable-skyhold-throne",
+    "name": "Skyhold Throne",
+    "filter": "mount",
+    "insigniaSlots": [
+      {
+        "shape": "regal"
+      },
+      {
+        "shape": "enlightened"
+      },
+      {
+        "universal": true
+      },
+      {
+        "universal": true,
+        "preferred": "crescent"
+      }
+    ],
+    "shortDescription": "Insignia slots: regal, enlightened, universal, universal (prefers crescent)."
+  },
+  {
+    "id": "stable-slab-of-vecna",
+    "name": "Slab of Vecna",
+    "filter": "mount",
+    "insigniaSlots": [
+      {
+        "shape": "regal"
+      },
+      {
+        "shape": "barbed"
+      },
+      {
+        "shape": "illuminated"
+      },
+      {
+        "universal": true,
+        "preferred": "barbed"
+      }
+    ],
+    "shortDescription": "Insignia slots: regal, barbed, illuminated, universal (prefers barbed)."
+  },
+  {
+    "id": "stable-snowtusk",
+    "name": "Snowtusk",
+    "filter": "mount",
+    "insigniaSlots": [
+      {
+        "shape": "regal"
+      },
+      {
+        "shape": "enlightened"
+      },
+      {
+        "universal": true
+      },
+      {
+        "universal": true,
+        "preferred": "illuminated"
+      }
+    ],
+    "shortDescription": "Insignia slots: regal, enlightened, universal, universal (prefers illuminated)."
+  },
+  {
+    "id": "stable-space-guppy-school",
+    "name": "Space Guppy School",
+    "filter": "mount",
+    "insigniaSlots": [
+      {
+        "shape": "regal"
+      },
+      {
+        "shape": "barbed"
+      },
+      {
+        "universal": true
+      },
+      {
+        "universal": true,
+        "preferred": "regal"
+      }
+    ],
+    "shortDescription": "Insignia slots: regal, barbed, universal, universal (prefers regal)."
+  },
+  {
+    "id": "stable-sunscorch-rune-board",
+    "name": "Sunscorch Rune Board",
+    "filter": "mount",
+    "insigniaSlots": [
+      {
+        "shape": "regal"
+      },
+      {
+        "shape": "crescent"
+      },
+      {
+        "shape": "illuminated"
+      },
+      {
+        "universal": true,
+        "preferred": "crescent"
+      }
+    ],
+    "shortDescription": "Insignia slots: regal, crescent, illuminated, universal (prefers crescent)."
+  },
+  {
+    "id": "stable-the-ebon-herald",
+    "name": "The Ebon Herald",
+    "filter": "mount",
+    "insigniaSlots": [
+      {
+        "shape": "crescent"
+      },
+      {
+        "shape": "barbed"
+      },
+      {
+        "shape": "illuminated"
+      },
+      {
+        "universal": true,
+        "preferred": "illuminated"
+      }
+    ],
+    "shortDescription": "Insignia slots: crescent, barbed, illuminated, universal (prefers illuminated)."
+  },
+  {
+    "id": "stable-twice-pale-alder",
+    "name": "Twice-Pale Alder",
+    "filter": "mount",
+    "insigniaSlots": [
+      {
+        "shape": "illuminated"
+      },
+      {
+        "shape": "regal"
+      },
+      {
+        "universal": true
+      },
+      {
+        "universal": true,
+        "preferred": "barbed"
+      }
+    ],
+    "shortDescription": "Insignia slots: illuminated, regal, universal, universal (prefers barbed)."
+  },
+  {
+    "id": "stable-uni-the-unicorn",
+    "name": "Uni the Unicorn",
+    "filter": "mount",
+    "insigniaSlots": [
+      {
+        "shape": "crescent"
+      },
+      {
+        "shape": "enlightened"
+      },
+      {
+        "universal": true
+      },
+      {
+        "universal": true,
+        "preferred": "barbed"
+      }
+    ],
+    "shortDescription": "Insignia slots: crescent, enlightened, universal, universal (prefers barbed)."
+  },
+  {
+    "id": "stable-zodar-armor",
+    "name": "Zodar Armor",
+    "filter": "mount",
+    "insigniaSlots": [
+      {
+        "shape": "barbed"
+      },
+      {
+        "shape": "enlightened"
+      },
+      {
+        "universal": true
+      },
+      {
+        "universal": true,
+        "preferred": "regal"
+      }
+    ],
+    "shortDescription": "Insignia slots: barbed, enlightened, universal, universal (prefers regal)."
+  },
+  {
     "id": "strike-m32-900-to-5400",
     "name": "Strike (M32+, 900 to 5400)",
     "filter": "modification_offhand_dynamic",
@@ -5251,6 +6884,14 @@
     "gameIds": ["Collar_Supportive_Regal_R5"]
   },
   {
+    "id": "survivalist-s-expertise",
+    "name": "Survivalist's Expertise",
+    "filter": "insignia_bonus",
+    "insigniaRecipe": ["crescent", "crescent", "regal", "illuminated"],
+    "longDescription": "You gain 5000 Forte. Negative effects from Resurrection Sickness are 25% more potent.",
+    "bonuses": ["survivalist-s-expertise"]
+  },
+  {
     "id": "swift-synergy",
     "name": "Celestial Swift Synergy",
     "filter": "combat_enchant_offense",
@@ -5266,6 +6907,13 @@
     "power_p": 0.05,
     "ca_p": 0.05,
     "il": 1
+  },
+  {
+    "id": "tactician-s-precision",
+    "name": "Tactician's Precision",
+    "filter": "insignia_bonus",
+    "insigniaRecipe": ["illuminated", "regal", "illuminated", "enlightened"],
+    "shortDescription": "Whenever you use a Daily power, reduce the remaining cooldown on all Encounter powers by 5s. This effect can only trigger once every 15s."
   },
   {
     "id": "the-bigger-they-are-minsc-damage-defense",
@@ -5287,6 +6935,22 @@
     "bonuses": ["paragon-exclusive"]
   },
   {
+    "id": "trainer-s-restoration",
+    "name": "Trainer's Restoration",
+    "filter": "insignia_bonus",
+    "insigniaRecipe": ["crescent", "illuminated", "illuminated", "enlightened"],
+    "longDescription": "You gain 3500 Incoming Healing and Outgoing Healing when your action points are full.",
+    "bonuses": [
+      {
+        "bonus": "trainer-s-restoration",
+        "min": 0,
+        "max": 1,
+        "default": 0,
+        "label": "Proc"
+      }
+    ]
+  },
+  {
     "id": "tranquility",
     "name": "Celestial Tranquility",
     "filter": "insignia",
@@ -5294,10 +6958,33 @@
     "combined_rating": 600,
     "strike": 1125,
     "forte": 1125,
+    "hideFromPicker": true,
+    "bonuses": ["insignia-shape-unknown"]
+  },
+  {
+    "id": "tranquility-crescent",
+    "name": "Celestial Crescent Insignia of Tranquility",
+    "filter": "insignia",
+    "insigniaShape": "crescent",
+    "preferredVariant": "tranquility-crescent-pref",
+    "il": 750,
+    "combined_rating": 600,
+    "strike": 1125,
+    "forte": 1125,
     "gameIds": [
-      "Insignia_Crescent_Outheal_Forte_R5",
-      "Insignia_Crescent_Outheal_Forte_Account_R5"
+      "Insignia_Crescent_Outheal_Forte_Account_R5",
+      "Insignia_Crescent_Outheal_Forte_R5"
     ]
+  },
+  {
+    "id": "tranquility-crescent-pref",
+    "name": "Celestial Crescent Insignia of Tranquility (Pref)",
+    "filter": "insignia",
+    "insigniaShape": "crescent",
+    "il": 900,
+    "combined_rating": 720,
+    "strike": 1350,
+    "forte": 1350
   },
   {
     "id": "tranquility-pref",
@@ -5306,7 +6993,9 @@
     "il": 900,
     "combined_rating": 720,
     "strike": 1350,
-    "forte": 1350
+    "forte": 1350,
+    "hideFromPicker": true,
+    "bonuses": ["insignia-shape-unknown"]
   },
   {
     "id": "tutor",
@@ -5401,6 +7090,13 @@
     "strike_p": 0.025,
     "movement": 0.1,
     "allowedClass": ["warlock"]
+  },
+  {
+    "id": "warlord-s-motivation",
+    "name": "Warlord's Motivation",
+    "filter": "insignia_bonus",
+    "insigniaRecipe": ["regal", "regal", "barbed", "enlightened"],
+    "shortDescription": "Your summoned Companion gains 12% more damage. This effect overwrites Warlord's Inspiration."
   },
   {
     "id": "watermelon-sorbet-power-accuracy",

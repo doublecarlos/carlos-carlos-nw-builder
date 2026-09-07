@@ -11,9 +11,11 @@ import PercentInput from "../ui/PercentInput.vue";
 import BaseBadge from "../ui/BaseBadge.vue";
 import BaseButton from "../ui/BaseButton.vue";
 import IconButton from "../ui/IconButton.vue";
-import { Replace, Trash } from "@lucide/vue";
+import { Replace, Table, Trash } from "@lucide/vue";
 import * as buildEditor from "../../stores/buildEditor";
 import * as pickerLens from "../../stores/pickerLens";
+import * as stableBrowser from "../../stores/stableBrowser";
+import { stableRef } from "../../engine/insignia";
 import { useItemBonusOccurrences } from "../../composables/useItemBonusOccurrences";
 import {
   useSlotDynamicStats,
@@ -38,6 +40,8 @@ const props = defineProps<{
    *  them -- passed straight to the picker. */
   hiddenReasons?: ReadonlyMap<string, string> | null;
   statSummary?: string;
+  /** Forwarded to the picker: what this row reads as while it holds nothing. */
+  placeholder?: string;
   invalid?: boolean;
   choiceDiffers?: boolean;
   otherChoiceLabel?: string;
@@ -73,6 +77,10 @@ defineExpose({
 
 const choice = () => props.build.choices[props.slotDef.id] ?? "";
 
+/** Not always the row's item: an unpinned stable bonus row is about the derived bonus, but the
+ * picker holds nothing, which is what lets its placeholder read `auto: <bonus>`. */
+const pickedItem = computed(() => (choice() ? props.item : null));
+
 const dynamicStatRows = useSlotDynamicStats(
   props.slotDef.id,
   computed(() => props.item),
@@ -107,17 +115,24 @@ const repetitions = computed(() =>
 const repetitionLabel = computed(
   () => props.item?.inlineRepetition?.label ?? "Copies",
 );
+
+/** The group a mount row heads, which the browse button opens onto. */
+const stableGroup = computed(() => {
+  const ref = stableRef(props.db, props.slotDef.id);
+  return ref?.role === "mount" ? ref.group : null;
+});
 </script>
 
 <template>
   <div class="flex flex-wrap items-center gap-2.5">
     <ItemPicker
       ref="picker"
+      :placeholder="placeholder"
       class="grow-0 basis-80 min-w-40"
       :items="items ?? []"
       :input-id="inputId"
       :model-value="choice()"
-      :selected-item="item"
+      :selected-item="pickedItem"
       :invalid="invalid"
       :db="db"
       :hidden-reasons="hiddenReasons"
@@ -131,6 +146,19 @@ const repetitionLabel = computed(
       :allow-empty="!slotDef.disallowEmpty"
       @update:model-value="buildEditor.setChoice(slotDef.id, $event)"
     />
+    <IconButton
+      v-if="stableGroup"
+      title="Browse stable"
+      :data-testid="'open-stable-browser:' + slotDef.id"
+      @click.stop="
+        stableBrowser.openFor(
+          stableGroup,
+          item ? { tab: 'mount', query: item.name } : null,
+        )
+      "
+    >
+      <Table />
+    </IconButton>
     <!-- Rows of an item_picker_list are the only removable ones; a hand-authored slot has no
          `list` and so no button. -->
     <IconButton

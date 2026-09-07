@@ -9,6 +9,7 @@
 import * as bonus from "./bonus";
 import { scaleFactorFor, scaledStat } from "./scaling";
 import { occurrenceCountFor } from "../lib/bonus-attachment";
+import { withDerivedBonuses } from "./insignia";
 import { dynamicValueKey, readDynamicValue } from "../lib/dynamic-stats";
 import type {
   Db,
@@ -658,9 +659,12 @@ function publishConflicts(db: Db, resolved: ResolvedBonuses): EngineError[] {
 
 export function resolveBuild(
   db: Db,
-  build: Build,
+  stored: Build,
   options?: { explain?: boolean },
 ): ResolvedBuild {
+  // Derived here, not written to the build, so everything below sees an ordinary equipped item.
+  // Inside `resolveBuild` so the picker's per-candidate resolves get the same treatment.
+  const build = withDerivedBonuses(db, stored);
   const resolved = bonus.resolve(db, build, options);
   const { rows, stages } = run(db, build, resolved);
   return {

@@ -68,6 +68,9 @@ const props = withDefaults(
     /** DOM id for the underlying input, so a `<label for>` written by an ancestor
      *  (BuildSlot's row label) points at something real. */
     inputId?: string;
+    /** What an empty row reads as instead of a bare dash. Display only: the row is still
+     * empty. */
+    placeholder?: string;
     /** Whether the dropdown offers the empty "- none -" row (`ItemPickerSlot.disallowEmpty`).
      *  Stops an empty value being *chosen*; says nothing about a build already holding one. */
     allowEmpty?: boolean;
@@ -84,6 +87,7 @@ const props = withDefaults(
     bonusPreview: undefined,
     hidePreview: false,
     inputId: undefined,
+    placeholder: undefined,
     allowEmpty: true,
     hiddenReasons: null,
   },
@@ -305,7 +309,7 @@ defineExpose({
     :invalid="invalid"
     :show-empty-option="allowEmpty"
     :closed-display="selectedItem?.name ?? ''"
-    :placeholder="selectedItem?.name || '-'"
+    :placeholder="selectedItem?.name || placeholder || '-'"
     :title-input="false"
     :menu-class="hidePreview ? 'inset-x-0' : 'left-0 w-[min(32rem,90vw)]'"
     @update:model-value="model = $event"

@@ -18,6 +18,7 @@ import BaseBadge from "./ui/BaseBadge.vue";
 import IconButton from "./ui/IconButton.vue";
 import ComboBox from "./ui/ComboBox.vue";
 import QuickOptions from "./game/QuickOptions.vue";
+import StableBrowser from "./game/StableBrowser.vue";
 import {
   ChevronsDownUp,
   ChevronsUpDown,
@@ -31,6 +32,8 @@ import { abbr, signedStat, statPickerOptions } from "../lib/format";
 import { descriptionParagraphs } from "../lib/description";
 import { matchesQuery } from "../lib/text-filter";
 import { slotsSupplying } from "../lib/bonus-slots";
+import * as insignia from "../engine/insignia";
+import * as stableBrowser from "../stores/stableBrowser";
 import { slotVisible } from "../lib/slot-visibility";
 import { expandSlots } from "../lib/item-picker-list";
 import { useHoverCard } from "../composables/useHoverCard";
@@ -491,6 +494,56 @@ function hiddenReasonsFor(slotId: string) {
 
 function errorsFor(slotId: string) {
   return errorsBySlot.value.get(slotId) ?? [];
+}
+
+const derivedBonuses = computed(() => {
+  const map = new Map<number, { name: string; counted: boolean }>();
+  for (const entry of insignia.derivedBonuses(db.value, build.value)) {
+    map.set(entry.group, { name: entry.item.name, counted: entry.counted });
+  }
+  return map;
+});
+
+/** What an empty stable row reads as: which shapes an insignia slot takes, or which bonus a
+ * group already derives. A match past the bonus's cap is labelled rather than dropped. */
+/** On the label rather than only the placeholder, which a filled row hides. */
+/** Gates the card's way into the browser, which has nothing to apply to without a group. */
+const hoveredStableGroup = computed(() => {
+  const slotId = hover.value?.slotId;
+  return slotId ? (insignia.stableRef(db.value, slotId)?.group ?? null) : null;
+});
+
+/** Lands on the side the card was already showing, filtered to the item it was about. */
+function openStableFromCard() {
+  const group = hoveredStableGroup.value;
+  const item = hoveredItem.value;
+  if (!group || !item) return;
+  stableBrowser.openFor(group, {
+    tab: item.insigniaSlots ? "mount" : "bonus",
+    query: item.name,
+  });
+}
+
+function stableLabelNote(slotId: string): string | undefined {
+  if (insignia.stableRef(db.value, slotId)?.role !== "insignia")
+    return undefined;
+  const spec = insignia.specForSlot(db.value, build.value, slotId);
+  return spec ? insignia.describeSlotSpec(spec) : undefined;
+}
+
+function stablePlaceholder(slotId: string): string | undefined {
+  const ref = insignia.stableRef(db.value, slotId);
+  if (!ref) return undefined;
+  if (ref.role === "insignia") {
+    const spec = insignia.specForSlot(db.value, build.value, slotId);
+    return spec ? insignia.describeSlotSpec(spec) : undefined;
+  }
+  if (ref.role !== "bonus") return undefined;
+  const derived = derivedBonuses.value.get(ref.group);
+  if (!derived) return undefined;
+  return derived.counted
+    ? `auto: ${derived.name}`
+    : `auto: ${derived.name} (at cap)`;
 }
 
 function toggle(sectionId: string) {
@@ -966,6 +1019,8 @@ watch(
               :hidden-reasons="hiddenReasonsFor(slotDef.id)"
               :errors="errorsFor(slotDef.id)"
               :stat-summary="statSummary(slotDef.id)"
+              :placeholder="stablePlaceholder(slotDef.id)"
+              :label-note="stableLabelNote(slotDef.id)"
               :choice-differs="differs(slotDef.id)"
               :other-choice-label="otherChoiceLabel(slotDef.id)"
               :bonus-diffs="rowDiff(slotDef.id)?.bonuses"
@@ -1007,6 +1062,19 @@ watch(
           </template>
         </BuildSection>
 
+        <StableBrowser
+          v-if="stableBrowser.group.value"
+          :db="db"
+          :build="build"
+          :group="stableBrowser.group.value"
+          :focus="stableBrowser.focus.value"
+          @close="stableBrowser.close()"
+          @apply="
+            (plan) =>
+              buildEditor.applyStablePlan(plan.group, plan.mount, plan.insignia)
+          "
+        />
+
         <!-- One card for the whole list, moved and refilled on hover. -->
         <BasePopover ref="tooltip" :width="320">
           <ItemCard
@@ -1019,7 +1087,9 @@ watch(
             :db="db"
             :slot-label="db.slotFor(hover.slotId)?.label ?? ''"
             :edit-label="editLabel"
+            :stable-group="hoveredStableGroup"
             @edit="onCardEdit"
+            @open-stable="openStableFromCard"
             @mouseenter="onCardEnter"
             @mouseleave="onCardLeave"
           />

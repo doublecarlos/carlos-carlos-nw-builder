@@ -47,6 +47,11 @@ const props = defineProps<{
   // item_picker only -- a build_parameter row has no item of its own.
   item?: Item | null;
   statSummary?: string;
+  /** item_picker only: what the row reads as while empty. */
+  placeholder?: string;
+  /** Muted text after the row's label. The stable says what an insignia slot takes here, since
+   *  the authored label cannot vary with the mount and a filled row hides its placeholder. */
+  labelNote?: string;
   bonusDiffs?: { id: string; message: string }[];
   // item_picker only
   items?: Item[];
@@ -169,7 +174,13 @@ useCursorRowKeys(anchor, {
         :id="labelId"
         class="slot-label min-w-0 flex-1 truncate text-muted"
         :for="labelsOneControl ? controlId : undefined"
-        >{{ slotDef.label }}</component
+        >{{ slotDef.label
+        }}<span
+          v-if="labelNote"
+          class="ml-1.5 opacity-70"
+          data-testid="slot-label-note"
+          >{{ labelNote }}</span
+        ></component
       >
     </div>
 
@@ -204,6 +215,7 @@ useCursorRowKeys(anchor, {
         :items="items"
         :hidden-reasons="hiddenReasons"
         :stat-summary="statSummary"
+        :placeholder="placeholder"
         :invalid="errors?.some((e) => e.severity !== 'warning') ?? false"
         :choice-differs="choiceDiffers"
         :other-choice-label="otherChoiceLabel"
