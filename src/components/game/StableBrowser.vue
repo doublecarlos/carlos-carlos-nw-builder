@@ -208,8 +208,8 @@ function apply(mount: Item) {
       Mount {{ group }} already holds
       {{ occupied.mount ? occupied.mount.name : "no mount" }}
       <template v-if="occupied.held">and {{ occupied.held }} insignia</template
-      >. Using another replaces the mount and drops any insignia its slots do
-      not take.
+      >. <br />
+      Using another replaces the mount and drops any incompatible insignia.
     </p>
   </BaseModal>
 </template>

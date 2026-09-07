@@ -665,7 +665,7 @@ const rows = computed(() =>
         <div class="mb-0.5 font-semibold">
           {{ stableReach.title }}
           <span class="font-normal text-muted"
-            >({{ stableReach.total }},
+            >({{ stableReach.total }} total,
             {{ stableReach.preferred }} preferred)</span
           >
         </div>
