@@ -5942,6 +5942,7 @@
     "id": "stable-armored-pale-horse",
     "name": "Armored Pale Horse",
     "filter": "mount",
+    "gameIds": ["Mount_Horse_Pale_Armored_Slots"],
     "insigniaSlots": [
       {
         "shape": "crescent"
@@ -5962,6 +5963,7 @@
     "id": "stable-balgora",
     "name": "Balgora",
     "filter": "mount",
+    "gameIds": ["Mount_M25_Appointment_Slots"],
     "insigniaSlots": [
       {
         "shape": "illuminated"
@@ -5982,6 +5984,9 @@
     "id": "stable-beholder-rune-board",
     "name": "Beholder Rune Board",
     "filter": "mount",
+    "gameIds": [
+      "Mount_M29_Summer_Runeboard_Trade_Bar_Beholder_Rune_Board_Slots"
+    ],
     "insigniaSlots": [
       {
         "shape": "crescent"
@@ -6023,6 +6028,7 @@
     "id": "stable-brain-stealer-dragon",
     "name": "Brain Stealer Dragon",
     "filter": "mount",
+    "gameIds": ["Mount_M30_Brainstealerdragon_Slots"],
     "insigniaSlots": [
       {
         "shape": "crescent"
@@ -6043,6 +6049,7 @@
     "id": "stable-cactus-the-hedgehog",
     "name": "Cactus the Hedgehog",
     "filter": "mount",
+    "gameIds": ["Mount_M32_5_Cactus_The_Hedgehod_Slots"],
     "insigniaSlots": [
       {
         "shape": "regal"
@@ -6063,6 +6070,7 @@
     "id": "stable-crimson-crystal-horse",
     "name": "Crimson Crystal Horse",
     "filter": "mount",
+    "gameIds": ["Mount_M31_Crimson_Crystal_Horse_Slots"],
     "insigniaSlots": [
       {
         "shape": "crescent"
@@ -6168,6 +6176,7 @@
     "id": "stable-dragon-chick",
     "name": "Dragon Chick",
     "filter": "mount",
+    "gameIds": ["Mount_M31_April_Fowls_Dragon_Chick_Slots"],
     "insigniaSlots": [
       {
         "shape": "regal"
@@ -6188,6 +6197,7 @@
     "id": "stable-dragon-chicken",
     "name": "Dragon Chicken",
     "filter": "mount",
+    "gameIds": ["Mount_M31_Dragon_Chicken_Slots"],
     "insigniaSlots": [
       {
         "shape": "barbed"
@@ -6229,6 +6239,7 @@
     "id": "stable-forever-familiar",
     "name": "Forever Familiar",
     "filter": "mount",
+    "gameIds": ["Mount_M32_Az_Forever_Familiar_Slots"],
     "insigniaSlots": [
       {
         "shape": "enlightened"
@@ -6249,6 +6260,7 @@
     "id": "stable-giant-space-hamster",
     "name": "Giant Space Hamster",
     "filter": "mount",
+    "gameIds": ["Mount_M27_Gianthamster_Space_Slots"],
     "insigniaSlots": [
       {
         "shape": "crescent"
@@ -6269,6 +6281,7 @@
     "id": "stable-gilded-goose",
     "name": "Gilded Goose",
     "filter": "mount",
+    "gameIds": ["Mount_M25_April_Fowls_Slots"],
     "insigniaSlots": [
       {
         "shape": "barbed"
@@ -6289,6 +6302,7 @@
     "id": "stable-glacier-prowler",
     "name": "Glacier Prowler",
     "filter": "mount",
+    "gameIds": ["Mount_M32_Winter_Mountain_Cat_Slots"],
     "insigniaSlots": [
       {
         "shape": "crescent"
@@ -6309,6 +6323,7 @@
     "id": "stable-glorious-undead-lion",
     "name": "Glorious Undead Lion",
     "filter": "mount",
+    "gameIds": ["Mount_M31_Glorious_Undead_Lion_Slots"],
     "insigniaSlots": [
       {
         "shape": "barbed"
@@ -6350,6 +6365,7 @@
     "id": "stable-golden-goose",
     "name": "Golden Goose",
     "filter": "mount",
+    "gameIds": ["Mount_M28_April_Fowls_Golden_Goose_Slots"],
     "insigniaSlots": [
       {
         "shape": "regal"
@@ -6370,6 +6386,7 @@
     "id": "stable-golden-rage-drake",
     "name": "Golden Rage Drake",
     "filter": "mount",
+    "gameIds": ["Mount_Rage_Drake_Golden_Slots"],
     "insigniaSlots": [
       {
         "shape": "crescent"
@@ -6390,6 +6407,7 @@
     "id": "stable-gravewake",
     "name": "Gravewake",
     "filter": "mount",
+    "gameIds": ["Mount_M31_5_Masquerade_Dullahan_Slots"],
     "insigniaSlots": [
       {
         "shape": "barbed"
@@ -6452,6 +6470,7 @@
     "id": "stable-hemovore-gelatinous-cube",
     "name": "Hemovore Gelatinous Cube",
     "filter": "mount",
+    "gameIds": ["Mount_M32_5_Hemovore_Gelatinouscubeslots"],
     "insigniaSlots": [
       {
         "shape": "regal"
@@ -6471,6 +6490,7 @@
     "id": "stable-hotenow-rune-board",
     "name": "Hotenow Rune Board",
     "filter": "mount",
+    "gameIds": ["Mount_M29_Summer_Runeboard_Slots"],
     "insigniaSlots": [
       {
         "shape": "regal"
@@ -6491,6 +6511,7 @@
     "id": "stable-immortal-jade-horse",
     "name": "Immortal Jade Horse",
     "filter": "mount",
+    "gameIds": ["Mount_M32_Lunar_Jade_Horse_Slots"],
     "insigniaSlots": [
       {
         "shape": "barbed"
@@ -6510,6 +6531,7 @@
     "id": "stable-maltese-tiger",
     "name": "Maltese Tiger",
     "filter": "mount",
+    "gameIds": ["Mount_Tiger_Maltese_Slots"],
     "insigniaSlots": [
       {
         "shape": "regal"
@@ -6530,6 +6552,7 @@
     "id": "stable-mechanical-goose",
     "name": "Mechanical Goose",
     "filter": "mount",
+    "gameIds": ["Mount_M32_5_April_Fowls_Mechanical_Goose_Slots"],
     "insigniaSlots": [
       {
         "shape": "regal"
@@ -6550,6 +6573,7 @@
     "id": "stable-midnight-s-plume",
     "name": "Midnight's Plume",
     "filter": "mount",
+    "gameIds": ["Mount_M29_Masquerade_Broom_Slots"],
     "insigniaSlots": [
       {
         "shape": "regal"
@@ -6590,6 +6614,7 @@
     "id": "stable-neo-eclipse-lion",
     "name": "Neo Eclipse Lion",
     "filter": "mount",
+    "gameIds": ["Mount_Lion_Neo_Eclipse_Mythic_Slots"],
     "insigniaSlots": [
       {
         "shape": "crescent"
@@ -6652,6 +6677,7 @@
     "id": "stable-ollie-the-octie",
     "name": "Ollie the Octie",
     "filter": "mount",
+    "gameIds": ["Mount_M33_Ollie_The_Octie_Slots"],
     "insigniaSlots": [
       {
         "shape": "barbed"
@@ -6693,6 +6719,7 @@
     "id": "stable-pink-sylph-wings",
     "name": "Pink Sylph Wings",
     "filter": "mount",
+    "gameIds": ["Mount_Butterfly_Wings_Pink_Slots"],
     "insigniaSlots": [
       {
         "shape": "regal"
@@ -6713,6 +6740,7 @@
     "id": "stable-protective-pink-yeti",
     "name": "Protective Pink Yeti",
     "filter": "mount",
+    "gameIds": ["Mount_Yeti_Pink_Slots"],
     "insigniaSlots": [
       {
         "shape": "crescent"
@@ -6733,6 +6761,7 @@
     "id": "stable-reanimated-chariot",
     "name": "Reanimated Chariot",
     "filter": "mount",
+    "gameIds": ["Mount_M26_Masquerade_Slots"],
     "insigniaSlots": [
       {
         "shape": "barbed"
@@ -6753,6 +6782,7 @@
     "id": "stable-reclusive-rothe",
     "name": "Reclusive Rothe",
     "filter": "mount",
+    "gameIds": ["Mount_M27_Winter_Rothe_Slots"],
     "insigniaSlots": [
       {
         "shape": "crescent"
@@ -6794,6 +6824,7 @@
     "id": "stable-red-dragon-wings",
     "name": "Red Dragon Wings",
     "filter": "mount",
+    "gameIds": ["Mount_Dragonwings_Red_Slots"],
     "insigniaSlots": [
       {
         "shape": "regal"
@@ -6814,6 +6845,7 @@
     "id": "stable-red-mountain-fox",
     "name": "Red Mountain Fox",
     "filter": "mount",
+    "gameIds": ["Mount_M29_Red_Fox_Slots"],
     "insigniaSlots": [
       {
         "shape": "enlightened"
@@ -6834,6 +6866,7 @@
     "id": "stable-regal-cobra",
     "name": "Regal Cobra",
     "filter": "mount",
+    "gameIds": ["Mount_M30_Chinesecobra_Slots"],
     "insigniaSlots": [
       {
         "shape": "enlightened"
@@ -6853,6 +6886,7 @@
     "id": "stable-rothe-traveler",
     "name": "Rothe Traveler",
     "filter": "mount",
+    "gameIds": ["Mount_M30_Rothetraveler_Slots"],
     "insigniaSlots": [
       {
         "shape": "crescent"
@@ -6873,6 +6907,7 @@
     "id": "stable-silvanite-blossom-bear",
     "name": "Silvanite Blossom Bear",
     "filter": "mount",
+    "gameIds": ["Mount_M33_Summer_Blossom_Bear_Slots"],
     "insigniaSlots": [
       {
         "shape": "crescent"
@@ -6893,6 +6928,7 @@
     "id": "stable-skyhold-alligator",
     "name": "Skyhold Alligator",
     "filter": "mount",
+    "gameIds": ["Mount_M30_Alligator_Mythic_Slots"],
     "insigniaSlots": [
       {
         "shape": "barbed"
@@ -6913,6 +6949,7 @@
     "id": "stable-skyhold-throne",
     "name": "Skyhold Throne",
     "filter": "mount",
+    "gameIds": ["Mount_M30_Floatingisland_Slots"],
     "insigniaSlots": [
       {
         "shape": "regal"
@@ -6996,6 +7033,7 @@
     "id": "stable-star-angler",
     "name": "Star Angler",
     "filter": "mount",
+    "gameIds": ["Mount_M33_5_Angler_Fish_Slots"],
     "insigniaSlots": [
       {
         "shape": "regal"
@@ -7016,6 +7054,7 @@
     "id": "stable-sunscorch-rune-board",
     "name": "Sunscorch Rune Board",
     "filter": "mount",
+    "gameIds": ["Mount_M31_Summer_Runeboard_Slots"],
     "insigniaSlots": [
       {
         "shape": "regal"
@@ -7036,6 +7075,7 @@
     "id": "stable-the-ebon-herald",
     "name": "The Ebon Herald",
     "filter": "mount",
+    "gameIds": ["Mount_M33_The_Ebon_Herald_Slots"],
     "insigniaSlots": [
       {
         "shape": "crescent"
@@ -7077,6 +7117,7 @@
     "id": "stable-umbral-widow",
     "name": "Umbral Widow",
     "filter": "mount",
+    "gameIds": ["Mount_M33_5_Abyssal_Spider_Slots"],
     "insigniaSlots": [
       {
         "shape": "illuminated"
@@ -7097,6 +7138,7 @@
     "id": "stable-uni-the-unicorn",
     "name": "Uni the Unicorn",
     "filter": "mount",
+    "gameIds": ["Mount_Dnd_Cartoon_Uni_Slots"],
     "insigniaSlots": [
       {
         "shape": "crescent"
