@@ -2,7 +2,7 @@
 // the row's stat summary, and a long description, shown on the item's hover card -- for an
 // effect that reads better as text than as a stat (e.g. a proc).
 import { test, expect, type Page } from "@playwright/test";
-import { openBuilder, slotRow, chooseItem } from "./support/app";
+import { openBuilder, slotRow, chooseItem, setItemFilter } from "./support/app";
 import { addLayer, layerRow } from "./support/nav";
 
 const SLOT_ID = "gear.head";
@@ -18,7 +18,7 @@ async function createAndEquipDescribedItem(page: Page, name: string) {
   await layerRow(page, "Layer 1").locator(".nav-name").click();
   await page.getByTestId("new-item").click();
   await page.getByTestId("item-name-input").fill(name);
-  await page.getByTestId("item-filter-input").fill("gear_head");
+  await setItemFilter(page, "gear_head");
   await page.getByTestId("add-item-description").click();
   await page
     .getByTestId("item-short-description-input")
@@ -58,7 +58,7 @@ test("an item's short/long description round-trip through the item editor", asyn
   await layerRow(page, "Layer 1").locator(".nav-name").click();
   await page.getByTestId("new-item").click();
   await page.getByTestId("item-name-input").fill(uniqueName);
-  await page.getByTestId("item-filter-input").fill("gear_head");
+  await setItemFilter(page, "gear_head");
   await page.getByTestId("add-item-description").click();
   await page
     .getByTestId("item-short-description-input")
@@ -94,7 +94,7 @@ test.describe("paragraphs in a description", () => {
     await layerRow(page, "Layer 1").locator(".nav-name").click();
     await page.getByTestId("new-item").click();
     await page.getByTestId("item-name-input").fill(name);
-    await page.getByTestId("item-filter-input").fill("gear_head");
+    await setItemFilter(page, "gear_head");
     await page.getByTestId("add-item-description").click();
     await page.getByTestId("item-short-description-input").fill(BROKEN_SHORT);
     await page.getByRole("button", { name: "Save item" }).click();
@@ -118,7 +118,7 @@ test.describe("paragraphs in a description", () => {
     await layerRow(page, "Layer 1").locator(".nav-name").click();
     await page.getByTestId("new-item").click();
     await page.getByTestId("item-name-input").fill(name);
-    await page.getByTestId("item-filter-input").fill("gear_head");
+    await setItemFilter(page, "gear_head");
     await page.getByTestId("add-item-description").click();
     await page.getByTestId("item-short-description-input").fill(WRAPPED_SHORT);
     await page.getByRole("button", { name: "Save item" }).click();
@@ -140,7 +140,7 @@ test.describe("paragraphs in a description", () => {
     await layerRow(page, "Layer 1").locator(".nav-name").click();
     await page.getByTestId("new-item").click();
     await page.getByTestId("item-name-input").fill(name);
-    await page.getByTestId("item-filter-input").fill("gear_head");
+    await setItemFilter(page, "gear_head");
     await page.getByTestId("add-item-description").click();
     await page.getByTestId("item-long-description-input").fill(BROKEN_LONG);
     await page.getByRole("button", { name: "Save item" }).click();

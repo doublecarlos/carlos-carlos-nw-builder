@@ -447,6 +447,9 @@ export interface UiState {
   collapsed: Record<string, boolean>;
   /** How wide each open rail is, in px, by rail id -- see stores/rails.ts. */
   railWidths: Record<string, number>;
+  /** Whether the item form offers every field group rather than the ones the item's filter
+   * is authored with. A view preference, not per item; see stores/itemFormFields.ts. */
+  showAllItemFields: boolean;
 }
 
 export function loadUiState(): Partial<UiState> {
@@ -457,6 +460,9 @@ export function loadUiState(): Partial<UiState> {
           expanded: booleans(stored.expanded),
           collapsed: booleans(stored.collapsed),
           railWidths: numbers(stored.railWidths),
+          ...(typeof stored.showAllItemFields === "boolean"
+            ? { showAllItemFields: stored.showAllItemFields }
+            : {}),
         }
       : {};
   } catch {
@@ -468,9 +474,9 @@ export function loadUiState(): Partial<UiState> {
  * Merges `state` onto whatever is already stored rather than replacing it.
  *
  * These fields have independent owners -- BuildEditor writes `expanded`, stores/rails.ts
- * writes `collapsed` and `railWidths` -- and each knows only its own. Writing the whole object
- * would mean
- * whichever saved last silently erased the other's preference.
+ * writes `collapsed` and `railWidths`, stores/itemFormFields.ts writes `showAllItemFields` --
+ * and each knows only its own. Writing the whole object would mean whichever saved last
+ * silently erased the other's preference.
  */
 export function saveUiState(state: Partial<UiState>) {
   try {

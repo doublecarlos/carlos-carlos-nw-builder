@@ -77,15 +77,16 @@ const exportText = computed(() => {
   if (effectiveTab.value === "slots") {
     if (!catalogExport.value) return "Loading…";
     // `slots` and `sectionPresets` both fold across every enabled layer, same "maintainer
-    // path" as items/bonuses above. Sections and `filterDefaults` are still the static shipped
-    // ones -- an overlay carries build_parameter slots, not the section structure they hang off
-    // (see `CatalogOverlay.slots`) nor the per-filter defaults.
+    // path" as items/bonuses above. Sections, `filterDefaults` and `filterFields` are still
+    // the static shipped ones -- an overlay carries build_parameter slots, not the section
+    // structure they hang off (see `CatalogOverlay.slots`) nor the per-filter declarations.
     const allEnabled = catalog.compose(layers.enabledOverlays.value);
     return catalogExport.value.toSlotsFile(
       NW_SLOTS.sections,
       allEnabled.slots,
       allEnabled.sectionPresets,
       NW_SLOTS.filterDefaults ?? {},
+      NW_SLOTS.filterFields ?? {},
     );
   }
   // "This layer": raw overlay JSON.

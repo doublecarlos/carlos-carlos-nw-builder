@@ -42,6 +42,7 @@ import {
 import { INSIGNIA_SHAPES } from "../../types";
 import type { StatRow } from "../../engine/bonus-draft";
 import BaseCheckbox from "../ui/BaseCheckbox.vue";
+import { showAllFields } from "../../stores/itemFormFields";
 
 const props = withDefaults(
   defineProps<{
@@ -853,6 +854,95 @@ function updateBonusOccurrence(id: string, occurrence: OccurrenceDraft | null) {
   }
 }
 
+// --- which field groups this item is offered ---------------------------------------------
+// `filterFields` in data/slots.json says which fields each filter is authored with. Data
+// rather than a constant here, so a layer can declare its own item category with no code edit.
+
+/** Every optional group in this form, in the order the template draws them, by the item
+ *  fields it edits. */
+const FIELD_GROUPS = {
+  tags: ["tags"],
+  gameIds: ["gameIds"],
+  description: ["shortDescription", "longDescription"],
+  allowedClass: ["allowedClass"],
+  inlineRepetition: ["inlineRepetition"],
+  insignia: ["insigniaShape", "preferredVariant"],
+  insigniaSlots: ["insigniaSlots"],
+  insigniaRecipe: ["insigniaRecipe"],
+  dynamicStats: ["dynamicStats"],
+  bonuses: ["bonuses"],
+  excludes: ["excludes"],
+  defaultParams: ["defaultParams"],
+  publishes: ["publishes"],
+  retirement: ["hideFromPicker", "replacedBy"],
+} as const;
+
+type FieldGroup = keyof typeof FIELD_GROUPS;
+
+/** Fields some filter claims; a field outside this set is offered everywhere. */
+const gatedFields = computed(() => {
+  const gated = new Set<string>();
+  for (const fields of Object.values(props.db.filterFields))
+    for (const field of fields) gated.add(field);
+  return gated;
+});
+
+const claimedFields = computed(
+  () => new Set<string>(props.db.filterFields[draft.value.filter.trim()] ?? []),
+);
+
+/** Read off the draft, not `props.source`, so a value typed a moment ago counts too. */
+function carriesField(field: string): boolean {
+  const local = draft.value;
+  switch (field) {
+    case "tags":
+      return local.tags.length > 0;
+    case "gameIds":
+      return local.gameIds.length > 0;
+    case "shortDescription":
+    case "longDescription":
+      return descriptionActive.value;
+    case "allowedClass":
+      return local.allowedClass.length > 0;
+    case "inlineRepetition":
+      return repetitionActive.value;
+    case "insigniaShape":
+      return local.insigniaShape !== "";
+    case "preferredVariant":
+      return local.preferredVariant !== "";
+    case "insigniaSlots":
+      return local.insigniaSlots.length > 0;
+    case "insigniaRecipe":
+      return local.insigniaRecipe.length > 0;
+    case "dynamicStats":
+      return local.dynamicStats.length > 0;
+    case "bonuses":
+      return local.bonuses.length > 0;
+    case "excludes":
+      return local.excludes.length > 0;
+    case "defaultParams":
+      return local.defaultParams.length > 0;
+    case "publishes":
+      return local.publishes.length > 0;
+    case "hideFromPicker":
+      return local.hideFromPicker;
+    case "replacedBy":
+      return local.replacedBy !== "";
+    default:
+      return false;
+  }
+}
+
+/** The `carriesField` arm is what keeps a mis-authored `filterFields` from hiding data. */
+function showsGroup(group: FieldGroup): boolean {
+  if (showAllFields.value) return true;
+  const fields: readonly string[] = FIELD_GROUPS[group];
+  if (!fields.some((field) => gatedFields.value.has(field))) return true;
+  return fields.some(
+    (field) => claimedFields.value.has(field) || carriesField(field),
+  );
+}
+
 // Rebuild draft when source changes (e.g. after undo/redo reverts the overlay).
 watch(
   () => props.source,
@@ -883,6 +973,13 @@ watch(
       }}</BaseBadge>
       <BaseBadge v-if="dirty && isNew">unsaved</BaseBadge>
       <span class="flex-1"></span>
+      <BaseCheckbox
+        v-model="showAllFields"
+        inline
+        data-testid="show-all-fields"
+      >
+        Show all fields
+      </BaseCheckbox>
       <!-- Save button only for new items -->
       <BaseButton
         v-if="isNew"
@@ -940,7 +1037,7 @@ watch(
       <option v-for="t in tags" :key="t" :value="t"></option>
     </datalist>
 
-    <FormGrid class="mb-2">
+    <FormGrid v-if="showsGroup('tags')" class="mb-2" data-testid="group-tags">
       <FormField label="Tags" class="min-w-80 flex-1">
         <TokenInput
           v-model="draft.tags"
@@ -951,7 +1048,11 @@ watch(
       </FormField>
     </FormGrid>
 
-    <FormGrid class="mb-2">
+    <FormGrid
+      v-if="showsGroup('gameIds')"
+      class="mb-2"
+      data-testid="group-game-ids"
+    >
       <FormField
         label="Game IDs (the Hitem values from a demo record)"
         class="min-w-80 flex-1"
@@ -964,17 +1065,268 @@ watch(
       </FormField>
     </FormGrid>
 
-    <FormSection>Restricted to classes</FormSection>
-    <div class="mb-1.5 flex flex-wrap gap-x-3 gap-y-0.5">
-      <BaseCheckbox
-        v-for="cls in classes"
-        :key="cls.value"
-        v-model="draft.allowedClass"
-        :value="cls.value"
+    <template v-if="showsGroup('description')">
+      <FormSection data-testid="group-description"
+        >Description (optional)</FormSection
       >
-        {{ cls.label }}
-      </BaseCheckbox>
-    </div>
+      <div class="flex flex-wrap items-center gap-1.5 mb-2">
+        <IconButton
+          v-if="!descriptionActive"
+          title="Add description"
+          data-testid="add-item-description"
+          @click="addDescription"
+          ><Plus
+        /></IconButton>
+        <IconButton
+          v-else
+          title="Remove description"
+          data-testid="remove-item-description"
+          @click="removeDescription"
+          ><Trash
+        /></IconButton>
+        <FormGrid
+          v-if="descriptionActive"
+          data-testid="item-description-fields"
+        >
+          <FormField
+            label="Short (shown next to the stat summary)"
+            class="min-w-80 flex-1"
+          >
+            <OcrTextField
+              v-model="draft.shortDescription"
+              single-line
+              :rows="2"
+              data-testid="item-short-description-input"
+              placeholder="e.g. AP when killing mobs"
+            />
+          </FormField>
+          <FormField
+            label="Long (shown on the hover card)"
+            class="min-w-80 flex-1"
+          >
+            <OcrTextField
+              v-model="draft.longDescription"
+              :rows="2"
+              data-testid="item-long-description-input"
+              placeholder="e.g. When you kill an enemy, gain 3% Action Points."
+            />
+          </FormField>
+        </FormGrid>
+      </div>
+    </template>
+
+    <template v-if="showsGroup('allowedClass')">
+      <FormSection data-testid="group-allowed-class"
+        >Restricted to classes</FormSection
+      >
+      <div class="mb-1.5 flex flex-wrap gap-x-3 gap-y-0.5">
+        <BaseCheckbox
+          v-for="cls in classes"
+          :key="cls.value"
+          v-model="draft.allowedClass"
+          :value="cls.value"
+        >
+          {{ cls.label }}
+        </BaseCheckbox>
+      </div>
+    </template>
+
+    <template v-if="showsGroup('inlineRepetition')">
+      <FormSection data-testid="group-inline-repetition"
+        >Inline repetition (boons, attributes, other point_assignment slots
+        filter)</FormSection
+      >
+      <div class="flex flex-wrap items-center gap-1.5 mb-2">
+        <IconButton
+          v-if="!repetitionActive"
+          title="Add inline repetition"
+          data-testid="add-inline-repetition"
+          @click="addInlineRepetition"
+          ><Plus
+        /></IconButton>
+        <IconButton
+          v-else
+          title="Remove inline repetition"
+          data-testid="remove-inline-repetition"
+          @click="removeInlineRepetition"
+          ><Trash
+        /></IconButton>
+        <FormGrid
+          v-if="repetitionActive"
+          data-testid="inline-repetition-fields"
+        >
+          <FormField label="Min">
+            <input
+              v-model.number="draft.repetitionMin"
+              class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+              type="number"
+            />
+          </FormField>
+          <FormField label="Max">
+            <input
+              v-model.number="draft.repetitionMax"
+              class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+              type="number"
+            />
+          </FormField>
+          <FormField label="Default">
+            <input
+              v-model.number="draft.repetitionDefault"
+              class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+              type="number"
+            />
+          </FormField>
+          <FormField label="Priority">
+            <input
+              v-model.number="draft.repetitionPriority"
+              class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+              type="number"
+            />
+          </FormField>
+          <FormField
+            label="Label (optional, overrides the item name on its row)"
+          >
+            <input
+              v-model="draft.repetitionLabel"
+              class="w-40 rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+              type="text"
+              data-testid="inline-repetition-label-input"
+            />
+          </FormField>
+        </FormGrid>
+      </div>
+    </template>
+
+    <template v-if="showsGroup('insignia')">
+      <FormSection data-testid="group-insignia">Insignia</FormSection>
+      <p class="mb-1.5 text-muted">
+        An insignia's shape is what a mount's slot is matched against. A slot
+        that prefers that shape swaps in the stronger item named here instead,
+        so only the ordinary one names a preferred item; the preferred one names
+        none.
+      </p>
+      <div class="mb-1.5 flex flex-wrap items-center gap-x-4 gap-y-1.5">
+        <FormField label="Insignia shape">
+          <ComboBox
+            class="w-44"
+            data-testid="item-insignia-shape"
+            :options="recipeOptions"
+            :model-value="draft.insigniaShape"
+            @update:model-value="(v) => (draft.insigniaShape = v)"
+          />
+        </FormField>
+        <FormField label="Preferred item">
+          <ComboBox
+            class="w-80"
+            data-testid="item-preferred-variant"
+            :options="preferredVariantOptions"
+            :model-value="draft.preferredVariant"
+            @update:model-value="(v) => (draft.preferredVariant = v)"
+          />
+        </FormField>
+      </div>
+    </template>
+
+    <template v-if="showsGroup('insigniaSlots')">
+      <FormSection data-testid="group-insignia-slots"
+        >Mount insignia slots</FormSection
+      >
+
+      <div
+        v-for="(row, index) in draft.insigniaSlots"
+        :key="'slot' + index"
+        class="insignia-slot-row mb-1 flex flex-wrap items-center gap-1.5"
+      >
+        <IconButton title="Add insignia slot" @click="addInsigniaSlot"
+          ><Plus
+        /></IconButton>
+        <IconButton
+          title="Remove insignia slot"
+          @click="removeInsigniaSlot(index)"
+          ><Trash
+        /></IconButton>
+        <FormField :label="`Slot ${index + 1} shape`">
+          <ComboBox
+            class="w-44"
+            :data-testid="`item-insignia-slot-${index}`"
+            :options="slotShapeOptions"
+            :model-value="row.shape"
+            @update:model-value="(v) => (row.shape = v)"
+          />
+        </FormField>
+        <FormField v-if="!row.shape || row.preferred" label="Prefers">
+          <ComboBox
+            class="w-44"
+            :data-testid="`item-insignia-slot-preferred-${index}`"
+            :options="preferredOptions"
+            :model-value="row.preferred"
+            @update:model-value="(v) => (row.preferred = v)"
+          />
+        </FormField>
+        <span v-if="row.shape && row.preferred" class="text-danger">
+          A fixed slot grants no preferred bonus. Clear one of the two.
+        </span>
+      </div>
+      <div
+        v-if="!draft.insigniaSlots.length"
+        class="insignia-slot-row mb-1 flex flex-wrap items-center gap-1.5"
+      >
+        <IconButton
+          title="Add insignia slot"
+          data-testid="item-add-insignia-slot"
+          @click="addInsigniaSlot"
+          ><Plus
+        /></IconButton>
+        <span class="text-muted">
+          A mount's insignia slots, in the order the game shows them. A slot
+          with no shape is universal and may name the shape it prefers.
+        </span>
+      </div>
+    </template>
+
+    <template v-if="showsGroup('insigniaRecipe')">
+      <FormSection data-testid="group-insignia-recipe"
+        >Insignia bonus recipe</FormSection
+      >
+      <div
+        v-for="(shape, index) in draft.insigniaRecipe"
+        :key="'recipe' + index"
+        class="insignia-recipe-row mb-1 flex flex-wrap items-center gap-1.5"
+      >
+        <IconButton title="Add recipe shape" @click="addRecipeShape"
+          ><Plus
+        /></IconButton>
+        <IconButton
+          title="Remove recipe shape"
+          @click="removeRecipeShape(index)"
+          ><Trash
+        /></IconButton>
+        <FormField :label="`Recipe shape ${index + 1}`">
+          <ComboBox
+            class="w-44"
+            :data-testid="`item-insignia-recipe-${index}`"
+            :options="recipeOptions"
+            :model-value="shape"
+            @update:model-value="(v) => (draft.insigniaRecipe[index] = v)"
+          />
+        </FormField>
+      </div>
+      <div
+        v-if="!draft.insigniaRecipe.length"
+        class="insignia-recipe-row mb-1 flex flex-wrap items-center gap-1.5"
+      >
+        <IconButton
+          title="Add recipe shape"
+          data-testid="item-add-recipe-shape"
+          @click="addRecipeShape"
+          ><Plus
+        /></IconButton>
+        <span class="text-muted">
+          The three or four shapes an insignia bonus is made of, matched
+          whatever order they end up slotted in.
+        </span>
+      </div>
+    </template>
 
     <FormSection>Stats</FormSection>
     <div
@@ -1015,338 +1367,25 @@ watch(
       <IconButton title="Add stat" @click="addStat"><Plus /></IconButton>
     </div>
 
-    <FormSection
-      >Dynamic stats (player types the value; default applies until they
-      do)</FormSection
-    >
-    <div
-      v-for="(row, index) in draft.dynamicStats"
-      :key="index"
-      class="dynamic-stat-row flex flex-wrap items-center gap-1.5 mb-1"
-    >
-      <IconButton title="Add dynamic stat" @click="addDynamicStat"
-        ><Plus
-      /></IconButton>
-      <IconButton title="Remove dynamic stat" @click="removeDynamicStat(index)"
-        ><Trash
-      /></IconButton>
-      <FormField label="Stat">
-        <ComboBox
-          class="combo--stat w-52"
-          :model-value="row.stat"
-          :options="dynamicStatOptions"
-          placeholder="- pick a stat -"
-          @update:model-value="(v) => (row.stat = v)"
-        />
-      </FormField>
-      <FormField label="Min">
-        <PercentInput
-          v-if="isPercent(row.stat)"
-          :model-value="row.min ?? ''"
-          class="w-24"
-          @update:model-value="(v) => (row.min = v)"
-        />
-        <input
-          v-else
-          v-model.number="row.min"
-          class="w-24 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-          type="number"
-        />
-      </FormField>
-      <FormField label="Max">
-        <PercentInput
-          v-if="isPercent(row.stat)"
-          :model-value="row.max ?? ''"
-          class="w-24"
-          @update:model-value="(v) => (row.max = v)"
-        />
-        <input
-          v-else
-          v-model.number="row.max"
-          class="w-24 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-          type="number"
-        />
-      </FormField>
-      <FormField label="Default">
-        <PercentInput
-          v-if="isPercent(row.stat)"
-          :model-value="row.default ?? ''"
-          class="w-24"
-          @update:model-value="(v) => (row.default = v)"
-        />
-        <input
-          v-else
-          v-model.number="row.default"
-          class="w-24 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-          type="number"
-        />
-      </FormField>
-      <FormField label="Label (optional)">
-        <input
-          v-model="row.label"
-          class="w-40 rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-          type="text"
-        />
-      </FormField>
-    </div>
-    <div
-      v-if="!draft.dynamicStats.length"
-      class="dynamic-stat-row flex flex-wrap items-center gap-1.5 mb-1"
-    >
-      <IconButton title="Add dynamic stat" @click="addDynamicStat"
-        ><Plus
-      /></IconButton>
-    </div>
-
-    <FormSection
-      >Inline repetition (boons, attributes, other point_assignment slots
-      filter)</FormSection
-    >
-    <div class="flex flex-wrap items-center gap-1.5 mb-2">
-      <IconButton
-        v-if="!repetitionActive"
-        title="Add inline repetition"
-        data-testid="add-inline-repetition"
-        @click="addInlineRepetition"
-        ><Plus
-      /></IconButton>
-      <IconButton
-        v-else
-        title="Remove inline repetition"
-        data-testid="remove-inline-repetition"
-        @click="removeInlineRepetition"
-        ><Trash
-      /></IconButton>
-      <FormGrid v-if="repetitionActive" data-testid="inline-repetition-fields">
-        <FormField label="Min">
-          <input
-            v-model.number="draft.repetitionMin"
-            class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-            type="number"
-          />
-        </FormField>
-        <FormField label="Max">
-          <input
-            v-model.number="draft.repetitionMax"
-            class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-            type="number"
-          />
-        </FormField>
-        <FormField label="Default">
-          <input
-            v-model.number="draft.repetitionDefault"
-            class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-            type="number"
-          />
-        </FormField>
-        <FormField label="Priority">
-          <input
-            v-model.number="draft.repetitionPriority"
-            class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-            type="number"
-          />
-        </FormField>
-        <FormField label="Label (optional, overrides the item name on its row)">
-          <input
-            v-model="draft.repetitionLabel"
-            class="w-40 rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-            type="text"
-            data-testid="inline-repetition-label-input"
-          />
-        </FormField>
-      </FormGrid>
-    </div>
-
-    <FormSection>Equipping this item suppresses</FormSection>
-    <TokenInput
-      v-model="draft.excludes"
-      :options="bonusIds"
-      placeholder="bonus id this item overrides…"
-    />
-    <p class="text-muted">
-      Item-level override: those bonuses go inactive whenever this item is
-      equipped, whatever grants them.
-    </p>
-
-    <FormSection>Description (optional)</FormSection>
-    <div class="flex flex-wrap items-center gap-1.5 mb-2">
-      <IconButton
-        v-if="!descriptionActive"
-        title="Add description"
-        data-testid="add-item-description"
-        @click="addDescription"
-        ><Plus
-      /></IconButton>
-      <IconButton
-        v-else
-        title="Remove description"
-        data-testid="remove-item-description"
-        @click="removeDescription"
-        ><Trash
-      /></IconButton>
-      <FormGrid v-if="descriptionActive" data-testid="item-description-fields">
-        <FormField
-          label="Short (shown next to the stat summary)"
-          class="min-w-80 flex-1"
-        >
-          <OcrTextField
-            v-model="draft.shortDescription"
-            single-line
-            :rows="2"
-            data-testid="item-short-description-input"
-            placeholder="e.g. AP when killing mobs"
-          />
-        </FormField>
-        <FormField
-          label="Long (shown on the hover card)"
-          class="min-w-80 flex-1"
-        >
-          <OcrTextField
-            v-model="draft.longDescription"
-            :rows="2"
-            data-testid="item-long-description-input"
-            placeholder="e.g. When you kill an enemy, gain 3% Action Points."
-          />
-        </FormField>
-      </FormGrid>
-    </div>
-
-    <FormSection
-      >Default build parameters (applied when this item is picked)</FormSection
-    >
-    <div
-      v-for="(row, index) in draft.defaultParams"
-      :key="index"
-      class="default-param-row flex flex-wrap items-center gap-1.5 mb-1"
-    >
-      <IconButton title="Add default build parameter" @click="addDefaultParam"
-        ><Plus
-      /></IconButton>
-      <IconButton
-        title="Remove default build parameter"
-        @click="removeDefaultParam(index)"
-        ><Trash
-      /></IconButton>
-      <ComboBox
-        class="w-52"
-        :model-value="row.slotId"
-        :options="defaultParamSlotOptions"
-        placeholder="- pick a build parameter -"
-        @update:model-value="(v) => (row.slotId = v)"
-      />
-      <BuildParamInput
-        v-if="slotForDefaultParam(row.slotId)"
-        v-model="row.value"
-        :slot-def="slotForDefaultParam(row.slotId)!"
-        >{{ slotForDefaultParam(row.slotId)?.label }}</BuildParamInput
+    <template v-if="showsGroup('dynamicStats')">
+      <FormSection data-testid="group-dynamic-stats"
+        >Dynamic stats (player types the value; default applies until they
+        do)</FormSection
       >
-    </div>
-    <div
-      v-if="!draft.defaultParams.length"
-      class="default-param-row flex flex-wrap items-center gap-1.5 mb-1"
-    >
-      <IconButton title="Add default build parameter" @click="addDefaultParam"
-        ><Plus
-      /></IconButton>
-    </div>
-
-    <FormSection
-      >Published build parameters (applied while this item is
-      equipped)</FormSection
-    >
-    <div
-      v-for="(row, index) in draft.publishes"
-      :key="index"
-      class="publishes-row flex flex-wrap items-center gap-1.5 mb-1"
-    >
-      <IconButton title="Add published value" @click="addPublishes"
-        ><Plus
-      /></IconButton>
-      <IconButton title="Remove published value" @click="removePublishes(index)"
-        ><Trash
-      /></IconButton>
-      <input
-        v-model="row.path"
-        class="w-52 rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-        type="text"
-        placeholder="Context path, e.g. class"
-        :data-testid="`publishes-path-${index}`"
-      />
-      <input
-        v-model="row.value"
-        class="w-52 rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-        type="text"
-        placeholder="Value"
-        :data-testid="`publishes-value-${index}`"
-      />
-    </div>
-    <div
-      v-if="!draft.publishes.length"
-      class="publishes-row flex flex-wrap items-center gap-1.5 mb-1"
-    >
-      <IconButton title="Add published value" @click="addPublishes"
-        ><Plus
-      /></IconButton>
-    </div>
-
-    <ItemBonuses
-      :attached-bonus-ids="draft.bonuses"
-      :occurrence-configs="draft.bonusOccurrences"
-      :item-name="draft.name"
-      :db="db"
-      :all-bonus-ids="allBonusIds"
-      :tags="tags"
-      :bonus-ids="bonusIds"
-      :allocatable-ids="props.allocatableIds"
-      @save-bonus="$emit('save-bonus', $event)"
-      @delete-bonus="$emit('delete-bonus', $event)"
-      @update-bonus="$emit('update-bonus', $event)"
-      @detach-bonus="detachBonus"
-      @attach-bonus="attachBonus"
-      @update-occurrence="(e) => updateBonusOccurrence(e.id, e.occurrence)"
-    />
-
-    <FormSection>Retirement</FormSection>
-    <div class="mb-1.5 flex flex-wrap items-center gap-x-4 gap-y-1.5">
-      <BaseCheckbox
-        v-model="draft.hideFromPicker"
-        data-testid="item-hide-from-picker"
-      >
-        Hide from pickers
-      </BaseCheckbox>
-      <div class="flex min-w-80 flex-1 items-center gap-1.5">
-        <span class="whitespace-nowrap text-muted">Replaced by</span>
-        <ComboBox
-          class="min-w-0 flex-1"
-          data-testid="item-replaced-by"
-          :options="replacementOptions"
-          :model-value="draft.replacedBy"
-          @update:model-value="(v) => (draft.replacedBy = v)"
-        />
-      </div>
-    </div>
-    <p class="mb-1.5 text-muted">
-      Hidden items are no longer offered as a new pick, but a build already
-      using one keeps calculating it. A replacement is followed everywhere an
-      item is looked up, and builds still holding the old id are offered the
-      rewrite.
-    </p>
-
-    <template v-if="draft.replacedBy">
       <div
-        v-for="(row, index) in draft.replacedByValues"
+        v-for="(row, index) in draft.dynamicStats"
         :key="index"
-        class="replaced-by-value-row flex flex-wrap items-center gap-1.5 mb-1"
+        class="dynamic-stat-row flex flex-wrap items-center gap-1.5 mb-1"
       >
-        <IconButton title="Add carried value" @click="addReplacedByValue"
+        <IconButton title="Add dynamic stat" @click="addDynamicStat"
           ><Plus
         /></IconButton>
         <IconButton
-          title="Remove carried value"
-          @click="removeReplacedByValue(index)"
+          title="Remove dynamic stat"
+          @click="removeDynamicStat(index)"
           ><Trash
         /></IconButton>
-        <FormField label="Carry stat">
+        <FormField label="Stat">
           <ComboBox
             class="combo--stat w-52"
             :model-value="row.stat"
@@ -1355,156 +1394,268 @@ watch(
             @update:model-value="(v) => (row.stat = v)"
           />
         </FormField>
-        <FormField label="Value on the replacement">
+        <FormField label="Min">
           <PercentInput
             v-if="isPercent(row.stat)"
-            :model-value="row.value ?? ''"
+            :model-value="row.min ?? ''"
             class="w-24"
-            @update:model-value="(v) => (row.value = v)"
+            @update:model-value="(v) => (row.min = v)"
           />
           <input
             v-else
-            v-model.number="row.value"
+            v-model.number="row.min"
             class="w-24 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
             type="number"
-            step="any"
+          />
+        </FormField>
+        <FormField label="Max">
+          <PercentInput
+            v-if="isPercent(row.stat)"
+            :model-value="row.max ?? ''"
+            class="w-24"
+            @update:model-value="(v) => (row.max = v)"
+          />
+          <input
+            v-else
+            v-model.number="row.max"
+            class="w-24 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+            type="number"
+          />
+        </FormField>
+        <FormField label="Default">
+          <PercentInput
+            v-if="isPercent(row.stat)"
+            :model-value="row.default ?? ''"
+            class="w-24"
+            @update:model-value="(v) => (row.default = v)"
+          />
+          <input
+            v-else
+            v-model.number="row.default"
+            class="w-24 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+            type="number"
+          />
+        </FormField>
+        <FormField label="Label (optional)">
+          <input
+            v-model="row.label"
+            class="w-40 rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+            type="text"
           />
         </FormField>
       </div>
       <div
-        v-if="!draft.replacedByValues.length"
-        class="replaced-by-value-row flex flex-wrap items-center gap-1.5 mb-1"
+        v-if="!draft.dynamicStats.length"
+        class="dynamic-stat-row flex flex-wrap items-center gap-1.5 mb-1"
       >
-        <IconButton
-          title="Add carried value"
-          data-testid="item-add-carried-value"
-          @click="addReplacedByValue"
+        <IconButton title="Add dynamic stat" @click="addDynamicStat"
           ><Plus
         /></IconButton>
-        <span class="text-muted">
-          Carry a value onto the replacement's dynamic stat, so a build moving
-          off this item keeps its number instead of taking the new item's
-          default.
-        </span>
       </div>
     </template>
 
-    <FormSection>Insignia</FormSection>
-    <p class="mb-1.5 text-muted">
-      An insignia's shape is what a mount's slot is matched against. A slot that
-      prefers that shape swaps in the stronger item named here instead, so only
-      the ordinary one names a preferred item; the preferred one names none.
-    </p>
-    <div class="mb-1.5 flex flex-wrap items-center gap-x-4 gap-y-1.5">
-      <FormField label="Insignia shape">
-        <ComboBox
-          class="w-44"
-          data-testid="item-insignia-shape"
-          :options="recipeOptions"
-          :model-value="draft.insigniaShape"
-          @update:model-value="(v) => (draft.insigniaShape = v)"
-        />
-      </FormField>
-      <FormField label="Preferred item">
-        <ComboBox
-          class="w-80"
-          data-testid="item-preferred-variant"
-          :options="preferredVariantOptions"
-          :model-value="draft.preferredVariant"
-          @update:model-value="(v) => (draft.preferredVariant = v)"
-        />
-      </FormField>
-    </div>
+    <template v-if="showsGroup('bonuses')">
+      <ItemBonuses
+        :attached-bonus-ids="draft.bonuses"
+        :occurrence-configs="draft.bonusOccurrences"
+        :item-name="draft.name"
+        :db="db"
+        :all-bonus-ids="allBonusIds"
+        :tags="tags"
+        :bonus-ids="bonusIds"
+        :allocatable-ids="props.allocatableIds"
+        @save-bonus="$emit('save-bonus', $event)"
+        @delete-bonus="$emit('delete-bonus', $event)"
+        @update-bonus="$emit('update-bonus', $event)"
+        @detach-bonus="detachBonus"
+        @attach-bonus="attachBonus"
+        @update-occurrence="(e) => updateBonusOccurrence(e.id, e.occurrence)"
+      />
+    </template>
 
-    <FormSection>Mount insignia slots</FormSection>
+    <template v-if="showsGroup('excludes')">
+      <FormSection data-testid="group-excludes"
+        >Equipping this item suppresses</FormSection
+      >
+      <TokenInput
+        v-model="draft.excludes"
+        :options="bonusIds"
+        placeholder="bonus id this item overrides…"
+      />
+      <p class="text-muted">
+        Item-level override: those bonuses go inactive whenever this item is
+        equipped, whatever grants them.
+      </p>
+    </template>
 
-    <div
-      v-for="(row, index) in draft.insigniaSlots"
-      :key="'slot' + index"
-      class="insignia-slot-row mb-1 flex flex-wrap items-center gap-1.5"
-    >
-      <IconButton title="Add insignia slot" @click="addInsigniaSlot"
-        ><Plus
-      /></IconButton>
-      <IconButton
-        title="Remove insignia slot"
-        @click="removeInsigniaSlot(index)"
-        ><Trash
-      /></IconButton>
-      <FormField :label="`Slot ${index + 1} shape`">
+    <template v-if="showsGroup('defaultParams')">
+      <FormSection data-testid="group-default-params"
+        >Default build parameters (applied when this item is
+        picked)</FormSection
+      >
+      <div
+        v-for="(row, index) in draft.defaultParams"
+        :key="index"
+        class="default-param-row flex flex-wrap items-center gap-1.5 mb-1"
+      >
+        <IconButton title="Add default build parameter" @click="addDefaultParam"
+          ><Plus
+        /></IconButton>
+        <IconButton
+          title="Remove default build parameter"
+          @click="removeDefaultParam(index)"
+          ><Trash
+        /></IconButton>
         <ComboBox
-          class="w-44"
-          :data-testid="`item-insignia-slot-${index}`"
-          :options="slotShapeOptions"
-          :model-value="row.shape"
-          @update:model-value="(v) => (row.shape = v)"
+          class="w-52"
+          :model-value="row.slotId"
+          :options="defaultParamSlotOptions"
+          placeholder="- pick a build parameter -"
+          @update:model-value="(v) => (row.slotId = v)"
         />
-      </FormField>
-      <FormField v-if="!row.shape || row.preferred" label="Prefers">
-        <ComboBox
-          class="w-44"
-          :data-testid="`item-insignia-slot-preferred-${index}`"
-          :options="preferredOptions"
-          :model-value="row.preferred"
-          @update:model-value="(v) => (row.preferred = v)"
-        />
-      </FormField>
-      <span v-if="row.shape && row.preferred" class="text-danger">
-        A fixed slot grants no preferred bonus. Clear one of the two.
-      </span>
-    </div>
-    <div
-      v-if="!draft.insigniaSlots.length"
-      class="insignia-slot-row mb-1 flex flex-wrap items-center gap-1.5"
-    >
-      <IconButton
-        title="Add insignia slot"
-        data-testid="item-add-insignia-slot"
-        @click="addInsigniaSlot"
-        ><Plus
-      /></IconButton>
-      <span class="text-muted">
-        A mount's insignia slots, in the order the game shows them. A slot with
-        no shape is universal and may name the shape it prefers.
-      </span>
-    </div>
+        <BuildParamInput
+          v-if="slotForDefaultParam(row.slotId)"
+          v-model="row.value"
+          :slot-def="slotForDefaultParam(row.slotId)!"
+          >{{ slotForDefaultParam(row.slotId)?.label }}</BuildParamInput
+        >
+      </div>
+      <div
+        v-if="!draft.defaultParams.length"
+        class="default-param-row flex flex-wrap items-center gap-1.5 mb-1"
+      >
+        <IconButton title="Add default build parameter" @click="addDefaultParam"
+          ><Plus
+        /></IconButton>
+      </div>
+    </template>
 
-    <FormSection>Insignia bonus recipe</FormSection>
-    <div
-      v-for="(shape, index) in draft.insigniaRecipe"
-      :key="'recipe' + index"
-      class="insignia-recipe-row mb-1 flex flex-wrap items-center gap-1.5"
-    >
-      <IconButton title="Add recipe shape" @click="addRecipeShape"
-        ><Plus
-      /></IconButton>
-      <IconButton title="Remove recipe shape" @click="removeRecipeShape(index)"
-        ><Trash
-      /></IconButton>
-      <FormField :label="`Recipe shape ${index + 1}`">
-        <ComboBox
-          class="w-44"
-          :data-testid="`item-insignia-recipe-${index}`"
-          :options="recipeOptions"
-          :model-value="shape"
-          @update:model-value="(v) => (draft.insigniaRecipe[index] = v)"
+    <template v-if="showsGroup('publishes')">
+      <FormSection data-testid="group-publishes"
+        >Published build parameters (applied while this item is
+        equipped)</FormSection
+      >
+      <div
+        v-for="(row, index) in draft.publishes"
+        :key="index"
+        class="publishes-row flex flex-wrap items-center gap-1.5 mb-1"
+      >
+        <IconButton title="Add published value" @click="addPublishes"
+          ><Plus
+        /></IconButton>
+        <IconButton
+          title="Remove published value"
+          @click="removePublishes(index)"
+          ><Trash
+        /></IconButton>
+        <input
+          v-model="row.path"
+          class="w-52 rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+          type="text"
+          placeholder="Context path, e.g. class"
+          :data-testid="`publishes-path-${index}`"
         />
-      </FormField>
-    </div>
-    <div
-      v-if="!draft.insigniaRecipe.length"
-      class="insignia-recipe-row mb-1 flex flex-wrap items-center gap-1.5"
-    >
-      <IconButton
-        title="Add recipe shape"
-        data-testid="item-add-recipe-shape"
-        @click="addRecipeShape"
-        ><Plus
-      /></IconButton>
-      <span class="text-muted">
-        The three or four shapes an insignia bonus is made of, matched whatever
-        order they end up slotted in.
-      </span>
-    </div>
+        <input
+          v-model="row.value"
+          class="w-52 rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+          type="text"
+          placeholder="Value"
+          :data-testid="`publishes-value-${index}`"
+        />
+      </div>
+      <div
+        v-if="!draft.publishes.length"
+        class="publishes-row flex flex-wrap items-center gap-1.5 mb-1"
+      >
+        <IconButton title="Add published value" @click="addPublishes"
+          ><Plus
+        /></IconButton>
+      </div>
+    </template>
+
+    <template v-if="showsGroup('retirement')">
+      <FormSection data-testid="group-retirement">Retirement</FormSection>
+      <div class="mb-1.5 flex flex-wrap items-center gap-x-4 gap-y-1.5">
+        <BaseCheckbox
+          v-model="draft.hideFromPicker"
+          data-testid="item-hide-from-picker"
+        >
+          Hide from pickers
+        </BaseCheckbox>
+        <div class="flex min-w-80 flex-1 items-center gap-1.5">
+          <span class="whitespace-nowrap text-muted">Replaced by</span>
+          <ComboBox
+            class="min-w-0 flex-1"
+            data-testid="item-replaced-by"
+            :options="replacementOptions"
+            :model-value="draft.replacedBy"
+            @update:model-value="(v) => (draft.replacedBy = v)"
+          />
+        </div>
+      </div>
+      <p class="mb-1.5 text-muted">
+        Hidden items are no longer offered as a new pick, but a build already
+        using one keeps calculating it. A replacement is followed everywhere an
+        item is looked up, and builds still holding the old id are offered the
+        rewrite.
+      </p>
+
+      <template v-if="draft.replacedBy">
+        <div
+          v-for="(row, index) in draft.replacedByValues"
+          :key="index"
+          class="replaced-by-value-row flex flex-wrap items-center gap-1.5 mb-1"
+        >
+          <IconButton title="Add carried value" @click="addReplacedByValue"
+            ><Plus
+          /></IconButton>
+          <IconButton
+            title="Remove carried value"
+            @click="removeReplacedByValue(index)"
+            ><Trash
+          /></IconButton>
+          <FormField label="Carry stat">
+            <ComboBox
+              class="combo--stat w-52"
+              :model-value="row.stat"
+              :options="dynamicStatOptions"
+              placeholder="- pick a stat -"
+              @update:model-value="(v) => (row.stat = v)"
+            />
+          </FormField>
+          <FormField label="Value on the replacement">
+            <PercentInput
+              v-if="isPercent(row.stat)"
+              :model-value="row.value ?? ''"
+              class="w-24"
+              @update:model-value="(v) => (row.value = v)"
+            />
+            <input
+              v-else
+              v-model.number="row.value"
+              class="w-24 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+              type="number"
+              step="any"
+            />
+          </FormField>
+        </div>
+        <div
+          v-if="!draft.replacedByValues.length"
+          class="replaced-by-value-row flex flex-wrap items-center gap-1.5 mb-1"
+        >
+          <IconButton
+            title="Add carried value"
+            data-testid="item-add-carried-value"
+            @click="addReplacedByValue"
+            ><Plus
+          /></IconButton>
+          <span class="text-muted">
+            Carry a value onto the replacement's dynamic stat, so a build moving
+            off this item keeps its number instead of taking the new item's
+            default.
+          </span>
+        </div>
+      </template>
+    </template>
   </div>
 </template>

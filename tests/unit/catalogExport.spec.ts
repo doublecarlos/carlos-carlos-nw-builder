@@ -8,6 +8,7 @@ import type {
   SectionPreset,
   SlotSection,
   FilterDefaultsMap,
+  FilterFieldsMap,
 } from "../../src/types";
 
 describe("catalogExport.toItemsFile", () => {
@@ -106,7 +107,7 @@ describe("catalogExport.toSlotsFile", () => {
     ];
 
     const parsed = JSON.parse(
-      catalogExport.toSlotsFile(sections, slots, presets, {}),
+      catalogExport.toSlotsFile(sections, slots, presets, {}, {}),
     );
 
     expect(parsed.sections).toEqual([
@@ -147,7 +148,9 @@ describe("catalogExport.toSlotsFile", () => {
     const sections: SlotSection[] = [
       { defaultOpen: true, id: "a", label: "A" },
     ];
-    const parsed = JSON.parse(catalogExport.toSlotsFile(sections, [], [], {}));
+    const parsed = JSON.parse(
+      catalogExport.toSlotsFile(sections, [], [], {}, {}),
+    );
     expect(Object.hasOwn(parsed.sections[0], "presets")).toBe(false);
   });
 
@@ -157,9 +160,20 @@ describe("catalogExport.toSlotsFile", () => {
       gear_head: { maxCopies: 2 },
     };
     const parsed = JSON.parse(
-      catalogExport.toSlotsFile([], [], [], filterDefaults),
+      catalogExport.toSlotsFile([], [], [], filterDefaults, {}),
     );
     expect(parsed.filterDefaults).toEqual(filterDefaults);
+  });
+
+  it("carries filterFields through unchanged", () => {
+    const filterFields: FilterFieldsMap = {
+      mount: ["insigniaSlots"],
+      insignia: ["insigniaShape", "preferredVariant"],
+    };
+    const parsed = JSON.parse(
+      catalogExport.toSlotsFile([], [], [], {}, filterFields),
+    );
+    expect(parsed.filterFields).toEqual(filterFields);
   });
 
   it("produces valid JSON for the real shipped data", () => {
@@ -169,9 +183,11 @@ describe("catalogExport.toSlotsFile", () => {
         NW_SLOTS.slots,
         NW_SLOTS.presets ?? [],
         NW_SLOTS.filterDefaults ?? {},
+        NW_SLOTS.filterFields ?? {},
       ),
     );
     expect(parsed.sections.length).toBe(NW_SLOTS.sections.length);
     expect(parsed.filterDefaults).toEqual(NW_SLOTS.filterDefaults);
+    expect(parsed.filterFields).toEqual(NW_SLOTS.filterFields);
   });
 });

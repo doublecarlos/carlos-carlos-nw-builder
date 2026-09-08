@@ -507,3 +507,24 @@ describe("Db.bonusesFor / bonusMembers with mixed bonus attachments", () => {
     expect(built.bonusMembers.get("bonus-b")).toEqual(["mixed-item"]);
   });
 });
+
+describe("Db.filterFields", () => {
+  const slots: SlotsData = {
+    sections: [{ id: "gear", label: "Gear" }],
+    slots: [],
+    filterFields: { test_mount: ["insigniaSlots"] },
+  };
+
+  it("carries the declaration through to the composed db", () => {
+    const built = db.build([], [], NW_SCHEMA, slots);
+    expect(built.filterFields).toEqual({ test_mount: ["insigniaSlots"] });
+  });
+
+  it("is empty when the slots file declares none", () => {
+    const built = db.build([], [], NW_SCHEMA, {
+      ...slots,
+      filterFields: undefined,
+    });
+    expect(built.filterFields).toEqual({});
+  });
+});

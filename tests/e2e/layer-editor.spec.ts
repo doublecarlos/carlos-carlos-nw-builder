@@ -2,7 +2,7 @@
 // Selecting a layer replaces the build editor and stat panel; editing an item in a layer shows
 // its effect on the build's resolved stats after switching back.
 import { test, expect, type Locator, type Page } from "@playwright/test";
-import { openBuilder, chooseItem } from "./support/app";
+import { openBuilder, chooseItem, setItemFilter } from "./support/app";
 import { addLayer, layerRow } from "./support/nav";
 
 const HEAD_ITEM = "M29 Enchanted Depthweave Cap";
@@ -259,7 +259,7 @@ test.describe("point_assignment items in the Layer Editor", () => {
     // "boon_tier1" is the shipped "Tier 1" point_assignment slot's own filter (data/
     // slots.json) -- an item carrying it is resolved as a stepper row via that slot's filter,
     // not chosen from a picker.
-    await page.getByTestId("item-filter-input").fill("boon_tier1");
+    await setItemFilter(page, "boon_tier1");
 
     await page.getByRole("button", { name: "Save item" }).click();
 

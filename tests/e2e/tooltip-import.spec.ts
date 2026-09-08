@@ -7,7 +7,7 @@
 // them, so a value that appears at all is expected to be right.
 import { test, expect } from "@playwright/test";
 import { fileURLToPath } from "node:url";
-import { openBuilder } from "./support/app";
+import { openBuilder, setItemFilter } from "./support/app";
 import { addLayer, layerRow } from "./support/nav";
 
 const TOOLTIP = fileURLToPath(
@@ -186,7 +186,7 @@ test.describe("applying tooltip values to the item being edited", () => {
   }) => {
     await openLayerEditor(page);
     await page.getByTestId("item-name-input").fill("ZZZ Apply Target");
-    await page.getByTestId("item-filter-input").fill("gear_head");
+    await setItemFilter(page, "gear_head");
     await page.getByRole("button", { name: "Save item" }).click();
 
     await openImportWithText(page);
@@ -254,7 +254,7 @@ test.describe("applying tooltip values to the item being edited", () => {
   test("overwrites a stat the item already carries", async ({ page }) => {
     await openLayerEditor(page);
     await page.getByTestId("item-name-input").fill("ZZZ Overwrite Target");
-    await page.getByTestId("item-filter-input").fill("gear_head");
+    await setItemFilter(page, "gear_head");
     await openImportWithText(page);
     await page.getByTestId("tooltip-import-apply-stat-power").click();
     await closeImport(page);

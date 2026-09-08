@@ -8,7 +8,13 @@
 // edit.
 import { test, expect } from "@playwright/test";
 import type { Page } from "@playwright/test";
-import { openBuilder, slotRow, pickerInput, chooseItem } from "./support/app";
+import {
+  openBuilder,
+  slotRow,
+  pickerInput,
+  chooseItem,
+  setItemFilter,
+} from "./support/app";
 import { addLayer, layerRow } from "./support/nav";
 
 const OLD_ITEM = "ZZZ Test Retired Ring";
@@ -17,7 +23,7 @@ const NEW_ITEM = "ZZZ Test Replacement Ring";
 async function createItem(page: Page, name: string) {
   await page.getByTestId("new-item").click();
   await page.getByTestId("item-name-input").fill(name);
-  await page.getByTestId("item-filter-input").fill("gear_ring");
+  await setItemFilter(page, "gear_ring");
   // Opts out of the copy cap gear_ring declares: the flows below hold one item in both rings.
   await page.getByTestId("item-max-copies").fill("0");
   await page.getByRole("button", { name: "Save item" }).click();
@@ -59,7 +65,7 @@ async function retireItem(page: Page, name: string, replacedBy?: string) {
 async function createDynamicItem(page: Page, name: string) {
   await page.getByTestId("new-item").click();
   await page.getByTestId("item-name-input").fill(name);
-  await page.getByTestId("item-filter-input").fill("gear_ring");
+  await setItemFilter(page, "gear_ring");
   await page.getByRole("button", { name: "Add dynamic stat" }).first().click();
   // Positional number inputs and the picker's own testid, the same way
   // item-editor-groups.spec.ts drives these rows -- FormField renders a bare span, so its

@@ -16,6 +16,7 @@ import {
   slotRow,
   occurrenceInput,
   pickerInput,
+  setItemFilter,
 } from "./support/app";
 import { addLayer, layerRow } from "./support/nav";
 
@@ -126,7 +127,7 @@ const AUTHORED_BONUS = "ZZZ Preset Occurrence Bonus";
 async function authorRingWithOccurrenceConfig(page: Page) {
   await page.getByTestId("new-item").click();
   await page.getByTestId("item-name-input").fill(AUTHORED_ITEM);
-  await page.getByTestId("item-filter-input").fill("gear_ring");
+  await setItemFilter(page, "gear_ring");
 
   await page.getByLabel("Add bonus").click();
   await page.getByTestId("bonus-name-input").fill(AUTHORED_BONUS);

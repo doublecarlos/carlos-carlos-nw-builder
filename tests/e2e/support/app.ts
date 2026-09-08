@@ -252,3 +252,13 @@ export async function confirmImport(page: Page) {
   await page.getByTestId("import-confirm").click();
   await expect(picker).toBeHidden();
 }
+
+/** Fills the item form's filter combobox and commits it. `fill` alone leaves an uncommitted
+ *  query (the combobox commits on blur), and the filter decides which field groups the form
+ *  offers, so a test reaching for one has to commit it before that group exists to click. */
+export async function setItemFilter(page: Page, filter: string) {
+  const input = page.getByTestId("item-filter-input");
+  await input.fill(filter);
+  await input.blur();
+  await expect(input).toHaveValue(filter);
+}

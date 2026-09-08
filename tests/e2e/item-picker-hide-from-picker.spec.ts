@@ -5,7 +5,12 @@
 // through the real layer editor UI rather than editing shipped game data, since the flag has
 // no shipped example yet.
 import { test, expect } from "@playwright/test";
-import { openBuilder, slotRow, pickerInput } from "./support/app";
+import {
+  openBuilder,
+  slotRow,
+  pickerInput,
+  setItemFilter,
+} from "./support/app";
 import { addLayer, layerRow } from "./support/nav";
 
 const HIDDEN_ITEM = "ZZZ Test Hide From Picker Item";
@@ -21,7 +26,7 @@ async function createItemWithProblemGrant(
 ) {
   await page.getByTestId("new-item").click();
   await page.getByTestId("item-name-input").fill(name);
-  await page.getByTestId("item-filter-input").fill("gear_head");
+  await setItemFilter(page, "gear_head");
 
   await page.getByLabel("Add bonus").click();
   await page.getByLabel("Add grant").click();

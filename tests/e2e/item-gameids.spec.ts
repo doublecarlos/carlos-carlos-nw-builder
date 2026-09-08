@@ -1,7 +1,7 @@
 // End-to-end coverage for the gameIds field: a TokenInput on the
 // item form that lets a layer teach the importer new Hitem mappings with no code change.
 import { test, expect } from "@playwright/test";
-import { openBuilder } from "./support/app";
+import { openBuilder, setItemFilter } from "./support/app";
 import { addLayer, layerRow } from "./support/nav";
 
 const UNIQUE_ITEM = "ZZZ Test GameIds Item";
@@ -14,7 +14,7 @@ test("gameIds persist after saving and reopening the item", async ({
   await layerRow(page, "Layer 1").locator(".nav-name").click();
   await page.getByTestId("new-item").click();
   await page.getByTestId("item-name-input").fill(UNIQUE_ITEM);
-  await page.getByTestId("item-filter-input").fill("gear_head");
+  await setItemFilter(page, "gear_head");
 
   const gameIdsField = page.getByTestId("item-gameids-input");
   const gameIdsInput = gameIdsField.locator("input");

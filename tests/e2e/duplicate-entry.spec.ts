@@ -2,7 +2,7 @@
 // editable draft pre-filled from the selected entry, saved only on explicit confirmation --
 // never overwrites the original, and Save mints a fresh id since the name is still taken.
 import { test, expect } from "@playwright/test";
-import { openBuilder } from "./support/app";
+import { openBuilder, setItemFilter } from "./support/app";
 import { addLayer, layerRow } from "./support/nav";
 
 const ITEM_NAME = "ZZZ Test Duplicate Item";
@@ -18,7 +18,7 @@ test("duplicating an item opens a pre-filled draft that saves as a separate item
   // Create the original item.
   await page.getByTestId("new-item").click();
   await page.getByTestId("item-name-input").fill(ITEM_NAME);
-  await page.getByTestId("item-filter-input").fill("gear_head");
+  await setItemFilter(page, "gear_head");
   await page.getByRole("button", { name: "Save item" }).click();
   await expect(page.locator(".editor-row", { hasText: ITEM_NAME })).toHaveCount(
     1,
@@ -103,7 +103,7 @@ test("duplicating a bonus attached to an item adds a pre-filled unsaved bonus", 
   // Create the item, then add and save one bonus directly in its Bonuses section.
   await page.getByTestId("new-item").click();
   await page.getByTestId("item-name-input").fill(ITEM);
-  await page.getByTestId("item-filter-input").fill("gear_head");
+  await setItemFilter(page, "gear_head");
   await page.getByRole("button", { name: "Save item" }).click();
 
   await page.getByRole("button", { name: "Add bonus" }).click();
