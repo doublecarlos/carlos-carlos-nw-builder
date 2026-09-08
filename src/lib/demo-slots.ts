@@ -1,31 +1,25 @@
-// Maps a demo's equipment bags (`Ebagid` + `Islotidx`) to this app's slot ids, and applies the
-// one placement rule that covers every bag's awkward cases: for each demo item in a bag, in
-// file order, resolve its `Hitem` through `Db.itemByGameId` to the entries claiming it, then
-// take the first candidate app slot that's still empty and whose filter accepts one of them.
-// No per-slot bookkeeping. Searching slots and claimants together is also what disambiguates
-// an in-game item modelled here as several entries -- see `resolveAt`.
+// Maps a demo's equipment bags (`Ebagid` + `Islotidx`) to this app's slot ids.
+//
+// A bag is seated as a whole, never item by item in slot order: the demo records `Islotidx`
+// against the layout the game showed that character's class, and those layouts differ per class.
+// Any complete seating is equivalent, since nothing the engine evaluates can see slot ids.
 import gameImportJson from "../../data/game-import.json";
 import type { Db, Item, Slot } from "../types";
 import type { DemoItem } from "./demo-snapshot";
 
 export interface GameBagEntry {
   bag: string;
-  /** Ordered candidate app slots, resolved by the placement rule below. */
+  /** Candidate app slots. Order picks between equally valid seatings, never whether one exists. */
   slots?: string[];
-  /** `MountEquippedActiveSlots` only: `gemSlots[mountIndex][gemIndex]`, the two-dimensional
-   *  case the generic rule cannot express (a mount at `Islotidx` n has up to 4 insignia).
-   *  Pairs with `slots`, which then takes the bag's own items positionally: the mount at
-   *  `Islotidx` n is `slots[n]` and its insignia are `gemSlots[n]`. */
+  /** `MountEquippedActiveSlots` only. Pairs with `slots`, which then takes this bag's own items
+   *  positionally: the mount at `Islotidx` n is `slots[n]`, its insignia `gemSlots[n]`. */
   gemSlots?: string[][];
-  /** Present in the demo but deliberately unmodelled (cosmetics, movement speed, ...); the
-   *  reason surfaces in the coverage report as "ignored on purpose" rather than "unrecognised". */
+  /** Present in the demo but deliberately unmodelled; reported as ignored, not unrecognised. */
   notModelled?: string;
 }
 
-/** Authored explanation for a group of `notInDemo` slots (see `notInDemoGroups` below) -- either
- *  a handful of explicit slot ids (a partial section, e.g. only the non-class Options slots) or
- *  one or more whole `SlotSection` ids, resolved against the live slot list at read time so this
- *  table doesn't have to be kept in sync by hand when a section's slot count changes. */
+/** Explanation for a group of `notInDemo` slots, named by slot id or by whole section. Sections
+ *  resolve against the live slot list, so a section's slot count can change without an edit. */
 export interface NotInDemoReasonEntry {
   label: string;
   reason: string;
@@ -35,19 +29,16 @@ export interface NotInDemoReasonEntry {
 
 export interface GameImportDataFile {
   bags: GameBagEntry[];
-  /** Render order for the coverage report's "Not in the demo" group -- see `notInDemoGroups`. */
+  /** Render order for the coverage report's "Not in the demo" group. */
   notInDemoReasons: NotInDemoReasonEntry[];
-  /** `Ppbuilds/Hclass` -> this app's `options.class` value. Per-character, not per-loadout --
-   *  every loadout imported off one character gets the same class. */
+  /** `Ppbuilds/Hclass` -> `options.class` value. Per-character, so every loadout shares it. */
   hclassToClass: Record<string, string>;
-  /** `Costumev5/Peffectivecostume/Species`, gender suffix stripped, -> the item id
-   *  `raceLeveling.race` (an `item_picker` slot) resolves the choice to. Confirmed against
-   *  real recordings for Aasimar and Human only --
-   *  Gith and Wood Elf tokens are unconfirmed (Neverwinter's Gith subrace naming doesn't
-   *  obviously collapse to one token the way the others do) and are deliberately left out until
-   *  a recording of each turns up, the same gap `hclassToClass` had until a real Warlock
-   *  recording showed "Player_Scourge" rather than the guessable "Player_Warlock". */
+  /** `Species` with its gender suffix stripped -> the `raceLeveling.race` item id. Only tokens
+   *  confirmed against a real recording belong here; a guessed one equips the wrong race. */
   speciesToRace: Record<string, string>;
+  /** Slot id -> item id an imported build falls back to. Applied once every bag is placed and
+   *  only where the slot is still empty, so a recognised game item always wins. */
+  defaultChoices: Record<string, string>;
 }
 
 export const GAME_IMPORT_DATA: GameImportDataFile =
@@ -61,16 +52,13 @@ export function bagEntry(bag: string): GameBagEntry | undefined {
   return bagsByName.get(bag);
 }
 
-/** Candidate app slot ids for one `unrecognised` outcome's bag+slot -- the same lookup
- *  `placeBag` does internally, exposed for the coverage report's "map to an item" picker.
- *  `slot` is the outcome's own `Islotidx`, only meaningful as a mount index for a `gemSlots`
- *  bag. An unknown bag or a `notModelled` one (which never produces `unrecognised` anyway)
- *  has no legal app slot at all. */
+/** Candidate app slot ids behind one `unrecognised` outcome, for the report's "map to an item"
+ *  picker. `slot` is the outcome's `Islotidx`, only meaningful as a mount index for a gem bag. */
 export function candidateSlotIds(bag: string, slot: number): string[] {
   const entry = bagEntry(bag);
   if (!entry) return [];
-  // A gem bag carrying `slots` holds two kinds of item at one index, and an `unrecognised`
-  // outcome records only that index, so both are offered and the names tell them apart.
+  // A gem bag holds a mount and its insignia at one index, and the outcome records only that
+  // index, so both are offered.
   if (entry.gemSlots) {
     const mount = entry.slots?.[slot];
     return [...(mount ? [mount] : []), ...(entry.gemSlots[slot] ?? [])];
@@ -91,27 +79,38 @@ export function raceFromSpecies(species: string | null): string | null {
 }
 
 export type PlacementResult =
-  /** Game item recognised and placed. */
   | { kind: "imported"; slotId: string; gameId: string; itemId: string }
-  /** Game item present but no catalogue entry claims its `Hitem`. `slot` is the demo's own
-   *  `Islotidx` (a mount's, for a gem) -- context for the coverage report, not an app slot. */
+  /** `slot` is the demo's own `Islotidx` (a mount's, for a gem), never an app slot. */
   | { kind: "unrecognised"; bag: string; slot: number; gameId: string }
-  /** Bag is `notModelled` in game-import.json -- ignored on purpose. */
   | { kind: "ignored"; bag: string; gameId: string; reason: string }
-  /** Recognised, but every candidate app slot for its bag was already full. */
+  /** Recognised, but no candidate slot was free. */
   | { kind: "overflow"; bag: string; gameId: string; itemId: string };
 
-/**
- * Resolves one game id against `db` and places it in the first of `candidates` that will take
- * it. Shared by both placement shapes below; `bag`/`slot` are only stamped onto the
- * non-"imported" variants, matching `PlacementResult`.
- *
- * A game id can have several claiming entries -- the offense / defense / utility forms of one
- * in-game enchantment -- and which one the demo meant is decided here, by which candidate slot
- * accepts which entry. That needs no extra data: a bag's slots already carve the catalogue by
- * `filter` (`OffenseGem` reaches only `enchantment_offense` slots, and so on), so the bag the
- * game recorded the item in *is* the disambiguator.
- */
+/** Every candidate slot accepting `gameId`, in candidate order, paired with the catalogue entry
+ *  that slot resolves it to. One game id can have several claimants (an enchantment's offense
+ *  and defense forms); the accepting slot is what picks between them. */
+function optionsFor(
+  gameId: string,
+  candidates: readonly string[],
+  db: Db,
+  acceptedBy: Map<string, Item[]> = new Map(),
+): { slotId: string; itemId: string }[] {
+  const claimants = db.itemByGameId.get(gameId) ?? [];
+  const options: { slotId: string; itemId: string }[] = [];
+  for (const slotId of candidates) {
+    let accepted = acceptedBy.get(slotId);
+    if (!accepted) {
+      accepted = db.forSlot(slotId);
+      acceptedBy.set(slotId, accepted);
+    }
+    const itemId = claimants.find((id) => accepted.some((i) => i.id === id));
+    if (itemId) options.push({ slotId, itemId });
+  }
+  return options;
+}
+
+/** First-free placement, for the single-candidate shape: a mount and each of its insignia have
+ *  exactly one possible home, so there is nothing for the matching below to choose between. */
 function resolveAt(
   gameId: string,
   candidates: readonly string[],
@@ -123,27 +122,111 @@ function resolveAt(
   const claimants = db.itemByGameId.get(gameId) ?? [];
   if (!claimants.length) return { kind: "unrecognised", bag, slot, gameId };
 
-  // `fallback` is the entry the bag *would* have used had a slot been free -- so a full bag
-  // reports the reading the player actually had, not whichever claimant the catalogue happens
-  // to list first (which for a shared game id may be a form this bag can't even hold).
-  let fallback: string | null = null;
-  for (const slotId of candidates) {
-    const accepted = db.forSlot(slotId);
-    const itemId = claimants.find((id) => accepted.some((i) => i.id === id));
-    if (!itemId) continue;
-    fallback ??= itemId;
+  const options = optionsFor(gameId, candidates, db);
+  for (const { slotId, itemId } of options) {
     if (occupied.has(slotId)) continue;
     occupied.add(slotId);
     return { kind: "imported", slotId, gameId, itemId };
   }
-  return { kind: "overflow", bag, gameId, itemId: fallback ?? claimants[0] };
+  // Report the entry this bag would have used, not whichever claimant is listed first.
+  return {
+    kind: "overflow",
+    bag,
+    gameId,
+    itemId: options[0]?.itemId ?? claimants[0],
+  };
+}
+
+interface Pending {
+  resultIndex: number;
+  gameId: string;
+  options: { slotId: string; itemId: string }[];
+  /** Reported when the matching leaves this item unseated. */
+  fallbackItemId: string;
 }
 
 /**
- * Places every non-empty item of one bag into a concrete app slot, mutating `occupied` as it
- * goes so later items (this bag or a later one) see what's already taken. `items` must already
- * be in the order the placement rule should apply them in (file order, i.e. `Islotidx` order).
+ * Maximum bipartite matching (Kuhn's augmenting paths) between a bag's recognised items and the
+ * candidate slots `occupied` leaves free. Each item is first offered a free slot in candidate
+ * order, so a bag plain first-fit could already seat is seated identically; only a blocked item
+ * displaces a seated one onto another of its own options.
  */
+function placeByMatching(
+  bag: string,
+  items: DemoItem[],
+  candidates: readonly string[],
+  db: Db,
+  occupied: Set<string>,
+): PlacementResult[] {
+  const acceptedBy = new Map<string, Item[]>();
+  const results: PlacementResult[] = [];
+  const pending: Pending[] = [];
+
+  for (const item of items) {
+    if (item.gameId == null) continue; // an empty demo slot is not a finding
+    const gameId = item.gameId;
+    const claimants = db.itemByGameId.get(gameId) ?? [];
+    if (!claimants.length) {
+      results.push({ kind: "unrecognised", bag, slot: item.slot, gameId });
+      continue;
+    }
+    const options = optionsFor(gameId, candidates, db, acceptedBy);
+    pending.push({
+      resultIndex: results.length,
+      gameId,
+      options,
+      fallbackItemId: options[0]?.itemId ?? claimants[0],
+    });
+    // Placeholder holding this item's position; every one is overwritten below.
+    results.push({ kind: "overflow", bag, gameId, itemId: claimants[0] });
+  }
+
+  const seatedBy = new Map<string, number>();
+  const seat = (index: number, seen: Set<string>): boolean => {
+    const { options } = pending[index];
+    for (const { slotId } of options) {
+      if (occupied.has(slotId) || seen.has(slotId) || seatedBy.has(slotId))
+        continue;
+      seen.add(slotId);
+      seatedBy.set(slotId, index);
+      return true;
+    }
+    for (const { slotId } of options) {
+      if (occupied.has(slotId) || seen.has(slotId)) continue;
+      seen.add(slotId);
+      if (seat(seatedBy.get(slotId)!, seen)) {
+        seatedBy.set(slotId, index);
+        return true;
+      }
+    }
+    return false;
+  };
+  pending.forEach((_, index) => seat(index, new Set()));
+
+  const slotOf = new Map<number, string>();
+  for (const [slotId, index] of seatedBy) {
+    slotOf.set(index, slotId);
+    occupied.add(slotId);
+  }
+
+  pending.forEach((entry, index) => {
+    const slotId = slotOf.get(index);
+    const seated = entry.options.find((option) => option.slotId === slotId);
+    results[entry.resultIndex] = seated
+      ? { kind: "imported", ...seated, gameId: entry.gameId }
+      : {
+          kind: "overflow",
+          bag,
+          gameId: entry.gameId,
+          itemId: entry.fallbackItemId,
+        };
+  });
+
+  return results;
+}
+
+/** Places one bag's non-empty items, adding each seated slot to `occupied` for later bags. One
+ *  result per non-empty item, in `items` order, which the coverage report indexes into. */
 export function placeBag(
   bag: string,
   items: DemoItem[],
@@ -152,8 +235,7 @@ export function placeBag(
 ): PlacementResult[] {
   const entry = bagEntry(bag);
 
-  // A bag the table doesn't know about at all (an unexpected client update) -- surface every
-  // item as unrecognised rather than silently dropping it.
+  // An unknown bag (a client update): surface its items rather than dropping them.
   if (!entry) {
     return items
       .filter(
@@ -205,22 +287,12 @@ export function placeBag(
     return results;
   }
 
-  const candidates = entry.slots ?? [];
-  const results: PlacementResult[] = [];
-  for (const item of items) {
-    if (item.gameId == null) continue; // an empty demo slot is not a finding
-    results.push(
-      resolveAt(item.gameId, candidates, db, occupied, bag, item.slot),
-    );
-  }
-  return results;
+  return placeByMatching(bag, items, entry.slots ?? [], db, occupied);
 }
 
-/** Every `item_picker` / `point_assignment` / `build_parameter` slot no bag entry names --
- *  what the coverage report renders as `notInDemo`. `options.class` and `raceLeveling.race`
- *  are excluded even though no bag names them: they're importable from `Ppbuilds/Hclass` and
- *  `Costumev5/Peffectivecostume/Species` respectively, just not through a bag at all. A stable
- *  bonus row is excluded because it derives from the insignia the demo does record. */
+/** Every value-holding slot no bag entry names, which the report renders as `notInDemo`.
+ *  `options.class` and `raceLeveling.race` are excluded because they import from the character
+ *  rather than a bag, a stable bonus row because it derives from the insignia. */
 export function notInDemoSlotIds(slots: Slot[]): string[] {
   const named = new Set<string>(["options.class", "raceLeveling.race"]);
   for (const entry of GAME_IMPORT_DATA.bags) {
@@ -248,17 +320,14 @@ export interface NotInDemoGroup {
   slotIds: string[];
 }
 
-/** One known lossy mapping from the placement rule itself, surfaced as a standing
- *  caveat rather than tied to any one outcome: mount combat power rarity is a silent
- *  narrowing of what an imported item actually is. */
+/** Standing caveats about what an import narrows, shown whatever the outcomes were. */
 export const KNOWN_LOSSY_NOTES = [
   "Mount combat power rarity (Celestial or not) isn't recorded - an imported mount combat power may not match the rarity you had equipped.",
+  "A mount combat power the catalogue doesn't model yet stays on the generic one.",
 ];
 
-/** Rolls a loadout's `notInDemo` slot ids up into `data/game-import.json`'s authored groups
- *  (only those with at least one id actually missing from this loadout), plus a catch-all per
- *  real section for any slot the table doesn't name yet -- so a future slot always shows up
- *  somewhere instead of silently vanishing from the report. */
+/** Rolls `notInDemo` slot ids up into the authored groups, plus a catch-all per section for any
+ *  slot the table does not name, so a new slot cannot vanish from the report. */
 export function notInDemoGroups(db: Db, slotIds: string[]): NotInDemoGroup[] {
   const present = new Set(slotIds);
   const bySection = new Map<string, string[]>();
@@ -342,8 +411,8 @@ export function validateGameBags(
   };
 
   for (const entry of bags) {
-    // `slots` and `gemSlots` pair up on a bag holding mounts and their insignia at once;
-    // `notModelled` is the whole bag's answer and pairs with neither.
+    // `slots` and `gemSlots` pair up; `notModelled` answers for the whole bag and pairs with
+    // neither.
     const placed = entry.slots !== undefined || entry.gemSlots !== undefined;
     const notModelled = entry.notModelled !== undefined;
     if (placed === notModelled) {
@@ -363,10 +432,9 @@ export function validateGameBags(
 }
 
 /**
- * - `slotId` names an `item_picker` slot that actually exists
- * - every value the map targets is one of that slot's own candidate item ids -- a typo in
- *   game-import.json would otherwise silently produce a `Build` whose choice resolves to
- *   nothing.
+ * - `slotId` names an `item_picker` slot that exists
+ * - every value is one of that slot's own candidate item ids, so a typo cannot produce a
+ *   choice that resolves to nothing
  */
 export function validateItemValueMap(
   map: Record<string, string>,
@@ -399,15 +467,8 @@ export function validateItemValueMap(
   return findings;
 }
 
-/**
- * Every value the map targets is one some item actually publishes at `path` (`Item.publishes`)
- * -- a typo in game-import.json (e.g. "warlok") would otherwise silently produce a `Build`
- * whose class resolves to nothing at all.
- *
- * Checked against published values rather than a list param's options because that is where
- * this vocabulary lives now: `options.class` is an ordinary `item_picker`, and the bare
- * class name a demo carries is resolved through the item publishing it.
- */
+/** Every value the map targets is one some item publishes at `path` (`Item.publishes`), which
+ *  is where this vocabulary lives: a typo would otherwise resolve to nothing at all. */
 export function validateValueMap(
   map: Record<string, string>,
   path: string,
@@ -484,5 +545,36 @@ export function validateNotInDemoReasons(
     }
   }
 
+  return findings;
+}
+
+/**
+ * - every key names an `item_picker` slot that exists
+ * - every value is one of that slot's own candidate item ids
+ */
+export function validateDefaultChoices(
+  map: Record<string, string>,
+  db: Db,
+  context: string,
+): GameImportLintFinding[] {
+  const findings: GameImportLintFinding[] = [];
+  for (const [slotId, itemId] of Object.entries(map)) {
+    const slot = db.slotById.get(slotId);
+    if (!slot || slot.type !== "item_picker") {
+      findings.push({
+        level: "error",
+        context,
+        message: `slot "${slotId}" does not exist as an item_picker in data/slots.json`,
+      });
+      continue;
+    }
+    if (!db.forSlot(slotId).some((item) => item.id === itemId)) {
+      findings.push({
+        level: "error",
+        context,
+        message: `"${slotId}" defaults to "${itemId}", not one of its own candidate item ids`,
+      });
+    }
+  }
   return findings;
 }

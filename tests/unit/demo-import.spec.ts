@@ -1,7 +1,5 @@
-// demo-import.ts's buildFromLoadout: turns one demo loadout into a Build + coverage report.
-// Pure -- no Vue, no stores -- so it's exercised directly against hand-built DemoCharacter/
-// DemoLoadout fixtures (for precise control over outcomes) plus one end-to-end pass over the
-// shared parser fixture.
+// demo-import.ts's buildFromLoadout. Pure, so it runs against hand-built DemoCharacter and
+// DemoLoadout fixtures, plus one end-to-end pass over the shared parser fixture.
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -9,6 +7,7 @@ import * as catalog from "../../src/data/catalog";
 import { parseDemo } from "../../src/lib/demo-format";
 import { readSnapshot } from "../../src/lib/demo-snapshot";
 import { buildFromLoadout } from "../../src/lib/demo-import";
+import { GAME_IMPORT_DATA } from "../../src/lib/demo-slots";
 import type {
   DemoCharacter,
   DemoItem,
@@ -59,10 +58,8 @@ const testItem = (id: string, filter: string, gameIds: string[]): Item => ({
   gameIds,
 });
 
-/** The shipped catalogue authors gameIds of its own, which would resolve items these tests
- *  never asked for. Every db here is composed over this overlay instead, so the only mappings
- *  in play are the ones the test itself authors -- and adding a gameId to the shipped data
- *  cannot change what any of them assert. */
+/** Strips the shipped gameIds, so only mappings a test authors are in play and adding one to
+ *  the shipped data cannot change what these assert. */
 const noShippedGameIds: CatalogOverlay = {
   ...catalog.emptyOverlay(),
   items: Object.fromEntries(
@@ -87,6 +84,23 @@ for (const item of [
 const mappedDb = catalog.makeDb([overlay]);
 const zeroMappingsDb = catalog.makeDb([noShippedGameIds]);
 
+/** One companion power per `companion_power` tag, so a whole active-bonus bar can be placed. */
+let companionOverlay = overlay;
+for (const [id, gameId, tag] of [
+  ["test-cp-offense", "Pet_Off_Test", "offense"],
+  ["test-cp-defense", "Pet_Def_Test", "defense"],
+  ["test-cp-utility", "Pet_Util_Test", "utility"],
+]) {
+  companionOverlay = catalog.upsert(companionOverlay, "items", id, {
+    ...testItem(id, "companion_power", [gameId]),
+    tags: [`companion_power:${tag}`],
+  });
+}
+const companionDb = catalog.makeDb([companionOverlay]);
+
+/** Read off the shipped table, so a new stand-in needs no edit to the assertions below. */
+const DEFAULT_CHOICES = GAME_IMPORT_DATA.defaultChoices;
+
 describe("buildFromLoadout: placement", () => {
   it("a fully-mapped loadout produces the expected choices", () => {
     const character = characterOf("Carlos", "Player_Bard", []);
@@ -100,8 +114,7 @@ describe("buildFromLoadout: placement", () => {
   });
 
   it("picks the class item its Hclass maps to", () => {
-    // `hclassToClass` still yields the bare class value; the importer resolves that through
-    // whichever item publishes it, since the class is an ordinary pick now.
+    // `hclassToClass` yields a bare class value, resolved through the item publishing it.
     const character = characterOf("Carlos", "Player_Bard", []);
     const loadout = loadoutOf([]);
     const { build } = buildFromLoadout(character, loadout, mappedDb);
@@ -167,9 +180,7 @@ describe("buildFromLoadout: placement", () => {
       loadoutOf([]),
       mappedDb,
     );
-    // Same as any other freshly created build (builds.createBuild() included): an
-    // unresolvable class simply leaves the slot empty, the ordinary "nothing chosen yet"
-    // state, rather than forcing a value.
+    // An unresolvable class leaves the slot empty rather than forcing a value.
     expect(build.choices["options.class"]).toBeUndefined();
     expect(
       report.outcomes.some(
@@ -204,6 +215,73 @@ describe("buildFromLoadout: placement", () => {
   });
 });
 
+describe("buildFromLoadout: generic stand-ins", () => {
+  it("applies the generic companion and mount combat power to an empty loadout", () => {
+    const character = characterOf("Carlos", "Player_Bard", []);
+    const { build } = buildFromLoadout(character, loadoutOf([]), mappedDb);
+    expect(build.choices["companions.companion"]).toBe("generic-companion");
+    expect(build.choices["mounts.mountCombat"]).toBe(
+      "mount-combat-power-celestial",
+    );
+  });
+
+  it("a recognised game item keeps the slot instead", () => {
+    const character = characterOf("Carlos", "Player_Bard", []);
+    const withMountPower = catalog.upsert(
+      overlay,
+      "items",
+      "test-mount-combat",
+      testItem("test-mount-combat", "mount_combat", ["Mount_Power_Test"]),
+    );
+    const { build } = buildFromLoadout(
+      character,
+      loadoutOf([demoItem("MountEquippedActivePower", 0, "Mount_Power_Test")]),
+      catalog.makeDb([withMountPower]),
+    );
+    expect(build.choices["mounts.mountCombat"]).toBe("test-mount-combat");
+  });
+});
+
+describe("buildFromLoadout: the companion bar seats whatever order it was recorded in", () => {
+  // The same five powers under two class layouts: a Cleric reads Utility third, a Warlock
+  // last. Neither order should decide whether the bar imports.
+  const bar = (order: string[]) =>
+    order.map((gameId, index) =>
+      demoItem("PetEquippedActiveBonus", index + 1, gameId),
+    );
+  const CLERIC = [
+    "Pet_Off_Test",
+    "Pet_Util_Test",
+    "Pet_Def_Test",
+    "Pet_Off_Test",
+    "Pet_Def_Test",
+  ];
+  const WARLOCK = [
+    "Pet_Off_Test",
+    "Pet_Def_Test",
+    "Pet_Util_Test",
+    "Pet_Off_Test",
+    "Pet_Def_Test",
+  ];
+
+  it.each([
+    ["Player_Devoted", CLERIC],
+    ["Player_Scourge", WARLOCK],
+  ])("imports every power for %s", (hclass, order) => {
+    const { build, report } = buildFromLoadout(
+      characterOf("Carlos", hclass, []),
+      loadoutOf(bar(order)),
+      companionDb,
+    );
+    expect(report.counts.overflow).toBe(0);
+    expect(build.choices["companions.offense"]).toBe("test-cp-offense");
+    expect(build.choices["companions.defense"]).toBe("test-cp-defense");
+    expect(build.choices["companions.utility"]).toBe("test-cp-utility");
+    expect(build.choices["companions.universal1"]).toBeDefined();
+    expect(build.choices["companions.universal2"]).toBeDefined();
+  });
+});
+
 describe("buildFromLoadout: zero mappings", () => {
   it("yields a valid, empty build rather than crashing", () => {
     const character = characterOf("Carlos", "Player_Bard", []);
@@ -219,9 +297,12 @@ describe("buildFromLoadout: zero mappings", () => {
       loadout,
       zeroMappingsDb,
     );
-    // The class still resolves -- it comes from the character's Hclass, not from any gameId
-    // mapping, so it is unaffected by this db having none.
-    expect(build.choices).toEqual({ "options.class": "class-bard" });
+    // The class comes from Hclass and the stand-ins from the table, so neither needs a
+    // gameId mapping.
+    expect(build.choices).toEqual({
+      "options.class": "class-bard",
+      ...DEFAULT_CHOICES,
+    });
     expect(build.id).toBeTruthy();
     expect(report.counts.imported).toBe(0);
     expect(report.counts.unrecognised).toBe(2);
@@ -271,10 +352,12 @@ describe("buildFromLoadout: naming and independence", () => {
     expect(a.build.choices).toEqual({
       "options.class": "class-bard",
       "gear.head": "test-head",
+      ...DEFAULT_CHOICES,
     });
     expect(b.build.choices).toEqual({
       "options.class": "class-bard",
       "gear.mainhand": "test-mainhand",
+      ...DEFAULT_CHOICES,
     });
   });
 });
@@ -318,8 +401,7 @@ describe("buildFromLoadout: against the shared parser fixture", () => {
     expect(report.loadout).toBe("1. DPS ST");
     expect(build.choices["options.class"]).toBe("class-bard");
     expect(build.choices["raceLeveling.race"]).toBe("race-aasimar");
-    // No gameIds authored anywhere -- every present item comes back unrecognised, none
-    // imported, and the build is still perfectly valid.
+    // With no gameIds authored, every item comes back unrecognised and the build is valid.
     expect(report.counts.imported).toBe(0);
     expect(report.counts.unrecognised).toBeGreaterThan(0);
     const total = Object.values(report.counts).reduce((a, b) => a + b, 0);

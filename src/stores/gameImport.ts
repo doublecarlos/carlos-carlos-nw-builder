@@ -1,7 +1,6 @@
-// Wizard state for "Import from game": parse a demo file, preview which loadouts recognise
-// what, let the user pick which to bring in, and commit them as new builds. Kept as a store
-// (not local component state) so GameImport.vue can stay a thin renderer of this, matching how
-// every other multi-step/overlay flow in the app separates state from markup.
+// Wizard state for "Import from game": parse a demo file, preview what each loadout recognises,
+// and commit the picked ones as new builds. A store, not component state, so GameImport.vue
+// stays a thin renderer.
 import { computed, reactive, ref } from "vue";
 import { parseDemo, DemoParseError, child } from "../lib/demo-format";
 import { readSnapshot } from "../lib/demo-snapshot";
@@ -22,20 +21,16 @@ import type { ImportReport } from "../lib/demo-import";
 
 export type WizardStep = 1 | 2 | 3 | 4;
 
-/** One imported build paired with its coverage report -- what step 4 (and a reopened report)
- *  renders, one tab per entry. `character`/`loadout` are kept (not just the build/report)
- *  so `mapUnrecognisedItem` can re-run `buildFromLoadout` later in the session, even after
- *  the wizard closes and `_snapshot` (below) is cleared. */
+/** One imported build with its report, one tab per entry. `character`/`loadout` are kept so
+ *  `mapUnrecognisedItem` can re-run `buildFromLoadout` after `_snapshot` is cleared. */
 export interface CommittedReport {
   buildId: string;
   buildName: string;
   report: ImportReport;
   character: DemoCharacter;
   loadout: DemoLoadout;
-  /** Bag/slot of every outcome that started out "unrecognised" at commit time, keyed by its
-   *  (stable) outcome index -- once an outcome is manually mapped its `kind` flips to
-   *  "imported"/"overflow" and loses that bag/slot, so this is what lets the report keep
-   *  showing (and re-mapping) the row instead of it vanishing the moment it resolves. */
+  /** Bag/slot of every outcome that was "unrecognised" at commit time, by outcome index. A
+   *  mapped outcome loses its bag/slot, so this is what keeps its row on the report. */
   unrecognisedOrigin: Map<number, { bag: string; slot: number }>;
 }
 
@@ -45,8 +40,8 @@ const _parseError = ref("");
 const _snapshot = ref<DemoSnapshot | null>(null);
 const _selected = ref<Set<string>>(new Set());
 const _names = reactive<Record<string, string>>({});
-/** The last commit's reports -- kept for the session (not `reset()`) so the "View import
- *  report" notice affordance can reopen step 4 with the same data after the wizard closes. */
+/** The last commit's reports. Kept for the session, not cleared by `reset()`, so the notice
+ *  can reopen the report after the wizard closes. */
 const _reports = ref<CommittedReport[]>([]);
 
 export const isOpen = computed(() => _open.value);
@@ -55,9 +50,8 @@ export const parseError = computed(() => _parseError.value);
 export const snapshot = computed(() => _snapshot.value);
 export const reports = computed(() => _reports.value);
 
-/** A loadout's identity within the wizard -- `Loadoutname` alone isn't unique (two loadouts,
- *  or two characters, can share one), so every row/selection/name override is keyed by
- *  position instead. */
+/** A loadout's identity within the wizard. `Loadoutname` alone is not unique, so rows,
+ *  selections and name overrides are keyed by position. */
 export const rowKey = (characterIndex: number, loadoutIndex: number) =>
   `${characterIndex}:${loadoutIndex}`;
 
@@ -72,9 +66,8 @@ export interface LoadoutRow {
   defaultName: string;
 }
 
-/** One row per loadout across every character, in file order. Runs the resolver in preview
- *  mode against the live (layers-included) db purely to compute a recognised-item count and a
- *  default build name -- nothing here writes anything. */
+/** One row per loadout, in file order. Resolves against the live db only to count recognised
+ *  items and name the build; writes nothing. */
 export const rows = computed<LoadoutRow[]>(() => {
   const snap = _snapshot.value;
   if (!snap) return [];
@@ -143,15 +136,14 @@ export function goToStep(target: WizardStep) {
   _step.value = target;
 }
 
-/** Reopens the wizard straight on the coverage-report step, showing the last commit's reports
- *  -- the "View import report" affordance on the post-import notice. */
+/** Reopens the wizard on the report step, behind the post-import notice's affordance. */
 export function openReport() {
   _open.value = true;
   _step.value = 4;
 }
 
-/** The active loadout of the first (recording) character only -- a demo can carry more than
- *  one character, but only one was actually being played when it was captured. */
+/** The active loadout of the recording character only: a demo can carry several characters,
+ *  but only one was being played. */
 function defaultSelection(snap: DemoSnapshot): Set<string> {
   const active = snap.characters[0]?.loadouts.find((loadout) => loadout.active);
   return active ? new Set([rowKey(0, active.index)]) : new Set();
@@ -245,14 +237,10 @@ export function commit() {
   );
 }
 
-/** Maps one "unrecognised" outcome's game id onto `itemId`'s `gameIds`, in a layer overlay,
- *  then re-resolves this loadout in place so the row can flip to "imported", teaching new
- *  item mappings from the import report. Also doubles as *re*-mapping: the report keeps
- *  showing the row afterwards (keyed by `unrecognisedOrigin`, not the outcome's current kind),
- *  so picking a different item here first retracts the game id from any item claiming it that
- *  shares the new item's `filter` -- the invariant catalog.ts's validate enforces. Claimants
- *  under *other* filters are left alone: they are the same in-game item's other slot-dependent
- *  forms (an enchantment's offense and defense entries), not a mapping being corrected. */
+/** Maps one outcome's game id onto `itemId` in a layer overlay, then re-resolves the loadout in
+ *  place. Re-mapping first retracts the game id from any claimant sharing the new item's
+ *  `filter`, the invariant catalog.ts validates; claimants under other filters are the same
+ *  in-game item's other slot-dependent forms, not a mapping being corrected. */
 export function mapUnrecognisedItem(
   reportIndex: number,
   outcomeIndex: number,
@@ -260,9 +248,8 @@ export function mapUnrecognisedItem(
 ) {
   const entry = _reports.value[reportIndex];
   const outcome = entry?.report.outcomes[outcomeIndex];
-  // Every outcome named in `unrecognisedOrigin` started as "unrecognised" and can only have
-  // moved to "imported"/"overflow" since -- the "notInDemo" check is for narrowing, not a real
-  // case; it's what lets every `outcome.gameId` read below skip an unnecessary null check.
+  // The "notInDemo" check narrows the union so every `outcome.gameId` read below is safe; an
+  // outcome in `unrecognisedOrigin` can never actually be one.
   if (
     !entry ||
     !outcome ||
@@ -303,8 +290,7 @@ export function mapUnrecognisedItem(
   overlay = catalog.upsert(overlay, "items", itemId, nextItem);
   layers.updateOverlay(layer.id, overlay);
 
-  // db.value already reflects the new mapping here -- resolved.ts's dependency chain
-  // (enabledOverlays -> overlays -> db) is a plain synchronous computed.
+  // db.value already reflects the new mapping: resolved.ts's chain is a synchronous computed.
   const { report: newReport } = buildFromLoadout(
     entry.character,
     entry.loadout,
@@ -312,19 +298,23 @@ export function mapUnrecognisedItem(
     { name: entry.buildName },
   );
 
-  // Positional diff, not a blanket choices copy -- protects any live edits the user made to
-  // the build elsewhere since commit. buildFromLoadout's per-bag pass is a stable, deterministic
-  // left-to-right greedy match, so re-running it after adding one gameId can only let a
-  // previously-unresolved item newly claim a previously-empty slot; it never disturbs any other
-  // already-successful placement (those items are processed earlier in the same pass, both
-  // times) -- the one exception is `outcomeIndex` itself, which a re-map can walk from one
-  // resolved item straight to another without ever passing through "unresolved".
+  // A positional diff rather than a blanket copy, so live edits made since commit survive.
+  // Every outcome the re-resolve actually changed is written, not just newly placed ones:
+  // teaching the bag one more game id can move an item that had alternatives onto another of
+  // its slots, and writing only the new placement would overwrite that item where it stood
+  // without ever writing it where it went.
   newReport.outcomes.forEach((o, i) => {
-    const wasImported = entry.report.outcomes[i]?.kind === "imported";
-    if (o.kind === "imported" && (!wasImported || i === outcomeIndex)) {
-      const label = `${db.value.slotById.get(o.slotId)?.label ?? o.slotId} → ${composed.name} (game import)`;
-      builds.setChoiceFor(entry.buildId, o.slotId, o.itemId, label);
-    }
+    if (o.kind !== "imported") return;
+    const before = entry.report.outcomes[i];
+    const unchanged =
+      before?.kind === "imported" &&
+      before.slotId === o.slotId &&
+      before.itemId === o.itemId &&
+      i !== outcomeIndex;
+    if (unchanged) return;
+    const name = db.value.get(o.itemId)?.name ?? o.itemId;
+    const label = `${db.value.slotById.get(o.slotId)?.label ?? o.slotId} → ${name} (game import)`;
+    builds.setChoiceFor(entry.buildId, o.slotId, o.itemId, label);
   });
 
   _reports.value = _reports.value.map((r, i) =>

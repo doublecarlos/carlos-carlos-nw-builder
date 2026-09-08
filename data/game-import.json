@@ -97,12 +97,12 @@
     {
       "bag": "PetEquippedActiveBonus",
       "slots": [
+        "companions.enhancement",
         "companions.offense",
         "companions.defense",
         "companions.universal1",
         "companions.universal2",
-        "companions.utility",
-        "companions.enhancement"
+        "companions.utility"
       ]
     },
     {
@@ -281,7 +281,7 @@
     },
     {
       "label": "Companion",
-      "reason": "The demo only stores a numeric companion index, not which companion it is.",
+      "reason": "The demo only stores a numeric companion index, not which companion it is, so the generic companion is applied instead.",
       "slotIds": ["companions.companion"]
     },
     {
@@ -318,6 +318,12 @@
   },
   "speciesToRace": {
     "Aasimar": "race-aasimar",
-    "Human": "race-human"
+    "Halforc": "race-half-orc",
+    "Human": "race-human",
+    "Sunelf": "race-sun-elf"
+  },
+  "defaultChoices": {
+    "companions.companion": "generic-companion",
+    "mounts.mountCombat": "mount-combat-power-celestial"
   }
 }

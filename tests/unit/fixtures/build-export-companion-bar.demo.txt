@@ -1,0 +1,71 @@
+{
+Version 2
+Activeplayerref 100000000000000001
+Packets
+{
+  Createdents
+  {
+    EntityRef 100000000000000001
+    EntityAttach
+    {
+      Savedname "Carlos o Bardo"
+      Ppbuilds
+      {
+        Achname "Build 1"
+        Hclass Player_Bard
+        Ppitems
+        {
+          Ebagid PetEquippedActiveBonus
+          Ulitemid 2218087575996871001
+        }
+      }
+      Pentityloadouts
+      {
+        Ppentityloadouts
+        {
+          Loadoutname "1. Companions"
+          Pploadoutitems
+          {
+            Hitem Pet_Anywhere_1_Test
+            Iitemid 2218087575996871001
+            Ebagid PetEquippedActiveBonus
+            Islotidx 1
+          }
+          Pploadoutitems
+          {
+            Hitem Pet_Anywhere_2_Test
+            Iitemid 2218087575996871002
+            Ebagid PetEquippedActiveBonus
+            Islotidx 2
+          }
+          Pploadoutitems
+          {
+            Hitem Pet_Anywhere_3_Test
+            Iitemid 2218087575996871003
+            Ebagid PetEquippedActiveBonus
+            Islotidx 3
+          }
+          Pploadoutitems
+          {
+            Hitem Pet_Anywhere_4_Test
+            Iitemid 2218087575996871004
+            Ebagid PetEquippedActiveBonus
+            Islotidx 4
+          }
+          Pploadoutitems
+          {
+            Hitem Pet_Offense_Only_Test
+            Iitemid 2218087575996871005
+            Ebagid PetEquippedActiveBonus
+            Islotidx 5
+          }
+          Ipowertreebuild 1
+          Ilastsavetime 132456789
+          Ilastloadtime 132456790
+        }
+      }
+    }
+    Entitytypeenum ENTITYPLAYER
+  }
+}
+}

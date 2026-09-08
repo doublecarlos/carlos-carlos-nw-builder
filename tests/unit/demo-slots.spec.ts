@@ -1,7 +1,6 @@
-// demo-slots.ts: the bag -> app-slot map and its one placement rule. Exercised against the
-// real, shipped game-import.json + data/slots.json (so these tests double as a sanity check
-// of the shipped table itself), with a small overlay of synthetic items giving controlled
-// gameIds to test against -- the real catalogue has zero gameIds populated yet.
+// demo-slots.ts: the bag -> app-slot map and its placement rule. Run against the shipped
+// game-import.json and data/slots.json, so these double as a lint of the shipped tables, with
+// an overlay of synthetic items supplying the gameIds the real catalogue has not got yet.
 import { describe, it, expect } from "vitest";
 import * as catalog from "../../src/data/catalog";
 import { NW_SLOTS } from "../../src/data/data";
@@ -14,6 +13,7 @@ import {
   notInDemoSlotIds,
   notInDemoGroups,
   raceFromSpecies,
+  validateDefaultChoices,
   validateGameBags,
   validateItemValueMap,
   validateNotInDemoReasons,
@@ -42,20 +42,36 @@ for (const item of [
   testItem("test-offhand", "gear_weapon_offhand", ["Secondary_Test"]),
   testItem("test-combat-off", "combat_enchant_offense", ["CombatGem_Off_Test"]),
   testItem("test-combat-def", "combat_enchant_defense", ["CombatGem_Def_Test"]),
-  // companions.offense selects by tag, not by filter -- this item needs the
-  // matching tag to still land in the "first open power slot" this describe block tests.
+  // companions.offense selects by tag, not by filter.
   testItem("test-companion-power", "companion_power", ["Pet_Bonus_Test"], {
     tags: ["companion_power:offense"],
   }),
   testItem("test-companion-enh", "companion_enhancement", ["Pet_Enh_Test"]),
+  // One power per companion_power tag, so a whole active-bonus bar can be placed.
+  testItem("test-cp-offense", "companion_power", ["Pet_Off_Test"], {
+    tags: ["companion_power:offense"],
+  }),
+  testItem("test-cp-defense", "companion_power", ["Pet_Def_Test"], {
+    tags: ["companion_power:defense"],
+  }),
+  testItem("test-cp-utility", "companion_power", ["Pet_Util_Test"], {
+    tags: ["companion_power:utility"],
+  }),
+  // Reaches every power slot, so it can occupy one a narrower item needs.
+  testItem("test-cp-any", "companion_power", ["Pet_Any_Test"], {
+    tags: [
+      "companion_power:offense",
+      "companion_power:defense",
+      "companion_power:utility",
+    ],
+  }),
   testItem("test-collar-sturdy", "sturdy_collar", ["Collar_Sturdy_Test"]),
   testItem("test-collar-supportive", "supportive_collar", [
     "Collar_Supportive_Test",
   ]),
   testItem("test-offense-gem", "enchantment_offense", ["OffenseGem_Test"]),
-  // One in-game enchantment, three catalogue forms, one shared `Hitem` -- what the gem bags
-  // below disambiguate by slot. Listed offense-first so the tests can tell "the form this bag
-  // accepts" apart from "whichever claimant the catalogue lists first".
+  // One in-game enchantment, three catalogue forms, one shared `Hitem`. Listed offense-first
+  // so a test can tell the form a bag accepts from the claimant listed first.
   testItem("test-garnet-power", "enchantment_offense", ["Garnet_Test"]),
   testItem("test-garnet-defense", "enchantment_defense", ["Garnet_Test"]),
   testItem("test-garnet-forte", "enchantment_utility", ["Garnet_Test"]),
@@ -109,6 +125,16 @@ describe("demo-slots: shipped data", () => {
         "class",
         db.items,
         "hclassToClass",
+      ),
+    ).toEqual([]);
+  });
+
+  it("defaultChoices passes its own lint against the slots it names", () => {
+    expect(
+      validateDefaultChoices(
+        GAME_IMPORT_DATA.defaultChoices,
+        db,
+        "defaultChoices",
       ),
     ).toEqual([]);
   });
@@ -299,6 +325,124 @@ describe("placeBag: PetEquippedActiveBonus mixes companion_power and companion_e
   });
 });
 
+describe("placeBag: a bag is seated as a whole, not first-come-first-served", () => {
+  // One companion bar recorded against two class layouts. First-fit seats in file order, so
+  // the last item finding a home would depend on which layout it was recorded against.
+  const bar = (order: string[]) =>
+    order.map((gameId, index) =>
+      demoItem("PetEquippedActiveBonus", index, gameId),
+    );
+  const CLERIC = [
+    "Pet_Enh_Test",
+    "Pet_Off_Test",
+    "Pet_Util_Test",
+    "Pet_Def_Test",
+    "Pet_Off_Test",
+    "Pet_Def_Test",
+  ];
+  const WARLOCK = [
+    "Pet_Enh_Test",
+    "Pet_Off_Test",
+    "Pet_Def_Test",
+    "Pet_Util_Test",
+    "Pet_Off_Test",
+    "Pet_Def_Test",
+  ];
+
+  it.each([
+    ["a Cleric's recorded order", CLERIC],
+    ["a Warlock's recorded order", WARLOCK],
+  ])("seats the whole bar in %s", (_label, order) => {
+    const results = placeBag(
+      "PetEquippedActiveBonus",
+      bar(order),
+      db,
+      new Set(),
+    );
+    expect(results.every((r) => r.kind === "imported")).toBe(true);
+    // Every seating of one bar fills the same six slots.
+    expect(
+      results.map((r) => (r.kind === "imported" ? r.slotId : r.kind)).sort(),
+    ).toEqual([
+      "companions.defense",
+      "companions.enhancement",
+      "companions.offense",
+      "companions.universal1",
+      "companions.universal2",
+      "companions.utility",
+    ]);
+  });
+
+  it("displaces earlier items that had somewhere else to go", () => {
+    // First-fit hands the four flexible powers the offense slot and both universals, leaving
+    // the narrow fifth nowhere to go.
+    const results = placeBag(
+      "PetEquippedActiveBonus",
+      [
+        ...Array.from({ length: 4 }, (_, i) =>
+          demoItem("PetEquippedActiveBonus", i, "Pet_Any_Test"),
+        ),
+        demoItem("PetEquippedActiveBonus", 4, "Pet_Off_Test"),
+      ],
+      db,
+      new Set(),
+    );
+    expect(results.every((r) => r.kind === "imported")).toBe(true);
+    expect(results.at(-1)).toEqual({
+      kind: "imported",
+      slotId: "companions.offense",
+      gameId: "Pet_Off_Test",
+      itemId: "test-cp-offense",
+    });
+    expect(
+      results.map((r) => (r.kind === "imported" ? r.slotId : r.kind)).sort(),
+    ).toEqual([
+      "companions.defense",
+      "companions.offense",
+      "companions.universal1",
+      "companions.universal2",
+      "companions.utility",
+    ]);
+  });
+
+  it("still overflows when there is genuinely no seating for every item", () => {
+    const results = placeBag(
+      "PetEquippedActiveBonus",
+      Array.from({ length: 4 }, (_, i) =>
+        demoItem("PetEquippedActiveBonus", i, "Pet_Util_Test"),
+      ),
+      db,
+      new Set(),
+    );
+    // Utility powers reach only the utility slot and the two universals.
+    expect(results.filter((r) => r.kind === "imported")).toHaveLength(3);
+    expect(results.at(-1)).toEqual({
+      kind: "overflow",
+      bag: "PetEquippedActiveBonus",
+      gameId: "Pet_Util_Test",
+      itemId: "test-cp-utility",
+    });
+  });
+
+  it("respects slots a previous bag already took", () => {
+    const occupied = new Set(["companions.offense"]);
+    const results = placeBag(
+      "PetEquippedActiveBonus",
+      [demoItem("PetEquippedActiveBonus", 0, "Pet_Off_Test")],
+      db,
+      occupied,
+    );
+    expect(results).toEqual([
+      {
+        kind: "imported",
+        slotId: "companions.universal1",
+        gameId: "Pet_Off_Test",
+        itemId: "test-cp-offense",
+      },
+    ]);
+  });
+});
+
 describe("placeBag: MountCollars is filter-driven, game order need not match ours", () => {
   it("a supportive collar seen before a sturdy one still lands in its own slot", () => {
     const results = placeBag(
@@ -381,8 +525,7 @@ describe("placeBag: overflow", () => {
 });
 
 describe("placeBag: one game id shared by several slot-dependent forms", () => {
-  // Pins the catalogue order the disambiguation has to beat, so the placements below can't
-  // pass by accidentally agreeing with the index: offense is the *last* claimant here.
+  // Pins the catalogue order the disambiguation has to beat: offense is the last claimant.
   it("indexes all three forms under the one game id", () => {
     expect(db.itemByGameId.get("Garnet_Test")).toEqual([
       "test-garnet-defense",
@@ -446,8 +589,7 @@ describe("placeBag: one game id shared by several slot-dependent forms", () => {
   });
 
   it("an overflowing shared id reports the form the bag would have used", () => {
-    // Not `claimants[0]` (the defense form) -- a full OffenseGem bag still read the item as
-    // the offense form, which is what the report has to show.
+    // Not `claimants[0]`: a full OffenseGem bag still read the item as the offense form.
     const items = Array.from({ length: 5 }, (_, i) =>
       demoItem("OffenseGem", i, "Garnet_Test"),
     );
@@ -543,8 +685,7 @@ describe("candidateSlotIds", () => {
   });
 
   it("indexes a gemSlots bag by the outcome's own slot (mount index)", () => {
-    // An outcome records only the mount index, so both kinds of item at that index are
-    // offered: the mount row first, then its insignia.
+    // An outcome records only the mount index, so the mount and its insignia are both offered.
     expect(candidateSlotIds("MountEquippedActiveSlots", 0)).toEqual([
       "insignia.mount1",
       "insignia.insignia1_1",
@@ -583,6 +724,8 @@ describe("raceFromSpecies", () => {
   it("maps a confirmed Species token, stripping the gender suffix", () => {
     expect(raceFromSpecies("Aasimar_Male")).toBe("race-aasimar");
     expect(raceFromSpecies("Human_Female")).toBe("race-human");
+    expect(raceFromSpecies("Sunelf_Male")).toBe("race-sun-elf");
+    expect(raceFromSpecies("Halforc_Male")).toBe("race-half-orc");
   });
 
   it("returns null for an unconfirmed or unknown Species, or when absent", () => {
@@ -722,6 +865,32 @@ describe("validateGameBags", () => {
       NW_SLOTS.slots,
     );
     expect(findings).toEqual([]);
+  });
+});
+
+describe("validateDefaultChoices", () => {
+  it("errors on a slot that isn't an item_picker", () => {
+    const findings = validateDefaultChoices(
+      { "companions.sep1": "generic-companion" },
+      db,
+      "test",
+    );
+    expect(
+      findings.some((f) => /does not exist as an item_picker/.test(f.message)),
+    ).toBe(true);
+  });
+
+  it("errors on a value that isn't one of the slot's own candidates", () => {
+    const findings = validateDefaultChoices(
+      { "companions.companion": "test-head" },
+      db,
+      "test",
+    );
+    expect(
+      findings.some((f) =>
+        /not one of its own candidate item ids/.test(f.message),
+      ),
+    ).toBe(true);
   });
 });
 

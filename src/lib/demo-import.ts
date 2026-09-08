@@ -1,7 +1,5 @@
-// The pure function that turns one demo loadout into a Build, plus the coverage report that
-// tells the user exactly what did and didn't come across. Side-effect-free -- no Vue, no
-// stores, no IndexedDB -- so the whole resolve step is testable without a browser; the wizard
-// (its own ticket) only renders what this returns and decides whether to commit it.
+// Turns one demo loadout into a Build plus its coverage report. Side-effect-free, so the whole
+// resolve step is testable without a browser; the wizard only renders what this returns.
 import * as storage from "../storage/storage";
 import { itemPublishing } from "../data/db";
 import { normaliseGroup, stableGroups } from "../engine/insignia";
@@ -16,15 +14,11 @@ import type { DemoCharacter, DemoItem, DemoLoadout } from "./demo-snapshot";
 import type { Build, Db } from "../types";
 
 export type SlotOutcome =
-  /** Game item recognised and placed. */
   | { kind: "imported"; slotId: string; gameId: string; itemId: string }
-  /** Game item present but no catalogue entry claims its `Hitem`. */
   | { kind: "unrecognised"; bag: string; slot: number; gameId: string }
-  /** Bag is `notModelled` in game-import.json -- ignored on purpose. */
   | { kind: "ignored"; bag: string; gameId: string; reason: string }
-  /** Recognised, but every candidate app slot for its bag was already full. */
   | { kind: "overflow"; bag: string; gameId: string; itemId: string }
-  /** App slot the demo has no counterpart for -- the user must fill it by hand. */
+  /** App slot the demo has no counterpart for; the user fills it by hand. */
   | { kind: "notInDemo"; slotId: string };
 
 export interface ImportReport {
@@ -34,16 +28,13 @@ export interface ImportReport {
   counts: Record<SlotOutcome["kind"], number>;
 }
 
-/** `Loadoutname` may be blank or unquoted junk (the sample has one literally "aaaaaa") --
- *  callers still want *something* to build a default build name from. */
+/** `Loadoutname` may be blank or junk, and callers still need a default build name. */
 function loadoutLabel(loadout: DemoLoadout): string {
   return loadout.name.trim() ? loadout.name : `loadout ${loadout.index + 1}`;
 }
 
-/** Groups a loadout's items by bag, each group sorted by `Islotidx` -- the order the
- *  placement rule applies within one bag. Bags absent from game-import.json still appear
- *  (under their own name), sorted alphabetically after every known bag, so an unexpected
- *  client update surfaces as `unrecognised` rather than being silently skipped. */
+/** Groups a loadout's items by bag, each sorted by `Islotidx`. Bags absent from
+ *  game-import.json still appear, so a client update surfaces rather than being skipped. */
 function groupByBag(items: DemoItem[]): Map<string, DemoItem[]> {
   const byBag = new Map<string, DemoItem[]>();
   for (const item of items) {
@@ -74,8 +65,8 @@ export function buildFromLoadout(
     options?.name ?? `${character.name} - ${label}`,
   );
 
-  // `hclassToClass` still maps to the bare class value ("bard"); the class is picked as an
-  // item now, so resolve that value to whichever item publishes it.
+  // `hclassToClass` yields a bare class value; the class is a pick, so resolve it through
+  // whichever item publishes that value.
   const gameClass = classFromHclass(character.gameClass);
   const classItem = gameClass
     ? itemPublishing(db, "class", gameClass)
@@ -95,9 +86,8 @@ export function buildFromLoadout(
     }
   }
 
-  // The importer writes choices directly rather than through the editor's actions, so the
-  // preferred swap `setChoice` would have applied runs here, once the whole stable is placed.
-  // A demo records the ordinary insignia either way: the `(Pref)` twins carry no game ids.
+  // Writing choices directly skips the editor's actions, so the preferred swap `setChoice`
+  // would have applied runs here instead, once the whole stable is placed.
   const swaps: Record<string, string> = {};
   for (const { group } of stableGroups(db)) {
     Object.assign(swaps, normaliseGroup(db, build, group));
@@ -108,6 +98,13 @@ export function buildFromLoadout(
       if (outcome.kind === "imported" && outcome.slotId === slotId)
         outcome.itemId = itemId;
     }
+  }
+
+  // Last, so anything a bag actually placed keeps its slot.
+  for (const [slotId, itemId] of Object.entries(
+    GAME_IMPORT_DATA.defaultChoices,
+  )) {
+    if (!build.choices[slotId]) build.choices[slotId] = itemId;
   }
 
   const notInDemo = notInDemoSlotIds(db.slots);

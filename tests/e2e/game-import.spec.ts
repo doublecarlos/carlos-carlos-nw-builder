@@ -1,11 +1,15 @@
-// End-to-end coverage for the "Import from game" wizard: header entry point,
-// instructions, file parsing (success and failure paths), loadout selection, and committing
-// through builds.importBuilds. The coverage report shown on commit has its own spec,
-// game-import-report.spec.ts.
+// The "Import from game" wizard: entry point, parsing, loadout selection and committing. The
+// coverage report shown on commit has its own spec, game-import-report.spec.ts.
 import { test, expect } from "@playwright/test";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { openBuilder } from "./support/app";
+import {
+  openBuilder,
+  ensureSectionExpanded,
+  pickerInput,
+  slotRow,
+} from "./support/app";
+import { shippedItemName } from "./support/shippedData";
 import { buildRow } from "./support/nav";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -70,8 +74,7 @@ test("loadouts are listed alphabetically, not in recording order", async ({
     .getByTestId("game-import-file-input")
     .setInputFiles(LOADOUT_ORDER_FIXTURE);
 
-  // The fixture's recording order is "Zulu Solo" then "aaaaaa" -- the game's own loadout
-  // switcher lists them alphabetically instead, so the wizard should match that.
+  // The fixture records "Zulu Solo" first; the game's own switcher lists alphabetically.
   const rows = page.getByTestId("game-import-loadout-row");
   await expect(rows).toHaveCount(2);
   await expect(rows.nth(0)).toContainText("aaaaaa");
@@ -101,6 +104,27 @@ test("selecting two loadouts and confirming creates two builds in the nav with t
   await expect(page.getByTestId("game-import-step-report")).toBeVisible();
   await page.getByTestId("game-import-done").click();
   await expect(page.getByTestId("game-import-modal")).toBeHidden();
+});
+
+test("an imported build starts on the generic companion and mount combat power", async ({
+  page,
+}) => {
+  await openBuilder(page);
+  await page.getByTestId("header-import-from-game").click();
+  await page.getByTestId("game-import-next").click();
+  await page.getByTestId("game-import-file-input").setInputFiles(DEMO_FIXTURE);
+  await page.getByTestId("game-import-commit").click();
+  await page.getByTestId("game-import-done").click();
+
+  await buildRow(page, "Carlos o Bardo - 1. DPS ST").click();
+  await ensureSectionExpanded(page, "companions");
+  await expect(pickerInput(slotRow(page, "companions.companion"))).toHaveValue(
+    shippedItemName("generic-companion"),
+  );
+  await ensureSectionExpanded(page, "mounts");
+  await expect(pickerInput(slotRow(page, "mounts.mountCombat"))).toHaveValue(
+    shippedItemName("mount-combat-power-celestial"),
+  );
 });
 
 test("a garbage file shows the 'not a demo file' message and does not create a build", async ({

@@ -9,18 +9,23 @@ const fixture = readFileSync(
   "utf-8",
 );
 
-/** One loadout carrying the same `Hitem` in the OffenseGem and DefenseGem bags -- the shape an
- *  in-game enchantment takes when its stats depend on the slot it sits in. */
+/** One loadout carrying the same `Hitem` in the OffenseGem and DefenseGem bags. */
 const sharedGameIdFixture = readFileSync(
   join(__dirname, "../fixtures/build-export-shared-gameid.demo.txt"),
   "utf-8",
 );
 
+/** A full companion bar of unmapped ids. Mapping them one at a time is what forces the
+ *  re-seating to displace an already-placed pick. */
+const companionBarFixture = readFileSync(
+  join(__dirname, "../fixtures/build-export-companion-bar.demo.txt"),
+  "utf-8",
+);
+
 async function freshStores() {
   vi.resetModules();
-  // The stores get a fresh `storage/idb` from `resetModules`, so the shims are loaded after
-  // it: a `setBackend` bound to this file's own import would land on the stale instance and
-  // leave the stores reaching for an IndexedDB the node environment has not got.
+  // Loaded after `resetModules`: a `setBackend` bound to this file's own import would land on
+  // the stale instance and leave the stores without an IndexedDB.
   const { installWindowShim, installIdbShim } = await import("./window-shim");
   installWindowShim();
   installIdbShim();
@@ -33,9 +38,9 @@ async function freshStores() {
   return { gameImport, builds, layers, resolved };
 }
 
-/** Imports the shared fixture's active loadout ("1. DPS ST") and returns the committed report
- *  index plus the outcome index of its `Head_Heavyheal_Test` unrecognised row -- the fixture's
- *  game ids are synthetic, so no shipped mapping resolves that row out from under the test. */
+/** Imports the fixture's active loadout and returns its report index plus the outcome index of
+ *  the `Head_Heavyheal_Test` row. The fixture's game ids are synthetic, so nothing shipped
+ *  resolves that row out from under the test. */
 function commitFixture(
   gameImport: Awaited<ReturnType<typeof freshStores>>["gameImport"],
 ) {
@@ -153,8 +158,8 @@ describe("gameImport store: mapUnrecognisedItem", () => {
   });
 
   it("mapping one game id onto a second filter's form leaves the first form's claim alone", async () => {
-    // Retraction is scoped to the new item's own filter: the offense and defense forms of one
-    // in-game enchantment are both legitimate claimants, not a mapping being corrected.
+    // Retraction is scoped to the new item's filter: one enchantment's offense and defense
+    // forms are both legitimate claimants.
     const { gameImport, resolved } = await freshStores();
     gameImport.parseFile(sharedGameIdFixture);
     gameImport.commit();
@@ -195,5 +200,53 @@ describe("gameImport store: mapUnrecognisedItem", () => {
       slotId: "enchantments.defense1",
       itemId: defenseItem,
     });
+  });
+});
+
+describe("gameImport store: re-seating a bag moves an already-placed pick", () => {
+  /** The shipped power reaching every companion power slot, and one reaching only offense. */
+  const ANY_POWER = "golden-cat-s-instincts-golden-cat-ca-any";
+  const OFFENSE_ONLY = "batiri-s-wisdom-batiri-damage-offense";
+
+  it("keeps every mapped power in the build, in the slots the report ends on", async () => {
+    const { gameImport, builds, resolved } = await freshStores();
+    gameImport.parseFile(companionBarFixture);
+    gameImport.commit();
+    const buildId = gameImport.reports.value[0].buildId;
+
+    const mapId = (gameId: string, itemId: string) => {
+      const outcomeIndex =
+        gameImport.reports.value[0].report.outcomes.findIndex(
+          (o) => o.kind === "unrecognised" && o.gameId === gameId,
+        );
+      expect(outcomeIndex).toBeGreaterThanOrEqual(0);
+      gameImport.mapUnrecognisedItem(0, outcomeIndex, itemId);
+    };
+
+    // The four flexible powers fill offense, defense and both universals.
+    for (const n of [1, 2, 3, 4]) mapId(`Pet_Anywhere_${n}_Test`, ANY_POWER);
+    expect(resolved.db.value.get(ANY_POWER)?.gameIds).toHaveLength(4);
+
+    // The offense-only power has nowhere left, so re-seating moves a flexible pick aside.
+    mapId("Pet_Offense_Only_Test", OFFENSE_ONLY);
+
+    const choices = builds.get(buildId)?.choices ?? {};
+    expect(choices["companions.offense"]).toBe(OFFENSE_ONLY);
+    // Nothing was dropped on the way.
+    expect(
+      [
+        "companions.offense",
+        "companions.defense",
+        "companions.universal1",
+        "companions.universal2",
+        "companions.utility",
+      ].filter((slotId) => choices[slotId]),
+    ).toHaveLength(5);
+
+    // The build agrees with the report it was re-resolved from.
+    for (const outcome of gameImport.reports.value[0].report.outcomes) {
+      if (outcome.kind !== "imported") continue;
+      expect(choices[outcome.slotId]).toBe(outcome.itemId);
+    }
   });
 });
