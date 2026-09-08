@@ -12,7 +12,7 @@ import * as trash from "./trash";
 import * as selection from "./selection";
 import * as folders from "./folders";
 import { buildOrder } from "./meta";
-import { flagStorageFailed, showNotice } from "./notice";
+import { flagStorageFailed, showNotice, showUndoNotice } from "./notice";
 import { db as engineDb } from "./resolved";
 import type { Build, BuildNavEntry, BuildOption } from "../types";
 
@@ -225,6 +225,18 @@ export function revertToDownloaded(id: string) {
   const restored = storage.revertToDownloaded(b) as Build;
   _builds.value.set(id, restored);
   markDirty(id);
+  showUndoNotice(`Reverted “${b.name}” to the last downloaded copy`, () =>
+    undoFor(id),
+  );
+}
+
+/** Undo on one build's own stack whether or not it is selected, which is what an undo notice
+ *  needs. `history.undo` selects the build, so the restore lands where the user is looking. */
+export function undoFor(id: string) {
+  const b = _builds.value.get(id);
+  if (!b) return;
+  const json = history.undo("build", id, b);
+  if (json != null) replaceActive(JSON.parse(json) as Build);
 }
 
 /** `buildEditor.ts`'s `setChoice` for a build that need not be the active one -- used by the

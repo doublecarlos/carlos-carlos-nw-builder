@@ -278,22 +278,16 @@ test("'update from current' overwrites a preset with the section's current value
   await presetMenu(page, "options").click();
   const updateBtn = page.getByTestId("preset-update-snapshot");
 
-  // First click only arms the confirm -- the preset is untouched and the popover stays open.
+  // The popover closes as the write lands, so the notice is not hidden behind it.
   await updateBtn.click();
-  await expect(updateBtn).toContainText("Really?");
-  await expect(page.locator(".preset-popover")).toBeVisible();
-
-  await updateBtn.click();
+  await expect(page.locator(".preset-popover")).toHaveCount(0);
   // Written back into the layer that already defined it, not a fresh one.
   await expect(page.getByText("Updated “Snapshot” in “Layer 1”")).toBeVisible();
   // Still in the build editor -- the write is not supposed to navigate anywhere.
   await expect(headerRow(page, "options")).toBeVisible();
 
-  // Reset the section, then re-apply: what comes back is the *new* contents. Two clicks --
-  // "Clear section" is itself two-step confirmed.
-  const clearBtn = page.getByTestId("clear-section-options");
-  await clearBtn.click();
-  await clearBtn.click();
+  // Reset the section, then re-apply: what comes back is the *new* contents.
+  await page.getByTestId("clear-section-options").click();
   await expect(pickerInput(slotRow(page, "options.class"))).toHaveValue("");
 
   await presetMenu(page, "options").click();
@@ -320,7 +314,6 @@ test("'update from current' leaves the other presets in the section alone", asyn
   await roleRow.getByText("Tank", { exact: true }).click();
 
   await presetMenu(page, "options").click();
-  await page.getByTestId("preset-update-overwrite-me").click();
   await page.getByTestId("preset-update-overwrite-me").click();
 
   await presetMenu(page, "options").click();

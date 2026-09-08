@@ -29,7 +29,8 @@ const props = withDefaults(
 );
 
 const emit = defineEmits<{
-  action: [action: string];
+  /** The Shift key at click time: skips the confirmation dialog the action would raise. */
+  action: [action: string, skipConfirm: boolean];
   close: [];
 }>();
 
@@ -78,7 +79,7 @@ useEscapeToClose(() => emit("close"));
               : 'cursor-pointer hover:bg-surface-2'
         "
         :disabled="item.disabled"
-        @click="$emit('action', item.action)"
+        @click="$emit('action', item.action, $event.shiftKey)"
       >
         <component
           :is="item.icon"

@@ -67,9 +67,9 @@ const emit = defineEmits<{
   "reorder-folder": [id: string, toIndex: number];
   "move-into-folder": [buildId: string, folderId: string];
   "folder-toggle": [id: string];
-  "delete-request": [id: string];
+  "delete-request": [id: string, skipConfirm: boolean];
   "menu-open": [id: string, event: MouseEvent];
-  "menu-action": [action: string, id: string];
+  "menu-action": [action: string, id: string, skipConfirm: boolean];
   "menu-close": [];
   create: [];
   "create-folder": [];
@@ -224,7 +224,7 @@ function onFolderKeydown(event: KeyboardEvent, folder: BuildFolder) {
   }
   if (event.key === "Delete" || event.key === "Backspace") {
     event.preventDefault();
-    emit("delete-request", folder.id);
+    emit("delete-request", folder.id, event.shiftKey);
     return;
   }
   if (event.key === "F2") {
@@ -288,9 +288,9 @@ function moveFocus(dir: 1 | -1) {
           @move-up="(id) => $emit('move-up', id)"
           @move-down="(id) => $emit('move-down', id)"
           @focus-move="moveFocus"
-          @delete-request="(id) => $emit('delete-request', id)"
+          @delete-request="(id, skip) => $emit('delete-request', id, skip)"
           @menu-open="(id, ev) => $emit('menu-open', id, ev)"
-          @menu-action="(a, id) => $emit('menu-action', a, id)"
+          @menu-action="(a, id, skip) => $emit('menu-action', a, id, skip)"
           @menu-close="$emit('menu-close')"
         />
 
@@ -381,7 +381,9 @@ function moveFocus(dir: 1 | -1) {
                 :anchor="menuAnchor"
                 :items="menuItems"
                 :ignore="['.nav-kebab']"
-                @action="(a) => $emit('menu-action', a, row.folder.id)"
+                @action="
+                  (a, skip) => $emit('menu-action', a, row.folder.id, skip)
+                "
                 @close="$emit('menu-close')"
               />
             </div>
@@ -411,9 +413,9 @@ function moveFocus(dir: 1 | -1) {
               @move-up="(id) => $emit('move-up', id)"
               @move-down="(id) => $emit('move-down', id)"
               @focus-move="moveFocus"
-              @delete-request="(id) => $emit('delete-request', id)"
+              @delete-request="(id, skip) => $emit('delete-request', id, skip)"
               @menu-open="(id, ev) => $emit('menu-open', id, ev)"
-              @menu-action="(a, id) => $emit('menu-action', a, id)"
+              @menu-action="(a, id, skip) => $emit('menu-action', a, id, skip)"
               @menu-close="$emit('menu-close')"
             />
 

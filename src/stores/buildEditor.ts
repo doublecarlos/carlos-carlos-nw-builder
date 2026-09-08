@@ -5,6 +5,7 @@ import * as storage from "../storage/storage";
 import * as builds from "./builds";
 import * as compare from "./compare";
 import * as history from "./history";
+import { showUndoNotice } from "./notice";
 import { db } from "./resolved";
 import {
   migrateItemIds,
@@ -517,6 +518,7 @@ export function resetAll() {
   const fresh = storage.defaultBuild(b.name);
   fresh.id = b.id;
   builds.replaceActive(fresh);
+  showUndoNotice(`Reset “${b.name}”`, () => builds.undoFor(b.id));
 }
 
 export function copySection(fromId: string, sectionIds: string[]) {
@@ -614,6 +616,7 @@ export function clearSection(sectionId: string, label: string) {
   for (const slot of buildSlots()) {
     if (slot.section === sectionId) clearSlot(b, slot, fresh);
   }
+  showUndoNotice(`Cleared ${label}`, () => builds.undoFor(b.id));
 }
 
 /**

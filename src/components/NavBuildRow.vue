@@ -55,9 +55,9 @@ const emit = defineEmits<{
   "move-up": [id: string];
   "move-down": [id: string];
   "focus-move": [dir: 1 | -1];
-  "delete-request": [id: string];
+  "delete-request": [id: string, skipConfirm: boolean];
   "menu-open": [id: string, event: MouseEvent];
-  "menu-action": [action: string, id: string];
+  "menu-action": [action: string, id: string, skipConfirm: boolean];
   "menu-close": [];
 }>();
 
@@ -71,7 +71,8 @@ const rowProps = computed(() => ({
 }));
 
 /** ↑/↓ moves the list selection; Ctrl/Cmd+↑/↓ reorders instead, within this row's own folder
- *  (or the top level). Delete/Backspace asks for the parent's two-step delete confirm. F2
+ *  (or the top level). Delete/Backspace asks the parent to delete the row, Shift+Delete
+ *  skipping the confirmation dialog it would otherwise raise. F2
  *  starts rename -- Enter is left alone since a native button already treats it as a click
  *  (= select), matching the "Enter activates, same as click" convention used elsewhere
  *  (useCursorRowKeys). */
@@ -89,7 +90,7 @@ function onRowKeydown(event: KeyboardEvent) {
   }
   if (event.key === "Delete" || event.key === "Backspace") {
     event.preventDefault();
-    emit("delete-request", props.build.id);
+    emit("delete-request", props.build.id, event.shiftKey);
     return;
   }
   if (event.key === "F2") {
@@ -169,7 +170,7 @@ function onRowKeydown(event: KeyboardEvent) {
           :anchor="menuAnchor"
           :items="menuItems"
           :ignore="['.nav-kebab']"
-          @action="(a) => emit('menu-action', a, build.id)"
+          @action="(a, skip) => emit('menu-action', a, build.id, skip)"
           @close="emit('menu-close')"
         />
       </div>
