@@ -302,6 +302,11 @@ export interface FilterDefaults {
 
 export type FilterDefaultsMap = Record<string, FilterDefaults>;
 
+/** The item fields a whole category is authored with, declared once against the filter and
+ * read by the item form. A field named by no entry at all is offered everywhere; naming it
+ * anywhere narrows it to the filters that claim it. */
+export type FilterFieldsMap = Record<string, string[]>;
+
 // --- the stable (mounts and insignia) --------------------------------------------------------
 
 export const INSIGNIA_SHAPES = [
@@ -343,6 +348,8 @@ export interface SlotsData {
   presets?: SectionPreset[];
   /** Optional like `presets`: without it every item is capped by its own field alone. */
   filterDefaults?: FilterDefaultsMap;
+  /** Optional like `filterDefaults`: without it the item form offers every field group. */
+  filterFields?: FilterFieldsMap;
 }
 
 // --- items / bonuses -----------------------------------------------------------------------
@@ -688,6 +695,8 @@ export interface Db {
   duplicates: string[];
   /** Carried here so a consumer can show what an item's blank field resolves to. */
   filterDefaults: FilterDefaultsMap;
+  /** Carried here so the item form can ask which field groups a filter is authored with. */
+  filterFields: FilterFieldsMap;
   /** Look up an item by the id given. Never forwards through `Item.replacedBy`. */
   get(id: string | null | undefined): Item | null;
   /** The item `id` would migrate to, or null. Drives the offer; never resolves a build. */

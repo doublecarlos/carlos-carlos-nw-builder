@@ -1588,3 +1588,34 @@ describe("catalog.referencedOverlay", () => {
     expect(overlay.slots).toEqual({ "options.race": raceSlot });
   });
 });
+
+describe("catalog.validateFilterFields", () => {
+  it("passes an entry naming only real item fields", () => {
+    const findings = catalog.validateFilterFields({
+      mount: ["insigniaSlots"],
+      insignia: ["insigniaShape", "preferredVariant"],
+    });
+    expect(findings).toEqual([]);
+  });
+
+  it("reports a field that is not an item field", () => {
+    const findings = catalog.validateFilterFields({
+      mount: ["insigniaSlots", "insigniaSlot"],
+    });
+    expect(findings).toHaveLength(1);
+    expect(findings[0].level).toBe("error");
+    expect(findings[0].message).toContain('"insigniaSlot"');
+    expect(findings[0].message).toContain('"mount"');
+  });
+
+  it("reports a stat key, which rides on an item but is not one of its fields", () => {
+    const findings = catalog.validateFilterFields({ gear_head: ["power"] });
+    expect(findings).toHaveLength(1);
+  });
+
+  it("finds nothing wrong with the shipped declaration", () => {
+    expect(catalog.validateFilterFields(NW_SLOTS.filterFields ?? {})).toEqual(
+      [],
+    );
+  });
+});

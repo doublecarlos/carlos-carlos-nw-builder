@@ -3,7 +3,7 @@
 // items' forms show no extra clutter. Each row pairs a build_parameter slot picker with that
 // slot's own control (BuildParamInput), reused as-is from the build editor.
 import { test, expect, type Page } from "@playwright/test";
-import { openBuilder } from "./support/app";
+import { openBuilder, setItemFilter } from "./support/app";
 import { addLayer, layerRow } from "./support/nav";
 
 const UNIQUE_ITEM = "ZZZ Test Default Params Item";
@@ -14,7 +14,7 @@ async function openNewItemForm(page: Page) {
   await layerRow(page, "Layer 1").locator(".nav-name").click();
   await page.getByTestId("new-item").click();
   await page.getByTestId("item-name-input").fill(UNIQUE_ITEM);
-  await page.getByTestId("item-filter-input").fill("paragon");
+  await setItemFilter(page, "paragon");
 }
 
 test("the section is hidden behind a single + button until a row is added", async ({

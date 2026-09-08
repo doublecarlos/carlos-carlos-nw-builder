@@ -3,20 +3,21 @@
 // button that clears it back to unset rather than leaving stale values behind that a
 // disabled/empty-looking field can't fully clean up).
 import { test, expect, type Page } from "@playwright/test";
-import { openBuilder } from "./support/app";
+import { openBuilder, setItemFilter } from "./support/app";
 import { addLayer, layerRow } from "./support/nav";
 
 const UNIQUE_ITEM = "ZZZ Test Groups Item";
 
 /** Creates a brand-new item draft in a fresh layer and fills in the minimum required
- *  fields, leaving the item form open for further edits. */
-async function openNewItemForm(page: Page) {
+ *  fields, leaving the item form open for further edits. The filter decides which field
+ *  groups the form offers, so a test reaching for one names the filter authored with it. */
+async function openNewItemForm(page: Page, filter = "gear_head") {
   await openBuilder(page);
   await addLayer(page);
   await layerRow(page, "Layer 1").locator(".nav-name").click();
   await page.getByTestId("new-item").click();
   await page.getByTestId("item-name-input").fill(UNIQUE_ITEM);
-  await page.getByTestId("item-filter-input").fill("gear_head");
+  await setItemFilter(page, filter);
 }
 
 test("dynamic stat rows can be added and removed, like Stats", async ({
@@ -54,7 +55,7 @@ test("dynamic stat rows can be added and removed, like Stats", async ({
 test("inline repetition group is hidden until added, then fully removable", async ({
   page,
 }) => {
-  await openNewItemForm(page);
+  await openNewItemForm(page, "boon_tier1");
 
   await expect(
     page.getByRole("button", { name: "Add inline repetition" }),
@@ -118,7 +119,7 @@ test("pre-added empty stat rows on a saved item survive filling one of them", as
 test("removing inline repetition on an existing item omits it from the saved item", async ({
   page,
 }) => {
-  await openNewItemForm(page);
+  await openNewItemForm(page, "boon_tier1");
 
   await page.getByRole("button", { name: "Add inline repetition" }).click();
   const fields = page.getByTestId("inline-repetition-fields");

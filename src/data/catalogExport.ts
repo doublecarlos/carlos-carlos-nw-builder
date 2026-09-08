@@ -21,6 +21,7 @@ import type {
   SectionPreset,
   SlotSection,
   FilterDefaultsMap,
+  FilterFieldsMap,
 } from "../types";
 
 const ITEM_LEADING_KEYS = ["id", "name", "filter"] as const;
@@ -75,18 +76,21 @@ function stripSection<T extends { section?: string }>(value: T) {
 /**
  * Regenerates the whole `data/slots.json` body from the composed in-memory data -- same "paste
  * back over the file" workflow `toItemsFile`/`toBonusesFile` already give items/bonuses, just
- * shaped for slots.json's nested `{ filterDefaults, sections: [{ ..., presets?, slots }] }`
- * structure instead of a bare top-level array. `filterDefaults` is required rather than
- * defaulted: it is not composed from the layers, so a caller that omits it drops the block.
+ * shaped for slots.json's nested `{ filterDefaults, filterFields, sections: [{ ..., presets?,
+ * slots }] }` structure instead of a bare top-level array. `filterDefaults` and `filterFields`
+ * are required rather than defaulted: neither is composed from the layers, so a caller that
+ * omits one drops the block.
  */
 export function toSlotsFile(
   sections: SlotSection[],
   slots: Slot[],
   presets: SectionPreset[],
   filterDefaults: FilterDefaultsMap,
+  filterFields: FilterFieldsMap,
 ): string {
   const body = {
     filterDefaults,
+    filterFields,
     sections: sections.map((section) => {
       const sectionSlots = slots
         .filter((slot) => slot.section === section.id)

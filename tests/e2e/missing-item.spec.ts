@@ -2,7 +2,13 @@
 // build, disable the layer, and see the slot show a "not in your catalogue" marker.
 // Re-enabling the layer restores the slot.
 import { test, expect } from "@playwright/test";
-import { openBuilder, chooseItem, slotRow, pickerInput } from "./support/app";
+import {
+  openBuilder,
+  chooseItem,
+  slotRow,
+  pickerInput,
+  setItemFilter,
+} from "./support/app";
 import { addLayer, layerRow, toggleLayerCheckbox } from "./support/nav";
 
 const UNIQUE_ITEM = "ZZZ Test Custom Layer Item";
@@ -20,8 +26,7 @@ test("disable layer → missing marker → re-enable restores the item", async (
   await page.getByTestId("item-name-input").fill(UNIQUE_ITEM);
 
   // Also set the filter so it appears in the Head slot's picker.
-  const filterInput = page.getByTestId("item-filter-input");
-  await filterInput.fill("gear_head");
+  await setItemFilter(page, "gear_head");
 
   await page.getByRole("button", { name: "Save item" }).click();
 

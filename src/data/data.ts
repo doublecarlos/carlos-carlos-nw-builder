@@ -52,6 +52,7 @@ function deriveSchema(raw: typeof rawSchema): Schema {
 function deriveSlots(raw: typeof rawSlots): SlotsData {
   return {
     filterDefaults: raw.filterDefaults,
+    filterFields: raw.filterFields,
     sections: raw.sections.map(({ id, label, defaultOpen }) => ({
       id,
       label,

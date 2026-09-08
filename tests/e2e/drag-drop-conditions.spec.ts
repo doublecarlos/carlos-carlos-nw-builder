@@ -3,7 +3,7 @@
 // dragging an existing condition into a freshly-added "not" block, including across grants,
 // variants, and (via ItemBonuses' cross-bonus registry) across bonuses on the same item.
 import { test, expect, type Page } from "@playwright/test";
-import { openBuilder } from "./support/app";
+import { openBuilder, setItemFilter } from "./support/app";
 import { addLayer, layerRow } from "./support/nav";
 import { dragOnto } from "./support/dragDrop";
 
@@ -208,7 +208,7 @@ test("dragging a condition between two bonuses on the same item moves it across 
   await layerRow(page, "Layer 1").locator(".nav-name").click();
   await page.getByTestId("new-item").click();
   await page.getByTestId("item-name-input").fill("ZZZ Cross Bonus Drag Item");
-  await page.getByTestId("item-filter-input").fill("gear_head");
+  await setItemFilter(page, "gear_head");
 
   const addBonus = page.getByLabel("Add bonus");
   await addBonus.click();

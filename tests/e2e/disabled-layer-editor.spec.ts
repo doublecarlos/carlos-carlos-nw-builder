@@ -2,7 +2,7 @@
 // its forms follow an undo, and its faults are linted. `enabled` only decides what the build
 // resolves to.
 import { test, expect, type Page } from "@playwright/test";
-import { openBuilder, undoButton } from "./support/app";
+import { openBuilder, undoButton, setItemFilter } from "./support/app";
 import { addLayer, layerRow } from "./support/nav";
 
 const RING = "ZZZ Test Disabled Layer Ring";
@@ -26,7 +26,7 @@ async function createItem(
 ) {
   await page.getByTestId("new-item").click();
   await page.getByTestId("item-name-input").fill(name);
-  await page.getByTestId("item-filter-input").fill(filter);
+  await setItemFilter(page, filter);
   if (maxCopies !== undefined)
     await page.getByTestId("item-max-copies").fill(maxCopies);
   await page.getByRole("button", { name: "Save item" }).click();

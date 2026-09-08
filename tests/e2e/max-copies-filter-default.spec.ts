@@ -3,7 +3,13 @@
 // authored through the layer editor, so nothing depends on shipped data keeping its own cap.
 import { test, expect } from "@playwright/test";
 import type { Page } from "@playwright/test";
-import { openBuilder, slotRow, pickerInput, chooseItem } from "./support/app";
+import {
+  openBuilder,
+  slotRow,
+  pickerInput,
+  chooseItem,
+  setItemFilter,
+} from "./support/app";
 import { addLayer, layerRow } from "./support/nav";
 import { shippedItemName } from "./support/shippedData";
 import { undoButton } from "./support/app";
@@ -18,7 +24,7 @@ async function createItem(
 ) {
   await page.getByTestId("new-item").click();
   await page.getByTestId("item-name-input").fill(name);
-  await page.getByTestId("item-filter-input").fill("gear_ring");
+  await setItemFilter(page, "gear_ring");
   if (maxCopies !== undefined) {
     await page.getByTestId("item-max-copies").fill(String(maxCopies));
   }

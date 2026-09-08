@@ -43,6 +43,7 @@ import type {
   Db,
   Build,
   FilterDefaultsMap,
+  FilterFieldsMap,
 } from "../types";
 
 export const emptyOverlay = (): CatalogOverlay => ({
@@ -152,6 +153,7 @@ export function makeDb(overlays: (CatalogOverlay | null | undefined)[] = []) {
     slots,
     presets: sectionPresets,
     filterDefaults: NW_SLOTS.filterDefaults,
+    filterFields: NW_SLOTS.filterFields,
   });
 }
 
@@ -1182,6 +1184,29 @@ export function validateMaxCopies(
 }
 
 /**
+ * Every field a `filterFields` entry claims is a real item field. A misspelling silently
+ * withholds a form group instead of narrowing one.
+ */
+export function validateFilterFields(
+  filterFields: FilterFieldsMap = NW_SLOTS.filterFields ?? {},
+): LintFinding[] {
+  const findings: LintFinding[] = [];
+  for (const [filter, fields] of Object.entries(filterFields)) {
+    for (const field of fields) {
+      if (ITEM_FIELDS.has(field)) continue;
+      findings.push({
+        level: "error",
+        kind: "item",
+        message:
+          `filterFields "${filter}" claims "${field}", which is not an item field - ` +
+          "no form group answers to it, so the entry does nothing",
+      });
+    }
+  }
+  return findings;
+}
+
+/**
  * The stable's slot declarations are coherent.
  *
  * A group missing its mount row, two insignia claiming one position, or a row pointed at the
@@ -1284,6 +1309,7 @@ export function validate(
   presets: SectionPreset[] = NW_SLOTS.presets ?? [],
   slots: Slot[] = NW_SLOTS?.slots ?? [],
   filterDefaults: FilterDefaultsMap = NW_SLOTS.filterDefaults ?? {},
+  filterFields: FilterFieldsMap = NW_SLOTS.filterFields ?? {},
 ): LintFinding[] {
   const findings: LintFinding[] = [
     ...validateSlots(slots),
@@ -1294,6 +1320,7 @@ export function validate(
     ...validateReplacements(items, schema),
     ...validateMaxCopies(items, slots, filterDefaults),
     ...validateStableSlots(slots),
+    ...validateFilterFields(filterFields),
   ];
   const report = (
     level: "error" | "warn",

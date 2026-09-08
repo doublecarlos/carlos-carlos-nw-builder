@@ -107,6 +107,7 @@ export function build(
   slots: SlotsData,
 ): Db {
   const filterDefaults = slots?.filterDefaults ?? {};
+  const filterFields = slots?.filterFields ?? {};
   const byId = new Map<string, Item>();
   // Keyed by `string | undefined` (not just `string`): an item with no `filter` still lands
   // here under the `undefined` key -- dead weight (`forFilter` is only ever called with a
@@ -182,6 +183,7 @@ export function build(
     itemByGameId,
     duplicates,
     filterDefaults,
+    filterFields,
 
     /** Look up an item by id. `-`, blank and nullish all mean "empty slot". Never follows
      * `replacedBy` -- see `endOfChain`. */

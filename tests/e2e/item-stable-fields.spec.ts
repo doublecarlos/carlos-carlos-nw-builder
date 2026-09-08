@@ -1,7 +1,7 @@
 // The item editor's stable fields. A mount's plain universal slot carries no shape and no
 // preference, so it is the one that a save can silently drop.
 import { test, expect, type Page } from "@playwright/test";
-import { openBuilder, chooseCombo } from "./support/app";
+import { openBuilder, chooseCombo, setItemFilter } from "./support/app";
 import { addLayer, layerRow } from "./support/nav";
 
 const MOUNT = "ZZZ Test Stable Mount";
@@ -12,7 +12,7 @@ async function openNewMountForm(page: Page) {
   await layerRow(page, "Layer 1").locator(".nav-name").click();
   await page.getByTestId("new-item").click();
   await page.getByTestId("item-name-input").fill(MOUNT);
-  await page.getByTestId("item-filter-input").fill("mount");
+  await setItemFilter(page, "mount");
 }
 
 const slotRows = (page: Page) => page.locator(".insignia-slot-row");

@@ -6,7 +6,13 @@
 // same way item-retirement.spec.ts does: nothing shipped is retired.
 import { test, expect } from "@playwright/test";
 import type { Page } from "@playwright/test";
-import { openBuilder, slotRow, pickerInput, chooseItem } from "./support/app";
+import {
+  openBuilder,
+  slotRow,
+  pickerInput,
+  chooseItem,
+  setItemFilter,
+} from "./support/app";
 import { addLayer, layerRow } from "./support/nav";
 
 const RETIRED_ITEM = "ZZZ Test Withheld Ring";
@@ -19,7 +25,7 @@ async function createItem(
 ) {
   await page.getByTestId("new-item").click();
   await page.getByTestId("item-name-input").fill(name);
-  await page.getByTestId("item-filter-input").fill("gear_ring");
+  await setItemFilter(page, "gear_ring");
   if (maxCopies !== undefined) {
     await page.getByTestId("item-max-copies").fill(String(maxCopies));
   }
