@@ -11,7 +11,6 @@ import {
   folderRow,
   filterBuilds,
   openRowMenu,
-  confirmDangerAction,
   renameViaSidebar,
 } from "./support/nav";
 import { beginDrag, dragOnto } from "./support/dragDrop";
@@ -182,7 +181,10 @@ test("deleting a folder keeps its builds, at the top level", async ({
   await dropIntoFolder(buildRow(page, "Build 2"), folderRow(page, "Folder 1"));
 
   const menu = await openRowMenu(folderRow(page, "Folder 1"));
-  await confirmDangerAction(menu, "Delete folder (keeps builds)");
+  await menu.getByRole("button", { name: "Delete folder" }).click();
+  // Ticked by default; unticking is what leaves the builds behind.
+  await page.getByTestId("confirm-checkbox").locator("input").uncheck();
+  await page.getByTestId("confirm-accept").click();
 
   await expect(folderRow(page, "Folder 1")).toHaveCount(0);
   await expect(buildRow(page, "Build 2")).toBeVisible();

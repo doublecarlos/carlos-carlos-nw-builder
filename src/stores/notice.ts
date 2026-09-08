@@ -37,6 +37,18 @@ export function clearNotice() {
   showNotice("");
 }
 
+/** A notice offering to take back what just happened. The affordance clears with the action,
+ *  so a second click cannot undo a further step. */
+export function showUndoNotice(text: string, undo: () => void) {
+  showNotice(text, {
+    label: "Undo",
+    run: () => {
+      undo();
+      clearNotice();
+    },
+  });
+}
+
 /** First storage failure in the session surfaces a notice; later ones don't pile on. */
 export function flagStorageFailed(text: string) {
   if (_storageFailed.value) return;

@@ -38,12 +38,15 @@ export async function openRowMenu(row: Locator): Promise<Locator> {
   return menu;
 }
 
-/** Clicks a danger action (Delete/Reset) twice -- the row's own two-step confirm turns the
- * label into "Really?" after the first click. */
+/** The shared confirmation dialog every delete raises. */
+export function confirmDialog(page: Page): Locator {
+  return page.getByTestId("confirm-dialog");
+}
+
+/** Clicks a menu delete and accepts the dialog it raises. */
 export async function confirmDangerAction(menu: Locator, label: string) {
-  const button = menu.getByRole("button", { name: label });
-  await button.click();
-  await menu.getByRole("button", { name: "Really?" }).click();
+  await menu.getByRole("button", { name: label }).click();
+  await menu.page().getByTestId("confirm-accept").click();
 }
 
 /** Renames via double-click. `input` is looked up from `page`, not `row` -- once rename mode

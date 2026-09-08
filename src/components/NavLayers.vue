@@ -53,9 +53,9 @@ const emit = defineEmits<{
   "move-up": [id: string];
   "move-down": [id: string];
   reorder: [id: string, toIndex: number];
-  "delete-request": [id: string];
+  "delete-request": [id: string, skipConfirm: boolean];
   "menu-open": [id: string, event: MouseEvent];
-  "menu-action": [action: string, id: string];
+  "menu-action": [action: string, id: string, skipConfirm: boolean];
   "menu-close": [];
   create: [];
 }>();
@@ -109,7 +109,7 @@ function onRowKeydown(event: KeyboardEvent, id: string, name: string) {
   }
   if (event.key === "Delete" || event.key === "Backspace") {
     event.preventDefault();
-    emit("delete-request", id);
+    emit("delete-request", id, event.shiftKey);
     return;
   }
   if (event.key === "F2") {
@@ -218,7 +218,7 @@ function moveFocus(dir: 1 | -1) {
             :anchor="menuAnchor"
             :items="menuItems"
             :ignore="['.nav-kebab']"
-            @action="(a) => $emit('menu-action', a, l.id)"
+            @action="(a, skip) => $emit('menu-action', a, l.id, skip)"
             @close="$emit('menu-close')"
           />
         </div>

@@ -428,3 +428,37 @@ test.describe("bonus stat payload editing", () => {
     ).toBeVisible();
   });
 });
+
+test.describe("discarding a layer's changes", () => {
+  test("the discard button confirms first, and cancelling keeps the edit", async ({
+    page,
+  }) => {
+    await openBuilder(page);
+    await addLayer(page);
+    await layerRow(page, "Layer 1").locator(".nav-name").click();
+
+    await page.locator(".editor-search").fill(HEAD_ITEM);
+    await page
+      .locator(".editor-row")
+      .filter({ hasText: HEAD_ITEM })
+      .first()
+      .click();
+    const renamed = `${HEAD_ITEM} (renamed)`;
+    await page.getByTestId("item-name-input").fill(renamed);
+
+    const changed = page.getByTestId("badge").filter({ hasText: "1 changed" });
+    await expect(changed).toBeVisible();
+
+    const discard = page.getByRole("button", { name: "Discard changes" });
+    await discard.click();
+    await expect(page.getByTestId("confirm-message")).toHaveText(
+      "Discard all 1 unsaved change in this layer?",
+    );
+    await page.getByTestId("confirm-cancel").click();
+    await expect(changed).toBeVisible();
+
+    await discard.click();
+    await page.getByTestId("confirm-accept").click();
+    await expect(changed).toHaveCount(0);
+  });
+});

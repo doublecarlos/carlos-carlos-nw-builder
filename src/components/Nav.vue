@@ -17,24 +17,20 @@ import {
 import NavBuilds from "./NavBuilds.vue";
 import NavLayers from "./NavLayers.vue";
 import NavTrash from "./NavTrash.vue";
-import { useConfirm } from "../composables/useConfirm";
 import * as builds from "../stores/builds";
 import * as folders from "../stores/folders";
 import * as layers from "../stores/layers";
 import * as selection from "../stores/selection";
 import * as buildEditor from "../stores/buildEditor";
 import * as trash from "../stores/trash";
-import { showNotice } from "../stores/notice";
+import * as confirm from "../stores/confirm";
 import type { Build, TrashEntry } from "../types";
-
-const CONFIRM_MS = 4000;
 
 const root = useTemplateRef("root");
 const openMenu = ref<{ type: string; id: string } | null>(null);
 const menuAnchor = ref<DOMRect | null>(null);
 const renaming = ref<{ type: string; id: string } | null>(null);
 const renameText = ref("");
-const confirm_ = useConfirm(CONFIRM_MS);
 
 const buildFilter = ref("");
 const layerFilter = ref("");
@@ -117,49 +113,101 @@ function cancelRename() {
   if (cancelled) focusRow(cancelled.id);
 }
 
-// --- two-step confirm (delegates to useConfirm composable) ---------------------------
+// --- confirmation dialogs -------------------------------------------------------------
+// Only the deletes confirm; reset and the reverts are undoable and post an undo notice instead.
+// `skip` is the Shift key from the originating event, threaded down by the Nav* components.
 
-function confirmLabel(type: string, id: string, action: string, label: string) {
-  return confirm_.label(`${type}:${id}:${action}`, label);
+const TRASH_NOTE = "Restorable from Recently deleted for 7 days.";
+
+function buildName(id: string) {
+  return builds.builds.value.find((b) => b.id === id)?.name ?? "";
 }
 
-function runConfirmed(
-  type: string,
+function layerName(id: string) {
+  return layers.layers.value.find((l) => l.id === id)?.name ?? "";
+}
+
+async function confirmDeleteBuild(id: string, skip: boolean) {
+  const { ok } = await confirm.askUnless(skip, {
+    title: "Delete build",
+    message: `Delete “${buildName(id)}”?`,
+    confirmLabel: "Delete",
+    danger: true,
+    note: TRASH_NOTE,
+  });
+  if (ok) deleteBuildRow(id);
+  return ok;
+}
+
+/** Unchecked leaves `folders.deleteFolder` to free the builds to the top level as it always
+ *  does; the checkbox is the only thing here that deletes a build. */
+async function confirmDeleteFolder(id: string, skip: boolean) {
+  const folder = folders.byId(id);
+  if (!folder) return false;
+  const count = folder.builds.length;
+  const { ok, checked } = await confirm.askUnless(skip, {
+    title: "Delete folder",
+    message: `Delete folder “${folder.name}”?`,
+    confirmLabel: "Delete",
+    danger: true,
+    note: count ? TRASH_NOTE : undefined,
+    checkbox: count
+      ? {
+          label: `Also delete the ${count} build${count === 1 ? "" : "s"} inside`,
+          checked: true,
+        }
+      : undefined,
+  });
+  if (!ok) return false;
+  // `builds.deleteBuild` detaches each id from the folder as it goes, so iterate a copy.
+  if (checked)
+    for (const buildId of [...folder.builds]) builds.deleteBuild(buildId);
+  deleteFolderRow(id);
+  return true;
+}
+
+async function confirmDeleteLayer(id: string, skip: boolean) {
+  const { ok } = await confirm.askUnless(skip, {
+    title: "Delete layer",
+    message: `Delete “${layerName(id)}”?`,
+    confirmLabel: "Delete",
+    danger: true,
+    note: TRASH_NOTE,
+  });
+  if (ok) deleteLayerRow(id);
+  return ok;
+}
+
+async function confirmPurge(entry: TrashEntry, skip: boolean) {
+  const { ok } = await confirm.askUnless(skip, {
+    title: "Delete permanently",
+    message: `Permanently delete “${entry.item.name}”?`,
+    confirmLabel: "Delete permanently",
+    danger: true,
+    note: "This cannot be undone.",
+  });
+  if (ok) purgeTrash(entry);
+}
+
+/** Delete/Backspace on a nav row, Shift+Delete going ahead without the dialog. */
+async function onDeleteRequest(
+  type: "build" | "folder" | "layer",
   id: string,
-  action: string,
-  run: () => void,
+  skip: boolean,
 ) {
-  if (confirm_.run(`${type}:${id}:${action}`)) {
-    run();
-    closeMenu();
-  }
-}
-
-/** Delete/Backspace on a nav row (`NavBuilds`/`NavLayers`' `delete-request` emit). Reuses the
- *  same two-step confirm key as the context menu's delete action -- arming it here also arms
- *  it there, so opening the menu right after mid-confirms as "Really?" instead of resetting.
- *  There's no menu open to show that state, so the first press surfaces it as a toast instead. */
-function onDeleteRequest(type: "build" | "folder" | "layer", id: string) {
-  if (!confirm_.run(`${type}:${id}:delete-${type}`)) {
-    const name =
-      type === "folder"
-        ? folders.byId(id)?.name
-        : (type === "build" ? builds.builds : layers.layers).value.find(
-            (item) => item.id === id,
-          )?.name;
-    showNotice(
-      type === "folder"
-        ? `Press Delete again to delete the folder "${name}".`
-        : `Press Delete again to delete "${name}".`,
-    );
+  const deleted =
+    type === "build"
+      ? await confirmDeleteBuild(id, skip)
+      : type === "folder"
+        ? await confirmDeleteFolder(id, skip)
+        : await confirmDeleteLayer(id, skip);
+  if (!deleted) {
+    focusRow(id);
     return;
   }
-  if (type === "build") deleteBuildRow(id);
-  else if (type === "folder") deleteFolderRow(id);
-  else deleteLayerRow(id);
   // The deleted row's button (and the keyboard focus on it) is gone -- refocus whatever the
   // store auto-selected next so the keyboard cursor isn't dropped. A deleted folder selects
-  // nothing: its builds only moved up to the top level.
+  // nothing on its own: its builds either went too or only moved up to the top level.
   const next = selection.selection.value;
   if (type !== "folder" && next && next.kind === type) focusRow(next.id);
 }
@@ -337,48 +385,24 @@ const buildMenuItems = (id: string) => [
   ...moveToItems(id),
   {
     action: "revert",
-    label: confirmLabel(
-      "build",
-      id,
-      "revert-build",
-      "Revert to last downloaded…",
-    ),
+    label: "Revert to last downloaded",
     disabled: !isBuildRevertable(id),
     icon: RotateCcw,
   },
-  {
-    action: "reset",
-    label: confirmLabel("build", id, "reset-build", "Reset"),
-    icon: RotateCcw,
-  },
-  {
-    action: "delete",
-    label: confirmLabel("build", id, "delete-build", "Delete"),
-    danger: true,
-    icon: Trash,
-  },
+  { action: "reset", label: "Reset", icon: RotateCcw },
+  { action: "delete", label: "Delete…", danger: true, icon: Trash },
 ];
 
-const folderMenuItems = (id: string) => [
+const folderMenuItems = () => [
   { action: "rename", label: "Rename (F2)", icon: Pencil },
   { action: "new-build", label: "New build here", icon: Plus },
-  {
-    action: "delete",
-    label: confirmLabel(
-      "folder",
-      id,
-      "delete-folder",
-      "Delete folder (keeps builds)",
-    ),
-    danger: true,
-    icon: Trash,
-  },
+  { action: "delete", label: "Delete folder…", danger: true, icon: Trash },
 ];
 
 /** The Builds section renders one menu for whichever row is open, build or folder. */
 function navMenuItems() {
   const open = openMenu.value;
-  if (open?.type === "folder") return folderMenuItems(open.id);
+  if (open?.type === "folder") return folderMenuItems();
   if (open?.type === "build") return buildMenuItems(open.id);
   return [];
 }
@@ -389,28 +413,18 @@ const layerMenuItems = (id: string) => [
   { action: "download", label: "Download…", icon: Download },
   {
     action: "revert",
-    label: confirmLabel(
-      "layer",
-      id,
-      "revert-layer",
-      "Revert to last downloaded…",
-    ),
+    label: "Revert to last downloaded",
     disabled: !isLayerRevertable(id),
     icon: RotateCcw,
   },
-  {
-    action: "delete",
-    label: confirmLabel("layer", id, "delete-layer", "Delete"),
-    danger: true,
-    icon: Trash,
-  },
+  { action: "delete", label: "Delete…", danger: true, icon: Trash },
 ];
 
-const trashMenuItems = (key: string) => [
+const trashMenuItems = () => [
   { action: "restore", label: "Restore", icon: RotateCcw },
   {
     action: "purge",
-    label: confirmLabel("trash", key, "purge-trash", "Delete permanently"),
+    label: "Delete permanently…",
     danger: true,
     icon: Trash,
   },
@@ -419,12 +433,14 @@ const trashMenuItems = (key: string) => [
 // --- menu action dispatchers ----------------------------------------------------------
 
 /** One dispatcher for both row kinds in the Builds section - see `rowType`. */
-function onNavMenuAction(action: string, id: string) {
-  if (rowType(id) === "folder") onFolderMenuAction(action, id);
-  else onBuildMenuAction(action, id);
+function onNavMenuAction(action: string, id: string, skip: boolean) {
+  if (rowType(id) === "folder") onFolderMenuAction(action, id, skip);
+  else onBuildMenuAction(action, id, skip);
 }
 
-function onFolderMenuAction(action: string, id: string) {
+/** Dispatchers close the menu first, or the modal opens in front of a menu still on the row. */
+function onFolderMenuAction(action: string, id: string, skip: boolean) {
+  closeMenu();
   switch (action) {
     case "rename":
       startRename("folder", id, folders.byId(id)?.name ?? "");
@@ -433,23 +449,20 @@ function onFolderMenuAction(action: string, id: string) {
       newBuildInFolder(id);
       break;
     case "delete":
-      runConfirmed("folder", id, "delete-folder", () => deleteFolderRow(id));
+      confirmDeleteFolder(id, skip);
       break;
   }
 }
 
-function onBuildMenuAction(action: string, id: string) {
+function onBuildMenuAction(action: string, id: string, skip: boolean) {
+  closeMenu();
   if (action.startsWith("move-to:")) {
     moveBuildToFolder(id, action.slice("move-to:".length) || null);
     return;
   }
   switch (action) {
     case "rename":
-      startRename(
-        "build",
-        id,
-        builds.builds.value.find((b) => b.id === id)?.name ?? "",
-      );
+      startRename("build", id, buildName(id));
       break;
     case "duplicate":
       duplicateCurrentBuild(id);
@@ -458,25 +471,22 @@ function onBuildMenuAction(action: string, id: string) {
       exportBuild(id);
       break;
     case "revert":
-      runConfirmed("build", id, "revert-build", () => revertBuild(id));
+      revertBuild(id);
       break;
     case "reset":
-      runConfirmed("build", id, "reset-build", () => resetBuild(id));
+      resetBuild(id);
       break;
     case "delete":
-      runConfirmed("build", id, "delete-build", () => deleteBuildRow(id));
+      confirmDeleteBuild(id, skip);
       break;
   }
 }
 
-function onLayerMenuAction(action: string, id: string) {
+function onLayerMenuAction(action: string, id: string, skip: boolean) {
+  closeMenu();
   switch (action) {
     case "rename":
-      startRename(
-        "layer",
-        id,
-        layers.layers.value.find((l) => l.id === id)?.name ?? "",
-      );
+      startRename("layer", id, layerName(id));
       break;
     case "duplicate":
       duplicateLayerRow(id);
@@ -485,22 +495,22 @@ function onLayerMenuAction(action: string, id: string) {
       exportLayer(id);
       break;
     case "revert":
-      runConfirmed("layer", id, "revert-layer", () => revertLayer(id));
+      revertLayer(id);
       break;
     case "delete":
-      runConfirmed("layer", id, "delete-layer", () => deleteLayerRow(id));
+      confirmDeleteLayer(id, skip);
       break;
   }
 }
 
-function onTrashMenuAction(action: string, key: string) {
+function onTrashMenuAction(action: string, key: string, skip: boolean) {
+  closeMenu();
   const entry = trash.trashed.value.find(
     (t) => `${t.kind}_${t.item.id}` === key,
   );
   if (!entry) return;
   if (action === "restore") restoreTrashEntry(entry);
-  else if (action === "purge")
-    runConfirmed("trash", key, "purge-trash", () => purgeTrash(entry));
+  else if (action === "purge") confirmPurge(entry, skip);
 }
 
 // --- document event handlers for closing menus ----------------------------------------
@@ -553,7 +563,7 @@ useEventListener(document, "scroll", onScrollCapture, {
       @rename-commit="commitRename"
       @rename-cancel="cancelRename"
       @menu-open="(id, ev) => openMenuFor(rowType(id), id, ev)"
-      @menu-action="(a, id) => onNavMenuAction(a, id)"
+      @menu-action="(a, id, skip) => onNavMenuAction(a, id, skip)"
       @menu-close="closeMenu"
       @move-up="(id) => moveRowUp(id)"
       @move-down="(id) => moveRowDown(id)"
@@ -561,7 +571,7 @@ useEventListener(document, "scroll", onScrollCapture, {
       @reorder-folder="(id, toIndex) => reorderFolder(id, toIndex)"
       @move-into-folder="(id, folderId) => moveBuildToFolder(id, folderId)"
       @folder-toggle="(id) => folders.toggleCollapsed(id)"
-      @delete-request="(id) => onDeleteRequest(rowType(id), id)"
+      @delete-request="(id, skip) => onDeleteRequest(rowType(id), id, skip)"
       @create="builds.createBuild()"
       @create-folder="folders.createFolder()"
     />
@@ -595,12 +605,12 @@ useEventListener(document, "scroll", onScrollCapture, {
       @rename-commit="commitRename"
       @rename-cancel="cancelRename"
       @menu-open="(id, ev) => openMenuFor('layer', id, ev)"
-      @menu-action="(a, id) => onLayerMenuAction(a, id)"
+      @menu-action="(a, id, skip) => onLayerMenuAction(a, id, skip)"
       @menu-close="closeMenu"
       @move-up="(id) => moveLayerUp(id)"
       @move-down="(id) => moveLayerDown(id)"
       @reorder="(id, toIndex) => reorderLayer(id, toIndex)"
-      @delete-request="(id) => onDeleteRequest('layer', id)"
+      @delete-request="(id, skip) => onDeleteRequest('layer', id, skip)"
       @create="layers.createLayer()"
     />
 
@@ -608,15 +618,13 @@ useEventListener(document, "scroll", onScrollCapture, {
       :entries="trash.trashed.value"
       :expanded="trashExpanded"
       :menu-open-id="openMenu?.type === 'trash' ? openMenu.id : null"
-      :menu-items="
-        openMenu?.type === 'trash' ? trashMenuItems(openMenu.id) : []
-      "
+      :menu-items="openMenu?.type === 'trash' ? trashMenuItems() : []"
       :menu-anchor="menuAnchor"
       :time-ago="timeAgo"
       @toggle-expand="trashExpanded = !trashExpanded"
       @restore="(entry) => restoreTrashEntry(entry)"
       @menu-open="(id, ev) => openMenuFor('trash', id, ev)"
-      @menu-action="(a, id) => onTrashMenuAction(a, id)"
+      @menu-action="(a, id, skip) => onTrashMenuAction(a, id, skip)"
       @menu-close="closeMenu"
     />
   </nav>

@@ -33,7 +33,11 @@
         },
         {
           "keys": ["Delete", "Backspace"],
-          "description": "Delete - press twice to confirm"
+          "description": "Delete, with a confirmation dialog"
+        },
+        {
+          "keys": ["Shift+Delete"],
+          "description": "Delete without the confirmation"
         },
         { "keys": ["Right-click"], "description": "Open the row's menu" }
       ]

@@ -1,24 +1,17 @@
 <script setup lang="ts">
-// A section header's "reset to defaults" control. Two-step confirm, mirroring Nav.vue's
-// build reset -- this discards every slot in the section at once, not just one row.
+// A section header's "reset to defaults" control. Undoable in one step, so it acts without
+// confirming and `buildEditor.clearSection` posts the undo notice.
 import { RotateCcw } from "@lucide/vue";
 import BaseButton from "../ui/BaseButton.vue";
 import BaseTooltip from "../ui/BaseTooltip.vue";
-import { useConfirm } from "../../composables/useConfirm";
 
-const props = defineProps<{
+defineProps<{
   sectionId: string;
 }>();
 
-const emit = defineEmits<{
+defineEmits<{
   clear: [];
 }>();
-
-const confirm_ = useConfirm();
-
-function click() {
-  if (confirm_.run(props.sectionId)) emit("clear");
-}
 </script>
 
 <template>
@@ -26,9 +19,9 @@ function click() {
     <BaseButton
       class="mr-0.5 w-36 flex-none justify-center whitespace-nowrap"
       :data-testid="`clear-section-${sectionId}`"
-      @click="click"
+      @click="$emit('clear')"
     >
-      <RotateCcw />{{ confirm_.label(sectionId, "Clear section") }}
+      <RotateCcw />Clear section
     </BaseButton>
   </BaseTooltip>
 </template>

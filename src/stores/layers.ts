@@ -9,7 +9,7 @@ import * as history from "./history";
 import * as trash from "./trash";
 import * as selection from "./selection";
 import { layerOrder, persistMeta } from "./meta";
-import { flagStorageFailed, showNotice } from "./notice";
+import { flagStorageFailed, showNotice, showUndoNotice } from "./notice";
 import * as catalog from "../data/catalog";
 import type { Layer, CatalogOverlay, SectionPreset } from "../types";
 
@@ -211,7 +211,9 @@ export function updatePreset(preset: SectionPreset): Layer {
     layer.id,
     catalog.upsert(layer.overlay, "sectionPresets", preset.id, preset),
   );
-  showNotice(`Updated “${name}” in “${layer.name}”`);
+  showUndoNotice(`Updated “${name}” in “${layer.name}”`, () =>
+    undoOverlayFor(layer.id),
+  );
   return layer;
 }
 
@@ -222,6 +224,29 @@ export function revertToDownloaded(id: string) {
   const restored = storage.revertToDownloaded(layer) as Layer;
   _layers.value.set(id, restored);
   markDirty(id);
+  showUndoNotice(`Reverted “${layer.name}” to the last downloaded copy`, () =>
+    undoLayerFor(id),
+  );
+}
+
+/** Undo a whole-layer snapshot (rename, enable, revert). Overlay snapshots share this stack
+ *  and need `undoOverlayFor` instead, so each caller undoes with the shape it recorded. */
+export function undoLayerFor(id: string) {
+  const layer = _layers.value.get(id);
+  if (!layer) return;
+  const json = history.undo("layer", id, layer);
+  if (json != null) {
+    _layers.value.set(id, JSON.parse(json) as Layer);
+    markDirty(id);
+  }
+}
+
+/** Undo an overlay snapshot (a catalogue edit, a preset update) on one layer's own stack. */
+export function undoOverlayFor(id: string) {
+  const layer = _layers.value.get(id);
+  if (!layer) return;
+  const json = history.undo("layer", id, layer.overlay);
+  if (json != null) updateOverlay(id, JSON.parse(json) as CatalogOverlay);
 }
 
 export function downloadLayer(id: string) {

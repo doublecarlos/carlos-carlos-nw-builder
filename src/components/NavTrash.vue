@@ -32,7 +32,7 @@ defineEmits<{
   "toggle-expand": [];
   restore: [entry: TrashEntry];
   "menu-open": [id: string, event: MouseEvent];
-  "menu-action": [action: string, id: string];
+  "menu-action": [action: string, id: string, skipConfirm: boolean];
   "menu-close": [];
 }>();
 </script>
@@ -100,7 +100,8 @@ defineEmits<{
             :items="menuItems"
             :ignore="['.nav-kebab']"
             @action="
-              (a) => $emit('menu-action', a, `${entry.kind}_${entry.item.id}`)
+              (a, skip) =>
+                $emit('menu-action', a, `${entry.kind}_${entry.item.id}`, skip)
             "
             @close="$emit('menu-close')"
           />

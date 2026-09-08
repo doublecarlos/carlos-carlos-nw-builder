@@ -8,6 +8,7 @@ import {
   layerRow,
   openRowMenu,
   confirmDangerAction,
+  confirmDialog,
   renameViaSidebar,
   addBuild,
   addFolder,
@@ -488,7 +489,7 @@ test("cancelling a rename with Escape returns focus to the row", async ({
   await expect(page.locator(".nav-rename")).toBeFocused();
 });
 
-test("Delete on a focused row arms a confirm notice, and fires on the second press", async ({
+test("Delete on a focused row asks for confirmation, then deletes", async ({
   page,
 }) => {
   await openBuilder(page);
@@ -498,15 +499,16 @@ test("Delete on a focused row arms a confirm notice, and fires on the second pre
   await buildRow(page, "Build 2").locator(".nav-name").focus();
   await page.keyboard.press("Delete");
 
-  // First press only arms the confirm -- the row is still there.
-  await expect(
-    page.getByText('Press Delete again to delete "Build 2".'),
-  ).toBeVisible();
+  await expect(confirmDialog(page)).toBeVisible();
+  await expect(page.getByTestId("confirm-message")).toHaveText(
+    "Delete \u201cBuild 2\u201d?",
+  );
   await expect(buildRow(page, "Build 2")).toBeVisible();
 
-  await page.keyboard.press("Delete");
+  // The go-ahead button holds focus, so Enter finishes what Delete started.
+  await expect(page.getByTestId("confirm-accept")).toBeFocused();
+  await page.keyboard.press("Enter");
 
-  // Second press actually deletes it.
   await expect(buildRow(page, "Build 2")).toHaveCount(0);
   const trash = recentlyDeletedHeader(page);
   await expect(trash).toBeVisible();

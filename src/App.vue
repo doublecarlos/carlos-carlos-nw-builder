@@ -11,6 +11,7 @@ import LandingScreen from "./components/LandingScreen.vue";
 import BuildEditor from "./components/BuildEditor.vue";
 import BuildDetails from "./components/BuildDetails.vue";
 import LayerEditor from "./components/LayerEditor.vue";
+import ConfirmDialog from "./components/ConfirmDialog.vue";
 import * as router from "./lib/router";
 import * as engine from "./stores/resolved";
 import * as details from "./stores/details";
@@ -178,5 +179,7 @@ syncRoute({ push: false });
         </template>
       </div>
     </template>
+
+    <ConfirmDialog />
   </div>
 </template>

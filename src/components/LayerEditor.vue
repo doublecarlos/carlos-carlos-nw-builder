@@ -19,7 +19,7 @@ import {
 } from "vue";
 import BaseModal from "./ui/BaseModal.vue";
 import { useEventListener, useMediaQuery } from "@vueuse/core";
-import { useConfirm } from "../composables/useConfirm";
+import * as confirm from "../stores/confirm";
 import ItemForm from "./game/ItemForm.vue";
 import BonusForm from "./game/BonusForm.vue";
 import PresetForm from "./game/PresetForm.vue";
@@ -146,7 +146,6 @@ const duplicateBonusSeed = ref<Bonus | null>(null);
 const newPresetSeed = layerEditorUi.takeNewPresetSeed();
 const duplicatePresetSeed = ref<SectionPreset | null>(newPresetSeed);
 const notice = ref("");
-const confirmReset_ = useConfirm(4000);
 
 const form = ref<InstanceType<typeof ItemForm> | null>(null);
 const bonusForm = ref<InstanceType<typeof BonusForm> | null>(null);
@@ -705,11 +704,14 @@ function restore(row: EditorRow) {
   notice.value = `Restored "${row.name}"`;
 }
 
-/** Two-step, not a `confirm()` dialog -- same pattern as BuildBar.vue's delete: this
- *  wipes every change in the overlay, and a blocking modal would stall anything driving
- *  the editor programmatically. */
-function resetAll() {
-  if (!confirmReset_.run("reset")) return;
+async function resetAll(event: MouseEvent) {
+  const { ok } = await confirm.askUnless(event.shiftKey, {
+    title: "Discard changes",
+    message: `Discard all ${changedCount.value} unsaved change${changedCount.value === 1 ? "" : "s"} in this layer?`,
+    confirmLabel: "Discard",
+    note: confirm.UNDO_NOTE,
+  });
+  if (!ok) return;
   history.snapshot(
     "layer",
     props.layer.id,
@@ -1223,17 +1225,9 @@ onUnmounted(() => {
         ><ClipboardPaste />From screenshot...</BaseButton
       >
 
-      <BaseButton
-        :danger="confirmReset_.isConfirming('reset')"
-        :disabled="!changedCount"
-        @click="resetAll"
-      >
+      <BaseButton :disabled="!changedCount" @click="resetAll">
         <RotateCcw />
-        {{
-          confirmReset_.isConfirming("reset")
-            ? "Really discard?"
-            : "Discard changes"
-        }}
+        Discard changes…
       </BaseButton>
 
       <span class="mx-1 h-4 w-px bg-line"></span>

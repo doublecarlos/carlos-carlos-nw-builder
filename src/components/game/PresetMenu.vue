@@ -21,14 +21,13 @@ const openSectionId = ref<string | null>(null);
 // Each row also carries an "update from current" button, the same direction as that entry but
 // aimed at a preset that already exists: it overwrites that preset's contents with the section
 // as it stands. Overwriting is the one destructive thing this menu does, and it lands on a
-// *layer's* undo stack rather than the build's (see `layers.updatePreset`), so it is two-step
-// confirmed the same way SectionClearButton's own discard is.
+// *layer's* undo stack rather than the build's (see `layers.updatePreset`), out of reach of
+// Ctrl+Z here, so that store posts an undo notice.
 import { onMounted, onUnmounted } from "vue";
 import BaseButton from "../ui/BaseButton.vue";
 import BaseTooltip from "../ui/BaseTooltip.vue";
 import { LayoutTemplate, Plus, Save } from "@lucide/vue";
 import { useEscapeToClose } from "../../composables/useEscapeToClose";
-import { useConfirm } from "../../composables/useConfirm";
 import type { SectionPreset } from "../../types";
 
 const props = defineProps<{
@@ -58,14 +57,10 @@ function create() {
   openSectionId.value = null;
 }
 
-const confirmUpdate_ = useConfirm();
-
-/** Armed on the first click, fires on the second -- and the popover stays open in between so
- *  the row can say so. */
+/** Closes the popover as it writes, so the undo notice is not left behind a menu. */
 function update(preset: SectionPreset) {
-  if (!confirmUpdate_.run(preset.id)) return;
-  emit("update", preset);
   openSectionId.value = null;
+  emit("update", preset);
 }
 
 /** Same `composedPath()`-based dismissal as SectionCopyMenu.vue -- see its own comment for why
@@ -122,20 +117,13 @@ useEscapeToClose(() => {
         </button>
         <button
           type="button"
-          class="preset-update-btn [&_svg]:size-[14px] flex cursor-pointer items-center gap-1 rounded p-1 hover:bg-surface-2"
-          :class="
-            confirmUpdate_.isConfirming(preset.id)
-              ? 'text-danger hover:text-danger'
-              : 'text-muted hover:text-accent'
-          "
+          class="preset-update-btn [&_svg]:size-[14px] flex cursor-pointer items-center gap-1 rounded p-1 text-muted hover:bg-surface-2 hover:text-accent"
           :title="`Overwrite “${preset.label}” with this section's current values`"
           :aria-label="`Overwrite “${preset.label}” with this section's current values`"
           :data-testid="`preset-update-${preset.id}`"
           @click="update(preset)"
         >
-          <Save /><span v-if="confirmUpdate_.isConfirming(preset.id)"
-            >Really?</span
-          >
+          <Save />
         </button>
       </div>
       <div v-if="presets.length" class="my-0.5 border-t border-line"></div>
