@@ -12,6 +12,7 @@ import StatValueInput from "./StatValueInput.vue";
 import StatRowList from "./StatRowList.vue";
 import DynamicStatRowList from "./DynamicStatRowList.vue";
 import IconButton from "../ui/IconButton.vue";
+import RepeatableRows from "../ui/RepeatableRows.vue";
 import { Copy, Plus, Save, Trash, Undo2 } from "@lucide/vue";
 import BaseButton from "../ui/BaseButton.vue";
 import BaseBadge from "../ui/BaseBadge.vue";
@@ -1227,100 +1228,78 @@ watch(
         >Mount insignia slots</FormSection
       >
 
-      <div
-        v-for="(row, index) in draft.insigniaSlots"
-        :key="'slot' + index"
-        class="insignia-slot-row mb-1 flex flex-wrap items-center gap-1.5"
+      <RepeatableRows
+        :rows="draft.insigniaSlots"
+        row-class="insignia-slot-row mb-1 flex flex-wrap items-center gap-1.5"
+        add-label="Add insignia slot"
+        remove-label="Remove insignia slot"
+        add-testid="item-add-insignia-slot"
+        @add="addInsigniaSlot"
+        @remove="removeInsigniaSlot"
       >
-        <IconButton title="Add insignia slot" @click="addInsigniaSlot"
-          ><Plus
-        /></IconButton>
-        <IconButton
-          title="Remove insignia slot"
-          @click="removeInsigniaSlot(index)"
-          ><Trash
-        /></IconButton>
-        <FormField :label="`Slot ${index + 1} shape`">
-          <ComboBox
-            class="w-44"
-            :data-testid="`item-insignia-slot-${index}`"
-            :options="slotShapeOptions"
-            :model-value="row.shape"
-            @update:model-value="(v) => (row.shape = v)"
-          />
-        </FormField>
-        <FormField v-if="!row.shape || row.preferred" label="Prefers">
-          <ComboBox
-            class="w-44"
-            :data-testid="`item-insignia-slot-preferred-${index}`"
-            :options="preferredOptions"
-            :model-value="row.preferred"
-            @update:model-value="(v) => (row.preferred = v)"
-          />
-        </FormField>
-        <span v-if="row.shape && row.preferred" class="text-danger">
-          A fixed slot grants no preferred bonus. Clear one of the two.
-        </span>
-      </div>
-      <div
-        v-if="!draft.insigniaSlots.length"
-        class="insignia-slot-row mb-1 flex flex-wrap items-center gap-1.5"
-      >
-        <IconButton
-          title="Add insignia slot"
-          data-testid="item-add-insignia-slot"
-          @click="addInsigniaSlot"
-          ><Plus
-        /></IconButton>
-        <span class="text-muted">
-          A mount's insignia slots, in the order the game shows them. A slot
-          with no shape is universal and may name the shape it prefers.
-        </span>
-      </div>
+        <template #row="{ row, index }">
+          <FormField :label="`Slot ${index + 1} shape`">
+            <ComboBox
+              class="w-44"
+              :data-testid="`item-insignia-slot-${index}`"
+              :options="slotShapeOptions"
+              :model-value="row.shape"
+              @update:model-value="(v) => (row.shape = v)"
+            />
+          </FormField>
+          <FormField v-if="!row.shape || row.preferred" label="Prefers">
+            <ComboBox
+              class="w-44"
+              :data-testid="`item-insignia-slot-preferred-${index}`"
+              :options="preferredOptions"
+              :model-value="row.preferred"
+              @update:model-value="(v) => (row.preferred = v)"
+            />
+          </FormField>
+          <span v-if="row.shape && row.preferred" class="text-danger">
+            A fixed slot grants no preferred bonus. Clear one of the two.
+          </span>
+        </template>
+        <template #empty>
+          <span class="text-muted">
+            A mount's insignia slots, in the order the game shows them. A slot
+            with no shape is universal and may name the shape it prefers.
+          </span>
+        </template>
+      </RepeatableRows>
     </template>
 
     <template v-if="showsGroup('insigniaRecipe')">
       <FormSection data-testid="group-insignia-recipe"
         >Insignia bonus recipe</FormSection
       >
-      <div
-        v-for="(shape, index) in draft.insigniaRecipe"
-        :key="'recipe' + index"
-        class="insignia-recipe-row mb-1 flex flex-wrap items-center gap-1.5"
+      <RepeatableRows
+        :rows="draft.insigniaRecipe"
+        row-class="insignia-recipe-row mb-1 flex flex-wrap items-center gap-1.5"
+        add-label="Add recipe shape"
+        remove-label="Remove recipe shape"
+        add-testid="item-add-recipe-shape"
+        @add="addRecipeShape"
+        @remove="removeRecipeShape"
       >
-        <IconButton title="Add recipe shape" @click="addRecipeShape"
-          ><Plus
-        /></IconButton>
-        <IconButton
-          title="Remove recipe shape"
-          @click="removeRecipeShape(index)"
-          ><Trash
-        /></IconButton>
-        <FormField :label="`Recipe shape ${index + 1}`">
-          <ComboBox
-            class="w-44"
-            :data-testid="`item-insignia-recipe-${index}`"
-            :options="recipeOptions"
-            :model-value="shape"
-            @update:model-value="(v) => (draft.insigniaRecipe[index] = v)"
-          />
-        </FormField>
-      </div>
-      <div
-        v-if="!draft.insigniaRecipe.length"
-        class="insignia-recipe-row mb-1 flex flex-wrap items-center gap-1.5"
-      >
-        <IconButton
-          title="Add recipe shape"
-          data-testid="item-add-recipe-shape"
-          @click="addRecipeShape"
-          ><Plus
-        /></IconButton>
-        <span class="text-muted">
-          The three or four shapes an insignia bonus is made of, matched
-          whatever order they end up slotted in.
-        </span>
-      </div>
+        <template #row="{ row: shape, index }">
+          <FormField :label="`Recipe shape ${index + 1}`">
+            <ComboBox
+              class="w-44"
+              :data-testid="`item-insignia-recipe-${index}`"
+              :options="recipeOptions"
+              :model-value="shape"
+              @update:model-value="(v) => (draft.insigniaRecipe[index] = v)"
+            />
+          </FormField>
+        </template>
+        <template #empty>
+          <span class="text-muted">
+            The three or four shapes an insignia bonus is made of, matched
+            whatever order they end up slotted in.
+          </span>
+        </template>
+      </RepeatableRows>
     </template>
 
     <FormSection>Stats</FormSection>
@@ -1377,41 +1356,30 @@ watch(
         >Default build parameters (applied when this item is
         picked)</FormSection
       >
-      <div
-        v-for="(row, index) in draft.defaultParams"
-        :key="index"
-        class="default-param-row flex flex-wrap items-center gap-1.5 mb-1"
+      <RepeatableRows
+        :rows="draft.defaultParams"
+        row-class="default-param-row flex flex-wrap items-center gap-1.5 mb-1"
+        add-label="Add default build parameter"
+        remove-label="Remove default build parameter"
+        @add="addDefaultParam"
+        @remove="removeDefaultParam"
       >
-        <IconButton title="Add default build parameter" @click="addDefaultParam"
-          ><Plus
-        /></IconButton>
-        <IconButton
-          title="Remove default build parameter"
-          @click="removeDefaultParam(index)"
-          ><Trash
-        /></IconButton>
-        <ComboBox
-          class="w-52"
-          :model-value="row.slotId"
-          :options="defaultParamSlotOptions"
-          placeholder="- pick a build parameter -"
-          @update:model-value="(v) => (row.slotId = v)"
-        />
-        <BuildParamInput
-          v-if="slotForDefaultParam(row.slotId)"
-          v-model="row.value"
-          :slot-def="slotForDefaultParam(row.slotId)!"
-          >{{ slotForDefaultParam(row.slotId)?.label }}</BuildParamInput
-        >
-      </div>
-      <div
-        v-if="!draft.defaultParams.length"
-        class="default-param-row flex flex-wrap items-center gap-1.5 mb-1"
-      >
-        <IconButton title="Add default build parameter" @click="addDefaultParam"
-          ><Plus
-        /></IconButton>
-      </div>
+        <template #row="{ row }">
+          <ComboBox
+            class="w-52"
+            :model-value="row.slotId"
+            :options="defaultParamSlotOptions"
+            placeholder="- pick a build parameter -"
+            @update:model-value="(v) => (row.slotId = v)"
+          />
+          <BuildParamInput
+            v-if="slotForDefaultParam(row.slotId)"
+            v-model="row.value"
+            :slot-def="slotForDefaultParam(row.slotId)!"
+            >{{ slotForDefaultParam(row.slotId)?.label }}</BuildParamInput
+          >
+        </template>
+      </RepeatableRows>
     </template>
 
     <template v-if="showsGroup('publishes')">
@@ -1419,42 +1387,31 @@ watch(
         >Published build parameters (applied while this item is
         equipped)</FormSection
       >
-      <div
-        v-for="(row, index) in draft.publishes"
-        :key="index"
-        class="publishes-row flex flex-wrap items-center gap-1.5 mb-1"
+      <RepeatableRows
+        :rows="draft.publishes"
+        row-class="publishes-row flex flex-wrap items-center gap-1.5 mb-1"
+        add-label="Add published value"
+        remove-label="Remove published value"
+        @add="addPublishes"
+        @remove="removePublishes"
       >
-        <IconButton title="Add published value" @click="addPublishes"
-          ><Plus
-        /></IconButton>
-        <IconButton
-          title="Remove published value"
-          @click="removePublishes(index)"
-          ><Trash
-        /></IconButton>
-        <BaseInput
-          v-model="row.path"
-          class="w-52"
-          type="text"
-          placeholder="Context path, e.g. class"
-          :data-testid="`publishes-path-${index}`"
-        />
-        <BaseInput
-          v-model="row.value"
-          class="w-52"
-          type="text"
-          placeholder="Value"
-          :data-testid="`publishes-value-${index}`"
-        />
-      </div>
-      <div
-        v-if="!draft.publishes.length"
-        class="publishes-row flex flex-wrap items-center gap-1.5 mb-1"
-      >
-        <IconButton title="Add published value" @click="addPublishes"
-          ><Plus
-        /></IconButton>
-      </div>
+        <template #row="{ row, index }">
+          <BaseInput
+            v-model="row.path"
+            class="w-52"
+            type="text"
+            placeholder="Context path, e.g. class"
+            :data-testid="`publishes-path-${index}`"
+          />
+          <BaseInput
+            v-model="row.value"
+            class="w-52"
+            type="text"
+            placeholder="Value"
+            :data-testid="`publishes-value-${index}`"
+          />
+        </template>
+      </RepeatableRows>
     </template>
 
     <template v-if="showsGroup('retirement')">
@@ -1485,53 +1442,42 @@ watch(
       </p>
 
       <template v-if="draft.replacedBy">
-        <div
-          v-for="(row, index) in draft.replacedByValues"
-          :key="index"
-          class="replaced-by-value-row flex flex-wrap items-center gap-1.5 mb-1"
+        <RepeatableRows
+          :rows="draft.replacedByValues"
+          row-class="replaced-by-value-row flex flex-wrap items-center gap-1.5 mb-1"
+          add-label="Add carried value"
+          remove-label="Remove carried value"
+          add-testid="item-add-carried-value"
+          @add="addReplacedByValue"
+          @remove="removeReplacedByValue"
         >
-          <IconButton title="Add carried value" @click="addReplacedByValue"
-            ><Plus
-          /></IconButton>
-          <IconButton
-            title="Remove carried value"
-            @click="removeReplacedByValue(index)"
-            ><Trash
-          /></IconButton>
-          <FormField label="Carry stat">
-            <ComboBox
-              class="combo--stat w-52"
-              :model-value="row.stat"
-              :options="statPickerOptions"
-              placeholder="- pick a stat -"
-              @update:model-value="(v) => (row.stat = v)"
-            />
-          </FormField>
-          <FormField label="Value on the replacement">
-            <StatValueInput
-              v-model="row.value"
-              :stat-key="row.stat"
-              class="w-24"
-              step="any"
-            />
-          </FormField>
-        </div>
-        <div
-          v-if="!draft.replacedByValues.length"
-          class="replaced-by-value-row flex flex-wrap items-center gap-1.5 mb-1"
-        >
-          <IconButton
-            title="Add carried value"
-            data-testid="item-add-carried-value"
-            @click="addReplacedByValue"
-            ><Plus
-          /></IconButton>
-          <span class="text-muted">
-            Carry a value onto the replacement's dynamic stat, so a build moving
-            off this item keeps its number instead of taking the new item's
-            default.
-          </span>
-        </div>
+          <template #row="{ row }">
+            <FormField label="Carry stat">
+              <ComboBox
+                class="combo--stat w-52"
+                :model-value="row.stat"
+                :options="statPickerOptions"
+                placeholder="- pick a stat -"
+                @update:model-value="(v) => (row.stat = v)"
+              />
+            </FormField>
+            <FormField label="Value on the replacement">
+              <StatValueInput
+                v-model="row.value"
+                :stat-key="row.stat"
+                class="w-24"
+                step="any"
+              />
+            </FormField>
+          </template>
+          <template #empty>
+            <span class="text-muted">
+              Carry a value onto the replacement's dynamic stat, so a build
+              moving off this item keeps its number instead of taking the new
+              item's default.
+            </span>
+          </template>
+        </RepeatableRows>
       </template>
     </template>
   </div>
