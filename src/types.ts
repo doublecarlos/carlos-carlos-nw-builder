@@ -1019,9 +1019,17 @@ export interface EngineError {
 /** A slot's item stats plus the bonuses attributed to it -- engine.ts's `rowVectors`. */
 export interface EngineRow {
   slotId: string;
+  /** Carried from the row's `ResolvedRow`. Re-deriving it downstream costs a `db.slotFor`,
+   * which synthesises a fresh slot on every call for a list row. */
+  slot: Slot;
   choice: string | undefined;
   item: Item | null;
   stats: Record<StatKey, number>;
+  /** The item's own share of `stats`, and this row's share of the pipeline's `dynamicStatMods`,
+   * both already multiplied by `repetitions`. Sparse: only the keys the row contributes to.
+   * Kept so stat-sources.ts can attribute a total without recomputing either. */
+  itemStats: Record<string, number>;
+  dynamicStats: Record<string, number>;
   /** Carried through from the row's `ResolvedRow`. `stats` above is already multiplied by it;
    * the count itself is here for the stages that need it (maxCopies, dynamic stats). */
   repetitions: number;

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, reactive, computed } from "vue";
-import { label as statLabel, signedStat } from "../../lib/format";
+import { bonusTitle, label as statLabel, signedStat } from "../../lib/format";
 import { matchesQuery } from "../../lib/text-filter";
 import { isHiddenBonus } from "../../engine/bonus";
 import { hasSuppliers } from "../../lib/bonus-slots";
@@ -17,12 +17,6 @@ import type {
   ConditionLeafResult,
   StatValues,
 } from "../../types";
-
-/** `m31-crimson-march-combat` -> `M31 Crimson March Combat`, for bonuses with no bonus name. */
-const fromId = (id: string) =>
-  String(id ?? "")
-    .replace(/[-_]+/g, " ")
-    .replace(/\b\w/g, (c) => c.toUpperCase());
 
 /**
  * One item often carries several bonuses (an AoE variant and a single-target one, say) and
@@ -115,15 +109,13 @@ const visibleBonuses = computed(() =>
 const entries = computed<Entry[]>(() => {
   const titleCounts = new Map<string, number>();
   for (const entry of visibleBonuses.value) {
-    const title = entry.bonus?.name ?? entry.sources?.[0] ?? fromId(entry.id);
+    const title = bonusTitle(entry);
     titleCounts.set(title, (titleCounts.get(title) ?? 0) + 1);
   }
 
   return visibleBonuses.value.map((entry) => {
     const unmet = entry.gate?.unmet ?? [];
-    // The bonus's own friendly name is the most specific title; the item carrying it and
-    // an id-derived fallback are progressively blunter instruments for one that has none.
-    const title = entry.bonus?.name ?? entry.sources?.[0] ?? fromId(entry.id);
+    const title = bonusTitle(entry);
     const state = entry.excluded
       ? "excluded"
       : entry.active

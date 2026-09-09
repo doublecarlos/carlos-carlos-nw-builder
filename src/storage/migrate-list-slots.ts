@@ -4,6 +4,8 @@
 // IndexedDB, an import, a bundle, a share link -- is covered by one pass. Idempotent: no id it
 // produces is one it renames.
 import { rowSlotId } from "../lib/item-picker-list";
+import { mapSlotIds } from "../lib/slot-fields";
+import type { SlotData } from "../lib/slot-fields";
 import type { CatalogOverlay, SectionPreset } from "../types";
 
 /** The fixed slots each list replaced, in the order they were authored. A record of what
@@ -45,6 +47,13 @@ function renamesFor(
   return renames;
 }
 
+/** One slot id's new name, or null for a retired id that earned no row. */
+const renamedTo = (
+  slotId: string,
+  renames: Map<string, string>,
+): string | null =>
+  renames.get(slotId) ?? (RETIRED_IDS.has(slotId) ? null : slotId);
+
 /** `source` re-keyed, dropping a retired id that earned no row. */
 function moveKeys<T>(
   source: Record<string, T> | undefined,
@@ -52,18 +61,10 @@ function moveKeys<T>(
 ): Record<string, T> {
   const out: Record<string, T> = {};
   for (const [key, value] of Object.entries(source ?? {})) {
-    const renamed = renames.get(key);
-    if (renamed) out[renamed] = value;
-    else if (!RETIRED_IDS.has(key)) out[key] = value;
+    const renamed = renamedTo(key, renames);
+    if (renamed != null) out[renamed] = value;
   }
   return out;
-}
-
-export interface StoredRows {
-  choices: Record<string, string>;
-  values: Record<string, Record<string, number>>;
-  assignments: Record<string, Record<string, number>>;
-  disabledSlots: Record<string, boolean>;
 }
 
 /**
@@ -74,14 +75,9 @@ export interface StoredRows {
  * No row counts come back -- `normalise`'s own `rowCounts` already grows a list to cover every
  * row its stored keys name, and compaction leaves those keys contiguous.
  */
-export function migrateListSlots(stored: StoredRows): StoredRows {
+export function migrateListSlots(stored: SlotData): SlotData {
   const renames = renamesFor((slotId) => Boolean(stored.choices?.[slotId]));
-  return {
-    choices: moveKeys(stored.choices, renames),
-    values: moveKeys(stored.values, renames),
-    assignments: moveKeys(stored.assignments, renames),
-    disabledSlots: moveKeys(stored.disabledSlots, renames),
-  };
+  return mapSlotIds(stored, (slotId) => renamedTo(slotId, renames));
 }
 
 /**

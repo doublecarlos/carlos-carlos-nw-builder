@@ -9,6 +9,7 @@ import { bonusIdOf } from "../lib/bonus-attachment";
 import { replacementIdOf, replacementValuesOf } from "../lib/item-replacement";
 import { resolvedOptions } from "../lib/param-options";
 import { parseRowSlotId, rowSlot } from "../lib/item-picker-list";
+import { copyCounts } from "../lib/copy-counts";
 import {
   isPreferredSlot,
   preferredVariantIds,
@@ -273,34 +274,6 @@ export function build(
 /** Convenience for tests/tooling: build from the statically-imported data (src/data.ts), no
  * `window` required. */
 export const fromData = () => build(NW_ITEMS, NW_BONUSES, NW_SCHEMA, NW_SLOTS);
-
-/** Every item id's current copy count across the build, tallied the same way `findErrors`
- * (engine.ts) counts for its `maxCopies` check -- but cheap: no `resolveBuild()` call, just the
- * raw ids `build.choices`/`build.assignments` already hold. `excludeSlotId`'s own choice is left
- * out of the tally so an item_picker slot never counts its own currently-equipped item against
- * itself -- re-selecting it should never read as "would exceed". */
-function copyCounts(
-  db: Db,
-  build: Build,
-  excludeSlotId: string,
-): Map<string, number> {
-  const counts = new Map<string, number>();
-  const bump = (id: string, by: number) =>
-    counts.set(id, (counts.get(id) ?? 0) + by);
-
-  for (const [slotId, itemId] of Object.entries(build.choices ?? {})) {
-    if (slotId !== excludeSlotId && itemId) bump(itemId, 1);
-  }
-  for (const slot of db.slots) {
-    if (slot.type !== "point_assignment") continue;
-    const assigned = build.assignments?.[slot.id] ?? {};
-    for (const item of db.forSlot(slot.id)) {
-      const count = assigned[item.id] ?? item.inlineRepetition!.default;
-      if (count > 0) bump(item.id, count);
-    }
-  }
-  return counts;
-}
 
 /**
  * The value this build currently publishes at `path`, from whatever it has equipped

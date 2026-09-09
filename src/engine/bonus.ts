@@ -7,7 +7,7 @@
 import * as conditions from "./conditions";
 import { getPath } from "../lib/build-path";
 import { bonusIdOf, occurrenceCountFor } from "../lib/bonus-attachment";
-import { inlineRepetitionCount } from "../lib/inline-repetition";
+import { assignedRows, inlineRepetitionCount } from "../lib/inline-repetition";
 import { isDisabled } from "../lib/slot-toggle";
 import { expandSlots } from "../lib/item-picker-list";
 import { readDynamicValue } from "../lib/dynamic-stats";
@@ -131,14 +131,11 @@ function collectInlineRepetition(
   candidates: Candidate[];
   zeroCandidates: Candidate[];
 } {
-  const counts = build.assignments?.[slot.id] ?? {};
   const statBucket = new Map<string, number>();
   const candidates: Candidate[] = [];
   const zeroCandidates: Candidate[] = [];
 
-  for (const item of db.forSlot(slot.id)) {
-    const count = counts[item.id] ?? item.inlineRepetition!.default;
-
+  for (const { item, count } of assignedRows(db, build, slot)) {
     // At 0 points the item contributes no stats/tags of its own -- only its bonus attachments
     // still need walking, for reachability (see collectAttachments's own doc comment).
     if (count > 0) {

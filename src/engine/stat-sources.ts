@@ -1,23 +1,15 @@
 // Per-stat source attribution for StatPanel.vue's stat source popover: "why is this number
 // what it is", one stat at a time rather than one bonus at a time (BonusInspector.vue's own job).
 //
-// The engine's rows/bonusStatsBySlot merge item and bonus stats together for the pipeline
-// (engine.ts's own comment: multiplicative stats combine per row, not per source), so sources
-// have to be re-attributed here rather than read off a ready-made vector. Each helper below
-// mirrors exactly one pipeline stage from engine.ts's `run()`, reading that stage's own output
-// (a resolved build's `stages.*`) rather than recomputing its math, so this can never drift
-// from what the panel actually displays.
+// Each helper below mirrors exactly one pipeline stage from engine.ts's `run()`, reading that
+// stage's own output (a resolved build's `stages.*`, or an `EngineRow`'s own `itemStats`/
+// `dynamicStats`) rather than recomputing its math, so this can never drift from what the panel
+// displays. Regrouping is all that is left: the pipeline needs stats summed per row, this needs
+// them named per source.
 import { NW_SCHEMA } from "../data/data";
-import { readDynamicValue } from "../lib/dynamic-stats";
-import { isDisabled } from "../lib/slot-toggle";
-import { scaleFactorFor, scaledStat } from "./scaling";
-import type {
-  ResolvedBuild,
-  Build,
-  Db,
-  EvaluatedBonus,
-  StatKey,
-} from "../types";
+import { bonusTitle } from "../lib/format";
+import { assignedRows } from "../lib/inline-repetition";
+import type { ResolvedBuild, Build, Db, StatKey } from "../types";
 
 export interface StatSource {
   name: string;
@@ -29,42 +21,14 @@ export interface StatSourceSection {
   sources: StatSource[];
 }
 
-/** `m31-crimson-march-combat` -> `M31 Crimson March Combat`, for a bonus with no bonus name --
- * same convention as BonusInspector.vue's own `fromId`, duplicated rather than shared (see
- * that file's note on ItemCard's bonus vocabulary for the same reasoning). */
-const fromId = (id: string) =>
-  String(id ?? "")
-    .replace(/[-_]+/g, " ")
-    .replace(/\b\w/g, (c) => c.toUpperCase());
-
-function bonusTitle(entry: EvaluatedBonus) {
-  return entry.bonus?.name ?? entry.sources?.[0] ?? fromId(entry.id);
-}
-
 /** Every equipped item's own stat (pre-bonus, pre-pipeline) -- summed by item name, since the
- * same item in two slots (two rings) contributes twice under one line, not two.
- *
- * Scaled by the same `scaleFactorFor` the pipeline applies, so a bolstered mount reports the
- * number it actually contributed rather than its unscaled catalogue value -- this popover
- * exists to explain the panel's total, and an unscaled line here would not add up to it. */
-function itemSources(
-  result: ResolvedBuild,
-  build: Build | null | undefined,
-  db: Db | null | undefined,
-  key: StatKey,
-): StatSource[] {
+ * same item in two slots (two rings) contributes twice under one line, not two. */
+function itemSources(result: ResolvedBuild, key: StatKey): StatSource[] {
   const totals = new Map<string, number>();
   for (const row of result.rows) {
-    if (!row.item || !row.item[key]) continue;
-    // Read off the item, not the row's contribution, so a switched-off pick would otherwise
-    // be listed at full value in a total it adds nothing to.
-    if (isDisabled(build, db?.slotFor(row.slotId))) continue;
-    const factor = scaleFactorFor(NW_SCHEMA, result.context, row.item);
-    totals.set(
-      row.item.name,
-      (totals.get(row.item.name) ?? 0) +
-        scaledStat(NW_SCHEMA, row.item, key, factor),
-    );
+    const value = row.itemStats[key];
+    if (!row.item || !value) continue;
+    totals.set(row.item.name, (totals.get(row.item.name) ?? 0) + value);
   }
   return [...totals].map(([name, value]) => ({ name, value }));
 }
@@ -82,9 +46,7 @@ function assignmentSources(
   const totals = new Map<string, number>();
   for (const slot of db.slots) {
     if (slot.type !== "point_assignment") continue;
-    const counts = build.assignments?.[slot.id] ?? {};
-    for (const item of db.forSlot(slot.id)) {
-      const count = counts[item.id] ?? item.inlineRepetition!.default;
+    for (const { item, count } of assignedRows(db, build, slot)) {
       if (count <= 0) continue;
       const raw = item[key];
       if (!raw) continue;
@@ -108,23 +70,12 @@ function bonusSources(result: ResolvedBuild, key: StatKey): StatSource[] {
 }
 
 /** Stage 2: every typed dynamic-stat value targeting this key, attributed to the item that
- *  carries it -- an item with several `dynamicStats` entries can contribute more than one
- *  line here, one per matching config. */
-function dynamicStatSources(
-  result: ResolvedBuild,
-  build: Build | null | undefined,
-  db: Db | null | undefined,
-  key: StatKey,
-): StatSource[] {
+ *  carries it. */
+function dynamicStatSources(result: ResolvedBuild, key: StatKey): StatSource[] {
   const out: StatSource[] = [];
-  if (!build) return out;
   for (const row of result.rows) {
-    if (isDisabled(build, db?.slotFor(row.slotId))) continue;
-    for (const config of row.item?.dynamicStats ?? []) {
-      if (config.stat !== key) continue;
-      const value = readDynamicValue(build, row.slotId, config);
-      if (value) out.push({ name: `${row.item!.name} (dynamic stat)`, value });
-    }
+    const value = row.dynamicStats[key];
+    if (value) out.push({ name: `${row.item!.name} (dynamic stat)`, value });
   }
   return out;
 }
@@ -193,10 +144,10 @@ function sourcesFor(
 ): StatSource[] {
   return [
     ...ratingContributionSource(result, key),
-    ...itemSources(result, build, db, key),
+    ...itemSources(result, key),
     ...assignmentSources(db, build, key),
     ...bonusSources(result, key),
-    ...dynamicStatSources(result, build, db, key),
+    ...dynamicStatSources(result, key),
     ...combinedRatingSource(result, key),
     ...abilitySource(result, key),
     ...forteSource(result, build, key),

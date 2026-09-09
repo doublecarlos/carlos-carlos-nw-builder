@@ -17,6 +17,7 @@ import { APP_COMMIT } from "../lib/app-info";
 import { setPath } from "../lib/build-path";
 import { deepEqual } from "../lib/deep-equal";
 import { storedListRows } from "../lib/item-picker-list";
+import type { SlotData } from "../lib/slot-fields";
 import {
   migrateListSlots,
   migrateOverlayListSlots,
@@ -284,7 +285,7 @@ const nestedNumbers = (
 const rowCounts = (
   source: unknown,
   base: Record<string, number>,
-  stored: Pick<Build, "choices" | "values" | "assignments" | "disabledSlots">,
+  stored: SlotData,
 ): Record<string, number> => {
   const out = { ...base };
   for (const [slotId, value] of Object.entries(numbers(source))) {

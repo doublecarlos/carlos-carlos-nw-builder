@@ -14,7 +14,14 @@ import {
 } from "../storage/migrate-item-ids";
 import { getPath, setPath } from "../lib/build-path";
 import { deepEqual } from "../lib/deep-equal";
-import { repetitionRows } from "../lib/inline-repetition";
+import { assignedRows, repetitionRows } from "../lib/inline-repetition";
+import {
+  clearSlotData,
+  copySlotData,
+  moveSlotData,
+  replaceSlotData,
+  storedSlotIds,
+} from "../lib/slot-fields";
 import { itemLabel, normaliseGroup, stableRef } from "../engine/insignia";
 import {
   expandSlots,
@@ -98,13 +105,9 @@ export function setChoice(slotId: string, id: string) {
         setPath(b.context, paramSlot.path, value);
     }
   } else {
-    delete b.choices[slotId];
-    delete b.values[slotId];
-    // Same reasoning as `values`: an emptied slot keeps nothing of what was picked there.
-    delete b.assignments[slotId];
-    // An empty row shows no checkbox, so a state left here could neither be seen nor undone.
-    // Swapping one pick for another keeps it, since the checkbox stays on screen.
-    delete b.disabledSlots[slotId];
+    // Only on a clear. Swapping one pick for another keeps the off state, since the checkbox
+    // stays on screen; an emptied row shows none, so a state left there could not be undone.
+    clearSlotData(b, slotId);
   }
   normaliseStable(b, slotId);
 }
@@ -124,43 +127,17 @@ function normaliseStable(b: Build, slotId: string) {
     normaliseGroup(db.value, b, ref.group),
   )) {
     if (ref.role === "insignia" && target !== slotId) continue;
-    if (id) {
-      b.choices[target] = id;
-    } else {
-      delete b.choices[target];
-      delete b.values[target];
-      delete b.assignments[target];
-    }
+    if (id) b.choices[target] = id;
+    else clearSlotData(b, target);
   }
 }
 
 /** Every row id of `listId` this build stores anything under -- what a clear has to drop, and
  *  not derivable from the row count alone once a stale key outlives a shortened list. */
 function listRowIds(b: Build, listId: string): string[] {
-  const ids = new Set<string>();
-  for (const field of [b.choices, b.values, b.assignments, b.disabledSlots]) {
-    for (const key of Object.keys(field ?? {})) {
-      if (parseRowSlotId(key)?.listId === listId) ids.add(key);
-    }
-  }
-  return [...ids];
-}
-
-/** Everything a row stores, moved from one row id to another (or dropped, with no `to`). */
-function moveRow(b: Build, from: string, to?: string) {
-  const choice = b.choices[from];
-  const value = b.values[from];
-  const repetitions = b.assignments[from];
-  const off = b.disabledSlots[from];
-  delete b.choices[from];
-  delete b.values[from];
-  delete b.assignments[from];
-  delete b.disabledSlots[from];
-  if (!to) return;
-  if (choice) b.choices[to] = choice;
-  if (value) b.values[to] = value;
-  if (repetitions) b.assignments[to] = repetitions;
-  if (off) b.disabledSlots[to] = off;
+  return storedSlotIds(b).filter(
+    (slotId) => parseRowSlotId(slotId)?.listId === listId,
+  );
 }
 
 /** Appends an empty row to an `item_picker_list`. */
@@ -187,9 +164,13 @@ export function removeListRow(rowId: string) {
 
   history.snapshot("build", b.id, null, `remove ${slotLabel(rowId)}`, b);
   for (let index = row.index; index < count; index += 1) {
-    moveRow(b, rowSlotId(row.listId, index + 1), rowSlotId(row.listId, index));
+    moveSlotData(
+      b,
+      rowSlotId(row.listId, index + 1),
+      rowSlotId(row.listId, index),
+    );
   }
-  moveRow(b, rowSlotId(row.listId, count));
+  moveSlotData(b, rowSlotId(row.listId, count));
   b.listRows[row.listId] = count - 1;
 }
 
@@ -251,16 +232,7 @@ export function applyFromCompare(slotId: string) {
       : `clear ${slot} (from "${other.name}")`,
     b,
   );
-  if (id) {
-    b.choices[slotId] = id;
-    const value = other.values?.[slotId];
-    if (value != null) b.values[slotId] = { ...value };
-    else delete b.values[slotId];
-  } else {
-    delete b.choices[slotId];
-    delete b.values[slotId];
-    delete b.disabledSlots[slotId];
-  }
+  copySlotData(b, other, slotId);
 }
 
 /** Copies one dynamic-stat value (`key`, a `dynamicValueKey`) from the compare build --
@@ -528,11 +500,8 @@ export function clearSlots() {
   const fresh = storage.defaultBuild();
   // Not `{}`: a slot with a `default` is "cleared" back to that default, exactly as a
   // build_parameter is.
-  b.choices = fresh.choices;
-  b.values = {};
-  b.assignments = fresh.assignments;
+  replaceSlotData(b, fresh);
   b.listRows = fresh.listRows;
-  b.disabledSlots = {};
 }
 
 export function resetAll() {
@@ -576,31 +545,14 @@ export function copySection(fromId: string, sectionIds: string[]) {
 
     if (slot.type === "point_assignment") {
       const rows: Record<string, number> = {};
-      for (const item of db.value.forSlot(slot.id)) {
-        rows[item.id] =
-          source.assignments?.[slot.id]?.[item.id] ??
-          item.inlineRepetition!.default;
-      }
+      for (const { item, count } of assignedRows(db.value, source, slot))
+        rows[item.id] = count;
       b.assignments[slot.id] = rows;
       continue;
     }
 
     if (slot.type !== "item_picker") continue;
-
-    const choice = source.choices[slot.id];
-    if (choice) b.choices[slot.id] = choice;
-    else delete b.choices[slot.id];
-
-    const value = source.values[slot.id];
-    if (value != null) b.values[slot.id] = { ...value };
-    else delete b.values[slot.id];
-
-    const repetitions = source.assignments?.[slot.id];
-    if (repetitions != null) b.assignments[slot.id] = { ...repetitions };
-    else delete b.assignments[slot.id];
-
-    if (source.disabledSlots?.[slot.id]) b.disabledSlots[slot.id] = true;
-    else delete b.disabledSlots[slot.id];
+    copySlotData(b, source, slot.id);
   }
 }
 
@@ -619,19 +571,13 @@ function clearSlot(b: Build, slot: Slot, fresh: Build) {
   }
 
   if (slot.type === "item_picker_list") {
-    for (const rowId of listRowIds(b, slot.id)) moveRow(b, rowId);
+    for (const rowId of listRowIds(b, slot.id)) clearSlotData(b, rowId);
     b.listRows[slot.id] = fresh.listRows[slot.id] ?? 0;
     return;
   }
 
   if (slot.type !== "item_picker") return;
-
-  const seeded = fresh.choices[slot.id];
-  if (seeded) b.choices[slot.id] = seeded;
-  else delete b.choices[slot.id];
-  delete b.values[slot.id];
-  delete b.assignments[slot.id];
-  delete b.disabledSlots[slot.id];
+  copySlotData(b, fresh, slot.id);
 }
 
 /** Resets every slot in a section to `defaultBuild()`'s value. */
