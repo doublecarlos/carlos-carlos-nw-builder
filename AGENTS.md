@@ -22,18 +22,22 @@ You are **required** to:
 You **MUST NOT**:
 
 - Workaround Git commit hooks with flags to disable them
+- Write a raw `<input>`/`<textarea>` outside `src/components/ui` (enforced by lint) - use `BaseInput`/`BaseTextarea`, or a dedicated `ui/` primitive for a genuinely novel control
+- Use a bare `z-<number>` utility class (enforced by lint) - use the `--z-index-*` scale in `src/base.css`
+- Call a composable from inside a template expression - construct it once (in `<script setup>`, or cached by key for a per-row case) and read the result in the template
 
 # Good practices
 
 - Use these prefixes when creating new branches: `feature/`, `bugfix/`, `chore/`
 - Use data-testid for reliable test locators whenever possible. You are free to add this attribute to components if they don't already have it as needed.
 - Code comments should be concise, direct and describe the design intent of what the code is doing now instead of comparing the code with an old implementation or refering to a github issue ID.
+- An editor form's draft shape, its entity conversion and its change labels live in `src/lib/*-draft.ts`, not in the SFC - the SFC owns markup and reactive wiring only. See `src/lib/item-draft.ts` for the worked example.
 
 # Code layout
 
 - `src/assets` - Icons, images, etc
 - `src/components/` - Main UI components
-- `src/components/ui` - Basic "universal" UI components, not related to the game domain
+- `src/components/ui` - Basic "universal" UI components, not related to the game domain. Reach for an existing primitive before hand-rolling markup for a control; the index is `src/components/ui/README.md`.
 - `src/components/game` - UI components that know about the game/build/etc, in other words connected to the domain
 - `src/composables` - Vue composables
 - `src/data` - Data-related code

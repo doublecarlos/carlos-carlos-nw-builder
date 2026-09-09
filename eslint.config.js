@@ -54,6 +54,33 @@ export default defineConfigWithVueTs(
   },
 
   {
+    name: "app/no-raw-text-inputs",
+    files: ["src/**/*.vue"],
+    // The primitives themselves (BaseInput, BaseTextarea, and genuinely novel controls like
+    // OcrTextField/PercentInput) are what a raw <input>/<textarea> is allowed to live inside.
+    ignores: ["src/components/ui/**"],
+    rules: {
+      // A checkbox/radio/file/range/color/hidden input is a different control than the
+      // duplicated text-entry field this rule targets (see src/components/ui/README.md) --
+      // excluded by type rather than by file, so a text input added anywhere later still trips.
+      "vue/no-restricted-syntax": [
+        "error",
+        {
+          selector: "VElement[name='textarea']",
+          message:
+            "Use BaseTextarea (src/components/ui) instead of a raw <textarea>.",
+        },
+        {
+          selector:
+            "VElement[name='input']:not(:has(VAttribute[key.name='type'] > VLiteral[value=/^(checkbox|radio|file|range|color|hidden)$/]))",
+          message:
+            "Use BaseInput or another ui/ primitive instead of a raw <input>. See src/components/ui/README.md.",
+        },
+      ],
+    },
+  },
+
+  {
     name: "app/vitest-tests",
     ...pluginVitest.configs.recommended,
     files: ["tests/unit/**/*.spec.ts"],

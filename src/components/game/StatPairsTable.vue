@@ -6,8 +6,8 @@
 // A row carrying `compare` stacks the compare build's own number under its value, tagged with
 // `compareLabel` (that build's name) under the stat's label. Rows leave `compare` unset when
 // the two builds agree, so the panel only grows where there is something to see.
-import IconButton from "./IconButton.vue";
-import CompareLine from "./CompareLine.vue";
+import IconButton from "../ui/IconButton.vue";
+import CompareLine from "../ui/CompareLine.vue";
 import { CircleAlert } from "@lucide/vue";
 
 defineProps<{

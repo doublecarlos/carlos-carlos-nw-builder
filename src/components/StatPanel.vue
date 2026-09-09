@@ -15,7 +15,7 @@ import StatSourceCard from "./game/StatSourceCard.vue";
 import BasePopover from "./ui/BasePopover.vue";
 import BasePanel from "./ui/BasePanel.vue";
 import PanelHead from "./ui/PanelHead.vue";
-import StatPairsTable from "./ui/StatPairsTable.vue";
+import StatPairsTable from "./game/StatPairsTable.vue";
 import CompareLine from "./ui/CompareLine.vue";
 import { useStatSourcePopover } from "../composables/useStatSourcePopover";
 import { NW_SCHEMA } from "../data/data";
