@@ -7,14 +7,9 @@
 // displays. Regrouping is all that is left: the pipeline needs stats summed per row, this needs
 // them named per source.
 import { NW_SCHEMA } from "../data/data";
+import { bonusTitle } from "../lib/format";
 import { assignedRows } from "../lib/inline-repetition";
-import type {
-  ResolvedBuild,
-  Build,
-  Db,
-  EvaluatedBonus,
-  StatKey,
-} from "../types";
+import type { ResolvedBuild, Build, Db, StatKey } from "../types";
 
 export interface StatSource {
   name: string;
@@ -24,18 +19,6 @@ export interface StatSourceSection {
   title: string;
   key: string;
   sources: StatSource[];
-}
-
-/** `m31-crimson-march-combat` -> `M31 Crimson March Combat`, for a bonus with no bonus name --
- * same convention as BonusInspector.vue's own `fromId`, duplicated rather than shared (see
- * that file's note on ItemCard's bonus vocabulary for the same reasoning). */
-const fromId = (id: string) =>
-  String(id ?? "")
-    .replace(/[-_]+/g, " ")
-    .replace(/\b\w/g, (c) => c.toUpperCase());
-
-function bonusTitle(entry: EvaluatedBonus) {
-  return entry.bonus?.name ?? entry.sources?.[0] ?? fromId(entry.id);
 }
 
 /** Every equipped item's own stat (pre-bonus, pre-pipeline) -- summed by item name, since the

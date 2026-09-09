@@ -5,10 +5,11 @@ import { describe, it, expect } from "vitest";
 import {
   itemPreview,
   bonusStatPreview,
+  bonusTitle,
   statPickerOptions,
 } from "../../src/lib/format";
 import { NW_SCHEMA } from "../../src/data/data";
-import type { Item } from "../../src/types";
+import type { EvaluatedBonus, Item } from "../../src/types";
 
 describe("itemPreview", () => {
   it("formats an item's own stats in schema order, signed", () => {
@@ -93,5 +94,32 @@ describe("statPickerOptions", () => {
   it("gives every option a unique label", () => {
     const labels = statPickerOptions.map((o) => o.label);
     expect(new Set(labels).size).toBe(labels.length);
+  });
+});
+
+/** The id fallback is unreachable on shipped data, where every bonus is named, so these are
+ *  what exercise it. */
+describe("bonusTitle", () => {
+  const entry = (over: Partial<EvaluatedBonus>) =>
+    ({ id: "some-bonus-id", ...over }) as EvaluatedBonus;
+
+  it("prefers the bonus's own name", () => {
+    const named = entry({
+      bonus: { id: "b", name: "Gladiator" },
+      sources: ["Ring"],
+    });
+    expect(bonusTitle(named)).toBe("Gladiator");
+  });
+
+  it("falls back to the item carrying it", () => {
+    expect(bonusTitle(entry({ bonus: { id: "b" }, sources: ["Ring"] }))).toBe(
+      "Ring",
+    );
+  });
+
+  it("falls back to the id, title-cased", () => {
+    expect(bonusTitle(entry({ bonus: { id: "b" }, sources: [] }))).toBe(
+      "Some Bonus Id",
+    );
   });
 });

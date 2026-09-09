@@ -5,7 +5,7 @@
 
 import { NW_SCHEMA } from "../data/data";
 import { scaledStat } from "../engine/scaling";
-import type { Item, StatKey } from "../types";
+import type { EvaluatedBonus, Item, StatKey } from "../types";
 
 const GROUPED = new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 });
 const finite = (value: unknown): value is number =>
@@ -105,6 +105,12 @@ export const titleCase = (value: unknown) =>
     .replace(/([a-z])([A-Z])/g, "$1 $2")
     .replace(/[_-]+/g, " ")
     .replace(/\b\w/g, (c) => c.toUpperCase());
+
+/** How a bonus is named on screen. Its own name is the most specific; the item carrying it and
+ * a title-cased id are progressively blunter instruments for one that has none. Shared so two
+ * surfaces cannot name the same bonus differently. */
+export const bonusTitle = (entry: EvaluatedBonus) =>
+  entry.bonus?.name ?? entry.sources?.[0] ?? titleCase(entry.id);
 
 export interface StatOption {
   value: StatKey;
