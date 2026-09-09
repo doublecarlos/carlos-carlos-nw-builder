@@ -41,15 +41,7 @@ import { useHoverCard } from "../composables/useHoverCard";
 import { occurrenceRowsForItem } from "../composables/useItemBonusOccurrences";
 import { scaledStat } from "../engine/scaling";
 import { itemScaleFactor, itemScaleNotes } from "../composables/useItemScale";
-import {
-  useCompareDiff,
-  paramDiffers,
-  paramDiffTitle,
-  assignmentDiffers,
-  assignmentDiffTitle,
-  occurrenceDiffers,
-  occurrenceDiffTitle,
-} from "../composables/useCompareDiff";
+import { useCompareDiff, type SlotDiff } from "../composables/useCompareDiff";
 import * as storage from "../storage/storage";
 import * as router from "../lib/router";
 import * as builds from "../stores/builds";
@@ -291,7 +283,7 @@ const hoveredOccurrenceRows = computed(() =>
 
 // --- quick compare ---------------------------------------------------------------------
 
-const { differs, otherChoiceLabel, rowDiff, rowHasDiff } = useCompareDiff({
+const { rowDiff, rowHasDiff } = useCompareDiff({
   db,
   build,
   result,
@@ -320,23 +312,9 @@ function isQuick(slotDef: Slot) {
 }
 
 function rowDiffers(slotDef: Slot) {
+  // Not a real editable row: expandSlots keeps the container alongside the rows it
+  // generates, and it never gets an entry of its own in `rowHasDiff`'s map.
   if (slotDef.type === "item_picker_list") return false;
-  if (slotDef.type === "build_parameter")
-    return paramDiffers(build.value, compareBuild.value, slotDef);
-  if (slotDef.type === "point_assignment")
-    return assignmentDiffers(
-      db.value,
-      build.value,
-      compareBuild.value,
-      slotDef,
-    );
-  // An item_picker's pick can repeat inline -- a count `rowHasDiff` (choice/value/bonus) knows
-  // nothing about.
-  if (slotDef.type === "item_picker")
-    return (
-      rowHasDiff(slotDef.id) ||
-      assignmentDiffers(db.value, build.value, compareBuild.value, slotDef)
-    );
   return rowHasDiff(slotDef.id);
 }
 
@@ -551,6 +529,61 @@ function stablePlaceholder(slotId: string): string | undefined {
     .join(", ");
   const rest = near.length - NEAR_MISSES_NAMED;
   return rest > 0 ? `1 short of ${named} +${rest} more` : `1 short of ${named}`;
+}
+
+/** Everything a BuildSlot row needs, gathered once per slot instead of ~9 calls per render
+ *  (`itemsFor` and `statSummary` aren't cheap). Scoped to *expanded* sections only, matching
+ *  BuildSection.vue's own `v-if="expanded"`, so a collapsed section's rows stay uncomputed. */
+interface SlotRowData {
+  item: Item | null;
+  items: Item[];
+  hiddenReasons: ReadonlyMap<string, string> | null;
+  errors: EngineError[];
+  statSummary: string;
+  placeholder: string | undefined;
+  labelOverride: string | undefined;
+  diff: SlotDiff | undefined;
+}
+
+const EMPTY_ROW_DATA: SlotRowData = {
+  item: null,
+  items: [],
+  hiddenReasons: null,
+  errors: [],
+  statSummary: "",
+  placeholder: undefined,
+  labelOverride: undefined,
+  diff: undefined,
+};
+
+const rowDataBySlot = computed(() => {
+  const map = new Map<string, SlotRowData>();
+  for (const section of sections.value) {
+    if (!sectionExpanded(section.id)) continue;
+    for (const slotDef of section.slots) {
+      if (
+        slotDef.type === "separator" ||
+        slotDef.type === "text" ||
+        slotDef.type === "item_picker_list"
+      )
+        continue;
+      map.set(slotDef.id, {
+        item: itemIn(slotDef.id),
+        items: itemsFor(slotDef.id),
+        hiddenReasons: hiddenReasonsFor(slotDef.id),
+        errors: errorsFor(slotDef.id),
+        statSummary: statSummary(slotDef.id),
+        placeholder: stablePlaceholder(slotDef.id),
+        labelOverride: stableLabel(slotDef.id),
+        diff: rowDiff(slotDef.id),
+      });
+    }
+  }
+  return map;
+});
+
+function rowDataFor(slotId: string): SlotRowData {
+  return rowDataBySlot.value.get(slotId) ?? EMPTY_ROW_DATA;
 }
 
 function toggle(sectionId: string) {
@@ -1026,46 +1059,14 @@ watch(
               :is-hovered="hover?.slotId === slotDef.id"
               :no-border="noBorderIds.has(slotDef.id)"
               :on-arrow="moveCursor"
-              :item="itemIn(slotDef.id)"
-              :items="itemsFor(slotDef.id)"
-              :hidden-reasons="hiddenReasonsFor(slotDef.id)"
-              :errors="errorsFor(slotDef.id)"
-              :stat-summary="statSummary(slotDef.id)"
-              :placeholder="stablePlaceholder(slotDef.id)"
-              :label-override="stableLabel(slotDef.id)"
-              :choice-differs="differs(slotDef.id)"
-              :toggle-differs="rowDiff(slotDef.id)?.disabled"
-              :other-choice-label="otherChoiceLabel(slotDef.id)"
-              :bonus-diffs="rowDiff(slotDef.id)?.bonuses"
-              :value-diffs="rowDiff(slotDef.id)?.values ?? []"
-              :occurrence-differs="
-                occurrenceDiffers(itemIn(slotDef.id), build, compareBuild)
-              "
-              :other-occurrence-label="
-                occurrenceDiffTitle(db, itemIn(slotDef.id), compareBuild)
-              "
-              :param-differs="
-                slotDef.type === 'build_parameter'
-                  ? paramDiffers(build, compareBuild, slotDef)
-                  : false
-              "
-              :other-param-label="
-                slotDef.type === 'build_parameter'
-                  ? paramDiffTitle(compareBuild, slotDef)
-                  : undefined
-              "
-              :assignment-differs="
-                slotDef.type === 'item_picker' ||
-                slotDef.type === 'point_assignment'
-                  ? assignmentDiffers(db, build, compareBuild, slotDef)
-                  : false
-              "
-              :other-assignment-label="
-                slotDef.type === 'item_picker' ||
-                slotDef.type === 'point_assignment'
-                  ? assignmentDiffTitle(db, build, compareBuild, slotDef)
-                  : undefined
-              "
+              :item="rowDataFor(slotDef.id).item"
+              :items="rowDataFor(slotDef.id).items"
+              :hidden-reasons="rowDataFor(slotDef.id).hiddenReasons"
+              :errors="rowDataFor(slotDef.id).errors"
+              :stat-summary="rowDataFor(slotDef.id).statSummary"
+              :placeholder="rowDataFor(slotDef.id).placeholder"
+              :label-override="rowDataFor(slotDef.id).labelOverride"
+              :diff="rowDataFor(slotDef.id).diff"
               @enter="(event, itemId) => onRowEnter(event, slotDef.id, itemId)"
               @leave="onRowLeave"
               @rowclick="

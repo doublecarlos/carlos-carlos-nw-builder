@@ -33,7 +33,7 @@ import type {
   BuildParameterSlot,
   PointAssignmentSlot,
 } from "../../types";
-import type { ValueDiff } from "../../composables/useCompareDiff";
+import type { SlotDiff } from "../../composables/useCompareDiff";
 
 const props = defineProps<{
   slotDef: RowSlot;
@@ -53,31 +53,36 @@ const props = defineProps<{
   /** Stands in for the row's authored label, which stays in slots.json for go-to and every
    *  other by-label lookup. */
   labelOverride?: string;
-  bonusDiffs?: { id: string; message: string }[];
   // item_picker only
   items?: Item[];
   /** Reason per withheld candidate, forwarded to the picker (db.ts's `hiddenReasons`). */
   hiddenReasons?: ReadonlyMap<string, string> | null;
-  choiceDiffers?: boolean;
-  otherChoiceLabel?: string;
-  valueDiffs?: ValueDiff[];
-  occurrenceDiffers?: boolean;
-  otherOccurrenceLabel?: string;
   // item_picker, point_assignment and build_parameter (when it has a linked item)
   errors?: EngineError[];
-  // build_parameter only
-  paramDiffers?: boolean;
-  otherParamLabel?: string;
-  // point_assignment, and an item_picker whose pick repeats inline -- the same stored counts,
-  // so one pair of props covers both.
-  assignmentDiffers?: boolean;
-  otherAssignmentLabel?: string;
-  /** item_picker only: this row's checkbox differs from the compare build's. */
-  toggleDiffers?: boolean;
+  /** How this row differs from the compare build: everything BuildEditor's `useCompareDiff`
+   *  knows, gathered into one object rather than a dozen separate props. Undefined the same as
+   *  every field being unset: no compare build, or nothing here differs. */
+  diff?: SlotDiff;
   /** True for the row immediately above a separator -- its own bottom border would otherwise
    *  double up against the separator's, so BuildEditor.vue suppresses it for that one row. */
   noBorder?: boolean;
 }>();
+
+// Unpacked once here rather than read as `props.diff?.x` at each spot below: this row forwards
+// a differently-named subset to each of the three possible child row components
+// (ItemPickerRow/PointAssignmentRow/BuildParameterRow), which keep their own individual diff
+// props; only BuildEditor's own hand-off to BuildSlot collapses to the single `diff` prop.
+const choiceDiffers = computed(() => props.diff?.choice);
+const toggleDiffers = computed(() => props.diff?.disabled);
+const otherChoiceLabel = computed(() => props.diff?.otherChoiceLabel);
+const bonusDiffs = computed(() => props.diff?.bonuses);
+const valueDiffs = computed(() => props.diff?.values ?? []);
+const occurrenceDiffers = computed(() => props.diff?.occurrence);
+const otherOccurrenceLabel = computed(() => props.diff?.otherOccurrenceLabel);
+const paramDiffers = computed(() => props.diff?.param);
+const otherParamLabel = computed(() => props.diff?.otherParamLabel);
+const assignmentDiffers = computed(() => props.diff?.assignment);
+const otherAssignmentLabel = computed(() => props.diff?.otherAssignmentLabel);
 
 const emit = defineEmits<{
   /** `itemId` is set only for a point_assignment row's per-item hover target

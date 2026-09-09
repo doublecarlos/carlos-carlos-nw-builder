@@ -124,15 +124,33 @@ function grantDragHandleProps(index: number) {
   }));
 }
 
-function tierDropList(grantUid: string, gIndex: number) {
-  const containerId = `tiers:${grantUid}`;
-  return useDropList({
-    containerId,
-    size: () => props.store.grants[gIndex]?.tiers.length ?? 0,
-    accepts: (source) =>
-      source.kind === "tier" && source.containerId === containerId,
-    onDrop: (source, index) => gs(gIndex).moveTierTo(source.index, index),
-  });
+// One `useDropList` per grant, cached by uid (NavBuilds.vue's `folderDrop` is the same idea).
+// `gIndex` is resolved fresh via `grantIndexByUid` rather than captured: grants reorder via
+// `moveGrantTo`, so a captured index would go stale across that move.
+function grantIndexByUid(grantUid: string): number {
+  return props.store.grants.findIndex((g) => g.uid === grantUid);
+}
+
+const tierDropLists = new Map<string, ReturnType<typeof useDropList>>();
+function tierDropList(grantUid: string) {
+  let list = tierDropLists.get(grantUid);
+  if (!list) {
+    const containerId = `tiers:${grantUid}`;
+    list = useDropList({
+      containerId,
+      size: () =>
+        props.store.grants[grantIndexByUid(grantUid)]?.tiers.length ?? 0,
+      accepts: (source) =>
+        source.kind === "tier" && source.containerId === containerId,
+      onDrop: (source, index) => {
+        const gIndex = grantIndexByUid(grantUid);
+        if (gIndex === -1) return;
+        gs(gIndex).moveTierTo(source.index, index);
+      },
+    });
+    tierDropLists.set(grantUid, list);
+  }
+  return list;
 }
 function tierDragHandleProps(grantUid: string, index: number) {
   return useDragHandle((): DragSource => ({
@@ -143,15 +161,26 @@ function tierDragHandleProps(grantUid: string, index: number) {
   }));
 }
 
-function variantDropList(grantUid: string, gIndex: number) {
-  const containerId = `variants:${grantUid}`;
-  return useDropList({
-    containerId,
-    size: () => props.store.grants[gIndex]?.variants.length ?? 0,
-    accepts: (source) =>
-      source.kind === "variant" && source.containerId === containerId,
-    onDrop: (source, index) => gs(gIndex).moveVariantTo(source.index, index),
-  });
+const variantDropLists = new Map<string, ReturnType<typeof useDropList>>();
+function variantDropList(grantUid: string) {
+  let list = variantDropLists.get(grantUid);
+  if (!list) {
+    const containerId = `variants:${grantUid}`;
+    list = useDropList({
+      containerId,
+      size: () =>
+        props.store.grants[grantIndexByUid(grantUid)]?.variants.length ?? 0,
+      accepts: (source) =>
+        source.kind === "variant" && source.containerId === containerId,
+      onDrop: (source, index) => {
+        const gIndex = grantIndexByUid(grantUid);
+        if (gIndex === -1) return;
+        gs(gIndex).moveVariantTo(source.index, index);
+      },
+    });
+    variantDropLists.set(grantUid, list);
+  }
+  return list;
 }
 function variantDragHandleProps(
   grantUid: string,
@@ -434,12 +463,12 @@ function toggleJson(gIndex: number) {
             data-testid="bonus-tier-row"
             class="my-1.5 rounded-md border-2 border-l-4 border-line border-l-accent bg-surface px-2.5 py-1.5"
             :class="[
-              tierDropList(grant.uid, gIndex).indicatorAt(tIndex) ===
-                'before' && '!border-t-accent',
-              tierDropList(grant.uid, gIndex).indicatorAt(tIndex) === 'after' &&
+              tierDropList(grant.uid).indicatorAt(tIndex) === 'before' &&
+                '!border-t-accent',
+              tierDropList(grant.uid).indicatorAt(tIndex) === 'after' &&
                 '!border-b-accent',
             ]"
-            v-bind="tierDropList(grant.uid, gIndex).rowProps(tIndex)"
+            v-bind="tierDropList(grant.uid).rowProps(tIndex)"
           >
             <div class="mb-1 flex flex-wrap items-center gap-1.5">
               <DragHandle
@@ -518,12 +547,12 @@ function toggleJson(gIndex: number) {
             data-testid="bonus-variant-row"
             class="my-1.5 rounded-md border-2 border-l-4 border-line border-l-accent bg-surface px-2.5 py-1.5"
             :class="[
-              variantDropList(grant.uid, gIndex).indicatorAt(vIndex) ===
-                'before' && '!border-t-accent',
-              variantDropList(grant.uid, gIndex).indicatorAt(vIndex) ===
-                'after' && '!border-b-accent',
+              variantDropList(grant.uid).indicatorAt(vIndex) === 'before' &&
+                '!border-t-accent',
+              variantDropList(grant.uid).indicatorAt(vIndex) === 'after' &&
+                '!border-b-accent',
             ]"
-            v-bind="variantDropList(grant.uid, gIndex).rowProps(vIndex)"
+            v-bind="variantDropList(grant.uid).rowProps(vIndex)"
           >
             <div class="mb-1 flex flex-wrap items-center gap-2">
               <DragHandle

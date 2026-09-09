@@ -28,13 +28,30 @@ export interface ValueDiff {
   other: number | null;
 }
 
+/** Everything BuildSlot.vue needs to know about how one row differs from the compare build,
+ *  the single prop it takes instead of a dozen separate ones. Every field applies to at most a
+ *  couple of row types (noted per field); a field that doesn't apply to a given `slot.type` is
+ *  always `false`/`undefined`, the same as when there is no compare build at all. */
 export interface SlotDiff {
   choice: boolean;
-  /** The `toggleable` checkbox differs. Its own flag, not part of `choice`: both builds hold
-   *  the same item, one just is not counting it. */
+  /** Display text for the compare build's choice, already resolved to a name; empty when it
+   *  holds nothing. */
+  otherChoiceLabel: string;
+  /** item_picker only: the `toggleable` checkbox differs. Its own flag, not part of `choice`:
+   *  both builds hold the same item, one just is not counting it. */
   disabled: boolean;
   values: ValueDiff[];
   bonuses: { id: string; message: string }[];
+  /** item_picker only: an item's occurrence-count attachment differs from the compare build's. */
+  occurrence: boolean;
+  otherOccurrenceLabel?: string;
+  /** build_parameter only. */
+  param: boolean;
+  otherParamLabel?: string;
+  /** point_assignment, and an item_picker whose pick repeats inline: the same stored counts,
+   *  so one pair of fields covers both. */
+  assignment: boolean;
+  otherAssignmentLabel?: string;
 }
 
 /** True if this slot's pick is switched off in one build and on in the other. Standalone for
@@ -348,8 +365,52 @@ export function useCompareDiff(options: {
       const disabled = disabledDiffers(build.value, compareBuild.value, slot);
       const values = choice ? [] : valueDiffs(slot.id);
       const bonuses = choice ? [] : bonusDiffsFor(slot.id);
-      if (choice || disabled || values.length || bonuses.length)
-        map.set(slot.id, { choice, disabled, values, bonuses });
+      const occurrence = choice
+        ? false
+        : occurrenceDiffers(itemIn(slot.id), build.value, compareBuild.value);
+      const param =
+        slot.type === "build_parameter" &&
+        paramDiffers(build.value, compareBuild.value, slot);
+      const assignment =
+        (slot.type === "item_picker" || slot.type === "point_assignment") &&
+        assignmentDiffers(db.value, build.value, compareBuild.value, slot);
+      if (
+        choice ||
+        disabled ||
+        values.length ||
+        bonuses.length ||
+        occurrence ||
+        param ||
+        assignment
+      ) {
+        map.set(slot.id, {
+          choice,
+          otherChoiceLabel: otherChoiceLabel(slot.id),
+          disabled,
+          values,
+          bonuses,
+          occurrence,
+          otherOccurrenceLabel: occurrence
+            ? occurrenceDiffTitle(db.value, itemIn(slot.id), compareBuild.value)
+            : undefined,
+          param,
+          otherParamLabel:
+            param && slot.type === "build_parameter"
+              ? paramDiffTitle(compareBuild.value, slot)
+              : undefined,
+          assignment,
+          otherAssignmentLabel:
+            assignment &&
+            (slot.type === "item_picker" || slot.type === "point_assignment")
+              ? assignmentDiffTitle(
+                  db.value,
+                  build.value,
+                  compareBuild.value,
+                  slot,
+                )
+              : undefined,
+        });
+      }
     }
     return map;
   });
