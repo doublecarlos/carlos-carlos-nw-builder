@@ -1085,6 +1085,26 @@ describe("catalog.nextId", () => {
   });
 });
 
+describe("catalog.tombstoneIds", () => {
+  it("returns the ids tombstoned in the given group, ignoring adds and other groups", () => {
+    const overlay: CatalogOverlay = {
+      items: {
+        "added-item": { id: "added-item" } as Item,
+        "removed-item": null,
+      },
+      bonuses: { "removed-bonus": null },
+      sectionPresets: {},
+      slots: {},
+    };
+    expect(catalog.tombstoneIds(overlay, "items")).toEqual(["removed-item"]);
+    expect(catalog.tombstoneIds(overlay, "bonuses")).toEqual(["removed-bonus"]);
+  });
+
+  it("returns an empty array for a group with nothing tombstoned", () => {
+    expect(catalog.tombstoneIds(catalog.emptyOverlay(), "slots")).toEqual([]);
+  });
+});
+
 describe("catalog.compose: layer overlay (two layers, same item id)", () => {
   it("the later overlay wins when both define the same item id", () => {
     const early: CatalogOverlay = {

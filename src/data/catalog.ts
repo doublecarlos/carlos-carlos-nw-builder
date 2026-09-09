@@ -277,6 +277,18 @@ export function statusOf(
   return shipped ? "edited" : "added";
 }
 
+/** Every id `group` tombstones in `overlay` -- the ids `statusOf` would call "removed". An
+ *  editor entry list has to show these alongside the group's present entries, since a
+ *  deletion would otherwise vanish with no way back. */
+export function tombstoneIds(
+  overlay: CatalogOverlay,
+  group: CatalogGroup,
+): string[] {
+  return Object.entries(overlay[group] ?? {})
+    .filter(([, value]) => value === null)
+    .map(([id]) => id);
+}
+
 // --- portable files (phase 7) -------------------------------------------------------------
 
 /** Everything in the composed catalogue this build depends on that base does not already
