@@ -43,6 +43,17 @@ export default defineConfigWithVueTs(
   },
 
   {
+    name: "app/z-index-scale",
+    files: ["src/**/*.vue"],
+    // TabButton's active-tab lift is the recorded exception; see its own comment.
+    ignores: ["src/components/ui/TabButton.vue"],
+    rules: {
+      // Use base.css's --z-index-* scale instead of a bare z-<number>.
+      "vue/no-restricted-class": ["error", "/^z-[0-9]+$/"],
+    },
+  },
+
+  {
     name: "app/vitest-tests",
     ...pluginVitest.configs.recommended,
     files: ["tests/unit/**/*.spec.ts"],

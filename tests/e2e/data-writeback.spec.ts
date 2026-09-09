@@ -5,6 +5,7 @@
 // the test layer holds. What lands on disk is covered in tests/unit/writeback.spec.ts.
 import { test, expect, type Page, type Request } from "@playwright/test";
 import { addLayer, layerRow } from "./support/nav";
+import { expectTopmost } from "./support/occlusion";
 
 const WRITEBACK = "**/__data/write";
 const FAKE_REPO = "E:\\worktrees\\data-writeback";
@@ -97,18 +98,9 @@ test("names the local server it sends to, in the label and the tooltip", async (
   const tooltip = page.getByTestId("tooltip");
   await expect(tooltip).toContainText("npm run dev");
 
-  // Both teleport to <body>, so only the z-order keeps the bubble in front of the modal.
-  await expect(
-    tooltip.evaluate((tip) => {
-      const box = tip.getBoundingClientRect();
-      return tip.contains(
-        document.elementFromPoint(
-          box.x + box.width / 2,
-          box.y + box.height / 2,
-        ),
-      );
-    }),
-  ).resolves.toBe(true);
+  // Both teleport to <body>, so only the z-order (z-popover over z-modal) keeps the bubble in
+  // front of the modal.
+  await expectTopmost(tooltip);
 });
 
 test("offers no save on the tab that is not a repo file", async ({ page }) => {

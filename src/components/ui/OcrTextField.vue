@@ -115,17 +115,19 @@ async function onPaste(event: ClipboardEvent) {
       @input="onInput"
       @paste="onPaste"
     ></textarea>
-    <span class="absolute top-2 right-2 z-10 leading-none"><OcrHint /></span>
+    <span class="absolute top-2 right-2 z-sticky leading-none"
+      ><OcrHint
+    /></span>
     <p
       v-if="busy"
-      class="absolute top-full left-0 z-10 flex items-center gap-1.5 rounded-md border border-line bg-surface px-1.5 py-0.5 text-muted shadow-lg"
+      class="absolute top-full left-0 z-sticky flex items-center gap-1.5 rounded-md border border-line bg-surface px-1.5 py-0.5 text-muted shadow-lg"
       data-testid="ocr-field-busy"
     >
       <LoaderCircle class="animate-spin" />Reading the screenshot…
     </p>
     <p
       v-else-if="error"
-      class="absolute top-full left-0 z-10 max-w-full rounded-md border border-line bg-surface px-1.5 py-0.5 text-error shadow-lg"
+      class="absolute top-full left-0 z-sticky max-w-full rounded-md border border-line bg-surface px-1.5 py-0.5 text-error shadow-lg"
       data-testid="ocr-field-error"
     >
       {{ error }}

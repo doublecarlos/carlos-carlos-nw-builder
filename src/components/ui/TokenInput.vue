@@ -7,6 +7,9 @@
 // thing to do (so free text). `allowFree` turns the second half off for the closed
 // vocabularies -- a condition's toggle/role/class/damage-type values -- that autocomplete
 // alone covers.
+//
+// The suggestion menu is anchored (`inset-x-0`), not teleported through BasePopover: base.css's
+// exception, since it matches the input's own width.
 import { ref, computed, watch, nextTick, useTemplateRef } from "vue";
 import { onKeyStroke } from "@vueuse/core";
 import { matchesQuery } from "../../lib/text-filter";
@@ -190,7 +193,7 @@ function onPaste(event: ClipboardEvent) {
     <div
       v-if="open && entries.length"
       ref="menu"
-      class="absolute inset-x-0 top-full z-30 mt-0.5 max-h-56 overflow-y-auto rounded-md border border-line bg-surface shadow-lg"
+      class="absolute inset-x-0 top-full z-menu mt-0.5 max-h-56 overflow-y-auto rounded-md border border-line bg-surface shadow-lg"
     >
       <div
         v-for="(entry, index) in entries"

@@ -2,6 +2,9 @@
 // `margin-bottom: -1px` on TabStrip pulls the row down onto the panel's own top border, and
 // the active tab paints its bottom border in the panel's own background colour to erase the
 // seam -- `border-b-surface` when active does that.
+//
+// `z-2` is deliberately not on base.css's scale: local ordering against its own siblings, one
+// above TabStrip's `z-base`, never escaping to overlap anything else.
 import { computed } from "vue";
 
 const props = withDefaults(defineProps<{ active?: boolean }>(), {

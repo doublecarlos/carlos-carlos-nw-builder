@@ -181,7 +181,7 @@ const counts = computed(() => {
 
 <template>
   <BasePanel flush>
-    <div class="sticky top-0 z-1 bg-surface pb-0.5">
+    <div class="sticky top-0 z-sticky bg-surface pb-0.5">
       <BaseInput
         v-model="query"
         class="w-full"

@@ -103,6 +103,18 @@
   --font-sans:
     -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  /* Stacking layers, low to high. Anchored surfaces (menus, tooltips, popovers) teleport to
+   * <body> rather than order themselves within a sticky/fixed ancestor's stacking context; see
+   * BasePopover. Exceptions: ComboBoxMenu/TokenInput stay anchored (width-coupled to their
+   * input); TabButton's active-tab lift is local sibling ordering, not a layer (see its own
+   * comment). */
+  --z-index-base: 1;
+  --z-index-sticky: 10;
+  --z-index-toolbar: 20;
+  --z-index-menu: 30;
+  --z-index-modal: 50;
+  --z-index-popover: 60;
 }
 
 @layer base {
