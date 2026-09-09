@@ -10,9 +10,9 @@ import * as bonus from "./bonus";
 import { scaleFactorFor, scaledStat } from "./scaling";
 import { occurrenceCountFor } from "../lib/bonus-attachment";
 import { assignedRows } from "../lib/inline-repetition";
+import { copyCounts } from "../lib/copy-counts";
 import { misplacedInsignia, withDerivedBonuses } from "./insignia";
 import { dynamicValueKey, readDynamicValue } from "../lib/dynamic-stats";
-import { isDisabled } from "../lib/slot-toggle";
 import type {
   Db,
   Build,
@@ -20,6 +20,7 @@ import type {
   Schema,
   StatKey,
   ResolvedBonuses,
+  ResolvedRow,
   EngineRow,
   Stages,
   DerivedOutputs,
@@ -74,15 +75,20 @@ function rowVectors(
 ): EngineRow[] {
   return resolved.rows.map((row) => {
     const stats = zeros(keys);
+    // Kept apart from `stats`, which merges the bonus and assignment stats in below: the stat
+    // source popover needs the item's own share, and recomputing it there let the two disagree.
+    const itemStats: Record<string, number> = {};
     if (row.item) {
       const factor = scaleFactorFor(schema, resolved.ctx, row.item);
       for (const key of keys) {
         // `repetitions` is 1 for an ordinary pick, so this only bites for an item that
         // declares an `inlineRepetition`: N repetitions carry N times the stat line, exactly as
         // N separate picks of the item would.
-        if (row.item[key])
-          stats[key] =
+        if (row.item[key]) {
+          itemStats[key] =
             scaledStat(schema, row.item, key, factor) * row.repetitions;
+          stats[key] = itemStats[key];
+        }
       }
     }
     // A point_assignment row has no single item to read stats off of -- its assignments'
@@ -103,6 +109,8 @@ function rowVectors(
       choice: row.choice,
       item: row.item,
       stats,
+      itemStats,
+      dynamicStats: {},
       repetitions: row.repetitions,
     };
   });
@@ -149,8 +157,10 @@ function run(
     for (const config of row.item?.dynamicStats ?? []) {
       // Scaled by the row's repetition count for the same reason its plain stats are: one
       // magnitude typed against an item that is in the build N times describes each of those N.
-      dynamicStatMods[config.stat] +=
+      const value =
         readDynamicValue(build, row.slotId, config) * row.repetitions;
+      dynamicStatMods[config.stat] += value;
+      row.dynamicStats[config.stat] = value;
     }
   }
   const afterDynamicStatMods = addVectors(sums, dynamicStatMods, keys);
@@ -386,41 +396,12 @@ function checkItemErrors(
   return errors;
 }
 
-function findErrors(
-  db: Db,
-  build: Build,
-  resolved: ResolvedBonuses,
-): EngineError[] {
+/** A numeric build_parameter's declared bounds. Nothing clamps the control, since silently
+ * rewriting a number someone typed is worse than showing it, so this is what keeps an
+ * out-of-range value visible. Matters most for a parameter that multiplies whole stat lines
+ * (`Schema.statScalers`): a 1000% bolster computes happily and is meaningless. */
+function parameterRanges(db: Db, resolved: ResolvedBonuses): EngineError[] {
   const errors: EngineError[] = [];
-  const counts = new Map<string, number>();
-
-  for (const row of resolved.rows) {
-    // By `repetitions`, not by 1: a pick that repeats inline is that many copies for maxCopies'
-    // purposes, same as the same count spent on a point_assignment row below.
-    // A switched-off pick still counts as one copy, matching `copyCounts` (db.ts), which
-    // withholds the item from other pickers whatever the checkbox says.
-    if (row.item)
-      counts.set(
-        row.item.id,
-        (counts.get(row.item.id) ?? 0) +
-          (isDisabled(build, row.slot) ? 1 : row.repetitions),
-      );
-  }
-  // point_assignment slots contribute to the same maxCopies count as an item_picker pick would
-  // (each point is "one more copy"), but they have no ResolvedRow.item to have been counted by
-  // the pass above -- counted here from the slot definitions themselves instead.
-  for (const slot of db.slots) {
-    if (slot.type !== "point_assignment") continue;
-    for (const { item, count } of assignedRows(db, build, slot)) {
-      if (count > 0) counts.set(item.id, (counts.get(item.id) ?? 0) + count);
-    }
-  }
-
-  // A numeric build_parameter's declared bounds. Nothing clamps the control -- silently
-  // rewriting a number someone typed is worse than showing it -- so this is what keeps an
-  // out-of-range value visible rather than quietly producing nonsense downstream. Matters most
-  // for a parameter that multiplies whole stat lines (`Schema.statScalers`): a 1000% bolster
-  // computes perfectly happily and is meaningless.
   for (const slot of db.slots) {
     if (slot.type !== "build_parameter") continue;
     if (slot.paramType !== "number" && slot.paramType !== "percent") continue;
@@ -448,16 +429,25 @@ function findErrors(
       });
     }
   }
+  return errors;
+}
 
+/** Every `point_assignment` row with points on it: the same class and copy checks a pick gets,
+ * plus its own count against the row's declared bounds. */
+function assignmentErrors(
+  db: Db,
+  build: Build,
+  cls: string | undefined,
+  counts: Map<string, number>,
+): EngineError[] {
+  const errors: EngineError[] = [];
   for (const slot of db.slots) {
     if (slot.type !== "point_assignment") continue;
     for (const { item, count } of assignedRows(db, build, slot)) {
       if (count <= 0) continue;
       const { min, max: rowMax } = item.inlineRepetition!;
 
-      errors.push(
-        ...checkItemErrors(slot.id, item, db, resolved.ctx.class, counts),
-      );
+      errors.push(...checkItemErrors(slot.id, item, db, cls, counts));
 
       if (count < min || count > rowMax) {
         errors.push({
@@ -470,18 +460,93 @@ function findErrors(
       }
     }
   }
+  return errors;
+}
 
-  // A warning, not an error: the pick still counts, it just should not be where it is.
-  for (const misplaced of misplacedInsignia(db, build)) {
-    errors.push({
-      slotId: misplaced.slotId,
-      kind: "insigniaSlot",
-      choice: misplaced.item.name,
-      message: misplaced.message,
-      severity: "warning",
-    });
+/** A warning, not an error: the pick still counts, it just should not be where it is. */
+function insigniaWarnings(db: Db, build: Build): EngineError[] {
+  return misplacedInsignia(db, build).map((misplaced) => ({
+    slotId: misplaced.slotId,
+    kind: "insigniaSlot",
+    choice: misplaced.item.name,
+    message: misplaced.message,
+    severity: "warning",
+  }));
+}
+
+/** Dynamic stats carry a declared range. The value is used as typed (see stage 2); flagging it
+ * here is what makes that safe. */
+function itemDynamicStatRanges(build: Build, row: ResolvedRow): EngineError[] {
+  const errors: EngineError[] = [];
+  for (const config of row.item?.dynamicStats ?? []) {
+    const typed = build.values?.[row.slotId]?.[dynamicValueKey(config.stat)];
+    const value = Number(typed);
+    if (
+      typed != null &&
+      Number.isFinite(value) &&
+      (value < config.min || value > config.max)
+    ) {
+      errors.push({
+        slotId: row.slotId,
+        kind: "outOfRange",
+        choice: row.item!.name,
+        message: `${row.item!.name}: ${value} is outside ${config.min}–${config.max}`,
+        severity: "error",
+      });
+    }
   }
+  return errors;
+}
 
+/** An `item_picker` pick's own inline-repetition count. A `point_assignment` row's counts are
+ * `assignmentErrors`' business, against the slot's item list rather than a single pick. */
+function repetitionRange(row: ResolvedRow): EngineError[] {
+  const repetition = row.item?.inlineRepetition;
+  if (
+    !repetition ||
+    (row.repetitions >= repetition.min && row.repetitions <= repetition.max)
+  )
+    return [];
+  return [
+    {
+      slotId: row.slotId,
+      kind: "outOfRange",
+      choice: row.item!.name,
+      message: `${row.item!.name}: ${row.repetitions} is outside ${repetition.min}–${repetition.max}`,
+      severity: "error",
+    },
+  ];
+}
+
+/** A `BonusOccurrenceConfig`'s count: not achievable through the stepper's own clamped buttons,
+ * but a hand-edited or imported build can carry one. */
+function occurrenceRanges(build: Build, row: ResolvedRow): EngineError[] {
+  const errors: EngineError[] = [];
+  const itemInputs = build.occurrenceInputs?.[row.item!.id];
+  for (const attachment of row.item?.bonuses ?? []) {
+    if (typeof attachment === "string") continue;
+    const count = occurrenceCountFor(attachment, itemInputs);
+    if (count < attachment.min || count > attachment.max) {
+      errors.push({
+        slotId: row.slotId,
+        kind: "outOfRange",
+        choice: row.item!.name,
+        message: `${row.item!.name}: ${count} is outside ${attachment.min}–${attachment.max}`,
+        severity: "error",
+      });
+    }
+  }
+  return errors;
+}
+
+/** Every rule that reads one resolved row, in row order so a slot's errors stay together. */
+function rowErrors(
+  db: Db,
+  build: Build,
+  resolved: ResolvedBonuses,
+  counts: Map<string, number>,
+): EngineError[] {
+  const errors: EngineError[] = [];
   for (const row of resolved.rows) {
     if (!row.item) {
       // Row has a choice set but the item doesn't resolve.
@@ -498,68 +563,22 @@ function findErrors(
     }
     errors.push(
       ...checkItemErrors(row.slotId, row.item, db, resolved.ctx.class, counts),
+      ...itemDynamicStatRanges(build, row),
+      ...repetitionRange(row),
+      ...occurrenceRanges(build, row),
     );
-
-    // Dynamic stats carry a declared range. The value is used as typed (see stage 2);
-    // flagging it here is what makes that safe.
-    for (const config of row.item.dynamicStats ?? []) {
-      const typed = build.values?.[row.slotId]?.[dynamicValueKey(config.stat)];
-      const value = Number(typed);
-      if (
-        typed != null &&
-        Number.isFinite(value) &&
-        (value < config.min || value > config.max)
-      ) {
-        errors.push({
-          slotId: row.slotId,
-          kind: "outOfRange",
-          choice: row.item.name,
-          message: `${row.item.name}: ${value} is outside ${config.min}–${config.max}`,
-          severity: "error",
-        });
-      }
-    }
-
-    // An item_picker pick's own inline-repetition count, same reasoning as the checks around
-    // it. A point_assignment row's counts are checked in their own loop above, against the
-    // slot's item list rather than a single pick.
-    const repetition = row.item.inlineRepetition;
-    if (
-      repetition &&
-      (row.repetitions < repetition.min || row.repetitions > repetition.max)
-    ) {
-      errors.push({
-        slotId: row.slotId,
-        kind: "outOfRange",
-        choice: row.item.name,
-        message: `${row.item.name}: ${row.repetitions} is outside ${repetition.min}–${repetition.max}`,
-        severity: "error",
-      });
-    }
-
-    // A BonusOccurrenceConfig's count, same reasoning as dynamicStats' own check above: not
-    // achievable through the stepper's own clamped +/- buttons, but a hand-edited or imported
-    // build can carry one.
-    const itemInputs = build.occurrenceInputs?.[row.item.id];
-    for (const attachment of row.item.bonuses ?? []) {
-      if (typeof attachment === "string") continue;
-      const count = occurrenceCountFor(attachment, itemInputs);
-      if (count < attachment.min || count > attachment.max) {
-        errors.push({
-          slotId: row.slotId,
-          kind: "outOfRange",
-          choice: row.item.name,
-          message: `${row.item.name}: ${count} is outside ${attachment.min}–${attachment.max}`,
-          severity: "error",
-        });
-      }
-    }
   }
+  return errors;
+}
 
-  // A grant/variant's dynamic stat, same reasoning as an item's own dynamicStats check above --
-  // resolved against the bonus's first contributing slot (bonus.ts's `resolve`), regardless of
-  // whether the bonus is currently active (a hand-edited/imported value can be stale but should
-  // still be flagged once it would matter again).
+/** A grant/variant's dynamic stat, resolved against the bonus's first contributing slot
+ * (bonus.ts's `resolve`) regardless of whether the bonus is currently active: a hand-edited or
+ * imported value can be stale but should still be flagged once it would matter again. */
+function bonusDynamicStatRanges(
+  build: Build,
+  resolved: ResolvedBonuses,
+): EngineError[] {
+  const errors: EngineError[] = [];
   for (const entry of resolved.bonuses) {
     for (const grant of entry.grants) {
       for (const config of grant.raw.dynamicStats ?? []) {
@@ -615,6 +634,21 @@ function dynamicStatRangeError(
       message: `${name}: ${value} is outside ${config.min}–${config.max}`,
       severity: "error",
     },
+  ];
+}
+
+function findErrors(
+  db: Db,
+  build: Build,
+  resolved: ResolvedBonuses,
+): EngineError[] {
+  const counts = copyCounts(db, build);
+  return [
+    ...parameterRanges(db, resolved),
+    ...assignmentErrors(db, build, resolved.ctx.class, counts),
+    ...insigniaWarnings(db, build),
+    ...rowErrors(db, build, resolved, counts),
+    ...bonusDynamicStatRanges(build, resolved),
   ];
 }
 

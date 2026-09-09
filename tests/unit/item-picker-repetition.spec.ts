@@ -7,6 +7,7 @@ import { describe, it, expect } from "vitest";
 import * as db from "../../src/data/db";
 import * as bonus from "../../src/engine/bonus";
 import * as engine from "../../src/engine/engine";
+import { sectionsFor } from "../../src/engine/stat-sources";
 import {
   assignedRows,
   inlineRepetitionCount,
@@ -264,5 +265,53 @@ describe("what the engine reports", () => {
     expect(messagesFor(withCount(3)).join(" ")).toMatch(
       /Test Shard is equipped 3 times, maximum 2/,
     );
+  });
+});
+
+/** The picker withholds what the engine would flag, so a pick never succeeds and is then
+ *  reported. Both read the same tally (lib/copy-counts.ts). */
+describe("what the picker withholds", () => {
+  const twoSlots = db.build([shard, gem, plain], bonuses, schema, {
+    ...slotsData,
+    slots: [
+      ...slots,
+      { ...slots[0], id: "gear.shard2", label: "Shard 2" } as Slot,
+    ],
+  });
+  const offeredElsewhere = (count: number) =>
+    db
+      .forSlotAndBuild(twoSlots, "gear.shard2", withCount(count))
+      .map((item) => item.id);
+
+  it("counts a repeating pick's copies against the cap", () => {
+    // maxCopies is 2, and the first slot already holds both of them.
+    expect(offeredElsewhere(2)).not.toContain(shard.id);
+  });
+
+  it("keeps offering it while the pick is under the cap", () => {
+    expect(offeredElsewhere(1)).toContain(shard.id);
+  });
+});
+
+/** The stat source popover explains the panel's total, so an item's line here has to be what
+ *  the pipeline actually took from it (engine.ts's `rowVectors`). */
+describe("what the stat popover credits", () => {
+  const gemPowerSourceAt = (count: number) => {
+    const build = testBuild({
+      choices: { "gear.shard": gem.id },
+      assignments: { "gear.shard": { [gem.id]: count } },
+    });
+    const result = engine.resolveBuild(testDb, build);
+    const [section] = sectionsFor(result, build, testDb, "power");
+    return section.sources.find((source) => source.name === gem.name)?.value;
+  };
+
+  it("credits the whole contribution, not one copy of the item's line", () => {
+    expect(gemPowerSourceAt(1)).toBe(10);
+    expect(gemPowerSourceAt(3)).toBe(30);
+  });
+
+  it("leaves the item out entirely at a count of 0", () => {
+    expect(gemPowerSourceAt(0)).toBeUndefined();
   });
 });
