@@ -10,6 +10,7 @@ import ComboBox from "../ui/ComboBox.vue";
 import TokenInput from "../ui/TokenInput.vue";
 import BaseButton from "../ui/BaseButton.vue";
 import BaseBadge from "../ui/BaseBadge.vue";
+import BaseInput from "../ui/BaseInput.vue";
 import FormBar from "../ui/FormBar.vue";
 import FormField from "../ui/FormField.vue";
 import FormGrid from "../ui/FormGrid.vue";
@@ -22,6 +23,7 @@ import { useDraftHistory } from "../../composables/useDraftHistory";
 import { BonusDraftStore } from "../../stores/bonus-draft";
 import { bonusDraftRegistryKey } from "../../composables/bonusDraftRegistry";
 import type { Bonus, Db } from "../../types";
+import type { EntryStatus } from "../../data/catalog";
 
 const props = withDefaults(
   defineProps<{
@@ -31,7 +33,7 @@ const props = withDefaults(
      *  Ignored once `source` or `initialDraft` is set -- only meaningful while creating
      *  a new top-level bonus. */
     duplicateFrom?: Bonus | null;
-    status?: string;
+    status?: EntryStatus;
     db: Db;
     /** Every known bonus id, for id-collision avoidance and for the "which bonus does this
      *  tier/condition reference" pickers below. */
@@ -312,7 +314,7 @@ watch(
   <div>
     <FormBar class="-mx-3 mb-3">
       <strong>{{ draft.name || draft.id || "New bonus" }}</strong>
-      <BaseBadge v-if="status !== 'base'" :variant="status as any">{{
+      <BaseBadge v-if="status !== 'base'" :variant="status">{{
         status
       }}</BaseBadge>
       <BaseBadge v-if="dirty && isNew">unsaved</BaseBadge>
@@ -345,9 +347,9 @@ watch(
 
     <FormGrid class="mb-2">
       <FormField label="Name">
-        <input
+        <BaseInput
           v-model="draft.name"
-          class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+          class="w-full"
           type="text"
           data-testid="bonus-name-input"
         />
@@ -382,11 +384,11 @@ watch(
       </FormField>
       <template v-if="draft.stacking === 'perSource'">
         <FormField label="Max stacks (0 = unlimited)">
-          <input
+          <BaseInput
             v-model.number="draft.maxStacks"
             type="number"
             min="0"
-            class="w-16 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+            class="w-16"
           />
         </FormField>
       </template>

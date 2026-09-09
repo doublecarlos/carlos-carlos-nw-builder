@@ -6,6 +6,7 @@ import { computed, ref, useTemplateRef } from "vue";
 import { Copy, Upload } from "@lucide/vue";
 import BaseButton from "./ui/BaseButton.vue";
 import BaseCheckbox from "./ui/BaseCheckbox.vue";
+import BaseInput from "./ui/BaseInput.vue";
 import BaseModal from "./ui/BaseModal.vue";
 import CodeBlock from "./ui/CodeBlock.vue";
 import GameImportReport from "./GameImportReport.vue";
@@ -210,13 +211,12 @@ const hasSelection = computed(() => selected.value.size > 0);
               >{{ row.recognisedCount }}/{{ row.itemCount }} recognised</span
             >
             <span class="flex-1"></span>
-            <input
-              :value="nameFor(row.key)"
-              class="w-56 rounded-md border border-line bg-surface px-1.5 py-0.5"
+            <BaseInput
+              :model-value="nameFor(row.key)"
+              class="w-56"
+              type="text"
               data-testid="game-import-name-input"
-              @input="
-                setName(row.key, ($event.target as HTMLInputElement).value)
-              "
+              @update:model-value="(v) => setName(row.key, String(v))"
             />
           </div>
         </div>

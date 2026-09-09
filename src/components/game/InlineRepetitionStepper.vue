@@ -7,6 +7,7 @@
 // silently rewritten -- same reasoning engine.ts gives for a dynamic-stat magnitude. Only the
 // -/+ buttons clamp, since they are app-driven rather than typed.
 import { Minus, Plus } from "@lucide/vue";
+import BaseInput from "../ui/BaseInput.vue";
 import IconButton from "../ui/IconButton.vue";
 import { isMac } from "../../lib/platform";
 import type { Item } from "../../types";
@@ -31,11 +32,11 @@ const emit = defineEmits<{
 /** See `InlineRepetitionConfig.label`. */
 const label = () => props.item.inlineRepetition!.label ?? props.item.name;
 
-function onInput(event: Event) {
-  const raw = Number((event.target as HTMLInputElement).value);
+function onInput(raw: string | number | null) {
+  const parsed = Number(raw);
   emit(
     "change",
-    Number.isFinite(raw) ? raw : props.item.inlineRepetition!.default,
+    Number.isFinite(parsed) ? parsed : props.item.inlineRepetition!.default,
   );
 }
 
@@ -68,14 +69,14 @@ function step(dir: 1 | -1, event: MouseEvent) {
       >
         <Minus />
       </IconButton>
-      <input
+      <BaseInput
         type="number"
-        class="w-14 rounded-md border border-line bg-surface py-0.5 text-center focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+        class="w-14 text-center!"
         :min="item.inlineRepetition!.min"
         :max="item.inlineRepetition!.max"
-        :value="value"
+        :model-value="value"
         :data-testid="`${testidPrefix}-input-${item.id}`"
-        @input="onInput"
+        @update:model-value="onInput"
       />
       <IconButton
         :title="`Increase (${modKey}+click for max)`"

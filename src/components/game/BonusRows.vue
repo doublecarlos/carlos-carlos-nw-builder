@@ -15,19 +15,21 @@ import ConditionRows, {
   type ConditionBranchTreeLocation,
 } from "./ConditionRows.vue";
 import IconButton from "../ui/IconButton.vue";
-import BaseTooltip from "../ui/BaseTooltip.vue";
 import {
   ArrowDown,
   ArrowUp,
   CirclePlus,
   Copy,
   FileJson,
-  GripVertical,
   Plus,
   Trash,
 } from "@lucide/vue";
 import BaseButton from "../ui/BaseButton.vue";
 import BaseCheckbox from "../ui/BaseCheckbox.vue";
+import BaseInput from "../ui/BaseInput.vue";
+import BaseTextarea from "../ui/BaseTextarea.vue";
+import SegmentedControl from "../ui/SegmentedControl.vue";
+import DragHandle from "../ui/DragHandle.vue";
 import FormField from "../ui/FormField.vue";
 import OcrTextField from "../ui/OcrTextField.vue";
 import FormSection from "../ui/FormSection.vue";
@@ -323,15 +325,10 @@ function toggleJson(gIndex: number) {
       v-bind="grantsDropList.rowProps(gIndex)"
     >
       <div class="flex flex-wrap items-center gap-2">
-        <BaseTooltip text="Drag to reorder">
-          <span
-            data-testid="grant-drag-handle"
-            class="cursor-grab text-muted hover:text-accent [&_svg]:size-[14px]"
-            v-bind="grantDragHandleProps(gIndex)"
-          >
-            <GripVertical />
-          </span>
-        </BaseTooltip>
+        <DragHandle
+          data-testid="grant-drag-handle"
+          v-bind="grantDragHandleProps(gIndex)"
+        />
         <span class="text-muted">Grant {{ gIndex + 1 }}</span>
         <div class="flex flex-wrap items-center gap-1.5">
           <IconButton
@@ -375,12 +372,12 @@ function toggleJson(gIndex: number) {
         </div>
       </div>
 
-      <textarea
+      <BaseTextarea
         v-if="grant.mode === 'json'"
         v-model="grant.json"
-        class="mt-1 w-full resize-y rounded-md border border-line bg-surface p-2 font-mono"
+        class="mt-1 w-full font-mono"
         rows="8"
-      ></textarea>
+      />
 
       <template v-else>
         <FormSection sub>Active when</FormSection>
@@ -397,56 +394,16 @@ function toggleJson(gIndex: number) {
 
         <FormSection sub>
           Payload
-          <div class="inline-flex">
-            <button
-              type="button"
-              class="border border-line px-2 py-0.5 first:rounded-l-md last:rounded-r-md last:border-l-0"
-              :class="
-                grant.payload === 'flat'
-                  ? 'border-accent bg-accent-soft text-text'
-                  : 'bg-surface text-muted'
-              "
-              @click="gs(gIndex).setPayload('flat')"
-            >
-              the same always
-            </button>
-            <button
-              type="button"
-              class="border border-line px-2 py-0.5 first:rounded-l-md last:rounded-r-md last:border-l-0"
-              :class="
-                grant.payload === 'tiers'
-                  ? 'border-accent bg-accent-soft text-text'
-                  : 'bg-surface text-muted'
-              "
-              @click="gs(gIndex).setPayload('tiers')"
-            >
-              tiered by bonus occurrences
-            </button>
-            <button
-              type="button"
-              class="border border-line px-2 py-0.5 first:rounded-l-md last:rounded-r-md last:border-l-0"
-              :class="
-                grant.payload === 'variants'
-                  ? 'border-accent bg-accent-soft text-text'
-                  : 'bg-surface text-muted'
-              "
-              @click="gs(gIndex).setPayload('variants')"
-            >
-              varies by condition
-            </button>
-            <button
-              type="button"
-              class="border border-line px-2 py-0.5 first:rounded-l-md last:rounded-r-md last:border-l-0"
-              :class="
-                grant.payload === 'problem'
-                  ? 'border-accent bg-accent-soft text-text'
-                  : 'bg-surface text-muted'
-              "
-              @click="gs(gIndex).setPayload('problem')"
-            >
-              reports a problem
-            </button>
-          </div>
+          <SegmentedControl
+            :model-value="grant.payload"
+            :options="[
+              { value: 'flat', label: 'the same always' },
+              { value: 'tiers', label: 'tiered by bonus occurrences' },
+              { value: 'variants', label: 'varies by condition' },
+              { value: 'problem', label: 'reports a problem' },
+            ]"
+            @update:model-value="gs(gIndex).setPayload($event)"
+          />
         </FormSection>
 
         <!-- flat payload -->
@@ -477,10 +434,10 @@ function toggleJson(gIndex: number) {
               class="w-28"
               @keydown="focusNextStat"
             />
-            <input
+            <BaseInput
               v-else
               v-model.number="stat.value"
-              class="w-28 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+              class="w-28"
               type="number"
               step="any"
               @keydown="focusNextStat"
@@ -530,10 +487,10 @@ function toggleJson(gIndex: number) {
                 class="w-24"
                 @update:model-value="(v) => (row.min = v)"
               />
-              <input
+              <BaseInput
                 v-else
                 v-model.number="row.min"
-                class="w-24 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+                class="w-24"
                 type="number"
               />
             </FormField>
@@ -544,10 +501,10 @@ function toggleJson(gIndex: number) {
                 class="w-24"
                 @update:model-value="(v) => (row.max = v)"
               />
-              <input
+              <BaseInput
                 v-else
                 v-model.number="row.max"
-                class="w-24 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+                class="w-24"
                 type="number"
               />
             </FormField>
@@ -558,19 +515,15 @@ function toggleJson(gIndex: number) {
                 class="w-24"
                 @update:model-value="(v) => (row.default = v)"
               />
-              <input
+              <BaseInput
                 v-else
                 v-model.number="row.default"
-                class="w-24 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+                class="w-24"
                 type="number"
               />
             </FormField>
             <FormField label="Label (optional)">
-              <input
-                v-model="row.label"
-                class="w-40 rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-                type="text"
-              />
+              <BaseInput v-model="row.label" class="w-40" type="text" />
             </FormField>
           </div>
           <div
@@ -610,15 +563,10 @@ function toggleJson(gIndex: number) {
             v-bind="tierDropList(grant.uid, gIndex).rowProps(tIndex)"
           >
             <div class="mb-1 flex flex-wrap items-center gap-1.5">
-              <BaseTooltip text="Drag to reorder">
-                <span
-                  data-testid="tier-drag-handle"
-                  class="cursor-grab text-muted hover:text-accent [&_svg]:size-[14px]"
-                  v-bind="tierDragHandleProps(grant.uid, tIndex)"
-                >
-                  <GripVertical />
-                </span>
-              </BaseTooltip>
+              <DragHandle
+                data-testid="tier-drag-handle"
+                v-bind="tierDragHandleProps(grant.uid, tIndex)"
+              />
               <IconButton
                 title="Move tier up"
                 :disabled="tIndex === 0"
@@ -653,11 +601,11 @@ function toggleJson(gIndex: number) {
                 placeholder="- bonus -"
                 @update:model-value="(v) => (tier.bonus = v)"
               />
-              <input
+              <BaseInput
                 v-model.number="tier.atLeast"
                 type="number"
                 min="1"
-                class="w-16 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+                class="w-16"
               />
               <span class="text-muted"
                 >{{ tier.atLeast === 1 ? "occurrence" : "occurrences" }} or
@@ -692,10 +640,10 @@ function toggleJson(gIndex: number) {
                 class="w-28"
                 @keydown="focusNextStat"
               />
-              <input
+              <BaseInput
                 v-else
                 v-model.number="stat.value"
-                class="w-28 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+                class="w-28"
                 type="number"
                 step="any"
                 @keydown="focusNextStat"
@@ -738,17 +686,10 @@ function toggleJson(gIndex: number) {
             v-bind="variantDropList(grant.uid, gIndex).rowProps(vIndex)"
           >
             <div class="mb-1 flex flex-wrap items-center gap-2">
-              <BaseTooltip text="Drag to reorder">
-                <span
-                  data-testid="variant-drag-handle"
-                  class="cursor-grab text-muted hover:text-accent [&_svg]:size-[14px]"
-                  v-bind="
-                    variantDragHandleProps(grant.uid, variant.uid, vIndex)
-                  "
-                >
-                  <GripVertical />
-                </span>
-              </BaseTooltip>
+              <DragHandle
+                data-testid="variant-drag-handle"
+                v-bind="variantDragHandleProps(grant.uid, variant.uid, vIndex)"
+              />
               <span class="text-muted">Variant {{ vIndex + 1 }}</span>
               <div class="flex flex-wrap items-center gap-1.5">
                 <IconButton
@@ -828,10 +769,10 @@ function toggleJson(gIndex: number) {
                 class="w-28"
                 @keydown="focusNextStat"
               />
-              <input
+              <BaseInput
                 v-else
                 v-model.number="stat.value"
-                class="w-28 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+                class="w-28"
                 type="number"
                 step="any"
                 @keydown="focusNextStat"
@@ -883,10 +824,10 @@ function toggleJson(gIndex: number) {
                   class="w-24"
                   @update:model-value="(v) => (row.min = v)"
                 />
-                <input
+                <BaseInput
                   v-else
                   v-model.number="row.min"
-                  class="w-24 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+                  class="w-24"
                   type="number"
                 />
               </FormField>
@@ -897,10 +838,10 @@ function toggleJson(gIndex: number) {
                   class="w-24"
                   @update:model-value="(v) => (row.max = v)"
                 />
-                <input
+                <BaseInput
                   v-else
                   v-model.number="row.max"
-                  class="w-24 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+                  class="w-24"
                   type="number"
                 />
               </FormField>
@@ -911,19 +852,15 @@ function toggleJson(gIndex: number) {
                   class="w-24"
                   @update:model-value="(v) => (row.default = v)"
                 />
-                <input
+                <BaseInput
                   v-else
                   v-model.number="row.default"
-                  class="w-24 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+                  class="w-24"
                   type="number"
                 />
               </FormField>
               <FormField label="Label (optional)">
-                <input
-                  v-model="row.label"
-                  class="w-40 rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-                  type="text"
-                />
+                <BaseInput v-model="row.label" class="w-40" type="text" />
               </FormField>
             </div>
             <div
@@ -953,49 +890,38 @@ function toggleJson(gIndex: number) {
           </p>
           <div class="mb-1.5 flex flex-wrap items-center gap-1.5">
             <span class="text-muted">Severity</span>
-            <div class="inline-flex">
-              <button
-                type="button"
-                data-testid="problem-severity-error"
-                class="border border-line px-2 py-0.5 first:rounded-l-md last:rounded-r-md last:border-l-0"
-                :class="
-                  grant.problemSeverity === 'error'
-                    ? 'border-danger bg-danger-soft text-danger'
-                    : 'bg-surface text-muted'
-                "
-                @click="grant.problemSeverity = 'error'"
-              >
-                error
-              </button>
-              <button
-                type="button"
-                data-testid="problem-severity-warning"
-                class="border border-line px-2 py-0.5 first:rounded-l-md last:rounded-r-md last:border-l-0"
-                :class="
-                  grant.problemSeverity === 'warning'
-                    ? 'border-warn bg-warn/25 text-warn'
-                    : 'bg-surface text-muted'
-                "
-                @click="grant.problemSeverity = 'warning'"
-              >
-                warning
-              </button>
-            </div>
+            <SegmentedControl
+              v-model="grant.problemSeverity"
+              :options="[
+                {
+                  value: 'error',
+                  label: 'error',
+                  tone: 'danger',
+                  testid: 'problem-severity-error',
+                },
+                {
+                  value: 'warning',
+                  label: 'warning',
+                  tone: 'warn',
+                  testid: 'problem-severity-warning',
+                },
+              ]"
+            />
           </div>
-          <input
+          <BaseInput
             v-model="grant.problemLabel"
             data-testid="problem-label"
             type="text"
-            class="mb-1.5 w-full rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+            class="mb-1.5 w-full"
             placeholder="Label shown in the sidebar summary (defaults to the slot's name)…"
           />
-          <textarea
+          <BaseTextarea
             v-model="grant.problemMessage"
             data-testid="problem-message"
-            class="mb-1.5 w-full resize-y rounded-md border border-line bg-surface p-2"
+            class="mb-1.5 w-full"
             rows="2"
             placeholder="Message shown to the user when this condition matches…"
-          ></textarea>
+          />
           <BaseCheckbox
             v-model="grant.problemHideFromPicker"
             data-testid="problem-hide-from-picker"
@@ -1027,11 +953,11 @@ function toggleJson(gIndex: number) {
             class="flex min-w-0 flex-1 flex-col gap-1.5"
             data-testid="grant-name-description-fields"
           >
-            <input
+            <BaseInput
               v-model="grant.name"
               data-testid="grant-name"
               type="text"
-              class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+              class="w-full"
               placeholder="Name, distinguishes this grant from the bonus's other grants on the hover card…"
             />
             <OcrTextField

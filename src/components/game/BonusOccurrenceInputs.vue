@@ -8,6 +8,7 @@
 // read from and written to -- stays theirs, and only the controls are shared.
 import { Minus, Plus } from "@lucide/vue";
 import BaseCheckbox from "../ui/BaseCheckbox.vue";
+import BaseInput from "../ui/BaseInput.vue";
 import IconButton from "../ui/IconButton.vue";
 import { isMac } from "../../lib/platform";
 import type { OccurrenceRow } from "../../composables/useItemBonusOccurrences";
@@ -32,8 +33,8 @@ function onCheckbox(row: OccurrenceRow, checked: boolean) {
   emit("change", row.bonusId, checked ? 1 : 0, row.label);
 }
 
-function onInput(row: OccurrenceRow, event: Event) {
-  const raw = Number((event.target as HTMLInputElement).value);
+function onInput(row: OccurrenceRow, value: string | number | null) {
+  const raw = Number(value);
   emit(
     "change",
     row.bonusId,
@@ -86,14 +87,14 @@ function step(row: OccurrenceRow, dir: 1 | -1, event: MouseEvent) {
       >
         <Minus />
       </IconButton>
-      <input
+      <BaseInput
         type="number"
-        class="w-14 rounded-md border border-line bg-surface py-0.5 text-center focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+        class="w-14 text-center!"
         :min="row.min"
         :max="row.max"
-        :value="row.value"
+        :model-value="row.value"
         :data-testid="`${testidPrefix}-input-${row.bonusId}`"
-        @input="onInput(row, $event)"
+        @update:model-value="onInput(row, $event)"
       />
       <IconButton
         :title="`Increase (${modKey}+click for max)`"

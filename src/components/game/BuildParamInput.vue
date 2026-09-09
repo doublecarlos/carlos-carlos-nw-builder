@@ -16,6 +16,7 @@ import ComboBox from "../ui/ComboBox.vue";
 import type { ComboBoxExposed } from "../ui/ComboBox.vue";
 import PercentInput from "../ui/PercentInput.vue";
 import BaseCheckbox from "../ui/BaseCheckbox.vue";
+import BaseInput from "../ui/BaseInput.vue";
 import type { BuildParameterSlot } from "../../types";
 
 const props = withDefaults(
@@ -45,8 +46,8 @@ function widthCls(slotDef: BuildParameterSlot) {
   return "w-20";
 }
 
-function onNumber(event: Event) {
-  const value = Number((event.target as HTMLInputElement).value);
+function onNumber(raw: string | number | null) {
+  const value = Number(raw);
   model.value = Number.isFinite(value) ? value : (props.slotDef.min ?? 0);
 }
 
@@ -108,18 +109,15 @@ defineExpose({ focus: focusControl, focusAndSeed });
     </BaseCheckbox>
 
     <div v-else class="flex items-center gap-1.5">
-      <input
+      <BaseInput
         :id="inputId"
         type="number"
-        :class="[
-          widthCls(slotDef),
-          'rounded-md border border-line bg-surface py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent',
-        ]"
+        :class="widthCls(slotDef)"
         :min="slotDef.min"
         :max="slotDef.max"
         :step="slotDef.step"
-        :value="model ?? ''"
-        @input="onNumber"
+        :model-value="(model as string | number | null) ?? ''"
+        @update:model-value="onNumber"
       />
       <div v-if="slotDef.presets?.length" class="flex gap-0.5">
         <button

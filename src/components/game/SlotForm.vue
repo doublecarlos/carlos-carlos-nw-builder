@@ -18,6 +18,7 @@ import IconButton from "../ui/IconButton.vue";
 import BaseButton from "../ui/BaseButton.vue";
 import BaseBadge from "../ui/BaseBadge.vue";
 import BaseCheckbox from "../ui/BaseCheckbox.vue";
+import BaseInput from "../ui/BaseInput.vue";
 import FormBar from "../ui/FormBar.vue";
 import FormField from "../ui/FormField.vue";
 import FormGrid from "../ui/FormGrid.vue";
@@ -28,12 +29,13 @@ import { deepEqual } from "../../lib/deep-equal";
 import { useDraftHistory } from "../../composables/useDraftHistory";
 import { resolvedOptions } from "../../lib/param-options";
 import type { BuildParameterSlot, Db, Slot } from "../../types";
+import type { EntryStatus } from "../../data/catalog";
 
 const props = withDefaults(
   defineProps<{
     /** The slot being edited, or null for a brand-new one. */
     source?: BuildParameterSlot | null;
-    status?: string;
+    status?: EntryStatus;
     db: Db;
     /** Every id already in use anywhere, so a new slot's generated id can't collide. */
     allocatableIds?: string[];
@@ -366,7 +368,7 @@ watch(
   <div>
     <FormBar class="-mx-3 mb-3" data-testid="form-bar">
       <strong>{{ draft.label || "New parameter" }}</strong>
-      <BaseBadge v-if="status !== 'base'" :variant="status as any">{{
+      <BaseBadge v-if="status !== 'base'" :variant="status">{{
         status
       }}</BaseBadge>
       <BaseBadge v-if="dirty && isNew">unsaved</BaseBadge>
@@ -396,9 +398,9 @@ watch(
 
     <FormGrid class="mb-2">
       <FormField label="Label">
-        <input
+        <BaseInput
           v-model="draft.label"
-          class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+          class="w-full"
           type="text"
           data-testid="slot-label-input"
         />
@@ -427,9 +429,9 @@ watch(
         label="Path"
         hint="Dotted path into the build context, e.g. toggles.myFeature"
       >
-        <input
+        <BaseInput
           v-model="draft.path"
-          class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+          class="w-full"
           type="text"
           data-testid="slot-path-input"
         />
@@ -459,43 +461,43 @@ watch(
           data-testid="slot-default-input"
           @update:model-value="(v) => (draft.default = v)"
         />
-        <input
+        <BaseInput
           v-else
           v-model="draft.default"
-          class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+          class="w-full"
           :type="numeric ? 'number' : 'text'"
           data-testid="slot-default-input"
         />
       </FormField>
       <template v-if="numeric">
         <FormField label="Min" class="w-24">
-          <input
+          <BaseInput
             v-model="draft.min"
-            class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+            class="w-full"
             type="number"
             data-testid="slot-min-input"
           />
         </FormField>
         <FormField label="Max" class="w-24">
-          <input
+          <BaseInput
             v-model="draft.max"
-            class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+            class="w-full"
             type="number"
             data-testid="slot-max-input"
           />
         </FormField>
         <FormField label="Step" class="w-24">
-          <input
+          <BaseInput
             v-model="draft.step"
-            class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+            class="w-full"
             type="number"
             data-testid="slot-step-input"
           />
         </FormField>
         <FormField label="Presets" hint="comma-separated">
-          <input
+          <BaseInput
             v-model="draft.presets"
-            class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+            class="w-full"
             type="text"
             data-testid="slot-presets-input"
           />
@@ -522,9 +524,9 @@ watch(
         >
           <!-- Stays a native `title`: it previews the value this expression resolves to, and
                a bubble opening on focus would sit over the field while it is being typed in. -->
-          <input
+          <BaseInput
             v-model="draft.optionsFromTags"
-            class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+            class="w-full"
             type="text"
             :title="tagOptions"
             data-testid="slot-options-tags-input"
@@ -535,9 +537,9 @@ watch(
           label="Item filter"
           hint="one option per item in this category"
         >
-          <input
+          <BaseInput
             v-model="draft.optionsFromFilter"
-            class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+            class="w-full"
             type="text"
             data-testid="slot-options-filter-input"
           />
@@ -577,16 +579,16 @@ watch(
           <IconButton title="Remove" @click="removeOption(index)"
             ><Trash
           /></IconButton>
-          <input
+          <BaseInput
             v-model="row.label"
-            class="w-40 rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+            class="w-40"
             type="text"
             placeholder="Label"
             :data-testid="`slot-option-label-${index}`"
           />
-          <input
+          <BaseInput
             v-model="row.value"
-            class="w-40 rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+            class="w-40"
             type="text"
             placeholder="Value"
             :data-testid="`slot-option-value-${index}`"

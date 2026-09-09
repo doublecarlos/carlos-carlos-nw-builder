@@ -21,6 +21,7 @@ import { useEventListener } from "@vueuse/core";
 import { ArrowRightToLine, Check, CirclePlus, LoaderCircle } from "@lucide/vue";
 import BaseButton from "../ui/BaseButton.vue";
 import BaseModal from "../ui/BaseModal.vue";
+import BaseTextarea from "../ui/BaseTextarea.vue";
 import IconButton from "../ui/IconButton.vue";
 import { parseTooltip } from "../../lib/tooltip-parser";
 import { imageFrom } from "../../lib/ocr-paste";
@@ -203,13 +204,13 @@ useEventListener(document, "paste", onPaste);
         {{ error }}
       </p>
 
-      <textarea
+      <BaseTextarea
         v-model="text"
         rows="8"
         data-testid="tooltip-import-text"
-        class="w-full flex-none resize-y rounded-md border border-line bg-surface px-2 py-1.5 font-mono"
+        class="w-full flex-none font-mono"
         placeholder="Paste a screenshot here - the recognised text appears in this box, where you can correct it before creating the item."
-      ></textarea>
+      />
 
       <div v-if="text.trim()" class="flex flex-col gap-2 lg:flex-row">
         <section class="min-w-0 flex-1">

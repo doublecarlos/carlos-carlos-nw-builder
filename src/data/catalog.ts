@@ -262,16 +262,18 @@ export function revert(
   return next;
 }
 
+export type EntryStatus = "base" | "added" | "edited" | "removed";
+
 /** How an entry differs from what shipped -- drives the badges in the editor list. */
 export function statusOf(
   overlay: CatalogOverlay | null | undefined,
   group: CatalogGroup,
   key: string,
-) {
+): EntryStatus {
   const override = overlay?.[group]?.[key];
   const shipped = inBase(group, key);
   if (override === null) return "removed";
-  if (override === undefined) return shipped ? "base" : "base";
+  if (override === undefined) return "base";
   return shipped ? "edited" : "added";
 }
 

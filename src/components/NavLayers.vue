@@ -4,6 +4,7 @@ import { computed, useTemplateRef, type Component, type Directive } from "vue";
 import BaseButton from "./ui/BaseButton.vue";
 import BaseTooltip from "./ui/BaseTooltip.vue";
 import BaseCheckbox from "./ui/BaseCheckbox.vue";
+import BaseInput from "./ui/BaseInput.vue";
 import { EllipsisVertical, Plus } from "@lucide/vue";
 import NavContextMenu from "./NavContextMenu.vue";
 import { isMac } from "../lib/platform";
@@ -143,13 +144,13 @@ function moveFocus(dir: 1 | -1) {
       </BaseTooltip>
     </div>
 
-    <input
-      :value="filter"
+    <BaseInput
+      :model-value="filter"
       type="text"
       placeholder="Filter…"
       data-testid="nav-layers-filter"
-      class="mb-1 rounded-md border border-line bg-surface px-2 py-0.5 text-sm focus:outline-accent w-full"
-      @input="$emit('update:filter', ($event.target as HTMLInputElement).value)"
+      class="mb-1 w-full"
+      @update:model-value="$emit('update:filter', String($event))"
     />
 
     <div class="max-h-48 overflow-y-auto">
@@ -171,18 +172,13 @@ function moveFocus(dir: 1 | -1) {
           />
         </div>
 
-        <input
+        <BaseInput
           v-if="renamingId === l.id"
           v-rename-focus
-          :value="renameText"
-          class="nav-rename min-w-0 flex-1 rounded-md border border-line bg-surface px-1 py-0.5"
-          @input="
-            $emit(
-              'rename-start',
-              l.id,
-              ($event.target as HTMLInputElement).value,
-            )
-          "
+          :model-value="renameText"
+          type="text"
+          class="nav-rename min-w-0 flex-1"
+          @update:model-value="$emit('rename-start', l.id, String($event))"
           @keydown.enter="$emit('rename-commit')"
           @keydown.esc="$emit('rename-cancel')"
           @blur="$emit('rename-commit')"

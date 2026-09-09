@@ -13,6 +13,7 @@ import IconButton from "../ui/IconButton.vue";
 import { Copy, Plus, Save, Trash, Undo2 } from "@lucide/vue";
 import BaseButton from "../ui/BaseButton.vue";
 import BaseBadge from "../ui/BaseBadge.vue";
+import BaseInput from "../ui/BaseInput.vue";
 import FormBar from "../ui/FormBar.vue";
 import FormField from "../ui/FormField.vue";
 import FormGrid from "../ui/FormGrid.vue";
@@ -22,6 +23,7 @@ import FormSection from "../ui/FormSection.vue";
 import { NW_SCHEMA } from "../../data/data";
 import { findParamSlot } from "../../lib/build-path";
 import * as catalog from "../../data/catalog";
+import type { EntryStatus } from "../../data/catalog";
 import { deepEqual } from "../../lib/deep-equal";
 import { useDraftHistory } from "../../composables/useDraftHistory";
 import { isPercentKind, kindOf, statPickerOptions } from "../../lib/format";
@@ -51,7 +53,7 @@ const props = withDefaults(
     /** Seed values for a brand-new draft, copied from an existing item ("Duplicate").
      *  Ignored once `source` is set -- only meaningful while creating a new item. */
     duplicateFrom?: Item | null;
-    status?: string;
+    status?: EntryStatus;
     db: Db;
     filters?: string[];
     /** Every known bonus id, forwarded to ItemBonuses for id-collision avoidance and
@@ -968,7 +970,7 @@ watch(
   <div>
     <FormBar class="-mx-3 mb-3">
       <strong>{{ draft.name || "New item" }}</strong>
-      <BaseBadge v-if="status !== 'base'" :variant="status as any">{{
+      <BaseBadge v-if="status !== 'base'" :variant="status">{{
         status
       }}</BaseBadge>
       <BaseBadge v-if="dirty && isNew">unsaved</BaseBadge>
@@ -1006,9 +1008,9 @@ watch(
 
     <FormGrid class="mb-2">
       <FormField label="Name">
-        <input
+        <BaseInput
           v-model="draft.name"
-          class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+          class="w-full"
           type="text"
           data-testid="item-name-input"
         />
@@ -1022,10 +1024,10 @@ watch(
         />
       </FormField>
       <FormField label="Max copies (0 = unlimited)">
-        <input
+        <BaseInput
           v-model.number="draft.maxCopies"
           :placeholder="maxCopiesHint"
-          class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+          class="w-full"
           data-testid="item-max-copies"
           type="number"
           min="0"
@@ -1156,39 +1158,39 @@ watch(
           data-testid="inline-repetition-fields"
         >
           <FormField label="Min">
-            <input
+            <BaseInput
               v-model.number="draft.repetitionMin"
-              class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+              class="w-full"
               type="number"
             />
           </FormField>
           <FormField label="Max">
-            <input
+            <BaseInput
               v-model.number="draft.repetitionMax"
-              class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+              class="w-full"
               type="number"
             />
           </FormField>
           <FormField label="Default">
-            <input
+            <BaseInput
               v-model.number="draft.repetitionDefault"
-              class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+              class="w-full"
               type="number"
             />
           </FormField>
           <FormField label="Priority">
-            <input
+            <BaseInput
               v-model.number="draft.repetitionPriority"
-              class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+              class="w-full"
               type="number"
             />
           </FormField>
           <FormField
             label="Label (optional, overrides the item name on its row)"
           >
-            <input
+            <BaseInput
               v-model="draft.repetitionLabel"
-              class="w-40 rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+              class="w-40"
               type="text"
               data-testid="inline-repetition-label-input"
             />
@@ -1351,10 +1353,10 @@ watch(
         class="w-28"
         @keydown="focusNextStat"
       />
-      <input
+      <BaseInput
         v-else
         v-model.number="stat.value"
-        class="w-28 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+        class="w-28"
         type="number"
         step="any"
         @keydown="focusNextStat"
@@ -1401,10 +1403,10 @@ watch(
             class="w-24"
             @update:model-value="(v) => (row.min = v)"
           />
-          <input
+          <BaseInput
             v-else
             v-model.number="row.min"
-            class="w-24 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+            class="w-24"
             type="number"
           />
         </FormField>
@@ -1415,10 +1417,10 @@ watch(
             class="w-24"
             @update:model-value="(v) => (row.max = v)"
           />
-          <input
+          <BaseInput
             v-else
             v-model.number="row.max"
-            class="w-24 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+            class="w-24"
             type="number"
           />
         </FormField>
@@ -1429,19 +1431,15 @@ watch(
             class="w-24"
             @update:model-value="(v) => (row.default = v)"
           />
-          <input
+          <BaseInput
             v-else
             v-model.number="row.default"
-            class="w-24 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+            class="w-24"
             type="number"
           />
         </FormField>
         <FormField label="Label (optional)">
-          <input
-            v-model="row.label"
-            class="w-40 rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-            type="text"
-          />
+          <BaseInput v-model="row.label" class="w-40" type="text" />
         </FormField>
       </div>
       <div
@@ -1548,16 +1546,16 @@ watch(
           @click="removePublishes(index)"
           ><Trash
         /></IconButton>
-        <input
+        <BaseInput
           v-model="row.path"
-          class="w-52 rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+          class="w-52"
           type="text"
           placeholder="Context path, e.g. class"
           :data-testid="`publishes-path-${index}`"
         />
-        <input
+        <BaseInput
           v-model="row.value"
-          class="w-52 rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+          class="w-52"
           type="text"
           placeholder="Value"
           :data-testid="`publishes-value-${index}`"
@@ -1630,10 +1628,10 @@ watch(
               class="w-24"
               @update:model-value="(v) => (row.value = v)"
             />
-            <input
+            <BaseInput
               v-else
               v-model.number="row.value"
-              class="w-24 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+              class="w-24"
               type="number"
               step="any"
             />

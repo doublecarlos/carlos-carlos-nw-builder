@@ -29,6 +29,7 @@ import ComboBox from "../ui/ComboBox.vue";
 import IconButton from "../ui/IconButton.vue";
 import BaseButton from "../ui/BaseButton.vue";
 import BaseBadge from "../ui/BaseBadge.vue";
+import BaseInput from "../ui/BaseInput.vue";
 import FormBar from "../ui/FormBar.vue";
 import FormField from "../ui/FormField.vue";
 import FormGrid from "../ui/FormGrid.vue";
@@ -48,6 +49,7 @@ import type {
   ItemPickerListSlot,
   PointAssignmentSlot,
 } from "../../types";
+import type { EntryStatus } from "../../data/catalog";
 
 const props = withDefaults(
   defineProps<{
@@ -57,7 +59,7 @@ const props = withDefaults(
      *  BuildEditor's "Create new from current" hands over a section's live state. Ignored once
      *  `source` is set, same contract ItemForm/BonusForm's own `duplicateFrom` has. */
     duplicateFrom?: SectionPreset | null;
-    status?: string;
+    status?: EntryStatus;
     db: Db;
     allocatableIds?: string[];
   }>(),
@@ -470,7 +472,7 @@ watch(
   <div>
     <FormBar class="-mx-3 mb-3" data-testid="form-bar">
       <strong>{{ draft.label || "New preset" }}</strong>
-      <BaseBadge v-if="status !== 'base'" :variant="status as any">{{
+      <BaseBadge v-if="status !== 'base'" :variant="status">{{
         status
       }}</BaseBadge>
       <BaseBadge v-if="dirty && isNew">unsaved</BaseBadge>
@@ -494,9 +496,9 @@ watch(
 
     <FormGrid class="mb-2">
       <FormField label="Label">
-        <input
+        <BaseInput
           v-model="draft.label"
-          class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+          class="w-full"
           type="text"
           data-testid="preset-label-input"
         />
@@ -582,9 +584,9 @@ watch(
           :key="config.stat"
           class="flex items-center gap-1"
         >
-          <input
+          <BaseInput
             v-model.number="row.values[dynamicValueKey(config.stat)]"
-            class="w-24 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+            class="w-24"
             type="number"
             :placeholder="String(config.default)"
           />

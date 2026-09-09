@@ -8,18 +8,18 @@
 import { computed } from "vue";
 import ComboBox from "../ui/ComboBox.vue";
 import IconButton from "../ui/IconButton.vue";
-import BaseTooltip from "../ui/BaseTooltip.vue";
+import DragHandle from "../ui/DragHandle.vue";
 import {
   Ampersand,
   CircleAlert,
   CirclePlus,
   Copy,
-  GripVertical,
   Plus,
   Split,
   Trash,
 } from "@lucide/vue";
 import FormField from "../ui/FormField.vue";
+import BaseInput from "../ui/BaseInput.vue";
 import TokenInput from "../ui/TokenInput.vue";
 import RangeOrExactFields from "./RangeOrExactFields.vue";
 import * as engine from "../../stores/resolved";
@@ -452,15 +452,11 @@ function changeParamKey(row: ConditionRow, key: string) {
         v-if="row.kind === 'leaf'"
         class="flex flex-wrap items-center gap-1.5"
       >
-        <BaseTooltip text="Drag to reorder or move into a block">
-          <span
-            data-testid="condition-drag-handle"
-            class="cursor-grab text-muted hover:text-accent [&_svg]:size-[14px]"
-            v-bind="dragHandleProps(i)"
-          >
-            <GripVertical />
-          </span>
-        </BaseTooltip>
+        <DragHandle
+          tooltip="Drag to reorder or move into a block"
+          data-testid="condition-drag-handle"
+          v-bind="dragHandleProps(i)"
+        />
         <IconButton title="Duplicate" @click="duplicateRow(i)"
           ><Copy
         /></IconButton>
@@ -518,17 +514,14 @@ function changeParamKey(row: ConditionRow, key: string) {
         </template>
         <template v-else-if="row.type === 'equipped'">
           <FormField label="Tag" class="min-w-0"
-            ><input
+            ><BaseInput
               v-model="row.tag"
-              class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+              class="w-full"
               type="text"
               list="nw-tags"
           /></FormField>
           <FormField label="Or exact item id" class="min-w-0"
-            ><input
-              v-model="row.item"
-              class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-              type="text"
+            ><BaseInput v-model="row.item" class="w-full" type="text"
           /></FormField>
           <RangeOrExactFields
             v-model:at-least="row.atLeast"
@@ -609,12 +602,7 @@ function changeParamKey(row: ConditionRow, key: string) {
               :options="optionsForCombo(row.type)"
               @update:model-value="(v) => (row.value = v)"
             />
-            <input
-              v-else
-              v-model="row.value"
-              class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-              type="text"
-            />
+            <BaseInput v-else v-model="row.value" class="w-full" type="text" />
           </FormField>
         </template>
       </div>
@@ -629,15 +617,11 @@ function changeParamKey(row: ConditionRow, key: string) {
           class="w-full rounded-md border border-line border-l-4 border-l-muted bg-text/5 my-0.5 px-2 pb-0.5 pt-1"
         >
           <div class="flex flex-wrap items-center gap-1 mb-0.5">
-            <BaseTooltip text="Drag to reorder or move into a block">
-              <span
-                data-testid="condition-drag-handle"
-                class="cursor-grab text-muted hover:text-accent [&_svg]:size-[14px]"
-                v-bind="dragHandleProps(i)"
-              >
-                <GripVertical />
-              </span>
-            </BaseTooltip>
+            <DragHandle
+              tooltip="Drag to reorder or move into a block"
+              data-testid="condition-drag-handle"
+              v-bind="dragHandleProps(i)"
+            />
             <span
               data-testid="condition-op-label"
               class="rounded bg-surface-2 px-1.5 font-semibold uppercase tracking-wide"
@@ -668,15 +652,10 @@ function changeParamKey(row: ConditionRow, key: string) {
                 v-if="row.op !== 'not'"
                 class="my-1 flex items-center gap-0.5"
               >
-                <BaseTooltip text="Drag to reorder">
-                  <span
-                    data-testid="condition-branch-drag-handle"
-                    class="cursor-grab text-muted hover:text-accent [&_svg]:size-[14px]"
-                    v-bind="branchDragHandleProps(row, i, bi)"
-                  >
-                    <GripVertical />
-                  </span>
-                </BaseTooltip>
+                <DragHandle
+                  data-testid="condition-branch-drag-handle"
+                  v-bind="branchDragHandleProps(row, i, bi)"
+                />
                 <span class="my-0.5 uppercase pr-1">
                   Condition {{ bi + 1 }}
                 </span>

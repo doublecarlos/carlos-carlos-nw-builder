@@ -10,6 +10,7 @@ import InlineRepetitionStepper from "./InlineRepetitionStepper.vue";
 import PercentInput from "../ui/PercentInput.vue";
 import BaseBadge from "../ui/BaseBadge.vue";
 import BaseButton from "../ui/BaseButton.vue";
+import BaseInput from "../ui/BaseInput.vue";
 import IconButton from "../ui/IconButton.vue";
 import { PinOff, Replace, Table, Trash } from "@lucide/vue";
 import * as buildEditor from "../../stores/buildEditor";
@@ -268,15 +269,15 @@ const stableGroup = computed(() => {
         :data-testid="'slot-dynamic:' + row.stat"
         @update:model-value="setDynamic(row, $event)"
       />
-      <input
+      <BaseInput
         v-else
         type="number"
-        class="w-20 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+        class="w-20"
         :min="row.min"
         :max="row.max"
-        :value="row.value"
+        :model-value="row.value"
         :data-testid="'slot-dynamic:' + row.stat"
-        @input="setDynamic(row, ($event.target as HTMLInputElement).value)"
+        @update:model-value="setDynamic(row, $event ?? '')"
       />
     </div>
   </div>

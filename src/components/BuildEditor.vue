@@ -14,6 +14,7 @@ import SeparatorRow from "./game/SeparatorRow.vue";
 import ItemPickerListRow from "./game/ItemPickerListRow.vue";
 import TextRow from "./game/TextRow.vue";
 import BaseButton from "./ui/BaseButton.vue";
+import BaseInput from "./ui/BaseInput.vue";
 import BaseBadge from "./ui/BaseBadge.vue";
 import IconButton from "./ui/IconButton.vue";
 import ComboBox from "./ui/ComboBox.vue";
@@ -870,11 +871,11 @@ watch(
         <BaseButton @click="setAll(false)"
           ><ChevronsDownUp />collapse all</BaseButton
         >
-        <input
+        <BaseInput
           v-model="filterText"
           type="search"
           data-testid="slot-filter-text"
-          class="slot-filter-text min-w-40 rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+          class="slot-filter-text min-w-40"
           :placeholder="`Filter slots… (${modKey}+/)`"
         />
         <ComboBox

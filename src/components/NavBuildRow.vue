@@ -5,6 +5,7 @@
 // every action is an emit the parent chain resolves.
 import { computed, type Component, type Directive } from "vue";
 import BaseTooltip from "./ui/BaseTooltip.vue";
+import BaseInput from "./ui/BaseInput.vue";
 import { EllipsisVertical } from "@lucide/vue";
 import NavContextMenu from "./NavContextMenu.vue";
 import { isMac } from "../lib/platform";
@@ -121,18 +122,13 @@ function onRowKeydown(event: KeyboardEvent) {
          same icon size, and a margin standing in for the toggle button's padding. -->
       <span class="m-0.5 size-[14px] flex-none" aria-hidden="true" />
 
-      <input
+      <BaseInput
         v-if="renaming"
         v-rename-focus
-        :value="renameText"
-        class="nav-rename min-w-0 flex-1 rounded-md border border-line bg-surface px-1 py-0.5"
-        @input="
-          emit(
-            'rename-start',
-            build.id,
-            ($event.target as HTMLInputElement).value,
-          )
-        "
+        :model-value="renameText"
+        type="text"
+        class="nav-rename min-w-0 flex-1"
+        @update:model-value="emit('rename-start', build.id, String($event))"
         @keydown.enter="emit('rename-commit')"
         @keydown.esc="emit('rename-cancel')"
         @blur="emit('rename-commit')"

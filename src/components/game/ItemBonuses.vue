@@ -23,6 +23,7 @@ import FormGrid from "../ui/FormGrid.vue";
 import { CirclePlus, Plus, Trash } from "@lucide/vue";
 import BaseButton from "../ui/BaseButton.vue";
 import BaseBadge from "../ui/BaseBadge.vue";
+import BaseInput from "../ui/BaseInput.vue";
 import FormSection from "../ui/FormSection.vue";
 import type { Db, Bonus } from "../../types";
 import type { BonusDraft } from "../../engine/bonus-draft";
@@ -281,61 +282,45 @@ function onSlotDuplicate(slot: Slot) {
           <span class="text-muted">Occurrence count:</span>
           <FormGrid data-testid="occurrence-config-fields">
             <FormField label="Min">
-              <input
-                class="w-16 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+              <BaseInput
+                class="w-16"
                 type="number"
-                :value="occurrenceFor(slot.id)?.min ?? ''"
-                @input="
-                  updateOccurrenceField(
-                    slot.id,
-                    'min',
-                    ($event.target as HTMLInputElement).value,
-                  )
+                :model-value="occurrenceFor(slot.id)?.min ?? ''"
+                @update:model-value="
+                  updateOccurrenceField(slot.id, 'min', $event)
                 "
               />
             </FormField>
             <FormField label="Max">
-              <input
-                class="w-16 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+              <BaseInput
+                class="w-16"
                 type="number"
-                :value="occurrenceFor(slot.id)?.max ?? ''"
-                @input="
-                  updateOccurrenceField(
-                    slot.id,
-                    'max',
-                    ($event.target as HTMLInputElement).value,
-                  )
+                :model-value="occurrenceFor(slot.id)?.max ?? ''"
+                @update:model-value="
+                  updateOccurrenceField(slot.id, 'max', $event)
                 "
               />
             </FormField>
             <FormField label="Default">
-              <input
-                class="w-16 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+              <BaseInput
+                class="w-16"
                 type="number"
-                :value="occurrenceFor(slot.id)?.default ?? ''"
-                @input="
-                  updateOccurrenceField(
-                    slot.id,
-                    'default',
-                    ($event.target as HTMLInputElement).value,
-                  )
+                :model-value="occurrenceFor(slot.id)?.default ?? ''"
+                @update:model-value="
+                  updateOccurrenceField(slot.id, 'default', $event)
                 "
               />
             </FormField>
             <FormField
               label="Label (optional, overrides the bonus name on this row)"
             >
-              <input
-                class="w-40 rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+              <BaseInput
+                class="w-40"
                 type="text"
                 data-testid="occurrence-config-label-input"
-                :value="occurrenceFor(slot.id)?.label ?? ''"
-                @input="
-                  updateOccurrenceField(
-                    slot.id,
-                    'label',
-                    ($event.target as HTMLInputElement).value,
-                  )
+                :model-value="occurrenceFor(slot.id)?.label ?? ''"
+                @update:model-value="
+                  updateOccurrenceField(slot.id, 'label', $event)
                 "
               />
             </FormField>
