@@ -277,9 +277,9 @@ export function statusOf(
   return shipped ? "edited" : "added";
 }
 
-/** Every id `group` tombstones in `overlay` -- the ids `statusOf` would call "removed". An
- *  editor entry list has to show these alongside the group's present entries, since a
- *  deletion would otherwise vanish with no way back. */
+/** Every id `group` tombstones in `overlay`, the ids `statusOf` calls "removed". An editor
+ *  entry list shows these alongside the group's present entries, so a deletion stays
+ *  reversible from the list. */
 export function tombstoneIds(
   overlay: CatalogOverlay,
   group: CatalogGroup,

@@ -379,8 +379,8 @@ const ilHpRows = computed(() => [
   },
 ]);
 
-// One row per group's own [label, key] sub-table, plus its fixed top-level extras -- the
-// shape damage/healing/ehp's tables all shared, now built once instead of three times.
+// One row per group's own [label, key] sub-table, plus its fixed top-level extras: the shape
+// damage, healing and ehp all share, built once rather than three times.
 function summaryTableRows(group: SummaryGroup) {
   const table = derived.value[group.source];
   const compareTable = compareDerived.value?.[group.source];

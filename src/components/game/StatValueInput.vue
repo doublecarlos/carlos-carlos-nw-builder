@@ -1,8 +1,7 @@
 <script setup lang="ts">
 // A stat's value field: `PercentInput` when the stat's kind is a percent/mult, a plain number
-// `BaseInput` otherwise. The one place that owns that branch -- every stat-value field in the
-// app (item stats, dynamic stats, bonus grants/tiers/variants, replacement carry-overs, slot
-// picker magnitudes) renders through this instead of repeating the `isPercent(...)` ternary.
+// `BaseInput` otherwise. The one place that owns that branch, so no call site repeats the
+// `isPercent(...)` ternary.
 import PercentInput from "../ui/PercentInput.vue";
 import BaseInput from "../ui/BaseInput.vue";
 import { isPercentKind, kindOf } from "../../lib/format";
@@ -10,7 +9,7 @@ import { isPercentKind, kindOf } from "../../lib/format";
 withDefaults(
   defineProps<{
     statKey: string;
-    /** Forwarded to the number branch only -- meaningless on a percent field. */
+    /** Forwarded to the number branch only; meaningless on a percent field. */
     step?: string | number;
     min?: string | number;
     max?: string | number;

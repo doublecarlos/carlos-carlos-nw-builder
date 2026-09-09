@@ -128,7 +128,7 @@ function previewStatsFor(raw: Grant): StatValues | null {
   return merged;
 }
 
-// `stacks` scales an active grant's own (pre-stacking) stats -- `appliedStats` is already
+// `stacks` scales an active grant's own (pre-stacking) stats: `appliedStats` is already
 // multiplied at the bonus level, but a single grant's `stats` is not.
 function grantRows(entry: EvaluatedBonus) {
   const stacks = entry.stacks ?? 1;

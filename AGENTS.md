@@ -32,6 +32,7 @@ You **MUST NOT**:
 - Use data-testid for reliable test locators whenever possible. You are free to add this attribute to components if they don't already have it as needed.
 - Code comments should be concise, direct and describe the design intent of what the code is doing now instead of comparing the code with an old implementation or refering to a github issue ID.
 - An editor form's draft shape, its entity conversion and its change labels live in `src/lib/*-draft.ts`, not in the SFC - the SFC owns markup and reactive wiring only. See `src/lib/item-draft.ts` for the worked example.
+- When adding a case to something that already handles two or more sibling cases, check whether it wants a descriptor table instead of another branch. No lint rule catches this one; `SECTIONS` in `src/components/LayerEditor.vue` is the worked example, where four parallel selection refs, row builders and save/delete/revert handlers collapsed onto one entry per overlay group.
 
 # Code layout
 

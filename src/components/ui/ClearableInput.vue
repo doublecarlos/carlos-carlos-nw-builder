@@ -1,8 +1,7 @@
 <script setup lang="ts">
 // A text filter with a clear button anchored inside the field, shown once there's something to
-// clear -- the stable reference's mount/bonus search. A wrapper around BaseInput rather than a
-// BaseInput variant, since the clear affordance is layout (an absolutely positioned button
-// stealing the field's own right padding), not a look BaseInput itself should carry.
+// clear. A wrapper around BaseInput rather than a variant of it: the clear affordance is layout
+// (a positioned button taking the field's right padding), not a look BaseInput should carry.
 import { X } from "@lucide/vue";
 import BaseInput from "./BaseInput.vue";
 import IconButton from "./IconButton.vue";
@@ -10,8 +9,7 @@ import IconButton from "./IconButton.vue";
 withDefaults(
   defineProps<{
     placeholder?: string;
-    /** Leading part of the clear button's own `data-testid`, so it can be found relative to
-     *  the field's -- `<testid>-clear`. */
+    /** Leading part of the clear button's own `data-testid`: `<testid>-clear`. */
     testid?: string;
   }>(),
   { placeholder: "", testid: undefined },

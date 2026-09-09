@@ -1,8 +1,7 @@
 <script setup lang="ts">
-// A repeatable list of "pick a stat, type its value" rows -- an item's flat `stats`, and a
-// bonus grant/tier/variant's own `stats`. Add/remove stays with the caller (each entity's
-// draft owns its own `addStat`/`removeStat` pair), this only owns the row markup and the
-// Tab/Enter jump to the next row's stat picker.
+// A repeatable list of "pick a stat, type its value" rows: an item's flat `stats`, and a
+// bonus grant/tier/variant's own. Add/remove stays with the caller's draft; this owns the row
+// markup and the Tab/Enter jump to the next row's stat picker.
 import ComboBox from "../ui/ComboBox.vue";
 import RepeatableRows from "../ui/RepeatableRows.vue";
 import StatValueInput from "./StatValueInput.vue";

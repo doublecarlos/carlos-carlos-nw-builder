@@ -78,7 +78,7 @@ test("deleting a preset removes it from the build's Preset menu, leaving the oth
   await saveRolePreset(page, "Temp Preset", "Healer");
 
   await page.getByRole("button", { name: "Delete" }).click();
-  await expect(page.getByText('Removed preset "temp-preset"')).toBeVisible();
+  await expect(page.getByText('Removed preset "Temp Preset"')).toBeVisible();
 
   await page.getByRole("button", { name: "Build 1" }).click();
   await ensureSectionExpanded(page, "options");

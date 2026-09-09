@@ -8,7 +8,7 @@ import { scaledStat } from "../engine/scaling";
 import type { Build, Db, EvaluatedBonus, Item } from "../types";
 
 // The item's own stats plus whatever active bonuses are credited to this row, summed key by
-// key rather than attributed separately -- one number per stat, not a name-tagged breakdown.
+// key rather than attributed separately: one number per stat, not a name-tagged breakdown.
 export function slotStatSummary(
   item: Item,
   scaleFactor: number,

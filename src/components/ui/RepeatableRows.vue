@@ -1,9 +1,7 @@
 <script setup lang="ts" generic="T">
 // One list where every row repeats the same Add/Remove pair, and an empty list still shows a
-// lone "Add" so the affordance never disappears -- `ItemForm`'s insignia slots, recipe shapes,
-// default params, published values and carried values, plus `StatRowList`/`DynamicStatRowList`.
-// The array, its row content and the add/remove handlers all stay with the caller via the
-// `#row`/`#empty` slots and the `add`/`remove` emits; this owns only the row scaffold. `rowClass`
+// lone "Add" so the affordance never disappears. The array, its row content and the handlers
+// stay with the caller via the `#row`/`#empty` slots and the `add`/`remove` emits. `rowClass`
 // is passed through rather than fixed, since several `tests/e2e` specs locate rows by it.
 import IconButton from "./IconButton.vue";
 import { Plus, Trash } from "@lucide/vue";

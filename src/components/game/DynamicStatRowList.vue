@@ -1,8 +1,7 @@
 <script setup lang="ts">
-// A repeatable list of dynamic-stat rows (stat / min / max / default / label) -- an item's own
-// `dynamicStats`, and a bonus grant/variant's `dynamicStats`. Same shape as `StatRowList`, one
-// field wider; kept as its own component rather than a variant of it since every field here is
-// wrapped in a labelled `FormField`, which `StatRowList`'s single-value row isn't.
+// A repeatable list of dynamic-stat rows (stat / min / max / default / label): an item's own
+// `dynamicStats`, and a bonus grant/variant's. Its own component rather than a `StatRowList`
+// variant, since every field here is wrapped in a labelled `FormField`.
 import ComboBox from "../ui/ComboBox.vue";
 import RepeatableRows from "../ui/RepeatableRows.vue";
 import BaseInput from "../ui/BaseInput.vue";

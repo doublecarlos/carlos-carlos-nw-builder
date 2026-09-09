@@ -1,8 +1,7 @@
 <script setup lang="ts">
-// GoToPalette's own search field: a combobox trigger, not an ordinary form field -- full width,
-// underlined rather than boxed, and with no focus ring of its own since the palette opening is
-// already the state that matters. Exposes `focus()` so the palette can land keystrokes the
-// instant it opens, the one thing its caller needs from the underlying element.
+// GoToPalette's own search field: a combobox trigger rather than an ordinary form field, so it
+// is full width, underlined rather than boxed, and carries no focus ring of its own. Exposes
+// `focus()` so the palette can land keystrokes the instant it opens.
 //
 // Role/aria-* and data-testid are left to fall through from the caller: they read off the
 // palette's own result list and highlight state, which this field knows nothing about.
