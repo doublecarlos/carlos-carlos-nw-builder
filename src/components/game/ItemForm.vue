@@ -7,13 +7,15 @@ import ItemBonuses from "./ItemBonuses.vue";
 import BuildParamInput from "./BuildParamInput.vue";
 import TokenInput from "../ui/TokenInput.vue";
 import CreatableComboBox from "../ui/CreatableComboBox.vue";
-import PercentInput from "../ui/PercentInput.vue";
 import ComboBox from "../ui/ComboBox.vue";
+import StatValueInput from "./StatValueInput.vue";
+import StatRowList from "./StatRowList.vue";
+import DynamicStatRowList from "./DynamicStatRowList.vue";
 import IconButton from "../ui/IconButton.vue";
-import { Copy, Plus, Save, Trash, Undo2 } from "@lucide/vue";
-import BaseButton from "../ui/BaseButton.vue";
-import BaseBadge from "../ui/BaseBadge.vue";
-import FormBar from "../ui/FormBar.vue";
+import RepeatableRows from "../ui/RepeatableRows.vue";
+import { Plus, Trash } from "@lucide/vue";
+import BaseInput from "../ui/BaseInput.vue";
+import DraftFormBar from "../ui/DraftFormBar.vue";
 import FormField from "../ui/FormField.vue";
 import FormGrid from "../ui/FormGrid.vue";
 import IdField from "../ui/IdField.vue";
@@ -22,25 +24,22 @@ import FormSection from "../ui/FormSection.vue";
 import { NW_SCHEMA } from "../../data/data";
 import { findParamSlot } from "../../lib/build-path";
 import * as catalog from "../../data/catalog";
-import { deepEqual } from "../../lib/deep-equal";
-import { useDraftHistory } from "../../composables/useDraftHistory";
-import { isPercentKind, kindOf, statPickerOptions } from "../../lib/format";
-import { focusNextCombo } from "../../lib/stat-row-nav";
-import type {
-  Item,
-  Db,
-  Bonus,
-  BuildParameterSlot,
-  BonusOccurrenceConfig,
-  ItemReplacement,
-  StatValues,
-} from "../../types";
-import {
-  replacementIdOf,
-  replacementValuesOf,
-} from "../../lib/item-replacement";
+import type { EntryStatus } from "../../data/catalog";
+import { useEditorDraft } from "../../composables/useEditorDraft";
+import { statPickerOptions } from "../../lib/format";
+import type { Item, Db, Bonus, BuildParameterSlot } from "../../types";
 import { INSIGNIA_SHAPES } from "../../types";
-import type { StatRow } from "../../engine/bonus-draft";
+import {
+  buildDraft,
+  toItem,
+  diffLabel,
+  hasDescription,
+  hasInlineRepetition,
+  FIELD_GROUPS,
+  type ItemDraft,
+  type OccurrenceDraft,
+  type FieldGroup,
+} from "../../lib/item-draft";
 import BaseCheckbox from "../ui/BaseCheckbox.vue";
 import { showAllFields } from "../../stores/itemFormFields";
 
@@ -49,9 +48,9 @@ const props = withDefaults(
     /** The item being edited, or null for a brand-new one. */
     source?: Item | null;
     /** Seed values for a brand-new draft, copied from an existing item ("Duplicate").
-     *  Ignored once `source` is set -- only meaningful while creating a new item. */
+     *  Ignored once `source` is set: only meaningful while creating a new item. */
     duplicateFrom?: Item | null;
-    status?: string;
+    status?: EntryStatus;
     db: Db;
     filters?: string[];
     /** Every known bonus id, forwarded to ItemBonuses for id-collision avoidance and
@@ -86,348 +85,26 @@ const emit = defineEmits<{
   "update-bonus": [payload: { id: string; bonus: Bonus }];
 }>();
 
-/** One attached bonus's editable occurrence bounds -- mirrors `BonusOccurrenceConfig`'s
- *  own `min`/`max`/`default`, just widened to `number | string | null` like every other
- *  numeric draft field here so a cleared input reads as empty rather than `0`. `label` mirrors
- *  the config's own optional field directly (always a string here -- "" reads as unset, same
- *  as `DynamicStatDraft.label`). */
-export interface OccurrenceDraft {
-  min: number | string | null;
-  max: number | string | null;
-  default: number | string | null;
-  label: string;
-}
-
-/** One `DynamicStatConfig` row -- widened to `number | string | null` like every other
- *  numeric draft field here so a cleared input reads as empty rather than `0`. */
-export interface DynamicStatDraft {
-  stat: string;
-  min: number | string | null;
-  max: number | string | null;
-  default: number | string | null;
-  label: string;
-}
-
-export interface ItemDraft {
-  name: string;
-  filter: string;
-  shortDescription: string;
-  longDescription: string;
-  maxCopies: number | string | null;
-  /** Both halves optional and independent -- see `Item.hideFromPicker` / `Item.replacedBy`. */
-  hideFromPicker: boolean;
-  replacedBy: string;
-  /** `ItemReplacement.values` as rows; empty writes the bare-id form back out. */
-  replacedByValues: { stat: string; value: number | string | null }[];
-  allowedClass: string[];
-  tags: string[];
-  gameIds: string[];
-  bonuses: string[];
-  /** Present only for a bonus id upgraded to a `BonusOccurrenceConfig` -- absence means a
-   *  plain-id attachment (always 1 occurrence), same "optional fields" convention
-   *  `DynamicStatDraft` uses. Keyed by bonus id, not array index, since it tracks
-   *  `draft.bonuses` entries by identity. */
-  bonusOccurrences: Record<string, OccurrenceDraft>;
-  excludes: string[];
-  dynamicStats: DynamicStatDraft[];
-  repetitionMin: number | string | null;
-  repetitionMax: number | string | null;
-  repetitionDefault: number | string | null;
-  repetitionPriority: number | string | null;
-  repetitionLabel: string;
-  stats: StatRow[];
-  defaultParams: { slotId: string; value: string | number | boolean }[];
-  /** Keyed by context *path*, not slot id -- a published value has no slot (see
-   *  `Item.publishes`), which is the whole reason it can replace one. */
-  publishes: { path: string; value: string }[];
-  /** An empty `shape` means universal, so one picker cannot contradict a separate checkbox. */
-  insigniaSlots: { shape: string; preferred: string }[];
-  insigniaShape: string;
-  preferredVariant: string;
-  /** A bonus recipe as three or four shapes; empty rows are dropped on save. */
-  insigniaRecipe: string[];
-}
-
-/** Inline-repetition numeric fields count as "set" once they hold a real number, not just an
- *  empty string left behind by a cleared number input. */
-function hasRepetitionField(v: number | string | null): boolean {
-  return v != null && v !== "";
-}
-
-function buildDraft(item: Item | null | undefined): ItemDraft {
-  const source = item ?? ({} as Partial<Item>);
-  const statKeys = new Set(NW_SCHEMA.statKeys);
-  const bonuses: string[] = [];
-  const bonusOccurrences: Record<string, OccurrenceDraft> = {};
-  for (const entry of source.bonuses ?? []) {
-    if (typeof entry === "string") {
-      bonuses.push(entry);
-    } else {
-      bonuses.push(entry.bonus);
-      bonusOccurrences[entry.bonus] = {
-        min: entry.min,
-        max: entry.max,
-        default: entry.default,
-        label: entry.label ?? "",
-      };
-    }
-  }
-  return {
-    name: source.name ?? "",
-    filter: source.filter ?? "",
-    shortDescription: source.shortDescription ?? "",
-    longDescription: source.longDescription ?? "",
-    maxCopies: source.maxCopies ?? null,
-    hideFromPicker: source.hideFromPicker ?? false,
-    replacedBy: source.replacedBy ? replacementIdOf(source.replacedBy) : "",
-    replacedByValues: Object.entries(
-      source.replacedBy ? replacementValuesOf(source.replacedBy) : {},
-    ).map(([stat, value]) => ({ stat, value: value ?? null })),
-    allowedClass: [...(source.allowedClass ?? [])],
-    tags: [...(source.tags ?? [])],
-    gameIds: [...(source.gameIds ?? [])],
-    bonuses,
-    bonusOccurrences,
-    excludes: [...(source.excludes ?? [])],
-    dynamicStats: (source.dynamicStats ?? []).map((d) => ({
-      stat: d.stat,
-      min: d.min,
-      max: d.max,
-      default: d.default,
-      label: d.label ?? "",
-    })),
-    repetitionMin: source.inlineRepetition?.min ?? null,
-    repetitionMax: source.inlineRepetition?.max ?? null,
-    repetitionDefault: source.inlineRepetition?.default ?? null,
-    repetitionPriority: source.inlineRepetition?.priority ?? null,
-    repetitionLabel: source.inlineRepetition?.label ?? "",
-    stats: Object.keys(source)
-      .filter((key) => statKeys.has(key))
-      .map((key) => ({ key, value: source[key as keyof Item] as number })),
-    publishes: Object.entries(source.publishes ?? {}).map(([path, value]) => ({
-      path,
-      value: String(value),
-    })),
-    defaultParams: Object.entries(source.defaultParams ?? {}).flatMap(
-      ([slotId, value]) => (value === undefined ? [] : [{ slotId, value }]),
-    ),
-    insigniaSlots: (source.insigniaSlots ?? []).map((spec) => ({
-      shape: spec.universal ? "" : (spec.shape ?? ""),
-      preferred: spec.preferred ?? "",
-    })),
-    insigniaShape: source.insigniaShape ?? "",
-    preferredVariant: source.preferredVariant ?? "",
-    insigniaRecipe: [...(source.insigniaRecipe ?? [])],
-  };
-}
-
-// Existing items: live edits. New items: draft until Save.
-const isNew = computed(() => !props.source);
-
-const draft = ref<ReturnType<typeof buildDraft>>(
-  buildDraft(props.source ?? props.duplicateFrom),
-);
-const error = ref("");
-// Initialize with item JSON for correct comparison on existing items.
-let lastEmittedJson = JSON.stringify(toItem());
-
-function diffLabel(oldJson: string, newJson: string): string {
-  try {
-    const old = JSON.parse(oldJson);
-    const nw = JSON.parse(newJson);
-    if (old.name !== nw.name) return `edit name → "${nw.name}"`;
-    if (old.filter !== nw.filter) return `edit filter → "${nw.filter}"`;
-    if (old.shortDescription !== nw.shortDescription)
-      return "edit short description";
-    if (old.longDescription !== nw.longDescription)
-      return "edit long description";
-    if (old.maxCopies !== nw.maxCopies)
-      return `edit max copies → ${nw.maxCopies ?? "(none)"}`;
-    if (old.hideFromPicker !== nw.hideFromPicker)
-      return nw.hideFromPicker ? "hide from pickers" : "offer in pickers again";
-    if (
-      JSON.stringify(replacementOf(old.replacedBy)) !==
-      JSON.stringify(replacementOf(nw.replacedBy))
-    )
-      return `edit replaced by → ${replacementOf(nw.replacedBy)?.item ?? "(none)"}`;
-    if (JSON.stringify(old.allowedClass) !== JSON.stringify(nw.allowedClass))
-      return "edit classes";
-    if (JSON.stringify(old.tags) !== JSON.stringify(nw.tags))
-      return diffArrayLabel("tag", old.tags ?? [], nw.tags ?? []);
-    if (JSON.stringify(old.gameIds) !== JSON.stringify(nw.gameIds))
-      return diffArrayLabel("game id", old.gameIds ?? [], nw.gameIds ?? []);
-    if (
-      JSON.stringify(bonusIdsOf(old.bonuses)) !==
-      JSON.stringify(bonusIdsOf(nw.bonuses))
-    )
-      return diffArrayLabel(
-        "bonus",
-        bonusIdsOf(old.bonuses),
-        bonusIdsOf(nw.bonuses),
-      );
-    if (
-      JSON.stringify(occurrenceConfigsOf(old.bonuses)) !==
-      JSON.stringify(occurrenceConfigsOf(nw.bonuses))
-    )
-      return diffOccurrenceLabel(
-        occurrenceConfigsOf(old.bonuses),
-        occurrenceConfigsOf(nw.bonuses),
-      );
-    if (JSON.stringify(old.excludes) !== JSON.stringify(nw.excludes))
-      return diffArrayLabel("exclude", old.excludes ?? [], nw.excludes ?? []);
-    if (JSON.stringify(old.dynamicStats) !== JSON.stringify(nw.dynamicStats))
-      return diffDynamicStatsLabel(
-        old.dynamicStats ?? [],
-        nw.dynamicStats ?? [],
-      );
-    if (
-      JSON.stringify(old.inlineRepetition) !==
-      JSON.stringify(nw.inlineRepetition)
-    )
-      return "edit inline repetition";
-    if (JSON.stringify(old.stats) !== JSON.stringify(nw.stats))
-      return diffStatsLabel(old.stats ?? [], nw.stats ?? []);
-    if (JSON.stringify(old.publishes) !== JSON.stringify(nw.publishes))
-      return "edit published values";
-    if (JSON.stringify(old.defaultParams) !== JSON.stringify(nw.defaultParams))
-      return "edit default build parameters";
-  } catch {
-    // JSON parse error -- shouldn't happen but be safe.
-  }
-  return "edit item";
-}
-
-/** A saved item's `bonuses` entries mix plain ids and `BonusOccurrenceConfig` objects --
- *  split that into "which bonuses are attached" (id order/membership) and "which attached
- *  ones carry an occurrence config" so attach/detach and occurrence edits get distinct,
- *  readable diff labels instead of one opaque "edit bonuses". */
-function bonusIdsOf(entries: unknown): string[] {
-  return Array.isArray(entries)
-    ? entries.map((e) =>
-        typeof e === "string" ? e : (e as { bonus: string }).bonus,
-      )
-    : [];
-}
-function occurrenceConfigsOf(entries: unknown): Record<string, unknown> {
-  const configs: Record<string, unknown> = {};
-  if (Array.isArray(entries)) {
-    for (const e of entries) {
-      if (typeof e !== "string") configs[(e as { bonus: string }).bonus] = e;
-    }
-  }
-  return configs;
-}
-
-/** Label an occurrence-config change with the specific bonus id it touched, same spirit as
- *  `diffArrayLabel` -- "edit occurrence config" alone wouldn't say which of an item's several
- *  attachments changed. */
-function diffOccurrenceLabel(
-  oldConfigs: Record<string, unknown>,
-  nwConfigs: Record<string, unknown>,
-): string {
-  const oldKeys = new Set(Object.keys(oldConfigs));
-  const nwKeys = new Set(Object.keys(nwConfigs));
-  const added = [...nwKeys].filter((id) => !oldKeys.has(id));
-  const removed = [...oldKeys].filter((id) => !nwKeys.has(id));
-  if (added.length) return `add occurrence config for "${added[0]}"`;
-  if (removed.length) return `remove occurrence config for "${removed[0]}"`;
-  const changed = [...nwKeys].find(
-    (id) => JSON.stringify(oldConfigs[id]) !== JSON.stringify(nwConfigs[id]),
-  );
-  return changed
-    ? `edit occurrence config for "${changed}"`
-    : "edit occurrence config";
-}
-
-/** Label array mutations as add/remove with the changed entry count. */
-function diffArrayLabel(
-  noun: string,
-  oldArr: unknown[],
-  newArr: unknown[],
-): string {
-  const oldSet = new Set(oldArr.map(String));
-  const newSet = new Set(newArr.map(String));
-  const added = newArr.filter((v) => !oldSet.has(String(v))).length;
-  const removed = oldArr.filter((v) => !newSet.has(String(v))).length;
-  if (added && removed) return `edit ${noun}s (+${added} / −${removed})`;
-  if (added) return `add ${noun}${added > 1 ? "s" : ""} (${added})`;
-  if (removed) return `remove ${noun}${removed > 1 ? "s" : ""} (${removed})`;
-  return `edit ${noun}s`;
-}
-
-/** Label stat changes with the specific stat key(s) that changed. */
-function diffStatsLabel(
-  oldStats: { key: string; value: number }[],
-  newStats: { key: string; value: number }[],
-): string {
-  const oldMap = new Map(oldStats.map((s) => [s.key, s.value]));
-  const newMap = new Map(newStats.map((s) => [s.key, s.value]));
-  const changed: string[] = [];
-  for (const [key, val] of newMap) {
-    if (!oldMap.has(key)) changed.push(`+${key}`);
-    else if (oldMap.get(key) !== val) changed.push(key);
-  }
-  for (const key of oldMap.keys()) {
-    if (!newMap.has(key)) changed.push(`−${key}`);
-  }
-  if (changed.length === 1) return `edit stat: ${changed[0]}`;
-  if (changed.length <= 3) return `edit stats: ${changed.join(", ")}`;
-  return `edit stats (${changed.length} changed)`;
-}
-
-/** Label a `dynamicStats` array change with the specific stat(s) added/removed/changed --
- *  same spirit as `diffStatsLabel`, over `Item.dynamicStats` entries instead. */
-function diffDynamicStatsLabel(
-  oldRows: { stat: string }[],
-  newRows: { stat: string }[],
-): string {
-  const oldStats = oldRows.map((r) => r.stat).filter(Boolean);
-  const newStats = newRows.map((r) => r.stat).filter(Boolean);
-  if (JSON.stringify(oldStats) !== JSON.stringify(newStats))
-    return diffArrayLabel("dynamic stat", oldStats, newStats);
-  return "edit dynamic stat range";
-}
-
-// --- Live edit emit (existing items) ---------------------------------------------------
-
-function emitChange() {
-  const item = toItem();
-  const currentJson = JSON.stringify(item);
-  if (currentJson === lastEmittedJson) return;
-  const label = diffLabel(lastEmittedJson, currentJson);
-  lastEmittedJson = currentJson;
-  emit("update:item", { item, label });
-}
-
-const { resetDraftHistory } = useDraftHistory({
-  draft,
-  isNew,
-  diffLabel,
-  onEmit: emitChange,
-});
-
 // --- Common ---------------------------------------------------------------------------
 
-const displayId = computed(
-  () =>
-    props.source?.id ??
-    (draft.value.name.trim()
-      ? catalog.nextId(
-          draft.value.name.trim(),
-          props.allocatableIds.length
-            ? props.allocatableIds
-            : props.db.items.map((i) => i.id),
-          "item",
-        )
-      : ""),
-);
+function computeId(local: ItemDraft): string {
+  return local.name.trim()
+    ? catalog.nextId(
+        local.name.trim(),
+        props.allocatableIds.length
+          ? props.allocatableIds
+          : props.db.items.map((i) => i.id),
+        "item",
+      )
+    : "";
+}
 
 /** The class vocabulary these checkboxes offer: every distinct value the catalogue publishes
  * at `class`, labelled by the item that publishes it. A class param's options are still
  * honoured as a fallback, so an overlay declaring the older param-based shape keeps working.
- * Blank values are dropped either way -- "no class at all" is not a restriction. */
+ * Blank values are dropped either way; "no class at all" is not a restriction. */
 const classSlot = computed(() => findParamSlot(props.db.slots, "class"));
-/** `replacedBy` candidates. This item is left out -- a self-reference is a lint error. */
+/** `replacedBy` candidates. This item is left out: a self-reference is a lint error. */
 const replacementOptions = computed(() => [
   { value: "", label: "- not replaced -" },
   ...props.db.items
@@ -447,9 +124,6 @@ const classes = computed(() => {
   }
   return [...byValue].map(([value, label]) => ({ value, label }));
 });
-
-const statComboOptions = statPickerOptions;
-const dynamicStatOptions = statPickerOptions;
 
 // Off the composed catalogue, so a layer-authored param can be seeded by `defaultParams`
 // exactly like a shipped one.
@@ -475,148 +149,15 @@ const maxCopiesHint = computed(() => {
   return fallback === undefined ? "unlimited" : `${fallback} for this filter`;
 });
 
-function toItem(): Item {
-  const local = draft.value;
-  const id =
-    props.source?.id ??
-    catalog.nextId(
-      local.name.trim(),
-      props.allocatableIds.length
-        ? props.allocatableIds
-        : props.db.items.map((i) => i.id),
-      "item",
-    );
-  const item: Item = {
-    id,
-    name: local.name.trim(),
-    filter: local.filter.trim(),
-  };
-
-  if (local.shortDescription.trim())
-    item.shortDescription = local.shortDescription.trim();
-  if (local.longDescription.trim())
-    item.longDescription = local.longDescription.trim();
-
-  for (const { key, value } of local.stats) {
-    if (!key) continue;
-    const number = Number(value);
-    if (value === "" || value == null || !Number.isFinite(number)) continue;
-    item[key] = number;
-  }
-
-  if (local.tags.length) item.tags = [...local.tags];
-  if (local.gameIds.length) item.gameIds = [...local.gameIds];
-  if (local.bonuses.length) {
-    const bonuses: (string | BonusOccurrenceConfig)[] = local.bonuses.map(
-      (id) => {
-        const occurrence = local.bonusOccurrences[id];
-        if (!occurrence) return id;
-        return {
-          bonus: id,
-          min: Number(occurrence.min) || 0,
-          max: Number(occurrence.max) || 0,
-          default: Number(occurrence.default) || 0,
-          ...(occurrence.label.trim()
-            ? { label: occurrence.label.trim() }
-            : {}),
-        };
-      },
-    );
-    item.bonuses = bonuses;
-  }
-  if (local.excludes.length) item.excludes = [...local.excludes];
-  // A typed 0 is a deliberate "unlimited even so", so emptiness decides here, not truthiness.
-  if (local.maxCopies !== null && local.maxCopies !== "") {
-    const copies = Number(local.maxCopies);
-    if (Number.isFinite(copies)) item.maxCopies = copies;
-  }
-  if (local.hideFromPicker) item.hideFromPicker = true;
-  if (local.replacedBy.trim()) {
-    const target = local.replacedBy.trim();
-    // Bare string unless a seed is set, so the simple case stays simple in the JSON.
-    const values: StatValues = {};
-    for (const row of local.replacedByValues) {
-      if (row.stat && row.value !== null && row.value !== "")
-        values[row.stat] = Number(row.value);
-    }
-    item.replacedBy = Object.keys(values).length
-      ? { item: target, values }
-      : target;
-  }
-  if (local.allowedClass.length) item.allowedClass = [...local.allowedClass];
-
-  // Every row is a slot: an empty shape means universal, so there is no blank row to discard.
-  const insigniaSlots = local.insigniaSlots.map((row) =>
-    row.shape
-      ? { shape: row.shape }
-      : {
-          universal: true as const,
-          ...(row.preferred ? { preferred: row.preferred } : {}),
-        },
-  );
-  if (insigniaSlots.length) item.insigniaSlots = insigniaSlots;
-  if (local.insigniaShape) item.insigniaShape = local.insigniaShape;
-  if (local.preferredVariant.trim())
-    item.preferredVariant = local.preferredVariant.trim();
-  const insigniaRecipe = local.insigniaRecipe.filter(Boolean);
-  if (insigniaRecipe.length) item.insigniaRecipe = insigniaRecipe;
-
-  const dynamicStats = local.dynamicStats
-    .filter((d) => d.stat)
-    .map((d) => ({
-      stat: d.stat,
-      min: Number(d.min) || 0,
-      max: Number(d.max) || 0,
-      default: Number(d.default) || 0,
-      ...(d.label.trim() ? { label: d.label.trim() } : {}),
-    }));
-  if (dynamicStats.length) item.dynamicStats = dynamicStats;
-
-  if (
-    hasRepetitionField(local.repetitionMin) ||
-    hasRepetitionField(local.repetitionMax) ||
-    hasRepetitionField(local.repetitionDefault)
-  ) {
-    item.inlineRepetition = {
-      min: Number(local.repetitionMin) || 0,
-      max: Number(local.repetitionMax) || 0,
-      default: Number(local.repetitionDefault) || 0,
-      ...(hasRepetitionField(local.repetitionPriority)
-        ? { priority: Number(local.repetitionPriority) }
-        : {}),
-      ...(local.repetitionLabel.trim()
-        ? { label: local.repetitionLabel.trim() }
-        : {}),
-    };
-  }
-
-  const publishes: Record<string, string | number | boolean> = {};
-  for (const { path, value } of local.publishes) {
-    if (path.trim()) publishes[path.trim()] = value;
-  }
-  if (Object.keys(publishes).length) item.publishes = publishes;
-
-  const defaultParams: Record<string, string | number | boolean> = {};
-  for (const { slotId, value } of local.defaultParams) {
-    if (slotId) defaultParams[slotId] = value;
-  }
-  if (Object.keys(defaultParams).length) item.defaultParams = defaultParams;
-
-  return item;
+/** The id `toItem` writes: the source's own once one exists, otherwise whatever `computeId`
+ *  works out from the draft's current name. */
+function itemId(local: ItemDraft): string {
+  return props.source?.id ?? computeId(local);
 }
-
-const dirty = computed(() => {
-  const item = toItem();
-  if (!props.source)
-    return Boolean(item.name || item.filter || draft.value.stats.length);
-  return !deepEqual(item, props.source);
-});
-
-const isPercent = (key: string) => isPercentKind(kindOf(key));
 
 function save() {
   error.value = "";
-  const item = toItem();
+  const item = toItem(draft.value, { id: itemId(draft.value) });
   if (!item.name) {
     error.value = "The item needs a name.";
     return;
@@ -628,13 +169,13 @@ function save() {
   emit("save", { item });
 }
 
-/** Merge item-shaped values -- currently the ones read off a tooltip screenshot -- into the
+/** Merge item-shaped values, currently the ones read off a tooltip screenshot, into the
  *  open draft. Imperative rather than a prop: the tooltip window is a sibling of this form, and
  *  routing its values through the layer overlay would reach a saved item but never an unsaved
  *  new draft, which is exactly the state the screenshot flow starts from. The draft watcher
  *  takes it from here, so the merge debounces out as an ordinary edit and joins undo like one.
  *
- *  The name and stats overwrite what is there -- taking the screenshot's value is the point.
+ *  The name and stats overwrite what is there: taking the screenshot's value is the point.
  *  `gameIds` appends instead, since one item legitimately carries several. */
 function applyPatch(patch: Partial<Item>) {
   const statKeys = new Set<string>(NW_SCHEMA.statKeys);
@@ -662,17 +203,6 @@ function addStat() {
 }
 function removeStat(index: number) {
   draft.value.stats.splice(index, 1);
-}
-function focusNextStat(event: KeyboardEvent) {
-  focusNextCombo(event);
-}
-
-/** A draft's `replacedBy` in the shape `Item` stores, for the change label above. */
-function replacementOf(value: unknown): ItemReplacement | null {
-  if (!value) return null;
-  return typeof value === "string"
-    ? { item: value }
-    : (value as ItemReplacement);
 }
 
 const shapeOptions = INSIGNIA_SHAPES.map((shape) => ({
@@ -763,26 +293,44 @@ function removeDefaultParam(index: number) {
 }
 
 // Description and inline repetition are single field groups rather than arrays, so
-// "added"/"removed" is tracked as its own flag instead of splicing a list. Both start active
-// whenever the source item already carries values for them. Dynamic stats, like Stats below,
-// are a plain repeatable list instead -- no separate group toggle.
-function hasDescription(d: ItemDraft): boolean {
-  return d.shortDescription !== "" || d.longDescription !== "";
-}
-function hasInlineRepetition(d: ItemDraft): boolean {
-  return (
-    hasRepetitionField(d.repetitionMin) ||
-    hasRepetitionField(d.repetitionMax) ||
-    hasRepetitionField(d.repetitionDefault) ||
-    hasRepetitionField(d.repetitionPriority)
-  );
-}
+// "added"/"removed" is tracked as its own flag instead of splicing a list (`hasDescription`/
+// `hasInlineRepetition`, from item-draft.ts). Both start active whenever the source item
+// already carries values for them. Dynamic stats, like Stats below, are a plain repeatable
+// list instead, no separate group toggle.
 
-const descriptionActive = ref(hasDescription(draft.value));
-const repetitionActive = ref(hasInlineRepetition(draft.value));
+// Built separately from `useEditorDraft`'s own draft below rather than read off it: these
+// flags need a value before that call exists, and `onRebuild` keeps them in sync afterward.
+const initialDraft = buildDraft(props.source ?? props.duplicateFrom);
+const descriptionActive = ref(hasDescription(initialDraft));
+const repetitionActive = ref(hasInlineRepetition(initialDraft));
+
+// Existing items: live edits. New items: draft until Save.
+const isNew = computed(() => !props.source);
+
+const { draft, error, dirty, displayId } = useEditorDraft<
+  Item,
+  ItemDraft,
+  Item
+>({
+  source: () => props.source,
+  isNew,
+  buildDraft: (source) => buildDraft(source ?? props.duplicateFrom),
+  toEntity: (local) => toItem(local, { id: itemId(local) }),
+  diffLabel,
+  hasContent: (d) => Boolean(d.name || d.filter || d.stats.length),
+  emit: (item, label) => emit("update:item", { item, label }),
+  displayId: {
+    sourceId: () => props.source?.id,
+    computeId,
+  },
+  onRebuild: (d) => {
+    descriptionActive.value = hasDescription(d);
+    repetitionActive.value = hasInlineRepetition(d);
+  },
+});
 
 // Draft undo/redo (new-item history) replaces `draft.value` wholesale, bypassing the
-// add/remove handlers below -- resurface the group automatically whenever its fields come
+// add/remove handlers below, so resurface the group automatically whenever its fields come
 // back populated so a redo of "add" doesn't leave the fields hidden behind a stale flag.
 // Never flips a flag to false itself; only the explicit remove handlers do that.
 watch(
@@ -839,7 +387,7 @@ function detachBonus(id: string) {
   }
 }
 
-/** Toggle or edit one attached bonus's occurrence config -- `occurrence: null` drops it back
+/** Toggle or edit one attached bonus's occurrence config: `occurrence: null` drops it back
  *  to a plain-id attachment (always 1 occurrence), mirroring `removeInlineRepetition`'s
  *  clear-back-to-unset behavior. */
 function updateBonusOccurrence(id: string, occurrence: OccurrenceDraft | null) {
@@ -857,27 +405,9 @@ function updateBonusOccurrence(id: string, occurrence: OccurrenceDraft | null) {
 // --- which field groups this item is offered ---------------------------------------------
 // `filterFields` in data/slots.json says which fields each filter is authored with. Data
 // rather than a constant here, so a layer can declare its own item category with no code edit.
-
-/** Every optional group in this form, in the order the template draws them, by the item
- *  fields it edits. */
-const FIELD_GROUPS = {
-  tags: ["tags"],
-  gameIds: ["gameIds"],
-  description: ["shortDescription", "longDescription"],
-  allowedClass: ["allowedClass"],
-  inlineRepetition: ["inlineRepetition"],
-  insignia: ["insigniaShape", "preferredVariant"],
-  insigniaSlots: ["insigniaSlots"],
-  insigniaRecipe: ["insigniaRecipe"],
-  dynamicStats: ["dynamicStats"],
-  bonuses: ["bonuses"],
-  excludes: ["excludes"],
-  defaultParams: ["defaultParams"],
-  publishes: ["publishes"],
-  retirement: ["hideFromPicker", "replacedBy"],
-} as const;
-
-type FieldGroup = keyof typeof FIELD_GROUPS;
+// `FIELD_GROUPS` itself (which item fields each group edits) lives in item-draft.ts, since it
+// carries no reactive state of its own; what stays here is the gating logic that reads it
+// against props/draft.
 
 /** Fields some filter claims; a field outside this set is offered everywhere. */
 const gatedFields = computed(() => {
@@ -942,73 +472,41 @@ function showsGroup(group: FieldGroup): boolean {
     (field) => claimedFields.value.has(field) || carriesField(field),
   );
 }
-
-// Rebuild draft when source changes (e.g. after undo/redo reverts the overlay).
-watch(
-  () => props.source,
-  (value) => {
-    // Same round-trip-echo guard BonusForm.vue uses: a live edit's own update:item goes
-    // out through the layer overlay and comes straight back as this prop. Rebuilding from
-    // that echo would wipe half-drawn rows - `toItem` drops stat, dynamic-stat and
-    // default-param rows with nothing picked yet, so an "add the rows first, fill them one
-    // by one" session would lose every row still empty when the first one is filled.
-    if (value && lastEmittedJson && JSON.stringify(value) === lastEmittedJson)
-      return;
-    draft.value = buildDraft(value);
-    descriptionActive.value = hasDescription(draft.value);
-    repetitionActive.value = hasInlineRepetition(draft.value);
-    error.value = "";
-    lastEmittedJson = JSON.stringify(toItem());
-    resetDraftHistory();
-  },
-);
 </script>
 
 <template>
   <div>
-    <FormBar class="-mx-3 mb-3">
-      <strong>{{ draft.name || "New item" }}</strong>
-      <BaseBadge v-if="status !== 'base'" :variant="status as any">{{
-        status
-      }}</BaseBadge>
-      <BaseBadge v-if="dirty && isNew">unsaved</BaseBadge>
-      <span class="flex-1"></span>
-      <BaseCheckbox
-        v-model="showAllFields"
-        inline
-        data-testid="show-all-fields"
-      >
-        Show all fields
-      </BaseCheckbox>
-      <!-- Save button only for new items -->
-      <BaseButton
-        v-if="isNew"
-        variant="primary"
-        :disabled="!dirty"
-        @click="save"
-        ><Save />Save item</BaseButton
-      >
-      <BaseButton v-if="status === 'edited'" @click="$emit('revert')"
-        ><Undo2 />Revert to shipped</BaseButton
-      >
-      <BaseButton
-        v-if="source"
-        data-testid="duplicate-item"
-        @click="$emit('duplicate')"
-        ><Copy />Duplicate</BaseButton
-      >
-      <BaseButton v-if="source" @click="$emit('delete')"
-        ><Trash />Delete</BaseButton
-      >
-    </FormBar>
-
-    <p v-if="error" class="mt-1 text-danger">{{ error }}</p>
+    <DraftFormBar
+      noun="item"
+      :title="draft.name || 'New item'"
+      :status="status"
+      :dirty="dirty"
+      :is-new="isNew"
+      :has-source="Boolean(source)"
+      can-duplicate
+      :error="error"
+      duplicate-testid="duplicate-item"
+      @save="save"
+      @revert="$emit('revert')"
+      @duplicate="$emit('duplicate')"
+      @delete="$emit('delete')"
+    >
+      <template #before-actions>
+        <BaseCheckbox
+          v-model="showAllFields"
+          inline
+          data-testid="show-all-fields"
+        >
+          Show all fields
+        </BaseCheckbox>
+      </template>
+    </DraftFormBar>
 
     <FormGrid class="mb-2">
       <FormField label="Name">
-        <input
+        <BaseInput
           v-model="draft.name"
-          class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+          class="w-full"
           type="text"
           data-testid="item-name-input"
         />
@@ -1022,10 +520,10 @@ watch(
         />
       </FormField>
       <FormField label="Max copies (0 = unlimited)">
-        <input
+        <BaseInput
           v-model.number="draft.maxCopies"
           :placeholder="maxCopiesHint"
-          class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+          class="w-full"
           data-testid="item-max-copies"
           type="number"
           min="0"
@@ -1156,39 +654,39 @@ watch(
           data-testid="inline-repetition-fields"
         >
           <FormField label="Min">
-            <input
+            <BaseInput
               v-model.number="draft.repetitionMin"
-              class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+              class="w-full"
               type="number"
             />
           </FormField>
           <FormField label="Max">
-            <input
+            <BaseInput
               v-model.number="draft.repetitionMax"
-              class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+              class="w-full"
               type="number"
             />
           </FormField>
           <FormField label="Default">
-            <input
+            <BaseInput
               v-model.number="draft.repetitionDefault"
-              class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+              class="w-full"
               type="number"
             />
           </FormField>
           <FormField label="Priority">
-            <input
+            <BaseInput
               v-model.number="draft.repetitionPriority"
-              class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+              class="w-full"
               type="number"
             />
           </FormField>
           <FormField
             label="Label (optional, overrides the item name on its row)"
           >
-            <input
+            <BaseInput
               v-model="draft.repetitionLabel"
-              class="w-40 rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+              class="w-40"
               type="text"
               data-testid="inline-repetition-label-input"
             />
@@ -1232,226 +730,93 @@ watch(
         >Mount insignia slots</FormSection
       >
 
-      <div
-        v-for="(row, index) in draft.insigniaSlots"
-        :key="'slot' + index"
-        class="insignia-slot-row mb-1 flex flex-wrap items-center gap-1.5"
+      <RepeatableRows
+        :rows="draft.insigniaSlots"
+        row-class="insignia-slot-row mb-1 flex flex-wrap items-center gap-1.5"
+        add-label="Add insignia slot"
+        remove-label="Remove insignia slot"
+        add-testid="item-add-insignia-slot"
+        @add="addInsigniaSlot"
+        @remove="removeInsigniaSlot"
       >
-        <IconButton title="Add insignia slot" @click="addInsigniaSlot"
-          ><Plus
-        /></IconButton>
-        <IconButton
-          title="Remove insignia slot"
-          @click="removeInsigniaSlot(index)"
-          ><Trash
-        /></IconButton>
-        <FormField :label="`Slot ${index + 1} shape`">
-          <ComboBox
-            class="w-44"
-            :data-testid="`item-insignia-slot-${index}`"
-            :options="slotShapeOptions"
-            :model-value="row.shape"
-            @update:model-value="(v) => (row.shape = v)"
-          />
-        </FormField>
-        <FormField v-if="!row.shape || row.preferred" label="Prefers">
-          <ComboBox
-            class="w-44"
-            :data-testid="`item-insignia-slot-preferred-${index}`"
-            :options="preferredOptions"
-            :model-value="row.preferred"
-            @update:model-value="(v) => (row.preferred = v)"
-          />
-        </FormField>
-        <span v-if="row.shape && row.preferred" class="text-danger">
-          A fixed slot grants no preferred bonus. Clear one of the two.
-        </span>
-      </div>
-      <div
-        v-if="!draft.insigniaSlots.length"
-        class="insignia-slot-row mb-1 flex flex-wrap items-center gap-1.5"
-      >
-        <IconButton
-          title="Add insignia slot"
-          data-testid="item-add-insignia-slot"
-          @click="addInsigniaSlot"
-          ><Plus
-        /></IconButton>
-        <span class="text-muted">
-          A mount's insignia slots, in the order the game shows them. A slot
-          with no shape is universal and may name the shape it prefers.
-        </span>
-      </div>
+        <template #row="{ row, index }">
+          <FormField :label="`Slot ${index + 1} shape`">
+            <ComboBox
+              class="w-44"
+              :data-testid="`item-insignia-slot-${index}`"
+              :options="slotShapeOptions"
+              :model-value="row.shape"
+              @update:model-value="(v) => (row.shape = v)"
+            />
+          </FormField>
+          <FormField v-if="!row.shape || row.preferred" label="Prefers">
+            <ComboBox
+              class="w-44"
+              :data-testid="`item-insignia-slot-preferred-${index}`"
+              :options="preferredOptions"
+              :model-value="row.preferred"
+              @update:model-value="(v) => (row.preferred = v)"
+            />
+          </FormField>
+          <span v-if="row.shape && row.preferred" class="text-danger">
+            A fixed slot grants no preferred bonus. Clear one of the two.
+          </span>
+        </template>
+        <template #empty>
+          <span class="text-muted">
+            A mount's insignia slots, in the order the game shows them. A slot
+            with no shape is universal and may name the shape it prefers.
+          </span>
+        </template>
+      </RepeatableRows>
     </template>
 
     <template v-if="showsGroup('insigniaRecipe')">
       <FormSection data-testid="group-insignia-recipe"
         >Insignia bonus recipe</FormSection
       >
-      <div
-        v-for="(shape, index) in draft.insigniaRecipe"
-        :key="'recipe' + index"
-        class="insignia-recipe-row mb-1 flex flex-wrap items-center gap-1.5"
+      <RepeatableRows
+        :rows="draft.insigniaRecipe"
+        row-class="insignia-recipe-row mb-1 flex flex-wrap items-center gap-1.5"
+        add-label="Add recipe shape"
+        remove-label="Remove recipe shape"
+        add-testid="item-add-recipe-shape"
+        @add="addRecipeShape"
+        @remove="removeRecipeShape"
       >
-        <IconButton title="Add recipe shape" @click="addRecipeShape"
-          ><Plus
-        /></IconButton>
-        <IconButton
-          title="Remove recipe shape"
-          @click="removeRecipeShape(index)"
-          ><Trash
-        /></IconButton>
-        <FormField :label="`Recipe shape ${index + 1}`">
-          <ComboBox
-            class="w-44"
-            :data-testid="`item-insignia-recipe-${index}`"
-            :options="recipeOptions"
-            :model-value="shape"
-            @update:model-value="(v) => (draft.insigniaRecipe[index] = v)"
-          />
-        </FormField>
-      </div>
-      <div
-        v-if="!draft.insigniaRecipe.length"
-        class="insignia-recipe-row mb-1 flex flex-wrap items-center gap-1.5"
-      >
-        <IconButton
-          title="Add recipe shape"
-          data-testid="item-add-recipe-shape"
-          @click="addRecipeShape"
-          ><Plus
-        /></IconButton>
-        <span class="text-muted">
-          The three or four shapes an insignia bonus is made of, matched
-          whatever order they end up slotted in.
-        </span>
-      </div>
+        <template #row="{ row: shape, index }">
+          <FormField :label="`Recipe shape ${index + 1}`">
+            <ComboBox
+              class="w-44"
+              :data-testid="`item-insignia-recipe-${index}`"
+              :options="recipeOptions"
+              :model-value="shape"
+              @update:model-value="(v) => (draft.insigniaRecipe[index] = v)"
+            />
+          </FormField>
+        </template>
+        <template #empty>
+          <span class="text-muted">
+            The three or four shapes an insignia bonus is made of, matched
+            whatever order they end up slotted in.
+          </span>
+        </template>
+      </RepeatableRows>
     </template>
 
     <FormSection>Stats</FormSection>
-    <div
-      v-for="(stat, index) in draft.stats"
-      :key="index"
-      class="stat-row flex flex-wrap items-center gap-1.5 mb-1"
-    >
-      <IconButton title="Add stat" @click="addStat"><Plus /></IconButton>
-      <IconButton title="Remove stat" @click="removeStat(index)"
-        ><Trash
-      /></IconButton>
-      <ComboBox
-        class="combo--stat w-52"
-        :model-value="stat.key"
-        :options="statComboOptions"
-        placeholder="- pick a stat -"
-        @update:model-value="(v) => (stat.key = v)"
-      />
-      <PercentInput
-        v-if="isPercent(stat.key)"
-        v-model="stat.value"
-        class="w-28"
-        @keydown="focusNextStat"
-      />
-      <input
-        v-else
-        v-model.number="stat.value"
-        class="w-28 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-        type="number"
-        step="any"
-        @keydown="focusNextStat"
-      />
-    </div>
-    <div
-      v-if="!draft.stats.length"
-      class="stat-row flex flex-wrap items-center gap-1.5 mb-1"
-    >
-      <IconButton title="Add stat" @click="addStat"><Plus /></IconButton>
-    </div>
+    <StatRowList :rows="draft.stats" @add="addStat" @remove="removeStat" />
 
     <template v-if="showsGroup('dynamicStats')">
       <FormSection data-testid="group-dynamic-stats"
         >Dynamic stats (player types the value; default applies until they
         do)</FormSection
       >
-      <div
-        v-for="(row, index) in draft.dynamicStats"
-        :key="index"
-        class="dynamic-stat-row flex flex-wrap items-center gap-1.5 mb-1"
-      >
-        <IconButton title="Add dynamic stat" @click="addDynamicStat"
-          ><Plus
-        /></IconButton>
-        <IconButton
-          title="Remove dynamic stat"
-          @click="removeDynamicStat(index)"
-          ><Trash
-        /></IconButton>
-        <FormField label="Stat">
-          <ComboBox
-            class="combo--stat w-52"
-            :model-value="row.stat"
-            :options="dynamicStatOptions"
-            placeholder="- pick a stat -"
-            @update:model-value="(v) => (row.stat = v)"
-          />
-        </FormField>
-        <FormField label="Min">
-          <PercentInput
-            v-if="isPercent(row.stat)"
-            :model-value="row.min ?? ''"
-            class="w-24"
-            @update:model-value="(v) => (row.min = v)"
-          />
-          <input
-            v-else
-            v-model.number="row.min"
-            class="w-24 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-            type="number"
-          />
-        </FormField>
-        <FormField label="Max">
-          <PercentInput
-            v-if="isPercent(row.stat)"
-            :model-value="row.max ?? ''"
-            class="w-24"
-            @update:model-value="(v) => (row.max = v)"
-          />
-          <input
-            v-else
-            v-model.number="row.max"
-            class="w-24 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-            type="number"
-          />
-        </FormField>
-        <FormField label="Default">
-          <PercentInput
-            v-if="isPercent(row.stat)"
-            :model-value="row.default ?? ''"
-            class="w-24"
-            @update:model-value="(v) => (row.default = v)"
-          />
-          <input
-            v-else
-            v-model.number="row.default"
-            class="w-24 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-            type="number"
-          />
-        </FormField>
-        <FormField label="Label (optional)">
-          <input
-            v-model="row.label"
-            class="w-40 rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-            type="text"
-          />
-        </FormField>
-      </div>
-      <div
-        v-if="!draft.dynamicStats.length"
-        class="dynamic-stat-row flex flex-wrap items-center gap-1.5 mb-1"
-      >
-        <IconButton title="Add dynamic stat" @click="addDynamicStat"
-          ><Plus
-        /></IconButton>
-      </div>
+      <DynamicStatRowList
+        :rows="draft.dynamicStats"
+        @add="addDynamicStat"
+        @remove="removeDynamicStat"
+      />
     </template>
 
     <template v-if="showsGroup('bonuses')">
@@ -1493,41 +858,30 @@ watch(
         >Default build parameters (applied when this item is
         picked)</FormSection
       >
-      <div
-        v-for="(row, index) in draft.defaultParams"
-        :key="index"
-        class="default-param-row flex flex-wrap items-center gap-1.5 mb-1"
+      <RepeatableRows
+        :rows="draft.defaultParams"
+        row-class="default-param-row flex flex-wrap items-center gap-1.5 mb-1"
+        add-label="Add default build parameter"
+        remove-label="Remove default build parameter"
+        @add="addDefaultParam"
+        @remove="removeDefaultParam"
       >
-        <IconButton title="Add default build parameter" @click="addDefaultParam"
-          ><Plus
-        /></IconButton>
-        <IconButton
-          title="Remove default build parameter"
-          @click="removeDefaultParam(index)"
-          ><Trash
-        /></IconButton>
-        <ComboBox
-          class="w-52"
-          :model-value="row.slotId"
-          :options="defaultParamSlotOptions"
-          placeholder="- pick a build parameter -"
-          @update:model-value="(v) => (row.slotId = v)"
-        />
-        <BuildParamInput
-          v-if="slotForDefaultParam(row.slotId)"
-          v-model="row.value"
-          :slot-def="slotForDefaultParam(row.slotId)!"
-          >{{ slotForDefaultParam(row.slotId)?.label }}</BuildParamInput
-        >
-      </div>
-      <div
-        v-if="!draft.defaultParams.length"
-        class="default-param-row flex flex-wrap items-center gap-1.5 mb-1"
-      >
-        <IconButton title="Add default build parameter" @click="addDefaultParam"
-          ><Plus
-        /></IconButton>
-      </div>
+        <template #row="{ row }">
+          <ComboBox
+            class="w-52"
+            :model-value="row.slotId"
+            :options="defaultParamSlotOptions"
+            placeholder="- pick a build parameter -"
+            @update:model-value="(v) => (row.slotId = v)"
+          />
+          <BuildParamInput
+            v-if="slotForDefaultParam(row.slotId)"
+            v-model="row.value"
+            :slot-def="slotForDefaultParam(row.slotId)!"
+            >{{ slotForDefaultParam(row.slotId)?.label }}</BuildParamInput
+          >
+        </template>
+      </RepeatableRows>
     </template>
 
     <template v-if="showsGroup('publishes')">
@@ -1535,42 +889,31 @@ watch(
         >Published build parameters (applied while this item is
         equipped)</FormSection
       >
-      <div
-        v-for="(row, index) in draft.publishes"
-        :key="index"
-        class="publishes-row flex flex-wrap items-center gap-1.5 mb-1"
+      <RepeatableRows
+        :rows="draft.publishes"
+        row-class="publishes-row flex flex-wrap items-center gap-1.5 mb-1"
+        add-label="Add published value"
+        remove-label="Remove published value"
+        @add="addPublishes"
+        @remove="removePublishes"
       >
-        <IconButton title="Add published value" @click="addPublishes"
-          ><Plus
-        /></IconButton>
-        <IconButton
-          title="Remove published value"
-          @click="removePublishes(index)"
-          ><Trash
-        /></IconButton>
-        <input
-          v-model="row.path"
-          class="w-52 rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-          type="text"
-          placeholder="Context path, e.g. class"
-          :data-testid="`publishes-path-${index}`"
-        />
-        <input
-          v-model="row.value"
-          class="w-52 rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-          type="text"
-          placeholder="Value"
-          :data-testid="`publishes-value-${index}`"
-        />
-      </div>
-      <div
-        v-if="!draft.publishes.length"
-        class="publishes-row flex flex-wrap items-center gap-1.5 mb-1"
-      >
-        <IconButton title="Add published value" @click="addPublishes"
-          ><Plus
-        /></IconButton>
-      </div>
+        <template #row="{ row, index }">
+          <BaseInput
+            v-model="row.path"
+            class="w-52"
+            type="text"
+            placeholder="Context path, e.g. class"
+            :data-testid="`publishes-path-${index}`"
+          />
+          <BaseInput
+            v-model="row.value"
+            class="w-52"
+            type="text"
+            placeholder="Value"
+            :data-testid="`publishes-value-${index}`"
+          />
+        </template>
+      </RepeatableRows>
     </template>
 
     <template v-if="showsGroup('retirement')">
@@ -1601,60 +944,42 @@ watch(
       </p>
 
       <template v-if="draft.replacedBy">
-        <div
-          v-for="(row, index) in draft.replacedByValues"
-          :key="index"
-          class="replaced-by-value-row flex flex-wrap items-center gap-1.5 mb-1"
+        <RepeatableRows
+          :rows="draft.replacedByValues"
+          row-class="replaced-by-value-row flex flex-wrap items-center gap-1.5 mb-1"
+          add-label="Add carried value"
+          remove-label="Remove carried value"
+          add-testid="item-add-carried-value"
+          @add="addReplacedByValue"
+          @remove="removeReplacedByValue"
         >
-          <IconButton title="Add carried value" @click="addReplacedByValue"
-            ><Plus
-          /></IconButton>
-          <IconButton
-            title="Remove carried value"
-            @click="removeReplacedByValue(index)"
-            ><Trash
-          /></IconButton>
-          <FormField label="Carry stat">
-            <ComboBox
-              class="combo--stat w-52"
-              :model-value="row.stat"
-              :options="dynamicStatOptions"
-              placeholder="- pick a stat -"
-              @update:model-value="(v) => (row.stat = v)"
-            />
-          </FormField>
-          <FormField label="Value on the replacement">
-            <PercentInput
-              v-if="isPercent(row.stat)"
-              :model-value="row.value ?? ''"
-              class="w-24"
-              @update:model-value="(v) => (row.value = v)"
-            />
-            <input
-              v-else
-              v-model.number="row.value"
-              class="w-24 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-              type="number"
-              step="any"
-            />
-          </FormField>
-        </div>
-        <div
-          v-if="!draft.replacedByValues.length"
-          class="replaced-by-value-row flex flex-wrap items-center gap-1.5 mb-1"
-        >
-          <IconButton
-            title="Add carried value"
-            data-testid="item-add-carried-value"
-            @click="addReplacedByValue"
-            ><Plus
-          /></IconButton>
-          <span class="text-muted">
-            Carry a value onto the replacement's dynamic stat, so a build moving
-            off this item keeps its number instead of taking the new item's
-            default.
-          </span>
-        </div>
+          <template #row="{ row }">
+            <FormField label="Carry stat">
+              <ComboBox
+                class="combo--stat w-52"
+                :model-value="row.stat"
+                :options="statPickerOptions"
+                placeholder="- pick a stat -"
+                @update:model-value="(v) => (row.stat = v)"
+              />
+            </FormField>
+            <FormField label="Value on the replacement">
+              <StatValueInput
+                v-model="row.value"
+                :stat-key="row.stat"
+                class="w-24"
+                step="any"
+              />
+            </FormField>
+          </template>
+          <template #empty>
+            <span class="text-muted">
+              Carry a value onto the replacement's dynamic stat, so a build
+              moving off this item keeps its number instead of taking the new
+              item's default.
+            </span>
+          </template>
+        </RepeatableRows>
       </template>
     </template>
   </div>

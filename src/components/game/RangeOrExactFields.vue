@@ -10,6 +10,8 @@
 // component -- mutating a prop's own fields in place would trip `vue/no-mutating-props`, and
 // the caller (ConditionRows.vue) already owns direct mutation rights over its own `row` objects.
 import FormField from "../ui/FormField.vue";
+import BaseInput from "../ui/BaseInput.vue";
+import SegmentedControl from "../ui/SegmentedControl.vue";
 
 withDefaults(
   defineProps<{
@@ -44,56 +46,26 @@ function setRangeMode(mode: "range" | "exact") {
 
 <template>
   <FormField :label="'&nbsp'" class="min-w-0">
-    <div class="inline-flex">
-      <button
-        type="button"
-        class="border border-line px-2 py-0.5 first:rounded-l-md last:rounded-r-md last:border-l-0"
-        :class="
-          rangeMode === 'range'
-            ? 'border-accent bg-accent-soft text-text'
-            : 'bg-surface text-muted'
-        "
-        @click="setRangeMode('range')"
-      >
-        range
-      </button>
-      <button
-        type="button"
-        class="border border-line px-2 py-0.5 first:rounded-l-md last:rounded-r-md last:border-l-0"
-        :class="
-          rangeMode === 'exact'
-            ? 'border-accent bg-accent-soft text-text'
-            : 'bg-surface text-muted'
-        "
-        @click="setRangeMode('exact')"
-      >
-        exact
-      </button>
-    </div>
+    <SegmentedControl
+      :model-value="rangeMode"
+      :options="[
+        { value: 'range', label: 'range' },
+        { value: 'exact', label: 'exact' },
+      ]"
+      @update:model-value="setRangeMode"
+    />
   </FormField>
   <template v-if="rangeMode === 'range'">
     <FormField :label="`At least${unitSuffix}`" class="min-w-0"
-      ><input
-        v-model.number="atLeast"
-        class="w-24 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-        type="number"
-        step="any"
+      ><BaseInput v-model="atLeast" class="w-24" type="number" step="any"
     /></FormField>
     <FormField :label="`Below${unitSuffix}`" class="min-w-0"
-      ><input
-        v-model.number="below"
-        class="w-24 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-        type="number"
-        step="any"
+      ><BaseInput v-model="below" class="w-24" type="number" step="any"
     /></FormField>
   </template>
   <template v-else>
     <FormField :label="`Exactly${unitSuffix}`" class="min-w-0"
-      ><input
-        v-model.number="exactly"
-        class="w-24 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-        type="number"
-        step="any"
+      ><BaseInput v-model="exactly" class="w-24" type="number" step="any"
     /></FormField>
   </template>
 </template>

@@ -69,7 +69,7 @@ const max = rails.maxWidth(props.rail);
          straddles the rail's edge like a knob rather than setting the gutter's width.
          `.stop` so pressing it never also starts a drag or resets the width. -->
     <RailToggle
-      class="absolute top-1 left-1/2 z-10 -translate-x-1/2 border border-line bg-surface"
+      class="absolute top-1 left-1/2 z-sticky -translate-x-1/2 border border-line bg-surface"
       :side="side"
       :label="label"
       :collapsed="collapsed"

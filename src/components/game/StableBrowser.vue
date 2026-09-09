@@ -9,8 +9,7 @@ import BaseButton from "../ui/BaseButton.vue";
 import TabStrip from "../ui/TabStrip.vue";
 import TabButton from "../ui/TabButton.vue";
 import { descriptionParagraphs } from "../../lib/description";
-import { X } from "@lucide/vue";
-import IconButton from "../ui/IconButton.vue";
+import ClearableInput from "../ui/ClearableInput.vue";
 import {
   PREFERRED_MARK,
   allBonuses,
@@ -112,24 +111,12 @@ function apply(mount: Item) {
           >By bonus</TabButton
         >
       </TabStrip>
-      <div class="relative ml-auto">
-        <input
-          v-model="query"
-          type="text"
-          placeholder="Filter…"
-          class="w-52 rounded border border-line bg-surface py-1 pl-2 pr-7"
-          data-testid="stable-filter"
-        />
-        <IconButton
-          v-if="query"
-          class="absolute right-1 top-1/2 -translate-y-1/2"
-          title="Clear filter"
-          data-testid="stable-filter-clear"
-          @click="query = ''"
-        >
-          <X />
-        </IconButton>
-      </div>
+      <ClearableInput
+        v-model="query"
+        class="ml-auto w-52"
+        placeholder="Filter…"
+        testid="stable-filter"
+      />
     </div>
 
     <div class="flex-1 overflow-y-auto p-4">

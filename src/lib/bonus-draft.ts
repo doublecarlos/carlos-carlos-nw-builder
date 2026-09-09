@@ -1,17 +1,19 @@
 // The draft <-> grant conversion for BonusRows.vue's editor, split out so item-form and
-// bonus-form can build and read drafts without importing the component.
+// bonus-form can build and read drafts without importing the component. In `lib/`, not
+// `engine/`: a draft is an authoring shape over `types.ts` with no calculation semantics of its
+// own, the same reasoning that puts `item-draft.ts`/`preset-draft.ts`/`slot-draft.ts` there.
 //
 // A grant has no `id` of its own, since a bonus now resolves as one unit (its final stats
 // are the sum of every active grant) and only the *bonus* needs to be addressable for
-// stacking/exclusion/everything mechanical. `name` is the one exception -- purely a display
+// stacking/exclusion/everything mechanical. `name` is the one exception: purely a display
 // label (ItemCard.vue's hover card), optional, for telling a multi-grant bonus's parts apart.
 // What the form covers structurally: the condition tree (leaves plus
 // `all`/`any`/`not`, see condition-draft.ts), a flat stat payload (optionally with its own
 // dynamic stats), a *tiered* payload keyed on bonus occurrences, and a *variants* payload
 // (first matching condition wins, each with its own optional dynamic stats). Only conditions
 // nested deeper than `MAX_DEPTH`, unrecognized condition keys, complex tiers, or a grant using
-// both `tiers` and `variants` fall through to the JSON escape hatch -- the editor never
-// silently flattens a structure it has no widget for.
+// both `tiers` and `variants` fall through to the JSON escape hatch: the editor never silently
+// flattens a structure it has no widget for.
 //
 // Stacking/`excludes` are a *bonus*-level property now (one grant among several shouldn't
 // imply the whole bonus stacks), so they're edited once by the caller (BonusForm.vue/
@@ -24,7 +26,8 @@ import {
   cloneRow,
   whenRowsComplete,
   type ConditionRow,
-} from "./condition-draft";
+} from "../engine/condition-draft";
+import { entriesToRows, rowsToEntries, putIfSet } from "./draft-fields";
 import type {
   Grant,
   GrantVariant,
@@ -76,7 +79,7 @@ const problemIsSimple = (problem: GrantProblem) =>
 
 /** Structures the form cannot represent without losing something. `dynamicStats` has a
  *  dedicated widget on the flat payload and on each variant's own payload (mirroring
- *  `ItemForm.vue`'s "Dynamic stats" section) -- but `Grant.dynamicStats` only ever applies
+ *  `ItemForm.vue`'s "Dynamic stats" section), but `Grant.dynamicStats` only ever applies
  *  alongside the flat payload, so pairing it with `tiers`/`variants`/`problem` on the same
  *  grant has no widget and falls to JSON, same "drop to JSON rather than silently flatten"
  *  rule `tiers`/`variants`/`problem` already follow. */
@@ -97,33 +100,28 @@ export interface StatRow {
 }
 
 export const statRows = (stats: StatValues | undefined): StatRow[] =>
-  Object.entries(stats ?? {}).map(([key, value]) => ({
-    key,
-    value: value as number,
-  }));
+  entriesToRows(stats, (key, value) => ({ key, value: value as number }));
 
 export const rowsToStats = (
   rows: StatRow[] | undefined,
-): Record<string, number> => {
-  const stats: Record<string, number> = {};
-  for (const { key, value } of rows ?? []) {
-    const number = Number(value);
-    if (
-      !key ||
-      (value as unknown) === "" ||
-      value == null ||
-      !Number.isFinite(number)
-    )
-      continue;
-    stats[key] = number;
-  }
-  return stats;
-};
+): Record<string, number> =>
+  rowsToEntries(
+    rows,
+    (row) => row.key,
+    (row) => {
+      const number = Number(row.value);
+      return (row.value as unknown) === "" ||
+        row.value == null ||
+        !Number.isFinite(number)
+        ? undefined
+        : number;
+    },
+  );
 
-/** One `DynamicStatConfig` row -- widened to `number | string | null` like every other
- *  numeric draft field so a cleared input reads as empty rather than `0`. Shared by the item
- *  editor (`Item.dynamicStats`) and the grant/variant "Dynamic stats" sections below, since
- *  both edit the same underlying shape. */
+/** One `DynamicStatConfig` row, widened to `number | string | null` like every other numeric
+ *  draft field so a cleared input reads as empty rather than `0`. Shared by the item editor
+ *  (`Item.dynamicStats`) and the grant/variant "Dynamic stats" sections below, since both edit
+ *  the same underlying shape. */
 export interface DynamicStatDraft {
   stat: string;
   min: number | string | null;
@@ -148,13 +146,16 @@ export const rowsToDynamicStats = (
 ): DynamicStatConfig[] =>
   (rows ?? [])
     .filter((d) => d.stat)
-    .map((d) => ({
-      stat: d.stat,
-      min: Number(d.min) || 0,
-      max: Number(d.max) || 0,
-      default: Number(d.default) || 0,
-      ...(d.label.trim() ? { label: d.label.trim() } : {}),
-    }));
+    .map((d) => {
+      const config: DynamicStatConfig = {
+        stat: d.stat,
+        min: Number(d.min) || 0,
+        max: Number(d.max) || 0,
+        default: Number(d.default) || 0,
+      };
+      putIfSet(config, "label", d.label.trim());
+      return config;
+    });
 
 export interface VariantDraft {
   uid: string;
@@ -190,7 +191,7 @@ export interface GrantDraft {
   problemMessage: string;
   problemLabel: string;
   problemHideFromPicker: boolean;
-  /** Same across every payload, unlike the payload-specific fields above -- see
+  /** Same across every payload, unlike the payload-specific fields above; see
    * `Grant.name`/`shortDescription`/`longDescription`. */
   name: string;
   shortDescription: string;
@@ -242,8 +243,8 @@ export function toDraft(grant: Grant = {}): GrantDraft {
 
 /**
  * True when every condition tree in the grant serializes without dropping anything: the
- * grant's own `when`, plus each variant's when when the payload is `variants` (a variant
- * with *no* condition is valid -- it always matches -- so an empty tree is complete). The
+ * grant's own `when`, plus each variant's when when the payload is `variants` (a variant with
+ * *no* condition is valid, since it always matches, so an empty tree is complete). The
  * form uses this to hold off auto-saving while a condition is half-drawn; otherwise
  * `rowsToWhen` would silently drop the empty leaf and the source round-trip would wipe the
  * row from the editor.
@@ -258,15 +259,14 @@ export function toGrant(draft: GrantDraft): Grant {
   if (draft.mode === "json") return JSON.parse(draft.json);
 
   const out: Grant = {};
-  const when = rowsToWhen(draft.conditions);
-  if (Object.keys(when).length) out.when = when;
+  putIfSet(out, "when", rowsToWhen(draft.conditions));
 
   if (draft.payload === "problem") {
     out.problem = {
       severity: draft.problemSeverity,
       message: draft.problemMessage,
     };
-    if (draft.problemLabel) out.problem.label = draft.problemLabel;
+    putIfSet(out.problem, "label", draft.problemLabel);
     if (draft.problemHideFromPicker) out.problem.hideFromPicker = true;
   } else if (draft.payload === "tiers") {
     out.tiers = draft.tiers.map((tier) => ({
@@ -278,22 +278,19 @@ export function toGrant(draft: GrantDraft): Grant {
     }));
   } else if (draft.payload === "variants") {
     out.variants = draft.variants.map((variant) => {
-      const vWhen = rowsToWhen(variant.conditions);
       const entry: GrantVariant = { stats: rowsToStats(variant.stats) };
-      if (Object.keys(vWhen).length) entry.when = vWhen;
-      const vDynamicStats = rowsToDynamicStats(variant.dynamicStats);
-      if (vDynamicStats.length) entry.dynamicStats = vDynamicStats;
+      putIfSet(entry, "when", rowsToWhen(variant.conditions));
+      putIfSet(entry, "dynamicStats", rowsToDynamicStats(variant.dynamicStats));
       return entry;
     });
   } else {
     out.stats = rowsToStats(draft.stats);
-    const dynamicStats = rowsToDynamicStats(draft.dynamicStats);
-    if (dynamicStats.length) out.dynamicStats = dynamicStats;
+    putIfSet(out, "dynamicStats", rowsToDynamicStats(draft.dynamicStats));
   }
 
-  if (draft.name) out.name = draft.name;
-  if (draft.shortDescription) out.shortDescription = draft.shortDescription;
-  if (draft.longDescription) out.longDescription = draft.longDescription;
+  putIfSet(out, "name", draft.name);
+  putIfSet(out, "shortDescription", draft.shortDescription);
+  putIfSet(out, "longDescription", draft.longDescription);
 
   return out;
 }
@@ -309,7 +306,7 @@ export interface BonusDraft {
 
 /** Assembles a bonus-level draft (id/name/grants plus the bonus-level stacking/excludes
  * fields) back into the JSON shape, the same "only include if present" convention `toGrant`
- * used to apply per-effect -- shared by BonusForm.vue and bonus-groups.js so the two editing
+ * used to apply per-effect. Shared by BonusForm.vue and bonus-groups.js so the two editing
  * surfaces can't drift on what counts as "present". Throws if any grant is unparseable JSON. */
 export function toBonus(draft: BonusDraft): Bonus {
   const grants = draft.grants.map((g) => toGrant(g));
@@ -318,9 +315,9 @@ export function toBonus(draft: BonusDraft): Bonus {
     name: draft.name.trim() || draft.id.trim(),
     grants,
   };
-  if (draft.stacking) out.stacking = draft.stacking;
+  putIfSet(out, "stacking", draft.stacking);
   if (draft.maxStacks) out.maxStacks = Number(draft.maxStacks);
-  if (draft.excludes?.length) out.excludes = [...draft.excludes];
+  putIfSet(out, "excludes", [...(draft.excludes ?? [])]);
   return out;
 }
 

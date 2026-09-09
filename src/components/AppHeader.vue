@@ -180,10 +180,12 @@ async function onImportFile(event: Event) {
 
     <AutosaveIndicator />
 
+    <!-- Wide enough for the layer editor's longer confirmations (tooltip-fill, duplicate);
+         `:title` still covers anything past this width. -->
     <span class="ml-auto flex items-center gap-1">
       <BaseNotice
         v-if="notice"
-        class="inline-block max-w-80 overflow-hidden text-ellipsis whitespace-nowrap"
+        class="inline-block max-w-[32rem] overflow-hidden text-ellipsis whitespace-nowrap"
         :title="notice"
         @dismiss="showNotice('')"
       >

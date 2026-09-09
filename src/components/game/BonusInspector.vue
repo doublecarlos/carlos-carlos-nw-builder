@@ -10,6 +10,7 @@ import BasePanel from "../ui/BasePanel.vue";
 import PanelHead from "../ui/PanelHead.vue";
 import BaseBadge from "../ui/BaseBadge.vue";
 import BaseCheckbox from "../ui/BaseCheckbox.vue";
+import BaseInput from "../ui/BaseInput.vue";
 import IconButton from "../ui/IconButton.vue";
 import { Crosshair } from "@lucide/vue";
 import type {
@@ -180,10 +181,10 @@ const counts = computed(() => {
 
 <template>
   <BasePanel flush>
-    <div class="sticky top-0 z-1 bg-surface pb-0.5">
-      <input
+    <div class="sticky top-0 z-sticky bg-surface pb-0.5">
+      <BaseInput
         v-model="query"
-        class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+        class="w-full"
         type="search"
         placeholder="Filter by bonus, id or item…"
       />

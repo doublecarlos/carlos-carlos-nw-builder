@@ -4,6 +4,9 @@ import { useTemplateRef } from "vue";
 // Floating dropdown shell used by ComboBox.vue. Same interaction (type to filter, arrow keys,
 // Enter, Escape), just different row content via the `#option` slot. `data-testid` rather than
 // a styling class: e2e specs need a stable hook that survives restyling.
+//
+// Anchored rather than teleported through BasePopover (base.css's exception): width-coupled to
+// its input, which a teleported surface can't express.
 
 withDefaults(
   defineProps<{
@@ -53,7 +56,7 @@ defineSlots<{
     ref="el"
     role="listbox"
     data-testid="picker-menu"
-    class="absolute top-full z-30 mt-0.5 max-h-80 overflow-y-auto rounded-md border border-line bg-surface shadow-lg"
+    class="absolute top-full z-menu mt-0.5 max-h-80 overflow-y-auto rounded-md border border-line bg-surface shadow-lg"
     :class="menuClass"
   >
     <slot />

@@ -7,7 +7,7 @@ withDefaults(defineProps<{ sticky?: boolean }>(), { sticky: false });
 <template>
   <div
     class="flex items-center gap-2 border-b border-line bg-surface px-2.5 py-1.5"
-    :class="sticky && 'sticky top-0 z-10'"
+    :class="sticky && 'sticky top-0 z-sticky'"
   >
     <slot />
   </div>

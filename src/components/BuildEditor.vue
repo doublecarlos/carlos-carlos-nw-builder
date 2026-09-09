@@ -14,6 +14,7 @@ import SeparatorRow from "./game/SeparatorRow.vue";
 import ItemPickerListRow from "./game/ItemPickerListRow.vue";
 import TextRow from "./game/TextRow.vue";
 import BaseButton from "./ui/BaseButton.vue";
+import BaseInput from "./ui/BaseInput.vue";
 import BaseBadge from "./ui/BaseBadge.vue";
 import IconButton from "./ui/IconButton.vue";
 import ComboBox from "./ui/ComboBox.vue";
@@ -25,11 +26,11 @@ import {
   EyeOff,
   FilterX,
 } from "@lucide/vue";
-import { NW_SCHEMA, NW_SLOTS } from "../data/data";
+import { NW_SLOTS } from "../data/data";
 import { forSlotAndBuild, hiddenReasons } from "../data/db";
-import { abbr, signedStat, statPickerOptions } from "../lib/format";
-import { descriptionParagraphs } from "../lib/description";
+import { statPickerOptions } from "../lib/format";
 import { matchesQuery } from "../lib/text-filter";
+import { slotStablePlaceholder, slotStatSummary } from "../lib/slot-summary";
 import { slotsSupplying } from "../lib/bonus-slots";
 import * as insignia from "../engine/insignia";
 import * as stableBrowser from "../stores/stableBrowser";
@@ -38,17 +39,8 @@ import { expandSlots } from "../lib/item-picker-list";
 import { isDisabled } from "../lib/slot-toggle";
 import { useHoverCard } from "../composables/useHoverCard";
 import { occurrenceRowsForItem } from "../composables/useItemBonusOccurrences";
-import { scaledStat } from "../engine/scaling";
 import { itemScaleFactor, itemScaleNotes } from "../composables/useItemScale";
-import {
-  useCompareDiff,
-  paramDiffers,
-  paramDiffTitle,
-  assignmentDiffers,
-  assignmentDiffTitle,
-  occurrenceDiffers,
-  occurrenceDiffTitle,
-} from "../composables/useCompareDiff";
+import { useCompareDiff, type SlotDiff } from "../composables/useCompareDiff";
 import * as storage from "../storage/storage";
 import * as router from "../lib/router";
 import * as builds from "../stores/builds";
@@ -290,7 +282,7 @@ const hoveredOccurrenceRows = computed(() =>
 
 // --- quick compare ---------------------------------------------------------------------
 
-const { differs, otherChoiceLabel, rowDiff, rowHasDiff } = useCompareDiff({
+const { rowDiff, rowHasDiff } = useCompareDiff({
   db,
   build,
   result,
@@ -319,23 +311,9 @@ function isQuick(slotDef: Slot) {
 }
 
 function rowDiffers(slotDef: Slot) {
+  // Not a real editable row: expandSlots keeps the container alongside the rows it
+  // generates, and it never gets an entry of its own in `rowHasDiff`'s map.
   if (slotDef.type === "item_picker_list") return false;
-  if (slotDef.type === "build_parameter")
-    return paramDiffers(build.value, compareBuild.value, slotDef);
-  if (slotDef.type === "point_assignment")
-    return assignmentDiffers(
-      db.value,
-      build.value,
-      compareBuild.value,
-      slotDef,
-    );
-  // An item_picker's pick can repeat inline -- a count `rowHasDiff` (choice/value/bonus) knows
-  // nothing about.
-  if (slotDef.type === "item_picker")
-    return (
-      rowHasDiff(slotDef.id) ||
-      assignmentDiffers(db.value, build.value, compareBuild.value, slotDef)
-    );
   return rowHasDiff(slotDef.id);
 }
 
@@ -529,27 +507,68 @@ function stableLabel(slotId: string): string | undefined {
   return spec ? insignia.describeSlotSpec(spec) : undefined;
 }
 
-/** How many near misses a bonus row names before it settles for a count. One, because the row
- * is an input's width and a second name only ever arrives half-cut. */
-const NEAR_MISSES_NAMED = 1;
-
-/** The bonus row's text: what its group derives, or what it is one insignia short of. A match
- * past the bonus's cap is labelled rather than dropped. */
 function stablePlaceholder(slotId: string): string | undefined {
-  const ref = insignia.stableRef(db.value, slotId);
-  if (ref?.role !== "bonus") return undefined;
-  const derived = derivedBonuses.value.get(ref.group);
-  if (derived) {
-    return derived.counted ? derived.name : `${derived.name} (at cap)`;
+  return slotStablePlaceholder(
+    db.value,
+    build.value,
+    slotId,
+    derivedBonuses.value,
+  );
+}
+
+/** Everything a BuildSlot row needs, gathered once per slot instead of ~9 calls per render
+ *  (`itemsFor` and `statSummary` aren't cheap). Scoped to *expanded* sections only, matching
+ *  BuildSection.vue's own `v-if="expanded"`, so a collapsed section's rows stay uncomputed. */
+interface SlotRowData {
+  item: Item | null;
+  items: Item[];
+  hiddenReasons: ReadonlyMap<string, string> | null;
+  errors: EngineError[];
+  statSummary: string;
+  placeholder: string | undefined;
+  labelOverride: string | undefined;
+  diff: SlotDiff | undefined;
+}
+
+const EMPTY_ROW_DATA: SlotRowData = {
+  item: null,
+  items: [],
+  hiddenReasons: null,
+  errors: [],
+  statSummary: "",
+  placeholder: undefined,
+  labelOverride: undefined,
+  diff: undefined,
+};
+
+const rowDataBySlot = computed(() => {
+  const map = new Map<string, SlotRowData>();
+  for (const section of sections.value) {
+    if (!sectionExpanded(section.id)) continue;
+    for (const slotDef of section.slots) {
+      if (
+        slotDef.type === "separator" ||
+        slotDef.type === "text" ||
+        slotDef.type === "item_picker_list"
+      )
+        continue;
+      map.set(slotDef.id, {
+        item: itemIn(slotDef.id),
+        items: itemsFor(slotDef.id),
+        hiddenReasons: hiddenReasonsFor(slotDef.id),
+        errors: errorsFor(slotDef.id),
+        statSummary: statSummary(slotDef.id),
+        placeholder: stablePlaceholder(slotDef.id),
+        labelOverride: stableLabel(slotDef.id),
+        diff: rowDiff(slotDef.id),
+      });
+    }
   }
-  const near = insignia.oneShortOf(db.value, build.value, ref.group);
-  if (!near.length) return undefined;
-  const named = near
-    .slice(0, NEAR_MISSES_NAMED)
-    .map((item) => item.name)
-    .join(", ");
-  const rest = near.length - NEAR_MISSES_NAMED;
-  return rest > 0 ? `1 short of ${named} +${rest} more` : `1 short of ${named}`;
+  return map;
+});
+
+function rowDataFor(slotId: string): SlotRowData {
+  return rowDataBySlot.value.get(slotId) ?? EMPTY_ROW_DATA;
 }
 
 function toggle(sectionId: string) {
@@ -642,52 +661,17 @@ const editLabel = computed(() => {
   return `Edit this item in ${where} (${modKey}+Click the row)`;
 });
 
-/**
- * Condensed, single-line stat summary for a row: the item's own stats plus whatever
- * active bonuses are credited to this slotDef (`bonusesBySlot`), summed together key by key
- * rather than attributed separately -- one number per stat, not a name-tagged breakdown.
- */
+// A switched-off row contributes nothing, and says so the way every row whose bonus is
+// inactive already does: no summary at all.
 function statSummary(slotId: string) {
   const item = itemIn(slotId);
   if (!item) return "";
-  // A switched-off row contributes nothing, and says so the way every row whose bonus is
-  // inactive already does: no summary at all.
   if (isDisabled(build.value, db.value.slotFor(slotId))) return "";
-  const totals: Record<string, number> = {};
-  // Scaled the same way the pipeline scales it, so the row's summary and the panel's totals
-  // never disagree. The bonus stats folded in below are not the item's to scale.
-  const factor = itemScaleFactor(item);
-  for (const key of NW_SCHEMA.statKeys) {
-    if (item[key])
-      totals[key] =
-        (totals[key] ?? 0) + scaledStat(NW_SCHEMA, item, key, factor);
-  }
-  // The item's own shortDescription leads, followed by every active grant crediting this
-  // row that carries one -- same "attributed to the first contributing row" set the stats
-  // above already dedupe through (bonusesBySlot).
-  //
-  // A description's paragraphs join the summary as separate parts, so the break an author
-  // typed reads here as the same separator that already divides one stat from the next.
-  const descriptions: string[] = [];
-  const slots = insignia.slotSummary(item);
-  if (slots) descriptions.push(slots);
-  descriptions.push(...descriptionParagraphs(item.shortDescription));
-  for (const entry of bonusesBySlot.value.get(slotId) ?? []) {
-    for (const [key, value] of Object.entries(entry.appliedStats ?? {})) {
-      totals[key] = (totals[key] ?? 0) + (value as number);
-    }
-    for (const grant of entry.grants ?? []) {
-      if (grant.active) {
-        descriptions.push(...descriptionParagraphs(grant.raw.shortDescription));
-      }
-    }
-  }
-  const parts = [...descriptions];
-  for (const key of NW_SCHEMA.statKeys) {
-    if (!totals[key]) continue;
-    parts.push(`${abbr(key)} ${signedStat(key, totals[key])}`);
-  }
-  return parts.join(" • ");
+  return slotStatSummary(
+    item,
+    itemScaleFactor(item),
+    bonusesBySlot.value.get(slotId) ?? [],
+  );
 }
 
 /**
@@ -856,11 +840,11 @@ watch(
 
 <template>
   <div class="flex min-w-0 flex-1 flex-col min-h-0">
-    <!-- Above the section headers below, which are sticky at `z-10` of their own: this bar is
-         positioned, so its dropdowns are stacked within it and cannot outrank a later sibling
+    <!-- Above the section headers below, which are sticky at `z-sticky` of their own: this bar
+         is positioned, so its dropdowns are stacked within it and cannot outrank a later sibling
          on their own -- the bar has to win the comparison for them. -->
     <div
-      class="sticky top-0 z-20 flex flex-col flex-wrap gap-3 border-b border-line bg-surface px-3.5 py-2"
+      class="sticky top-0 z-toolbar flex flex-col flex-wrap gap-3 border-b border-line bg-surface px-3.5 py-2"
     >
       <QuickOptions class="flex-1" />
       <div class="flex flex-wrap items-center gap-1.5">
@@ -870,11 +854,11 @@ watch(
         <BaseButton @click="setAll(false)"
           ><ChevronsDownUp />collapse all</BaseButton
         >
-        <input
+        <BaseInput
           v-model="filterText"
           type="search"
           data-testid="slot-filter-text"
-          class="slot-filter-text min-w-40 rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+          class="slot-filter-text min-w-40"
           :placeholder="`Filter slots… (${modKey}+/)`"
         />
         <ComboBox
@@ -1025,46 +1009,14 @@ watch(
               :is-hovered="hover?.slotId === slotDef.id"
               :no-border="noBorderIds.has(slotDef.id)"
               :on-arrow="moveCursor"
-              :item="itemIn(slotDef.id)"
-              :items="itemsFor(slotDef.id)"
-              :hidden-reasons="hiddenReasonsFor(slotDef.id)"
-              :errors="errorsFor(slotDef.id)"
-              :stat-summary="statSummary(slotDef.id)"
-              :placeholder="stablePlaceholder(slotDef.id)"
-              :label-override="stableLabel(slotDef.id)"
-              :choice-differs="differs(slotDef.id)"
-              :toggle-differs="rowDiff(slotDef.id)?.disabled"
-              :other-choice-label="otherChoiceLabel(slotDef.id)"
-              :bonus-diffs="rowDiff(slotDef.id)?.bonuses"
-              :value-diffs="rowDiff(slotDef.id)?.values ?? []"
-              :occurrence-differs="
-                occurrenceDiffers(itemIn(slotDef.id), build, compareBuild)
-              "
-              :other-occurrence-label="
-                occurrenceDiffTitle(db, itemIn(slotDef.id), compareBuild)
-              "
-              :param-differs="
-                slotDef.type === 'build_parameter'
-                  ? paramDiffers(build, compareBuild, slotDef)
-                  : false
-              "
-              :other-param-label="
-                slotDef.type === 'build_parameter'
-                  ? paramDiffTitle(compareBuild, slotDef)
-                  : undefined
-              "
-              :assignment-differs="
-                slotDef.type === 'item_picker' ||
-                slotDef.type === 'point_assignment'
-                  ? assignmentDiffers(db, build, compareBuild, slotDef)
-                  : false
-              "
-              :other-assignment-label="
-                slotDef.type === 'item_picker' ||
-                slotDef.type === 'point_assignment'
-                  ? assignmentDiffTitle(db, build, compareBuild, slotDef)
-                  : undefined
-              "
+              :item="rowDataFor(slotDef.id).item"
+              :items="rowDataFor(slotDef.id).items"
+              :hidden-reasons="rowDataFor(slotDef.id).hiddenReasons"
+              :errors="rowDataFor(slotDef.id).errors"
+              :stat-summary="rowDataFor(slotDef.id).statSummary"
+              :placeholder="rowDataFor(slotDef.id).placeholder"
+              :label-override="rowDataFor(slotDef.id).labelOverride"
+              :diff="rowDataFor(slotDef.id).diff"
               @enter="(event, itemId) => onRowEnter(event, slotDef.id, itemId)"
               @leave="onRowLeave"
               @rowclick="

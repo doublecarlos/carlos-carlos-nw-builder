@@ -8,18 +8,18 @@
 import { computed } from "vue";
 import ComboBox from "../ui/ComboBox.vue";
 import IconButton from "../ui/IconButton.vue";
-import BaseTooltip from "../ui/BaseTooltip.vue";
+import DragHandle from "../ui/DragHandle.vue";
 import {
   Ampersand,
   CircleAlert,
   CirclePlus,
   Copy,
-  GripVertical,
   Plus,
   Split,
   Trash,
 } from "@lucide/vue";
 import FormField from "../ui/FormField.vue";
+import BaseInput from "../ui/BaseInput.vue";
 import TokenInput from "../ui/TokenInput.vue";
 import RangeOrExactFields from "./RangeOrExactFields.vue";
 import * as engine from "../../stores/resolved";
@@ -171,7 +171,10 @@ function moveRowTo(index: number, toIndex: number) {
 // that branch's path.
 const containerId = computed(() => `${props.treeId}:${props.path.join(".")}`);
 
-function dropList() {
+// Built once per rendered list, not once per template read (this is read from three spots).
+// The `computed` stays correct even if `containerId` later changes, since the only reactive
+// read here is `containerId.value` (a sibling group dragged past this one shifts `path`).
+const rowsDropList = computed(() => {
   const id = containerId.value;
   return useDropList({
     containerId: id,
@@ -192,7 +195,7 @@ function dropList() {
       });
     },
   });
-}
+});
 function dragHandleProps(index: number) {
   return useDragHandle((): DragSource => ({
     kind: "condition-row",
@@ -274,43 +277,66 @@ function moveBranchTo(row: ConditionRow, index: number, toIndex: number) {
 }
 
 // A branch dropped onto its own group's branches list reorders locally (moveBranchTo, same as
-// dropList()'s same-container case for rows). A branch dropped onto a *different* group's
+// rowsDropList's same-container case for rows). A branch dropped onto a *different* group's
 // branches list -- possibly a different grant/variant's tree, or a different bonus entirely --
 // can't be resolved here (this component only sees the one group's `branches` it's rendering),
 // so it bubbles up via `transferBranch`, mirroring `transfer` above. A `not` group always has
 // exactly one branch (see newGroupRow), so it's never a valid transfer target -- excluded via
 // `accepts` rather than left to fail inside `onDrop`, so it also never shows as a drop target.
-function branchesDropList(row: ConditionRow, groupIndex: number) {
-  const id = `branches:${props.treeId}:${row.uid}`;
-  return useDropList({
-    containerId: id,
-    size: () => row.branches?.length ?? 0,
-    accepts: (source) => source.kind === "condition-branch" && row.op !== "not",
-    onDrop: (source, index) => {
-      if (source.containerId === id) {
-        moveBranchTo(row, source.index, index);
-        return;
-      }
-      const from = source.data as ConditionBranchTreeLocation | undefined;
-      if (!from) return;
-      const targetGroupPath = [...props.path, groupIndex];
-      // Refuse to drop a branch into (or as a branch of) a group nested inside its own
-      // content -- would nest it inside itself. `from.groupPath`/`branchIndex` together
-      // address the branch's own rows-list, the same way a dragged row's `path` does.
-      if (
-        isDescendantPath([...from.groupPath, from.branchIndex], targetGroupPath)
-      )
-        return;
-      emit("transferBranch", {
-        source: from,
-        target: {
-          treeId: props.treeId,
-          groupPath: targetGroupPath,
-          branchIndex: index,
-        },
-      });
-    },
-  });
+//
+// One `useDropList` per group row, cached by uid (a map, since several group rows can exist
+// at once). `replaceRowAndUpdateBranches` replaces a group row with a new object, same uid, on
+// every branch edit, so the closures below re-resolve the row by uid on each access rather
+// than closing over the reference that was live when the cache entry was built.
+const branchDropLists = new Map<string, ReturnType<typeof useDropList>>();
+function rowByUid(uid: string): ConditionRow | undefined {
+  return props.rows.find((r) => r.uid === uid);
+}
+function branchesDropList(row: ConditionRow) {
+  let list = branchDropLists.get(row.uid);
+  if (!list) {
+    const uid = row.uid;
+    const id = `branches:${props.treeId}:${uid}`;
+    list = useDropList({
+      containerId: id,
+      size: () => rowByUid(uid)?.branches?.length ?? 0,
+      accepts: (source) =>
+        source.kind === "condition-branch" && rowByUid(uid)?.op !== "not",
+      onDrop: (source, index) => {
+        const current = rowByUid(uid);
+        if (!current) return;
+        const rowIndex = props.rows.indexOf(current);
+        if (rowIndex === -1) return;
+        if (source.containerId === id) {
+          moveBranchTo(current, source.index, index);
+          return;
+        }
+        const from = source.data as ConditionBranchTreeLocation | undefined;
+        if (!from) return;
+        const targetGroupPath = [...props.path, rowIndex];
+        // Refuse to drop a branch into (or as a branch of) a group nested inside its own
+        // content, which would nest it inside itself. `from.groupPath`/`branchIndex` together
+        // address the branch's own rows-list, the same way a dragged row's `path` does.
+        if (
+          isDescendantPath(
+            [...from.groupPath, from.branchIndex],
+            targetGroupPath,
+          )
+        )
+          return;
+        emit("transferBranch", {
+          source: from,
+          target: {
+            treeId: props.treeId,
+            groupPath: targetGroupPath,
+            branchIndex: index,
+          },
+        });
+      },
+    });
+    branchDropLists.set(uid, list);
+  }
+  return list;
 }
 function branchDragHandleProps(
   row: ConditionRow,
@@ -443,24 +469,20 @@ function changeParamKey(row: ConditionRow, key: string) {
       data-testid="condition-row"
       class="border-y-2 border-line/50 py-1"
       :class="[
-        dropList().indicatorAt(i) === 'before' && '!border-t-accent',
-        dropList().indicatorAt(i) === 'after' && '!border-b-accent',
+        rowsDropList.indicatorAt(i) === 'before' && '!border-t-accent',
+        rowsDropList.indicatorAt(i) === 'after' && '!border-b-accent',
       ]"
-      v-bind="dropList().rowProps(i)"
+      v-bind="rowsDropList.rowProps(i)"
     >
       <div
         v-if="row.kind === 'leaf'"
         class="flex flex-wrap items-center gap-1.5"
       >
-        <BaseTooltip text="Drag to reorder or move into a block">
-          <span
-            data-testid="condition-drag-handle"
-            class="cursor-grab text-muted hover:text-accent [&_svg]:size-[14px]"
-            v-bind="dragHandleProps(i)"
-          >
-            <GripVertical />
-          </span>
-        </BaseTooltip>
+        <DragHandle
+          tooltip="Drag to reorder or move into a block"
+          data-testid="condition-drag-handle"
+          v-bind="dragHandleProps(i)"
+        />
         <IconButton title="Duplicate" @click="duplicateRow(i)"
           ><Copy
         /></IconButton>
@@ -518,17 +540,14 @@ function changeParamKey(row: ConditionRow, key: string) {
         </template>
         <template v-else-if="row.type === 'equipped'">
           <FormField label="Tag" class="min-w-0"
-            ><input
+            ><BaseInput
               v-model="row.tag"
-              class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+              class="w-full"
               type="text"
               list="nw-tags"
           /></FormField>
           <FormField label="Or exact item id" class="min-w-0"
-            ><input
-              v-model="row.item"
-              class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-              type="text"
+            ><BaseInput v-model="row.item" class="w-full" type="text"
           /></FormField>
           <RangeOrExactFields
             v-model:at-least="row.atLeast"
@@ -609,12 +628,7 @@ function changeParamKey(row: ConditionRow, key: string) {
               :options="optionsForCombo(row.type)"
               @update:model-value="(v) => (row.value = v)"
             />
-            <input
-              v-else
-              v-model="row.value"
-              class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-              type="text"
-            />
+            <BaseInput v-else v-model="row.value" class="w-full" type="text" />
           </FormField>
         </template>
       </div>
@@ -629,15 +643,11 @@ function changeParamKey(row: ConditionRow, key: string) {
           class="w-full rounded-md border border-line border-l-4 border-l-muted bg-text/5 my-0.5 px-2 pb-0.5 pt-1"
         >
           <div class="flex flex-wrap items-center gap-1 mb-0.5">
-            <BaseTooltip text="Drag to reorder or move into a block">
-              <span
-                data-testid="condition-drag-handle"
-                class="cursor-grab text-muted hover:text-accent [&_svg]:size-[14px]"
-                v-bind="dragHandleProps(i)"
-              >
-                <GripVertical />
-              </span>
-            </BaseTooltip>
+            <DragHandle
+              tooltip="Drag to reorder or move into a block"
+              data-testid="condition-drag-handle"
+              v-bind="dragHandleProps(i)"
+            />
             <span
               data-testid="condition-op-label"
               class="rounded bg-surface-2 px-1.5 font-semibold uppercase tracking-wide"
@@ -657,26 +667,21 @@ function changeParamKey(row: ConditionRow, key: string) {
               data-testid="condition-branch"
               class="py-0.5 border-y-2 border-transparent"
               :class="[
-                branchesDropList(row, i).indicatorAt(bi) === 'before' &&
+                branchesDropList(row).indicatorAt(bi) === 'before' &&
                   '!border-t-accent',
-                branchesDropList(row, i).indicatorAt(bi) === 'after' &&
+                branchesDropList(row).indicatorAt(bi) === 'after' &&
                   '!border-b-accent',
               ]"
-              v-bind="branchesDropList(row, i).rowProps(bi)"
+              v-bind="branchesDropList(row).rowProps(bi)"
             >
               <div
                 v-if="row.op !== 'not'"
                 class="my-1 flex items-center gap-0.5"
               >
-                <BaseTooltip text="Drag to reorder">
-                  <span
-                    data-testid="condition-branch-drag-handle"
-                    class="cursor-grab text-muted hover:text-accent [&_svg]:size-[14px]"
-                    v-bind="branchDragHandleProps(row, i, bi)"
-                  >
-                    <GripVertical />
-                  </span>
-                </BaseTooltip>
+                <DragHandle
+                  data-testid="condition-branch-drag-handle"
+                  v-bind="branchDragHandleProps(row, i, bi)"
+                />
                 <span class="my-0.5 uppercase pr-1">
                   Condition {{ bi + 1 }}
                 </span>
@@ -717,12 +722,12 @@ function changeParamKey(row: ConditionRow, key: string) {
       data-testid="condition-empty-drop"
       class="mt-1 flex flex-wrap items-center gap-1 rounded-md border-2 border-dashed border-transparent p-0.5"
       :class="
-        dropList().isActiveContainer.value && !rows.length && '!border-accent'
+        rowsDropList.isActiveContainer.value && !rows.length && '!border-accent'
       "
-      v-bind="rows.length ? {} : dropList().emptyProps()"
+      v-bind="rows.length ? {} : rowsDropList.emptyProps()"
     >
       <span
-        v-if="dropList().isActiveContainer.value && !rows.length"
+        v-if="rowsDropList.isActiveContainer.value && !rows.length"
         class="text-muted"
         >Drop here</span
       >

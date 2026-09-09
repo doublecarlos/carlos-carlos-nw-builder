@@ -7,9 +7,13 @@
 // thing to do (so free text). `allowFree` turns the second half off for the closed
 // vocabularies -- a condition's toggle/role/class/damage-type values -- that autocomplete
 // alone covers.
-import { ref, computed, watch, nextTick, useTemplateRef } from "vue";
+//
+// The suggestion menu is anchored (`inset-x-0`), not teleported through BasePopover: base.css's
+// exception, since it matches the input's own width.
+import { computed, useTemplateRef } from "vue";
 import { onKeyStroke } from "@vueuse/core";
 import { matchesQuery } from "../../lib/text-filter";
+import { useMenuNavigation } from "../../composables/useMenuNavigation";
 
 const MAX_SUGGESTIONS = 40;
 
@@ -35,11 +39,17 @@ const labelFor = (value: string) => props.labels[value] ?? value;
 
 const model = defineModel<string[]>({ default: () => [] });
 
-const query = ref("");
-const open = ref(false);
-const highlight = ref(0);
 const input = useTemplateRef("input");
 const menu = useTemplateRef("menu");
+
+const { open, query, highlight } = useMenuNavigation({
+  target: input,
+  entryCount: () => entries.value.length,
+  onHighlightChange: () =>
+    menu.value
+      ?.querySelector("[data-highlighted]")
+      ?.scrollIntoView({ block: "nearest" }),
+});
 
 const suggestions = computed(() => {
   if (!open.value) return [];
@@ -64,14 +74,6 @@ const freeValue = computed(() => {
 const entries = computed(() =>
   freeValue.value ? [freeValue.value, ...suggestions.value] : suggestions.value,
 );
-
-watch(highlight, () => {
-  nextTick(() => {
-    menu.value
-      ?.querySelector("[data-highlighted]")
-      ?.scrollIntoView({ block: "nearest" });
-  });
-});
 
 function add(value: string) {
   const token = String(value ?? "").trim();
@@ -101,20 +103,6 @@ onKeyStroke(
   { target: input },
 );
 
-onKeyStroke(
-  ["ArrowDown", "ArrowUp"],
-  (event) => {
-    event.preventDefault();
-    open.value = true;
-    const step = event.key === "ArrowDown" ? 1 : -1;
-    highlight.value = Math.min(
-      Math.max(highlight.value + step, 0),
-      entries.value.length - 1,
-    );
-  },
-  { target: input },
-);
-
 // Comma and Enter both commit, so pasting "a, b, c" and typing behave alike.
 // Tab also commits when there's a query or a highlighted entry.
 onKeyStroke(
@@ -126,15 +114,6 @@ onKeyStroke(
       event.preventDefault();
       add(picked ?? query.value);
     }
-  },
-  { target: input },
-);
-
-onKeyStroke(
-  "Escape",
-  () => {
-    open.value = false;
-    query.value = "";
   },
   { target: input },
 );
@@ -190,7 +169,7 @@ function onPaste(event: ClipboardEvent) {
     <div
       v-if="open && entries.length"
       ref="menu"
-      class="absolute inset-x-0 top-full z-30 mt-0.5 max-h-56 overflow-y-auto rounded-md border border-line bg-surface shadow-lg"
+      class="absolute inset-x-0 top-full z-menu mt-0.5 max-h-56 overflow-y-auto rounded-md border border-line bg-surface shadow-lg"
     >
       <div
         v-for="(entry, index) in entries"

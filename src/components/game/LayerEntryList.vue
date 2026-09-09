@@ -8,6 +8,7 @@ import { onKeyStroke } from "@vueuse/core";
 import { CirclePlus, FilterX, RotateCcw } from "@lucide/vue";
 import BaseButton from "../ui/BaseButton.vue";
 import BaseBadge from "../ui/BaseBadge.vue";
+import BaseInput from "../ui/BaseInput.vue";
 import BaseTooltip from "../ui/BaseTooltip.vue";
 import ComboBox from "../ui/ComboBox.vue";
 import type {
@@ -16,13 +17,14 @@ import type {
   SectionPreset,
   BuildParameterSlot,
 } from "../../types";
+import type { EntryStatus } from "../../data/catalog";
 
 export interface ItemRow {
   key: string;
   name: string;
   filter: string;
   item: Item | null;
-  status: string;
+  status: EntryStatus;
   kind: "item";
 }
 export interface BonusRow {
@@ -30,7 +32,7 @@ export interface BonusRow {
   name: string;
   filter: string;
   bonus: Bonus | null;
-  status: string;
+  status: EntryStatus;
   kind: "bonus";
 }
 export interface PresetRow {
@@ -38,7 +40,7 @@ export interface PresetRow {
   name: string;
   filter: string;
   preset: SectionPreset | null;
-  status: string;
+  status: EntryStatus;
   kind: "sectionPreset";
 }
 export interface SlotRow {
@@ -46,7 +48,7 @@ export interface SlotRow {
   name: string;
   filter: string;
   slot: BuildParameterSlot | null;
-  status: string;
+  status: EntryStatus;
   kind: "slot";
 }
 export type EditorRow = ItemRow | BonusRow | PresetRow | SlotRow;
@@ -142,10 +144,10 @@ onKeyStroke(["ArrowDown", "ArrowUp", "Enter"], (event) => {
 <template>
   <div class="flex min-h-0 flex-col rounded-md border border-line bg-surface">
     <div class="flex items-center gap-1 p-2">
-      <input
+      <BaseInput
         v-model="query"
         type="search"
-        class="editor-search w-full min-w-0 rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+        class="editor-search w-full min-w-0"
         :placeholder="searchPlaceholder"
       />
     </div>
@@ -184,7 +186,7 @@ onKeyStroke(["ArrowDown", "ArrowUp", "Enter"], (event) => {
         <span class="editor-row-name min-w-0 flex-1 truncate">{{
           row.name
         }}</span>
-        <BaseBadge v-if="row.status !== 'base'" :variant="row.status as any">{{
+        <BaseBadge v-if="row.status !== 'base'" :variant="row.status">{{
           row.status
         }}</BaseBadge>
         <BaseTooltip text="Unsaved edits in the form">

@@ -10,7 +10,7 @@
 // on every edit and emit it to the parent. Now `addStat(gi)` mutates
 // `draft.grants[gi].stats.push(row)` directly - no structural cloning needed.
 
-import * as bonusDraft from "../engine/bonus-draft";
+import * as bonusDraft from "../lib/bonus-draft";
 import {
   removeConditionAt,
   insertConditionAt,
@@ -20,7 +20,7 @@ import {
   adjustPathAfterRemoval,
   type ConditionRow,
 } from "../engine/condition-draft";
-import type { GrantDraft } from "../engine/bonus-draft";
+import type { GrantDraft } from "../lib/bonus-draft";
 import { reorderIndex } from "../composables/useDragAndDrop";
 
 /** Which of a `BonusDraftStore`'s condition trees a location lives in -- a grant's own

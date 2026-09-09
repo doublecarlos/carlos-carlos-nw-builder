@@ -6,6 +6,7 @@
 import { computed, useTemplateRef, type Component, type Directive } from "vue";
 import BaseButton from "./ui/BaseButton.vue";
 import BaseTooltip from "./ui/BaseTooltip.vue";
+import BaseInput from "./ui/BaseInput.vue";
 import NavBuildRow from "./NavBuildRow.vue";
 import {
   ChevronDown,
@@ -254,13 +255,13 @@ function moveFocus(dir: 1 | -1) {
       <span class="text-sm font-semibold uppercase text-muted">Builds</span>
     </div>
 
-    <input
-      :value="filter"
+    <BaseInput
+      :model-value="filter"
       type="text"
       placeholder="Filter…"
       data-testid="nav-builds-filter"
-      class="mb-1 rounded-md border border-line bg-surface px-2 py-0.5 text-sm focus:outline-accent"
-      @input="$emit('update:filter', ($event.target as HTMLInputElement).value)"
+      class="mb-1"
+      @update:model-value="$emit('update:filter', String($event))"
     />
 
     <div class="overflow-y-auto">
@@ -325,17 +326,14 @@ function moveFocus(dir: 1 | -1) {
               />
             </button>
 
-            <input
+            <BaseInput
               v-if="renamingId === row.folder.id"
               v-rename-focus
-              :value="renameText"
-              class="nav-rename min-w-0 flex-1 rounded-md border border-line bg-surface px-1 py-0.5"
-              @input="
-                $emit(
-                  'rename-start',
-                  row.folder.id,
-                  ($event.target as HTMLInputElement).value,
-                )
+              :model-value="renameText"
+              type="text"
+              class="nav-rename min-w-0 flex-1"
+              @update:model-value="
+                $emit('rename-start', row.folder.id, String($event))
               "
               @keydown.enter="$emit('rename-commit')"
               @keydown.esc="$emit('rename-cancel')"

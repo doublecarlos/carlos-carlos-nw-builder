@@ -4,7 +4,7 @@
 // to do nothing.
 import { describe, expect, it } from "vitest";
 import { BonusDraftStore } from "../../../src/stores/bonus-draft";
-import * as bonusDraft from "../../../src/engine/bonus-draft";
+import * as bonusDraft from "../../../src/lib/bonus-draft";
 import { newLeafRow, newGroupRow } from "../../../src/engine/condition-draft";
 
 /** One-grant store, payload pre-switched when requested, change count tracked. */

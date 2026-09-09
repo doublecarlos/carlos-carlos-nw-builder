@@ -262,17 +262,31 @@ export function revert(
   return next;
 }
 
+export type EntryStatus = "base" | "added" | "edited" | "removed";
+
 /** How an entry differs from what shipped -- drives the badges in the editor list. */
 export function statusOf(
   overlay: CatalogOverlay | null | undefined,
   group: CatalogGroup,
   key: string,
-) {
+): EntryStatus {
   const override = overlay?.[group]?.[key];
   const shipped = inBase(group, key);
   if (override === null) return "removed";
-  if (override === undefined) return shipped ? "base" : "base";
+  if (override === undefined) return "base";
   return shipped ? "edited" : "added";
+}
+
+/** Every id `group` tombstones in `overlay`, the ids `statusOf` calls "removed". An editor
+ *  entry list shows these alongside the group's present entries, so a deletion stays
+ *  reversible from the list. */
+export function tombstoneIds(
+  overlay: CatalogOverlay,
+  group: CatalogGroup,
+): string[] {
+  return Object.entries(overlay[group] ?? {})
+    .filter(([, value]) => value === null)
+    .map(([id]) => id);
 }
 
 // --- portable files (phase 7) -------------------------------------------------------------

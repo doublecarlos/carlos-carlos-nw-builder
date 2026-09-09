@@ -7,9 +7,10 @@
 // already-filled field still browses the full option list) and the committed `model` once
 // closed. Unlike ComboBox, committing isn't limited to picking a listed option -- typing
 // something new and blurring or pressing Enter/Tab commits the typed text itself.
-import { ref, computed, watch, nextTick, useId, useTemplateRef } from "vue";
+import { computed, watch, useId, useTemplateRef } from "vue";
 import { onKeyStroke } from "@vueuse/core";
 import { matchesQuery } from "../../lib/text-filter";
+import { useMenuNavigation } from "../../composables/useMenuNavigation";
 import ComboBoxMenu from "./ComboBoxMenu.vue";
 import ComboBoxMenuRow from "./ComboBoxMenuRow.vue";
 
@@ -30,11 +31,14 @@ const props = withDefaults(
 
 const model = defineModel<string>({ default: "" });
 
-const query = ref("");
-const open = ref(false);
-const highlight = ref(0);
 const input = useTemplateRef("input");
 const menu = useTemplateRef("menu");
+
+const { open, query, highlight, close } = useMenuNavigation({
+  target: input,
+  entryCount: () => entries.value.length,
+  onHighlightChange: () => menu.value?.scrollToHighlighted(),
+});
 
 const suggestions = computed(() => {
   if (!open.value) return [];
@@ -63,10 +67,6 @@ const activeDescendant = computed(() =>
   menuOpen.value ? optionId(highlight.value) : undefined,
 );
 
-watch(highlight, () => {
-  nextTick(() => menu.value?.scrollToHighlighted());
-});
-
 watch(entries, () => {
   highlight.value = 0;
 });
@@ -74,11 +74,6 @@ watch(entries, () => {
 function commit(value: string) {
   model.value = value.trim();
   close();
-}
-
-function close() {
-  open.value = false;
-  query.value = "";
 }
 
 function onFocus() {
@@ -102,20 +97,6 @@ function onBlur() {
 }
 
 onKeyStroke(
-  ["ArrowDown", "ArrowUp"],
-  (event) => {
-    event.preventDefault();
-    open.value = true;
-    const step = event.key === "ArrowDown" ? 1 : -1;
-    highlight.value = Math.min(
-      Math.max(highlight.value + step, 0),
-      entries.value.length - 1,
-    );
-  },
-  { target: input },
-);
-
-onKeyStroke(
   ["Enter", "Tab"],
   (event) => {
     if (!open.value) return;
@@ -124,14 +105,6 @@ onKeyStroke(
     if (!value.trim()) return;
     if (event.key === "Enter") event.preventDefault();
     commit(value);
-  },
-  { target: input },
-);
-
-onKeyStroke(
-  "Escape",
-  () => {
-    close();
   },
   { target: input },
 );

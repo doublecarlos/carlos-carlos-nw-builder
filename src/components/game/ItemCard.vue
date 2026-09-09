@@ -19,6 +19,7 @@ import {
   stat as formatStat,
 } from "../../lib/format";
 import { descriptionParagraphs } from "../../lib/description";
+import { itemCardRows } from "../../lib/item-card-rows";
 import {
   PREFERRED_MARK,
   itemDisplay,
@@ -26,18 +27,10 @@ import {
   reachableBonuses,
   slotSummary,
 } from "../../engine/insignia";
-import { isHiddenBonus } from "../../engine/bonus";
 import { scaledStat } from "../../engine/scaling";
 import type { OccurrenceRow } from "../../composables/useItemBonusOccurrences";
 import type { DynamicStatConfig } from "../../types";
-import type {
-  Item,
-  Db,
-  EvaluatedBonus,
-  GrantEvaluation,
-  Grant,
-  StatValues,
-} from "../../types";
+import type { Item, Db, EvaluatedBonus } from "../../types";
 import { SquarePen, Table, TriangleAlert } from "@lucide/vue";
 import BaseBadge from "../ui/BaseBadge.vue";
 import BaseCard from "../ui/BaseCard.vue";
@@ -93,36 +86,6 @@ const emit = defineEmits<{ edit: []; "open-stable": [] }>();
 const replacement = computed(
   () => props.db?.replacementFor(props.item.id) ?? null,
 );
-
-const occurrenceRowByBonusId = computed(
-  () => new Map(props.occurrenceRows.map((row) => [row.bonusId, row])),
-);
-
-/** `item`'s own BonusOccurrenceConfig row for `bonusId`, only when it's the reason this
- *  (inactive) row has nothing to show: at `value: 0`. An active bonus never needs this --
- *  its numbers already speak for themselves -- and a row this item doesn't itself have a
- *  config for (contributed only by other items, or gated on something else entirely) has none
- *  to show either. */
-function zeroOccurrenceNote(bonusId: string, active: boolean) {
-  if (active) return null;
-  const row = occurrenceRowByBonusId.value.get(bonusId);
-  return row && row.value === 0 ? row : null;
-}
-
-/** Same {key, label, value} shape as the `stats` computed, for one-per-line rendering
- *  anywhere a bonus payload is shown -- the tooltip should read the same way whether it's
- *  the item's own stats or a bonus's. `multiplier` scales for stacking sources (see
- *  `grantRows`'s own doc comment) without needing a separate scaled copy of the stats object. */
-function statList(stats: StatValues | null | undefined, multiplier = 1) {
-  return Object.entries(stats ?? {}).map(([key, value]) => ({
-    key,
-    label: statLabel(key),
-    value: signedStat(
-      key,
-      multiplier === 1 ? value : (value ?? 0) * multiplier,
-    ),
-  }));
-}
 
 /** The header badge, scaled like the stat lines below it -- an unscaled figure next to scaled
  *  rows reads as a contradiction rather than as two different numbers. */
@@ -206,213 +169,8 @@ const notes = computed(() => {
   return out;
 });
 
-/**
- * A flat, non-stacking bonus can still have more than one contributing item -- e.g. a
- * bonus with no occurrence-count requirement at all, granted once as long as *any*
- * one of its items is worn (M31 Thayan Predator's base +2%, fed by both Runebound Shackle
- * and Sanguine Seal).
- * Every contributing item's own card shows the same resolved total, so owning both reads
- * as "each one gives +2%" when really it is one +2% shared between them. Tiered and
- * per-source-stacking bonuses already explain their own multi-source case (the ladder,
- * and `grantRows`'s own stacking multiplier), so this only fires for the plain leftover case.
- */
-function sharedSources(entry: EvaluatedBonus) {
-  if (
-    !entry.active ||
-    tierGrant(entry) ||
-    entry.bonus?.stacking === "perSource"
-  ) {
-    return null;
-  }
-  const others = [...new Set(entry.sources ?? [])].filter(
-    (name) => name !== props.item.name,
-  );
-  return others.length ? others : null;
-}
-
-type ResolvedGrant = GrantEvaluation & { raw: Grant };
-
-/** The one grant (if any) of this bonus that carries a `tiers` ladder. A bonus is a sum
- * of several independent grants now, so "is this bonus tiered" means "does any one of its
- * grants happen to be", not a property of the whole thing. */
-function tierGrant(entry: EvaluatedBonus) {
-  return entry.grants?.find((g) => g.raw.tiers) ?? null;
-}
-
-/**
- * A tiered bonus (e.g. Gladiator's Guile: 10% at 1 occurrence, 15% at 2) has no `when`
- * condition at all -- the occurrence count is matched directly in bonus.ts, so
- * `gate.leaves` is empty and the card would otherwise show "always" next to a number that
- * quietly depends on how many of the bonus's items are equipped. Every contributing item's
- * own card lists the same shared bonus, so without the ladder each one reads as granting
- * the full total on its own. Returns null for a grant with no `tiers`.
- */
-function tierLadderFor(grant: ResolvedGrant | null) {
-  const tiers = grant?.raw.tiers;
-  if (!tiers?.length) return null;
-  const activeAt =
-    grant!.active && grant!.chose?.startsWith("tier:")
-      ? Number(grant!.chose.slice("tier:".length))
-      : null;
-  return tiers
-    .map((tier) => ({
-      atLeast: tier.bonusOccurrences?.atLeast ?? 1,
-      stats: statList(tier.stats),
-    }))
-    .sort((a, b) => a.atLeast - b.atLeast)
-    .map((tier) => ({ ...tier, active: tier.atLeast === activeAt }));
-}
-/**
- * A varied bonus (e.g. role-dependent payloads) picks its first matching branch and, unlike
- * tiers, had no ladder of its own before -- the card only ever showed the winning branch's
- * numbers, with no way to see what the other branches needed or would have granted. This
- * mirrors `tierLadderFor`, using `variantBranches` (bonus.ts's per-branch `explain`, run for
- * every branch, not just up to the first match) so an unmatched branch can show *why* it
- * didn't apply, not just that it didn't. Returns null for a grant with no `variants`.
- */
-function variantLadderFor(grant: ResolvedGrant | null) {
-  const variants = grant?.raw.variants;
-  if (!variants?.length) return null;
-  const activeIndex =
-    grant!.active && grant!.chose?.startsWith("variant:")
-      ? Number(grant!.chose.slice("variant:".length))
-      : null;
-  const branches = grant!.variantBranches ?? [];
-  return variants.map((variant, index) => ({
-    key: index,
-    label:
-      (branches[index]?.leaves ?? [])
-        .map((leaf) => leaf.label)
-        .filter(Boolean)
-        .join(" + ") || "always",
-    stats: statList(variant.stats),
-    active: index === activeIndex,
-    unmet: branches[index]?.unmet ?? [],
-  }));
-}
-
-// Bonus state -> dot colour + whether its title/numbers read muted (an inactive/excluded
-// bonus's numbers are what it *would* grant, not what it does).
-const STATE_DOT: Record<string, string> = {
-  active: "bg-ok",
-  inactive: "bg-muted opacity-50",
-  excluded: "bg-danger",
-};
-
-/** Falls back to the grant's own `when` (same label text `entry.gate`/`row.conditions`
- * already use at the bonus level) so an unnamed grant still reads as *something* other than
- * a bare position in the list. Only shown by the template when the bonus has more than one
- * grant -- for the (overwhelmingly common) single-grant case this would just repeat the
- * bonus-level "Conditions: ..." line right above it. */
-function grantLabel(grant: ResolvedGrant, index: number) {
-  if (grant.raw.name) return grant.raw.name;
-  const fromConditions = (grant.gate?.leaves ?? [])
-    .map((leaf) => leaf.label)
-    .filter(Boolean)
-    .join(" + ");
-  return fromConditions || `Part ${index + 1}`;
-}
-
-/**
- * Every grant of this bonus, one row each -- a bonus is a sum of independent grants, and the
- * bonus-level `conditions`/`unmet`/`stats` fields above collapse that down to one
- * representative grant (evaluateBonus's "closest to unlocking" pick), which hides why every
- * *other* grant is or isn't active. Always has at least one entry; the template only draws
- * the per-grant label/border chrome when there's more than one to distinguish.
- *
- * `stacks` scales an active grant's own stats for perSource stacking (e.g. two rings of the
- * same item) -- `entry.appliedStats` is the already-multiplied bonus total, but a single
- * grant's own `stats` is pre-stacking (bonus.ts multiplies the *summed* grant stats, not each
- * grant individually), so without this a stacking bonus's card would show one copy's worth.
- */
-/** A flat grant's preview payload for the inactive/near-miss branch below -- `raw.stats` plus
- *  each `dynamicStats` config's own `default`, same merge `bonus.ts`'s `withDynamicStats`
- *  applies at evaluation time (using the config's default rather than a resolved player value,
- *  since there is nothing resolved to show for a grant that isn't active). `null` for a grant
- *  with neither, or one using `tiers`/`variants` instead (those preview through their own
- *  ladder helpers above). */
-function previewStatsFor(raw: Grant): StatValues | null {
-  if (raw.tiers || raw.variants) return null;
-  if (!raw.stats && !raw.dynamicStats?.length) return null;
-  const merged: StatValues = { ...(raw.stats ?? {}) };
-  for (const config of raw.dynamicStats ?? []) {
-    merged[config.stat] = (merged[config.stat] ?? 0) + config.default;
-  }
-  return merged;
-}
-
-function grantRows(entry: EvaluatedBonus) {
-  const stacks = entry.stacks ?? 1;
-  // A `perSource`-stacking bonus's preview (no active stack to total up) is what *one* stack
-  // would grant, not a flat always-on number -- label it as such so it doesn't read like the
-  // bonus already grants this regardless of stack count.
-  const stacking = entry.bonus?.stacking === "perSource";
-  return (entry.grants ?? []).map((grant, index) => {
-    const preview = grant.active ? null : previewStatsFor(grant.raw);
-    return {
-      key: index,
-      label: grantLabel(grant, index),
-      active: grant.active,
-      unmet: grant.gate?.unmet ?? [],
-      problem: grant.problem,
-      tiers: tierLadderFor(grant),
-      variants: variantLadderFor(grant),
-      eachStack: stacking && preview != null,
-      stats:
-        grant.active && grant.stats
-          ? statList(grant.stats, stacks)
-          : preview
-            ? statList(preview)
-            : null,
-    };
-  });
-}
-
 const rows = computed(() =>
-  props.bonuses
-    .filter((entry) => !isHiddenBonus(entry.bonus))
-    .map((entry) => {
-      const sharedWith = sharedSources(entry);
-      // `sources` is sorted deterministically upstream (bonus.ts, by evaluation order), so
-      // every card agrees on which one is "first" without any cross-item coordination.
-      const isFirst =
-        !entry.sources?.length || entry.sources[0] === props.item.name;
-      const state = entry.excluded
-        ? "excluded"
-        : entry.active
-          ? "active"
-          : "inactive";
-      return {
-        id: entry.id,
-        state,
-        dotClass: STATE_DOT[state],
-        muted: state !== "active",
-        name: entry.bonus?.name ?? null,
-        conditions: (entry.gate?.leaves ?? [])
-          .map((leaf) => leaf.label)
-          .filter(Boolean)
-          .join(" + "),
-        zeroOccurrence: zeroOccurrenceNote(entry.id, entry.active),
-        excludedBy: entry.excludedBy,
-        // Every active grant's own description, in grant order, falling back to its short one
-        // the same way an item's does so a grant carrying only that still says something here.
-        descriptions: (entry.grants ?? [])
-          .filter((g) => g.active)
-          .flatMap((g) =>
-            descriptionParagraphs(
-              g.raw.longDescription || g.raw.shortDescription,
-            ),
-          ),
-        stacks: entry.stacks ?? 1,
-        grants: grantRows(entry),
-        sharedWith,
-        // A shared bonus is real numbers on exactly one card and a pointer everywhere else
-        // -- showing the same total on every contributing card reads as each one granting
-        // it independently, when they share credit for one thing.
-        secondary: Boolean(sharedWith) && !isFirst,
-        firstSource: entry.sources?.[0] ?? null,
-      };
-    }),
+  itemCardRows(props.item, props.bonuses, props.occurrenceRows),
 );
 </script>
 

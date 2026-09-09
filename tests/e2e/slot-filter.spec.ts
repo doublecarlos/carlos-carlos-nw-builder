@@ -13,6 +13,7 @@ import {
   slotFilterStatCombo,
   slotFilterClearButton,
 } from "./support/app";
+import { expectTopmost } from "./support/occlusion";
 
 test.describe("slot filter: text", () => {
   test("typing a slot label shows only matching slots and hides sections with no match", async ({
@@ -203,23 +204,8 @@ test.describe("stat filter menu stacking", () => {
     await expect(menu).toBeVisible();
 
     // The menu drops out of the sticky toolbar and over the section list, whose own headers
-    // are sticky too. Hit-test straight down the menu: every point has to land inside it, or
-    // a header is painting on top and swallowing the clicks meant for an option.
-    const box = await menu.boundingBox();
-    expect(box).not.toBeNull();
-    const x = box!.x + box!.width / 2;
-    const ys = [0.1, 0.3, 0.5, 0.7, 0.9].map((f) => box!.y + box!.height * f);
-
-    const covered = await page.evaluate(
-      ([px, pys]) =>
-        (pys as number[]).filter(
-          (py) =>
-            !document
-              .elementFromPoint(px as number, py)
-              ?.closest('[data-testid="picker-menu"]'),
-        ),
-      [x, ys] as [number, number[]],
-    );
-    expect(covered).toEqual([]);
+    // are sticky too: every point down the menu has to land inside it, or a header is
+    // painting on top and swallowing the clicks meant for an option.
+    await expectTopmost(menu);
   });
 });

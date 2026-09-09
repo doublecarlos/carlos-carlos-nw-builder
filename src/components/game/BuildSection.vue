@@ -67,7 +67,7 @@ useCursorRowKeys(button, {
          divider moves here from the body below: sticking detaches the header from the body,
          which would take the body's own top border with it. -->
     <div
-      class="bg-surface-2 sticky top-0 z-10 flex items-center pr-1.5 focus-within:outline-2 focus-within:-outline-offset-1 focus-within:outline-accent"
+      class="bg-surface-2 sticky top-0 z-sticky flex items-center pr-1.5 focus-within:outline-2 focus-within:-outline-offset-1 focus-within:outline-accent"
       :class="expanded && 'border-b border-line'"
     >
       <button

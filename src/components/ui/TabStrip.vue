@@ -5,7 +5,7 @@
 </script>
 
 <template>
-  <div class="relative z-1 -mb-px flex gap-0.5 pl-0.5">
+  <div class="relative z-base -mb-px flex gap-0.5 pl-0.5">
     <slot />
   </div>
 </template>

@@ -1,9 +1,9 @@
-// Round-trip coverage for engine/bonus-draft.ts's `problem` payload: the same
+// Round-trip coverage for lib/bonus-draft.ts's `problem` payload: the same
 // toDraft/toGrant/needsJson contract the flat/tiers/variants payloads already have,
 // verified separately since bonus-draft-store.spec.ts only covers the GrantStore mutation
 // layer, not this conversion.
 import { describe, it, expect } from "vitest";
-import { toDraft, toGrant, needsJson } from "../../src/engine/bonus-draft";
+import { toDraft, toGrant, needsJson } from "../../src/lib/bonus-draft";
 import type { Grant } from "../../src/types";
 
 describe("bonus-draft problem payload", () => {

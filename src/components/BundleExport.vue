@@ -14,6 +14,7 @@ import { matchesQuery } from "../lib/text-filter";
 import type { BuildNavEntry } from "../types";
 import { Download, Folder } from "@lucide/vue";
 import BaseButton from "./ui/BaseButton.vue";
+import BaseInput from "./ui/BaseInput.vue";
 import BaseModal from "./ui/BaseModal.vue";
 
 const emit = defineEmits<{
@@ -177,11 +178,11 @@ function selectAllLayers() {
       <!-- Builds column -->
       <div class="flex-1">
         <h3 class="mb-2 font-medium">Builds</h3>
-        <input
+        <BaseInput
           v-model="buildFilter"
           type="text"
           placeholder="Filter builds…"
-          class="mb-2 w-full rounded border border-line bg-surface px-2 py-1"
+          class="mb-2 w-full"
           data-testid="bundle-build-filter"
         />
         <div class="max-h-48 space-y-1 overflow-y-auto">
@@ -237,11 +238,11 @@ function selectAllLayers() {
       <!-- Layers column -->
       <div class="flex-1">
         <h3 class="mb-2 font-medium">Layers</h3>
-        <input
+        <BaseInput
           v-model="layerFilter"
           type="text"
           placeholder="Filter layers…"
-          class="mb-2 w-full rounded border border-line bg-surface px-2 py-1"
+          class="mb-2 w-full"
           data-testid="bundle-layer-filter"
         />
         <div class="max-h-48 space-y-1 overflow-y-auto">

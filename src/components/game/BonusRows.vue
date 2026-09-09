@@ -8,31 +8,31 @@
 // mutation, which schedules an undo snapshot in BonusForm.
 
 import { computed, inject, ref } from "vue";
-import PercentInput from "../ui/PercentInput.vue";
 import ComboBox from "../ui/ComboBox.vue";
 import ConditionRows, {
   type ConditionTreeLocation,
   type ConditionBranchTreeLocation,
 } from "./ConditionRows.vue";
 import IconButton from "../ui/IconButton.vue";
-import BaseTooltip from "../ui/BaseTooltip.vue";
+import StatRowList from "./StatRowList.vue";
+import DynamicStatRowList from "./DynamicStatRowList.vue";
 import {
   ArrowDown,
   ArrowUp,
   CirclePlus,
   Copy,
   FileJson,
-  GripVertical,
   Plus,
   Trash,
 } from "@lucide/vue";
 import BaseButton from "../ui/BaseButton.vue";
 import BaseCheckbox from "../ui/BaseCheckbox.vue";
-import FormField from "../ui/FormField.vue";
+import BaseInput from "../ui/BaseInput.vue";
+import BaseTextarea from "../ui/BaseTextarea.vue";
+import SegmentedControl from "../ui/SegmentedControl.vue";
+import DragHandle from "../ui/DragHandle.vue";
 import OcrTextField from "../ui/OcrTextField.vue";
 import FormSection from "../ui/FormSection.vue";
-import { isPercentKind, kindOf, statPickerOptions } from "../../lib/format";
-import { focusNextCombo } from "../../lib/stat-row-nav";
 import {
   BonusDraftStore,
   moveConditionAcrossStores,
@@ -40,7 +40,7 @@ import {
   type ConditionLocation,
   type ConditionBranchLocation,
 } from "../../stores/bonus-draft";
-import type { GrantDraft } from "../../engine/bonus-draft";
+import type { GrantDraft } from "../../lib/bonus-draft";
 import { bonusDraftRegistryKey } from "../../composables/bonusDraftRegistry";
 import {
   useDragHandle,
@@ -61,15 +61,9 @@ const props = withDefaults(
   { tags: () => [], registryId: "" },
 );
 
-const statComboOptions = statPickerOptions;
 const bonusComboOptions = computed(() =>
   props.store.bonusIds.map((s) => ({ value: s, label: s })),
 );
-const isPercent = (key: string) => isPercentKind(kindOf(key));
-
-function focusNextStat(event: KeyboardEvent) {
-  focusNextCombo(event);
-}
 
 // Guard against a grant being removed while an event handler is still firing.
 function gs(index: number) {
@@ -130,15 +124,33 @@ function grantDragHandleProps(index: number) {
   }));
 }
 
-function tierDropList(grantUid: string, gIndex: number) {
-  const containerId = `tiers:${grantUid}`;
-  return useDropList({
-    containerId,
-    size: () => props.store.grants[gIndex]?.tiers.length ?? 0,
-    accepts: (source) =>
-      source.kind === "tier" && source.containerId === containerId,
-    onDrop: (source, index) => gs(gIndex).moveTierTo(source.index, index),
-  });
+// One `useDropList` per grant, cached by uid (NavBuilds.vue's `folderDrop` is the same idea).
+// `gIndex` is resolved fresh via `grantIndexByUid` rather than captured: grants reorder via
+// `moveGrantTo`, so a captured index would go stale across that move.
+function grantIndexByUid(grantUid: string): number {
+  return props.store.grants.findIndex((g) => g.uid === grantUid);
+}
+
+const tierDropLists = new Map<string, ReturnType<typeof useDropList>>();
+function tierDropList(grantUid: string) {
+  let list = tierDropLists.get(grantUid);
+  if (!list) {
+    const containerId = `tiers:${grantUid}`;
+    list = useDropList({
+      containerId,
+      size: () =>
+        props.store.grants[grantIndexByUid(grantUid)]?.tiers.length ?? 0,
+      accepts: (source) =>
+        source.kind === "tier" && source.containerId === containerId,
+      onDrop: (source, index) => {
+        const gIndex = grantIndexByUid(grantUid);
+        if (gIndex === -1) return;
+        gs(gIndex).moveTierTo(source.index, index);
+      },
+    });
+    tierDropLists.set(grantUid, list);
+  }
+  return list;
 }
 function tierDragHandleProps(grantUid: string, index: number) {
   return useDragHandle((): DragSource => ({
@@ -149,15 +161,26 @@ function tierDragHandleProps(grantUid: string, index: number) {
   }));
 }
 
-function variantDropList(grantUid: string, gIndex: number) {
-  const containerId = `variants:${grantUid}`;
-  return useDropList({
-    containerId,
-    size: () => props.store.grants[gIndex]?.variants.length ?? 0,
-    accepts: (source) =>
-      source.kind === "variant" && source.containerId === containerId,
-    onDrop: (source, index) => gs(gIndex).moveVariantTo(source.index, index),
-  });
+const variantDropLists = new Map<string, ReturnType<typeof useDropList>>();
+function variantDropList(grantUid: string) {
+  let list = variantDropLists.get(grantUid);
+  if (!list) {
+    const containerId = `variants:${grantUid}`;
+    list = useDropList({
+      containerId,
+      size: () =>
+        props.store.grants[grantIndexByUid(grantUid)]?.variants.length ?? 0,
+      accepts: (source) =>
+        source.kind === "variant" && source.containerId === containerId,
+      onDrop: (source, index) => {
+        const gIndex = grantIndexByUid(grantUid);
+        if (gIndex === -1) return;
+        gs(gIndex).moveVariantTo(source.index, index);
+      },
+    });
+    variantDropLists.set(grantUid, list);
+  }
+  return list;
 }
 function variantDragHandleProps(
   grantUid: string,
@@ -323,15 +346,10 @@ function toggleJson(gIndex: number) {
       v-bind="grantsDropList.rowProps(gIndex)"
     >
       <div class="flex flex-wrap items-center gap-2">
-        <BaseTooltip text="Drag to reorder">
-          <span
-            data-testid="grant-drag-handle"
-            class="cursor-grab text-muted hover:text-accent [&_svg]:size-[14px]"
-            v-bind="grantDragHandleProps(gIndex)"
-          >
-            <GripVertical />
-          </span>
-        </BaseTooltip>
+        <DragHandle
+          data-testid="grant-drag-handle"
+          v-bind="grantDragHandleProps(gIndex)"
+        />
         <span class="text-muted">Grant {{ gIndex + 1 }}</span>
         <div class="flex flex-wrap items-center gap-1.5">
           <IconButton
@@ -375,12 +393,12 @@ function toggleJson(gIndex: number) {
         </div>
       </div>
 
-      <textarea
+      <BaseTextarea
         v-if="grant.mode === 'json'"
         v-model="grant.json"
-        class="mt-1 w-full resize-y rounded-md border border-line bg-surface p-2 font-mono"
+        class="mt-1 w-full font-mono"
         rows="8"
-      ></textarea>
+      />
 
       <template v-else>
         <FormSection sub>Active when</FormSection>
@@ -397,192 +415,35 @@ function toggleJson(gIndex: number) {
 
         <FormSection sub>
           Payload
-          <div class="inline-flex">
-            <button
-              type="button"
-              class="border border-line px-2 py-0.5 first:rounded-l-md last:rounded-r-md last:border-l-0"
-              :class="
-                grant.payload === 'flat'
-                  ? 'border-accent bg-accent-soft text-text'
-                  : 'bg-surface text-muted'
-              "
-              @click="gs(gIndex).setPayload('flat')"
-            >
-              the same always
-            </button>
-            <button
-              type="button"
-              class="border border-line px-2 py-0.5 first:rounded-l-md last:rounded-r-md last:border-l-0"
-              :class="
-                grant.payload === 'tiers'
-                  ? 'border-accent bg-accent-soft text-text'
-                  : 'bg-surface text-muted'
-              "
-              @click="gs(gIndex).setPayload('tiers')"
-            >
-              tiered by bonus occurrences
-            </button>
-            <button
-              type="button"
-              class="border border-line px-2 py-0.5 first:rounded-l-md last:rounded-r-md last:border-l-0"
-              :class="
-                grant.payload === 'variants'
-                  ? 'border-accent bg-accent-soft text-text'
-                  : 'bg-surface text-muted'
-              "
-              @click="gs(gIndex).setPayload('variants')"
-            >
-              varies by condition
-            </button>
-            <button
-              type="button"
-              class="border border-line px-2 py-0.5 first:rounded-l-md last:rounded-r-md last:border-l-0"
-              :class="
-                grant.payload === 'problem'
-                  ? 'border-accent bg-accent-soft text-text'
-                  : 'bg-surface text-muted'
-              "
-              @click="gs(gIndex).setPayload('problem')"
-            >
-              reports a problem
-            </button>
-          </div>
+          <SegmentedControl
+            :model-value="grant.payload"
+            :options="[
+              { value: 'flat', label: 'the same always' },
+              { value: 'tiers', label: 'tiered by bonus occurrences' },
+              { value: 'variants', label: 'varies by condition' },
+              { value: 'problem', label: 'reports a problem' },
+            ]"
+            @update:model-value="gs(gIndex).setPayload($event)"
+          />
         </FormSection>
 
         <!-- flat payload -->
         <template v-if="grant.payload === 'flat'">
-          <div
-            v-for="(stat, sIndex) in grant.stats"
-            :key="sIndex"
-            class="stat-row flex flex-wrap items-center gap-1.5 mb-1"
-          >
-            <IconButton title="Add stat" @click="gs(gIndex).addStat()"
-              ><Plus
-            /></IconButton>
-            <IconButton
-              title="Remove stat"
-              @click="gs(gIndex).removeStat(sIndex)"
-              ><Trash
-            /></IconButton>
-            <ComboBox
-              class="combo--stat w-52"
-              :model-value="stat.key"
-              :options="statComboOptions"
-              placeholder="- pick a stat -"
-              @update:model-value="(v) => (stat.key = v)"
-            />
-            <PercentInput
-              v-if="isPercent(stat.key)"
-              v-model="stat.value"
-              class="w-28"
-              @keydown="focusNextStat"
-            />
-            <input
-              v-else
-              v-model.number="stat.value"
-              class="w-28 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-              type="number"
-              step="any"
-              @keydown="focusNextStat"
-            />
-          </div>
-          <div
-            v-if="!grant.stats.length"
-            class="stat-row flex flex-wrap items-center gap-1.5 mb-1"
-          >
-            <IconButton title="Add stat" @click="gs(gIndex).addStat()"
-              ><Plus
-            /></IconButton>
-          </div>
+          <StatRowList
+            :rows="grant.stats"
+            @add="gs(gIndex).addStat()"
+            @remove="(i: number) => gs(gIndex).removeStat(i)"
+          />
 
           <FormSection sub
             >Dynamic stats (player types the value; default applies until they
             do)</FormSection
           >
-          <div
-            v-for="(row, dIndex) in grant.dynamicStats"
-            :key="dIndex"
-            class="dynamic-stat-row flex flex-wrap items-center gap-1.5 mb-1"
-          >
-            <IconButton
-              title="Add dynamic stat"
-              @click="gs(gIndex).addDynamicStat()"
-              ><Plus
-            /></IconButton>
-            <IconButton
-              title="Remove dynamic stat"
-              @click="gs(gIndex).removeDynamicStat(dIndex)"
-              ><Trash
-            /></IconButton>
-            <FormField label="Stat">
-              <ComboBox
-                class="combo--stat w-52"
-                :model-value="row.stat"
-                :options="statComboOptions"
-                placeholder="- pick a stat -"
-                @update:model-value="(v) => (row.stat = v)"
-              />
-            </FormField>
-            <FormField label="Min">
-              <PercentInput
-                v-if="isPercent(row.stat)"
-                :model-value="row.min ?? ''"
-                class="w-24"
-                @update:model-value="(v) => (row.min = v)"
-              />
-              <input
-                v-else
-                v-model.number="row.min"
-                class="w-24 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-                type="number"
-              />
-            </FormField>
-            <FormField label="Max">
-              <PercentInput
-                v-if="isPercent(row.stat)"
-                :model-value="row.max ?? ''"
-                class="w-24"
-                @update:model-value="(v) => (row.max = v)"
-              />
-              <input
-                v-else
-                v-model.number="row.max"
-                class="w-24 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-                type="number"
-              />
-            </FormField>
-            <FormField label="Default">
-              <PercentInput
-                v-if="isPercent(row.stat)"
-                :model-value="row.default ?? ''"
-                class="w-24"
-                @update:model-value="(v) => (row.default = v)"
-              />
-              <input
-                v-else
-                v-model.number="row.default"
-                class="w-24 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-                type="number"
-              />
-            </FormField>
-            <FormField label="Label (optional)">
-              <input
-                v-model="row.label"
-                class="w-40 rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-                type="text"
-              />
-            </FormField>
-          </div>
-          <div
-            v-if="!grant.dynamicStats.length"
-            class="dynamic-stat-row flex flex-wrap items-center gap-1.5 mb-1"
-          >
-            <IconButton
-              title="Add dynamic stat"
-              @click="gs(gIndex).addDynamicStat()"
-              ><Plus
-            /></IconButton>
-          </div>
+          <DynamicStatRowList
+            :rows="grant.dynamicStats"
+            @add="gs(gIndex).addDynamicStat()"
+            @remove="(i: number) => gs(gIndex).removeDynamicStat(i)"
+          />
         </template>
 
         <!-- tiered payload -->
@@ -602,23 +463,18 @@ function toggleJson(gIndex: number) {
             data-testid="bonus-tier-row"
             class="my-1.5 rounded-md border-2 border-l-4 border-line border-l-accent bg-surface px-2.5 py-1.5"
             :class="[
-              tierDropList(grant.uid, gIndex).indicatorAt(tIndex) ===
-                'before' && '!border-t-accent',
-              tierDropList(grant.uid, gIndex).indicatorAt(tIndex) === 'after' &&
+              tierDropList(grant.uid).indicatorAt(tIndex) === 'before' &&
+                '!border-t-accent',
+              tierDropList(grant.uid).indicatorAt(tIndex) === 'after' &&
                 '!border-b-accent',
             ]"
-            v-bind="tierDropList(grant.uid, gIndex).rowProps(tIndex)"
+            v-bind="tierDropList(grant.uid).rowProps(tIndex)"
           >
             <div class="mb-1 flex flex-wrap items-center gap-1.5">
-              <BaseTooltip text="Drag to reorder">
-                <span
-                  data-testid="tier-drag-handle"
-                  class="cursor-grab text-muted hover:text-accent [&_svg]:size-[14px]"
-                  v-bind="tierDragHandleProps(grant.uid, tIndex)"
-                >
-                  <GripVertical />
-                </span>
-              </BaseTooltip>
+              <DragHandle
+                data-testid="tier-drag-handle"
+                v-bind="tierDragHandleProps(grant.uid, tIndex)"
+              />
               <IconButton
                 title="Move tier up"
                 :disabled="tIndex === 0"
@@ -653,61 +509,22 @@ function toggleJson(gIndex: number) {
                 placeholder="- bonus -"
                 @update:model-value="(v) => (tier.bonus = v)"
               />
-              <input
+              <BaseInput
                 v-model.number="tier.atLeast"
                 type="number"
                 min="1"
-                class="w-16 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+                class="w-16"
               />
               <span class="text-muted"
                 >{{ tier.atLeast === 1 ? "occurrence" : "occurrences" }} or
                 more</span
               >
             </div>
-            <div
-              v-for="(stat, sIndex) in tier.stats"
-              :key="sIndex"
-              class="stat-row flex flex-wrap items-center gap-1.5 mb-1"
-            >
-              <IconButton
-                title="Add stat"
-                @click="gs(gIndex).addTierStat(tIndex)"
-                ><Plus
-              /></IconButton>
-              <IconButton
-                title="Remove stat"
-                @click="gs(gIndex).removeTierStat(sIndex, tIndex)"
-                ><Trash
-              /></IconButton>
-              <ComboBox
-                class="combo--stat w-52"
-                :model-value="stat.key"
-                :options="statComboOptions"
-                placeholder="- pick a stat -"
-                @update:model-value="(v) => (stat.key = v)"
-              />
-              <PercentInput
-                v-if="isPercent(stat.key)"
-                v-model="stat.value"
-                class="w-28"
-                @keydown="focusNextStat"
-              />
-              <input
-                v-else
-                v-model.number="stat.value"
-                class="w-28 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-                type="number"
-                step="any"
-                @keydown="focusNextStat"
-              />
-            </div>
-            <div v-if="!tier.stats.length" class="mt-1 flex flex-wrap gap-1">
-              <IconButton
-                title="Add stat"
-                @click="gs(gIndex).addTierStat(tIndex)"
-                ><Plus
-              /></IconButton>
-            </div>
+            <StatRowList
+              :rows="tier.stats"
+              @add="gs(gIndex).addTierStat(tIndex)"
+              @remove="(i: number) => gs(gIndex).removeTierStat(i, tIndex)"
+            />
           </div>
           <IconButton
             v-if="!grant.tiers.length"
@@ -730,25 +547,18 @@ function toggleJson(gIndex: number) {
             data-testid="bonus-variant-row"
             class="my-1.5 rounded-md border-2 border-l-4 border-line border-l-accent bg-surface px-2.5 py-1.5"
             :class="[
-              variantDropList(grant.uid, gIndex).indicatorAt(vIndex) ===
-                'before' && '!border-t-accent',
-              variantDropList(grant.uid, gIndex).indicatorAt(vIndex) ===
-                'after' && '!border-b-accent',
+              variantDropList(grant.uid).indicatorAt(vIndex) === 'before' &&
+                '!border-t-accent',
+              variantDropList(grant.uid).indicatorAt(vIndex) === 'after' &&
+                '!border-b-accent',
             ]"
-            v-bind="variantDropList(grant.uid, gIndex).rowProps(vIndex)"
+            v-bind="variantDropList(grant.uid).rowProps(vIndex)"
           >
             <div class="mb-1 flex flex-wrap items-center gap-2">
-              <BaseTooltip text="Drag to reorder">
-                <span
-                  data-testid="variant-drag-handle"
-                  class="cursor-grab text-muted hover:text-accent [&_svg]:size-[14px]"
-                  v-bind="
-                    variantDragHandleProps(grant.uid, variant.uid, vIndex)
-                  "
-                >
-                  <GripVertical />
-                </span>
-              </BaseTooltip>
+              <DragHandle
+                data-testid="variant-drag-handle"
+                v-bind="variantDragHandleProps(grant.uid, variant.uid, vIndex)"
+              />
               <span class="text-muted">Variant {{ vIndex + 1 }}</span>
               <div class="flex flex-wrap items-center gap-1.5">
                 <IconButton
@@ -800,142 +610,23 @@ function toggleJson(gIndex: number) {
               @transfer-branch="onBranchTransfer"
             />
             <FormSection sub>Grants</FormSection>
-            <div
-              v-for="(stat, sIndex) in variant.stats"
-              :key="sIndex"
-              class="stat-row flex flex-wrap items-center gap-1.5 mb-1"
-            >
-              <IconButton
-                title="Add stat"
-                @click="gs(gIndex).addVariantStat(vIndex)"
-                ><Plus
-              /></IconButton>
-              <IconButton
-                title="Remove stat"
-                @click="gs(gIndex).removeVariantStat(sIndex, vIndex)"
-                ><Trash
-              /></IconButton>
-              <ComboBox
-                class="combo--stat w-52"
-                :model-value="stat.key"
-                :options="statComboOptions"
-                placeholder="- pick a stat -"
-                @update:model-value="(v) => (stat.key = v)"
-              />
-              <PercentInput
-                v-if="isPercent(stat.key)"
-                v-model="stat.value"
-                class="w-28"
-                @keydown="focusNextStat"
-              />
-              <input
-                v-else
-                v-model.number="stat.value"
-                class="w-28 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-                type="number"
-                step="any"
-                @keydown="focusNextStat"
-              />
-            </div>
-            <div
-              v-if="!variant.stats.length"
-              class="stat-row flex flex-wrap items-center gap-1.5 mb-1"
-            >
-              <IconButton
-                title="Add stat"
-                @click="gs(gIndex).addVariantStat(vIndex)"
-                ><Plus
-              /></IconButton>
-            </div>
+            <StatRowList
+              :rows="variant.stats"
+              @add="gs(gIndex).addVariantStat(vIndex)"
+              @remove="(i: number) => gs(gIndex).removeVariantStat(i, vIndex)"
+            />
 
             <FormSection sub
               >Dynamic stats (player types the value; default applies until they
               do)</FormSection
             >
-            <div
-              v-for="(row, dIndex) in variant.dynamicStats"
-              :key="dIndex"
-              class="dynamic-stat-row flex flex-wrap items-center gap-1.5 mb-1"
-            >
-              <IconButton
-                title="Add dynamic stat"
-                @click="gs(gIndex).addVariantDynamicStat(vIndex)"
-                ><Plus
-              /></IconButton>
-              <IconButton
-                title="Remove dynamic stat"
-                @click="gs(gIndex).removeVariantDynamicStat(dIndex, vIndex)"
-                ><Trash
-              /></IconButton>
-              <FormField label="Stat">
-                <ComboBox
-                  class="combo--stat w-52"
-                  :model-value="row.stat"
-                  :options="statComboOptions"
-                  placeholder="- pick a stat -"
-                  @update:model-value="(v) => (row.stat = v)"
-                />
-              </FormField>
-              <FormField label="Min">
-                <PercentInput
-                  v-if="isPercent(row.stat)"
-                  :model-value="row.min ?? ''"
-                  class="w-24"
-                  @update:model-value="(v) => (row.min = v)"
-                />
-                <input
-                  v-else
-                  v-model.number="row.min"
-                  class="w-24 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-                  type="number"
-                />
-              </FormField>
-              <FormField label="Max">
-                <PercentInput
-                  v-if="isPercent(row.stat)"
-                  :model-value="row.max ?? ''"
-                  class="w-24"
-                  @update:model-value="(v) => (row.max = v)"
-                />
-                <input
-                  v-else
-                  v-model.number="row.max"
-                  class="w-24 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-                  type="number"
-                />
-              </FormField>
-              <FormField label="Default">
-                <PercentInput
-                  v-if="isPercent(row.stat)"
-                  :model-value="row.default ?? ''"
-                  class="w-24"
-                  @update:model-value="(v) => (row.default = v)"
-                />
-                <input
-                  v-else
-                  v-model.number="row.default"
-                  class="w-24 rounded-md border border-line bg-surface px-1.5 py-0.5 text-right focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-                  type="number"
-                />
-              </FormField>
-              <FormField label="Label (optional)">
-                <input
-                  v-model="row.label"
-                  class="w-40 rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-                  type="text"
-                />
-              </FormField>
-            </div>
-            <div
-              v-if="!variant.dynamicStats.length"
-              class="dynamic-stat-row flex flex-wrap items-center gap-1.5 mb-1"
-            >
-              <IconButton
-                title="Add dynamic stat"
-                @click="gs(gIndex).addVariantDynamicStat(vIndex)"
-                ><Plus
-              /></IconButton>
-            </div>
+            <DynamicStatRowList
+              :rows="variant.dynamicStats"
+              @add="gs(gIndex).addVariantDynamicStat(vIndex)"
+              @remove="
+                (i: number) => gs(gIndex).removeVariantDynamicStat(i, vIndex)
+              "
+            />
           </div>
           <BaseButton
             variant="link"
@@ -953,49 +644,38 @@ function toggleJson(gIndex: number) {
           </p>
           <div class="mb-1.5 flex flex-wrap items-center gap-1.5">
             <span class="text-muted">Severity</span>
-            <div class="inline-flex">
-              <button
-                type="button"
-                data-testid="problem-severity-error"
-                class="border border-line px-2 py-0.5 first:rounded-l-md last:rounded-r-md last:border-l-0"
-                :class="
-                  grant.problemSeverity === 'error'
-                    ? 'border-danger bg-danger-soft text-danger'
-                    : 'bg-surface text-muted'
-                "
-                @click="grant.problemSeverity = 'error'"
-              >
-                error
-              </button>
-              <button
-                type="button"
-                data-testid="problem-severity-warning"
-                class="border border-line px-2 py-0.5 first:rounded-l-md last:rounded-r-md last:border-l-0"
-                :class="
-                  grant.problemSeverity === 'warning'
-                    ? 'border-warn bg-warn/25 text-warn'
-                    : 'bg-surface text-muted'
-                "
-                @click="grant.problemSeverity = 'warning'"
-              >
-                warning
-              </button>
-            </div>
+            <SegmentedControl
+              v-model="grant.problemSeverity"
+              :options="[
+                {
+                  value: 'error',
+                  label: 'error',
+                  tone: 'danger',
+                  testid: 'problem-severity-error',
+                },
+                {
+                  value: 'warning',
+                  label: 'warning',
+                  tone: 'warn',
+                  testid: 'problem-severity-warning',
+                },
+              ]"
+            />
           </div>
-          <input
+          <BaseInput
             v-model="grant.problemLabel"
             data-testid="problem-label"
             type="text"
-            class="mb-1.5 w-full rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+            class="mb-1.5 w-full"
             placeholder="Label shown in the sidebar summary (defaults to the slot's name)…"
           />
-          <textarea
+          <BaseTextarea
             v-model="grant.problemMessage"
             data-testid="problem-message"
-            class="mb-1.5 w-full resize-y rounded-md border border-line bg-surface p-2"
+            class="mb-1.5 w-full"
             rows="2"
             placeholder="Message shown to the user when this condition matches…"
-          ></textarea>
+          />
           <BaseCheckbox
             v-model="grant.problemHideFromPicker"
             data-testid="problem-hide-from-picker"
@@ -1027,11 +707,11 @@ function toggleJson(gIndex: number) {
             class="flex min-w-0 flex-1 flex-col gap-1.5"
             data-testid="grant-name-description-fields"
           >
-            <input
+            <BaseInput
               v-model="grant.name"
               data-testid="grant-name"
               type="text"
-              class="w-full rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+              class="w-full"
               placeholder="Name, distinguishes this grant from the bonus's other grants on the hover card…"
             />
             <OcrTextField

@@ -14,6 +14,7 @@ import {
   markRaw,
   onMounted,
   onUnmounted,
+  reactive,
   ref,
   watch,
 } from "vue";
@@ -50,11 +51,11 @@ import BaseButton from "./ui/BaseButton.vue";
 import RailGutter from "./ui/RailGutter.vue";
 import BaseCheckbox from "./ui/BaseCheckbox.vue";
 import BaseBadge from "./ui/BaseBadge.vue";
-import BaseNotice from "./ui/BaseNotice.vue";
 import TabStrip from "./ui/TabStrip.vue";
 import TabButton from "./ui/TabButton.vue";
 import { ClipboardPaste, Download, RotateCcw, Upload } from "@lucide/vue";
 import * as catalog from "../data/catalog";
+import { showNotice } from "../stores/notice";
 import * as router from "../lib/router";
 import * as engine from "../stores/resolved";
 import * as history from "../stores/history";
@@ -65,6 +66,7 @@ import { matchesQuery } from "../lib/text-filter";
 import type {
   CatalogGroup,
   CatalogOverlay,
+  Db,
   Item,
   Bonus,
   BuildParameterSlot,
@@ -101,6 +103,17 @@ function setOverlay(newValue: CatalogOverlay) {
   layers.updateOverlay(props.layer.id, newValue);
 }
 
+/** Every overlay write is "snapshot the undo stack, then store the new overlay"; only the
+ *  snapshot's action id and message vary. */
+function commit(
+  actionId: string | null,
+  message: string,
+  next: CatalogOverlay,
+) {
+  history.snapshot("layer", props.layer.id, actionId, message, overlay.value);
+  setOverlay(next);
+}
+
 /** The editor's own catalogue: the layer under edit folds last whatever its `enabled` flag
  * says, so its entries reach the lists, forms and lint even while switched off. Dropped from
  * the engine's fold order first, so an enabled layer folds once and on top. `markRaw` as in
@@ -122,11 +135,91 @@ const ui = computed(() => layerEditorUi.getState(props.layer.id));
 
 const query = ref("");
 const statusFilter = ref("all"); // all | changed | added | edited | removed
-const section = ref("items"); // items | bonuses | sectionPresets | slots
-const selectedId = ref<string | null>(null);
-const selectedBonusId = ref<string | null>(null);
-const selectedPresetId = ref<string | null>(null);
-const selectedSlotId = ref<string | null>(null);
+const section = ref<CatalogGroup>("items");
+
+/** One entry per overlay group, so a section is data rather than a fourth if/else branch:
+ *  adding a fifth is an entry here plus its own form block in the template. `routerKey`
+ *  mirrors the router params' naming, which predates this table. `labelIn` returns null for
+ *  an id that no longer resolves, so callers fall back to the raw id. */
+interface SectionDef {
+  group: CatalogGroup;
+  routerKey: "item" | "bonus" | "preset" | "slot";
+  noun: string;
+  existsIn(db: Db, id: string): boolean;
+  labelIn(db: Db, id: string): string | null;
+  rowsFrom(db: Db, overlay: CatalogOverlay): EditorRow[];
+  /** Clears this section's own duplicate seed before blanking the selection. */
+  createNew(): void;
+}
+const SECTIONS: Record<CatalogGroup, SectionDef> = {
+  items: {
+    group: "items",
+    routerKey: "item",
+    noun: "item",
+    existsIn: (db, id) => Boolean(db.get(id)),
+    labelIn: (db, id) => db.get(id)?.name ?? null,
+    rowsFrom: itemRowsFrom,
+    createNew: () => newItem(),
+  },
+  bonuses: {
+    group: "bonuses",
+    routerKey: "bonus",
+    noun: "bonus",
+    existsIn: (db, id) => Boolean(db.bonusById.get(id)),
+    labelIn: (db, id) => {
+      const bonus = db.bonusById.get(id);
+      return bonus ? bonus.name || bonus.id : null;
+    },
+    rowsFrom: bonusRowsFrom,
+    createNew: () => newBonus(),
+  },
+  sectionPresets: {
+    group: "sectionPresets",
+    routerKey: "preset",
+    noun: "preset",
+    existsIn: (db, id) => db.presets.some((preset) => preset.id === id),
+    labelIn: (db, id) => {
+      const preset = db.presets.find((candidate) => candidate.id === id);
+      return preset ? preset.label || preset.id : null;
+    },
+    rowsFrom: presetRowsFrom,
+    createNew: () => newPreset(),
+  },
+  slots: {
+    group: "slots",
+    routerKey: "slot",
+    noun: "parameter",
+    existsIn: (db, id) => db.slotById.has(id),
+    labelIn: (db, id) => {
+      const slot = db.authoredSlots.find((candidate) => candidate.id === id);
+      return slot ? slot.label || slot.id : null;
+    },
+    rowsFrom: slotRowsFrom,
+    createNew: () => newSlot(),
+  },
+};
+
+/** `EditorRow.kind` names things the way the row lists do ("sectionPreset", singular); the
+ *  overlay/router side names them the way `CatalogOverlay` does ("sectionPresets", plural).
+ *  One lookup instead of a `kind === "bonus" ? "bonuses" : ...` chain at each of the three
+ *  places (`select`, `restore`, `selectFinding`) that need to cross from one naming to the
+ *  other. */
+const GROUP_OF_KIND: Record<EditorRow["kind"], CatalogGroup> = {
+  item: "items",
+  bonus: "bonuses",
+  sectionPreset: "sectionPresets",
+  slot: "slots",
+};
+
+/** This layer's current selection, one id per overlay group. One reactive record rather than
+ *  four `selectedXId` refs, which always moved in lockstep with `section` itself. */
+const selectedBySection = reactive<Record<CatalogGroup, string | null>>({
+  items: null,
+  bonuses: null,
+  sectionPresets: null,
+  slots: null,
+});
+
 const showExport = ref(false);
 const showTooltipImport = ref(false);
 const exportTab = ref("overlay"); // items | bonuses | overlay | slots
@@ -145,136 +238,143 @@ const duplicateBonusSeed = ref<Bonus | null>(null);
 /** Same one-shot handoff as `newItemSeed`, from BuildSection's "Create new from current". */
 const newPresetSeed = layerEditorUi.takeNewPresetSeed();
 const duplicatePresetSeed = ref<SectionPreset | null>(newPresetSeed);
-const notice = ref("");
 
 const form = ref<InstanceType<typeof ItemForm> | null>(null);
 const bonusForm = ref<InstanceType<typeof BonusForm> | null>(null);
 const presetForm = ref<InstanceType<typeof PresetForm> | null>(null);
 const slotForm = ref<InstanceType<typeof SlotForm> | null>(null);
 
-// Removed entries are gone from `db`, so the list is built from the composed catalogue
-// plus the overlay's tombstones -- otherwise a deletion would vanish with no way back.
-const itemRows = computed<ItemRow[]>(() => {
-  const rows: ItemRow[] = db.value.items.map((item) => ({
-    key: item.id,
-    name: item.name,
-    filter: item.filter ?? "",
-    item,
-    status: catalog.statusOf(overlay.value, "items", item.id),
-    kind: "item",
-  }));
-  for (const [id, value] of Object.entries(overlay.value.items ?? {})) {
-    if (value === null) {
-      // A tombstone only ever hides a shipped item, so its display name is still in `base()`.
-      const name =
-        catalog.base().items.find((item) => item.id === id)?.name ?? id;
-      rows.push({
-        key: id,
-        name,
-        filter: "-",
-        item: null,
-        status: "removed",
-        kind: "item",
-      });
-    }
-  }
+/** One row per composed-catalogue entry plus one per tombstone, name-sorted. Removed entries
+ *  are gone from `db`, so without the tombstone pass (`catalog.tombstoneIds`) a deletion would
+ *  vanish from the list with no way back. */
+function editorRows<E, R extends EditorRow>(
+  entries: E[],
+  toRow: (entity: E) => R,
+  tombstones: string[],
+  toTombstoneRow: (id: string) => R,
+): R[] {
+  const rows = entries.map(toRow);
+  for (const id of tombstones) rows.push(toTombstoneRow(id));
   return rows.sort((a, b) => a.name.localeCompare(b.name));
-});
+}
 
-/** Same shape as `itemRows`, one row per bonus rather than per item -- so the same
+function itemRowsFrom(catalogDb: Db, ovl: CatalogOverlay): ItemRow[] {
+  return editorRows<Item, ItemRow>(
+    catalogDb.items,
+    (item) => ({
+      key: item.id,
+      name: item.name,
+      filter: item.filter ?? "",
+      item,
+      status: catalog.statusOf(ovl, "items", item.id),
+      kind: "item",
+    }),
+    catalog.tombstoneIds(ovl, "items"),
+    (id) => ({
+      key: id,
+      // A tombstone only ever hides a shipped item, so its name is still in `base()`.
+      name: catalog.base().items.find((item) => item.id === id)?.name ?? id,
+      filter: "-",
+      item: null,
+      status: "removed",
+      kind: "item",
+    }),
+  );
+}
+
+/** Same shape as `itemRowsFrom`, one row per bonus rather than per item, so the same
  * list/search/keyboard-nav code serves both without knowing which it's showing. */
-const bonusRows = computed<BonusRow[]>(() => {
-  const rows: BonusRow[] = db.value.bonuses.map((bonus) => ({
-    key: bonus.id,
-    name: bonus.name || bonus.id,
-    filter: `${(bonus.grants ?? []).length} grant(s)`,
-    bonus,
-    status: catalog.statusOf(overlay.value, "bonuses", bonus.id),
-    kind: "bonus",
-  }));
-  for (const [id, value] of Object.entries(overlay.value.bonuses ?? {})) {
-    if (value === null) {
-      rows.push({
-        key: id,
-        name: id,
-        filter: "-",
-        bonus: null,
-        status: "removed",
-        kind: "bonus",
-      });
-    }
-  }
-  return rows.sort((a, b) => a.name.localeCompare(b.name));
-});
+function bonusRowsFrom(catalogDb: Db, ovl: CatalogOverlay): BonusRow[] {
+  return editorRows<Bonus, BonusRow>(
+    catalogDb.bonuses,
+    (bonus) => ({
+      key: bonus.id,
+      name: bonus.name || bonus.id,
+      filter: `${(bonus.grants ?? []).length} grant(s)`,
+      bonus,
+      status: catalog.statusOf(ovl, "bonuses", bonus.id),
+      kind: "bonus",
+    }),
+    catalog.tombstoneIds(ovl, "bonuses"),
+    (id) => ({
+      key: id,
+      name: id,
+      filter: "-",
+      bonus: null,
+      status: "removed",
+      kind: "bonus",
+    }),
+  );
+}
 
-/** Same shape as `itemRows`/`bonusRows`, one row per section preset. */
-const presetRows = computed<PresetRow[]>(() => {
-  const rows: PresetRow[] = db.value.presets.map((preset) => ({
-    key: preset.id,
-    name: preset.label || preset.id,
-    filter: preset.section,
-    preset,
-    status: catalog.statusOf(overlay.value, "sectionPresets", preset.id),
-    kind: "sectionPreset",
-  }));
-  for (const [id, value] of Object.entries(
-    overlay.value.sectionPresets ?? {},
-  )) {
-    if (value === null) {
+/** Same shape as `itemRowsFrom`/`bonusRowsFrom`, one row per section preset. */
+function presetRowsFrom(catalogDb: Db, ovl: CatalogOverlay): PresetRow[] {
+  return editorRows<SectionPreset, PresetRow>(
+    catalogDb.presets,
+    (preset) => ({
+      key: preset.id,
+      name: preset.label || preset.id,
+      filter: preset.section,
+      preset,
+      status: catalog.statusOf(ovl, "sectionPresets", preset.id),
+      kind: "sectionPreset",
+    }),
+    catalog.tombstoneIds(ovl, "sectionPresets"),
+    (id) => {
       const shipped = catalog
         .base()
         .sectionPresets.find((preset) => preset.id === id);
-      rows.push({
+      return {
         key: id,
         name: shipped?.label ?? id,
         filter: shipped?.section ?? "-",
         preset: null,
         status: "removed",
         kind: "sectionPreset",
-      });
-    }
-  }
-  return rows.sort((a, b) => a.name.localeCompare(b.name));
-});
+      };
+    },
+  );
+}
 
 /** Same shape again, one row per authorable slot. Only `build_parameter` slots are listed:
  * the other four variants aren't overlay-editable (see `CatalogOverlay.slots`), so showing
  * them would offer an edit that cannot be saved. */
-const slotRows = computed<SlotRow[]>(() => {
-  // Authored, not resolved: SlotForm edits what was written, so a slot deriving its options
-  // from items must not arrive at the form with those options baked in as inline rows.
-  const rows: SlotRow[] = db.value.authoredSlots
-    .filter((slot) => slot.type === "build_parameter")
-    .map((slot) => ({
+function slotRowsFrom(catalogDb: Db, ovl: CatalogOverlay): SlotRow[] {
+  return editorRows<BuildParameterSlot, SlotRow>(
+    // Authored, not resolved: SlotForm edits what was written, so a slot deriving its options
+    // from items must not arrive at the form with those options baked in as inline rows.
+    catalogDb.authoredSlots.filter(
+      (slot): slot is BuildParameterSlot => slot.type === "build_parameter",
+    ),
+    (slot) => ({
       key: slot.id,
       name: slot.label || slot.id,
       filter: slot.path,
       slot,
-      status: catalog.statusOf(overlay.value, "slots", slot.id),
+      status: catalog.statusOf(ovl, "slots", slot.id),
       kind: "slot",
-    }));
-  for (const [id, value] of Object.entries(overlay.value.slots ?? {})) {
-    if (value === null) {
-      const shipped = catalog.base().slots.find((slot) => slot.id === id);
-      rows.push({
-        key: id,
-        name: shipped?.label ?? id,
-        filter: "-",
-        slot: null,
-        status: "removed",
-        kind: "slot",
-      });
-    }
-  }
-  return rows.sort((a, b) => a.name.localeCompare(b.name));
-});
+    }),
+    catalog.tombstoneIds(ovl, "slots"),
+    (id) => ({
+      key: id,
+      name: catalog.base().slots.find((slot) => slot.id === id)?.label ?? id,
+      filter: "-",
+      slot: null,
+      status: "removed",
+      kind: "slot",
+    }),
+  );
+}
 
-const rows = computed(() => {
-  if (section.value === "bonuses") return bonusRows.value;
-  if (section.value === "sectionPresets") return presetRows.value;
-  if (section.value === "slots") return slotRows.value;
-  return itemRows.value;
-});
+const rows = computed<EditorRow[]>(() =>
+  SECTIONS[section.value].rowsFrom(db.value, overlay.value),
+);
+
+/** The Parameters tab's count badge, which has to be right while a different section is
+ *  showing. Authored-and-filtered plus tombstones, so it can't be read off `db` directly. */
+const slotRowCount = computed(
+  () => slotRowsFrom(db.value, overlay.value).length,
+);
 
 const filtered = computed(() => {
   return rows.value.filter((row) => {
@@ -297,51 +397,39 @@ const statusFilterOptions = [
 ];
 
 const selected = computed(() => {
-  if (selectedId.value == null) return null;
-  return db.value.get(selectedId.value);
+  if (selectedBySection.items == null) return null;
+  return db.value.get(selectedBySection.items);
 });
-
-const selectedStatus = computed(() =>
-  selectedId.value == null
-    ? "base"
-    : catalog.statusOf(overlay.value, "items", selectedId.value),
-);
 
 const selectedBonus = computed(() => {
-  if (selectedBonusId.value == null) return null;
-  return db.value.bonusById.get(selectedBonusId.value) ?? null;
+  if (selectedBySection.bonuses == null) return null;
+  return db.value.bonusById.get(selectedBySection.bonuses) ?? null;
 });
-
-const selectedBonusStatus = computed(() =>
-  selectedBonusId.value == null
-    ? "base"
-    : catalog.statusOf(overlay.value, "bonuses", selectedBonusId.value),
-);
 
 const selectedPreset = computed(() => {
-  if (selectedPresetId.value == null) return null;
-  return db.value.presets.find((p) => p.id === selectedPresetId.value) ?? null;
+  if (selectedBySection.sectionPresets == null) return null;
+  return (
+    db.value.presets.find((p) => p.id === selectedBySection.sectionPresets) ??
+    null
+  );
 });
 
-const selectedPresetStatus = computed(() =>
-  selectedPresetId.value == null
-    ? "base"
-    : catalog.statusOf(overlay.value, "sectionPresets", selectedPresetId.value),
-);
-
 const selectedSlot = computed(() => {
-  if (selectedSlotId.value == null) return null;
+  if (selectedBySection.slots == null) return null;
   const slot = db.value.authoredSlots.find(
-    (candidate) => candidate.id === selectedSlotId.value,
+    (candidate) => candidate.id === selectedBySection.slots,
   );
   return slot?.type === "build_parameter" ? slot : null;
 });
 
-const selectedSlotStatus = computed(() =>
-  selectedSlotId.value == null
+/** The status badge for whichever entity is currently selected. One computed rather than
+ *  four: `EntryStatus` doesn't vary by entity type, and only one form is ever showing. */
+const selectedStatus = computed(() => {
+  const id = selectedBySection[section.value];
+  return id == null
     ? "base"
-    : catalog.statusOf(overlay.value, "slots", selectedSlotId.value),
-);
+    : catalog.statusOf(overlay.value, section.value, id);
+});
 
 const filters = computed<string[]>(() =>
   [
@@ -395,17 +483,15 @@ const entryCount = computed(() => {
 });
 
 const hasUnsavedDraft = (row: EditorRow) => {
-  if (row.kind === "bonus") {
-    if (row.key === selectedBonusId.value)
-      return bonusForm.value?.dirty ?? false;
-  }
-  if (row.kind === "sectionPreset") {
-    if (row.key === selectedPresetId.value)
-      return presetForm.value?.dirty ?? false;
-  }
-  if (row.kind === "slot") {
-    if (row.key === selectedSlotId.value) return slotForm.value?.dirty ?? false;
-  }
+  if (row.kind === "bonus" && row.key === selectedBySection.bonuses)
+    return bonusForm.value?.dirty ?? false;
+  if (
+    row.kind === "sectionPreset" &&
+    row.key === selectedBySection.sectionPresets
+  )
+    return presetForm.value?.dirty ?? false;
+  if (row.kind === "slot" && row.key === selectedBySection.slots)
+    return slotForm.value?.dirty ?? false;
   return false;
 };
 
@@ -444,8 +530,61 @@ const warnCount = computed(
 // one stop per keystroke: a click is a real "go to this row" navigation, an arrow key is
 // just skimming.
 
+/** The router-params patch for making `id` the selection in `group`: its own key set, every
+ *  *other* section's key nulled out. `slot` is deliberately never included in that clearing,
+ *  since it is only ever written by the slots section itself. */
+function routeParamsFor(
+  group: CatalogGroup,
+  id: string | null,
+): router.RouterParams {
+  const params: router.RouterParams = { item: null, bonus: null, preset: null };
+  params[SECTIONS[group].routerKey] = id;
+  return params;
+}
+
+/** Just this section's own key, without `routeParamsFor`'s clearing of the others: a save or
+ *  delete inside a section never changes which section is showing. */
+function routeParamFor(
+  group: CatalogGroup,
+  id: string | null,
+): router.RouterParams {
+  return { [SECTIONS[group].routerKey]: id };
+}
+
+/** Whether `source.status` names one of `statusFilterOptions`' own values. */
 function isValidStatusFilter(value: unknown) {
   return statusFilterOptions.some((option) => option.value === value);
+}
+
+/** The section/selection fields `restoreSelection` reads. Not `Record<string, string>`: only
+ *  a type without an index signature of its own accepts both a parsed route and
+ *  `LayerEditorUiState` without a cast. */
+interface SelectionSource {
+  section?: string;
+  item?: string;
+  bonus?: string;
+  preset?: string;
+  slot?: string;
+}
+
+/** Applies `source`'s section/selection fields (a parsed route, or the per-layer `ui` store)
+ *  to `section`/`selectedBySection`, shared by `onPopState` and `onMounted`. An id that no
+ *  longer resolves in `db` is dropped, so a stale or hand-edited URL can't select something
+ *  that isn't there. */
+function restoreSelection(source: SelectionSource) {
+  for (const group of ["bonuses", "sectionPresets", "slots"] as const) {
+    if (source.section !== group) continue;
+    section.value = group;
+    const id = source[SECTIONS[group].routerKey];
+    selectedBySection[group] =
+      id && SECTIONS[group].existsIn(db.value, id) ? id : null;
+    return;
+  }
+  section.value = "items";
+  selectedBySection.items =
+    source.item && SECTIONS.items.existsIn(db.value, source.item)
+      ? source.item
+      : null;
 }
 
 /** Back/forward landed on this component while it was already mounted (still in the
@@ -458,101 +597,51 @@ function onPopState() {
   duplicateBonusSeed.value = null;
   duplicatePresetSeed.value = null;
   const route = router.parse();
-  if (route.section === "bonuses") {
-    section.value = "bonuses";
-    selectedBonusId.value =
-      route.bonus && db.value.bonusById.get(route.bonus) ? route.bonus : null;
-  } else if (route.section === "sectionPresets") {
-    section.value = "sectionPresets";
-    selectedPresetId.value =
-      route.preset && db.value.presets.some((p) => p.id === route.preset)
-        ? route.preset
-        : null;
-  } else {
-    section.value = "items";
-    selectedId.value =
-      route.item && db.value.get(route.item) ? route.item : null;
-  }
+  restoreSelection(route);
   statusFilter.value = isValidStatusFilter(route.status) ? route.status : "all";
   query.value = route.q ?? "";
 }
 
-function switchSection(target: string) {
+function switchSection(target: CatalogGroup) {
   if (section.value === target) return;
   section.value = target;
-  if (target === "bonuses") {
-    router.apply({
-      section: "bonuses",
-      item: null,
-      preset: null,
-      bonus: selectedBonusId.value,
-    });
-  } else if (target === "sectionPresets") {
-    router.apply({
-      section: "sectionPresets",
-      item: null,
-      bonus: null,
-      preset: selectedPresetId.value,
-    });
-  } else if (target === "slots") {
-    router.apply({
-      section: "slots",
-      item: null,
-      bonus: null,
-      preset: null,
-      slot: selectedSlotId.value,
-    });
-  } else {
-    router.apply({
-      section: null,
-      bonus: null,
-      preset: null,
-      item: selectedId.value,
-    });
-  }
+  router.apply({
+    section: target === "items" ? null : target,
+    ...routeParamsFor(target, selectedBySection[target]),
+  });
 }
 
 function select(row: EditorRow, { push = true }: { push?: boolean } = {}) {
   if (row.status === "removed") return;
-  if (row.kind === "bonus") {
-    selectedBonusId.value = row.key;
-    router.apply({ bonus: row.key, item: null, preset: null }, { push });
-  } else if (row.kind === "sectionPreset") {
-    selectedPresetId.value = row.key;
-    router.apply({ preset: row.key, item: null, bonus: null }, { push });
-  } else if (row.kind === "slot") {
-    selectedSlotId.value = row.key;
-    router.apply(
-      { slot: row.key, item: null, bonus: null, preset: null },
-      {
-        push,
-      },
-    );
-  } else {
-    selectedId.value = row.key;
-    router.apply({ item: row.key, bonus: null, preset: null }, { push });
-  }
+  const group = GROUP_OF_KIND[row.kind];
+  selectedBySection[group] = row.key;
+  router.apply(routeParamsFor(group, row.key), { push });
 }
 
-const selectedKey = computed(() => {
-  if (section.value === "bonuses") return selectedBonusId.value;
-  if (section.value === "sectionPresets") return selectedPresetId.value;
-  if (section.value === "slots") return selectedSlotId.value;
-  return selectedId.value;
-});
+const selectedKey = computed(() => selectedBySection[section.value]);
+
+/** Blanks `group`'s selection so its form mounts as an empty draft. The counter is what
+ *  forces that remount even when the selection was already null. */
+function newEntry(group: CatalogGroup) {
+  selectedBySection[group] = null;
+  newItemCounter.value++;
+  router.apply(routeParamFor(group, null));
+}
 
 function newItem() {
-  selectedId.value = null;
   duplicateItemSeed.value = null;
-  newItemCounter.value++;
-  router.apply({ item: null });
+  newEntry("items");
 }
 
 function newBonus() {
-  selectedBonusId.value = null;
   duplicateBonusSeed.value = null;
-  newItemCounter.value++;
-  router.apply({ bonus: null });
+  newEntry("bonuses");
+}
+
+/** The entry list's "create" click, dispatched to the current section's own `createNew`:
+ *  each clears a differently-typed duplicate seed, the template needs only one handler. */
+function createEntry() {
+  SECTIONS[section.value].createNew();
 }
 
 /** Opens a new item draft pre-filled from the currently selected item -- an explicit Save
@@ -562,10 +651,10 @@ function duplicateItem() {
   const item = selected.value;
   if (!item) return;
   duplicateItemSeed.value = item;
-  selectedId.value = null;
+  selectedBySection.items = null;
   newItemCounter.value++;
   router.apply({ item: null });
-  notice.value = `Duplicating "${item.name}" - edit and save to create a copy`;
+  showNotice(`Duplicating "${item.name}" - edit and save to create a copy`);
 }
 
 /** Opens a new item draft seeded from a pasted tooltip. Like "Duplicate", the seed is only
@@ -573,12 +662,14 @@ function duplicateItem() {
  *  and anything the parser could not read is simply an empty field. */
 function createFromTooltip(draft: Partial<Item>) {
   section.value = "items";
-  selectedId.value = null;
+  selectedBySection.items = null;
   duplicateItemSeed.value = { id: "", name: "", ...draft } as Item;
   newItemCounter.value++;
   router.apply({ item: null });
   showTooltipImport.value = false;
-  notice.value = `Filled ${Object.keys(draft).length} field(s) from the tooltip - review and save to create the item`;
+  showNotice(
+    `Filled ${Object.keys(draft).length} field(s) from the tooltip - review and save to create the item`,
+  );
 }
 
 /** How the tooltip window should name the item its "apply" buttons write into, or null when
@@ -600,108 +691,103 @@ function applyFromTooltip({
   label: string;
 }) {
   form.value?.applyPatch(patch);
-  notice.value = `Applied ${label} from the tooltip to ${applyTarget.value}`;
+  showNotice(`Applied ${label} from the tooltip to ${applyTarget.value}`);
 }
 
 function duplicateBonus() {
   const bonus = selectedBonus.value;
   if (!bonus) return;
   duplicateBonusSeed.value = bonus;
-  selectedBonusId.value = null;
+  selectedBySection.bonuses = null;
   newItemCounter.value++;
   router.apply({ bonus: null });
-  notice.value = `Duplicating "${bonus.name || bonus.id}" - edit and save to create a copy`;
+  showNotice(
+    `Duplicating "${bonus.name || bonus.id}" - edit and save to create a copy`,
+  );
 }
 
 function newPreset() {
   duplicatePresetSeed.value = null;
-  selectedPresetId.value = null;
-  newItemCounter.value++;
-  router.apply({ preset: null });
+  newEntry("sectionPresets");
 }
 
 function newSlot() {
-  selectedSlotId.value = null;
-  newItemCounter.value++;
-  router.apply({ slot: null });
+  newEntry("slots");
 }
 
-function onSave({ item }: { item: Item }) {
-  history.snapshot(
-    "layer",
-    props.layer.id,
-    `save:${item.id}`,
-    `Save item "${item.name}"`,
-    overlay.value,
+// --- overlay writes ---------------------------------------------------------------------
+// One save/live-edit/delete/revert over whichever overlay group SECTIONS names. Only the
+// payload each form emits stays per-section, as the thin wrappers further down.
+
+/** Writes `entity` into `group` and selects it. `label` comes from the entity rather than
+ *  `labelIn`, since a brand-new entry is not in `db` until this write lands. */
+function saveEntry(
+  group: CatalogGroup,
+  id: string,
+  entity: Item | Bonus | SectionPreset | BuildParameterSlot,
+  label: string,
+) {
+  const { noun } = SECTIONS[group];
+  commit(
+    `save-${group}:${id}`,
+    `Save ${noun} "${label}"`,
+    catalog.upsert(overlay.value, group, id, entity),
   );
-  const next = catalog.upsert(overlay.value, "items", item.id, item);
-  setOverlay(next);
-  selectedId.value = item.id;
-  router.apply({ item: item.id });
-  notice.value = `Saved "${item.name}"`;
+  selectedBySection[group] = id;
+  router.apply(routeParamFor(group, id));
+  showNotice(`Saved ${noun} "${label}"`);
 }
 
-/** Live-edit handler: debounced changes from existing items go here. */
-function onUpdateItem({ item, label }: { item: Item; label: string }) {
-  history.snapshot(
-    "layer",
-    props.layer.id,
-    `edit:${item.id}`,
+/** Live-edit handler: debounced changes from an existing entry go here. `label` is the
+ *  form's own "what changed" text, which becomes the undo step's label. */
+function updateEntry(
+  group: CatalogGroup,
+  id: string,
+  entity: Item | Bonus | SectionPreset | BuildParameterSlot,
+  label: string,
+) {
+  commit(
+    `edit-${group}:${id}`,
     label,
-    overlay.value,
+    catalog.upsert(overlay.value, group, id, entity),
   );
-  const next = catalog.upsert(overlay.value, "items", item.id, item);
-  setOverlay(next);
 }
 
-function onDelete() {
-  const id = selectedId.value!;
-  const name = selected.value?.name ?? id;
-  history.snapshot(
-    "layer",
-    props.layer.id,
-    `delete:${id}`,
-    `Delete item "${name}"`,
-    overlay.value,
+function deleteEntry(group: CatalogGroup) {
+  const { noun, labelIn } = SECTIONS[group];
+  const id = selectedBySection[group]!;
+  const label = labelIn(db.value, id) ?? id;
+  commit(
+    `delete-${group}:${id}`,
+    `Delete ${noun} "${label}"`,
+    catalog.remove(overlay.value, group, id),
   );
-  setOverlay(catalog.remove(overlay.value, "items", id));
-  selectedId.value = null;
-  router.apply({ item: null });
-  notice.value = `Removed "${name}"`;
+  selectedBySection[group] = null;
+  router.apply(routeParamFor(group, null));
+  showNotice(`Removed ${noun} "${label}"`);
 }
 
-function onRevert() {
-  const id = selectedId.value!;
-  const name = selected.value?.name ?? id;
-  history.snapshot(
-    "layer",
-    props.layer.id,
-    `revert:${id}`,
-    `Revert item "${name}"`,
-    overlay.value,
+function revertEntry(group: CatalogGroup) {
+  const { noun, labelIn } = SECTIONS[group];
+  const id = selectedBySection[group]!;
+  const label = labelIn(db.value, id) ?? id;
+  commit(
+    `revert-${group}:${id}`,
+    `Revert ${noun} "${label}"`,
+    catalog.revert(overlay.value, group, id),
   );
-  setOverlay(catalog.revert(overlay.value, "items", id));
-  notice.value = `Reverted "${name}" to the shipped version`;
+  showNotice(`Reverted ${noun} "${label}" to the shipped version`);
 }
 
 function restore(row: EditorRow) {
-  const group: CatalogGroup =
-    row.kind === "bonus"
-      ? "bonuses"
-      : row.kind === "sectionPreset"
-        ? "sectionPresets"
-        : row.kind === "slot"
-          ? "slots"
-          : "items";
-  history.snapshot(
-    "layer",
-    props.layer.id,
-    `restore:${row.key}`,
-    `Restore "${row.name}"`,
-    overlay.value,
+  const group = GROUP_OF_KIND[row.kind];
+  const { noun } = SECTIONS[group];
+  commit(
+    `restore-${group}:${row.key}`,
+    `Restore ${noun} "${row.name}"`,
+    catalog.revert(overlay.value, group, row.key),
   );
-  setOverlay(catalog.revert(overlay.value, group, row.key));
-  notice.value = `Restored "${row.name}"`;
+  showNotice(`Restored ${noun} "${row.name}"`);
 }
 
 async function resetAll(event: MouseEvent) {
@@ -712,123 +798,40 @@ async function resetAll(event: MouseEvent) {
     note: confirm.UNDO_NOTE,
   });
   if (!ok) return;
-  history.snapshot(
-    "layer",
-    props.layer.id,
-    null,
-    "Discard all changes",
-    overlay.value,
-  );
-  setOverlay(catalog.emptyOverlay());
-  selectedId.value = null;
-  selectedBonusId.value = null;
-  selectedPresetId.value = null;
-  selectedSlotId.value = null;
-  router.apply({ item: null, bonus: null, preset: null, slot: null });
-  notice.value = "Discarded every change - back to the shipped data";
+  commit(null, "Discard all changes", catalog.emptyOverlay());
+  const cleared: router.RouterParams = {};
+  for (const group of Object.keys(SECTIONS) as CatalogGroup[]) {
+    selectedBySection[group] = null;
+    Object.assign(cleared, routeParamFor(group, null));
+  }
+  router.apply(cleared);
+  showNotice("Discarded every change - back to the shipped data");
 }
 
-/** Jump to whatever a validation finding points at, switching section if needed --
- * findings carry `kind` precisely so this doesn't have to guess from the id/name shape. */
+/** Jump to whatever a validation finding points at, switching section if needed. Findings
+ * carry `kind` precisely so this doesn't have to guess from the id/name shape. */
 function selectFinding(finding: LintFinding) {
   if (!finding.name) return;
-  if (finding.kind === "bonus") {
-    section.value = "bonuses";
-    selectedBonusId.value = finding.name;
-    router.apply({
-      section: "bonuses",
-      bonus: finding.name,
-      item: null,
-      preset: null,
-    });
-  } else if (finding.kind === "sectionPreset") {
-    section.value = "sectionPresets";
-    selectedPresetId.value = finding.name;
-    router.apply({
-      section: "sectionPresets",
-      preset: finding.name,
-      item: null,
-      bonus: null,
-    });
-  } else if (finding.kind === "slot") {
-    section.value = "slots";
-    selectedSlotId.value = finding.name;
-    router.apply({
-      section: "slots",
-      slot: finding.name,
-      item: null,
-      bonus: null,
-      preset: null,
-    });
-  } else {
-    section.value = "items";
-    selectedId.value = finding.name;
-    router.apply({
-      section: null,
-      item: finding.name,
-      bonus: null,
-      preset: null,
-    });
-  }
+  const group = GROUP_OF_KIND[finding.kind];
+  section.value = group;
+  selectedBySection[group] = finding.name;
+  router.apply({
+    section: group === "items" ? null : group,
+    ...routeParamsFor(group, finding.name),
+  });
 }
 
-// --- bonuses ----------------------------------------------------------------------------
-// `onSaveBonus`/`onDeleteBonus` are the sub-editor inside the item form (a bonus this item
-// attaches or detaches); `onSaveBonusTop`/`onDeleteBonusTop`/`onRevertBonusTop` are this
-// component's own "Bonuses" section, browsing and editing a bonus on its own.
+// The per-section wrappers: each names the payload its own form emits, then defers.
+const onSave = ({ item }: { item: Item }) =>
+  saveEntry("items", item.id, item, item.name);
+const onUpdateItem = ({ item, label }: { item: Item; label: string }) =>
+  updateEntry("items", item.id, item, label);
+const onDelete = () => deleteEntry("items");
+const onRevert = () => revertEntry("items");
 
-function onSaveBonus({ id, bonus }: { id: string; bonus: Bonus }) {
-  history.snapshot(
-    "layer",
-    props.layer.id,
-    `save-bonus:${id}`,
-    `Save bonus "${bonus.name || id}"`,
-    overlay.value,
-  );
-  setOverlay(catalog.upsert(overlay.value, "bonuses", id, bonus));
-  notice.value = `Saved bonus "${bonus.name || id}"`;
-}
-
-/** Live-edit handler: debounced changes from existing bonuses in item editor go here. */
-function onUpdateBonus({ id, bonus }: { id: string; bonus: Bonus }) {
-  history.snapshot(
-    "layer",
-    props.layer.id,
-    `edit-bonus:${id}`,
-    `Edit bonus "${bonus.name || id}"`,
-    overlay.value,
-  );
-  setOverlay(catalog.upsert(overlay.value, "bonuses", id, bonus));
-}
-
-function onDeleteBonus(id: string) {
-  history.snapshot(
-    "layer",
-    props.layer.id,
-    `delete-bonus:${id}`,
-    `Delete bonus "${id}"`,
-    overlay.value,
-  );
-  setOverlay(catalog.remove(overlay.value, "bonuses", id));
-  notice.value = `Removed bonus "${id}"`;
-}
-
-function onSaveBonusTop({ id, bonus }: { id: string; bonus: Bonus }) {
-  history.snapshot(
-    "layer",
-    props.layer.id,
-    `save-bonus:${id}`,
-    `Save bonus "${bonus.name || id}"`,
-    overlay.value,
-  );
-  setOverlay(catalog.upsert(overlay.value, "bonuses", id, bonus));
-  selectedBonusId.value = id;
-  router.apply({ bonus: id });
-  notice.value = `Saved bonus "${bonus.name || id}"`;
-}
-
-/** Live-edit handler: debounced changes from existing bonuses go here. */
-function onUpdateBonusTop({
+const onSaveBonusTop = ({ id, bonus }: { id: string; bonus: Bonus }) =>
+  saveEntry("bonuses", id, bonus, bonus.name || id);
+const onUpdateBonusTop = ({
   id,
   bonus,
   label,
@@ -836,174 +839,63 @@ function onUpdateBonusTop({
   id: string;
   bonus: Bonus;
   label: string;
-}) {
-  history.snapshot(
-    "layer",
-    props.layer.id,
-    `edit-bonus:${id}`,
-    label,
-    overlay.value,
-  );
-  setOverlay(catalog.upsert(overlay.value, "bonuses", id, bonus));
-}
+}) => updateEntry("bonuses", id, bonus, label);
+const onDeleteBonusTop = () => deleteEntry("bonuses");
+const onRevertBonusTop = () => revertEntry("bonuses");
 
-function onDeleteBonusTop() {
-  const id = selectedBonusId.value!;
-  history.snapshot(
-    "layer",
-    props.layer.id,
-    `delete-bonus:${id}`,
-    `Delete bonus "${id}"`,
-    overlay.value,
-  );
-  setOverlay(catalog.remove(overlay.value, "bonuses", id));
-  selectedBonusId.value = null;
-  router.apply({ bonus: null });
-  notice.value = `Removed bonus "${id}"`;
-}
-
-function onRevertBonusTop() {
-  const id = selectedBonusId.value!;
-  history.snapshot(
-    "layer",
-    props.layer.id,
-    `revert-bonus:${id}`,
-    `Revert bonus "${id}"`,
-    overlay.value,
-  );
-  setOverlay(catalog.revert(overlay.value, "bonuses", id));
-  notice.value = `Reverted bonus "${id}" to the shipped version`;
-}
-
-// --- section presets ------------------------------------------------------------------
-
-function onSavePreset({ preset }: { preset: SectionPreset }) {
-  history.snapshot(
-    "layer",
-    props.layer.id,
-    `save-preset:${preset.id}`,
-    `Save preset "${preset.label || preset.id}"`,
-    overlay.value,
-  );
-  setOverlay(
-    catalog.upsert(overlay.value, "sectionPresets", preset.id, preset),
-  );
-  selectedPresetId.value = preset.id;
-  router.apply({ preset: preset.id });
-  notice.value = `Saved preset "${preset.label || preset.id}"`;
-}
-
-/** Live-edit handler: debounced changes from an existing preset go here. */
-function onUpdatePreset({
+const onSavePreset = ({ preset }: { preset: SectionPreset }) =>
+  saveEntry("sectionPresets", preset.id, preset, preset.label || preset.id);
+const onUpdatePreset = ({
   preset,
   label,
 }: {
   preset: SectionPreset;
   label: string;
-}) {
-  history.snapshot(
-    "layer",
-    props.layer.id,
-    `edit-preset:${preset.id}`,
-    label,
-    overlay.value,
-  );
-  setOverlay(
-    catalog.upsert(overlay.value, "sectionPresets", preset.id, preset),
-  );
-}
+}) => updateEntry("sectionPresets", preset.id, preset, label);
+const onDeletePreset = () => deleteEntry("sectionPresets");
+const onRevertPreset = () => revertEntry("sectionPresets");
 
-function onDeletePreset() {
-  const id = selectedPresetId.value!;
-  history.snapshot(
-    "layer",
-    props.layer.id,
-    `delete-preset:${id}`,
-    `Delete preset "${id}"`,
-    overlay.value,
-  );
-  setOverlay(catalog.remove(overlay.value, "sectionPresets", id));
-  selectedPresetId.value = null;
-  router.apply({ preset: null });
-  notice.value = `Removed preset "${id}"`;
-}
-
-// --- build parameter slots -------------------------------------------------------------
-// Mechanically identical to the preset handlers above -- a slot is just a fourth overlay
-// group. What makes it different lives in SlotForm.vue and in `validateSlots`, not here.
-
-function onSaveSlot({ slot }: { slot: BuildParameterSlot }) {
-  history.snapshot(
-    "layer",
-    props.layer.id,
-    `save-slot:${slot.id}`,
-    `Save parameter "${slot.label || slot.id}"`,
-    overlay.value,
-  );
-  setOverlay(catalog.upsert(overlay.value, "slots", slot.id, slot));
-  selectedSlotId.value = slot.id;
-  router.apply({ slot: slot.id });
-  notice.value = `Saved parameter "${slot.label || slot.id}"`;
-}
-
-/** Live-edit handler: debounced changes from an existing slot go here. */
-function onUpdateSlot({
+const onSaveSlot = ({ slot }: { slot: BuildParameterSlot }) =>
+  saveEntry("slots", slot.id, slot, slot.label || slot.id);
+const onUpdateSlot = ({
   slot,
   label,
 }: {
   slot: BuildParameterSlot;
   label: string;
-}) {
-  history.snapshot(
-    "layer",
-    props.layer.id,
-    `edit-slot:${slot.id}`,
-    label,
-    overlay.value,
+}) => updateEntry("slots", slot.id, slot, label);
+const onDeleteSlot = () => deleteEntry("slots");
+const onRevertSlot = () => revertEntry("slots");
+
+// --- bonuses nested in the item form ------------------------------------------------------
+// ItemForm's bonus sub-editor writes the same overlay group as the Bonuses section, but must
+// leave the selection and the URL alone: the item stays selected, so `saveEntry`/`deleteEntry`
+// would move focus off it.
+
+function onSaveBonus({ id, bonus }: { id: string; bonus: Bonus }) {
+  const label = bonus.name || id;
+  commit(
+    `save-bonuses:${id}`,
+    `Save bonus "${label}"`,
+    catalog.upsert(overlay.value, "bonuses", id, bonus),
   );
-  setOverlay(catalog.upsert(overlay.value, "slots", slot.id, slot));
+  showNotice(`Saved bonus "${label}"`);
 }
 
-function onDeleteSlot() {
-  const id = selectedSlotId.value!;
-  const label = selectedSlot.value?.label ?? id;
-  history.snapshot(
-    "layer",
-    props.layer.id,
-    `delete-slot:${id}`,
-    `Delete parameter "${label}"`,
-    overlay.value,
-  );
-  setOverlay(catalog.remove(overlay.value, "slots", id));
-  selectedSlotId.value = null;
-  router.apply({ slot: null });
-  notice.value = `Removed parameter "${label}"`;
+/** Live-edit handler for that sub-editor. ItemBonuses emits no "what changed" text of its
+ *  own, so the undo step is labelled from the bonus itself. */
+function onUpdateBonus({ id, bonus }: { id: string; bonus: Bonus }) {
+  updateEntry("bonuses", id, bonus, `Edit bonus "${bonus.name || id}"`);
 }
 
-function onRevertSlot() {
-  const id = selectedSlotId.value!;
-  history.snapshot(
-    "layer",
-    props.layer.id,
-    `revert-slot:${id}`,
-    `Revert parameter "${id}"`,
-    overlay.value,
+function onDeleteBonus(id: string) {
+  const label = SECTIONS.bonuses.labelIn(db.value, id) ?? id;
+  commit(
+    `delete-bonuses:${id}`,
+    `Delete bonus "${label}"`,
+    catalog.remove(overlay.value, "bonuses", id),
   );
-  setOverlay(catalog.revert(overlay.value, "slots", id));
-  notice.value = `Reverted parameter "${id}" to the shipped version`;
-}
-
-function onRevertPreset() {
-  const id = selectedPresetId.value!;
-  history.snapshot(
-    "layer",
-    props.layer.id,
-    `revert-preset:${id}`,
-    `Revert preset "${id}"`,
-    overlay.value,
-  );
-  setOverlay(catalog.revert(overlay.value, "sectionPresets", id));
-  notice.value = `Reverted preset "${id}" to the shipped version`;
+  showNotice(`Removed bonus "${label}"`);
 }
 
 async function importOverlay(event: Event) {
@@ -1012,17 +904,12 @@ async function importOverlay(event: Event) {
   if (!file) return;
   try {
     const parsed = JSON.parse(await file.text());
-    history.snapshot(
-      "layer",
-      props.layer.id,
-      null,
-      "Import overlay",
-      overlay.value,
-    );
-    setOverlay(catalog.normaliseOverlay(parsed));
-    notice.value = "Overlay imported";
+    commit(null, "Import overlay", catalog.normaliseOverlay(parsed));
+    showNotice("Overlay imported");
   } catch (error: unknown) {
-    notice.value = `Could not read that overlay: ${error instanceof Error ? error.message : String(error)}`;
+    showNotice(
+      `Could not read that overlay: ${error instanceof Error ? error.message : String(error)}`,
+    );
   }
   input.value = "";
 }
@@ -1036,23 +923,16 @@ watch(query, (value) => {
 
 // Mirror every field this component owns into the per-layer store, so a later remount (a
 // round trip through the build editor) has something to restore from once the URL itself
-// has been cleared by `onUnmounted` below.
+// has been cleared by `onUnmounted` below. `selectedBySection` is a reactive object, not a
+// ref, so it deep-watches by default even inside this array of sources.
 watch(
-  [
-    section,
-    selectedId,
-    selectedBonusId,
-    selectedPresetId,
-    selectedSlotId,
-    statusFilter,
-    query,
-  ],
-  ([sec, item, bonus, preset, slot, status, q]) => {
+  [section, selectedBySection, statusFilter, query],
+  ([sec, sel, status, q]) => {
     ui.value.section = sec;
-    ui.value.item = item ?? "";
-    ui.value.bonus = bonus ?? "";
-    ui.value.preset = preset ?? "";
-    ui.value.slot = slot ?? "";
+    ui.value.item = sel.items ?? "";
+    ui.value.bonus = sel.bonuses ?? "";
+    ui.value.preset = sel.sectionPresets ?? "";
+    ui.value.slot = sel.slots ?? "";
     ui.value.status = status === "all" ? "" : status;
     ui.value.q = q;
   },
@@ -1085,10 +965,10 @@ onMounted(() => {
     // BuildSection's "Create new from current": the pre-filled draft *is* the point of the
     // jump, so it outranks whatever this layer had open -- same reasoning as `newItemSeed`.
     section.value = "sectionPresets";
-    selectedPresetId.value = null;
+    selectedBySection.sectionPresets = null;
     ui.value.section = "sectionPresets";
     ui.value.preset = "";
-    notice.value = "New preset from the current build - name it and save";
+    showNotice("New preset from the current build - name it and save");
   } else if (newItemSeed) {
     // BuildEditor's Ctrl/Cmd+click on an empty slot row: the blank draft *is* the point of the
     // jump, so restoring whatever this layer had open before would throw it away. The per-layer
@@ -1099,26 +979,9 @@ onMounted(() => {
     const narrowedTo = [newItemSeed.filter, ...(newItemSeed.tags ?? [])]
       .filter(Boolean)
       .join(", ");
-    notice.value = `New item - pre-filled for "${narrowedTo}"`;
-  } else if (source.section === "bonuses") {
-    section.value = "bonuses";
-    if (source.bonus && db.value.bonusById.get(source.bonus))
-      selectedBonusId.value = source.bonus;
-  } else if (source.section === "sectionPresets") {
-    section.value = "sectionPresets";
-    if (source.preset && db.value.presets.some((p) => p.id === source.preset))
-      selectedPresetId.value = source.preset;
-  } else if (source.section === "slots") {
-    section.value = "slots";
-    if (source.slot && db.value.slotById.has(source.slot))
-      selectedSlotId.value = source.slot;
-  } else if (source.item && db.value.get(source.item)) {
-    selectedId.value = source.item;
+    showNotice(`New item - pre-filled for "${narrowedTo}"`);
   } else {
-    selectedId.value = null;
-    selectedBonusId.value = null;
-    selectedPresetId.value = null;
-    selectedSlotId.value = null;
+    restoreSelection(source);
   }
   if (isValidStatusFilter(source.status)) statusFilter.value = source.status;
   if (source.q) query.value = source.q;
@@ -1192,7 +1055,7 @@ onUnmounted(() => {
           @click="switchSection('slots')"
         >
           Parameters
-          <span class="opacity-75 tabular-nums">{{ slotRows.length }}</span>
+          <span class="opacity-75 tabular-nums">{{ slotRowCount }}</span>
         </TabButton>
       </TabStrip>
 
@@ -1242,15 +1105,11 @@ onUnmounted(() => {
       build. Enable it to see its effects.
     </div>
 
-    <BaseNotice v-if="notice" class="mb-2" @dismiss="notice = ''">{{
-      notice
-    }}</BaseNotice>
-
     <LayerExportModal
       v-if="showExport"
       v-model="exportTab"
       :overlay="overlay"
-      @notice="notice = $event"
+      @notice="showNotice"
       @close="showExport = false"
     />
 
@@ -1290,15 +1149,7 @@ onUnmounted(() => {
           :status-filter-options="statusFilterOptions"
           :has-unsaved-draft="hasUnsavedDraft"
           @select="select"
-          @create="
-            section === 'bonuses'
-              ? newBonus()
-              : section === 'sectionPresets'
-                ? newPreset()
-                : section === 'slots'
-                  ? newSlot()
-                  : newItem()
-          "
+          @create="createEntry"
           @restore="restore"
         />
         <RailGutter
@@ -1316,7 +1167,7 @@ onUnmounted(() => {
         <ItemForm
           v-if="section === 'items'"
           ref="form"
-          :key="selectedId ?? `__new__${newItemCounter}`"
+          :key="`item:${selectedKey ?? `__new__${newItemCounter}`}`"
           :source="selected"
           :duplicate-from="duplicateItemSeed"
           :status="selectedStatus"
@@ -1338,10 +1189,10 @@ onUnmounted(() => {
         <BonusForm
           v-else-if="section === 'bonuses'"
           ref="bonusForm"
-          :key="selectedBonusId ?? `__new__${newItemCounter}`"
+          :key="`bonus:${selectedKey ?? `__new__${newItemCounter}`}`"
           :source="selectedBonus"
           :duplicate-from="duplicateBonusSeed"
-          :status="selectedBonusStatus"
+          :status="selectedStatus"
           :db="db"
           :all-bonus-ids="allBonusIds"
           :tags="tagList"
@@ -1356,9 +1207,9 @@ onUnmounted(() => {
         <SlotForm
           v-else-if="section === 'slots'"
           ref="slotForm"
-          :key="selectedSlotId ?? `__new__${newItemCounter}`"
+          :key="`slot:${selectedKey ?? `__new__${newItemCounter}`}`"
           :source="selectedSlot"
-          :status="selectedSlotStatus"
+          :status="selectedStatus"
           :db="db"
           :allocatable-ids="allocatableIds"
           @save="onSaveSlot"
@@ -1369,10 +1220,10 @@ onUnmounted(() => {
         <PresetForm
           v-else
           ref="presetForm"
-          :key="selectedPresetId ?? `__new__${newItemCounter}`"
+          :key="`preset:${selectedKey ?? `__new__${newItemCounter}`}`"
           :source="selectedPreset"
           :duplicate-from="duplicatePresetSeed"
-          :status="selectedPresetStatus"
+          :status="selectedStatus"
           :db="db"
           :allocatable-ids="allocatableIds"
           @save="onSavePreset"

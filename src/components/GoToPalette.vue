@@ -11,6 +11,7 @@
 import { computed, nextTick, onMounted, ref, useTemplateRef, watch } from "vue";
 import { onKeyStroke } from "@vueuse/core";
 import BaseModal from "./ui/BaseModal.vue";
+import PaletteInput from "./ui/PaletteInput.vue";
 import { rankEntries, type GoToEntry } from "../lib/go-to";
 import { useGoToEntries } from "../composables/useGoToEntries";
 import * as goTo from "../stores/goTo";
@@ -25,7 +26,7 @@ const KIND_LABEL: Record<GoToEntry["kind"], string> = {
 };
 
 const modal = useTemplateRef<InstanceType<typeof BaseModal>>("modal");
-const input = useTemplateRef<HTMLInputElement>("input");
+const input = useTemplateRef<InstanceType<typeof PaletteInput>>("input");
 const list = useTemplateRef<HTMLElement>("list");
 const query = ref("");
 const highlight = ref(0);
@@ -110,10 +111,9 @@ onKeyStroke("Enter", (event) => {
     data-testid="go-to-palette"
     @close="goTo.close()"
   >
-    <input
+    <PaletteInput
       ref="input"
       v-model="query"
-      type="text"
       role="combobox"
       aria-expanded="true"
       aria-controls="go-to-list"
@@ -122,7 +122,6 @@ onKeyStroke("Enter", (event) => {
       "
       aria-label="Go to a section, slot, build or layer"
       data-testid="go-to-input"
-      class="w-full border-b border-line bg-surface px-3 py-2.5 focus:outline-none"
       placeholder="Go to a section, slot, build or layer…"
     />
 
