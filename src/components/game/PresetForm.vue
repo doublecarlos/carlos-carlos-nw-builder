@@ -1,7 +1,8 @@
 <script setup lang="ts">
-// Editing form for one section preset. Hybrid approach (same as ItemForm.vue/BonusForm.vue):
-// - Existing presets (source != null): live edits, changes emit immediately
-// - New presets (source == null): explicit Save button, draft until label is finalized
+// Editing form for one section preset. Hybrid approach (same as ItemForm.vue/BonusForm.vue).
+// The draft shape and its `SectionPreset` conversion live in lib/preset-draft.ts, the same
+// pattern ItemForm.vue's own draft mapping follows now (see that module's header comment); this
+// file owns markup and wiring only.
 //
 // Each of a preset's slot-keyed value fields (params/choices/values/assignments) is edited as a
 // small add/remove row list, the same "pick a key, then enter a type-appropriate value"
@@ -10,15 +11,6 @@
 // slot type (BuildParamInput/ItemPicker/PointAssignmentInput), reused as-is via its existing
 // slotDef + v-model contract. That reuse is what keeps this form from needing any new
 // per-paramType/per-slot-type value editing code.
-//
-// `occurrences` is the one field with no row list of its own: it is keyed by item, not by slot
-// (see `SectionPreset.occurrences`), so it is authored inline on whichever row put that item on
-// screen (an item row's own pick, or a point_assignment row's items) into one draft-wide
-// map. Only entries still reachable from a row survive `toPreset`, so re-picking a row's item
-// doesn't leave counts behind for an item the preset no longer mentions.
-//
-// `clears` is the mirror image: a row list whose rows carry only a slot, no value at all, since
-// the whole point is resetting that slot to its built-in default.
 import { computed } from "vue";
 import { Plus, Trash } from "@lucide/vue";
 import BonusOccurrenceInputs from "./BonusOccurrenceInputs.vue";
@@ -38,6 +30,12 @@ import { useEditorDraft } from "../../composables/useEditorDraft";
 import { occurrenceRows } from "../../composables/useItemBonusOccurrences";
 import { dynamicValueKey } from "../../lib/dynamic-stats";
 import { parseRowSlotId, rowSlot } from "../../lib/item-picker-list";
+import {
+  buildDraft,
+  toPreset,
+  diffLabel,
+  type PresetDraft,
+} from "../../lib/preset-draft";
 import type {
   SectionPreset,
   Db,
@@ -77,163 +75,15 @@ const emit = defineEmits<{
   revert: [];
 }>();
 
-interface ParamRow {
-  slotId: string;
-  value: string | number | boolean;
-}
-interface ItemRow {
-  slotId: string;
-  choice: string;
-  /** One entry per dynamic-stat config the chosen item declares, keyed by `dynamicValueKey`,
-   *  same shape `Build.values[slotId]` stores, since a preset just seeds that. */
-  values: Record<string, number | string | null>;
-}
-interface AssignmentRow {
-  slotId: string;
-  counts: Record<string, number>;
-}
-interface ClearRow {
-  slotId: string;
-}
-
-interface PresetDraft {
-  label: string;
-  section: string;
-  paramRows: ParamRow[];
-  itemRows: ItemRow[];
-  assignmentRows: AssignmentRow[];
-  clearRows: ClearRow[];
-  /** Item id to bonus id to count, draft-wide rather than per row, mirroring the field it
-   *  writes (see the module comment). */
-  occurrences: Record<string, Record<string, number>>;
-}
-
-function buildDraft(preset: SectionPreset | null | undefined): PresetDraft {
-  const source = preset ?? ({} as Partial<SectionPreset>);
-  return {
-    label: source.label ?? "",
-    section: source.section ?? "",
-    paramRows: Object.entries(source.params ?? {}).map(([slotId, value]) => ({
-      slotId,
-      value,
-    })),
-    itemRows: Object.entries(source.choices ?? {}).map(([slotId, choice]) => ({
-      slotId,
-      choice,
-      values: { ...(source.values?.[slotId] ?? {}) },
-    })),
-    assignmentRows: Object.entries(source.assignments ?? {}).map(
-      ([slotId, counts]) => ({ slotId, counts: { ...counts } }),
-    ),
-    clearRows: (source.clears ?? []).map((slotId) => ({ slotId })),
-    occurrences: Object.fromEntries(
-      Object.entries(source.occurrences ?? {}).map(([itemId, counts]) => [
-        itemId,
-        { ...counts },
-      ]),
-    ),
-  };
-}
-
-/** Every item the form currently offers occurrence inputs for: each item row's own pick, plus
- *  every item a point_assignment row lists (that row renders a set of inputs per item, the same
- *  as the build editor's own). What `toPreset` keeps `occurrences` entries for. */
-function authoredItemIdsOf(local: PresetDraft): Set<string> {
-  const ids = new Set<string>();
-  for (const row of local.itemRows) if (row.choice) ids.add(row.choice);
-  for (const row of local.assignmentRows) {
-    if (!row.slotId) continue;
-    for (const item of props.db.forSlot(row.slotId)) ids.add(item.id);
-  }
-  return ids;
-}
-
 function computeId(local: PresetDraft): string {
   const label = local.label.trim();
   return label ? catalog.nextId(label, props.allocatableIds, "preset") : "";
 }
 
-function toPreset(local: PresetDraft): SectionPreset {
-  const label = local.label.trim();
-  const id = props.source?.id ?? computeId(local);
-  const preset: SectionPreset = {
-    id,
-    label,
-    section: local.section,
-  };
-
-  const params: Record<string, string | number | boolean> = {};
-  for (const row of local.paramRows) {
-    if (!row.slotId) continue;
-    params[row.slotId] = row.value;
-  }
-  if (Object.keys(params).length) preset.params = params;
-
-  const choices: Record<string, string> = {};
-  const values: Record<string, Record<string, number>> = {};
-  for (const row of local.itemRows) {
-    if (!row.slotId || !row.choice) continue;
-    choices[row.slotId] = row.choice;
-    const rowValues: Record<string, number> = {};
-    for (const [key, raw] of Object.entries(row.values)) {
-      if (raw == null || raw === "") continue;
-      const number = Number(raw);
-      if (Number.isFinite(number)) rowValues[key] = number;
-    }
-    if (Object.keys(rowValues).length) values[row.slotId] = rowValues;
-  }
-  if (Object.keys(choices).length) preset.choices = choices;
-  if (Object.keys(values).length) preset.values = values;
-
-  const assignments: Record<string, Record<string, number>> = {};
-  for (const row of local.assignmentRows) {
-    if (!row.slotId || !Object.keys(row.counts).length) continue;
-    assignments[row.slotId] = { ...row.counts };
-  }
-  if (Object.keys(assignments).length) preset.assignments = assignments;
-
-  const occurrences: Record<string, Record<string, number>> = {};
-  for (const itemId of authoredItemIdsOf(local)) {
-    const counts = local.occurrences[itemId];
-    if (!counts) continue;
-    const kept = Object.fromEntries(
-      Object.entries(counts).filter(([, count]) => Number.isFinite(count)),
-    );
-    if (Object.keys(kept).length) occurrences[itemId] = kept;
-  }
-  if (Object.keys(occurrences).length) preset.occurrences = occurrences;
-
-  const clears = [
-    ...new Set(local.clearRows.map((row) => row.slotId).filter(Boolean)),
-  ];
-  if (clears.length) preset.clears = clears;
-
-  return preset;
-}
-
-function diffLabel(oldJson: string, newJson: string): string {
-  try {
-    const old = JSON.parse(oldJson);
-    const nw = JSON.parse(newJson);
-    if (old.label !== nw.label) return `edit label → "${nw.label}"`;
-    if (old.section !== nw.section) return `edit section → "${nw.section}"`;
-    if (JSON.stringify(old.params) !== JSON.stringify(nw.params))
-      return "edit params";
-    if (
-      JSON.stringify(old.choices) !== JSON.stringify(nw.choices) ||
-      JSON.stringify(old.values) !== JSON.stringify(nw.values)
-    )
-      return "edit item choices";
-    if (JSON.stringify(old.assignments) !== JSON.stringify(nw.assignments))
-      return "edit point assignments";
-    if (JSON.stringify(old.occurrences) !== JSON.stringify(nw.occurrences))
-      return "edit bonus occurrences";
-    if (JSON.stringify(old.clears) !== JSON.stringify(nw.clears))
-      return "edit cleared slots";
-  } catch {
-    // JSON parse error, shouldn't happen but be safe.
-  }
-  return "edit preset";
+/** The id `toPreset` writes: the source's own once one exists, otherwise whatever
+ *  `computeId` works out from the draft's current label. */
+function presetId(local: PresetDraft): string {
+  return props.source?.id ?? computeId(local);
 }
 
 // Existing presets: live edits. New presets: draft until Save.
@@ -247,7 +97,7 @@ const { draft, error, dirty, displayId } = useEditorDraft<
   source: () => props.source,
   isNew,
   buildDraft: (source) => buildDraft(source ?? props.duplicateFrom),
-  toEntity: toPreset,
+  toEntity: (local) => toPreset(local, { id: presetId(local), db: props.db }),
   diffLabel,
   hasContent: (d) =>
     Boolean(
@@ -426,7 +276,9 @@ function save() {
     error.value = "Add at least one slot value.";
     return;
   }
-  emit("save", { preset: toPreset(draft.value) });
+  emit("save", {
+    preset: toPreset(draft.value, { id: presetId(draft.value), db: props.db }),
+  });
 }
 </script>
 

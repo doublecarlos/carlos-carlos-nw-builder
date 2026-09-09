@@ -26,9 +26,9 @@ import BaseBadge from "../ui/BaseBadge.vue";
 import BaseInput from "../ui/BaseInput.vue";
 import FormSection from "../ui/FormSection.vue";
 import type { Db, Bonus } from "../../types";
-import type { BonusDraft } from "../../engine/bonus-draft";
+import type { BonusDraft } from "../../lib/bonus-draft";
 import type { BonusDraftStore } from "../../stores/bonus-draft";
-import type { OccurrenceDraft } from "./ItemForm.vue";
+import type { OccurrenceDraft } from "../../lib/item-draft";
 import { bonusDraftRegistryKey } from "../../composables/bonusDraftRegistry";
 
 // Lets a condition be dragged from one bonus's tree straight into another's, both attached to

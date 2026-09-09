@@ -40,7 +40,7 @@ import {
   type ConditionLocation,
   type ConditionBranchLocation,
 } from "../../stores/bonus-draft";
-import type { GrantDraft } from "../../engine/bonus-draft";
+import type { GrantDraft } from "../../lib/bonus-draft";
 import { bonusDraftRegistryKey } from "../../composables/bonusDraftRegistry";
 import {
   useDragHandle,

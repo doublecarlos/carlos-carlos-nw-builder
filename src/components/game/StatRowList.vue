@@ -8,7 +8,7 @@ import RepeatableRows from "../ui/RepeatableRows.vue";
 import StatValueInput from "./StatValueInput.vue";
 import { statPickerOptions } from "../../lib/format";
 import { focusNextCombo } from "../../lib/stat-row-nav";
-import type { StatRow } from "../../engine/bonus-draft";
+import type { StatRow } from "../../lib/bonus-draft";
 
 defineProps<{ rows: StatRow[] }>();
 const emit = defineEmits<{ add: []; remove: [index: number] }>();

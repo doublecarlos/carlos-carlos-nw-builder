@@ -14,7 +14,7 @@ import FormField from "../ui/FormField.vue";
 import FormGrid from "../ui/FormGrid.vue";
 import FormSection from "../ui/FormSection.vue";
 import IdField from "../ui/IdField.vue";
-import * as bonusDraft from "../../engine/bonus-draft";
+import * as bonusDraft from "../../lib/bonus-draft";
 import * as catalog from "../../data/catalog";
 import { useEditorDraft } from "../../composables/useEditorDraft";
 import { BonusDraftStore } from "../../stores/bonus-draft";

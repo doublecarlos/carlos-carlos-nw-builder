@@ -9,7 +9,7 @@ import BaseInput from "../ui/BaseInput.vue";
 import StatValueInput from "./StatValueInput.vue";
 import FormField from "../ui/FormField.vue";
 import { statPickerOptions } from "../../lib/format";
-import type { DynamicStatDraft } from "../../engine/bonus-draft";
+import type { DynamicStatDraft } from "../../lib/bonus-draft";
 
 defineProps<{ rows: DynamicStatDraft[] }>();
 const emit = defineEmits<{ add: []; remove: [index: number] }>();

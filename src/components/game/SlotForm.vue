@@ -1,16 +1,14 @@
 <script setup lang="ts">
 // Editing form for one build_parameter slot. Same hybrid lifecycle as ItemForm/BonusForm/
 // PresetForm: an existing slot live-edits on every change, a brand-new one is a draft until
-// Save.
+// Save. The draft shape and its `BuildParameterSlot` conversion live in lib/slot-draft.ts, the
+// same pattern the other three forms' draft mapping follows now (see bonus-draft.ts's header
+// comment); this file owns markup and wiring only.
 //
 // Deliberately narrow: `build_parameter` only, appended to an existing section.
 // The other four `Slot` variants carry layout structure (section membership, ordering,
 // separators) that an overlay's flat id->value map cannot express, so they stay base-only
 // and never reach this form.
-//
-// Fields this form does not offer are carried through verbatim rather than dropped:
-// `visibleWhen` is the one that exists today, and editing a shipped param's label must not
-// silently un-scope it. `passthrough` below is what keeps that true for anything added later.
 import { ref, computed } from "vue";
 import { Plus, Trash } from "@lucide/vue";
 import ComboBox from "../ui/ComboBox.vue";
@@ -25,6 +23,15 @@ import IdField from "../ui/IdField.vue";
 import * as catalog from "../../data/catalog";
 import { useEditorDraft } from "../../composables/useEditorDraft";
 import { resolvedOptions } from "../../lib/param-options";
+import {
+  buildDraft,
+  passthroughOf,
+  toSlot,
+  diffLabel,
+  isNumeric,
+  findPathConflict,
+  type SlotDraft,
+} from "../../lib/slot-draft";
 import type { BuildParameterSlot, Db } from "../../types";
 import type { EntryStatus } from "../../data/catalog";
 
@@ -51,98 +58,6 @@ const emit = defineEmits<{
   revert: [];
 }>();
 
-interface OptionRow {
-  value: string;
-  label: string;
-}
-
-interface SlotDraft {
-  label: string;
-  section: string;
-  paramType: BuildParameterSlot["paramType"];
-  path: string;
-  quick: boolean;
-  /** Held loosely in the draft: `toSlot` casts back per `paramType`, so switching type
-   *  mid-edit can't leave a number sitting in a boolean's `default`. `string | number`
-   *  rather than `string` because Vue's `v-model` casts to a number by itself on an
-   *  `<input type="number">`, so these fields start as strings and become numbers as soon
-   *  as they are typed into. */
-  default: string | number;
-  /** Which way the option set is authored. A three-way choice rather than two independent
-   *  fields so `options` XOR `optionsFrom`, and `filter` XOR `tags` within it, are structurally
-   *  impossible to violate from this form; `validateSlots` still enforces both for data
-   *  arriving from a file. */
-  optionsSource: "inline" | "tags" | "filter";
-  options: OptionRow[];
-  optionsFromTags: string;
-  optionsFromFilter: string;
-  allowEmpty: boolean;
-  min: string | number;
-  max: string | number;
-  step: string | number;
-  presets: string;
-}
-
-/** Fields the form does not edit, kept aside and re-attached by `toSlot`. */
-const passthrough = ref<Partial<BuildParameterSlot>>({});
-
-function buildDraft(slot: BuildParameterSlot | null | undefined): SlotDraft {
-  const {
-    id: _id,
-    label,
-    section,
-    type: _type,
-    paramType,
-    path,
-    quick,
-    default: fallback,
-    options,
-    min,
-    max,
-    step,
-    presets,
-    optionsFrom,
-    allowEmpty,
-    ...rest
-  } = slot ?? ({} as Partial<BuildParameterSlot>);
-  passthrough.value = rest;
-  return {
-    label: label ?? "",
-    section: section ?? "",
-    paramType: paramType ?? "number",
-    path: path ?? "",
-    quick: quick ?? false,
-    default: fallback == null ? "" : String(fallback),
-    optionsSource: optionsFrom
-      ? optionsFrom.tags?.length
-        ? "tags"
-        : "filter"
-      : "inline",
-    options: (options ?? []).map((option) => ({
-      value: option.value,
-      label: option.label,
-    })),
-    optionsFromTags: (optionsFrom?.tags ?? []).join(", "),
-    optionsFromFilter: optionsFrom?.filter ?? "",
-    allowEmpty: allowEmpty ?? false,
-    min: min == null ? "" : String(min),
-    max: max == null ? "" : String(max),
-    step: step == null ? "" : String(step),
-    presets: (presets ?? []).join(", "),
-  };
-}
-
-const numeric = computed(
-  () =>
-    draft.value.paramType === "number" || draft.value.paramType === "percent",
-);
-
-const number = (raw: string | number) => {
-  if (typeof raw === "number") return Number.isFinite(raw) ? raw : undefined;
-  const value = Number(raw);
-  return raw.trim() !== "" && Number.isFinite(value) ? value : undefined;
-};
-
 function computeId(local: SlotDraft): string {
   return local.label.trim()
     ? catalog.nextSlotId(
@@ -153,92 +68,20 @@ function computeId(local: SlotDraft): string {
     : "";
 }
 
-function toSlot(local: SlotDraft): BuildParameterSlot {
-  const slot: BuildParameterSlot = {
-    ...passthrough.value,
-    id: props.source?.id ?? computeId(local),
-    label: local.label.trim(),
-    section: local.section,
-    type: "build_parameter",
-    paramType: local.paramType,
-    path: local.path.trim(),
-  };
-  if (local.quick) slot.quick = true;
-
-  // `default` is typed by `paramType`, not by what the text field happens to hold: a boolean
-  // param storing the string "true" would compare unequal to `true` everywhere downstream.
-  if (local.paramType === "boolean") {
-    slot.default = String(local.default) === "true";
-  } else if (numeric.value) {
-    const fallback = number(local.default);
-    if (fallback !== undefined) slot.default = fallback;
-    const min = number(local.min);
-    const max = number(local.max);
-    const step = number(local.step);
-    if (min !== undefined) slot.min = min;
-    if (max !== undefined) slot.max = max;
-    if (step !== undefined) slot.step = step;
-    const presets = local.presets
-      .split(",")
-      .map((part) => number(part))
-      .filter((value): value is number => value !== undefined);
-    if (presets.length) slot.presets = presets;
-  } else {
-    slot.default = String(local.default);
-    if (local.optionsSource === "inline") {
-      const options = local.options
-        .filter((row) => row.label.trim())
-        .map((row) => ({
-          value: row.value,
-          label: row.label.trim(),
-        }));
-      if (options.length) slot.options = options;
-    } else {
-      slot.optionsFrom =
-        local.optionsSource === "tags"
-          ? {
-              tags: local.optionsFromTags
-                .split(",")
-                .map((tag) => tag.trim())
-                .filter(Boolean),
-            }
-          : { filter: local.optionsFromFilter.trim() };
-      if (local.allowEmpty) slot.allowEmpty = true;
-    }
-  }
-  return slot;
+/** The id `toSlot` writes: the source's own once one exists, otherwise whatever `computeId`
+ *  works out from the draft's current label. */
+function slotId(local: SlotDraft): string {
+  return props.source?.id ?? computeId(local);
 }
 
-function diffLabel(oldJson: string, newJson: string): string {
-  try {
-    const old = JSON.parse(oldJson);
-    const nw = JSON.parse(newJson);
-    if (old.label !== nw.label) return `edit label to "${nw.label}"`;
-    if (old.path !== nw.path) return `edit path to "${nw.path}"`;
-    if (old.paramType !== nw.paramType) return `edit type to "${nw.paramType}"`;
-    if (JSON.stringify(old.options) !== JSON.stringify(nw.options))
-      return "edit options";
-    if (old.default !== nw.default) return "edit default";
-  } catch {
-    // JSON parse error, shouldn't happen but be safe.
-  }
-  return "edit parameter";
-}
+/** Fields the form does not edit, kept aside and re-attached by `toSlot`; updated alongside
+ *  the draft (initial build and every `props.source` rebuild) rather than derived from it,
+ *  since `SlotDraft` itself is what `useEditorDraft` diffs/undoes and has no room for it. */
+const passthrough = ref<Partial<BuildParameterSlot>>(
+  passthroughOf(props.source),
+);
 
-/** The other slot already sitting on this `path`, if any. Two slots sharing a path silently
- * fight over one value in `context`, so this blocks the save outright rather than leaving it
- * to the lint drawer to report after the damage is saved. */
-function findPathConflict(local: SlotDraft): string | null {
-  const path = local.path.trim();
-  if (!path) return null;
-  const clash = props.db.slots.find(
-    (slot) =>
-      slot.type === "build_parameter" &&
-      slot.path === path &&
-      slot.id !== (props.source?.id ?? computeId(local)),
-  );
-  return clash ? clash.id : null;
-}
+const numeric = computed(() => isNumeric(draft.value.paramType));
 
 const isNew = computed(() => !props.source);
 
@@ -249,14 +92,18 @@ const { draft, error, dirty, displayId } = useEditorDraft<
 >({
   source: () => props.source,
   isNew,
-  buildDraft,
-  toEntity: toSlot,
+  buildDraft: (source) => {
+    passthrough.value = passthroughOf(source);
+    return buildDraft(source);
+  },
+  toEntity: (local) =>
+    toSlot(local, { id: slotId(local), passthrough: passthrough.value }),
   diffLabel,
   hasContent: (d) => Boolean(d.label || d.path),
   // A path collision is never worth persisting: the two slots would silently share one value.
   canEmit: (d) =>
     Boolean(d.label.trim() && d.section && d.path.trim()) &&
-    !findPathConflict(d),
+    !findPathConflict(d, props.db, slotId(d)),
   emit: (slot, label) => emit("update:slot", { slot, label }),
   displayId: {
     sourceId: () => props.source?.id,
@@ -298,11 +145,16 @@ const tagOptions = computed(() =>
  * option set with a typo'd tag otherwise looks identical to one with no matching items yet. */
 const derivedPreview = computed(() => {
   if (draft.value.optionsSource === "inline") return null;
-  const preview = resolvedOptions(toSlot(draft.value), props.db.items) ?? [];
-  return preview;
+  const slot = toSlot(draft.value, {
+    id: slotId(draft.value),
+    passthrough: passthrough.value,
+  });
+  return resolvedOptions(slot, props.db.items) ?? [];
 });
 
-const pathConflict = computed(() => findPathConflict(draft.value));
+const pathConflict = computed(() =>
+  findPathConflict(draft.value, props.db, slotId(draft.value)),
+);
 
 function addOption() {
   draft.value.options.push({ value: "", label: "" });
@@ -329,7 +181,12 @@ function save() {
     error.value = `Path "${draft.value.path.trim()}" is already used by ${pathConflict.value} - the two would silently share one value.`;
     return;
   }
-  emit("save", { slot: toSlot(draft.value) });
+  emit("save", {
+    slot: toSlot(draft.value, {
+      id: slotId(draft.value),
+      passthrough: passthrough.value,
+    }),
+  });
 }
 </script>
 
