@@ -9,6 +9,7 @@
 // from what the panel actually displays.
 import { NW_SCHEMA } from "../data/data";
 import { readDynamicValue } from "../lib/dynamic-stats";
+import { isDisabled } from "../lib/slot-toggle";
 import { scaleFactorFor, scaledStat } from "./scaling";
 import type {
   ResolvedBuild,
@@ -46,10 +47,18 @@ function bonusTitle(entry: EvaluatedBonus) {
  * Scaled by the same `scaleFactorFor` the pipeline applies, so a bolstered mount reports the
  * number it actually contributed rather than its unscaled catalogue value -- this popover
  * exists to explain the panel's total, and an unscaled line here would not add up to it. */
-function itemSources(result: ResolvedBuild, key: StatKey): StatSource[] {
+function itemSources(
+  result: ResolvedBuild,
+  build: Build | null | undefined,
+  db: Db | null | undefined,
+  key: StatKey,
+): StatSource[] {
   const totals = new Map<string, number>();
   for (const row of result.rows) {
     if (!row.item || !row.item[key]) continue;
+    // Read off the item, not the row's contribution, so a switched-off pick would otherwise
+    // be listed at full value in a total it adds nothing to.
+    if (isDisabled(build, db?.slotFor(row.slotId))) continue;
     const factor = scaleFactorFor(NW_SCHEMA, result.context, row.item);
     totals.set(
       row.item.name,
@@ -104,11 +113,13 @@ function bonusSources(result: ResolvedBuild, key: StatKey): StatSource[] {
 function dynamicStatSources(
   result: ResolvedBuild,
   build: Build | null | undefined,
+  db: Db | null | undefined,
   key: StatKey,
 ): StatSource[] {
   const out: StatSource[] = [];
   if (!build) return out;
   for (const row of result.rows) {
+    if (isDisabled(build, db?.slotFor(row.slotId))) continue;
     for (const config of row.item?.dynamicStats ?? []) {
       if (config.stat !== key) continue;
       const value = readDynamicValue(build, row.slotId, config);
@@ -182,10 +193,10 @@ function sourcesFor(
 ): StatSource[] {
   return [
     ...ratingContributionSource(result, key),
-    ...itemSources(result, key),
+    ...itemSources(result, build, db, key),
     ...assignmentSources(db, build, key),
     ...bonusSources(result, key),
-    ...dynamicStatSources(result, build, key),
+    ...dynamicStatSources(result, build, db, key),
     ...combinedRatingSource(result, key),
     ...abilitySource(result, key),
     ...forteSource(result, build, key),

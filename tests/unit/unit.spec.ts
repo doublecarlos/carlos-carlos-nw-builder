@@ -85,7 +85,12 @@ function runBuild(
     choices,
     values,
     context,
-    listRows: storedListRows({ choices, values, assignments: {} }),
+    listRows: storedListRows({
+      choices,
+      values,
+      assignments: {},
+      disabledSlots: {},
+    }),
   } as unknown as Build) as RunResult;
   result.activeById = new Map(
     result.bonuses

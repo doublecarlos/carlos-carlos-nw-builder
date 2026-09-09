@@ -21,6 +21,7 @@ import BuildParameterRow from "./BuildParameterRow.vue";
 import PointAssignmentRow from "./PointAssignmentRow.vue";
 import * as buildEditor from "../../stores/buildEditor";
 import { isFormControl } from "../../composables/focus";
+import { isDisabled } from "../../lib/slot-toggle";
 import { useCursorRowKeys } from "../../composables/useCursorRowKeys";
 import { computed, useTemplateRef } from "vue";
 import type {
@@ -71,6 +72,8 @@ const props = defineProps<{
   // so one pair of props covers both.
   assignmentDiffers?: boolean;
   otherAssignmentLabel?: string;
+  /** item_picker only: this row's checkbox differs from the compare build's. */
+  toggleDiffers?: boolean;
   /** True for the row immediately above a separator -- its own bottom border would otherwise
    *  double up against the separator's, so BuildEditor.vue suppresses it for that one row. */
   noBorder?: boolean;
@@ -122,6 +125,33 @@ function onRowClick(event: MouseEvent) {
 const labelsOneControl = computed(
   () => props.slotDef.type !== "point_assignment",
 );
+
+// --- the quick enable/disable checkbox ------------------------------------------------------
+// The box sits at the right edge of the label column, not beside the picker, so a section
+// mixing toggleable and ordinary rows keeps every picker on one line.
+
+const toggleableSlot = computed(() =>
+  props.slotDef.type === "item_picker" && props.slotDef.toggleable
+    ? props.slotDef
+    : null,
+);
+
+/** An empty row has nothing to switch off, so the box is hidden. Its space is kept, or picking
+ *  an item would shift the label under the pointer. */
+const hasChoice = computed(() =>
+  Boolean(props.build.choices?.[props.slotDef.id]),
+);
+
+const disabled = computed(() => isDisabled(props.build, props.slotDef));
+
+function onToggle(event: Event) {
+  const slot = toggleableSlot.value;
+  if (slot)
+    buildEditor.setSlotDisabled(
+      slot,
+      !(event.target as HTMLInputElement).checked,
+    );
+}
 const controlId = computed(() => `slot-${props.slotDef.id}`);
 const labelId = computed(() => `slot-${props.slotDef.id}-label`);
 
@@ -157,6 +187,7 @@ useCursorRowKeys(anchor, {
           occurrenceDiffers ||
           paramDiffers ||
           assignmentDiffers ||
+          toggleDiffers ||
           (bonusDiffs?.length ?? 0) > 0) &&
         'is-diff bg-diff/20',
     ]"
@@ -165,7 +196,7 @@ useCursorRowKeys(anchor, {
     @mouseleave="emit('leave')"
     @click="onRowClick"
   >
-    <div class="flex w-40 shrink-0 items-center justify-between min-w-0">
+    <div class="flex w-44 shrink-0 items-center justify-between gap-1 min-w-0">
       <!-- A point_assignment row has no single control to point `for` at (it is a row of
            steppers, one per item), so it labels the group instead -- see `aria-labelledby`
            below. Clicking it still parks the row cursor, via this row's own `onRowClick`. -->
@@ -177,6 +208,19 @@ useCursorRowKeys(anchor, {
         :for="labelsOneControl ? controlId : undefined"
         >{{ labelOverride || slotDef.label }}</component
       >
+
+      <!-- Its own accessible name: the row label beside it belongs to the picker. -->
+      <input
+        v-if="toggleableSlot"
+        type="checkbox"
+        class="shrink-0 cursor-pointer"
+        :class="!hasChoice && 'invisible'"
+        :checked="!disabled"
+        :aria-label="`Count ${labelOverride || slotDef.label} in this build`"
+        :title="`Count ${labelOverride || slotDef.label} in this build`"
+        :data-testid="'slot-toggle:' + slotDef.id"
+        @change="onToggle"
+      />
     </div>
 
     <div
@@ -206,6 +250,7 @@ useCursorRowKeys(anchor, {
         :db="db"
         :compare-build="compareBuild"
         :highlight-diff="highlightDiff"
+        :disabled="disabled"
         :item="item"
         :items="items"
         :hidden-reasons="hiddenReasons"

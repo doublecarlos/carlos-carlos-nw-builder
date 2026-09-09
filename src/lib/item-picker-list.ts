@@ -44,6 +44,7 @@ export function rowSlot(
     ...(slot.filter ? { filter: slot.filter } : {}),
     ...(slot.tags ? { tags: [...slot.tags] } : {}),
     ...(slot.visibleWhen ? { visibleWhen: slot.visibleWhen } : {}),
+    ...(slot.toggleable ? { toggleable: true } : {}),
     list: slot.id,
   };
 }
@@ -54,10 +55,15 @@ export function rowSlot(
  * build cannot carry a pick that no row shows.
  */
 export function storedListRows(
-  build: Pick<Build, "choices" | "values" | "assignments">,
+  build: Pick<Build, "choices" | "values" | "assignments" | "disabledSlots">,
 ): Record<string, number> {
   const counts: Record<string, number> = {};
-  for (const field of [build.choices, build.values, build.assignments]) {
+  for (const field of [
+    build.choices,
+    build.values,
+    build.assignments,
+    build.disabledSlots,
+  ]) {
     for (const key of Object.keys(field ?? {})) {
       const row = parseRowSlotId(key);
       if (row)

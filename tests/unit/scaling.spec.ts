@@ -157,7 +157,12 @@ function buildWith(
     values: {},
     assignments: {},
     occurrenceInputs: {},
-    listRows: storedListRows({ choices, values: {}, assignments: {} }),
+    listRows: storedListRows({
+      choices,
+      values: {},
+      assignments: {},
+      disabledSlots: {},
+    }),
     context: { ...CONTEXT, ...context },
     compare: { id: "", highlight: false, onlyDiff: false, statLines: false },
   } as unknown as Build;
@@ -367,7 +372,12 @@ describe("aura mount equips carry their own payload", () => {
       values: {},
       assignments: {},
       occurrenceInputs,
-      listRows: storedListRows({ choices, values: {}, assignments: {} }),
+      listRows: storedListRows({
+        choices,
+        values: {},
+        assignments: {},
+        disabledSlots: {},
+      }),
       context: {
         class: "",
         role: "dps",

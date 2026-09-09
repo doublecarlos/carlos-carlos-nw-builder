@@ -71,6 +71,7 @@ function testBuild(choices: Record<string, string>): Build {
     assignments: {},
     occurrenceInputs: {},
     listRows: {},
+    disabledSlots: {},
     context: {
       class: "",
       role: "",

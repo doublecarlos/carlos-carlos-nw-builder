@@ -30,6 +30,20 @@
     ]
   },
   {
+    "id": "apocalipse-set",
+    "name": "Apocalipse Set",
+    "grants": [
+      {
+        "when": {
+          "toggle": "party"
+        },
+        "stats": {
+          "enemy_incoming_damage": 0.05
+        }
+      }
+    ]
+  },
+  {
     "id": "arti-assasin-s-dice",
     "name": "Arti: Assasin's Dice",
     "grants": [
@@ -297,6 +311,20 @@
     ]
   },
   {
+    "id": "bard-s-storyteller-flamingo",
+    "name": "Bard's Storyteller + Flamingo",
+    "grants": [
+      {
+        "when": {
+          "toggle": "party"
+        },
+        "stats": {
+          "outgoing_damage": 0.17
+        }
+      }
+    ]
+  },
+  {
     "id": "bard-s-truly-inspired-skill",
     "name": "Bard's Truly Inspired (Skill)",
     "grants": [
@@ -495,7 +523,14 @@
     "grants": [
       {
         "when": {
-          "toggle": "combat"
+          "all": [
+            {
+              "toggle": "combat"
+            },
+            {
+              "toggle": "party"
+            }
+          ]
         },
         "stats": {
           "sev_p": 0.05
@@ -826,6 +861,20 @@
     ]
   },
   {
+    "id": "fighter-s-enforced-threat",
+    "name": "Fighter's Enforced Threat",
+    "grants": [
+      {
+        "when": {
+          "toggle": "party"
+        },
+        "stats": {
+          "enemy_awareness": -0.1
+        }
+      }
+    ]
+  },
+  {
     "id": "flapjack",
     "name": "Flapjack",
     "grants": [
@@ -893,6 +942,22 @@
             }
           }
         ]
+      }
+    ]
+  },
+  {
+    "id": "grace-ring",
+    "name": "Grace Ring",
+    "grants": [
+      {
+        "when": {
+          "toggle": "party"
+        },
+        "stats": {
+          "enemy_defense": -0.035,
+          "enemy_awareness": -0.035,
+          "enemy_crit_avoid": -0.035
+        }
       }
     ]
   },
@@ -2787,6 +2852,20 @@
     ]
   },
   {
+    "id": "marilith-set",
+    "name": "Marilith Set",
+    "grants": [
+      {
+        "when": {
+          "toggle": "party"
+        },
+        "stats": {
+          "enemy_incoming_damage": 0.05
+        }
+      }
+    ]
+  },
+  {
     "id": "master-cruelty",
     "name": "Master Cruelty",
     "grants": [
@@ -2917,7 +2996,14 @@
     "grants": [
       {
         "when": {
-          "toggle": "combat"
+          "all": [
+            {
+              "toggle": "combat"
+            },
+            {
+              "toggle": "party"
+            }
+          ]
         },
         "stats": {
           "ca_p": 0.02
@@ -3044,6 +3130,22 @@
         "stats": {
           "power": 2953,
           "acc": 2953
+        }
+      }
+    ]
+  },
+  {
+    "id": "mythic-bregan-chest",
+    "name": "Mythic Bregan Chest",
+    "grants": [
+      {
+        "when": {
+          "toggle": "party"
+        },
+        "stats": {
+          "enemy_defense": -0.05,
+          "enemy_awareness": -0.05,
+          "enemy_crit_avoid": -0.05
         }
       }
     ]
@@ -3441,6 +3543,62 @@
           "strike": -1500,
           "ca": -1500,
           "power": -1500
+        }
+      }
+    ]
+  },
+  {
+    "id": "purple-armor-break",
+    "name": "Armor Break",
+    "grants": [
+      {
+        "when": {
+          "toggle": "party"
+        },
+        "stats": {
+          "enemy_defense": -0.09
+        }
+      }
+    ]
+  },
+  {
+    "id": "purple-dulled-senses",
+    "name": "Dulled Senses",
+    "grants": [
+      {
+        "when": {
+          "toggle": "party"
+        },
+        "stats": {
+          "enemy_awareness": -0.09
+        }
+      }
+    ]
+  },
+  {
+    "id": "purple-slowed-reactions",
+    "name": "Slowed Reactions",
+    "grants": [
+      {
+        "when": {
+          "toggle": "party"
+        },
+        "stats": {
+          "enemy_deflect": -0.09
+        }
+      }
+    ]
+  },
+  {
+    "id": "purple-vulnerability",
+    "name": "Vulnerability",
+    "grants": [
+      {
+        "when": {
+          "toggle": "party"
+        },
+        "stats": {
+          "enemy_crit_avoid": -0.09
         }
       }
     ]
@@ -4031,6 +4189,20 @@
         },
         "stats": {
           "ca_p": 0.05
+        }
+      }
+    ]
+  },
+  {
+    "id": "vistani-set",
+    "name": "Vistani Set",
+    "grants": [
+      {
+        "when": {
+          "toggle": "party"
+        },
+        "stats": {
+          "enemy_incoming_damage": 0.05
         }
       }
     ]

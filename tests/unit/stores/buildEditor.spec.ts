@@ -4,6 +4,7 @@
 // different key, or the window elapsing, doesn't.
 import { afterEach, describe, expect, it, vi } from "vitest";
 import * as storage from "../../../src/storage/storage";
+import type { ItemPickerSlot } from "../../../src/types";
 
 async function freshStores() {
   vi.resetModules();
@@ -891,5 +892,98 @@ describe("buildEditor storage wiring", () => {
     expect(idb.stores.get("meta")?.get("app")).toMatchObject({
       buildOrder: expect.any(Array),
     });
+  });
+});
+
+/**
+ * `misc.misc` is a shipped `toggleable` list, so its rows carry the checkbox: the store's
+ * off-state bookkeeping is tested against a real slot rather than a local fixture, same as the
+ * row tests above.
+ */
+describe("buildEditor toggleable slots", () => {
+  const LIST = "misc.misc";
+  const row = (index: number) => `${LIST}#${index}`;
+
+  /** A list row as the ordinary `item_picker` slot the store's actions take. */
+  const rowSlotOf = (
+    resolved: Awaited<ReturnType<typeof freshStores>>["resolved"],
+    slotId: string,
+  ): ItemPickerSlot => {
+    const slot = resolved.db.value.slotFor(slotId);
+    if (slot?.type !== "item_picker") throw new Error("not a picker row");
+    return slot;
+  };
+
+  it("stores the off state, and undoes the switch", async () => {
+    const { builds, buildEditor, resolved } = await freshStores();
+    const slot = resolved.db.value.slotById.get(LIST)!;
+    if (slot.type !== "item_picker_list") throw new Error("not a list slot");
+    buildEditor.addListRow(slot);
+    buildEditor.setChoice(row(1), "ItemA");
+    const rowDef = rowSlotOf(resolved, row(1));
+
+    buildEditor.setSlotDisabled(rowDef, true);
+    expect(builds.build.value.disabledSlots[row(1)]).toBe(true);
+
+    buildEditor.undo();
+    expect(builds.build.value.disabledSlots[row(1)]).toBeUndefined();
+    expect(builds.build.value.choices[row(1)]).toBe("ItemA");
+  });
+
+  it("switching back on drops the entry rather than storing an on state", async () => {
+    const { builds, buildEditor, resolved } = await freshStores();
+    const slot = resolved.db.value.slotById.get(LIST)!;
+    if (slot.type !== "item_picker_list") throw new Error("not a list slot");
+    buildEditor.addListRow(slot);
+    buildEditor.setChoice(row(1), "ItemA");
+    const rowDef = rowSlotOf(resolved, row(1));
+
+    buildEditor.setSlotDisabled(rowDef, true);
+    buildEditor.setSlotDisabled(rowDef, false);
+    expect(builds.build.value.disabledSlots).toEqual({});
+  });
+
+  it("keeps the off state when the pick changes, drops it when the row is emptied", async () => {
+    const { builds, buildEditor, resolved } = await freshStores();
+    const slot = resolved.db.value.slotById.get(LIST)!;
+    if (slot.type !== "item_picker_list") throw new Error("not a list slot");
+    buildEditor.addListRow(slot);
+    buildEditor.setChoice(row(1), "ItemA");
+    buildEditor.setSlotDisabled(rowSlotOf(resolved, row(1)), true);
+
+    buildEditor.setChoice(row(1), "ItemB");
+    expect(builds.build.value.disabledSlots[row(1)]).toBe(true);
+
+    buildEditor.setChoice(row(1), "");
+    expect(builds.build.value.disabledSlots[row(1)]).toBeUndefined();
+  });
+
+  it("carries the off state when a removed row shifts the rows below it up", async () => {
+    const { builds, buildEditor, resolved } = await freshStores();
+    const slot = resolved.db.value.slotById.get(LIST)!;
+    if (slot.type !== "item_picker_list") throw new Error("not a list slot");
+    for (let i = 0; i < 3; i += 1) buildEditor.addListRow(slot);
+    buildEditor.setChoice(row(1), "ItemA");
+    buildEditor.setChoice(row(3), "ItemC");
+    buildEditor.setSlotDisabled(rowSlotOf(resolved, row(3)), true);
+
+    buildEditor.removeListRow(row(2));
+
+    const build = builds.build.value;
+    expect(build.choices[row(2)]).toBe("ItemC");
+    expect(build.disabledSlots[row(2)]).toBe(true);
+    expect(build.disabledSlots[row(3)]).toBeUndefined();
+  });
+
+  it("clearSection switches every row back on", async () => {
+    const { builds, buildEditor, resolved } = await freshStores();
+    const slot = resolved.db.value.slotById.get(LIST)!;
+    if (slot.type !== "item_picker_list") throw new Error("not a list slot");
+    buildEditor.addListRow(slot);
+    buildEditor.setChoice(row(1), "ItemA");
+    buildEditor.setSlotDisabled(rowSlotOf(resolved, row(1)), true);
+
+    buildEditor.clearSection(slot.section, "Misc");
+    expect(builds.build.value.disabledSlots).toEqual({});
   });
 });

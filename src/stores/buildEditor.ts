@@ -102,6 +102,9 @@ export function setChoice(slotId: string, id: string) {
     delete b.values[slotId];
     // Same reasoning as `values`: an emptied slot keeps nothing of what was picked there.
     delete b.assignments[slotId];
+    // An empty row shows no checkbox, so a state left here could neither be seen nor undone.
+    // Swapping one pick for another keeps it, since the checkbox stays on screen.
+    delete b.disabledSlots[slotId];
   }
   normaliseStable(b, slotId);
 }
@@ -135,7 +138,7 @@ function normaliseStable(b: Build, slotId: string) {
  *  not derivable from the row count alone once a stale key outlives a shortened list. */
 function listRowIds(b: Build, listId: string): string[] {
   const ids = new Set<string>();
-  for (const field of [b.choices, b.values, b.assignments]) {
+  for (const field of [b.choices, b.values, b.assignments, b.disabledSlots]) {
     for (const key of Object.keys(field ?? {})) {
       if (parseRowSlotId(key)?.listId === listId) ids.add(key);
     }
@@ -148,13 +151,16 @@ function moveRow(b: Build, from: string, to?: string) {
   const choice = b.choices[from];
   const value = b.values[from];
   const repetitions = b.assignments[from];
+  const off = b.disabledSlots[from];
   delete b.choices[from];
   delete b.values[from];
   delete b.assignments[from];
+  delete b.disabledSlots[from];
   if (!to) return;
   if (choice) b.choices[to] = choice;
   if (value) b.values[to] = value;
   if (repetitions) b.assignments[to] = repetitions;
+  if (off) b.disabledSlots[to] = off;
 }
 
 /** Appends an empty row to an `item_picker_list`. */
@@ -212,6 +218,22 @@ export function setDynamicValue(slotId: string, key: string, raw: string) {
   }
 }
 
+/** Takes one `toggleable` slot's pick out of the calculation, or puts it back, leaving the
+ *  pick itself untouched. */
+export function setSlotDisabled(slot: ItemPickerSlot, disabled: boolean) {
+  const b = builds.build.value;
+  if (!b) return;
+  history.snapshot(
+    "build",
+    b.id,
+    `disabled:${slot.id}`,
+    `${disabled ? "disable" : "enable"} ${slot.label}`,
+    b,
+  );
+  if (disabled) b.disabledSlots[slot.id] = true;
+  else delete b.disabledSlots[slot.id];
+}
+
 export function applyFromCompare(slotId: string) {
   const other = compare.compareBuild.value;
   if (!other) return;
@@ -237,6 +259,7 @@ export function applyFromCompare(slotId: string) {
   } else {
     delete b.choices[slotId];
     delete b.values[slotId];
+    delete b.disabledSlots[slotId];
   }
 }
 
@@ -509,6 +532,7 @@ export function clearSlots() {
   b.values = {};
   b.assignments = fresh.assignments;
   b.listRows = fresh.listRows;
+  b.disabledSlots = {};
 }
 
 export function resetAll() {
@@ -574,6 +598,9 @@ export function copySection(fromId: string, sectionIds: string[]) {
     const repetitions = source.assignments?.[slot.id];
     if (repetitions != null) b.assignments[slot.id] = { ...repetitions };
     else delete b.assignments[slot.id];
+
+    if (source.disabledSlots?.[slot.id]) b.disabledSlots[slot.id] = true;
+    else delete b.disabledSlots[slot.id];
   }
 }
 
@@ -604,6 +631,7 @@ function clearSlot(b: Build, slot: Slot, fresh: Build) {
   else delete b.choices[slot.id];
   delete b.values[slot.id];
   delete b.assignments[slot.id];
+  delete b.disabledSlots[slot.id];
 }
 
 /** Resets every slot in a section to `defaultBuild()`'s value. */

@@ -101,6 +101,7 @@ function buildWith(choices: Record<string, string> = {}): Build {
     assignments: {},
     occurrenceInputs: {},
     listRows: {},
+    disabledSlots: {},
     context: { class: "" },
     compare: { id: "", highlight: false, onlyDiff: false, statLines: false },
   } as unknown as Build;

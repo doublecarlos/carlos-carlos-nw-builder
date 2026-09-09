@@ -207,6 +207,7 @@ export function defaultBuild(name = "New build"): Build {
     assignments,
     occurrenceInputs: {},
     listRows,
+    disabledSlots: {},
     context,
     // The quick-compare picker (App.vue topbar). Saved with the build -- unlike `tab`, which
     // is pure session state -- so reopening a build remembers what you were sizing it up
@@ -252,6 +253,16 @@ const booleans = (source: unknown): Record<string, boolean> => {
   return out;
 };
 
+/** `disabledSlots`' own coercion: only the off state is stored, so an explicit `false` is
+ * dropped rather than kept as a second way of saying what absence already says. */
+const offSlots = (source: unknown): Record<string, boolean> => {
+  const out: Record<string, boolean> = {};
+  for (const [slotId, off] of Object.entries(booleans(source))) {
+    if (off) out[slotId] = true;
+  }
+  return out;
+};
+
 /** `assignments`' own coercion: a slot id's inner map falls back to `base`'s (each row's
  * seeded default) key by key, rather than replacing the whole inner map, so a raw payload
  * missing one row (an older export, a hand trim) doesn't lose the other rows' defaults. */
@@ -273,7 +284,7 @@ const nestedNumbers = (
 const rowCounts = (
   source: unknown,
   base: Record<string, number>,
-  stored: Pick<Build, "choices" | "values" | "assignments">,
+  stored: Pick<Build, "choices" | "values" | "assignments" | "disabledSlots">,
 ): Record<string, number> => {
   const out = { ...base };
   for (const [slotId, value] of Object.entries(numbers(source))) {
@@ -343,6 +354,7 @@ export function normalise(
     choices: migrateClassToChoice(strings(raw.choices), context),
     values: nestedNumbers(raw.values, {}),
     assignments: nestedNumbers(raw.assignments, base.assignments),
+    disabledSlots: offSlots(raw.disabledSlots),
   });
 
   return {
@@ -360,6 +372,7 @@ export function normalise(
     assignments: stored.assignments,
     occurrenceInputs: nestedNumbers(raw.occurrenceInputs, {}),
     listRows: rowCounts(raw.listRows, base.listRows, stored),
+    disabledSlots: stored.disabledSlots,
     // `context`'s pass-through fields (class/role/damageType) are not individually
     // validated -- the result is only knowable-safe by construction, not by the type
     // checker; hence the cast.

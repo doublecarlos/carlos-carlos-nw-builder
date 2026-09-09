@@ -1421,6 +1421,7 @@ describe("catalog.referencedOverlay", () => {
       assignments: {},
       occurrenceInputs: {},
       listRows: {},
+      disabledSlots: {},
       context: {} as Build["context"],
       compare: { id: "", highlight: false, onlyDiff: false, statLines: false },
     };
@@ -1439,6 +1440,7 @@ describe("catalog.referencedOverlay", () => {
       assignments: {},
       occurrenceInputs: {},
       listRows: {},
+      disabledSlots: {},
       context: {} as Build["context"],
       compare: { id: "", highlight: false, onlyDiff: false, statLines: false },
     };
@@ -1472,6 +1474,7 @@ describe("catalog.referencedOverlay", () => {
       assignments: {},
       occurrenceInputs: {},
       listRows: {},
+      disabledSlots: {},
       context: {} as Build["context"],
       compare: { id: "", highlight: false, onlyDiff: false, statLines: false },
     };
@@ -1493,6 +1496,7 @@ describe("catalog.referencedOverlay", () => {
       assignments: {},
       occurrenceInputs: {},
       listRows: {},
+      disabledSlots: {},
       context: {} as Build["context"],
       compare: { id: "", highlight: false, onlyDiff: false, statLines: false },
     };
@@ -1521,6 +1525,7 @@ describe("catalog.referencedOverlay", () => {
       assignments: {},
       occurrenceInputs: {},
       listRows: {},
+      disabledSlots: {},
       context: {} as Build["context"],
       compare: { id: "", highlight: false, onlyDiff: false, statLines: false },
     };
@@ -1545,6 +1550,7 @@ describe("catalog.referencedOverlay", () => {
       assignments: {},
       occurrenceInputs: {},
       listRows: {},
+      disabledSlots: {},
       context: {} as Build["context"],
       compare: { id: "", highlight: false, onlyDiff: false, statLines: false },
     };
@@ -1575,6 +1581,7 @@ describe("catalog.referencedOverlay", () => {
       assignments: {},
       occurrenceInputs: {},
       listRows: {},
+      disabledSlots: {},
       context: { race: "elf" } as unknown as Build["context"],
       compare: { id: "", highlight: false, onlyDiff: false, statLines: false },
     };

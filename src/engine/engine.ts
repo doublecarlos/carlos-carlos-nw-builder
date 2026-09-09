@@ -11,6 +11,7 @@ import { scaleFactorFor, scaledStat } from "./scaling";
 import { occurrenceCountFor } from "../lib/bonus-attachment";
 import { misplacedInsignia, withDerivedBonuses } from "./insignia";
 import { dynamicValueKey, readDynamicValue } from "../lib/dynamic-stats";
+import { isDisabled } from "../lib/slot-toggle";
 import type {
   Db,
   Build,
@@ -394,8 +395,14 @@ function findErrors(
   for (const row of resolved.rows) {
     // By `repetitions`, not by 1: a pick that repeats inline is that many copies for maxCopies'
     // purposes, same as the same count spent on a point_assignment row below.
+    // A switched-off pick still counts as one copy, matching `copyCounts` (db.ts), which
+    // withholds the item from other pickers whatever the checkbox says.
     if (row.item)
-      counts.set(row.item.id, (counts.get(row.item.id) ?? 0) + row.repetitions);
+      counts.set(
+        row.item.id,
+        (counts.get(row.item.id) ?? 0) +
+          (isDisabled(build, row.slot) ? 1 : row.repetitions),
+      );
   }
   // point_assignment slots contribute to the same maxCopies count as an item_picker pick would
   // (each point is "one more copy"), but they have no ResolvedRow.item to have been counted by

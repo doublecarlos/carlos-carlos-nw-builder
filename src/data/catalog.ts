@@ -606,6 +606,19 @@ export function validateSlots(slots: Slot[]): LintFinding[] {
         paramSlots,
       );
     }
+    // Read off the raw object: the other variants do not declare the field, which is how a
+    // file can still arrive carrying it.
+    if (
+      (slot as { toggleable?: unknown }).toggleable !== undefined &&
+      slot.type !== "item_picker" &&
+      slot.type !== "item_picker_list"
+    ) {
+      findings.push({
+        level: "error",
+        kind: "item",
+        message: `${slot.id}: toggleable is only meaningful on an item_picker or item_picker_list, this is a ${slot.type}`,
+      });
+    }
     if (slot.type === "point_assignment") {
       if (!slot.filter) {
         findings.push({

@@ -35,6 +35,7 @@ import * as insignia from "../engine/insignia";
 import * as stableBrowser from "../stores/stableBrowser";
 import { slotVisible } from "../lib/slot-visibility";
 import { expandSlots } from "../lib/item-picker-list";
+import { isDisabled } from "../lib/slot-toggle";
 import { useHoverCard } from "../composables/useHoverCard";
 import { occurrenceRowsForItem } from "../composables/useItemBonusOccurrences";
 import { scaledStat } from "../engine/scaling";
@@ -649,6 +650,9 @@ const editLabel = computed(() => {
 function statSummary(slotId: string) {
   const item = itemIn(slotId);
   if (!item) return "";
+  // A switched-off row contributes nothing, and says so the way every row whose bonus is
+  // inactive already does: no summary at all.
+  if (isDisabled(build.value, db.value.slotFor(slotId))) return "";
   const totals: Record<string, number> = {};
   // Scaled the same way the pipeline scales it, so the row's summary and the panel's totals
   // never disagree. The bonus stats folded in below are not the item's to scale.
@@ -1029,6 +1033,7 @@ watch(
               :placeholder="stablePlaceholder(slotDef.id)"
               :label-override="stableLabel(slotDef.id)"
               :choice-differs="differs(slotDef.id)"
+              :toggle-differs="rowDiff(slotDef.id)?.disabled"
               :other-choice-label="otherChoiceLabel(slotDef.id)"
               :bonus-diffs="rowDiff(slotDef.id)?.bonuses"
               :value-diffs="rowDiff(slotDef.id)?.values ?? []"

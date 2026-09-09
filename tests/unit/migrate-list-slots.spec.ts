@@ -9,7 +9,7 @@ import * as storage from "../../src/storage/storage";
 import type { SectionPreset } from "../../src/types";
 
 const rows = (choices: Record<string, string>) =>
-  migrateListSlots({ choices, values: {}, assignments: {} });
+  migrateListSlots({ choices, values: {}, assignments: {}, disabledSlots: {} });
 
 describe("migrateListSlots", () => {
   it("compacts a sparse list into contiguous rows, in authored order", () => {
@@ -31,6 +31,7 @@ describe("migrateListSlots", () => {
       choices: { "misc.misc4": "a" },
       values: { "misc.misc4": { power: 10 } },
       assignments: { "misc.misc4": { a: 3 } },
+      disabledSlots: {},
     });
     expect(migrated.values).toEqual({ "misc.misc#1": { power: 10 } });
     expect(migrated.assignments).toEqual({ "misc.misc#1": { a: 3 } });
@@ -63,6 +64,7 @@ describe("migrateListSlots", () => {
       choices: {},
       values: { "group.group3": { power: 10 } },
       assignments: {},
+      disabledSlots: {},
     });
     expect(migrated.values).toEqual({});
   });
