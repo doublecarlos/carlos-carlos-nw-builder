@@ -4,31 +4,28 @@
 // Save.
 //
 // Deliberately narrow: `build_parameter` only, appended to an existing section.
-// The other four `Slot` variants carry layout structure -- section membership, ordering,
-// separators -- that an overlay's flat id->value map cannot express, so they stay base-only
+// The other four `Slot` variants carry layout structure (section membership, ordering,
+// separators) that an overlay's flat id->value map cannot express, so they stay base-only
 // and never reach this form.
 //
 // Fields this form does not offer are carried through verbatim rather than dropped:
 // `visibleWhen` is the one that exists today, and editing a shipped param's label must not
 // silently un-scope it. `passthrough` below is what keeps that true for anything added later.
-import { ref, computed, watch } from "vue";
-import { Plus, Save, Trash, Undo2 } from "@lucide/vue";
+import { ref, computed } from "vue";
+import { Plus, Trash } from "@lucide/vue";
 import ComboBox from "../ui/ComboBox.vue";
 import IconButton from "../ui/IconButton.vue";
-import BaseButton from "../ui/BaseButton.vue";
-import BaseBadge from "../ui/BaseBadge.vue";
 import BaseCheckbox from "../ui/BaseCheckbox.vue";
 import BaseInput from "../ui/BaseInput.vue";
-import FormBar from "../ui/FormBar.vue";
+import DraftFormBar from "../ui/DraftFormBar.vue";
 import FormField from "../ui/FormField.vue";
 import FormGrid from "../ui/FormGrid.vue";
 import FormSection from "../ui/FormSection.vue";
 import IdField from "../ui/IdField.vue";
 import * as catalog from "../../data/catalog";
-import { deepEqual } from "../../lib/deep-equal";
-import { useDraftHistory } from "../../composables/useDraftHistory";
+import { useEditorDraft } from "../../composables/useEditorDraft";
 import { resolvedOptions } from "../../lib/param-options";
-import type { BuildParameterSlot, Db, Slot } from "../../types";
+import type { BuildParameterSlot, Db } from "../../types";
 import type { EntryStatus } from "../../data/catalog";
 
 const props = withDefaults(
@@ -65,7 +62,7 @@ interface SlotDraft {
   paramType: BuildParameterSlot["paramType"];
   path: string;
   quick: boolean;
-  /** Held loosely in the draft -- `toSlot` casts back per `paramType`, so switching type
+  /** Held loosely in the draft: `toSlot` casts back per `paramType`, so switching type
    *  mid-edit can't leave a number sitting in a boolean's `default`. `string | number`
    *  rather than `string` because Vue's `v-model` casts to a number by itself on an
    *  `<input type="number">`, so these fields start as strings and become numbers as soon
@@ -73,7 +70,7 @@ interface SlotDraft {
   default: string | number;
   /** Which way the option set is authored. A three-way choice rather than two independent
    *  fields so `options` XOR `optionsFrom`, and `filter` XOR `tags` within it, are structurally
-   *  impossible to violate from this form -- `validateSlots` still enforces both for data
+   *  impossible to violate from this form; `validateSlots` still enforces both for data
    *  arriving from a file. */
   optionsSource: "inline" | "tags" | "filter";
   options: OptionRow[];
@@ -135,25 +132,9 @@ function buildDraft(slot: BuildParameterSlot | null | undefined): SlotDraft {
   };
 }
 
-const isNew = computed(() => !props.source);
-const draft = ref<SlotDraft>(buildDraft(props.source));
-const error = ref("");
-
 const numeric = computed(
   () =>
     draft.value.paramType === "number" || draft.value.paramType === "percent",
-);
-
-const displayId = computed(
-  () =>
-    props.source?.id ??
-    (draft.value.label.trim()
-      ? catalog.nextSlotId(
-          draft.value.section,
-          draft.value.label.trim(),
-          props.allocatableIds,
-        )
-      : ""),
 );
 
 const number = (raw: string | number) => {
@@ -162,40 +143,50 @@ const number = (raw: string | number) => {
   return raw.trim() !== "" && Number.isFinite(value) ? value : undefined;
 };
 
-function toSlot(): BuildParameterSlot {
+function computeId(local: SlotDraft): string {
+  return local.label.trim()
+    ? catalog.nextSlotId(
+        local.section,
+        local.label.trim(),
+        props.allocatableIds,
+      )
+    : "";
+}
+
+function toSlot(local: SlotDraft): BuildParameterSlot {
   const slot: BuildParameterSlot = {
     ...passthrough.value,
-    id: displayId.value,
-    label: draft.value.label.trim(),
-    section: draft.value.section,
+    id: props.source?.id ?? computeId(local),
+    label: local.label.trim(),
+    section: local.section,
     type: "build_parameter",
-    paramType: draft.value.paramType,
-    path: draft.value.path.trim(),
+    paramType: local.paramType,
+    path: local.path.trim(),
   };
-  if (draft.value.quick) slot.quick = true;
+  if (local.quick) slot.quick = true;
 
   // `default` is typed by `paramType`, not by what the text field happens to hold: a boolean
   // param storing the string "true" would compare unequal to `true` everywhere downstream.
-  if (draft.value.paramType === "boolean") {
-    slot.default = String(draft.value.default) === "true";
+  if (local.paramType === "boolean") {
+    slot.default = String(local.default) === "true";
   } else if (numeric.value) {
-    const fallback = number(draft.value.default);
+    const fallback = number(local.default);
     if (fallback !== undefined) slot.default = fallback;
-    const min = number(draft.value.min);
-    const max = number(draft.value.max);
-    const step = number(draft.value.step);
+    const min = number(local.min);
+    const max = number(local.max);
+    const step = number(local.step);
     if (min !== undefined) slot.min = min;
     if (max !== undefined) slot.max = max;
     if (step !== undefined) slot.step = step;
-    const presets = draft.value.presets
+    const presets = local.presets
       .split(",")
       .map((part) => number(part))
       .filter((value): value is number => value !== undefined);
     if (presets.length) slot.presets = presets;
   } else {
-    slot.default = String(draft.value.default);
-    if (draft.value.optionsSource === "inline") {
-      const options = draft.value.options
+    slot.default = String(local.default);
+    if (local.optionsSource === "inline") {
+      const options = local.options
         .filter((row) => row.label.trim())
         .map((row) => ({
           value: row.value,
@@ -204,21 +195,19 @@ function toSlot(): BuildParameterSlot {
       if (options.length) slot.options = options;
     } else {
       slot.optionsFrom =
-        draft.value.optionsSource === "tags"
+        local.optionsSource === "tags"
           ? {
-              tags: draft.value.optionsFromTags
+              tags: local.optionsFromTags
                 .split(",")
                 .map((tag) => tag.trim())
                 .filter(Boolean),
             }
-          : { filter: draft.value.optionsFromFilter.trim() };
-      if (draft.value.allowEmpty) slot.allowEmpty = true;
+          : { filter: local.optionsFromFilter.trim() };
+      if (local.allowEmpty) slot.allowEmpty = true;
     }
   }
   return slot;
 }
-
-let lastEmittedJson = JSON.stringify(props.source ? toSlot() : draft.value);
 
 function diffLabel(oldJson: string, newJson: string): string {
   try {
@@ -231,34 +220,51 @@ function diffLabel(oldJson: string, newJson: string): string {
       return "edit options";
     if (old.default !== nw.default) return "edit default";
   } catch {
-    // JSON parse error -- shouldn't happen but be safe.
+    // JSON parse error, shouldn't happen but be safe.
   }
   return "edit parameter";
 }
 
-function emitChange() {
-  if (
-    !draft.value.label.trim() ||
-    !draft.value.section ||
-    !draft.value.path.trim()
-  )
-    return;
-  // A path collision is never worth persisting: the two slots would silently share one value.
-  if (pathConflict.value) return;
-  const slot = toSlot();
-  const currentJson = JSON.stringify(slot);
-  if (currentJson === lastEmittedJson) return;
-  const changeLabel = diffLabel(lastEmittedJson, currentJson);
-  lastEmittedJson = currentJson;
-  emit("update:slot", { slot, label: changeLabel });
+/** The other slot already sitting on this `path`, if any. Two slots sharing a path silently
+ * fight over one value in `context`, so this blocks the save outright rather than leaving it
+ * to the lint drawer to report after the damage is saved. */
+function findPathConflict(local: SlotDraft): string | null {
+  const path = local.path.trim();
+  if (!path) return null;
+  const clash = props.db.slots.find(
+    (slot) =>
+      slot.type === "build_parameter" &&
+      slot.path === path &&
+      slot.id !== (props.source?.id ?? computeId(local)),
+  );
+  return clash ? clash.id : null;
 }
 
-const { resetDraftHistory } = useDraftHistory({
-  draft,
+const isNew = computed(() => !props.source);
+
+const { draft, error, dirty, displayId } = useEditorDraft<
+  BuildParameterSlot,
+  SlotDraft,
+  BuildParameterSlot
+>({
+  source: () => props.source,
   isNew,
+  buildDraft,
+  toEntity: toSlot,
   diffLabel,
-  onEmit: emitChange,
+  hasContent: (d) => Boolean(d.label || d.path),
+  // A path collision is never worth persisting: the two slots would silently share one value.
+  canEmit: (d) =>
+    Boolean(d.label.trim() && d.section && d.path.trim()) &&
+    !findPathConflict(d),
+  emit: (slot, label) => emit("update:slot", { slot, label }),
+  displayId: {
+    sourceId: () => props.source?.id,
+    computeId,
+  },
 });
+
+defineExpose({ draft, dirty });
 
 const sectionOptions = computed(() =>
   props.db.sections.map((s) => ({ value: s.id, label: s.label })),
@@ -288,28 +294,15 @@ const tagOptions = computed(() =>
   [...props.db.itemsByTag.keys()].sort().join(", "),
 );
 
-/** How many items the current `optionsFrom` selector actually matches -- authoring a derived
+/** How many items the current `optionsFrom` selector actually matches: authoring a derived
  * option set with a typo'd tag otherwise looks identical to one with no matching items yet. */
 const derivedPreview = computed(() => {
   if (draft.value.optionsSource === "inline") return null;
-  const preview = resolvedOptions(toSlot(), props.db.items) ?? [];
+  const preview = resolvedOptions(toSlot(draft.value), props.db.items) ?? [];
   return preview;
 });
 
-/** The other slot already sitting on this `path`, if any. Two slots sharing a path silently
- * fight over one value in `context`, so this blocks the save outright rather than leaving it
- * to the lint drawer to report after the damage is saved. */
-const pathConflict = computed(() => {
-  const path = draft.value.path.trim();
-  if (!path) return null;
-  const clash = props.db.slots.find(
-    (slot) =>
-      slot.type === "build_parameter" &&
-      slot.path === path &&
-      slot.id !== displayId.value,
-  );
-  return clash ? clash.id : null;
-});
+const pathConflict = computed(() => findPathConflict(draft.value));
 
 function addOption() {
   draft.value.options.push({ value: "", label: "" });
@@ -317,13 +310,6 @@ function addOption() {
 function removeOption(index: number) {
   draft.value.options.splice(index, 1);
 }
-
-const dirty = computed(() => {
-  if (!props.source) return Boolean(draft.value.label || draft.value.path);
-  return !deepEqual(toSlot(), props.source as Slot);
-});
-
-defineExpose({ draft, dirty });
 
 function save() {
   error.value = "";
@@ -343,58 +329,27 @@ function save() {
     error.value = `Path "${draft.value.path.trim()}" is already used by ${pathConflict.value} - the two would silently share one value.`;
     return;
   }
-  emit("save", { slot: toSlot() });
+  emit("save", { slot: toSlot(draft.value) });
 }
-
-watch(
-  () => props.source,
-  (value) => {
-    // Same round-trip-echo guard the other forms use: a live edit's own update:slot comes
-    // back through the layer overlay as a new `source`, and rebuilding from that echo would
-    // wipe a half-typed field.
-    if (value && lastEmittedJson && JSON.stringify(value) === lastEmittedJson)
-      return;
-    draft.value = buildDraft(value);
-    error.value = "";
-    lastEmittedJson = value
-      ? JSON.stringify(toSlot())
-      : JSON.stringify(draft.value);
-    resetDraftHistory();
-  },
-);
 </script>
 
 <template>
   <div>
-    <FormBar class="-mx-3 mb-3" data-testid="form-bar">
-      <strong>{{ draft.label || "New parameter" }}</strong>
-      <BaseBadge v-if="status !== 'base'" :variant="status">{{
-        status
-      }}</BaseBadge>
-      <BaseBadge v-if="dirty && isNew">unsaved</BaseBadge>
-      <span class="flex-1"></span>
-      <BaseButton
-        v-if="isNew"
-        variant="primary"
-        :disabled="!dirty"
-        data-testid="save-slot"
-        @click="save"
-        ><Save />Save parameter</BaseButton
-      >
-      <BaseButton v-if="status === 'edited'" @click="$emit('revert')"
-        ><Undo2 />Revert to shipped</BaseButton
-      >
-      <BaseButton
-        v-if="source"
-        data-testid="delete-slot"
-        @click="$emit('delete')"
-        ><Trash />Delete</BaseButton
-      >
-    </FormBar>
-
-    <p v-if="error" class="mt-1 text-danger" data-testid="slot-error">
-      {{ error }}
-    </p>
+    <DraftFormBar
+      noun="parameter"
+      :title="draft.label || 'New parameter'"
+      :status="status"
+      :dirty="dirty"
+      :is-new="isNew"
+      :has-source="Boolean(source)"
+      :error="error"
+      save-testid="save-slot"
+      delete-testid="delete-slot"
+      error-testid="slot-error"
+      @save="save"
+      @revert="$emit('revert')"
+      @delete="$emit('delete')"
+    />
 
     <FormGrid class="mb-2">
       <FormField label="Label">

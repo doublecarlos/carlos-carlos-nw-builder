@@ -13,11 +13,9 @@ import StatRowList from "./StatRowList.vue";
 import DynamicStatRowList from "./DynamicStatRowList.vue";
 import IconButton from "../ui/IconButton.vue";
 import RepeatableRows from "../ui/RepeatableRows.vue";
-import { Copy, Plus, Save, Trash, Undo2 } from "@lucide/vue";
-import BaseButton from "../ui/BaseButton.vue";
-import BaseBadge from "../ui/BaseBadge.vue";
+import { Plus, Trash } from "@lucide/vue";
 import BaseInput from "../ui/BaseInput.vue";
-import FormBar from "../ui/FormBar.vue";
+import DraftFormBar from "../ui/DraftFormBar.vue";
 import FormField from "../ui/FormField.vue";
 import FormGrid from "../ui/FormGrid.vue";
 import IdField from "../ui/IdField.vue";
@@ -27,8 +25,7 @@ import { NW_SCHEMA } from "../../data/data";
 import { findParamSlot } from "../../lib/build-path";
 import * as catalog from "../../data/catalog";
 import type { EntryStatus } from "../../data/catalog";
-import { deepEqual } from "../../lib/deep-equal";
-import { useDraftHistory } from "../../composables/useDraftHistory";
+import { useEditorDraft } from "../../composables/useEditorDraft";
 import { statPickerOptions } from "../../lib/format";
 import type {
   Item,
@@ -53,7 +50,7 @@ const props = withDefaults(
     /** The item being edited, or null for a brand-new one. */
     source?: Item | null;
     /** Seed values for a brand-new draft, copied from an existing item ("Duplicate").
-     *  Ignored once `source` is set -- only meaningful while creating a new item. */
+     *  Ignored once `source` is set: only meaningful while creating a new item. */
     duplicateFrom?: Item | null;
     status?: EntryStatus;
     db: Db;
@@ -90,10 +87,10 @@ const emit = defineEmits<{
   "update-bonus": [payload: { id: string; bonus: Bonus }];
 }>();
 
-/** One attached bonus's editable occurrence bounds -- mirrors `BonusOccurrenceConfig`'s
+/** One attached bonus's editable occurrence bounds: mirrors `BonusOccurrenceConfig`'s
  *  own `min`/`max`/`default`, just widened to `number | string | null` like every other
  *  numeric draft field here so a cleared input reads as empty rather than `0`. `label` mirrors
- *  the config's own optional field directly (always a string here -- "" reads as unset, same
+ *  the config's own optional field directly (always a string here; "" reads as unset, same
  *  as `DynamicStatDraft.label`). */
 export interface OccurrenceDraft {
   min: number | string | null;
@@ -102,7 +99,7 @@ export interface OccurrenceDraft {
   label: string;
 }
 
-/** One `DynamicStatConfig` row -- widened to `number | string | null` like every other
+/** One `DynamicStatConfig` row, widened to `number | string | null` like every other
  *  numeric draft field here so a cleared input reads as empty rather than `0`. */
 export interface DynamicStatDraft {
   stat: string;
@@ -118,7 +115,7 @@ export interface ItemDraft {
   shortDescription: string;
   longDescription: string;
   maxCopies: number | string | null;
-  /** Both halves optional and independent -- see `Item.hideFromPicker` / `Item.replacedBy`. */
+  /** Both halves optional and independent; see `Item.hideFromPicker` / `Item.replacedBy`. */
   hideFromPicker: boolean;
   replacedBy: string;
   /** `ItemReplacement.values` as rows; empty writes the bare-id form back out. */
@@ -127,7 +124,7 @@ export interface ItemDraft {
   tags: string[];
   gameIds: string[];
   bonuses: string[];
-  /** Present only for a bonus id upgraded to a `BonusOccurrenceConfig` -- absence means a
+  /** Present only for a bonus id upgraded to a `BonusOccurrenceConfig`; absence means a
    *  plain-id attachment (always 1 occurrence), same "optional fields" convention
    *  `DynamicStatDraft` uses. Keyed by bonus id, not array index, since it tracks
    *  `draft.bonuses` entries by identity. */
@@ -141,7 +138,7 @@ export interface ItemDraft {
   repetitionLabel: string;
   stats: StatRow[];
   defaultParams: { slotId: string; value: string | number | boolean }[];
-  /** Keyed by context *path*, not slot id -- a published value has no slot (see
+  /** Keyed by context *path*, not slot id: a published value has no slot (see
    *  `Item.publishes`), which is the whole reason it can replace one. */
   publishes: { path: string; value: string }[];
   /** An empty `shape` means universal, so one picker cannot contradict a separate checkbox. */
@@ -225,16 +222,6 @@ function buildDraft(item: Item | null | undefined): ItemDraft {
   };
 }
 
-// Existing items: live edits. New items: draft until Save.
-const isNew = computed(() => !props.source);
-
-const draft = ref<ReturnType<typeof buildDraft>>(
-  buildDraft(props.source ?? props.duplicateFrom),
-);
-const error = ref("");
-// Initialize with item JSON for correct comparison on existing items.
-let lastEmittedJson = JSON.stringify(toItem());
-
 function diffLabel(oldJson: string, newJson: string): string {
   try {
     const old = JSON.parse(oldJson);
@@ -296,12 +283,12 @@ function diffLabel(oldJson: string, newJson: string): string {
     if (JSON.stringify(old.defaultParams) !== JSON.stringify(nw.defaultParams))
       return "edit default build parameters";
   } catch {
-    // JSON parse error -- shouldn't happen but be safe.
+    // JSON parse error, shouldn't happen but be safe.
   }
   return "edit item";
 }
 
-/** A saved item's `bonuses` entries mix plain ids and `BonusOccurrenceConfig` objects --
+/** A saved item's `bonuses` entries mix plain ids and `BonusOccurrenceConfig` objects;
  *  split that into "which bonuses are attached" (id order/membership) and "which attached
  *  ones carry an occurrence config" so attach/detach and occurrence edits get distinct,
  *  readable diff labels instead of one opaque "edit bonuses". */
@@ -323,7 +310,7 @@ function occurrenceConfigsOf(entries: unknown): Record<string, unknown> {
 }
 
 /** Label an occurrence-config change with the specific bonus id it touched, same spirit as
- *  `diffArrayLabel` -- "edit occurrence config" alone wouldn't say which of an item's several
+ *  `diffArrayLabel`: "edit occurrence config" alone wouldn't say which of an item's several
  *  attachments changed. */
 function diffOccurrenceLabel(
   oldConfigs: Record<string, unknown>,
@@ -379,7 +366,7 @@ function diffStatsLabel(
   return `edit stats (${changed.length} changed)`;
 }
 
-/** Label a `dynamicStats` array change with the specific stat(s) added/removed/changed --
+/** Label a `dynamicStats` array change with the specific stat(s) added/removed/changed,
  *  same spirit as `diffStatsLabel`, over `Item.dynamicStats` entries instead. */
 function diffDynamicStatsLabel(
   oldRows: { stat: string }[],
@@ -392,46 +379,26 @@ function diffDynamicStatsLabel(
   return "edit dynamic stat range";
 }
 
-// --- Live edit emit (existing items) ---------------------------------------------------
-
-function emitChange() {
-  const item = toItem();
-  const currentJson = JSON.stringify(item);
-  if (currentJson === lastEmittedJson) return;
-  const label = diffLabel(lastEmittedJson, currentJson);
-  lastEmittedJson = currentJson;
-  emit("update:item", { item, label });
-}
-
-const { resetDraftHistory } = useDraftHistory({
-  draft,
-  isNew,
-  diffLabel,
-  onEmit: emitChange,
-});
-
 // --- Common ---------------------------------------------------------------------------
 
-const displayId = computed(
-  () =>
-    props.source?.id ??
-    (draft.value.name.trim()
-      ? catalog.nextId(
-          draft.value.name.trim(),
-          props.allocatableIds.length
-            ? props.allocatableIds
-            : props.db.items.map((i) => i.id),
-          "item",
-        )
-      : ""),
-);
+function computeId(local: ItemDraft): string {
+  return local.name.trim()
+    ? catalog.nextId(
+        local.name.trim(),
+        props.allocatableIds.length
+          ? props.allocatableIds
+          : props.db.items.map((i) => i.id),
+        "item",
+      )
+    : "";
+}
 
 /** The class vocabulary these checkboxes offer: every distinct value the catalogue publishes
  * at `class`, labelled by the item that publishes it. A class param's options are still
  * honoured as a fallback, so an overlay declaring the older param-based shape keeps working.
- * Blank values are dropped either way -- "no class at all" is not a restriction. */
+ * Blank values are dropped either way; "no class at all" is not a restriction. */
 const classSlot = computed(() => findParamSlot(props.db.slots, "class"));
-/** `replacedBy` candidates. This item is left out -- a self-reference is a lint error. */
+/** `replacedBy` candidates. This item is left out: a self-reference is a lint error. */
 const replacementOptions = computed(() => [
   { value: "", label: "- not replaced -" },
   ...props.db.items
@@ -476,17 +443,8 @@ const maxCopiesHint = computed(() => {
   return fallback === undefined ? "unlimited" : `${fallback} for this filter`;
 });
 
-function toItem(): Item {
-  const local = draft.value;
-  const id =
-    props.source?.id ??
-    catalog.nextId(
-      local.name.trim(),
-      props.allocatableIds.length
-        ? props.allocatableIds
-        : props.db.items.map((i) => i.id),
-      "item",
-    );
+function toItem(local: ItemDraft): Item {
+  const id = props.source?.id ?? computeId(local);
   const item: Item = {
     id,
     name: local.name.trim(),
@@ -606,16 +564,9 @@ function toItem(): Item {
   return item;
 }
 
-const dirty = computed(() => {
-  const item = toItem();
-  if (!props.source)
-    return Boolean(item.name || item.filter || draft.value.stats.length);
-  return !deepEqual(item, props.source);
-});
-
 function save() {
   error.value = "";
-  const item = toItem();
+  const item = toItem(draft.value);
   if (!item.name) {
     error.value = "The item needs a name.";
     return;
@@ -627,13 +578,13 @@ function save() {
   emit("save", { item });
 }
 
-/** Merge item-shaped values -- currently the ones read off a tooltip screenshot -- into the
+/** Merge item-shaped values, currently the ones read off a tooltip screenshot, into the
  *  open draft. Imperative rather than a prop: the tooltip window is a sibling of this form, and
  *  routing its values through the layer overlay would reach a saved item but never an unsaved
  *  new draft, which is exactly the state the screenshot flow starts from. The draft watcher
  *  takes it from here, so the merge debounces out as an ordinary edit and joins undo like one.
  *
- *  The name and stats overwrite what is there -- taking the screenshot's value is the point.
+ *  The name and stats overwrite what is there: taking the screenshot's value is the point.
  *  `gameIds` appends instead, since one item legitimately carries several. */
 function applyPatch(patch: Partial<Item>) {
   const statKeys = new Set<string>(NW_SCHEMA.statKeys);
@@ -761,7 +712,7 @@ function removeDefaultParam(index: number) {
 // Description and inline repetition are single field groups rather than arrays, so
 // "added"/"removed" is tracked as its own flag instead of splicing a list. Both start active
 // whenever the source item already carries values for them. Dynamic stats, like Stats below,
-// are a plain repeatable list instead -- no separate group toggle.
+// are a plain repeatable list instead, no separate group toggle.
 function hasDescription(d: ItemDraft): boolean {
   return d.shortDescription !== "" || d.longDescription !== "";
 }
@@ -774,11 +725,39 @@ function hasInlineRepetition(d: ItemDraft): boolean {
   );
 }
 
-const descriptionActive = ref(hasDescription(draft.value));
-const repetitionActive = ref(hasInlineRepetition(draft.value));
+// Built separately from `useEditorDraft`'s own draft below rather than read off it: these
+// flags need a value before that call exists, and `onRebuild` keeps them in sync afterward.
+const initialDraft = buildDraft(props.source ?? props.duplicateFrom);
+const descriptionActive = ref(hasDescription(initialDraft));
+const repetitionActive = ref(hasInlineRepetition(initialDraft));
+
+// Existing items: live edits. New items: draft until Save.
+const isNew = computed(() => !props.source);
+
+const { draft, error, dirty, displayId } = useEditorDraft<
+  Item,
+  ItemDraft,
+  Item
+>({
+  source: () => props.source,
+  isNew,
+  buildDraft: (source) => buildDraft(source ?? props.duplicateFrom),
+  toEntity: toItem,
+  diffLabel,
+  hasContent: (d) => Boolean(d.name || d.filter || d.stats.length),
+  emit: (item, label) => emit("update:item", { item, label }),
+  displayId: {
+    sourceId: () => props.source?.id,
+    computeId,
+  },
+  onRebuild: (d) => {
+    descriptionActive.value = hasDescription(d);
+    repetitionActive.value = hasInlineRepetition(d);
+  },
+});
 
 // Draft undo/redo (new-item history) replaces `draft.value` wholesale, bypassing the
-// add/remove handlers below -- resurface the group automatically whenever its fields come
+// add/remove handlers below, so resurface the group automatically whenever its fields come
 // back populated so a redo of "add" doesn't leave the fields hidden behind a stale flag.
 // Never flips a flag to false itself; only the explicit remove handlers do that.
 watch(
@@ -835,7 +814,7 @@ function detachBonus(id: string) {
   }
 }
 
-/** Toggle or edit one attached bonus's occurrence config -- `occurrence: null` drops it back
+/** Toggle or edit one attached bonus's occurrence config: `occurrence: null` drops it back
  *  to a plain-id attachment (always 1 occurrence), mirroring `removeInlineRepetition`'s
  *  clear-back-to-unset behavior. */
 function updateBonusOccurrence(id: string, occurrence: OccurrenceDraft | null) {
@@ -938,67 +917,35 @@ function showsGroup(group: FieldGroup): boolean {
     (field) => claimedFields.value.has(field) || carriesField(field),
   );
 }
-
-// Rebuild draft when source changes (e.g. after undo/redo reverts the overlay).
-watch(
-  () => props.source,
-  (value) => {
-    // Same round-trip-echo guard BonusForm.vue uses: a live edit's own update:item goes
-    // out through the layer overlay and comes straight back as this prop. Rebuilding from
-    // that echo would wipe half-drawn rows - `toItem` drops stat, dynamic-stat and
-    // default-param rows with nothing picked yet, so an "add the rows first, fill them one
-    // by one" session would lose every row still empty when the first one is filled.
-    if (value && lastEmittedJson && JSON.stringify(value) === lastEmittedJson)
-      return;
-    draft.value = buildDraft(value);
-    descriptionActive.value = hasDescription(draft.value);
-    repetitionActive.value = hasInlineRepetition(draft.value);
-    error.value = "";
-    lastEmittedJson = JSON.stringify(toItem());
-    resetDraftHistory();
-  },
-);
 </script>
 
 <template>
   <div>
-    <FormBar class="-mx-3 mb-3">
-      <strong>{{ draft.name || "New item" }}</strong>
-      <BaseBadge v-if="status !== 'base'" :variant="status">{{
-        status
-      }}</BaseBadge>
-      <BaseBadge v-if="dirty && isNew">unsaved</BaseBadge>
-      <span class="flex-1"></span>
-      <BaseCheckbox
-        v-model="showAllFields"
-        inline
-        data-testid="show-all-fields"
-      >
-        Show all fields
-      </BaseCheckbox>
-      <!-- Save button only for new items -->
-      <BaseButton
-        v-if="isNew"
-        variant="primary"
-        :disabled="!dirty"
-        @click="save"
-        ><Save />Save item</BaseButton
-      >
-      <BaseButton v-if="status === 'edited'" @click="$emit('revert')"
-        ><Undo2 />Revert to shipped</BaseButton
-      >
-      <BaseButton
-        v-if="source"
-        data-testid="duplicate-item"
-        @click="$emit('duplicate')"
-        ><Copy />Duplicate</BaseButton
-      >
-      <BaseButton v-if="source" @click="$emit('delete')"
-        ><Trash />Delete</BaseButton
-      >
-    </FormBar>
-
-    <p v-if="error" class="mt-1 text-danger">{{ error }}</p>
+    <DraftFormBar
+      noun="item"
+      :title="draft.name || 'New item'"
+      :status="status"
+      :dirty="dirty"
+      :is-new="isNew"
+      :has-source="Boolean(source)"
+      can-duplicate
+      :error="error"
+      duplicate-testid="duplicate-item"
+      @save="save"
+      @revert="$emit('revert')"
+      @duplicate="$emit('duplicate')"
+      @delete="$emit('delete')"
+    >
+      <template #before-actions>
+        <BaseCheckbox
+          v-model="showAllFields"
+          inline
+          data-testid="show-all-fields"
+        >
+          Show all fields
+        </BaseCheckbox>
+      </template>
+    </DraftFormBar>
 
     <FormGrid class="mb-2">
       <FormField label="Name">
