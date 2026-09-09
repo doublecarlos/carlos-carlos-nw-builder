@@ -987,3 +987,70 @@ describe("buildEditor toggleable slots", () => {
     expect(builds.build.value.disabledSlots).toEqual({});
   });
 });
+
+/**
+ * Every field a slot stores travels together, whichever action moves it. Written straight onto
+ * the build: no shipped `item_picker` item declares an `inlineRepetition` and no stable slot is
+ * `toggleable`, so an import or a hand-edited file is the only way to this state.
+ */
+describe("buildEditor slot data", () => {
+  const SLOT = "misc.misc#1";
+
+  it("applies every field of the compare build's slot, not just the pick", async () => {
+    const { builds, buildEditor } = await freshStores();
+    const other = builds.build.value;
+    other.choices[SLOT] = "ItemA";
+    other.values[SLOT] = { magnitude: 5 };
+    other.assignments[SLOT] = { ItemA: 3 };
+    other.disabledSlots[SLOT] = true;
+
+    builds.createBuild();
+    const mine = builds.build.value;
+    mine.compare.id = other.id;
+    buildEditor.applyFromCompare(SLOT);
+
+    expect(mine.choices[SLOT]).toBe("ItemA");
+    expect(mine.values[SLOT]).toEqual({ magnitude: 5 });
+    expect(mine.assignments[SLOT]).toEqual({ ItemA: 3 });
+    expect(mine.disabledSlots[SLOT]).toBe(true);
+    // Copied, not shared: editing one build must not reach into the other.
+    expect(mine.assignments[SLOT]).not.toBe(other.assignments[SLOT]);
+  });
+
+  it("clears every field when the compare build's slot is empty", async () => {
+    const { builds, buildEditor } = await freshStores();
+    const other = builds.build.value;
+
+    builds.createBuild();
+    const mine = builds.build.value;
+    mine.compare.id = other.id;
+    mine.choices[SLOT] = "ItemA";
+    mine.values[SLOT] = { magnitude: 5 };
+    mine.assignments[SLOT] = { ItemA: 3 };
+    mine.disabledSlots[SLOT] = true;
+
+    buildEditor.applyFromCompare(SLOT);
+
+    expect(mine.choices[SLOT]).toBeUndefined();
+    expect(mine.values[SLOT]).toBeUndefined();
+    expect(mine.assignments[SLOT]).toBeUndefined();
+    expect(mine.disabledSlots[SLOT]).toBeUndefined();
+  });
+
+  it("leaves nothing behind when a mount evicts an insignia it does not take", async () => {
+    const { builds, buildEditor } = await freshStores();
+    const INSIGNIA = "insignia.insignia1_1";
+    // Set before the mount, so the pick lands while the group is still in its manual fallback.
+    buildEditor.setChoice(INSIGNIA, "aggression-barbed");
+    const build = builds.build.value;
+    build.values[INSIGNIA] = { magnitude: 5 };
+    build.disabledSlots[INSIGNIA] = true;
+
+    // A barbed insignia in slot 1, which this mount declares as crescent.
+    buildEditor.setChoice("insignia.mount1", "stable-armored-pale-horse");
+
+    expect(build.choices[INSIGNIA]).toBeUndefined();
+    expect(build.values[INSIGNIA]).toBeUndefined();
+    expect(build.disabledSlots[INSIGNIA]).toBeUndefined();
+  });
+});

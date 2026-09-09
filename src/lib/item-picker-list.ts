@@ -3,6 +3,8 @@
 // Rows are positional: row N of `misc.misc` is the ordinary `item_picker` slot `misc.misc#N`,
 // 1-based so the id and the rendered label agree. Everything downstream of the expansion sees
 // plain picks and knows nothing about lists.
+import { storedSlotIds } from "./slot-fields";
+import type { SlotData } from "./slot-fields";
 import type { Build, ItemPickerListSlot, ItemPickerSlot, Slot } from "../types";
 
 /** Separates a container id from its row number. Not `.`, which already separates a section
@@ -54,21 +56,11 @@ export function rowSlot(
  * whatever the count says. `normalise` grows a payload to these, so a hand-edited or imported
  * build cannot carry a pick that no row shows.
  */
-export function storedListRows(
-  build: Pick<Build, "choices" | "values" | "assignments" | "disabledSlots">,
-): Record<string, number> {
+export function storedListRows(build: SlotData): Record<string, number> {
   const counts: Record<string, number> = {};
-  for (const field of [
-    build.choices,
-    build.values,
-    build.assignments,
-    build.disabledSlots,
-  ]) {
-    for (const key of Object.keys(field ?? {})) {
-      const row = parseRowSlotId(key);
-      if (row)
-        counts[row.listId] = Math.max(counts[row.listId] ?? 0, row.index);
-    }
+  for (const slotId of storedSlotIds(build)) {
+    const row = parseRowSlotId(slotId);
+    if (row) counts[row.listId] = Math.max(counts[row.listId] ?? 0, row.index);
   }
   return counts;
 }
