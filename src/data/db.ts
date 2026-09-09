@@ -9,6 +9,7 @@ import { bonusIdOf } from "../lib/bonus-attachment";
 import { replacementIdOf, replacementValuesOf } from "../lib/item-replacement";
 import { resolvedOptions } from "../lib/param-options";
 import { parseRowSlotId, rowSlot } from "../lib/item-picker-list";
+import { assignedRows } from "../lib/inline-repetition";
 import {
   isPreferredSlot,
   preferredVariantIds,
@@ -293,9 +294,7 @@ function copyCounts(
   }
   for (const slot of db.slots) {
     if (slot.type !== "point_assignment") continue;
-    const assigned = build.assignments?.[slot.id] ?? {};
-    for (const item of db.forSlot(slot.id)) {
-      const count = assigned[item.id] ?? item.inlineRepetition!.default;
+    for (const { item, count } of assignedRows(db, build, slot)) {
       if (count > 0) bump(item.id, count);
     }
   }

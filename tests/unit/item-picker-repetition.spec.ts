@@ -7,11 +7,16 @@ import { describe, it, expect } from "vitest";
 import * as db from "../../src/data/db";
 import * as bonus from "../../src/engine/bonus";
 import * as engine from "../../src/engine/engine";
-import { inlineRepetitionCount } from "../../src/lib/inline-repetition";
+import {
+  assignedRows,
+  inlineRepetitionCount,
+} from "../../src/lib/inline-repetition";
 import type {
   Bonus,
   Build,
   Item,
+  ItemPickerSlot,
+  PointAssignmentSlot,
   Schema,
   Slot,
   SlotsData,
@@ -120,6 +125,39 @@ describe("reading the count", () => {
 
   it("is 1 for an item that declares no config", () => {
     expect(inlineRepetitionCount(testBuild(), "gear.shard", plain)).toBe(1);
+  });
+});
+
+describe("reading a whole slot's rows", () => {
+  const pointSlot: PointAssignmentSlot = {
+    id: "gear.points",
+    label: "Points",
+    section: "gear",
+    type: "point_assignment",
+    filter: "shards",
+  };
+  const pointDb = db.build([shard, gem, plain], bonuses, schema, {
+    ...slotsData,
+    slots: [...slots, pointSlot],
+  });
+
+  it("gives a point_assignment slot every candidate, defaulting the untouched ones", () => {
+    const build = testBuild({ assignments: { "gear.points": { gem: 3 } } });
+    expect(assignedRows(pointDb, build, pointSlot)).toEqual([
+      { item: gem, count: 3 },
+      { item: shard, count: 1 },
+    ]);
+  });
+
+  it("gives an item_picker slot the one pick that declares a config", () => {
+    expect(
+      assignedRows(testDb, withCount(2), slots[0] as ItemPickerSlot),
+    ).toEqual([{ item: shard, count: 2 }]);
+  });
+
+  it("gives an item_picker slot nothing when its pick declares none", () => {
+    const build = testBuild({ choices: { "gear.shard": plain.id } });
+    expect(assignedRows(testDb, build, slots[0] as ItemPickerSlot)).toEqual([]);
   });
 });
 

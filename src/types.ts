@@ -1019,6 +1019,9 @@ export interface EngineError {
 /** A slot's item stats plus the bonuses attributed to it -- engine.ts's `rowVectors`. */
 export interface EngineRow {
   slotId: string;
+  /** Carried from the row's `ResolvedRow`. Re-deriving it downstream costs a `db.slotFor`,
+   * which synthesises a fresh slot on every call for a list row. */
+  slot: Slot;
   choice: string | undefined;
   item: Item | null;
   stats: Record<StatKey, number>;

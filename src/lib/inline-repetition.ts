@@ -35,3 +35,16 @@ export function repetitionRows(
   const item = db.get(build?.choices?.[slot.id]);
   return item?.inlineRepetition ? [item] : [];
 }
+
+/** `repetitionRows` with each row's count. Rows at 0 are included: what an empty row means
+ * differs per caller. */
+export function assignedRows(
+  db: Db,
+  build: Build,
+  slot: PointAssignmentSlot | ItemPickerSlot,
+): { item: Item; count: number }[] {
+  return repetitionRows(db, build, slot).map((item) => ({
+    item,
+    count: inlineRepetitionCount(build, slot.id, item),
+  }));
+}

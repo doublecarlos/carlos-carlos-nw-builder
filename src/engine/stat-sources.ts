@@ -9,6 +9,7 @@
 // from what the panel actually displays.
 import { NW_SCHEMA } from "../data/data";
 import { readDynamicValue } from "../lib/dynamic-stats";
+import { assignedRows } from "../lib/inline-repetition";
 import { isDisabled } from "../lib/slot-toggle";
 import { scaleFactorFor, scaledStat } from "./scaling";
 import type {
@@ -50,7 +51,6 @@ function bonusTitle(entry: EvaluatedBonus) {
 function itemSources(
   result: ResolvedBuild,
   build: Build | null | undefined,
-  db: Db | null | undefined,
   key: StatKey,
 ): StatSource[] {
   const totals = new Map<string, number>();
@@ -58,7 +58,7 @@ function itemSources(
     if (!row.item || !row.item[key]) continue;
     // Read off the item, not the row's contribution, so a switched-off pick would otherwise
     // be listed at full value in a total it adds nothing to.
-    if (isDisabled(build, db?.slotFor(row.slotId))) continue;
+    if (isDisabled(build, row.slot)) continue;
     const factor = scaleFactorFor(NW_SCHEMA, result.context, row.item);
     totals.set(
       row.item.name,
@@ -82,9 +82,7 @@ function assignmentSources(
   const totals = new Map<string, number>();
   for (const slot of db.slots) {
     if (slot.type !== "point_assignment") continue;
-    const counts = build.assignments?.[slot.id] ?? {};
-    for (const item of db.forSlot(slot.id)) {
-      const count = counts[item.id] ?? item.inlineRepetition!.default;
+    for (const { item, count } of assignedRows(db, build, slot)) {
       if (count <= 0) continue;
       const raw = item[key];
       if (!raw) continue;
@@ -113,13 +111,12 @@ function bonusSources(result: ResolvedBuild, key: StatKey): StatSource[] {
 function dynamicStatSources(
   result: ResolvedBuild,
   build: Build | null | undefined,
-  db: Db | null | undefined,
   key: StatKey,
 ): StatSource[] {
   const out: StatSource[] = [];
   if (!build) return out;
   for (const row of result.rows) {
-    if (isDisabled(build, db?.slotFor(row.slotId))) continue;
+    if (isDisabled(build, row.slot)) continue;
     for (const config of row.item?.dynamicStats ?? []) {
       if (config.stat !== key) continue;
       const value = readDynamicValue(build, row.slotId, config);
@@ -193,10 +190,10 @@ function sourcesFor(
 ): StatSource[] {
   return [
     ...ratingContributionSource(result, key),
-    ...itemSources(result, build, db, key),
+    ...itemSources(result, build, key),
     ...assignmentSources(db, build, key),
     ...bonusSources(result, key),
-    ...dynamicStatSources(result, build, db, key),
+    ...dynamicStatSources(result, build, key),
     ...combinedRatingSource(result, key),
     ...abilitySource(result, key),
     ...forteSource(result, build, key),

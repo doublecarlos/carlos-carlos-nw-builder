@@ -14,7 +14,7 @@ import {
 } from "../storage/migrate-item-ids";
 import { getPath, setPath } from "../lib/build-path";
 import { deepEqual } from "../lib/deep-equal";
-import { repetitionRows } from "../lib/inline-repetition";
+import { assignedRows, repetitionRows } from "../lib/inline-repetition";
 import { itemLabel, normaliseGroup, stableRef } from "../engine/insignia";
 import {
   expandSlots,
@@ -576,11 +576,8 @@ export function copySection(fromId: string, sectionIds: string[]) {
 
     if (slot.type === "point_assignment") {
       const rows: Record<string, number> = {};
-      for (const item of db.value.forSlot(slot.id)) {
-        rows[item.id] =
-          source.assignments?.[slot.id]?.[item.id] ??
-          item.inlineRepetition!.default;
-      }
+      for (const { item, count } of assignedRows(db.value, source, slot))
+        rows[item.id] = count;
       b.assignments[slot.id] = rows;
       continue;
     }

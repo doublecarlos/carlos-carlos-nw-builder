@@ -9,6 +9,7 @@
 import * as bonus from "./bonus";
 import { scaleFactorFor, scaledStat } from "./scaling";
 import { occurrenceCountFor } from "../lib/bonus-attachment";
+import { assignedRows } from "../lib/inline-repetition";
 import { misplacedInsignia, withDerivedBonuses } from "./insignia";
 import { dynamicValueKey, readDynamicValue } from "../lib/dynamic-stats";
 import { isDisabled } from "../lib/slot-toggle";
@@ -98,6 +99,7 @@ function rowVectors(
     }
     return {
       slotId: row.slotId,
+      slot: row.slot,
       choice: row.choice,
       item: row.item,
       stats,
@@ -409,9 +411,7 @@ function findErrors(
   // the pass above -- counted here from the slot definitions themselves instead.
   for (const slot of db.slots) {
     if (slot.type !== "point_assignment") continue;
-    const assigned = build.assignments?.[slot.id] ?? {};
-    for (const item of db.forSlot(slot.id)) {
-      const count = assigned[item.id] ?? item.inlineRepetition!.default;
+    for (const { item, count } of assignedRows(db, build, slot)) {
       if (count > 0) counts.set(item.id, (counts.get(item.id) ?? 0) + count);
     }
   }
@@ -451,11 +451,9 @@ function findErrors(
 
   for (const slot of db.slots) {
     if (slot.type !== "point_assignment") continue;
-    const assigned = build.assignments?.[slot.id] ?? {};
-    for (const item of db.forSlot(slot.id)) {
-      const { min, max: rowMax, default: def } = item.inlineRepetition!;
-      const count = assigned[item.id] ?? def;
+    for (const { item, count } of assignedRows(db, build, slot)) {
       if (count <= 0) continue;
+      const { min, max: rowMax } = item.inlineRepetition!;
 
       errors.push(
         ...checkItemErrors(slot.id, item, db, resolved.ctx.class, counts),
