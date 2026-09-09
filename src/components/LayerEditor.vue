@@ -52,11 +52,11 @@ import BaseButton from "./ui/BaseButton.vue";
 import RailGutter from "./ui/RailGutter.vue";
 import BaseCheckbox from "./ui/BaseCheckbox.vue";
 import BaseBadge from "./ui/BaseBadge.vue";
-import BaseNotice from "./ui/BaseNotice.vue";
 import TabStrip from "./ui/TabStrip.vue";
 import TabButton from "./ui/TabButton.vue";
 import { ClipboardPaste, Download, RotateCcw, Upload } from "@lucide/vue";
 import * as catalog from "../data/catalog";
+import { showNotice } from "../stores/notice";
 import * as router from "../lib/router";
 import * as engine from "../stores/resolved";
 import * as history from "../stores/history";
@@ -212,7 +212,6 @@ const duplicateBonusSeed = ref<Bonus | null>(null);
 /** Same one-shot handoff as `newItemSeed`, from BuildSection's "Create new from current". */
 const newPresetSeed = layerEditorUi.takeNewPresetSeed();
 const duplicatePresetSeed = ref<SectionPreset | null>(newPresetSeed);
-const notice = ref("");
 
 const form = ref<InstanceType<typeof ItemForm> | null>(null);
 const bonusForm = ref<InstanceType<typeof BonusForm> | null>(null);
@@ -621,7 +620,7 @@ function duplicateItem() {
   selectedBySection.items = null;
   newItemCounter.value++;
   router.apply({ item: null });
-  notice.value = `Duplicating "${item.name}" - edit and save to create a copy`;
+  showNotice(`Duplicating "${item.name}" - edit and save to create a copy`);
 }
 
 /** Opens a new item draft seeded from a pasted tooltip. Like "Duplicate", the seed is only
@@ -634,7 +633,9 @@ function createFromTooltip(draft: Partial<Item>) {
   newItemCounter.value++;
   router.apply({ item: null });
   showTooltipImport.value = false;
-  notice.value = `Filled ${Object.keys(draft).length} field(s) from the tooltip - review and save to create the item`;
+  showNotice(
+    `Filled ${Object.keys(draft).length} field(s) from the tooltip - review and save to create the item`,
+  );
 }
 
 /** How the tooltip window should name the item its "apply" buttons write into, or null when
@@ -656,7 +657,7 @@ function applyFromTooltip({
   label: string;
 }) {
   form.value?.applyPatch(patch);
-  notice.value = `Applied ${label} from the tooltip to ${applyTarget.value}`;
+  showNotice(`Applied ${label} from the tooltip to ${applyTarget.value}`);
 }
 
 function duplicateBonus() {
@@ -666,7 +667,9 @@ function duplicateBonus() {
   selectedBySection.bonuses = null;
   newItemCounter.value++;
   router.apply({ bonus: null });
-  notice.value = `Duplicating "${bonus.name || bonus.id}" - edit and save to create a copy`;
+  showNotice(
+    `Duplicating "${bonus.name || bonus.id}" - edit and save to create a copy`,
+  );
 }
 
 function newPreset() {
@@ -690,7 +693,7 @@ function onSave({ item }: { item: Item }) {
   );
   selectedBySection.items = item.id;
   router.apply({ item: item.id });
-  notice.value = `Saved "${item.name}"`;
+  showNotice(`Saved "${item.name}"`);
 }
 
 /** Live-edit handler: debounced changes from existing items go here. */
@@ -712,7 +715,7 @@ function onDelete() {
   );
   selectedBySection.items = null;
   router.apply({ item: null });
-  notice.value = `Removed "${name}"`;
+  showNotice(`Removed "${name}"`);
 }
 
 function onRevert() {
@@ -723,7 +726,7 @@ function onRevert() {
     `Revert item "${name}"`,
     catalog.revert(overlay.value, "items", id),
   );
-  notice.value = `Reverted "${name}" to the shipped version`;
+  showNotice(`Reverted "${name}" to the shipped version`);
 }
 
 function restore(row: EditorRow) {
@@ -733,7 +736,7 @@ function restore(row: EditorRow) {
     `Restore "${row.name}"`,
     catalog.revert(overlay.value, group, row.key),
   );
-  notice.value = `Restored "${row.name}"`;
+  showNotice(`Restored "${row.name}"`);
 }
 
 async function resetAll(event: MouseEvent) {
@@ -750,7 +753,7 @@ async function resetAll(event: MouseEvent) {
   selectedBySection.sectionPresets = null;
   selectedBySection.slots = null;
   router.apply({ item: null, bonus: null, preset: null, slot: null });
-  notice.value = "Discarded every change - back to the shipped data";
+  showNotice("Discarded every change - back to the shipped data");
 }
 
 /** Jump to whatever a validation finding points at, switching section if needed --
@@ -777,7 +780,7 @@ function onSaveBonus({ id, bonus }: { id: string; bonus: Bonus }) {
     `Save bonus "${bonus.name || id}"`,
     catalog.upsert(overlay.value, "bonuses", id, bonus),
   );
-  notice.value = `Saved bonus "${bonus.name || id}"`;
+  showNotice(`Saved bonus "${bonus.name || id}"`);
 }
 
 /** Live-edit handler: debounced changes from existing bonuses in item editor go here. */
@@ -795,7 +798,7 @@ function onDeleteBonus(id: string) {
     `Delete bonus "${id}"`,
     catalog.remove(overlay.value, "bonuses", id),
   );
-  notice.value = `Removed bonus "${id}"`;
+  showNotice(`Removed bonus "${id}"`);
 }
 
 function onSaveBonusTop({ id, bonus }: { id: string; bonus: Bonus }) {
@@ -806,7 +809,7 @@ function onSaveBonusTop({ id, bonus }: { id: string; bonus: Bonus }) {
   );
   selectedBySection.bonuses = id;
   router.apply({ bonus: id });
-  notice.value = `Saved bonus "${bonus.name || id}"`;
+  showNotice(`Saved bonus "${bonus.name || id}"`);
 }
 
 /** Live-edit handler: debounced changes from existing bonuses go here. */
@@ -835,7 +838,7 @@ function onDeleteBonusTop() {
   );
   selectedBySection.bonuses = null;
   router.apply({ bonus: null });
-  notice.value = `Removed bonus "${id}"`;
+  showNotice(`Removed bonus "${id}"`);
 }
 
 function onRevertBonusTop() {
@@ -845,7 +848,7 @@ function onRevertBonusTop() {
     `Revert bonus "${id}"`,
     catalog.revert(overlay.value, "bonuses", id),
   );
-  notice.value = `Reverted bonus "${id}" to the shipped version`;
+  showNotice(`Reverted bonus "${id}" to the shipped version`);
 }
 
 // --- section presets ------------------------------------------------------------------
@@ -858,7 +861,7 @@ function onSavePreset({ preset }: { preset: SectionPreset }) {
   );
   selectedBySection.sectionPresets = preset.id;
   router.apply({ preset: preset.id });
-  notice.value = `Saved preset "${preset.label || preset.id}"`;
+  showNotice(`Saved preset "${preset.label || preset.id}"`);
 }
 
 /** Live-edit handler: debounced changes from an existing preset go here. */
@@ -885,7 +888,7 @@ function onDeletePreset() {
   );
   selectedBySection.sectionPresets = null;
   router.apply({ preset: null });
-  notice.value = `Removed preset "${id}"`;
+  showNotice(`Removed preset "${id}"`);
 }
 
 function onRevertPreset() {
@@ -895,7 +898,7 @@ function onRevertPreset() {
     `Revert preset "${id}"`,
     catalog.revert(overlay.value, "sectionPresets", id),
   );
-  notice.value = `Reverted preset "${id}" to the shipped version`;
+  showNotice(`Reverted preset "${id}" to the shipped version`);
 }
 
 // --- build parameter slots -------------------------------------------------------------
@@ -910,7 +913,7 @@ function onSaveSlot({ slot }: { slot: BuildParameterSlot }) {
   );
   selectedBySection.slots = slot.id;
   router.apply({ slot: slot.id });
-  notice.value = `Saved parameter "${slot.label || slot.id}"`;
+  showNotice(`Saved parameter "${slot.label || slot.id}"`);
 }
 
 /** Live-edit handler: debounced changes from an existing slot go here. */
@@ -938,7 +941,7 @@ function onDeleteSlot() {
   );
   selectedBySection.slots = null;
   router.apply({ slot: null });
-  notice.value = `Removed parameter "${label}"`;
+  showNotice(`Removed parameter "${label}"`);
 }
 
 function onRevertSlot() {
@@ -948,7 +951,7 @@ function onRevertSlot() {
     `Revert parameter "${id}"`,
     catalog.revert(overlay.value, "slots", id),
   );
-  notice.value = `Reverted parameter "${id}" to the shipped version`;
+  showNotice(`Reverted parameter "${id}" to the shipped version`);
 }
 
 async function importOverlay(event: Event) {
@@ -958,9 +961,11 @@ async function importOverlay(event: Event) {
   try {
     const parsed = JSON.parse(await file.text());
     commit(null, "Import overlay", catalog.normaliseOverlay(parsed));
-    notice.value = "Overlay imported";
+    showNotice("Overlay imported");
   } catch (error: unknown) {
-    notice.value = `Could not read that overlay: ${error instanceof Error ? error.message : String(error)}`;
+    showNotice(
+      `Could not read that overlay: ${error instanceof Error ? error.message : String(error)}`,
+    );
   }
   input.value = "";
 }
@@ -1019,7 +1024,7 @@ onMounted(() => {
     selectedBySection.sectionPresets = null;
     ui.value.section = "sectionPresets";
     ui.value.preset = "";
-    notice.value = "New preset from the current build - name it and save";
+    showNotice("New preset from the current build - name it and save");
   } else if (newItemSeed) {
     // BuildEditor's Ctrl/Cmd+click on an empty slot row: the blank draft *is* the point of the
     // jump, so restoring whatever this layer had open before would throw it away. The per-layer
@@ -1030,7 +1035,7 @@ onMounted(() => {
     const narrowedTo = [newItemSeed.filter, ...(newItemSeed.tags ?? [])]
       .filter(Boolean)
       .join(", ");
-    notice.value = `New item - pre-filled for "${narrowedTo}"`;
+    showNotice(`New item - pre-filled for "${narrowedTo}"`);
   } else {
     restoreSelection(source);
   }
@@ -1156,15 +1161,11 @@ onUnmounted(() => {
       build. Enable it to see its effects.
     </div>
 
-    <BaseNotice v-if="notice" class="mb-2" @dismiss="notice = ''">{{
-      notice
-    }}</BaseNotice>
-
     <LayerExportModal
       v-if="showExport"
       v-model="exportTab"
       :overlay="overlay"
-      @notice="notice = $event"
+      @notice="showNotice"
       @close="showExport = false"
     />
 
