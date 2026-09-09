@@ -6,6 +6,7 @@ import { dynamicValueKey } from "../lib/dynamic-stats";
 import { label as statLabel } from "../lib/format";
 import { repetitionRows } from "../lib/inline-repetition";
 import { expandSlots } from "../lib/item-picker-list";
+import { isDisabled } from "../lib/slot-toggle";
 import { itemLabel, stableRef } from "../engine/insignia";
 import type {
   Build,
@@ -17,6 +18,7 @@ import type {
   ItemPickerSlot,
   PointAssignmentSlot,
   ResolvedBuild,
+  Slot,
   StatValues,
 } from "../types";
 
@@ -28,8 +30,22 @@ export interface ValueDiff {
 
 export interface SlotDiff {
   choice: boolean;
+  /** The `toggleable` checkbox differs. Its own flag, not part of `choice`: both builds hold
+   *  the same item, one just is not counting it. */
+  disabled: boolean;
   values: ValueDiff[];
   bonuses: { id: string; message: string }[];
+}
+
+/** True if this slot's pick is switched off in one build and on in the other. Standalone for
+ * the same reason `paramDiffers` is: it needs the two builds and nothing else. */
+export function disabledDiffers(
+  build: Build,
+  compareBuild: Build | null,
+  slot: Slot,
+) {
+  if (!compareBuild) return false;
+  return isDisabled(build, slot) !== isDisabled(compareBuild, slot);
 }
 
 /** True if this build_parameter slot's value differs between two builds. Generic over any
@@ -329,10 +345,11 @@ export function useCompareDiff(options: {
     if (!compareBuild.value) return map;
     for (const slot of expandSlots(db.value.slots, build.value)) {
       const choice = differs(slot.id);
+      const disabled = disabledDiffers(build.value, compareBuild.value, slot);
       const values = choice ? [] : valueDiffs(slot.id);
       const bonuses = choice ? [] : bonusDiffsFor(slot.id);
-      if (choice || values.length || bonuses.length)
-        map.set(slot.id, { choice, values, bonuses });
+      if (choice || disabled || values.length || bonuses.length)
+        map.set(slot.id, { choice, disabled, values, bonuses });
     }
     return map;
   });

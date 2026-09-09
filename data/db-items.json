@@ -651,7 +651,7 @@
     "id": "apocalipse-set",
     "name": "Apocalipse Set",
     "filter": "group_buff",
-    "enemy_incoming_damage": 0.05
+    "bonuses": ["apocalipse-set"]
   },
   {
     "id": "arma-egg-on",
@@ -805,7 +805,7 @@
     "id": "bard-s-storyteller-flamingo",
     "name": "Bard's Storyteller + Flamingo",
     "filter": "group_buff",
-    "outgoing_damage": 0.17
+    "bonuses": ["bard-s-storyteller-flamingo"]
   },
   {
     "id": "batiri-s-wisdom-batiri-damage-offense",
@@ -1847,15 +1847,7 @@
     "id": "campfire-buff",
     "name": "Campfire Buff",
     "filter": "attributes_campfire",
-    "bonuses": [
-      {
-        "bonus": "campfire-buff-bonus",
-        "min": 0,
-        "max": 1,
-        "default": 1,
-        "label": "Buff active"
-      }
-    ]
+    "bonuses": ["campfire-buff-bonus"]
   },
   {
     "id": "captain",
@@ -2601,7 +2593,7 @@
     "id": "fighter-s-enforced-threat",
     "name": "Fighter's Enforced Threat",
     "filter": "group_buff",
-    "enemy_awareness": -0.1
+    "bonuses": ["fighter-s-enforced-threat"]
   },
   {
     "id": "flapjack",
@@ -2787,9 +2779,7 @@
     "id": "grace-ring",
     "name": "Grace Ring",
     "filter": "group_buff",
-    "enemy_defense": -0.035,
-    "enemy_awareness": -0.035,
-    "enemy_crit_avoid": -0.035
+    "bonuses": ["grace-ring"]
   },
   {
     "id": "grand-summer-feast",
@@ -4861,7 +4851,7 @@
     "id": "marilith-set",
     "name": "Marilith Set",
     "filter": "group_buff",
-    "enemy_incoming_damage": 0.05
+    "bonuses": ["marilith-set"]
   },
   {
     "id": "martial-performance",
@@ -5043,9 +5033,7 @@
     "id": "mythic-bregan-chest",
     "name": "Mythic Bregan Chest",
     "filter": "group_buff",
-    "enemy_defense": -0.05,
-    "enemy_awareness": -0.05,
-    "enemy_crit_avoid": -0.05
+    "bonuses": ["mythic-bregan-chest"]
   },
   {
     "id": "neverwinter-knight-s-discipline-neverwinter-knight-damage-offense",
@@ -5426,25 +5414,25 @@
     "id": "purple-armor-break",
     "name": "Armor Break",
     "filter": "group_buff",
-    "enemy_defense": -0.09
+    "bonuses": ["purple-armor-break"]
   },
   {
     "id": "purple-dulled-senses",
     "name": "Dulled Senses",
     "filter": "group_buff",
-    "enemy_awareness": -0.09
+    "bonuses": ["purple-dulled-senses"]
   },
   {
     "id": "purple-slowed-reactions",
     "name": "Slowed Reactions",
     "filter": "group_buff",
-    "enemy_deflect": -0.09
+    "bonuses": ["purple-slowed-reactions"]
   },
   {
     "id": "purple-vulnerability",
     "name": "Vulnerability",
     "filter": "group_buff",
-    "enemy_crit_avoid": -0.09
+    "bonuses": ["purple-vulnerability"]
   },
   {
     "id": "quick-action-celestial",
@@ -7369,7 +7357,7 @@
     "id": "vistani-set",
     "name": "Vistani Set",
     "filter": "group_buff",
-    "enemy_incoming_damage": 0.05
+    "bonuses": ["vistani-set"]
   },
   {
     "id": "voice-throw",

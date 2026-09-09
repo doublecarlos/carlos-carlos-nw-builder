@@ -172,6 +172,9 @@ export interface ItemPickerSlot extends SlotVisibility {
    * not a stat line worth comparing rows by. Purely presentational -- candidate filtering
    * (`hideFromPicker`) is unaffected. */
   hidePreview?: boolean;
+  /** Gives the row a checkbox that drops its pick from the calculation without clearing it.
+   * The pick stays saved; `Build.disabledSlots` holds the off state. */
+  toggleable?: boolean;
   /** Set only on a row expanded from an `ItemPickerListSlot`: the container's id, which is
    * what the row's remove button acts on. */
   list?: string;
@@ -245,6 +248,8 @@ export interface ItemPickerListSlot extends SlotVisibility {
   /** The exclusive `filter` XOR `tags` selector `ItemPickerSlot` carries, handed to every row. */
   filter?: string;
   tags?: string[];
+  /** Handed to every row, each with its own off state. See `ItemPickerSlot.toggleable`. */
+  toggleable?: boolean;
 }
 
 export type Slot =
@@ -795,6 +800,9 @@ export interface Build {
   /** Each `item_picker_list`'s row count, by container slot id. Stored rather than derived
    * from `choices` so a row left empty is still a row. Absent reads as `defaultRows`. */
   listRows: Record<string, number>;
+  /** Every `toggleable` slot switched off, by slot id. Only the off state is stored, so an
+   * absent entry (and every older build) reads as on. The pick itself stays in `choices`. */
+  disabledSlots: Record<string, boolean>;
   context: BuildContext;
   compare: BuildCompare;
   catalog?: CatalogOverlay;

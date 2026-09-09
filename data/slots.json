@@ -659,49 +659,57 @@
           "id": "buffs.eventFood",
           "label": "Event Food",
           "filter": "consumable_event_food",
-          "type": "item_picker"
+          "type": "item_picker",
+          "toggleable": true
         },
         {
           "id": "buffs.elixir",
           "label": "Elixir",
           "filter": "consumable_elixir",
-          "type": "item_picker"
+          "type": "item_picker",
+          "toggleable": true
         },
         {
           "id": "buffs.potion",
           "label": "Potion",
           "filter": "consumable_potion",
-          "type": "item_picker"
+          "type": "item_picker",
+          "toggleable": true
         },
         {
           "id": "buffs.food",
           "label": "Food",
           "filter": "consumable_food",
-          "type": "item_picker"
+          "type": "item_picker",
+          "toggleable": true
         },
         {
           "id": "buffs.trinket",
           "label": "Trinket",
           "filter": "trinket",
-          "type": "item_picker"
+          "type": "item_picker",
+          "toggleable": true
         },
         {
           "id": "buffs.eventItem",
           "label": "Event Item",
           "filter": "consumable_event_item",
-          "type": "item_picker"
+          "type": "item_picker",
+          "toggleable": true
         },
         {
           "id": "buffs.blessing",
           "label": "Blessing",
           "filter": "consumable_blessing",
-          "type": "item_picker"
+          "type": "item_picker",
+          "toggleable": true
         },
         {
           "id": "baselineAndAttributes.attributesCampfireBuff",
           "label": "Campfire Buff",
           "filter": "attributes_campfire",
-          "type": "item_picker"
+          "type": "item_picker",
+          "toggleable": true
         }
       ]
     },
@@ -1546,6 +1554,7 @@
           "label": "Group buff",
           "filter": "group_buff",
           "type": "item_picker_list",
+          "toggleable": true,
           "defaultRows": 0
         }
       ]
@@ -1596,6 +1605,7 @@
           "label": "Artifact call buff",
           "filter": "artifact_call",
           "type": "item_picker_list",
+          "toggleable": true,
           "defaultRows": 0
         }
       ]
@@ -1610,6 +1620,7 @@
           "label": "Misc bonus",
           "filter": "misc",
           "type": "item_picker_list",
+          "toggleable": true,
           "defaultRows": 0
         }
       ]

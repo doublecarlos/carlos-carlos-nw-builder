@@ -39,6 +39,8 @@ const props = defineProps<{
   db: Db;
   compareBuild?: Build | null;
   highlightDiff: boolean;
+  /** This row's `toggleable` checkbox is unchecked: the pick stays, struck through. */
+  disabled?: boolean;
   item?: Item | null;
   items?: Item[];
   /** Why each of `items` would normally be withheld, when the editor's lens is re-showing
@@ -149,6 +151,7 @@ const stableGroup = computed(() => {
       ref="picker"
       :placeholder="placeholder"
       class="grow-0 basis-80 min-w-40"
+      :class="disabled && '[&_input]:text-muted [&_input]:line-through'"
       :items="items ?? []"
       :input-id="inputId"
       :model-value="choice()"

@@ -33,7 +33,7 @@ useCursorRowKeys(anchor, {
     :data-cursor-key="'slot:' + slotDef.id"
     :data-testid="'list-add-row:' + slotDef.id"
   >
-    <div class="w-40 shrink-0" />
+    <div class="w-44 shrink-0" />
     <div class="min-w-0 flex-1">
       <span ref="anchor" tabindex="-1" data-cursor-anchor class="sr-only" />
       <!-- Labelled rather than a bare icon: an empty list is nothing but this row, and a

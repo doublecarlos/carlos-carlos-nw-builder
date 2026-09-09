@@ -63,6 +63,7 @@ export interface StoredRows {
   choices: Record<string, string>;
   values: Record<string, Record<string, number>>;
   assignments: Record<string, Record<string, number>>;
+  disabledSlots: Record<string, boolean>;
 }
 
 /**
@@ -79,6 +80,7 @@ export function migrateListSlots(stored: StoredRows): StoredRows {
     choices: moveKeys(stored.choices, renames),
     values: moveKeys(stored.values, renames),
     assignments: moveKeys(stored.assignments, renames),
+    disabledSlots: moveKeys(stored.disabledSlots, renames),
   };
 }
 

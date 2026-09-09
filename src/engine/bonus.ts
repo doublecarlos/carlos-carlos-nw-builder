@@ -8,6 +8,7 @@ import * as conditions from "./conditions";
 import { getPath } from "../lib/build-path";
 import { bonusIdOf, occurrenceCountFor } from "../lib/bonus-attachment";
 import { inlineRepetitionCount } from "../lib/inline-repetition";
+import { isDisabled } from "../lib/slot-toggle";
 import { expandSlots } from "../lib/item-picker-list";
 import { readDynamicValue } from "../lib/dynamic-stats";
 import type {
@@ -256,7 +257,12 @@ export function collect(
     const item = db.get(choice);
     // A pick declaring an `inlineRepetition` is in the build that many times over, read from
     // the same `build.assignments` store a point_assignment row uses. Anything else is in once.
-    const repetitions = item ? inlineRepetitionCount(build, slot.id, item) : 0;
+    // A slot switched off (`toggleable`) resolves to 0, the count that already means "no real
+    // occurrences right now", so disabling needs nothing of its own downstream.
+    const repetitions =
+      item && !isDisabled(build, slot)
+        ? inlineRepetitionCount(build, slot.id, item)
+        : 0;
     rows.push({ slotId: slot.id, slot, choice, item, repetitions });
     if (!item) return;
 

@@ -100,6 +100,7 @@ function buildWith(overrides: Partial<Build> = {}): Build {
     assignments: {},
     occurrenceInputs: {},
     listRows: {},
+    disabledSlots: {},
     context: { class: "" },
     compare: { id: "", highlight: false, onlyDiff: false, statLines: false },
     ...overrides,
