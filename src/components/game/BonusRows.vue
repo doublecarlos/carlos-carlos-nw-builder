@@ -8,13 +8,14 @@
 // mutation, which schedules an undo snapshot in BonusForm.
 
 import { computed, inject, ref } from "vue";
-import PercentInput from "../ui/PercentInput.vue";
 import ComboBox from "../ui/ComboBox.vue";
 import ConditionRows, {
   type ConditionTreeLocation,
   type ConditionBranchTreeLocation,
 } from "./ConditionRows.vue";
 import IconButton from "../ui/IconButton.vue";
+import StatRowList from "./StatRowList.vue";
+import DynamicStatRowList from "./DynamicStatRowList.vue";
 import {
   ArrowDown,
   ArrowUp,
@@ -30,11 +31,8 @@ import BaseInput from "../ui/BaseInput.vue";
 import BaseTextarea from "../ui/BaseTextarea.vue";
 import SegmentedControl from "../ui/SegmentedControl.vue";
 import DragHandle from "../ui/DragHandle.vue";
-import FormField from "../ui/FormField.vue";
 import OcrTextField from "../ui/OcrTextField.vue";
 import FormSection from "../ui/FormSection.vue";
-import { isPercentKind, kindOf, statPickerOptions } from "../../lib/format";
-import { focusNextCombo } from "../../lib/stat-row-nav";
 import {
   BonusDraftStore,
   moveConditionAcrossStores,
@@ -63,15 +61,9 @@ const props = withDefaults(
   { tags: () => [], registryId: "" },
 );
 
-const statComboOptions = statPickerOptions;
 const bonusComboOptions = computed(() =>
   props.store.bonusIds.map((s) => ({ value: s, label: s })),
 );
-const isPercent = (key: string) => isPercentKind(kindOf(key));
-
-function focusNextStat(event: KeyboardEvent) {
-  focusNextCombo(event);
-}
 
 // Guard against a grant being removed while an event handler is still firing.
 function gs(index: number) {
@@ -408,134 +400,21 @@ function toggleJson(gIndex: number) {
 
         <!-- flat payload -->
         <template v-if="grant.payload === 'flat'">
-          <div
-            v-for="(stat, sIndex) in grant.stats"
-            :key="sIndex"
-            class="stat-row flex flex-wrap items-center gap-1.5 mb-1"
-          >
-            <IconButton title="Add stat" @click="gs(gIndex).addStat()"
-              ><Plus
-            /></IconButton>
-            <IconButton
-              title="Remove stat"
-              @click="gs(gIndex).removeStat(sIndex)"
-              ><Trash
-            /></IconButton>
-            <ComboBox
-              class="combo--stat w-52"
-              :model-value="stat.key"
-              :options="statComboOptions"
-              placeholder="- pick a stat -"
-              @update:model-value="(v) => (stat.key = v)"
-            />
-            <PercentInput
-              v-if="isPercent(stat.key)"
-              v-model="stat.value"
-              class="w-28"
-              @keydown="focusNextStat"
-            />
-            <BaseInput
-              v-else
-              v-model.number="stat.value"
-              class="w-28"
-              type="number"
-              step="any"
-              @keydown="focusNextStat"
-            />
-          </div>
-          <div
-            v-if="!grant.stats.length"
-            class="stat-row flex flex-wrap items-center gap-1.5 mb-1"
-          >
-            <IconButton title="Add stat" @click="gs(gIndex).addStat()"
-              ><Plus
-            /></IconButton>
-          </div>
+          <StatRowList
+            :rows="grant.stats"
+            @add="gs(gIndex).addStat()"
+            @remove="(i: number) => gs(gIndex).removeStat(i)"
+          />
 
           <FormSection sub
             >Dynamic stats (player types the value; default applies until they
             do)</FormSection
           >
-          <div
-            v-for="(row, dIndex) in grant.dynamicStats"
-            :key="dIndex"
-            class="dynamic-stat-row flex flex-wrap items-center gap-1.5 mb-1"
-          >
-            <IconButton
-              title="Add dynamic stat"
-              @click="gs(gIndex).addDynamicStat()"
-              ><Plus
-            /></IconButton>
-            <IconButton
-              title="Remove dynamic stat"
-              @click="gs(gIndex).removeDynamicStat(dIndex)"
-              ><Trash
-            /></IconButton>
-            <FormField label="Stat">
-              <ComboBox
-                class="combo--stat w-52"
-                :model-value="row.stat"
-                :options="statComboOptions"
-                placeholder="- pick a stat -"
-                @update:model-value="(v) => (row.stat = v)"
-              />
-            </FormField>
-            <FormField label="Min">
-              <PercentInput
-                v-if="isPercent(row.stat)"
-                :model-value="row.min ?? ''"
-                class="w-24"
-                @update:model-value="(v) => (row.min = v)"
-              />
-              <BaseInput
-                v-else
-                v-model.number="row.min"
-                class="w-24"
-                type="number"
-              />
-            </FormField>
-            <FormField label="Max">
-              <PercentInput
-                v-if="isPercent(row.stat)"
-                :model-value="row.max ?? ''"
-                class="w-24"
-                @update:model-value="(v) => (row.max = v)"
-              />
-              <BaseInput
-                v-else
-                v-model.number="row.max"
-                class="w-24"
-                type="number"
-              />
-            </FormField>
-            <FormField label="Default">
-              <PercentInput
-                v-if="isPercent(row.stat)"
-                :model-value="row.default ?? ''"
-                class="w-24"
-                @update:model-value="(v) => (row.default = v)"
-              />
-              <BaseInput
-                v-else
-                v-model.number="row.default"
-                class="w-24"
-                type="number"
-              />
-            </FormField>
-            <FormField label="Label (optional)">
-              <BaseInput v-model="row.label" class="w-40" type="text" />
-            </FormField>
-          </div>
-          <div
-            v-if="!grant.dynamicStats.length"
-            class="dynamic-stat-row flex flex-wrap items-center gap-1.5 mb-1"
-          >
-            <IconButton
-              title="Add dynamic stat"
-              @click="gs(gIndex).addDynamicStat()"
-              ><Plus
-            /></IconButton>
-          </div>
+          <DynamicStatRowList
+            :rows="grant.dynamicStats"
+            @add="gs(gIndex).addDynamicStat()"
+            @remove="(i: number) => gs(gIndex).removeDynamicStat(i)"
+          />
         </template>
 
         <!-- tiered payload -->
@@ -612,50 +491,11 @@ function toggleJson(gIndex: number) {
                 more</span
               >
             </div>
-            <div
-              v-for="(stat, sIndex) in tier.stats"
-              :key="sIndex"
-              class="stat-row flex flex-wrap items-center gap-1.5 mb-1"
-            >
-              <IconButton
-                title="Add stat"
-                @click="gs(gIndex).addTierStat(tIndex)"
-                ><Plus
-              /></IconButton>
-              <IconButton
-                title="Remove stat"
-                @click="gs(gIndex).removeTierStat(sIndex, tIndex)"
-                ><Trash
-              /></IconButton>
-              <ComboBox
-                class="combo--stat w-52"
-                :model-value="stat.key"
-                :options="statComboOptions"
-                placeholder="- pick a stat -"
-                @update:model-value="(v) => (stat.key = v)"
-              />
-              <PercentInput
-                v-if="isPercent(stat.key)"
-                v-model="stat.value"
-                class="w-28"
-                @keydown="focusNextStat"
-              />
-              <BaseInput
-                v-else
-                v-model.number="stat.value"
-                class="w-28"
-                type="number"
-                step="any"
-                @keydown="focusNextStat"
-              />
-            </div>
-            <div v-if="!tier.stats.length" class="mt-1 flex flex-wrap gap-1">
-              <IconButton
-                title="Add stat"
-                @click="gs(gIndex).addTierStat(tIndex)"
-                ><Plus
-              /></IconButton>
-            </div>
+            <StatRowList
+              :rows="tier.stats"
+              @add="gs(gIndex).addTierStat(tIndex)"
+              @remove="(i: number) => gs(gIndex).removeTierStat(i, tIndex)"
+            />
           </div>
           <IconButton
             v-if="!grant.tiers.length"
@@ -741,138 +581,23 @@ function toggleJson(gIndex: number) {
               @transfer-branch="onBranchTransfer"
             />
             <FormSection sub>Grants</FormSection>
-            <div
-              v-for="(stat, sIndex) in variant.stats"
-              :key="sIndex"
-              class="stat-row flex flex-wrap items-center gap-1.5 mb-1"
-            >
-              <IconButton
-                title="Add stat"
-                @click="gs(gIndex).addVariantStat(vIndex)"
-                ><Plus
-              /></IconButton>
-              <IconButton
-                title="Remove stat"
-                @click="gs(gIndex).removeVariantStat(sIndex, vIndex)"
-                ><Trash
-              /></IconButton>
-              <ComboBox
-                class="combo--stat w-52"
-                :model-value="stat.key"
-                :options="statComboOptions"
-                placeholder="- pick a stat -"
-                @update:model-value="(v) => (stat.key = v)"
-              />
-              <PercentInput
-                v-if="isPercent(stat.key)"
-                v-model="stat.value"
-                class="w-28"
-                @keydown="focusNextStat"
-              />
-              <BaseInput
-                v-else
-                v-model.number="stat.value"
-                class="w-28"
-                type="number"
-                step="any"
-                @keydown="focusNextStat"
-              />
-            </div>
-            <div
-              v-if="!variant.stats.length"
-              class="stat-row flex flex-wrap items-center gap-1.5 mb-1"
-            >
-              <IconButton
-                title="Add stat"
-                @click="gs(gIndex).addVariantStat(vIndex)"
-                ><Plus
-              /></IconButton>
-            </div>
+            <StatRowList
+              :rows="variant.stats"
+              @add="gs(gIndex).addVariantStat(vIndex)"
+              @remove="(i: number) => gs(gIndex).removeVariantStat(i, vIndex)"
+            />
 
             <FormSection sub
               >Dynamic stats (player types the value; default applies until they
               do)</FormSection
             >
-            <div
-              v-for="(row, dIndex) in variant.dynamicStats"
-              :key="dIndex"
-              class="dynamic-stat-row flex flex-wrap items-center gap-1.5 mb-1"
-            >
-              <IconButton
-                title="Add dynamic stat"
-                @click="gs(gIndex).addVariantDynamicStat(vIndex)"
-                ><Plus
-              /></IconButton>
-              <IconButton
-                title="Remove dynamic stat"
-                @click="gs(gIndex).removeVariantDynamicStat(dIndex, vIndex)"
-                ><Trash
-              /></IconButton>
-              <FormField label="Stat">
-                <ComboBox
-                  class="combo--stat w-52"
-                  :model-value="row.stat"
-                  :options="statComboOptions"
-                  placeholder="- pick a stat -"
-                  @update:model-value="(v) => (row.stat = v)"
-                />
-              </FormField>
-              <FormField label="Min">
-                <PercentInput
-                  v-if="isPercent(row.stat)"
-                  :model-value="row.min ?? ''"
-                  class="w-24"
-                  @update:model-value="(v) => (row.min = v)"
-                />
-                <BaseInput
-                  v-else
-                  v-model.number="row.min"
-                  class="w-24"
-                  type="number"
-                />
-              </FormField>
-              <FormField label="Max">
-                <PercentInput
-                  v-if="isPercent(row.stat)"
-                  :model-value="row.max ?? ''"
-                  class="w-24"
-                  @update:model-value="(v) => (row.max = v)"
-                />
-                <BaseInput
-                  v-else
-                  v-model.number="row.max"
-                  class="w-24"
-                  type="number"
-                />
-              </FormField>
-              <FormField label="Default">
-                <PercentInput
-                  v-if="isPercent(row.stat)"
-                  :model-value="row.default ?? ''"
-                  class="w-24"
-                  @update:model-value="(v) => (row.default = v)"
-                />
-                <BaseInput
-                  v-else
-                  v-model.number="row.default"
-                  class="w-24"
-                  type="number"
-                />
-              </FormField>
-              <FormField label="Label (optional)">
-                <BaseInput v-model="row.label" class="w-40" type="text" />
-              </FormField>
-            </div>
-            <div
-              v-if="!variant.dynamicStats.length"
-              class="dynamic-stat-row flex flex-wrap items-center gap-1.5 mb-1"
-            >
-              <IconButton
-                title="Add dynamic stat"
-                @click="gs(gIndex).addVariantDynamicStat(vIndex)"
-                ><Plus
-              /></IconButton>
-            </div>
+            <DynamicStatRowList
+              :rows="variant.dynamicStats"
+              @add="gs(gIndex).addVariantDynamicStat(vIndex)"
+              @remove="
+                (i: number) => gs(gIndex).removeVariantDynamicStat(i, vIndex)
+              "
+            />
           </div>
           <BaseButton
             variant="link"

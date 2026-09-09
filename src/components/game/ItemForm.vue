@@ -7,8 +7,10 @@ import ItemBonuses from "./ItemBonuses.vue";
 import BuildParamInput from "./BuildParamInput.vue";
 import TokenInput from "../ui/TokenInput.vue";
 import CreatableComboBox from "../ui/CreatableComboBox.vue";
-import PercentInput from "../ui/PercentInput.vue";
 import ComboBox from "../ui/ComboBox.vue";
+import StatValueInput from "./StatValueInput.vue";
+import StatRowList from "./StatRowList.vue";
+import DynamicStatRowList from "./DynamicStatRowList.vue";
 import IconButton from "../ui/IconButton.vue";
 import { Copy, Plus, Save, Trash, Undo2 } from "@lucide/vue";
 import BaseButton from "../ui/BaseButton.vue";
@@ -26,8 +28,7 @@ import * as catalog from "../../data/catalog";
 import type { EntryStatus } from "../../data/catalog";
 import { deepEqual } from "../../lib/deep-equal";
 import { useDraftHistory } from "../../composables/useDraftHistory";
-import { isPercentKind, kindOf, statPickerOptions } from "../../lib/format";
-import { focusNextCombo } from "../../lib/stat-row-nav";
+import { statPickerOptions } from "../../lib/format";
 import type {
   Item,
   Db,
@@ -450,9 +451,6 @@ const classes = computed(() => {
   return [...byValue].map(([value, label]) => ({ value, label }));
 });
 
-const statComboOptions = statPickerOptions;
-const dynamicStatOptions = statPickerOptions;
-
 // Off the composed catalogue, so a layer-authored param can be seeded by `defaultParams`
 // exactly like a shipped one.
 const buildParamSlots = computed(() =>
@@ -614,8 +612,6 @@ const dirty = computed(() => {
   return !deepEqual(item, props.source);
 });
 
-const isPercent = (key: string) => isPercentKind(kindOf(key));
-
 function save() {
   error.value = "";
   const item = toItem();
@@ -664,9 +660,6 @@ function addStat() {
 }
 function removeStat(index: number) {
   draft.value.stats.splice(index, 1);
-}
-function focusNextStat(event: KeyboardEvent) {
-  focusNextCombo(event);
 }
 
 /** A draft's `replacedBy` in the shape `Item` stores, for the change label above. */
@@ -1331,125 +1324,18 @@ watch(
     </template>
 
     <FormSection>Stats</FormSection>
-    <div
-      v-for="(stat, index) in draft.stats"
-      :key="index"
-      class="stat-row flex flex-wrap items-center gap-1.5 mb-1"
-    >
-      <IconButton title="Add stat" @click="addStat"><Plus /></IconButton>
-      <IconButton title="Remove stat" @click="removeStat(index)"
-        ><Trash
-      /></IconButton>
-      <ComboBox
-        class="combo--stat w-52"
-        :model-value="stat.key"
-        :options="statComboOptions"
-        placeholder="- pick a stat -"
-        @update:model-value="(v) => (stat.key = v)"
-      />
-      <PercentInput
-        v-if="isPercent(stat.key)"
-        v-model="stat.value"
-        class="w-28"
-        @keydown="focusNextStat"
-      />
-      <BaseInput
-        v-else
-        v-model.number="stat.value"
-        class="w-28"
-        type="number"
-        step="any"
-        @keydown="focusNextStat"
-      />
-    </div>
-    <div
-      v-if="!draft.stats.length"
-      class="stat-row flex flex-wrap items-center gap-1.5 mb-1"
-    >
-      <IconButton title="Add stat" @click="addStat"><Plus /></IconButton>
-    </div>
+    <StatRowList :rows="draft.stats" @add="addStat" @remove="removeStat" />
 
     <template v-if="showsGroup('dynamicStats')">
       <FormSection data-testid="group-dynamic-stats"
         >Dynamic stats (player types the value; default applies until they
         do)</FormSection
       >
-      <div
-        v-for="(row, index) in draft.dynamicStats"
-        :key="index"
-        class="dynamic-stat-row flex flex-wrap items-center gap-1.5 mb-1"
-      >
-        <IconButton title="Add dynamic stat" @click="addDynamicStat"
-          ><Plus
-        /></IconButton>
-        <IconButton
-          title="Remove dynamic stat"
-          @click="removeDynamicStat(index)"
-          ><Trash
-        /></IconButton>
-        <FormField label="Stat">
-          <ComboBox
-            class="combo--stat w-52"
-            :model-value="row.stat"
-            :options="dynamicStatOptions"
-            placeholder="- pick a stat -"
-            @update:model-value="(v) => (row.stat = v)"
-          />
-        </FormField>
-        <FormField label="Min">
-          <PercentInput
-            v-if="isPercent(row.stat)"
-            :model-value="row.min ?? ''"
-            class="w-24"
-            @update:model-value="(v) => (row.min = v)"
-          />
-          <BaseInput
-            v-else
-            v-model.number="row.min"
-            class="w-24"
-            type="number"
-          />
-        </FormField>
-        <FormField label="Max">
-          <PercentInput
-            v-if="isPercent(row.stat)"
-            :model-value="row.max ?? ''"
-            class="w-24"
-            @update:model-value="(v) => (row.max = v)"
-          />
-          <BaseInput
-            v-else
-            v-model.number="row.max"
-            class="w-24"
-            type="number"
-          />
-        </FormField>
-        <FormField label="Default">
-          <PercentInput
-            v-if="isPercent(row.stat)"
-            :model-value="row.default ?? ''"
-            class="w-24"
-            @update:model-value="(v) => (row.default = v)"
-          />
-          <BaseInput
-            v-else
-            v-model.number="row.default"
-            class="w-24"
-            type="number"
-          />
-        </FormField>
-        <FormField label="Label (optional)">
-          <BaseInput v-model="row.label" class="w-40" type="text" />
-        </FormField>
-      </div>
-      <div
-        v-if="!draft.dynamicStats.length"
-        class="dynamic-stat-row flex flex-wrap items-center gap-1.5 mb-1"
-      >
-        <IconButton title="Add dynamic stat" @click="addDynamicStat"
-          ><Plus
-        /></IconButton>
-      </div>
+      <DynamicStatRowList
+        :rows="draft.dynamicStats"
+        @add="addDynamicStat"
+        @remove="removeDynamicStat"
+      />
     </template>
 
     <template v-if="showsGroup('bonuses')">
@@ -1616,23 +1502,16 @@ watch(
             <ComboBox
               class="combo--stat w-52"
               :model-value="row.stat"
-              :options="dynamicStatOptions"
+              :options="statPickerOptions"
               placeholder="- pick a stat -"
               @update:model-value="(v) => (row.stat = v)"
             />
           </FormField>
           <FormField label="Value on the replacement">
-            <PercentInput
-              v-if="isPercent(row.stat)"
-              :model-value="row.value ?? ''"
+            <StatValueInput
+              v-model="row.value"
+              :stat-key="row.stat"
               class="w-24"
-              @update:model-value="(v) => (row.value = v)"
-            />
-            <BaseInput
-              v-else
-              v-model.number="row.value"
-              class="w-24"
-              type="number"
               step="any"
             />
           </FormField>

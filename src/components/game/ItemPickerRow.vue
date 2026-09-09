@@ -7,11 +7,10 @@ import { computed, useTemplateRef } from "vue";
 import ItemPicker from "./ItemPicker.vue";
 import BonusOccurrenceInputs from "./BonusOccurrenceInputs.vue";
 import InlineRepetitionStepper from "./InlineRepetitionStepper.vue";
-import PercentInput from "../ui/PercentInput.vue";
 import BaseBadge from "../ui/BaseBadge.vue";
 import BaseButton from "../ui/BaseButton.vue";
-import BaseInput from "../ui/BaseInput.vue";
 import IconButton from "../ui/IconButton.vue";
+import StatValueInput from "./StatValueInput.vue";
 import { PinOff, Replace, Table, Trash } from "@lucide/vue";
 import * as buildEditor from "../../stores/buildEditor";
 import * as pickerLens from "../../stores/pickerLens";
@@ -27,7 +26,7 @@ import {
   useSlotDynamicStats,
   type DynamicStatRow,
 } from "../../composables/useDynamicStats";
-import { isPercentKind, kindOf, stat as formatStat } from "../../lib/format";
+import { stat as formatStat } from "../../lib/format";
 import { inlineRepetitionCount } from "../../lib/inline-repetition";
 import type { Build, Db, Item, ItemPickerSlot } from "../../types";
 import type { ValueDiff } from "../../composables/useCompareDiff";
@@ -93,8 +92,6 @@ const dynamicStatRows = useSlotDynamicStats(
   props.slotDef.id,
   computed(() => props.item),
 );
-
-const isPercent = (stat: string) => isPercentKind(kindOf(stat));
 
 function setDynamic(row: DynamicStatRow, raw: string | number) {
   buildEditor.setDynamicValue(
@@ -262,20 +259,12 @@ const stableGroup = computed(() => {
   >
     <div v-for="row in dynamicStatRows" :key="row.key" class="flex gap-1.5">
       <span>{{ rangeLabel(row) }}</span>
-      <PercentInput
-        v-if="isPercent(row.stat)"
-        :model-value="row.value"
-        class="w-20"
-        :data-testid="'slot-dynamic:' + row.stat"
-        @update:model-value="setDynamic(row, $event)"
-      />
-      <BaseInput
-        v-else
-        type="number"
-        class="w-20"
+      <StatValueInput
+        :stat-key="row.stat"
         :min="row.min"
         :max="row.max"
         :model-value="row.value"
+        class="w-20"
         :data-testid="'slot-dynamic:' + row.stat"
         @update:model-value="setDynamic(row, $event ?? '')"
       />

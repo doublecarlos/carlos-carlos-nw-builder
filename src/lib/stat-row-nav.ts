@@ -2,10 +2,9 @@
 // stat's *value* field jumps to the next stat row's key picker. Plain Tab would land on that
 // row's add/remove icon buttons first -- they sit before the combo box in the DOM -- and Enter
 // has no native "next field" behaviour to begin with, so both are handled the same way here.
-// Shared because the same `.stat-row` markup is built in four places (item-form.js's own stats,
-// and bonus-rows.js's flat/tier/variant stats) with no component in common at the value-input
-// level -- a plain `<input>` in three of the four, `PercentInput` in all four depending on the
-// stat's kind.
+// DOM-based rather than component-state-based on purpose: `StatRowList.vue` renders every
+// `.stat-row`, but a row can hold either a `PercentInput` or a plain number input depending on
+// the stat's kind, so walking the DOM is simpler than tracking refs per row per kind.
 
 export function focusNextCombo(event: KeyboardEvent) {
   // Only Tab (forward) and Enter trigger the jump - other keys are ignored.
