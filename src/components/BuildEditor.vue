@@ -26,11 +26,11 @@ import {
   EyeOff,
   FilterX,
 } from "@lucide/vue";
-import { NW_SCHEMA, NW_SLOTS } from "../data/data";
+import { NW_SLOTS } from "../data/data";
 import { forSlotAndBuild, hiddenReasons } from "../data/db";
-import { abbr, signedStat, statPickerOptions } from "../lib/format";
-import { descriptionParagraphs } from "../lib/description";
+import { statPickerOptions } from "../lib/format";
 import { matchesQuery } from "../lib/text-filter";
+import { slotStablePlaceholder, slotStatSummary } from "../lib/slot-summary";
 import { slotsSupplying } from "../lib/bonus-slots";
 import * as insignia from "../engine/insignia";
 import * as stableBrowser from "../stores/stableBrowser";
@@ -39,7 +39,6 @@ import { expandSlots } from "../lib/item-picker-list";
 import { isDisabled } from "../lib/slot-toggle";
 import { useHoverCard } from "../composables/useHoverCard";
 import { occurrenceRowsForItem } from "../composables/useItemBonusOccurrences";
-import { scaledStat } from "../engine/scaling";
 import { itemScaleFactor, itemScaleNotes } from "../composables/useItemScale";
 import { useCompareDiff, type SlotDiff } from "../composables/useCompareDiff";
 import * as storage from "../storage/storage";
@@ -508,27 +507,13 @@ function stableLabel(slotId: string): string | undefined {
   return spec ? insignia.describeSlotSpec(spec) : undefined;
 }
 
-/** How many near misses a bonus row names before it settles for a count. One, because the row
- * is an input's width and a second name only ever arrives half-cut. */
-const NEAR_MISSES_NAMED = 1;
-
-/** The bonus row's text: what its group derives, or what it is one insignia short of. A match
- * past the bonus's cap is labelled rather than dropped. */
 function stablePlaceholder(slotId: string): string | undefined {
-  const ref = insignia.stableRef(db.value, slotId);
-  if (ref?.role !== "bonus") return undefined;
-  const derived = derivedBonuses.value.get(ref.group);
-  if (derived) {
-    return derived.counted ? derived.name : `${derived.name} (at cap)`;
-  }
-  const near = insignia.oneShortOf(db.value, build.value, ref.group);
-  if (!near.length) return undefined;
-  const named = near
-    .slice(0, NEAR_MISSES_NAMED)
-    .map((item) => item.name)
-    .join(", ");
-  const rest = near.length - NEAR_MISSES_NAMED;
-  return rest > 0 ? `1 short of ${named} +${rest} more` : `1 short of ${named}`;
+  return slotStablePlaceholder(
+    db.value,
+    build.value,
+    slotId,
+    derivedBonuses.value,
+  );
 }
 
 /** Everything a BuildSlot row needs, gathered once per slot instead of ~9 calls per render
@@ -676,52 +661,17 @@ const editLabel = computed(() => {
   return `Edit this item in ${where} (${modKey}+Click the row)`;
 });
 
-/**
- * Condensed, single-line stat summary for a row: the item's own stats plus whatever
- * active bonuses are credited to this slotDef (`bonusesBySlot`), summed together key by key
- * rather than attributed separately -- one number per stat, not a name-tagged breakdown.
- */
+// A switched-off row contributes nothing, and says so the way every row whose bonus is
+// inactive already does: no summary at all.
 function statSummary(slotId: string) {
   const item = itemIn(slotId);
   if (!item) return "";
-  // A switched-off row contributes nothing, and says so the way every row whose bonus is
-  // inactive already does: no summary at all.
   if (isDisabled(build.value, db.value.slotFor(slotId))) return "";
-  const totals: Record<string, number> = {};
-  // Scaled the same way the pipeline scales it, so the row's summary and the panel's totals
-  // never disagree. The bonus stats folded in below are not the item's to scale.
-  const factor = itemScaleFactor(item);
-  for (const key of NW_SCHEMA.statKeys) {
-    if (item[key])
-      totals[key] =
-        (totals[key] ?? 0) + scaledStat(NW_SCHEMA, item, key, factor);
-  }
-  // The item's own shortDescription leads, followed by every active grant crediting this
-  // row that carries one -- same "attributed to the first contributing row" set the stats
-  // above already dedupe through (bonusesBySlot).
-  //
-  // A description's paragraphs join the summary as separate parts, so the break an author
-  // typed reads here as the same separator that already divides one stat from the next.
-  const descriptions: string[] = [];
-  const slots = insignia.slotSummary(item);
-  if (slots) descriptions.push(slots);
-  descriptions.push(...descriptionParagraphs(item.shortDescription));
-  for (const entry of bonusesBySlot.value.get(slotId) ?? []) {
-    for (const [key, value] of Object.entries(entry.appliedStats ?? {})) {
-      totals[key] = (totals[key] ?? 0) + (value as number);
-    }
-    for (const grant of entry.grants ?? []) {
-      if (grant.active) {
-        descriptions.push(...descriptionParagraphs(grant.raw.shortDescription));
-      }
-    }
-  }
-  const parts = [...descriptions];
-  for (const key of NW_SCHEMA.statKeys) {
-    if (!totals[key]) continue;
-    parts.push(`${abbr(key)} ${signedStat(key, totals[key])}`);
-  }
-  return parts.join(" • ");
+  return slotStatSummary(
+    item,
+    itemScaleFactor(item),
+    bonusesBySlot.value.get(slotId) ?? [],
+  );
 }
 
 /**

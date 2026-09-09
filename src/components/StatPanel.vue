@@ -73,14 +73,52 @@ const ehpRows: [string, string][] = [
   ["Crit / no deflect", "critNoDeflect"],
 ];
 
+// One of `derived`'s three sub-tables (baseDamage/effectiveMagPhys/overallHealing live at
+// the top level instead, hence `extra` rather than folding them into `rows`).
+type ExtraSummaryRow = {
+  key: "baseDamage" | "effectiveMagPhys" | "overallHealing";
+  label: string;
+  format: "int" | "pct";
+};
+interface SummaryGroup {
+  source: "damage" | "healing" | "ehp";
+  label: string;
+  rows: [string, string][];
+  extra?: ExtraSummaryRow[];
+}
+
 // The summary widget's picker spans all three `derived` tables below, not just damage --
 // `source` says which one, and doubles as the row key's namespace since 'average' repeats
 // across all three.
-const SUMMARY_GROUPS = [
-  { source: "damage", label: "Damage", rows: damageRows },
-  { source: "healing", label: "Healing", rows: healingRows },
+const SUMMARY_GROUPS: SummaryGroup[] = [
+  {
+    source: "damage",
+    label: "Damage",
+    rows: damageRows,
+    extra: [
+      { key: "baseDamage", label: "Base damage", format: "int" },
+      {
+        key: "effectiveMagPhys",
+        label: "Effective magical/physical",
+        format: "pct",
+      },
+    ],
+  },
+  {
+    source: "healing",
+    label: "Healing",
+    rows: healingRows,
+    extra: [
+      {
+        key: "overallHealing",
+        label: "Overall outgoing healing",
+        format: "pct",
+      },
+    ],
+  },
   { source: "ehp", label: "EHP", rows: ehpRows },
 ];
+const [damageGroup, healingGroup, ehpGroup] = SUMMARY_GROUPS;
 
 // Only ever mounted when `engine.resolved.value.ok` -- the throw documents
 // that invariant instead of a defensive fallback for a state that can't happen.
@@ -341,78 +379,36 @@ const ilHpRows = computed(() => [
   },
 ]);
 
-const damageTableRows = computed(() => [
-  ...damageRows.map(([label, key]) => ({
+// One row per group's own [label, key] sub-table, plus its fixed top-level extras -- the
+// shape damage/healing/ehp's tables all shared, now built once instead of three times.
+function summaryTableRows(group: SummaryGroup) {
+  const table = derived.value[group.source];
+  const compareTable = compareDerived.value?.[group.source];
+  const base = group.rows.map(([label, key]) => ({
     key,
     label,
-    value: int(derived.value.damage[key as keyof typeof derived.value.damage]),
-    compare: intCompare(
-      derived.value.damage[key as keyof typeof derived.value.damage],
-      compareDerived.value?.damage[key as keyof typeof derived.value.damage],
-    ),
+    value: int(table[key]),
+    compare: intCompare(table[key], compareTable?.[key]),
     lead: key === "average",
-  })),
-  {
-    key: "baseDamage",
-    label: "Base damage",
-    value: int(derived.value.baseDamage),
-    compare: intCompare(
-      derived.value.baseDamage,
-      compareDerived.value?.baseDamage,
-    ),
-    muted: true,
-  },
-  {
-    key: "effectiveMagPhys",
-    label: "Effective magical/physical",
-    value: pct(derived.value.effectiveMagPhys),
-    compare: pairCompare(
-      derived.value.effectiveMagPhys,
-      compareDerived.value?.effectiveMagPhys,
-      pct,
-    ),
-    muted: true,
-  },
-]);
+  }));
+  const extras = (group.extra ?? []).map((extra) => {
+    const format = extra.format === "int" ? int : pct;
+    const mine = derived.value[extra.key];
+    const other = compareDerived.value?.[extra.key];
+    return {
+      key: extra.key,
+      label: extra.label,
+      value: format(mine),
+      compare: pairCompare(mine, other, format),
+      muted: true,
+    };
+  });
+  return [...base, ...extras];
+}
 
-const healingTableRows = computed(() => [
-  ...healingRows.map(([label, key]) => ({
-    key,
-    label,
-    value: int(
-      derived.value.healing[key as keyof typeof derived.value.healing],
-    ),
-    compare: intCompare(
-      derived.value.healing[key as keyof typeof derived.value.healing],
-      compareDerived.value?.healing[key as keyof typeof derived.value.healing],
-    ),
-    lead: key === "average",
-  })),
-  {
-    key: "overallHealing",
-    label: "Overall outgoing healing",
-    value: pct(derived.value.overallHealing),
-    compare: pairCompare(
-      derived.value.overallHealing,
-      compareDerived.value?.overallHealing,
-      pct,
-    ),
-    muted: true,
-  },
-]);
-
-const ehpTableRows = computed(() =>
-  ehpRows.map(([label, key]) => ({
-    key,
-    label,
-    value: int(derived.value.ehp[key as keyof typeof derived.value.ehp]),
-    compare: intCompare(
-      derived.value.ehp[key as keyof typeof derived.value.ehp],
-      compareDerived.value?.ehp[key as keyof typeof derived.value.ehp],
-    ),
-    lead: key === "average",
-  })),
-);
+const damageTableRows = computed(() => summaryTableRows(damageGroup));
+const healingTableRows = computed(() => summaryTableRows(healingGroup));
+const ehpTableRows = computed(() => summaryTableRows(ehpGroup));
 
 function fmtPctSigned(value: number | null) {
   if (value == null || Math.abs(value) < 1e-9) return "-";
