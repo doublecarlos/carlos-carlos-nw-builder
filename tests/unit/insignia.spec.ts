@@ -159,6 +159,13 @@ const items: Item[] = [
       universal("regal"),
     ],
   },
+  // Three slots, so a three-shape recipe leaves no spare at all.
+  {
+    id: "three-slot-mount",
+    name: "Three Slot Mount",
+    filter: "mount",
+    insigniaSlots: [fixed("crescent"), universal(), universal("regal")],
+  },
   // The opposite: its fourth slot only takes the shape that would displace the bonus.
   {
     id: "blocked-spare-mount",
@@ -750,6 +757,33 @@ describe("the reference the browser renders", () => {
       made.get("three-bonus")!,
     )!;
     expect(best.shapes[3]).toBeUndefined();
+  });
+
+  it("fills a mount with no spare slot, ordering the recipe by what each slot prefers", () => {
+    const mount = made.get("three-slot-mount")!;
+    const best = insignia.bestArrangement(
+      made,
+      mount,
+      made.get("three-bonus")!,
+    )!;
+    expect(best.shapes).toEqual(["crescent", "barbed", "regal"]);
+    expect(best.preferred).toBe(1);
+  });
+
+  it("reaches nothing when a fixed slot rules the recipe out", () => {
+    expect(
+      insignia.bestArrangement(
+        made,
+        made.get("fixed-mount")!,
+        made.get("other-bonus")!,
+      ),
+    ).toBeNull();
+  });
+
+  it("reaches nothing when the mount has fewer slots than the recipe needs", () => {
+    const specs = made.get("three-slot-mount")!.insigniaSlots!;
+    const recipe = made.get("four-bonus")!.insigniaRecipe!;
+    expect(insignia.missingFor(made, specs, [], recipe)).toBeNull();
   });
 });
 

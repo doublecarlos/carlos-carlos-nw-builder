@@ -167,6 +167,81 @@ function recipes(db: Db) {
   return built;
 }
 
+// --- placing a recipe -------------------------------------------------------------------------
+
+/** Per slot, the shape it holds; `undefined` where it is empty. */
+type Held = (InsigniaShape | undefined)[];
+
+/** No spec constrains any slot, for a caller reading shapes already sitting in a build rather
+ * than planning where they could go. */
+const ANY_SLOTS: InsigniaSlotSpec[] = [];
+
+/**
+ * `recipe` laid into the first `recipe.length` slots, one shape per slot: each in a slot that
+ * accepts it and does not contradict what that slot already holds. Null when there is none.
+ *
+ * `score` picks between placements, highest first and ties to the first found. Without one the
+ * search stops at the first placement, which is all a feasibility check needs.
+ */
+function placeRecipe(
+  specs: (InsigniaSlotSpec | undefined)[],
+  held: Held,
+  recipe: readonly InsigniaShape[],
+  score?: (shapes: InsigniaShape[]) => number,
+): InsigniaShape[] | null {
+  const placed: (InsigniaShape | undefined)[] = Array(recipe.length).fill(
+    undefined,
+  );
+  const taken: boolean[] = Array(recipe.length).fill(false);
+  let best: InsigniaShape[] | null = null;
+  let bestScore = -Infinity;
+
+  const walk = (k: number): boolean => {
+    if (k === recipe.length) {
+      const shapes = placed as InsigniaShape[];
+      if (!score) {
+        best = [...shapes];
+        return true;
+      }
+      const value = score(shapes);
+      if (value > bestScore) {
+        bestScore = value;
+        best = [...shapes];
+      }
+      return false;
+    }
+    for (let slot = 0; slot < recipe.length; slot++) {
+      if (taken[slot]) continue;
+      if (!slotAccepts(specs[slot], recipe[k])) continue;
+      if (held[slot] !== undefined && held[slot] !== recipe[k]) continue;
+      taken[slot] = true;
+      placed[slot] = recipe[k];
+      const done = walk(k + 1);
+      taken[slot] = false;
+      placed[slot] = undefined;
+      if (done) return true;
+    }
+    return false;
+  };
+  walk(0);
+  return best;
+}
+
+/** Whether `spare` beside `recipe` completes a four-shape recipe, which would displace the
+ * bonus `recipe` aims at. */
+function displaces(
+  db: Db,
+  recipe: readonly InsigniaShape[],
+  spare: InsigniaShape | undefined,
+): boolean {
+  return (
+    !!spare &&
+    recipes(db).four.some((item) =>
+      sameShapes(item.insigniaRecipe!, [...recipe, spare]),
+    )
+  );
+}
+
 /** Four-shape recipes first, then three-shape ones against the first three slots. A hole in the
  * slots being matched disqualifies that pass. */
 export function matchBonus(
@@ -174,45 +249,19 @@ export function matchBonus(
   shapes: (InsigniaShape | undefined)[],
 ): Item | null {
   const { four, three } = recipes(db);
-  const all = shapes.slice(0, 4);
-  if (all.length === 4 && all.every(Boolean)) {
-    const match = four.find((item) =>
-      sameShapes(item.insigniaRecipe!, all as string[]),
+  const match = (list: Item[], length: number) => {
+    const held = shapes.slice(0, length);
+    if (held.length < length || !held.every(Boolean)) return null;
+    return (
+      list.find(
+        (item) => placeRecipe(ANY_SLOTS, held, item.insigniaRecipe!) !== null,
+      ) ?? null
     );
-    if (match) return match;
-  }
-  const first = shapes.slice(0, 3);
-  if (first.length === 3 && first.every(Boolean)) {
-    const match = three.find((item) =>
-      sameShapes(item.insigniaRecipe!, first as string[]),
-    );
-    if (match) return match;
-  }
-  return null;
+  };
+  return match(four, 4) ?? match(three, 3);
 }
 
 // --- reachability -----------------------------------------------------------------------------
-
-/** De-duplicated, since recipes repeat shapes. */
-function orderings(shapes: readonly string[]): string[][] {
-  const seen = new Set<string>();
-  const out: string[][] = [];
-  const walk = (left: string[], acc: string[]) => {
-    if (!left.length) {
-      const key = acc.join("|");
-      if (!seen.has(key)) {
-        seen.add(key);
-        out.push([...acc]);
-      }
-      return;
-    }
-    for (let i = 0; i < left.length; i++) {
-      walk([...left.slice(0, i), ...left.slice(i + 1)], [...acc, left[i]]);
-    }
-  };
-  walk([...shapes], []);
-  return out;
-}
 
 /** One entry per slot; `undefined` leaves that slot empty. */
 interface Arrangement {
@@ -224,13 +273,6 @@ const preferredCount = (
   specs: InsigniaSlotSpec[],
   shapes: (InsigniaShape | undefined)[],
 ) => shapes.filter((shape, i) => isPreferredSlot(specs[i], shape)).length;
-
-/** More preferences met, then more slots filled. */
-function better(a: Arrangement, b: Arrangement | null) {
-  if (!b) return true;
-  if (a.preferred !== b.preferred) return a.preferred > b.preferred;
-  return a.shapes.filter(Boolean).length > b.shapes.filter(Boolean).length;
-}
 
 /**
  * The best way to fill `mount` so that it produces `bonus`, or null when it cannot.
@@ -247,36 +289,33 @@ export function bestArrangement(
   const specs = mount.insigniaSlots;
   if (!recipe || !specs || specs.length < recipe.length) return null;
 
-  // At most one slot is ever spare: recipes are three or four shapes, mounts three or four slots.
-  const spare = specs.length > recipe.length ? recipe.length : -1;
-  const { four } = recipes(db);
-  const completesFour = (shapes: InsigniaShape[]) =>
-    four.some((item) => sameShapes(item.insigniaRecipe!, shapes));
+  const order = placeRecipe(specs, [], recipe, (shapes) =>
+    preferredCount(specs, shapes),
+  );
+  if (!order) return null;
 
-  let best: Arrangement | null = null;
-  for (const order of orderings(recipe)) {
-    if (!order.every((shape, i) => slotAccepts(specs[i], shape))) continue;
-    const candidates: (InsigniaShape | undefined)[] =
-      spare === -1
-        ? [undefined]
-        : [
-            undefined,
-            // Only shapes the catalogue supplies, so a pairing counts as reachable in practice.
-            ...INSIGNIA_SHAPES.filter(
-              (shape) =>
-                slotAccepts(specs[spare], shape) &&
-                insigniaOfShape(db, shape) &&
-                !completesFour([...order, shape]),
-            ),
-          ];
-    for (const extra of candidates) {
-      const shapes: (InsigniaShape | undefined)[] =
-        spare === -1 ? [...order] : [...order, extra];
-      const arrangement = { shapes, preferred: preferredCount(specs, shapes) };
-      if (better(arrangement, best)) best = arrangement;
-    }
-  }
-  return best;
+  // At most one slot is ever spare: recipes are three or four shapes, mounts three or four slots.
+  // The recipe's slots and the spare score independently, so the best of each is the best whole.
+  const spare = specs.length > recipe.length ? recipe.length : -1;
+  const candidates =
+    spare === -1
+      ? []
+      : // Only shapes the catalogue supplies, so a pairing counts as reachable in practice.
+        INSIGNIA_SHAPES.filter(
+          (shape) =>
+            slotAccepts(specs[spare], shape) &&
+            insigniaOfShape(db, shape) &&
+            !displaces(db, recipe, shape),
+        );
+  // A shape meeting the spare slot's preference first, then any shape at all: a filled spare
+  // beats an empty one once neither can be preferred.
+  const extra =
+    candidates.find((shape) => isPreferredSlot(specs[spare], shape)) ??
+    candidates[0];
+
+  const shapes: (InsigniaShape | undefined)[] =
+    spare === -1 ? order : [...order, extra];
+  return { shapes, preferred: preferredCount(specs, shapes) };
 }
 
 /** `preferred` is how many of the mount's preferred slots the best arrangement satisfies. */
@@ -286,10 +325,25 @@ export interface Reach {
   preferred: number;
 }
 
-const reachFor = (db: Db, mount: Item, bonus: Item): Reach | null => {
+const reachCache = new WeakMap<Db, Map<string, Reach | null>>();
+
+/** Memoised per pairing: the reference tables ask for every mount against every bonus, and both
+ * directions ask about the same pairs. */
+function reachFor(db: Db, mount: Item, bonus: Item): Reach | null {
+  let byPair = reachCache.get(db);
+  if (!byPair) {
+    byPair = new Map();
+    reachCache.set(db, byPair);
+  }
+  const key = `${mount.id}|${bonus.id}`;
+  const memoized = byPair.get(key);
+  if (memoized !== undefined) return memoized;
+
   const best = bestArrangement(db, mount, bonus);
-  return best ? { mount, bonus, preferred: best.preferred } : null;
-};
+  const reach = best ? { mount, bonus, preferred: best.preferred } : null;
+  byPair.set(key, reach);
+  return reach;
+}
 
 const catalogueCache = new WeakMap<Db, { mounts: Item[]; bonuses: Item[] }>();
 
@@ -451,14 +505,10 @@ const readStable = (db: Db, build: Build) =>
 
 // --- what a slot's candidates lead to ----------------------------------------------------------
 
-/** Per slot, the shape it holds; `undefined` where it is empty. */
-type Held = (InsigniaShape | undefined)[];
-
 /**
  * How many empty slots `recipe` would still need on `specs`, or null when `held` rules it out.
- *
- * `matchBonus`'s rule read forwards: a recipe takes the first `recipe.length` slots, and a
- * spare holding a shape that completes a four-shape recipe displaces the three-shape one.
+ * The count is the holes among the recipe's own slots, so it does not depend on which placement
+ * `placeRecipe` found.
  */
 export function missingFor(
   db: Db,
@@ -467,31 +517,9 @@ export function missingFor(
   recipe: readonly InsigniaShape[],
 ): number | null {
   if (specs.length < recipe.length) return null;
-
-  const used: boolean[] = Array(recipe.length).fill(false);
-  const walk = (k: number): boolean => {
-    if (k === recipe.length) return true;
-    for (let slot = 0; slot < recipe.length; slot++) {
-      if (used[slot]) continue;
-      if (!slotAccepts(specs[slot], recipe[k])) continue;
-      if (held[slot] !== undefined && held[slot] !== recipe[k]) continue;
-      used[slot] = true;
-      if (walk(k + 1)) return true;
-      used[slot] = false;
-    }
-    return false;
-  };
-  if (!walk(0)) return null;
-
+  if (!placeRecipe(specs, held, recipe)) return null;
   const spare = specs.length > recipe.length ? held[recipe.length] : undefined;
-  if (
-    spare &&
-    recipes(db).four.some((item) =>
-      sameShapes(item.insigniaRecipe!, [...recipe, spare]),
-    )
-  ) {
-    return null;
-  }
+  if (displaces(db, recipe, spare)) return null;
 
   let missing = 0;
   for (let slot = 0; slot < recipe.length; slot++) {
@@ -603,21 +631,32 @@ export function oneShortOf(db: Db, build: Build, group: number): Item[] {
 
 // --- preferred variants -----------------------------------------------------------------------
 
-const upgradedIds = new WeakMap<Db, Set<string>>();
-
-/** The upgraded half of every pair, which is exactly what `preferredVariant` points at. */
-export function preferredVariantIds(db: Db): ReadonlySet<string> {
-  let ids = upgradedIds.get(db);
-  if (!ids) {
-    ids = new Set(
-      db.items
-        .map((item) => item.preferredVariant)
-        .filter((id): id is string => !!id),
-    );
-    upgradedIds.set(db, ids);
-  }
-  return ids;
+interface VariantPairs {
+  /** The upgraded half of every pair, which is exactly what `preferredVariant` points at. */
+  upgraded: Set<string>;
+  /** The same pairs read backwards, upgraded id to the ordinary half. */
+  baseOf: Map<string, Item>;
 }
+
+const variantCache = new WeakMap<Db, VariantPairs>();
+
+function variantPairs(db: Db): VariantPairs {
+  let pairs = variantCache.get(db);
+  if (!pairs) {
+    pairs = { upgraded: new Set(), baseOf: new Map() };
+    for (const item of db.items) {
+      const upgraded = item.preferredVariant;
+      if (!upgraded) continue;
+      pairs.upgraded.add(upgraded);
+      if (!pairs.baseOf.has(upgraded)) pairs.baseOf.set(upgraded, item);
+    }
+    variantCache.set(db, pairs);
+  }
+  return pairs;
+}
+
+export const preferredVariantIds = (db: Db): ReadonlySet<string> =>
+  variantPairs(db).upgraded;
 
 export const PREFERRED_MARK = "★";
 
@@ -651,8 +690,7 @@ export function itemLabel(db: Db | null | undefined, item: Item): string {
 function baseVariant(db: Db, item: Item | null): Item | null {
   if (!item) return null;
   if (item.preferredVariant) return item;
-  const owner = db.items.find((other) => other.preferredVariant === item.id);
-  return owner ?? item;
+  return variantPairs(db).baseOf.get(item.id) ?? item;
 }
 
 /** The half of `item`'s pair belonging in a slot with this preferred state. */
