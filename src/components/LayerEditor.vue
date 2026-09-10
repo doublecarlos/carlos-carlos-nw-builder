@@ -447,8 +447,7 @@ const allBonusIds = computed<string[]>(() =>
   [...new Set<string>(db.value.bonuses.map((bonus) => bonus.id))].sort(),
 );
 
-/** Every known bonus as a BonusComboBox choice -- "attach an existing bonus" and the "which
- * bonus does this tier/condition count" pickers -- listed by name, the way its rows lead. */
+/** Every known bonus as a BonusComboBox choice, listed by name the way its rows lead. */
 const bonusOptions = computed<BonusOption[]>(() =>
   db.value.bonuses
     .map((bonus) => ({ value: bonus.id, label: bonus.name ?? bonus.id }))

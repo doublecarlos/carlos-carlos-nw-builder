@@ -174,7 +174,7 @@ describe("condition-draft range/exact leaves", () => {
   });
 
   // An occurrence leaf's empty bonus is the bonus it sits in, so it is complete as drawn and
-  // serializes with no `bonus` -- the data's own spelling of that (`BonusOccurrenceSpec`).
+  // serializes with no `bonus`, the data's own spelling of that (`BonusOccurrenceSpec`).
   it("an occurrence leaf naming no bonus is complete and writes none", () => {
     const row = newLeafRow("bonusOccurrences");
     expect(row.bonus).toBe("");

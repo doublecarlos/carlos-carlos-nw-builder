@@ -55,9 +55,8 @@ export function toItemsFile(items: Item[]): string {
   return `${JSON.stringify(items.map(canonicalItem), null, 2)}\n`;
 }
 
-/** An occurrence leaf naming the bonus it sits in is spelled by omitting `bonus` -- the
- *  engine's reading of an absent one (`EvalContext.self`), so the explicit form is only a
- *  longer spelling of the same thing. */
+/** An occurrence leaf naming the bonus it sits in is spelled by omitting `bonus`, which is
+ *  how the engine reads an absent one (`EvalContext.self`). */
 function implicitSelf(
   spec: BonusOccurrenceSpec,
   self: string,
@@ -82,7 +81,7 @@ function whenWithImplicitSelf(
 
 /** "At least one of the bonus itself" is no gate at all: a bonus is only evaluated through an
  *  attachment, and one contributing no occurrences already forces every grant inactive
- *  (bonus.ts's `evaluateBonus`). Only the whole `when` -- combined with anything else, or
+ *  (bonus.ts's `evaluateBonus`). Only as the whole `when`: combined with anything else, or
  *  negated, the leaf is not trivially true. */
 function isTrivialSelfGate(when: ConditionWhen): boolean {
   const spec = when.bonusOccurrences;

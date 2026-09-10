@@ -575,11 +575,11 @@ export interface ConditionWhen {
   duration?: RangeLike;
   enemies?: RangeLike;
   /** How many occurrences of a bonus are attached across every equipped item, tallied from
-   *  each contributing item's `BonusOccurrenceConfig` (or 1 per bare-id attachment). Nearly
-   *  always the bonus this condition sits in, so that is what an omitted `bonus` means -- see
-   *  `EvalContext.self`; only a bonus gating on a *different* one names it. "At least one of
-   *  itself" as a grant's whole condition is no gate at all (a 0-count attachment already
-   *  forces every grant inactive), so the exporter drops it. */
+   *  each contributing item's `BonusOccurrenceConfig` (or 1 per bare-id attachment). An
+   *  omitted `bonus` is the bonus this condition sits in (`EvalContext.self`); only a bonus
+   *  gating on a different one names it. "At least one of itself" as a grant's whole condition
+   *  is no gate at all (a 0-count attachment already forces every grant inactive), so the
+   *  exporter drops it. */
   bonusOccurrences?: BonusOccurrenceSpec;
   equipped?: RangeSpec & { tag?: string; item?: string };
   param?: ParamCondition;
@@ -901,7 +901,7 @@ export interface EvalContext {
   equipped: Map<string, number>;
   tags: Map<string, number>;
   bonusOccurrences: Map<string, number>;
-  /** The bonus whose grants are being evaluated -- what a `bonusOccurrences` leaf naming no
+  /** The bonus whose grants are being evaluated, which a `bonusOccurrences` leaf naming no
    *  `bonus` counts. Set per bonus by bonus.ts's `evaluateBonus`; absent where no bonus is in
    *  play (a slot's `visibleWhen`), where such a leaf counts nothing. */
   self?: string;

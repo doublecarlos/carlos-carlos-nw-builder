@@ -72,7 +72,7 @@ describe("filterAndRank", () => {
       (option) => option.label,
       (option) => option.value,
     );
-    // Nothing's label contains the query, so nothing lists -- the value only ranks.
+    // No label contains the query, so nothing lists: the value only ranks.
     expect(byLabel).toEqual([]);
   });
 

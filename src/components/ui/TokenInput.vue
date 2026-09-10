@@ -4,14 +4,14 @@
 //
 // Used for an item's tags, where both halves matter: you usually want an existing tag (so
 // autocomplete), but coining a new one by typing it is a normal thing to do (so free text).
-// `allowFree` turns the second half off for the closed vocabularies -- a condition's
-// toggle/role/class/damage-type values, a bonus's `excludes` -- that autocomplete alone covers.
+// `allowFree` turns the second half off for closed vocabularies (a condition's
+// toggle/role/class/damage-type values, a bonus's `excludes`).
 //
-// Options are ComboBox's `{ value, label, search }`, and the menu is ComboBox's own shell and
-// rows, so a chip picker and a single-value picker over the same vocabulary list, match, rank
-// and read alike -- a caller drawing a richer row hands the same `#option` slot to either. The
-// value is matched as well as the label here, unlike in ComboBox: a token is committed by
-// value, so typing one exactly has to find its row rather than offer it as "new".
+// Options are ComboBox's `{ value, label, search }` and the menu is ComboBox's own shell and
+// rows, so a chip picker and a single-value picker over one vocabulary list, match, rank and
+// read alike, and a richer row goes into the same `#option` slot on either. Unlike ComboBox,
+// the value is matched too: a token is committed by value, so typing one exactly has to find
+// its row rather than offer it as "new".
 import { computed, useId, useTemplateRef, watch } from "vue";
 import { onKeyStroke } from "@vueuse/core";
 import { filterAndRank } from "../../lib/text-filter";

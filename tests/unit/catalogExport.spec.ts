@@ -108,7 +108,7 @@ describe("catalogExport.toBonusesFile", () => {
   });
 
   // Once the self-reference is implicit, "at least one of itself" as a grant's whole `when`
-  // is no condition at all -- but only as the whole `when`, and only when unbounded above.
+  // is no condition at all, but only as the whole `when`, and only when unbounded above.
   it("drops a when that is nothing but an unbounded self-occurrence gate", () => {
     const grants: Grant[] = [
       { when: { bonusOccurrences: {} }, stats: { power: 1 } },

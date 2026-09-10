@@ -20,11 +20,8 @@ export function matchesQuery(
 }
 
 /**
- * `matchesQuery` over a list of entries, with any entry whose `value` is exactly the query
- * (case-insensitive) moved to the front -- a pasted id lands on its own row rather than
- * somewhere among the rows it happens to be a substring of. Stable otherwise, so the rest keep
- * the caller's order. `haystack` is what a query word may match in; `value` is what "exactly
- * the query" compares against, and need not be in the haystack.
+ * `matchesQuery` over a list, with an entry whose `value` equals the query moved to the front
+ * so a pasted id lands on its own row. Stable otherwise. `value` need not be in `haystack`.
  */
 export function filterAndRank<T>(
   entries: T[],

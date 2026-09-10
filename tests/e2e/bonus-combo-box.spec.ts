@@ -57,7 +57,7 @@ async function openOccurrenceLeaf(page: Page): Promise<Locator> {
 /** The leaf's bonus picker: the second combobox on the row, after the leaf type's. */
 const bonusPicker = (row: Locator) => row.getByTestId("picker-input").nth(1);
 
-/** The open menu's choosable rows -- by role, which the "N more" footer row does not carry. */
+/** The open menu's choosable rows, by role, which the "N more" footer row does not carry. */
 const menuOptions = (page: Page) =>
   page.getByTestId("picker-menu").getByRole("option");
 

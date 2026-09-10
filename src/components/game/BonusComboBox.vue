@@ -7,9 +7,9 @@
 // leads with a row whose id is exactly what was typed.
 //
 // `self` is for the occurrence pickers, where the bonus being edited is the usual target: it
-// offers "this bonus" as the first row and as what an empty value reads as -- the data's own
-// spelling of that choice (`BonusOccurrenceSpec`), so the picker never has to know the id of
-// the bonus it sits in, which a not-yet-saved one does not have.
+// offers "this bonus" as the first row and as what an empty value reads as, the data's own
+// spelling of that choice (`BonusOccurrenceSpec`). The picker never needs the id of the bonus
+// it sits in, which a not-yet-saved one does not have.
 import { computed } from "vue";
 import ComboBox from "../ui/ComboBox.vue";
 import BonusOptionRow from "./BonusOptionRow.vue";
