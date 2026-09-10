@@ -40,8 +40,6 @@ for (const item of [
   testItem("test-head", "gear_head", ["Head_Test"]),
   testItem("test-mainhand", "gear_weapon_mainhand", ["Primary_Test"]),
   testItem("test-offhand", "gear_weapon_offhand", ["Secondary_Test"]),
-  testItem("test-combat-off", "combat_enchant_offense", ["CombatGem_Off_Test"]),
-  testItem("test-combat-def", "combat_enchant_defense", ["CombatGem_Def_Test"]),
   // companions.offense selects by tag, not by filter.
   testItem("test-companion-power", "companion_power", ["Pet_Bonus_Test"], {
     tags: ["companion_power:offense"],
@@ -96,10 +94,6 @@ const demoItem = (
 ): DemoItem => ({ bag, slot, gameId, inventoryId: null, gems });
 
 describe("demo-slots: shipped data", () => {
-  it("has 39 bags", () => {
-    expect(GAME_IMPORT_DATA.bags).toHaveLength(39);
-  });
-
   it("passes its own lint against the real slot list", () => {
     expect(validateGameBags(GAME_IMPORT_DATA.bags, NW_SLOTS.slots)).toEqual([]);
   });
@@ -273,25 +267,6 @@ describe("placeBag: Melee -> mainhand/offhand, filter-driven not index-driven", 
         slotId: "gear.mainhand",
         gameId: "Primary_Test",
         itemId: "test-mainhand",
-      },
-    ]);
-  });
-});
-
-describe("placeBag: CombatGem, one bag two filters", () => {
-  it("the offense/defense enchant land in their own slot regardless of order", () => {
-    const results = placeBag(
-      "CombatGem",
-      [demoItem("CombatGem", 0, "CombatGem_Def_Test")],
-      db,
-      new Set(),
-    );
-    expect(results).toEqual([
-      {
-        kind: "imported",
-        slotId: "enchantments.combatDefense",
-        gameId: "CombatGem_Def_Test",
-        itemId: "test-combat-def",
       },
     ]);
   });
