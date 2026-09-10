@@ -543,6 +543,7 @@
     "name": "Acute Senses",
     "filter": "companion_enhancement",
     "il": 900,
+    "gameIds": ["Pet_Enhancement_Combat_Adv_Up"],
     "bonuses": ["acute-senses-ca"]
   },
   {
@@ -1893,7 +1894,10 @@
     "il": 3500,
     "mana_regen": 0.1,
     "overall_healing": 0.09,
-    "gameIds": ["Enchantment_Combat_O_R6_Account"],
+    "gameIds": [
+      "Enchantment_Combat_O_R6_Account",
+      "Enchantment_Combat_O_V2_R6_Account"
+    ],
     "shortDescription": "Max Mana +10%",
     "longDescription": "Max Mana +10%"
   },
@@ -1903,6 +1907,7 @@
     "filter": "companion_power",
     "il": 900,
     "combined_rating": 900,
+    "gameIds": ["Pet_Lion_Celestial_Player_Bonus"],
     "longDescription": "Stalwart Golden Lion companion power. Role: Utility.",
     "dynamicStats": [
       {
@@ -2212,6 +2217,7 @@
     "combined_rating": 900,
     "strike_p": 0.045,
     "sev_p": 0.045,
+    "gameIds": ["Pet_M30_Coldlightwalker_Player_Bonus"],
     "longDescription": "Coldlight Walker companion power. Role: Utility.",
     "tags": ["companion_power:utility"]
   },
@@ -2236,6 +2242,7 @@
     "il": 900,
     "combined_rating": 900,
     "power_p": 0.09,
+    "gameIds": ["Pet_Compy_Pack_Player_Bonus"],
     "longDescription": "Alpha Compy companion power. Role: Utility.",
     "tags": ["companion_power:utility"]
   },
@@ -2293,6 +2300,7 @@
     "combined_rating": 900,
     "acc_p": 0.045,
     "ca_p": 0.045,
+    "gameIds": ["Pet_Drow_Player_Bonus"],
     "longDescription": "Dark Dealer companion power. Role: Utility.",
     "tags": ["companion_power:utility"]
   },
@@ -2301,7 +2309,14 @@
     "name": "Debuff Enhancement",
     "filter": "companion_enhancement",
     "il": 900,
-    "gameIds": ["Pet_Enhancement_Defense_Down"]
+    "gameIds": [
+      "Pet_Enhancement_Defense_Down",
+      "Pet_Enhancement_Combat_Awareness_Down",
+      "Pet_Enhancement_Crit_Resist_Down",
+      "Pet_Enhancement_Deflect_Down",
+      "Pet_Enhancement_Damage_Down",
+      "Pet_Enhancement_Advantage_Down"
+    ]
   },
   {
     "id": "defender-s-retort",
@@ -2552,6 +2567,7 @@
     "name": "Exploit Weakness",
     "filter": "companion_enhancement",
     "il": 900,
+    "gameIds": ["Pet_Enhancement_Crit_Chance_Sev_Up"],
     "bonuses": ["exploit-weakness-strike-sev-blaspheme"]
   },
   {
@@ -2562,6 +2578,7 @@
     "combined_rating": 900,
     "power_p": 0.045,
     "strike_p": 0.045,
+    "gameIds": ["Pet_Fawn_Player_Bonus"],
     "longDescription": "Fawn of Shiallia companion power. Role: Offense, Utility.",
     "tags": ["companion_power:offense", "companion_power:utility"]
   },
@@ -2768,6 +2785,7 @@
     "il": 900,
     "combined_rating": 900,
     "ca_p": 0.09,
+    "gameIds": ["Pet_Cat_Gold_Player_Bonus"],
     "longDescription": "Golden Cat companion power. Role: Any (Offense, Defense, or Utility).",
     "tags": [
       "companion_power:offense",
@@ -3547,7 +3565,7 @@
     "name": "Celestial Lightning Flash",
     "filter": "combat_enchant_offense",
     "il": 3000,
-    "outgoing_damage": 0.12,
+    "outgoing_damage": 0.15,
     "gameIds": ["Enchantment_Combat_G_V2_R6_Account"],
     "bonuses": ["lightning-flash"]
   },
@@ -3726,7 +3744,6 @@
     "forte_p": 0.025,
     "gameIds": ["Arms_M28_Heavyheal_Chase_T2"],
     "shortDescription": "Max Divinity +25%",
-    "longDescription": "Max Divinity +25%",
     "allowedClass": ["cleric", "paladin"]
   },
   {
@@ -4434,12 +4451,12 @@
     "id": "m33-cracked-stormbind-tunic-shirt",
     "name": "M33 Cracked Stormbind Tunic Shirt",
     "filter": "gear_shirt",
-    "il": 4850,
-    "combined_rating": 4365,
-    "acc": 2837,
-    "ca": 1746,
-    "strike": 3492,
+    "il": 4600,
+    "acc": 2691,
+    "ca": 1656,
+    "strike": 3312,
     "recharge": 0.015,
+    "combined_rating": 4140,
     "gameIds": ["Shirt_M33_Mediumdps_S-tier"],
     "bonuses": [
       {
@@ -4742,6 +4759,18 @@
     "bonuses": ["m33-critical-breaker"]
   },
   {
+    "id": "m33-wintermarked-lifeward-vambraces",
+    "name": "M33 Wintermarked Lifeward Vambraces",
+    "filter": "gear_arms",
+    "il": 5700,
+    "power": 2992,
+    "severity": 5130,
+    "combined_rating": 5130,
+    "gameIds": ["Arms_M33_Heavyheal_S-tier"],
+    "shortDescription": "Max Divinity +20%",
+    "allowedClass": ["cleric", "paladin"]
+  },
+  {
     "id": "m33-wintermarked-marcher-poleyns",
     "name": "M33 Wintermarked Marcher Poleyns",
     "filter": "gear_boots",
@@ -4820,6 +4849,17 @@
     "gameIds": ["Arms_M33_Lightdps_S-tier"],
     "allowedClass": ["warlock", "wizard"],
     "bonuses": ["m33-eagle-s-mastery-lesser"]
+  },
+  {
+    "id": "maestro-s-observation",
+    "name": "Maestro's Observation",
+    "filter": "companion_power",
+    "il": 900,
+    "combined_rating": 900,
+    "acc_p": 0.09,
+    "gameIds": ["Pet_Jarlaxle_Player_Bonus"],
+    "longDescription": "Jarlaxle's companion power. Role: Offense.",
+    "tags": ["companion_power:offense"]
   },
   {
     "id": "magistrate-patience",
@@ -5206,6 +5246,7 @@
     "name": "Perfect Vision",
     "filter": "companion_enhancement",
     "il": 900,
+    "gameIds": ["Pet_Enhancement_Accuracy_Up"],
     "bonuses": ["perfect-vision-acc"]
   },
   {
@@ -5242,6 +5283,7 @@
     "name": "Potency",
     "filter": "companion_enhancement",
     "il": 900,
+    "gameIds": ["Pet_Enhancement_Damage_Up"],
     "bonuses": ["potency-power"]
   },
   {
@@ -5249,6 +5291,7 @@
     "name": "Potent Precision",
     "filter": "companion_enhancement",
     "il": 900,
+    "gameIds": ["Pet_Enhancement_Crit_Damage_Up"],
     "bonuses": ["potent-precision-severity"]
   },
   {
@@ -5916,6 +5959,7 @@
     "filter": "companion_power",
     "il": 900,
     "combined_rating": 900,
+    "gameIds": ["Pet_Spineddevil_Player_Bonus"],
     "longDescription": "Spined Devil companion power. Role: Offense.",
     "tags": ["companion_power:offense"],
     "bonuses": ["spined-devil-s-influence-spined-devil-damage-offense"]
@@ -7223,7 +7267,7 @@
     "name": "Celestial Swift Synergy",
     "filter": "combat_enchant_offense",
     "il": 3500,
-    "outgoing_damage": 0.12,
+    "outgoing_damage": 0.15,
     "gameIds": ["Enchantment_Combat_M_V2_R6_Account"],
     "bonuses": ["swift-synergy"]
   },

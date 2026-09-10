@@ -67,8 +67,12 @@
       "slots": ["enchantments.bonus"]
     },
     {
-      "bag": "CombatGem",
-      "slots": ["enchantments.combatOffense", "enchantments.combatDefense"]
+      "bag": "CombatOffenseGem",
+      "slots": ["enchantments.combatOffense"]
+    },
+    {
+      "bag": "CombatDefenseGem",
+      "slots": ["enchantments.combatDefense"]
     },
     {
       "bag": "OverloadGem",

@@ -3,6 +3,8 @@
 import { describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import * as catalog from "../../../src/data/catalog";
+import type { Item } from "../../../src/types";
 
 const fixture = readFileSync(
   join(__dirname, "../fixtures/build-export.demo.txt"),
@@ -204,12 +206,29 @@ describe("gameImport store: mapUnrecognisedItem", () => {
 });
 
 describe("gameImport store: re-seating a bag moves an already-placed pick", () => {
-  /** The shipped power reaching every companion power slot, and one reaching only offense. */
-  const ANY_POWER = "golden-cat-s-instincts-golden-cat-ca-any";
-  const OFFENSE_ONLY = "batiri-s-wisdom-batiri-damage-offense";
+  /** One power reaching every companion power slot, and one reaching only offense. Seeded
+   *  into a layer so no shipped item's game ids can shift the count. */
+  const ANY_POWER = "test-power-any";
+  const OFFENSE_ONLY = "test-power-offense";
+  const power = (id: string, roles: string[]): Item => ({
+    id,
+    name: id,
+    filter: "companion_power",
+    tags: roles.map((role) => `companion_power:${role}`),
+  });
 
   it("keeps every mapped power in the build, in the slots the report ends on", async () => {
-    const { gameImport, builds, resolved } = await freshStores();
+    const { gameImport, builds, layers, resolved } = await freshStores();
+    const layer = layers.createLayer();
+    let overlay = catalog.emptyOverlay();
+    for (const item of [
+      power(ANY_POWER, ["offense", "defense", "utility"]),
+      power(OFFENSE_ONLY, ["offense"]),
+    ]) {
+      overlay = catalog.upsert(overlay, "items", item.id, item);
+    }
+    layers.updateOverlay(layer.id, overlay);
+
     gameImport.parseFile(companionBarFixture);
     gameImport.commit();
     const buildId = gameImport.reports.value[0].buildId;
