@@ -699,11 +699,9 @@ export function resolve(
     };
   });
 
-  // Exclusions come from equipped items (legacy `bonus_overrides`) and from active bonuses.
+  // An active bonus suppresses the bonuses it `excludes`; an item wanting to suppress one
+  // carries a bonus that does, so there is one exclusion mechanism, not two.
   const excluded = new Map<string, string>();
-  for (const row of rows) {
-    for (const id of row.item?.excludes ?? []) excluded.set(id, row.item!.name);
-  }
   for (const entry of evaluated) {
     if (!entry.active) continue;
     for (const id of entry.bonus.excludes ?? []) excluded.set(id, entry.id);

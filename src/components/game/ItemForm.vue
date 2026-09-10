@@ -59,8 +59,7 @@ const props = withDefaults(
     status?: EntryStatus;
     db: Db;
     filters?: string[];
-    /** Every known bonus id, for the `excludes` vocabulary and, forwarded to ItemBonuses,
-     *  id-collision avoidance. */
+    /** Every known bonus id, forwarded to ItemBonuses for id-collision avoidance. */
     allBonusIds?: string[];
     tags?: string[];
     /** Every known bonus, forwarded to ItemBonuses for its pickers. */
@@ -455,8 +454,6 @@ function carriesField(field: string): boolean {
       return local.dynamicStats.length > 0;
     case "bonuses":
       return local.bonuses.length > 0;
-    case "excludes":
-      return local.excludes.length > 0;
     case "defaultParams":
       return local.defaultParams.length > 0;
     case "publishes":
@@ -843,21 +840,6 @@ function showsGroup(group: FieldGroup): boolean {
         @attach-bonus="attachBonus"
         @update-occurrence="(e) => updateBonusOccurrence(e.id, e.occurrence)"
       />
-    </template>
-
-    <template v-if="showsGroup('excludes')">
-      <FormSection data-testid="group-excludes"
-        >Equipping this item suppresses</FormSection
-      >
-      <TokenInput
-        v-model="draft.excludes"
-        :options="allBonusIds"
-        placeholder="bonus id this item overrides…"
-      />
-      <p class="text-muted">
-        Item-level override: those bonuses go inactive whenever this item is
-        equipped, whatever grants them.
-      </p>
     </template>
 
     <template v-if="showsGroup('defaultParams')">

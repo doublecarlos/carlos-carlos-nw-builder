@@ -320,7 +320,6 @@ export function referencedOverlay(db: Db, build: Build): CatalogOverlay {
     if (!item) continue;
     for (const attachment of item.bonuses ?? [])
       bonusIds.add(bonusIdOf(attachment));
-    for (const bonusId of item.excludes ?? []) bonusIds.add(bonusId);
   }
 
   // Follow bonus excludes transitively - bonuses can chain through excludes
@@ -424,7 +423,6 @@ const ITEM_FIELDS = new Set([
   "dynamicStats",
   "inlineRepetition",
   "bonuses",
-  "excludes",
   "shortDescription",
   "longDescription",
   "gameIds",

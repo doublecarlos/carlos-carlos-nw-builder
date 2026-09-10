@@ -36,7 +36,6 @@ const ITEM_TRAILING_KEYS = [
   "allowedClass",
   "tags",
   "bonuses",
-  "excludes",
   "inlineRepetition",
   "publishes",
 ] as const;

@@ -393,7 +393,6 @@ export interface Item {
    * separate mutually-exclusive items, or a stacking effect that coexists with the item's own
    * always-on stats. An item may mix both shapes, one entry per bonus it carries. */
   bonuses?: (string | BonusOccurrenceConfig)[];
-  excludes?: string[];
   /** Short blurb shown alongside the item's stat summary in the build editor, for an
    * effect that reads better as text than as a stat (e.g. a proc) -- see
    * `BuildEditor.vue`'s `statSummary`. */

@@ -1474,16 +1474,9 @@ describe("catalog.referencedOverlay", () => {
     expect(overlay.items[BASE_ITEM_ID]).toBeUndefined();
   });
 
-  it("includes bonuses reachable through excludes", () => {
+  it("includes bonuses reachable through a bonus's excludes", () => {
     const db = testDb(
-      [
-        baseItem,
-        {
-          ...layerItem,
-          bonuses: ["chained-bonus"],
-          excludes: ["excluded-bonus"],
-        },
-      ],
+      [baseItem, { ...layerItem, bonuses: ["chained-bonus"] }],
       [layerBonus, chainedBonus, excludedBonus],
     );
     const build: Build = {
@@ -1498,8 +1491,7 @@ describe("catalog.referencedOverlay", () => {
       context: {} as Build["context"],
       compare: { id: "", highlight: false, onlyDiff: false, statLines: false },
     };
-    // The item has bonuses: ["chained-bonus"] and excludes: ["excluded-bonus"]
-    // chained-bonus also excludes excluded-bonus (transitive)
+    // The item carries chained-bonus, which excludes excluded-bonus.
     const overlay = catalog.referencedOverlay(db, build);
     expect(overlay.items["layer-item"]).toBeDefined();
     expect(overlay.bonuses["chained-bonus"]).toBeDefined();
