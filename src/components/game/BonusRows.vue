@@ -7,8 +7,8 @@
 // writes directly onto `draft.value.grants`. The store's `onChange()` is called after every
 // mutation, which schedules an undo snapshot in BonusForm.
 
-import { computed, inject, ref } from "vue";
-import ComboBox from "../ui/ComboBox.vue";
+import { inject, ref } from "vue";
+import BonusComboBox from "./BonusComboBox.vue";
 import ConditionRows, {
   type ConditionTreeLocation,
   type ConditionBranchTreeLocation,
@@ -41,6 +41,7 @@ import {
   type ConditionBranchLocation,
 } from "../../stores/bonus-draft";
 import type { GrantDraft } from "../../lib/bonus-draft";
+import type { BonusOption } from "../../types";
 import { bonusDraftRegistryKey } from "../../composables/bonusDraftRegistry";
 import {
   useDragHandle,
@@ -54,15 +55,13 @@ const props = withDefaults(
   defineProps<{
     store: BonusDraftStore;
     tags?: string[];
+    /** Every known bonus, for the tier and occurrence-condition pickers. */
+    bonusOptions?: BonusOption[];
     /** This bonus's key in ItemBonuses' cross-bonus condition-drag registry, forwarded from
      *  BonusForm -- see bonusDraftRegistry.ts. Empty outside ItemBonuses. */
     registryId?: string;
   }>(),
-  { tags: () => [], registryId: "" },
-);
-
-const bonusComboOptions = computed(() =>
-  props.store.bonusIds.map((s) => ({ value: s, label: s })),
+  { tags: () => [], bonusOptions: () => [], registryId: "" },
 );
 
 // Guard against a grant being removed while an event handler is still firing.
@@ -405,7 +404,7 @@ function toggleJson(gIndex: number) {
         <ConditionRows
           :rows="grant.conditions"
           :depth="0"
-          :bonus-ids="props.store.bonusIds"
+          :bonus-options="bonusOptions"
           :tree-id="grantTreeId(gIndex)"
           :path="[]"
           @update="(updated) => props.store.setConditions(gIndex, updated)"
@@ -502,11 +501,11 @@ function toggleJson(gIndex: number) {
                 @click="gs(gIndex).removeTier(tIndex)"
                 ><Trash
               /></IconButton>
-              <ComboBox
+              <BonusComboBox
                 class="combo--bonus w-44"
                 :model-value="tier.bonus"
-                :options="bonusComboOptions"
-                placeholder="- bonus -"
+                :options="bonusOptions"
+                self
                 @update:model-value="(v) => (tier.bonus = v)"
               />
               <BaseInput
@@ -599,7 +598,7 @@ function toggleJson(gIndex: number) {
             <ConditionRows
               :rows="variant.conditions"
               :depth="0"
-              :bonus-ids="props.store.bonusIds"
+              :bonus-options="bonusOptions"
               :tree-id="variantTreeId(gIndex, vIndex)"
               :path="[]"
               @update="

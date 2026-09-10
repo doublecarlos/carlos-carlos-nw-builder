@@ -102,14 +102,21 @@ const selected = computed(
   () => props.options.find((option) => option.value === model.value) ?? null,
 );
 
+/** An option whose value is exactly what was typed leads the list: a pasted id lands on its
+ *  row rather than somewhere among the rows it happens to be a substring of. Stable, so the
+ *  rest keep the caller's order. */
 const filtered = computed(() => {
   if (!open.value) return [];
-  const source = props.options.filter((option) =>
-    matchesQuery(
-      [option.label, option.search ?? "", option.group ?? ""],
-      query.value,
-    ),
-  );
+  const typed = query.value.trim().toLowerCase();
+  const isExact = (option: T) => option.value.toLowerCase() === typed;
+  const source = props.options
+    .filter((option) =>
+      matchesQuery(
+        [option.label, option.search ?? "", option.group ?? ""],
+        query.value,
+      ),
+    )
+    .sort((a, b) => Number(isExact(b)) - Number(isExact(a)));
   return source.slice(0, props.maxRows);
 });
 

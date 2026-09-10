@@ -19,7 +19,7 @@ import * as catalog from "../../data/catalog";
 import { useEditorDraft } from "../../composables/useEditorDraft";
 import { BonusDraftStore } from "../../stores/bonus-draft";
 import { bonusDraftRegistryKey } from "../../composables/bonusDraftRegistry";
-import type { Bonus, Db } from "../../types";
+import type { Bonus, BonusOption, Db } from "../../types";
 import type { EntryStatus } from "../../data/catalog";
 
 const props = withDefaults(
@@ -32,11 +32,11 @@ const props = withDefaults(
     duplicateFrom?: Bonus | null;
     status?: EntryStatus;
     db: Db;
-    /** Every known bonus id, for id-collision avoidance and for the "which bonus does this
-     *  tier/condition reference" pickers below. */
+    /** Every known bonus id, for id-collision avoidance and the `excludes` vocabulary. */
     allBonusIds?: string[];
     tags?: string[];
-    bonusIds?: string[];
+    /** Every known bonus, for the "which bonus does this tier/condition count" pickers. */
+    bonusOptions?: BonusOption[];
     allocatableIds?: string[];
     fixedId?: string | null;
     /** Initial draft for pending slots (ItemBonuses embedded case). */
@@ -52,7 +52,7 @@ const props = withDefaults(
     status: "base",
     allBonusIds: () => [],
     tags: () => [],
-    bonusIds: () => [],
+    bonusOptions: () => [],
     allocatableIds: () => [],
     fixedId: null,
     initialDraft: null,
@@ -218,7 +218,6 @@ function save() {
 const draftStore = new BonusDraftStore(
   () => draft.value.grants,
   isNew.value ? scheduleSnapshot : scheduleEmit,
-  props.allBonusIds,
 );
 
 // Registers this instance's store for cross-bonus condition dragging (see
@@ -312,7 +311,7 @@ if (bonusDraftRegistry && props.registryId) {
     <FormSection sub>Suppresses these bonuses</FormSection>
     <TokenInput
       v-model="draft.excludes"
-      :options="bonusIds"
+      :options="allBonusIds"
       placeholder="bonus id to suppress…"
     />
 
@@ -327,6 +326,7 @@ if (bonusDraftRegistry && props.registryId) {
     <BonusRows
       :store="draftStore"
       :tags="tags"
+      :bonus-options="bonusOptions"
       :registry-id="registryId"
       @error="error = $event"
     />

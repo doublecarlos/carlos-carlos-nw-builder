@@ -544,6 +544,10 @@ export interface RangeSpec {
 /** A bare number is shorthand for `{ atLeast: n }` -- see conditions.ts's `inRange`. */
 export type RangeLike = number | RangeSpec;
 
+/** The count leaf a `bonusOccurrences` condition and a grant tier share. No bound means "at
+ *  least one"; no `bonus` means the bonus being evaluated. */
+export type BonusOccurrenceSpec = RangeSpec & { bonus?: string };
+
 /** Reads any `build_parameter` by its (context-relative) path -- the escape hatch for a
  * parameter with no dedicated leaf. `key` is a path, e.g. `bolster` or `toggles.combat`, not a
  * slot id. The three comparison forms are mutually exclusive, chosen by the addressed
@@ -571,16 +575,13 @@ export interface ConditionWhen {
   damageType?: string | string[];
   duration?: RangeLike;
   enemies?: RangeLike;
-  /** How many total occurrences of `bonus` (usually this bonus's own id -- a "self-referential"
-   *  attachment) are currently attached across every equipped item, tallied from each
-   *  contributing item's `BonusOccurrenceConfig` (or 1 per bare-id attachment). A `min:0,max:1`
-   *  attachment gating its own flat grant with `atLeast: 1` is a per-item on/off checkbox --
-   *  what a dedicated `proc` leaf used to be, before it was folded into this same mechanism
-   *  instead of keeping a second, less general one. Gating this way is redundant with the
-   *  attachment's count itself for a plain flat grant (a 0-count attachment already contributes
-   *  no candidate at all, so the grant is never reached either way) -- it's kept anyway so the
-   *  bonus inspector's `gate.leaves` has something to explain, the same way `proc` always did. */
-  bonusOccurrences?: RangeSpec & { bonus: string };
+  /** How many occurrences of a bonus are attached across every equipped item, tallied from
+   *  each contributing item's `BonusOccurrenceConfig` (or 1 per bare-id attachment). Nearly
+   *  always the bonus this condition sits in, so that is what an omitted `bonus` means -- see
+   *  `EvalContext.self`; only a bonus gating on a *different* one names it. "At least one of
+   *  itself" as a grant's whole condition is no gate at all (a 0-count attachment already
+   *  forces every grant inactive), so the exporter drops it. */
+  bonusOccurrences?: BonusOccurrenceSpec;
   equipped?: RangeSpec & { tag?: string; item?: string };
   param?: ParamCondition;
   all?: ConditionWhen[];
@@ -597,10 +598,8 @@ export interface GrantVariant {
 }
 
 export interface GrantTier {
-  /** `bonus` is technically optional on the type (mirroring `RangeSpec`'s shape) but a tier
-   * omitting it always evaluates to 0 occurrences -- see conditions.ts's `bonusOccurrences`
-   * leaf. */
-  bonusOccurrences?: RangeSpec & { bonus?: string };
+  /** Absent altogether reads as `{ atLeast: 1 }` of the owning bonus. */
+  bonusOccurrences?: BonusOccurrenceSpec;
   stats: StatValues;
 }
 
@@ -845,6 +844,13 @@ export interface BuildOption {
   folder?: string;
 }
 
+/** A bonus offered as a picker choice: its id as the value, its name as the label.
+ * `BonusComboBox.vue` renders these. */
+export interface BonusOption {
+  value: string;
+  label: string;
+}
+
 /** One row-group under the sidebar's Builds heading: a build sitting at the top level, or a
  * folder together with the builds it holds. What `NavBuilds.vue` renders. */
 export type BuildNavEntry =
@@ -896,6 +902,10 @@ export interface EvalContext {
   equipped: Map<string, number>;
   tags: Map<string, number>;
   bonusOccurrences: Map<string, number>;
+  /** The bonus whose grants are being evaluated -- what a `bonusOccurrences` leaf naming no
+   *  `bonus` counts. Set per bonus by bonus.ts's `evaluateBonus`; absent where no bonus is in
+   *  play (a slot's `visibleWhen`), where such a leaf counts nothing. */
+  self?: string;
   /** Friendly names for bonus IDs, so conditions can display "Gladiator's Guile"
    *  instead of "m31-gladiators-guile" in their labels. */
   bonusNames: Map<string, string>;

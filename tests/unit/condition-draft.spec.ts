@@ -173,6 +173,27 @@ describe("condition-draft range/exact leaves", () => {
     });
   });
 
+  // An occurrence leaf's empty bonus is the bonus it sits in, so it is complete as drawn and
+  // serializes with no `bonus` -- the data's own spelling of that (`BonusOccurrenceSpec`).
+  it("an occurrence leaf naming no bonus is complete and writes none", () => {
+    const row = newLeafRow("bonusOccurrences");
+    expect(row.bonus).toBe("");
+    expect(whenRowsComplete([row])).toBe(true);
+    expect(rowsToWhen([row])).toEqual({ bonusOccurrences: {} });
+  });
+
+  it("an occurrence leaf without a bonus round-trips, bounded or not", () => {
+    for (const when of [
+      { bonusOccurrences: {} },
+      { bonusOccurrences: { atLeast: 2 } },
+      { bonusOccurrences: { exactly: 3 } },
+    ]) {
+      const rows = whenToRows(when);
+      expect(rows[0].bonus).toBe("");
+      expect(rowsToWhen(rows)).toEqual(when);
+    }
+  });
+
   it("an unbounded count leaf round-trips without gaining an explicit atLeast", () => {
     const when = { equipped: { tag: "level_attr:3" } };
     const rows = whenToRows(when);

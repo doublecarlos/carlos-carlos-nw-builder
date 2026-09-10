@@ -4,10 +4,6 @@
     "name": "Accursed Resolve",
     "grants": [
       {
-        "bonusOccurrences": {
-          "bonus": "accursed-resolve",
-          "atLeast": 1
-        },
         "stats": {
           "power": 3500,
           "deflect": 3500
@@ -231,7 +227,6 @@
               "awareness": -1000
             },
             "bonusOccurrences": {
-              "bonus": "assassin-s-covenant",
               "atLeast": 1
             }
           },
@@ -247,7 +242,6 @@
               "awareness": -1500
             },
             "bonusOccurrences": {
-              "bonus": "assassin-s-covenant",
               "atLeast": 2
             }
           },
@@ -263,7 +257,6 @@
               "awareness": -1750
             },
             "bonusOccurrences": {
-              "bonus": "assassin-s-covenant",
               "atLeast": 3
             }
           }
@@ -500,11 +493,6 @@
     "name": "Campfire Buff",
     "grants": [
       {
-        "when": {
-          "bonusOccurrences": {
-            "bonus": "campfire-buff-bonus"
-          }
-        },
         "stats": {
           "str": 1,
           "con": 1,
@@ -549,7 +537,6 @@
               "forte": 2500
             },
             "bonusOccurrences": {
-              "bonus": "cautious-devotion",
               "atLeast": 1
             }
           },
@@ -559,7 +546,6 @@
               "forte": 3750
             },
             "bonusOccurrences": {
-              "bonus": "cautious-devotion",
               "atLeast": 2
             }
           },
@@ -569,7 +555,6 @@
               "forte": 4375
             },
             "bonusOccurrences": {
-              "bonus": "cautious-devotion",
               "atLeast": 3
             }
           }
@@ -582,10 +567,6 @@
     "name": "Cavalry's Alarm",
     "grants": [
       {
-        "bonusOccurrences": {
-          "bonus": "cavalry-s-alarm",
-          "atLeast": 1
-        },
         "stats": {
           "combined_rating": 3000
         }
@@ -630,7 +611,6 @@
             },
             "when": {
               "bonusOccurrences": {
-                "bonus": "death-s-bulwark-stats",
                 "exactly": 1
               }
             }
@@ -642,7 +622,6 @@
             },
             "when": {
               "bonusOccurrences": {
-                "bonus": "death-s-bulwark-stats",
                 "exactly": 2
               }
             }
@@ -654,7 +633,6 @@
             },
             "when": {
               "bonusOccurrences": {
-                "bonus": "death-s-bulwark-stats",
                 "exactly": 3
               }
             }
@@ -686,7 +664,6 @@
             },
             "when": {
               "bonusOccurrences": {
-                "bonus": "deathly-rage-stats",
                 "exactly": 1
               }
             }
@@ -698,7 +675,6 @@
             },
             "when": {
               "bonusOccurrences": {
-                "bonus": "deathly-rage-stats",
                 "exactly": 2
               }
             }
@@ -711,7 +687,6 @@
             },
             "when": {
               "bonusOccurrences": {
-                "bonus": "deathly-rage-stats",
                 "exactly": 3
               }
             }
@@ -804,7 +779,6 @@
               "deflect": -1500
             },
             "bonusOccurrences": {
-              "bonus": "executioner-s-covenant",
               "atLeast": 1
             }
           },
@@ -820,7 +794,6 @@
               "deflect": -2250
             },
             "bonusOccurrences": {
-              "bonus": "executioner-s-covenant",
               "atLeast": 2
             }
           },
@@ -836,7 +809,6 @@
               "deflect": -2625
             },
             "bonusOccurrences": {
-              "bonus": "executioner-s-covenant",
               "atLeast": 3
             }
           }
@@ -916,7 +888,6 @@
               "stamina_regen": 0.1
             },
             "bonusOccurrences": {
-              "bonus": "gladiator-s-guile",
               "atLeast": 1
             }
           },
@@ -926,7 +897,6 @@
               "stamina_regen": 0.15
             },
             "bonusOccurrences": {
-              "bonus": "gladiator-s-guile",
               "atLeast": 2
             }
           },
@@ -936,7 +906,6 @@
               "stamina_regen": 0.175
             },
             "bonusOccurrences": {
-              "bonus": "gladiator-s-guile",
               "atLeast": 3
             }
           }
@@ -1010,7 +979,6 @@
               "hit_points_p": 0.08
             },
             "bonusOccurrences": {
-              "bonus": "guardian-s-spirit",
               "atLeast": 1
             }
           },
@@ -1020,7 +988,6 @@
               "hit_points_p": 0.12
             },
             "bonusOccurrences": {
-              "bonus": "guardian-s-spirit",
               "atLeast": 2
             }
           },
@@ -1030,7 +997,6 @@
               "hit_points_p": 0.15
             },
             "bonusOccurrences": {
-              "bonus": "guardian-s-spirit",
               "atLeast": 3
             }
           }
@@ -1067,7 +1033,6 @@
               "inc_healing": -1000
             },
             "bonusOccurrences": {
-              "bonus": "ice-cold-aggression",
               "atLeast": 1
             }
           },
@@ -1079,7 +1044,6 @@
               "inc_healing": -2000
             },
             "bonusOccurrences": {
-              "bonus": "ice-cold-aggression",
               "atLeast": 2
             }
           },
@@ -1091,7 +1055,6 @@
               "inc_healing": -3000
             },
             "bonusOccurrences": {
-              "bonus": "ice-cold-aggression",
               "atLeast": 3
             }
           }
@@ -1112,7 +1075,6 @@
               "inc_healing": -1000
             },
             "bonusOccurrences": {
-              "bonus": "ice-cold-resolve",
               "atLeast": 1
             }
           },
@@ -1123,7 +1085,6 @@
               "inc_healing": -2000
             },
             "bonusOccurrences": {
-              "bonus": "ice-cold-resolve",
               "atLeast": 2
             }
           },
@@ -1134,7 +1095,6 @@
               "inc_healing": -3000
             },
             "bonusOccurrences": {
-              "bonus": "ice-cold-resolve",
               "atLeast": 3
             }
           }
@@ -1402,7 +1362,6 @@
         "when": {
           "toggle": "combat",
           "bonusOccurrences": {
-            "bonus": "m26-masterwork-neck-waist-set",
             "atLeast": 2
           }
         },
@@ -1420,7 +1379,6 @@
       {
         "when": {
           "bonusOccurrences": {
-            "bonus": "m28-voidtouched-set",
             "atLeast": 2
           }
         },
@@ -1435,7 +1393,6 @@
             "item": "location-wildspace"
           },
           "bonusOccurrences": {
-            "bonus": "m28-voidtouched-set",
             "atLeast": 2
           }
         },
@@ -1453,7 +1410,6 @@
           },
           "toggle": "combat",
           "bonusOccurrences": {
-            "bonus": "m28-voidtouched-set",
             "atLeast": 2
           }
         },
@@ -1497,7 +1453,6 @@
           },
           "toggle": "combat",
           "bonusOccurrences": {
-            "bonus": "m28-voidtouched-set",
             "atLeast": 2
           }
         },
@@ -1639,7 +1594,6 @@
       {
         "when": {
           "bonusOccurrences": {
-            "bonus": "m31-enchanted-advantage",
             "atLeast": 2
           }
         },
@@ -1853,7 +1807,6 @@
       {
         "when": {
           "bonusOccurrences": {
-            "bonus": "m32-cleric-s-impending-doom-celestial",
             "atLeast": 2
           }
         },
@@ -1869,7 +1822,6 @@
           },
           "toggle": "combat",
           "bonusOccurrences": {
-            "bonus": "m32-cleric-s-impending-doom-celestial",
             "atLeast": 2
           }
         },
@@ -1886,7 +1838,6 @@
       {
         "when": {
           "bonusOccurrences": {
-            "bonus": "m32-cleric-s-impending-doom-legendary",
             "atLeast": 2
           }
         },
@@ -1902,7 +1853,6 @@
           },
           "toggle": "combat",
           "bonusOccurrences": {
-            "bonus": "m32-cleric-s-impending-doom-legendary",
             "atLeast": 2
           }
         },
@@ -1919,7 +1869,6 @@
       {
         "when": {
           "bonusOccurrences": {
-            "bonus": "m32-cleric-s-impending-doom-mythic",
             "atLeast": 2
           }
         },
@@ -1935,7 +1884,6 @@
           },
           "toggle": "combat",
           "bonusOccurrences": {
-            "bonus": "m32-cleric-s-impending-doom-mythic",
             "atLeast": 2
           }
         },
@@ -2000,7 +1948,6 @@
           },
           "toggle": "combat",
           "bonusOccurrences": {
-            "bonus": "m32-doomcleaver-celestial",
             "atLeast": 2
           }
         },
@@ -2017,7 +1964,6 @@
       {
         "when": {
           "bonusOccurrences": {
-            "bonus": "m32-impending-doom-celestial",
             "atLeast": 2
           }
         },
@@ -2033,7 +1979,6 @@
           },
           "toggle": "combat",
           "bonusOccurrences": {
-            "bonus": "m32-impending-doom-celestial",
             "atLeast": 2
           }
         },
@@ -2050,7 +1995,6 @@
       {
         "when": {
           "bonusOccurrences": {
-            "bonus": "m32-knot-of-the-bloodhound-celestial",
             "atLeast": 2
           }
         },
@@ -2068,7 +2012,6 @@
       {
         "when": {
           "bonusOccurrences": {
-            "bonus": "m32-omen-of-doom-legendary",
             "atLeast": 2
           }
         },
@@ -2084,7 +2027,6 @@
           },
           "toggle": "combat",
           "bonusOccurrences": {
-            "bonus": "m32-omen-of-doom-legendary",
             "atLeast": 2
           }
         },
@@ -2101,7 +2043,6 @@
       {
         "when": {
           "bonusOccurrences": {
-            "bonus": "m32-omen-of-doom-mythic",
             "atLeast": 2
           }
         },
@@ -2117,7 +2058,6 @@
           },
           "toggle": "combat",
           "bonusOccurrences": {
-            "bonus": "m32-omen-of-doom-mythic",
             "atLeast": 2
           }
         },
@@ -2204,7 +2144,6 @@
       {
         "when": {
           "bonusOccurrences": {
-            "bonus": "m33-5-evolving-form",
             "exactly": 3
           }
         },
@@ -2326,7 +2265,6 @@
             "atLeast": 30
           },
           "bonusOccurrences": {
-            "bonus": "m33-chilling-flow-mythic",
             "atLeast": 2
           }
         },
@@ -2341,7 +2279,6 @@
             "atLeast": 30
           },
           "bonusOccurrences": {
-            "bonus": "m33-chilling-flow-mythic",
             "atLeast": 2
           }
         },
@@ -2496,7 +2433,6 @@
       {
         "when": {
           "bonusOccurrences": {
-            "bonus": "m33-freezing-energy",
             "atLeast": 2
           }
         },
@@ -2513,7 +2449,6 @@
       {
         "when": {
           "bonusOccurrences": {
-            "bonus": "m33-freezing-grasp",
             "atLeast": 2
           }
         },
@@ -2530,7 +2465,6 @@
       {
         "when": {
           "bonusOccurrences": {
-            "bonus": "m33-freezing-rage",
             "atLeast": 2
           }
         },
@@ -2827,10 +2761,6 @@
     "name": "Magistrate Patience",
     "grants": [
       {
-        "bonusOccurrences": {
-          "bonus": "magistrate-patience",
-          "atLeast": 1
-        },
         "stats": {
           "crit_avoid": 2500
         }
@@ -2862,7 +2792,6 @@
               "severity": 5000
             },
             "bonusOccurrences": {
-              "bonus": "master-cruelty",
               "atLeast": 1
             }
           },
@@ -2871,7 +2800,6 @@
               "severity": 7500
             },
             "bonusOccurrences": {
-              "bonus": "master-cruelty",
               "atLeast": 2
             }
           },
@@ -2880,7 +2808,6 @@
               "severity": 8750
             },
             "bonusOccurrences": {
-              "bonus": "master-cruelty",
               "atLeast": 3
             }
           }
@@ -2893,10 +2820,6 @@
     "name": "Master's Precision",
     "grants": [
       {
-        "bonusOccurrences": {
-          "bonus": "master-s-precision",
-          "atLeast": 1
-        },
         "stats": {
           "strike": 5000
         }
@@ -2936,7 +2859,6 @@
               "out_healing": 1500
             },
             "bonusOccurrences": {
-              "bonus": "mender-s-covenant",
               "atLeast": 1
             }
           },
@@ -2952,7 +2874,6 @@
               "out_healing": 2250
             },
             "bonusOccurrences": {
-              "bonus": "mender-s-covenant",
               "atLeast": 2
             }
           },
@@ -2968,7 +2889,6 @@
               "out_healing": 2625
             },
             "bonusOccurrences": {
-              "bonus": "mender-s-covenant",
               "atLeast": 3
             }
           }
@@ -3165,7 +3085,6 @@
         "tiers": [
           {
             "bonusOccurrences": {
-              "bonus": "pack-tactics",
               "atLeast": 1
             },
             "stats": {
@@ -3175,7 +3094,6 @@
           },
           {
             "bonusOccurrences": {
-              "bonus": "pack-tactics",
               "atLeast": 2
             },
             "stats": {
@@ -3185,7 +3103,6 @@
           },
           {
             "bonusOccurrences": {
-              "bonus": "pack-tactics",
               "atLeast": 3
             },
             "stats": {
@@ -3195,7 +3112,6 @@
           },
           {
             "bonusOccurrences": {
-              "bonus": "pack-tactics",
               "atLeast": 4
             },
             "stats": {
@@ -3205,7 +3121,6 @@
           },
           {
             "bonusOccurrences": {
-              "bonus": "pack-tactics",
               "atLeast": 5
             },
             "stats": {
@@ -3225,7 +3140,6 @@
         "tiers": [
           {
             "bonusOccurrences": {
-              "bonus": "pack-tactics",
               "atLeast": 1
             },
             "stats": {
@@ -3235,7 +3149,6 @@
           },
           {
             "bonusOccurrences": {
-              "bonus": "pack-tactics",
               "atLeast": 2
             },
             "stats": {
@@ -3245,7 +3158,6 @@
           },
           {
             "bonusOccurrences": {
-              "bonus": "pack-tactics",
               "atLeast": 3
             },
             "stats": {
@@ -3255,7 +3167,6 @@
           },
           {
             "bonusOccurrences": {
-              "bonus": "pack-tactics",
               "atLeast": 4
             },
             "stats": {
@@ -3476,10 +3387,6 @@
     "name": "Predator's Instinct",
     "grants": [
       {
-        "bonusOccurrences": {
-          "bonus": "predator-s-instinct",
-          "atLeast": 1
-        },
         "stats": {
           "acc": 3000,
           "ca": 3000,
@@ -3908,10 +3815,6 @@
     "name": "Shepherd's Devotion",
     "grants": [
       {
-        "bonusOccurrences": {
-          "bonus": "shepherd-s-devotion",
-          "atLeast": 1
-        },
         "stats": {
           "defense": 1500
         }
@@ -4136,10 +4039,6 @@
     "name": "Trainer's Restoration",
     "grants": [
       {
-        "bonusOccurrences": {
-          "bonus": "trainer-s-restoration",
-          "atLeast": 1
-        },
         "stats": {
           "inc_healing": 3500,
           "out_healing": 3500

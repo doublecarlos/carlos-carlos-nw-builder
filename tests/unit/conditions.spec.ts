@@ -186,6 +186,49 @@ describe("conditions.ts bonusOccurrences leaf uses bonusNames for friendly label
   });
 });
 
+describe("conditions.ts bonusOccurrences leaf without a bonus counts ctx.self", () => {
+  const own = "test-self-bonus";
+  const c = ctx(
+    {},
+    {
+      self: own,
+      bonusOccurrences: new Map([
+        [own, 2],
+        ["test-other-bonus", 5],
+      ]),
+      bonusNames: new Map([[own, "Self Bonus"]]),
+    },
+  );
+
+  it("an empty leaf is at least one of the bonus being evaluated", () => {
+    expect(evaluate({ bonusOccurrences: {} }, c)).toBe(true);
+    expect(evaluate({ bonusOccurrences: { atLeast: 3 } }, c)).toBe(false);
+    expect(evaluate({ bonusOccurrences: { exactly: 2 } }, c)).toBe(true);
+  });
+
+  it("an explicit bonus still wins over self", () => {
+    expect(
+      evaluate(
+        { bonusOccurrences: { bonus: "test-other-bonus", atLeast: 5 } },
+        c,
+      ),
+    ).toBe(true);
+  });
+
+  it("labels the implicit target by the bonus's name", () => {
+    const result = explain({ bonusOccurrences: { atLeast: 3 } }, c);
+    expect(result.unmet[0].label).toBe("3 occurrences of Self Bonus");
+    expect(result.unmet[0].detail).toBe("you have 2");
+  });
+
+  it("with no bonus in play, counts nothing", () => {
+    const outside = ctx({}, { bonusOccurrences: new Map([[own, 2]]) });
+    const result = explain({ bonusOccurrences: {} }, outside);
+    expect(result.ok).toBe(false);
+    expect(result.unmet[0].label).toBe("1 occurrence of this bonus");
+  });
+});
+
 describe("conditions.ts equipped/bonusOccurrences leaves support exactly", () => {
   it("equipped: exactly matches only the exact count, not >=1 (regression -- used to ignore exactly entirely)", () => {
     const zero = ctx({}, { tags: new Map() });

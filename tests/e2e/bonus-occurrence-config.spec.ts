@@ -272,10 +272,9 @@ test.describe("BonusOccurrenceConfig label override", () => {
 });
 
 // A dedicated `proc` leaf/`build.procs` no longer exists -- a per-item on/off toggle is
-// now a plain `min:0,max:1` BonusOccurrenceConfig, self-referentially gating its own bonus's
-// flat grant with `bonusOccurrences: { bonus: <own id>, atLeast: 1 }` (see types.ts's own note
-// on why that condition is kept even though a 0-count attachment already contributes no
-// candidate either way). Mirrors data/db-bonuses.json's real `campfire-buff-bonus` migration.
+// now a plain `min:0,max:1` BonusOccurrenceConfig on an unconditional flat grant, the shape
+// data/db-bonuses.json's real `campfire-buff-bonus` has. The fixture spells the self gate
+// out anyway, to show the explicit form still resolves the same way.
 const TOGGLE_BONUS_ID = "test-toggle-bonus";
 const TOGGLE_RING_ID = "test-toggle-ring";
 

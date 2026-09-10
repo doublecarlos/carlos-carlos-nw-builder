@@ -27,7 +27,13 @@ import * as catalog from "../../data/catalog";
 import type { EntryStatus } from "../../data/catalog";
 import { useEditorDraft } from "../../composables/useEditorDraft";
 import { statPickerOptions } from "../../lib/format";
-import type { Item, Db, Bonus, BuildParameterSlot } from "../../types";
+import type {
+  Item,
+  Db,
+  Bonus,
+  BonusOption,
+  BuildParameterSlot,
+} from "../../types";
 import { INSIGNIA_SHAPES } from "../../types";
 import {
   buildDraft,
@@ -53,11 +59,12 @@ const props = withDefaults(
     status?: EntryStatus;
     db: Db;
     filters?: string[];
-    /** Every known bonus id, forwarded to ItemBonuses for id-collision avoidance and
-     *  "attach an existing bonus". */
+    /** Every known bonus id, for the `excludes` vocabulary and, forwarded to ItemBonuses,
+     *  id-collision avoidance. */
     allBonusIds?: string[];
     tags?: string[];
-    bonusIds?: string[];
+    /** Every known bonus, forwarded to ItemBonuses for its pickers. */
+    bonusOptions?: BonusOption[];
     allocatableIds?: string[];
   }>(),
   {
@@ -67,7 +74,7 @@ const props = withDefaults(
     filters: () => [],
     allBonusIds: () => [],
     tags: () => [],
-    bonusIds: () => [],
+    bonusOptions: () => [],
     allocatableIds: () => [],
   },
 );
@@ -827,7 +834,7 @@ function showsGroup(group: FieldGroup): boolean {
         :db="db"
         :all-bonus-ids="allBonusIds"
         :tags="tags"
-        :bonus-ids="bonusIds"
+        :bonus-options="bonusOptions"
         :allocatable-ids="props.allocatableIds"
         @save-bonus="$emit('save-bonus', $event)"
         @delete-bonus="$emit('delete-bonus', $event)"
@@ -844,7 +851,7 @@ function showsGroup(group: FieldGroup): boolean {
       >
       <TokenInput
         v-model="draft.excludes"
-        :options="bonusIds"
+        :options="allBonusIds"
         placeholder="bonus id this item overrides…"
       />
       <p class="text-muted">

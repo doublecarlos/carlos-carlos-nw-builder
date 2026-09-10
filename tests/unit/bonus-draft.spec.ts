@@ -262,3 +262,21 @@ describe("bonus-draft grant with an equipped.below condition", () => {
     expect(toGrant(toDraft(grant))).toEqual(grant);
   });
 });
+
+describe("bonus-draft tiers", () => {
+  it("a tier naming no bonus round-trips without one, and an explicit bonus is kept", () => {
+    const grant: Grant = {
+      tiers: [
+        { bonusOccurrences: { atLeast: 1 }, stats: { power: 1 } },
+        {
+          bonusOccurrences: { bonus: "other", atLeast: 2 },
+          stats: { power: 2 },
+        },
+      ],
+    };
+    expect(needsJson(grant)).toBe(false);
+    const draft = toDraft(grant);
+    expect(draft.tiers.map((tier) => tier.bonus)).toEqual(["", "other"]);
+    expect(toGrant(draft)).toEqual(grant);
+  });
+});
