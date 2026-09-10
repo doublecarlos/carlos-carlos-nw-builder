@@ -110,6 +110,10 @@ function computeId(local: ItemDraft): string {
  * honoured as a fallback, so an overlay declaring the older param-based shape keeps working.
  * Blank values are dropped either way; "no class at all" is not a restriction. */
 const classSlot = computed(() => findParamSlot(props.db.slots, "class"));
+/** A tag is its own label. */
+const tagOptions = computed(() =>
+  props.tags.map((tag) => ({ value: tag, label: tag })),
+);
 /** `replacedBy` candidates. This item is left out: a self-reference is a lint error. */
 const replacementOptions = computed(() => [
   { value: "", label: "- not replaced -" },
@@ -543,7 +547,7 @@ function showsGroup(group: FieldGroup): boolean {
       <FormField label="Tags" class="min-w-80 flex-1">
         <TokenInput
           v-model="draft.tags"
-          :options="tags"
+          :options="tagOptions"
           placeholder="Add a tag…"
           data-testid="item-tags-input"
         />

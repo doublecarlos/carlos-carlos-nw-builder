@@ -405,10 +405,6 @@ function optionsForCombo(type?: string) {
 // than one pick. The row model keeps them comma-separated; the control speaks arrays.
 const isMultiValue = (type?: string) =>
   MULTI_VALUE_LEAF_TYPES.includes(type ?? "");
-const optionValues = (options: { value: string }[]) =>
-  options.map((option) => option.value);
-const optionLabels = (options: { value: string; label: string }[]) =>
-  Object.fromEntries(options.map((option) => [option.value, option.label]));
 
 // --- the generic `param` leaf -----------------------------------------------------------
 // Every build_parameter slot is a candidate key; the comparison control shown depends on the
@@ -588,8 +584,7 @@ function changeParamKey(row: ConditionRow, key: string) {
                 class="w-56"
                 data-testid="condition-values"
                 :model-value="fromCsv(row.equals)"
-                :options="optionValues(paramValueOptions(row.key))"
-                :labels="optionLabels(paramValueOptions(row.key))"
+                :options="paramValueOptions(row.key)"
                 :allow-free="!paramValueOptions(row.key).length"
                 placeholder="- value -"
                 @update:model-value="(v) => (row.equals = v.join(', '))"
@@ -615,8 +610,7 @@ function changeParamKey(row: ConditionRow, key: string) {
               class="w-56"
               data-testid="condition-values"
               :model-value="fromCsv(row.value)"
-              :options="optionValues(optionsForCombo(row.type))"
-              :labels="optionLabels(optionsForCombo(row.type))"
+              :options="optionsForCombo(row.type)"
               :allow-free="!optionsForCombo(row.type).length"
               placeholder="- value -"
               @update:model-value="(v) => (row.value = v.join(', '))"

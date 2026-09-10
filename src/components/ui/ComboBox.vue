@@ -29,7 +29,7 @@ export interface ComboBoxExposed {
 import { ref, computed, watch, nextTick, useId, useTemplateRef } from "vue";
 import { onKeyStroke } from "@vueuse/core";
 import { blurToRowAnchor } from "../../lib/row-cursor";
-import { matchesQuery } from "../../lib/text-filter";
+import { filterAndRank } from "../../lib/text-filter";
 import ComboBoxMenu from "./ComboBoxMenu.vue";
 import ComboBoxMenuRow from "./ComboBoxMenuRow.vue";
 
@@ -102,22 +102,16 @@ const selected = computed(
   () => props.options.find((option) => option.value === model.value) ?? null,
 );
 
-/** An option whose value is exactly what was typed leads the list: a pasted id lands on its
- *  row rather than somewhere among the rows it happens to be a substring of. Stable, so the
- *  rest keep the caller's order. */
+/** The value itself is deliberately not matched: ItemPicker decides per lens whether an id
+ *  is searchable, and puts it in `search` when it is. */
 const filtered = computed(() => {
   if (!open.value) return [];
-  const typed = query.value.trim().toLowerCase();
-  const isExact = (option: T) => option.value.toLowerCase() === typed;
-  const source = props.options
-    .filter((option) =>
-      matchesQuery(
-        [option.label, option.search ?? "", option.group ?? ""],
-        query.value,
-      ),
-    )
-    .sort((a, b) => Number(isExact(b)) - Number(isExact(a)));
-  return source.slice(0, props.maxRows);
+  return filterAndRank(
+    props.options,
+    query.value,
+    (option) => [option.label, option.search ?? "", option.group ?? ""],
+    (option) => option.value,
+  ).slice(0, props.maxRows);
 });
 
 /** Rows cut by `maxRows`, reported in the menu's footer so filtering feels bounded. */

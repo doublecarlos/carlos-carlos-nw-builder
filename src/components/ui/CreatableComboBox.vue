@@ -9,7 +9,7 @@
 // something new and blurring or pressing Enter/Tab commits the typed text itself.
 import { computed, watch, useId, useTemplateRef } from "vue";
 import { onKeyStroke } from "@vueuse/core";
-import { matchesQuery } from "../../lib/text-filter";
+import { filterAndRank } from "../../lib/text-filter";
 import { useMenuNavigation } from "../../composables/useMenuNavigation";
 import ComboBoxMenu from "./ComboBoxMenu.vue";
 import ComboBoxMenuRow from "./ComboBoxMenuRow.vue";
@@ -42,9 +42,12 @@ const { open, query, highlight, close } = useMenuNavigation({
 
 const suggestions = computed(() => {
   if (!open.value) return [];
-  return props.options
-    .filter((option) => matchesQuery(option, query.value))
-    .slice(0, MAX_SUGGESTIONS);
+  return filterAndRank(
+    props.options,
+    query.value,
+    (option) => option,
+    (option) => option,
+  ).slice(0, MAX_SUGGESTIONS);
 });
 
 /** Offering the typed text itself as a "new" entry when it isn't already a known option. */

@@ -1,6 +1,7 @@
-// End-to-end coverage for BonusComboBox, the picker shared by "attach an existing bonus" and
-// the occurrence condition/tier rows: rows lead with the name and carry the id, a typed id
-// finds its row first, and an occurrence leaf defaults to the bonus it sits in.
+// End-to-end coverage for the bonus pickers: BonusComboBox, shared by "attach an existing
+// bonus" and the occurrence condition/tier rows, and the `excludes` TokenInput, which draws the
+// same rows. Rows lead with the name and carry the id, a typed id finds its row first, and an
+// occurrence leaf defaults to the bonus it sits in.
 import { test, expect, type Page, type Locator } from "@playwright/test";
 import {
   confirmImport,
@@ -125,4 +126,36 @@ test("the item form's attach picker lists bonuses by name with their id", async 
   await expect(options.first().getByTestId("bonus-option-id")).toHaveText(
     LONG_ID,
   );
+});
+
+test("the excludes editor offers the same name-and-id rows, by id or name, and never a free entry", async ({
+  page,
+}) => {
+  await openBuilder(page);
+  await importText(page, bundle);
+  await confirmImport(page);
+  await layerRow(page, LAYER_NAME).locator(".nav-name").click();
+  await page.getByRole("button", { name: /Bonuses \d+/ }).click();
+  await page.getByTestId("new-bonus").click();
+
+  const excludes = page.getByTestId("bonus-excludes-input");
+  const query = excludes.getByTestId("token-query");
+  await query.click();
+  await query.fill("pick");
+  const options = menuOptions(page);
+  await expect(options).toHaveCount(2);
+  await expect(options.first().getByTestId("bonus-option-id")).toHaveText(
+    LONG_ID,
+  );
+
+  // A closed vocabulary: text matching nothing offers nothing, not a "new" entry.
+  await query.fill("no-such-bonus");
+  await expect(page.getByTestId("picker-menu")).toHaveCount(0);
+
+  await query.fill(SHORT_ID);
+  await expect(options.first()).toContainText("Zed Pick");
+  await options.first().click();
+  const chip = excludes.getByTestId("token-chip");
+  await expect(chip).toHaveText(/Zed Pick/);
+  await expect(chip).toHaveAttribute("data-value", SHORT_ID);
 });

@@ -19,6 +19,7 @@ import * as catalog from "../../data/catalog";
 import { useEditorDraft } from "../../composables/useEditorDraft";
 import { BonusDraftStore } from "../../stores/bonus-draft";
 import { bonusDraftRegistryKey } from "../../composables/bonusDraftRegistry";
+import BonusOptionRow from "./BonusOptionRow.vue";
 import type { Bonus, BonusOption, Db } from "../../types";
 import type { EntryStatus } from "../../data/catalog";
 
@@ -32,10 +33,11 @@ const props = withDefaults(
     duplicateFrom?: Bonus | null;
     status?: EntryStatus;
     db: Db;
-    /** Every known bonus id, for id-collision avoidance and the `excludes` vocabulary. */
+    /** Every known bonus id, for id-collision avoidance. */
     allBonusIds?: string[];
     tags?: string[];
-    /** Every known bonus, for the "which bonus does this tier/condition count" pickers. */
+    /** Every known bonus, for `excludes` and the "which bonus does this tier/condition count"
+     *  pickers. */
     bonusOptions?: BonusOption[];
     allocatableIds?: string[];
     fixedId?: string | null;
@@ -311,9 +313,15 @@ if (bonusDraftRegistry && props.registryId) {
     <FormSection sub>Suppresses these bonuses</FormSection>
     <TokenInput
       v-model="draft.excludes"
-      :options="allBonusIds"
-      placeholder="bonus id to suppress…"
-    />
+      data-testid="bonus-excludes-input"
+      :options="bonusOptions"
+      :allow-free="false"
+      placeholder="bonus to suppress…"
+    >
+      <template #option="{ option }">
+        <BonusOptionRow :option="option" />
+      </template>
+    </TokenInput>
 
     <FormSection>
       Grants
