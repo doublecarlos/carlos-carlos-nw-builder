@@ -162,12 +162,33 @@ describe("condition-draft range/exact leaves", () => {
     expect(whenRowsComplete([row])).toBe(true);
   });
 
-  it("bonusOccurrences still defaults atLeast to 1 in range mode when left blank", () => {
+  // conditions.ts reads a count leaf carrying no range at all as "at least one", so the
+  // unbounded mode writes nothing rather than spelling that default back out.
+  it("a fresh count leaf starts unbounded and writes no range", () => {
     const row = newLeafRow("bonusOccurrences");
+    expect(row.rangeMode).toBe("atLeastOne");
     row.bonus = "vitality";
     expect(rowsToWhen([row])).toEqual({
-      bonusOccurrences: { bonus: "vitality", atLeast: 1 },
+      bonusOccurrences: { bonus: "vitality" },
     });
+  });
+
+  it("an unbounded count leaf round-trips without gaining an explicit atLeast", () => {
+    const when = { equipped: { tag: "level_attr:3" } };
+    const rows = whenToRows(when);
+    expect(rows[0].rangeMode).toBe("atLeastOne");
+    expect(rowsToWhen(rows)).toEqual(when);
+  });
+
+  // The unbounded mode writing nothing must not make an unfilled range mode look the same:
+  // one is a decision, the other is a row still being typed.
+  it("a range-mode count leaf with neither bound filled in is incomplete", () => {
+    const row = newLeafRow("equipped");
+    row.tag = "level_attr:3";
+    row.rangeMode = "range";
+    expect(whenRowsComplete([row])).toBe(false);
+    row.atLeast = 2;
+    expect(whenRowsComplete([row])).toBe(true);
   });
 });
 

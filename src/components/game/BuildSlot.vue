@@ -201,7 +201,11 @@ useCursorRowKeys(anchor, {
     @mouseleave="emit('leave')"
     @click="onRowClick"
   >
-    <div class="flex w-44 shrink-0 items-center justify-between gap-1 min-w-0">
+    <!-- `self-start` plus the control's own vertical box keeps the label and toggle on the
+         row's first line once diff notes make the row taller. -->
+    <div
+      class="flex w-44 shrink-0 items-center justify-between gap-1 min-w-0 self-start border-y border-transparent py-0.5"
+    >
       <!-- A point_assignment row has no single control to point `for` at (it is a row of
            steppers, one per item), so it labels the group instead -- see `aria-labelledby`
            below. Clicking it still parks the row cursor, via this row's own `onRowClick`. -->

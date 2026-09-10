@@ -4,11 +4,12 @@
 import { test, expect } from "@playwright/test";
 import type { Page } from "@playwright/test";
 import {
-  openBuilder,
-  slotRow,
-  pickerInput,
   chooseItem,
+  openBuilder,
+  pickerInput,
   setItemFilter,
+  slotRow,
+  togglePickerOption,
 } from "./support/app";
 import { addLayer, layerRow } from "./support/nav";
 import { shippedItemName } from "./support/shippedData";
@@ -78,7 +79,7 @@ test("an item with no cap of its own is held to its filter's", async ({
   ).toHaveCount(0);
   await page.keyboard.press("Escape");
 
-  await page.getByTestId("show-hidden-toggle").click();
+  await togglePickerOption(page, "showHidden");
   await other.scrollIntoViewIfNeeded();
   await input.click();
   await input.fill(INHERITED_ITEM);

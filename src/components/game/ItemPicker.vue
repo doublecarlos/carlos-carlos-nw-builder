@@ -23,6 +23,7 @@ import { itemScaleFactor } from "../../composables/useItemScale";
 import { scaledStat } from "../../engine/scaling";
 import { NW_SCHEMA } from "../../data/data";
 import { itemSearchText } from "../../lib/item-search";
+import * as pickerLens from "../../stores/pickerLens";
 import { PREFERRED_MARK, itemDisplay } from "../../engine/insignia";
 import type { InsigniaGroup } from "../../engine/insignia";
 import type { Item, Db, Build } from "../../types";
@@ -48,17 +49,12 @@ const props = withDefaults(
      * resolved into `slotId` so the dropdown can show the bonus stats it would add, same as
      * the row's own stat summary would show once it's actually picked. Left
      * unset by callers with no live build to resolve against (PresetForm's item rows, which
-     * pick a default for a slot rather than editing a real build). `filterHidden` (default
-     * true) governs whether a candidate that would activate a `hideFromPicker` problem grant
-     * is dropped from the dropdown entirely -- the resolve already happens per candidate for
-     * the preview below, so this reads off the same result rather than costing anything extra.
-     * Turned off, the candidate is listed with the conflict named beside it instead, the same
-     * way `hiddenReasons` labels the filters the caller resolved. */
+     * pick a default for a slot rather than editing a real build). The same resolve also finds
+     * the candidates a `hideFromPicker` problem grant withholds, at no extra pass. */
     bonusPreview?: {
       db: Db;
       build: Build;
       slotId: string;
-      filterHidden?: boolean;
     };
     /** Render bare item names -- no item level, no conditional-bonus marker, no stat/bonus
      * preview lines -- and let the menu match the input's width instead of widening to make
@@ -77,9 +73,8 @@ const props = withDefaults(
      *  Stops an empty value being *chosen*; says nothing about a build already holding one. */
     allowEmpty?: boolean;
     /** Why each candidate in `items` would normally be withheld, keyed by item id
-     *  (`db.ts`'s `hiddenReasons`). Set only by a caller that asked for the withheld ones
-     *  back: a listed candidate has to say what is wrong with it, or the wider list is just a
-     *  longer list. Candidates named here sort below the freely available ones. */
+     *  (`db.ts`'s `slotCandidateList`). `items` arrives complete, so this is what decides
+     *  which of them are offered (`visibleItems`); the named ones sort last. */
     hiddenReasons?: ReadonlyMap<string, string> | null;
     /** Display the current value and never open, for a derived row. */
     readonly?: boolean;
@@ -122,10 +117,8 @@ interface BonusStatsPreview {
    *  its own. Sourced from `previewStats`, the same near-miss payload BonusInspector.vue
    *  and ItemCard.vue already show for equipped items' inactive bonuses. */
   potential: Record<string, number>;
-  /** Names the bonus whose `hideFromPicker` problem grant picking `item` here would
-   *  activate, or null when there is none -- the candidate is left out of the dropdown
-   *  entirely unless the caller opted out via `bonusPreview.filterHidden`, in which case this
-   *  is the reason shown on its row. */
+  /** The bonus whose `hideFromPicker` grant picking `item` would activate, or null. Withholds
+   *  the candidate the way the slot's own filters do, and is its reason once re-shown. */
   conflict: string | null;
 }
 
@@ -186,6 +179,15 @@ function previewBonusStats(item: Item): BonusStatsPreview | null {
   }
 }
 
+/** `hidePreview` states something about the call site's own list, so the menu option can only
+ *  take previews away, never add them back. */
+const previewsHidden = computed(
+  () => props.hidePreview || !pickerLens.showPreview.value,
+);
+
+/** Mirrored out of ComboBox for the exact-id override alone; filtering stays ComboBox's. */
+const query = ref("");
+
 /** Same formatted parts, so "potential" can be hidden when it would just repeat "current". */
 const sameParts = (
   a: ReturnType<typeof bonusStatPreview>,
@@ -214,36 +216,43 @@ const candidateStats = computed(() => {
   return map;
 });
 
-/** Why each listed candidate would normally be withheld: the caller's own `hiddenReasons` for
- *  the filters it resolved, plus this component's per-candidate conflict check. Empty unless
- *  something is being re-shown. */
+/** The caller's `hiddenReasons` plus this component's own conflict check. Names every withheld
+ *  candidate, listed or not: `visibleItems` needs the full set to decide from. */
 const withheld = computed(() => {
   const map = new Map<string, string>(props.hiddenReasons ?? []);
-  if (props.bonusPreview?.filterHidden === false) {
-    for (const [id, stats] of candidateStats.value ?? []) {
-      if (stats?.conflict && !map.has(id)) map.set(id, stats.conflict);
-    }
+  for (const [id, stats] of candidateStats.value ?? []) {
+    if (stats?.conflict && !map.has(id)) map.set(id, stats.conflict);
   }
   return map;
 });
 
-/** `items` narrowed by any active `hideFromPicker` problem grant a candidate would trigger,
- *  opt-out via `bonusPreview.filterHidden === false`. Re-shown candidates sort last, so
- *  turning the lens on appends to the list a player was already reading instead of
- *  reshuffling it. */
-const visibleItems = computed(() => {
-  const stats = candidateStats.value;
-  if (!stats) return props.items;
-  if (props.bonusPreview?.filterHidden === false) {
-    const reasons = withheld.value;
-    return [...props.items].sort(
-      (a, b) => Number(reasons.has(a.id)) - Number(reasons.has(b.id)),
-    );
-  }
-  return props.items.filter((item) => !stats.get(item.id)?.conflict);
+/** A full id is unambiguous, so it offers its item whatever the lens says. The row still
+ *  carries the withheld reason. */
+const namedById = computed(() => {
+  const typed = query.value.trim().toLowerCase();
+  return typed && props.items.some((item) => item.id.toLowerCase() === typed)
+    ? typed
+    : null;
 });
 
-/** Kept off `matchMap`, which `hidePreview` skips: which name a row shows is not a preview. */
+/** Where "show unavailable" and the exact-id override are actually applied. Re-shown
+ *  candidates sort last, so turning the option on appends rather than reshuffles. */
+const visibleItems = computed(() => {
+  // Null while closed, and a closed picker has nothing listed to filter.
+  if (!candidateStats.value) return props.items;
+  const reasons = withheld.value;
+  const listed = pickerLens.showHidden.value
+    ? [...props.items]
+    : props.items.filter(
+        (item) =>
+          !reasons.has(item.id) || item.id.toLowerCase() === namedById.value,
+      );
+  return listed.sort(
+    (a, b) => Number(reasons.has(a.id)) - Number(reasons.has(b.id)),
+  );
+});
+
+/** Kept off `matchMap`, which the preview options skip: a row's name is not a preview. */
 const displayMap = computed(
   () =>
     new Map(
@@ -251,9 +260,22 @@ const displayMap = computed(
     ),
 );
 
-/** Map items to the generic {value, label} format ComboBox expects, plus the off-screen
- *  `search` blob that lets a query match an item by what it grants rather than only by name.
- *  `itemSearchText` memoizes per catalogue, so re-mapping here is a lookup, not a rebuild.
+/** The off-screen haystack, limited to whichever picker-option buckets are on.
+ *  `itemSearchText` memoizes per catalogue, so this is a lookup and a join, not a rebuild. */
+function searchTextFor(db: Db | null, item: Item) {
+  const parts: string[] = [];
+  // The exactly-named item needs its id here too, or ComboBox filters the row back out.
+  if (pickerLens.searchById.value || item.id.toLowerCase() === namedById.value)
+    parts.push(item.id);
+  if (db) {
+    const text = itemSearchText(db, item);
+    if (pickerLens.searchByStat.value) parts.push(text.stat);
+    if (pickerLens.searchByBonus.value) parts.push(text.bonus);
+  }
+  return parts.join(" ") || undefined;
+}
+
+/** Map items to the generic {value, label} format ComboBox expects, plus that `search` blob.
  *  `label` stays the catalogue name even where the row draws a shortened one: it is what the
  *  query matches against. */
 const options = computed(() => {
@@ -261,7 +283,7 @@ const options = computed(() => {
   const optionFor = (item: Item, group?: string) => ({
     value: item.id,
     label: item.name,
-    search: db ? itemSearchText(db, item) : undefined,
+    search: searchTextFor(db, item),
     group,
   });
   const items = visibleItems.value;
@@ -303,8 +325,8 @@ const matchMap = computed(() => {
       flagged: boolean;
     }
   >();
-  // Nothing in the template reads it while `hidePreview` is set, so skip the formatting work.
-  if (props.hidePreview) return map;
+  // Nothing in the template reads it while previews are off, so skip the formatting work.
+  if (previewsHidden.value) return map;
   for (const item of visibleItems.value) {
     const bonusStats = candidateStats.value?.get(item.id) ?? null;
     const bonusPreview = bonusStatPreview(bonusStats?.current);
@@ -319,9 +341,11 @@ const matchMap = computed(() => {
       preview: itemPreview(item, 4, factor),
       bonusPreview,
       // "Potentially" is only worth showing when it says something "current" doesn't already.
-      potentialPreview: sameParts(bonusPreview, potentialPreview)
-        ? EMPTY_PREVIEW
-        : potentialPreview,
+      potentialPreview:
+        !pickerLens.showPotential.value ||
+        sameParts(bonusPreview, potentialPreview)
+          ? EMPTY_PREVIEW
+          : potentialPreview,
       flagged: hasBonuses(item),
     });
   }
@@ -361,9 +385,10 @@ defineExpose({
     :title-input="false"
     :readonly="readonly"
     :max-rows="maxRows"
-    :menu-class="hidePreview ? 'inset-x-0' : 'left-0 w-[min(32rem,90vw)]'"
+    :menu-class="previewsHidden ? 'inset-x-0' : 'left-0 w-[min(32rem,90vw)]'"
     @update:model-value="model = $event"
     @update:open="isOpen = $event"
+    @update:query="query = $event"
   >
     <template #option="{ option }">
       <div class="flex items-baseline gap-1.5" :class="option.group && 'pl-3'">
@@ -380,7 +405,7 @@ defineExpose({
           >
         </span>
         <!-- Why this row is here at all when it would normally be withheld. Outside the
-             `hidePreview` block below: which candidates are legal is not a presentation
+             `previewsHidden` block below: which candidates are legal is not a presentation
              question. -->
         <span
           v-if="withheld.get(option.value)"
@@ -389,7 +414,7 @@ defineExpose({
           >{{ withheld.get(option.value) }}</span
         >
         <!-- Both markers describe the item as gear, so they go with the preview lines. -->
-        <template v-if="!hidePreview">
+        <template v-if="!previewsHidden">
           <!-- Stays a native `title`: this marker lives inside an already-open dropdown, and
                a BaseTooltip here would be a second floating layer stacked over the first. -->
           <span
@@ -405,7 +430,7 @@ defineExpose({
           >
         </template>
       </div>
-      <template v-if="!hidePreview && matchMap.has(option.value)">
+      <template v-if="!previewsHidden && matchMap.has(option.value)">
         <!-- Indented under the name, so the row reads as "item, then what it's worth". -->
         <div
           class="flex flex-col gap-0.5"

@@ -143,7 +143,6 @@ async function onImportFile(event: Event) {
       :db="engine.db.value"
       :build="builds.build.value"
       :group="stableBrowser.group.value"
-      :focus="stableBrowser.focus.value"
       @close="stableBrowser.close()"
       @apply="applyStableMount"
     />

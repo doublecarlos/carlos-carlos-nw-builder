@@ -509,7 +509,7 @@ const {
 </script>
 
 <template>
-  <BasePanel ref="root" flush>
+  <BasePanel ref="root">
     <div
       v-if="errorList.length"
       class="mb-2.5 rounded-md bg-danger-soft px-2.5 py-1.5 text-danger"

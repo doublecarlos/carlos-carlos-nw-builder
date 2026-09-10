@@ -107,10 +107,19 @@ function buildWith(choices: Record<string, string> = {}): Build {
   } as unknown as Build;
 }
 
-const idsIn = (slotId: string, build: Build, includeHidden = false) =>
-  db.forSlotAndBuild(testDb, slotId, build, { includeHidden }).map((i) => i.id);
+/** Ids the slot offers. `includeHidden` reads the withheld ones back, the way the picker does
+ *  once "show unavailable" is on. */
+const idsIn = (slotId: string, build: Build, includeHidden = false) => {
+  const { items, reasons } = db.slotCandidateList(testDb, slotId, build);
+  return items
+    .filter((item) => includeHidden || !reasons.has(item.id))
+    .map((item) => item.id);
+};
 
-describe("forSlotAndBuild's includeHidden lens", () => {
+const reasonsIn = (slotId: string, build: Build) =>
+  db.slotCandidateList(testDb, slotId, build).reasons;
+
+describe("which candidates a slot withholds", () => {
   it("re-admits a retired candidate", () => {
     const build = buildWith();
     expect(idsIn("ring1", build)).not.toContain("retired");
@@ -142,16 +151,37 @@ describe("forSlotAndBuild's includeHidden lens", () => {
   });
 });
 
+// One pass over the candidates for both halves, which is what lets the picker hold the whole
+// list and decide for itself which of it to draw.
+describe("slotCandidateList", () => {
+  it("lists every candidate, withheld ones included, with a reason for each", () => {
+    const { items, reasons } = db.slotCandidateList(
+      testDb,
+      "ring1",
+      buildWith(),
+    );
+    const ids = items.map((item) => item.id);
+    expect(ids).toContain("plain");
+    expect(ids).toContain("retired");
+    expect(reasons.get("retired")).toBe("retired");
+    expect(reasons.has("plain")).toBe(false);
+  });
+
+  it("leaves forSlotAndBuild offering only what is not withheld", () => {
+    const build = buildWith({ "options.class": "class-cleric" });
+    expect(db.forSlotAndBuild(testDb, "ring1", build).map((i) => i.id)).toEqual(
+      idsIn("ring1", build),
+    );
+  });
+});
+
 describe("the reason a re-shown candidate carries", () => {
   it("names retirement", () => {
-    expect(db.hiddenReasons(testDb, "ring1", buildWith()).get("retired")).toBe(
-      "retired",
-    );
+    expect(reasonsIn("ring1", buildWith()).get("retired")).toBe("retired");
   });
 
   it("names the class by its display name, not the published id", () => {
-    const reasons = db.hiddenReasons(
-      testDb,
+    const reasons = reasonsIn(
       "ring1",
       buildWith({ "options.class": "class-cleric" }),
     );
@@ -159,17 +189,12 @@ describe("the reason a re-shown candidate carries", () => {
   });
 
   it("names the copies already spent and the cap", () => {
-    const reasons = db.hiddenReasons(
-      testDb,
-      "ring2",
-      buildWith({ ring1: "capped" }),
-    );
+    const reasons = reasonsIn("ring2", buildWith({ ring1: "capped" }));
     expect(reasons.get("capped")).toBe("1/1 copies");
   });
 
   it("says nothing about a candidate the picker offers anyway", () => {
-    const reasons = db.hiddenReasons(
-      testDb,
+    const reasons = reasonsIn(
       "ring1",
       buildWith({ "options.class": "class-wizard" }),
     );
@@ -179,10 +204,8 @@ describe("the reason a re-shown candidate carries", () => {
 
   it("leaves the slot's own equipped pick unlabelled, so clearing it is not a one-way door", () => {
     const build = buildWith({ ring1: "retired" });
-    expect(db.hiddenReasons(testDb, "ring1", build).has("retired")).toBe(false);
-    expect(db.hiddenReasons(testDb, "ring2", build).get("retired")).toBe(
-      "retired",
-    );
+    expect(reasonsIn("ring1", build).has("retired")).toBe(false);
+    expect(reasonsIn("ring2", build).get("retired")).toBe("retired");
   });
 
   it("reports one reason per candidate, retirement first", () => {
@@ -202,7 +225,7 @@ describe("the reason a re-shown candidate carries", () => {
       NW_SCHEMA,
       slotsData,
     );
-    const reasons = db.hiddenReasons(
+    const { reasons } = db.slotCandidateList(
       both,
       "ring1",
       buildWith({ "options.class": "class-cleric" }),

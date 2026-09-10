@@ -134,7 +134,7 @@ test.describe("BonusOccurrenceConfig rows", () => {
     await expect(card).toBeHidden();
 
     await page.getByRole("button", { name: /^Bonuses/ }).click();
-    const sidebar = page.locator("aside.sidebar");
+    const sidebar = page.getByTestId("details-sidebar");
     await sidebar
       .getByPlaceholder("Filter by bonus, id or item…")
       .fill("Test Stepper Bonus");

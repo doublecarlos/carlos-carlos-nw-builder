@@ -63,9 +63,15 @@ const testDb = db.build(
   slotsData,
 );
 
-/** How ComboBox actually uses the two together, so these read as real queries. */
-const finds = (item: Item, query: string) =>
-  matchesQuery([item.name, itemSearchText(testDb, item)], query);
+/** How ComboBox uses them together, with every bucket on (the menu's default). */
+const finds = (item: Item, query: string) => {
+  const text = itemSearchText(testDb, item);
+  return matchesQuery([item.name, text.stat, text.bonus], query);
+};
+
+/** One bucket at a time, the way an unticked picker option leaves it. */
+const findsIn = (item: Item, bucket: "stat" | "bonus", query: string) =>
+  matchesQuery([itemSearchText(testDb, item)[bucket]], query);
 
 describe("itemSearchText", () => {
   it("matches an item by a stat it carries, by label and by raw key", () => {
@@ -101,9 +107,24 @@ describe("itemSearchText", () => {
     expect(finds(ringWithSet, "nights band")).toBe(true);
   });
 
-  it("returns the same text on repeat calls (memoized per catalogue)", () => {
+  it("returns the same object on repeat calls (memoized per catalogue)", () => {
     expect(itemSearchText(testDb, ringWithSet)).toBe(
       itemSearchText(testDb, ringWithSet),
     );
+  });
+
+  // The picker options menu turns the two off independently, so a term must not leak from the
+  // bucket its option names into the other one.
+  it("keeps stat terms and bonus names in separate buckets", () => {
+    expect(findsIn(ringWithSet, "bonus", "tyrant")).toBe(true);
+    expect(findsIn(ringWithSet, "stat", "tyrant")).toBe(false);
+    expect(findsIn(ringWithSet, "stat", "power")).toBe(true);
+    expect(findsIn(ringWithSet, "bonus", "power")).toBe(false);
+  });
+
+  // A bonus's payload is still a stat, whichever side of the item/bonus line it sits on.
+  it("files a bonus tier's stats under stat, not bonus", () => {
+    expect(findsIn(ringWithSet, "stat", "crit_avoid")).toBe(true);
+    expect(findsIn(ringWithSet, "bonus", "crit_avoid")).toBe(false);
   });
 });

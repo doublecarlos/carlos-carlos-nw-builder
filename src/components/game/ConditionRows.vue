@@ -536,6 +536,7 @@ function changeParamKey(row: ConditionRow, key: string) {
             v-model:below="row.below"
             v-model:exactly="row.exactly"
             v-model:range-mode="row.rangeMode"
+            allow-at-least-one
           />
         </template>
         <template v-else-if="row.type === 'equipped'">
@@ -554,6 +555,7 @@ function changeParamKey(row: ConditionRow, key: string) {
             v-model:below="row.below"
             v-model:exactly="row.exactly"
             v-model:range-mode="row.rangeMode"
+            allow-at-least-one
           />
         </template>
         <template v-else-if="row.type === 'param'">

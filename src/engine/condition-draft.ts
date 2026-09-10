@@ -45,7 +45,9 @@ export interface ConditionRow {
    *  one is live is picked by `rangeMode`, not by which field happens to be non-null (so
    *  switching modes in the UI doesn't have to guess at intent from stale values). */
   exactly?: string | number | null;
-  rangeMode?: "range" | "exact";
+  /** `atLeastOne` writes no range at all, which conditions.ts reads as "at least one". Count
+   *  leaves only: the others treat an empty spec as unconstrained. */
+  rangeMode?: "range" | "exact" | "atLeastOne";
   bonus?: string;
   tag?: string;
   item?: string;
@@ -72,6 +74,31 @@ const numberOrUndefined = (
   value != null && value !== "" ? Number(value) : undefined;
 
 // --- leaf <-> row --------------------------------------------------------------------
+
+/** An unbounded spec round-trips as `atLeastOne`, not as a range pre-filled with 1, so saving
+ *  it back leaves the data in the shape it arrived in. */
+function countFields(spec: RangeSpec | undefined) {
+  if (spec?.exactly != null)
+    return {
+      atLeast: null,
+      below: null,
+      exactly: spec.exactly,
+      rangeMode: "exact" as const,
+    };
+  if (spec?.atLeast == null && spec?.below == null)
+    return {
+      atLeast: null,
+      below: null,
+      exactly: null,
+      rangeMode: "atLeastOne" as const,
+    };
+  return {
+    atLeast: spec.atLeast ?? null,
+    below: spec.below ?? null,
+    exactly: null,
+    rangeMode: "range" as const,
+  };
+}
 
 /** Dynamically shaped per `type` -- spec is the raw value from the `when` object.
  * Returns only the leaf-specific fields (uid/kind are added by the caller). */
@@ -103,27 +130,19 @@ function leafFromSpec(
   }
   if (type === "bonusOccurrences") {
     const s = spec as (RangeSpec & { bonus?: string }) | undefined;
-    const exact = s?.exactly != null;
     return {
       type,
       bonus: s?.bonus ?? "",
-      atLeast: exact ? null : (s?.atLeast ?? 1),
-      below: exact ? null : (s?.below ?? null),
-      exactly: s?.exactly ?? null,
-      rangeMode: exact ? "exact" : "range",
+      ...countFields(s),
     };
   }
   if (type === "equipped") {
     const s = spec as (RangeSpec & { tag?: string; item?: string }) | undefined;
-    const exact = s?.exactly != null;
     return {
       type,
       tag: s?.tag ?? "",
       item: s?.item ?? "",
-      atLeast: exact ? null : (s?.atLeast ?? 1),
-      below: exact ? null : (s?.below ?? null),
-      exactly: s?.exactly ?? null,
-      rangeMode: exact ? "exact" : "range",
+      ...countFields(s),
     };
   }
   if (type === "param") {
@@ -165,6 +184,22 @@ function leafFromSpec(
   };
 }
 
+/** Mirrors `countFields`. Since `atLeastOne` legitimately writes nothing, a mode still waiting
+ *  for its number returns `undefined` instead, which is what `whenRowsComplete` reads. */
+function countSpec(row: ConditionRow): RangeSpec | undefined {
+  if (row.rangeMode === "atLeastOne") return {};
+  if (row.rangeMode === "exact") {
+    const exactly = numberOrUndefined(row.exactly);
+    return exactly !== undefined ? { exactly } : undefined;
+  }
+  const range: RangeSpec = {};
+  const atLeast = numberOrUndefined(row.atLeast);
+  const below = numberOrUndefined(row.below);
+  if (atLeast !== undefined) range.atLeast = atLeast;
+  if (below !== undefined) range.below = below;
+  return Object.keys(range).length ? range : undefined;
+}
+
 /** Converts a draft row back into a `when`-object value for that leaf key. */
 function leafToSpec(
   row: ConditionRow,
@@ -188,16 +223,8 @@ function leafToSpec(
   }
   if (row.type === "bonusOccurrences") {
     if (!row.bonus) return undefined;
-    if (row.rangeMode === "exact") {
-      const exactly = numberOrUndefined(row.exactly);
-      return exactly !== undefined ? { bonus: row.bonus, exactly } : undefined;
-    }
-    const range: RangeSpec & { bonus: string } = {
-      bonus: row.bonus,
-      atLeast: Number(row.atLeast) || 1,
-    };
-    if (row.below != null && row.below !== "") range.below = Number(row.below);
-    return range;
+    const range = countSpec(row);
+    return range && { bonus: row.bonus, ...range };
   }
   if (row.type === "equipped") {
     const target = row.tag
@@ -206,13 +233,8 @@ function leafToSpec(
         ? { item: row.item }
         : null;
     if (!target) return undefined;
-    if (row.rangeMode === "exact") {
-      const exactly = numberOrUndefined(row.exactly);
-      return exactly !== undefined ? { ...target, exactly } : undefined;
-    }
-    const range: RangeSpec = { atLeast: Number(row.atLeast) || 1 };
-    if (row.below != null && row.below !== "") range.below = Number(row.below);
-    return { ...target, ...range };
+    const range = countSpec(row);
+    return range && { ...target, ...range };
   }
   if (row.type === "param") {
     if (!row.key) return undefined;

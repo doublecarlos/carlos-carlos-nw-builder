@@ -16,18 +16,17 @@ import TextRow from "./game/TextRow.vue";
 import BaseButton from "./ui/BaseButton.vue";
 import BaseInput from "./ui/BaseInput.vue";
 import BaseBadge from "./ui/BaseBadge.vue";
-import IconButton from "./ui/IconButton.vue";
 import ComboBox from "./ui/ComboBox.vue";
+import CheckMenu from "./ui/CheckMenu.vue";
 import QuickOptions from "./game/QuickOptions.vue";
 import {
   ChevronsDownUp,
   ChevronsUpDown,
-  Eye,
-  EyeOff,
+  SlidersHorizontal,
   FilterX,
 } from "@lucide/vue";
 import { NW_SLOTS } from "../data/data";
-import { forSlotAndBuild, hiddenReasons } from "../data/db";
+import { slotCandidateList } from "../data/db";
 import { statPickerOptions } from "../lib/format";
 import { matchesQuery } from "../lib/text-filter";
 import { slotStablePlaceholder, slotStatSummary } from "../lib/slot-summary";
@@ -119,10 +118,12 @@ const filterText = slotFilter.text;
 const filterStat = slotFilter.stat;
 const filterActive = slotFilter.isActive;
 
-const lensTitle = computed(() =>
-  pickerLens.showHidden.value
-    ? "Hide unavailable items"
-    : "Show unavailable items",
+const pickerOptionItems = computed(() =>
+  pickerLens.OPTIONS.map((option) => ({
+    key: option.key,
+    label: option.label,
+    checked: option.value.value,
+  })),
 );
 
 const statFilterOptions = [
@@ -453,21 +454,13 @@ const bonusesBySlot = computed(() => {
   return map;
 });
 
+// Withheld candidates come back too: the picker decides which to draw, so it needs both lists.
+//
 // An unset class/race constrains nothing: with both fields defaulting to empty, a fresh build
 // would otherwise hide every restricted item with no explanation. Equipping one still flags
 // the `requires X` error once a class/race is (not) chosen.
-function itemsFor(slotId: string) {
-  return forSlotAndBuild(db.value, slotId, build.value, {
-    includeHidden: pickerLens.showHidden.value,
-  });
-}
-
-/** Only computed while the lens is on: with it off nothing is re-shown, so nothing needs a
- *  reason and the second pass over the candidates is pure cost. */
-function hiddenReasonsFor(slotId: string) {
-  return pickerLens.showHidden.value
-    ? hiddenReasons(db.value, slotId, build.value)
-    : null;
+function candidatesFor(slotId: string) {
+  return slotCandidateList(db.value, slotId, build.value);
 }
 
 function errorsFor(slotId: string) {
@@ -517,7 +510,7 @@ function stablePlaceholder(slotId: string): string | undefined {
 }
 
 /** Everything a BuildSlot row needs, gathered once per slot instead of ~9 calls per render
- *  (`itemsFor` and `statSummary` aren't cheap). Scoped to *expanded* sections only, matching
+ *  (`candidatesFor` and `statSummary` aren't cheap). Scoped to *expanded* sections only, matching
  *  BuildSection.vue's own `v-if="expanded"`, so a collapsed section's rows stay uncomputed. */
 interface SlotRowData {
   item: Item | null;
@@ -552,10 +545,11 @@ const rowDataBySlot = computed(() => {
         slotDef.type === "item_picker_list"
       )
         continue;
+      const candidates = candidatesFor(slotDef.id);
       map.set(slotDef.id, {
         item: itemIn(slotDef.id),
-        items: itemsFor(slotDef.id),
-        hiddenReasons: hiddenReasonsFor(slotDef.id),
+        items: candidates.items,
+        hiddenReasons: candidates.reasons,
         errors: errorsFor(slotDef.id),
         statSummary: statSummary(slotDef.id),
         placeholder: stablePlaceholder(slotDef.id),
@@ -918,20 +912,17 @@ watch(
             filteredSlotCount === 1 ? "" : "es"
           }}</BaseBadge
         >
-        <!-- Last and pushed to the far edge: a lens, not a filter -- it widens what the
-             pickers offer rather than narrowing the slot list the rest of this bar acts on,
-             and "clear filters" leaves it alone. -->
-        <IconButton
+        <!-- Lenses, not filters: "clear filters" leaves them alone. -->
+        <CheckMenu
           class="ml-auto"
-          :class="pickerLens.showHidden.value && 'bg-accent-soft text-accent'"
-          :title="lensTitle"
-          :aria-pressed="pickerLens.showHidden.value"
-          data-testid="show-hidden-toggle"
-          @click="pickerLens.toggle()"
+          label="Picker options"
+          title="What the item pickers search, and what each row shows"
+          testid="picker-options"
+          :items="pickerOptionItems"
+          @toggle="pickerLens.toggle"
         >
-          <Eye v-if="pickerLens.showHidden.value" />
-          <EyeOff v-else />
-        </IconButton>
+          <template #icon><SlidersHorizontal /></template>
+        </CheckMenu>
       </div>
     </div>
 

@@ -180,7 +180,7 @@ const counts = computed(() => {
 </script>
 
 <template>
-  <BasePanel flush>
+  <BasePanel>
     <div class="sticky top-0 z-sticky bg-surface pb-0.5">
       <BaseInput
         v-model="query"
