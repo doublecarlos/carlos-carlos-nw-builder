@@ -2,42 +2,54 @@
 // Token / chip input: committed values become badges, with autocomplete over known options and
 // free text allowed for values that do not exist yet.
 //
-// Used for an item's bonus membership, where both halves matter: you usually want to attach an
-// existing bonus (so autocomplete), but creating a brand-new bonus id by typing it is a normal
-// thing to do (so free text). `allowFree` turns the second half off for the closed
-// vocabularies -- a condition's toggle/role/class/damage-type values -- that autocomplete
-// alone covers.
+// Used for an item's tags, where both halves matter: you usually want an existing tag (so
+// autocomplete), but coining a new one by typing it is a normal thing to do (so free text).
+// `allowFree` turns the second half off for closed vocabularies (a condition's
+// toggle/role/class/damage-type values, a bonus's `excludes`).
 //
-// The suggestion menu is anchored (`inset-x-0`), not teleported through BasePopover: base.css's
-// exception, since it matches the input's own width.
-import { computed, useTemplateRef } from "vue";
+// Options are ComboBox's `{ value, label, search }` and the menu is ComboBox's own shell and
+// rows, so a chip picker and a single-value picker over one vocabulary list, match, rank and
+// read alike, and a richer row goes into the same `#option` slot on either. Unlike ComboBox,
+// the value is matched too: a token is committed by value, so typing one exactly has to find
+// its row rather than offer it as "new".
+import { computed, useId, useTemplateRef, watch } from "vue";
 import { onKeyStroke } from "@vueuse/core";
-import { matchesQuery } from "../../lib/text-filter";
+import { filterAndRank } from "../../lib/text-filter";
 import { useMenuNavigation } from "../../composables/useMenuNavigation";
+import ComboBoxMenu from "./ComboBoxMenu.vue";
+import ComboBoxMenuRow from "./ComboBoxMenuRow.vue";
+import type { ComboBoxOption } from "./ComboBox.vue";
 
 const MAX_SUGGESTIONS = 40;
 
 const props = withDefaults(
   defineProps<{
-    options?: string[];
-    /** Display text per option value, for vocabularies whose stored value is not what a
-     *  reader recognises (a role's `dps` against its "DPS" label). Values without an entry
-     *  show as themselves. */
-    labels?: Record<string, string>;
+    options?: ComboBoxOption[];
     placeholder?: string;
     allowFree?: boolean;
   }>(),
   {
     options: () => [],
-    labels: () => ({}),
     placeholder: "Type to search…",
     allowFree: true,
   },
 );
 
-const labelFor = (value: string) => props.labels[value] ?? value;
+defineSlots<{
+  /** A row's content. Defaults to the option's label; the "new" badge on a free entry is
+   *  drawn outside the slot either way. */
+  option?(props: { option: ComboBoxOption }): unknown;
+}>();
 
 const model = defineModel<string[]>({ default: () => [] });
+
+const optionByValue = computed(
+  () => new Map(props.options.map((option) => [option.value, option])),
+);
+
+/** A committed value reads by its option's label; a free value is its own label. */
+const labelFor = (value: string) =>
+  optionByValue.value.get(value)?.label ?? value;
 
 const input = useTemplateRef("input");
 const menu = useTemplateRef("menu");
@@ -45,38 +57,49 @@ const menu = useTemplateRef("menu");
 const { open, query, highlight } = useMenuNavigation({
   target: input,
   entryCount: () => entries.value.length,
-  onHighlightChange: () =>
-    menu.value
-      ?.querySelector("[data-highlighted]")
-      ?.scrollIntoView({ block: "nearest" }),
+  onHighlightChange: () => menu.value?.scrollToHighlighted(),
 });
 
 const suggestions = computed(() => {
   if (!open.value) return [];
   const chosen = new Set(model.value);
-  return props.options
-    .filter(
-      (option) =>
-        !chosen.has(option) &&
-        matchesQuery([option, labelFor(option)], query.value),
-    )
-    .slice(0, MAX_SUGGESTIONS);
+  return filterAndRank(
+    props.options.filter((option) => !chosen.has(option.value)),
+    query.value,
+    (option) => [option.value, option.label, option.search ?? ""],
+    (option) => option.value,
+  ).slice(0, MAX_SUGGESTIONS);
 });
 
-/** Offering to create the typed value, when it is genuinely new. */
+/** The typed text offered as its own entry, when it is genuinely new. */
 const freeValue = computed(() => {
   const value = query.value.trim();
   if (!props.allowFree || !value) return "";
   if (model.value.includes(value)) return "";
-  return props.options.includes(value) ? "" : value;
+  return optionByValue.value.has(value) ? "" : value;
 });
 
-const entries = computed(() =>
-  freeValue.value ? [freeValue.value, ...suggestions.value] : suggestions.value,
+const entries = computed<ComboBoxOption[]>(() =>
+  freeValue.value
+    ? [{ value: freeValue.value, label: freeValue.value }, ...suggestions.value]
+    : suggestions.value,
 );
 
+// Same accessible-combobox wiring as ComboBox.vue: focus stays on the input while `highlight`
+// moves, so the active row is named by `aria-activedescendant` rather than focused.
+const listboxId = useId();
+const optionId = (index: number) => `${listboxId}-option-${index}`;
+const menuOpen = computed(() => open.value && entries.value.length > 0);
+const activeDescendant = computed(() =>
+  menuOpen.value ? optionId(highlight.value) : undefined,
+);
+
+watch(entries, () => {
+  highlight.value = 0;
+});
+
 function add(value: string) {
-  const token = String(value ?? "").trim();
+  const token = value.trim();
   if (!token || model.value.includes(token)) return;
   model.value = [...model.value, token];
   query.value = "";
@@ -90,8 +113,6 @@ function removeAt(index: number) {
 }
 
 // --- keyboard handling via onKeyStroke (scoped to the input ref) --------------------
-// Each key group is handled declaratively with string/array key names instead of
-// manual event.key checks.
 
 onKeyStroke(
   "Backspace",
@@ -112,7 +133,7 @@ onKeyStroke(
     if (event.key === "Tab" && !query.value && !picked) return;
     if (picked || query.value.trim()) {
       event.preventDefault();
-      add(picked ?? query.value);
+      add(picked?.value ?? query.value);
     }
   },
   { target: input },
@@ -155,6 +176,11 @@ function onPaste(event: ClipboardEvent) {
       data-testid="token-query"
       class="min-w-20 flex-1 border-0 bg-transparent px-0.5 py-0.5 outline-none"
       type="text"
+      role="combobox"
+      aria-autocomplete="list"
+      :aria-expanded="menuOpen ? 'true' : 'false'"
+      :aria-controls="menuOpen ? listboxId : undefined"
+      :aria-activedescendant="activeDescendant"
       autocomplete="off"
       spellcheck="false"
       :placeholder="model.length ? '' : placeholder"
@@ -166,28 +192,32 @@ function onPaste(event: ClipboardEvent) {
       @paste="onPaste"
     />
 
-    <div
-      v-if="open && entries.length"
-      ref="menu"
-      class="absolute inset-x-0 top-full z-menu mt-0.5 max-h-56 overflow-y-auto rounded-md border border-line bg-surface shadow-lg"
-    >
-      <div
+    <ComboBoxMenu v-if="menuOpen" ref="menu" :listbox-id="listboxId">
+      <ComboBoxMenuRow
         v-for="(entry, index) in entries"
-        :key="entry"
-        data-testid="token-option"
-        class="flex cursor-pointer gap-2 px-2 py-1"
-        :class="index === highlight && 'bg-accent-soft'"
-        :data-highlighted="index === highlight || undefined"
-        @mousedown.prevent="add(entry)"
+        :id="optionId(index)"
+        :key="entry.value"
+        :highlighted="index === highlight"
+        @mousedown.prevent="add(entry.value)"
         @mouseenter="highlight = index"
       >
-        <span>{{ labelFor(entry) }}</span>
-        <span
-          v-if="entry === freeValue"
-          class="ml-auto rounded bg-ok/25 px-1.5 text-ok"
-          >new</span
-        >
-      </div>
-    </div>
+        <span class="flex items-center gap-2">
+          <span class="min-w-0 flex-1">
+            <slot name="option" :option="entry">
+              <span
+                class="block overflow-hidden text-ellipsis whitespace-nowrap"
+              >
+                {{ entry.label }}
+              </span>
+            </slot>
+          </span>
+          <span
+            v-if="entry.value === freeValue"
+            class="ml-auto rounded bg-ok/25 px-1.5 text-ok"
+            >new</span
+          >
+        </span>
+      </ComboBoxMenuRow>
+    </ComboBoxMenu>
   </div>
 </template>

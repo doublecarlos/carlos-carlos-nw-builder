@@ -8,6 +8,7 @@
 // and free of cycles.
 
 import type {
+  BonusOccurrenceSpec,
   ConditionWhen,
   RangeLike,
   RangeSpec,
@@ -137,9 +138,11 @@ const LEAVES: Record<
   },
 
   bonusOccurrences(spec, ctx) {
-    const s = spec as RangeSpec & { bonus: string };
-    const have = countOf(ctx.bonusOccurrences, s.bonus);
-    const displayName = ctx.bonusNames?.get(s.bonus) ?? s.bonus;
+    const s = spec as BonusOccurrenceSpec;
+    const target = s.bonus ?? ctx.self;
+    const have = countOf(ctx.bonusOccurrences, target);
+    const displayName =
+      (target && ctx.bonusNames?.get(target)) ?? target ?? "this bonus";
     const wanted = s.exactly ?? s.atLeast ?? 1;
     return {
       ok: inRange(have, countRange(s)),

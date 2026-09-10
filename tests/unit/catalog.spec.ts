@@ -921,6 +921,79 @@ describe("catalog.validate: point_assignment-referenced items", () => {
   });
 });
 
+describe("catalog.validate: bonusOccurrences targets", () => {
+  const findingsFor = (bonuses: Bonus[]) =>
+    catalog.validate([], bonuses).filter((f) => f.kind === "bonus");
+
+  it("an omitted bonus and a reference to another bonus pass clean", () => {
+    const findings = findingsFor([
+      { id: "other", grants: [] },
+      {
+        id: "self",
+        grants: [
+          {
+            when: {
+              bonusOccurrences: {},
+              any: [{ bonusOccurrences: { bonus: "other" } }],
+            },
+            tiers: [{ bonusOccurrences: { atLeast: 2 }, stats: {} }],
+          },
+        ],
+      },
+    ]);
+    expect(findings).toEqual([]);
+  });
+
+  it("naming the owning bonus explicitly is a warning, wherever the leaf sits", () => {
+    const findings = findingsFor([
+      {
+        id: "self",
+        grants: [
+          { when: { not: { bonusOccurrences: { bonus: "self" } } }, stats: {} },
+          {
+            variants: [
+              { when: { bonusOccurrences: { bonus: "self" } }, stats: {} },
+            ],
+          },
+          {
+            tiers: [
+              { bonusOccurrences: { bonus: "self", atLeast: 1 }, stats: {} },
+            ],
+          },
+        ],
+      },
+    ]);
+    expect(findings.map((f) => [f.level, f.message])).toEqual([
+      [
+        "warn",
+        'grant 1: bonusOccurrences names this bonus itself - omit "bonus"',
+      ],
+      [
+        "warn",
+        'grant 2: bonusOccurrences names this bonus itself - omit "bonus"',
+      ],
+      [
+        "warn",
+        'grant 3: bonusOccurrences names this bonus itself - omit "bonus"',
+      ],
+    ]);
+  });
+
+  it("naming a bonus the catalogue lacks is an error", () => {
+    const findings = findingsFor([
+      {
+        id: "self",
+        grants: [
+          { when: { bonusOccurrences: { bonus: "no-such" } }, stats: {} },
+        ],
+      },
+    ]);
+    expect(findings).toHaveLength(1);
+    expect(findings[0].level).toBe("error");
+    expect(findings[0].message).toMatch(/"no-such".*not a bonus/);
+  });
+});
+
 describe("catalog.validate: BonusOccurrenceConfig attachments", () => {
   it("a well-formed occurrence config attached to a real bonus passes clean", () => {
     const items: Item[] = [
@@ -1474,16 +1547,9 @@ describe("catalog.referencedOverlay", () => {
     expect(overlay.items[BASE_ITEM_ID]).toBeUndefined();
   });
 
-  it("includes bonuses reachable through excludes", () => {
+  it("includes bonuses reachable through a bonus's excludes", () => {
     const db = testDb(
-      [
-        baseItem,
-        {
-          ...layerItem,
-          bonuses: ["chained-bonus"],
-          excludes: ["excluded-bonus"],
-        },
-      ],
+      [baseItem, { ...layerItem, bonuses: ["chained-bonus"] }],
       [layerBonus, chainedBonus, excludedBonus],
     );
     const build: Build = {
@@ -1498,8 +1564,7 @@ describe("catalog.referencedOverlay", () => {
       context: {} as Build["context"],
       compare: { id: "", highlight: false, onlyDiff: false, statLines: false },
     };
-    // The item has bonuses: ["chained-bonus"] and excludes: ["excluded-bonus"]
-    // chained-bonus also excludes excluded-bonus (transitive)
+    // The item carries chained-bonus, which excludes excluded-bonus.
     const overlay = catalog.referencedOverlay(db, build);
     expect(overlay.items["layer-item"]).toBeDefined();
     expect(overlay.bonuses["chained-bonus"]).toBeDefined();

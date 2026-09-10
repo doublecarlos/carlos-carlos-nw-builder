@@ -6,7 +6,7 @@
 // groups, exactly mirroring what conditions.ts's `walk()` does with an object's keys. A group's
 // branches are each their own rows list, so nesting is just ConditionRows containing itself.
 
-import type { ConditionWhen, RangeSpec } from "../types";
+import type { BonusOccurrenceSpec, ConditionWhen, RangeSpec } from "../types";
 
 // Every leaf conditions.ts understands. `all`/`any`/`not` are handled structurally, not
 // as leaves -- see below.
@@ -48,6 +48,7 @@ export interface ConditionRow {
   /** `atLeastOne` writes no range at all, which conditions.ts reads as "at least one". Count
    *  leaves only: the others treat an empty spec as unconstrained. */
   rangeMode?: "range" | "exact" | "atLeastOne";
+  /** Empty means the bonus the condition sits in (`BonusOccurrenceSpec`). */
   bonus?: string;
   tag?: string;
   item?: string;
@@ -129,7 +130,7 @@ function leafFromSpec(
     };
   }
   if (type === "bonusOccurrences") {
-    const s = spec as (RangeSpec & { bonus?: string }) | undefined;
+    const s = spec as BonusOccurrenceSpec | undefined;
     return {
       type,
       bonus: s?.bonus ?? "",
@@ -222,9 +223,8 @@ function leafToSpec(
     return Object.keys(range).length ? range : undefined;
   }
   if (row.type === "bonusOccurrences") {
-    if (!row.bonus) return undefined;
     const range = countSpec(row);
-    return range && { bonus: row.bonus, ...range };
+    return range && (row.bonus ? { bonus: row.bonus, ...range } : range);
   }
   if (row.type === "equipped") {
     const target = row.tag

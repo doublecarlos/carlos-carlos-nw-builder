@@ -10,14 +10,12 @@ import { newLeafRow, newGroupRow } from "../../../src/engine/condition-draft";
 /** One-grant store, payload pre-switched when requested, change count tracked. */
 function makeStore(
   payload: "flat" | "tiers" | "variants" | "problem" = "flat",
-  bonusIds: string[] = [],
 ) {
   const grants = [bonusDraft.toDraft({ when: {}, stats: {} })];
   let changes = 0;
   const store = new BonusDraftStore(
     () => grants,
     () => changes++,
-    bonusIds,
   );
   const gs = store.grantStore(0)!;
   if (payload !== "flat") gs.setPayload(payload);
@@ -55,7 +53,7 @@ describe("GrantStore stat mutations", () => {
   });
 
   it("addTierStat targets the selected tier, not grant.stats", () => {
-    const { gs } = makeStore("tiers", ["bonus-a"]);
+    const { gs } = makeStore("tiers");
     expect(gs.grant.tiers).toHaveLength(1); // auto-created by setPayload
     gs.addTierStat(0);
     expect(gs.grant.tiers[0].stats).toEqual([{ key: "", value: 0 }]);
@@ -63,7 +61,7 @@ describe("GrantStore stat mutations", () => {
   });
 
   it("removeTierStat removes the right row from the selected tier", () => {
-    const { gs } = makeStore("tiers", ["bonus-a"]);
+    const { gs } = makeStore("tiers");
     gs.addTierStat(0);
     gs.addTierStat(0);
     gs.removeTierStat(0, 0);
@@ -71,7 +69,7 @@ describe("GrantStore stat mutations", () => {
   });
 
   it("addTierStat on a missing tier is a no-op (no onChange)", () => {
-    const { gs, changes } = makeStore("tiers", ["bonus-a"]);
+    const { gs, changes } = makeStore("tiers");
     const before = changes();
     gs.addTierStat(5);
     expect(changes()).toBe(before);
@@ -169,7 +167,7 @@ describe("BonusDraftStore.moveGrantTo", () => {
 
 describe("GrantStore.moveTierTo / moveVariantTo", () => {
   it("moveTierTo drops a tier at an arbitrary index", () => {
-    const { gs } = makeStore("tiers", ["a"]);
+    const { gs } = makeStore("tiers");
     gs.addTier();
     gs.addTier();
     gs.addTier();
@@ -395,10 +393,18 @@ describe("BonusDraftStore.moveBranch", () => {
   });
 });
 
-describe("BonusDraftStore bonusIds wiring", () => {
-  it("setPayload('tiers') seeds the auto-created tier with the first bonus id", () => {
-    const { gs } = makeStore("tiers", ["bonus-a", "bonus-b"]);
-    expect(gs.grant.tiers[0].bonus).toBe("bonus-a");
+describe("BonusDraftStore tier seeding", () => {
+  it("setPayload('tiers') seeds the auto-created tier on the owning bonus", () => {
+    const { gs } = makeStore("tiers");
+    expect(gs.grant.tiers[0].bonus).toBe("");
+  });
+
+  it("addTier inherits an explicit bonus from the tier above", () => {
+    const { gs } = makeStore("tiers");
+    gs.grant.tiers[0].bonus = "other-bonus";
+    gs.addTier();
+    expect(gs.grant.tiers[1].bonus).toBe("other-bonus");
+    expect(gs.grant.tiers[1].atLeast).toBe(2);
   });
 });
 

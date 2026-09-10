@@ -32,7 +32,7 @@ async function setLeafType(row: Locator, type: string) {
 async function addValue(row: Locator, query: string, option: string) {
   const values = row.getByTestId("condition-values");
   await values.getByTestId("token-query").fill(query);
-  await values.getByTestId("token-option").filter({ hasText: option }).click();
+  await values.getByTestId("picker-option").filter({ hasText: option }).click();
 }
 
 test("a role condition edits several values as chips and saves them as a list", async ({

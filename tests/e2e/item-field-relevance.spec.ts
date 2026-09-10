@@ -60,7 +60,6 @@ test("groups nothing declares are offered to every item", async ({ page }) => {
   // No `filterFields` entry claims these, so narrowing never reaches them.
   await expect(group(page, "dynamic-stats")).toBeVisible();
   await expect(group(page, "description")).toBeVisible();
-  await expect(group(page, "excludes")).toBeVisible();
   await expect(group(page, "retirement")).toBeVisible();
 });
 

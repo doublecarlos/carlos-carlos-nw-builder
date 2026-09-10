@@ -17,6 +17,9 @@
 import type {
   Item,
   Bonus,
+  BonusOccurrenceSpec,
+  ConditionWhen,
+  Grant,
   Slot,
   SectionPreset,
   SlotSection,
@@ -33,7 +36,6 @@ const ITEM_TRAILING_KEYS = [
   "allowedClass",
   "tags",
   "bonuses",
-  "excludes",
   "inlineRepetition",
   "publishes",
 ] as const;
@@ -53,11 +55,88 @@ export function toItemsFile(items: Item[]): string {
   return `${JSON.stringify(items.map(canonicalItem), null, 2)}\n`;
 }
 
+/** An occurrence leaf naming the bonus it sits in is spelled by omitting `bonus`, which is
+ *  how the engine reads an absent one (`EvalContext.self`). */
+function implicitSelf(
+  spec: BonusOccurrenceSpec,
+  self: string,
+): BonusOccurrenceSpec {
+  if (spec.bonus !== self) return spec;
+  const { bonus: _self, ...rest } = spec;
+  return rest;
+}
+
+function whenWithImplicitSelf(
+  when: ConditionWhen,
+  self: string,
+): ConditionWhen {
+  const out: ConditionWhen = { ...when };
+  if (out.bonusOccurrences)
+    out.bonusOccurrences = implicitSelf(out.bonusOccurrences, self);
+  if (out.all) out.all = out.all.map((sub) => whenWithImplicitSelf(sub, self));
+  if (out.any) out.any = out.any.map((sub) => whenWithImplicitSelf(sub, self));
+  if (out.not) out.not = whenWithImplicitSelf(out.not, self);
+  return out;
+}
+
+/** "At least one of the bonus itself" is no gate at all: a bonus is only evaluated through an
+ *  attachment, and one contributing no occurrences already forces every grant inactive
+ *  (bonus.ts's `evaluateBonus`). Only as the whole `when`: combined with anything else, or
+ *  negated, the leaf is not trivially true. */
+function isTrivialSelfGate(when: ConditionWhen): boolean {
+  const spec = when.bonusOccurrences;
+  return (
+    Object.keys(when).length === 1 &&
+    spec !== undefined &&
+    spec.bonus === undefined &&
+    spec.below === undefined &&
+    spec.exactly === undefined &&
+    (spec.atLeast === undefined || spec.atLeast === 1)
+  );
+}
+
+function canonicalWhen(
+  when: ConditionWhen,
+  self: string,
+): ConditionWhen | undefined {
+  const out = whenWithImplicitSelf(when, self);
+  return isTrivialSelfGate(out) ? undefined : out;
+}
+
+/** Keeps `key`'s position while dropping it when its canonical form is empty. */
+function withWhen<T extends { when?: ConditionWhen }>(
+  holder: T,
+  self: string,
+): T {
+  if (!holder.when) return holder;
+  const when = canonicalWhen(holder.when, self);
+  const { when: _when, ...rest } = holder;
+  return (when ? { ...holder, when } : rest) as T;
+}
+
+function grantWithImplicitSelf(grant: Grant, self: string): Grant {
+  const out: Grant = withWhen(grant, self);
+  if (out.variants)
+    out.variants = out.variants.map((variant) => withWhen(variant, self));
+  if (out.tiers)
+    out.tiers = out.tiers.map((tier) =>
+      tier.bonusOccurrences
+        ? {
+            ...tier,
+            bonusOccurrences: implicitSelf(tier.bonusOccurrences, self),
+          }
+        : tier,
+    );
+  return out;
+}
+
 export function toBonusesFile(bonuses: Bonus[]): string {
   const canonical = bonuses.map((bonus) => ({
     id: bonus.id,
     name: bonus.name ?? bonus.id,
-    grants: bonus.grants ?? [],
+    grants: (bonus.grants ?? []).map((grant) =>
+      grantWithImplicitSelf(grant, bonus.id),
+    ),
     ...(bonus.excludes !== undefined ? { excludes: bonus.excludes } : {}),
     ...(bonus.stacking !== undefined ? { stacking: bonus.stacking } : {}),
     ...(bonus.maxStacks !== undefined ? { maxStacks: bonus.maxStacks } : {}),

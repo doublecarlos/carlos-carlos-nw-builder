@@ -322,7 +322,7 @@ test.describe("bonus grant conditions", () => {
     // Now complete the condition by picking a class value. The next auto-save carries
     // the full tree, and the row still survives the round-trip.
     await values.getByTestId("token-query").fill("Cleric");
-    await values.getByTestId("token-option").first().click();
+    await values.getByTestId("picker-option").first().click();
     await expect(typePicker).toHaveValue("class");
     await expect(values.getByTestId("token-chip")).toHaveText(/Cleric/);
     await expect(statusBadge).toBeVisible();
@@ -364,7 +364,7 @@ test.describe("bonus stat payload editing", () => {
     await page.getByRole("button", { name: "Add stat" }).first().click();
     await expect(page.locator(".stat-row")).toHaveCount(rowsBefore + 1);
 
-    // The tier's bonus combo lists the bonus ids (they reach the form through the store).
+    // The tier's bonus combo lists every bonus, each row carrying its id.
     await page
       .locator(".combo--bonus")
       .first()

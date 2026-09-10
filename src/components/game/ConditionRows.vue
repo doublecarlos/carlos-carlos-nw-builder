@@ -7,6 +7,7 @@
 // itself by its own inferred name with no self-registration needed.
 import { computed } from "vue";
 import ComboBox from "../ui/ComboBox.vue";
+import BonusComboBox from "./BonusComboBox.vue";
 import IconButton from "../ui/IconButton.vue";
 import DragHandle from "../ui/DragHandle.vue";
 import {
@@ -34,7 +35,7 @@ import {
   isDescendantPath,
   type ConditionRow,
 } from "../../engine/condition-draft";
-import type { BuildParameterSlot } from "../../types";
+import type { BonusOption, BuildParameterSlot } from "../../types";
 import {
   useDragHandle,
   useDropList,
@@ -87,7 +88,8 @@ const props = withDefaults(
     // Sent as `update:rows` by the component; parent replaces its own array reference.
     rows: ConditionRow[];
     depth?: number;
-    bonusIds?: string[];
+    /** Every known bonus, for the occurrences leaf's picker. */
+    bonusOptions?: BonusOption[];
     /** Identifies which condition tree `path` is root-relative to -- opaque to this component,
      *  interpreted by whichever ancestor owns the store (see `transfer` above). */
     treeId?: string;
@@ -97,7 +99,7 @@ const props = withDefaults(
   }>(),
   {
     depth: 0,
-    bonusIds: () => [],
+    bonusOptions: () => [],
     treeId: "",
     path: () => [],
   },
@@ -112,10 +114,6 @@ const typeOptions = LEAF_TYPES.map((t) => ({
   value: t,
   label: labels[t] ?? t,
 }));
-const bonusComboOptions = computed(() =>
-  props.bonusIds.map((s) => ({ value: s, label: s })),
-);
-
 function opLabel(op?: string) {
   if (op === "not") return "not";
   return op === "any" ? "any of" : "all of";
@@ -407,10 +405,6 @@ function optionsForCombo(type?: string) {
 // than one pick. The row model keeps them comma-separated; the control speaks arrays.
 const isMultiValue = (type?: string) =>
   MULTI_VALUE_LEAF_TYPES.includes(type ?? "");
-const optionValues = (options: { value: string }[]) =>
-  options.map((option) => option.value);
-const optionLabels = (options: { value: string; label: string }[]) =>
-  Object.fromEntries(options.map((option) => [option.value, option.label]));
 
 // --- the generic `param` leaf -----------------------------------------------------------
 // Every build_parameter slot is a candidate key; the comparison control shown depends on the
@@ -523,11 +517,11 @@ function changeParamKey(row: ConditionRow, key: string) {
         </template>
         <template v-else-if="row.type === 'bonusOccurrences'">
           <FormField label="Bonus" class="min-w-0">
-            <ComboBox
+            <BonusComboBox
               class="w-44"
               :model-value="row.bonus"
-              :options="bonusComboOptions"
-              placeholder="- bonus -"
+              :options="bonusOptions"
+              self
               @update:model-value="(v) => (row.bonus = v)"
             />
           </FormField>
@@ -590,8 +584,7 @@ function changeParamKey(row: ConditionRow, key: string) {
                 class="w-56"
                 data-testid="condition-values"
                 :model-value="fromCsv(row.equals)"
-                :options="optionValues(paramValueOptions(row.key))"
-                :labels="optionLabels(paramValueOptions(row.key))"
+                :options="paramValueOptions(row.key)"
                 :allow-free="!paramValueOptions(row.key).length"
                 placeholder="- value -"
                 @update:model-value="(v) => (row.equals = v.join(', '))"
@@ -617,8 +610,7 @@ function changeParamKey(row: ConditionRow, key: string) {
               class="w-56"
               data-testid="condition-values"
               :model-value="fromCsv(row.value)"
-              :options="optionValues(optionsForCombo(row.type))"
-              :labels="optionLabels(optionsForCombo(row.type))"
+              :options="optionsForCombo(row.type)"
               :allow-free="!optionsForCombo(row.type).length"
               placeholder="- value -"
               @update:model-value="(v) => (row.value = v.join(', '))"
@@ -706,7 +698,7 @@ function changeParamKey(row: ConditionRow, key: string) {
               <ConditionRows
                 :rows="branch"
                 :depth="depth + 1"
-                :bonus-ids="bonusIds"
+                :bonus-options="bonusOptions"
                 :tree-id="treeId"
                 :path="[...path, i, bi]"
                 class="ml-4 border-l-1 border-solid pl-2"

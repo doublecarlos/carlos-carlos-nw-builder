@@ -69,6 +69,7 @@ import type {
   Db,
   Item,
   Bonus,
+  BonusOption,
   BuildParameterSlot,
   SectionPreset,
   LintFinding,
@@ -441,20 +442,21 @@ const filters = computed<string[]>(() =>
   ].sort(),
 );
 
-/** Every known bonus id, for id-collision avoidance, "attach an existing bonus", and the
- * "which bonus does this tier/condition reference" pickers. */
+/** Every known bonus id, for id-collision avoidance and the `excludes` vocabulary. */
 const allBonusIds = computed<string[]>(() =>
   [...new Set<string>(db.value.bonuses.map((bonus) => bonus.id))].sort(),
+);
+
+/** Every known bonus as a BonusComboBox choice, listed by name the way its rows lead. */
+const bonusOptions = computed<BonusOption[]>(() =>
+  db.value.bonuses
+    .map((bonus) => ({ value: bonus.id, label: bonus.name ?? bonus.id }))
+    .sort((a, b) => a.label.localeCompare(b.label)),
 );
 
 const tagList = computed<string[]>(() =>
   [...db.value.itemsByTag.keys()].sort(),
 );
-
-/** The vocabulary for `excludes`. A bonus now resolves as one unit, so only bonuses (not
- * individual grants) are addressable -- same list as `allBonusIds`, kept as its own computed
- * since the two are used for unrelated purposes at the call sites. */
-const bonusIds = computed(() => allBonusIds.value);
 
 const changedCount = computed(
   () =>
@@ -1175,7 +1177,7 @@ onUnmounted(() => {
           :filters="filters"
           :all-bonus-ids="allBonusIds"
           :tags="tagList"
-          :bonus-ids="bonusIds"
+          :bonus-options="bonusOptions"
           :allocatable-ids="allocatableIds"
           @save="onSave"
           @update:item="onUpdateItem"
@@ -1196,7 +1198,7 @@ onUnmounted(() => {
           :db="db"
           :all-bonus-ids="allBonusIds"
           :tags="tagList"
-          :bonus-ids="bonusIds"
+          :bonus-options="bonusOptions"
           :allocatable-ids="allocatableIds"
           @save="onSaveBonusTop"
           @update:bonus="onUpdateBonusTop"

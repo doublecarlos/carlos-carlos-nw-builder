@@ -16,7 +16,7 @@
 // up front any more.
 import { ref, computed, provide } from "vue";
 import BonusForm from "./BonusForm.vue";
-import ComboBox from "../ui/ComboBox.vue";
+import BonusComboBox from "./BonusComboBox.vue";
 import IconButton from "../ui/IconButton.vue";
 import FormField from "../ui/FormField.vue";
 import FormGrid from "../ui/FormGrid.vue";
@@ -25,7 +25,7 @@ import BaseButton from "../ui/BaseButton.vue";
 import BaseBadge from "../ui/BaseBadge.vue";
 import BaseInput from "../ui/BaseInput.vue";
 import FormSection from "../ui/FormSection.vue";
-import type { Db, Bonus } from "../../types";
+import type { Db, Bonus, BonusOption } from "../../types";
 import type { BonusDraft } from "../../lib/bonus-draft";
 import type { BonusDraftStore } from "../../stores/bonus-draft";
 import type { OccurrenceDraft } from "../../lib/item-draft";
@@ -46,10 +46,11 @@ const props = withDefaults(
     /** Seeds the Name field of a brand-new private bonus. */
     itemName?: string;
     db: Db;
-    /** Every known bonus id, for "attach an existing bonus" and id-collision avoidance. */
+    /** Every known bonus id, for id-collision avoidance. */
     allBonusIds?: string[];
     tags?: string[];
-    bonusIds?: string[];
+    /** Every known bonus, for "attach an existing bonus" and the pickers in each form. */
+    bonusOptions?: BonusOption[];
     /** All existing ids for collision-free id allocation. */
     allocatableIds?: string[];
   }>(),
@@ -59,7 +60,7 @@ const props = withDefaults(
     itemName: "",
     allBonusIds: () => [],
     tags: () => [],
-    bonusIds: () => [],
+    bonusOptions: () => [],
     allocatableIds: () => [],
   },
 );
@@ -98,12 +99,7 @@ const slots = computed<Slot[]>(() => [
 /** Existing bonuses not already attached, for "attach an existing bonus". */
 const attachable = computed(() => {
   const attached = new Set(props.attachedBonusIds);
-  return props.allBonusIds
-    .filter((id) => !attached.has(id))
-    .map((id) => ({
-      value: id,
-      label: props.db.bonusById.get(id)?.name ?? id,
-    }));
+  return props.bonusOptions.filter((option) => !attached.has(option.value));
 });
 
 function sourceFor(slot: Slot): Bonus | null {
@@ -226,9 +222,14 @@ function onSlotDuplicate(slot: Slot) {
       <IconButton title="Add bonus" @click="addBonus"
         ><CirclePlus
       /></IconButton>
-      <span v-if="attachable.length" class="inline-flex items-center gap-1.5">
+      <!-- A control inside the heading, not heading text: drops the heading's own case,
+           weight and tracking so the picker and its menu read like every other picker. -->
+      <span
+        v-if="attachable.length"
+        class="inline-flex items-center gap-1.5 font-normal normal-case tracking-normal"
+      >
         or
-        <ComboBox
+        <BonusComboBox
           class="w-56"
           model-value=""
           :options="attachable"
@@ -336,7 +337,7 @@ function onSlotDuplicate(slot: Slot) {
         :db="db"
         :all-bonus-ids="allBonusIds"
         :tags="tags"
-        :bonus-ids="bonusIds"
+        :bonus-options="bonusOptions"
         :allocatable-ids="props.allocatableIds"
         @save="onSlotSave(slot, $event)"
         @update:bonus="onSlotUpdate(slot, $event)"

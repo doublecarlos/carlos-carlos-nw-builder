@@ -64,7 +64,6 @@ export interface ItemDraft {
    *  `DynamicStatDraft` uses. Keyed by bonus id, not array index, since it tracks
    *  `draft.bonuses` entries by identity. */
   bonusOccurrences: Record<string, OccurrenceDraft>;
-  excludes: string[];
   dynamicStats: DynamicStatDraft[];
   repetitionMin: number | string | null;
   repetitionMax: number | string | null;
@@ -136,7 +135,6 @@ export function buildDraft(item: Item | null | undefined): ItemDraft {
     gameIds: [...(source.gameIds ?? [])],
     bonuses,
     bonusOccurrences,
-    excludes: [...(source.excludes ?? [])],
     dynamicStats: dynamicStatRows(source.dynamicStats),
     repetitionMin: source.inlineRepetition?.min ?? null,
     repetitionMax: source.inlineRepetition?.max ?? null,
@@ -204,7 +202,6 @@ export function toItem(local: ItemDraft, ctx: ItemDraftContext): Item {
     );
     item.bonuses = bonuses;
   }
-  putIfSet(item, "excludes", [...local.excludes]);
   // A typed 0 is a deliberate "unlimited even so", so `numberOrUnset` (emptiness, not
   // truthiness) is what decides whether this is written at all.
   putIfSet(item, "maxCopies", numberOrUnset(local.maxCopies));
@@ -391,10 +388,6 @@ const CHECKS: DiffCheck<Item>[] = [
       : null;
   },
   (old, nw) =>
-    JSON.stringify(old.excludes) !== JSON.stringify(nw.excludes)
-      ? arrayDiffLabel("exclude", old.excludes ?? [], nw.excludes ?? [])
-      : null,
-  (old, nw) =>
     JSON.stringify(old.dynamicStats) !== JSON.stringify(nw.dynamicStats)
       ? dynamicStatsDiffLabel(old.dynamicStats ?? [], nw.dynamicStats ?? [])
       : null,
@@ -442,7 +435,6 @@ export const FIELD_GROUPS = {
   insigniaRecipe: ["insigniaRecipe"],
   dynamicStats: ["dynamicStats"],
   bonuses: ["bonuses"],
-  excludes: ["excludes"],
   defaultParams: ["defaultParams"],
   publishes: ["publishes"],
   retirement: ["hideFromPicker", "replacedBy"],

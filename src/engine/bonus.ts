@@ -22,7 +22,6 @@ import type {
   DynamicStatConfig,
   EvalContext,
   ConditionExplain,
-  ConditionWhen,
   GrantEvaluation,
   BonusEvaluation,
   EvaluatedBonus,
@@ -456,17 +455,10 @@ function evaluateGrant(
     let bestAt = -1;
     for (const tier of grant.tiers) {
       const need = tier.bonusOccurrences?.atLeast ?? 1;
-      // `tier.bonusOccurrences.bonus` is optional on the type (GrantTier) but not on
-      // `ConditionWhen.bonusOccurrences` -- see types.ts: an *actually* bonusless tier still
-      // reaches `conditions.evaluate` and fails closed there (`bonusOccurrences.bonus`
-      // undefined -> 0 occurrences counted), so this cast changes nothing at runtime.
       if (
         need > bestAt &&
         conditions.evaluate(
-          {
-            bonusOccurrences:
-              tier.bonusOccurrences as ConditionWhen["bonusOccurrences"],
-          },
+          { bonusOccurrences: tier.bonusOccurrences ?? {} },
           ctx,
         )
       ) {
@@ -524,9 +516,11 @@ export function evaluateBonus(
   dynamicValues: Record<string, number> = {},
   { hasSources = true }: { hasSources?: boolean } = {},
 ): BonusEvaluation {
+  // What an occurrence leaf naming no bonus counts (`EvalContext.self`).
+  const own: EvalContext = { ...ctx, self: bonus.id };
   const evaluated = (bonus.grants ?? []).map((grant) => ({
     raw: grant,
-    ...evaluateGrant(grant, ctx, explain, dynamicValues),
+    ...evaluateGrant(grant, own, explain, dynamicValues),
   }));
   // `hasSources: false` (resolve()'s zero-sources group) forces every grant inactive regardless
   // of what its own `when` resolves to -- there is nothing occurring to grant it for. Not just
@@ -705,11 +699,9 @@ export function resolve(
     };
   });
 
-  // Exclusions come from equipped items (legacy `bonus_overrides`) and from active bonuses.
+  // An active bonus suppresses the bonuses it `excludes`; an item wanting to suppress one
+  // carries a bonus that does, so there is one exclusion mechanism, not two.
   const excluded = new Map<string, string>();
-  for (const row of rows) {
-    for (const id of row.item?.excludes ?? []) excluded.set(id, row.item!.name);
-  }
   for (const entry of evaluated) {
     if (!entry.active) continue;
     for (const id of entry.bonus.excludes ?? []) excluded.set(id, entry.id);

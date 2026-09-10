@@ -18,3 +18,20 @@ export function matchesQuery(
   ).toLowerCase();
   return words.every((word) => text.includes(word));
 }
+
+/**
+ * `matchesQuery` over a list, with an entry whose `value` equals the query moved to the front
+ * so a pasted id lands on its own row. Stable otherwise. `value` need not be in `haystack`.
+ */
+export function filterAndRank<T>(
+  entries: T[],
+  query: string,
+  haystack: (entry: T) => string | string[],
+  value: (entry: T) => string,
+): T[] {
+  const typed = query.trim().toLowerCase();
+  const isExact = (entry: T) => value(entry).toLowerCase() === typed;
+  return entries
+    .filter((entry) => matchesQuery(haystack(entry), query))
+    .sort((a, b) => Number(isExact(b)) - Number(isExact(a)));
+}

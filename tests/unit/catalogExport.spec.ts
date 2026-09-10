@@ -3,6 +3,7 @@ import * as catalogExport from "../../src/data/catalogExport";
 import { NW_SLOTS, NW_ITEMS, NW_BONUSES } from "../../src/data/data";
 import type {
   Bonus,
+  Grant,
   Item,
   Slot,
   SectionPreset,
@@ -56,6 +57,87 @@ describe("catalogExport.toBonusesFile", () => {
     const parsed = JSON.parse(catalogExport.toBonusesFile(bonuses));
     expect(parsed).toEqual([
       { id: "no-name-bonus", name: "no-name-bonus", grants: [] },
+    ]);
+  });
+
+  // An occurrence leaf naming the bonus it sits in is the engine's reading of one naming
+  // nothing, so the file carries the shorter spelling; a leaf naming another bonus is not.
+  it("drops a bonusOccurrences bonus equal to the owning bonus, everywhere one can sit", () => {
+    const bonus: Bonus = {
+      id: "self",
+      name: "Self",
+      grants: [
+        {
+          when: {
+            bonusOccurrences: { bonus: "self", atLeast: 2 },
+            any: [
+              { bonusOccurrences: { bonus: "self" } },
+              { not: { bonusOccurrences: { bonus: "other", exactly: 1 } } },
+            ],
+          },
+          variants: [
+            {
+              when: { bonusOccurrences: { bonus: "self", atLeast: 2 } },
+              stats: {},
+            },
+            { stats: {} },
+          ],
+          tiers: [
+            { bonusOccurrences: { bonus: "self", atLeast: 1 }, stats: {} },
+          ],
+        },
+      ],
+    };
+    const parsed = JSON.parse(catalogExport.toBonusesFile([bonus]));
+    expect(parsed[0].grants[0]).toEqual({
+      when: {
+        bonusOccurrences: { atLeast: 2 },
+        any: [
+          { bonusOccurrences: {} },
+          { not: { bonusOccurrences: { bonus: "other", exactly: 1 } } },
+        ],
+      },
+      variants: [
+        { when: { bonusOccurrences: { atLeast: 2 } }, stats: {} },
+        { stats: {} },
+      ],
+      tiers: [{ bonusOccurrences: { atLeast: 1 }, stats: {} }],
+    });
+    // The input is left alone: the exporter reads the catalogue, it does not edit it.
+    expect(bonus.grants![0].when!.bonusOccurrences!.bonus).toBe("self");
+  });
+
+  // Once the self-reference is implicit, "at least one of itself" as a grant's whole `when`
+  // is no condition at all, but only as the whole `when`, and only when unbounded above.
+  it("drops a when that is nothing but an unbounded self-occurrence gate", () => {
+    const grants: Grant[] = [
+      { when: { bonusOccurrences: {} }, stats: { power: 1 } },
+      {
+        when: { bonusOccurrences: { bonus: "self", atLeast: 1 } },
+        stats: { power: 2 },
+      },
+      {
+        variants: [
+          { when: { bonusOccurrences: { atLeast: 1 } }, stats: { power: 3 } },
+        ],
+      },
+      // Not trivial: another key, an upper bound, a different bonus, a negation.
+      { when: { bonusOccurrences: {}, toggle: "combat" }, stats: {} },
+      { when: { bonusOccurrences: { atLeast: 2 } }, stats: {} },
+      { when: { bonusOccurrences: { bonus: "other" } }, stats: {} },
+      { when: { not: { bonusOccurrences: {} } }, stats: {} },
+    ];
+    const parsed = JSON.parse(
+      catalogExport.toBonusesFile([{ id: "self", grants }]),
+    );
+    expect(parsed[0].grants).toEqual([
+      { stats: { power: 1 } },
+      { stats: { power: 2 } },
+      { variants: [{ stats: { power: 3 } }] },
+      { when: { bonusOccurrences: {}, toggle: "combat" }, stats: {} },
+      { when: { bonusOccurrences: { atLeast: 2 } }, stats: {} },
+      { when: { bonusOccurrences: { bonus: "other" } }, stats: {} },
+      { when: { not: { bonusOccurrences: {} } }, stats: {} },
     ]);
   });
 

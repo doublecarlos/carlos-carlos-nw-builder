@@ -29,6 +29,7 @@ import {
 } from "../engine/condition-draft";
 import { entriesToRows, rowsToEntries, putIfSet } from "./draft-fields";
 import type {
+  BonusOccurrenceSpec,
   Grant,
   GrantVariant,
   GrantProblem,
@@ -172,6 +173,7 @@ export const newVariant = (): VariantDraft => ({
 });
 
 export interface TierDraft {
+  /** Empty means the bonus the tier belongs to (`BonusOccurrenceSpec`). */
   bonus: string;
   atLeast: number;
   stats: StatRow[];
@@ -269,13 +271,12 @@ export function toGrant(draft: GrantDraft): Grant {
     putIfSet(out.problem, "label", draft.problemLabel);
     if (draft.problemHideFromPicker) out.problem.hideFromPicker = true;
   } else if (draft.payload === "tiers") {
-    out.tiers = draft.tiers.map((tier) => ({
-      bonusOccurrences: {
-        bonus: tier.bonus,
-        atLeast: Number(tier.atLeast) || 1,
-      },
-      stats: rowsToStats(tier.stats),
-    }));
+    out.tiers = draft.tiers.map((tier) => {
+      const occurrences: BonusOccurrenceSpec = {};
+      putIfSet(occurrences, "bonus", tier.bonus);
+      occurrences.atLeast = Number(tier.atLeast) || 1;
+      return { bonusOccurrences: occurrences, stats: rowsToStats(tier.stats) };
+    });
   } else if (draft.payload === "variants") {
     out.variants = draft.variants.map((variant) => {
       const entry: GrantVariant = { stats: rowsToStats(variant.stats) };

@@ -29,7 +29,7 @@ export interface ComboBoxExposed {
 import { ref, computed, watch, nextTick, useId, useTemplateRef } from "vue";
 import { onKeyStroke } from "@vueuse/core";
 import { blurToRowAnchor } from "../../lib/row-cursor";
-import { matchesQuery } from "../../lib/text-filter";
+import { filterAndRank } from "../../lib/text-filter";
 import ComboBoxMenu from "./ComboBoxMenu.vue";
 import ComboBoxMenuRow from "./ComboBoxMenuRow.vue";
 
@@ -102,15 +102,16 @@ const selected = computed(
   () => props.options.find((option) => option.value === model.value) ?? null,
 );
 
+/** The value itself is deliberately not matched: ItemPicker decides per lens whether an id
+ *  is searchable, and puts it in `search` when it is. */
 const filtered = computed(() => {
   if (!open.value) return [];
-  const source = props.options.filter((option) =>
-    matchesQuery(
-      [option.label, option.search ?? "", option.group ?? ""],
-      query.value,
-    ),
-  );
-  return source.slice(0, props.maxRows);
+  return filterAndRank(
+    props.options,
+    query.value,
+    (option) => [option.label, option.search ?? "", option.group ?? ""],
+    (option) => option.value,
+  ).slice(0, props.maxRows);
 });
 
 /** Rows cut by `maxRows`, reported in the menu's footer so filtering feels bounded. */

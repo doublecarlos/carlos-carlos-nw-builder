@@ -27,7 +27,13 @@ import * as catalog from "../../data/catalog";
 import type { EntryStatus } from "../../data/catalog";
 import { useEditorDraft } from "../../composables/useEditorDraft";
 import { statPickerOptions } from "../../lib/format";
-import type { Item, Db, Bonus, BuildParameterSlot } from "../../types";
+import type {
+  Item,
+  Db,
+  Bonus,
+  BonusOption,
+  BuildParameterSlot,
+} from "../../types";
 import { INSIGNIA_SHAPES } from "../../types";
 import {
   buildDraft,
@@ -53,11 +59,11 @@ const props = withDefaults(
     status?: EntryStatus;
     db: Db;
     filters?: string[];
-    /** Every known bonus id, forwarded to ItemBonuses for id-collision avoidance and
-     *  "attach an existing bonus". */
+    /** Every known bonus id, forwarded to ItemBonuses for id-collision avoidance. */
     allBonusIds?: string[];
     tags?: string[];
-    bonusIds?: string[];
+    /** Every known bonus, forwarded to ItemBonuses for its pickers. */
+    bonusOptions?: BonusOption[];
     allocatableIds?: string[];
   }>(),
   {
@@ -67,7 +73,7 @@ const props = withDefaults(
     filters: () => [],
     allBonusIds: () => [],
     tags: () => [],
-    bonusIds: () => [],
+    bonusOptions: () => [],
     allocatableIds: () => [],
   },
 );
@@ -104,6 +110,10 @@ function computeId(local: ItemDraft): string {
  * honoured as a fallback, so an overlay declaring the older param-based shape keeps working.
  * Blank values are dropped either way; "no class at all" is not a restriction. */
 const classSlot = computed(() => findParamSlot(props.db.slots, "class"));
+/** A tag is its own label. */
+const tagOptions = computed(() =>
+  props.tags.map((tag) => ({ value: tag, label: tag })),
+);
 /** `replacedBy` candidates. This item is left out: a self-reference is a lint error. */
 const replacementOptions = computed(() => [
   { value: "", label: "- not replaced -" },
@@ -448,8 +458,6 @@ function carriesField(field: string): boolean {
       return local.dynamicStats.length > 0;
     case "bonuses":
       return local.bonuses.length > 0;
-    case "excludes":
-      return local.excludes.length > 0;
     case "defaultParams":
       return local.defaultParams.length > 0;
     case "publishes":
@@ -539,7 +547,7 @@ function showsGroup(group: FieldGroup): boolean {
       <FormField label="Tags" class="min-w-80 flex-1">
         <TokenInput
           v-model="draft.tags"
-          :options="tags"
+          :options="tagOptions"
           placeholder="Add a tag…"
           data-testid="item-tags-input"
         />
@@ -827,7 +835,7 @@ function showsGroup(group: FieldGroup): boolean {
         :db="db"
         :all-bonus-ids="allBonusIds"
         :tags="tags"
-        :bonus-ids="bonusIds"
+        :bonus-options="bonusOptions"
         :allocatable-ids="props.allocatableIds"
         @save-bonus="$emit('save-bonus', $event)"
         @delete-bonus="$emit('delete-bonus', $event)"
@@ -836,21 +844,6 @@ function showsGroup(group: FieldGroup): boolean {
         @attach-bonus="attachBonus"
         @update-occurrence="(e) => updateBonusOccurrence(e.id, e.occurrence)"
       />
-    </template>
-
-    <template v-if="showsGroup('excludes')">
-      <FormSection data-testid="group-excludes"
-        >Equipping this item suppresses</FormSection
-      >
-      <TokenInput
-        v-model="draft.excludes"
-        :options="bonusIds"
-        placeholder="bonus id this item overrides…"
-      />
-      <p class="text-muted">
-        Item-level override: those bonuses go inactive whenever this item is
-        equipped, whatever grants them.
-      </p>
     </template>
 
     <template v-if="showsGroup('defaultParams')">

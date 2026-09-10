@@ -320,7 +320,6 @@ export function referencedOverlay(db: Db, build: Build): CatalogOverlay {
     if (!item) continue;
     for (const attachment of item.bonuses ?? [])
       bonusIds.add(bonusIdOf(attachment));
-    for (const bonusId of item.excludes ?? []) bonusIds.add(bonusId);
   }
 
   // Follow bonus excludes transitively - bonuses can chain through excludes
@@ -424,7 +423,6 @@ const ITEM_FIELDS = new Set([
   "dynamicStats",
   "inlineRepetition",
   "bonuses",
-  "excludes",
   "shortDescription",
   "longDescription",
   "gameIds",
@@ -590,6 +588,16 @@ function conditionPaths(when: ConditionWhen | undefined, out: Set<string>) {
       out.add(key);
     }
   }
+}
+
+/** Every bonus id a `when`'s occurrence leaves name, flattened out of its combinators. */
+function occurrenceTargets(when: ConditionWhen | undefined, out: string[]) {
+  if (!when || typeof when !== "object") return;
+  const named = when.bonusOccurrences?.bonus;
+  if (named !== undefined) out.push(named);
+  for (const sub of [...(when.all ?? []), ...(when.any ?? [])])
+    occurrenceTargets(sub, out);
+  occurrenceTargets(when.not, out);
 }
 
 /**
@@ -1836,6 +1844,32 @@ export function validate(
           bonus.id,
           "bonus",
         );
+      }
+
+      const targets: string[] = [];
+      occurrenceTargets(grant.when, targets);
+      for (const variant of grant.variants ?? [])
+        occurrenceTargets(variant.when, targets);
+      for (const tier of grant.tiers ?? []) {
+        const named = tier.bonusOccurrences?.bonus;
+        if (named !== undefined) targets.push(named);
+      }
+      for (const target of new Set(targets)) {
+        if (target === bonus.id) {
+          report(
+            "warn",
+            `${label}: bonusOccurrences names this bonus itself - omit "bonus"`,
+            bonus.id,
+            "bonus",
+          );
+        } else if (!bonusIds.has(target)) {
+          report(
+            "error",
+            `${label}: bonusOccurrences names "${target}", which is not a bonus in the catalogue`,
+            bonus.id,
+            "bonus",
+          );
+        }
       }
     });
   }
