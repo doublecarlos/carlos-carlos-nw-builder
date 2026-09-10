@@ -1,11 +1,9 @@
 <script setup lang="ts">
-// Real tabs, not a row of pill buttons: each sits flush against its neighbour with only the
-// top corners rounded, and the active one shares its background/bottom edge with the panel
-// right below it so the seam disappears -- see TabButton.vue.
+// A row of tab buttons, detached from whatever sits below it. See TabButton.vue.
 </script>
 
 <template>
-  <div class="relative z-base -mb-px flex gap-0.5 pl-0.5">
+  <div class="flex flex-wrap items-center gap-1">
     <slot />
   </div>
 </template>

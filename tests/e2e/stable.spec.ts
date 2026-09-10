@@ -604,3 +604,118 @@ test("a derived bonus compares against a build deriving a different one", async 
   await fillGroupOne(page);
   await expect(row).not.toHaveClass(/is-diff/);
 });
+
+// --- the reference as a place you can link to, collapse, and search from either end ---------
+
+test("a ?stable= link opens the reference on that tab, and opening it writes one", async ({
+  page,
+}) => {
+  await page.goto("/?stable=bonus");
+  const browser = page.getByTestId("stable-browser");
+  await expect(browser).toBeVisible();
+  await expect(browser).toContainText("Stable reference");
+  await expect(page.getByTestId("stable-tab-bonus")).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+
+  // The other tab is the other half of the same route.
+  await page.getByTestId("stable-tab-mount").click();
+  await expect(page).toHaveURL(/[?&]stable=mount/);
+
+  // Closing takes the param back off, so the URL never offers to reopen what was dismissed.
+  await page.getByTestId("modal-close").click();
+  await expect(page).not.toHaveURL(/stable=/);
+});
+
+test("Back closes a reference the URL opened", async ({ page }) => {
+  await openBuilder(page);
+  await page.getByTestId("header-tools").click();
+  await page.getByRole("button", { name: "Mount stable reference" }).click();
+  await expect(page.getByTestId("stable-browser")).toBeVisible();
+  await expect(page).toHaveURL(/[?&]stable=mount/);
+
+  await page.goBack();
+  await expect(page.getByTestId("stable-browser")).toHaveCount(0);
+});
+
+test("a card collapses to its heading, and the two buttons do it wholesale", async ({
+  page,
+}) => {
+  await page.goto("/?stable=mount");
+  await page.getByTestId("stable-filter").fill(MOUNT);
+  const card = page.getByTestId("stable-group-card").first();
+  await expect(card.getByTestId("stable-reach-row").first()).toBeVisible();
+
+  await card.getByTestId(/^stable-card-toggle:/).click();
+  await expect(card.getByTestId("stable-reach-row")).toHaveCount(0);
+  await expect(card).toContainText(MOUNT);
+
+  await page.getByTestId("stable-expand-all").click();
+  await expect(card.getByTestId("stable-reach-row").first()).toBeVisible();
+
+  await page.getByTestId("stable-collapse-all").click();
+  await expect(card.getByTestId("stable-reach-row")).toHaveCount(0);
+});
+
+// Either end answers the same question, so a bonus name narrows the mount tab too, and naming
+// a row shows that row alone rather than burying it in everything else the head reaches.
+test("naming a row narrows each card to that row, on both tabs", async ({
+  page,
+}) => {
+  await page.goto("/?stable=mount");
+  await page.getByTestId("stable-filter").fill("Accursed Resolve");
+
+  const card = page.getByTestId("stable-group-card").first();
+  await expect(card).toContainText(MOUNT);
+  const rows = card.getByTestId("stable-reach-row");
+  await expect(rows).toHaveCount(1);
+  await expect(rows.first()).toContainText("Accursed Resolve");
+  // The head still says what the full list would have been.
+  await expect(card).toContainText(/1 of \d+/);
+
+  await page.getByTestId("stable-tab-bonus").click();
+  await page.getByTestId("stable-filter").fill(MOUNT);
+  const bonusCard = page.getByTestId("stable-group-card").first();
+  await expect(bonusCard).toContainText("Accursed Resolve");
+  const bonusRows = bonusCard.getByTestId("stable-reach-row");
+  await expect(bonusRows).toHaveCount(1);
+  await expect(bonusRows.first()).toContainText(MOUNT);
+});
+
+// Naming the head asks "what does this reach", which is the whole list.
+test("naming a heading keeps every row under it", async ({ page }) => {
+  await page.goto("/?stable=mount");
+  await page.getByTestId("stable-filter").fill(MOUNT);
+
+  const card = page.getByTestId("stable-group-card").first();
+  await expect(card).toContainText(MOUNT);
+  const rows = card.getByTestId("stable-reach-row");
+  const count = await rows.count();
+  expect(count).toBeGreaterThan(1);
+  // A full card states its plain total, not a subset.
+  await expect(card).not.toContainText(/\d+ of \d+/);
+});
+
+// The identity line is on the row itself, so the table answers "what is this made of"
+// without a hover to ask.
+test("a row carries its own combination beside its name", async ({ page }) => {
+  await page.goto("/?stable=mount");
+  await page.getByTestId("stable-filter").fill("Accursed Resolve");
+  const row = page.getByTestId("stable-reach-row").first();
+  await expect(row).toContainText("Accursed Resolve");
+  // Accursed Resolve's recipe, muted beside the name.
+  await expect(row).toContainText("crescent");
+
+  await page.getByTestId("stable-tab-bonus").click();
+  await page.getByTestId("stable-filter").fill(MOUNT);
+  const mountRow = page.getByTestId("stable-reach-row").first();
+  await expect(mountRow).toContainText(MOUNT);
+  // The mount's slot line, the same text its own heading carries.
+  await expect(mountRow).toContainText("universal");
+
+  // Nothing pops up on hover any more.
+  await mountRow.getByText(MOUNT, { exact: true }).hover();
+  await page.waitForTimeout(600);
+  await expect(page.getByTestId("tooltip")).toHaveCount(0);
+});

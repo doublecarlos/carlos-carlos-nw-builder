@@ -21,6 +21,7 @@ ordinary one.
 | BaseTextarea                              | The ordinary multi-line text field                                                        |
 | BaseTooltip                               | Themed hover/focus tooltip, replacing `title`                                             |
 | ClearableInput                            | A text filter field with an in-field clear button, wrapping BaseInput                     |
+| CheckMenu                                 | Menu of checkbox options that stays open as they are toggled                              |
 | CodeBlock                                 | Read-only, resizable JSON preview                                                         |
 | ComboBox / ComboBoxMenu / ComboBoxMenuRow | Typeable single-select over a small fixed option list, replacing `<select>`               |
 | CompareLine                               | A compare build's value stacked under this build's own, inside one table cell             |
@@ -42,7 +43,7 @@ ordinary one.
 | RailGutter / RailToggle                   | A side rail's show/hide-and-resize edge, and the button that collapses/restores it        |
 | RepeatableRows                            | A list whose rows share one Add/Remove pair, with an empty state that still offers Add    |
 | SegmentedControl                          | "Pick exactly one of a few options", with a `tone` per option                             |
-| TabButton / TabStrip                      | Real tabs sharing a seamless edge with the panel below them                               |
+| TabButton / TabStrip                      | A row of tabs, each drawn as its own button rather than joined to the panel below         |
 | ThemeToggle                               | System -> Light -> Dark cycle button                                                      |
 | TokenInput                                | Token/chip input with autocomplete and optional free text                                 |
 

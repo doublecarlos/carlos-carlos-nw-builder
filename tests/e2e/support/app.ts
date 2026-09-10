@@ -262,3 +262,13 @@ export async function setItemFilter(page: Page, filter: string) {
   await input.blur();
   await expect(input).toHaveValue(filter);
 }
+
+/** Flips one row of the build editor's "Picker options" menu, then closes it. The menu stays
+ *  open across a toggle by design, so it has to be dismissed before it covers the row under
+ *  test. `key` is the option's own key (`showHidden`, `searchById`, ...). */
+export async function togglePickerOption(page: Page, key: string) {
+  await page.getByTestId("picker-options").click();
+  await page.getByTestId(`picker-options:${key}`).click();
+  await page.keyboard.press("Escape");
+  await expect(page.getByTestId(`picker-options:${key}`)).toBeHidden();
+}

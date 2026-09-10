@@ -13,7 +13,6 @@ import IconButton from "../ui/IconButton.vue";
 import StatValueInput from "./StatValueInput.vue";
 import { PinOff, Replace, Table, Trash } from "@lucide/vue";
 import * as buildEditor from "../../stores/buildEditor";
-import * as pickerLens from "../../stores/pickerLens";
 import * as stableBrowser from "../../stores/stableBrowser";
 import {
   PREFERRED_MARK,
@@ -159,12 +158,7 @@ const stableGroup = computed(() => {
       :hidden-reasons="hiddenReasons"
       :readonly="derivedBonusRow"
       :groups="insigniaGroups"
-      :bonus-preview="{
-        db,
-        build,
-        slotId: slotDef.id,
-        filterHidden: !pickerLens.showHidden.value,
-      }"
+      :bonus-preview="{ db, build, slotId: slotDef.id }"
       :hide-preview="slotDef.hidePreview"
       :allow-empty="!slotDef.disallowEmpty"
       @update:model-value="buildEditor.setChoice(slotDef.id, $event)"

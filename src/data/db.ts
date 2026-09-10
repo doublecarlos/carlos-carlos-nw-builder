@@ -387,32 +387,27 @@ export function slotCandidates(
   });
 }
 
-/** `slotCandidates` narrowed to what the slot actually offers. `includeHidden` re-admits the
- * withheld ones, for the build editor's "show unavailable" lens. */
-export function forSlotAndBuild(
+/** Every candidate the slot offers, plus the reason each withheld one is normally kept back.
+ * The build editor's picker decides for itself which to draw (its "show unavailable" option,
+ * and the exact-id override), so it needs both in hand. */
+export function slotCandidateList(
   db: Db,
   slotId: string,
   build: Build,
-  { includeHidden = false }: { includeHidden?: boolean } = {},
-): Item[] {
-  const candidates = slotCandidates(db, slotId, build);
-  return (includeHidden ? candidates : candidates.filter((c) => !c.hidden)).map(
-    (c) => c.item,
-  );
-}
-
-/** Reason per withheld candidate, keyed by item id -- what a picker showing them needs to say
- * why each is there. */
-export function hiddenReasons(
-  db: Db,
-  slotId: string,
-  build: Build,
-): Map<string, string> {
+): { items: Item[]; reasons: Map<string, string> } {
+  const items: Item[] = [];
   const reasons = new Map<string, string>();
   for (const { item, hidden } of slotCandidates(db, slotId, build)) {
+    items.push(item);
     if (hidden) reasons.set(item.id, hidden);
   }
-  return reasons;
+  return { items, reasons };
+}
+
+/** Just what the slot offers, for a caller with no way to show a withheld candidate. */
+export function forSlotAndBuild(db: Db, slotId: string, build: Build): Item[] {
+  const { items, reasons } = slotCandidateList(db, slotId, build);
+  return items.filter((item) => !reasons.has(item.id));
 }
 
 /** One slot whose stored item id has been superseded, and what it now resolves to. */

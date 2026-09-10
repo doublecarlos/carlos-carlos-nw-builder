@@ -1,6 +1,9 @@
 // Searchable text for one catalogue item, so the picker's typeahead can match what an item
 // *does* -- its stats, and the bonuses it belongs to -- not just what it is called.
 //
+// Split into buckets because the picker options menu turns each off independently. A bonus
+// payload's stats count as stat text: "severity" should find the gear that grants it.
+//
 // Built statically off the catalogue rather than off the picker's live preview lines, which
 // matters most for bonuses: a bonus contributes the same searchable text whether it is already
 // active, only partly unlocked, or unreachable in the current build, so searching "gladiator"
@@ -33,14 +36,9 @@ const pushStatValues = (
   }
 };
 
-/** A bonus's own name plus every stat any of its grants can pay out. Every payload shape is
- *  walked (`stats`, `variants`, `tiers`) because which one applies is a runtime question this
- *  deliberately does not ask -- see the note at the top on why potential counts as searchable. */
-const pushBonusTerms = (schema: Schema, bonus: Bonus, out: string[]) => {
-  if (bonus.name) out.push(bonus.name);
+/** Every payload shape is walked, because which one applies is a runtime question. */
+const pushBonusStats = (schema: Schema, bonus: Bonus, out: string[]) => {
   for (const grant of bonus.grants ?? []) {
-    if (grant.name) out.push(grant.name);
-    if (grant.shortDescription) out.push(grant.shortDescription);
     pushStatValues(schema, grant.stats, out);
     for (const variant of grant.variants ?? [])
       pushStatValues(schema, variant.stats, out);
@@ -49,16 +47,32 @@ const pushBonusTerms = (schema: Schema, bonus: Bonus, out: string[]) => {
   }
 };
 
+/** What a bonus is called, down to each grant's own name and blurb. */
+const pushBonusNames = (bonus: Bonus, out: string[]) => {
+  if (bonus.name) out.push(bonus.name);
+  for (const grant of bonus.grants ?? []) {
+    if (grant.name) out.push(grant.name);
+    if (grant.shortDescription) out.push(grant.shortDescription);
+  }
+};
+
+export interface ItemSearchText {
+  /** The item's own stats, plus every stat its bonuses can pay out. */
+  stat: string;
+  /** The names and blurbs of the bonuses the item takes part in. */
+  bonus: string;
+}
+
 /** Per-`Db` memo: the text for an item never changes while the catalogue it came from is alive,
  *  and a rebuilt Db (a catalogue overlay edit) simply gets a fresh map. */
-const cache = new WeakMap<Db, Map<string, string>>();
+const cache = new WeakMap<Db, Map<string, ItemSearchText>>();
 
 /**
- * The extra haystack ItemPicker hands ComboBox alongside an option's label -- the item's own
- * stats and every bonus it contributes to, joined into one blob. Case is irrelevant here;
- * `matchesQuery` lowercases both sides.
+ * The extra haystacks ItemPicker hands ComboBox, one per search option. `matchesQuery`
+ * lowercases both sides. An item's own description and slot line go in `stat`: they describe
+ * the gear, and there is no third switch to hang them off.
  */
-export function itemSearchText(db: Db, item: Item): string {
+export function itemSearchText(db: Db, item: Item): ItemSearchText {
   let byId = cache.get(db);
   if (!byId) {
     byId = new Map();
@@ -67,17 +81,20 @@ export function itemSearchText(db: Db, item: Item): string {
   const memoized = byId.get(item.id);
   if (memoized !== undefined) return memoized;
 
-  const terms: string[] = [];
-  if (item.shortDescription) terms.push(item.shortDescription);
-  if (item.insigniaSlots) terms.push(slotLine(item));
+  const stat: string[] = [];
+  const bonus: string[] = [];
+  if (item.shortDescription) stat.push(item.shortDescription);
+  if (item.insigniaSlots) stat.push(slotLine(item));
   for (const key of db.schema.statKeys) {
     if (!item[key]) continue;
-    pushStatTerms(db.schema, key, terms);
+    pushStatTerms(db.schema, key, stat);
   }
-  for (const candidate of db.bonusesFor(item))
-    pushBonusTerms(db.schema, candidate.bonus, terms);
+  for (const candidate of db.bonusesFor(item)) {
+    pushBonusStats(db.schema, candidate.bonus, stat);
+    pushBonusNames(candidate.bonus, bonus);
+  }
 
-  const text = terms.join(" ");
+  const text = { stat: stat.join(" "), bonus: bonus.join(" ") };
   byId.set(item.id, text);
   return text;
 }

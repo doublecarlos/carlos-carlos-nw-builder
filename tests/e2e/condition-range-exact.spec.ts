@@ -31,14 +31,16 @@ test("an equipped leaf's below bound is actually saved, not silently dropped", a
   const row = await openNewConditionLeaf(page);
   await setLeafType(row, "equipped");
 
-  // Defaults to range mode with atLeast pre-filled to 1, same as before this leaf had an
-  // exact-mode alternative.
+  // A count leaf opens unbounded: "at least 1" is the engine's own reading of a leaf with no
+  // range, so the mode that writes nothing is the default and shows no fields at all.
   await expect(
-    row.getByRole("button", { name: "range", exact: true }),
+    row.getByRole("button", { name: "at least 1", exact: true }),
   ).toBeVisible();
+  await expect(row.locator('input[type="number"]')).toHaveCount(0);
+
+  await row.getByRole("button", { name: "range", exact: true }).click();
   const numberInputs = row.locator('input[type="number"]');
   await expect(numberInputs).toHaveCount(2);
-  await expect(numberInputs.nth(0)).toHaveValue("1");
 
   await row
     .locator('input[type="text"]:not([data-testid="picker-input"])')
@@ -58,6 +60,24 @@ test("an equipped leaf's below bound is actually saved, not silently dropped", a
   expect(json).toContain('"tag": "ring_of_x"');
   expect(json).toContain('"atLeast": 2');
   expect(json).toContain('"below": 4');
+});
+
+// The unbounded mode is what an explicit `atLeast: 1` in the data normalizes to, so it has to
+// round-trip as writing no range rather than as writing the default back out.
+test("a count leaf left unbounded saves no range at all", async ({ page }) => {
+  const row = await openNewConditionLeaf(page);
+  await setLeafType(row, "equipped");
+  await row
+    .locator('input[type="text"]:not([data-testid="picker-input"])')
+    .first()
+    .fill("ring_of_x");
+
+  const grant = page.getByTestId("bonus-grant-row").first();
+  await grant.getByLabel("Edit as JSON").click();
+  const json = await grant.locator("textarea").inputValue();
+  expect(json).toContain('"tag": "ring_of_x"');
+  expect(json).not.toContain('"atLeast"');
+  expect(json).not.toContain('"below"');
 });
 
 test("switching a condition between range and exact comparison resets the other mode's fields", async ({

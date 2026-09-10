@@ -61,6 +61,13 @@ export const describeRange = (spec: RangeLike | null | undefined): string => {
   return "any";
 };
 
+/** A count leaf with no bound means "at least one", not "any count". Shared by `equipped` and
+ *  `bonusOccurrences` so an explicit `atLeast: 1` in the data is redundant, not load-bearing. */
+const countRange = (spec: RangeSpec): RangeLike =>
+  spec.atLeast != null || spec.below != null || spec.exactly != null
+    ? spec
+    : { atLeast: 1 };
+
 // --- leaf predicates -------------------------------------------------------------------
 // Each returns { ok, label, detail } so the UI can explain *why* a bonus is inactive --
 // "needs duration ≥ 30s (you have 10s)" rather than just a missing row.
@@ -135,7 +142,7 @@ const LEAVES: Record<
     const displayName = ctx.bonusNames?.get(s.bonus) ?? s.bonus;
     const wanted = s.exactly ?? s.atLeast ?? 1;
     return {
-      ok: inRange(have, s),
+      ok: inRange(have, countRange(s)),
       label: `${wanted} ${plural(wanted, "occurrence")} of ${displayName}`,
       detail: `you have ${have}`,
     };
@@ -189,10 +196,7 @@ const LEAVES: Record<
     const s = spec as RangeSpec & { tag?: string; item?: string };
     const have =
       s.tag != null ? countOf(ctx.tags, s.tag) : countOf(ctx.equipped, s.item);
-    const range =
-      s.atLeast != null || s.below != null || s.exactly != null
-        ? s
-        : { atLeast: 1 };
+    const range = countRange(s) as RangeSpec;
     return {
       ok: inRange(have, range),
       label: `${range.exactly ?? range.atLeast ?? 1}× ${s.tag ?? s.item}`,

@@ -1,10 +1,6 @@
 <script setup lang="ts">
-// `margin-bottom: -1px` on TabStrip pulls the row down onto the panel's own top border, and
-// the active tab paints its bottom border in the panel's own background colour to erase the
-// seam -- `border-b-surface` when active does that.
-//
-// `z-2` is deliberately not on base.css's scale: local ordering against its own siblings, one
-// above TabStrip's `z-base`, never escaping to overlap anything else.
+// One tab, drawn as an ordinary button: the seam-erasing version only looked right where the
+// strip sat directly on a panel border, which is not true of every call site.
 import { computed } from "vue";
 
 const props = withDefaults(defineProps<{ active?: boolean }>(), {
@@ -13,7 +9,7 @@ const props = withDefaults(defineProps<{ active?: boolean }>(), {
 
 const toneClasses = computed(() =>
   props.active
-    ? "relative z-2 border-line border-b-surface bg-surface font-semibold text-text"
+    ? "border-accent bg-accent-soft font-semibold text-accent"
     : "border-line bg-surface-2 text-muted hover:bg-surface hover:text-text",
 );
 </script>
@@ -21,8 +17,9 @@ const toneClasses = computed(() =>
 <template>
   <button
     type="button"
-    class="flex items-center gap-1.5 rounded-t-md border px-3 py-1.5"
+    class="flex cursor-pointer items-center gap-1.5 rounded-md border px-3 py-1.5"
     :class="toneClasses"
+    :aria-pressed="active"
   >
     <slot />
   </button>

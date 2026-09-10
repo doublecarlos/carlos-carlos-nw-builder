@@ -19,6 +19,7 @@ import * as selection from "./stores/selection";
 import * as builds from "./stores/builds";
 import * as landing from "./stores/landing";
 import * as layers from "./stores/layers";
+import * as stableBrowser from "./stores/stableBrowser";
 import RailGutter from "./components/ui/RailGutter.vue";
 import * as rails from "./stores/rails";
 import { useGlobalShortcuts } from "./composables/useGlobalShortcuts";
@@ -69,6 +70,15 @@ const minWidthPx = computed(
 
 // --- routing --------------------------------------------------------------------------
 
+/** Only the group-less reference is addressable: a group a link names may no longer exist. */
+const stableParam = () =>
+  stableBrowser.isOpen.value && stableBrowser.group.value === null
+    ? stableBrowser.tab.value
+    : null;
+
+const stableTabIn = (route: Record<string, string>) =>
+  route.stable === "mount" || route.stable === "bonus" ? route.stable : null;
+
 function syncRoute({ push = true }: { push?: boolean } = {}) {
   const sel = selection.selection.value;
   router.apply(
@@ -76,9 +86,18 @@ function syncRoute({ push = true }: { push?: boolean } = {}) {
       build: sel?.kind === "build" ? sel.id : null,
       layer: sel?.kind === "layer" ? sel.id : null,
       tab: details.tab.value === "bonuses" ? "bonuses" : null,
+      stable: stableParam(),
     },
     { push },
   );
+}
+
+/** A group-scoped browse writes no param, so leave one open rather than closing it. */
+function applyStableRoute(route: Record<string, string>) {
+  const tab = stableTabIn(route);
+  if (tab) stableBrowser.openReference({ tab, query: "" });
+  else if (stableBrowser.isOpen.value && stableBrowser.group.value === null)
+    stableBrowser.close();
 }
 
 function onPopState() {
@@ -93,6 +112,7 @@ function onPopState() {
     if (first) selection.selectBuild(first.id);
   }
   details.setTab(route.tab === "bonuses" ? "bonuses" : "stats");
+  applyStableRoute(route);
 }
 
 watch(
@@ -100,9 +120,14 @@ watch(
   () => syncRoute(),
 );
 watch(details.tab, () => syncRoute({ push: false }));
+watch([stableBrowser.isOpen, stableBrowser.tab, stableBrowser.group], () =>
+  syncRoute(),
+);
 
 useEventListener(window, "popstate", onPopState);
 
+// Read before the first write, or the sync below scrubs an incoming `?stable=`.
+applyStableRoute(router.parse());
 syncRoute({ push: false });
 </script>
 

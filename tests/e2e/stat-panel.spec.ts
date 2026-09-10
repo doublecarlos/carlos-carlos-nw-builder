@@ -158,7 +158,7 @@ test.describe("stat source popover", () => {
     page,
   }) => {
     await openBuilder(page);
-    const sidebar = page.locator(".sidebar");
+    const sidebar = page.getByTestId("details-sidebar");
     await expect(sidebar).toHaveJSProperty("scrollTop", 0);
 
     await statInfoButton(page, "power").click();

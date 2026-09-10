@@ -1,25 +1,26 @@
 <script setup lang="ts">
 // The stable reference: which bonuses a mount can reach, and which mounts reach a bonus. Both
-// directions are the same pairing (`insignia.ts`'s `Reach`) read from opposite ends.
+// directions are the same pairing (`insignia.ts`'s `Reach`) read from opposite ends, derived
+// into cards by lib/stable-rows.ts.
 //
 // Applying a row overwrites a group, so it names what it will replace first.
-import { computed, ref } from "vue";
+//
+// Tab and filter live in the store so the URL can mirror them; collapse state stays local.
+import { computed, ref, watch } from "vue";
 import BaseModal from "../ui/BaseModal.vue";
 import BaseButton from "../ui/BaseButton.vue";
 import TabStrip from "../ui/TabStrip.vue";
 import TabButton from "../ui/TabButton.vue";
-import { descriptionParagraphs } from "../../lib/description";
 import ClearableInput from "../ui/ClearableInput.vue";
 import {
-  PREFERRED_MARK,
-  allBonuses,
-  allMounts,
-  mountsFor,
-  reachableBonuses,
-  readGroup,
-  slotLine,
-} from "../../engine/insignia";
-import type { StableFocus } from "../../stores/stableBrowser";
+  ChevronDown,
+  ChevronRight,
+  ChevronsDownUp,
+  ChevronsUpDown,
+} from "@lucide/vue";
+import { PREFERRED_MARK, readGroup } from "../../engine/insignia";
+import { stableCards, type StableCard } from "../../lib/stable-rows";
+import * as stableBrowser from "../../stores/stableBrowser";
 import type { Db, Build, Item } from "../../types";
 
 const props = defineProps<{
@@ -28,7 +29,6 @@ const props = defineProps<{
   build?: Build | null;
   /** The group a pick applies to. Null opens the same tables with nothing to set. */
   group: number | null;
-  focus?: StableFocus | null;
 }>();
 
 const emit = defineEmits<{
@@ -36,36 +36,41 @@ const emit = defineEmits<{
   apply: [payload: { group: number; mount: string }];
 }>();
 
-const tab = ref<"mount" | "bonus">(props.focus?.tab ?? "mount");
-const query = ref(props.focus?.query ?? "");
+const tab = stableBrowser.tab;
+const query = stableBrowser.query;
 
-const matches = (name: string) =>
-  name.toLowerCase().includes(query.value.trim().toLowerCase());
+const cards = computed(() => stableCards(props.db, tab.value, query.value));
 
-const byMount = computed(() =>
-  allMounts(props.db)
-    .filter((mount) => matches(mount.name))
-    .sort((a, b) => a.name.localeCompare(b.name))
-    .map((mount) => ({
-      head: mount,
-      // A mount's card is headed by its slot line, which says more here than prose would.
-      description: [] as string[],
-      reaches: reachableBonuses(props.db, mount),
-    })),
+// --- collapsing ---------------------------------------------------------------------------
+// Ids explicitly collapsed, not ids expanded, so "expand all" is a reset. A row-matched card
+// stays open regardless: collapsing it would hide what put it on screen.
+const collapsed = ref(new Set<string>());
+
+const isCollapsed = (card: StableCard) =>
+  collapsed.value.has(card.id) && !card.matchedByRow;
+
+function toggleCard(id: string) {
+  const next = new Set(collapsed.value);
+  if (next.has(id)) next.delete(id);
+  else next.add(id);
+  collapsed.value = next;
+}
+
+const collapseAll = () => {
+  collapsed.value = new Set(cards.value.map((card) => card.id));
+};
+const expandAll = () => {
+  collapsed.value = new Set();
+};
+
+/** The other side lists different ids, so an old collapse would land on whatever shares one. */
+watch(tab, expandAll);
+
+const openCount = computed(
+  () => cards.value.filter((card) => !isCollapsed(card)).length,
 );
 
-const byBonus = computed(() =>
-  allBonuses(props.db)
-    .filter((bonus) => matches(bonus.name))
-    .sort((a, b) => a.name.localeCompare(b.name))
-    .map((bonus) => ({
-      head: bonus,
-      description: descriptionParagraphs(
-        bonus.longDescription || bonus.shortDescription,
-      ),
-      reaches: mountsFor(props.db, bonus),
-    })),
-);
+// --- applying -----------------------------------------------------------------------------
 
 const occupied = computed(() => {
   if (props.group === null || !props.build) return null;
@@ -96,7 +101,7 @@ function apply(mount: Item) {
     data-testid="stable-browser"
     @close="emit('close')"
   >
-    <div class="flex flex-none flex-wrap items-end gap-3 px-4 pt-3">
+    <div class="flex flex-none flex-wrap items-center gap-2 px-4 pt-3">
       <TabStrip>
         <TabButton
           :active="tab === 'mount'"
@@ -111,80 +116,121 @@ function apply(mount: Item) {
           >By bonus</TabButton
         >
       </TabStrip>
+      <!-- Same pair, order and icons as the build editor's own section controls. -->
+      <BaseButton
+        class="ml-auto"
+        :disabled="openCount === cards.length"
+        data-testid="stable-expand-all"
+        @click="expandAll"
+        ><ChevronsUpDown />expand all</BaseButton
+      >
+      <BaseButton
+        :disabled="!openCount"
+        data-testid="stable-collapse-all"
+        @click="collapseAll"
+        ><ChevronsDownUp />collapse all</BaseButton
+      >
       <ClearableInput
         v-model="query"
-        class="ml-auto w-52"
-        placeholder="Filter…"
+        class="w-56"
+        placeholder="Filter mounts and bonuses…"
         testid="stable-filter"
       />
     </div>
 
     <div class="flex-1 overflow-y-auto p-4">
+      <p
+        v-if="!cards.length"
+        class="text-muted"
+        data-testid="stable-no-matches"
+      >
+        No mount or bonus matches that filter.
+      </p>
       <div
-        v-for="entry in tab === 'mount' ? byMount : byBonus"
-        :key="entry.head.id"
+        v-for="card in cards"
+        :key="card.id"
         class="mb-3 rounded-md border border-line"
         data-testid="stable-group-card"
       >
-        <div
-          class="flex items-baseline gap-2 border-b border-line px-2.5 py-1.5"
-        >
-          <span class="font-semibold">{{ entry.head.name }}</span>
-          <span v-if="entry.head.insigniaSlots" class="text-muted">{{
-            slotLine(entry.head)
-          }}</span>
-          <span v-else class="text-muted">{{
-            (entry.head.insigniaRecipe ?? []).join(" · ")
-          }}</span>
-          <span class="ml-auto text-muted">{{ entry.reaches.length }}</span>
+        <div class="flex items-center gap-2 border-b border-line pr-2.5">
+          <!-- "Use mount" stays outside the toggle: a button cannot nest in another. -->
+          <button
+            type="button"
+            class="flex min-w-0 flex-1 cursor-pointer items-center gap-2 rounded-md py-1.5 pl-2.5 text-left hover:bg-surface-2"
+            :aria-expanded="!isCollapsed(card)"
+            :title="isCollapsed(card) ? 'Expand' : 'Collapse'"
+            :data-testid="'stable-card-toggle:' + card.id"
+            @click="toggleCard(card.id)"
+          >
+            <ChevronRight
+              v-if="isCollapsed(card)"
+              class="size-4 flex-none text-muted"
+            />
+            <ChevronDown v-else class="size-4 flex-none text-muted" />
+            <span class="shrink-0 font-semibold">{{ card.name }}</span>
+            <span class="min-w-0 truncate text-muted">{{ card.meta }}</span>
+            <!-- A narrowed card says what it is a subset of. -->
+            <span class="ml-auto shrink-0 pl-2 text-muted">{{
+              card.matchedByRow
+                ? `${card.rows.length} of ${card.total}`
+                : card.total
+            }}</span>
+          </button>
           <!-- One mount per card on this side, so the pick belongs to the card, not to each
                bonus under it. -->
           <BaseButton
             v-if="tab === 'mount' && group !== null"
+            class="flex-none"
             data-testid="stable-apply"
-            :title="`Set Mount ${group} to ${entry.head.name}`"
-            @click="apply(entry.head)"
+            :title="`Set Mount ${group} to ${card.name}`"
+            @click="apply(card.head)"
             >Use mount</BaseButton
           >
         </div>
-        <div
-          v-if="entry.description.length"
-          class="border-b border-line px-2.5 py-1.5 text-muted"
-          data-testid="stable-head-description"
-        >
-          <p v-for="line in entry.description" :key="line">{{ line }}</p>
-        </div>
-        <p v-if="!entry.reaches.length" class="px-2.5 py-1.5 text-muted">
-          Nothing reaches this.
-        </p>
-        <ul v-else>
-          <li
-            v-for="reach in entry.reaches"
-            :key="reach.mount.id + ':' + reach.bonus.id"
-            class="flex items-center gap-2 px-2.5 py-1 odd:bg-surface-2/40"
-            data-testid="stable-reach-row"
+        <template v-if="!isCollapsed(card)">
+          <div
+            v-if="card.description.length"
+            class="border-b border-line px-2.5 py-1.5 text-muted"
+            data-testid="stable-head-description"
           >
-            <span
-              ><span>{{
-                tab === "mount" ? reach.bonus.name : reach.mount.name
-              }}</span
-              ><span
-                v-if="reach.preferred"
-                class="ml-1 whitespace-nowrap text-accent"
-                :title="preferredTitle(reach.preferred)"
-                >{{ PREFERRED_MARK.repeat(reach.preferred) }}</span
-              ></span
+            <p v-for="line in card.description" :key="line">{{ line }}</p>
+          </div>
+          <p v-if="!card.rows.length" class="px-2.5 py-1.5 text-muted">
+            Nothing reaches this.
+          </p>
+          <ul v-else>
+            <li
+              v-for="row in card.rows"
+              :key="row.id"
+              class="flex items-center gap-2 border-l-2 px-2.5 py-1"
+              :class="
+                row.matched && !card.matchedByRow
+                  ? 'border-accent bg-accent-soft font-semibold'
+                  : 'border-transparent odd:bg-surface-2/40'
+              "
+              data-testid="stable-reach-row"
             >
-            <BaseButton
-              v-if="tab === 'bonus' && group !== null"
-              class="ml-auto"
-              data-testid="stable-apply"
-              :title="`Set Mount ${group} to ${reach.mount.name}`"
-              @click="apply(reach.mount)"
-              >Use mount</BaseButton
-            >
-          </li>
-        </ul>
+              <span class="shrink-0"
+                ><span>{{ row.name }}</span
+                ><span
+                  v-if="row.preferred"
+                  class="ml-1 whitespace-nowrap text-accent"
+                  :title="preferredTitle(row.preferred)"
+                  >{{ PREFERRED_MARK.repeat(row.preferred) }}</span
+                ></span
+              >
+              <span class="min-w-0 truncate text-muted">{{ row.meta }}</span>
+              <BaseButton
+                v-if="tab === 'bonus' && group !== null"
+                class="ml-auto"
+                data-testid="stable-apply"
+                :title="`Set Mount ${group} to ${row.name}`"
+                @click="apply(row.item)"
+                >Use mount</BaseButton
+              >
+            </li>
+          </ul>
+        </template>
       </div>
     </div>
 

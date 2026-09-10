@@ -120,6 +120,96 @@ describe("itemCardRows", () => {
     expect(row.conditions).toBe("Fighter + Tier 2");
   });
 
+  // A bonus's own gate is only populated while it is inactive, and a lone grant is never drawn
+  // as a labelled block, so without folding the two a one-grant bonus says nothing when on.
+  it("states an active single grant's own conditions on the row", () => {
+    const [row] = itemCardRows(
+      item(),
+      [
+        bonus({
+          active: true,
+          grants: [
+            grantEval(
+              { stats: { power: 10 } },
+              {
+                gate: {
+                  ok: true,
+                  leaves: [{ ok: true, label: "party enabled" }],
+                  unmet: [],
+                },
+              },
+            ),
+          ],
+        }),
+      ],
+      [],
+    );
+    expect(row.conditions).toBe("party enabled");
+  });
+
+  it("does not repeat a gate the inactive bonus already reports", () => {
+    const gate = {
+      ok: false,
+      leaves: [{ ok: false, label: "party enabled" }],
+      unmet: [{ ok: false, label: "party enabled" }],
+    };
+    const [row] = itemCardRows(
+      item(),
+      [
+        bonus({
+          active: false,
+          gate,
+          grants: [
+            grantEval({ stats: { power: 10 } }, { active: false, gate }),
+          ],
+        }),
+      ],
+      [],
+    );
+    expect(row.conditions).toBe("party enabled");
+  });
+
+  // Several grants each get their own labelled block, which already states their conditions;
+  // folding them into the row's one line as well would say it twice.
+  it("leaves a multi-grant row's conditions to the bonus gate alone", () => {
+    const [row] = itemCardRows(
+      item(),
+      [
+        bonus({
+          active: true,
+          grants: [
+            grantEval(
+              { stats: { power: 10 } },
+              {
+                gate: {
+                  ok: true,
+                  leaves: [{ ok: true, label: "2 occurrences" }],
+                  unmet: [],
+                },
+              },
+            ),
+            grantEval(
+              { stats: { sev: 5 } },
+              {
+                gate: {
+                  ok: true,
+                  leaves: [{ ok: true, label: "combat enabled" }],
+                  unmet: [],
+                },
+              },
+            ),
+          ],
+        }),
+      ],
+      [],
+    );
+    expect(row.conditions).toBe("");
+    expect(row.grants.map((g) => g.label)).toEqual([
+      "2 occurrences",
+      "combat enabled",
+    ]);
+  });
+
   it("names the item's own zero-count occurrence row only while inactive", () => {
     const occRow: OccurrenceRow = {
       bonusId: "b1",

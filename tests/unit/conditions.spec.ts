@@ -224,6 +224,46 @@ describe("conditions.ts equipped/bonusOccurrences leaves support exactly", () =>
   });
 });
 
+// A count leaf carrying no bound reads as "at least one", which is what makes an explicit
+// `atLeast: 1` in the data redundant rather than load-bearing.
+describe("conditions.ts count leaves default to at least one", () => {
+  it("equipped: a bare tag needs one, and is not satisfied by none", () => {
+    const cond = { equipped: { tag: "ring_of_x" } };
+    expect(evaluate(cond, ctx({}, { tags: new Map() }))).toBe(false);
+    expect(evaluate(cond, ctx({}, { tags: new Map([["ring_of_x", 1]]) }))).toBe(
+      true,
+    );
+  });
+
+  it("bonusOccurrences: a bare bonus needs one, and is not satisfied by none", () => {
+    const cond = { bonusOccurrences: { bonus: "b" } };
+    expect(evaluate(cond, ctx({}, { bonusOccurrences: new Map() }))).toBe(
+      false,
+    );
+    expect(
+      evaluate(cond, ctx({}, { bonusOccurrences: new Map([["b", 1]]) })),
+    ).toBe(true);
+  });
+
+  it("reads the same as spelling the default out", () => {
+    const none = ctx({}, { bonusOccurrences: new Map() });
+    expect(explain({ bonusOccurrences: { bonus: "b" } }, none)).toEqual(
+      explain({ bonusOccurrences: { bonus: "b", atLeast: 1 } }, none),
+    );
+    const noTags = ctx({}, { tags: new Map() });
+    expect(explain({ equipped: { tag: "t" } }, noTags)).toEqual(
+      explain({ equipped: { tag: "t", atLeast: 1 } }, noTags),
+    );
+  });
+
+  // An upper bound on its own is a real constraint, so it must not be widened into one.
+  it("leaves a below-only bound alone", () => {
+    const cond = { equipped: { tag: "t", below: 2 } };
+    expect(evaluate(cond, ctx({}, { tags: new Map() }))).toBe(true);
+    expect(evaluate(cond, ctx({}, { tags: new Map([["t", 2]]) }))).toBe(false);
+  });
+});
+
 // Every list-taking leaf matches its list as "one of". Requiring several toggles at once is
 // `all`, so the list never has to be read two ways.
 describe("conditions.ts toggle leaf", () => {

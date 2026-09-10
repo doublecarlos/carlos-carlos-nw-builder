@@ -83,6 +83,9 @@ const emit = defineEmits<{
    *  (e.g. ItemPicker.vue gating its own expensive per-candidate work to only run while the
    *  dropdown is actually open, same reasoning as this component's own `filtered` below). */
   "update:open": [value: boolean];
+  /** Mirrors what has been typed, for a caller whose option list depends on the query
+   *  (ItemPicker's exact-id override). Filtering itself stays here. */
+  "update:query": [value: string];
 }>();
 
 const model = defineModel<string>({ default: "" });
@@ -90,6 +93,7 @@ const model = defineModel<string>({ default: "" });
 const open = ref(false);
 watch(open, (value) => emit("update:open", value));
 const query = ref("");
+watch(query, (value) => emit("update:query", value));
 const highlight = ref(0);
 const input = useTemplateRef("input");
 const list = ref<InstanceType<typeof ComboBoxMenu> | null>(null);
