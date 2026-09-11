@@ -39,6 +39,8 @@ import BaseCardBody from "../ui/BaseCardBody.vue";
 import IconButton from "../ui/IconButton.vue";
 import BaseButton from "../ui/BaseButton.vue";
 import BaseLink from "../ui/BaseLink.vue";
+import LinkList from "../ui/LinkList.vue";
+import type { LinkListItem } from "../ui/LinkList.vue";
 
 const props = withDefaults(
   defineProps<{
@@ -184,7 +186,15 @@ const rows = computed(() =>
     props.bonuses,
     props.occurrenceRows,
     props.bonusById,
-  ),
+  ).map((row) => ({
+    ...row,
+    sharedWith: row.sharedWith
+      ? row.sharedWith.map<LinkListItem>((part) => ({
+          key: part.slotId,
+          label: part.name,
+        }))
+      : null,
+  })),
 );
 </script>
 
@@ -321,14 +331,11 @@ const rows = computed(() =>
           <template v-else>
             <div v-if="row.sharedWith" class="pl-3 leading-snug text-muted">
               Other parts:
-              <template v-for="(part, index) in row.sharedWith" :key="part.name"
-                ><template v-if="index">, </template
-                ><BaseLink
-                  data-testid="item-card-shared-source"
-                  @click="emit('go-to-slot', part.slotId)"
-                  >{{ part.name }}</BaseLink
-                ></template
-              >
+              <LinkList
+                :items="row.sharedWith"
+                link-testid="item-card-shared-source"
+                @select="emit('go-to-slot', $event)"
+              />
             </div>
 
             <!-- One block per grant -- own label, own active state, own ladder/unmet. The
@@ -446,10 +453,10 @@ const rows = computed(() =>
           >
             overridden by
             <BaseLink
-              v-if="row.excludedBy.slotId"
+              :plain="!row.excludedBy.slotId"
               @click="emit('go-to-slot', row.excludedBy.slotId)"
               >{{ row.excludedBy.name }}</BaseLink
-            ><template v-else>{{ row.excludedBy.name }}</template>
+            >
           </div>
         </div>
       </div>

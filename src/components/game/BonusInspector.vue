@@ -14,6 +14,8 @@ import BaseBadge from "../ui/BaseBadge.vue";
 import BaseCheckbox from "../ui/BaseCheckbox.vue";
 import BaseInput from "../ui/BaseInput.vue";
 import BaseLink from "../ui/BaseLink.vue";
+import LinkList from "../ui/LinkList.vue";
+import type { LinkListItem } from "../ui/LinkList.vue";
 import IconButton from "../ui/IconButton.vue";
 import { Crosshair } from "@lucide/vue";
 import type {
@@ -65,7 +67,7 @@ function locate(entry: Entry) {
 }
 
 /** Parks the build editor's cursor on a row this bonus comes from. */
-function jumpTo(slotId: string) {
+function jumpToSlot(slotId: string) {
   goTo.requestJump({ slotId });
 }
 
@@ -85,7 +87,7 @@ interface Entry {
   id: string;
   title: string;
   qualifier: string;
-  sources: BonusSource[];
+  sources: LinkListItem[];
   slot: string;
   /** The bonus that won over this one, with its instancing slot to jump to; an id the build
    *  no longer resolves keeps only its text. */
@@ -119,11 +121,6 @@ const visibleBonuses = computed(() =>
   result.value.bonuses.filter((entry) => !isHiddenBonus(entry.bonus)),
 );
 
-// Over every bonus, hidden ones included: an excluder can be one the list leaves out.
-const bonusById = computed(
-  () => new Map(result.value.bonuses.map((entry) => [entry.id, entry])),
-);
-
 const entries = computed<Entry[]>(() => {
   const titleCounts = new Map<string, number>();
   for (const entry of visibleBonuses.value) {
@@ -145,9 +142,12 @@ const entries = computed<Entry[]>(() => {
       title,
       qualifier:
         (titleCounts.get(title) ?? 0) > 1 ? conditionSummary(entry) : "",
-      sources: entry.sources ?? [],
+      sources: (entry.sources ?? []).map((source) => ({
+        key: source.slotId,
+        label: source.name,
+      })),
       slot: db.value.slotFor(entry.slotId)?.label ?? entry.slotId,
-      excludedBy: excluderFor(entry, bonusById.value),
+      excludedBy: excluderFor(entry, engine.bonusById.value),
       stacks: entry.stacks ?? 1,
       chose: choseLabel(entry.chose),
       payload: entry.active ? (entry.appliedStats ?? null) : entry.previewStats,
@@ -166,7 +166,7 @@ const filtered = computed(() => {
   return entries.value.filter((entry) => {
     if (nearMissOnly.value && !entry.nearMiss) return false;
     return matchesQuery(
-      [entry.title, entry.id, ...entry.sources.map((s) => s.name)],
+      [entry.title, entry.id, ...entry.sources.map((s) => s.label)],
       query.value,
     );
   });
@@ -309,14 +309,11 @@ const counts = computed(() => {
         >
           <span class="text-warn">overridden by</span>
           <BaseLink
-            v-if="entry.excludedBy.slotId"
             class="ml-1"
-            @click="jumpTo(entry.excludedBy.slotId)"
+            :plain="!entry.excludedBy.slotId"
+            @click="jumpToSlot(entry.excludedBy.slotId)"
             >{{ entry.excludedBy.name }}</BaseLink
           >
-          <span v-else class="ml-1 text-muted">{{
-            entry.excludedBy.name
-          }}</span>
         </p>
 
         <div v-if="open[entry.id]" class="pb-0.5 pl-3.5 pt-1">
@@ -335,20 +332,16 @@ const counts = computed(() => {
             slot
             <BaseLink
               data-testid="bonus-slot-link"
-              @click="jumpTo(entry.raw.slotId)"
+              @click="jumpToSlot(entry.raw.slotId)"
               >{{ entry.slot }}</BaseLink
             >
             · from
-            <template v-if="entry.sources.length">
-              <template v-for="(source, index) in entry.sources" :key="index"
-                ><template v-if="index">, </template
-                ><BaseLink
-                  data-testid="bonus-source-link"
-                  @click="jumpTo(source.slotId)"
-                  >{{ source.name }}</BaseLink
-                ></template
-              >
-            </template>
+            <LinkList
+              v-if="entry.sources.length"
+              :items="entry.sources"
+              link-testid="bonus-source-link"
+              @select="jumpToSlot"
+            />
             <template v-else>-</template>
           </p>
           <p class="mt-1 block font-mono text-muted">{{ entry.id }}</p>

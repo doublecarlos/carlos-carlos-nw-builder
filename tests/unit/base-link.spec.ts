@@ -38,4 +38,12 @@ describe("BaseLink", () => {
     const html = await render({ "data-testid": "notice-action" });
     expect(html).toContain('data-testid="notice-action"');
   });
+
+  it("renders plain text in a span when there is nowhere to go", async () => {
+    const html = await render({ plain: true, "data-testid": "excluder" });
+    expect(html).toMatch(/^<span [^>]*data-testid="excluder"/);
+    expect(html).not.toContain("<button");
+    expect(html).not.toContain("text-accent");
+    expect(html).toContain("apply");
+  });
 });

@@ -70,6 +70,7 @@ const tooltip = ref<InstanceType<typeof BasePopover> | null>(null);
 const db = engine.db;
 const build = builds.build;
 const resolved = engine.resolved;
+const bonusById = engine.bonusById;
 
 /** The swaps "update" would make, one per line. */
 const retiredTitle = computed(() =>
@@ -211,14 +212,6 @@ const errorsBySlot = computed(() => {
   }
   return map;
 });
-
-/**
- * bonusId -> resolved entry, so a hover can look up an item's bonuses without scanning
- * all 48 of them per row.
- */
-const bonusById = computed(
-  () => new Map(result.value.bonuses.map((bonus) => [bonus.id, bonus])),
-);
 
 function itemIn(slotId: string): Item | null {
   return rowBySlot.value.get(slotId)?.item ?? null;

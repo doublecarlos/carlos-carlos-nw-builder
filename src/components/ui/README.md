@@ -14,7 +14,7 @@ ordinary one.
 | BaseCheckbox                              | A checkbox and its label as one clickable unit, `v-model` only                            |
 | BaseDrawer                                | An in-flow panel worked alongside its surroundings; use BaseModal for open-use-leave      |
 | BaseInput                                 | The ordinary text/number/search field                                                     |
-| BaseLink                                  | An action link inline in running text, on the text baseline; icon buttons are BaseButton  |
+| BaseLink                                  | An action link inline in running text, on the text baseline; `plain` writes it as text    |
 | BaseModal                                 | The app's one modal overlay: backdrop, focus trap, Escape, scroll lock                    |
 | BaseNotice                                | Dismissible inline message                                                                |
 | BasePanel                                 | Side-panel shell                                                                          |
@@ -36,6 +36,7 @@ ordinary one.
 | HistoryButton                             | Undo/redo button with an inline "what this step would do" label                           |
 | IconButton                                | Icon-only button; `title` is both its accessible name and its tooltip                     |
 | IdField                                   | Read-only display of a frozen, generator-assigned id                                      |
+| LinkList                                  | A comma-separated run of BaseLinks inside a sentence, some entries optionally plain text  |
 | OcrHint                                   | Marks a field that reads pasted screenshots                                               |
 | OcrTextField                              | A description field that also OCRs a pasted screenshot into it                            |
 | PaletteInput                              | GoToPalette's own combobox-trigger search field                                           |
