@@ -335,7 +335,9 @@ const counts = computed(() => {
               @click="jumpToSlot(entry.raw.slotId)"
               >{{ entry.slot }}</BaseLink
             >
-            · from
+          </p>
+          <p class="mt-1 block text-muted">
+            from
             <LinkList
               v-if="entry.sources.length"
               :items="entry.sources"

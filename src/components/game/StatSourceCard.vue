@@ -13,7 +13,6 @@ import { signedStat } from "../../lib/format";
 import BaseCard from "../ui/BaseCard.vue";
 import BaseCardHeader from "../ui/BaseCardHeader.vue";
 import BaseCardBody from "../ui/BaseCardBody.vue";
-import BaseLink from "../ui/BaseLink.vue";
 import type { StatSourceSection } from "../../engine/stat-sources";
 import { useEscapeToClose } from "../../composables/useEscapeToClose";
 
@@ -29,6 +28,12 @@ useEscapeToClose(() => emit("close"));
 // Width (`w-64` = 256px) and max-height (`max-h-96` = 384px) are read back by StatPanel.vue's
 // own positioning logic (`CARD_W`) -- keep them in step. `.statcard` on the root is a bare JS
 // hook for that same positioning code (`closest('.statcard')`), not a style.
+
+// A source with a slot renders its whole row as the button that jumps there; one without
+// stays a plain div. Both share this layout, hover included, so the two read as the same
+// kind of line.
+const ROW_CLASS =
+  "statcard-row flex justify-between gap-2 border-b border-line py-0.5 last:border-b-0 hover:shadow-[inset_0_1px_0_var(--color-accent),inset_0_-1px_0_var(--color-accent)]";
 </script>
 
 <template>
@@ -63,23 +68,30 @@ useEscapeToClose(() => emit("close"));
           class="statcard-rows flex flex-col"
           data-testid="stat-card-rows"
         >
-          <div
+          <template
             v-for="(src, j) in section.sources"
             :key="`${src.slotId ?? ''}:${src.name}:${j}`"
-            class="statcard-row flex justify-between gap-2 border-b border-line py-0.5 last:border-b-0 hover:shadow-[inset_0_1px_0_var(--color-accent),inset_0_-1px_0_var(--color-accent)]"
-            data-testid="stat-card-row"
           >
-            <BaseLink
+            <button
               v-if="src.slotId"
-              data-testid="stat-card-source-link"
+              type="button"
+              :class="ROW_CLASS"
+              class="w-full cursor-pointer bg-transparent text-left focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent"
+              data-testid="stat-card-row"
               @click="emit('go-to-slot', src.slotId)"
-              >{{ src.name }}</BaseLink
             >
-            <span v-else>{{ src.name }}</span>
-            <span class="tabular-nums">{{
-              signedStat(section.key, src.value)
-            }}</span>
-          </div>
+              <span class="min-w-0">{{ src.name }}</span>
+              <span class="flex-none tabular-nums">{{
+                signedStat(section.key, src.value)
+              }}</span>
+            </button>
+            <div v-else :class="ROW_CLASS" data-testid="stat-card-row">
+              <span class="min-w-0">{{ src.name }}</span>
+              <span class="flex-none tabular-nums">{{
+                signedStat(section.key, src.value)
+              }}</span>
+            </div>
+          </template>
         </div>
         <div
           v-else

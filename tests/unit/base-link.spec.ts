@@ -21,6 +21,7 @@ describe("BaseLink", () => {
     for (const cls of [
       "inline-block",
       "align-baseline",
+      "text-left",
       "text-accent",
       "hover:underline",
       "focus-visible:underline",
