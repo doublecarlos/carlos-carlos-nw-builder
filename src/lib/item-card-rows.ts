@@ -1,9 +1,10 @@
 // ItemCard.vue's bonus-row derivation, Vue-free so it is unit-testable.
-import { label as statLabel, signedStat } from "./format";
+import { bonusTitle, label as statLabel, signedStat } from "./format";
 import { descriptionParagraphs } from "./description";
 import { isHiddenBonus } from "../engine/bonus";
 import type { OccurrenceRow } from "../composables/useItemBonusOccurrences";
 import type {
+  BonusSource,
   EvaluatedBonus,
   Grant,
   GrantEvaluation,
@@ -46,8 +47,12 @@ function zeroOccurrenceNote(
 }
 
 // Other items crediting the same non-tiered, non-stacking bonus, so it doesn't read as
-// each item granting it independently.
-function sharedSources(entry: EvaluatedBonus, itemName: string) {
+// each item granting it independently. One entry per name, pointing at that name's first
+// slot: two rings of one item are one part, not two.
+function sharedSources(
+  entry: EvaluatedBonus,
+  itemName: string,
+): BonusSource[] | null {
   if (
     !entry.active ||
     tierGrant(entry) ||
@@ -55,10 +60,26 @@ function sharedSources(entry: EvaluatedBonus, itemName: string) {
   ) {
     return null;
   }
-  const others = [...new Set(entry.sources?.map((s) => s.name) ?? [])].filter(
-    (name) => name !== itemName,
-  );
-  return others.length ? others : null;
+  const others = new Map<string, BonusSource>();
+  for (const source of entry.sources ?? []) {
+    if (source.name !== itemName && !others.has(source.name)) {
+      others.set(source.name, source);
+    }
+  }
+  return others.size ? [...others.values()] : null;
+}
+
+// The excluder's title and instancing slot, so a row can link to it. An id the map does
+// not know keeps its text with no slot to link to. Shared with BonusInspector.vue.
+export function excluderFor(
+  entry: EvaluatedBonus,
+  bonusById: Map<string, EvaluatedBonus>,
+): BonusSource | null {
+  if (!entry.excludedBy) return null;
+  const excluder = bonusById.get(entry.excludedBy);
+  return excluder
+    ? { name: bonusTitle(excluder), slotId: excluder.slotId }
+    : { name: entry.excludedBy, slotId: "" };
 }
 
 function tierGrant(entry: EvaluatedBonus) {
@@ -173,6 +194,7 @@ function buildItemCardRow(
   entry: EvaluatedBonus,
   item: Item,
   occurrenceRowByBonusId: Map<string, OccurrenceRow>,
+  bonusById: Map<string, EvaluatedBonus>,
 ) {
   const sharedWith = sharedSources(entry, item.name);
   const isFirst =
@@ -194,7 +216,7 @@ function buildItemCardRow(
       entry.active,
       occurrenceRowByBonusId,
     ),
-    excludedBy: entry.excludedBy,
+    excludedBy: excluderFor(entry, bonusById),
     descriptions: (entry.grants ?? [])
       .filter((g) => g.active)
       .flatMap((g) =>
@@ -205,7 +227,7 @@ function buildItemCardRow(
     sharedWith,
     // A shared bonus shows real numbers on exactly one card; the rest point to it.
     secondary: Boolean(sharedWith) && !isFirst,
-    firstSource: entry.sources?.[0]?.name ?? null,
+    firstSource: entry.sources?.[0] ?? null,
   };
 }
 
@@ -215,15 +237,20 @@ const STATE_DOT: Record<string, string> = {
   excluded: "bg-danger",
 };
 
+// `bonusById` covers the whole build, not just `bonuses`: an excluder usually sits on
+// another item.
 export function itemCardRows(
   item: Item,
   bonuses: EvaluatedBonus[],
   occurrenceRows: OccurrenceRow[],
+  bonusById: Map<string, EvaluatedBonus> = new Map(),
 ): ItemCardRow[] {
   const occurrenceRowByBonusId = new Map(
     occurrenceRows.map((row) => [row.bonusId, row]),
   );
   return bonuses
     .filter((entry) => !isHiddenBonus(entry.bonus))
-    .map((entry) => buildItemCardRow(entry, item, occurrenceRowByBonusId));
+    .map((entry) =>
+      buildItemCardRow(entry, item, occurrenceRowByBonusId, bonusById),
+    );
 }

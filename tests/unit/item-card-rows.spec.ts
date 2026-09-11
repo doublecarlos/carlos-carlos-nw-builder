@@ -371,13 +371,54 @@ describe("itemCardRows", () => {
     });
 
     const [rowForA] = itemCardRows(item({ name: "Item A" }), [shared], []);
-    expect(rowForA.sharedWith).toEqual(["Item B"]);
+    expect(rowForA.sharedWith).toEqual([{ name: "Item B", slotId: "slot2" }]);
     expect(rowForA.secondary).toBe(false);
 
     const [rowForB] = itemCardRows(item({ name: "Item B" }), [shared], []);
-    expect(rowForB.sharedWith).toEqual(["Item A"]);
+    expect(rowForB.sharedWith).toEqual([{ name: "Item A", slotId: "slot1" }]);
     expect(rowForB.secondary).toBe(true);
-    expect(rowForB.firstSource).toBe("Item A");
+    expect(rowForB.firstSource).toEqual({ name: "Item A", slotId: "slot1" });
+  });
+
+  it("lists each other part once, at the first slot carrying that name", () => {
+    const shared = bonus({
+      sources: [
+        { name: "Item A", slotId: "slot1" },
+        { name: "Ring", slotId: "ring1" },
+        { name: "Ring", slotId: "ring2" },
+        { name: "Item A", slotId: "slot3" },
+      ],
+    });
+    const [row] = itemCardRows(item({ name: "Item A" }), [shared], []);
+    expect(row.sharedWith).toEqual([{ name: "Ring", slotId: "ring1" }]);
+  });
+
+  it("resolves the excluder's title and slot through the build's bonus map", () => {
+    const excluder = bonus({
+      id: "winner",
+      bonus: { id: "winner", name: "Winner" },
+      sources: [{ name: "Other Item", slotId: "slot9" }],
+      slotId: "slot9",
+    });
+    const [row] = itemCardRows(
+      item(),
+      [bonus({ excluded: true, excludedBy: "winner" })],
+      [],
+      new Map([[excluder.id, excluder]]),
+    );
+    expect(row.excludedBy).toEqual({ name: "Winner", slotId: "slot9" });
+  });
+
+  it("keeps an unresolved excluder's id as text with nowhere to link", () => {
+    const [row] = itemCardRows(
+      item(),
+      [bonus({ excluded: true, excludedBy: "gone" })],
+      [],
+    );
+    expect(row.excludedBy).toEqual({ name: "gone", slotId: "" });
+
+    const [plain] = itemCardRows(item(), [bonus()], []);
+    expect(plain.excludedBy).toBeNull();
   });
 
   it("does not credit sharing to a tiered or perSource-stacking bonus", () => {

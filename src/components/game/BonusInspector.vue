@@ -4,16 +4,20 @@ import { bonusTitle, label as statLabel, signedStat } from "../../lib/format";
 import { matchesQuery } from "../../lib/text-filter";
 import { isHiddenBonus } from "../../engine/bonus";
 import { hasSuppliers } from "../../lib/bonus-slots";
+import { excluderFor } from "../../lib/item-card-rows";
 import * as engine from "../../stores/resolved";
+import * as goTo from "../../stores/goTo";
 import * as slotFilter from "../../stores/slotFilter";
 import BasePanel from "../ui/BasePanel.vue";
 import PanelHead from "../ui/PanelHead.vue";
 import BaseBadge from "../ui/BaseBadge.vue";
 import BaseCheckbox from "../ui/BaseCheckbox.vue";
 import BaseInput from "../ui/BaseInput.vue";
+import BaseLink from "../ui/BaseLink.vue";
 import IconButton from "../ui/IconButton.vue";
 import { Crosshair } from "@lucide/vue";
 import type {
+  BonusSource,
   EvaluatedBonus,
   ConditionLeafResult,
   StatValues,
@@ -60,6 +64,11 @@ function locate(entry: Entry) {
   slotFilter.showSuppliersOf(entry.id, entry.title);
 }
 
+/** Parks the build editor's cursor on a row this bonus comes from. */
+function jumpTo(slotId: string) {
+  goTo.requestJump({ slotId });
+}
+
 function statList(stats: StatValues | null | undefined) {
   if (!stats) return [];
   return Object.entries(stats).map(
@@ -76,8 +85,11 @@ interface Entry {
   id: string;
   title: string;
   qualifier: string;
-  sources: string[];
+  sources: BonusSource[];
   slot: string;
+  /** The bonus that won over this one, with its instancing slot to jump to; an id the build
+   *  no longer resolves keeps only its text. */
+  excludedBy: BonusSource | null;
   stacks: number;
   chose: string;
   payload: StatValues | null;
@@ -107,6 +119,11 @@ const visibleBonuses = computed(() =>
   result.value.bonuses.filter((entry) => !isHiddenBonus(entry.bonus)),
 );
 
+// Over every bonus, hidden ones included: an excluder can be one the list leaves out.
+const bonusById = computed(
+  () => new Map(result.value.bonuses.map((entry) => [entry.id, entry])),
+);
+
 const entries = computed<Entry[]>(() => {
   const titleCounts = new Map<string, number>();
   for (const entry of visibleBonuses.value) {
@@ -128,8 +145,9 @@ const entries = computed<Entry[]>(() => {
       title,
       qualifier:
         (titleCounts.get(title) ?? 0) > 1 ? conditionSummary(entry) : "",
-      sources: entry.sources?.map((s) => s.name) ?? [],
+      sources: entry.sources ?? [],
       slot: db.value.slotFor(entry.slotId)?.label ?? entry.slotId,
+      excludedBy: excluderFor(entry, bonusById.value),
       stacks: entry.stacks ?? 1,
       chose: choseLabel(entry.chose),
       payload: entry.active ? (entry.appliedStats ?? null) : entry.previewStats,
@@ -147,7 +165,10 @@ const entries = computed<Entry[]>(() => {
 const filtered = computed(() => {
   return entries.value.filter((entry) => {
     if (nearMissOnly.value && !entry.nearMiss) return false;
-    return matchesQuery([entry.title, entry.id, ...entry.sources], query.value);
+    return matchesQuery(
+      [entry.title, entry.id, ...entry.sources.map((s) => s.name)],
+      query.value,
+    );
   });
 });
 
@@ -281,9 +302,21 @@ const counts = computed(() => {
           </li>
         </ul>
 
-        <p v-if="entry.raw.excluded" class="mt-1 pl-3.5 text-muted">
+        <p
+          v-if="entry.excludedBy"
+          class="mt-1 pl-3.5 text-muted"
+          data-testid="bonus-excluded-by"
+        >
           <span class="text-warn">overridden by</span>
-          <span class="ml-1 text-muted">{{ entry.raw.excludedBy }}</span>
+          <BaseLink
+            v-if="entry.excludedBy.slotId"
+            class="ml-1"
+            @click="jumpTo(entry.excludedBy.slotId)"
+            >{{ entry.excludedBy.name }}</BaseLink
+          >
+          <span v-else class="ml-1 text-muted">{{
+            entry.excludedBy.name
+          }}</span>
         </p>
 
         <div v-if="open[entry.id]" class="pb-0.5 pl-3.5 pt-1">
@@ -299,7 +332,24 @@ const counts = computed(() => {
             per stack: {{ statList(entry.perStack).join(", ") }}
           </p>
           <p class="mt-1 block text-muted">
-            slot {{ entry.slot }} · from {{ entry.sources.join(", ") || "-" }}
+            slot
+            <BaseLink
+              data-testid="bonus-slot-link"
+              @click="jumpTo(entry.raw.slotId)"
+              >{{ entry.slot }}</BaseLink
+            >
+            · from
+            <template v-if="entry.sources.length">
+              <template v-for="(source, index) in entry.sources" :key="index"
+                ><template v-if="index">, </template
+                ><BaseLink
+                  data-testid="bonus-source-link"
+                  @click="jumpTo(source.slotId)"
+                  >{{ source.name }}</BaseLink
+                ></template
+              >
+            </template>
+            <template v-else>-</template>
           </p>
           <p class="mt-1 block font-mono text-muted">{{ entry.id }}</p>
         </div>
