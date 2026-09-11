@@ -29,11 +29,13 @@ export function toggle() {
   else open();
 }
 
-export interface JumpTarget {
-  sectionId: string;
-  /** Omitted for a whole-section jump. */
-  slotId?: string;
-}
+/**
+ * A whole section, a slot within a known section, or a slot on its own. The last shape is for
+ * callers that only hold a slot id (a hover card's link, say); the editor resolves its section.
+ */
+export type JumpTarget =
+  | { sectionId: string; slotId?: string }
+  | { sectionId?: undefined; slotId: string };
 
 const _jump = ref<JumpTarget | null>(null);
 

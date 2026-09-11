@@ -2,7 +2,13 @@
 // tests/unit/go-to.spec.ts; this is about opening it, what choosing a row actually does, and
 // the header affordance that tells anyone it exists.
 import { test, expect, type Page } from "@playwright/test";
-import { openBuilder, headerRow, cursorRow, slotRow } from "./support/app";
+import {
+  openBuilder,
+  headerRow,
+  cursorRow,
+  slotRow,
+  slotFilterInput,
+} from "./support/app";
 import {
   addBuild,
   addFolder,
@@ -141,6 +147,25 @@ test.describe("choosing a destination", () => {
     // to land on at all.
     await expect(headerRow(page, "gear")).toContainText("▾");
     await expect(slotRow(page, "gear.offhandMod1")).toBeVisible();
+  });
+
+  test("a slot hidden by the slot filter clears the filter on the way", async ({
+    page,
+  }) => {
+    await openBuilder(page);
+    await slotFilterInput(page).fill("boons");
+    await expect(slotRow(page, "gear.offhandMod1")).toBeHidden();
+
+    await openPalette(page, "offhand mod 1");
+    await page.keyboard.press("Enter");
+
+    // A filtered-out row is not in the DOM to land on, so the jump has to win over the filter.
+    await expect(slotFilterInput(page)).toHaveValue("");
+    await expect(slotRow(page, "gear.offhandMod1")).toBeVisible();
+    await expect(cursorRow(page)).toHaveAttribute(
+      "data-cursor-key",
+      "slot:gear.offhandMod1",
+    );
   });
 
   test("a section lands the cursor on its header, without opening it", async ({
