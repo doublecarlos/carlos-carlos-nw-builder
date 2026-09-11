@@ -57,14 +57,13 @@ async function onImportFile(event: Event) {
         <h2 class="text-3xl font-semibold tracking-wide">
           Carlos Carlos' NW Builder
         </h2>
-        <p class="text-lg text-muted">Create and compare Neverwinter builds.</p>
-        <p class="text-muted">
+        <p class="text-lg text-text">Create and compare Neverwinter builds.</p>
+        <p class="text-text">
           You can define your own items and bonuses using customization layers.
           <br />
           Built-in database contains recent gear for Hellbringer and Arbiter.
           <br />
-          Everything is saved on your browser - export to download a permanent
-          copy.
+          Everything is saved in your browser.
         </p>
       </div>
 
@@ -109,7 +108,7 @@ async function onImportFile(event: Event) {
       </div>
 
       <!-- Also in the About dialog, which is the only place a returning user would see it. -->
-      <p class="text-xs text-muted" data-testid="landing-disclaimer">
+      <p class="text-sm text-muted" data-testid="landing-disclaimer">
         {{ DISCLAIMER }}
       </p>
     </div>

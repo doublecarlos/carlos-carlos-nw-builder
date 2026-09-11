@@ -115,9 +115,9 @@ describe("migratePresetListSlots", () => {
   });
 });
 
-describe("normalise: migration through the storage door", () => {
+describe("normalize: migration through the storage door", () => {
   it("migrates a stored build and counts its rows", () => {
-    const build = storage.normalise({
+    const build = storage.normalize({
       choices: { "group.group4": "a", "group.group20": "b" },
     });
     expect(build.choices["group.group#1"]).toBe("a");
@@ -132,7 +132,7 @@ describe("normalise: migration through the storage door", () => {
       name: "Build",
       choices: { "misc.misc3": "a" },
     };
-    const build = storage.normalise({
+    const build = storage.normalize({
       ...snapshot,
       downloaded: { snapshot, at: 1 },
     });
@@ -147,7 +147,7 @@ describe("normalise: migration through the storage door", () => {
   });
 
   it("migrates a layer's authored presets", () => {
-    const layer = storage.normaliseLayer({
+    const layer = storage.normalizeLayer({
       id: "l1",
       name: "Layer",
       overlay: {

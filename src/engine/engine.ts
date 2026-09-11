@@ -27,6 +27,7 @@ import type {
   EngineError,
   ResolvedBuild,
 } from "../types";
+import { outOfRangeErrorMessage } from "../lib/format";
 
 const zeros = (keys: StatKey[]) => {
   const out: Record<StatKey, number> = {};
@@ -424,7 +425,7 @@ function parameterRanges(db: Db, resolved: ResolvedBonuses): EngineError[] {
         slotId: slot.id,
         kind: "outOfRange",
         choice: slot.label,
-        message: `${slot.label}: ${show(value)} is outside ${low}–${high}`,
+        message: outOfRangeErrorMessage(slot.label, show(value), low, high),
         severity: "error",
       });
     }
@@ -454,7 +455,7 @@ function assignmentErrors(
           slotId: slot.id,
           kind: "outOfRange",
           choice: item.name,
-          message: `${item.name}: ${count} is outside ${min}–${rowMax}`,
+          message: outOfRangeErrorMessage(item.name, count, min, rowMax),
           severity: "error",
         });
       }
@@ -490,7 +491,12 @@ function itemDynamicStatRanges(build: Build, row: ResolvedRow): EngineError[] {
         slotId: row.slotId,
         kind: "outOfRange",
         choice: row.item!.name,
-        message: `${row.item!.name}: ${value} is outside ${config.min}–${config.max}`,
+        message: outOfRangeErrorMessage(
+          row.item!.name,
+          value,
+          config.min,
+          config.max,
+        ),
         severity: "error",
       });
     }
@@ -512,7 +518,12 @@ function repetitionRange(row: ResolvedRow): EngineError[] {
       slotId: row.slotId,
       kind: "outOfRange",
       choice: row.item!.name,
-      message: `${row.item!.name}: ${row.repetitions} is outside ${repetition.min}–${repetition.max}`,
+      message: outOfRangeErrorMessage(
+        row.item!.name,
+        row.repetitions,
+        repetition.min,
+        repetition.max,
+      ),
       severity: "error",
     },
   ];
@@ -531,7 +542,12 @@ function occurrenceRanges(build: Build, row: ResolvedRow): EngineError[] {
         slotId: row.slotId,
         kind: "outOfRange",
         choice: row.item!.name,
-        message: `${row.item!.name}: ${count} is outside ${attachment.min}–${attachment.max}`,
+        message: outOfRangeErrorMessage(
+          row.item!.name,
+          count,
+          attachment.min,
+          attachment.max,
+        ),
         severity: "error",
       });
     }
@@ -555,7 +571,7 @@ function rowErrors(
           slotId: row.slotId,
           kind: "missing",
           choice: row.choice,
-          message: `Item "${row.choice}" is not in your catalogue`,
+          message: `Item "${row.choice}" does not exist`,
           severity: "error",
         });
       }
@@ -631,7 +647,7 @@ function dynamicStatRangeError(
       slotId,
       kind: "outOfRange",
       choice: name,
-      message: `${name}: ${value} is outside ${config.min}–${config.max}`,
+      message: outOfRangeErrorMessage(name, value, config.min, config.max),
       severity: "error",
     },
   ];
@@ -697,7 +713,7 @@ function publishConflicts(db: Db, resolved: ResolvedBonuses): EngineError[] {
                 `${db.get(entry.itemId)?.name ?? entry.itemId} sets it to "${entry.value}"`,
             )
             .join(", ") +
-          ` - unequip one, or ${conflict.path} has no value at all`,
+          `; unequip one, or ${conflict.path} is left unset`,
         severity: "error",
       });
     }

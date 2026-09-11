@@ -14,8 +14,8 @@ const label = computed(() =>
 
 const tooltip = computed(() =>
   storageFailed.value
-    ? "This browser's storage cannot be written to, so nothing you do here is being kept. Use Export to save a copy before closing the tab."
-    : "Edits are saved automatically to this browser's storage. That storage can be cleared or lost - use Export to keep a backup elsewhere.",
+    ? "This browser's storage cannot be written to. Use Export to save a copy before closing the tab."
+    : "Edits are saved automatically to this browser's storage. That storage can be cleared or lost; use Export to keep a backup elsewhere.",
 );
 
 const toneClass = computed(() =>

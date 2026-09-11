@@ -321,9 +321,7 @@ function toggleJson(gIndex: number) {
   if (s.grant.mode === "json") {
     emit(
       "error",
-      "That grant is too complex for the form (an unrecognized " +
-        "condition, tiers combined with variants, or conditions nested deeper than " +
-        "5 levels). Keeping it as JSON.",
+      "That grant is too complex for the form. Keeping it as JSON.",
     );
   } else {
     emit("error", ""); // cleared any previous error
@@ -428,16 +426,14 @@ function toggleJson(gIndex: number) {
 
         <!-- flat payload -->
         <template v-if="grant.payload === 'flat'">
+          <FormSection sub>Stats</FormSection>
           <StatRowList
             :rows="grant.stats"
             @add="gs(gIndex).addStat()"
             @remove="(i: number) => gs(gIndex).removeStat(i)"
           />
 
-          <FormSection sub
-            >Dynamic stats (player types the value; default applies until they
-            do)</FormSection
-          >
+          <FormSection sub>Dynamic stats</FormSection>
           <DynamicStatRowList
             :rows="grant.dynamicStats"
             @add="gs(gIndex).addDynamicStat()"
@@ -448,9 +444,7 @@ function toggleJson(gIndex: number) {
         <!-- tiered payload -->
         <template v-else-if="grant.payload === 'tiers'">
           <p class="text-muted">
-            The highest matching tier wins and <strong>replaces</strong> the
-            lower ones - each tier's stats are the total at that occurrence
-            count, not an extra on top.
+            Grants stats from the highest matching tier; others are ignored.
           </p>
           <!-- Boxed, not just a rule on the left -- with several tiers stacked back to back a
                thin line alone isn't enough contrast to tell where one ends and the next
@@ -536,9 +530,7 @@ function toggleJson(gIndex: number) {
         <!-- variant payload -->
         <template v-else-if="grant.payload === 'variants'">
           <p class="text-muted">
-            The first variant whose own condition matches wins -- order them
-            most-specific first. Each variant's payload replaces the others, it
-            does not add to them.
+            Grants stats from the first matching variant; others are ignored.
           </p>
           <div
             v-for="(variant, vIndex) in grant.variants"
@@ -608,17 +600,14 @@ function toggleJson(gIndex: number) {
               @transfer="onConditionTransfer"
               @transfer-branch="onBranchTransfer"
             />
-            <FormSection sub>Grants</FormSection>
+            <FormSection sub>Stats</FormSection>
             <StatRowList
               :rows="variant.stats"
               @add="gs(gIndex).addVariantStat(vIndex)"
               @remove="(i: number) => gs(gIndex).removeVariantStat(i, vIndex)"
             />
 
-            <FormSection sub
-              >Dynamic stats (player types the value; default applies until they
-              do)</FormSection
-            >
+            <FormSection sub>Dynamic stats</FormSection>
             <DynamicStatRowList
               :rows="variant.dynamicStats"
               @add="gs(gIndex).addVariantDynamicStat(vIndex)"
@@ -637,12 +626,9 @@ function toggleJson(gIndex: number) {
 
         <!-- problem payload: reports a build error/warning instead of granting stats -->
         <template v-else-if="grant.payload === 'problem'">
-          <p class="text-muted">
-            Shown inline on the slot and in the sidebar's problem summary
-            whenever "Active when" matches -- it grants no stats.
-          </p>
-          <div class="mb-1.5 flex flex-wrap items-center gap-1.5">
-            <span class="text-muted">Severity</span>
+          <p class="text-muted">Shows a warning or error. Grants no stats.</p>
+          <div class="my-1.5 flex flex-wrap items-center gap-1.5">
+            <FormSection sub inline>Severity</FormSection>
             <SegmentedControl
               v-model="grant.problemSeverity"
               :options="[
@@ -666,22 +652,22 @@ function toggleJson(gIndex: number) {
             data-testid="problem-label"
             type="text"
             class="mb-1.5 w-full"
-            placeholder="Label shown in the sidebar summary (defaults to the slot's name)…"
+            placeholder="Label (defaults to the slot's name)"
           />
           <BaseTextarea
             v-model="grant.problemMessage"
             data-testid="problem-message"
             class="mb-1.5 w-full"
             rows="2"
-            placeholder="Message shown to the user when this condition matches…"
+            placeholder="Message"
           />
           <BaseCheckbox
             v-model="grant.problemHideFromPicker"
             data-testid="problem-hide-from-picker"
             inline
           >
-            Also filter matching items out of item picker dropdowns, not just
-            flag them once picked
+            Hide item from pickers if selecting it would trigger this
+            {{ grant.problemSeverity }}
           </BaseCheckbox>
         </template>
 
@@ -711,20 +697,20 @@ function toggleJson(gIndex: number) {
               data-testid="grant-name"
               type="text"
               class="w-full"
-              placeholder="Name, distinguishes this grant from the bonus's other grants on the hover card…"
+              placeholder="Name"
             />
             <OcrTextField
               v-model="grant.shortDescription"
               single-line
               :rows="2"
               data-testid="grant-short-description"
-              placeholder="Short description, shown next to the item's stat summary when active…"
+              placeholder="Short description, shown in the stat summary"
             />
             <OcrTextField
               v-model="grant.longDescription"
               :rows="2"
               data-testid="grant-long-description"
-              placeholder="Long description, shown on the item's hover card when active…"
+              placeholder="Long description, shown in the hover card"
             />
           </div>
         </div>

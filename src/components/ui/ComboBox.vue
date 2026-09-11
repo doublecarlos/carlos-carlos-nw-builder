@@ -50,7 +50,7 @@ const props = withDefaults(
      *  first screenful, so rendering everything for every keystroke is wasted work. */
     maxRows?: number;
     /** Override the closed-box display when the model value doesn't match any option
-     *  (e.g. the equipped item was removed from the catalogue). */
+     *  (e.g. the equipped item was removed from the catalog). */
     closedDisplay?: string;
     /** Forwarded to ComboBoxMenu*/
     menuClass?: string;
@@ -423,9 +423,7 @@ onKeyStroke(
         <slot name="no-match">no match</slot>
       </ComboBoxMenuRow>
       <ComboBoxMenuRow v-if="hiddenCount" muted presentational>
-        <slot name="more" :count="hiddenCount"
-          >{{ hiddenCount }} more - keep typing</slot
-        >
+        <slot name="more" :count="hiddenCount">{{ hiddenCount }} more</slot>
       </ComboBoxMenuRow>
     </ComboBoxMenu>
   </div>

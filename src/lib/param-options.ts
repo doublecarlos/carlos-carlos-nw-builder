@@ -39,7 +39,7 @@ export function optionsFromItems(
  * `label` from the item name.
  *
  * The option names an item but does not equip one -- a parameter equips nothing.
- * A derived option set is a vocabulary borrowed from the catalogue, which is what makes it
+ * A derived option set is a vocabulary borrowed from the catalog, which is what makes it
  * useful for the engine-coupled scalars (role, damage type) that stay parameters; anything
  * that should also *bring* the item is an `item_picker` with `Item.publishes`.
  */

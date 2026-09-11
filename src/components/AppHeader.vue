@@ -204,7 +204,7 @@ async function onImportFile(event: Event) {
     <span class="h-4 w-px bg-line" />
 
     <!-- A disabled button fires no pointer events, so the "nothing to undo" wording has no
-         way to show; it said nothing the greyed-out button did not already. -->
+         way to show; it said nothing the grayed-out button did not already. -->
     <BaseTooltip :text="canUndo ? `Undo: ${undoLabel} (Ctrl+Z)` : ''">
       <HistoryButton
         type="undo"

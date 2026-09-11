@@ -142,7 +142,7 @@ const statFilterOptions = [
 ];
 
 /** Slots that could supply the bonus being filtered on, or null when none is. Off the
- *  catalogue, memoised per db+bonus -- see lib/bonus-slots.ts on why this can afford to ask
+ *  catalog, memoised per db+bonus -- see lib/bonus-slots.ts on why this can afford to ask
  *  about candidates when the stat filter below cannot. */
 const bonusSupplierSlots = computed(() =>
   slotFilter.bonusId.value
@@ -229,7 +229,7 @@ function itemIn(slotId: string): Item | null {
 /** The hover card's own item resolution: an item_picker/build_parameter row hovers as a
  * whole (`itemIn`, the row's single resolved item), but a point_assignment row has no
  * single item -- `itemId` names which of its rows was hovered instead (looked up straight
- * off the catalogue, not off `build.assignments`, since the card should preview any row's
+ * off the catalog, not off `build.assignments`, since the card should preview any row's
  * item whether or not points are currently spent on it). */
 function itemForHover(slotId: string, itemId?: string): Item | null {
   return itemId ? db.value.get(itemId) : itemIn(slotId);
@@ -949,7 +949,6 @@ watch(
         <CheckMenu
           class="ml-auto"
           label="Picker options"
-          title="What the item pickers search, and what each row shows"
           testid="picker-options"
           :items="pickerOptionItems"
           @toggle="pickerLens.toggle"

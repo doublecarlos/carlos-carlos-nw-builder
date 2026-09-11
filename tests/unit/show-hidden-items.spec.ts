@@ -202,7 +202,7 @@ describe("the reason a re-shown candidate carries", () => {
     expect(reasons.has("wizard-only")).toBe(false);
   });
 
-  it("leaves the slot's own equipped pick unlabelled, so clearing it is not a one-way door", () => {
+  it("leaves the slot's own equipped pick unlabeled, so clearing it is not a one-way door", () => {
     const build = buildWith({ ring1: "retired" });
     expect(reasonsIn("ring1", build).has("retired")).toBe(false);
     expect(reasonsIn("ring2", build).get("retired")).toBe("retired");

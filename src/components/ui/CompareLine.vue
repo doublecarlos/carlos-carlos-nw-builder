@@ -5,7 +5,7 @@
 // outline working on the stat they belong to, and each cell's second line still lines up with
 // the column above it. The dashed rule stands in for the row border it therefore doesn't get.
 //
-// Recedes by opacity rather than by a muted colour, so a caller that has a meaningful colour
+// Recedes by opacity rather than by a muted color, so a caller that has a meaningful color
 // to give the line (the ratings table's capped/overcapped state) keeps it legible, and one
 // that doesn't simply inherits the cell's own.
 //

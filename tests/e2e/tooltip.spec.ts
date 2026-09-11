@@ -1,5 +1,5 @@
 // BaseTooltip, driven through the real app rather than in isolation -- the things that make it
-// worth having over a native `title` are all behavioural: it shows on keyboard focus, it can be
+// worth having over a native `title` are all behavioral: it shows on keyboard focus, it can be
 // dismissed, and it does not linger over whatever a click just opened.
 import { test, expect } from "@playwright/test";
 import { openBuilder } from "./support/app";
@@ -18,7 +18,7 @@ test("a tooltip opens on hover and closes when the pointer leaves", async ({
   await openBuilder(page);
 
   await infoButton(page).hover();
-  await expect(tooltip(page)).toHaveText("Show contributing sources");
+  await expect(tooltip(page)).toHaveText("Show sources");
 
   await page.getByTestId("app-header").hover();
   await expect(tooltip(page)).toBeHidden();
@@ -53,7 +53,7 @@ test("the tooltip describes its trigger while open", async ({ page }) => {
 
   await expect(tooltip(page)).toBeVisible();
 
-  // Described-by, not labelled-by: it explains the control rather than naming it. The two ids
+  // Described-by, not labeled-by: it explains the control rather than naming it. The two ids
   // are compared inside the page rather than through a local, both because the linkage is the
   // actual claim and because a `const x = await locator.getAttribute(...)` local is what
   // eslint-plugin-playwright's `prefer-web-first-assertions` autofix mistakes for a locator.
@@ -129,7 +129,9 @@ test("a tooltip sits under its trigger, not beside it", async ({ page }) => {
   await openBuilder(page);
   // A trigger with room on both sides, so this measures the placement rather than the
   // viewport clamp -- the edge case has its own test below.
-  const button = page.getByRole("button", { name: "Clear section" }).first();
+  const button = page
+    .getByRole("button", { name: "Clear", exact: true })
+    .first();
 
   await button.hover();
   await expect(tooltip(page)).toBeVisible();
@@ -137,10 +139,10 @@ test("a tooltip sits under its trigger, not beside it", async ({ page }) => {
   const trigger = (await button.boundingBox())!;
   const bubble = (await tooltip(page).boundingBox())!;
 
-  // Centred on the trigger, within a pixel of rounding.
-  const triggerCentre = trigger.x + trigger.width / 2;
-  const bubbleCentre = bubble.x + bubble.width / 2;
-  expect(Math.abs(bubbleCentre - triggerCentre)).toBeLessThanOrEqual(1);
+  // Centered on the trigger, within a pixel of rounding.
+  const triggerCenter = trigger.x + trigger.width / 2;
+  const bubbleCenter = bubble.x + bubble.width / 2;
+  expect(Math.abs(bubbleCenter - triggerCenter)).toBeLessThanOrEqual(1);
   expect(bubble.y).toBeGreaterThan(trigger.y);
 });
 
@@ -177,7 +179,7 @@ test("a short tooltip sizes to its text rather than a fixed box", async ({
   const bubble = (await tooltip(page).locator("..").boundingBox())!;
   const trigger = (await kebab.boundingBox())!;
 
-  // A fixed 240px box centred on a ~20px kebab hangs ~110px off each side and reads as
+  // A fixed 240px box centered on a ~20px kebab hangs ~110px off each side and reads as
   // belonging to nothing, which is what a shared min-width with the item hover card did.
   expect(bubble.width).toBeLessThan(160);
   expect(

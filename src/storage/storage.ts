@@ -1,12 +1,12 @@
 // Build and layer persistence, plus import/export.
 //
 // Owns the shape of a stored build so the rest of the app never has to reason about it:
-// anything that comes back from storage or from a pasted JSON blob goes through `normalise`
-// first, and anything `normalise` returns is safe to hand straight to the engine.
+// anything that comes back from storage or from a pasted JSON blob goes through `normalize`
+// first, and anything `normalize` returns is safe to hand straight to the engine.
 //
 // Two backing stores. The user's documents -- builds, layers, history, trash and app meta --
 // live in IndexedDB, behind `idb.ts`, so every function that touches them is async. The
-// catalogue overlay (`nw:catalog-overlay`) and the UI preferences (`nw:ui`) are small, single
+// catalog overlay (`nw:catalog-overlay`) and the UI preferences (`nw:ui`) are small, single
 // values read synchronously, and stay in localStorage.
 
 import { NW_SLOTS, NW_CATALOG_VERSION } from "../data/data";
@@ -43,7 +43,7 @@ const UI_KEY = "nw:ui";
 // --- versioned envelope ------------------------------------------------------------------
 // Wraps every payload this module reads or writes (stored state, JSON export/import) with what
 // it needs to be read back safely: the shape version of `data` (`v`), which of the payload
-// shapes this module owns it is (`kind`), and what item catalogue it was authored against
+// shapes this module owns it is (`kind`), and what item catalog it was authored against
 // (`catalog`). Without this, a shape-breaking change (like swapping item names for ids) fails
 // silently -- a build loads looking fine with every slot quietly empty. With it, that becomes
 // a real refusal with a message.
@@ -51,7 +51,7 @@ const UI_KEY = "nw:ui";
 // Un-enveloped data (everything saved/exported before this existed) is deliberately NOT
 // refused: `unwrap` only throws on a *mismatched* `v`/`kind`, so today's un-enveloped
 // stored state and already-issued exports keep working exactly as before. The refuse
-// behaviour only starts biting the next time `SCHEMA_VERSION` actually moves -- which is the
+// behavior only starts biting the next time `SCHEMA_VERSION` actually moves -- which is the
 // point: this doesn't retroactively invalidate anything, it just makes the *next* breaking
 // change honest instead of silent.
 
@@ -103,7 +103,7 @@ function unwrap<T>(
     throw new Error(
       raw.v < SCHEMA_VERSION
         ? `This ${expectedKind} was made with an older version of the app and can no longer be opened.`
-        : `This ${expectedKind} was made with a newer version of the app - open it there instead.`,
+        : `This ${expectedKind} was made with a newer version of the app; open it there instead.`,
     );
   }
   return {
@@ -129,7 +129,7 @@ function readEnveloped<T>(key: string, kind: EnvelopeKind): T | null {
     return unwrap<T>(stored, kind).data;
   } catch (error: unknown) {
     showNotice(
-      `${error instanceof Error ? error.message : String(error)} - starting fresh.`,
+      `${error instanceof Error ? error.message : String(error)} Starting fresh.`,
     );
     return null;
   }
@@ -193,7 +193,7 @@ const noCompare = (): Build["compare"] => ({
 });
 
 export function defaultBuild(name = "New build"): Build {
-  // Base catalogue only (no workspace overlay) -- same reach every other pure helper in this
+  // Base catalog only (no workspace overlay) -- same reach every other pure helper in this
   // file has, and enough to seed every shipped default. A default on an *overlay-added* slot
   // is not seeded here.
   const { context, choices, assignments, listRows } = seededDefaults(
@@ -323,7 +323,7 @@ function migrateClassToChoice(
  * shape, a hand-edited export, or a user who pasted nonsense: unknown keys survive, missing
  * ones fall back to defaults, and the wrong type anywhere is replaced rather than thrown on.
  */
-export function normalise(
+export function normalize(
   raw: unknown,
   { keepId = true }: { keepId?: boolean } = {},
 ): Build {
@@ -336,16 +336,16 @@ export function normalise(
   // Custom gear stored with the build. Nothing writes this yet -- the editor edits the
   // workspace layer -- but preserving it here means a build carrying custom items survives
   // a save/reload/share round trip, so turning the feature on is a UI change and not a
-  // migration. `App.vue` already folds `build.catalog` in as a catalogue layer.
+  // migration. `App.vue` already folds `build.catalog` in as a catalog layer.
   const perBuild: CatalogOverlay | null = isPlain(raw.catalog)
-    ? migrateOverlayListSlots(catalog.normaliseOverlay(raw.catalog))
+    ? migrateOverlayListSlots(catalog.normalizeOverlay(raw.catalog))
     : null;
 
   // The snapshot is migrated too, or `sameContent` would read every migrated build as having
   // diverged from its download the moment it loaded.
   const downloaded = isPlain(raw.downloaded)
     ? (migrateDownloaded(raw.downloaded, (snapshot) =>
-        normalise(snapshot, { keepId: true }),
+        normalize(snapshot, { keepId: true }),
       ) as Build["downloaded"])
     : undefined;
 
@@ -419,18 +419,18 @@ export function normalise(
 
 export function duplicate(build: Build, name?: string): Build {
   return {
-    ...normalise(build),
+    ...normalize(build),
     id: newId(),
     name: name ?? `${build.name} copy`,
   };
 }
 
-// --- the catalogue overlay ---------------------------------------------------------------
+// --- the catalog overlay ---------------------------------------------------------------
 // The editor's layer over the shipped items and bonuses. Kept under its own key because it
-// is a workspace, not part of any build: switching builds must not change the catalogue.
+// is a workspace, not part of any build: switching builds must not change the catalog.
 
 export function loadOverlay() {
-  return catalog.normaliseOverlay(
+  return catalog.normalizeOverlay(
     readEnveloped<unknown>(OVERLAY_KEY, "overlay"),
   );
 }
@@ -451,7 +451,7 @@ export function saveOverlay(overlay: CatalogOverlay) {
 
 // --- ui state ----------------------------------------------------------------------------
 // View-only preferences (e.g. which BuildEditor sections are open) that live alongside builds
-// but aren't part of any one build -- same reasoning as the catalogue overlay above. App.vue
+// but aren't part of any one build -- same reasoning as the catalog overlay above. App.vue
 // supplies its own defaults for anything missing here, so this only has to carry what's set.
 
 export interface UiState {
@@ -528,13 +528,13 @@ function migrateDownloaded(
   return { ...raw, snapshot: coerce(raw.snapshot) };
 }
 
-/** Tolerant coercion, same spirit as `normalise`. */
-export function normaliseLayer(raw: unknown): Layer {
+/** Tolerant coercion, same spirit as `normalize`. */
+export function normalizeLayer(raw: unknown): Layer {
   const base = defaultLayer("Layer");
   if (!isPlain(raw)) return base;
   const downloaded = isPlain(raw.downloaded)
     ? (migrateDownloaded(raw.downloaded, (snapshot) => {
-        const { downloaded: _nested, ...rest } = normaliseLayer(snapshot);
+        const { downloaded: _nested, ...rest } = normalizeLayer(snapshot);
         return rest;
       }) as Layer["downloaded"])
     : undefined;
@@ -543,7 +543,7 @@ export function normaliseLayer(raw: unknown): Layer {
     name:
       typeof raw.name === "string" && raw.name.trim() ? raw.name : base.name,
     enabled: typeof raw.enabled === "boolean" ? raw.enabled : true,
-    overlay: migrateOverlayListSlots(catalog.normaliseOverlay(raw.overlay)),
+    overlay: migrateOverlayListSlots(catalog.normalizeOverlay(raw.overlay)),
     ...(downloaded ? { downloaded } : {}),
   };
 }
@@ -552,7 +552,7 @@ export function normaliseLayer(raw: unknown): Layer {
 
 /** Reads back the stored folder set, keeping only members that still exist and refusing to
  *  let two folders claim the same build (last writer of a duplicate loses). */
-function normaliseFolders(raw: unknown, buildIds: Set<string>): BuildFolder[] {
+function normalizeFolders(raw: unknown, buildIds: Set<string>): BuildFolder[] {
   if (!Array.isArray(raw)) return [];
   const claimed = new Set<string>();
   const folders: BuildFolder[] = [];
@@ -628,10 +628,10 @@ export async function loadAll(): Promise<{
   };
 
   const builds: Build[] = (rawBuilds as unknown[]).map((b: unknown) =>
-    normalise(unwrapEnvelope(b)),
+    normalize(unwrapEnvelope(b)),
   );
   const layers: Layer[] = (rawLayers as unknown[]).map((l: unknown) =>
-    normaliseLayer(unwrapEnvelope(l)),
+    normalizeLayer(unwrapEnvelope(l)),
   );
   const trash: TrashEntry[] = (rawTrash as TrashEntry[]).filter(
     (t) => isPlain(t) && (t.kind === "build" || t.kind === "layer"),
@@ -643,7 +643,7 @@ export async function loadAll(): Promise<{
   // Repair meta: drop dangling ids, append unlisted ones.
   const rawMetaObj =
     rawMeta && isPlain(rawMeta) ? (rawMeta as Record<string, unknown>) : null;
-  const folders = normaliseFolders(rawMetaObj?.folders, buildIds);
+  const folders = normalizeFolders(rawMetaObj?.folders, buildIds);
   const meta: AppMeta = rawMetaObj
     ? {
         buildOrder: repairBuildOrder(rawMetaObj.buildOrder, buildIds, folders),
@@ -754,8 +754,8 @@ export function revertToDownloaded<
 export const toJson = (value: unknown) => JSON.stringify(value, null, 2);
 
 /** A single build's own export -- the counterpart `parseJson` unwraps. Strips the `compare`
- *  field (it references a sibling build by id and means nothing elsewhere; `normalise`
- *  refills the default on import) and embeds catalogue entries the build depends on that
+ *  field (it references a sibling build by id and means nothing elsewhere; `normalize`
+ *  refills the default on import) and embeds catalog entries the build depends on that
  *  the shipped base does not already provide. */
 export function toBuildJson(build: Build, db?: Db): string {
   const { compare: _c, ...rest } = build;
@@ -803,7 +803,7 @@ export function toBundleJson(bundle: Bundle): string {
  * Accepts a single (enveloped) build, or -- for backward compatibility with anything saved
  * before the envelope existed -- an un-enveloped single build or array of them, and returns an
  * array either way. Throws only on unparseable text or a version/kind mismatch; structural
- * problems within a build are absorbed by `normalise`.
+ * problems within a build are absorbed by `normalize`.
  *
  * Ids come back as the file wrote them; what happens to one already in use is
  * `lib/import-plan.ts`'s decision.
@@ -817,7 +817,7 @@ export function parseJson(text: string): {
   const list = Array.isArray(data) ? data : [data];
   if (!list.length) throw new Error("no builds in that JSON");
   return {
-    builds: list.map((build) => normalise(build)),
+    builds: list.map((build) => normalize(build)),
     catalogStale,
   };
 }
@@ -829,7 +829,7 @@ export function parseLayerJson(text: string): {
 } {
   const parsed = JSON.parse(text);
   const { data, catalogStale } = unwrap<unknown>(parsed, "layer");
-  return { layer: normaliseLayer(data), catalogStale };
+  return { layer: normalizeLayer(data), catalogStale };
 }
 
 /**
@@ -849,8 +849,8 @@ export function parseBundleJson(text: string): {
     folders?: unknown;
   };
 
-  const builds = (bundle.builds ?? []).map((b: unknown) => normalise(b));
-  const layers = (bundle.layers ?? []).map((l: unknown) => normaliseLayer(l));
+  const builds = (bundle.builds ?? []).map((b: unknown) => normalize(b));
+  const layers = (bundle.layers ?? []).map((l: unknown) => normalizeLayer(l));
 
   const folders = (Array.isArray(bundle.folders) ? bundle.folders : [])
     .filter(isPlain)

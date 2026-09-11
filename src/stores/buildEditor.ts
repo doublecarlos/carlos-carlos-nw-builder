@@ -22,7 +22,7 @@ import {
   replaceSlotData,
   storedSlotIds,
 } from "../lib/slot-fields";
-import { itemLabel, normaliseGroup, stableRef } from "../engine/insignia";
+import { itemLabel, normalizeGroup, stableRef } from "../engine/insignia";
 import {
   expandSlots,
   listRowCount,
@@ -109,7 +109,7 @@ export function setChoice(slotId: string, id: string) {
     // stays on screen; an emptied row shows none, so a state left there could not be undone.
     clearSlotData(b, slotId);
   }
-  normaliseStable(b, slotId);
+  normalizeStable(b, slotId);
 }
 
 /**
@@ -120,11 +120,11 @@ export function setChoice(slotId: string, id: string) {
  * had just restored. Changing a mount re-pairs the whole group, changing one insignia only its
  * own slot. It rides the caller's snapshot, so a mount swap and its evictions undo as one step.
  */
-function normaliseStable(b: Build, slotId: string) {
+function normalizeStable(b: Build, slotId: string) {
   const ref = stableRef(db.value, slotId);
   if (!ref || ref.role === "bonus") return;
   for (const [target, id] of Object.entries(
-    normaliseGroup(db.value, b, ref.group),
+    normalizeGroup(db.value, b, ref.group),
   )) {
     if (ref.role === "insignia" && target !== slotId) continue;
     if (id) b.choices[target] = id;

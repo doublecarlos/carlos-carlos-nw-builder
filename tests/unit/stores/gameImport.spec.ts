@@ -1,5 +1,5 @@
-// Tests for stores/gameImport.ts's mapUnrecognisedItem: mapping an unrecognised game id
-// onto a catalogue item, in a layer overlay, and re-resolving the committed build in place.
+// Tests for stores/gameImport.ts's mapUnrecognizedItem: mapping an unrecognized game id
+// onto a catalog item, in a layer overlay, and re-resolving the committed build in place.
 import { describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -50,12 +50,12 @@ function commitFixture(
   gameImport.commit();
   const report = gameImport.reports.value[0].report;
   const outcomeIndex = report.outcomes.findIndex(
-    (o) => o.kind === "unrecognised" && o.gameId === "Head_Heavyheal_Test",
+    (o) => o.kind === "unrecognized" && o.gameId === "Head_Heavyheal_Test",
   );
   return { reportIndex: 0, outcomeIndex };
 }
 
-describe("gameImport store: mapUnrecognisedItem", () => {
+describe("gameImport store: mapUnrecognizedItem", () => {
   it("moves the row to imported, stamps the layer item's gameIds, and equips it", async () => {
     const { gameImport, builds, layers, resolved } = await freshStores();
     const { reportIndex, outcomeIndex } = commitFixture(gameImport);
@@ -64,7 +64,7 @@ describe("gameImport store: mapUnrecognisedItem", () => {
     const itemId = resolved.db.value.forSlot("gear.head")[0].id;
     const buildId = gameImport.reports.value[reportIndex].buildId;
 
-    gameImport.mapUnrecognisedItem(reportIndex, outcomeIndex, itemId);
+    gameImport.mapUnrecognizedItem(reportIndex, outcomeIndex, itemId);
 
     const updated = gameImport.reports.value[reportIndex].report;
     expect(updated.outcomes[outcomeIndex]).toMatchObject({
@@ -97,7 +97,7 @@ describe("gameImport store: mapUnrecognisedItem", () => {
     builds.setChoiceFor(buildId, "gear.neck", neckItemId, "test hand-edit");
 
     const itemId = resolved.db.value.forSlot("gear.head")[0].id;
-    gameImport.mapUnrecognisedItem(reportIndex, outcomeIndex, itemId);
+    gameImport.mapUnrecognizedItem(reportIndex, outcomeIndex, itemId);
 
     expect(builds.get(buildId)?.choices["gear.neck"]).toBe(neckItemId);
   });
@@ -110,7 +110,7 @@ describe("gameImport store: mapUnrecognisedItem", () => {
 
     const itemId = resolved.db.value.forSlot("gear.head")[0].id;
     expect(() =>
-      gameImport.mapUnrecognisedItem(reportIndex, outcomeIndex, itemId),
+      gameImport.mapUnrecognizedItem(reportIndex, outcomeIndex, itemId),
     ).not.toThrow();
 
     expect(
@@ -124,10 +124,10 @@ describe("gameImport store: mapUnrecognisedItem", () => {
     const { reportIndex, outcomeIndex } = commitFixture(gameImport);
     const itemId = resolved.db.value.forSlot("gear.head")[0].id;
 
-    gameImport.mapUnrecognisedItem(reportIndex, outcomeIndex, itemId);
+    gameImport.mapUnrecognizedItem(reportIndex, outcomeIndex, itemId);
 
     expect(
-      gameImport.reports.value[reportIndex].unrecognisedOrigin.get(
+      gameImport.reports.value[reportIndex].unrecognizedOrigin.get(
         outcomeIndex,
       ),
     ).toEqual({ bag: "Head", slot: expect.any(Number) });
@@ -141,12 +141,12 @@ describe("gameImport store: mapUnrecognisedItem", () => {
       .map((item) => item.id);
     expect(secondItemId).toBeDefined();
 
-    gameImport.mapUnrecognisedItem(reportIndex, outcomeIndex, firstItemId);
+    gameImport.mapUnrecognizedItem(reportIndex, outcomeIndex, firstItemId);
     expect(resolved.db.value.get(firstItemId)?.gameIds).toContain(
       "Head_Heavyheal_Test",
     );
 
-    gameImport.mapUnrecognisedItem(reportIndex, outcomeIndex, secondItemId);
+    gameImport.mapUnrecognizedItem(reportIndex, outcomeIndex, secondItemId);
 
     expect(resolved.db.value.get(firstItemId)?.gameIds ?? []).not.toContain(
       "Head_Heavyheal_Test",
@@ -169,7 +169,7 @@ describe("gameImport store: mapUnrecognisedItem", () => {
     const report = gameImport.reports.value[0].report;
     const rowFor = (bag: string) =>
       report.outcomes.findIndex(
-        (o) => o.kind === "unrecognised" && o.bag === bag,
+        (o) => o.kind === "unrecognized" && o.bag === bag,
       );
     const offenseRow = rowFor("OffenseGem");
     const defenseRow = rowFor("DefenseGem");
@@ -181,8 +181,8 @@ describe("gameImport store: mapUnrecognisedItem", () => {
     const defenseItem = resolved.db.value.forSlot("enchantments.defense1")[0]
       .id;
 
-    gameImport.mapUnrecognisedItem(0, offenseRow, offenseItem);
-    gameImport.mapUnrecognisedItem(0, defenseRow, defenseItem);
+    gameImport.mapUnrecognizedItem(0, offenseRow, offenseItem);
+    gameImport.mapUnrecognizedItem(0, defenseRow, defenseItem);
 
     expect(resolved.db.value.get(offenseItem)?.gameIds).toContain(
       "Enchantment_Shared_Test",
@@ -236,10 +236,10 @@ describe("gameImport store: re-seating a bag moves an already-placed pick", () =
     const mapId = (gameId: string, itemId: string) => {
       const outcomeIndex =
         gameImport.reports.value[0].report.outcomes.findIndex(
-          (o) => o.kind === "unrecognised" && o.gameId === gameId,
+          (o) => o.kind === "unrecognized" && o.gameId === gameId,
         );
       expect(outcomeIndex).toBeGreaterThanOrEqual(0);
-      gameImport.mapUnrecognisedItem(0, outcomeIndex, itemId);
+      gameImport.mapUnrecognizedItem(0, outcomeIndex, itemId);
     };
 
     // The four flexible powers fill offense, defense and both universals.

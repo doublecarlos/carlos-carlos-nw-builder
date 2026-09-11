@@ -6,7 +6,7 @@
 //
 // Opened by a click on the row's own circle-alert button, closed by the × here, or by
 // StatPanel.vue's own document-level "click outside" handler -- there is no hover/mouseleave
-// behaviour at all, on purpose: a dense stat table put the pointer's path to the card through
+// behavior at all, on purpose: a dense stat table put the pointer's path to the card through
 // other rows' own trigger buttons often enough that hover-to-open kept swapping the card's
 // contents out from under the pointer before it arrived.
 import { signedStat } from "../../lib/format";

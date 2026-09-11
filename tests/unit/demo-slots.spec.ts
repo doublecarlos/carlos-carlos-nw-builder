@@ -1,6 +1,6 @@
 // demo-slots.ts: the bag -> app-slot map and its placement rule. Run against the shipped
 // game-import.json and data/slots.json, so these double as a lint of the shipped tables, with
-// an overlay of synthetic items supplying the gameIds the real catalogue has not got yet.
+// an overlay of synthetic items supplying the gameIds the real catalog has not got yet.
 import { describe, it, expect } from "vitest";
 import * as catalog from "../../src/data/catalog";
 import { NW_SLOTS } from "../../src/data/data";
@@ -68,7 +68,7 @@ for (const item of [
     "Collar_Supportive_Test",
   ]),
   testItem("test-offense-gem", "enchantment_offense", ["OffenseGem_Test"]),
-  // One in-game enchantment, three catalogue forms, one shared `Hitem`. Listed offense-first
+  // One in-game enchantment, three catalog forms, one shared `Hitem`. Listed offense-first
   // so a test can tell the form a bag accepts from the claimant listed first.
   testItem("test-garnet-power", "enchantment_offense", ["Garnet_Test"]),
   testItem("test-garnet-defense", "enchantment_defense", ["Garnet_Test"]),
@@ -98,8 +98,8 @@ describe("demo-slots: shipped data", () => {
     expect(validateGameBags(GAME_IMPORT_DATA.bags, NW_SLOTS.slots)).toEqual([]);
   });
 
-  it("has 12 notInDemoReasons groups", () => {
-    expect(GAME_IMPORT_DATA.notInDemoReasons).toHaveLength(12);
+  it("has 11 notInDemoReasons groups", () => {
+    expect(GAME_IMPORT_DATA.notInDemoReasons).toHaveLength(11);
   });
 
   it("notInDemoReasons passes its own lint against the real slot/section list", () => {
@@ -182,7 +182,7 @@ describe("validateValueMap", () => {
 });
 
 describe("placeBag: simple mapped bag", () => {
-  it("places a recognised item in its one slot", () => {
+  it("places a recognized item in its one slot", () => {
     const results = placeBag(
       "Head",
       [demoItem("Head", 0, "Head_Test")],
@@ -199,7 +199,7 @@ describe("placeBag: simple mapped bag", () => {
     ]);
   });
 
-  it("an unrecognised Hitem with no catalogue mapping", () => {
+  it("an unrecognized Hitem with no catalog mapping", () => {
     const results = placeBag(
       "Head",
       [demoItem("Head", 0, "Head_Unknown_Item")],
@@ -208,7 +208,7 @@ describe("placeBag: simple mapped bag", () => {
     );
     expect(results).toEqual([
       {
-        kind: "unrecognised",
+        kind: "unrecognized",
         bag: "Head",
         slot: 0,
         gameId: "Head_Unknown_Item",
@@ -226,7 +226,7 @@ describe("placeBag: simple mapped bag", () => {
     expect(results).toEqual([]);
   });
 
-  it("a bag not in the table at all is reported unrecognised, not dropped", () => {
+  it("a bag not in the table at all is reported unrecognized, not dropped", () => {
     const results = placeBag(
       "TotallyNewBagFromAClientUpdate",
       [demoItem("TotallyNewBagFromAClientUpdate", 0, "Some_Gid")],
@@ -235,7 +235,7 @@ describe("placeBag: simple mapped bag", () => {
     );
     expect(results).toEqual([
       {
-        kind: "unrecognised",
+        kind: "unrecognized",
         bag: "TotallyNewBagFromAClientUpdate",
         slot: 0,
         gameId: "Some_Gid",
@@ -446,7 +446,7 @@ describe("placeBag: MountCollars is filter-driven, game order need not match our
   });
 });
 
-describe("placeBag: notModelled bags report ignored, never unrecognised", () => {
+describe("placeBag: notModelled bags report ignored, never unrecognized", () => {
   it("FashionHead's item is ignored with the table's reason", () => {
     const results = placeBag(
       "FashionHead",
@@ -500,7 +500,7 @@ describe("placeBag: overflow", () => {
 });
 
 describe("placeBag: one game id shared by several slot-dependent forms", () => {
-  // Pins the catalogue order the disambiguation has to beat: offense is the last claimant.
+  // Pins the catalog order the disambiguation has to beat: offense is the last claimant.
   it("indexes all three forms under the one game id", () => {
     expect(db.itemByGameId.get("Garnet_Test")).toEqual([
       "test-garnet-defense",
@@ -578,7 +578,7 @@ describe("placeBag: one game id shared by several slot-dependent forms", () => {
     });
   });
 
-  it("a game id no item claims is still unrecognised, not an empty-claimant overflow", () => {
+  it("a game id no item claims is still unrecognized, not an empty-claimant overflow", () => {
     const results = placeBag(
       "OffenseGem",
       [demoItem("OffenseGem", 0, "Nothing_Claims_This")],
@@ -587,7 +587,7 @@ describe("placeBag: one game id shared by several slot-dependent forms", () => {
     );
     expect(results).toEqual([
       {
-        kind: "unrecognised",
+        kind: "unrecognized",
         bag: "OffenseGem",
         slot: 0,
         gameId: "Nothing_Claims_This",
@@ -610,7 +610,7 @@ describe("placeBag: MountEquippedActiveSlots gems, two-dimensional placement", (
     );
     expect(results).toEqual([
       {
-        kind: "unrecognised",
+        kind: "unrecognized",
         bag: "MountEquippedActiveSlots",
         slot: 2,
         gameId: "Mount_Whatever",
@@ -751,7 +751,7 @@ describe("notInDemoGroups", () => {
   it("rolls a whole missing section up into one authored group", () => {
     const groups = notInDemoGroups(db, missing);
     const boons = groups.find((g) => g.label === "Boons");
-    expect(boons?.reason).toMatch(/boon points/);
+    expect(boons?.reason).toMatch(/Not recorded in the game export/);
     expect(boons?.slotIds).toContain("boons.tier1");
     expect(boons?.slotIds).toHaveLength(
       NW_SLOTS.slots.filter(
@@ -777,12 +777,12 @@ describe("notInDemoGroups", () => {
     expect(missing.every((id) => covered.has(id))).toBe(true);
   });
 
-  it("falls back to a section-labelled group for a slot no authored reason names", () => {
+  it("falls back to a section-labeled group for a slot no authored reason names", () => {
     const groups = notInDemoGroups(db, ["overloads.overload1"]);
     expect(groups).toEqual([
       {
         label: "Enchantments",
-        reason: "Not recorded in this demo - set it by hand.",
+        reason: "Not recorded in the game export.",
         slotIds: ["overloads.overload1"],
       },
     ]);

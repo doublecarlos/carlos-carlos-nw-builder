@@ -194,7 +194,7 @@ function runImport() {
       class="flex-none px-4 pb-2 text-sm text-warning"
       data-testid="import-stale"
     >
-      ⚠ Made against an older item catalogue; some items may no longer resolve.
+      Made against an older item catalog; some items may no longer resolve.
     </p>
 
     <div

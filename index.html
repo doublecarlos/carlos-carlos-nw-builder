@@ -17,7 +17,7 @@
       content="Build planner for Neverwinter. Create and compare Neverwinter builds, create and edit new items/bonuses as needed."
     />
 
-    <!-- The page's own chrome colour, per scheme. Matches --bg in src/base.css, so the
+    <!-- The page's own chrome color, per scheme. Matches --bg in src/base.css, so the
          browser UI and the app agree on first paint. -->
     <meta
       name="theme-color"
@@ -81,7 +81,7 @@
     <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 
-    <!-- What a browser reads to offer "install": the app's name, its icons and the colours to
+    <!-- What a browser reads to offer "install": the app's name, its icons and the colors to
          paint the window chrome and the launch splash with. It is a plain JSON file with no
          room for comments of its own, so the reasoning for what is in it -- and the assertions
          holding it to this head and to src/base.css -- live in tests/unit/manifest.spec.ts.
@@ -149,7 +149,7 @@
 
     <!-- Styles for the boot screen below, and only for it. src/base.css arrives with the
          module bundle, which by definition has not run yet while this is on screen, so these
-         few rules have to stand alone. Colours are the light and dark --bg/--text/--muted from
+         few rules have to stand alone. Colors are the light and dark --bg/--text/--muted from
          src/base.css, and the dark rules hang off the same `.dark` class the script above
          sets, so the two themes are chosen the same way here as in the app. -->
     <style>
@@ -262,8 +262,7 @@
             <br />
             Built-in database contains recent gear for Hellbringer and Arbiter.
             <br />
-            Everything is saved on your browser - export to download a permanent
-            copy.
+            Everything is saved in your browser.
           </p>
           <noscript>
             <p class="boot-copy">

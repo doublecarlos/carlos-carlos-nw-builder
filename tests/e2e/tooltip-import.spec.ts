@@ -1,5 +1,5 @@
 // Screenshot to reviewed item, end to end: OCR reads a real tooltip capture, the parser turns
-// it into a list of recognised fields, and those reach an item either through "Create item"
+// it into a list of recognized fields, and those reach an item either through "Create item"
 // (a new draft in ItemForm) or field by field into the item the editor already has open.
 //
 // The OCR assertions are deliberately about the numbers that matter (item level, the rating
@@ -24,7 +24,7 @@ async function openImportModal(page: import("@playwright/test").Page) {
 
 test.describe("creating an item from a tooltip screenshot", () => {
   // Serial on purpose: each OCR run loads its own ~4MB WASM core and ~3MB language model and
-  // then saturates a core recognising. Run in parallel against the suite's other workers they
+  // then saturates a core recognizing. Run in parallel against the suite's other workers they
   // starve each other badly enough to look like a hang.
   test.describe.configure({ mode: "serial" });
   // The first run still pays for fetching the core and model.
@@ -69,7 +69,7 @@ test.describe("creating an item from a tooltip screenshot", () => {
     );
   });
 
-  test("parses corrections typed into the recognised text", async ({
+  test("parses corrections typed into the recognized text", async ({
     page,
   }) => {
     await openImportModal(page);
@@ -148,7 +148,7 @@ test("a pasted screenshot lands without clicking into the window first", async (
   );
 });
 
-// The window's other exit: instead of creating an item, send a recognised value into whatever
+// The window's other exit: instead of creating an item, send a recognized value into whatever
 // item the editor already has open. No OCR here -- the text box is filled by hand, which is
 // the same input the parser sees either way and keeps these fast.
 test.describe("applying tooltip values to the item being edited", () => {
@@ -225,7 +225,7 @@ test.describe("applying tooltip values to the item being edited", () => {
     ).toHaveValue("999");
   });
 
-  test("sends every recognised value into an unsaved new draft", async ({
+  test("sends every recognized value into an unsaved new draft", async ({
     page,
   }) => {
     await openLayerEditor(page);

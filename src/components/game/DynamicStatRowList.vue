@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // A repeatable list of dynamic-stat rows (stat / min / max / default / label): an item's own
 // `dynamicStats`, and a bonus grant/variant's. Its own component rather than a `StatRowList`
-// variant, since every field here is wrapped in a labelled `FormField`.
+// variant, since every field here is wrapped in a labeled `FormField`.
 import ComboBox from "../ui/ComboBox.vue";
 import RepeatableRows from "../ui/RepeatableRows.vue";
 import BaseInput from "../ui/BaseInput.vue";
@@ -49,6 +49,12 @@ const emit = defineEmits<{ add: []; remove: [index: number] }>();
       <FormField label="Label (optional)">
         <BaseInput v-model="row.label" class="w-40" type="text" />
       </FormField>
+    </template>
+    <template #empty>
+      <span class="text-muted"
+        >No dynamic stats defined. A dynamic stat's value is typed per
+        build.</span
+      >
     </template>
   </RepeatableRows>
 </template>

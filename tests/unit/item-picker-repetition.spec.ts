@@ -254,7 +254,7 @@ describe("what the engine reports", () => {
 
   it("flags a count outside the config's declared bounds", () => {
     expect(messagesFor(withCount(9)).join(" ")).toMatch(
-      /Test Shard: 9 is outside 0–3/,
+      /Test Shard: value 9 must be between 0 and 3/,
     );
     expect(messagesFor(withCount(2))).toEqual([]);
   });

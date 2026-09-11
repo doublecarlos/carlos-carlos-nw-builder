@@ -52,5 +52,5 @@ test("a problem-only bonus is hidden from the item hover card and the sidebar Bo
   await page
     .getByPlaceholder("Filter by bonus, id or item…")
     .fill(WARNING_TITLE);
-  await expect(page.getByText("Nothing matches that filter.")).toBeVisible();
+  await expect(page.getByText("Nothing matches the filter.")).toBeVisible();
 });

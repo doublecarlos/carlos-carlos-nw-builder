@@ -29,7 +29,7 @@ import type {
  * One item often carries several bonuses (an AoE variant and a single-target one, say) and
  * they all inherit the item's name, so the rows need something to tell them apart.
  *
- * The conditions do that in the user's own language -- "combat enabled + duration 10–30s".
+ * The conditions do that in the user's own language: "combat enabled + duration 10-30s".
  * The bonus id also distinguishes them, but only as generated slugs: the same two bonuses
  * come out as "combat combat short" and "combat medium plus combat", which is noise.
  */
@@ -98,7 +98,7 @@ interface Entry {
   perStack: StatValues | null;
   unmet: ConditionLeafResult[];
   nearMiss: boolean;
-  /** Whether anything in the catalogue could supply this, so the "where?" action leads
+  /** Whether anything in the catalog could supply this, so the "where?" action leads
    *  somewhere. Always false for an already-active bonus: the answer is "where it is". */
   canLocate: boolean;
   state: "excluded" | "active" | "inactive";
@@ -106,7 +106,7 @@ interface Entry {
   muted: boolean;
 }
 
-// Same small vocabulary as ItemCard.vue's own per-row state colouring, duplicated rather than
+// Same small vocabulary as ItemCard.vue's own per-row state coloring, duplicated rather than
 // shared: the two live in different visual contexts (a hover card vs. this sidebar list).
 const STATE_DOT: Record<string, string> = {
   active: "bg-ok",
@@ -210,7 +210,7 @@ const counts = computed(() => {
         placeholder="Filter by bonus, id or item…"
       />
       <div class="flex items-center gap-3 py-2 text-muted">
-        <span>{{ counts.active }}/{{ counts.total }} active</span>
+        <span>{{ counts.active }}/{{ counts.total }} active bonuses</span>
         <BaseCheckbox v-model="nearMissOnly" inline class="ml-auto"
           >near misses only ({{ counts.nearMiss }})</BaseCheckbox
         >
@@ -223,136 +223,134 @@ const counts = computed(() => {
         <span class="text-muted">({{ group.list.length }})</span>
       </PanelHead>
 
-      <div
-        v-for="entry in group.list"
-        :key="entry.id"
-        class="border-b border-line/50 py-1.5 last:border-b-0"
-      >
-        <div class="flex w-full items-center gap-1.5">
-          <button
-            type="button"
-            class="group flex min-w-0 flex-1 items-center gap-1.5 text-left cursor-pointer"
-            @click="toggle(entry.id)"
-          >
-            <span
-              class="size-1.5 flex-none rounded-full"
-              :class="entry.dotClass"
-            ></span>
-            <span
-              class="max-w-3/5 flex-none overflow-hidden text-ellipsis whitespace-nowrap group-hover:underline"
-              :class="entry.muted && 'text-muted'"
-              >{{ entry.title }}</span
+      <div class="divide-y divide-line/50">
+        <div v-for="entry in group.list" :key="entry.id" class="py-1.5">
+          <div class="flex w-full items-center gap-1.5">
+            <button
+              type="button"
+              class="group flex min-w-0 flex-1 items-center gap-1.5 text-left cursor-pointer"
+              @click="toggle(entry.id)"
             >
-            <span
-              v-if="entry.qualifier"
-              class="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-muted"
-              :title="entry.qualifier"
-            >
-              {{ entry.qualifier }}
-            </span>
-            <BaseBadge v-if="entry.nearMiss" class="ml-auto flex-none"
-              >1 away</BaseBadge
-            >
-            <span
-              v-if="entry.stacks > 1"
-              class="flex-none rounded-full bg-surface-2 px-1.5 font-semibold text-muted"
-              >×{{ entry.stacks }}</span
-            >
-            <span
-              v-if="entry.chose"
-              class="flex-none rounded-full bg-surface-2 px-1.5 font-semibold text-muted"
-              >{{ entry.chose }}</span
-            >
-          </button>
+              <span
+                class="size-1.5 flex-none rounded-full"
+                :class="entry.dotClass"
+              ></span>
+              <span
+                class="max-w-3/5 flex-none overflow-hidden text-ellipsis whitespace-nowrap group-hover:underline"
+                :class="entry.muted && 'text-muted'"
+                >{{ entry.title }}</span
+              >
+              <span
+                v-if="entry.qualifier"
+                class="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-muted"
+                :title="entry.qualifier"
+              >
+                {{ entry.qualifier }}
+              </span>
+              <BaseBadge v-if="entry.nearMiss" class="ml-auto flex-none"
+                >1 away</BaseBadge
+              >
+              <span
+                v-if="entry.stacks > 1"
+                class="flex-none rounded-full bg-surface-2 px-1.5 font-semibold text-muted"
+                >×{{ entry.stacks }}</span
+              >
+              <span
+                v-if="entry.chose"
+                class="flex-none rounded-full bg-surface-2 px-1.5 font-semibold text-muted"
+                >{{ entry.chose }}</span
+              >
+            </button>
 
-          <!-- Sibling of the expand button rather than inside it: nesting a button in a button
+            <!-- Sibling of the expand button rather than inside it: nesting a button in a button
              is invalid, and these are two different questions -- "what is failing" and
              "where would I get it". -->
-          <IconButton
-            v-if="entry.canLocate"
-            class="flex-none"
-            title="Show the slots that could supply this"
-            :data-testid="`bonus-locate-${entry.id}`"
-            @click="locate(entry)"
-          >
-            <Crosshair />
-          </IconButton>
-        </div>
-
-        <!-- The payoff: for an inactive bonus, exactly which conditions failed and what
-             they would need. Rendered verbatim from the engine. -->
-        <ul v-if="entry.unmet.length" class="mt-1 list-none pl-3.5">
-          <li v-for="(leaf, i) in entry.unmet" :key="i" class="text-muted">
-            <span class="text-warn">{{ leaf.label }}</span>
-            <span v-if="leaf.detail" class="ml-1 text-muted"
-              >- {{ leaf.detail }}</span
+            <IconButton
+              v-if="entry.canLocate"
+              class="flex-none"
+              title="Show the slots that could supply this"
+              :data-testid="`bonus-locate-${entry.id}`"
+              @click="locate(entry)"
             >
-            <ul v-if="leaf.children?.length" class="list-none pl-3">
-              <li
-                v-for="(child, j) in leaf.children"
-                :key="j"
-                :class="child.ok && 'text-ok'"
-              >
-                {{ child.ok ? "✓" : "✗" }} {{ child.label }}
-                <span v-if="child.detail" class="ml-1 text-muted"
-                  >- {{ child.detail }}</span
-                >
-              </li>
-            </ul>
-          </li>
-        </ul>
-
-        <p
-          v-if="entry.excludedBy"
-          class="mt-1 pl-3.5 text-muted"
-          data-testid="bonus-excluded-by"
-        >
-          <span class="text-warn">overridden by</span>
-          <BaseLink
-            class="ml-1"
-            :plain="!entry.excludedBy.slotId"
-            @click="jumpToSlot(entry.excludedBy.slotId)"
-            >{{ entry.excludedBy.name }}</BaseLink
-          >
-        </p>
-
-        <div v-if="open[entry.id]" class="pb-0.5 pl-3.5 pt-1">
-          <div class="flex flex-wrap gap-x-2.5 gap-y-1">
-            <span v-for="part in statList(entry.payload)" :key="part">{{
-              part
-            }}</span>
-            <span v-if="!statList(entry.payload).length" class="text-muted"
-              >no stat payload</span
-            >
+              <Crosshair />
+            </IconButton>
           </div>
-          <p v-if="entry.perStack" class="mt-1 block text-muted">
-            per stack: {{ statList(entry.perStack).join(", ") }}
-          </p>
-          <p class="mt-1 block text-muted">
-            slot
+
+          <!-- The payoff: for an inactive bonus, exactly which conditions failed and what
+             they would need. Rendered verbatim from the engine. -->
+          <ul v-if="entry.unmet.length" class="mt-1 list-none pl-3.5">
+            <li v-for="(leaf, i) in entry.unmet" :key="i" class="text-muted">
+              <span class="text-warn">{{ leaf.label }}</span>
+              <span v-if="leaf.detail" class="ml-1 text-muted"
+                >- {{ leaf.detail }}</span
+              >
+              <ul v-if="leaf.children?.length" class="list-none pl-3">
+                <li
+                  v-for="(child, j) in leaf.children"
+                  :key="j"
+                  :class="child.ok && 'text-ok'"
+                >
+                  {{ child.ok ? "✓" : "✗" }} {{ child.label }}
+                  <span v-if="child.detail" class="ml-1 text-muted"
+                    >- {{ child.detail }}</span
+                  >
+                </li>
+              </ul>
+            </li>
+          </ul>
+
+          <p
+            v-if="entry.excludedBy"
+            class="mt-1 pl-3.5 text-muted"
+            data-testid="bonus-excluded-by"
+          >
+            <span class="text-warn">overridden by</span>
             <BaseLink
-              data-testid="bonus-slot-link"
-              @click="jumpToSlot(entry.raw.slotId)"
-              >{{ entry.slot }}</BaseLink
+              class="ml-1"
+              :plain="!entry.excludedBy.slotId"
+              @click="jumpToSlot(entry.excludedBy.slotId)"
+              >{{ entry.excludedBy.name }}</BaseLink
             >
           </p>
-          <p class="mt-1 block text-muted">
-            from
-            <LinkList
-              v-if="entry.sources.length"
-              :items="entry.sources"
-              link-testid="bonus-source-link"
-              @select="jumpToSlot"
-            />
-            <template v-else>-</template>
-          </p>
-          <p class="mt-1 block font-mono text-muted">{{ entry.id }}</p>
+
+          <div v-if="open[entry.id]" class="pb-0.5 pl-3.5 pt-1">
+            <div class="flex flex-wrap gap-x-2.5 gap-y-1">
+              <span v-for="part in statList(entry.payload)" :key="part">{{
+                part
+              }}</span>
+              <span v-if="!statList(entry.payload).length" class="text-muted"
+                >no stats granted</span
+              >
+            </div>
+            <p v-if="entry.perStack" class="mt-1 block text-muted">
+              per stack: {{ statList(entry.perStack).join(", ") }}
+            </p>
+            <p class="mt-1 block text-muted">
+              slot
+              <BaseLink
+                data-testid="bonus-slot-link"
+                @click="jumpToSlot(entry.raw.slotId)"
+                >{{ entry.slot }}</BaseLink
+              >
+            </p>
+            <p class="mt-1 block text-muted">
+              from
+              <LinkList
+                v-if="entry.sources.length"
+                :items="entry.sources"
+                link-testid="bonus-source-link"
+                @select="jumpToSlot"
+              />
+              <template v-else>-</template>
+            </p>
+            <p class="mt-1 block font-mono text-muted">{{ entry.id }}</p>
+          </div>
         </div>
       </div>
     </template>
 
     <p v-if="!filtered.length" class="py-2.5 text-muted">
-      Nothing matches that filter.
+      Nothing matches the filter.
     </p>
   </BasePanel>
 </template>

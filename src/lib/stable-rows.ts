@@ -1,6 +1,6 @@
 // StableBrowser.vue's card derivation, Vue-free so it is unit-testable.
 //
-// Both ends are plain catalogue items (a mount carries `insigniaSlots`, a bonus
+// Both ends are plain catalog items (a mount carries `insigniaSlots`, a bonus
 // `insigniaRecipe`), so one card shape serves both tabs and the tab only picks which end
 // heads the card.
 import { descriptionParagraphs } from "./description";

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // The layer editor: browse/add/edit/remove items and shared bonuses in a single layer,
-// lint the composed catalogue, and export the results.
+// lint the composed catalog, and export the results.
 //
 // Takes the selected Layer as a prop and writes through `layers.updateOverlay`. When the
 // layer is disabled, the editor shows a muted banner saying its changes are not applied.
@@ -115,7 +115,7 @@ function commit(
   setOverlay(next);
 }
 
-/** The editor's own catalogue: the layer under edit folds last whatever its `enabled` flag
+/** The editor's own catalog: the layer under edit folds last whatever its `enabled` flag
  * says, so its entries reach the lists, forms and lint even while switched off. Dropped from
  * the engine's fold order first, so an enabled layer folds once and on top. `markRaw` as in
  * `engine.db`. */
@@ -245,7 +245,7 @@ const bonusForm = ref<InstanceType<typeof BonusForm> | null>(null);
 const presetForm = ref<InstanceType<typeof PresetForm> | null>(null);
 const slotForm = ref<InstanceType<typeof SlotForm> | null>(null);
 
-/** One row per composed-catalogue entry plus one per tombstone, name-sorted. Removed entries
+/** One row per composed-catalog entry plus one per tombstone, name-sorted. Removed entries
  *  are gone from `db`, so without the tombstone pass (`catalog.tombstoneIds`) a deletion would
  *  vanish from the list with no way back. */
 function editorRows<E, R extends EditorRow>(
@@ -656,7 +656,7 @@ function duplicateItem() {
   selectedBySection.items = null;
   newItemCounter.value++;
   router.apply({ item: null });
-  showNotice(`Duplicating "${item.name}" - edit and save to create a copy`);
+  showNotice(`Duplicating "${item.name}". Edit and save to create a copy.`);
 }
 
 /** Opens a new item draft seeded from a pasted tooltip. Like "Duplicate", the seed is only
@@ -670,7 +670,7 @@ function createFromTooltip(draft: Partial<Item>) {
   router.apply({ item: null });
   showTooltipImport.value = false;
   showNotice(
-    `Filled ${Object.keys(draft).length} field(s) from the tooltip - review and save to create the item`,
+    `Filled ${Object.keys(draft).length} field(s) from the tooltip. Review and save to create the item.`,
   );
 }
 
@@ -704,7 +704,7 @@ function duplicateBonus() {
   newItemCounter.value++;
   router.apply({ bonus: null });
   showNotice(
-    `Duplicating "${bonus.name || bonus.id}" - edit and save to create a copy`,
+    `Duplicating "${bonus.name || bonus.id}". Edit and save to create a copy.`,
   );
 }
 
@@ -807,7 +807,7 @@ async function resetAll(event: MouseEvent) {
     Object.assign(cleared, routeParamFor(group, null));
   }
   router.apply(cleared);
-  showNotice("Discarded every change - back to the shipped data");
+  showNotice("Discarded every change. The layer is back to the shipped data.");
 }
 
 /** Shows `id` in `group`, switching section if needed. */
@@ -892,7 +892,7 @@ function onSaveBonus({ id, bonus }: { id: string; bonus: Bonus }) {
 }
 
 /** Live-edit handler for that sub-editor. ItemBonuses emits no "what changed" text of its
- *  own, so the undo step is labelled from the bonus itself. */
+ *  own, so the undo step is labeled from the bonus itself. */
 function onUpdateBonus({ id, bonus }: { id: string; bonus: Bonus }) {
   updateEntry("bonuses", id, bonus, `Edit bonus "${bonus.name || id}"`);
 }
@@ -913,7 +913,7 @@ async function importOverlay(event: Event) {
   if (!file) return;
   try {
     const parsed = JSON.parse(await file.text());
-    commit(null, "Import overlay", catalog.normaliseOverlay(parsed));
+    commit(null, "Import overlay", catalog.normalizeOverlay(parsed));
     showNotice("Overlay imported");
   } catch (error: unknown) {
     showNotice(
@@ -968,7 +968,7 @@ onMounted(() => {
   const routedActive = hasRoutedLayerState(routed);
   const source = routedActive ? routed : ui.value;
   // Restore what this layer had open, unless a new-item seed outranks it (first branch).
-  // When the layer changes, keep the `item` param if the new layer's composed catalogue
+  // When the layer changes, keep the `item` param if the new layer's composed catalog
   // still has that id, otherwise drop it (phase 6 §2.3).
   if (newPresetSeed) {
     // BuildSection's "Create new from current": the pre-filled draft *is* the point of the
@@ -977,7 +977,7 @@ onMounted(() => {
     selectedBySection.sectionPresets = null;
     ui.value.section = "sectionPresets";
     ui.value.preset = "";
-    showNotice("New preset from the current build - name it and save");
+    showNotice("New preset from the current build. Name it and save.");
   } else if (newItemSeed) {
     // BuildEditor's Ctrl/Cmd+click on an empty slot row: the blank draft *is* the point of the
     // jump, so restoring whatever this layer had open before would throw it away. The per-layer
@@ -988,7 +988,7 @@ onMounted(() => {
     const narrowedTo = [newItemSeed.filter, ...(newItemSeed.tags ?? [])]
       .filter(Boolean)
       .join(", ");
-    showNotice(`New item - pre-filled for "${narrowedTo}"`);
+    showNotice(`New item, pre-filled for "${narrowedTo}"`);
   } else {
     restoreSelection(source);
   }
@@ -1110,7 +1110,7 @@ onUnmounted(() => {
       v-if="!props.layer.enabled"
       class="mb-2 rounded-md border border-warn/40 bg-warn/10 px-3 py-1.5 text-warn"
     >
-      This layer is disabled - its changes are not currently applied to the
+      This layer is disabled; its changes are not currently applied to the
       build. Enable it to see its effects.
     </div>
 

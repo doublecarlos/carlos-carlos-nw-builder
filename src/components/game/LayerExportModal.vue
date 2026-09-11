@@ -217,19 +217,12 @@ function downloadExport() {
         {{ saveStatus.message }}
       </p>
       <p class="mt-1 text-muted">
-        <template v-if="effectiveTab === 'items'">
-          Composed from all enabled layers - for regenerating the shipped data
-          files.
+        <template v-if="effectiveTab === 'overlay'">
+          Raw overlay JSON for this layer.
         </template>
-        <template v-else-if="effectiveTab === 'bonuses'">
-          Composed from all enabled layers - for regenerating the shipped data
-          files.
+        <template v-else>
+          Composed from the base files and all enabled layers.
         </template>
-        <template v-else-if="effectiveTab === 'slots'">
-          Composed from all enabled layers' presets - for regenerating
-          data/slots.json.
-        </template>
-        <template v-else> Just this layer's raw overlay JSON. </template>
       </p>
     </div>
   </BaseModal>

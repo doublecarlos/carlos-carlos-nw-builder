@@ -20,7 +20,7 @@ const props = withDefaults(
      *
      *  Off (the default) is what a hover card wants: every ItemCard reads at the same width
      *  regardless of how little that particular item needs, so sweeping a list doesn't make
-     *  the card jump about. On is what a tooltip wants -- "Build menu" in a 240px box centred
+     *  the card jump about. On is what a tooltip wants -- "Build menu" in a 240px box centered
      *  on a 20px kebab would hang off both sides of it and read as belonging to nothing. */
     fitContent?: boolean;
   }>(),
@@ -40,15 +40,15 @@ const GAP = 8;
  * no room -- what a hover card wants, since it is a panel *about* the row it appears next to
  * and covering that row would be worse than moving.
  *
- * `center` centres the panel on the anchor and slides it just far enough to stay on screen --
+ * `center` centers the panel on the anchor and slides it just far enough to stay on screen --
  * what a tooltip wants, since it belongs to the control it points at and has to stay visibly
  * attached to it. Flipping a small label to the far side of its trigger reads as belonging to
  * whatever it landed next to instead.
  */
 type PopoverAlign = "beside" | "center";
 
-/** Centres `width` on the anchor, kept inside the viewport. */
-function centredLeft(anchor: DOMRect, width: number) {
+/** Centers `width` on the anchor, kept inside the viewport. */
+function centeredLeft(anchor: DOMRect, width: number) {
   const left = anchor.left + anchor.width / 2 - width / 2;
   // Clamped rather than flipped: the panel stays over its anchor either way.
   return Math.max(Math.min(left, window.innerWidth - width - MARGIN), MARGIN);
@@ -62,8 +62,8 @@ function place(
   let left: number;
   if (align === "center") {
     // `props.width` is only an opening guess when the panel sizes to its content; the pass
-    // below re-centres on the width it actually rendered at.
-    left = centredLeft(anchor, props.width);
+    // below re-centers on the width it actually rendered at.
+    left = centeredLeft(anchor, props.width);
   } else {
     // Horizontal: from pointer if given, else from anchor's right edge.
     const originX = pointerX ?? anchor.right + GAP;
@@ -85,7 +85,7 @@ function place(
     const { offsetWidth, offsetHeight } = el.value;
 
     const nextLeft =
-      align === "center" ? centredLeft(anchor, offsetWidth) : pos.value.left;
+      align === "center" ? centeredLeft(anchor, offsetWidth) : pos.value.left;
     const nextTop =
       pos.value.top + offsetHeight > window.innerHeight - MARGIN
         ? Math.max(anchor.top - offsetHeight - 6, MARGIN)

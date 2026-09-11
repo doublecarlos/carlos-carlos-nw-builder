@@ -36,7 +36,7 @@ useCursorRowKeys(anchor, {
     <div class="w-44 shrink-0" />
     <div class="min-w-0 flex-1">
       <span ref="anchor" tabindex="-1" data-cursor-anchor class="sr-only" />
-      <!-- Labelled rather than a bare icon: an empty list is nothing but this row, and a
+      <!-- Labeled rather than a bare icon: an empty list is nothing but this row, and a
            lone + under a section header says nothing about what it would add. -->
       <BaseButton :data-testid="'list-add:' + slotDef.id" @click="add">
         <Plus />Add {{ slotDef.label }}

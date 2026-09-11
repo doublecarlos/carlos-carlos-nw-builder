@@ -118,7 +118,7 @@ function buildIco(images: { size: number; png: Buffer }[]): Buffer {
     entry.writeUInt8(size % 256, 1);
     entry.writeUInt8(0, 2); // palette size: not paletted
     entry.writeUInt8(0, 3); // reserved
-    entry.writeUInt16LE(1, 4); // colour planes
+    entry.writeUInt16LE(1, 4); // color planes
     entry.writeUInt16LE(32, 6); // bits per pixel
     entry.writeUInt32LE(png.length, 8);
     entry.writeUInt32LE(offset, 12);

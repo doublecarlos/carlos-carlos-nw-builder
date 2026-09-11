@@ -92,7 +92,7 @@ useEventListener(
   true,
 );
 
-/** Described-by rather than labelled-by: the tooltip explains the control, it does not name
+/** Described-by rather than labeled-by: the tooltip explains the control, it does not name
  *  it. Only wired while the bubble exists -- pointing at a removed element says nothing. */
 watch([open, trigger], ([isOpen, el]) => {
   if (!el) return;

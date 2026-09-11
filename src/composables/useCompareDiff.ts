@@ -89,7 +89,7 @@ function paramLabel(slot: BuildParameterSlot, value: unknown) {
 }
 
 /** The hover tooltip for a differing build_parameter slot -- the control itself just goes
- * bold/dotted/coloured, this is the only place the compare build's actual value shows. */
+ * bold/dotted/colored, this is the only place the compare build's actual value shows. */
 export function paramDiffTitle(
   compareBuild: Build | null,
   slot: BuildParameterSlot,

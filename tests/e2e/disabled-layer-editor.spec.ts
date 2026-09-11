@@ -1,4 +1,4 @@
-// A switched-off layer is still edited against its own catalogue: its entries reach the list,
+// A switched-off layer is still edited against its own catalog: its entries reach the list,
 // its forms follow an undo, and its faults are linted. `enabled` only decides what the build
 // resolves to.
 import { test, expect, type Page } from "@playwright/test";

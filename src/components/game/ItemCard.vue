@@ -62,7 +62,7 @@ const props = withDefaults(
      *  owned by the item. */
     scale?: number;
     /** Lines naming what `scale` came from (`itemScaleNotes`), listed among `notes` so the
-     *  card never shows numbers that silently disagree with the catalogue. */
+     *  card never shows numbers that silently disagree with the catalog. */
     scaleNotes?: string[];
     /** Tooltip for the header's edit button, naming the layer the edit lands in -- which is
      *  not necessarily the one on screen. Empty hides the button. */
@@ -93,7 +93,7 @@ const emit = defineEmits<{
   "go-to-slot": [slotId: string];
 }>();
 
-/** What this item would be swapped for, when the card has a catalogue to ask. */
+/** What this item would be swapped for, when the card has a catalog to ask. */
 const replacement = computed(
   () => props.db?.replacementFor(props.item.id) ?? null,
 );
@@ -114,7 +114,7 @@ const longDescription = computed(() =>
 
 const STABLE_ROWS = 8;
 
-/** Null without a catalogue, as on the layer editor's preview card. */
+/** Null without a catalog, as on the layer editor's preview card. */
 const stableReach = computed(() => {
   const db = props.db;
   if (!db) return null;
@@ -157,11 +157,11 @@ const stats = computed(() => {
   return out;
 });
 
-/** One line per `DynamicStatConfig` -- shared between an item's own `dynamicStats` (below)
- *  and a grant's (`grantRows`'s preview), same "you choose" phrasing either way. */
+/** One line per `DynamicStatConfig`; shared between an item's own `dynamicStats` (below)
+ *  and a grant's (`grantRows`'s preview). */
 function dynamicStatNote(config: DynamicStatConfig): string {
   const lbl = config.label ?? statLabel(config.stat);
-  return `${lbl} ${formatStat(config.stat, config.min)}–${formatStat(config.stat, config.max)}, you choose`;
+  return `${lbl} ${formatStat(config.stat, config.min)} to ${formatStat(config.stat, config.max)}`;
 }
 
 /** Notes that are not stats but change whether the item is legal or what it grants. */
@@ -209,7 +209,7 @@ const rows = computed(() =>
         ><span
           v-if="shown.preferred"
           class="ml-1 text-accent"
-          title="the upgraded half, which only a slot preferring its shape takes"
+          title="Preferred"
           >{{ PREFERRED_MARK }}</span
         ></span
       >
@@ -238,10 +238,9 @@ const rows = computed(() =>
       >
         <TriangleAlert class="mt-0.5 h-[14px] w-[14px] shrink-0" />
         <span>
-          <template v-if="item.hideFromPicker"
-            >Retired: no longer offered as a new pick.</template
-          >
+          <template v-if="item.hideFromPicker">Retired.</template>
           <template v-if="replacement">
+            <br v-if="item.hideFromPicker" />
             Replaced by {{ replacement.name }}.
           </template>
         </span>
@@ -369,7 +368,6 @@ const rows = computed(() =>
                   <div
                     v-for="tier in g.tiers"
                     :key="tier.atLeast"
-                    class=""
                     :class="
                       tier.active ? 'font-semibold text-text' : 'text-muted'
                     "
@@ -451,7 +449,7 @@ const rows = computed(() =>
             class="pl-3 text-warn"
             data-testid="item-card-excluded-by"
           >
-            overridden by
+            Overridden by
             <BaseLink
               :plain="!row.excludedBy.slotId"
               @click="emit('go-to-slot', row.excludedBy.slotId)"
@@ -475,9 +473,7 @@ const rows = computed(() =>
             {{ stableReach.preferred }} preferred)</span
           >
         </div>
-        <p v-if="!stableReach.rows.length" class="text-muted">
-          Nothing reaches this.
-        </p>
+        <p v-if="!stableReach.rows.length" class="text-muted">None.</p>
         <div
           v-for="row in stableReach.rows"
           :key="row.id"

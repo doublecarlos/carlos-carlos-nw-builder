@@ -128,24 +128,24 @@ describe("buildFromLoadout: placement", () => {
     expect(build.choices["raceLeveling.race"]).toBe("race-aasimar");
   });
 
-  it("an unrecognised Hitem produces an unrecognised outcome and leaves the slot empty", () => {
+  it("an unrecognized Hitem produces an unrecognized outcome and leaves the slot empty", () => {
     const character = characterOf("Carlos", "Player_Bard", []);
     const loadout = loadoutOf([demoItem("Melee", 0, "Some_Unmapped_Weapon")]);
     const { build, report } = buildFromLoadout(character, loadout, mappedDb);
     expect(build.choices["gear.mainhand"]).toBeUndefined();
     expect(
       report.outcomes.some(
-        (o) => o.kind === "unrecognised" && o.gameId === "Some_Unmapped_Weapon",
+        (o) => o.kind === "unrecognized" && o.gameId === "Some_Unmapped_Weapon",
       ),
     ).toBe(true);
   });
 
-  it("a notModelled bag's item is ignored, never unrecognised", () => {
+  it("a notModelled bag's item is ignored, never unrecognized", () => {
     const character = characterOf("Carlos", "Player_Bard", []);
     const loadout = loadoutOf([demoItem("FashionHead", 0, "Fashion_Whatever")]);
     const { report } = buildFromLoadout(character, loadout, mappedDb);
     expect(report.counts.ignored).toBe(1);
-    expect(report.counts.unrecognised).toBe(0);
+    expect(report.counts.unrecognized).toBe(0);
     expect(
       report.outcomes.some(
         (o) => o.kind === "ignored" && o.gameId === "Fashion_Whatever",
@@ -204,7 +204,7 @@ describe("buildFromLoadout: placement", () => {
     ).toBe(true);
   });
 
-  it("a recognised Species excludes raceLeveling.race from notInDemo", () => {
+  it("a recognized Species excludes raceLeveling.race from notInDemo", () => {
     const character = characterOf("Carlos", "Player_Bard", [], "Aasimar_Male");
     const { report } = buildFromLoadout(character, loadoutOf([]), mappedDb);
     expect(
@@ -225,7 +225,7 @@ describe("buildFromLoadout: generic stand-ins", () => {
     );
   });
 
-  it("a recognised game item keeps the slot instead", () => {
+  it("a recognized game item keeps the slot instead", () => {
     const character = characterOf("Carlos", "Player_Bard", []);
     const withMountPower = catalog.upsert(
       overlay,
@@ -305,7 +305,7 @@ describe("buildFromLoadout: zero mappings", () => {
     });
     expect(build.id).toBeTruthy();
     expect(report.counts.imported).toBe(0);
-    expect(report.counts.unrecognised).toBe(2);
+    expect(report.counts.unrecognized).toBe(2);
   });
 });
 
@@ -401,9 +401,9 @@ describe("buildFromLoadout: against the shared parser fixture", () => {
     expect(report.loadout).toBe("1. DPS ST");
     expect(build.choices["options.class"]).toBe("class-bard");
     expect(build.choices["raceLeveling.race"]).toBe("race-aasimar");
-    // With no gameIds authored, every item comes back unrecognised and the build is valid.
+    // With no gameIds authored, every item comes back unrecognized and the build is valid.
     expect(report.counts.imported).toBe(0);
-    expect(report.counts.unrecognised).toBeGreaterThan(0);
+    expect(report.counts.unrecognized).toBeGreaterThan(0);
     const total = Object.values(report.counts).reduce((a, b) => a + b, 0);
     expect(total).toBe(report.outcomes.length);
   });

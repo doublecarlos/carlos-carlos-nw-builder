@@ -1,8 +1,8 @@
 // The versioned envelope (build-parameters plan 0005): every build/collection payload this
 // module reads or writes -- localStorage, JSON export/import, share links -- carries a schema
-// version, a `kind`, and a catalogue version. These prove the three behaviours that matter:
+// version, a `kind`, and a catalog version. These prove the three behaviors that matter:
 // un-enveloped (pre-existing) data still works, a genuine mismatch is refused with a message
-// instead of silently misread, and a stale catalogue is a soft signal, not a refusal.
+// instead of silently misread, and a stale catalog is a soft signal, not a refusal.
 import { describe, expect, it, beforeEach } from "vitest";
 import { installWindowShim, installIdbShim } from "./stores/window-shim";
 import * as storage from "../../src/storage/storage";
@@ -89,7 +89,7 @@ describe("parseJson (single-build import)", () => {
     expect(() => storage.parseJson(payload)).toThrow(/older version/i);
   });
 
-  it("reports catalogStale when the envelope carries a different catalogue version", () => {
+  it("reports catalogStale when the envelope carries a different catalog version", () => {
     const build = storage.defaultBuild();
     const payload = JSON.stringify({
       v: storage.SCHEMA_VERSION,
@@ -101,7 +101,7 @@ describe("parseJson (single-build import)", () => {
   });
 });
 
-describe("defaultLayer / normaliseLayer", () => {
+describe("defaultLayer / normalizeLayer", () => {
   it("defaultLayer creates a layer with an empty overlay and enabled: true", () => {
     const layer = storage.defaultLayer("Test layer");
     expect(layer.name).toBe("Test layer");
@@ -110,23 +110,23 @@ describe("defaultLayer / normaliseLayer", () => {
     expect(catalog.isEmpty(layer.overlay)).toBe(true);
   });
 
-  it("normaliseLayer defaults enabled to true", () => {
-    const layer = storage.normaliseLayer({});
+  it("normalizeLayer defaults enabled to true", () => {
+    const layer = storage.normalizeLayer({});
     expect(layer.enabled).toBe(true);
   });
 
-  it("normaliseLayer preserves an explicit enabled: false", () => {
-    const layer = storage.normaliseLayer({ enabled: false });
+  it("normalizeLayer preserves an explicit enabled: false", () => {
+    const layer = storage.normalizeLayer({ enabled: false });
     expect(layer.enabled).toBe(false);
   });
 
-  it("normaliseLayer survives a garbage overlay", () => {
-    const layer = storage.normaliseLayer({ overlay: "garbage" });
+  it("normalizeLayer survives a garbage overlay", () => {
+    const layer = storage.normalizeLayer({ overlay: "garbage" });
     expect(catalog.isEmpty(layer.overlay)).toBe(true);
     expect(layer.enabled).toBe(true);
   });
 
-  it("normaliseLayer preserves a valid overlay", () => {
+  it("normalizeLayer preserves a valid overlay", () => {
     const overlay: CatalogOverlay = {
       items: {
         "test-id": { id: "test-id", name: "Test", filter: "gear_head" },
@@ -135,17 +135,17 @@ describe("defaultLayer / normaliseLayer", () => {
       sectionPresets: {},
       slots: {},
     };
-    const layer = storage.normaliseLayer({ overlay });
+    const layer = storage.normalizeLayer({ overlay });
     expect(layer.overlay.items["test-id"]).toBeDefined();
   });
 
-  it("normaliseLayer preserves the id when provided", () => {
-    const layer = storage.normaliseLayer({ id: "l_custom", name: "Custom" });
+  it("normalizeLayer preserves the id when provided", () => {
+    const layer = storage.normalizeLayer({ id: "l_custom", name: "Custom" });
     expect(layer.id).toBe("l_custom");
   });
 
-  it("normaliseLayer preserves the name when provided", () => {
-    const layer = storage.normaliseLayer({ name: "My Layer" });
+  it("normalizeLayer preserves the name when provided", () => {
+    const layer = storage.normalizeLayer({ name: "My Layer" });
     expect(layer.name).toBe("My Layer");
   });
 });
@@ -461,12 +461,12 @@ describe("point_assignment: assignments", () => {
     });
   });
 
-  it("normalise preserves a valid assignments payload", () => {
+  it("normalize preserves a valid assignments payload", () => {
     const raw = {
       ...storage.defaultBuild(),
       assignments: { "boons.tier1": { "boon-tier1-power": 3 } },
     };
-    const build = storage.normalise(raw);
+    const build = storage.normalize(raw);
     // The row present in `raw` is overridden; the row `raw` didn't mention keeps its
     // seeded default rather than being dropped.
     expect(build.assignments["boons.tier1"]).toEqual({
@@ -480,18 +480,18 @@ describe("point_assignment: assignments", () => {
     });
   });
 
-  it("normalise falls back to the seeded default for a garbage count", () => {
+  it("normalize falls back to the seeded default for a garbage count", () => {
     const raw = {
       ...storage.defaultBuild(),
       assignments: { "boons.tier1": { "boon-tier1-power": "not-a-number" } },
     };
-    const build = storage.normalise(raw);
+    const build = storage.normalize(raw);
     expect(build.assignments["boons.tier1"]["boon-tier1-power"]).toBe(0);
   });
 
-  it("normalise defaults assignments entirely when the payload has none at all", () => {
+  it("normalize defaults assignments entirely when the payload has none at all", () => {
     const raw = { ...storage.defaultBuild(), assignments: undefined };
-    const build = storage.normalise(raw);
+    const build = storage.normalize(raw);
     expect(build.assignments["boons.tier1"]).toEqual({
       "boon-tier1-power": 0,
       "boon-tier1-avoidance": 0,
@@ -509,7 +509,7 @@ describe("BuildCompare: statLines", () => {
     expect(storage.defaultBuild().compare.statLines).toBe(false);
   });
 
-  it("normalise preserves an explicit statLines: true", () => {
+  it("normalize preserves an explicit statLines: true", () => {
     const raw = {
       ...storage.defaultBuild(),
       compare: {
@@ -519,15 +519,15 @@ describe("BuildCompare: statLines", () => {
         statLines: true,
       },
     };
-    expect(storage.normalise(raw).compare.statLines).toBe(true);
+    expect(storage.normalize(raw).compare.statLines).toBe(true);
   });
 
-  it("normalise defaults statLines to false for a build saved before it existed", () => {
+  it("normalize defaults statLines to false for a build saved before it existed", () => {
     const raw = {
       ...storage.defaultBuild(),
       compare: { id: "other", highlight: true, onlyDiff: true },
     };
-    expect(storage.normalise(raw).compare.statLines).toBe(false);
+    expect(storage.normalize(raw).compare.statLines).toBe(false);
   });
 });
 
@@ -540,29 +540,29 @@ describe("BonusOccurrenceConfig: occurrenceInputs", () => {
     expect(build.occurrenceInputs).toEqual({});
   });
 
-  it("normalise preserves a valid occurrenceInputs payload", () => {
+  it("normalize preserves a valid occurrenceInputs payload", () => {
     const raw = {
       ...storage.defaultBuild(),
       occurrenceInputs: { "some-item": { "some-bonus": 3 } },
     };
-    const build = storage.normalise(raw);
+    const build = storage.normalize(raw);
     expect(build.occurrenceInputs).toEqual({
       "some-item": { "some-bonus": 3 },
     });
   });
 
-  it("normalise drops a garbage count rather than keeping it", () => {
+  it("normalize drops a garbage count rather than keeping it", () => {
     const raw = {
       ...storage.defaultBuild(),
       occurrenceInputs: { "some-item": { "some-bonus": "not-a-number" } },
     };
-    const build = storage.normalise(raw);
+    const build = storage.normalize(raw);
     expect(build.occurrenceInputs).toEqual({ "some-item": {} });
   });
 
-  it("normalise defaults occurrenceInputs entirely when the payload has none at all", () => {
+  it("normalize defaults occurrenceInputs entirely when the payload has none at all", () => {
     const raw = { ...storage.defaultBuild(), occurrenceInputs: undefined };
-    const build = storage.normalise(raw);
+    const build = storage.normalize(raw);
     expect(build.occurrenceInputs).toEqual({});
   });
 });
@@ -579,9 +579,9 @@ describe("defaultBuild and duplicate no longer carry updated", () => {
     expect(dup).not.toHaveProperty("updated");
   });
 
-  it("normalise strips updated from stored data", () => {
+  it("normalize strips updated from stored data", () => {
     const raw = { ...storage.defaultBuild(), updated: 12345 };
-    const build = storage.normalise(raw);
+    const build = storage.normalize(raw);
     expect(build).not.toHaveProperty("updated");
   });
 });
@@ -805,7 +805,7 @@ describe("bundle round trip", () => {
     // Decision 22: builds inside a bundle do NOT carry embedded catalog
     // (required layers travel as real layers instead).
     // But toBundleJson doesn't strip catalog - it's parseBundleJson that re-ids builds.
-    // The catalog is preserved through normalise. Let's verify the current behaviour.
+    // The catalog is preserved through normalize. Let's verify the current behavior.
     expect(bundle.builds[0].catalog).toBeDefined();
   });
 

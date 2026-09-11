@@ -82,7 +82,7 @@ describe("itemCardRows", () => {
     expect(itemCardRows(item(), [hidden], [])).toEqual([]);
   });
 
-  it("marks state, dot colour and muted from active/excluded", () => {
+  it("marks state, dot color and muted from active/excluded", () => {
     const rows = itemCardRows(
       item(),
       [
@@ -121,7 +121,7 @@ describe("itemCardRows", () => {
   });
 
   // A bonus's own gate is only populated while it is inactive, and a lone grant is never drawn
-  // as a labelled block, so without folding the two a one-grant bonus says nothing when on.
+  // as a labeled block, so without folding the two a one-grant bonus says nothing when on.
   it("states an active single grant's own conditions on the row", () => {
     const [row] = itemCardRows(
       item(),
@@ -169,7 +169,7 @@ describe("itemCardRows", () => {
     expect(row.conditions).toBe("party enabled");
   });
 
-  // Several grants each get their own labelled block, which already states their conditions;
+  // Several grants each get their own labeled block, which already states their conditions;
   // folding them into the row's one line as well would say it twice.
   it("leaves a multi-grant row's conditions to the bonus gate alone", () => {
     const [row] = itemCardRows(

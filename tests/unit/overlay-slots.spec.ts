@@ -1,5 +1,5 @@
 // `build_parameter` slots as a fourth CatalogOverlay group: composing, editing,
-// linting, and -- the half that matters most -- travelling with a downloaded build, so a
+// linting, and -- the half that matters most -- traveling with a downloaded build, so a
 // user-defined parameter resolves identically on someone else's machine instead of being
 // trapped in the browser that authored it.
 import { describe, it, expect } from "vitest";
@@ -191,17 +191,17 @@ describe("catalog overlay editing: the slots group", () => {
     ).toBe(false);
   });
 
-  it("normaliseOverlay fills in slots for an overlay saved before they existed", () => {
+  it("normalizeOverlay fills in slots for an overlay saved before they existed", () => {
     const legacy = { items: {}, bonuses: {}, sectionPresets: {} };
-    expect(catalog.normaliseOverlay(legacy).slots).toEqual({});
+    expect(catalog.normalizeOverlay(legacy).slots).toEqual({});
   });
 
-  it("normaliseOverlay keeps a slot entry and its tombstone", () => {
-    const normalised = catalog.normaliseOverlay({
+  it("normalizeOverlay keeps a slot entry and its tombstone", () => {
+    const normalized = catalog.normalizeOverlay({
       slots: { [customParam.id]: customParam, "options.gone": null },
     });
-    expect(normalised.slots[customParam.id]).toEqual(customParam);
-    expect(normalised.slots["options.gone"]).toBe(null);
+    expect(normalized.slots[customParam.id]).toEqual(customParam);
+    expect(normalized.slots["options.gone"]).toBe(null);
   });
 });
 

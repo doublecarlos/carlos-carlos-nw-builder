@@ -3,7 +3,7 @@
 // dynamic-stat magnitude(s) + an inline-repetition stepper when the pick declares one), a
 // point_assignment slot (a row of numeric steppers, one per item), or a
 // build_parameter slot (a generic control over BuildParamInput). Row chrome (hover/diff
-// highlighting, the click-to-cursor/ctrl-click-to-edit behaviour, the cursor anchor, the
+// highlighting, the click-to-cursor/ctrl-click-to-edit behavior, the cursor anchor, the
 // errors list) is identical across all three and lives here; each type's own control + diff
 // note pairing lives in its own row component (ItemPickerRow/PointAssignmentRow/
 // BuildParameterRow), picked below by `slotDef.type`.

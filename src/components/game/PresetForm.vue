@@ -45,6 +45,7 @@ import type {
   PointAssignmentSlot,
 } from "../../types";
 import type { EntryStatus } from "../../data/catalog";
+import FormSectionDescription from "../ui/FormSectionDescription.vue";
 
 const props = withDefaults(
   defineProps<{
@@ -132,7 +133,7 @@ const sectionOptions = computed(() =>
   props.db.sections.map((s) => ({ value: s.id, label: s.label })),
 );
 
-/** Off the composed catalogue rather than the shipped file, so a layer-authored param is
+/** Off the composed catalog rather than the shipped file, so a layer-authored param is
  * offered here the same as a shipped one: a preset seeding a custom param is the whole
  * point of both being overlayable. */
 const slotsInSection = computed(() =>
@@ -452,10 +453,9 @@ function save() {
           ><Plus
         /></IconButton>
       </FormSection>
-      <p class="mb-1 text-muted">
-        Applying the preset resets these slots to their default instead of
-        setting a value.
-      </p>
+      <FormSectionDescription>
+        Applying the preset resets these slots to their defaults.
+      </FormSectionDescription>
       <div
         v-for="(row, index) in draft.clearRows"
         :key="index"
@@ -473,8 +473,8 @@ function save() {
         />
       </div>
     </template>
-    <p v-else class="text-muted">
+    <FormSectionDescription v-else>
       Pick a section above to start adding slot values.
-    </p>
+    </FormSectionDescription>
   </div>
 </template>

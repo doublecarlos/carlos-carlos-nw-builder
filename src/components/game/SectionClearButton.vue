@@ -21,7 +21,7 @@ defineEmits<{
       :data-testid="`clear-section-${sectionId}`"
       @click="$emit('clear')"
     >
-      <RotateCcw />Clear section
+      <RotateCcw />Clear
     </BaseButton>
   </BaseTooltip>
 </template>

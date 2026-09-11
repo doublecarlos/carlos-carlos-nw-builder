@@ -19,7 +19,7 @@ export function itemScaleFactor(item: Item | null | undefined): number {
 }
 
 /** One human-readable line per scaler currently acting on `item` -- "Mount bolster 125.00%
- *  applied" -- so a card showing scaled numbers says why they differ from the catalogue. */
+ *  applied" -- so a card showing scaled numbers says why they differ from the catalog. */
 export function itemScaleNotes(item: Item | null | undefined): string[] {
   const state = resolved.value;
   if (!state.ok) return [];

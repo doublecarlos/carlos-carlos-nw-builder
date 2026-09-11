@@ -8,9 +8,9 @@
 //
 //   - 3x upscale. Tooltip text is 11-13px tall in a native-resolution crop, which is where
 //     every engine tested struggled. Upscaling is the only preprocessing that helped; keying
-//     on colour and thresholding to black-on-white -- the obvious idea -- made accuracy
-//     dramatically *worse*, because tooltips colour their text (magenta titles, cyan and green
-//     stat names, dim grey secondary text) and any such key discards most of it.
+//     on color and thresholding to black-on-white -- the obvious idea -- made accuracy
+//     dramatically *worse*, because tooltips color their text (magenta titles, cyan and green
+//     stat names, dim gray secondary text) and any such key discards most of it.
 //   - PSM 3. tesseract.js defaults to PSM 6, which scored materially worse on these layouts.
 //
 // Expect an omitted field rather than a wrong one: across the measured corpus this recovered

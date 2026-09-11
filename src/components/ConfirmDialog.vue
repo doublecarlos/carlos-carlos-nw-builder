@@ -50,7 +50,9 @@ watch(pending, async (request) => {
     <div
       class="flex flex-none items-center gap-2 border-t border-line px-4 py-3"
     >
-      <span class="text-xs text-muted">Hold Shift to skip this dialog.</span>
+      <span class="text-xs text-muted"
+        >Hold Shift to skip this confirmation.</span
+      >
       <BaseButton
         class="ml-auto"
         data-testid="confirm-cancel"

@@ -1,5 +1,5 @@
 // StableBrowser.vue's card derivation. Fixtures are authored here rather than read off the
-// shipped catalogue: these are rules about how the reference reads, not facts about current
+// shipped catalog: these are rules about how the reference reads, not facts about current
 // data.
 import { describe, it, expect } from "vitest";
 import * as db from "../../src/data/db";

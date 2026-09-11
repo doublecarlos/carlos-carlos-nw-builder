@@ -1,7 +1,7 @@
 // End-to-end coverage for `optionsFrom`: a list parameter authored with it derives its
-// options from the item catalogue, so extending the option set is an item edit rather than a
+// options from the item catalog, so extending the option set is an item edit rather than a
 // slot edit. Driven through the `paragon` tag, whose option set is read from the shipped
-// catalogue so adding a paragon item doesn't outdate this spec.
+// catalog so adding a paragon item doesn't outdate this spec.
 import { test, expect, type Page } from "@playwright/test";
 import { openBuilder, slotRow, pickerInput } from "./support/app";
 import { addLayer, layerRow } from "./support/nav";

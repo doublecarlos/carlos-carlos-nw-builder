@@ -2,7 +2,7 @@
 // `Item.replacedBy` (a lookup that forwards to whatever superseded it), plus the build
 // rewrite that persists the second one.
 //
-// Mostly built from purpose-made items rather than the shipped catalogue: nothing shipped was
+// Mostly built from purpose-made items rather than the shipped catalog: nothing shipped was
 // retired when these were written, and pinning them on entries that exist today would make the
 // tests hostage to a data edit. The export round trip at the end is the exception, since what
 // it guards is how a *real* download is composed back.
@@ -224,7 +224,7 @@ describe("replacedBy is an offer, not a redirect", () => {
   });
 
   it("counts a retired id and its replacement separately against maxCopies", () => {
-    // They are distinct catalogue entries until the player migrates, so a cap on one says
+    // They are distinct catalog entries until the player migrates, so a cap on one says
     // nothing about the other -- the same way any two items with the same cap are independent.
     const capped = db.build(
       [
@@ -437,7 +437,7 @@ describe("migrating onto a dynamic stat", () => {
       ])
       .map((finding) => finding.message);
     expect(messages).toEqual([
-      'replacedBy seeds power, but "b" declares no dynamicStats entry for it - ' +
+      'replacedBy seeds power, but "b" declares no dynamicStats entry for it; ' +
         "the value would be dropped on migration",
     ]);
   });
@@ -461,7 +461,7 @@ describe("migrating onto a dynamic stat", () => {
 });
 
 /**
- * A download embeds the catalogue entries its build depends on (`referencedOverlay`), and an
+ * A download embeds the catalog entries its build depends on (`referencedOverlay`), and an
  * overlay entry is keyed by the id it is stored under while db.ts re-indexes it by the entry's
  * own `id`. Emitting a *resolved* item therefore files the replacement under the retired id, so
  * on import the retired id indexes under the replacement's name and disappears -- taking the
@@ -493,12 +493,12 @@ describe("exporting a build that still holds a retired id", () => {
 
   const exported = () => {
     const source = catalog.makeDb([layer]);
-    const build = storage.normalise({
+    const build = storage.normalize({
       ...storage.defaultBuild("mine"),
       choices: { "gear.ring1": RETIRED },
     });
     const json = storage.toBuildJson(build, source);
-    const imported = storage.normalise(JSON.parse(json).data);
+    const imported = storage.normalize(JSON.parse(json).data);
     return { imported, db: catalog.makeDb([imported.catalog ?? null]) };
   };
 
@@ -551,24 +551,24 @@ describe("accepting the offer does not move the numbers", () => {
     ["celestial-lion-s-presence-3-stalwart-golden-lion-damage-utility", 0.03],
     ["celestial-lion-s-presence-4-stalwart-golden-lion-damage-utility", 0.04],
   ])("holds %s at its own value either side of the rewrite", (id, want) => {
-    const catalogue = catalog.makeDb([]);
-    const build = storage.normalise({
+    const db = catalog.makeDb([]);
+    const build = storage.normalize({
       ...storage.defaultBuild("imported"),
       choices: { [SLOT]: id },
     });
     // Before: the build still holds the retired item, whose own flat stat this is. It is not
     // a dynamic stat at all yet, so it lands in `sums` rather than `dynamicStatMods`.
     expect(
-      engine.resolveBuild(catalogue, build).stages.sums.overall_damage,
+      engine.resolveBuild(db, build).stages.sums.overall_damage,
     ).toBeCloseTo(want, 10);
     expect(damage(build)).toBe(0);
 
     // After: the replacement's dynamic stat, seeded to the same number.
-    const migrated = migrateItemIds(catalogue, build);
+    const migrated = migrateItemIds(db, build);
     expect(damage(migrated)).toBeCloseTo(want, 10);
-    expect(
-      engine.resolveBuild(catalogue, migrated).stages.sums.overall_damage,
-    ).toBe(0);
+    expect(engine.resolveBuild(db, migrated).stages.sums.overall_damage).toBe(
+      0,
+    );
   });
 });
 
@@ -649,9 +649,9 @@ describe("migrateSlotItem", () => {
   });
 });
 
-describe("the shipped catalogue", () => {
+describe("the shipped catalog", () => {
   // Both retirement fields have to be in `validate`'s known-item-field allowlist, or every
-  // entry carrying one is reported as a misspelled stat. Pinned on the real catalogue rather
+  // entry carrying one is reported as a misspelled stat. Pinned on the real catalog rather
   // than a fixture, since the allowlist only matters for what actually ships.
   it("lints clean at error level", () => {
     const base = catalog.base();
@@ -685,7 +685,7 @@ describe("validateReplacements", () => {
   it("reports a dangling target", () => {
     expect(
       messages([{ id: "a", name: "A", filter: "f", replacedBy: "gone" }]),
-    ).toEqual(['replacedBy "gone" is not an item in the catalogue']);
+    ).toEqual(['replacedBy "gone" does not exist']);
   });
 
   it("reports a cycle once per member", () => {

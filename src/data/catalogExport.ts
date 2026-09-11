@@ -1,5 +1,5 @@
 // Regenerates the shipped data/db-items.json, data/db-bonuses.json, and data/slots.json
-// bodies from the composed in-memory catalogue -- the maintainer path for pasting edits
+// bodies from the composed in-memory catalog -- the maintainer path for pasting edits
 // made in the layer editor back into the repo. Kept in its own module, separate from
 // catalog.ts's core compose/upsert/etc, so LayerExportModal.vue can dynamic-import it and
 // leave it a chunk the page never requests unless maintainer mode is on.

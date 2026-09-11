@@ -386,11 +386,11 @@ function optionsForCombo(type?: string) {
   if (!path) return [];
   const slot = paramSlots.value.find((s) => s.path === path);
   // Drop a slot's own "- none -" row: "" is a build-editor value, not a condition
-  // value -- a `class: ""` leaf would serialise to nothing anyway (`fromCsv`).
+  // value -- a `class: ""` leaf would serialize to nothing anyway (`fromCsv`).
   const fromSlot = (slot?.options ?? []).filter((o) => o.value);
   if (fromSlot.length) return fromSlot;
   // No parameter declares this path, so the vocabulary is whatever items publish at it --
-  // which is where `class` lives. Labelled by the publishing item, and deduped
+  // which is where `class` lives. Labeled by the publishing item, and deduped
   // since several items may legitimately assert the same value.
   const byValue = new Map<string, string>();
   for (const item of engine.db.value.items) {
@@ -410,7 +410,7 @@ const isMultiValue = (type?: string) =>
 // Every build_parameter slot is a candidate key; the comparison control shown depends on the
 // selected one's `paramType`, same source of truth `optionsForCombo` above already uses for the
 // dedicated leaves.
-// Off the composed catalogue: a layer-authored param is as gateable as a shipped one, so it
+// Off the composed catalog: a layer-authored param is as gateable as a shipped one, so it
 // has to appear in this picker the moment it exists.
 const paramSlots = computed(() =>
   engine.db.value.slots.filter(
@@ -473,7 +473,7 @@ function changeParamKey(row: ConditionRow, key: string) {
         class="flex flex-wrap items-center gap-1.5"
       >
         <DragHandle
-          tooltip="Drag to reorder or move into a block"
+          tooltip="Drag to reorder or move to another condition group"
           data-testid="condition-drag-handle"
           v-bind="dragHandleProps(i)"
         />
@@ -629,8 +629,8 @@ function changeParamKey(row: ConditionRow, key: string) {
 
       <div v-else class="flex flex-wrap items-center gap-1.5 mb-1">
         <!-- A condition tree can sit on either a plain or already-recessed background
-             depending where it's embedded, so the fill mixes in the current text colour at
-             low alpha rather than a fixed surface colour -- it reads as a step down from
+             depending where it's embedded, so the fill mixes in the current text color at
+             low alpha rather than a fixed surface color -- it reads as a step down from
              whatever it's sitting on either way. -->
         <div
           data-testid="condition-group-box"
@@ -638,7 +638,7 @@ function changeParamKey(row: ConditionRow, key: string) {
         >
           <div class="flex flex-wrap items-center gap-1 mb-0.5">
             <DragHandle
-              tooltip="Drag to reorder or move into a block"
+              tooltip="Drag to reorder or move to another condition group"
               data-testid="condition-drag-handle"
               v-bind="dragHandleProps(i)"
             />

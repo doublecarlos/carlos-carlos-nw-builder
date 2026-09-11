@@ -2,9 +2,9 @@
 // The right column: the sheet's output block, rebuilt.
 //
 // Every table is derived from NW_SCHEMA rather than a hand-written stat list, so adding a
-// stat to the schema makes it appear here with no edit. Overcapped values are coloured; the
+// stat to the schema makes it appear here with no edit. Overcapped values are colored; the
 // rating/percent pair each get their own merged overcap-or-headroom column (signed: positive
-// over the cap, negative is spare headroom), coloured independently since they cap separately.
+// over the cap, negative is spare headroom), colored independently since they cap separately.
 import { ref, computed } from "vue";
 import ComboBox from "./ui/ComboBox.vue";
 import BuildComboBox from "./game/BuildComboBox.vue";
@@ -129,7 +129,7 @@ const result = computed(() => {
 });
 // The sheet-style compare row under the picker: another build's own `derived`, resolved
 // against the same db. `null` means "not comparing" and the widget collapses back to a
-// single centred value.
+// single centered value.
 const compareResult = computed(() =>
   engine.compareResolved.value?.ok ? engine.compareResolved.value.result : null,
 );
@@ -236,7 +236,7 @@ const fmt = (key: string, value: unknown) => fmtStat(key, value);
 /** `over` is signed: positive means over the cap, negative means headroom to spare --
  * one merged column instead of the sheet's separate overcap/headroom pair. `capped` is
  * `min(total, cap)`, i.e. what the stat actually contributes once excess is thrown away.
- * `primaryCls`/`overCls` split the colouring in two: Rating/Percentage read green (at or
+ * `primaryCls`/`overCls` split the coloring in two: Rating/Percentage read green (at or
  * over cap) or default (headroom) -- they already show the effective value, so "over"
  * isn't itself a problem -- while the excess, red when wasted / blue when there's room to
  * spare, lives in the Overcap columns. `redOver` is the one exception: rating alone turns
@@ -463,7 +463,7 @@ function statCompare(
  * of a lone number floating under one column.
  *
  * `cls` is run through `capCell` against the *compare* build's own totals and caps, not
- * inherited from the cell above: the colour means "this number is capped/overcapped", so
+ * inherited from the cell above: the color means "this number is capped/overcapped", so
  * borrowing this build's would state something untrue about the other build. `text-text`
  * resets it when the compare build has headroom and the cell above does not. */
 function capCompare(
@@ -496,7 +496,7 @@ function capCompare(
 
 // The stat source popover ("why is this number what it is", per stat) -- source attribution
 // itself lives in stat-sources.ts, since it's pure data derivation with no template of its
-// own. See useStatSourcePopover for the click-to-open/close/click-outside behaviour.
+// own. See useStatSourcePopover for the click-to-open/close/click-outside behavior.
 const {
   root,
   tooltip,
@@ -650,7 +650,7 @@ const {
         </tr>
       </thead>
       <tbody>
-        <!-- Each cell coloured off its own column's 'over', not the row: rating and
+        <!-- Each cell colored off its own column's 'over', not the row: rating and
              percentage cap independently, so one can read green while the other reads
              red on the same row. -->
         <tr
@@ -665,7 +665,7 @@ const {
           >
             <div class="flex items-center">
               <IconButton
-                title="Show contributing sources"
+                title="Show sources"
                 class="stat-info-btn"
                 :data-stat-key="row.key"
                 @click="toggleCard($event, row.key)"

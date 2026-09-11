@@ -1,6 +1,6 @@
 // Turns the generic node tree from demo-format.ts into a game-domain, app-agnostic snapshot:
 // characters, their saved loadouts, and the items equipped in each. Knows about Neverwinter
-// (bags, loadouts, classes) but nothing about this app's slots, catalogue or `Build` shape --
+// (bags, loadouts, classes) but nothing about this app's slots, catalog or `Build` shape --
 // that's demo-import.ts's job.
 import { child, childrenOf, scalar, type DemoNode } from "./demo-format";
 

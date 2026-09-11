@@ -63,7 +63,7 @@ test("the system preference still decides when nothing is stored", async ({
 });
 
 test("the two themes actually paint differently", async ({ browser }) => {
-  // Compared rather than pinned to a literal: which colours they are is
+  // Compared rather than pinned to a literal: which colors they are is
   // tests/unit/seo-metadata.spec.ts's business, against src/base.css.
   const light = await bootWith(browser, "light", "light");
   const dark = await bootWith(browser, "dark", "light");

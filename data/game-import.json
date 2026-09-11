@@ -235,17 +235,17 @@
   "notInDemoReasons": [
     {
       "label": "Boons",
-      "reason": "The demo does not record boon points. Set these by hand.",
+      "reason": "Not recorded in the game export.",
       "sections": ["boons"]
     },
     {
-      "label": "Race and Leveling",
-      "reason": "Levelling points and race Ability Scores are not in the demo. Race itself is read from the character's costume when recognised.",
+      "label": "Race and Leveling Ability Scores",
+      "reason": "Not recorded in the game export.",
       "sections": ["raceLeveling"]
     },
     {
       "label": "Role / Forte / Damage type",
-      "reason": "Role, forte and damage type are not recorded; check the Options section.",
+      "reason": "Not recorded in the game export.",
       "slotIds": [
         "options.role",
         "options.damageType",
@@ -265,47 +265,46 @@
     },
     {
       "label": "Class",
-      "reason": "This character's class wasn't recognised from the demo.",
+      "reason": "This character's class wasn't recognized from the demo.",
       "slotIds": ["options.class"]
     },
     {
       "label": "Weapon modifications",
-      "reason": "Weapon enchant modifications aren't recorded in the demo.",
+      "reason": "Not recorded in the game export.",
       "slotIds": ["gear.mainhandMod", "gear.offhandMod1", "gear.offhandMod2"]
     },
     {
       "label": "Reinforcements",
-      "reason": "Reinforcement kits aren't recorded in the demo.",
+      "reason": "Not recorded in the game export.",
       "sections": ["reinforcements"]
     },
     {
-      "label": "Consumable buffs",
-      "reason": "Active consumable buffs aren't recorded in the demo.",
-      "slotIds": ["buffs.eventFood", "buffs.blessing"]
+      "label": "Buffs (consumables, etc.)",
+      "reason": "Not recorded in the game export.",
+      "slotIds": [
+        "buffs.eventFood",
+        "buffs.blessing",
+        "baselineAndAttributes.attributesCampfireBuff"
+      ]
     },
     {
       "label": "Companion",
-      "reason": "The demo only stores a numeric companion index, not which companion it is, so the generic companion is applied instead.",
+      "reason": "Not recorded in the game export.",
       "slotIds": ["companions.companion"]
     },
     {
       "label": "Mount and companion bolster",
-      "reason": "Bolster comes from your whole stable and companion collection, not from the equipped loadout, so a loadout export has nothing to read it from. Both default to the maximum; set them by hand if your collection is not complete.",
+      "reason": "Not recorded in the game export.",
       "slotIds": ["mounts.bolster", "companions.bolster"]
     },
     {
-      "label": "Campfire buff",
-      "reason": "Campfire buffs aren't recorded in the demo.",
-      "slotIds": ["baselineAndAttributes.attributesCampfireBuff"]
-    },
-    {
       "label": "Feats and other class/race features",
-      "reason": "Feats, paragon and other per-class/race features aren't recoverable from a demo file.",
+      "reason": "Not recorded in the game export.",
       "sections": ["classStuff"]
     },
     {
       "label": "Group / Artifact Call / Misc",
-      "reason": "Situational modelling that's never in the demo.",
+      "reason": "Not recorded in the game export.",
       "sections": ["group", "artifactCall", "misc"]
     }
   ],

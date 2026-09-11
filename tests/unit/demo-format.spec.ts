@@ -125,7 +125,7 @@ describe("parseDemo: errors", () => {
 });
 
 describe("parseDemo: unknown keys", () => {
-  it("preserves keys it doesn't recognise verbatim", () => {
+  it("preserves keys it doesn't recognize verbatim", () => {
     const root = parseDemo("{\nTotallyMadeUpKey 42\n}\n");
     expect(scalar(root, "TotallyMadeUpKey")).toBe("42");
   });

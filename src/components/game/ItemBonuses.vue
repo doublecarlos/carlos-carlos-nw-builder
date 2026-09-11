@@ -30,6 +30,7 @@ import type { BonusDraft } from "../../lib/bonus-draft";
 import type { BonusDraftStore } from "../../stores/bonus-draft";
 import type { OccurrenceDraft } from "../../lib/item-draft";
 import { bonusDraftRegistryKey } from "../../composables/bonusDraftRegistry";
+import FormSectionDescription from "../ui/FormSectionDescription.vue";
 
 // Lets a condition be dragged from one bonus's tree straight into another's, both attached to
 // this same item (see bonusDraftRegistry.ts) -- each BonusForm below registers its own
@@ -237,17 +238,15 @@ function onSlotDuplicate(slot: Slot) {
           class="w-56"
           model-value=""
           :options="attachable"
-          placeholder="attach an existing one…"
+          placeholder="Attach an existing one…"
           @update:model-value="attachExisting"
         />
       </span>
     </FormSection>
 
-    <p v-if="!slots.length" class="text-muted">
-      This item has no bonuses yet. Add one above -- most are private to a
-      single item; attaching an existing bonus id shares it with whatever else
-      already lists it.
-    </p>
+    <FormSectionDescription v-if="!slots.length">
+      This item has no bonuses.
+    </FormSectionDescription>
 
     <div
       v-for="slot in slots"
@@ -255,7 +254,7 @@ function onSlotDuplicate(slot: Slot) {
       data-testid="bonus-card"
       class="mb-2.5 rounded-md border border-line bg-accent-soft/30 px-2.5 py-2"
     >
-      <!-- A dangling reference (attached id with no catalogue entry -- a hand-edited import,
+      <!-- A dangling reference (attached id with no catalog entry -- a hand-edited import,
            typically) has nothing else to signal it: BonusForm's own `status` badge needs
            overlay access this component doesn't have, so it stays 'base' here throughout. -->
       <BaseBadge v-if="slot.id && !sourceFor(slot)" variant="warn" class="mb-1"
@@ -316,9 +315,7 @@ function onSlotDuplicate(slot: Slot) {
                 "
               />
             </FormField>
-            <FormField
-              label="Label (optional, overrides the bonus name on this row)"
-            >
+            <FormField label="Label">
               <BaseInput
                 class="w-40"
                 type="text"

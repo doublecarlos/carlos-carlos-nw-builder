@@ -4,7 +4,7 @@
 // you a bonus is one occurrence short, but not where that occurrence could come from.
 //
 // Deliberately a *candidate* question, not a resolved one -- "which rows can hold something
-// that contributes to this bonus", answered off the catalogue alone. That is what makes it
+// that contributes to this bonus", answered off the catalog alone. That is what makes it
 // affordable: BuildEditor's `slotGrantsStat` explains why the stat filter refuses to consider
 // not-yet-chosen items (it would mean re-running the engine per candidate per slot), and this
 // never asks what a candidate *would* do -- only whether the bonus lists it as a member.
@@ -13,7 +13,7 @@ import type { Db } from "../types";
 
 const EMPTY: ReadonlySet<string> = new Set();
 
-/** Per-`Db` memo. Neither the catalogue nor a bonus's membership changes while a `Db` is
+/** Per-`Db` memo. Neither the catalog nor a bonus's membership changes while a `Db` is
  *  alive, and a rebuilt one (a layer edit) simply gets a fresh index. */
 const cache = new WeakMap<Db, Map<string, Set<string>>>();
 
@@ -25,7 +25,7 @@ const cache = new WeakMap<Db, Map<string, Set<string>>>();
  * them one at a time would walk the whole slot list once per row.
  *
  * An `item_picker_list` is indexed under the container's id, not its rows' -- row count is not
- * a catalogue fact, and this index is memoised per `Db`. Callers testing a rendered row against
+ * a catalog fact, and this index is memoised per `Db`. Callers testing a rendered row against
  * it check the row's `list` alongside its own id.
  *
  * Candidates come from `db.forSlot`, not `forSlotAndBuild`: a slot the current class or a
@@ -58,7 +58,7 @@ function index(db: Db): Map<string, Set<string>> {
   return bySlot;
 }
 
-/** The slots that could supply `bonusId`. Empty when nothing in the catalogue offers it. */
+/** The slots that could supply `bonusId`. Empty when nothing in the catalog offers it. */
 export function slotsSupplying(db: Db, bonusId: string): ReadonlySet<string> {
   return index(db).get(bonusId) ?? EMPTY;
 }

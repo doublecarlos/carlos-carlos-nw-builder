@@ -9,7 +9,7 @@
 // Neither writes to the catalog -- a created draft still needs an explicit Save, and an
 // applied field is an ordinary edit of the item it lands on.
 //
-// The recognised text is shown and editable on purpose. OCR here omits fields rather than
+// The recognized text is shown and editable on purpose. OCR here omits fields rather than
 // getting them wrong, so the useful correction is usually "it missed a line", which is far
 // easier to spot and fix in the text than in a half-filled form.
 //
@@ -52,7 +52,7 @@ const busy = ref(false);
 const error = ref("");
 const result = computed(() => parseTooltip(text.value));
 
-/** One recognised value, in the shape both exits need: something to show, and the item-shaped
+/** One recognized value, in the shape both exits need: something to show, and the item-shaped
  *  patch that carries it. */
 interface Field {
   id: string;
@@ -88,7 +88,7 @@ const fields = computed<Field[]>(() => {
   return list;
 });
 
-/** Creating an item needs a recognised *value*, not just a name: `findName` returns the first
+/** Creating an item needs a recognized *value*, not just a name: `findName` returns the first
  *  line that is not chrome, so any prose at all produces one, and a name alone is no evidence
  *  the text was ever a tooltip. Applying single fields has no such problem -- the name is
  *  picked deliberately, one button at a time. */
@@ -180,11 +180,7 @@ useEventListener(document, "paste", onPaste);
   >
     <div class="flex min-h-0 flex-1 flex-col gap-2.5 overflow-y-auto p-4">
       <div class="flex flex-wrap items-baseline gap-2">
-        <span class="text-muted"
-          >Paste or drop a screenshot. <br />
-          Name and base stats are filled in; bonuses must be created
-          manually.</span
-        >
+        <span class="text-muted">Paste or drop a screenshot.</span>
         <span class="flex-1"></span>
         <BaseButton as="label" :disabled="busy"
           >Choose image…
@@ -209,14 +205,14 @@ useEventListener(document, "paste", onPaste);
         rows="8"
         data-testid="tooltip-import-text"
         class="w-full flex-none font-mono"
-        placeholder="Paste a screenshot here - the recognised text appears in this box, where you can correct it before creating the item."
+        placeholder="The recognized text will appear here; you can correct it before creating the item."
       />
 
       <div v-if="text.trim()" class="flex flex-col gap-2 lg:flex-row">
         <section class="min-w-0 flex-1">
-          <h4 class="mb-1 text-muted">Recognised ({{ fields.length }})</h4>
+          <h4 class="mb-1 text-muted">Recognized ({{ fields.length }})</h4>
           <p v-if="!fields.length" class="text-muted">
-            No stat lines recognised yet.
+            No stat lines recognized yet.
           </p>
           <template v-else>
             <ul data-testid="tooltip-import-stats" class="flex flex-col">
@@ -256,7 +252,7 @@ useEventListener(document, "paste", onPaste);
 
         <section v-if="result.bonusLines.length" class="min-w-0 flex-1">
           <h4 class="mb-1 text-muted">
-            Not applied - granted by an enchantment or kit ({{
+            Not applied: granted by an enchantment or kit ({{
               result.bonusLines.length
             }})
           </h4>
@@ -273,7 +269,7 @@ useEventListener(document, "paste", onPaste);
 
         <section v-if="result.unmatched.length" class="min-w-0 flex-1">
           <h4 class="mb-1 text-muted">
-            Not recognised ({{ result.unmatched.length }})
+            Not recognized ({{ result.unmatched.length }})
           </h4>
           <ul data-testid="tooltip-import-unmatched" class="flex flex-col">
             <li
@@ -298,7 +294,7 @@ useEventListener(document, "paste", onPaste);
       >
       <BaseButton
         :disabled="!fields.length || !applyTarget || busy"
-        :title="`Apply every recognised value ${applyHint}`"
+        :title="`Apply every recognized value ${applyHint}`"
         data-testid="tooltip-import-apply-all"
         @click="applyAll"
         ><ArrowRightToLine />Apply all</BaseButton

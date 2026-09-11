@@ -158,7 +158,7 @@ test("clearing the mount hands the group back to manual and drops the preferred 
   );
 });
 
-test("an insignia row is labelled with the shape its mount's slot takes", async ({
+test("an insignia row is labeled with the shape its mount's slot takes", async ({
   page,
 }) => {
   await openStable(page);
@@ -197,7 +197,7 @@ test("an insignia row is labelled with the shape its mount's slot takes", async 
   await expect(label("insignia.insignia2_1")).toHaveText("Insignia 2.1");
 });
 
-test("a mount's row summarises the slots it offers", async ({ page }) => {
+test("a mount's row summarizes the slots it offers", async ({ page }) => {
   await openStable(page);
   await chooseItem(page, "insignia.mount1", MOUNT);
 

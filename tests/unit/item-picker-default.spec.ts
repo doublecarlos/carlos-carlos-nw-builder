@@ -76,12 +76,12 @@ describe("seeding a fresh build", () => {
 
 describe("what a seeded default is not", () => {
   it("is a plain stored choice, so a build that cleared the slot stays cleared", () => {
-    // `normalise` replaces `choices` wholesale rather than merging the seeded defaults in --
+    // `normalize` replaces `choices` wholesale rather than merging the seeded defaults in --
     // a slot the player emptied must not quietly come back on the next load.
     const { choices } = storage.seededDefaults(slotsData.slots, testDb);
     const stored: Record<string, string> = {};
     expect(
-      storage.normalise({ choices: stored }).choices["options.location"],
+      storage.normalize({ choices: stored }).choices["options.location"],
     ).toBeUndefined();
     expect(choices["options.location"]).toBe(thay.id);
   });

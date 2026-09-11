@@ -1,6 +1,6 @@
 // index.html carries the same three strings -- title, description, icon -- in up to four
 // places each (plain meta, Open Graph, Twitter, JSON-LD), and nothing in the build checks that
-// they still agree. Neither does anything notice when a colour, an icon path or a crawler rule
+// they still agree. Neither does anything notice when a color, an icon path or a crawler rule
 // drifts away from the file it was copied from. These assertions re-read the committed files
 // and pin those relationships.
 import { describe, it, expect } from "vitest";
@@ -100,7 +100,7 @@ describe("index.html head", () => {
     expect(metaContent("og:image:alt")).toBeTruthy();
   });
 
-  it("declares a browser chrome colour per scheme, matching the theme", () => {
+  it("declares a browser chrome color per scheme, matching the theme", () => {
     expect(themeBg.light).toBeTruthy();
     expect(themeBg.dark).toBeTruthy();
     expect(

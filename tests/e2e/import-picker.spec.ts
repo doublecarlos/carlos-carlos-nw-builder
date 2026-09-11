@@ -10,7 +10,7 @@ import {
 } from "./support/nav";
 
 /** An un-enveloped bundle: two builds and a layer, none of them known to the workspace. Ids
- *  are spelled out, as a real export's are - they are what a second import recognises. */
+ *  are spelled out, as a real export's are - they are what a second import recognizes. */
 const bundle = JSON.stringify({
   builds: [
     { id: "b_bundle_a", name: "Bundle A" },
@@ -100,7 +100,7 @@ test("the same file imported twice is offered as a replacement the second time",
 
   await importText(page, bundle);
 
-  // The ids the file carries survived the first import, so the second recognises them.
+  // The ids the file carries survived the first import, so the second recognizes them.
   await expect(page.getByTestId("import-conflict")).toHaveCount(3);
   await page.getByTestId("import-all-replace").click();
   await confirmImport(page);

@@ -21,7 +21,7 @@ test.describe("item picker hidePreview", () => {
     await pickerInput(row).click();
 
     // Warlock has ability scores *and* its own bonuses in the shipped table, so it would show
-    // a stat line and the "◈" conditional-bonus marker if the flag weren't honoured.
+    // a stat line and the "◈" conditional-bonus marker if the flag weren't honored.
     const option = pickerOption(row, className("warlock"));
     await expect(option).toHaveText(className("warlock"));
     await expect(option.getByTestId("picker-option-bonus-preview")).toHaveCount(

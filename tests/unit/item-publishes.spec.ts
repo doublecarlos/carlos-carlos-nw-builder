@@ -241,7 +241,7 @@ describe("catalog lint for publishes", () => {
 
 describe("migrating options.class from a stored context value", () => {
   it("an old build's context.class becomes the class item's pick", () => {
-    const migrated = storage.normalise({
+    const migrated = storage.normalize({
       id: "old",
       name: "Old build",
       context: { class: "warlock" },
@@ -250,7 +250,7 @@ describe("migrating options.class from a stored context value", () => {
   });
 
   it("leaves a build that already made the pick alone", () => {
-    const migrated = storage.normalise({
+    const migrated = storage.normalize({
       id: "old",
       name: "Old build",
       context: { class: "warlock" },
@@ -260,7 +260,7 @@ describe("migrating options.class from a stored context value", () => {
   });
 
   it("leaves a stored class no item stands for rather than guessing", () => {
-    const migrated = storage.normalise({
+    const migrated = storage.normalize({
       id: "old",
       name: "Old build",
       context: { class: "artificer" },
@@ -269,12 +269,12 @@ describe("migrating options.class from a stored context value", () => {
   });
 
   it("does nothing to a build that never named a class", () => {
-    const migrated = storage.normalise({ id: "old", name: "Old build" });
+    const migrated = storage.normalize({ id: "old", name: "Old build" });
     expect(migrated.choices["options.class"]).toBeUndefined();
   });
 
   it("the migrated pick resolves back to the class it used to name", () => {
-    const migrated = storage.normalise({
+    const migrated = storage.normalize({
       id: "old",
       name: "Old build",
       context: { class: "warlock" },

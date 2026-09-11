@@ -32,7 +32,7 @@ async function load(): Promise<LoadedState> {
   } catch (error: unknown) {
     console.warn("This browser's storage is unavailable:", error);
     flagStorageFailed(
-      "Could not open this browser's storage - nothing will be saved. Use Export to keep a copy.",
+      "Could not open this browser's storage; nothing will be saved. Use Export to keep a copy.",
     );
     return emptyState();
   }

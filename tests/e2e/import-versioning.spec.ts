@@ -1,6 +1,6 @@
 // End-to-end coverage for the versioned export/import envelope (build-parameters plan 0005):
 // a real export round-trips through import, an un-enveloped (legacy) build still works, and a
-// version or kind mismatch is refused with a clear message instead of silently mis-normalised.
+// version or kind mismatch is refused with a clear message instead of silently mis-normalized.
 import { test, expect, type Page } from "@playwright/test";
 import { confirmImport, importText, openBuilder } from "./support/app";
 

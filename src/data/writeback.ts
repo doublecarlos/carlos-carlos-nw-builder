@@ -58,7 +58,7 @@ export async function writeDataFile(
     });
   } catch {
     throw new WritebackError(
-      `Could not reach ${where} - start it with \`npm run dev\` or \`npm run data-server\` and try again`,
+      `Could not reach ${where}; start it with \`npm run dev\` or \`npm run data-server\` and try again`,
     );
   }
 
@@ -70,7 +70,7 @@ export async function writeDataFile(
   }
   if (payload === null) {
     throw new WritebackError(
-      `${where} answered, but not as a writeback server - is something else on that port?`,
+      `${where} answered, but not as a writeback server. Is something else on that port?`,
     );
   }
   if (!payload.ok || payload.repo === undefined) {

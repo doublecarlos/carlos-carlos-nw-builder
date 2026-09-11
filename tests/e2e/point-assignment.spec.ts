@@ -195,7 +195,7 @@ test.describe("point_assignment hover card", () => {
       itemName(POWER_ID),
     );
 
-    // Aim at the label's leading edge rather than its centre: the open card is placed just
+    // Aim at the label's leading edge rather than its center: the open card is placed just
     // right of the label it came from, and in a row this wide it can reach over the middle of
     // the next label along -- a hover there would land on the card instead of the label.
     await assignmentLabel(row, AVOIDANCE_ID).hover({
@@ -386,7 +386,7 @@ test.describe("point_assignment hover card for an unselected candidate", () => {
   });
 });
 
-// Mirrors slot-list.spec.ts's "row click behaviour" coverage for item_picker rows: Ctrl/Cmd
+// Mirrors slot-list.spec.ts's "row click behavior" coverage for item_picker rows: Ctrl/Cmd
 // click jumps straight to a layer's item form. A point_assignment row has several items, not
 // one, so the target here is one item's own label (assignmentLabel) rather than the row's
 // `.slot-label` -- ctrl-clicking the row's own label stays a no-op, same as an empty slot.

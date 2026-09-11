@@ -83,7 +83,7 @@ test.describe("mount and companion bolster", () => {
     await expect(statValue(page, "il")).toHaveText(before!);
   });
 
-  test("the stat source popover reports the scaled figure, not the catalogue one", async ({
+  test("the stat source popover reports the scaled figure, not the catalog one", async ({
     page,
   }) => {
     await openBuilder(page);
@@ -183,10 +183,10 @@ test("a bolster outside its range is reported on the row, not clamped", async ({
 
   await setBolster(page, "companions.bolster", 1000);
   const row = slotRow(page, "companions.bolster");
-  await expect(row).toContainText("is outside 0%–120%");
+  await expect(row).toContainText("must be between 0% and 120%");
   // The value someone typed is still what the control shows -- reported, not rewritten.
   await expect(row.locator("input")).toHaveValue("1000");
 
   await setBolster(page, "companions.bolster", 120);
-  await expect(row).not.toContainText("is outside");
+  await expect(row).not.toContainText("must be between");
 });

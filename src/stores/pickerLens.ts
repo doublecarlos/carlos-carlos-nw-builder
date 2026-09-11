@@ -11,9 +11,9 @@ import { ref } from "vue";
 export const searchByStat = ref(true);
 /** Match a query against the names, part names and descriptions of an item's bonuses. */
 export const searchByBonus = ref(true);
-/** Match a query against the catalogue id, for a maintainer working from exported data. */
+/** Match a query against the catalog id, for a maintainer working from exported data. */
 export const searchById = ref(false);
-/** Re-show the candidates the slot's own filters withhold, each labelled with why. */
+/** Re-show the candidates the slot's own filters withhold, each labeled with why. */
 export const showHidden = ref(false);
 /** Draw each row's stat and bonus preview lines, not just its name and item level. */
 export const showPreview = ref(true);

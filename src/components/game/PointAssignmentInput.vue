@@ -78,7 +78,7 @@ function focus() {
   root.value?.querySelector("input")?.focus();
 }
 
-/** No type-ahead target here (no combobox to seed) -- same no-op-beyond-focus behaviour
+/** No type-ahead target here (no combobox to seed) -- same no-op-beyond-focus behavior
  *  BuildParamInput uses for its own non-list paramTypes. */
 function focusAndSeed() {
   focus();

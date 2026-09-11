@@ -1,6 +1,6 @@
 // itemPreview and bonusStatPreview share the same underlying part-formatting/limit logic --
 // these tests cover both the shape each returns and the schema-order/limit/zero-filtering
-// behaviour that logic is responsible for.
+// behavior that logic is responsible for.
 import { describe, it, expect } from "vitest";
 import {
   itemPreview,
@@ -86,7 +86,7 @@ describe("statPickerOptions", () => {
     expect(byValue.get("power_p")).toBe("Power %");
   });
 
-  it("leaves a stat with no rating/percent counterpart labelled plainly", () => {
+  it("leaves a stat with no rating/percent counterpart labeled plainly", () => {
     const byValue = new Map(statPickerOptions.map((o) => [o.value, o.label]));
     expect(byValue.get("il")).toBe("Item Level");
   });

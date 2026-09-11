@@ -48,6 +48,7 @@ import {
 } from "../../lib/item-draft";
 import BaseCheckbox from "../ui/BaseCheckbox.vue";
 import { showAllFields } from "../../stores/itemFormFields";
+import FormSectionDescription from "../ui/FormSectionDescription.vue";
 
 const props = withDefaults(
   defineProps<{
@@ -106,9 +107,9 @@ function computeId(local: ItemDraft): string {
     : "";
 }
 
-/** The class vocabulary these checkboxes offer: every distinct value the catalogue publishes
- * at `class`, labelled by the item that publishes it. A class param's options are still
- * honoured as a fallback, so an overlay declaring the older param-based shape keeps working.
+/** The class vocabulary these checkboxes offer: every distinct value the catalog publishes
+ * at `class`, labeled by the item that publishes it. A class param's options are still
+ * honored as a fallback, so an overlay declaring the older param-based shape keeps working.
  * Blank values are dropped either way; "no class at all" is not a restriction. */
 const classSlot = computed(() => findParamSlot(props.db.slots, "class"));
 /** A tag is its own label. */
@@ -136,7 +137,7 @@ const classes = computed(() => {
   return [...byValue].map(([value, label]) => ({ value, label }));
 });
 
-// Off the composed catalogue, so a layer-authored param can be seeded by `defaultParams`
+// Off the composed catalog, so a layer-authored param can be seeded by `defaultParams`
 // exactly like a shipped one.
 const buildParamSlots = computed(() =>
   props.db.slots.filter(
@@ -521,7 +522,7 @@ function showsGroup(group: FieldGroup): boolean {
         />
       </FormField>
       <IdField :id="displayId" label="Id" :existing="Boolean(source)" />
-      <FormField label="Filter (slot category)">
+      <FormField label="Filter (category)">
         <CreatableComboBox
           v-model="draft.filter"
           :options="filters"
@@ -560,22 +561,18 @@ function showsGroup(group: FieldGroup): boolean {
       class="mb-2"
       data-testid="group-game-ids"
     >
-      <FormField
-        label="Game IDs (the Hitem values from a demo record)"
-        class="min-w-80 flex-1"
-      >
+      <FormField label="Internal game IDs" class="min-w-80 flex-1">
         <TokenInput
           v-model="draft.gameIds"
-          placeholder="Add a game id…"
+          placeholder="Add an ID..."
           data-testid="item-gameids-input"
         />
       </FormField>
     </FormGrid>
 
     <template v-if="showsGroup('description')">
-      <FormSection data-testid="group-description"
-        >Description (optional)</FormSection
-      >
+      <FormSection data-testid="group-description">Description</FormSection>
+      <FormSectionDescription>Optional.</FormSectionDescription>
       <div class="flex flex-wrap items-center gap-1.5 mb-2">
         <IconButton
           v-if="!descriptionActive"
@@ -596,7 +593,7 @@ function showsGroup(group: FieldGroup): boolean {
           data-testid="item-description-fields"
         >
           <FormField
-            label="Short (shown next to the stat summary)"
+            label="Short description, shown in the stat summary"
             class="min-w-80 flex-1"
           >
             <OcrTextField
@@ -604,18 +601,16 @@ function showsGroup(group: FieldGroup): boolean {
               single-line
               :rows="2"
               data-testid="item-short-description-input"
-              placeholder="e.g. AP when killing mobs"
             />
           </FormField>
           <FormField
-            label="Long (shown on the hover card)"
+            label="Long description, shown in the hover card"
             class="min-w-80 flex-1"
           >
             <OcrTextField
               v-model="draft.longDescription"
               :rows="2"
               data-testid="item-long-description-input"
-              placeholder="e.g. When you kill an enemy, gain 3% Action Points."
             />
           </FormField>
         </FormGrid>
@@ -624,7 +619,7 @@ function showsGroup(group: FieldGroup): boolean {
 
     <template v-if="showsGroup('allowedClass')">
       <FormSection data-testid="group-allowed-class"
-        >Restricted to classes</FormSection
+        >Class restrictions</FormSection
       >
       <div class="mb-1.5 flex flex-wrap gap-x-3 gap-y-0.5">
         <BaseCheckbox
@@ -640,8 +635,11 @@ function showsGroup(group: FieldGroup): boolean {
 
     <template v-if="showsGroup('inlineRepetition')">
       <FormSection data-testid="group-inline-repetition"
-        >Inline repetition (boons, attributes, other point_assignment slots
-        filter)</FormSection
+        >Inline repetition</FormSection
+      >
+      <FormSectionDescription
+        >For boons, leveling attribute scores, and other point assignment
+        slots.</FormSectionDescription
       >
       <div class="flex flex-wrap items-center gap-1.5 mb-2">
         <IconButton
@@ -690,9 +688,7 @@ function showsGroup(group: FieldGroup): boolean {
               type="number"
             />
           </FormField>
-          <FormField
-            label="Label (optional, overrides the item name on its row)"
-          >
+          <FormField label="Label (optional)">
             <BaseInput
               v-model="draft.repetitionLabel"
               class="w-40"
@@ -706,12 +702,6 @@ function showsGroup(group: FieldGroup): boolean {
 
     <template v-if="showsGroup('insignia')">
       <FormSection data-testid="group-insignia">Insignia</FormSection>
-      <p class="mb-1.5 text-muted">
-        An insignia's shape is what a mount's slot is matched against. A slot
-        that prefers that shape swaps in the stronger item named here instead,
-        so only the ordinary one names a preferred item; the preferred one names
-        none.
-      </p>
       <div class="mb-1.5 flex flex-wrap items-center gap-x-4 gap-y-1.5">
         <FormField label="Insignia shape">
           <ComboBox
@@ -722,7 +712,7 @@ function showsGroup(group: FieldGroup): boolean {
             @update:model-value="(v) => (draft.insigniaShape = v)"
           />
         </FormField>
-        <FormField label="Preferred item">
+        <FormField label="Preferred version">
           <ComboBox
             class="w-80"
             data-testid="item-preferred-variant"
@@ -736,7 +726,7 @@ function showsGroup(group: FieldGroup): boolean {
 
     <template v-if="showsGroup('insigniaSlots')">
       <FormSection data-testid="group-insignia-slots"
-        >Mount insignia slots</FormSection
+        >Insignia slots</FormSection
       >
 
       <RepeatableRows
@@ -768,13 +758,7 @@ function showsGroup(group: FieldGroup): boolean {
             />
           </FormField>
           <span v-if="row.shape && row.preferred" class="text-danger">
-            A fixed slot grants no preferred bonus. Clear one of the two.
-          </span>
-        </template>
-        <template #empty>
-          <span class="text-muted">
-            A mount's insignia slots, in the order the game shows them. A slot
-            with no shape is universal and may name the shape it prefers.
+            A fixed slot cannot grant a preferred bonus.
           </span>
         </template>
       </RepeatableRows>
@@ -782,7 +766,7 @@ function showsGroup(group: FieldGroup): boolean {
 
     <template v-if="showsGroup('insigniaRecipe')">
       <FormSection data-testid="group-insignia-recipe"
-        >Insignia bonus recipe</FormSection
+        >Insignia bonus</FormSection
       >
       <RepeatableRows
         :rows="draft.insigniaRecipe"
@@ -806,8 +790,7 @@ function showsGroup(group: FieldGroup): boolean {
         </template>
         <template #empty>
           <span class="text-muted">
-            The three or four shapes an insignia bonus is made of, matched
-            whatever order they end up slotted in.
+            Insignia shapes that define this bonus.
           </span>
         </template>
       </RepeatableRows>
@@ -817,10 +800,7 @@ function showsGroup(group: FieldGroup): boolean {
     <StatRowList :rows="draft.stats" @add="addStat" @remove="removeStat" />
 
     <template v-if="showsGroup('dynamicStats')">
-      <FormSection data-testid="group-dynamic-stats"
-        >Dynamic stats (player types the value; default applies until they
-        do)</FormSection
-      >
+      <FormSection data-testid="group-dynamic-stats">Dynamic stats</FormSection>
       <DynamicStatRowList
         :rows="draft.dynamicStats"
         @add="addDynamicStat"
@@ -851,9 +831,11 @@ function showsGroup(group: FieldGroup): boolean {
 
     <template v-if="showsGroup('defaultParams')">
       <FormSection data-testid="group-default-params"
-        >Default build parameters (applied when this item is
-        picked)</FormSection
+        >Default build parameters</FormSection
       >
+      <FormSectionDescription>
+        Applied once when this item is picked.
+      </FormSectionDescription>
       <RepeatableRows
         :rows="draft.defaultParams"
         row-class="default-param-row flex flex-wrap items-center gap-1.5 mb-1"
@@ -882,9 +864,11 @@ function showsGroup(group: FieldGroup): boolean {
 
     <template v-if="showsGroup('publishes')">
       <FormSection data-testid="group-publishes"
-        >Published build parameters (applied while this item is
-        equipped)</FormSection
+        >Published build parameters</FormSection
       >
+      <FormSectionDescription>
+        Applied while this item is equipped.
+      </FormSectionDescription>
       <RepeatableRows
         :rows="draft.publishes"
         row-class="publishes-row flex flex-wrap items-center gap-1.5 mb-1"
@@ -914,12 +898,17 @@ function showsGroup(group: FieldGroup): boolean {
 
     <template v-if="showsGroup('retirement')">
       <FormSection data-testid="group-retirement">Retirement</FormSection>
+      <FormSectionDescription>
+        Retired items are not offered in item pickers. <br />
+        Builds using a retired item will still work, and the Build Editor will
+        offer the replacement set below.
+      </FormSectionDescription>
       <div class="mb-1.5 flex flex-wrap items-center gap-x-4 gap-y-1.5">
         <BaseCheckbox
           v-model="draft.hideFromPicker"
           data-testid="item-hide-from-picker"
         >
-          Hide from pickers
+          Retire item
         </BaseCheckbox>
         <div class="flex min-w-80 flex-1 items-center gap-1.5">
           <span class="whitespace-nowrap text-muted">Replaced by</span>
@@ -932,12 +921,6 @@ function showsGroup(group: FieldGroup): boolean {
           />
         </div>
       </div>
-      <p class="mb-1.5 text-muted">
-        Hidden items are no longer offered as a new pick, but a build already
-        using one keeps calculating it. A replacement is followed everywhere an
-        item is looked up, and builds still holding the old id are offered the
-        rewrite.
-      </p>
 
       <template v-if="draft.replacedBy">
         <RepeatableRows
@@ -970,9 +953,7 @@ function showsGroup(group: FieldGroup): boolean {
           </template>
           <template #empty>
             <span class="text-muted">
-              Carry a value onto the replacement's dynamic stat, so a build
-              moving off this item keeps its number instead of taking the new
-              item's default.
+              Carry a value into the replacement's dynamic stat settings.
             </span>
           </template>
         </RepeatableRows>

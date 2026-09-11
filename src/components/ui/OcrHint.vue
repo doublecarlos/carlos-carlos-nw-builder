@@ -7,7 +7,7 @@ import BaseTooltip from "./BaseTooltip.vue";
 
 <template>
   <BaseTooltip
-    text="You can paste a screenshot in this field to automatically recognise its text. Crop it first."
+    text="Paste a screenshot to read its text. Crop it first."
     :width="240"
   >
     <span

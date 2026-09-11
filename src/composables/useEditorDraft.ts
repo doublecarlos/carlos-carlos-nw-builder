@@ -2,7 +2,7 @@
 // same way: an existing entry live-edits (changes emit debounced), a brand-new one is a draft
 // until Save. Owns the draft ref, `dirty`, `displayId`, the live-edit emit with its round-trip
 // echo guard, and the `useDraftHistory` wiring. Each form supplies its own draft shape,
-// entity conversion and diff labelling: the four drafts share this plumbing, not their shape.
+// entity conversion and diff labeling: the four drafts share this plumbing, not their shape.
 import { ref, computed, watch, type ComputedRef, type Ref } from "vue";
 import { useDraftHistory } from "./useDraftHistory";
 import { deepEqual } from "../lib/deep-equal";

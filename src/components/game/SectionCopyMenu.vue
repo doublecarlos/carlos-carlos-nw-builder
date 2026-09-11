@@ -83,7 +83,7 @@ useEscapeToClose(() => {
           v-model="chosen"
           class="copy-popover-select w-56"
           :options="otherBuilds"
-          placeholder="choose a build…"
+          placeholder="Choose a build…"
         />
         <BaseButton variant="primary" :disabled="!chosen" @click="confirm"
           >Copy</BaseButton

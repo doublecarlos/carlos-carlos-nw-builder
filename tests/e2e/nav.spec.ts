@@ -516,8 +516,8 @@ test("Delete on a focused row asks for confirmation, then deletes", async ({
 
 // --- Row alignment ------------------------------------------------------------------
 
-/** How far a child's vertical centre sits from its row's, in px. */
-async function centreOffset(row: Locator, childSelector: string) {
+/** How far a child's vertical center sits from its row's, in px. */
+async function centerOffset(row: Locator, childSelector: string) {
   const rowBox = await row.boundingBox();
   const childBox = await row.locator(childSelector).boundingBox();
   if (!rowBox || !childBox)
@@ -527,7 +527,7 @@ async function centreOffset(row: Locator, childSelector: string) {
   );
 }
 
-test("kebab icons sit on their row's vertical centre", async ({ page }) => {
+test("kebab icons sit on their row's vertical center", async ({ page }) => {
   await openBuilder(page);
   await addFolder(page);
   await addLayer(page);
@@ -538,7 +538,7 @@ test("kebab icons sit on their row's vertical centre", async ({ page }) => {
     layerRow(page, "Layer 1"),
   ]) {
     // Sub-pixel rather than exact: row heights land on half pixels at this font size.
-    expect(await centreOffset(row, ".nav-kebab svg")).toBeLessThan(1);
+    expect(await centerOffset(row, ".nav-kebab svg")).toBeLessThan(1);
   }
 });
 

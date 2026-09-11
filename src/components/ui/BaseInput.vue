@@ -7,7 +7,7 @@
 // to it: a plain `v-model` on a dynamically-typed native `<input>` never gets Vue's own
 // `v-model.number` treatment, since that only triggers for a statically-known `type="number"`.
 // This reproduces the same "empty and mid-typing input stays as-is, everything else becomes a
-// number" behaviour by hand.
+// number" behavior by hand.
 //
 // A dedicated control like OcrTextField or PercentInput is still the right call for anything
 // genuinely novel; this only owns the ordinary case.

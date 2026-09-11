@@ -25,7 +25,7 @@ describe("deepEqual", () => {
 
   it("treats undefined and missing keys as distinct from JSON.stringify's own blind spot", () => {
     // JSON.stringify drops `undefined` values, so this documents the actual (not
-    // hypothetical) behaviour rather than asserting an "ideal" one.
+    // hypothetical) behavior rather than asserting an "ideal" one.
     expect(deepEqual({ a: undefined }, {})).toBe(true);
   });
 });

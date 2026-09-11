@@ -229,7 +229,7 @@ describe("authoring", () => {
 
 describe("what a build stores", () => {
   it("keeps the off state and drops an explicit on", () => {
-    const build = storage.normalise({
+    const build = storage.normalize({
       disabledSlots: { "buffs.elixir": true, "buffs.spare": false },
     });
     expect(build.disabledSlots).toEqual({ "buffs.elixir": true });
@@ -239,17 +239,17 @@ describe("what a build stores", () => {
     expect(storage.defaultBuild().disabledSlots).toEqual({});
     const saved = switchedOff();
     expect(
-      storage.normalise(JSON.parse(JSON.stringify(saved))).disabledSlots,
+      storage.normalize(JSON.parse(JSON.stringify(saved))).disabledSlots,
     ).toEqual({ "buffs.elixir": true });
   });
 
   it("reads a build saved before the feature existed as all-on", () => {
-    const build = storage.normalise({ choices: { "buffs.elixir": "elixir" } });
+    const build = storage.normalize({ choices: { "buffs.elixir": "elixir" } });
     expect(build.disabledSlots).toEqual({});
   });
 
   it("grows a list to cover a row it holds nothing but an off state for", () => {
-    const build = storage.normalise({ disabledSlots: { "misc.misc#3": true } });
+    const build = storage.normalize({ disabledSlots: { "misc.misc#3": true } });
     expect(build.listRows["misc.misc"]).toBe(3);
   });
 });

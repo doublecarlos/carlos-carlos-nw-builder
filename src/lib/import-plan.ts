@@ -203,7 +203,7 @@ export function resolveImport(
     ];
   });
 
-  // A comparison survives only where its target does: remapped when that build travelled too,
+  // A comparison survives only where its target does: remapped when that build traveled too,
   // kept when it names one already here, dropped otherwise rather than dangling.
   const importedIds = new Set(builds.map((b) => b.build.id));
   const resolvedBuilds = builds.map(({ build, replacing }) => {

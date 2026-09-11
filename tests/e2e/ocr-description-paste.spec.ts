@@ -74,7 +74,7 @@ async function pasteBlankImage(field: Locator) {
 
 test.describe("reading a description off a screenshot", () => {
   // Serial on purpose: each OCR run loads its own ~4MB WASM core and ~3MB language model and
-  // then saturates a core recognising. Run in parallel against the suite's other workers they
+  // then saturates a core recognizing. Run in parallel against the suite's other workers they
   // starve each other badly enough to look like a hang.
   test.describe.configure({ mode: "serial" });
   // The first run still pays for fetching the core and model.

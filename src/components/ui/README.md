@@ -24,6 +24,7 @@ ordinary one.
 | ClearableInput                            | A text filter field with an in-field clear button, wrapping BaseInput                     |
 | CheckMenu                                 | Menu of checkbox options that stays open as they are toggled                              |
 | CodeBlock                                 | Read-only, resizable JSON preview                                                         |
+| CodeSnippet                               | Simple code snippet component                                                             |
 | ComboBox / ComboBoxMenu / ComboBoxMenuRow | Typeable single-select over a small fixed option list, replacing `<select>`               |
 | CompareLine                               | A compare build's value stacked under this build's own, inside one table cell             |
 | CreatableComboBox                         | Single-value combobox: pick a known option, or type one that doesn't exist yet            |
@@ -33,6 +34,7 @@ ordinary one.
 | FormField                                 | Label-above-control stack, the basic form unit                                            |
 | FormGrid                                  | Wrapping row of FormField instances                                                       |
 | FormSection                               | Section heading inside an editing form                                                    |
+| FormSectionDescription                    | Section description inside an editing form                                                |
 | HistoryButton                             | Undo/redo button with an inline "what this step would do" label                           |
 | IconButton                                | Icon-only button; `title` is both its accessible name and its tooltip                     |
 | IdField                                   | Read-only display of a frozen, generator-assigned id                                      |

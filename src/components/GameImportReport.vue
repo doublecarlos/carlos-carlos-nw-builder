@@ -10,7 +10,7 @@ import BaseButton from "./ui/BaseButton.vue";
 import ItemPicker from "./game/ItemPicker.vue";
 import { db } from "../stores/resolved";
 import * as builds from "../stores/builds";
-import { reports, mapUnrecognisedItem } from "../stores/gameImport";
+import { reports, mapUnrecognizedItem } from "../stores/gameImport";
 import {
   notInDemoGroups,
   candidateSlotIds,
@@ -34,16 +34,16 @@ const activeReport = computed(
 );
 
 const combined = computed(() => {
-  let recognised = 0;
+  let recognized = 0;
   let total = 0;
   for (const { report } of reports.value) {
-    recognised += report.counts.imported;
+    recognized += report.counts.imported;
     total +=
       report.counts.imported +
-      report.counts.unrecognised +
+      report.counts.unrecognized +
       report.counts.overflow;
   }
-  return { recognised, total };
+  return { recognized, total };
 });
 
 interface ImportedRow {
@@ -81,43 +81,43 @@ const importedBySection = computed<ImportedSection[]>(() => {
     }));
 });
 
-interface UnrecognisedRow {
+interface UnrecognizedRow {
   slot: number;
   gameId: string;
   /** This outcome's index in `report.outcomes` -- doubles as the row's identity for the open
-   *  picker and the argument `mapUnrecognisedItem` re-resolves against. */
+   *  picker and the argument `mapUnrecognizedItem` re-resolves against. */
   outcomeIndex: number;
   /** Whether the bag names any app slot at all -- an unmapped/unknown bag has nothing to map
    *  to, so "Map to an item…" is hidden rather than offered and failing silently. */
   canMap: boolean;
   /** Set once this row has been manually mapped -- the row keeps its place in the list either
-   *  way (keyed off `unrecognisedOrigin`, not the outcome's current kind) so a wrong pick can
+   *  way (keyed off `unrecognizedOrigin`, not the outcome's current kind) so a wrong pick can
    *  be corrected instead of the whole row vanishing. */
   mappedItem: Item | null;
   /** Mapped, but every candidate slot for it was already filled -- shown as a note rather than
    *  silently looking unmapped. */
   overflow: boolean;
 }
-interface UnrecognisedBag {
+interface UnrecognizedBag {
   bag: string;
-  rows: UnrecognisedRow[];
+  rows: UnrecognizedRow[];
 }
 
-const unrecognisedByBag = computed<UnrecognisedBag[]>(() => {
+const unrecognizedByBag = computed<UnrecognizedBag[]>(() => {
   const entry = reports.value[activeIndex.value];
   const report = activeReport.value;
   if (!entry || !report) return [];
-  const byBag = new Map<string, UnrecognisedRow[]>();
-  for (const [outcomeIndex, origin] of entry.unrecognisedOrigin) {
+  const byBag = new Map<string, UnrecognizedRow[]>();
+  for (const [outcomeIndex, origin] of entry.unrecognizedOrigin) {
     const outcome = report.outcomes[outcomeIndex];
-    // Every outcome named in `unrecognisedOrigin` started as "unrecognised" and can only have
+    // Every outcome named in `unrecognizedOrigin` started as "unrecognized" and can only have
     // moved to "imported"/"overflow" since -- this check is for narrowing, not a real case.
     if (!outcome || outcome.kind === "notInDemo") continue;
     const mappedItemId =
       outcome.kind === "imported" || outcome.kind === "overflow"
         ? outcome.itemId
         : null;
-    const row: UnrecognisedRow = {
+    const row: UnrecognizedRow = {
       slot: origin.slot,
       gameId: outcome.gameId,
       outcomeIndex,
@@ -134,8 +134,8 @@ const unrecognisedByBag = computed<UnrecognisedBag[]>(() => {
 
 /** Ids still needing a mapping -- excludes rows already mapped, unlike the list below which
  *  keeps showing those too. */
-const unrecognisedGameIds = computed(() =>
-  unrecognisedByBag.value.flatMap((group) =>
+const unrecognizedGameIds = computed(() =>
+  unrecognizedByBag.value.flatMap((group) =>
     group.rows.filter((row) => !row.mappedItem).map((row) => row.gameId),
   ),
 );
@@ -147,7 +147,7 @@ const openCandidates = computed<Item[]>(() => {
   const entry = reports.value[activeIndex.value];
   const origin =
     openOutcomeIndex.value != null
-      ? entry?.unrecognisedOrigin.get(openOutcomeIndex.value)
+      ? entry?.unrecognizedOrigin.get(openOutcomeIndex.value)
       : undefined;
   if (!entry || !origin) return [];
   const build = builds.get(entry.buildId);
@@ -168,12 +168,12 @@ function toggleMapPicker(outcomeIndex: number) {
 
 function onPick(outcomeIndex: number, itemId: string) {
   if (!itemId) return; // the picker's empty option
-  mapUnrecognisedItem(activeIndex.value, outcomeIndex, itemId);
+  mapUnrecognizedItem(activeIndex.value, outcomeIndex, itemId);
   openOutcomeIndex.value = null;
 }
 
-/** Recognised but every candidate slot for its bag was already full -- a real placement
- *  conflict rather than a catalogue gap, called out as a note instead of its own group. */
+/** Recognized but every candidate slot for its bag was already full -- a real placement
+ *  conflict rather than a catalog gap, called out as a note instead of its own group. */
 const overflowCount = computed(() => activeReport.value?.counts.overflow ?? 0);
 
 const notInDemoRows = computed(() => {
@@ -186,9 +186,9 @@ const notInDemoRows = computed(() => {
   return notInDemoGroups(db.value, slotIds);
 });
 
-async function copyUnrecognisedIds() {
+async function copyUnrecognizedIds() {
   try {
-    await navigator.clipboard.writeText(unrecognisedGameIds.value.join("\n"));
+    await navigator.clipboard.writeText(unrecognizedGameIds.value.join("\n"));
   } catch {
     // Clipboard permission denied -- the ids are still readable/selectable in the list.
   }
@@ -198,7 +198,7 @@ async function copyUnrecognisedIds() {
 <template>
   <div class="flex flex-col gap-3" data-testid="game-import-report">
     <p class="text-muted" data-testid="game-import-report-summary">
-      {{ combined.recognised }}/{{ combined.total }} items recognised across
+      {{ combined.recognized }}/{{ combined.total }} items recognized across
       {{ reports.length }} build{{ reports.length === 1 ? "" : "s" }}
     </p>
 
@@ -229,7 +229,6 @@ async function copyUnrecognisedIds() {
             <p
               v-for="(row, index) in section.rows"
               :key="index"
-              class=""
               data-testid="game-import-report-imported-row"
             >
               {{ row.slotLabel }} → {{ row.itemName }}
@@ -238,30 +237,34 @@ async function copyUnrecognisedIds() {
         </div>
       </details>
 
-      <details open data-testid="game-import-report-unrecognised">
+      <details open data-testid="game-import-report-unrecognized">
         <summary class="cursor-pointer font-semibold">
-          Not recognised ({{ activeReport.counts.unrecognised }})
+          Not recognized ({{ activeReport.counts.unrecognized }})
         </summary>
         <div class="mt-2 flex flex-col gap-2">
-          <p class="text-muted">
-            The catalogue models a curated subset of the game's items - an
-            unrecognised id means "not modelled yet", not "your file is broken".
+          <p>
+            The following Internal game IDs exist in your export but aren't
+            recognized.<br />
+            You can map the IDs to items here.
+          </p>
+          <p>
+            <BaseButton
+              v-if="unrecognizedGameIds.length"
+              data-testid="game-import-report-copy-unrecognized"
+              class="my-2"
+              @click="copyUnrecognizedIds"
+              >Copy all IDs</BaseButton
+            >
           </p>
           <p v-if="overflowCount" class="text-muted">
             {{ overflowCount }} more item{{
               overflowCount === 1 ? " was" : "s were"
             }}
-            recognised, but every matching slot was already filled.
+            recognized, but every matching slot was already filled.
           </p>
-          <BaseButton
-            v-if="unrecognisedGameIds.length"
-            variant="ghost"
-            data-testid="game-import-report-copy-unrecognised"
-            @click="copyUnrecognisedIds"
-            >Copy all ids</BaseButton
-          >
+
           <div
-            v-for="group in unrecognisedByBag"
+            v-for="group in unrecognizedByBag"
             :key="group.bag"
             class="flex flex-col gap-1"
           >
@@ -277,7 +280,7 @@ async function copyUnrecognisedIds() {
               <template v-for="row in group.rows" :key="row.outcomeIndex">
                 <div
                   class="grid grid-cols-[1fr_1fr_auto] items-center gap-x-3 border-t border-line px-2 py-1.5"
-                  data-testid="game-import-report-unrecognised-row"
+                  data-testid="game-import-report-unrecognized-row"
                 >
                   <span>{{ group.bag }}/{{ row.slot }} → {{ row.gameId }}</span>
                   <span :class="row.mappedItem ? 'text-text' : 'text-muted'">
@@ -319,16 +322,15 @@ async function copyUnrecognisedIds() {
 
       <details open data-testid="game-import-report-not-in-demo">
         <summary class="cursor-pointer font-semibold">
-          Not in the demo ({{ notInDemoRows.length }})
+          Not in the export ({{ notInDemoRows.length }})
         </summary>
         <div class="mt-2 flex flex-col gap-1.5">
           <p
             v-for="group in notInDemoRows"
             :key="group.label"
-            class=""
             data-testid="game-import-report-notindemo-row"
           >
-            <strong>{{ group.label }}</strong> - {{ group.reason }}
+            <strong>{{ group.label }}</strong>
           </p>
           <p
             v-for="note in KNOWN_LOSSY_NOTES"
