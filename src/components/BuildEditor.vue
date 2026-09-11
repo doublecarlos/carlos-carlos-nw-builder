@@ -647,6 +647,12 @@ function onCardEdit() {
   openInLayerEditor(item.id);
 }
 
+/** Same dismissal: the row the jump lands on may be the one the card is hanging over. */
+function onCardGoToSlot(slotId: string) {
+  closeCard();
+  goTo.requestJump({ slotId });
+}
+
 /** Names the destination off the same resolution `ensureTargetLayer` commits to, so the two
  *  cannot drift. Unnamed when there is no layer yet: it gets its name only once created. */
 const editLabel = computed(() => {
@@ -1036,7 +1042,9 @@ watch(
             :slot-label="db.slotFor(hover.slotId)?.label ?? ''"
             :edit-label="editLabel"
             :stable-group="hoveredStableGroup"
+            :bonus-by-id="bonusById"
             @edit="onCardEdit"
+            @go-to-slot="onCardGoToSlot"
             @open-stable="openStableFromCard"
             @mouseenter="onCardEnter"
             @mouseleave="onCardLeave"

@@ -38,6 +38,7 @@ import BaseCardHeader from "../ui/BaseCardHeader.vue";
 import BaseCardBody from "../ui/BaseCardBody.vue";
 import IconButton from "../ui/IconButton.vue";
 import BaseButton from "../ui/BaseButton.vue";
+import BaseLink from "../ui/BaseLink.vue";
 
 const props = withDefaults(
   defineProps<{
@@ -67,6 +68,9 @@ const props = withDefaults(
     /** Set when the card is shown over a stable row. Without one the browser has nothing to
      *  apply to, so "and N more" stays plain text. */
     stableGroup?: number | null;
+    /** Every resolved bonus in the build by id, so an "overridden by" line can name the
+     *  excluder and link to its slot; that bonus usually sits on another item. */
+    bonusById?: Map<string, EvaluatedBonus>;
   }>(),
   {
     bonuses: () => [],
@@ -77,10 +81,15 @@ const props = withDefaults(
     scaleNotes: () => [],
     editLabel: "",
     stableGroup: null,
+    bonusById: () => new Map(),
   },
 );
 
-const emit = defineEmits<{ edit: []; "open-stable": [] }>();
+const emit = defineEmits<{
+  edit: [];
+  "open-stable": [];
+  "go-to-slot": [slotId: string];
+}>();
 
 /** What this item would be swapped for, when the card has a catalogue to ask. */
 const replacement = computed(
@@ -170,7 +179,12 @@ const notes = computed(() => {
 });
 
 const rows = computed(() =>
-  itemCardRows(props.item, props.bonuses, props.occurrenceRows),
+  itemCardRows(
+    props.item,
+    props.bonuses,
+    props.occurrenceRows,
+    props.bonusById,
+  ),
 );
 </script>
 
@@ -293,12 +307,28 @@ const rows = computed(() =>
           >
             {{ desc }}
           </div>
-          <div v-if="row.secondary" class="pl-3 leading-snug text-muted">
-            This bonus was accounted for in {{ row.firstSource }}
+          <div
+            v-if="row.secondary && row.firstSource"
+            class="pl-3 leading-snug text-muted"
+          >
+            This bonus was accounted for in
+            <BaseLink
+              data-testid="item-card-first-source"
+              @click="emit('go-to-slot', row.firstSource.slotId)"
+              >{{ row.firstSource.name }}</BaseLink
+            >
           </div>
           <template v-else>
             <div v-if="row.sharedWith" class="pl-3 leading-snug text-muted">
-              Other parts: {{ row.sharedWith.join(", ") }}
+              Other parts:
+              <template v-for="(part, index) in row.sharedWith" :key="part.name"
+                ><template v-if="index">, </template
+                ><BaseLink
+                  data-testid="item-card-shared-source"
+                  @click="emit('go-to-slot', part.slotId)"
+                  >{{ part.name }}</BaseLink
+                ></template
+              >
             </div>
 
             <!-- One block per grant -- own label, own active state, own ladder/unmet. The
@@ -409,8 +439,17 @@ const rows = computed(() =>
               </div>
             </div>
           </template>
-          <div v-if="row.excludedBy" class="pl-3 text-warn">
-            overridden by {{ row.excludedBy }}
+          <div
+            v-if="row.excludedBy"
+            class="pl-3 text-warn"
+            data-testid="item-card-excluded-by"
+          >
+            overridden by
+            <BaseLink
+              v-if="row.excludedBy.slotId"
+              @click="emit('go-to-slot', row.excludedBy.slotId)"
+              >{{ row.excludedBy.name }}</BaseLink
+            ><template v-else>{{ row.excludedBy.name }}</template>
           </div>
         </div>
       </div>

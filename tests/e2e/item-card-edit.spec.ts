@@ -1,7 +1,14 @@
-// The hover card's edit button: the same jump Ctrl/Cmd+click on the row makes, without a
-// modifier, and a tooltip naming the layer it lands in.
+// The hover card's actions: the edit button, which makes the same jump Ctrl/Cmd+click on the
+// row makes without a modifier and names the layer it lands in, and the links that park the
+// cursor on another row the card names.
 import { test, expect, type Page } from "@playwright/test";
-import { openBuilder, slotRow, chooseItem, hoverForCard } from "./support/app";
+import {
+  openBuilder,
+  slotRow,
+  cursorRow,
+  chooseItem,
+  hoverForCard,
+} from "./support/app";
 import { shippedItemName } from "./support/shippedData";
 import { addLayer, layerRow, renameViaSidebar } from "./support/nav";
 
@@ -65,4 +72,28 @@ test("the edit button names the layer the edit would land in", async ({
     "aria-label",
     /Edit this item in “Tuning”/,
   );
+});
+
+// A two-piece set: shirt and pants share one bonus, credited to the shirt as the first
+// source, so the pants card points back at it.
+const SHIRT_ITEM = shippedItemName("m31-bloodwoven-signs-damage");
+const PANTS_ITEM = shippedItemName("m31-bloodwoven-sigils-ca");
+
+test("the card's link to a shared bonus's first source parks the cursor on that row", async ({
+  page,
+}) => {
+  await openBuilder(page);
+  await chooseItem(page, "gear.shirt", SHIRT_ITEM);
+  await chooseItem(page, "gear.pants", PANTS_ITEM);
+  await hoverForCard(page, slotRow(page, "gear.pants"));
+  const link = card(page).getByTestId("item-card-first-source");
+  await expect(link).toHaveText(SHIRT_ITEM);
+
+  await link.click();
+
+  await expect(cursorRow(page)).toHaveAttribute(
+    "data-cursor-key",
+    "slot:gear.shirt",
+  );
+  await expect(card(page)).toBeHidden();
 });
