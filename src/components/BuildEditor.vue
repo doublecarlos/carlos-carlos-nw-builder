@@ -244,6 +244,7 @@ const {
   onFocusIn: onHoverFocusIn,
   onFocusOut,
   closeCard,
+  suppressUntilPointerMoves,
 } = useHoverCard(
   tooltip,
   (slotId, itemId) => itemForHover(slotId, itemId) !== null,
@@ -691,12 +692,17 @@ function moveCursor(dir: 1 | -1, bySection = false) {
 
 /** Focuses a cursor row: its invisible anchor when it has one, the row itself otherwise.
  *  `preventScroll` is for callers that place the scroll themselves -- letting focus do its own
- *  minimal scroll first would show a jump, then the real one. */
+ *  minimal scroll first would show a jump, then the real one.
+ *
+ *  All programmatic cursor moves (arrow keys, Mod+arrow, palette and link jumps) go through
+ *  here, so this is where the hover card is suppressed until the pointer moves. A mouse click
+ *  focuses its row natively and skips this. */
 function focusRow(row: Element, preventScroll = false) {
   const target =
     row.querySelector<HTMLElement>("[data-cursor-anchor]") ??
     (row as HTMLElement);
   target.focus({ preventScroll });
+  suppressUntilPointerMoves();
 }
 
 function moveCursorByRow(dir: 1 | -1) {
