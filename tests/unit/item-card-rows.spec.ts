@@ -19,7 +19,7 @@ const bonus = (over: Partial<EvaluatedBonus> = {}): EvaluatedBonus =>
     id: "b1",
     bonus: { id: "b1", name: "Test Bonus" },
     bonusId: "b1",
-    sources: ["Test Item"],
+    sources: [{ name: "Test Item", slotId: "slot1" }],
     slotId: "slot1",
     active: true,
     gate: { ok: true, leaves: [], unmet: [] },
@@ -363,7 +363,10 @@ describe("itemCardRows", () => {
   it("credits a shared, non-tiered, non-stacking bonus to its first source only", () => {
     const shared = bonus({
       bonus: { id: "shared-b", name: "Shared" },
-      sources: ["Item A", "Item B"],
+      sources: [
+        { name: "Item A", slotId: "slot1" },
+        { name: "Item B", slotId: "slot2" },
+      ],
       active: true,
     });
 
@@ -379,7 +382,10 @@ describe("itemCardRows", () => {
 
   it("does not credit sharing to a tiered or perSource-stacking bonus", () => {
     const tiered = bonus({
-      sources: ["Item A", "Item B"],
+      sources: [
+        { name: "Item A", slotId: "slot1" },
+        { name: "Item B", slotId: "slot2" },
+      ],
       grants: [grantEval({ tiers: [{ stats: {} }] }, { active: true })],
     });
     expect(
@@ -388,7 +394,10 @@ describe("itemCardRows", () => {
 
     const stacking = bonus({
       bonus: { id: "b1", name: "S", stacking: "perSource" },
-      sources: ["Item A", "Item B"],
+      sources: [
+        { name: "Item A", slotId: "slot1" },
+        { name: "Item B", slotId: "slot2" },
+      ],
     });
     expect(
       itemCardRows(item({ name: "Item A" }), [stacking], [])[0].sharedWith,

@@ -975,8 +975,30 @@ describe("a bonus reachable only through a currently-zero occurrence count", () 
     // Only dial-item's 2 real occurrences count -- other-dial-item's 0 contributes nothing to
     // stacks, sources, or the applied stats, even though it's equipped in the same build.
     expect(entry?.stacks).toBe(2);
-    expect(entry?.sources).toEqual(["Dial Item", "Dial Item"]);
+    expect(entry?.sources).toEqual([
+      { name: "Dial Item", slotId: "slot1" },
+      { name: "Dial Item", slotId: "slot1" },
+    ]);
     expect(entry?.appliedStats?.power_p).toBeCloseTo(2 * 0.02, 9);
+  });
+
+  it("sources carry each contributing slot's id, in build order", () => {
+    const result = engine.resolveBuild(
+      testDb,
+      buildWith(
+        { slot2: "other-dial-item", slot1: "dial-item" },
+        {
+          "dial-item": { "stacking-bonus": 1 },
+          "other-dial-item": { "stacking-bonus": 1 },
+        },
+      ),
+    );
+    const entry = result.bonuses.find((b) => b.id === "stacking-bonus");
+    expect(entry?.stacks).toBe(2);
+    expect(entry?.sources).toEqual([
+      { name: "Dial Item", slotId: "slot1" },
+      { name: "Other Dial Item", slotId: "slot2" },
+    ]);
   });
 
   it("both equipped items' dials at 0 still resolves one inactive entry, not two", () => {

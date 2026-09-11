@@ -962,11 +962,18 @@ export interface BonusEvaluation {
   problems: GrantProblem[];
 }
 
+/** A contributing item's name and the build slot it sits in. */
+export interface BonusSource {
+  name: string;
+  slotId: string;
+}
+
 export interface EvaluatedBonus {
   id: string;
   bonus: Bonus;
   bonusId: string;
-  sources: string[];
+  /** One entry per contributing slot, in build order. */
+  sources: BonusSource[];
   slotId: string;
   active: boolean;
   gate: ConditionExplain;

@@ -55,7 +55,7 @@ function sharedSources(entry: EvaluatedBonus, itemName: string) {
   ) {
     return null;
   }
-  const others = [...new Set(entry.sources ?? [])].filter(
+  const others = [...new Set(entry.sources?.map((s) => s.name) ?? [])].filter(
     (name) => name !== itemName,
   );
   return others.length ? others : null;
@@ -175,7 +175,8 @@ function buildItemCardRow(
   occurrenceRowByBonusId: Map<string, OccurrenceRow>,
 ) {
   const sharedWith = sharedSources(entry, item.name);
-  const isFirst = !entry.sources?.length || entry.sources[0] === item.name;
+  const isFirst =
+    !entry.sources?.length || entry.sources[0]?.name === item.name;
   const state = entry.excluded
     ? "excluded"
     : entry.active
@@ -204,7 +205,7 @@ function buildItemCardRow(
     sharedWith,
     // A shared bonus shows real numbers on exactly one card; the rest point to it.
     secondary: Boolean(sharedWith) && !isFirst,
-    firstSource: entry.sources?.[0] ?? null,
+    firstSource: entry.sources?.[0]?.name ?? null,
   };
 }
 

@@ -110,7 +110,7 @@ export const titleCase = (value: unknown) =>
  * a title-cased id are progressively blunter instruments for one that has none. Shared so two
  * surfaces cannot name the same bonus differently. */
 export const bonusTitle = (entry: EvaluatedBonus) =>
-  entry.bonus?.name ?? entry.sources?.[0] ?? titleCase(entry.id);
+  entry.bonus?.name ?? entry.sources?.[0]?.name ?? titleCase(entry.id);
 
 export interface StatOption {
   value: StatKey;
