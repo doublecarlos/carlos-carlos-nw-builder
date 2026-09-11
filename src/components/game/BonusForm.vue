@@ -9,7 +9,8 @@ import { CirclePlus } from "@lucide/vue";
 import ComboBox from "../ui/ComboBox.vue";
 import TokenInput from "../ui/TokenInput.vue";
 import BaseInput from "../ui/BaseInput.vue";
-import BaseLink from "../ui/BaseLink.vue";
+import LinkList from "../ui/LinkList.vue";
+import type { LinkListItem } from "../ui/LinkList.vue";
 import DraftFormBar from "../ui/DraftFormBar.vue";
 import FormField from "../ui/FormField.vue";
 import FormGrid from "../ui/FormGrid.vue";
@@ -180,11 +181,12 @@ const { draft, error, dirty, displayId, scheduleSnapshot, scheduleEmit } =
 
 // --- Common ---------------------------------------------------------------------------
 
-const members = computed(() => {
+const members = computed<LinkListItem[]>(() => {
   if (!props.source) return [];
   return (props.db.bonusMembers.get(props.source.id) ?? []).map((id) => ({
-    id,
-    name: props.db.get(id)?.name ?? id,
+    key: id,
+    label: props.db.get(id)?.name ?? id,
+    plain: id === props.currentItemId,
   }));
 });
 
@@ -288,16 +290,11 @@ if (bonusDraftRegistry && props.registryId) {
     <p class="text-muted">
       <template v-if="members.length">
         Granted by <strong>{{ members.length }}</strong> item(s) -
-        <template v-for="(member, index) in members" :key="member.id"
-          ><template v-if="index > 0">, </template
-          ><span v-if="member.id === currentItemId">{{ member.name }}</span
-          ><BaseLink
-            v-else
-            data-testid="bonus-member-link"
-            @click="$emit('open-item', member.id)"
-            >{{ member.name }}</BaseLink
-          ></template
-        >.
+        <LinkList
+          :items="members"
+          link-testid="bonus-member-link"
+          @select="$emit('open-item', $event)"
+        />.
       </template>
       <template v-else>
         Not granted by any item yet -- attach this id from an item's Bonuses

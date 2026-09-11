@@ -7,7 +7,7 @@ import { isHiddenBonus } from "../engine/bonus";
 import * as builds from "./builds";
 import * as layers from "./layers";
 import * as compare from "./compare";
-import type { ResolvedBuild } from "../types";
+import type { EvaluatedBonus, ResolvedBuild } from "../types";
 
 type Resolution =
   | { ok: true; result: ResolvedBuild }
@@ -76,6 +76,14 @@ export const compareResolved = computed<Resolution | null>(() => {
     };
   }
 });
+
+/** Every resolved bonus by id, hidden ones included: an "overridden by" line can name an
+ * excluder the inspector's own list leaves out. Empty while the build fails to resolve. */
+export const bonusById = computed<Map<string, EvaluatedBonus>>(() =>
+  resolved.value.ok
+    ? new Map(resolved.value.result.bonuses.map((bonus) => [bonus.id, bonus]))
+    : new Map(),
+);
 
 /** Summarised here so the tab can show it without mounting the inspector. Matches
  * BonusInspector.vue's own `visibleBonuses` filter, so the tab badge and the panel it opens
