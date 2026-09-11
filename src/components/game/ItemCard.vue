@@ -368,7 +368,6 @@ const rows = computed(() =>
                   <div
                     v-for="tier in g.tiers"
                     :key="tier.atLeast"
-                    class=""
                     :class="
                       tier.active ? 'font-semibold text-text' : 'text-muted'
                     "

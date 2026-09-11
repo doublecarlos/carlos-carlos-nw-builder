@@ -117,7 +117,7 @@ const hasSelection = computed(() => selected.value.size > 0);
         <CodeSnippet class="block"
           >[game install path]/Live/demos/build_export.demo</CodeSnippet
         >
-        <p class="">
+        <p>
           <strong>3. </strong>The build export contains data about all of your
           character loadouts. Nothing is uploaded; the file is analyzed locally
           in your browser.
@@ -147,7 +147,7 @@ const hasSelection = computed(() => selected.value.size > 0);
           @drop="onDrop"
         >
           <Upload class="size-6 text-muted" />
-          <p class="">Drag the export file here, or</p>
+          <p>Drag the export file here, or</p>
           <BaseButton @click="triggerFilePick">Choose file…</BaseButton>
           <input
             ref="fileInput"

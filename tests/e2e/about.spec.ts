@@ -21,10 +21,11 @@ test("About opens from the header and names this build", async ({ page }) => {
 
   const dialog = page.getByTestId("about-dialog");
   await expect(dialog).toBeVisible();
-  // Anchored, so the line is the version and nothing else -- but tolerant of the whitespace
-  // the template indents it with, which a regex match does not normalize away.
+  // Anchored, so the line is the version and the build it came from and nothing else -- but
+  // tolerant of the whitespace the template indents it with, which a regex match does not
+  // normalize away. A checkout without git history builds as "unknown".
   await expect(dialog.getByTestId("about-version")).toHaveText(
-    /^\s*Version \d+\.\d+\.\d+\s*$/,
+    /^\s*Version \d+\.\d+\.\d+ \(build ([0-9a-f]{7}|unknown)\)\s*$/,
   );
 });
 
@@ -82,8 +83,8 @@ test("About names the commit this build came from", async ({ page }) => {
   await openBuilder(page);
   await page.getByTestId("header-about").click();
 
-  // A checkout without git history builds as "unknown".
-  await expect(page.getByTestId("about-build")).toHaveText(
-    /^\s*Build ([0-9a-f]{7}|unknown)\s*$/,
+  // Shares the version line. A checkout without git history builds as "unknown".
+  await expect(page.getByTestId("about-version")).toHaveText(
+    /\(build ([0-9a-f]{7}|unknown)\)/,
   );
 });

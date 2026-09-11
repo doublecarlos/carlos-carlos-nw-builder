@@ -16,7 +16,7 @@ import {
 function clearButton(page: Page, sectionId: string) {
   return headerRow(page, sectionId)
     .locator("..")
-    .getByRole("button", { name: "Clear section" });
+    .getByRole("button", { name: "Clear", exact: true });
 }
 
 test("clearing a section acts at once and offers an undo notice", async ({

@@ -166,14 +166,14 @@ export function parseFile(text: string) {
 
   if (!child(root, "Packets")) {
     _parseError.value =
-      "That doesn't look like a game export file - no Packets block was found in it.";
+      "That doesn't look like a game export file; no Packets block was found in it.";
     return;
   }
 
   const parsed = readSnapshot(root);
   if (!parsed.characters.length) {
     _parseError.value =
-      "This export has no character loadouts in it - it may have been recorded on a " +
+      "This export has no character loadouts in it; it may have been recorded on a " +
       "loading screen, or with something other than build_export.";
     return;
   }

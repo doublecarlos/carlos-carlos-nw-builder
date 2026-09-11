@@ -713,7 +713,7 @@ function publishConflicts(db: Db, resolved: ResolvedBonuses): EngineError[] {
                 `${db.get(entry.itemId)?.name ?? entry.itemId} sets it to "${entry.value}"`,
             )
             .join(", ") +
-          ` ; unequip one, or ${conflict.path} is left unset`,
+          `; unequip one, or ${conflict.path} is left unset`,
         severity: "error",
       });
     }

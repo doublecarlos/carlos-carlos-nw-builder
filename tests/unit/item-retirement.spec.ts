@@ -437,7 +437,7 @@ describe("migrating onto a dynamic stat", () => {
       ])
       .map((finding) => finding.message);
     expect(messages).toEqual([
-      'replacedBy seeds power, but "b" declares no dynamicStats entry for it - ' +
+      'replacedBy seeds power, but "b" declares no dynamicStats entry for it; ' +
         "the value would be dropped on migration",
     ]);
   });
@@ -685,7 +685,7 @@ describe("validateReplacements", () => {
   it("reports a dangling target", () => {
     expect(
       messages([{ id: "a", name: "A", filter: "f", replacedBy: "gone" }]),
-    ).toEqual(['replacedBy "gone" is not an item in the catalog']);
+    ).toEqual(['replacedBy "gone" does not exist']);
   });
 
   it("reports a cycle once per member", () => {

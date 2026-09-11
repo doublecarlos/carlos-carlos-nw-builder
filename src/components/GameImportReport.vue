@@ -229,7 +229,6 @@ async function copyUnrecognizedIds() {
             <p
               v-for="(row, index) in section.rows"
               :key="index"
-              class=""
               data-testid="game-import-report-imported-row"
             >
               {{ row.slotLabel }} → {{ row.itemName }}
@@ -329,7 +328,6 @@ async function copyUnrecognizedIds() {
           <p
             v-for="group in notInDemoRows"
             :key="group.label"
-            class=""
             data-testid="game-import-report-notindemo-row"
           >
             <strong>{{ group.label }}</strong>

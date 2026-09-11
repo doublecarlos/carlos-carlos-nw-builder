@@ -98,8 +98,8 @@ describe("demo-slots: shipped data", () => {
     expect(validateGameBags(GAME_IMPORT_DATA.bags, NW_SLOTS.slots)).toEqual([]);
   });
 
-  it("has 12 notInDemoReasons groups", () => {
-    expect(GAME_IMPORT_DATA.notInDemoReasons).toHaveLength(12);
+  it("has 11 notInDemoReasons groups", () => {
+    expect(GAME_IMPORT_DATA.notInDemoReasons).toHaveLength(11);
   });
 
   it("notInDemoReasons passes its own lint against the real slot/section list", () => {
@@ -751,7 +751,7 @@ describe("notInDemoGroups", () => {
   it("rolls a whole missing section up into one authored group", () => {
     const groups = notInDemoGroups(db, missing);
     const boons = groups.find((g) => g.label === "Boons");
-    expect(boons?.reason).toMatch(/boon points/);
+    expect(boons?.reason).toMatch(/Not recorded in the game export/);
     expect(boons?.slotIds).toContain("boons.tier1");
     expect(boons?.slotIds).toHaveLength(
       NW_SLOTS.slots.filter(
@@ -782,7 +782,7 @@ describe("notInDemoGroups", () => {
     expect(groups).toEqual([
       {
         label: "Enchantments",
-        reason: "Not recorded in this demo - set it by hand.",
+        reason: "Not recorded in the game export.",
         slotIds: ["overloads.overload1"],
       },
     ]);

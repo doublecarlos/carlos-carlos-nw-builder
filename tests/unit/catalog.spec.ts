@@ -356,9 +356,7 @@ describe("catalog.validateSlotDefaults", () => {
       [headSlot({ default: "ghost" })],
       [item("helm")],
     );
-    expect(
-      findings.some((f) => /is not an item in the catalog/.test(f.message)),
-    ).toBe(true);
+    expect(findings.some((f) => /does not exist/.test(f.message))).toBe(true);
   });
 
   it("reports a default the slot itself would never offer", () => {
@@ -901,7 +899,7 @@ describe("catalog.validate: point_assignment-referenced items", () => {
     const findings = catalog.validate(items, []);
     expect(
       findings.some(
-        (f) => f.name === "bad-boon" && /is outside/.test(f.message),
+        (f) => f.name === "bad-boon" && /must be between/.test(f.message),
       ),
     ).toBe(true);
   });
@@ -966,15 +964,15 @@ describe("catalog.validate: bonusOccurrences targets", () => {
     expect(findings.map((f) => [f.level, f.message])).toEqual([
       [
         "warn",
-        'grant 1: bonusOccurrences names this bonus itself - omit "bonus"',
+        'grant 1: bonusOccurrences names this bonus itself; omit "bonus"',
       ],
       [
         "warn",
-        'grant 2: bonusOccurrences names this bonus itself - omit "bonus"',
+        'grant 2: bonusOccurrences names this bonus itself; omit "bonus"',
       ],
       [
         "warn",
-        'grant 3: bonusOccurrences names this bonus itself - omit "bonus"',
+        'grant 3: bonusOccurrences names this bonus itself; omit "bonus"',
       ],
     ]);
   });
@@ -990,7 +988,7 @@ describe("catalog.validate: bonusOccurrences targets", () => {
     ]);
     expect(findings).toHaveLength(1);
     expect(findings[0].level).toBe("error");
-    expect(findings[0].message).toMatch(/"no-such".*not a bonus/);
+    expect(findings[0].message).toMatch(/"no-such".*does not exist/);
   });
 });
 
@@ -1037,7 +1035,7 @@ describe("catalog.validate: BonusOccurrenceConfig attachments", () => {
     const findings = catalog.validate(items, bonuses);
     expect(
       findings.some(
-        (f) => f.name === "bad-occurrence" && /is outside/.test(f.message),
+        (f) => f.name === "bad-occurrence" && /must be between/.test(f.message),
       ),
     ).toBe(true);
   });

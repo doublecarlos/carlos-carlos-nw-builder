@@ -56,7 +56,7 @@ export const describeRange = (spec: RangeLike | null | undefined): string => {
   if (typeof spec === "number") return `≥ ${spec}`;
   if (spec.exactly != null) return `= ${spec.exactly}`;
   if (spec.atLeast != null && spec.below != null)
-    return `${spec.atLeast} - ${spec.below}`;
+    return `${spec.atLeast} to ${spec.below}`;
   if (spec.atLeast != null) return `≥ ${spec.atLeast}`;
   if (spec.below != null) return `< ${spec.below}`;
   return "any";

@@ -129,7 +129,9 @@ test("a tooltip sits under its trigger, not beside it", async ({ page }) => {
   await openBuilder(page);
   // A trigger with room on both sides, so this measures the placement rather than the
   // viewport clamp -- the edge case has its own test below.
-  const button = page.getByRole("button", { name: "Clear section" }).first();
+  const button = page
+    .getByRole("button", { name: "Clear", exact: true })
+    .first();
 
   await button.hover();
   await expect(tooltip(page)).toBeVisible();

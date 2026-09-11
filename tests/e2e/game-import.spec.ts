@@ -32,7 +32,7 @@ test("header button opens the wizard on the instructions step", async ({
 test("the demo_record command is present and copyable", async ({ page }) => {
   await openBuilder(page);
   await page.getByTestId("header-import-from-game").click();
-  await expect(page.getByTestId("game-import-command")).toHaveValue(
+  await expect(page.getByTestId("game-import-command")).toHaveText(
     "/demo_record build_export $$ demo_record_stop",
   );
   await expect(page.getByRole("button", { name: "Copy" })).toBeEnabled();

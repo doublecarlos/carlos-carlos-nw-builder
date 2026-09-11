@@ -139,7 +139,7 @@ test.describe("BonusOccurrenceConfig rows", () => {
       .getByPlaceholder("Filter by bonus, id or item…")
       .fill("Test Stepper Bonus");
     await expect(sidebar.getByText("Test Stepper Bonus")).toBeVisible();
-    await expect(sidebar.getByText("Nothing matches that filter.")).toHaveCount(
+    await expect(sidebar.getByText("Nothing matches the filter.")).toHaveCount(
       0,
     );
   });

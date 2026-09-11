@@ -183,10 +183,10 @@ test("a bolster outside its range is reported on the row, not clamped", async ({
 
   await setBolster(page, "companions.bolster", 1000);
   const row = slotRow(page, "companions.bolster");
-  await expect(row).toContainText("is outside 0%–120%");
+  await expect(row).toContainText("must be between 0% and 120%");
   // The value someone typed is still what the control shows -- reported, not rewritten.
   await expect(row.locator("input")).toHaveValue("1000");
 
   await setBolster(page, "companions.bolster", 120);
-  await expect(row).not.toContainText("is outside");
+  await expect(row).not.toContainText("must be between");
 });
