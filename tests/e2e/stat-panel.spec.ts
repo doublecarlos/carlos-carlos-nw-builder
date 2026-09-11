@@ -109,7 +109,7 @@ test.describe("stat source popover", () => {
     await expect(rows.first()).toContainText(HEAD_ITEM);
   });
 
-  test("clicking an item's source link closes the card and jumps to its build row", async ({
+  test("clicking an item's row closes the card and jumps to its build row", async ({
     page,
   }) => {
     await openBuilder(page);
@@ -117,7 +117,7 @@ test.describe("stat source popover", () => {
 
     await statInfoButton(page, "strike").click();
     await statCard(page)
-      .locator('[data-testid="stat-card-source-link"]')
+      .locator('[data-testid="stat-card-row"]')
       .filter({ hasText: HEAD_ITEM })
       .click();
 

@@ -16,7 +16,7 @@ withDefaults(defineProps<{ disabled?: boolean; plain?: boolean }>(), {
     v-else
     type="button"
     :disabled="disabled"
-    class="m-0 inline-block cursor-pointer border-0 bg-transparent p-0 align-baseline text-accent underline-offset-2 hover:underline focus-visible:underline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent disabled:cursor-default disabled:text-muted disabled:no-underline"
+    class="m-0 inline-block cursor-pointer border-0 bg-transparent p-0 text-left align-baseline text-accent underline-offset-2 hover:underline focus-visible:underline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent disabled:cursor-default disabled:text-muted disabled:no-underline"
   >
     <slot />
   </button>
