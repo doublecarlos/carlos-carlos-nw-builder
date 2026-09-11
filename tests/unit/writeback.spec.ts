@@ -69,7 +69,7 @@ describe("the writeback endpoint", () => {
     await expect(response.json()).resolves.toMatchObject({ ok: true, repo });
     await expect(
       readFile(path.join(dataDir, "db-items.json"), "utf8"),
-    ).resolves.toBe('[{"id":"x"}]\n');
+    ).resolves.toBe('[{ "id": "x" }]\n');
   });
 
   it("writes each of the three data files", async () => {

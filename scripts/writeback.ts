@@ -12,6 +12,8 @@
 import { writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { IncomingMessage, ServerResponse } from "node:http";
+
+import prettier from "prettier";
 import type { Connect, Plugin } from "vite";
 
 /** Duplicated in `src/data/writeback.ts`, which cannot import this module without dragging
@@ -153,7 +155,13 @@ export async function handleWriteback(
 
   const repo = path.dirname(dataDir);
   try {
-    await writeFile(path.join(dataDir, request.file), request.body, "utf8");
+    const filePath = path.join(dataDir, request.file);
+
+    const formatted = await prettier.format(request.body, {
+      filepath: filePath,
+    });
+
+    await writeFile(filePath, formatted, "utf8");
   } catch (error) {
     send(res, 500, { ok: false, error: (error as Error).message });
     return;
