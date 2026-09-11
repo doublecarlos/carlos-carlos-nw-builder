@@ -178,7 +178,7 @@ function grantRows(entry: EvaluatedBonus) {
 export type ItemCardRow = ReturnType<typeof buildItemCardRow>;
 
 // The bonus-level gate is only populated while the bonus is inactive, and a lone grant's own
-// `when` is never drawn as a labelled block. Folding both is what lets a one-grant bonus state
+// `when` is never drawn as a labeled block. Folding both is what lets a one-grant bonus state
 // its conditions either way; deduped, since the inactive case reports the same gate twice.
 function conditionsFor(entry: EvaluatedBonus) {
   const grants = entry.grants ?? [];

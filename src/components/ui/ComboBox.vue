@@ -50,7 +50,7 @@ const props = withDefaults(
      *  first screenful, so rendering everything for every keystroke is wasted work. */
     maxRows?: number;
     /** Override the closed-box display when the model value doesn't match any option
-     *  (e.g. the equipped item was removed from the catalogue). */
+     *  (e.g. the equipped item was removed from the catalog). */
     closedDisplay?: string;
     /** Forwarded to ComboBoxMenu*/
     menuClass?: string;

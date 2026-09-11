@@ -1,5 +1,5 @@
 // End-to-end coverage for the missing-item marker: define an item in a layer, equip it in a
-// build, disable the layer, and see the slot show a "not in your catalogue" marker.
+// build, disable the layer, and see the slot show a "not in your catalog" marker.
 // Re-enabling the layer restores the slot.
 import { test, expect } from "@playwright/test";
 import {

@@ -1,7 +1,7 @@
 // The other half of stat-row keyboard nav (see ComboBox.vue's `focusStatValue`): Tab/Enter on a
 // stat's *value* field jumps to the next stat row's key picker. Plain Tab would land on that
 // row's add/remove icon buttons first -- they sit before the combo box in the DOM -- and Enter
-// has no native "next field" behaviour to begin with, so both are handled the same way here.
+// has no native "next field" behavior to begin with, so both are handled the same way here.
 // DOM-based rather than component-state-based on purpose: `StatRowList.vue` renders every
 // `.stat-row`, but a row can hold either a `PercentInput` or a plain number input depending on
 // the stat's kind, so walking the DOM is simpler than tracking refs per row per kind.

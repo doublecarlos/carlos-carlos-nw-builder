@@ -1,4 +1,4 @@
-// public/privacy.html is standalone: no bundle, no access to the app's colour tokens or to the
+// public/privacy.html is standalone: no bundle, no access to the app's color tokens or to the
 // URLs vite substitutes into lib/app-info.ts. Everything on it is therefore a second copy of
 // something, and nothing in the build would notice one going stale.
 import { describe, it, expect } from "vitest";
@@ -42,13 +42,13 @@ function tokens(css: string, selector: string): Record<string, string> {
 const SHARED = ["--bg", "--text", "--muted", "--accent", "--line"];
 
 describe("privacy page", () => {
-  it("reuses the app's light colours", () => {
+  it("reuses the app's light colors", () => {
     const app = tokens(baseCss, ":root {");
     const here = tokens(page, ":root {");
     for (const name of SHARED) expect(here[name]).toBe(app[name]);
   });
 
-  it("reuses the app's dark colours", () => {
+  it("reuses the app's dark colors", () => {
     const app = tokens(baseCss, ".dark {");
     const here = tokens(page, "@media (prefers-color-scheme: dark)");
     for (const name of SHARED) expect(here[name]).toBe(app[name]);

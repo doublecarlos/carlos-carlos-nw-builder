@@ -202,7 +202,7 @@ describe("validateMaxCopies", () => {
     expect(findings.map((f) => f.name)).toEqual(["b"]);
   });
 
-  it("the shipped catalogue has no filter left half-capped", () => {
+  it("the shipped catalog has no filter left half-capped", () => {
     expect(catalog.validateMaxCopies(NW_ITEMS)).toEqual([]);
   });
 });

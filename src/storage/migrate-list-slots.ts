@@ -1,6 +1,6 @@
 // Renaming what a pre-`item_picker_list` build stored onto the rows those lists expand into.
 //
-// Called from `normalise`/`normaliseLayer`, so every door a build or layer arrives through --
+// Called from `normalize`/`normalizeLayer`, so every door a build or layer arrives through --
 // IndexedDB, an import, a bundle, a share link -- is covered by one pass. Idempotent: no id it
 // produces is one it renames.
 import { rowSlotId } from "../lib/item-picker-list";
@@ -9,7 +9,7 @@ import type { SlotData } from "../lib/slot-fields";
 import type { CatalogOverlay, SectionPreset } from "../types";
 
 /** The fixed slots each list replaced, in the order they were authored. A record of what
- * shipped rather than a view of `data/slots.json`: relabelling or reordering a list slot must
+ * shipped rather than a view of `data/slots.json`: relabeling or reordering a list slot must
  * not change what an old build migrates to. */
 const RETIRED_SLOTS: Record<string, string[]> = {
   "classStuff.classStuff": numbered("classStuff.classStuff", 10),
@@ -72,7 +72,7 @@ function moveKeys<T>(
  * magnitude or a repetition count but no choice is an orphan (`setChoice` drops both when a
  * slot is cleared), so it is dropped rather than given a row of its own.
  *
- * No row counts come back -- `normalise`'s own `rowCounts` already grows a list to cover every
+ * No row counts come back -- `normalize`'s own `rowCounts` already grows a list to cover every
  * row its stored keys name, and compaction leaves those keys contiguous.
  */
 export function migrateListSlots(stored: SlotData): SlotData {

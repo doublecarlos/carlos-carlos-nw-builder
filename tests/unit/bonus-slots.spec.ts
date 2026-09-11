@@ -1,5 +1,5 @@
 // "Where could this bonus come from" -- the lookup behind the Bonuses tab's locate action.
-// Built on its own fixture rather than the shipped catalogue, so it keeps meaning something
+// Built on its own fixture rather than the shipped catalog, so it keeps meaning something
 // when the shipped data moves.
 import { describe, it, expect } from "vitest";
 import * as db from "../../src/data/db";
@@ -76,7 +76,7 @@ describe("slotsSupplying", () => {
     );
   });
 
-  it("indexes a rebuilt catalogue separately", () => {
+  it("indexes a rebuilt catalog separately", () => {
     const rebuilt = db.build(items, bonuses, NW_SCHEMA, slots);
     expect(slotsSupplying(rebuilt, "set-bonus")).not.toBe(
       slotsSupplying(built, "set-bonus"),

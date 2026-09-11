@@ -254,7 +254,7 @@ function onSlotDuplicate(slot: Slot) {
       data-testid="bonus-card"
       class="mb-2.5 rounded-md border border-line bg-accent-soft/30 px-2.5 py-2"
     >
-      <!-- A dangling reference (attached id with no catalogue entry -- a hand-edited import,
+      <!-- A dangling reference (attached id with no catalog entry -- a hand-edited import,
            typically) has nothing else to signal it: BonusForm's own `status` badge needs
            overlay access this component doesn't have, so it stays 'base' here throughout. -->
       <BaseBadge v-if="slot.id && !sourceFor(slot)" variant="warn" class="mb-1"

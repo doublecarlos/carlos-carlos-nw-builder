@@ -1,8 +1,8 @@
 // Rewriting a build's stored item ids onto the items that superseded them (`Item.replacedBy`).
 //
-// Not part of `normalise`, unlike migrate-list-slots.ts's slot renames: that table is a frozen
-// record of what shipped, while this one is a view of the composed catalogue, which varies per
-// build and which `normalise` cannot see. Runs only when the player accepts the offer.
+// Not part of `normalize`, unlike migrate-list-slots.ts's slot renames: that table is a frozen
+// record of what shipped, while this one is a view of the composed catalog, which varies per
+// build and which `normalize` cannot see. Runs only when the player accepts the offer.
 //
 // Pure and idempotent: an id it produces is one nothing supersedes.
 import { retiredChoices } from "../data/db";

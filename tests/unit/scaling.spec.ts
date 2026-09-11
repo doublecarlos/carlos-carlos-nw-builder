@@ -1,6 +1,6 @@
 // Item stat scaling (mount/companion bolster).
 //
-// A synthetic catalogue rather than the shipped one, so each claim is isolated from whatever
+// A synthetic catalog rather than the shipped one, so each claim is isolated from whatever
 // the real mount data happens to be today. The shipped wiring gets its own check at the bottom.
 
 import { describe, it, expect } from "vitest";
@@ -338,8 +338,8 @@ describe("shipped bolster wiring", () => {
     expect(scaled.has("companion_equip")).toBe(false);
   });
 
-  it("holds unscaled base values in the catalogue", () => {
-    // The db was normalised: a mount equip is 1750 IL, not the 3937 the sheet stored
+  it("holds unscaled base values in the catalog", () => {
+    // The db was normalized: a mount equip is 1750 IL, not the 3937 the sheet stored
     // pre-multiplied by max bolster.
     const equips = shipped.forFilter("mount_equip");
     expect(equips.length).toBeGreaterThan(0);

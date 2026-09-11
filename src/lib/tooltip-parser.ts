@@ -20,7 +20,7 @@ export interface ParsedStat {
 }
 
 export interface TooltipParseResult {
-  /** Item-shaped draft: `name`/`il`/`gameIds` plus one entry per recognised stat line. */
+  /** Item-shaped draft: `name`/`il`/`gameIds` plus one entry per recognized stat line. */
   draft: Partial<Item>;
   stats: ParsedStat[];
   /** The internal item id the tooltip printed, if it carried one. */
@@ -39,7 +39,7 @@ const BONUS_PREFIX = /^(equip|reinforced|use|set|modification)\s*[:.]\s*/i;
 
 /**
  * "Def: Head_M33_Lightdps_S-tier" -- the game's internal item id, which the tooltip prints on
- * a line of its own. Anchored on the whole line so prose mentioning a defence stat cannot
+ * a line of its own. Anchored on the whole line so prose mentioning a defense stat cannot
  * match; "Defense:" cannot either, since the colon has to follow "Def" directly.
  */
 const GAME_ID = /^def\s*[:.]\s*([A-Za-z0-9][A-Za-z0-9_-]{2,})\s*$/i;

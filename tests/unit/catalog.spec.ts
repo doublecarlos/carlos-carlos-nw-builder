@@ -357,7 +357,7 @@ describe("catalog.validateSlotDefaults", () => {
       [item("helm")],
     );
     expect(
-      findings.some((f) => /is not an item in the catalogue/.test(f.message)),
+      findings.some((f) => /is not an item in the catalog/.test(f.message)),
     ).toBe(true);
   });
 
@@ -661,7 +661,7 @@ describe("catalog.validate: item id lint", () => {
       { id: "ring-b", name: "Ring", filter: "gear_ring" },
     ];
     // Scoped to these two items -- validate() also lints the real shipped NW_SLOTS (e.g.
-    // linkedItem references), which this synthetic two-item catalogue can never satisfy.
+    // linkedItem references), which this synthetic two-item catalog can never satisfy.
     const findings = catalog
       .validate(items, [])
       .filter((f) => f.name === "ring-a" || f.name === "ring-b");
@@ -776,7 +776,7 @@ describe("catalog.validate: gameIds lint", () => {
   });
 
   it("allows one game id across items of different filters -- an enchantment's slot forms", () => {
-    // One in-game Celestial Garnet, three catalogue entries; the importer tells them apart by
+    // One in-game Celestial Garnet, three catalog entries; the importer tells them apart by
     // which slot accepts which, so this is legitimate data, not an ambiguity.
     const items = [
       {
@@ -979,7 +979,7 @@ describe("catalog.validate: bonusOccurrences targets", () => {
     ]);
   });
 
-  it("naming a bonus the catalogue lacks is an error", () => {
+  it("naming a bonus the catalog lacks is an error", () => {
     const findings = findingsFor([
       {
         id: "self",
@@ -1467,7 +1467,7 @@ function shippedItemWithBonus(): { item: Item; bonus: Bonus } {
   throw new Error("no shipped item attaches a shipped bonus by id");
 }
 
-// A real item that exists in the shipped base catalogue - referencedOverlay should not emit it.
+// A real item that exists in the shipped base catalog - referencedOverlay should not emit it.
 const BASE_ITEM_ID = "1-amethyst-awareness";
 
 /** Cloned out of the shipped list rather than retyped: referencedOverlay diffs against base,
@@ -1591,7 +1591,7 @@ describe("catalog.referencedOverlay", () => {
   });
 
   it("picks up a base item whose bonus a layer edited", () => {
-    // referencedOverlay diffs against the shipped base catalogue, so this case needs a real
+    // referencedOverlay diffs against the shipped base catalog, so this case needs a real
     // base item carrying a real base bonus -- picked out of the shipped data rather than
     // hardcoded, so renaming any one entry cannot break the test.
     const shippedPair = shippedItemWithBonus();

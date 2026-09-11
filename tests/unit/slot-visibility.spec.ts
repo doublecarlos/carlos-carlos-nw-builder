@@ -60,7 +60,7 @@ function testBuild(context: Record<string, unknown> = {}): Build {
   };
 }
 
-// A paragon-shaped fixture of its own rather than the shipped catalogue: what "an equipped
+// A paragon-shaped fixture of its own rather than the shipped catalog: what "an equipped
 // item flips a param's visibility" means must not move when data/slots.json does.
 const paragonItem: Item = {
   id: "test-paragon",

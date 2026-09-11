@@ -35,7 +35,7 @@ const isQuick = (slot: Slot): slot is QuickSlot =>
   (slot.type === "build_parameter" || slot.type === "item_picker") &&
   !!slot.quick;
 
-/** Off the composed catalogue, not the shipped file: a layer can add, edit or remove a
+/** Off the composed catalog, not the shipped file: a layer can add, edit or remove a
  * `quick` slot, and this strip has to show what the build editor is actually resolving. */
 const allQuickSlots = computed(() => engine.db.value.slots.filter(isQuick));
 
@@ -51,7 +51,7 @@ const quickSlots = computed(() =>
   ),
 );
 
-/** Only a `build_parameter` can be a bare checkbox; a picker is always a labelled control. */
+/** Only a `build_parameter` can be a bare checkbox; a picker is always a labeled control. */
 const isBooleanParam = (slot: QuickSlot) =>
   slot.type === "build_parameter" && slot.paramType === "boolean";
 

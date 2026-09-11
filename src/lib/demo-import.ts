@@ -2,7 +2,7 @@
 // resolve step is testable without a browser; the wizard only renders what this returns.
 import * as storage from "../storage/storage";
 import { itemPublishing } from "../data/db";
-import { normaliseGroup, stableGroups } from "../engine/insignia";
+import { normalizeGroup, stableGroups } from "../engine/insignia";
 import {
   GAME_IMPORT_DATA,
   classFromHclass,
@@ -15,7 +15,7 @@ import type { Build, Db } from "../types";
 
 export type SlotOutcome =
   | { kind: "imported"; slotId: string; gameId: string; itemId: string }
-  | { kind: "unrecognised"; bag: string; slot: number; gameId: string }
+  | { kind: "unrecognized"; bag: string; slot: number; gameId: string }
   | { kind: "ignored"; bag: string; gameId: string; reason: string }
   | { kind: "overflow"; bag: string; gameId: string; itemId: string }
   /** App slot the demo has no counterpart for; the user fills it by hand. */
@@ -90,7 +90,7 @@ export function buildFromLoadout(
   // would have applied runs here instead, once the whole stable is placed.
   const swaps: Record<string, string> = {};
   for (const { group } of stableGroups(db)) {
-    Object.assign(swaps, normaliseGroup(db, build, group));
+    Object.assign(swaps, normalizeGroup(db, build, group));
   }
   for (const [slotId, itemId] of Object.entries(swaps)) {
     build.choices[slotId] = itemId;
@@ -114,7 +114,7 @@ export function buildFromLoadout(
 
   const counts: Record<SlotOutcome["kind"], number> = {
     imported: 0,
-    unrecognised: 0,
+    unrecognized: 0,
     ignored: 0,
     overflow: 0,
     notInDemo: 0,

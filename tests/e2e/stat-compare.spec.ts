@@ -57,7 +57,7 @@ test("a differing stat stacks the compare build's own value under this build's",
   expect(await ownValue(page, "hp")).not.toBe(firstBuildHp);
 });
 
-test("the compare line is labelled with the compare build's name", async ({
+test("the compare line is labeled with the compare build's name", async ({
   page,
 }) => {
   await openBuilder(page);

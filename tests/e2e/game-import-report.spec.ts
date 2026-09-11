@@ -1,5 +1,5 @@
 // End-to-end coverage for the "Import from game" coverage report: the three groups
-// (imported / not recognised / not in the demo), the copy-all affordance, multi-loadout tabs,
+// (imported / not recognized / not in the demo), the copy-all affordance, multi-loadout tabs,
 // and reopening from the post-import notice.
 import { test, expect, type Page } from "@playwright/test";
 import { dirname, join } from "node:path";
@@ -11,10 +11,10 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const DEMO_FIXTURE = join(__dirname, "../unit/fixtures/build-export.demo.txt");
 
 /** The fixture's `Hitem`s are deliberately synthetic, so no shipped `gameIds` claim them and
- *  the demo recognises nothing out of the box however far the catalogue's own mappings grow.
+ *  the demo recognizes nothing out of the box however far the catalog's own mappings grow.
  *  Teaching one mapping through a layer -- the real mechanism the report relies on -- gives
  *  report an actual "imported" row to assert on, the same way a player would fix an
- *  "unrecognised" id after reading the report. */
+ *  "unrecognized" id after reading the report. */
 async function mapFixtureHeadItem(page: Page) {
   await addLayer(page);
   await layerRow(page, "Layer 1").locator(".nav-name").click();
@@ -49,21 +49,21 @@ test("all three groups render with correct counts", async ({ page }) => {
     imported.getByTestId("game-import-report-imported-row"),
   ).toHaveText("Head → ZZZ Test Heavyheal Hood");
 
-  // 5 items in the loadout are equipped-and-namable; one is now recognised above, leaving 4
+  // 5 items in the loadout are equipped-and-namable; one is now recognized above, leaving 4
   // (the mainhand weapon, the stable mount and its two insignia gems).
-  const unrecognised = page.getByTestId("game-import-report-unrecognised");
-  await expect(unrecognised.locator("summary")).toHaveText(
-    "Not recognised (4)",
+  const unrecognized = page.getByTestId("game-import-report-unrecognized");
+  await expect(unrecognized.locator("summary")).toHaveText(
+    "Not recognized (4)",
   );
   await expect(
-    unrecognised.getByTestId("game-import-report-unrecognised-row"),
+    unrecognized.getByTestId("game-import-report-unrecognized-row"),
   ).toHaveCount(4);
 
   const notInDemo = page.getByTestId("game-import-report-not-in-demo");
   await expect(notInDemo.locator("summary")).toHaveText("Not in the demo (12)");
 });
 
-test("unrecognised ids are listed and the copy button puts them on the clipboard", async ({
+test("unrecognized ids are listed and the copy button puts them on the clipboard", async ({
   page,
   context,
 }) => {
@@ -73,17 +73,17 @@ test("unrecognised ids are listed and the copy button puts them on the clipboard
 
   await page.getByTestId("game-import-commit").click();
 
-  const unrecognised = page.getByTestId("game-import-report-unrecognised");
+  const unrecognized = page.getByTestId("game-import-report-unrecognized");
   await expect(
-    unrecognised.getByTestId("game-import-report-unrecognised-row"),
+    unrecognized.getByTestId("game-import-report-unrecognized-row"),
   ).toHaveCount(5);
-  await expect(unrecognised).toContainText("Head_Heavyheal_Test");
+  await expect(unrecognized).toContainText("Head_Heavyheal_Test");
 
-  await page.getByTestId("game-import-report-copy-unrecognised").click();
+  await page.getByTestId("game-import-report-copy-unrecognized").click();
   const clipboard = await page.evaluate(() => navigator.clipboard.readText());
   // Grouped by bag in game-import.json's own order (known bags first, unmapped ones -- "MainHand"
   // here, the real bag is "Melee" -- alphabetically after), not by demo file order. Split on
-  // \r?\n -- the OS clipboard normalises the joined \n text to CRLF on Windows.
+  // \r?\n -- the OS clipboard normalizes the joined \n text to CRLF on Windows.
   expect(clipboard.split(/\r?\n/)).toEqual([
     "Head_Heavyheal_Test",
     "Mount_Something_Legendary",
@@ -124,29 +124,29 @@ test("tabs appear for a two-loadout import and switch content", async ({
   const tabs = page.getByTestId("game-import-report-tab");
   await expect(tabs).toHaveCount(2);
   await expect(
-    page.getByTestId("game-import-report-unrecognised").locator("summary"),
-  ).toHaveText("Not recognised (5)");
+    page.getByTestId("game-import-report-unrecognized").locator("summary"),
+  ).toHaveText("Not recognized (5)");
 
   await tabs.filter({ hasText: "aaaaaa" }).click();
   await expect(
-    page.getByTestId("game-import-report-unrecognised").locator("summary"),
-  ).toHaveText("Not recognised (2)");
+    page.getByTestId("game-import-report-unrecognized").locator("summary"),
+  ).toHaveText("Not recognized (2)");
 });
 
-test("mapping an unrecognised id via the report keeps the row (so it can be re-mapped) and teaches the layer", async ({
+test("mapping an unrecognized id via the report keeps the row (so it can be re-mapped) and teaches the layer", async ({
   page,
 }) => {
   await openBuilder(page);
   await openImportAndUploadFixture(page);
   await page.getByTestId("game-import-commit").click();
 
-  const unrecognised = page.getByTestId("game-import-report-unrecognised");
-  const row = unrecognised
-    .getByTestId("game-import-report-unrecognised-row")
+  const unrecognized = page.getByTestId("game-import-report-unrecognized");
+  const row = unrecognized
+    .getByTestId("game-import-report-unrecognized-row")
     .filter({ hasText: "Head_Heavyheal_Test" });
   await row.getByTestId("game-import-report-map-item").click();
 
-  const picker = unrecognised.getByTestId("game-import-report-map-picker");
+  const picker = unrecognized.getByTestId("game-import-report-map-picker");
   await picker.getByTestId("picker-input").click();
   // Index 0 is the picker's own "empty" option; the first real candidate is index 1.
   const firstOption = picker.getByTestId("picker-option").nth(1);
@@ -163,10 +163,10 @@ test("mapping an unrecognised id via the report keeps the row (so it can be re-m
     "Change mapping…",
   );
   await expect(
-    unrecognised.getByTestId("game-import-report-unrecognised-row"),
+    unrecognized.getByTestId("game-import-report-unrecognized-row"),
   ).toHaveCount(5);
-  await expect(unrecognised.locator("summary")).toHaveText(
-    "Not recognised (4)",
+  await expect(unrecognized.locator("summary")).toHaveText(
+    "Not recognized (4)",
   );
 
   const imported = page.getByTestId("game-import-report-imported");
@@ -191,7 +191,7 @@ test("mapping an unrecognised id via the report keeps the row (so it can be re-m
   ).toHaveText(`Head → ${secondItemName}`);
 
   // The mapping landed in a layer overlay ("map to an item" reuses ensureTargetLayer, the
-  // same "no layers yet -> create Layer 1" rule Ctrl+click uses), not the base catalogue.
+  // same "no layers yet -> create Layer 1" rule Ctrl+click uses), not the base catalog.
   await page.getByTestId("game-import-done").click();
   await layerRow(page, "Layer 1").locator(".nav-name").click();
   await page.locator(".editor-search").fill(secondItemName);
@@ -220,6 +220,6 @@ test("reopening from the notice shows the same report", async ({ page }) => {
   await expect(page.getByTestId("game-import-modal")).toBeVisible();
   await expect(page.getByTestId("game-import-step-report")).toBeVisible();
   await expect(
-    page.getByTestId("game-import-report-unrecognised").locator("summary"),
-  ).toHaveText("Not recognised (5)");
+    page.getByTestId("game-import-report-unrecognized").locator("summary"),
+  ).toHaveText("Not recognized (5)");
 });

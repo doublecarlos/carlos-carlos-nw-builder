@@ -2,7 +2,7 @@
 //
 // Consumes the statically-imported data (src/data.ts) and builds the lookups the engine and UI
 // need. Pure: no DOM, no fetch -- `build()` takes items/bonuses/schema/slots as plain
-// arguments so catalog.ts can hand it a composed (base + overlay) catalogue instead.
+// arguments so catalog.ts can hand it a composed (base + overlay) catalog instead.
 
 import { NW_ITEMS, NW_BONUSES, NW_SCHEMA, NW_SLOTS } from "./data";
 import { bonusIdOf } from "../lib/bonus-attachment";
@@ -38,7 +38,7 @@ const pushTo = <K>(map: Map<K, string[]>, key: K, value: string) => {
  *
  * `il` leads because it is the number players already rank gear by and the picker renders it on
  * every row, so the resulting order is verifiable on screen rather than being an opaque score.
- * The tiebreak carries more weight than it looks: only about half the catalogue has an `il` at
+ * The tiebreak carries more weight than it looks: only about half the catalog has an `il` at
  * all (boons, group buffs, powers and leveling entries carry none) and several large categories
  * share a single value across every member, so for those slots the name comparison *is* the
  * sort -- it has to be deterministic, not incidental.
@@ -156,7 +156,7 @@ export function build(
   );
 
   /** An authored slot, or the row an `item_picker_list` id addresses -- rows are not in
-   * `slotById`, since how many exist is a property of the build, not the catalogue. */
+   * `slotById`, since how many exist is a property of the build, not the catalog. */
   const slotFor = (slotId: string): Slot | undefined => {
     const authored = slotById.get(slotId);
     if (authored) return authored;

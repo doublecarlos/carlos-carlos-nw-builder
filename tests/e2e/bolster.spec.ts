@@ -83,7 +83,7 @@ test.describe("mount and companion bolster", () => {
     await expect(statValue(page, "il")).toHaveText(before!);
   });
 
-  test("the stat source popover reports the scaled figure, not the catalogue one", async ({
+  test("the stat source popover reports the scaled figure, not the catalog one", async ({
     page,
   }) => {
     await openBuilder(page);

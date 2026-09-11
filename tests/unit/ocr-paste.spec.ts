@@ -22,7 +22,7 @@ describe("tidyOcrText", () => {
     );
   });
 
-  it("reports nothing recognised as empty rather than whitespace", () => {
+  it("reports nothing recognized as empty rather than whitespace", () => {
     expect(tidyOcrText("  \n \n", false)).toBe("");
     expect(tidyOcrText("  \n \n", true)).toBe("");
   });

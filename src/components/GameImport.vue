@@ -119,7 +119,7 @@ const hasSelection = computed(() => selected.value.size > 0);
         >
         <p class="">
           <strong>3. </strong>The build export contains data about all of your
-          character loadouts. Nothing is uploaded; the file is analysed locally
+          character loadouts. Nothing is uploaded; the file is analyzed locally
           in your browser.
         </p>
         <div class="flex justify-end">
@@ -201,7 +201,7 @@ const hasSelection = computed(() => selected.value.size > 0);
               >currently equipped</span
             >
             <span class="text-sm text-muted"
-              >{{ row.recognisedCount }}/{{ row.itemCount }} recognised</span
+              >{{ row.recognizedCount }}/{{ row.itemCount }} recognized</span
             >
             <span class="flex-1"></span>
             <BaseInput

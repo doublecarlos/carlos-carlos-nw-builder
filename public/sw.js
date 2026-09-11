@@ -29,7 +29,7 @@ const INDEX = new URL("./", self.location.href).href;
 /**
  * Static hosts routinely answer with `Vary: Origin` (or `Vary: Accept-Encoding`), and the app's
  * entry script and stylesheet are `crossorigin`, so the page sends an `Origin` header where the
- * worker's own priming fetch does not. Honouring Vary would make those two requests different
+ * worker's own priming fetch does not. Honoring Vary would make those two requests different
  * cache keys and miss every time. Only one response per URL is ever stored, so there is nothing
  * for Vary to disambiguate.
  */

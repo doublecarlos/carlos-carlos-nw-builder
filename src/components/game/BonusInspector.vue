@@ -98,7 +98,7 @@ interface Entry {
   perStack: StatValues | null;
   unmet: ConditionLeafResult[];
   nearMiss: boolean;
-  /** Whether anything in the catalogue could supply this, so the "where?" action leads
+  /** Whether anything in the catalog could supply this, so the "where?" action leads
    *  somewhere. Always false for an already-active bonus: the answer is "where it is". */
   canLocate: boolean;
   state: "excluded" | "active" | "inactive";
@@ -106,7 +106,7 @@ interface Entry {
   muted: boolean;
 }
 
-// Same small vocabulary as ItemCard.vue's own per-row state colouring, duplicated rather than
+// Same small vocabulary as ItemCard.vue's own per-row state coloring, duplicated rather than
 // shared: the two live in different visual contexts (a hover card vs. this sidebar list).
 const STATE_DOT: Record<string, string> = {
   active: "bg-ok",

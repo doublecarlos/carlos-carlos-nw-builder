@@ -12,7 +12,7 @@ function entry(
   return { key: `${kind}:${label}`, kind, id: label, label, detail };
 }
 
-const CATALOGUE: GoToEntry[] = [
+const CATALOG: GoToEntry[] = [
   entry("section", "Gear"),
   entry("section", "Boons"),
   entry("slot", "Head", "Gear"),
@@ -23,12 +23,12 @@ const CATALOGUE: GoToEntry[] = [
 ];
 
 const labels = (query: string, limit?: number) =>
-  rankEntries(CATALOGUE, query, limit).map((e) => e.label);
+  rankEntries(CATALOG, query, limit).map((e) => e.label);
 
 describe("rankEntries", () => {
   it("keeps everything, in order, for an empty query", () => {
-    expect(labels("")).toEqual(CATALOGUE.map((e) => e.label));
-    expect(labels("   ")).toEqual(CATALOGUE.map((e) => e.label));
+    expect(labels("")).toEqual(CATALOG.map((e) => e.label));
+    expect(labels("   ")).toEqual(CATALOG.map((e) => e.label));
   });
 
   it("puts an exact label match first, ahead of rows that merely mention it", () => {

@@ -3,8 +3,8 @@
 // Both halves are covered -- authoring the count in the Layer editor's preset form, and
 // applying an already-authored preset from the build's own "Preset..." menu.
 //
-// Neither test depends on the shipped catalogue happening to carry a suitable item: each
-// brings its own, through whichever catalogue layer its half of the flow can see (an imported
+// Neither test depends on the shipped catalog happening to carry a suitable item: each
+// brings its own, through whichever catalog layer its half of the flow can see (an imported
 // build's own overlay below, a layer-authored item further down).
 import { test, expect, type Page } from "@playwright/test";
 import {
@@ -26,7 +26,7 @@ const RING_NAME = "Test Preset Ring";
 const STACK_BONUS_ID = "test-preset-occurrence-bonus";
 const PRESET_LABEL = "Stacked Ring";
 
-/** A build whose catalogue carries one ring with a 0-5 occurrence config, plus whatever extra
+/** A build whose catalog carries one ring with a 0-5 occurrence config, plus whatever extra
  *  overlay entries a test needs (e.g. the preset under test). */
 function buildWithRing(extra: Record<string, unknown> = {}) {
   return {
@@ -117,7 +117,7 @@ test("applying a preset seeds the item's occurrence count alongside its choice",
 });
 
 // The authoring half works off a layer-authored item instead of the build catalog above: the
-// preset form lives in the Layer editor, where the item has to come from a catalogue layer to
+// preset form lives in the Layer editor, where the item has to come from a catalog layer to
 // be pickable at all. Both the item id and the bonus id are generated on save, so the controls
 // below are located structurally (by testid prefix) rather than by those ids.
 const AUTHORED_ITEM = "ZZZ Preset Occurrence Ring";

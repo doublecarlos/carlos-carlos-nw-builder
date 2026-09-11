@@ -1,7 +1,7 @@
 // The stable: which insignia a mount's slots accept, which slots upgrade an insignia to its
 // preferred variant, and which bonus a group of slotted insignia produces.
 //
-// Everything is derived from the catalogue, never stored on a build. A group resolves by shape
+// Everything is derived from the catalog, never stored on a build. A group resolves by shape
 // alone; an insignia's type carries only its stats.
 
 import { INSIGNIA_SHAPES } from "../types";
@@ -128,7 +128,7 @@ export function describeSlotSpec(spec: InsigniaSlotSpec): string {
 export const slotLine = (mount: Item) =>
   (mount.insigniaSlots ?? []).map(describeSlotSpec).join(", ");
 
-/** `slotLine` labelled, for the surfaces that show it beside other text. Empty for anything
+/** `slotLine` labeled, for the surfaces that show it beside other text. Empty for anything
  * that is not a mount. */
 export const slotSummary = (item: Item) =>
   item.insigniaSlots ? `Slots: ${slotLine(item)}` : "";
@@ -300,7 +300,7 @@ export function bestArrangement(
   const candidates =
     spare === -1
       ? []
-      : // Only shapes the catalogue supplies, so a pairing counts as reachable in practice.
+      : // Only shapes the catalog supplies, so a pairing counts as reachable in practice.
         INSIGNIA_SHAPES.filter(
           (shape) =>
             slotAccepts(specs[spare], shape) &&
@@ -345,23 +345,23 @@ function reachFor(db: Db, mount: Item, bonus: Item): Reach | null {
   return reach;
 }
 
-const catalogueCache = new WeakMap<Db, { mounts: Item[]; bonuses: Item[] }>();
+const catalogCache = new WeakMap<Db, { mounts: Item[]; bonuses: Item[] }>();
 
 /** Memoised per `Db`: a picker row asks on every build change, and both are a full scan. */
-function stableCatalogue(db: Db) {
-  let split = catalogueCache.get(db);
+function stableCatalog(db: Db) {
+  let split = catalogCache.get(db);
   if (!split) {
     split = {
       mounts: db.items.filter((item) => item.insigniaSlots),
       bonuses: db.items.filter((item) => item.insigniaRecipe),
     };
-    catalogueCache.set(db, split);
+    catalogCache.set(db, split);
   }
   return split;
 }
 
-export const allMounts = (db: Db) => stableCatalogue(db).mounts;
-export const allBonuses = (db: Db) => stableCatalogue(db).bonuses;
+export const allMounts = (db: Db) => stableCatalog(db).mounts;
+export const allBonuses = (db: Db) => stableCatalog(db).bonuses;
 
 /** Best-preferred first, then by name. */
 export function reachableBonuses(db: Db, mount: Item): Reach[] {
@@ -709,7 +709,7 @@ function variantFor(
  * Slots whose pick disagrees with the slot it sits in, and what belongs there. An empty string
  * means the slot's mount does not take that shape at all, so the pick has to go.
  */
-export function normaliseGroup(
+export function normalizeGroup(
   db: Db,
   build: Build,
   group: number,

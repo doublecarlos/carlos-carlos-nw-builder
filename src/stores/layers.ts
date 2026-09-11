@@ -1,6 +1,6 @@
-// Layers: named catalogue overlays that can be toggled on/off independently. The engine
+// Layers: named catalog overlays that can be toggled on/off independently. The engine
 // folds every enabled layer's overlay (plus the active build's catalog) on top of the
-// base catalogue. The list reads highest-priority first: the topmost layer wins.
+// base catalog. The list reads highest-priority first: the topmost layer wins.
 import { computed, ref } from "vue";
 import { useDebounceFn } from "@vueuse/core";
 import { reorderIndex } from "../composables/useDragAndDrop";
@@ -21,7 +21,7 @@ export const layers = computed(() =>
   layerOrder.value.map((id) => _layers.value.get(id)!).filter(Boolean),
 );
 
-/** Enabled layers in fold order, for the engine to fold over the base catalogue. Reversed
+/** Enabled layers in fold order, for the engine to fold over the base catalog. Reversed
  * against the displayed order: folding last is what wins, and the top layer has priority. */
 export const enabledOverlays = computed(() =>
   layers.value
@@ -50,12 +50,12 @@ export function ensureTargetLayer(): Layer {
   return targetLayer.value ?? createLayer();
 }
 
-/** Every id across base catalogue, every layer (enabled or not), and the selected build's
+/** Every id across base catalog, every layer (enabled or not), and the selected build's
  * per-build catalog. Used by catalog.nextId to avoid id collisions with a switched-off
- * layer. Consumed when allocating ids for new catalogue entries. */
+ * layer. Consumed when allocating ids for new catalog entries. */
 export function allocatableIds(): string[] {
   const ids: string[] = [];
-  // Base catalogue ids are known statically, collected from the shipped data.
+  // Base catalog ids are known statically, collected from the shipped data.
   // Layers contribute all their item, bonus and section preset ids.
   for (const layer of _layers.value.values()) {
     ids.push(...Object.keys(layer.overlay.items ?? {}));
@@ -91,7 +91,7 @@ export function renameLayer(id: string, name: string) {
 export function duplicateLayer(id: string) {
   const source = _layers.value.get(id);
   if (!source) return;
-  const copy = storage.normaliseLayer({
+  const copy = storage.normalizeLayer({
     ...source,
     id: storage.newId("l"),
     name: `${source.name} copy`,
@@ -168,7 +168,7 @@ export function updateOverlay(id: string, overlay: CatalogOverlay) {
 }
 
 /** The enabled layer whose overlay already defines this preset, highest priority first -- the
- * one the composed catalogue actually took it from, and so the only one an edit can land in
+ * one the composed catalog actually took it from, and so the only one an edit can land in
  * and still be visible. Null for a shipped preset no layer has touched yet. */
 function presetOwner(id: string): Layer | null {
   return (
@@ -241,7 +241,7 @@ export function undoLayerFor(id: string) {
   }
 }
 
-/** Undo an overlay snapshot (a catalogue edit, a preset update) on one layer's own stack. */
+/** Undo an overlay snapshot (a catalog edit, a preset update) on one layer's own stack. */
 export function undoOverlayFor(id: string) {
   const layer = _layers.value.get(id);
   if (!layer) return;
@@ -270,7 +270,7 @@ export function importLayerText(text: string) {
     markDirty(layer.id);
     selection.selectLayer(layer.id);
     const stale = catalogStale
-      ? ". Made against an older item catalogue; some items may no longer resolve"
+      ? ". Made against an older item catalog; some items may no longer resolve"
       : "";
     showNotice(`Imported “${layer.name}”${stale}`);
   } catch (error: unknown) {

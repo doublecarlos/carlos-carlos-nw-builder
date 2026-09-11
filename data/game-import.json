@@ -265,7 +265,7 @@
     },
     {
       "label": "Class",
-      "reason": "This character's class wasn't recognised from the demo.",
+      "reason": "This character's class wasn't recognized from the demo.",
       "slotIds": ["options.class"]
     },
     {

@@ -143,9 +143,9 @@ describe("storedListRows", () => {
   });
 });
 
-describe("normalise", () => {
+describe("normalize", () => {
   it("keeps a row count the build was saved with, filled or not", () => {
-    const build = storage.normalise({
+    const build = storage.normalize({
       choices: { "misc.misc#1": "vip-hp-bonus-self" },
       listRows: { "misc.misc": 4 },
     });
@@ -153,14 +153,14 @@ describe("normalise", () => {
   });
 
   it("grows a payload to cover a pick whose row count was lost", () => {
-    const build = storage.normalise({
+    const build = storage.normalize({
       choices: { "misc.misc#3": "vip-hp-bonus-self" },
     });
     expect(build.listRows["misc.misc"]).toBe(3);
   });
 
   it("coerces a nonsense count rather than carrying it through", () => {
-    const build = storage.normalise({ listRows: { "misc.misc": -2.5 } });
+    const build = storage.normalize({ listRows: { "misc.misc": -2.5 } });
     expect(build.listRows["misc.misc"]).toBe(0);
   });
 });

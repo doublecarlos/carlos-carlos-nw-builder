@@ -1,6 +1,6 @@
 // itemSearchText (#picker search): the extra haystack the item picker hands ComboBox so a typed
 // query can match what an item grants, not just what it is called. The interesting property is
-// that it is built statically off the catalogue -- a bonus contributes its terms whether or not
+// that it is built statically off the catalog -- a bonus contributes its terms whether or not
 // it is currently active, which is what makes a partly-unlocked set findable.
 
 import { describe, it, expect } from "vitest";
@@ -107,7 +107,7 @@ describe("itemSearchText", () => {
     expect(finds(ringWithSet, "nights band")).toBe(true);
   });
 
-  it("returns the same object on repeat calls (memoized per catalogue)", () => {
+  it("returns the same object on repeat calls (memoized per catalog)", () => {
     expect(itemSearchText(testDb, ringWithSet)).toBe(
       itemSearchText(testDb, ringWithSet),
     );

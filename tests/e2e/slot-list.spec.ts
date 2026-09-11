@@ -88,7 +88,7 @@ test.describe("choosing and clearing an item", () => {
   });
 });
 
-test.describe("row click behaviour", () => {
+test.describe("row click behavior", () => {
   test("Ctrl+click on a filled slot opens the layer editor on that item; a plain click does not", async ({
     page,
   }) => {

@@ -1,7 +1,7 @@
 // Unit tests for the bonus model's semantics (plan Part 2).
 //
 // The golden fixture proves the engine reproduces the sheet.
-// Each test names the behaviour and, where relevant, the legacy bug it prevents.
+// Each test names the behavior and, where relevant, the legacy bug it prevents.
 
 import { describe, it, expect } from "vitest";
 import * as db from "../../src/data/db";

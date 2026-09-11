@@ -300,7 +300,7 @@ export function importBuilds(
   }
   if (stale)
     parts.push(
-      "made against an older item catalogue; some items may no longer resolve",
+      "made against an older item catalog; some items may no longer resolve",
     );
   if (overlays && overlays.length > 0) {
     for (const b of newBuilds) {

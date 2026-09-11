@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // LayerEditor's validation findings list: every lint error/warning across the composed
-// catalogue (see catalog.validate). Purely a list -- jumping to what a finding points at is
+// catalog (see catalog.validate). Purely a list -- jumping to what a finding points at is
 // the parent's job, since that means switching section/selection, which only it owns.
 import BaseLink from "../ui/BaseLink.vue";
 import BaseDrawer from "../ui/BaseDrawer.vue";

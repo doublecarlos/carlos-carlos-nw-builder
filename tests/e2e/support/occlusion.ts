@@ -1,6 +1,6 @@
 import { expect, type Locator } from "@playwright/test";
 
-/** Asserts `locator` paints on top at several points down its own centre, via
+/** Asserts `locator` paints on top at several points down its own center, via
  *  `document.elementFromPoint`; unlike `toBeVisible()`, which passes even when occluded. */
 export async function expectTopmost(locator: Locator) {
   const uncovered = await locator.evaluate((el) => {

@@ -1,4 +1,4 @@
-// The stable resolver. Fixtures are authored here rather than read off the shipped catalogue:
+// The stable resolver. Fixtures are authored here rather than read off the shipped catalog:
 // these are rules about how the pieces fit, not facts about current data.
 import { describe, it, expect } from "vitest";
 import * as db from "../../src/data/db";
@@ -331,7 +331,7 @@ describe("the ordinary and (Pref) pairing", () => {
     const build = testBuild(
       group(1, ["crescent", "regal", "barbed", "enlightened"], "fixed-mount"),
     );
-    expect(insignia.normaliseGroup(made, build, 1)).toEqual({
+    expect(insignia.normalizeGroup(made, build, 1)).toEqual({
       [insigniaSlot(1, 4)]: "enlightened-pref",
     });
   });
@@ -344,7 +344,7 @@ describe("the ordinary and (Pref) pairing", () => {
         "fixed-mount",
       ),
     );
-    const changes = insignia.normaliseGroup(made, build, 1);
+    const changes = insignia.normalizeGroup(made, build, 1);
     expect(changes[insigniaSlot(1, 3)]).toBe("barbed");
   });
 
@@ -356,7 +356,7 @@ describe("the ordinary and (Pref) pairing", () => {
         "fixed-mount",
       ),
     );
-    expect(insignia.normaliseGroup(made, build, 1)).toEqual({});
+    expect(insignia.normalizeGroup(made, build, 1)).toEqual({});
   });
 });
 
@@ -391,7 +391,7 @@ describe("naming an insignia", () => {
     );
   });
 
-  it("says nothing about a pairing without a catalogue to ask", () => {
+  it("says nothing about a pairing without a catalog to ask", () => {
     expect(insignia.itemDisplay(null, made.get("regal-pref")!)).toEqual({
       name: "regal (Pref)",
       preferred: false,
@@ -850,7 +850,7 @@ describe("re-pairing a group with its mount", () => {
     const build = testBuild(
       group(1, ["barbed", "regal", "barbed", "regal"], "fixed-mount"),
     );
-    expect(insignia.normaliseGroup(made, build, 1)).toEqual({
+    expect(insignia.normalizeGroup(made, build, 1)).toEqual({
       // Slot 1 is fixed to crescent, so the barbed insignia sitting there has to go.
       [insigniaSlot(1, 1)]: "",
     });
@@ -858,7 +858,7 @@ describe("re-pairing a group with its mount", () => {
 
   it("says nothing about a group with no mount, which constrains nothing", () => {
     const build = testBuild(group(1, ["barbed", "regal", "barbed", "regal"]));
-    expect(insignia.normaliseGroup(made, build, 1)).toEqual({});
+    expect(insignia.normalizeGroup(made, build, 1)).toEqual({});
   });
 });
 

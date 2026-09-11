@@ -1,6 +1,6 @@
 // Undo coalescing was previously untestable in isolation -- it lived inside App.vue, entangled
 // with routing/persistence/every other concern. Now that it's its own module, these prove the
-// coalescing behaviour directly: same key within the window collapses to one undo step: a
+// coalescing behavior directly: same key within the window collapses to one undo step: a
 // different key, or the window elapsing, doesn't.
 import { afterEach, describe, expect, it, vi } from "vitest";
 import * as storage from "../../../src/storage/storage";
@@ -785,7 +785,7 @@ describe("buildEditor undo labels", () => {
 
 /**
  * `misc.misc` is a shipped `item_picker_list`; `removeListRow` resolves its container off the
- * composed catalogue, so these need a real slot rather than a local fixture.
+ * composed catalog, so these need a real slot rather than a local fixture.
  */
 describe("buildEditor item_picker_list rows", () => {
   const LIST = "misc.misc";

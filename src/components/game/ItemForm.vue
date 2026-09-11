@@ -107,9 +107,9 @@ function computeId(local: ItemDraft): string {
     : "";
 }
 
-/** The class vocabulary these checkboxes offer: every distinct value the catalogue publishes
- * at `class`, labelled by the item that publishes it. A class param's options are still
- * honoured as a fallback, so an overlay declaring the older param-based shape keeps working.
+/** The class vocabulary these checkboxes offer: every distinct value the catalog publishes
+ * at `class`, labeled by the item that publishes it. A class param's options are still
+ * honored as a fallback, so an overlay declaring the older param-based shape keeps working.
  * Blank values are dropped either way; "no class at all" is not a restriction. */
 const classSlot = computed(() => findParamSlot(props.db.slots, "class"));
 /** A tag is its own label. */
@@ -137,7 +137,7 @@ const classes = computed(() => {
   return [...byValue].map(([value, label]) => ({ value, label }));
 });
 
-// Off the composed catalogue, so a layer-authored param can be seeded by `defaultParams`
+// Off the composed catalog, so a layer-authored param can be seeded by `defaultParams`
 // exactly like a shipped one.
 const buildParamSlots = computed(() =>
   props.db.slots.filter(

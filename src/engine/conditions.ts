@@ -210,7 +210,7 @@ const LEAVES: Record<
 
 // --- inline summary text ---------------------------------------------------------------
 // `any`/`not` also have to read as one self-contained line, because the two places that
-// summarise a gate (the item card's "Conditions: ..." line and the "needs ..." list) render
+// summarize a gate (the item card's "Conditions: ..." line and the "needs ..." list) render
 // `label` alone and never descend into `children`. So each compound builds its text out of
 // its own children's labels, and falls back to a bounded phrase -- deferring to the
 // expandable tree -- once that text would get long or deeply nested.

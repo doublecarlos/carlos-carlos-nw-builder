@@ -32,9 +32,9 @@ type FileShape = "build" | "layer" | "bundle" | "overlay" | "unknown";
 
 const OVERLAY_GROUPS = ["items", "bonuses", "sectionPresets", "slots"] as const;
 
-/** Un-enveloped files have to be recognised by their fields. Ordered most to least specific:
+/** Un-enveloped files have to be recognized by their fields. Ordered most to least specific:
  *  a bundle and a layer each have a key nothing else has, an overlay is the only shape whose
- *  own keys are the four catalogue groups, and a build is what everything else used to be. */
+ *  own keys are the four catalog groups, and a build is what everything else used to be. */
 function sniffLegacy(parsed: unknown): FileShape {
   if (Array.isArray(parsed)) return "build"; // pre-envelope multi-build export
   if (!isPlain(parsed)) return "unknown";
@@ -60,7 +60,7 @@ function shapeOf(parsed: unknown): FileShape {
   return sniffLegacy(parsed);
 }
 
-/** Wraps a bare overlay in a layer so the layer parser can take it. No id, so `normaliseLayer`
+/** Wraps a bare overlay in a layer so the layer parser can take it. No id, so `normalizeLayer`
  *  mints a fresh one - importing the same overlay twice gives two layers, never a conflict. */
 function overlayAsLayerText(overlay: unknown, name: string) {
   return JSON.stringify({ name, enabled: true, overlay });
@@ -219,7 +219,7 @@ function importNotice(plan: ImportPlan, resolved: ResolvedImport) {
 
   if (plan.catalogStale)
     parts.push(
-      "made against an older item catalogue; some items may no longer resolve",
+      "made against an older item catalog; some items may no longer resolve",
     );
 
   // One notice per import, not per build.

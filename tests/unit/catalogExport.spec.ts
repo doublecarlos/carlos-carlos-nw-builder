@@ -103,7 +103,7 @@ describe("catalogExport.toBonusesFile", () => {
       ],
       tiers: [{ bonusOccurrences: { atLeast: 1 }, stats: {} }],
     });
-    // The input is left alone: the exporter reads the catalogue, it does not edit it.
+    // The input is left alone: the exporter reads the catalog, it does not edit it.
     expect(bonus.grants![0].when!.bonusOccurrences!.bonus).toBe("self");
   });
 

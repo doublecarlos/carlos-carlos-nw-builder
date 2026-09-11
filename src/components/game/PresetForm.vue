@@ -133,7 +133,7 @@ const sectionOptions = computed(() =>
   props.db.sections.map((s) => ({ value: s.id, label: s.label })),
 );
 
-/** Off the composed catalogue rather than the shipped file, so a layer-authored param is
+/** Off the composed catalog rather than the shipped file, so a layer-authored param is
  * offered here the same as a shipped one: a preset seeding a custom param is the whole
  * point of both being overlayable. */
 const slotsInSection = computed(() =>

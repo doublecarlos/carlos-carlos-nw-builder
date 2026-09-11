@@ -22,7 +22,7 @@ test("About opens from the header and names this build", async ({ page }) => {
   const dialog = page.getByTestId("about-dialog");
   await expect(dialog).toBeVisible();
   // Anchored, so the line is the version and nothing else -- but tolerant of the whitespace
-  // the template indents it with, which a regex match does not normalise away.
+  // the template indents it with, which a regex match does not normalize away.
   await expect(dialog.getByTestId("about-version")).toHaveText(
     /^\s*Version \d+\.\d+\.\d+\s*$/,
   );

@@ -102,7 +102,7 @@ test.describe("slot filter: text", () => {
     await chooseItem(page, "gear.arms", "M33 Runefrost Swift Armguards");
 
     // "Arms" matches the slot label, "Runefrost" matches the equipped item's name -- neither
-    // word alone is enough to prove the AND-across-words behaviour, only both together.
+    // word alone is enough to prove the AND-across-words behavior, only both together.
     await slotFilterInput(page).fill("Arms Runefrost");
     await expect(slotRow(page, "gear.arms")).toBeVisible();
     await expect(slotRow(page, "gear.head")).toBeHidden();

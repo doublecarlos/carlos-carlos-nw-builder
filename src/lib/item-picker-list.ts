@@ -53,7 +53,7 @@ export function rowSlot(
 
 /**
  * Row counts implied by what a build already stores -- a pick at `misc.misc#5` is a fifth row,
- * whatever the count says. `normalise` grows a payload to these, so a hand-edited or imported
+ * whatever the count says. `normalize` grows a payload to these, so a hand-edited or imported
  * build cannot carry a pick that no row shows.
  */
 export function storedListRows(build: SlotData): Record<string, number> {

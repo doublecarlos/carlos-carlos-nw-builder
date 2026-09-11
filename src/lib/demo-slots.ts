@@ -14,7 +14,7 @@ export interface GameBagEntry {
   /** `MountEquippedActiveSlots` only. Pairs with `slots`, which then takes this bag's own items
    *  positionally: the mount at `Islotidx` n is `slots[n]`, its insignia `gemSlots[n]`. */
   gemSlots?: string[][];
-  /** Present in the demo but deliberately unmodelled; reported as ignored, not unrecognised. */
+  /** Present in the demo but deliberately unmodelled; reported as ignored, not unrecognized. */
   notModelled?: string;
 }
 
@@ -37,7 +37,7 @@ export interface GameImportDataFile {
    *  confirmed against a real recording belong here; a guessed one equips the wrong race. */
   speciesToRace: Record<string, string>;
   /** Slot id -> item id an imported build falls back to. Applied once every bag is placed and
-   *  only where the slot is still empty, so a recognised game item always wins. */
+   *  only where the slot is still empty, so a recognized game item always wins. */
   defaultChoices: Record<string, string>;
 }
 
@@ -52,7 +52,7 @@ export function bagEntry(bag: string): GameBagEntry | undefined {
   return bagsByName.get(bag);
 }
 
-/** Candidate app slot ids behind one `unrecognised` outcome, for the report's "map to an item"
+/** Candidate app slot ids behind one `unrecognized` outcome, for the report's "map to an item"
  *  picker. `slot` is the outcome's `Islotidx`, only meaningful as a mount index for a gem bag. */
 export function candidateSlotIds(bag: string, slot: number): string[] {
   const entry = bagEntry(bag);
@@ -81,12 +81,12 @@ export function raceFromSpecies(species: string | null): string | null {
 export type PlacementResult =
   | { kind: "imported"; slotId: string; gameId: string; itemId: string }
   /** `slot` is the demo's own `Islotidx` (a mount's, for a gem), never an app slot. */
-  | { kind: "unrecognised"; bag: string; slot: number; gameId: string }
+  | { kind: "unrecognized"; bag: string; slot: number; gameId: string }
   | { kind: "ignored"; bag: string; gameId: string; reason: string }
-  /** Recognised, but no candidate slot was free. */
+  /** Recognized, but no candidate slot was free. */
   | { kind: "overflow"; bag: string; gameId: string; itemId: string };
 
-/** Every candidate slot accepting `gameId`, in candidate order, paired with the catalogue entry
+/** Every candidate slot accepting `gameId`, in candidate order, paired with the catalog entry
  *  that slot resolves it to. One game id can have several claimants (an enchantment's offense
  *  and defense forms); the accepting slot is what picks between them. */
 function optionsFor(
@@ -120,7 +120,7 @@ function resolveAt(
   slot: number,
 ): PlacementResult {
   const claimants = db.itemByGameId.get(gameId) ?? [];
-  if (!claimants.length) return { kind: "unrecognised", bag, slot, gameId };
+  if (!claimants.length) return { kind: "unrecognized", bag, slot, gameId };
 
   const options = optionsFor(gameId, candidates, db);
   for (const { slotId, itemId } of options) {
@@ -146,7 +146,7 @@ interface Pending {
 }
 
 /**
- * Maximum bipartite matching (Kuhn's augmenting paths) between a bag's recognised items and the
+ * Maximum bipartite matching (Kuhn's augmenting paths) between a bag's recognized items and the
  * candidate slots `occupied` leaves free. Each item is first offered a free slot in candidate
  * order, so a bag plain first-fit could already seat is seated identically; only a blocked item
  * displaces a seated one onto another of its own options.
@@ -167,7 +167,7 @@ function placeByMatching(
     const gameId = item.gameId;
     const claimants = db.itemByGameId.get(gameId) ?? [];
     if (!claimants.length) {
-      results.push({ kind: "unrecognised", bag, slot: item.slot, gameId });
+      results.push({ kind: "unrecognized", bag, slot: item.slot, gameId });
       continue;
     }
     const options = optionsFor(gameId, candidates, db, acceptedBy);
@@ -242,7 +242,7 @@ export function placeBag(
         (item): item is DemoItem & { gameId: string } => item.gameId != null,
       )
       .map((item) => ({
-        kind: "unrecognised",
+        kind: "unrecognized",
         bag,
         slot: item.slot,
         gameId: item.gameId,

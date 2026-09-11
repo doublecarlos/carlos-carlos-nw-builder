@@ -1,5 +1,5 @@
 // The parts of "paste a screenshot into a field" that are not the recognition itself: picking
-// the image off a clipboard or drop payload, and folding recognised text into the value being
+// the image off a clipboard or drop payload, and folding recognized text into the value being
 // edited.
 //
 // Nothing here reaches `ocr.ts`, so the engine and its language model stay behind the dynamic
@@ -19,7 +19,7 @@ export function imageFrom(
 }
 
 /**
- * Tidies recognised text for the field it is going into.
+ * Tidies recognized text for the field it is going into.
  *
  * A one-line field takes the whole transcription on one line: OCR breaks a paragraph wherever
  * the tooltip wrapped it, and that break belongs to the screenshot's width rather than to the

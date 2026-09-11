@@ -62,7 +62,7 @@ const props = withDefaults(
      *  owned by the item. */
     scale?: number;
     /** Lines naming what `scale` came from (`itemScaleNotes`), listed among `notes` so the
-     *  card never shows numbers that silently disagree with the catalogue. */
+     *  card never shows numbers that silently disagree with the catalog. */
     scaleNotes?: string[];
     /** Tooltip for the header's edit button, naming the layer the edit lands in -- which is
      *  not necessarily the one on screen. Empty hides the button. */
@@ -93,7 +93,7 @@ const emit = defineEmits<{
   "go-to-slot": [slotId: string];
 }>();
 
-/** What this item would be swapped for, when the card has a catalogue to ask. */
+/** What this item would be swapped for, when the card has a catalog to ask. */
 const replacement = computed(
   () => props.db?.replacementFor(props.item.id) ?? null,
 );
@@ -114,7 +114,7 @@ const longDescription = computed(() =>
 
 const STABLE_ROWS = 8;
 
-/** Null without a catalogue, as on the layer editor's preview card. */
+/** Null without a catalog, as on the layer editor's preview card. */
 const stableReach = computed(() => {
   const db = props.db;
   if (!db) return null;

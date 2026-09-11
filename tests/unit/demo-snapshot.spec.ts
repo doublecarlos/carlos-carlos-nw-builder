@@ -1,5 +1,5 @@
 // demo-snapshot.ts: turns the generic node tree into characters/loadouts/items, still with no
-// app knowledge (no slots, no catalogue, no Build).
+// app knowledge (no slots, no catalog, no Build).
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";

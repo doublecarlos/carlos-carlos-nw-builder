@@ -2,7 +2,7 @@
 // dislikes it simply declines to offer "install" -- silently, with nothing failing. So the
 // reasoning for what it contains lives here, next to the assertions that hold it in place:
 // against index.html, which carries the same name and description; against src/base.css, whose
-// --bg is the colour the launch splash has to match; and against public/, which has to actually
+// --bg is the color the launch splash has to match; and against public/, which has to actually
 // ship the icons it names.
 import { describe, it, expect } from "vitest";
 import { readFileSync, existsSync } from "node:fs";
@@ -33,8 +33,8 @@ const metaContent = (key: string) =>
     .match(new RegExp(`<meta[^>]*name="${key}"[^>]*>`, "s"))?.[0]
     .match(/content="([^"]*)"/)?.[1];
 
-/** The light theme's --bg, which is what a manifest colour has to agree with: the file has one
- *  slot per colour and no way to express a scheme, so it states the default one. */
+/** The light theme's --bg, which is what a manifest color has to agree with: the file has one
+ *  slot per color and no way to express a scheme, so it states the default one. */
 const lightBg = baseCss.match(/:root\s*\{[^}]*--bg:\s*([^;]+);/)?.[1].trim();
 
 describe("the manifest link", () => {
@@ -44,7 +44,7 @@ describe("the manifest link", () => {
     expect(existsSync(path.join(root, "public", href))).toBe(true);
   });
 
-  it("uses the .webmanifest extension browsers and hosts both recognise", () => {
+  it("uses the .webmanifest extension browsers and hosts both recognize", () => {
     expect(href.endsWith(".webmanifest")).toBe(true);
   });
 });
@@ -96,19 +96,19 @@ describe("scope and entry point", () => {
   });
 });
 
-describe("colours", () => {
+describe("colors", () => {
   it("paints the window chrome in the theme's own background", () => {
     expect(lightBg).toBeTruthy();
     expect(manifest.theme_color).toBe(lightBg);
   });
 
   it("paints the launch splash to match, so the first frame does not flash", () => {
-    // index.html's boot screen sits on this same colour; a mismatch shows as a flicker between
+    // index.html's boot screen sits on this same color; a mismatch shows as a flicker between
     // the splash and the page it hands over to.
     expect(manifest.background_color).toBe(lightBg);
   });
 
-  it("agrees with the chrome colour the page declares for the same scheme", () => {
+  it("agrees with the chrome color the page declares for the same scheme", () => {
     const light = html
       .match(/<meta[^>]*media="\(prefers-color-scheme: light\)"[^>]*>/s)?.[0]
       .match(/content="([^"]*)"/)?.[1];

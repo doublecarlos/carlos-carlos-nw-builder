@@ -1,5 +1,5 @@
 // Stable item ids (build-parameters plan 0004): `Item.id` is the identifier, `name` is
-// display-only and may repeat. These prove the two behaviours the plan's own verification
+// display-only and may repeat. These prove the two behaviors the plan's own verification
 // section calls out: two items sharing a display name still resolve and count independently,
 // and renaming an item's display name leaves anything that refers to it by id unaffected.
 import { describe, it, expect } from "vitest";

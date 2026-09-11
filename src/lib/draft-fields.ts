@@ -7,7 +7,7 @@
 //
 // The four modules stay separate on purpose: a generic mapper over them does not survive their
 // shapes. An item's stat keys are flat properties on the entity itself; a slot must carry
-// fields it does not recognise through verbatim, where every other draft drops them; a preset's
+// fields it does not recognize through verbatim, where every other draft drops them; a preset's
 // occurrences are keyed by item rather than by slot; a bonus nests condition trees under
 // grants. Each needs its own escape hatch, leaving the same four functions wearing a config
 // object.

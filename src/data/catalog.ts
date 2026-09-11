@@ -1,8 +1,8 @@
-// The item/bonus catalogue as composable layers.
+// The item/bonus catalog as composable layers.
 //
-// Until now the catalogue was fixed: `db.fromGlobals()` read `NW_ITEMS` / `NW_BONUSES` once and
+// Until now the catalog was fixed: `db.fromGlobals()` read `NW_ITEMS` / `NW_BONUSES` once and
 // nothing could change it. The editor needs to change it, and custom gear saved *with a build*
-// will need to change it per build -- so the catalogue is now a base plus an ordered list of
+// will need to change it per build -- so the catalog is now a base plus an ordered list of
 // overlays, folded together on demand.
 //
 //     effective = base  <-  workspace overlay  <-  (future) build overlay
@@ -63,7 +63,7 @@ export const isEmpty = (overlay: CatalogOverlay | null | undefined) =>
   GROUPS.every((group) => !Object.keys(overlay[group] ?? {}).length);
 
 /** Anything persisted or pasted has to survive being wrong. */
-export function normaliseOverlay(raw: unknown): CatalogOverlay {
+export function normalizeOverlay(raw: unknown): CatalogOverlay {
   const overlay = emptyOverlay();
   if (!raw || typeof raw !== "object") return overlay;
   for (const group of GROUPS) {
@@ -146,7 +146,7 @@ export function compose(overlays: (CatalogOverlay | null | undefined)[] = []) {
   };
 }
 
-/** A db the engine accepts, built from the composed catalogue. */
+/** A db the engine accepts, built from the composed catalog. */
 export function makeDb(overlays: (CatalogOverlay | null | undefined)[] = []) {
   const { items, bonuses, sectionPresets, slots } = compose(overlays);
   return db.build(items, bonuses, NW_SCHEMA, {
@@ -168,14 +168,14 @@ const clone = (overlay: CatalogOverlay): CatalogOverlay => ({
 });
 
 const inBase = (group: CatalogGroup, key: string) => {
-  const catalogueBase = base();
+  const catalogBase = base();
   if (group === "items")
-    return catalogueBase.items.some((item) => item.id === key);
+    return catalogBase.items.some((item) => item.id === key);
   if (group === "bonuses")
-    return catalogueBase.bonuses.some((bonus) => bonus.id === key);
+    return catalogBase.bonuses.some((bonus) => bonus.id === key);
   if (group === "slots")
-    return catalogueBase.slots.some((slot) => slot.id === key);
-  return catalogueBase.sectionPresets.some((preset) => preset.id === key);
+    return catalogBase.slots.some((slot) => slot.id === key);
+  return catalogBase.sectionPresets.some((preset) => preset.id === key);
 };
 
 /** Save an entry under its id. Ids are frozen at creation (`nextId`, below) and never
@@ -292,7 +292,7 @@ export function tombstoneIds(
 
 // --- portable files (phase 7) -------------------------------------------------------------
 
-/** Everything in the composed catalogue this build depends on that base does not already
+/** Everything in the composed catalog this build depends on that base does not already
  *  provide - what a download has to carry to resolve identically elsewhere. */
 export function referencedOverlay(db: Db, build: Build): CatalogOverlay {
   const itemIds = new Set<string>();
@@ -337,7 +337,7 @@ export function referencedOverlay(db: Db, build: Build): CatalogOverlay {
     }
   }
 
-  // Build reference maps for base catalogue
+  // Build reference maps for base catalog
   const baseItems = new Map(base().items.map((i) => [i.id, i]));
   const baseBonuses = new Map(base().bonuses.map((b) => [b.id, b]));
 
@@ -345,7 +345,7 @@ export function referencedOverlay(db: Db, build: Build): CatalogOverlay {
 
   // Emit only items absent from base or not deep-equal to it. An overlay entry is keyed by the
   // id it is stored under and db.ts re-indexes it by the entry's own `id`, so the two must
-  // agree: one emitted under someone else's id vanishes from the catalogue on import.
+  // agree: one emitted under someone else's id vanishes from the catalog on import.
   for (const id of itemIds) {
     const item = db.get(id);
     if (!item) continue;
@@ -606,7 +606,7 @@ function occurrenceTargets(when: ConditionWhen | undefined, out: string[]) {
  * over one value -- or shadowing a `BuildContext` field outright) and its `visibleWhen`, every
  * `point_assignment` slot's `filter`, and every `item_picker` slot's `filter`/`tags` selector.
  * Standalone from `validate()` below since it needs only the slot list, not a composed
- * catalogue.
+ * catalog.
  */
 export function validateSlots(slots: Slot[]): LintFinding[] {
   const findings: LintFinding[] = [];
@@ -812,7 +812,7 @@ function slotResolver(slots: Slot[]): (slotId: string) => Slot | undefined {
  * reference that exists but belongs to a different section (a preset can only touch its own
  * section), or a reference whose slot type doesn't match the field it was declared under (e.g.
  * an `item_picker` slot id under `assignments`). Standalone from `validate()` below, same as
- * `validateSlots`, since it needs only the slot/preset lists, not a composed catalogue.
+ * `validateSlots`, since it needs only the slot/preset lists, not a composed catalog.
  */
 export function validatePresets(
   presets: SectionPreset[],
@@ -1006,11 +1006,11 @@ export function validateParamReaders(
 }
 
 /**
- * Lint the composed catalogue. Warnings are things that are probably a mistake; errors are
+ * Lint the composed catalog. Warnings are things that are probably a mistake; errors are
  * things the engine will misread or silently drop.
  */
 /**
- * Lint every `ItemPickerSlot.default` against the catalogue: an id that does not exist, or is
+ * Lint every `ItemPickerSlot.default` against the catalog: an id that does not exist, or is
  * not one of that slot's own candidates, leaves the slot quietly empty in every fresh build.
  * Split out of `validateSlots` because it is the one slot rule needing the item list too.
  */
@@ -1402,7 +1402,7 @@ export function validate(
     ...itemPickerFilters,
     ...pointAssignmentFilters,
   ]);
-  // The class vocabulary is whatever the catalogue publishes at `class` -- there is no
+  // The class vocabulary is whatever the catalog publishes at `class` -- there is no
   // class param to read options off any more. Falls back to a class *param*'s options when one
   // exists, so an overlay that still declares the old shape keeps linting sensibly.
   // Blank values are excluded either way: "" is not a class an item may be restricted to, and
@@ -1889,6 +1889,6 @@ export function validate(
 }
 
 // `toItemsFile`/`toBonusesFile`/`toSlotsFile` -- regenerating the shipped data/*.json files
-// from the composed catalogue -- live in `catalogExport.ts`, not here: that keeps this
+// from the composed catalog -- live in `catalogExport.ts`, not here: that keeps this
 // module free of the maintainer-only export code so it can be dynamic-imported and left
 // unfetched unless maintainer mode is on (see LayerExportModal.vue).

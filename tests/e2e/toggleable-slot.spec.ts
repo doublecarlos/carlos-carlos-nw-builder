@@ -119,7 +119,7 @@ test.describe("toggleable slot", () => {
     expect(toggleable!.x).toBe(ordinary!.x);
   });
 
-  // A row grown by a compare note used to re-centre the label column over the taller row,
+  // A row grown by a compare note used to re-center the label column over the taller row,
   // floating the checkbox away from the control it belongs to.
   test("keeps the box on the picker's line when a compare note grows the row", async ({
     page,

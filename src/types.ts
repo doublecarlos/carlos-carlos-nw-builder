@@ -38,7 +38,7 @@ export interface RoleDef {
 /** A whole category of items whose own stat line is scaled by a build parameter -- mount and
  * companion bolster, where the game multiplies the item's every stat by `1 + bolster`.
  *
- * Declared as data so "which items scale" is a catalogue question rather than a hardcoded
+ * Declared as data so "which items scale" is a catalog question rather than a hardcoded
  * filter list in the engine: `applies` is the same `{ filter, tags }` selector `optionsFrom`
  * uses, so an overlay item opts in by carrying a tag, with no code or schema edit. The factor
  * is read from the `build_parameter` at `param`, which is where the value's range, default and
@@ -115,10 +115,10 @@ export interface BuildParameterSlot extends SlotVisibility {
   quick?: boolean;
   default?: string | number | boolean;
   options?: { value: string; label: string }[];
-  /** `list` only: derive the option set from the item catalogue instead of enumerating it
+  /** `list` only: derive the option set from the item catalog instead of enumerating it
    * inline, so "add a value" becomes "add an item" and happens entirely in the item editor.
    * Same `filter` XOR `tags` selector `ItemPickerSlot` uses, resolved by db.ts's `build()`
-   * against the *composed* catalogue -- an overlay-added item carrying the tag becomes an
+   * against the *composed* catalog -- an overlay-added item carrying the tag becomes an
    * option with no slot edit at all.
    *
    * Mutually exclusive with `options` (catalog.ts's `validateSlots` enforces all three rules).
@@ -418,7 +418,7 @@ export interface Item {
    * Independent of `hideFromPicker`; setting both is the ordinary retirement.
    * `validateReplacements` reports cycles and dangling ids. */
   replacedBy?: string | ItemReplacement;
-  /** In-game internal item identifiers (`Hitem` in a demo record) that this catalogue entry
+  /** In-game internal item identifiers (`Hitem` in a demo record) that this catalog entry
    * stands for. The relation is many-to-many. Several game items routinely collapse onto one
    * entry -- different ranks of the same enchantment, or a mount's four rarity tiers. One game
    * item also spreads across several entries when its stats depend on where it is slotted: a
@@ -686,8 +686,8 @@ export interface Db {
   bonusById: Map<string, Bonus>;
   bonusMembers: Map<string, string[]>;
   itemsByTag: Map<string, string[]>;
-  /** Game `Hitem` -> every catalogue item id claiming it, in catalogue order. Built from base
-   *  catalogue + active overlay, so a layer can add mappings the shipped catalogue does not
+  /** Game `Hitem` -> every catalog item id claiming it, in catalog order. Built from base
+   *  catalog + active overlay, so a layer can add mappings the shipped catalog does not
    *  have. Usually one claimant, but one in-game item is modelled as several entries whenever
    *  its stats depend on where it is slotted -- an enchantment grants power in an offense slot,
    *  defense in a defense slot and forte in the utility slot, so all three entries claim the
@@ -716,7 +716,7 @@ export interface Db {
   bonusesFor(item: Item): BonusCandidate[];
 }
 
-// --- catalogue overlay (catalog.ts) ----------------------------------------------------------
+// --- catalog overlay (catalog.ts) ----------------------------------------------------------
 
 export interface CatalogOverlay {
   items: Record<string, Item | null>;

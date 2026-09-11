@@ -1,4 +1,4 @@
-// The resolved-build pipeline: fold the catalogue overlays into a `db`, run the engine over
+// The resolved-build pipeline: fold the catalog overlays into a `db`, run the engine over
 // the active (and, if picked, compare) build.
 import { computed, markRaw } from "vue";
 import * as catalog from "../data/catalog";
@@ -14,7 +14,7 @@ type Resolution =
   | { ok: false; message: string; stack: string };
 
 /**
- * Catalogue layers, lowest priority first. The shipped data is the base (inside
+ * Catalog layers, lowest priority first. The shipped data is the base (inside
  * `catalog.makeDb`); everything here is folded over it.
  *
  * Enabled layers come first (already reversed by the store, so the topmost layer folds
@@ -85,7 +85,7 @@ export const bonusById = computed<Map<string, EvaluatedBonus>>(() =>
     : new Map(),
 );
 
-/** Summarised here so the tab can show it without mounting the inspector. Matches
+/** Summarized here so the tab can show it without mounting the inspector. Matches
  * BonusInspector.vue's own `visibleBonuses` filter, so the tab badge and the panel it opens
  * never disagree on the total. */
 export const bonusCounts = computed(() => {

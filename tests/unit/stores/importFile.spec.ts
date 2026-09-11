@@ -35,7 +35,7 @@ const bundleText = (storage: typeof import("../../../src/storage/storage")) =>
     storage.SCHEMA_VERSION,
   );
 
-/** An export envelope without `catalog`, so nothing reads as catalogue-stale. */
+/** An export envelope without `catalog`, so nothing reads as catalog-stale. */
 const enveloped = (kind: string, data: unknown, v = 1) =>
   JSON.stringify({ v, kind, data });
 
@@ -104,7 +104,7 @@ describe("importFile store", () => {
     expect(importFile.pending.value?.layers[0].name).toBe("Bundled layer");
   });
 
-  it("recognises the same file imported twice as what is already here", async () => {
+  it("recognizes the same file imported twice as what is already here", async () => {
     const { storage, importFile } = await freshStores();
     const text = bundleText(storage);
     importAll(importFile, text, "nw-bundle.json");

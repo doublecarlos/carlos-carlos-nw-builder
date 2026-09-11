@@ -1,10 +1,10 @@
-// Searchable text for one catalogue item, so the picker's typeahead can match what an item
+// Searchable text for one catalog item, so the picker's typeahead can match what an item
 // *does* -- its stats, and the bonuses it belongs to -- not just what it is called.
 //
 // Split into buckets because the picker options menu turns each off independently. A bonus
 // payload's stats count as stat text: "severity" should find the gear that grants it.
 //
-// Built statically off the catalogue rather than off the picker's live preview lines, which
+// Built statically off the catalog rather than off the picker's live preview lines, which
 // matters most for bonuses: a bonus contributes the same searchable text whether it is already
 // active, only partly unlocked, or unreachable in the current build, so searching "gladiator"
 // finds the pieces of a set that has not been completed yet. It also keeps this independent of
@@ -63,8 +63,8 @@ export interface ItemSearchText {
   bonus: string;
 }
 
-/** Per-`Db` memo: the text for an item never changes while the catalogue it came from is alive,
- *  and a rebuilt Db (a catalogue overlay edit) simply gets a fresh map. */
+/** Per-`Db` memo: the text for an item never changes while the catalog it came from is alive,
+ *  and a rebuilt Db (a catalog overlay edit) simply gets a fresh map. */
 const cache = new WeakMap<Db, Map<string, ItemSearchText>>();
 
 /**

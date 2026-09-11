@@ -6,7 +6,7 @@
 // or, with `hidePreview`, nothing but the name.
 //
 // A native <datalist> was considered and rejected: it cannot show item level and a stat
-// preview per row, and its keyboard behaviour is not controllable. This is ~120 lines instead.
+// preview per row, and its keyboard behavior is not controllable. This is ~120 lines instead.
 //
 // The component owns only its own transient UI state (open / query / highlight). The chosen
 // value is `model` and every change leaves via `update:model`, so the single build document
@@ -40,9 +40,9 @@ const props = withDefaults(
      * fallen out of it (e.g. a class change narrowing `allowedClass`). */
     selectedItem?: Item | null;
     invalid?: boolean;
-    /** Catalogue the candidates came from, used only to widen what a typed query matches
+    /** Catalog the candidates came from, used only to widen what a typed query matches
      * (stats and bonus names, via `itemSearchText`). Separate from `bonusPreview.db` because
-     * it is useful without a live build -- PresetForm has a catalogue but no build to resolve
+     * it is useful without a live build -- PresetForm has a catalog but no build to resolve
      * against. Omit it and the dropdown filters on item names alone, as it always did. */
     db?: Db | null;
     /** Build-editor context for a bonus-aware preview: each candidate is hypothetically
@@ -261,7 +261,7 @@ const displayMap = computed(
 );
 
 /** The off-screen haystack, limited to whichever picker-option buckets are on.
- *  `itemSearchText` memoizes per catalogue, so this is a lookup and a join, not a rebuild. */
+ *  `itemSearchText` memoizes per catalog, so this is a lookup and a join, not a rebuild. */
 function searchTextFor(db: Db | null, item: Item) {
   const parts: string[] = [];
   // The exactly-named item needs its id here too, or ComboBox filters the row back out.
@@ -276,7 +276,7 @@ function searchTextFor(db: Db | null, item: Item) {
 }
 
 /** Map items to the generic {value, label} format ComboBox expects, plus that `search` blob.
- *  `label` stays the catalogue name even where the row draws a shortened one: it is what the
+ *  `label` stays the catalog name even where the row draws a shortened one: it is what the
  *  query matches against. */
 const options = computed(() => {
   const db = props.db;

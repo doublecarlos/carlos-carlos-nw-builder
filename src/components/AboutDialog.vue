@@ -90,7 +90,7 @@ defineEmits<{ close: [] }>();
       >
         {{ DISCLAIMER }}
         <br />
-        Released under the MIT licence.
+        Released under the MIT license.
       </p>
     </div>
   </BaseModal>

@@ -64,7 +64,7 @@ export async function parkCursorOnRow(page: Page, slotId: string) {
 
 /**
  * Moves focus off whatever field or row holds it, the precondition for any shortcut guarded by
- * `isFormControl`. Clicks the header's top-left corner rather than its centre: the bar is a row
+ * `isFormControl`. Clicks the header's top-left corner rather than its center: the bar is a row
  * of controls, and its middle is whichever one happens to land there at the current width.
  */
 export async function blurToHeader(page: Page) {
@@ -192,7 +192,7 @@ export function className(classId: string): string {
 
 /** Picks an option from a ComboBox.vue instance (the compare picker, a section's "copy from"
  * picker, …) -- same click-to-open/click-the-row interaction as `chooseItem` above, just over
- * a fixed option list instead of the item catalogue. */
+ * a fixed option list instead of the item catalog. */
 export async function chooseCombo(combo: Locator, label: string) {
   await combo.getByTestId("picker-input").click();
   await combo.getByText(label, { exact: true }).click();

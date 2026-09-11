@@ -1,4 +1,4 @@
-// db.ts's `itemByGameId`: the game `Hitem` -> claiming catalogue item ids index the game
+// db.ts's `itemByGameId`: the game `Hitem` -> claiming catalog item ids index the game
 // importer will resolve against. Exercised through catalog.makeDb so "base"/"overlay" mean what the ticket
 // means by those words -- db.build() itself has no concept of either, it just indexes
 // whatever composed item list it's handed.
@@ -19,9 +19,9 @@ describe("Db.itemByGameId", () => {
     expect(built.itemByGameId.get("Base_Gid")).toEqual(["a"]);
   });
 
-  it("is empty when nothing in the composed catalogue carries gameIds", () => {
+  it("is empty when nothing in the composed catalog carries gameIds", () => {
     // Spelled out as an explicit item list rather than `catalog.makeDb([])`: the shipped
-    // catalogue authors gameIds of its own now, so base is no longer an example of "nothing".
+    // catalog authors gameIds of its own now, so base is no longer an example of "nothing".
     const built = db.build(
       [{ id: "a", name: "A", filter: "gear_ring" }],
       [],
@@ -75,7 +75,7 @@ describe("Db.itemByGameId", () => {
     expect(built.itemByGameId.get("Gid_Two")).toEqual(["multi"]);
   });
 
-  it("keeps every item claiming one game id, in catalogue order", () => {
+  it("keeps every item claiming one game id, in catalog order", () => {
     // One in-game enchantment is modelled here as its offense and defense forms; both carry
     // the `Hitem` the game records, and demo-slots.ts picks between them by slot.
     const overlay = catalog.upsert(
@@ -357,7 +357,7 @@ describe("forSlot tag-based item_picker resolution", () => {
 
   it("orders tag-resolved candidates the same way a filter-resolved slot does", () => {
     // None of these fixtures carry an `il`, so they all tie there and fall through to the name
-    // tiebreak -- which is the common case in this catalogue, not an edge one.
+    // tiebreak -- which is the common case in this catalog, not an edge one.
     const names = testDb.forSlot("companions.universal").map((i) => i.name);
     expect(names).toEqual([...names].sort((a, b) => a.localeCompare(b)));
   });
@@ -399,7 +399,7 @@ describe("forSlot tag-based item_picker resolution", () => {
 
 // Picker candidate order: item level descending, name ascending as tiebreak. iL leads because
 // it is what the picker already renders per row; the name tiebreak matters more than it looks,
-// since large parts of this catalogue carry no `il` at all or share one value across a whole
+// since large parts of this catalog carry no `il` at all or share one value across a whole
 // category, leaving name to do the entire sort there.
 describe("forSlot candidate ordering", () => {
   const slotsData: SlotsData = {

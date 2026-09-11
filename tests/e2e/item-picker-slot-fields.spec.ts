@@ -3,7 +3,7 @@
 // "- empty -" row in the dropdown), `visibleWhen` (scope the row to when it is relevant), and an
 // item-declared `inlineRepetition` (the pick repeats N times, with a stepper beside the picker).
 //
-// Each case drives a slot this spec authors itself, imported as a build-level catalogue
+// Each case drives a slot this spec authors itself, imported as a build-level catalog
 // overlay: an overlay re-declares a shipped slot by id, so the fixtures here own what they
 // assert instead of riding on whatever data/slots.json happens to say.
 import { test, expect, type Page } from "@playwright/test";

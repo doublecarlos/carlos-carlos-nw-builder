@@ -1,4 +1,4 @@
-// Wizard state for "Import from game": parse a demo file, preview what each loadout recognises,
+// Wizard state for "Import from game": parse a demo file, preview what each loadout recognizes,
 // and commit the picked ones as new builds. A store, not component state, so GameImport.vue
 // stays a thin renderer.
 import { computed, reactive, ref } from "vue";
@@ -22,16 +22,16 @@ import type { ImportReport } from "../lib/demo-import";
 export type WizardStep = 1 | 2 | 3 | 4;
 
 /** One imported build with its report, one tab per entry. `character`/`loadout` are kept so
- *  `mapUnrecognisedItem` can re-run `buildFromLoadout` after `_snapshot` is cleared. */
+ *  `mapUnrecognizedItem` can re-run `buildFromLoadout` after `_snapshot` is cleared. */
 export interface CommittedReport {
   buildId: string;
   buildName: string;
   report: ImportReport;
   character: DemoCharacter;
   loadout: DemoLoadout;
-  /** Bag/slot of every outcome that was "unrecognised" at commit time, by outcome index. A
+  /** Bag/slot of every outcome that was "unrecognized" at commit time, by outcome index. A
    *  mapped outcome loses its bag/slot, so this is what keeps its row on the report. */
-  unrecognisedOrigin: Map<number, { bag: string; slot: number }>;
+  unrecognizedOrigin: Map<number, { bag: string; slot: number }>;
 }
 
 const _open = ref(false);
@@ -62,11 +62,11 @@ export interface LoadoutRow {
   active: boolean;
   savedAt: number | null;
   itemCount: number;
-  recognisedCount: number;
+  recognizedCount: number;
   defaultName: string;
 }
 
-/** One row per loadout, in file order. Resolves against the live db only to count recognised
+/** One row per loadout, in file order. Resolves against the live db only to count recognized
  *  items and name the build; writes nothing. */
 export const rows = computed<LoadoutRow[]>(() => {
   const snap = _snapshot.value;
@@ -82,7 +82,7 @@ export const rows = computed<LoadoutRow[]>(() => {
         active: loadout.active,
         savedAt: loadout.savedAt,
         itemCount: loadout.items.filter((item) => item.gameId != null).length,
-        recognisedCount: report.counts.imported,
+        recognizedCount: report.counts.imported,
         defaultName: build.name,
       });
     }
@@ -207,10 +207,10 @@ export function commit() {
   builds.importBuilds(newBuilds, false, layers.enabledOverlays.value);
   _reports.value = newBuilds.map((build, i) => {
     const report = newReports[i];
-    const unrecognisedOrigin = new Map<number, { bag: string; slot: number }>();
+    const unrecognizedOrigin = new Map<number, { bag: string; slot: number }>();
     report.outcomes.forEach((outcome, index) => {
-      if (outcome.kind === "unrecognised") {
-        unrecognisedOrigin.set(index, { bag: outcome.bag, slot: outcome.slot });
+      if (outcome.kind === "unrecognized") {
+        unrecognizedOrigin.set(index, { bag: outcome.bag, slot: outcome.slot });
       }
     });
     return {
@@ -219,20 +219,20 @@ export function commit() {
       report,
       character: newContexts[i].character,
       loadout: newContexts[i].loadout,
-      unrecognisedOrigin,
+      unrecognizedOrigin,
     };
   });
   _step.value = 4;
 
-  const recognised = newReports.reduce((sum, r) => sum + r.counts.imported, 0);
+  const recognized = newReports.reduce((sum, r) => sum + r.counts.imported, 0);
   const total = newReports.reduce(
     (sum, r) =>
-      sum + r.counts.imported + r.counts.unrecognised + r.counts.overflow,
+      sum + r.counts.imported + r.counts.unrecognized + r.counts.overflow,
     0,
   );
   showNotice(
     `Imported ${newBuilds.length} build${newBuilds.length === 1 ? "" : "s"} from game` +
-      (total ? ` (${recognised}/${total} items recognised)` : ""),
+      (total ? ` (${recognized}/${total} items recognized)` : ""),
     { label: "View import report", run: openReport },
   );
 }
@@ -241,7 +241,7 @@ export function commit() {
  *  place. Re-mapping first retracts the game id from any claimant sharing the new item's
  *  `filter`, the invariant catalog.ts validates; claimants under other filters are the same
  *  in-game item's other slot-dependent forms, not a mapping being corrected. */
-export function mapUnrecognisedItem(
+export function mapUnrecognizedItem(
   reportIndex: number,
   outcomeIndex: number,
   itemId: string,
@@ -249,12 +249,12 @@ export function mapUnrecognisedItem(
   const entry = _reports.value[reportIndex];
   const outcome = entry?.report.outcomes[outcomeIndex];
   // The "notInDemo" check narrows the union so every `outcome.gameId` read below is safe; an
-  // outcome in `unrecognisedOrigin` can never actually be one.
+  // outcome in `unrecognizedOrigin` can never actually be one.
   if (
     !entry ||
     !outcome ||
     outcome.kind === "notInDemo" ||
-    !entry.unrecognisedOrigin.has(outcomeIndex)
+    !entry.unrecognizedOrigin.has(outcomeIndex)
   )
     return;
 

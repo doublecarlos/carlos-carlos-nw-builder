@@ -44,7 +44,7 @@ test.describe("selecting a layer replaces the build editor", () => {
     const layer = layerRow(page, "Layer 1");
     await layer.locator(".nav-name").click();
 
-    // The layer editor is visible. Find the head item in the composed catalogue.
+    // The layer editor is visible. Find the head item in the composed catalog.
     const searchBox = page.locator(".editor-search");
     await searchBox.fill(HEAD_ITEM);
     await page.locator(".editor-row", { hasText: HEAD_ITEM }).click();

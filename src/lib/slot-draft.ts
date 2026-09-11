@@ -4,7 +4,7 @@
 //
 // `passthrough` is Slot's own wrinkle: fields the form doesn't edit (`visibleWhen` today) must
 // be *preserved*, not dropped, since editing a shipped param's label must not silently un-scope
-// it; every other draft here drops what it doesn't recognise, this one inverts that. It has to
+// it; every other draft here drops what it doesn't recognize, this one inverts that. It has to
 // live alongside the draft rather than inside it (`buildDraft` returns only the `SlotDraft`
 // shape `useEditorDraft` diffs/undoes), so `toSlot` takes it as part of its context.
 import {

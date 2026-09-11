@@ -68,7 +68,7 @@ const statParts = (get: (key: StatKey) => unknown, limit: number) => {
  *
  * `factor` is the caller's `itemScaleFactor` (mount/companion bolster), so a candidate row
  * previews what the item would actually contribute to *this* build rather than its unscaled
- * catalogue line -- otherwise comparing two mounts in the picker would rank them by numbers
+ * catalog line -- otherwise comparing two mounts in the picker would rank them by numbers
  * neither one ends up having.
  */
 export const itemPreview = (
