@@ -1,4 +1,4 @@
-import { ref, type Ref } from "vue";
+import { onScopeDispose, ref, type Ref } from "vue";
 import { useEventListener, useTimeoutFn } from "@vueuse/core";
 import { isFormControl } from "./focus";
 import { useEscapeToClose } from "./useEscapeToClose";
@@ -31,42 +31,50 @@ export interface HoverPosition {
  * card stop appearing until an unrelated gear change: `editing` used to latch true on *any*
  * focusin and nothing ever set it back, since only a picker's blur-to-`<body>` (a focusout with
  * no matching focusin) reset it.
+ *
+ * `suppressUntilPointerMoves` is for programmatic scrolls (keyboard cursor, jumps): the row
+ * left under a still pointer gets no card until the pointer moves.
  */
 export function useHoverCard(
   tooltip: Ref<InstanceType<typeof BasePopover> | null>,
   hasItem: (slotId: string, itemId?: string) => boolean,
 ) {
   const hover = ref<HoverPosition | null>(null);
-  /** Stashed arguments for the hover timer callback, since the timer delay varies. */
-  const hoverArgs = ref<{
+  /** The row waiting to open, kept for the hover timers and, while suppressed, for the pointer
+   *  move that lifts suppression. Its rect is read at open time because the row may still be
+   *  scrolling when the pointer enters it. */
+  let pending: {
     slotId: string;
     itemId?: string;
-    rect: DOMRect;
+    row: HTMLElement;
     x: number;
-  } | null>(null);
+  } | null = null;
   let lastHideAt = 0; // Date.now() of the last close, for the "resume" fast path
   let editing = false; // a real form control has focus: suppress the card so it cannot cover a dropdown
+  /** No card until the pointer moves, after a programmatic scroll. */
+  let suppressed = false;
+  /** First pointer position seen after arming; only a move away from it lifts suppression. */
+  let baseline: { x: number; y: number } | null = null;
+  /** Stops the window `mousemove` listener, which exists only while suppressed. */
+  let stopPointerWatch: (() => void) | null = null;
 
-  const { start: startHoverTimer, stop: stopHoverTimer } = useTimeoutFn(() => {
-    const args = hoverArgs.value;
-    if (args) {
-      tooltip.value?.place(args.rect, args.x);
-      hover.value = { slotId: args.slotId, itemId: args.itemId };
+  function openPending() {
+    if (pending) {
+      tooltip.value?.place(pending.row.getBoundingClientRect(), pending.x);
+      hover.value = { slotId: pending.slotId, itemId: pending.itemId };
     }
-    hoverArgs.value = null;
-  }, HOVER_DELAY_MS);
+    pending = null;
+  }
+
+  const { start: startHoverTimer, stop: stopHoverTimer } = useTimeoutFn(
+    openPending,
+    HOVER_DELAY_MS,
+  );
 
   // Immediate variant for the "resume" fast path - sweeping down a list should feel
   // like one continuous hover, not a fresh delay per row.
   const { start: startHoverTimerNow, stop: stopHoverTimerNow } = useTimeoutFn(
-    () => {
-      const args = hoverArgs.value;
-      if (args) {
-        tooltip.value?.place(args.rect, args.x);
-        hover.value = { slotId: args.slotId, itemId: args.itemId };
-      }
-      hoverArgs.value = null;
-    },
+    openPending,
     0,
   );
 
@@ -79,10 +87,17 @@ export function useHoverCard(
     stopHoverTimer();
     stopHoverTimerNow();
     stopLeaveTimer();
-    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
-    const x = event.clientX;
+    pending = {
+      slotId,
+      itemId,
+      row: event.currentTarget as HTMLElement,
+      x: event.clientX,
+    };
+    if (suppressed) {
+      notePointer(event.clientX, event.clientY);
+      return;
+    }
     const resuming = Date.now() - lastHideAt < HOVER_RESUME_MS;
-    hoverArgs.value = { slotId, itemId, rect, x };
     if (resuming) startHoverTimerNow();
     else startHoverTimer();
   }
@@ -90,6 +105,7 @@ export function useHoverCard(
   function onRowLeave() {
     stopHoverTimer();
     stopHoverTimerNow();
+    pending = null;
     // Grace period, not an instant close: the card sits outside the row's own bounds, so
     // reaching it always crosses this "gap" first. Without the grace period the card would
     // vanish the instant the pointer leaves the row, before it ever reaches the card.
@@ -137,6 +153,41 @@ export function useHoverCard(
     editing = false;
   }
 
+  /** Holds the card until the pointer moves, so a row scrolled under a still pointer gets no
+   *  card. Also ends the "resume" session: the next card waits the full delay. */
+  function suppressUntilPointerMoves() {
+    suppressed = true;
+    baseline = null;
+    lastHideAt = 0;
+    stopHoverTimer();
+    stopHoverTimerNow();
+    pending = null;
+    stopPointerWatch ??= useEventListener(window, "mousemove", (event) =>
+      notePointer(event.clientX, event.clientY),
+    );
+  }
+
+  /** The first event after arming sets the baseline instead of counting as a move: a browser
+   *  may replay a `mousemove` at the pointer's unchanged spot once a scroll settles. A move away
+   *  from the baseline lifts suppression and opens the row under the pointer, whose `mouseenter`
+   *  already fired. */
+  function notePointer(x: number, y: number) {
+    if (!baseline) {
+      baseline = { x, y };
+      return;
+    }
+    if (baseline.x === x && baseline.y === y) return;
+    suppressed = false;
+    stopPointerWatch?.();
+    stopPointerWatch = null;
+    if (pending) {
+      pending.x = x;
+      startHoverTimer();
+    }
+  }
+
+  onScopeDispose(() => stopPointerWatch?.());
+
   useEventListener(window, "scroll", onScroll, true);
 
   useEscapeToClose(() => close());
@@ -150,5 +201,6 @@ export function useHoverCard(
     onFocusIn,
     onFocusOut,
     closeCard: close,
+    suppressUntilPointerMoves,
   };
 }
