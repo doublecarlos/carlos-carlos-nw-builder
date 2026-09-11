@@ -9,6 +9,7 @@ import { CirclePlus } from "@lucide/vue";
 import ComboBox from "../ui/ComboBox.vue";
 import TokenInput from "../ui/TokenInput.vue";
 import BaseInput from "../ui/BaseInput.vue";
+import BaseLink from "../ui/BaseLink.vue";
 import DraftFormBar from "../ui/DraftFormBar.vue";
 import FormField from "../ui/FormField.vue";
 import FormGrid from "../ui/FormGrid.vue";
@@ -47,6 +48,9 @@ const props = withDefaults(
      *  slot key, see bonusDraftRegistry.ts). Empty on the standalone "Bonuses" page,
      *  which isn't embedded in ItemBonuses and has no registry to register into. */
     registryId?: string;
+    /** The item whose form embeds this bonus (ItemBonuses case). Its own "Granted by" entry
+     *  is plain text since it is already on screen. */
+    currentItemId?: string;
   }>(),
   {
     source: null,
@@ -70,6 +74,8 @@ const emit = defineEmits<{
   delete: [];
   duplicate: [];
   revert: [];
+  /** A "Granted by" member link was clicked: open that item in the editor. */
+  "open-item": [itemId: string];
 }>();
 
 function buildDraft(bonus: Bonus | null | undefined): bonusDraft.BonusDraft {
@@ -175,9 +181,10 @@ const { draft, error, dirty, displayId, scheduleSnapshot, scheduleEmit } =
 
 const members = computed(() => {
   if (!props.source) return [];
-  return (props.db.bonusMembers.get(props.source.id) ?? []).map(
-    (id) => props.db.get(id)?.name ?? id,
-  );
+  return (props.db.bonusMembers.get(props.source.id) ?? []).map((id) => ({
+    id,
+    name: props.db.get(id)?.name ?? id,
+  }));
 });
 
 const stackingOptions = [
@@ -280,7 +287,16 @@ if (bonusDraftRegistry && props.registryId) {
     <p class="text-muted">
       <template v-if="members.length">
         Granted by <strong>{{ members.length }}</strong> item(s) -
-        {{ members.join(", ") }}.
+        <template v-for="(member, index) in members" :key="member.id"
+          ><template v-if="index > 0">, </template
+          ><span v-if="member.id === currentItemId">{{ member.name }}</span
+          ><BaseLink
+            v-else
+            data-testid="bonus-member-link"
+            @click="$emit('open-item', member.id)"
+            >{{ member.name }}</BaseLink
+          ></template
+        >.
       </template>
       <template v-else>
         Not granted by any item yet -- attach this id from an item's Bonuses

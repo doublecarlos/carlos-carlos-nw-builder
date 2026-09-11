@@ -810,18 +810,25 @@ async function resetAll(event: MouseEvent) {
   showNotice("Discarded every change - back to the shipped data");
 }
 
-/** Jump to whatever a validation finding points at, switching section if needed. Findings
- * carry `kind` precisely so this doesn't have to guess from the id/name shape. */
-function selectFinding(finding: LintFinding) {
-  if (!finding.name) return;
-  const group = GROUP_OF_KIND[finding.kind];
+/** Shows `id` in `group`, switching section if needed. */
+function jumpTo(group: CatalogGroup, id: string) {
   section.value = group;
-  selectedBySection[group] = finding.name;
+  selectedBySection[group] = id;
   router.apply({
     section: group === "items" ? null : group,
-    ...routeParamsFor(group, finding.name),
+    ...routeParamsFor(group, id),
   });
 }
+
+/** Jump to whatever a validation finding points at. Findings carry `kind` precisely so this
+ * doesn't have to guess from the id/name shape. */
+function selectFinding(finding: LintFinding) {
+  if (!finding.name) return;
+  jumpTo(GROUP_OF_KIND[finding.kind], finding.name);
+}
+
+/** A bonus form's "Granted by" link: open that item. */
+const openItem = (itemId: string) => jumpTo("items", itemId);
 
 // The per-section wrappers: each names the payload its own form emits, then defers.
 const onSave = ({ item }: { item: Item }) =>
@@ -1187,6 +1194,7 @@ onUnmounted(() => {
           @save-bonus="onSaveBonus"
           @delete-bonus="onDeleteBonus"
           @update-bonus="onUpdateBonus"
+          @open-item="openItem"
         />
         <BonusForm
           v-else-if="section === 'bonuses'"
@@ -1205,6 +1213,7 @@ onUnmounted(() => {
           @delete="onDeleteBonusTop"
           @duplicate="duplicateBonus"
           @revert="onRevertBonusTop"
+          @open-item="openItem"
         />
         <SlotForm
           v-else-if="section === 'slots'"

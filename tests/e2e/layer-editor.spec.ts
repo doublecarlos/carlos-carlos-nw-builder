@@ -462,3 +462,47 @@ test.describe("discarding a layer's changes", () => {
     await expect(changed).toHaveCount(0);
   });
 });
+
+test.describe("a bonus's 'Granted by' items", () => {
+  test("each granting item is a link that opens that item in the Items section", async ({
+    page,
+  }) => {
+    const ITEM = "ZZZ Test Granting Item";
+    const BONUS = "ZZZ Test Granted Bonus";
+
+    await openBuilder(page);
+    await addLayer(page);
+    await layerRow(page, "Layer 1").locator(".nav-name").click();
+
+    // Create the item, then add and save one bonus directly in its Bonuses section.
+    await page.getByTestId("new-item").click();
+    await page.getByTestId("item-name-input").fill(ITEM);
+    await setItemFilter(page, "gear_head");
+    await page.getByRole("button", { name: "Save item" }).click();
+
+    await page.getByRole("button", { name: "Add bonus" }).click();
+    const card = page.getByTestId("bonus-card").first();
+    await card.getByTestId("bonus-name-input").fill(BONUS);
+    await card.getByRole("button", { name: "Save bonus" }).click();
+    await expect(card.getByTestId("duplicate-bonus")).toBeVisible();
+
+    // Inside the item's own form the item is plain text: there is nothing to open.
+    await expect(
+      card.getByText(`Granted by 1 item(s) - ${ITEM}.`),
+    ).toBeVisible();
+    await expect(card.getByTestId("bonus-member-link")).toHaveCount(0);
+
+    // From the Bonuses section the same item is a link.
+    await page.getByRole("button", { name: /Bonuses \d+/ }).click();
+    await page.locator(".editor-search").fill(BONUS);
+    await page.locator(".editor-row", { hasText: BONUS }).click();
+    await expect(page.getByTestId("bonus-name-input")).toHaveValue(BONUS);
+
+    const link = page.getByTestId("bonus-member-link");
+    await expect(link).toHaveText(ITEM);
+    await link.click();
+
+    await expect(page.getByTestId("new-item")).toBeVisible();
+    await expect(page.getByTestId("item-name-input")).toHaveValue(ITEM);
+  });
+});
