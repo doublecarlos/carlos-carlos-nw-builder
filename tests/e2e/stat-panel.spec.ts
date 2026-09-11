@@ -1,7 +1,7 @@
 // End-to-end coverage for StatPanel.vue's stat source popover (StatSourceCard.vue): which
 // items/bonuses/pipeline stages fed a given stat's number, one stat at a time.
 import { test, expect } from "@playwright/test";
-import { openBuilder, chooseItem, cursorRow } from "./support/app";
+import { openBuilder, chooseItem, cursorRow, slotRow } from "./support/app";
 import {
   statInfoButton,
   statCard,
@@ -114,6 +114,11 @@ test.describe("stat source popover", () => {
   }) => {
     await openBuilder(page);
     await chooseItem(page, "gear.head", HEAD_ITEM);
+    // From the far end of the list, so landing in view takes a real scroll.
+    await page
+      .getByTestId("editor-column")
+      .evaluate((el) => el.scrollTo(0, el.scrollHeight));
+    await expect(slotRow(page, "gear.head")).not.toBeInViewport();
 
     await statInfoButton(page, "strike").click();
     await statCard(page)
@@ -126,6 +131,7 @@ test.describe("stat source popover", () => {
       "data-cursor-key",
       "slot:gear.head",
     );
+    await expect(slotRow(page, "gear.head")).toBeInViewport();
   });
 
   test("clicking the same button again closes the card", async ({ page }) => {

@@ -4,7 +4,15 @@
 // Sections start collapsed except Gear. That keeps the mounted DOM at ~15 rows
 // on load; expanding everything is ~180 rows, which the browser handles fine -- only one
 // dropdown is ever open, and that is where the per-row cost actually lives. No virtualisation.
-import { computed, reactive, ref, watch, useTemplateRef, nextTick } from "vue";
+import {
+  computed,
+  reactive,
+  ref,
+  watch,
+  useTemplateRef,
+  nextTick,
+  onBeforeUnmount,
+} from "vue";
 import { useActiveElement } from "@vueuse/core";
 import ItemCard from "./game/ItemCard.vue";
 import BasePopover from "./ui/BasePopover.vue";
@@ -54,6 +62,7 @@ import * as layers from "../stores/layers";
 import * as layerEditorUi from "../stores/layerEditorUi";
 import * as goTo from "../stores/goTo";
 import { isMac } from "../lib/platform";
+import { animateScrollTop, type CancelScroll } from "../lib/animate-scroll";
 import type {
   Item,
   EvaluatedBonus,
@@ -736,7 +745,14 @@ function onFocusIn(event: FocusEvent) {
 // left, instead of snapping back to the top of the list.
 const buildScrollEl = useTemplateRef<HTMLElement>("buildScrollEl");
 
+/** The jump scroll in flight, if any. A new jump replaces it and teardown stops it, so no
+ *  late frame ever writes to a stale container. Started by `scrollIntoEditor` below. */
+let cancelJumpScroll: CancelScroll = () => {};
+
+onBeforeUnmount(() => cancelJumpScroll());
+
 watch(buildScrollEl, async (el) => {
+  cancelJumpScroll();
   if (!el) return;
   await nextTick();
   el.scrollTop = editorScroll.buildScrollTop.value;
@@ -752,16 +768,23 @@ function onBuildScroll(event: Event) {
  *  sit flush against the border. */
 const SECTION_TOP_GAP = 6;
 
+/** How many viewport heights of a long jump are animated; the rest is snapped over first. */
+const JUMP_ANIMATED_SCREENS = 2.5;
+
 /**
  * Scrolls `el` to rest just inside the editor's top edge. `clearance` is what has to stay above
- * it -- the section's own sticky header, when the target is a row underneath one.
+ * it: the section's own sticky header, when the target is a row underneath one.
  *
  * Measured against the scroll area's content edge rather than its border box: the list is
  * padded, and a sticky header comes to rest past that padding, so anything landing at the
  * border box top would end up underneath it.
  *
- * Never animated. Smooth scrolling is duration-by-distance and the list is ~8000px tall, so end
- * to end takes about two seconds -- which is latency, for somewhere reached by typing its name.
+ * Animated over a constant quarter second whatever the distance, never with native smooth
+ * scrolling: that is duration-by-distance, and the list is ~8000px tall, so end to end would
+ * take about two seconds. A fixed beat keeps the palette's "typed its name, want it now" case
+ * cheap, while a jump from a link still shows which way the list moved instead of teleporting.
+ * A long jump snaps to within a screen and a half first and glides only that last stretch, so
+ * it reads as arriving from the right direction rather than rows blurring past.
  */
 function scrollIntoEditor(el: HTMLElement, clearance = 0) {
   const container = buildScrollEl.value;
@@ -770,12 +793,17 @@ function scrollIntoEditor(el: HTMLElement, clearance = 0) {
   const inset =
     (parseFloat(style.borderTopWidth) || 0) +
     (parseFloat(style.paddingTop) || 0);
-  container.scrollTop +=
+  const target =
+    container.scrollTop +
     el.getBoundingClientRect().top -
     container.getBoundingClientRect().top -
     inset -
     clearance -
     SECTION_TOP_GAP;
+  cancelJumpScroll();
+  cancelJumpScroll = animateScrollTop(container, target, {
+    maxDistance: container.clientHeight * JUMP_ANIMATED_SCREENS,
+  });
 }
 
 function sectionEl(sectionId: string) {
