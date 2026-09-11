@@ -505,6 +505,7 @@ const {
   openSections,
   toggleCard,
   closeCard,
+  goToSlot,
 } = useStatSourcePopover(result, build, engine.db);
 </script>
 
@@ -758,6 +759,7 @@ const {
         :sections="openSections"
         :data-stat-key="openCard.key"
         @close="closeCard"
+        @go-to-slot="goToSlot"
       />
     </BasePopover>
   </BasePanel>

@@ -5,7 +5,7 @@
 // stage's own output (a resolved build's `stages.*`, or an `EngineRow`'s own `itemStats`/
 // `dynamicStats`) rather than recomputing its math, so this can never drift from what the panel
 // displays. Regrouping is all that is left: the pipeline needs stats summed per row, this needs
-// them named per source.
+// them named per source, each linked back to the build row that produced it where there is one.
 import { NW_SCHEMA } from "../data/data";
 import { bonusTitle } from "../lib/format";
 import { assignedRows } from "../lib/inline-repetition";
@@ -14,6 +14,9 @@ import type { ResolvedBuild, Build, Db, StatKey } from "../types";
 export interface StatSource {
   name: string;
   value: number;
+  /** The build row this line came from; absent for a pipeline stage's own line (Rating
+   * contribution, Combined rating, an ability score, Forte), which has no row to jump to. */
+  slotId?: string;
 }
 export interface StatSourceSection {
   title: string;
@@ -21,50 +24,55 @@ export interface StatSourceSection {
   sources: StatSource[];
 }
 
-/** Every equipped item's own stat (pre-bonus, pre-pipeline) -- summed by item name, since the
- * same item in two slots (two rings) contributes twice under one line, not two. */
+/** Every equipped item's own stat (pre-bonus, pre-pipeline), one line per build row: the
+ * same item in two slots (two rings) is two lines, each linking to its own row. */
 function itemSources(result: ResolvedBuild, key: StatKey): StatSource[] {
-  const totals = new Map<string, number>();
+  const out: StatSource[] = [];
   for (const row of result.rows) {
     const value = row.itemStats[key];
     if (!row.item || !value) continue;
-    totals.set(row.item.name, (totals.get(row.item.name) ?? 0) + value);
+    out.push({ name: row.item.name, value, slotId: row.slotId });
   }
-  return [...totals].map(([name, value]) => ({ name, value }));
+  return out;
 }
 
-/** Every point_assignment row's item stat × its count -- the counterpart to `itemSources`
- * above for a slot with no single `ResolvedRow.item` to read (bonus.ts's `collect()` folds
- * these into `assignmentStatsBySlot` for the pipeline; this re-attributes them back to the
- * item that earned them, same reasoning as this file's own module comment). */
+/** Every point_assignment row's item stat × its count, one line per item, each linking to the
+ * slot itself since its items share one build row. The counterpart to `itemSources` above for
+ * a slot with no single `ResolvedRow.item` to read: bonus.ts's `collect()` folds these into
+ * `assignmentStatsBySlot` for the pipeline, and this re-attributes them to the item that
+ * earned them. */
 function assignmentSources(
   db: Db | null | undefined,
   build: Build | null | undefined,
   key: StatKey,
 ): StatSource[] {
   if (!db || !build) return [];
-  const totals = new Map<string, number>();
+  const out: StatSource[] = [];
   for (const slot of db.slots) {
     if (slot.type !== "point_assignment") continue;
     for (const { item, count } of assignedRows(db, build, slot)) {
       if (count <= 0) continue;
       const raw = item[key];
       if (!raw) continue;
-      totals.set(
-        item.name,
-        (totals.get(item.name) ?? 0) + (raw as number) * count,
-      );
+      out.push({
+        name: item.name,
+        value: (raw as number) * count,
+        slotId: slot.id,
+      });
     }
   }
-  return [...totals].map(([name, value]) => ({ name, value }));
+  return out;
 }
 
-/** Every active bonus's applied (post-stacking) contribution to this stat. */
+/** Every active bonus's applied (post-stacking) contribution to this stat, linked to the
+ * bonus's instancing slot. */
 function bonusSources(result: ResolvedBuild, key: StatKey): StatSource[] {
   const out: StatSource[] = [];
   for (const entry of result.bonuses) {
     const value = entry.active ? entry.appliedStats?.[key] : null;
-    if (value) out.push({ name: bonusTitle(entry), value });
+    if (value) {
+      out.push({ name: bonusTitle(entry), value, slotId: entry.slotId });
+    }
   }
   return out;
 }
@@ -75,7 +83,13 @@ function dynamicStatSources(result: ResolvedBuild, key: StatKey): StatSource[] {
   const out: StatSource[] = [];
   for (const row of result.rows) {
     const value = row.dynamicStats[key];
-    if (value) out.push({ name: `${row.item!.name} (dynamic stat)`, value });
+    if (value) {
+      out.push({
+        name: `${row.item!.name} (dynamic stat)`,
+        value,
+        slotId: row.slotId,
+      });
+    }
   }
   return out;
 }
