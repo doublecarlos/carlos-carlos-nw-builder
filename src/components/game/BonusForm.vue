@@ -63,6 +63,7 @@ const props = withDefaults(
     fixedId: null,
     initialDraft: null,
     registryId: "",
+    currentItemId: undefined,
   },
 );
 
