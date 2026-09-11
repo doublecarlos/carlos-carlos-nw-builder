@@ -400,7 +400,7 @@ defineExpose({
             v-if="displayMap.get(option.value)?.preferred"
             class="ml-1 shrink-0 text-accent"
             data-testid="picker-option-preferred"
-            title="the upgraded half, which only a slot preferring its shape takes"
+            title="Preferred"
             >{{ PREFERRED_MARK }}</span
           >
         </span>

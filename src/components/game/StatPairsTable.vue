@@ -39,7 +39,7 @@ defineProps<{
           <div class="flex items-center gap-0.5">
             <IconButton
               v-if="row.onInfo"
-              title="Show contributing sources"
+              title="Show sources"
               class="stat-info-btn flex-none"
               :data-stat-key="row.key"
               @click="row.onInfo"

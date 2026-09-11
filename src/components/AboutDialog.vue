@@ -23,16 +23,13 @@ defineEmits<{ close: [] }>();
   >
     <div class="flex flex-col gap-4 overflow-y-auto p-4">
       <div class="flex flex-col gap-1">
-        <p class="font-semibold">Carlos Carlos' NW Builder</p>
-        <p class="text-muted" data-testid="about-version">
-          Version {{ APP_VERSION }}
+        <p class="text-lg font-semibold">Carlos Carlos' NW Builder</p>
+        <p data-testid="about-version">
+          Version {{ APP_VERSION }} (build {{ APP_COMMIT }})
         </p>
-        <p class="text-xs text-muted" data-testid="about-build">
-          Build {{ APP_COMMIT }}
-        </p>
-        <p class="text-muted">
-          A build planner for Neverwinter. Everything runs in your browser -- no
-          account, no server, nothing sent anywhere.
+        <p>
+          A build planner for Neverwinter. <br />
+          Everything runs locally in your browser.
         </p>
       </div>
 
@@ -81,14 +78,14 @@ defineEmits<{ close: [] }>();
         >
           Maintainer tools
         </BaseCheckbox>
-        <p class="text-xs text-muted">
-          Adds tabs to a layer's export window for regenerating this app's JSON
-          data files. Only useful alongside a checkout of the source.
+        <p>
+          Enables tools to re-export data files. Mostly useful if you have a
+          clone of the source code.
         </p>
       </div>
 
       <p
-        class="border-t border-line pt-3 text-xs text-muted"
+        class="border-t border-line pt-3 text-muted"
         data-testid="about-disclaimer"
       >
         {{ DISCLAIMER }}

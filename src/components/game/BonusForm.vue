@@ -212,7 +212,7 @@ function save() {
     !draft.value.grants.every((grant) => bonusDraft.grantWhenIsComplete(grant))
   ) {
     error.value =
-      "A grant has an unfinished condition -- fill in its value or remove the condition before saving.";
+      "A grant has an unfinished condition; fill in its value or remove the condition before saving.";
     return;
   }
   let bonus: Bonus;
@@ -296,10 +296,7 @@ if (bonusDraftRegistry && props.registryId) {
           @select="$emit('open-item', $event)"
         />.
       </template>
-      <template v-else>
-        Not granted by any item yet -- attach this id from an item's Bonuses
-        section.
-      </template>
+      <template v-else> Not granted by any item. </template>
     </p>
 
     <FormSection sub>Stacking</FormSection>
@@ -324,13 +321,13 @@ if (bonusDraftRegistry && props.registryId) {
       </template>
     </div>
 
-    <FormSection sub>Suppresses these bonuses</FormSection>
+    <FormSection sub>Suppressed bonuses</FormSection>
     <TokenInput
       v-model="draft.excludes"
       data-testid="bonus-excludes-input"
       :options="bonusOptions"
       :allow-free="false"
-      placeholder="bonus to suppress…"
+      placeholder="Bonus to suppress…"
     >
       <template #option="{ option }">
         <BonusOptionRow :option="option" />

@@ -18,7 +18,7 @@ test("a tooltip opens on hover and closes when the pointer leaves", async ({
   await openBuilder(page);
 
   await infoButton(page).hover();
-  await expect(tooltip(page)).toHaveText("Show contributing sources");
+  await expect(tooltip(page)).toHaveText("Show sources");
 
   await page.getByTestId("app-header").hover();
   await expect(tooltip(page)).toBeHidden();

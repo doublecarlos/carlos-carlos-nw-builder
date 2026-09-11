@@ -103,7 +103,7 @@ function unwrap<T>(
     throw new Error(
       raw.v < SCHEMA_VERSION
         ? `This ${expectedKind} was made with an older version of the app and can no longer be opened.`
-        : `This ${expectedKind} was made with a newer version of the app - open it there instead.`,
+        : `This ${expectedKind} was made with a newer version of the app; open it there instead.`,
     );
   }
   return {
@@ -129,7 +129,7 @@ function readEnveloped<T>(key: string, kind: EnvelopeKind): T | null {
     return unwrap<T>(stored, kind).data;
   } catch (error: unknown) {
     showNotice(
-      `${error instanceof Error ? error.message : String(error)} - starting fresh.`,
+      `${error instanceof Error ? error.message : String(error)} Starting fresh.`,
     );
     return null;
   }

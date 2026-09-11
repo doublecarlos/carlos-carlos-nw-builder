@@ -138,3 +138,13 @@ export const statPickerOptions: StatOption[] = NW_SCHEMA.stats.map((s) => ({
 }));
 
 export { finite };
+
+/** Error message for out-of-range errors */
+export function outOfRangeErrorMessage(
+  label: string,
+  current: number | string,
+  min: number | string,
+  max: number | string,
+) {
+  return `${label}: value ${current} must be between ${min} and ${max}`;
+}

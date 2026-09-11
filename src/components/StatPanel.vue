@@ -665,7 +665,7 @@ const {
           >
             <div class="flex items-center">
               <IconButton
-                title="Show contributing sources"
+                title="Show sources"
                 class="stat-info-btn"
                 :data-stat-key="row.key"
                 @click="toggleCard($event, row.key)"

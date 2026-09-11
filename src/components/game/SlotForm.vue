@@ -178,7 +178,7 @@ function save() {
     return;
   }
   if (pathConflict.value) {
-    error.value = `Path "${draft.value.path.trim()}" is already used by ${pathConflict.value} - the two would silently share one value.`;
+    error.value = `Path "${draft.value.path.trim()}" is already used by ${pathConflict.value}; the two would silently share one value.`;
     return;
   }
   emit("save", {
@@ -222,7 +222,7 @@ function save() {
         <ComboBox
           :model-value="draft.section"
           :options="sectionOptions"
-          placeholder="pick a section"
+          placeholder="Pick a section"
           data-testid="slot-section-input"
           @update:model-value="(v) => (draft.section = v)"
         />
@@ -260,7 +260,7 @@ function save() {
       class="mb-2 text-danger"
       data-testid="slot-path-clash"
     >
-      Path "{{ draft.path.trim() }}" is already used by {{ pathConflict }} - the
+      Path "{{ draft.path.trim() }}" is already used by {{ pathConflict }}; the
       two would silently share one value.
     </p>
 

@@ -423,9 +423,7 @@ onKeyStroke(
         <slot name="no-match">no match</slot>
       </ComboBoxMenuRow>
       <ComboBoxMenuRow v-if="hiddenCount" muted presentational>
-        <slot name="more" :count="hiddenCount"
-          >{{ hiddenCount }} more - keep typing</slot
-        >
+        <slot name="more" :count="hiddenCount">{{ hiddenCount }} more</slot>
       </ComboBoxMenuRow>
     </ComboBoxMenu>
   </div>

@@ -26,7 +26,7 @@ const props = withDefaults(
      *  the result list grows and shrinks under it, instead of drifting with its own height. */
     align?: "center" | "top";
     /** The panel's own width and height -- every surface differs, so none is assumed here. */
-    panelClass?: string;
+    panelClass?: string | string[];
   }>(),
   {
     title: undefined,

@@ -45,6 +45,7 @@ import type {
   FilterDefaultsMap,
   FilterFieldsMap,
 } from "../types";
+import { outOfRangeErrorMessage } from "../lib/format";
 
 export const emptyOverlay = (): CatalogOverlay => ({
   items: {},
@@ -468,7 +469,7 @@ function checkParamCondition(
   if (dedicated) {
     report(
       "warn",
-      `${path}: param "${spec.key}" has a dedicated "${dedicated}" condition -- prefer that`,
+      `${path}: param "${spec.key}" has a dedicated "${dedicated}" condition; prefer that`,
     );
   }
 
@@ -478,7 +479,7 @@ function checkParamCondition(
     // condition key -- the bonus would silently never apply.
     report(
       "error",
-      `${path}: param "${spec.key}" is not a build_parameter's path - the condition can never be active`,
+      `${path}: param "${spec.key}" is not a build_parameter's path; the condition can never be active`,
     );
     return;
   }
@@ -492,12 +493,12 @@ function checkParamCondition(
   ) {
     report(
       "error",
-      `${path}: param "${spec.key}" is a number - use atLeast/below/exactly`,
+      `${path}: param "${spec.key}" is a number; use atLeast/below/exactly`,
     );
   } else if (slot.paramType === "boolean" && spec.is === undefined) {
-    report("error", `${path}: param "${spec.key}" is a boolean - use "is"`);
+    report("error", `${path}: param "${spec.key}" is a boolean; use "is"`);
   } else if (slot.paramType === "list" && spec.equals === undefined) {
-    report("error", `${path}: param "${spec.key}" is a list - use "equals"`);
+    report("error", `${path}: param "${spec.key}" is a list; use "equals"`);
   }
 
   if (slot.paramType === "list" && spec.equals !== undefined) {
@@ -527,7 +528,7 @@ function checkConditions(
       // conditions.ts fails closed on an unknown key, so this would silently never apply.
       report(
         "error",
-        `${path}: unknown condition "${key}" - the bonus can never be active`,
+        `${path}: unknown condition "${key}"; the bonus can never be active`,
       );
       continue;
     }
@@ -664,7 +665,7 @@ export function validateSlots(slots: Slot[]): LintFinding[] {
         findings.push({
           level: "error",
           kind: "item",
-          message: `${slot.id}: ${slot.type} slot has both a filter and tags -- pick one, resolving both is ambiguous`,
+          message: `${slot.id}: ${slot.type} slot has both a filter and tags; pick one, resolving both is ambiguous`,
         });
       }
       if (slot.type === "item_picker_list") {
@@ -684,7 +685,7 @@ export function validateSlots(slots: Slot[]): LintFinding[] {
         findings.push({
           level: "error",
           kind: "item",
-          message: `${slot.id}: disallowEmpty needs a default -- without one every fresh build starts in the state it forbids`,
+          message: `${slot.id}: disallowEmpty needs a default; without one every fresh build starts in the state it forbids`,
         });
       }
       continue;
@@ -703,7 +704,7 @@ export function validateSlots(slots: Slot[]): LintFinding[] {
       findings.push({
         level: "error",
         kind: "item",
-        message: `${slot.id}: path "${slot.path}" duplicates ${owner}'s -- they would silently share one value`,
+        message: `${slot.id}: path "${slot.path}" duplicates ${owner}'s; they would silently share one value`,
       });
     } else {
       seenPaths.set(slot.path, slot.id);
@@ -721,7 +722,7 @@ export function validateSlots(slots: Slot[]): LintFinding[] {
           level: "error",
           kind: "slot",
           name: slot.id,
-          message: `${slot.id}: optionsFrom is only meaningful on a list param - this is a ${slot.paramType}`,
+          message: `${slot.id}: optionsFrom is only meaningful on a list param; this is a ${slot.paramType}`,
         });
       }
       if (slot.options) {
@@ -729,7 +730,7 @@ export function validateSlots(slots: Slot[]): LintFinding[] {
           level: "error",
           kind: "slot",
           name: slot.id,
-          message: `${slot.id}: has both options and optionsFrom -- pick one, resolving both is ambiguous`,
+          message: `${slot.id}: has both options and optionsFrom; pick one, resolving both is ambiguous`,
         });
       }
       // Same "exactly one selector" rule `item_picker` has: a slot
@@ -748,7 +749,7 @@ export function validateSlots(slots: Slot[]): LintFinding[] {
           level: "error",
           kind: "slot",
           name: slot.id,
-          message: `${slot.id}: optionsFrom has both a filter and tags -- pick one, resolving both is ambiguous`,
+          message: `${slot.id}: optionsFrom has both a filter and tags; pick one, resolving both is ambiguous`,
         });
       }
     }
@@ -762,7 +763,7 @@ export function validateSlots(slots: Slot[]): LintFinding[] {
         findings.push({
           level: "error",
           kind: "item",
-          message: `${slot.id}: visibleWhen reads its own path "${slot.path}" -- the param would hide itself at some values, with no way to change it back`,
+          message: `${slot.id}: visibleWhen reads its own path "${slot.path}"; the param would hide itself at some values, with no way to change it back`,
         });
       }
     }
@@ -947,7 +948,7 @@ export function validateParamSchema(
         name: slot.id,
         message:
           `${slot.id}: option "${option.value}" is not a ` +
-          `${kind === "role" ? "role in schema.roles" : "stat key in schema.statKeys"} - ` +
+          `${kind === "role" ? "role in schema.roles" : "stat key in schema.statKeys"}; ` +
           `the engine would fall back silently and compute the wrong numbers`,
       });
     }
@@ -996,7 +997,7 @@ export function validateParamReaders(
         kind: "bonus",
         name: bonus.id,
         message:
-          `reads parameter "${path}", but ${slotId} has been removed - the condition ` +
+          `reads parameter "${path}", but ${slotId} has been removed; the condition ` +
           `fails closed, so this bonus silently never applies`,
       });
     }
@@ -1028,7 +1029,7 @@ export function validateSlotDefaults(
         level: "error",
         kind: "slot",
         name: slot.id,
-        message: `${slot.id}: default "${slot.default}" is not an item in the catalogue`,
+        message: `${slot.id}: default "${slot.default}" does not exist`,
       });
       continue;
     }
@@ -1080,7 +1081,7 @@ export function validateReplacements(
         level: "error",
         kind: "item",
         name: item.id,
-        message: `replacedBy "${target}" is not an item in the catalogue`,
+        message: `replacedBy "${target}" does not exist`,
       });
       continue;
     }
@@ -1114,7 +1115,7 @@ export function validateReplacements(
             name: item.id,
             message:
               `replacedBy seeds ${stat}, but "${final.id}" declares no dynamicStats ` +
-              "entry for it - the value would be dropped on migration",
+              "entry for it; the value would be dropped on migration",
           });
         }
       }
@@ -1210,7 +1211,7 @@ export function validateMaxCopies(
         name: item.id,
         message:
           `${capped.length} of ${group.length} "${filter}" items cap how many copies a ` +
-          "build may hold and this one does not - set a max, or 0 to say it may repeat",
+          "build may hold and this one does not; set a max, or 0 to say it may repeat",
       });
     }
   }
@@ -1233,7 +1234,7 @@ export function validateFilterFields(
         level: "error",
         kind: "item",
         message:
-          `filterFields "${filter}" claims "${field}", which is not an item field - ` +
+          `filterFields "${filter}" claims "${field}", which is not an item field; ` +
           "no form group answers to it, so the entry does nothing",
       });
     }
@@ -1454,7 +1455,7 @@ export function validate(
       ) {
         report(
           "warn",
-          `${label}: ${key} = ${value} means ${value * 100}% - decimals here ` +
+          `${label}: ${key} = ${value} means ${value * 100}%; this field takes decimals ` +
             "(0.09 is 9%)",
           name,
           kind,
@@ -1464,7 +1465,7 @@ export function validate(
   };
 
   /** Same shape as an occurrence config's own check (`bonus "x" occurrence config ...` below)
-   *  -- stat exists, min/max/default are finite numbers, default falls within min–max. Shared
+   *  -- stat exists, min/max/default are finite numbers, default falls within min-max. Shared
    *  by an item's own `dynamicStats` and a grant/variant's, since both use the identical
    *  `DynamicStatConfig` shape. */
   const checkDynamicStats = (
@@ -1504,7 +1505,12 @@ export function validate(
       ) {
         report(
           "error",
-          `${label} "${config.stat}" default ${def} is outside ${min}–${max}`,
+          outOfRangeErrorMessage(
+            `${label} "${config.stat}" default`,
+            def as number,
+            min as number,
+            max as number,
+          ),
           name,
           kind,
         );
@@ -1530,7 +1536,7 @@ export function validate(
       if (!matchesPickerTag) {
         report(
           "error",
-          "no filter or tag - the item appears in no slot",
+          "no filter or tag; the item appears in no slot",
           item.id,
         );
       }
@@ -1550,7 +1556,7 @@ export function validate(
       report(
         "error",
         `filter "${item.filter}" is claimed by both an item_picker slot and a ` +
-          "point_assignment slot - which one resolves it is ambiguous",
+          "point_assignment slot; which one resolves it is ambiguous",
         item.id,
       );
     } else if (
@@ -1580,7 +1586,7 @@ export function validate(
       } else if (min > max || def < min || def > max) {
         report(
           "error",
-          `inlineRepetition default ${def} is outside ${min}–${max}`,
+          outOfRangeErrorMessage(`inlineRepetition default`, def, min, max),
           item.id,
         );
       }
@@ -1598,7 +1604,7 @@ export function validate(
       if (item.insigniaSlots.length < 3 || item.insigniaSlots.length > 4) {
         report(
           "error",
-          `insigniaSlots has ${item.insigniaSlots.length} entries - a mount has 3 or 4`,
+          `insigniaSlots has ${item.insigniaSlots.length} entries; a mount has 3 or 4`,
           item.id,
         );
       }
@@ -1640,7 +1646,7 @@ export function validate(
       if (item.insigniaRecipe.length < 3 || item.insigniaRecipe.length > 4) {
         report(
           "error",
-          `insigniaRecipe has ${item.insigniaRecipe.length} shapes - a bonus takes 3 or 4`,
+          `insigniaRecipe has ${item.insigniaRecipe.length} shapes; a bonus takes 3 or 4`,
           item.id,
         );
       }
@@ -1684,7 +1690,7 @@ export function validate(
       else if (!ITEM_FIELDS.has(key)) {
         report(
           "error",
-          `"${key}" is neither a stat nor an item field - it is ignored ` +
+          `"${key}" is neither a stat nor an item field; it is ignored ` +
             "entirely, so a misspelled stat name silently does nothing",
           item.id,
         );
@@ -1704,7 +1710,7 @@ export function validate(
         // engine then overwrote from this item, with no hint on screen that it had.
         report(
           "error",
-          `publishes "${path}" is already a build_parameter's path (${paramSlots.get(path)!.id}) - the parameter's own value would be silently overridden`,
+          `publishes "${path}" is already a build_parameter's path (${paramSlots.get(path)!.id}); the parameter's own value would be silently overridden`,
           item.id,
         );
       }
@@ -1755,7 +1761,12 @@ export function validate(
       } else if (min > max || def < min || def > max) {
         report(
           "error",
-          `bonus "${bonusId}" occurrence config default ${def} is outside ${min}–${max}`,
+          outOfRangeErrorMessage(
+            `bonus "${bonusId}" occurrence config default`,
+            def,
+            min,
+            max,
+          ),
           item.id,
         );
       }
@@ -1809,7 +1820,7 @@ export function validate(
       report(
         "error",
         `gameId "${gameId}" is claimed by multiple "${filter ?? "(no filter)"}" items: ` +
-          `${clash.join(", ")} - no slot could tell them apart, so the map would be ambiguous`,
+          `${clash.join(", ")}. No slot could tell them apart, so the map would be ambiguous`,
       );
     }
   }
@@ -1858,14 +1869,14 @@ export function validate(
         if (target === bonus.id) {
           report(
             "warn",
-            `${label}: bonusOccurrences names this bonus itself - omit "bonus"`,
+            `${label}: bonusOccurrences names this bonus itself; omit "bonus"`,
             bonus.id,
             "bonus",
           );
         } else if (!bonusIds.has(target)) {
           report(
             "error",
-            `${label}: bonusOccurrences names "${target}", which is not a bonus in the catalogue`,
+            `${label}: bonusOccurrences names "${target}", which does not exist`,
             bonus.id,
             "bonus",
           );

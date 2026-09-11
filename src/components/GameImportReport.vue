@@ -243,9 +243,19 @@ async function copyUnrecognisedIds() {
           Not recognised ({{ activeReport.counts.unrecognised }})
         </summary>
         <div class="mt-2 flex flex-col gap-2">
-          <p class="text-muted">
-            The catalogue models a curated subset of the game's items - an
-            unrecognised id means "not modelled yet", not "your file is broken".
+          <p>
+            The following Internal game IDs exist in your export but aren't
+            recognised.<br />
+            You can map the IDs to items here.
+          </p>
+          <p>
+            <BaseButton
+              v-if="unrecognisedGameIds.length"
+              data-testid="game-import-report-copy-unrecognised"
+              class="my-2"
+              @click="copyUnrecognisedIds"
+              >Copy all IDs</BaseButton
+            >
           </p>
           <p v-if="overflowCount" class="text-muted">
             {{ overflowCount }} more item{{
@@ -253,13 +263,7 @@ async function copyUnrecognisedIds() {
             }}
             recognised, but every matching slot was already filled.
           </p>
-          <BaseButton
-            v-if="unrecognisedGameIds.length"
-            variant="ghost"
-            data-testid="game-import-report-copy-unrecognised"
-            @click="copyUnrecognisedIds"
-            >Copy all ids</BaseButton
-          >
+
           <div
             v-for="group in unrecognisedByBag"
             :key="group.bag"
@@ -319,7 +323,7 @@ async function copyUnrecognisedIds() {
 
       <details open data-testid="game-import-report-not-in-demo">
         <summary class="cursor-pointer font-semibold">
-          Not in the demo ({{ notInDemoRows.length }})
+          Not in the export ({{ notInDemoRows.length }})
         </summary>
         <div class="mt-2 flex flex-col gap-1.5">
           <p
@@ -328,7 +332,7 @@ async function copyUnrecognisedIds() {
             class=""
             data-testid="game-import-report-notindemo-row"
           >
-            <strong>{{ group.label }}</strong> - {{ group.reason }}
+            <strong>{{ group.label }}</strong>
           </p>
           <p
             v-for="note in KNOWN_LOSSY_NOTES"

@@ -949,7 +949,6 @@ watch(
         <CheckMenu
           class="ml-auto"
           label="Picker options"
-          title="What the item pickers search, and what each row shows"
           testid="picker-options"
           :items="pickerOptionItems"
           @toggle="pickerLens.toggle"

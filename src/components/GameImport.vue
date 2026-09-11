@@ -8,7 +8,6 @@ import BaseButton from "./ui/BaseButton.vue";
 import BaseCheckbox from "./ui/BaseCheckbox.vue";
 import BaseInput from "./ui/BaseInput.vue";
 import BaseModal from "./ui/BaseModal.vue";
-import CodeBlock from "./ui/CodeBlock.vue";
 import GameImportReport from "./GameImportReport.vue";
 import {
   step,
@@ -25,6 +24,7 @@ import {
   commit,
   type LoadoutRow,
 } from "../stores/gameImport";
+import CodeSnippet from "./ui/CodeSnippet.vue";
 
 const DEMO_COMMAND = "/demo_record build_export $$ demo_record_stop";
 
@@ -89,7 +89,7 @@ const hasSelection = computed(() => selected.value.size > 0);
 <template>
   <BaseModal
     title="Import from game"
-    :panel-class="`max-h-[85vh] ${step === 4 ? 'w-[680px]' : 'w-[560px]'}`"
+    :panel-class="['max-h-[85vh]', 'w-[680px]']"
     data-testid="game-import-modal"
     @close="close()"
   >
@@ -101,33 +101,26 @@ const hasSelection = computed(() => selected.value.size > 0);
         data-testid="game-import-step-instructions"
       >
         <div>
-          <p class="mb-1 font-medium">1. In game, run this command</p>
+          <p class="mb-1 font-medium">
+            <strong>1. </strong>In game, run this command
+          </p>
           <div class="flex items-start gap-2">
-            <CodeBlock
-              :value="DEMO_COMMAND"
-              :rows="1"
-              class="flex-1"
+            <CodeSnippet
+              class="block flex-1"
               data-testid="game-import-command"
-            />
+              >{{ DEMO_COMMAND }}</CodeSnippet
+            >
             <BaseButton @click="copyCommand"><Copy />Copy</BaseButton>
           </div>
         </div>
+        <p><strong>2. </strong>Find the generated export file at:</p>
+        <CodeSnippet class="block"
+          >[game install path]/Live/demos/build_export.demo</CodeSnippet
+        >
         <p class="">
-          <strong>2.</strong> The file appears at
-          <code>&lt;game install path&gt;\demos\build_export.demo</code>. Steam
-          installs put it under <code>steamapps\common\Neverwinter\</code>; the
-          Arc/standalone client uses its own install directory.
-        </p>
-        <p class="">
-          <strong>3.</strong> The recording captures whatever character you're
-          logged in as, and includes
-          <strong>all of that character's saved loadouts</strong> - switch
-          loadouts first only if you want the "currently equipped" marker on a
-          particular one.
-        </p>
-        <p class="text-muted">
-          <strong>4.</strong> The file is plain text and contains the character
-          name; nothing is uploaded - parsing happens in your browser.
+          <strong>3. </strong>The build export contains data about all of your
+          character loadouts. Nothing is uploaded; the file is analysed locally
+          in your browser.
         </p>
         <div class="flex justify-end">
           <BaseButton
@@ -154,7 +147,7 @@ const hasSelection = computed(() => selected.value.size > 0);
           @drop="onDrop"
         >
           <Upload class="size-6 text-muted" />
-          <p class="">Drag a demo file here, or</p>
+          <p class="">Drag the export file here, or</p>
           <BaseButton @click="triggerFilePick">Choose file…</BaseButton>
           <input
             ref="fileInput"

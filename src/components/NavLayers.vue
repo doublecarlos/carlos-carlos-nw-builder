@@ -134,7 +134,7 @@ function moveFocus(dir: 1 | -1) {
   <div ref="root" class="border-t border-line pt-1.5">
     <div class="mb-1 flex items-center justify-between px-1 py-0.5">
       <BaseTooltip
-        text="Layers apply bottom to top - a higher layer overrides the ones below it."
+        text="Layers apply bottom to top; a higher layer overrides the ones below it."
       >
         <span
           class="flex items-center gap-1 text-sm font-semibold uppercase text-muted"

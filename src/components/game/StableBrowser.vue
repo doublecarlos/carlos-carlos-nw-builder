@@ -196,7 +196,7 @@ function apply(mount: Item) {
             <p v-for="line in card.description" :key="line">{{ line }}</p>
           </div>
           <p v-if="!card.rows.length" class="px-2.5 py-1.5 text-muted">
-            Nothing reaches this.
+            No {{ tab === "mount" ? "insignia bonuses" : "mounts" }}.
           </p>
           <ul v-else>
             <li

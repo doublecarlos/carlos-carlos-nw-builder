@@ -270,7 +270,7 @@ export function importLayerText(text: string) {
     markDirty(layer.id);
     selection.selectLayer(layer.id);
     const stale = catalogStale
-      ? " - made against an older item catalogue; some items may no longer resolve"
+      ? ". Made against an older item catalogue; some items may no longer resolve"
       : "";
     showNotice(`Imported “${layer.name}”${stale}`);
   } catch (error: unknown) {
@@ -318,7 +318,7 @@ async function flushSave() {
         await storage.putLayer(layer);
       } catch {
         flagStorageFailed(
-          "Could not save to storage - export your layers to keep them.",
+          "Could not save to storage; export your layers to keep them.",
         );
       }
     }

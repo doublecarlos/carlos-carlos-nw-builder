@@ -101,7 +101,7 @@ function setDynamic(row: DynamicStatRow, raw: string | number) {
 }
 
 function rangeLabel(row: DynamicStatRow) {
-  return `${row.label} (${formatStat(row.stat, row.min)} - ${formatStat(row.stat, row.max)})`;
+  return `${row.label} (${formatStat(row.stat, row.min)} to ${formatStat(row.stat, row.max)})`;
 }
 
 // --- the pick's own inline repetition -------------------------------------------------------
@@ -165,7 +165,7 @@ const stableGroup = computed(() => {
     />
     <IconButton
       v-if="derivedBonusRow && choice()"
-      title="Unpin, and go back to the bonus this group derives"
+      title="Unpin and go back to this group's bonus"
       :data-testid="'unpin-bonus:' + slotDef.id"
       @click.stop="buildEditor.setChoice(slotDef.id, '')"
     >
@@ -221,7 +221,7 @@ const stableGroup = computed(() => {
       v-if="preferredPick"
       class="shrink-0 text-accent"
       data-testid="slot-preferred"
-      title="the upgraded half, which only a slot preferring its shape takes"
+      title="Preferred"
       >{{ PREFERRED_MARK }}</span
     >
     <span

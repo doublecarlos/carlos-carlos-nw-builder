@@ -656,7 +656,7 @@ function duplicateItem() {
   selectedBySection.items = null;
   newItemCounter.value++;
   router.apply({ item: null });
-  showNotice(`Duplicating "${item.name}" - edit and save to create a copy`);
+  showNotice(`Duplicating "${item.name}". Edit and save to create a copy.`);
 }
 
 /** Opens a new item draft seeded from a pasted tooltip. Like "Duplicate", the seed is only
@@ -670,7 +670,7 @@ function createFromTooltip(draft: Partial<Item>) {
   router.apply({ item: null });
   showTooltipImport.value = false;
   showNotice(
-    `Filled ${Object.keys(draft).length} field(s) from the tooltip - review and save to create the item`,
+    `Filled ${Object.keys(draft).length} field(s) from the tooltip. Review and save to create the item.`,
   );
 }
 
@@ -704,7 +704,7 @@ function duplicateBonus() {
   newItemCounter.value++;
   router.apply({ bonus: null });
   showNotice(
-    `Duplicating "${bonus.name || bonus.id}" - edit and save to create a copy`,
+    `Duplicating "${bonus.name || bonus.id}". Edit and save to create a copy.`,
   );
 }
 
@@ -807,7 +807,7 @@ async function resetAll(event: MouseEvent) {
     Object.assign(cleared, routeParamFor(group, null));
   }
   router.apply(cleared);
-  showNotice("Discarded every change - back to the shipped data");
+  showNotice("Discarded every change. The layer is back to the shipped data.");
 }
 
 /** Shows `id` in `group`, switching section if needed. */
@@ -977,7 +977,7 @@ onMounted(() => {
     selectedBySection.sectionPresets = null;
     ui.value.section = "sectionPresets";
     ui.value.preset = "";
-    showNotice("New preset from the current build - name it and save");
+    showNotice("New preset from the current build. Name it and save.");
   } else if (newItemSeed) {
     // BuildEditor's Ctrl/Cmd+click on an empty slot row: the blank draft *is* the point of the
     // jump, so restoring whatever this layer had open before would throw it away. The per-layer
@@ -988,7 +988,7 @@ onMounted(() => {
     const narrowedTo = [newItemSeed.filter, ...(newItemSeed.tags ?? [])]
       .filter(Boolean)
       .join(", ");
-    showNotice(`New item - pre-filled for "${narrowedTo}"`);
+    showNotice(`New item, pre-filled for "${narrowedTo}"`);
   } else {
     restoreSelection(source);
   }
@@ -1110,7 +1110,7 @@ onUnmounted(() => {
       v-if="!props.layer.enabled"
       class="mb-2 rounded-md border border-warn/40 bg-warn/10 px-3 py-1.5 text-warn"
     >
-      This layer is disabled - its changes are not currently applied to the
+      This layer is disabled; its changes are not currently applied to the
       build. Enable it to see its effects.
     </div>
 

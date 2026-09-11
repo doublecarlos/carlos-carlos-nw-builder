@@ -473,7 +473,7 @@ function changeParamKey(row: ConditionRow, key: string) {
         class="flex flex-wrap items-center gap-1.5"
       >
         <DragHandle
-          tooltip="Drag to reorder or move into a block"
+          tooltip="Drag to reorder or move to another condition group"
           data-testid="condition-drag-handle"
           v-bind="dragHandleProps(i)"
         />
@@ -638,7 +638,7 @@ function changeParamKey(row: ConditionRow, key: string) {
         >
           <div class="flex flex-wrap items-center gap-1 mb-0.5">
             <DragHandle
-              tooltip="Drag to reorder or move into a block"
+              tooltip="Drag to reorder or move to another condition group"
               data-testid="condition-drag-handle"
               v-bind="dragHandleProps(i)"
             />

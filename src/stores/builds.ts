@@ -383,7 +383,7 @@ async function flushSave() {
         await storage.putBuild(b);
       } catch {
         flagStorageFailed(
-          "Could not save to storage - export your build to keep it.",
+          "Could not save to storage; export your build to keep it.",
         );
       }
     }

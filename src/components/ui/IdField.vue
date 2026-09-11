@@ -22,7 +22,7 @@ defineProps<{
     <BaseTooltip
       :text="
         existing
-          ? 'Frozen -- renaming does not change it'
+          ? 'Frozen; renaming does not change it'
           : 'Assigned when first saved'
       "
     >

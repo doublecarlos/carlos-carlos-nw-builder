@@ -322,8 +322,7 @@ export interface NotInDemoGroup {
 
 /** Standing caveats about what an import narrows, shown whatever the outcomes were. */
 export const KNOWN_LOSSY_NOTES = [
-  "Mount combat power rarity (Celestial or not) isn't recorded - an imported mount combat power may not match the rarity you had equipped.",
-  "A mount combat power the catalogue doesn't model yet stays on the generic one.",
+  "Mount combat power rarity isn't recorded; Celestial is assumed.",
 ];
 
 /** Rolls `notInDemo` slot ids up into the authored groups, plus a catch-all per section for any
@@ -360,7 +359,7 @@ export function notInDemoGroups(db: Db, slotIds: string[]): NotInDemoGroup[] {
     if (!leftover.length) continue;
     groups.push({
       label: sectionLabel.get(sectionId) ?? sectionId,
-      reason: "Not recorded in this demo - set it by hand.",
+      reason: "Not recorded in the game export.",
       slotIds: leftover,
     });
   }
