@@ -255,7 +255,7 @@ async function copyUnrecognisedIds() {
           </p>
           <BaseButton
             v-if="unrecognisedGameIds.length"
-            variant="link"
+            variant="ghost"
             data-testid="game-import-report-copy-unrecognised"
             @click="copyUnrecognisedIds"
             >Copy all ids</BaseButton

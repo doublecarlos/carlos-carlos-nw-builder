@@ -14,6 +14,7 @@ ordinary one.
 | BaseCheckbox                              | A checkbox and its label as one clickable unit, `v-model` only                            |
 | BaseDrawer                                | An in-flow panel worked alongside its surroundings; use BaseModal for open-use-leave      |
 | BaseInput                                 | The ordinary text/number/search field                                                     |
+| BaseLink                                  | An action link inline in running text, on the text baseline; icon buttons are BaseButton  |
 | BaseModal                                 | The app's one modal overlay: backdrop, focus trap, Escape, scroll lock                    |
 | BaseNotice                                | Dismissible inline message                                                                |
 | BasePanel                                 | Side-panel shell                                                                          |

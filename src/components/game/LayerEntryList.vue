@@ -196,7 +196,7 @@ onKeyStroke(["ArrowDown", "ArrowUp", "Enter"], (event) => {
         </BaseTooltip>
         <BaseButton
           v-if="row.status === 'removed'"
-          variant="link"
+          variant="ghost"
           @click.stop="emit('restore', row)"
           ><RotateCcw />restore</BaseButton
         >

@@ -7,7 +7,7 @@ import { computed } from "vue";
 const props = withDefaults(
   defineProps<{
     as?: "button" | "label";
-    variant?: "default" | "primary" | "link";
+    variant?: "default" | "primary" | "ghost";
     active?: boolean;
     danger?: boolean;
     disabled?: boolean;
@@ -22,9 +22,9 @@ const props = withDefaults(
 );
 
 const classes = computed(() => {
-  if (props.variant === "link") {
+  if (props.variant === "ghost") {
     return [
-      "[&_svg]:size-[14px] inline-flex items-center gap-1 bg-transparent border-0 cursor-pointer px-1 py-0.5",
+      "[&_svg]:size-[14px] inline-flex items-center gap-1 bg-transparent border-0 cursor-pointer px-1 py-0.5 enabled:hover:text-accent",
       props.disabled && "text-muted cursor-default",
     ];
   }
