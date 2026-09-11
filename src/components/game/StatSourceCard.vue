@@ -13,6 +13,7 @@ import { signedStat } from "../../lib/format";
 import BaseCard from "../ui/BaseCard.vue";
 import BaseCardHeader from "../ui/BaseCardHeader.vue";
 import BaseCardBody from "../ui/BaseCardBody.vue";
+import BaseLink from "../ui/BaseLink.vue";
 import type { StatSourceSection } from "../../engine/stat-sources";
 import { useEscapeToClose } from "../../composables/useEscapeToClose";
 
@@ -21,7 +22,7 @@ defineProps<{
   sections: StatSourceSection[];
 }>();
 
-const emit = defineEmits<{ close: [] }>();
+const emit = defineEmits<{ close: []; "go-to-slot": [slotId: string] }>();
 
 useEscapeToClose(() => emit("close"));
 
@@ -63,12 +64,18 @@ useEscapeToClose(() => emit("close"));
           data-testid="stat-card-rows"
         >
           <div
-            v-for="src in section.sources"
-            :key="src.name"
+            v-for="(src, j) in section.sources"
+            :key="`${src.slotId ?? ''}:${src.name}:${j}`"
             class="statcard-row flex justify-between gap-2 border-b border-line py-0.5 last:border-b-0 hover:shadow-[inset_0_1px_0_var(--color-accent),inset_0_-1px_0_var(--color-accent)]"
             data-testid="stat-card-row"
           >
-            <span>{{ src.name }}</span>
+            <BaseLink
+              v-if="src.slotId"
+              data-testid="stat-card-source-link"
+              @click="emit('go-to-slot', src.slotId)"
+              >{{ src.name }}</BaseLink
+            >
+            <span v-else>{{ src.name }}</span>
             <span class="tabular-nums">{{
               signedStat(section.key, src.value)
             }}</span>

@@ -2,6 +2,7 @@ import { ref, computed, type Ref, type ComputedRef } from "vue";
 import { onClickOutside } from "@vueuse/core";
 import { sectionsFor } from "../engine/stat-sources";
 import { NW_SCHEMA } from "../data/data";
+import * as goTo from "../stores/goTo";
 import type BasePanel from "../components/ui/BasePanel.vue";
 import type BasePopover from "../components/ui/BasePopover.vue";
 import type { ResolvedBuild, Build, Db } from "../types";
@@ -51,6 +52,12 @@ export function useStatSourcePopover(
     openCard.value = null;
   }
 
+  /** A source line's link: the card gives way to the build row it names. */
+  function goToSlot(slotId: string) {
+    closeCard();
+    goTo.requestJump({ slotId });
+  }
+
   /** A second click on the same row's own button closes it again; a click on a *different*
    * row's button just switches the card straight over. */
   function toggleCard(event: MouseEvent, key: string) {
@@ -81,5 +88,6 @@ export function useStatSourcePopover(
     openSections,
     toggleCard,
     closeCard,
+    goToSlot,
   };
 }

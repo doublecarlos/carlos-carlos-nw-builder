@@ -1,7 +1,7 @@
 // End-to-end coverage for StatPanel.vue's stat source popover (StatSourceCard.vue): which
 // items/bonuses/pipeline stages fed a given stat's number, one stat at a time.
 import { test, expect } from "@playwright/test";
-import { openBuilder, chooseItem } from "./support/app";
+import { openBuilder, chooseItem, cursorRow } from "./support/app";
 import {
   statInfoButton,
   statCard,
@@ -107,6 +107,25 @@ test.describe("stat source popover", () => {
     const rows = card.locator('[data-testid="stat-card-row"]');
     await expect(rows).toHaveCount(1);
     await expect(rows.first()).toContainText(HEAD_ITEM);
+  });
+
+  test("clicking an item's source link closes the card and jumps to its build row", async ({
+    page,
+  }) => {
+    await openBuilder(page);
+    await chooseItem(page, "gear.head", HEAD_ITEM);
+
+    await statInfoButton(page, "strike").click();
+    await statCard(page)
+      .locator('[data-testid="stat-card-source-link"]')
+      .filter({ hasText: HEAD_ITEM })
+      .click();
+
+    await expect(statCard(page)).toBeHidden();
+    await expect(cursorRow(page)).toHaveAttribute(
+      "data-cursor-key",
+      "slot:gear.head",
+    );
   });
 
   test("clicking the same button again closes the card", async ({ page }) => {
