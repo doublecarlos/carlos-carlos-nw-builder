@@ -4,7 +4,7 @@
 // list) stays in BuildSlot.vue since it's identical across every slot type.
 import { useTemplateRef } from "vue";
 import BuildParamInput from "./BuildParamInput.vue";
-import BaseButton from "../ui/BaseButton.vue";
+import BaseLink from "../ui/BaseLink.vue";
 import * as buildEditor from "../../stores/buildEditor";
 import { getPath } from "../../lib/build-path";
 import type { Build, BuildParameterSlot } from "../../types";
@@ -56,13 +56,12 @@ const paramValue = () =>
     class="slot-diff-note mt-0.5 text-muted"
   >
     {{ compareBuild?.name }}: {{ otherParamLabel }}
-    <BaseButton
-      variant="link"
-      class="ml-0.5 text-accent"
+    <BaseLink
+      class="ml-0.5"
       @click.stop="buildEditor.applyParamFromCompare(slotDef)"
     >
       apply
-    </BaseButton>
+    </BaseLink>
   </p>
 
   <template v-if="highlightDiff && !paramDiffers">

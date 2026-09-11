@@ -8,7 +8,7 @@ import ItemPicker from "./ItemPicker.vue";
 import BonusOccurrenceInputs from "./BonusOccurrenceInputs.vue";
 import InlineRepetitionStepper from "./InlineRepetitionStepper.vue";
 import BaseBadge from "../ui/BaseBadge.vue";
-import BaseButton from "../ui/BaseButton.vue";
+import BaseLink from "../ui/BaseLink.vue";
 import IconButton from "../ui/IconButton.vue";
 import StatValueInput from "./StatValueInput.vue";
 import { PinOff, Replace, Table, Trash } from "@lucide/vue";
@@ -270,13 +270,12 @@ const stableGroup = computed(() => {
     class="slot-diff-note mt-0.5 text-muted"
   >
     {{ compareBuild?.name }}: {{ otherChoiceLabel || "(empty)" }}
-    <BaseButton
-      variant="link"
-      class="ml-0.5 text-accent"
+    <BaseLink
+      class="ml-0.5"
       @click.stop="buildEditor.applyFromCompare(slotDef.id)"
     >
       apply
-    </BaseButton>
+    </BaseLink>
   </p>
 
   <template v-if="highlightDiff">
@@ -296,13 +295,12 @@ const stableGroup = computed(() => {
       class="slot-diff-note mt-0.5 text-muted"
     >
       {{ compareBuild?.name }}: {{ diff.label }} {{ diff.other ?? "(none)" }}
-      <BaseButton
-        variant="link"
-        class="ml-0.5 text-accent"
+      <BaseLink
+        class="ml-0.5"
         @click.stop="buildEditor.applyValueFromCompare(slotDef.id, diff.key)"
       >
         apply
-      </BaseButton>
+      </BaseLink>
     </p>
   </template>
 
@@ -311,13 +309,12 @@ const stableGroup = computed(() => {
     class="slot-diff-note mt-0.5 text-muted"
   >
     {{ compareBuild?.name }}: {{ otherAssignmentLabel }}
-    <BaseButton
-      variant="link"
-      class="ml-0.5 text-accent"
+    <BaseLink
+      class="ml-0.5"
       @click.stop="buildEditor.applyAssignmentsFromCompare(slotDef)"
     >
       apply
-    </BaseButton>
+    </BaseLink>
   </p>
 
   <p
@@ -325,12 +322,11 @@ const stableGroup = computed(() => {
     class="slot-diff-note mt-0.5 text-muted"
   >
     {{ compareBuild?.name }}: {{ otherOccurrenceLabel ?? "(none)" }}
-    <BaseButton
-      variant="link"
-      class="ml-0.5 text-accent"
+    <BaseLink
+      class="ml-0.5"
       @click.stop="buildEditor.applyOccurrenceFromCompare(item!.id)"
     >
       apply
-    </BaseButton>
+    </BaseLink>
   </p>
 </template>

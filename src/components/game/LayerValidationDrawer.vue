@@ -2,7 +2,7 @@
 // LayerEditor's validation findings list: every lint error/warning across the composed
 // catalogue (see catalog.validate). Purely a list -- jumping to what a finding points at is
 // the parent's job, since that means switching section/selection, which only it owns.
-import BaseButton from "../ui/BaseButton.vue";
+import BaseLink from "../ui/BaseLink.vue";
 import BaseDrawer from "../ui/BaseDrawer.vue";
 import type { LintFinding } from "../../types";
 
@@ -36,12 +36,9 @@ defineEmits<{
           "
           >{{ finding.level }}</span
         >
-        <BaseButton
-          v-if="finding.name"
-          variant="link"
-          @click="$emit('select', finding)"
-          >{{ finding.name }}</BaseButton
-        >
+        <BaseLink v-if="finding.name" @click="$emit('select', finding)">{{
+          finding.name
+        }}</BaseLink>
         <span>{{ finding.message }}</span>
       </li>
     </ul>

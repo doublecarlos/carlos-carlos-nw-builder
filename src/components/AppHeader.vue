@@ -5,6 +5,7 @@ import { ref, useTemplateRef } from "vue";
 import ThemeToggle from "./ui/ThemeToggle.vue";
 import HistoryButton from "./ui/HistoryButton.vue";
 import BaseButton from "./ui/BaseButton.vue";
+import BaseLink from "./ui/BaseLink.vue";
 import BaseNotice from "./ui/BaseNotice.vue";
 import BaseTooltip from "./ui/BaseTooltip.vue";
 import AboutDialog from "./AboutDialog.vue";
@@ -190,12 +191,11 @@ async function onImportFile(event: Event) {
       >
         {{ notice }}
       </BaseNotice>
-      <BaseButton
+      <BaseLink
         v-if="notice && noticeAction"
-        variant="link"
         data-testid="notice-action"
         @click="noticeAction.run()"
-        >{{ noticeAction.label }}</BaseButton
+        >{{ noticeAction.label }}</BaseLink
       >
     </span>
 

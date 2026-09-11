@@ -4,7 +4,7 @@
 // in BuildSlot.vue since it's identical across every slot type.
 import { useTemplateRef } from "vue";
 import PointAssignmentInput from "./PointAssignmentInput.vue";
-import BaseButton from "../ui/BaseButton.vue";
+import BaseLink from "../ui/BaseLink.vue";
 import * as buildEditor from "../../stores/buildEditor";
 import type { Build, PointAssignmentSlot } from "../../types";
 
@@ -59,12 +59,11 @@ const values = () => props.build.assignments[props.slotDef.id] ?? {};
     class="slot-diff-note mt-0.5 text-muted"
   >
     {{ compareBuild?.name }}: {{ otherAssignmentLabel }}
-    <BaseButton
-      variant="link"
-      class="ml-0.5 text-accent"
+    <BaseLink
+      class="ml-0.5"
       @click.stop="buildEditor.applyAssignmentsFromCompare(slotDef)"
     >
       apply
-    </BaseButton>
+    </BaseLink>
   </p>
 </template>

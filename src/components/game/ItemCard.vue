@@ -447,7 +447,7 @@ const rows = computed(() =>
         </div>
         <BaseButton
           v-if="stableReach.more && stableGroup"
-          variant="link"
+          variant="ghost"
           class="mt-0.5"
           data-testid="item-card-stable-more"
           @click="emit('open-stable')"

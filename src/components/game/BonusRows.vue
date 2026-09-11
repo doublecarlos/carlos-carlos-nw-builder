@@ -628,7 +628,7 @@ function toggleJson(gIndex: number) {
             />
           </div>
           <BaseButton
-            variant="link"
+            variant="ghost"
             data-testid="add-variant"
             @click="gs(gIndex).addVariant()"
             ><CirclePlus />add variant</BaseButton
