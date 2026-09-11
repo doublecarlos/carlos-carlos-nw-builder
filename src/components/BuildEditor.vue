@@ -796,11 +796,17 @@ function sectionEl(sectionId: string) {
  */
 async function runJump(target: goTo.JumpTarget) {
   goTo.consumeJump();
-  if (target.slotId && !expanded[target.sectionId]) {
-    expanded[target.sectionId] = true;
+  const sectionId =
+    target.sectionId ?? db.value.slotFor(target.slotId)?.section;
+  if (!sectionId) return;
+  if (target.slotId) {
+    // A row the slot filter hides is not in the DOM to land on, and "take me to this row"
+    // outranks a filter left behind. Only the filter: compare's "only diff" is its own mode.
+    if (slotFilter.isActive.value) slotFilter.clear();
+    expanded[sectionId] = true;
     await nextTick();
   }
-  const section = sectionEl(target.sectionId);
+  const section = sectionEl(sectionId);
   if (!section) return;
   const header = section.querySelector<HTMLElement>(
     "[data-cursor-key^='header:']",
