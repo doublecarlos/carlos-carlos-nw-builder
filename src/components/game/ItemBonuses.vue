@@ -45,6 +45,8 @@ const props = withDefaults(
     occurrenceConfigs?: Record<string, OccurrenceDraft>;
     /** Seeds the Name field of a brand-new private bonus. */
     itemName?: string;
+    /** The item being edited, so its own "Granted by" entry is not a link to itself. */
+    itemId?: string;
     db: Db;
     /** Every known bonus id, for id-collision avoidance. */
     allBonusIds?: string[];
@@ -58,6 +60,7 @@ const props = withDefaults(
     attachedBonusIds: () => [],
     occurrenceConfigs: () => ({}),
     itemName: "",
+    itemId: undefined,
     allBonusIds: () => [],
     tags: () => [],
     bonusOptions: () => [],
@@ -74,6 +77,7 @@ const emit = defineEmits<{
   "update-occurrence": [
     payload: { id: string; occurrence: OccurrenceDraft | null },
   ];
+  "open-item": [itemId: string];
 }>();
 
 interface Slot {
@@ -339,10 +343,12 @@ function onSlotDuplicate(slot: Slot) {
         :tags="tags"
         :bonus-options="bonusOptions"
         :allocatable-ids="props.allocatableIds"
+        :current-item-id="itemId"
         @save="onSlotSave(slot, $event)"
         @update:bonus="onSlotUpdate(slot, $event)"
         @delete="onSlotDelete(slot)"
         @duplicate="onSlotDuplicate(slot)"
+        @open-item="emit('open-item', $event)"
       >
         <template #extra-actions>
           <BaseButton @click="onSlotDetach(slot)">Detach</BaseButton>

@@ -89,6 +89,7 @@ const emit = defineEmits<{
   "save-bonus": [payload: { id: string; bonus: Bonus }];
   "delete-bonus": [id: string];
   "update-bonus": [payload: { id: string; bonus: Bonus }];
+  "open-item": [itemId: string];
 }>();
 
 // --- Common ---------------------------------------------------------------------------
@@ -832,6 +833,7 @@ function showsGroup(group: FieldGroup): boolean {
         :attached-bonus-ids="draft.bonuses"
         :occurrence-configs="draft.bonusOccurrences"
         :item-name="draft.name"
+        :item-id="source?.id"
         :db="db"
         :all-bonus-ids="allBonusIds"
         :tags="tags"
@@ -843,6 +845,7 @@ function showsGroup(group: FieldGroup): boolean {
         @detach-bonus="detachBonus"
         @attach-bonus="attachBonus"
         @update-occurrence="(e) => updateBonusOccurrence(e.id, e.occurrence)"
+        @open-item="$emit('open-item', $event)"
       />
     </template>
 
