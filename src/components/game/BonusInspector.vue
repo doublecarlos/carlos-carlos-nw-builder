@@ -128,7 +128,7 @@ const entries = computed<Entry[]>(() => {
       title,
       qualifier:
         (titleCounts.get(title) ?? 0) > 1 ? conditionSummary(entry) : "",
-      sources: entry.sources ?? [],
+      sources: entry.sources?.map((s) => s.name) ?? [],
       slot: db.value.slotFor(entry.slotId)?.label ?? entry.slotId,
       stacks: entry.stacks ?? 1,
       chose: choseLabel(entry.chose),

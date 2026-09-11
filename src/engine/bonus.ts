@@ -684,7 +684,7 @@ export function resolve(
       id: group.id,
       bonus: group.bonus,
       bonusId: anchor.bonusId,
-      sources: sources.map((s) => s.source),
+      sources: sources.map((s) => ({ name: s.source, slotId: s.slotId })),
       slotId: anchor.slotId, // instancing slot, used for stat attribution
       active: result.active,
       gate: result.gate,

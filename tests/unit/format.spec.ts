@@ -106,15 +106,20 @@ describe("bonusTitle", () => {
   it("prefers the bonus's own name", () => {
     const named = entry({
       bonus: { id: "b", name: "Gladiator" },
-      sources: ["Ring"],
+      sources: [{ name: "Ring", slotId: "ring1" }],
     });
     expect(bonusTitle(named)).toBe("Gladiator");
   });
 
   it("falls back to the item carrying it", () => {
-    expect(bonusTitle(entry({ bonus: { id: "b" }, sources: ["Ring"] }))).toBe(
-      "Ring",
-    );
+    expect(
+      bonusTitle(
+        entry({
+          bonus: { id: "b" },
+          sources: [{ name: "Ring", slotId: "ring1" }],
+        }),
+      ),
+    ).toBe("Ring");
   });
 
   it("falls back to the id, title-cased", () => {
