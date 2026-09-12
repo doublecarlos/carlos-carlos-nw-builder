@@ -41,6 +41,7 @@ import BaseButton from "../ui/BaseButton.vue";
 import BaseLink from "../ui/BaseLink.vue";
 import LinkList from "../ui/LinkList.vue";
 import type { LinkListItem } from "../ui/LinkList.vue";
+import StatHoverableTable from "./StatHoverableTable.vue";
 
 const props = withDefaults(
   defineProps<{
@@ -258,17 +259,7 @@ const rows = computed(() =>
           {{ paragraph }}
         </p>
       </div>
-      <div class="flex flex-col divide-y divide-line">
-        <div
-          v-for="stat in stats"
-          :key="stat.key"
-          class="flex justify-between gap-2 py-0.5 hover:shadow-[inset_0_1px_0_var(--color-accent),inset_0_-1px_0_var(--color-accent)]"
-        >
-          <span>{{ stat.label }}</span
-          ><span class="tabular-nums">{{ stat.value }}</span>
-        </div>
-        <div v-if="!stats.length" class="text-muted">no direct stats</div>
-      </div>
+      <StatHoverableTable :stats="stats"></StatHoverableTable>
 
       <div
         v-if="notes.length"
@@ -365,47 +356,34 @@ const rows = computed(() =>
                   {{ g.problem.message }}
                 </div>
                 <template v-else-if="g.tiers">
-                  <div
-                    v-for="tier in g.tiers"
-                    :key="tier.atLeast"
-                    :class="
-                      tier.active ? 'font-semibold text-text' : 'text-muted'
-                    "
-                  >
-                    <div>{{ tier.atLeast }} equipped:</div>
-                    <div class="flex flex-col divide-y divide-line">
-                      <div
-                        v-for="s in tier.stats"
-                        :key="s.key"
-                        class="flex justify-between gap-2 py-0.5 ml-4 hover:shadow-[inset_0_1px_0_var(--color-accent),inset_0_-1px_0_var(--color-accent)]"
-                      >
-                        <span>{{ s.label }}</span
-                        ><span class="tabular-nums">{{ s.value }}</span>
-                      </div>
+                  <div v-for="tier in g.tiers" :key="tier.atLeast">
+                    <div
+                      :class="
+                        tier.active ? 'font-semibold text-text' : 'text-muted'
+                      "
+                    >
+                      {{ tier.atLeast }} equipped:
                     </div>
+                    <StatHoverableTable
+                      :stats="tier.stats"
+                      :active="tier.active"
+                    ></StatHoverableTable>
                   </div>
                 </template>
                 <template v-else-if="g.variants">
                   <div class="divide-y divide-line divide-y-2">
-                    <div
-                      v-for="v in g.variants"
-                      :key="v.key"
-                      class="py-1"
-                      :class="
-                        v.active ? 'font-semibold text-text' : 'text-muted'
-                      "
-                    >
-                      <div>{{ v.label }}:</div>
-                      <div class="flex flex-col divide-y divide-line">
-                        <div
-                          v-for="s in v.stats"
-                          :key="s.key"
-                          class="flex justify-between gap-2 py-0.5 hover:shadow-[inset_0_1px_0_var(--color-accent),inset_0_-1px_0_var(--color-accent)]"
-                        >
-                          <span>{{ s.label }}</span
-                          ><span class="tabular-nums">{{ s.value }}</span>
-                        </div>
+                    <div v-for="v in g.variants" :key="v.key" class="py-1">
+                      <div
+                        :class="
+                          v.active ? 'font-semibold text-text' : 'text-muted'
+                        "
+                      >
+                        {{ v.label }}:
                       </div>
+                      <StatHoverableTable
+                        :stats="v.stats"
+                        :active="v.active"
+                      ></StatHoverableTable>
                     </div>
                   </div>
                 </template>
@@ -423,14 +401,10 @@ const rows = computed(() =>
                   <div v-if="g.eachStack" class="leading-snug text-muted">
                     each stack would give:
                   </div>
-                  <div
-                    v-for="s in g.stats"
-                    :key="s.key"
-                    class="flex justify-between gap-2 py-0.5 hover:shadow-[inset_0_1px_0_var(--color-accent),inset_0_-1px_0_var(--color-accent)]"
-                  >
-                    <span>{{ s.label }}</span
-                    ><span class="tabular-nums">{{ s.value }}</span>
-                  </div>
+                  <StatHoverableTable
+                    :stats="g.stats"
+                    :active="g.active"
+                  ></StatHoverableTable>
                 </div>
                 <div
                   v-for="(leaf, i) in g.unmet"
