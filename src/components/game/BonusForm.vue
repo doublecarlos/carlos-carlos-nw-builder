@@ -24,6 +24,7 @@ import { bonusDraftRegistryKey } from "../../composables/bonusDraftRegistry";
 import BonusOptionRow from "./BonusOptionRow.vue";
 import type { Bonus, BonusOption, Db } from "../../types";
 import type { EntryStatus } from "../../data/catalog";
+import FormSectionDescription from "../ui/FormSectionDescription.vue";
 
 const props = withDefaults(
   defineProps<{
@@ -296,7 +297,7 @@ if (bonusDraftRegistry && props.registryId) {
     <template v-if="!collapsed">
       <!-- The embedding item's per-attachment settings, ahead of the bonus's own definition. -->
       <slot />
-
+      <FormSection>Identification</FormSection>
       <FormGrid class="mb-2">
         <FormField label="Name">
           <BaseInput
@@ -325,7 +326,7 @@ if (bonusDraftRegistry && props.registryId) {
         <template v-else> Not granted by any item. </template>
       </p>
 
-      <FormSection sub>Stacking</FormSection>
+      <FormSection>Stacking</FormSection>
       <div class="flex flex-wrap items-center gap-1.5 mb-1">
         <FormField label="Behavior">
           <ComboBox
@@ -347,7 +348,11 @@ if (bonusDraftRegistry && props.registryId) {
         </template>
       </div>
 
-      <FormSection sub>Suppressed bonuses</FormSection>
+      <FormSection>Suppressed bonuses</FormSection>
+      <FormSectionDescription
+        >If this bonus has at least one active grant, it will suppress the
+        bonuses listed below.</FormSectionDescription
+      >
       <TokenInput
         v-model="draft.excludes"
         data-testid="bonus-excludes-input"

@@ -110,7 +110,7 @@ const previewRow = computed<OccurrenceRow | null>(() => {
 <template>
   <!-- Ruled off below: the attachment's settings end here and the bonus's own definition
        follows. -->
-  <div data-testid="occurrence-section" class="mb-2 border-b border-line pb-2">
+  <div data-testid="occurrence-section" class="border-b border-line pb-2">
     <template v-if="full">
       <FormGrid>
         <FormField label="Occurrences">
