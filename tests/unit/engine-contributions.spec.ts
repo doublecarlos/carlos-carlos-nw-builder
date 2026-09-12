@@ -221,6 +221,7 @@ describe("ability contributions", () => {
       "out_healing_p>overall_healing",
       "forte_p>power_p",
       "forte_p>sev_p",
+      "enemy_incoming_damage_magical>enemy_incoming_damage",
     ]);
   });
 });

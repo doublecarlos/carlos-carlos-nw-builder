@@ -330,13 +330,13 @@
     },
     {
       "key": "enemy_incoming_damage_magical",
-      "label": "Enemy Incoming Magical",
+      "label": "Enemy Incoming Magical Damage",
       "kind": "percent",
       "enemy": true
     },
     {
       "key": "enemy_incoming_damage_physical",
-      "label": "Enemy Incoming Physical",
+      "label": "Enemy Incoming Physical Damage",
       "kind": "percent",
       "enemy": true
     },
