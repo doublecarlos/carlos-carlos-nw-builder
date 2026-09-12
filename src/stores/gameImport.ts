@@ -19,7 +19,12 @@ import type {
 import type { Build } from "../types";
 import type { ImportReport } from "../lib/demo-import";
 
-export type WizardStep = 1 | 2 | 3 | 4;
+export enum ImportStep {
+  Instructions = 1,
+  Loadouts = 2,
+  Report = 3,
+}
+export type WizardStep = ImportStep;
 
 /** One imported build with its report, one tab per entry. `character`/`loadout` are kept so
  *  `mapUnrecognizedItem` can re-run `buildFromLoadout` after `_snapshot` is cleared. */
@@ -35,7 +40,7 @@ export interface CommittedReport {
 }
 
 const _open = ref(false);
-const _step = ref<WizardStep>(1);
+const _step = ref<WizardStep>(ImportStep.Instructions);
 const _parseError = ref("");
 const _snapshot = ref<DemoSnapshot | null>(null);
 const _selected = ref<Set<string>>(new Set());
@@ -114,7 +119,7 @@ export function toggleSelected(key: string) {
 }
 
 function reset() {
-  _step.value = 1;
+  _step.value = ImportStep.Instructions;
   _parseError.value = "";
   _snapshot.value = null;
   _selected.value = new Set();
@@ -132,14 +137,14 @@ export function close() {
 }
 
 export function goToStep(target: WizardStep) {
-  if (target === 3 && !_snapshot.value) return;
+  if (target === ImportStep.Loadouts && !_snapshot.value) return;
   _step.value = target;
 }
 
 /** Reopens the wizard on the report step, behind the post-import notice's affordance. */
 export function openReport() {
   _open.value = true;
-  _step.value = 4;
+  _step.value = ImportStep.Report;
 }
 
 /** The active loadout of the recording character only: a demo can carry several characters,
@@ -180,7 +185,7 @@ export function parseFile(text: string) {
 
   _snapshot.value = parsed;
   _selected.value = defaultSelection(parsed);
-  _step.value = 3;
+  _step.value = ImportStep.Loadouts;
 }
 
 export function commit() {
@@ -222,7 +227,7 @@ export function commit() {
       unrecognizedOrigin,
     };
   });
-  _step.value = 4;
+  _step.value = ImportStep.Report;
 
   const recognized = newReports.reduce((sum, r) => sum + r.counts.imported, 0);
   const total = newReports.reduce(
