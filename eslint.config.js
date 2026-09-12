@@ -37,8 +37,6 @@ export default defineConfigWithVueTs(
         // `updated` from the comparison -- the bound name is intentionally unused.
         { ignoreRestSiblings: true },
       ],
-      // Nav.vue is a well-known abbreviation, not a single-word component that lacks meaning.
-      "vue/multi-word-component-names": ["error", { ignores: ["Nav"] }],
     },
   },
 

@@ -1,25 +1,19 @@
 <script setup lang="ts">
 // Build list section inside the left sidebar, one level deep: top-level builds and folders,
 // each folder holding builds. Pure presentation - actions, menu items, and rename state are
-// provided by the parent (Nav.vue), which also resolves whether a row id names a build or a
+// provided by the parent (NavBar.vue), which also resolves whether a row id names a build or a
 // folder (ids are unique across both, so one `menuOpenId`/`renamingId` covers each). The one
 // store read here is the nav history behind the heading's undo/redo pair: it is the sidebar's
 // own stack, with nothing for the parent to decide.
-import { computed, useTemplateRef, type Component, type Directive } from "vue";
+import { computed, useTemplateRef, type Component } from "vue";
 import BaseButton from "./ui/BaseButton.vue";
-import BaseTooltip from "./ui/BaseTooltip.vue";
+
 import BaseInput from "./ui/BaseInput.vue";
 import HistoryButtons from "./ui/HistoryButtons.vue";
-import NavBuildRow from "./NavBuildRow.vue";
-import {
-  ChevronDown,
-  ChevronRight,
-  EllipsisVertical,
-  FolderPlus,
-  Plus,
-} from "@lucide/vue";
-import NavContextMenu from "./NavContextMenu.vue";
-import { isMac } from "../lib/platform";
+import NavRowBuild from "./NavRowBuild.vue";
+import NavRowFolder from "./NavRowFolder.vue";
+import { ChevronDown, ChevronRight, FolderPlus, Plus } from "@lucide/vue";
+
 import { matchesQuery } from "../lib/text-filter";
 import * as navHistory from "../stores/navHistory";
 import {
@@ -29,13 +23,6 @@ import {
   type DragSource,
 } from "../composables/useDragAndDrop";
 import type { Build, BuildFolder, BuildNavEntry } from "../types";
-
-const vRenameFocus: Directive<HTMLInputElement> = {
-  mounted(el) {
-    el.focus();
-    el.select();
-  },
-};
 
 const props = defineProps<{
   /** Top-level rows in order: loose builds and folders with their contents. */
@@ -205,39 +192,6 @@ const tailVisible = computed(
     dragSource.value?.kind === "build" || dragSource.value?.kind === "folder",
 );
 
-/** The folder header's own keyboard handling. Enter/Space are left to the native button
- *  (= expand/collapse); the rest mirrors a build row's, minus selection - a folder has no
- *  editor to open. */
-function onFolderKeydown(event: KeyboardEvent, folder: BuildFolder) {
-  if (event.key === "ArrowDown" || event.key === "ArrowUp") {
-    event.preventDefault();
-    const dir = event.key === "ArrowDown" ? 1 : -1;
-    if (isMac ? event.metaKey : event.ctrlKey) {
-      if (dir === 1) emit("move-down", folder.id);
-      else emit("move-up", folder.id);
-    } else {
-      moveFocus(dir);
-    }
-    return;
-  }
-  if (event.key === "ArrowRight" || event.key === "ArrowLeft") {
-    event.preventDefault();
-    // Already in the state the key asks for.
-    if (folder.collapsed === (event.key === "ArrowLeft")) return;
-    emit("folder-toggle", folder.id);
-    return;
-  }
-  if (event.key === "Delete" || event.key === "Backspace") {
-    event.preventDefault();
-    emit("delete-request", folder.id, event.shiftKey);
-    return;
-  }
-  if (event.key === "F2") {
-    event.preventDefault();
-    emit("rename-start", folder.id, folder.name);
-  }
-}
-
 function moveFocus(dir: 1 | -1) {
   const focusable = root.value?.querySelectorAll<HTMLElement>("[data-nav-key]");
   if (!focusable?.length) return;
@@ -284,7 +238,7 @@ function moveFocus(dir: 1 | -1) {
         v-for="row in rows"
         :key="row.kind === 'build' ? row.build.id : row.folder.id"
       >
-        <NavBuildRow
+        <NavRowBuild
           v-if="row.kind === 'build'"
           :build="row.build"
           :active="selectedId === row.build.id"
@@ -311,99 +265,59 @@ function moveFocus(dir: 1 | -1) {
         />
 
         <template v-else>
-          <div
-            class="nav-row nav-row--folder relative flex cursor-grab items-center gap-1 h-9 rounded-md border-b-2 border-t-2 border-transparent py-1 pl-1 pr-1 focus-within:rounded-none focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-accent"
-            :class="[
-              rootDrop.indicatorAt(row.index) === 'before' &&
-                '!border-t-accent',
-              rootDrop.indicatorAt(row.index) === 'after' && '!border-b-accent',
-              rootDrop.indicatorAt(row.index) === 'into' &&
-                'is-drop-into bg-accent-soft !border-b-accent !border-t-accent',
-            ]"
-            v-bind="folderRowProps(row.folder.id, row.index)"
+          <NavRowFolder
+            :id="row.folder.id"
+            :name="row.folder.name"
+            :renaming="renamingId === row.folder.id"
+            :rename-text="renameText"
+            :menu-open="menuOpenId === row.folder.id"
+            :menu-items="menuOpenId === row.folder.id ? menuItems : []"
+            :menu-anchor="menuAnchor"
+            :handle-props="folderRowProps(row.folder.id, row.index)"
+            :drop-props="folderRowProps(row.folder.id, row.index)"
+            :indicator="rootDrop.indicatorAt(row.index)"
+            :nested="false"
+            :collapsed="row.folder.collapsed"
+            :build-count="row.folder.builds.length"
+            @select="(id) => $emit('folder-toggle', id)"
+            @folder-toggle="(id) => $emit('folder-toggle', id)"
+            @rename-start="(id, name) => $emit('rename-start', id, name)"
+            @rename-commit="$emit('rename-commit')"
+            @rename-cancel="$emit('rename-cancel')"
+            @move-up="(id) => $emit('move-up', id)"
+            @move-down="(id) => $emit('move-down', id)"
+            @focus-move="moveFocus"
+            @delete-request="(id, skip) => $emit('delete-request', id, skip)"
+            @menu-open="(id, ev) => $emit('menu-open', id, ev)"
+            @menu-action="(a, id, skip) => $emit('menu-action', a, id, skip)"
+            @menu-close="$emit('menu-close')"
           >
-            <!-- The chevron toggles too: reaching for it and hitting dead space, when the
-                 name right next to it expands the folder, reads as broken. Kept out of the
-                 tab order so the row still has the one keyboard stop the name button is. -->
-            <button
-              type="button"
-              tabindex="-1"
-              data-testid="folder-toggle"
-              class="nav-folder-toggle flex-none cursor-pointer rounded-md p-0.5 leading-none text-muted hover:bg-surface-2 hover:text-text"
-              :aria-label="
-                isOpen(row.folder) ? 'Collapse folder' : 'Expand folder'
-              "
-              @click="$emit('folder-toggle', row.folder.id)"
-            >
-              <component
-                :is="isOpen(row.folder) ? ChevronDown : ChevronRight"
-                class="size-[14px]"
-              />
-            </button>
-
-            <BaseInput
-              v-if="renamingId === row.folder.id"
-              v-rename-focus
-              :model-value="renameText"
-              type="text"
-              class="nav-rename min-w-0 flex-1 focus:outline-none"
-              @update:model-value="
-                $emit('rename-start', row.folder.id, String($event))
-              "
-              @keydown.enter="$emit('rename-commit')"
-              @keydown.esc="$emit('rename-cancel')"
-              @blur="$emit('rename-commit')"
-            />
-
-            <BaseTooltip v-else :text="row.folder.name">
+            <template #before>
               <button
                 type="button"
-                class="nav-name min-w-0 flex-1 cursor-pointer overflow-hidden text-ellipsis whitespace-nowrap py-0.5 text-left font-medium focus:outline-none"
-                :data-nav-key="row.folder.id"
-                data-nav-kind="folder"
-                :aria-expanded="isOpen(row.folder)"
+                tabindex="-1"
+                data-testid="folder-toggle"
+                class="nav-folder-toggle flex-none cursor-pointer rounded-md p-0.5 leading-none text-muted hover:bg-surface-2 hover:text-text"
+                :aria-label="
+                  isOpen(row.folder) ? 'Collapse folder' : 'Expand folder'
+                "
                 @click="$emit('folder-toggle', row.folder.id)"
-                @dblclick="
-                  $emit('rename-start', row.folder.id, row.folder.name)
-                "
-                @contextmenu.prevent="$emit('menu-open', row.folder.id, $event)"
-                @keydown="onFolderKeydown($event, row.folder)"
               >
-                {{ row.folder.name }}
+                <component
+                  :is="isOpen(row.folder) ? ChevronDown : ChevronRight"
+                  class="size-[14px]"
+                />
               </button>
-            </BaseTooltip>
-
-            <span class="flex-none text-sm tabular-nums text-muted">{{
-              row.folder.builds.length
-            }}</span>
-
-            <div class="nav-menu-wrap relative flex items-center">
-              <BaseTooltip text="Folder menu">
-                <button
-                  type="button"
-                  class="nav-kebab flex flex-none cursor-pointer items-center rounded-md px-1.5 py-1 text-muted hover:bg-surface-2 hover:text-text focus:outline-none"
-                  aria-label="Folder menu"
-                  @click="$emit('menu-open', row.folder.id, $event)"
-                >
-                  <EllipsisVertical class="size-[14px]" />
-                </button>
-              </BaseTooltip>
-
-              <NavContextMenu
-                v-if="menuOpenId === row.folder.id"
-                :anchor="menuAnchor"
-                :items="menuItems"
-                :ignore="['.nav-kebab']"
-                @action="
-                  (a, skip) => $emit('menu-action', a, row.folder.id, skip)
-                "
-                @close="$emit('menu-close')"
-              />
-            </div>
-          </div>
+            </template>
+            <template #after>
+              <span class="flex-none text-sm tabular-nums text-muted">{{
+                row.folder.builds.length
+              }}</span>
+            </template>
+          </NavRowFolder>
 
           <template v-if="isOpen(row.folder)">
-            <NavBuildRow
+            <NavRowBuild
               v-for="child in row.builds"
               :key="child.build.id"
               :build="child.build"
