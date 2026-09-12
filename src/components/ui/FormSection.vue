@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // Section heading inside an editing form. `sub` drops the border/uppercase for a nested
-// grouping one level down (e.g. a sub-heading inside a bonus's form).
+// grouping one level down.
 import { computed } from "vue";
 
 const props = withDefaults(defineProps<{ sub?: boolean; inline?: boolean }>(), {

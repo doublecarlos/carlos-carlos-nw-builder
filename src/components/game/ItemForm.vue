@@ -512,6 +512,7 @@ function showsGroup(group: FieldGroup): boolean {
       </template>
     </DraftFormBar>
 
+    <FormSection>Identification</FormSection>
     <FormGrid class="mb-2">
       <FormField label="Name">
         <BaseInput

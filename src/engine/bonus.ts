@@ -701,6 +701,9 @@ export function resolve(
 
   // An active bonus suppresses the bonuses it `excludes`; an item wanting to suppress one
   // carries a bonus that does, so there is one exclusion mechanism, not two.
+  //
+  // Excludes are only considered for active bonuses. The exclusion set is built after the
+  // initial evaluation once, so mutual exclusion ends up excluding both.
   const excluded = new Map<string, string>();
   for (const entry of evaluated) {
     if (!entry.active) continue;

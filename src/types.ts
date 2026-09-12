@@ -975,6 +975,7 @@ export interface EvaluatedBonus {
   /** One entry per contributing slot, in build order. */
   sources: BonusSource[];
   slotId: string;
+  /** A bonus is active if at least one of its grants is active and it comes from a real source. */
   active: boolean;
   gate: ConditionExplain;
   chose: string | null;
