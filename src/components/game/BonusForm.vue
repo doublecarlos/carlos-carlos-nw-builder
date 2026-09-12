@@ -52,6 +52,14 @@ const props = withDefaults(
     /** The item whose form embeds this bonus (ItemBonuses case). Its own "Granted by" entry
      *  is plain text since it is already on screen. */
     currentItemId?: string;
+    /** Nested inside another form's card (ItemBonuses case): the header bar is an in-flow
+     *  row with icon actions instead of a sticky strip, see DraftFormBar.vue. */
+    embedded?: boolean;
+    /** Shows only the header bar. The draft and its undo history live in this instance
+     *  either way, so collapsing a card never loses an edit in progress. */
+    collapsed?: boolean;
+    /** Whether the header bar's inert area raises `toggle`, see DraftFormBar.vue. */
+    toggleable?: boolean;
   }>(),
   {
     source: null,
@@ -65,6 +73,9 @@ const props = withDefaults(
     initialDraft: null,
     registryId: "",
     currentItemId: undefined,
+    embedded: false,
+    collapsed: false,
+    toggleable: false,
   },
 );
 
@@ -76,6 +87,8 @@ const emit = defineEmits<{
   delete: [];
   duplicate: [];
   revert: [];
+  /** The header bar of a `toggleable` form was clicked outside its controls. */
+  toggle: [];
   /** A "Granted by" member link was clicked: open that item in the editor. */
   "open-item": [itemId: string];
 }>();
@@ -258,96 +271,110 @@ if (bonusDraftRegistry && props.registryId) {
       :is-new="isNew"
       :has-source="Boolean(source)"
       can-duplicate
+      :embedded="embedded"
+      :toggleable="toggleable"
       :error="error"
       duplicate-testid="duplicate-bonus"
       @save="save"
+      @toggle="$emit('toggle')"
       @revert="$emit('revert')"
       @duplicate="$emit('duplicate')"
       @delete="$emit('delete')"
     >
-      <!-- ItemBonuses.vue's per-item embedding injects its own "Detach" here -->
+      <!-- ItemBonuses fills these: chevron, occurrence chip, Detach. -->
+      <template #leading>
+        <slot name="leading" />
+      </template>
+      <template #after-title>
+        <slot name="after-title" />
+      </template>
       <template #extra-actions>
         <slot name="extra-actions" />
       </template>
     </DraftFormBar>
 
-    <FormGrid class="mb-2">
-      <FormField label="Name">
-        <BaseInput
-          v-model="draft.name"
-          class="w-full"
-          type="text"
-          data-testid="bonus-name-input"
-        />
-      </FormField>
-      <IdField
-        :id="displayId"
-        label="Id"
-        :existing="Boolean(source || fixedId)"
-      />
-    </FormGrid>
+    <template v-if="!collapsed">
+      <!-- The embedding item's per-attachment settings, ahead of the bonus's own definition. -->
+      <slot />
 
-    <p class="text-muted">
-      <template v-if="members.length">
-        Granted by <strong>{{ members.length }}</strong> item(s) -
-        <LinkList
-          :items="members"
-          link-testid="bonus-member-link"
-          @select="$emit('open-item', $event)"
-        />.
-      </template>
-      <template v-else> Not granted by any item. </template>
-    </p>
-
-    <FormSection sub>Stacking</FormSection>
-    <div class="flex flex-wrap items-center gap-1.5 mb-1">
-      <FormField label="Behavior">
-        <ComboBox
-          class="w-64"
-          :model-value="draft.stacking"
-          :options="stackingOptions"
-          @update:model-value="(v) => (draft.stacking = v)"
-        />
-      </FormField>
-      <template v-if="draft.stacking === 'perSource'">
-        <FormField label="Max stacks (0 = unlimited)">
+      <FormGrid class="mb-2">
+        <FormField label="Name">
           <BaseInput
-            v-model.number="draft.maxStacks"
-            type="number"
-            min="0"
-            class="w-16"
+            v-model="draft.name"
+            class="w-full"
+            type="text"
+            data-testid="bonus-name-input"
           />
         </FormField>
-      </template>
-    </div>
+        <IdField
+          :id="displayId"
+          label="Id"
+          :existing="Boolean(source || fixedId)"
+        />
+      </FormGrid>
 
-    <FormSection sub>Suppressed bonuses</FormSection>
-    <TokenInput
-      v-model="draft.excludes"
-      data-testid="bonus-excludes-input"
-      :options="bonusOptions"
-      :allow-free="false"
-      placeholder="Bonus to suppress…"
-    >
-      <template #option="{ option }">
-        <BonusOptionRow :option="option" />
-      </template>
-    </TokenInput>
+      <p class="text-muted">
+        <template v-if="members.length">
+          Granted by <strong>{{ members.length }}</strong> item(s) -
+          <LinkList
+            :items="members"
+            link-testid="bonus-member-link"
+            @select="$emit('open-item', $event)"
+          />.
+        </template>
+        <template v-else> Not granted by any item. </template>
+      </p>
 
-    <FormSection>
-      Grants
-      <IconButton title="Add grant" @click="addGrant"
-        ><CirclePlus
-      /></IconButton>
-      <span v-if="!draft.grants.length" class="text-muted">none yet</span>
-    </FormSection>
+      <FormSection sub>Stacking</FormSection>
+      <div class="flex flex-wrap items-center gap-1.5 mb-1">
+        <FormField label="Behavior">
+          <ComboBox
+            class="w-64"
+            :model-value="draft.stacking"
+            :options="stackingOptions"
+            @update:model-value="(v) => (draft.stacking = v)"
+          />
+        </FormField>
+        <template v-if="draft.stacking === 'perSource'">
+          <FormField label="Max stacks (0 = unlimited)">
+            <BaseInput
+              v-model.number="draft.maxStacks"
+              type="number"
+              min="0"
+              class="w-16"
+            />
+          </FormField>
+        </template>
+      </div>
 
-    <BonusRows
-      :store="draftStore"
-      :tags="tags"
-      :bonus-options="bonusOptions"
-      :registry-id="registryId"
-      @error="error = $event"
-    />
+      <FormSection sub>Suppressed bonuses</FormSection>
+      <TokenInput
+        v-model="draft.excludes"
+        data-testid="bonus-excludes-input"
+        :options="bonusOptions"
+        :allow-free="false"
+        placeholder="Bonus to suppress…"
+      >
+        <template #option="{ option }">
+          <BonusOptionRow :option="option" />
+        </template>
+      </TokenInput>
+
+      <FormSection>
+        Grants
+        <IconButton title="Add grant" @click="addGrant"
+          ><CirclePlus
+        /></IconButton>
+        <span v-if="!draft.grants.length" class="text-muted">none yet</span>
+      </FormSection>
+
+      <BonusRows
+        :store="draftStore"
+        :tags="tags"
+        :bonus-options="bonusOptions"
+        :registry-id="registryId"
+        @error="error = $event"
+      />
+    </template>
   </div>
 </template>

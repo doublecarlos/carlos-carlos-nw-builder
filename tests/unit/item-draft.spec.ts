@@ -70,6 +70,36 @@ describe("buildDraft / toItem round trip", () => {
     expect(toItem(buildDraft(item), { id: "gear" })).toEqual(item);
   });
 
+  it("writes a fixed count of exactly 1 with no label back as a bare id", () => {
+    const draft = buildDraft({
+      id: "gear",
+      name: "Gear",
+      filter: "ring",
+      bonuses: ["plain_bonus"],
+    });
+    draft.bonusOccurrences = {
+      plain_bonus: { min: 1, max: 1, default: 1, label: "" },
+    };
+    expect(toItem(draft, { id: "gear" }).bonuses).toEqual(["plain_bonus"]);
+  });
+
+  it("keeps a fixed count of 1 as a config once it carries a label or another bound", () => {
+    const draft = buildDraft({
+      id: "gear",
+      name: "Gear",
+      filter: "ring",
+      bonuses: ["labeled", "counted"],
+    });
+    draft.bonusOccurrences = {
+      labeled: { min: 1, max: 1, default: 1, label: "Stacks" },
+      counted: { min: 3, max: 3, default: 3, label: "" },
+    };
+    expect(toItem(draft, { id: "gear" }).bonuses).toEqual([
+      { bonus: "labeled", min: 1, max: 1, default: 1, label: "Stacks" },
+      { bonus: "counted", min: 3, max: 3, default: 3 },
+    ]);
+  });
+
   it("round-trips insignia slots, universal and shaped", () => {
     const item: Item = {
       id: "mount",
