@@ -312,7 +312,7 @@ function moveFocus(dir: 1 | -1) {
 
         <template v-else>
           <div
-            class="nav-row nav-row--folder relative flex cursor-grab items-center gap-1 rounded-md border-b-2 border-t-2 border-transparent py-1 pl-1 pr-1 focus-within:rounded-none focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-accent"
+            class="nav-row nav-row--folder relative flex cursor-grab items-center gap-1 h-9 rounded-md border-b-2 border-t-2 border-transparent py-1 pl-1 pr-1 focus-within:rounded-none focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-accent"
             :class="[
               rootDrop.indicatorAt(row.index) === 'before' &&
                 '!border-t-accent',

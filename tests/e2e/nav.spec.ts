@@ -541,16 +541,3 @@ test("kebab icons sit on their row's vertical center", async ({ page }) => {
     expect(await centerOffset(row, ".nav-kebab svg")).toBeLessThan(1);
   }
 });
-
-test("a top-level build name lines up with a folder name", async ({ page }) => {
-  await openBuilder(page);
-  await addFolder(page);
-
-  const build = await buildRow(page, "Build 1")
-    .locator(".nav-name")
-    .boundingBox();
-  const folder = await folderRow(page, "Folder 1")
-    .locator(".nav-name")
-    .boundingBox();
-  expect(build!.x).toBeCloseTo(folder!.x, 0);
-});

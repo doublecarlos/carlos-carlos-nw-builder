@@ -110,7 +110,7 @@ function onRowKeydown(event: KeyboardEvent) {
     ]"
   >
     <div
-      class="nav-row nav-row--build relative flex cursor-grab items-center gap-1 rounded-md border-b-2 border-t-2 border-transparent py-1 pr-1 focus-within:rounded-none focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-accent"
+      class="nav-row nav-row--build relative flex cursor-grab items-center gap-1 h-9 rounded-md border-b-2 border-t-2 border-transparent py-1 pl-2 pr-1 focus-within:rounded-none focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-accent"
       :class="[
         active && 'is-active bg-accent-soft',
         indicator === 'before' && '!border-t-accent',
@@ -118,10 +118,6 @@ function onRowKeydown(event: KeyboardEvent) {
       ]"
       v-bind="rowProps"
     >
-      <!-- Stands in for a folder header's chevron so build names line up with folder names:
-         same icon size, and a margin standing in for the toggle button's padding. -->
-      <span class="m-0.5 size-[14px] flex-none" aria-hidden="true" />
-
       <BaseInput
         v-if="renaming"
         v-rename-focus

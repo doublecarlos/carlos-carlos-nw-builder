@@ -60,7 +60,7 @@ defineEmits<{
       <div
         v-for="entry in entries"
         :key="`${entry.kind}_${entry.item.id}_${entry.deletedAt}`"
-        class="nav-row relative flex items-center gap-1 rounded-md py-1 pl-5 pr-1"
+        class="nav-row relative flex items-center gap-1 h-9 rounded-md py-1 pl-5 pr-1"
       >
         <span
           class="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-sm text-muted"

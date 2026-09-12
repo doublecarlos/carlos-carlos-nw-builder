@@ -157,7 +157,7 @@ function moveFocus(dir: 1 | -1) {
       <div
         v-for="(l, i) in filteredLayers"
         :key="l.id"
-        class="nav-row nav-row--layer relative flex cursor-grab items-center gap-1 rounded-md py-1 pl-1.5 pr-1 border-t-2 border-b-2 border-transparent focus-within:rounded-none focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-accent"
+        class="nav-row nav-row--layer relative flex cursor-grab items-center gap-1 h-9 rounded-md py-1 pl-1.5 pr-1 border-t-2 border-b-2 border-transparent focus-within:rounded-none focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-accent"
         :class="[
           selectedId === l.id && 'is-active bg-accent-soft',
           dropList.indicatorAt(i) === 'before' && '!border-t-accent',
