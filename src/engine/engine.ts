@@ -281,10 +281,10 @@ function derive(db: Db, build: Build, stages: Stages): DerivedOutputs {
     (capped.base_damage_flat + (itemLevel / 10) * role.damageBonus) *
     (1 + capped.base_damage_mult);
 
-  const effMagPhys = magical
+  const effectiveMagPhys = magical
     ? capped.magical_damage_boost
     : capped.physical_damage_boost;
-  const enemyEff = magical
+  const effectiveEnemyIncomingMagPhys = magical
     ? capped.enemy_incoming_damage_magical
     : capped.enemy_incoming_damage_physical;
   const overallOgh = capped.out_healing_p + capped.overall_healing;
@@ -293,10 +293,9 @@ function derive(db: Db, build: Build, stages: Stages): DerivedOutputs {
     const critMult = 1 + capped.sev_p - capped.enemy_crit_avoid;
     const deflectMult = 1 / (1 + capped.enemy_deflect_sev - capped.acc_p);
     const other =
-      (1 + effMagPhys) *
-      (1 + enemyEff) *
+      (1 + effectiveMagPhys) *
       (1 + capped.outgoing_damage) *
-      (1 + capped.enemy_incoming_damage) *
+      (1 + capped.enemy_incoming_damage + effectiveEnemyIncomingMagPhys) *
       (1 + capped.outgoing_damage_mult);
     const value =
       baseDamage *
@@ -334,7 +333,7 @@ function derive(db: Db, build: Build, stages: Stages): DerivedOutputs {
     itemLevel,
     hp,
     baseDamage,
-    effectiveMagPhys: effMagPhys,
+    effectiveMagPhys: effectiveMagPhys,
     overallHealing: overallOgh,
     damage: {
       average: damage(capped.strike_p, capped.enemy_deflect),
