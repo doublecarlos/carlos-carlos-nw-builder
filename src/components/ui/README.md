@@ -29,7 +29,8 @@ ordinary one.
 | CompareLine                               | A compare build's value stacked under this build's own, inside one table cell              |
 | CreatableComboBox                         | Single-value combobox: pick a known option, or type one that doesn't exist yet             |
 | DraftFormBar                              | Shared header bar (title, status badges, Save/Revert/Duplicate/Delete) for an editor form  |
-| DragHandle                                | The grip affordance on a draggable row                                                     |
+| DragHandle                                | The grip affordance on a draggable row; `touch-action: none` so touch drags don't scroll   |
+| DropIndicator                             | The drag-and-drop insertion line for one `useDropList`                                     |
 | FormBar                                   | Sticky action bar at the top of an editing form                                            |
 | FormField                                 | Label-above-control stack, the basic form unit                                             |
 | FormGrid                                  | Wrapping row of FormField instances                                                        |

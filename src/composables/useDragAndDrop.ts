@@ -1,27 +1,17 @@
-// Generic drag-and-drop building blocks for the list/tree reorder UIs across the app
-// (builds, layers, grants, tiers, variants, condition rows/branches). Hand-rolled on native
-// HTML5 drag events (dragstart/dragover/drop/dragend) -- GameImport.vue already does the same
-// for its file dropzone, this generalizes the pattern to reorderable lists.
+// Generic drag-and-drop helpers for the app's list/tree reorder UIs (builds, layers, grants,
+// tiers, variants, condition rows/branches). Pointer events plus list-level hit testing:
+// `elementFromPoint` finds the innermost `[data-drop-list]` that accepts the source, which
+// resolves to one gap or row. No per-row dragover handlers. Native DnD is only for file drops.
 //
-// The composable never mutates domain arrays itself: each drop zone is handed an `onDrop`
-// callback and the call site decides how to apply it (a store method, an `update` emit),
-// mirroring how every existing move-up/down button already works. Drag state (what's being
-// dragged, and which drop zone is currently hovered) lives in a module-scope singleton --
-// cross-component drops (e.g. a condition dragged from one grant's tree into another's) need
-// visibility between components that share no useful common ancestor, so provide/inject
-// doesn't fit; this matches how the rest of the app's shared state lives in module-scope
-// stores rather than injected context.
+// Each drop zone gets an `onDrop` callback and the call site mutates the array. Drag state is
+// a module-scope singleton so cross-component drops work without a common ancestor, with a
+// `Map<containerId, ListEntry>` replacing native DnD's event bubbling. A nested ConditionRows
+// branch supplies its own useDropList, even while empty, so "drop into" needs no primitive.
 //
-// A "drop into a nested block" (e.g. an existing condition dragged into a fresh `not` group)
-// needs no separate primitive: ConditionRows.vue renders each branch as its own nested
-// ConditionRows instance with its own useDropList, including while empty, so that instance's
-// own drop zone already is "drop into this block".
-//
-// Vitest runs unit tests with `environment: "node"` (no DOM/DragEvent), so the DOM-facing
-// handlers below have no unit coverage -- only the pure index/edge helpers do. End-to-end
-// (Playwright) tests are the only net for the handlers themselves.
+// Vitest has no DOM, so only the pure helpers below are unit tested; DOM access is deferred to
+// the pointerdown handler and its listeners. Playwright covers the rest.
 
-import { computed, reactive } from "vue";
+import { computed, reactive, type ComponentPublicInstance } from "vue";
 
 export interface DragSource {
   /** Distinguishes payload shapes so a drop zone can reject sources it doesn't understand
@@ -31,258 +21,485 @@ export interface DragSource {
   containerId: string;
   /** Stable id within that container (e.g. a build's id, a row's uid). */
   key: string;
-  /** Position within `containerId` before the drag started -- used for same-list reorder
-   *  index math (see `reorderIndex`). */
+  /** Position within `containerId` before the drag started (see `reorderIndex`). */
   index: number;
   /** Arbitrary extra data a call site needs at drop time (e.g. a condition row's tree id and
    *  path, for a cross-container transfer). */
   data?: unknown;
 }
 
-export type DropEdge = "before" | "after";
+/** Where a drop lands: between rows ("before"/"after" are the same insertion index) or inside
+ *  a row that opted in via `rowProps(i, { into: true })`. */
+export type DropZone = "before" | "after" | "into";
 
-/** Where a drop lands relative to the row under the cursor: between rows (`before`/`after`),
- *  or inside the row itself -- only offered by rows that opt in (`rowProps`'s `into`), such
- *  as a build folder's header in the sidebar. */
-export type DropZone = DropEdge | "into";
+export interface DragHandleProps {
+  onPointerdown(event: PointerEvent): void;
+}
+
+const DRAG_THRESHOLD = 4;
+const AUTOSCROLL_ZONE = 24;
+const AUTOSCROLL_MAX_SPEED = 12;
+
+interface RowRect {
+  top: number;
+  /** Gap boundary and separator line. Extends over block children that follow the row but
+   *  aren't rows themselves, such as a build folder's expanded children list. */
+  bottom: number;
+  /** The row's own bottom for the "into" band. Unlike `bottom`, never extended over block
+   *  children. Defaults to `bottom`. */
+  intoBottom?: number;
+  into: boolean;
+}
+
+type Resolved = { zone: "gap"; gap: number } | { zone: "into"; index: number };
+
+interface ListEntry {
+  containerId: string;
+  el: HTMLElement;
+  accepts: (source: DragSource) => boolean;
+  onDrop: (source: DragSource, index: number, zone: DropZone) => void;
+}
+
+interface DragTarget {
+  containerId: string;
+  /** Real (unfiltered) row indices, resolved against this list's own DOM rows. */
+  resolved: Resolved;
+  /** Separator position in the target list's own coordinate space, valid only when
+   *  `resolved.zone === "gap"`. */
+  separatorTop: number;
+}
 
 interface DragBusState {
   source: DragSource | null;
-  overContainerId: string | null;
-  overIndex: number | null;
-  overEdge: DropZone | null;
+  target: DragTarget | null;
 }
 
-const state = reactive<DragBusState>({
-  source: null,
-  overContainerId: null,
-  overIndex: null,
-  overEdge: null,
-});
+const state = reactive<DragBusState>({ source: null, target: null });
+const registry = new Map<string, ListEntry>();
 
-function clearDrag() {
-  state.source = null;
-  state.overContainerId = null;
-  state.overIndex = null;
-  state.overEdge = null;
-}
-
-let cleanupArmed = false;
-/** Clears stuck hover/drag state if a drag ends outside any drop zone (dropped on the OS
- *  desktop, cancelled with Escape, etc). Armed lazily on first handle/list use, as a plain
- *  `addEventListener` rather than a composable like VueUse's `useEventListener` -- drop zones
- *  are created dynamically (per grant, per condition branch) from contexts that aren't real
- *  `<script setup>` setup scope, where a lifecycle-hook-based listener wouldn't reliably
- *  register, and this listener needs no unmount cleanup anyway (it's page-lifetime, for a
- *  module-scope singleton). Guarded for Vitest's `environment: "node"`, and for `builds.ts`/
- *  `layers.ts`/`bonus-draft.ts`'s partial `window` shim in store unit tests (`window` set to
- *  `globalThis`, sans DOM methods) -- neither has a real `addEventListener` to call. */
-function armGlobalCleanup() {
-  if (cleanupArmed) return;
-  cleanupArmed = true;
-  if (
-    typeof window !== "undefined" &&
-    typeof window.addEventListener === "function"
-  ) {
-    window.addEventListener("dragend", clearDrag);
-  }
-}
-
-/** Pure -- which side of a row's own height the cursor is over. Unit-testable without DOM. */
-export function resolveDropEdge(offsetYRatio: number): DropEdge {
-  return offsetYRatio < 0.5 ? "before" : "after";
-}
-
-/** Pure -- the three-way split for a row that can also be dropped *into*. The middle half of
- *  the row's height means "inside"; the outer quarters keep the before/after reorder gesture
- *  reachable, so a row can still be dropped next to a folder rather than in it. */
-export function resolveDropZone(offsetYRatio: number): DropZone {
-  if (offsetYRatio < 0.25) return "before";
-  if (offsetYRatio >= 0.75) return "after";
-  return "into";
-}
-
-/** What is currently in flight, for call sites whose drop affordances depend on it -- a
- *  folder header accepts a build dropped into it, but not another folder. */
+/** What is currently in flight, for call sites whose affordances depend on it. */
 export const dragSource = computed<DragSource | null>(() => state.source);
 
-/** Pure -- the index a dragged item lands at once it's spliced out of `fromIndex`, given a
- *  target index computed against the list *before* that removal (which is what dragover
- *  math naturally produces, since the list hasn't been mutated yet while hovering). Only
- *  matters for same-list moves; cross-list moves insert into an unrelated array. */
+/** Pure. The final index after the item is spliced out of `fromIndex`, given a target index
+ *  computed before that removal. Only used for same-list moves. */
 export function reorderIndex(fromIndex: number, toIndex: number): number {
   return toIndex > fromIndex ? toIndex - 1 : toIndex;
 }
 
-/** What `useDragHandle` returns and `useDropList`'s `rowProps` returns -- named so a component
- *  can take them as props and forward them to the element that actually carries the gesture. */
-export interface DragHandleProps {
-  draggable: boolean;
-  onDragstart: (event: DragEvent) => void;
-  onDragend: () => void;
+/** Pure. Resolves a pointer's `y` against row rects into an insertion gap (0..rows.length) or
+ *  an "into" band over the middle half of a row that accepts drops. The 25/75 split keeps the
+ *  reorder gesture reachable beside a folder. Positions index the given `rows` array. */
+export function resolveTarget(rows: RowRect[], y: number): Resolved {
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    if (!row.into) continue;
+    const bottom = row.intoBottom ?? row.bottom;
+    const ratio = (y - row.top) / (bottom - row.top || 1);
+    if (ratio >= 0.25 && ratio < 0.75) return { zone: "into", index: i };
+  }
+  const gap = rows.filter((r) => (r.top + r.bottom) / 2 < y).length;
+  return { zone: "gap", gap };
 }
 
-export interface DropRowProps {
-  onDragover: (event: DragEvent) => void;
-  onDrop: (event: DragEvent) => void;
+/** Pure. Where the separator line sits for a resolved `gap`, relative to `listTop`, so it can
+ *  be used directly as a `top` style inside a `position: relative` list root. Sits at the gap
+ *  midpoint, or at `listContentBottom` when `gap === rows.length`. */
+export function separatorTop(
+  rows: RowRect[],
+  gap: number,
+  listContentBottom: number,
+  listTop: number,
+): number {
+  if (gap >= rows.length) return listContentBottom - listTop;
+  const above = gap > 0 ? rows[gap - 1].bottom : rows[gap].top;
+  const below = rows[gap].top;
+  return (above + below) / 2 - listTop;
 }
 
-/** Binds the element that starts a drag. That is a grip icon in the editor's dense rows, whose
- *  text inputs and comboboxes would otherwise lose the browser's own drag-to-select-text
- *  gesture to the drag; the sidebar's nav rows have no such fields (only a rename input, which
- *  turns `draggable` off while it is up) and so drag by the whole row instead. Safe to call
- *  dynamically (e.g. once per row from a template helper, not just from real `<script setup>`
- *  setup scope) since it's a plain function with no Vue lifecycle hooks of its own. */
-export function useDragHandle(getSource: () => DragSource): DragHandleProps {
-  armGlobalCleanup();
+/** Pure. Autoscroll speed for the pointer's signed distance from a scrollable edge: negative
+ *  near the top, positive near the bottom, 0 at `zone` px away, capped at `maxSpeed`. */
+export function autoscrollDelta(
+  distanceFromEdge: number,
+  zone = AUTOSCROLL_ZONE,
+  maxSpeed = AUTOSCROLL_MAX_SPEED,
+): number {
+  const abs = Math.abs(distanceFromEdge);
+  if (abs >= zone) return 0;
+  const speed = Math.round(((zone - abs) / zone) * maxSpeed);
+  return distanceFromEdge < 0 ? -speed : speed;
+}
+
+function findScrollableAncestor(el: HTMLElement | null): HTMLElement | null {
+  let node = el;
+  while (node && node !== document.documentElement) {
+    const style = getComputedStyle(node);
+    if (
+      (style.overflowY === "auto" || style.overflowY === "scroll") &&
+      node.scrollHeight > node.clientHeight
+    ) {
+      return node;
+    }
+    node = node.parentElement;
+  }
+  return null;
+}
+
+/** Reads `entry`'s rows from the DOM and resolves the pointer against them. Rects are read per
+ *  move, since autoscroll changes them. */
+function resolveInList(entry: ListEntry, x: number, y: number): DragTarget {
+  const rowEls = Array.from(
+    entry.el.querySelectorAll<HTMLElement>(
+      `[data-drop-of="${entry.containerId}"]`,
+    ),
+  );
+  // A row's element can sit inside a wrapper that is the root's direct child. Walk up to that
+  // wrapper to compare it with the root's other direct children below.
+  function ownDirectChild(el: HTMLElement): HTMLElement {
+    let node = el;
+    while (node.parentElement && node.parentElement !== entry.el)
+      node = node.parentElement;
+    return node;
+  }
+  const directChildren = Array.from(entry.el.children);
+  const rects: RowRect[] = rowEls.map((el, i) => {
+    const rect = el.getBoundingClientRect();
+    // A folder renders its children list as a further direct child after its row. Extend
+    // `bottom` over those children, up to the next row's wrapper, so the gap falls past the
+    // whole block.
+    const startIdx = directChildren.indexOf(ownDirectChild(el));
+    const nextRowEl = rowEls[i + 1];
+    const nextStartIdx = nextRowEl
+      ? directChildren.indexOf(ownDirectChild(nextRowEl))
+      : directChildren.length;
+    const blockEnd = directChildren[Math.max(startIdx, nextStartIdx - 1)];
+    const blockBottom = blockEnd
+      ? blockEnd.getBoundingClientRect().bottom
+      : rect.bottom;
+    return {
+      top: rect.top,
+      bottom: Math.max(rect.bottom, blockBottom),
+      intoBottom: rect.bottom,
+      into: el.hasAttribute("data-drop-into"),
+    };
+  });
+  const indices = rowEls.map((el) => Number(el.dataset.dropRow));
+  const resolved = resolveTarget(rects, y);
+
+  if (resolved.zone === "into") {
+    return {
+      containerId: entry.containerId,
+      resolved: { zone: "into", index: indices[resolved.index] },
+      separatorTop: 0,
+    };
+  }
+
+  const realGap =
+    resolved.gap < indices.length
+      ? indices[resolved.gap]
+      : indices.length
+        ? indices[indices.length - 1] + 1
+        : 0;
+  const listRect = entry.el.getBoundingClientRect();
+  const lastChild = entry.el.lastElementChild;
+  const listContentBottom = lastChild
+    ? lastChild.getBoundingClientRect().bottom
+    : listRect.bottom;
   return {
-    draggable: true,
-    onDragstart(event: DragEvent) {
-      const source = getSource();
-      state.source = source;
-      event.dataTransfer?.setData("text/plain", source.key);
-      if (event.dataTransfer) event.dataTransfer.effectAllowed = "move";
-    },
-    onDragend() {
-      clearDrag();
+    containerId: entry.containerId,
+    resolved: { zone: "gap", gap: realGap },
+    // Round to a whole pixel, or a 2px line at a fractional `top` anti-aliases across rows.
+    separatorTop: Math.round(
+      separatorTop(rects, resolved.gap, listContentBottom, listRect.top),
+    ),
+  };
+}
+
+/** Walks up through enclosing `[data-drop-list]`s until one accepts the source. A build over
+ *  a folder's build-only list falls through to the root list around it. */
+function hitTest(x: number, y: number) {
+  if (!state.source) {
+    state.target = null;
+    return;
+  }
+  const source = state.source;
+  let node = document.elementFromPoint(x, y) as HTMLElement | null;
+  let resolved: DragTarget | null = null;
+  while (node) {
+    const listEl: HTMLElement | null = node.closest("[data-drop-list]");
+    if (!listEl) break;
+    const containerId = listEl.dataset.dropList!;
+    const entry = registry.get(containerId);
+    if (entry && entry.accepts(source)) {
+      resolved = resolveInList(entry, x, y);
+      break;
+    }
+    node = listEl.parentElement;
+  }
+  state.target = resolved;
+}
+
+let scrollRaf: number | null = null;
+let lastPointer = { x: 0, y: 0 };
+// True for one frame after a pointermove. Autoscroll waits for a still tick, so a frame
+// between the pointer settling and release can't scroll under an already-resolved drop.
+let pointerMovedSinceLastTick = false;
+
+function autoscrollTick() {
+  if (!state.source) {
+    scrollRaf = null;
+    return;
+  }
+  if (pointerMovedSinceLastTick) {
+    pointerMovedSinceLastTick = false;
+    scrollRaf = requestAnimationFrame(autoscrollTick);
+    return;
+  }
+  const el = document.elementFromPoint(
+    lastPointer.x,
+    lastPointer.y,
+  ) as HTMLElement | null;
+  const scrollEl = findScrollableAncestor(el);
+  if (scrollEl) {
+    const rect = scrollEl.getBoundingClientRect();
+    const topDist = lastPointer.y - rect.top;
+    const bottomDist = rect.bottom - lastPointer.y;
+    let delta = 0;
+    if (topDist < AUTOSCROLL_ZONE) delta = autoscrollDelta(-topDist);
+    else if (bottomDist < AUTOSCROLL_ZONE) delta = autoscrollDelta(bottomDist);
+    if (delta !== 0) {
+      scrollEl.scrollTop += delta;
+      hitTest(lastPointer.x, lastPointer.y);
+    }
+  }
+  scrollRaf = requestAnimationFrame(autoscrollTick);
+}
+
+function moveDrag(x: number, y: number) {
+  lastPointer = { x, y };
+  pointerMovedSinceLastTick = true;
+  hitTest(x, y);
+}
+
+function onEscape(event: KeyboardEvent) {
+  if (event.key === "Escape") {
+    event.preventDefault();
+    cancelDrag();
+  }
+}
+function onWindowBlur() {
+  cancelDrag();
+}
+function swallowClick(event: MouseEvent) {
+  event.preventDefault();
+  event.stopPropagation();
+}
+
+function startDrag(
+  source: DragSource,
+  handleEl: HTMLElement,
+  pointerId: number,
+) {
+  state.source = source;
+  state.target = null;
+  pointerMovedSinceLastTick = true;
+  try {
+    handleEl.setPointerCapture(pointerId);
+  } catch {
+    // Not critical: window listeners still drive the drag.
+  }
+  document.documentElement.classList.add("is-dragging");
+  // Clears any selection made while the pointer traveled here. Without `draggable="true"`, a
+  // mousedown-move starts native text selection, which `is-dragging`'s `user-select: none`
+  // only stops from spreading. Handles and whole-row targets therefore keep a permanent
+  // `select-none` (DragHandle.vue, NavRow.vue) so selection never starts.
+  window.getSelection?.()?.removeAllRanges();
+  window.addEventListener("keydown", onEscape, true);
+  window.addEventListener("blur", onWindowBlur);
+  // One-shot, capture phase: swallows the click the browser fires on the common ancestor of
+  // the down/up targets after a drag. `teardown` removes it on cancel.
+  window.addEventListener("click", swallowClick, { capture: true, once: true });
+  scrollRaf = requestAnimationFrame(autoscrollTick);
+}
+
+function teardown() {
+  if (scrollRaf !== null) {
+    cancelAnimationFrame(scrollRaf);
+    scrollRaf = null;
+  }
+  document.documentElement.classList.remove("is-dragging");
+  window.removeEventListener("keydown", onEscape, true);
+  window.removeEventListener("blur", onWindowBlur);
+  window.removeEventListener("click", swallowClick, true);
+}
+
+function endDrag() {
+  const { source, target } = state;
+  teardown();
+  state.source = null;
+  state.target = null;
+  if (!source || !target) return;
+  const entry = registry.get(target.containerId);
+  if (!entry) return;
+  if (target.resolved.zone === "into") {
+    entry.onDrop(source, target.resolved.index, "into");
+  } else {
+    entry.onDrop(source, target.resolved.gap, "before");
+  }
+}
+
+function cancelDrag() {
+  teardown();
+  state.source = null;
+  state.target = null;
+}
+
+/** Binds the element that starts a drag: a grip icon in the editor's rows (so inputs keep text
+ *  selection) and the whole row in the sidebar nav. Rename mode turns dragging off.
+ *
+ *  `pointerdown` only arms a drag; it starts after `DRAG_THRESHOLD` px, so a click or small
+ *  wiggle still selects the row. Presses in an editable descendant or a `data-no-drag` element
+ *  never arm. */
+export function useDragHandle(getSource: () => DragSource): DragHandleProps {
+  return {
+    onPointerdown(event: PointerEvent) {
+      if (event.button !== 0) return;
+      const startedOn = event.target as HTMLElement;
+      if (
+        startedOn.closest("input, textarea, [contenteditable], [data-no-drag]")
+      )
+        return;
+
+      const handleEl = event.currentTarget as HTMLElement;
+      const pointerId = event.pointerId;
+      const startX = event.clientX;
+      const startY = event.clientY;
+      let dragging = false;
+      let finished = false;
+
+      function finish(canceled: boolean) {
+        if (finished) return;
+        finished = true;
+        window.removeEventListener("pointermove", onMove);
+        window.removeEventListener("pointerup", onUp);
+        window.removeEventListener("pointercancel", onPointerCancel);
+        window.removeEventListener("lostpointercapture", onLostCapture);
+        if (!dragging) return;
+        if (canceled) cancelDrag();
+        else endDrag();
+      }
+
+      function onMove(moveEvent: PointerEvent) {
+        if (moveEvent.pointerId !== pointerId) return;
+        if (!dragging) {
+          const dx = moveEvent.clientX - startX;
+          const dy = moveEvent.clientY - startY;
+          if (Math.hypot(dx, dy) < DRAG_THRESHOLD) return;
+          dragging = true;
+          startDrag(getSource(), handleEl, pointerId);
+        }
+        moveDrag(moveEvent.clientX, moveEvent.clientY);
+      }
+      function onUp(upEvent: PointerEvent) {
+        if (upEvent.pointerId !== pointerId) return;
+        finish(false);
+      }
+      function onPointerCancel(cancelEvent: PointerEvent) {
+        if (cancelEvent.pointerId !== pointerId) return;
+        finish(true);
+      }
+      // A capture loss ahead of the matching pointerup would strand the drag open; defer a
+      // frame so a same-frame pointerup finishes first and this no-ops via `finished`.
+      function onLostCapture(lostEvent: PointerEvent) {
+        if (lostEvent.pointerId !== pointerId) return;
+        requestAnimationFrame(() => finish(true));
+      }
+
+      window.addEventListener("pointermove", onMove);
+      window.addEventListener("pointerup", onUp);
+      window.addEventListener("pointercancel", onPointerCancel);
+      window.addEventListener("lostpointercapture", onLostCapture);
     },
   };
 }
 
-/** One reorderable list. `containerId` should be stable and unique per rendered list instance
- *  (e.g. `"tiers:" + grant.uid`) -- `accepts` typically checks both `source.kind` and, for
- *  lists that shouldn't accept drops from a sibling list of the same kind (tiers/variants are
- *  scoped to their own grant), `source.containerId === containerId` too. */
+/** One reorderable list. `containerId` must be stable and unique per list instance. `accepts`
+ *  usually checks `source.kind` and, for lists scoped to a parent (tiers/variants per grant),
+ *  `source.containerId === containerId`. */
 export function useDropList(options: {
   containerId: string;
-  /** How many rows the list renders right now. Indicators are resolved against the *gaps*
-   *  between rows, so where the list ends decides which row (or trailing strip) owns the
-   *  last gap. */
-  size: () => number;
-  /** The list renders its own trailing drop strip (`tailProps`), which then owns the gap past
-   *  the last row instead of it being drawn under that row. */
-  tail?: boolean;
   accepts: (source: DragSource) => boolean;
-  /** `zone` is `"into"` only for rows that opted in via `rowProps(index, { into: true })`,
-   *  in which case `index` is that row's own index rather than a gap between rows. */
+  /** `zone` is `"into"` only for rows registered with `rowProps(i, { into: true })`; then
+   *  `index` is that row's own index, not a gap. */
   onDrop: (source: DragSource, index: number, zone: DropZone) => void;
 }) {
-  armGlobalCleanup();
+  function registerList(el: Element | ComponentPublicInstance | null) {
+    if (el) {
+      registry.set(options.containerId, {
+        containerId: options.containerId,
+        el: el as HTMLElement,
+        accepts: options.accepts,
+        onDrop: options.onDrop,
+      });
+    } else {
+      registry.delete(options.containerId);
+    }
+  }
 
+  /** Bind on the list's root. Sets `data-drop-list` and registers the element so a hit inside
+   *  it resolves back to this list. */
+  function listProps() {
+    return {
+      "data-drop-list": options.containerId,
+      ref: registerList,
+    };
+  }
+
+  /** Bind on each row: `data-drop-row`, `data-drop-of`, and `data-drop-into` for an "into"
+   *  row. The controller reads these via `elementFromPoint`, so there are no per-row
+   *  listeners. */
+  function rowProps(
+    index: number,
+    opts?: { into?: boolean },
+  ): Record<string, string | undefined> {
+    return {
+      "data-drop-row": String(index),
+      "data-drop-of": options.containerId,
+      "data-drop-into": opts?.into ? "" : undefined,
+    };
+  }
+
+  /** True while this list is the resolved drop target. */
   const isActiveContainer = computed(
     () =>
       state.source !== null &&
-      state.overContainerId === options.containerId &&
-      options.accepts(state.source),
+      state.target?.containerId === options.containerId,
   );
 
-  /** The insertion point a drop would land at, as an index in `0..size`, or null when the
-   *  pointer is over a row's "into" band or over some other list. Both halves of a gap -- the
-   *  bottom of one row and the top of the next -- resolve to the same number, so a gap is one
-   *  drop position rather than two adjacent ones. */
+  /** Resolved insertion gap (a real index in `0..size`) when the zone isn't `"into"`, else
+   *  null. */
   const dropGap = computed<number | null>(() => {
-    if (!isActiveContainer.value || state.overIndex === null) return null;
-    if (state.overEdge === "into") return null;
-    return state.overEdge === "after" ? state.overIndex + 1 : state.overIndex;
+    if (!isActiveContainer.value || state.target?.resolved.zone !== "gap")
+      return null;
+    return state.target.resolved.gap;
   });
 
-  function indicatorAt(index: number): DropZone | null {
-    if (state.overEdge === "into")
-      return isActiveContainer.value && state.overIndex === index
-        ? "into"
-        : null;
-    const gap = dropGap.value;
-    if (gap === null) return null;
-    // A gap is drawn above the row that would follow the drop. The gap past the last row has
-    // no such row, so it falls back to a line under the last one -- unless a trailing strip
-    // owns it.
-    if (gap === index) return "before";
-    if (!options.tail && gap >= options.size() && index === options.size() - 1)
-      return "after";
-    return null;
-  }
+  /** Real row index when the zone is `"into"`, else null. */
+  const intoIndex = computed<number | null>(() => {
+    if (!isActiveContainer.value || state.target?.resolved.zone !== "into")
+      return null;
+    return state.target.resolved.index;
+  });
 
-  /** True while the drop would land past the last row -- what a trailing strip highlights. */
-  const tailActive = computed(
-    () => dropGap.value !== null && dropGap.value >= options.size(),
-  );
-
-  function handleDragover(
-    event: DragEvent,
-    index: number,
-    edge: DropZone | null,
-  ) {
-    if (!state.source || !options.accepts(state.source)) return;
-    event.preventDefault();
-    event.stopPropagation();
-    state.overContainerId = options.containerId;
-    state.overIndex = index;
-    state.overEdge = edge;
-  }
-
-  function handleDrop(event: DragEvent, dropIndex: number, zone: DropZone) {
-    if (!state.source || !options.accepts(state.source)) return;
-    event.preventDefault();
-    event.stopPropagation();
-    const source = state.source;
-    clearDrag();
-    options.onDrop(source, dropIndex, zone);
-  }
-
-  /** Bind on each row -- reports which part of the row the cursor is over so the drop lands
-   *  before or after it, or (for a row that passes `into`) inside it. */
-  function rowProps(index: number, opts?: { into?: boolean }): DropRowProps {
-    return {
-      onDragover(event: DragEvent) {
-        const target = event.currentTarget as HTMLElement;
-        const rect = target.getBoundingClientRect();
-        const ratio = (event.clientY - rect.top) / (rect.height || 1);
-        handleDragover(
-          event,
-          index,
-          opts?.into ? resolveDropZone(ratio) : resolveDropEdge(ratio),
-        );
-      },
-      onDrop(event: DragEvent) {
-        const zone = state.overEdge ?? "before";
-        handleDrop(event, zone === "after" ? index + 1 : index, zone);
-      },
-    };
-  }
-
-  /** Bind on a strip rendered after the last row, so "at the end of this list" has a target
-   *  of its own. Needed where the last row is not the last thing on screen -- a build folder
-   *  renders its contents *below* its own row, which would otherwise leave no reachable spot
-   *  to drop a build back out at the top level. */
-  function tailProps(): DropRowProps {
-    return {
-      onDragover(event: DragEvent) {
-        handleDragover(event, options.size(), "before");
-      },
-      onDrop(event: DragEvent) {
-        handleDrop(event, options.size(), "before");
-      },
-    };
-  }
-
-  /** Bind on the list's empty-state placeholder so an empty list is still a valid target. */
-  function emptyProps(): DropRowProps {
-    return {
-      onDragover(event: DragEvent) {
-        handleDragover(event, 0, null);
-      },
-      onDrop(event: DragEvent) {
-        handleDrop(event, 0, "before");
-      },
-    };
-  }
+  /** Style for `DropIndicator`, in the list's own coordinate space; null hides it. */
+  const separatorStyle = computed<{ top: string } | null>(() => {
+    if (dropGap.value === null || !state.target) return null;
+    return { top: `${state.target.separatorTop}px` };
+  });
 
   return {
-    isActiveContainer,
-    indicatorAt,
-    tailActive,
+    listProps,
     rowProps,
-    tailProps,
-    emptyProps,
+    intoIndex,
+    separatorStyle,
   };
 }

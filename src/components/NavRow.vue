@@ -1,17 +1,17 @@
 <script setup lang="ts">
 // Shared presentation row for build/folder/layer nav rows: rename input, tooltip,
-// drag bind, indicator styling, menu, keyboard contract. Before/after slots for
-// folder chevron and build count.
+// drag bind, drag-source/drop-into styling, menu, keyboard contract. The insertion line
+// itself is a list-level DropIndicator, not drawn per row. Before/after slots for folder
+// chevron and build count.
 import { computed, type Component, type Directive } from "vue";
 import BaseTooltip from "./ui/BaseTooltip.vue";
 import BaseInput from "./ui/BaseInput.vue";
 import { EllipsisVertical } from "@lucide/vue";
 import NavContextMenu from "./NavContextMenu.vue";
 import { isMac } from "../lib/platform";
-import type {
-  DragHandleProps,
-  DropRowProps,
-  DropZone,
+import {
+  dragSource,
+  type DragHandleProps,
 } from "../composables/useDragAndDrop";
 
 const vRenameFocus: Directive<HTMLInputElement> = {
@@ -38,8 +38,8 @@ const props = defineProps<{
   }[];
   menuAnchor: DOMRect | null;
   handleProps: DragHandleProps;
-  dropProps: DropRowProps;
-  indicator: DropZone | null;
+  rowProps: Record<string, string | undefined>;
+  isDropInto: boolean;
   nested: boolean;
   disabled?: boolean;
   collapsed?: boolean;
@@ -61,10 +61,11 @@ const emit = defineEmits<{
 }>();
 
 const rowProps = computed(() => ({
-  ...props.dropProps,
-  ...props.handleProps,
-  draggable: !props.renaming,
+  ...props.rowProps,
+  ...(props.renaming ? {} : props.handleProps),
 }));
+
+const isDragSource = computed(() => dragSource.value?.key === props.id);
 
 function onRowKeydown(event: KeyboardEvent) {
   if (event.key === "ArrowDown" || event.key === "ArrowUp") {
@@ -105,23 +106,14 @@ function onRowKeydown(event: KeyboardEvent) {
 </script>
 
 <template>
-  <div
-    :class="[
-      nested
-        ? 'nav-row--nested ml-6 pl-1 border-l-1 border-solid border-line'
-        : 'pl-1 my-1',
-    ]"
-  >
+  <div :class="[nested ? 'nav-row--nested my-1' : 'pl-1 my-1']">
     <div
-      class="nav-row relative flex cursor-grab items-center gap-1 h-9 rounded-md border-b-2 border-t-2 border-transparent py-1 pl-2 pr-1 focus-within:rounded-none focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-accent"
+      class="nav-row relative flex cursor-grab select-none items-center gap-1 h-9 rounded-md py-1 pl-2 pr-1 focus-within:rounded-none focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-accent"
       :class="[
         `nav-row--${kind}`,
         active && 'is-active bg-accent-soft',
-        indicator === 'before' && '!border-t-accent',
-        indicator === 'after' && '!border-b-accent',
-        kind === 'folder' &&
-          indicator === 'into' &&
-          'is-drop-into bg-accent-soft !border-b-accent !border-t-accent',
+        isDragSource && 'is-drag-source opacity-50',
+        kind === 'folder' && isDropInto && 'is-drop-into bg-accent-soft',
       ]"
       v-bind="rowProps"
     >
@@ -169,6 +161,7 @@ function onRowKeydown(event: KeyboardEvent) {
         >
           <button
             type="button"
+            data-no-drag
             class="nav-kebab flex flex-none cursor-pointer items-center rounded-md px-1.5 py-1 text-muted hover:bg-surface-2 hover:text-text focus:outline-none"
             :aria-label="`${kind} menu`"
             @click="emit('menu-open', id, $event)"

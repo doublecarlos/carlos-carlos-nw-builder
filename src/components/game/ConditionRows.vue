@@ -10,6 +10,7 @@ import ComboBox from "../ui/ComboBox.vue";
 import BonusComboBox from "./BonusComboBox.vue";
 import IconButton from "../ui/IconButton.vue";
 import DragHandle from "../ui/DragHandle.vue";
+import DropIndicator from "../ui/DropIndicator.vue";
 import {
   Ampersand,
   CircleAlert,
@@ -37,6 +38,7 @@ import {
 } from "../../engine/condition-draft";
 import type { BonusOption, BuildParameterSlot } from "../../types";
 import {
+  dragSource,
   useDragHandle,
   useDropList,
   reorderIndex,
@@ -176,7 +178,6 @@ const rowsDropList = computed(() => {
   const id = containerId.value;
   return useDropList({
     containerId: id,
-    size: () => props.rows.length,
     accepts: (source) => source.kind === "condition-row",
     onDrop: (source, index) => {
       if (source.containerId === id) {
@@ -297,7 +298,6 @@ function branchesDropList(row: ConditionRow) {
     const id = `branches:${props.treeId}:${uid}`;
     list = useDropList({
       containerId: id,
-      size: () => rowByUid(uid)?.branches?.length ?? 0,
       accepts: (source) =>
         source.kind === "condition-branch" && rowByUid(uid)?.op !== "not",
       onDrop: (source, index) => {
@@ -456,15 +456,18 @@ function changeParamKey(row: ConditionRow, key: string) {
 <template>
   <!-- One row per direct child of the list -- ruled off like a table so a run of conditions
        reads as rows instead of a wrapped paragraph of buttons. -->
-  <div class="flex flex-col">
+  <div v-bind="rowsDropList.listProps()" class="relative flex flex-col">
+    <DropIndicator :pos="rowsDropList.separatorStyle.value" />
+
     <div
       v-for="(row, i) in rows"
       :key="row.uid"
       data-testid="condition-row"
       class="border-y-2 border-line/50 py-1"
       :class="[
-        rowsDropList.indicatorAt(i) === 'before' && '!border-t-accent',
-        rowsDropList.indicatorAt(i) === 'after' && '!border-b-accent',
+        dragSource?.containerId === containerId &&
+          dragSource?.key === row.uid &&
+          'is-drag-source opacity-50',
       ]"
       v-bind="rowsDropList.rowProps(i)"
     >
@@ -654,17 +657,21 @@ function changeParamKey(row: ConditionRow, key: string) {
               ><Trash
             /></IconButton>
           </div>
-          <div class="flex flex-col divide-y divide-dashed divide-line">
+          <div
+            v-bind="branchesDropList(row).listProps()"
+            class="relative flex flex-col divide-y divide-dashed divide-line"
+          >
+            <DropIndicator :pos="branchesDropList(row).separatorStyle.value" />
+
             <div
               v-for="(branch, bi) in row.branches"
               :key="bi"
               data-testid="condition-branch"
-              class="py-0.5 border-y-2 border-transparent"
+              class="py-0.5"
               :class="[
-                branchesDropList(row).indicatorAt(bi) === 'before' &&
-                  '!border-t-accent',
-                branchesDropList(row).indicatorAt(bi) === 'after' &&
-                  '!border-b-accent',
+                dragSource?.containerId === `branches:${treeId}:${row.uid}` &&
+                  dragSource?.key === String(bi) &&
+                  'is-drag-source opacity-50',
               ]"
               v-bind="branchesDropList(row).rowProps(bi)"
             >
@@ -714,17 +721,8 @@ function changeParamKey(row: ConditionRow, key: string) {
 
     <div
       data-testid="condition-empty-drop"
-      class="mt-1 flex flex-wrap items-center gap-1 rounded-md border-2 border-dashed border-transparent p-0.5"
-      :class="
-        rowsDropList.isActiveContainer.value && !rows.length && '!border-accent'
-      "
-      v-bind="rows.length ? {} : rowsDropList.emptyProps()"
+      class="mt-1 flex flex-wrap items-center gap-1 rounded-md p-0.5"
     >
-      <span
-        v-if="rowsDropList.isActiveContainer.value && !rows.length"
-        class="text-muted"
-        >Drop here</span
-      >
       <IconButton title="Add condition" @click="addLeaf"><Plus /></IconButton>
       <template v-if="canNest">
         <IconButton

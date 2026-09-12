@@ -33,6 +33,7 @@ import SegmentedControl from "../ui/SegmentedControl.vue";
 import DragHandle from "../ui/DragHandle.vue";
 import OcrTextField from "../ui/OcrTextField.vue";
 import FormSection from "../ui/FormSection.vue";
+import DropIndicator from "../ui/DropIndicator.vue";
 import {
   BonusDraftStore,
   moveConditionAcrossStores,
@@ -44,6 +45,7 @@ import type { GrantDraft } from "../../lib/bonus-draft";
 import type { BonusOption } from "../../types";
 import { bonusDraftRegistryKey } from "../../composables/bonusDraftRegistry";
 import {
+  dragSource,
   useDragHandle,
   useDropList,
   type DragSource,
@@ -109,7 +111,6 @@ const grantsContainerId = `grants:${instanceId}`;
 
 const grantsDropList = useDropList({
   containerId: grantsContainerId,
-  size: () => props.store.grants.length,
   accepts: (source) =>
     source.kind === "grant" && source.containerId === grantsContainerId,
   onDrop: (source, index) => props.store.moveGrantTo(source.index, index),
@@ -137,8 +138,6 @@ function tierDropList(grantUid: string) {
     const containerId = `tiers:${grantUid}`;
     list = useDropList({
       containerId,
-      size: () =>
-        props.store.grants[grantIndexByUid(grantUid)]?.tiers.length ?? 0,
       accepts: (source) =>
         source.kind === "tier" && source.containerId === containerId,
       onDrop: (source, index) => {
@@ -167,8 +166,6 @@ function variantDropList(grantUid: string) {
     const containerId = `variants:${grantUid}`;
     list = useDropList({
       containerId,
-      size: () =>
-        props.store.grants[grantIndexByUid(grantUid)]?.variants.length ?? 0,
       accepts: (source) =>
         source.kind === "variant" && source.containerId === containerId,
       onDrop: (source, index) => {
@@ -330,16 +327,15 @@ function toggleJson(gIndex: number) {
 </script>
 
 <template>
-  <div>
+  <div v-bind="grantsDropList.listProps()" class="relative">
+    <DropIndicator :pos="grantsDropList.separatorStyle.value" />
+
     <div
       v-for="(grant, gIndex) in props.store.grants"
       :key="grant.uid"
       data-testid="bonus-grant-row"
       class="mb-2 rounded-md border-2 border-line bg-surface-2 p-2.5"
-      :class="[
-        grantsDropList.indicatorAt(gIndex) === 'before' && '!border-t-accent',
-        grantsDropList.indicatorAt(gIndex) === 'after' && '!border-b-accent',
-      ]"
+      :class="[dragSource?.key === grant.uid && 'is-drag-source opacity-50']"
       v-bind="grantsDropList.rowProps(gIndex)"
     >
       <div class="flex flex-wrap items-center gap-2">
@@ -446,78 +442,82 @@ function toggleJson(gIndex: number) {
           <p class="text-muted">
             Grants stats from the highest matching tier; others are ignored.
           </p>
-          <!-- Boxed, not just a rule on the left -- with several tiers stacked back to back a
-               thin line alone isn't enough contrast to tell where one ends and the next
-               begins. The parent is already `bg-surface-2`, so tiers go `bg-surface` to read
-               as lighter cards sitting on top of it. -->
-          <div
-            v-for="(tier, tIndex) in grant.tiers"
-            :key="tIndex"
-            data-testid="bonus-tier-row"
-            class="my-1.5 rounded-md border-2 border-l-4 border-line border-l-accent bg-surface px-2.5 py-1.5"
-            :class="[
-              tierDropList(grant.uid).indicatorAt(tIndex) === 'before' &&
-                '!border-t-accent',
-              tierDropList(grant.uid).indicatorAt(tIndex) === 'after' &&
-                '!border-b-accent',
-            ]"
-            v-bind="tierDropList(grant.uid).rowProps(tIndex)"
-          >
-            <div class="mb-1 flex flex-wrap items-center gap-1.5">
-              <DragHandle
-                data-testid="tier-drag-handle"
-                v-bind="tierDragHandleProps(grant.uid, tIndex)"
-              />
-              <IconButton
-                title="Move tier up"
-                :disabled="tIndex === 0"
-                @click="gs(gIndex).moveTier(tIndex, -1)"
-                ><ArrowUp
-              /></IconButton>
-              <IconButton
-                title="Move tier down"
-                :disabled="tIndex === grant.tiers.length - 1"
-                @click="gs(gIndex).moveTier(tIndex, 1)"
-                ><ArrowDown
-              /></IconButton>
-              <IconButton
-                title="Duplicate tier"
-                @click="gs(gIndex).duplicateTier(tIndex)"
-                ><Copy
-              /></IconButton>
-              <IconButton
-                title="Insert tier"
-                @click="gs(gIndex).insertTier(tIndex)"
-                ><CirclePlus
-              /></IconButton>
-              <IconButton
-                title="Remove tier"
-                @click="gs(gIndex).removeTier(tIndex)"
-                ><Trash
-              /></IconButton>
-              <BonusComboBox
-                class="combo--bonus w-44"
-                :model-value="tier.bonus"
-                :options="bonusOptions"
-                self
-                @update:model-value="(v) => (tier.bonus = v)"
-              />
-              <BaseInput
-                v-model.number="tier.atLeast"
-                type="number"
-                min="1"
-                class="w-16"
-              />
-              <span class="text-muted"
-                >{{ tier.atLeast === 1 ? "occurrence" : "occurrences" }} or
-                more</span
-              >
-            </div>
-            <StatRowList
-              :rows="tier.stats"
-              @add="gs(gIndex).addTierStat(tIndex)"
-              @remove="(i: number) => gs(gIndex).removeTierStat(i, tIndex)"
+          <div v-bind="tierDropList(grant.uid).listProps()" class="relative">
+            <DropIndicator
+              :pos="tierDropList(grant.uid).separatorStyle.value"
             />
+
+            <!-- Boxed, not just a left rule: with tiers stacked, a thin line alone isn't
+                 enough contrast. Tiers use `bg-surface` to stand out against the parent's
+                 `bg-surface-2`. -->
+            <div
+              v-for="(tier, tIndex) in grant.tiers"
+              :key="tIndex"
+              data-testid="bonus-tier-row"
+              class="my-1.5 rounded-md border-2 border-l-4 border-line border-l-accent bg-surface px-2.5 py-1.5"
+              :class="[
+                dragSource?.containerId === `tiers:${grant.uid}` &&
+                  dragSource?.key === String(tIndex) &&
+                  'is-drag-source opacity-50',
+              ]"
+              v-bind="tierDropList(grant.uid).rowProps(tIndex)"
+            >
+              <div class="mb-1 flex flex-wrap items-center gap-1.5">
+                <DragHandle
+                  data-testid="tier-drag-handle"
+                  v-bind="tierDragHandleProps(grant.uid, tIndex)"
+                />
+                <IconButton
+                  title="Move tier up"
+                  :disabled="tIndex === 0"
+                  @click="gs(gIndex).moveTier(tIndex, -1)"
+                  ><ArrowUp
+                /></IconButton>
+                <IconButton
+                  title="Move tier down"
+                  :disabled="tIndex === grant.tiers.length - 1"
+                  @click="gs(gIndex).moveTier(tIndex, 1)"
+                  ><ArrowDown
+                /></IconButton>
+                <IconButton
+                  title="Duplicate tier"
+                  @click="gs(gIndex).duplicateTier(tIndex)"
+                  ><Copy
+                /></IconButton>
+                <IconButton
+                  title="Insert tier"
+                  @click="gs(gIndex).insertTier(tIndex)"
+                  ><CirclePlus
+                /></IconButton>
+                <IconButton
+                  title="Remove tier"
+                  @click="gs(gIndex).removeTier(tIndex)"
+                  ><Trash
+                /></IconButton>
+                <BonusComboBox
+                  class="combo--bonus w-44"
+                  :model-value="tier.bonus"
+                  :options="bonusOptions"
+                  self
+                  @update:model-value="(v) => (tier.bonus = v)"
+                />
+                <BaseInput
+                  v-model.number="tier.atLeast"
+                  type="number"
+                  min="1"
+                  class="w-16"
+                />
+                <span class="text-muted"
+                  >{{ tier.atLeast === 1 ? "occurrence" : "occurrences" }} or
+                  more</span
+                >
+              </div>
+              <StatRowList
+                :rows="tier.stats"
+                @add="gs(gIndex).addTierStat(tIndex)"
+                @remove="(i: number) => gs(gIndex).removeTierStat(i, tIndex)"
+              />
+            </div>
           </div>
           <IconButton
             v-if="!grant.tiers.length"
@@ -532,89 +532,94 @@ function toggleJson(gIndex: number) {
           <p class="text-muted">
             Grants stats from the first matching variant; others are ignored.
           </p>
-          <div
-            v-for="(variant, vIndex) in grant.variants"
-            :key="variant.uid"
-            data-testid="bonus-variant-row"
-            class="my-1.5 rounded-md border-2 border-l-4 border-line border-l-accent bg-surface px-2.5 py-1.5"
-            :class="[
-              variantDropList(grant.uid).indicatorAt(vIndex) === 'before' &&
-                '!border-t-accent',
-              variantDropList(grant.uid).indicatorAt(vIndex) === 'after' &&
-                '!border-b-accent',
-            ]"
-            v-bind="variantDropList(grant.uid).rowProps(vIndex)"
-          >
-            <div class="mb-1 flex flex-wrap items-center gap-2">
-              <DragHandle
-                data-testid="variant-drag-handle"
-                v-bind="variantDragHandleProps(grant.uid, variant.uid, vIndex)"
-              />
-              <span class="text-muted">Variant {{ vIndex + 1 }}</span>
-              <div class="flex flex-wrap items-center gap-1.5">
-                <IconButton
-                  title="Move variant up"
-                  :disabled="vIndex === 0"
-                  @click="gs(gIndex).moveVariant(vIndex, -1)"
-                >
-                  <ArrowUp />
-                </IconButton>
-                <IconButton
-                  title="Move variant down"
-                  :disabled="vIndex === grant.variants.length - 1"
-                  @click="gs(gIndex).moveVariant(vIndex, 1)"
-                >
-                  <ArrowDown />
-                </IconButton>
-                <IconButton
-                  title="Duplicate variant"
-                  @click="gs(gIndex).duplicateVariant(vIndex)"
-                >
-                  <Copy />
-                </IconButton>
-                <IconButton
-                  title="Insert variant"
-                  @click="gs(gIndex).insertVariant(vIndex)"
-                >
-                  <CirclePlus />
-                </IconButton>
-                <IconButton
-                  title="Remove variant"
-                  @click="gs(gIndex).removeVariant(vIndex)"
-                >
-                  <Trash />
-                </IconButton>
-              </div>
-            </div>
-            <FormSection sub>When</FormSection>
-            <ConditionRows
-              :rows="variant.conditions"
-              :depth="0"
-              :bonus-options="bonusOptions"
-              :tree-id="variantTreeId(gIndex, vIndex)"
-              :path="[]"
-              @update="
-                (updated) =>
-                  props.store.setVariantConditions(gIndex, vIndex, updated)
-              "
-              @transfer="onConditionTransfer"
-              @transfer-branch="onBranchTransfer"
-            />
-            <FormSection sub>Stats</FormSection>
-            <StatRowList
-              :rows="variant.stats"
-              @add="gs(gIndex).addVariantStat(vIndex)"
-              @remove="(i: number) => gs(gIndex).removeVariantStat(i, vIndex)"
+          <div v-bind="variantDropList(grant.uid).listProps()" class="relative">
+            <DropIndicator
+              :pos="variantDropList(grant.uid).separatorStyle.value"
             />
 
-            <FormSection sub>Dynamic stats</FormSection>
-            <DynamicStatRowList
-              :rows="variant.dynamicStats"
-              @add="gs(gIndex).addVariantDynamicStat(vIndex)"
-              @remove="
-                (i: number) => gs(gIndex).removeVariantDynamicStat(i, vIndex)
-              "
-            />
+            <div
+              v-for="(variant, vIndex) in grant.variants"
+              :key="variant.uid"
+              data-testid="bonus-variant-row"
+              class="my-1.5 rounded-md border-2 border-l-4 border-line border-l-accent bg-surface px-2.5 py-1.5"
+              :class="[
+                dragSource?.key === variant.uid && 'is-drag-source opacity-50',
+              ]"
+              v-bind="variantDropList(grant.uid).rowProps(vIndex)"
+            >
+              <div class="mb-1 flex flex-wrap items-center gap-2">
+                <DragHandle
+                  data-testid="variant-drag-handle"
+                  v-bind="
+                    variantDragHandleProps(grant.uid, variant.uid, vIndex)
+                  "
+                />
+                <span class="text-muted">Variant {{ vIndex + 1 }}</span>
+                <div class="flex flex-wrap items-center gap-1.5">
+                  <IconButton
+                    title="Move variant up"
+                    :disabled="vIndex === 0"
+                    @click="gs(gIndex).moveVariant(vIndex, -1)"
+                  >
+                    <ArrowUp />
+                  </IconButton>
+                  <IconButton
+                    title="Move variant down"
+                    :disabled="vIndex === grant.variants.length - 1"
+                    @click="gs(gIndex).moveVariant(vIndex, 1)"
+                  >
+                    <ArrowDown />
+                  </IconButton>
+                  <IconButton
+                    title="Duplicate variant"
+                    @click="gs(gIndex).duplicateVariant(vIndex)"
+                  >
+                    <Copy />
+                  </IconButton>
+                  <IconButton
+                    title="Insert variant"
+                    @click="gs(gIndex).insertVariant(vIndex)"
+                  >
+                    <CirclePlus />
+                  </IconButton>
+                  <IconButton
+                    title="Remove variant"
+                    @click="gs(gIndex).removeVariant(vIndex)"
+                  >
+                    <Trash />
+                  </IconButton>
+                </div>
+              </div>
+              <FormSection sub>When</FormSection>
+              <ConditionRows
+                :rows="variant.conditions"
+                :depth="0"
+                :bonus-options="bonusOptions"
+                :tree-id="variantTreeId(gIndex, vIndex)"
+                :path="[]"
+                @update="
+                  (updated) =>
+                    props.store.setVariantConditions(gIndex, vIndex, updated)
+                "
+                @transfer="onConditionTransfer"
+                @transfer-branch="onBranchTransfer"
+              />
+              <FormSection sub>Stats</FormSection>
+              <StatRowList
+                :rows="variant.stats"
+                @add="gs(gIndex).addVariantStat(vIndex)"
+                @remove="(i: number) => gs(gIndex).removeVariantStat(i, vIndex)"
+              />
+
+              <FormSection sub>Dynamic stats</FormSection>
+              <DynamicStatRowList
+                :rows="variant.dynamicStats"
+                @add="gs(gIndex).addVariantDynamicStat(vIndex)"
+                @remove="
+                  (i: number) => gs(gIndex).removeVariantDynamicStat(i, vIndex)
+                "
+              />
+            </div>
           </div>
           <BaseButton
             variant="ghost"
