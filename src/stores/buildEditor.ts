@@ -5,6 +5,7 @@ import * as storage from "../storage/storage";
 import * as builds from "./builds";
 import * as compare from "./compare";
 import * as history from "./history";
+import * as navHistory from "./navHistory";
 import { showUndoNotice } from "./notice";
 import { db } from "./resolved";
 import {
@@ -475,11 +476,17 @@ export function applyOccurrenceFromCompare(itemId: string) {
   b.occurrenceInputs = { ...b.occurrenceInputs, [itemId]: applied };
 }
 
+/** A workspace operation rather than a content edit, so it lands on the nav undo stack. */
 export function renameBuild(name: string) {
   const b = builds.build.value;
-  if (!b) return;
-  history.snapshot("build", b.id, "name", `rename build → "${name}"`, b);
-  b.name = name;
+  if (!b || b.name === name) return;
+  const { id, name: previous } = b;
+  builds.setName(id, name);
+  navHistory.record({
+    label: `rename build → "${name}"`,
+    undo: () => builds.setName(id, previous),
+    redo: () => builds.setName(id, name),
+  });
 }
 
 export const filledSlots = computed(() => {

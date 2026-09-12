@@ -1,6 +1,6 @@
 // Soft-delete for builds and layers: deleteBuild/deleteLayer move the item here with a
 // timestamp rather than dropping it outright. On boot, entries older than 7 days are
-// purged. Restore re-inserts the record and appends to the relevant order.
+// purged. Restoring hands the item back to its store, which decides where it lands.
 import { computed, ref } from "vue";
 import * as history from "./history";
 import * as storage from "../storage/storage";
@@ -41,22 +41,40 @@ export function _init(entries: TrashEntry[]) {
 
   // Purge old entries from IDB.
   for (const entry of purge) {
-    storage
-      .deleteTrash(`${entry.kind}_${entry.item.id}_${entry.deletedAt}`)
-      .catch(() => {});
+    storage.deleteTrash(trashKey(entry)).catch(() => {});
   }
 }
 
-/** Restore an item from trash, re-inserting it into the relevant store. Returns the
- * restored item, or null if the entry was not found. */
+function trashKey(entry: TrashEntry) {
+  return `${entry.kind}_${entry.item.id}_${entry.deletedAt}`;
+}
+
+/** Drops the entry at `idx` and hands its item back to the caller, who re-inserts it. */
+function take(idx: number): Build | Layer {
+  const [entry] = _trash.value.splice(idx, 1);
+  storage.deleteTrash(trashKey(entry)).catch(() => {});
+  return entry.item;
+}
+
+/** Takes an item back out of the trash for the trash UI's Restore. Returns the item, or null
+ * if the entry was not found. */
 export function restore(entry: TrashEntry): Build | Layer | null {
   const idx = _trash.value.indexOf(entry);
-  if (idx === -1) return null;
-  _trash.value.splice(idx, 1);
-  storage
-    .deleteTrash(`${entry.kind}_${entry.item.id}_${entry.deletedAt}`)
-    .catch(() => {});
-  return entry.item;
+  return idx === -1 ? null : take(idx);
+}
+
+/** Takes the newest trashed copy of `id` back out, for a nav undo that puts a deleted item
+ * back. Null when nothing is left to restore: the entry was purged, or already restored
+ * from the trash UI. */
+export function takeById(kind: "build", id: string): Build | null;
+export function takeById(kind: "layer", id: string): Layer | null;
+export function takeById(kind: "build" | "layer", id: string) {
+  let idx = -1;
+  _trash.value.forEach((entry, i) => {
+    if (entry.kind !== kind || entry.item.id !== id) return;
+    if (idx === -1 || entry.deletedAt > _trash.value[idx].deletedAt) idx = i;
+  });
+  return idx === -1 ? null : take(idx);
 }
 
 /** Remove an entry from trash permanently. Also drops the item's undo history. */
@@ -64,8 +82,7 @@ export function purge(entry: TrashEntry) {
   const idx = _trash.value.indexOf(entry);
   if (idx === -1) return;
   _trash.value.splice(idx, 1);
-  const trashKey = `${entry.kind}_${entry.item.id}_${entry.deletedAt}`;
-  storage.deleteTrash(trashKey).catch(() => {});
+  storage.deleteTrash(trashKey(entry)).catch(() => {});
   // Drop the history for this item.
   history._delete(`${entry.kind}:${entry.item.id}`);
 }

@@ -2,15 +2,23 @@
 // creates/destroys them. Where each one sits in the sidebar -- top level or inside a folder --
 // is folders.ts's business, which this file delegates every ordering call to. Build content
 // edits live in buildEditor.ts.
+//
+// Creating, duplicating, deleting and moving builds each record one step on the nav undo
+// stack (`navHistory.ts`). A build leaving the pool always goes through the trash, so undoing
+// a create and undoing a delete are the same two primitives run in opposite directions:
+// `trashBuild` and `restoreBuild`. Neither records anything.
 import { computed, ref, watch } from "vue";
 import { useDebounceFn } from "@vueuse/core";
 import * as storage from "../storage/storage";
 import * as history from "./history";
 import * as landing from "./landing";
 import * as layers from "./layers";
+import * as navHistory from "./navHistory";
+import type { NavStepOutcome } from "./navHistory";
 import * as trash from "./trash";
 import * as selection from "./selection";
 import * as folders from "./folders";
+import type { BuildPlacement } from "./folders";
 import { buildOrder } from "./meta";
 import { flagStorageFailed, showNotice, showUndoNotice } from "./notice";
 import { db as engineDb } from "./resolved";
@@ -125,30 +133,19 @@ export function commitActive() {
   selection.selectBuild(b.id);
 }
 
-export function createBuild(folderId: string | null = null) {
-  const b = storage.defaultBuild(`Build ${_builds.value.size + 1}`);
+/** Puts a build into the pool at `placement`. */
+function addBuild(b: Build, placement: BuildPlacement) {
   _builds.value.set(b.id, b);
-  if (folderId) folders.placeBuild(b.id, folderId);
-  else folders.appendBuild(b.id);
+  folders.putBuild(b.id, placement);
   markDirty(b.id);
-  selection.selectBuild(b.id);
-  showNotice(`Created “${b.name}”`);
 }
 
-export function duplicateBuild() {
-  const source = build.value;
-  if (!source) return;
-  const copy = storage.duplicate(source);
-  _builds.value.set(copy.id, copy);
-  folders.insertBuildAfter(source.id, copy.id);
-  markDirty(copy.id);
-  selection.selectBuild(copy.id);
-  showNotice(`Duplicated as “${copy.name}”`);
-}
-
-export function deleteBuild(id: string) {
+/** Moves a build to the trash. Returns the placement it had, or null when there is no such
+ *  build. Selection moves on to the first build when the trashed one was selected. */
+function trashBuild(id: string): BuildPlacement | null {
   const b = _builds.value.get(id);
-  if (!b) return;
+  const placement = folders.placementOf(id);
+  if (!b || !placement) return null;
 
   const wasLast = _builds.value.size < 2;
   if (_placeholderId === id) _placeholderId = null;
@@ -159,7 +156,6 @@ export function deleteBuild(id: string) {
   storage.deleteBuildRecord(id).catch(() => {});
 
   trash._add("build", b);
-  showNotice(`Deleted "${b.name}"`);
 
   // Deleting the last build hands a fresh one its place, so every reader of `build.value`
   // still finds one. The builder stays up rather than dropping back to the landing screen:
@@ -171,7 +167,7 @@ export function deleteBuild(id: string) {
     folders.appendBuild(replacement.id);
     _placeholderId = replacement.id;
     selection.selectBuild(replacement.id);
-    return;
+    return placement;
   }
 
   if (
@@ -181,6 +177,108 @@ export function deleteBuild(id: string) {
     const next = folders.orderedBuildIds.value[0];
     if (next) selection.selectBuild(next);
   }
+  return placement;
+}
+
+/** Takes a build back out of the trash to `placement`. False when nothing is left to restore. */
+function restoreBuild(id: string, placement: BuildPlacement): boolean {
+  const item = trash.takeById("build", id);
+  if (!item) return false;
+  addBuild(item, placement);
+  return true;
+}
+
+/** The nav step primitives. A trashed row is gone, so the row to focus after trashing is
+ *  whatever build the selection landed on. */
+function trashStep(id: string): NavStepOutcome {
+  if (!trashBuild(id)) return false;
+  const sel = selection.selection.value;
+  return { focusId: sel?.kind === "build" ? sel.id : null };
+}
+
+function restoreStep(id: string, placement: BuildPlacement): NavStepOutcome {
+  if (!restoreBuild(id, placement)) return false;
+  selection.selectBuild(id);
+  return { focusId: id };
+}
+
+/** Records a build that `addBuild` just put in the pool: undoing sends it to the trash, the
+ *  same way a delete does, so nothing the user typed into it is lost. */
+function recordAdded(label: string, id: string) {
+  const placement = folders.placementOf(id)!;
+  navHistory.record({
+    label,
+    undo: () => trashStep(id),
+    redo: () => restoreStep(id, placement),
+  });
+}
+
+export function createBuild(folderId: string | null = null) {
+  const b = storage.defaultBuild(`Build ${_builds.value.size + 1}`);
+  addBuild(b, { folderId, index: Number.MAX_SAFE_INTEGER });
+  selection.selectBuild(b.id);
+  showNotice(`Created “${b.name}”`);
+  recordAdded(`create build "${b.name}"`, b.id);
+}
+
+export function duplicateBuild() {
+  const source = build.value;
+  if (!source) return;
+  const copy = storage.duplicate(source);
+  addBuild(copy, folders.placementAfter(source.id));
+  selection.selectBuild(copy.id);
+  showNotice(`Duplicated as “${copy.name}”`);
+  recordAdded(`duplicate build "${source.name}"`, copy.id);
+}
+
+export function deleteBuild(id: string) {
+  const name = _builds.value.get(id)?.name;
+  const placement = trashBuild(id);
+  if (!placement) return;
+  showNotice(`Deleted "${name}"`);
+  navHistory.record({
+    label: `delete build "${name}"`,
+    undo: () => restoreStep(id, placement),
+    redo: () => trashStep(id),
+  });
+}
+
+/** Deletes a folder and every build in it as one step: the builds go to the trash, and the
+ *  folder itself goes the way `folders.deleteFolder` takes it. Undo recreates the folder
+ *  and puts back whichever of its builds the trash still holds. */
+export function deleteFolderWithBuilds(id: string) {
+  const folder = folders.byId(id);
+  if (!folder) return;
+  const ids = [...folder.builds];
+  for (const buildId of ids) trashBuild(buildId);
+  const removed = folders.removeFolder(id)!;
+  showNotice(`Deleted folder “${folder.name}” and its builds`);
+  navHistory.record({
+    label: `delete folder "${folder.name}"`,
+    undo: () => {
+      folders.addFolder(removed.folder, removed.index);
+      for (const buildId of ids)
+        restoreBuild(buildId, { folderId: id, index: Number.MAX_SAFE_INTEGER });
+      return { focusId: id };
+    },
+    redo: () => {
+      if (!folders.byId(id)) return false;
+      for (const buildId of ids) trashBuild(buildId);
+      folders.removeFolder(id);
+      return { focusId: null };
+    },
+  });
+}
+
+/** Renames a build in place. Records nothing: `buildEditor.renameBuild` is the recorded
+ *  operation, and this is what its undo and redo run. */
+export function setName(id: string, name: string): NavStepOutcome {
+  const b = _builds.value.get(id);
+  if (!b) return false;
+  b.name = name;
+  markDirty(id);
+  selection.selectBuild(id);
+  return { focusId: id };
 }
 
 /** Raises the landing screen again if emptying the trash left the app with nothing at all:
@@ -198,7 +296,8 @@ export function showLandingIfEmptied() {
 /** Moves a build to `toIndex` inside `folderId` (the top level when null, the default).
  *  `toIndex` is relative to the target list as it stands now, before `id` is removed --
  *  callers (the delta-based `moveBuild` below, and drag-and-drop's drop-index math) both
- *  naturally produce indexes in those terms. See `folders.placeBuild`. */
+ *  naturally produce indexes in those terms. See `folders.placeBuild`, which records the
+ *  step for both of these. */
 export function moveBuildTo(
   id: string,
   toIndex: number,

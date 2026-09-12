@@ -1,11 +1,19 @@
 // Layers: named catalog overlays that can be toggled on/off independently. The engine
 // folds every enabled layer's overlay (plus the active build's catalog) on top of the
 // base catalog. The list reads highest-priority first: the topmost layer wins.
+//
+// Creating, duplicating, deleting, moving, renaming and enabling layers each record one step
+// on the nav undo stack (`navHistory.ts`); overlay edits stay on the layer's own content
+// stack. A layer leaving the pool always goes through the trash, so undoing a create and
+// undoing a delete are the same two primitives run in opposite directions: `trashLayer` and
+// `restoreLayer`. Neither records anything.
 import { computed, ref } from "vue";
 import { useDebounceFn } from "@vueuse/core";
 import { reorderIndex } from "../composables/useDragAndDrop";
 import * as storage from "../storage/storage";
 import * as history from "./history";
+import * as navHistory from "./navHistory";
+import type { NavStepOutcome } from "./navHistory";
 import * as trash from "./trash";
 import * as selection from "./selection";
 import { layerOrder, persistMeta } from "./meta";
@@ -67,25 +75,111 @@ export function allocatableIds(): string[] {
 
 // --- mutations --------------------------------------------------------------------------
 
+/** Puts a layer into the pool at `index` in the fold order. */
+function addLayer(layer: Layer, index: number) {
+  _layers.value.set(layer.id, layer);
+  layerOrder.value.splice(
+    Math.max(0, Math.min(layerOrder.value.length, index)),
+    0,
+    layer.id,
+  );
+  markDirty(layer.id);
+}
+
+/** Moves a layer to the trash. Returns the index it had in the fold order, or null when there
+ *  is no such layer. Selection moves on to the bottom layer when the trashed one was selected. */
+function trashLayer(id: string): number | null {
+  const layer = _layers.value.get(id);
+  const index = layerOrder.value.indexOf(id);
+  if (!layer || index === -1) return null;
+
+  clearDirty(id);
+  _layers.value.delete(id);
+  layerOrder.value = layerOrder.value.filter((oid) => oid !== id);
+  storage.deleteLayerRecord(id).catch(() => {});
+
+  trash._add("layer", layer);
+
+  if (
+    selection.selection.value?.kind === "layer" &&
+    selection.selection.value.id === id
+  ) {
+    const next = layerOrder.value[layerOrder.value.length - 1];
+    if (next) selection.selectLayer(next);
+    else _lastLayerId.value = null;
+  }
+  return index;
+}
+
+/** Takes a layer back out of the trash to `index`. False when nothing is left to restore. */
+function restoreLayer(id: string, index: number): boolean {
+  const item = trash.takeById("layer", id);
+  if (!item) return false;
+  addLayer(item, index);
+  return true;
+}
+
+/** The nav step primitives. A trashed row is gone, so the row to focus after trashing is
+ *  whatever layer the selection landed on. */
+function trashStep(id: string): NavStepOutcome {
+  if (trashLayer(id) === null) return false;
+  const sel = selection.selection.value;
+  return { focusId: sel?.kind === "layer" ? sel.id : null };
+}
+
+function restoreStep(id: string, index: number): NavStepOutcome {
+  if (!restoreLayer(id, index)) return false;
+  selection.selectLayer(id);
+  return { focusId: id };
+}
+
+/** Records a layer that `addLayer` just put in the pool: undoing sends it to the trash, the
+ *  same way a delete does, so nothing edited into it is lost. */
+function recordAdded(label: string, id: string) {
+  const index = layerOrder.value.indexOf(id);
+  navHistory.record({
+    label,
+    undo: () => trashStep(id),
+    redo: () => restoreStep(id, index),
+  });
+}
+
+/** Applies one layer field and lands the selection on the layer, for rename and enable. */
+function setField<K extends "name" | "enabled">(
+  id: string,
+  key: K,
+  value: Layer[K],
+): NavStepOutcome {
+  const layer = _layers.value.get(id);
+  if (!layer) return false;
+  layer[key] = value;
+  markDirty(id);
+  selection.selectLayer(id);
+  return { focusId: id };
+}
+
 export function createLayer(name?: string): Layer {
   const n = _layers.value.size + 1;
   const layer = storage.defaultLayer(name ?? `Layer ${n}`);
-  _layers.value.set(layer.id, layer);
-  layerOrder.value.push(layer.id);
-  markDirty(layer.id);
+  addLayer(layer, layerOrder.value.length);
   selection.selectLayer(layer.id);
   _lastLayerId.value = layer.id;
   showNotice(`Created “${layer.name}”`);
+  recordAdded(`create layer "${layer.name}"`, layer.id);
   return layer;
 }
 
 export function renameLayer(id: string, name: string) {
   const layer = _layers.value.get(id);
-  if (layer) {
-    history.snapshot("layer", id, "name", `rename layer → "${name}"`, layer);
-    layer.name = name;
-    markDirty(id);
-  }
+  if (!layer || layer.name === name) return;
+  const previous = layer.name;
+  layer.name = name;
+  markDirty(id);
+  navHistory.record({
+    label: `rename layer → "${name}"`,
+    undo: () => setField(id, "name", previous),
+    redo: () => setField(id, "name", name),
+  });
 }
 
 export function duplicateLayer(id: string) {
@@ -96,48 +190,49 @@ export function duplicateLayer(id: string) {
     id: storage.newId("l"),
     name: `${source.name} copy`,
   });
-  _layers.value.set(copy.id, copy);
-  layerOrder.value.push(copy.id);
-  markDirty(copy.id);
+  addLayer(copy, layerOrder.value.length);
   selection.selectLayer(copy.id);
   showNotice(`Duplicated as “${copy.name}”`);
+  recordAdded(`duplicate layer "${source.name}"`, copy.id);
 }
 
 export function deleteLayer(id: string) {
-  const layer = _layers.value.get(id);
-  if (!layer) return;
-
-  clearDirty(id);
-  _layers.value.delete(id);
-  layerOrder.value = layerOrder.value.filter((oid) => oid !== id);
-  storage.deleteLayerRecord(id).catch(() => {});
-
-  trash._add("layer", layer);
-  showNotice(`Deleted "${layer.name}"`);
-
-  if (
-    selection.selection.value?.kind === "layer" &&
-    selection.selection.value.id === id
-  ) {
-    const next = layerOrder.value[layerOrder.value.length - 1];
-    if (next) selection.selectLayer(next);
-    else _lastLayerId.value = null;
-  }
+  const name = _layers.value.get(id)?.name;
+  const index = trashLayer(id);
+  if (index === null) return;
+  showNotice(`Deleted "${name}"`);
+  navHistory.record({
+    label: `delete layer "${name}"`,
+    undo: () => restoreStep(id, index),
+    redo: () => trashStep(id),
+  });
 }
 
 export function setLayerEnabled(id: string, on: boolean) {
   const layer = _layers.value.get(id);
-  if (layer) {
-    history.snapshot(
-      "layer",
-      id,
-      `enabled:${id}`,
-      on ? "Enable layer" : "Disable layer",
-      layer,
-    );
-    layer.enabled = on;
-    markDirty(id);
-  }
+  if (!layer || layer.enabled === on) return;
+  layer.enabled = on;
+  markDirty(id);
+  navHistory.record({
+    label: `${on ? "enable" : "disable"} layer "${layer.name}"`,
+    undo: () => setField(id, "enabled", !on),
+    redo: () => setField(id, "enabled", on),
+  });
+}
+
+/** Puts a layer at an absolute index in the fold order. */
+function setLayerIndex(id: string, index: number): NavStepOutcome {
+  const from = layerOrder.value.indexOf(id);
+  if (from === -1) return false;
+  layerOrder.value.splice(from, 1);
+  layerOrder.value.splice(
+    Math.max(0, Math.min(layerOrder.value.length, index)),
+    0,
+    id,
+  );
+  persistMeta();
+  selection.selectLayer(id);
+  return { focusId: id };
 }
 
 /** See builds.ts's `moveBuildTo` -- same "index relative to the list before removal" contract. */
@@ -149,6 +244,11 @@ export async function moveLayerTo(id: string, toIndex: number) {
   if (insertAt === idx) return;
   layerOrder.value.splice(idx, 1);
   layerOrder.value.splice(insertAt, 0, id);
+  navHistory.record({
+    label: "move layer",
+    undo: () => setLayerIndex(id, idx),
+    redo: () => setLayerIndex(id, insertAt),
+  });
   await persistMeta();
 }
 
@@ -229,8 +329,8 @@ export function revertToDownloaded(id: string) {
   );
 }
 
-/** Undo a whole-layer snapshot (rename, enable, revert). Overlay snapshots share this stack
- *  and need `undoOverlayFor` instead, so each caller undoes with the shape it recorded. */
+/** Undo a whole-layer snapshot (revert). Overlay snapshots share this stack and need
+ *  `undoOverlayFor` instead, so each caller undoes with the shape it recorded. */
 export function undoLayerFor(id: string) {
   const layer = _layers.value.get(id);
   if (!layer) return;
@@ -265,9 +365,7 @@ export function downloadLayer(id: string) {
 export function importLayerText(text: string) {
   try {
     const { layer, catalogStale } = storage.parseLayerJson(text);
-    _layers.value.set(layer.id, layer);
-    layerOrder.value.push(layer.id);
-    markDirty(layer.id);
+    addLayer(layer, layerOrder.value.length);
     selection.selectLayer(layer.id);
     const stale = catalogStale
       ? ". Made against an older item catalog; some items may no longer resolve"
