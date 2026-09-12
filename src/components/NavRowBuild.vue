@@ -2,11 +2,7 @@
 // Presentation row for a single build, delegates to NavRow with kind="build".
 import NavRow from "./NavRow.vue";
 import type { Build } from "../types";
-import type {
-  DragHandleProps,
-  DropRowProps,
-  DropZone,
-} from "../composables/useDragAndDrop";
+import type { DragHandleProps } from "../composables/useDragAndDrop";
 import type { Component } from "vue";
 
 defineProps<{
@@ -24,8 +20,7 @@ defineProps<{
   }[];
   menuAnchor: DOMRect | null;
   handleProps: DragHandleProps;
-  dropProps: DropRowProps;
-  indicator: DropZone | null;
+  rowProps: Record<string, string | undefined>;
   nested: boolean;
 }>();
 
@@ -56,8 +51,8 @@ const emit = defineEmits<{
     :menu-items="menuItems"
     :menu-anchor="menuAnchor"
     :handle-props="handleProps"
-    :drop-props="dropProps"
-    :indicator="indicator"
+    :row-props="rowProps"
+    :is-drop-into="false"
     :nested="nested"
     @select="(id) => emit('select', id)"
     @rename-start="(id, name) => emit('rename-start', id, name)"

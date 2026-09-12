@@ -20,12 +20,18 @@ export function layerRow(page: Page, name: string): Locator {
   return page.locator(".nav-row--layer").filter({ hasText: name });
 }
 
-/** The sidebar rows currently drawing a drop line. Tailwind's `!` important prefix is matched
- *  as a class substring, so the selector needs no CSS escaping. */
+/** The drop-line elements currently visible in the sidebar (DropIndicator.vue renders nothing
+ *  when hidden, so a visible one is always a real drop line, not a dormant placeholder). */
 export function dropIndicators(page: Page): Locator {
-  return page
-    .getByTestId("library")
-    .locator('[class*="!border-t-accent"], [class*="!border-b-accent"]');
+  return page.getByTestId("library").getByTestId("drop-indicator");
+}
+
+/** The visible drop indicator's left edge, distinguishing a root-list line from one inside a
+ *  folder's indented list. */
+export async function dropIndicatorIndent(page: Page): Promise<number> {
+  const box = await dropIndicators(page).boundingBox();
+  if (!box) throw new Error("No drop indicator is visible");
+  return box.x;
 }
 
 /** Opens a row's kebab menu and returns it (`.navmenu`), scoped so `getByText` only ever

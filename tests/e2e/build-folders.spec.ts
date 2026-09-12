@@ -13,7 +13,7 @@ import {
   openRowMenu,
   renameViaSidebar,
 } from "./support/nav";
-import { beginDrag, dragOnto } from "./support/dragDrop";
+import { beginDrag, dragOnto, dropAt, requireBox } from "./support/dragDrop";
 
 /** Drags a build row onto a folder header's middle band, which is "put it in this folder". */
 async function dropIntoFolder(
@@ -28,9 +28,6 @@ test("the Folder button adds an empty folder", async ({ page }) => {
   await addFolder(page);
 
   await expect(folderRow(page, "Folder 1")).toBeVisible();
-  await expect(page.getByTestId("folder-empty")).toContainText(
-    "Drop builds here",
-  );
 });
 
 test("dragging a build onto a folder puts it inside, and it survives a reload", async ({
@@ -162,8 +159,9 @@ test("a folder reorders among the top-level rows", async ({ page }) => {
   await openBuilder(page);
   await addFolder(page);
   await addFolder(page);
+  await addFolder(page);
 
-  const folderRows = page.locator(".nav-row--folder");
+  const folderRows = page.locator(".nav-row--folder .nav-name");
   await expect(folderRows.nth(0)).toContainText("Folder 1");
 
   await dragOnto(folderRow(page, "Folder 1"), folderRow(page, "Folder 2"));
@@ -250,7 +248,7 @@ test("the chevron left of a folder name expands and collapses it", async ({
   await expect(buildRow(page, "Build 2")).toBeVisible();
 });
 
-test("a build drags out of a folder that is the last row in the list", async ({
+test("a build drags out of a folder that is the last row in the list, dropped below it at the root indent", async ({
   page,
 }) => {
   await openBuilder(page);
@@ -258,15 +256,44 @@ test("a build drags out of a folder that is the last row in the list", async ({
   await dropIntoFolder(buildRow(page, "Build 1"), folderRow(page, "Folder 1"));
   await expect(buildRowNesting(page, "Build 1")).toHaveClass(/nav-row--nested/);
 
-  // The folder is now the only top-level row, and its contents render below it -- the trailing
-  // strip is the only spot left that means "out of the folder, at the end".
-  const drag = await beginDrag(buildRow(page, "Build 1"));
-  const tail = page.getByTestId("nav-root-tail");
-  await expect(tail).toContainText("Move to the end");
-  await drag.dropOn(tail);
+  // The folder is the only top-level row, its contents below it. A point at the root list's
+  // indent below the folder's children resolves against the root list: "after the folder".
+  const rootBox = await requireBox(page.getByTestId("nav-builds-list"));
+  const folderListBox = await requireBox(page.getByTestId("nav-folder-list"));
+
+  await beginDrag(buildRow(page, "Build 1"));
+  await dropAt(page, rootBox.x + 8, folderListBox.y + folderListBox.height + 4);
 
   await expect(buildRowNesting(page, "Build 1")).not.toHaveClass(
     /nav-row--nested/,
   );
   await expect(folderRow(page, "Folder 1")).toContainText("0");
+});
+
+test("a build stays in its folder when dropped below its last row but still at the folder's own indent", async ({
+  page,
+}) => {
+  await openBuilder(page);
+  await addBuild(page);
+  await addFolder(page);
+  await dropIntoFolder(buildRow(page, "Build 1"), folderRow(page, "Folder 1"));
+  await dropIntoFolder(buildRow(page, "Build 2"), folderRow(page, "Folder 1"));
+  await expect(folderRow(page, "Folder 1")).toContainText("2");
+
+  const folderListBox = await requireBox(page.getByTestId("nav-folder-list"));
+
+  // A point still inside the folder's list root (its trailing padding) lands at the end of the
+  // folder's list, not the root's.
+  await beginDrag(buildRow(page, "Build 1"));
+  await dropAt(
+    page,
+    folderListBox.x + 8,
+    folderListBox.y + folderListBox.height - 2,
+  );
+
+  await expect(buildRowNesting(page, "Build 1")).toHaveClass(/nav-row--nested/);
+  await expect(folderRow(page, "Folder 1")).toContainText("2");
+  const rows = page.locator(".nav-row--build");
+  await expect(rows.nth(0)).toContainText("Build 2");
+  await expect(rows.nth(1)).toContainText("Build 1");
 });

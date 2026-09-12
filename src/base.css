@@ -140,4 +140,15 @@
     -webkit-appearance: none;
     margin: 0;
   }
+
+  /* Set on <html> during a pointer-based drag (useDragAndDrop.ts). Suppresses text selection
+   * and pins the cursor to "grabbing", since the dragged element is no longer under the
+   * pointer. */
+  html.is-dragging {
+    user-select: none;
+    cursor: grabbing;
+  }
+  html.is-dragging * {
+    cursor: grabbing !important;
+  }
 }

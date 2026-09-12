@@ -19,7 +19,7 @@ withDefaults(
 <template>
   <BaseTooltip :text="tooltip">
     <span
-      class="cursor-grab text-muted hover:text-accent [&_svg]:size-[14px]"
+      class="cursor-grab touch-none select-none text-muted hover:text-accent [&_svg]:size-[14px]"
       v-bind="$attrs"
     >
       <GripVertical />

@@ -20,8 +20,8 @@ defineProps<{
   }[];
   menuAnchor: DOMRect | null;
   handleProps: import("../composables/useDragAndDrop").DragHandleProps;
-  dropProps: import("../composables/useDragAndDrop").DropRowProps;
-  indicator: import("../composables/useDragAndDrop").DropZone | null;
+  rowProps: Record<string, string | undefined>;
+  isDropInto: boolean;
   nested?: boolean;
   collapsed: boolean;
   buildCount: number;
@@ -55,8 +55,8 @@ const emit = defineEmits<{
     :menu-items="menuItems"
     :menu-anchor="menuAnchor"
     :handle-props="handleProps"
-    :drop-props="dropProps"
-    :indicator="indicator"
+    :row-props="rowProps"
+    :is-drop-into="isDropInto"
     :nested="!!nested"
     :collapsed="collapsed"
     @select="(id) => emit('select', id)"

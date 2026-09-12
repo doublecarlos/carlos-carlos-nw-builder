@@ -12,6 +12,7 @@ import BaseInput from "./ui/BaseInput.vue";
 import HistoryButtons from "./ui/HistoryButtons.vue";
 import NavRowBuild from "./NavRowBuild.vue";
 import NavRowFolder from "./NavRowFolder.vue";
+import DropIndicator from "./ui/DropIndicator.vue";
 import { ChevronDown, ChevronRight, FolderPlus, Plus } from "@lucide/vue";
 
 import { matchesQuery } from "../lib/text-filter";
@@ -116,8 +117,6 @@ const root = useTemplateRef("root");
 
 const rootDrop = useDropList({
   containerId: "nav-builds",
-  size: () => props.entries.length,
-  tail: true,
   accepts: (source) => source.kind === "build" || source.kind === "folder",
   onDrop: (source, index, zone) => {
     if (zone === "into") {
@@ -131,24 +130,14 @@ const rootDrop = useDropList({
   },
 });
 
-function folderBuildCount(id: string) {
-  const entry = props.entries.find(
-    (e) => e.kind === "folder" && e.folder.id === id,
-  );
-  return entry?.kind === "folder" ? entry.builds.length : 0;
-}
-
-// One drop list per folder, cached by id. `useDropList` is a plain function with no lifecycle
-// hooks of its own, so calling it per row is safe, but it does own a `computed` -- caching
-// keeps a re-render from building a fresh one for every folder every time. Entries for
-// folders that go away are inert and die with the component.
+// One drop list per folder, cached by id. `useDropList` owns a few `computed`s, so a cache
+// avoids rebuilding them every render. Entries for removed folders die with the component.
 const folderDrops = new Map<string, ReturnType<typeof useDropList>>();
 function folderDrop(id: string) {
   let list = folderDrops.get(id);
   if (!list) {
     list = useDropList({
       containerId: `nav-folder:${id}`,
-      size: () => folderBuildCount(id),
       accepts: (source) => source.kind === "build",
       onDrop: (source, index) => emit("reorder", source.key, index, id),
     });
@@ -174,23 +163,6 @@ function folderHandleProps(id: string, index: number) {
     index,
   }));
 }
-
-/** Rows drag by themselves rather than by a grip, so a folder header carries the drag source,
- *  the drop target and the "drop a build in here" zone all at once. Dragging is off while the
- *  header is a rename input, which needs the browser's own drag-to-select-text gesture. */
-function folderRowProps(id: string, index: number) {
-  return {
-    ...rootDrop.rowProps(index, { into: canDropInto.value }),
-    ...folderHandleProps(id, index),
-    draggable: props.renamingId !== id,
-  };
-}
-
-/** The trailing drop strip only earns its space while something droppable is in flight. */
-const tailVisible = computed(
-  () =>
-    dragSource.value?.kind === "build" || dragSource.value?.kind === "folder",
-);
 
 function moveFocus(dir: 1 | -1) {
   const focusable = root.value?.querySelectorAll<HTMLElement>("[data-nav-key]");
@@ -233,7 +205,16 @@ function moveFocus(dir: 1 | -1) {
       @update:model-value="$emit('update:filter', String($event))"
     />
 
-    <div class="overflow-y-auto">
+    <div
+      v-bind="rootDrop.listProps()"
+      data-testid="nav-builds-list"
+      class="relative overflow-y-auto pb-8"
+    >
+      <!-- Rendered first: resolveInList measures `listContentBottom` from the list root's last
+           DOM child. Rendered after the rows, this absolute element would become that child
+           once visible. -->
+      <DropIndicator :pos="rootDrop.separatorStyle.value" />
+
       <template
         v-for="row in rows"
         :key="row.kind === 'build' ? row.build.id : row.folder.id"
@@ -248,8 +229,7 @@ function moveFocus(dir: 1 | -1) {
           :menu-items="menuOpenId === row.build.id ? menuItems : []"
           :menu-anchor="menuAnchor"
           :handle-props="buildHandleProps(row.build.id, row.index, null)"
-          :drop-props="rootDrop.rowProps(row.index)"
-          :indicator="rootDrop.indicatorAt(row.index)"
+          :row-props="rootDrop.rowProps(row.index)"
           :nested="false"
           @select="(id) => $emit('select', id)"
           @rename-start="(id, name) => $emit('rename-start', id, name)"
@@ -273,9 +253,9 @@ function moveFocus(dir: 1 | -1) {
             :menu-open="menuOpenId === row.folder.id"
             :menu-items="menuOpenId === row.folder.id ? menuItems : []"
             :menu-anchor="menuAnchor"
-            :handle-props="folderRowProps(row.folder.id, row.index)"
-            :drop-props="folderRowProps(row.folder.id, row.index)"
-            :indicator="rootDrop.indicatorAt(row.index)"
+            :handle-props="folderHandleProps(row.folder.id, row.index)"
+            :row-props="rootDrop.rowProps(row.index, { into: canDropInto })"
+            :is-drop-into="rootDrop.intoIndex.value === row.index"
             :nested="false"
             :collapsed="row.folder.collapsed"
             :build-count="row.folder.builds.length"
@@ -296,6 +276,7 @@ function moveFocus(dir: 1 | -1) {
               <button
                 type="button"
                 tabindex="-1"
+                data-no-drag
                 data-testid="folder-toggle"
                 class="nav-folder-toggle flex-none cursor-pointer rounded-md p-0.5 leading-none text-muted hover:bg-surface-2 hover:text-text"
                 :aria-label="
@@ -316,7 +297,16 @@ function moveFocus(dir: 1 | -1) {
             </template>
           </NavRowFolder>
 
-          <template v-if="isOpen(row.folder)">
+          <div
+            v-if="isOpen(row.folder)"
+            v-bind="folderDrop(row.folder.id).listProps()"
+            data-testid="nav-folder-list"
+            class="relative ml-6 border-l-1 border-solid border-line pl-1"
+          >
+            <DropIndicator
+              :pos="folderDrop(row.folder.id).separatorStyle.value"
+            />
+
             <NavRowBuild
               v-for="child in row.builds"
               :key="child.build.id"
@@ -330,8 +320,7 @@ function moveFocus(dir: 1 | -1) {
               :handle-props="
                 buildHandleProps(child.build.id, child.index, row.folder.id)
               "
-              :drop-props="folderDrop(row.folder.id).rowProps(child.index)"
-              :indicator="folderDrop(row.folder.id).indicatorAt(child.index)"
+              :row-props="folderDrop(row.folder.id).rowProps(child.index)"
               :nested="true"
               @select="(id) => $emit('select', id)"
               @rename-start="(id, name) => $emit('rename-start', id, name)"
@@ -345,53 +334,18 @@ function moveFocus(dir: 1 | -1) {
               @menu-action="(a, id, skip) => $emit('menu-action', a, id, skip)"
               @menu-close="$emit('menu-close')"
             />
-
-            <div
-              v-if="!row.builds.length"
-              class="nav-folder-empty ml-11 mr-1 rounded-md border border-dashed px-2 py-1 text-sm text-muted"
-              :class="
-                folderDrop(row.folder.id).isActiveContainer.value
-                  ? 'border-accent'
-                  : 'border-line'
-              "
-              data-testid="folder-empty"
-              v-bind="folderDrop(row.folder.id).emptyProps()"
-            >
-              Drop builds here
-            </div>
-          </template>
+          </div>
         </template>
       </template>
+    </div>
 
-      <!-- A standing target for "the end of the top level". An expanded folder renders its
-           builds *below* its own row, so a build inside the last folder would otherwise have
-           nowhere past it to be dropped back out to. -->
-      <div
-        data-testid="nav-root-tail"
-        class="nav-root-tail mx-1 rounded-md border border-dashed text-sm"
-        :class="
-          tailVisible
-            ? [
-                'mt-1 px-2 py-1',
-                rootDrop.tailActive.value
-                  ? 'border-accent text-accent'
-                  : 'border-line text-muted',
-              ]
-            : 'h-2 border-transparent'
-        "
-        v-bind="rootDrop.tailProps()"
+    <div class="mt-2 flex items-center justify-center gap-1">
+      <BaseButton data-testid="nav-add-build" @click="$emit('create')"
+        ><Plus />New</BaseButton
       >
-        <template v-if="tailVisible">Move to the end</template>
-      </div>
-
-      <div class="mt-2 flex items-center justify-center gap-1">
-        <BaseButton data-testid="nav-add-build" @click="$emit('create')"
-          ><Plus />New</BaseButton
-        >
-        <BaseButton data-testid="nav-add-folder" @click="$emit('create-folder')"
-          ><FolderPlus />Folder</BaseButton
-        >
-      </div>
+      <BaseButton data-testid="nav-add-folder" @click="$emit('create-folder')"
+        ><FolderPlus />Folder</BaseButton
+      >
     </div>
   </div>
 </template>

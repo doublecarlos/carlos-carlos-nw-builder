@@ -8,6 +8,7 @@ import BaseInput from "./ui/BaseInput.vue";
 import { Plus } from "@lucide/vue";
 
 import NavRow from "./NavRow.vue";
+import DropIndicator from "./ui/DropIndicator.vue";
 
 import { matchesQuery } from "../lib/text-filter";
 import {
@@ -64,7 +65,6 @@ const root = useTemplateRef("root");
 
 const dropList = useDropList({
   containerId: "nav-layers",
-  size: () => props.layers.length,
   accepts: (source) => source.kind === "layer",
   onDrop: (source, index) => emit("reorder", source.key, index),
 });
@@ -111,7 +111,12 @@ function moveFocus(dir: 1 | -1) {
       @update:model-value="$emit('update:filter', String($event))"
     />
 
-    <div class="max-h-48 overflow-y-auto">
+    <div
+      v-bind="dropList.listProps()"
+      class="relative max-h-48 overflow-y-auto pb-2"
+    >
+      <DropIndicator :pos="dropList.separatorStyle.value" />
+
       <NavRow
         v-for="(l, i) in filteredLayers"
         :id="l.id"
@@ -125,8 +130,8 @@ function moveFocus(dir: 1 | -1) {
         :menu-items="menuOpenId === l.id ? menuItems : []"
         :menu-anchor="menuAnchor"
         :handle-props="dragHandleProps(l.id, i)"
-        :drop-props="dropList.rowProps(i)"
-        :indicator="dropList.indicatorAt(i)"
+        :row-props="dropList.rowProps(i)"
+        :is-drop-into="false"
         :nested="false"
         :disabled="!l.enabled"
         @select="(id) => $emit('select', id)"
@@ -150,12 +155,12 @@ function moveFocus(dir: 1 | -1) {
           </div>
         </template>
       </NavRow>
+    </div>
 
-      <div class="flex items-center justify-center gap-1 mt-2">
-        <BaseButton data-testid="nav-add-layer" @click="$emit('create')"
-          ><Plus />New</BaseButton
-        >
-      </div>
+    <div class="flex items-center justify-center gap-1 mt-2">
+      <BaseButton data-testid="nav-add-layer" @click="$emit('create')"
+        ><Plus />New</BaseButton
+      >
     </div>
   </div>
 </template>
