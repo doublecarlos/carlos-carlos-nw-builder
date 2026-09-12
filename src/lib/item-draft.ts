@@ -5,6 +5,7 @@
 // it is unit-testable and Vue-free.
 import { NW_SCHEMA } from "../data/data";
 import { replacementIdOf, replacementValuesOf } from "./item-replacement";
+import { isPlainOccurrence } from "./occurrence-mode";
 import {
   entriesToRows,
   rowsToEntries,
@@ -189,7 +190,7 @@ export function toItem(local: ItemDraft, ctx: ItemDraftContext): Item {
     const bonuses: (string | BonusOccurrenceConfig)[] = local.bonuses.map(
       (id) => {
         const occurrence = local.bonusOccurrences[id];
-        if (!occurrence) return id;
+        if (!occurrence || isPlainOccurrence(occurrence)) return id;
         const config: BonusOccurrenceConfig = {
           bonus: id,
           min: Number(occurrence.min) || 0,

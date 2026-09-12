@@ -1,39 +1,40 @@
 <script setup lang="ts">
-// "Bonuses" -- every bonus group the open item belongs to, editable in place.
+// "Bonuses": every bonus group the open item belongs to, editable in place.
 //
-// A thin orchestrator over BonusForm.vue: this owns which ids are attached to the item
-// (attach/detach, the "+ Add bonus"/"attach existing" affordances, one pending not-yet-saved
-// slot per in-progress new bonus) and defers all of the actual editing -- name, id preview,
-// stacking, excludes, grants, undo/redo, save/revert/delete -- to BonusForm itself, the same
-// component the standalone "Bonuses" section uses. One bonus-editing surface, not two that
-// can drift apart (the bug this replaced: a hand-rolled id-generation copy here froze the id the
-// instant "+ Add bonus" was clicked, seeded from the *item's* name, instead of previewing it
-// live from whatever the user types into the bonus's own Name field the way BonusForm does).
-//
-// A pending slot has no id at all until its first save: BonusForm previews one live off
-// Name (seeded from the item's own name as a starting point), and that same Save both persists
-// the bonus and attaches the resulting id to the item, in one step -- there is nothing to decide
-// up front any more.
+// A thin orchestrator over BonusForm.vue: this owns which ids are attached, each
+// attachment's occurrence config and which cards are open; all bonus editing is BonusForm's,
+// the same component the standalone "Bonuses" section uses, so there is one editing surface.
+// A pending slot has no id until its first save, which persists the bonus and attaches the
+// resulting id in one step. Each card's single header row is BonusForm's embedded
+// DraftFormBar, filled through its slots (chevron, occurrence chip, Detach); the chevron is
+// the accessible toggle and the rest of the row a wider hit area for the same fold. A lone
+// attached bonus starts open, several start closed, and a pending one is always open.
 import { ref, computed, provide } from "vue";
 import BonusForm from "./BonusForm.vue";
 import BonusComboBox from "./BonusComboBox.vue";
+import BonusOccurrenceSection from "./BonusOccurrenceSection.vue";
 import IconButton from "../ui/IconButton.vue";
-import FormField from "../ui/FormField.vue";
-import FormGrid from "../ui/FormGrid.vue";
-import { CirclePlus, Plus, Trash } from "@lucide/vue";
-import BaseButton from "../ui/BaseButton.vue";
+import {
+  ChevronDown,
+  ChevronRight,
+  ChevronsDownUp,
+  ChevronsUpDown,
+  CirclePlus,
+  Unlink,
+} from "@lucide/vue";
 import BaseBadge from "../ui/BaseBadge.vue";
-import BaseInput from "../ui/BaseInput.vue";
+import BaseButton from "../ui/BaseButton.vue";
 import FormSection from "../ui/FormSection.vue";
 import type { Db, Bonus, BonusOption } from "../../types";
 import type { BonusDraft } from "../../lib/bonus-draft";
 import type { BonusDraftStore } from "../../stores/bonus-draft";
 import type { OccurrenceDraft } from "../../lib/item-draft";
+import { occurrenceSummary } from "../../lib/occurrence-mode";
 import { bonusDraftRegistryKey } from "../../composables/bonusDraftRegistry";
 import FormSectionDescription from "../ui/FormSectionDescription.vue";
 
 // Lets a condition be dragged from one bonus's tree straight into another's, both attached to
-// this same item (see bonusDraftRegistry.ts) -- each BonusForm below registers its own
+// this same item (see bonusDraftRegistry.ts): each BonusForm below registers its own
 // store under its slot's key.
 provide(bonusDraftRegistryKey, new Map<string, BonusDraftStore>());
 
@@ -42,7 +43,7 @@ const props = withDefaults(
     /** Bonus ids the item currently declares. */
     attachedBonusIds?: string[];
     /** Occurrence config for an attached id upgraded from a plain attachment (always 1
-     *  occurrence) to a typed, player-set count -- absent means plain. Keyed by bonus id. */
+     *  occurrence) to a typed, player-set count; absent means plain. Keyed by bonus id. */
     occurrenceConfigs?: Record<string, OccurrenceDraft>;
     /** Seeds the Name field of a brand-new private bonus. */
     itemName?: string;
@@ -84,7 +85,7 @@ const emit = defineEmits<{
 interface Slot {
   key: string;
   id: string | null;
-  /** Source bonus copied by "Duplicate" -- seeds a fresh pending slot's draft via
+  /** Source bonus copied by "Duplicate": seeds a fresh pending slot's draft via
    *  BonusForm's `duplicate-from` prop instead of leaving it blank. */
   seed?: Bonus | null;
 }
@@ -92,12 +93,45 @@ interface Slot {
 let nextPendingKey = 0;
 const pending = ref<Slot[]>([]);
 
+function attachedKey(id: string): string {
+  return `id:${id}`;
+}
+
+/** Slot keys whose card is open: local UI state, neither saved nor undone. Seeded once per
+ *  mount (ItemForm is keyed by item) with a lone attached bonus open. */
+const expandedKeys = ref(
+  new Set<string>(
+    props.attachedBonusIds.length === 1
+      ? props.attachedBonusIds.map(attachedKey)
+      : [],
+  ),
+);
+
+function isExpanded(slot: Slot): boolean {
+  return expandedKeys.value.has(slot.key);
+}
+
+function toggleExpanded(slot: Slot) {
+  if (expandedKeys.value.has(slot.key)) expandedKeys.value.delete(slot.key);
+  else expandedKeys.value.add(slot.key);
+}
+
+const openCount = computed(
+  () => slots.value.filter((slot) => isExpanded(slot)).length,
+);
+
+function expandAll() {
+  for (const slot of slots.value) expandedKeys.value.add(slot.key);
+}
+
+function collapseAll() {
+  expandedKeys.value.clear();
+}
+
 /** One slot per attached id, plus however many pending (not-yet-saved, not-yet-attached) ones
- * are in progress. An attached slot is keyed by its id; a pending slot keeps its own key across
- * the save transition (see `onSlotSave`) so its BonusForm instance is never remounted --
- * and so never loses its in-progress draft/undo history -- right at the moment it's saved. */
+ * are in progress. An attached slot is keyed by its id, a pending one by its own counter. */
 const slots = computed<Slot[]>(() => [
-  ...props.attachedBonusIds.map((id): Slot => ({ key: `id:${id}`, id })),
+  ...props.attachedBonusIds.map((id): Slot => ({ key: attachedKey(id), id })),
   ...pending.value,
 ]);
 
@@ -111,45 +145,21 @@ function sourceFor(slot: Slot): Bonus | null {
   return slot.id ? (props.db.bonusById.get(slot.id) ?? null) : null;
 }
 
-/** An occurrence config only makes sense once the attachment has a real bonus id -- a pending
+/** An occurrence config only makes sense once the attachment has a real bonus id; a pending
  *  (not-yet-saved) slot has none yet, so this reads as "no config" for it too. */
 function occurrenceFor(id: string | null): OccurrenceDraft | null {
   return id ? (props.occurrenceConfigs[id] ?? null) : null;
 }
 
-const emptyOccurrence: OccurrenceDraft = {
-  min: null,
-  max: null,
-  default: null,
-  label: "",
-};
-
-function addOccurrence(id: string | null) {
-  if (!id) return;
-  emit("update-occurrence", { id, occurrence: { ...emptyOccurrence } });
+/** The compact chip beside the title: how many times this attachment counts. A pending slot
+ *  has no attachment yet, so it shows none. */
+function occurrenceChip(slot: Slot): string | null {
+  return slot.id ? occurrenceSummary(occurrenceFor(slot.id)) : null;
 }
 
-function removeOccurrence(id: string | null) {
-  if (!id) return;
-  emit("update-occurrence", { id, occurrence: null });
-}
-
-function updateOccurrenceField(
-  id: string | null,
-  field: keyof OccurrenceDraft,
-  value: number | string | null,
-) {
-  if (!id) return;
-  const current = occurrenceFor(id) ?? emptyOccurrence;
-  emit("update-occurrence", {
-    id,
-    occurrence: { ...current, [field]: value },
-  });
-}
-
-/** A pending slot's id previews from Name, so it's seeded with the item's own name -- the
+/** A pending slot's id previews from Name, so it's seeded with the item's own name: the
  * common case is a bonus that's only this item's business. Read once at creation (`initialDraft`
- * is only ever consulted on mount) -- not kept in sync with later edits to the item's own name. */
+ * is only ever consulted on mount), not kept in sync with later edits to the item's own name. */
 function initialDraftFor(slot: Slot): BonusDraft | null {
   if (slot.id || slot.seed) return null;
   return {
@@ -162,9 +172,15 @@ function initialDraftFor(slot: Slot): BonusDraft | null {
   };
 }
 
-function addBonus() {
-  pending.value.push({ key: `pending:${nextPendingKey}`, id: null });
+function addPending(seed: Bonus | null) {
+  const key = `pending:${nextPendingKey}`;
   nextPendingKey += 1;
+  pending.value.push({ key, id: null, seed });
+  expandedKeys.value.add(key);
+}
+
+function addBonus() {
+  addPending(null);
 }
 
 function attachExisting(id: string) {
@@ -172,19 +188,16 @@ function attachExisting(id: string) {
   emit("attach-bonus", id);
 }
 
-/** A pending slot's first save both persists the bonus (forwarded as-is) and attaches the
- * resulting id to the item -- see the module comment above. The pending slot itself is then
- * dropped: the id it just got now flows through `props.attachedBonusIds` instead, same as any
- * other attached bonus, so keeping both around would double-render it. BonusForm resets its own
- * draft/undo history after every save regardless (its own comment on why), so there's nothing
- * lost by letting the real, `props.attachedBonusIds`-driven instance mount fresh rather than
- * trying to keep this exact component instance alive across the transition. An already-attached
- * slot's save is just a plain re-save, forwarded as-is. */
+/** Forwards the save; a pending slot's first save also attaches the new id. The pending slot
+ *  is then dropped, since the id now arrives through `props.attachedBonusIds` and keeping
+ *  both would render the bonus twice; the fresh attached card inherits the open state. */
 function onSlotSave(slot: Slot, payload: { id: string; bonus: Bonus }) {
   emit("save-bonus", payload);
   if (!slot.id) {
     emit("attach-bonus", payload.id);
     pending.value = pending.value.filter((s) => s !== slot);
+    expandedKeys.value.delete(slot.key);
+    expandedKeys.value.add(attachedKey(payload.id));
   }
 }
 
@@ -195,28 +208,23 @@ function onSlotUpdate(slot: Slot, payload: { id: string; bonus: Bonus }) {
   }
 }
 
-/** Stop this item from listing the bonus -- always valid, whether or not the bonus is defined,
+/** Stop this item from listing the bonus; always valid, whether or not the bonus is defined,
  * shared, or brand-new. A pending slot has nothing attached yet, so this just discards it. */
 function onSlotDetach(slot: Slot) {
   if (slot.id) emit("detach-bonus", slot.id);
   else pending.value = pending.value.filter((s) => s !== slot);
+  expandedKeys.value.delete(slot.key);
 }
 
 function onSlotDelete(slot: Slot) {
   if (slot.id) emit("delete-bonus", slot.id);
 }
 
-/** "Duplicate" on an attached bonus adds a new pending slot seeded from it -- same
+/** "Duplicate" on an attached bonus adds a new pending slot seeded from it: the same
  * unsaved-until-Save flow as "Add bonus", just pre-filled instead of blank. */
 function onSlotDuplicate(slot: Slot) {
   const source = sourceFor(slot);
-  if (!source) return;
-  pending.value.push({
-    key: `pending:${nextPendingKey}`,
-    id: null,
-    seed: source,
-  });
-  nextPendingKey += 1;
+  if (source) addPending(source);
 }
 </script>
 
@@ -242,6 +250,25 @@ function onSlotDuplicate(slot: Slot) {
           @update:model-value="attachExisting"
         />
       </span>
+      <!-- Same pair, order and icons as the build editor's own section controls; only worth
+           a row's width once there is more than one card to fold. -->
+      <span
+        v-if="slots.length > 1"
+        class="ml-auto inline-flex items-center gap-1.5 font-normal normal-case tracking-normal"
+      >
+        <BaseButton
+          :disabled="openCount === slots.length"
+          data-testid="bonus-expand-all"
+          @click="expandAll"
+          ><ChevronsUpDown />expand all</BaseButton
+        >
+        <BaseButton
+          :disabled="!openCount"
+          data-testid="bonus-collapse-all"
+          @click="collapseAll"
+          ><ChevronsDownUp />collapse all</BaseButton
+        >
+      </span>
     </FormSection>
 
     <FormSectionDescription v-if="!slots.length">
@@ -252,83 +279,9 @@ function onSlotDuplicate(slot: Slot) {
       v-for="slot in slots"
       :key="slot.key"
       data-testid="bonus-card"
-      class="mb-2.5 rounded-md border border-line bg-accent-soft/30 px-2.5 py-2"
+      :data-expanded="isExpanded(slot)"
+      class="mb-2.5 rounded-md border border-line bg-accent-soft/30 px-2.5 py-1"
     >
-      <!-- A dangling reference (attached id with no catalog entry -- a hand-edited import,
-           typically) has nothing else to signal it: BonusForm's own `status` badge needs
-           overlay access this component doesn't have, so it stays 'base' here throughout. -->
-      <BaseBadge v-if="slot.id && !sourceFor(slot)" variant="warn" class="mb-1"
-        >not defined yet</BaseBadge
-      >
-      <div
-        v-if="slot.id"
-        class="mb-1.5 flex flex-wrap items-center gap-1.5"
-        data-testid="occurrence-config-row"
-      >
-        <IconButton
-          v-if="!occurrenceFor(slot.id)"
-          title="Add custom occurence count"
-          data-testid="add-occurrence-config"
-          @click="addOccurrence(slot.id)"
-          ><Plus
-        /></IconButton>
-        <IconButton
-          v-else
-          title="Back to default occurence count"
-          data-testid="remove-occurrence-config"
-          @click="removeOccurrence(slot.id)"
-          ><Trash
-        /></IconButton>
-        <span v-if="!occurrenceFor(slot.id)" class="text-muted"
-          >Occurrence count: default (1 per item copy)</span
-        >
-        <template v-else>
-          <span class="text-muted">Occurrence count:</span>
-          <FormGrid data-testid="occurrence-config-fields">
-            <FormField label="Min">
-              <BaseInput
-                class="w-16"
-                type="number"
-                :model-value="occurrenceFor(slot.id)?.min ?? ''"
-                @update:model-value="
-                  updateOccurrenceField(slot.id, 'min', $event)
-                "
-              />
-            </FormField>
-            <FormField label="Max">
-              <BaseInput
-                class="w-16"
-                type="number"
-                :model-value="occurrenceFor(slot.id)?.max ?? ''"
-                @update:model-value="
-                  updateOccurrenceField(slot.id, 'max', $event)
-                "
-              />
-            </FormField>
-            <FormField label="Default">
-              <BaseInput
-                class="w-16"
-                type="number"
-                :model-value="occurrenceFor(slot.id)?.default ?? ''"
-                @update:model-value="
-                  updateOccurrenceField(slot.id, 'default', $event)
-                "
-              />
-            </FormField>
-            <FormField label="Label">
-              <BaseInput
-                class="w-40"
-                type="text"
-                data-testid="occurrence-config-label-input"
-                :model-value="occurrenceFor(slot.id)?.label ?? ''"
-                @update:model-value="
-                  updateOccurrenceField(slot.id, 'label', $event)
-                "
-              />
-            </FormField>
-          </FormGrid>
-        </template>
-      </div>
       <BonusForm
         :source="sourceFor(slot)"
         :fixed-id="slot.id"
@@ -341,15 +294,55 @@ function onSlotDuplicate(slot: Slot) {
         :bonus-options="bonusOptions"
         :allocatable-ids="props.allocatableIds"
         :current-item-id="itemId"
+        embedded
+        toggleable
+        :collapsed="!isExpanded(slot)"
         @save="onSlotSave(slot, $event)"
+        @toggle="toggleExpanded(slot)"
         @update:bonus="onSlotUpdate(slot, $event)"
         @delete="onSlotDelete(slot)"
         @duplicate="onSlotDuplicate(slot)"
         @open-item="emit('open-item', $event)"
       >
-        <template #extra-actions>
-          <BaseButton @click="onSlotDetach(slot)">Detach</BaseButton>
+        <template #leading>
+          <IconButton
+            :title="isExpanded(slot) ? 'Collapse' : 'Expand'"
+            :aria-expanded="isExpanded(slot)"
+            data-testid="bonus-card-toggle"
+            @click="toggleExpanded(slot)"
+          >
+            <ChevronDown v-if="isExpanded(slot)" />
+            <ChevronRight v-else />
+          </IconButton>
         </template>
+        <template #after-title>
+          <!-- A dangling reference (attached id with no catalog entry, typically a hand-edited
+               import) has nothing else to signal it: BonusForm's own `status` badge needs
+               overlay access this component doesn't have, so it stays 'base' here throughout. -->
+          <BaseBadge v-if="slot.id && !sourceFor(slot)" variant="warn"
+            >not defined yet</BaseBadge
+          >
+          <span
+            v-if="occurrenceChip(slot)"
+            class="rounded-full bg-surface-2 px-1.5 text-muted"
+            data-testid="occurrence-chip"
+            >{{ occurrenceChip(slot) }}</span
+          >
+        </template>
+        <template #extra-actions>
+          <IconButton title="Detach" @click="onSlotDetach(slot)"
+            ><Unlink
+          /></IconButton>
+        </template>
+        <BonusOccurrenceSection
+          v-if="slot.id"
+          :occurrence="occurrenceFor(slot.id)"
+          :bonus-id="slot.id"
+          :bonus-name="sourceFor(slot)?.name ?? ''"
+          @update:occurrence="
+            emit('update-occurrence', { id: slot.id, occurrence: $event })
+          "
+        />
       </BonusForm>
     </div>
   </div>

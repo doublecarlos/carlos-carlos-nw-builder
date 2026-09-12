@@ -133,14 +133,13 @@ async function authorRingWithOccurrenceConfig(page: Page) {
   await page.getByTestId("bonus-name-input").fill(AUTHORED_BONUS);
   await page.getByRole("button", { name: "Save bonus" }).click();
 
-  const configRow = page.getByTestId("occurrence-config-row");
-  await configRow.getByTestId("add-occurrence-config").click();
-  const fields = configRow.getByTestId("occurrence-config-fields");
-  const bounds = fields.locator('input[type="number"]');
-  await bounds.nth(0).fill("0");
-  await bounds.nth(1).fill("5");
-  await bounds.nth(2).fill("0");
-  await fields.getByTestId("occurrence-config-label-input").fill("Stacks");
+  const section = page.getByTestId("occurrence-section");
+  await section.getByTestId("occurrence-customize").click();
+  await section.getByTestId("occurrence-mode-range").click();
+  await section.getByTestId("occurrence-min-input").fill("0");
+  await section.getByTestId("occurrence-max-input").fill("5");
+  await section.getByTestId("occurrence-default-input").fill("0");
+  await section.getByTestId("occurrence-label-input").fill("Stacks");
 
   await page.getByRole("button", { name: "Save item" }).click();
 }
