@@ -25,7 +25,7 @@ const emptySchema: Schema = {
   ratingStats: [],
   abilityStats: [],
   ratingConversion: [],
-  abilityContributions: [],
+  statContributions: [],
   forteSplit: {},
   roles: {},
   statScalers: [],

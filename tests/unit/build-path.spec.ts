@@ -54,10 +54,10 @@ describe("build-path", () => {
   it("forte reads as a group: all three forte slots land under context.forte", () => {
     const build = defaultBuild();
     // All three forte picks now default to empty, so no key is stored -- the group
-    // exists with no picks, which stage 6 (engine.ts) treats as "no redistribution".
+    // exists with no picks, which the engine's contribution stage treats as "no forte rules".
     expect(build.context.forte).toEqual({});
-    // stage 6 (engine.ts) iterates schema.forteSplit's own keys against context.forte -- the
-    // nesting this proves is exactly what it depends on.
+    // The engine's forteRules iterates schema.forteSplit's own keys against context.forte --
+    // the nesting this proves is exactly what it depends on.
     expect(Object.keys(NW_SCHEMA.forteSplit).sort()).toEqual(
       ["primary", "secondaryA", "secondaryB"].sort(),
     );

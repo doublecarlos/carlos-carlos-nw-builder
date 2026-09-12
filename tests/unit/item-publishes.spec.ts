@@ -20,7 +20,7 @@ const emptySchema: Schema = {
   ratingStats: [],
   abilityStats: [],
   ratingConversion: [],
-  abilityContributions: [],
+  statContributions: [],
   forteSplit: {},
   // `derive()` indexes this with `context.role`, falling back to `dps` -- an empty map makes
   // any full `resolveBuild` throw, so the fallback has to exist even here.

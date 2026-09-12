@@ -1,10 +1,7 @@
 // The calculation pipeline and derived outputs.
 //
-// Every intermediate stage is kept, which is what makes the "why is my Power that number?"
-// inspector possible.
-//
-// Deviations from the sheet are marked `FIX #n` and justified where they occur. None changes a
-// number on current data except where the sheet was demonstrably wrong.
+// `run()` gathers every row's stats and calculates the final results over multiple stages.
+// Every intermediate stage is kept, which makes inspecting stat sources possible.
 
 import * as bonus from "./bonus";
 import { scaleFactorFor, scaledStat } from "./scaling";
@@ -16,6 +13,7 @@ import { dynamicValueKey, readDynamicValue } from "../lib/dynamic-stats";
 import type {
   Db,
   Build,
+  ForteSplit,
   Item,
   Schema,
   StatKey,
@@ -23,6 +21,8 @@ import type {
   ResolvedRow,
   EngineRow,
   Stages,
+  StatContribution,
+  AppliedContribution,
   DerivedOutputs,
   EngineError,
   ResolvedBuild,
@@ -117,11 +117,33 @@ function rowVectors(
   });
 }
 
+const FORTE_SOURCE: StatKey = "forte_p";
+
+/** Transform forte split into stat contribution rules. */
+function forteRules(
+  schema: Schema,
+  forte: ForteSplit | undefined,
+  known: Set<StatKey>,
+): StatContribution[] {
+  const picks = (forte ?? {}) as Record<string, StatKey | undefined>;
+  const rules: StatContribution[] = [];
+  for (const [slot, divisor] of Object.entries(schema.forteSplit)) {
+    const target = picks[slot];
+    if (target && known.has(target))
+      rules.push({ source: FORTE_SOURCE, target, divisor });
+  }
+  return rules;
+}
+
 function run(
   db: Db,
   build: Build,
   resolved: ResolvedBonuses,
-): { rows: EngineRow[]; stages: Stages } {
+): {
+  rows: EngineRow[];
+  stages: Stages;
+  appliedContributions: AppliedContribution[];
+} {
   const { schema } = db;
   const keys: StatKey[] = schema.statKeys;
   const context = build.context ?? {};
@@ -145,14 +167,7 @@ function run(
   for (const [key, product] of products) sums[key] = product - 1;
 
   // --- stage 2: dynamic stat resolution --------------------------------------------------
-  // FIX #6: the sheet matched the target stat by searching the item's *display name*. The
-  // item now declares `dynamicStats` outright, so renaming one cannot silently move the value.
-  //
-  // The declared range is NOT clamped here. Silently rewriting a number the user typed is
-  // worse than showing it and flagging it -- and it would make the engine disagree with the
-  // sheet for no stated reason. `findErrors` reports out-of-range values instead. An unset
-  // value reads as its config's own `default` (`readDynamicValue`), unlike a bare `?? 0` --
-  // that's what makes a declared default actually apply.
+  // The declared range is NOT clamped here. An unset value reads as its config's own `default`.
   const dynamicStatMods = zeros(keys);
   for (const row of rows) {
     for (const config of row.item?.dynamicStats ?? []) {
@@ -174,8 +189,20 @@ function run(
     afterCombinedRating[key] += sums.combined_rating;
   }
 
-  // --- stage 4: rating -> percent ------------------------------------------------------
+  // --- stage 4: caps -------------------------------------------------------------------
+  // Calculates caps for each applicable stat, based on the build's item level.
+  // It is assumed that nothing after this stage alters Item Level.
   const itemLevel = afterCombinedRating.il;
+  const caps = zeros(keys);
+  for (const rule of schema.ratingConversion) {
+    caps[rule.rating] = itemLevel + rule.allowedOver;
+    caps[rule.percent] = rule.pctCap;
+  }
+  /** `value` held to `key`'s cap; a stat with no cap reads as-is. */
+  const atCap = (key: StatKey, value: number) =>
+    caps[key] > 0 ? Math.min(value, caps[key]) : value;
+
+  // --- stage 5: rating -> percent ------------------------------------------------------
   const ratingPct = zeros(keys);
   for (const rule of schema.ratingConversion) {
     const shortfall = Math.max(
@@ -186,44 +213,30 @@ function run(
   }
   const afterRatingPct = addVectors(afterCombinedRating, ratingPct, keys);
 
-  // --- stage 5: ability scores ---------------------------------------------------------
-  // FIX #5: `hit_points_mult` is a multiplicative stat, so con/200 is simply another factor
-  // rather than the sheet's `(1+cur)*(1+con/200)-1-cur` hack. Algebraically identical.
-  const abilities = zeros(keys);
-  for (const rule of schema.abilityContributions) {
-    abilities[rule.stat] += afterRatingPct[rule.ability] / rule.divisor;
-  }
-  const afterAbilityScores: Record<StatKey, number> = {};
-  for (const key of keys) {
-    afterAbilityScores[key] = multiplicative.has(key)
-      ? (1 + afterRatingPct[key]) * (1 + abilities[key]) - 1
-      : afterRatingPct[key] + abilities[key];
+  // --- stage 6: stat contributions ----------------------------------------------------------
+  // One ordered rule list, defining source and target stats, and the divisor.
+  // Applied against running totals. Each rule read its source at the source's cap.
+  // Forte rules generated by the engine are applied last.
+  const rules: StatContribution[] = [
+    ...schema.statContributions,
+    ...forteRules(schema, context.forte, new Set(keys)),
+  ];
+  const contributions = zeros(keys);
+  const applied: AppliedContribution[] = [];
+  const totals: Record<StatKey, number> = { ...afterRatingPct };
+  for (const rule of rules) {
+    let value = atCap(rule.source, totals[rule.source] ?? 0) / rule.divisor;
+    // The sheet's M32 forte mode rounds each forte share to two decimals before it lands.
+    if (context.m32Forte && rule.source === FORTE_SOURCE)
+      value = sheetRound(value, 2);
+    contributions[rule.target] += value;
+    totals[rule.target] = multiplicative.has(rule.target)
+      ? (1 + totals[rule.target]) * (1 + value) - 1
+      : totals[rule.target] + value;
+    applied.push({ source: rule.source, target: rule.target, value });
   }
 
-  // --- stage 6: forte redistribution ---------------------------------------------------
-  const forte = zeros(keys);
-  const fortePool = afterAbilityScores.forte_p;
-  // `forteSplit`'s own keys (primary/secondaryA/secondaryB) are fixed, but it's iterated by
-  // `Object.entries` below alongside `picks`, so the lookup needs a plain index signature.
-  const picks = (context.forte ?? {}) as Record<string, StatKey | undefined>;
-  for (const [slot, divisor] of Object.entries(schema.forteSplit)) {
-    const stat = picks[slot];
-    if (stat && forte[stat] !== undefined) forte[stat] += fortePool / divisor;
-  }
-  if (context.m32Forte) {
-    for (const stat of Object.keys(forte))
-      forte[stat] = sheetRound(forte[stat], 2);
-  }
-  const totals = addVectors(afterAbilityScores, forte, keys);
-
-  // --- stage 7: caps -------------------------------------------------------------------
-  // FIX #2: `overcap` is now non-negative and `headroom` is its own field, instead of the
-  // sheet's single signed number that meant two different things depending on its sign.
-  const caps = zeros(keys);
-  for (const rule of schema.ratingConversion) {
-    caps[rule.rating] = totals.il + rule.allowedOver;
-    caps[rule.percent] = rule.pctCap;
-  }
+  // --- stage 7: final caps -------------------------------------------------------------
   const capped = zeros(keys);
   const overcap = zeros(keys);
   const headroom = zeros(keys);
@@ -245,18 +258,16 @@ function run(
       dynamicStatMods,
       afterDynamicStatMods,
       afterCombinedRating,
+      caps,
       ratingPct,
       afterRatingPct,
-      abilities,
-      afterAbilityScores,
-      forte,
-      afterForte: totals,
+      contributions,
       totals,
-      caps,
       capped,
       overcap,
       headroom,
     },
+    appliedContributions: applied,
   };
 }
 
@@ -287,8 +298,6 @@ function derive(db: Db, build: Build, stages: Stages): DerivedOutputs {
   const effectiveEnemyIncomingMagPhys = magical
     ? capped.enemy_incoming_damage_magical
     : capped.enemy_incoming_damage_physical;
-  const overallOgh = capped.out_healing_p + capped.overall_healing;
-
   const damage = (critChance: number, deflectChance: number) => {
     const critMult = 1 + capped.sev_p - capped.enemy_crit_avoid;
     const deflectMult = 1 / (1 + capped.enemy_deflect_sev - capped.acc_p);
@@ -314,7 +323,7 @@ function derive(db: Db, build: Build, stages: Stages): DerivedOutputs {
     (magnitude / 100) *
     (1 + capped.power_p) *
     averageByChance(1 + capped.sev_p / 2, critChance) *
-    (1 + overallOgh);
+    (1 + capped.overall_healing);
 
   const ehp = (critChance: number, deflectChance: number) => {
     const critMult = 1 + capped.enemy_severity - capped.crit_avoid_p;
@@ -333,8 +342,7 @@ function derive(db: Db, build: Build, stages: Stages): DerivedOutputs {
     itemLevel,
     hp,
     baseDamage,
-    effectiveMagPhys: effectiveMagPhys,
-    overallHealing: overallOgh,
+    effectiveMagPhys,
     damage: {
       average: damage(capped.strike_p, capped.enemy_deflect),
       critNoDeflect: damage(1, 0),
@@ -731,12 +739,13 @@ export function resolveBuild(
   // Inside `resolveBuild` so the picker's per-candidate resolves get the same treatment.
   const build = withDerivedBonuses(db, stored);
   const resolved = bonus.resolve(db, build, options);
-  const { rows, stages } = run(db, build, resolved);
+  const { rows, stages, appliedContributions } = run(db, build, resolved);
   return {
     context: resolved.ctx,
     rows,
     bonuses: resolved.bonuses,
     stages,
+    appliedContributions,
     derived: derive(db, build, stages),
     errors: [
       ...findErrors(db, build, resolved),

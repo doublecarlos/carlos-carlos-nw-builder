@@ -73,10 +73,10 @@ const ehpRows: [string, string][] = [
   ["Crit / no deflect", "critNoDeflect"],
 ];
 
-// One of `derived`'s three sub-tables (baseDamage/effectiveMagPhys/overallHealing live at
-// the top level instead, hence `extra` rather than folding them into `rows`).
+// One of `derived`'s three sub-tables (baseDamage/effectiveMagPhys live at the top level
+// instead, hence `extra` rather than folding them into `rows`).
 type ExtraSummaryRow = {
-  key: "baseDamage" | "effectiveMagPhys" | "overallHealing";
+  key: "baseDamage" | "effectiveMagPhys";
   label: string;
   format: "int" | "pct";
 };
@@ -104,18 +104,7 @@ const SUMMARY_GROUPS: SummaryGroup[] = [
       },
     ],
   },
-  {
-    source: "healing",
-    label: "Healing",
-    rows: healingRows,
-    extra: [
-      {
-        key: "overallHealing",
-        label: "Overall outgoing healing",
-        format: "pct",
-      },
-    ],
-  },
+  { source: "healing", label: "Healing", rows: healingRows },
   { source: "ehp", label: "EHP", rows: ehpRows },
 ];
 const [damageGroup, healingGroup, ehpGroup] = SUMMARY_GROUPS;
@@ -133,8 +122,8 @@ const result = computed(() => {
 const compareResult = computed(() =>
   engine.compareResolved.value?.ok ? engine.compareResolved.value.result : null,
 );
-// Only needed for the stat source popover's forte picks and dynamic-stat values -- the
-// rest of the panel reads entirely off `result`.
+// Only needed for the stat source popover's point_assignment lines; the rest of the panel
+// reads entirely off `result`.
 const build = builds.build;
 
 // The compare build's own numbers, stacked under this build's inside the same cell (see

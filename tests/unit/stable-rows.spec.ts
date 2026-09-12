@@ -14,7 +14,7 @@ const schema: Schema = {
   ratingStats: [],
   abilityStats: [],
   ratingConversion: [],
-  abilityContributions: [],
+  statContributions: [],
   forteSplit: {},
   roles: { dps: { label: "DPS", hpBonus: 1, damageBonus: 1 } },
   statScalers: [],
