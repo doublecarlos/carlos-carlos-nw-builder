@@ -13,7 +13,7 @@ const tab = details.tab;
 </script>
 
 <template>
-  <aside data-testid="details-sidebar">
+  <aside data-testid="details-sidebar" data-undo-scope="editor">
     <TabStrip class="mb-1.5 px-2.5 pt-2.5">
       <TabButton :active="tab === 'stats'" @click="details.setTab('stats')"
         >Stats</TabButton
