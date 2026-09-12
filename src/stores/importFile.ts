@@ -182,10 +182,13 @@ export function applyImport(plan: ImportPlan, decisions: ImportDecisions) {
     layers.upsertImported(layer, replacing);
 
   // Rebuilt now the builds exist under their final ids.
-  for (const folder of resolved.folders) {
-    const folderId = folders.createFolder(folder.name, folder.collapsed);
-    for (const buildId of folder.builds) folders.placeBuild(buildId, folderId);
-  }
+  for (const folder of resolved.folders)
+    folders.addFolder({
+      id: storage.newId("f"),
+      name: folder.name,
+      collapsed: folder.collapsed,
+      builds: [...folder.builds],
+    });
 
   // Land on something that came in, so the import is visible and not merely reported.
   const lastBuild = resolved.builds.at(-1)?.build.id;

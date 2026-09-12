@@ -20,6 +20,7 @@ async function freshStores() {
   const selection = await import("../../../src/stores/selection");
   const trash = await import("../../../src/stores/trash");
   const buildEditor = await import("../../../src/stores/buildEditor");
+  const navHistory = await import("../../../src/stores/navHistory");
   const compare = await import("../../../src/stores/compare");
   const resolved = await import("../../../src/stores/resolved");
   const meta = await import("../../../src/stores/meta");
@@ -33,6 +34,7 @@ async function freshStores() {
     selection,
     trash,
     buildEditor,
+    navHistory,
     compare,
     resolved,
     meta,
@@ -764,10 +766,11 @@ describe("buildEditor.setChoice applies the picked item's defaultParams", () => 
 });
 
 describe("buildEditor undo labels", () => {
-  it("renameBuild includes the new name in the label", async () => {
-    const { buildEditor } = await freshStores();
+  it("renameBuild is a nav step, not a content edit", async () => {
+    const { buildEditor, navHistory } = await freshStores();
     buildEditor.renameBuild("My Warlock");
-    expect(buildEditor.undoLabel.value).toBe('rename build → "My Warlock"');
+    expect(buildEditor.canUndo.value).toBe(false);
+    expect(navHistory.undoLabel.value).toBe('rename build → "My Warlock"');
   });
 
   it("setDynamicValue includes the new value in the label", async () => {

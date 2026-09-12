@@ -2,7 +2,7 @@
 // Left sidebar: builds (optionally grouped into folders), customization layers, and recently
 // deleted. Owns shared state (menus, rename, confirm) and delegates list rendering to
 // NavBuilds / NavLayers / NavTrash.
-import { nextTick, ref, useTemplateRef } from "vue";
+import { nextTick, ref, useTemplateRef, watch } from "vue";
 import { useEventListener } from "@vueuse/core";
 import {
   Copy,
@@ -20,6 +20,7 @@ import NavTrash from "./NavTrash.vue";
 import * as builds from "../stores/builds";
 import * as folders from "../stores/folders";
 import * as layers from "../stores/layers";
+import * as navHistory from "../stores/navHistory";
 import * as selection from "../stores/selection";
 import * as buildEditor from "../stores/buildEditor";
 import * as trash from "../stores/trash";
@@ -140,7 +141,7 @@ async function confirmDeleteBuild(id: string, skip: boolean) {
 }
 
 /** Unchecked leaves `folders.deleteFolder` to free the builds to the top level as it always
- *  does; the checkbox is the only thing here that deletes a build. */
+ *  does; the checkbox is the only path here that deletes builds, as one step with the folder. */
 async function confirmDeleteFolder(id: string, skip: boolean) {
   const folder = folders.byId(id);
   if (!folder) return false;
@@ -159,10 +160,9 @@ async function confirmDeleteFolder(id: string, skip: boolean) {
       : undefined,
   });
   if (!ok) return false;
-  // `builds.deleteBuild` detaches each id from the folder as it goes, so iterate a copy.
-  if (checked)
-    for (const buildId of [...folder.builds]) builds.deleteBuild(buildId);
-  deleteFolderRow(id);
+  if (checked) builds.deleteFolderWithBuilds(id);
+  else folders.deleteFolder(id);
+  closeMenu();
   return true;
 }
 
@@ -220,6 +220,12 @@ async function focusRow(id: string) {
   root.value?.querySelector<HTMLElement>(`[data-nav-key="${id}"]`)?.focus();
 }
 
+// A nav undo/redo re-selects the row it touched; the store cannot reach the DOM, so it asks
+// for the focus to follow and the sidebar answers here.
+watch(navHistory.focusRequest, (request) => {
+  if (request) focusRow(request.focusId);
+});
+
 // --- build actions --------------------------------------------------------------------
 
 function duplicateCurrentBuild(id: string) {
@@ -267,10 +273,6 @@ function moveBuildToFolder(id: string, folderId: string | null) {
   folders.placeBuild(id, folderId);
   closeMenu();
   focusRow(id);
-}
-function deleteFolderRow(id: string) {
-  folders.deleteFolder(id);
-  closeMenu();
 }
 function newBuildInFolder(id: string) {
   builds.createBuild(id);

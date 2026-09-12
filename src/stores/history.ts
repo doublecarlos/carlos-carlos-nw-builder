@@ -2,14 +2,17 @@
 // IndexedDB on the same 250 ms debounce as the items themselves. Undo/redo always operate on
 // the **selected** item's stack, and restore selects the item if it is not already selected.
 //
-// ## What is undoable
+// ## What is on an item's stack
 // Every edit in `stores/buildEditor.ts` that changes one item's content, every committed
-// overlay change in the layer editor, `renameBuild`, `renameLayer`, `setLayerEnabled`, and
-// `revertToDownloaded`.
+// overlay change in the layer editor, and `revertToDownloaded`.
+//
+// ## What is on the nav stack instead
+// Workspace operations go to `stores/navHistory.ts`, one session-only stack for the whole
+// sidebar: create, duplicate, delete, move, rename, enable/disable, and every folder
+// operation. Delete there is undone through the trash.
 //
 // ## What is not undoable
-// `createBuild`, `deleteBuild`, `createLayer`, `deleteLayer`, `moveBuild`, `moveLayer`,
-// import, download, and selection changes. Delete is covered by the trash (phase 2b §4).
+// Import, download, and selection changes.
 //
 // ## Coalescing
 // Consecutive calls to `snapshot` with the same `key` inside a 700 ms window collapse into
