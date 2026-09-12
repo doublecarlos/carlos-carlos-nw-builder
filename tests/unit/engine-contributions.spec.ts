@@ -31,6 +31,24 @@ const stats: StatDef[] = [
   { key: "dex", label: "Dexterity", kind: "flat", ability: true },
   { key: "con", label: "Constitution", kind: "flat", ability: true },
   { key: "wis", label: "Wisdom", kind: "flat", ability: true },
+  {
+    key: "enemy_incoming_damage",
+    label: "Enemy Incoming Damage",
+    kind: "percent",
+    enemy: true,
+  },
+  {
+    key: "enemy_incoming_damage_magical",
+    label: "Enemy Incoming Magical Damage",
+    kind: "percent",
+    enemy: true,
+  },
+  {
+    key: "enemy_incoming_damage_physical",
+    label: "Enemy Incoming Physical Damage",
+    kind: "percent",
+    enemy: true,
+  },
 ] as StatDef[];
 
 // A shipped-shaped conversion: with no rating at all the percent starts 0.1 under `capPct`,
@@ -191,7 +209,7 @@ describe("overall healing carries outgoing healing", () => {
   });
 });
 
-describe("ability contributions", () => {
+describe("stat contributions", () => {
   it("adds dexterity / 200 to severity", () => {
     const result = resolveWith({ dex: 30, sev_p: 0.1 });
     expect(result.stages.contributions.sev_p).toBeCloseTo(30 / 200, 9);
@@ -223,5 +241,47 @@ describe("ability contributions", () => {
       "forte_p>sev_p",
       "enemy_incoming_damage_magical>enemy_incoming_damage",
     ]);
+  });
+
+  it("picks physical debuff as source for a physical build", () => {
+    const result = resolveWith({}, { forte, damageType: "physical" });
+    expect(
+      result.appliedContributions.map((c) => `${c.source}>${c.target}`),
+    ).toContain("enemy_incoming_damage_physical>enemy_incoming_damage");
+    expect(result.appliedContributions.map((c) => c.source)).not.toContain(
+      "enemy_incoming_damage_magical",
+    );
+  });
+});
+
+describe("enemy incoming magical/physical damage debuff", () => {
+  it("adds the magical debuff into enemy incoming damage for a magical build", () => {
+    const result = resolveWith({
+      enemy_incoming_damage_magical: 0.15,
+      enemy_incoming_damage_physical: 0.3,
+    });
+    expect(result.stages.totals.enemy_incoming_damage).toBeCloseTo(0.15, 9);
+  });
+
+  it("adds the physical debuff into enemy incoming damage for a physical build", () => {
+    const result = resolveWith(
+      {
+        enemy_incoming_damage_magical: 0.15,
+        enemy_incoming_damage_physical: 0.3,
+      },
+      { damageType: "physical" },
+    );
+    expect(result.stages.totals.enemy_incoming_damage).toBeCloseTo(0.3, 9);
+  });
+
+  it("leaves enemy incoming damage untouched when only the other damage type's debuff is set", () => {
+    const magicalBuild = resolveWith({ enemy_incoming_damage_physical: 0.3 });
+    expect(magicalBuild.stages.totals.enemy_incoming_damage).toBeCloseTo(0, 9);
+
+    const physicalBuild = resolveWith(
+      { enemy_incoming_damage_magical: 0.15 },
+      { damageType: "physical" },
+    );
+    expect(physicalBuild.stages.totals.enemy_incoming_damage).toBeCloseTo(0, 9);
   });
 });
