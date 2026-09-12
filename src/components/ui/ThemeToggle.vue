@@ -7,9 +7,9 @@ import { Monitor, Moon, Sun } from "@lucide/vue";
 import { preference, cyclePreference } from "../../stores/theme";
 
 const labels = {
-  system: "System theme",
-  light: "Light theme",
-  dark: "Dark theme",
+  system: "Theme: System",
+  light: "Theme: Light",
+  dark: "Theme: Dark",
 } as const;
 
 const icon = {
@@ -20,10 +20,9 @@ const icon = {
 </script>
 
 <template>
-  <BaseTooltip :text="`${labels[preference]} (click to change)`">
+  <BaseTooltip :text="`${labels[preference]}`">
     <BaseButton @click="cyclePreference">
       <component :is="icon[preference]" />
-      Theme: <span class="capitalize">{{ preference }}</span>
     </BaseButton>
   </BaseTooltip>
 </template>

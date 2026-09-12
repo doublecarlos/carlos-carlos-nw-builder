@@ -274,19 +274,18 @@ test.describe("applying tooltip values to the item being edited", () => {
     await expect(rows.locator('input[type="number"]')).toHaveValue("1234");
   });
 
-  test("offers no apply buttons when no item form is open", async ({
+  test("the toggle lives in the item form, and leaves with it", async ({
     page,
   }) => {
     await openLayerEditor(page);
+    await expect(page.getByTestId("tooltip-import-toggle")).toBeVisible();
+
+    // "From screenshot" is item-only (F): another section has no item form, so the toggle
+    // is gone with it, and comes back with the Items section.
     await page.getByRole("button", { name: /Bonuses \d+/ }).click();
+    await expect(page.getByTestId("tooltip-import-toggle")).toHaveCount(0);
 
-    await openImportWithText(page);
-    await expect(
-      page.getByTestId("tooltip-import-apply-stat-power"),
-    ).toBeDisabled();
-    await expect(page.getByTestId("tooltip-import-apply-all")).toBeDisabled();
-
-    // Creating an item is still on the table -- it does not need a form to be open already.
-    await expect(page.getByTestId("tooltip-import-create")).toBeEnabled();
+    await page.getByRole("button", { name: /Items \d+/ }).click();
+    await expect(page.getByTestId("tooltip-import-toggle")).toBeVisible();
   });
 });

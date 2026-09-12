@@ -27,6 +27,7 @@ import BaseBadge from "./ui/BaseBadge.vue";
 import ComboBox from "./ui/ComboBox.vue";
 import CheckMenu from "./ui/CheckMenu.vue";
 import HistoryButtons from "./ui/HistoryButtons.vue";
+import IconButton from "./ui/IconButton.vue";
 import QuickOptions from "./game/QuickOptions.vue";
 import {
   ChevronsDownUp,
@@ -886,16 +887,10 @@ watch(
          is positioned, so its dropdowns are stacked within it and cannot outrank a later sibling
          on their own -- the bar has to win the comparison for them. -->
     <div
-      class="sticky top-0 z-toolbar flex flex-col flex-wrap gap-3 border-b border-line bg-surface px-3.5 py-2"
+      class="sticky top-0 z-toolbar flex flex-col flex-wrap gap-2 border-b border-line bg-surface px-3.5 py-2"
     >
       <QuickOptions class="flex-1" />
       <div class="flex flex-wrap items-center gap-1.5">
-        <BaseButton @click="setAll(true)"
-          ><ChevronsUpDown />expand all</BaseButton
-        >
-        <BaseButton @click="setAll(false)"
-          ><ChevronsDownUp />collapse all</BaseButton
-        >
         <BaseInput
           v-model="filterText"
           type="search"
@@ -960,25 +955,42 @@ watch(
             filteredSlotCount === 1 ? "" : "es"
           }}</BaseBadge
         >
-        <HistoryButtons
-          class="ml-auto"
-          testid="editor"
-          :can-undo="canUndo"
-          :can-redo="canRedo"
-          :undo-label="undoLabel"
-          :redo-label="redoLabel"
-          @undo="undo()"
-          @redo="redo()"
-        />
-        <!-- Lenses, not filters: "clear filters" leaves them alone. -->
-        <CheckMenu
-          label="Picker options"
-          testid="picker-options"
-          :items="pickerOptionItems"
-          @toggle="pickerLens.toggle"
-        >
-          <template #icon><SlidersHorizontal /></template>
-        </CheckMenu>
+        <span class="ml-auto flex flex-wrap items-center gap-1.5 text-[16px]">
+          <HistoryButtons
+            testid="editor"
+            :can-undo="canUndo"
+            :can-redo="canRedo"
+            :undo-label="undoLabel"
+            :redo-label="redoLabel"
+            @undo="undo()"
+            @redo="redo()"
+          />
+          <span class="mx-1 h-4 w-px bg-line"></span>
+          <IconButton
+            data-testid="editor-expand-all"
+            title="Expand all"
+            @click="setAll(true)"
+            ><ChevronsUpDown
+          /></IconButton>
+          <IconButton
+            data-testid="editor-collapse-all"
+            title="Collapse all"
+            @click="setAll(false)"
+            ><ChevronsDownUp
+          /></IconButton>
+          <span class="mx-1 h-4 w-px bg-line"></span>
+          <!-- Lenses, not filters: "clear filters" leaves them alone. -->
+          <CheckMenu
+            label="Picker options"
+            icon-only
+            title="Picker options"
+            testid="picker-options"
+            :items="pickerOptionItems"
+            @toggle="pickerLens.toggle"
+          >
+            <template #icon><SlidersHorizontal /></template>
+          </CheckMenu>
+        </span>
       </div>
     </div>
 

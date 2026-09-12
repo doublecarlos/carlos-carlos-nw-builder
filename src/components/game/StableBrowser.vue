@@ -9,6 +9,7 @@
 import { computed, ref, watch } from "vue";
 import BaseModal from "../ui/BaseModal.vue";
 import BaseButton from "../ui/BaseButton.vue";
+import IconButton from "../ui/IconButton.vue";
 import TabStrip from "../ui/TabStrip.vue";
 import TabButton from "../ui/TabButton.vue";
 import ClearableInput from "../ui/ClearableInput.vue";
@@ -117,19 +118,22 @@ function apply(mount: Item) {
         >
       </TabStrip>
       <!-- Same pair, order and icons as the build editor's own section controls. -->
-      <BaseButton
-        class="ml-auto"
+      <IconButton
+        class="ml-auto text-[16px]"
         :disabled="openCount === cards.length"
+        title="Expand all"
         data-testid="stable-expand-all"
         @click="expandAll"
-        ><ChevronsUpDown />expand all</BaseButton
-      >
-      <BaseButton
+        ><ChevronsUpDown
+      /></IconButton>
+      <IconButton
+        class="text-[16px]"
         :disabled="!openCount"
+        title="Collapse all"
         data-testid="stable-collapse-all"
         @click="collapseAll"
-        ><ChevronsDownUp />collapse all</BaseButton
-      >
+        ><ChevronsDownUp
+      /></IconButton>
       <ClearableInput
         v-model="query"
         class="w-56"

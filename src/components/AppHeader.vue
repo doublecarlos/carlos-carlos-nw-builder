@@ -207,7 +207,7 @@ async function onImportFile(event: Event) {
       /></BaseButton>
     </BaseTooltip>
 
-    <BaseTooltip text="About this app, and where to report a problem">
+    <BaseTooltip text="About">
       <BaseButton
         data-testid="header-about"
         aria-label="About"

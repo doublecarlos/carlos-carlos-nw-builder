@@ -23,7 +23,6 @@ import {
   Unlink,
 } from "@lucide/vue";
 import BaseBadge from "../ui/BaseBadge.vue";
-import BaseButton from "../ui/BaseButton.vue";
 import FormSection from "../ui/FormSection.vue";
 import type { Db, Bonus, BonusOption } from "../../types";
 import type { BonusDraft } from "../../lib/bonus-draft";
@@ -253,21 +252,22 @@ function onSlotDuplicate(slot: Slot) {
       <!-- Same pair, order and icons as the build editor's own section controls; only worth
            a row's width once there is more than one card to fold. -->
       <span
-        v-if="slots.length > 1"
-        class="ml-auto inline-flex items-center gap-1.5 font-normal normal-case tracking-normal"
+        class="ml-auto inline-flex items-center gap-1.5 font-normal normal-case tracking-normal text-[16px]"
       >
-        <BaseButton
+        <IconButton
           :disabled="openCount === slots.length"
+          title="Expand all"
           data-testid="bonus-expand-all"
           @click="expandAll"
-          ><ChevronsUpDown />expand all</BaseButton
-        >
-        <BaseButton
+          ><ChevronsUpDown
+        /></IconButton>
+        <IconButton
           :disabled="!openCount"
+          title="Collapse all"
           data-testid="bonus-collapse-all"
           @click="collapseAll"
-          ><ChevronsDownUp />collapse all</BaseButton
-        >
+          ><ChevronsDownUp
+        /></IconButton>
       </span>
     </FormSection>
 

@@ -17,10 +17,14 @@ withDefaults(
     /** The accessible name, when it should stay put while `title` changes. */
     label?: string;
     disabled?: boolean;
+    /** Button chrome around a native `<label>` instead of a button: the one spot that needs
+     *  it is LayerEditor's Import, a label wrapping a hidden file input. */
+    as?: "button" | "label";
   }>(),
   {
     label: undefined,
     disabled: false,
+    as: "button",
   },
 );
 
@@ -29,15 +33,17 @@ defineEmits<{ click: [event: MouseEvent] }>();
 
 <template>
   <BaseTooltip :text="title">
-    <button
-      v-bind="$attrs"
-      type="button"
-      class="[&_svg]:size-[14px] cursor-pointer inline-flex items-center justify-center rounded p-1 text-muted enabled:hover:bg-surface-2 enabled:hover:text-accent disabled:cursor-default disabled:opacity-35"
+    <component
+      :is="as"
+      v-bind="{
+        ...(as === 'button' ? { type: 'button', disabled } : {}),
+        ...$attrs,
+      }"
+      class="[&_svg]:size-[1em] cursor-pointer inline-flex items-center justify-center rounded p-1 text-muted enabled:hover:bg-surface-2 enabled:hover:text-accent disabled:cursor-default disabled:opacity-35"
       :aria-label="label ?? title"
-      :disabled="disabled"
       @click="$emit('click', $event)"
     >
       <slot />
-    </button>
+    </component>
   </BaseTooltip>
 </template>

@@ -13,7 +13,7 @@ import StatRowList from "./StatRowList.vue";
 import DynamicStatRowList from "./DynamicStatRowList.vue";
 import IconButton from "../ui/IconButton.vue";
 import RepeatableRows from "../ui/RepeatableRows.vue";
-import { Plus, Trash } from "@lucide/vue";
+import { Plus, ScanText, Trash } from "@lucide/vue";
 import BaseInput from "../ui/BaseInput.vue";
 import DraftFormBar from "../ui/DraftFormBar.vue";
 import FormField from "../ui/FormField.vue";
@@ -91,6 +91,7 @@ const emit = defineEmits<{
   "delete-bonus": [id: string];
   "update-bonus": [payload: { id: string; bonus: Bonus }];
   "open-item": [itemId: string];
+  "tooltip-import": [];
 }>();
 
 // --- Common ---------------------------------------------------------------------------
@@ -510,6 +511,15 @@ function showsGroup(group: FieldGroup): boolean {
           Show all fields
         </BaseCheckbox>
       </template>
+      <template #extra-actions>
+        <IconButton
+          class="text-[16px]"
+          title="From screenshot"
+          data-testid="tooltip-import-toggle"
+          @click="$emit('tooltip-import')"
+          ><ScanText
+        /></IconButton>
+      </template>
     </DraftFormBar>
 
     <FormSection>Identification</FormSection>
@@ -573,7 +583,6 @@ function showsGroup(group: FieldGroup): boolean {
 
     <template v-if="showsGroup('description')">
       <FormSection data-testid="group-description">Description</FormSection>
-      <FormSectionDescription>Optional.</FormSectionDescription>
       <div class="flex flex-wrap items-center gap-1.5 mb-2">
         <IconButton
           v-if="!descriptionActive"

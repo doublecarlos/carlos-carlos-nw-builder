@@ -51,6 +51,10 @@ async function setMaintainer(page: Page, on: boolean) {
   await page.getByTestId("about-maintainer").locator("input").setChecked(on);
   await page.keyboard.press("Escape");
   await expect(page.getByTestId("about-dialog")).toHaveCount(0);
+  // Closing the dialog hands focus back to the About button, whose focus-tooltip then hangs
+  // over the toolbar. Drop it so the export toggle's click is not intercepted.
+  await page.keyboard.press("Escape");
+  await expect(page.getByTestId("tooltip")).toBeHidden();
 }
 
 test("a dev build starts with the data-file tabs already available", async ({
