@@ -110,7 +110,7 @@ function onRowKeydown(event: KeyboardEvent) {
     ]"
   >
     <div
-      class="nav-row nav-row--build relative flex cursor-grab items-center gap-1 rounded-md border-b-2 border-t-2 border-transparent py-1 pr-1"
+      class="nav-row nav-row--build relative flex cursor-grab items-center gap-1 rounded-md border-b-2 border-t-2 border-transparent py-1 pr-1 focus-within:rounded-none focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-accent"
       :class="[
         active && 'is-active bg-accent-soft',
         indicator === 'before' && '!border-t-accent',
@@ -127,7 +127,7 @@ function onRowKeydown(event: KeyboardEvent) {
         v-rename-focus
         :model-value="renameText"
         type="text"
-        class="nav-rename min-w-0 flex-1"
+        class="nav-rename min-w-0 flex-1 focus:outline-none"
         @update:model-value="emit('rename-start', build.id, String($event))"
         @keydown.enter="emit('rename-commit')"
         @keydown.esc="emit('rename-cancel')"
@@ -137,7 +137,7 @@ function onRowKeydown(event: KeyboardEvent) {
       <BaseTooltip v-else :text="build.name">
         <button
           type="button"
-          class="nav-name min-w-0 flex-1 cursor-pointer overflow-hidden text-ellipsis whitespace-nowrap py-0.5 text-left"
+          class="nav-name min-w-0 flex-1 cursor-pointer overflow-hidden text-ellipsis whitespace-nowrap py-0.5 text-left focus:outline-none"
           :data-nav-key="build.id"
           data-nav-kind="build"
           @click="emit('select', build.id)"
@@ -153,7 +153,7 @@ function onRowKeydown(event: KeyboardEvent) {
         <BaseTooltip text="Build menu">
           <button
             type="button"
-            class="nav-kebab flex flex-none cursor-pointer items-center rounded-md px-1.5 py-1 text-muted hover:bg-surface-2 hover:text-text"
+            class="nav-kebab flex flex-none cursor-pointer items-center rounded-md px-1.5 py-1 text-muted hover:bg-surface-2 hover:text-text focus:outline-none"
             aria-label="Build menu"
             @click="emit('menu-open', build.id, $event)"
           >

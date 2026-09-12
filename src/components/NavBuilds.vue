@@ -297,7 +297,7 @@ function moveFocus(dir: 1 | -1) {
 
         <template v-else>
           <div
-            class="nav-row nav-row--folder relative flex cursor-grab items-center gap-1 rounded-md border-b-2 border-t-2 border-transparent py-1 pl-1 pr-1"
+            class="nav-row nav-row--folder relative flex cursor-grab items-center gap-1 rounded-md border-b-2 border-t-2 border-transparent py-1 pl-1 pr-1 focus-within:rounded-none focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-accent"
             :class="[
               rootDrop.indicatorAt(row.index) === 'before' &&
                 '!border-t-accent',
@@ -331,7 +331,7 @@ function moveFocus(dir: 1 | -1) {
               v-rename-focus
               :model-value="renameText"
               type="text"
-              class="nav-rename min-w-0 flex-1"
+              class="nav-rename min-w-0 flex-1 focus:outline-none"
               @update:model-value="
                 $emit('rename-start', row.folder.id, String($event))
               "
@@ -343,7 +343,7 @@ function moveFocus(dir: 1 | -1) {
             <BaseTooltip v-else :text="row.folder.name">
               <button
                 type="button"
-                class="nav-name min-w-0 flex-1 cursor-pointer overflow-hidden text-ellipsis whitespace-nowrap py-0.5 text-left font-medium"
+                class="nav-name min-w-0 flex-1 cursor-pointer overflow-hidden text-ellipsis whitespace-nowrap py-0.5 text-left font-medium focus:outline-none"
                 :data-nav-key="row.folder.id"
                 data-nav-kind="folder"
                 :aria-expanded="isOpen(row.folder)"
@@ -366,7 +366,7 @@ function moveFocus(dir: 1 | -1) {
               <BaseTooltip text="Folder menu">
                 <button
                   type="button"
-                  class="nav-kebab flex flex-none cursor-pointer items-center rounded-md px-1.5 py-1 text-muted hover:bg-surface-2 hover:text-text"
+                  class="nav-kebab flex flex-none cursor-pointer items-center rounded-md px-1.5 py-1 text-muted hover:bg-surface-2 hover:text-text focus:outline-none"
                   aria-label="Folder menu"
                   @click="$emit('menu-open', row.folder.id, $event)"
                 >

@@ -534,8 +534,8 @@ useEventListener(document, "scroll", onScrollCapture, {
     <NavBuilds
       :entries="builds.navEntries.value"
       :selected-id="
-        selection.selection.value?.kind === 'build'
-          ? selection.selection.value.id
+        selection.highlighted.value?.kind === 'build'
+          ? selection.highlighted.value.id
           : null
       "
       :filter="buildFilter"
@@ -553,7 +553,7 @@ useEventListener(document, "scroll", onScrollCapture, {
       :menu-items="navMenuItems()"
       :menu-anchor="menuAnchor"
       @update:filter="(v) => (buildFilter = v)"
-      @select="(id) => selection.selectBuild(id)"
+      @select="(id) => selection.pickBuild(id)"
       @rename-start="
         (id, name) => {
           renaming = { type: rowType(id), id };
@@ -579,8 +579,8 @@ useEventListener(document, "scroll", onScrollCapture, {
     <NavLayers
       :layers="layers.layers.value"
       :selected-id="
-        selection.selection.value?.kind === 'layer'
-          ? selection.selection.value.id
+        selection.highlighted.value?.kind === 'layer'
+          ? selection.highlighted.value.id
           : null
       "
       :filter="layerFilter"
@@ -594,7 +594,7 @@ useEventListener(document, "scroll", onScrollCapture, {
       :can-move-up="(id) => layerIndex(id) !== 0"
       :can-move-down="(id) => layerIndex(id) !== layers.layers.value.length - 1"
       @update:filter="(v) => (layerFilter = v)"
-      @select="(id) => selection.selectLayer(id)"
+      @select="(id) => selection.pickLayer(id)"
       @toggle-enabled="(id) => toggleLayerEnabled(id)"
       @rename-start="
         (id, name) => {

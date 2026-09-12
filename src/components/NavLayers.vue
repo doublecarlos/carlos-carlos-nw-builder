@@ -157,7 +157,7 @@ function moveFocus(dir: 1 | -1) {
       <div
         v-for="(l, i) in filteredLayers"
         :key="l.id"
-        class="nav-row nav-row--layer relative flex cursor-grab items-center gap-1 rounded-md py-1 pl-1.5 pr-1 border-t-2 border-b-2 border-transparent"
+        class="nav-row nav-row--layer relative flex cursor-grab items-center gap-1 rounded-md py-1 pl-1.5 pr-1 border-t-2 border-b-2 border-transparent focus-within:rounded-none focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-accent"
         :class="[
           selectedId === l.id && 'is-active bg-accent-soft',
           dropList.indicatorAt(i) === 'before' && '!border-t-accent',
@@ -177,7 +177,7 @@ function moveFocus(dir: 1 | -1) {
           v-rename-focus
           :model-value="renameText"
           type="text"
-          class="nav-rename min-w-0 flex-1"
+          class="nav-rename min-w-0 flex-1 focus:outline-none"
           @update:model-value="$emit('rename-start', l.id, String($event))"
           @keydown.enter="$emit('rename-commit')"
           @keydown.esc="$emit('rename-cancel')"
@@ -186,7 +186,7 @@ function moveFocus(dir: 1 | -1) {
         <button
           v-else
           type="button"
-          class="nav-name min-w-0 flex-1 cursor-pointer overflow-hidden text-ellipsis whitespace-nowrap py-0.5 text-left"
+          class="nav-name min-w-0 flex-1 cursor-pointer overflow-hidden text-ellipsis whitespace-nowrap py-0.5 text-left focus:outline-none"
           :class="!l.enabled && 'text-muted'"
           :data-nav-key="l.id"
           @click="$emit('select', l.id)"
@@ -201,7 +201,7 @@ function moveFocus(dir: 1 | -1) {
           <BaseTooltip text="Layer menu">
             <button
               type="button"
-              class="nav-kebab flex flex-none cursor-pointer items-center rounded-md px-1.5 py-1 text-muted hover:bg-surface-2 hover:text-text"
+              class="nav-kebab flex flex-none cursor-pointer items-center rounded-md px-1.5 py-1 text-muted hover:bg-surface-2 hover:text-text focus:outline-none"
               aria-label="Layer menu"
               @click="$emit('menu-open', l.id, $event)"
             >
