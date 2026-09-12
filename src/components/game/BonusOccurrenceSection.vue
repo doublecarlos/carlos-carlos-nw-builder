@@ -12,7 +12,6 @@ import BaseInput from "../ui/BaseInput.vue";
 import BaseLink from "../ui/BaseLink.vue";
 import FormField from "../ui/FormField.vue";
 import FormGrid from "../ui/FormGrid.vue";
-import FormSectionDescription from "../ui/FormSectionDescription.vue";
 import SegmentedControl from "../ui/SegmentedControl.vue";
 import BonusOccurrenceInputs from "./BonusOccurrenceInputs.vue";
 import type { OccurrenceDraft } from "../../lib/item-draft";
@@ -164,21 +163,17 @@ const previewRow = computed<OccurrenceRow | null>(() => {
           >
         </FormField>
       </FormGrid>
-      <FormSectionDescription v-if="spec.hasLabel" class="mt-1">
-        Shown next to the {{ mode === "toggle" ? "toggle" : "stepper" }} in the
-        build editor.
-      </FormSectionDescription>
 
       <!-- The preview is the real build-editor control, made inert: it shows exactly what
            the player gets without taking input. -->
       <div
         v-if="previewRow"
-        class="mt-1.5 flex flex-wrap items-center gap-2 text-muted"
+        class="mt-3 flex flex-wrap items-center gap-2 text-muted"
       >
-        <span>Player sees:</span>
+        <span>Preview:</span>
         <div
           inert
-          class="flex flex-wrap items-center gap-2 opacity-70"
+          class="flex flex-wrap items-center gap-2 outline outline-line p-2"
           data-testid="occurrence-preview"
         >
           <BonusOccurrenceInputs

@@ -111,7 +111,6 @@ test("switching Fixed → Toggle → Range shows each mode's own fields", async 
   await expect(
     section.getByTestId("occurrence-default-toggle").locator("input"),
   ).toBeChecked();
-  await expect(section).toContainText("Player sees:");
   await expect(
     section.getByTestId("occurrence-preview").locator("input[type=checkbox]"),
   ).toBeVisible();
