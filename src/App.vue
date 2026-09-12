@@ -23,6 +23,7 @@ import * as stableBrowser from "./stores/stableBrowser";
 import RailGutter from "./components/ui/RailGutter.vue";
 import * as rails from "./stores/rails";
 import { useGlobalShortcuts } from "./composables/useGlobalShortcuts";
+import { undoScope, useUndoScope } from "./composables/useUndoScope";
 
 const resolved = engine.resolved;
 
@@ -49,6 +50,7 @@ const detailsWidth = computed(() =>
 );
 
 useGlobalShortcuts();
+useUndoScope();
 
 // --- loading state ------------------------------------------------------------------------
 const loading = builds.loading;
@@ -132,7 +134,12 @@ syncRoute({ push: false });
 </script>
 
 <template>
-  <div class="flex h-screen flex-col" :style="{ minWidth: minWidthPx + 'px' }">
+  <!-- The active undo scope is reflected here so tests can read it off the DOM. -->
+  <div
+    class="flex h-screen flex-col"
+    :style="{ minWidth: minWidthPx + 'px' }"
+    :data-undo-scope-active="undoScope"
+  >
     <AppHeader class="flex-none" />
 
     <!-- Loading skeleton: header stays visible, rest is a muted panel -->

@@ -1015,7 +1015,10 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="flex min-h-0 min-w-0 flex-1 flex-col p-3">
+  <div
+    class="flex min-h-0 min-w-0 flex-1 flex-col p-3"
+    data-undo-scope="editor"
+  >
     <!-- Layer header strip -->
     <div class="mb-2 flex flex-none flex-wrap items-center gap-1.5">
       <div class="flex items-center gap-1.5">

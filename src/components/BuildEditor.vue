@@ -872,7 +872,7 @@ watch(
 </script>
 
 <template>
-  <div class="flex min-w-0 flex-1 flex-col min-h-0">
+  <div class="flex min-w-0 flex-1 flex-col min-h-0" data-undo-scope="editor">
     <!-- Above the section headers below, which are sticky at `z-sticky` of their own: this bar
          is positioned, so its dropdowns are stacked within it and cannot outrank a later sibling
          on their own -- the bar has to win the comparison for them. -->

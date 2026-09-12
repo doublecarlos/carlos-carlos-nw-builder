@@ -532,6 +532,7 @@ useEventListener(document, "scroll", onScrollCapture, {
     ref="root"
     class="flex flex-col gap-0.5 bg-surface p-2"
     data-testid="library"
+    data-undo-scope="nav"
   >
     <NavBuilds
       :entries="builds.navEntries.value"
