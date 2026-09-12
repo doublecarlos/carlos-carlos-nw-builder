@@ -5,7 +5,7 @@
 // screen, or the three-column builder (nav, editor area with sticky header, stat panel).
 import { watch, computed } from "vue";
 import { useEventListener } from "@vueuse/core";
-import Nav from "./components/Nav.vue";
+import NavBar from "./components/NavBar.vue";
 import AppHeader from "./components/AppHeader.vue";
 import LandingScreen from "./components/LandingScreen.vue";
 import BuildEditor from "./components/BuildEditor.vue";
@@ -169,7 +169,7 @@ syncRoute({ push: false });
           :style="{ width: navWidth + 'px' }"
           data-testid="nav-column"
         >
-          <Nav v-if="!navCollapsed" class="min-w-0 flex-1 overflow-y-auto" />
+          <NavBar v-if="!navCollapsed" class="min-w-0 flex-1 overflow-y-auto" />
           <RailGutter
             rail="nav"
             side="left"

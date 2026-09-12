@@ -1,13 +1,14 @@
 <script setup lang="ts">
 // Layer list section inside the left sidebar. Pure presentation.
-import { computed, useTemplateRef, type Component, type Directive } from "vue";
+import { computed, useTemplateRef, type Component } from "vue";
 import BaseButton from "./ui/BaseButton.vue";
 import BaseTooltip from "./ui/BaseTooltip.vue";
 import BaseCheckbox from "./ui/BaseCheckbox.vue";
 import BaseInput from "./ui/BaseInput.vue";
-import { EllipsisVertical, Plus } from "@lucide/vue";
-import NavContextMenu from "./NavContextMenu.vue";
-import { isMac } from "../lib/platform";
+import { Plus } from "@lucide/vue";
+
+import NavRow from "./NavRow.vue";
+
 import { matchesQuery } from "../lib/text-filter";
 import {
   useDragHandle,
@@ -15,13 +16,6 @@ import {
   type DragSource,
 } from "../composables/useDragAndDrop";
 import type { Layer } from "../types";
-
-const vRenameFocus: Directive<HTMLInputElement> = {
-  mounted(el) {
-    el.focus();
-    el.select();
-  },
-};
 
 const props = defineProps<{
   layers: Layer[];
@@ -83,42 +77,6 @@ function dragHandleProps(id: string, index: number) {
   }));
 }
 
-/** A layer row drags by itself rather than by a grip, so the one element carries both the
- *  drag source and the drop target. Dragging is off while the row is a rename input, which
- *  needs the browser's own drag-to-select-text gesture. */
-function rowProps(id: string, index: number) {
-  return {
-    ...dropList.rowProps(index),
-    ...dragHandleProps(id, index),
-    draggable: props.renamingId !== id,
-  };
-}
-
-/** Same row-keyboard contract as NavBuilds.vue: ↑/↓ moves selection, Ctrl/Cmd+↑/↓ reorders,
- *  Delete/Backspace requests the parent's two-step delete confirm, F2 starts rename. */
-function onRowKeydown(event: KeyboardEvent, id: string, name: string) {
-  if (event.key === "ArrowDown" || event.key === "ArrowUp") {
-    event.preventDefault();
-    const dir = event.key === "ArrowDown" ? 1 : -1;
-    if (isMac ? event.metaKey : event.ctrlKey) {
-      if (dir === 1) emit("move-down", id);
-      else emit("move-up", id);
-    } else {
-      moveFocus(dir);
-    }
-    return;
-  }
-  if (event.key === "Delete" || event.key === "Backspace") {
-    event.preventDefault();
-    emit("delete-request", id, event.shiftKey);
-    return;
-  }
-  if (event.key === "F2") {
-    event.preventDefault();
-    emit("rename-start", id, name);
-  }
-}
-
 function moveFocus(dir: 1 | -1) {
   const rows = root.value?.querySelectorAll<HTMLElement>("[data-nav-key]");
   if (!rows?.length) return;
@@ -154,71 +112,44 @@ function moveFocus(dir: 1 | -1) {
     />
 
     <div class="max-h-48 overflow-y-auto">
-      <div
+      <NavRow
         v-for="(l, i) in filteredLayers"
+        :id="l.id"
         :key="l.id"
-        class="nav-row nav-row--layer relative flex cursor-grab items-center gap-1 h-9 rounded-md py-1 pl-1.5 pr-1 border-t-2 border-b-2 border-transparent focus-within:rounded-none focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-accent"
-        :class="[
-          selectedId === l.id && 'is-active bg-accent-soft',
-          dropList.indicatorAt(i) === 'before' && '!border-t-accent',
-          dropList.indicatorAt(i) === 'after' && '!border-b-accent',
-        ]"
-        v-bind="rowProps(l.id, i)"
+        :name="l.name"
+        kind="layer"
+        :active="selectedId === l.id"
+        :renaming="renamingId === l.id"
+        :rename-text="renameText"
+        :menu-open="menuOpenId === l.id"
+        :menu-items="menuOpenId === l.id ? menuItems : []"
+        :menu-anchor="menuAnchor"
+        :handle-props="dragHandleProps(l.id, i)"
+        :drop-props="dropList.rowProps(i)"
+        :indicator="dropList.indicatorAt(i)"
+        :nested="false"
+        :disabled="!l.enabled"
+        @select="(id) => $emit('select', id)"
+        @rename-start="(id, name) => $emit('rename-start', id, name)"
+        @rename-commit="$emit('rename-commit')"
+        @rename-cancel="$emit('rename-cancel')"
+        @move-up="(id) => $emit('move-up', id)"
+        @move-down="(id) => $emit('move-down', id)"
+        @focus-move="moveFocus"
+        @delete-request="(id, skip) => $emit('delete-request', id, skip)"
+        @menu-open="(id, ev) => $emit('menu-open', id, ev)"
+        @menu-action="(a, id, skip) => $emit('menu-action', a, id, skip)"
+        @menu-close="$emit('menu-close')"
       >
-        <div @click.stop>
-          <BaseCheckbox
-            :model-value="l.enabled"
-            @update:model-value="$emit('toggle-enabled', l.id)"
-          />
-        </div>
-
-        <BaseInput
-          v-if="renamingId === l.id"
-          v-rename-focus
-          :model-value="renameText"
-          type="text"
-          class="nav-rename min-w-0 flex-1 focus:outline-none"
-          @update:model-value="$emit('rename-start', l.id, String($event))"
-          @keydown.enter="$emit('rename-commit')"
-          @keydown.esc="$emit('rename-cancel')"
-          @blur="$emit('rename-commit')"
-        />
-        <button
-          v-else
-          type="button"
-          class="nav-name min-w-0 flex-1 cursor-pointer overflow-hidden text-ellipsis whitespace-nowrap py-0.5 text-left focus:outline-none"
-          :class="!l.enabled && 'text-muted'"
-          :data-nav-key="l.id"
-          @click="$emit('select', l.id)"
-          @dblclick="$emit('rename-start', l.id, l.name)"
-          @contextmenu.prevent="$emit('menu-open', l.id, $event)"
-          @keydown="onRowKeydown($event, l.id, l.name)"
-        >
-          {{ l.name }}
-        </button>
-
-        <div class="nav-menu-wrap relative flex items-center">
-          <BaseTooltip text="Layer menu">
-            <button
-              type="button"
-              class="nav-kebab flex flex-none cursor-pointer items-center rounded-md px-1.5 py-1 text-muted hover:bg-surface-2 hover:text-text focus:outline-none"
-              aria-label="Layer menu"
-              @click="$emit('menu-open', l.id, $event)"
-            >
-              <EllipsisVertical class="size-[14px]" />
-            </button>
-          </BaseTooltip>
-
-          <NavContextMenu
-            v-if="menuOpenId === l.id"
-            :anchor="menuAnchor"
-            :items="menuItems"
-            :ignore="['.nav-kebab']"
-            @action="(a, skip) => $emit('menu-action', a, l.id, skip)"
-            @close="$emit('menu-close')"
-          />
-        </div>
-      </div>
+        <template #before>
+          <div @click.stop>
+            <BaseCheckbox
+              :model-value="l.enabled"
+              @update:model-value="$emit('toggle-enabled', l.id)"
+            />
+          </div>
+        </template>
+      </NavRow>
 
       <div class="flex items-center justify-center gap-1 mt-2">
         <BaseButton data-testid="nav-add-layer" @click="$emit('create')"
