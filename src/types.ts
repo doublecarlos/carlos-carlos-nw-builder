@@ -23,10 +23,20 @@ export interface RatingConversionRule {
   pctCap: number;
 }
 
-export interface AbilityContribution {
-  ability: string;
-  stat: StatKey;
+/** One rule of the engine's contribution stage: `target` gains `source / divisor`, where
+ * `source` is read at its cap. */
+export interface StatContribution {
+  source: StatKey;
+  target: StatKey;
   divisor: number;
+}
+
+/** What one StatContribution actually added to its target in a resolved build, in rule
+ * order. */
+export interface AppliedContribution {
+  source: StatKey;
+  target: StatKey;
+  value: number;
 }
 
 export interface RoleDef {
@@ -63,7 +73,9 @@ export interface Schema {
   ratingStats: StatKey[];
   abilityStats: StatKey[];
   ratingConversion: RatingConversionRule[];
-  abilityContributions: AbilityContribution[];
+  statContributions: StatContribution[];
+  /** Forte slot name to divisor. The engine turns Forte into `forte_p` contribution rules,
+   * appended after `statContributions`. */
   forteSplit: Record<string, number>;
   roles: Record<string, RoleDef>;
   statScalers: StatScaler[];
@@ -1088,7 +1100,6 @@ export interface DerivedOutputs {
   hp: number;
   baseDamage: number;
   effectiveMagPhys: number;
-  overallHealing: number;
   damage: DamageOutputs;
   healing: HealingOutputs;
   ehp: EhpOutputs;
@@ -1099,6 +1110,7 @@ export interface ResolvedBuild {
   rows: EngineRow[];
   bonuses: EvaluatedBonus[];
   stages: Stages;
+  appliedContributions: AppliedContribution[];
   derived: DerivedOutputs;
   errors: EngineError[];
 }

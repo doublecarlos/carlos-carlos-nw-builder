@@ -33,7 +33,7 @@ function deriveSchema(raw: typeof rawSchema): Schema {
       .filter((s): boolean => "ability" in s && Boolean(s.ability))
       .map((s) => s.key),
     ratingConversion: raw.ratingConversion,
-    abilityContributions: raw.abilityContributions,
+    statContributions: raw.statContributions,
     forteSplit: raw.forteSplit,
     roles: raw.roles,
     statScalers: raw.statScalers,

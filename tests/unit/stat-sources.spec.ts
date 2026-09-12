@@ -14,16 +14,19 @@ import type {
   SlotsData,
 } from "../../src/types";
 
+// Stat labels come from the shipped schema; the contribution rules are made here.
 const schema: Schema = {
   stats: [{ key: "power", label: "Power", kind: "int" }],
   statByKey: { power: { key: "power", label: "Power", kind: "int" } },
-  statKeys: ["power"],
+  statKeys: ["power", "power_p", "forte_p", "out_healing_p", "overall_healing"],
   multiplicativeStats: [],
   ratingStats: [],
   abilityStats: [],
   ratingConversion: [],
-  abilityContributions: [],
-  forteSplit: {},
+  statContributions: [
+    { source: "out_healing_p", target: "overall_healing", divisor: 1 },
+  ],
+  forteSplit: { primary: 2 },
   roles: { dps: { label: "DPS", hpBonus: 1, damageBonus: 1.2 } },
   statScalers: [],
 };
@@ -36,6 +39,8 @@ const ring: Item = {
   filter: "rings",
   tags: ["ring"],
   power: 10,
+  forte_p: 0.3,
+  out_healing_p: 0.2,
   bonuses: [BONUS],
 };
 
@@ -77,7 +82,7 @@ const build: Build = {
   occurrenceInputs: {},
   listRows: {},
   disabledSlots: {},
-  context: { role: "dps" } as Build["context"],
+  context: { role: "dps", forte: { primary: "power_p" } } as Build["context"],
   compare: { id: "", highlight: false, onlyDiff: false, statLines: false },
 };
 
@@ -102,5 +107,16 @@ describe("stat source lines", () => {
     const [conversion] = percentage.sources;
     expect(conversion.name).toBe("Rating contribution");
     expect(conversion).not.toHaveProperty("slotId");
+  });
+
+  it("names a contribution line by its source stat", () => {
+    const [overall] = sectionsFor(result, build, testDb, "overall_healing");
+    expect(overall.sources).toEqual([{ name: "Outgoing Healing", value: 0.4 }]);
+  });
+
+  it("shows a forte pick's share as a Forte line, unlinked", () => {
+    // Two rings at 0.3 forte each, halved by the primary slot's divisor.
+    const forteLine = percentage.sources.find((s) => s.name === "Forte");
+    expect(forteLine).toEqual({ name: "Forte", value: 0.3 });
   });
 });

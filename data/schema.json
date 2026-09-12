@@ -474,19 +474,20 @@
     }
   ],
 
-  "abilityContributions": [
-    { "ability": "dex", "stat": "sev_p", "divisor": 200 },
-    { "ability": "cha", "stat": "forte_p", "divisor": 200 },
-    { "ability": "int", "stat": "magical_damage_boost", "divisor": 400 },
-    { "ability": "str", "stat": "physical_damage_boost", "divisor": 400 },
-    { "ability": "wis", "stat": "out_healing_p", "divisor": 400 },
-    { "ability": "con", "stat": "ap_gain", "divisor": 400 },
-    { "ability": "cha", "stat": "recharge", "divisor": 400 },
-    { "ability": "dex", "stat": "movement", "divisor": 400 },
-    { "ability": "str", "stat": "stamina_regen", "divisor": 200 },
-    { "ability": "int", "stat": "control_bonus_p", "divisor": 200 },
-    { "ability": "wis", "stat": "control_resist_p", "divisor": 200 },
-    { "ability": "con", "stat": "hit_points_mult", "divisor": 200 }
+  "statContributions": [
+    { "source": "dex", "target": "sev_p", "divisor": 200 },
+    { "source": "cha", "target": "forte_p", "divisor": 200 },
+    { "source": "int", "target": "magical_damage_boost", "divisor": 400 },
+    { "source": "str", "target": "physical_damage_boost", "divisor": 400 },
+    { "source": "wis", "target": "out_healing_p", "divisor": 400 },
+    { "source": "con", "target": "ap_gain", "divisor": 400 },
+    { "source": "cha", "target": "recharge", "divisor": 400 },
+    { "source": "dex", "target": "movement", "divisor": 400 },
+    { "source": "str", "target": "stamina_regen", "divisor": 200 },
+    { "source": "int", "target": "control_bonus_p", "divisor": 200 },
+    { "source": "wis", "target": "control_resist_p", "divisor": 200 },
+    { "source": "con", "target": "hit_points_mult", "divisor": 200 },
+    { "source": "out_healing_p", "target": "overall_healing", "divisor": 1 }
   ],
 
   "forteSplit": { "primary": 2, "secondaryA": 4, "secondaryB": 4 },

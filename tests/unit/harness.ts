@@ -16,7 +16,7 @@ export const STAGES = [
   "afterDynamicStatMods",
   "afterCombinedRating",
   "afterRatingPct",
-  "afterAbilityScores",
+  "contributions",
   "totals",
   "caps",
   "capped",

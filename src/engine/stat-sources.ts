@@ -2,10 +2,11 @@
 // what it is", one stat at a time rather than one bonus at a time (BonusInspector.vue's own job).
 //
 // Each helper below mirrors exactly one pipeline stage from engine.ts's `run()`, reading that
-// stage's own output (a resolved build's `stages.*`, or an `EngineRow`'s own `itemStats`/
-// `dynamicStats`) rather than recomputing its math, so this can never drift from what the panel
-// displays. Regrouping is all that is left: the pipeline needs stats summed per row, this needs
-// them named per source, each linked back to the build row that produced it where there is one.
+// stage's own output (a resolved build's `stages.*` or `appliedContributions`, or an
+// `EngineRow`'s own `itemStats`/`dynamicStats`) rather than recomputing its math, so this can
+// never drift from what the panel displays. Regrouping is all that is left: the pipeline needs
+// stats summed per row, this needs them named per source, each linked back to the build row
+// that produced it where there is one.
 import { NW_SCHEMA } from "../data/data";
 import { bonusTitle } from "../lib/format";
 import { assignedRows } from "../lib/inline-repetition";
@@ -15,7 +16,8 @@ export interface StatSource {
   name: string;
   value: number;
   /** The build row this line came from; absent for a pipeline stage's own line (Rating
-   * contribution, Combined rating, an ability score, Forte), which has no row to jump to. */
+   * contribution, Combined rating, an ability score, Outgoing Healing, Forte), which has no
+   * row to jump to. */
   slotId?: string;
 }
 export interface StatSourceSection {
@@ -106,8 +108,8 @@ function combinedRatingSource(
   return value ? [{ name: "Combined rating", value }] : [];
 }
 
-/** Stage 4: the rating -> percent conversion. Always present (even at 0) and always first for
- * a paired percent stat -- it is structurally part of the number, not an optional extra. */
+/** Stage 5: the rating -> percent conversion. Always present and always first for
+ * a paired percent stat. */
 function ratingContributionSource(
   result: ResolvedBuild,
   key: StatKey,
@@ -119,32 +121,21 @@ function ratingContributionSource(
   ];
 }
 
-/** Stage 5: ability score redistribution (e.g. Dexterity feeding Severity%). */
-function abilitySource(result: ResolvedBuild, key: StatKey): StatSource[] {
-  const rule = NW_SCHEMA.abilityContributions.find((r) => r.stat === key);
-  if (!rule) return [];
-  const value = result.stages.abilities?.[key] ?? 0;
-  return value
-    ? [
-        {
-          name: NW_SCHEMA.statByKey[rule.ability]?.label ?? rule.ability,
-          value,
-        },
-      ]
-    : [];
-}
-
-/** Stage 6: the forte pool, if the player picked this stat in one of the three forte slots. */
-function forteSource(
+/** Stage 6: every contribution rule targeting this key, one line per source stat.
+ * Two rules with the same source fold into one line, in the order the pipeline applied them. */
+function contributionSources(
   result: ResolvedBuild,
-  build: Build | null | undefined,
   key: StatKey,
 ): StatSource[] {
-  const picks = build?.context?.forte as
-    Record<string, string | undefined> | undefined;
-  if (!picks || !Object.values(picks).includes(key)) return [];
-  const value = result.stages.forte?.[key] ?? 0;
-  return value ? [{ name: "Forte", value }] : [];
+  const bySource = new Map<StatKey, number>();
+  for (const { source, target, value } of result.appliedContributions) {
+    if (target !== key || !value) continue;
+    bySource.set(source, (bySource.get(source) ?? 0) + value);
+  }
+  return [...bySource].map(([source, value]) => ({
+    name: NW_SCHEMA.statByKey[source]?.label ?? source,
+    value,
+  }));
 }
 
 /** Every contribution to one stat key, in the order they'd appear reading the pipeline
@@ -163,8 +154,7 @@ function sourcesFor(
     ...bonusSources(result, key),
     ...dynamicStatSources(result, key),
     ...combinedRatingSource(result, key),
-    ...abilitySource(result, key),
-    ...forteSource(result, build, key),
+    ...contributionSources(result, key),
   ];
 }
 
