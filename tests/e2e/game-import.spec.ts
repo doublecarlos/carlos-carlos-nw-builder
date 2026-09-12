@@ -43,7 +43,6 @@ test("uploading the fixture advances to the loadout list with the right names, a
 }) => {
   await openBuilder(page);
   await page.getByTestId("header-import-from-game").click();
-  await page.getByTestId("game-import-next").click();
   await page.getByTestId("game-import-file-input").setInputFiles(DEMO_FIXTURE);
 
   await expect(page.getByTestId("game-import-step-loadouts")).toBeVisible();
@@ -69,7 +68,6 @@ test("loadouts are listed alphabetically, not in recording order", async ({
 }) => {
   await openBuilder(page);
   await page.getByTestId("header-import-from-game").click();
-  await page.getByTestId("game-import-next").click();
   await page
     .getByTestId("game-import-file-input")
     .setInputFiles(LOADOUT_ORDER_FIXTURE);
@@ -86,7 +84,6 @@ test("selecting two loadouts and confirming creates two builds in the nav with t
 }) => {
   await openBuilder(page);
   await page.getByTestId("header-import-from-game").click();
-  await page.getByTestId("game-import-next").click();
   await page.getByTestId("game-import-file-input").setInputFiles(DEMO_FIXTURE);
 
   const rows = page.getByTestId("game-import-loadout-row");
@@ -111,7 +108,6 @@ test("an imported build starts on the generic companion and mount combat power",
 }) => {
   await openBuilder(page);
   await page.getByTestId("header-import-from-game").click();
-  await page.getByTestId("game-import-next").click();
   await page.getByTestId("game-import-file-input").setInputFiles(DEMO_FIXTURE);
   await page.getByTestId("game-import-commit").click();
   await page.getByTestId("game-import-done").click();
@@ -132,7 +128,6 @@ test("a garbage file shows the 'not a demo file' message and does not create a b
 }) => {
   await openBuilder(page);
   await page.getByTestId("header-import-from-game").click();
-  await page.getByTestId("game-import-next").click();
   await page
     .getByTestId("game-import-file-input")
     .setInputFiles(GARBAGE_FIXTURE);
@@ -145,7 +140,6 @@ test("a garbage file shows the 'not a demo file' message and does not create a b
 test("Escape closes the wizard without committing", async ({ page }) => {
   await openBuilder(page);
   await page.getByTestId("header-import-from-game").click();
-  await page.getByTestId("game-import-next").click();
   await page.getByTestId("game-import-file-input").setInputFiles(DEMO_FIXTURE);
   await expect(page.getByTestId("game-import-step-loadouts")).toBeVisible();
 

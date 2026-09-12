@@ -29,7 +29,6 @@ async function mapFixtureHeadItem(page: Page) {
 
 async function openImportAndUploadFixture(page: Page) {
   await page.getByTestId("header-import-from-game").click();
-  await page.getByTestId("game-import-next").click();
   await page.getByTestId("game-import-file-input").setInputFiles(DEMO_FIXTURE);
   await expect(page.getByTestId("game-import-step-loadouts")).toBeVisible();
 }

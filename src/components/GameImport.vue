@@ -22,6 +22,7 @@ import {
   goToStep,
   parseFile,
   commit,
+  ImportStep,
   type LoadoutRow,
 } from "../stores/gameImport";
 import CodeSnippet from "./ui/CodeSnippet.vue";
@@ -92,12 +93,15 @@ const hasSelection = computed(() => selected.value.size > 0);
     :panel-class="['max-h-[85vh]', 'w-[680px]']"
     data-testid="game-import-modal"
     @close="close()"
+    @dragover.prevent="isDragging = true"
+    @dragleave.prevent="isDragging = false"
+    @drop.prevent="onDrop"
   >
     <div class="flex-1 overflow-y-auto p-4">
-      <!-- Step 1: instructions -->
+      <!-- Step 1: instructions + file picker -->
       <div
-        v-if="step === 1"
-        class="flex flex-col gap-3"
+        v-if="step === ImportStep.Instructions"
+        class="flex flex-col gap-4"
         data-testid="game-import-step-instructions"
       >
         <div>
@@ -122,29 +126,11 @@ const hasSelection = computed(() => selected.value.size > 0);
           character loadouts. Nothing is uploaded; the file is analyzed locally
           in your browser.
         </p>
-        <div class="flex justify-end">
-          <BaseButton
-            variant="primary"
-            data-testid="game-import-next"
-            @click="goToStep(2)"
-            >Next</BaseButton
-          >
-        </div>
-      </div>
-
-      <!-- Step 2: pick the file -->
-      <div
-        v-else-if="step === 2"
-        class="flex flex-col gap-3"
-        data-testid="game-import-step-file"
-      >
         <div
           class="flex flex-col items-center justify-center gap-2 rounded-md border-2 border-dashed p-8 text-center"
           :class="isDragging ? 'border-accent bg-accent-soft' : 'border-line'"
           data-testid="game-import-dropzone"
-          @dragover.prevent="isDragging = true"
-          @dragleave.prevent="isDragging = false"
-          @drop="onDrop"
+          @drop.prevent="onDrop"
         >
           <Upload class="size-6 text-muted" />
           <p>Drag the export file here, or</p>
@@ -165,14 +151,11 @@ const hasSelection = computed(() => selected.value.size > 0);
         >
           {{ parseError }}
         </p>
-        <div class="flex justify-between">
-          <BaseButton @click="goToStep(1)">Back</BaseButton>
-        </div>
       </div>
 
       <!-- Step 3: pick loadouts -->
       <div
-        v-else-if="step === 3"
+        v-else-if="step === ImportStep.Loadouts"
         class="flex flex-col gap-3"
         data-testid="game-import-step-loadouts"
       >
@@ -214,7 +197,9 @@ const hasSelection = computed(() => selected.value.size > 0);
           </div>
         </div>
         <div class="flex justify-between">
-          <BaseButton @click="goToStep(2)">Back</BaseButton>
+          <BaseButton @click="goToStep(ImportStep.Instructions)"
+            >Back</BaseButton
+          >
           <BaseButton
             variant="primary"
             :disabled="!hasSelection"
