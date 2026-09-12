@@ -1,14 +1,20 @@
 // End-to-end coverage for undo/redo: edit a slot, undo, redo, and verify the undo/redo
 // button states follow along.
 import { test, expect } from "@playwright/test";
-import { openBuilder, chooseItem, blurToHeader } from "./support/app";
+import {
+  openBuilder,
+  chooseItem,
+  blurToHeader,
+  undoButton,
+  redoButton,
+} from "./support/app";
 
 const HEAD_ITEM = "M29 Enchanted Depthweave Cap";
 
 test("Ctrl+Z undoes a build slot edit", async ({ page }) => {
   await openBuilder(page);
-  const undo = page.getByRole("button", { name: /Undo/ });
-  const redo = page.getByRole("button", { name: /Redo/ });
+  const undo = undoButton(page);
+  const redo = redoButton(page);
 
   // Initially nothing to undo/redo
   await expect(undo).toBeDisabled();
@@ -32,8 +38,8 @@ test("Ctrl+Z undoes a build slot edit", async ({ page }) => {
 // an undo.
 test.fixme("Ctrl+Shift+Z redoes after undo", async ({ page }) => {
   await openBuilder(page);
-  const undo = page.getByTestId("history-undo");
-  const redo = page.getByTestId("history-redo");
+  const undo = undoButton(page);
+  const redo = redoButton(page);
 
   await chooseItem(page, "gear.head", HEAD_ITEM);
   await expect(undo).toBeEnabled();
@@ -50,8 +56,8 @@ test.fixme("Ctrl+Shift+Z redoes after undo", async ({ page }) => {
 
 test.fixme("Ctrl+Y redoes after undo", async ({ page }) => {
   await openBuilder(page);
-  const undo = page.getByRole("button", { name: /Undo/ });
-  const redo = page.getByRole("button", { name: /Redo/ });
+  const undo = undoButton(page);
+  const redo = redoButton(page);
 
   await chooseItem(page, "gear.head", HEAD_ITEM);
   await expect(undo).toBeEnabled();

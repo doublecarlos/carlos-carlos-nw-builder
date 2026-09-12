@@ -213,14 +213,24 @@ export function slotFilterClearButton(page: Page): Locator {
   return page.getByTestId("slot-filter-clear");
 }
 
-/** The undo button in the app header. */
+/** The editor's undo button, over the selected build's or layer's own history. */
 export function undoButton(page: Page): Locator {
-  return page.getByTestId("header-undo");
+  return page.getByTestId("editor-undo");
 }
 
-/** The redo button in the app header. */
+/** The editor's redo button, over the selected build's or layer's own history. */
 export function redoButton(page: Page): Locator {
-  return page.getByTestId("header-redo");
+  return page.getByTestId("editor-redo");
+}
+
+/** The sidebar's undo button, over the list operations (create, rename, move, delete). */
+export function navUndoButton(page: Page): Locator {
+  return page.getByTestId("nav-undo");
+}
+
+/** The sidebar's redo button, over the list operations (create, rename, move, delete). */
+export function navRedoButton(page: Page): Locator {
+  return page.getByTestId("nav-redo");
 }
 
 /** The draft indicator in the editor header. */

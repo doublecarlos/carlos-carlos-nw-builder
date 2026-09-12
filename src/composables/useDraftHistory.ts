@@ -1,7 +1,7 @@
 // Shared engine behind ItemForm.vue / BonusForm.vue's "hybrid" editing model:
 // - New entries (no committed source yet): edits accumulate into a local undo/redo stack,
 //   coalesced into one step per DEBOUNCE_MS of typing, and registered with the global
-//   formUndo store so the app header's Undo/Redo buttons reach them.
+//   formUndo store so the editor's Undo/Redo buttons and Ctrl+Z reach them.
 // - Existing entries: edits debounce straight out to the caller via `onEmit` instead --
 //   there is no local undo stack, since the layer overlay's own history (`stores/history`)
 //   already covers that case.

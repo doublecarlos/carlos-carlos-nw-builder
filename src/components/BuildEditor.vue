@@ -26,6 +26,7 @@ import BaseInput from "./ui/BaseInput.vue";
 import BaseBadge from "./ui/BaseBadge.vue";
 import ComboBox from "./ui/ComboBox.vue";
 import CheckMenu from "./ui/CheckMenu.vue";
+import HistoryButtons from "./ui/HistoryButtons.vue";
 import QuickOptions from "./game/QuickOptions.vue";
 import {
   ChevronsDownUp,
@@ -48,6 +49,7 @@ import { useHoverCard } from "../composables/useHoverCard";
 import { occurrenceRowsForItem } from "../composables/useItemBonusOccurrences";
 import { itemScaleFactor, itemScaleNotes } from "../composables/useItemScale";
 import { useCompareDiff, type SlotDiff } from "../composables/useCompareDiff";
+import { useItemUndoRedo } from "../composables/useUndoRedo";
 import * as storage from "../storage/storage";
 import * as router from "../lib/router";
 import * as builds from "../stores/builds";
@@ -117,6 +119,13 @@ watch(
   },
   { deep: true },
 );
+
+// --- undo/redo ---------------------------------------------------------------------------
+
+/** The build's own history. The buttons act on it whatever has focus; only the keyboard
+ *  follows the undo scope. */
+const { canUndo, canRedo, undoLabel, redoLabel, undo, redo } =
+  useItemUndoRedo();
 
 // --- slot filter -------------------------------------------------------------------------
 
@@ -951,9 +960,18 @@ watch(
             filteredSlotCount === 1 ? "" : "es"
           }}</BaseBadge
         >
+        <HistoryButtons
+          class="ml-auto"
+          testid="editor"
+          :can-undo="canUndo"
+          :can-redo="canRedo"
+          :undo-label="undoLabel"
+          :redo-label="redoLabel"
+          @undo="undo()"
+          @redo="redo()"
+        />
         <!-- Lenses, not filters: "clear filters" leaves them alone. -->
         <CheckMenu
-          class="ml-auto"
           label="Picker options"
           testid="picker-options"
           :items="pickerOptionItems"

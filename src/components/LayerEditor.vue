@@ -48,6 +48,7 @@ const TooltipImportModal = defineAsyncComponent({
 import LayerValidationDrawer from "./game/LayerValidationDrawer.vue";
 import LayerEntryList from "./game/LayerEntryList.vue";
 import BaseButton from "./ui/BaseButton.vue";
+import HistoryButtons from "./ui/HistoryButtons.vue";
 import RailGutter from "./ui/RailGutter.vue";
 import BaseCheckbox from "./ui/BaseCheckbox.vue";
 import BaseBadge from "./ui/BaseBadge.vue";
@@ -63,6 +64,7 @@ import * as layers from "../stores/layers";
 import * as layerEditorUi from "../stores/layerEditorUi";
 import * as rails from "../stores/rails";
 import { matchesQuery } from "../lib/text-filter";
+import { useItemUndoRedo } from "../composables/useUndoRedo";
 import type {
   CatalogGroup,
   CatalogOverlay,
@@ -220,6 +222,11 @@ const selectedBySection = reactive<Record<CatalogGroup, string | null>>({
   sectionPresets: null,
   slots: null,
 });
+
+/** The layer's own history, with an open form's draft steps in front of it. The buttons act on
+ *  it whatever has focus; only the keyboard follows the undo scope. */
+const { canUndo, canRedo, undoLabel, redoLabel, undo, redo } =
+  useItemUndoRedo();
 
 const showExport = ref(false);
 const showTooltipImport = ref(false);
@@ -1082,6 +1089,16 @@ onUnmounted(() => {
       <BaseBadge v-if="warnCount" variant="warn"
         >{{ warnCount }} warning(s)</BaseBadge
       >
+
+      <HistoryButtons
+        testid="editor"
+        :can-undo="canUndo"
+        :can-redo="canRedo"
+        :undo-label="undoLabel"
+        :redo-label="redoLabel"
+        @undo="undo()"
+        @redo="redo()"
+      />
 
       <BaseButton
         :active="showExport"

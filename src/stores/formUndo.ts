@@ -1,6 +1,7 @@
 // Form-level undo: tracks the active form's draft undo/redo state. Forms register
 // themselves when they have draft history (new items only), and unregister on unmount.
-// The AppHeader buttons delegate here when a form is active with draft changes.
+// The undo/redo bindings in `composables/useUndoRedo.ts` delegate here first while a form is
+// active with draft changes.
 import { computed, shallowRef } from "vue";
 
 export interface FormUndoState {
@@ -18,7 +19,7 @@ export interface FormUndoState {
  *  returns the exact object a caller passed to `register` -- `unregister`'s `===` check below
  *  depends on that identity surviving the round-trip. A plain `ref` deep-reactively wraps
  *  assigned objects in a Proxy, so `.value` would never `===` the original `state`, and
- *  `unregister` would silently never clear `_active` -- leaving the app's global Undo/Redo
+ *  `unregister` would silently never clear `_active`, leaving every Undo/Redo binding
  *  permanently pointed at the last form that ever registered, long after it unmounted. */
 const _active = shallowRef<FormUndoState | null>(null);
 

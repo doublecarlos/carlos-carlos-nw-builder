@@ -1,9 +1,8 @@
 <script setup lang="ts">
-// Full-width header bar: app title, export/import, an auto-save indicator, undo/redo, theme
-// toggle, notice, and the About/shortcut overlays.
+// Full-width header bar: app title, export/import, an auto-save indicator, theme toggle,
+// notice, and the About/shortcut overlays.
 import { ref, useTemplateRef } from "vue";
 import ThemeToggle from "./ui/ThemeToggle.vue";
-import HistoryButton from "./ui/HistoryButton.vue";
 import BaseButton from "./ui/BaseButton.vue";
 import BaseLink from "./ui/BaseLink.vue";
 import BaseNotice from "./ui/BaseNotice.vue";
@@ -26,7 +25,6 @@ import {
   Upload,
   Wrench,
 } from "@lucide/vue";
-import { useUndoRedoKeys } from "../composables/useUndoRedoKeys";
 import { importFileText, pending as pendingImport } from "../stores/importFile";
 import { notice, noticeAction, showNotice } from "../stores/notice";
 import {
@@ -47,9 +45,6 @@ const importFileInput = useTemplateRef("importFileInput");
 const modKey = isMac ? "⌘" : "Ctrl";
 const showBundleExport = ref(false);
 const showAbout = ref(false);
-
-const { canUndo, canRedo, undoLabel, redoLabel, undo, redo } =
-  useUndoRedoKeys();
 
 function triggerExportBundle() {
   showBundleExport.value = true;
@@ -200,33 +195,6 @@ async function onImportFile(event: Event) {
     </span>
 
     <span class="flex-1"></span>
-
-    <span class="h-4 w-px bg-line" />
-
-    <!-- A disabled button fires no pointer events, so the "nothing to undo" wording has no
-         way to show; it said nothing the grayed-out button did not already. -->
-    <BaseTooltip :text="canUndo ? `Undo: ${undoLabel} (Ctrl+Z)` : ''">
-      <HistoryButton
-        type="undo"
-        :disabled="!canUndo"
-        :detail="canUndo ? undoLabel : ''"
-        data-testid="header-undo"
-        @click="undo()"
-      >
-        Undo
-      </HistoryButton>
-    </BaseTooltip>
-    <BaseTooltip :text="canRedo ? `Redo: ${redoLabel} (Ctrl+Shift+Z)` : ''">
-      <HistoryButton
-        type="redo"
-        :disabled="!canRedo"
-        :detail="canRedo ? redoLabel : ''"
-        data-testid="header-redo"
-        @click="redo()"
-      >
-        Redo
-      </HistoryButton>
-    </BaseTooltip>
 
     <span class="h-4 w-px bg-line" />
 

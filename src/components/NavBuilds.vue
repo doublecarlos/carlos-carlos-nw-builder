@@ -2,11 +2,14 @@
 // Build list section inside the left sidebar, one level deep: top-level builds and folders,
 // each folder holding builds. Pure presentation - actions, menu items, and rename state are
 // provided by the parent (Nav.vue), which also resolves whether a row id names a build or a
-// folder (ids are unique across both, so one `menuOpenId`/`renamingId` covers each).
+// folder (ids are unique across both, so one `menuOpenId`/`renamingId` covers each). The one
+// store read here is the nav history behind the heading's undo/redo pair: it is the sidebar's
+// own stack, with nothing for the parent to decide.
 import { computed, useTemplateRef, type Component, type Directive } from "vue";
 import BaseButton from "./ui/BaseButton.vue";
 import BaseTooltip from "./ui/BaseTooltip.vue";
 import BaseInput from "./ui/BaseInput.vue";
+import HistoryButtons from "./ui/HistoryButtons.vue";
 import NavBuildRow from "./NavBuildRow.vue";
 import {
   ChevronDown,
@@ -18,6 +21,7 @@ import {
 import NavContextMenu from "./NavContextMenu.vue";
 import { isMac } from "../lib/platform";
 import { matchesQuery } from "../lib/text-filter";
+import * as navHistory from "../stores/navHistory";
 import {
   dragSource,
   useDragHandle,
@@ -253,6 +257,17 @@ function moveFocus(dir: 1 | -1) {
   <div ref="root" class="flex min-h-0 flex-1 flex-col">
     <div class="mb-1 flex items-center justify-between px-1 py-0.5">
       <span class="text-sm font-semibold uppercase text-muted">Builds</span>
+      <!-- Workspace operations (create, rename, move, delete, folders) across the whole
+           sidebar, so the pair sits on the first heading rather than on each section. -->
+      <HistoryButtons
+        testid="nav"
+        :can-undo="navHistory.canUndo.value"
+        :can-redo="navHistory.canRedo.value"
+        :undo-label="navHistory.undoLabel.value"
+        :redo-label="navHistory.redoLabel.value"
+        @undo="navHistory.undo()"
+        @redo="navHistory.redo()"
+      />
     </div>
 
     <BaseInput
