@@ -24,6 +24,7 @@ import RailGutter from "./components/ui/RailGutter.vue";
 import * as rails from "./stores/rails";
 import { useGlobalShortcuts } from "./composables/useGlobalShortcuts";
 import { undoScope, useUndoScope } from "./composables/useUndoScope";
+import { useUndoRedoKeys } from "./composables/useUndoRedoKeys";
 
 const resolved = engine.resolved;
 
@@ -50,7 +51,10 @@ const detailsWidth = computed(() =>
 );
 
 useGlobalShortcuts();
+// The scope tracker and the keys it routes are installed together: the keyboard binding
+// belongs to the whole page, not to any one of the toolbars showing an undo pair.
 useUndoScope();
+useUndoRedoKeys();
 
 // --- loading state ------------------------------------------------------------------------
 const loading = builds.loading;

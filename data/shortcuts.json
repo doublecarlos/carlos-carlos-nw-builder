@@ -5,8 +5,14 @@
       "label": "Anywhere",
       "shortcuts": [
         { "keys": ["?"], "description": "Show this list" },
-        { "keys": ["Mod+Z"], "description": "Undo the last edit" },
-        { "keys": ["Mod+Shift+Z", "Ctrl+Y"], "description": "Redo" },
+        {
+          "keys": ["Mod+Z"],
+          "description": "Undo the last edit to the active build or layer. If the build/layer sidebar is focused, undo the last operation done there instead."
+        },
+        {
+          "keys": ["Mod+Shift+Z", "Ctrl+Y"],
+          "description": "Redo"
+        },
         {
           "keys": ["Mod+K"],
           "description": "Go to a section, slot, build or layer"

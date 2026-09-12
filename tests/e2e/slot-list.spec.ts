@@ -12,6 +12,7 @@ import {
   cursorRow,
   cursorKey,
   chooseItem,
+  undoButton,
 } from "./support/app";
 
 // Unique across the whole item table (grep-checked) and allowed for the default "warlock"
@@ -242,7 +243,7 @@ test.describe("section collapse/expand", () => {
     await expect(slotRow(page, "reinforcements.armorKit1")).toBeHidden();
 
     // Collapsing is not a build edit, so it never lands on the undo stack.
-    await expect(page.getByRole("button", { name: "Undo" })).toBeDisabled();
+    await expect(undoButton(page)).toBeDisabled();
   });
 });
 
