@@ -18,11 +18,12 @@ import { onClickOutside } from "@vueuse/core";
 import BaseButton from "./BaseButton.vue";
 import BaseCheckbox from "./BaseCheckbox.vue";
 import BasePopover from "./BasePopover.vue";
+import IconButton from "./IconButton.vue";
 import { useEscapeToClose } from "../../composables/useEscapeToClose";
 
 withDefaults(
   defineProps<{
-    /** The trigger's own text. */
+    /** The trigger's accessible name; its text unless `iconOnly`, then its tooltip. */
     label: string;
     items: CheckMenuItem[];
     /** Tooltip on the trigger, when the label alone does not say what the menu is for. */
@@ -30,8 +31,10 @@ withDefaults(
     testid?: string;
     /** px. The menu sizes to its content up to this. */
     width?: number;
+    /** Render the trigger as an icon button -- the BuildEditor toolbar's picker options. */
+    iconOnly?: boolean;
   }>(),
-  { title: "", testid: undefined, width: 320 },
+  { title: "", testid: undefined, width: 320, iconOnly: false },
 );
 
 const emit = defineEmits<{ toggle: [key: string] }>();
@@ -66,7 +69,18 @@ useEscapeToClose(() => {
 
 <template>
   <div class="flex-none">
+    <IconButton
+      v-if="iconOnly"
+      :class="triggerClass"
+      :title="title || label"
+      :aria-expanded="open"
+      :data-testid="testid"
+      @click="toggleMenu"
+    >
+      <slot name="icon" />
+    </IconButton>
     <BaseButton
+      v-else
       :class="triggerClass"
       :title="title"
       :aria-expanded="open"

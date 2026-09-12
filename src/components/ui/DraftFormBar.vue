@@ -2,9 +2,10 @@
 // Shared header bar for the editor forms (Item/Bonus/Preset/Slot): title, status badges, the
 // Save/Revert/Duplicate/Delete actions and the form-level error line. `#leading` sits before
 // the title (ItemBonuses' collapse chevron), `#after-title` holds the caller's badges and
-// chips, `#extra-actions` its own actions (ItemBonuses' Detach).
-// `embedded`: an in-flow row inside another form's card, with icon actions right after the
-// title and only Save kept at the right.
+// chips, `#extra-actions` its own actions (ItemBonuses' Detach, ItemForm's From screenshot).
+// Revert/Duplicate/Delete are icon buttons right after the title; Save is the one labeled
+// button, on the right.
+// `embedded`: an in-flow row inside another form's card, the same layout, just not sticky.
 // `toggleable`: a click on the bar's inert area (title, badges, chips, spacer) raises
 // `toggle`; its controls never do.
 import { computed, type Component } from "vue";
@@ -71,7 +72,7 @@ function onBarClick(event: MouseEvent) {
   emit("toggle");
 }
 
-/** One secondary action, drawn once below as an icon button (embedded) or a text button. */
+/** One secondary action, drawn as an icon button with its title as the tooltip. */
 interface ActionSpec {
   key: string;
   title: string;
@@ -127,11 +128,24 @@ const actions = computed<ActionSpec[]>(() =>
     }}</BaseBadge>
     <BaseBadge v-if="dirty && isNew">unsaved</BaseBadge>
     <slot name="after-title" />
-    <!-- Embedded sends Save to the row's end; standalone sends the actions. -->
+    <!-- Secondary actions stay snug against the title, as icon buttons; the spacer span
+         below is what parks Save at the row's end. -->
     <span
-      class="flex flex-1 flex-wrap items-center gap-1.5"
-      :class="{ 'order-last': embedded }"
+      v-if="actions.length || $slots['extra-actions']"
+      class="flex flex-wrap items-center gap-1.5 text-[14px]"
     >
+      <IconButton
+        v-for="action in actions"
+        :key="action.key"
+        :title="action.title"
+        :data-testid="action.testid"
+        @click="action.run()"
+      >
+        <component :is="action.icon" />
+      </IconButton>
+      <slot name="extra-actions" />
+    </span>
+    <span class="flex flex-1 flex-wrap items-center gap-1.5">
       <span class="flex-1"></span>
       <slot name="before-actions" />
       <!-- Save button only for new entries -->
@@ -143,24 +157,6 @@ const actions = computed<ActionSpec[]>(() =>
         @click="$emit('save')"
         ><Save />Save {{ noun }}</BaseButton
       >
-    </span>
-    <span
-      v-if="actions.length || $slots['extra-actions']"
-      class="flex flex-wrap items-center gap-1.5"
-      :class="{ 'order-last': !embedded }"
-    >
-      <component
-        :is="embedded ? IconButton : BaseButton"
-        v-for="action in actions"
-        :key="action.key"
-        :title="embedded ? action.title : undefined"
-        :data-testid="action.testid"
-        @click="action.run()"
-      >
-        <component :is="action.icon" />
-        <template v-if="!embedded">{{ action.title }}</template>
-      </component>
-      <slot name="extra-actions" />
     </span>
   </FormBar>
 

@@ -47,14 +47,14 @@ const TooltipImportModal = defineAsyncComponent({
 });
 import LayerValidationDrawer from "./game/LayerValidationDrawer.vue";
 import LayerEntryList from "./game/LayerEntryList.vue";
-import BaseButton from "./ui/BaseButton.vue";
 import HistoryButtons from "./ui/HistoryButtons.vue";
+import IconButton from "./ui/IconButton.vue";
 import RailGutter from "./ui/RailGutter.vue";
 import BaseCheckbox from "./ui/BaseCheckbox.vue";
 import BaseBadge from "./ui/BaseBadge.vue";
 import TabStrip from "./ui/TabStrip.vue";
 import TabButton from "./ui/TabButton.vue";
-import { ClipboardPaste, Download, RotateCcw, Upload } from "@lucide/vue";
+import { Download, RotateCcw, Upload } from "@lucide/vue";
 import * as catalog from "../data/catalog";
 import { showNotice } from "../stores/notice";
 import * as router from "../lib/router";
@@ -1090,39 +1090,42 @@ onUnmounted(() => {
         >{{ warnCount }} warning(s)</BaseBadge
       >
 
-      <HistoryButtons
-        testid="editor"
-        :can-undo="canUndo"
-        :can-redo="canRedo"
-        :undo-label="undoLabel"
-        :redo-label="redoLabel"
-        @undo="undo()"
-        @redo="redo()"
-      />
+      <span class="inline-flex flex-wrap gap-1.5 items-center text-lg">
+        <HistoryButtons
+          testid="editor"
+          :can-undo="canUndo"
+          :can-redo="canRedo"
+          :undo-label="undoLabel"
+          :redo-label="redoLabel"
+          @undo="undo()"
+          @redo="redo()"
+        />
 
-      <BaseButton
-        :active="showExport"
-        data-testid="layer-export-toggle"
-        @click="showExport = !showExport"
-        ><Download />Export…</BaseButton
-      >
-      <BaseButton as="label"
-        ><Upload />Import
-        <input type="file" accept=".json" hidden @change="importOverlay"
-      /></BaseButton>
-      <BaseButton
-        :active="showTooltipImport"
-        data-testid="tooltip-import-toggle"
-        @click="showTooltipImport = !showTooltipImport"
-        ><ClipboardPaste />From screenshot...</BaseButton
-      >
+        <span class="mx-1 h-4 w-px bg-line"></span>
 
-      <BaseButton :disabled="!changedCount" @click="resetAll">
-        <RotateCcw />
-        Discard changes…
-      </BaseButton>
+        <IconButton
+          title="Export…"
+          data-testid="layer-export-toggle"
+          @click="showExport = !showExport"
+          ><Download
+        /></IconButton>
+        <IconButton as="label" title="Import"
+          ><Upload /><input
+            type="file"
+            accept=".json"
+            hidden
+            @change="importOverlay"
+        /></IconButton>
 
-      <span class="mx-1 h-4 w-px bg-line"></span>
+        <span class="mx-1 h-4 w-px bg-line"></span>
+
+        <IconButton
+          title="Discard changes"
+          :disabled="!changedCount"
+          @click="resetAll"
+          ><RotateCcw
+        /></IconButton>
+      </span>
     </div>
 
     <!-- Disabled layer banner -->
@@ -1215,6 +1218,7 @@ onUnmounted(() => {
           @delete-bonus="onDeleteBonus"
           @update-bonus="onUpdateBonus"
           @open-item="openItem"
+          @tooltip-import="showTooltipImport = !showTooltipImport"
         />
         <BonusForm
           v-else-if="section === 'bonuses'"
