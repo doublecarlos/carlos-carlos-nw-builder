@@ -708,16 +708,15 @@ function toggleJson(gIndex: number) {
             />
             <OcrTextField
               v-model="grant.shortDescription"
-              type="input"
+              :rows="2"
               single-line
-              :rows="1"
               class="w-full"
               data-testid="grant-short-description"
               placeholder="Short description, shown in the stat summary"
             />
             <OcrTextField
               v-model="grant.longDescription"
-              :rows="2"
+              :rows="5"
               data-testid="grant-long-description"
               placeholder="Long description, shown in the hover card"
             />

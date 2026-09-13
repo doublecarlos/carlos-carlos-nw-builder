@@ -616,9 +616,8 @@ function showsGroup(group: FieldGroup): boolean {
             >
               <OcrTextField
                 v-model="draft.shortDescription"
-                type="input"
+                :rows="2"
                 single-line
-                :rows="1"
                 class="flex-1 w-full"
                 data-testid="item-short-description-input"
               />
