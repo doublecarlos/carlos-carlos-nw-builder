@@ -5,15 +5,14 @@
 // folder (ids are unique across both, so one `menuOpenId`/`renamingId` covers each). The one
 // store read here is the nav history behind the heading's undo/redo pair: it is the sidebar's
 // own stack, with nothing for the parent to decide.
-import { computed, useTemplateRef, type Component } from "vue";
+import { computed, type Component } from "vue";
 import BaseButton from "./ui/BaseButton.vue";
 
 import BaseInput from "./ui/BaseInput.vue";
 import HistoryButtons from "./ui/HistoryButtons.vue";
-import NavRowBuild from "./NavRowBuild.vue";
-import NavRowFolder from "./NavRowFolder.vue";
+import NavRow from "./NavRow.vue";
 import DropIndicator from "./ui/DropIndicator.vue";
-import { ChevronDown, ChevronRight, FolderPlus, Plus } from "@lucide/vue";
+import { FileSliders, Folder, FolderPlus, FolderOpen, Plus } from "@lucide/vue";
 
 import { matchesQuery } from "../lib/text-filter";
 import * as navHistory from "../stores/navHistory";
@@ -113,8 +112,6 @@ function isOpen(folder: BuildFolder) {
  *  plain before/after reorder gesture on a folder header. */
 const canDropInto = computed(() => dragSource.value?.kind === "build");
 
-const root = useTemplateRef("root");
-
 const rootDrop = useDropList({
   containerId: "nav-builds",
   accepts: (source) => source.kind === "build" || source.kind === "folder",
@@ -163,24 +160,10 @@ function folderHandleProps(id: string, index: number) {
     index,
   }));
 }
-
-function moveFocus(dir: 1 | -1) {
-  const focusable = root.value?.querySelectorAll<HTMLElement>("[data-nav-key]");
-  if (!focusable?.length) return;
-  const current = document.activeElement?.closest("[data-nav-key]");
-  const idx = current
-    ? Array.from(focusable).indexOf(current as HTMLElement)
-    : -1;
-  const next =
-    focusable[Math.min(Math.max(idx + dir, 0), focusable.length - 1)];
-  next.focus();
-  // A folder has nothing to select - moving onto one just parks the keyboard cursor there.
-  if (next.dataset.navKind === "build") emit("select", next.dataset.navKey!);
-}
 </script>
 
 <template>
-  <div ref="root" class="flex min-h-0 flex-1 flex-col">
+  <div class="flex min-h-0 flex-1 flex-col">
     <div class="mb-1 flex items-center justify-between px-1 py-0.5">
       <span class="text-sm font-semibold uppercase text-muted">Builds</span>
       <!-- Workspace operations (create, rename, move, delete, folders) across the whole
@@ -208,7 +191,8 @@ function moveFocus(dir: 1 | -1) {
     <div
       v-bind="rootDrop.listProps()"
       data-testid="nav-builds-list"
-      class="relative overflow-y-auto pb-8"
+      data-nav-list
+      class="relative space-y-1 overflow-y-auto pl-1 pb-8"
     >
       <!-- Rendered first: resolveInList measures `listContentBottom` from the list root's last
            DOM child. Rendered after the rows, this absolute element would become that child
@@ -219,9 +203,12 @@ function moveFocus(dir: 1 | -1) {
         v-for="row in rows"
         :key="row.kind === 'build' ? row.build.id : row.folder.id"
       >
-        <NavRowBuild
+        <NavRow
           v-if="row.kind === 'build'"
-          :build="row.build"
+          :id="row.build.id"
+          :name="row.build.name"
+          kind="build"
+          :icon="FileSliders"
           :active="selectedId === row.build.id"
           :renaming="renamingId === row.build.id"
           :rename-text="renameText"
@@ -230,14 +217,14 @@ function moveFocus(dir: 1 | -1) {
           :menu-anchor="menuAnchor"
           :handle-props="buildHandleProps(row.build.id, row.index, null)"
           :row-props="rootDrop.rowProps(row.index)"
-          :nested="false"
+          :is-drop-into="false"
+          @activate="(id) => $emit('select', id)"
           @select="(id) => $emit('select', id)"
           @rename-start="(id, name) => $emit('rename-start', id, name)"
           @rename-commit="$emit('rename-commit')"
           @rename-cancel="$emit('rename-cancel')"
           @move-up="(id) => $emit('move-up', id)"
           @move-down="(id) => $emit('move-down', id)"
-          @focus-move="moveFocus"
           @delete-request="(id, skip) => $emit('delete-request', id, skip)"
           @menu-open="(id, ev) => $emit('menu-open', id, ev)"
           @menu-action="(a, id, skip) => $emit('menu-action', a, id, skip)"
@@ -245,9 +232,13 @@ function moveFocus(dir: 1 | -1) {
         />
 
         <template v-else>
-          <NavRowFolder
+          <NavRow
             :id="row.folder.id"
             :name="row.folder.name"
+            kind="folder"
+            :icon="isOpen(row.folder) ? FolderOpen : Folder"
+            :count="row.folder.builds.length"
+            :active="false"
             :renaming="renamingId === row.folder.id"
             :rename-text="renameText"
             :menu-open="menuOpenId === row.folder.id"
@@ -256,61 +247,39 @@ function moveFocus(dir: 1 | -1) {
             :handle-props="folderHandleProps(row.folder.id, row.index)"
             :row-props="rootDrop.rowProps(row.index, { into: canDropInto })"
             :is-drop-into="rootDrop.intoIndex.value === row.index"
-            :nested="false"
             :collapsed="row.folder.collapsed"
-            :build-count="row.folder.builds.length"
-            @select="(id) => $emit('folder-toggle', id)"
+            @activate="(id) => $emit('folder-toggle', id)"
+            @select="(id) => $emit('select', id)"
             @folder-toggle="(id) => $emit('folder-toggle', id)"
             @rename-start="(id, name) => $emit('rename-start', id, name)"
             @rename-commit="$emit('rename-commit')"
             @rename-cancel="$emit('rename-cancel')"
             @move-up="(id) => $emit('move-up', id)"
             @move-down="(id) => $emit('move-down', id)"
-            @focus-move="moveFocus"
             @delete-request="(id, skip) => $emit('delete-request', id, skip)"
             @menu-open="(id, ev) => $emit('menu-open', id, ev)"
             @menu-action="(a, id, skip) => $emit('menu-action', a, id, skip)"
             @menu-close="$emit('menu-close')"
-          >
-            <template #before>
-              <button
-                type="button"
-                tabindex="-1"
-                data-no-drag
-                data-testid="folder-toggle"
-                class="nav-folder-toggle flex-none cursor-pointer rounded-md p-0.5 leading-none text-muted hover:bg-surface-2 hover:text-text"
-                :aria-label="
-                  isOpen(row.folder) ? 'Collapse folder' : 'Expand folder'
-                "
-                @click="$emit('folder-toggle', row.folder.id)"
-              >
-                <component
-                  :is="isOpen(row.folder) ? ChevronDown : ChevronRight"
-                  class="size-[14px]"
-                />
-              </button>
-            </template>
-            <template #after>
-              <span class="flex-none text-sm tabular-nums text-muted">{{
-                row.folder.builds.length
-              }}</span>
-            </template>
-          </NavRowFolder>
+          />
 
           <div
             v-if="isOpen(row.folder)"
             v-bind="folderDrop(row.folder.id).listProps()"
             data-testid="nav-folder-list"
-            class="relative ml-6 border-l-1 border-solid border-line pl-1"
+            class="relative ml-3 space-y-1 pl-2 before:absolute before:inset-y-1 before:left-0 before:w-px before:bg-line before:content-['']"
           >
             <DropIndicator
               :pos="folderDrop(row.folder.id).separatorStyle.value"
             />
 
-            <NavRowBuild
+            <NavRow
               v-for="child in row.builds"
+              :id="child.build.id"
               :key="child.build.id"
-              :build="child.build"
+              :name="child.build.name"
+              kind="build"
+              class="nav-row--nested"
+              :icon="FileSliders"
               :active="selectedId === child.build.id"
               :renaming="renamingId === child.build.id"
               :rename-text="renameText"
@@ -321,14 +290,14 @@ function moveFocus(dir: 1 | -1) {
                 buildHandleProps(child.build.id, child.index, row.folder.id)
               "
               :row-props="folderDrop(row.folder.id).rowProps(child.index)"
-              :nested="true"
+              :is-drop-into="false"
+              @activate="(id) => $emit('select', id)"
               @select="(id) => $emit('select', id)"
               @rename-start="(id, name) => $emit('rename-start', id, name)"
               @rename-commit="$emit('rename-commit')"
               @rename-cancel="$emit('rename-cancel')"
               @move-up="(id) => $emit('move-up', id)"
               @move-down="(id) => $emit('move-down', id)"
-              @focus-move="moveFocus"
               @delete-request="(id, skip) => $emit('delete-request', id, skip)"
               @menu-open="(id, ev) => $emit('menu-open', id, ev)"
               @menu-action="(a, id, skip) => $emit('menu-action', a, id, skip)"

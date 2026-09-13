@@ -93,6 +93,31 @@ test("the filter reaches builds inside a collapsed folder", async ({
   await expect(buildRow(page, "Build 1")).toHaveCount(0);
 });
 
+test("arrowing past a folder activates the build on the far side", async ({
+  page,
+}) => {
+  await openBuilder(page);
+  await addBuild(page);
+  await addFolder(page);
+  await renameViaSidebar(page, folderRow(page, "Folder 1"), "A");
+  await addFolder(page);
+  await renameViaSidebar(page, folderRow(page, "Folder 2"), "B");
+  await dropIntoFolder(buildRow(page, "Build 1"), folderRow(page, "A"));
+  await dropIntoFolder(buildRow(page, "Build 2"), folderRow(page, "B"));
+
+  // Build 1 (inside A), folder B, Build 2 (inside B): the folder is a stop on the way.
+  await buildRow(page, "Build 1").locator(".nav-name").focus();
+  await page.keyboard.press("ArrowDown");
+  await expect(folderRow(page, "B").locator(".nav-name")).toBeFocused();
+  await page.keyboard.press("ArrowDown");
+  await expect(buildRow(page, "Build 2")).toHaveClass(/is-active/);
+
+  // And back up, where the same folder sits between the two builds.
+  await page.keyboard.press("ArrowUp");
+  await page.keyboard.press("ArrowUp");
+  await expect(buildRow(page, "Build 1")).toHaveClass(/is-active/);
+});
+
 test("a folder can be renamed from the sidebar", async ({ page }) => {
   await openBuilder(page);
   await addFolder(page);
@@ -232,19 +257,17 @@ test("a bundle export carries the folders of the builds it exports", async ({
   expect(bundle.data.folders[0].builds).toEqual([bundle.data.builds[0].id]);
 });
 
-test("the chevron left of a folder name expands and collapses it", async ({
-  page,
-}) => {
+test("clicking a folder row expands and collapses it", async ({ page }) => {
   await openBuilder(page);
   await addBuild(page);
   await addFolder(page);
   await dropIntoFolder(buildRow(page, "Build 2"), folderRow(page, "Folder 1"));
 
-  const chevron = folderRow(page, "Folder 1").getByTestId("folder-toggle");
-  await chevron.click();
+  const folder = folderRow(page, "Folder 1").locator(".nav-name");
+  await folder.click();
   await expect(buildRow(page, "Build 2")).toHaveCount(0);
 
-  await chevron.click();
+  await folder.click();
   await expect(buildRow(page, "Build 2")).toBeVisible();
 });
 

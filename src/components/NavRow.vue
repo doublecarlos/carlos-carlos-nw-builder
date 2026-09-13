@@ -1,8 +1,9 @@
 <script setup lang="ts">
-// Shared presentation row for build/folder/layer nav rows: rename input, tooltip,
-// drag bind, drag-source/drop-into styling, menu, keyboard contract. The insertion line
-// itself is a list-level DropIndicator, not drawn per row. Before/after slots for folder
-// chevron and build count.
+// Shared presentation row for build/folder/layer nav rows: leading icon, name and optional
+// count live inside one button; rename input, tooltip, drag bind, drag-source/drop-into
+// styling, menu and the keyboard contract live around it. The insertion line itself is a
+// list-level DropIndicator, not drawn per row. A `before` slot is kept for the layer enable
+// checkbox, a control rather than part of the name button.
 import { computed, type Component, type Directive } from "vue";
 import BaseTooltip from "./ui/BaseTooltip.vue";
 import BaseInput from "./ui/BaseInput.vue";
@@ -40,19 +41,24 @@ const props = defineProps<{
   handleProps: DragHandleProps;
   rowProps: Record<string, string | undefined>;
   isDropInto: boolean;
-  nested: boolean;
   disabled?: boolean;
   collapsed?: boolean;
+  /** Display-only leading icon, rendered inside the name button. */
+  icon?: Component;
+  /** Trailing count rendered inside the name button (a folder's build count). */
+  count?: number;
 }>();
 
 const emit = defineEmits<{
+  /** This row's own button was clicked (or Entered): the row activates itself. */
+  activate: [id: string];
+  /** Arrow navigation landed on a selectable row: the list should select this id. */
   select: [id: string];
   "rename-start": [id: string, name: string];
   "rename-commit": [];
   "rename-cancel": [];
   "move-up": [id: string];
   "move-down": [id: string];
-  "focus-move": [dir: 1 | -1];
   "delete-request": [id: string, skipConfirm: boolean];
   "folder-toggle": [id: string];
   "menu-open": [id: string, event: MouseEvent];
@@ -67,6 +73,19 @@ const rowProps = computed(() => ({
 
 const isDragSource = computed(() => dragSource.value?.key === props.id);
 
+/** Plain arrow keys walk the enclosing nav list, so the primitive owns its own keyboard
+ *  cursor instead of every list re-implementing the walk. Landing on a folder moves focus
+ *  only: a folder row toggles rather than loading into the editor. */
+function moveFocus(origin: HTMLElement, dir: 1 | -1) {
+  const list = origin.closest("[data-nav-list]");
+  const rows = list?.querySelectorAll<HTMLElement>("[data-nav-key]");
+  if (!rows?.length) return;
+  const idx = Array.from(rows).indexOf(origin);
+  const next = rows[Math.min(Math.max(idx + dir, 0), rows.length - 1)];
+  next.focus();
+  if (next.dataset.navKind !== "folder") emit("select", next.dataset.navKey!);
+}
+
 function onRowKeydown(event: KeyboardEvent) {
   if (event.key === "ArrowDown" || event.key === "ArrowUp") {
     event.preventDefault();
@@ -75,7 +94,7 @@ function onRowKeydown(event: KeyboardEvent) {
       if (dir === 1) emit("move-down", props.id);
       else emit("move-up", props.id);
     } else {
-      emit("focus-move", dir);
+      moveFocus(event.currentTarget as HTMLElement, dir);
     }
     return;
   }
@@ -106,79 +125,88 @@ function onRowKeydown(event: KeyboardEvent) {
 </script>
 
 <template>
-  <div :class="[nested ? 'nav-row--nested my-1' : 'pl-1 my-1']">
-    <div
-      class="nav-row relative flex cursor-grab select-none items-center gap-1 h-9 rounded-md py-1 pl-2 pr-1 focus-within:rounded-none focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-accent"
-      :class="[
-        `nav-row--${kind}`,
-        active && 'is-active bg-accent-soft',
-        isDragSource && 'is-drag-source opacity-50',
-        kind === 'folder' && isDropInto && 'is-drop-into bg-accent-soft',
-      ]"
-      v-bind="rowProps"
-    >
-      <slot name="before" />
+  <div
+    class="nav-row relative flex cursor-grab select-none items-center gap-1 h-9 rounded-md py-1 pl-2 pr-1 focus-within:rounded-none focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-accent"
+    :class="[
+      `nav-row--${kind}`,
+      active && 'is-active bg-accent-soft',
+      isDragSource && 'is-drag-source opacity-50',
+      kind === 'folder' && isDropInto && 'is-drop-into bg-accent-soft',
+    ]"
+    v-bind="rowProps"
+  >
+    <slot name="before" />
 
-      <BaseInput
-        v-if="renaming"
-        v-rename-focus
-        :model-value="renameText"
-        type="text"
-        class="nav-rename min-w-0 flex-1 focus:outline-none"
-        @update:model-value="emit('rename-start', id, String($event))"
-        @keydown.enter="emit('rename-commit')"
-        @keydown.esc="emit('rename-cancel')"
-        @blur="emit('rename-commit')"
-      />
+    <BaseInput
+      v-if="renaming"
+      v-rename-focus
+      :model-value="renameText"
+      type="text"
+      class="nav-rename min-w-0 flex-1 focus:outline-none"
+      @update:model-value="emit('rename-start', id, String($event))"
+      @keydown.enter="emit('rename-commit')"
+      @keydown.esc="emit('rename-cancel')"
+      @blur="emit('rename-commit')"
+    />
 
-      <BaseTooltip v-else :text="name">
+    <BaseTooltip v-else :text="name">
+      <button
+        type="button"
+        class="nav-name flex min-w-0 flex-1 cursor-pointer items-center gap-1.5 overflow-hidden py-0.5 text-left focus:outline-none"
+        :class="disabled && 'text-muted'"
+        :data-nav-key="id"
+        :data-nav-kind="kind"
+        @click="emit('activate', id)"
+        @dblclick="emit('rename-start', id, name)"
+        @contextmenu.prevent="emit('menu-open', id, $event)"
+        @keydown="onRowKeydown"
+      >
+        <component
+          :is="icon"
+          v-if="icon"
+          class="size-[14px] flex-none text-muted"
+        />
+        <span
+          class="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap"
+          >{{ name }}</span
+        >
+        <span
+          v-if="count !== undefined"
+          class="flex-none text-sm tabular-nums text-muted"
+          >{{ count }}</span
+        >
+      </button>
+    </BaseTooltip>
+
+    <div class="nav-menu-wrap relative flex items-center">
+      <BaseTooltip
+        :text="
+          kind === 'folder'
+            ? 'Folder menu'
+            : kind === 'layer'
+              ? 'Layer menu'
+              : 'Build menu'
+        "
+      >
         <button
           type="button"
-          class="nav-name min-w-0 flex-1 cursor-pointer overflow-hidden text-ellipsis whitespace-nowrap py-0.5 text-left focus:outline-none"
-          :class="disabled && 'text-muted'"
-          :data-nav-key="id"
-          :data-nav-kind="kind"
-          @click="emit('select', id)"
-          @dblclick="emit('rename-start', id, name)"
-          @contextmenu.prevent="emit('menu-open', id, $event)"
-          @keydown="onRowKeydown"
+          data-no-drag
+          class="nav-kebab flex flex-none cursor-pointer items-center rounded-md px-1.5 py-1 text-muted hover:bg-surface-2 hover:text-text focus:outline-none"
+          :aria-label="`${kind} menu`"
+          @click="emit('menu-open', id, $event)"
         >
-          {{ name }}
+          <EllipsisVertical class="size-[14px]" />
         </button>
       </BaseTooltip>
 
-      <slot name="after" />
-
-      <div class="nav-menu-wrap relative flex items-center">
-        <BaseTooltip
-          :text="
-            kind === 'folder'
-              ? 'Folder menu'
-              : kind === 'layer'
-                ? 'Layer menu'
-                : 'Build menu'
-          "
-        >
-          <button
-            type="button"
-            data-no-drag
-            class="nav-kebab flex flex-none cursor-pointer items-center rounded-md px-1.5 py-1 text-muted hover:bg-surface-2 hover:text-text focus:outline-none"
-            :aria-label="`${kind} menu`"
-            @click="emit('menu-open', id, $event)"
-          >
-            <EllipsisVertical class="size-[14px]" />
-          </button>
-        </BaseTooltip>
-
-        <NavContextMenu
-          v-if="menuOpen"
-          :anchor="menuAnchor"
-          :items="menuItems"
-          :ignore="['.nav-kebab']"
-          @action="(a, skip) => emit('menu-action', a, id, skip)"
-          @close="emit('menu-close')"
-        />
-      </div>
+      <NavContextMenu
+        v-if="menuOpen"
+        :anchor="menuAnchor"
+        :items="menuItems"
+        :ignore="['.nav-kebab']"
+        @action="(a, skip) => emit('menu-action', a, id, skip)"
+        @close="emit('menu-close')"
+      />
     </div>
   </div>
 </template>

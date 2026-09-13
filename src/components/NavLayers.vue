@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // Layer list section inside the left sidebar. Pure presentation.
-import { computed, useTemplateRef, type Component } from "vue";
+import { computed, type Component } from "vue";
 import BaseButton from "./ui/BaseButton.vue";
 import BaseTooltip from "./ui/BaseTooltip.vue";
 import BaseCheckbox from "./ui/BaseCheckbox.vue";
@@ -61,8 +61,6 @@ const filteredLayers = computed(() => {
   return props.layers.filter((l) => matchesQuery(l.name, props.filter));
 });
 
-const root = useTemplateRef("root");
-
 const dropList = useDropList({
   containerId: "nav-layers",
   accepts: (source) => source.kind === "layer",
@@ -76,20 +74,10 @@ function dragHandleProps(id: string, index: number) {
     index,
   }));
 }
-
-function moveFocus(dir: 1 | -1) {
-  const rows = root.value?.querySelectorAll<HTMLElement>("[data-nav-key]");
-  if (!rows?.length) return;
-  const current = document.activeElement?.closest("[data-nav-key]");
-  const idx = current ? Array.from(rows).indexOf(current as HTMLElement) : -1;
-  const next = rows[Math.min(Math.max(idx + dir, 0), rows.length - 1)];
-  next.focus();
-  emit("select", next.dataset.navKey!);
-}
 </script>
 
 <template>
-  <div ref="root" class="border-t border-line pt-1.5">
+  <div class="border-t border-line pt-1.5">
     <div class="mb-1 flex items-center justify-between px-1 py-0.5">
       <BaseTooltip
         text="Layers apply bottom to top; a higher layer overrides the ones below it."
@@ -113,7 +101,8 @@ function moveFocus(dir: 1 | -1) {
 
     <div
       v-bind="dropList.listProps()"
-      class="relative max-h-48 overflow-y-auto pb-2"
+      data-nav-list
+      class="relative max-h-48 space-y-1 overflow-y-auto pl-1 pb-2"
     >
       <DropIndicator :pos="dropList.separatorStyle.value" />
 
@@ -132,15 +121,14 @@ function moveFocus(dir: 1 | -1) {
         :handle-props="dragHandleProps(l.id, i)"
         :row-props="dropList.rowProps(i)"
         :is-drop-into="false"
-        :nested="false"
         :disabled="!l.enabled"
+        @activate="(id) => $emit('select', id)"
         @select="(id) => $emit('select', id)"
         @rename-start="(id, name) => $emit('rename-start', id, name)"
         @rename-commit="$emit('rename-commit')"
         @rename-cancel="$emit('rename-cancel')"
         @move-up="(id) => $emit('move-up', id)"
         @move-down="(id) => $emit('move-down', id)"
-        @focus-move="moveFocus"
         @delete-request="(id, skip) => $emit('delete-request', id, skip)"
         @menu-open="(id, ev) => $emit('menu-open', id, ev)"
         @menu-action="(a, id, skip) => $emit('menu-action', a, id, skip)"
