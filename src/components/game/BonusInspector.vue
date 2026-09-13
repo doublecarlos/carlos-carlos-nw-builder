@@ -18,7 +18,7 @@ import BaseLink from "../ui/BaseLink.vue";
 import LinkList from "../ui/LinkList.vue";
 import type { LinkListItem } from "../ui/LinkList.vue";
 import IconButton from "../ui/IconButton.vue";
-import StatHoverableTable from "./StatHoverableTable.vue";
+import StatRows from "./StatRows.vue";
 import { Crosshair } from "@lucide/vue";
 import type {
   BonusSource,
@@ -315,7 +315,7 @@ const counts = computed(() => {
           </p>
 
           <div v-if="open[entry.id]" class="pb-0.5 pl-3.5 pt-1">
-            <StatHoverableTable
+            <StatRows
               :rows="statList(entry.payload)"
               :active="entry.state === 'active'"
               empty-text="no stats granted"

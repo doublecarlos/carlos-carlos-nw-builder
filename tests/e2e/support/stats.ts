@@ -1,4 +1,4 @@
-// Shared helpers for StatPanel.vue's stat source popover (StatSourceCard.vue).
+// Shared helpers for StatPanel.vue's stat source popover (StatPanelSourceCard.vue).
 import type { Locator, Page } from "@playwright/test";
 
 /** The circle-alert button that opens a stat's source popover, keyed by its schema stat key
@@ -19,7 +19,7 @@ export function statCardClose(page: Page): Locator {
 
 /**
  * Every populated section's source list, in the card's own top-to-bottom order (Rating before
- * Percentage for a paired stat -- StatSourceCard.vue always emits the Rating block first,
+ * Percentage for a paired stat -- StatPanelSourceCard.vue always emits the Rating block first,
  * whether or not it happens to be empty). A section with no sources renders `.statcard-empty`
  * instead and contributes no entry here.
  */

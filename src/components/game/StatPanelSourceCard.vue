@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // Click-triggered popover for a stat row in StatPanel.vue: which items/bonuses/pipeline
-// stages fed the number on screen. Its rows are the shared `StatHoverableTable`, rendered
+// stages fed the number on screen. Its rows are the shared `StatRows`, rendered
 // once for the whole panel and refilled per click, not once per row.
 //
 // Opened by a click on the row's own circle-alert button, closed by the × here or by
@@ -12,8 +12,8 @@ import { signedStat } from "../../lib/format";
 import BaseCard from "../ui/BaseCard.vue";
 import BaseCardHeader from "../ui/BaseCardHeader.vue";
 import BaseCardBody from "../ui/BaseCardBody.vue";
-import StatHoverableTable from "./StatHoverableTable.vue";
-import type { StatRow } from "./StatHoverableTable.vue";
+import StatRows from "./StatRows.vue";
+import type { StatRow } from "./StatRows.vue";
 import type { StatSourceSection } from "../../engine/stat-sources";
 import { useEscapeToClose } from "../../composables/useEscapeToClose";
 
@@ -72,7 +72,7 @@ const sectionRows = computed(() =>
         >
           {{ section.title }}
         </div>
-        <StatHoverableTable
+        <StatRows
           v-if="section.rows.length"
           class="statcard-rows"
           data-testid="stat-card-rows"

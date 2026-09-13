@@ -11,11 +11,11 @@ import BuildComboBox from "./game/BuildComboBox.vue";
 import BaseCheckbox from "./ui/BaseCheckbox.vue";
 import IconButton from "./ui/IconButton.vue";
 import { CircleAlert } from "@lucide/vue";
-import StatSourceCard from "./game/StatSourceCard.vue";
+import StatPanelSourceCard from "./game/StatPanelSourceCard.vue";
 import BasePopover from "./ui/BasePopover.vue";
 import BasePanel from "./ui/BasePanel.vue";
 import PanelHead from "./ui/PanelHead.vue";
-import StatPairsTable from "./game/StatPairsTable.vue";
+import StatPanelPairsTable from "./game/StatPanelPairsTable.vue";
 import CompareLine from "./ui/CompareLine.vue";
 import { useStatSourcePopover } from "../composables/useStatSourcePopover";
 import { NW_SCHEMA } from "../data/data";
@@ -415,7 +415,7 @@ function signedInt(value: number) {
   return (value > 0 ? "+" : "") + int(value);
 }
 
-/** A `StatPairsTable` row's compare line, or `null` for no second line at all -- when the
+/** A `StatPanelPairsTable` row's compare line, or `null` for no second line at all -- when the
  * panel isn't comparing, or when the two builds agree and there is nothing worth the height.
  *
  * The compare build's plain value, with no signed delta beside it: a "(-11,709)" suffix is
@@ -608,7 +608,7 @@ const {
       </table>
     </div>
 
-    <StatPairsTable
+    <StatPanelPairsTable
       class="my-4"
       :rows="ilHpRows"
       :compare-label="compareName"
@@ -724,25 +724,28 @@ const {
     </table>
 
     <PanelHead>Other stats</PanelHead>
-    <StatPairsTable :rows="otherRows" :compare-label="compareName" />
+    <StatPanelPairsTable :rows="otherRows" :compare-label="compareName" />
 
     <PanelHead>Ability scores</PanelHead>
-    <StatPairsTable :rows="abilityRows" :compare-label="compareName" />
+    <StatPanelPairsTable :rows="abilityRows" :compare-label="compareName" />
 
     <PanelHead>Enemy</PanelHead>
-    <StatPairsTable :rows="enemyRows" :compare-label="compareName" />
+    <StatPanelPairsTable :rows="enemyRows" :compare-label="compareName" />
 
     <PanelHead>Damage</PanelHead>
-    <StatPairsTable :rows="damageTableRows" :compare-label="compareName" />
+    <StatPanelPairsTable :rows="damageTableRows" :compare-label="compareName" />
 
     <PanelHead>Healing</PanelHead>
-    <StatPairsTable :rows="healingTableRows" :compare-label="compareName" />
+    <StatPanelPairsTable
+      :rows="healingTableRows"
+      :compare-label="compareName"
+    />
 
     <PanelHead>Effective hit points</PanelHead>
-    <StatPairsTable :rows="ehpTableRows" :compare-label="compareName" />
+    <StatPanelPairsTable :rows="ehpTableRows" :compare-label="compareName" />
 
     <BasePopover ref="tooltip" :width="320">
-      <StatSourceCard
+      <StatPanelSourceCard
         v-if="openCard"
         :label="openLabel"
         :sections="openSections"

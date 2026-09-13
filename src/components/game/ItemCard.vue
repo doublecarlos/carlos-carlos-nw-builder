@@ -42,7 +42,7 @@ import BaseButton from "../ui/BaseButton.vue";
 import BaseLink from "../ui/BaseLink.vue";
 import LinkList from "../ui/LinkList.vue";
 import type { LinkListItem } from "../ui/LinkList.vue";
-import StatHoverableTable from "./StatHoverableTable.vue";
+import StatRows from "./StatRows.vue";
 
 const props = withDefaults(
   defineProps<{
@@ -273,10 +273,7 @@ const rows = computed(() =>
           {{ paragraph }}
         </p>
       </div>
-      <StatHoverableTable
-        :rows="stats"
-        empty-text="no direct stats"
-      ></StatHoverableTable>
+      <StatRows :rows="stats" empty-text="no direct stats"></StatRows>
 
       <div
         v-if="notes.length"
@@ -381,10 +378,10 @@ const rows = computed(() =>
                     >
                       {{ tier.atLeast }} equipped:
                     </div>
-                    <StatHoverableTable
+                    <StatRows
                       :rows="tier.stats"
                       :active="tier.active"
-                    ></StatHoverableTable>
+                    ></StatRows>
                   </div>
                 </template>
                 <template v-else-if="g.variants">
@@ -397,19 +394,16 @@ const rows = computed(() =>
                       >
                         {{ v.label }}:
                       </div>
-                      <StatHoverableTable
-                        :rows="v.stats"
-                        :active="v.active"
-                      ></StatHoverableTable>
+                      <StatRows :rows="v.stats" :active="v.active"></StatRows>
                     </div>
                   </div>
                 </template>
-                <StatHoverableTable
+                <StatRows
                   v-else-if="g.stats"
                   :rows="g.stats"
                   :active="g.active"
                   :notes="grantNotes(row, g)"
-                ></StatHoverableTable>
+                ></StatRows>
                 <div
                   v-for="(leaf, i) in g.unmet"
                   :key="i"

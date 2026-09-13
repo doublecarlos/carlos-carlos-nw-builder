@@ -1,4 +1,4 @@
-// End-to-end coverage for StatHoverableTable.vue, the shared "label / value" stat list behind
+// End-to-end coverage for StatRows.vue, the shared "label / value" stat list behind
 // the item hover card, the bonus inspector and the stat source card. Rows collapse their
 // borders into one shared line, and hover replaces that line with an accent.
 import { test, expect, type Page } from "@playwright/test";

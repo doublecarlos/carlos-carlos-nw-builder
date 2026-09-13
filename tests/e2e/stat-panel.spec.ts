@@ -1,4 +1,4 @@
-// End-to-end coverage for StatPanel.vue's stat source popover (StatSourceCard.vue): which
+// End-to-end coverage for StatPanel.vue's stat source popover (StatPanelSourceCard.vue): which
 // items/bonuses/pipeline stages fed a given stat's number, one stat at a time.
 import { test, expect } from "@playwright/test";
 import { openBuilder, chooseItem, cursorRow, slotRow } from "./support/app";

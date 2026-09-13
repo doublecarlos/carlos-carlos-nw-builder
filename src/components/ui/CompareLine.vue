@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // The compare build's own value, stacked under this build's in the same cell (StatPanel.vue's
-// ratings table and StatPairsTable.vue). Deliberately not a table row of its own: keeping the
+// ratings table and StatPanelPairsTable.vue). Deliberately not a table row of its own: keeping the
 // pair inside one <tr> leaves row striping, the ratings table's group dividers and the hover
 // outline working on the stat they belong to, and each cell's second line still lines up with
 // the column above it. The dashed rule stands in for the row border it therefore doesn't get.
