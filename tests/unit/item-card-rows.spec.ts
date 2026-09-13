@@ -235,13 +235,16 @@ describe("itemCardRows", () => {
     expect(activeRow.zeroOccurrence).toBeNull();
   });
 
-  it("collects active grants' descriptions, long falling back to short", () => {
+  it("keeps each active grant's description on its own grant row, long falling back to short", () => {
     const [row] = itemCardRows(
       item(),
       [
         bonus({
           grants: [
-            grantEval({ longDescription: "Long text." }, { active: true }),
+            grantEval(
+              { longDescription: "Long one.\n\nLong two." },
+              { active: true },
+            ),
             grantEval({ shortDescription: "Short text." }, { active: true }),
             grantEval(
               { longDescription: "Hidden while inactive." },
@@ -252,7 +255,11 @@ describe("itemCardRows", () => {
       ],
       [],
     );
-    expect(row.descriptions).toEqual(["Long text.", "Short text."]);
+    expect(row.grants.map((g) => g.descriptions)).toEqual([
+      ["Long one.", "Long two."],
+      ["Short text."],
+      [],
+    ]);
   });
 
   it("builds a tier ladder in ascending order, marking the active tier", () => {

@@ -165,6 +165,11 @@ function grantRows(entry: EvaluatedBonus) {
       tiers: tierLadderFor(grant),
       variants: variantLadderFor(grant),
       eachStack: stacking && preview != null,
+      descriptions: grant.active
+        ? descriptionParagraphs(
+            grant.raw.longDescription || grant.raw.shortDescription,
+          )
+        : [],
       stats:
         grant.active && grant.stats
           ? statList(grant.stats, stacks)
@@ -217,11 +222,6 @@ function buildItemCardRow(
       occurrenceRowByBonusId,
     ),
     excludedBy: excluderFor(entry, bonusById),
-    descriptions: (entry.grants ?? [])
-      .filter((g) => g.active)
-      .flatMap((g) =>
-        descriptionParagraphs(g.raw.longDescription || g.raw.shortDescription),
-      ),
     stacks: entry.stacks ?? 1,
     grants: grantRows(entry),
     sharedWith,
