@@ -376,11 +376,18 @@ const CHECKS: DiffCheck<Item>[] = [
     JSON.stringify(old.gameIds) !== JSON.stringify(nw.gameIds)
       ? arrayDiffLabel("game id", old.gameIds ?? [], nw.gameIds ?? [])
       : null,
-  (old, nw) =>
-    JSON.stringify(bonusIdsOf(old.bonuses)) !==
-    JSON.stringify(bonusIdsOf(nw.bonuses))
-      ? arrayDiffLabel("bonus", bonusIdsOf(old.bonuses), bonusIdsOf(nw.bonuses))
-      : null,
+  (old, nw) => {
+    const oldIds = bonusIdsOf(old.bonuses);
+    const nwIds = bonusIdsOf(nw.bonuses);
+    if (JSON.stringify(oldIds) === JSON.stringify(nwIds)) return null;
+    // Same ids in a different order is a pure reorder, distinct from membership edits.
+    if (
+      oldIds.length === nwIds.length &&
+      oldIds.every((id) => nwIds.includes(id))
+    )
+      return "reorder bonuses";
+    return arrayDiffLabel("bonus", oldIds, nwIds);
+  },
   (old, nw) => {
     const oldConfigs = occurrenceConfigsOf(old.bonuses);
     const nwConfigs = occurrenceConfigsOf(nw.bonuses);
