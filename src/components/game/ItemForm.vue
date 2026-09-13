@@ -331,7 +331,7 @@ const { draft, error, dirty, displayId } = useEditorDraft<
   buildDraft: (source) => buildDraft(source ?? props.duplicateFrom),
   toEntity: (local) => toItem(local, { id: itemId(local) }),
   diffLabel,
-  hasContent: (d) => Boolean(d.name || d.filter || d.stats.length),
+  hasContent: (d) => Boolean(d.name || d.stats.length),
   emit: (item, label) => emit("update:item", { item, label }),
   displayId: {
     sourceId: () => props.source?.id,
@@ -341,6 +341,7 @@ const { draft, error, dirty, displayId } = useEditorDraft<
     descriptionActive.value = hasDescription(d);
     repetitionActive.value = hasInlineRepetition(d);
   },
+  draftNoun: "item",
 });
 
 // Draft undo/redo (new-item history) replaces `draft.value` wholesale, bypassing the

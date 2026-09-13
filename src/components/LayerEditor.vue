@@ -21,6 +21,7 @@ import {
 import BaseModal from "./ui/BaseModal.vue";
 import { useEventListener, useMediaQuery } from "@vueuse/core";
 import * as confirm from "../stores/confirm";
+import * as draftGuard from "../stores/draftGuard";
 import ItemForm from "./game/ItemForm.vue";
 import BonusForm from "./game/BonusForm.vue";
 import PresetForm from "./game/PresetForm.vue";
@@ -611,8 +612,9 @@ function onPopState() {
   query.value = route.q ?? "";
 }
 
-function switchSection(target: CatalogGroup) {
+async function switchSection(target: CatalogGroup) {
   if (section.value === target) return;
+  if (!(await draftGuard.confirmDiscard())) return;
   section.value = target;
   router.apply({
     section: target === "items" ? null : target,
@@ -620,9 +622,14 @@ function switchSection(target: CatalogGroup) {
   });
 }
 
-function select(row: EditorRow, { push = true }: { push?: boolean } = {}) {
+async function select(
+  row: EditorRow,
+  { push = true }: { push?: boolean } = {},
+) {
   if (row.status === "removed") return;
   const group = GROUP_OF_KIND[row.kind];
+  if (section.value === group && selectedBySection[group] === row.key) return;
+  if (!(await draftGuard.confirmDiscard())) return;
   selectedBySection[group] = row.key;
   router.apply(routeParamsFor(group, row.key), { push });
 }
@@ -631,7 +638,8 @@ const selectedKey = computed(() => selectedBySection[section.value]);
 
 /** Blanks `group`'s selection so its form mounts as an empty draft. The counter is what
  *  forces that remount even when the selection was already null. */
-function newEntry(group: CatalogGroup) {
+async function newEntry(group: CatalogGroup) {
+  if (!(await draftGuard.confirmDiscard())) return;
   selectedBySection[group] = null;
   newItemCounter.value++;
   router.apply(routeParamFor(group, null));
@@ -656,9 +664,10 @@ function createEntry() {
 /** Opens a new item draft pre-filled from the currently selected item -- an explicit Save
  *  is still required, and that Save is what mints the copy's id (from whatever name ends
  *  up in the draft, so retyping the name before saving is what changes it). */
-function duplicateItem() {
+async function duplicateItem() {
   const item = selected.value;
   if (!item) return;
+  if (!(await draftGuard.confirmDiscard())) return;
   duplicateItemSeed.value = item;
   selectedBySection.items = null;
   newItemCounter.value++;
@@ -669,7 +678,8 @@ function duplicateItem() {
 /** Opens a new item draft seeded from a pasted tooltip. Like "Duplicate", the seed is only
  *  a draft -- an explicit Save is what mints the item, so every parsed value stays editable
  *  and anything the parser could not read is simply an empty field. */
-function createFromTooltip(draft: Partial<Item>) {
+async function createFromTooltip(draft: Partial<Item>) {
+  if (!(await draftGuard.confirmDiscard())) return;
   section.value = "items";
   selectedBySection.items = null;
   duplicateItemSeed.value = { id: "", name: "", ...draft } as Item;
@@ -703,9 +713,10 @@ function applyFromTooltip({
   showNotice(`Applied ${label} from the tooltip to ${applyTarget.value}`);
 }
 
-function duplicateBonus() {
+async function duplicateBonus() {
   const bonus = selectedBonus.value;
   if (!bonus) return;
+  if (!(await draftGuard.confirmDiscard())) return;
   duplicateBonusSeed.value = bonus;
   selectedBySection.bonuses = null;
   newItemCounter.value++;
@@ -818,7 +829,8 @@ async function resetAll(event: MouseEvent) {
 }
 
 /** Shows `id` in `group`, switching section if needed. */
-function jumpTo(group: CatalogGroup, id: string) {
+async function jumpTo(group: CatalogGroup, id: string) {
+  if (!(await draftGuard.confirmDiscard())) return;
   section.value = group;
   selectedBySection[group] = id;
   router.apply({
@@ -856,7 +868,37 @@ const onUpdateBonusTop = ({
   bonus: Bonus;
   label: string;
 }) => updateEntry("bonuses", id, bonus, label);
-const onDeleteBonusTop = () => deleteEntry("bonuses");
+
+async function onDeleteBonusTop(event?: MouseEvent) {
+  const bonus = selectedBonus.value;
+  if (!bonus) return;
+  const label = bonus.name || bonus.id;
+  const members = db.value.bonusMembers.get(bonus.id) ?? [];
+  const { ok, checked } = await confirm.askUnless(event?.shiftKey ?? false, {
+    title: "Delete bonus",
+    message: `Delete bonus “${label}”?`,
+    confirmLabel: "Delete",
+    danger: true,
+    note: confirm.UNDO_NOTE,
+    checkbox: members.length
+      ? {
+          label: `Also unlink from ${members.length} item${members.length === 1 ? "" : "s"}`,
+          checked: true,
+        }
+      : undefined,
+  });
+  if (!ok) return;
+  let next = overlay.value;
+  if (checked) next = catalog.unlinkBonus(next, db.value.items, bonus.id);
+  commit(
+    `delete-bonuses:${bonus.id}`,
+    `Delete bonus "${label}"`,
+    catalog.remove(next, "bonuses", bonus.id),
+  );
+  selectedBySection.bonuses = null;
+  router.apply(routeParamFor("bonuses", null));
+  showNotice(`Removed bonus "${label}"`);
+}
 const onRevertBonusTop = () => revertEntry("bonuses");
 
 const onSavePreset = ({ preset }: { preset: SectionPreset }) =>
@@ -1004,6 +1046,24 @@ onMounted(() => {
 });
 
 useEventListener(window, "popstate", onPopState);
+
+// A nav pick can switch `props.layer` without remounting this component. Reset the local
+// selection to the new layer's own remembered state (and force a fresh blank form), so the
+// previous layer's open draft does not linger into the new one.
+watch(
+  () => props.layer.id,
+  () => {
+    duplicateItemSeed.value = null;
+    duplicateBonusSeed.value = null;
+    duplicatePresetSeed.value = null;
+    newItemCounter.value++;
+    restoreSelection(ui.value);
+    statusFilter.value = isValidStatusFilter(ui.value.status)
+      ? ui.value.status
+      : "all";
+    query.value = ui.value.q;
+  },
+);
 
 onUnmounted(() => {
   router.apply(

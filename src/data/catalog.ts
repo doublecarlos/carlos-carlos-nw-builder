@@ -263,6 +263,27 @@ export function revert(
   return next;
 }
 
+/** Drop `bonusId` from every item that attaches it, returning a new overlay. Each changed item
+ *  is written as an overlay entry, so a base item becomes an "edited" override while an added
+ *  one keeps the rest of its fields. Used when deleting a bonus that is still attached, so the
+ *  delete leaves no dangling references behind. */
+export function unlinkBonus(
+  overlay: CatalogOverlay,
+  items: Item[],
+  bonusId: string,
+): CatalogOverlay {
+  let next = overlay;
+  for (const item of items) {
+    const attachments = item.bonuses ?? [];
+    if (!attachments.some((entry) => bonusIdOf(entry) === bonusId)) continue;
+    next = upsert(next, "items", item.id, {
+      ...item,
+      bonuses: attachments.filter((entry) => bonusIdOf(entry) !== bonusId),
+    });
+  }
+  return next;
+}
+
 export type EntryStatus = "base" | "added" | "edited" | "removed";
 
 /** How an entry differs from what shipped -- drives the badges in the editor list. */
@@ -1006,6 +1027,28 @@ export function validateParamReaders(
 }
 
 /**
+ * A bonus definition that no item attaches to can never grant anything, and the only symptom
+ * is its absence in game.
+ */
+export function validateBonusAttachments(
+  items: Item[],
+  bonuses: Bonus[],
+): LintFinding[] {
+  const attached = new Set<string>();
+  for (const item of items) {
+    for (const entry of item.bonuses ?? []) attached.add(bonusIdOf(entry));
+  }
+  return bonuses
+    .filter((bonus) => bonus.id && !attached.has(bonus.id))
+    .map((bonus) => ({
+      level: "warn" as const,
+      kind: "bonus" as const,
+      name: bonus.id,
+      message: "not attached to any item",
+    }));
+}
+
+/**
  * Lint the composed catalog. Warnings are things that are probably a mistake; errors are
  * things the engine will misread or silently drop.
  */
@@ -1353,6 +1396,7 @@ export function validate(
     ...validatePresets(presets, slots),
     ...validateParamSchema(slots, schema),
     ...validateParamReaders(slots, bonuses),
+    ...validateBonusAttachments(items, bonuses),
     ...validateReplacements(items, schema),
     ...validateMaxCopies(items, slots, filterDefaults),
     ...validateStableSlots(slots),

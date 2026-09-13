@@ -27,6 +27,9 @@ const props = withDefaults(
     /** Whether this form is editing an already-saved entry; gates Duplicate and Delete. */
     hasSource: boolean;
     canDuplicate?: boolean;
+    /** Whether the Delete action appears at all. Off for a bonus embedded in an item, where
+     *  Detach is the only removal. */
+    canDelete?: boolean;
     embedded?: boolean;
     toggleable?: boolean;
     error?: string;
@@ -38,6 +41,7 @@ const props = withDefaults(
   {
     status: "base",
     canDuplicate: false,
+    canDelete: true,
     embedded: false,
     toggleable: false,
     error: "",
@@ -52,7 +56,7 @@ const emit = defineEmits<{
   save: [];
   revert: [];
   duplicate: [];
-  delete: [];
+  delete: [event: MouseEvent];
   /** The inert part of a `toggleable` bar was clicked. */
   toggle: [];
 }>();
@@ -79,7 +83,7 @@ interface ActionSpec {
   icon: Component;
   show: boolean;
   testid: string | undefined;
-  run: () => void;
+  run: (event: MouseEvent) => void;
 }
 
 const actions = computed<ActionSpec[]>(() =>
@@ -104,9 +108,9 @@ const actions = computed<ActionSpec[]>(() =>
       key: "delete",
       title: "Delete",
       icon: Trash,
-      show: props.hasSource,
+      show: props.hasSource && props.canDelete,
       testid: props.deleteTestid,
-      run: () => emit("delete"),
+      run: (event: MouseEvent) => emit("delete", event),
     },
   ].filter((action) => action.show),
 );
@@ -139,7 +143,7 @@ const actions = computed<ActionSpec[]>(() =>
         :key="action.key"
         :title="action.title"
         :data-testid="action.testid"
-        @click="action.run()"
+        @click="action.run($event)"
       >
         <component :is="action.icon" />
       </IconButton>

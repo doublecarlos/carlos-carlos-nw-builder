@@ -3,8 +3,16 @@
 // until Save. Owns the draft ref, `dirty`, `displayId`, the live-edit emit with its round-trip
 // echo guard, and the `useDraftHistory` wiring. Each form supplies its own draft shape,
 // entity conversion and diff labeling: the four drafts share this plumbing, not their shape.
-import { ref, computed, watch, type ComputedRef, type Ref } from "vue";
+import {
+  ref,
+  computed,
+  onUnmounted,
+  watch,
+  type ComputedRef,
+  type Ref,
+} from "vue";
 import { useDraftHistory } from "./useDraftHistory";
+import * as draftGuard from "../stores/draftGuard";
 import { deepEqual } from "../lib/deep-equal";
 
 export interface UseEditorDraftOptions<Source, Draft, Entity> {
@@ -39,6 +47,9 @@ export interface UseEditorDraftOptions<Source, Draft, Entity> {
   /** Extra per-form state to resync when the draft rebuilds from a new source, e.g.
    *  ItemForm's `descriptionActive`/`repetitionActive`. */
   onRebuild?: (draft: Draft) => void;
+  /** When set, the form registers as an unsaved new draft (`isNew && dirty`) for the
+   *  navigation guard, named by this noun. */
+  draftNoun?: string;
 }
 
 export function useEditorDraft<Source, Draft, Entity>(
@@ -102,6 +113,14 @@ export function useEditorDraft<Source, Draft, Entity>(
     () =>
       displayIdOptions.sourceId() ?? displayIdOptions.computeId(draft.value),
   );
+
+  if (options.draftNoun) {
+    const unregister = draftGuard.register({
+      noun: options.draftNoun,
+      isDirty: () => isNew.value && dirty.value,
+    });
+    onUnmounted(unregister);
+  }
 
   // Rebuild the draft when source changes (e.g. after undo/redo reverts the overlay). A live
   // edit's own update emit round-trips through the layer overlay back into this prop, and

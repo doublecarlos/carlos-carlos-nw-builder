@@ -114,6 +114,7 @@ const { draft, error, dirty, displayId } = useEditorDraft<
     sourceId: () => props.source?.id,
     computeId,
   },
+  draftNoun: "preset",
 });
 
 function occurrenceRowsFor(itemId: string) {

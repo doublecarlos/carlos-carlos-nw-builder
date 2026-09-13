@@ -57,6 +57,9 @@ const props = withDefaults(
     /** Nested inside another form's card (ItemBonuses case): the header bar is an in-flow
      *  row with icon actions instead of a sticky strip, see DraftFormBar.vue. */
     embedded?: boolean;
+    /** Whether the header bar shows its Delete action. Off when embedded in an item form,
+     *  where Detach is the only way to remove the bonus. */
+    canDelete?: boolean;
     /** Shows only the header bar. The draft and its undo history live in this instance
      *  either way, so collapsing a card never loses an edit in progress. */
     collapsed?: boolean;
@@ -76,6 +79,7 @@ const props = withDefaults(
     registryId: "",
     currentItemId: undefined,
     embedded: false,
+    canDelete: true,
     collapsed: false,
     toggleable: false,
   },
@@ -86,7 +90,7 @@ const emit = defineEmits<{
   "update:bonus": [payload: { id: string; bonus: Bonus; label: string }];
   /** Emitted on Save click for new bonuses. */
   save: [payload: { id: string; bonus: Bonus }];
-  delete: [];
+  delete: [event: MouseEvent];
   duplicate: [];
   revert: [];
   /** The header bar of a `toggleable` form was clicked outside its controls. */
@@ -192,6 +196,7 @@ const { draft, error, dirty, displayId, scheduleSnapshot, scheduleEmit } =
       sourceId: () => props.source?.id ?? props.fixedId ?? undefined,
       computeId,
     },
+    draftNoun: "bonus",
   });
 
 // --- Common ---------------------------------------------------------------------------
@@ -273,6 +278,7 @@ if (bonusDraftRegistry && props.registryId) {
       :is-new="isNew"
       :has-source="Boolean(source)"
       can-duplicate
+      :can-delete="canDelete"
       :embedded="embedded"
       :toggleable="toggleable"
       :error="error"
@@ -281,7 +287,7 @@ if (bonusDraftRegistry && props.registryId) {
       @toggle="$emit('toggle')"
       @revert="$emit('revert')"
       @duplicate="$emit('duplicate')"
-      @delete="$emit('delete')"
+      @delete="emit('delete', $event)"
     >
       <!-- ItemBonuses fills these: chevron, occurrence chip, Detach. -->
       <template #leading>

@@ -111,16 +111,23 @@ function applyStableRoute(route: Record<string, string>) {
     stableBrowser.close();
 }
 
-function onPopState() {
+async function onPopState() {
   const route = router.parse();
+  // A dirty draft can veto the change; the URL already moved, so put it back to what is
+  // still selected rather than leaving browser history and the editor out of step.
+  let ok = true;
   if (route.build) {
-    selection.selectBuild(route.build);
+    ok = await selection.selectBuild(route.build);
   } else if (route.layer) {
-    selection.selectLayer(route.layer);
+    ok = await selection.selectLayer(route.layer);
   } else {
     // If no selection in route, pick the first build.
     const first = builds.builds.value[0];
-    if (first) selection.selectBuild(first.id);
+    if (first) ok = await selection.selectBuild(first.id);
+  }
+  if (!ok) {
+    syncRoute({ push: false });
+    return;
   }
   details.setTab(route.tab === "bonuses" ? "bonuses" : "stats");
   applyStableRoute(route);
