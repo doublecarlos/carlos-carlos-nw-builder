@@ -13,6 +13,7 @@ import IconButton from "../ui/IconButton.vue";
 import TabStrip from "../ui/TabStrip.vue";
 import TabButton from "../ui/TabButton.vue";
 import ClearableInput from "../ui/ClearableInput.vue";
+import DescriptionText from "../ui/DescriptionText.vue";
 import {
   ChevronDown,
   ChevronRight,
@@ -194,10 +195,10 @@ function apply(mount: Item) {
         <template v-if="!isCollapsed(card)">
           <div
             v-if="card.description.length"
-            class="border-b border-line px-2.5 py-1.5 text-muted"
+            class="border-b border-line px-2.5 py-1.5"
             data-testid="stable-head-description"
           >
-            <p v-for="line in card.description" :key="line">{{ line }}</p>
+            <DescriptionText muted :paragraphs="card.description" />
           </div>
           <p v-if="!card.rows.length" class="px-2.5 py-1.5 text-muted">
             No {{ tab === "mount" ? "insignia bonuses" : "mounts" }}.

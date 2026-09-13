@@ -40,6 +40,7 @@ import BaseCardBody from "../ui/BaseCardBody.vue";
 import IconButton from "../ui/IconButton.vue";
 import BaseButton from "../ui/BaseButton.vue";
 import BaseLink from "../ui/BaseLink.vue";
+import DescriptionText from "../ui/DescriptionText.vue";
 import LinkList from "../ui/LinkList.vue";
 import type { LinkListItem } from "../ui/LinkList.vue";
 import StatRows from "./StatRows.vue";
@@ -260,19 +261,12 @@ const rows = computed(() =>
           </template>
         </span>
       </div>
-      <div
+      <DescriptionText
         v-if="longDescription.length"
         class="mb-1.5"
         data-testid="item-card-long-description"
-      >
-        <p
-          v-for="(paragraph, index) in longDescription"
-          :key="index"
-          class="mt-1 first:mt-0"
-        >
-          {{ paragraph }}
-        </p>
-      </div>
+        :paragraphs="longDescription"
+      />
       <StatRows :rows="stats" empty-text="no direct stats"></StatRows>
 
       <div
@@ -315,13 +309,6 @@ const rows = computed(() =>
             }}
           </div>
           <div
-            v-for="(desc, index) in row.descriptions"
-            :key="index"
-            class="pl-3 leading-snug"
-          >
-            {{ desc }}
-          </div>
-          <div
             v-if="row.secondary && row.firstSource"
             class="pl-3 leading-snug text-muted"
           >
@@ -350,6 +337,7 @@ const rows = computed(() =>
               <div
                 v-for="g in row.grants"
                 :key="g.key"
+                data-testid="item-card-grant"
                 :class="
                   row.grants.length > 1 &&
                   'mt-1.5 border-l-2 border-t-2 border-b-2 border-line pl-2 pt-1.5'
@@ -404,6 +392,12 @@ const rows = computed(() =>
                   :active="g.active"
                   :notes="grantNotes(row, g)"
                 ></StatRows>
+                <DescriptionText
+                  v-if="g.descriptions.length"
+                  class="mt-1"
+                  :paragraphs="g.descriptions"
+                  data-testid="item-card-grant-description"
+                />
                 <div
                   v-for="(leaf, i) in g.unmet"
                   :key="i"
