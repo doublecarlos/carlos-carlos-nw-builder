@@ -1,10 +1,12 @@
 // Wire Ctrl+Z / ⌘Z (undo) and Ctrl+Shift+Z / ⌘Shift+Z / Ctrl+Y (redo) to the
 // undo/redo composable.  Skips when a form control has focus so the browser's
-// native undo in those fields is not hijacked.
+// native undo in those fields is not hijacked, and while a modal is open so an
+// overlay's own controls are not edited out from under it.
 import { computed } from "vue";
 import { useMagicKeys, whenever } from "@vueuse/core";
 import { isFormControl } from "./focus";
 import { useUndoRedo } from "./useUndoRedo";
+import { isModalOpen } from "../stores/modals";
 
 export function useUndoRedoKeys() {
   const { canUndo, canRedo, undoLabel, redoLabel, undo, redo } = useUndoRedo();
@@ -19,11 +21,21 @@ export function useUndoRedoKeys() {
   );
 
   whenever(undoPressed, () => {
-    if (!isFormControl(document.activeElement) && canUndo.value) undo();
+    if (
+      !isModalOpen.value &&
+      !isFormControl(document.activeElement) &&
+      canUndo.value
+    )
+      undo();
   });
 
   whenever(redoPressed, () => {
-    if (!isFormControl(document.activeElement) && canRedo.value) redo();
+    if (
+      !isModalOpen.value &&
+      !isFormControl(document.activeElement) &&
+      canRedo.value
+    )
+      redo();
   });
 
   return { canUndo, canRedo, undoLabel, redoLabel, undo, redo };

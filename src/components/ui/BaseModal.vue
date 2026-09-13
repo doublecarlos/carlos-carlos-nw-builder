@@ -9,6 +9,7 @@
 import { onBeforeUnmount, onMounted, useId, useTemplateRef } from "vue";
 import { useScrollLock } from "@vueuse/core";
 import { useEscapeToClose } from "../../composables/useEscapeToClose";
+import { modalClosed, modalOpened } from "../../stores/modals";
 
 // Attrs land on the backdrop, not the panel: `data-testid` on the outer element is what lets
 // a spec click the backdrop to dismiss, and `panelClass` covers the inner box.
@@ -100,9 +101,15 @@ function onTab(event: KeyboardEvent) {
 /** The panel, not its first control: the dialog's name is read out, and no control wears a
  *  focus ring it did not earn. Callers that want a specific field focused do it themselves --
  *  their `onMounted` runs after this one. */
-onMounted(() => panel.value?.focus());
+onMounted(() => {
+  modalOpened();
+  panel.value?.focus();
+});
 
-onBeforeUnmount(() => returnFocusTo?.focus?.());
+onBeforeUnmount(() => {
+  modalClosed();
+  returnFocusTo?.focus?.();
+});
 
 useEscapeToClose(() => emit("close"));
 </script>
