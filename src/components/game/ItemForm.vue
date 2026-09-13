@@ -524,11 +524,13 @@ function showsGroup(group: FieldGroup): boolean {
 
     <FormSection>Identification</FormSection>
     <FormGrid class="mb-2">
-      <FormField label="Name">
-        <BaseInput
+      <FormField label="Name" class="flex-1">
+        <OcrTextField
           v-model="draft.name"
+          :rows="1"
           class="w-full"
-          type="text"
+          type="input"
+          single-line
           data-testid="item-name-input"
         />
       </FormField>
@@ -582,7 +584,17 @@ function showsGroup(group: FieldGroup): boolean {
     </FormGrid>
 
     <template v-if="showsGroup('description')">
-      <FormSection data-testid="group-description">Description</FormSection>
+      <FormSection data-testid="group-description"
+        >Description
+
+        <IconButton
+          v-if="descriptionActive"
+          title="Remove description"
+          data-testid="remove-item-description"
+          @click="removeDescription"
+          ><Trash
+        /></IconButton>
+      </FormSection>
       <div class="flex flex-wrap items-center gap-1.5 mb-2">
         <IconButton
           v-if="!descriptionActive"
@@ -591,39 +603,41 @@ function showsGroup(group: FieldGroup): boolean {
           @click="addDescription"
           ><Plus
         /></IconButton>
-        <IconButton
-          v-else
-          title="Remove description"
-          data-testid="remove-item-description"
-          @click="removeDescription"
-          ><Trash
-        /></IconButton>
-        <FormGrid
+
+        <div
           v-if="descriptionActive"
           data-testid="item-description-fields"
+          class="flex-1"
         >
-          <FormField
-            label="Short description, shown in the stat summary"
-            class="min-w-80 flex-1"
-          >
-            <OcrTextField
-              v-model="draft.shortDescription"
-              single-line
-              :rows="2"
-              data-testid="item-short-description-input"
-            />
-          </FormField>
-          <FormField
-            label="Long description, shown in the hover card"
-            class="min-w-80 flex-1"
-          >
-            <OcrTextField
-              v-model="draft.longDescription"
-              :rows="2"
-              data-testid="item-long-description-input"
-            />
-          </FormField>
-        </FormGrid>
+          <FormGrid class="mb-2">
+            <FormField
+              label="Short description, shown in the stat summary"
+              class="w-full flex-1"
+            >
+              <OcrTextField
+                v-model="draft.shortDescription"
+                type="input"
+                single-line
+                :rows="1"
+                class="flex-1 w-full"
+                data-testid="item-short-description-input"
+              />
+            </FormField>
+          </FormGrid>
+
+          <FormGrid class="mb-2">
+            <FormField
+              label="Long description, shown in the hover card"
+              class="min-w-80 flex-1"
+            >
+              <OcrTextField
+                v-model="draft.longDescription"
+                :rows="5"
+                data-testid="item-long-description-input"
+              />
+            </FormField>
+          </FormGrid>
+        </div>
       </div>
     </template>
 

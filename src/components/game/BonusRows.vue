@@ -697,17 +697,21 @@ function toggleJson(gIndex: number) {
             class="flex min-w-0 flex-1 flex-col gap-1.5"
             data-testid="grant-name-description-fields"
           >
-            <BaseInput
+            <OcrTextField
               v-model="grant.name"
-              data-testid="grant-name"
-              type="text"
+              type="input"
+              single-line
+              :rows="1"
               class="w-full"
+              data-testid="grant-name"
               placeholder="Name"
             />
             <OcrTextField
               v-model="grant.shortDescription"
+              type="input"
               single-line
-              :rows="2"
+              :rows="1"
+              class="w-full"
               data-testid="grant-short-description"
               placeholder="Short description, shown in the stat summary"
             />
