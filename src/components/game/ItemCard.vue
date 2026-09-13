@@ -20,6 +20,7 @@ import {
 } from "../../lib/format";
 import { descriptionParagraphs } from "../../lib/description";
 import { itemCardRows } from "../../lib/item-card-rows";
+import type { ItemCardRow } from "../../lib/item-card-rows";
 import {
   PREFERRED_MARK,
   itemDisplay,
@@ -41,6 +42,7 @@ import BaseButton from "../ui/BaseButton.vue";
 import BaseLink from "../ui/BaseLink.vue";
 import LinkList from "../ui/LinkList.vue";
 import type { LinkListItem } from "../ui/LinkList.vue";
+import StatRows from "./StatRows.vue";
 
 const props = withDefaults(
   defineProps<{
@@ -164,6 +166,19 @@ function dynamicStatNote(config: DynamicStatConfig): string {
   return `${lbl} ${formatStat(config.stat, config.min)} to ${formatStat(config.stat, config.max)}`;
 }
 
+/** Non-stat lines shown above a flat grant's rows. */
+function grantNotes(
+  row: { stacks: number },
+  grant: ItemCardRow["grants"][number],
+): string[] {
+  const notes: string[] = [];
+  if (row.stacks > 1 && grant.active) {
+    notes.push(`total, from ${row.stacks} stacking sources`);
+  }
+  if (grant.eachStack) notes.push("each stack would give:");
+  return notes;
+}
+
 /** Notes that are not stats but change whether the item is legal or what it grants. */
 const notes = computed(() => {
   const out: string[] = [...props.scaleNotes];
@@ -258,17 +273,7 @@ const rows = computed(() =>
           {{ paragraph }}
         </p>
       </div>
-      <div class="flex flex-col divide-y divide-line">
-        <div
-          v-for="stat in stats"
-          :key="stat.key"
-          class="flex justify-between gap-2 py-0.5 hover:shadow-[inset_0_1px_0_var(--color-accent),inset_0_-1px_0_var(--color-accent)]"
-        >
-          <span>{{ stat.label }}</span
-          ><span class="tabular-nums">{{ stat.value }}</span>
-        </div>
-        <div v-if="!stats.length" class="text-muted">no direct stats</div>
-      </div>
+      <StatRows :rows="stats" empty-text="no direct stats"></StatRows>
 
       <div
         v-if="notes.length"
@@ -365,73 +370,40 @@ const rows = computed(() =>
                   {{ g.problem.message }}
                 </div>
                 <template v-else-if="g.tiers">
-                  <div
-                    v-for="tier in g.tiers"
-                    :key="tier.atLeast"
-                    :class="
-                      tier.active ? 'font-semibold text-text' : 'text-muted'
-                    "
-                  >
-                    <div>{{ tier.atLeast }} equipped:</div>
-                    <div class="flex flex-col divide-y divide-line">
-                      <div
-                        v-for="s in tier.stats"
-                        :key="s.key"
-                        class="flex justify-between gap-2 py-0.5 ml-4 hover:shadow-[inset_0_1px_0_var(--color-accent),inset_0_-1px_0_var(--color-accent)]"
-                      >
-                        <span>{{ s.label }}</span
-                        ><span class="tabular-nums">{{ s.value }}</span>
-                      </div>
+                  <div v-for="tier in g.tiers" :key="tier.atLeast">
+                    <div
+                      :class="
+                        tier.active ? 'font-semibold text-text' : 'text-muted'
+                      "
+                    >
+                      {{ tier.atLeast }} equipped:
                     </div>
+                    <StatRows
+                      :rows="tier.stats"
+                      :active="tier.active"
+                    ></StatRows>
                   </div>
                 </template>
                 <template v-else-if="g.variants">
                   <div class="divide-y divide-line divide-y-2">
-                    <div
-                      v-for="v in g.variants"
-                      :key="v.key"
-                      class="py-1"
-                      :class="
-                        v.active ? 'font-semibold text-text' : 'text-muted'
-                      "
-                    >
-                      <div>{{ v.label }}:</div>
-                      <div class="flex flex-col divide-y divide-line">
-                        <div
-                          v-for="s in v.stats"
-                          :key="s.key"
-                          class="flex justify-between gap-2 py-0.5 hover:shadow-[inset_0_1px_0_var(--color-accent),inset_0_-1px_0_var(--color-accent)]"
-                        >
-                          <span>{{ s.label }}</span
-                          ><span class="tabular-nums">{{ s.value }}</span>
-                        </div>
+                    <div v-for="v in g.variants" :key="v.key" class="py-1">
+                      <div
+                        :class="
+                          v.active ? 'font-semibold text-text' : 'text-muted'
+                        "
+                      >
+                        {{ v.label }}:
                       </div>
+                      <StatRows :rows="v.stats" :active="v.active"></StatRows>
                     </div>
                   </div>
                 </template>
-                <div
+                <StatRows
                   v-else-if="g.stats"
-                  class="flex flex-col divide-y divide-line"
-                  :class="!g.active && 'text-muted'"
-                >
-                  <div
-                    v-if="row.stacks > 1 && g.active"
-                    class="leading-snug text-muted"
-                  >
-                    total, from {{ row.stacks }} stacking sources
-                  </div>
-                  <div v-if="g.eachStack" class="leading-snug text-muted">
-                    each stack would give:
-                  </div>
-                  <div
-                    v-for="s in g.stats"
-                    :key="s.key"
-                    class="flex justify-between gap-2 py-0.5 hover:shadow-[inset_0_1px_0_var(--color-accent),inset_0_-1px_0_var(--color-accent)]"
-                  >
-                    <span>{{ s.label }}</span
-                    ><span class="tabular-nums">{{ s.value }}</span>
-                  </div>
-                </div>
+                  :rows="g.stats"
+                  :active="g.active"
+                  :notes="grantNotes(row, g)"
+                ></StatRows>
                 <div
                   v-for="(leaf, i) in g.unmet"
                   :key="i"
