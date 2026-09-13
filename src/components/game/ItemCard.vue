@@ -20,6 +20,7 @@ import {
 } from "../../lib/format";
 import { descriptionParagraphs } from "../../lib/description";
 import { itemCardRows } from "../../lib/item-card-rows";
+import type { ItemCardRow } from "../../lib/item-card-rows";
 import {
   PREFERRED_MARK,
   itemDisplay,
@@ -165,6 +166,19 @@ function dynamicStatNote(config: DynamicStatConfig): string {
   return `${lbl} ${formatStat(config.stat, config.min)} to ${formatStat(config.stat, config.max)}`;
 }
 
+/** Non-stat lines shown above a flat grant's rows. */
+function grantNotes(
+  row: { stacks: number },
+  grant: ItemCardRow["grants"][number],
+): string[] {
+  const notes: string[] = [];
+  if (row.stacks > 1 && grant.active) {
+    notes.push(`total, from ${row.stacks} stacking sources`);
+  }
+  if (grant.eachStack) notes.push("each stack would give:");
+  return notes;
+}
+
 /** Notes that are not stats but change whether the item is legal or what it grants. */
 const notes = computed(() => {
   const out: string[] = [...props.scaleNotes];
@@ -259,7 +273,10 @@ const rows = computed(() =>
           {{ paragraph }}
         </p>
       </div>
-      <StatHoverableTable :stats="stats"></StatHoverableTable>
+      <StatHoverableTable
+        :rows="stats"
+        empty-text="no direct stats"
+      ></StatHoverableTable>
 
       <div
         v-if="notes.length"
@@ -365,7 +382,7 @@ const rows = computed(() =>
                       {{ tier.atLeast }} equipped:
                     </div>
                     <StatHoverableTable
-                      :stats="tier.stats"
+                      :rows="tier.stats"
                       :active="tier.active"
                     ></StatHoverableTable>
                   </div>
@@ -381,31 +398,18 @@ const rows = computed(() =>
                         {{ v.label }}:
                       </div>
                       <StatHoverableTable
-                        :stats="v.stats"
+                        :rows="v.stats"
                         :active="v.active"
                       ></StatHoverableTable>
                     </div>
                   </div>
                 </template>
-                <div
+                <StatHoverableTable
                   v-else-if="g.stats"
-                  class="flex flex-col divide-y divide-line"
-                  :class="!g.active && 'text-muted'"
-                >
-                  <div
-                    v-if="row.stacks > 1 && g.active"
-                    class="leading-snug text-muted"
-                  >
-                    total, from {{ row.stacks }} stacking sources
-                  </div>
-                  <div v-if="g.eachStack" class="leading-snug text-muted">
-                    each stack would give:
-                  </div>
-                  <StatHoverableTable
-                    :stats="g.stats"
-                    :active="g.active"
-                  ></StatHoverableTable>
-                </div>
+                  :rows="g.stats"
+                  :active="g.active"
+                  :notes="grantNotes(row, g)"
+                ></StatHoverableTable>
                 <div
                   v-for="(leaf, i) in g.unmet"
                   :key="i"

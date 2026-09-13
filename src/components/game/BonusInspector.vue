@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed } from "vue";
-import { bonusTitle, label as statLabel, signedStat } from "../../lib/format";
+import { bonusTitle } from "../../lib/format";
+import { statList } from "../../lib/item-card-rows";
 import { matchesQuery } from "../../lib/text-filter";
 import { isHiddenBonus } from "../../engine/bonus";
 import { hasSuppliers } from "../../lib/bonus-slots";
@@ -17,6 +18,7 @@ import BaseLink from "../ui/BaseLink.vue";
 import LinkList from "../ui/LinkList.vue";
 import type { LinkListItem } from "../ui/LinkList.vue";
 import IconButton from "../ui/IconButton.vue";
+import StatHoverableTable from "./StatHoverableTable.vue";
 import { Crosshair } from "@lucide/vue";
 import type {
   BonusSource,
@@ -71,11 +73,10 @@ function jumpToSlot(slotId: string) {
   goTo.requestJump({ slotId });
 }
 
-function statList(stats: StatValues | null | undefined) {
-  if (!stats) return [];
-  return Object.entries(stats).map(
-    ([key, value]) => `${statLabel(key)} ${signedStat(key, value)}`,
-  );
+function statText(stats: StatValues | null | undefined): string {
+  return statList(stats)
+    .map((row) => `${row.label} ${row.value}`)
+    .join(", ");
 }
 
 function toggle(id: string) {
@@ -314,16 +315,14 @@ const counts = computed(() => {
           </p>
 
           <div v-if="open[entry.id]" class="pb-0.5 pl-3.5 pt-1">
-            <div class="flex flex-wrap gap-x-2.5 gap-y-1">
-              <span v-for="part in statList(entry.payload)" :key="part">{{
-                part
-              }}</span>
-              <span v-if="!statList(entry.payload).length" class="text-muted"
-                >no stats granted</span
-              >
-            </div>
+            <StatHoverableTable
+              :rows="statList(entry.payload)"
+              :active="entry.state === 'active'"
+              empty-text="no stats granted"
+              row-testid="bonus-stat-row"
+            />
             <p v-if="entry.perStack" class="mt-1 block text-muted">
-              per stack: {{ statList(entry.perStack).join(", ") }}
+              per stack: {{ statText(entry.perStack) }}
             </p>
             <p class="mt-1 block text-muted">
               slot
