@@ -24,8 +24,9 @@ const props = withDefaults(
     /** The value belongs on one line, so a transcription is folded onto one. */
     singleLine?: boolean;
     placeholder?: string;
+    type?: "input" | "textarea";
   }>(),
-  { rows: 2, singleLine: false, placeholder: "" },
+  { rows: 2, singleLine: false, placeholder: "", type: "textarea" },
 );
 
 // Defaulted so a caller can bind an optional field: an absent description arrives as
@@ -105,16 +106,21 @@ async function onPaste(event: ClipboardEvent) {
 
 <template>
   <div ref="wrapper" class="relative min-w-0">
-    <textarea
+    <component
+      :is="type"
       ref="control"
       v-bind="$attrs"
       :value="model"
       :rows="rows"
       :placeholder="placeholder"
-      class="w-full resize-y rounded-md border border-line bg-surface p-2 pr-7 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+      :class="
+        type === 'input'
+          ? 'rounded-md border border-line bg-surface px-1.5 py-0.5 focus:outline-2 focus:-outline-offset-1 focus:outline-accent'
+          : 'w-full resize-y rounded-md border border-line bg-surface p-2 pr-7 focus:outline-2 focus:-outline-offset-1 focus:outline-accent'
+      "
       @input="onInput"
       @paste="onPaste"
-    ></textarea>
+    ></component>
     <span class="absolute top-2 right-2 z-sticky leading-none"
       ><OcrHint
     /></span>

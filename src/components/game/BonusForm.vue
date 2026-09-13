@@ -25,6 +25,7 @@ import BonusOptionRow from "./BonusOptionRow.vue";
 import type { Bonus, BonusOption, Db } from "../../types";
 import type { EntryStatus } from "../../data/catalog";
 import FormSectionDescription from "../ui/FormSectionDescription.vue";
+import OcrTextField from "../ui/OcrTextField.vue";
 
 const props = withDefaults(
   defineProps<{
@@ -299,11 +300,13 @@ if (bonusDraftRegistry && props.registryId) {
       <slot />
       <FormSection>Identification</FormSection>
       <FormGrid class="mb-2">
-        <FormField label="Name">
-          <BaseInput
+        <FormField label="Name" class="flex-1">
+          <OcrTextField
             v-model="draft.name"
+            type="input"
+            single-line
+            :rows="1"
             class="w-full"
-            type="text"
             data-testid="bonus-name-input"
           />
         </FormField>

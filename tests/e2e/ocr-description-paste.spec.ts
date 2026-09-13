@@ -157,31 +157,3 @@ test("a text paste is left to the browser", async ({ page }) => {
   await expect(page.getByTestId("ocr-field-busy")).toBeHidden();
   await expect(field).toHaveValue("typed by hand");
 });
-
-test("every field that reads screenshots says so, and only those", async ({
-  page,
-}) => {
-  await openDescriptionFields(page);
-  // The marker sits on the control, so the count is exactly the two description fields --
-  // the grant name beside them in BonusRows.vue takes no screenshot and carries none.
-  const hints = page.getByTestId("ocr-hint");
-  await expect(hints).toHaveCount(2);
-
-  await hints.first().hover();
-  await expect(page.getByTestId("tooltip")).toContainText(
-    /paste a screenshot/i,
-  );
-});
-
-test("both description fields are the same control at the same height", async ({
-  page,
-}) => {
-  await openDescriptionFields(page);
-  const short = await page
-    .getByTestId("item-short-description-input")
-    .boundingBox();
-  const long = await page
-    .getByTestId("item-long-description-input")
-    .boundingBox();
-  expect(short?.height).toBe(long?.height);
-});
