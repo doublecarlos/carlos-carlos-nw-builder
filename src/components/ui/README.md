@@ -39,6 +39,7 @@ ordinary one.
 | HistoryButtons                            | The undo/redo icon pair for one history; tooltips name the step each would apply           |
 | IconButton                                | Icon-only button; `title` is its tooltip and, unless `label` is given, its accessible name |
 | IdField                                   | Read-only display of a frozen, generator-assigned id                                       |
+| InputRow                                  | A typed control in a fixed leading column, right-aligned, with its description after it    |
 | LinkList                                  | A comma-separated run of BaseLinks inside a sentence, some entries optionally plain text   |
 | OcrHint                                   | Marks a field that reads pasted screenshots                                                |
 | OcrTextField                              | A description field that also OCRs a pasted screenshot into it                             |

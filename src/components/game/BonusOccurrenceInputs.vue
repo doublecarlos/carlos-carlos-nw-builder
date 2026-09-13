@@ -10,6 +10,7 @@ import { Minus, Plus } from "@lucide/vue";
 import BaseCheckbox from "../ui/BaseCheckbox.vue";
 import BaseInput from "../ui/BaseInput.vue";
 import IconButton from "../ui/IconButton.vue";
+import InputRow from "../ui/InputRow.vue";
 import { isMac } from "../../lib/platform";
 import type { OccurrenceRow } from "../../composables/useItemBonusOccurrences";
 
@@ -63,46 +64,45 @@ function step(row: OccurrenceRow, dir: 1 | -1, event: MouseEvent) {
 </script>
 
 <template>
+  <!-- A checkbox stays one clickable unit with its label, so it skips InputRow's grid. -->
   <BaseCheckbox
     v-for="row in rows.filter((r) => r.kind === 'checkbox')"
     :key="row.bonusId"
-    inline
     :data-testid="`${testidPrefix}-toggle-${row.bonusId}`"
     :model-value="row.value === 1"
     @update:model-value="onCheckbox(row, $event as boolean)"
   >
     {{ row.label }}
   </BaseCheckbox>
-  <div
+  <InputRow
     v-for="row in rows.filter((r) => r.kind === 'stepper')"
     :key="row.bonusId"
-    class="flex items-center gap-1.5"
   >
-    <span>{{ row.label }}</span>
-    <div class="flex items-center gap-1">
-      <IconButton
-        :title="`Decrease (${modKey}+click for min)`"
-        :disabled="row.value <= row.min"
-        @click="step(row, -1, $event)"
-      >
-        <Minus />
-      </IconButton>
-      <BaseInput
-        type="number"
-        class="w-14 text-center!"
-        :min="row.min"
-        :max="row.max"
-        :model-value="row.value"
-        :data-testid="`${testidPrefix}-input-${row.bonusId}`"
-        @update:model-value="onInput(row, $event)"
-      />
-      <IconButton
-        :title="`Increase (${modKey}+click for max)`"
-        :disabled="row.value >= row.max"
-        @click="step(row, 1, $event)"
-      >
-        <Plus />
-      </IconButton>
-    </div>
-  </div>
+    <IconButton
+      :title="`Decrease (${modKey}+click for min)`"
+      :disabled="row.value <= row.min"
+      @click="step(row, -1, $event)"
+    >
+      <Minus />
+    </IconButton>
+    <BaseInput
+      type="number"
+      class="w-14 text-center!"
+      :min="row.min"
+      :max="row.max"
+      :model-value="row.value"
+      :data-testid="`${testidPrefix}-input-${row.bonusId}`"
+      @update:model-value="onInput(row, $event)"
+    />
+    <IconButton
+      :title="`Increase (${modKey}+click for max)`"
+      :disabled="row.value >= row.max"
+      @click="step(row, 1, $event)"
+    >
+      <Plus />
+    </IconButton>
+    <template #description>
+      <span>{{ row.label }}</span>
+    </template>
+  </InputRow>
 </template>
