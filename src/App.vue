@@ -56,6 +56,11 @@ useGlobalShortcuts();
 useUndoScope();
 useUndoRedoKeys();
 
+// --- focus bar ---------------------------------------------------------------------------
+// Shows which region contains the current focus for undo/redo shortcuts.
+const navFocused = computed(() => undoScope.value === "nav");
+const editorFocused = computed(() => undoScope.value === "editor");
+
 // --- loading state ------------------------------------------------------------------------
 const loading = builds.loading;
 
@@ -165,7 +170,7 @@ syncRoute({ push: false });
              and the resize handle, and is all that is left to render once the rail
              collapses. -->
         <div
-          class="flex flex-none border-r border-line"
+          class="relative flex flex-none border-r border-line"
           :style="{ width: navWidth + 'px' }"
           data-testid="nav-column"
         >
@@ -176,43 +181,59 @@ syncRoute({ push: false });
             label="builds and layers"
             :collapsed="navCollapsed"
           />
+          <!-- Above the rail gutter and the editor's sticky toolbar, which would otherwise
+               paint over the bar. -->
+          <div
+            v-if="navFocused"
+            class="pointer-events-none absolute inset-x-0 top-0 z-menu h-[2px] bg-accent/90"
+            data-testid="nav-focus-bar"
+          />
         </div>
 
-        <!-- Layer selected: editor spans columns 2 and 3 -->
-        <template v-if="selectedLayer">
-          <div class="flex min-w-0 flex-1">
-            <LayerEditor :layer="selectedLayer" />
-          </div>
-        </template>
-
-        <!-- Build selected: BuildEditor + StatPanel -->
-        <template v-else>
-          <!-- Column 2: Editor area -->
-          <div class="flex min-w-0 flex-1 flex-col">
-            <BuildEditor />
-          </div>
-
-          <!-- Column 3: Stat panel. Same gutter treatment as the nav, mirrored. -->
-          <div
-            class="flex flex-none border-l border-line"
-            :style="{ width: detailsWidth + 'px' }"
-            data-testid="stat-panel-column"
-          >
-            <RailGutter
-              rail="details"
-              side="right"
-              label="stats"
-              :collapsed="detailsCollapsed"
-            />
-            <div
-              v-if="!detailsCollapsed"
-              class="min-w-0 flex-1 overflow-y-auto"
-            >
-              <BuildDetails v-if="resolved.ok" />
-              <div v-else class="p-6 text-muted">No build selected</div>
+        <!-- Columns 2 and 3 share the editor undo scope, so one ring wraps both. -->
+        <div class="relative flex min-w-0 flex-1">
+          <!-- Layer selected: editor spans columns 2 and 3 -->
+          <template v-if="selectedLayer">
+            <div class="flex min-w-0 flex-1">
+              <LayerEditor :layer="selectedLayer" />
             </div>
-          </div>
-        </template>
+          </template>
+
+          <!-- Build selected: BuildEditor + StatPanel -->
+          <template v-else>
+            <!-- Column 2: Editor area -->
+            <div class="flex min-w-0 flex-1 flex-col">
+              <BuildEditor />
+            </div>
+
+            <!-- Column 3: Stat panel. Same gutter treatment as the nav, mirrored. -->
+            <div
+              class="flex flex-none border-l border-line"
+              :style="{ width: detailsWidth + 'px' }"
+              data-testid="stat-panel-column"
+            >
+              <RailGutter
+                rail="details"
+                side="right"
+                label="stats"
+                :collapsed="detailsCollapsed"
+              />
+              <div
+                v-if="!detailsCollapsed"
+                class="min-w-0 flex-1 overflow-y-auto"
+              >
+                <BuildDetails v-if="resolved.ok" />
+                <div v-else class="p-6 text-muted">No build selected</div>
+              </div>
+            </div>
+          </template>
+
+          <div
+            v-if="editorFocused"
+            class="pointer-events-none absolute inset-x-0 top-0 z-menu h-[2px] bg-accent/90"
+            data-testid="editor-focus-bar"
+          />
+        </div>
       </div>
     </template>
 

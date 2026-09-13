@@ -9,6 +9,11 @@ function activeScope(page: Page) {
   return page.locator("[data-undo-scope-active]");
 }
 
+/** The focus bar along the top edge of the region that owns the undo scope. */
+function focusBar(page: Page, scope: "nav" | "editor") {
+  return page.getByTestId(`${scope}-focus-bar`);
+}
+
 function firstBuildName(page: Page) {
   return page
     .getByTestId("library")
@@ -122,4 +127,25 @@ test("tabbing into the nav moves the scope without a click", async ({
     "data-undo-scope-active",
     "nav",
   );
+});
+
+test("the focused region is the one with the focus bar", async ({ page }) => {
+  await openBuilder(page);
+  await expect(focusBar(page, "editor")).toBeVisible();
+  await expect(focusBar(page, "nav")).toHaveCount(0);
+
+  // The top-left corner sits in the nav's own padding: part of the marked region, but on no
+  // row, so the bar is the only cue that the scope moved here.
+  await page.getByTestId("library").click({ position: { x: 4, y: 4 } });
+  await expect(activeScope(page)).toHaveAttribute(
+    "data-undo-scope-active",
+    "nav",
+  );
+  await expect(page.locator("[data-nav-key]:focus")).toHaveCount(0);
+  await expect(focusBar(page, "nav")).toBeVisible();
+  await expect(focusBar(page, "editor")).toHaveCount(0);
+
+  await slotFilterInput(page).click();
+  await expect(focusBar(page, "editor")).toBeVisible();
+  await expect(focusBar(page, "nav")).toHaveCount(0);
 });

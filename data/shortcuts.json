@@ -7,7 +7,7 @@
         { "keys": ["?"], "description": "Show this list" },
         {
           "keys": ["Mod+Z"],
-          "description": "Undo the last edit to the active build or layer. If the build/layer sidebar is focused, undo the last operation done there instead."
+          "description": "Undo the last change on the active build/layer (if editor is focused) or sidebar operation (if left sidebar is focused)"
         },
         {
           "keys": ["Mod+Shift+Z", "Ctrl+Y"],
