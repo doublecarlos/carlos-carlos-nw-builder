@@ -7,6 +7,7 @@
 import { test, expect, type Page } from "@playwright/test";
 import {
   confirmImport,
+  ensureSectionExpanded,
   openBuilder,
   slotRow,
   assignmentInput,
@@ -432,5 +433,90 @@ test.describe("point_assignment Ctrl+click", () => {
     await row.locator(".slot-label").click({ modifiers: ["Control"] });
 
     await expect(page.getByTestId("builder-content")).toBeVisible();
+  });
+});
+
+// Every section body is one shared grid, and a point_assignment section adds one content track
+// per stepper, so a row reads as one line and a column keeps one width down the section. The
+// shipped Race and Leveling section has six such rows of eight level columns each.
+const RACE_SECTION = "raceLeveling";
+const STR_SLOT = "raceLeveling.leveling_str";
+const CON_SLOT = "raceLeveling.leveling_con";
+const COLUMN_ITEM = "3"; // "Level 3", the leftmost of the shared columns
+
+async function openRaceSection(page: Page) {
+  await openBuilder(page);
+  await ensureSectionExpanded(page, RACE_SECTION);
+}
+
+function sectionBody(page: Page, sectionId: string) {
+  return page.locator(
+    `[data-section-id="${sectionId}"] [data-testid="section-body"]`,
+  );
+}
+
+function labelBox(page: Page, slotId: string, itemId: string) {
+  return assignmentLabel(slotRow(page, slotId), itemId).boundingBox();
+}
+
+test.describe("point_assignment shared column layout", () => {
+  test("a row's steppers stay on one line instead of wrapping", async ({
+    page,
+  }) => {
+    await openRaceSection(page);
+    const first = await labelBox(page, STR_SLOT, `leveling-str-${COLUMN_ITEM}`);
+    const last = await labelBox(page, STR_SLOT, "leveling-str-20");
+    expect(first).not.toBeNull();
+    expect(last).not.toBeNull();
+    expect(Math.abs(first!.y - last!.y)).toBeLessThan(2);
+  });
+
+  test("the section scrolls horizontally when the columns don't fit", async ({
+    page,
+  }) => {
+    await openRaceSection(page);
+    const scrollable = await sectionBody(page, RACE_SECTION).evaluate(
+      (el) => el.scrollWidth > el.clientWidth,
+    );
+    expect(scrollable).toBe(true);
+  });
+
+  test("the same column keeps one width across rows", async ({ page }) => {
+    await openRaceSection(page);
+    const str = await labelBox(page, STR_SLOT, `leveling-str-${COLUMN_ITEM}`);
+    const con = await labelBox(page, CON_SLOT, `leveling-con-${COLUMN_ITEM}`);
+    expect(str).not.toBeNull();
+    expect(con).not.toBeNull();
+    expect(Math.abs(str!.x - con!.x)).toBeLessThan(1);
+    expect(Math.abs(str!.width - con!.width)).toBeLessThan(1);
+  });
+
+  test("stepper columns hug their content, while a normal control still fills", async ({
+    page,
+  }) => {
+    // Wide enough that the eight columns leave spare width to the right.
+    await page.setViewportSize({ width: 2400, height: 1000 });
+    await openRaceSection(page);
+    await ensureSectionExpanded(page, "options");
+
+    const raceBody = sectionBody(page, RACE_SECTION);
+    const raceRight = await raceBody.evaluate(
+      (el) => el.getBoundingClientRect().right,
+    );
+    const last = await labelBox(page, STR_SLOT, "leveling-str-20");
+    expect(last).not.toBeNull();
+    // Spare width sits after the columns instead of widening them apart.
+    expect(raceRight - (last!.x + last!.width)).toBeGreaterThan(100);
+
+    const optionsRight = await sectionBody(page, "options").evaluate(
+      (el) => el.getBoundingClientRect().right,
+    );
+    const controlBox = await page
+      .locator('[data-cursor-key="slot:options.class"] > div')
+      .nth(1)
+      .boundingBox();
+    expect(controlBox).not.toBeNull();
+    // The ordinary row's control still stretches to the section's edge.
+    expect(optionsRight - (controlBox!.x + controlBox!.width)).toBeLessThan(40);
   });
 });

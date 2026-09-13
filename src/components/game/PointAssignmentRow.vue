@@ -36,10 +36,11 @@ const values = () => props.build.assignments[props.slotDef.id] ?? {};
 </script>
 
 <template>
-  <div class="flex flex-wrap items-center gap-2.5">
+  <!-- Sits on the section's shared column grid, so it just passes the tracks through. -->
+  <div class="grid col-span-full [grid-template-columns:subgrid]">
     <PointAssignmentInput
       ref="assignment"
-      class="min-w-0 flex-1"
+      subgrid
       :slot-def="slotDef"
       :values="values()"
       @change="
@@ -56,7 +57,7 @@ const values = () => props.build.assignments[props.slotDef.id] ?? {};
 
   <p
     v-if="highlightDiff && assignmentDiffers"
-    class="slot-diff-note mt-0.5 text-muted"
+    class="slot-diff-note mt-0.5 text-muted col-span-full"
   >
     {{ compareBuild?.name }}: {{ otherAssignmentLabel }}
     <BaseLink

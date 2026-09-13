@@ -26,6 +26,9 @@ const props = defineProps<{
    *  rows author counts of their own (PresetForm.vue), so the steppers below show and write that
    *  editor's values instead of the current build's. */
   occurrenceValues?: Record<string, Record<string, number>>;
+  /** True when the caller laid out a shared column grid (the build editor's section): the
+   *  steppers become its items, one per column. PresetForm.vue leaves this off and wraps. */
+  subgrid?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -88,7 +91,14 @@ defineExpose({ focus, focusAndSeed });
 </script>
 
 <template>
-  <div ref="root" class="flex flex-wrap gap-4">
+  <div
+    ref="root"
+    :class="
+      subgrid
+        ? 'grid col-span-full min-w-0 [grid-template-columns:subgrid]'
+        : 'flex flex-wrap gap-4'
+    "
+  >
     <InlineRepetitionStepper
       v-for="item in rows"
       :key="item.id"

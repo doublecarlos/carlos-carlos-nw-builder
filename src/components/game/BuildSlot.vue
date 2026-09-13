@@ -182,7 +182,7 @@ useCursorRowKeys(anchor, {
 
 <template>
   <div
-    class="relative flex justify-center gap-2.5 px-2.5 py-1 focus-within:outline-2 focus-within:-outline-offset-1 focus-within:outline-accent"
+    class="relative grid col-span-full py-1 pr-2.5 focus-within:outline-2 focus-within:-outline-offset-1 focus-within:outline-accent [grid-template-columns:subgrid]"
     :class="[
       noBorder ? 'border-b-0' : 'border-b border-line/45 last:border-b-0',
       isHovered && 'is-hovered bg-accent-soft/40',
@@ -202,9 +202,10 @@ useCursorRowKeys(anchor, {
     @click="onRowClick"
   >
     <!-- `self-start` plus the control's own vertical box keeps the label and toggle on the
-         row's first line once diff notes make the row taller. -->
+         row's first line once diff notes make the row taller. The left padding lives here, not
+         on the row: on the row it would push the label into the shared label-to-control gap. -->
     <div
-      class="flex w-44 shrink-0 items-center justify-between gap-1 min-w-0 self-start border-y border-transparent py-0.5"
+      class="col-start-1 flex w-44 shrink-0 items-center justify-between gap-1 min-w-0 self-start border-y border-transparent py-0.5 pl-2.5"
     >
       <!-- A point_assignment row has no single control to point `for` at (it is a row of
            steppers, one per item), so it labels the group instead -- see `aria-labelledby`
@@ -233,7 +234,7 @@ useCursorRowKeys(anchor, {
     </div>
 
     <div
-      class="min-w-0 flex-1"
+      class="min-w-0 grid [grid-column:2/-1] [grid-template-columns:subgrid]"
       :role="labelsOneControl ? undefined : 'group'"
       :aria-labelledby="labelsOneControl ? undefined : labelId"
     >
@@ -250,31 +251,34 @@ useCursorRowKeys(anchor, {
         class="sr-only"
       />
 
-      <ItemPickerRow
-        v-if="slotDef.type === 'item_picker'"
-        ref="control"
-        :input-id="controlId"
-        :slot-def="slotDef"
-        :build="build"
-        :db="db"
-        :compare-build="compareBuild"
-        :highlight-diff="highlightDiff"
-        :disabled="disabled"
-        :item="item"
-        :items="items"
-        :hidden-reasons="hiddenReasons"
-        :stat-summary="statSummary"
-        :placeholder="placeholder"
-        :invalid="errors?.some((e) => e.severity !== 'warning') ?? false"
-        :choice-differs="choiceDiffers"
-        :other-choice-label="otherChoiceLabel"
-        :bonus-diffs="bonusDiffs"
-        :value-diffs="valueDiffs"
-        :occurrence-differs="occurrenceDiffers"
-        :other-occurrence-label="otherOccurrenceLabel"
-        :assignment-differs="assignmentDiffers"
-        :other-assignment-label="otherAssignmentLabel"
-      />
+      <!-- item_picker rows span every content track: their picker is one control, not a set of
+           aligned columns. The wrapper exists because ItemPickerRow has multiple roots. -->
+      <div v-if="slotDef.type === 'item_picker'" class="col-span-full">
+        <ItemPickerRow
+          ref="control"
+          :input-id="controlId"
+          :slot-def="slotDef"
+          :build="build"
+          :db="db"
+          :compare-build="compareBuild"
+          :highlight-diff="highlightDiff"
+          :disabled="disabled"
+          :item="item"
+          :items="items"
+          :hidden-reasons="hiddenReasons"
+          :stat-summary="statSummary"
+          :placeholder="placeholder"
+          :invalid="errors?.some((e) => e.severity !== 'warning') ?? false"
+          :choice-differs="choiceDiffers"
+          :other-choice-label="otherChoiceLabel"
+          :bonus-diffs="bonusDiffs"
+          :value-diffs="valueDiffs"
+          :occurrence-differs="occurrenceDiffers"
+          :other-occurrence-label="otherOccurrenceLabel"
+          :assignment-differs="assignmentDiffers"
+          :other-assignment-label="otherAssignmentLabel"
+        />
+      </div>
       <PointAssignmentRow
         v-else-if="slotDef.type === 'point_assignment'"
         ref="control"
@@ -287,18 +291,20 @@ useCursorRowKeys(anchor, {
         @item-enter="(event, itemId) => emit('enter', event, itemId)"
         @item-leave="emit('leave')"
       />
-      <BuildParameterRow
-        v-else
-        ref="control"
-        :input-id="controlId"
-        :slot-def="slotDef"
-        :build="build"
-        :compare-build="compareBuild"
-        :highlight-diff="highlightDiff"
-        :bonus-diffs="bonusDiffs"
-        :param-differs="paramDiffers"
-        :other-param-label="otherParamLabel"
-      />
+      <!-- Same placement reason as the item_picker wrapper above. -->
+      <div v-else class="col-span-full">
+        <BuildParameterRow
+          ref="control"
+          :input-id="controlId"
+          :slot-def="slotDef"
+          :build="build"
+          :compare-build="compareBuild"
+          :highlight-diff="highlightDiff"
+          :bonus-diffs="bonusDiffs"
+          :param-differs="paramDiffers"
+          :other-param-label="otherParamLabel"
+        />
+      </div>
 
       <!-- The keyboard cursor anchor: invisible, out of the tab order, but focusable. Focus
            here (or on the input below) lights the row's focus-within outline; keydowns land
@@ -323,7 +329,7 @@ useCursorRowKeys(anchor, {
       <p
         v-for="error in errors ?? []"
         :key="error.kind + error.choice"
-        class="mt-0.5"
+        class="mt-0.5 col-span-full"
         :class="error.severity === 'warning' ? 'text-warn' : 'text-danger'"
       >
         {{ error.message }}

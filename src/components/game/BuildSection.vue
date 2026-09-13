@@ -13,7 +13,7 @@ import SectionCopyMenu from "./SectionCopyMenu.vue";
 import PresetMenu from "./PresetMenu.vue";
 import SectionClearButton from "./SectionClearButton.vue";
 import { useCursorRowKeys } from "../../composables/useCursorRowKeys";
-import { useTemplateRef } from "vue";
+import { computed, useTemplateRef } from "vue";
 import type { Slot, SectionPreset, BuildOption } from "../../types";
 
 const props = defineProps<{
@@ -26,6 +26,8 @@ const props = defineProps<{
   warnings: number;
   diffs: number;
   expanded: boolean;
+  /** How many point-assignment stepper columns a row here can hold at most, or 0 for none. */
+  assignmentColumns: number;
   /** Arrow keys on the focused header: BuildEditor moves focus to the next/previous row,
    *  or to the next/previous section when the platform modifier is held. */
   onArrow: (dir: 1 | -1, bySection: boolean) => void;
@@ -54,6 +56,20 @@ const button = useTemplateRef("button");
 useCursorRowKeys(button, {
   onArrow: (dir, bySection) => props.onArrow(dir, bySection),
 });
+
+/** True for a section holding point_assignment steppers, whose columns may overflow the body. */
+const hasAssignments = computed(() => props.assignmentColumns > 0);
+
+/** Every section body is one grid and every row reuses its tracks via subgrid, so labels and
+ *  controls line up across the whole editor. A point section adds one max-content stepper
+ *  track plus a trailing filler every row spans, so the steppers neither wrap nor stretch and
+ *  a picker still fills the width; other sections get one shrinking track that truncates a
+ *  long picker summary. The column gap is declared here alone; subgrids inherit it. */
+const bodyStyle = computed(() => ({
+  gridTemplateColumns: hasAssignments.value
+    ? `11rem repeat(${props.assignmentColumns}, max-content) 1fr`
+    : "11rem minmax(0, 1fr)",
+}));
 </script>
 
 <template>
@@ -108,7 +124,13 @@ useCursorRowKeys(button, {
       <SectionClearButton :section-id="id" @clear="$emit('clear')" />
     </div>
 
-    <div v-if="expanded" class="bg-surface pb-2 pt-1">
+    <div
+      v-if="expanded"
+      class="bg-surface pb-2 pt-1 grid gap-x-2.5"
+      :class="hasAssignments && 'overflow-x-auto'"
+      :style="bodyStyle"
+      data-testid="section-body"
+    >
       <template v-for="slot in slots" :key="slot.id">
         <slot :slot-def="slot" />
       </template>
