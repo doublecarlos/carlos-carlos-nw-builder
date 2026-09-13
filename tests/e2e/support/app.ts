@@ -40,6 +40,13 @@ export async function ensureSectionExpanded(page: Page, sectionId: string) {
   if (arrow === "▸") await headerRow(page, sectionId).click();
 }
 
+/** Opens every build section through the toolbar. That button disables itself once nothing is
+ *  left to expand, which is the case when every section already starts open. */
+export async function expandAllSections(page: Page) {
+  const expandAll = page.getByRole("button", { name: /expand all/i });
+  if (await expandAll.isEnabled()) await expandAll.click();
+}
+
 export function slotRow(page: Page, slotId: string): Locator {
   return page.locator(`[data-cursor-key="slot:${slotId}"]`);
 }
