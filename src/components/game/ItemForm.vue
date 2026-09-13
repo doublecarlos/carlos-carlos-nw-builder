@@ -26,6 +26,7 @@ import { findParamSlot } from "../../lib/build-path";
 import * as catalog from "../../data/catalog";
 import type { EntryStatus } from "../../data/catalog";
 import { useEditorDraft } from "../../composables/useEditorDraft";
+import { reorderIndex } from "../../composables/useDragAndDrop";
 import { statPickerOptions } from "../../lib/format";
 import type {
   Item,
@@ -398,6 +399,18 @@ function detachBonus(id: string) {
     const { [id]: _removed, ...rest } = draft.value.bonusOccurrences;
     draft.value.bonusOccurrences = rest;
   }
+}
+
+/** Reorders `draft.bonuses`. `to` is a pre-removal gap index, matching the drop list. */
+function moveBonus(from: number, to: number) {
+  const ids = draft.value.bonuses;
+  if (from < 0 || from >= ids.length) return;
+  const insertAt = reorderIndex(from, Math.max(0, Math.min(ids.length, to)));
+  if (insertAt === from) return;
+  const next = [...ids];
+  const [moved] = next.splice(from, 1);
+  next.splice(insertAt, 0, moved);
+  draft.value.bonuses = next;
 }
 
 /** Toggle or edit one attached bonus's occurrence config: `occurrence: null` drops it back
@@ -835,6 +848,7 @@ function showsGroup(group: FieldGroup): boolean {
         @detach-bonus="detachBonus"
         @attach-bonus="attachBonus"
         @update-occurrence="(e) => updateBonusOccurrence(e.id, e.occurrence)"
+        @move-bonus="({ from, to }) => moveBonus(from, to)"
         @open-item="$emit('open-item', $event)"
       />
     </template>

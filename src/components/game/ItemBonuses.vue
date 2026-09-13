@@ -15,6 +15,8 @@ import BonusComboBox from "./BonusComboBox.vue";
 import BonusOccurrenceSection from "./BonusOccurrenceSection.vue";
 import IconButton from "../ui/IconButton.vue";
 import {
+  ArrowDown,
+  ArrowUp,
   ChevronDown,
   ChevronRight,
   ChevronsDownUp,
@@ -24,12 +26,20 @@ import {
 } from "@lucide/vue";
 import BaseBadge from "../ui/BaseBadge.vue";
 import FormSection from "../ui/FormSection.vue";
+import DragHandle from "../ui/DragHandle.vue";
+import DropIndicator from "../ui/DropIndicator.vue";
 import type { Db, Bonus, BonusOption } from "../../types";
 import type { BonusDraft } from "../../lib/bonus-draft";
 import type { BonusDraftStore } from "../../stores/bonus-draft";
 import type { OccurrenceDraft } from "../../lib/item-draft";
 import { occurrenceSummary } from "../../lib/occurrence-mode";
 import { bonusDraftRegistryKey } from "../../composables/bonusDraftRegistry";
+import {
+  dragSource,
+  useDragHandle,
+  useDropList,
+  type DragSource,
+} from "../../composables/useDragAndDrop";
 import FormSectionDescription from "../ui/FormSectionDescription.vue";
 
 // Lets a condition be dragged from one bonus's tree straight into another's, both attached to
@@ -78,6 +88,7 @@ const emit = defineEmits<{
   "update-occurrence": [
     payload: { id: string; occurrence: OccurrenceDraft | null },
   ];
+  "move-bonus": [payload: { from: number; to: number }];
   "open-item": [itemId: string];
 }>();
 
@@ -225,6 +236,46 @@ function onSlotDuplicate(slot: Slot) {
   const source = sourceFor(slot);
   if (source) addPending(source);
 }
+
+// --- drag-and-drop: reorder the attached bonuses -----------------------------------------
+// Only attached slots are reorderable; a pending slot has no id in `draft.bonuses` yet, so it
+// carries no handle or drop row. `instanceId` scopes the list to this ItemBonuses instance.
+const instanceId = `item-bonuses:${Math.random().toString(36).slice(2)}`;
+const bonusesContainerId = `bonuses:${instanceId}`;
+
+const bonusesDropList = useDropList({
+  containerId: bonusesContainerId,
+  accepts: (source) =>
+    source.kind === "item-bonus" && source.containerId === bonusesContainerId,
+  onDrop: (source, index) =>
+    emit("move-bonus", { from: source.index, to: index }),
+});
+
+/** A slot's index within the attached list, or null for a pending slot. */
+function attachedIndex(slot: Slot): number | null {
+  return slot.id ? props.attachedBonusIds.indexOf(slot.id) : null;
+}
+
+function bonusDragHandleProps(index: number) {
+  return useDragHandle((): DragSource => ({
+    kind: "item-bonus",
+    containerId: bonusesContainerId,
+    key: props.attachedBonusIds[index] ?? String(index),
+    index,
+  }));
+}
+
+/** Drop-row props only for attached slots; a pending slot is not a drop target. */
+function slotDropProps(slot: Slot): Record<string, string | undefined> {
+  const index = attachedIndex(slot);
+  return index === null ? {} : bonusesDropList.rowProps(index);
+}
+
+/** Arrow-button moves, expressed as the same pre-removal gap index the drop list emits; down
+ *  targets past the next card. */
+function nudgeBonus(index: number, delta: -1 | 1) {
+  emit("move-bonus", { from: index, to: delta < 0 ? index - 1 : index + 2 });
+}
 </script>
 
 <template>
@@ -275,75 +326,104 @@ function onSlotDuplicate(slot: Slot) {
       This item has no bonuses.
     </FormSectionDescription>
 
-    <div
-      v-for="slot in slots"
-      :key="slot.key"
-      data-testid="bonus-card"
-      :data-expanded="isExpanded(slot)"
-      class="mb-2.5 rounded-md border border-line bg-accent-soft/30 px-2.5 py-1"
-    >
-      <BonusForm
-        :source="sourceFor(slot)"
-        :fixed-id="slot.id"
-        :initial-draft="initialDraftFor(slot)"
-        :duplicate-from="slot.seed ?? null"
-        :registry-id="slot.key"
-        :db="db"
-        :all-bonus-ids="allBonusIds"
-        :tags="tags"
-        :bonus-options="bonusOptions"
-        :allocatable-ids="props.allocatableIds"
-        :current-item-id="itemId"
-        embedded
-        toggleable
-        :collapsed="!isExpanded(slot)"
-        @save="onSlotSave(slot, $event)"
-        @toggle="toggleExpanded(slot)"
-        @update:bonus="onSlotUpdate(slot, $event)"
-        @delete="onSlotDelete(slot)"
-        @duplicate="onSlotDuplicate(slot)"
-        @open-item="emit('open-item', $event)"
+    <div v-bind="bonusesDropList.listProps()" class="relative">
+      <DropIndicator :pos="bonusesDropList.separatorStyle.value" />
+
+      <div
+        v-for="slot in slots"
+        :key="slot.key"
+        data-testid="bonus-card"
+        :data-expanded="isExpanded(slot)"
+        class="mb-2.5 rounded-md border border-line bg-accent-soft/30 px-2.5 py-1"
+        :class="[
+          slot.id && dragSource?.key === slot.id && 'is-drag-source opacity-50',
+        ]"
+        v-bind="slotDropProps(slot)"
       >
-        <template #leading>
-          <IconButton
-            :title="isExpanded(slot) ? 'Collapse' : 'Expand'"
-            :aria-expanded="isExpanded(slot)"
-            data-testid="bonus-card-toggle"
-            @click="toggleExpanded(slot)"
-          >
-            <ChevronDown v-if="isExpanded(slot)" />
-            <ChevronRight v-else />
-          </IconButton>
-        </template>
-        <template #after-title>
-          <!-- A dangling reference (attached id with no catalog entry, typically a hand-edited
+        <BonusForm
+          :source="sourceFor(slot)"
+          :fixed-id="slot.id"
+          :initial-draft="initialDraftFor(slot)"
+          :duplicate-from="slot.seed ?? null"
+          :registry-id="slot.key"
+          :db="db"
+          :all-bonus-ids="allBonusIds"
+          :tags="tags"
+          :bonus-options="bonusOptions"
+          :allocatable-ids="props.allocatableIds"
+          :current-item-id="itemId"
+          embedded
+          toggleable
+          :collapsed="!isExpanded(slot)"
+          @save="onSlotSave(slot, $event)"
+          @toggle="toggleExpanded(slot)"
+          @update:bonus="onSlotUpdate(slot, $event)"
+          @delete="onSlotDelete(slot)"
+          @duplicate="onSlotDuplicate(slot)"
+          @open-item="emit('open-item', $event)"
+        >
+          <template #leading>
+            <DragHandle
+              v-if="slot.id"
+              data-testid="bonus-drag-handle"
+              v-bind="bonusDragHandleProps(attachedIndex(slot)!)"
+            />
+            <IconButton
+              :title="isExpanded(slot) ? 'Collapse' : 'Expand'"
+              :aria-expanded="isExpanded(slot)"
+              data-testid="bonus-card-toggle"
+              @click="toggleExpanded(slot)"
+            >
+              <ChevronDown v-if="isExpanded(slot)" />
+              <ChevronRight v-else />
+            </IconButton>
+          </template>
+          <template #after-title>
+            <!-- A dangling reference (attached id with no catalog entry, typically a hand-edited
                import) has nothing else to signal it: BonusForm's own `status` badge needs
                overlay access this component doesn't have, so it stays 'base' here throughout. -->
-          <BaseBadge v-if="slot.id && !sourceFor(slot)" variant="warn"
-            >not defined yet</BaseBadge
-          >
-          <span
-            v-if="occurrenceChip(slot)"
-            class="rounded-full bg-surface-2 px-1.5 text-muted"
-            data-testid="occurrence-chip"
-            >{{ occurrenceChip(slot) }}</span
-          >
-        </template>
-        <template #extra-actions>
-          <IconButton title="Detach" @click="onSlotDetach(slot)"
-            ><Unlink
-          /></IconButton>
-        </template>
-        <BonusOccurrenceSection
-          v-if="slot.id"
-          :occurrence="occurrenceFor(slot.id)"
-          :bonus-id="slot.id"
-          :bonus-name="sourceFor(slot)?.name ?? ''"
-          @update:occurrence="
-            emit('update-occurrence', { id: slot.id, occurrence: $event })
-          "
-        />
-      </BonusForm>
+            <BaseBadge v-if="slot.id && !sourceFor(slot)" variant="warn"
+              >not defined yet</BaseBadge
+            >
+            <span
+              v-if="occurrenceChip(slot)"
+              class="rounded-full bg-surface-2 px-1.5 text-muted"
+              data-testid="occurrence-chip"
+              >{{ occurrenceChip(slot) }}</span
+            >
+          </template>
+          <template #extra-actions>
+            <template v-if="slot.id">
+              <IconButton
+                title="Move bonus up"
+                data-testid="bonus-move-up"
+                :disabled="attachedIndex(slot) === 0"
+                @click="nudgeBonus(attachedIndex(slot)!, -1)"
+                ><ArrowUp
+              /></IconButton>
+              <IconButton
+                title="Move bonus down"
+                data-testid="bonus-move-down"
+                :disabled="attachedIndex(slot) === attachedBonusIds.length - 1"
+                @click="nudgeBonus(attachedIndex(slot)!, 1)"
+                ><ArrowDown
+              /></IconButton>
+            </template>
+            <IconButton title="Detach" @click="onSlotDetach(slot)"
+              ><Unlink
+            /></IconButton>
+          </template>
+          <BonusOccurrenceSection
+            v-if="slot.id"
+            :occurrence="occurrenceFor(slot.id)"
+            :bonus-id="slot.id"
+            :bonus-name="sourceFor(slot)?.name ?? ''"
+            @update:occurrence="
+              emit('update-occurrence', { id: slot.id, occurrence: $event })
+            "
+          />
+        </BonusForm>
+      </div>
     </div>
   </div>
 </template>

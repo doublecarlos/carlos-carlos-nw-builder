@@ -176,6 +176,19 @@ describe("diffLabel", () => {
     );
   });
 
+  it("labels a pure reorder distinctly from a membership edit", () => {
+    const old: Item = { ...base, bonuses: ["a", "b", "c"] };
+    const reordered: Item = { ...base, bonuses: ["c", "a", "b"] };
+    expect(diffLabel(JSON.stringify(old), JSON.stringify(reordered))).toBe(
+      "reorder bonuses",
+    );
+
+    const added: Item = { ...base, bonuses: ["a", "b", "c", "d"] };
+    expect(diffLabel(JSON.stringify(old), JSON.stringify(added))).toBe(
+      "add bonus (1)",
+    );
+  });
+
   it("falls back to the generic label when nothing recognized changed", () => {
     expect(diffLabel(JSON.stringify(base), JSON.stringify(base))).toBe(
       "edit item",
