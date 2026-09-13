@@ -37,7 +37,10 @@ test("a problem-only bonus is hidden from the item hover card and the sidebar Bo
   await expect(row.getByText(WARNING_MESSAGE)).toBeVisible();
 
   // The item's hover card shows the item, but no "Bonuses" section at all -- the warning bonus
-  // is this item's only bonus, and it is hidden.
+  // is this item's only bonus, and it is hidden. Scroll the label into place first: the card
+  // cancels a pending open on any scroll, so a hover that still has to scroll would cancel
+  // itself.
+  await assignmentLabel(row, SEVERITY_ID).scrollIntoViewIfNeeded();
   await assignmentLabel(row, SEVERITY_ID).hover();
   const card = page.getByTestId("item-card");
   await expect(card.getByTestId("item-card-name")).toHaveText(SEVERITY_NAME);

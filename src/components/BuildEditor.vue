@@ -322,6 +322,9 @@ interface SectionRow extends SlotSection {
   diffs: number;
   total: number;
   presets: SectionPreset[];
+  /** How many point-assignment stepper columns a row can hold at most, or 0 when the section
+   *  has none. BuildSection.vue gives the section one shared content track per column. */
+  assignmentColumns: number;
 }
 
 /** True for a slotDef that renders in the always-visible QuickOptions strip instead of its own
@@ -404,6 +407,9 @@ const sections = computed<SectionRow[]>(() => {
           else errors += 1;
         }
       }
+      const pointSlots = allSlots.filter(
+        (slotDef) => slotDef.type === "point_assignment",
+      );
       return {
         ...section,
         slots,
@@ -412,6 +418,13 @@ const sections = computed<SectionRow[]>(() => {
         warnings,
         diffs,
         total: pickerSlots.length,
+        assignmentColumns: pointSlots.length
+          ? Math.max(
+              ...pointSlots.map(
+                (slotDef) => db.value.forSlot(slotDef.id).length,
+              ),
+            )
+          : 0,
         presets: db.value.presets.filter(
           (preset) => preset.section === section.id,
         ),
@@ -1047,6 +1060,7 @@ watch(
           :warnings="section.warnings"
           :diffs="section.diffs"
           :expanded="sectionExpanded(section.id)"
+          :assignment-columns="section.assignmentColumns"
           :on-arrow="moveCursor"
           :highlight-diff="highlightDiff"
           :other-builds="otherBuilds"
@@ -1062,11 +1076,17 @@ watch(
             <SeparatorRow
               v-if="slotDef.type === 'separator'"
               :slot-def="slotDef"
+              class="col-span-full"
             />
-            <TextRow v-else-if="slotDef.type === 'text'" :slot-def="slotDef" />
+            <TextRow
+              v-else-if="slotDef.type === 'text'"
+              :slot-def="slotDef"
+              class="col-span-full"
+            />
             <ItemPickerListRow
               v-else-if="slotDef.type === 'item_picker_list'"
               :slot-def="slotDef"
+              class="col-span-full"
               :on-arrow="moveCursor"
             />
             <BuildSlot
