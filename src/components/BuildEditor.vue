@@ -121,6 +121,15 @@ watch(
   { deep: true },
 );
 
+/** How many sections the manual preference has open, for the toolbar buttons' enable state. */
+const expandedSectionCount = computed(
+  () => db.value.sections.filter((section) => expanded[section.id]).length,
+);
+const allSectionsExpanded = computed(
+  () => expandedSectionCount.value === db.value.sections.length,
+);
+const noSectionsExpanded = computed(() => expandedSectionCount.value === 0);
+
 // --- undo/redo ---------------------------------------------------------------------------
 
 /** The build's own history. The buttons act on it whatever has focus; only the keyboard
@@ -969,12 +978,14 @@ watch(
           <IconButton
             data-testid="editor-expand-all"
             title="Expand all"
+            :disabled="allSectionsExpanded"
             @click="setAll(true)"
             ><ChevronsUpDown
           /></IconButton>
           <IconButton
             data-testid="editor-collapse-all"
             title="Collapse all"
+            :disabled="noSectionsExpanded"
             @click="setAll(false)"
             ><ChevronsDownUp
           /></IconButton>

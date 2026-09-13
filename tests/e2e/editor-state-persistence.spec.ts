@@ -2,7 +2,7 @@
 // mounts the other. Coverage for the state that must survive that round trip anyway: the
 // build editor's scroll position, and the layer editor's active tab/search/selection.
 import { test, expect } from "@playwright/test";
-import { openBuilder } from "./support/app";
+import { openBuilder, expandAllSections } from "./support/app";
 import { addLayer, layerRow } from "./support/nav";
 
 const HEAD_ITEM = "M29 Enchanted Depthweave Cap";
@@ -19,7 +19,7 @@ test("build editor keeps its scroll position after switching to a layer and back
 }) => {
   await openBuilder(page);
   // Expand every section so the column has enough rows to actually scroll.
-  await page.getByRole("button", { name: /expand all/i }).click();
+  await expandAllSections(page);
 
   const scrollEl = page.getByTestId("editor-column");
   await scrollEl.evaluate((el) => {

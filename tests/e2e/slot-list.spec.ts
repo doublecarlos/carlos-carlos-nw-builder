@@ -202,6 +202,26 @@ test.describe("section collapse/expand", () => {
     await expect(slotRow(page, "options.class")).toBeVisible();
   });
 
+  test('"expand all" / "collapse all" are disabled when they have nothing to do', async ({
+    page,
+  }) => {
+    await openBuilder(page);
+    const expandAll = page.getByTestId("editor-expand-all");
+    const collapseAll = page.getByTestId("editor-collapse-all");
+
+    // Every section starts open, so only collapse-all has work left.
+    await expect(expandAll).toBeDisabled();
+    await expect(collapseAll).toBeEnabled();
+
+    await collapseAll.click();
+    await expect(expandAll).toBeEnabled();
+    await expect(collapseAll).toBeDisabled();
+
+    await expandAll.click();
+    await expect(expandAll).toBeDisabled();
+    await expect(collapseAll).toBeEnabled();
+  });
+
   test("the Options header's badge only counts its item_picker slots (Class, Paragon)", async ({
     page,
   }) => {

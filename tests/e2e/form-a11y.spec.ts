@@ -2,17 +2,16 @@
 // on screen: a `<label for>` pointing at an id that no control claims, and a combobox whose
 // open/closed state and active option never reach the accessibility tree.
 import { test, expect } from "@playwright/test";
-import { openBuilder, slotRow, pickerInput } from "./support/app";
-
-/** Opens every section, so the sweep below sees all ~200 rows rather than the few that start
- *  expanded. The toolbar's own "expand all" is the same control a user would reach for. */
-async function expandEverything(page: import("@playwright/test").Page) {
-  await page.getByRole("button", { name: "expand all" }).click();
-}
+import {
+  openBuilder,
+  slotRow,
+  pickerInput,
+  expandAllSections,
+} from "./support/app";
 
 test("every label points at a control that exists", async ({ page }) => {
   await openBuilder(page);
-  await expandEverything(page);
+  await expandAllSections(page);
 
   const broken = await page.evaluate(() =>
     [...document.querySelectorAll("label[for]")]
@@ -27,7 +26,7 @@ test("every label is attached to something, by `for` or by wrapping", async ({
   page,
 }) => {
   await openBuilder(page);
-  await expandEverything(page);
+  await expandAllSections(page);
 
   // A `<label>` with neither a `for` nor a control inside it names nothing at all -- the state
   // every slot row was in before, just without the dangling attribute to prove it.
@@ -46,7 +45,7 @@ test("every label is attached to something, by `for` or by wrapping", async ({
 
 test("no id is claimed twice", async ({ page }) => {
   await openBuilder(page);
-  await expandEverything(page);
+  await expandAllSections(page);
 
   // Slot ids are only unique within the slot list; as DOM ids they share one document-wide
   // namespace with everything else. A duplicate silently breaks `for`/`aria-*` targeting,
@@ -77,7 +76,7 @@ test("a point_assignment row labels its steppers as a group", async ({
   page,
 }) => {
   await openBuilder(page);
-  await expandEverything(page);
+  await expandAllSections(page);
 
   // No single stepper could honestly answer to "Leveling STR", so the row names the group
   // rather than pointing `for` at an arbitrary one of them.
