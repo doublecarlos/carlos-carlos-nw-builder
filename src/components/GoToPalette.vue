@@ -63,19 +63,17 @@ function move(delta: number) {
  * BuildEditor mounts and consumes it. `builds.build` always resolves to a build (falling back
  * to the first), so there is always one to go back to.
  */
-function choose(entry: GoToEntry) {
+async function choose(entry: GoToEntry) {
   if (entry.kind === "build") {
-    selection.selectBuild(entry.id);
-    goTo.close();
+    if (await selection.goToBuild(entry.id)) goTo.close();
     return;
   }
   if (entry.kind === "layer") {
-    selection.selectLayer(entry.id);
-    goTo.close();
+    if (await selection.goToLayer(entry.id)) goTo.close();
     return;
   }
   if (selection.selection.value?.kind !== "build") {
-    selection.selectBuild(builds.build.value.id);
+    if (!(await selection.goToBuild(builds.build.value.id))) return;
   }
   goTo.requestJump({
     sectionId: entry.kind === "slot" ? entry.sectionId! : entry.id,

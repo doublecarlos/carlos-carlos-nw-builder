@@ -109,6 +109,7 @@ const { draft, error, dirty, displayId } = useEditorDraft<
     sourceId: () => props.source?.id,
     computeId,
   },
+  draftNoun: "parameter",
 });
 
 defineExpose({ draft, dirty });

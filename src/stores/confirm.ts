@@ -19,6 +19,11 @@ export interface ConfirmRequest {
   danger?: boolean;
   /** A line under the question saying how the thing comes back, or that it does not. */
   note?: string;
+  /** How the note reads. `danger` for a consequence that cannot be undone. */
+  noteTone?: "muted" | "danger";
+  /** Whether the dialog offers the Shift-to-skip hint. Off for a choice that should always
+   *  be made deliberately. */
+  skippable?: boolean;
   /** Extra decision, carried back in the outcome. */
   checkbox?: ConfirmCheckbox;
 }

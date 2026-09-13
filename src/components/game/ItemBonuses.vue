@@ -353,6 +353,7 @@ function nudgeBonus(index: number, delta: -1 | 1) {
           :allocatable-ids="props.allocatableIds"
           :current-item-id="itemId"
           embedded
+          :can-delete="false"
           toggleable
           :collapsed="!isExpanded(slot)"
           @save="onSlotSave(slot, $event)"

@@ -44,13 +44,19 @@ watch(pending, async (request) => {
         >{{ pending.checkbox.label }}</BaseCheckbox
       >
 
-      <p v-if="pending.note" class="text-xs text-muted">{{ pending.note }}</p>
+      <p
+        v-if="pending.note"
+        class="text-xs"
+        :class="pending.noteTone === 'danger' ? 'text-danger' : 'text-muted'"
+      >
+        {{ pending.note }}
+      </p>
     </div>
 
     <div
       class="flex flex-none items-center gap-2 border-t border-line px-4 py-3"
     >
-      <span class="text-xs text-muted"
+      <span v-if="pending.skippable !== false" class="text-xs text-muted"
         >Hold Shift to skip this confirmation.</span
       >
       <BaseButton

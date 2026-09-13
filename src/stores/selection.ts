@@ -3,6 +3,7 @@
 // both meta and sessionStorage.
 import { computed, ref, shallowRef } from "vue";
 import { afterPaint } from "../lib/after-paint";
+import * as draftGuard from "./draftGuard";
 import * as landing from "./landing";
 import { persistMeta as persistMetaOrder } from "./meta";
 import type { Selection } from "../types";
@@ -52,13 +53,8 @@ function persistMeta() {
   persistMetaOrder(_selection.value);
 }
 
-// Picking something to look at is the one thing every way off the landing screen has in
-// common -- a build created, a file imported, a loadout read out of the game, a restore from
-// trash -- so the builder is revealed here rather than at each of those call sites. The
-// `_restore*` seeds below deliberately do not: they run during boot, before the landing
-// screen has had its say.
-
-function select(sel: Selection) {
+/** Lands a selection and clears any pick still in flight. */
+function applySelection(sel: Selection) {
   _pending.value = null;
   _selection.value = sel;
   landing.enterBuilder();
@@ -66,22 +62,51 @@ function select(sel: Selection) {
   persistMeta();
 }
 
-export function selectBuild(id: string) {
-  select({ kind: "build", id });
+// Picking something to look at is the one thing every way off the landing screen has in
+// common -- a build created, a file imported, a loadout read out of the game, a restore from
+// trash -- so the builder is revealed here rather than at each of those call sites. The
+// `_restore*` seeds below deliberately do not: they run during boot, before the landing
+// screen has had its say.
+
+/**
+ * Every selection change funnels through here, so no path can drop an unsaved draft silently.
+ * A clean state lands synchronously (callers and their tests rely on that); a dirty draft is
+ * confirmed first.
+ */
+export function select(sel: Selection): boolean | Promise<boolean> {
+  if (!draftGuard.hasDirtyDraft()) {
+    applySelection(sel);
+    return true;
+  }
+  return draftGuard.confirmDiscard().then((ok) => {
+    if (ok) applySelection(sel);
+    return ok;
+  });
 }
 
-export function selectLayer(id: string) {
-  select({ kind: "layer", id });
+export function selectBuild(id: string): boolean | Promise<boolean> {
+  return select({ kind: "build", id });
+}
+
+export function selectLayer(id: string): boolean | Promise<boolean> {
+  return select({ kind: "layer", id });
 }
 
 // A nav row click selects in two steps so the highlight never waits on the heavier render:
 // the row lights up in the same frame as its focus outline, and the editor, with the engine
 // work behind it, follows once that frame has painted. Any select in between supersedes a
-// pick still in flight.
+// pick still in flight. `select` raises the discard dialog; cancelling drops the pending
+// highlight so the sidebar snaps back to what is actually selected.
 function pick(sel: Selection) {
   _pending.value = sel;
   afterPaint(() => {
-    if (_pending.value === sel) select(sel);
+    if (_pending.value !== sel) return;
+    const result = select(sel);
+    if (result instanceof Promise) {
+      void result.then((ok) => {
+        if (!ok && _pending.value === sel) _pending.value = null;
+      });
+    }
   });
 }
 
@@ -92,6 +117,14 @@ export function pickBuild(id: string) {
 export function pickLayer(id: string) {
   pick({ kind: "layer", id });
 }
+
+/** A "go to" jump: the same guarded `select`, without the pending-highlight step. */
+export async function goTo(sel: Selection): Promise<boolean> {
+  return await select(sel);
+}
+
+export const goToBuild = (id: string) => goTo({ kind: "build", id });
+export const goToLayer = (id: string) => goTo({ kind: "layer", id });
 
 export function clearSelection() {
   _pending.value = null;

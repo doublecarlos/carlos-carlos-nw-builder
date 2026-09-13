@@ -920,8 +920,14 @@ describe("catalog.validate: point_assignment-referenced items", () => {
 });
 
 describe("catalog.validate: bonusOccurrences targets", () => {
+  // The attachment lint also fires here (no items are passed); these tests are about the
+  // target references, so it is filtered out rather than attached in every fixture.
   const findingsFor = (bonuses: Bonus[]) =>
-    catalog.validate([], bonuses).filter((f) => f.kind === "bonus");
+    catalog
+      .validate([], bonuses)
+      .filter(
+        (f) => f.kind === "bonus" && f.message !== "not attached to any item",
+      );
 
   it("an omitted bonus and a reference to another bonus pass clean", () => {
     const findings = findingsFor([
@@ -1339,7 +1345,12 @@ describe("catalog.validate: param condition lint", () => {
   const warningsFor = (when: ConditionWhen) =>
     catalog
       .validate([], bonusWith(when))
-      .filter((f) => f.level === "warn" && f.kind === "bonus");
+      .filter(
+        (f) =>
+          f.level === "warn" &&
+          f.kind === "bonus" &&
+          f.message !== "not attached to any item",
+      );
 
   it("an unresolvable key is an error -- the condition can never be active", () => {
     const errors = errorsFor({ param: { key: "does-not-exist", is: true } });
@@ -1707,5 +1718,82 @@ describe("catalog.validateFilterFields", () => {
     expect(catalog.validateFilterFields(NW_SLOTS.filterFields ?? {})).toEqual(
       [],
     );
+  });
+});
+
+describe("catalog.validateBonusAttachments", () => {
+  const item = (id: string, bonuses?: Item["bonuses"]): Item => ({
+    id,
+    name: id,
+    filter: "gear_head",
+    bonuses,
+  });
+  const bonus = (id: string): Bonus => ({
+    id,
+    name: id,
+    grants: [],
+  });
+
+  it("reports a bonus no item attaches to", () => {
+    const findings = catalog.validateBonusAttachments(
+      [item("a", ["used"])],
+      [bonus("used"), bonus("orphan")],
+    );
+    expect(findings).toHaveLength(1);
+    expect(findings[0].level).toBe("warn");
+    expect(findings[0].kind).toBe("bonus");
+    expect(findings[0].name).toBe("orphan");
+  });
+
+  it("counts an occurrence-config attachment as attached", () => {
+    const findings = catalog.validateBonusAttachments(
+      [item("a", [{ bonus: "used", min: 0, max: 1, default: 0 }])],
+      [bonus("used")],
+    );
+    expect(findings).toEqual([]);
+  });
+
+  it("finds nothing wrong with the shipped catalog", () => {
+    expect(catalog.validateBonusAttachments(NW_ITEMS, NW_BONUSES)).toEqual([]);
+  });
+});
+
+describe("catalog.unlinkBonus", () => {
+  const item = (id: string, bonuses?: Item["bonuses"]): Item => ({
+    id,
+    name: id,
+    filter: "gear_head",
+    bonuses,
+  });
+  const bonus = (id: string): Bonus => ({ id, name: id, grants: [] });
+
+  it("removes a bare attachment, leaving the item an overlay edit", () => {
+    const items = [item("a", ["keep", "drop"])];
+    const next = catalog.unlinkBonus({} as CatalogOverlay, items, "drop");
+    expect(next.items?.a).toEqual({ ...items[0], bonuses: ["keep"] });
+  });
+
+  it("removes an occurrence-config attachment too", () => {
+    const items = [item("a", [{ bonus: "drop", min: 0, max: 2, default: 1 }])];
+    const next = catalog.unlinkBonus({} as CatalogOverlay, items, "drop");
+    expect(next.items?.a).toEqual({ ...items[0], bonuses: [] });
+  });
+
+  it("leaves items that do not reference the bonus untouched", () => {
+    const items = [item("a", ["keep"]), item("b", ["drop"])];
+    const next = catalog.unlinkBonus({} as CatalogOverlay, items, "drop");
+    expect(next.items?.a).toBeUndefined();
+    expect(next.items?.b).toEqual({ ...items[1], bonuses: [] });
+  });
+
+  it("keeps an unrelated bonus definition out of the result", () => {
+    const overlay = catalog.upsert(
+      {} as CatalogOverlay,
+      "bonuses",
+      "drop",
+      bonus("drop"),
+    );
+    const next = catalog.unlinkBonus(overlay, [item("a", ["drop"])], "drop");
+    expect(next.bonuses?.drop).toEqual(bonus("drop"));
   });
 });
