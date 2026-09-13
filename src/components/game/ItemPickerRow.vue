@@ -10,6 +10,7 @@ import InlineRepetitionStepper from "./InlineRepetitionStepper.vue";
 import BaseBadge from "../ui/BaseBadge.vue";
 import BaseLink from "../ui/BaseLink.vue";
 import IconButton from "../ui/IconButton.vue";
+import InputRow from "../ui/InputRow.vue";
 import StatValueInput from "./StatValueInput.vue";
 import { PinOff, Replace, Table, Trash } from "@lucide/vue";
 import * as buildEditor from "../../stores/buildEditor";
@@ -100,8 +101,8 @@ function setDynamic(row: DynamicStatRow, raw: string | number) {
   );
 }
 
-function rangeLabel(row: DynamicStatRow) {
-  return `${row.label} (${formatStat(row.stat, row.min)} to ${formatStat(row.stat, row.max)})`;
+function rangeNote(row: DynamicStatRow) {
+  return `(from ${formatStat(row.stat, row.min)} to ${formatStat(row.stat, row.max)})`;
 }
 
 // --- the pick's own inline repetition -------------------------------------------------------
@@ -233,10 +234,7 @@ const stableGroup = computed(() => {
 
   <!-- This item's BonusOccurrenceConfig inputs, if it carries any -- see
        BonusOccurrenceInputs.vue for what each config's range renders as. -->
-  <div
-    v-if="occurrenceRows.length"
-    class="mt-1 flex flex-wrap items-center gap-2.5"
-  >
+  <div v-if="occurrenceRows.length" class="mt-1 flex flex-col gap-1.5">
     <BonusOccurrenceInputs
       :rows="occurrenceRows"
       testid-prefix="occurrence"
@@ -247,22 +245,20 @@ const stableGroup = computed(() => {
   <!-- Every dynamic-stat magnitude this slot's pick carries -- item-level and/or bonus-level
        (useDynamicStats.ts), one input per row, driven entirely by the item/bonus's own
        declared configs so a second (or third) one works with no UI change. -->
-  <div
-    v-if="dynamicStatRows.length"
-    class="mt-1 flex flex-col flex-wrap gap-2.5"
-  >
-    <div v-for="row in dynamicStatRows" :key="row.key" class="flex gap-1.5">
-      <span>{{ rangeLabel(row) }}</span>
+  <div v-if="dynamicStatRows.length" class="mt-1 flex flex-col gap-1.5">
+    <InputRow v-for="row in dynamicStatRows" :key="row.key">
       <StatValueInput
         :stat-key="row.stat"
         :min="row.min"
         :max="row.max"
         :model-value="row.value"
-        class="w-20"
+        class="w-full"
         :data-testid="'slot-dynamic:' + row.stat"
         @update:model-value="setDynamic(row, $event ?? '')"
       />
-    </div>
+      <template #description>{{ row.label }}</template>
+      <template #note>{{ rangeNote(row) }}</template>
+    </InputRow>
   </div>
 
   <p
