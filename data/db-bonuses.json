@@ -589,28 +589,18 @@
     ]
   },
   {
-    "id": "death-s-bulwark-proc",
-    "name": "Death's Bulwark Proc",
-    "grants": []
-  },
-  {
     "id": "death-s-bulwark-stats",
     "name": "Death's Bulwark Stats",
     "grants": [
       {
-        "when": {
-          "bonusOccurrences": {
-            "bonus": "death-s-bulwark-proc",
-            "exactly": 1
-          }
-        },
         "variants": [
           {
             "stats": {
               "defense_p": 0.02
             },
             "when": {
-              "bonusOccurrences": {
+              "equipped": {
+                "item": "boon-master-death-s-bulwark",
                 "exactly": 1
               }
             }
@@ -621,7 +611,8 @@
               "crit_avoid_p": 0.04
             },
             "when": {
-              "bonusOccurrences": {
+              "equipped": {
+                "item": "boon-master-death-s-bulwark",
                 "exactly": 2
               }
             }
@@ -632,7 +623,8 @@
               "crit_avoid_p": 0.06
             },
             "when": {
-              "bonusOccurrences": {
+              "equipped": {
+                "item": "boon-master-death-s-bulwark",
                 "exactly": 3
               }
             }
@@ -642,28 +634,18 @@
     ]
   },
   {
-    "id": "deathly-rage-proc",
-    "name": "Deathly Rage Proc",
-    "grants": []
-  },
-  {
     "id": "deathly-rage-stats",
     "name": "Deathly Rage Stats",
     "grants": [
       {
-        "when": {
-          "bonusOccurrences": {
-            "bonus": "deathly-rage-proc",
-            "exactly": 1
-          }
-        },
         "variants": [
           {
             "stats": {
               "ca_p": 0.02
             },
             "when": {
-              "bonusOccurrences": {
+              "equipped": {
+                "item": "boon-master-deathly-rage",
                 "exactly": 1
               }
             }
@@ -674,7 +656,8 @@
               "power_p": 0.04
             },
             "when": {
-              "bonusOccurrences": {
+              "equipped": {
+                "item": "boon-master-deathly-rage",
                 "exactly": 2
               }
             }
@@ -686,7 +669,8 @@
               "sev_p": 0.06
             },
             "when": {
-              "bonusOccurrences": {
+              "equipped": {
+                "item": "boon-master-deathly-rage",
                 "exactly": 3
               }
             }
@@ -846,6 +830,56 @@
     ]
   },
   {
+    "id": "fighter-s-marathon-runner",
+    "name": "Fighter's Marathon Runner",
+    "grants": [
+      {
+        "when": {
+          "not": {
+            "toggle": "combat"
+          }
+        },
+        "stats": {
+          "movement": 0.1
+        }
+      }
+    ]
+  },
+  {
+    "id": "fighter-s-tactician-s-edge",
+    "name": "Fighter's Tactician's Edge",
+    "grants": [
+      {
+        "stats": {},
+        "dynamicStats": [
+          {
+            "stat": "ca_p",
+            "min": 0.05,
+            "max": 0.1,
+            "default": 0.1
+          },
+          {
+            "stat": "strike_p",
+            "min": 0.05,
+            "max": 0.1,
+            "default": 0.1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "fighter-s-unshakable-shieldarm",
+    "name": "Fighter's Unshakable Shieldarm",
+    "grants": [
+      {
+        "stats": {
+          "crit_avoid_p": 0.1
+        }
+      }
+    ]
+  },
+  {
     "id": "flapjack",
     "name": "Flapjack",
     "grants": [
@@ -875,6 +909,18 @@
         }
       }
     ]
+  },
+  {
+    "id": "frigid-winds-2",
+    "name": "Frigid Winds",
+    "grants": [
+      {
+        "stats": {
+          "outgoing_damage": 0.015
+        }
+      }
+    ],
+    "stacking": "perSource"
   },
   {
     "id": "gladiator-s-guile",
@@ -2947,6 +2993,17 @@
     ]
   },
   {
+    "id": "momentum-s-movement-speed",
+    "name": "Momentum's Movement Speed",
+    "grants": [
+      {
+        "stats": {
+          "movement": 0.2
+        }
+      }
+    ]
+  },
+  {
     "id": "mount-hag-s-enchanted-cauldroon",
     "name": "Mount: Hag's Enchanted Cauldroon",
     "grants": [
@@ -3285,6 +3342,50 @@
               },
               "equipped": {
                 "tag": "exclusive:blademaster"
+              }
+            },
+            {
+              "not": {
+                "equipped": {
+                  "item": "paragon-vanguard",
+                  "exactly": 1
+                }
+              },
+              "equipped": {
+                "tag": "exclusive:vanguard"
+              }
+            },
+            {
+              "not": {
+                "equipped": {
+                  "item": "paragon-dreadnought",
+                  "exactly": 1
+                }
+              },
+              "equipped": {
+                "tag": "exclusive:dreadnought"
+              }
+            },
+            {
+              "not": {
+                "equipped": {
+                  "item": "paragon-arcanist",
+                  "exactly": 1
+                }
+              },
+              "equipped": {
+                "tag": "exclusive:arcanist"
+              }
+            },
+            {
+              "not": {
+                "equipped": {
+                  "item": "paragon-thaumaturge",
+                  "exactly": 1
+                }
+              },
+              "equipped": {
+                "tag": "exclusive:thaumaturge"
               }
             }
           ]
@@ -3690,6 +3791,33 @@
     ]
   },
   {
+    "id": "relative-haste-2",
+    "name": "Relative Haste",
+    "grants": [
+      {
+        "when": {
+          "toggle": "combat"
+        },
+        "stats": {
+          "recharge": 0.05
+        }
+      }
+    ],
+    "stacking": "perSource",
+    "maxStacks": 4
+  },
+  {
+    "id": "rimefire-weaving-2",
+    "name": "Rimefire Weaving",
+    "grants": [
+      {
+        "stats": {
+          "enemy_incoming_damage": 0.05
+        }
+      }
+    ]
+  },
+  {
     "id": "risky-investment",
     "name": "Risky Investment",
     "grants": [
@@ -3698,8 +3826,9 @@
           "toggle": "combat"
         },
         "stats": {
-          "outgoing_damage": 0.088
-        }
+          "outgoing_damage": 0.12
+        },
+        "longDescription": "Rough estimation based on 5 stacks + encounters being generally 40% of Hellbringer's Damage."
       }
     ]
   },
@@ -3990,6 +4119,17 @@
     ]
   },
   {
+    "id": "swath-of-destruction-2",
+    "name": "Swath of Destruction",
+    "grants": [
+      {
+        "stats": {
+          "enemy_incoming_damage": 0.03
+        }
+      }
+    ]
+  },
+  {
     "id": "swift-synergy",
     "name": "Swift Synergy",
     "grants": [
@@ -4084,7 +4224,8 @@
         },
         "stats": {
           "outgoing_damage": 0.07
-        }
+        },
+        "longDescription": "Rough estimation based on Powers being generally 50% of Hellbringer's Damage."
       }
     ]
   },
@@ -4151,6 +4292,39 @@
         "stats": {
           "sev_p": 0.05,
           "strike": 2000
+        }
+      }
+    ]
+  },
+  {
+    "id": "wizard-s-brisk-transport",
+    "name": "Wizard's Brisk Transport",
+    "grants": [
+      {
+        "stats": {},
+        "longDescription": "When you Teleport your Movement Speed is\nincreased by 10 for 2 seconds."
+      }
+    ]
+  },
+  {
+    "id": "wizard-s-controlled-momentum",
+    "name": "Wizard's Controlled Momentum",
+    "grants": [
+      {
+        "stats": {
+          "outgoing_damage": 0.02
+        },
+        "longDescription": "After using a Control Encounter power allies within\n30' of you deal 2% more damage for 6 seconds. This\neffect does not stack."
+      }
+    ]
+  },
+  {
+    "id": "wizard-s-improved-technique",
+    "name": "Wizard's Improved Technique",
+    "grants": [
+      {
+        "stats": {
+          "control_bonus_p": 0.05
         }
       }
     ]

@@ -12,6 +12,8 @@
     "data-server": "tsx scripts/data-server.ts",
     "fix": "npm run regen-data && prettier --write . && eslint . --fix --cache",
     "regen-data": "tsx scripts/regen-data.ts",
+    "fixture": "tsx scripts/update-fixture.ts --dry-run",
+    "fixture:update": "tsx scripts/update-fixture.ts",
     "icons": "tsx scripts/generate-icons.ts",
     "test": "vitest run",
     "test:ui": "playwright test",
