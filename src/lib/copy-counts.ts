@@ -1,24 +1,13 @@
 // How many copies of each item a build holds, for `Item.maxCopies`.
-//
-// One function for both readers: the engine reports the cap being exceeded and the picker
-// withholds the candidate that would exceed it, so a disagreement reads as a pick that succeeds
-// and is then flagged.
+
 import { expandSlots } from "./item-picker-list";
 import { assignedRows, inlineRepetitionCount } from "./inline-repetition";
 import type { Build, Db } from "../types";
 
 /**
- * A switched-off pick counts like any other: the checkbox takes it out of the calculation, not
- * out of the slot it occupies.
- *
- * `exclude` drops one slot's own pick, so an `item_picker` never counts what it already holds
- * against itself and re-selecting it reads as "would exceed".
+ * Build-wide number of copies for each item.
  */
-export function copyCounts(
-  db: Db,
-  build: Build,
-  exclude?: string,
-): Map<string, number> {
+export function copyCounts(db: Db, build: Build): Map<string, number> {
   const counts = new Map<string, number>();
   const bump = (id: string, by: number) =>
     counts.set(id, (counts.get(id) ?? 0) + by);
@@ -30,9 +19,31 @@ export function copyCounts(
       }
       continue;
     }
-    if (slot.type !== "item_picker" || slot.id === exclude) continue;
+    if (slot.type !== "item_picker") continue;
     const item = db.get(build.choices?.[slot.id]);
     if (item) bump(item.id, inlineRepetitionCount(build, slot.id, item));
   }
   return counts;
+}
+
+/**
+ * The build-wide tally as one slot sees it, minus that slot's own pick, so an `item_picker`
+ * never counts what it already holds against itself.
+ */
+export function copyCountsExcluding(
+  db: Db,
+  build: Build,
+  slotId: string,
+  counts: Map<string, number>,
+): Map<string, number> {
+  if (db.slotFor(slotId)?.type !== "item_picker") return counts;
+  const item = db.get(build.choices?.[slotId]);
+  if (!item) return counts;
+  const own = inlineRepetitionCount(build, slotId, item);
+  if (!own) return counts;
+  const next = new Map(counts);
+  const remaining = (next.get(item.id) ?? 0) - own;
+  if (remaining > 0) next.set(item.id, remaining);
+  else next.delete(item.id);
+  return next;
 }

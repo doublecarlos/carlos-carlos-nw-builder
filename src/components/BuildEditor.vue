@@ -36,7 +36,7 @@ import {
   FilterX,
 } from "@lucide/vue";
 import { NW_SLOTS } from "../data/data";
-import { slotCandidateList } from "../data/db";
+import { slotCandidateContext, slotCandidateList } from "../data/db";
 import { statPickerOptions } from "../lib/format";
 import { matchesQuery } from "../lib/text-filter";
 import { slotStablePlaceholder, slotStatSummary } from "../lib/slot-summary";
@@ -494,10 +494,6 @@ const bonusesBySlot = computed(() => {
 // An unset class/race constrains nothing: with both fields defaulting to empty, a fresh build
 // would otherwise hide every restricted item with no explanation. Equipping one still flags
 // the `requires X` error once a class/race is (not) chosen.
-function candidatesFor(slotId: string) {
-  return slotCandidateList(db.value, slotId, build.value);
-}
-
 function errorsFor(slotId: string) {
   return errorsBySlot.value.get(slotId) ?? [];
 }
@@ -545,8 +541,9 @@ function stablePlaceholder(slotId: string): string | undefined {
 }
 
 /** Everything a BuildSlot row needs, gathered once per slot instead of ~9 calls per render
- *  (`candidatesFor` and `statSummary` aren't cheap). Scoped to *expanded* sections only, matching
- *  BuildSection.vue's own `v-if="expanded"`, so a collapsed section's rows stay uncomputed. */
+ *  (`slotCandidateList` and `statSummary` aren't cheap). Scoped to *expanded* sections only,
+ *  matching BuildSection.vue's own `v-if="expanded"`, so a collapsed section's rows stay
+ *  uncomputed. */
 interface SlotRowData {
   item: Item | null;
   items: Item[];
@@ -571,6 +568,9 @@ const EMPTY_ROW_DATA: SlotRowData = {
 
 const rowDataBySlot = computed(() => {
   const map = new Map<string, SlotRowData>();
+  // One context for the whole pass: the copy tally and published class are the same for every
+  // row.
+  const candidateContext = slotCandidateContext(db.value, build.value);
   for (const section of sections.value) {
     if (!sectionExpanded(section.id)) continue;
     for (const slotDef of section.slots) {
@@ -580,7 +580,12 @@ const rowDataBySlot = computed(() => {
         slotDef.type === "item_picker_list"
       )
         continue;
-      const candidates = candidatesFor(slotDef.id);
+      const candidates = slotCandidateList(
+        db.value,
+        slotDef.id,
+        build.value,
+        candidateContext,
+      );
       map.set(slotDef.id, {
         item: itemIn(slotDef.id),
         items: candidates.items,

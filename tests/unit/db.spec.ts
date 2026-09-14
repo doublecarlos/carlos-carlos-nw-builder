@@ -271,6 +271,37 @@ describe("forSlotAndBuild maxCopies filtering", () => {
       .map((i) => i.id);
     expect(candidates).toContain("shared-item");
   });
+
+  // The build editor shares one `SlotCandidateContext` across every row; these pin that path
+  // to the per-call result, slot-local discount included.
+  it("a shared context matches the per-call candidate list for every slot", () => {
+    const build = buildWith(
+      { ring1: "capped2" },
+      { "boons.tier1": { "shared-item": 1 } },
+    );
+    const context = db.slotCandidateContext(testDb, build);
+    for (const slotId of ["ring1", "ring2", "ring3", "sharedPicker"]) {
+      const shared = db.slotCandidateList(testDb, slotId, build, context);
+      const perCall = db.slotCandidateList(testDb, slotId, build);
+      expect(shared.items).toEqual(perCall.items);
+      expect([...shared.reasons]).toEqual([...perCall.reasons]);
+    }
+  });
+
+  it("discounts only the resolving slot's own pick from the shared tally", () => {
+    const build = buildWith({ ring1: "capped1" });
+    const context = db.slotCandidateContext(testDb, build);
+    expect(
+      db
+        .slotCandidateList(testDb, "ring1", build, context)
+        .reasons.has("capped1"),
+    ).toBe(false);
+    expect(
+      db
+        .slotCandidateList(testDb, "ring2", build, context)
+        .reasons.get("capped1"),
+    ).toBe("1/1 copies");
+  });
 });
 
 // forSlot's tag-based resolution: an item_picker slot with `tags` instead of `filter`

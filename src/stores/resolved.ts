@@ -7,7 +7,7 @@ import { isHiddenBonus } from "../engine/bonus";
 import * as builds from "./builds";
 import * as layers from "./layers";
 import * as compare from "./compare";
-import type { EvaluatedBonus, ResolvedBuild } from "../types";
+import type { CatalogOverlay, EvaluatedBonus, ResolvedBuild } from "../types";
 
 type Resolution =
   | { ok: true; result: ResolvedBuild }
@@ -20,16 +20,28 @@ type Resolution =
  * Enabled layers come first (already reversed by the store, so the topmost layer folds
  * last), then the active build's per-build catalog. Order matters: an overlay earlier in
  * this list can be overridden by a later one, and the build catalog beats every layer.
+ *
+ * A build swap re-evaluates this into a fresh array, almost always with the same overlay
+ * objects. Returning the previous array when nothing changed keeps `db` and its
+ * `WeakMap<Db, ...>` memos alive across the swap.
  */
+const sameOverlays = (
+  a: (CatalogOverlay | null | undefined)[],
+  b: (CatalogOverlay | null | undefined)[],
+) => a.length === b.length && a.every((overlay, index) => overlay === b[index]);
+
+let lastOverlays: (CatalogOverlay | null | undefined)[] = [];
+
 export const overlays = computed(() => {
   const result = [...layers.enabledOverlays.value];
   if (builds.build.value?.catalog) result.push(builds.build.value.catalog);
+  if (sameOverlays(lastOverlays, result)) return lastOverlays;
+  lastOverlays = result;
   return result;
 });
 
 /**
- * markRaw: 369 items plus several Maps. Vue deep-proxying it would cost more than the whole
- * calculation. Rebuilt only when a layer actually changes -- indexing is well under a
+ * Rebuilt only when the overlay list changes. Indexing is well under a
  * millisecond, so there is no reason to be cleverer than this.
  */
 export const db = computed(() => markRaw(catalog.makeDb(overlays.value)));
