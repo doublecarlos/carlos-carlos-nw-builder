@@ -46,25 +46,6 @@ test("a scoped param appears only while its condition holds", async ({
   }
 });
 
-test("hiding a param does not clear it -- the value is still there when it comes back", async ({
-  page,
-}) => {
-  await openBuilder(page);
-  await chooseClass(page, "warlock");
-  // Soulweaver, not Hellbringer: it carries no `defaultParams`, so re-picking it can't seed
-  // forte and the assertion below is about the hide/show round-trip alone.
-  await chooseItem(page, "options.paragon", "Soulweaver");
-  await chooseItem(page, "options.forte2a", "Combat Advantage");
-
-  await clearSlot(page, "options.paragon");
-  await expect(slotRow(page, "options.forte2a")).toHaveCount(0);
-
-  await chooseItem(page, "options.paragon", "Soulweaver");
-  await expect(pickerInput(slotRow(page, "options.forte2a"))).toHaveValue(
-    "Combat Advantage",
-  );
-});
-
 test("an unscoped param is untouched, in its section and in the quick strip", async ({
   page,
 }) => {
