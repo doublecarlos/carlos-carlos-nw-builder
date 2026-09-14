@@ -34,7 +34,7 @@ const close = (a: number, b: number, tolerance: number) => {
  * now non-negative and `headroom` is separate (FIX #2). Recombine before comparing, so the
  * fix is verified rather than papered over.
  */
-const sheetOvercap = (
+export const sheetOvercap = (
   stages: Record<string, Record<string, number>>,
   key: string,
 ) => (stages.overcap[key] ?? 0) - (stages.headroom[key] ?? 0);

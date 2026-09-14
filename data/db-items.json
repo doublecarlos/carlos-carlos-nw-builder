@@ -490,6 +490,9 @@
     "id": "a-due",
     "name": "A Due",
     "filter": "feat3",
+    "outgoing_damage": 0.1,
+    "incoming_damage": -0.1,
+    "longDescription": "You and the nearest party member within 25' are\ngranted the effect of A Due, increasing total\noutgoing damage by 10%, decreasing total damage\ntaken by 10%, and increasing Outgoing Healing by\n10%.\n\nEffect ends when the party member moves out of\nrange, or the effect moves to a closer party member.",
     "allowedClass": ["bard"],
     "tags": ["exclusive:songblade"],
     "bonuses": ["paragon-exclusive"]
@@ -641,9 +644,19 @@
     "shortDescription": "Whenever you receive damage you grant stacks of Ally's Resilience to all nearby teammates. Each stack gives 0.25% Defense and Deflect. Max 20 stacks from all sources. 10s duration."
   },
   {
+    "id": "always-spiteful",
+    "name": "Always Spiteful",
+    "filter": "class_feat",
+    "longDescription": "At the start of combat, if your Vengeance Gauge is\nbelow 55, your Vengeance Gauge is set to 55. This\neffect can only occur once every 12 seconds.",
+    "allowedClass": ["fighter"],
+    "tags": ["exclusive:dreadnought"],
+    "bonuses": ["paragon-exclusive"]
+  },
+  {
     "id": "angel-of-death",
     "name": "Angel of Death",
     "filter": "feat5",
+    "longDescription": "Encounter powers which cost divinity now grant\nAngelic Inspiration. When you reach 26 stacks the\neffect is converted into Angelic Presence.\n\nDuration: 60s\n\nAngelic Presence Effect: Use Channel Divinity and\nrelease it immediately to gain the effect of Angel of\nDeath, allowing you to cast damaging spells without\npaying their divinity cost.\n\nDuration: 12s\n\nThis effect may not occur outside of combat.",
     "allowedClass": ["cleric"],
     "tags": ["exclusive:arbiter"],
     "bonuses": ["paragon-exclusive"]
@@ -653,6 +666,13 @@
     "name": "Apocalipse Set",
     "filter": "group_buff",
     "bonuses": ["apocalipse-set"]
+  },
+  {
+    "id": "arcane-presence",
+    "name": "Arcane Presence",
+    "filter": "class_feat",
+    "longDescription": "Arcane Mastery increases the damage of your Cold,\nFire, and Lightning based attacks by 1% per stack.",
+    "allowedClass": ["wizard"]
   },
   {
     "id": "arma-egg-on",
@@ -790,6 +810,7 @@
     "id": "backup-performer",
     "name": "Backup Performer",
     "filter": "feat1",
+    "longDescription": "When not in a quickplay slot, Rejuvenating Carol\nbecomes Reinvigorating Carol.\n\nInstantly heal nearby party members.\n\nMagnitude: 1200\n\nAdded Effect: Restores 100 mana\n(divinity/soulweave/performance) to any healers and\ndoes not cancel other songs.\n\nReverts back to Rejuvenating Carol for 30s\nafterwards.",
     "allowedClass": ["bard"],
     "tags": ["exclusive:songblade"],
     "bonuses": ["paragon-exclusive"]
@@ -798,6 +819,7 @@
     "id": "ballad-colla-voce",
     "name": "Ballad Colla Voce",
     "filter": "feat3",
+    "longDescription": "When not in a quickplay slot and you play Ballad of\nthe Hero or Ballad of the Witch, you and nearby\nparty members are granted the effect of Colla Voce,\ngranting a bonus based on their combat role.\n\nDPS: Increases total outgoing damage by 5%.\n\nTank: Decreases total damage taken by 5%.\n\nHealer: Increases Outgoing Healing by 5%.\nDuration: 20s\n\nEffect ends upon activating Hero's Finale or Witch's\nFinale",
     "allowedClass": ["bard"],
     "tags": ["exclusive:songblade"],
     "bonuses": ["paragon-exclusive"]
@@ -823,6 +845,7 @@
     "id": "battlefield-ostinato",
     "name": "Battlefield Ostinato",
     "filter": "feat2",
+    "longDescription": "Your single target at-will attacks now grant the effect\nof Ostinato Vivo, increasing the damage dealt by\nyour area of effect at-will attacks 20%.\n\nDuration: 12s\n\nYour area of effect at-will attacks now grant the effect\nof Ostinato Bellicoso, increasing the damage dealt by\nyour single target at-will attacks by 20%.\n\nDuration: 12s",
     "allowedClass": ["bard"],
     "tags": ["exclusive:songblade"],
     "bonuses": ["paragon-exclusive"]
@@ -862,6 +885,15 @@
     "ca": 1500,
     "severity": 1500,
     "gameIds": ["Artifact_M30_All_Zone_Artifact_R5"]
+  },
+  {
+    "id": "bloody-reprise",
+    "name": "Bloody Reprise",
+    "filter": "feat5",
+    "longDescription": "Whenever your Vengeance Gauge drops below 50%\nyou receive the effect of Bloody Reprise.\nDuration: 3s\n\nBloody Reprise Effect: Whenever you use an\nencounter power, set your Vengeance Gauge to 75.",
+    "allowedClass": ["fighter"],
+    "tags": ["exclusive:dreadnought"],
+    "bonuses": ["paragon-exclusive"]
   },
   {
     "id": "blue-fire-eye",
@@ -1062,13 +1094,12 @@
     "longDescription": "Change to get stats and shield when killing enemies or taking damage.",
     "bonuses": [
       {
-        "bonus": "death-s-bulwark-proc",
+        "bonus": "death-s-bulwark-stats",
         "min": 0,
         "max": 1,
         "default": 0,
-        "label": "proc"
-      },
-      "death-s-bulwark-stats"
+        "label": "Proc"
+      }
     ],
     "inlineRepetition": {
       "min": 0,
@@ -1084,13 +1115,12 @@
     "filter": "boon_tier_master",
     "longDescription": "Change to get stats when killing enemies or taking damage.",
     "bonuses": [
-      "deathly-rage-stats",
       {
-        "bonus": "deathly-rage-proc",
+        "bonus": "deathly-rage-stats",
         "min": 0,
         "max": 1,
         "default": 0,
-        "label": "proc"
+        "label": "Proc"
       }
     ],
     "inlineRepetition": {
@@ -1826,6 +1856,7 @@
     "id": "burning-patch",
     "name": "Burning Patch",
     "filter": "feat4",
+    "longDescription": "Flame Strike no longer applies a damage over time\nand instead ignites the target location dealing\nmagnitude 3240 damage over 18s.\n\nMagnitude: 540 x 6\n\nDuration: 18s",
     "allowedClass": ["cleric"],
     "tags": ["exclusive:arbiter"],
     "bonuses": ["paragon-exclusive"]
@@ -2071,6 +2102,21 @@
     "bonuses": ["cha-lua-accuracy-severity"]
   },
   {
+    "id": "chilling-advantage",
+    "name": "Chilling Advantage",
+    "filter": "feat3",
+    "longDescription": "Your cold-based at-will, encounter, and daily powers\nthat apply Chill now also directly apply Rimefire\nSmolder.",
+    "allowedClass": ["wizard"],
+    "tags": ["exclusive:thaumaturge"]
+  },
+  {
+    "id": "chilling-presence",
+    "name": "Chilling Presence",
+    "filter": "class_feat",
+    "longDescription": "Increase the damage you deal by 0.5% for each stack\nof Chill on your target. This damage bonus is\ndoubled on Frozen targets.",
+    "allowedClass": ["wizard"]
+  },
+  {
     "id": "class-barbarian",
     "name": "Barbarian",
     "filter": "build_param_linked_item",
@@ -2140,10 +2186,28 @@
   },
   {
     "id": "class-fighter",
-    "name": "Fighter Placeholer",
+    "name": "Fighter",
     "filter": "build_param_linked_item",
+    "str": 16,
+    "con": 16,
+    "dex": 14,
+    "int": 8,
+    "wis": 10,
+    "cha": 10,
     "tags": ["class"],
-    "bonuses": ["baseline-character", "baseline-enemy-stats"],
+    "bonuses": [
+      "baseline-character",
+      "baseline-enemy-stats",
+      {
+        "bonus": "fighter-s-unshakable-shieldarm",
+        "min": 0,
+        "max": 1,
+        "default": 1,
+        "label": "Blocking (10% Crit Avoid)"
+      },
+      "fighter-s-marathon-runner",
+      "fighter-s-tactician-s-edge"
+    ],
     "publishes": {
       "class": "fighter"
     }
@@ -2201,10 +2265,22 @@
   },
   {
     "id": "class-wizard",
-    "name": "Wizard Placeholer",
+    "name": "Wizard",
     "filter": "build_param_linked_item",
+    "str": 8,
+    "con": 10,
+    "dex": 12,
+    "int": 18,
+    "wis": 14,
+    "cha": 12,
     "tags": ["class"],
-    "bonuses": ["baseline-character", "baseline-enemy-stats"],
+    "bonuses": [
+      "baseline-character",
+      "baseline-enemy-stats",
+      "wizard-s-improved-technique",
+      "wizard-s-controlled-momentum",
+      "wizard-s-brisk-transport"
+    ],
     "publishes": {
       "class": "wizard"
     }
@@ -2229,6 +2305,21 @@
     "ca": 880
   },
   {
+    "id": "combat-superiority",
+    "name": "Combat Superiority",
+    "filter": "class_feat",
+    "longDescription": "Whenever you activate an encounter or daily power,\n\nincrease the damage dealt by your at-will attacks by\n10%.\n\nDuration: 10s",
+    "allowedClass": ["fighter"]
+  },
+  {
+    "id": "combustive-action",
+    "name": "Combustive Action",
+    "filter": "class_feat",
+    "longDescription": "When a target affected by Smolder dies, you gain 5%\nof your max Action Points. Cooldown 1 second.",
+    "allowedClass": ["wizard"],
+    "tags": ["exclusive:thaumaturge"]
+  },
+  {
     "id": "comp-enchantment-celestial",
     "name": "Celestial Companion Enchantment",
     "filter": "companion_enchantment",
@@ -2250,6 +2341,7 @@
     "id": "creeping-death",
     "name": "Creeping Death",
     "filter": "feat4",
+    "longDescription": "When you deal damage with your At-Will, Encounter,\nor Daily powers to enemies they are afflicted with\nCreeping Death. Creeping Death deals 25 magnitude\ndamage as Necrotic damage every 2 seconds for 10\nseconds. Stacks up to 5 times.",
     "allowedClass": ["warlock"],
     "tags": ["exclusive:hellbringer"],
     "bonuses": ["paragon-exclusive"]
@@ -2274,11 +2366,38 @@
     "strike": 880
   },
   {
+    "id": "critical-burn",
+    "name": "Critical Burn",
+    "filter": "feat4",
+    "sev_p": 0.1,
+    "longDescription": "Your critical severity is increased by 10% and smolder\nnow deals 25% more critical damage.",
+    "allowedClass": ["wizard"],
+    "tags": ["exclusive:thaumaturge"]
+  },
+  {
+    "id": "critical-conflagration",
+    "name": "Critical Conflagration",
+    "filter": "class_feat",
+    "longDescription": "Whenever you critically strike with one of your\npowers, you add Smolder to your target, if it is not\nalready taking damage from the effect.",
+    "allowedClass": ["wizard"],
+    "tags": ["exclusive:thaumaturge"]
+  },
+  {
     "id": "critical-sun",
     "name": "Critical Sun",
     "filter": "feat4",
+    "longDescription": "Whenever Celestial Prominence deals critical damage,\nyou may cast Celestial Prominence again without\nspending any action points.\n\nDuration: 6s\n\nThis effect may not trigger twice in a row.",
     "allowedClass": ["cleric"],
     "tags": ["exclusive:arbiter"],
+    "bonuses": ["paragon-exclusive"]
+  },
+  {
+    "id": "crushing-blows",
+    "name": "Crushing Blows",
+    "filter": "feat3",
+    "longDescription": "20% chance, on hit, to deal a crushing blow\nconsuming 5 vengeance to deal an additional 150\nmagnitude damage. No effect if Vengeance Gauge is\nbelow 5.",
+    "allowedClass": ["fighter"],
+    "tags": ["exclusive:dreadnought"],
     "bonuses": ["paragon-exclusive"]
   },
   {
@@ -2361,6 +2480,14 @@
     "name": "Diamond Blessing",
     "filter": "consumable_blessing",
     "bonuses": ["diamond-blessing-damage"]
+  },
+  {
+    "id": "directed-flames",
+    "name": "Directed Flames",
+    "filter": "feat5",
+    "longDescription": "Smolder and Rimefire Smolder now deal 25% of their\ntotal damage when applied or reapplied, but they no\nlonger deal damage over time. Directed Flames can\noccur once every second.",
+    "allowedClass": ["wizard"],
+    "tags": ["exclusive:thaumaturge"]
   },
   {
     "id": "divine-equilibrium",
@@ -2483,7 +2610,7 @@
     "id": "double-scorch",
     "name": "Double Scorch",
     "filter": "feat1",
-    "longDescription": "Doubles damage from Soul Scorch",
+    "longDescription": "Soul Scorch's initial hit deals an additional 25\nmagnitude damage per Soul Spark spent.",
     "allowedClass": ["warlock"],
     "tags": ["exclusive:hellbringer"],
     "bonuses": ["paragon-exclusive"]
@@ -2498,6 +2625,7 @@
     "id": "elemental-medley",
     "name": "Elemental Medley",
     "filter": "feat2",
+    "longDescription": "Con Fuoco, Con Moto, and Con Brio now grant the\neffect of Elemental Medley, increasing the damage\nbonus of your elemental songs on your attacks by 10\nmagnitude.\n\nDuration: 60s\n\nThis effect may stack up to 3 times while in combat\nbut cannot be reapplied by the same at-will until the\neffect dissipates.",
     "allowedClass": ["bard"],
     "tags": ["exclusive:songblade"],
     "bonuses": ["paragon-exclusive"]
@@ -2522,6 +2650,23 @@
     "shortDescription": "When you use an Encounter or Daily power with a control effect on a target, deal an extra 50 magnitude damage to that target. This effect does not stack."
   },
   {
+    "id": "enduring-vengeance",
+    "name": "Enduring Vengeance",
+    "filter": "class_feat",
+    "longDescription": "Every 10 seconds your Vengeance Gauge is above\n50%, you gain a stack of Enduring Vengeance\nincreasing your damage dealt by 1%.\n\nThis effect may stack up to 5 times. Effect ends when\nyour Vengeance Gauge drops below 50%.",
+    "dynamicStats": [
+      {
+        "stat": "outgoing_damage",
+        "min": 0.01,
+        "max": 0.05,
+        "default": 0.05
+      }
+    ],
+    "allowedClass": ["fighter"],
+    "tags": ["exclusive:dreadnought"],
+    "bonuses": ["paragon-exclusive"]
+  },
+  {
     "id": "enemy-type-boss",
     "name": "Enemy: Boss",
     "filter": "scenario_flag"
@@ -2538,6 +2683,13 @@
     "bonuses": ["etrien"]
   },
   {
+    "id": "evocation",
+    "name": "Evocation",
+    "filter": "class_feat",
+    "longDescription": "Increase the damage of your Area of Effect powers by\n10%.",
+    "allowedClass": ["wizard"]
+  },
+  {
     "id": "executioner-s-covenant",
     "name": "Executioner's Covenant",
     "filter": "insignia_bonus",
@@ -2545,9 +2697,19 @@
     "bonuses": ["executioner-s-covenant"]
   },
   {
+    "id": "executioner-s-cut",
+    "name": "Executioner's Cut",
+    "filter": "feat3",
+    "longDescription": "On using an encounter power, consume 5 vengeance\nto slice each target hit, causing 200 magnitude\ndamage after 2s. This effect does not stack. No effect\nif Vengeance Gauge is below 5.",
+    "allowedClass": ["fighter"],
+    "tags": ["exclusive:dreadnought"],
+    "bonuses": ["paragon-exclusive"]
+  },
+  {
     "id": "executioner-s-gift",
     "name": "Executioner's Gift",
     "filter": "feat4",
+    "longDescription": "Your powers deal up to 30% more damage as your\ntarget's health diminishes.",
     "allowedClass": ["warlock"],
     "tags": ["exclusive:hellbringer"],
     "bonuses": ["paragon-exclusive"]
@@ -2556,7 +2718,6 @@
     "id": "expanded-faith",
     "name": "Expanded Faith",
     "filter": "class_feat",
-    "shortDescription": "Max Divinity +150",
     "longDescription": "Max Divinity +150",
     "allowedClass": ["cleric"],
     "tags": ["exclusive:arbiter"],
@@ -2628,6 +2789,7 @@
     "id": "focused-light",
     "name": "Focused Light",
     "filter": "feat2",
+    "longDescription": "Forgemaster's Flame now grants the effect of Focused\nLight. Focused Light enhances Daunting Light\nlimiting it to a single target, increasing the magnitude\nto 450, and the magnitude of the Radiant Judgement\neffect to 100.\n\nDuration: 10s",
     "allowedClass": ["cleric"],
     "tags": ["exclusive:arbiter"],
     "bonuses": ["paragon-exclusive"]
@@ -2758,6 +2920,31 @@
     "hit_points": 5400
   },
   {
+    "id": "frigid-winds",
+    "name": "Frigid Winds",
+    "filter": "feat4",
+    "longDescription": "You do 1.5% more damage per stack of Chill on your\ntarget.",
+    "allowedClass": ["wizard"],
+    "tags": ["exclusive:thaumaturge"],
+    "bonuses": [
+      {
+        "bonus": "frigid-winds-2",
+        "min": 1,
+        "max": 6,
+        "default": 6,
+        "label": "Chill stacks"
+      }
+    ]
+  },
+  {
+    "id": "frost-wave",
+    "name": "Frost Wave",
+    "filter": "class_feat",
+    "longDescription": "When you activate a Daily power you apply 6 stacks\nof Chill and Freeze foes within 30' of you.",
+    "allowedClass": ["wizard"],
+    "tags": ["exclusive:thaumaturge"]
+  },
+  {
     "id": "generic-companion",
     "name": "Generic Companion",
     "filter": "companion",
@@ -2777,6 +2964,14 @@
     "filter": "insignia_bonus",
     "insigniaRecipe": ["regal", "illuminated", "enlightened"],
     "bonuses": ["gladiator-s-guile"]
+  },
+  {
+    "id": "glowing-flames",
+    "name": "Glowing Flames",
+    "filter": "feat2",
+    "longDescription": "Smolder's flames now radiate, dealing 30% of their\nnormal damage to afflicted enemies within 15' of the\nprimary target.",
+    "allowedClass": ["wizard"],
+    "tags": ["exclusive:thaumaturge"]
   },
   {
     "id": "golden-cat-s-instincts-golden-cat-ca-any",
@@ -2810,6 +3005,21 @@
     "name": "Grand Summer Feast (Legacy)",
     "filter": "consumable_event_food",
     "bonuses": ["grand-summer-feast-legacy"]
+  },
+  {
+    "id": "greater-endurance",
+    "name": "Greater Endurance",
+    "filter": "class_feat",
+    "longDescription": "Increases movement speed by 10% whenever your\nstamina gauge is full. Effect decreases as remaining\nstamina decreases.",
+    "dynamicStats": [
+      {
+        "stat": "movement",
+        "min": 0,
+        "max": 0.1,
+        "default": 0.1
+      }
+    ],
+    "allowedClass": ["fighter"]
   },
   {
     "id": "guardian-s-spirit",
@@ -2850,9 +3060,18 @@
     "bonuses": ["ice-cold-resolve"]
   },
   {
+    "id": "icy-veins",
+    "name": "Icy Veins",
+    "filter": "feat2",
+    "longDescription": "Whenever you activate an Encounter Power, all foes\nwithin 20' of you have 1 stack of Chill applied to\nthem.",
+    "allowedClass": ["wizard"],
+    "tags": ["exclusive:thaumaturge"]
+  },
+  {
     "id": "inner-balance",
     "name": "Inner Balance",
     "filter": "feat3",
+    "longDescription": "Increases the divinity restored when Channel Divinity\nconsumes Radiant Judgement by up to 20 if your\nCritical Strike and Accuracy are equal.\n\nIncreases the divinity restored when Channel Divinity\nconsumes Burning Judgement by up to 20 if your\nCombat Advantage and Critical Severity are equal.\n\nBoth effects are diminished the farther apart the\nindicated ratings.",
     "allowedClass": ["cleric"],
     "tags": ["exclusive:arbiter"],
     "bonuses": ["paragon-exclusive"]
@@ -2887,6 +3106,15 @@
     "filter": "insignia_bonus",
     "insigniaRecipe": ["crescent", "crescent", "regal", "barbed"],
     "shortDescription": "Whenever you receive Combat Advantage damage from an attack, you are healed for 7.5% of your Maximum Hit Points over 6s. Cooldown 10s This effect overwrites Knight's Rebuke."
+  },
+  {
+    "id": "landwaster",
+    "name": "Landwaster",
+    "filter": "feat4",
+    "longDescription": "Grants Earthshaker the effect of applying Landwaster\nwhen the Vengeance Gauge is above 50.\nLandwaster Effect: Allows the execution of\nShockwave with no action points by activating\nEarthshaker again. Doing so costs 50 vengeance.\nDuration: 5s",
+    "allowedClass": ["fighter"],
+    "tags": ["exclusive:dreadnought"],
+    "bonuses": ["paragon-exclusive"]
   },
   {
     "id": "leveling-cha-12",
@@ -3573,6 +3801,7 @@
     "id": "lightspeed",
     "name": "Lightspeed",
     "filter": "feat1",
+    "longDescription": "Searing Javelin now grants the effect of Lightspeed.\nLightspeed enhances Daunting Light, reducing the\ncast time and increasing Burning Judgement by 1\nadditional charge.\n\nDuration: 10s",
     "allowedClass": ["cleric"],
     "tags": ["exclusive:arbiter"],
     "bonuses": ["paragon-exclusive"]
@@ -3598,6 +3827,7 @@
     "id": "loremaster",
     "name": "Loremaster",
     "filter": "feat5",
+    "longDescription": "You now have a chance to gain Battle Research\nwhenever you use an at-will power.\n\nWhen your action points are below 100%, the daily\npower Lore is replaced with Research. Research has a\n1 second cast time and grants a stack of Battle\nResearch.\n\nUpon reaching 5 stacks of Battle Research, activating\nResearch or Lore grants you Ready to Exploit. Ready\nto Exploit increases encounter and ballad finale\ndamage by 125% for 10s.",
     "allowedClass": ["bard"],
     "tags": ["exclusive:songblade"],
     "bonuses": ["paragon-exclusive"]
@@ -4897,6 +5127,7 @@
     "id": "martial-performance",
     "name": "Martial Performance",
     "filter": "feat4",
+    "longDescription": "When not in a quickplay slot, whenever you damage\nan enemy with the initial activation of Blaze\nFlamenco, Tailwind Mambo, or Steel March the\ndamage bonus added to your attacks is increased by\n10 magnitude for the duration of the song effect.",
     "allowedClass": ["bard"],
     "tags": ["exclusive:songblade"],
     "bonuses": ["paragon-exclusive"]
@@ -4932,6 +5163,15 @@
         "label": "Proc"
       }
     ]
+  },
+  {
+    "id": "masterful-performance",
+    "name": "Masterful Performance",
+    "filter": "class_feat",
+    "longDescription": "Increases the effectiveness of Blaze Flamenco, Steel\nMarch, Tailwind Mambo's added effects by 50%\nwhen not in a quickplay slot.",
+    "allowedClass": ["bard"],
+    "tags": ["exclusive:songblade"],
+    "bonuses": ["paragon-exclusive"]
   },
   {
     "id": "masterwork-sets-2",
@@ -5010,6 +5250,24 @@
     "bonuses": ["m32-artifact-offhand-modification-validation"]
   },
   {
+    "id": "momentum",
+    "name": "Momentum",
+    "filter": "class_feat",
+    "longDescription": "Bull Charge no longer knocks targets, but deals an\nadditional 400 magnitude damage. Movement speed\nis increased by 20% after running for 2s. Effect ends\nwhen movement stops.",
+    "allowedClass": ["fighter"],
+    "tags": ["exclusive:dreadnought"],
+    "bonuses": [
+      {
+        "bonus": "momentum-s-movement-speed",
+        "min": 0,
+        "max": 1,
+        "default": 0,
+        "label": "Movement Speed Buff"
+      },
+      "paragon-exclusive"
+    ]
+  },
+  {
     "id": "mount-combat-power-celestial",
     "name": "Generic Mount Combat Power",
     "filter": "mount_combat",
@@ -5070,6 +5328,15 @@
     "acc": 1312.5
   },
   {
+    "id": "mystifying-strikes",
+    "name": "Mystifying Strikes",
+    "filter": "class_feat",
+    "longDescription": "Your attacks now have a 5% chance to apply the\neffect Mystify to the target, dealing psychic damage\nover time.\n\nMagnitude: 100x5\n\nDuration: 12s\n\nWhenever another player strikes a target affected by\nyour Mystify the effect ends immediately and the\nmystified target takes psychic damage.\n\nMagnitude: 400\n\nAdded Effect: The player who triggered the effect is\nhealed.\n\nHeal Magnitude: 400",
+    "allowedClass": ["bard"],
+    "tags": ["exclusive:songblade"],
+    "bonuses": ["paragon-exclusive"]
+  },
+  {
     "id": "mythic-bregan-chest",
     "name": "Mythic Bregan Chest",
     "filter": "group_buff",
@@ -5104,6 +5371,13 @@
     "il": 1750,
     "combined_rating": 1575,
     "ca": 2625
+  },
+  {
+    "id": "orb-of-imposition",
+    "name": "Orb of Imposition",
+    "filter": "class_feat",
+    "longDescription": "Increase the duration of your control powers by 25%.\n\nYour control powers do 5% more damage against\ncontrol immune targets.",
+    "allowedClass": ["wizard"]
   },
   {
     "id": "other-bard-s-lore",
@@ -5153,11 +5427,27 @@
     "tags": ["paragon"]
   },
   {
+    "id": "paragon-arcanist",
+    "name": "Arcanist",
+    "filter": "paragon",
+    "defaultParams": {
+      "options.role": "dps",
+      "options.forte1": "power_p",
+      "options.forte2a": "ca_p",
+      "options.forte2b": "crit_avoid_p"
+    },
+    "allowedClass": ["wizard"],
+    "tags": ["paragon"]
+  },
+  {
     "id": "paragon-blademaster",
     "name": "Blademaster",
     "filter": "paragon",
     "defaultParams": {
-      "options.role": "dps"
+      "options.role": "dps",
+      "options.forte1": "power_p",
+      "options.forte2a": "sev_p",
+      "options.forte2b": "awareness_p"
     },
     "allowedClass": ["barbarian"],
     "tags": ["paragon"]
@@ -5167,9 +5457,25 @@
     "name": "Devout",
     "filter": "paragon",
     "defaultParams": {
-      "options.role": "healer"
+      "options.role": "healer",
+      "options.forte1": "mana_regen",
+      "options.forte2a": "sev_p",
+      "options.forte2b": "deflect_p"
     },
     "allowedClass": ["cleric"],
+    "tags": ["paragon"]
+  },
+  {
+    "id": "paragon-dreadnought",
+    "name": "Dreadnought",
+    "filter": "paragon",
+    "defaultParams": {
+      "options.role": "dps",
+      "options.forte1": "power_p",
+      "options.forte2a": "acc_p",
+      "options.forte2b": "crit_avoid_p"
+    },
+    "allowedClass": ["fighter"],
     "tags": ["paragon"]
   },
   {
@@ -5190,7 +5496,10 @@
     "name": "Minstrel",
     "filter": "paragon",
     "defaultParams": {
-      "options.role": "healer"
+      "options.role": "healer",
+      "options.forte1": "mana_regen",
+      "options.forte2a": "sev_p",
+      "options.forte2b": "deflect_sev_p"
     },
     "allowedClass": ["bard"],
     "tags": ["paragon"]
@@ -5200,7 +5509,10 @@
     "name": "Sentinel",
     "filter": "paragon",
     "defaultParams": {
-      "options.role": "tank"
+      "options.role": "tank",
+      "options.forte1": "defense_p",
+      "options.forte2a": "sev_p",
+      "options.forte2b": "awareness_p"
     },
     "allowedClass": ["barbarian"],
     "tags": ["paragon"]
@@ -5210,7 +5522,10 @@
     "name": "Songblade",
     "filter": "paragon",
     "defaultParams": {
-      "options.role": "dps"
+      "options.role": "dps",
+      "options.forte1": "power_p",
+      "options.forte2a": "sev_p",
+      "options.forte2b": "deflect_sev_p"
     },
     "allowedClass": ["bard"],
     "tags": ["paragon"]
@@ -5220,15 +5535,45 @@
     "name": "Soulweaver",
     "filter": "paragon",
     "defaultParams": {
-      "options.role": "healer"
+      "options.role": "healer",
+      "options.forte1": "mana_regen",
+      "options.forte2a": "strike_p",
+      "options.forte2b": "awareness_p"
     },
     "allowedClass": ["warlock"],
+    "tags": ["paragon"]
+  },
+  {
+    "id": "paragon-thaumaturge",
+    "name": "Thaumaturge",
+    "filter": "paragon",
+    "defaultParams": {
+      "options.role": "dps",
+      "options.forte1": "power_p",
+      "options.forte2a": "ca_p",
+      "options.forte2b": "crit_avoid_p"
+    },
+    "allowedClass": ["wizard"],
+    "tags": ["paragon"]
+  },
+  {
+    "id": "paragon-vanguard",
+    "name": "Vanguard",
+    "filter": "paragon",
+    "defaultParams": {
+      "options.role": "tank",
+      "options.forte1": "defense_p",
+      "options.forte2a": "acc_p",
+      "options.forte2b": "crit_avoid_p"
+    },
+    "allowedClass": ["fighter"],
     "tags": ["paragon"]
   },
   {
     "id": "parting-blasphemy",
     "name": "Parting Blasphemy",
     "filter": "feat2",
+    "longDescription": "Whenever Curse is removed from a target it deals 85\nmagnitude damage.",
     "allowedClass": ["warlock"],
     "tags": ["exclusive:hellbringer"],
     "bonuses": ["paragon-exclusive"]
@@ -5237,6 +5582,7 @@
     "id": "perfect-balance",
     "name": "Perfect Balance",
     "filter": "feat5",
+    "longDescription": "Encounter powers which generate Radiant Judgement\nnow grant Radiant Shift. Encounter powers which\ngenerate Burning Judgement now grant Burning Shift.\nThese effects may stack up to 4 times.\n\nRadiant Shift Effect: Increases damage dealt by 1%\nBurning Shift Effect: Increases damage dealt by 1%\nDuration: 60s\n\nIf either Radiant Shift or Burning Shift exceed one\nanother by a single stack, both effects will expire\nimmediately. Upon reaching 4 stacks of both Radiant\nShift and Burning Shift both effects will be consumed\ninstantly restoring your divinity to full.",
     "allowedClass": ["cleric"],
     "tags": ["exclusive:arbiter"],
     "bonuses": ["paragon-exclusive"]
@@ -5253,6 +5599,7 @@
     "id": "performer",
     "name": "Performer",
     "filter": "feat5",
+    "longDescription": "Your at-will and encounter powers now have a\nchance to randomly activate an improvised version of\nan encounter power. This improvised version does\nnot trigger or affect the cooldown of the actual\nencounter power.\n\nEvery time you use an improvised power, you gain a\nstack of \"Playing to the Audience.\" When you reach 8\nstacks, the daily \"Encore\" switches to \"Grandstand.\"\nGrandstand doubles the damage or healing of the\ntriggered song. Does not affect finale damage for\nBallad of the Hero or Ballad of the Witch. Using\ngrandstand resets your stacks.",
     "allowedClass": ["bard"],
     "tags": ["exclusive:songblade"],
     "bonuses": ["paragon-exclusive"]
@@ -5268,8 +5615,18 @@
     "id": "piercing-javelin",
     "name": "Piercing Javelin",
     "filter": "feat1",
+    "longDescription": "Grants your at-will powers a 10% chance to grant the\neffect of Piercing Javelin which guarantees that your\nnext Searing Javelin will critically strike.\n\nDuration: 10s",
     "allowedClass": ["cleric"],
     "tags": ["exclusive:arbiter"],
+    "bonuses": ["paragon-exclusive"]
+  },
+  {
+    "id": "plow-the-road",
+    "name": "Plow the Road",
+    "filter": "class_feat",
+    "longDescription": "Shield Slam deals an additional 200 magnitude\ndamage and consumes 10 vengeance. No effect if\nyour Vengeance Gauge is below 10.",
+    "allowedClass": ["fighter"],
+    "tags": ["exclusive:dreadnought"],
     "bonuses": ["paragon-exclusive"]
   },
   {
@@ -5319,6 +5676,7 @@
     "id": "power-of-the-nine-hells",
     "name": "Power of the Nine Hells",
     "filter": "feat1",
+    "longDescription": "Grants your encounter powers without Curse\nConsume or Curse Synergy the ability to summon a\nSoul Puppet.",
     "allowedClass": ["warlock"],
     "tags": ["exclusive:hellbringer"],
     "bonuses": ["paragon-exclusive"]
@@ -5422,6 +5780,15 @@
         "label": "Proc"
       }
     ]
+  },
+  {
+    "id": "prepared-slam",
+    "name": "Prepared Slam",
+    "filter": "feat2",
+    "longDescription": "Tremor gains the effect of pulling nearby enemies\ntowards you.",
+    "allowedClass": ["fighter"],
+    "tags": ["exclusive:dreadnought"],
+    "bonuses": ["paragon-exclusive"]
   },
   {
     "id": "prime-rib-power",
@@ -5717,9 +6084,26 @@
     "id": "redoublement",
     "name": "Redoublement",
     "filter": "feat4",
+    "longDescription": "Allows for the execution of other encounters between\nstrikes of Ad Libitum and Volti Subito. Between strikes\n\nof either power, your Encounter powers deal 10%\nmore damage.",
     "allowedClass": ["bard"],
     "tags": ["exclusive:songblade"],
     "bonuses": ["paragon-exclusive"]
+  },
+  {
+    "id": "relative-haste",
+    "name": "Relative Haste",
+    "filter": "feat1",
+    "allowedClass": ["wizard"],
+    "tags": ["exclusive:thaumaturge"],
+    "bonuses": [
+      {
+        "bonus": "relative-haste-2",
+        "min": 1,
+        "max": 4,
+        "default": 1,
+        "label": "Chilled enemies"
+      }
+    ]
   },
   {
     "id": "rhythm-illuminated",
@@ -5747,6 +6131,15 @@
     "severity": 1350
   },
   {
+    "id": "ricochet",
+    "name": "Ricochet",
+    "filter": "feat2",
+    "longDescription": "Shield Throw now bounces to up to three nearby\nenemies dealing 10% less damage to the second\ntarget, 20% less damage to the third target, and 30%\nless damage to the fourth target. Powers that deal\ndamage to multiple enemies gain a 10% chance\nwhen striking more than one target to allow the use\nof Shield Throw regardless of the power's cooldown\nand without triggering a cooldown. This does not\napply to Shield Throw.",
+    "allowedClass": ["fighter"],
+    "tags": ["exclusive:dreadnought"],
+    "bonuses": ["paragon-exclusive"]
+  },
+  {
     "id": "rime-temper",
     "name": "Celestial Rime Temper",
     "filter": "combat_enchant_defense",
@@ -5756,13 +6149,40 @@
     "gameIds": ["Enchantment_Combat_L_V2_R6_Account"]
   },
   {
+    "id": "rimefire-weaving",
+    "name": "Rimefire Weaving",
+    "filter": "feat5",
+    "enemy_incoming_damage": 0.05,
+    "longDescription": "Having smolder or chill on a target reduces its\nDamage Resistance to your damage by 5%. Having\nRimefire on target increases this to 10%. Rimefire\nbonus does not stack with chill or smolder.",
+    "allowedClass": ["wizard"],
+    "tags": ["exclusive:thaumaturge"],
+    "bonuses": [
+      {
+        "bonus": "rimefire-weaving-2",
+        "min": 0,
+        "max": 1,
+        "default": 1,
+        "label": "Rimefire active"
+      }
+    ]
+  },
+  {
     "id": "risky-investment",
     "name": "Risky Investment",
     "filter": "feat3",
-    "longDescription": "Rough estimation based on 1 stack + encounters being generally 40% of Hellbringer's Damage.",
+    "longDescription": "Soul Investiture now grants you a 20% bonus to\nEncounter damage, +2% for each stack you have.",
     "allowedClass": ["warlock"],
     "tags": ["exclusive:hellbringer"],
     "bonuses": ["risky-investment", "paragon-exclusive"]
+  },
+  {
+    "id": "roiling-hatred",
+    "name": "Roiling Hatred",
+    "filter": "feat5",
+    "longDescription": "Whenever you critically strike, restore 2 vengeance.",
+    "allowedClass": ["fighter"],
+    "tags": ["exclusive:dreadnought"],
+    "bonuses": ["paragon-exclusive"]
   },
   {
     "id": "runic-aura",
@@ -5837,6 +6257,14 @@
     "severity": 880
   },
   {
+    "id": "shatter-strike",
+    "name": "Shatter Strike",
+    "filter": "feat3",
+    "longDescription": "Whenever you deal damage to a frozen target, you\nhave a 20% chance to shatter them. Shattered Foes\nare stunned for 5 seconds and take 300 magnitude\ndamage.\n\nAdditionally, your control powers deal an additional\n200 magnitude damage against control immune\ntargets.",
+    "allowedClass": ["wizard"],
+    "tags": ["exclusive:thaumaturge"]
+  },
+  {
     "id": "shattered-resolve",
     "name": "Celestial Shattered Resolve",
     "filter": "combat_enchant_defense",
@@ -5871,6 +6299,13 @@
     ]
   },
   {
+    "id": "shield-talent",
+    "name": "Shield Talent",
+    "filter": "class_feat",
+    "longDescription": "Increases stamina regeneration.",
+    "allowedClass": ["fighter"]
+  },
+  {
     "id": "slayer-overload",
     "name": "Slayer Overload",
     "filter": "overload",
@@ -5884,9 +6319,18 @@
     "bonuses": ["slayer-overload"]
   },
   {
+    "id": "smoldering-recovery",
+    "name": "Smoldering Recovery",
+    "filter": "feat1",
+    "longDescription": "Whenever your Smolder deals damage to an enemy,\nyou gain 0.5% of your Action Points. With Directed\nFlames you will gain 0.3% of your Action Points.",
+    "allowedClass": ["wizard"],
+    "tags": ["exclusive:thaumaturge"]
+  },
+  {
     "id": "soul-desecration",
     "name": "Soul Desecration",
     "filter": "feat3",
+    "longDescription": "Your Soul Puppet no longer dissipates after 20\nseconds, deals 100% more damage, and you will\nautomatically summon a Soul Puppet if one is not\nactive.",
     "allowedClass": ["warlock"],
     "tags": ["exclusive:hellbringer"],
     "bonuses": ["paragon-exclusive"]
@@ -5904,6 +6348,7 @@
     "id": "soul-spark-recovery",
     "name": "Soul Spark Recovery",
     "filter": "feat5",
+    "longDescription": "Every 6 Soul Sparks spent on Soul Scorch reduces\nyour encounter cooldowns by 1 second.",
     "allowedClass": ["warlock"],
     "tags": ["exclusive:hellbringer"],
     "bonuses": ["paragon-exclusive"]
@@ -7223,6 +7668,15 @@
     "bonuses": ["m32-artifact-offhand-modification-validation"]
   },
   {
+    "id": "striker-s-mark",
+    "name": "Striker's Mark",
+    "filter": "feat4",
+    "longDescription": "Your daily powers deal an additional 400 magnitude\ndamage to targets affected by Commander's Strike or\nother sources of Physical Vulnerability Up. The effect\nof Physical Vulnerability Up is removed from the\ntarget in this case.",
+    "allowedClass": ["fighter"],
+    "tags": ["exclusive:dreadnought"],
+    "bonuses": ["paragon-exclusive"]
+  },
+  {
     "id": "sturdy-crescent-collar",
     "name": "Sturdy Crescent Collar",
     "filter": "sturdy_collar",
@@ -7235,6 +7689,7 @@
     "id": "sudden-veredict",
     "name": "Sudden Veredict",
     "filter": "feat3",
+    "longDescription": "Encounter powers which generate Radiant Judgement\nor Burning Judgement now have a 25% chance to\ninstantly fill the Judgement Gauge.",
     "allowedClass": ["cleric"],
     "tags": ["exclusive:arbiter"],
     "bonuses": ["paragon-exclusive"]
@@ -7261,6 +7716,23 @@
     "insigniaRecipe": ["crescent", "crescent", "regal", "illuminated"],
     "longDescription": "You gain 5000 Forte. Negative effects from Resurrection Sickness are 25% more potent.",
     "bonuses": ["survivalist-s-expertise"]
+  },
+  {
+    "id": "swath-of-destruction",
+    "name": "Swath of Destruction",
+    "filter": "class_feat",
+    "longDescription": "Increases Smolder damage by 10%, and targets\naffected by Smolder take 3% more damage.",
+    "allowedClass": ["wizard"],
+    "tags": ["exclusive:thaumaturge"],
+    "bonuses": [
+      {
+        "bonus": "swath-of-destruction-2",
+        "min": 0,
+        "max": 1,
+        "default": 1,
+        "label": "Smolder active"
+      }
+    ]
   },
   {
     "id": "swift-synergy",
@@ -7301,6 +7773,7 @@
     "id": "tipping-scales",
     "name": "Tipping Scales",
     "filter": "feat2",
+    "longDescription": "Divine glow now generates a full stack of burning\njudgement or divine judgement as long as you have\nat least one charge of either.",
     "allowedClass": ["cleric"],
     "tags": ["exclusive:arbiter"],
     "bonuses": ["paragon-exclusive"]
@@ -7369,6 +7842,15 @@
     "bonuses": ["insignia-shape-unknown"]
   },
   {
+    "id": "trip-attack",
+    "name": "Trip Attack",
+    "filter": "feat1",
+    "longDescription": "Knee Breaker now knocks the target down, its\nmagnitude is enhanced to 1300, and it provides\ncombat advantage. These effects consume 10\nvengeance. No effect if your Vengeance Gauge is\nbelow 10.",
+    "allowedClass": ["fighter"],
+    "tags": ["exclusive:dreadnought"],
+    "bonuses": ["paragon-exclusive"]
+  },
+  {
     "id": "tutor",
     "name": "Tutor",
     "filter": "group_buff",
@@ -7392,6 +7874,21 @@
     "gameIds": ["Collar_Unified_Crescent_R5"]
   },
   {
+    "id": "vigorous-strikes",
+    "name": "Vigorous Strikes",
+    "filter": "class_feat",
+    "longDescription": "Increases your Critical Strike by 5% whenever your\nstamina is full. This effect decreases as stamina\ndecreases.",
+    "dynamicStats": [
+      {
+        "stat": "strike_p",
+        "min": 0,
+        "max": 0.05,
+        "default": 0.05
+      }
+    ],
+    "allowedClass": ["fighter"]
+  },
+  {
     "id": "vip-hp-bonus-self",
     "name": "VIP HP Bonus",
     "filter": "misc",
@@ -7407,6 +7904,7 @@
     "id": "voice-throw",
     "name": "Voice Throw",
     "filter": "feat1",
+    "longDescription": "Whenever you play a song that is not in a quickplay\nslot and a tank is in range, your attacks grant 50% of\nthe threat they generate to that tank.\n\nDuration: 10s",
     "allowedClass": ["bard"],
     "tags": ["exclusive:songblade"],
     "bonuses": ["paragon-exclusive"]
@@ -7415,7 +7913,7 @@
     "id": "warlock-s-all-consuming-curse",
     "name": "All Consuming Curse",
     "filter": "class_feat",
-    "shortDescription": "At-wills apply curse",
+    "longDescription": "At-will powers now apply Curse to enemies hit.",
     "allowedClass": ["warlock"],
     "tags": ["exclusive:hellbringer"],
     "bonuses": ["paragon-exclusive"]
@@ -7424,7 +7922,7 @@
     "id": "warlock-s-curse",
     "name": "Warlock's Curse",
     "filter": "feat2",
-    "longDescription": "Rough estimation based on Powers being generally 50% of Hellbringer's Damage.",
+    "longDescription": "Your powers deal 15% more damage to targets\nafflicted with Curse.",
     "allowedClass": ["warlock"],
     "tags": ["exclusive:hellbringer"],
     "bonuses": ["warlock-s-curse", "paragon-exclusive"]
@@ -7433,6 +7931,7 @@
     "id": "warlock-s-dark-prayers",
     "name": "Dark Prayers",
     "filter": "class_feat",
+    "longDescription": "Whenever a target affected by your Curse dies you\nspawn a Soul Puppet. Whenever your Soul Puppet\nhits a target, generate a Soul Spark.",
     "allowedClass": ["warlock"],
     "tags": ["exclusive:hellbringer"],
     "bonuses": ["paragon-exclusive"]
@@ -7442,6 +7941,7 @@
     "name": "Dust to Dust",
     "filter": "class_feat",
     "outgoing_damage": 0.05,
+    "longDescription": "Your damage dealt is increased by 5%.",
     "allowedClass": ["warlock"],
     "tags": ["exclusive:hellbringer"],
     "bonuses": ["paragon-exclusive"]
@@ -7450,6 +7950,7 @@
     "id": "warlock-s-no-pity-no-mercy",
     "name": "No Pity No Mercy",
     "filter": "class_feat",
+    "longDescription": "Hellish Rebuke no longer deals damage over time.\nInstead, initial hits and retaliate hits have their\nmagnitude increased by 15. 3 Soul Sparks are now\ngenerated on each initial hit.",
     "allowedClass": ["warlock"],
     "tags": ["exclusive:hellbringer"],
     "bonuses": ["paragon-exclusive"]
@@ -7460,6 +7961,8 @@
     "filter": "class_feat",
     "strike_p": 0.025,
     "movement": 0.1,
+    "deflect_p": 0.025,
+    "longDescription": "Increase your Movement Speed by 10%. Adds 2.5%\nDeflect and Critical Strike.",
     "allowedClass": ["warlock"]
   },
   {
@@ -7500,6 +8003,15 @@
     "gameIds": ["Collar_Wayfaring_Crescent_R5"]
   },
   {
+    "id": "weight-of-vengeance",
+    "name": "Weight of Vengeance",
+    "filter": "feat1",
+    "longDescription": "Grants Anvil of Doom the effect of dealing an\nadditional 480 magnitude damage, recovering from\ncooldown 4s faster, and consuming 15 vengeance.\nNo effect if your Vengeance Gauge is below 15.",
+    "allowedClass": ["fighter"],
+    "tags": ["exclusive:dreadnought"],
+    "bonuses": ["paragon-exclusive"]
+  },
+  {
     "id": "wild-storm-severity",
     "name": "Wild Storm Elixir",
     "filter": "consumable_elixir",
@@ -7519,6 +8031,7 @@
     "id": "wrathful-souls",
     "name": "Wrathful Souls",
     "filter": "feat5",
+    "longDescription": "Soul Sparks now increase your damage by 1.0%\neach.",
     "allowedClass": ["warlock"],
     "tags": ["exclusive:hellbringer"],
     "bonuses": ["paragon-exclusive"]
