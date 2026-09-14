@@ -9,7 +9,7 @@ import { bonusIdOf } from "../lib/bonus-attachment";
 import { replacementIdOf, replacementValuesOf } from "../lib/item-replacement";
 import { resolvedOptions } from "../lib/param-options";
 import { parseRowSlotId, rowSlot } from "../lib/item-picker-list";
-import { copyCounts } from "../lib/copy-counts";
+import { copyCounts, copyCountsExcluding } from "../lib/copy-counts";
 import {
   isPreferredSlot,
   preferredVariantIds,
@@ -316,15 +316,40 @@ export interface SlotCandidate {
 }
 
 /** Display name per published class value, so a reason can read "Wizard only" instead of
- * repeating the raw published id. Built once per candidate list rather than per candidate. */
+ * repeating the raw published id. Memoized per `Db`, so it survives a build swap. */
+const classNamesCache = new WeakMap<Db, Map<string, string>>();
+
 function classNames(db: Db): Map<string, string> {
+  const memoized = classNamesCache.get(db);
+  if (memoized) return memoized;
   const names = new Map<string, string>();
   for (const item of db.items) {
     const value = item.publishes?.class;
     if (typeof value === "string" && !names.has(value))
       names.set(value, item.name);
   }
+  classNamesCache.set(db, names);
   return names;
+}
+
+/** Per-build inputs shared by every slot in one candidate pass, so the copy tally and
+ *  published class are derived once. */
+export interface SlotCandidateContext {
+  /** The class the build publishes, or undefined when it has picked none. */
+  cls: string | undefined;
+  /** Build-wide copy counts; a slot's own pick is discounted per call. */
+  counts: Map<string, number>;
+}
+
+/** Builds that shared context for a caller resolving more than one slot. */
+export function slotCandidateContext(
+  db: Db,
+  build: Build,
+): SlotCandidateContext {
+  return {
+    cls: publishedValue(db, build, "class") as string | undefined,
+    counts: copyCounts(db, build),
+  };
 }
 
 /**
@@ -341,13 +366,21 @@ export function slotCandidates(
   db: Db,
   slotId: string,
   build: Build,
+  context?: SlotCandidateContext,
 ): SlotCandidate[] {
-  // Published by the equipped class item rather than stored on the build -- `options.class` is
-  // an ordinary item_picker now, so `context.class` no longer exists.
-  const cls = publishedValue(db, build, "class") as string | undefined;
   const slot = db.slotFor(slotId);
+  const cls = context
+    ? context.cls
+    : (publishedValue(db, build, "class") as string | undefined);
   const counts =
-    slot?.type === "item_picker" ? copyCounts(db, build, slotId) : null;
+    slot?.type === "item_picker"
+      ? copyCountsExcluding(
+          db,
+          build,
+          slotId,
+          context ? context.counts : copyCounts(db, build),
+        )
+      : null;
   const equipped = build.choices?.[slotId];
   let names: Map<string, string> | null = null;
   let preferredHalves: ReadonlySet<string> | null = null;
@@ -394,10 +427,11 @@ export function slotCandidateList(
   db: Db,
   slotId: string,
   build: Build,
+  context?: SlotCandidateContext,
 ): { items: Item[]; reasons: Map<string, string> } {
   const items: Item[] = [];
   const reasons = new Map<string, string>();
-  for (const { item, hidden } of slotCandidates(db, slotId, build)) {
+  for (const { item, hidden } of slotCandidates(db, slotId, build, context)) {
     items.push(item);
     if (hidden) reasons.set(item.id, hidden);
   }
