@@ -924,16 +924,29 @@ export interface EvalContext {
   /** Friendly names for bonus IDs, so conditions can display "Gladiator's Guile"
    *  instead of "m31-gladiators-guile" in their labels. */
   bonusNames: Map<string, string>;
+  /** Same for item ids, so an `equipped: { item }` leaf reads as the item's name. */
+  itemNames: Map<string, string>;
   /** Every `build_parameter`'s current value, keyed by its (context-relative) `path` -- what
    *  the `param` leaf reads. Built once by bonus.ts's `collect()`. */
   params: Map<string, string | number | boolean>;
 }
+
+/** What a build would have to hold for a condition leaf to pass: something tagged `tag`, the
+ *  item `itemId`, or an occurrence of `bonusId`. Structured so the UI can ask the catalog which
+ *  slots could supply it (lib/bonus-slots.ts) without parsing the leaf's label back apart. */
+export type SupplyNeed =
+  | { kind: "tag"; tag: string }
+  | { kind: "item"; itemId: string }
+  | { kind: "bonus"; bonusId: string };
 
 export interface ConditionLeafResult {
   ok: boolean;
   label: string;
   detail?: string;
   children?: ConditionLeafResult[];
+  /** Set by the `equipped` and `bonusOccurrences` leaves, which count something a slot can
+   *  hold. Absent for leaves about the context (duration, toggles, a param). */
+  need?: SupplyNeed;
 }
 
 export interface ConditionExplain {
@@ -990,6 +1003,12 @@ export interface EvaluatedBonus {
   bonusId: string;
   /** One entry per contributing slot, in build order. */
   sources: BonusSource[];
+  /** An item on the build that carries this bonus without contributing an occurrence (its
+   *  occurrence config sits at 0), so the inspector can say which control to flip and where.
+   *  Null whenever there is a real source, or when the bonus is only reachable through a
+   *  carrier at 0 points. A bonus is on the build when it has a source or a carrier
+   *  (lib/bonus-inspector.ts's `isCarried`). */
+  carrier: { itemId: string; name: string; slotId: string } | null;
   slotId: string;
   /** A bonus is active if at least one of its grants is active and it comes from a real source. */
   active: boolean;

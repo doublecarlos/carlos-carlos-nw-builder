@@ -120,20 +120,20 @@ function variantLadderFor(grant: ResolvedGrant | null) {
       (branches[index]?.leaves ?? [])
         .map((leaf) => leaf.label)
         .filter(Boolean)
-        .join(" + ") || "always",
+        .join(" + ") || "always on",
     stats: statList(variant.stats),
     active: index === activeIndex,
     unmet: branches[index]?.unmet ?? [],
   }));
 }
 
-function grantLabel(grant: ResolvedGrant, index: number) {
+function grantLabel(grant: ResolvedGrant) {
   if (grant.raw.name) return grant.raw.name;
   const fromConditions = (grant.gate?.leaves ?? [])
     .map((leaf) => leaf.label)
     .filter(Boolean)
     .join(" + ");
-  return fromConditions || `Part ${index + 1}`;
+  return fromConditions || "always on";
 }
 
 // An inactive grant's near-miss preview: raw stats plus each dynamicStats config's default,
@@ -158,7 +158,7 @@ function grantRows(entry: EvaluatedBonus) {
     const preview = grant.active ? null : previewStatsFor(grant.raw);
     return {
       key: index,
-      label: grantLabel(grant, index),
+      label: grantLabel(grant),
       active: grant.active,
       unmet: grant.gate?.unmet ?? [],
       problem: grant.problem,
@@ -182,19 +182,6 @@ function grantRows(entry: EvaluatedBonus) {
 
 export type ItemCardRow = ReturnType<typeof buildItemCardRow>;
 
-// The bonus-level gate is only populated while the bonus is inactive, and a lone grant's own
-// `when` is never drawn as a labeled block. Folding both is what lets a one-grant bonus state
-// its conditions either way; deduped, since the inactive case reports the same gate twice.
-function conditionsFor(entry: EvaluatedBonus) {
-  const grants = entry.grants ?? [];
-  const leaves = [
-    ...(entry.gate?.leaves ?? []),
-    ...(grants.length === 1 ? (grants[0].gate?.leaves ?? []) : []),
-  ];
-  const labels = leaves.map((leaf) => leaf.label).filter(Boolean);
-  return [...new Set(labels)].join(" + ");
-}
-
 function buildItemCardRow(
   entry: EvaluatedBonus,
   item: Item,
@@ -215,7 +202,6 @@ function buildItemCardRow(
     dotClass: STATE_DOT[state],
     muted: state !== "active",
     name: entry.bonus?.name ?? null,
-    conditions: conditionsFor(entry),
     zeroOccurrence: zeroOccurrenceNote(
       entry.id,
       entry.active,

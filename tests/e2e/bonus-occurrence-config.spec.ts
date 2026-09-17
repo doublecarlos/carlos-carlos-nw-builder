@@ -109,9 +109,11 @@ test.describe("BonusOccurrenceConfig rows", () => {
     await expect(row).toContainText("Power");
   });
 
-  // A bonus reachable only through this item's own 0-valued config shows in the hover
-  // card and sidebar -- inactive, explained by its own input's current value -- rather than
-  // being indistinguishable from an item that doesn't carry the bonus at all.
+  // A bonus reachable only through this item's own 0-valued config shows in the hover card
+  // and sidebar, inactive and explained by its own input's current value, rather than being
+  // indistinguishable from an item that doesn't carry the bonus at all. The sidebar lists
+  // what the build carries: the ring is equipped, so its bonus is on the build with its
+  // count at 0, unlike a bonus only reachable through a pick at 0 points.
   test("a 0-valued stepper's bonus still shows in the item's hover card and the sidebar's Bonuses list", async ({
     page,
   }) => {
@@ -138,10 +140,9 @@ test.describe("BonusOccurrenceConfig rows", () => {
     await sidebar
       .getByPlaceholder("Filter by bonus, id or item…")
       .fill("Test Stepper Bonus");
-    await expect(sidebar.getByText("Test Stepper Bonus")).toBeVisible();
-    await expect(sidebar.getByText("Nothing matches the filter.")).toHaveCount(
-      0,
-    );
+    const entry = sidebar.getByTestId(`bonus-entry-${STEPPER_BONUS_ID}`);
+    await expect(entry).toBeVisible();
+    await expect(entry).toHaveAttribute("data-state", "inactive");
   });
 
   test("checking the checkbox activates its bonus without touching the stepper's count", async ({

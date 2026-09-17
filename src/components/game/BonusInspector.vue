@@ -1,11 +1,16 @@
 <script setup lang="ts">
 import { ref, reactive, computed } from "vue";
 import { bonusTitle } from "../../lib/format";
-import { statList } from "../../lib/item-card-rows";
+import { statList, excluderFor } from "../../lib/item-card-rows";
+import {
+  collapseSources,
+  inspectorBonuses,
+  isNearMiss,
+  occurrenceStateText,
+} from "../../lib/bonus-inspector";
+import { occurrenceRowsForItem } from "../../composables/useItemBonusOccurrences";
 import { matchesQuery } from "../../lib/text-filter";
-import { isHiddenBonus } from "../../engine/bonus";
-import { hasSuppliers } from "../../lib/bonus-slots";
-import { excluderFor } from "../../lib/item-card-rows";
+import { supplyNeedFor } from "../../lib/bonus-slots";
 import * as engine from "../../stores/resolved";
 import * as goTo from "../../stores/goTo";
 import * as slotFilter from "../../stores/slotFilter";
@@ -13,7 +18,7 @@ import BasePanel from "../ui/BasePanel.vue";
 import PanelHead from "../ui/PanelHead.vue";
 import BaseBadge from "../ui/BaseBadge.vue";
 import BaseCheckbox from "../ui/BaseCheckbox.vue";
-import BaseInput from "../ui/BaseInput.vue";
+import ClearableInput from "../ui/ClearableInput.vue";
 import BaseLink from "../ui/BaseLink.vue";
 import LinkList from "../ui/LinkList.vue";
 import type { LinkListItem } from "../ui/LinkList.vue";
@@ -25,6 +30,7 @@ import type {
   EvaluatedBonus,
   ConditionLeafResult,
   StatValues,
+  SupplyNeed,
 } from "../../types";
 
 /**
@@ -62,10 +68,47 @@ function choseLabel(chose: string | null) {
   return chose;
 }
 
-/** Narrows the build editor's slot list to the rows that could supply this bonus. The list is
- *  in the next column over, already on screen, so there is nothing to navigate to. */
-function locate(entry: Entry) {
-  slotFilter.showSuppliersOf(entry.id, entry.title);
+/** Narrows the build editor's slot list to the rows that could supply what one unmet
+ *  condition counts (an item, a tag, an occurrence of another bonus). The list is in the next
+ *  column over, already on screen, so there is nothing to navigate to. */
+function locateNeed(need: SupplyNeed, label: string) {
+  slotFilter.showSuppliersOf(need, label);
+}
+
+/** An unmet leaf as rendered: its text, and the need behind it when the catalog has a slot
+ *  that could supply it. */
+interface UnmetLine {
+  ok: boolean;
+  label: string;
+  detail: string;
+  need: SupplyNeed | null;
+  children: UnmetLine[];
+}
+
+function unmetLine(leaf: ConditionLeafResult): UnmetLine {
+  return {
+    ok: leaf.ok,
+    label: leaf.label,
+    detail: leaf.detail ?? "",
+    need: supplyNeedFor(db.value, leaf),
+    children: (leaf.children ?? []).map(unmetLine),
+  };
+}
+
+/** Why a carried bonus has no occurrence: the carrier's own control for it sits at 0. Reads
+ *  the same rows the carrier's picker renders, so the label is the control's own; a carrier
+ *  with no such row (a fixed config) falls back to plain wording. */
+function zeroOccurrenceFor(entry: EvaluatedBonus): ZeroOccurrence | null {
+  const carrier = entry.carrier;
+  if (!carrier) return null;
+  const row = occurrenceRowsForItem(db.value.get(carrier.itemId)).find(
+    (candidate) => candidate.bonusId === entry.id,
+  );
+  return {
+    label: row?.label ?? "count",
+    state: row ? occurrenceStateText(row) : "0",
+    carrier,
+  };
 }
 
 /** Parks the build editor's cursor on a row this bonus comes from. */
@@ -83,6 +126,12 @@ function toggle(id: string) {
   open[id] = !open[id];
 }
 
+interface ZeroOccurrence {
+  label: string;
+  state: string;
+  carrier: NonNullable<EvaluatedBonus["carrier"]>;
+}
+
 interface Entry {
   raw: EvaluatedBonus;
   id: string;
@@ -97,11 +146,10 @@ interface Entry {
   chose: string;
   payload: StatValues | null;
   perStack: StatValues | null;
-  unmet: ConditionLeafResult[];
+  unmet: UnmetLine[];
+  /** The carrier's occurrence control at 0, the reason an entry with a met gate is inactive. */
+  zeroOccurrence: ZeroOccurrence | null;
   nearMiss: boolean;
-  /** Whether anything in the catalog could supply this, so the "where?" action leads
-   *  somewhere. Always false for an already-active bonus: the answer is "where it is". */
-  canLocate: boolean;
   state: "excluded" | "active" | "inactive";
   dotClass: string;
   muted: boolean;
@@ -115,12 +163,7 @@ const STATE_DOT: Record<string, string> = {
   excluded: "bg-danger",
 };
 
-// Problem-only bonuses (a bonus that exists purely to report a build error/warning) are
-// already surfaced inline on their slot and in the errors summary -- listing them here too,
-// especially while inactive, reads as a bonus that never grants anything.
-const visibleBonuses = computed(() =>
-  result.value.bonuses.filter((entry) => !isHiddenBonus(entry.bonus)),
-);
+const visibleBonuses = computed(() => inspectorBonuses(result.value.bonuses));
 
 const entries = computed<Entry[]>(() => {
   const titleCounts = new Map<string, number>();
@@ -143,19 +186,21 @@ const entries = computed<Entry[]>(() => {
       title,
       qualifier:
         (titleCounts.get(title) ?? 0) > 1 ? conditionSummary(entry) : "",
-      sources: (entry.sources ?? []).map((source) => ({
-        key: source.slotId,
-        label: source.name,
-      })),
+      // A carrier contributing nothing is still where the bonus comes from.
+      sources: collapseSources(
+        entry.sources.length || !entry.carrier
+          ? entry.sources
+          : [{ name: entry.carrier.name, slotId: entry.carrier.slotId }],
+      ),
       slot: db.value.slotFor(entry.slotId)?.label ?? entry.slotId,
       excludedBy: excluderFor(entry, engine.bonusById.value),
       stacks: entry.stacks ?? 1,
       chose: choseLabel(entry.chose),
       payload: entry.active ? (entry.appliedStats ?? null) : entry.previewStats,
       perStack: entry.stacks > 1 ? entry.stats : null,
-      unmet,
-      nearMiss: !entry.active && !entry.excluded && unmet.length === 1,
-      canLocate: !entry.active && hasSuppliers(db.value, entry.id),
+      unmet: unmet.map(unmetLine),
+      zeroOccurrence: zeroOccurrenceFor(entry),
+      nearMiss: isNearMiss(entry),
       state,
       dotClass: STATE_DOT[state],
       muted: state !== "active",
@@ -204,14 +249,15 @@ const counts = computed(() => {
 <template>
   <BasePanel>
     <div class="sticky top-0 z-sticky bg-surface pb-0.5">
-      <BaseInput
+      <ClearableInput
         v-model="query"
-        class="w-full"
-        type="search"
         placeholder="Filter by bonus, id or item…"
+        testid="bonus-filter"
       />
       <div class="flex items-center gap-3 py-2 text-muted">
-        <span>{{ counts.active }}/{{ counts.total }} active bonuses</span>
+        <span data-testid="bonus-inspector-count"
+          >{{ counts.active }}/{{ counts.total }} active bonuses</span
+        >
         <BaseCheckbox v-model="nearMissOnly" inline class="ml-auto"
           >near misses only ({{ counts.nearMiss }})</BaseCheckbox
         >
@@ -225,7 +271,13 @@ const counts = computed(() => {
       </PanelHead>
 
       <div class="divide-y divide-line/50">
-        <div v-for="entry in group.list" :key="entry.id" class="py-1.5">
+        <div
+          v-for="entry in group.list"
+          :key="entry.id"
+          class="py-1.5"
+          :data-testid="`bonus-entry-${entry.id}`"
+          :data-state="entry.state"
+        >
           <div class="flex w-full items-center gap-1.5">
             <button
               type="button"
@@ -262,30 +314,29 @@ const counts = computed(() => {
                 >{{ entry.chose }}</span
               >
             </button>
-
-            <!-- Sibling of the expand button rather than inside it: nesting a button in a button
-             is invalid, and these are two different questions -- "what is failing" and
-             "where would I get it". -->
-            <IconButton
-              v-if="entry.canLocate"
-              class="flex-none"
-              title="Show the slots that could supply this"
-              :data-testid="`bonus-locate-${entry.id}`"
-              @click="locate(entry)"
-            >
-              <Crosshair />
-            </IconButton>
           </div>
 
           <!-- The payoff: for an inactive bonus, exactly which conditions failed and what
-             they would need. Rendered verbatim from the engine. -->
+             they would need. Rendered verbatim from the engine, plus a crosshair wherever
+             the catalog has a slot that could supply the thing counted. Outside the expand
+             button above (nesting a button in a button is invalid), and two different
+             questions anyway: "what is failing" and "where would I get it". -->
           <ul v-if="entry.unmet.length" class="mt-1 list-none pl-3.5">
             <li v-for="(leaf, i) in entry.unmet" :key="i" class="text-muted">
               <span class="text-warn">{{ leaf.label }}</span>
               <span v-if="leaf.detail" class="ml-1 text-muted"
                 >- {{ leaf.detail }}</span
               >
-              <ul v-if="leaf.children?.length" class="list-none pl-3">
+              <IconButton
+                v-if="leaf.need"
+                class="ml-1 align-middle"
+                title="Show the slots that could supply this"
+                :data-testid="`bonus-need-locate-${entry.id}-${i}`"
+                @click="locateNeed(leaf.need, leaf.label)"
+              >
+                <Crosshair />
+              </IconButton>
+              <ul v-if="leaf.children.length" class="list-none pl-3">
                 <li
                   v-for="(child, j) in leaf.children"
                   :key="j"
@@ -295,10 +346,35 @@ const counts = computed(() => {
                   <span v-if="child.detail" class="ml-1 text-muted"
                     >- {{ child.detail }}</span
                   >
+                  <IconButton
+                    v-if="child.need"
+                    class="ml-1 align-middle"
+                    title="Show the slots that could supply this"
+                    :data-testid="`bonus-need-locate-${entry.id}-${i}-${j}`"
+                    @click="locateNeed(child.need, child.label)"
+                  >
+                    <Crosshair />
+                  </IconButton>
                 </li>
               </ul>
             </li>
           </ul>
+
+          <p
+            v-if="entry.zeroOccurrence"
+            class="mt-1 pl-3.5 text-muted"
+            data-testid="bonus-zero-occurrence"
+          >
+            <span class="text-warn"
+              >{{ entry.zeroOccurrence.label }}:
+              {{ entry.zeroOccurrence.state }}</span
+            >
+            on
+            <BaseLink
+              @click="jumpToSlot(entry.zeroOccurrence.carrier.slotId)"
+              >{{ entry.zeroOccurrence.carrier.name }}</BaseLink
+            >
+          </p>
 
           <p
             v-if="entry.excludedBy"
@@ -332,7 +408,7 @@ const counts = computed(() => {
                 >{{ entry.slot }}</BaseLink
               >
             </p>
-            <p class="mt-1 block text-muted">
+            <p class="mt-1 block text-muted" data-testid="bonus-from">
               from
               <LinkList
                 v-if="entry.sources.length"

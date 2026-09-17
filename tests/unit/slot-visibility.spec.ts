@@ -40,6 +40,7 @@ function ctx(overrides: Partial<EvalContext> = {}): EvalContext {
     tags: new Map(),
     bonusOccurrences: new Map(),
     bonusNames: new Map(),
+    itemNames: new Map(),
     params: new Map(),
     ...overrides,
   };

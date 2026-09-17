@@ -20,7 +20,7 @@ const tab = details.tab;
       >
       <TabButton :active="tab === 'bonuses'" @click="details.setTab('bonuses')">
         Bonuses
-        <span class="opacity-75 tabular-nums"
+        <span class="opacity-75 tabular-nums" data-testid="bonus-tab-count"
           >{{ engine.bonusCounts.value.active }}/{{
             engine.bonusCounts.value.total
           }}</span

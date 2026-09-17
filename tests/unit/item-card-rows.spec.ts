@@ -99,30 +99,9 @@ describe("itemCardRows", () => {
     ]);
   });
 
-  it("joins non-empty gate leaf labels for the conditions line", () => {
-    const [row] = itemCardRows(
-      item(),
-      [
-        bonus({
-          gate: {
-            ok: true,
-            leaves: [
-              { ok: true, label: "Fighter" },
-              { ok: true, label: "" },
-              { ok: true, label: "Tier 2" },
-            ],
-            unmet: [],
-          },
-        }),
-      ],
-      [],
-    );
-    expect(row.conditions).toBe("Fighter + Tier 2");
-  });
-
-  // A bonus's own gate is only populated while it is inactive, and a lone grant is never drawn
-  // as a labeled block, so without folding the two a one-grant bonus says nothing when on.
-  it("states an active single grant's own conditions on the row", () => {
+  // A grant's conditions are its label: the card has no separate conditions line, so a met
+  // gate is stated through the grant header and a failing one through its "needs" lines.
+  it("labels a grant by its own non-empty condition labels", () => {
     const [row] = itemCardRows(
       item(),
       [
@@ -134,7 +113,11 @@ describe("itemCardRows", () => {
               {
                 gate: {
                   ok: true,
-                  leaves: [{ ok: true, label: "party enabled" }],
+                  leaves: [
+                    { ok: true, label: "Fighter" },
+                    { ok: true, label: "" },
+                    { ok: true, label: "Tier 2" },
+                  ],
                   unmet: [],
                 },
               },
@@ -144,10 +127,19 @@ describe("itemCardRows", () => {
       ],
       [],
     );
-    expect(row.conditions).toBe("party enabled");
+    expect(row.grants[0].label).toBe("Fighter + Tier 2");
   });
 
-  it("does not repeat a gate the inactive bonus already reports", () => {
+  it("labels an unconditional grant as always on", () => {
+    const [row] = itemCardRows(
+      item(),
+      [bonus({ active: true, grants: [grantEval({ stats: { power: 10 } })] })],
+      [],
+    );
+    expect(row.grants[0].label).toBe("always on");
+  });
+
+  it("carries a failing grant's unmet leaves for its needs lines", () => {
     const gate = {
       ok: false,
       leaves: [{ ok: false, label: "party enabled" }],
@@ -166,12 +158,12 @@ describe("itemCardRows", () => {
       ],
       [],
     );
-    expect(row.conditions).toBe("party enabled");
+    expect(row.grants[0].unmet.map((leaf) => leaf.label)).toEqual([
+      "party enabled",
+    ]);
   });
 
-  // Several grants each get their own labeled block, which already states their conditions;
-  // folding them into the row's one line as well would say it twice.
-  it("leaves a multi-grant row's conditions to the bonus gate alone", () => {
+  it("labels each of several grants by its own conditions", () => {
     const [row] = itemCardRows(
       item(),
       [
@@ -203,7 +195,6 @@ describe("itemCardRows", () => {
       ],
       [],
     );
-    expect(row.conditions).toBe("");
     expect(row.grants.map((g) => g.label)).toEqual([
       "2 occurrences",
       "combat enabled",

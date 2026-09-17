@@ -3,7 +3,7 @@
 import { computed, markRaw } from "vue";
 import * as catalog from "../data/catalog";
 import * as engine from "../engine/engine";
-import { isHiddenBonus } from "../engine/bonus";
+import { inspectorBonuses, isNearMiss } from "../lib/bonus-inspector";
 import * as builds from "./builds";
 import * as layers from "./layers";
 import * as compare from "./compare";
@@ -87,22 +87,15 @@ export const bonusById = computed<Map<string, EvaluatedBonus>>(() =>
     : new Map(),
 );
 
-/** Summarized here so the tab can show it without mounting the inspector. Matches
- * BonusInspector.vue's own `visibleBonuses` filter, so the tab badge and the panel it opens
+/** Summarized here so the tab can show it without mounting the inspector. Reads the same
+ * `inspectorBonuses` list BonusInspector.vue renders, so the tab badge and the panel it opens
  * never disagree on the total. */
 export const bonusCounts = computed(() => {
   if (!resolved.value.ok) return { total: 0, active: 0, nearMiss: 0 };
-  const all = resolved.value.result.bonuses.filter(
-    (bonus) => !isHiddenBonus(bonus.bonus),
-  );
+  const all = inspectorBonuses(resolved.value.result.bonuses);
   return {
     total: all.length,
     active: all.filter((bonus) => bonus.active).length,
-    nearMiss: all.filter(
-      (bonus) =>
-        !bonus.active &&
-        !bonus.excluded &&
-        (bonus.gate?.unmet?.length ?? 0) === 1,
-    ).length,
+    nearMiss: all.filter(isNearMiss).length,
   };
 });

@@ -43,8 +43,13 @@ const bump = (
 /** A `BonusCandidate` (one item's contribution of one bonus) plus where/when it was
  * instanced -- collect()'s per-slot bookkeeping, not part of the candidate itself. */
 interface Candidate extends BonusCandidate {
+  itemId: string;
   slotId: string;
   order: number;
+  /** Whether the item carrying this attachment is itself on the build: always for a real
+   *  candidate, and for a zero one only when its count is the attachment's own (a typed 0)
+   *  rather than the item's (0 points spent, inline repetition at 0). */
+  carried: boolean;
 }
 
 // --- pass 1: collect ---
@@ -93,13 +98,20 @@ function collectAttachments(
           ? repetitions
           : occurrenceCountFor(attachment, itemInputs);
     bump(bonusOccurrences, bonusId, count);
+    const candidate = {
+      bonus,
+      bonusId,
+      itemId: item.id,
+      source: item.name,
+      slotId,
+      order,
+      carried: repetitions > 0,
+    };
     if (count === 0) {
-      zeroCandidates.push({ bonus, bonusId, source: item.name, slotId, order });
+      zeroCandidates.push(candidate);
       continue;
     }
-    for (let i = 0; i < count; i++) {
-      candidates.push({ bonus, bonusId, source: item.name, slotId, order });
-    }
+    for (let i = 0; i < count; i++) candidates.push(candidate);
   }
 }
 
@@ -332,6 +344,10 @@ export function collect(
   for (const [id, bonus] of db.bonusById) {
     if (bonus.name) bonusNames.set(id, bonus.name);
   }
+  const itemNames = new Map<string, string>();
+  for (const item of db.items) {
+    if (item.name) itemNames.set(item.id, item.name);
+  }
 
   // The three dedicated leaves read their own `EvalContext` field rather than `params`, so a
   // published value has to reach both -- `class` is the one that actually travels this way
@@ -351,6 +367,7 @@ export function collect(
     tags,
     bonusOccurrences,
     bonusNames,
+    itemNames,
     params,
   };
 
@@ -592,6 +609,9 @@ interface Group {
    *  slotId/order/bonusId fallback wherever `sources[0]` would otherwise be read. Absent for
    *  any group with at least one real source. */
   anchor?: Candidate;
+  /** Whether an item carrying this bonus is on the build: implied by a real source, and for a
+   *  zero-sources group true once any of its zero anchors is carried. */
+  carried: boolean;
 }
 
 /** Every dynamic-stat value this bonus's grants/variants declare, resolved against `slotId`
@@ -638,19 +658,32 @@ export function resolve(
     const id = candidate.bonus.id;
     const group = groups.get(id);
     if (group) group.sources.push(candidate);
-    else groups.set(id, { id, bonus: candidate.bonus, sources: [candidate] });
+    else
+      groups.set(id, {
+        id,
+        bonus: candidate.bonus,
+        sources: [candidate],
+        carried: true,
+      });
   }
   // Seed a sources-less group for each zero-only attachment collectAttachments() flagged --
   // see its doc comment for why -- but only where nothing real already reached this bonus; a
-  // group with at least one real source is untouched.
+  // group with at least one real source is untouched. Among several zero anchors, a carried
+  // one wins the instancing slot: it is the row the bonus is actually on, so that is where
+  // its dynamic values are read from and where the inspector's slot link should land.
   for (const anchor of zeroCandidates) {
-    if (!groups.has(anchor.bonus.id)) {
+    const group = groups.get(anchor.bonus.id);
+    if (!group) {
       groups.set(anchor.bonus.id, {
         id: anchor.bonus.id,
         bonus: anchor.bonus,
         sources: [],
         anchor,
+        carried: anchor.carried,
       });
+    } else if (!group.sources.length && anchor.carried && !group.carried) {
+      group.anchor = anchor;
+      group.carried = true;
     }
   }
 
@@ -685,6 +718,14 @@ export function resolve(
       bonus: group.bonus,
       bonusId: anchor.bonusId,
       sources: sources.map((s) => ({ name: s.source, slotId: s.slotId })),
+      carrier:
+        !sources.length && group.carried
+          ? {
+              itemId: anchor.itemId,
+              name: anchor.source,
+              slotId: anchor.slotId,
+            }
+          : null,
       slotId: anchor.slotId, // instancing slot, used for stat attribution
       active: result.active,
       gate: result.gate,

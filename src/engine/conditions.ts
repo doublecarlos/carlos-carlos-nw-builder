@@ -144,11 +144,14 @@ const LEAVES: Record<
     const displayName =
       (target && ctx.bonusNames?.get(target)) ?? target ?? "this bonus";
     const wanted = s.exactly ?? s.atLeast ?? 1;
-    return {
+    const result: ConditionLeafResult = {
       ok: inRange(have, countRange(s)),
       label: `${wanted} ${plural(wanted, "occurrence")} of ${displayName}`,
       detail: `you have ${have}`,
     };
+    // No target outside a bonus (a slot's `visibleWhen`): nothing a slot could supply.
+    if (target) result.need = { kind: "bonus", bonusId: target };
+    return result;
   },
 
   /** Reads any build_parameter by `key` (a slot's `path`) from `ctx.params`. The three
@@ -193,17 +196,28 @@ const LEAVES: Record<
   },
 
   // `spec.item`, when used instead of `tag`, is an item id (bonus.ts's `collect()` keys
-  // `ctx.equipped` by id) -- the label below shows the raw id rather than a display name
-  // since this module has no `Db` to resolve one.
+  // `ctx.equipped` by id), shown through `ctx.itemNames` since this module has no `Db` of its
+  // own to resolve a display name; an id the map does not know is shown as is.
   equipped(spec, ctx) {
     const s = spec as RangeSpec & { tag?: string; item?: string };
-    const have =
-      s.tag != null ? countOf(ctx.tags, s.tag) : countOf(ctx.equipped, s.item);
     const range = countRange(s) as RangeSpec;
+    const wanted = range.exactly ?? range.atLeast ?? 1;
+    if (s.tag != null) {
+      const have = countOf(ctx.tags, s.tag);
+      return {
+        ok: inRange(have, range),
+        label: `${wanted}× ${plural(wanted, "item")} tagged "${s.tag}"`,
+        detail: `you have ${have}`,
+        need: { kind: "tag", tag: s.tag },
+      };
+    }
+    const item = s.item ?? "";
+    const have = countOf(ctx.equipped, item);
     return {
       ok: inRange(have, range),
-      label: `${range.exactly ?? range.atLeast ?? 1}× ${s.tag ?? s.item}`,
+      label: `${wanted}× ${ctx.itemNames?.get(item) ?? item}`,
       detail: `you have ${have}`,
+      need: { kind: "item", itemId: item },
     };
   },
 };
