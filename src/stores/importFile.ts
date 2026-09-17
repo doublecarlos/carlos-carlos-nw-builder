@@ -14,6 +14,7 @@ import * as layers from "./layers";
 import * as folders from "./folders";
 import * as trash from "./trash";
 import * as storage from "../storage/storage";
+import { unpackNotice, type UnpackedCatalog } from "./buildCatalog";
 import { showNotice } from "./notice";
 import {
   buildPlan,
@@ -176,8 +177,11 @@ export function applyImport(plan: ImportPlan, decisions: ImportDecisions) {
   // Imported builds stand on their own, so the landing screen's placeholder makes way first.
   if (resolved.builds.length) builds.discardPlaceholder();
 
-  for (const { build, replacing } of resolved.builds)
-    builds.upsertImported(build, replacing);
+  const unpacked: UnpackedCatalog[] = [];
+  for (const { build, replacing } of resolved.builds) {
+    const landed = builds.upsertImported(build, replacing);
+    if (landed) unpacked.push(landed);
+  }
   for (const { layer, replacing } of resolved.layers)
     layers.upsertImported(layer, replacing);
 
@@ -196,13 +200,17 @@ export function applyImport(plan: ImportPlan, decisions: ImportDecisions) {
   if (lastBuild) builds.selectImported(lastBuild);
   else if (lastLayer) layers.selectImported(lastLayer);
 
-  showNotice(importNotice(plan, resolved));
+  showNotice(importNotice(plan, resolved, unpacked));
 }
 
 const countPhrase = (n: number, noun: string) =>
   `${n} ${noun}${n === 1 ? "" : "s"}`;
 
-function importNotice(plan: ImportPlan, resolved: ResolvedImport) {
+function importNotice(
+  plan: ImportPlan,
+  resolved: ResolvedImport,
+  unpacked: UnpackedCatalog[],
+) {
   const { builds: newBuilds, layers: newLayers } = resolved;
   const single =
     newBuilds.length + newLayers.length === 1
@@ -226,16 +234,8 @@ function importNotice(plan: ImportPlan, resolved: ResolvedImport) {
     );
 
   // One notice per import, not per build.
-  const overlays = layers.enabledOverlays.value;
-  for (const { build } of newBuilds) {
-    const count = builds.overlayOverlapCount(build, overlays);
-    if (count > 0) {
-      parts.push(
-        `${count} custom entr${count === 1 ? "y" : "ies"} came with this build and override your layers for those items.`,
-      );
-      break;
-    }
-  }
+  const landed = unpackNotice(unpacked);
+  if (landed) parts.push(landed);
 
   return parts.join(". ");
 }

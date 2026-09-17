@@ -14,35 +14,25 @@ type Resolution =
   | { ok: false; message: string; stack: string };
 
 /**
- * Catalog layers, lowest priority first. The shipped data is the base (inside
- * `catalog.makeDb`); everything here is folded over it.
+ * Every enabled layer's overlay, lowest priority first. The shipped data is the base (inside
+ * `catalog.makeDb`) and these fold over it, so an overlay earlier in the list can be
+ * overridden by a later one. The store hands them over already reversed, which is what makes
+ * the topmost layer fold last and win.
  *
- * Enabled layers come first (already reversed by the store, so the topmost layer folds
- * last), then the active build's per-build catalog. Order matters: an overlay earlier in
- * this list can be overridden by a later one, and the build catalog beats every layer.
- *
- * A build swap re-evaluates this into a fresh array, almost always with the same overlay
- * objects. Returning the previous array when nothing changed keeps `db` and its
- * `WeakMap<Db, ...>` memos alive across the swap.
+ * Read-only: the array is the layers store's own, and a caller writing to it would change
+ * what the engine folds without the store ever hearing about it.
  */
-const sameOverlays = (
-  a: (CatalogOverlay | null | undefined)[],
-  b: (CatalogOverlay | null | undefined)[],
-) => a.length === b.length && a.every((overlay, index) => overlay === b[index]);
-
-let lastOverlays: (CatalogOverlay | null | undefined)[] = [];
-
-export const overlays = computed(() => {
-  const result = [...layers.enabledOverlays.value];
-  if (builds.build.value?.catalog) result.push(builds.build.value.catalog);
-  if (sameOverlays(lastOverlays, result)) return lastOverlays;
-  lastOverlays = result;
-  return result;
-});
+export const overlays = computed<readonly CatalogOverlay[]>(
+  () => layers.enabledOverlays.value,
+);
 
 /**
- * Rebuilt only when the overlay list changes. Indexing is well under a
- * millisecond, so there is no reason to be cleverer than this.
+ * Rebuilt only when the overlay list changes. Indexing is well under a millisecond, so there
+ * is no reason to be cleverer than this.
+ *
+ * `markRaw` keeps Vue out of the result: a composed catalog is a deep tree of items, bonuses,
+ * slots and their nested bonus/condition objects that nothing ever writes to, so proxying
+ * every node of it would cost more than the resolve that reads it.
  */
 export const db = computed(() => markRaw(catalog.makeDb(overlays.value)));
 

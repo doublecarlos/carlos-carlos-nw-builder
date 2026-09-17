@@ -91,9 +91,26 @@ export const base = (): {
   slots: NW_SLOTS.slots ?? [],
 });
 
+/** How `compose` orders items, bonuses and presets by id.
+ *
+ * `export` collates, which is what the generated data files and the in-app export drawer are
+ * written with: their byte order is committed, so it has to stay put. `runtime` compares
+ * codepoints, which is cheaper, and nothing at runtime reads the id order: every consumer
+ * re-sorts by its own key (`byItemLevel` in db.ts, `name` in param-options.ts). */
+export type IdOrder = "export" | "runtime";
+
+const ID_COMPARATORS: Record<
+  IdOrder,
+  (a: { id: string }, b: { id: string }) => number
+> = {
+  export: (a, b) => a.id.localeCompare(b.id),
+  runtime: (a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0),
+};
+
 /**
  * Fold overlays over the base, later layers winning. Items, bonuses and presets come out
  * sorted by id so the export is stable and diffs against the generated files stay readable.
+ * The default `order` is the collating one every export path depends on.
  *
  * Slots deliberately do not sort: a slot list *is* its render order, hand-authored in
  * slots.json, and sorting it by id would reshuffle every section on load. They come out in
@@ -101,7 +118,10 @@ export const base = (): {
  * that, since re-`set`ting an existing key keeps its original position. Appending globally is
  * the same as appending within a section, because every consumer groups by `slot.section`.
  */
-export function compose(overlays: (CatalogOverlay | null | undefined)[] = []) {
+export function compose(
+  overlays: readonly (CatalogOverlay | null | undefined)[] = [],
+  { order = "export" }: { order?: IdOrder } = {},
+) {
   const {
     items: baseItems,
     bonuses: baseBonuses,
@@ -136,19 +156,23 @@ export function compose(overlays: (CatalogOverlay | null | undefined)[] = []) {
     }
   }
 
+  const byId = ID_COMPARATORS[order];
   return {
-    items: [...items.values()].sort((a, b) => a.id.localeCompare(b.id)),
-    bonuses: [...bonuses.values()].sort((a, b) => a.id.localeCompare(b.id)),
-    sectionPresets: [...sectionPresets.values()].sort((a, b) =>
-      a.id.localeCompare(b.id),
-    ),
+    items: [...items.values()].sort(byId),
+    bonuses: [...bonuses.values()].sort(byId),
+    sectionPresets: [...sectionPresets.values()].sort(byId),
     slots: [...slots.values()],
   };
 }
 
-/** A db the engine accepts, built from the composed catalog. */
-export function makeDb(overlays: (CatalogOverlay | null | undefined)[] = []) {
-  const { items, bonuses, sectionPresets, slots } = compose(overlays);
+/** A db the engine accepts, built from the composed catalog. Composed in codepoint order:
+ *  nothing downstream reads the id order, and this runs on every overlay change. */
+export function makeDb(
+  overlays: readonly (CatalogOverlay | null | undefined)[] = [],
+) {
+  const { items, bonuses, sectionPresets, slots } = compose(overlays, {
+    order: "runtime",
+  });
   return db.build(items, bonuses, NW_SCHEMA, {
     sections: NW_SLOTS.sections,
     slots,

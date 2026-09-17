@@ -22,6 +22,11 @@ import type { BuildPlacement } from "./folders";
 import { buildOrder } from "./meta";
 import { flagStorageFailed, showNotice, showUndoNotice } from "./notice";
 import { db as engineDb } from "./resolved";
+import {
+  unpackCatalog,
+  unpackNotice,
+  type UnpackedCatalog,
+} from "./buildCatalog";
 import type { Build, BuildNavEntry, BuildOption } from "../types";
 
 const SAVE_DEBOUNCE_MS = 250;
@@ -356,34 +361,11 @@ export function setChoiceFor(
   markDirty(id);
 }
 
-/** Count of custom entries in `build.catalog` that overlap with ids enabled layers define. */
-export function overlayOverlapCount(
-  build: Build,
-  overlays: import("../types").CatalogOverlay[],
-): number {
-  if (!build.catalog) return 0;
-  const ids = new Set<string>();
-  for (const overlay of overlays) {
-    if (!overlay) continue;
-    for (const key of Object.keys(overlay.items ?? {})) ids.add(key);
-    for (const key of Object.keys(overlay.bonuses ?? {})) ids.add(key);
-  }
-  let count = 0;
-  for (const key of Object.keys(build.catalog.items ?? {})) {
-    if (ids.has(key)) count++;
-  }
-  for (const key of Object.keys(build.catalog.bonuses ?? {})) {
-    if (ids.has(key)) count++;
-  }
-  return count;
-}
-
-export function importBuilds(
-  newBuilds: Build[],
-  stale: boolean,
-  overlays?: import("../types").CatalogOverlay[],
-) {
+export function importBuilds(newBuilds: Build[], stale: boolean) {
+  const unpacked: UnpackedCatalog[] = [];
   for (const b of newBuilds) {
+    const result = unpackCatalog(b);
+    if (result) unpacked.push(result);
     _builds.value.set(b.id, b);
     folders.appendBuild(b.id);
     markDirty(b.id);
@@ -401,29 +383,27 @@ export function importBuilds(
     parts.push(
       "made against an older item catalog; some items may no longer resolve",
     );
-  if (overlays && overlays.length > 0) {
-    for (const b of newBuilds) {
-      const cnt = overlayOverlapCount(b, overlays);
-      if (cnt > 0) {
-        parts.push(
-          `${cnt} custom entr${cnt === 1 ? "y" : "ies"} came with this build and override your layers for those items.`,
-        );
-        break; // one notice per import, not per build
-      }
-    }
-  }
+  // One notice per import, not per build.
+  const landed = unpackNotice(unpacked);
+  if (landed) parts.push(landed);
   showNotice(parts.join(". "));
 }
 
 /** Writes one imported build into the pool. `replacing` takes over the row (and folder) of the
  *  build whose id it carries, which goes to the trash; anything else is appended.
- *  `importFile.ts` decides which of the two an entry is. */
-export function upsertImported(build: Build, replacing: boolean) {
+ *  `importFile.ts` decides which of the two an entry is. Returns where the build's embedded
+ *  catalog landed, for the caller's own notice. */
+export function upsertImported(
+  build: Build,
+  replacing: boolean,
+): UnpackedCatalog | null {
+  const unpacked = unpackCatalog(build);
   const existing = _builds.value.get(build.id);
   if (replacing && existing) trash._add("build", existing);
   else if (!existing) folders.appendBuild(build.id);
   _builds.value.set(build.id, build);
   markDirty(build.id);
+  return unpacked;
 }
 
 /** Drops the placeholder build the landing screen keeps alive (see `build`, and the watcher
@@ -466,6 +446,18 @@ export function _init(buildsMap: Map<string, Build>, order: string[]) {
 
 export function _setLoading(value: boolean) {
   _loading.value = value;
+}
+
+/** Lifts the embedded catalog off every hydrated build that still carries one, into the same
+ *  layer an import would produce. Stored builds predating that unpacking keep resolving the
+ *  way they did, with their custom entries now on show. Runs after `_setLoading(false)`, so
+ *  the stripped build is written back and the migration happens once. */
+export function _unpackStoredCatalogs() {
+  for (const b of _builds.value.values()) {
+    if (!b.catalog) continue;
+    unpackCatalog(b);
+    markDirty(b.id);
+  }
 }
 
 // --- persistence (incremental - only dirty ids are written) -----------------------------

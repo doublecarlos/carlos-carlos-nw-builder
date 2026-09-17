@@ -1,6 +1,6 @@
-// Layers: named catalog overlays that can be toggled on/off independently. The engine
-// folds every enabled layer's overlay (plus the active build's catalog) on top of the
-// base catalog. The list reads highest-priority first: the topmost layer wins.
+// Layers: named catalog overlays that can be toggled on/off independently. The engine folds
+// every enabled layer's overlay on top of the base catalog. The list reads highest-priority
+// first: the topmost layer wins.
 //
 // Creating, duplicating, deleting, moving, renaming and enabling layers each record one step
 // on the nav undo stack (`navHistory.ts`); overlay edits stay on the layer's own content
@@ -19,6 +19,7 @@ import * as selection from "./selection";
 import { layerOrder, persistMeta } from "./meta";
 import { flagStorageFailed, showNotice, showUndoNotice } from "./notice";
 import * as catalog from "../data/catalog";
+import { deepEqual } from "../lib/deep-equal";
 import type { Layer, CatalogOverlay, SectionPreset } from "../types";
 
 const SAVE_DEBOUNCE_MS = 250;
@@ -392,6 +393,29 @@ export function upsertImported(layer: Layer, replacing: boolean) {
 /** Selects an imported layer, once the whole file has been written. */
 export function selectImported(id: string) {
   if (_layers.value.has(id)) selection.selectLayer(id);
+}
+
+/**
+ * Hosts an incoming build's embedded catalog (`buildCatalog.ts`) in a layer. A layer whose
+ * overlay already matches takes it, left exactly where the user put it; otherwise a new
+ * top-priority one is created, the position the embedded overlay folded at, so the build
+ * resolves the way its author saw it.
+ *
+ * Matching on content is what keeps one sender's five builds, or the same file imported
+ * twice, down to a single layer. Records nothing on the nav stack: this is part of an import,
+ * not a step the user took. `persistMeta` is handed the selection, since the order write
+ * would otherwise forget it.
+ */
+export function adoptOverlay(
+  name: string,
+  overlay: CatalogOverlay,
+): { layer: Layer; reused: boolean } {
+  const match = layers.value.find((layer) => deepEqual(layer.overlay, overlay));
+  if (match) return { layer: match, reused: true };
+  const layer: Layer = { ...storage.defaultLayer(name), overlay };
+  addLayer(layer, 0);
+  persistMeta(selection.selection.value);
+  return { layer, reused: false };
 }
 
 // --- bootstrap --------------------------------------------------------------------------

@@ -333,10 +333,9 @@ export function normalize(
   const context = isPlain(raw.context) ? raw.context : {};
   const compare = isPlain(raw.compare) ? raw.compare : {};
 
-  // Custom gear stored with the build. Nothing writes this yet -- the editor edits the
-  // workspace layer -- but preserving it here means a build carrying custom items survives
-  // a save/reload/share round trip, so turning the feature on is a UI change and not a
-  // migration. `App.vue` already folds `build.catalog` in as a catalog layer.
+  // The catalog a download embeds (see `Build.catalog`). Coerced like the rest of the build so
+  // the stores get a valid overlay to unpack into a layer; a build that has been through that
+  // carries none.
   const perBuild: CatalogOverlay | null = isPlain(raw.catalog)
     ? migrateOverlayListSlots(catalog.normalizeOverlay(raw.catalog))
     : null;

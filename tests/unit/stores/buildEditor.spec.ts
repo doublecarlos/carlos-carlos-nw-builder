@@ -229,15 +229,13 @@ describe("buildEditor.setOccurrenceInput", () => {
   });
 });
 
-// A custom ring carried by each build's own `catalog` overlay (storage.ts's `Build.catalog`),
-// same mechanism bonus-occurrence-config.spec.ts's e2e fixtures use -- both test builds carry
-// an identical copy so the item resolves regardless of which one ends up active (db.ts only
-// folds in the *active* build's own catalog, see resolved.ts's `overlays`).
+// A custom ring living in a layer, which is where catalog content the shipped data has not
+// got belongs. Both test builds pick it, and the layer resolves it whichever one is active.
 describe("buildEditor.applyOccurrenceFromCompare", () => {
   const RING_ID = "test-occurrence-ring";
   const STACK_BONUS_ID = "test-occurrence-stack-bonus";
 
-  const catalog = {
+  const ringOverlay = {
     items: {
       [RING_ID]: {
         id: RING_ID,
@@ -257,6 +255,14 @@ describe("buildEditor.applyOccurrenceFromCompare", () => {
     slots: {},
   };
 
+  /** Fresh stores with the ring's layer already in place. */
+  async function storesWithRing() {
+    const stores = await freshStores();
+    const layer = stores.layers.createLayer("Rings");
+    stores.layers.updateOverlay(layer.id, ringOverlay);
+    return stores;
+  }
+
   function buildWithRing(
     name: string,
     occurrenceInputs: Record<string, Record<string, number>> = {},
@@ -265,12 +271,11 @@ describe("buildEditor.applyOccurrenceFromCompare", () => {
       ...storage.defaultBuild(name),
       choices: { "gear.ring1": RING_ID },
       occurrenceInputs,
-      catalog,
     };
   }
 
   it("copies the compare build's counts onto the active build's item", async () => {
-    const { builds, buildEditor, compare } = await freshStores();
+    const { builds, buildEditor, compare } = await storesWithRing();
     const active = buildWithRing("Active", {
       [RING_ID]: { [STACK_BONUS_ID]: 2 },
     });
@@ -289,7 +294,7 @@ describe("buildEditor.applyOccurrenceFromCompare", () => {
   });
 
   it("falls back to the attachment's own default for a bonus the compare build never touched", async () => {
-    const { builds, buildEditor, compare } = await freshStores();
+    const { builds, buildEditor, compare } = await storesWithRing();
     const active = buildWithRing("Active", {
       [RING_ID]: { [STACK_BONUS_ID]: 2 },
     });
@@ -306,7 +311,7 @@ describe("buildEditor.applyOccurrenceFromCompare", () => {
   });
 
   it("does nothing without a compare build selected", async () => {
-    const { builds, buildEditor } = await freshStores();
+    const { builds, buildEditor } = await storesWithRing();
     const active = buildWithRing("Active", {
       [RING_ID]: { [STACK_BONUS_ID]: 2 },
     });

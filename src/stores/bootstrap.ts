@@ -1,5 +1,6 @@
-// One-shot hydrate: loads everything from IDB, fills the stores, applies the URL route,
-// then drops the loading flag. Called once by main.ts before the app mounts.
+// One-shot hydrate: loads everything from IDB, fills the stores, applies the URL route, drops
+// the loading flag, then unpacks any catalog still stored on a build. Called once by main.ts
+// before the app mounts.
 import * as storage from "../storage/storage";
 import * as router from "../lib/router";
 import * as builds from "./builds";
@@ -82,4 +83,8 @@ export async function hydrate() {
   builds._setLoading(false);
   layers._setLoading(false);
   history._setLoading(false);
+
+  // Last of all, with both stores live and persisting: a build stored with its catalog still
+  // embedded hands it to a layer here, and the stripped build and new layer both get written.
+  builds._unpackStoredCatalogs();
 }
