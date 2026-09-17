@@ -18,6 +18,7 @@ function ctx(
     tags: new Map(),
     bonusOccurrences: new Map(),
     bonusNames: new Map(),
+    itemNames: new Map(),
     params: new Map(Object.entries(params)),
     ...overrides,
   };
@@ -243,7 +244,7 @@ describe("conditions.ts equipped/bonusOccurrences leaves support exactly", () =>
   it("equipped: exactly appears in the explain label instead of a stale atLeast default", () => {
     const c = ctx({}, { tags: new Map([["ring_of_x", 1]]) });
     const result = explain({ equipped: { tag: "ring_of_x", exactly: 2 } }, c);
-    expect(result.unmet[0].label).toBe("2× ring_of_x");
+    expect(result.unmet[0].label).toBe('2× items tagged "ring_of_x"');
   });
 
   it("bonusOccurrences: exactly matches only the exact count", () => {
@@ -364,6 +365,21 @@ describe("conditions.ts compound operators explain themselves in one line", () =
     ]);
   });
 
+  it("not: an item's leaf inside reads by the item's display name when the context knows it", () => {
+    const c = ctx(
+      {},
+      {
+        equipped: new Map([["mystic-aura-self", 1]]),
+        itemNames: new Map([["mystic-aura-self", "Mystic Aura"]]),
+      },
+    );
+    const result = explain(
+      { not: { equipped: { item: "mystic-aura-self" } } },
+      c,
+    );
+    expect(result.leaves[0].label).toBe("not 1× Mystic Aura");
+  });
+
   it("not: an ANDed group is negated as a whole, parenthesised", () => {
     const c = ctx({}, { toggles: { party: true }, enemies: 5 });
     const result = explain({ not: { toggle: "party", enemies: 3 } }, c);
@@ -377,7 +393,9 @@ describe("conditions.ts compound operators explain themselves in one line", () =
       c,
     );
     expect(result.ok).toBe(false);
-    expect(result.unmet[0].label).toBe("party enabled or 1× seal");
+    expect(result.unmet[0].label).toBe(
+      'party enabled or 1× item tagged "seal"',
+    );
   });
 
   it("any: an alternative with several conditions reads as one group, not as more alternatives", () => {
@@ -442,5 +460,74 @@ describe("conditions.ts compound operators explain themselves in one line", () =
     expect(result.leaves[0].label).toBe(
       "(party enabled + enemies ≥ 3) or x enabled",
     );
+  });
+});
+
+// The `equipped` leaf says what kind of thing it counts, and an item by the name a user
+// would recognize; the raw id only when the context has no name for it.
+describe("conditions.ts equipped leaf labels", () => {
+  it("a tag counts items tagged with it, singular at one", () => {
+    const c = ctx({}, { tags: new Map() });
+    expect(
+      explain({ equipped: { tag: "gem:amethyst" } }, c).unmet[0].label,
+    ).toBe('1× item tagged "gem:amethyst"');
+    expect(
+      explain({ equipped: { tag: "gem:amethyst", atLeast: 3 } }, c).unmet[0]
+        .label,
+    ).toBe('3× items tagged "gem:amethyst"');
+  });
+
+  it("an item is shown by its display name", () => {
+    const c = ctx(
+      {},
+      { itemNames: new Map([["enemy-type-boss", "Enemy type: Boss"]]) },
+    );
+    const result = explain({ equipped: { item: "enemy-type-boss" } }, c);
+    expect(result.unmet[0].label).toBe("1× Enemy type: Boss");
+  });
+
+  it("an item the context has no name for falls back to its id", () => {
+    const result = explain({ equipped: { item: "enemy-type-boss" } }, ctx({}));
+    expect(result.unmet[0].label).toBe("1× enemy-type-boss");
+  });
+});
+
+// A leaf that counts something a slot can hold says what, in a shape the UI can hand to
+// lib/bonus-slots.ts; a leaf about the context carries nothing.
+describe("conditions.ts leaves name what would supply them", () => {
+  it("equipped by tag", () => {
+    const result = explain({ equipped: { tag: "gem:amethyst" } }, ctx({}));
+    expect(result.unmet[0].need).toEqual({ kind: "tag", tag: "gem:amethyst" });
+  });
+
+  it("equipped by item", () => {
+    const result = explain({ equipped: { item: "runic-aura" } }, ctx({}));
+    expect(result.unmet[0].need).toEqual({
+      kind: "item",
+      itemId: "runic-aura",
+    });
+  });
+
+  it("bonusOccurrences, naming the target bonus", () => {
+    const result = explain({ bonusOccurrences: { bonus: "b" } }, ctx({}));
+    expect(result.unmet[0].need).toEqual({ kind: "bonus", bonusId: "b" });
+  });
+
+  it("bonusOccurrences of the bonus itself, through the context's self", () => {
+    const result = explain({ bonusOccurrences: {} }, ctx({}, { self: "own" }));
+    expect(result.unmet[0].need).toEqual({ kind: "bonus", bonusId: "own" });
+  });
+
+  it("bonusOccurrences outside any bonus names nothing", () => {
+    const result = explain({ bonusOccurrences: {} }, ctx({}));
+    expect(result.unmet[0].need).toBeUndefined();
+  });
+
+  it("a context leaf names nothing", () => {
+    const result = explain({ toggle: "party", duration: 30 }, ctx({}));
+    expect(result.unmet.map((leaf) => leaf.need)).toEqual([
+      undefined,
+      undefined,
+    ]);
   });
 });

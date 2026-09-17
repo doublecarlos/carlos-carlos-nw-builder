@@ -1,16 +1,19 @@
-// End-to-end coverage for the item card's one-line condition summaries: they have to
-// explain compound conditions, not just name the operator. Mystic Aura (Group) is gated on
-// `party AND NOT equipped(mystic-aura-self)`, which used to read "party enabled + not".
+// End-to-end coverage for the item card's one-line condition text: it has to explain a
+// compound condition, not just name the operator. Mystic Aura (Group) is gated on
+// `party AND NOT equipped(mystic-aura-self)`.
 import { test, expect, type Page } from "@playwright/test";
 import { openBuilder, slotRow, chooseItem, addListRows } from "./support/app";
 import { shippedItemName } from "./support/shippedData";
+
+/** The item the `not` gate excludes, read the way the label shows it: by name. */
+const SELF_AURA = shippedItemName("mystic-aura-self");
 
 const GROUP_SLOT = "group.group#1";
 const MOUNT_SLOT = "mounts.mountEquip";
 
 /** Equips the group aura and the self aura the group aura's `not` gate excludes, then hovers
- *  the group row. Both summaries only have a gate to describe while the bonus is inactive,
- *  which is exactly what equipping the self aura makes it. */
+ *  the group row. The card only lists what a gate needs while the bonus is inactive, which is
+ *  exactly what equipping the self aura makes it. */
 async function openBlockedGroupAuraCard(page: Page) {
   await openBuilder(page);
   // Group is an item_picker_list: a fresh build has no rows until one is added.
@@ -28,22 +31,12 @@ async function openBlockedGroupAuraCard(page: Page) {
   return page.getByTestId("item-card"); // the floating hover card
 }
 
-test("the Conditions line names what the `not` negates, not just the operator", async ({
-  page,
-}) => {
-  const card = await openBlockedGroupAuraCard(page);
-
-  await expect(card.getByTestId("item-card-bonus-conditions")).toHaveText(
-    "Conditions: party enabled + not 1× mystic-aura-self",
-  );
-});
-
-test("the unmet `needs ...` list reads the same way as the Conditions line", async ({
+test("the unmet `needs ...` line names what the `not` negates, not just the operator", async ({
   page,
 }) => {
   const card = await openBlockedGroupAuraCard(page);
 
   const unmet = card.getByTestId("item-card-bonus-unmet");
   await expect(unmet).toHaveCount(1);
-  await expect(unmet).toContainText("needs not 1× mystic-aura-self");
+  await expect(unmet).toContainText(`needs not 1× ${SELF_AURA}`);
 });

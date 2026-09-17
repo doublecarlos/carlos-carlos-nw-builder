@@ -73,6 +73,7 @@ import type {
   Slot,
   SlotSection,
   SectionPreset,
+  SupplyNeed,
 } from "../types";
 
 const root = useTemplateRef("root");
@@ -142,7 +143,8 @@ const { canUndo, canRedo, undoLabel, redoLabel, undo, redo } =
 const modKey = isMac ? "Cmd" : "Ctrl";
 
 // The filter lives in a store because the Bonuses tab, in the other column, is a second author
-// for it -- clicking a near miss narrows this list to the slots that could supply that bonus.
+// for it: clicking a near miss narrows this list to the slots that could supply that bonus, or
+// whatever one of its conditions is short of.
 const filterText = slotFilter.text;
 const filterStat = slotFilter.stat;
 const filterActive = slotFilter.isActive;
@@ -160,12 +162,12 @@ const statFilterOptions = [
   ...statPickerOptions,
 ];
 
-/** Slots that could supply the bonus being filtered on, or null when none is. Off the
- *  catalog, memoised per db+bonus -- see lib/bonus-slots.ts on why this can afford to ask
- *  about candidates when the stat filter below cannot. */
-const bonusSupplierSlots = computed(() =>
-  slotFilter.bonusId.value
-    ? slotsSupplying(db.value, slotFilter.bonusId.value)
+/** Slots that could supply the need being filtered on, or null when none is. Off the
+ *  catalog, memoized per db; see lib/bonus-slots.ts on why this can afford to ask about
+ *  candidates when the stat filter below cannot. */
+const supplierSlots = computed(() =>
+  slotFilter.need.value
+    ? slotsSupplying(db.value, slotFilter.need.value)
     : null,
 );
 
@@ -199,10 +201,10 @@ function slotMatchesFilters(section: SlotSection, slotDef: Slot): boolean {
   // could this come from", so it must survive the text query rather than widen it. A list's
   // rows are indexed under the container (lib/bonus-slots.ts), not under each row.
   if (
-    bonusSupplierSlots.value &&
-    !bonusSupplierSlots.value.has(slotDef.id) &&
+    supplierSlots.value &&
+    !supplierSlots.value.has(slotDef.id) &&
     !(slotDef.type === "item_picker" && slotDef.list
-      ? bonusSupplierSlots.value.has(slotDef.list)
+      ? supplierSlots.value.has(slotDef.list)
       : false)
   )
     return false;
@@ -693,6 +695,12 @@ function onCardGoToSlot(slotId: string) {
   goTo.requestJump({ slotId });
 }
 
+/** Same dismissal: the filter rewrites the list under the card, likely dropping its own row. */
+function onCardLocate(need: SupplyNeed, label: string) {
+  closeCard();
+  slotFilter.showSuppliersOf(need, label);
+}
+
 /** Names the destination off the same resolution `ensureTargetLayer` commits to, so the two
  *  cannot drift. Unnamed when there is no layer yet: it gets its name only once created. */
 const editLabel = computed(() => {
@@ -938,20 +946,21 @@ watch(
           @click="slotFilter.clear()"
           ><FilterX />clear filters</BaseButton
         >
-        <!-- The bonus filter has no control of its own here -- it is set from the Bonuses
-             tab -- so it needs something on screen saying it is on and how to drop it. -->
+        <!-- The need filter has no control of its own here (it is set from the Bonuses tab
+             and the hover card), so it needs something on screen saying it is on and how to
+             drop it. -->
         <BaseBadge
-          v-if="slotFilter.bonusId.value"
+          v-if="slotFilter.need.value"
           variant="near"
-          data-testid="slot-filter-bonus"
+          data-testid="slot-filter-need"
         >
-          could supply {{ slotFilter.bonusLabel.value }}
+          could supply {{ slotFilter.label.value }}
           <button
             type="button"
             class="ml-1 cursor-pointer font-semibold"
-            aria-label="Clear the bonus filter"
-            data-testid="slot-filter-bonus-clear"
-            @click="slotFilter.clearBonus()"
+            aria-label="Clear the supply filter"
+            data-testid="slot-filter-need-clear"
+            @click="slotFilter.clearNeed()"
           >
             ✕
           </button>
@@ -1137,6 +1146,7 @@ watch(
             :bonus-by-id="bonusById"
             @edit="onCardEdit"
             @go-to-slot="onCardGoToSlot"
+            @locate="onCardLocate"
             @open-stable="openStableFromCard"
             @mouseenter="onCardEnter"
             @mouseleave="onCardLeave"

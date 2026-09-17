@@ -21,6 +21,8 @@ import {
 import { descriptionParagraphs } from "../../lib/description";
 import { itemCardRows } from "../../lib/item-card-rows";
 import type { ItemCardRow } from "../../lib/item-card-rows";
+import { occurrenceStateText } from "../../lib/bonus-inspector";
+import { supplyNeedFor } from "../../lib/bonus-slots";
 import {
   PREFERRED_MARK,
   itemDisplay,
@@ -30,9 +32,14 @@ import {
 } from "../../engine/insignia";
 import { scaledStat } from "../../engine/scaling";
 import type { OccurrenceRow } from "../../composables/useItemBonusOccurrences";
-import type { DynamicStatConfig } from "../../types";
-import type { Item, Db, EvaluatedBonus } from "../../types";
-import { SquarePen, Table, TriangleAlert } from "@lucide/vue";
+import type {
+  DynamicStatConfig,
+  Item,
+  Db,
+  EvaluatedBonus,
+  SupplyNeed,
+} from "../../types";
+import { Crosshair, SquarePen, Table, TriangleAlert } from "@lucide/vue";
 import BaseBadge from "../ui/BaseBadge.vue";
 import BaseCard from "../ui/BaseCard.vue";
 import BaseCardHeader from "../ui/BaseCardHeader.vue";
@@ -51,7 +58,8 @@ const props = withDefaults(
     /** Resolved bonus entries this item takes part in, from `result.bonuses`. */
     bonuses?: EvaluatedBonus[];
     slotLabel?: string;
-    /** Only for resolving `item.bonuses` ids to their bonus names in `notes` below. */
+    /** The catalog, for what the card cannot read off the item alone: its replacement, its
+     *  effective copy cap, its stable reach, and which unmet conditions a slot could supply. */
     db?: Db | null;
     /** `item`'s own BonusOccurrenceConfig rows (useItemBonusOccurrences.ts) -- same data
      *  ItemPickerRow.vue's checkbox/stepper inputs read, resolved by the caller rather than
@@ -94,6 +102,8 @@ const emit = defineEmits<{
   edit: [];
   "open-stable": [];
   "go-to-slot": [slotId: string];
+  /** Asks the caller to narrow its slot list to what could supply an unmet condition. */
+  locate: [need: SupplyNeed, label: string];
 }>();
 
 /** What this item would be swapped for, when the card has a catalog to ask. */
@@ -170,7 +180,7 @@ function dynamicStatNote(config: DynamicStatConfig): string {
 /** Non-stat lines shown above a flat grant's rows. */
 function grantNotes(
   row: { stacks: number },
-  grant: ItemCardRow["grants"][number],
+  grant: Pick<ItemCardRow["grants"][number], "active" | "eachStack">,
 ): string[] {
   const notes: string[] = [];
   if (row.stacks > 1 && grant.active) {
@@ -210,6 +220,14 @@ const rows = computed(() =>
           label: part.name,
         }))
       : null,
+    // No catalog (the layer editor's preview card) means no "where would I get this" action.
+    grants: row.grants.map((grant) => ({
+      ...grant,
+      unmet: grant.unmet.map((leaf) => ({
+        leaf,
+        need: props.db ? supplyNeedFor(props.db, leaf) : null,
+      })),
+    })),
   })),
 );
 </script>
@@ -285,16 +303,9 @@ const rows = computed(() =>
               :class="row.dotClass"
             ></span>
             <span class="min-w-0 flex-1" :class="row.muted && 'text-muted'">{{
-              row.name || row.conditions || "always"
+              row.name || "always"
             }}</span>
             <BaseBadge v-if="row.stacks > 1">×{{ row.stacks }}</BaseBadge>
-          </div>
-          <div
-            v-if="row.name && row.conditions"
-            class="pl-3 leading-snug text-muted"
-            data-testid="item-card-bonus-conditions"
-          >
-            Conditions: {{ row.conditions }}
           </div>
           <div
             v-if="row.zeroOccurrence"
@@ -302,11 +313,7 @@ const rows = computed(() =>
             data-testid="item-card-bonus-zero-occurrence"
           >
             {{ row.zeroOccurrence.label }}:
-            {{
-              row.zeroOccurrence.kind === "checkbox"
-                ? "off on this item"
-                : "0 on this item"
-            }}
+            {{ occurrenceStateText(row.zeroOccurrence) }} on this item
           </div>
           <div
             v-if="row.secondary && row.firstSource"
@@ -344,15 +351,38 @@ const rows = computed(() =>
                 "
               >
                 <div
-                  v-if="row.grants.length > 1"
+                  v-if="g.unmet.length <= 0"
                   class="flex items-center gap-1.5"
                   :class="!g.active && 'text-muted'"
                 >
                   <span
+                    v-if="row.grants.length > 1"
                     class="size-1.5 flex-none rounded-full"
                     :class="g.active ? 'bg-ok' : 'bg-muted opacity-50'"
                   ></span>
-                  <span class="min-w-0 flex-1">{{ g.label }}</span>
+                  <span class="min-w-0 flex items-center flex-1">{{
+                    g.label
+                  }}</span>
+                </div>
+                <div
+                  v-for="({ leaf, need }, i) in g.unmet"
+                  :key="i"
+                  class="text-warn flex items-center gap-2"
+                  data-testid="item-card-bonus-unmet"
+                >
+                  <span class="flex-1">
+                    needs {{ leaf.label
+                    }}<span v-if="leaf.detail"> - {{ leaf.detail }}</span>
+                  </span>
+                  <IconButton
+                    v-if="need"
+                    class="ml-1 align-middle text-warn"
+                    title="Show the slots that could supply this"
+                    data-testid="item-card-need-locate"
+                    @click="emit('locate', need, leaf.label)"
+                  >
+                    <Crosshair />
+                  </IconButton>
                 </div>
                 <div v-if="g.problem" class="text-warn">
                   {{ g.problem.message }}
@@ -398,15 +428,6 @@ const rows = computed(() =>
                   :paragraphs="g.descriptions"
                   data-testid="item-card-grant-description"
                 />
-                <div
-                  v-for="(leaf, i) in g.unmet"
-                  :key="i"
-                  class="text-warn"
-                  data-testid="item-card-bonus-unmet"
-                >
-                  needs {{ leaf.label
-                  }}<span v-if="leaf.detail"> - {{ leaf.detail }}</span>
-                </div>
               </div>
             </div>
           </template>

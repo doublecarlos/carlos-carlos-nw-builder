@@ -202,6 +202,75 @@ describe("what the engine collects", () => {
   });
 });
 
+// Whether a carrier is on the build is a different question from whether it contributes an
+// occurrence: the inspector lists a bonus whose carrier sits at count 0 (switchable on) but
+// not one only reachable through a pick at 0 points. `carrier` is what tells the two apart
+// once `sources` is empty.
+describe("what the engine names as carrier", () => {
+  const pointSlot: PointAssignmentSlot = {
+    id: "gear.points",
+    label: "Points",
+    section: "gear",
+    type: "point_assignment",
+    filter: "shards",
+  };
+  const pointDb = db.build([shard, gem, plain], bonuses, schema, {
+    ...slotsData,
+    slots: [...slots, pointSlot],
+  });
+  const entry = (build: Build, id: string, from = testDb) =>
+    bonus.resolve(from, build).bonuses.find((b) => b.id === id)!;
+
+  it("a point_assignment carrier at 0 points is not on the build", () => {
+    const build = testBuild({
+      choices: {},
+      assignments: { "gear.points": { [shard.id]: 0 } },
+    });
+    expect(entry(build, PROC_BONUS, pointDb).carrier).toBeNull();
+    expect(entry(build, STACK_BONUS, pointDb).carrier).toBeNull();
+  });
+
+  it("a point_assignment carrier at 1 point is named even with its config at 0", () => {
+    const build = testBuild({
+      choices: {},
+      assignments: { "gear.points": { [shard.id]: 1 } },
+    });
+    const proc = entry(build, PROC_BONUS, pointDb);
+    expect(proc.carrier?.slotId).toBe("gear.points");
+    expect(proc.sources).toEqual([]);
+    expect(proc.active).toBe(false);
+    expect(entry(build, STACK_BONUS, pointDb).sources).toHaveLength(1);
+  });
+
+  it("names the carrier only while it is on the build and contributes nothing", () => {
+    const build = withCount(1);
+    build.occurrenceInputs = { [shard.id]: { [PROC_BONUS]: 0 } };
+    expect(entry(build, PROC_BONUS).carrier).toEqual({
+      itemId: shard.id,
+      name: shard.name,
+      slotId: "gear.shard",
+    });
+    // A real source: the sources list already says where it comes from.
+    expect(entry(build, STACK_BONUS).carrier).toBeNull();
+    // Uncarried: nothing on the build to point at.
+    expect(entry(withCount(0), PROC_BONUS).carrier).toBeNull();
+  });
+
+  it("a carried zero anchor wins the instancing slot over an uncarried one", () => {
+    // Same bonus reachable twice with no real source: through the pick repeating 0 times
+    // (first in build order) and through a point spent on it with the proc still at 0.
+    const build = testBuild({
+      assignments: {
+        "gear.shard": { [shard.id]: 0 },
+        "gear.points": { [shard.id]: 1 },
+      },
+    });
+    const proc = entry(build, PROC_BONUS, pointDb);
+    expect(proc.carrier?.slotId).toBe("gear.points");
+    expect(proc.slotId).toBe("gear.points");
+  });
+});
+
 describe("what the engine computes", () => {
   /** One row's stats. Driven by `gem` (no bonuses), so this reads the item's own line rather
    *  than the bonus stats a row is also credited with. */
