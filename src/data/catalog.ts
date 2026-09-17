@@ -91,26 +91,14 @@ export const base = (): {
   slots: NW_SLOTS.slots ?? [],
 });
 
-/** How `compose` orders items, bonuses and presets by id.
- *
- * `export` collates, which is what the generated data files and the in-app export drawer are
- * written with: their byte order is committed, so it has to stay put. `runtime` compares
- * codepoints, which is cheaper, and nothing at runtime reads the id order: every consumer
- * re-sorts by its own key (`byItemLevel` in db.ts, `name` in param-options.ts). */
-export type IdOrder = "export" | "runtime";
-
-const ID_COMPARATORS: Record<
-  IdOrder,
-  (a: { id: string }, b: { id: string }) => number
-> = {
-  export: (a, b) => a.id.localeCompare(b.id),
-  runtime: (a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0),
-};
+/** Ids are machine identifiers, so they sort by codepoint: deterministic on every machine,
+ *  where collation depends on the locale, and cheap enough for the front of every `makeDb`. */
+const byId = (a: { id: string }, b: { id: string }) =>
+  a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
 
 /**
  * Fold overlays over the base, later layers winning. Items, bonuses and presets come out
  * sorted by id so the export is stable and diffs against the generated files stay readable.
- * The default `order` is the collating one every export path depends on.
  *
  * Slots deliberately do not sort: a slot list *is* its render order, hand-authored in
  * slots.json, and sorting it by id would reshuffle every section on load. They come out in
@@ -120,7 +108,6 @@ const ID_COMPARATORS: Record<
  */
 export function compose(
   overlays: readonly (CatalogOverlay | null | undefined)[] = [],
-  { order = "export" }: { order?: IdOrder } = {},
 ) {
   const {
     items: baseItems,
@@ -156,7 +143,6 @@ export function compose(
     }
   }
 
-  const byId = ID_COMPARATORS[order];
   return {
     items: [...items.values()].sort(byId),
     bonuses: [...bonuses.values()].sort(byId),
@@ -165,14 +151,11 @@ export function compose(
   };
 }
 
-/** A db the engine accepts, built from the composed catalog. Composed in codepoint order:
- *  nothing downstream reads the id order, and this runs on every overlay change. */
+/** A db the engine accepts, built from the composed catalog. */
 export function makeDb(
   overlays: readonly (CatalogOverlay | null | undefined)[] = [],
 ) {
-  const { items, bonuses, sectionPresets, slots } = compose(overlays, {
-    order: "runtime",
-  });
+  const { items, bonuses, sectionPresets, slots } = compose(overlays);
   return db.build(items, bonuses, NW_SCHEMA, {
     sections: NW_SLOTS.sections,
     slots,

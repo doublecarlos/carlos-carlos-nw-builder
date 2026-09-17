@@ -1798,8 +1798,9 @@ describe("catalog.unlinkBonus", () => {
   });
 });
 
-// `compose`'s id ordering is a caller's choice: the export paths (regen-data.ts and the export
-// drawer) write committed bytes and keep collation, `makeDb` takes the cheaper codepoint sort.
+// Ids are machine identifiers, so `compose` orders them by codepoint on every path, the
+// generated data files included: collation would make the committed order depend on the
+// locale the regenerating machine runs in.
 describe("catalog.compose id ordering", () => {
   const overlay: CatalogOverlay = {
     items: {
@@ -1811,29 +1812,15 @@ describe("catalog.compose id ordering", () => {
     slots: {},
   };
 
-  it("offers the same entries either way", () => {
-    const exported = catalog.compose([overlay]);
-    const runtime = catalog.compose([overlay], { order: "runtime" });
-    expect(new Set(runtime.items)).toEqual(new Set(exported.items));
-    expect(new Set(runtime.bonuses)).toEqual(new Set(exported.bonuses));
-    expect(new Set(runtime.sectionPresets)).toEqual(
-      new Set(exported.sectionPresets),
-    );
-    expect(runtime.slots).toEqual(exported.slots);
-  });
-
-  it("orders the export by collation, which is what the generated files are written in", () => {
+  it("orders items, bonuses and presets by codepoint", () => {
     const { items, bonuses, sectionPresets } = catalog.compose([overlay]);
-    const collated = (ids: string[]) =>
-      expect(ids).toEqual([...ids].sort((a, b) => a.localeCompare(b)));
-    collated(items.map((entry) => entry.id));
-    collated(bonuses.map((entry) => entry.id));
-    collated(sectionPresets.map((entry) => entry.id));
-  });
-
-  it("orders the runtime catalog by codepoint", () => {
-    const { items } = catalog.compose([overlay], { order: "runtime" });
-    const ids = items.map((item) => item.id);
-    expect(ids).toEqual([...ids].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0)));
+    const codepoint = (ids: string[]) =>
+      expect(ids).toEqual(
+        [...ids].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0)),
+      );
+    codepoint(items.map((entry) => entry.id));
+    codepoint(bonuses.map((entry) => entry.id));
+    codepoint(sectionPresets.map((entry) => entry.id));
+    expect(items.map((item) => item.id)).toContain("aa-custom");
   });
 });
