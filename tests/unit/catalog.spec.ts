@@ -1797,3 +1797,30 @@ describe("catalog.unlinkBonus", () => {
     expect(next.bonuses?.drop).toEqual(bonus("drop"));
   });
 });
+
+// Ids are machine identifiers, so `compose` orders them by codepoint on every path, the
+// generated data files included: collation would make the committed order depend on the
+// locale the regenerating machine runs in.
+describe("catalog.compose id ordering", () => {
+  const overlay: CatalogOverlay = {
+    items: {
+      "zz-custom": { id: "zz-custom", name: "Zed", filter: "gear_ring" },
+      "aa-custom": { id: "aa-custom", name: "Ay", filter: "gear_ring" },
+    },
+    bonuses: {},
+    sectionPresets: {},
+    slots: {},
+  };
+
+  it("orders items, bonuses and presets by codepoint", () => {
+    const { items, bonuses, sectionPresets } = catalog.compose([overlay]);
+    const codepoint = (ids: string[]) =>
+      expect(ids).toEqual(
+        [...ids].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0)),
+      );
+    codepoint(items.map((entry) => entry.id));
+    codepoint(bonuses.map((entry) => entry.id));
+    codepoint(sectionPresets.map((entry) => entry.id));
+    expect(items.map((item) => item.id)).toContain("aa-custom");
+  });
+});

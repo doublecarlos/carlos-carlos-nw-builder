@@ -1,5 +1,6 @@
-// A build swap must not replace `db` while the overlay list is unchanged, or every
-// `WeakMap<Db, ...>` memo is discarded. These pin that contract.
+// `db` is composed from the enabled layers and nothing else, so which build is active never
+// touches it: swapping builds must not replace `db`, or every `WeakMap<Db, ...>` memo keyed on
+// it is discarded. These pin that contract.
 import { describe, expect, it, vi } from "vitest";
 import type { CatalogOverlay } from "../../../src/types";
 
@@ -25,7 +26,7 @@ const emptyOverlay = (): CatalogOverlay => ({
 });
 
 describe("resolved.db stability", () => {
-  it("keeps the same db when swapping between builds without a per-build catalog", async () => {
+  it("keeps the same db when swapping between builds", async () => {
     const { builds, resolved } = await freshStores();
     const first = resolved.db.value;
     const before = builds.build.value.id;
@@ -57,20 +58,19 @@ describe("resolved.db stability", () => {
     layers.updateOverlay(layer.id, emptyOverlay());
     expect(resolved.db.value).not.toBe(afterCreate);
   });
+});
 
-  it("rebuilds db when a build swaps to one carrying its own catalog", async () => {
-    const { builds, resolved } = await freshStores();
-    const plain = resolved.db.value;
+describe("resolved.overlays", () => {
+  it("is the enabled layers' overlays and nothing else", async () => {
+    const { layers, resolved } = await freshStores();
+    const bottom = layers.createLayer("Bottom");
+    const top = layers.createLayer("Top");
+    await layers.moveLayerTo(top.id, 0);
 
-    builds.createBuild();
-    const withCatalog = builds.build.value.id;
-    builds.build.value.catalog = emptyOverlay();
+    // Lowest priority first, so the top layer folds last.
+    expect(resolved.overlays.value).toEqual([bottom.overlay, top.overlay]);
 
-    expect(resolved.db.value).not.toBe(plain);
-
-    // Back to a catalog-less build: the previous overlay list is gone, so a fresh db.
-    builds.createBuild();
-    expect(builds.build.value.id).not.toBe(withCatalog);
-    expect(resolved.db.value).not.toBe(plain);
+    layers.setLayerEnabled(bottom.id, false);
+    expect(resolved.overlays.value).toEqual([top.overlay]);
   });
 });

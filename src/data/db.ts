@@ -438,9 +438,15 @@ export function slotCandidateList(
   return { items, reasons };
 }
 
-/** Just what the slot offers, for a caller with no way to show a withheld candidate. */
-export function forSlotAndBuild(db: Db, slotId: string, build: Build): Item[] {
-  const { items, reasons } = slotCandidateList(db, slotId, build);
+/** Just what the slot offers, for a caller with no way to show a withheld candidate. A caller
+ *  resolving several slots for one build shares a `context`, as the list above takes. */
+export function forSlotAndBuild(
+  db: Db,
+  slotId: string,
+  build: Build,
+  context?: SlotCandidateContext,
+): Item[] {
+  const { items, reasons } = slotCandidateList(db, slotId, build, context);
   return items.filter((item) => !reasons.has(item.id));
 }
 

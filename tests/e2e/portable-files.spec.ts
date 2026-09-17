@@ -8,7 +8,7 @@ import {
   openBuilder,
   pickerInput,
 } from "./support/app";
-import { addBuild, buildRow, renameViaSidebar } from "./support/nav";
+import { addBuild, buildRow, layerRow, renameViaSidebar } from "./support/nav";
 
 /** Export the first build's JSON via the header's "Export bundle…" button. Since we need a
  *  single-build export (not a bundle), we use the download function from the kebab menu. */
@@ -219,6 +219,44 @@ test.describe("portable files", () => {
     await expect(
       page.getByTestId("library").locator(".nav-row--layer"),
     ).toContainText("my-overlay");
+  });
+
+  test("a build's embedded catalog arrives as a layer, once per sender", async ({
+    page,
+  }) => {
+    await openBuilder(page);
+
+    // What a download of a build using custom gear hands out: the entries it depends on ride
+    // along under `catalog`, and the import unpacks them where they can be seen and edited.
+    const file = JSON.stringify({
+      v: 1,
+      kind: "build",
+      data: {
+        name: "Gifted build",
+        choices: { "gear.ring1": "itm_e2e_gift" },
+        catalog: {
+          items: {
+            itm_e2e_gift: {
+              id: "itm_e2e_gift",
+              name: "E2E gift ring",
+              filter: "gear_ring",
+            },
+          },
+          bonuses: {},
+          sectionPresets: {},
+          slots: {},
+        },
+      },
+    });
+
+    await importText(page, file, "gifted.json");
+    await confirmImport(page);
+    await expect(layerRow(page, "Gifted build (imported)")).toHaveCount(1);
+
+    // The same file again matches that layer by content rather than stacking up a second one.
+    await importText(page, file, "gifted.json");
+    await confirmImport(page);
+    await expect(layerRow(page, "Gifted build (imported)")).toHaveCount(1);
   });
 
   test("import lives only in the header", async ({ page }) => {

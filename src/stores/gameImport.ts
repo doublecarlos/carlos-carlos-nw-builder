@@ -209,7 +209,7 @@ export function commit() {
   });
   if (!newBuilds.length) return;
 
-  builds.importBuilds(newBuilds, false, layers.enabledOverlays.value);
+  builds.importBuilds(newBuilds, false);
   _reports.value = newBuilds.map((build, i) => {
     const report = newReports[i];
     const unrecognizedOrigin = new Map<number, { bag: string; slot: number }>();

@@ -288,6 +288,20 @@ describe("forSlotAndBuild maxCopies filtering", () => {
     }
   });
 
+  // The game-import report shares one context across the candidate slots of a whole bag.
+  it("a shared context matches the per-call offer for every slot", () => {
+    const build = buildWith(
+      { ring1: "capped2" },
+      { "boons.tier1": { "shared-item": 1 } },
+    );
+    const context = db.slotCandidateContext(testDb, build);
+    for (const slotId of ["ring1", "ring2", "ring3", "sharedPicker"]) {
+      expect(
+        db.forSlotAndBuild(testDb, slotId, build, context).map((i) => i.id),
+      ).toEqual(db.forSlotAndBuild(testDb, slotId, build).map((i) => i.id));
+    }
+  });
+
   it("discounts only the resolving slot's own pick from the shared tally", () => {
     const build = buildWith({ ring1: "capped1" });
     const context = db.slotCandidateContext(testDb, build);

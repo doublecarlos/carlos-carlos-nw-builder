@@ -91,6 +91,11 @@ export const base = (): {
   slots: NW_SLOTS.slots ?? [],
 });
 
+/** Ids are machine identifiers, so they sort by codepoint: deterministic on every machine,
+ *  where collation depends on the locale, and cheap enough for the front of every `makeDb`. */
+const byId = (a: { id: string }, b: { id: string }) =>
+  a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+
 /**
  * Fold overlays over the base, later layers winning. Items, bonuses and presets come out
  * sorted by id so the export is stable and diffs against the generated files stay readable.
@@ -101,7 +106,9 @@ export const base = (): {
  * that, since re-`set`ting an existing key keeps its original position. Appending globally is
  * the same as appending within a section, because every consumer groups by `slot.section`.
  */
-export function compose(overlays: (CatalogOverlay | null | undefined)[] = []) {
+export function compose(
+  overlays: readonly (CatalogOverlay | null | undefined)[] = [],
+) {
   const {
     items: baseItems,
     bonuses: baseBonuses,
@@ -137,17 +144,17 @@ export function compose(overlays: (CatalogOverlay | null | undefined)[] = []) {
   }
 
   return {
-    items: [...items.values()].sort((a, b) => a.id.localeCompare(b.id)),
-    bonuses: [...bonuses.values()].sort((a, b) => a.id.localeCompare(b.id)),
-    sectionPresets: [...sectionPresets.values()].sort((a, b) =>
-      a.id.localeCompare(b.id),
-    ),
+    items: [...items.values()].sort(byId),
+    bonuses: [...bonuses.values()].sort(byId),
+    sectionPresets: [...sectionPresets.values()].sort(byId),
     slots: [...slots.values()],
   };
 }
 
 /** A db the engine accepts, built from the composed catalog. */
-export function makeDb(overlays: (CatalogOverlay | null | undefined)[] = []) {
+export function makeDb(
+  overlays: readonly (CatalogOverlay | null | undefined)[] = [],
+) {
   const { items, bonuses, sectionPresets, slots } = compose(overlays);
   return db.build(items, bonuses, NW_SCHEMA, {
     sections: NW_SLOTS.sections,

@@ -16,7 +16,7 @@ import {
   candidateSlotIds,
   KNOWN_LOSSY_NOTES,
 } from "../lib/demo-slots";
-import { forSlotAndBuild } from "../data/db";
+import { forSlotAndBuild, slotCandidateContext } from "../data/db";
 import type { Item } from "../types";
 
 const activeIndex = ref(0);
@@ -152,9 +152,11 @@ const openCandidates = computed<Item[]>(() => {
   if (!entry || !origin) return [];
   const build = builds.get(entry.buildId);
   if (!build) return [];
+  // One context for the whole union: every slot below resolves against the same build.
+  const context = slotCandidateContext(db.value, build);
   const seen = new Map<string, Item>();
   for (const slotId of candidateSlotIds(origin.bag, origin.slot)) {
-    for (const item of forSlotAndBuild(db.value, slotId, build)) {
+    for (const item of forSlotAndBuild(db.value, slotId, build, context)) {
       seen.set(item.id, item);
     }
   }

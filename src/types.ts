@@ -815,6 +815,10 @@ export interface Build {
   disabledSlots: Record<string, boolean>;
   context: BuildContext;
   compare: BuildCompare;
+  /** Transport only: a download embeds the catalog entries the build depends on
+   * (`catalog.referencedOverlay`) so it resolves identically elsewhere, and the import unpacks
+   * that into a layer (`stores/buildCatalog.ts`). A stored build is not expected to carry one;
+   * anything hydrated with it still set is migrated at boot. */
   catalog?: CatalogOverlay;
   downloaded?: { snapshot: BuildSnapshot; at: number };
 }
