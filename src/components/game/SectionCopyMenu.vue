@@ -6,15 +6,15 @@ const exclusive = useExclusiveOpen<string>();
 </script>
 
 <script setup lang="ts">
-// A section header's "copy this section from another build" control.
-import { ref, useTemplateRef } from "vue";
-import { onClickOutside } from "@vueuse/core";
+// A section header's "copy this section from another build" control. `roving: false` since the
+// combobox owns its own Up/Down. `dismiss-on-tab: false` so Tab reaches the Copy button instead
+// of closing the menu first.
+import { ref, useTemplateRef, watch } from "vue";
 import { Copy } from "@lucide/vue";
 import BuildComboBox from "./BuildComboBox.vue";
 import BaseButton from "../ui/BaseButton.vue";
 import BaseTooltip from "../ui/BaseTooltip.vue";
-import BasePopover from "../ui/BasePopover.vue";
-import { useEscapeToClose } from "../../composables/useEscapeToClose";
+import BaseMenu from "../ui/BaseMenu.vue";
 import type { BuildOption } from "../../types";
 
 const props = defineProps<{
@@ -30,65 +30,63 @@ const emit = defineEmits<{
 // single click, not "pick a build, then click copy".
 const chosen = ref(props.otherBuilds[0]?.value ?? "");
 
-const isOpen = () => exclusive.isOpen(props.sectionId);
-const popover = useTemplateRef<InstanceType<typeof BasePopover>>("popover");
-const menuEl = useTemplateRef<HTMLElement>("menuEl");
+const menu = useTemplateRef<InstanceType<typeof BaseMenu>>("menu");
 
-function toggle(event: MouseEvent) {
-  if (isOpen()) {
-    close();
-    return;
-  }
-  exclusive.open(props.sectionId);
-  popover.value?.place(
-    (event.currentTarget as HTMLElement).getBoundingClientRect(),
-  );
-}
+// Another section grabbing `exclusive` means this one is no longer open; close to match.
+watch(
+  () => exclusive.isOpen(props.sectionId),
+  (mine) => {
+    if (!mine) menu.value?.close();
+  },
+);
 
-function close() {
-  exclusive.close();
-  popover.value?.close();
+/** Only clears `exclusive` when this instance held it. A close cascading from the watch above
+ *  (another section just took it) must not stomp that section's own claim. */
+function onClose() {
+  if (exclusive.isOpen(props.sectionId)) exclusive.close();
 }
 
 function confirm() {
   if (!chosen.value) return;
   emit("copy", chosen.value);
-  close();
+  menu.value?.close();
 }
-
-// composedPath-based, not a live closest() walk: choosing the ComboBox option inside detaches
-// that row from the DOM in the same mousedown (see `choose()` in ComboBox.vue), which a
-// closest() check would miss.
-onClickOutside(menuEl, close, { ignore: [".section-copy-btn"] });
-
-useEscapeToClose(() => {
-  if (isOpen()) close();
-});
 </script>
 
 <template>
   <div class="mr-0.5 flex-none">
-    <BaseTooltip text="Copy this section from another build">
-      <BaseButton class="section-copy-btn" @click="toggle">
-        <Copy />Copy from…
-      </BaseButton>
-    </BaseTooltip>
-    <BasePopover ref="popover" :width="480" fit-content>
-      <div
-        ref="menuEl"
-        class="copy-popover -translate-x-full flex items-center gap-1.5 whitespace-nowrap rounded-md border border-line bg-surface px-2 py-1.5 shadow-lg"
+    <BaseMenu
+      ref="menu"
+      :width="480"
+      fit-content
+      role="group"
+      :roving="false"
+      :dismiss-on-tab="false"
+      label="Copy section from"
+      panel-class="copy-popover flex items-center gap-1.5 whitespace-nowrap px-2 py-1.5"
+      item-selector="[data-testid='picker-input']"
+      :ignore="['.section-copy-btn']"
+      @open="exclusive.open(sectionId)"
+      @close="onClose"
+    >
+      <template #trigger="{ toggle, attrs }">
+        <BaseTooltip text="Copy this section from another build">
+          <BaseButton class="section-copy-btn" v-bind="attrs" @click="toggle">
+            <Copy />Copy from…
+          </BaseButton>
+        </BaseTooltip>
+      </template>
+
+      <span class="text-muted">Copy section from</span>
+      <BuildComboBox
+        v-model="chosen"
+        class="copy-popover-select w-56"
+        :options="otherBuilds"
+        placeholder="Choose a build…"
+      />
+      <BaseButton variant="primary" :disabled="!chosen" @click="confirm"
+        >Copy</BaseButton
       >
-        <span class="text-muted">Copy section from</span>
-        <BuildComboBox
-          v-model="chosen"
-          class="copy-popover-select w-56"
-          :options="otherBuilds"
-          placeholder="Choose a build…"
-        />
-        <BaseButton variant="primary" :disabled="!chosen" @click="confirm"
-          >Copy</BaseButton
-        >
-      </div>
-    </BasePopover>
+    </BaseMenu>
   </div>
 </template>

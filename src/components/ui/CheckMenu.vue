@@ -13,13 +13,13 @@ export interface CheckMenuItem {
 //
 // Each row states its own `checked` and emits `toggle`, so the values can stay in a store's
 // individual refs without one object owning them.
-import { ref, useTemplateRef } from "vue";
-import { onClickOutside } from "@vueuse/core";
+//
+// Built on BaseMenu with `role="group"`, not `menu`: a checkbox is a semantics mismatch for a
+// menuitem. Roving focus still moves over the native `<input>`s.
 import BaseButton from "./BaseButton.vue";
 import BaseCheckbox from "./BaseCheckbox.vue";
-import BasePopover from "./BasePopover.vue";
+import BaseMenu from "./BaseMenu.vue";
 import IconButton from "./IconButton.vue";
-import { useEscapeToClose } from "../../composables/useEscapeToClose";
 
 withDefaults(
   defineProps<{
@@ -38,79 +38,56 @@ withDefaults(
 );
 
 const emit = defineEmits<{ toggle: [key: string] }>();
-
-const open = ref(false);
-const popover = useTemplateRef<InstanceType<typeof BasePopover>>("popover");
-const menuEl = useTemplateRef<HTMLElement>("menuEl");
-const triggerClass = "check-menu-btn";
-
-function toggleMenu(event: MouseEvent) {
-  if (open.value) {
-    close();
-    return;
-  }
-  open.value = true;
-  popover.value?.place(
-    (event.currentTarget as HTMLElement).getBoundingClientRect(),
-  );
-}
-
-function close() {
-  open.value = false;
-  popover.value?.close();
-}
-
-onClickOutside(menuEl, close, { ignore: [`.${triggerClass}`] });
-
-useEscapeToClose(() => {
-  if (open.value) close();
-});
 </script>
 
 <template>
   <div class="flex-none">
-    <IconButton
-      v-if="iconOnly"
-      :class="triggerClass"
-      :title="title || label"
-      :aria-expanded="open"
-      :data-testid="testid"
-      @click="toggleMenu"
+    <BaseMenu
+      :width="width"
+      fit-content
+      role="group"
+      :label="label"
+      panel-class="flex flex-col overflow-y-auto p-1.5"
+      item-selector="input[type='checkbox']"
+      :ignore="['.check-menu-btn']"
     >
-      <slot name="icon" />
-    </IconButton>
-    <BaseButton
-      v-else
-      :class="triggerClass"
-      :title="title"
-      :aria-expanded="open"
-      :data-testid="testid"
-      @click="toggleMenu"
-    >
-      <slot name="icon" />{{ label }}
-    </BaseButton>
-    <BasePopover ref="popover" :width="width" fit-content>
-      <div
-        ref="menuEl"
-        class="flex -translate-x-full flex-col overflow-y-auto rounded-md border border-line bg-surface p-1.5 shadow-lg"
-        role="group"
-        :aria-label="label"
-      >
-        <!-- BaseCheckbox is a label wrapping its input, so padding it makes the whole row the
-             hit target. -->
-        <BaseCheckbox
-          v-for="item in items"
-          :key="item.key"
-          class="rounded-md px-2 py-1.5 hover:bg-surface-2"
-          :class="item.disabled && 'opacity-60'"
-          :model-value="item.checked"
-          :disabled="item.disabled"
-          :data-testid="testid ? `${testid}:${item.key}` : undefined"
-          @update:model-value="emit('toggle', item.key)"
+      <template #trigger="{ toggle: openMenu, attrs }">
+        <IconButton
+          v-if="iconOnly"
+          class="check-menu-btn"
+          :title="title || label"
+          v-bind="attrs"
+          :data-testid="testid"
+          @click="openMenu"
         >
-          {{ item.label }}
-        </BaseCheckbox>
-      </div>
-    </BasePopover>
+          <slot name="icon" />
+        </IconButton>
+        <BaseButton
+          v-else
+          class="check-menu-btn"
+          :title="title"
+          v-bind="attrs"
+          :data-testid="testid"
+          @click="openMenu"
+        >
+          <slot name="icon" />{{ label }}
+        </BaseButton>
+      </template>
+
+      <!-- BaseCheckbox is a label wrapping its input, so padding it makes the whole row the
+           hit target. -->
+      <BaseCheckbox
+        v-for="item in items"
+        :key="item.key"
+        class="rounded-md px-2 py-1.5 hover:bg-surface-2"
+        :class="item.disabled && 'opacity-60'"
+        :model-value="item.checked"
+        :disabled="item.disabled"
+        :data-testid="testid ? `${testid}:${item.key}` : undefined"
+        @update:model-value="emit('toggle', item.key)"
+      >
+        {{ item.label }}
+      </BaseCheckbox>
+    </BaseMenu>
   </div>
 </template>

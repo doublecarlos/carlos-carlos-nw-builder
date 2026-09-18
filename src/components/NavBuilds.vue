@@ -42,8 +42,8 @@ const props = defineProps<{
     danger?: boolean;
     disabled?: boolean;
   }[];
-  /** Bounding rect of the row that opened the menu, for popover anchoring. */
-  menuAnchor: DOMRect | null;
+  /** The kebab's bounding rect (placement) and element (focus-restore), for NavContextMenu. */
+  menuOrigin: { anchor: DOMRect; trigger: HTMLElement } | null;
 }>();
 
 const emit = defineEmits<{
@@ -214,7 +214,7 @@ function folderHandleProps(id: string, index: number) {
           :rename-text="renameText"
           :menu-open="menuOpenId === row.build.id"
           :menu-items="menuOpenId === row.build.id ? menuItems : []"
-          :menu-anchor="menuAnchor"
+          :menu-origin="menuOrigin"
           :handle-props="buildHandleProps(row.build.id, row.index, null)"
           :row-props="rootDrop.rowProps(row.index)"
           :is-drop-into="false"
@@ -243,7 +243,7 @@ function folderHandleProps(id: string, index: number) {
             :rename-text="renameText"
             :menu-open="menuOpenId === row.folder.id"
             :menu-items="menuOpenId === row.folder.id ? menuItems : []"
-            :menu-anchor="menuAnchor"
+            :menu-origin="menuOrigin"
             :handle-props="folderHandleProps(row.folder.id, row.index)"
             :row-props="rootDrop.rowProps(row.index, { into: canDropInto })"
             :is-drop-into="rootDrop.intoIndex.value === row.index"
@@ -285,7 +285,7 @@ function folderHandleProps(id: string, index: number) {
               :rename-text="renameText"
               :menu-open="menuOpenId === child.build.id"
               :menu-items="menuOpenId === child.build.id ? menuItems : []"
-              :menu-anchor="menuAnchor"
+              :menu-origin="menuOrigin"
               :handle-props="
                 buildHandleProps(child.build.id, child.index, row.folder.id)
               "

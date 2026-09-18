@@ -7,6 +7,9 @@ import { onKeyStroke } from "@vueuse/core";
  * to the current entry list and Escape closing on the spot. Committing a highlighted entry
  * (Enter/Tab/comma) stays with each caller, since what "commit" means differs - replace the field
  * versus add another token.
+ *
+ * `useRovingFocus` is the counterpart where focus moves for real: a menu-button's items each
+ * take actual Tab-focus in turn, instead of a highlight index moving in a text field.
  */
 export function useMenuNavigation(options: {
   target: Ref<HTMLElement | null>;

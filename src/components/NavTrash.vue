@@ -23,8 +23,8 @@ defineProps<{
     danger?: boolean;
     disabled?: boolean;
   }[];
-  /** Bounding rect of the row that opened the menu, for popover anchoring. */
-  menuAnchor: DOMRect | null;
+  /** The kebab's bounding rect (placement) and element (focus-restore), for NavContextMenu. */
+  menuOrigin: { anchor: DOMRect; trigger: HTMLElement } | null;
   timeAgo: (ms: number) => string;
 }>();
 
@@ -86,6 +86,8 @@ defineEmits<{
               type="button"
               class="nav-kebab flex flex-none cursor-pointer items-center rounded-md px-1.5 py-1 text-muted hover:bg-surface-2 hover:text-text"
               aria-label="Trash menu"
+              aria-haspopup="menu"
+              :aria-expanded="menuOpenId === `${entry.kind}_${entry.item.id}`"
               @click="
                 $emit('menu-open', `${entry.kind}_${entry.item.id}`, $event)
               "
@@ -96,7 +98,7 @@ defineEmits<{
 
           <NavContextMenu
             v-if="menuOpenId === `${entry.kind}_${entry.item.id}`"
-            :anchor="menuAnchor"
+            :origin="menuOrigin"
             :items="menuItems"
             :ignore="['.nav-kebab']"
             @action="

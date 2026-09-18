@@ -21,13 +21,11 @@ const exclusive = useExclusiveOpen<string>();
 // as it stands. Overwriting is the one destructive thing this menu does, and it lands on a
 // *layer's* undo stack rather than the build's (see `layers.updatePreset`), out of reach of
 // Ctrl+Z here, so that store posts an undo notice.
-import { useTemplateRef } from "vue";
-import { onClickOutside } from "@vueuse/core";
+import { useTemplateRef, watch } from "vue";
 import BaseButton from "../ui/BaseButton.vue";
 import BaseTooltip from "../ui/BaseTooltip.vue";
-import BasePopover from "../ui/BasePopover.vue";
+import BaseMenu from "../ui/BaseMenu.vue";
 import { LayoutTemplate, Plus, Save } from "@lucide/vue";
-import { useEscapeToClose } from "../../composables/useEscapeToClose";
 import type { SectionPreset } from "../../types";
 
 const props = defineProps<{
@@ -41,95 +39,95 @@ const emit = defineEmits<{
   update: [preset: SectionPreset];
 }>();
 
-const isOpen = () => exclusive.isOpen(props.sectionId);
-const popover = useTemplateRef<InstanceType<typeof BasePopover>>("popover");
-const menuEl = useTemplateRef<HTMLElement>("menuEl");
+const menu = useTemplateRef<InstanceType<typeof BaseMenu>>("menu");
 
-function toggle(event: MouseEvent) {
-  if (isOpen()) {
-    close();
-    return;
-  }
-  exclusive.open(props.sectionId);
-  popover.value?.place(
-    (event.currentTarget as HTMLElement).getBoundingClientRect(),
-  );
-}
+// Another section grabbing `exclusive` means this one is no longer open; close to match.
+watch(
+  () => exclusive.isOpen(props.sectionId),
+  (mine) => {
+    if (!mine) menu.value?.close();
+  },
+);
 
-function close() {
-  exclusive.close();
-  popover.value?.close();
+/** Only clears `exclusive` when this instance held it. A close cascading from the watch above
+ *  (another section just took it) must not stomp that section's own claim. */
+function onClose() {
+  if (exclusive.isOpen(props.sectionId)) exclusive.close();
 }
 
 function choose(preset: SectionPreset) {
   emit("apply", preset);
-  close();
+  menu.value?.close();
 }
 
 function create() {
   emit("create");
-  close();
+  menu.value?.close();
 }
 
-/** Closes the popover as it writes, so the undo notice is not left behind a menu. */
+/** Closes the menu as it writes, so the undo notice is not left behind it. */
 function update(preset: SectionPreset) {
-  close();
+  menu.value?.close();
   emit("update", preset);
 }
-
-onClickOutside(menuEl, close, { ignore: [".section-preset-btn"] });
-
-useEscapeToClose(() => {
-  if (isOpen()) close();
-});
 </script>
 
 <template>
   <div class="mr-0.5 flex-none">
-    <BaseTooltip text="Apply a preset to this section, or save one from it">
-      <BaseButton class="section-preset-btn" @click="toggle">
-        <LayoutTemplate />Presets…
-      </BaseButton>
-    </BaseTooltip>
-    <BasePopover ref="popover" :width="320" fit-content>
+    <BaseMenu
+      ref="menu"
+      :width="320"
+      fit-content
+      role="group"
+      panel-class="preset-popover flex max-h-64 min-w-40 flex-col gap-0.5 overflow-y-auto whitespace-nowrap p-1"
+      :ignore="['.section-preset-btn']"
+      @open="exclusive.open(sectionId)"
+      @close="onClose"
+    >
+      <template #trigger="{ toggle, attrs }">
+        <BaseTooltip text="Apply a preset to this section, or save one from it">
+          <BaseButton class="section-preset-btn" v-bind="attrs" @click="toggle">
+            <LayoutTemplate />Presets…
+          </BaseButton>
+        </BaseTooltip>
+      </template>
+
       <div
-        ref="menuEl"
-        class="preset-popover -translate-x-full flex max-h-64 min-w-40 flex-col gap-0.5 overflow-y-auto whitespace-nowrap rounded-md border border-line bg-surface p-1 shadow-lg"
+        v-for="preset in presets"
+        :key="preset.id"
+        class="preset-menu-row flex items-center gap-1"
       >
-        <div
-          v-for="preset in presets"
-          :key="preset.id"
-          class="preset-menu-row flex items-center gap-1"
-        >
-          <button
-            type="button"
-            class="flex-1 rounded px-2 py-1 text-left hover:bg-surface-2"
-            :data-testid="`preset-apply-${preset.id}`"
-            @click="choose(preset)"
-          >
-            {{ preset.label }}
-          </button>
-          <button
-            type="button"
-            class="preset-update-btn [&_svg]:size-[14px] flex cursor-pointer items-center gap-1 rounded p-1 text-muted hover:bg-surface-2 hover:text-accent"
-            :title="`Overwrite “${preset.label}” with this section's current values`"
-            :aria-label="`Overwrite “${preset.label}” with this section's current values`"
-            :data-testid="`preset-update-${preset.id}`"
-            @click="update(preset)"
-          >
-            <Save />
-          </button>
-        </div>
-        <div v-if="presets.length" class="my-0.5 border-t border-line"></div>
         <button
           type="button"
-          class="preset-create-btn flex items-center gap-1.5 rounded px-2 py-1 text-left hover:bg-surface-2"
-          data-testid="preset-create-from-current"
-          @click="create"
+          tabindex="-1"
+          class="flex-1 rounded px-2 py-1 text-left hover:bg-surface-2"
+          :data-testid="`preset-apply-${preset.id}`"
+          @click="choose(preset)"
         >
-          <Plus class="size-3.5" />Create new from current
+          {{ preset.label }}
+        </button>
+        <button
+          type="button"
+          tabindex="-1"
+          class="preset-update-btn [&_svg]:size-[14px] flex cursor-pointer items-center gap-1 rounded p-1 text-muted hover:bg-surface-2 hover:text-accent"
+          :title="`Overwrite “${preset.label}” with this section's current values`"
+          :aria-label="`Overwrite “${preset.label}” with this section's current values`"
+          :data-testid="`preset-update-${preset.id}`"
+          @click="update(preset)"
+        >
+          <Save />
         </button>
       </div>
-    </BasePopover>
+      <div v-if="presets.length" class="my-0.5 border-t border-line"></div>
+      <button
+        type="button"
+        tabindex="-1"
+        class="preset-create-btn flex items-center gap-1.5 rounded px-2 py-1 text-left hover:bg-surface-2"
+        data-testid="preset-create-from-current"
+        @click="create"
+      >
+        <Plus class="size-3.5" />Create new from current
+      </button>
+    </BaseMenu>
   </div>
 </template>

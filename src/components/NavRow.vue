@@ -37,7 +37,8 @@ const props = defineProps<{
     danger?: boolean;
     disabled?: boolean;
   }[];
-  menuAnchor: DOMRect | null;
+  /** The kebab's bounding rect (placement) and element (focus-restore), for NavContextMenu. */
+  menuOrigin: { anchor: DOMRect; trigger: HTMLElement } | null;
   handleProps: DragHandleProps;
   rowProps: Record<string, string | undefined>;
   isDropInto: boolean;
@@ -193,6 +194,8 @@ function onRowKeydown(event: KeyboardEvent) {
           data-no-drag
           class="nav-kebab flex flex-none cursor-pointer items-center rounded-md px-1.5 py-1 text-muted hover:bg-surface-2 hover:text-text focus:outline-none"
           :aria-label="`${kind} menu`"
+          aria-haspopup="menu"
+          :aria-expanded="menuOpen"
           @click="emit('menu-open', id, $event)"
         >
           <EllipsisVertical class="size-[14px]" />
@@ -201,7 +204,7 @@ function onRowKeydown(event: KeyboardEvent) {
 
       <NavContextMenu
         v-if="menuOpen"
-        :anchor="menuAnchor"
+        :origin="menuOrigin"
         :items="menuItems"
         :ignore="['.nav-kebab']"
         @action="(a, skip) => emit('menu-action', a, id, skip)"
