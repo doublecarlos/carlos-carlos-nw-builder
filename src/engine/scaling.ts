@@ -91,5 +91,8 @@ export function scaledStat(
   const raw = (item[key] as number | undefined) ?? 0;
   if (!raw) return 0;
   if (schema.statByKey[key]?.kind === "mult") return raw;
-  return raw * factor;
+
+  // Bolster floors the IL calculation but keeps other stats at full precision
+  const computed = raw * factor;
+  return key === "il" ? Math.floor(computed) : computed;
 }
