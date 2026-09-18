@@ -15,12 +15,12 @@ describe("itemPreview", () => {
   it("formats an item's own stats in schema order, signed", () => {
     const item: Item = {
       id: "i1",
+      combined_rating: 50,
       name: "Test Item",
       power: 100,
-      combined_rating: 50,
     };
     expect(itemPreview(item)).toEqual({
-      parts: ["CR +50", "Power +100"],
+      parts: ["Power +100", "CR +50"],
       more: 0,
     });
   });
@@ -40,7 +40,7 @@ describe("itemPreview", () => {
       ca: 40,
     };
     expect(itemPreview(item, 2)).toEqual({
-      parts: ["CR +10", "Power +20"],
+      parts: ["Power +20", "Acc +30"],
       more: 2,
     });
   });
@@ -67,7 +67,7 @@ describe("bonusStatPreview", () => {
   it("caps parts at `limit`, same as itemPreview", () => {
     expect(
       bonusStatPreview({ combined_rating: 1, power: 2, acc: 3, ca: 4 }, 2),
-    ).toEqual({ parts: ["CR +1", "Power +2"], more: 2 });
+    ).toEqual({ parts: ["Power +2", "Acc +3"], more: 2 });
   });
 });
 

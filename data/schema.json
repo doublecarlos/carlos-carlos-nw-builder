@@ -2,13 +2,6 @@
   "stats": [
     { "key": "il", "label": "Item Level", "kind": "flat", "abbr": "IL" },
     {
-      "key": "combined_rating",
-      "label": "Combined Rating",
-      "kind": "flat",
-      "abbr": "CR"
-    },
-
-    {
       "key": "power_p",
       "label": "Power",
       "kind": "percent",
@@ -348,7 +341,13 @@
     },
 
     { "key": "gold", "label": "Gold", "kind": "percent" },
-    { "key": "glory", "label": "Glory", "kind": "percent" }
+    { "key": "glory", "label": "Glory", "kind": "percent" },
+    {
+      "key": "combined_rating",
+      "label": "Combined Rating",
+      "kind": "flat",
+      "abbr": "CR"
+    }
   ],
 
   "statScalers": [
