@@ -33,8 +33,8 @@ const props = defineProps<{
     danger?: boolean;
     disabled?: boolean;
   }[];
-  /** Bounding rect of the row that opened the menu, for popover anchoring. */
-  menuAnchor: DOMRect | null;
+  /** The kebab's bounding rect (placement) and element (focus-restore), for NavContextMenu. */
+  menuOrigin: { anchor: DOMRect; trigger: HTMLElement } | null;
   canMoveUp: (id: string) => boolean;
   canMoveDown: (id: string) => boolean;
 }>();
@@ -117,7 +117,7 @@ function dragHandleProps(id: string, index: number) {
         :rename-text="renameText"
         :menu-open="menuOpenId === l.id"
         :menu-items="menuOpenId === l.id ? menuItems : []"
-        :menu-anchor="menuAnchor"
+        :menu-origin="menuOrigin"
         :handle-props="dragHandleProps(l.id, i)"
         :row-props="dropList.rowProps(i)"
         :is-drop-into="false"

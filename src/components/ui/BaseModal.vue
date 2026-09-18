@@ -3,12 +3,13 @@
 // and the dialog semantics that make it announce as a dialog. Callers supply the panel's
 // sizing through `panelClass` -- the chrome is shared, the shape is not.
 //
-// Anchored surfaces (BasePopover, BaseTooltip, NavContextMenu) are deliberately not built on
-// this: they are not modal, and taking focus away from the control they hang off is the one
-// thing they must not do. In-flow panels are BaseDrawer.
+// Anchored surfaces are deliberately not built on this: none of them is modal. A hover surface
+// (BasePopover, BaseTooltip) never takes focus. BaseMenu takes it on open and returns it on
+// close. This component traps focus for a full dialog. In-flow panels are BaseDrawer.
 import { onBeforeUnmount, onMounted, useId, useTemplateRef } from "vue";
 import { useScrollLock } from "@vueuse/core";
 import { useEscapeToClose } from "../../composables/useEscapeToClose";
+import { trapTab } from "../../lib/focus-trap";
 import { modalClosed, modalOpened } from "../../stores/modals";
 
 // Attrs land on the backdrop, not the panel: `data-testid` on the outer element is what lets
@@ -62,40 +63,10 @@ defineExpose({ releaseFocus });
 // Locked for as long as this component lives; VueUse restores the previous overflow on unmount.
 useScrollLock(document.body, true);
 
-const FOCUSABLE = [
-  "a[href]",
-  "button:not([disabled])",
-  "input:not([disabled])",
-  "select:not([disabled])",
-  "textarea:not([disabled])",
-  '[tabindex]:not([tabindex="-1"])',
-].join(",");
-
-/** Tabbable descendants in document order, minus the hidden ones -- the file inputs behind
- *  "Choose file…" buttons are focusable by selector but not reachable by Tab. */
-function focusables(): HTMLElement[] {
-  const root = panel.value;
-  if (!root) return [];
-  return [...root.querySelectorAll<HTMLElement>(FOCUSABLE)].filter(
-    (el) => el.offsetWidth > 0 || el.offsetHeight > 0,
-  );
-}
-
 /** Tab wraps inside the panel: a modal owns the screen while it is open, so tabbing off its
  *  edge must not land on the page behind it. */
 function onTab(event: KeyboardEvent) {
-  const items = focusables();
-  if (!items.length) {
-    // Nothing to move to -- the panel itself keeps the keyboard.
-    event.preventDefault();
-    return;
-  }
-  const first = items[0];
-  const last = items[items.length - 1];
-  const active = document.activeElement;
-  if (event.shiftKey ? active !== first : active !== last) return;
-  event.preventDefault();
-  (event.shiftKey ? last : first).focus();
+  trapTab(event, panel.value);
 }
 
 /** The panel, not its first control: the dialog's name is read out, and no control wears a

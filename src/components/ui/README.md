@@ -15,6 +15,7 @@ ordinary one.
 | BaseDrawer                                | An in-flow panel worked alongside its surroundings; use BaseModal for open-use-leave       |
 | BaseInput                                 | The ordinary text/number/search field                                                      |
 | BaseLink                                  | An action link inline in running text, on the text baseline; `plain` writes it as text     |
+| BaseMenu / BaseMenuItem                   | Click-triggered menu shell: placement, click-outside, Escape, roving keyboard focus        |
 | BaseModal                                 | The app's one modal overlay: backdrop, focus trap, Escape, scroll lock                     |
 | BaseNotice                                | Dismissible inline message                                                                 |
 | BasePanel                                 | Side-panel shell                                                                           |
@@ -22,7 +23,7 @@ ordinary one.
 | BaseTextarea                              | The ordinary multi-line text field                                                         |
 | BaseTooltip                               | Themed hover/focus tooltip, replacing `title`                                              |
 | ClearableInput                            | A text filter field with an in-field clear button, wrapping BaseInput                      |
-| CheckMenu                                 | Menu of checkbox options that stays open as they are toggled                               |
+| CheckMenu                                 | Menu of checkbox options that stays open as they are toggled; built on BaseMenu            |
 | CodeBlock                                 | Read-only, resizable JSON preview                                                          |
 | CodeSnippet                               | Simple code snippet component                                                              |
 | ComboBox / ComboBoxMenu / ComboBoxMenuRow | Typeable single-select over a small fixed option list, replacing `<select>`                |

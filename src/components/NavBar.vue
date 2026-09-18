@@ -29,7 +29,7 @@ import type { Build, TrashEntry } from "../types";
 
 const root = useTemplateRef("root");
 const openMenu = ref<{ type: string; id: string } | null>(null);
-const menuAnchor = ref<DOMRect | null>(null);
+const menuOrigin = ref<{ anchor: DOMRect; trigger: HTMLElement } | null>(null);
 const renaming = ref<{ type: string; id: string } | null>(null);
 const renameText = ref("");
 
@@ -66,18 +66,18 @@ function isMenuOpen(type: string, id: string) {
 function openMenuFor(type: string, id: string, event: MouseEvent) {
   if (isMenuOpen(type, id)) {
     openMenu.value = null;
-    menuAnchor.value = null;
+    menuOrigin.value = null;
     return;
   }
-  const el = event.currentTarget as HTMLElement;
-  const rect = el.closest(".nav-row")!.getBoundingClientRect();
-  menuAnchor.value = rect;
+  const trigger = event.currentTarget as HTMLElement;
+  const anchor = trigger.closest(".nav-row")!.getBoundingClientRect();
+  menuOrigin.value = { anchor, trigger };
   openMenu.value = { type, id };
 }
 
 function closeMenu() {
   openMenu.value = null;
-  menuAnchor.value = null;
+  menuOrigin.value = null;
 }
 
 // --- rename ---------------------------------------------------------------------------
@@ -554,7 +554,7 @@ useEventListener(document, "scroll", onScrollCapture, {
           : null
       "
       :menu-items="navMenuItems()"
-      :menu-anchor="menuAnchor"
+      :menu-origin="menuOrigin"
       @update:filter="(v) => (buildFilter = v)"
       @select="(id) => selection.pickBuild(id)"
       @rename-start="
@@ -593,7 +593,7 @@ useEventListener(document, "scroll", onScrollCapture, {
       :menu-items="
         openMenu?.type === 'layer' ? layerMenuItems(openMenu.id) : []
       "
-      :menu-anchor="menuAnchor"
+      :menu-origin="menuOrigin"
       :can-move-up="(id) => layerIndex(id) !== 0"
       :can-move-down="(id) => layerIndex(id) !== layers.layers.value.length - 1"
       @update:filter="(v) => (layerFilter = v)"
@@ -622,7 +622,7 @@ useEventListener(document, "scroll", onScrollCapture, {
       :expanded="trashExpanded"
       :menu-open-id="openMenu?.type === 'trash' ? openMenu.id : null"
       :menu-items="openMenu?.type === 'trash' ? trashMenuItems() : []"
-      :menu-anchor="menuAnchor"
+      :menu-origin="menuOrigin"
       :time-ago="timeAgo"
       @toggle-expand="trashExpanded = !trashExpanded"
       @restore="(entry) => restoreTrashEntry(entry)"

@@ -1,16 +1,16 @@
 <script setup lang="ts">
-// Reusable kebab-menu flyout for builds, layers, and trash entries.
-// Positioned by BasePopover: the parent provides the trigger element's bounding rect
-// and the popover handles viewport-edge flipping and clamping automatically.
-import { ref, onMounted, nextTick, type Component } from "vue";
-import { onClickOutside } from "@vueuse/core";
-import BasePopover from "./ui/BasePopover.vue";
-import { useEscapeToClose } from "../composables/useEscapeToClose";
+// Reusable kebab-menu flyout for builds, layers, and trash entries. Built on BaseMenu, which
+// owns placement, click-outside, Escape, and focus. This component just supplies the row list.
+// The trigger lives in the parent (NavRow's kebab, AppHeader's Tools button), so `origin` carries
+// the anchor rect to place against and the element to hand focus back to on close.
+import { onMounted, useTemplateRef, type Component } from "vue";
+import BaseMenu from "./ui/BaseMenu.vue";
+import BaseMenuItem from "./ui/BaseMenuItem.vue";
 
 const props = withDefaults(
   defineProps<{
-    /** Bounding rect of the trigger element, used to anchor the popover. */
-    anchor: DOMRect | null;
+    /** The trigger's bounding rect (for placement) and element (for focus-restore on close). */
+    origin: { anchor: DOMRect; trigger: HTMLElement } | null;
     items: {
       action: string;
       label: string;
@@ -34,60 +34,33 @@ const emit = defineEmits<{
   close: [];
 }>();
 
-const popover = ref<InstanceType<typeof BasePopover> | null>(null);
-const menuEl = ref<HTMLElement | null>(null);
+const menu = useTemplateRef<InstanceType<typeof BaseMenu>>("menu");
 
-// Place the popover after mount - the component is v-if-gated so it mounts fresh each
-// time a menu opens. nextTick gives BasePopover's Teleport a chance to render.
-// A left-aligned menu passes the trigger's left edge as the origin: `place` starts at the
-// anchor's right edge, which only the `-translate-x-full` case pulls back over the trigger.
-onMounted(async () => {
-  await nextTick();
-  const anchor = props.anchor;
-  if (anchor)
-    popover.value?.place(
-      anchor,
-      props.align === "left" ? anchor.left : undefined,
-    );
+// v-if-gated by the parent, so it mounts fresh each time a menu opens. Open it right away:
+// BaseMenu's own ref is available as soon as this component mounts.
+onMounted(() => {
+  if (props.origin) menu.value?.open(props.origin.trigger, props.origin.anchor);
 });
-
-// Close when clicking outside the menu, ignoring the trigger buttons.
-onClickOutside(menuEl, () => emit("close"), {
-  ignore: props.ignore,
-});
-
-useEscapeToClose(() => emit("close"));
 </script>
 
 <template>
-  <BasePopover ref="popover" :width="192">
-    <div
-      ref="menuEl"
-      class="navmenu flex min-w-48 flex-col rounded-md border border-line bg-surface p-1 shadow-lg"
-      :class="align === 'right' && '-translate-x-full'"
+  <BaseMenu
+    ref="menu"
+    :width="192"
+    :align="align"
+    :ignore="ignore"
+    panel-class="navmenu flex min-w-48 flex-col p-1"
+    @close="emit('close')"
+  >
+    <BaseMenuItem
+      v-for="item in items"
+      :key="item.action"
+      :icon="item.icon"
+      :danger="item.danger"
+      :disabled="item.disabled"
+      @click="(e) => emit('action', item.action, e.shiftKey)"
     >
-      <button
-        v-for="item in items"
-        :key="item.action"
-        type="button"
-        class="inline-flex w-full items-center gap-1.5 rounded-md px-2 py-1 text-left"
-        :class="
-          item.disabled
-            ? 'text-muted'
-            : item.danger
-              ? 'cursor-pointer hover:bg-danger-soft hover:text-danger'
-              : 'cursor-pointer hover:bg-surface-2'
-        "
-        :disabled="item.disabled"
-        @click="$emit('action', item.action, $event.shiftKey)"
-      >
-        <component
-          :is="item.icon"
-          v-if="item.icon"
-          class="size-[14px] flex-none"
-        />
-        {{ item.label }}
-      </button>
-    </div>
-  </BasePopover>
+      {{ item.label }}
+    </BaseMenuItem>
+  </BaseMenu>
 </template>

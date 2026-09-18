@@ -54,20 +54,23 @@ function triggerImport() {
   importFileInput.value?.click();
 }
 
-const toolsAnchor = ref<DOMRect | null>(null);
+const toolsOrigin = ref<{ anchor: DOMRect; trigger: HTMLElement } | null>(null);
 
 const TOOLS = [
   { action: "stable", label: "Mount stable reference", icon: Table },
 ];
 
 function toggleTools(event: MouseEvent) {
-  toolsAnchor.value = toolsAnchor.value
-    ? null
-    : (event.currentTarget as HTMLElement).getBoundingClientRect();
+  if (toolsOrigin.value) {
+    toolsOrigin.value = null;
+    return;
+  }
+  const trigger = event.currentTarget as HTMLElement;
+  toolsOrigin.value = { anchor: trigger.getBoundingClientRect(), trigger };
 }
 
 function onTool(action: string) {
-  toolsAnchor.value = null;
+  toolsOrigin.value = null;
   if (action === "stable") stableBrowser.openReference();
 }
 
@@ -120,17 +123,21 @@ async function onImportFile(event: Event) {
     >
     <GameImport v-if="gameImportOpen" />
 
-    <BaseButton data-testid="header-tools" @click="toggleTools"
+    <BaseButton
+      data-testid="header-tools"
+      aria-haspopup="menu"
+      :aria-expanded="!!toolsOrigin"
+      @click="toggleTools"
       ><Wrench />Tools</BaseButton
     >
     <NavContextMenu
-      v-if="toolsAnchor"
-      :anchor="toolsAnchor"
+      v-if="toolsOrigin"
+      :origin="toolsOrigin"
       align="left"
       :items="TOOLS"
       :ignore="['[data-testid=header-tools]']"
       @action="onTool"
-      @close="toolsAnchor = null"
+      @close="toolsOrigin = null"
     />
     <!-- Mounted here rather than in the editor: the reference is worth reading with no build
          open, and one instance serves both ways in. -->
