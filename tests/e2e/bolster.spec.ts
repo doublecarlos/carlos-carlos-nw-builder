@@ -109,12 +109,12 @@ test.describe("mount and companion bolster", () => {
     await chooseItem(page, "mounts.mountEquip", MOUNT_EQUIP);
     await chooseItem(page, "companions.companion", "Generic Companion");
 
-    // Mount equip 1750 + companion 1800, each at its own max: 3937.5 + 3960 -> 7897.5.
-    await expect(statValue(page, "il")).toHaveText("7,898");
+    // Mount equip 1750 + companion 1800, each at its own max: 3937 + 3960 -> 7897.
+    await expect(statValue(page, "il")).toHaveText("7,897");
 
     await setBolster(page, "companions.bolster", 0);
-    // Only the companion drops to base: 3937.5 + 1800.
-    await expect(statValue(page, "il")).toHaveText("5,738");
+    // Only the companion drops to base: 3937 + 1800.
+    await expect(statValue(page, "il")).toHaveText("5,737");
   });
 });
 
@@ -130,8 +130,8 @@ test.describe("bolster is reflected everywhere an item's numbers appear", () => 
     const summary = slotRow(page, "mounts.mountEquip").getByTestId(
       "slot-stat-summary",
     );
-    // 1750 * 2.25 = 3937.5, rounded once at the edge.
-    await expect(summary).toContainText("3,938");
+    // 1750 * 2.25 = 3937.5, floored once at the edge.
+    await expect(summary).toContainText("3,937");
 
     await setBolster(page, "mounts.bolster", 0);
     await expect(summary).toContainText("1,750");
@@ -150,7 +150,7 @@ test.describe("bolster is reflected everywhere an item's numbers appear", () => 
     await expect(card).toBeVisible();
     // At max bolster the scaled item level is 3937.5, so this is also the check that the badge
     // rounds like every other displayed figure instead of leaking the raw fraction.
-    await expect(card).toContainText("iL 3,938");
+    await expect(card).toContainText("iL 3,937");
     await expect(card).not.toContainText("3,937.5");
 
     await page.mouse.move(0, 0);
@@ -158,7 +158,7 @@ test.describe("bolster is reflected everywhere an item's numbers appear", () => 
     await hoverForCard(page, label);
     // Badge and body agree, and neither shows the max-bolster figure.
     await expect(card).toContainText("iL 1,750");
-    await expect(card).not.toContainText("3,938");
+    await expect(card).not.toContainText("3,937");
   });
 
   test("the item level on each dropdown row", async ({ page }) => {
@@ -171,7 +171,7 @@ test.describe("bolster is reflected everywhere an item's numbers appear", () => 
     // Candidates preview at the build's own bolster, so they are comparable to each other and
     // to what equipping one would actually do.
     await expect(row.getByText("iL 1,750").first()).toBeVisible();
-    await expect(row.getByText("iL 3,938")).toHaveCount(0);
+    await expect(row.getByText("iL 3,937")).toHaveCount(0);
   });
 });
 
