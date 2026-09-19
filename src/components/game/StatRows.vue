@@ -41,13 +41,13 @@ const emit = defineEmits<{
 }>();
 
 const ROW_COLLAPSE =
-  "relative flex flex-wrap justify-between gap-x-2 border-y border-line -mt-px py-0.5 first:mt-0 first:border-t-transparent last:border-b-transparent";
+  "relative flex flex-wrap justify-between gap-x-2 border-y border-line -mt-px py-0.5 first:mt-0";
 const ROW_CLASS = `${ROW_COLLAPSE} hover:z-10 hover:border-accent focus-visible:z-10 focus-visible:border-accent focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent`;
 const NOTE_CLASS = `${ROW_COLLAPSE} text-muted`;
 </script>
 
 <template>
-  <div class="flex flex-col" :class="active ? 'text-text' : 'text-muted'">
+  <div class="flex flex-col py-1" :class="active ? 'text-text' : 'text-muted'">
     <div v-for="note in notes" :key="note" :class="NOTE_CLASS">
       {{ note }}
     </div>

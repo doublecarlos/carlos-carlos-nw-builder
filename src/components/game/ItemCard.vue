@@ -283,7 +283,6 @@ const rows = computed(() =>
       </div>
       <DescriptionText
         v-if="longDescription.length"
-        class="mb-1.5"
         data-testid="item-card-long-description"
         :paragraphs="longDescription"
       />
@@ -397,24 +396,35 @@ const rows = computed(() =>
                      catalog's real value, so a scaled line reads the same here as on a flat
                      grant or on the item's own rows above. -->
                 <template v-else-if="g.tiers">
-                  <div v-for="tier in g.tiers" :key="tier.atLeast">
+                  <div>
                     <div
-                      :class="
-                        tier.active ? 'font-semibold text-text' : 'text-muted'
-                      "
+                      v-for="tier in g.tiers"
+                      :key="tier.atLeast"
+                      class="py-1 border-t border-t-1 border-line last:border-b last:border-b-1"
                     >
-                      {{ tier.atLeast }} equipped:
+                      <div
+                        :class="
+                          tier.active ? 'font-semibold text-text' : 'text-muted'
+                        "
+                      >
+                        {{ tier.atLeast }} equipped:
+                      </div>
+                      <StatRows
+                        :rows="tier.stats"
+                        :active="tier.active"
+                        class="ml-4"
+                        @go-to-slot="emit('go-to-slot', $event)"
+                      ></StatRows>
                     </div>
-                    <StatRows
-                      :rows="tier.stats"
-                      :active="tier.active"
-                      @go-to-slot="emit('go-to-slot', $event)"
-                    ></StatRows>
                   </div>
                 </template>
                 <template v-else-if="g.variants">
-                  <div class="divide-y divide-line divide-y-2">
-                    <div v-for="v in g.variants" :key="v.key" class="py-1">
+                  <div>
+                    <div
+                      v-for="v in g.variants"
+                      :key="v.key"
+                      class="py-1 border-t border-t-1 border-line last:border-b last:border-b-1"
+                    >
                       <div
                         :class="
                           v.active ? 'font-semibold text-text' : 'text-muted'
@@ -425,6 +435,7 @@ const rows = computed(() =>
                       <StatRows
                         :rows="v.stats"
                         :active="v.active"
+                        class="ml-4"
                         @go-to-slot="emit('go-to-slot', $event)"
                       ></StatRows>
                     </div>
@@ -437,20 +448,6 @@ const rows = computed(() =>
                   :notes="grantNotes(row, g)"
                   @go-to-slot="emit('go-to-slot', $event)"
                 ></StatRows>
-                <div
-                  v-if="g.scale?.unset"
-                  class="text-muted"
-                  data-testid="grant-scale-unset"
-                >
-                  <BaseLink
-                    :plain="!g.scale.slotId"
-                    @click="
-                      g.scale.slotId && emit('go-to-slot', g.scale.slotId)
-                    "
-                    >{{ g.scale.label }}</BaseLink
-                  >
-                  share is unset
-                </div>
                 <DescriptionText
                   v-if="g.descriptions.length"
                   class="mt-1"

@@ -463,14 +463,10 @@ describe("grantRows for a scaled grant", () => {
       },
       { key: "power", label: "Power", value: "+40", note: noteAt40("100") },
     ]);
-    expect(row.scale).toEqual({
-      label: "Encounter Damage",
-      unset: false,
-      slotId: "gear.encounterShare",
-    });
+    expect(row.scaled).toBe(true);
   });
 
-  it("keeps the row at a share of 0 and flags the share as unset with its slot", () => {
+  it("keeps the row at a share of 0, its note showing the unset share", () => {
     const [row] = grantRows(
       entryOf(
         buildWith({ "gear.ring1": "flat-ring" }, share(0)),
@@ -488,11 +484,6 @@ describe("grantRows for a scaled grant", () => {
         { text: "Encounter Damage", slotId: "gear.encounterShare" },
       ],
     });
-    expect(row.scale).toEqual({
-      label: "Encounter Damage",
-      unset: true,
-      slotId: "gear.encounterShare",
-    });
   });
 
   it("leaves the slot links out when no slot list is at hand", () => {
@@ -502,19 +493,18 @@ describe("grantRows for a scaled grant", () => {
         "flat-scaled",
       ),
     );
-    expect(row.scale?.slotId).toBeNull();
     expect(row.stats?.[0].note).toEqual([
       { text: "15.00% x 0.00% " },
       { text: "Encounter Damage" },
     ]);
   });
 
-  it("gives no scale to an unscaled grant", () => {
+  it("gives no note to an unscaled grant", () => {
     const [row] = grantRows(
       entryOf(buildWith({ "gear.ring1": "plain-ring" }, share(0.4)), "plain"),
       slotsData.slots,
     );
-    expect(row.scale).toBeNull();
+    expect(row.scaled).toBe(false);
     expect(row.stats?.[0]).not.toHaveProperty("note");
   });
 
@@ -675,10 +665,10 @@ describe("grantRows for a scaled grant", () => {
       new Map(),
       slotsData.slots,
     );
-    expect(row.grants[0].scale).toMatchObject({
-      unset: true,
-      slotId: "gear.encounterShare",
-    });
+    expect(row.grants[0].stats?.[0].note).toEqual([
+      { text: "15.00% x 0.00% " },
+      { text: "Encounter Damage", slotId: "gear.encounterShare" },
+    ]);
   });
 });
 

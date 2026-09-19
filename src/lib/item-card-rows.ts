@@ -233,18 +233,6 @@ function rungLines(
   return scaledLines(unscaled, scale, slots);
 }
 
-// The scaler on a grant, for the card to say the share is unset at a multiplier of 0 and point
-// at the parameter that sets it. Null slot id when the catalog is not at hand (the layer
-// editor's preview card), leaving the text without a link.
-function scaleRowFor(scale: GrantScale | undefined, slots: Slot[]) {
-  if (!scale) return null;
-  return {
-    label: scale.label,
-    unset: scale.multiplier === 0,
-    slotId: findParamSlot(slots, scale.path)?.id ?? null,
-  };
-}
-
 // A flat grant's lines: the live payload times `stacks` while active (`appliedStats` is
 // already multiplied at the bonus level, but a single grant's `stats` is not), else the
 // preview. A scaled grant shows the effective number either way, with the real one under it,
@@ -270,8 +258,8 @@ function grantStatLines(
 }
 
 /** One row per grant of `entry`, with each stat line already formatted. `slots` resolves a
- *  scaler's parameter slot for the note and "share is unset" links. Shared with
- *  BonusInspector.vue, which shows the scaled grants' lines under the bonus payload. */
+ *  scaler's parameter slot for the note links. Shared with BonusInspector.vue, which shows the
+ *  scaled grants' lines under the bonus payload. */
 export function grantRows(entry: EvaluatedBonus, slots: Slot[] = []) {
   const stacks = entry.stacks ?? 1;
   const stacking = entry.bonus?.stacking === "perSource";
@@ -292,7 +280,7 @@ export function grantRows(entry: EvaluatedBonus, slots: Slot[] = []) {
           )
         : [],
       stats: grantStatLines(grant, preview, stacks, slots),
-      scale: scaleRowFor(grant.scale, slots),
+      scaled: grant.scale != null,
     };
   });
 }

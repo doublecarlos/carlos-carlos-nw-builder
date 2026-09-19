@@ -170,53 +170,6 @@
           "min": 0
         },
         {
-          "id": "options.scalersText",
-          "text": "The share of your total damage each power type deals. They should sum to less than 100%; the remainder is damage these scalers do not cover (DoTs, procs, companion, mount).",
-          "type": "text"
-        },
-        {
-          "id": "options.encounterDamage",
-          "label": "Encounter Damage",
-          "type": "build_parameter",
-          "paramType": "percent",
-          "path": "scalers.encounterDamage",
-          "default": 0,
-          "min": 0,
-          "max": 1,
-          "step": 5,
-          "scaler": {
-            "mode": "absolute"
-          }
-        },
-        {
-          "id": "options.atWillDamage",
-          "label": "At-will Damage",
-          "type": "build_parameter",
-          "paramType": "percent",
-          "path": "scalers.atWillDamage",
-          "default": 0,
-          "min": 0,
-          "max": 1,
-          "step": 5,
-          "scaler": {
-            "mode": "absolute"
-          }
-        },
-        {
-          "id": "options.dailyDamage",
-          "label": "Daily Damage",
-          "type": "build_parameter",
-          "paramType": "percent",
-          "path": "scalers.dailyDamage",
-          "default": 0,
-          "min": 0,
-          "max": 1,
-          "step": 5,
-          "scaler": {
-            "mode": "absolute"
-          }
-        },
-        {
           "id": "options.forte1",
           "label": "Forte 1 (½)",
           "type": "build_parameter",
@@ -1666,6 +1619,60 @@
           "type": "item_picker_list",
           "toggleable": true,
           "defaultRows": 0
+        }
+      ]
+    },
+    {
+      "defaultOpen": true,
+      "id": "scalers",
+      "label": "Scalers",
+      "slots": [
+        {
+          "id": "scalers.scalersText",
+          "text": "Conditional damage bonuses will be weighted (multiplied) by these scalers.",
+          "type": "text"
+        },
+        {
+          "id": "scalers.encounterDamage",
+          "label": "Encounter damage",
+          "type": "build_parameter",
+          "paramType": "percent",
+          "path": "scalers.encounterDamage",
+          "default": 0,
+          "min": 0,
+          "max": 1,
+          "step": 5,
+          "scaler": {
+            "mode": "absolute"
+          }
+        },
+        {
+          "id": "scalers.atWillDamage",
+          "label": "At-will damage",
+          "type": "build_parameter",
+          "paramType": "percent",
+          "path": "scalers.atWillDamage",
+          "default": 0,
+          "min": 0,
+          "max": 1,
+          "step": 5,
+          "scaler": {
+            "mode": "absolute"
+          }
+        },
+        {
+          "id": "scalers.dailyDamage",
+          "label": "Daily damage",
+          "type": "build_parameter",
+          "paramType": "percent",
+          "path": "scalers.dailyDamage",
+          "default": 0,
+          "min": 0,
+          "max": 1,
+          "step": 5,
+          "scaler": {
+            "mode": "absolute"
+          }
         }
       ]
     },

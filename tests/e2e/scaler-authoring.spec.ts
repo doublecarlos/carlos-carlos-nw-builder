@@ -29,9 +29,9 @@ test("a grant's scaler is picked from the scaler parameters and survives reopeni
 
   const picker = page.getByTestId("grant-scaled-by");
   await expect(picker.getByTestId("picker-input")).toHaveValue("not scaled");
-  await chooseCombo(picker, "Encounter Damage");
+  await chooseCombo(picker, "Encounter damage");
   await expect(picker.getByTestId("picker-input")).toHaveValue(
-    "Encounter Damage",
+    "Encounter damage",
   );
   await page.getByRole("button", { name: "Save bonus" }).click();
 
@@ -43,7 +43,7 @@ test("a grant's scaler is picked from the scaler parameters and survives reopeni
   await openEditorRow(page, BONUS);
   await expect(page.getByTestId("bonus-name-input")).toHaveValue(BONUS);
   await expect(picker.getByTestId("picker-input")).toHaveValue(
-    "Encounter Damage",
+    "Encounter damage",
   );
 });
 
