@@ -2,7 +2,15 @@
 // the item hover card, the bonus inspector and the stat source card. Rows collapse their
 // borders into one shared line, and hover replaces that line with an accent.
 import { test, expect, type Page } from "@playwright/test";
-import { openBuilder, chooseItem, hoverForCard, slotRow } from "./support/app";
+import {
+  openBuilder,
+  chooseItem,
+  confirmImport,
+  hoverForCard,
+  importText,
+  slotRow,
+} from "./support/app";
+import { statInfoButton, statCard } from "./support/stats";
 
 const HEAD_ITEM = "M29 Enchanted Depthweave Cap";
 
@@ -68,4 +76,54 @@ test("the bonus inspector renders a granted stat as a shared row", async ({
   await expect(rows).toHaveCount(1);
   await expect(rows.first()).toContainText("Combat Advantage");
   await expect(rows.first()).toContainText("+10.00%");
+});
+
+test("a long label wraps under itself and leaves the value on the first line's right edge", async ({
+  page,
+}) => {
+  const RING_ID = "test-long-name-ring";
+  const RING_NAME = "Celestial Enlightened Insignia of Brutality Test Ring";
+  await openBuilder(page);
+  await importText(
+    page,
+    JSON.stringify({
+      name: "Long label test",
+      choices: { "gear.ring1": RING_ID },
+      catalog: {
+        items: {
+          [RING_ID]: {
+            id: RING_ID,
+            name: RING_NAME,
+            filter: "gear_ring",
+            power: 1125,
+          },
+        },
+        bonuses: {},
+        sectionPresets: {},
+      },
+    }),
+  );
+  await confirmImport(page);
+  await expect(page.getByTestId("app-header")).toContainText(/imported/i);
+
+  // The source card is the narrowest list the rows render in, so it is where a name wraps.
+  await statInfoButton(page, "power").click();
+  const row = statCard(page)
+    .getByTestId("stat-card-row")
+    .filter({ hasText: RING_NAME });
+  await expect(row).toContainText("+1,125");
+
+  const label = row.locator("span").nth(0);
+  const [rowBox, labelBox, valueBox, lineHeight] = await Promise.all([
+    row.boundingBox(),
+    label.boundingBox(),
+    row.locator("span").nth(1).boundingBox(),
+    label.evaluate((el) => parseFloat(getComputedStyle(el).lineHeight)),
+  ]);
+  // The name really did wrap, and the value still sits on the row's first line, flush right.
+  expect(labelBox!.height).toBeGreaterThan(lineHeight * 1.5);
+  expect(valueBox!.y - rowBox!.y).toBeLessThan(lineHeight / 2);
+  expect(
+    rowBox!.x + rowBox!.width - (valueBox!.x + valueBox!.width),
+  ).toBeLessThan(2);
 });

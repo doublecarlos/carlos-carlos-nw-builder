@@ -498,7 +498,17 @@ function evaluateGrant(
     ...extra,
   });
 
-  if (!gate.ok) return inactive();
+  // Explained even under an unmet gate: the hover card labels each variant rung by its own
+  // conditions, and without them every rung would read as unconditional.
+  const explainVariants = () =>
+    explain && grant.variants
+      ? grant.variants.map((v) => conditions.explain(v.when, ctx))
+      : undefined;
+
+  if (!gate.ok) {
+    const variantBranches = explainVariants();
+    return inactive(variantBranches ? { variantBranches } : {});
+  }
 
   // `problem`: reports a build error/warning instead of granting stats.
   if (grant.problem) {
@@ -515,9 +525,7 @@ function evaluateGrant(
   // evaluated (not just up to the first match) so the hover card can show why the *other*
   // branches didn't apply too, not only the one that won.
   if (grant.variants) {
-    const variantBranches = explain
-      ? grant.variants.map((v) => conditions.explain(v.when, ctx))
-      : undefined;
+    const variantBranches = explainVariants();
     const index = variantBranches
       ? variantBranches.findIndex((b) => b.ok)
       : grant.variants.findIndex((v) => conditions.evaluate(v.when, ctx));

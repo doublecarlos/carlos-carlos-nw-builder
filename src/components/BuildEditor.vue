@@ -41,6 +41,7 @@ import { statPickerOptions } from "../lib/format";
 import { matchesQuery } from "../lib/text-filter";
 import { slotStablePlaceholder, slotStatSummary } from "../lib/slot-summary";
 import { slotsSupplying } from "../lib/bonus-slots";
+import { readDynamicValue } from "../lib/dynamic-stats";
 import * as insignia from "../engine/insignia";
 import * as stableBrowser from "../stores/stableBrowser";
 import { slotVisible } from "../lib/slot-visibility";
@@ -189,12 +190,14 @@ function slotGrantsStat(slotDef: Slot, statKey: string): boolean {
  *  summary (the text next to the picker, `statSummary`) does. The stat filter is independent
  *  of all of that: it always narrows the result further. */
 function slotMatchesFilters(section: SlotSection, slotDef: Slot): boolean {
-  if (
-    slotDef.type === "separator" ||
-    slotDef.type === "text" ||
-    slotDef.type === "item_picker_list"
-  )
-    return false;
+  if (slotDef.type === "separator" || slotDef.type === "text") return false;
+  // A list's container is its "Add" row: no choice or stats for the text and stat filters to
+  // match, so it only survives a supply filter naming the list, the one filter whose answer
+  // can be a row that does not exist yet. It counts as a match like any other row.
+  if (slotDef.type === "item_picker_list") {
+    if (filterStat.value || !supplierSlots.value?.has(slotDef.id)) return false;
+    return matchesQuery([section.label, slotDef.label], filterText.value);
+  }
   if (filterStat.value && !slotGrantsStat(slotDef, filterStat.value))
     return false;
   // Narrows the same way the stat filter does, and for the same reason: it answers "where
@@ -274,6 +277,25 @@ const {
 const hoveredItem = computed(() =>
   hover.value ? itemForHover(hover.value.slotId, hover.value.itemId) : null,
 );
+
+/** The values the engine resolves for the hovered item's own dynamic stats, read off the build
+ *  the same way engine.ts does, so the card's typed rows show what was typed rather than the
+ *  config's default. Per copy, like the card's fixed rows: the engine's own row total is this
+ *  times the item's repetitions. Only for the slot's own pick; a point_assignment candidate
+ *  has no typed value of its own. */
+const hoveredDynamicValues = computed(() => {
+  const item = hoveredItem.value;
+  const slotId = hover.value?.slotId;
+  if (!item?.dynamicStats?.length || !slotId || itemIn(slotId) !== item) {
+    return {};
+  }
+  return Object.fromEntries(
+    item.dynamicStats.map((config) => [
+      config.stat,
+      readDynamicValue(build.value, slotId, config),
+    ]),
+  );
+});
 
 /**
  * Every bonus the hovered item takes part in -- its own inline ones and its sets'.
@@ -1138,6 +1160,7 @@ watch(
             :bonuses="hoveredBonuses"
             :occurrence-rows="hoveredOccurrenceRows"
             :scalers="itemScalers(hoveredItem)"
+            :dynamic-values="hoveredDynamicValues"
             :db="db"
             :slot-label="db.slotFor(hover.slotId)?.label ?? ''"
             :edit-label="editLabel"

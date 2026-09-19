@@ -193,3 +193,27 @@ test.describe("stat source popover", () => {
     await expect(sidebar).toHaveJSProperty("scrollTop", 0);
   });
 });
+
+test.describe("problem list", () => {
+  test("a problem's label jumps to the slot it is about", async ({ page }) => {
+    await openBuilder(page);
+    // Class-restricted with no class chosen, so equipping it is itself the problem.
+    await chooseItem(page, "gear.head", HEAD_ITEM);
+    const link = page.getByTestId("stat-panel-error-link");
+    await expect(link).toHaveText("Head");
+
+    // From the far end of the list, so landing in view takes a real scroll.
+    await page
+      .getByTestId("editor-column")
+      .evaluate((el) => el.scrollTo(0, el.scrollHeight));
+    await expect(slotRow(page, "gear.head")).not.toBeInViewport();
+
+    await link.click();
+
+    await expect(cursorRow(page)).toHaveAttribute(
+      "data-cursor-key",
+      "slot:gear.head",
+    );
+    await expect(slotRow(page, "gear.head")).toBeInViewport();
+  });
+});

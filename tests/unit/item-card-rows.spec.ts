@@ -1,9 +1,15 @@
 // ItemCard.vue's bonus-row derivation, moved to lib/item-card-rows.ts so it is testable
 // independent of the component (see F16/F17 in the UI review).
 import { describe, it, expect } from "vitest";
-import { itemCardRows, statList } from "../../src/lib/item-card-rows";
-import { label as statLabel, signedStat } from "../../src/lib/format";
+import {
+  dynamicNoteText,
+  itemCardRows,
+  statList,
+  withDynamicNotes,
+} from "../../src/lib/item-card-rows";
+import { int, label as statLabel, signedStat } from "../../src/lib/format";
 import type {
+  DynamicStatConfig,
   EvaluatedBonus,
   Grant,
   GrantEvaluation,
@@ -52,6 +58,72 @@ const line = (key: string, value: number) => ({
   key,
   label: statLabel(key),
   value: signedStat(key, value),
+});
+
+const typedLine = (key: string, value: number, config: DynamicStatConfig) => ({
+  ...line(key, value),
+  note: [{ text: dynamicNoteText(config) }],
+});
+
+describe("dynamicNoteText", () => {
+  it("states the typed range in the stat's own format", () => {
+    expect(
+      dynamicNoteText({ stat: "power", min: 0, max: 1000, default: 500 }),
+    ).toBe(`from 0 to ${int(1000)}`);
+    expect(
+      dynamicNoteText({
+        stat: "outgoing_damage",
+        min: 0,
+        max: 0.5,
+        default: 0.1,
+      }),
+    ).toBe("from 0.00% to 50.00%");
+  });
+
+  it("leads with the config's own label when it has one", () => {
+    expect(
+      dynamicNoteText({
+        stat: "power",
+        min: 0,
+        max: 1000,
+        default: 500,
+        label: "Enchant rank",
+      }),
+    ).toBe(`Enchant rank, from 0 to ${int(1000)}`);
+  });
+});
+
+describe("withDynamicNotes", () => {
+  const config: DynamicStatConfig = {
+    stat: "power",
+    min: 0,
+    max: 1000,
+    default: 500,
+  };
+
+  it("returns the lines untouched without configs", () => {
+    const lines = [line("power", 10)];
+    expect(withDynamicNotes(lines, undefined)).toBe(lines);
+    expect(withDynamicNotes(lines, [])).toBe(lines);
+  });
+
+  it("notes only the line whose stat a config declares", () => {
+    expect(
+      withDynamicNotes([line("power", 500), line("defense", 10)], [config]),
+    ).toEqual([typedLine("power", 500, config), line("defense", 10)]);
+  });
+
+  it("appends the range after a scaler's own parts", () => {
+    const scaled = {
+      ...line("power", 200),
+      note: [{ text: "500 x 40.00% " }, { text: "Encounter Damage" }],
+    };
+    expect(withDynamicNotes([scaled], [config])[0].note).toEqual([
+      { text: "500 x 40.00% " },
+      { text: "Encounter Damage" },
+      { text: `, from 0 to ${int(1000)}` },
+    ]);
+  });
 });
 
 describe("statList", () => {
@@ -334,13 +406,14 @@ describe("itemCardRows", () => {
     expect(row.grants[0].stats).toEqual([line("power", 30)]);
   });
 
-  it("previews an inactive grant's raw stats plus each dynamicStats config's default", () => {
-    const raw: Grant = {
-      stats: { power: 5 },
-      dynamicStats: [
-        { stat: "combined_rating", min: 0, max: 100, default: 25 },
-      ],
+  it("previews an inactive grant's raw stats plus each dynamicStats config's default, noting the range", () => {
+    const config: DynamicStatConfig = {
+      stat: "combined_rating",
+      min: 0,
+      max: 100,
+      default: 25,
     };
+    const raw: Grant = { stats: { power: 5 }, dynamicStats: [config] };
     const [row] = itemCardRows(
       item(),
       [
@@ -353,9 +426,122 @@ describe("itemCardRows", () => {
     );
     expect(row.grants[0].stats).toEqual([
       line("power", 5),
-      line("combined_rating", 25),
+      typedLine("combined_rating", 25, config),
     ]);
     expect(row.grants[0].eachStack).toBe(true);
+  });
+
+  it("notes the range on an active grant's typed stat, merged with its fixed share", () => {
+    const config: DynamicStatConfig = {
+      stat: "power",
+      min: 0,
+      max: 1000,
+      default: 500,
+      label: "Enchant rank",
+    };
+    const raw: Grant = { stats: { power: 10 }, dynamicStats: [config] };
+    const [row] = itemCardRows(
+      item(),
+      [
+        bonus({
+          grants: [grantEval(raw, { active: true, stats: { power: 760 } })],
+        }),
+      ],
+      [],
+    );
+    expect(row.grants[0].stats).toEqual([typedLine("power", 760, config)]);
+  });
+
+  it("notes a variant's own typed stat on its rung, live and previewed alike", () => {
+    const config: DynamicStatConfig = {
+      stat: "power",
+      min: 0,
+      max: 100,
+      default: 20,
+    };
+    const raw: Grant = {
+      variants: [
+        { stats: { defense: 5 }, dynamicStats: [config] },
+        { stats: { defense: 15 } },
+      ],
+    };
+    const [row] = itemCardRows(
+      item(),
+      [
+        bonus({
+          grants: [
+            grantEval(raw, {
+              active: true,
+              chose: "variant:0",
+              stats: { defense: 5, power: 70 },
+            }),
+          ],
+        }),
+      ],
+      [],
+    );
+    expect(row.grants[0].variants?.map((v) => v.stats)).toEqual([
+      [line("defense", 5), typedLine("power", 70, config)],
+      [line("defense", 15)],
+    ]);
+
+    const [inactive] = itemCardRows(
+      item(),
+      [
+        bonus({
+          active: false,
+          grants: [grantEval(raw, { active: false, stats: null })],
+        }),
+      ],
+      [],
+    );
+    expect(inactive.grants[0].variants?.[0].stats).toEqual([
+      line("defense", 5),
+      typedLine("power", 20, config),
+    ]);
+  });
+
+  it("labels each variant by its own conditions while the grant's gate is unmet", () => {
+    const raw: Grant = {
+      when: { toggle: "combat" },
+      variants: [{ stats: { power: 5 } }, { stats: { power: 15 } }],
+    };
+    const [row] = itemCardRows(
+      item(),
+      [
+        bonus({
+          active: false,
+          grants: [
+            grantEval(raw, {
+              active: false,
+              stats: null,
+              gate: {
+                ok: false,
+                leaves: [{ ok: false, label: "combat is on" }],
+                unmet: [{ ok: false, label: "combat is on" }],
+              },
+              variantBranches: [
+                {
+                  ok: false,
+                  leaves: [{ ok: false, label: "Tank role" }],
+                  unmet: [{ ok: false, label: "Tank role" }],
+                },
+                {
+                  ok: true,
+                  leaves: [{ ok: true, label: "DPS role" }],
+                  unmet: [],
+                },
+              ],
+            }),
+          ],
+        }),
+      ],
+      [],
+    );
+    expect(row.grants[0].variants?.map((v) => [v.label, v.active])).toEqual([
+      ["Tank role", false],
+      ["DPS role", false],
+    ]);
   });
 
   it("credits a shared, non-tiered, non-stacking bonus to its first source only", () => {
