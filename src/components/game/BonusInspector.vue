@@ -425,6 +425,7 @@ const counts = computed(() => {
                 :rows="grant.stats"
                 :active="grant.active"
                 row-testid="bonus-grant-stat-row"
+                @go-to-slot="jumpToSlot"
               />
               <p
                 v-if="grant.scale?.unset"

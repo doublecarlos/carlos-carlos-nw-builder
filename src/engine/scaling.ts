@@ -36,8 +36,8 @@ function matches(scaler: ResolvedScaler, item: Item): boolean {
  * resolves to its slot's declared `default` exactly once, in bonus.ts's `collect()`, which is
  * the same number the parameter's own control shows.
  *
- * Returned as a list rather than folded straight to a number so the UI can name what scaled an
- * item ("Mount bolster 60% applied") instead of showing silently different figures.
+ * Returned as a list rather than folded straight to a number so the UI can note what scaled
+ * each stat ("1,750 x 225.00% Mount bolster") instead of showing silently different figures.
  */
 export function activeScalersFor(
   context: EvalContext,
@@ -51,21 +51,27 @@ export function activeScalersFor(
 }
 
 /**
- * The multiplier for one item, or 1 when no scaler claims it.
+ * The one multiplier a set of scalers amounts to, or 1 for none.
  *
  * Scalers compose multiplicatively when several claim one item. Nothing shipped overlaps today
  * (an item is a mount or a companion, never both), but the alternative (first match wins)
  * would make the outcome depend on slot order, which is a worse thing to leave lying around
  * for the quality-tier scaler this is shaped to accept next.
  */
+export function composeFactor(
+  scalers: Pick<ResolvedScaler, "multiplier">[],
+): number {
+  let factor = 1;
+  for (const { multiplier } of scalers) factor *= multiplier;
+  return factor;
+}
+
+/** The multiplier for one item, or 1 when no scaler claims it. */
 export function scaleFactorFor(
   context: EvalContext,
   item: Item | null | undefined,
 ): number {
-  let factor = 1;
-  for (const { multiplier } of activeScalersFor(context, item))
-    factor *= multiplier;
-  return factor;
+  return composeFactor(activeScalersFor(context, item));
 }
 
 /**

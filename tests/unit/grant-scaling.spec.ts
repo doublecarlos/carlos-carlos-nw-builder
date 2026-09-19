@@ -13,7 +13,14 @@ import * as db from "../../src/data/db";
 import * as engine from "../../src/engine/engine";
 import * as catalog from "../../src/data/catalog";
 import { storedListRows } from "../../src/lib/item-picker-list";
-import { grantRows, itemCardRows } from "../../src/lib/item-card-rows";
+import {
+  grantRows,
+  itemCardRows,
+  scaleNote,
+} from "../../src/lib/item-card-rows";
+import { activeScalersFor } from "../../src/engine/scaling";
+import { collect } from "../../src/engine/bonus";
+import { int } from "../../src/lib/format";
 import type {
   Build,
   Bonus,
@@ -431,9 +438,14 @@ describe("GrantEvaluation.scale", () => {
   });
 });
 
-describe("grantRows for a scaled grant", () => {
-  const FACTOR = "x 40.00% Encounter Damage";
+/** The note under a line scaled by the 40% share: the real value, the factor, and the scaler's
+ *  name linked to its parameter slot. */
+const noteAt40 = (raw: string) => [
+  { text: `${raw} x 40.00% ` },
+  { text: "Encounter Damage", slotId: "gear.encounterShare" },
+];
 
+describe("grantRows for a scaled grant", () => {
   it("shows the effective value with the real value and scaler under it", () => {
     const [row] = grantRows(
       entryOf(
@@ -447,13 +459,12 @@ describe("grantRows for a scaled grant", () => {
         key: "outgoing_damage",
         label: "Outgoing Damage",
         value: "+6.00%",
-        note: `15.00% ${FACTOR}`,
+        note: noteAt40("15.00%"),
       },
-      { key: "power", label: "Power", value: "+40", note: `100 ${FACTOR}` },
+      { key: "power", label: "Power", value: "+40", note: noteAt40("100") },
     ]);
     expect(row.scale).toEqual({
       label: "Encounter Damage",
-      factor: FACTOR,
       unset: false,
       slotId: "gear.encounterShare",
     });
@@ -472,17 +483,19 @@ describe("grantRows for a scaled grant", () => {
       key: "outgoing_damage",
       label: "Outgoing Damage",
       value: "0.00%",
-      note: "15.00% x 0.00% Encounter Damage",
+      note: [
+        { text: "15.00% x 0.00% " },
+        { text: "Encounter Damage", slotId: "gear.encounterShare" },
+      ],
     });
     expect(row.scale).toEqual({
       label: "Encounter Damage",
-      factor: "x 0.00% Encounter Damage",
       unset: true,
       slotId: "gear.encounterShare",
     });
   });
 
-  it("leaves the slot link out when no slot list is at hand", () => {
+  it("leaves the slot links out when no slot list is at hand", () => {
     const [row] = grantRows(
       entryOf(
         buildWith({ "gear.ring1": "flat-ring" }, share(0)),
@@ -490,6 +503,10 @@ describe("grantRows for a scaled grant", () => {
       ),
     );
     expect(row.scale?.slotId).toBeNull();
+    expect(row.stats?.[0].note).toEqual([
+      { text: "15.00% x 0.00% " },
+      { text: "Encounter Damage" },
+    ]);
   });
 
   it("gives no scale to an unscaled grant", () => {
@@ -517,36 +534,48 @@ describe("grantRows for a scaled grant", () => {
         key: "outgoing_damage",
         label: "Outgoing Damage",
         value: "+8.00%",
-        note: `10.00% ${FACTOR}`,
+        note: noteAt40("10.00%"),
       },
     ]);
   });
 
-  it("keeps the tier ladder at the real values and captions it with the factor", () => {
-    const [row] = grantRows(
-      entryOf(
-        buildWith({ "gear.ring1": "tier-ring" }, share(0.4), {
-          "tier-ring": { "tier-scaled": 5 },
-        }),
-        "tier-scaled",
-      ),
-      slotsData.slots,
+  it("scales every tier rung, noting the real value under each", () => {
+    const entry = entryOf(
+      buildWith({ "gear.ring1": "tier-ring" }, share(0.4), {
+        "tier-ring": { "tier-scaled": 5 },
+      }),
+      "tier-scaled",
     );
-    expect(
-      row.tiers?.map((tier) => [tier.stats[0].value, tier.active]),
-    ).toEqual([
-      ["+22.00%", false],
-      ["+30.00%", true],
+    const [row] = grantRows(entry, slotsData.slots);
+    expect(row.tiers?.map((tier) => [tier.stats[0], tier.active])).toEqual([
+      [
+        {
+          key: "outgoing_damage",
+          label: "Outgoing Damage",
+          value: "+8.80%",
+          note: noteAt40("22.00%"),
+        },
+        false,
+      ],
+      [
+        {
+          key: "outgoing_damage",
+          label: "Outgoing Damage",
+          value: "+12.00%",
+          note: noteAt40("30.00%"),
+        },
+        true,
+      ],
     ]);
-    expect(row.scale?.factor).toBe(FACTOR);
-    // The live rung's effective line, which the inspector shows.
+    // The live rung is the number the engine granted, and the inspector's line agrees.
+    expect(entry.stats?.outgoing_damage).toBeCloseTo(0.12, 9);
     expect(row.stats?.[0]).toMatchObject({
       value: "+12.00%",
-      note: `30.00% ${FACTOR}`,
+      note: noteAt40("30.00%"),
     });
   });
 
-  it("keeps the variant ladder at the real values", () => {
+  it("scales every variant rung, noting the real value under each", () => {
     const [row] = grantRows(
       entryOf(
         buildWith({ "gear.ring1": "variant-ring" }, share(0.4)),
@@ -554,11 +583,65 @@ describe("grantRows for a scaled grant", () => {
       ),
       slotsData.slots,
     );
-    expect(row.variants?.map((v) => v.stats[0].value)).toEqual([
-      "+10.00%",
-      "+20.00%",
+    expect(row.variants?.map((v) => [v.stats[0], v.active])).toEqual([
+      [
+        {
+          key: "outgoing_damage",
+          label: "Outgoing Damage",
+          value: "+4.00%",
+          note: noteAt40("10.00%"),
+        },
+        true,
+      ],
+      [
+        {
+          key: "outgoing_damage",
+          label: "Outgoing Damage",
+          value: "+8.00%",
+          note: noteAt40("20.00%"),
+        },
+        false,
+      ],
     ]);
-    expect(row.scale?.factor).toBe(FACTOR);
+  });
+
+  it("leaves an unscaled ladder at the real values with no notes", () => {
+    const plainTier: Bonus = {
+      id: "plain-tier",
+      grants: [
+        {
+          tiers: [
+            {
+              bonusOccurrences: { atLeast: 1 },
+              stats: { outgoing_damage: 0.22 },
+            },
+          ],
+        },
+      ],
+    };
+    const [row] = grantRows(
+      engine
+        .resolveBuild(
+          db.build(
+            [
+              ring("plain-tier-ring", [
+                { bonus: "plain-tier", min: 0, max: 5, default: 1 },
+              ]),
+            ],
+            [plainTier],
+            schema,
+            slotsData,
+          ),
+          buildWith({ "gear.ring1": "plain-tier-ring" }),
+        )
+        .bonuses.find((b) => b.bonusId === "plain-tier")!,
+      slotsData.slots,
+    );
+    expect(row.tiers?.[0].stats[0]).toEqual({
+      key: "outgoing_damage",
+      label: "Outgoing Damage",
+      value: "+22.00%",
+    });
   });
 
   it("previews an inactive scaled grant at the effective value, with the note", () => {
@@ -573,7 +656,7 @@ describe("grantRows for a scaled grant", () => {
         key: "outgoing_damage",
         label: "Outgoing Damage",
         value: "+6.00%",
-        note: `15.00% ${FACTOR}`,
+        note: noteAt40("15.00%"),
       },
     ]);
     // The card's preview and the bonus-level one agree.
@@ -596,5 +679,85 @@ describe("grantRows for a scaled grant", () => {
       unset: true,
       slotId: "gear.encounterShare",
     });
+  });
+});
+
+// One helper writes the note under an item's bolstered row and under a scaled grant's, so the
+// two can never drift apart in wording.
+describe("scaleNote", () => {
+  const bolster: BuildParameterSlot = {
+    id: "gear.mountBolster",
+    label: "Mount bolster",
+    section: "gear",
+    type: "build_parameter",
+    paramType: "percent",
+    path: "mountBolster",
+    default: 1.25,
+    min: 0,
+    max: 1.25,
+    scaler: { mode: "relative", applies: { filter: ["test_mount"] } },
+  };
+  const mount: Item = {
+    id: "test-mount",
+    name: "Test Mount",
+    filter: "test_mount",
+    il: 1750,
+  };
+  const withBolster: SlotsData = {
+    sections: slotsData.sections,
+    slots: [...slotsData.slots, bolster],
+  };
+  const mountDb = db.build([mount], [], schema, withBolster);
+
+  it("writes an item's bolster note in the grant note's format", () => {
+    const { ctx } = collect(
+      mountDb,
+      buildWith({}, { mountBolster: 1.25 }) as Build,
+    );
+    const scalers = activeScalersFor(ctx, mount);
+    expect(scalers).toHaveLength(1);
+    // The raw item level, not the floored scaled one, times the resolved multiplier. Grouped
+    // through `int` so the expectation does not depend on the machine's locale.
+    expect(scaleNote(1750, "il", scalers, withBolster.slots)).toEqual([
+      { text: `${int(1750)} x 225.00% ` },
+      { text: "Mount bolster", slotId: "gear.mountBolster" },
+    ]);
+  });
+
+  it("resolves the link to the scaler's own parameter slot", () => {
+    const [grant] = entryOf(
+      buildWith({ "gear.ring1": "flat-ring" }, share(0.4)),
+      "flat-scaled",
+    ).grants;
+    const note = scaleNote(
+      0.15,
+      "outgoing_damage",
+      [grant.scale!],
+      withBolster.slots,
+    );
+    expect(note).toEqual(noteAt40("15.00%"));
+  });
+
+  it("chains the factors when several scalers claim one value", () => {
+    const [grant] = entryOf(
+      buildWith({ "gear.ring1": "flat-ring" }, share(0.4)),
+      "flat-scaled",
+    ).grants;
+    const { ctx } = collect(
+      mountDb,
+      buildWith({}, { mountBolster: 1.25 }) as Build,
+    );
+    const note = scaleNote(
+      100,
+      "power",
+      [...activeScalersFor(ctx, mount), grant.scale!],
+      withBolster.slots,
+    );
+    expect(note).toEqual([
+      { text: "100 x 225.00% " },
+      { text: "Mount bolster", slotId: "gear.mountBolster" },
+      { text: " x 40.00% " },
+      { text: "Encounter Damage", slotId: "gear.encounterShare" },
+    ]);
   });
 });

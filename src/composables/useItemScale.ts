@@ -6,8 +6,7 @@
 // resolved build to read -- a picker preview must still render while the build is broken.
 import { activeScalersFor, scaleFactorFor } from "../engine/scaling";
 import { resolved } from "../stores/resolved";
-import { pct } from "../lib/format";
-import type { Item } from "../types";
+import type { Item, ResolvedScaler } from "../types";
 
 /** The multiplier the active build applies to `item`'s own stat line, or 1 for an item nothing
  *  scales. Cheap enough to call per candidate row -- a walk of at most a handful of scalers. */
@@ -17,12 +16,10 @@ export function itemScaleFactor(item: Item | null | undefined): number {
   return scaleFactorFor(state.result.context, item);
 }
 
-/** One human-readable line per scaler currently acting on `item` -- "Mount bolster 125.00%
- *  applied" -- so a card showing scaled numbers says why they differ from the catalog. */
-export function itemScaleNotes(item: Item | null | undefined): string[] {
+/** Every scaler currently acting on `item`, for a card to scale its stat line by and to note
+ *  under each scaled row why the number differs from the catalog. */
+export function itemScalers(item: Item | null | undefined): ResolvedScaler[] {
   const state = resolved.value;
   if (!state.ok) return [];
-  return activeScalersFor(state.result.context, item).map(
-    ({ label, value }) => `${label} ${pct(value)} applied`,
-  );
+  return activeScalersFor(state.result.context, item);
 }

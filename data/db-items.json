@@ -6177,7 +6177,7 @@
         "bonus": "risky-investment",
         "min": 0,
         "max": 5,
-        "default": 0,
+        "default": 5,
         "label": "Soul Investiture"
       },
       "paragon-exclusive"

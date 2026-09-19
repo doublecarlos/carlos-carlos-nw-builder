@@ -19,8 +19,8 @@ import {
   stat as formatStat,
 } from "../../lib/format";
 import { descriptionParagraphs } from "../../lib/description";
-import { itemCardRows } from "../../lib/item-card-rows";
-import type { ItemCardRow } from "../../lib/item-card-rows";
+import { itemCardRows, scaleNote } from "../../lib/item-card-rows";
+import type { ItemCardRow, StatLine } from "../../lib/item-card-rows";
 import { occurrenceStateText } from "../../lib/bonus-inspector";
 import { supplyNeedFor } from "../../lib/bonus-slots";
 import {
@@ -30,13 +30,14 @@ import {
   reachableBonuses,
   slotSummary,
 } from "../../engine/insignia";
-import { scaledStat } from "../../engine/scaling";
+import { composeFactor, scaledStat } from "../../engine/scaling";
 import type { OccurrenceRow } from "../../composables/useItemBonusOccurrences";
 import type {
   DynamicStatConfig,
   Item,
   Db,
   EvaluatedBonus,
+  ResolvedScaler,
   SupplyNeed,
 } from "../../types";
 import { Crosshair, SquarePen, Table, TriangleAlert } from "@lucide/vue";
@@ -67,14 +68,12 @@ const props = withDefaults(
      *  count-of-0 explain that directly instead of only through a generic unmet-gate
      *  leaf, which reads oddly for a bonus gated on its own occurrence count. */
     occurrenceRows?: OccurrenceRow[];
-    /** Mount/companion bolster acting on this item (`itemScaleFactor`), resolved by the caller
+    /** Mount/companion bolster acting on this item (`itemScalers`), resolved by the caller
      *  rather than read from the store here so this component stays prop-driven. Scales the
-     *  item's own stat line only -- the bonus payloads below are attributed to a slot, not
-     *  owned by the item. */
-    scale?: number;
-    /** Lines naming what `scale` came from (`itemScaleNotes`), listed among `notes` so the
-     *  card never shows numbers that silently disagree with the catalog. */
-    scaleNotes?: string[];
+     *  item's own stat line only, since the bonus payloads below are attributed to a slot, not
+     *  owned by the item. Each scaled row notes the real value and the scaler, the same way a
+     *  scaled grant's rows do. */
+    scalers?: ResolvedScaler[];
     /** Tooltip for the header's edit button, naming the layer the edit lands in -- which is
      *  not necessarily the one on screen. Empty hides the button. */
     editLabel?: string;
@@ -90,8 +89,7 @@ const props = withDefaults(
     slotLabel: "",
     db: null,
     occurrenceRows: () => [],
-    scale: 1,
-    scaleNotes: () => [],
+    scalers: () => [],
     editLabel: "",
     stableGroup: null,
     bonusById: () => new Map(),
@@ -111,9 +109,11 @@ const replacement = computed(
   () => props.db?.replacementFor(props.item.id) ?? null,
 );
 
+const scale = computed(() => composeFactor(props.scalers));
+
 /** The header badge, scaled like the stat lines below it -- an unscaled figure next to scaled
  *  rows reads as a contradiction rather than as two different numbers. */
-const scaledIl = computed(() => int(scaledStat(props.item, "il", props.scale)));
+const scaledIl = computed(() => int(scaledStat(props.item, "il", scale.value)));
 
 /** Falls back to the short description, so an item carrying only that still says something on
  * its card rather than nothing. */
@@ -151,15 +151,21 @@ const slots = computed(() => slotSummary(props.item));
 
 const shown = computed(() => itemDisplay(props.db, props.item));
 
+/** The item's own stat line at the build's bolster. A scaled row's note shows the catalog
+ *  value (the unfloored item level included) and every scaler behind the number. */
 const stats = computed(() => {
-  const out: { key: string; label: string; value: string }[] = [];
+  const out: StatLine[] = [];
+  const slots = props.db?.slots ?? [];
   for (const key of NW_SCHEMA.statKeys) {
-    const value = props.item[key];
+    const value = props.item[key] as number | undefined;
     if (!value) continue;
     out.push({
       key,
       label: statLabel(key),
-      value: signedStat(key, scaledStat(props.item, key, props.scale)),
+      value: signedStat(key, scaledStat(props.item, key, scale.value)),
+      ...(props.scalers.length && {
+        note: scaleNote(value, key, props.scalers, slots),
+      }),
     });
   }
   return out;
@@ -187,7 +193,7 @@ function grantNotes(
 
 /** Notes that are not stats but change whether the item is legal or what it grants. */
 const notes = computed(() => {
-  const out: string[] = [...props.scaleNotes];
+  const out: string[] = [];
   if (props.item.allowedClass)
     out.push(`${props.item.allowedClass.join(" or ")} only`);
   // The effective cap, so an item inheriting its filter's default still states one.
@@ -281,7 +287,11 @@ const rows = computed(() =>
         data-testid="item-card-long-description"
         :paragraphs="longDescription"
       />
-      <StatRows :rows="stats" empty-text="no direct stats"></StatRows>
+      <StatRows
+        :rows="stats"
+        empty-text="no direct stats"
+        @go-to-slot="emit('go-to-slot', $event)"
+      ></StatRows>
 
       <div
         v-if="notes.length"
@@ -383,17 +393,10 @@ const rows = computed(() =>
                 <div v-if="g.problem" class="text-warn">
                   {{ g.problem.message }}
                 </div>
-                <!-- A ladder lists the catalog's real values; its caption says the scaler
-                     still applies to whichever rung is live, and the live line under the
-                     ladder shows what that rung actually grants. -->
+                <!-- A ladder's rungs are already at the grant's scale, each noting the
+                     catalog's real value, so a scaled line reads the same here as on a flat
+                     grant or on the item's own rows above. -->
                 <template v-else-if="g.tiers">
-                  <div
-                    v-if="g.scale"
-                    class="text-muted"
-                    data-testid="grant-scale-caption"
-                  >
-                    before {{ g.scale.factor }}
-                  </div>
                   <div v-for="tier in g.tiers" :key="tier.atLeast">
                     <div
                       :class="
@@ -405,17 +408,11 @@ const rows = computed(() =>
                     <StatRows
                       :rows="tier.stats"
                       :active="tier.active"
+                      @go-to-slot="emit('go-to-slot', $event)"
                     ></StatRows>
                   </div>
                 </template>
                 <template v-else-if="g.variants">
-                  <div
-                    v-if="g.scale"
-                    class="text-muted"
-                    data-testid="grant-scale-caption"
-                  >
-                    before {{ g.scale.factor }}
-                  </div>
                   <div class="divide-y divide-line divide-y-2">
                     <div v-for="v in g.variants" :key="v.key" class="py-1">
                       <div
@@ -425,7 +422,11 @@ const rows = computed(() =>
                       >
                         {{ v.label }}:
                       </div>
-                      <StatRows :rows="v.stats" :active="v.active"></StatRows>
+                      <StatRows
+                        :rows="v.stats"
+                        :active="v.active"
+                        @go-to-slot="emit('go-to-slot', $event)"
+                      ></StatRows>
                     </div>
                   </div>
                 </template>
@@ -434,16 +435,7 @@ const rows = computed(() =>
                   :rows="g.stats"
                   :active="g.active"
                   :notes="grantNotes(row, g)"
-                ></StatRows>
-                <StatRows
-                  v-if="
-                    (g.tiers || g.variants) && g.scale && g.active && g.stats
-                  "
-                  class="mt-1"
-                  :rows="g.stats"
-                  :active="g.active"
-                  :notes="grantNotes(row, g)"
-                  data-testid="grant-scale-live"
+                  @go-to-slot="emit('go-to-slot', $event)"
                 ></StatRows>
                 <div
                   v-if="g.scale?.unset"

@@ -52,11 +52,24 @@ function bonusStats(result: ReturnType<typeof resolve>, id: string) {
   return entry!.appliedStats!;
 }
 
-const FIVE_STACKS = { "risky-investment": { "risky-investment": 5 } };
+/** Risky Investment's Soul Investiture count, which ships at its full five stacks. */
+const stacksOf = (stacks: number) => ({
+  "risky-investment": { "risky-investment": stacks },
+});
 
 describe("shipped damage-type scaled entries", () => {
+  it("start Risky Investment at five Soul Investiture stacks", () => {
+    const attachment = shipped
+      .get("risky-investment")!
+      .bonuses!.find(
+        (entry) =>
+          typeof entry !== "string" && entry.bonus === "risky-investment",
+      );
+    expect(attachment).toMatchObject({ default: 5, max: 5 });
+  });
+
   it("reproduce the old pre-multiplied values at the weights those assumed", () => {
-    const result = resolve({ scalers: SHARES }, FIVE_STACKS);
+    const result = resolve({ scalers: SHARES });
     // 0.30 at five stacks x 0.40 encounters.
     expect(bonusStats(result, "risky-investment").outgoing_damage).toBeCloseTo(
       0.12,
@@ -74,7 +87,7 @@ describe("shipped damage-type scaled entries", () => {
   });
 
   it("contribute nothing at the default shares of 0", () => {
-    const result = resolve({}, FIVE_STACKS);
+    const result = resolve();
     expect(bonusStats(result, "risky-investment").outgoing_damage).toBe(0);
     expect(
       bonusStats(result, "sturdy-crescent-collar").outgoing_damage_mult,
@@ -83,7 +96,7 @@ describe("shipped damage-type scaled entries", () => {
   });
 
   it("give Risky Investment nothing at zero Soul Investiture stacks", () => {
-    const result = resolve({ scalers: SHARES });
+    const result = resolve({ scalers: SHARES }, stacksOf(0));
     const entry = result.bonuses.find((b) => b.bonusId === "risky-investment");
     expect(entry?.active).toBe(false);
     expect(entry?.appliedStats).toBeNull();
@@ -92,12 +105,7 @@ describe("shipped damage-type scaled entries", () => {
   it("climb Risky Investment's ladder two points per stack", () => {
     const at = (stacks: number) =>
       bonusStats(
-        resolve(
-          { scalers: { encounterDamage: 1 } },
-          {
-            "risky-investment": { "risky-investment": stacks },
-          },
-        ),
+        resolve({ scalers: { encounterDamage: 1 } }, stacksOf(stacks)),
         "risky-investment",
       ).outgoing_damage;
     expect([1, 2, 3, 4, 5].map(at)).toEqual([0.22, 0.24, 0.26, 0.28, 0.3]);
