@@ -63,7 +63,8 @@ const NOTE_CLASS = `${ROW_COLLAPSE} text-muted`;
       :data-testid="rowTestid"
       @click="row.select && emit('select', row.select)"
     >
-      <span class="min-w-0">{{ row.label }}</span>
+      <!-- The label flexes and wraps within itself so the value keeps the right edge. -->
+      <span class="min-w-0 flex-1">{{ row.label }}</span>
       <span class="flex-none tabular-nums">{{ row.value }}</span>
       <span
         v-if="row.note"

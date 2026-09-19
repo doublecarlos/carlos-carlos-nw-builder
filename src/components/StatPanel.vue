@@ -9,6 +9,7 @@ import { ref, computed } from "vue";
 import ComboBox from "./ui/ComboBox.vue";
 import BuildComboBox from "./game/BuildComboBox.vue";
 import BaseCheckbox from "./ui/BaseCheckbox.vue";
+import BaseLink from "./ui/BaseLink.vue";
 import IconButton from "./ui/IconButton.vue";
 import { CircleAlert } from "@lucide/vue";
 import StatPanelSourceCard from "./game/StatPanelSourceCard.vue";
@@ -507,7 +508,15 @@ const {
       <strong>{{ errorList.length }} problem(s)</strong>
       <ul class="mt-1 pl-5">
         <li v-for="error in errorList" :key="error.slotId + error.kind">
-          <strong>{{ errorLabel(error) }}:</strong> {{ error.message }}
+          <!-- The label jumps to the slot the problem is about, as a source card's rows do. -->
+          <strong
+            ><BaseLink
+              data-testid="stat-panel-error-link"
+              @click="goToSlot(error.slotId)"
+              >{{ errorLabel(error) }}</BaseLink
+            >:</strong
+          >
+          {{ error.message }}
         </li>
       </ul>
     </div>
@@ -519,7 +528,13 @@ const {
       <strong>{{ warningList.length }} warning(s)</strong>
       <ul class="mt-1 pl-5">
         <li v-for="warning in warningList" :key="warning.slotId + warning.kind">
-          <strong>{{ errorLabel(warning) }}:</strong>
+          <strong
+            ><BaseLink
+              data-testid="stat-panel-warning-link"
+              @click="goToSlot(warning.slotId)"
+              >{{ errorLabel(warning) }}</BaseLink
+            >:</strong
+          >
           {{ warning.message }}
         </li>
       </ul>

@@ -5,7 +5,10 @@ import { test, expect, type Page } from "@playwright/test";
 import {
   openBuilder,
   chooseItem,
+  confirmImport,
   hoverForCard,
+  importText,
+  listAddButton,
   slotRow,
   slotFilterInput,
   assignmentInput,
@@ -29,6 +32,49 @@ const GEM_SLOT_COUNT = 8;
 const BOON_SLOT = "boons.tier_master";
 const BOON = "boon-master-death-s-bulwark";
 const BOON_BONUS = "death-s-bulwark-stats";
+
+/** A ring whose bonus needs the Wildspace location, an item only the scenario flags list can
+ *  hold, so the one slot that could supply it is a row that may not exist yet. */
+const LOCATION_RING_ID = "test-location-ring";
+const LOCATION_BONUS_ID = "test-location-bonus";
+const LOCATION_NEED_LOCATE = `bonus-need-locate-${LOCATION_BONUS_ID}-0`;
+const SCENARIO_LIST = "options.scenario";
+const LOCATION_NEED = "could supply 1× Location: Wildspace";
+
+async function importLocationRing(page: Page) {
+  await importText(
+    page,
+    JSON.stringify({
+      name: "Location need test",
+      choices: { [RING_SLOT]: LOCATION_RING_ID },
+      catalog: {
+        items: {
+          [LOCATION_RING_ID]: {
+            id: LOCATION_RING_ID,
+            name: "Test Location Ring",
+            filter: "gear_ring",
+            bonuses: [LOCATION_BONUS_ID],
+          },
+        },
+        bonuses: {
+          [LOCATION_BONUS_ID]: {
+            id: LOCATION_BONUS_ID,
+            name: "Test Location Bonus",
+            grants: [
+              {
+                when: { equipped: { item: "location-wildspace" } },
+                stats: { power: 100 },
+              },
+            ],
+          },
+        },
+        sectionPresets: {},
+      },
+    }),
+  );
+  await confirmImport(page);
+  await expect(page.getByTestId("app-header")).toContainText(/imported/i);
+}
 
 async function openBonuses(page: Page) {
   await page.getByRole("button", { name: /Bonuses/ }).click();
@@ -127,6 +173,51 @@ test("the hover card's crosshair applies the same filter and dismisses the card"
   await expect(page.getByTestId("slot-filter-need")).toContainText(
     'could supply 1× item tagged "gem:amethyst"',
   );
+});
+
+test("a need only a list can supply keeps the list's add row, from the hover card", async ({
+  page,
+}) => {
+  await openBuilder(page);
+  await importLocationRing(page);
+  await hoverForCard(page, slotRow(page, RING_SLOT).locator(".slot-label"));
+  const card = page.getByTestId("item-card");
+  await expect(card).toBeVisible();
+
+  await card
+    .getByTestId("item-card-bonus-unmet")
+    .filter({ hasText: "Location: Wildspace" })
+    .getByTestId("item-card-need-locate")
+    .click();
+
+  await expect(card).toBeHidden();
+  await expect(page.getByTestId("slot-filter-need")).toContainText(
+    LOCATION_NEED,
+  );
+  // The list starts empty, so the add row is the whole answer.
+  await expect(listAddButton(page, SCENARIO_LIST)).toBeVisible();
+  await expect(slotRows(page)).toHaveCount(1);
+  await expect(page.getByTestId("slot-filter-count")).toHaveText("1 match");
+});
+
+test("a need only a list can supply keeps the list's add row, from the Bonuses tab", async ({
+  page,
+}) => {
+  await openBuilder(page);
+  await importLocationRing(page);
+  await openBonuses(page);
+
+  await page.getByTestId(LOCATION_NEED_LOCATE).click();
+
+  await expect(page.getByTestId("slot-filter-need")).toContainText(
+    LOCATION_NEED,
+  );
+  await expect(listAddButton(page, SCENARIO_LIST)).toBeVisible();
+
+  // Adding a row through it keeps both the row and the add row in the narrowed list.
+  await listAddButton(page, SCENARIO_LIST).click();
+  await expect(slotRow(page, `${SCENARIO_LIST}#1`)).toBeVisible();
+  await expect(listAddButton(page, SCENARIO_LIST)).toBeVisible();
 });
 
 test("the chip's own control drops just the supply filter", async ({

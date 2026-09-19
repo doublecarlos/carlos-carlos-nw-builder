@@ -12,6 +12,7 @@ import { isHiddenBonus } from "../engine/bonus";
 import type { OccurrenceRow } from "../composables/useItemBonusOccurrences";
 import type {
   BonusSource,
+  DynamicStatConfig,
   EvaluatedBonus,
   Grant,
   GrantEvaluation,
@@ -66,6 +67,51 @@ export function scaleNote(
     text = "";
   }
   return parts;
+}
+
+/**
+ * The note under a dynamic stat's line: the config's own label when it has one, then the
+ * range the player can type within, worded as the slot row's own hint is, e.g. "Enchant rank,
+ * from 0 to 1,000". Shared by an item's own `dynamicStats` rows and a grant's or variant's,
+ * so a typed stat reads the same wherever it is declared.
+ */
+export function dynamicNoteText(config: DynamicStatConfig): string {
+  const range = `from ${formatStat(config.stat, config.min)} to ${formatStat(config.stat, config.max)}`;
+  return config.label ? `${config.label}, ${range}` : range;
+}
+
+/** `lines` with each config's range note on the line for its stat. A line already carrying a
+ *  scaler's parts keeps them and gets the range appended, so "15.00% x 40.00% Encounter
+ *  Damage, from 0 to 1,000" reads as one sentence. A stat that is both fixed and dynamic
+ *  shows its merged value with the note. */
+export function withDynamicNotes(
+  lines: StatLine[],
+  configs: DynamicStatConfig[] | undefined,
+): StatLine[] {
+  if (!configs?.length) return lines;
+  const byStat = new Map(configs.map((config) => [config.stat, config]));
+  return lines.map((line) => {
+    const config = byStat.get(line.key);
+    if (!config) return line;
+    const text = dynamicNoteText(config);
+    return {
+      ...line,
+      note: line.note ? [...line.note, { text: `, ${text}` }] : [{ text }],
+    };
+  });
+}
+
+/** `stats` plus each config's default, the same merge bonus.ts applies when the payload is
+ *  live, so an inactive preview shows a typed stat at its default. */
+function withDynamicDefaults(
+  stats: StatValues | undefined,
+  configs: DynamicStatConfig[] | undefined,
+): StatValues {
+  const merged: StatValues = { ...(stats ?? {}) };
+  for (const config of configs ?? []) {
+    merged[config.stat] = (merged[config.stat] ?? 0) + config.default;
+  }
+  return merged;
 }
 
 // `multiplier` scales a perSource-stacking grant's own pre-stacking stats for display.
@@ -176,7 +222,13 @@ function variantLadderFor(grant: ResolvedGrant | null, slots: Slot[]) {
           .map((leaf) => leaf.label)
           .filter(Boolean)
           .join(" + ") || "always on",
-      stats: rungLines(variant.stats, active, grant!, slots),
+      stats: rungLines(
+        variant.stats,
+        active,
+        grant!,
+        slots,
+        variant.dynamicStats,
+      ),
       active,
       unmet: branches[index]?.unmet ?? [],
     };
@@ -192,17 +244,12 @@ function grantLabel(grant: ResolvedGrant) {
   return fromConditions || "always on";
 }
 
-// An inactive grant's near-miss preview: raw stats plus each dynamicStats config's default,
-// the same merge bonus.ts applies when the grant is live. Null for tiers/variants, which
-// preview through their own ladder helpers above.
+// An inactive grant's near-miss preview: raw stats plus each dynamicStats config's default.
+// Null for tiers/variants, which preview through their own ladder helpers above.
 function previewStatsFor(raw: Grant): StatValues | null {
   if (raw.tiers || raw.variants) return null;
   if (!raw.stats && !raw.dynamicStats?.length) return null;
-  const merged: StatValues = { ...(raw.stats ?? {}) };
-  for (const config of raw.dynamicStats ?? []) {
-    merged[config.stat] = (merged[config.stat] ?? 0) + config.default;
-  }
-  return merged;
+  return withDynamicDefaults(raw.stats, raw.dynamicStats);
 }
 
 // Every line scaled and annotated: the effective value on the row, the real one and the
@@ -220,17 +267,22 @@ function scaledLines(
 
 // A ladder rung's lines, scaled like the flat grant's when the grant names a scaler. The live
 // rung reads the engine's own unscaled payload (which includes any typed dynamic stat) so its
-// number is exactly what the build was granted.
+// number is exactly what the build was granted; an inactive rung previews each of its
+// `configs` at its default, as a flat grant does.
 function rungLines(
   stats: StatValues | undefined,
   active: boolean,
   grant: ResolvedGrant,
   slots: Slot[],
+  configs?: DynamicStatConfig[],
 ): StatLine[] {
   const scale = grant.scale;
-  if (!scale) return statList(stats);
-  const unscaled = (active ? scale.unscaled : null) ?? stats ?? {};
-  return scaledLines(unscaled, scale, slots);
+  const live = active ? (scale?.unscaled ?? grant.stats) : null;
+  const unscaled = live ?? withDynamicDefaults(stats, configs);
+  const lines = scale
+    ? scaledLines(unscaled, scale, slots)
+    : statList(unscaled);
+  return withDynamicNotes(lines, configs);
 }
 
 // A flat grant's lines: the live payload times `stacks` while active (`appliedStats` is
@@ -244,17 +296,24 @@ function grantStatLines(
   slots: Slot[],
 ): StatLine[] | null {
   const scale = grant.scale;
+  const configs = grant.raw.dynamicStats;
   if (grant.active && grant.stats) {
     const lines = statList(grant.stats, stacks);
     const unscaled = scale?.unscaled;
-    if (!unscaled) return lines;
-    return lines.map((line) => ({
-      ...line,
-      note: scaleNote(unscaled[line.key], line.key, [scale], slots),
-    }));
+    if (!unscaled) return withDynamicNotes(lines, configs);
+    return withDynamicNotes(
+      lines.map((line) => ({
+        ...line,
+        note: scaleNote(unscaled[line.key], line.key, [scale], slots),
+      })),
+      configs,
+    );
   }
   if (!preview) return null;
-  return scale ? scaledLines(preview, scale, slots) : statList(preview);
+  return withDynamicNotes(
+    scale ? scaledLines(preview, scale, slots) : statList(preview),
+    configs,
+  );
 }
 
 /** One row per grant of `entry`, with each stat line already formatted. `slots` resolves a

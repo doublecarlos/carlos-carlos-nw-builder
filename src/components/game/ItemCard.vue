@@ -12,14 +12,13 @@
 // over it and closes it on leave.
 import { computed } from "vue";
 import { NW_SCHEMA } from "../../data/data";
-import {
-  int,
-  label as statLabel,
-  signedStat,
-  stat as formatStat,
-} from "../../lib/format";
+import { int, label as statLabel, signedStat } from "../../lib/format";
 import { descriptionParagraphs } from "../../lib/description";
-import { itemCardRows, scaleNote } from "../../lib/item-card-rows";
+import {
+  dynamicNoteText,
+  itemCardRows,
+  scaleNote,
+} from "../../lib/item-card-rows";
 import type { ItemCardRow, StatLine } from "../../lib/item-card-rows";
 import { occurrenceStateText } from "../../lib/bonus-inspector";
 import { supplyNeedFor } from "../../lib/bonus-slots";
@@ -33,7 +32,6 @@ import {
 import { composeFactor, scaledStat } from "../../engine/scaling";
 import type { OccurrenceRow } from "../../composables/useItemBonusOccurrences";
 import type {
-  DynamicStatConfig,
   Item,
   Db,
   EvaluatedBonus,
@@ -74,6 +72,10 @@ const props = withDefaults(
      *  owned by the item. Each scaled row notes the real value and the scaler, the same way a
      *  scaled grant's rows do. */
     scalers?: ResolvedScaler[];
+    /** The value per stat the engine resolves for `item`'s own `dynamicStats` at the hovered
+     *  slot, resolved by the caller so this component stays prop-driven. A config with no
+     *  entry (a candidate preview, the layer editor's card) reads at its default. */
+    dynamicValues?: Record<string, number>;
     /** Tooltip for the header's edit button, naming the layer the edit lands in -- which is
      *  not necessarily the one on screen. Empty hides the button. */
     editLabel?: string;
@@ -90,6 +92,7 @@ const props = withDefaults(
     db: null,
     occurrenceRows: () => [],
     scalers: () => [],
+    dynamicValues: () => ({}),
     editLabel: "",
     stableGroup: null,
     bonusById: () => new Map(),
@@ -152,7 +155,9 @@ const slots = computed(() => slotSummary(props.item));
 const shown = computed(() => itemDisplay(props.db, props.item));
 
 /** The item's own stat line at the build's bolster. A scaled row's note shows the catalog
- *  value (the unfloored item level included) and every scaler behind the number. */
+ *  value (the unfloored item level included) and every scaler behind the number. A typed
+ *  dynamic stat follows as its own row at the engine's resolved value: bolster never touches
+ *  it (engine.ts adds it after scaling the item's fields), so the row stays unscaled too. */
 const stats = computed(() => {
   const out: StatLine[] = [];
   const slots = props.db?.slots ?? [];
@@ -168,15 +173,17 @@ const stats = computed(() => {
       }),
     });
   }
+  for (const config of props.item.dynamicStats ?? []) {
+    const value = props.dynamicValues[config.stat] ?? config.default;
+    out.push({
+      key: `dynamic:${config.stat}`,
+      label: statLabel(config.stat),
+      value: signedStat(config.stat, value),
+      note: [{ text: dynamicNoteText(config) }],
+    });
+  }
   return out;
 });
-
-/** One line per `DynamicStatConfig`; shared between an item's own `dynamicStats` (below)
- *  and a grant's (`grantRows`'s preview). */
-function dynamicStatNote(config: DynamicStatConfig): string {
-  const lbl = config.label ?? statLabel(config.stat);
-  return `${lbl} ${formatStat(config.stat, config.min)} to ${formatStat(config.stat, config.max)}`;
-}
 
 /** Non-stat lines shown above a flat grant's rows. */
 function grantNotes(
@@ -201,9 +208,6 @@ const notes = computed(() => {
     ? props.db.maxCopies(props.item)
     : (props.item.maxCopies ?? 0);
   if (cap) out.push(`max ${cap} equipped`);
-  for (const config of props.item.dynamicStats ?? []) {
-    out.push(dynamicStatNote(config));
-  }
   return out;
 });
 

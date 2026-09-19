@@ -219,6 +219,36 @@ describe("bonus model semantics", () => {
     expect(healerBonus.stats?.outgoing_damage).toBeUndefined();
   });
 
+  it("A variant grant under an unmet gate still explains every variant branch", () => {
+    // The set's last grant wants the Wildspace location before its role variants apply; with
+    // no location chosen the grant is inactive, and the hover card still needs each variant's
+    // own conditions to label its rungs.
+    const ID = "m28-voidtouched-set";
+    const result = runBuild(
+      {
+        "gear.mainhand": "M28 Voidtouched Pactblade",
+        "gear.offhand": "M28 Voidtouched Tome",
+      },
+      { role: "dps" },
+    );
+    const gated = result.activeById
+      .get(ID)!
+      .grants!.find(
+        (grant) => grant.raw.variants && !grant.active && !grant.gate.ok,
+      )!;
+    expect(gated.chose).toBeNull();
+    expect(gated.variantBranches?.map((b) => b.leaves[0]?.label)).toEqual([
+      "Role: dps",
+      "Role: healer",
+      "Role: tank",
+    ]);
+    expect(gated.variantBranches?.map((b) => b.ok)).toEqual([
+      true,
+      false,
+      false,
+    ]);
+  });
+
   it("A bonus needing two occurrences needs both items equipped", () => {
     const ID = "m28-voidtouched-set";
     expect(
