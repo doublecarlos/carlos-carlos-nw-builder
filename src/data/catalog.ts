@@ -781,6 +781,27 @@ export function validateSlots(slots: Slot[]): LintFinding[] {
         });
       }
     }
+    if (slot.scaler) {
+      // A scaler's value becomes a multiplier, so only a numeric param can carry one; an
+      // unknown `mode` would silently resolve as `absolute` in bonus.ts.
+      if (slot.paramType !== "number" && slot.paramType !== "percent") {
+        findings.push({
+          level: "error",
+          kind: "slot",
+          name: slot.id,
+          message: `${slot.id}: scaler is only meaningful on a number or percent param; this is a ${slot.paramType}`,
+        });
+      }
+      const mode: unknown = slot.scaler.mode;
+      if (mode !== "relative" && mode !== "absolute") {
+        findings.push({
+          level: "error",
+          kind: "slot",
+          name: slot.id,
+          message: `${slot.id}: scaler mode must be "relative" or "absolute", got ${JSON.stringify(mode)}`,
+        });
+      }
+    }
     if (slot.visibleWhen) {
       // The condition itself is checked at the top of the loop; this is the one rule only a
       // `build_parameter` can break. Harmless at runtime -- the row just disappears at
@@ -1029,6 +1050,42 @@ export function validateParamReaders(
           `fails closed, so this bonus silently never applies`,
       });
     }
+  }
+  return findings;
+}
+
+/**
+ * A grant's `scaledBy` has to name a `build_parameter` declaring a `scaler`, resolved against
+ * the composed slot list so a layer may point at a scaler it added itself. bonus.ts's
+ * `evaluateGrant` treats an unknown scaler as x1, so the grant would silently apply at full
+ * strength instead of the share the author meant.
+ */
+export function validateScaledBy(
+  slots: Slot[],
+  bonuses: Bonus[],
+): LintFinding[] {
+  const scalerPaths = new Set(
+    slots
+      .filter(
+        (slot): slot is BuildParameterSlot =>
+          slot.type === "build_parameter" && !!slot.scaler,
+      )
+      .map((slot) => slot.path),
+  );
+  const findings: LintFinding[] = [];
+  for (const bonus of bonuses) {
+    bonus.grants?.forEach((grant, index) => {
+      if (grant.scaledBy === undefined || scalerPaths.has(grant.scaledBy))
+        return;
+      findings.push({
+        level: "error",
+        kind: "bonus",
+        name: bonus.id,
+        message:
+          `grant ${index + 1}: scaledBy names "${grant.scaledBy}", which is not a ` +
+          `parameter declaring a scaler; the grant would apply unscaled`,
+      });
+    });
   }
   return findings;
 }
@@ -1403,6 +1460,7 @@ export function validate(
     ...validatePresets(presets, slots),
     ...validateParamSchema(slots, schema),
     ...validateParamReaders(slots, bonuses),
+    ...validateScaledBy(slots, bonuses),
     ...validateBonusAttachments(items, bonuses),
     ...validateReplacements(items, schema),
     ...validateMaxCopies(items, slots, filterDefaults),

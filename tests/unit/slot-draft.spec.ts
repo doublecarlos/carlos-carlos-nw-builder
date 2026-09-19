@@ -111,6 +111,56 @@ describe("buildDraft / toSlot round trip", () => {
     expect(toSlot(draft, { id: "s6", passthrough })).toEqual(slot);
   });
 
+  it("round-trips a scaler block with its mode and both applies lists", () => {
+    const slot: BuildParameterSlot = {
+      id: "s7",
+      label: "Mount Bolster",
+      section: "mounts",
+      type: "build_parameter",
+      paramType: "percent",
+      path: "mountBolster",
+      default: 0,
+      scaler: {
+        mode: "relative",
+        applies: { filter: ["mount_combat", "mount_equip"], tags: ["mount"] },
+      },
+    };
+    const draft = buildDraft(slot);
+    expect(draft.scalerMode).toBe("relative");
+    expect(draft.scalerFilters).toBe("mount_combat, mount_equip");
+    expect(draft.scalerTags).toBe("mount");
+    expect(toSlot(draft, ctx(slot))).toEqual(slot);
+  });
+
+  it("clearing the scaler mode removes the block rather than restoring it from passthrough", () => {
+    const slot: BuildParameterSlot = {
+      id: "s8",
+      label: "Encounter Damage",
+      section: "options",
+      type: "build_parameter",
+      paramType: "percent",
+      path: "scalers.encounterDamage",
+      scaler: { mode: "absolute", applies: { filter: ["companion"] } },
+    };
+    expect(passthroughOf(slot)).not.toHaveProperty("scaler");
+    const draft = buildDraft(slot);
+    draft.scalerMode = "";
+    expect(toSlot(draft, ctx(slot))).not.toHaveProperty("scaler");
+  });
+
+  it("a scaler with no filters or tags carries only its mode", () => {
+    const draft = buildDraft(null);
+    draft.label = "Daily Damage";
+    draft.section = "options";
+    draft.paramType = "percent";
+    draft.path = "scalers.dailyDamage";
+    draft.scalerMode = "absolute";
+    draft.scalerFilters = " , ";
+    expect(toSlot(draft, { id: "s9", passthrough: {} }).scaler).toEqual({
+      mode: "absolute",
+    });
+  });
+
   it("uses ctx.id rather than any id on the source draft", () => {
     const slot: BuildParameterSlot = {
       id: "orig",
@@ -145,6 +195,13 @@ describe("diffLabel", () => {
     const nw = { ...base, path: "recovery2", default: 5 };
     expect(diffLabel(JSON.stringify(base), JSON.stringify(nw))).toBe(
       'edit path to "recovery2"',
+    );
+  });
+
+  it("labels a scaler change", () => {
+    const nw = { ...base, scaler: { mode: "absolute" as const } };
+    expect(diffLabel(JSON.stringify(base), JSON.stringify(nw))).toBe(
+      "edit scaler",
     );
   });
 

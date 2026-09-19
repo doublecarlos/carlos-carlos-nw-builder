@@ -6,7 +6,7 @@
 import { describe, it, expect } from "vitest";
 import * as db from "../../src/data/db";
 import * as engine from "../../src/engine/engine";
-import { NW_SCHEMA } from "../../src/data/data";
+import { collect } from "../../src/engine/bonus";
 import { fromData } from "../../src/data/db";
 import { storedListRows } from "../../src/lib/item-picker-list";
 import type {
@@ -43,20 +43,6 @@ const schema: Schema = {
   statContributions: [],
   forteSplit: {},
   roles: { dps: { label: "dps", hpBonus: 1, damageBonus: 1 } },
-  statScalers: [
-    {
-      id: "mount_bolster",
-      label: "Mount bolster",
-      param: "mountBolster",
-      applies: { filter: ["test_mount"] },
-    },
-    {
-      id: "companion_bolster",
-      label: "Companion bolster",
-      param: "companionBolster",
-      applies: { tags: ["bolstered_companion"] },
-    },
-  ],
 };
 
 const mount: Item = {
@@ -98,10 +84,11 @@ const picker = (id: string, filter: string): ItemPickerSlot => ({
   type: "item_picker",
   filter,
 });
-const bolsterParam = (
+const scalerParam = (
   id: string,
   path: string,
   fallback: number,
+  scaler: BuildParameterSlot["scaler"],
 ): BuildParameterSlot => ({
   id,
   label: id,
@@ -112,13 +99,24 @@ const bolsterParam = (
   default: fallback,
   min: 0,
   max: fallback,
+  scaler,
 });
 
 const slotsData: SlotsData = {
   sections: [{ id: "gear", label: "Gear" }],
   slots: [
-    bolsterParam("gear.mountBolster", "mountBolster", 1.25),
-    bolsterParam("gear.companionBolster", "companionBolster", 1.2),
+    scalerParam("gear.mountBolster", "mountBolster", 1.25, {
+      mode: "relative",
+      applies: { filter: ["test_mount"] },
+    }),
+    scalerParam("gear.companionBolster", "companionBolster", 1.2, {
+      mode: "relative",
+      applies: { tags: ["bolstered_companion"] },
+    }),
+    // Claims no item: only reachable by an explicit reference.
+    scalerParam("gear.encounterShare", "scalers.encounterDamage", 0.4, {
+      mode: "absolute",
+    }),
     picker("gear.mount", "test_mount"),
     picker("gear.companion", "test_companion"),
     picker("gear.collar", "test_collar"),
@@ -248,14 +246,12 @@ describe("bolster scaling", () => {
     ).toBeCloseTo(1100, 9);
   });
 
-  it("never scales a multiplicative stat", () => {
+  it("scales a multiplicative stat like any other on the line", () => {
     const result = engine.resolveBuild(testDb, buildWith(EQUIPPED));
-    // Multiplicative stats combine as (1 + v) products, so scaling the stored value would
-    // compound rather than scale the effect it stands for.
     expect(
       result.rows.find((r) => r.slotId === "gear.companion")!.stats
         .incoming_damage,
-    ).toBe(0.1);
+    ).toBeCloseTo(0.1 * 2.2, 9);
   });
 
   it("falls back to the parameter's declared default when the build has no value", () => {
@@ -309,23 +305,76 @@ describe("bolster scaling", () => {
   });
 });
 
-describe("shipped bolster wiring", () => {
-  const shipped = fromData();
+describe("resolved scaler map", () => {
+  const scalersOf = (context: Record<string, unknown> = {}) =>
+    collect(testDb, buildWith(EQUIPPED, context as Partial<BuildContext>)).ctx
+      .scalers;
 
-  it("declares a scaler per bolster parameter, and a slot for each", () => {
-    const paths = NW_SCHEMA.statScalers.map((s) => s.param);
-    expect(paths).toEqual(["mountBolster", "companionBolster"]);
-    for (const path of paths) {
-      const slot = shipped.slots.find(
-        (s) => s.type === "build_parameter" && s.path === path,
-      );
-      expect(slot, `no build_parameter slot for ${path}`).toBeTruthy();
+  it("resolves a relative scaler to 1 + value", () => {
+    const scaler = scalersOf({ mountBolster: 0.6 }).get("mountBolster")!;
+    expect(scaler.mode).toBe("relative");
+    expect(scaler.value).toBe(0.6);
+    expect(scaler.multiplier).toBeCloseTo(1.6, 9);
+    expect(scaler.label).toBe("gear.mountBolster");
+  });
+
+  it("resolves an absolute scaler to its value as-is", () => {
+    const scaler = scalersOf({ scalers: { encounterDamage: 0.25 } }).get(
+      "scalers.encounterDamage",
+    )!;
+    expect(scaler.mode).toBe("absolute");
+    expect(scaler.value).toBe(0.25);
+    expect(scaler.multiplier).toBe(0.25);
+  });
+
+  it("reads the slot default when the build has no value", () => {
+    expect(scalersOf().get("scalers.encounterDamage")!.multiplier).toBe(0.4);
+  });
+
+  it("pins an unreadable relative value to x1", () => {
+    const scaler = scalersOf({ mountBolster: "nonsense" }).get("mountBolster")!;
+    expect(scaler.value).toBe(0);
+    expect(scaler.multiplier).toBe(1);
+  });
+
+  it("pins an unreadable absolute value to the slot default", () => {
+    const scaler = scalersOf({ scalers: { encounterDamage: "nonsense" } }).get(
+      "scalers.encounterDamage",
+    )!;
+    expect(scaler.value).toBe(0.4);
+    expect(scaler.multiplier).toBe(0.4);
+  });
+
+  it("leaves every item alone through a scaler with no applies", () => {
+    const result = engine.resolveBuild(
+      testDb,
+      buildWith(EQUIPPED, { mountBolster: 0, companionBolster: 0 }),
+    );
+    for (const slotId of ["gear.mount", "gear.companion", "gear.collar"]) {
+      const row = result.rows.find((r) => r.slotId === slotId)!;
+      expect(row.stats.il).toBe(row.item!.il);
     }
+  });
+});
+
+const shipped = fromData();
+const shippedScalers = shipped.slots.filter(
+  (s): s is BuildParameterSlot => s.type === "build_parameter" && !!s.scaler,
+);
+
+describe("shipped bolster wiring", () => {
+  const bolsters = shippedScalers.filter((s) => s.scaler?.mode === "relative");
+
+  it("declares a relative scaler on each bolster parameter", () => {
+    expect(bolsters.map((s) => s.path).sort()).toEqual([
+      "companionBolster",
+      "mountBolster",
+    ]);
   });
 
   it("scales every mount and companion item, and nothing else", () => {
     const scaled = new Set(
-      NW_SCHEMA.statScalers.flatMap((s) => s.applies.filter ?? []),
+      bolsters.flatMap((s) => s.scaler?.applies?.filter ?? []),
     );
     expect([...scaled].sort()).toEqual([
       "companion",
@@ -345,6 +394,27 @@ describe("shipped bolster wiring", () => {
     expect(equips.length).toBeGreaterThan(0);
     for (const item of equips) expect(item.il).toBe(1750);
     expect(shipped.get("generic-companion")?.il).toBe(1800);
+  });
+});
+
+// The damage-type shares are absolute scalers claiming no item: a grant reaches one through
+// `scaledBy` alone. They start at 0 because no default is right for every class.
+describe("shipped damage-type scalers", () => {
+  const shares = shippedScalers.filter((s) => s.scaler?.mode === "absolute");
+
+  it("declares an absolute scaler per power type, defaulting to 0", () => {
+    expect(shares.map((s) => s.path).sort()).toEqual([
+      "scalers.atWillDamage",
+      "scalers.dailyDamage",
+      "scalers.encounterDamage",
+    ]);
+    for (const slot of shares) {
+      expect(slot.default).toBe(0);
+      expect(slot.min).toBe(0);
+      expect(slot.max).toBe(1);
+      expect(slot.paramType).toBe("percent");
+      expect(slot.scaler?.applies).toBeUndefined();
+    }
   });
 });
 

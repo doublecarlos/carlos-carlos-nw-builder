@@ -78,8 +78,7 @@ export const itemPreview = (
 ) =>
   item
     ? statParts(
-        (key) =>
-          factor === 1 ? item[key] : scaledStat(NW_SCHEMA, item, key, factor),
+        (key) => (factor === 1 ? item[key] : scaledStat(item, key, factor)),
         limit,
       )
     : { parts: [], more: 0 };

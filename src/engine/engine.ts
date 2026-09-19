@@ -70,25 +70,20 @@ const sheetRound = (value: number, digits = 2) => {
  * row by attribution (bonus.ts's `anchor.slotId`) rather than by belonging to the item, and are
  * not the granting item's to scale. Scaling the bonuses that genuinely should is separate work.
  */
-function rowVectors(
-  schema: Schema,
-  resolved: ResolvedBonuses,
-  keys: StatKey[],
-): EngineRow[] {
+function rowVectors(resolved: ResolvedBonuses, keys: StatKey[]): EngineRow[] {
   return resolved.rows.map((row) => {
     const stats = zeros(keys);
     // Kept apart from `stats`, which merges the bonus and assignment stats in below: the stat
     // source popover needs the item's own share, and recomputing it there let the two disagree.
     const itemStats: Record<string, number> = {};
     if (row.item) {
-      const factor = scaleFactorFor(schema, resolved.ctx, row.item);
+      const factor = scaleFactorFor(resolved.ctx, row.item);
       for (const key of keys) {
         // `repetitions` is 1 for an ordinary pick, so this only bites for an item that
         // declares an `inlineRepetition`: N repetitions carry N times the stat line, exactly as
         // N separate picks of the item would.
         if (row.item[key]) {
-          itemStats[key] =
-            scaledStat(schema, row.item, key, factor) * row.repetitions;
+          itemStats[key] = scaledStat(row.item, key, factor) * row.repetitions;
           stats[key] = itemStats[key];
         }
       }
@@ -158,7 +153,7 @@ function run(
   const keys: StatKey[] = schema.statKeys;
   const context = build.context ?? {};
   const multiplicative = new Set(schema.multiplicativeStats);
-  const rows = rowVectors(schema, resolved, keys);
+  const rows = rowVectors(resolved, keys);
 
   // --- stage 1: initial sums -----------------------------------------------------------
   const sums = zeros(keys);
@@ -415,7 +410,7 @@ function checkItemErrors(
 /** A numeric build_parameter's declared bounds. Nothing clamps the control, since silently
  * rewriting a number someone typed is worse than showing it, so this is what keeps an
  * out-of-range value visible. Matters most for a parameter that multiplies whole stat lines
- * (`Schema.statScalers`): a 1000% bolster computes happily and is meaningless. */
+ * (one declaring a `scaler`): a 1000% bolster computes happily and is meaningless. */
 function parameterRanges(db: Db, resolved: ResolvedBonuses): EngineError[] {
   const errors: EngineError[] = [];
   for (const slot of db.slots) {

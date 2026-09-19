@@ -36,7 +36,6 @@ function deriveSchema(raw: typeof rawSchema): Schema {
     statContributions: raw.statContributions,
     forteSplit: raw.forteSplit,
     roles: raw.roles,
-    statScalers: raw.statScalers,
   };
 }
 

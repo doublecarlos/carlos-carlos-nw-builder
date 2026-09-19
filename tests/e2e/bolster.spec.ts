@@ -8,6 +8,7 @@ import {
   slotRow,
   pickerInput,
   chooseItem,
+  cursorRow,
   hoverForCard,
 } from "./support/app";
 import { statInfoButton, statCard, statCardClose } from "./support/stats";
@@ -135,6 +136,42 @@ test.describe("bolster is reflected everywhere an item's numbers appear", () => 
 
     await setBolster(page, "mounts.bolster", 0);
     await expect(summary).toContainText("1,750");
+  });
+
+  test("the hover card notes the catalog value and the bolster under each scaled row", async ({
+    page,
+  }) => {
+    await openBuilder(page);
+    await ensureSectionExpanded(page, "mounts");
+    await chooseItem(page, "mounts.mountEquip", MOUNT_EQUIP);
+
+    const label = slotRow(page, "mounts.mountEquip").locator(".slot-label");
+    await hoverForCard(page, label);
+    const card = page.locator(".itemcard");
+    await expect(card).toBeVisible();
+
+    // The same "<real> x <multiplier> <scaler>" line a scaled grant's row carries, once under
+    // every one of the item's own rows: the raw item level, not the floored scaled one.
+    const ilRow = card
+      .getByTestId("stat-row")
+      .filter({ hasText: "Item Level" });
+    await expect(ilRow).toContainText("+3,937");
+    await expect(ilRow.getByTestId("stat-row-note")).toHaveText(
+      "1,750 x 225.00% Mount bolster",
+    );
+    const powerRow = card.getByTestId("stat-row").filter({ hasText: "Power" });
+    await expect(powerRow.getByTestId("stat-row-note")).toHaveText(
+      "2,625 x 225.00% Mount bolster",
+    );
+    await expect(card).not.toContainText("applied");
+
+    // The scaler's name is the way to its row.
+    await ilRow.getByTestId("stat-row-note-link").click();
+    await expect(card).toBeHidden();
+    await expect(cursorRow(page)).toHaveAttribute(
+      "data-cursor-key",
+      "slot:mounts.bolster",
+    );
   });
 
   test("the hover card's item level badge, matching its own stat rows", async ({

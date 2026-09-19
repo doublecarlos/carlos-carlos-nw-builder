@@ -48,7 +48,7 @@ import { expandSlots } from "../lib/item-picker-list";
 import { isDisabled } from "../lib/slot-toggle";
 import { useHoverCard } from "../composables/useHoverCard";
 import { occurrenceRowsForItem } from "../composables/useItemBonusOccurrences";
-import { itemScaleFactor, itemScaleNotes } from "../composables/useItemScale";
+import { itemScaleFactor, itemScalers } from "../composables/useItemScale";
 import { useCompareDiff, type SlotDiff } from "../composables/useCompareDiff";
 import { useItemUndoRedo } from "../composables/useUndoRedo";
 import * as storage from "../storage/storage";
@@ -1137,8 +1137,7 @@ watch(
             :item="hoveredItem"
             :bonuses="hoveredBonuses"
             :occurrence-rows="hoveredOccurrenceRows"
-            :scale="itemScaleFactor(hoveredItem)"
-            :scale-notes="itemScaleNotes(hoveredItem)"
+            :scalers="itemScalers(hoveredItem)"
             :db="db"
             :slot-label="db.slotFor(hover.slotId)?.label ?? ''"
             :edit-label="editLabel"

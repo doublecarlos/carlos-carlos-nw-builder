@@ -424,7 +424,6 @@ describe("point_assignment resolution", () => {
     statContributions: [],
     forteSplit: {},
     roles: { dps: { label: "dps", hpBonus: 1, damageBonus: 1 } },
-    statScalers: [],
   };
 
   const powerItem: Item = {
@@ -584,7 +583,6 @@ describe("a point_assignment item's own config stays 0 while the item itself is 
     statContributions: [],
     forteSplit: {},
     roles: { dps: { label: "dps", hpBonus: 1, damageBonus: 1 } },
-    statScalers: [],
   };
 
   const procBonus: Bonus = { id: "boon-master-proc", grants: [] };
@@ -694,7 +692,6 @@ describe("BonusOccurrenceConfig resolution", () => {
     statContributions: [],
     forteSplit: {},
     roles: { dps: { label: "dps", hpBonus: 1, damageBonus: 1 } },
-    statScalers: [],
   };
 
   // Mirrors the motivating "Shattered Resolve" example: an always-on bonus (bare id,
@@ -883,7 +880,6 @@ describe("a bonus reachable only through a currently-zero occurrence count", () 
     statContributions: [],
     forteSplit: {},
     roles: { dps: { label: "dps", hpBonus: 1, damageBonus: 1 } },
-    statScalers: [],
   };
 
   const stackingBonus: Bonus = {
@@ -1031,7 +1027,6 @@ describe("an unconditional stacking grant reachable only through a currently-zer
     statContributions: [],
     forteSplit: {},
     roles: { dps: { label: "dps", hpBonus: 1, damageBonus: 1 } },
-    statScalers: [],
   };
 
   const unconditionalStackingBonus: Bonus = {
@@ -1136,7 +1131,6 @@ describe("per-item boolean occurrence attachments (formerly procs)", () => {
     statContributions: [],
     forteSplit: {},
     roles: { dps: { label: "dps", hpBonus: 1, damageBonus: 1 } },
-    statScalers: [],
   };
 
   const procRing: Item = {
@@ -1336,7 +1330,6 @@ describe("race restrictions ride on the generic equipped condition", () => {
     statContributions: [],
     forteSplit: {},
     roles: { dps: { label: "dps", hpBonus: 1, damageBonus: 1 } },
-    statScalers: [],
   };
 
   // Race restrictions are no longer a dedicated `allowedRace`/`kind: "race"` check -- race
@@ -1443,7 +1436,6 @@ describe("problem grants (bonus-authored errors/warnings)", () => {
     statContributions: [],
     forteSplit: {},
     roles: { dps: { label: "dps", hpBonus: 1, damageBonus: 1 } },
-    statScalers: [],
   };
 
   // item_picker case: an error grant gated on the build's own class -- stands in for "the

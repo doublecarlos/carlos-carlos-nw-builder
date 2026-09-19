@@ -34,7 +34,6 @@ const schema: Schema = {
   statContributions: [],
   forteSplit: {},
   roles: { dps: { label: "DPS", hpBonus: 1, damageBonus: 1.2 } },
-  statScalers: [],
 };
 
 const STACK_BONUS = "stack-bonus";

@@ -1,6 +1,13 @@
 // ItemCard.vue's bonus-row derivation, Vue-free so it is unit-testable.
-import { bonusTitle, label as statLabel, signedStat } from "./format";
+import {
+  bonusTitle,
+  label as statLabel,
+  pct,
+  signedStat,
+  stat as formatStat,
+} from "./format";
 import { descriptionParagraphs } from "./description";
+import { findParamSlot } from "./build-path";
 import { isHiddenBonus } from "../engine/bonus";
 import type { OccurrenceRow } from "../composables/useItemBonusOccurrences";
 import type {
@@ -8,16 +15,57 @@ import type {
   EvaluatedBonus,
   Grant,
   GrantEvaluation,
+  GrantScale,
   Item,
+  Slot,
   StatValues,
 } from "../types";
 
 type ResolvedGrant = GrantEvaluation & { raw: Grant };
 
+/** One run of a stat line's note. A part carrying a slot id is a scaler's name and renders as
+ *  a link to that parameter's row; without one it is plain text. */
+export interface NotePart {
+  text: string;
+  slotId?: string;
+}
+
 export interface StatLine {
   key: string;
   label: string;
   value: string;
+  /** Muted line under the value saying why it differs from the catalog: the real value and
+   *  every scaler behind a scaled one, e.g. "15.00% x 40.00% Encounter Damage". */
+  note?: NotePart[];
+}
+
+/** What a note needs to know about one scaler acting on a value: `ResolvedScaler` and
+ *  `GrantScale` both carry these fields. */
+export type ScaleFactor = Pick<GrantScale, "label" | "multiplier" | "path">;
+
+/**
+ * The note under a scaled stat line, shared by an item's bolstered rows and a scaled grant's so
+ * the two read identically: the catalog's real value, then "x <multiplier> <scaler>" once per
+ * scaler. Scalers compose multiplicatively (scaling.ts's `scaleFactorFor`), so listing each
+ * factor in turn keeps every label next to its own number and every link on its own name. The
+ * scaler's name links to its parameter slot when `slots` has it; without a catalog (the layer
+ * editor's preview card) it stays text.
+ */
+export function scaleNote(
+  rawValue: number | undefined,
+  statKey: string,
+  scalers: ScaleFactor[],
+  slots: Slot[],
+): NotePart[] {
+  const parts: NotePart[] = [];
+  let text = formatStat(statKey, rawValue);
+  for (const { label, multiplier, path } of scalers) {
+    text += ` x ${pct(multiplier)} `;
+    const slotId = findParamSlot(slots, path)?.id;
+    parts.push({ text }, slotId ? { text: label, slotId } : { text: label });
+    text = "";
+  }
+  return parts;
 }
 
 // `multiplier` scales a perSource-stacking grant's own pre-stacking stats for display.
@@ -87,8 +135,9 @@ function tierGrant(entry: EvaluatedBonus) {
 }
 
 // Tiers have no `when` of their own (bonus.ts matches occurrence count directly), so the
-// active tier is read off `chose` instead of the gate.
-function tierLadderFor(grant: ResolvedGrant | null) {
+// active tier is read off `chose` instead of the gate. Every rung shows what it would grant
+// under the grant's scaler, with the real value in its note.
+function tierLadderFor(grant: ResolvedGrant | null, slots: Slot[]) {
   const tiers = grant?.raw.tiers;
   if (!tiers?.length) return null;
   const activeAt =
@@ -96,17 +145,21 @@ function tierLadderFor(grant: ResolvedGrant | null) {
       ? Number(grant!.chose.slice("tier:".length))
       : null;
   return tiers
-    .map((tier) => ({
-      atLeast: tier.bonusOccurrences?.atLeast ?? 1,
-      stats: statList(tier.stats),
-    }))
-    .sort((a, b) => a.atLeast - b.atLeast)
-    .map((tier) => ({ ...tier, active: tier.atLeast === activeAt }));
+    .map((tier) => {
+      const atLeast = tier.bonusOccurrences?.atLeast ?? 1;
+      const active = atLeast === activeAt;
+      return {
+        atLeast,
+        active,
+        stats: rungLines(tier.stats, active, grant!, slots),
+      };
+    })
+    .sort((a, b) => a.atLeast - b.atLeast);
 }
 
 // `variantBranches` explains every branch, not just the winner, so an unmatched one can
 // show why it didn't apply.
-function variantLadderFor(grant: ResolvedGrant | null) {
+function variantLadderFor(grant: ResolvedGrant | null, slots: Slot[]) {
   const variants = grant?.raw.variants;
   if (!variants?.length) return null;
   const activeIndex =
@@ -114,17 +167,20 @@ function variantLadderFor(grant: ResolvedGrant | null) {
       ? Number(grant!.chose.slice("variant:".length))
       : null;
   const branches = grant!.variantBranches ?? [];
-  return variants.map((variant, index) => ({
-    key: index,
-    label:
-      (branches[index]?.leaves ?? [])
-        .map((leaf) => leaf.label)
-        .filter(Boolean)
-        .join(" + ") || "always on",
-    stats: statList(variant.stats),
-    active: index === activeIndex,
-    unmet: branches[index]?.unmet ?? [],
-  }));
+  return variants.map((variant, index) => {
+    const active = index === activeIndex;
+    return {
+      key: index,
+      label:
+        (branches[index]?.leaves ?? [])
+          .map((leaf) => leaf.label)
+          .filter(Boolean)
+          .join(" + ") || "always on",
+      stats: rungLines(variant.stats, active, grant!, slots),
+      active,
+      unmet: branches[index]?.unmet ?? [],
+    };
+  });
 }
 
 function grantLabel(grant: ResolvedGrant) {
@@ -149,9 +205,62 @@ function previewStatsFor(raw: Grant): StatValues | null {
   return merged;
 }
 
-// `stacks` scales an active grant's own (pre-stacking) stats: `appliedStats` is already
-// multiplied at the bonus level, but a single grant's `stats` is not.
-function grantRows(entry: EvaluatedBonus) {
+// Every line scaled and annotated: the effective value on the row, the real one and the
+// scaler in the note, so the number shown never silently disagrees with the catalog.
+function scaledLines(
+  unscaled: StatValues,
+  scale: GrantScale,
+  slots: Slot[],
+): StatLine[] {
+  return statList(unscaled, scale.multiplier).map((line) => ({
+    ...line,
+    note: scaleNote(unscaled[line.key], line.key, [scale], slots),
+  }));
+}
+
+// A ladder rung's lines, scaled like the flat grant's when the grant names a scaler. The live
+// rung reads the engine's own unscaled payload (which includes any typed dynamic stat) so its
+// number is exactly what the build was granted.
+function rungLines(
+  stats: StatValues | undefined,
+  active: boolean,
+  grant: ResolvedGrant,
+  slots: Slot[],
+): StatLine[] {
+  const scale = grant.scale;
+  if (!scale) return statList(stats);
+  const unscaled = (active ? scale.unscaled : null) ?? stats ?? {};
+  return scaledLines(unscaled, scale, slots);
+}
+
+// A flat grant's lines: the live payload times `stacks` while active (`appliedStats` is
+// already multiplied at the bonus level, but a single grant's `stats` is not), else the
+// preview. A scaled grant shows the effective number either way, with the real one under it,
+// so an inactive preview never promises more than the live line would give.
+function grantStatLines(
+  grant: ResolvedGrant,
+  preview: StatValues | null,
+  stacks: number,
+  slots: Slot[],
+): StatLine[] | null {
+  const scale = grant.scale;
+  if (grant.active && grant.stats) {
+    const lines = statList(grant.stats, stacks);
+    const unscaled = scale?.unscaled;
+    if (!unscaled) return lines;
+    return lines.map((line) => ({
+      ...line,
+      note: scaleNote(unscaled[line.key], line.key, [scale], slots),
+    }));
+  }
+  if (!preview) return null;
+  return scale ? scaledLines(preview, scale, slots) : statList(preview);
+}
+
+/** One row per grant of `entry`, with each stat line already formatted. `slots` resolves a
+ *  scaler's parameter slot for the note links. Shared with BonusInspector.vue, which shows the
+ *  scaled grants' lines under the bonus payload. */
+export function grantRows(entry: EvaluatedBonus, slots: Slot[] = []) {
   const stacks = entry.stacks ?? 1;
   const stacking = entry.bonus?.stacking === "perSource";
   return (entry.grants ?? []).map((grant, index) => {
@@ -162,23 +271,21 @@ function grantRows(entry: EvaluatedBonus) {
       active: grant.active,
       unmet: grant.gate?.unmet ?? [],
       problem: grant.problem,
-      tiers: tierLadderFor(grant),
-      variants: variantLadderFor(grant),
+      tiers: tierLadderFor(grant, slots),
+      variants: variantLadderFor(grant, slots),
       eachStack: stacking && preview != null,
       descriptions: grant.active
         ? descriptionParagraphs(
             grant.raw.longDescription || grant.raw.shortDescription,
           )
         : [],
-      stats:
-        grant.active && grant.stats
-          ? statList(grant.stats, stacks)
-          : preview
-            ? statList(preview)
-            : null,
+      stats: grantStatLines(grant, preview, stacks, slots),
+      scaled: grant.scale != null,
     };
   });
 }
+
+export type GrantRow = ReturnType<typeof grantRows>[number];
 
 export type ItemCardRow = ReturnType<typeof buildItemCardRow>;
 
@@ -187,6 +294,7 @@ function buildItemCardRow(
   item: Item,
   occurrenceRowByBonusId: Map<string, OccurrenceRow>,
   bonusById: Map<string, EvaluatedBonus>,
+  slots: Slot[],
 ) {
   const sharedWith = sharedSources(entry, item.name);
   const isFirst =
@@ -209,7 +317,7 @@ function buildItemCardRow(
     ),
     excludedBy: excluderFor(entry, bonusById),
     stacks: entry.stacks ?? 1,
-    grants: grantRows(entry),
+    grants: grantRows(entry, slots),
     sharedWith,
     // A shared bonus shows real numbers on exactly one card; the rest point to it.
     secondary: Boolean(sharedWith) && !isFirst,
@@ -224,12 +332,14 @@ const STATE_DOT: Record<string, string> = {
 };
 
 // `bonusById` covers the whole build, not just `bonuses`: an excluder usually sits on
-// another item.
+// another item. `slots` is the catalog's slot list, for linking a scaled grant to its
+// scaler's parameter.
 export function itemCardRows(
   item: Item,
   bonuses: EvaluatedBonus[],
   occurrenceRows: OccurrenceRow[],
   bonusById: Map<string, EvaluatedBonus> = new Map(),
+  slots: Slot[] = [],
 ): ItemCardRow[] {
   const occurrenceRowByBonusId = new Map(
     occurrenceRows.map((row) => [row.bonusId, row]),
@@ -237,6 +347,6 @@ export function itemCardRows(
   return bonuses
     .filter((entry) => !isHiddenBonus(entry.bonus))
     .map((entry) =>
-      buildItemCardRow(entry, item, occurrenceRowByBonusId, bonusById),
+      buildItemCardRow(entry, item, occurrenceRowByBonusId, bonusById, slots),
     );
 }

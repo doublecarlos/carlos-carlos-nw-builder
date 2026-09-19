@@ -23,11 +23,13 @@ import type {
   EvalContext,
   ConditionExplain,
   GrantEvaluation,
+  GrantScale,
   BonusEvaluation,
   EvaluatedBonus,
   PointAssignmentSlot,
   ResolvedBonuses,
   ResolvedRow,
+  ResolvedScaler,
   StatValues,
 } from "../types";
 
@@ -338,6 +340,30 @@ export function collect(
     published.set(path, value);
   }
 
+  // Every scaler parameter's multiplier, resolved from the same `params` value a condition
+  // would read so a slot default or a published value reaches it too. An unreadable value is
+  // not dropped but pinned to the scaler's own zero point: `relative` at 0 leaves the scaled
+  // stats at base, and `absolute` falls back to the slot's declared default rather than to a
+  // full-strength x1.
+  const scalers = new Map<string, ResolvedScaler>();
+  for (const slot of db.slots) {
+    if (slot.type !== "build_parameter" || !slot.scaler) continue;
+    const { mode, applies } = slot.scaler;
+    let value = Number(params.get(slot.path));
+    if (!Number.isFinite(value)) {
+      const fallback = Number(slot.default);
+      value = mode === "relative" || !Number.isFinite(fallback) ? 0 : fallback;
+    }
+    scalers.set(slot.path, {
+      path: slot.path,
+      label: slot.label,
+      mode,
+      applies,
+      value,
+      multiplier: mode === "relative" ? 1 + value : value,
+    });
+  }
+
   // Populate bonus names from the db so conditions can display friendly names
   // instead of internal IDs like "m32-impending-doom-celestial".
   const bonusNames = new Map<string, string>();
@@ -369,6 +395,7 @@ export function collect(
     bonusNames,
     itemNames,
     params,
+    scalers,
   };
 
   return {
@@ -401,6 +428,47 @@ function withDynamicStats(
   return out;
 }
 
+/** The scaler a grant's `scaledBy` names, as the display record `GrantEvaluation.scale`
+ *  carries. A scaler the context does not know resolves to nothing: catalog validation
+ *  rejects the reference, so this only happens for an overlay in flux, and leaving the grant
+ *  unscaled keeps the bonus visible rather than zeroing it. */
+function grantScale(
+  grant: Grant,
+  ctx: EvalContext,
+): Omit<GrantScale, "unscaled"> | undefined {
+  const scaler =
+    grant.scaledBy === undefined ? undefined : ctx.scalers.get(grant.scaledBy);
+  if (!scaler) return undefined;
+  const { path, label, value, multiplier } = scaler;
+  return { path, label, value, multiplier };
+}
+
+/** Applies a scaler's multiplier to a resolved payload. Returns `stats` unchanged (same
+ *  reference) when nothing scales it. */
+function scaledStats(
+  stats: StatValues,
+  scale: Pick<GrantScale, "multiplier"> | undefined,
+): StatValues {
+  if (!scale) return stats;
+  return Object.fromEntries(
+    Object.entries(stats).map(([key, value]) => [
+      key,
+      (value as number) * scale.multiplier,
+    ]),
+  );
+}
+
+/** A grant's stat payload with its scaler applied, plus the `scale` record explaining it.
+ *  Spread into the evaluation so an unscaled grant carries no `scale` key at all. */
+function scaledPayload(
+  unscaled: StatValues,
+  scale: Omit<GrantScale, "unscaled"> | undefined,
+): { stats: StatValues; scale?: GrantScale } {
+  return scale
+    ? { stats: scaledStats(unscaled, scale), scale: { ...scale, unscaled } }
+    : { stats: unscaled };
+}
+
 /** Resolve one grant against the context into a stat payload (or none). `dynamicValues` is
  *  this grant's owning bonus's resolved dynamic-stat values (bonus.ts's `resolve`), already
  *  keyed by stat and defaulted -- see `resolveDynamicValues`. */
@@ -418,8 +486,19 @@ function evaluateGrant(
         unmet: [],
       };
 
-  if (!gate.ok)
-    return { active: false, gate, stats: null, chose: null, problem: null };
+  // Carried on every shape, active or not, so an inactive grant's preview can scale too.
+  const scale = grantScale(grant, ctx);
+  const inactive = (extra: Partial<GrantEvaluation> = {}): GrantEvaluation => ({
+    active: false,
+    gate,
+    stats: null,
+    chose: null,
+    problem: null,
+    ...(scale && { scale: { ...scale, unscaled: null } }),
+    ...extra,
+  });
+
+  if (!gate.ok) return inactive();
 
   // `problem`: reports a build error/warning instead of granting stats.
   if (grant.problem) {
@@ -443,21 +522,17 @@ function evaluateGrant(
       ? variantBranches.findIndex((b) => b.ok)
       : grant.variants.findIndex((v) => conditions.evaluate(v.when, ctx));
     return index === -1
-      ? {
-          active: false,
-          gate,
-          stats: null,
-          chose: null,
-          problem: null,
-          variantBranches,
-        }
+      ? inactive({ variantBranches })
       : {
           active: true,
           gate,
-          stats: withDynamicStats(
-            grant.variants[index].stats,
-            grant.variants[index].dynamicStats,
-            dynamicValues,
+          ...scaledPayload(
+            withDynamicStats(
+              grant.variants[index].stats,
+              grant.variants[index].dynamicStats,
+              dynamicValues,
+            ),
+            scale,
           ),
           chose: `variant:${index}`,
           problem: null,
@@ -487,20 +562,19 @@ function evaluateGrant(
       ? {
           active: true,
           gate,
-          stats: best.stats,
+          ...scaledPayload(best.stats, scale),
           chose: `tier:${bestAt}`,
           problem: null,
         }
-      : { active: false, gate, stats: null, chose: null, problem: null };
+      : inactive();
   }
 
   return {
     active: true,
     gate,
-    stats: withDynamicStats(
-      grant.stats ?? {},
-      grant.dynamicStats,
-      dynamicValues,
+    ...scaledPayload(
+      withDynamicStats(grant.stats ?? {}, grant.dynamicStats, dynamicValues),
+      scale,
     ),
     chose: "stats",
     problem: null,
@@ -547,7 +621,13 @@ export function evaluateBonus(
   // than the bonus-level one. `gate`/`raw` stay real either way, for the near-miss branch.
   const results = hasSources
     ? evaluated
-    : evaluated.map((r) => ({ ...r, active: false, stats: null, chose: null }));
+    : evaluated.map((r) => ({
+        ...r,
+        active: false,
+        stats: null,
+        chose: null,
+        ...(r.scale && { scale: { ...r.scale, unscaled: null } }),
+      }));
   const activeResults = results.filter((r) => r.active);
   const active = activeResults.length > 0;
 
@@ -584,7 +664,11 @@ export function evaluateBonus(
       results[0],
     );
     gate = best?.gate ?? gate;
-    previewStats = best?.raw.stats ?? null; // only a flat grant has a raw `.stats` to preview
+    // Only a flat grant has a raw `.stats` to preview; scaled like its live payload would be,
+    // so the preview does not promise the catalog's full value.
+    previewStats = best?.raw.stats
+      ? scaledStats(best.raw.stats, best.scale)
+      : null;
   }
 
   return {

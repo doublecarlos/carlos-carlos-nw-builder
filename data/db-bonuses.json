@@ -3825,10 +3825,49 @@
         "when": {
           "toggle": "combat"
         },
-        "stats": {
-          "outgoing_damage": 0.12
-        },
-        "longDescription": "Rough estimation based on 5 stacks + encounters being generally 40% of Hellbringer's Damage."
+        "tiers": [
+          {
+            "bonusOccurrences": {
+              "atLeast": 1
+            },
+            "stats": {
+              "outgoing_damage": 0.22
+            }
+          },
+          {
+            "bonusOccurrences": {
+              "atLeast": 2
+            },
+            "stats": {
+              "outgoing_damage": 0.24
+            }
+          },
+          {
+            "bonusOccurrences": {
+              "atLeast": 3
+            },
+            "stats": {
+              "outgoing_damage": 0.26
+            }
+          },
+          {
+            "bonusOccurrences": {
+              "atLeast": 4
+            },
+            "stats": {
+              "outgoing_damage": 0.28
+            }
+          },
+          {
+            "bonusOccurrences": {
+              "atLeast": 5
+            },
+            "stats": {
+              "outgoing_damage": 0.3
+            }
+          }
+        ],
+        "scaledBy": "scalers.encounterDamage"
       }
     ]
   },
@@ -4093,6 +4132,19 @@
     ]
   },
   {
+    "id": "sturdy-crescent-collar",
+    "name": "Sturdy Crescent Collar",
+    "grants": [
+      {
+        "stats": {
+          "outgoing_damage_mult": 0.05
+        },
+        "scaledBy": "scalers.encounterDamage",
+        "longDescription": "Encounter powers deal 5% more damage."
+      }
+    ]
+  },
+  {
     "id": "sunlord-ca",
     "name": "Sunlord's Gift Elixir",
     "grants": [
@@ -4223,9 +4275,30 @@
           "toggle": "combat"
         },
         "stats": {
-          "outgoing_damage": 0.07
+          "outgoing_damage": 0.15
         },
-        "longDescription": "Rough estimation based on Powers being generally 50% of Hellbringer's Damage."
+        "name": "Encounters",
+        "scaledBy": "scalers.encounterDamage"
+      },
+      {
+        "when": {
+          "toggle": "combat"
+        },
+        "stats": {
+          "outgoing_damage": 0.15
+        },
+        "name": "At-wills",
+        "scaledBy": "scalers.atWillDamage"
+      },
+      {
+        "when": {
+          "toggle": "combat"
+        },
+        "stats": {
+          "outgoing_damage": 0.15
+        },
+        "name": "Dailies",
+        "scaledBy": "scalers.dailyDamage"
       }
     ]
   },

@@ -22,7 +22,7 @@ import { useEditorDraft } from "../../composables/useEditorDraft";
 import { BonusDraftStore } from "../../stores/bonus-draft";
 import { bonusDraftRegistryKey } from "../../composables/bonusDraftRegistry";
 import BonusOptionRow from "./BonusOptionRow.vue";
-import type { Bonus, BonusOption, Db } from "../../types";
+import type { Bonus, BonusOption, BuildParameterSlot, Db } from "../../types";
 import type { EntryStatus } from "../../data/catalog";
 import FormSectionDescription from "../ui/FormSectionDescription.vue";
 import OcrTextField from "../ui/OcrTextField.vue";
@@ -215,6 +215,17 @@ const stackingOptions = [
   { value: "perSource", label: "once per contributing slot" },
 ];
 
+/** Every parameter declaring a scaler, read off the composed db so one a layer added is
+ *  offered alongside the shipped ones. */
+const scalerOptions = computed<BonusOption[]>(() =>
+  props.db.slots
+    .filter(
+      (slot): slot is BuildParameterSlot =>
+        slot.type === "build_parameter" && Boolean(slot.scaler),
+    )
+    .map((slot) => ({ value: slot.path, label: slot.label })),
+);
+
 defineExpose({ draft, dirty });
 
 function addGrant() {
@@ -386,6 +397,7 @@ if (bonusDraftRegistry && props.registryId) {
         :store="draftStore"
         :tags="tags"
         :bonus-options="bonusOptions"
+        :scaler-options="scalerOptions"
         :registry-id="registryId"
         @error="error = $event"
       />

@@ -6172,7 +6172,16 @@
     "longDescription": "Soul Investiture now grants you a 20% bonus to\nEncounter damage, +2% for each stack you have.",
     "allowedClass": ["warlock"],
     "tags": ["exclusive:hellbringer"],
-    "bonuses": ["risky-investment", "paragon-exclusive"]
+    "bonuses": [
+      {
+        "bonus": "risky-investment",
+        "min": 0,
+        "max": 5,
+        "default": 5,
+        "label": "Soul Investiture"
+      },
+      "paragon-exclusive"
+    ]
   },
   {
     "id": "roiling-hatred",
@@ -7681,8 +7690,8 @@
     "filter": "sturdy_collar",
     "il": 1000,
     "combined_rating": 900,
-    "outgoing_damage_mult": 0.02,
-    "gameIds": ["Collar_Sturdy_Crescent_R5"]
+    "gameIds": ["Collar_Sturdy_Crescent_R5"],
+    "bonuses": ["sturdy-crescent-collar"]
   },
   {
     "id": "sudden-veredict",

@@ -531,6 +531,78 @@ describe("BuildCompare: statLines", () => {
   });
 });
 
+describe("scaler parameters", () => {
+  it("normalize keeps a finite scaler value", () => {
+    const base = storage.defaultBuild();
+    const raw = { ...base, context: { ...base.context, mountBolster: 0.6 } };
+    expect(storage.normalize(raw).context.mountBolster).toBe(0.6);
+  });
+
+  it("normalize floors a negative scaler value at 0", () => {
+    const base = storage.defaultBuild();
+    const raw = {
+      ...base,
+      context: { ...base.context, companionBolster: -0.5 },
+    };
+    expect(storage.normalize(raw).context.companionBolster).toBe(0);
+  });
+
+  it("normalize replaces an unreadable scaler value with the seeded default", () => {
+    const base = storage.defaultBuild();
+    const raw = {
+      ...base,
+      context: {
+        ...base.context,
+        mountBolster: "nonsense",
+        companionBolster: undefined,
+      },
+    };
+    const build = storage.normalize(raw);
+    expect(build.context.mountBolster).toBe(base.context.mountBolster);
+    expect(build.context.companionBolster).toBe(base.context.companionBolster);
+  });
+
+  it("seeds every damage-type share at 0 in a fresh build", () => {
+    const { scalers } = storage.defaultBuild().context as unknown as {
+      scalers: Record<string, unknown>;
+    };
+    expect(scalers).toEqual({
+      encounterDamage: 0,
+      atWillDamage: 0,
+      dailyDamage: 0,
+    });
+  });
+
+  it("normalizes a dotted scaler path without writing into the raw input", () => {
+    const base = storage.defaultBuild();
+    const rawScalers = { encounterDamage: "nonsense", atWillDamage: 0.3 };
+    const raw = { ...base, context: { ...base.context, scalers: rawScalers } };
+    const { scalers } = storage.normalize(raw).context as unknown as {
+      scalers: Record<string, unknown>;
+    };
+    expect(scalers).not.toBe(rawScalers);
+    expect(scalers).toEqual({
+      encounterDamage: 0,
+      atWillDamage: 0.3,
+      dailyDamage: 0,
+    });
+    expect(rawScalers).toEqual({
+      encounterDamage: "nonsense",
+      atWillDamage: 0.3,
+    });
+  });
+
+  it("duplicate does not share the nested scalers object with its source", () => {
+    const source = storage.defaultBuild();
+    const copy = storage.duplicate(source);
+    const nested = (build: Build) =>
+      (build.context as unknown as { scalers: Record<string, number> }).scalers;
+    expect(nested(copy)).not.toBe(nested(source));
+    nested(copy).encounterDamage = 0.5;
+    expect(nested(source).encounterDamage).toBe(0);
+  });
+});
+
 // BonusOccurrenceConfig: unlike `assignments`, no shipped item has one of these yet, so
 // there is nothing to seed a default from -- an absent entry falls back to the config's own
 // `default` at read time instead (bonus.ts's `collect()`), not to a build-carried value.

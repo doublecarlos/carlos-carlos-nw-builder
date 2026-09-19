@@ -7,8 +7,9 @@
 // writes directly onto `draft.value.grants`. The store's `onChange()` is called after every
 // mutation, which schedules an undo snapshot in BonusForm.
 
-import { inject, ref } from "vue";
+import { computed, inject, ref } from "vue";
 import BonusComboBox from "./BonusComboBox.vue";
+import ComboBox from "../ui/ComboBox.vue";
 import ConditionRows, {
   type ConditionTreeLocation,
   type ConditionBranchTreeLocation,
@@ -59,11 +60,24 @@ const props = withDefaults(
     tags?: string[];
     /** Every known bonus, for the tier and occurrence-condition pickers. */
     bonusOptions?: BonusOption[];
+    /** Every parameter declaring a scaler, keyed by its path, for each grant's "scaled by"
+     *  picker. */
+    scalerOptions?: BonusOption[];
     /** This bonus's key in ItemBonuses' cross-bonus condition-drag registry, forwarded from
      *  BonusForm -- see bonusDraftRegistry.ts. Empty outside ItemBonuses. */
     registryId?: string;
   }>(),
-  { tags: () => [], bonusOptions: () => [], registryId: "" },
+  {
+    tags: () => [],
+    bonusOptions: () => [],
+    scalerOptions: () => [],
+    registryId: "",
+  },
+);
+
+/** The path doubles as search text so typing `scalers.` narrows to the damage-type shares. */
+const searchableScalers = computed(() =>
+  props.scalerOptions.map((option) => ({ ...option, search: option.value })),
 );
 
 // Guard against a grant being removed while an event handler is still firing.
@@ -675,6 +689,35 @@ function toggleJson(gIndex: number) {
             {{ grant.problemSeverity }}
           </BaseCheckbox>
         </template>
+
+        <!-- Per grant rather than per tier/variant: the scaler multiplies whichever payload
+             wins, so it sits with the grant-wide fields. -->
+        <div class="my-1.5 flex flex-wrap items-center gap-1.5">
+          <FormSection sub inline>Scaled by</FormSection>
+          <ComboBox
+            v-model="grant.scaledBy"
+            class="w-64"
+            :options="searchableScalers"
+            show-empty-option
+            :closed-display="grant.scaledBy ? '' : 'not scaled'"
+            menu-class="left-0 w-max min-w-full max-w-[min(22rem,80vw)]"
+            data-testid="grant-scaled-by"
+          >
+            <template #empty>not scaled</template>
+            <template #option="{ option }">
+              <div class="min-w-0 leading-tight">
+                <div class="overflow-hidden text-ellipsis whitespace-nowrap">
+                  {{ option.label }}
+                </div>
+                <div
+                  class="overflow-hidden text-ellipsis whitespace-nowrap text-xs text-muted"
+                >
+                  {{ option.value }}
+                </div>
+              </div>
+            </template>
+          </ComboBox>
+        </div>
 
         <FormSection sub>Name and description (optional)</FormSection>
         <div class="mb-1.5 flex flex-wrap items-start gap-1.5">

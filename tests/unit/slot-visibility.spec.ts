@@ -28,7 +28,6 @@ const emptySchema: Schema = {
   statContributions: [],
   forteSplit: {},
   roles: {},
-  statScalers: [],
 };
 
 function ctx(overrides: Partial<EvalContext> = {}): EvalContext {
@@ -42,6 +41,7 @@ function ctx(overrides: Partial<EvalContext> = {}): EvalContext {
     bonusNames: new Map(),
     itemNames: new Map(),
     params: new Map(),
+    scalers: new Map(),
     ...overrides,
   };
 }

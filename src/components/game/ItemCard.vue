@@ -19,8 +19,8 @@ import {
   stat as formatStat,
 } from "../../lib/format";
 import { descriptionParagraphs } from "../../lib/description";
-import { itemCardRows } from "../../lib/item-card-rows";
-import type { ItemCardRow } from "../../lib/item-card-rows";
+import { itemCardRows, scaleNote } from "../../lib/item-card-rows";
+import type { ItemCardRow, StatLine } from "../../lib/item-card-rows";
 import { occurrenceStateText } from "../../lib/bonus-inspector";
 import { supplyNeedFor } from "../../lib/bonus-slots";
 import {
@@ -30,13 +30,14 @@ import {
   reachableBonuses,
   slotSummary,
 } from "../../engine/insignia";
-import { scaledStat } from "../../engine/scaling";
+import { composeFactor, scaledStat } from "../../engine/scaling";
 import type { OccurrenceRow } from "../../composables/useItemBonusOccurrences";
 import type {
   DynamicStatConfig,
   Item,
   Db,
   EvaluatedBonus,
+  ResolvedScaler,
   SupplyNeed,
 } from "../../types";
 import { Crosshair, SquarePen, Table, TriangleAlert } from "@lucide/vue";
@@ -67,14 +68,12 @@ const props = withDefaults(
      *  count-of-0 explain that directly instead of only through a generic unmet-gate
      *  leaf, which reads oddly for a bonus gated on its own occurrence count. */
     occurrenceRows?: OccurrenceRow[];
-    /** Mount/companion bolster acting on this item (`itemScaleFactor`), resolved by the caller
+    /** Mount/companion bolster acting on this item (`itemScalers`), resolved by the caller
      *  rather than read from the store here so this component stays prop-driven. Scales the
-     *  item's own stat line only -- the bonus payloads below are attributed to a slot, not
-     *  owned by the item. */
-    scale?: number;
-    /** Lines naming what `scale` came from (`itemScaleNotes`), listed among `notes` so the
-     *  card never shows numbers that silently disagree with the catalog. */
-    scaleNotes?: string[];
+     *  item's own stat line only, since the bonus payloads below are attributed to a slot, not
+     *  owned by the item. Each scaled row notes the real value and the scaler, the same way a
+     *  scaled grant's rows do. */
+    scalers?: ResolvedScaler[];
     /** Tooltip for the header's edit button, naming the layer the edit lands in -- which is
      *  not necessarily the one on screen. Empty hides the button. */
     editLabel?: string;
@@ -90,8 +89,7 @@ const props = withDefaults(
     slotLabel: "",
     db: null,
     occurrenceRows: () => [],
-    scale: 1,
-    scaleNotes: () => [],
+    scalers: () => [],
     editLabel: "",
     stableGroup: null,
     bonusById: () => new Map(),
@@ -111,11 +109,11 @@ const replacement = computed(
   () => props.db?.replacementFor(props.item.id) ?? null,
 );
 
+const scale = computed(() => composeFactor(props.scalers));
+
 /** The header badge, scaled like the stat lines below it -- an unscaled figure next to scaled
  *  rows reads as a contradiction rather than as two different numbers. */
-const scaledIl = computed(() =>
-  int(scaledStat(NW_SCHEMA, props.item, "il", props.scale)),
-);
+const scaledIl = computed(() => int(scaledStat(props.item, "il", scale.value)));
 
 /** Falls back to the short description, so an item carrying only that still says something on
  * its card rather than nothing. */
@@ -153,18 +151,21 @@ const slots = computed(() => slotSummary(props.item));
 
 const shown = computed(() => itemDisplay(props.db, props.item));
 
+/** The item's own stat line at the build's bolster. A scaled row's note shows the catalog
+ *  value (the unfloored item level included) and every scaler behind the number. */
 const stats = computed(() => {
-  const out: { key: string; label: string; value: string }[] = [];
+  const out: StatLine[] = [];
+  const slots = props.db?.slots ?? [];
   for (const key of NW_SCHEMA.statKeys) {
-    const value = props.item[key];
+    const value = props.item[key] as number | undefined;
     if (!value) continue;
     out.push({
       key,
       label: statLabel(key),
-      value: signedStat(
-        key,
-        scaledStat(NW_SCHEMA, props.item, key, props.scale),
-      ),
+      value: signedStat(key, scaledStat(props.item, key, scale.value)),
+      ...(props.scalers.length && {
+        note: scaleNote(value, key, props.scalers, slots),
+      }),
     });
   }
   return out;
@@ -192,7 +193,7 @@ function grantNotes(
 
 /** Notes that are not stats but change whether the item is legal or what it grants. */
 const notes = computed(() => {
-  const out: string[] = [...props.scaleNotes];
+  const out: string[] = [];
   if (props.item.allowedClass)
     out.push(`${props.item.allowedClass.join(" or ")} only`);
   // The effective cap, so an item inheriting its filter's default still states one.
@@ -212,6 +213,7 @@ const rows = computed(() =>
     props.bonuses,
     props.occurrenceRows,
     props.bonusById,
+    props.db?.slots ?? [],
   ).map((row) => ({
     ...row,
     sharedWith: row.sharedWith
@@ -281,11 +283,14 @@ const rows = computed(() =>
       </div>
       <DescriptionText
         v-if="longDescription.length"
-        class="mb-1.5"
         data-testid="item-card-long-description"
         :paragraphs="longDescription"
       />
-      <StatRows :rows="stats" empty-text="no direct stats"></StatRows>
+      <StatRows
+        :rows="stats"
+        empty-text="no direct stats"
+        @go-to-slot="emit('go-to-slot', $event)"
+      ></StatRows>
 
       <div
         v-if="notes.length"
@@ -387,24 +392,39 @@ const rows = computed(() =>
                 <div v-if="g.problem" class="text-warn">
                   {{ g.problem.message }}
                 </div>
+                <!-- A ladder's rungs are already at the grant's scale, each noting the
+                     catalog's real value, so a scaled line reads the same here as on a flat
+                     grant or on the item's own rows above. -->
                 <template v-else-if="g.tiers">
-                  <div v-for="tier in g.tiers" :key="tier.atLeast">
+                  <div>
                     <div
-                      :class="
-                        tier.active ? 'font-semibold text-text' : 'text-muted'
-                      "
+                      v-for="tier in g.tiers"
+                      :key="tier.atLeast"
+                      class="py-1 border-t border-t-1 border-line last:border-b last:border-b-1"
                     >
-                      {{ tier.atLeast }} equipped:
+                      <div
+                        :class="
+                          tier.active ? 'font-semibold text-text' : 'text-muted'
+                        "
+                      >
+                        {{ tier.atLeast }} equipped:
+                      </div>
+                      <StatRows
+                        :rows="tier.stats"
+                        :active="tier.active"
+                        class="ml-4"
+                        @go-to-slot="emit('go-to-slot', $event)"
+                      ></StatRows>
                     </div>
-                    <StatRows
-                      :rows="tier.stats"
-                      :active="tier.active"
-                    ></StatRows>
                   </div>
                 </template>
                 <template v-else-if="g.variants">
-                  <div class="divide-y divide-line divide-y-2">
-                    <div v-for="v in g.variants" :key="v.key" class="py-1">
+                  <div>
+                    <div
+                      v-for="v in g.variants"
+                      :key="v.key"
+                      class="py-1 border-t border-t-1 border-line last:border-b last:border-b-1"
+                    >
                       <div
                         :class="
                           v.active ? 'font-semibold text-text' : 'text-muted'
@@ -412,7 +432,12 @@ const rows = computed(() =>
                       >
                         {{ v.label }}:
                       </div>
-                      <StatRows :rows="v.stats" :active="v.active"></StatRows>
+                      <StatRows
+                        :rows="v.stats"
+                        :active="v.active"
+                        class="ml-4"
+                        @go-to-slot="emit('go-to-slot', $event)"
+                      ></StatRows>
                     </div>
                   </div>
                 </template>
@@ -421,6 +446,7 @@ const rows = computed(() =>
                   :rows="g.stats"
                   :active="g.active"
                   :notes="grantNotes(row, g)"
+                  @go-to-slot="emit('go-to-slot', $event)"
                 ></StatRows>
                 <DescriptionText
                   v-if="g.descriptions.length"
