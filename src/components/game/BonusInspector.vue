@@ -205,9 +205,9 @@ const entries = computed<Entry[]>(() => {
       chose: choseLabel(entry.chose),
       payload: entry.active ? (entry.appliedStats ?? null) : entry.previewStats,
       perStack: entry.stacks > 1 ? entry.stats : null,
-      scaledGrants: grantRows(entry, db.value.slots).filter(
-        (grant) => grant.scaled,
-      ),
+      scaledGrants: entry.grants.some((grant) => grant.scale)
+        ? grantRows(entry, db.value.slots).filter((grant) => grant.scaled)
+        : [],
       manyGrants: entry.grants.length > 1,
       unmet: unmet.map(unmetLine),
       zeroOccurrence: zeroOccurrenceFor(entry),
