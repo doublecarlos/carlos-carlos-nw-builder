@@ -3,7 +3,8 @@
 // source card.
 //
 // Rows collapse their borders. Hover or focus lifts a row so its accent border
-// replaces that line rather than stacking a second one.
+// replaces that line rather than stacking a second one. A row's `note` wraps onto its own
+// line under the value, so "15.00% x 40.00% Encounter Damage" never crowds the label.
 import type { StatLine } from "../../lib/item-card-rows";
 
 export interface StatRow extends StatLine {
@@ -19,7 +20,7 @@ withDefaults(
     /** Muted lines above the rows, such as "each stack would give:". */
     notes?: string[];
     emptyText?: string;
-    /** Test id applied to every row. */
+    /** Test id applied to every row; a row's note carries it with a `-note` suffix. */
     rowTestid?: string;
   }>(),
   {
@@ -33,7 +34,7 @@ withDefaults(
 const emit = defineEmits<{ select: [value: string] }>();
 
 const ROW_COLLAPSE =
-  "relative flex justify-between gap-2 border-y border-line -mt-px py-0.5 first:mt-0 first:border-t-transparent last:border-b-transparent";
+  "relative flex flex-wrap justify-between gap-x-2 border-y border-line -mt-px py-0.5 first:mt-0 first:border-t-transparent last:border-b-transparent";
 const ROW_CLASS = `${ROW_COLLAPSE} hover:z-10 hover:border-accent focus-visible:z-10 focus-visible:border-accent focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent`;
 const NOTE_CLASS = `${ROW_COLLAPSE} text-muted`;
 </script>
@@ -57,6 +58,12 @@ const NOTE_CLASS = `${ROW_COLLAPSE} text-muted`;
     >
       <span class="min-w-0">{{ row.label }}</span>
       <span class="flex-none tabular-nums">{{ row.value }}</span>
+      <span
+        v-if="row.note"
+        class="basis-full text-right leading-snug text-muted"
+        :data-testid="`${rowTestid}-note`"
+        >{{ row.note }}</span
+      >
     </component>
     <div v-if="!rows.length && emptyText" class="py-0.5 text-muted">
       {{ emptyText }}

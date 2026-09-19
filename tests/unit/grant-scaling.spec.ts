@@ -4,12 +4,16 @@
 //
 // A synthetic catalog rather than the shipped one: one absolute scaler at a known share, and
 // one bonus per payload shape so each claim reads on its own.
+//
+// The display half (`GrantEvaluation.scale` and item-card-rows.ts's `grantRows`) is covered
+// here too, off the same fixture, so the card's numbers are checked against the engine's.
 
 import { describe, it, expect } from "vitest";
 import * as db from "../../src/data/db";
 import * as engine from "../../src/engine/engine";
 import * as catalog from "../../src/data/catalog";
 import { storedListRows } from "../../src/lib/item-picker-list";
+import { grantRows, itemCardRows } from "../../src/lib/item-card-rows";
 import type {
   Build,
   Bonus,
@@ -96,6 +100,21 @@ const strayBonus: Bonus = {
   id: "stray-scaled",
   grants: [{ stats: { outgoing_damage: 0.1 }, scaledBy: "scalers.missing" }],
 };
+/** Scaled but gated on a toggle, so it can be evaluated inactive and previewed. */
+const gatedBonus: Bonus = {
+  id: "gated-scaled",
+  grants: [
+    {
+      when: { toggle: "combat" },
+      stats: { outgoing_damage: 0.15 },
+      scaledBy: SCALER,
+    },
+  ],
+};
+const plainBonus: Bonus = {
+  id: "plain",
+  grants: [{ stats: { outgoing_damage: 0.15 } }],
+};
 
 const ring = (id: string, bonuses: Item["bonuses"]): Item => ({
   id,
@@ -112,6 +131,8 @@ const items: Item[] = [
   ring("stacked-ring", ["stacked-scaled"]),
   ring("dynamic-ring", ["dynamic-scaled"]),
   ring("stray-ring", ["stray-scaled"]),
+  ring("gated-ring", ["gated-scaled"]),
+  ring("plain-ring", ["plain"]),
 ];
 
 const picker = (id: string): ItemPickerSlot => ({
@@ -140,7 +161,16 @@ const slotsData: SlotsData = {
 
 const testDb = db.build(
   items,
-  [flatBonus, tierBonus, variantBonus, stackedBonus, dynamicBonus, strayBonus],
+  [
+    flatBonus,
+    tierBonus,
+    variantBonus,
+    stackedBonus,
+    dynamicBonus,
+    strayBonus,
+    gatedBonus,
+    plainBonus,
+  ],
   schema,
   slotsData,
 );
@@ -170,11 +200,15 @@ function buildWith(
   } as unknown as Build;
 }
 
-/** The resolved payload of one bonus, both per-stack and as applied to the pipeline. */
-function bonusOf(build: Build, id: string) {
-  const entry = engine
+function entryOf(build: Build, id: string) {
+  return engine
     .resolveBuild(testDb, build)
     .bonuses.find((b) => b.bonusId === id)!;
+}
+
+/** The resolved payload of one bonus, both per-stack and as applied to the pipeline. */
+function bonusOf(build: Build, id: string) {
+  const entry = entryOf(build, id);
   return {
     stats: entry.stats!,
     applied: entry.appliedStats!,
@@ -322,5 +356,245 @@ describe("catalog.validateScaledBy", () => {
         (f) => f.name === "stray-scaled" && /scaledBy names/.test(f.message),
       ),
     ).toBe(true);
+  });
+});
+
+describe("GrantEvaluation.scale", () => {
+  it("names the scaler and keeps the unscaled payload on an active scaled grant", () => {
+    const [grant] = entryOf(
+      buildWith({ "gear.ring1": "flat-ring" }, share(0.4)),
+      "flat-scaled",
+    ).grants;
+    expect(grant.scale).toEqual({
+      path: SCALER,
+      label: "Encounter Damage",
+      value: 0.4,
+      multiplier: 0.4,
+      unscaled: { outgoing_damage: 0.15, power: 100 },
+    });
+  });
+
+  it("is present at a share of 0", () => {
+    const [grant] = entryOf(
+      buildWith({ "gear.ring1": "flat-ring" }, share(0)),
+      "flat-scaled",
+    ).grants;
+    expect(grant.scale?.multiplier).toBe(0);
+    expect(grant.stats).toEqual({ outgoing_damage: 0, power: 0 });
+  });
+
+  it("is carried by tier and variant grants", () => {
+    const tier = entryOf(
+      buildWith({ "gear.ring1": "tier-ring" }, share(0.4), {
+        "tier-ring": { "tier-scaled": 5 },
+      }),
+      "tier-scaled",
+    ).grants[0];
+    expect(tier.scale).toMatchObject({
+      multiplier: 0.4,
+      unscaled: { outgoing_damage: 0.3 },
+    });
+    const variant = entryOf(
+      buildWith({ "gear.ring1": "variant-ring" }, share(0.4)),
+      "variant-scaled",
+    ).grants[0];
+    expect(variant.scale).toMatchObject({
+      multiplier: 0.4,
+      unscaled: { outgoing_damage: 0.1 },
+    });
+  });
+
+  it("is absent from an unscaled grant and one naming an unknown scaler", () => {
+    const plain = entryOf(
+      buildWith({ "gear.ring1": "plain-ring" }, share(0.4)),
+      "plain",
+    ).grants[0];
+    expect(plain).not.toHaveProperty("scale");
+    const stray = entryOf(
+      buildWith({ "gear.ring1": "stray-ring" }, share(0.4)),
+      "stray-scaled",
+    ).grants[0];
+    expect(stray).not.toHaveProperty("scale");
+  });
+
+  it("stays on an inactive grant with no payload, and scales the bonus preview", () => {
+    const entry = entryOf(
+      buildWith({ "gear.ring1": "gated-ring" }, share(0.4)),
+      "gated-scaled",
+    );
+    expect(entry.active).toBe(false);
+    expect(entry.grants[0].scale).toMatchObject({
+      multiplier: 0.4,
+      unscaled: null,
+    });
+    expect(entry.previewStats?.outgoing_damage).toBeCloseTo(0.06, 9);
+  });
+});
+
+describe("grantRows for a scaled grant", () => {
+  const FACTOR = "x 40.00% Encounter Damage";
+
+  it("shows the effective value with the real value and scaler under it", () => {
+    const [row] = grantRows(
+      entryOf(
+        buildWith({ "gear.ring1": "flat-ring" }, share(0.4)),
+        "flat-scaled",
+      ),
+      slotsData.slots,
+    );
+    expect(row.stats).toEqual([
+      {
+        key: "outgoing_damage",
+        label: "Outgoing Damage",
+        value: "+6.00%",
+        note: `15.00% ${FACTOR}`,
+      },
+      { key: "power", label: "Power", value: "+40", note: `100 ${FACTOR}` },
+    ]);
+    expect(row.scale).toEqual({
+      label: "Encounter Damage",
+      factor: FACTOR,
+      unset: false,
+      slotId: "gear.encounterShare",
+    });
+  });
+
+  it("keeps the row at a share of 0 and flags the share as unset with its slot", () => {
+    const [row] = grantRows(
+      entryOf(
+        buildWith({ "gear.ring1": "flat-ring" }, share(0)),
+        "flat-scaled",
+      ),
+      slotsData.slots,
+    );
+    expect(row.active).toBe(true);
+    expect(row.stats?.[0]).toEqual({
+      key: "outgoing_damage",
+      label: "Outgoing Damage",
+      value: "0.00%",
+      note: "15.00% x 0.00% Encounter Damage",
+    });
+    expect(row.scale).toEqual({
+      label: "Encounter Damage",
+      factor: "x 0.00% Encounter Damage",
+      unset: true,
+      slotId: "gear.encounterShare",
+    });
+  });
+
+  it("leaves the slot link out when no slot list is at hand", () => {
+    const [row] = grantRows(
+      entryOf(
+        buildWith({ "gear.ring1": "flat-ring" }, share(0)),
+        "flat-scaled",
+      ),
+    );
+    expect(row.scale?.slotId).toBeNull();
+  });
+
+  it("gives no scale to an unscaled grant", () => {
+    const [row] = grantRows(
+      entryOf(buildWith({ "gear.ring1": "plain-ring" }, share(0.4)), "plain"),
+      slotsData.slots,
+    );
+    expect(row.scale).toBeNull();
+    expect(row.stats?.[0]).not.toHaveProperty("note");
+  });
+
+  it("multiplies the stack count on top of the scale, noting the per-stack real value", () => {
+    const [row] = grantRows(
+      entryOf(
+        buildWith(
+          { "gear.ring1": "stacked-ring", "gear.ring2": "stacked-ring" },
+          share(0.4),
+        ),
+        "stacked-scaled",
+      ),
+      slotsData.slots,
+    );
+    expect(row.stats).toEqual([
+      {
+        key: "outgoing_damage",
+        label: "Outgoing Damage",
+        value: "+8.00%",
+        note: `10.00% ${FACTOR}`,
+      },
+    ]);
+  });
+
+  it("keeps the tier ladder at the real values and captions it with the factor", () => {
+    const [row] = grantRows(
+      entryOf(
+        buildWith({ "gear.ring1": "tier-ring" }, share(0.4), {
+          "tier-ring": { "tier-scaled": 5 },
+        }),
+        "tier-scaled",
+      ),
+      slotsData.slots,
+    );
+    expect(
+      row.tiers?.map((tier) => [tier.stats[0].value, tier.active]),
+    ).toEqual([
+      ["+22.00%", false],
+      ["+30.00%", true],
+    ]);
+    expect(row.scale?.factor).toBe(FACTOR);
+    // The live rung's effective line, which the inspector shows.
+    expect(row.stats?.[0]).toMatchObject({
+      value: "+12.00%",
+      note: `30.00% ${FACTOR}`,
+    });
+  });
+
+  it("keeps the variant ladder at the real values", () => {
+    const [row] = grantRows(
+      entryOf(
+        buildWith({ "gear.ring1": "variant-ring" }, share(0.4)),
+        "variant-scaled",
+      ),
+      slotsData.slots,
+    );
+    expect(row.variants?.map((v) => v.stats[0].value)).toEqual([
+      "+10.00%",
+      "+20.00%",
+    ]);
+    expect(row.scale?.factor).toBe(FACTOR);
+  });
+
+  it("previews an inactive scaled grant at the effective value, with the note", () => {
+    const entry = entryOf(
+      buildWith({ "gear.ring1": "gated-ring" }, share(0.4)),
+      "gated-scaled",
+    );
+    const [row] = grantRows(entry, slotsData.slots);
+    expect(row.active).toBe(false);
+    expect(row.stats).toEqual([
+      {
+        key: "outgoing_damage",
+        label: "Outgoing Damage",
+        value: "+6.00%",
+        note: `15.00% ${FACTOR}`,
+      },
+    ]);
+    // The card's preview and the bonus-level one agree.
+    expect(entry.previewStats?.outgoing_damage).toBeCloseTo(0.06, 9);
+  });
+
+  it("reaches the hover card rows with the slot list", () => {
+    const entry = entryOf(
+      buildWith({ "gear.ring1": "flat-ring" }, share(0)),
+      "flat-scaled",
+    );
+    const [row] = itemCardRows(
+      testDb.get("flat-ring")!,
+      [entry],
+      [],
+      new Map(),
+      slotsData.slots,
+    );
+    expect(row.grants[0].scale).toMatchObject({
+      unset: true,
+      slotId: "gear.encounterShare",
+    });
   });
 });

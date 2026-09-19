@@ -207,6 +207,7 @@ const rows = computed(() =>
     props.bonuses,
     props.occurrenceRows,
     props.bonusById,
+    props.db?.slots ?? [],
   ).map((row) => ({
     ...row,
     sharedWith: row.sharedWith
@@ -382,7 +383,17 @@ const rows = computed(() =>
                 <div v-if="g.problem" class="text-warn">
                   {{ g.problem.message }}
                 </div>
+                <!-- A ladder lists the catalog's real values; its caption says the scaler
+                     still applies to whichever rung is live, and the live line under the
+                     ladder shows what that rung actually grants. -->
                 <template v-else-if="g.tiers">
+                  <div
+                    v-if="g.scale"
+                    class="text-muted"
+                    data-testid="grant-scale-caption"
+                  >
+                    before {{ g.scale.factor }}
+                  </div>
                   <div v-for="tier in g.tiers" :key="tier.atLeast">
                     <div
                       :class="
@@ -398,6 +409,13 @@ const rows = computed(() =>
                   </div>
                 </template>
                 <template v-else-if="g.variants">
+                  <div
+                    v-if="g.scale"
+                    class="text-muted"
+                    data-testid="grant-scale-caption"
+                  >
+                    before {{ g.scale.factor }}
+                  </div>
                   <div class="divide-y divide-line divide-y-2">
                     <div v-for="v in g.variants" :key="v.key" class="py-1">
                       <div
@@ -417,6 +435,30 @@ const rows = computed(() =>
                   :active="g.active"
                   :notes="grantNotes(row, g)"
                 ></StatRows>
+                <StatRows
+                  v-if="
+                    (g.tiers || g.variants) && g.scale && g.active && g.stats
+                  "
+                  class="mt-1"
+                  :rows="g.stats"
+                  :active="g.active"
+                  :notes="grantNotes(row, g)"
+                  data-testid="grant-scale-live"
+                ></StatRows>
+                <div
+                  v-if="g.scale?.unset"
+                  class="text-muted"
+                  data-testid="grant-scale-unset"
+                >
+                  <BaseLink
+                    :plain="!g.scale.slotId"
+                    @click="
+                      g.scale.slotId && emit('go-to-slot', g.scale.slotId)
+                    "
+                    >{{ g.scale.label }}</BaseLink
+                  >
+                  share is unset
+                </div>
                 <DescriptionText
                   v-if="g.descriptions.length"
                   class="mt-1"

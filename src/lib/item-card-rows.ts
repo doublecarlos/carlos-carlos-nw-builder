@@ -1,6 +1,13 @@
 // ItemCard.vue's bonus-row derivation, Vue-free so it is unit-testable.
-import { bonusTitle, label as statLabel, signedStat } from "./format";
+import {
+  bonusTitle,
+  label as statLabel,
+  pct,
+  signedStat,
+  stat as formatStat,
+} from "./format";
 import { descriptionParagraphs } from "./description";
+import { findParamSlot } from "./build-path";
 import { isHiddenBonus } from "../engine/bonus";
 import type { OccurrenceRow } from "../composables/useItemBonusOccurrences";
 import type {
@@ -8,7 +15,9 @@ import type {
   EvaluatedBonus,
   Grant,
   GrantEvaluation,
+  GrantScale,
   Item,
+  Slot,
   StatValues,
 } from "../types";
 
@@ -18,6 +27,9 @@ export interface StatLine {
   key: string;
   label: string;
   value: string;
+  /** Muted line under the value saying why it differs from the catalog, e.g. the real value
+   *  and the scaler behind a scaled one. */
+  note?: string;
 }
 
 // `multiplier` scales a perSource-stacking grant's own pre-stacking stats for display.
@@ -149,9 +161,66 @@ function previewStatsFor(raw: Grant): StatValues | null {
   return merged;
 }
 
-// `stacks` scales an active grant's own (pre-stacking) stats: `appliedStats` is already
-// multiplied at the bonus level, but a single grant's `stats` is not.
-function grantRows(entry: EvaluatedBonus) {
+// "x 40.00% Encounter Damage": the factor as every scaled line spells it, so the stat notes
+// and the ladder caption read as one statement.
+function scaleFactorText(scale: GrantScale) {
+  return `x ${pct(scale.multiplier)} ${scale.label}`;
+}
+
+// Puts the real (unscaled) value and the factor under each scaled line, in the voice the
+// item's own "Mount bolster 125.00% applied" note uses: the number shown never silently
+// disagrees with the catalog.
+function withScaleNotes(
+  lines: StatLine[],
+  unscaled: StatValues,
+  scale: GrantScale,
+): StatLine[] {
+  const factor = scaleFactorText(scale);
+  return lines.map((line) => ({
+    ...line,
+    note: `${formatStat(line.key, unscaled[line.key])} ${factor}`,
+  }));
+}
+
+// The scaler on a grant, for the card to caption its ladder and, at a multiplier of 0, to
+// say the share is unset and point at the parameter that sets it. Null slot id when the
+// catalog is not at hand (the layer editor's preview card), leaving the text without a link.
+function scaleRowFor(scale: GrantScale | undefined, slots: Slot[]) {
+  if (!scale) return null;
+  return {
+    label: scale.label,
+    factor: scaleFactorText(scale),
+    unset: scale.multiplier === 0,
+    slotId: findParamSlot(slots, scale.path)?.id ?? null,
+  };
+}
+
+// A flat grant's lines: the live payload times `stacks` while active (`appliedStats` is
+// already multiplied at the bonus level, but a single grant's `stats` is not), else the
+// preview. A scaled grant shows the effective number either way, with the real one beside it,
+// so an inactive preview never promises more than the live line would give.
+function grantStatLines(
+  grant: ResolvedGrant,
+  preview: StatValues | null,
+  stacks: number,
+): StatLine[] | null {
+  const scale = grant.scale;
+  if (grant.active && grant.stats) {
+    const lines = statList(grant.stats, stacks);
+    return scale?.unscaled
+      ? withScaleNotes(lines, scale.unscaled, scale)
+      : lines;
+  }
+  if (!preview) return null;
+  return scale
+    ? withScaleNotes(statList(preview, scale.multiplier), preview, scale)
+    : statList(preview);
+}
+
+/** One row per grant of `entry`, with each stat line already formatted. `slots` resolves a
+ *  scaler's parameter slot for the "share is unset" link. Shared with BonusInspector.vue,
+ *  which shows the scaled grants' lines under the bonus payload. */
+export function grantRows(entry: EvaluatedBonus, slots: Slot[] = []) {
   const stacks = entry.stacks ?? 1;
   const stacking = entry.bonus?.stacking === "perSource";
   return (entry.grants ?? []).map((grant, index) => {
@@ -170,15 +239,13 @@ function grantRows(entry: EvaluatedBonus) {
             grant.raw.longDescription || grant.raw.shortDescription,
           )
         : [],
-      stats:
-        grant.active && grant.stats
-          ? statList(grant.stats, stacks)
-          : preview
-            ? statList(preview)
-            : null,
+      stats: grantStatLines(grant, preview, stacks),
+      scale: scaleRowFor(grant.scale, slots),
     };
   });
 }
+
+export type GrantRow = ReturnType<typeof grantRows>[number];
 
 export type ItemCardRow = ReturnType<typeof buildItemCardRow>;
 
@@ -187,6 +254,7 @@ function buildItemCardRow(
   item: Item,
   occurrenceRowByBonusId: Map<string, OccurrenceRow>,
   bonusById: Map<string, EvaluatedBonus>,
+  slots: Slot[],
 ) {
   const sharedWith = sharedSources(entry, item.name);
   const isFirst =
@@ -209,7 +277,7 @@ function buildItemCardRow(
     ),
     excludedBy: excluderFor(entry, bonusById),
     stacks: entry.stacks ?? 1,
-    grants: grantRows(entry),
+    grants: grantRows(entry, slots),
     sharedWith,
     // A shared bonus shows real numbers on exactly one card; the rest point to it.
     secondary: Boolean(sharedWith) && !isFirst,
@@ -224,12 +292,14 @@ const STATE_DOT: Record<string, string> = {
 };
 
 // `bonusById` covers the whole build, not just `bonuses`: an excluder usually sits on
-// another item.
+// another item. `slots` is the catalog's slot list, for linking a scaled grant to its
+// scaler's parameter.
 export function itemCardRows(
   item: Item,
   bonuses: EvaluatedBonus[],
   occurrenceRows: OccurrenceRow[],
   bonusById: Map<string, EvaluatedBonus> = new Map(),
+  slots: Slot[] = [],
 ): ItemCardRow[] {
   const occurrenceRowByBonusId = new Map(
     occurrenceRows.map((row) => [row.bonusId, row]),
@@ -237,6 +307,6 @@ export function itemCardRows(
   return bonuses
     .filter((entry) => !isHiddenBonus(entry.bonus))
     .map((entry) =>
-      buildItemCardRow(entry, item, occurrenceRowByBonusId, bonusById),
+      buildItemCardRow(entry, item, occurrenceRowByBonusId, bonusById, slots),
     );
 }

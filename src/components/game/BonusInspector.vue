@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ref, reactive, computed } from "vue";
 import { bonusTitle } from "../../lib/format";
-import { statList, excluderFor } from "../../lib/item-card-rows";
+import { statList, excluderFor, grantRows } from "../../lib/item-card-rows";
+import type { GrantRow } from "../../lib/item-card-rows";
 import {
   collapseSources,
   inspectorBonuses,
@@ -146,6 +147,12 @@ interface Entry {
   chose: string;
   payload: StatValues | null;
   perStack: StatValues | null;
+  /** The grants a scaler multiplies, each with its effective line and the real value beside
+   *  it, the same rows the hover card shows. The summed payload above cannot say which
+   *  scaler shaped it, nor point at the parameter when a share is unset. */
+  scaledGrants: GrantRow[];
+  /** Whether the scaled grants need their own labels to tell them apart. */
+  manyGrants: boolean;
   unmet: UnmetLine[];
   /** The carrier's occurrence control at 0, the reason an entry with a met gate is inactive. */
   zeroOccurrence: ZeroOccurrence | null;
@@ -198,6 +205,10 @@ const entries = computed<Entry[]>(() => {
       chose: choseLabel(entry.chose),
       payload: entry.active ? (entry.appliedStats ?? null) : entry.previewStats,
       perStack: entry.stacks > 1 ? entry.stats : null,
+      scaledGrants: grantRows(entry, db.value.slots).filter(
+        (grant) => grant.scale,
+      ),
+      manyGrants: entry.grants.length > 1,
       unmet: unmet.map(unmetLine),
       zeroOccurrence: zeroOccurrenceFor(entry),
       nearMiss: isNearMiss(entry),
@@ -400,6 +411,34 @@ const counts = computed(() => {
             <p v-if="entry.perStack" class="mt-1 block text-muted">
               per stack: {{ statText(entry.perStack) }}
             </p>
+            <div
+              v-for="grant in entry.scaledGrants"
+              :key="grant.key"
+              class="mt-1"
+              data-testid="bonus-grant-scale"
+            >
+              <p v-if="entry.manyGrants" class="text-muted">
+                {{ grant.label }}:
+              </p>
+              <StatRows
+                v-if="grant.stats"
+                :rows="grant.stats"
+                :active="grant.active"
+                row-testid="bonus-grant-stat-row"
+              />
+              <p
+                v-if="grant.scale?.unset"
+                class="text-muted"
+                data-testid="grant-scale-unset"
+              >
+                <BaseLink
+                  :plain="!grant.scale.slotId"
+                  @click="grant.scale.slotId && jumpToSlot(grant.scale.slotId)"
+                  >{{ grant.scale.label }}</BaseLink
+                >
+                share is unset
+              </p>
+            </div>
             <p class="mt-1 block text-muted">
               slot
               <BaseLink

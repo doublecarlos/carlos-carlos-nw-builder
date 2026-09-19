@@ -989,6 +989,23 @@ export interface GrantEvaluation {
    * show every branch (met or not), not just the one that won. Only populated when `explain`
    * is on and the grant actually carries `variants`. */
   variantBranches?: ConditionExplain[];
+  /** The scaler applied to this grant's `stats`, for display. Present whenever `raw.scaledBy`
+   * names a live scaler, active or not and including at a multiplier of 0, so an inactive
+   * grant's preview scales the same way its live payload would. */
+  scale?: GrantScale;
+}
+
+/** How a grant's payload was scaled: the scaler's identity and the payload it multiplied,
+ * so a card can print the real value beside the effective one. */
+export interface GrantScale {
+  path: string;
+  label: string;
+  value: number;
+  multiplier: number;
+  /** The resolved payload before the multiplier (the catalog's real value plus any typed
+   * dynamic stat), which `stats` no longer holds once scaled. Null while the grant is
+   * inactive, like `stats`. */
+  unscaled: StatValues | null;
 }
 
 export interface BonusEvaluation {
