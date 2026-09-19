@@ -157,6 +157,40 @@ describe("bonus-draft short/long description", () => {
   });
 });
 
+describe("bonus-draft scaledBy", () => {
+  it("round-trips on a flat grant and stays in the form", () => {
+    const grant: Grant = {
+      when: { toggle: "combat" },
+      stats: { outgoing_damage: 0.15 },
+      scaledBy: "scalers.encounterDamage",
+    };
+    expect(needsJson(grant)).toBe(false);
+    const draft = toDraft(grant);
+    expect(draft.scaledBy).toBe("scalers.encounterDamage");
+    expect(toGrant(draft)).toEqual(grant);
+  });
+
+  it("round-trips alongside a tiered payload, since it applies per grant", () => {
+    const grant: Grant = {
+      tiers: [
+        { bonusOccurrences: { atLeast: 1 }, stats: { outgoing_damage: 0.22 } },
+      ],
+      scaledBy: "scalers.encounterDamage",
+    };
+    expect(toGrant(toDraft(grant))).toEqual(grant);
+  });
+
+  it("clearing it in the draft drops the key from the rebuilt grant", () => {
+    const draft = toDraft({
+      stats: { outgoing_damage: 0.15 },
+      scaledBy: "scalers.encounterDamage",
+    });
+    draft.scaledBy = "";
+    expect(toGrant(draft)).not.toHaveProperty("scaledBy");
+    expect(toGrant(toDraft({ stats: {} }))).not.toHaveProperty("scaledBy");
+  });
+});
+
 describe("bonus-draft dynamic stats", () => {
   it("a flat grant with dynamicStats round-trips through the form, not JSON", () => {
     const grant: Grant = {

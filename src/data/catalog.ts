@@ -781,6 +781,27 @@ export function validateSlots(slots: Slot[]): LintFinding[] {
         });
       }
     }
+    if (slot.scaler) {
+      // A scaler's value becomes a multiplier, so only a numeric param can carry one; an
+      // unknown `mode` would silently resolve as `absolute` in bonus.ts.
+      if (slot.paramType !== "number" && slot.paramType !== "percent") {
+        findings.push({
+          level: "error",
+          kind: "slot",
+          name: slot.id,
+          message: `${slot.id}: scaler is only meaningful on a number or percent param; this is a ${slot.paramType}`,
+        });
+      }
+      const mode: unknown = slot.scaler.mode;
+      if (mode !== "relative" && mode !== "absolute") {
+        findings.push({
+          level: "error",
+          kind: "slot",
+          name: slot.id,
+          message: `${slot.id}: scaler mode must be "relative" or "absolute", got ${JSON.stringify(mode)}`,
+        });
+      }
+    }
     if (slot.visibleWhen) {
       // The condition itself is checked at the top of the loop; this is the one rule only a
       // `build_parameter` can break. Harmless at runtime -- the row just disappears at

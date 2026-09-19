@@ -15,6 +15,8 @@ import {
 } from "./draft-fields";
 import type { BuildParameterSlot, Db } from "../types";
 
+type Scaler = NonNullable<BuildParameterSlot["scaler"]>;
+
 export interface OptionRow {
   value: string;
   label: string;
@@ -45,6 +47,11 @@ export interface SlotDraft {
   max: string | number;
   step: string | number;
   presets: string;
+  /** Empty means the parameter is not a scaler; see `BuildParameterSlot.scaler`. The filter
+   *  and tag lists are comma-separated like `optionsFromTags`. */
+  scalerMode: "" | Scaler["mode"];
+  scalerFilters: string;
+  scalerTags: string;
 }
 
 /** Fields the form does not edit, kept aside and re-attached by `toSlot`. Returned by
@@ -69,6 +76,7 @@ export function passthroughOf(
     presets: _presets,
     optionsFrom: _optionsFrom,
     allowEmpty: _allowEmpty,
+    scaler: _scaler,
     ...rest
   } = slot ?? ({} as Partial<BuildParameterSlot>);
   return rest;
@@ -91,6 +99,7 @@ export function buildDraft(
     presets,
     optionsFrom,
     allowEmpty,
+    scaler,
   } = slot ?? ({} as Partial<BuildParameterSlot>);
   return {
     label: label ?? "",
@@ -115,6 +124,9 @@ export function buildDraft(
     max: max == null ? "" : String(max),
     step: step == null ? "" : String(step),
     presets: (presets ?? []).join(", "),
+    scalerMode: scaler?.mode ?? "",
+    scalerFilters: (scaler?.applies?.filter ?? []).join(", "),
+    scalerTags: (scaler?.applies?.tags ?? []).join(", "),
   };
 }
 
@@ -126,6 +138,12 @@ export const isNumeric = (paramType: BuildParameterSlot["paramType"]) =>
  *  since they start as ordinary text fields rather than a cleared-to-null number input. */
 const number = (raw: string | number): number | undefined =>
   numberOrUnset(raw === "" ? null : raw);
+
+const commaList = (raw: string): string[] =>
+  raw
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean);
 
 /** Resolved slot id, threaded the same way `item-draft.ts`'s `ItemDraftContext` is: the
  *  source's own once one exists, otherwise whatever the form's `computeId` worked out. */
@@ -163,6 +181,13 @@ export function toSlot(
       .map((part) => number(part))
       .filter((value): value is number => value !== undefined);
     putIfSet(slot, "presets", presets);
+    if (local.scalerMode) {
+      const applies: NonNullable<Scaler["applies"]> = {};
+      putIfSet(applies, "filter", commaList(local.scalerFilters));
+      putIfSet(applies, "tags", commaList(local.scalerTags));
+      slot.scaler = { mode: local.scalerMode };
+      putIfSet(slot.scaler, "applies", applies);
+    }
   } else {
     slot.default = String(local.default);
     if (local.optionsSource === "inline") {
@@ -177,10 +202,7 @@ export function toSlot(
       slot.optionsFrom =
         local.optionsSource === "tags"
           ? {
-              tags: local.optionsFromTags
-                .split(",")
-                .map((tag) => tag.trim())
-                .filter(Boolean),
+              tags: commaList(local.optionsFromTags),
             }
           : { filter: local.optionsFromFilter.trim() };
       if (local.allowEmpty) slot.allowEmpty = true;
@@ -199,6 +221,10 @@ const CHECKS: DiffCheck<BuildParameterSlot>[] = [
       ? "edit options"
       : null,
   (old, nw) => (old.default !== nw.default ? "edit default" : null),
+  (old, nw) =>
+    JSON.stringify(old.scaler) !== JSON.stringify(nw.scaler)
+      ? "edit scaler"
+      : null,
 ];
 
 export function diffLabel(oldJson: string, newJson: string): string {

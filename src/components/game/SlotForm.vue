@@ -136,6 +136,12 @@ const booleanDefaultOptions = [
   { value: "true", label: "on" },
 ];
 
+const scalerModeOptions = [
+  { value: "", label: "not a scaler" },
+  { value: "relative", label: "relative (1 + value)" },
+  { value: "absolute", label: "absolute (value as-is)" },
+];
+
 /** Every tag any item carries, so the derived-options field can be filled from the real
  * vocabulary instead of a guess. */
 const tagOptions = computed(() =>
@@ -313,6 +319,47 @@ function save() {
             class="w-full"
             type="text"
             data-testid="slot-presets-input"
+          />
+        </FormField>
+      </template>
+    </FormGrid>
+
+    <!-- A scaler multiplies stat lines by this parameter's value, so only a numeric param
+         can be one. Filters/tags name the items scaled wholesale; a scaler with neither is
+         reached only through a grant's own `scaledBy`. -->
+    <FormGrid v-if="numeric" class="mb-2">
+      <FormField label="Scales stats" class="w-52">
+        <ComboBox
+          :model-value="draft.scalerMode"
+          :options="scalerModeOptions"
+          data-testid="slot-scaler-mode-input"
+          @update:model-value="
+            (v) => (draft.scalerMode = v as SlotDraft['scalerMode'])
+          "
+        />
+      </FormField>
+      <template v-if="draft.scalerMode">
+        <FormField
+          label="Scaled item filters"
+          hint="comma-separated; every item in these categories"
+        >
+          <BaseInput
+            v-model="draft.scalerFilters"
+            class="w-full"
+            type="text"
+            data-testid="slot-scaler-filters-input"
+          />
+        </FormField>
+        <FormField
+          label="Scaled item tags"
+          hint="comma-separated; every item with one of these tags"
+        >
+          <BaseInput
+            v-model="draft.scalerTags"
+            class="w-full"
+            type="text"
+            :title="tagOptions"
+            data-testid="slot-scaler-tags-input"
           />
         </FormField>
       </template>

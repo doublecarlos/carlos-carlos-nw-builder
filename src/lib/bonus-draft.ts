@@ -198,6 +198,9 @@ export interface GrantDraft {
   name: string;
   shortDescription: string;
   longDescription: string;
+  /** Path of the scaler parameter this grant's stats are multiplied by, or "" for none;
+   * see `Grant.scaledBy`. Per grant like `name`, since it scales whichever payload wins. */
+  scaledBy: string;
 }
 
 export function toDraft(grant: Grant = {}): GrantDraft {
@@ -240,6 +243,7 @@ export function toDraft(grant: Grant = {}): GrantDraft {
     name: json ? "" : (grant.name ?? ""),
     shortDescription: json ? "" : (grant.shortDescription ?? ""),
     longDescription: json ? "" : (grant.longDescription ?? ""),
+    scaledBy: json ? "" : (grant.scaledBy ?? ""),
   };
 }
 
@@ -292,6 +296,7 @@ export function toGrant(draft: GrantDraft): Grant {
   putIfSet(out, "name", draft.name);
   putIfSet(out, "shortDescription", draft.shortDescription);
   putIfSet(out, "longDescription", draft.longDescription);
+  putIfSet(out, "scaledBy", draft.scaledBy);
 
   return out;
 }

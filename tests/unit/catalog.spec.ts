@@ -72,6 +72,44 @@ describe("catalog.validateSlots", () => {
     expect(findings).toEqual([]);
   });
 
+  it("accepts a scaler on a numeric param", () => {
+    const findings = catalog.validateSlots([
+      {
+        ...(paramSlot("a", "scalers.encounter") as BuildParameterSlot),
+        paramType: "percent",
+        scaler: { mode: "absolute" },
+      },
+    ]);
+    expect(findings).toEqual([]);
+  });
+
+  it("reports a scaler on a boolean or list param", () => {
+    for (const paramType of ["boolean", "list"] as const) {
+      const findings = catalog.validateSlots([
+        {
+          ...(paramSlot("a", "scalers.encounter") as BuildParameterSlot),
+          paramType,
+          scaler: { mode: "relative" },
+        },
+      ]);
+      expect(
+        findings.some((f) => /scaler is only meaningful/.test(f.message)),
+      ).toBe(true);
+    }
+  });
+
+  it("reports a scaler mode that is neither relative nor absolute", () => {
+    const findings = catalog.validateSlots([
+      {
+        ...(paramSlot("a", "scalers.encounter") as BuildParameterSlot),
+        paramType: "number",
+        scaler: { mode: "multiply" as unknown as "absolute" },
+      },
+    ]);
+    expect(findings).toHaveLength(1);
+    expect(findings[0].message).toMatch(/scaler mode must be/);
+  });
+
   it("accepts a visibleWhen gating one param on another", () => {
     const findings = catalog.validateSlots([
       paramSlot("a", "toggles.myFeature"),
