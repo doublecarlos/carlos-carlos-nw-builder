@@ -645,6 +645,11 @@ export interface Grant {
   variants?: GrantVariant[];
   tiers?: GrantTier[];
   problem?: GrantProblem;
+  /** Names a scaler by its parameter path (`scalers.encounterDamage`). This grant's resolved
+   *  stats are multiplied by that scaler's multiplier, whichever payload shape wins: for a
+   *  bonus that only applies to part of your damage, where the catalog stores the real game
+   *  value and the player owns the share it represents. */
+  scaledBy?: string;
   /** Same as `Item.shortDescription`/`longDescription`, shown whenever this grant is
    * active -- next to its slot's stat summary and on that slot's hover card
    * respectively, alongside the item's own text. */

@@ -427,6 +427,25 @@ function withDynamicStats(
   return out;
 }
 
+/** Applies the grant's `scaledBy` multiplier to a resolved payload. A scaler the context does
+ *  not know leaves the payload unscaled: catalog validation rejects the reference, so this
+ *  only happens for an overlay in flux, and x1 keeps the bonus visible rather than zeroing it.
+ *  Returns `stats` unchanged (same reference) when nothing scales it. */
+function scaledStats(
+  stats: StatValues,
+  scaledBy: string | undefined,
+  ctx: EvalContext,
+): StatValues {
+  if (scaledBy === undefined) return stats;
+  const factor = ctx.scalers.get(scaledBy)?.multiplier ?? 1;
+  return Object.fromEntries(
+    Object.entries(stats).map(([key, value]) => [
+      key,
+      (value as number) * factor,
+    ]),
+  );
+}
+
 /** Resolve one grant against the context into a stat payload (or none). `dynamicValues` is
  *  this grant's owning bonus's resolved dynamic-stat values (bonus.ts's `resolve`), already
  *  keyed by stat and defaulted -- see `resolveDynamicValues`. */
@@ -480,10 +499,14 @@ function evaluateGrant(
       : {
           active: true,
           gate,
-          stats: withDynamicStats(
-            grant.variants[index].stats,
-            grant.variants[index].dynamicStats,
-            dynamicValues,
+          stats: scaledStats(
+            withDynamicStats(
+              grant.variants[index].stats,
+              grant.variants[index].dynamicStats,
+              dynamicValues,
+            ),
+            grant.scaledBy,
+            ctx,
           ),
           chose: `variant:${index}`,
           problem: null,
@@ -513,7 +536,7 @@ function evaluateGrant(
       ? {
           active: true,
           gate,
-          stats: best.stats,
+          stats: scaledStats(best.stats, grant.scaledBy, ctx),
           chose: `tier:${bestAt}`,
           problem: null,
         }
@@ -523,10 +546,10 @@ function evaluateGrant(
   return {
     active: true,
     gate,
-    stats: withDynamicStats(
-      grant.stats ?? {},
-      grant.dynamicStats,
-      dynamicValues,
+    stats: scaledStats(
+      withDynamicStats(grant.stats ?? {}, grant.dynamicStats, dynamicValues),
+      grant.scaledBy,
+      ctx,
     ),
     chose: "stats",
     problem: null,

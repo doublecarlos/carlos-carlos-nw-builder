@@ -1034,6 +1034,42 @@ export function validateParamReaders(
 }
 
 /**
+ * A grant's `scaledBy` has to name a `build_parameter` declaring a `scaler`, resolved against
+ * the composed slot list so a layer may point at a scaler it added itself. bonus.ts's
+ * `evaluateGrant` treats an unknown scaler as x1, so the grant would silently apply at full
+ * strength instead of the share the author meant.
+ */
+export function validateScaledBy(
+  slots: Slot[],
+  bonuses: Bonus[],
+): LintFinding[] {
+  const scalerPaths = new Set(
+    slots
+      .filter(
+        (slot): slot is BuildParameterSlot =>
+          slot.type === "build_parameter" && !!slot.scaler,
+      )
+      .map((slot) => slot.path),
+  );
+  const findings: LintFinding[] = [];
+  for (const bonus of bonuses) {
+    bonus.grants?.forEach((grant, index) => {
+      if (grant.scaledBy === undefined || scalerPaths.has(grant.scaledBy))
+        return;
+      findings.push({
+        level: "error",
+        kind: "bonus",
+        name: bonus.id,
+        message:
+          `grant ${index + 1}: scaledBy names "${grant.scaledBy}", which is not a ` +
+          `parameter declaring a scaler; the grant would apply unscaled`,
+      });
+    });
+  }
+  return findings;
+}
+
+/**
  * A bonus definition that no item attaches to can never grant anything, and the only symptom
  * is its absence in game.
  */
@@ -1403,6 +1439,7 @@ export function validate(
     ...validatePresets(presets, slots),
     ...validateParamSchema(slots, schema),
     ...validateParamReaders(slots, bonuses),
+    ...validateScaledBy(slots, bonuses),
     ...validateBonusAttachments(items, bonuses),
     ...validateReplacements(items, schema),
     ...validateMaxCopies(items, slots, filterDefaults),

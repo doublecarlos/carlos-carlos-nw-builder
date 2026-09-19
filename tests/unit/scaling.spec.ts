@@ -357,23 +357,24 @@ describe("resolved scaler map", () => {
   });
 });
 
+const shipped = fromData();
+const shippedScalers = shipped.slots.filter(
+  (s): s is BuildParameterSlot => s.type === "build_parameter" && !!s.scaler,
+);
+
 describe("shipped bolster wiring", () => {
-  const shipped = fromData();
-  const scalerSlots = shipped.slots.filter(
-    (s): s is BuildParameterSlot => s.type === "build_parameter" && !!s.scaler,
-  );
+  const bolsters = shippedScalers.filter((s) => s.scaler?.mode === "relative");
 
   it("declares a relative scaler on each bolster parameter", () => {
-    expect(scalerSlots.map((s) => s.path).sort()).toEqual([
+    expect(bolsters.map((s) => s.path).sort()).toEqual([
       "companionBolster",
       "mountBolster",
     ]);
-    for (const slot of scalerSlots) expect(slot.scaler?.mode).toBe("relative");
   });
 
   it("scales every mount and companion item, and nothing else", () => {
     const scaled = new Set(
-      scalerSlots.flatMap((s) => s.scaler?.applies?.filter ?? []),
+      bolsters.flatMap((s) => s.scaler?.applies?.filter ?? []),
     );
     expect([...scaled].sort()).toEqual([
       "companion",
@@ -393,6 +394,27 @@ describe("shipped bolster wiring", () => {
     expect(equips.length).toBeGreaterThan(0);
     for (const item of equips) expect(item.il).toBe(1750);
     expect(shipped.get("generic-companion")?.il).toBe(1800);
+  });
+});
+
+// The damage-type shares are absolute scalers claiming no item: a grant reaches one through
+// `scaledBy` alone. They start at 0 because no default is right for every class.
+describe("shipped damage-type scalers", () => {
+  const shares = shippedScalers.filter((s) => s.scaler?.mode === "absolute");
+
+  it("declares an absolute scaler per power type, defaulting to 0", () => {
+    expect(shares.map((s) => s.path).sort()).toEqual([
+      "scalers.atWillDamage",
+      "scalers.dailyDamage",
+      "scalers.encounterDamage",
+    ]);
+    for (const slot of shares) {
+      expect(slot.default).toBe(0);
+      expect(slot.min).toBe(0);
+      expect(slot.max).toBe(1);
+      expect(slot.paramType).toBe("percent");
+      expect(slot.scaler?.applies).toBeUndefined();
+    }
   });
 });
 

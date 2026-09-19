@@ -561,6 +561,46 @@ describe("scaler parameters", () => {
     expect(build.context.mountBolster).toBe(base.context.mountBolster);
     expect(build.context.companionBolster).toBe(base.context.companionBolster);
   });
+
+  it("seeds every damage-type share at 0 in a fresh build", () => {
+    const { scalers } = storage.defaultBuild().context as unknown as {
+      scalers: Record<string, unknown>;
+    };
+    expect(scalers).toEqual({
+      encounterDamage: 0,
+      atWillDamage: 0,
+      dailyDamage: 0,
+    });
+  });
+
+  it("normalizes a dotted scaler path without writing into the raw input", () => {
+    const base = storage.defaultBuild();
+    const rawScalers = { encounterDamage: "nonsense", atWillDamage: 0.3 };
+    const raw = { ...base, context: { ...base.context, scalers: rawScalers } };
+    const { scalers } = storage.normalize(raw).context as unknown as {
+      scalers: Record<string, unknown>;
+    };
+    expect(scalers).not.toBe(rawScalers);
+    expect(scalers).toEqual({
+      encounterDamage: 0,
+      atWillDamage: 0.3,
+      dailyDamage: 0,
+    });
+    expect(rawScalers).toEqual({
+      encounterDamage: "nonsense",
+      atWillDamage: 0.3,
+    });
+  });
+
+  it("duplicate does not share the nested scalers object with its source", () => {
+    const source = storage.defaultBuild();
+    const copy = storage.duplicate(source);
+    const nested = (build: Build) =>
+      (build.context as unknown as { scalers: Record<string, number> }).scalers;
+    expect(nested(copy)).not.toBe(nested(source));
+    nested(copy).encounterDamage = 0.5;
+    expect(nested(source).encounterDamage).toBe(0);
+  });
 });
 
 // BonusOccurrenceConfig: unlike `assignments`, no shipped item has one of these yet, so
