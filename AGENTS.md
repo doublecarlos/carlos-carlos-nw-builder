@@ -14,7 +14,8 @@ You are **required** to:
 - Implement tests as needed, both UI and unit tests
 - Run `npm run fix` to perform formatting and linting
 - Run `npm run typecheck` to perform typechecking
-- Run `npm run test` and `npm run test:ui` to run the tests
+- Run `npm run test` to perform unit testing
+- Run targeted E2E tests relevant to the changes made using `npm run test:ui -- <cli args>`.
 - Check if code comments follow the practices outlined below
 
 # Do not
