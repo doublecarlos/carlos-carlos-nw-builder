@@ -74,7 +74,6 @@ const schema: Schema = {
   statContributions: [],
   forteSplit: {},
   roles: {},
-  statScalers: [],
 };
 
 // One group, one insignia slot: enough to exercise stableRef's role gate and oneShortOf's

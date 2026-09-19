@@ -531,6 +531,38 @@ describe("BuildCompare: statLines", () => {
   });
 });
 
+describe("scaler parameters", () => {
+  it("normalize keeps a finite scaler value", () => {
+    const base = storage.defaultBuild();
+    const raw = { ...base, context: { ...base.context, mountBolster: 0.6 } };
+    expect(storage.normalize(raw).context.mountBolster).toBe(0.6);
+  });
+
+  it("normalize floors a negative scaler value at 0", () => {
+    const base = storage.defaultBuild();
+    const raw = {
+      ...base,
+      context: { ...base.context, companionBolster: -0.5 },
+    };
+    expect(storage.normalize(raw).context.companionBolster).toBe(0);
+  });
+
+  it("normalize replaces an unreadable scaler value with the seeded default", () => {
+    const base = storage.defaultBuild();
+    const raw = {
+      ...base,
+      context: {
+        ...base.context,
+        mountBolster: "nonsense",
+        companionBolster: undefined,
+      },
+    };
+    const build = storage.normalize(raw);
+    expect(build.context.mountBolster).toBe(base.context.mountBolster);
+    expect(build.context.companionBolster).toBe(base.context.companionBolster);
+  });
+});
+
 // BonusOccurrenceConfig: unlike `assignments`, no shipped item has one of these yet, so
 // there is nothing to seed a default from -- an absent entry falls back to the config's own
 // `default` at read time instead (bonus.ts's `collect()`), not to a build-carried value.

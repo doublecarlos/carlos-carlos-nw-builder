@@ -14,7 +14,7 @@ import * as catalog from "../data/catalog";
 import { fromData as baseDb, itemPublishing } from "../data/db";
 import * as idb from "./idb";
 import { APP_COMMIT } from "../lib/app-info";
-import { setPath } from "../lib/build-path";
+import { getPath, setPath } from "../lib/build-path";
 import { deepEqual } from "../lib/deep-equal";
 import { storedListRows } from "../lib/item-picker-list";
 import type { SlotData } from "../lib/slot-fields";
@@ -357,6 +357,55 @@ export function normalize(
     disabledSlots: offSlots(raw.disabledSlots),
   });
 
+  const normalizedContext = {
+    ...base.context,
+    ...context,
+    duration: Number.isFinite(Number(context.duration))
+      ? Math.max(Number(context.duration), 0)
+      : base.context.duration,
+    enemies: Number.isFinite(Number(context.enemies))
+      ? Math.max(Number(context.enemies), 0)
+      : base.context.enemies,
+    magnitude: Number.isFinite(Number(context.magnitude))
+      ? Number(context.magnitude)
+      : base.context.magnitude,
+    toggles: {
+      ...base.context.toggles,
+      ...(isPlain(context.toggles) ? context.toggles : {}),
+    },
+    forte: {
+      ...base.context.forte,
+      ...(isPlain(context.forte) ? context.forte : {}),
+    },
+  };
+  // A scaler parameter is validated rather than passed through like class/role: it multiplies
+  // whole stat lines, so a `NaN` from a truncated write or hand-edited export would spread to
+  // every downstream stage instead of staying in one field. Floored at 0 because a negative
+  // multiplier flips signs, which is categorically worse than the out-of-range value the
+  // engine reports without clamping.
+  for (const slot of NW_SLOTS.slots) {
+    if (slot.type !== "build_parameter" || !slot.scaler) continue;
+    // The spread above shares every nested object with the raw input, and `duplicate` hands
+    // a live build in, so a dotted path is copied node by node before the write: it must not
+    // land in an object the input still owns, the same isolation `toggles`/`forte` get. A
+    // non-object node is left for `setPath` to rebuild.
+    let node: Record<string, unknown> = normalizedContext;
+    for (const key of slot.path.split(".").slice(0, -1)) {
+      const next = node[key];
+      if (!isPlain(next)) break;
+      node[key] = { ...next };
+      node = node[key] as Record<string, unknown>;
+    }
+    const value = Number(getPath(context, slot.path));
+    setPath(
+      normalizedContext,
+      slot.path,
+      Number.isFinite(value)
+        ? Math.max(value, 0)
+        : getPath(base.context, slot.path),
+    );
+  }
+
   return {
     ...base,
     ...(perBuild && !catalog.isEmpty(perBuild) ? { catalog: perBuild } : {}),
@@ -376,36 +425,7 @@ export function normalize(
     // `context`'s pass-through fields (class/role/damageType) are not individually
     // validated -- the result is only knowable-safe by construction, not by the type
     // checker; hence the cast.
-    context: {
-      ...base.context,
-      ...context,
-      duration: Number.isFinite(Number(context.duration))
-        ? Math.max(Number(context.duration), 0)
-        : base.context.duration,
-      enemies: Number.isFinite(Number(context.enemies))
-        ? Math.max(Number(context.enemies), 0)
-        : base.context.enemies,
-      magnitude: Number.isFinite(Number(context.magnitude))
-        ? Number(context.magnitude)
-        : base.context.magnitude,
-      // Validated rather than passed through like class/role: these multiply whole stat lines
-      // (`Schema.statScalers`), so a `NaN` from a truncated write or hand-edited export would
-      // spread to every downstream stage instead of staying in one field.
-      mountBolster: Number.isFinite(Number(context.mountBolster))
-        ? Math.max(Number(context.mountBolster), 0)
-        : base.context.mountBolster,
-      companionBolster: Number.isFinite(Number(context.companionBolster))
-        ? Math.max(Number(context.companionBolster), 0)
-        : base.context.companionBolster,
-      toggles: {
-        ...base.context.toggles,
-        ...(isPlain(context.toggles) ? context.toggles : {}),
-      },
-      forte: {
-        ...base.context.forte,
-        ...(isPlain(context.forte) ? context.forte : {}),
-      },
-    } as Build["context"],
+    context: normalizedContext as Build["context"],
     compare: {
       id: typeof compare.id === "string" ? compare.id : base.compare.id,
       highlight: Boolean(compare.highlight),

@@ -20,6 +20,7 @@ function ctx(
     bonusNames: new Map(),
     itemNames: new Map(),
     params: new Map(Object.entries(params)),
+    scalers: new Map(),
     ...overrides,
   };
 }
@@ -115,7 +116,6 @@ const emptySchema: Schema = {
   statContributions: [],
   forteSplit: {},
   roles: {},
-  statScalers: [],
 };
 const testDb = db.build([], [], emptySchema, testSlots);
 

@@ -19,7 +19,6 @@ const schema: Schema = {
   statContributions: [],
   forteSplit: {},
   roles: { dps: { label: "DPS", hpBonus: 1, damageBonus: 1 } },
-  statScalers: [],
 };
 
 const slots: SlotsData = {

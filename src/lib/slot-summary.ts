@@ -17,8 +17,7 @@ export function slotStatSummary(
   const totals: Record<string, number> = {};
   for (const key of NW_SCHEMA.statKeys) {
     if (item[key])
-      totals[key] =
-        (totals[key] ?? 0) + scaledStat(NW_SCHEMA, item, key, scaleFactor);
+      totals[key] = (totals[key] ?? 0) + scaledStat(item, key, scaleFactor);
   }
   const descriptions: string[] = [];
   const slots = slotSummary(item);

@@ -28,6 +28,7 @@ import type {
   PointAssignmentSlot,
   ResolvedBonuses,
   ResolvedRow,
+  ResolvedScaler,
   StatValues,
 } from "../types";
 
@@ -338,6 +339,30 @@ export function collect(
     published.set(path, value);
   }
 
+  // Every scaler parameter's multiplier, resolved from the same `params` value a condition
+  // would read so a slot default or a published value reaches it too. An unreadable value is
+  // not dropped but pinned to the scaler's own zero point: `relative` at 0 leaves the scaled
+  // stats at base, and `absolute` falls back to the slot's declared default rather than to a
+  // full-strength x1.
+  const scalers = new Map<string, ResolvedScaler>();
+  for (const slot of db.slots) {
+    if (slot.type !== "build_parameter" || !slot.scaler) continue;
+    const { mode, applies } = slot.scaler;
+    let value = Number(params.get(slot.path));
+    if (!Number.isFinite(value)) {
+      const fallback = Number(slot.default);
+      value = mode === "relative" || !Number.isFinite(fallback) ? 0 : fallback;
+    }
+    scalers.set(slot.path, {
+      path: slot.path,
+      label: slot.label,
+      mode,
+      applies,
+      value,
+      multiplier: mode === "relative" ? 1 + value : value,
+    });
+  }
+
   // Populate bonus names from the db so conditions can display friendly names
   // instead of internal IDs like "m32-impending-doom-celestial".
   const bonusNames = new Map<string, string>();
@@ -369,6 +394,7 @@ export function collect(
     bonusNames,
     itemNames,
     params,
+    scalers,
   };
 
   return {

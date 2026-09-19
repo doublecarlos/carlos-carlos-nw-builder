@@ -45,26 +45,6 @@ export interface RoleDef {
   damageBonus: number;
 }
 
-/** A whole category of items whose own stat line is scaled by a build parameter -- mount and
- * companion bolster, where the game multiplies the item's every stat by `1 + bolster`.
- *
- * Declared as data so "which items scale" is a catalog question rather than a hardcoded
- * filter list in the engine: `applies` is the same `{ filter, tags }` selector `optionsFrom`
- * uses, so an overlay item opts in by carrying a tag, with no code or schema edit. The factor
- * is read from the `build_parameter` at `param`, which is where the value's range, default and
- * UI live -- a scaler declares only *what* it scales, never how much.
- *
- * Applies to an item's own stat vector alone. Bonuses an item grants are attributed to a slot
- * rather than to the item that granted them (bonus.ts's `anchor.slotId`), so they are
- * deliberately out of scope. */
-export interface StatScaler {
-  id: string;
-  label: string;
-  /** A `BuildParameterSlot.path`, read out of `EvalContext.params`. */
-  param: string;
-  applies: { filter?: string[]; tags?: string[] };
-}
-
 export interface Schema {
   stats: StatDef[];
   statByKey: Record<StatKey, StatDef>;
@@ -78,7 +58,6 @@ export interface Schema {
    * appended after `statContributions`. */
   forteSplit: Record<string, number>;
   roles: Record<string, RoleDef>;
-  statScalers: StatScaler[];
 }
 
 export interface SlotSection {
@@ -149,6 +128,19 @@ export interface BuildParameterSlot extends SlotVisibility {
   max?: number;
   step?: number;
   presets?: number[];
+  /** Marks this parameter as a stat scaler: its value multiplies stat payloads elsewhere
+   * rather than only being read by `param` conditions. The slot's `path` is the scaler's
+   * identity and its `label` the display name. */
+  scaler?: {
+    /** How the stored value becomes a multiplier.
+     * `relative`: `1 + value` (120% bolster -> x2.20).
+     * `absolute`: `value` as-is (40% encounter share -> x0.40). */
+    mode: "relative" | "absolute";
+    /** Items whose own stat vector this scales wholesale, OR-matched the same way an
+     * `item_picker` selects candidates. Absent means nothing is scaled by category and the
+     * scaler is only ever reached through an explicit reference. */
+    applies?: { filter?: string[]; tags?: string[] };
+  };
 }
 
 export interface ItemPickerSlot extends SlotVisibility {
@@ -769,10 +761,10 @@ export interface BuildContext {
   m32Forte: boolean;
   forte: ForteSplit;
   toggles: Record<string, boolean>;
-  /** Collection-wide bolster, as decimal fractions (1.25 === 125%) -- what `Schema.statScalers`
-   * multiplies the matching items' stat lines by. Character-wide values from the stable and
-   * companion collection, not properties of the equipped mount/companion, which is why they are
-   * context and not item fields. */
+  /** Collection-wide bolster, as decimal fractions (1.25 === 125%): what the bolster slots'
+   * `scaler` blocks multiply the matching items' stat lines by. Character-wide values from the
+   * stable and companion collection, not properties of the equipped mount/companion, which is
+   * why they are context and not item fields. */
   mountBolster: number;
   companionBolster: number;
 }
@@ -929,6 +921,21 @@ export interface EvalContext {
   /** Every `build_parameter`'s current value, keyed by its (context-relative) `path` -- what
    *  the `param` leaf reads. Built once by bonus.ts's `collect()`. */
   params: Map<string, string | number | boolean>;
+  /** Every `build_parameter` declaring a `scaler`, by its `path`. Resolved once so the
+   *  engine, the stat-source popover and the UI cannot compute different multipliers. */
+  scalers: Map<string, ResolvedScaler>;
+}
+
+/** A scaler slot's declaration paired with the multiplier its current value works out to. */
+export interface ResolvedScaler {
+  path: string;
+  label: string;
+  mode: "relative" | "absolute";
+  applies?: { filter?: string[]; tags?: string[] };
+  /** The parameter's current value, defaulted from the slot. */
+  value: number;
+  /** `1 + value` or `value`, per `mode`. */
+  multiplier: number;
 }
 
 /** What a build would have to hold for a condition leaf to pass: something tagged `tag`, the

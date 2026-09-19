@@ -113,9 +113,7 @@ const replacement = computed(
 
 /** The header badge, scaled like the stat lines below it -- an unscaled figure next to scaled
  *  rows reads as a contradiction rather than as two different numbers. */
-const scaledIl = computed(() =>
-  int(scaledStat(NW_SCHEMA, props.item, "il", props.scale)),
-);
+const scaledIl = computed(() => int(scaledStat(props.item, "il", props.scale)));
 
 /** Falls back to the short description, so an item carrying only that still says something on
  * its card rather than nothing. */
@@ -161,10 +159,7 @@ const stats = computed(() => {
     out.push({
       key,
       label: statLabel(key),
-      value: signedStat(
-        key,
-        scaledStat(NW_SCHEMA, props.item, key, props.scale),
-      ),
+      value: signedStat(key, scaledStat(props.item, key, props.scale)),
     });
   }
   return out;

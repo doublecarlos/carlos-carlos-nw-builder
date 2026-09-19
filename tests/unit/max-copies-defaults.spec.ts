@@ -25,7 +25,6 @@ const schema: Schema = {
   statContributions: [],
   forteSplit: {},
   roles: { dps: { label: "DPS", hpBonus: 1, damageBonus: 1 } },
-  statScalers: [],
 };
 
 const picker = (id: string, filter: string): Slot => ({

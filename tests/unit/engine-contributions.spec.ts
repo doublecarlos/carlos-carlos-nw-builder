@@ -86,7 +86,6 @@ const schema: Schema = {
   ],
   forteSplit: { primary: 2, secondaryA: 4, secondaryB: 4 },
   roles: { dps: { label: "dps", hpBonus: 1, damageBonus: 1 } },
-  statScalers: [],
 };
 
 const slotsData: SlotsData = {

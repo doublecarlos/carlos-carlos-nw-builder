@@ -28,7 +28,6 @@ const schema: Schema = {
   ],
   forteSplit: { primary: 2 },
   roles: { dps: { label: "DPS", hpBonus: 1, damageBonus: 1.2 } },
-  statScalers: [],
 };
 
 const BONUS = "ring-bonus";

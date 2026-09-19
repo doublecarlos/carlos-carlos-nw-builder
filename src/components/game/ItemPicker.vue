@@ -21,7 +21,6 @@ import {
 import * as engine from "../../engine/engine";
 import { itemScaleFactor } from "../../composables/useItemScale";
 import { scaledStat } from "../../engine/scaling";
-import { NW_SCHEMA } from "../../data/data";
 import { itemSearchText } from "../../lib/item-search";
 import * as pickerLens from "../../stores/pickerLens";
 import { PREFERRED_MARK, itemDisplay } from "../../engine/insignia";
@@ -337,7 +336,7 @@ const matchMap = computed(() => {
     const factor = itemScaleFactor(item);
     map.set(item.id, {
       item,
-      il: scaledStat(NW_SCHEMA, item, "il", factor),
+      il: scaledStat(item, "il", factor),
       preview: itemPreview(item, 4, factor),
       bonusPreview,
       // "Potentially" is only worth showing when it says something "current" doesn't already.
