@@ -3825,10 +3825,50 @@
         "when": {
           "toggle": "combat"
         },
-        "stats": {
-          "outgoing_damage": 0.12
-        },
-        "longDescription": "Rough estimation based on 5 stacks + encounters being generally 40% of Hellbringer's Damage."
+        "scaledBy": "scalers.encounterDamage",
+        "tiers": [
+          {
+            "stats": {
+              "outgoing_damage": 0.22
+            },
+            "bonusOccurrences": {
+              "atLeast": 1
+            }
+          },
+          {
+            "stats": {
+              "outgoing_damage": 0.24
+            },
+            "bonusOccurrences": {
+              "atLeast": 2
+            }
+          },
+          {
+            "stats": {
+              "outgoing_damage": 0.26
+            },
+            "bonusOccurrences": {
+              "atLeast": 3
+            }
+          },
+          {
+            "stats": {
+              "outgoing_damage": 0.28
+            },
+            "bonusOccurrences": {
+              "atLeast": 4
+            }
+          },
+          {
+            "stats": {
+              "outgoing_damage": 0.3
+            },
+            "bonusOccurrences": {
+              "atLeast": 5
+            }
+          }
+        ],
+        "longDescription": "Soul Investiture grants 20% bonus Encounter damage, +2% per stack."
       }
     ]
   },
@@ -4093,6 +4133,19 @@
     ]
   },
   {
+    "id": "sturdy-crescent-collar",
+    "name": "Sturdy Crescent Collar",
+    "grants": [
+      {
+        "stats": {
+          "outgoing_damage_mult": 0.05
+        },
+        "scaledBy": "scalers.encounterDamage",
+        "longDescription": "Encounter powers deal 5% more damage."
+      }
+    ]
+  },
+  {
     "id": "sunlord-ca",
     "name": "Sunlord's Gift Elixir",
     "grants": [
@@ -4219,13 +4272,37 @@
     "name": "Warlock's Curse",
     "grants": [
       {
+        "name": "Encounters",
         "when": {
           "toggle": "combat"
         },
         "stats": {
-          "outgoing_damage": 0.07
+          "outgoing_damage": 0.15
         },
-        "longDescription": "Rough estimation based on Powers being generally 50% of Hellbringer's Damage."
+        "scaledBy": "scalers.encounterDamage",
+        "longDescription": "Encounter powers deal 15% more damage to cursed targets."
+      },
+      {
+        "name": "At-wills",
+        "when": {
+          "toggle": "combat"
+        },
+        "stats": {
+          "outgoing_damage": 0.15
+        },
+        "scaledBy": "scalers.atWillDamage",
+        "longDescription": "At-will powers deal 15% more damage to cursed targets."
+      },
+      {
+        "name": "Dailies",
+        "when": {
+          "toggle": "combat"
+        },
+        "stats": {
+          "outgoing_damage": 0.15
+        },
+        "scaledBy": "scalers.dailyDamage",
+        "longDescription": "Daily powers deal 15% more damage to cursed targets."
       }
     ]
   },
