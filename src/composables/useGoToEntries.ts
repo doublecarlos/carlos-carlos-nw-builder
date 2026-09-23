@@ -21,7 +21,8 @@ export function useGoToEntries() {
   return computed<GoToEntry[]>(() => {
     const entries: GoToEntry[] = [];
     const resolved = engine.resolved.value;
-    if (resolved.ok) {
+    const active = builds.build.value;
+    if (resolved.ok && active) {
       const db = engine.db.value;
       const itemBySlot = new Map(
         resolved.result.rows.map((row) => [row.slotId, row.item]),
@@ -35,7 +36,7 @@ export function useGoToEntries() {
         });
       }
       for (const section of db.sections) {
-        for (const slotDef of expandSlots(db.slots, builds.build.value)) {
+        for (const slotDef of expandSlots(db.slots, active)) {
           if (slotDef.section !== section.id) continue;
           if (
             slotDef.type === "separator" ||

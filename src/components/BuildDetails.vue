@@ -8,6 +8,9 @@ import BonusInspector from "./game/BonusInspector.vue";
 import BaseBadge from "./ui/BaseBadge.vue";
 import * as engine from "../stores/resolved";
 import * as details from "../stores/details";
+import type { Build } from "../types";
+
+defineProps<{ build: Build }>();
 
 const tab = details.tab;
 </script>
@@ -32,7 +35,7 @@ const tab = details.tab;
     </TabStrip>
 
     <!-- v-show, not v-if: switching tabs must not discard the inspector's filter. -->
-    <StatPanel v-show="tab === 'stats'" />
+    <StatPanel v-show="tab === 'stats'" :build="build" />
     <BonusInspector v-show="tab === 'bonuses'" />
   </aside>
 </template>

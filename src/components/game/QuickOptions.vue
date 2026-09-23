@@ -19,13 +19,18 @@ import BaseTooltip from "../ui/BaseTooltip.vue";
 import { getPath } from "../../lib/build-path";
 import { slotVisible } from "../../lib/slot-visibility";
 import { paramDiffers, paramDiffTitle } from "../../composables/useCompareDiff";
-import * as builds from "../../stores/builds";
 import * as compare from "../../stores/compare";
 import * as buildEditor from "../../stores/buildEditor";
 import * as engine from "../../stores/resolved";
-import type { BuildParameterSlot, ItemPickerSlot, Slot } from "../../types";
+import type {
+  Build,
+  BuildParameterSlot,
+  ItemPickerSlot,
+  Slot,
+} from "../../types";
 
-const build = builds.build;
+const props = defineProps<{ build: Build }>();
+const build = computed(() => props.build);
 const compareBuild = compare.compareBuild;
 const highlightDiff = () => build.value.compare.highlight;
 

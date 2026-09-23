@@ -173,9 +173,6 @@ export function applyImport(plan: ImportPlan, decisions: ImportDecisions) {
     return;
   }
 
-  // Imported builds stand on their own, so the landing screen's placeholder makes way first.
-  if (resolved.builds.length) builds.discardPlaceholder();
-
   const unpacked: UnpackedCatalog[] = [];
   for (const { build, replacing } of resolved.builds) {
     const landed = builds.upsertImported(build, replacing);

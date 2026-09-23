@@ -22,6 +22,9 @@ async function freshStores() {
   builds._setLoading(false);
   history._setLoading(false);
   layers._setLoading(false);
+  const storage = await import("../../../src/storage/storage");
+  // Every test starts from one "Build 1".
+  builds.replaceActive(storage.defaultBuild("Build 1"));
   return { builds, buildEditor, history, layers, notice };
 }
 
@@ -45,25 +48,25 @@ const preset = (fields: Partial<SectionPreset> = {}): SectionPreset => ({
 describe("undo notices", () => {
   it("resetting a build offers a notice that puts its choices back", async () => {
     const { builds, buildEditor, notice } = await freshStores();
-    const before = builds.build.value;
+    const before = builds.build.value!;
     builds.replaceActive({
       ...before,
       choices: { ...before.choices, "gear.head": "i_head" },
     });
 
     buildEditor.resetAll();
-    expect(builds.build.value.choices["gear.head"]).toBeUndefined();
+    expect(builds.build.value!.choices["gear.head"]).toBeUndefined();
 
     expect(notice.noticeAction.value?.label).toBe("Undo");
     notice.noticeAction.value?.run();
 
-    expect(builds.build.value.choices["gear.head"]).toBe("i_head");
+    expect(builds.build.value!.choices["gear.head"]).toBe("i_head");
     expect(notice.noticeAction.value).toBeNull();
   });
 
   it("reverting a build offers a notice that brings the newer state back", async () => {
     const { builds, notice } = await freshStores();
-    const downloaded = builds.build.value;
+    const downloaded = builds.build.value!;
     builds.replaceActive({
       ...downloaded,
       choices: { ...downloaded.choices, "gear.head": "i_head" },
@@ -71,12 +74,12 @@ describe("undo notices", () => {
     });
 
     builds.revertToDownloaded(downloaded.id);
-    expect(builds.build.value.choices["gear.head"]).toBeUndefined();
+    expect(builds.build.value!.choices["gear.head"]).toBeUndefined();
 
     expect(notice.noticeAction.value?.label).toBe("Undo");
     notice.noticeAction.value?.run();
 
-    expect(builds.build.value.choices["gear.head"]).toBe("i_head");
+    expect(builds.build.value!.choices["gear.head"]).toBe("i_head");
     expect(notice.noticeAction.value).toBeNull();
   });
 

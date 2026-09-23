@@ -15,6 +15,9 @@ async function freshStores() {
   const resolved = await import("../../../src/stores/resolved");
   builds._setLoading(false);
   layers._setLoading(false);
+  const storage = await import("../../../src/storage/storage");
+  // Every test starts from one "Build 1".
+  builds.replaceActive(storage.defaultBuild("Build 1"));
   return { builds, layers, resolved };
 }
 
@@ -31,11 +34,11 @@ describe("resolved.db stability", () => {
   it("keeps the same db when swapping between builds", async () => {
     const { builds, resolved } = await freshStores();
     const first = resolved.db.value;
-    const before = builds.build.value.id;
+    const before = builds.build.value!.id;
 
     builds.createBuild();
 
-    expect(builds.build.value.id).not.toBe(before);
+    expect(builds.build.value!.id).not.toBe(before);
     expect(resolved.db.value).toBe(first);
   });
 
@@ -43,7 +46,7 @@ describe("resolved.db stability", () => {
     const { builds, resolved } = await freshStores();
     const first = resolved.db.value;
 
-    builds.build.value.choices.ring1 = "some-item";
+    builds.build.value!.choices.ring1 = "some-item";
 
     expect(resolved.db.value).toBe(first);
   });

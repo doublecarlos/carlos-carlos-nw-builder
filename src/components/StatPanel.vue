@@ -21,10 +21,9 @@ import CompareLine from "./ui/CompareLine.vue";
 import { useStatSourcePopover } from "../composables/useStatSourcePopover";
 import { NW_SCHEMA } from "../data/data";
 import { int as fmtInt, pct as fmtPct, stat as fmtStat } from "../lib/format";
-import * as builds from "../stores/builds";
 import * as compare from "../stores/compare";
 import * as engine from "../stores/resolved";
-import type { EngineError, ResolvedBuild } from "../types";
+import type { Build, EngineError, ResolvedBuild } from "../types";
 
 // Display order only -- data/schema.json stays untouched. Forte sits with the defensive
 // ratings rather than right after Severity, per the user's re-grouping.
@@ -123,9 +122,10 @@ const result = computed(() => {
 const compareResult = computed(() =>
   engine.compareResolved.value?.ok ? engine.compareResolved.value.result : null,
 );
-// Only needed for the stat source popover's point_assignment lines; the rest of the panel
-// reads entirely off `result`.
-const build = builds.build;
+// Only needed for the stat source popover's point_assignment lines and the compare toggle;
+// the rest of the panel reads entirely off `result`.
+const props = defineProps<{ build: Build }>();
+const build = computed(() => props.build);
 
 // The compare build's own numbers, stacked under this build's inside the same cell (see
 // CompareLine.vue). Off unless the user asked for them *and* there is a compare build

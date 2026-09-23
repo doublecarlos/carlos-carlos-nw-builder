@@ -88,7 +88,7 @@ describe("unpacking an imported build's catalog", () => {
     expect(layer.overlay.items?.[CUSTOM_ITEM_ID]).toBeDefined();
     // Index 0 is the highest priority, which is where the embedded catalog used to fold.
     expect(layers.layers.value[0].id).toBe(layer.id);
-    expect(builds.build.value.name).toBe("Shared");
+    expect(builds.build.value!.name).toBe("Shared");
   });
 
   it("clears the field, so the build is stored without it", async () => {

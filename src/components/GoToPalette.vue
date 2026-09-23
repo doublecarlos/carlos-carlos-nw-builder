@@ -60,8 +60,8 @@ function move(delta: number) {
 /**
  * Jumping to a section or slot needs the Build editor, which is not on screen while a layer is
  * selected -- so selecting the build comes first, and the request waits in the store until
- * BuildEditor mounts and consumes it. `builds.build` always resolves to a build (falling back
- * to the first), so there is always one to go back to.
+ * BuildEditor mounts and consumes it. `builds.build` falls back to the first build, and
+ * section and slot entries are only offered while one exists.
  */
 async function choose(entry: GoToEntry) {
   if (entry.kind === "build") {
@@ -72,8 +72,10 @@ async function choose(entry: GoToEntry) {
     if (await selection.goToLayer(entry.id)) goTo.close();
     return;
   }
+  const active = builds.build.value;
+  if (!active) return;
   if (selection.selection.value?.kind !== "build") {
-    if (!(await selection.goToBuild(builds.build.value.id))) return;
+    if (!(await selection.goToBuild(active.id))) return;
   }
   goTo.requestJump({
     sectionId: entry.kind === "slot" ? entry.sectionId! : entry.id,

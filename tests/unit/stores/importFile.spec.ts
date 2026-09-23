@@ -67,7 +67,7 @@ describe("importFile store", () => {
     );
 
     expect(builds.builds.value.length).toBe(before + 1);
-    expect(builds.build.value.name).toBe("Exported build");
+    expect(builds.build.value!.name).toBe("Exported build");
   });
 
   it("routes an enveloped layer export to the layers store", async () => {
@@ -152,6 +152,7 @@ describe("importFile store", () => {
 
   it("replaces the build whose id an entry carries, trashing the old copy", async () => {
     const { builds, trash, storage, importFile } = await freshStores();
+    builds.replaceActive(storage.defaultBuild("Build 1"));
     const mine = builds.builds.value[0];
     const before = builds.builds.value.length;
 
@@ -176,10 +177,9 @@ describe("importFile store", () => {
     expect(trash.trashed.value[0].item.id).toBe(mine.id);
   });
 
-  it("drops the landing screen's placeholder rather than importing beside it", async () => {
+  it("imports from the landing as the only build", async () => {
     const { builds, landing, storage, importFile } = await freshStores();
     landing.show();
-    const placeholder = builds.build.value.id;
 
     importAll(
       importFile,
@@ -192,25 +192,6 @@ describe("importFile store", () => {
     );
 
     expect(builds.builds.value.map((b) => b.name)).toEqual(["Imported"]);
-    expect(builds.get(placeholder)).toBeUndefined();
-  });
-
-  it("keeps the placeholder when the file brings no builds of its own", async () => {
-    const { builds, landing, storage, importFile } = await freshStores();
-    landing.show();
-    const placeholder = builds.build.value.id;
-
-    importAll(
-      importFile,
-      enveloped(
-        "layer",
-        storage.defaultLayer("Just a layer"),
-        storage.SCHEMA_VERSION,
-      ),
-      "layer.json",
-    );
-
-    expect(builds.get(placeholder)).toBeDefined();
   });
 
   it("cancelling drops the plan and imports nothing", async () => {
