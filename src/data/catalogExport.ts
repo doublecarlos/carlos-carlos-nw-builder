@@ -2,26 +2,26 @@
 // layer editor edits back into the repo. A separate module so it is only loaded in maintainer
 // mode.
 //
-// Produces valid JSON, so the result can replace db-items.json / db-bonuses.json wholesale
-// with no further editing (JSON has no comment syntax, so unlike the pre-JSON export there
-// is no header here -- the provenance note lives in data/db-items.js / data/db-bonuses.js,
-// the loaders that fetch these files). Formatting is Prettier's job once the result lands
-// in the repo (`npm run fix`); this side only rebuilds each entry's own key order --
-// id/name/filter leading, tags/bonuses/etc trailing -- so a hand edit that scrambles an
-// item's keys is corrected back on the next `npm run fix` rather than round-tripping as-is
-// forever. Stats (whatever is left over) keep their existing relative order: there is no
-// canonical order among them worth enforcing, and their number/names vary per item.
+// Produces valid JSON that can replace the data files wholesale. Whitespace is left to
+// Prettier (`npm run fix`). Key order is rebuilt here, so a hand edit that scrambles it is
+// corrected on the next `npm run fix`. Stats follow their order in data/schema.json.
 
+import { NW_SCHEMA } from "./data";
 import type {
   Item,
   Bonus,
   BonusOccurrenceSpec,
   ConditionWhen,
+  DynamicStatConfig,
   Grant,
+  GrantTier,
+  GrantVariant,
   Slot,
   SectionPreset,
   SlotSection,
   FilterDef,
+  Schema,
+  StatValues,
 } from "../types";
 
 const ITEM_LEADING_KEYS = ["id", "name", "filter"] as const;
@@ -36,20 +36,79 @@ const ITEM_TRAILING_KEYS = [
   "inlineRepetition",
   "publishes",
 ] as const;
+const BONUS_KEYS = [
+  "id",
+  "name",
+  "grants",
+  "excludes",
+  "stacking",
+  "maxStacks",
+] as const;
+const GRANT_KEYS = [
+  "name",
+  "when",
+  "stats",
+  "dynamicStats",
+  "variants",
+  "tiers",
+  "problem",
+  "scaledBy",
+  "shortDescription",
+  "longDescription",
+] as const;
+const VARIANT_KEYS = ["when", "stats", "dynamicStats"] as const;
+const TIER_KEYS = ["bonusOccurrences", "stats"] as const;
+const PROBLEM_KEYS = [
+  "severity",
+  "message",
+  "label",
+  "hideFromPicker",
+] as const;
+const DYNAMIC_STAT_KEYS = ["stat", "min", "max", "default", "label"] as const;
 
-function canonicalItem(item: Item): Item {
-  const used = new Set<string>([...ITEM_LEADING_KEYS, ...ITEM_TRAILING_KEYS]);
-  const stats = Object.keys(item).filter((key) => !used.has(key));
-  const ordered = {} as Record<string, unknown>;
-  for (const key of [...ITEM_LEADING_KEYS, ...stats, ...ITEM_TRAILING_KEYS]) {
-    const value = (item as Record<string, unknown>)[key];
-    if (value !== undefined) ordered[key] = value;
+/** Rebuilds `value` with `leading` keys first and `trailing` keys last, each in the given
+ *  order. Unlisted keys keep their relative order in between. Undefined values are dropped. */
+function orderKeys<T extends object>(
+  value: T,
+  leading: readonly string[],
+  trailing: readonly string[] = [],
+): T {
+  const source = value as Record<string, unknown>;
+  const trailingSet = new Set(trailing);
+  const head = leading.filter((key) => !trailingSet.has(key));
+  const listed = new Set([...head, ...trailing]);
+  const rest = Object.keys(source).filter((key) => !listed.has(key));
+  const ordered: Record<string, unknown> = {};
+  for (const key of [...head, ...rest, ...trailing]) {
+    if (source[key] !== undefined) ordered[key] = source[key];
   }
-  return ordered as Item;
+  return ordered as T;
 }
 
-export function toItemsFile(items: Item[]): string {
-  return `${JSON.stringify(items.map(canonicalItem), null, 2)}\n`;
+function canonicalStats(stats: StatValues, schema: Schema): StatValues {
+  return orderKeys(stats, schema.statKeys);
+}
+
+function canonicalDynamicStats(
+  configs: DynamicStatConfig[] | undefined,
+): DynamicStatConfig[] | undefined {
+  return configs?.map((config) => orderKeys(config, DYNAMIC_STAT_KEYS));
+}
+
+function canonicalItem(item: Item, schema: Schema): Item {
+  const ordered = orderKeys(
+    item,
+    [...ITEM_LEADING_KEYS, ...schema.statKeys],
+    ITEM_TRAILING_KEYS,
+  );
+  if (ordered.dynamicStats)
+    ordered.dynamicStats = canonicalDynamicStats(ordered.dynamicStats);
+  return ordered;
+}
+
+export function toItemsFile(items: Item[], schema: Schema = NW_SCHEMA): string {
+  const canonical = items.map((item) => canonicalItem(item, schema));
+  return `${JSON.stringify(canonical, null, 2)}\n`;
 }
 
 /** An occurrence leaf naming the bonus it sits in is spelled by omitting `bonus`, which is
@@ -127,17 +186,51 @@ function grantWithImplicitSelf(grant: Grant, self: string): Grant {
   return out;
 }
 
-export function toBonusesFile(bonuses: Bonus[]): string {
-  const canonical = bonuses.map((bonus) => ({
-    id: bonus.id,
-    name: bonus.name ?? bonus.id,
-    grants: (bonus.grants ?? []).map((grant) =>
-      grantWithImplicitSelf(grant, bonus.id),
+function canonicalVariant(variant: GrantVariant, schema: Schema): GrantVariant {
+  const out = orderKeys(variant, VARIANT_KEYS);
+  if (out.stats) out.stats = canonicalStats(out.stats, schema);
+  if (out.dynamicStats)
+    out.dynamicStats = canonicalDynamicStats(out.dynamicStats);
+  return out;
+}
+
+function canonicalTier(tier: GrantTier, schema: Schema): GrantTier {
+  const out = orderKeys(tier, TIER_KEYS);
+  if (out.stats) out.stats = canonicalStats(out.stats, schema);
+  return out;
+}
+
+function canonicalGrant(grant: Grant, self: string, schema: Schema): Grant {
+  const out = orderKeys(grantWithImplicitSelf(grant, self), GRANT_KEYS);
+  if (out.stats) out.stats = canonicalStats(out.stats, schema);
+  if (out.dynamicStats)
+    out.dynamicStats = canonicalDynamicStats(out.dynamicStats);
+  if (out.variants)
+    out.variants = out.variants.map((variant) =>
+      canonicalVariant(variant, schema),
+    );
+  if (out.tiers)
+    out.tiers = out.tiers.map((tier) => canonicalTier(tier, schema));
+  if (out.problem) out.problem = orderKeys(out.problem, PROBLEM_KEYS);
+  return out;
+}
+
+export function toBonusesFile(
+  bonuses: Bonus[],
+  schema: Schema = NW_SCHEMA,
+): string {
+  const canonical = bonuses.map((bonus) =>
+    orderKeys(
+      {
+        ...bonus,
+        name: bonus.name ?? bonus.id,
+        grants: (bonus.grants ?? []).map((grant) =>
+          canonicalGrant(grant, bonus.id, schema),
+        ),
+      },
+      BONUS_KEYS,
     ),
-    ...(bonus.excludes !== undefined ? { excludes: bonus.excludes } : {}),
-    ...(bonus.stacking !== undefined ? { stacking: bonus.stacking } : {}),
-    ...(bonus.maxStacks !== undefined ? { maxStacks: bonus.maxStacks } : {}),
-  }));
+  );
   return `${JSON.stringify(canonical, null, 2)}\n`;
 }
 

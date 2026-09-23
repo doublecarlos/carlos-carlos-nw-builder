@@ -19,6 +19,7 @@ import IdField from "../ui/IdField.vue";
 import * as bonusDraft from "../../lib/bonus-draft";
 import * as catalog from "../../data/catalog";
 import { useEditorDraft } from "../../composables/useEditorDraft";
+import { deepEqual } from "../../lib/deep-equal";
 import { BonusDraftStore } from "../../stores/bonus-draft";
 import { bonusDraftRegistryKey } from "../../composables/bonusDraftRegistry";
 import BonusOptionRow from "./BonusOptionRow.vue";
@@ -150,7 +151,7 @@ function diffLabel(oldJson: string, newJson: string): string {
         return `remove exclude${removed > 1 ? "s" : ""} (${removed})`;
       return "edit excludes";
     }
-    if (JSON.stringify(old.grants) !== JSON.stringify(nw.grants)) {
+    if (!deepEqual(old.grants, nw.grants)) {
       const oldCount = (old.grants ?? []).length;
       const newCount = (nw.grants ?? []).length;
       if (newCount > oldCount)

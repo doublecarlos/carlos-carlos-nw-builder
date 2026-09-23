@@ -38,8 +38,50 @@ describe("catalogExport.toItemsFile", () => {
     expect(positions).toEqual([...positions].sort((a, b) => a - b));
   });
 
+  it("orders stats by schema.json, with unknown keys after them", () => {
+    const item = {
+      id: "x",
+      name: "X",
+      tags: ["a"],
+      power: 1,
+      custom: 2,
+      acc_p: 3,
+      power_p: 4,
+    } as Item;
+    const [parsed] = JSON.parse(catalogExport.toItemsFile([item]));
+    expect(Object.keys(parsed)).toEqual([
+      "id",
+      "name",
+      "power_p",
+      "acc_p",
+      "power",
+      "custom",
+      "tags",
+    ]);
+  });
+
+  it("orders dynamicStats entries' keys", () => {
+    const item = {
+      id: "x",
+      name: "X",
+      dynamicStats: [{ default: 1, max: 2, min: 0, stat: "power" }],
+    } as Item;
+    const [parsed] = JSON.parse(catalogExport.toItemsFile([item]));
+    expect(Object.keys(parsed.dynamicStats[0])).toEqual([
+      "stat",
+      "min",
+      "max",
+      "default",
+    ]);
+  });
+
   it("produces valid JSON for the real shipped data", () => {
     expect(JSON.parse(catalogExport.toItemsFile(NW_ITEMS))).toEqual(NW_ITEMS);
+  });
+
+  it("is idempotent on the real shipped data", () => {
+    const once = catalogExport.toItemsFile(NW_ITEMS);
+    expect(catalogExport.toItemsFile(JSON.parse(once))).toBe(once);
   });
 });
 
@@ -156,10 +198,49 @@ describe("catalogExport.toBonusesFile", () => {
     expect(parsed[0].name).toBe("Named Bonus");
   });
 
+  it("orders grant, variant, tier and problem keys, and their stats by schema.json", () => {
+    const bonus = {
+      id: "b",
+      grants: [
+        {
+          longDescription: "d",
+          stats: { power: 1, power_p: 2 },
+          when: { toggle: "t" },
+          name: "g",
+        },
+        {
+          variants: [{ stats: { acc: 1, acc_p: 2 }, when: { toggle: "t" } }],
+        },
+        {
+          tiers: [{ stats: { power: 1 }, bonusOccurrences: { atLeast: 2 } }],
+        },
+        { problem: { message: "m", severity: "error" } },
+      ],
+    } as Bonus;
+    const [parsed] = JSON.parse(catalogExport.toBonusesFile([bonus]));
+    const [plain, varied, tiered, problem] = parsed.grants;
+    expect(Object.keys(plain)).toEqual([
+      "name",
+      "when",
+      "stats",
+      "longDescription",
+    ]);
+    expect(Object.keys(plain.stats)).toEqual(["power_p", "power"]);
+    expect(Object.keys(varied.variants[0])).toEqual(["when", "stats"]);
+    expect(Object.keys(varied.variants[0].stats)).toEqual(["acc_p", "acc"]);
+    expect(Object.keys(tiered.tiers[0])).toEqual(["bonusOccurrences", "stats"]);
+    expect(Object.keys(problem.problem)).toEqual(["severity", "message"]);
+  });
+
   it("produces valid JSON for the real shipped data", () => {
     expect(JSON.parse(catalogExport.toBonusesFile(NW_BONUSES))).toEqual(
       NW_BONUSES.map((bonus) => ({ ...bonus, name: bonus.name ?? bonus.id })),
     );
+  });
+
+  it("is idempotent on the real shipped data", () => {
+    const once = catalogExport.toBonusesFile(NW_BONUSES);
+    expect(catalogExport.toBonusesFile(JSON.parse(once))).toBe(once);
   });
 });
 

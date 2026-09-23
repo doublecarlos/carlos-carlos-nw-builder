@@ -125,10 +125,14 @@ export function useEditorDraft<Source, Draft, Entity>(
   // Rebuild the draft when source changes (e.g. after undo/redo reverts the overlay). A live
   // edit's own update emit round-trips through the layer overlay back into this prop, and
   // rebuilding from that echo would wipe a half-drawn row, since every `toEntity` drops
-  // whatever isn't filled in yet. Skip the rebuild when the incoming source is byte-identical
-  // to what this form last emitted.
+  // whatever isn't filled in yet. Skip the rebuild when the incoming source equals what this
+  // form last emitted, in any key order.
   watch(source, (value) => {
-    if (value && lastEmittedJson && JSON.stringify(value) === lastEmittedJson)
+    if (
+      value &&
+      lastEmittedJson &&
+      deepEqual(value, JSON.parse(lastEmittedJson))
+    )
       return;
     draft.value = buildDraft(value);
     onRebuild?.(draft.value);
