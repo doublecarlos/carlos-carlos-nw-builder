@@ -185,3 +185,56 @@ test("creating a new layer from a dirty layer draft warns first", async ({
   // The new layer opens a blank draft; the old one is discarded.
   await expect(page.getByTestId("item-name-input")).toHaveValue("");
 });
+
+test("browser back inside the app uses the in-app dialog, not the browser's", async ({
+  page,
+}) => {
+  let browserPrompted = false;
+  page.on("dialog", (dialog) => {
+    browserPrompted = true;
+    void dialog.dismiss();
+  });
+  await openLayer(page);
+  await page.getByTestId("new-item").click();
+  await page.getByTestId("item-name-input").fill(DRAFT_ITEM);
+
+  await page.goBack();
+  await expect(confirmDialog(page)).toBeVisible();
+  await page.getByTestId("confirm-cancel").click();
+  await expect(page.getByTestId("item-name-input")).toHaveValue(DRAFT_ITEM);
+  expect(browserPrompted).toBe(false);
+});
+
+test("leaving the page with a dirty draft asks through the browser", async ({
+  page,
+}) => {
+  await openLayer(page);
+  await page.getByTestId("new-item").click();
+  await page.getByTestId("item-name-input").fill(DRAFT_ITEM);
+
+  const dialog = page.waitForEvent("dialog");
+  await page.close({ runBeforeUnload: true });
+  const prompt = await dialog;
+  expect(prompt.type()).toBe("beforeunload");
+  await prompt.dismiss();
+
+  // Staying keeps the draft.
+  await expect(page.getByTestId("item-name-input")).toHaveValue(DRAFT_ITEM);
+});
+
+test("leaving the page without a dirty draft does not ask", async ({
+  page,
+}) => {
+  let browserPrompted = false;
+  page.on("dialog", (dialog) => {
+    browserPrompted = true;
+    void dialog.dismiss();
+  });
+  await openLayer(page);
+  await page.getByTestId("new-item").click();
+
+  const closed = page.waitForEvent("close");
+  await page.close({ runBeforeUnload: true });
+  await closed;
+  expect(browserPrompted).toBe(false);
+});

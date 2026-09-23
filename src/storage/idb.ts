@@ -8,6 +8,11 @@
 // non-IDB between opening a transaction and using it kills it. `withStore` takes the
 // request-building callback synchronously - one operation per transaction.
 //
+// ## Writes during unload
+// A write issued while the page unloads gets no later task to finish an async open in, so
+// the connection stays open once made and a write opens its transaction synchronously. Each
+// transaction then commits explicitly, since the page may be gone before auto-commit.
+//
 // ## onupgradeneeded must be additive
 // Create each store only if `db.objectStoreNames.contains(name)` is false, so a later
 // version bump adding a sixth store cannot fail on browsers already holding v1.
@@ -55,12 +60,38 @@ function openDb(): Promise<IDBDatabase> {
   });
 }
 
+let _db: IDBDatabase | null = null;
+
+function forget(db: IDBDatabase) {
+  if (_db === db) _db = null;
+}
+
+/** Runs `use` on the shared connection: synchronously when it is already open. */
+function withDb<T>(use: (db: IDBDatabase) => Promise<T>): Promise<T> {
+  if (_db) return use(_db);
+  return openDb().then((db) => {
+    if (_db) {
+      // Another caller finished opening first; keep theirs.
+      db.close();
+    } else {
+      _db = db;
+      // Step aside for another tab upgrading the schema.
+      db.onversionchange = () => {
+        db.close();
+        forget(db);
+      };
+      db.onclose = () => forget(db);
+    }
+    return use(_db);
+  });
+}
+
 function withStore<T>(
   storeName: StoreName,
   mode: IDBTransactionMode,
   callback: (store: IDBObjectStore) => IDBRequest<T>,
 ): Promise<T> {
-  return openDb().then((db) => {
+  return withDb((db) => {
     return new Promise<T>((resolve, reject) => {
       const transaction = db.transaction(storeName, mode);
       const store = transaction.objectStore(storeName);
@@ -71,14 +102,10 @@ function withStore<T>(
       };
       request.onerror = () =>
         reject(request.error ?? new Error("IDB request failed"));
-      transaction.oncomplete = () => {
-        db.close();
-        resolve(result);
-      };
-      transaction.onerror = () => {
-        db.close();
+      transaction.oncomplete = () => resolve(result);
+      transaction.onerror = () =>
         reject(transaction.error ?? new Error("IDB transaction failed"));
-      };
+      transaction.commit();
     });
   });
 }
@@ -90,29 +117,26 @@ const idbBackend: Backend = {
     return withStore(store, "readonly", (s) => s.get(key));
   },
 
-  async getAll(store: StoreName) {
+  getAll(store: StoreName) {
     const items: unknown[] = [];
-    const db = await openDb();
-    return new Promise<unknown[]>((resolve, reject) => {
-      const transaction = db.transaction(store, "readonly");
-      const objectStore = transaction.objectStore(store);
-      const request = objectStore.openCursor();
-      request.onsuccess = () => {
-        const cursor = request.result;
-        if (cursor) {
-          items.push(cursor.value);
-          cursor.continue();
-        }
-      };
-      transaction.oncomplete = () => {
-        db.close();
-        resolve(items);
-      };
-      transaction.onerror = () => {
-        db.close();
-        reject(transaction.error ?? new Error("IDB getAll failed"));
-      };
-    });
+    return withDb(
+      (db) =>
+        new Promise<unknown[]>((resolve, reject) => {
+          const transaction = db.transaction(store, "readonly");
+          const objectStore = transaction.objectStore(store);
+          const request = objectStore.openCursor();
+          request.onsuccess = () => {
+            const cursor = request.result;
+            if (cursor) {
+              items.push(cursor.value);
+              cursor.continue();
+            }
+          };
+          transaction.oncomplete = () => resolve(items);
+          transaction.onerror = () =>
+            reject(transaction.error ?? new Error("IDB getAll failed"));
+        }),
+    );
   },
 
   put(store: StoreName, key: string, value: unknown) {

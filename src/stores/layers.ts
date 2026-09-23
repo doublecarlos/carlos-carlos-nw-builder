@@ -9,6 +9,7 @@
 // `restoreLayer`. Neither records anything.
 import { computed, ref } from "vue";
 import { useDebounceFn } from "@vueuse/core";
+import { onPageHide } from "../lib/page-lifecycle";
 import { reorderIndex } from "../composables/useDragAndDrop";
 import * as storage from "../storage/storage";
 import * as history from "./history";
@@ -426,12 +427,14 @@ export function _init(layersMap: Map<string, Layer>, order: string[]) {
 const _dirtyIds = new Set<string>();
 let _loading = true;
 
+// Starts every write before its first await, so a flush on page hide queues them all.
 async function flushSave() {
   const ids = [..._dirtyIds];
   _dirtyIds.clear();
-  for (const id of ids) {
-    const layer = _layers.value.get(id);
-    if (layer) {
+  await Promise.all(
+    ids.map(async (id) => {
+      const layer = _layers.value.get(id);
+      if (!layer) return;
       try {
         await storage.putLayer(layer);
       } catch {
@@ -439,11 +442,13 @@ async function flushSave() {
           "Could not save to storage; export your layers to keep them.",
         );
       }
-    }
-  }
+    }),
+  );
 }
 
 const flushSaveDebounced = useDebounceFn(flushSave, SAVE_DEBOUNCE_MS);
+// A write still waiting on the debounce would be lost if the page goes away first.
+onPageHide(() => void flushSave());
 
 function markDirty(id: string) {
   if (_loading) return;

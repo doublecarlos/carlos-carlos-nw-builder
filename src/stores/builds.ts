@@ -9,6 +9,7 @@
 // `trashBuild` and `restoreBuild`. Neither records anything.
 import { computed, ref, watch } from "vue";
 import { useDebounceFn } from "@vueuse/core";
+import { onPageHide } from "../lib/page-lifecycle";
 import * as storage from "../storage/storage";
 import * as history from "./history";
 import * as landing from "./landing";
@@ -467,12 +468,14 @@ export function _unpackStoredCatalogs() {
 
 const _dirtyIds = new Set<string>();
 
+// Starts every write before its first await, so a flush on page hide queues them all.
 async function flushSave() {
   const ids = [..._dirtyIds];
   _dirtyIds.clear();
-  for (const id of ids) {
-    const b = _builds.value.get(id);
-    if (b) {
+  await Promise.all(
+    ids.map(async (id) => {
+      const b = _builds.value.get(id);
+      if (!b) return;
       try {
         await storage.putBuild(b);
       } catch {
@@ -480,11 +483,13 @@ async function flushSave() {
           "Could not save to storage; export your build to keep it.",
         );
       }
-    }
-  }
+    }),
+  );
 }
 
 const flushSaveDebounced = useDebounceFn(flushSave, SAVE_DEBOUNCE_MS);
+// A write still waiting on the debounce would be lost if the page goes away first.
+onPageHide(() => void flushSave());
 
 function markDirty(id: string) {
   if (_loading.value) return;
