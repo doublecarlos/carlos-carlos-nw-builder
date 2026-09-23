@@ -700,7 +700,7 @@ function toggleJson(gIndex: number) {
             :options="searchableScalers"
             show-empty-option
             :closed-display="grant.scaledBy ? '' : 'not scaled'"
-            menu-class="left-0 w-max min-w-full max-w-[min(22rem,80vw)]"
+            menu-class="w-max min-w-(--anchor-width) max-w-[min(22rem,80vw)]"
             data-testid="grant-scaled-by"
           >
             <template #empty>not scaled</template>

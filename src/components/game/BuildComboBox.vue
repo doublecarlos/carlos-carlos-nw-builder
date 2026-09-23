@@ -55,7 +55,7 @@ const closedDisplay = computed(() =>
     :options="grouped"
     :placeholder="placeholder"
     :closed-display="closedDisplay"
-    menu-class="left-0 w-max min-w-full max-w-[min(22rem,80vw)]"
+    menu-class="w-max min-w-(--anchor-width) max-w-[min(22rem,80vw)]"
   >
     <template #group="{ label }">
       <span class="flex items-center gap-1.5 font-semibold text-muted">

@@ -1,12 +1,21 @@
 <script setup lang="ts">
-import { useTemplateRef } from "vue";
+import {
+  computed,
+  onMounted,
+  onUpdated,
+  ref,
+  useTemplateRef,
+  type CSSProperties,
+} from "vue";
+import { useElementBounding, useWindowSize } from "@vueuse/core";
 
 // Floating dropdown shell used by ComboBox.vue. Same interaction (type to filter, arrow keys,
 // Enter, Escape), just different row content via the `#option` slot. `data-testid` rather than
 // a styling class: e2e specs need a stable hook that survives restyling.
 //
-// Anchored rather than teleported through BasePopover (base.css's exception): width-coupled to
-// its input, which a teleported surface can't express.
+// Rendered in place rather than teleported through BasePopover (base.css's exception), but
+// `fixed` against its parent's rect, so a scrolling ancestor (a point section's horizontally
+// scrolling body) can't clip it. `--anchor-width` carries the parent's width for `menuClass`.
 
 withDefaults(
   defineProps<{
@@ -20,10 +29,43 @@ withDefaults(
      *  been wired for it yet -- the role still applies, only the association is missing. */
     listboxId?: string;
   }>(),
-  { menuClass: "inset-x-0", listboxId: undefined },
+  { menuClass: "w-(--anchor-width)", listboxId: undefined },
 );
 
+/** Gap between the input and the menu, and the menu's minimum distance to the viewport edge. */
+const GAP = 2;
+const MARGIN = 8;
+
 const el = useTemplateRef("el");
+const anchor = computed(() => el.value?.parentElement ?? null);
+const { left, top, bottom, width } = useElementBounding(anchor);
+const { height: viewportHeight } = useWindowSize();
+
+/** The rows' full height, unconstrained by `max-height`. Remeasured on every render, since
+ *  the rows arrive through the slot. */
+const contentHeight = ref(0);
+const measure = () => {
+  contentHeight.value = el.value?.scrollHeight ?? 0;
+};
+onMounted(measure);
+onUpdated(measure);
+
+/** Drops below the input, or opens upward when the rows don't fit below and there is more
+ *  room above. Either way the menu is capped to the space on its side. */
+const style = computed<CSSProperties>(() => {
+  const below = viewportHeight.value - bottom.value - GAP - MARGIN;
+  const above = top.value - GAP - MARGIN;
+  const up = contentHeight.value > below && above > below;
+  const room = Math.max(up ? above : below, 0);
+  return {
+    left: `${left.value}px`,
+    "--anchor-width": `${width.value}px`,
+    maxHeight: `min(20rem, ${room}px)`,
+    ...(up
+      ? { bottom: `${viewportHeight.value - top.value + GAP}px` }
+      : { top: `${bottom.value + GAP}px` }),
+  };
+});
 
 /** Scroll the `[data-highlighted]` row into view. Called by the parent picker's
  * `watch(highlight, ...)` instead of reaching into `$el`.
@@ -56,8 +98,9 @@ defineSlots<{
     ref="el"
     role="listbox"
     data-testid="picker-menu"
-    class="absolute top-full z-menu mt-0.5 max-h-80 overflow-y-auto rounded-md border border-line bg-surface shadow-lg"
+    class="fixed z-menu overflow-y-auto rounded-md border border-line bg-surface shadow-lg"
     :class="menuClass"
+    :style="style"
   >
     <slot />
   </div>

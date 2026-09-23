@@ -97,7 +97,8 @@ function open(trigger: HTMLElement, anchor?: DOMRect) {
   const rect = anchor ?? trigger.getBoundingClientRect();
   isOpen.value = true;
   returnFocusTo = trigger;
-  popover.value?.place(rect, props.align === "left" ? rect.left : undefined);
+  if (props.align === "left") popover.value?.place(rect, rect.left);
+  else popover.value?.place(rect, undefined, "end");
   focusOpen();
   emit("open");
 }
@@ -167,7 +168,7 @@ defineExpose({ open, close, isOpen });
       ref="panel"
       tabindex="-1"
       class="rounded-md border border-line bg-surface shadow-lg focus:outline-none"
-      :class="[panelClass, align === 'right' && '-translate-x-full']"
+      :class="panelClass"
       :role="role"
       :aria-label="label"
     >
