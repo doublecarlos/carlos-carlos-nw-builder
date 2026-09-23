@@ -354,6 +354,95 @@ describe("catalogExport.toSlotsFile", () => {
     ).toEqual(JSON.parse(raw));
   });
 
+  it("orders section, slot, preset and nested keys", () => {
+    const sections: SlotSection[] = [
+      { slotIds: [], label: "A", defaultOpen: false, id: "a" },
+    ];
+    const slots: Slot[] = [
+      {
+        scaler: { applies: { tags: ["t"], filter: ["f"] }, mode: "relative" },
+        options: [{ label: "L", value: "v" }],
+        quick: true,
+        paramType: "list",
+        path: "p",
+        type: "build_parameter",
+        section: "a",
+        label: "P",
+        id: "a.p",
+      },
+      {
+        stable: { index: 1, role: "insignia", group: 0 },
+        filter: "mount",
+        type: "item_picker",
+        section: "a",
+        label: "M",
+        id: "a.m",
+      },
+    ];
+    const presets: SectionPreset[] = [
+      {
+        clears: ["a.m"],
+        params: { "a.p": "v" },
+        section: "a",
+        label: "Preset",
+        id: "a.preset",
+      },
+    ];
+    const [section] = JSON.parse(
+      catalogExport.toSlotsFile(sections, slots, presets),
+    ).sections;
+    expect(Object.keys(section)).toEqual([
+      "id",
+      "label",
+      "defaultOpen",
+      "presets",
+      "slots",
+    ]);
+    const [param, picker] = section.slots;
+    expect(Object.keys(param)).toEqual([
+      "id",
+      "label",
+      "type",
+      "paramType",
+      "path",
+      "options",
+      "scaler",
+      "quick",
+    ]);
+    expect(Object.keys(param.options[0])).toEqual(["value", "label"]);
+    expect(Object.keys(param.scaler)).toEqual(["mode", "applies"]);
+    expect(Object.keys(param.scaler.applies)).toEqual(["filter", "tags"]);
+    expect(Object.keys(picker)).toEqual([
+      "id",
+      "label",
+      "type",
+      "filter",
+      "stable",
+    ]);
+    expect(Object.keys(picker.stable)).toEqual(["group", "role", "index"]);
+    expect(Object.keys(section.presets[0])).toEqual([
+      "id",
+      "label",
+      "params",
+      "clears",
+    ]);
+  });
+
+  it("matches the key order data/slots.json is committed in", () => {
+    const raw = readFileSync(
+      new URL("../../data/slots.json", import.meta.url),
+      "utf8",
+    );
+    const text = catalogExport.toSlotsFile(
+      NW_SLOTS.sections,
+      NW_SLOTS.slots,
+      NW_SLOTS.presets ?? [],
+    );
+    expect(JSON.stringify(JSON.parse(text))).toBe(
+      JSON.stringify(JSON.parse(raw)),
+    );
+  });
+
   it("writes a reordered and an added section as nesting, never as slotIds", () => {
     const added: Slot = {
       id: "extra.pick",
@@ -432,6 +521,28 @@ describe("catalogExport.toFiltersFile", () => {
       bare: {},
       boon_tier1: { fields: ["inlineRepetition"] },
     });
+  });
+
+  it("writes maxCopies before fields, with fields sorted", () => {
+    const filters: FilterDef[] = [
+      { fields: ["preferredVariant", "insigniaShape"], maxCopies: 1, id: "x" },
+    ];
+    const text = catalogExport.toFiltersFile(filters);
+    const parsed = JSON.parse(text);
+    expect(Object.keys(parsed.x)).toEqual(["maxCopies", "fields"]);
+    expect(parsed.x.fields).toEqual(["insigniaShape", "preferredVariant"]);
+    expect(filters[0].fields).toEqual(["preferredVariant", "insigniaShape"]);
+  });
+
+  it("matches the key order data/filters.json is committed in", () => {
+    const raw = readFileSync(
+      new URL("../../data/filters.json", import.meta.url),
+      "utf8",
+    );
+    const text = catalogExport.toFiltersFile(NW_FILTERS);
+    expect(JSON.stringify(JSON.parse(text))).toBe(
+      JSON.stringify(JSON.parse(raw)),
+    );
   });
 
   it("round-trips the real shipped data", () => {

@@ -1,9 +1,9 @@
 {
   "sections": [
     {
-      "defaultOpen": true,
       "id": "options",
       "label": "Options",
+      "defaultOpen": true,
       "slots": [
         {
           "id": "options.class",
@@ -15,8 +15,8 @@
         {
           "id": "options.paragon",
           "label": "Paragon",
-          "filter": "paragon",
-          "type": "item_picker"
+          "type": "item_picker",
+          "filter": "paragon"
         },
         {
           "id": "options.role",
@@ -280,14 +280,14 @@
           "path": "enemies",
           "default": 1,
           "min": 1,
-          "quick": true,
-          "presets": [1, 3, 5, 10]
+          "presets": [1, 3, 5, 10],
+          "quick": true
         },
         {
           "id": "options.scenario",
           "label": "Flags",
-          "filter": "scenario_flag",
           "type": "item_picker_list",
+          "filter": "scenario_flag",
           "defaultRows": 0
         },
         {
@@ -298,8 +298,8 @@
           "path": "duration",
           "default": 60,
           "min": 0,
-          "quick": true,
-          "presets": [0, 10, 30, 60]
+          "presets": [0, 10, 30, 60],
+          "quick": true
         },
         {
           "id": "options.toggleConsumables",
@@ -340,27 +340,27 @@
       ]
     },
     {
-      "defaultOpen": true,
       "id": "raceLeveling",
       "label": "Race and Leveling",
+      "defaultOpen": true,
       "slots": [
         {
           "id": "raceLeveling.race",
           "label": "Race",
-          "filter": "race",
-          "type": "item_picker"
+          "type": "item_picker",
+          "filter": "race"
         },
         {
           "id": "raceLeveling.raceAttributes1",
           "label": "Race Ability Score 1",
-          "filter": "race_attributes",
-          "type": "item_picker"
+          "type": "item_picker",
+          "filter": "race_attributes"
         },
         {
           "id": "raceLeveling.raceAttributes2",
           "label": "Race Ability Score 2",
-          "filter": "race_attributes",
-          "type": "item_picker"
+          "type": "item_picker",
+          "filter": "race_attributes"
         },
         {
           "id": "raceLeveling.leveling_str",
@@ -401,63 +401,63 @@
       ]
     },
     {
-      "defaultOpen": true,
       "id": "gear",
       "label": "Gear",
+      "defaultOpen": true,
       "slots": [
         {
           "id": "gear.head",
           "label": "Head",
-          "filter": "gear_head",
-          "type": "item_picker"
+          "type": "item_picker",
+          "filter": "gear_head"
         },
         {
           "id": "gear.armor",
           "label": "Armor",
-          "filter": "gear_armor",
-          "type": "item_picker"
+          "type": "item_picker",
+          "filter": "gear_armor"
         },
         {
           "id": "gear.arms",
           "label": "Arms",
-          "filter": "gear_arms",
-          "type": "item_picker"
+          "type": "item_picker",
+          "filter": "gear_arms"
         },
         {
           "id": "gear.mainhand",
           "label": "Weapon Mainhand",
-          "filter": "gear_weapon_mainhand",
-          "type": "item_picker"
+          "type": "item_picker",
+          "filter": "gear_weapon_mainhand"
         },
         {
           "id": "gear.offhand",
           "label": "Weapon Offhand",
-          "filter": "gear_weapon_offhand",
-          "type": "item_picker"
+          "type": "item_picker",
+          "filter": "gear_weapon_offhand"
         },
         {
           "id": "gear.mainhandMod",
           "label": "Mainhand mod",
-          "filter": "modification_mainhand",
-          "type": "item_picker"
+          "type": "item_picker",
+          "filter": "modification_mainhand"
         },
         {
           "id": "gear.offhandMod1",
           "label": "Offhand Mod 1",
-          "filter": "modification_offhand_static",
-          "type": "item_picker"
+          "type": "item_picker",
+          "filter": "modification_offhand_static"
         },
         {
           "id": "gear.offhandMod2",
           "label": "Offhand Mod 2",
-          "filter": "modification_offhand_dynamic",
-          "type": "item_picker"
+          "type": "item_picker",
+          "filter": "modification_offhand_dynamic"
         },
         {
           "id": "gear.boots",
           "label": "Boots",
-          "filter": "gear_boots",
-          "type": "item_picker"
+          "type": "item_picker",
+          "filter": "gear_boots"
         },
         {
           "id": "gear.sepBootsNeck",
@@ -466,187 +466,187 @@
         {
           "id": "gear.neck",
           "label": "Neck",
-          "filter": "gear_neck",
-          "type": "item_picker"
+          "type": "item_picker",
+          "filter": "gear_neck"
         },
         {
           "id": "gear.ring1",
           "label": "Ring 1",
-          "filter": "gear_ring",
-          "type": "item_picker"
+          "type": "item_picker",
+          "filter": "gear_ring"
         },
         {
           "id": "gear.ring2",
           "label": "Ring 2",
-          "filter": "gear_ring",
-          "type": "item_picker"
+          "type": "item_picker",
+          "filter": "gear_ring"
         },
         {
           "id": "gear.waist",
           "label": "Waist",
-          "filter": "gear_waist",
-          "type": "item_picker"
+          "type": "item_picker",
+          "filter": "gear_waist"
         },
         {
           "id": "gear.shirt",
           "label": "Shirt",
-          "filter": "gear_shirt",
-          "type": "item_picker"
+          "type": "item_picker",
+          "filter": "gear_shirt"
         },
         {
           "id": "gear.pants",
           "label": "Pants",
-          "filter": "gear_pants",
-          "type": "item_picker"
+          "type": "item_picker",
+          "filter": "gear_pants"
         }
       ]
     },
     {
-      "defaultOpen": true,
       "id": "reinforcements",
       "label": "Reinforcements",
+      "defaultOpen": true,
       "slots": [
         {
           "id": "reinforcements.armorKit1",
           "label": "Armor Kit 1",
-          "filter": "reinforcement_armor_kit",
-          "type": "item_picker"
+          "type": "item_picker",
+          "filter": "reinforcement_armor_kit"
         },
         {
           "id": "reinforcements.armorKit2",
           "label": "Armor Kit 2",
-          "filter": "reinforcement_armor_kit",
-          "type": "item_picker"
+          "type": "item_picker",
+          "filter": "reinforcement_armor_kit"
         },
         {
           "id": "reinforcements.armorKit3",
           "label": "Armor Kit 3",
-          "filter": "reinforcement_armor_kit",
-          "type": "item_picker"
+          "type": "item_picker",
+          "filter": "reinforcement_armor_kit"
         },
         {
           "id": "reinforcements.armorKit4",
           "label": "Armor Kit 4",
-          "filter": "reinforcement_armor_kit",
-          "type": "item_picker"
+          "type": "item_picker",
+          "filter": "reinforcement_armor_kit"
         },
         {
           "id": "reinforcements.jewel1",
           "label": "Jewel 1",
-          "filter": "reinforcement_jewel",
-          "type": "item_picker"
+          "type": "item_picker",
+          "filter": "reinforcement_jewel"
         },
         {
           "id": "reinforcements.jewel2",
           "label": "Jewel 2",
-          "filter": "reinforcement_jewel",
-          "type": "item_picker"
+          "type": "item_picker",
+          "filter": "reinforcement_jewel"
         },
         {
           "id": "reinforcements.jewel3",
           "label": "Jewel 3",
-          "filter": "reinforcement_jewel",
-          "type": "item_picker"
+          "type": "item_picker",
+          "filter": "reinforcement_jewel"
         },
         {
           "id": "reinforcements.jewel4",
           "label": "Jewel 4",
-          "filter": "reinforcement_jewel",
-          "type": "item_picker"
+          "type": "item_picker",
+          "filter": "reinforcement_jewel"
         }
       ]
     },
     {
-      "defaultOpen": true,
       "id": "buffs",
       "label": "Buffs",
+      "defaultOpen": true,
       "slots": [
         {
           "id": "buffs.eventFood",
           "label": "Event Food",
-          "filter": "consumable_event_food",
           "type": "item_picker",
+          "filter": "consumable_event_food",
           "toggleable": true
         },
         {
           "id": "buffs.elixir",
           "label": "Elixir",
-          "filter": "consumable_elixir",
           "type": "item_picker",
+          "filter": "consumable_elixir",
           "toggleable": true
         },
         {
           "id": "buffs.potion",
           "label": "Potion",
-          "filter": "consumable_potion",
           "type": "item_picker",
+          "filter": "consumable_potion",
           "toggleable": true
         },
         {
           "id": "buffs.food",
           "label": "Food",
-          "filter": "consumable_food",
           "type": "item_picker",
+          "filter": "consumable_food",
           "toggleable": true
         },
         {
           "id": "buffs.trinket",
           "label": "Trinket",
-          "filter": "trinket",
           "type": "item_picker",
+          "filter": "trinket",
           "toggleable": true
         },
         {
           "id": "buffs.eventItem",
           "label": "Event Item",
-          "filter": "consumable_event_item",
           "type": "item_picker",
+          "filter": "consumable_event_item",
           "toggleable": true
         },
         {
           "id": "buffs.blessing",
           "label": "Blessing",
-          "filter": "consumable_blessing",
           "type": "item_picker",
+          "filter": "consumable_blessing",
           "toggleable": true
         },
         {
           "id": "baselineAndAttributes.attributesCampfireBuff",
           "label": "Campfire Buff",
-          "filter": "attributes_campfire",
           "type": "item_picker",
+          "filter": "attributes_campfire",
           "toggleable": true
         }
       ]
     },
     {
-      "defaultOpen": true,
       "id": "enchantments",
       "label": "Enchantments",
+      "defaultOpen": true,
       "slots": [
         {
           "id": "enchantments.offense1",
           "label": "Offense 1",
-          "filter": "enchantment_offense",
-          "type": "item_picker"
+          "type": "item_picker",
+          "filter": "enchantment_offense"
         },
         {
           "id": "enchantments.offense2",
           "label": "Offense 2",
-          "filter": "enchantment_offense",
-          "type": "item_picker"
+          "type": "item_picker",
+          "filter": "enchantment_offense"
         },
         {
           "id": "enchantments.offense3",
           "label": "Offense 3",
-          "filter": "enchantment_offense",
-          "type": "item_picker"
+          "type": "item_picker",
+          "filter": "enchantment_offense"
         },
         {
           "id": "enchantments.offense4",
           "label": "Offense 4",
-          "filter": "enchantment_offense",
-          "type": "item_picker"
+          "type": "item_picker",
+          "filter": "enchantment_offense"
         },
         {
           "id": "enchantments.sepOffenseDefense",
@@ -655,26 +655,26 @@
         {
           "id": "enchantments.defense1",
           "label": "Defense 1",
-          "filter": "enchantment_defense",
-          "type": "item_picker"
+          "type": "item_picker",
+          "filter": "enchantment_defense"
         },
         {
           "id": "enchantments.defense2",
           "label": "Defense 2",
-          "filter": "enchantment_defense",
-          "type": "item_picker"
+          "type": "item_picker",
+          "filter": "enchantment_defense"
         },
         {
           "id": "enchantments.defense3",
           "label": "Defense 3",
-          "filter": "enchantment_defense",
-          "type": "item_picker"
+          "type": "item_picker",
+          "filter": "enchantment_defense"
         },
         {
           "id": "enchantments.defense4",
           "label": "Defense 4",
-          "filter": "enchantment_defense",
-          "type": "item_picker"
+          "type": "item_picker",
+          "filter": "enchantment_defense"
         },
         {
           "id": "enchantments.sepDefenseCombat",
@@ -683,14 +683,14 @@
         {
           "id": "enchantments.combatOffense",
           "label": "Strike Enchantment",
-          "filter": "combat_enchant_offense",
-          "type": "item_picker"
+          "type": "item_picker",
+          "filter": "combat_enchant_offense"
         },
         {
           "id": "enchantments.combatDefense",
           "label": "Guard Enchantment",
-          "filter": "combat_enchant_defense",
-          "type": "item_picker"
+          "type": "item_picker",
+          "filter": "combat_enchant_defense"
         },
         {
           "id": "enchantments.sepCombatBonus",
@@ -699,14 +699,14 @@
         {
           "id": "enchantments.bonus",
           "label": "Bonus",
-          "filter": "enchantment_bonus",
-          "type": "item_picker"
+          "type": "item_picker",
+          "filter": "enchantment_bonus"
         },
         {
           "id": "enchantments.utility",
           "label": "Utility",
-          "filter": "enchantment_utility",
-          "type": "item_picker"
+          "type": "item_picker",
+          "filter": "enchantment_utility"
         },
         {
           "id": "enchantments.sepUtilityOverloads",
@@ -715,82 +715,82 @@
         {
           "id": "overloads.overload1",
           "label": "Overload 1",
-          "filter": "overload",
-          "type": "item_picker"
+          "type": "item_picker",
+          "filter": "overload"
         },
         {
           "id": "overloads.overload2",
           "label": "Overload 2",
-          "filter": "overload",
-          "type": "item_picker"
+          "type": "item_picker",
+          "filter": "overload"
         }
       ]
     },
     {
-      "defaultOpen": true,
       "id": "artifacts",
       "label": "Artifacts",
+      "defaultOpen": true,
       "slots": [
         {
           "id": "artifacts.artifact1",
           "label": "Artifact 1",
-          "filter": "artifact",
-          "type": "item_picker"
+          "type": "item_picker",
+          "filter": "artifact"
         },
         {
           "id": "artifacts.artifact2",
           "label": "Artifact 2",
-          "filter": "artifact",
-          "type": "item_picker"
+          "type": "item_picker",
+          "filter": "artifact"
         },
         {
           "id": "artifacts.artifact3",
           "label": "Artifact 3",
-          "filter": "artifact",
-          "type": "item_picker"
+          "type": "item_picker",
+          "filter": "artifact"
         },
         {
           "id": "artifacts.artifact4",
           "label": "Artifact 4",
-          "filter": "artifact",
-          "type": "item_picker"
+          "type": "item_picker",
+          "filter": "artifact"
         }
       ]
     },
     {
-      "defaultOpen": true,
       "id": "classStuff",
       "label": "Feats, class feats & other class stuff",
+      "defaultOpen": true,
       "slots": [
         {
           "id": "classStuff.feat1",
           "label": "Feat 1",
-          "filter": "feat1",
-          "type": "item_picker"
+          "type": "item_picker",
+          "filter": "feat1"
         },
         {
           "id": "classStuff.feat2",
           "label": "Feat 2",
-          "filter": "feat2",
-          "type": "item_picker"
+          "type": "item_picker",
+          "filter": "feat2"
         },
         {
           "id": "classStuff.feat3",
           "label": "Feat 3",
-          "filter": "feat3",
-          "type": "item_picker"
+          "type": "item_picker",
+          "filter": "feat3"
         },
         {
           "id": "classStuff.feat4",
           "label": "Feat 4",
-          "filter": "feat4",
-          "type": "item_picker"
+          "type": "item_picker",
+          "filter": "feat4"
         },
         {
           "id": "classStuff.feat5",
           "label": "Feat 5",
-          "filter": "feat5",
-          "type": "item_picker"
+          "type": "item_picker",
+          "filter": "feat5"
         },
         {
           "id": "classStuff.sepFeatClassFeat",
@@ -799,14 +799,14 @@
         {
           "id": "classStuff.classFeat1",
           "label": "Class Feat 1",
-          "filter": "class_feat",
-          "type": "item_picker"
+          "type": "item_picker",
+          "filter": "class_feat"
         },
         {
           "id": "classStuff.classFeat2",
           "label": "Class Feat 2",
-          "filter": "class_feat",
-          "type": "item_picker"
+          "type": "item_picker",
+          "filter": "class_feat"
         },
         {
           "id": "classStuff.sepClassFeatClassStuff",
@@ -815,16 +815,16 @@
         {
           "id": "classStuff.classStuff",
           "label": "Class stuff",
-          "filter": "class_stuff",
           "type": "item_picker_list",
+          "filter": "class_stuff",
           "defaultRows": 0
         }
       ]
     },
     {
-      "defaultOpen": true,
       "id": "boons",
       "label": "Boons",
+      "defaultOpen": true,
       "presets": [
         {
           "id": "boons-max-offense",
@@ -861,20 +861,20 @@
         {
           "id": "boons.guildOffense",
           "label": "Guild - Offense",
-          "filter": "guild_boon_off",
-          "type": "item_picker"
+          "type": "item_picker",
+          "filter": "guild_boon_off"
         },
         {
           "id": "boons.guildDefense",
           "label": "Guild - Defense",
-          "filter": "guild_boon_def",
-          "type": "item_picker"
+          "type": "item_picker",
+          "filter": "guild_boon_def"
         },
         {
           "id": "boons.guildUtility",
           "label": "Guild - Utility",
-          "filter": "guild_boon_util",
-          "type": "item_picker"
+          "type": "item_picker",
+          "filter": "guild_boon_util"
         },
         {
           "id": "boons.tier_master",
@@ -915,14 +915,14 @@
       ]
     },
     {
-      "defaultOpen": true,
       "id": "companions",
       "label": "Companions",
+      "defaultOpen": true,
       "slots": [
         {
           "id": "companions.textCelestial",
-          "text": "Companions are assumed to be Celestial.",
-          "type": "text"
+          "type": "text",
+          "text": "Companions are assumed to be Celestial."
         },
         {
           "id": "companions.bolster",
@@ -945,8 +945,8 @@
         {
           "id": "companions.companion",
           "label": "Companion",
-          "filter": "companion",
-          "type": "item_picker"
+          "type": "item_picker",
+          "filter": "companion"
         },
         {
           "id": "companions.sep1",
@@ -955,26 +955,26 @@
         {
           "id": "companions.equip1",
           "label": "Equip 1",
-          "filter": "companion_equip",
-          "type": "item_picker"
+          "type": "item_picker",
+          "filter": "companion_equip"
         },
         {
           "id": "companions.equip2",
           "label": "Equip 2",
-          "filter": "companion_equip",
-          "type": "item_picker"
+          "type": "item_picker",
+          "filter": "companion_equip"
         },
         {
           "id": "companions.equip3",
           "label": "Equip 3",
-          "filter": "companion_equip",
-          "type": "item_picker"
+          "type": "item_picker",
+          "filter": "companion_equip"
         },
         {
           "id": "companions.enchantment",
           "label": "Enchantment",
-          "filter": "companion_enchantment",
-          "type": "item_picker"
+          "type": "item_picker",
+          "filter": "companion_enchantment"
         },
         {
           "id": "companions.sep2",
@@ -983,8 +983,8 @@
         {
           "id": "companions.enhancement",
           "label": "Enhancement",
-          "filter": "companion_enhancement",
-          "type": "item_picker"
+          "type": "item_picker",
+          "filter": "companion_enhancement"
         },
         {
           "id": "companions.sep3",
@@ -993,52 +993,52 @@
         {
           "id": "companions.offense",
           "label": "Offense",
-          "tags": ["companion_power:offense"],
-          "type": "item_picker"
+          "type": "item_picker",
+          "tags": ["companion_power:offense"]
         },
         {
           "id": "companions.defense",
           "label": "Defense",
-          "tags": ["companion_power:defense"],
-          "type": "item_picker"
+          "type": "item_picker",
+          "tags": ["companion_power:defense"]
         },
         {
           "id": "companions.universal1",
           "label": "Universal 1",
+          "type": "item_picker",
           "tags": [
             "companion_power:offense",
             "companion_power:defense",
             "companion_power:utility"
-          ],
-          "type": "item_picker"
+          ]
         },
         {
           "id": "companions.universal2",
           "label": "Universal 2",
+          "type": "item_picker",
           "tags": [
             "companion_power:offense",
             "companion_power:defense",
             "companion_power:utility"
-          ],
-          "type": "item_picker"
+          ]
         },
         {
           "id": "companions.utility",
           "label": "Utility",
-          "tags": ["companion_power:utility"],
-          "type": "item_picker"
+          "type": "item_picker",
+          "tags": ["companion_power:utility"]
         }
       ]
     },
     {
-      "defaultOpen": true,
       "id": "mounts",
       "label": "Mounts",
+      "defaultOpen": true,
       "slots": [
         {
           "id": "mounts.textCelestial",
-          "text": "Mounts are assumed to be Celestial.",
-          "type": "text"
+          "type": "text",
+          "text": "Mounts are assumed to be Celestial."
         },
         {
           "id": "mounts.bolster",
@@ -1061,14 +1061,14 @@
         {
           "id": "mounts.mountCombat",
           "label": "Mount Combat Power",
-          "filter": "mount_combat",
-          "type": "item_picker"
+          "type": "item_picker",
+          "filter": "mount_combat"
         },
         {
           "id": "mounts.mountEquip",
           "label": "Mount Equip Power",
-          "filter": "mount_equip",
-          "type": "item_picker"
+          "type": "item_picker",
+          "filter": "mount_equip"
         },
         {
           "id": "mounts.sep1",
@@ -1077,45 +1077,45 @@
         {
           "id": "mounts.sturdyCollar",
           "label": "Sturdy Collar",
-          "filter": "sturdy_collar",
-          "type": "item_picker"
+          "type": "item_picker",
+          "filter": "sturdy_collar"
         },
         {
           "id": "mounts.supportiveCollar",
           "label": "Supportive Collar",
-          "filter": "supportive_collar",
-          "type": "item_picker"
+          "type": "item_picker",
+          "filter": "supportive_collar"
         },
         {
           "id": "mounts.wayfaringCollar",
           "label": "Wayfaring Collar",
-          "filter": "wayfaring_collar",
-          "type": "item_picker"
+          "type": "item_picker",
+          "filter": "wayfaring_collar"
         },
         {
           "id": "mounts.unifiedCollar",
           "label": "Unified Collar",
-          "filter": "unified_collar",
-          "type": "item_picker"
+          "type": "item_picker",
+          "filter": "unified_collar"
         },
         {
           "id": "mounts.practicalCollar",
           "label": "Practical Collar",
-          "filter": "pratical_collar",
-          "type": "item_picker"
+          "type": "item_picker",
+          "filter": "pratical_collar"
         }
       ]
     },
     {
-      "defaultOpen": true,
       "id": "insignia",
       "label": "Insignia",
+      "defaultOpen": true,
       "slots": [
         {
           "id": "insignia.mount1",
           "label": "Mount 1",
-          "filter": "mount",
           "type": "item_picker",
+          "filter": "mount",
           "stable": {
             "group": 1,
             "role": "mount"
@@ -1124,8 +1124,8 @@
         {
           "id": "insignia.insignia1_1",
           "label": "Insignia 1.1",
-          "filter": "insignia",
           "type": "item_picker",
+          "filter": "insignia",
           "stable": {
             "group": 1,
             "role": "insignia",
@@ -1135,8 +1135,8 @@
         {
           "id": "insignia.insignia1_2",
           "label": "Insignia 1.2",
-          "filter": "insignia",
           "type": "item_picker",
+          "filter": "insignia",
           "stable": {
             "group": 1,
             "role": "insignia",
@@ -1146,8 +1146,8 @@
         {
           "id": "insignia.insignia1_3",
           "label": "Insignia 1.3",
-          "filter": "insignia",
           "type": "item_picker",
+          "filter": "insignia",
           "stable": {
             "group": 1,
             "role": "insignia",
@@ -1157,8 +1157,8 @@
         {
           "id": "insignia.insignia1_4",
           "label": "Insignia 1.4",
-          "filter": "insignia",
           "type": "item_picker",
+          "filter": "insignia",
           "stable": {
             "group": 1,
             "role": "insignia",
@@ -1168,8 +1168,8 @@
         {
           "id": "insignia.bonus1",
           "label": "Bonus 1",
-          "filter": "insignia_bonus",
           "type": "item_picker",
+          "filter": "insignia_bonus",
           "stable": {
             "group": 1,
             "role": "bonus"
@@ -1182,8 +1182,8 @@
         {
           "id": "insignia.mount2",
           "label": "Mount 2",
-          "filter": "mount",
           "type": "item_picker",
+          "filter": "mount",
           "stable": {
             "group": 2,
             "role": "mount"
@@ -1192,8 +1192,8 @@
         {
           "id": "insignia.insignia2_1",
           "label": "Insignia 2.1",
-          "filter": "insignia",
           "type": "item_picker",
+          "filter": "insignia",
           "stable": {
             "group": 2,
             "role": "insignia",
@@ -1203,8 +1203,8 @@
         {
           "id": "insignia.insignia2_2",
           "label": "Insignia 2.2",
-          "filter": "insignia",
           "type": "item_picker",
+          "filter": "insignia",
           "stable": {
             "group": 2,
             "role": "insignia",
@@ -1214,8 +1214,8 @@
         {
           "id": "insignia.insignia2_3",
           "label": "Insignia 2.3",
-          "filter": "insignia",
           "type": "item_picker",
+          "filter": "insignia",
           "stable": {
             "group": 2,
             "role": "insignia",
@@ -1225,8 +1225,8 @@
         {
           "id": "insignia.insignia2_4",
           "label": "Insignia 2.4",
-          "filter": "insignia",
           "type": "item_picker",
+          "filter": "insignia",
           "stable": {
             "group": 2,
             "role": "insignia",
@@ -1236,8 +1236,8 @@
         {
           "id": "insignia.bonus2",
           "label": "Bonus 2",
-          "filter": "insignia_bonus",
           "type": "item_picker",
+          "filter": "insignia_bonus",
           "stable": {
             "group": 2,
             "role": "bonus"
@@ -1250,8 +1250,8 @@
         {
           "id": "insignia.mount3",
           "label": "Mount 3",
-          "filter": "mount",
           "type": "item_picker",
+          "filter": "mount",
           "stable": {
             "group": 3,
             "role": "mount"
@@ -1260,8 +1260,8 @@
         {
           "id": "insignia.insignia3_1",
           "label": "Insignia 3.1",
-          "filter": "insignia",
           "type": "item_picker",
+          "filter": "insignia",
           "stable": {
             "group": 3,
             "role": "insignia",
@@ -1271,8 +1271,8 @@
         {
           "id": "insignia.insignia3_2",
           "label": "Insignia 3.2",
-          "filter": "insignia",
           "type": "item_picker",
+          "filter": "insignia",
           "stable": {
             "group": 3,
             "role": "insignia",
@@ -1282,8 +1282,8 @@
         {
           "id": "insignia.insignia3_3",
           "label": "Insignia 3.3",
-          "filter": "insignia",
           "type": "item_picker",
+          "filter": "insignia",
           "stable": {
             "group": 3,
             "role": "insignia",
@@ -1293,8 +1293,8 @@
         {
           "id": "insignia.insignia3_4",
           "label": "Insignia 3.4",
-          "filter": "insignia",
           "type": "item_picker",
+          "filter": "insignia",
           "stable": {
             "group": 3,
             "role": "insignia",
@@ -1304,8 +1304,8 @@
         {
           "id": "insignia.bonus3",
           "label": "Bonus 3",
-          "filter": "insignia_bonus",
           "type": "item_picker",
+          "filter": "insignia_bonus",
           "stable": {
             "group": 3,
             "role": "bonus"
@@ -1318,8 +1318,8 @@
         {
           "id": "insignia.mount4",
           "label": "Mount 4",
-          "filter": "mount",
           "type": "item_picker",
+          "filter": "mount",
           "stable": {
             "group": 4,
             "role": "mount"
@@ -1328,8 +1328,8 @@
         {
           "id": "insignia.insignia4_1",
           "label": "Insignia 4.1",
-          "filter": "insignia",
           "type": "item_picker",
+          "filter": "insignia",
           "stable": {
             "group": 4,
             "role": "insignia",
@@ -1339,8 +1339,8 @@
         {
           "id": "insignia.insignia4_2",
           "label": "Insignia 4.2",
-          "filter": "insignia",
           "type": "item_picker",
+          "filter": "insignia",
           "stable": {
             "group": 4,
             "role": "insignia",
@@ -1350,8 +1350,8 @@
         {
           "id": "insignia.insignia4_3",
           "label": "Insignia 4.3",
-          "filter": "insignia",
           "type": "item_picker",
+          "filter": "insignia",
           "stable": {
             "group": 4,
             "role": "insignia",
@@ -1361,8 +1361,8 @@
         {
           "id": "insignia.insignia4_4",
           "label": "Insignia 4.4",
-          "filter": "insignia",
           "type": "item_picker",
+          "filter": "insignia",
           "stable": {
             "group": 4,
             "role": "insignia",
@@ -1372,8 +1372,8 @@
         {
           "id": "insignia.bonus4",
           "label": "Bonus 4",
-          "filter": "insignia_bonus",
           "type": "item_picker",
+          "filter": "insignia_bonus",
           "stable": {
             "group": 4,
             "role": "bonus"
@@ -1386,8 +1386,8 @@
         {
           "id": "insignia.mount5",
           "label": "Mount 5",
-          "filter": "mount",
           "type": "item_picker",
+          "filter": "mount",
           "stable": {
             "group": 5,
             "role": "mount"
@@ -1396,8 +1396,8 @@
         {
           "id": "insignia.insignia5_1",
           "label": "Insignia 5.1",
-          "filter": "insignia",
           "type": "item_picker",
+          "filter": "insignia",
           "stable": {
             "group": 5,
             "role": "insignia",
@@ -1407,8 +1407,8 @@
         {
           "id": "insignia.insignia5_2",
           "label": "Insignia 5.2",
-          "filter": "insignia",
           "type": "item_picker",
+          "filter": "insignia",
           "stable": {
             "group": 5,
             "role": "insignia",
@@ -1418,8 +1418,8 @@
         {
           "id": "insignia.insignia5_3",
           "label": "Insignia 5.3",
-          "filter": "insignia",
           "type": "item_picker",
+          "filter": "insignia",
           "stable": {
             "group": 5,
             "role": "insignia",
@@ -1429,8 +1429,8 @@
         {
           "id": "insignia.insignia5_4",
           "label": "Insignia 5.4",
-          "filter": "insignia",
           "type": "item_picker",
+          "filter": "insignia",
           "stable": {
             "group": 5,
             "role": "insignia",
@@ -1440,8 +1440,8 @@
         {
           "id": "insignia.bonus5",
           "label": "Bonus 5",
-          "filter": "insignia_bonus",
           "type": "item_picker",
+          "filter": "insignia_bonus",
           "stable": {
             "group": 5,
             "role": "bonus"
@@ -1450,9 +1450,9 @@
       ]
     },
     {
-      "defaultOpen": true,
       "id": "group",
       "label": "Group",
+      "defaultOpen": true,
       "presets": [
         {
           "id": "group-dungeon",
@@ -1470,17 +1470,17 @@
         {
           "id": "group.group",
           "label": "Group buff",
-          "filter": "group_buff",
           "type": "item_picker_list",
-          "toggleable": true,
-          "defaultRows": 0
+          "filter": "group_buff",
+          "defaultRows": 0,
+          "toggleable": true
         }
       ]
     },
     {
-      "defaultOpen": true,
       "id": "artifactCall",
       "label": "Artifact Call",
+      "defaultOpen": true,
       "presets": [
         {
           "id": "artifacts-dungeon",
@@ -1521,22 +1521,22 @@
         {
           "id": "artifactCall.artifactCall",
           "label": "Artifact call buff",
-          "filter": "artifact_call",
           "type": "item_picker_list",
-          "toggleable": true,
-          "defaultRows": 0
+          "filter": "artifact_call",
+          "defaultRows": 0,
+          "toggleable": true
         }
       ]
     },
     {
-      "defaultOpen": true,
       "id": "scalers",
       "label": "Scalers",
+      "defaultOpen": true,
       "slots": [
         {
           "id": "scalers.scalersText",
-          "text": "Conditional damage bonuses will be weighted (multiplied) by these scalers.",
-          "type": "text"
+          "type": "text",
+          "text": "Conditional damage bonuses will be weighted (multiplied) by these scalers."
         },
         {
           "id": "scalers.encounterDamage",
@@ -1583,17 +1583,17 @@
       ]
     },
     {
-      "defaultOpen": true,
       "id": "misc",
       "label": "Misc",
+      "defaultOpen": true,
       "slots": [
         {
           "id": "misc.misc",
           "label": "Misc bonus",
-          "filter": "misc",
           "type": "item_picker_list",
-          "toggleable": true,
-          "defaultRows": 0
+          "filter": "misc",
+          "defaultRows": 0,
+          "toggleable": true
         }
       ]
     }
