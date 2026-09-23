@@ -1,222 +1,6 @@
 {
   "stats": [
     { "key": "il", "label": "Item Level", "kind": "flat", "abbr": "IL" },
-    {
-      "key": "power_p",
-      "label": "Power",
-      "kind": "percent",
-      "rating": "power"
-    },
-    {
-      "key": "acc_p",
-      "label": "Accuracy",
-      "kind": "percent",
-      "rating": "acc",
-      "abbr": "Acc"
-    },
-    {
-      "key": "ca_p",
-      "label": "Combat Advantage",
-      "kind": "percent",
-      "rating": "ca",
-      "abbr": "CA"
-    },
-    {
-      "key": "strike_p",
-      "label": "Critical Strike",
-      "kind": "percent",
-      "rating": "strike",
-      "abbr": "C. Strike"
-    },
-    {
-      "key": "sev_p",
-      "label": "Critical Severity",
-      "kind": "percent",
-      "rating": "severity",
-      "abbr": "C. Sev."
-    },
-    {
-      "key": "forte_p",
-      "label": "Forte",
-      "kind": "percent",
-      "rating": "forte"
-    },
-
-    { "key": "power", "label": "Power", "kind": "rating" },
-    { "key": "acc", "label": "Accuracy", "kind": "rating", "abbr": "Acc" },
-    {
-      "key": "ca",
-      "label": "Combat Advantage",
-      "kind": "rating",
-      "abbr": "CA"
-    },
-    {
-      "key": "strike",
-      "label": "Critical Strike",
-      "kind": "rating",
-      "abbr": "C. Strike"
-    },
-    {
-      "key": "severity",
-      "label": "Critical Severity",
-      "kind": "rating",
-      "abbr": "C. Sev."
-    },
-    { "key": "forte", "label": "Forte", "kind": "rating" },
-
-    {
-      "key": "base_damage_flat",
-      "label": "Base Damage",
-      "kind": "flat",
-      "aliases": ["Damage"]
-    },
-    {
-      "key": "base_damage_mult",
-      "label": "Base Damage (Mult)",
-      "kind": "mult"
-    },
-    { "key": "outgoing_damage", "label": "Outgoing Damage", "kind": "percent" },
-    {
-      "key": "outgoing_damage_mult",
-      "label": "Outgoing Damage (Mult)",
-      "kind": "mult"
-    },
-    { "key": "overall_damage", "label": "Overall Damage", "kind": "percent" },
-    {
-      "key": "magical_damage_boost",
-      "label": "Magical Damage",
-      "kind": "percent"
-    },
-    {
-      "key": "physical_damage_boost",
-      "label": "Physical Damage",
-      "kind": "percent"
-    },
-    { "key": "incoming_damage", "label": "Incoming Damage", "kind": "mult" },
-
-    {
-      "key": "hit_points_p",
-      "label": "HP Bonus",
-      "kind": "percent",
-      "aliases": ["Maximum Hit Points", "Max Hit Points"]
-    },
-    { "key": "hit_points_mult", "label": "HP (Mult)", "kind": "mult" },
-    {
-      "key": "hit_points",
-      "label": "Hit Points",
-      "kind": "flat",
-      "aliases": ["Maximum Hit Points", "Max Hit Points"]
-    },
-
-    {
-      "key": "defense_p",
-      "label": "Defense",
-      "kind": "percent",
-      "rating": "defense"
-    },
-    {
-      "key": "awareness_p",
-      "label": "Awareness",
-      "kind": "percent",
-      "rating": "awareness"
-    },
-    {
-      "key": "crit_avoid_p",
-      "label": "Critical Avoidance",
-      "kind": "percent",
-      "rating": "crit_avoid"
-    },
-    {
-      "key": "deflect_p",
-      "label": "Deflect",
-      "kind": "percent",
-      "rating": "deflect",
-      "aliases": ["Deflect Chance"]
-    },
-    {
-      "key": "deflect_sev_p",
-      "label": "Deflect Severity",
-      "kind": "percent",
-      "rating": "deflect_sev"
-    },
-    {
-      "key": "inc_healing_p",
-      "label": "Incoming Healing",
-      "kind": "percent",
-      "rating": "inc_healing"
-    },
-    {
-      "key": "out_healing_p",
-      "label": "Outgoing Healing",
-      "kind": "percent",
-      "rating": "out_healing"
-    },
-
-    { "key": "defense", "label": "Defense", "kind": "rating" },
-    { "key": "awareness", "label": "Awareness", "kind": "rating" },
-    { "key": "crit_avoid", "label": "Critical Avoidance", "kind": "rating" },
-    {
-      "key": "deflect",
-      "label": "Deflect",
-      "kind": "rating",
-      "aliases": ["Deflect Chance"]
-    },
-    { "key": "deflect_sev", "label": "Deflect Severity", "kind": "rating" },
-    { "key": "inc_healing", "label": "Incoming Healing", "kind": "rating" },
-    { "key": "out_healing", "label": "Outgoing Healing", "kind": "rating" },
-    { "key": "overall_healing", "label": "Overall Healing", "kind": "percent" },
-
-    {
-      "key": "ap_gain",
-      "label": "AP Gain",
-      "kind": "percent",
-      "aliases": ["Action Point Gain", "Action Points"]
-    },
-    {
-      "key": "recharge",
-      "label": "Recharge",
-      "kind": "percent",
-      "aliases": ["Recharge Speed"]
-    },
-    {
-      "key": "movement",
-      "label": "Movement",
-      "kind": "percent",
-      "aliases": ["Movement Speed"]
-    },
-    {
-      "key": "mana_regen",
-      "label": "Mana Regen",
-      "kind": "percent",
-      "aliases": ["Mana Regeneration"]
-    },
-    {
-      "key": "stamina_regen",
-      "label": "Stamina Regen",
-      "kind": "percent",
-      "aliases": ["Stamina Regeneration"]
-    },
-
-    {
-      "key": "control_bonus_p",
-      "label": "Control Bonus",
-      "kind": "percent",
-      "rating": "control_bonus"
-    },
-    { "key": "control_bonus", "label": "Control Bonus", "kind": "rating" },
-    {
-      "key": "control_resist_p",
-      "label": "Control Resist",
-      "kind": "percent",
-      "rating": "control_resist",
-      "aliases": ["Control Resistance"]
-    },
-    {
-      "key": "control_resist",
-      "label": "Control Resist",
-      "kind": "rating",
-      "aliases": ["Control Resistance"]
-    },
 
     {
       "key": "str",
@@ -262,6 +46,227 @@
     },
 
     {
+      "key": "power_p",
+      "label": "Power",
+      "kind": "percent",
+      "rating": "power"
+    },
+    {
+      "key": "acc_p",
+      "label": "Accuracy",
+      "kind": "percent",
+      "rating": "acc",
+      "abbr": "Acc"
+    },
+    {
+      "key": "ca_p",
+      "label": "Combat Advantage",
+      "kind": "percent",
+      "rating": "ca",
+      "abbr": "CA"
+    },
+    {
+      "key": "strike_p",
+      "label": "Critical Strike",
+      "kind": "percent",
+      "rating": "strike",
+      "abbr": "C. Strike"
+    },
+    {
+      "key": "sev_p",
+      "label": "Critical Severity",
+      "kind": "percent",
+      "rating": "severity",
+      "abbr": "C. Sev."
+    },
+
+    {
+      "key": "defense_p",
+      "label": "Defense",
+      "kind": "percent",
+      "rating": "defense"
+    },
+    {
+      "key": "awareness_p",
+      "label": "Awareness",
+      "kind": "percent",
+      "rating": "awareness"
+    },
+    {
+      "key": "crit_avoid_p",
+      "label": "Critical Avoidance",
+      "kind": "percent",
+      "rating": "crit_avoid"
+    },
+    {
+      "key": "deflect_p",
+      "label": "Deflect",
+      "kind": "percent",
+      "rating": "deflect",
+      "aliases": ["Deflect Chance"]
+    },
+    {
+      "key": "deflect_sev_p",
+      "label": "Deflect Severity",
+      "kind": "percent",
+      "rating": "deflect_sev"
+    },
+
+    {
+      "key": "forte_p",
+      "label": "Forte",
+      "kind": "percent",
+      "rating": "forte"
+    },
+    {
+      "key": "control_bonus_p",
+      "label": "Control Bonus",
+      "kind": "percent",
+      "rating": "control_bonus"
+    },
+    {
+      "key": "control_resist_p",
+      "label": "Control Resist",
+      "kind": "percent",
+      "rating": "control_resist",
+      "aliases": ["Control Resistance"]
+    },
+    {
+      "key": "inc_healing_p",
+      "label": "Incoming Healing",
+      "kind": "percent",
+      "rating": "inc_healing"
+    },
+    {
+      "key": "out_healing_p",
+      "label": "Outgoing Healing",
+      "kind": "percent",
+      "rating": "out_healing"
+    },
+
+    { "key": "power", "label": "Power", "kind": "rating" },
+    { "key": "acc", "label": "Accuracy", "kind": "rating", "abbr": "Acc" },
+    {
+      "key": "ca",
+      "label": "Combat Advantage",
+      "kind": "rating",
+      "abbr": "CA"
+    },
+    {
+      "key": "strike",
+      "label": "Critical Strike",
+      "kind": "rating",
+      "abbr": "C. Strike"
+    },
+    {
+      "key": "severity",
+      "label": "Critical Severity",
+      "kind": "rating",
+      "abbr": "C. Sev."
+    },
+
+    { "key": "defense", "label": "Defense", "kind": "rating" },
+    { "key": "awareness", "label": "Awareness", "kind": "rating" },
+    { "key": "crit_avoid", "label": "Critical Avoidance", "kind": "rating" },
+    {
+      "key": "deflect",
+      "label": "Deflect",
+      "kind": "rating",
+      "aliases": ["Deflect Chance"]
+    },
+    { "key": "deflect_sev", "label": "Deflect Severity", "kind": "rating" },
+
+    { "key": "forte", "label": "Forte", "kind": "rating" },
+    { "key": "control_bonus", "label": "Control Bonus", "kind": "rating" },
+    {
+      "key": "control_resist",
+      "label": "Control Resist",
+      "kind": "rating",
+      "aliases": ["Control Resistance"]
+    },
+    { "key": "inc_healing", "label": "Incoming Healing", "kind": "rating" },
+    { "key": "out_healing", "label": "Outgoing Healing", "kind": "rating" },
+
+    {
+      "key": "ap_gain",
+      "label": "AP Gain",
+      "kind": "percent",
+      "aliases": ["Action Point Gain", "Action Points"]
+    },
+    {
+      "key": "recharge",
+      "label": "Recharge",
+      "kind": "percent",
+      "aliases": ["Recharge Speed"]
+    },
+    {
+      "key": "movement",
+      "label": "Movement",
+      "kind": "percent",
+      "aliases": ["Movement Speed"]
+    },
+    {
+      "key": "stamina_regen",
+      "label": "Stamina Regen",
+      "kind": "percent",
+      "aliases": ["Stamina Regeneration"]
+    },
+    { "key": "outgoing_damage", "label": "Outgoing Damage", "kind": "percent" },
+    {
+      "key": "magical_damage_boost",
+      "label": "Magical Damage",
+      "kind": "percent"
+    },
+    {
+      "key": "physical_damage_boost",
+      "label": "Physical Damage",
+      "kind": "percent"
+    },
+    { "key": "overall_healing", "label": "Overall Healing", "kind": "percent" },
+    { "key": "incoming_damage", "label": "Incoming Damage", "kind": "mult" },
+    { "key": "gold", "label": "Gold", "kind": "percent" },
+    { "key": "glory", "label": "Glory", "kind": "percent" },
+
+    {
+      "key": "base_damage_flat",
+      "label": "Base Damage",
+      "kind": "flat",
+      "aliases": ["Damage"]
+    },
+    {
+      "key": "base_damage_mult",
+      "label": "Base Damage (Mult)",
+      "kind": "mult"
+    },
+    {
+      "key": "outgoing_damage_mult",
+      "label": "Outgoing Damage (Mult)",
+      "kind": "mult"
+    },
+    { "key": "overall_damage", "label": "Overall Damage", "kind": "percent" },
+
+    {
+      "key": "hit_points_p",
+      "label": "HP Bonus",
+      "kind": "percent",
+      "aliases": ["Maximum Hit Points", "Max Hit Points"]
+    },
+    { "key": "hit_points_mult", "label": "HP (Mult)", "kind": "mult" },
+    {
+      "key": "hit_points",
+      "label": "Hit Points",
+      "kind": "flat",
+      "aliases": ["Maximum Hit Points", "Max Hit Points"]
+    },
+
+    {
+      "key": "mana_regen",
+      "label": "Mana Regen",
+      "kind": "percent",
+      "aliases": ["Mana Regeneration"]
+    },
+
+    {
       "key": "enemy_accuracy",
       "label": "Enemy Accuracy",
       "kind": "percent",
@@ -282,12 +287,6 @@
     {
       "key": "enemy_severity",
       "label": "Enemy Critical Severity",
-      "kind": "percent",
-      "enemy": true
-    },
-    {
-      "key": "enemy_incoming_damage",
-      "label": "Enemy Incoming Damage",
       "kind": "percent",
       "enemy": true
     },
@@ -322,14 +321,14 @@
       "enemy": true
     },
     {
-      "key": "enemy_incoming_damage_magical",
-      "label": "Enemy Incoming Magical Damage",
+      "key": "enemy_incoming_damage",
+      "label": "Enemy Incoming Damage",
       "kind": "percent",
       "enemy": true
     },
     {
-      "key": "enemy_incoming_damage_physical",
-      "label": "Enemy Incoming Physical Damage",
+      "key": "enemy_incoming_damage_magical",
+      "label": "Enemy Incoming Magical Damage",
       "kind": "percent",
       "enemy": true
     },
@@ -339,9 +338,13 @@
       "kind": "percent",
       "enemy": true
     },
+    {
+      "key": "enemy_incoming_damage_physical",
+      "label": "Enemy Incoming Physical Damage",
+      "kind": "percent",
+      "enemy": true
+    },
 
-    { "key": "gold", "label": "Gold", "kind": "percent" },
-    { "key": "glory", "label": "Glory", "kind": "percent" },
     {
       "key": "combined_rating",
       "label": "Combined Rating",
