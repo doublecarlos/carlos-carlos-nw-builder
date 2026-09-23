@@ -189,8 +189,8 @@
           "toggle": "artifactCall"
         },
         "stats": {
-          "enemy_incoming_damage": 0.05,
-          "enemy_awareness": -0.05
+          "enemy_awareness": -0.05,
+          "enemy_incoming_damage": 0.05
         }
       }
     ]
@@ -216,48 +216,48 @@
       {
         "tiers": [
           {
-            "stats": {
-              "acc": 1000,
-              "severity": 1000,
-              "strike": 1000,
-              "ca": 1000,
-              "defense": -1000,
-              "deflect": -1000,
-              "crit_avoid": -1000,
-              "awareness": -1000
-            },
             "bonusOccurrences": {
               "atLeast": 1
+            },
+            "stats": {
+              "acc": 1000,
+              "ca": 1000,
+              "strike": 1000,
+              "severity": 1000,
+              "defense": -1000,
+              "awareness": -1000,
+              "crit_avoid": -1000,
+              "deflect": -1000
             }
           },
           {
-            "stats": {
-              "acc": 1500,
-              "severity": 1500,
-              "strike": 1500,
-              "ca": 1500,
-              "defense": -1500,
-              "deflect": -1500,
-              "crit_avoid": -1500,
-              "awareness": -1500
-            },
             "bonusOccurrences": {
               "atLeast": 2
+            },
+            "stats": {
+              "acc": 1500,
+              "ca": 1500,
+              "strike": 1500,
+              "severity": 1500,
+              "defense": -1500,
+              "awareness": -1500,
+              "crit_avoid": -1500,
+              "deflect": -1500
             }
           },
           {
-            "stats": {
-              "acc": 1750,
-              "severity": 1750,
-              "strike": 1750,
-              "ca": 1750,
-              "defense": -1750,
-              "deflect": -1750,
-              "crit_avoid": -1750,
-              "awareness": -1750
-            },
             "bonusOccurrences": {
               "atLeast": 3
+            },
+            "stats": {
+              "acc": 1750,
+              "ca": 1750,
+              "strike": 1750,
+              "severity": 1750,
+              "defense": -1750,
+              "awareness": -1750,
+              "crit_avoid": -1750,
+              "deflect": -1750
             }
           }
         ]
@@ -532,30 +532,30 @@
       {
         "tiers": [
           {
+            "bonusOccurrences": {
+              "atLeast": 1
+            },
             "stats": {
               "out_healing_p": 0.05,
               "forte": 2500
-            },
-            "bonusOccurrences": {
-              "atLeast": 1
             }
           },
           {
+            "bonusOccurrences": {
+              "atLeast": 2
+            },
             "stats": {
               "out_healing_p": 0.075,
               "forte": 3750
-            },
-            "bonusOccurrences": {
-              "atLeast": 2
             }
           },
           {
+            "bonusOccurrences": {
+              "atLeast": 3
+            },
             "stats": {
               "out_healing_p": 0.0875,
               "forte": 4375
-            },
-            "bonusOccurrences": {
-              "atLeast": 3
             }
           }
         ]
@@ -595,38 +595,38 @@
       {
         "variants": [
           {
-            "stats": {
-              "defense_p": 0.02
-            },
             "when": {
               "equipped": {
                 "item": "boon-master-death-s-bulwark",
                 "exactly": 1
               }
+            },
+            "stats": {
+              "defense_p": 0.02
             }
           },
           {
-            "stats": {
-              "defense_p": 0.04,
-              "crit_avoid_p": 0.04
-            },
             "when": {
               "equipped": {
                 "item": "boon-master-death-s-bulwark",
                 "exactly": 2
               }
+            },
+            "stats": {
+              "defense_p": 0.04,
+              "crit_avoid_p": 0.04
             }
           },
           {
-            "stats": {
-              "defense_p": 0.06,
-              "crit_avoid_p": 0.06
-            },
             "when": {
               "equipped": {
                 "item": "boon-master-death-s-bulwark",
                 "exactly": 3
               }
+            },
+            "stats": {
+              "defense_p": 0.06,
+              "crit_avoid_p": 0.06
             }
           }
         ]
@@ -640,39 +640,39 @@
       {
         "variants": [
           {
-            "stats": {
-              "ca_p": 0.02
-            },
             "when": {
               "equipped": {
                 "item": "boon-master-deathly-rage",
                 "exactly": 1
               }
+            },
+            "stats": {
+              "ca_p": 0.02
             }
           },
           {
-            "stats": {
-              "ca_p": 0.04,
-              "power_p": 0.04
-            },
             "when": {
               "equipped": {
                 "item": "boon-master-deathly-rage",
                 "exactly": 2
               }
+            },
+            "stats": {
+              "power_p": 0.04,
+              "ca_p": 0.04
             }
           },
           {
-            "stats": {
-              "ca_p": 0.06,
-              "power_p": 0.06,
-              "sev_p": 0.06
-            },
             "when": {
               "equipped": {
                 "item": "boon-master-deathly-rage",
                 "exactly": 3
               }
+            },
+            "stats": {
+              "power_p": 0.06,
+              "ca_p": 0.06,
+              "sev_p": 0.06
             }
           }
         ]
@@ -752,6 +752,9 @@
       {
         "tiers": [
           {
+            "bonusOccurrences": {
+              "atLeast": 1
+            },
             "stats": {
               "acc": 1500,
               "ca": 1500,
@@ -761,12 +764,12 @@
               "awareness": -1500,
               "crit_avoid": -1500,
               "deflect": -1500
-            },
-            "bonusOccurrences": {
-              "atLeast": 1
             }
           },
           {
+            "bonusOccurrences": {
+              "atLeast": 2
+            },
             "stats": {
               "acc": 2250,
               "ca": 2250,
@@ -776,12 +779,12 @@
               "awareness": -2250,
               "crit_avoid": -2250,
               "deflect": -2250
-            },
-            "bonusOccurrences": {
-              "atLeast": 2
             }
           },
           {
+            "bonusOccurrences": {
+              "atLeast": 3
+            },
             "stats": {
               "acc": 2625,
               "ca": 2625,
@@ -791,9 +794,6 @@
               "awareness": -2625,
               "crit_avoid": -2625,
               "deflect": -2625
-            },
-            "bonusOccurrences": {
-              "atLeast": 3
             }
           }
         ]
@@ -929,30 +929,30 @@
       {
         "tiers": [
           {
+            "bonusOccurrences": {
+              "atLeast": 1
+            },
             "stats": {
               "movement": 0.1,
               "stamina_regen": 0.1
-            },
-            "bonusOccurrences": {
-              "atLeast": 1
             }
           },
           {
+            "bonusOccurrences": {
+              "atLeast": 2
+            },
             "stats": {
               "movement": 0.15,
               "stamina_regen": 0.15
-            },
-            "bonusOccurrences": {
-              "atLeast": 2
             }
           },
           {
+            "bonusOccurrences": {
+              "atLeast": 3
+            },
             "stats": {
               "movement": 0.175,
               "stamina_regen": 0.175
-            },
-            "bonusOccurrences": {
-              "atLeast": 3
             }
           }
         ]
@@ -988,8 +988,8 @@
           "acc_p": 0.015,
           "strike_p": 0.015,
           "sev_p": 0.025,
-          "hit_points_p": 0.025,
-          "deflect_p": 0.015
+          "deflect_p": 0.015,
+          "hit_points_p": 0.025
         }
       }
     ]
@@ -1007,8 +1007,8 @@
           "acc_p": 0.05,
           "strike_p": 0.015,
           "sev_p": 0.025,
-          "hit_points_p": 0.025,
-          "deflect_p": 0.015
+          "deflect_p": 0.015,
+          "hit_points_p": 0.025
         }
       }
     ]
@@ -1020,30 +1020,30 @@
       {
         "tiers": [
           {
+            "bonusOccurrences": {
+              "atLeast": 1
+            },
             "stats": {
               "defense": 2500,
               "hit_points_p": 0.08
-            },
-            "bonusOccurrences": {
-              "atLeast": 1
             }
           },
           {
+            "bonusOccurrences": {
+              "atLeast": 2
+            },
             "stats": {
               "defense": 3000,
               "hit_points_p": 0.12
-            },
-            "bonusOccurrences": {
-              "atLeast": 2
             }
           },
           {
+            "bonusOccurrences": {
+              "atLeast": 3
+            },
             "stats": {
               "defense": 3500,
               "hit_points_p": 0.15
-            },
-            "bonusOccurrences": {
-              "atLeast": 3
             }
           }
         ]
@@ -1072,36 +1072,36 @@
       {
         "tiers": [
           {
+            "bonusOccurrences": {
+              "atLeast": 1
+            },
             "stats": {
               "power": 2000,
               "strike": 1500,
               "severity": 1500,
               "inc_healing": -1000
-            },
-            "bonusOccurrences": {
-              "atLeast": 1
             }
           },
           {
+            "bonusOccurrences": {
+              "atLeast": 2
+            },
             "stats": {
               "power": 3500,
               "strike": 2750,
               "severity": 2750,
               "inc_healing": -2000
-            },
-            "bonusOccurrences": {
-              "atLeast": 2
             }
           },
           {
+            "bonusOccurrences": {
+              "atLeast": 3
+            },
             "stats": {
               "power": 4500,
               "strike": 3750,
               "severity": 3750,
               "inc_healing": -3000
-            },
-            "bonusOccurrences": {
-              "atLeast": 3
             }
           }
         ]
@@ -1115,33 +1115,33 @@
       {
         "tiers": [
           {
+            "bonusOccurrences": {
+              "atLeast": 1
+            },
             "stats": {
               "power": 2500,
               "defense": 2500,
               "inc_healing": -1000
-            },
-            "bonusOccurrences": {
-              "atLeast": 1
             }
           },
           {
+            "bonusOccurrences": {
+              "atLeast": 2
+            },
             "stats": {
               "power": 4500,
               "defense": 4500,
               "inc_healing": -2000
-            },
-            "bonusOccurrences": {
-              "atLeast": 2
             }
           },
           {
+            "bonusOccurrences": {
+              "atLeast": 3
+            },
             "stats": {
               "power": 6000,
               "defense": 6000,
               "inc_healing": -3000
-            },
-            "bonusOccurrences": {
-              "atLeast": 3
             }
           }
         ]
@@ -1429,8 +1429,8 @@
           }
         },
         "stats": {
-          "incoming_damage": -0.05,
-          "overall_healing": 0.05
+          "overall_healing": 0.05,
+          "incoming_damage": -0.05
         }
       },
       {
@@ -1567,22 +1567,22 @@
       {
         "variants": [
           {
-            "stats": {
-              "outgoing_damage": 0.036
-            },
             "when": {
               "toggle": "combat",
               "enemies": {
                 "atLeast": 2
               }
+            },
+            "stats": {
+              "outgoing_damage": 0.036
             }
           },
           {
-            "stats": {
-              "outgoing_damage": 0.009
-            },
             "when": {
               "toggle": "combat"
+            },
+            "stats": {
+              "outgoing_damage": 0.009
             }
           }
         ]
@@ -1611,22 +1611,22 @@
       {
         "variants": [
           {
-            "stats": {
-              "outgoing_damage": 0.07
-            },
             "when": {
               "toggle": "combat",
               "equipped": {
                 "item": "location-thay"
               }
+            },
+            "stats": {
+              "outgoing_damage": 0.07
             }
           },
           {
-            "stats": {
-              "outgoing_damage": 0.035
-            },
             "when": {
               "toggle": "combat"
+            },
+            "stats": {
+              "outgoing_damage": 0.035
             }
           }
         ]
@@ -1758,13 +1758,13 @@
       {
         "variants": [
           {
-            "stats": {
-              "outgoing_damage": 0.05
-            },
             "when": {
               "equipped": {
                 "item": "location-thay"
               }
+            },
+            "stats": {
+              "outgoing_damage": 0.05
             }
           },
           {
@@ -1857,8 +1857,8 @@
           }
         },
         "stats": {
-          "forte_p": 0.08,
-          "strike_p": 0.075
+          "strike_p": 0.075,
+          "forte_p": 0.08
         }
       },
       {
@@ -1888,8 +1888,8 @@
           }
         },
         "stats": {
-          "forte_p": 0.07,
-          "strike_p": 0.037
+          "strike_p": 0.037,
+          "forte_p": 0.07
         }
       },
       {
@@ -1919,8 +1919,8 @@
           }
         },
         "stats": {
-          "forte_p": 0.07,
-          "strike_p": 0.037
+          "strike_p": 0.037,
+          "forte_p": 0.07
         }
       },
       {
@@ -2195,8 +2195,8 @@
         },
         "stats": {
           "ca_p": 0.02,
-          "movement": 0.075,
-          "strike_p": 0.02
+          "strike_p": 0.02,
+          "movement": 0.075
         }
       }
     ]
@@ -2211,24 +2211,24 @@
         },
         "variants": [
           {
-            "stats": {
-              "acc_p": 0.025
-            },
             "when": {
               "duration": {
                 "atLeast": 10,
                 "below": 30
               }
+            },
+            "stats": {
+              "acc_p": 0.025
             }
           },
           {
-            "stats": {
-              "acc_p": 0.075
-            },
             "when": {
               "duration": {
                 "atLeast": 30
               }
+            },
+            "stats": {
+              "acc_p": 0.075
             }
           }
         ]
@@ -2245,24 +2245,24 @@
         },
         "variants": [
           {
-            "stats": {
-              "acc_p": 0.035
-            },
             "when": {
               "duration": {
                 "atLeast": 10,
                 "below": 30
               }
+            },
+            "stats": {
+              "acc_p": 0.035
             }
           },
           {
-            "stats": {
-              "acc_p": 0.105
-            },
             "when": {
               "duration": {
                 "atLeast": 30
               }
+            },
+            "stats": {
+              "acc_p": 0.105
             }
           }
         ]
@@ -2330,27 +2330,27 @@
         },
         "variants": [
           {
-            "stats": {
-              "sev_p": 0.06
-            },
             "when": {
               "role": "dps"
+            },
+            "stats": {
+              "sev_p": 0.06
             }
           },
           {
-            "stats": {
-              "overall_healing": 0.05
-            },
             "when": {
               "role": "healer"
+            },
+            "stats": {
+              "overall_healing": 0.05
             }
           },
           {
-            "stats": {
-              "awareness_p": 0.05
-            },
             "when": {
               "role": "tank"
+            },
+            "stats": {
+              "awareness_p": 0.05
             }
           }
         ]
@@ -2394,24 +2394,24 @@
         },
         "variants": [
           {
-            "stats": {
-              "strike_p": 0.036
-            },
             "when": {
               "duration": {
                 "atLeast": 10,
                 "below": 30
               }
+            },
+            "stats": {
+              "strike_p": 0.036
             }
           },
           {
-            "stats": {
-              "strike_p": 0.09
-            },
             "when": {
               "duration": {
                 "atLeast": 30
               }
+            },
+            "stats": {
+              "strike_p": 0.09
             }
           }
         ]
@@ -2623,21 +2623,21 @@
       {
         "variants": [
           {
-            "stats": {
-              "out_healing_p": 0.07
-            },
             "when": {
               "toggle": "party"
+            },
+            "stats": {
+              "out_healing_p": 0.07
             }
           },
           {
-            "stats": {
-              "out_healing_p": 0.014
-            },
             "when": {
               "not": {
                 "toggle": "party"
               }
+            },
+            "stats": {
+              "out_healing_p": 0.014
             }
           }
         ]
@@ -2757,33 +2757,33 @@
         },
         "variants": [
           {
-            "stats": {
-              "ca_p": 0.07
-            },
             "when": {
               "duration": {
                 "atLeast": 50
               }
+            },
+            "stats": {
+              "ca_p": 0.07
             }
           },
           {
-            "stats": {
-              "ca_p": 0.042
-            },
             "when": {
               "duration": {
                 "atLeast": 30
               }
+            },
+            "stats": {
+              "ca_p": 0.042
             }
           },
           {
-            "stats": {
-              "ca_p": 0.014
-            },
             "when": {
               "duration": {
                 "atLeast": 10
               }
+            },
+            "stats": {
+              "ca_p": 0.014
             }
           }
         ]
@@ -2834,27 +2834,27 @@
       {
         "tiers": [
           {
-            "stats": {
-              "severity": 5000
-            },
             "bonusOccurrences": {
               "atLeast": 1
+            },
+            "stats": {
+              "severity": 5000
             }
           },
           {
-            "stats": {
-              "severity": 7500
-            },
             "bonusOccurrences": {
               "atLeast": 2
+            },
+            "stats": {
+              "severity": 7500
             }
           },
           {
-            "stats": {
-              "severity": 8750
-            },
             "bonusOccurrences": {
               "atLeast": 3
+            },
+            "stats": {
+              "severity": 8750
             }
           }
         ]
@@ -2894,6 +2894,9 @@
       {
         "tiers": [
           {
+            "bonusOccurrences": {
+              "atLeast": 1
+            },
             "stats": {
               "power": 1500,
               "strike": 1500,
@@ -2903,12 +2906,12 @@
               "crit_avoid": -1500,
               "deflect": -1500,
               "out_healing": 1500
-            },
-            "bonusOccurrences": {
-              "atLeast": 1
             }
           },
           {
+            "bonusOccurrences": {
+              "atLeast": 2
+            },
             "stats": {
               "power": 2250,
               "strike": 2250,
@@ -2918,12 +2921,12 @@
               "crit_avoid": -2250,
               "deflect": -2250,
               "out_healing": 2250
-            },
-            "bonusOccurrences": {
-              "atLeast": 2
             }
           },
           {
+            "bonusOccurrences": {
+              "atLeast": 3
+            },
             "stats": {
               "power": 2625,
               "strike": 2625,
@@ -2933,9 +2936,6 @@
               "crit_avoid": -2625,
               "deflect": -2625,
               "out_healing": 2625
-            },
-            "bonusOccurrences": {
-              "atLeast": 3
             }
           }
         ]
@@ -3518,14 +3518,14 @@
     "grants": [
       {
         "stats": {
-          "defense": 1500,
-          "crit_avoid": 1500,
-          "deflect": 1500,
-          "awareness": 1500,
-          "severity": -1500,
-          "strike": -1500,
+          "power": -1500,
           "ca": -1500,
-          "power": -1500
+          "strike": -1500,
+          "severity": -1500,
+          "defense": 1500,
+          "awareness": 1500,
+          "crit_avoid": 1500,
+          "deflect": 1500
         }
       }
     ]
@@ -3900,8 +3900,8 @@
           "toggle": "consumables"
         },
         "stats": {
-          "hit_points": 20000,
-          "movement": 0.05
+          "movement": 0.05,
+          "hit_points": 20000
         }
       }
     ]
@@ -4271,33 +4271,33 @@
     "name": "Warlock's Curse",
     "grants": [
       {
+        "name": "Encounters",
         "when": {
           "toggle": "combat"
         },
         "stats": {
           "outgoing_damage": 0.15
         },
-        "name": "Encounters",
         "scaledBy": "scalers.encounterDamage"
       },
       {
+        "name": "At-wills",
         "when": {
           "toggle": "combat"
         },
         "stats": {
           "outgoing_damage": 0.15
         },
-        "name": "At-wills",
         "scaledBy": "scalers.atWillDamage"
       },
       {
+        "name": "Dailies",
         "when": {
           "toggle": "combat"
         },
         "stats": {
           "outgoing_damage": 0.15
         },
-        "name": "Dailies",
         "scaledBy": "scalers.dailyDamage"
       }
     ]

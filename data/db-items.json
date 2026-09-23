@@ -4,8 +4,8 @@
     "name": "Celestial Amethyst",
     "filter": "enchantment_defense",
     "il": 1800,
-    "combined_rating": 1620,
     "awareness": 2700,
+    "combined_rating": 1620,
     "gameIds": ["Enchantment_Standard_E_V2_R6_Account"],
     "tags": ["gem:amethyst"]
   },
@@ -14,8 +14,8 @@
     "name": "Celestial Amethyst",
     "filter": "enchantment_offense",
     "il": 1800,
-    "combined_rating": 1620,
     "ca": 2700,
+    "combined_rating": 1620,
     "gameIds": ["Enchantment_Standard_E_V2_R6_Account"],
     "tags": ["gem:amethyst"]
   },
@@ -24,8 +24,8 @@
     "name": "Celestial Citrine",
     "filter": "enchantment_offense",
     "il": 1800,
-    "combined_rating": 1620,
     "acc": 2700,
+    "combined_rating": 1620,
     "gameIds": ["Enchantment_Standard_C_V2_R6_Account"],
     "tags": ["gem:citrine"]
   },
@@ -34,8 +34,8 @@
     "name": "Celestial Citrine",
     "filter": "enchantment_defense",
     "il": 1800,
-    "combined_rating": 1620,
     "deflect": 2700,
+    "combined_rating": 1620,
     "gameIds": ["Enchantment_Standard_C_V2_R6_Account"],
     "tags": ["gem:citrine"]
   },
@@ -44,8 +44,8 @@
     "name": "Celestial Cobalt",
     "filter": "enchantment_defense",
     "il": 1800,
-    "combined_rating": 1620,
     "deflect_sev": 2700,
+    "combined_rating": 1620,
     "gameIds": ["Enchantment_Standard_A_V2_R6_Account"]
   },
   {
@@ -53,8 +53,8 @@
     "name": "Celestial Cobalt",
     "filter": "enchantment_offense",
     "il": 1800,
-    "combined_rating": 1620,
     "severity": 2700,
+    "combined_rating": 1620,
     "gameIds": ["Enchantment_Standard_A_V2_R6_Account"]
   },
   {
@@ -62,8 +62,8 @@
     "name": "Celestial Garnet",
     "filter": "enchantment_defense",
     "il": 1800,
-    "combined_rating": 1620,
     "defense": 2700,
+    "combined_rating": 1620,
     "gameIds": ["Enchantment_Standard_B_V2_R6_Account"]
   },
   {
@@ -71,8 +71,8 @@
     "name": "Celestial Garnet",
     "filter": "enchantment_utility",
     "il": 1800,
-    "combined_rating": 1620,
     "forte": 2700,
+    "combined_rating": 1620,
     "gameIds": ["Enchantment_Standard_B_V2_R6_Account"]
   },
   {
@@ -80,8 +80,8 @@
     "name": "Celestial Garnet",
     "filter": "enchantment_offense",
     "il": 1800,
-    "combined_rating": 1620,
     "power": 2700,
+    "combined_rating": 1620,
     "gameIds": ["Enchantment_Standard_B_V2_R6_Account"]
   },
   {
@@ -89,8 +89,8 @@
     "name": "Celestial Jade",
     "filter": "enchantment_offense",
     "il": 1800,
-    "combined_rating": 1620,
     "strike": 2700,
+    "combined_rating": 1620,
     "gameIds": ["Enchantment_Standard_D_V2_R6_Account"],
     "tags": ["gem:jade"]
   },
@@ -99,8 +99,8 @@
     "name": "Celestial Jade",
     "filter": "enchantment_defense",
     "il": 1800,
-    "combined_rating": 1620,
     "crit_avoid": 2700,
+    "combined_rating": 1620,
     "gameIds": ["Enchantment_Standard_D_V2_R6_Account"],
     "tags": ["gem:jade"]
   },
@@ -109,9 +109,9 @@
     "name": "Celestial Aquamarine",
     "filter": "enchantment_offense",
     "il": 1800,
-    "combined_rating": 1620,
     "acc": 1485,
     "severity": 1485,
+    "combined_rating": 1620,
     "gameIds": ["Enchantment_Standard_F_V2_R6_Account"],
     "tags": ["gem:aquamarine"]
   },
@@ -120,9 +120,9 @@
     "name": "Celestial Aquamarine",
     "filter": "enchantment_defense",
     "il": 1800,
-    "combined_rating": 1620,
     "crit_avoid": 1485,
     "deflect": 1485,
+    "combined_rating": 1620,
     "gameIds": ["Enchantment_Standard_F_V2_R6_Account"],
     "tags": ["gem:aquamarine"]
   },
@@ -131,9 +131,9 @@
     "name": "Celestial Bloodstone",
     "filter": "enchantment_defense",
     "il": 1800,
-    "combined_rating": 1620,
     "deflect": 1485,
     "deflect_sev": 1485,
+    "combined_rating": 1620,
     "gameIds": ["Enchantment_Standard_N_V2_R6_Account"],
     "tags": ["gem:bloodstone"]
   },
@@ -142,9 +142,9 @@
     "name": "Celestial Bloodstone",
     "filter": "enchantment_offense",
     "il": 1800,
-    "combined_rating": 1620,
     "power": 1485,
     "ca": 1485,
+    "combined_rating": 1620,
     "gameIds": ["Enchantment_Standard_N_V2_R6_Account"],
     "tags": ["gem:bloodstone"]
   },
@@ -153,9 +153,9 @@
     "name": "Celestial Diamond",
     "filter": "enchantment_offense",
     "il": 1800,
-    "combined_rating": 1620,
     "ca": 1485,
     "severity": 1485,
+    "combined_rating": 1620,
     "gameIds": ["Enchantment_Standard_J_V2_R6_Account"]
   },
   {
@@ -163,9 +163,9 @@
     "name": "Celestial Diamond",
     "filter": "enchantment_defense",
     "il": 1800,
-    "combined_rating": 1620,
     "defense": 1485,
     "crit_avoid": 1485,
+    "combined_rating": 1620,
     "gameIds": ["Enchantment_Standard_J_V2_R6_Account"]
   },
   {
@@ -173,9 +173,9 @@
     "name": "Celestial Kyanite",
     "filter": "enchantment_defense",
     "il": 1800,
-    "combined_rating": 1620,
     "awareness": 1485,
     "crit_avoid": 1485,
+    "combined_rating": 1620,
     "gameIds": ["Enchantment_Standard_O_V2_R6_Account"]
   },
   {
@@ -183,9 +183,9 @@
     "name": "Celestial Kyanite",
     "filter": "enchantment_offense",
     "il": 1800,
-    "combined_rating": 1620,
     "strike": 1485,
     "severity": 1485,
+    "combined_rating": 1620,
     "gameIds": ["Enchantment_Standard_O_V2_R6_Account"]
   },
   {
@@ -193,9 +193,9 @@
     "name": "Celestial Moonstone",
     "filter": "enchantment_defense",
     "il": 1800,
-    "combined_rating": 1620,
     "defense": 1485,
     "awareness": 1485,
+    "combined_rating": 1620,
     "gameIds": ["Enchantment_Standard_L_V2_R6_Account"]
   },
   {
@@ -203,9 +203,9 @@
     "name": "Celestial Moonstone",
     "filter": "enchantment_offense",
     "il": 1800,
-    "combined_rating": 1620,
     "power": 1485,
     "ca": 1485,
+    "combined_rating": 1620,
     "gameIds": ["Enchantment_Standard_L_V2_R6_Account"]
   },
   {
@@ -213,9 +213,9 @@
     "name": "Celestial Onyx",
     "filter": "enchantment_offense",
     "il": 1800,
-    "combined_rating": 1620,
     "ca": 1485,
     "severity": 1485,
+    "combined_rating": 1620,
     "gameIds": ["Enchantment_Standard_M_V2_R6_Account"]
   },
   {
@@ -223,9 +223,9 @@
     "name": "Celestial Onyx",
     "filter": "enchantment_defense",
     "il": 1800,
-    "combined_rating": 1620,
     "crit_avoid": 1485,
     "deflect_sev": 1485,
+    "combined_rating": 1620,
     "gameIds": ["Enchantment_Standard_M_V2_R6_Account"]
   },
   {
@@ -233,9 +233,9 @@
     "name": "Celestial Opal",
     "filter": "enchantment_defense",
     "il": 1800,
-    "combined_rating": 1620,
     "awareness": 1485,
     "deflect": 1485,
+    "combined_rating": 1620,
     "gameIds": ["Enchantment_Standard_K_V2_R6_Account"]
   },
   {
@@ -243,9 +243,9 @@
     "name": "Celestial Opal",
     "filter": "enchantment_offense",
     "il": 1800,
-    "combined_rating": 1620,
     "power": 1485,
     "strike": 1485,
+    "combined_rating": 1620,
     "gameIds": ["Enchantment_Standard_K_V2_R6_Account"]
   },
   {
@@ -253,9 +253,9 @@
     "name": "Celestial Peridot",
     "filter": "enchantment_offense",
     "il": 1800,
-    "combined_rating": 1620,
     "acc": 1485,
     "strike": 1485,
+    "combined_rating": 1620,
     "gameIds": ["Enchantment_Standard_I_V2_R6_Account"]
   },
   {
@@ -263,9 +263,9 @@
     "name": "Celestial Peridot",
     "filter": "enchantment_defense",
     "il": 1800,
-    "combined_rating": 1620,
     "defense": 1485,
     "deflect_sev": 1485,
+    "combined_rating": 1620,
     "gameIds": ["Enchantment_Standard_I_V2_R6_Account"]
   },
   {
@@ -273,9 +273,9 @@
     "name": "Celestial Ruby",
     "filter": "enchantment_defense",
     "il": 1800,
-    "combined_rating": 1620,
     "defense": 1485,
     "deflect": 1485,
+    "combined_rating": 1620,
     "gameIds": ["Enchantment_Standard_H_V2_R6_Account"]
   },
   {
@@ -283,9 +283,9 @@
     "name": "Celestial Ruby",
     "filter": "enchantment_offense",
     "il": 1800,
-    "combined_rating": 1620,
     "power": 1485,
     "acc": 1485,
+    "combined_rating": 1620,
     "gameIds": ["Enchantment_Standard_H_V2_R6_Account"]
   },
   {
@@ -293,9 +293,9 @@
     "name": "Celestial Sapphire",
     "filter": "enchantment_defense",
     "il": 1800,
-    "combined_rating": 1620,
     "awareness": 1485,
     "deflect_sev": 1485,
+    "combined_rating": 1620,
     "gameIds": ["Enchantment_Standard_G_V2_R6_Account"]
   },
   {
@@ -303,9 +303,9 @@
     "name": "Celestial Sapphire",
     "filter": "enchantment_offense",
     "il": 1800,
-    "combined_rating": 1620,
     "ca": 1485,
     "strike": 1485,
+    "combined_rating": 1620,
     "gameIds": ["Enchantment_Standard_G_V2_R6_Account"]
   },
   {
@@ -313,10 +313,10 @@
     "name": "Celestial Ammolite",
     "filter": "enchantment_defense",
     "il": 1800,
-    "combined_rating": 1620,
     "defense": 1080,
     "awareness": 1080,
     "crit_avoid": 1080,
+    "combined_rating": 1620,
     "gameIds": ["Enchantment_Standard_P_V2_R6_Account"]
   },
   {
@@ -324,10 +324,10 @@
     "name": "Celestial Ammolite",
     "filter": "enchantment_offense",
     "il": 1800,
-    "combined_rating": 1620,
     "power": 1080,
     "ca": 1080,
     "strike": 1080,
+    "combined_rating": 1620,
     "gameIds": ["Enchantment_Standard_P_V2_R6_Account"]
   },
   {
@@ -335,10 +335,10 @@
     "name": "Celestial Bismuth",
     "filter": "enchantment_offense",
     "il": 1800,
-    "combined_rating": 1620,
     "acc": 1080,
     "ca": 1080,
     "severity": 1080,
+    "combined_rating": 1620,
     "gameIds": ["Enchantment_Standard_S_V2_R6_Account"]
   },
   {
@@ -346,10 +346,10 @@
     "name": "Celestial Bismuth",
     "filter": "enchantment_defense",
     "il": 1800,
-    "combined_rating": 1620,
     "defense": 1080,
     "awareness": 1080,
     "deflect": 1080,
+    "combined_rating": 1620,
     "gameIds": ["Enchantment_Standard_S_V2_R6_Account"]
   },
   {
@@ -357,10 +357,10 @@
     "name": "Celestial Bone Filligree",
     "filter": "enchantment_offense",
     "il": 1800,
-    "combined_rating": 1620,
     "acc": 1080,
     "ca": 1080,
     "strike": 1080,
+    "combined_rating": 1620,
     "gameIds": ["Enchantment_Standard_U_V2_R6_Account"]
   },
   {
@@ -368,10 +368,10 @@
     "name": "Celestial Bone Filligree",
     "filter": "enchantment_defense",
     "il": 1800,
-    "combined_rating": 1620,
     "awareness": 1080,
     "deflect": 1080,
     "deflect_sev": 1080,
+    "combined_rating": 1620,
     "gameIds": ["Enchantment_Standard_U_V2_R6_Account"]
   },
   {
@@ -379,10 +379,10 @@
     "name": "Celestial Fire Agate",
     "filter": "enchantment_defense",
     "il": 1800,
-    "combined_rating": 1620,
     "awareness": 1080,
     "crit_avoid": 1080,
     "deflect": 1080,
+    "combined_rating": 1620,
     "gameIds": ["Enchantment_Standard_Q_V2_R6_Account"],
     "tags": ["gem:fire_agate"]
   },
@@ -391,10 +391,10 @@
     "name": "Celestial Fire Agate",
     "filter": "enchantment_offense",
     "il": 1800,
-    "combined_rating": 1620,
     "power": 1080,
     "strike": 1080,
     "severity": 1080,
+    "combined_rating": 1620,
     "gameIds": ["Enchantment_Standard_Q_V2_R6_Account"],
     "tags": ["gem:fire_agate"]
   },
@@ -403,10 +403,10 @@
     "name": "Celestial Mother of Pearl",
     "filter": "enchantment_offense",
     "il": 1800,
-    "combined_rating": 1620,
     "acc": 1080,
     "strike": 1080,
     "severity": 1080,
+    "combined_rating": 1620,
     "gameIds": ["Enchantment_Standard_R_V2_R6_Account"]
   },
   {
@@ -414,10 +414,10 @@
     "name": "Celestial Mother of Pearl",
     "filter": "enchantment_defense",
     "il": 1800,
-    "combined_rating": 1620,
     "awareness": 1080,
     "crit_avoid": 1080,
     "deflect_sev": 1080,
+    "combined_rating": 1620,
     "gameIds": ["Enchantment_Standard_R_V2_R6_Account"]
   },
   {
@@ -425,10 +425,10 @@
     "name": "Celestial Netherite",
     "filter": "enchantment_defense",
     "il": 1800,
-    "combined_rating": 1620,
     "defense": 1080,
     "deflect": 1080,
     "deflect_sev": 1080,
+    "combined_rating": 1620,
     "gameIds": ["Enchantment_Standard_V_V2_R6_Account"]
   },
   {
@@ -436,10 +436,10 @@
     "name": "Celestial Netherite",
     "filter": "enchantment_offense",
     "il": 1800,
-    "combined_rating": 1620,
     "power": 1080,
     "acc": 1080,
     "ca": 1080,
+    "combined_rating": 1620,
     "gameIds": ["Enchantment_Standard_V_V2_R6_Account"]
   },
   {
@@ -447,10 +447,10 @@
     "name": "Celestial Rubellite Tourmaline",
     "filter": "enchantment_defense",
     "il": 1800,
-    "combined_rating": 1620,
     "defense": 1080,
     "crit_avoid": 1080,
     "deflect_sev": 1080,
+    "combined_rating": 1620,
     "gameIds": ["Enchantment_Standard_T_V2_R6_Account"]
   },
   {
@@ -458,10 +458,10 @@
     "name": "Celestial Rubellite Tourmaline",
     "filter": "enchantment_offense",
     "il": 1800,
-    "combined_rating": 1620,
     "power": 1080,
     "ca": 1080,
     "severity": 1080,
+    "combined_rating": 1620,
     "gameIds": ["Enchantment_Standard_T_V2_R6_Account"]
   },
   {
@@ -469,10 +469,10 @@
     "name": "Celestial Skullite",
     "filter": "enchantment_defense",
     "il": 1800,
-    "combined_rating": 1620,
     "defense": 1080,
     "crit_avoid": 1080,
     "deflect": 1080,
+    "combined_rating": 1620,
     "gameIds": ["Enchantment_Standard_W_V2_R6_Account"]
   },
   {
@@ -480,10 +480,10 @@
     "name": "Celestial Skullite",
     "filter": "enchantment_offense",
     "il": 1800,
-    "combined_rating": 1620,
     "power": 1080,
     "acc": 1080,
     "strike": 1080,
+    "combined_rating": 1620,
     "gameIds": ["Enchantment_Standard_W_V2_R6_Account"]
   },
   {
@@ -553,12 +553,12 @@
     "id": "aggression-barbed",
     "name": "Celestial Barbed Insignia of Aggression",
     "filter": "insignia",
-    "insigniaShape": "barbed",
-    "preferredVariant": "aggression-barbed-pref",
     "il": 750,
-    "combined_rating": 600,
     "strike": 1125,
     "severity": 1125,
+    "combined_rating": 600,
+    "insigniaShape": "barbed",
+    "preferredVariant": "aggression-barbed-pref",
     "gameIds": [
       "Insignia_Barbed_Armorpen_Account_R6",
       "Insignia_Barbed_Armorpen_R6"
@@ -568,22 +568,22 @@
     "id": "aggression-barbed-pref",
     "name": "Celestial Barbed Insignia of Aggression (Pref)",
     "filter": "insignia",
-    "insigniaShape": "barbed",
     "il": 900,
-    "combined_rating": 720,
     "strike": 1350,
-    "severity": 1350
+    "severity": 1350,
+    "combined_rating": 720,
+    "insigniaShape": "barbed"
   },
   {
     "id": "aggression-illuminated",
     "name": "Celestial Illuminated Insignia of Aggression",
     "filter": "insignia",
-    "insigniaShape": "illuminated",
-    "preferredVariant": "aggression-illuminated-pref",
     "il": 750,
-    "combined_rating": 600,
     "strike": 1125,
     "severity": 1125,
+    "combined_rating": 600,
+    "insigniaShape": "illuminated",
+    "preferredVariant": "aggression-illuminated-pref",
     "gameIds": [
       "Insignia_Illuminated_Armorpen_Account_R6",
       "Insignia_Illuminated_Armorpen_R6"
@@ -593,22 +593,22 @@
     "id": "aggression-illuminated-pref",
     "name": "Celestial Illuminated Insignia of Aggression (Pref)",
     "filter": "insignia",
-    "insigniaShape": "illuminated",
     "il": 900,
-    "combined_rating": 720,
     "strike": 1350,
-    "severity": 1350
+    "severity": 1350,
+    "combined_rating": 720,
+    "insigniaShape": "illuminated"
   },
   {
     "id": "aggression-regal",
     "name": "Celestial Regal Insignia of Aggression",
     "filter": "insignia",
-    "insigniaShape": "regal",
-    "preferredVariant": "aggression-regal-pref",
     "il": 750,
-    "combined_rating": 600,
     "strike": 1125,
     "severity": 1125,
+    "combined_rating": 600,
+    "insigniaShape": "regal",
+    "preferredVariant": "aggression-regal-pref",
     "gameIds": [
       "Insignia_Regal_Armorpen_Account_R6",
       "Insignia_Regal_Armorpen_R6"
@@ -618,20 +618,20 @@
     "id": "aggression-regal-pref",
     "name": "Celestial Regal Insignia of Aggression (Pref)",
     "filter": "insignia",
-    "insigniaShape": "regal",
     "il": 900,
-    "combined_rating": 720,
     "strike": 1350,
-    "severity": 1350
+    "severity": 1350,
+    "combined_rating": 720,
+    "insigniaShape": "regal"
   },
   {
     "id": "alchemist-s-discipline-alchemist-strike-ca-offense-utility",
     "name": "Alchemist's Discipline",
     "filter": "companion_power",
     "il": 900,
-    "combined_rating": 900,
     "ca_p": 0.045,
     "strike_p": 0.045,
+    "combined_rating": 900,
     "gameIds": ["Pet_Alchemist_Player_Bonus"],
     "longDescription": "Alchemist companion power. Role: Offense, Utility.",
     "tags": ["companion_power:offense", "companion_power:utility"]
@@ -679,10 +679,10 @@
     "name": "Arma-Egg-On",
     "filter": "artifact",
     "il": 2600,
-    "combined_rating": 2080,
     "acc": 2535,
     "ca": 1560,
     "severity": 2340,
+    "combined_rating": 2080,
     "gameIds": ["Artifact_M31_April_Fowls_Artifact_R5"]
   },
   {
@@ -690,8 +690,8 @@
     "name": "Armor Breaker",
     "filter": "mount_equip",
     "il": 1750,
-    "combined_rating": 1575,
-    "severity": 2625
+    "severity": 2625,
+    "combined_rating": 1575
   },
   {
     "id": "arti-assasin-s-dice",
@@ -785,10 +785,10 @@
     "name": "Assassin's Knife",
     "filter": "artifact",
     "il": 2000,
-    "combined_rating": 2000,
     "acc": 1950,
     "ca": 1200,
     "severity": 1800,
+    "combined_rating": 2000,
     "gameIds": ["Artifact_M31_All_Zone_Artifact_R5"]
   },
   {
@@ -796,9 +796,9 @@
     "name": "Avian Aura",
     "filter": "mount_equip",
     "il": 1750,
-    "combined_rating": 1575,
     "power": 933.3333333333334,
-    "forte": 2625
+    "forte": 2625,
+    "combined_rating": 1575
   },
   {
     "id": "avian-aura-group-celestial",
@@ -855,10 +855,10 @@
     "name": "Beacon of Meteor Swarm",
     "filter": "artifact",
     "il": 1500,
-    "combined_rating": 1275,
     "ca": 1125,
     "strike": 1125,
     "severity": 1125,
+    "combined_rating": 1275,
     "gameIds": ["Artifact_M28_Meteorswarm_R5"]
   },
   {
@@ -871,19 +871,19 @@
     "name": "Blazing Oportunity",
     "filter": "mount_equip",
     "il": 1750,
-    "combined_rating": 1575,
     "ca": 1312.5,
-    "severity": 1312.5
+    "severity": 1312.5,
+    "combined_rating": 1575
   },
   {
     "id": "bloodbrass-pistol",
     "name": "Bloodbrass Pistol",
     "filter": "artifact",
     "il": 2000,
-    "combined_rating": 2000,
     "acc": 1500,
     "ca": 1500,
     "severity": 1500,
+    "combined_rating": 2000,
     "gameIds": ["Artifact_M30_All_Zone_Artifact_R5"]
   },
   {
@@ -906,8 +906,8 @@
     "name": "Guild Boon: Accuracy",
     "filter": "guild_boon_off",
     "il": 1000,
-    "combined_rating": 800,
-    "acc": 3000
+    "acc": 3000,
+    "combined_rating": 800
   },
   {
     "id": "boon-advance-recharge",
@@ -1019,8 +1019,8 @@
     "name": "Guild Boon: Awareness",
     "filter": "guild_boon_def",
     "il": 1000,
-    "combined_rating": 800,
-    "awareness": 3000
+    "awareness": 3000,
+    "combined_rating": 800
   },
   {
     "id": "boon-bug",
@@ -1033,24 +1033,24 @@
     "name": "Guild Boon: Critical Avoidance",
     "filter": "guild_boon_def",
     "il": 1000,
-    "combined_rating": 800,
-    "crit_avoid": 3000
+    "crit_avoid": 3000,
+    "combined_rating": 800
   },
   {
     "id": "boon-defense",
     "name": "Guild Boon: Defense",
     "filter": "guild_boon_def",
     "il": 1000,
-    "combined_rating": 800,
-    "defense": 3000
+    "defense": 3000,
+    "combined_rating": 800
   },
   {
     "id": "boon-incoming-healing",
     "name": "Guild Boon: Incoming Healing",
     "filter": "guild_boon_def",
     "il": 1000,
-    "combined_rating": 800,
-    "inc_healing": 3000
+    "inc_healing": 3000,
+    "combined_rating": 800
   },
   {
     "id": "boon-master-blessed-advantage",
@@ -1171,16 +1171,16 @@
     "name": "Guild Boon: Movement Speed",
     "filter": "guild_boon_util",
     "il": 1000,
-    "combined_rating": 800,
-    "movement": 0.1
+    "movement": 0.1,
+    "combined_rating": 800
   },
   {
     "id": "boon-power",
     "name": "Guild Boon: Power",
     "filter": "guild_boon_off",
     "il": 1000,
-    "combined_rating": 800,
-    "power": 3000
+    "power": 3000,
+    "combined_rating": 800
   },
   {
     "id": "boon-revive-sickness",
@@ -1194,16 +1194,16 @@
     "name": "Guild Boon: Critical Severity",
     "filter": "guild_boon_off",
     "il": 1000,
-    "combined_rating": 800,
-    "severity": 3000
+    "severity": 3000,
+    "combined_rating": 800
   },
   {
     "id": "boon-strike",
     "name": "Guild Boon: Critical Strike",
     "filter": "guild_boon_off",
     "il": 1000,
-    "combined_rating": 800,
-    "strike": 3000
+    "strike": 3000,
+    "combined_rating": 800
   },
   {
     "id": "boon-tier1-avoidance",
@@ -1710,9 +1710,9 @@
     "name": "Celestial Brutality",
     "filter": "insignia",
     "il": 750,
-    "combined_rating": 600,
     "power": 1125,
     "severity": 1125,
+    "combined_rating": 600,
     "hideFromPicker": true,
     "bonuses": ["insignia-shape-unknown"]
   },
@@ -1720,12 +1720,12 @@
     "id": "brutality-barbed",
     "name": "Celestial Barbed Insignia of Brutality",
     "filter": "insignia",
-    "insigniaShape": "barbed",
-    "preferredVariant": "brutality-barbed-pref",
     "il": 750,
-    "combined_rating": 600,
     "power": 1125,
     "severity": 1125,
+    "combined_rating": 600,
+    "insigniaShape": "barbed",
+    "preferredVariant": "brutality-barbed-pref",
     "gameIds": [
       "Insignia_Barbed_Power_Recovery_Account_R6",
       "Insignia_Barbed_Power_Recovery_R6"
@@ -1735,22 +1735,22 @@
     "id": "brutality-barbed-pref",
     "name": "Celestial Barbed Insignia of Brutality (Pref)",
     "filter": "insignia",
-    "insigniaShape": "barbed",
     "il": 900,
-    "combined_rating": 720,
     "power": 1350,
-    "severity": 1350
+    "severity": 1350,
+    "combined_rating": 720,
+    "insigniaShape": "barbed"
   },
   {
     "id": "brutality-crescent",
     "name": "Celestial Crescent Insignia of Brutality",
     "filter": "insignia",
-    "insigniaShape": "crescent",
-    "preferredVariant": "brutality-crescent-pref",
     "il": 750,
-    "combined_rating": 600,
     "power": 1125,
     "severity": 1125,
+    "combined_rating": 600,
+    "insigniaShape": "crescent",
+    "preferredVariant": "brutality-crescent-pref",
     "gameIds": [
       "Insignia_Crescent_Power_Recovery_Account_R6",
       "Insignia_Crescent_Power_Recovery_R6"
@@ -1760,22 +1760,22 @@
     "id": "brutality-crescent-pref",
     "name": "Celestial Crescent Insignia of Brutality (Pref)",
     "filter": "insignia",
-    "insigniaShape": "crescent",
     "il": 900,
-    "combined_rating": 720,
     "power": 1350,
-    "severity": 1350
+    "severity": 1350,
+    "combined_rating": 720,
+    "insigniaShape": "crescent"
   },
   {
     "id": "brutality-enlightened",
     "name": "Celestial Enlightened Insignia of Brutality",
     "filter": "insignia",
-    "insigniaShape": "enlightened",
-    "preferredVariant": "brutality-enlightened-pref",
     "il": 750,
-    "combined_rating": 600,
     "power": 1125,
     "severity": 1125,
+    "combined_rating": 600,
+    "insigniaShape": "enlightened",
+    "preferredVariant": "brutality-enlightened-pref",
     "gameIds": [
       "Insignia_Enlightened_Power_Recovery_Account_R6",
       "Insignia_Enlightened_Power_Recovery_R6"
@@ -1785,22 +1785,22 @@
     "id": "brutality-enlightened-pref",
     "name": "Celestial Enlightened Insignia of Brutality (Pref)",
     "filter": "insignia",
-    "insigniaShape": "enlightened",
     "il": 900,
-    "combined_rating": 720,
     "power": 1350,
-    "severity": 1350
+    "severity": 1350,
+    "combined_rating": 720,
+    "insigniaShape": "enlightened"
   },
   {
     "id": "brutality-illuminated",
     "name": "Celestial Illuminated Insignia of Brutality",
     "filter": "insignia",
-    "insigniaShape": "illuminated",
-    "preferredVariant": "brutality-illuminated-pref",
     "il": 750,
-    "combined_rating": 600,
     "power": 1125,
     "severity": 1125,
+    "combined_rating": 600,
+    "insigniaShape": "illuminated",
+    "preferredVariant": "brutality-illuminated-pref",
     "gameIds": [
       "Insignia_Illuminated_Power_Recovery_R6",
       "Insignia_llluminated_Power_Recovery_Account_R6"
@@ -1810,20 +1810,20 @@
     "id": "brutality-illuminated-pref",
     "name": "Celestial Illuminated Insignia of Brutality (Pref)",
     "filter": "insignia",
-    "insigniaShape": "illuminated",
     "il": 900,
-    "combined_rating": 720,
     "power": 1350,
-    "severity": 1350
+    "severity": 1350,
+    "combined_rating": 720,
+    "insigniaShape": "illuminated"
   },
   {
     "id": "brutality-pref",
     "name": "Celestial Brutality (Pref)",
     "filter": "insignia",
     "il": 900,
-    "combined_rating": 720,
     "power": 1350,
     "severity": 1350,
+    "combined_rating": 720,
     "hideFromPicker": true,
     "bonuses": ["insignia-shape-unknown"]
   },
@@ -1831,12 +1831,12 @@
     "id": "brutality-regal",
     "name": "Celestial Regal Insignia of Brutality",
     "filter": "insignia",
-    "insigniaShape": "regal",
-    "preferredVariant": "brutality-regal-pref",
     "il": 750,
-    "combined_rating": 600,
     "power": 1125,
     "severity": 1125,
+    "combined_rating": 600,
+    "insigniaShape": "regal",
+    "preferredVariant": "brutality-regal-pref",
     "gameIds": [
       "Insignia_Regal_Power_Recovery_Account_R6",
       "Insignia_Regal_Power_Recovery_R6"
@@ -1846,11 +1846,11 @@
     "id": "brutality-regal-pref",
     "name": "Celestial Regal Insignia of Brutality (Pref)",
     "filter": "insignia",
-    "insigniaShape": "regal",
     "il": 900,
-    "combined_rating": 720,
     "power": 1350,
-    "severity": 1350
+    "severity": 1350,
+    "combined_rating": 720,
+    "insigniaShape": "regal"
   },
   {
     "id": "burning-patch",
@@ -1923,8 +1923,8 @@
     "name": "Celestial Fluid Aurora",
     "filter": "combat_enchant_defense",
     "il": 3500,
-    "mana_regen": 0.1,
     "overall_healing": 0.09,
+    "mana_regen": 0.1,
     "gameIds": [
       "Enchantment_Combat_O_R6_Account",
       "Enchantment_Combat_O_V2_R6_Account"
@@ -1955,8 +1955,8 @@
     "name": "Celestial Lion's Presence 2%",
     "filter": "companion_power",
     "il": 900,
-    "combined_rating": 900,
     "overall_damage": 0.02,
+    "combined_rating": 900,
     "hideFromPicker": true,
     "replacedBy": {
       "item": "celestial-lion-s-presence",
@@ -1972,8 +1972,8 @@
     "name": "Celestial Lion's Presence 3%",
     "filter": "companion_power",
     "il": 900,
-    "combined_rating": 900,
     "overall_damage": 0.03,
+    "combined_rating": 900,
     "hideFromPicker": true,
     "replacedBy": {
       "item": "celestial-lion-s-presence",
@@ -1989,8 +1989,8 @@
     "name": "Celestial Lion's Presence 4%",
     "filter": "companion_power",
     "il": 900,
-    "combined_rating": 900,
     "overall_damage": 0.04,
+    "combined_rating": 900,
     "hideFromPicker": true,
     "replacedBy": {
       "item": "celestial-lion-s-presence",
@@ -2006,9 +2006,9 @@
     "name": "Celestial Skill",
     "filter": "insignia",
     "il": 750,
-    "combined_rating": 600,
     "ca": 1125,
     "strike": 1125,
+    "combined_rating": 600,
     "hideFromPicker": true,
     "bonuses": ["insignia-shape-unknown"]
   },
@@ -2016,34 +2016,34 @@
     "id": "celestial-skill-barbed",
     "name": "Celestial Barbed Insignia of Skill",
     "filter": "insignia",
-    "insigniaShape": "barbed",
-    "preferredVariant": "celestial-skill-barbed-pref",
     "il": 750,
-    "combined_rating": 600,
     "ca": 1125,
     "strike": 1125,
+    "combined_rating": 600,
+    "insigniaShape": "barbed",
+    "preferredVariant": "celestial-skill-barbed-pref",
     "gameIds": ["Insignia_Barbed_Crit_Account_R6", "Insignia_Barbed_Crit_R6"]
   },
   {
     "id": "celestial-skill-barbed-pref",
     "name": "Celestial Barbed Insignia of Skill (Pref)",
     "filter": "insignia",
-    "insigniaShape": "barbed",
     "il": 900,
-    "combined_rating": 720,
     "ca": 1350,
-    "strike": 1350
+    "strike": 1350,
+    "combined_rating": 720,
+    "insigniaShape": "barbed"
   },
   {
     "id": "celestial-skill-crescent",
     "name": "Celestial Crescent Insignia of Skill",
     "filter": "insignia",
-    "insigniaShape": "crescent",
-    "preferredVariant": "celestial-skill-crescent-pref",
     "il": 750,
-    "combined_rating": 600,
     "ca": 1125,
     "strike": 1125,
+    "combined_rating": 600,
+    "insigniaShape": "crescent",
+    "preferredVariant": "celestial-skill-crescent-pref",
     "gameIds": [
       "Insignia_Crescent_Crit_Account_R6",
       "Insignia_Crescent_Crit_R6"
@@ -2053,22 +2053,22 @@
     "id": "celestial-skill-crescent-pref",
     "name": "Celestial Crescent Insignia of Skill (Pref)",
     "filter": "insignia",
-    "insigniaShape": "crescent",
     "il": 900,
-    "combined_rating": 720,
     "ca": 1350,
-    "strike": 1350
+    "strike": 1350,
+    "combined_rating": 720,
+    "insigniaShape": "crescent"
   },
   {
     "id": "celestial-skill-enlightened",
     "name": "Celestial Enlightened Insignia of Skill",
     "filter": "insignia",
-    "insigniaShape": "enlightened",
-    "preferredVariant": "celestial-skill-enlightened-pref",
     "il": 750,
-    "combined_rating": 600,
     "ca": 1125,
     "strike": 1125,
+    "combined_rating": 600,
+    "insigniaShape": "enlightened",
+    "preferredVariant": "celestial-skill-enlightened-pref",
     "gameIds": [
       "Insignia_Enlightened_Crit_Account_R6",
       "Insignia_Enlightened_Crit_R6"
@@ -2078,20 +2078,20 @@
     "id": "celestial-skill-enlightened-pref",
     "name": "Celestial Enlightened Insignia of Skill (Pref)",
     "filter": "insignia",
-    "insigniaShape": "enlightened",
     "il": 900,
-    "combined_rating": 720,
     "ca": 1350,
-    "strike": 1350
+    "strike": 1350,
+    "combined_rating": 720,
+    "insigniaShape": "enlightened"
   },
   {
     "id": "celestial-skill-pref",
     "name": "Celestial Skill (Pref)",
     "filter": "insignia",
     "il": 900,
-    "combined_rating": 720,
     "ca": 1350,
     "strike": 1350,
+    "combined_rating": 720,
     "hideFromPicker": true,
     "bonuses": ["insignia-shape-unknown"]
   },
@@ -2290,9 +2290,9 @@
     "name": "Coldlight Walker's Gaze",
     "filter": "companion_power",
     "il": 900,
-    "combined_rating": 900,
     "strike_p": 0.045,
     "sev_p": 0.045,
+    "combined_rating": 900,
     "gameIds": ["Pet_M30_Coldlightwalker_Player_Bonus"],
     "longDescription": "Coldlight Walker companion power. Role: Utility.",
     "tags": ["companion_power:utility"]
@@ -2331,8 +2331,8 @@
     "name": "Compy's Instincts",
     "filter": "companion_power",
     "il": 900,
-    "combined_rating": 900,
     "power_p": 0.09,
+    "combined_rating": 900,
     "gameIds": ["Pet_Compy_Pack_Player_Bonus"],
     "longDescription": "Alpha Compy companion power. Role: Utility.",
     "tags": ["companion_power:utility"]
@@ -2351,11 +2351,11 @@
     "name": "Crimson Calamity",
     "filter": "artifact",
     "il": 2600,
-    "combined_rating": 2600,
     "ca": 1560,
     "defense": 1365,
     "deflect_sev": 2925,
     "stamina_regen": 0.15,
+    "combined_rating": 2600,
     "gameIds": ["Artifact_M31_All_Bp_Artifact_R5"]
   },
   {
@@ -2405,10 +2405,10 @@
     "name": "Crystal of Soul's Flight",
     "filter": "artifact",
     "il": 1500,
-    "combined_rating": 1275,
     "power": 1125,
     "acc": 1125,
     "ca": 1125,
+    "combined_rating": 1275,
     "gameIds": ["Artifact_Soulflight_R5"]
   },
   {
@@ -2416,9 +2416,9 @@
     "name": "Dark Dealings",
     "filter": "companion_power",
     "il": 900,
-    "combined_rating": 900,
     "acc_p": 0.045,
     "ca_p": 0.045,
+    "combined_rating": 900,
     "gameIds": ["Pet_Drow_Player_Bonus"],
     "longDescription": "Dark Dealer companion power. Role: Utility.",
     "tags": ["companion_power:utility"]
@@ -2449,10 +2449,10 @@
     "name": "Demogorgon's Reach",
     "filter": "artifact",
     "il": 1200,
-    "combined_rating": 1020,
     "power": 900,
     "forte": 900,
     "hit_points": 3600,
+    "combined_rating": 1020,
     "gameIds": ["Artifact_Demogorgon_Revamp_R5"]
   },
   {
@@ -2460,19 +2460,19 @@
     "name": "M32 Demon Skull",
     "filter": "artifact",
     "il": 2600,
-    "combined_rating": 2600,
     "power": 2184,
     "ca": 2496,
     "severity": 1825,
+    "combined_rating": 2600,
     "gameIds": ["Artifact_M32_All_Lockbox_Artifact_R5"]
   },
   {
     "id": "devil-s-precision",
     "name": "Devil's precision",
     "filter": "overload",
+    "il": 1,
     "acc_p": 0.05,
     "strike_p": 0.05,
-    "il": 1,
     "gameIds": ["Enchantment_Overload_Crit_Accuracy"]
   },
   {
@@ -2503,9 +2503,9 @@
     "name": "Celestial Dominance",
     "filter": "insignia",
     "il": 750,
-    "combined_rating": 600,
     "power": 1125,
     "forte": 1125,
+    "combined_rating": 600,
     "hideFromPicker": true,
     "bonuses": ["insignia-shape-unknown"]
   },
@@ -2513,34 +2513,34 @@
     "id": "dominance-barbed",
     "name": "Celestial Barbed Insignia of Dominance",
     "filter": "insignia",
-    "insigniaShape": "barbed",
-    "preferredVariant": "dominance-barbed-pref",
     "il": 750,
-    "combined_rating": 600,
     "power": 1125,
     "forte": 1125,
+    "combined_rating": 600,
+    "insigniaShape": "barbed",
+    "preferredVariant": "dominance-barbed-pref",
     "gameIds": ["Insignia_Barbed_Power_Account_R6", "Insignia_Barbed_Power_R6"]
   },
   {
     "id": "dominance-barbed-pref",
     "name": "Celestial Barbed Insignia of Dominance (Pref)",
     "filter": "insignia",
-    "insigniaShape": "barbed",
     "il": 900,
-    "combined_rating": 720,
     "power": 1350,
-    "forte": 1350
+    "forte": 1350,
+    "combined_rating": 720,
+    "insigniaShape": "barbed"
   },
   {
     "id": "dominance-illuminated",
     "name": "Celestial Illuminated Insignia of Dominance",
     "filter": "insignia",
-    "insigniaShape": "illuminated",
-    "preferredVariant": "dominance-illuminated-pref",
     "il": 750,
-    "combined_rating": 600,
     "power": 1125,
     "forte": 1125,
+    "combined_rating": 600,
+    "insigniaShape": "illuminated",
+    "preferredVariant": "dominance-illuminated-pref",
     "gameIds": [
       "Insignia_Illuminated_Power_Account_R6",
       "Insignia_Illuminated_Power_R6"
@@ -2550,20 +2550,20 @@
     "id": "dominance-illuminated-pref",
     "name": "Celestial Illuminated Insignia of Dominance (Pref)",
     "filter": "insignia",
-    "insigniaShape": "illuminated",
     "il": 900,
-    "combined_rating": 720,
     "power": 1350,
-    "forte": 1350
+    "forte": 1350,
+    "combined_rating": 720,
+    "insigniaShape": "illuminated"
   },
   {
     "id": "dominance-pref",
     "name": "Celestial Dominance (Pref)",
     "filter": "insignia",
     "il": 900,
-    "combined_rating": 720,
     "power": 1350,
     "forte": 1350,
+    "combined_rating": 720,
     "hideFromPicker": true,
     "bonuses": ["insignia-shape-unknown"]
   },
@@ -2571,31 +2571,31 @@
     "id": "dominance-regal",
     "name": "Celestial Regal Insignia of Dominance",
     "filter": "insignia",
-    "insigniaShape": "regal",
-    "preferredVariant": "dominance-regal-pref",
     "il": 750,
-    "combined_rating": 600,
     "power": 1125,
     "forte": 1125,
+    "combined_rating": 600,
+    "insigniaShape": "regal",
+    "preferredVariant": "dominance-regal-pref",
     "gameIds": ["Insignia_Regal_Power_Account_R6", "Insignia_Regal_Power_R6"]
   },
   {
     "id": "dominance-regal-pref",
     "name": "Celestial Regal Insignia of Dominance (Pref)",
     "filter": "insignia",
-    "insigniaShape": "regal",
     "il": 900,
-    "combined_rating": 720,
     "power": 1350,
-    "forte": 1350
+    "forte": 1350,
+    "combined_rating": 720,
+    "insigniaShape": "regal"
   },
   {
     "id": "dominant-force-power-celestial",
     "name": "Dominant Force",
     "filter": "mount_equip",
     "il": 1750,
-    "combined_rating": 1575,
-    "power": 2625
+    "power": 2625,
+    "combined_rating": 1575
   },
   {
     "id": "doomsayer",
@@ -2635,10 +2635,10 @@
     "name": "M25 Enchanted Bregan D'aerthe Expert's Cloth",
     "filter": "gear_armor",
     "il": 2050,
-    "combined_rating": 1845,
     "strike": 1538,
     "severity": 923,
     "crit_avoid": 615,
+    "combined_rating": 1845,
     "gameIds": ["Body_M25_Mediumheal_Chase_R2"],
     "allowedClass": ["bard", "warlock"]
   },
@@ -2736,9 +2736,9 @@
     "name": "Fawn's Instincts",
     "filter": "companion_power",
     "il": 900,
-    "combined_rating": 900,
     "power_p": 0.045,
     "strike_p": 0.045,
+    "combined_rating": 900,
     "gameIds": ["Pet_Fawn_Player_Bonus"],
     "longDescription": "Fawn of Shiallia companion power. Role: Offense, Utility.",
     "tags": ["companion_power:offense", "companion_power:utility"]
@@ -2748,9 +2748,9 @@
     "name": "Ferocious Predator",
     "filter": "mount_equip",
     "il": 1750,
-    "combined_rating": 1575,
     "power": 1312.5,
-    "severity": 1312.5
+    "severity": 1312.5,
+    "combined_rating": 1575
   },
   {
     "id": "ferocity-celestial",
@@ -2798,12 +2798,12 @@
     "id": "fortitude-barbed",
     "name": "Celestial Barbed Insignia of Fortitude",
     "filter": "insignia",
-    "insigniaShape": "barbed",
-    "preferredVariant": "fortitude-barbed-pref",
     "il": 750,
-    "combined_rating": 600,
     "defense": 1125,
     "hit_points": 4500,
+    "combined_rating": 600,
+    "insigniaShape": "barbed",
+    "preferredVariant": "fortitude-barbed-pref",
     "gameIds": [
       "Insignia_Barbed_Hitpoints_Defense_Account_R6",
       "Insignia_Barbed_Hitpoints_Defense_R6"
@@ -2813,22 +2813,22 @@
     "id": "fortitude-barbed-pref",
     "name": "Celestial Barbed Insignia of Fortitude (Pref)",
     "filter": "insignia",
-    "insigniaShape": "barbed",
     "il": 900,
-    "combined_rating": 720,
     "defense": 1350,
-    "hit_points": 5400
+    "hit_points": 5400,
+    "combined_rating": 720,
+    "insigniaShape": "barbed"
   },
   {
     "id": "fortitude-crescent",
     "name": "Celestial Crescent Insignia of Fortitude",
     "filter": "insignia",
-    "insigniaShape": "crescent",
-    "preferredVariant": "fortitude-crescent-pref",
     "il": 750,
-    "combined_rating": 600,
     "defense": 1125,
     "hit_points": 4500,
+    "combined_rating": 600,
+    "insigniaShape": "crescent",
+    "preferredVariant": "fortitude-crescent-pref",
     "gameIds": [
       "Insignia_Crescent_Hitpoints_Defense_Account_R6",
       "Insignia_Crescent_Hitpoints_Defense_R6"
@@ -2838,22 +2838,22 @@
     "id": "fortitude-crescent-pref",
     "name": "Celestial Crescent Insignia of Fortitude (Pref)",
     "filter": "insignia",
-    "insigniaShape": "crescent",
     "il": 900,
-    "combined_rating": 720,
     "defense": 1350,
-    "hit_points": 5400
+    "hit_points": 5400,
+    "combined_rating": 720,
+    "insigniaShape": "crescent"
   },
   {
     "id": "fortitude-enlightened",
     "name": "Celestial Enlightened Insignia of Fortitude",
     "filter": "insignia",
-    "insigniaShape": "enlightened",
-    "preferredVariant": "fortitude-enlightened-pref",
     "il": 750,
-    "combined_rating": 600,
     "defense": 1125,
     "hit_points": 4500,
+    "combined_rating": 600,
+    "insigniaShape": "enlightened",
+    "preferredVariant": "fortitude-enlightened-pref",
     "gameIds": [
       "Insignia_Enlightened_Hitpoints_Defense_Account_R6",
       "Insignia_Enlightened_Hitpoints_Defense_R6"
@@ -2863,22 +2863,22 @@
     "id": "fortitude-enlightened-pref",
     "name": "Celestial Enlightened Insignia of Fortitude (Pref)",
     "filter": "insignia",
-    "insigniaShape": "enlightened",
     "il": 900,
-    "combined_rating": 720,
     "defense": 1350,
-    "hit_points": 5400
+    "hit_points": 5400,
+    "combined_rating": 720,
+    "insigniaShape": "enlightened"
   },
   {
     "id": "fortitude-illuminated",
     "name": "Celestial Illuminated Insignia of Fortitude",
     "filter": "insignia",
-    "insigniaShape": "illuminated",
-    "preferredVariant": "fortitude-illuminated-pref",
     "il": 750,
-    "combined_rating": 600,
     "defense": 1125,
     "hit_points": 4500,
+    "combined_rating": 600,
+    "insigniaShape": "illuminated",
+    "preferredVariant": "fortitude-illuminated-pref",
     "gameIds": [
       "Insignia_Illuminated_Hitpoints_Defense_Account_R6",
       "Insignia_Illuminated_Hitpoints_Defense_R6"
@@ -2888,22 +2888,22 @@
     "id": "fortitude-illuminated-pref",
     "name": "Celestial Illuminated Insignia of Fortitude (Pref)",
     "filter": "insignia",
-    "insigniaShape": "illuminated",
     "il": 900,
-    "combined_rating": 720,
     "defense": 1350,
-    "hit_points": 5400
+    "hit_points": 5400,
+    "combined_rating": 720,
+    "insigniaShape": "illuminated"
   },
   {
     "id": "fortitude-regal",
     "name": "Celestial Regal Insignia of Fortitude",
     "filter": "insignia",
-    "insigniaShape": "regal",
-    "preferredVariant": "fortitude-regal-pref",
     "il": 750,
-    "combined_rating": 600,
     "defense": 1125,
     "hit_points": 4500,
+    "combined_rating": 600,
+    "insigniaShape": "regal",
+    "preferredVariant": "fortitude-regal-pref",
     "gameIds": [
       "Insignia_Regal_Hitpoints_Defense_Account_R6",
       "Insignia_Regal_Hitpoints_Defense_R6"
@@ -2913,11 +2913,11 @@
     "id": "fortitude-regal-pref",
     "name": "Celestial Regal Insignia of Fortitude (Pref)",
     "filter": "insignia",
-    "insigniaShape": "regal",
     "il": 900,
-    "combined_rating": 720,
     "defense": 1350,
-    "hit_points": 5400
+    "hit_points": 5400,
+    "combined_rating": 720,
+    "insigniaShape": "regal"
   },
   {
     "id": "frigid-winds",
@@ -2978,8 +2978,8 @@
     "name": "Golden Cat's Instincts",
     "filter": "companion_power",
     "il": 900,
-    "combined_rating": 900,
     "ca_p": 0.09,
+    "combined_rating": 900,
     "gameIds": ["Pet_Cat_Gold_Player_Bonus"],
     "longDescription": "Golden Cat companion power. Role: Any (Offense, Defense, or Utility).",
     "tags": [
@@ -3034,8 +3034,8 @@
     "name": "Hero Soul",
     "filter": "mount_equip",
     "il": 1750,
-    "combined_rating": 1575,
-    "forte": 2625
+    "forte": 2625,
+    "combined_rating": 1575
   },
   {
     "id": "hot-wings-accuracy-severity",
@@ -3837,11 +3837,11 @@
     "name": "M15 Envenomed Storyteller's Journal",
     "filter": "artifact",
     "il": 600,
-    "combined_rating": 480,
     "power": 450,
     "ca": 450,
     "strike": 450,
     "defense": 450,
+    "combined_rating": 480,
     "gameIds": ["Artifact_Storytellers_Journal_Y1_RS"]
   },
   {
@@ -3849,11 +3849,11 @@
     "name": "M16 Burnished Sword Knot Epic",
     "filter": "gear_weapon_offhand",
     "il": 850,
-    "combined_rating": 765,
     "acc": 500,
     "ca": 638,
     "strike": 638,
     "severity": 500,
+    "combined_rating": 765,
     "gameIds": ["Secondary_Greatweapon_Artifact_M16capseal _L80_R3"],
     "allowedClass": ["barbarian"]
   },
@@ -3862,11 +3862,11 @@
     "name": "M26 Scintillant Amulet",
     "filter": "gear_neck",
     "il": 1700,
-    "combined_rating": 1530,
+    "int": 6,
     "ca": 849.15,
     "strike": 851.69995,
     "severity": 849.15,
-    "int": 6,
+    "combined_rating": 1530,
     "gameIds": ["Neck_M26_Artifact_Crafted_Masterwork_Dps_Magical_R1"],
     "bonuses": ["m26-masterwork-neck-waist-set"]
   },
@@ -3875,11 +3875,11 @@
     "name": "M26 Scintillant Amulet +1",
     "filter": "gear_neck",
     "il": 1800,
-    "combined_rating": 1620,
+    "int": 6,
     "ca": 899.10004,
     "strike": 901.8,
     "severity": 899.10004,
-    "int": 6,
+    "combined_rating": 1620,
     "gameIds": ["Neck_M26_Artifact_Crafted_Masterwork_Dps_Magical_R1_Hq"],
     "bonuses": ["m26-masterwork-neck-waist-set"]
   },
@@ -3888,12 +3888,12 @@
     "name": "M26 Scintillant Sash",
     "filter": "gear_waist",
     "il": 1700,
-    "combined_rating": 1530,
+    "int": 3,
+    "cha": 3,
     "acc": 849,
     "ca": 849,
     "strike": 852,
-    "int": 3,
-    "cha": 3,
+    "combined_rating": 1530,
     "gameIds": ["Waist_M26_Artifact_Crafted_Masterwork_Dps_Magical_R1"],
     "bonuses": ["m26-masterwork-neck-waist-set"]
   },
@@ -3902,12 +3902,12 @@
     "name": "M26 Scintillant Sash +1",
     "filter": "gear_waist",
     "il": 1800,
-    "combined_rating": 1620,
+    "int": 3,
+    "cha": 3,
     "acc": 899,
     "ca": 899,
     "strike": 902,
-    "int": 3,
-    "cha": 3,
+    "combined_rating": 1620,
     "gameIds": ["Waist_M26_Artifact_Crafted_Masterwork_Dps_Magical_R1_Hq"],
     "bonuses": ["m26-masterwork-neck-waist-set"]
   },
@@ -3916,10 +3916,10 @@
     "name": "M26 Shroomwood Amulet",
     "filter": "gear_neck",
     "il": 1700,
-    "combined_rating": 1530,
+    "str": 6,
     "ca": 1698,
     "strike": 852,
-    "str": 6,
+    "combined_rating": 1530,
     "gameIds": ["Neck_M26_Artifact_Crafted_Masterwork_Dps_Physical_R1"],
     "bonuses": ["m26-masterwork-neck-waist-set"]
   },
@@ -3928,10 +3928,10 @@
     "name": "M26 Shroomwood Amulet +1",
     "filter": "gear_neck",
     "il": 1800,
-    "combined_rating": 1620,
+    "str": 6,
     "ca": 1798,
     "strike": 902,
-    "str": 6,
+    "combined_rating": 1620,
     "gameIds": ["Neck_M26_Artifact_Crafted_Masterwork_Dps_Physical_R1_Hq"],
     "bonuses": ["m26-masterwork-neck-waist-set"]
   },
@@ -3940,12 +3940,12 @@
     "name": "M26 Shroomwood Sash",
     "filter": "gear_waist",
     "il": 1700,
-    "combined_rating": 1530,
+    "str": 3,
+    "dex": 3,
     "ca": 849,
     "strike": 852,
     "severity": 849,
-    "str": 3,
-    "dex": 3,
+    "combined_rating": 1530,
     "gameIds": ["Waist_M26_Artifact_Crafted_Masterwork_Dps_Physical_R1"],
     "bonuses": ["m26-masterwork-neck-waist-set"]
   },
@@ -3954,12 +3954,12 @@
     "name": "M26 Shroomwood Sash +1",
     "filter": "gear_waist",
     "il": 1800,
-    "combined_rating": 1620,
+    "str": 3,
+    "dex": 3,
     "ca": 899,
     "strike": 902,
     "severity": 899,
-    "str": 3,
-    "dex": 3,
+    "combined_rating": 1620,
     "gameIds": ["Waist_M26_Artifact_Crafted_Masterwork_Dps_Physical_R1_Hq"],
     "bonuses": ["m26-masterwork-neck-waist-set"]
   },
@@ -3968,10 +3968,10 @@
     "name": "M28 Ultraviolet Elven Gloves",
     "filter": "gear_arms",
     "il": 2900,
-    "combined_rating": 2610,
+    "forte_p": 0.025,
     "strike": 2175,
     "severity": 2175,
-    "forte_p": 0.025,
+    "combined_rating": 2610,
     "gameIds": ["Arms_M28_Heavyheal_Chase_T2"],
     "shortDescription": "Max Divinity +25%",
     "allowedClass": ["cleric", "paladin"]
@@ -3981,10 +3981,10 @@
     "name": "M28 Voidtouched Greatsword",
     "filter": "gear_weapon_mainhand",
     "il": 3000,
-    "combined_rating": 2700,
     "ca": 2250,
     "strike": 2250,
     "base_damage_flat": 275,
+    "combined_rating": 2700,
     "gameIds": ["Primary_M28_Greatweapon_Chase_T2"],
     "allowedClass": ["barbarian"],
     "bonuses": ["m28-voidtouched-set"]
@@ -3994,10 +3994,10 @@
     "name": "M28 Voidtouched Pactblade",
     "filter": "gear_weapon_mainhand",
     "il": 3000,
-    "combined_rating": 2700,
     "severity": 2250,
     "forte": 2250,
     "base_damage_flat": 275,
+    "combined_rating": 2700,
     "gameIds": ["Primary_M28_Scourge_Chase_T2"],
     "allowedClass": ["warlock"],
     "bonuses": ["m28-voidtouched-set"]
@@ -4007,9 +4007,9 @@
     "name": "M28 Voidtouched Tome",
     "filter": "gear_weapon_offhand",
     "il": 3000,
-    "combined_rating": 2700,
     "acc": 2250,
     "ca": 2250,
+    "combined_rating": 2700,
     "gameIds": ["Secondary_M28_Scourge_Chase_T2"],
     "allowedClass": ["warlock"],
     "bonuses": ["m28-voidtouched-set"]
@@ -4019,9 +4019,9 @@
     "name": "M29 Enchanted Depthweave Cap",
     "filter": "gear_head",
     "il": 3200,
-    "combined_rating": 2880,
     "strike": 2400,
     "forte": 2400,
+    "combined_rating": 2880,
     "gameIds": ["Head_M29_Lightdps_Chase_T2"],
     "allowedClass": ["warlock", "wizard"],
     "bonuses": ["m29-enchanted-depthweave-cap-ca"]
@@ -4031,10 +4031,10 @@
     "name": "M29 Enchanted Depthweave Coat",
     "filter": "gear_armor",
     "il": 3200,
-    "combined_rating": 2880,
     "acc": 1200,
     "ca": 2400,
     "forte": 1200,
+    "combined_rating": 2880,
     "gameIds": ["Body_M29_Lightdps_Chase_T2"],
     "allowedClass": ["warlock", "wizard"],
     "bonuses": ["m29-ruthless-advantage"]
@@ -4044,10 +4044,10 @@
     "name": "M29 Enchanted Depthcured Vest",
     "filter": "gear_armor",
     "il": 3200,
-    "combined_rating": 2880,
     "acc": 1200,
     "ca": 2400,
     "forte": 1200,
+    "combined_rating": 2880,
     "gameIds": ["Body_M29_Mediumdps_Chase_T2"],
     "allowedClass": ["bard", "cleric", "ranger", "rogue"],
     "bonuses": ["m29-ruthless-advantage"]
@@ -4057,10 +4057,10 @@
     "name": "M31.5 Ritualistic Necklace",
     "filter": "gear_neck",
     "il": 4050,
-    "combined_rating": 3645,
     "ca": 1215,
     "defense": 2126,
     "crit_avoid": 1671,
+    "combined_rating": 3645,
     "gameIds": ["Neck_M32_All_Bp_Artifact"]
   },
   {
@@ -4068,10 +4068,10 @@
     "name": "M31.5 Ritualistic Strap",
     "filter": "gear_waist",
     "il": 4050,
-    "combined_rating": 3645,
-    "forte": 1367,
     "awareness": 2430,
     "deflect": 2278,
+    "forte": 1367,
+    "combined_rating": 3645,
     "gameIds": ["Waist_M32_All_Bp_Artifact"]
   },
   {
@@ -4079,10 +4079,10 @@
     "name": "M31 Belt of the Forsaken",
     "filter": "gear_waist",
     "il": 4050,
-    "combined_rating": 3645,
-    "strike": 3645,
     "dex": 3,
     "int": 3,
+    "strike": 3645,
+    "combined_rating": 3645,
     "gameIds": ["Waist_M31_All_Dungeon_Artifact"]
   },
   {
@@ -4090,9 +4090,9 @@
     "name": "M31 Bindings of the Death Pact",
     "filter": "gear_arms",
     "il": 4300,
-    "combined_rating": 3870,
     "acc": 4612,
     "severity": 3483,
+    "combined_rating": 3870,
     "gameIds": ["Arms_M31_Lightdps_S-tier"],
     "bonuses": ["m31-berserking-might-greater"]
   },
@@ -4101,9 +4101,9 @@
     "name": "M31 Bloodlit Veil",
     "filter": "gear_ring",
     "il": 4150,
-    "combined_rating": 3320,
     "acc": 8092,
     "severity": 7470,
+    "combined_rating": 3320,
     "gameIds": ["Ring_M31_Mediumdps_S-tier"],
     "bonuses": ["m24-maiden-s-advantage"]
   },
@@ -4112,11 +4112,11 @@
     "name": "M31 Bloodwoven Ink",
     "filter": "gear_shirt",
     "il": 3150,
-    "combined_rating": 2835,
     "severity": 2268,
     "forte": 1276,
     "out_healing": 1134,
     "recharge": 0.015,
+    "combined_rating": 2835,
     "gameIds": ["Shirt_M31_Mediumheal_S-tier"]
   },
   {
@@ -4124,9 +4124,9 @@
     "name": "M31 Bloodwoven Sigils",
     "filter": "gear_pants",
     "il": 3150,
-    "combined_rating": 2835,
     "ca": 1134,
     "strike": 2268,
+    "combined_rating": 2835,
     "gameIds": ["Pants_M31_Heavydps_S-tier"],
     "bonuses": ["m31-reckless-advantage", "m31-enchanted-advantage"]
   },
@@ -4135,9 +4135,9 @@
     "name": "M31 Bloodwoven Signs",
     "filter": "gear_shirt",
     "il": 3150,
-    "combined_rating": 2835,
     "acc": 2457,
     "forte": 1276,
+    "combined_rating": 2835,
     "gameIds": ["Shirt_M31_Lightdps_S-tier"],
     "bonuses": ["m31-enchanted-advantage", "m31-critical-empowerment"]
   },
@@ -4146,10 +4146,10 @@
     "name": "M31 Bulwark of the Eternal Zulkirate",
     "filter": "gear_armor",
     "il": 4300,
-    "combined_rating": 3870,
-    "forte": 2612,
     "deflect_sev": 4354,
+    "forte": 2612,
     "control_bonus": 3548,
+    "combined_rating": 3870,
     "gameIds": ["Body_M31_Heavytank_S-tier"],
     "bonuses": ["m19-ruthless-might"]
   },
@@ -4158,10 +4158,10 @@
     "name": "M31 Bulwark of the Zulkir's Decree",
     "filter": "gear_armor",
     "il": 4550,
-    "combined_rating": 4095,
-    "forte": 2149.875,
     "defense": 2627.625,
+    "forte": 2149.875,
     "inc_healing": 3685.5,
+    "combined_rating": 4095,
     "gameIds": ["Body_M31_Heavyall_Sss-tier"],
     "bonuses": ["m31-ruthless-might-ascendant"]
   },
@@ -4170,9 +4170,9 @@
     "name": "M31 Crown of the Everscourge",
     "filter": "gear_head",
     "il": 4550,
-    "combined_rating": 4095,
     "strike": 4504.5,
     "forte": 2764.125,
+    "combined_rating": 4095,
     "gameIds": ["Head_M31_Heavydps_S-tier"],
     "bonuses": ["m31-enduring-avantage-ascendant"]
   },
@@ -4181,9 +4181,9 @@
     "name": "M31 Gauntlets of the Wrathborn",
     "filter": "gear_arms",
     "il": 4550,
-    "combined_rating": 4095,
     "acc": 3992.625,
     "severity": 3685.5,
+    "combined_rating": 4095,
     "gameIds": ["Arms_M31_Heavydps_S-tier"],
     "bonuses": ["m31-enveloped-rage-ascendant"]
   },
@@ -4192,9 +4192,9 @@
     "name": "M31 Greaves of the Crimson March",
     "filter": "gear_boots",
     "il": 4550,
-    "combined_rating": 4095,
     "ca": 2457,
     "severity": 4504.5,
+    "combined_rating": 4095,
     "gameIds": ["Feet_M31_Heavyall_Sss-tier"],
     "bonuses": [
       {
@@ -4211,8 +4211,8 @@
     "name": "M31 Necklace of the Forsaken",
     "filter": "gear_neck",
     "il": 4050,
-    "combined_rating": 3645,
     "ca": 1215,
+    "combined_rating": 3645,
     "gameIds": ["Neck_M31_All_Dungeon_Artifact"]
   },
   {
@@ -4220,10 +4220,10 @@
     "name": "M31 Runebound Shackle",
     "filter": "gear_ring",
     "il": 3950,
-    "combined_rating": 3160,
     "strike": 8532,
     "severity": 5688,
     "ap_gain": 0.015,
+    "combined_rating": 3160,
     "gameIds": ["Ring_M31_Lightdps_A-tier"],
     "bonuses": ["m31-thayan-predator"]
   },
@@ -4232,9 +4232,9 @@
     "name": "M31 Sanguine Seal",
     "filter": "gear_ring",
     "il": 3950,
-    "combined_rating": 3160,
     "ca": 3792,
     "severity": 8532,
+    "combined_rating": 3160,
     "gameIds": ["Ring_M31_Mediumdps_A-tier"],
     "bonuses": ["m31-thayan-predator"]
   },
@@ -4243,37 +4243,37 @@
     "name": "M31 Thayan Ring of the Companion",
     "filter": "companion_equip",
     "il": 2600,
-    "combined_rating": 2340,
     "acc": 2535,
-    "severity": 2340
+    "severity": 2340,
+    "combined_rating": 2340
   },
   {
     "id": "m31-thayan-sword-knot-acc-ca-forte",
     "name": "M31 Thayan Sword Knot of the Companion",
     "filter": "companion_equip",
     "il": 2600,
-    "combined_rating": 2340,
     "acc": 1268,
     "ca": 1248,
-    "forte": 1228
+    "forte": 1228,
+    "combined_rating": 2340
   },
   {
     "id": "m31-thayan-talisman-ca-strike",
     "name": "M31 Thayan Talisman of the Companion",
     "filter": "companion_equip",
     "il": 2600,
-    "combined_rating": 2340,
     "ca": 1950,
-    "strike": 2340
+    "strike": 2340,
+    "combined_rating": 2340
   },
   {
     "id": "m31-threads-of-the-arch-thrall-power-strike-severity",
     "name": "M31 Threads of the Arch-Thrall",
     "filter": "gear_boots",
     "il": 4300,
-    "combined_rating": 3870,
     "ca": 2838,
     "forte": 2612,
+    "combined_rating": 3870,
     "gameIds": ["Feet_M31_Lightdps_S-tier"],
     "bonuses": ["eagle-s-mastery-greater"]
   },
@@ -4282,9 +4282,9 @@
     "name": "M31 Twisted Pact",
     "filter": "gear_ring",
     "il": 4150,
-    "combined_rating": 3320,
     "strike": 8964,
     "forte": 4482,
+    "combined_rating": 3320,
     "gameIds": ["Ring_M31_Mediumheal_S-tier"],
     "bonuses": ["m31-enduring-critical"]
   },
@@ -4293,9 +4293,9 @@
     "name": "M31 Visage of the Eternal Herald",
     "filter": "gear_head",
     "il": 4550,
-    "combined_rating": 4095,
     "severity": 4505,
     "out_healing": 2457,
+    "combined_rating": 4095,
     "gameIds": ["Head_M31_Heavyheal_S-tier"],
     "bonuses": ["m31-ruthless-resources-ascendant"]
   },
@@ -4304,9 +4304,9 @@
     "name": "M32.5 Cindersilk Hood",
     "filter": "gear_head",
     "il": 4600,
-    "combined_rating": 4140,
     "ca": 3146,
     "forte": 3291,
+    "combined_rating": 4140,
     "gameIds": ["Head_M32_5_Lightdps_Ab-tier"]
   },
   {
@@ -4314,9 +4314,9 @@
     "name": "M32 Bracers of the Infernal Tempest",
     "filter": "gear_arms",
     "il": 5000,
-    "combined_rating": 4500,
     "strike": 4050,
     "forte": 3712,
+    "combined_rating": 4500,
     "gameIds": ["Arms_M32_Lightdps_S-tier"],
     "allowedClass": ["warlock", "wizard"],
     "bonuses": ["m32-bracers-of-the-infernal-tempest-strike"]
@@ -4326,9 +4326,9 @@
     "name": "M32 Circlet of the Infernal Tempest",
     "filter": "gear_head",
     "il": 5000,
-    "combined_rating": 4500,
     "strike": 4050,
     "forte": 3712,
+    "combined_rating": 4500,
     "gameIds": ["Head_M32_Lightdps_S-tier"],
     "allowedClass": ["warlock", "wizard"],
     "bonuses": ["m32-circlet-of-the-infernal-tempest-strike-sev"]
@@ -4338,10 +4338,10 @@
     "name": "M32 Codex of Eternal Chains (Celestial)",
     "filter": "gear_weapon_offhand",
     "il": 5250,
-    "combined_rating": 4725,
     "acc": 3412,
     "strike": 3149.685,
     "severity": 3149.685,
+    "combined_rating": 4725,
     "gameIds": ["Secondary_M32_Warlock_All_R6"],
     "allowedClass": ["warlock"],
     "tags": ["artifact:offhand"],
@@ -4352,9 +4352,9 @@
     "name": "M32 Codex of Eternal Chains (Legendary)",
     "filter": "gear_weapon_offhand",
     "il": 4450,
-    "combined_rating": 4005,
     "strike": 4005,
     "severity": 4005,
+    "combined_rating": 4005,
     "gameIds": ["Secondary_M32_Warlock_All_R4"],
     "allowedClass": ["warlock"],
     "tags": ["artifact:offhand"],
@@ -4365,10 +4365,10 @@
     "name": "M32 Codex of Eternal Chains (Mythic)",
     "filter": "gear_weapon_offhand",
     "il": 4800,
-    "combined_rating": 4320,
     "acc": 3120,
     "strike": 2880,
     "severity": 2880,
+    "combined_rating": 4320,
     "gameIds": ["Secondary_M32_Warlock_All_R5"],
     "allowedClass": ["warlock"],
     "tags": ["artifact:offhand"],
@@ -4379,10 +4379,10 @@
     "name": "M32 Deathsilver Coil of Dominion",
     "filter": "gear_ring",
     "il": 4900,
-    "combined_rating": 3920,
     "strike": 8820,
     "severity": 8820,
     "ap_gain": 0.015,
+    "combined_rating": 3920,
     "gameIds": ["Ring_M32_Heavydps_S-tier"],
     "bonuses": ["m32-deathsilver-coil-of-dominion-acc-strike"]
   },
@@ -4391,10 +4391,10 @@
     "name": "M32 Deathsilver Ring of Submission",
     "filter": "gear_ring",
     "il": 4900,
-    "combined_rating": 3920,
     "acc": 9555,
     "ca": 5880,
     "ap_gain": 0.015,
+    "combined_rating": 3920,
     "gameIds": ["Ring_M32_Mediumdps_S-tier"],
     "bonuses": ["m32-deathsilver-ring-of-submission-strike"]
   },
@@ -4403,11 +4403,11 @@
     "name": "M32 Doomcleaver (Celestial)",
     "filter": "gear_weapon_mainhand",
     "il": 5250,
-    "combined_rating": 4725,
     "strike": 3150,
     "severity": 3150,
-    "base_damage_flat": 200,
     "deflect": 3937,
+    "base_damage_flat": 200,
+    "combined_rating": 4725,
     "gameIds": ["Primary_M32_Barbarian_All_R6"],
     "allowedClass": ["barbarian"],
     "tags": ["artifact:mainhand"],
@@ -4421,10 +4421,10 @@
     "name": "M32 Knot of the Bloodhound (Celestial)",
     "filter": "gear_weapon_offhand",
     "il": 5250,
-    "combined_rating": 4725,
     "ca": 2100,
     "strike": 3150,
     "defense": 1837,
+    "combined_rating": 4725,
     "gameIds": ["Secondary_M32_Barbarian_All_R6"],
     "allowedClass": ["barbarian"],
     "tags": ["artifact:offhand"],
@@ -4438,11 +4438,11 @@
     "name": "M32 Omen of Doom (Celestial)",
     "filter": "gear_weapon_mainhand",
     "il": 5250,
-    "combined_rating": 4725,
     "acc": 3412,
     "strike": 3149.685,
     "severity": 3149.685,
     "base_damage_flat": 200,
+    "combined_rating": 4725,
     "gameIds": ["Primary_M32_Warlock_All_R6"],
     "allowedClass": ["warlock"],
     "tags": ["artifact:mainhand"],
@@ -4453,11 +4453,11 @@
     "name": "M32 Omen of Doom (Legendary)",
     "filter": "gear_weapon_mainhand",
     "il": 4450,
-    "combined_rating": 4005,
     "acc": 2892,
     "strike": 2670,
     "severity": 2670,
     "base_damage_flat": 50,
+    "combined_rating": 4005,
     "gameIds": ["Primary_M32_Warlock_All_R4"],
     "allowedClass": ["warlock"],
     "tags": ["artifact:mainhand"],
@@ -4468,11 +4468,11 @@
     "name": "M32 Omen of Doom (Mythic)",
     "filter": "gear_weapon_mainhand",
     "il": 4800,
-    "combined_rating": 4320,
     "acc": 3120,
     "strike": 2880,
     "severity": 2880,
     "base_damage_flat": 100,
+    "combined_rating": 4320,
     "gameIds": ["Primary_M32_Warlock_All_R5"],
     "allowedClass": ["warlock"],
     "tags": ["artifact:mainhand"],
@@ -4483,10 +4483,10 @@
     "name": "M32 Rotsteel Loop of Ash",
     "filter": "gear_ring",
     "il": 4650,
-    "combined_rating": 3720,
     "strike": 8370,
     "severity": 8370,
     "ap_gain": 0.015,
+    "combined_rating": 3720,
     "gameIds": ["Ring_M32_Lightdps_A-tier"],
     "bonuses": ["m32-rotsteel-loop-of-ash-ca"]
   },
@@ -4495,11 +4495,11 @@
     "name": "M32 Rotsteel Coil of Blight",
     "filter": "gear_ring",
     "il": 4650,
-    "combined_rating": 3720,
     "sev_p": 0.075,
     "ca": 5580,
     "strike": 8370,
     "ap_gain": 0.015,
+    "combined_rating": 3720,
     "gameIds": ["Ring_M32_Heavydps_A-tier"]
   },
   {
@@ -4507,10 +4507,10 @@
     "name": "M32 Rotsteel Ring of Spores",
     "filter": "gear_ring",
     "il": 4650,
-    "combined_rating": 3720,
     "ca": 5580,
     "severity": 8370,
     "ap_gain": 0.015,
+    "combined_rating": 3720,
     "gameIds": ["Ring_M32_Mediumdps_A-tier"],
     "bonuses": ["m32-rotsteel-ring-of-spores-strike"]
   },
@@ -4519,9 +4519,9 @@
     "name": "M32 Sigil of the Abyss (Legendary)",
     "filter": "gear_weapon_offhand",
     "il": 4450,
-    "combined_rating": 4005,
     "acc": 4339,
     "strike": 4005,
+    "combined_rating": 4005,
     "gameIds": ["Secondary_M32_Cleric_All_R4"],
     "allowedClass": ["cleric"],
     "tags": ["artifact:offhand"],
@@ -4545,10 +4545,10 @@
     "name": "M32 Warden of the Last Rite (Celestial)",
     "filter": "gear_weapon_mainhand",
     "il": 5250,
-    "base_damage_flat": 200,
     "power": 1837,
     "severity": 3150,
     "out_healing": 2100,
+    "base_damage_flat": 200,
     "combined_rating": 4725,
     "allowedClass": ["cleric"],
     "tags": ["artifact:mainhand"],
@@ -4559,11 +4559,11 @@
     "name": "M32 Warden of the Last Rite (Legendary)",
     "filter": "gear_weapon_mainhand",
     "il": 4450,
-    "combined_rating": 4005,
-    "base_damage_flat": 50,
     "power": 1557,
     "severity": 2670,
     "out_healing": 1780,
+    "base_damage_flat": 50,
+    "combined_rating": 4005,
     "gameIds": ["Primary_M32_Cleric_All_R4"],
     "allowedClass": ["cleric"],
     "tags": ["artifact:mainhand"],
@@ -4574,10 +4574,10 @@
     "name": "M32 Warden of the Last Rite (Mythic)",
     "filter": "gear_weapon_mainhand",
     "il": 4800,
-    "base_damage_flat": 100,
     "power": 1680,
     "severity": 2880,
     "out_healing": 1920,
+    "base_damage_flat": 100,
     "combined_rating": 4320,
     "gameIds": ["Primary_M32_Cleric_All_R5"],
     "allowedClass": ["cleric"],
@@ -4589,11 +4589,11 @@
     "name": "M33.5 Laughing Void",
     "filter": "artifact",
     "il": 2600,
-    "combined_rating": 2600,
+    "ca": 1560,
     "strike": 2340,
     "severity": 2340,
-    "ca": 1560,
     "stamina_regen": 0.15,
+    "combined_rating": 2600,
     "gameIds": ["Artifact_M33_5_All_Bp_Artifact_R5"],
     "bonuses": ["m33-5-evolving-form"]
   },
@@ -4601,13 +4601,13 @@
     "id": "m33-5-voidbound-belt",
     "name": "M33.5 Voidbound Belt",
     "filter": "gear_waist",
+    "il": 4050,
     "str": 3,
     "dex": 3,
     "int": 3,
-    "acc": 1974,
     "power": 2126,
+    "acc": 1974,
     "severity": 1823,
-    "il": 4050,
     "combined_rating": 3645,
     "gameIds": ["Waist_M33_5_All_Bp_Artifact"],
     "bonuses": ["m33-5-evolving-form"]
@@ -4616,13 +4616,13 @@
     "id": "m33-5-voidbound-necklace",
     "name": "M33.5 Voidbound Necklace",
     "filter": "gear_neck",
+    "il": 4050,
     "str": 3,
     "dex": 3,
     "int": 3,
     "ca": 1215,
     "severity": 3645,
     "forte": 2734,
-    "il": 4050,
     "combined_rating": 3645,
     "gameIds": ["Neck_M33_5_All_Bp_Artifact"],
     "bonuses": ["m33-5-evolving-form"]
@@ -4632,10 +4632,10 @@
     "name": "M33 Coldsilver Coil of Wrath",
     "filter": "gear_ring",
     "il": 5700,
-    "combined_rating": 4560,
     "strike": 10260,
     "severity": 10260,
     "ap_gain": 0.015,
+    "combined_rating": 4560,
     "gameIds": ["Ring_M33_Heavydps_R5"],
     "bonuses": ["m33-accumulating-precision"]
   },
@@ -4644,10 +4644,10 @@
     "name": "M33 Coldsilver Loop of the Arcane",
     "filter": "gear_ring",
     "il": 5700,
-    "combined_rating": 4560,
     "ca": 6840,
     "strike": 10260,
     "ap_gain": 0.015,
+    "combined_rating": 4560,
     "gameIds": ["Ring_M33_Lightdps_R5"],
     "bonuses": ["m33-dashing-ranger"]
   },
@@ -4656,10 +4656,10 @@
     "name": "M33 Coldsilver Ring of Initiative",
     "filter": "gear_ring",
     "il": 5700,
-    "combined_rating": 4560,
     "acc": 11115,
     "ca": 6840,
     "ap_gain": 0.015,
+    "combined_rating": 4560,
     "gameIds": ["Ring_M33_Mediumdps_R5"],
     "bonuses": ["m24-maiden-s-advantage"]
   },
@@ -4668,11 +4668,11 @@
     "name": "M33 Cracked Stormbind Tunic Pants",
     "filter": "gear_pants",
     "il": 4600,
-    "combined_rating": 4140,
     "acc": 2242,
     "ca": 1380,
     "strike": 3312,
     "ap_gain": 0.015,
+    "combined_rating": 4140,
     "gameIds": ["Pants_M33_Mediumdps_S-tier"],
     "bonuses": ["m33-reckless-advantage"]
   },
@@ -4702,11 +4702,11 @@
     "name": "M33 Deep-Riven Lifebraid Vestment",
     "filter": "gear_pants",
     "il": 4850,
-    "combined_rating": 4365,
     "power": 1273,
     "strike": 2182,
     "forte": 2619,
     "stamina_regen": 0.015,
+    "combined_rating": 4365,
     "gameIds": ["Pants_M33_Mediumheal_Sss-tier"],
     "bonuses": ["m33-freezing-energy", "m33-survivor-s-gift-celestial"]
   },
@@ -4715,11 +4715,11 @@
     "name": "M33 Deep-Riven Stormbind Tunic",
     "filter": "gear_pants",
     "il": 4850,
-    "combined_rating": 4365,
     "acc": 2364,
     "ca": 1455,
     "strike": 3492,
     "ap_gain": 0.015,
+    "combined_rating": 4365,
     "gameIds": ["Pants_M33_Mediumdps_Sss-tier"],
     "bonuses": ["m33-freezing-grasp", "m33-reckless-advantage-celestial"]
   },
@@ -4728,11 +4728,11 @@
     "name": "M33 Deep-Riven Titanweave Harness",
     "filter": "gear_pants",
     "il": 4850,
-    "combined_rating": 4365,
     "acc": 2364,
     "ca": 2328,
     "severity": 2182,
     "ap_gain": 0.015,
+    "combined_rating": 4365,
     "gameIds": ["Pants_M33_Heavydps_Sss-tier"],
     "bonuses": ["m33-corrupt-power-celestial", "m33-freezing-rage"]
   },
@@ -4741,11 +4741,11 @@
     "name": "M33 Frost-Riven Lifebraid Vestment",
     "filter": "gear_shirt",
     "il": 4850,
-    "combined_rating": 4365,
     "strike": 3492,
     "forte": 1964,
     "out_healing": 1746,
     "ap_gain": 0.015,
+    "combined_rating": 4365,
     "gameIds": ["Shirt_M33_Mediumheal_Sss-tier"],
     "bonuses": ["m33-freezing-energy", "m33-graceful-harmony-celestial"]
   },
@@ -4754,11 +4754,11 @@
     "name": "M33 Frost-Riven Stormbind Tunic",
     "filter": "gear_shirt",
     "il": 4850,
-    "combined_rating": 4365,
     "acc": 2837,
     "ca": 1746,
     "strike": 3492,
     "recharge": 0.015,
+    "combined_rating": 4365,
     "gameIds": ["Shirt_M33_Mediumdps_Sss-tier"],
     "bonuses": [
       "m33-freezing-grasp",
@@ -4776,11 +4776,11 @@
     "name": "M33 Frost-Riven Titanweave Harness",
     "filter": "gear_shirt",
     "il": 4850,
-    "combined_rating": 4365,
     "power": 1528,
     "ca": 2328,
     "strike": 2619,
     "recharge": 0.015,
+    "combined_rating": 4365,
     "gameIds": ["Shirt_M33_Heavydps_Sss-tier"],
     "bonuses": ["m33-freezing-rage", "m33-corrupt-power"]
   },
@@ -4789,28 +4789,28 @@
     "name": "M33 Frostforged Ring of the Companion",
     "filter": "companion_equip",
     "il": 2850,
-    "combined_rating": 2565,
     "strike": 2565,
-    "severity": 2565
+    "severity": 2565,
+    "combined_rating": 2565
   },
   {
     "id": "m33-frostforged-sword-knot-of-the-companion-acc-ca-forte",
     "name": "M33 Frostforged Sword Knot of the Companion",
     "filter": "companion_equip",
     "il": 2850,
-    "combined_rating": 2565,
     "acc": 1389,
     "ca": 1368,
-    "forte": 1347
+    "forte": 1347,
+    "combined_rating": 2565
   },
   {
     "id": "m33-frostforged-talisman-of-the-companion-ca-sev",
     "name": "M33 Frostforged Talisman of the Companion",
     "filter": "companion_equip",
     "il": 2850,
-    "combined_rating": 2565,
     "ca": 1710,
     "severity": 2565,
+    "combined_rating": 2565,
     "gameIds": ["Companion_Equipment_M33_Alldps_Stat_1"]
   },
   {
@@ -4818,10 +4818,10 @@
     "name": "M33 Frostsilver Coil of Wrath",
     "filter": "gear_ring",
     "il": 6000,
-    "combined_rating": 4800,
     "strike": 10800,
     "severity": 10800,
     "ap_gain": 0.015,
+    "combined_rating": 4800,
     "gameIds": ["Ring_M33_Heavydps_R6"],
     "bonuses": [
       "m33-frostsilver-coil-of-wrath-accuracy",
@@ -4834,11 +4834,11 @@
     "name": "M33 Frostsilver Loop of the Arcane",
     "filter": "gear_ring",
     "il": 6000,
-    "combined_rating": 4800,
     "acc_p": 0.06,
     "ca": 7200,
     "strike": 10800,
     "ap_gain": 0.015,
+    "combined_rating": 4800,
     "gameIds": ["Ring_M33_Lightdps_R6"],
     "bonuses": [
       "m33-frostsilver-loop-of-the-arcane-accuracy",
@@ -4851,10 +4851,10 @@
     "name": "M33 Frostsilver Ring of Initiative",
     "filter": "gear_ring",
     "il": 6000,
-    "combined_rating": 4800,
     "acc": 11700,
     "ca": 7200,
     "ap_gain": 0.015,
+    "combined_rating": 4800,
     "gameIds": ["Ring_M33_Mediumdps_R6"],
     "bonuses": [
       "m33-frostsilver-ring-of-initiative-strike",
@@ -4867,9 +4867,9 @@
     "name": "M33 Runefrost Skimisher Bracers",
     "filter": "gear_arms",
     "il": 5400,
-    "combined_rating": 4860,
     "strike": 4860,
     "forte": 3645,
+    "combined_rating": 4860,
     "gameIds": ["Arms_M33_Mediumdps_A-tier"],
     "allowedClass": ["cleric", "bard", "rogue", "ranger"]
   },
@@ -4877,10 +4877,10 @@
     "id": "m33-runefrost-skirmisher-barbute",
     "name": "M33 Runefrost Skirmisher Barbute",
     "filter": "gear_head",
+    "il": 5400,
     "power": 2835,
     "forte": 3645,
     "combined_rating": 4860,
-    "il": 5400,
     "gameIds": ["Head_M33_Mediumdps_A-tier"],
     "allowedClass": ["bard", "cleric", "ranger", "rogue"],
     "bonuses": ["m33-strategist-s-advantage"]
@@ -4890,9 +4890,9 @@
     "name": "M33 Runefrost Skirmisher's Breastplate",
     "filter": "gear_armor",
     "il": 5400,
-    "combined_rating": 4860,
     "strike": 4860,
     "forte": 3645,
+    "combined_rating": 4860,
     "gameIds": ["Body_M33_Mediumdps_A-tier"],
     "allowedClass": ["bard", "cleric", "ranger", "rogue"],
     "bonuses": ["m33-ruthless-advantage-legendary"]
@@ -4902,9 +4902,9 @@
     "name": "M33 Runefrost Swift Armguards",
     "filter": "gear_arms",
     "il": 5400,
-    "combined_rating": 4860,
     "power": 2835,
     "acc": 5265,
+    "combined_rating": 4860,
     "gameIds": ["Arms_M33_Lightdps_A-tier"],
     "allowedClass": ["warlock", "wizard"],
     "bonuses": ["m33-runefrost-swift-armguards"]
@@ -4928,37 +4928,37 @@
     "name": "M33 True Ice Icon of the Companion",
     "filter": "companion_equip",
     "il": 3000,
-    "combined_rating": 2700,
     "forte": 1418,
-    "out_healing": 2340
+    "out_healing": 2340,
+    "combined_rating": 2700
   },
   {
     "id": "m33-true-ice-ring-of-the-companion-strike-sev",
     "name": "M33 True Ice Ring of the Companion",
     "filter": "companion_equip",
     "il": 3000,
-    "combined_rating": 2700,
     "strike": 2700,
-    "severity": 2700
+    "severity": 2700,
+    "combined_rating": 2700
   },
   {
     "id": "m33-true-ice-sword-knot-of-the-companion-acc-ca-forte",
     "name": "M33 True Ice Sword Knot of the Companion",
     "filter": "companion_equip",
     "il": 3000,
-    "combined_rating": 2700,
     "acc": 1462,
     "ca": 1440,
-    "forte": 1418
+    "forte": 1418,
+    "combined_rating": 2700
   },
   {
     "id": "m33-true-ice-talisman-of-the-companion-ca-sev",
     "name": "M33 True Ice Talisman of the Companion",
     "filter": "companion_equip",
     "il": 3000,
-    "combined_rating": 2700,
     "ca": 1800,
     "severity": 2700,
+    "combined_rating": 2700,
     "gameIds": ["Companion_Equipment_M33_Alldps_Stat_1_R5"]
   },
   {
@@ -4966,10 +4966,10 @@
     "name": "M33 Wintermarked Frostlute",
     "filter": "gear_weapon_offhand",
     "il": 5800,
-    "combined_rating": 5220,
     "power": 2030,
     "strike": 3480,
     "forte": 2610,
+    "combined_rating": 5220,
     "gameIds": ["Secondary_M33_Bard_S-tier"],
     "allowedClass": ["bard"],
     "tags": ["artifact:offhand"],
@@ -4980,9 +4980,9 @@
     "name": "M33 Wintermarked Hunter Hood",
     "filter": "gear_head",
     "il": 5700,
-    "combined_rating": 5130,
     "strike": 5130,
     "forte": 3848,
+    "combined_rating": 5130,
     "gameIds": ["Head_M33_Lightdps_S-tier_Boe"],
     "allowedClass": ["warlock", "wizard"],
     "bonuses": ["m33-critical-breaker"]
@@ -5004,9 +5004,9 @@
     "name": "M33 Wintermarked Marcher Poleyns",
     "filter": "gear_boots",
     "il": 5700,
-    "combined_rating": 5130,
     "ca": 3420,
     "severity": 5130,
+    "combined_rating": 5130,
     "gameIds": ["Feet_M33_Mediumdps_S-tier"],
     "allowedClass": ["bard", "cleric", "ranger", "rogue"],
     "bonuses": ["m33-critical-breaker"]
@@ -5016,11 +5016,11 @@
     "name": "M33 Wintermarked Rimecrook",
     "filter": "gear_weapon_mainhand",
     "il": 5800,
-    "combined_rating": 5220,
-    "base_damage_flat": 100,
-    "strike": 3480,
     "power": 2030,
+    "strike": 3480,
     "severity": 3480,
+    "base_damage_flat": 100,
+    "combined_rating": 5220,
     "gameIds": ["Primary_M33_Devoted_S-tier"],
     "allowedClass": ["cleric"],
     "tags": ["artifact:mainhand"],
@@ -5031,10 +5031,10 @@
     "name": "M33 Wintermarked Sanctum Emblem",
     "filter": "gear_weapon_offhand",
     "il": 5800,
-    "combined_rating": 5220,
-    "strike": 3480,
     "power": 2030,
+    "strike": 3480,
     "forte": 2610,
+    "combined_rating": 5220,
     "gameIds": ["Secondary_M33_Devoted_S-tier"],
     "allowedClass": ["cleric"],
     "tags": ["artifact:offhand"],
@@ -5045,11 +5045,11 @@
     "name": "M33 Wintermarked Skaldblade",
     "filter": "gear_weapon_mainhand",
     "il": 5800,
-    "combined_rating": 5220,
     "power": 2030,
     "acc": 3770,
     "strike": 3480,
     "base_damage_flat": 100,
+    "combined_rating": 5220,
     "gameIds": ["Primary_M33_Bard_S-tier"],
     "allowedClass": ["bard"],
     "tags": ["artifact:mainhand"],
@@ -5060,9 +5060,9 @@
     "name": "M33 Wintermarked Skirmisher Bracers",
     "filter": "gear_arms",
     "il": 5700,
-    "combined_rating": 5130,
     "ca": 3420,
     "severity": 5130,
+    "combined_rating": 5130,
     "gameIds": ["Arms_M33_Mediumdps_S-tier"],
     "allowedClass": ["bard", "cleric", "ranger", "rogue"],
     "bonuses": ["m33-relentless-reserves"]
@@ -5072,9 +5072,9 @@
     "name": "M33 Wintermarked Swiftguards",
     "filter": "gear_arms",
     "il": 5700,
-    "combined_rating": 5130,
     "strike": 5130,
     "forte": 3848,
+    "combined_rating": 5130,
     "gameIds": ["Arms_M33_Lightdps_S-tier"],
     "allowedClass": ["warlock", "wizard"],
     "bonuses": ["m33-eagle-s-mastery-lesser"]
@@ -5084,8 +5084,8 @@
     "name": "Maestro's Observation",
     "filter": "companion_power",
     "il": 900,
-    "combined_rating": 900,
     "acc_p": 0.09,
+    "combined_rating": 900,
     "gameIds": ["Pet_Jarlaxle_Player_Bonus"],
     "longDescription": "Jarlaxle's companion power. Role: Offense.",
     "tags": ["companion_power:offense"]
@@ -5111,9 +5111,9 @@
     "name": "M27 Marco's Mystic Marker",
     "filter": "artifact",
     "il": 1500,
-    "combined_rating": 1275,
     "acc": 2250,
     "severity": 1125,
+    "combined_rating": 1275,
     "gameIds": ["Artifact_M27_Marcosmissiles_R5"]
   },
   {
@@ -5322,9 +5322,9 @@
     "name": "Mystic Aura",
     "filter": "mount_equip",
     "il": 1750,
-    "combined_rating": 1575,
     "power": 1312.5,
-    "acc": 1312.5
+    "acc": 1312.5,
+    "combined_rating": 1575
   },
   {
     "id": "mystifying-strikes",
@@ -5346,8 +5346,8 @@
     "name": "Neverwinter Knight's Discipline",
     "filter": "companion_power",
     "il": 900,
-    "combined_rating": 900,
     "outgoing_damage": 0.09,
+    "combined_rating": 900,
     "gameIds": ["Pet_Neverwinter_Knight_Player_Bonus"],
     "longDescription": "Neverwinter Knight companion power. Role: Offense.",
     "tags": ["companion_power:offense"]
@@ -5357,10 +5357,10 @@
     "name": "Nightflame Censer",
     "filter": "artifact",
     "il": 2600,
-    "combined_rating": 2080,
     "power": 2184,
     "ca": 2496,
     "forte": 3510,
+    "combined_rating": 2080,
     "gameIds": ["Artifact_M31_All_Lockbox_Artifact_R5"]
   },
   {
@@ -5368,8 +5368,8 @@
     "name": "Opportunistic",
     "filter": "mount_equip",
     "il": 1750,
-    "combined_rating": 1575,
-    "ca": 2625
+    "ca": 2625,
+    "combined_rating": 1575
   },
   {
     "id": "orb-of-imposition",
@@ -5402,9 +5402,9 @@
     "name": "Pack Tactics",
     "filter": "mount_equip",
     "il": 1750,
-    "combined_rating": 1575,
     "ca": 1312.5,
-    "awareness": 1312.5
+    "awareness": 1312.5,
+    "combined_rating": 1575
   },
   {
     "id": "paladin-aura",
@@ -5700,12 +5700,12 @@
     "id": "precision-enlightened",
     "name": "Celestial Enlightened Insignia of Precision",
     "filter": "insignia",
-    "insigniaShape": "enlightened",
-    "preferredVariant": "precision-enlightened-pref",
     "il": 750,
-    "combined_rating": 600,
     "acc": 1125,
     "strike": 1125,
+    "combined_rating": 600,
+    "insigniaShape": "enlightened",
+    "preferredVariant": "precision-enlightened-pref",
     "gameIds": [
       "Insignia_Enlightened_Precision_Accuracy_Crit_Account_R6",
       "Insignia_Enlightened_Precision_Accuracy_Crit_R6"
@@ -5715,22 +5715,22 @@
     "id": "precision-enlightened-pref",
     "name": "Celestial Enlightened Insignia of Precision (Pref)",
     "filter": "insignia",
-    "insigniaShape": "enlightened",
     "il": 900,
-    "combined_rating": 720,
     "acc": 1350,
-    "strike": 1350
+    "strike": 1350,
+    "combined_rating": 720,
+    "insigniaShape": "enlightened"
   },
   {
     "id": "precision-regal",
     "name": "Celestial Regal Insignia of Precision",
     "filter": "insignia",
-    "insigniaShape": "regal",
-    "preferredVariant": "precision-regal-pref",
     "il": 750,
-    "combined_rating": 600,
     "acc": 1125,
     "strike": 1125,
+    "combined_rating": 600,
+    "insigniaShape": "regal",
+    "preferredVariant": "precision-regal-pref",
     "gameIds": [
       "Insignia_Regal_Accuracy_Crit_Account_R6",
       "Insignia_Regal_Accuracy_Crit_R6"
@@ -5740,29 +5740,29 @@
     "id": "precision-regal-pref",
     "name": "Celestial Regal Insignia of Precision (Pref)",
     "filter": "insignia",
-    "insigniaShape": "regal",
     "il": 900,
-    "combined_rating": 720,
     "acc": 1350,
-    "strike": 1350
+    "strike": 1350,
+    "combined_rating": 720,
+    "insigniaShape": "regal"
   },
   {
     "id": "precision-strike-severity-worgs-celestial",
     "name": "Precision",
     "filter": "mount_equip",
     "il": 1750,
-    "combined_rating": 1575,
     "strike": 1312.5,
-    "severity": 1312.5
+    "severity": 1312.5,
+    "combined_rating": 1575
   },
   {
     "id": "predator-s-focus-strike-ca-golden-armored-griffon-celestial",
     "name": "Predator's Focus",
     "filter": "mount_equip",
     "il": 1750,
-    "combined_rating": 1575,
     "ca": 1312.5,
-    "strike": 1312.5
+    "strike": 1312.5,
+    "combined_rating": 1575
   },
   {
     "id": "predator-s-instinct",
@@ -5856,10 +5856,10 @@
     "name": "Aasimar",
     "filter": "race",
     "power_p": 0.02,
-    "hit_points_p": 0.02,
     "defense_p": 0.02,
     "inc_healing_p": 0.02,
-    "out_healing_p": 0.02
+    "out_healing_p": 0.02,
+    "hit_points_p": 0.02
   },
   {
     "id": "race-attributes-2-cha",
@@ -5987,8 +5987,8 @@
     "id": "race-gith",
     "name": "Gith",
     "filter": "race",
-    "ca_p": 0.05,
     "dex": 2,
+    "ca_p": 0.05,
     "stamina_regen": 0.05
   },
   {
@@ -6007,12 +6007,12 @@
     "ca_p": 0.01,
     "strike_p": 0.01,
     "sev_p": 0.01,
-    "forte_p": 0.01,
     "defense_p": 0.01,
     "awareness_p": 0.01,
     "crit_avoid_p": 0.01,
     "deflect_p": 0.01,
     "deflect_sev_p": 0.01,
+    "forte_p": 0.01,
     "inc_healing_p": 0.01,
     "out_healing_p": 0.01
   },
@@ -6020,39 +6020,39 @@
     "id": "race-sun-elf",
     "name": "Sun Elf",
     "filter": "race",
-    "ap_gain": 0.05,
     "int": 2,
-    "control_resist_p": 0.25
+    "control_resist_p": 0.25,
+    "ap_gain": 0.05
   },
   {
     "id": "race-wood-elf",
     "name": "Wood Elf",
     "filter": "race",
-    "strike_p": 0.05,
-    "dex": 2
+    "dex": 2,
+    "strike_p": 0.05
   },
   {
     "id": "rage-of-flames",
     "name": "Rage of Flames",
     "filter": "overload",
-    "outgoing_damage": 0.05,
-    "il": 1
+    "il": 1,
+    "outgoing_damage": 0.05
   },
   {
     "id": "rapid-accuracy-accuracy-celestial",
     "name": "Rapid Accuracy",
     "filter": "mount_equip",
     "il": 1750,
-    "combined_rating": 1575,
-    "acc": 2625
+    "acc": 2625,
+    "combined_rating": 1575
   },
   {
     "id": "raptor-s-instincts-tamed-velociraptor-power-offense",
     "name": "Raptor's Instincts",
     "filter": "companion_power",
     "il": 900,
-    "combined_rating": 900,
     "power_p": 0.045,
+    "combined_rating": 900,
     "gameIds": ["Pet_Raptor_Player_Bonus"],
     "longDescription": "Tamed Velociraptor companion power. Role: Offense.",
     "tags": ["companion_power:offense"],
@@ -6108,12 +6108,12 @@
     "id": "rhythm-illuminated",
     "name": "Celestial Illuminated Insignia of Rhythm",
     "filter": "insignia",
+    "il": 750,
+    "severity": 1125,
+    "out_healing": 1125,
+    "combined_rating": 600,
     "insigniaShape": "illuminated",
     "preferredVariant": "rhythm-illuminated-pref",
-    "il": 750,
-    "combined_rating": 600,
-    "out_healing": 1125,
-    "severity": 1125,
     "gameIds": [
       "Insignia_Illuminated_Rhythm_Critsev_Outheal_Account_R6",
       "Insignia_Illuminated_Rhythm_Critsev_Outheal_R6"
@@ -6123,11 +6123,11 @@
     "id": "rhythm-illuminated-pref",
     "name": "Celestial Illuminated Insignia of Rhythm (Pref)",
     "filter": "insignia",
-    "insigniaShape": "illuminated",
     "il": 900,
-    "combined_rating": 720,
+    "severity": 1350,
     "out_healing": 1350,
-    "severity": 1350
+    "combined_rating": 720,
+    "insigniaShape": "illuminated"
   },
   {
     "id": "ricochet",
@@ -6197,9 +6197,9 @@
     "name": "Runic Aura",
     "filter": "mount_equip",
     "il": 1750,
-    "combined_rating": 1575,
     "power": 1312.5,
-    "defense": 1312.5
+    "defense": 1312.5,
+    "combined_rating": 1575
   },
   {
     "id": "runic-aura-group-celestial",
@@ -6212,8 +6212,8 @@
     "name": "Ruthless Efficiency",
     "filter": "mount_equip",
     "il": 1750,
-    "combined_rating": 1575,
-    "strike": 2625
+    "strike": 2625,
+    "combined_rating": 1575
   },
   {
     "id": "sambocade-movement",
@@ -6244,11 +6244,11 @@
     "name": "Sealing Parchment",
     "filter": "artifact",
     "il": 2600,
-    "combined_rating": 2600,
     "ca": 1560,
     "defense": 1365,
     "awareness": 1560,
     "stamina_regen": 0.15,
+    "combined_rating": 2600,
     "gameIds": ["Artifact_M32_All_Bp_Artifact_R5"]
   },
   {
@@ -7713,8 +7713,8 @@
     "name": "Supportive Regal Collar",
     "filter": "supportive_collar",
     "il": 1000,
-    "combined_rating": 900,
     "out_healing_p": 0.05,
+    "combined_rating": 900,
     "gameIds": ["Collar_Supportive_Regal_R5"]
   },
   {
@@ -7755,9 +7755,9 @@
     "id": "sword-coast-tactician",
     "name": "Sword Coast Tactician",
     "filter": "overload",
+    "il": 1,
     "power_p": 0.05,
-    "ca_p": 0.05,
-    "il": 1
+    "ca_p": 0.05
   },
   {
     "id": "tactician-s-precision",
@@ -7807,9 +7807,9 @@
     "name": "Celestial Tranquility",
     "filter": "insignia",
     "il": 750,
-    "combined_rating": 600,
     "strike": 1125,
     "forte": 1125,
+    "combined_rating": 600,
     "hideFromPicker": true,
     "bonuses": ["insignia-shape-unknown"]
   },
@@ -7817,12 +7817,12 @@
     "id": "tranquility-crescent",
     "name": "Celestial Crescent Insignia of Tranquility",
     "filter": "insignia",
-    "insigniaShape": "crescent",
-    "preferredVariant": "tranquility-crescent-pref",
     "il": 750,
-    "combined_rating": 600,
     "strike": 1125,
     "forte": 1125,
+    "combined_rating": 600,
+    "insigniaShape": "crescent",
+    "preferredVariant": "tranquility-crescent-pref",
     "gameIds": [
       "Insignia_Crescent_Outheal_Forte_Account_R6",
       "Insignia_Crescent_Outheal_Forte_R6"
@@ -7832,20 +7832,20 @@
     "id": "tranquility-crescent-pref",
     "name": "Celestial Crescent Insignia of Tranquility (Pref)",
     "filter": "insignia",
-    "insigniaShape": "crescent",
     "il": 900,
-    "combined_rating": 720,
     "strike": 1350,
-    "forte": 1350
+    "forte": 1350,
+    "combined_rating": 720,
+    "insigniaShape": "crescent"
   },
   {
     "id": "tranquility-pref",
     "name": "Celestial Tranquility (Pref)",
     "filter": "insignia",
     "il": 900,
-    "combined_rating": 720,
     "strike": 1350,
     "forte": 1350,
+    "combined_rating": 720,
     "hideFromPicker": true,
     "bonuses": ["insignia-shape-unknown"]
   },
@@ -7869,9 +7869,9 @@
     "name": "Uncanny Precision",
     "filter": "mount_equip",
     "il": 1750,
-    "combined_rating": 1575,
     "acc": 1312.5,
-    "ca": 1312.5
+    "ca": 1312.5,
+    "combined_rating": 1575
   },
   {
     "id": "unified-crescent-collar",
@@ -7968,8 +7968,8 @@
     "name": "Shadow Walk",
     "filter": "class_feat",
     "strike_p": 0.025,
-    "movement": 0.1,
     "deflect_p": 0.025,
+    "movement": 0.1,
     "longDescription": "Increase your Movement Speed by 10%. Adds 2.5%\nDeflect and Critical Strike.",
     "allowedClass": ["warlock"]
   },
@@ -7997,8 +7997,8 @@
     "name": "Wayfaring Barbed Collar",
     "filter": "wayfaring_collar",
     "il": 1000,
-    "combined_rating": 900,
     "sev_p": 0.05,
+    "combined_rating": 900,
     "gameIds": ["Collar_Wayfaring_Barbed_R5"]
   },
   {
@@ -8006,8 +8006,8 @@
     "name": "Wayfaring Crescent Collar",
     "filter": "wayfaring_collar",
     "il": 1000,
-    "combined_rating": 900,
     "recharge": 0.05,
+    "combined_rating": 900,
     "gameIds": ["Collar_Wayfaring_Crescent_R5"]
   },
   {
@@ -8030,8 +8030,8 @@
     "name": "Wolf's Instincts",
     "filter": "companion_power",
     "il": 900,
-    "combined_rating": 900,
     "sev_p": 0.09,
+    "combined_rating": 900,
     "longDescription": "Wolf companion power. Role: Offense, Utility.",
     "tags": ["companion_power:offense", "companion_power:utility"]
   },
