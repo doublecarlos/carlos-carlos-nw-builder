@@ -234,12 +234,82 @@ export function toBonusesFile(
   return `${JSON.stringify(canonical, null, 2)}\n`;
 }
 
-/** Drops the `section` field `data.ts`'s `deriveSlots` injects on load -- the raw file's own
- *  slot/preset objects never carry it (it's implied by nesting), so round-tripping through
- *  `toSlotsFile` has to strip it back off before re-serializing. */
+/** Drops the `section` field `deriveSlots` injects on load. The file implies it by nesting. */
 function stripSection<T extends { section?: string }>(value: T) {
   const { section: _section, ...rest } = value;
   return rest;
+}
+
+const SECTION_KEYS = [
+  "id",
+  "label",
+  "defaultOpen",
+  "presets",
+  "slots",
+] as const;
+const SLOT_KEYS = [
+  "id",
+  "label",
+  "type",
+  "text",
+  "filter",
+  "tags",
+  "list",
+  "stable",
+  "paramType",
+  "path",
+  "default",
+  "options",
+  "optionsFrom",
+  "allowEmpty",
+  "min",
+  "max",
+  "step",
+  "presets",
+  "scaler",
+  "defaultRows",
+  "quick",
+  "disallowEmpty",
+  "hidePreview",
+  "toggleable",
+  "visibleWhen",
+] as const;
+const SELECTOR_KEYS = ["filter", "tags"] as const;
+const OPTION_KEYS = ["value", "label"] as const;
+const SCALER_KEYS = ["mode", "applies"] as const;
+const STABLE_KEYS = ["group", "role", "index"] as const;
+const PRESET_KEYS = [
+  "id",
+  "label",
+  "params",
+  "choices",
+  "values",
+  "assignments",
+  "occurrences",
+  "clears",
+] as const;
+const FILTER_KEYS = ["maxCopies", "fields"] as const;
+
+function canonicalSlot(slot: Slot) {
+  const out = orderKeys(slot, SLOT_KEYS);
+  if (out.type === "build_parameter") {
+    if (out.options)
+      out.options = out.options.map((option) => orderKeys(option, OPTION_KEYS));
+    if (out.optionsFrom)
+      out.optionsFrom = orderKeys(out.optionsFrom, SELECTOR_KEYS);
+    if (out.scaler) {
+      out.scaler = orderKeys(out.scaler, SCALER_KEYS);
+      if (out.scaler.applies)
+        out.scaler.applies = orderKeys(out.scaler.applies, SELECTOR_KEYS);
+    }
+  }
+  if (out.type === "item_picker" && out.stable)
+    out.stable = orderKeys(out.stable, STABLE_KEYS);
+  return stripSection(out);
+}
+
+function canonicalPreset(preset: SectionPreset) {
+  return stripSection(orderKeys(preset, PRESET_KEYS));
 }
 
 /**
@@ -253,19 +323,21 @@ export function toSlotsFile(
 ): string {
   const body = {
     sections: sections.map((section) => {
-      const sectionSlots = slots
-        .filter((slot) => slot.section === section.id)
-        .map(stripSection);
       const sectionPresets = presets
         .filter((preset) => preset.section === section.id)
-        .map(stripSection);
-      return {
-        defaultOpen: section.defaultOpen,
-        id: section.id,
-        label: section.label,
-        ...(sectionPresets.length ? { presets: sectionPresets } : {}),
-        slots: sectionSlots,
-      };
+        .map(canonicalPreset);
+      return orderKeys(
+        {
+          id: section.id,
+          label: section.label,
+          defaultOpen: section.defaultOpen,
+          presets: sectionPresets.length ? sectionPresets : undefined,
+          slots: slots
+            .filter((slot) => slot.section === section.id)
+            .map(canonicalSlot),
+        },
+        SECTION_KEYS,
+      );
     }),
   };
   return `${JSON.stringify(body, null, 2)}\n`;
@@ -273,19 +345,17 @@ export function toSlotsFile(
 
 /**
  * Regenerates `data/filters.json`, keyed and sorted by id in code-unit order, matching how
- * `data.ts` reads it. Undefined fields are omitted.
+ * `data.ts` reads it. Each filter's `fields` are sorted the same way.
  */
 export function toFiltersFile(filters: FilterDef[]): string {
   const byId = new Map(filters.map((filter) => [filter.id, filter]));
   const body: Record<string, Omit<FilterDef, "id">> = {};
   for (const id of [...byId.keys()].sort()) {
-    const filter = byId.get(id)!;
-    body[id] = {
-      ...(filter.maxCopies !== undefined
-        ? { maxCopies: filter.maxCopies }
-        : {}),
-      ...(filter.fields !== undefined ? { fields: filter.fields } : {}),
-    };
+    const { id: _id, ...filter } = byId.get(id)!;
+    body[id] = orderKeys(
+      { ...filter, fields: filter.fields && [...filter.fields].sort() },
+      FILTER_KEYS,
+    );
   }
   return `${JSON.stringify(body, null, 2)}\n`;
 }
