@@ -6,6 +6,8 @@ import {
   itemPreview,
   bonusStatPreview,
   bonusTitle,
+  pctInput,
+  statInput,
   statPickerOptions,
 } from "../../src/lib/format";
 import { NW_SCHEMA } from "../../src/data/data";
@@ -126,5 +128,27 @@ describe("bonusTitle", () => {
     expect(bonusTitle(entry({ bonus: { id: "b" }, sources: [] }))).toBe(
       "Some Bonus Id",
     );
+  });
+});
+
+describe("pctInput", () => {
+  it("shows a decimal in percent units, trailing zeros trimmed", () => {
+    expect(pctInput(0.55)).toBe("55%");
+    expect(pctInput(0.036)).toBe("3.6%");
+    expect(pctInput(0)).toBe("0%");
+  });
+
+  it("is `-` for anything non-numeric", () => {
+    expect(pctInput(undefined)).toBe("-");
+  });
+});
+
+describe("statInput", () => {
+  it("uses percent units for a percent stat", () => {
+    expect(statInput("power_p", 0.12)).toBe("12%");
+  });
+
+  it("leaves a flat stat's value as typed", () => {
+    expect(statInput("power", 1500)).toBe("1500");
   });
 });

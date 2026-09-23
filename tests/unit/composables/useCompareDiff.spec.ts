@@ -1,13 +1,14 @@
-// occurrenceDiffers/occurrenceDiffTitle: whether an item's BonusOccurrenceConfig counts
-// differ from the compare build, and a display string for what the compare build's counts are.
+// occurrenceDiffers/occurrenceDiffTitle and paramDiffTitle: whether a slot differs from the
+// compare build, and a display string for what the compare build holds.
 // Pure functions, so exercised directly rather than through the full useCompareDiff() setup
 // (db/build/result/compareBuild/compareResult/itemIn) the rest of that module needs.
 import { describe, it, expect } from "vitest";
 import {
   occurrenceDiffers,
   occurrenceDiffTitle,
+  paramDiffTitle,
 } from "../../../src/composables/useCompareDiff";
-import type { Build, Db, Item } from "../../../src/types";
+import type { Build, BuildParameterSlot, Db, Item } from "../../../src/types";
 
 const item: Item = {
   id: "test-ring",
@@ -100,5 +101,28 @@ describe("occurrenceDiffTitle", () => {
     };
     const there = build({ "labeled-ring": { "stack-bonus": 2 } });
     expect(occurrenceDiffTitle(db, labeled, there)).toBe("Stacks 2");
+  });
+});
+
+describe("paramDiffTitle", () => {
+  const percentSlot: BuildParameterSlot = {
+    id: "scalers.encounterDamage",
+    label: "Encounter damage",
+    section: "scalers",
+    type: "build_parameter",
+    paramType: "percent",
+    path: "scalers.encounterDamage",
+  };
+
+  it("shows a percent parameter in percent units", () => {
+    const other = { context: { scalers: { encounterDamage: 0.55 } } };
+    expect(paramDiffTitle(other as unknown as Build, percentSlot)).toBe("55%");
+  });
+
+  it("shows (none) for an unset percent parameter", () => {
+    const other = { context: {} };
+    expect(paramDiffTitle(other as unknown as Build, percentSlot)).toBe(
+      "(none)",
+    );
   });
 });

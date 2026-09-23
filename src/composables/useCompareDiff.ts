@@ -3,7 +3,7 @@
 import { computed, type Ref } from "vue";
 import { getPath } from "../lib/build-path";
 import { dynamicValueKey } from "../lib/dynamic-stats";
-import { label as statLabel } from "../lib/format";
+import { label as statLabel, pctInput, statInput } from "../lib/format";
 import { repetitionRows } from "../lib/inline-repetition";
 import { expandSlots } from "../lib/item-picker-list";
 import { isDisabled } from "../lib/slot-toggle";
@@ -25,7 +25,8 @@ import type {
 export interface ValueDiff {
   key: string;
   label: string;
-  other: number | null;
+  /** The compare build's value as its input shows it; "(none)" when unset. */
+  otherLabel: string;
 }
 
 /** Everything BuildSlot.vue needs to know about how one row differs from the compare build,
@@ -85,6 +86,8 @@ function paramLabel(slot: BuildParameterSlot, value: unknown) {
   if (slot.paramType === "boolean") return value ? "on" : "off";
   if (slot.paramType === "list")
     return slot.options?.find((o) => o.value === value)?.label ?? "(none)";
+  if (slot.paramType === "percent" && typeof value === "number")
+    return pctInput(value);
   return value ?? "(none)";
 }
 
@@ -265,7 +268,8 @@ export function useCompareDiff(options: {
         out.push({
           key,
           label: config.label ?? statLabel(config.stat),
-          other: otherValue,
+          otherLabel:
+            otherValue === null ? "(none)" : statInput(config.stat, otherValue),
         });
       }
     }
