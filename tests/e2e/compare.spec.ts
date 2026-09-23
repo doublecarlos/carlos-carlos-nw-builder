@@ -131,6 +131,27 @@ test.describe("build_parameter compare diff apply", () => {
   });
 });
 
+test("a percent build_parameter's diff note shows the compare value in percent units", async ({
+  page,
+}) => {
+  await openBuilder(page);
+  await ensureSectionExpanded(page, "scalers");
+  const input = slotRow(page, "scalers.encounterDamage").locator("input");
+  await input.click();
+  await input.fill("55");
+  await input.blur();
+
+  await page.getByTestId("nav-add-build").click();
+  await chooseCombo(page.locator(".compare-select"), "Build 1");
+  await page.getByRole("checkbox", { name: "Highlight changes" }).check();
+  await ensureSectionExpanded(page, "scalers");
+
+  const note = slotRow(page, "scalers.encounterDamage").locator(
+    ".slot-diff-note",
+  );
+  await expect(note).toContainText("Build 1: 55%");
+});
+
 test.describe("point_assignment compare diff apply", () => {
   const SLOT_ID = "boons.tier1";
   const POWER_ID = "boon-tier1-power";

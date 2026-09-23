@@ -290,7 +290,7 @@ const stableGroup = computed(() => {
       :key="diff.key"
       class="slot-diff-note mt-0.5 text-muted"
     >
-      {{ compareBuild?.name }}: {{ diff.label }} {{ diff.other ?? "(none)" }}
+      {{ compareBuild?.name }}: {{ diff.label }} {{ diff.otherLabel }}
       <BaseLink
         class="ml-0.5"
         @click.stop="buildEditor.applyValueFromCompare(slotDef.id, diff.key)"

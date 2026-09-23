@@ -21,6 +21,14 @@ export const int = (value: unknown) =>
 export const pct = (value: unknown, digits = 2) =>
   finite(value) ? `${(value * 100).toFixed(digits)}%` : "-";
 
+/** As a percent input shows it: up to 4 decimals, trailing zeros trimmed. 0.55 -> "55%". */
+export const pctInput = (value: unknown) =>
+  finite(value) ? `${Number((value * 100).toFixed(4))}%` : "-";
+
+/** A typed stat value as its input shows it: percent units for a percent/mult stat. */
+export const statInput = (key: StatKey, value: number) =>
+  isPercentKind(kindOf(key)) ? pctInput(value) : String(value);
+
 /** Percent-flavoured stats are the ones stored as fractions. */
 export const isPercentKind = (kind: string) =>
   kind === "percent" || kind === "mult";
