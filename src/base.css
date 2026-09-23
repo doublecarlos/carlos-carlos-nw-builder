@@ -106,8 +106,8 @@
 
   /* Stacking layers, low to high. Anchored surfaces (menus, tooltips, popovers) teleport to
    * <body> rather than order themselves within a sticky/fixed ancestor's stacking context; see
-   * BasePopover. Exceptions: ComboBoxMenu/TokenInput stay anchored (width-coupled to their
-   * input); TabButton's active-tab lift is local sibling ordering, not a layer (see its own
+   * BasePopover. Exceptions: ComboBoxMenu renders in place, fixed against its input (see its
+   * own comment); TabButton's active-tab lift is local sibling ordering, not a layer (see its own
    * comment). */
   --z-index-base: 1;
   --z-index-sticky: 10;

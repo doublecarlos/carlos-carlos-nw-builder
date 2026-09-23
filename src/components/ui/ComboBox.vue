@@ -70,7 +70,7 @@ const props = withDefaults(
     showEmptyOption: false,
     maxRows: 60,
     closedDisplay: "",
-    menuClass: "inset-x-0",
+    menuClass: "w-(--anchor-width)",
     titleInput: true,
     titleRows: true,
     inputId: undefined,

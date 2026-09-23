@@ -384,7 +384,7 @@ defineExpose({
     :title-input="false"
     :readonly="readonly"
     :max-rows="maxRows"
-    :menu-class="previewsHidden ? 'inset-x-0' : 'left-0 w-[min(32rem,90vw)]'"
+    :menu-class="previewsHidden ? 'w-(--anchor-width)' : 'w-[min(32rem,90vw)]'"
     @update:model-value="model = $event"
     @update:open="isOpen = $event"
     @update:query="query = $event"

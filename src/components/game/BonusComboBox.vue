@@ -42,7 +42,7 @@ const closedDisplay = computed(() =>
     :placeholder="placeholder"
     :show-empty-option="self"
     :closed-display="closedDisplay"
-    menu-class="left-0 w-max min-w-full max-w-[min(22rem,80vw)]"
+    menu-class="w-max min-w-(--anchor-width) max-w-[min(22rem,80vw)]"
   >
     <template #empty>this bonus</template>
     <template #option="{ option }">

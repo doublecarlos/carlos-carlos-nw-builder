@@ -13,6 +13,8 @@ import {
   assignmentInput,
   assignmentLabel,
   stepAssignment,
+  pickerInput,
+  slotFilterInput,
   hoverForCard,
 } from "./support/app";
 import { shippedItemName as itemName } from "./support/shippedData";
@@ -489,6 +491,33 @@ test.describe("point_assignment shared column layout", () => {
     expect(con).not.toBeNull();
     expect(Math.abs(str!.x - con!.x)).toBeLessThan(1);
     expect(Math.abs(str!.width - con!.width)).toBeLessThan(1);
+  });
+
+  test("a picker's menu is not clipped by the horizontally scrolling body", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1400, height: 1400 });
+    await openRaceSection(page);
+    // Filtered down to one picker row, so the body is far shorter than the menu.
+    await slotFilterInput(page).fill("Race Ability Score 2");
+    const row = slotRow(page, "raceLeveling.raceAttributes2");
+    await expect(slotRow(page, STR_SLOT)).toBeHidden();
+    await pickerInput(row).click();
+
+    const menu = page.getByTestId("picker-menu");
+    await expect(menu).toBeVisible();
+    const menuBox = await menu.boundingBox();
+    const bodyBox = await sectionBody(page, RACE_SECTION).boundingBox();
+    expect(menuBox!.y + menuBox!.height).toBeGreaterThan(
+      bodyBox!.y + bodyBox!.height,
+    );
+    // The menu's bottom edge must be the topmost element there.
+    const bottomHitsMenu = await menu.evaluate((el) => {
+      const box = el.getBoundingClientRect();
+      const hit = document.elementFromPoint(box.left + 10, box.bottom - 4);
+      return !!hit && el.contains(hit);
+    });
+    expect(bottomHitsMenu).toBe(true);
   });
 
   test("stepper columns hug their content, while a normal control still fills", async ({

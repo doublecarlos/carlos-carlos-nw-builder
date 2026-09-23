@@ -44,8 +44,17 @@ const GAP = 8;
  * what a tooltip wants, since it belongs to the control it points at and has to stay visibly
  * attached to it. Flipping a small label to the far side of its trigger reads as belonging to
  * whatever it landed next to instead.
+ *
+ * `end` lines the panel's right edge up with the anchor's, for a menu dropping from a trigger.
+ * Placed by coordinates rather than a transform, so a fixed descendant (ComboBoxMenu) still
+ * positions against the viewport.
  */
-type PopoverAlign = "beside" | "center";
+type PopoverAlign = "beside" | "center" | "end";
+
+/** Ends `width` at the anchor's right edge, kept inside the viewport. */
+function endLeft(anchor: DOMRect, width: number) {
+  return Math.max(anchor.right - width, MARGIN);
+}
 
 /** Centers `width` on the anchor, kept inside the viewport. */
 function centeredLeft(anchor: DOMRect, width: number) {
@@ -64,6 +73,9 @@ function place(
     // `props.width` is only an opening guess when the panel sizes to its content; the pass
     // below re-centers on the width it actually rendered at.
     left = centeredLeft(anchor, props.width);
+  } else if (align === "end") {
+    // Same opening guess as `center`, corrected below to the rendered width.
+    left = endLeft(anchor, props.width);
   } else {
     // Horizontal: from pointer if given, else from anchor's right edge.
     const originX = pointerX ?? anchor.right + GAP;
@@ -85,7 +97,11 @@ function place(
     const { offsetWidth, offsetHeight } = el.value;
 
     const nextLeft =
-      align === "center" ? centeredLeft(anchor, offsetWidth) : pos.value.left;
+      align === "center"
+        ? centeredLeft(anchor, offsetWidth)
+        : align === "end"
+          ? endLeft(anchor, offsetWidth)
+          : pos.value.left;
     const nextTop =
       pos.value.top + offsetHeight > window.innerHeight - MARGIN
         ? Math.max(anchor.top - offsetHeight - 6, MARGIN)
