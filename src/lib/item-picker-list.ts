@@ -45,7 +45,6 @@ export function rowSlot(
     type: "item_picker",
     ...(slot.filter ? { filter: slot.filter } : {}),
     ...(slot.tags ? { tags: [...slot.tags] } : {}),
-    ...(slot.visibleWhen ? { visibleWhen: slot.visibleWhen } : {}),
     ...(slot.toggleable ? { toggleable: true } : {}),
     list: slot.id,
   };

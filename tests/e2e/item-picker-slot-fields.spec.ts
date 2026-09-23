@@ -1,7 +1,7 @@
-// End-to-end coverage for the four fields an `item_picker` slot carries beyond its candidate
+// End-to-end coverage for the three fields an `item_picker` slot carries beyond its candidate
 // selector: `quick` (render in the top strip instead of a section row), `disallowEmpty` (no
-// "- empty -" row in the dropdown), `visibleWhen` (scope the row to when it is relevant), and an
-// item-declared `inlineRepetition` (the pick repeats N times, with a stepper beside the picker).
+// "- empty -" row in the dropdown), and an item-declared `inlineRepetition` (the pick repeats N
+// times, with a stepper beside the picker).
 //
 // Each case drives a slot this spec authors itself, imported as a build-level catalog
 // overlay: an overlay re-declares a shipped slot by id, so the fixtures here own what they
@@ -118,45 +118,6 @@ test.describe("disallowEmpty", () => {
     // The candidates are still all there -- only the "no value" row is gone.
     await expect(row.getByText(BOSS, { exact: true })).toBeVisible();
     await expect(row.getByText("- empty -", { exact: true })).toHaveCount(0);
-  });
-});
-
-test.describe("visibleWhen", () => {
-  test("scopes an item_picker's row to when its condition holds", async ({
-    page,
-  }) => {
-    await openBuilder(page);
-    await importOverlay(page, {
-      visibleWhen: { toggle: "combat" },
-    });
-
-    const combat = page
-      .getByTestId("quick-options")
-      .getByLabel("Combat", { exact: true });
-
-    // The shipped `combat` toggle starts on, so the scoped row is rendered to begin with.
-    await expect(slotRow(page, SLOT_ID)).toBeVisible();
-    await combat.uncheck();
-    await expect(slotRow(page, SLOT_ID)).toHaveCount(0);
-    await combat.check();
-    await expect(slotRow(page, SLOT_ID)).toBeVisible();
-  });
-
-  test("hiding the row does not unequip what is in it", async ({ page }) => {
-    await openBuilder(page);
-    await importOverlay(page, { visibleWhen: { toggle: "combat" } });
-
-    const combat = page
-      .getByTestId("quick-options")
-      .getByLabel("Combat", { exact: true });
-    await chooseItem(page, SLOT_ID, BOSS);
-
-    await combat.uncheck();
-    await expect(slotRow(page, SLOT_ID)).toHaveCount(0);
-
-    // Still the same pick when the row comes back -- hiding is a display filter, nothing more.
-    await combat.check();
-    await expect(pickerInput(slotRow(page, SLOT_ID))).toHaveValue(BOSS);
   });
 });
 

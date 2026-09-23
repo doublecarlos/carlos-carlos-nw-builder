@@ -98,38 +98,6 @@ describe("buildDraft / toSlot round trip", () => {
     expect(roundTrip(slot)).toEqual(slot);
   });
 
-  it("round-trips a visibleWhen through the condition rows", () => {
-    const slot: BuildParameterSlot = {
-      id: "s6",
-      label: "Hidden param",
-      section: "boons",
-      type: "build_parameter",
-      paramType: "number",
-      path: "hidden",
-      visibleWhen: { class: "fighter" },
-    };
-    const draft = buildDraft(slot);
-    expect(draft.whenMode).toBe("rows");
-    expect(roundTrip(slot)).toEqual(slot);
-  });
-
-  it("keeps a condition the row model cannot express as JSON", () => {
-    const slot: BuildParameterSlot = {
-      id: "s6b",
-      label: "Odd",
-      section: "boons",
-      type: "build_parameter",
-      paramType: "number",
-      path: "odd",
-      visibleWhen: {
-        equipped: ["a", "b"],
-      } as BuildParameterSlot["visibleWhen"],
-    };
-    const draft = buildDraft(slot);
-    expect(draft.whenMode).toBe("json");
-    expect(roundTrip(slot)).toEqual(slot);
-  });
-
   it("round-trips a scaler block with its mode and both applies lists", () => {
     const slot: BuildParameterSlot = {
       id: "s7",
@@ -191,7 +159,6 @@ describe("buildDraft / toSlot round trip", () => {
       toggleable: true,
       quick: true,
       stable: { group: 1, role: "insignia", index: 2 },
-      visibleWhen: { class: "fighter" },
     };
     expect(roundTrip(slot)).toEqual(slot);
   });
@@ -458,10 +425,5 @@ describe("slotSaveError", () => {
     expect(slotSaveError(draft, testDb, "stable.x")).toMatch(
       /needs a position/,
     );
-  });
-
-  it("reports unparseable visibleWhen JSON", () => {
-    const draft = draftOf({ whenMode: "json", whenJson: "{oops" });
-    expect(slotSaveError(draft, testDb, "x")).toMatch(/not valid JSON/);
   });
 });

@@ -72,17 +72,15 @@ describe("rowSlot", () => {
     });
   });
 
-  it("passes a tag selector and a visibility condition down to the row", () => {
+  it("passes a tag selector down to the row", () => {
     const tagged: ItemPickerListSlot = {
       ...misc,
       filter: undefined,
       tags: ["a", "b"],
-      visibleWhen: { equipped: { tag: "x" } },
     };
     const row = rowSlot(tagged, 1);
     expect(row.tags).toEqual(["a", "b"]);
     expect(row.filter).toBeUndefined();
-    expect(row.visibleWhen).toEqual({ equipped: { tag: "x" } });
   });
 });
 

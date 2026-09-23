@@ -5,14 +5,12 @@
 // `TYPE_FIELDS[draft.type]` decides which blocks render. `type` is only editable on a new draft,
 // since build data stored under a saved slot depends on its type.
 import { computed } from "vue";
-import { FileJson, Plus, Trash } from "@lucide/vue";
+import { Plus, Trash } from "@lucide/vue";
 import ComboBox from "../ui/ComboBox.vue";
-import ConditionRows from "./ConditionRows.vue";
 import IconButton from "../ui/IconButton.vue";
 import ItemPicker from "./ItemPicker.vue";
 import BaseCheckbox from "../ui/BaseCheckbox.vue";
 import BaseInput from "../ui/BaseInput.vue";
-import BaseTextarea from "../ui/BaseTextarea.vue";
 import DraftFormBar from "../ui/DraftFormBar.vue";
 import FormField from "../ui/FormField.vue";
 import FormGrid from "../ui/FormGrid.vue";
@@ -22,12 +20,6 @@ import IdField from "../ui/IdField.vue";
 import * as catalog from "../../data/catalog";
 import { useEditorDraft } from "../../composables/useEditorDraft";
 import { resolvedOptions } from "../../lib/param-options";
-import {
-  rowsToWhen,
-  whenToRows,
-  whenIsRepresentable,
-  type ConditionRow,
-} from "../../engine/condition-draft";
 import {
   buildDraft,
   hasContent,
@@ -42,7 +34,6 @@ import {
   type SlotDraft,
 } from "../../lib/slot-draft";
 import type {
-  BonusOption,
   BuildParameterSlot,
   Db,
   Item,
@@ -180,13 +171,6 @@ const tagOptions = computed(() =>
   [...props.db.itemsByTag.keys()].sort().join(", "),
 );
 
-/** Every known bonus as a choice for the occurrences condition, by name. */
-const bonusOptions = computed<BonusOption[]>(() =>
-  props.db.bonuses
-    .map((bonus) => ({ value: bonus.id, label: bonus.name ?? bonus.id }))
-    .sort((a, b) => a.label.localeCompare(b.label)),
-);
-
 /** The items this slot's selector offers, resolved as `Db.forSlot` does, for the default picker. */
 const candidates = computed<Item[]>(() => {
   if (draft.value.selectorSource === "tags") {
@@ -228,44 +212,6 @@ function addOption() {
 }
 function removeOption(index: number) {
   draft.value.options.splice(index, 1);
-}
-
-function setConditions(rows: ConditionRow[]) {
-  draft.value.when = rows;
-}
-
-/** Swaps the `visibleWhen` editor between rows and raw JSON. A condition the rows cannot
- *  express stays in JSON. */
-function toggleWhenMode() {
-  if (draft.value.whenMode === "rows") {
-    const when = rowsToWhen(draft.value.when);
-    draft.value.whenJson = Object.keys(when).length
-      ? JSON.stringify(when, null, 2)
-      : "";
-    draft.value.whenMode = "json";
-    error.value = "";
-    return;
-  }
-  const text = draft.value.whenJson.trim();
-  if (!text) {
-    draft.value.when = [];
-    draft.value.whenMode = "rows";
-    error.value = "";
-    return;
-  }
-  try {
-    const when = JSON.parse(text);
-    if (!whenIsRepresentable(when)) {
-      error.value =
-        "That condition is too complex for the form. Keeping it as JSON.";
-      return;
-    }
-    draft.value.when = whenToRows(when);
-    draft.value.whenMode = "rows";
-    error.value = "";
-  } catch (err: unknown) {
-    error.value = `That condition is not valid JSON: ${err instanceof Error ? err.message : String(err)}`;
-  }
 }
 
 function save() {
@@ -746,37 +692,5 @@ function save() {
         </template>
       </FormGrid>
     </template>
-
-    <!-- visibleWhen, on every type --------------------------------------------------------- -->
-    <FormSection
-      >Shown when
-      <IconButton
-        :title="draft.whenMode === 'json' ? 'Use the form' : 'Edit as JSON'"
-        data-testid="slot-when-json-toggle"
-        @click="toggleWhenMode"
-        ><FileJson
-      /></IconButton>
-    </FormSection>
-    <FormSectionDescription>
-      Leave empty to always show the row. A hidden row's value still applies to
-      the build.
-    </FormSectionDescription>
-    <BaseTextarea
-      v-if="draft.whenMode === 'json'"
-      v-model="draft.whenJson"
-      class="mb-2 w-full font-mono"
-      rows="6"
-      data-testid="slot-when-json"
-    />
-    <ConditionRows
-      v-else
-      class="mb-2"
-      :rows="draft.when"
-      :depth="0"
-      :bonus-options="bonusOptions"
-      tree-id="slot"
-      :path="[]"
-      @update="setConditions"
-    />
   </div>
 </template>

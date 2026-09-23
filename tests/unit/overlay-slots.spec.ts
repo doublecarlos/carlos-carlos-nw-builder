@@ -209,6 +209,18 @@ describe("catalog overlay editing: the slots group", () => {
     expect(normalized.slots[customParam.id]).toEqual(customParam);
     expect(normalized.slots["options.gone"]).toBe(null);
   });
+
+  it("normalizeOverlay drops a stored slot's visibleWhen", () => {
+    const normalized = catalog.normalizeOverlay({
+      slots: {
+        [customParam.id]: {
+          ...customParam,
+          visibleWhen: { equipped: { tag: "paragon" } },
+        },
+      },
+    });
+    expect(normalized.slots[customParam.id]).toEqual(customParam);
+  });
 });
 
 describe("catalog.nextSlotId", () => {

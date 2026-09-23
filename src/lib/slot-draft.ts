@@ -9,17 +9,9 @@ import {
   fieldDiffLabel,
   type DiffCheck,
 } from "./draft-fields";
-import {
-  whenToRows,
-  rowsToWhen,
-  whenRowsComplete,
-  whenIsRepresentable,
-  type ConditionRow,
-} from "../engine/condition-draft";
 import { STABLE_ROLE_FILTER, validateSlotDefaults } from "../data/catalog";
 import type {
   BuildParameterSlot,
-  ConditionWhen,
   Db,
   ItemPickerListSlot,
   ItemPickerSlot,
@@ -85,10 +77,6 @@ export interface SlotDraft {
   type: Slot["type"];
   label: string;
   section: string;
-  /** `visibleWhen` as condition rows, or as raw JSON when the rows cannot express it. */
-  whenMode: "rows" | "json";
-  when: ConditionRow[];
-  whenJson: string;
   // --- build_parameter --------------------------------------------------------------------
   paramType: BuildParameterSlot["paramType"];
   path: string;
@@ -153,16 +141,10 @@ type SlotFields = Partial<
 
 export function buildDraft(slot: Slot | null | undefined): SlotDraft {
   const source = (slot ?? {}) as SlotFields;
-  const representable = whenIsRepresentable(source.visibleWhen);
   return {
     type: slot?.type ?? "build_parameter",
     label: source.label ?? "",
     section: source.section ?? "",
-    whenMode: representable ? "rows" : "json",
-    when: representable ? whenToRows(source.visibleWhen) : [],
-    whenJson: source.visibleWhen
-      ? JSON.stringify(source.visibleWhen, null, 2)
-      : "",
     paramType: source.paramType ?? "number",
     path: source.path ?? "",
     default:
@@ -238,17 +220,6 @@ export interface SlotDraftContext {
   id: string;
 }
 
-/** The authored `visibleWhen`, or undefined. Throws on invalid JSON, which `save()` reports. */
-function visibleWhenOf(local: SlotDraft): ConditionWhen | undefined {
-  if (local.whenMode === "json") {
-    const text = local.whenJson.trim();
-    if (!text) return undefined;
-    return JSON.parse(text) as ConditionWhen;
-  }
-  const when = rowsToWhen(local.when);
-  return Object.keys(when).length ? when : undefined;
-}
-
 /** The `filter` XOR `tags` selector the three item-selecting types share. */
 function putSelector(
   slot: { filter?: string; tags?: string[] },
@@ -264,7 +235,6 @@ interface SlotCommon {
   id: string;
   section: string;
   label: string;
-  visibleWhen?: ConditionWhen;
 }
 
 /** One builder per slot type, each writing only its own type's fields. */
@@ -283,7 +253,6 @@ const BUILDERS: {
       paramType: local.paramType,
       path: local.path.trim(),
     };
-    putIfSet(slot, "visibleWhen", common.visibleWhen);
     if (local.quick) slot.quick = true;
 
     // Cast `default` by `paramType`, so a boolean param never stores the string "true".
@@ -330,7 +299,6 @@ const BUILDERS: {
       section: common.section,
       type: "item_picker",
     };
-    putIfSet(slot, "visibleWhen", common.visibleWhen);
     putSelector(slot, local);
     putIfSet(slot, "default", local.itemDefault.trim());
     if (local.disallowEmpty) slot.disallowEmpty = true;
@@ -351,7 +319,6 @@ const BUILDERS: {
       section: common.section,
       type: "item_picker_list",
     };
-    putIfSet(slot, "visibleWhen", common.visibleWhen);
     putSelector(slot, local);
     putIfSet(slot, "defaultRows", number(local.defaultRows));
     if (local.toggleable) slot.toggleable = true;
@@ -365,7 +332,6 @@ const BUILDERS: {
       type: "point_assignment",
       filter: local.filter.trim(),
     };
-    putIfSet(slot, "visibleWhen", common.visibleWhen);
     return slot;
   },
   separator: (_local, common) => {
@@ -374,7 +340,6 @@ const BUILDERS: {
       section: common.section,
       type: "separator",
     };
-    putIfSet(slot, "visibleWhen", common.visibleWhen);
     putIfSet(slot, "label", common.label);
     return slot;
   },
@@ -385,7 +350,6 @@ const BUILDERS: {
       type: "text",
       text: local.text.trim(),
     };
-    putIfSet(slot, "visibleWhen", common.visibleWhen);
     putIfSet(slot, "label", common.label);
     return slot;
   },
@@ -396,7 +360,6 @@ export function toSlot(local: SlotDraft, ctx: SlotDraftContext): Slot {
     id: ctx.id,
     section: local.section,
     label: local.label.trim(),
-    visibleWhen: visibleWhenOf(local),
   };
   return BUILDERS[local.type](local, common);
 }
@@ -406,10 +369,6 @@ const CHECKS: DiffCheck<Slot>[] = [
   (old, nw) => (old.label !== nw.label ? `edit label to "${nw.label}"` : null),
   (old, nw) =>
     old.section !== nw.section ? `move to section "${nw.section}"` : null,
-  (old, nw) =>
-    JSON.stringify(old.visibleWhen) !== JSON.stringify(nw.visibleWhen)
-      ? "edit visibility condition"
-      : null,
   (old, nw) =>
     (old as BuildParameterSlot).path !== (nw as BuildParameterSlot).path
       ? `edit path to "${(nw as BuildParameterSlot).path}"`
@@ -486,17 +445,6 @@ export function slotSaveError(
   if (!local.section) return `The ${noun} needs a section.`;
   if (LABELED_TYPES.includes(local.type) && !local.label.trim())
     return `The ${noun} needs a label.`;
-
-  if (local.whenMode === "json") {
-    try {
-      const text = local.whenJson.trim();
-      if (text) JSON.parse(text);
-    } catch (err: unknown) {
-      return `"Shown when" is not valid JSON: ${err instanceof Error ? err.message : String(err)}`;
-    }
-  } else if (!whenRowsComplete(local.when)) {
-    return "Finish or remove the half-filled condition under “Shown when”.";
-  }
 
   if (local.type === "build_parameter") {
     if (!local.path.trim()) return "The parameter needs a path.";
