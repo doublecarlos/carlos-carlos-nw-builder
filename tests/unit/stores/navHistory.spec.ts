@@ -22,8 +22,11 @@ async function freshStores() {
   builds._setLoading(false);
   history._setLoading(false);
   layers._setLoading(false);
+  const storage = await import("../../../src/storage/storage");
+  // Every test starts from one "Build 1".
+  builds.replaceActive(storage.defaultBuild("Build 1"));
   // Touching `build` guarantees the always-present "Build 1" exists before each test.
-  void builds.build.value;
+  void builds.build.value!;
   return {
     builds,
     buildEditor,
@@ -105,19 +108,19 @@ describe("nav history stack", () => {
     }
     expect(undone).toBe(50);
     // The five oldest steps fell off, so the name settles where step 6 started.
-    expect(s.builds.build.value.name).toBe("Name 5");
+    expect(s.builds.build.value!.name).toBe("Name 5");
   });
 
   it("undo and redo publish the row to focus", async () => {
     const s = await freshStores();
     const { builds, navHistory } = s;
     builds.createBuild();
-    const id = builds.build.value.id;
+    const id = builds.build.value!.id;
     expect(navHistory.focusRequest.value).toBeNull();
 
     navHistory.undo();
     const afterUndo = navHistory.focusRequest.value;
-    expect(afterUndo?.focusId).toBe(builds.build.value.id);
+    expect(afterUndo?.focusId).toBe(builds.build.value!.id);
 
     expect(navHistory.redo()).toEqual({ focusId: id });
     expect(navHistory.focusRequest.value?.focusId).toBe(id);
@@ -129,7 +132,7 @@ describe("nav history stack", () => {
     const s = await freshStores();
     const { builds, navHistory, trash } = s;
     builds.createBuild();
-    const id = builds.build.value.id;
+    const id = builds.build.value!.id;
     builds.deleteBuild(id);
     trash.purge(trash.trashed.value.find((entry) => entry.item.id === id)!);
 
@@ -147,7 +150,7 @@ describe("nav history stack", () => {
     const s = await freshStores();
     const { builds, layers, navHistory, trash, folders } = s;
     builds.createBuild();
-    const id = builds.build.value.id;
+    const id = builds.build.value!.id;
     builds.deleteBuild(id);
     const entry = trash.trashed.value.find((e) => e.item.id === id)!;
     const stepsBefore = navHistory.undoLabel.value;
@@ -171,7 +174,7 @@ describe("nav history: builds", () => {
     const s = await freshStores();
     const { builds, navHistory, selection } = s;
     builds.createBuild();
-    const id = builds.build.value.id;
+    const id = builds.build.value!.id;
     expect(tree(s)).toEqual(["Build 1", "Build 2"]);
 
     navHistory.undo();
@@ -202,7 +205,7 @@ describe("nav history: builds", () => {
     const s = await freshStores();
     const { builds, buildEditor, navHistory, trash } = s;
     builds.createBuild();
-    const id = builds.build.value.id;
+    const id = builds.build.value!.id;
     buildEditor.setChoice("ring1", "ItemA");
     expect(navHistory.undoLabel.value).toBe('create build "Build 2"');
 
@@ -213,7 +216,7 @@ describe("nav history: builds", () => {
     ).toBe("ItemA");
 
     navHistory.redo();
-    expect(builds.build.value.choices.ring1).toBe("ItemA");
+    expect(builds.build.value!.choices.ring1).toBe("ItemA");
   });
 
   it("duplicate: undo trashes the copy, redo puts it back next to its source", async () => {
@@ -237,7 +240,7 @@ describe("nav history: builds", () => {
     const { builds, folders, navHistory, selection } = s;
     const folderId = folders.createFolder("Alts");
     builds.createBuild(folderId);
-    const id = builds.build.value.id;
+    const id = builds.build.value!.id;
     builds.createBuild(folderId);
     expect(tree(s)).toEqual(["Build 1", "Alts[Build 2, Build 3]"]);
 
@@ -255,17 +258,16 @@ describe("nav history: builds", () => {
     expect(trashedIds(s)).toEqual([id]);
   });
 
-  it("delete of the last build: undo brings it back beside the placeholder", async () => {
+  it("delete of the last build: undo brings it back as the only build", async () => {
     const s = await freshStores();
     const { builds, navHistory } = s;
-    const id = builds.build.value.id;
+    const id = builds.build.value!.id;
     builds.deleteBuild(id);
-    expect(tree(s)).toEqual(["Build 1"]);
-    expect(builds.build.value.id).not.toBe(id);
+    expect(tree(s)).toEqual([]);
 
     navHistory.undo();
-    expect(builds.builds.value.map((b) => b.id)).toContain(id);
-    expect(builds.build.value.id).toBe(id);
+    expect(builds.builds.value.map((b) => b.id)).toEqual([id]);
+    expect(builds.build.value!.id).toBe(id);
   });
 
   it("delete of a build the undo cannot place in its folder falls back to the top level", async () => {
@@ -273,7 +275,7 @@ describe("nav history: builds", () => {
     const { builds, folders, navHistory } = s;
     const folderId = folders.createFolder("Alts");
     builds.createBuild(folderId);
-    const id = builds.build.value.id;
+    const id = builds.build.value!.id;
     builds.deleteBuild(id);
     // The grouping goes away without a recorded step, as a purge-like edge case would.
     folders.removeFolder(folderId);
@@ -286,7 +288,7 @@ describe("nav history: builds", () => {
     const s = await freshStores();
     const { builds, navHistory } = s;
     builds.createBuild();
-    const id = builds.build.value.id;
+    const id = builds.build.value!.id;
     builds.moveBuild(id, -1);
     expect(tree(s)).toEqual(["Build 2", "Build 1"]);
     expect(navHistory.undoLabel.value).toBe("move build");
@@ -301,7 +303,7 @@ describe("nav history: builds", () => {
     const s = await freshStores();
     const { builds, folders, navHistory, selection } = s;
     builds.createBuild();
-    const id = builds.build.value.id;
+    const id = builds.build.value!.id;
     builds.createBuild();
     const folderId = folders.createFolder("Alts");
     expect(tree(s)).toEqual(["Build 1", "Build 2", "Build 3", "Alts[]"]);
@@ -320,7 +322,7 @@ describe("nav history: builds", () => {
     const s = await freshStores();
     const { builds, folders, navHistory } = s;
     builds.createBuild();
-    const id = builds.build.value.id;
+    const id = builds.build.value!.id;
     const folderId = folders.createFolder("Alts");
     const before = navHistory.undoLabel.value;
 
@@ -336,7 +338,7 @@ describe("nav history: builds", () => {
   it("a move that changes nothing records nothing", async () => {
     const s = await freshStores();
     const { builds, navHistory } = s;
-    const id = builds.build.value.id;
+    const id = builds.build.value!.id;
     builds.moveBuild(id, -1);
     expect(navHistory.canUndo.value).toBe(false);
   });
@@ -345,9 +347,9 @@ describe("nav history: builds", () => {
     const s = await freshStores();
     const { builds, buildEditor, history, navHistory, selection } = s;
     builds.createBuild();
-    const id = builds.build.value.id;
+    const id = builds.build.value!.id;
     buildEditor.renameBuild("Warlock");
-    expect(builds.build.value.name).toBe("Warlock");
+    expect(builds.build.value!.name).toBe("Warlock");
     expect(history.canUndo.value).toBe(false);
 
     selection.selectBuild(builds.builds.value[0].id);
@@ -388,7 +390,7 @@ describe("nav history: builds", () => {
     const { builds, folders, navHistory, trash } = s;
     const folderId = folders.createFolder("Alts");
     builds.createBuild(folderId);
-    const purgedId = builds.build.value.id;
+    const purgedId = builds.build.value!.id;
     builds.createBuild(folderId);
 
     builds.deleteFolderWithBuilds(folderId);

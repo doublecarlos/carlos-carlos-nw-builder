@@ -17,8 +17,11 @@ async function freshStores() {
   const trash = await import("../../../src/stores/trash");
   builds._setLoading(false);
   layers._setLoading(false);
+  const storage = await import("../../../src/storage/storage");
+  // Every test starts from one "Build 1".
+  builds.replaceActive(storage.defaultBuild("Build 1"));
   // Touching `build` guarantees the always-present "Build 1" exists before each test.
-  void builds.build.value;
+  void builds.build.value!;
   return { builds, folders, selection, trash };
 }
 
@@ -38,7 +41,7 @@ describe("folders store", () => {
   it("placeBuild moves a build into a folder and back out to the top level", async () => {
     const { builds, folders } = await freshStores();
     builds.createBuild();
-    const id = builds.build.value.id;
+    const id = builds.build.value!.id;
     const folderId = folders.createFolder("Alts");
 
     folders.placeBuild(id, folderId);
@@ -53,7 +56,7 @@ describe("folders store", () => {
   it("a build is never in two containers at once", async () => {
     const { builds, folders } = await freshStores();
     builds.createBuild();
-    const id = builds.build.value.id;
+    const id = builds.build.value!.id;
     const first = folders.createFolder("One");
     const second = folders.createFolder("Two");
 
@@ -89,7 +92,7 @@ describe("folders store", () => {
   it("dropping into a collapsed folder expands it", async () => {
     const { builds, folders } = await freshStores();
     const folderId = folders.createFolder("Alts", true);
-    folders.placeBuild(builds.build.value.id, folderId);
+    folders.placeBuild(builds.build.value!.id, folderId);
 
     expect(folders.byId(folderId)?.collapsed).toBe(false);
   });
@@ -169,13 +172,13 @@ describe("builds store with folders", () => {
   it("duplicating a build inside a folder keeps the copy next to it", async () => {
     const { builds, folders, selection } = await freshStores();
     const folderId = folders.createFolder("Alts");
-    const id = builds.build.value.id;
+    const id = builds.build.value!.id;
     folders.placeBuild(id, folderId);
     selection.selectBuild(id);
 
     builds.duplicateBuild();
 
-    const copyId = builds.build.value.id;
+    const copyId = builds.build.value!.id;
     expect(folders.byId(folderId)?.builds).toEqual([id, copyId]);
   });
 
@@ -185,13 +188,13 @@ describe("builds store with folders", () => {
 
     builds.createBuild(folderId);
 
-    expect(folders.byId(folderId)?.builds).toEqual([builds.build.value.id]);
+    expect(folders.byId(folderId)?.builds).toEqual([builds.build.value!.id]);
   });
 
   it("deleting a build leaves no dangling id in its folder", async () => {
     const { builds, folders, trash } = await freshStores();
     builds.createBuild();
-    const id = builds.build.value.id;
+    const id = builds.build.value!.id;
     const folderId = folders.createFolder("Alts");
     folders.placeBuild(id, folderId);
 

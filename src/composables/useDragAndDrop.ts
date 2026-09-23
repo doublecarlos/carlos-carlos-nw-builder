@@ -1,7 +1,9 @@
 // Generic drag-and-drop helpers for the app's list/tree reorder UIs (builds, layers, grants,
 // tiers, variants, condition rows/branches). Pointer events plus list-level hit testing:
 // `elementFromPoint` finds the innermost `[data-drop-list]` that accepts the source, which
-// resolves to one gap or row. No per-row dragover handlers. Native DnD is only for file drops.
+// resolves to one gap or row. Outside any list, an enclosing `[data-drop-tail]` stands in for
+// the list it names, so the space around a list still drops at its start or end. No per-row
+// dragover handlers. Native DnD is only for file drops.
 //
 // Each drop zone gets an `onDrop` callback and the call site mutates the array. Drag state is
 // a module-scope singleton so cross-component drops work without a common ancestor, with a
@@ -215,14 +217,16 @@ function resolveInList(entry: ListEntry, x: number, y: number): DragTarget {
 }
 
 /** Walks up through enclosing `[data-drop-list]`s until one accepts the source. A build over
- *  a folder's build-only list falls through to the root list around it. */
+ *  a folder's build-only list falls through to the root list around it. Past the outermost
+ *  list, an enclosing `[data-drop-tail]` resolves against the list it names. */
 function hitTest(x: number, y: number) {
   if (!state.source) {
     state.target = null;
     return;
   }
   const source = state.source;
-  let node = document.elementFromPoint(x, y) as HTMLElement | null;
+  const hit = document.elementFromPoint(x, y) as HTMLElement | null;
+  let node = hit;
   let resolved: DragTarget | null = null;
   while (node) {
     const listEl: HTMLElement | null = node.closest("[data-drop-list]");
@@ -234,6 +238,11 @@ function hitTest(x: number, y: number) {
       break;
     }
     node = listEl.parentElement;
+  }
+  if (!resolved) {
+    const tailEl: HTMLElement | null = hit?.closest("[data-drop-tail]") ?? null;
+    const entry = tailEl && registry.get(tailEl.dataset.dropTail!);
+    if (entry && entry.accepts(source)) resolved = resolveInList(entry, x, y);
   }
   state.target = resolved;
 }
@@ -454,6 +463,12 @@ export function useDropList(options: {
     };
   }
 
+  /** Bind on an element around the list whose empty space should drop into it: above the
+   *  rows lands first, below them lands last. */
+  function tailProps() {
+    return { "data-drop-tail": options.containerId };
+  }
+
   /** Bind on each row: `data-drop-row`, `data-drop-of`, and `data-drop-into` for an "into"
    *  row. The controller reads these via `elementFromPoint`, so there are no per-row
    *  listeners. */
@@ -498,6 +513,7 @@ export function useDropList(options: {
 
   return {
     listProps,
+    tailProps,
     rowProps,
     intoIndex,
     separatorStyle,

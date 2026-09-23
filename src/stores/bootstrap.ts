@@ -51,10 +51,8 @@ export async function hydrate() {
 
   trash._init(data.trash);
 
-  // Builds and layers are counted from the raw load rather than from their stores: the builds
-  // store keeps one build alive at all times, so an emptiness question asked of it always
-  // answers no. The trash is asked of its store instead, which has just dropped the entries
-  // past their purge age -- expired deletions must not keep the landing screen down.
+  // The trash is asked of its store rather than the raw load, as the store has just dropped
+  // the entries past their purge age. Expired deletions must not keep the landing screen down.
   if (
     data.builds.length === 0 &&
     data.layers.length === 0 &&

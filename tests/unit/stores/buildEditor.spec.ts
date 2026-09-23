@@ -27,6 +27,9 @@ async function freshStores() {
   builds._setLoading(false);
   history._setLoading(false);
   layers._setLoading(false);
+  const storage = await import("../../../src/storage/storage");
+  // Every test starts from one "Build 1".
+  builds.replaceActive(storage.defaultBuild("Build 1"));
   return {
     builds,
     history,
@@ -52,9 +55,9 @@ describe("buildEditor undo coalescing", () => {
     buildEditor.setChoice("ring1", "ItemA");
     buildEditor.setChoice("ring1", "ItemB");
 
-    expect(builds.build.value.choices.ring1).toBe("ItemB");
+    expect(builds.build.value!.choices.ring1).toBe("ItemB");
     buildEditor.undo();
-    expect(builds.build.value.choices.ring1).toBeUndefined();
+    expect(builds.build.value!.choices.ring1).toBeUndefined();
     expect(buildEditor.canUndo.value).toBe(false);
   });
 
@@ -64,11 +67,11 @@ describe("buildEditor undo coalescing", () => {
     buildEditor.setChoice("ring2", "ItemC");
 
     buildEditor.undo();
-    expect(builds.build.value.choices.ring2).toBeUndefined();
-    expect(builds.build.value.choices.ring1).toBe("ItemA");
+    expect(builds.build.value!.choices.ring2).toBeUndefined();
+    expect(builds.build.value!.choices.ring1).toBe("ItemA");
 
     buildEditor.undo();
-    expect(builds.build.value.choices.ring1).toBeUndefined();
+    expect(builds.build.value!.choices.ring1).toBeUndefined();
     expect(buildEditor.canUndo.value).toBe(false);
   });
 
@@ -80,22 +83,22 @@ describe("buildEditor undo coalescing", () => {
     buildEditor.setChoice("ring1", "ItemB");
 
     buildEditor.undo();
-    expect(builds.build.value.choices.ring1).toBe("ItemA");
+    expect(builds.build.value!.choices.ring1).toBe("ItemA");
     expect(buildEditor.canUndo.value).toBe(true);
 
     buildEditor.undo();
-    expect(builds.build.value.choices.ring1).toBeUndefined();
+    expect(builds.build.value!.choices.ring1).toBeUndefined();
   });
 
   it("redo replays an undone step", async () => {
     const { builds, buildEditor } = await freshStores();
     buildEditor.setChoice("ring1", "ItemA");
     buildEditor.undo();
-    expect(builds.build.value.choices.ring1).toBeUndefined();
+    expect(builds.build.value!.choices.ring1).toBeUndefined();
 
     expect(buildEditor.canRedo.value).toBe(true);
     buildEditor.redo();
-    expect(builds.build.value.choices.ring1).toBe("ItemA");
+    expect(builds.build.value!.choices.ring1).toBe("ItemA");
     expect(buildEditor.canRedo.value).toBe(false);
   });
 
@@ -115,8 +118,8 @@ describe("buildEditor undo coalescing", () => {
 
     buildEditor.setParam(classSlot, "wizard");
 
-    expect(builds.build.value.context.class).toBe("wizard");
-    expect(Object.hasOwn(builds.build.value, "class")).toBe(false);
+    expect(builds.build.value!.context.class).toBe("wizard");
+    expect(Object.hasOwn(builds.build.value!, "class")).toBe(false);
   });
 });
 
@@ -147,13 +150,13 @@ describe("buildEditor point_assignment edits", () => {
 
   it("defaultBuild seeds both rows before any edit", async () => {
     const { builds } = await freshStores();
-    expect(builds.build.value.assignments["boons.tier1"]).toEqual(seededRows);
+    expect(builds.build.value!.assignments["boons.tier1"]).toEqual(seededRows);
   });
 
   it("setAssignment writes the count under the slot id, keyed by item", async () => {
     const { builds, buildEditor } = await freshStores();
     buildEditor.setAssignment(slot, "boon-tier1-power", 2);
-    expect(builds.build.value.assignments["boons.tier1"]).toEqual({
+    expect(builds.build.value!.assignments["boons.tier1"]).toEqual({
       ...seededRows,
       "boon-tier1-power": 2,
     });
@@ -163,7 +166,7 @@ describe("buildEditor point_assignment edits", () => {
     const { builds, buildEditor } = await freshStores();
     buildEditor.setAssignment(slot, "boon-tier1-power", 2);
     buildEditor.setAssignment(slot, "boon-tier1-avoidance", 1);
-    expect(builds.build.value.assignments["boons.tier1"]).toEqual({
+    expect(builds.build.value!.assignments["boons.tier1"]).toEqual({
       ...seededRows,
       "boon-tier1-power": 2,
       "boon-tier1-avoidance": 1,
@@ -175,7 +178,7 @@ describe("buildEditor point_assignment edits", () => {
     buildEditor.setAssignment(slot, "boon-tier1-power", 2);
     buildEditor.setAssignment(slot, "boon-tier1-avoidance", 1);
     buildEditor.undo();
-    expect(builds.build.value.assignments["boons.tier1"]).toEqual({
+    expect(builds.build.value!.assignments["boons.tier1"]).toEqual({
       ...seededRows,
       "boon-tier1-power": 2,
     });
@@ -186,7 +189,7 @@ describe("buildEditor point_assignment edits", () => {
     buildEditor.setAssignment(slot, "boon-tier1-power", 2);
     buildEditor.setAssignment(slot, "boon-tier1-avoidance", 1);
     buildEditor.resetAssignmentsToDefault(slot);
-    expect(builds.build.value.assignments["boons.tier1"]).toEqual(seededRows);
+    expect(builds.build.value!.assignments["boons.tier1"]).toEqual(seededRows);
   });
 });
 
@@ -194,7 +197,7 @@ describe("buildEditor.setOccurrenceInput", () => {
   it("writes the count under the item id, keyed by bonus id", async () => {
     const { builds, buildEditor } = await freshStores();
     buildEditor.setOccurrenceInput("test-ring", "test-bonus", 3, "Test Bonus");
-    expect(builds.build.value.occurrenceInputs).toEqual({
+    expect(builds.build.value!.occurrenceInputs).toEqual({
       "test-ring": { "test-bonus": 3 },
     });
   });
@@ -203,7 +206,7 @@ describe("buildEditor.setOccurrenceInput", () => {
     const { builds, buildEditor } = await freshStores();
     buildEditor.setOccurrenceInput("test-ring", "bonus-a", 2, "Bonus A");
     buildEditor.setOccurrenceInput("test-ring", "bonus-b", 1, "Bonus B");
-    expect(builds.build.value.occurrenceInputs).toEqual({
+    expect(builds.build.value!.occurrenceInputs).toEqual({
       "test-ring": { "bonus-a": 2, "bonus-b": 1 },
     });
   });
@@ -212,7 +215,7 @@ describe("buildEditor.setOccurrenceInput", () => {
     const { builds, buildEditor } = await freshStores();
     buildEditor.setOccurrenceInput("ring-a", "shared-bonus", 2, "Shared Bonus");
     buildEditor.setOccurrenceInput("ring-b", "shared-bonus", 5, "Shared Bonus");
-    expect(builds.build.value.occurrenceInputs).toEqual({
+    expect(builds.build.value!.occurrenceInputs).toEqual({
       "ring-a": { "shared-bonus": 2 },
       "ring-b": { "shared-bonus": 5 },
     });
@@ -223,7 +226,7 @@ describe("buildEditor.setOccurrenceInput", () => {
     buildEditor.setOccurrenceInput("test-ring", "bonus-a", 2, "Bonus A");
     buildEditor.setOccurrenceInput("test-ring", "bonus-b", 1, "Bonus B");
     buildEditor.undo();
-    expect(builds.build.value.occurrenceInputs).toEqual({
+    expect(builds.build.value!.occurrenceInputs).toEqual({
       "test-ring": { "bonus-a": 2 },
     });
   });
@@ -290,7 +293,7 @@ describe("buildEditor.applyOccurrenceFromCompare", () => {
 
     buildEditor.applyOccurrenceFromCompare(RING_ID);
 
-    expect(builds.build.value.occurrenceInputs[RING_ID]).toEqual({
+    expect(builds.build.value!.occurrenceInputs[RING_ID]).toEqual({
       [STACK_BONUS_ID]: 4,
     });
   });
@@ -307,7 +310,7 @@ describe("buildEditor.applyOccurrenceFromCompare", () => {
 
     buildEditor.applyOccurrenceFromCompare(RING_ID);
 
-    expect(builds.build.value.occurrenceInputs[RING_ID]).toEqual({
+    expect(builds.build.value!.occurrenceInputs[RING_ID]).toEqual({
       [STACK_BONUS_ID]: 0,
     });
   });
@@ -321,7 +324,7 @@ describe("buildEditor.applyOccurrenceFromCompare", () => {
 
     buildEditor.applyOccurrenceFromCompare(RING_ID);
 
-    expect(builds.build.value.occurrenceInputs[RING_ID]).toEqual({
+    expect(builds.build.value!.occurrenceInputs[RING_ID]).toEqual({
       [STACK_BONUS_ID]: 2,
     });
   });
@@ -357,14 +360,14 @@ describe("buildEditor.applyPreset", () => {
     const { builds, buildEditor } = await freshStores();
     buildEditor.applyPreset(preset);
 
-    expect(builds.build.value.context.role).toBe("dps");
-    expect(builds.build.value.choices.ring1).toBe("ItemA");
-    expect(builds.build.value.values.ring1).toEqual({ power: 42 });
-    expect(builds.build.value.assignments["boons.tier1"]).toEqual({
+    expect(builds.build.value!.context.role).toBe("dps");
+    expect(builds.build.value!.choices.ring1).toBe("ItemA");
+    expect(builds.build.value!.values.ring1).toEqual({ power: 42 });
+    expect(builds.build.value!.assignments["boons.tier1"]).toEqual({
       ...seededRows,
       "boon-tier1-power": 3,
     });
-    expect(builds.build.value.occurrenceInputs.ItemA).toEqual({
+    expect(builds.build.value!.occurrenceInputs.ItemA).toEqual({
       "stack-bonus": 4,
     });
   });
@@ -375,7 +378,7 @@ describe("buildEditor.applyPreset", () => {
     buildEditor.setOccurrenceInput("ItemA", "stack-bonus", 1, "Stack Bonus");
     buildEditor.applyPreset(preset);
 
-    expect(builds.build.value.occurrenceInputs.ItemA).toEqual({
+    expect(builds.build.value!.occurrenceInputs.ItemA).toEqual({
       "other-bonus": 2,
       "stack-bonus": 4,
     });
@@ -386,7 +389,7 @@ describe("buildEditor.applyPreset", () => {
     buildEditor.setOccurrenceInput("ItemB", "stack-bonus", 5, "Stack Bonus");
     buildEditor.applyPreset(preset);
 
-    expect(builds.build.value.occurrenceInputs.ItemB).toEqual({
+    expect(builds.build.value!.occurrenceInputs.ItemB).toEqual({
       "stack-bonus": 5,
     });
   });
@@ -395,14 +398,14 @@ describe("buildEditor.applyPreset", () => {
     const { builds, buildEditor } = await freshStores();
     buildEditor.setChoice("ring2", "PreExisting");
     buildEditor.applyPreset(preset);
-    expect(builds.build.value.choices.ring2).toBe("PreExisting");
+    expect(builds.build.value!.choices.ring2).toBe("PreExisting");
   });
 
   it("merges into an assignment row without clobbering a sibling item", async () => {
     const { builds, buildEditor } = await freshStores();
     buildEditor.setAssignment(tier1Slot, "boon-tier1-avoidance", 1);
     buildEditor.applyPreset(preset);
-    expect(builds.build.value.assignments["boons.tier1"]).toEqual({
+    expect(builds.build.value!.assignments["boons.tier1"]).toEqual({
       ...seededRows,
       "boon-tier1-power": 3,
       "boon-tier1-avoidance": 1,
@@ -415,10 +418,10 @@ describe("buildEditor.applyPreset", () => {
     buildEditor.undo();
     // The default "" is deleted rather than stored (build-path.ts's `setPath`), so a fresh
     // build's `role` is absent, not an empty string.
-    expect(builds.build.value.context.role).toBeUndefined();
-    expect(builds.build.value.choices.ring1).toBeUndefined();
-    expect(builds.build.value.assignments["boons.tier1"]).toEqual(seededRows);
-    expect(builds.build.value.occurrenceInputs.ItemA).toBeUndefined();
+    expect(builds.build.value!.context.role).toBeUndefined();
+    expect(builds.build.value!.choices.ring1).toBeUndefined();
+    expect(builds.build.value!.assignments["boons.tier1"]).toEqual(seededRows);
+    expect(builds.build.value!.occurrenceInputs.ItemA).toBeUndefined();
   });
 
   it("ignores a params entry whose slot id is not a build_parameter", async () => {
@@ -429,7 +432,7 @@ describe("buildEditor.applyPreset", () => {
       section: "gear",
       params: { "gear.head": "nope" }, // gear.head is an item_picker slot
     });
-    expect(builds.build.value.context.role).toBeUndefined();
+    expect(builds.build.value!.context.role).toBeUndefined();
   });
 });
 
@@ -467,10 +470,10 @@ describe("buildEditor.applyPreset clears", () => {
       clears: ["options.role", "gear.head", "boons.tier1"],
     });
 
-    expect(builds.build.value.context.role).toBeUndefined();
-    expect(builds.build.value.choices["gear.head"]).toBeUndefined();
-    expect(builds.build.value.values["gear.head"]).toBeUndefined();
-    expect(builds.build.value.assignments["boons.tier1"]).toEqual(seededRows);
+    expect(builds.build.value!.context.role).toBeUndefined();
+    expect(builds.build.value!.choices["gear.head"]).toBeUndefined();
+    expect(builds.build.value!.values["gear.head"]).toBeUndefined();
+    expect(builds.build.value!.assignments["boons.tier1"]).toEqual(seededRows);
   });
 
   it("leaves a slot it doesn't name untouched", async () => {
@@ -485,8 +488,8 @@ describe("buildEditor.applyPreset clears", () => {
       clears: ["gear.head"],
     });
 
-    expect(builds.build.value.choices["gear.head"]).toBeUndefined();
-    expect(builds.build.value.choices["gear.arms"]).toBe("ItemB");
+    expect(builds.build.value!.choices["gear.head"]).toBeUndefined();
+    expect(builds.build.value!.choices["gear.arms"]).toBe("ItemB");
   });
 
   // Order matters: clearing runs first so a hand-authored preset naming one slot in both
@@ -503,7 +506,7 @@ describe("buildEditor.applyPreset clears", () => {
       choices: { "gear.head": "ItemB" },
     });
 
-    expect(builds.build.value.choices["gear.head"]).toBe("ItemB");
+    expect(builds.build.value!.choices["gear.head"]).toBe("ItemB");
   });
 
   it("ignores an unknown slot id", async () => {
@@ -517,7 +520,7 @@ describe("buildEditor.applyPreset clears", () => {
       clears: ["not.a.slot"],
     });
 
-    expect(builds.build.value.choices["gear.head"]).toBe("ItemA");
+    expect(builds.build.value!.choices["gear.head"]).toBe("ItemA");
   });
 
   it("applies as a single undo step alongside the rest of the preset", async () => {
@@ -533,8 +536,8 @@ describe("buildEditor.applyPreset clears", () => {
     });
     buildEditor.undo();
 
-    expect(builds.build.value.choices["gear.head"]).toBe("ItemA");
-    expect(builds.build.value.choices["gear.arms"]).toBeUndefined();
+    expect(builds.build.value!.choices["gear.head"]).toBe("ItemA");
+    expect(builds.build.value!.choices["gear.arms"]).toBeUndefined();
   });
 });
 
@@ -626,8 +629,8 @@ describe("buildEditor.presetFromSection", () => {
 
     buildEditor.applyPreset(preset);
 
-    expect(builds.build.value.choices["gear.head"]).toBe("ItemA");
-    expect(builds.build.value.choices["gear.arms"]).toBeUndefined();
+    expect(builds.build.value!.choices["gear.head"]).toBe("ItemA");
+    expect(builds.build.value!.choices["gear.arms"]).toBeUndefined();
   });
 });
 
@@ -657,17 +660,17 @@ describe("buildEditor.clearSection", () => {
       },
       "dps",
     );
-    expect(builds.build.value.context.role).toBe("dps");
+    expect(builds.build.value!.context.role).toBe("dps");
 
     buildEditor.clearSection("options", "Options");
-    expect(builds.build.value.context.role).toBeUndefined();
+    expect(builds.build.value!.context.role).toBeUndefined();
   });
 
   it("resets a point_assignment slot's rows to their defaults", async () => {
     const { builds, buildEditor } = await freshStores();
     buildEditor.setAssignment(tier1Slot, "boon-tier1-power", 3);
     buildEditor.clearSection("boons", "Boons");
-    expect(builds.build.value.assignments["boons.tier1"]).toEqual(seededRows);
+    expect(builds.build.value!.assignments["boons.tier1"]).toEqual(seededRows);
   });
 
   it("clears an item_picker slot's choice and value", async () => {
@@ -676,8 +679,8 @@ describe("buildEditor.clearSection", () => {
     buildEditor.setDynamicValue("gear.head", "power", "5");
 
     buildEditor.clearSection("gear", "Gear");
-    expect(builds.build.value.choices["gear.head"]).toBeUndefined();
-    expect(builds.build.value.values["gear.head"]).toBeUndefined();
+    expect(builds.build.value!.choices["gear.head"]).toBeUndefined();
+    expect(builds.build.value!.values["gear.head"]).toBeUndefined();
   });
 
   it("leaves other sections untouched", async () => {
@@ -686,7 +689,7 @@ describe("buildEditor.clearSection", () => {
     buildEditor.setAssignment(tier1Slot, "boon-tier1-power", 3);
 
     buildEditor.clearSection("gear", "Gear");
-    expect(builds.build.value.assignments["boons.tier1"]).toEqual({
+    expect(builds.build.value!.assignments["boons.tier1"]).toEqual({
       ...seededRows,
       "boon-tier1-power": 3,
     });
@@ -699,7 +702,7 @@ describe("buildEditor.clearSection", () => {
 
     buildEditor.clearSection("boons", "Boons");
     buildEditor.undo();
-    expect(builds.build.value.assignments["boons.tier1"]).toEqual({
+    expect(builds.build.value!.assignments["boons.tier1"]).toEqual({
       ...seededRows,
       "boon-tier1-power": 3,
     });
@@ -721,11 +724,11 @@ describe("buildEditor.setChoice applies the picked item's defaultParams", () => 
     const { builds, buildEditor } = await freshStores();
     buildEditor.setChoice("options.paragon", "paragon-hellbringer");
 
-    expect(builds.build.value.choices["options.paragon"]).toBe(
+    expect(builds.build.value!.choices["options.paragon"]).toBe(
       "paragon-hellbringer",
     );
-    expect(builds.build.value.context.role).toBe("dps");
-    expect(builds.build.value.context.forte).toEqual({
+    expect(builds.build.value!.context.role).toBe("dps");
+    expect(builds.build.value!.context.forte).toEqual({
       primary: "power_p",
       secondaryA: "strike_p",
       secondaryB: "awareness_p",
@@ -737,11 +740,11 @@ describe("buildEditor.setChoice applies the picked item's defaultParams", () => 
     buildEditor.setChoice("options.paragon", "paragon-hellbringer");
     buildEditor.undo();
 
-    expect(builds.build.value.choices["options.paragon"]).toBeUndefined();
-    expect(builds.build.value.context.role).toBeUndefined();
+    expect(builds.build.value!.choices["options.paragon"]).toBeUndefined();
+    expect(builds.build.value!.context.role).toBeUndefined();
     // `forte` is a compound field: replaceActive's normalization always gives it an object,
     // just an empty one once the picks themselves are gone -- unlike the scalar `role` above.
-    expect(builds.build.value.context.forte).toEqual({});
+    expect(builds.build.value!.context.forte).toEqual({});
   });
 
   it("leaves defaultParams as ordinary editable fields (what-if override)", async () => {
@@ -760,15 +763,15 @@ describe("buildEditor.setChoice applies the picked item's defaultParams", () => 
       "healer",
     );
 
-    expect(builds.build.value.context.role).toBe("healer");
+    expect(builds.build.value!.context.role).toBe("healer");
   });
 
   it("does nothing extra when the picked item has no defaultParams", async () => {
     const { builds, buildEditor } = await freshStores();
     buildEditor.setChoice("ring1", "ItemA");
 
-    expect(builds.build.value.choices.ring1).toBe("ItemA");
-    expect(builds.build.value.context.role).toBeUndefined();
+    expect(builds.build.value!.choices.ring1).toBe("ItemA");
+    expect(builds.build.value!.context.role).toBeUndefined();
   });
 });
 
@@ -806,11 +809,13 @@ describe("buildEditor item_picker_list rows", () => {
     const slot = resolved.db.value.slotById.get(LIST)!;
     if (slot.type !== "item_picker_list") throw new Error("not a list slot");
 
-    expect(builds.build.value.listRows[LIST]).toBe(slot.defaultRows ?? 0);
+    expect(builds.build.value!.listRows[LIST]).toBe(slot.defaultRows ?? 0);
     buildEditor.addListRow(slot);
     buildEditor.addListRow(slot);
-    expect(builds.build.value.listRows[LIST]).toBe((slot.defaultRows ?? 0) + 2);
-    expect(builds.build.value.choices[row(1)]).toBeUndefined();
+    expect(builds.build.value!.listRows[LIST]).toBe(
+      (slot.defaultRows ?? 0) + 2,
+    );
+    expect(builds.build.value!.choices[row(1)]).toBeUndefined();
   });
 
   it("closes the gap when a row in the middle is removed", async () => {
@@ -826,7 +831,7 @@ describe("buildEditor item_picker_list rows", () => {
 
     buildEditor.removeListRow(row(2));
 
-    const build = builds.build.value;
+    const build = builds.build.value!;
     expect(build.listRows[LIST]).toBe(2);
     expect(build.choices[row(1)]).toBe("ItemA");
     expect(build.choices[row(2)]).toBe("ItemC");
@@ -844,12 +849,12 @@ describe("buildEditor item_picker_list rows", () => {
     buildEditor.setChoice(row(2), "ItemB");
 
     buildEditor.removeListRow(row(1));
-    expect(builds.build.value.choices[row(1)]).toBe("ItemB");
+    expect(builds.build.value!.choices[row(1)]).toBe("ItemB");
 
     buildEditor.undo();
-    expect(builds.build.value.listRows[LIST]).toBe(2);
-    expect(builds.build.value.choices[row(2)]).toBe("ItemB");
-    expect(builds.build.value.choices[row(1)]).toBeUndefined();
+    expect(builds.build.value!.listRows[LIST]).toBe(2);
+    expect(builds.build.value!.choices[row(2)]).toBe("ItemB");
+    expect(builds.build.value!.choices[row(1)]).toBeUndefined();
   });
 
   it("ignores a row that is past the end of the list", async () => {
@@ -859,7 +864,7 @@ describe("buildEditor item_picker_list rows", () => {
     buildEditor.addListRow(slot);
 
     buildEditor.removeListRow(row(4));
-    expect(builds.build.value.listRows[LIST]).toBe(1);
+    expect(builds.build.value!.listRows[LIST]).toBe(1);
   });
 
   it("clearSection drops every row the list held", async () => {
@@ -872,8 +877,8 @@ describe("buildEditor item_picker_list rows", () => {
 
     buildEditor.clearSection(slot.section, "Misc");
 
-    expect(builds.build.value.listRows[LIST]).toBe(slot.defaultRows ?? 0);
-    expect(builds.build.value.choices[row(2)]).toBeUndefined();
+    expect(builds.build.value!.listRows[LIST]).toBe(slot.defaultRows ?? 0);
+    expect(builds.build.value!.choices[row(2)]).toBeUndefined();
   });
 
   it("applyPreset grows a list to cover the rows it names", async () => {
@@ -888,8 +893,8 @@ describe("buildEditor item_picker_list rows", () => {
       choices: { [row(3)]: "ItemC" },
     });
 
-    expect(builds.build.value.listRows[LIST]).toBe(3);
-    expect(builds.build.value.choices[row(3)]).toBe("ItemC");
+    expect(builds.build.value!.listRows[LIST]).toBe(3);
+    expect(builds.build.value!.choices[row(3)]).toBe("ItemC");
   });
 });
 
@@ -933,11 +938,11 @@ describe("buildEditor toggleable slots", () => {
     const rowDef = rowSlotOf(resolved, row(1));
 
     buildEditor.setSlotDisabled(rowDef, true);
-    expect(builds.build.value.disabledSlots[row(1)]).toBe(true);
+    expect(builds.build.value!.disabledSlots[row(1)]).toBe(true);
 
     buildEditor.undo();
-    expect(builds.build.value.disabledSlots[row(1)]).toBeUndefined();
-    expect(builds.build.value.choices[row(1)]).toBe("ItemA");
+    expect(builds.build.value!.disabledSlots[row(1)]).toBeUndefined();
+    expect(builds.build.value!.choices[row(1)]).toBe("ItemA");
   });
 
   it("switching back on drops the entry rather than storing an on state", async () => {
@@ -950,7 +955,7 @@ describe("buildEditor toggleable slots", () => {
 
     buildEditor.setSlotDisabled(rowDef, true);
     buildEditor.setSlotDisabled(rowDef, false);
-    expect(builds.build.value.disabledSlots).toEqual({});
+    expect(builds.build.value!.disabledSlots).toEqual({});
   });
 
   it("keeps the off state when the pick changes, drops it when the row is emptied", async () => {
@@ -962,10 +967,10 @@ describe("buildEditor toggleable slots", () => {
     buildEditor.setSlotDisabled(rowSlotOf(resolved, row(1)), true);
 
     buildEditor.setChoice(row(1), "ItemB");
-    expect(builds.build.value.disabledSlots[row(1)]).toBe(true);
+    expect(builds.build.value!.disabledSlots[row(1)]).toBe(true);
 
     buildEditor.setChoice(row(1), "");
-    expect(builds.build.value.disabledSlots[row(1)]).toBeUndefined();
+    expect(builds.build.value!.disabledSlots[row(1)]).toBeUndefined();
   });
 
   it("carries the off state when a removed row shifts the rows below it up", async () => {
@@ -979,7 +984,7 @@ describe("buildEditor toggleable slots", () => {
 
     buildEditor.removeListRow(row(2));
 
-    const build = builds.build.value;
+    const build = builds.build.value!;
     expect(build.choices[row(2)]).toBe("ItemC");
     expect(build.disabledSlots[row(2)]).toBe(true);
     expect(build.disabledSlots[row(3)]).toBeUndefined();
@@ -994,7 +999,7 @@ describe("buildEditor toggleable slots", () => {
     buildEditor.setSlotDisabled(rowSlotOf(resolved, row(1)), true);
 
     buildEditor.clearSection(slot.section, "Misc");
-    expect(builds.build.value.disabledSlots).toEqual({});
+    expect(builds.build.value!.disabledSlots).toEqual({});
   });
 });
 
@@ -1008,14 +1013,14 @@ describe("buildEditor slot data", () => {
 
   it("applies every field of the compare build's slot, not just the pick", async () => {
     const { builds, buildEditor } = await freshStores();
-    const other = builds.build.value;
+    const other = builds.build.value!;
     other.choices[SLOT] = "ItemA";
     other.values[SLOT] = { magnitude: 5 };
     other.assignments[SLOT] = { ItemA: 3 };
     other.disabledSlots[SLOT] = true;
 
     builds.createBuild();
-    const mine = builds.build.value;
+    const mine = builds.build.value!;
     mine.compare.id = other.id;
     buildEditor.applyFromCompare(SLOT);
 
@@ -1029,10 +1034,10 @@ describe("buildEditor slot data", () => {
 
   it("clears every field when the compare build's slot is empty", async () => {
     const { builds, buildEditor } = await freshStores();
-    const other = builds.build.value;
+    const other = builds.build.value!;
 
     builds.createBuild();
-    const mine = builds.build.value;
+    const mine = builds.build.value!;
     mine.compare.id = other.id;
     mine.choices[SLOT] = "ItemA";
     mine.values[SLOT] = { magnitude: 5 };
@@ -1052,7 +1057,7 @@ describe("buildEditor slot data", () => {
     const INSIGNIA = "insignia.insignia1_1";
     // Set before the mount, so the pick lands while the group is still in its manual fallback.
     buildEditor.setChoice(INSIGNIA, "aggression-barbed");
-    const build = builds.build.value;
+    const build = builds.build.value!;
     build.values[INSIGNIA] = { magnitude: 5 };
     build.disabledSlots[INSIGNIA] = true;
 
@@ -1103,17 +1108,17 @@ describe("seeding from the composed catalog", () => {
   it("a new build starts on the layer's own default", async () => {
     const { builds } = await storesWithPick();
     builds.createBuild();
-    expect(builds.build.value.choices[SLOT]).toBe(ITEM);
+    expect(builds.build.value!.choices[SLOT]).toBe(ITEM);
   });
 
   it("clearing every slot puts the default back instead of emptying the row", async () => {
     const { builds, buildEditor } = await storesWithPick();
     builds.createBuild();
     buildEditor.setChoice(SLOT, "");
-    expect(builds.build.value.choices[SLOT]).toBeUndefined();
+    expect(builds.build.value!.choices[SLOT]).toBeUndefined();
 
     buildEditor.clearSlots();
-    expect(builds.build.value.choices[SLOT]).toBe(ITEM);
+    expect(builds.build.value!.choices[SLOT]).toBe(ITEM);
   });
 
   it("clearing the section the slot lives in puts the default back too", async () => {
@@ -1122,7 +1127,7 @@ describe("seeding from the composed catalog", () => {
     buildEditor.setChoice(SLOT, "");
 
     buildEditor.clearSection("options", "Options");
-    expect(builds.build.value.choices[SLOT]).toBe(ITEM);
+    expect(builds.build.value!.choices[SLOT]).toBe(ITEM);
   });
 
   it("resetting the build re-seeds it", async () => {
@@ -1131,6 +1136,6 @@ describe("seeding from the composed catalog", () => {
     buildEditor.setChoice(SLOT, "");
 
     buildEditor.resetAll();
-    expect(builds.build.value.choices[SLOT]).toBe(ITEM);
+    expect(builds.build.value!.choices[SLOT]).toBe(ITEM);
   });
 });

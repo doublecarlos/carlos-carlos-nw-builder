@@ -19,6 +19,9 @@ async function freshStores() {
   const buildEditor = await import("../../../src/stores/buildEditor");
   builds._setLoading(false);
   layers._setLoading(false);
+  const storage = await import("../../../src/storage/storage");
+  // Every test starts from one "Build 1".
+  builds.replaceActive(storage.defaultBuild("Build 1"));
   return { builds, folders, landing, layers, selection, trash, buildEditor };
 }
 
@@ -35,21 +38,21 @@ describe("builds store", () => {
     const before = builds.builds.value.length;
     builds.createBuild();
     expect(builds.builds.value.length).toBe(before + 1);
-    expect(builds.build.value.name).toMatch(/^Build \d+$/);
+    expect(builds.build.value!.name).toMatch(/^Build \d+$/);
   });
 
   it("duplicateBuild copies the active build", async () => {
     const { builds } = await freshStores();
     builds.createBuild();
-    const name = builds.build.value.name;
+    const name = builds.build.value!.name;
     builds.duplicateBuild();
-    expect(builds.build.value.name).toBe(`${name} copy`);
+    expect(builds.build.value!.name).toBe(`${name} copy`);
   });
 
   it("deleteBuild moves the build to trash", async () => {
     const { builds, trash } = await freshStores();
     builds.createBuild();
-    const secondId = builds.build.value.id;
+    const secondId = builds.build.value!.id;
 
     builds.createBuild();
     expect(builds.builds.value.length).toBeGreaterThanOrEqual(3);
@@ -59,23 +62,17 @@ describe("builds store", () => {
     expect(trash.trashed.value.some((e) => e.item.id === secondId)).toBe(true);
   });
 
-  it("deleteBuild replaces the last build with an empty one", async () => {
-    const { builds, landing, trash } = await freshStores();
-
-    // There should be exactly one build initially.
+  it("deleteBuild of the last build leaves no builds behind", async () => {
+    const { builds, landing, selection, trash } = await freshStores();
     expect(builds.builds.value.length).toBe(1);
-    const oldId = builds.build.value.id;
+    const oldId = builds.build.value!.id;
 
     builds.deleteBuild(oldId);
 
-    // The old build should be in trash.
     expect(trash.trashed.value.some((e) => e.item.id === oldId)).toBe(true);
-
-    // There should still be exactly one build, with a fresh id.
-    expect(builds.builds.value.length).toBe(1);
-    expect(builds.build.value.id).not.toBe(oldId);
-    expect(builds.build.value.name).toBe("Build 1");
-
+    expect(builds.builds.value).toEqual([]);
+    expect(builds.build.value).toBeNull();
+    expect(selection.selection.value).toBeNull();
     // The builder stays up: the landing screen would hide the trash the build just went to.
     expect(landing.showing.value).toBe(false);
   });
@@ -83,14 +80,13 @@ describe("builds store", () => {
   it("showLandingIfEmptied raises the landing once the last deletion is purged", async () => {
     const { builds, landing, trash } = await freshStores();
 
-    builds.deleteBuild(builds.build.value.id);
+    builds.deleteBuild(builds.build.value!.id);
     expect(landing.showing.value).toBe(false);
 
     trash.purge(trash.trashed.value[0]);
     builds.showLandingIfEmptied();
 
-    // The build left standing is the placeholder this store keeps alive, which nobody wrote.
-    expect(builds.builds.value.length).toBe(1);
+    expect(builds.builds.value.length).toBe(0);
     expect(landing.showing.value).toBe(true);
   });
 
@@ -98,7 +94,7 @@ describe("builds store", () => {
     const { builds, layers, landing, trash } = await freshStores();
     layers.createLayer();
 
-    builds.deleteBuild(builds.build.value.id);
+    builds.deleteBuild(builds.build.value!.id);
     trash.purge(trash.trashed.value.find((e) => e.kind === "build")!);
     builds.showLandingIfEmptied();
 
@@ -108,7 +104,7 @@ describe("builds store", () => {
   it("showLandingIfEmptied leaves the builder up for a build someone wrote", async () => {
     const { builds, landing, trash } = await freshStores();
     builds.createBuild();
-    const kept = builds.build.value.id;
+    const kept = builds.build.value!.id;
 
     builds.deleteBuild(builds.builds.value.find((b) => b.id !== kept)!.id);
     trash.purge(trash.trashed.value[0]);
@@ -120,7 +116,7 @@ describe("builds store", () => {
   it("moveBuild reorders within bounds", async () => {
     const { builds } = await freshStores();
     builds.createBuild();
-    const id = builds.build.value.id;
+    const id = builds.build.value!.id;
     builds.moveBuild(id, -1);
     const idx = builds.builds.value.findIndex((b) => b.id === id);
     expect(idx).toBeGreaterThanOrEqual(0);
@@ -172,7 +168,7 @@ describe("builds store", () => {
   it("otherBuilds excludes the active build", async () => {
     const { builds } = await freshStores();
     builds.createBuild();
-    const activeId = builds.build.value.id;
+    const activeId = builds.build.value!.id;
     expect(builds.otherBuilds.value.every((o) => o.value !== activeId)).toBe(
       true,
     );
@@ -180,9 +176,9 @@ describe("builds store", () => {
 
   it("otherBuilds names the folder holding each build", async () => {
     const { builds, folders } = await freshStores();
-    const topLevelId = builds.build.value.id;
+    const topLevelId = builds.build.value!.id;
     builds.createBuild();
-    const filedId = builds.build.value.id;
+    const filedId = builds.build.value!.id;
     const folderId = folders.createFolder("Alts");
     folders.placeBuild(filedId, folderId);
 
@@ -196,11 +192,11 @@ describe("builds store", () => {
 
   it("otherBuilds lists in sidebar order, so a folder's builds stay together", async () => {
     const { builds, folders } = await freshStores();
-    const firstId = builds.build.value.id;
+    const firstId = builds.build.value!.id;
     builds.createBuild();
-    const secondId = builds.build.value.id;
+    const secondId = builds.build.value!.id;
     builds.createBuild();
-    const thirdId = builds.build.value.id;
+    const thirdId = builds.build.value!.id;
     const folderId = folders.createFolder("Alts");
     // The two filed builds start out either side of the third, so only the sidebar's own
     // ordering can bring them back together -- which is what lets the picker head them once.

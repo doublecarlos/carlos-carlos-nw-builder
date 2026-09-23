@@ -192,7 +192,7 @@ function folderHandleProps(id: string, index: number) {
       v-bind="rootDrop.listProps()"
       data-testid="nav-builds-list"
       data-nav-list
-      class="relative space-y-1 overflow-y-auto pl-1 pb-8"
+      class="relative space-y-1 overflow-y-auto pl-1 pb-1"
     >
       <!-- Rendered first: resolveInList measures `listContentBottom` from the list root's last
            DOM child. Rendered after the rows, this absolute element would become that child
@@ -308,7 +308,11 @@ function folderHandleProps(id: string, index: number) {
       </template>
     </div>
 
-    <div class="mt-2 flex items-center justify-center gap-1">
+    <!-- Fills the rest of the section, so a drop anywhere below the rows appends. -->
+    <div
+      v-bind="rootDrop.tailProps()"
+      class="flex flex-1 items-start justify-center gap-1 pt-2"
+    >
       <BaseButton data-testid="nav-add-build" @click="$emit('create')"
         ><Plus />New</BaseButton
       >

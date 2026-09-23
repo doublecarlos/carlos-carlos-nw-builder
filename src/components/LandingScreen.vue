@@ -1,5 +1,6 @@
 <script setup lang="ts">
-// Landing screen: what stands in front of the builder whenever the app holds nothing at all.
+// Landing screen: what stands in front of the builder whenever the app holds nothing at all,
+// and what fills the editor area beside the nav while there are no builds.
 // Says what the app is for and offers the three ways in -- start fresh, import a file, or
 // read a build back out of the game.
 import { useTemplateRef } from "vue";
@@ -15,13 +16,6 @@ const importFileInput = useTemplateRef("importFileInput");
 // Each way in just makes content; selecting it is what puts the builder up, so nothing here
 // has to dismiss this screen by hand. An import that fails, or a wizard the user backs out
 // of, therefore leaves them here with the ways in still in front of them.
-
-/** The builds store keeps one build alive at all times, so a fresh visit already has an empty
- *  "Build 1" waiting behind this screen. Starting here commits that one; minting another
- *  would only leave the newcomer with a stray "Build 1" they never asked for. */
-function startBuilding() {
-  builds.commitActive();
-}
 
 function triggerImport() {
   importFileInput.value?.click();
@@ -71,7 +65,7 @@ async function onImportFile(event: Event) {
         type="button"
         class="inline-flex cursor-pointer items-center gap-2 rounded-md bg-accent-soft px-6 py-3 text-lg font-semibold text-accent hover:bg-accent-soft/80"
         data-testid="landing-new-build"
-        @click="startBuilding"
+        @click="builds.startBuild()"
       >
         <Plus class="size-[18px]" />
         New build

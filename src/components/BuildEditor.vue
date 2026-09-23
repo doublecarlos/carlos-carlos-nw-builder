@@ -63,6 +63,7 @@ import * as goTo from "../stores/goTo";
 import { isMac } from "../lib/platform";
 import { animateScrollTop, type CancelScroll } from "../lib/animate-scroll";
 import type {
+  Build,
   Item,
   EvaluatedBonus,
   EngineError,
@@ -77,7 +78,8 @@ const activeElement = useActiveElement();
 const tooltip = ref<InstanceType<typeof BasePopover> | null>(null);
 
 const db = engine.db;
-const build = builds.build;
+const props = defineProps<{ build: Build }>();
+const build = computed(() => props.build);
 const resolved = engine.resolved;
 const bonusById = engine.bonusById;
 
@@ -940,7 +942,7 @@ watch(
     <div
       class="sticky top-0 z-toolbar flex flex-col flex-wrap gap-2 border-b border-line bg-surface px-3.5 py-2"
     >
-      <QuickOptions class="flex-1" />
+      <QuickOptions class="flex-1" :build="build" />
       <div class="flex flex-wrap items-center gap-1.5">
         <BaseInput
           v-model="filterText"

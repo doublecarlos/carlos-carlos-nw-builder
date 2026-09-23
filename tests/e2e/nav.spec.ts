@@ -344,11 +344,10 @@ test("deleting the last build leaves it in the trash, nav still up", async ({
   const menu = await openRowMenu(buildRow(page, "Build 1"));
   await confirmDangerAction(menu, "Delete");
 
-  // A fresh build takes its place rather than the landing screen, which would hide the nav
-  // the deleted build has to be restored from.
-  await expect(page.getByTestId("landing")).toBeHidden();
+  // No build takes its place, and the nav the deleted build is restored from stays up.
+  await expect(page.getByTestId("nav-column")).toBeVisible();
   await expect(recentlyDeletedHeader(page)).toBeVisible();
-  await expect(buildRow(page, "Build 1")).toBeVisible();
+  await expect(buildRow(page, "Build 1")).toBeHidden();
 });
 
 test("clicking outside an open menu closes it", async ({ page }) => {

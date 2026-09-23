@@ -3,6 +3,7 @@
 //
 // Layout: header (always visible), then either a loading skeleton, the first-run landing
 // screen, or the three-column builder (nav, editor area with sticky header, stat panel).
+// With no builds, the landing content takes the place of the editor and stat panel.
 import { watch, computed } from "vue";
 import { useEventListener } from "@vueuse/core";
 import NavBar from "./components/NavBar.vue";
@@ -67,6 +68,7 @@ const loading = builds.loading;
 // --- landing screen -----------------------------------------------------------------------
 // Stands in front of the builder whenever the app holds nothing at all.
 const showLanding = landing.showing;
+const activeBuild = builds.build;
 
 /** The selected layer object, for the LayerEditor prop. */
 const selectedLayer = computed(() => {
@@ -207,10 +209,10 @@ syncRoute({ push: false });
           </template>
 
           <!-- Build selected: BuildEditor + StatPanel -->
-          <template v-else>
+          <template v-else-if="activeBuild">
             <!-- Column 2: Editor area -->
             <div class="flex min-w-0 flex-1 flex-col">
-              <BuildEditor />
+              <BuildEditor :build="activeBuild" />
             </div>
 
             <!-- Column 3: Stat panel. Same gutter treatment as the nav, mirrored. -->
@@ -229,11 +231,16 @@ syncRoute({ push: false });
                 v-if="!detailsCollapsed"
                 class="min-w-0 flex-1 overflow-y-auto"
               >
-                <BuildDetails v-if="resolved.ok" />
+                <BuildDetails v-if="resolved.ok" :build="activeBuild" />
                 <div v-else class="p-6 text-muted">No build selected</div>
               </div>
             </div>
           </template>
+
+          <!-- No builds: the landing content spans columns 2 and 3, beside the nav -->
+          <div v-else class="flex min-w-0 flex-1" data-testid="no-builds">
+            <LandingScreen />
+          </div>
 
           <div
             v-if="editorFocused"

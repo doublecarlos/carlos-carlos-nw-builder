@@ -35,11 +35,6 @@ const SAVE_DEBOUNCE_MS = 250;
 const _builds = ref<Map<string, Build>>(new Map());
 const _loading = ref(true);
 
-/** The build this store keeps alive without anyone having asked for it -- minted below when
- *  the pool would otherwise be empty, and unwritten until an edit or `commitActive` marks it
- *  dirty. It is the one build that does not count as content: see `showLandingIfEmptied`. */
-let _placeholderId: string | null = null;
-
 /** Every build in sidebar order -- folder contents expanded in place, so the flat list the
  *  rest of the app reads (compare pickers, bundle export, the Go To palette) is unchanged by
  *  grouping. `folders.entries` is what the sidebar itself renders. */
@@ -68,19 +63,14 @@ export const navEntries = computed<BuildNavEntry[]>(() =>
   }),
 );
 
-export const build = computed(() => {
+/** The selected build, else the first one. Null only when there are no builds. */
+export const build = computed<Build | null>(() => {
   const sel = selection.selection.value;
   if (sel?.kind === "build" && _builds.value.has(sel.id)) {
     return _builds.value.get(sel.id)!;
   }
   const first = folders.orderedBuildIds.value[0];
-  if (first) return _builds.value.get(first)!;
-  // Guarantee at least one build exists.
-  const b = storage.defaultBuild("Build 1", engineDb.value);
-  _builds.value.set(b.id, b);
-  buildOrder.value.push(b.id);
-  _placeholderId = b.id;
-  return b;
+  return first ? _builds.value.get(first)! : null;
 });
 
 export const loading = computed(() => _loading.value);
@@ -129,16 +119,6 @@ export function replaceActive(newBuild: Build) {
   selection.selectBuild(newBuild.id);
 }
 
-/** Persists the build this store keeps alive, and selects it. What the landing screen's
- *  "New build" does: an empty "Build 1" is always already waiting there, but nothing has
- *  written it yet, so without this it would be gone again on the next load. */
-export function commitActive() {
-  const b = build.value;
-  if (!b) return;
-  markDirty(b.id);
-  selection.selectBuild(b.id);
-}
-
 /** Puts a build into the pool at `placement`. */
 function addBuild(b: Build, placement: BuildPlacement) {
   _builds.value.set(b.id, b);
@@ -147,14 +127,12 @@ function addBuild(b: Build, placement: BuildPlacement) {
 }
 
 /** Moves a build to the trash. Returns the placement it had, or null when there is no such
- *  build. Selection moves on to the first build when the trashed one was selected. */
+ *  build. Selection moves on to the first build when the trashed one was selected, or is
+ *  cleared when none is left. */
 function trashBuild(id: string): BuildPlacement | null {
   const b = _builds.value.get(id);
   const placement = folders.placementOf(id);
   if (!b || !placement) return null;
-
-  const wasLast = _builds.value.size < 2;
-  if (_placeholderId === id) _placeholderId = null;
 
   clearDirty(id);
   _builds.value.delete(id);
@@ -163,25 +141,16 @@ function trashBuild(id: string): BuildPlacement | null {
 
   trash._add("build", b);
 
-  // Deleting the last build hands a fresh one its place, so every reader of `build.value`
-  // still finds one. The builder stays up rather than dropping back to the landing screen:
-  // the build just deleted is sitting in the trash, and the landing would hide the nav that
-  // is the only way to restore it.
-  if (wasLast) {
-    const replacement = storage.defaultBuild("Build 1", engineDb.value);
-    _builds.value.set(replacement.id, replacement);
-    folders.appendBuild(replacement.id);
-    _placeholderId = replacement.id;
-    selection.selectBuild(replacement.id);
-    return placement;
-  }
-
+  // Deleting the last build leaves the builder up with no builds, rather than the landing
+  // screen: the build is sitting in the trash, and the landing would hide the nav it is
+  // restored from.
   if (
     selection.selection.value?.kind === "build" &&
     selection.selection.value.id === id
   ) {
     const next = folders.orderedBuildIds.value[0];
     if (next) selection.selectBuild(next);
+    else selection.clearSelection();
   }
   return placement;
 }
@@ -228,6 +197,13 @@ export function createBuild(folderId: string | null = null) {
   selection.selectBuild(b.id);
   showNotice(`Created “${b.name}”`);
   recordAdded(`create build "${b.name}"`, b.id);
+}
+
+/** The landing screen's "New build": the first build, not a step to undo or announce. */
+export function startBuild() {
+  const b = storage.defaultBuild("Build 1", engineDb.value);
+  addBuild(b, { folderId: null, index: Number.MAX_SAFE_INTEGER });
+  selection.selectBuild(b.id);
 }
 
 export function duplicateBuild() {
@@ -291,12 +267,10 @@ export function setName(id: string, name: string): NavStepOutcome {
 }
 
 /** Raises the landing screen again if emptying the trash left the app with nothing at all:
- *  no build anyone has written, no layers, and nothing else to restore. Lives here rather
- *  than in trash.ts, which builds and layers both import, and it is this store that knows
- *  which build is only a placeholder. */
+ *  no builds, no layers, and nothing else to restore. Lives here rather than in trash.ts,
+ *  which builds and layers both import. */
 export function showLandingIfEmptied() {
-  const written = builds.value.some((b) => b.id !== _placeholderId);
-  if (written) return;
+  if (builds.value.length > 0) return;
   if (layers.layers.value.length > 0) return;
   if (trash.trashed.value.length > 0) return;
   landing.show();
@@ -410,19 +384,6 @@ export function upsertImported(
   return unpacked;
 }
 
-/** Drops the placeholder build the landing screen keeps alive (see `build`, and the watcher
- *  at the foot of this file), so builds arriving from a file do not land beside an empty
- *  "Build 1" nobody asked for. No-op once anything has been committed: the landing screen
- *  standing is what says the pool holds nothing but the placeholder. */
-export function discardPlaceholder() {
-  if (!landing.showing.value) return;
-  for (const id of [..._builds.value.keys()]) {
-    clearDirty(id);
-    _builds.value.delete(id);
-    folders.removeBuild(id);
-  }
-}
-
 /** Selects an imported build, once the whole file has been written. */
 export function selectImported(id: string) {
   if (_builds.value.has(id)) selection.selectBuild(id);
@@ -493,7 +454,6 @@ onPageHide(() => void flushSave());
 
 function markDirty(id: string) {
   if (_loading.value) return;
-  if (id === _placeholderId) _placeholderId = null;
   _dirtyIds.add(id);
   flushSaveDebounced();
 }
@@ -504,15 +464,11 @@ function clearDirty(id: string) {
 
 // Deep-watch the active build so buildEditor.ts content edits (which mutate build.value in
 // place) trigger persistence of just that build's record. Only edits: a swap to a different
-// build is either one already stored or a placeholder nobody has asked for yet, and writing
-// that would turn "deleted my last build" into stored content. The mutations that mint real
-// builds all mark their own dirt. Never while the landing screen is up either, for the same
-// reason -- nothing behind it has been asked for.
+// build is already stored, and the mutations that mint builds mark their own dirt.
 watch(
   () => build.value,
   (b, prev) => {
-    if (b && b.id === prev?.id && !_loading.value && !landing.showing.value)
-      markDirty(b.id);
+    if (b && b.id === prev?.id && !_loading.value) markDirty(b.id);
   },
   { deep: true },
 );

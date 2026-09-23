@@ -47,6 +47,9 @@ async function freshStores() {
   builds._setLoading(false);
   history._setLoading(false);
   layers._setLoading(false);
+  const storage = await import("../../../src/storage/storage");
+  // Every test starts from one "Build 1".
+  builds.replaceActive(storage.defaultBuild("Build 1"));
   // Ensure at least one layer exists (createLayer adds to layerOrder)
   if (!layers.layers.value.length) {
     layers.createLayer("Layer 1");
@@ -63,7 +66,7 @@ describe("history store", () => {
 
   it("a build edit then undo restores that build", async () => {
     const { builds, history, selection } = await freshStores();
-    const b = builds.build.value;
+    const b = builds.build.value!;
     selection.selectBuild(b.id);
 
     history.snapshot("build", b.id, "choice:ring1", "ring1 → ItemA", b);
@@ -79,23 +82,23 @@ describe("history store", () => {
 
   it("undo on one build leaves other builds alone", async () => {
     const { builds, history, selection } = await freshStores();
-    const b1 = builds.build.value;
+    const b1 = builds.build.value!;
     selection.selectBuild(b1.id);
 
     // Create a second build
     builds.createBuild();
-    const b2 = builds.build.value;
+    const b2 = builds.build.value!;
     expect(b2.id).not.toBe(b1.id);
 
     // Edit b1
     selection.selectBuild(b1.id);
-    const curB1 = builds.build.value;
+    const curB1 = builds.build.value!;
     history.snapshot("build", b1.id, "choice:ring1", "ring1 → A", curB1);
     curB1.choices.ring1 = "A";
 
     // Edit b2
     selection.selectBuild(b2.id);
-    const curB2 = builds.build.value;
+    const curB2 = builds.build.value!;
     history.snapshot("build", b2.id, "choice:ring1", "ring1 → B", curB2);
     curB2.choices.ring1 = "B";
 
@@ -135,7 +138,7 @@ describe("history store", () => {
 
   it("undoing a build edit while a layer is selected switches selection to the build", async () => {
     const { builds, history, layers, selection } = await freshStores();
-    const b = builds.build.value;
+    const b = builds.build.value!;
     selection.selectBuild(b.id);
 
     history.snapshot("build", b.id, "choice:ring1", "ring1 → X", b);
@@ -164,7 +167,7 @@ describe("history store", () => {
     overlay.items = { ...overlay.items, item1: { id: "item1", name: "X" } };
 
     // Switch to build
-    const b = builds.build.value;
+    const b = builds.build.value!;
     selection.selectBuild(b.id);
 
     // Undo the layer - should switch selection back to the layer
@@ -178,7 +181,7 @@ describe("history store", () => {
 
   it("collapses two edits of the same field inside 700 ms into one step", async () => {
     const { builds, history, selection } = await freshStores();
-    const b = builds.build.value;
+    const b = builds.build.value!;
     selection.selectBuild(b.id);
 
     history.snapshot("build", b.id, "choice:ring1", "ring1 → A", b);
@@ -198,7 +201,7 @@ describe("history store", () => {
   it("does not coalesce once the coalescing window has elapsed", async () => {
     vi.useFakeTimers();
     const { builds, history, selection } = await freshStores();
-    const b = builds.build.value;
+    const b = builds.build.value!;
     selection.selectBuild(b.id);
 
     history.snapshot("build", b.id, "choice:ring1", "ring1 → A", b);
@@ -226,7 +229,7 @@ describe("history store", () => {
 
   it("past a depth of 50 the oldest entry drops", async () => {
     const { builds, history, selection } = await freshStores();
-    const b = builds.build.value;
+    const b = builds.build.value!;
     selection.selectBuild(b.id);
 
     // Push 51 entries
@@ -247,7 +250,7 @@ describe("history store", () => {
   it("history entry is persisted to the IDB store", async () => {
     vi.useFakeTimers();
     const { builds, history, selection } = await freshStores();
-    const b = builds.build.value;
+    const b = builds.build.value!;
     selection.selectBuild(b.id);
 
     history.snapshot("build", b.id, "choice:ring1", "ring1 → X", b);
@@ -268,7 +271,7 @@ describe("history store", () => {
 
   it("deleting an item keeps its history while it is in the trash", async () => {
     const { builds, history, selection, trash } = await freshStores();
-    const b = builds.build.value;
+    const b = builds.build.value!;
     selection.selectBuild(b.id);
 
     history.snapshot("build", b.id, "choice:ring1", "ring1 → X", b);
@@ -289,7 +292,7 @@ describe("history store", () => {
 
   it("purging from the trash drops the history too", async () => {
     const { builds, history, selection, trash } = await freshStores();
-    const b = builds.build.value;
+    const b = builds.build.value!;
     selection.selectBuild(b.id);
 
     history.snapshot("build", b.id, "choice:ring1", "ring1 → X", b);
@@ -312,7 +315,7 @@ describe("history store", () => {
 
   it("redo replays an undone step", async () => {
     const { builds, history, selection } = await freshStores();
-    const b = builds.build.value;
+    const b = builds.build.value!;
     selection.selectBuild(b.id);
 
     history.snapshot("build", b.id, "choice:ring1", "ring1 → X", b);

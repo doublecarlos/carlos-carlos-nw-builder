@@ -33,7 +33,10 @@ async function fresh() {
   builds._setLoading(false);
   history._setLoading(false);
   layers._setLoading(false);
-  void builds.build.value;
+  const storage = await import("../../../src/storage/storage");
+  // Every test starts from one "Build 1".
+  builds.replaceActive(storage.defaultBuild("Build 1"));
+  void builds.build.value!;
 
   const effects = effectScope();
   const bindings = effects.run(() => {
@@ -80,14 +83,14 @@ describe("useUndoRedo", () => {
     expect(s.scoped.undoLabel.value).toBe("ring1 → ItemA");
 
     s.scoped.undo();
-    expect(s.builds.build.value.choices.ring1).toBeUndefined();
+    expect(s.builds.build.value!.choices.ring1).toBeUndefined();
     expect(s.navHistory.canUndo.value).toBe(true);
     expect(s.scoped.canUndo.value).toBe(false);
     expect(s.scoped.canRedo.value).toBe(true);
     expect(s.scoped.redoLabel.value).toBe("ring1 → ItemA");
 
     s.scoped.redo();
-    expect(s.builds.build.value.choices.ring1).toBe("ItemA");
+    expect(s.builds.build.value!.choices.ring1).toBe("ItemA");
     s.dispose();
   });
 
@@ -119,7 +122,7 @@ describe("useUndoRedo", () => {
     expect(s.scoped.undoLabel.value).toBe("");
 
     s.scoped.undo();
-    expect(s.builds.build.value.choices.ring1).toBe("ItemA");
+    expect(s.builds.build.value!.choices.ring1).toBe("ItemA");
     s.dispose();
   });
 
@@ -140,7 +143,7 @@ describe("useItemUndoRedo", () => {
     expect(s.item.undoLabel.value).toBe("ring1 → ItemA");
 
     s.item.undo();
-    expect(s.builds.build.value.choices.ring1).toBeUndefined();
+    expect(s.builds.build.value!.choices.ring1).toBeUndefined();
     expect(s.navHistory.canUndo.value).toBe(true);
     expect(s.item.canUndo.value).toBe(false);
     s.dispose();
@@ -179,7 +182,7 @@ describe("form draft history", () => {
     s.scoped.undo();
     s.scoped.redo();
     expect(calls).toEqual({ undo: 1, redo: 1 });
-    expect(s.builds.build.value.choices.ring1).toBe("ItemA");
+    expect(s.builds.build.value!.choices.ring1).toBe("ItemA");
     s.dispose();
   });
 
@@ -202,7 +205,7 @@ describe("form draft history", () => {
 
     s.item.undo();
     expect(calls.undo).toBe(1);
-    expect(s.builds.build.value.choices.ring1).toBe("ItemA");
+    expect(s.builds.build.value!.choices.ring1).toBe("ItemA");
     s.dispose();
   });
 

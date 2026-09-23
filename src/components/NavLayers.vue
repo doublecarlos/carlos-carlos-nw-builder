@@ -102,7 +102,7 @@ function dragHandleProps(id: string, index: number) {
     <div
       v-bind="dropList.listProps()"
       data-nav-list
-      class="relative max-h-48 space-y-1 overflow-y-auto pl-1 pb-2"
+      class="relative max-h-48 space-y-1 overflow-y-auto pl-1 pb-1"
     >
       <DropIndicator :pos="dropList.separatorStyle.value" />
 
