@@ -103,7 +103,7 @@ const scalerParam = (
 });
 
 const slotsData: SlotsData = {
-  sections: [{ id: "gear", label: "Gear" }],
+  sections: [{ id: "gear", label: "Gear", slotIds: [] }],
   slots: [
     scalerParam("gear.mountBolster", "mountBolster", 1.25, {
       mode: "relative",

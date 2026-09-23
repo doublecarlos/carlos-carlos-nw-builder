@@ -24,6 +24,8 @@ describe("overlay localStorage", () => {
       bonuses: {},
       sectionPresets: {},
       slots: {},
+      sections: {},
+      filters: {},
     };
     storage.saveOverlay(overlay);
     expect(storage.loadOverlay()).toEqual(overlay);
@@ -37,6 +39,8 @@ describe("overlay localStorage", () => {
       bonuses: { x: null },
       sectionPresets: {},
       slots: {},
+      sections: {},
+      filters: {},
     });
   });
 });
@@ -134,6 +138,8 @@ describe("defaultLayer / normalizeLayer", () => {
       bonuses: {},
       sectionPresets: {},
       slots: {},
+      sections: {},
+      filters: {},
     };
     const layer = storage.normalizeLayer({ overlay });
     expect(layer.overlay.items["test-id"]).toBeDefined();
@@ -639,6 +645,85 @@ describe("BonusOccurrenceConfig: occurrenceInputs", () => {
   });
 });
 
+describe("defaultBuild with a composed catalog", () => {
+  const LAYER_SECTION = "notes";
+  const PICKER = "notes.pick";
+  const LIST = "notes.list";
+  const POINTS = "notes.points";
+  const CHOICE = "notes-choice";
+  const COUNTED = "notes-counted";
+
+  /** One layer adding a section and one slot of each seeding type, plus the items their
+   *  selectors resolve to. */
+  const layer = (): CatalogOverlay => ({
+    ...catalog.emptyOverlay(),
+    sections: {
+      [LAYER_SECTION]: {
+        id: LAYER_SECTION,
+        label: "Notes",
+        slotIds: [PICKER, LIST, POINTS],
+      },
+    },
+    items: {
+      [CHOICE]: { id: CHOICE, name: "Choice", filter: "notes_pick" },
+      [COUNTED]: {
+        id: COUNTED,
+        name: "Counted",
+        filter: "notes_points",
+        inlineRepetition: { min: 0, max: 5, default: 2 },
+      },
+    },
+    slots: {
+      [PICKER]: {
+        id: PICKER,
+        label: "Pick",
+        section: LAYER_SECTION,
+        type: "item_picker",
+        filter: "notes_pick",
+        default: CHOICE,
+      },
+      [LIST]: {
+        id: LIST,
+        label: "List",
+        section: LAYER_SECTION,
+        type: "item_picker_list",
+        filter: "notes_pick",
+        defaultRows: 3,
+      },
+      [POINTS]: {
+        id: POINTS,
+        label: "Points",
+        section: LAYER_SECTION,
+        type: "point_assignment",
+        filter: "notes_points",
+      },
+    },
+  });
+
+  it("seeds a layer-added picker, list and point row from the db it is handed", () => {
+    const build = storage.defaultBuild("Layered", catalog.makeDb([layer()]));
+    expect(build.choices[PICKER]).toBe(CHOICE);
+    expect(build.listRows[LIST]).toBe(3);
+    expect(build.assignments[POINTS]).toEqual({ [COUNTED]: 2 });
+  });
+
+  it("seeds the shipped defaults too, so the composed catalog only adds", () => {
+    const build = storage.defaultBuild("Layered", catalog.makeDb([layer()]));
+    const base = storage.defaultBuild();
+    expect(build.context).toEqual(base.context);
+    expect(build.assignments["boons.tier1"]).toEqual(
+      base.assignments["boons.tier1"],
+    );
+  });
+
+  it("seeds base only when no db is given", () => {
+    const build = storage.defaultBuild("Base only");
+    expect(build.choices[PICKER]).toBeUndefined();
+    expect(build.listRows[LIST]).toBeUndefined();
+    expect(build.assignments[POINTS]).toBeUndefined();
+  });
+});
+
 describe("defaultBuild and duplicate no longer carry updated", () => {
   it("defaultBuild does not have an updated field", () => {
     const build = storage.defaultBuild();
@@ -757,6 +842,8 @@ describe("toBuildJson with db (portable files)", () => {
       bonusById: new Map([[layerBonus.id, layerBonus]]),
       slots: [],
       authoredSlots: [],
+      sections: [],
+      filters: [],
     } as unknown as Db;
 
     const json = JSON.parse(storage.toBuildJson(build, db));
@@ -782,6 +869,8 @@ describe("toBuildJson with db (portable files)", () => {
       bonusById: new Map(),
       slots: [],
       authoredSlots: [],
+      sections: [],
+      filters: [],
     } as unknown as Db;
 
     const json = JSON.parse(storage.toBuildJson(build, db));
@@ -812,6 +901,8 @@ describe("toBuildJson with db (portable files)", () => {
       bonusById: new Map([[layerBonus.id, layerBonus]]),
       slots: [],
       authoredSlots: [],
+      sections: [],
+      filters: [],
     } as unknown as Db;
 
     const json = storage.toBuildJson(build, db);
@@ -870,6 +961,8 @@ describe("bundle round trip", () => {
       bonuses: {},
       sectionPresets: {},
       slots: {},
+      sections: {},
+      filters: {},
     };
 
     const json = storage.toBundleJson({ builds: [build], layers: [] });

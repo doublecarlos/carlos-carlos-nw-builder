@@ -55,6 +55,8 @@ const props = withDefaults(
      *  BuildEditor's "Create new from current" hands over a section's live state. Ignored once
      *  `source` is set, same contract ItemForm/BonusForm's own `duplicateFrom` has. */
     duplicateFrom?: SectionPreset | null;
+    /** The section a new preset lands in, from the outline's selection. */
+    defaultSection?: string;
     status?: EntryStatus;
     db: Db;
     allocatableIds?: string[];
@@ -62,6 +64,7 @@ const props = withDefaults(
   {
     source: null,
     duplicateFrom: null,
+    defaultSection: "",
     status: "base",
     allocatableIds: () => [],
   },
@@ -97,7 +100,11 @@ const { draft, error, dirty, displayId } = useEditorDraft<
 >({
   source: () => props.source,
   isNew,
-  buildDraft: (source) => buildDraft(source ?? props.duplicateFrom),
+  buildDraft: (source) => {
+    const local = buildDraft(source ?? props.duplicateFrom);
+    if (!source && !local.section) local.section = props.defaultSection;
+    return local;
+  },
   toEntity: (local) => toPreset(local, { id: presetId(local), db: props.db }),
   diffLabel,
   hasContent: (d) =>

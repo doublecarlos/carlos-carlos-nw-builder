@@ -10,9 +10,9 @@ import type { Build, Item, SlotsData } from "../../src/types";
 
 const slotsData: SlotsData = {
   sections: [
-    { id: "options", label: "Options" },
-    { id: "gear", label: "Gear" },
-    { id: "boons", label: "Boons" },
+    { id: "options", label: "Options", slotIds: [] },
+    { id: "gear", label: "Gear", slotIds: [] },
+    { id: "boons", label: "Boons", slotIds: [] },
   ],
   slots: [
     {

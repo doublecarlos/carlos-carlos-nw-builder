@@ -9,6 +9,7 @@ import { defaultBuild } from "../../src/storage/storage";
 import { NW_SLOTS } from "../../src/data/data";
 import type {
   Build,
+  FilterDef,
   Item,
   Schema,
   Slot,
@@ -44,7 +45,7 @@ const PER_GROUP = 4;
 /** Slot ids deliberately unlike the shipped ones, which is what proves the resolver finds
  * these rows through `stable` rather than by name. */
 const slots: SlotsData = {
-  sections: [{ id: "insignia", label: "Insignia" }],
+  sections: [{ id: "insignia", label: "Insignia", slotIds: [] }],
   slots: GROUPS.flatMap((g) => [
     picker(`g${g}.steed`, "mount", { group: g, role: "mount" }),
     ...Array.from({ length: PER_GROUP }, (_, i) =>
@@ -56,8 +57,9 @@ const slots: SlotsData = {
     ),
     picker(`g${g}.set-bonus`, "insignia_bonus", { group: g, role: "bonus" }),
   ]),
-  filterDefaults: { insignia_bonus: { maxCopies: 2 } },
 };
+
+const filters: FilterDef[] = [{ id: "insignia_bonus", maxCopies: 2 }];
 
 const fixed = (shape: string) => ({ shape });
 const universal = (preferred?: string) =>
@@ -179,7 +181,7 @@ const items: Item[] = [
   },
 ];
 
-const made = db.build(items, [], schema, slots);
+const made = db.build(items, [], schema, slots, filters);
 
 /** Slot ids by role, resolved through the db exactly as the app resolves them. */
 const mountSlot = (group: number) => insignia.mountSlotId(made, group)!;

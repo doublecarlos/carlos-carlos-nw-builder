@@ -44,6 +44,41 @@ export interface GameImportDataFile {
 export const GAME_IMPORT_DATA: GameImportDataFile =
   gameImportJson as GameImportDataFile;
 
+/** Slot ids the app writes to by name, rather than through a bag. Shared by the writers and
+ *  the lint that warns when a layer removes one. */
+export const REQUIRED_SLOT_IDS = {
+  class: {
+    id: "options.class",
+    writer: "the game import and the class migration",
+  },
+  race: { id: "raceLeveling.race", writer: "the game import" },
+} as const satisfies Record<string, { id: string; writer: string }>;
+
+/** Every slot and section id `game-import.json` names, with where, for the catalog lint. */
+export function gameImportReferences(): {
+  slotIds: Map<string, string>;
+  sectionIds: Map<string, string>;
+} {
+  const slotIds = new Map<string, string>();
+  const sectionIds = new Map<string, string>();
+  for (const entry of GAME_IMPORT_DATA.bags) {
+    const where = `bag "${entry.bag}"`;
+    for (const slotId of entry.slots ?? []) slotIds.set(slotId, where);
+    for (const group of entry.gemSlots ?? []) {
+      for (const slotId of group) slotIds.set(slotId, where);
+    }
+  }
+  for (const entry of GAME_IMPORT_DATA.notInDemoReasons) {
+    const where = `notInDemoReasons "${entry.label}"`;
+    for (const slotId of entry.slotIds ?? []) slotIds.set(slotId, where);
+    for (const sectionId of entry.sections ?? [])
+      sectionIds.set(sectionId, where);
+  }
+  for (const slotId of Object.keys(GAME_IMPORT_DATA.defaultChoices))
+    slotIds.set(slotId, "defaultChoices");
+  return { slotIds, sectionIds };
+}
+
 const bagsByName = new Map(
   GAME_IMPORT_DATA.bags.map((entry) => [entry.bag, entry]),
 );
@@ -291,10 +326,12 @@ export function placeBag(
 }
 
 /** Every value-holding slot no bag entry names, which the report renders as `notInDemo`.
- *  `options.class` and `raceLeveling.race` are excluded because they import from the character
- *  rather than a bag, a stable bonus row because it derives from the insignia. */
+ *  The class and race slots are excluded because they import from the character rather
+ *  than a bag, a stable bonus row because it derives from the insignia. */
 export function notInDemoSlotIds(slots: Slot[]): string[] {
-  const named = new Set<string>(["options.class", "raceLeveling.race"]);
+  const named = new Set<string>(
+    Object.values(REQUIRED_SLOT_IDS).map((entry) => entry.id),
+  );
   for (const entry of GAME_IMPORT_DATA.bags) {
     for (const slotId of entry.slots ?? []) named.add(slotId);
     for (const group of entry.gemSlots ?? []) {

@@ -63,8 +63,12 @@ export interface Schema {
 export interface SlotSection {
   id: string;
   label: string;
-  /** Whether the section starts expanded in the build editor, authored in `data/slots.json`. */
+  /** Whether the section starts expanded in the build editor. Absent counts as open. */
   defaultOpen?: boolean;
+  /** The section's slots in render order. Ordering only: `Slot.section` owns membership, so
+   * ids of non-members are ignored and unlisted members render last. Serialized as nesting,
+   * not as this list. */
+  slotIds: string[];
 }
 
 /** The one field every `Slot` variant carries, whatever it renders. */
@@ -303,17 +307,26 @@ export interface SectionPreset {
   clears?: string[];
 }
 
-/** Defaults a whole item category shares, declared once against the filter. An item's own
- * field always wins, so an explicit `maxCopies: 0` opts one member back out. */
+/** Per-category item metadata from `data/filters.json`. Optional: an undeclared category gets
+ * the defaults. */
+export interface FilterDef {
+  id: string;
+  /** Copies of one member a build may hold. An item's own `maxCopies` wins, 0 meaning uncapped. */
+  maxCopies?: number;
+  /** The item fields the category is authored with. A field no filter names is offered
+   * everywhere; once named, only to the filters that name it. */
+  fields?: string[];
+}
+
+/** The `maxCopies` half of a `FilterDef`, as `Db.filterDefaults` keys it. */
 export interface FilterDefaults {
   maxCopies?: number;
 }
 
+/** `Db`'s view of `FilterDef.maxCopies` by filter, derived from the filter list. */
 export type FilterDefaultsMap = Record<string, FilterDefaults>;
 
-/** The item fields a whole category is authored with, declared once against the filter and
- * read by the item form. A field named by no entry at all is offered everywhere; naming it
- * anywhere narrows it to the filters that claim it. */
+/** `Db`'s view of `FilterDef.fields` by filter, derived from the filter list. */
 export type FilterFieldsMap = Record<string, string[]>;
 
 // --- the stable (mounts and insignia) --------------------------------------------------------
@@ -353,12 +366,8 @@ export interface SlotsData {
   sections: SlotSection[];
   slots: Slot[];
   /** Optional: several unit-test fixtures build a minimal `SlotsData` with no presets of
-   * their own -- `db.ts`'s `build()` already defaults a missing one to `[]`. */
+   * their own, and `db.ts`'s `build()` already defaults a missing one to `[]`. */
   presets?: SectionPreset[];
-  /** Optional like `presets`: without it every item is capped by its own field alone. */
-  filterDefaults?: FilterDefaultsMap;
-  /** Optional like `filterDefaults`: without it the item form offers every field group. */
-  filterFields?: FilterFieldsMap;
 }
 
 // --- items / bonuses -----------------------------------------------------------------------
@@ -705,9 +714,11 @@ export interface Db {
    *  catalog.ts's validate rejects two claimants sharing a filter as genuinely ambiguous. */
   itemByGameId: Map<string, string[]>;
   duplicates: string[];
-  /** Carried here so a consumer can show what an item's blank field resolves to. */
+  /** The filter list the db was built from, as `makeDb` handed it over. */
+  filters: FilterDef[];
+  /** `maxCopies` by filter, derived from `filters`. */
   filterDefaults: FilterDefaultsMap;
-  /** Carried here so the item form can ask which field groups a filter is authored with. */
+  /** `fields` by filter, derived from `filters`. */
   filterFields: FilterFieldsMap;
   /** Look up an item by the id given. Never forwards through `Item.replacedBy`. */
   get(id: string | null | undefined): Item | null;
@@ -731,21 +742,26 @@ export interface CatalogOverlay {
   items: Record<string, Item | null>;
   bonuses: Record<string, Bonus | null>;
   sectionPresets: Record<string, SectionPreset | null>;
-  /** Build-parameter slots, same add/edit/tombstone shape as the three above. Only
-   * `build_parameter` slots are authorable (SlotForm.vue) -- the other four `Slot` variants
-   * carry layout structure (`section` membership, ordering, separators) that an overlay's
-   * flat id->value map cannot express, so they stay base-only. Composed slots keep base's
-   * declaration order with overlay-added ones appended per section; see `compose`. */
+  /** Any `Slot` variant. `section` sets membership; order within it is the section's
+   * `slotIds`, and a slot it does not list renders after the section's base slots. */
   slots: Record<string, Slot | null>;
+  /** Whole `SlotSection` entries, `slotIds` included, so a reorder is an ordinary edit. */
+  sections: Record<string, SlotSection | null>;
+  /** Per-filter metadata. A tombstone reverts the category to the defaults. */
+  filters: Record<string, FilterDef | null>;
+  /** Full section order. Unlisted ids follow in base order; a later layer's list replaces
+   * an earlier one. */
+  sectionOrder?: string[];
 }
 
-export type CatalogGroup = "items" | "bonuses" | "sectionPresets" | "slots";
+export type CatalogGroup =
+  "items" | "bonuses" | "sectionPresets" | "slots" | "sections" | "filters";
 
 export interface LintFinding {
   level: "error" | "warn";
   message: string;
   name?: string;
-  kind: "item" | "bonus" | "sectionPreset" | "slot";
+  kind: "item" | "bonus" | "sectionPreset" | "slot" | "section" | "filter";
 }
 
 // --- builds (storage.ts) ---------------------------------------------------------------------

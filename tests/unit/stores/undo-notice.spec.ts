@@ -30,6 +30,8 @@ const emptyOverlay = (): CatalogOverlay => ({
   bonuses: {},
   sectionPresets: {},
   slots: {},
+  sections: {},
+  filters: {},
 });
 
 const preset = (fields: Partial<SectionPreset> = {}): SectionPreset => ({

@@ -1,6 +1,6 @@
 // The item form offers a field group only where the item's filter is authored with it
-// (`filterFields` in data/slots.json), plus the two escapes: a group the item already carries
-// a value in stays, and "Show all fields" brings everything back.
+// (the filter's `fields` in data/filters.json), plus the two escapes: a group the item
+// already carries a value in stays, and "Show all fields" brings everything back.
 import { test, expect, type Page } from "@playwright/test";
 import { openBuilder, setItemFilter } from "./support/app";
 import { addLayer, layerRow } from "./support/nav";
@@ -57,7 +57,7 @@ test("a gear item keeps its classes group and drops the rest", async ({
 test("groups nothing declares are offered to every item", async ({ page }) => {
   await openNewItemForm(page, "boon_tier1");
 
-  // No `filterFields` entry claims these, so narrowing never reaches them.
+  // No filter declaration claims these, so narrowing never reaches them.
   await expect(group(page, "dynamic-stats")).toBeVisible();
   await expect(group(page, "description")).toBeVisible();
   await expect(group(page, "retirement")).toBeVisible();

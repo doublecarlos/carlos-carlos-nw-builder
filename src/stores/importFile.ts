@@ -14,6 +14,7 @@ import * as layers from "./layers";
 import * as folders from "./folders";
 import * as trash from "./trash";
 import * as storage from "../storage/storage";
+import { GROUPS } from "../data/catalog";
 import { unpackNotice, type UnpackedCatalog } from "./buildCatalog";
 import { showNotice } from "./notice";
 import {
@@ -31,18 +32,16 @@ const isPlain = (value: unknown): value is Record<string, unknown> =>
 /** Shapes this module can route. `unknown` means "no idea" - reported, not guessed at. */
 type FileShape = "build" | "layer" | "bundle" | "overlay" | "unknown";
 
-const OVERLAY_GROUPS = ["items", "bonuses", "sectionPresets", "slots"] as const;
-
 /** Un-enveloped files have to be recognized by their fields. Ordered most to least specific:
  *  a bundle and a layer each have a key nothing else has, an overlay is the only shape whose
- *  own keys are the four catalog groups, and a build is what everything else used to be. */
+ *  own keys are the catalog groups, and anything else is a build. */
 function sniffLegacy(parsed: unknown): FileShape {
   if (Array.isArray(parsed)) return "build"; // pre-envelope multi-build export
   if (!isPlain(parsed)) return "unknown";
   if (Array.isArray(parsed.builds) && Array.isArray(parsed.layers))
     return "bundle";
   if (isPlain(parsed.overlay)) return "layer";
-  if (OVERLAY_GROUPS.some((group) => isPlain(parsed[group]))) return "overlay";
+  if (GROUPS.some((group) => isPlain(parsed[group]))) return "overlay";
   return "build";
 }
 

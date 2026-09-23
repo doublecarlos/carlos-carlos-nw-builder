@@ -19,6 +19,7 @@ import {
   undoButton,
 } from "./support/app";
 import { addLayer, layerRow } from "./support/nav";
+import { openSlotsTab, newInOutline } from "./support/layerEditor";
 
 /** Adds a "Cleared slots" row naming `slotLabel` to the preset draft on screen. */
 async function addClearRow(page: Page, slotLabel: string) {
@@ -42,8 +43,8 @@ async function createOptionsPreset(
 ) {
   await addLayer(page);
   await layerRow(page, "Layer 1").locator(".nav-name").click();
-  await page.getByRole("button", { name: /Presets \d+/ }).click();
-  await page.getByTestId("new-preset").click();
+  await openSlotsTab(page);
+  await newInOutline(page, "new-preset");
 
   await page.getByTestId("preset-label-input").fill(label);
   await chooseCombo(page.getByTestId("preset-section-input"), "Options");
@@ -213,7 +214,7 @@ test("'Create new from current' opens a preset draft holding the section's state
   await presetMenu(page, "options").click();
   await page.getByTestId("preset-create-from-current").click();
 
-  // Landed in the layer editor's Presets tab on an unsaved draft, pre-filled from the section.
+  // Landed in the layer editor's Slots tab on an unsaved preset draft, pre-filled from the section.
   await expect(page.getByTestId("preset-label-input")).toHaveValue(
     "Options preset",
   );

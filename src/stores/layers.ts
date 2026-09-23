@@ -59,17 +59,13 @@ export function ensureTargetLayer(): Layer {
   return targetLayer.value ?? createLayer();
 }
 
-/** Every id across base catalog, every layer (enabled or not), and the selected build's
- * per-build catalog. Used by catalog.nextId to avoid id collisions with a switched-off
- * layer. Consumed when allocating ids for new catalog entries. */
+/** Every id any layer's overlay names, enabled or not, since disabled layers are missing from
+ *  the composed catalog. The caller adds the composed ids. */
 export function allocatableIds(): string[] {
   const ids: string[] = [];
-  // Base catalog ids are known statically, collected from the shipped data.
-  // Layers contribute all their item, bonus and section preset ids.
   for (const layer of _layers.value.values()) {
-    ids.push(...Object.keys(layer.overlay.items ?? {}));
-    ids.push(...Object.keys(layer.overlay.bonuses ?? {}));
-    ids.push(...Object.keys(layer.overlay.sectionPresets ?? {}));
+    for (const group of catalog.GROUPS)
+      ids.push(...Object.keys(layer.overlay[group] ?? {}));
   }
   return ids;
 }
@@ -281,8 +277,8 @@ function presetOwner(id: string): Layer | null {
 
 /**
  * Writes a section preset into the layer that already defines it, falling back to
- * `ensureTargetLayer()` for a shipped one -- where it becomes an overlay edit over the shipped
- * entry, exactly what the layer editor's own Presets tab would produce. Returns the layer it
+ * `ensureTargetLayer()` for a shipped one, where it becomes an overlay edit over the shipped
+ * entry, exactly what the layer editor's own preset form would produce. Returns the layer it
  * landed in, which the notice names: the write is invisible from the build editor otherwise.
  *
  * Snapshotted on that layer's undo stack, since that is the stack it belongs to -- the build

@@ -3,7 +3,13 @@
 // wholesale, or two slots fighting over one value).
 import { describe, it, expect } from "vitest";
 import * as catalog from "../../src/data/catalog";
-import { NW_SLOTS, NW_ITEMS, NW_BONUSES } from "../../src/data/data";
+import {
+  NW_SLOTS,
+  NW_ITEMS,
+  NW_BONUSES,
+  NW_FILTERS,
+} from "../../src/data/data";
+import { filterFieldsOf } from "../../src/data/db";
 import type {
   Bonus,
   BuildParameterSlot,
@@ -1210,6 +1216,8 @@ describe("catalog.tombstoneIds", () => {
       bonuses: { "removed-bonus": null },
       sectionPresets: {},
       slots: {},
+      sections: {},
+      filters: {},
     };
     expect(catalog.tombstoneIds(overlay, "items")).toEqual(["removed-item"]);
     expect(catalog.tombstoneIds(overlay, "bonuses")).toEqual(["removed-bonus"]);
@@ -1233,6 +1241,8 @@ describe("catalog.compose: layer overlay (two layers, same item id)", () => {
       bonuses: {},
       sectionPresets: {},
       slots: {},
+      sections: {},
+      filters: {},
     };
     const later: CatalogOverlay = {
       items: {
@@ -1245,6 +1255,8 @@ describe("catalog.compose: layer overlay (two layers, same item id)", () => {
       bonuses: {},
       sectionPresets: {},
       slots: {},
+      sections: {},
+      filters: {},
     };
     const composed = catalog.compose([early, later]);
     const item = composed.items.find((i) => i.id === "shared-item");
@@ -1263,6 +1275,8 @@ describe("catalog.compose: layer overlay (two layers, same item id)", () => {
       bonuses: {},
       sectionPresets: {},
       slots: {},
+      sections: {},
+      filters: {},
     };
     // Disabling the later layer means not passing it to compose
     const composed = catalog.compose([early]);
@@ -1282,12 +1296,16 @@ describe("catalog.compose: layer overlay (two layers, same item id)", () => {
       bonuses: {},
       sectionPresets: {},
       slots: {},
+      sections: {},
+      filters: {},
     };
     const later: CatalogOverlay = {
       items: { "shared-item": null },
       bonuses: {},
       sectionPresets: {},
       slots: {},
+      sections: {},
+      filters: {},
     };
     const composed = catalog.compose([early, later]);
     expect(composed.items.find((i) => i.id === "shared-item")).toBeUndefined();
@@ -1300,6 +1318,8 @@ describe("catalog.compose: sectionPresets overlay", () => {
     bonuses: {},
     sectionPresets: { "test-preset": preset },
     slots: {},
+    sections: {},
+    filters: {},
   });
 
   it("a layer-added preset appears in the composed list", () => {
@@ -1355,6 +1375,8 @@ describe("catalog.compose: sectionPresets overlay", () => {
         bonuses: {},
         sectionPresets: { [shipped!.id]: null },
         slots: {},
+        sections: {},
+        filters: {},
       },
     ]);
     expect(
@@ -1500,6 +1522,8 @@ function testDb(items: Item[], bonuses: Bonus[], slots: Slot[] = []): Db {
     bonusById: bonusesById,
     slots,
     authoredSlots: slots,
+    sections: [],
+    filters: [],
   } as unknown as Db;
 }
 
@@ -1753,7 +1777,7 @@ describe("catalog.validateFilterFields", () => {
   });
 
   it("finds nothing wrong with the shipped declaration", () => {
-    expect(catalog.validateFilterFields(NW_SLOTS.filterFields ?? {})).toEqual(
+    expect(catalog.validateFilterFields(filterFieldsOf(NW_FILTERS))).toEqual(
       [],
     );
   });
@@ -1848,6 +1872,8 @@ describe("catalog.compose id ordering", () => {
     bonuses: {},
     sectionPresets: {},
     slots: {},
+    sections: {},
+    filters: {},
   };
 
   it("orders items, bonuses and presets by codepoint", () => {

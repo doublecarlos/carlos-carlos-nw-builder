@@ -1,10 +1,10 @@
 // Item database indexing.
 //
 // Consumes the statically-imported data (src/data.ts) and builds the lookups the engine and UI
-// need. Pure: no DOM, no fetch -- `build()` takes items/bonuses/schema/slots as plain
+// need. Pure: no DOM, no fetch. `build()` takes items/bonuses/schema/slots/filters as plain
 // arguments so catalog.ts can hand it a composed (base + overlay) catalog instead.
 
-import { NW_ITEMS, NW_BONUSES, NW_SCHEMA, NW_SLOTS } from "./data";
+import { NW_ITEMS, NW_BONUSES, NW_SCHEMA, NW_SLOTS, NW_FILTERS } from "./data";
 import { bonusIdOf } from "../lib/bonus-attachment";
 import { replacementIdOf, replacementValuesOf } from "../lib/item-replacement";
 import { resolvedOptions } from "../lib/param-options";
@@ -25,6 +25,9 @@ import type {
   Db,
   BonusCandidate,
   Build,
+  FilterDef,
+  FilterDefaultsMap,
+  FilterFieldsMap,
 } from "../types";
 
 const pushTo = <K>(map: Map<K, string[]>, key: K, value: string) => {
@@ -101,14 +104,32 @@ function collectSeeds(
 export const stillOffered = (item: Item, inUse: boolean) =>
   inUse || !item.hideFromPicker;
 
+/** `maxCopies` by filter, for the filters that declare one. */
+export function filterDefaultsOf(filters: FilterDef[]): FilterDefaultsMap {
+  const out: FilterDefaultsMap = {};
+  for (const filter of filters)
+    if (filter.maxCopies !== undefined)
+      out[filter.id] = { maxCopies: filter.maxCopies };
+  return out;
+}
+
+/** `fields` by filter, for the filters that declare any. */
+export function filterFieldsOf(filters: FilterDef[]): FilterFieldsMap {
+  const out: FilterFieldsMap = {};
+  for (const filter of filters)
+    if (filter.fields !== undefined) out[filter.id] = filter.fields;
+  return out;
+}
+
 export function build(
   items: Item[],
   bonuses: Bonus[] = [],
   schema: Schema,
   slots: SlotsData,
+  filters: FilterDef[] = [],
 ): Db {
-  const filterDefaults = slots?.filterDefaults ?? {};
-  const filterFields = slots?.filterFields ?? {};
+  const filterDefaults = filterDefaultsOf(filters);
+  const filterFields = filterFieldsOf(filters);
   const byId = new Map<string, Item>();
   // Keyed by `string | undefined` (not just `string`): an item with no `filter` still lands
   // here under the `undefined` key -- dead weight (`forFilter` is only ever called with a
@@ -183,6 +204,7 @@ export function build(
     itemsByTag,
     itemByGameId,
     duplicates,
+    filters,
     filterDefaults,
     filterFields,
 
@@ -273,7 +295,8 @@ export function build(
 
 /** Convenience for tests/tooling: build from the statically-imported data (src/data.ts), no
  * `window` required. */
-export const fromData = () => build(NW_ITEMS, NW_BONUSES, NW_SCHEMA, NW_SLOTS);
+export const fromData = () =>
+  build(NW_ITEMS, NW_BONUSES, NW_SCHEMA, NW_SLOTS, NW_FILTERS);
 
 /**
  * The value this build currently publishes at `path`, from whatever it has equipped

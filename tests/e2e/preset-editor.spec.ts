@@ -13,16 +13,17 @@ import {
   ensureSectionExpanded,
 } from "./support/app";
 import { addLayer, layerRow } from "./support/nav";
+import { openSlotsTab, newInOutline } from "./support/layerEditor";
 
 async function openPresetsTab(page: Page) {
   await openBuilder(page);
   await addLayer(page);
   await layerRow(page, "Layer 1").locator(".nav-name").click();
-  await page.getByRole("button", { name: /Presets \d+/ }).click();
+  await openSlotsTab(page);
 }
 
 /** Fills out and saves a new Options-section preset with a single Role parameter. Assumes
- *  the Presets tab is already open and "New" has already been clicked for this preset. */
+ *  the Slots tab is already open and a new preset draft has already been started. */
 async function saveRolePreset(page: Page, label: string, roleValue: string) {
   await page.getByTestId("preset-label-input").fill(label);
   await chooseCombo(page.getByTestId("preset-section-input"), "Options");
@@ -41,7 +42,7 @@ test("creating a preset in a layer makes it available in the build's Preset menu
   page,
 }) => {
   await openPresetsTab(page);
-  await page.getByTestId("new-preset").click();
+  await newInOutline(page, "new-preset");
   await saveRolePreset(page, "E2E Preset", "DPS");
 
   // Back to the build: the new preset shows up in the Options section's menu, and applying
@@ -71,10 +72,10 @@ test("deleting a preset removes it from the build's Preset menu, leaving the oth
 
   // A second preset stays behind after the delete -- proves the delete removed just the one
   // preset, not the whole menu (which would also disappear if it were the section's last one).
-  await page.getByTestId("new-preset").click();
+  await newInOutline(page, "new-preset");
   await saveRolePreset(page, "Keep Preset", "Tank");
 
-  await page.getByTestId("new-preset").click();
+  await newInOutline(page, "new-preset");
   await saveRolePreset(page, "Temp Preset", "Healer");
 
   await page.getByRole("button", { name: "Delete" }).click();

@@ -72,9 +72,14 @@ describe("the writeback endpoint", () => {
     ).resolves.toBe('[{ "id": "x" }]\n');
   });
 
-  it("writes each of the three data files", async () => {
+  it("writes each of the four data files", async () => {
     const statuses: Record<string, number> = {};
-    for (const file of ["db-items.json", "db-bonuses.json", "slots.json"]) {
+    for (const file of [
+      "db-items.json",
+      "db-bonuses.json",
+      "slots.json",
+      "filters.json",
+    ]) {
       statuses[file] = (await post({ file, body: "[]\n" })).status;
     }
 
@@ -82,6 +87,7 @@ describe("the writeback endpoint", () => {
       "db-items.json": 200,
       "db-bonuses.json": 200,
       "slots.json": 200,
+      "filters.json": 200,
     });
   });
 

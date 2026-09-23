@@ -153,13 +153,15 @@ describe("layers store", () => {
       bonuses: {},
       sectionPresets: {},
       slots: {},
+      sections: {},
+      filters: {},
     });
     layers.setLayerEnabled(l.id, false);
     const ids = layers.allocatableIds();
     expect(ids).toContain("custom-item");
   });
 
-  it("allocatableIds includes section preset ids", async () => {
+  it("allocatableIds covers every overlay group, layout and filters included", async () => {
     const { layers } = await freshStores();
     const l = layers.createLayer();
     layers.updateOverlay(l.id, {
@@ -172,9 +174,21 @@ describe("layers store", () => {
           section: "options",
         },
       },
-      slots: {},
+      slots: {
+        "extras.note": {
+          id: "extras.note",
+          type: "text",
+          label: "Note",
+          section: "extras",
+          text: "",
+        },
+      },
+      sections: { extras: { id: "extras", label: "Extras", slotIds: [] } },
+      filters: { pet: { id: "pet", maxCopies: 1 } },
     });
-    expect(layers.allocatableIds()).toContain("custom-preset");
+    expect(layers.allocatableIds()).toEqual(
+      expect.arrayContaining(["custom-preset", "extras.note", "extras", "pet"]),
+    );
   });
 
   it("allocatableIds returns empty when no layers have items", async () => {
@@ -225,6 +239,8 @@ describe("layers store", () => {
       bonuses: {},
       sectionPresets: {},
       slots: {},
+      sections: {},
+      filters: {},
     });
     layers.updateOverlay(a.id, overlayNaming("from A"));
     layers.updateOverlay(b.id, overlayNaming("from B"));
@@ -252,6 +268,8 @@ describe("layers.updatePreset", () => {
     bonuses: {},
     sectionPresets: { [value.id]: value },
     slots: {},
+    sections: {},
+    filters: {},
   });
 
   it("writes into the layer that already defines the preset", async () => {

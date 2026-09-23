@@ -20,6 +20,8 @@ const customOverlay = (): CatalogOverlay => ({
   bonuses: {},
   sectionPresets: {},
   slots: {},
+  sections: {},
+  filters: {},
 });
 
 async function freshStores() {

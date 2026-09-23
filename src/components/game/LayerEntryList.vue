@@ -1,22 +1,16 @@
 <script setup lang="ts">
-// LayerEditor's left panel: search/status-filter the current section's rows, create a new
-// entry, and browse/select/restore existing ones. Owns its own keyboard cursor (arrow keys
-// from the search box or a focused row) since that only ever needs this list's own rows and
-// selection -- the parent still owns what "select" actually does (routing, section state).
+// The layer editor's flat left pane for the Items, Bonuses and Filters tabs: name-sorted rows
+// with create/select/restore. The Slots tab uses LayerSlotOutline.vue instead.
+//
+// Owns the keyboard cursor; the parent owns what "select" does (routing, section state).
 import { computed } from "vue";
 import { onKeyStroke } from "@vueuse/core";
-import { CirclePlus, FilterX, RotateCcw } from "@lucide/vue";
+import { CirclePlus, RotateCcw } from "@lucide/vue";
 import BaseButton from "../ui/BaseButton.vue";
 import BaseBadge from "../ui/BaseBadge.vue";
-import BaseInput from "../ui/BaseInput.vue";
 import BaseTooltip from "../ui/BaseTooltip.vue";
-import ComboBox from "../ui/ComboBox.vue";
-import type {
-  Item,
-  Bonus,
-  SectionPreset,
-  BuildParameterSlot,
-} from "../../types";
+import LayerListHeader from "./LayerListHeader.vue";
+import type { Item, Bonus, FilterDef } from "../../types";
 import type { EntryStatus } from "../../data/catalog";
 
 export interface ItemRow {
@@ -35,60 +29,51 @@ export interface BonusRow {
   status: EntryStatus;
   kind: "bonus";
 }
-export interface PresetRow {
+/** One item category. `def` is null for an undeclared category. */
+export interface FilterRow {
   key: string;
   name: string;
+  /** The secondary column: how many items carry this category. */
   filter: string;
-  preset: SectionPreset | null;
+  def: FilterDef | null;
   status: EntryStatus;
-  kind: "sectionPreset";
+  kind: "filter";
 }
-export interface SlotRow {
-  key: string;
-  name: string;
-  filter: string;
-  slot: BuildParameterSlot | null;
-  status: EntryStatus;
-  kind: "slot";
-}
-export type EditorRow = ItemRow | BonusRow | PresetRow | SlotRow;
+export type EditorRow = ItemRow | BonusRow | FilterRow;
 
 const props = defineProps<{
-  /** Already filtered by query/status -- this component only renders and navigates them. */
+  /** Already filtered by query/status; this component only renders and navigates them. */
   rows: EditorRow[];
-  section: string; // items | bonuses | sectionPresets | slots
+  section: string; // items | bonuses | filters
   selectedKey: string | null;
   statusFilterOptions: { value: string; label: string }[];
   hasUnsavedDraft: (row: EditorRow) => boolean;
 }>();
 
-const CREATE_LABEL: Record<string, string> = {
-  bonuses: "New bonus",
-  sectionPresets: "New preset",
-  slots: "New parameter",
-  items: "New item",
+/** The header text for each overlay group the list serves. */
+interface SectionChrome {
+  createLabel: string;
+  createTestId: string;
+  searchPlaceholder: string;
+}
+const CHROME: Record<string, SectionChrome> = {
+  items: {
+    createLabel: "New item",
+    createTestId: "new-item",
+    searchPlaceholder: "Filter items…",
+  },
+  bonuses: {
+    createLabel: "New bonus",
+    createTestId: "new-bonus",
+    searchPlaceholder: "Filter bonuses…",
+  },
+  filters: {
+    createLabel: "New filter",
+    createTestId: "new-filter",
+    searchPlaceholder: "Filter categories…",
+  },
 };
-const SEARCH_PLACEHOLDER: Record<string, string> = {
-  bonuses: "Filter bonuses…",
-  sectionPresets: "Filter presets…",
-  slots: "Filter parameters…",
-  items: "Filter items…",
-};
-const CREATE_TESTID: Record<string, string> = {
-  bonuses: "new-bonus",
-  sectionPresets: "new-preset",
-  slots: "new-slot",
-  items: "new-item",
-};
-const createLabel = computed(
-  () => CREATE_LABEL[props.section] ?? CREATE_LABEL.items,
-);
-const createTestId = computed(
-  () => CREATE_TESTID[props.section] ?? CREATE_TESTID.items,
-);
-const searchPlaceholder = computed(
-  () => SEARCH_PLACEHOLDER[props.section] ?? SEARCH_PLACEHOLDER.items,
-);
+const chrome = computed(() => CHROME[props.section] ?? CHROME.items);
 
 const emit = defineEmits<{
   select: [row: EditorRow, options?: { push?: boolean }];
@@ -98,11 +83,6 @@ const emit = defineEmits<{
 
 const query = defineModel<string>("query", { required: true });
 const statusFilter = defineModel<string>("statusFilter", { required: true });
-
-function clearFilters() {
-  query.value = "";
-  statusFilter.value = "all";
-}
 
 function onRowClick(row: EditorRow) {
   if (row.status === "removed") return;
@@ -143,37 +123,22 @@ onKeyStroke(["ArrowDown", "ArrowUp", "Enter"], (event) => {
 
 <template>
   <div class="flex min-h-0 flex-col rounded-md border border-line bg-surface">
-    <div class="flex items-center gap-1 p-2">
-      <BaseInput
-        v-model="query"
-        type="search"
-        class="editor-search w-full min-w-0"
-        :placeholder="searchPlaceholder"
-      />
-    </div>
-    <div class="flex flex-none gap-1.5 px-2">
-      <ComboBox
-        class="w-full"
-        :model-value="statusFilter"
-        :options="statusFilterOptions"
-        @update:model-value="(v) => (statusFilter = v)"
-      />
-    </div>
-    <div class="flex flex-none gap-1.5 border-b border-line px-2 py-2">
-      <BaseButton
-        :disabled="!(query || statusFilter !== 'all')"
-        class="flex-1 text-center justify-center"
-        @click="clearFilters"
-        ><FilterX />clear filters</BaseButton
-      >
-      <BaseButton
-        class="flex-1 text-center justify-center"
-        variant="primary"
-        :data-testid="createTestId"
-        @click="emit('create')"
-        ><CirclePlus />{{ createLabel }}</BaseButton
-      >
-    </div>
+    <LayerListHeader
+      v-model:query="query"
+      v-model:status-filter="statusFilter"
+      :search-placeholder="chrome.searchPlaceholder"
+      :status-filter-options="statusFilterOptions"
+    >
+      <template #create>
+        <BaseButton
+          class="flex-1 text-center justify-center"
+          variant="primary"
+          :data-testid="chrome.createTestId"
+          @click="emit('create')"
+          ><CirclePlus />{{ chrome.createLabel }}</BaseButton
+        >
+      </template>
+    </LayerListHeader>
     <div class="min-h-0 flex-1 overflow-y-auto">
       <div
         v-for="row in rows"

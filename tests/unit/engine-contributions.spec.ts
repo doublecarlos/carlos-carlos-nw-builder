@@ -89,7 +89,7 @@ const schema: Schema = {
 };
 
 const slotsData: SlotsData = {
-  sections: [{ id: "gear", label: "Gear" }],
+  sections: [{ id: "gear", label: "Gear", slotIds: [] }],
   slots: [
     {
       id: "gear.neck",

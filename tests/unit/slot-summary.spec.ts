@@ -79,7 +79,7 @@ const schema: Schema = {
 // One group, one insignia slot: enough to exercise stableRef's role gate and oneShortOf's
 // "missing exactly one" case without the shipped catalog's 3-4 slot groups.
 const slots: SlotsData = {
-  sections: [{ id: "insignia", label: "Insignia" }],
+  sections: [{ id: "insignia", label: "Insignia", slotIds: [] }],
   slots: [
     {
       id: "mount",

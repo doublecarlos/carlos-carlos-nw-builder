@@ -22,7 +22,7 @@ const schema: Schema = {
 };
 
 const slots: SlotsData = {
-  sections: [{ id: "gear", label: "Gear" }],
+  sections: [{ id: "gear", label: "Gear", slotIds: [] }],
   slots: [
     {
       id: "gear.ring1",

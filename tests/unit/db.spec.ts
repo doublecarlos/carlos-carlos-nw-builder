@@ -6,7 +6,7 @@ import { describe, it, expect } from "vitest";
 import * as catalog from "../../src/data/catalog";
 import * as db from "../../src/data/db";
 import { NW_SCHEMA, NW_SLOTS } from "../../src/data/data";
-import type { Build, Item, SlotsData } from "../../src/types";
+import type { Build, FilterDef, Item, SlotsData } from "../../src/types";
 
 describe("Db.itemByGameId", () => {
   it("indexes a plain item's gameIds -- the base case, no overlay involved", () => {
@@ -124,8 +124,8 @@ describe("Db.itemByGameId", () => {
 describe("forSlotAndBuild maxCopies filtering", () => {
   const slotsData: SlotsData = {
     sections: [
-      { id: "gear", label: "Gear" },
-      { id: "boons", label: "Boons" },
+      { id: "gear", label: "Gear", slotIds: [] },
+      { id: "boons", label: "Boons", slotIds: [] },
     ],
     slots: [
       {
@@ -323,7 +323,7 @@ describe("forSlotAndBuild maxCopies filtering", () => {
 // item serve several slots at once (e.g. a companion power that's both offense and utility).
 describe("forSlot tag-based item_picker resolution", () => {
   const slotsData: SlotsData = {
-    sections: [{ id: "companions", label: "Companions" }],
+    sections: [{ id: "companions", label: "Companions", slotIds: [] }],
     slots: [
       {
         id: "companions.offense",
@@ -448,7 +448,7 @@ describe("forSlot tag-based item_picker resolution", () => {
 // category, leaving name to do the entire sort there.
 describe("forSlot candidate ordering", () => {
   const slotsData: SlotsData = {
-    sections: [{ id: "gear", label: "Gear" }],
+    sections: [{ id: "gear", label: "Gear", slotIds: [] }],
     slots: [
       {
         id: "gear.ring1",
@@ -553,23 +553,43 @@ describe("Db.bonusesFor / bonusMembers with mixed bonus attachments", () => {
   });
 });
 
-describe("Db.filterFields", () => {
+describe("Db views over the filter list", () => {
   const slots: SlotsData = {
-    sections: [{ id: "gear", label: "Gear" }],
+    sections: [{ id: "gear", label: "Gear", slotIds: [] }],
     slots: [],
-    filterFields: { test_mount: ["insigniaSlots"] },
   };
+  const filters: FilterDef[] = [
+    { id: "test_mount", fields: ["insigniaSlots"] },
+    { id: "test_ring", maxCopies: 1 },
+    { id: "test_both", maxCopies: 3, fields: ["insigniaRecipe"] },
+    { id: "test_bare" },
+  ];
 
-  it("carries the declaration through to the composed db", () => {
-    const built = db.build([], [], NW_SCHEMA, slots);
-    expect(built.filterFields).toEqual({ test_mount: ["insigniaSlots"] });
+  it("keeps the list it was built from", () => {
+    const built = db.build([], [], NW_SCHEMA, slots, filters);
+    expect(built.filters).toBe(filters);
   });
 
-  it("is empty when the slots file declares none", () => {
-    const built = db.build([], [], NW_SCHEMA, {
-      ...slots,
-      filterFields: undefined,
+  it("keys `fields` by filter, only for the filters declaring any", () => {
+    const built = db.build([], [], NW_SCHEMA, slots, filters);
+    expect(built.filterFields).toEqual({
+      test_mount: ["insigniaSlots"],
+      test_both: ["insigniaRecipe"],
     });
+  });
+
+  it("keys `maxCopies` by filter, only for the filters declaring one", () => {
+    const built = db.build([], [], NW_SCHEMA, slots, filters);
+    expect(built.filterDefaults).toEqual({
+      test_ring: { maxCopies: 1 },
+      test_both: { maxCopies: 3 },
+    });
+  });
+
+  it("derives empty views when no filter is declared", () => {
+    const built = db.build([], [], NW_SCHEMA, slots);
+    expect(built.filters).toEqual([]);
     expect(built.filterFields).toEqual({});
+    expect(built.filterDefaults).toEqual({});
   });
 });

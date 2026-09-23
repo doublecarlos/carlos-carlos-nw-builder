@@ -45,7 +45,7 @@ const undefaulted: Slot = {
 };
 
 const slotsData: SlotsData = {
-  sections: [{ id: "options", label: "Options" }],
+  sections: [{ id: "options", label: "Options", slotIds: [] }],
   slots: [defaulted, undefaulted],
   presets: [],
 };

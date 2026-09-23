@@ -40,7 +40,7 @@ const derivedSlot: BuildParameterSlot = {
 };
 
 const slotsData = (slots: Slot[]): SlotsData => ({
-  sections: [{ id: "options", label: "Options" }],
+  sections: [{ id: "options", label: "Options", slotIds: [] }],
   slots,
   presets: [],
 });

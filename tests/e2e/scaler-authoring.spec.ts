@@ -3,6 +3,7 @@
 import { test, expect, type Page } from "@playwright/test";
 import { openBuilder, chooseCombo } from "./support/app";
 import { addLayer, layerRow } from "./support/nav";
+import { openSlotsTab } from "./support/layerEditor";
 
 const BONUS = "ZZZ Test Scaled Bonus";
 
@@ -51,7 +52,7 @@ test("a parameter's scaler mode and filters are editable and survive reopening",
   page,
 }) => {
   await openLayer(page);
-  await page.getByTestId("tab-slots").click();
+  await openSlotsTab(page);
 
   // Mount bolster ships as a relative scaler over the two mount filters.
   await openEditorRow(page, "Mount bolster");

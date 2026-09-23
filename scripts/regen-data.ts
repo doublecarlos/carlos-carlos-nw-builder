@@ -1,13 +1,9 @@
-// Rewrites data/db-items.json, data/db-bonuses.json and data/slots.json from the
-// statically-imported base catalog, through the same canonical serializer *and* the same
-// `compose()` sort the in-app export drawer uses (catalog.ts's compose, catalogExport.ts's
-// toItemsFile/toBonusesFile/toSlotsFile) -- so the committed files stay in the exporter's
-// shape without anyone needing to open the app and paste the result back by hand. Run via
-// `npm run fix`, before Prettier reformats whitespace.
+// Rewrites the shipped data/*.json files from the base catalog, using the same `compose()` and
+// serializers as the in-app export, so the committed files stay in the exporter's shape.
+// Run via `npm run fix`, before Prettier reformats whitespace.
 import { writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
-import { NW_SLOTS } from "../src/data/data";
 import * as catalog from "../src/data/catalog";
 import * as catalogExport from "../src/data/catalogExport";
 
@@ -17,9 +13,9 @@ const dataDir = path.join(
   "data",
 );
 
-// No overlays -- this regenerates the *base* catalog, sorted the same way `compose()`
-// sorts it for the export drawer (by id) so both paths agree on file order.
-const { items, bonuses, sectionPresets } = catalog.compose([]);
+// No overlays: this regenerates the base catalog, in the same order the export drawer uses.
+const { items, bonuses, sectionPresets, slots, sections, filters } =
+  catalog.compose([]);
 
 writeFileSync(
   path.join(dataDir, "db-items.json"),
@@ -31,11 +27,9 @@ writeFileSync(
 );
 writeFileSync(
   path.join(dataDir, "slots.json"),
-  catalogExport.toSlotsFile(
-    NW_SLOTS.sections,
-    NW_SLOTS.slots,
-    sectionPresets,
-    NW_SLOTS.filterDefaults ?? {},
-    NW_SLOTS.filterFields ?? {},
-  ),
+  catalogExport.toSlotsFile(sections, slots, sectionPresets),
+);
+writeFileSync(
+  path.join(dataDir, "filters.json"),
+  catalogExport.toFiltersFile(filters),
 );

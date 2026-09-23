@@ -10,7 +10,7 @@ import { buildDraft, toPreset, diffLabel } from "../../src/lib/preset-draft";
 import type { Item, SectionPreset, SlotsData } from "../../src/types";
 
 const slotsData: SlotsData = {
-  sections: [{ id: "gear", label: "Gear" }],
+  sections: [{ id: "gear", label: "Gear", slotIds: [] }],
   slots: [
     {
       id: "ring1",

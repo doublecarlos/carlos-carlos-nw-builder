@@ -1,5 +1,5 @@
-// Tests for stores/layerEditorUi.ts: per-layer section/filter/selection remembered across
-// LayerEditor.vue remounts, plus the one-shot new-item seed BuildEditor.vue hands over.
+// Tests for stores/layerEditorUi.ts: the per-layer tab, search and selection remembered
+// across LayerEditor.vue remounts, plus the one-shot new-item seed BuildEditor.vue hands over.
 import { describe, expect, it } from "vitest";
 import {
   getState,
@@ -16,6 +16,9 @@ describe("layerEditorUi store", () => {
       bonus: "",
       preset: "",
       slot: "",
+      sectionId: "",
+      slotsGroup: "",
+      filter: "",
       status: "",
       q: "",
     });
@@ -35,6 +38,28 @@ describe("layerEditorUi store", () => {
     const b = getState("layer-c");
     expect(b.item).toBe("");
     expect(a.item).toBe("item-1");
+  });
+
+  it("remembers the Filters tab's own selection", () => {
+    const state = getState("layer-filters");
+    state.section = "filters";
+    state.filter = "gear_ring";
+    expect(getState("layer-filters")).toMatchObject({
+      section: "filters",
+      filter: "gear_ring",
+    });
+  });
+
+  it("remembers which of the Slots tab's three groups it last showed", () => {
+    const state = getState("layer-slots");
+    state.section = "slots";
+    state.slotsGroup = "sections";
+    state.sectionId = "gear";
+    expect(getState("layer-slots")).toMatchObject({
+      section: "slots",
+      slotsGroup: "sections",
+      sectionId: "gear",
+    });
   });
 });
 

@@ -501,7 +501,7 @@ describe("point_assignment resolution", () => {
     filter: "test_boon_tier",
   };
   const slotsData: SlotsData = {
-    sections: [{ id: "boons", label: "Boons" }],
+    sections: [{ id: "boons", label: "Boons", slotIds: [] }],
     slots: [pointSlot],
   };
   const testDb = db.build(
@@ -644,7 +644,7 @@ describe("a point_assignment item's own config stays 0 while the item itself is 
     filter: "test_boon_master",
   };
   const slotsData: SlotsData = {
-    sections: [{ id: "boons", label: "Boons" }],
+    sections: [{ id: "boons", label: "Boons", slotIds: [] }],
     slots: [pointSlot],
   };
   const testDb = db.build(
@@ -783,7 +783,7 @@ describe("BonusOccurrenceConfig resolution", () => {
   };
 
   const slotsData: SlotsData = {
-    sections: [{ id: "test", label: "Test" }],
+    sections: [{ id: "test", label: "Test", slotIds: [] }],
     slots: [
       {
         id: "slot1",
@@ -936,7 +936,7 @@ describe("a bonus reachable only through a currently-zero occurrence count", () 
   };
 
   const slotsData: SlotsData = {
-    sections: [{ id: "test", label: "Test" }],
+    sections: [{ id: "test", label: "Test", slotIds: [] }],
     slots: [
       {
         id: "slot1",
@@ -1075,7 +1075,7 @@ describe("an unconditional stacking grant reachable only through a currently-zer
   };
 
   const slotsData: SlotsData = {
-    sections: [{ id: "test", label: "Test" }],
+    sections: [{ id: "test", label: "Test", slotIds: [] }],
     slots: [
       {
         id: "slot1",
@@ -1243,7 +1243,7 @@ describe("per-item boolean occurrence attachments (formerly procs)", () => {
     filter: "test_gear",
   };
   const slotsData: SlotsData = {
-    sections: [{ id: "gear", label: "Gear" }],
+    sections: [{ id: "gear", label: "Gear", slotIds: [] }],
     slots: [gearSlot],
   };
   const testDb = db.build(
@@ -1416,8 +1416,8 @@ describe("race restrictions ride on the generic equipped condition", () => {
       schema,
       {
         sections: [
-          { id: "raceLeveling", label: "Race" },
-          { id: "gear", label: "Gear" },
+          { id: "raceLeveling", label: "Race", slotIds: [] },
+          { id: "gear", label: "Gear", slotIds: [] },
         ],
         slots: [raceSlot, trinketSlot],
       },
@@ -1575,8 +1575,8 @@ describe("problem grants (bonus-authored errors/warnings)", () => {
 
   const slotsData: SlotsData = {
     sections: [
-      { id: "gear", label: "Gear" },
-      { id: "boons", label: "Boons" },
+      { id: "gear", label: "Gear", slotIds: [] },
+      { id: "boons", label: "Boons", slotIds: [] },
     ],
     slots: [pickerSlot, boonSlot],
   };

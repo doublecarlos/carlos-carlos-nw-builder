@@ -39,7 +39,7 @@ const items: Item[] = [
 ];
 
 const slots: SlotsData = {
-  sections: [{ id: "gear", label: "Gear" }],
+  sections: [{ id: "gear", label: "Gear", slotIds: [] }],
   slots: [
     {
       id: "gear.head",

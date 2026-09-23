@@ -1,9 +1,6 @@
 <script setup lang="ts">
-// The left column: 15 collapsible sections over 180 slots.
-//
-// Sections start collapsed except Gear. That keeps the mounted DOM at ~15 rows
-// on load; expanding everything is ~180 rows, which the browser handles fine -- only one
-// dropdown is ever open, and that is where the per-row cost actually lives. No virtualisation.
+// The left column: the composed catalog's collapsible sections, some 180 slots in all.
+// No virtualization: only one dropdown is ever open, and that is where the per-row cost lives.
 import {
   computed,
   reactive,
@@ -35,7 +32,6 @@ import {
   SlidersHorizontal,
   FilterX,
 } from "@lucide/vue";
-import { NW_SLOTS } from "../data/data";
 import { slotCandidateContext, slotCandidateList } from "../data/db";
 import { statPickerOptions } from "../lib/format";
 import { matchesQuery } from "../lib/text-filter";
@@ -106,15 +102,22 @@ const highlightDiff = computed(() => build.value.compare.highlight);
 const onlyDiff = computed(() => build.value.compare.onlyDiff);
 const otherBuilds = builds.otherBuilds;
 
-// Which sections are open -- a UI preference, not a build edit, shared across every build
-// rather than saved with one, persisted under its own key so it survives a reload. The default
-// open state is authored per-section in `data/slots.json` (`defaultOpen`).
+// Which sections are open: a UI preference shared across builds and persisted on its own.
+// A section with no saved entry, such as one a layer just added, starts on its `defaultOpen`.
+// Entries for sections that are gone are kept, so toggling a layer remembers its state.
 const savedExpanded = storage.loadUiState().expanded;
 const expanded = reactive<Record<string, boolean>>({});
-for (const section of NW_SLOTS.sections) {
-  expanded[section.id] =
-    savedExpanded?.[section.id] ?? section.defaultOpen !== false;
-}
+watch(
+  () => db.value.sections,
+  (sections) => {
+    for (const section of sections) {
+      if (section.id in expanded) continue;
+      expanded[section.id] =
+        savedExpanded?.[section.id] ?? section.defaultOpen !== false;
+    }
+  },
+  { immediate: true },
+);
 watch(
   expanded,
   () => {

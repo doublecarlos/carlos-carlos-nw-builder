@@ -1,15 +1,22 @@
 import { describe, it, expect } from "vitest";
+import { readFileSync } from "node:fs";
+import * as catalog from "../../src/data/catalog";
 import * as catalogExport from "../../src/data/catalogExport";
-import { NW_SLOTS, NW_ITEMS, NW_BONUSES } from "../../src/data/data";
+import {
+  NW_SLOTS,
+  NW_ITEMS,
+  NW_BONUSES,
+  NW_FILTERS,
+} from "../../src/data/data";
 import type {
   Bonus,
+  CatalogOverlay,
   Grant,
   Item,
   Slot,
   SectionPreset,
   SlotSection,
-  FilterDefaultsMap,
-  FilterFieldsMap,
+  FilterDef,
 } from "../../src/types";
 
 describe("catalogExport.toItemsFile", () => {
@@ -159,8 +166,8 @@ describe("catalogExport.toBonusesFile", () => {
 describe("catalogExport.toSlotsFile", () => {
   it("round-trips a small sections/slots/presets fixture", () => {
     const sections: SlotSection[] = [
-      { defaultOpen: true, id: "a", label: "A" },
-      { defaultOpen: false, id: "b", label: "B" },
+      { defaultOpen: true, id: "a", label: "A", slotIds: [] },
+      { defaultOpen: false, id: "b", label: "B", slotIds: [] },
     ];
     const slots: Slot[] = [
       {
@@ -189,7 +196,7 @@ describe("catalogExport.toSlotsFile", () => {
     ];
 
     const parsed = JSON.parse(
-      catalogExport.toSlotsFile(sections, slots, presets, {}, {}),
+      catalogExport.toSlotsFile(sections, slots, presets),
     );
 
     expect(parsed.sections).toEqual([
@@ -228,34 +235,15 @@ describe("catalogExport.toSlotsFile", () => {
 
   it("omits the presets key entirely for a section with none", () => {
     const sections: SlotSection[] = [
-      { defaultOpen: true, id: "a", label: "A" },
+      { defaultOpen: true, id: "a", label: "A", slotIds: [] },
     ];
-    const parsed = JSON.parse(
-      catalogExport.toSlotsFile(sections, [], [], {}, {}),
-    );
+    const parsed = JSON.parse(catalogExport.toSlotsFile(sections, [], []));
     expect(Object.hasOwn(parsed.sections[0], "presets")).toBe(false);
   });
 
-  it("carries filterDefaults through unchanged", () => {
-    const filterDefaults: FilterDefaultsMap = {
-      artifact: { maxCopies: 1 },
-      gear_head: { maxCopies: 2 },
-    };
-    const parsed = JSON.parse(
-      catalogExport.toSlotsFile([], [], [], filterDefaults, {}),
-    );
-    expect(parsed.filterDefaults).toEqual(filterDefaults);
-  });
-
-  it("carries filterFields through unchanged", () => {
-    const filterFields: FilterFieldsMap = {
-      mount: ["insigniaSlots"],
-      insignia: ["insigniaShape", "preferredVariant"],
-    };
-    const parsed = JSON.parse(
-      catalogExport.toSlotsFile([], [], [], {}, filterFields),
-    );
-    expect(parsed.filterFields).toEqual(filterFields);
+  it("writes nothing but the sections", () => {
+    const parsed = JSON.parse(catalogExport.toSlotsFile([], [], []));
+    expect(Object.keys(parsed)).toEqual(["sections"]);
   });
 
   it("produces valid JSON for the real shipped data", () => {
@@ -264,12 +252,113 @@ describe("catalogExport.toSlotsFile", () => {
         NW_SLOTS.sections,
         NW_SLOTS.slots,
         NW_SLOTS.presets ?? [],
-        NW_SLOTS.filterDefaults ?? {},
-        NW_SLOTS.filterFields ?? {},
       ),
     );
     expect(parsed.sections.length).toBe(NW_SLOTS.sections.length);
-    expect(parsed.filterDefaults).toEqual(NW_SLOTS.filterDefaults);
-    expect(parsed.filterFields).toEqual(NW_SLOTS.filterFields);
+  });
+
+  it("writes the shipped data back as the same document data/slots.json holds", () => {
+    const raw = readFileSync(
+      new URL("../../data/slots.json", import.meta.url),
+      "utf8",
+    );
+    expect(
+      JSON.parse(
+        catalogExport.toSlotsFile(
+          NW_SLOTS.sections,
+          NW_SLOTS.slots,
+          NW_SLOTS.presets ?? [],
+        ),
+      ),
+    ).toEqual(JSON.parse(raw));
+  });
+
+  it("writes a reordered and an added section as nesting, never as slotIds", () => {
+    const added: Slot = {
+      id: "extra.pick",
+      label: "Pick",
+      section: "extra",
+      type: "item_picker",
+      filter: "artifact",
+    };
+    const overlay: CatalogOverlay = {
+      ...catalog.emptyOverlay(),
+      slots: { [added.id]: added },
+      sections: { extra: { id: "extra", label: "Extra", slotIds: [added.id] } },
+      sectionOrder: ["extra", "gear"],
+    };
+    const composed = catalog.compose([overlay]);
+    const text = catalogExport.toSlotsFile(
+      composed.sections,
+      composed.slots,
+      composed.sectionPresets,
+    );
+    expect(text).not.toContain("slotIds");
+
+    const parsed = JSON.parse(text) as {
+      sections: { id: string; slots: { id: string; section?: string }[] }[];
+    };
+    expect(parsed.sections.map((section) => section.id).slice(0, 2)).toEqual([
+      "extra",
+      "gear",
+    ]);
+    expect(parsed.sections[0].slots).toEqual([
+      {
+        id: "extra.pick",
+        label: "Pick",
+        type: "item_picker",
+        filter: "artifact",
+      },
+    ]);
+    // Order survives a round trip through deriveSlots' shape: nesting is the order.
+    const gear = parsed.sections[1];
+    expect(gear.slots.map((slot) => slot.id)).toEqual(
+      composed.slots.filter((s) => s.section === "gear").map((s) => s.id),
+    );
+  });
+});
+
+describe("catalogExport.toFiltersFile", () => {
+  it("keys each filter by id, with the id in the key alone", () => {
+    const filters: FilterDef[] = [
+      { id: "insignia_bonus", maxCopies: 3, fields: ["insigniaRecipe"] },
+    ];
+    expect(JSON.parse(catalogExport.toFiltersFile(filters))).toEqual({
+      insignia_bonus: { maxCopies: 3, fields: ["insigniaRecipe"] },
+    });
+  });
+
+  it("sorts the entries by id whatever order the list arrived in", () => {
+    const filters: FilterDef[] = [
+      { id: "mount", fields: ["insigniaSlots"] },
+      { id: "artifact", maxCopies: 1 },
+      { id: "insignia", fields: ["insigniaShape"] },
+    ];
+    const parsed = JSON.parse(catalogExport.toFiltersFile(filters));
+    expect(Object.keys(parsed)).toEqual(["artifact", "insignia", "mount"]);
+  });
+
+  it("omits a field left undefined instead of writing null", () => {
+    const filters: FilterDef[] = [
+      { id: "artifact", maxCopies: 1, fields: undefined },
+      { id: "boon_tier1", maxCopies: undefined, fields: ["inlineRepetition"] },
+      { id: "bare" },
+    ];
+    const text = catalogExport.toFiltersFile(filters);
+    expect(text).not.toContain("null");
+    expect(JSON.parse(text)).toEqual({
+      artifact: { maxCopies: 1 },
+      bare: {},
+      boon_tier1: { fields: ["inlineRepetition"] },
+    });
+  });
+
+  it("round-trips the real shipped data", () => {
+    const parsed = JSON.parse(catalogExport.toFiltersFile(NW_FILTERS));
+    expect(Object.keys(parsed)).toEqual(NW_FILTERS.map((f) => f.id));
+    for (const filter of NW_FILTERS) {
+      const { id, ...rest } = filter;
+      expect(parsed[id]).toEqual(rest);
+    }
   });
 });
