@@ -105,6 +105,15 @@ export function normalizeOverlay(raw: unknown): CatalogOverlay {
     if (section && !isStringList(section.slotIds))
       overlay.sections[id] = { ...section, slotIds: [] };
   }
+  // Slots no longer carry a visibility condition; an old overlay's is dropped.
+  for (const [id, slot] of Object.entries(overlay.slots)) {
+    if (slot && "visibleWhen" in slot) {
+      const { visibleWhen: _dropped, ...rest } = slot as Slot & {
+        visibleWhen?: unknown;
+      };
+      overlay.slots[id] = rest as Slot;
+    }
+  }
   if (isStringList(source.sectionOrder))
     overlay.sectionOrder = [...source.sectionOrder];
   return overlay;
@@ -822,9 +831,8 @@ function shadowsBuildContext(path: string): boolean {
     : CONTEXT_SCALAR_KEYS.has(head);
 }
 
-/** Every path a `visibleWhen` reads, flattened out of its combinators -- the `param` leaf's
- * `key` plus the dedicated leaves that are really a param under another name. Used only to
- * catch a slot gating itself; the conditions themselves are linted by `checkConditions`. */
+/** Every param path a condition reads, flattened out of its combinators: the `param` leaf's
+ * `key` plus the dedicated leaves that are really a param under another name. */
 function conditionPaths(when: ConditionWhen | undefined, out: Set<string>) {
   if (!when || typeof when !== "object") return;
   for (const [key, spec] of Object.entries(when)) {
@@ -860,32 +868,14 @@ function occurrenceTargets(when: ConditionWhen | undefined, out: string[]) {
 
 /**
  * Lint every `build_parameter` slot's `path` (empty, duplicated -- two slots silently fighting
- * over one value -- or shadowing a `BuildContext` field outright) and its `visibleWhen`, every
- * `point_assignment` slot's `filter`, and every `item_picker` slot's `filter`/`tags` selector.
- * Standalone from `validate()` below since it needs only the slot list, not a composed
- * catalog.
+ * over one value -- or shadowing a `BuildContext` field outright), every `point_assignment`
+ * slot's `filter`, and every `item_picker` slot's `filter`/`tags` selector. Standalone from
+ * `validate()` below since it needs only the slot list, not a composed catalog.
  */
 export function validateSlots(slots: Slot[]): LintFinding[] {
   const findings: LintFinding[] = [];
   const seenPaths = new Map<string, string>();
-  // Built up front rather than during the loop below: a `visibleWhen` may legitimately read a
-  // param declared further down the list, and `checkConditions` errors on a key it can't resolve.
-  const paramSlots = new Map<string, BuildParameterSlot>();
   for (const slot of slots) {
-    if (slot.type === "build_parameter" && slot.path)
-      paramSlots.set(slot.path, slot);
-  }
-  for (const slot of slots) {
-    // Every slot type carries `visibleWhen`, so this runs ahead of the per-type branches
-    // below: a mistyped condition on a separator is as broken as one on a param.
-    if (slot.visibleWhen) {
-      checkConditions(
-        slot.visibleWhen,
-        `${slot.id} visibleWhen`,
-        (level, message) => findings.push({ level, kind: "item", message }),
-        paramSlots,
-      );
-    }
     // Read off the raw object: the other variants do not declare the field, which is how a
     // file can still arrive carrying it.
     if (
@@ -1028,20 +1018,6 @@ export function validateSlots(slots: Slot[]): LintFinding[] {
           kind: "slot",
           name: slot.id,
           message: `${slot.id}: scaler mode must be "relative" or "absolute", got ${JSON.stringify(mode)}`,
-        });
-      }
-    }
-    if (slot.visibleWhen) {
-      // The condition itself is checked at the top of the loop; this is the one rule only a
-      // `build_parameter` can break. Harmless at runtime -- the row just disappears at
-      // whichever values fail -- but a param that hides itself can never be set back.
-      const read = new Set<string>();
-      conditionPaths(slot.visibleWhen, read);
-      if (read.has(slot.path)) {
-        findings.push({
-          level: "error",
-          kind: "item",
-          message: `${slot.id}: visibleWhen reads its own path "${slot.path}"; the param would hide itself at some values, with no way to change it back`,
         });
       }
     }

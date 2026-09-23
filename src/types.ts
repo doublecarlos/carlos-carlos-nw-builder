@@ -71,18 +71,6 @@ export interface SlotSection {
   slotIds: string[];
 }
 
-/** The one field every `Slot` variant carries, whatever it renders. */
-export interface SlotVisibility {
-  /** Renders this slot's row only while the condition holds, evaluated against the *resolved*
-   * build (`ResolvedBuild.context`).
-   *
-   * Display only: a hidden row's value still reaches the engine untouched -- a param resolves,
-   * a pick stays equipped, points stay spent. Anything else would make every condition reading
-   * a slot depend on what happened to be rendered. Evaluating against the resolved context
-   * also means a slot cannot influence its own visibility mid-resolution. */
-  visibleWhen?: ConditionWhen;
-}
-
 /** A build-wide value with no item of its own -- the engine-coupled build-context fields
  * (role, damageType, forte, duration, magnitude, toggles, ...). `path` is a dotted path into
  * `build.context` (`role`, `forte.primary`, `toggles.combat`), resolved by build-path.ts's
@@ -99,7 +87,7 @@ export interface SlotVisibility {
  * item asserts the value, instead of a value conjuring an item -- so anything that needs to
  * both carry stats and set a context value is an item picker now, and a parameter is only ever
  * the scalar itself. */
-export interface BuildParameterSlot extends SlotVisibility {
+export interface BuildParameterSlot {
   id: string;
   label: string;
   section: string;
@@ -147,7 +135,7 @@ export interface BuildParameterSlot extends SlotVisibility {
   };
 }
 
-export interface ItemPickerSlot extends SlotVisibility {
+export interface ItemPickerSlot {
   id: string;
   label: string;
   section: string;
@@ -197,7 +185,7 @@ export interface ItemPickerSlot extends SlotVisibility {
  * `equipped`/tags/bonus occurrences/bonus candidates by the count instead of by one). No shared point
  * budget across the row: each item's `inlineRepetition.min`/`max` (on the item itself, see
  * `Item`) is its own bound, not a pool split between them. */
-export interface PointAssignmentSlot extends SlotVisibility {
+export interface PointAssignmentSlot {
   id: string;
   label: string;
   section: string;
@@ -216,7 +204,7 @@ export type RowSlot = ItemPickerSlot | BuildParameterSlot | PointAssignmentSlot;
  * and unused by `SeparatorRow.vue` itself -- it only exists so the handful of call sites that
  * look up any `Slot` by id (`slotById.get(id)?.label`) keep compiling without special-casing a
  * type they'll never actually see a separator's id come through. */
-export interface SeparatorSlot extends SlotVisibility {
+export interface SeparatorSlot {
   id: string;
   section: string;
   type: "separator";
@@ -227,7 +215,7 @@ export interface SeparatorSlot extends SlotVisibility {
  * Unlike `SeparatorSlot` it does render its own content (`text`), sized/padded like a real row
  * so it reads as an inline note rather than a divider. `label` is optional and unused, kept for
  * the same reason as `SeparatorSlot`'s -- see that type's doc comment. */
-export interface TextSlot extends SlotVisibility {
+export interface TextSlot {
   id: string;
   section: string;
   type: "text";
@@ -246,7 +234,7 @@ export interface TextSlot extends SlotVisibility {
  * The container holds no value -- `Build.listRows` has its row count -- and renders only the
  * row that adds another.
  */
-export interface ItemPickerListSlot extends SlotVisibility {
+export interface ItemPickerListSlot {
   id: string;
   label: string;
   section: string;
@@ -932,7 +920,7 @@ export interface EvalContext {
   bonusOccurrences: Map<string, number>;
   /** The bonus whose grants are being evaluated, which a `bonusOccurrences` leaf naming no
    *  `bonus` counts. Set per bonus by bonus.ts's `evaluateBonus`; absent where no bonus is in
-   *  play (a slot's `visibleWhen`), where such a leaf counts nothing. */
+   *  play, where such a leaf counts nothing. */
   self?: string;
   /** Friendly names for bonus IDs, so conditions can display "Gladiator's Guile"
    *  instead of "m31-gladiators-guile" in their labels. */

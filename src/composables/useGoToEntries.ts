@@ -1,5 +1,4 @@
 import { computed } from "vue";
-import { slotVisible } from "../lib/slot-visibility";
 import { expandSlots } from "../lib/item-picker-list";
 import { itemLabel } from "../engine/insignia";
 import type { GoToEntry } from "../lib/go-to";
@@ -14,8 +13,8 @@ import * as layers from "../stores/layers";
  *
  * The slot list mirrors what BuildEditor.vue actually renders (`allSlotsBySection`): no
  * separators or text rows, since neither is a place the cursor can land, no `quick` slot (it
- * lives in the QuickOptions strip, not in a section), and nothing hidden by its own
- * `visibleWhen`. Offering a target the editor has no row for is worse than not offering it.
+ * lives in the QuickOptions strip, not in a section). Offering a target the editor has no row
+ * for is worse than not offering it.
  */
 export function useGoToEntries() {
   return computed<GoToEntry[]>(() => {
@@ -49,7 +48,6 @@ export function useGoToEntries() {
             slotDef.quick
           )
             continue;
-          if (!slotVisible(slotDef, resolved.result.context)) continue;
           const item = itemBySlot.get(slotDef.id);
           entries.push({
             key: `slot:${slotDef.id}`,

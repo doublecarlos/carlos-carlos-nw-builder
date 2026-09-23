@@ -254,21 +254,6 @@ test("editing a shipped parameter and reverting brings the shipped one back", as
   await expect(slotRow(page, "options.magnitude")).not.toContainText("Renamed");
 });
 
-test("editing a shipped parameter's label keeps its visibleWhen scoping", async ({
-  page,
-}) => {
-  await openBuilder(page);
-  await openSlotsFor(page);
-
-  // options.forte1 ships with a `visibleWhen`; an unrelated edit must keep it intact.
-  await openOutlineRow(page, "Forte 1");
-  await page.getByTestId("slot-label-input").fill("Primary Forte");
-
-  await backToBuild(page);
-  // Still hidden: no paragon is equipped, so the rename must not have un-scoped it.
-  await expect(slotRow(page, "options.forte1")).toHaveCount(0);
-});
-
 test("a slot the engine reads warns before it is deleted", async ({ page }) => {
   await openBuilder(page);
   await openSlotsFor(page);

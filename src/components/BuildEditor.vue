@@ -40,7 +40,6 @@ import { slotsSupplying } from "../lib/bonus-slots";
 import { readDynamicValue } from "../lib/dynamic-stats";
 import * as insignia from "../engine/insignia";
 import * as stableBrowser from "../stores/stableBrowser";
-import { slotVisible } from "../lib/slot-visibility";
 import { expandSlots } from "../lib/item-picker-list";
 import { isDisabled } from "../lib/slot-toggle";
 import { useHoverCard } from "../composables/useHoverCard";
@@ -374,22 +373,14 @@ function rowDiffers(slotDef: Slot) {
  *  text/stat filter or the only-diff toggle, unlike `sections.value`'s own per-section lists.
  *  `sections` and `bonusesBySlot` both read their slot lists off this rather than off each
  *  other: `slotMatchesFilters` (used by `sections`) matches against `statSummary`, which reads
- *  `bonusesBySlot` -- if that read `sections.value` back, the two computeds would cycle.
- *
- *  `visibleWhen` is applied here rather than alongside the text/stat filter below so that
- *  everything downstream agrees a hidden param is not on screen: the section's own diff and
- *  error badges stop counting it, and `bonusesBySlot` stops crediting a shared bonus to a row
- *  nobody can see (which would hide the bonus from the summary entirely). */
+ *  `bonusesBySlot` -- if that read `sections.value` back, the two computeds would cycle. */
 const editorSlots = computed(() => expandSlots(db.value.slots, build.value));
 
 const allSlotsBySection = computed(() =>
   db.value.sections.map((section) => ({
     section,
     slots: editorSlots.value.filter(
-      (slotDef) =>
-        slotDef.section === section.id &&
-        !isQuick(slotDef) &&
-        slotVisible(slotDef, result.value.context),
+      (slotDef) => slotDef.section === section.id && !isQuick(slotDef),
     ),
   })),
 );

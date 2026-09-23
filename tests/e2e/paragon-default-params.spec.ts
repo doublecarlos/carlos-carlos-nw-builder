@@ -43,3 +43,10 @@ test("Role and Forte stay editable after the auto-fill (what-if override)", asyn
     "Combat Advantage",
   );
 });
+
+test("the Forte rows show before any paragon is picked", async ({ page }) => {
+  await openBuilder(page);
+
+  for (const id of ["options.forte1", "options.forte2a", "options.forte2b"])
+    await expect(slotRow(page, id)).toBeVisible();
+});

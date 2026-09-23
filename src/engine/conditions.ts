@@ -149,7 +149,7 @@ const LEAVES: Record<
       label: `${wanted} ${plural(wanted, "occurrence")} of ${displayName}`,
       detail: `you have ${have}`,
     };
-    // No target outside a bonus (a slot's `visibleWhen`): nothing a slot could supply.
+    // No target outside a bonus: nothing a slot could supply.
     if (target) result.need = { kind: "bonus", bonusId: target };
     return result;
   },
