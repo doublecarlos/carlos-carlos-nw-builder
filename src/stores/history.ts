@@ -19,6 +19,7 @@
 // one undo step. Pass `null` to force a distinct step.
 import { computed, ref } from "vue";
 import { useDebounceFn } from "@vueuse/core";
+import { onPageHide } from "../lib/page-lifecycle";
 import * as idb from "../storage/idb";
 import * as selection from "./selection";
 
@@ -47,23 +48,27 @@ let _loading = true;
 const _dirtyIds = new Set<string>();
 const SAVE_DEBOUNCE_MS = 250;
 
+// Starts every write before its first await, so a flush on page hide queues them all.
 async function flushSave() {
   const keys = [..._dirtyIds];
   _dirtyIds.clear();
-  for (const key of keys) {
-    const h = _histories.value.get(key);
-    if (h) {
+  await Promise.all(
+    keys.map(async (key) => {
+      const h = _histories.value.get(key);
+      if (!h) return;
       try {
         // Store the key inside the value so it's recoverable via getAll.
         await idb.put("history", key, { id: key, data: h });
       } catch {
         // non-critical - next save will retry
       }
-    }
-  }
+    }),
+  );
 }
 
 const flushSaveDebounced = useDebounceFn(flushSave, SAVE_DEBOUNCE_MS);
+// A write still waiting on the debounce would be lost if the page goes away first.
+onPageHide(() => void flushSave());
 
 function markDirty(key: string) {
   if (_loading) return;

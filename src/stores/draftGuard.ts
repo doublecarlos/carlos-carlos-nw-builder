@@ -1,7 +1,9 @@
 // Tracks unsaved, not-yet-saved drafts (a new entry, a pending bonus card) that navigation
 // would otherwise discard silently. Forms register while mounted; any action about to unmount
-// them asks first through `confirmDiscard`.
-import { shallowRef } from "vue";
+// them asks first through `confirmDiscard`. Leaving the page itself (close, reload, an outside
+// URL) cannot wait on that dialog, so it falls back to the browser's own prompt.
+import { computed, shallowRef } from "vue";
+import { defaultWindow, useEventListener } from "@vueuse/core";
 import * as confirm from "./confirm";
 
 export interface DraftGuard {
@@ -34,6 +36,15 @@ export function dirtyGuards(): DraftGuard[] {
 export function hasDirtyDraft(): boolean {
   return guards.value.some((guard) => guard.isDirty());
 }
+
+// Listens only while a draft is dirty: a standing `beforeunload` listener can keep the page
+// out of the back/forward cache.
+const anyDirty = computed(hasDirtyDraft);
+useEventListener(
+  () => (anyDirty.value ? defaultWindow : undefined),
+  "beforeunload",
+  (event: BeforeUnloadEvent) => event.preventDefault(),
+);
 
 /** True means "go ahead": no draft is dirty, or the user chose to discard. */
 export async function confirmDiscard(): Promise<boolean> {
