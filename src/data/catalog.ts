@@ -1,21 +1,20 @@
-// The item/bonus catalog as composable layers.
+// The catalog (items, bonuses, filter metadata and the slot layout) as composable layers.
 //
-// Until now the catalog was fixed: `db.fromGlobals()` read `NW_ITEMS` / `NW_BONUSES` once and
-// nothing could change it. The editor needs to change it, and custom gear saved *with a build*
-// will need to change it per build -- so the catalog is now a base plus an ordered list of
-// overlays, folded together on demand.
+// The catalog is a base (the shipped data files) plus an ordered list of overlays, folded
+// together on demand. The editor changes it through a workspace layer, and a build downloaded
+// with custom gear carries its own overlay, so both are one more entry in the fold:
 //
-//     effective = base  <-  workspace overlay  <-  (future) build overlay
+//     effective = base  <-  workspace overlay  <-  build overlay
 //
-// An overlay is `{ items: { [id]: item|null }, bonuses: { [id]: bonus|null } }`, where the
-// value replaces whatever the layers below it had and `null` is a tombstone hiding a base
-// entry. That single shape covers add, edit and delete, survives JSON, and composes -- which
-// is what makes the per-build case a matter of passing one more overlay rather than a redesign.
+// An overlay is one `{ [id]: entry | null }` record per catalog group, where the value
+// replaces whatever the layers below it had and `null` is a tombstone hiding a base entry.
+// Layout is data too: a section entry carries its `slotIds`, and an optional `sectionOrder`
+// reorders the sections, so `compose` returns slots in render order.
 //
 // Nothing here touches the DOM or the engine. `makeDb` hands the composed arrays to the
 // existing `db.build`, so the engine cannot tell the difference.
 
-import { NW_ITEMS, NW_BONUSES, NW_SCHEMA, NW_SLOTS } from "./data";
+import { NW_ITEMS, NW_BONUSES, NW_SCHEMA, NW_SLOTS, NW_FILTERS } from "./data";
 import * as db from "./db";
 import { findParamSlot } from "../lib/build-path";
 import { resolvedOptions } from "../lib/param-options";
@@ -23,6 +22,7 @@ import { deepEqual } from "../lib/deep-equal";
 import { bonusIdOf } from "../lib/bonus-attachment";
 import { replacementIdOf, replacementValuesOf } from "../lib/item-replacement";
 import { parseRowSlotId, rowSlot } from "../lib/item-picker-list";
+import { REQUIRED_SLOT_IDS, gameImportReferences } from "../lib/demo-slots";
 import { INSIGNIA_SHAPES } from "../types";
 
 import type {
@@ -35,6 +35,7 @@ import type {
   ParamCondition,
   LintFinding,
   Slot,
+  SlotSection,
   StableRole,
   SectionPreset,
   BuildParameterSlot,
@@ -42,53 +43,87 @@ import type {
   ItemPickerListSlot,
   Db,
   Build,
+  FilterDef,
   FilterDefaultsMap,
   FilterFieldsMap,
 } from "../types";
 import { outOfRangeErrorMessage } from "../lib/format";
+
+/** Any entry an overlay group holds. */
+export type CatalogEntry =
+  Item | Bonus | SectionPreset | Slot | SlotSection | FilterDef;
 
 export const emptyOverlay = (): CatalogOverlay => ({
   items: {},
   bonuses: {},
   sectionPresets: {},
   slots: {},
+  sections: {},
+  filters: {},
 });
 
-/** Every group an overlay carries, in one place -- the loops below iterate this rather than
- * spelling the four names out, so adding a fifth group is one edit here. */
-const GROUPS = ["items", "bonuses", "sectionPresets", "slots"] as const;
+/** Every record group an overlay carries. `sectionOrder` is not a record and is handled by name. */
+export const GROUPS = [
+  "items",
+  "bonuses",
+  "sectionPresets",
+  "slots",
+  "sections",
+  "filters",
+] as const;
 
 export const isEmpty = (overlay: CatalogOverlay | null | undefined) =>
   !overlay ||
-  GROUPS.every((group) => !Object.keys(overlay[group] ?? {}).length);
+  (!overlay.sectionOrder &&
+    GROUPS.every((group) => !Object.keys(overlay[group] ?? {}).length));
 
-/** Anything persisted or pasted has to survive being wrong. */
+const isStringList = (value: unknown): value is string[] =>
+  Array.isArray(value) && value.every((entry) => typeof entry === "string");
+
+/** Anything persisted or pasted has to survive being wrong. A missing group gets an empty record. */
 export function normalizeOverlay(raw: unknown): CatalogOverlay {
   const overlay = emptyOverlay();
   if (!raw || typeof raw !== "object") return overlay;
+  const source = raw as Record<string, unknown>;
   for (const group of GROUPS) {
-    const source = (raw as Record<string, unknown>)[group];
-    if (!source || typeof source !== "object") continue;
-    for (const [key, value] of Object.entries(source)) {
+    const entries = source[group];
+    if (!entries || typeof entries !== "object") continue;
+    for (const [key, value] of Object.entries(entries)) {
       if (value === null)
         overlay[group][key] = null; // tombstone
       else if (value && typeof value === "object")
-        overlay[group][key] = value as Item & Bonus & SectionPreset & Slot;
+        overlay[group][key] = value as Item &
+          Bonus &
+          SectionPreset &
+          Slot &
+          SlotSection &
+          FilterDef;
     }
   }
+  // A section entry always has an order list.
+  for (const [id, section] of Object.entries(overlay.sections)) {
+    if (section && !isStringList(section.slotIds))
+      overlay.sections[id] = { ...section, slotIds: [] };
+  }
+  if (isStringList(source.sectionOrder))
+    overlay.sectionOrder = [...source.sectionOrder];
   return overlay;
 }
 
-export const base = (): {
-  items: Item[];
-  bonuses: Bonus[];
-  sectionPresets: SectionPreset[];
-  slots: Slot[];
-} => ({
+type GroupEntry<G extends CatalogGroup> = NonNullable<
+  CatalogOverlay[G][string]
+>;
+
+/** The shipped catalog, one list per overlay group. */
+export type CatalogBase = { [G in CatalogGroup]: GroupEntry<G>[] };
+
+export const base = (): CatalogBase => ({
   items: NW_ITEMS ?? [],
   bonuses: NW_BONUSES ?? [],
   sectionPresets: NW_SLOTS.presets ?? [],
   slots: NW_SLOTS.slots ?? [],
+  sections: NW_SLOTS.sections ?? [],
+  filters: NW_FILTERS ?? [],
 });
 
 /** Ids are machine identifiers, so they sort by codepoint: deterministic on every machine,
@@ -96,58 +131,103 @@ export const base = (): {
 const byId = (a: { id: string }, b: { id: string }) =>
   a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
 
+/** One group folded over its base list, later layers winning. Keeps base order and appends
+ *  added entries. */
+function foldGroup<T extends { id: string }>(
+  baseEntries: readonly T[],
+  layers: readonly (Record<string, T | null> | undefined)[],
+): Map<string, T> {
+  const out = new Map(baseEntries.map((entry) => [entry.id, entry]));
+  for (const layer of layers) {
+    for (const [id, entry] of Object.entries(layer ?? {})) {
+      if (entry === null) out.delete(id);
+      else out.set(id, entry);
+    }
+  }
+  return out;
+}
+
+/** Sections in `order` first (unknown ids skipped), then the rest in the order given. */
+function orderSections(
+  sections: SlotSection[],
+  order: readonly string[] | undefined,
+): SlotSection[] {
+  if (!order) return sections;
+  const byId = new Map(sections.map((section) => [section.id, section]));
+  const listed: SlotSection[] = [];
+  for (const id of order) {
+    const section = byId.get(id);
+    if (section) {
+      listed.push(section);
+      byId.delete(id);
+    }
+  }
+  return [...listed, ...byId.values()];
+}
+
 /**
- * Fold overlays over the base, later layers winning. Items, bonuses and presets come out
- * sorted by id so the export is stable and diffs against the generated files stay readable.
- *
- * Slots deliberately do not sort: a slot list *is* its render order, hand-authored in
- * slots.json, and sorting it by id would reshuffle every section on load. They come out in
- * base order instead, with an overlay-added slot appended -- a `Map` keyed by id gives exactly
- * that, since re-`set`ting an existing key keeps its original position. Appending globally is
- * the same as appending within a section, because every consumer groups by `slot.section`.
+ * Slots in render order: per section, its `slotIds` first (ignoring ids that aren't its
+ * members), then its other members. Slots of a missing section go last, so the engine and
+ * lint still see them.
+ */
+function layoutSlots(slots: Slot[], sections: SlotSection[]): Slot[] {
+  const members = new Map<string, Slot[]>();
+  for (const slot of slots) {
+    const list = members.get(slot.section);
+    if (list) list.push(slot);
+    else members.set(slot.section, [slot]);
+  }
+  const out: Slot[] = [];
+  for (const section of sections) {
+    const own = members.get(section.id) ?? [];
+    members.delete(section.id);
+    const ownById = new Map(own.map((slot) => [slot.id, slot]));
+    for (const id of section.slotIds) {
+      const slot = ownById.get(id);
+      if (!slot) continue;
+      out.push(slot);
+      ownById.delete(id);
+    }
+    out.push(...ownById.values());
+  }
+  for (const orphans of members.values()) out.push(...orphans);
+  return out;
+}
+
+/**
+ * Fold overlays over the base, later layers winning. Items, bonuses, presets and filters come
+ * out sorted by id so the export is stable. Sections and slots come out in layout order:
+ * `sectionOrder` (the last layer's wins) then the unlisted sections in base order, and slots
+ * per `layoutSlots`.
  */
 export function compose(
   overlays: readonly (CatalogOverlay | null | undefined)[] = [],
 ) {
-  const {
-    items: baseItems,
-    bonuses: baseBonuses,
-    sectionPresets: basePresets,
-    slots: baseSlots,
-  } = base();
-
-  const items = new Map(baseItems.map((item) => [item.id, item]));
-  const bonuses = new Map(baseBonuses.map((bonus) => [bonus.id, bonus]));
-  const sectionPresets = new Map(
-    basePresets.map((preset) => [preset.id, preset]),
+  const catalogBase = base();
+  const present = overlays.filter(
+    (overlay): overlay is CatalogOverlay => !!overlay,
   );
-  const slots = new Map(baseSlots.map((slot) => [slot.id, slot]));
+  const group = <G extends CatalogGroup>(name: G) =>
+    foldGroup(
+      catalogBase[name],
+      present.map(
+        (overlay) => overlay[name] as Record<string, GroupEntry<G> | null>,
+      ),
+    );
 
-  for (const overlay of overlays) {
-    if (!overlay) continue;
-    for (const [id, item] of Object.entries(overlay.items ?? {})) {
-      if (item === null) items.delete(id);
-      else items.set(id, item);
-    }
-    for (const [id, bonus] of Object.entries(overlay.bonuses ?? {})) {
-      if (bonus === null) bonuses.delete(id);
-      else bonuses.set(id, bonus);
-    }
-    for (const [id, preset] of Object.entries(overlay.sectionPresets ?? {})) {
-      if (preset === null) sectionPresets.delete(id);
-      else sectionPresets.set(id, preset);
-    }
-    for (const [id, slot] of Object.entries(overlay.slots ?? {})) {
-      if (slot === null) slots.delete(id);
-      else slots.set(id, slot);
-    }
+  let sectionOrder: string[] | undefined;
+  for (const overlay of present) {
+    if (overlay.sectionOrder) sectionOrder = overlay.sectionOrder;
   }
 
+  const sections = orderSections([...group("sections").values()], sectionOrder);
   return {
-    items: [...items.values()].sort(byId),
-    bonuses: [...bonuses.values()].sort(byId),
-    sectionPresets: [...sectionPresets.values()].sort(byId),
-    slots: [...slots.values()],
+    items: [...group("items").values()].sort(byId),
+    bonuses: [...group("bonuses").values()].sort(byId),
+    sectionPresets: [...group("sectionPresets").values()].sort(byId),
+    slots: layoutSlots([...group("slots").values()], sections),
+    sections,
+    filters: [...group("filters").values()].sort(byId),
   };
 }
 
@@ -155,14 +235,15 @@ export function compose(
 export function makeDb(
   overlays: readonly (CatalogOverlay | null | undefined)[] = [],
 ) {
-  const { items, bonuses, sectionPresets, slots } = compose(overlays);
-  return db.build(items, bonuses, NW_SCHEMA, {
-    sections: NW_SLOTS.sections,
-    slots,
-    presets: sectionPresets,
-    filterDefaults: NW_SLOTS.filterDefaults,
-    filterFields: NW_SLOTS.filterFields,
-  });
+  const { items, bonuses, sectionPresets, slots, sections, filters } =
+    compose(overlays);
+  return db.build(
+    items,
+    bonuses,
+    NW_SCHEMA,
+    { sections, slots, presets: sectionPresets },
+    filters,
+  );
 }
 
 // --- editing (pure: every helper returns a new overlay) ---------------------------------
@@ -172,18 +253,31 @@ const clone = (overlay: CatalogOverlay): CatalogOverlay => ({
   bonuses: { ...overlay.bonuses },
   sectionPresets: { ...overlay.sectionPresets },
   slots: { ...overlay.slots },
+  sections: { ...overlay.sections },
+  filters: { ...overlay.filters },
+  ...(overlay.sectionOrder ? { sectionOrder: [...overlay.sectionOrder] } : {}),
 });
 
-const inBase = (group: CatalogGroup, key: string) => {
-  const catalogBase = base();
-  if (group === "items")
-    return catalogBase.items.some((item) => item.id === key);
-  if (group === "bonuses")
-    return catalogBase.bonuses.some((bonus) => bonus.id === key);
-  if (group === "slots")
-    return catalogBase.slots.some((slot) => slot.id === key);
-  return catalogBase.sectionPresets.some((preset) => preset.id === key);
-};
+const inBase = (group: CatalogGroup, key: string) =>
+  base()[group].some((entry) => entry.id === key);
+
+/** Overlay entries in any group, tombstones excluded. */
+export function entryCount(overlay: CatalogOverlay): number {
+  let count = 0;
+  for (const group of GROUPS) {
+    for (const value of Object.values(overlay[group] ?? {})) {
+      if (value !== null) count += 1;
+    }
+  }
+  return count;
+}
+
+/** Everything the overlay says: entries, tombstones and a section reorder. */
+export function changedCount(overlay: CatalogOverlay): number {
+  let count = overlay.sectionOrder ? 1 : 0;
+  for (const group of GROUPS) count += Object.keys(overlay[group] ?? {}).length;
+  return count;
+}
 
 /** Save an entry under its id. Ids are frozen at creation (`nextId`, below) and never
  * user-edited afterwards, so the key an entry is saved under never changes across its
@@ -192,12 +286,10 @@ export function upsert(
   overlay: CatalogOverlay,
   group: CatalogGroup,
   key: string,
-  value: Item | Bonus | SectionPreset | Slot,
+  value: CatalogEntry,
 ) {
   const next = clone(overlay);
-  (next[group] as Record<string, Item | Bonus | SectionPreset | Slot | null>)[
-    key
-  ] = value;
+  (next[group] as Record<string, CatalogEntry | null>)[key] = value;
   return next;
 }
 
@@ -210,7 +302,7 @@ const slugify = (text: string) =>
 
 /**
  * A stable id for a brand-new item or bonus, derived from its name at the moment of first
- * save and never regenerated afterwards -- see `Item.id`'s own comment on why. Disambiguates
+ * save and never regenerated afterwards (see `Item.id`'s own comment on why). Disambiguates
  * against `existingIds` (every id already in use) by appending `-2`, `-3`, ... so two entries
  * whose names happen to slugify the same still get distinct ids with no user action needed.
  */
@@ -227,24 +319,51 @@ export function nextId(
   return `${base}-${n}`;
 }
 
+/** The stem a new slot's id uses when its label slugifies to nothing, as for a separator. */
+const SLOT_ID_FALLBACK: Record<Slot["type"], string> = {
+  build_parameter: "param",
+  item_picker: "slot",
+  item_picker_list: "list",
+  point_assignment: "points",
+  separator: "sep",
+  text: "text",
+};
+
 /**
- * A new `build_parameter` slot's id. Slot ids are namespaced by their section
- * (`options.magnitude`, `gear.head`), unlike item/bonus ids, so this prefixes rather than
- * calling `nextId` directly -- disambiguating against the prefixed form, since that is what
- * actually has to be unique.
+ * A new slot's id, namespaced by its section (`options.magnitude`, `gear.head`) and
+ * disambiguated against the full prefixed form.
  */
 export function nextSlotId(
   section: string,
   label: string,
   existingIds: string[],
+  type: Slot["type"] = "build_parameter",
 ): string {
   const prefix = section ? `${section}.` : "";
-  const stem = slugify(label) || "param";
+  const stem = slugify(label) || SLOT_ID_FALLBACK[type];
   const taken = new Set(existingIds);
   if (!taken.has(`${prefix}${stem}`)) return `${prefix}${stem}`;
   let n = 2;
   while (taken.has(`${prefix}${stem}-${n}`)) n += 1;
   return `${prefix}${stem}-${n}`;
+}
+
+/**
+ * A new filter's id, in snake_case like the shipped ones (`insignia_bonus`). Runs of
+ * characters outside `[a-z0-9_]` become one `_`, and the disambiguating suffix uses `_` too.
+ */
+export function nextFilterId(name: string, existingIds: string[]): string {
+  const stem =
+    String(name)
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9_]+/g, "_")
+      .replace(/^_+|_+$/g, "") || "filter";
+  const taken = new Set(existingIds);
+  if (!taken.has(stem)) return stem;
+  let n = 2;
+  while (taken.has(`${stem}_${n}`)) n += 1;
+  return `${stem}_${n}`;
 }
 
 /** Hide a base entry, or drop an added one outright. */
@@ -267,6 +386,100 @@ export function revert(
 ) {
   const next = clone(overlay);
   delete next[group][key];
+  return next;
+}
+
+/** The composed layout a move is resolved against. Slots must be authored, not resolved,
+ *  since a moved slot is written back into the overlay as-is. */
+export interface SlotLayout {
+  sections: SlotSection[];
+  slots: Slot[];
+}
+
+/** `layout`'s members of `sectionId`, in render order. */
+const membersOf = (layout: SlotLayout, sectionId: string) =>
+  layout.slots
+    .filter((slot) => slot.section === sectionId)
+    .map((slot) => slot.id);
+
+/** `ids` with `id` moved to `index` (clamped), counted after removing `id`. */
+const withAt = (ids: string[], id: string, index: number) => {
+  const rest = ids.filter((entry) => entry !== id);
+  rest.splice(Math.max(0, Math.min(rest.length, index)), 0, id);
+  return rest;
+};
+
+/**
+ * Put `slotId` at `index` among `toSection`'s members, writing the target section's full
+ * `slotIds`, and for a cross-section move, the source section and the slot's new `section`.
+ * The slot id is kept, since build data is keyed by it. Unchanged when the slot or section is
+ * not in `layout`, or the move is a no-op.
+ */
+export function moveSlot(
+  overlay: CatalogOverlay,
+  layout: SlotLayout,
+  slotId: string,
+  toSection: string,
+  index: number,
+): CatalogOverlay {
+  const slot = layout.slots.find((entry) => entry.id === slotId);
+  const target = layout.sections.find((section) => section.id === toSection);
+  if (!slot || !target) return overlay;
+
+  const before = membersOf(layout, toSection);
+  const after = withAt(before, slotId, index);
+  if (slot.section === toSection && deepEqual(before, after)) return overlay;
+
+  let next = upsert(overlay, "sections", toSection, {
+    ...target,
+    slotIds: after,
+  });
+  if (slot.section !== toSection) {
+    const source = layout.sections.find(
+      (section) => section.id === slot.section,
+    );
+    if (source) {
+      next = upsert(next, "sections", source.id, {
+        ...source,
+        slotIds: membersOf(layout, source.id).filter((id) => id !== slotId),
+      });
+    }
+    next = upsert(next, "slots", slotId, { ...slot, section: toSection });
+  }
+  return next;
+}
+
+/** Put `sectionId` at `index`, writing the full `sectionOrder`. Unchanged when the section is
+ *  not in `layout` or is already there. */
+export function moveSection(
+  overlay: CatalogOverlay,
+  layout: SlotLayout,
+  sectionId: string,
+  index: number,
+): CatalogOverlay {
+  const before = layout.sections.map((section) => section.id);
+  if (!before.includes(sectionId)) return overlay;
+  const after = withAt(before, sectionId, index);
+  if (deepEqual(before, after)) return overlay;
+  return { ...clone(overlay), sectionOrder: after };
+}
+
+/** Drop every slot and preset belonging to `sectionId`, returning a new overlay. Offered as an
+ *  option when deleting a section, like `unlinkBonus`. */
+export function removeSectionMembers(
+  overlay: CatalogOverlay,
+  slots: Slot[],
+  presets: SectionPreset[],
+  sectionId: string,
+): CatalogOverlay {
+  let next = overlay;
+  for (const slot of slots) {
+    if (slot.section === sectionId) next = remove(next, "slots", slot.id);
+  }
+  for (const preset of presets) {
+    if (preset.section === sectionId)
+      next = remove(next, "sectionPresets", preset.id);
+  }
   return next;
 }
 
@@ -293,7 +506,7 @@ export function unlinkBonus(
 
 export type EntryStatus = "base" | "added" | "edited" | "removed";
 
-/** How an entry differs from what shipped -- drives the badges in the editor list. */
+/** How an entry differs from what shipped, which drives the badges in the editor list. */
 export function statusOf(
   overlay: CatalogOverlay | null | undefined,
   group: CatalogGroup,
@@ -319,6 +532,21 @@ export function tombstoneIds(
 }
 
 // --- portable files (phase 7) -------------------------------------------------------------
+
+/** The entries of `composed` absent from `shipped` or not deep-equal to it, keyed by their own
+ *  `id`, which db.ts relies on when re-indexing. */
+function divergent<T extends { id: string }>(
+  composed: readonly T[],
+  shipped: readonly T[],
+): Record<string, T> {
+  const byId = new Map(shipped.map((entry) => [entry.id, entry]));
+  const out: Record<string, T> = {};
+  for (const entry of composed) {
+    const baseEntry = byId.get(entry.id);
+    if (!baseEntry || !deepEqual(entry, baseEntry)) out[entry.id] = entry;
+  }
+  return out;
+}
 
 /** Everything in the composed catalog this build depends on that base does not already
  *  provide - what a download has to carry to resolve identically elsewhere. */
@@ -365,58 +593,45 @@ export function referencedOverlay(db: Db, build: Build): CatalogOverlay {
     }
   }
 
-  // Build reference maps for base catalog
-  const baseItems = new Map(base().items.map((i) => [i.id, i]));
-  const baseBonuses = new Map(base().bonuses.map((b) => [b.id, b]));
-
+  const catalogBase = base();
   const overlay = emptyOverlay();
 
-  // Emit only items absent from base or not deep-equal to it. An overlay entry is keyed by the
-  // id it is stored under and db.ts re-indexes it by the entry's own `id`, so the two must
-  // agree: one emitted under someone else's id vanishes from the catalog on import.
+  // Of the items and bonuses this build reaches, only the ones absent from base or not
+  // deep-equal to it.
+  const items: Item[] = [];
   for (const id of itemIds) {
     const item = db.get(id);
-    if (!item) continue;
-    const baseItem = baseItems.get(id);
-    if (!baseItem || !deepEqual(item, baseItem)) {
-      overlay.items[id] = item;
-    }
+    if (item) items.push(item);
   }
-
-  // Emit only bonuses absent from base or not deep-equal to their base counterpart
+  overlay.items = divergent(items, catalogBase.items);
+  const bonuses: Bonus[] = [];
   for (const id of visitedBonuses) {
     const bonus = db.bonusById.get(id);
-    if (!bonus) continue;
-    const baseBonus = baseBonuses.get(id);
-    if (!baseBonus || !deepEqual(bonus, baseBonus)) {
-      overlay.bonuses[id] = bonus;
-    }
+    if (bonus) bonuses.push(bonus);
   }
+  overlay.bonuses = divergent(bonuses, catalogBase.bonuses);
 
-  // Every build_parameter slot that differs from base, whether or not this build ever set it.
-  // Unlike an item, a param needs no reference to matter: bonus.ts's `collect()` walks the
-  // *whole* slot list and puts each param in `ctx.params` at its stored value or its `default`,
-  // so an added slot and an edited default both change what conditions see. Carrying only the
-  // ones the build happens to have a stored value for would let the same build resolve
-  // differently on the other machine -- which is the one thing a download must not do.
+  // Every slot, section and filter that differs from base, used by this build or not: the
+  // engine reads every slot's param, slots need their sections, and picks need their
+  // category's `maxCopies`. Authored slots, so derived options are never frozen in.
   //
-  // Added/edited only, the same deep-equal test items use. A *removed* shipped param does not
-  // travel: "not in `db.slots`" cannot be told apart from "this db was never built from base"
-  // here, and tombstoning on that guess would embed a full set of them into every ordinary
-  // download. Same limitation items and presets already have.
-  //
-  // Restricted to `build_parameter` because that is all an overlay can carry (see
-  // `CatalogOverlay.slots`), so nothing else can have diverged.
-  const baseParamSlots = new Map(
-    base()
-      .slots.filter((slot) => slot.type === "build_parameter")
-      .map((slot) => [slot.id, slot]),
-  );
-  for (const slot of db.authoredSlots) {
-    if (slot.type !== "build_parameter") continue;
-    const baseSlot = baseParamSlots.get(slot.id);
-    if (!baseSlot || !deepEqual(slot, baseSlot)) overlay.slots[slot.id] = slot;
-  }
+  // Added/edited only. Removed entries don't travel, since "missing from the db" can't be
+  // told apart from "never built from base" here.
+  overlay.slots = divergent(db.authoredSlots, catalogBase.slots);
+  overlay.sections = divergent(db.sections, catalogBase.sections);
+  overlay.filters = divergent(db.filters, catalogBase.filters);
+
+  // The section order travels only when it differs from `compose`'s default order.
+  const composedOrder = db.sections.map((section) => section.id);
+  const present = new Set(composedOrder);
+  const baseOrder = catalogBase.sections
+    .map((section) => section.id)
+    .filter((id) => present.has(id));
+  const natural = [
+    ...baseOrder,
+    ...composedOrder.filter((id) => !baseOrder.includes(id)),
+  ];
+  if (!deepEqual(composedOrder, natural)) overlay.sectionOrder = composedOrder;
 
   return overlay;
 }
@@ -585,6 +800,20 @@ const CONTEXT_SCALAR_KEYS = new Set([
   "m32Forte",
 ]);
 const CONTEXT_CONTAINER_KEYS = new Set(["forte", "toggles"]);
+
+// Param paths the engine reads directly off `BuildContext`, each with the reader that needs
+// it. Without a `build_parameter` slot at the path, the value cannot be changed.
+const ENGINE_PARAM_PATHS: Record<string, string> = {
+  role: "the engine picks the role's stat weights from it",
+  damageType: "the engine picks physical or magical damage from it",
+  duration: "duration conditions read it",
+  enemies: "enemy-count conditions read it",
+  magnitude: "the engine scales damage by it",
+  m32Forte: "the engine picks how forte contributes from it",
+  "forte.primary": "the engine splits forte by it",
+  "forte.secondaryA": "the engine splits forte by it",
+  "forte.secondaryB": "the engine splits forte by it",
+};
 
 function shadowsBuildContext(path: string): boolean {
   const [head, ...rest] = path.split(".");
@@ -857,18 +1086,97 @@ function slotResolver(slots: Slot[]): (slotId: string) => Slot | undefined {
 }
 
 /**
- * Lint every `SectionPreset`: a duplicate id, a reference to a slot id that doesn't exist, a
- * reference that exists but belongs to a different section (a preset can only touch its own
- * section), or a reference whose slot type doesn't match the field it was declared under (e.g.
- * an `item_picker` slot id under `assignments`). Standalone from `validate()` below, same as
- * `validateSlots`, since it needs only the slot/preset lists, not a composed catalog.
+ * Lint the layout. Errors for a slot whose section does not exist and for duplicate section
+ * ids; warnings for stale ids in `slotIds`/`sectionOrder` (which `compose` ignores) and for
+ * empty sections.
+ */
+export function validateSections(
+  sections: SlotSection[],
+  slots: Slot[],
+  sectionOrder?: readonly string[],
+): LintFinding[] {
+  const findings: LintFinding[] = [];
+  const sectionIds = new Set<string>();
+  const slotsById = new Map(slots.map((slot) => [slot.id, slot]));
+  const memberCount = new Map<string, number>();
+  for (const slot of slots)
+    memberCount.set(slot.section, (memberCount.get(slot.section) ?? 0) + 1);
+
+  for (const section of sections) {
+    if (sectionIds.has(section.id)) {
+      findings.push({
+        level: "error",
+        kind: "section",
+        name: section.id,
+        message: `section "${section.id}" is defined more than once`,
+      });
+      continue;
+    }
+    sectionIds.add(section.id);
+    if (!memberCount.get(section.id)) {
+      findings.push({
+        level: "warn",
+        kind: "section",
+        name: section.id,
+        message: `section "${section.id}" has no slots`,
+      });
+    }
+    for (const slotId of section.slotIds) {
+      const slot = slotsById.get(slotId);
+      if (!slot) {
+        findings.push({
+          level: "warn",
+          kind: "section",
+          name: section.id,
+          message: `section "${section.id}" orders "${slotId}", which is not a slot; the entry is ignored`,
+        });
+      } else if (slot.section !== section.id) {
+        findings.push({
+          level: "warn",
+          kind: "section",
+          name: section.id,
+          message: `section "${section.id}" orders "${slotId}", which belongs to section "${slot.section}"; the entry is ignored`,
+        });
+      }
+    }
+  }
+
+  for (const slot of slots) {
+    if (sectionIds.has(slot.section)) continue;
+    findings.push({
+      level: "error",
+      kind: "slot",
+      name: slot.id,
+      message: `${slot.id}: section "${slot.section}" does not exist, so the slot is never shown`,
+    });
+  }
+
+  for (const sectionId of sectionOrder ?? []) {
+    if (sectionIds.has(sectionId)) continue;
+    findings.push({
+      level: "warn",
+      kind: "section",
+      name: sectionId,
+      message: `sectionOrder names "${sectionId}", which is not a section; the entry is ignored`,
+    });
+  }
+
+  return findings;
+}
+
+/**
+ * Lint every `SectionPreset`: duplicate ids, a missing section, and slot references that are
+ * missing, belong to another section, or have the wrong type for their field. Needs only the
+ * lists, not a composed catalog.
  */
 export function validatePresets(
   presets: SectionPreset[],
   slots: Slot[],
+  sections: SlotSection[] = NW_SLOTS.sections ?? [],
 ): LintFinding[] {
   const findings: LintFinding[] = [];
   const resolve = slotResolver(slots);
+  const sectionIds = new Set(sections.map((section) => section.id));
   const seenIds = new Set<string>();
 
   for (const preset of presets) {
@@ -887,6 +1195,15 @@ export function validatePresets(
       });
     } else {
       seenIds.add(preset.id);
+    }
+
+    if (!sectionIds.has(preset.section)) {
+      findings.push({
+        level: "error",
+        kind: "sectionPreset",
+        name: preset.id,
+        message: `preset "${preset.id}": section "${preset.section}" does not exist`,
+      });
     }
 
     for (const [field, expectedTypes] of Object.entries(
@@ -1113,10 +1430,6 @@ export function validateBonusAttachments(
 }
 
 /**
- * Lint the composed catalog. Warnings are things that are probably a mistake; errors are
- * things the engine will misread or silently drop.
- */
-/**
  * Lint every `ItemPickerSlot.default` against the catalog: an id that does not exist, or is
  * not one of that slot's own candidates, leaves the slot quietly empty in every fresh build.
  * Split out of `validateSlots` because it is the one slot rule needing the item list too.
@@ -1286,14 +1599,14 @@ function rowsOffering(item: Item, slots: Slot[]): number {
 /**
  * Within one filter a cap is either a category-wide fact or nobody's, so members carrying
  * `maxCopies` beside members that don't is an oversight. Quiet where a cap could never bind
- * (a filter one row alone can hold) or where a `filterDefaults` entry already answers for
- * every member. Warns rather than errors: unlimited is right for some categories, and an
- * item that means it says so with `maxCopies: 0`.
+ * (a filter one row alone can hold) or where the filter's own `maxCopies` (data/filters.json)
+ * already answers for every member. Warns rather than errors: unlimited is right for some
+ * categories, and an item that means it says so with `maxCopies: 0`.
  */
 export function validateMaxCopies(
   items: Item[],
   slots: Slot[] = NW_SLOTS?.slots ?? [],
-  filterDefaults: FilterDefaultsMap = NW_SLOTS.filterDefaults ?? {},
+  filterDefaults: FilterDefaultsMap = db.filterDefaultsOf(NW_FILTERS),
 ): LintFinding[] {
   const findings: LintFinding[] = [];
   const byFilter = new Map<string, Item[]>();
@@ -1327,11 +1640,11 @@ export function validateMaxCopies(
 }
 
 /**
- * Every field a `filterFields` entry claims is a real item field. A misspelling silently
- * withholds a form group instead of narrowing one.
+ * Every field a filter's `fields` names is a real item field. A misspelling would silently
+ * hide a form group.
  */
 export function validateFilterFields(
-  filterFields: FilterFieldsMap = NW_SLOTS.filterFields ?? {},
+  filterFields: FilterFieldsMap = db.filterFieldsOf(NW_FILTERS),
 ): LintFinding[] {
   const findings: LintFinding[] = [];
   for (const [filter, fields] of Object.entries(filterFields)) {
@@ -1341,12 +1654,141 @@ export function validateFilterFields(
         level: "error",
         kind: "item",
         message:
-          `filterFields "${filter}" claims "${field}", which is not an item field; ` +
+          `filter "${filter}" claims field "${field}", which is not an item field; ` +
           "no form group answers to it, so the entry does nothing",
       });
     }
   }
   return findings;
+}
+
+/** Every filter a slot selects by, including a list param's `optionsFrom.filter`. */
+function slotSelectorFilters(slots: Slot[]): Set<string> {
+  const filters = new Set<string>();
+  for (const slot of slots) {
+    if (slot.type === "build_parameter") {
+      if (slot.optionsFrom?.filter) filters.add(slot.optionsFrom.filter);
+    } else if (slot.type !== "separator" && slot.type !== "text") {
+      if (slot.filter) filters.add(slot.filter);
+    }
+  }
+  return filters;
+}
+
+/**
+ * Every category the catalog uses: items' `filter` plus every filter a slot selects by. A
+ * declaration in data/filters.json is optional metadata on top of these.
+ */
+export function usedFilters(items: Item[], slots: Slot[]): Set<string> {
+  const used = slotSelectorFilters(slots);
+  for (const item of items) if (item.filter) used.add(item.filter);
+  return used;
+}
+
+/**
+ * Warns about a declared filter that nothing uses, likely a leftover or a typo.
+ */
+export function validateFilters(
+  filters: FilterDef[],
+  items: Item[],
+  slots: Slot[],
+): LintFinding[] {
+  const used = usedFilters(items, slots);
+  return filters
+    .filter((filter) => !used.has(filter.id))
+    .map((filter) => ({
+      level: "warn" as const,
+      kind: "filter" as const,
+      name: filter.id,
+      message: `filter "${filter.id}" is declared, but no item or slot uses it`,
+    }));
+}
+
+/**
+ * Warns when the composed layout lacks a slot or section that code depends on:
+ * `ENGINE_PARAM_PATHS`, `REQUIRED_SLOT_IDS` and every id `data/game-import.json` names.
+ */
+export function validateRequiredSlots(
+  slots: Slot[],
+  sections: SlotSection[],
+): LintFinding[] {
+  const findings: LintFinding[] = [];
+  const paramPaths = new Set(
+    slots
+      .filter((slot) => slot.type === "build_parameter")
+      .map((slot) => slot.path),
+  );
+  // Named after the shipped slot, so the finding points at the tombstone to restore.
+  const shippedParam = (path: string) =>
+    base().slots.find(
+      (slot) => slot.type === "build_parameter" && slot.path === path,
+    );
+  for (const [path, reader] of Object.entries(ENGINE_PARAM_PATHS)) {
+    if (paramPaths.has(path)) continue;
+    findings.push({
+      level: "warn",
+      kind: "slot",
+      name: shippedParam(path)?.id ?? path,
+      message: `no build_parameter has the path "${path}", but ${reader}; builds keep whatever value they last stored`,
+    });
+  }
+
+  const slotIds = new Set(slots.map((slot) => slot.id));
+  for (const { id, writer } of Object.values(REQUIRED_SLOT_IDS)) {
+    if (slotIds.has(id)) continue;
+    findings.push({
+      level: "warn",
+      kind: "slot",
+      name: id,
+      message: `slot "${id}" is missing, but ${writer} writes to it; its picks end up in a slot that is never shown`,
+    });
+  }
+
+  const sectionIds = new Set(sections.map((section) => section.id));
+  const references = gameImportReferences();
+  for (const [id, where] of references.slotIds) {
+    if (slotIds.has(id)) continue;
+    findings.push({
+      level: "warn",
+      kind: "slot",
+      name: id,
+      message: `slot "${id}" is missing, but game-import.json (${where}) names it; the import skips what it would have placed there`,
+    });
+  }
+  for (const [id, where] of references.sectionIds) {
+    if (sectionIds.has(id)) continue;
+    findings.push({
+      level: "warn",
+      kind: "section",
+      name: id,
+      message: `section "${id}" is missing, but game-import.json (${where}) names it; the import report drops that group`,
+    });
+  }
+  return findings;
+}
+
+/** The filter a stable row of each role must select, shared by lint and the slot form. */
+export const STABLE_ROLE_FILTER: Record<StableRole, string> = {
+  mount: "mount",
+  insignia: "insignia",
+  bonus: "insignia_bonus",
+};
+
+/**
+ * Why code outside the catalog needs this slot, or null. Lets the editor warn before a delete.
+ */
+export function requiredSlotReason(slot: Slot): string | null {
+  if (slot.type === "build_parameter") {
+    const reader = ENGINE_PARAM_PATHS[slot.path];
+    if (reader)
+      return `${reader}, and builds would keep whatever value they last stored`;
+  }
+  const required = Object.values(REQUIRED_SLOT_IDS).find(
+    (entry) => entry.id === slot.id,
+  );
+  if (required)
+    return `${required.writer} writes to it, and those picks would end up in a slot that is never shown`;
+  return null;
 }
 
 /**
@@ -1362,11 +1804,7 @@ export function validateStableSlots(
   const report = (name: string, message: string) =>
     findings.push({ level: "error", kind: "slot", name, message });
 
-  const FILTER_FOR: Record<StableRole, string> = {
-    mount: "mount",
-    insignia: "insignia",
-    bonus: "insignia_bonus",
-  };
+  const FILTER_FOR = STABLE_ROLE_FILTER;
 
   const groups = new Map<
     number,
@@ -1445,27 +1883,36 @@ export function validateStableSlots(
   return findings;
 }
 
+/**
+ * Lint the composed catalog. Warnings are things that are probably a mistake; errors are
+ * things the engine will misread or silently drop. `sectionOrder` is the layer's own, since
+ * the composed layout has already applied it.
+ */
 export function validate(
   items: Item[],
   bonuses: Bonus[],
   schema: Schema = NW_SCHEMA,
   presets: SectionPreset[] = NW_SLOTS.presets ?? [],
   slots: Slot[] = NW_SLOTS?.slots ?? [],
-  filterDefaults: FilterDefaultsMap = NW_SLOTS.filterDefaults ?? {},
-  filterFields: FilterFieldsMap = NW_SLOTS.filterFields ?? {},
+  sections: SlotSection[] = NW_SLOTS?.sections ?? [],
+  filters: FilterDef[] = NW_FILTERS,
+  sectionOrder?: readonly string[],
 ): LintFinding[] {
   const findings: LintFinding[] = [
     ...validateSlots(slots),
     ...validateSlotDefaults(slots, items),
-    ...validatePresets(presets, slots),
+    ...validateSections(sections, slots, sectionOrder),
+    ...validatePresets(presets, slots, sections),
     ...validateParamSchema(slots, schema),
     ...validateParamReaders(slots, bonuses),
     ...validateScaledBy(slots, bonuses),
     ...validateBonusAttachments(items, bonuses),
     ...validateReplacements(items, schema),
-    ...validateMaxCopies(items, slots, filterDefaults),
+    ...validateMaxCopies(items, slots, db.filterDefaultsOf(filters)),
     ...validateStableSlots(slots),
-    ...validateFilterFields(filterFields),
+    ...validateFilterFields(db.filterFieldsOf(filters)),
+    ...validateFilters(filters, items, slots),
+    ...validateRequiredSlots(slots, sections),
   ];
   const report = (
     level: "error" | "warn",
@@ -1997,7 +2444,5 @@ export function validate(
   return findings;
 }
 
-// `toItemsFile`/`toBonusesFile`/`toSlotsFile` -- regenerating the shipped data/*.json files
-// from the composed catalog -- live in `catalogExport.ts`, not here: that keeps this
-// module free of the maintainer-only export code so it can be dynamic-imported and left
-// unfetched unless maintainer mode is on (see LayerExportModal.vue).
+// The data file exporters live in `catalogExport.ts`, so that maintainer-only code is only
+// loaded in maintainer mode.

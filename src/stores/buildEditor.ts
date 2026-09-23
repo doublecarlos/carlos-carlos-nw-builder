@@ -494,6 +494,9 @@ export const filledSlots = computed(() => {
   return b ? Object.values(b.choices).filter(Boolean).length : 0;
 });
 
+/** A blank build from the composed catalog, so clearing resets layer-added slots too. */
+const freshDefaults = () => storage.defaultBuild("New build", db.value);
+
 export function clearSlots() {
   const b = builds.build.value;
   if (!b) return;
@@ -504,7 +507,7 @@ export function clearSlots() {
     `clear all ${filledSlots.value} slots`,
     b,
   );
-  const fresh = storage.defaultBuild();
+  const fresh = freshDefaults();
   // Not `{}`: a slot with a `default` is "cleared" back to that default, exactly as a
   // build_parameter is.
   replaceSlotData(b, fresh);
@@ -515,7 +518,7 @@ export function resetAll() {
   const b = builds.build.value;
   if (!b) return;
   history.snapshot("build", b.id, null, "reset build", b);
-  const fresh = storage.defaultBuild(b.name);
+  const fresh = storage.defaultBuild(b.name, db.value);
   fresh.id = b.id;
   builds.replaceActive(fresh);
   showUndoNotice(`Reset “${b.name}”`, () => builds.undoFor(b.id));
@@ -563,9 +566,8 @@ export function copySection(fromId: string, sectionIds: string[]) {
   }
 }
 
-/** Resets one slot to `defaultBuild()`'s value -- same per-type handling as `copySection`,
- *  just sourced from the built-in defaults instead of another build. `fresh` is passed in so a
- *  caller clearing several slots pays for one `defaultBuild()` rather than one per slot. */
+/** Resets one slot to its default from `fresh`, per type like `copySection`. `fresh` is passed
+ *  in so clearing several slots builds it once. */
 function clearSlot(b: Build, slot: Slot, fresh: Build) {
   if (slot.type === "build_parameter") {
     setPath(b.context, slot.path, getPath(fresh.context, slot.path));
@@ -587,13 +589,13 @@ function clearSlot(b: Build, slot: Slot, fresh: Build) {
   copySlotData(b, fresh, slot.id);
 }
 
-/** Resets every slot in a section to `defaultBuild()`'s value. */
+/** Resets every slot in a section to its declared default. */
 export function clearSection(sectionId: string, label: string) {
   const b = builds.build.value;
   if (!b) return;
 
   history.snapshot("build", b.id, null, `clear section "${label}"`, b);
-  const fresh = storage.defaultBuild();
+  const fresh = freshDefaults();
   for (const slot of buildSlots()) {
     if (slot.section === sectionId) clearSlot(b, slot, fresh);
   }
@@ -637,7 +639,7 @@ export function applyPreset(preset: SectionPreset) {
 
   // First, so a slot named by both `clears` and a writing field below still ends up written.
   if (preset.clears?.length) {
-    const fresh = storage.defaultBuild();
+    const fresh = freshDefaults();
     for (const slotId of preset.clears) {
       const slot = db.value.slotFor(slotId);
       if (slot) clearSlot(b, slot, fresh);
@@ -686,7 +688,7 @@ export function presetFromSection(
   const b = builds.build.value;
   if (!b) return preset;
 
-  const fresh = storage.defaultBuild();
+  const fresh = freshDefaults();
   const params: Record<string, string | number | boolean> = {};
   const choices: Record<string, string> = {};
   const values: Record<string, Record<string, number>> = {};

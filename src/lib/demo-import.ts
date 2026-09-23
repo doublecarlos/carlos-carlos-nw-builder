@@ -5,6 +5,7 @@ import { itemPublishing } from "../data/db";
 import { normalizeGroup, stableGroups } from "../engine/insignia";
 import {
   GAME_IMPORT_DATA,
+  REQUIRED_SLOT_IDS,
   classFromHclass,
   notInDemoSlotIds,
   placeBag,
@@ -63,6 +64,7 @@ export function buildFromLoadout(
   const label = loadoutLabel(loadout);
   const build = storage.defaultBuild(
     options?.name ?? `${character.name} - ${label}`,
+    db,
   );
 
   // `hclassToClass` yields a bare class value; the class is a pick, so resolve it through
@@ -71,10 +73,10 @@ export function buildFromLoadout(
   const classItem = gameClass
     ? itemPublishing(db, "class", gameClass)
     : undefined;
-  if (classItem) build.choices["options.class"] = classItem;
+  if (classItem) build.choices[REQUIRED_SLOT_IDS.class.id] = classItem;
 
   const race = raceFromSpecies(character.species);
-  if (race) build.choices["raceLeveling.race"] = race;
+  if (race) build.choices[REQUIRED_SLOT_IDS.race.id] = race;
 
   const outcomes: SlotOutcome[] = [];
   const occupied = new Set<string>();
@@ -108,8 +110,8 @@ export function buildFromLoadout(
   }
 
   const notInDemo = notInDemoSlotIds(db.slots);
-  if (!classItem) notInDemo.push("options.class");
-  if (!race) notInDemo.push("raceLeveling.race");
+  if (!classItem) notInDemo.push(REQUIRED_SLOT_IDS.class.id);
+  if (!race) notInDemo.push(REQUIRED_SLOT_IDS.race.id);
   for (const slotId of notInDemo) outcomes.push({ kind: "notInDemo", slotId });
 
   const counts: Record<SlotOutcome["kind"], number> = {

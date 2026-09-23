@@ -7,6 +7,7 @@ import * as catalog from "../../src/data/catalog";
 import { NW_ITEMS } from "../../src/data/data";
 import type {
   Build,
+  FilterDef,
   FilterDefaultsMap,
   Item,
   Schema,
@@ -37,7 +38,7 @@ const picker = (id: string, filter: string): Slot => ({
 
 // Two ring slots, so a ring can repeat; one charm slot, so a charm cannot.
 const slots: SlotsData = {
-  sections: [{ id: "gear", label: "Gear" }],
+  sections: [{ id: "gear", label: "Gear", slotIds: [] }],
   slots: [
     picker("gear.ring1", "test_ring"),
     picker("gear.ring2", "test_ring"),
@@ -45,10 +46,11 @@ const slots: SlotsData = {
   ],
 };
 
-const defaults: FilterDefaultsMap = { test_ring: { maxCopies: 1 } };
+/** The category default rings inherit, as data/filters.json declares it. */
+const capped: FilterDef[] = [{ id: "test_ring", maxCopies: 1 }];
 
-/** The same slots, with the category default rings inherit. */
-const capped: SlotsData = { ...slots, filterDefaults: defaults };
+/** The same declaration as `Db` views it, for the lint. */
+const defaults: FilterDefaultsMap = db.filterDefaultsOf(capped);
 
 const item = (
   id: string,
@@ -93,7 +95,13 @@ describe("Db.maxCopies with per-filter defaults", () => {
   const ownCap = item("two-ring", "test_ring", { maxCopies: 2 });
   const optedOut = item("free-ring", "test_ring", { maxCopies: 0 });
   const charm = item("charm", "test_charm");
-  const testDb = db.build([plain, ownCap, optedOut, charm], [], schema, capped);
+  const testDb = db.build(
+    [plain, ownCap, optedOut, charm],
+    [],
+    schema,
+    slots,
+    capped,
+  );
 
   it("falls back to the filter's default when the item declares no cap", () => {
     expect(testDb.maxCopies(plain)).toBe(1);
@@ -119,7 +127,7 @@ describe("Db.maxCopies with per-filter defaults", () => {
 describe("a cap inherited from the filter", () => {
   it("is enforced by the engine exactly like an item's own", () => {
     const plain = item("plain-ring", "test_ring");
-    const testDb = db.build([plain], [], schema, capped);
+    const testDb = db.build([plain], [], schema, slots, capped);
     const twice = engine.resolveBuild(
       testDb,
       testBuild({ "gear.ring1": "plain-ring", "gear.ring2": "plain-ring" }),
@@ -129,7 +137,7 @@ describe("a cap inherited from the filter", () => {
 
   it("is lifted by an explicit 0 on the item", () => {
     const optedOut = item("free-ring", "test_ring", { maxCopies: 0 });
-    const testDb = db.build([optedOut], [], schema, capped);
+    const testDb = db.build([optedOut], [], schema, slots, capped);
     const twice = engine.resolveBuild(
       testDb,
       testBuild({ "gear.ring1": "free-ring", "gear.ring2": "free-ring" }),

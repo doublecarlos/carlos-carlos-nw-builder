@@ -1,15 +1,16 @@
-// End-to-end coverage for `BuildParameterSlot.visibleWhen`: it scopes a param's row to
-// when it is relevant. Driven through the shipped scoping this shipped with -- the three forte
-// params are hidden until a paragon is equipped -- since that is the only path a user has to
-// flip one today (authoring a slot is slot-overlay.spec.ts's own coverage).
-import { test, expect } from "@playwright/test";
+// End-to-end coverage for `SlotVisibility.visibleWhen`: the shipped forte params stay hidden
+// until a paragon is equipped, and the slot form can author the same kind of condition.
+import { test, expect, type Page } from "@playwright/test";
 import {
   openBuilder,
   slotRow,
   pickerInput,
+  chooseCombo,
   chooseItem,
   chooseClass,
 } from "./support/app";
+import { newInOutline, openSlotsTab } from "./support/layerEditor";
+import { addLayer, layerRow } from "./support/nav";
 
 const FORTE_SLOTS = ["options.forte1", "options.forte2a", "options.forte2b"];
 
@@ -60,3 +61,46 @@ test("an unscoped param is untouched, in its section and in the quick strip", as
   await expect(quick).toContainText("Duration (s)");
   await expect(slotRow(page, "options.magnitude")).toBeVisible();
 });
+
+test("a condition authored in the slot form scopes the row it is on", async ({
+  page,
+}) => {
+  await openBuilder(page);
+  await addLayer(page);
+  await layerRow(page, "Layer 1").locator(".nav-name").click();
+  await openSlotsTab(page);
+
+  await newInOutline(page, "new-slot");
+  await page.getByTestId("slot-label-input").fill("Wizard Only");
+  await page.getByTestId("slot-path-input").fill("wizardOnly");
+  await chooseCombo(page.getByTestId("slot-section-input"), "Options");
+  await addClassCondition(page, "wizard", "Wizard");
+  await page.getByTestId("save-slot").click();
+
+  await backToBuild(page);
+  // No class picked yet, so the condition does not hold and the row stays away.
+  await expect(slotRow(page, "options.wizard-only")).toHaveCount(0);
+  await chooseClass(page, "wizard");
+  await expect(slotRow(page, "options.wizard-only")).toBeVisible();
+});
+
+/** Adds one "class is <name>" row to the open form's "Shown when" editor. */
+async function addClassCondition(page: Page, query: string, option: string) {
+  await page.getByRole("button", { name: "Add condition" }).click();
+  const row = page.getByTestId("condition-row").first();
+  await row.getByTestId("picker-input").first().click();
+  await row.getByText("class", { exact: true }).click();
+  const values = row.getByTestId("condition-values");
+  await values.getByTestId("token-query").fill(query);
+  await values.getByTestId("picker-option").filter({ hasText: option }).click();
+}
+
+async function backToBuild(page: Page) {
+  await page
+    .getByTestId("library")
+    .locator(".nav-row--build")
+    .first()
+    .locator(".nav-name")
+    .click();
+  await expect(page.getByTestId("builder-content")).toBeVisible();
+}

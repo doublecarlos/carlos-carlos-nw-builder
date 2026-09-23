@@ -425,10 +425,8 @@ export function diffLabel(oldJson: string, newJson: string): string {
 }
 
 // --- which field groups this item is offered ---------------------------------------------
-// `filterFields` in data/slots.json says which fields each filter is authored with, so a layer
-// can declare its own item category with no code edit. This table says which item fields each
-// optional template group edits; whether to show one stays in ItemForm.vue, since that depends
-// on reactive props/draft state (`showsGroup`/`carriesField`).
+// Which item fields each optional form group edits. A filter's `fields` picks the groups its
+// items show; the reactive gating lives in ItemForm.vue.
 
 /** Every optional group in ItemForm.vue's template, in the order it draws them, by the item
  *  fields it edits. */

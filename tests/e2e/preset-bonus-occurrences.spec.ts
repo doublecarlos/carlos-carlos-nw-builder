@@ -19,6 +19,7 @@ import {
   setItemFilter,
 } from "./support/app";
 import { addLayer, layerRow } from "./support/nav";
+import { openSlotsTab, newInOutline } from "./support/layerEditor";
 
 const RING_SLOT = "gear.ring1";
 const RING_ID = "test-preset-occurrence-ring";
@@ -154,8 +155,8 @@ test("a count typed into the preset form is what applying the preset writes", as
 
   // Author the preset: pick the ring in an item row, then set the occurrence stepper that
   // appears for the config it carries.
-  await page.getByRole("button", { name: /Presets \d+/ }).click();
-  await page.getByTestId("new-preset").click();
+  await openSlotsTab(page);
+  await newInOutline(page, "new-preset");
   await page.getByTestId("preset-label-input").fill(PRESET_LABEL);
   await chooseCombo(page.getByTestId("preset-section-input"), "Gear");
 

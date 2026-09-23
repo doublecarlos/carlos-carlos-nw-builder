@@ -2,6 +2,7 @@
 
 import rawSchema from "../../data/schema.json";
 import rawSlots from "../../data/slots.json";
+import rawFilters from "../../data/filters.json";
 import rawItems from "../../data/db-items.json";
 import rawBonuses from "../../data/db-bonuses.json";
 import type {
@@ -10,6 +11,7 @@ import type {
   StatKey,
   SlotsData,
   Slot,
+  FilterDef,
   SectionPreset,
   Item,
   Bonus,
@@ -40,22 +42,17 @@ function deriveSchema(raw: typeof rawSchema): Schema {
 }
 
 /**
- * `data/slots.json` is authored nested (a section's slots -- and, optionally, its presets --
- * live inside it -- no per-slot `section` back-reference, no `row`; order is array position).
- * Every consumer (db.ts, engine.ts, bonus.ts, BuildEditor.vue) still wants the flat
- * `{sections, slots, presets}` shape `Db` has always had (plus presets), so this is the one
- * place that reconciles the two -- everything downstream is unchanged. `presets` is optional
- * per section in the JSON (most sections don't have any yet), hence the cast rather than a
- * destructure that `resolveJsonModule` could type-check against every section uniformly.
+ * Flattens the nested `data/slots.json` into the `{sections, slots, presets}` shape `Db` uses:
+ * each slot and preset gets its `section`, each section its `slotIds`. `presets` is optional
+ * per section, hence the cast.
  */
 function deriveSlots(raw: typeof rawSlots): SlotsData {
   return {
-    filterDefaults: raw.filterDefaults,
-    filterFields: raw.filterFields,
-    sections: raw.sections.map(({ id, label, defaultOpen }) => ({
+    sections: raw.sections.map(({ id, label, defaultOpen, slots }) => ({
       id,
       label,
       defaultOpen,
+      slotIds: slots.map((slot) => slot.id),
     })),
     slots: raw.sections.flatMap((section) =>
       section.slots.map((slot) => ({ ...slot, section: section.id }) as Slot),
@@ -71,8 +68,21 @@ function deriveSlots(raw: typeof rawSlots): SlotsData {
   };
 }
 
+/**
+ * Turns the id-keyed `data/filters.json` into a list of entities with their id inside, like
+ * items. Sorted by id, the same order the file is written in.
+ */
+function deriveFilters(
+  raw: Record<string, Omit<FilterDef, "id">>,
+): FilterDef[] {
+  return Object.keys(raw)
+    .sort()
+    .map((id) => ({ id, ...raw[id] }));
+}
+
 export const NW_SCHEMA: Schema = deriveSchema(rawSchema);
 export const NW_SLOTS: SlotsData = deriveSlots(rawSlots);
+export const NW_FILTERS: FilterDef[] = deriveFilters(rawFilters);
 export const NW_ITEMS: Item[] = rawItems;
 export const NW_BONUSES: Bonus[] = rawBonuses as Bonus[];
 

@@ -12,11 +12,14 @@ import {
 import {
   addBuild,
   addFolder,
+  addLayer,
   buildRow,
   folderRow,
+  layerRow,
   openRowMenu,
   renameViaSidebar,
 } from "./support/nav";
+import { newInOutline, openSlotsTab } from "./support/layerEditor";
 
 const palette = (page: Page) => page.getByTestId("go-to-palette");
 const input = (page: Page) => page.getByTestId("go-to-input");
@@ -299,6 +302,36 @@ test.describe("choosing a destination", () => {
     await expect(cursorRow(page)).toHaveAttribute(
       "data-cursor-key",
       "slot:gear.offhandMod1",
+    );
+  });
+
+  test("a section and a slot a layer adds are destinations like the shipped ones", async ({
+    page,
+  }) => {
+    await openBuilder(page);
+    await addLayer(page);
+    await layerRow(page, "Layer 1").locator(".nav-name").click();
+    await openSlotsTab(page);
+    await newInOutline(page, "new-section");
+    await page.getByTestId("section-label-input").fill("Field Notes");
+    await page.getByTestId("save-section").click();
+    await newInOutline(page, "new-slot");
+    await page.getByTestId("slot-label-input").fill("Scribble");
+    await page.getByTestId("slot-path-input").fill("scribble");
+    await page.getByTestId("slot-default-input").fill("1");
+    await page.getByTestId("save-slot").click();
+    await expect(page.getByText('Saved slot "Scribble"')).toBeVisible();
+
+    // The palette reads the composed catalog, so both exist for it even while the layer
+    // editor, not the build editor, is on screen.
+    await openPalette(page, "field notes");
+    await expect(option(page, "section:field-notes")).toBeVisible();
+    await input(page).fill("scribble");
+    await option(page, "slot:field-notes.scribble").click();
+
+    await expect(cursorRow(page)).toHaveAttribute(
+      "data-cursor-key",
+      "slot:field-notes.scribble",
     );
   });
 });

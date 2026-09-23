@@ -86,7 +86,7 @@ const forteSlot: Slot = {
 };
 
 const testSlots: SlotsData = {
-  sections: [{ id: "options", label: "Options" }],
+  sections: [{ id: "options", label: "Options", slotIds: [] }],
   slots: [
     {
       id: "options.paragon",

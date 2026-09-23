@@ -86,7 +86,7 @@ const slots: Slot[] = [
 ];
 
 const slotsData: SlotsData = {
-  sections: [{ id: "gear", label: "Gear" }],
+  sections: [{ id: "gear", label: "Gear", slotIds: [] }],
   slots,
   presets: [],
 };

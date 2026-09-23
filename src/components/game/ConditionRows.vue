@@ -24,7 +24,7 @@ import FormField from "../ui/FormField.vue";
 import BaseInput from "../ui/BaseInput.vue";
 import TokenInput from "../ui/TokenInput.vue";
 import RangeOrExactFields from "./RangeOrExactFields.vue";
-import * as engine from "../../stores/resolved";
+import { useEditorDb } from "../../composables/useEditorDb";
 import {
   LEAF_TYPES,
   MAX_DEPTH,
@@ -364,6 +364,9 @@ function changeType(row: ConditionRow) {
   Object.assign(row, fresh, { uid: row.uid });
 }
 
+/** The surrounding editor's catalog, so params from a disabled layer are still offered. */
+const db = useEditorDb();
+
 // Each condition leaf's valid values come from the matching `options` build_parameter slot in
 // slots.json -- the same source of truth the Options section itself renders from, so a value
 // typo'd here can't drift from what's actually selectable in a build.
@@ -393,7 +396,7 @@ function optionsForCombo(type?: string) {
   // which is where `class` lives. Labeled by the publishing item, and deduped
   // since several items may legitimately assert the same value.
   const byValue = new Map<string, string>();
-  for (const item of engine.db.value.items) {
+  for (const item of db.value.items) {
     const value = item.publishes?.[path];
     if (typeof value === "string" && value && !byValue.has(value))
       byValue.set(value, item.name);
@@ -413,7 +416,7 @@ const isMultiValue = (type?: string) =>
 // Off the composed catalog: a layer-authored param is as gateable as a shipped one, so it
 // has to appear in this picker the moment it exists.
 const paramSlots = computed(() =>
-  engine.db.value.slots.filter(
+  db.value.slots.filter(
     (slot): slot is BuildParameterSlot => slot.type === "build_parameter",
   ),
 );

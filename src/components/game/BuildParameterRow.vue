@@ -28,11 +28,8 @@ defineExpose({
   focusAndSeed: (char: string) => param.value?.focusAndSeed(char),
 });
 
-/** Falls back to the slot's own `default`, the same way bonus.ts's `collect()` does when it
- * fills `ctx.params`. Without it an overlay-added param renders blank until it is first
- * touched, while the engine is already resolving it at its default -- the control and the
- * numbers would disagree. `defaultBuild` only seeds `context` from the *base* slot list, so
- * this is the read that has to cover the gap, not a reseed of stored state. */
+/** Falls back to the slot's `default`, as bonus.ts's `collect()` does, so a build saved before
+ *  a layer added the param shows the value the engine is already using. */
 const paramValue = () =>
   (getPath(props.build.context, props.slotDef.path) ??
     props.slotDef.default) as string | number | boolean | undefined;

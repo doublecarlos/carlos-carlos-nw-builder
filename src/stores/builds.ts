@@ -75,7 +75,7 @@ export const build = computed(() => {
   const first = folders.orderedBuildIds.value[0];
   if (first) return _builds.value.get(first)!;
   // Guarantee at least one build exists.
-  const b = storage.defaultBuild("Build 1");
+  const b = storage.defaultBuild("Build 1", engineDb.value);
   _builds.value.set(b.id, b);
   buildOrder.value.push(b.id);
   _placeholderId = b.id;
@@ -167,7 +167,7 @@ function trashBuild(id: string): BuildPlacement | null {
   // the build just deleted is sitting in the trash, and the landing would hide the nav that
   // is the only way to restore it.
   if (wasLast) {
-    const replacement = storage.defaultBuild("Build 1");
+    const replacement = storage.defaultBuild("Build 1", engineDb.value);
     _builds.value.set(replacement.id, replacement);
     folders.appendBuild(replacement.id);
     _placeholderId = replacement.id;
@@ -219,7 +219,10 @@ function recordAdded(label: string, id: string) {
 }
 
 export function createBuild(folderId: string | null = null) {
-  const b = storage.defaultBuild(`Build ${_builds.value.size + 1}`);
+  const b = storage.defaultBuild(
+    `Build ${_builds.value.size + 1}`,
+    engineDb.value,
+  );
   addBuild(b, { folderId, index: Number.MAX_SAFE_INTEGER });
   selection.selectBuild(b.id);
   showNotice(`Created “${b.name}”`);

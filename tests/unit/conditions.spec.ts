@@ -92,7 +92,7 @@ describe("conditions.ts param leaf", () => {
 // --- bonus.ts's collect(): populating EvalContext.params ------------------------------------
 
 const testSlots: SlotsData = {
-  sections: [{ id: "options", label: "Options" }],
+  sections: [{ id: "options", label: "Options", slotIds: [] }],
   slots: [
     {
       id: "options.bolster",

@@ -162,7 +162,7 @@ const shareParam: BuildParameterSlot = {
   scaler: { mode: "absolute" },
 };
 const slotsData: SlotsData = {
-  sections: [{ id: "gear", label: "Gear" }],
+  sections: [{ id: "gear", label: "Gear", slotIds: [] }],
   slots: [shareParam, picker("gear.ring1"), picker("gear.ring2")],
 };
 

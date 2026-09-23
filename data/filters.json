@@ -1,0 +1,148 @@
+{
+  "artifact": {
+    "maxCopies": 1
+  },
+  "artifact_call": {
+    "maxCopies": 1,
+    "fields": ["allowedClass"]
+  },
+  "boon_tier1": {
+    "fields": ["inlineRepetition"]
+  },
+  "boon_tier2": {
+    "fields": ["inlineRepetition"]
+  },
+  "boon_tier3": {
+    "fields": ["inlineRepetition"]
+  },
+  "boon_tier4": {
+    "fields": ["inlineRepetition"]
+  },
+  "boon_tier_advanced": {
+    "fields": ["inlineRepetition"]
+  },
+  "boon_tier_master": {
+    "fields": ["inlineRepetition"]
+  },
+  "build_param_linked_item": {
+    "fields": ["publishes"]
+  },
+  "class_feat": {
+    "maxCopies": 1,
+    "fields": ["allowedClass"]
+  },
+  "class_stuff": {
+    "maxCopies": 1,
+    "fields": ["allowedClass"]
+  },
+  "companion_power": {
+    "maxCopies": 1
+  },
+  "feat1": {
+    "maxCopies": 1,
+    "fields": ["allowedClass"]
+  },
+  "feat2": {
+    "maxCopies": 1,
+    "fields": ["allowedClass"]
+  },
+  "feat3": {
+    "maxCopies": 1,
+    "fields": ["allowedClass"]
+  },
+  "feat4": {
+    "maxCopies": 1,
+    "fields": ["allowedClass"]
+  },
+  "feat5": {
+    "maxCopies": 1,
+    "fields": ["allowedClass"]
+  },
+  "gear_armor": {
+    "fields": ["allowedClass"]
+  },
+  "gear_arms": {
+    "fields": ["allowedClass"]
+  },
+  "gear_boots": {
+    "fields": ["allowedClass"]
+  },
+  "gear_head": {
+    "fields": ["allowedClass"]
+  },
+  "gear_neck": {
+    "fields": ["allowedClass"]
+  },
+  "gear_pants": {
+    "fields": ["allowedClass"]
+  },
+  "gear_ring": {
+    "maxCopies": 1,
+    "fields": ["allowedClass"]
+  },
+  "gear_shirt": {
+    "fields": ["allowedClass"]
+  },
+  "gear_waist": {
+    "fields": ["allowedClass"]
+  },
+  "gear_weapon_mainhand": {
+    "fields": ["allowedClass"]
+  },
+  "gear_weapon_offhand": {
+    "fields": ["allowedClass"]
+  },
+  "group_buff": {
+    "maxCopies": 1
+  },
+  "insignia": {
+    "fields": ["insigniaShape", "preferredVariant"]
+  },
+  "insignia_bonus": {
+    "maxCopies": 3,
+    "fields": ["insigniaRecipe"]
+  },
+  "leveling_cha": {
+    "fields": ["inlineRepetition"]
+  },
+  "leveling_con": {
+    "fields": ["inlineRepetition"]
+  },
+  "leveling_dex": {
+    "fields": ["inlineRepetition"]
+  },
+  "leveling_int": {
+    "fields": ["inlineRepetition"]
+  },
+  "leveling_str": {
+    "fields": ["inlineRepetition"]
+  },
+  "leveling_wis": {
+    "fields": ["inlineRepetition"]
+  },
+  "modification_mainhand": {
+    "fields": ["allowedClass"]
+  },
+  "modification_offhand_dynamic": {
+    "fields": ["allowedClass"]
+  },
+  "modification_offhand_static": {
+    "fields": ["allowedClass"]
+  },
+  "mount": {
+    "maxCopies": 1,
+    "fields": ["insigniaSlots"]
+  },
+  "paragon": {
+    "fields": ["allowedClass", "defaultParams"]
+  },
+  "race": {
+    "maxCopies": 1
+  },
+  "race_attributes": {
+    "maxCopies": 1
+  },
+  "scenario_flag": {
+    "maxCopies": 1
+  }
+}

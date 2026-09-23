@@ -17,6 +17,7 @@ import { APP_COMMIT } from "../lib/app-info";
 import { getPath, setPath } from "../lib/build-path";
 import { deepEqual } from "../lib/deep-equal";
 import { storedListRows } from "../lib/item-picker-list";
+import { REQUIRED_SLOT_IDS } from "../lib/demo-slots";
 import type { SlotData } from "../lib/slot-fields";
 import {
   migrateListSlots,
@@ -192,13 +193,14 @@ const noCompare = (): Build["compare"] => ({
   statLines: false,
 });
 
-export function defaultBuild(name = "New build"): Build {
-  // Base catalog only (no workspace overlay) -- same reach every other pure helper in this
-  // file has, and enough to seed every shipped default. A default on an *overlay-added* slot
-  // is not seeded here.
+/**
+ * A blank build, seeded from `db`'s declared defaults. Pass the composed catalog to seed
+ * layer-added slots too; the default is the shipped catalog.
+ */
+export function defaultBuild(name = "New build", db: Db = baseDb()): Build {
   const { context, choices, assignments, listRows } = seededDefaults(
-    NW_SLOTS.slots,
-    baseDb(),
+    db.slots,
+    db,
   );
   return {
     id: newId(),
@@ -298,9 +300,9 @@ const rowCounts = (
 };
 
 /**
- * Builds saved before `options.class` became an `item_picker` stored the class as a
- * bare `context.class` string. The value lives in `choices` like any other pick now, and is
- * published back into the context by the equipped class item -- so an old build migrates by
+ * Builds saved before the class became an `item_picker` pick stored the class as a bare
+ * `context.class` string. The value lives in `choices` like any other pick now, and is
+ * published back into the context by the equipped class item, so an old build migrates by
  * looking up whichever item publishes the class it used to name.
  *
  * Leaves `context.class` in place rather than deleting it: it is inert (nothing reads it any
@@ -312,10 +314,10 @@ function migrateClassToChoice(
   context: Record<string, unknown>,
 ): Record<string, string> {
   const stored = context.class;
-  if (choices["options.class"] || typeof stored !== "string" || !stored)
-    return choices;
+  const slotId = REQUIRED_SLOT_IDS.class.id;
+  if (choices[slotId] || typeof stored !== "string" || !stored) return choices;
   const itemId = itemPublishing(baseDb(), "class", stored);
-  return itemId ? { ...choices, "options.class": itemId } : choices;
+  return itemId ? { ...choices, [slotId]: itemId } : choices;
 }
 
 /**

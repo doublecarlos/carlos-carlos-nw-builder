@@ -253,6 +253,8 @@ describe("buildEditor.applyOccurrenceFromCompare", () => {
     },
     sectionPresets: {},
     slots: {},
+    sections: {},
+    filters: {},
   };
 
   /** Fresh stores with the ring's layer already in place. */
@@ -1060,5 +1062,75 @@ describe("buildEditor slot data", () => {
     expect(build.choices[INSIGNIA]).toBeUndefined();
     expect(build.values[INSIGNIA]).toBeUndefined();
     expect(build.disabledSlots[INSIGNIA]).toBeUndefined();
+  });
+});
+
+// A layer adds an `item_picker` with a `default`; new builds and clears must seed it like a
+// shipped slot.
+describe("seeding from the composed catalog", () => {
+  const SLOT = "options.layerPick";
+  const ITEM = "test-layer-choice";
+
+  const pickOverlay = {
+    items: {
+      [ITEM]: { id: ITEM, name: "Layer Choice", filter: "layer_pick" },
+    },
+    bonuses: {},
+    sectionPresets: {},
+    slots: {
+      [SLOT]: {
+        id: SLOT,
+        label: "Layer Pick",
+        section: "options",
+        type: "item_picker" as const,
+        filter: "layer_pick",
+        default: ITEM,
+      },
+    },
+    sections: {},
+    filters: {},
+  };
+
+  /** Fresh stores with the layer already in place, so the composed db has the slot before
+   *  anything mints a build. */
+  async function storesWithPick() {
+    const stores = await freshStores();
+    const layer = stores.layers.createLayer("Picks");
+    stores.layers.updateOverlay(layer.id, pickOverlay);
+    return stores;
+  }
+
+  it("a new build starts on the layer's own default", async () => {
+    const { builds } = await storesWithPick();
+    builds.createBuild();
+    expect(builds.build.value.choices[SLOT]).toBe(ITEM);
+  });
+
+  it("clearing every slot puts the default back instead of emptying the row", async () => {
+    const { builds, buildEditor } = await storesWithPick();
+    builds.createBuild();
+    buildEditor.setChoice(SLOT, "");
+    expect(builds.build.value.choices[SLOT]).toBeUndefined();
+
+    buildEditor.clearSlots();
+    expect(builds.build.value.choices[SLOT]).toBe(ITEM);
+  });
+
+  it("clearing the section the slot lives in puts the default back too", async () => {
+    const { builds, buildEditor } = await storesWithPick();
+    builds.createBuild();
+    buildEditor.setChoice(SLOT, "");
+
+    buildEditor.clearSection("options", "Options");
+    expect(builds.build.value.choices[SLOT]).toBe(ITEM);
+  });
+
+  it("resetting the build re-seeds it", async () => {
+    const { builds, buildEditor } = await storesWithPick();
+    builds.createBuild();
+    buildEditor.setChoice(SLOT, "");
+
+    buildEditor.resetAll();
+    expect(builds.build.value.choices[SLOT]).toBe(ITEM);
   });
 });

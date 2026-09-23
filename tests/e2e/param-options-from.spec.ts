@@ -5,15 +5,16 @@
 import { test, expect, type Page } from "@playwright/test";
 import { openBuilder, slotRow, pickerInput } from "./support/app";
 import { addLayer, layerRow } from "./support/nav";
+import { openSlotsTab, newInOutline } from "./support/layerEditor";
 import { shippedItemNamesByTag } from "./support/shippedData";
 
 const PARAGONS = shippedItemNamesByTag("paragon");
 
-/** Creates a layer, selects it, and opens the Parameters tab. */
+/** Creates a layer, selects it, and opens the Slots tab. */
 async function openParametersTab(page: Page) {
   await addLayer(page);
   await layerRow(page, "Layer 1").locator(".nav-name").click();
-  await page.getByTestId("tab-slots").click();
+  await openSlotsTab(page);
 }
 
 async function chooseIn(page: Page, testId: string, label: string) {
@@ -24,7 +25,7 @@ async function chooseIn(page: Page, testId: string, label: string) {
 
 /** Authors a `list` param deriving its options from the `paragon` tag. */
 async function createDerivedParam(page: Page, { allowEmpty = false } = {}) {
-  await page.getByTestId("new-slot").click();
+  await newInOutline(page, "new-slot");
   await page.getByTestId("slot-label-input").fill("Preferred paragon");
   await page.getByTestId("slot-path-input").fill("preferredParagon");
   await chooseIn(page, "slot-type-input", "list");
@@ -41,7 +42,7 @@ test("the form previews how many items the selector matches", async ({
   await openBuilder(page);
   await openParametersTab(page);
 
-  await page.getByTestId("new-slot").click();
+  await newInOutline(page, "new-slot");
   await page.getByTestId("slot-label-input").fill("Preferred paragon");
   await page.getByTestId("slot-path-input").fill("preferredParagon");
   await chooseIn(page, "slot-type-input", "list");

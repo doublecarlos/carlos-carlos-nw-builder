@@ -1,12 +1,11 @@
-// Per-layer UI state for LayerEditor.vue -- which section/filter/selection was active.
+// Per-layer UI state for LayerEditor.vue: which tab, search and selection were active.
 //
 // Switching to the build editor swaps the whole LayerEditor instance out (App.vue's
 // v-if/v-else), so its local refs are lost on unmount. LayerEditor.vue itself still owns the
 // URL (its own corner of the query string, cleared on unmount to keep a build's URL clean),
-// but a fresh mount needs *something* to fall back on once that URL is gone -- this is that
-// something. Field names mirror the router params (`item`/`bonus`/`preset`/`section`/`status`/
-// `q`) so a mounting component can treat "the URL" and "the stored state" as interchangeable
-// sources. `slot` is the build_parameter slot selected in the Slots section.
+// but a fresh mount needs *something* to fall back on once that URL is gone. Field names
+// mirror the router params so either can be the source. Only one of `slot`/`preset`/`sectionId`
+// is set at a time; `slotsGroup` is the Slots tab group last shown.
 import { reactive } from "vue";
 import type { Item, SectionPreset } from "../types";
 
@@ -16,6 +15,9 @@ export interface LayerEditorUiState {
   bonus: string;
   preset: string;
   slot: string;
+  sectionId: string;
+  slotsGroup: string;
+  filter: string;
   status: string;
   q: string;
 }
@@ -27,6 +29,9 @@ function defaults(): LayerEditorUiState {
     bonus: "",
     preset: "",
     slot: "",
+    sectionId: "",
+    slotsGroup: "",
+    filter: "",
     status: "",
     q: "",
   };
@@ -69,7 +74,7 @@ export function takeNewItemSeed(): Item | null {
 // --- pending new-preset seed ---------------------------------------------------------------
 // The same one-shot handoff for BuildSection's "Create new from current": the build editor
 // snapshots a section into a preset shape, and whichever LayerEditor mounts next opens the
-// Presets tab on an unsaved draft already holding it.
+// Slots tab on an unsaved preset draft already holding it.
 
 let pendingNewPreset: SectionPreset | null = null;
 

@@ -18,6 +18,7 @@ import BaseInput from "../ui/BaseInput.vue";
 import DraftFormBar from "../ui/DraftFormBar.vue";
 import FormField from "../ui/FormField.vue";
 import FormGrid from "../ui/FormGrid.vue";
+import BaseLink from "../ui/BaseLink.vue";
 import IdField from "../ui/IdField.vue";
 import OcrTextField from "../ui/OcrTextField.vue";
 import FormSection from "../ui/FormSection.vue";
@@ -92,6 +93,8 @@ const emit = defineEmits<{
   "delete-bonus": [id: string];
   "update-bonus": [payload: { id: string; bonus: Bonus }];
   "open-item": [itemId: string];
+  /** Opens this item's category in the Filters tab. */
+  "open-filter": [filter: string];
   "tooltip-import": [];
 }>();
 
@@ -430,11 +433,8 @@ function updateBonusOccurrence(id: string, occurrence: OccurrenceDraft | null) {
 }
 
 // --- which field groups this item is offered ---------------------------------------------
-// `filterFields` in data/slots.json says which fields each filter is authored with. Data
-// rather than a constant here, so a layer can declare its own item category with no code edit.
-// `FIELD_GROUPS` itself (which item fields each group edits) lives in item-draft.ts, since it
-// carries no reactive state of its own; what stays here is the gating logic that reads it
-// against props/draft.
+// A filter's `fields` says which field groups its items are authored with. `FIELD_GROUPS`
+// lives in item-draft.ts; the reactive gating stays here.
 
 /** Fields some filter claims; a field outside this set is offered everywhere. */
 const gatedFields = computed(() => {
@@ -488,7 +488,7 @@ function carriesField(field: string): boolean {
   }
 }
 
-/** The `carriesField` arm is what keeps a mis-authored `filterFields` from hiding data. */
+/** `carriesField` keeps a mis-authored filter declaration from hiding existing data. */
 function showsGroup(group: FieldGroup): boolean {
   if (showAllFields.value) return true;
   const fields: readonly string[] = FIELD_GROUPS[group];
@@ -555,6 +555,12 @@ function showsGroup(group: FieldGroup): boolean {
           :options="filters"
           testid="item-filter-input"
         />
+        <BaseLink
+          v-if="draft.filter.trim()"
+          data-testid="edit-filter-link"
+          @click="$emit('open-filter', draft.filter.trim())"
+          >edit filter</BaseLink
+        >
       </FormField>
       <FormField label="Max copies (0 = unlimited)">
         <BaseInput

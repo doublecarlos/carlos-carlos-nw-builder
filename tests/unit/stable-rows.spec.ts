@@ -20,7 +20,7 @@ const schema: Schema = {
 };
 
 const slots: SlotsData = {
-  sections: [{ id: "insignia", label: "Insignia" }],
+  sections: [{ id: "insignia", label: "Insignia", slotIds: [] }],
   slots: [
     {
       id: "steed",

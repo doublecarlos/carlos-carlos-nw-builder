@@ -1,8 +1,6 @@
-// Regenerates the shipped data/db-items.json, data/db-bonuses.json, and data/slots.json
-// bodies from the composed in-memory catalog -- the maintainer path for pasting edits
-// made in the layer editor back into the repo. Kept in its own module, separate from
-// catalog.ts's core compose/upsert/etc, so LayerExportModal.vue can dynamic-import it and
-// leave it a chunk the page never requests unless maintainer mode is on.
+// Regenerates the shipped data/*.json files from the composed catalog, so maintainers can paste
+// layer editor edits back into the repo. A separate module so it is only loaded in maintainer
+// mode.
 //
 // Produces valid JSON, so the result can replace db-items.json / db-bonuses.json wholesale
 // with no further editing (JSON has no comment syntax, so unlike the pre-JSON export there
@@ -23,8 +21,7 @@ import type {
   Slot,
   SectionPreset,
   SlotSection,
-  FilterDefaultsMap,
-  FilterFieldsMap,
+  FilterDef,
 } from "../types";
 
 const ITEM_LEADING_KEYS = ["id", "name", "filter"] as const;
@@ -153,23 +150,15 @@ function stripSection<T extends { section?: string }>(value: T) {
 }
 
 /**
- * Regenerates the whole `data/slots.json` body from the composed in-memory data -- same "paste
- * back over the file" workflow `toItemsFile`/`toBonusesFile` already give items/bonuses, just
- * shaped for slots.json's nested `{ filterDefaults, filterFields, sections: [{ ..., presets?,
- * slots }] }` structure instead of a bare top-level array. `filterDefaults` and `filterFields`
- * are required rather than defaulted: neither is composed from the layers, so a caller that
- * omits one drops the block.
+ * Regenerates `data/slots.json`, nesting slots and presets under their sections. Order comes
+ * from `compose`, so `slotIds` is not written out. A slot whose section is missing is dropped.
  */
 export function toSlotsFile(
   sections: SlotSection[],
   slots: Slot[],
   presets: SectionPreset[],
-  filterDefaults: FilterDefaultsMap,
-  filterFields: FilterFieldsMap,
 ): string {
   const body = {
-    filterDefaults,
-    filterFields,
     sections: sections.map((section) => {
       const sectionSlots = slots
         .filter((slot) => slot.section === section.id)
@@ -186,5 +175,24 @@ export function toSlotsFile(
       };
     }),
   };
+  return `${JSON.stringify(body, null, 2)}\n`;
+}
+
+/**
+ * Regenerates `data/filters.json`, keyed and sorted by id in code-unit order, matching how
+ * `data.ts` reads it. Undefined fields are omitted.
+ */
+export function toFiltersFile(filters: FilterDef[]): string {
+  const byId = new Map(filters.map((filter) => [filter.id, filter]));
+  const body: Record<string, Omit<FilterDef, "id">> = {};
+  for (const id of [...byId.keys()].sort()) {
+    const filter = byId.get(id)!;
+    body[id] = {
+      ...(filter.maxCopies !== undefined
+        ? { maxCopies: filter.maxCopies }
+        : {}),
+      ...(filter.fields !== undefined ? { fields: filter.fields } : {}),
+    };
+  }
   return `${JSON.stringify(body, null, 2)}\n`;
 }

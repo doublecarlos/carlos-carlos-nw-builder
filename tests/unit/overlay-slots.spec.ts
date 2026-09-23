@@ -103,16 +103,22 @@ describe("catalog.compose: slots overlay", () => {
     );
   });
 
-  it("keeps base declaration order and appends an added slot at the end", () => {
+  it("keeps base declaration order and appends an added slot at the end of its section", () => {
     // A slot list *is* its render order, so unlike items/bonuses/presets it must not sort
-    // by id -- `options.bolster` would otherwise jump ahead of most of the Options section.
+    // by id: `options.bolster` would otherwise jump ahead of most of the Options section.
+    // The section it names is where it lands, after that section's shipped slots.
     const baseIds = catalog.base().slots.map((s) => s.id);
     const composed = catalog.compose([
       overlayWith({ [customParam.id]: customParam }),
     ]);
+    const lastOptionsIndex =
+      baseIds.length -
+      1 -
+      [...baseIds].reverse().findIndex((id) => id.startsWith("options."));
     expect(composed.slots.map((s) => s.id)).toEqual([
-      ...baseIds,
+      ...baseIds.slice(0, lastOptionsIndex + 1),
       customParam.id,
+      ...baseIds.slice(lastOptionsIndex + 1),
     ]);
   });
 });
@@ -231,8 +237,8 @@ describe("makeDb with an overlay-added parameter", () => {
 
   it("reaches ctx.params at its default, so a bonus can gate on it immediately", () => {
     // The point of the whole feature: define a param in a layer, gate a bonus on it, and the
-    // engine resolves it with no seeding step. `defaultBuild` only seeds from base, so the
-    // build's own `context` is empty here on purpose.
+    // engine resolves it with no seeding step. The build's own `context` is empty here on
+    // purpose, as a build that predates the layer's would be.
     const db = catalog.makeDb([overlayWith({ [customParam.id]: customParam })]);
     const { ctx } = bonus.collect(db, testBuild());
 
@@ -269,6 +275,8 @@ describe("catalog.referencedOverlay: slots travel with a build", () => {
       bonusById: new Map(),
       slots,
       authoredSlots: slots,
+      sections: [],
+      filters: [],
     }) as unknown as Db;
 
   it("carries an overlay-added param even though no choice references it", () => {

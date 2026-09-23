@@ -1,11 +1,9 @@
-// Opt-in flag for the maintainer-only export tabs in LayerExportModal -- the composed
-// db-items.json / db-bonuses.json / slots.json files. Those only mean anything with the
-// source repo on hand, so they stay hidden until someone asks for them, either from the
-// About dialog or by loading the app once with `?maintainer=1`.
+// Opt-in flag for the maintainer-only export tabs in LayerExportModal, which export the
+// composed data files. Enabled from the About dialog or by loading the app with `?maintainer=1`.
 //
 // A stored preference rather than `import.meta.env.DEV`: the code behind those tabs is
 // already a dynamic import, so a production build that ships it costs a reader who never
-// turns this on nothing but the three tab buttons this flag hides.
+// turns this on nothing but the four tab buttons this flag hides.
 import { useStorage } from "@vueuse/core";
 import * as router from "../lib/router";
 

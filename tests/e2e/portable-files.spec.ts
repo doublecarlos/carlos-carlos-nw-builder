@@ -3,10 +3,14 @@
 import { test, expect, type Page } from "@playwright/test";
 import {
   chooseCombo,
+  chooseItem,
   confirmImport,
+  ensureSectionExpanded,
+  headerRow,
   importText,
   openBuilder,
   pickerInput,
+  slotRow,
 } from "./support/app";
 import { addBuild, buildRow, layerRow, renameViaSidebar } from "./support/nav";
 
@@ -257,6 +261,78 @@ test.describe("portable files", () => {
     await importText(page, file, "gifted.json");
     await confirmImport(page);
     await expect(layerRow(page, "Gifted build (imported)")).toHaveCount(1);
+  });
+
+  test("a pick in a layer-added slot travels with its section and filter", async ({
+    page,
+    browser,
+  }) => {
+    await openBuilder(page);
+
+    // A layer adding a whole category: its item, an item_picker slot for it, the section the
+    // slot lives in, and the category's own copy cap.
+    const overlay = {
+      items: {
+        itm_e2e_pet: {
+          id: "itm_e2e_pet",
+          name: "E2E pocket pet",
+          filter: "e2e_pet",
+        },
+      },
+      bonuses: {},
+      sectionPresets: {},
+      slots: {
+        "e2e_extras.pet": {
+          id: "e2e_extras.pet",
+          type: "item_picker",
+          label: "Pet",
+          section: "e2e_extras",
+          filter: "e2e_pet",
+        },
+      },
+      sections: {
+        e2e_extras: { id: "e2e_extras", label: "E2E Extras", slotIds: [] },
+      },
+      filters: { e2e_pet: { id: "e2e_pet", maxCopies: 1 } },
+    };
+    await importText(page, JSON.stringify(overlay), "extras.json");
+    await confirmImport(page);
+
+    // The import lands on the new layer; the pick happens back in the build.
+    await buildRow(page, "Build 1").locator(".nav-name").click();
+    await expect(page.getByTestId("builder-content")).toBeVisible();
+    await ensureSectionExpanded(page, "e2e_extras");
+    await chooseItem(page, "e2e_extras.pet", "E2E pocket pet");
+
+    const envelope = (await exportedBuildJson(page)) as {
+      data: { catalog: Record<string, Record<string, unknown>> };
+    };
+    // The slot, its section and the category's cap travel with the item.
+    expect(envelope.data.catalog.slots["e2e_extras.pet"]).toMatchObject({
+      type: "item_picker",
+      filter: "e2e_pet",
+    });
+    expect(envelope.data.catalog.sections.e2e_extras).toMatchObject({
+      label: "E2E Extras",
+    });
+    expect(envelope.data.catalog.filters.e2e_pet).toMatchObject({
+      maxCopies: 1,
+    });
+
+    // Someone else's browser: no layer of its own, so what renders is what the file carried.
+    const other = await browser.newContext();
+    const theirs = await other.newPage();
+    await openBuilder(theirs);
+    await importText(theirs, JSON.stringify(envelope), "shared.json");
+    await confirmImport(theirs);
+
+    // The import lands on the build it brought in.
+    await expect(headerRow(theirs, "e2e_extras")).toContainText("E2E Extras");
+    await ensureSectionExpanded(theirs, "e2e_extras");
+    await expect(pickerInput(slotRow(theirs, "e2e_extras.pet"))).toHaveValue(
+      "E2E pocket pet",
+    );
+    await other.close();
   });
 
   test("import lives only in the header", async ({ page }) => {

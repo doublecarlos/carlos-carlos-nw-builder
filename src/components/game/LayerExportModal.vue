@@ -1,8 +1,6 @@
 <script setup lang="ts">
-// LayerEditor's export window: this layer's own raw overlay JSON, plus -- for anyone who has
-// turned maintainer mode on -- the composed db-items/db-bonuses/slots files for regenerating
-// the shipped data across every enabled layer. Self-contained aside from which tab is active,
-// which the parent keeps so reopening it remembers the last tab.
+// LayerEditor's export window: this layer's raw overlay JSON, plus, in maintainer mode, the
+// composed data files across every enabled layer. The parent keeps the active tab.
 //
 // The maintainer tabs can also send their file to the local server (data/writeback.ts).
 //
@@ -19,7 +17,6 @@ import TabButton from "../ui/TabButton.vue";
 import * as catalog from "../../data/catalog";
 import * as layers from "../../stores/layers";
 import * as maintainer from "../../stores/maintainer";
-import { NW_SLOTS } from "../../data/data";
 import type { CatalogOverlay } from "../../types";
 
 const props = defineProps<{
@@ -32,11 +29,51 @@ const emit = defineEmits<{
   close: [];
 }>();
 
-const activeTab = defineModel<string>({ default: "overlay" }); // items | bonuses | slots | overlay
+const activeTab = defineModel<string>({ default: "overlay" }); // overlay | a DATA_FILES tab
 
-// The maintainer tabs (items/bonuses/slots) regenerate the shipped db-*.json files -- only
-// useful with the source repo on hand, so they stay behind an opt-in (stores/maintainer.ts).
+// The maintainer tabs are only useful with the source repo, so they are opt-in.
 const maintainerTabsEnabled = maintainer.enabled;
+
+type CatalogExportModule = typeof import("../../data/catalogExport");
+type WritebackModule = typeof import("../../data/writeback");
+type Composed = ReturnType<typeof catalog.compose>;
+
+interface DataFileTab {
+  tab: string;
+  /** The file under `data/` the tab regenerates; doubles as the tab's label. */
+  file: string;
+  /** `composed` folds every enabled layer. */
+  render: (exporter: CatalogExportModule, composed: Composed) => string;
+}
+
+/** One maintainer tab per shipped data file, in tab order. */
+const DATA_FILES: readonly DataFileTab[] = [
+  {
+    tab: "items",
+    file: "db-items.json",
+    render: (exporter, composed) => exporter.toItemsFile(composed.items),
+  },
+  {
+    tab: "bonuses",
+    file: "db-bonuses.json",
+    render: (exporter, composed) => exporter.toBonusesFile(composed.bonuses),
+  },
+  {
+    tab: "slots",
+    file: "slots.json",
+    render: (exporter, composed) =>
+      exporter.toSlotsFile(
+        composed.sections,
+        composed.slots,
+        composed.sectionPresets,
+      ),
+  },
+  {
+    tab: "filters",
+    file: "filters.json",
+    render: (exporter, composed) => exporter.toFiltersFile(composed.filters),
+  },
+];
 
 /** The tab actually in effect: the maintainer tabs collapse to "overlay" while the flag is
  *  off, even if `activeTab` was left pointing at one of them (e.g. remembered from an
@@ -45,11 +82,14 @@ const effectiveTab = computed(() =>
   maintainerTabsEnabled.value ? activeTab.value : "overlay",
 );
 
+/** The data file the active tab stands for, or null on the "This layer" tab. */
+const dataFileTab = computed(
+  () => DATA_FILES.find((entry) => entry.tab === effectiveTab.value) ?? null,
+);
+
 // Fetched only once a maintainer tab is actually in effect, so a reader who never turns the
 // flag on never pays for `catalogExport.ts`: it stays a chunk of its own that the page does
 // not request.
-type CatalogExportModule = typeof import("../../data/catalogExport");
-type WritebackModule = typeof import("../../data/writeback");
 const catalogExport = ref<CatalogExportModule | null>(null);
 const writeback = ref<WritebackModule | null>(null);
 watchEffect(() => {
@@ -63,42 +103,19 @@ watchEffect(() => {
 });
 
 const exportText = computed(() => {
-  if (effectiveTab.value === "items") {
-    if (!catalogExport.value) return "Loading…";
-    // Composed across all enabled layers for the maintainer path.
-    const allEnabled = catalog.compose(layers.enabledOverlays.value);
-    return catalogExport.value.toItemsFile(allEnabled.items);
-  }
-  if (effectiveTab.value === "bonuses") {
-    if (!catalogExport.value) return "Loading…";
-    const allEnabled = catalog.compose(layers.enabledOverlays.value);
-    return catalogExport.value.toBonusesFile(allEnabled.bonuses);
-  }
-  if (effectiveTab.value === "slots") {
-    if (!catalogExport.value) return "Loading…";
-    // `slots` and `sectionPresets` both fold across every enabled layer, same "maintainer
-    // path" as items/bonuses above. Sections, `filterDefaults` and `filterFields` are still
-    // the static shipped ones -- an overlay carries build_parameter slots, not the section
-    // structure they hang off (see `CatalogOverlay.slots`) nor the per-filter declarations.
-    const allEnabled = catalog.compose(layers.enabledOverlays.value);
-    return catalogExport.value.toSlotsFile(
-      NW_SLOTS.sections,
-      allEnabled.slots,
-      allEnabled.sectionPresets,
-      NW_SLOTS.filterDefaults ?? {},
-      NW_SLOTS.filterFields ?? {},
-    );
-  }
+  const entry = dataFileTab.value;
   // "This layer": raw overlay JSON.
-  return JSON.stringify(props.overlay, null, 2);
+  if (!entry) return JSON.stringify(props.overlay, null, 2);
+  if (!catalogExport.value) return "Loading…";
+  return entry.render(
+    catalogExport.value,
+    catalog.compose(layers.enabledOverlays.value),
+  );
 });
 
-const exportName = computed(() => {
-  if (effectiveTab.value === "items") return "db-items.json";
-  if (effectiveTab.value === "bonuses") return "db-bonuses.json";
-  if (effectiveTab.value === "slots") return "slots.json";
-  return "catalog-overlay.json";
-});
+const exportName = computed(
+  () => dataFileTab.value?.file ?? "catalog-overlay.json",
+);
 
 async function copyExport() {
   try {
@@ -174,19 +191,11 @@ function downloadExport() {
           >
           <template v-if="maintainerTabsEnabled">
             <TabButton
-              :active="effectiveTab === 'items'"
-              @click="activeTab = 'items'"
-              >db-items.json</TabButton
-            >
-            <TabButton
-              :active="effectiveTab === 'bonuses'"
-              @click="activeTab = 'bonuses'"
-              >db-bonuses.json</TabButton
-            >
-            <TabButton
-              :active="effectiveTab === 'slots'"
-              @click="activeTab = 'slots'"
-              >slots.json</TabButton
+              v-for="entry in DATA_FILES"
+              :key="entry.tab"
+              :active="effectiveTab === entry.tab"
+              @click="activeTab = entry.tab"
+              >{{ entry.file }}</TabButton
             >
           </template>
         </TabStrip>

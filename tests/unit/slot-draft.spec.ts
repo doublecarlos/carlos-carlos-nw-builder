@@ -1,23 +1,26 @@
-// Coverage for lib/slot-draft.ts, the draft <-> BuildParameterSlot conversion SlotForm.vue now
-// delegates to (see that module's header comment). `passthrough` gets the most attention here:
-// a field this form doesn't know about (`visibleWhen`) must survive a round trip untouched,
-// the one draft module here that preserves rather than drops what it doesn't recognize.
+// Coverage for lib/slot-draft.ts, mainly that each slot type round-trips unchanged and never
+// picks up another type's fields.
 import { describe, it, expect } from "vitest";
 import * as db from "../../src/data/db";
 import { NW_SCHEMA } from "../../src/data/data";
 import {
   buildDraft,
-  passthroughOf,
   toSlot,
   diffLabel,
   findPathConflict,
+  slotSaveError,
+  TYPE_FIELDS,
 } from "../../src/lib/slot-draft";
-import type { BuildParameterSlot, SlotsData } from "../../src/types";
+import type {
+  BuildParameterSlot,
+  Item,
+  Slot,
+  SlotsData,
+} from "../../src/types";
 
-const ctx = (slot: BuildParameterSlot, id = slot.id) => ({
-  id,
-  passthrough: passthroughOf(slot),
-});
+const ctx = (slot: Slot, id = slot.id) => ({ id });
+
+const roundTrip = (slot: Slot) => toSlot(buildDraft(slot), ctx(slot));
 
 describe("buildDraft / toSlot round trip", () => {
   it("round-trips a minimal numeric slot", () => {
@@ -29,7 +32,7 @@ describe("buildDraft / toSlot round trip", () => {
       paramType: "number",
       path: "recovery",
     };
-    expect(toSlot(buildDraft(slot), ctx(slot))).toEqual(slot);
+    expect(roundTrip(slot)).toEqual(slot);
   });
 
   it("round-trips numeric bounds and a preset list, including a 0 min", () => {
@@ -45,7 +48,7 @@ describe("buildDraft / toSlot round trip", () => {
       step: 1,
       presets: [1, 5, 10],
     };
-    expect(toSlot(buildDraft(slot), ctx(slot))).toEqual(slot);
+    expect(roundTrip(slot)).toEqual(slot);
   });
 
   it("round-trips a boolean slot's default without confusing the string 'false'", () => {
@@ -58,7 +61,7 @@ describe("buildDraft / toSlot round trip", () => {
       path: "toggle",
       default: false,
     };
-    expect(toSlot(buildDraft(slot), ctx(slot))).toEqual(slot);
+    expect(roundTrip(slot)).toEqual(slot);
   });
 
   it("round-trips inline list options", () => {
@@ -77,7 +80,7 @@ describe("buildDraft / toSlot round trip", () => {
         { value: "b", label: "B" },
       ],
     };
-    expect(toSlot(buildDraft(slot), ctx(slot))).toEqual(slot);
+    expect(roundTrip(slot)).toEqual(slot);
   });
 
   it("round-trips a tag-derived option set, including allowEmpty", () => {
@@ -92,11 +95,11 @@ describe("buildDraft / toSlot round trip", () => {
       optionsFrom: { tags: ["companion_power"] },
       allowEmpty: true,
     };
-    expect(toSlot(buildDraft(slot), ctx(slot))).toEqual(slot);
+    expect(roundTrip(slot)).toEqual(slot);
   });
 
-  it("carries an unrecognized field through untouched (passthrough)", () => {
-    const slot: BuildParameterSlot & { visibleWhen: unknown } = {
+  it("round-trips a visibleWhen through the condition rows", () => {
+    const slot: BuildParameterSlot = {
       id: "s6",
       label: "Hidden param",
       section: "boons",
@@ -106,9 +109,25 @@ describe("buildDraft / toSlot round trip", () => {
       visibleWhen: { class: "fighter" },
     };
     const draft = buildDraft(slot);
-    const passthrough = passthroughOf(slot);
-    expect(passthrough).toEqual({ visibleWhen: { class: "fighter" } });
-    expect(toSlot(draft, { id: "s6", passthrough })).toEqual(slot);
+    expect(draft.whenMode).toBe("rows");
+    expect(roundTrip(slot)).toEqual(slot);
+  });
+
+  it("keeps a condition the row model cannot express as JSON", () => {
+    const slot: BuildParameterSlot = {
+      id: "s6b",
+      label: "Odd",
+      section: "boons",
+      type: "build_parameter",
+      paramType: "number",
+      path: "odd",
+      visibleWhen: {
+        equipped: ["a", "b"],
+      } as BuildParameterSlot["visibleWhen"],
+    };
+    const draft = buildDraft(slot);
+    expect(draft.whenMode).toBe("json");
+    expect(roundTrip(slot)).toEqual(slot);
   });
 
   it("round-trips a scaler block with its mode and both applies lists", () => {
@@ -132,7 +151,7 @@ describe("buildDraft / toSlot round trip", () => {
     expect(toSlot(draft, ctx(slot))).toEqual(slot);
   });
 
-  it("clearing the scaler mode removes the block rather than restoring it from passthrough", () => {
+  it("clearing the scaler mode removes the block", () => {
     const slot: BuildParameterSlot = {
       id: "s8",
       label: "Encounter Damage",
@@ -142,7 +161,6 @@ describe("buildDraft / toSlot round trip", () => {
       path: "scalers.encounterDamage",
       scaler: { mode: "absolute", applies: { filter: ["companion"] } },
     };
-    expect(passthroughOf(slot)).not.toHaveProperty("scaler");
     const draft = buildDraft(slot);
     draft.scalerMode = "";
     expect(toSlot(draft, ctx(slot))).not.toHaveProperty("scaler");
@@ -156,8 +174,91 @@ describe("buildDraft / toSlot round trip", () => {
     draft.path = "scalers.dailyDamage";
     draft.scalerMode = "absolute";
     draft.scalerFilters = " , ";
-    expect(toSlot(draft, { id: "s9", passthrough: {} }).scaler).toEqual({
-      mode: "absolute",
+    const slot = toSlot(draft, { id: "s9" }) as BuildParameterSlot;
+    expect(slot.scaler).toEqual({ mode: "absolute" });
+  });
+
+  it("round-trips an item_picker with every flag, a default and a stable row", () => {
+    const slot: Slot = {
+      id: "stable.insignia1",
+      label: "Insignia 1",
+      section: "stable",
+      type: "item_picker",
+      filter: "insignia",
+      default: "ins-a",
+      disallowEmpty: true,
+      hidePreview: true,
+      toggleable: true,
+      quick: true,
+      stable: { group: 1, role: "insignia", index: 2 },
+      visibleWhen: { class: "fighter" },
+    };
+    expect(roundTrip(slot)).toEqual(slot);
+  });
+
+  it("round-trips a tag-selected item_picker", () => {
+    const slot: Slot = {
+      id: "gear.power",
+      label: "Companion power",
+      section: "gear",
+      type: "item_picker",
+      tags: ["companion_power:offense", "companion_power:utility"],
+    };
+    expect(roundTrip(slot)).toEqual(slot);
+  });
+
+  it("round-trips an item_picker_list", () => {
+    const slot: Slot = {
+      id: "misc.misc",
+      label: "Misc",
+      section: "misc",
+      type: "item_picker_list",
+      filter: "misc",
+      defaultRows: 2,
+      toggleable: true,
+    };
+    expect(roundTrip(slot)).toEqual(slot);
+  });
+
+  it("round-trips a point_assignment, a separator and a text slot", () => {
+    const points: Slot = {
+      id: "boons.points",
+      label: "Boon points",
+      section: "boons",
+      type: "point_assignment",
+      filter: "boon_points",
+    };
+    const separator: Slot = {
+      id: "gear.sep",
+      section: "gear",
+      type: "separator",
+    };
+    const text: Slot = {
+      id: "gear.note",
+      section: "gear",
+      type: "text",
+      text: "Offense slots below",
+    };
+    expect(roundTrip(points)).toEqual(points);
+    expect(roundTrip(separator)).toEqual(separator);
+    expect(roundTrip(text)).toEqual(text);
+  });
+
+  it("writes only the active type's fields, so switching type leaks nothing", () => {
+    const draft = buildDraft(null);
+    draft.label = "Head";
+    draft.section = "gear";
+    draft.path = "leftover";
+    draft.default = "7";
+    draft.type = "item_picker";
+    draft.filter = "head";
+    const slot = toSlot(draft, { id: "gear.head" });
+    expect(slot).toEqual({
+      id: "gear.head",
+      label: "Head",
+      section: "gear",
+      type: "item_picker",
+      filter: "head",
     });
   });
 
@@ -171,6 +272,18 @@ describe("buildDraft / toSlot round trip", () => {
       path: "x",
     };
     expect(toSlot(buildDraft(slot), ctx(slot, "renamed")).id).toBe("renamed");
+  });
+
+  it("names a field block for every slot type", () => {
+    const types: Slot["type"][] = [
+      "build_parameter",
+      "item_picker",
+      "item_picker_list",
+      "point_assignment",
+      "separator",
+      "text",
+    ];
+    for (const type of types) expect(TYPE_FIELDS[type]).toBeDefined();
   });
 });
 
@@ -205,29 +318,44 @@ describe("diffLabel", () => {
     );
   });
 
+  it("labels a move between sections", () => {
+    const nw = { ...base, section: "gear" };
+    expect(diffLabel(JSON.stringify(base), JSON.stringify(nw))).toBe(
+      'move to section "gear"',
+    );
+  });
+
   it("falls back to the generic label when nothing recognized changed", () => {
     expect(diffLabel(JSON.stringify(base), JSON.stringify(base))).toBe(
-      "edit parameter",
+      "edit slot",
     );
   });
 });
 
-describe("findPathConflict", () => {
-  const slotsData: SlotsData = {
-    sections: [{ id: "boons", label: "Boons" }],
-    slots: [
-      {
-        id: "s1",
-        label: "Recovery",
-        section: "boons",
-        type: "build_parameter",
-        paramType: "number",
-        path: "recovery",
-      },
-    ],
-  };
-  const testDb = db.build([], [], NW_SCHEMA, slotsData);
+const items: Item[] = [
+  { id: "ins-a", name: "Insignia A", filter: "insignia" },
+  { id: "mount-a", name: "Mount A", filter: "mount" },
+];
 
+const slotsData: SlotsData = {
+  sections: [
+    { id: "boons", label: "Boons", slotIds: [] },
+    { id: "stable", label: "Stable", slotIds: [] },
+  ],
+  slots: [
+    {
+      id: "s1",
+      label: "Recovery",
+      section: "boons",
+      type: "build_parameter",
+      paramType: "number",
+      path: "recovery",
+    },
+  ],
+};
+const testDb = db.build(items, [], NW_SCHEMA, slotsData);
+
+describe("findPathConflict", () => {
   it("finds the other slot already on this path", () => {
     const draft = buildDraft(null);
     draft.path = "recovery";
@@ -243,5 +371,97 @@ describe("findPathConflict", () => {
   it("is null for a blank path", () => {
     const draft = buildDraft(null);
     expect(findPathConflict(draft, testDb, "s2")).toBeNull();
+  });
+
+  it("is null for a type that has no path at all", () => {
+    const draft = buildDraft(null);
+    draft.type = "item_picker";
+    draft.path = "recovery";
+    expect(findPathConflict(draft, testDb, "s2")).toBeNull();
+  });
+});
+
+describe("slotSaveError", () => {
+  function draftOf(patch: Partial<ReturnType<typeof buildDraft>>) {
+    return { ...buildDraft(null), section: "boons", label: "X", ...patch };
+  }
+
+  it("wants a section", () => {
+    expect(slotSaveError(draftOf({ section: "" }), testDb, "x")).toMatch(
+      /needs a section/,
+    );
+  });
+
+  it("wants a label on a slot that renders one", () => {
+    expect(slotSaveError(draftOf({ label: "" }), testDb, "x")).toMatch(
+      /needs a label/,
+    );
+  });
+
+  it("does not want a label on a separator", () => {
+    expect(
+      slotSaveError(draftOf({ label: "", type: "separator" }), testDb, "x"),
+    ).toBeNull();
+  });
+
+  it("blocks a path already taken by another parameter", () => {
+    expect(slotSaveError(draftOf({ path: "recovery" }), testDb, "s2")).toMatch(
+      /already used by s1/,
+    );
+  });
+
+  it("wants a selector on an item picker", () => {
+    expect(
+      slotSaveError(draftOf({ type: "item_picker" }), testDb, "x"),
+    ).toMatch(/needs an item filter or tags/);
+  });
+
+  it("blocks a default that is not one of the slot's own candidates", () => {
+    const draft = draftOf({
+      type: "item_picker",
+      filter: "insignia",
+      itemDefault: "mount-a",
+    });
+    expect(slotSaveError(draft, testDb, "stable.x")).toMatch(
+      /not one of this slot's own candidates/,
+    );
+  });
+
+  it("accepts a default the slot does offer", () => {
+    const draft = draftOf({
+      type: "item_picker",
+      filter: "insignia",
+      itemDefault: "ins-a",
+    });
+    expect(slotSaveError(draft, testDb, "stable.x")).toBeNull();
+  });
+
+  it("holds a stable row to the filter its role has to select", () => {
+    const draft = draftOf({
+      type: "item_picker",
+      filter: "insignia",
+      stableRole: "mount",
+      stableGroup: "1",
+    });
+    expect(slotSaveError(draft, testDb, "stable.x")).toMatch(
+      /must select the "mount" filter/,
+    );
+  });
+
+  it("wants a position on a stable insignia row", () => {
+    const draft = draftOf({
+      type: "item_picker",
+      filter: "insignia",
+      stableRole: "insignia",
+      stableGroup: "1",
+    });
+    expect(slotSaveError(draft, testDb, "stable.x")).toMatch(
+      /needs a position/,
+    );
+  });
+
+  it("reports unparseable visibleWhen JSON", () => {
+    const draft = draftOf({ whenMode: "json", whenJson: "{oops" });
+    expect(slotSaveError(draft, testDb, "x")).toMatch(/not valid JSON/);
   });
 });

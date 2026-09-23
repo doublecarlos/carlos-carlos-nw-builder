@@ -11,7 +11,7 @@ import { itemSearchText } from "../../src/lib/item-search";
 import type { Bonus, Item, SlotsData } from "../../src/types";
 
 const slotsData: SlotsData = {
-  sections: [{ id: "gear", label: "Gear" }],
+  sections: [{ id: "gear", label: "Gear", slotIds: [] }],
   slots: [
     {
       id: "gear.ring1",

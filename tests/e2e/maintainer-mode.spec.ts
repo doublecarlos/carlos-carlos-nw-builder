@@ -1,5 +1,5 @@
 // The maintainer export tabs are opt-in for anyone running the shipped app, so a player never
-// meets three tabs named after this repo's data files. A dev build defaults the other way --
+// meets four tabs named after this repo's data files. A dev build defaults the other way,
 // which is what these tests see, since Playwright drives the dev server. The shipped default
 // is covered in tests/unit/stores/maintainer.spec.ts, the only place it can be observed.
 import { test, expect, type Page } from "@playwright/test";
@@ -82,9 +82,7 @@ test("the tab composes its file rather than only appearing", async ({
   expect(JSON.parse(await output.inputValue()).length).toBeGreaterThan(0);
 });
 
-test("the slots.json tab carries filterDefaults, not just the sections", async ({
-  page,
-}) => {
+test("the slots.json tab carries the sections alone", async ({ page }) => {
   await bootAt(page, "/");
   await openLayer(page);
   await openExport(page);
@@ -98,9 +96,33 @@ test("the slots.json tab carries filterDefaults, not just the sections", async (
   await expect(output).not.toHaveValue("Loading…");
 
   const parsed = JSON.parse(await output.inputValue()) as {
-    filterDefaults: Record<string, unknown>;
+    sections: unknown[];
   };
-  expect(Object.keys(parsed.filterDefaults).length).toBeGreaterThan(0);
+  expect(Object.keys(parsed)).toEqual(["sections"]);
+  expect(parsed.sections.length).toBeGreaterThan(0);
+});
+
+test("the filters.json tab carries the per-filter declarations", async ({
+  page,
+}) => {
+  await bootAt(page, "/");
+  await openLayer(page);
+  await openExport(page);
+
+  await page
+    .getByTestId("layer-export")
+    .getByRole("button", { name: "filters.json" })
+    .click();
+
+  const output = page.getByTestId("layer-export").locator("textarea");
+  await expect(output).not.toHaveValue("Loading…");
+
+  const parsed = JSON.parse(await output.inputValue()) as Record<
+    string,
+    { maxCopies?: number; fields?: string[] }
+  >;
+  expect(parsed.artifact).toEqual({ maxCopies: 1 });
+  expect(parsed.insignia?.fields).toContain("insigniaShape");
 });
 
 test("?maintainer=0 puts the data-file tabs away and leaves the URL", async ({
