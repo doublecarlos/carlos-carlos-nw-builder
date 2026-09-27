@@ -265,6 +265,12 @@ export function updateOverlay(id: string, overlay: CatalogOverlay) {
   }
 }
 
+/** Puts an overlay undo/redo snapshot back. A persisted snapshot can predate a format change,
+ *  so it is normalized like a stored layer's overlay. */
+export function restoreOverlay(id: string, json: string) {
+  updateOverlay(id, storage.normalizeLayerOverlay(JSON.parse(json)));
+}
+
 /** The enabled layer whose overlay already defines this preset, highest priority first -- the
  * one the composed catalog actually took it from, and so the only one an edit can land in
  * and still be visible. Null for a shipped preset no layer has touched yet. */
@@ -334,7 +340,7 @@ export function undoLayerFor(id: string) {
   if (!layer) return;
   const json = history.undo("layer", id, layer);
   if (json != null) {
-    _layers.value.set(id, JSON.parse(json) as Layer);
+    _layers.value.set(id, storage.normalizeLayer(JSON.parse(json)));
     markDirty(id);
   }
 }
@@ -344,7 +350,7 @@ export function undoOverlayFor(id: string) {
   const layer = _layers.value.get(id);
   if (!layer) return;
   const json = history.undo("layer", id, layer.overlay);
-  if (json != null) updateOverlay(id, JSON.parse(json) as CatalogOverlay);
+  if (json != null) restoreOverlay(id, json);
 }
 
 export function downloadLayer(id: string) {

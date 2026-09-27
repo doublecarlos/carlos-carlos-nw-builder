@@ -339,7 +339,7 @@ export function normalize(
   // the stores get a valid overlay to unpack into a layer; a build that has been through that
   // carries none.
   const perBuild: CatalogOverlay | null = isPlain(raw.catalog)
-    ? migrateOverlayListSlots(catalog.normalizeOverlay(raw.catalog))
+    ? normalizeLayerOverlay(raw.catalog)
     : null;
 
   // The snapshot is migrated too, or `sameContent` would read every migrated build as having
@@ -549,6 +549,12 @@ function migrateDownloaded(
   return { ...raw, snapshot: coerce(raw.snapshot) };
 }
 
+/** Coerces and migrates a stored overlay, the way a layer or a build's embedded catalog holds
+ *  one. */
+export function normalizeLayerOverlay(raw: unknown): CatalogOverlay {
+  return migrateOverlayListSlots(catalog.normalizeOverlay(raw));
+}
+
 /** Tolerant coercion, same spirit as `normalize`. */
 export function normalizeLayer(raw: unknown): Layer {
   const base = defaultLayer("Layer");
@@ -564,7 +570,7 @@ export function normalizeLayer(raw: unknown): Layer {
     name:
       typeof raw.name === "string" && raw.name.trim() ? raw.name : base.name,
     enabled: typeof raw.enabled === "boolean" ? raw.enabled : true,
-    overlay: migrateOverlayListSlots(catalog.normalizeOverlay(raw.overlay)),
+    overlay: normalizeLayerOverlay(raw.overlay),
     ...(downloaded ? { downloaded } : {}),
   };
 }

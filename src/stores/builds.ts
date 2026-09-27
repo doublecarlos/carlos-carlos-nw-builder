@@ -119,6 +119,12 @@ export function replaceActive(newBuild: Build) {
   selection.selectBuild(newBuild.id);
 }
 
+/** Puts an undo/redo snapshot back as the active build. A persisted snapshot can predate a
+ *  format change, so it goes through `normalize` like any stored build. */
+export function restoreSnapshot(json: string) {
+  replaceActive(storage.normalize(JSON.parse(json)));
+}
+
 /** Puts a build into the pool at `placement`. */
 function addBuild(b: Build, placement: BuildPlacement) {
   _builds.value.set(b.id, b);
@@ -318,7 +324,7 @@ export function undoFor(id: string) {
   const b = _builds.value.get(id);
   if (!b) return;
   const json = history.undo("build", id, b);
-  if (json != null) replaceActive(JSON.parse(json) as Build);
+  if (json != null) restoreSnapshot(json);
 }
 
 /** `buildEditor.ts`'s `setChoice` for a build that need not be the active one -- used by the
