@@ -30,7 +30,9 @@ const close = (a: number, b: number, tolerance: number) => {
 
 /** The sheet adds item dynamic stats in a stage of its own after `sums`. The engine sums them
  *  with every other row stat, so its `sums` is the sheet's `afterDynamicStatMods`. */
-const SHEET_STAGE: Record<string, string> = { sums: "afterDynamicStatMods" };
+export const SHEET_STAGE: Record<string, string> = {
+  sums: "afterDynamicStatMods",
+};
 
 /**
  * The sheet stores one signed number where the new engine keeps two fields: `overcap` is

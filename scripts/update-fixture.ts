@@ -11,7 +11,12 @@ import prettier from "prettier";
 import * as db from "../src/data/db";
 import * as engine from "../src/engine/engine";
 import type { Build, Db, ResolvedBuild } from "../src/types";
-import { IGNORED_STATS, sheetOvercap } from "../tests/unit/harness";
+import {
+  IGNORED_STATS,
+  SHEET_STAGE,
+  STAGES,
+  sheetOvercap,
+} from "../tests/unit/harness";
 
 const REPO_ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 const DEFAULT_FIXTURES = ["tests/unit/fixture.json"];
@@ -65,7 +70,11 @@ function syncStages(
     string,
     Record<string, number>
   >;
-  for (const [stage, stats] of Object.entries(expected.stages)) {
+  // Walks the same engine-to-sheet stage pairs as the test, so sheet-only stages stay untouched.
+  for (const stage of STAGES) {
+    const sheetStage = SHEET_STAGE[stage] ?? stage;
+    const stats = expected.stages[sheetStage];
+    if (!stats) continue;
     const engineStage = engineStages[stage];
     if (!engineStage) {
       missing.push(`stages.${stage} (stage absent from engine)`);
@@ -78,11 +87,15 @@ function syncStages(
           ? sheetOvercap(engineStages, stat)
           : engineStage[stat];
       if (typeof got !== "number") {
-        missing.push(`stages.${stage}.${stat}`);
+        missing.push(`stages.${sheetStage}.${stat}`);
         continue;
       }
       if (!close(got, want, tolerance)) {
-        changes.push({ field: `stages.${stage}.${stat}`, from: want, to: got });
+        changes.push({
+          field: `stages.${sheetStage}.${stat}`,
+          from: want,
+          to: got,
+        });
         stats[stat] = got;
       }
     }
