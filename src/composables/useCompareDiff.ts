@@ -2,31 +2,29 @@
 // bonus it takes part in differs from the compare build.
 import { computed, type Ref } from "vue";
 import { getPath } from "../lib/build-path";
-import { itemStatAddress, storedInput } from "../lib/build-inputs";
-import { label as statLabel, pctInput, statInput } from "../lib/format";
-import { repetitionRows } from "../lib/inline-repetition";
+import { inputKey } from "../lib/build-inputs";
+import { pctInput } from "../lib/format";
 import { expandSlots } from "../lib/item-picker-list";
 import { isDisabled } from "../lib/slot-toggle";
 import { itemLabel, stableRef } from "../engine/insignia";
+import { inputEntries, type InputEntry } from "../engine/inputs";
 import type {
   Build,
   BuildParameterSlot,
-  BonusOccurrenceConfig,
   Db,
   EvaluatedBonus,
   InputAddress,
+  InputSpec,
   Item,
-  ItemPickerSlot,
-  PointAssignmentSlot,
   ResolvedBuild,
   Slot,
   StatValues,
 } from "../types";
 
-export interface ValueDiff {
+export interface InputDiff {
   address: InputAddress;
   label: string;
-  /** The compare build's value as its input shows it; "(none)" when unset. */
+  /** The compare build's value as its control shows it. */
   otherLabel: string;
 }
 
@@ -42,18 +40,12 @@ export interface SlotDiff {
   /** item_picker only: the `toggleable` checkbox differs. Its own flag, not part of `choice`:
    *  both builds hold the same item, one just is not counting it. */
   disabled: boolean;
-  values: ValueDiff[];
+  /** Every typed value on the row that differs, matched to the compare build's by address. */
+  inputs: InputDiff[];
   bonuses: { id: string; message: string }[];
-  /** item_picker only: an item's occurrence-count attachment differs from the compare build's. */
-  occurrence: boolean;
-  otherOccurrenceLabel?: string;
   /** build_parameter only. */
   param: boolean;
   otherParamLabel?: string;
-  /** point_assignment, and an item_picker whose pick repeats inline: the same stored counts,
-   *  so one pair of fields covers both. */
-  assignment: boolean;
-  otherAssignmentLabel?: string;
 }
 
 /** True if this slot's pick is switched off in one build and on in the other. Standalone for
@@ -102,97 +94,9 @@ export function paramDiffTitle(
   return `${paramLabel(slot, getPath(compareBuild.context, slot.path))}`;
 }
 
-/** True if any of this slot's inline-repetition counts differs from the compare build -- every
- * row of a `point_assignment` slot, or an `item_picker`'s own repeating pick. Needs `db`
- * (unlike `paramDiffers`) since neither slot carries its item list on itself.
- *
- * Two builds holding different picks report no difference here: the choice note covers that,
- * and two items' counts aren't comparable -- same reasoning `valueDiffs` gives. */
-export function assignmentDiffers(
-  db: Db,
-  build: Build,
-  compareBuild: Build | null,
-  slot: PointAssignmentSlot | ItemPickerSlot,
-) {
-  if (!compareBuild) return false;
-  if (
-    slot.type === "item_picker" &&
-    (build.choices?.[slot.id] ?? "") !== (compareBuild.choices?.[slot.id] ?? "")
-  )
-    return false;
-  return repetitionRows(db, build, slot).some((item) => {
-    const def = item.inlineRepetition!.default;
-    const here = build.assignments?.[slot.id]?.[item.id] ?? def;
-    const there = compareBuild.assignments?.[slot.id]?.[item.id] ?? def;
-    return here !== there;
-  });
-}
-
-/** The compare build's counts for every row of this slot, "Item A 2, Item B 0" -- the
- * inline-repetition counterpart to `paramDiffTitle`. Needs `db` to resolve the slot's rows and
- * their names, and `build` to say which item an `item_picker`'s single row holds. */
-export function assignmentDiffTitle(
-  db: Db,
-  build: Build | null,
-  compareBuild: Build | null,
-  slot: PointAssignmentSlot | ItemPickerSlot,
-) {
-  if (!compareBuild) return undefined;
-  return repetitionRows(db, build, slot)
-    .map((item) => {
-      const there =
-        compareBuild.assignments?.[slot.id]?.[item.id] ??
-        item.inlineRepetition!.default;
-      return `${item.inlineRepetition!.label ?? item.name} ${there}`;
-    })
-    .join(", ");
-}
-
-/** True if any of this item's BonusOccurrenceConfig counts differ from the compare build --
- * parallel to `assignmentDiffers`, but per attachment on a single item_picker item rather than
- * per row of several point_assignment items, since that's where these attachments live. A fixed
- * (`min === max`) config is skipped -- it has no player-set count to differ on. */
-export function occurrenceDiffers(
-  item: Item | null,
-  build: Build,
-  compareBuild: Build | null,
-): boolean {
-  if (!compareBuild || !item) return false;
-  const here = build.occurrenceInputs?.[item.id] ?? {};
-  const there = compareBuild.occurrenceInputs?.[item.id] ?? {};
-  return (item.bonuses ?? []).some((attachment) => {
-    if (typeof attachment === "string" || attachment.min === attachment.max)
-      return false;
-    return (
-      (here[attachment.bonus] ?? attachment.default) !==
-      (there[attachment.bonus] ?? attachment.default)
-    );
-  });
-}
-
-/** The compare build's counts for this item's occurrence attachments, "Bonus A 2, Bonus B 0" --
- * the occurrence counterpart to `assignmentDiffTitle`. Needs `db` (unlike `occurrenceDiffers`)
- * to resolve each bonus id to a display name. */
-export function occurrenceDiffTitle(
-  db: Db,
-  item: Item | null,
-  compareBuild: Build | null,
-): string | undefined {
-  if (!compareBuild || !item) return undefined;
-  const there = compareBuild.occurrenceInputs?.[item.id] ?? {};
-  const parts = (item.bonuses ?? [])
-    .filter(
-      (attachment): attachment is BonusOccurrenceConfig =>
-        typeof attachment !== "string" && attachment.min !== attachment.max,
-    )
-    .map((attachment) => {
-      const name =
-        attachment.label ??
-        db.bonusById.get(attachment.bonus)?.name ??
-        attachment.bonus;
-      return `${name} ${there[attachment.bonus] ?? attachment.default}`;
-    });
-  return parts.length ? parts.join(", ") : undefined;
+/** A typed value as its control shows it. */
+function shownInput(spec: InputSpec, value: number) {
+  return spec.type === "boolean" ? (value ? "on" : "off") : spec.format(value);
 }
 
 export function useCompareDiff(options: {
@@ -246,35 +150,40 @@ export function useCompareDiff(options: {
     );
   }
 
-  /** Every one of this slot's item-level dynamic-stat values that differs from the compare
-   * build's -- only meaningful when the same item occupies the slot in both (a differing item
-   * already gets its own note via `differs` above, and the two magnitudes would not be
-   * comparable if the items' `dynamicStats` configs don't even match). Grant/variant-level
-   * dynamic values (bonus.ts's `resolveDynamicValues`) are not diffed here -- which grant/
-   * variant is active can itself depend on build context that differs between the two builds,
-   * so there is no single config to compare against without re-resolving the compare build's
-   * bonuses too. */
-  function valueDiffs(slotId: string): ValueDiff[] {
+  /** Both builds' typed values. The compare build's are keyed by address, so a bonus's
+   * settings match wherever each build renders them. */
+  const ownInputs = computed(() =>
+    inputEntries(db.value, build.value, result.value),
+  );
+  const otherInputs = computed(() => {
+    const map = new Map<string, InputEntry>();
+    if (!compareBuild.value || !compareResult.value) return map;
+    for (const entry of inputEntries(
+      db.value,
+      compareBuild.value,
+      compareResult.value,
+    ))
+      map.set(inputKey(entry.address), entry);
+    return map;
+  });
+
+  /** Every typed value on this slot that differs from the compare build's. A value only one
+   * build declares is left to the choice and bonus notes, as is every value on a slot whose
+   * choice already differs. */
+  function inputDiffs(slotId: string): InputDiff[] {
     if (!compareBuild.value || differs(slotId)) return [];
-    const item = itemIn(slotId);
-    if (!item?.dynamicStats?.length) return [];
-    const out: ValueDiff[] = [];
-    for (const config of item.dynamicStats) {
-      const address = itemStatAddress(slotId, config.stat);
-      const mineValue = storedInput(build.value, address) ?? null;
-      const otherValue = storedInput(compareBuild.value, address) ?? null;
-      if (mineValue !== otherValue) {
-        out.push({
-          address,
-          label: config.label ?? statLabel(config.stat),
-          otherLabel:
-            otherValue === null
-              ? "(none)"
-              : statInput(config.stat, Number(otherValue)),
-        });
-      }
-    }
-    return out;
+    return ownInputs.value.flatMap((entry) => {
+      if (entry.slotId !== slotId) return [];
+      const other = otherInputs.value.get(inputKey(entry.address));
+      if (!other || other.value === entry.value) return [];
+      return [
+        {
+          address: entry.address,
+          label: entry.spec.label,
+          otherLabel: shownInput(other.spec, other.value),
+        },
+      ];
+    });
   }
 
   function statsEqual(a?: StatValues | null, b?: StatValues | null) {
@@ -368,51 +277,22 @@ export function useCompareDiff(options: {
     for (const slot of expandSlots(db.value.slots, build.value)) {
       const choice = differs(slot.id);
       const disabled = disabledDiffers(build.value, compareBuild.value, slot);
-      const values = choice ? [] : valueDiffs(slot.id);
+      const inputs = inputDiffs(slot.id);
       const bonuses = choice ? [] : bonusDiffsFor(slot.id);
-      const occurrence = choice
-        ? false
-        : occurrenceDiffers(itemIn(slot.id), build.value, compareBuild.value);
       const param =
         slot.type === "build_parameter" &&
         paramDiffers(build.value, compareBuild.value, slot);
-      const assignment =
-        (slot.type === "item_picker" || slot.type === "point_assignment") &&
-        assignmentDiffers(db.value, build.value, compareBuild.value, slot);
-      if (
-        choice ||
-        disabled ||
-        values.length ||
-        bonuses.length ||
-        occurrence ||
-        param ||
-        assignment
-      ) {
+      if (choice || disabled || inputs.length || bonuses.length || param) {
         map.set(slot.id, {
           choice,
           otherChoiceLabel: otherChoiceLabel(slot.id),
           disabled,
-          values,
+          inputs,
           bonuses,
-          occurrence,
-          otherOccurrenceLabel: occurrence
-            ? occurrenceDiffTitle(db.value, itemIn(slot.id), compareBuild.value)
-            : undefined,
           param,
           otherParamLabel:
             param && slot.type === "build_parameter"
               ? paramDiffTitle(compareBuild.value, slot)
-              : undefined,
-          assignment,
-          otherAssignmentLabel:
-            assignment &&
-            (slot.type === "item_picker" || slot.type === "point_assignment")
-              ? assignmentDiffTitle(
-                  db.value,
-                  build.value,
-                  compareBuild.value,
-                  slot,
-                )
               : undefined,
         });
       }
@@ -446,7 +326,7 @@ export function useCompareDiff(options: {
     otherChoice,
     otherChoiceLabel,
     differs,
-    valueDiffs,
+    inputDiffs,
     rowDiff,
     rowHasDiff,
     optionsDiffCount,

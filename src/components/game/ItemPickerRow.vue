@@ -1,17 +1,15 @@
 <script setup lang="ts">
-// The item_picker case of BuildSlot.vue's row content: the picker itself, its dynamic-stat
-// magnitude(s) (item-level and/or bonus-level -- useDynamicStats.ts), and this type's diff
-// notes (choice/bonus/value). Row chrome (label, cursor anchor, hover/diff highlighting, the
-// errors list) stays in BuildSlot.vue since it's identical across every slot type.
+// The item_picker case of BuildSlot.vue's row content: the picker itself, its typed values
+// (useSlotInputs.ts) and this type's diff notes (choice/bonus/value). Row chrome (label, cursor
+// anchor, hover/diff highlighting, the errors list) stays in BuildSlot.vue since it's identical
+// across every slot type.
 import { computed, useTemplateRef } from "vue";
 import ItemPicker from "./ItemPicker.vue";
-import BonusOccurrenceInputs from "./BonusOccurrenceInputs.vue";
+import BuildInputControl from "./BuildInputControl.vue";
 import InlineRepetitionStepper from "./InlineRepetitionStepper.vue";
 import BaseBadge from "../ui/BaseBadge.vue";
 import BaseLink from "../ui/BaseLink.vue";
 import IconButton from "../ui/IconButton.vue";
-import InputRow from "../ui/InputRow.vue";
-import StatValueInput from "./StatValueInput.vue";
 import { PinOff, Replace, Table, Trash } from "@lucide/vue";
 import * as buildEditor from "../../stores/buildEditor";
 import * as stableBrowser from "../../stores/stableBrowser";
@@ -21,16 +19,10 @@ import {
   itemDisplay,
   stableRef,
 } from "../../engine/insignia";
-import { useItemBonusOccurrences } from "../../composables/useItemBonusOccurrences";
-import {
-  useSlotDynamicStats,
-  type DynamicStatRow,
-} from "../../composables/useDynamicStats";
-import { stat as formatStat } from "../../lib/format";
-import { inlineRepetitionCount } from "../../lib/inline-repetition";
+import { useSlotInputs } from "../../composables/useSlotInputs";
 import { inputKey } from "../../lib/build-inputs";
 import type { Build, Db, Item, ItemPickerSlot } from "../../types";
-import type { ValueDiff } from "../../composables/useCompareDiff";
+import type { InputDiff } from "../../composables/useCompareDiff";
 
 const props = defineProps<{
   slotDef: ItemPickerSlot;
@@ -54,29 +46,17 @@ const props = defineProps<{
   choiceDiffers?: boolean;
   otherChoiceLabel?: string;
   bonusDiffs?: { id: string; message: string }[];
-  valueDiffs?: ValueDiff[];
-  occurrenceDiffers?: boolean;
-  otherOccurrenceLabel?: string;
-  /** The pick's inline-repetition count against the compare build -- same pair of props a
-   *  point_assignment row takes, since it is the same stored value. */
-  assignmentDiffers?: boolean;
-  otherAssignmentLabel?: string;
+  inputDiffs?: InputDiff[];
   /** DOM id for the picker input, so BuildSlot's row label can point at it. */
   inputId?: string;
 }>();
 
 const picker = useTemplateRef<InstanceType<typeof ItemPicker>>("picker");
 
-const occurrenceRows = useItemBonusOccurrences(computed(() => props.item));
-
 /** The item this slot's pick would migrate to, or null when it has no replacement. */
 const replacement = computed(() =>
   props.db.replacementFor(props.build.choices?.[props.slotDef.id]),
 );
-
-function setOccurrence(bonusId: string, count: number, label: string) {
-  buildEditor.setOccurrenceInput(props.item!.id, bonusId, count, label);
-}
 
 defineExpose({
   focus: () => picker.value?.focus(),
@@ -89,34 +69,23 @@ const choice = () => props.build.choices[props.slotDef.id] ?? "";
  * picker holds nothing, which is what lets its placeholder name the derived bonus. */
 const pickedItem = computed(() => (choice() ? props.item : null));
 
-const dynamicStatRows = useSlotDynamicStats(
-  props.slotDef.id,
-  computed(() => props.item),
+const inputs = useSlotInputs(
+  () => props.slotDef,
+  () => (props.inputDiffs ?? []).map((diff) => diff.address),
 );
 
-function setDynamic(row: DynamicStatRow, raw: string | number) {
-  buildEditor.setDynamicValue(row.address, raw === "" ? "" : String(raw));
+/** The pick's own repetition count sits beside the picker; every other value lists below. */
+const repetition = computed(() =>
+  inputs.value.find((input) => input.kind === "repetition"),
+);
+const listed = computed(() =>
+  inputs.value.filter((input) => input.kind !== "repetition"),
+);
+
+function setRepetition(count: number) {
+  const input = repetition.value;
+  if (input) buildEditor.setInput(input.address, count, input.spec.label);
 }
-
-function rangeNote(row: DynamicStatRow) {
-  return `(from ${formatStat(row.stat, row.min)} to ${formatStat(row.stat, row.max)})`;
-}
-
-// --- the pick's own inline repetition -------------------------------------------------------
-// The item's own config turns the stepper on, exactly as `dynamicStats` and
-// `BonusOccurrenceConfig` do for their inputs above. The slot says nothing about it.
-
-const repetitions = computed(() =>
-  props.item
-    ? inlineRepetitionCount(props.build, props.slotDef.id, props.item)
-    : 0,
-);
-
-/** Not the item name the shared control defaults to -- the picker above already says that, so
- *  the caption says what the number means. `InlineRepetitionConfig.label` overrides it. */
-const repetitionLabel = computed(
-  () => props.item?.inlineRepetition?.label ?? "Copies",
-);
 
 /** The picker's own box is a fixed width, so the star sits out here with the summary. */
 const preferredPick = computed(
@@ -193,14 +162,15 @@ const stableGroup = computed(() => {
       <Trash />
     </IconButton>
     <InlineRepetitionStepper
-      v-if="item?.inlineRepetition"
-      :item="item"
-      :value="repetitions"
+      v-if="repetition"
+      :item-id="repetition.anchor.itemId!"
+      :label="repetition.spec.label"
+      :value="repetition.value"
+      :min="repetition.spec.min"
+      :max="repetition.spec.max"
       testid-prefix="repetition"
-      @change="(count) => buildEditor.setAssignment(slotDef, item!.id, count)"
-    >
-      <template #label>{{ repetitionLabel }}</template>
-    </InlineRepetitionStepper>
+      @change="setRepetition"
+    />
     <!-- The build-wide notice, scoped to this row. -->
     <span
       v-if="replacement || pickedItem?.hideFromPicker"
@@ -230,33 +200,12 @@ const stableGroup = computed(() => {
     >
   </div>
 
-  <!-- This item's BonusOccurrenceConfig inputs, if it carries any -- see
-       BonusOccurrenceInputs.vue for what each config's range renders as. -->
-  <div v-if="occurrenceRows.length" class="mt-1 flex flex-col gap-1.5">
-    <BonusOccurrenceInputs
-      :rows="occurrenceRows"
-      testid-prefix="occurrence"
-      @change="setOccurrence"
+  <div v-if="listed.length" class="mt-1 flex flex-col gap-1.5">
+    <BuildInputControl
+      v-for="input in listed"
+      :key="inputKey(input.address)"
+      :input="input"
     />
-  </div>
-
-  <!-- Every dynamic-stat magnitude this slot's pick carries -- item-level and/or bonus-level
-       (useDynamicStats.ts), one input per row, driven entirely by the item/bonus's own
-       declared configs so a second (or third) one works with no UI change. -->
-  <div v-if="dynamicStatRows.length" class="mt-1 flex flex-col gap-1.5">
-    <InputRow v-for="row in dynamicStatRows" :key="inputKey(row.address)">
-      <StatValueInput
-        :stat-key="row.stat"
-        :min="row.min"
-        :max="row.max"
-        :model-value="row.value"
-        class="w-full"
-        :data-testid="'slot-dynamic:' + row.stat"
-        @update:model-value="setDynamic(row, $event ?? '')"
-      />
-      <template #description>{{ row.label }}</template>
-      <template #note>{{ rangeNote(row) }}</template>
-    </InputRow>
   </div>
 
   <p
@@ -284,43 +233,17 @@ const stableGroup = computed(() => {
 
   <template v-if="highlightDiff">
     <p
-      v-for="diff in valueDiffs ?? []"
+      v-for="diff in inputDiffs ?? []"
       :key="inputKey(diff.address)"
       class="slot-diff-note mt-0.5 text-muted"
     >
       {{ compareBuild?.name }}: {{ diff.label }} {{ diff.otherLabel }}
       <BaseLink
         class="ml-0.5"
-        @click.stop="buildEditor.applyValueFromCompare(diff.address)"
+        @click.stop="buildEditor.applyInputFromCompare(diff.address)"
       >
         apply
       </BaseLink>
     </p>
   </template>
-
-  <p
-    v-if="highlightDiff && assignmentDiffers"
-    class="slot-diff-note mt-0.5 text-muted"
-  >
-    {{ compareBuild?.name }}: {{ otherAssignmentLabel }}
-    <BaseLink
-      class="ml-0.5"
-      @click.stop="buildEditor.applyAssignmentsFromCompare(slotDef)"
-    >
-      apply
-    </BaseLink>
-  </p>
-
-  <p
-    v-if="highlightDiff && occurrenceDiffers"
-    class="slot-diff-note mt-0.5 text-muted"
-  >
-    {{ compareBuild?.name }}: {{ otherOccurrenceLabel ?? "(none)" }}
-    <BaseLink
-      class="ml-0.5"
-      @click.stop="buildEditor.applyOccurrenceFromCompare(item!.id)"
-    >
-      apply
-    </BaseLink>
-  </p>
 </template>

@@ -1,11 +1,11 @@
 // The draft <-> SectionPreset conversion for PresetForm.vue, the same pattern bonus-draft.ts
 // and item-draft.ts already carry for their own entities (see bonus-draft.ts's header comment).
 //
-// `occurrences` is the one field with no row list of its own: it is keyed by item, not by slot
-// (see `SectionPreset.occurrences`), so it is authored inline on whichever row put that item on
-// screen (an item row's own pick, or a point_assignment row's items) into one draft-wide map.
-// `authoredItemIdsOf` needs `Db.forSlot` to resolve that, so both it and `toPreset` (which
-// calls it) take a `Db` in their context rather than reading `props.db` directly.
+// `occurrences` and `bonusValues` have no row list of their own: they are keyed by item and by
+// bonus, not by slot, so they are authored against whichever items the rows put on screen (an
+// item row's own pick, or a point_assignment row's items). `authoredItemIdsOf` needs
+// `Db.forSlot` to resolve that, so both it and `toPreset` (which calls it) take a `Db` in their
+// context rather than reading `props.db` directly.
 import {
   entriesToRows,
   rowsToEntries,
@@ -14,7 +14,14 @@ import {
   fieldDiffLabel,
   type DiffCheck,
 } from "./draft-fields";
-import type { BonusValues, SectionPreset, Db, SlotValues } from "../types";
+import { bonusStatConfigs } from "../engine/inputs";
+import type {
+  BonusValues,
+  DynamicStatConfig,
+  SectionPreset,
+  Db,
+  SlotValues,
+} from "../types";
 
 interface ParamRow {
   slotId: string;
@@ -45,14 +52,15 @@ export interface PresetDraft {
   /** Item id to bonus id to count, draft-wide rather than per row, mirroring the field it
    *  writes (see the module comment). */
   occurrences: Record<string, Record<string, number>>;
-  /** Carried through unedited, so saving the form keeps them. */
-  bonusValues: Record<string, BonusValues>;
+  /** Bonus id to its settings, draft-wide like `occurrences`. */
+  bonusValues: Record<string, BonusValuesDraft>;
 }
 
-/** A deep copy that also works on a reactive draft, which `structuredClone` rejects. */
-const copyBonusValues = (
-  source: Record<string, BonusValues> | undefined,
-): Record<string, BonusValues> => JSON.parse(JSON.stringify(source ?? {}));
+/** One bonus's settings as the form edits them: dynamic stats may be blank or mid-typing. */
+export interface BonusValuesDraft {
+  stat: Record<string, number | string | null>;
+  input: Record<string, number | boolean>;
+}
 
 export function buildDraft(
   preset: SectionPreset | null | undefined,
@@ -81,7 +89,12 @@ export function buildDraft(
         { ...counts },
       ]),
     ),
-    bonusValues: copyBonusValues(source.bonusValues),
+    bonusValues: Object.fromEntries(
+      Object.entries(source.bonusValues ?? {}).map(([bonusId, values]) => [
+        bonusId,
+        { stat: { ...values.stat }, input: { ...values.input } },
+      ]),
+    ),
   };
 }
 
@@ -98,12 +111,54 @@ function authoredItemIdsOf(local: PresetDraft, db: Db): Set<string> {
   return ids;
 }
 
+/** Every bonus the authored items carry, once each. */
+function authoredBonusIdsOf(local: PresetDraft, db: Db): Set<string> {
+  const ids = new Set<string>();
+  for (const itemId of authoredItemIdsOf(local, db)) {
+    const item = db.get(itemId);
+    for (const { bonus } of item ? db.bonusesFor(item) : []) ids.add(bonus.id);
+  }
+  return ids;
+}
+
+/** One bonus's dynamic stats the form offers settings for. */
+export interface BonusStatGroup {
+  bonusId: string;
+  name: string;
+  configs: DynamicStatConfig[];
+}
+
+/** Every bonus the authored items carry that declares dynamic stats. What `toPreset` keeps
+ *  `bonusValues` entries for. */
+export function bonusStatGroups(local: PresetDraft, db: Db): BonusStatGroup[] {
+  return [...authoredBonusIdsOf(local, db)].flatMap((bonusId) => {
+    const bonus = db.bonusById.get(bonusId);
+    const configs = bonus ? bonusStatConfigs(bonus) : [];
+    return configs.length
+      ? [{ bonusId, name: bonus?.name ?? bonusId, configs }]
+      : [];
+  });
+}
+
 /** Resolved preset id, threaded in the same way `item-draft.ts`'s `ItemDraftContext` is: the
  *  source's own once one exists, otherwise whatever the form's `computeId` worked out. `db` is
- *  needed only for `authoredItemIdsOf`'s slot lookup. */
+ *  needed for `authoredItemIdsOf`'s slot lookup. */
 export interface PresetDraftContext {
   id: string;
   db: Db;
+}
+
+/** A draft's settings for one bonus, blanks dropped, or undefined once empty. */
+function bonusValuesOf(draft: BonusValuesDraft): BonusValues | undefined {
+  const out: BonusValues = {};
+  const stat: Record<string, number> = {};
+  for (const [key, raw] of Object.entries(draft.stat)) {
+    const number = numberOrUnset(raw);
+    if (number !== undefined) stat[key] = number;
+  }
+  if (Object.keys(stat).length) out.stat = stat;
+  if (Object.keys(draft.input).length) out.input = { ...draft.input };
+  return Object.keys(out).length ? out : undefined;
 }
 
 export function toPreset(
@@ -160,7 +215,14 @@ export function toPreset(
     if (Object.keys(kept).length) occurrences[itemId] = kept;
   }
   putIfSet(preset, "occurrences", occurrences);
-  putIfSet(preset, "bonusValues", copyBonusValues(local.bonusValues));
+
+  const bonusValues: Record<string, BonusValues> = {};
+  for (const bonusId of authoredBonusIdsOf(local, ctx.db)) {
+    const draft = local.bonusValues[bonusId];
+    const values = draft && bonusValuesOf(draft);
+    if (values) bonusValues[bonusId] = values;
+  }
+  putIfSet(preset, "bonusValues", bonusValues);
 
   putIfSet(preset, "clears", [
     ...new Set(local.clearRows.map((row) => row.slotId).filter(Boolean)),
@@ -179,9 +241,12 @@ const CHECKS: DiffCheck<SectionPreset>[] = [
       : null,
   (old, nw) =>
     JSON.stringify(old.choices) !== JSON.stringify(nw.choices) ||
-    JSON.stringify(old.values) !== JSON.stringify(nw.values) ||
-    JSON.stringify(old.bonusValues) !== JSON.stringify(nw.bonusValues)
+    JSON.stringify(old.values) !== JSON.stringify(nw.values)
       ? "edit item choices"
+      : null,
+  (old, nw) =>
+    JSON.stringify(old.bonusValues) !== JSON.stringify(nw.bonusValues)
+      ? "edit bonus settings"
       : null,
   (old, nw) =>
     JSON.stringify(old.assignments) !== JSON.stringify(nw.assignments)

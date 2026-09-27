@@ -14,6 +14,8 @@ import {
   assignmentInput,
   stepAssignment,
   parkCursorOnRow,
+  importText,
+  confirmImport,
 } from "./support/app";
 import {
   addBuild,
@@ -361,5 +363,69 @@ test.describe("folder names in the build pickers", () => {
     await expect(
       combo.getByTestId("picker-option").filter({ hasText: "Build 1" }),
     ).toHaveText("Build 1");
+  });
+});
+
+test.describe("a bonus's dynamic stat in compare", () => {
+  const RING_SLOT = "gear.ring1";
+  const RING_ID = "test-compare-dynamic-ring";
+  const BONUS_ID = "test-compare-dynamic-bonus";
+
+  /** A build holding a ring whose bonus types Defense, optionally set away from its default. */
+  function ringBuild(name: string, defense?: number) {
+    return JSON.stringify({
+      name,
+      choices: { [RING_SLOT]: RING_ID },
+      ...(defense === undefined
+        ? {}
+        : { bonusValues: { [BONUS_ID]: { stat: { defense } } } }),
+      catalog: {
+        items: {
+          [RING_ID]: {
+            id: RING_ID,
+            name: "Test Compare Dynamic Ring",
+            filter: "gear_ring",
+            bonuses: [BONUS_ID],
+          },
+        },
+        bonuses: {
+          [BONUS_ID]: {
+            id: BONUS_ID,
+            name: "Test Compare Dynamic Bonus",
+            grants: [
+              {
+                dynamicStats: [
+                  { stat: "defense", min: 0, max: 200, default: 40 },
+                ],
+              },
+            ],
+          },
+        },
+        sectionPresets: {},
+      },
+    });
+  }
+
+  test("a differing value shows a note on the bonus's row and applies", async ({
+    page,
+  }) => {
+    await openBuilder(page);
+    await importText(page, ringBuild("Typed defense", 120));
+    await confirmImport(page);
+    await importText(page, ringBuild("Default defense"));
+    await confirmImport(page);
+
+    await chooseCombo(page.locator(".compare-select"), "Typed defense");
+    await page.getByRole("checkbox", { name: "Highlight changes" }).check();
+
+    const row = slotRow(page, RING_SLOT);
+    await expect(row).toHaveClass(/is-diff/);
+    await expect(row.locator(".slot-diff-note")).toContainText(
+      "Typed defense: Defense 120",
+    );
+
+    await row.getByRole("button", { name: "apply" }).click();
+    await expect(row.getByTestId("slot-dynamic:defense")).toHaveValue("120");
+    await expect(row).not.toHaveClass(/is-diff/);
   });
 });

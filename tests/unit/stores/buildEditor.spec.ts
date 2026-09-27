@@ -5,8 +5,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import * as storage from "../../../src/storage/storage";
 import {
+  assignmentAddress,
   bonusStatAddress,
   itemStatAddress,
+  occurrenceAddress,
 } from "../../../src/lib/build-inputs";
 import type { ItemPickerSlot } from "../../../src/types";
 
@@ -157,19 +159,19 @@ describe("buildEditor point_assignment edits", () => {
     expect(builds.build.value!.assignments["boons.tier1"]).toEqual(seededRows);
   });
 
-  it("setAssignment writes the count under the slot id, keyed by item", async () => {
+  it("setInput writes the count under the slot id, keyed by item", async () => {
     const { builds, buildEditor } = await freshStores();
-    buildEditor.setAssignment(slot, "boon-tier1-power", 2);
+    buildEditor.setInput(assignmentAddress(slot.id, "boon-tier1-power"), 2);
     expect(builds.build.value!.assignments["boons.tier1"]).toEqual({
       ...seededRows,
       "boon-tier1-power": 2,
     });
   });
 
-  it("setAssignment on a second item does not clobber the first", async () => {
+  it("setInput on a second item does not clobber the first", async () => {
     const { builds, buildEditor } = await freshStores();
-    buildEditor.setAssignment(slot, "boon-tier1-power", 2);
-    buildEditor.setAssignment(slot, "boon-tier1-avoidance", 1);
+    buildEditor.setInput(assignmentAddress(slot.id, "boon-tier1-power"), 2);
+    buildEditor.setInput(assignmentAddress(slot.id, "boon-tier1-avoidance"), 1);
     expect(builds.build.value!.assignments["boons.tier1"]).toEqual({
       ...seededRows,
       "boon-tier1-power": 2,
@@ -179,8 +181,8 @@ describe("buildEditor point_assignment edits", () => {
 
   it("undo reverts one item's count without touching the other's", async () => {
     const { builds, buildEditor } = await freshStores();
-    buildEditor.setAssignment(slot, "boon-tier1-power", 2);
-    buildEditor.setAssignment(slot, "boon-tier1-avoidance", 1);
+    buildEditor.setInput(assignmentAddress(slot.id, "boon-tier1-power"), 2);
+    buildEditor.setInput(assignmentAddress(slot.id, "boon-tier1-avoidance"), 1);
     buildEditor.undo();
     expect(builds.build.value!.assignments["boons.tier1"]).toEqual({
       ...seededRows,
@@ -190,17 +192,17 @@ describe("buildEditor point_assignment edits", () => {
 
   it("resetAssignmentsToDefault resets every row in the slot at once", async () => {
     const { builds, buildEditor } = await freshStores();
-    buildEditor.setAssignment(slot, "boon-tier1-power", 2);
-    buildEditor.setAssignment(slot, "boon-tier1-avoidance", 1);
+    buildEditor.setInput(assignmentAddress(slot.id, "boon-tier1-power"), 2);
+    buildEditor.setInput(assignmentAddress(slot.id, "boon-tier1-avoidance"), 1);
     buildEditor.resetAssignmentsToDefault(slot);
     expect(builds.build.value!.assignments["boons.tier1"]).toEqual(seededRows);
   });
 });
 
-describe("buildEditor.setOccurrenceInput", () => {
+describe("buildEditor.setInput on occurrence counts", () => {
   it("writes the count under the item id, keyed by bonus id", async () => {
     const { builds, buildEditor } = await freshStores();
-    buildEditor.setOccurrenceInput("test-ring", "test-bonus", 3, "Test Bonus");
+    buildEditor.setInput(occurrenceAddress("test-ring", "test-bonus"), 3);
     expect(builds.build.value!.occurrenceInputs).toEqual({
       "test-ring": { "test-bonus": 3 },
     });
@@ -208,8 +210,8 @@ describe("buildEditor.setOccurrenceInput", () => {
 
   it("a second bonus on the same item does not clobber the first", async () => {
     const { builds, buildEditor } = await freshStores();
-    buildEditor.setOccurrenceInput("test-ring", "bonus-a", 2, "Bonus A");
-    buildEditor.setOccurrenceInput("test-ring", "bonus-b", 1, "Bonus B");
+    buildEditor.setInput(occurrenceAddress("test-ring", "bonus-a"), 2);
+    buildEditor.setInput(occurrenceAddress("test-ring", "bonus-b"), 1);
     expect(builds.build.value!.occurrenceInputs).toEqual({
       "test-ring": { "bonus-a": 2, "bonus-b": 1 },
     });
@@ -217,8 +219,8 @@ describe("buildEditor.setOccurrenceInput", () => {
 
   it("the same bonus on a different item is tracked independently", async () => {
     const { builds, buildEditor } = await freshStores();
-    buildEditor.setOccurrenceInput("ring-a", "shared-bonus", 2, "Shared Bonus");
-    buildEditor.setOccurrenceInput("ring-b", "shared-bonus", 5, "Shared Bonus");
+    buildEditor.setInput(occurrenceAddress("ring-a", "shared-bonus"), 2);
+    buildEditor.setInput(occurrenceAddress("ring-b", "shared-bonus"), 5);
     expect(builds.build.value!.occurrenceInputs).toEqual({
       "ring-a": { "shared-bonus": 2 },
       "ring-b": { "shared-bonus": 5 },
@@ -227,8 +229,8 @@ describe("buildEditor.setOccurrenceInput", () => {
 
   it("undo reverts one bonus's count without touching a sibling's", async () => {
     const { builds, buildEditor } = await freshStores();
-    buildEditor.setOccurrenceInput("test-ring", "bonus-a", 2, "Bonus A");
-    buildEditor.setOccurrenceInput("test-ring", "bonus-b", 1, "Bonus B");
+    buildEditor.setInput(occurrenceAddress("test-ring", "bonus-a"), 2);
+    buildEditor.setInput(occurrenceAddress("test-ring", "bonus-b"), 1);
     buildEditor.undo();
     expect(builds.build.value!.occurrenceInputs).toEqual({
       "test-ring": { "bonus-a": 2 },
@@ -238,7 +240,7 @@ describe("buildEditor.setOccurrenceInput", () => {
 
 // A custom ring living in a layer, which is where catalog content the shipped data has not
 // got belongs. Both test builds pick it, and the layer resolves it whichever one is active.
-describe("buildEditor.applyOccurrenceFromCompare", () => {
+describe("buildEditor.applyInputFromCompare on occurrence counts", () => {
   const RING_ID = "test-occurrence-ring";
   const STACK_BONUS_ID = "test-occurrence-stack-bonus";
 
@@ -295,14 +297,16 @@ describe("buildEditor.applyOccurrenceFromCompare", () => {
     builds.replaceActive(active);
     compare.setCompareBuild(other.id);
 
-    buildEditor.applyOccurrenceFromCompare(RING_ID);
+    buildEditor.applyInputFromCompare(
+      occurrenceAddress(RING_ID, STACK_BONUS_ID),
+    );
 
     expect(builds.build.value!.occurrenceInputs[RING_ID]).toEqual({
       [STACK_BONUS_ID]: 4,
     });
   });
 
-  it("falls back to the attachment's own default for a bonus the compare build never touched", async () => {
+  it("clears the count when the compare build stores none, so it reads the attachment's default", async () => {
     const { builds, buildEditor, compare } = await storesWithRing();
     const active = buildWithRing("Active", {
       [RING_ID]: { [STACK_BONUS_ID]: 2 },
@@ -312,11 +316,11 @@ describe("buildEditor.applyOccurrenceFromCompare", () => {
     builds.replaceActive(active);
     compare.setCompareBuild(other.id);
 
-    buildEditor.applyOccurrenceFromCompare(RING_ID);
+    buildEditor.applyInputFromCompare(
+      occurrenceAddress(RING_ID, STACK_BONUS_ID),
+    );
 
-    expect(builds.build.value!.occurrenceInputs[RING_ID]).toEqual({
-      [STACK_BONUS_ID]: 0,
-    });
+    expect(builds.build.value!.occurrenceInputs[RING_ID]).toBeUndefined();
   });
 
   it("does nothing without a compare build selected", async () => {
@@ -326,7 +330,9 @@ describe("buildEditor.applyOccurrenceFromCompare", () => {
     });
     builds.replaceActive(active);
 
-    buildEditor.applyOccurrenceFromCompare(RING_ID);
+    buildEditor.applyInputFromCompare(
+      occurrenceAddress(RING_ID, STACK_BONUS_ID),
+    );
 
     expect(builds.build.value!.occurrenceInputs[RING_ID]).toEqual({
       [STACK_BONUS_ID]: 2,
@@ -378,7 +384,7 @@ describe("buildEditor.applyPreset", () => {
 
   it("merges bonus settings per bonus", async () => {
     const { builds, buildEditor } = await freshStores();
-    buildEditor.setDynamicValue(bonusStatAddress("proc", "crit"), "0.1");
+    buildEditor.setInput(bonusStatAddress("proc", "crit"), 0.1);
     buildEditor.applyPreset({
       ...preset,
       bonusValues: { proc: { stat: { power: 5 }, input: { on: true } } },
@@ -391,8 +397,8 @@ describe("buildEditor.applyPreset", () => {
 
   it("merges into an item's occurrence counts without clobbering its other bonus", async () => {
     const { builds, buildEditor } = await freshStores();
-    buildEditor.setOccurrenceInput("ItemA", "other-bonus", 2, "Other Bonus");
-    buildEditor.setOccurrenceInput("ItemA", "stack-bonus", 1, "Stack Bonus");
+    buildEditor.setInput(occurrenceAddress("ItemA", "other-bonus"), 2);
+    buildEditor.setInput(occurrenceAddress("ItemA", "stack-bonus"), 1);
     buildEditor.applyPreset(preset);
 
     expect(builds.build.value!.occurrenceInputs.ItemA).toEqual({
@@ -403,7 +409,7 @@ describe("buildEditor.applyPreset", () => {
 
   it("leaves another item's occurrence counts untouched", async () => {
     const { builds, buildEditor } = await freshStores();
-    buildEditor.setOccurrenceInput("ItemB", "stack-bonus", 5, "Stack Bonus");
+    buildEditor.setInput(occurrenceAddress("ItemB", "stack-bonus"), 5);
     buildEditor.applyPreset(preset);
 
     expect(builds.build.value!.occurrenceInputs.ItemB).toEqual({
@@ -420,7 +426,10 @@ describe("buildEditor.applyPreset", () => {
 
   it("merges into an assignment row without clobbering a sibling item", async () => {
     const { builds, buildEditor } = await freshStores();
-    buildEditor.setAssignment(tier1Slot, "boon-tier1-avoidance", 1);
+    buildEditor.setInput(
+      assignmentAddress(tier1Slot.id, "boon-tier1-avoidance"),
+      1,
+    );
     buildEditor.applyPreset(preset);
     expect(builds.build.value!.assignments["boons.tier1"]).toEqual({
       ...seededRows,
@@ -477,8 +486,11 @@ describe("buildEditor.applyPreset clears", () => {
     const { builds, buildEditor } = await freshStores();
     buildEditor.setParam(roleSlot, "dps");
     buildEditor.setChoice("gear.head", "ItemA");
-    buildEditor.setDynamicValue(itemStatAddress("gear.head", "power"), "5");
-    buildEditor.setAssignment(tier1Slot, "boon-tier1-power", 3);
+    buildEditor.setInput(itemStatAddress("gear.head", "power"), 5);
+    buildEditor.setInput(
+      assignmentAddress(tier1Slot.id, "boon-tier1-power"),
+      3,
+    );
 
     buildEditor.applyPreset({
       id: "wipe",
@@ -565,8 +577,8 @@ describe("buildEditor.presetFromSection", () => {
   it("captures a section's picks, values and occurrence counts", async () => {
     const { buildEditor } = await freshStores();
     buildEditor.setChoice("gear.head", "ItemA");
-    buildEditor.setDynamicValue(itemStatAddress("gear.head", "power"), "5");
-    buildEditor.setOccurrenceInput("ItemA", "stack-bonus", 2, "Stack Bonus");
+    buildEditor.setInput(itemStatAddress("gear.head", "power"), 5);
+    buildEditor.setInput(occurrenceAddress("ItemA", "stack-bonus"), 2);
 
     const preset = buildEditor.presetFromSection("gear", "My Gear");
 
@@ -575,6 +587,42 @@ describe("buildEditor.presetFromSection", () => {
     expect(preset.choices?.["gear.head"]).toBe("ItemA");
     expect(preset.values?.["gear.head"]).toEqual({ stat: { power: 5 } });
     expect(preset.occurrences?.ItemA).toEqual({ "stack-bonus": 2 });
+  });
+
+  it("captures the settings of the bonuses its items carry, and no others", async () => {
+    const stores = await freshStores();
+    const layer = stores.layers.createLayer("Procs");
+    stores.layers.updateOverlay(layer.id, {
+      items: {
+        "test-proc-ring": {
+          id: "test-proc-ring",
+          name: "Test Proc Ring",
+          filter: "gear_ring",
+          bonuses: ["test-proc"],
+        },
+      },
+      bonuses: {
+        "test-proc": {
+          id: "test-proc",
+          name: "Test Proc",
+          grants: [
+            { dynamicStats: [{ stat: "power", min: 0, max: 99, default: 1 }] },
+          ],
+        },
+      },
+      sectionPresets: {},
+      slots: {},
+      sections: {},
+      filters: {},
+    });
+    const { buildEditor } = stores;
+    buildEditor.setChoice("gear.ring1", "test-proc-ring");
+    buildEditor.setInput(bonusStatAddress("test-proc", "power"), 7);
+    buildEditor.setInput(bonusStatAddress("elsewhere", "power"), 3);
+
+    const preset = buildEditor.presetFromSection("gear");
+
+    expect(preset.bonusValues).toEqual({ "test-proc": { stat: { power: 7 } } });
   });
 
   it("lists a slot sitting at its default under clears", async () => {
@@ -685,7 +733,10 @@ describe("buildEditor.clearSection", () => {
 
   it("resets a point_assignment slot's rows to their defaults", async () => {
     const { builds, buildEditor } = await freshStores();
-    buildEditor.setAssignment(tier1Slot, "boon-tier1-power", 3);
+    buildEditor.setInput(
+      assignmentAddress(tier1Slot.id, "boon-tier1-power"),
+      3,
+    );
     buildEditor.clearSection("boons", "Boons");
     expect(builds.build.value!.assignments["boons.tier1"]).toEqual(seededRows);
   });
@@ -693,7 +744,7 @@ describe("buildEditor.clearSection", () => {
   it("clears an item_picker slot's choice and value", async () => {
     const { builds, buildEditor } = await freshStores();
     buildEditor.setChoice("gear.head", "ItemA");
-    buildEditor.setDynamicValue(itemStatAddress("gear.head", "power"), "5");
+    buildEditor.setInput(itemStatAddress("gear.head", "power"), 5);
 
     buildEditor.clearSection("gear", "Gear");
     expect(builds.build.value!.choices["gear.head"]).toBeUndefined();
@@ -703,7 +754,10 @@ describe("buildEditor.clearSection", () => {
   it("leaves other sections untouched", async () => {
     const { builds, buildEditor } = await freshStores();
     buildEditor.setChoice("gear.head", "ItemA");
-    buildEditor.setAssignment(tier1Slot, "boon-tier1-power", 3);
+    buildEditor.setInput(
+      assignmentAddress(tier1Slot.id, "boon-tier1-power"),
+      3,
+    );
 
     buildEditor.clearSection("gear", "Gear");
     expect(builds.build.value!.assignments["boons.tier1"]).toEqual({
@@ -715,7 +769,10 @@ describe("buildEditor.clearSection", () => {
   it("applies as a single undo step", async () => {
     const { builds, buildEditor } = await freshStores();
     buildEditor.setChoice("gear.head", "ItemA");
-    buildEditor.setAssignment(tier1Slot, "boon-tier1-power", 3);
+    buildEditor.setInput(
+      assignmentAddress(tier1Slot.id, "boon-tier1-power"),
+      3,
+    );
 
     buildEditor.clearSection("boons", "Boons");
     buildEditor.undo();
@@ -800,15 +857,15 @@ describe("buildEditor undo labels", () => {
     expect(navHistory.undoLabel.value).toBe('rename build → "My Warlock"');
   });
 
-  it("setDynamicValue includes the new value in the label", async () => {
+  it("setInput includes the new value in the label", async () => {
     const { buildEditor } = await freshStores();
-    buildEditor.setDynamicValue(itemStatAddress("ring1", "power"), "42");
+    buildEditor.setInput(itemStatAddress("ring1", "power"), 42);
     expect(buildEditor.undoLabel.value).toContain("→ 42");
   });
 
-  it("setDynamicValue shows (none) when clearing", async () => {
+  it("setInput shows (none) when clearing", async () => {
     const { buildEditor } = await freshStores();
-    buildEditor.setDynamicValue(itemStatAddress("ring1", "power"), "");
+    buildEditor.setInput(itemStatAddress("ring1", "power"), null);
     expect(buildEditor.undoLabel.value).toContain("→ (none)");
   });
 });
@@ -844,7 +901,7 @@ describe("buildEditor item_picker_list rows", () => {
     buildEditor.setChoice(row(1), "ItemA");
     buildEditor.setChoice(row(2), "ItemB");
     buildEditor.setChoice(row(3), "ItemC");
-    buildEditor.setDynamicValue(itemStatAddress(row(3), "power"), "42");
+    buildEditor.setInput(itemStatAddress(row(3), "power"), 42);
 
     buildEditor.removeListRow(row(2));
 

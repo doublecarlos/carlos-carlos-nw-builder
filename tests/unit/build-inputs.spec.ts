@@ -8,6 +8,7 @@ import {
   bonusStatAddress,
   inputKey,
   itemStatAddress,
+  occurrenceAddress,
   readInput,
   storedInput,
   writeInput,
@@ -207,8 +208,10 @@ describe("inputRanges", () => {
     name: "Test Boon",
     filter: "boons",
     inlineRepetition: { min: 1, max: 3, default: 0 },
+    bonuses: [{ bonus: "stack", min: 0, max: 2, default: 0 }],
   };
   const bonuses: Bonus[] = [
+    { id: "stack", name: "Stack", grants: [] },
     {
       id: "proc",
       name: "Proc",
@@ -270,6 +273,12 @@ describe("inputRanges", () => {
     });
     expect(error.slotId).toBe("gear.ring");
     expect(error.address).toEqual(bonusStatAddress("proc", "power"));
+  });
+
+  it("checks the occurrence counts of a point_assignment row's items", () => {
+    const [error] = errorsFor({ occurrenceInputs: { boon: { stack: 3 } } });
+    expect(error.slotId).toBe("boons.row");
+    expect(error.address).toEqual(occurrenceAddress("boon", "stack"));
   });
 
   it("accepts 0 on a point_assignment row whatever its declared min", () => {

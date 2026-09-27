@@ -6,8 +6,13 @@
 import { describe, it, expect } from "vitest";
 import * as db from "../../src/data/db";
 import { NW_SCHEMA } from "../../src/data/data";
-import { buildDraft, toPreset, diffLabel } from "../../src/lib/preset-draft";
-import type { Item, SectionPreset, SlotsData } from "../../src/types";
+import {
+  bonusStatGroups,
+  buildDraft,
+  toPreset,
+  diffLabel,
+} from "../../src/lib/preset-draft";
+import type { Bonus, Item, SectionPreset, SlotsData } from "../../src/types";
 
 const slotsData: SlotsData = {
   sections: [{ id: "gear", label: "Gear", slotIds: [] }],
@@ -38,14 +43,24 @@ const slotsData: SlotsData = {
   ],
 };
 
-const ring: Item = { id: "ring", name: "Ring", filter: "test_ring" };
+const ring: Item = {
+  id: "ring",
+  name: "Ring",
+  filter: "test_ring",
+  bonuses: ["proc"],
+};
 const boon: Item = {
   id: "boon",
   name: "Boon",
   filter: "test_boon",
   inlineRepetition: { min: 0, max: 3, default: 0 },
 };
-const testDb = db.build([ring, boon], [], NW_SCHEMA, slotsData);
+const proc: Bonus = {
+  id: "proc",
+  name: "Proc",
+  grants: [{ dynamicStats: [{ stat: "power", min: 0, max: 100, default: 5 }] }],
+};
+const testDb = db.build([ring, boon], [proc], NW_SCHEMA, slotsData);
 
 const ctx = (id: string) => ({ id, db: testDb });
 
@@ -95,6 +110,35 @@ describe("buildDraft / toPreset round trip", () => {
     expect(preset.occurrences).toEqual({ boon: { some_bonus: 1 } });
   });
 
+  it("round-trips a carried bonus's settings", () => {
+    const preset: SectionPreset = {
+      id: "p5",
+      label: "Preset 5",
+      section: "gear",
+      choices: { ring1: "ring" },
+      bonusValues: { proc: { stat: { power: 40 } } },
+    };
+    expect(toPreset(buildDraft(preset), ctx("p5"))).toEqual(preset);
+  });
+
+  it("drops blank bonus settings and those of a bonus no row's item carries", () => {
+    const draft = buildDraft({
+      id: "p6",
+      label: "Preset 6",
+      section: "gear",
+      choices: { ring1: "ring" },
+      bonusValues: {
+        proc: { stat: { power: 40 } },
+        stray: { stat: { power: 1 } },
+      },
+    });
+    expect(toPreset(draft, ctx("p6")).bonusValues).toEqual({
+      proc: { stat: { power: 40 } },
+    });
+    draft.bonusValues.proc!.stat.power = "";
+    expect(toPreset(draft, ctx("p6")).bonusValues).toBeUndefined();
+  });
+
   it("uses ctx.id rather than any id on the source draft", () => {
     const preset: SectionPreset = {
       id: "orig",
@@ -102,6 +146,22 @@ describe("buildDraft / toPreset round trip", () => {
       section: "gear",
     };
     expect(toPreset(buildDraft(preset), ctx("renamed")).id).toBe("renamed");
+  });
+});
+
+describe("bonusStatGroups", () => {
+  it("offers the dynamic stats of every bonus a picked item carries", () => {
+    const draft = buildDraft({
+      id: "p1",
+      label: "P",
+      section: "gear",
+      choices: { ring1: "ring" },
+    });
+    expect(bonusStatGroups(draft, testDb)).toEqual([
+      { bonusId: "proc", name: "Proc", configs: proc.grants![0]!.dynamicStats },
+    ]);
+    draft.itemRows[0]!.choice = "";
+    expect(bonusStatGroups(draft, testDb)).toEqual([]);
   });
 });
 

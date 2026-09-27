@@ -3,7 +3,6 @@
 // build.occurrenceInputs is keyed by item id *and* bonus id, so two items each carrying their
 // own config for the same bonus (e.g. a boolean, proc-shaped one) already get two
 // independent counts with no aliasing to guard against.
-import { computed, type ComputedRef, type Ref } from "vue";
 import * as builds from "../stores/builds";
 import { db } from "../stores/resolved";
 import type { Item } from "../types";
@@ -69,12 +68,4 @@ export function occurrenceRows(
   }
 
   return rows;
-}
-
-/** `occurrenceRowsForItem`, wrapped as a computed tracking a single reactive item -- for a
- *  component showing exactly one item's row (ItemPickerRow.vue). */
-export function useItemBonusOccurrences(
-  item: Ref<Item | null | undefined> | ComputedRef<Item | null | undefined>,
-) {
-  return computed<OccurrenceRow[]>(() => occurrenceRowsForItem(item.value));
 }

@@ -161,3 +161,15 @@ export const bonusStatAddress = (
   bonusId: string,
   stat: string,
 ): InputAddress => ({ store: "bonusValues", bonusId, kind: "stat", key: stat });
+
+/** Where one item's repetition count at one slot is stored. */
+export const assignmentAddress = (
+  slotId: string,
+  itemId: string,
+): InputAddress => ({ store: "assignments", slotId, itemId });
+
+/** Where one item's count for one BonusOccurrenceConfig attachment is stored. */
+export const occurrenceAddress = (
+  itemId: string,
+  bonusId: string,
+): InputAddress => ({ store: "occurrenceInputs", itemId, bonusId });

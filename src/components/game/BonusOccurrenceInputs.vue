@@ -1,66 +1,26 @@
 <script setup lang="ts">
-// The inputs for one item's BonusOccurrenceConfig attachments: a 0-1 range reads as a checkbox
-// (a per-item on/off toggle, e.g. a proc), a wider range as a stepper. A fixed (min === max)
-// config never reaches here at all -- see useItemBonusOccurrences.ts.
+// The inputs for one item's BonusOccurrenceConfig attachments outside the active build: a
+// preset's counts (PresetForm.vue) and the item editor's preview (BonusOccurrenceSection.vue).
+// A 0-1 range reads as a checkbox, a wider range as a stepper. The build editor renders its own
+// counts through BuildInputControl.vue.
 //
-// Multi-root on purpose: every caller wraps these in its own layout (an item_picker row, a
-// point_assignment column, a preset's item row), so the wrapper -- and where the counts are
-// read from and written to -- stays theirs, and only the controls are shared.
-import { Minus, Plus } from "@lucide/vue";
+// Multi-root on purpose: every caller wraps these in its own layout, so the wrapper stays
+// theirs and only the controls are shared.
 import BaseCheckbox from "../ui/BaseCheckbox.vue";
-import BaseInput from "../ui/BaseInput.vue";
-import IconButton from "../ui/IconButton.vue";
 import InputRow from "../ui/InputRow.vue";
-import { isMac } from "../../lib/platform";
+import NumberStepper from "../ui/NumberStepper.vue";
 import type { OccurrenceRow } from "../../composables/useItemBonusOccurrences";
-
-const modKey = isMac ? "Cmd" : "Ctrl";
 
 defineProps<{
   rows: OccurrenceRow[];
-  /** Leading part of each control's `data-testid` -- `<prefix>-toggle-<bonusId>` and
-   *  `<prefix>-input-<bonusId>`. Callers whose rows aren't unique on the page on their own
-   *  (a point_assignment row renders a set per item) fold their own key into it. */
+  /** Leading part of each control's `data-testid`: `<prefix>-toggle-<bonusId>` and
+   *  `<prefix>-input-<bonusId>`. */
   testidPrefix: string;
 }>();
 
 const emit = defineEmits<{
-  /** `label` rides along so the caller's undo entry can name the row the user actually saw --
-   *  a config's `label` override, not necessarily the bonus's own name. */
-  change: [bonusId: string, count: number, label: string];
+  change: [bonusId: string, count: number];
 }>();
-
-function onCheckbox(row: OccurrenceRow, checked: boolean) {
-  emit("change", row.bonusId, checked ? 1 : 0, row.label);
-}
-
-function onInput(row: OccurrenceRow, value: string | number | null) {
-  const raw = Number(value);
-  emit(
-    "change",
-    row.bonusId,
-    Number.isFinite(raw) ? raw : row.defaultValue,
-    row.label,
-  );
-}
-
-/** A plain click steps by one, Ctrl/Cmd+click jumps straight to that direction's bound -- the
- *  same platform-modifier convention every other stepper in the app uses. Stopped from
- *  bubbling: an item_picker row's own Ctrl+click jumps to that item in the layer editor, which
- *  would otherwise fire instead of the step. */
-function step(row: OccurrenceRow, dir: 1 | -1, event: MouseEvent) {
-  event.stopPropagation();
-  if (isMac ? event.metaKey : event.ctrlKey) {
-    emit("change", row.bonusId, dir === 1 ? row.max : row.min, row.label);
-    return;
-  }
-  emit(
-    "change",
-    row.bonusId,
-    Math.min(Math.max(row.value + dir, row.min), row.max),
-    row.label,
-  );
-}
 </script>
 
 <template>
@@ -70,7 +30,7 @@ function step(row: OccurrenceRow, dir: 1 | -1, event: MouseEvent) {
     :key="row.bonusId"
     :data-testid="`${testidPrefix}-toggle-${row.bonusId}`"
     :model-value="row.value === 1"
-    @update:model-value="onCheckbox(row, $event as boolean)"
+    @update:model-value="emit('change', row.bonusId, $event ? 1 : 0)"
   >
     {{ row.label }}
   </BaseCheckbox>
@@ -78,29 +38,13 @@ function step(row: OccurrenceRow, dir: 1 | -1, event: MouseEvent) {
     v-for="row in rows.filter((r) => r.kind === 'stepper')"
     :key="row.bonusId"
   >
-    <IconButton
-      :title="`Decrease (${modKey}+click for min)`"
-      :disabled="row.value <= row.min"
-      @click="step(row, -1, $event)"
-    >
-      <Minus />
-    </IconButton>
-    <BaseInput
-      type="number"
-      class="w-14 text-center!"
+    <NumberStepper
       :min="row.min"
       :max="row.max"
       :model-value="row.value"
       :data-testid="`${testidPrefix}-input-${row.bonusId}`"
-      @update:model-value="onInput(row, $event)"
+      @update:model-value="emit('change', row.bonusId, $event)"
     />
-    <IconButton
-      :title="`Increase (${modKey}+click for max)`"
-      :disabled="row.value >= row.max"
-      @click="step(row, 1, $event)"
-    >
-      <Plus />
-    </IconButton>
     <template #description>
       <span>{{ row.label }}</span>
     </template>
