@@ -56,9 +56,37 @@ const plainRing: Item = {
   deflect: 800,
 };
 
+/** Every stat it offers is typed in by the player, on the item and on its bonus alike. */
+const dynamicBonus: Bonus = {
+  id: "test-dynamic-bonus",
+  name: "Test Dynamic Bonus",
+  grants: [
+    {
+      stats: {},
+      dynamicStats: [{ stat: "ca", min: 0, max: 100, default: 0 }],
+    },
+    {
+      variants: [
+        {
+          stats: {},
+          dynamicStats: [{ stat: "movement", min: 0, max: 1, default: 0 }],
+        },
+      ],
+    },
+  ],
+};
+
+const dynamicRing: Item = {
+  id: "ring-dynamic",
+  name: "Shifting Loop",
+  filter: "gear_ring",
+  dynamicStats: [{ stat: "acc", min: 0, max: 100, default: 0 }],
+  bonuses: ["test-dynamic-bonus"],
+};
+
 const testDb = db.build(
-  [ringWithSet, plainRing],
-  [setBonus],
+  [ringWithSet, plainRing, dynamicRing],
+  [setBonus, dynamicBonus],
   NW_SCHEMA,
   slotsData,
 );
@@ -100,6 +128,15 @@ describe("itemSearchText", () => {
     // it still has to be findable -- searching for the stat is how you go looking for the set.
     expect(finds(ringWithSet, "crit_avoid")).toBe(true);
     expect(finds(ringWithSet, NW_SCHEMA.statByKey.crit_avoid.label)).toBe(true);
+  });
+
+  it("matches a dynamic stat on the item, its grant or its variant", () => {
+    expect(findsIn(dynamicRing, "stat", "acc")).toBe(true);
+    expect(findsIn(dynamicRing, "stat", NW_SCHEMA.statByKey.ca.label)).toBe(
+      true,
+    );
+    expect(findsIn(dynamicRing, "stat", "movement")).toBe(true);
+    expect(findsIn(plainRing, "stat", "movement")).toBe(false);
   });
 
   it("leaves the item's own name matchable, unchanged", () => {

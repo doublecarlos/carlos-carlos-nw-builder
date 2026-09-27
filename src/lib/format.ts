@@ -83,13 +83,20 @@ export const itemPreview = (
   item: Item | null | undefined,
   limit = 4,
   factor = 1,
-) =>
-  item
-    ? statParts(
-        (key) => (factor === 1 ? item[key] : scaledStat(item, key, factor)),
-        limit,
-      )
-    : { parts: [], more: 0 };
+) => {
+  if (!item) return { parts: [], more: 0 };
+  // A candidate has no typed value yet, so its dynamic stats preview at their defaults. The
+  // engine does not bolster-scale them, so neither does this.
+  const dynamic = new Map<StatKey, number>();
+  for (const config of item.dynamicStats ?? [])
+    dynamic.set(config.stat, (dynamic.get(config.stat) ?? 0) + config.default);
+  return statParts(
+    (key) =>
+      (factor === 1 ? Number(item[key]) || 0 : scaledStat(item, key, factor)) +
+      (dynamic.get(key) ?? 0),
+    limit,
+  );
+};
 
 /**
  * The bonus-derived stats a candidate item would add if it were slotted in -- same shape as

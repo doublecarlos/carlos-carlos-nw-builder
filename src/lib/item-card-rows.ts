@@ -101,15 +101,17 @@ export function withDynamicNotes(
   });
 }
 
-/** `stats` plus each config's default, the same merge bonus.ts applies when the payload is
- *  live, so an inactive preview shows a typed stat at its default. */
-function withDynamicDefaults(
+/** `stats` plus each config's value from `EvaluatedBonus.dynamicValues`, the same merge bonus.ts
+ *  applies when the payload is live, so an inactive preview shows what it would grant. */
+function withDynamicValues(
   stats: StatValues | undefined,
   configs: DynamicStatConfig[] | undefined,
+  values: Record<string, number>,
 ): StatValues {
   const merged: StatValues = { ...(stats ?? {}) };
   for (const config of configs ?? []) {
-    merged[config.stat] = (merged[config.stat] ?? 0) + config.default;
+    merged[config.stat] =
+      (merged[config.stat] ?? 0) + (values[config.stat] ?? config.default);
   }
   return merged;
 }
@@ -205,7 +207,11 @@ function tierLadderFor(grant: ResolvedGrant | null, slots: Slot[]) {
 
 // `variantBranches` explains every branch, not just the winner, so an unmatched one can
 // show why it didn't apply.
-function variantLadderFor(grant: ResolvedGrant | null, slots: Slot[]) {
+function variantLadderFor(
+  grant: ResolvedGrant | null,
+  slots: Slot[],
+  values: Record<string, number>,
+) {
   const variants = grant?.raw.variants;
   if (!variants?.length) return null;
   const activeIndex =
@@ -228,6 +234,7 @@ function variantLadderFor(grant: ResolvedGrant | null, slots: Slot[]) {
         grant!,
         slots,
         variant.dynamicStats,
+        values,
       ),
       active,
       unmet: branches[index]?.unmet ?? [],
@@ -244,12 +251,15 @@ function grantLabel(grant: ResolvedGrant) {
   return fromConditions || "always on";
 }
 
-// An inactive grant's near-miss preview: raw stats plus each dynamicStats config's default.
+// An inactive grant's near-miss preview: raw stats plus each dynamicStats config's value.
 // Null for tiers/variants, which preview through their own ladder helpers above.
-function previewStatsFor(raw: Grant): StatValues | null {
+function previewStatsFor(
+  raw: Grant,
+  values: Record<string, number>,
+): StatValues | null {
   if (raw.tiers || raw.variants) return null;
   if (!raw.stats && !raw.dynamicStats?.length) return null;
-  return withDynamicDefaults(raw.stats, raw.dynamicStats);
+  return withDynamicValues(raw.stats, raw.dynamicStats, values);
 }
 
 // Every line scaled and annotated: the effective value on the row, the real one and the
@@ -268,17 +278,18 @@ function scaledLines(
 // A ladder rung's lines, scaled like the flat grant's when the grant names a scaler. The live
 // rung reads the engine's own unscaled payload (which includes any typed dynamic stat) so its
 // number is exactly what the build was granted; an inactive rung previews each of its
-// `configs` at its default, as a flat grant does.
+// `configs` at its resolved value, as a flat grant does.
 function rungLines(
   stats: StatValues | undefined,
   active: boolean,
   grant: ResolvedGrant,
   slots: Slot[],
   configs?: DynamicStatConfig[],
+  values: Record<string, number> = {},
 ): StatLine[] {
   const scale = grant.scale;
   const live = active ? (scale?.unscaled ?? grant.stats) : null;
-  const unscaled = live ?? withDynamicDefaults(stats, configs);
+  const unscaled = live ?? withDynamicValues(stats, configs, values);
   const lines = scale
     ? scaledLines(unscaled, scale, slots)
     : statList(unscaled);
@@ -323,7 +334,9 @@ export function grantRows(entry: EvaluatedBonus, slots: Slot[] = []) {
   const stacks = entry.stacks ?? 1;
   const stacking = entry.bonus?.stacking === "perSource";
   return (entry.grants ?? []).map((grant, index) => {
-    const preview = grant.active ? null : previewStatsFor(grant.raw);
+    const preview = grant.active
+      ? null
+      : previewStatsFor(grant.raw, entry.dynamicValues);
     return {
       key: index,
       label: grantLabel(grant),
@@ -331,7 +344,7 @@ export function grantRows(entry: EvaluatedBonus, slots: Slot[] = []) {
       unmet: grant.gate?.unmet ?? [],
       problem: grant.problem,
       tiers: tierLadderFor(grant, slots),
-      variants: variantLadderFor(grant, slots),
+      variants: variantLadderFor(grant, slots, entry.dynamicValues),
       eachStack: stacking && preview != null,
       descriptions: grant.active
         ? descriptionParagraphs(

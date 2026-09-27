@@ -1049,6 +1049,9 @@ export interface EvaluatedBonus {
   chose: string | null;
   stats: StatValues | null;
   previewStats: StatValues | null;
+  /** stat -> what each of this bonus's grant/variant dynamic stats reads at `slotId`, typed or
+   *  defaulted. An inactive payload previews at these, as the live one would apply them. */
+  dynamicValues: Record<string, number>;
   grants: (GrantEvaluation & { raw: Grant })[];
   problems: GrantProblem[];
   stacks: number;
@@ -1110,9 +1113,9 @@ export interface EngineRow {
   choice: string | undefined;
   item: Item | null;
   stats: Record<StatKey, number>;
-  /** The item's own share of `stats`, and this row's share of the pipeline's `dynamicStatMods`,
-   * both already multiplied by `repetitions`. Sparse: only the keys the row contributes to.
-   * Kept so stat-sources.ts can attribute a total without recomputing either. */
+  /** The item's own fixed and dynamic shares of `stats`, both already multiplied by
+   * `repetitions`. Sparse: only the keys the row contributes to. Kept so stat-sources.ts can
+   * attribute a total without recomputing either. */
   itemStats: Record<string, number>;
   dynamicStats: Record<string, number>;
   /** Carried through from the row's `ResolvedRow`. `stats` above is already multiplied by it;

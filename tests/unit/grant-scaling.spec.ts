@@ -118,6 +118,18 @@ const gatedBonus: Bonus = {
     },
   ],
 };
+/** `gatedBonus` with a dynamic stat, so its preview has a typed value to carry. */
+const gatedDynamicBonus: Bonus = {
+  id: "gated-dynamic-scaled",
+  grants: [
+    {
+      when: { toggle: "combat" },
+      stats: { outgoing_damage: 0.15 },
+      dynamicStats: [{ stat: "power", min: 0, max: 1000, default: 250 }],
+      scaledBy: SCALER,
+    },
+  ],
+};
 const plainBonus: Bonus = {
   id: "plain",
   grants: [{ stats: { outgoing_damage: 0.15 } }],
@@ -139,6 +151,7 @@ const items: Item[] = [
   ring("dynamic-ring", ["dynamic-scaled"]),
   ring("stray-ring", ["stray-scaled"]),
   ring("gated-ring", ["gated-scaled"]),
+  ring("gated-dynamic-ring", ["gated-dynamic-scaled"]),
   ring("plain-ring", ["plain"]),
 ];
 
@@ -176,6 +189,7 @@ const testDb = db.build(
     dynamicBonus,
     strayBonus,
     gatedBonus,
+    gatedDynamicBonus,
     plainBonus,
   ],
   schema,
@@ -435,6 +449,17 @@ describe("GrantEvaluation.scale", () => {
       unscaled: null,
     });
     expect(entry.previewStats?.outgoing_damage).toBeCloseTo(0.06, 9);
+  });
+
+  it("previews an inactive grant's dynamic stats, typed value first", () => {
+    const build = buildWith({ "gear.ring1": "gated-dynamic-ring" }, share(0.4));
+    const preview = () =>
+      entryOf(build, "gated-dynamic-scaled").previewStats ?? {};
+    expect(preview().power).toBeCloseTo(100, 9);
+
+    build.values = { "gear.ring1": { "gated-dynamic-scaled:power": 500 } };
+    expect(preview().power).toBeCloseTo(200, 9);
+    expect(preview().outgoing_damage).toBeCloseTo(0.06, 9);
   });
 });
 

@@ -47,6 +47,23 @@ describe("itemPreview", () => {
     });
   });
 
+  it("adds each dynamic stat at its default, unscaled", () => {
+    const item: Item = {
+      id: "i1",
+      name: "Test Item",
+      power: 100,
+      acc: 10,
+      dynamicStats: [
+        { stat: "power", min: 0, max: 1000, default: 50 },
+        { stat: "ca", min: 0, max: 1000, default: 40 },
+      ],
+    };
+    expect(itemPreview(item, 4, 2)).toEqual({
+      parts: ["Power +250", "Acc +20", "CA +40"],
+      more: 0,
+    });
+  });
+
   it("returns an empty preview for a null/undefined item", () => {
     expect(itemPreview(null)).toEqual({ parts: [], more: 0 });
     expect(itemPreview(undefined)).toEqual({ parts: [], more: 0 });

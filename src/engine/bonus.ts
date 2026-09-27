@@ -672,11 +672,16 @@ export function evaluateBonus(
       results[0],
     );
     gate = best?.gate ?? gate;
-    // Only a flat grant has a raw `.stats` to preview; scaled like its live payload would be,
-    // so the preview does not promise the catalog's full value.
-    previewStats = best?.raw.stats
-      ? scaledStats(best.raw.stats, best.scale)
-      : null;
+    // Only a flat grant has a raw payload to preview, dynamic stats included; scaled like its
+    // live payload would be, so the preview does not promise the catalog's full value.
+    const raw = best?.raw;
+    previewStats =
+      raw && (raw.stats || raw.dynamicStats?.length)
+        ? scaledStats(
+            withDynamicStats(raw.stats ?? {}, raw.dynamicStats, dynamicValues),
+            best.scale,
+          )
+        : null;
   }
 
   return {
@@ -824,6 +829,7 @@ export function resolve(
       chose: result.chose,
       stats: result.stats,
       previewStats: result.previewStats,
+      dynamicValues,
       grants: result.grants,
       problems: result.problems,
       stacks,

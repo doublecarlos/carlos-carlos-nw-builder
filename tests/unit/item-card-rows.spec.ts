@@ -32,6 +32,7 @@ const bonus = (over: Partial<EvaluatedBonus> = {}): EvaluatedBonus =>
     chose: null,
     stats: null,
     previewStats: null,
+    dynamicValues: {},
     grants: [],
     problems: [],
     stacks: 1,
@@ -429,6 +430,41 @@ describe("itemCardRows", () => {
       typedLine("combined_rating", 25, config),
     ]);
     expect(row.grants[0].eachStack).toBe(true);
+  });
+
+  it("previews an inactive grant and variant rung at the bonus's typed values", () => {
+    const config: DynamicStatConfig = {
+      stat: "power",
+      min: 0,
+      max: 1000,
+      default: 500,
+    };
+    const flat: Grant = { stats: { defense: 5 }, dynamicStats: [config] };
+    const variant: Grant = {
+      variants: [{ stats: { defense: 15 }, dynamicStats: [config] }],
+    };
+    const [row] = itemCardRows(
+      item(),
+      [
+        bonus({
+          active: false,
+          dynamicValues: { power: 800 },
+          grants: [
+            grantEval(flat, { active: false, stats: null }),
+            grantEval(variant, { active: false, stats: null }),
+          ],
+        }),
+      ],
+      [],
+    );
+    expect(row.grants[0].stats).toEqual([
+      line("defense", 5),
+      typedLine("power", 800, config),
+    ]);
+    expect(row.grants[1].variants?.[0].stats).toEqual([
+      line("defense", 15),
+      typedLine("power", 800, config),
+    ]);
   });
 
   it("notes the range on an active grant's typed stat, merged with its fixed share", () => {

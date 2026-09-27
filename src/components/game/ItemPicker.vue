@@ -435,7 +435,10 @@ defineExpose({
           class="flex flex-col gap-0.5"
           :class="option.group ? 'pl-5' : 'pl-2'"
         >
-          <div class="flex flex-wrap gap-2 text-text">
+          <div
+            data-testid="picker-option-preview"
+            class="flex flex-wrap gap-2 text-text"
+          >
             <span
               v-for="part in matchMap.get(option.value)?.preview?.parts ?? []"
               :key="part"

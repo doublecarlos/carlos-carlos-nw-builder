@@ -13,7 +13,6 @@ export const IGNORED_STATS = new Set([
 // Stages the sheet exposes and the engine reproduces, by name.
 export const STAGES = [
   "sums",
-  "afterDynamicStatMods",
   "afterCombinedRating",
   "afterRatingPct",
   "contributions",
@@ -28,6 +27,10 @@ const close = (a: number, b: number, tolerance: number) => {
   if (!Number.isFinite(a) || !Number.isFinite(b)) return false;
   return Math.abs(a - b) <= tolerance * Math.max(Math.abs(a), Math.abs(b), 1);
 };
+
+/** The sheet adds item dynamic stats in a stage of its own after `sums`. The engine sums them
+ *  with every other row stat, so its `sums` is the sheet's `afterDynamicStatMods`. */
+const SHEET_STAGE: Record<string, string> = { sums: "afterDynamicStatMods" };
 
 /**
  * The sheet stores one signed number where the new engine keeps two fields: `overcap` is
@@ -64,7 +67,7 @@ export function compareFixture(
   const result = engine.resolveBuild(db, fixture.build);
 
   for (const stage of STAGES) {
-    const want = fixture.expected.stages[stage];
+    const want = fixture.expected.stages[SHEET_STAGE[stage] ?? stage];
     if (!want) continue;
     for (const [stat, expected] of Object.entries(want)) {
       if (IGNORED_STATS.has(stat)) continue;

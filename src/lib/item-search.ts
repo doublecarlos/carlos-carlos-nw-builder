@@ -14,7 +14,15 @@
 // Matching itself stays in text-filter.ts -- this only assembles the haystack.
 
 import { slotLine } from "../engine/insignia";
-import type { Bonus, Db, Item, Schema, StatKey, StatValues } from "../types";
+import type {
+  Bonus,
+  Db,
+  DynamicStatConfig,
+  Item,
+  Schema,
+  StatKey,
+  StatValues,
+} from "../types";
 
 /** Every way a user might name one stat: its schema label, its short form, and the raw key
  *  (which is what shows up in exported/imported data, so it is worth matching too). */
@@ -36,12 +44,24 @@ const pushStatValues = (
   }
 };
 
+/** A dynamic stat is searchable whatever its typed value, since it is on offer either way. */
+const pushDynamicStats = (
+  schema: Schema,
+  configs: DynamicStatConfig[] | undefined,
+  out: string[],
+) => {
+  for (const config of configs ?? []) pushStatTerms(schema, config.stat, out);
+};
+
 /** Every payload shape is walked, because which one applies is a runtime question. */
 const pushBonusStats = (schema: Schema, bonus: Bonus, out: string[]) => {
   for (const grant of bonus.grants ?? []) {
     pushStatValues(schema, grant.stats, out);
-    for (const variant of grant.variants ?? [])
+    pushDynamicStats(schema, grant.dynamicStats, out);
+    for (const variant of grant.variants ?? []) {
       pushStatValues(schema, variant.stats, out);
+      pushDynamicStats(schema, variant.dynamicStats, out);
+    }
     for (const tier of grant.tiers ?? [])
       pushStatValues(schema, tier.stats, out);
   }
@@ -89,6 +109,7 @@ export function itemSearchText(db: Db, item: Item): ItemSearchText {
     if (!item[key]) continue;
     pushStatTerms(db.schema, key, stat);
   }
+  pushDynamicStats(db.schema, item.dynamicStats, stat);
   for (const candidate of db.bonusesFor(item)) {
     pushBonusStats(db.schema, candidate.bonus, stat);
     pushBonusNames(candidate.bonus, bonus);
