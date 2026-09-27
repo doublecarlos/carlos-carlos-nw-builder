@@ -154,6 +154,17 @@ const filterText = slotFilter.text;
 const filterStat = slotFilter.stat;
 const filterActive = slotFilter.isActive;
 
+/** "Only show changes" narrows the list like a filter, so the bar reports it and clears it too. */
+const onlyDiffActive = computed(() => onlyDiff.value && !!compareBuild.value);
+const anyFilterActive = computed(
+  () => filterActive.value || onlyDiffActive.value,
+);
+
+function clearAllFilters() {
+  slotFilter.clear();
+  compare.setCompareFlag("onlyDiff", false);
+}
+
 const pickerOptionItems = computed(() =>
   pickerLens.OPTIONS.map((option) => ({
     key: option.key,
@@ -388,7 +399,6 @@ const allSlotsBySection = computed(() =>
 );
 
 const sections = computed<SectionRow[]>(() => {
-  const onlyDiffAndComparing = onlyDiff.value && compareBuild.value;
   return allSlotsBySection.value
     .map(({ section, slots: allSlots }) => {
       // Counted off the section's full slotDef list, not the (possibly onlyDiff/filter-
@@ -396,7 +406,7 @@ const sections = computed<SectionRow[]>(() => {
       // `slots` would otherwise be invisible. Same reasoning for `unsaved`.
       const diffs = compareBuild.value ? allSlots.filter(rowDiffers).length : 0;
       const slots = allSlots.filter((slotDef) => {
-        if (onlyDiffAndComparing && !rowDiffers(slotDef)) return false;
+        if (onlyDiffActive.value && !rowDiffers(slotDef)) return false;
         if (filterActive.value && !slotMatchesFilters(section, slotDef))
           return false;
         return true;
@@ -450,11 +460,7 @@ const sections = computed<SectionRow[]>(() => {
         ),
       };
     })
-    .filter(
-      (section) =>
-        section.slots.length > 0 ||
-        (!onlyDiffAndComparing && !filterActive.value),
-    );
+    .filter((section) => section.slots.length > 0 || !anyFilterActive.value);
 });
 
 /** Total rendered slots across every visible section, for the "N matches" indicator next to
@@ -959,9 +965,9 @@ watch(
           @update:model-value="(v) => (filterStat = v)"
         />
         <BaseButton
-          :disabled="!filterActive"
+          :disabled="!anyFilterActive"
           data-testid="slot-filter-clear"
-          @click="slotFilter.clear()"
+          @click="clearAllFilters"
           ><FilterX />clear filters</BaseButton
         >
         <!-- The need filter has no control of its own here (it is set from the Bonuses tab
@@ -979,6 +985,22 @@ watch(
             aria-label="Clear the supply filter"
             data-testid="slot-filter-need-clear"
             @click="slotFilter.clearNeed()"
+          >
+            ✕
+          </button>
+        </BaseBadge>
+        <BaseBadge
+          v-if="onlyDiffActive"
+          variant="near"
+          data-testid="slot-filter-only-diff"
+        >
+          only changes vs {{ compareBuild?.name }}
+          <button
+            type="button"
+            class="ml-1 cursor-pointer font-semibold"
+            aria-label="Show all slots again"
+            data-testid="slot-filter-only-diff-clear"
+            @click="compare.setCompareFlag('onlyDiff', false)"
           >
             ✕
           </button>
@@ -1002,7 +1024,7 @@ watch(
           </button>
         </BaseBadge>
         <BaseBadge
-          v-if="filterActive"
+          v-if="anyFilterActive"
           variant="near"
           data-testid="slot-filter-count"
           >{{ filteredSlotCount }} match{{
