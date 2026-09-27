@@ -614,7 +614,7 @@ export function evaluateBonus(
   // of what its own `when` resolves to -- there is nothing occurring to grant it for. Not just
   // the bonus-level `active` below: an unconditional grant (no `when` at all, e.g. Shattered
   // Resolve's flat per-stack payload) would otherwise stay `active: true` on its own, and some
-  // consumers (ItemCard.vue, useDynamicStats.ts) read each grant's own `.active` directly rather
+  // consumers (ItemCard.vue, useSlotInputs.ts) read each grant's own `.active` directly rather
   // than the bonus-level one. `gate`/`raw` stay real either way, for the near-miss branch.
   const results = hasSources
     ? evaluated

@@ -17,6 +17,7 @@ import BonusOccurrenceInputs from "./BonusOccurrenceInputs.vue";
 import BuildParamInput from "./BuildParamInput.vue";
 import ItemPicker from "./ItemPicker.vue";
 import PointAssignmentInput from "./PointAssignmentInput.vue";
+import StatValueInput from "./StatValueInput.vue";
 import ComboBox from "../ui/ComboBox.vue";
 import IconButton from "../ui/IconButton.vue";
 import BaseInput from "../ui/BaseInput.vue";
@@ -30,6 +31,7 @@ import { useEditorDraft } from "../../composables/useEditorDraft";
 import { occurrenceRows } from "../../composables/useItemBonusOccurrences";
 import { parseRowSlotId, rowSlot } from "../../lib/item-picker-list";
 import {
+  bonusStatGroups,
   buildDraft,
   toPreset,
   diffLabel,
@@ -134,6 +136,25 @@ function setOccurrence(itemId: string, bonusId: string, count: number) {
   };
 }
 
+/** Settings for every bonus the rows' items carry, stored once per bonus like the build's. */
+const bonusGroups = computed(() => bonusStatGroups(draft.value, props.db));
+
+function bonusStat(bonusId: string, stat: string) {
+  return draft.value.bonusValues[bonusId]?.stat[stat] ?? "";
+}
+
+function setBonusStat(
+  bonusId: string,
+  stat: string,
+  value: number | string | null,
+) {
+  const current = draft.value.bonusValues[bonusId] ?? { stat: {}, input: {} };
+  draft.value.bonusValues[bonusId] = {
+    ...current,
+    stat: { ...current.stat, [stat]: value },
+  };
+}
+
 // --- Common ---------------------------------------------------------------------------
 
 const sectionOptions = computed(() =>
@@ -231,6 +252,7 @@ function chooseSection(section: string) {
   draft.value.assignmentRows = [];
   draft.value.clearRows = [];
   draft.value.occurrences = {};
+  draft.value.bonusValues = {};
 }
 
 function addParamRow() {
@@ -442,15 +464,55 @@ function save() {
           v-if="assignmentSlotDef(row.slotId)"
           :slot-def="assignmentSlotDef(row.slotId)!"
           :values="row.counts"
-          :occurrence-values="draft.occurrences"
           @change="
             (itemId, count) => (row.counts = { ...row.counts, [itemId]: count })
           "
-          @occurrence-change="
-            (itemId, bonusId, count) => setOccurrence(itemId, bonusId, count)
-          "
-        />
+        >
+          <template #item="{ item }">
+            <div
+              v-if="occurrenceRowsFor(item.id).length"
+              class="flex flex-wrap items-center justify-center gap-2"
+            >
+              <BonusOccurrenceInputs
+                :rows="occurrenceRowsFor(item.id)"
+                :testid-prefix="`assignment-occurrence-${item.id}`"
+                @change="
+                  (bonusId, count) => setOccurrence(item.id, bonusId, count)
+                "
+              />
+            </div>
+          </template>
+        </PointAssignmentInput>
       </div>
+
+      <template v-if="bonusGroups.length">
+        <FormSection>Bonus settings</FormSection>
+        <FormSectionDescription>
+          Dynamic stats of the bonuses these items carry, set once per bonus.
+        </FormSectionDescription>
+        <FormGrid
+          v-for="group in bonusGroups"
+          :key="group.bonusId"
+          class="mb-1"
+          data-testid="preset-bonus-settings"
+        >
+          <FormField
+            v-for="config in group.configs"
+            :key="config.stat"
+            :label="`${group.name}: ${config.label ?? config.stat}`"
+          >
+            <StatValueInput
+              class="w-24"
+              :stat-key="config.stat"
+              :data-testid="`preset-bonus-stat-${group.bonusId}-${config.stat}`"
+              :model-value="bonusStat(group.bonusId, config.stat)"
+              @update:model-value="
+                setBonusStat(group.bonusId, config.stat, $event)
+              "
+            />
+          </FormField>
+        </FormGrid>
+      </template>
       <FormSection
         >Cleared slots
         <IconButton

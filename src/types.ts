@@ -304,7 +304,7 @@ export interface SectionPreset {
    * scoped by the section's slot ids, and `clears` leaves it alone. */
   bonusValues?: Record<string, BonusValues>;
   /** `point_assignment` slots -- slot id to `{ itemId: count }`, merged into the existing row
-   * rather than replacing it (matches `setAssignment`'s own per-item merge). */
+   * rather than replacing it, one count at a time like the build editor's steppers. */
   assignments?: Record<string, Record<string, number>>;
   /** Each item's `BonusOccurrenceConfig` count(s), item id then bonus id -- keyed by item, not
    * by slot, because `Build.occurrenceInputs` (the field this writes into) is itself per-item:
@@ -542,11 +542,11 @@ export interface InlineRepetitionConfig extends BoundedValueConfig {
  * identical as either one grows. */
 export interface BonusOccurrenceConfig extends BoundedValueConfig {
   bonus: string; // Bonus.id
-  /** Overrides the bonus's own `name` for this attachment's row only -- the checkbox/stepper
-   *  `useItemBonusOccurrences.ts` builds for the build editor, and the matching compare-diff
-   *  title in `useCompareDiff.ts`. Everywhere else (bonus lists, hover cards, etc.) still shows
-   *  the bonus's real name; this only reads differently on this one item's own input, e.g. a
-   *  bonus named for its overall effect whose per-item stepper should read "Stacks" instead. */
+  /** Overrides the bonus's own `name` for this attachment's row only: the checkbox/stepper
+   *  the build editor shows, and its compare-diff note. Everywhere else (bonus lists, hover
+   *  cards, etc.) still shows the bonus's real name; this only reads differently on this one
+   *  item's own input, e.g. a bonus named for its overall effect whose per-item stepper should
+   *  read "Stacks" instead. */
   label?: string;
 }
 

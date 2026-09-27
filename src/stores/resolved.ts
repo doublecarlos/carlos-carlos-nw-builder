@@ -3,6 +3,7 @@
 import { computed, markRaw } from "vue";
 import * as catalog from "../data/catalog";
 import * as engine from "../engine/engine";
+import { inputEntries, type InputEntry } from "../engine/inputs";
 import { inspectorBonuses, isNearMiss } from "../lib/bonus-inspector";
 import * as builds from "./builds";
 import * as layers from "./layers";
@@ -98,4 +99,13 @@ export const bonusCounts = computed(() => {
     active: all.filter((bonus) => bonus.active).length,
     nearMiss: all.filter(isNearMiss).length,
   };
+});
+
+/** Every typed value the active build declares, active or not (engine/inputs.ts). Empty while
+ * the build fails to resolve. */
+export const inputs = computed<InputEntry[]>(() => {
+  const b = builds.build.value;
+  return b && resolved.value.ok
+    ? inputEntries(db.value, b, resolved.value.result)
+    : [];
 });

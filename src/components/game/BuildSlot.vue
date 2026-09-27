@@ -76,13 +76,9 @@ const choiceDiffers = computed(() => props.diff?.choice);
 const toggleDiffers = computed(() => props.diff?.disabled);
 const otherChoiceLabel = computed(() => props.diff?.otherChoiceLabel);
 const bonusDiffs = computed(() => props.diff?.bonuses);
-const valueDiffs = computed(() => props.diff?.values ?? []);
-const occurrenceDiffers = computed(() => props.diff?.occurrence);
-const otherOccurrenceLabel = computed(() => props.diff?.otherOccurrenceLabel);
+const inputDiffs = computed(() => props.diff?.inputs ?? []);
 const paramDiffers = computed(() => props.diff?.param);
 const otherParamLabel = computed(() => props.diff?.otherParamLabel);
-const assignmentDiffers = computed(() => props.diff?.assignment);
-const otherAssignmentLabel = computed(() => props.diff?.otherAssignmentLabel);
 
 const emit = defineEmits<{
   /** `itemId` is set only for a point_assignment row's per-item hover target
@@ -188,10 +184,8 @@ useCursorRowKeys(anchor, {
       isHovered && 'is-hovered bg-accent-soft/40',
       highlightDiff &&
         (choiceDiffers ||
-          (valueDiffs?.length ?? 0) > 0 ||
-          occurrenceDiffers ||
+          inputDiffs.length > 0 ||
           paramDiffers ||
-          assignmentDiffers ||
           toggleDiffers ||
           (bonusDiffs?.length ?? 0) > 0) &&
         'is-diff bg-diff/20',
@@ -272,11 +266,7 @@ useCursorRowKeys(anchor, {
           :choice-differs="choiceDiffers"
           :other-choice-label="otherChoiceLabel"
           :bonus-diffs="bonusDiffs"
-          :value-diffs="valueDiffs"
-          :occurrence-differs="occurrenceDiffers"
-          :other-occurrence-label="otherOccurrenceLabel"
-          :assignment-differs="assignmentDiffers"
-          :other-assignment-label="otherAssignmentLabel"
+          :input-diffs="inputDiffs"
         />
       </div>
       <PointAssignmentRow
@@ -286,8 +276,7 @@ useCursorRowKeys(anchor, {
         :build="build"
         :compare-build="compareBuild"
         :highlight-diff="highlightDiff"
-        :assignment-differs="assignmentDiffers"
-        :other-assignment-label="otherAssignmentLabel"
+        :input-diffs="inputDiffs"
         @item-enter="(event, itemId) => emit('enter', event, itemId)"
         @item-leave="emit('leave')"
       />

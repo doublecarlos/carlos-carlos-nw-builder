@@ -1,8 +1,10 @@
 // Every typed per-build value a build declares, one descriptor per mechanism. The range check
 // reads this table, so a new kind of value gets its errors by adding an entry.
 import {
+  assignmentAddress,
   bonusStatAddress,
   itemStatAddress,
+  occurrenceAddress,
   readInput,
 } from "../lib/build-inputs";
 import {
@@ -15,16 +17,26 @@ import {
 } from "../lib/format";
 import { repetitionRows } from "../lib/inline-repetition";
 import type {
+  Bonus,
   BoundedValueConfig,
   Build,
   BuildParameterSlot,
   Db,
   DynamicStatConfig,
   EngineError,
+  EvaluatedBonus,
   InputAddress,
   InputSpec,
-  ResolvedBonuses,
+  Item,
+  ResolvedRow,
 } from "../types";
+
+/** What the table reads off a resolution: the engine's `ResolvedBonuses` and the UI's
+ * `ResolvedBuild` both fit. */
+export interface InputSource {
+  rows: readonly Pick<ResolvedRow, "slotId" | "slot" | "item">[];
+  bonuses: readonly EvaluatedBonus[];
+}
 
 export type InputKindId =
   "itemDynamic" | "bonusDynamic" | "occurrence" | "repetition";
@@ -45,7 +57,7 @@ export interface InputEntry {
 export interface InputKind {
   id: InputKindId;
   /** Every declared value this kind has on the build, active or not. */
-  entries(db: Db, build: Build, resolved: ResolvedBonuses): InputEntry[];
+  entries(db: Db, build: Build, resolved: InputSource): InputEntry[];
 }
 
 /** A dynamic stat's spec: percent units for a percent/mult stat. */
@@ -108,60 +120,68 @@ const itemDynamic: InputKind = {
     ),
 };
 
-/** One entry per bonus and stat: every grant and variant of a bonus naming one stat shares
- * its stored value. */
+/** Every dynamic stat a bonus's grants and variants declare, the first config per stat.
+ * Configs naming one stat share its stored value. */
+export function bonusStatConfigs(bonus: Bonus): DynamicStatConfig[] {
+  const out = new Map<string, DynamicStatConfig>();
+  for (const grant of bonus.grants ?? []) {
+    const configs = [
+      ...(grant.dynamicStats ?? []),
+      ...(grant.variants ?? []).flatMap(
+        (variant) => variant.dynamicStats ?? [],
+      ),
+    ];
+    for (const config of configs)
+      if (!out.has(config.stat)) out.set(config.stat, config);
+  }
+  return [...out.values()];
+}
+
 const bonusDynamic: InputKind = {
   id: "bonusDynamic",
-  entries: (_db, build, resolved) => {
-    const out = new Map<string, InputEntry>();
-    for (const entry of resolved.bonuses) {
-      const configs = entry.grants.flatMap((grant) => [
-        ...(grant.raw.dynamicStats ?? []),
-        ...(grant.raw.variants ?? []).flatMap(
-          (variant) => variant.dynamicStats ?? [],
-        ),
-      ]);
-      for (const config of configs) {
-        const key = `${entry.bonusId}:${config.stat}`;
-        if (out.has(key)) continue;
+  entries: (_db, build, resolved) =>
+    resolved.bonuses.flatMap((entry) =>
+      bonusStatConfigs(entry.bonus).map((config) => {
         const address = bonusStatAddress(entry.bonusId, config.stat);
-        out.set(key, {
-          kind: "bonusDynamic",
+        return {
+          kind: "bonusDynamic" as const,
           address,
           spec: statSpec(config),
           value: readInput(build, address, config.default),
           slotId: entry.slotId,
           source: entry.bonus.name ?? entry.bonusId,
-        });
-      }
-    }
-    return [...out.values()];
-  },
+        };
+      }),
+    ),
 };
+
+/** The items a row holds: its pick, or every candidate of a `point_assignment` slot. */
+function rowItems(db: Db, row: InputSource["rows"][number]): Item[] {
+  if (row.slot.type === "point_assignment") return db.forSlot(row.slotId);
+  return row.item ? [row.item] : [];
+}
 
 const occurrence: InputKind = {
   id: "occurrence",
   entries: (db, build, resolved) =>
     resolved.rows.flatMap((row) =>
-      (row.item?.bonuses ?? []).flatMap((attachment) => {
-        if (typeof attachment === "string") return [];
-        const address: InputAddress = {
-          store: "occurrenceInputs",
-          itemId: row.item!.id,
-          bonusId: attachment.bonus,
-        };
-        const bonus = db.bonusById.get(attachment.bonus);
-        return [
-          {
-            kind: "occurrence" as const,
-            address,
-            spec: countSpec(attachment, bonus?.name ?? attachment.bonus),
-            value: readInput(build, address, attachment.default),
-            slotId: row.slotId,
-            source: row.item!.name,
-          },
-        ];
-      }),
+      rowItems(db, row).flatMap((item) =>
+        (item.bonuses ?? []).flatMap((attachment) => {
+          if (typeof attachment === "string") return [];
+          const address = occurrenceAddress(item.id, attachment.bonus);
+          const bonus = db.bonusById.get(attachment.bonus);
+          return [
+            {
+              kind: "occurrence" as const,
+              address,
+              spec: countSpec(attachment, bonus?.name ?? attachment.bonus),
+              value: readInput(build, address, attachment.default),
+              slotId: row.slotId,
+              source: item.name,
+            },
+          ];
+        }),
+      ),
     ),
 };
 
@@ -176,11 +196,7 @@ const repetition: InputKind = {
         return [];
       return repetitionRows(db, build, slot).map((item) => {
         const config = item.inlineRepetition!;
-        const address: InputAddress = {
-          store: "assignments",
-          slotId: row.slotId,
-          itemId: item.id,
-        };
+        const address = assignmentAddress(row.slotId, item.id);
         const spec = countSpec(
           config,
           slot.type === "point_assignment" ? item.name : "Copies",
@@ -198,10 +214,11 @@ const repetition: InputKind = {
     }),
 };
 
+/** In the order a row shows them: counts before typed stats. */
 export const INPUT_KINDS: InputKind[] = [
-  itemDynamic,
   repetition,
   occurrence,
+  itemDynamic,
   bonusDynamic,
 ];
 
@@ -209,7 +226,7 @@ export const INPUT_KINDS: InputKind[] = [
 export function inputEntries(
   db: Db,
   build: Build,
-  resolved: ResolvedBonuses,
+  resolved: InputSource,
 ): InputEntry[] {
   return INPUT_KINDS.flatMap((kind) => kind.entries(db, build, resolved));
 }
@@ -245,7 +262,7 @@ export function rangeError(
 export function inputRanges(
   db: Db,
   build: Build,
-  resolved: ResolvedBonuses,
+  resolved: InputSource,
 ): EngineError[] {
   return inputEntries(db, build, resolved).flatMap(
     (entry) =>

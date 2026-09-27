@@ -1,6 +1,6 @@
 // Every mutation that writes the active build's *content* goes through here, and every one of
 // them snapshots before mutating -- the history store owns the undo stack.
-import { computed, watch } from "vue";
+import { computed, toRaw, watch } from "vue";
 import * as storage from "../storage/storage";
 import * as builds from "./builds";
 import * as compare from "./compare";
@@ -39,6 +39,7 @@ import {
   writeInput,
 } from "../lib/build-inputs";
 import type {
+  BonusValues,
   Build,
   BuildParameterSlot,
   InputAddress,
@@ -187,28 +188,46 @@ export function removeListRow(rowId: string) {
 
 /** Names the value at `address` in an undo label. */
 function inputLabel(address: InputAddress): string {
-  if (address.store === "values")
-    return `${slotLabel(address.slotId)} ${address.key}`;
-  if (address.store === "bonusValues") {
-    const bonus = db.value.bonusById.get(address.bonusId);
-    return `${bonus?.name ?? address.bonusId} ${address.key}`;
+  const itemName = (id: string) => db.value.get(id)?.name ?? id;
+  const bonusName = (id: string) => db.value.bonusById.get(id)?.name ?? id;
+  switch (address.store) {
+    case "values":
+      return `${slotLabel(address.slotId)} ${address.key}`;
+    case "bonusValues":
+      return `${bonusName(address.bonusId)} ${address.key}`;
+    case "occurrenceInputs":
+      return `${itemName(address.itemId)} ${bonusName(address.bonusId)}`;
+    case "assignments":
+      return `${slotLabel(address.slotId)} ${itemName(address.itemId)}`;
+    case "context":
+      return address.path;
   }
-  return inputKey(address);
 }
 
-/** Sets one dynamic-stat value. An empty `raw` clears it back to its default. */
-export function setDynamicValue(address: InputAddress, raw: string) {
+/** A typed value as an undo label shows it. */
+function shownValue(value: number | boolean | null) {
+  if (value === null) return "(none)";
+  if (typeof value === "boolean") return value ? "on" : "off";
+  return String(value);
+}
+
+/** Sets one typed value. `null` clears it back to its default. `label` names the value in the
+ *  undo entry, as the control showing it does. */
+export function setInput(
+  address: InputAddress,
+  value: number | boolean | null,
+  label = inputLabel(address),
+) {
   const b = builds.build.value;
   if (!b) return;
-  const cleared = raw === "" || raw == null;
   history.snapshot(
     "build",
     b.id,
     inputKey(address),
-    `${inputLabel(address)} → ${cleared ? "(none)" : raw}`,
+    `${label} → ${shownValue(value)}`,
     b,
   );
-  writeInput(b, address, cleared ? null : Number(raw));
+  writeInput(b, address, value);
 }
 
 /** Takes one `toggleable` slot's pick out of the calculation, or puts it back, leaving the
@@ -247,8 +266,9 @@ export function applyFromCompare(slotId: string) {
   copySlotData(b, other, slotId);
 }
 
-/** Copies one dynamic-stat value from the compare build. */
-export function applyValueFromCompare(address: InputAddress) {
+/** Copies one typed value from the compare build, clearing it when the compare build stores
+ *  none. */
+export function applyInputFromCompare(address: InputAddress) {
   const other = compare.compareBuild.value;
   if (!other) return;
   const b = builds.build.value;
@@ -258,7 +278,7 @@ export function applyValueFromCompare(address: InputAddress) {
     "build",
     b.id,
     inputKey(address),
-    `${inputLabel(address)} → ${value ?? "(none)"} (from "${other.name}")`,
+    `${inputLabel(address)} → ${shownValue(value)} (from "${other.name}")`,
     b,
   );
   writeInput(b, address, value);
@@ -374,27 +394,6 @@ export function applyRetiredItem(slotId: string) {
   builds.replaceActive(migrateSlotItem(db.value, b, slotId));
 }
 
-/** One item's inline-repetition count at one slot. One function for both slot types, since
- *  `Build.assignments` stores them identically -- only their item lists differ. */
-export function setAssignment(
-  slot: PointAssignmentSlot | ItemPickerSlot,
-  itemId: string,
-  count: number,
-) {
-  const b = builds.build.value;
-  if (!b) return;
-  const item = db.value.get(itemId);
-  const label = item?.inlineRepetition?.label ?? item?.name ?? itemId;
-  history.snapshot(
-    "build",
-    b.id,
-    `assignment:${slot.id}:${itemId}`,
-    `${slot.label} ${label} → ${count}`,
-    b,
-  );
-  b.assignments[slot.id] = { ...b.assignments[slot.id], [itemId]: count };
-}
-
 export function resetAssignmentsToDefault(
   slot: PointAssignmentSlot | ItemPickerSlot,
 ) {
@@ -411,82 +410,6 @@ export function resetAssignmentsToDefault(
   for (const item of repetitionRows(db.value, b, slot))
     reset[item.id] = item.inlineRepetition!.default;
   b.assignments[slot.id] = reset;
-}
-
-export function applyAssignmentsFromCompare(
-  slot: PointAssignmentSlot | ItemPickerSlot,
-) {
-  const other = compare.compareBuild.value;
-  if (!other) return;
-  const b = builds.build.value;
-  if (!b) return;
-  history.snapshot(
-    "build",
-    b.id,
-    `assignment:${slot.id}`,
-    `${slot.label} → values from "${other.name}"`,
-    b,
-  );
-  const applied: Record<string, number> = {};
-  // Rows come from *this* build: an item_picker's counts only apply while both builds hold
-  // the same pick (`assignmentDiffers`), so every row here exists on the other side too.
-  for (const item of repetitionRows(db.value, b, slot)) {
-    applied[item.id] =
-      other.assignments?.[slot.id]?.[item.id] ?? item.inlineRepetition!.default;
-  }
-  b.assignments[slot.id] = applied;
-}
-
-/**
- * Sets one item's typed occurrence count for one BonusOccurrenceConfig attachment -- `label`
- * is the row's own description of what it's setting (already resolved by the caller, which has
- * the bonus name this store doesn't).
- */
-export function setOccurrenceInput(
-  itemId: string,
-  bonusId: string,
-  count: number,
-  label: string,
-) {
-  const b = builds.build.value;
-  if (!b) return;
-  history.snapshot(
-    "build",
-    b.id,
-    `occurrence:${itemId}:${bonusId}`,
-    `${label} → ${count}`,
-    b,
-  );
-  b.occurrenceInputs = {
-    ...b.occurrenceInputs,
-    [itemId]: { ...b.occurrenceInputs[itemId], [bonusId]: count },
-  };
-}
-
-/** Copies every one of this item's BonusOccurrenceConfig counts from the compare build --
- *  the occurrence counterpart to `applyAssignmentsFromCompare`. */
-export function applyOccurrenceFromCompare(itemId: string) {
-  const other = compare.compareBuild.value;
-  if (!other) return;
-  const b = builds.build.value;
-  if (!b) return;
-  const item = db.value.get(itemId);
-  if (!item) return;
-  const there = other.occurrenceInputs?.[itemId] ?? {};
-  const applied: Record<string, number> = {};
-  for (const attachment of item.bonuses ?? []) {
-    if (typeof attachment === "string" || attachment.min === attachment.max)
-      continue;
-    applied[attachment.bonus] = there[attachment.bonus] ?? attachment.default;
-  }
-  history.snapshot(
-    "build",
-    b.id,
-    `occurrence:${itemId}`,
-    `${item.name} occurrences → values from "${other.name}"`,
-    b,
-  );
-  b.occurrenceInputs = { ...b.occurrenceInputs, [itemId]: applied };
 }
 
 /** A workspace operation rather than a content edit, so it lands on the nav undo stack. */
@@ -719,14 +642,20 @@ export function presetFromSection(
   const values: Record<string, SlotValues> = {};
   const assignments: Record<string, Record<string, number>> = {};
   const occurrences: Record<string, Record<string, number>> = {};
+  const bonusValues: Record<string, BonusValues> = {};
   const clears: string[] = [];
 
-  /** An item the snapshot references carries its own occurrence counts along -- those are
-   *  per-item state (see `SectionPreset.occurrences`), so they'd otherwise be lost. */
-  function carryOccurrences(itemId: string) {
+  /** An item the snapshot references carries its occurrence counts and its bonuses' settings
+   *  along. Neither is stored per slot, so they'd otherwise be lost. */
+  function carryItemState(itemId: string) {
     const counts = b!.occurrenceInputs[itemId];
     if (counts && Object.keys(counts).length)
       occurrences[itemId] = { ...counts };
+    const item = db.value.get(itemId);
+    for (const { bonus } of item ? db.value.bonusesFor(item) : []) {
+      const settings = b!.bonusValues[bonus.id];
+      if (settings) bonusValues[bonus.id] = structuredClone(toRaw(settings));
+    }
   }
 
   for (const slot of buildSlots()) {
@@ -748,7 +677,7 @@ export function presetFromSection(
         continue;
       }
       assignments[slot.id] = { ...row };
-      for (const itemId of Object.keys(row)) carryOccurrences(itemId);
+      for (const itemId of Object.keys(row)) carryItemState(itemId);
       continue;
     }
 
@@ -772,7 +701,7 @@ export function presetFromSection(
       continue;
     }
     choices[slot.id] = choice;
-    carryOccurrences(choice);
+    carryItemState(choice);
     if (value?.stat && Object.keys(value.stat).length)
       values[slot.id] = { stat: { ...value.stat } };
     // An `item_picker` pick that repeats inline carries its count the same way a
@@ -786,6 +715,7 @@ export function presetFromSection(
   if (Object.keys(values).length) preset.values = values;
   if (Object.keys(assignments).length) preset.assignments = assignments;
   if (Object.keys(occurrences).length) preset.occurrences = occurrences;
+  if (Object.keys(bonusValues).length) preset.bonusValues = bonusValues;
   if (clears.length) preset.clears = clears;
 
   return preset;
