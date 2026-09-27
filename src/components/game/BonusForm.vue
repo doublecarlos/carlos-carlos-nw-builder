@@ -109,6 +109,7 @@ function buildDraft(bonus: Bonus | null | undefined): bonusDraft.BonusDraft {
     stacking: source.stacking ?? "",
     maxStacks: source.maxStacks ?? null,
     excludes: [...(source.excludes ?? [])],
+    ...(source.inputs && { inputs: JSON.parse(JSON.stringify(source.inputs)) }),
   };
 }
 

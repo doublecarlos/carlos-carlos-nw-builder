@@ -147,6 +147,9 @@ export interface BuildParameterSlot {
   max?: number;
   step?: number;
   presets?: number[];
+  /** A `number` with both bounds is a stepper unless this says `field`; anything else is a
+   *  field. */
+  control?: NumberControl;
   /** Marks this parameter as a stat scaler: its value multiplies stat payloads elsewhere
    * rather than only being read by `param` conditions. The slot's `path` is the scaler's
    * identity and its `label` the display name. */
@@ -589,6 +592,14 @@ export interface ParamCondition {
   equals?: string | string[];
 }
 
+/** Reads one of the evaluated bonus's own `inputs`, `key` naming it. Same comparison forms as
+ * `ParamCondition`: `is` for a boolean input, `atLeast`/`below`/`exactly` for a number or
+ * percent one. */
+export type InputCondition = Omit<ParamCondition, "equals">;
+
+/** How a number value is edited: -/+ buttons around the field, or the field alone. */
+export type NumberControl = "stepper" | "field";
+
 /** A `when` predicate (conditions.ts). Keys present are ANDed; an absent key is unconstrained.
  * Loose on leaf value types (`string | string[]`) because conditions.ts's `asArray` accepts
  * either uniformly. */
@@ -610,6 +621,7 @@ export interface ConditionWhen {
   bonusOccurrences?: BonusOccurrenceSpec;
   equipped?: RangeSpec & { tag?: string; item?: string };
   param?: ParamCondition;
+  input?: InputCondition;
   all?: ConditionWhen[];
   any?: ConditionWhen[];
   not?: ConditionWhen;
@@ -677,9 +689,27 @@ export interface Grant {
   longDescription?: string;
 }
 
+/** A named value a bonus declares for the player to set, read by its grants' `input` leaf. */
+export interface InputDef {
+  type: "boolean" | "number" | "percent";
+  /** Required for `number` and `percent`; a `boolean` ignores them. */
+  min?: number;
+  max?: number;
+  step?: number;
+  presets?: number[];
+  /** A `number` with both bounds is a stepper unless this says `field`; anything else is a
+   *  field. */
+  control?: NumberControl;
+  default: number | boolean;
+  label?: string;
+}
+
 export interface Bonus {
   id: string;
   name?: string;
+  /** Values the player sets, by name. One value per bonus per build: every copy and carrier
+   *  of the bonus reads the same one, as duplicate procs trigger together. */
+  inputs?: Record<string, InputDef>;
   grants?: Grant[];
   excludes?: string[];
   stacking?: "perSource" | string;
@@ -844,6 +874,8 @@ export interface InputSpec {
   max: number;
   step?: number;
   presets?: number[];
+  /** As declared; `numberControl` resolves the default. */
+  control?: NumberControl;
   default: number;
   label: string;
   /** Formats a value in the units the control shows, for notes and error messages. */
@@ -999,6 +1031,17 @@ export interface EvalContext {
   /** Every `build_parameter` declaring a `scaler`, by its `path`. Resolved once so the
    *  engine, the stat-source popover and the UI cannot compute different multipliers. */
   scalers: Map<string, ResolvedScaler>;
+  /** The `self` bonus's inputs, by name, what the `input` leaf reads. Set per bonus alongside
+   *  `self`. */
+  inputs?: Map<string, ResolvedInput>;
+}
+
+/** One bonus input's current value, defaulted, with the label its leaf shows. */
+export interface ResolvedInput {
+  label: string;
+  value: number | boolean;
+  /** Formats a number in the units its control shows. */
+  format: (value: number) => string;
 }
 
 /** A scaler slot's declaration paired with the multiplier its current value works out to. */
@@ -1094,6 +1137,8 @@ export interface BonusEvaluation {
 export interface BonusSource {
   name: string;
   slotId: string;
+  /** The contributing item. Absent where a source only links to a slot. */
+  itemId?: string;
 }
 
 export interface EvaluatedBonus {
@@ -1118,6 +1163,8 @@ export interface EvaluatedBonus {
   /** stat -> what each of this bonus's grant/variant dynamic stats reads, typed or defaulted.
    *  An inactive payload previews at these, as the live one would apply them. */
   dynamicValues: Record<string, number>;
+  /** name -> each of the bonus's inputs, typed or defaulted. */
+  inputValues: Record<string, number | boolean>;
   grants: (GrantEvaluation & { raw: Grant })[];
   problems: GrantProblem[];
   stacks: number;

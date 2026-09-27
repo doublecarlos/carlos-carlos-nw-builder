@@ -11,12 +11,15 @@
 // `boolean` is the one case with a default slot: BaseCheckbox's clickable label is *inside* the
 // control (a bigger, more natural click target), so the caller passes its label as slot content
 // instead of rendering a separate label element the way the other three paramTypes need.
-import { ref, useTemplateRef } from "vue";
+import { computed, ref, useTemplateRef } from "vue";
 import ComboBox from "../ui/ComboBox.vue";
 import type { ComboBoxExposed } from "../ui/ComboBox.vue";
 import PercentInput from "../ui/PercentInput.vue";
 import BaseCheckbox from "../ui/BaseCheckbox.vue";
 import BaseInput from "../ui/BaseInput.vue";
+import NumberStepper from "../ui/NumberStepper.vue";
+import PresetButtons from "../ui/PresetButtons.vue";
+import { numberControl } from "../../engine/inputs";
 import type { BuildParameterSlot } from "../../types";
 
 const props = withDefaults(
@@ -37,6 +40,13 @@ const props = withDefaults(
 );
 
 const model = defineModel<string | number | boolean>();
+
+/** A number param with both bounds steps, unless its `control` asks for a field. */
+const stepper = computed(
+  () =>
+    props.slotDef.paramType === "number" &&
+    numberControl(props.slotDef) === "stepper",
+);
 
 /** Width class per paramType when `wide` is set, so every row lines up visually. */
 function widthCls(slotDef: BuildParameterSlot) {
@@ -109,7 +119,17 @@ defineExpose({ focus: focusControl, focusAndSeed });
     </BaseCheckbox>
 
     <div v-else class="flex items-center gap-1.5">
+      <NumberStepper
+        v-if="stepper"
+        :id="inputId"
+        :min="slotDef.min ?? -Infinity"
+        :max="slotDef.max ?? Infinity"
+        :step="slotDef.step"
+        :model-value="Number(model ?? slotDef.min)"
+        @update:model-value="model = $event"
+      />
       <BaseInput
+        v-else
         :id="inputId"
         type="number"
         :class="widthCls(slotDef)"
@@ -119,22 +139,12 @@ defineExpose({ focus: focusControl, focusAndSeed });
         :model-value="(model as string | number | null) ?? ''"
         @update:model-value="onNumber"
       />
-      <div v-if="slotDef.presets?.length" class="flex gap-0.5">
-        <button
-          v-for="preset in slotDef.presets"
-          :key="preset"
-          type="button"
-          class="rounded-md border px-1.5 py-0.5"
-          :class="
-            Number(model) === preset
-              ? 'border-accent bg-accent-soft text-text'
-              : 'border-line bg-surface-2 text-muted'
-          "
-          @click="model = preset as string | number | boolean"
-        >
-          {{ preset }}
-        </button>
-      </div>
+      <PresetButtons
+        v-if="slotDef.presets?.length"
+        :presets="slotDef.presets"
+        :model-value="Number(model)"
+        @update:model-value="model = $event ?? undefined"
+      />
     </div>
   </div>
 </template>

@@ -1,6 +1,6 @@
 <script setup lang="ts">
-// A whole-number field between -/+ buttons. A plain click steps by one, Ctrl/Cmd+click jumps
-// to that direction's bound. Used for inline repetition counts and bonus occurrence counts.
+// A number field between -/+ buttons. A plain click steps by `step` (one by default),
+// Ctrl/Cmd+click jumps to that direction's bound.
 //
 // A typed value outside [min, max] is let through, so the caller can flag it rather than have
 // it silently rewritten. Only the buttons clamp. Attributes (`data-testid`, `id`) land on the
@@ -12,10 +12,14 @@ import { isMac } from "../../lib/platform";
 
 defineOptions({ inheritAttrs: false });
 
-const props = defineProps<{
-  min: number;
-  max: number;
-}>();
+const props = withDefaults(
+  defineProps<{
+    min: number;
+    max: number;
+    step?: number;
+  }>(),
+  { step: 1 },
+);
 
 const model = defineModel<number>({ required: true });
 
@@ -27,13 +31,16 @@ function onInput(raw: string | number | null) {
 }
 
 /** Stopped from bubbling, so a row's own click handling (Ctrl+click to edit) never sees it. */
-function step(dir: 1 | -1, event: MouseEvent) {
+function stepBy(dir: 1 | -1, event: MouseEvent) {
   event.stopPropagation();
   if (isMac ? event.metaKey : event.ctrlKey) {
     model.value = dir === 1 ? props.max : props.min;
     return;
   }
-  model.value = Math.min(Math.max(model.value + dir, props.min), props.max);
+  model.value = Math.min(
+    Math.max(model.value + dir * props.step, props.min),
+    props.max,
+  );
 }
 </script>
 
@@ -42,7 +49,7 @@ function step(dir: 1 | -1, event: MouseEvent) {
     <IconButton
       :title="`Decrease (${modKey}+click for min)`"
       :disabled="model <= min"
-      @click="step(-1, $event)"
+      @click="stepBy(-1, $event)"
     >
       <Minus />
     </IconButton>
@@ -52,13 +59,14 @@ function step(dir: 1 | -1, event: MouseEvent) {
       class="w-14 text-center!"
       :min="min"
       :max="max"
+      :step="step"
       :model-value="model"
       @update:model-value="onInput"
     />
     <IconButton
       :title="`Increase (${modKey}+click for max)`"
       :disabled="model >= max"
-      @click="step(1, $event)"
+      @click="stepBy(1, $event)"
     >
       <Plus />
     </IconButton>

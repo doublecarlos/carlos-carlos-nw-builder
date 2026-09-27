@@ -16,6 +16,7 @@ import type {
   ConditionLeafResult,
   ConditionExplain,
   ParamCondition,
+  InputCondition,
 } from "../types";
 
 const asArray = <T>(value: T | T[]): T[] =>
@@ -51,14 +52,18 @@ export const inRange = (
   return true;
 };
 
-export const describeRange = (spec: RangeLike | null | undefined): string => {
+/** `format` writes each bound, in the units the value is shown in. */
+export const describeRange = (
+  spec: RangeLike | null | undefined,
+  format: (value: number) => string = String,
+): string => {
   if (spec == null) return "any";
-  if (typeof spec === "number") return `≥ ${spec}`;
-  if (spec.exactly != null) return `= ${spec.exactly}`;
+  if (typeof spec === "number") return `≥ ${format(spec)}`;
+  if (spec.exactly != null) return `= ${format(spec.exactly)}`;
   if (spec.atLeast != null && spec.below != null)
-    return `${spec.atLeast} to ${spec.below}`;
-  if (spec.atLeast != null) return `≥ ${spec.atLeast}`;
-  if (spec.below != null) return `< ${spec.below}`;
+    return `${format(spec.atLeast)} to ${format(spec.below)}`;
+  if (spec.atLeast != null) return `≥ ${format(spec.atLeast)}`;
+  if (spec.below != null) return `< ${format(spec.below)}`;
   return "any";
 };
 
@@ -192,6 +197,34 @@ const LEAVES: Record<
       ok: inRange(numeric, range),
       label: `${s.key} ${describeRange(range)}`,
       detail: `you have ${value ?? 0}`,
+    };
+  },
+
+  /** Reads one of the `self` bonus's inputs, with the same comparison forms as `param`. Fails
+   * closed on a name the bonus does not declare. */
+  input(spec, ctx) {
+    const s = spec as InputCondition;
+    const input = ctx.inputs?.get(s.key);
+    if (!input) {
+      return {
+        ok: false,
+        label: `input "${s.key}"`,
+        detail: "unknown input",
+      };
+    }
+    const { label, value, format } = input;
+    if (s.is !== undefined) {
+      return {
+        ok: Boolean(value) === s.is,
+        label: `${label} is ${s.is ? "on" : "off"}`,
+        detail: `you have ${value ? "on" : "off"}`,
+      };
+    }
+    const range = { atLeast: s.atLeast, below: s.below, exactly: s.exactly };
+    return {
+      ok: inRange(Number(value), range),
+      label: `${label} ${describeRange(range, format)}`,
+      detail: `you have ${format(Number(value))}`,
     };
   },
 

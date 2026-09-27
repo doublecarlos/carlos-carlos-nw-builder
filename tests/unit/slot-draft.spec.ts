@@ -119,6 +119,24 @@ describe("buildDraft / toSlot round trip", () => {
     expect(toSlot(draft, ctx(slot))).toEqual(slot);
   });
 
+  it("round-trips a number param's control, and drops it on a percent", () => {
+    const slot: BuildParameterSlot = {
+      id: "s10",
+      label: "Stacks",
+      section: "options",
+      type: "build_parameter",
+      paramType: "number",
+      path: "stacks",
+      min: 0,
+      max: 5,
+      control: "field",
+    };
+    expect(roundTrip(slot)).toEqual(slot);
+    const draft = buildDraft(slot);
+    draft.paramType = "percent";
+    expect(toSlot(draft, ctx(slot))).not.toHaveProperty("control");
+  });
+
   it("clearing the scaler mode removes the block", () => {
     const slot: BuildParameterSlot = {
       id: "s8",

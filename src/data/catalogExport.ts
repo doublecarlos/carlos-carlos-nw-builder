@@ -39,6 +39,7 @@ const ITEM_TRAILING_KEYS = [
 const BONUS_KEYS = [
   "id",
   "name",
+  "inputs",
   "grants",
   "excludes",
   "stacking",
@@ -55,6 +56,16 @@ const GRANT_KEYS = [
   "scaledBy",
   "shortDescription",
   "longDescription",
+] as const;
+const INPUT_KEYS = [
+  "type",
+  "label",
+  "min",
+  "max",
+  "step",
+  "presets",
+  "control",
+  "default",
 ] as const;
 const VARIANT_KEYS = ["when", "stats", "dynamicStats"] as const;
 const TIER_KEYS = ["bonusOccurrences", "stats"] as const;
@@ -224,6 +235,14 @@ export function toBonusesFile(
       {
         ...bonus,
         name: bonus.name ?? bonus.id,
+        ...(bonus.inputs && {
+          inputs: Object.fromEntries(
+            Object.entries(bonus.inputs).map(([name, def]) => [
+              name,
+              orderKeys(def, INPUT_KEYS),
+            ]),
+          ),
+        }),
         grants: (bonus.grants ?? []).map((grant) =>
           canonicalGrant(grant, bonus.id, schema),
         ),
@@ -266,6 +285,7 @@ const SLOT_KEYS = [
   "max",
   "step",
   "presets",
+  "control",
   "scaler",
   "defaultRows",
   "quick",

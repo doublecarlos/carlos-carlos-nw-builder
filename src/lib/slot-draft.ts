@@ -15,6 +15,7 @@ import type {
   Db,
   ItemPickerListSlot,
   ItemPickerSlot,
+  NumberControl,
   PointAssignmentSlot,
   SeparatorSlot,
   Slot,
@@ -99,6 +100,8 @@ export interface SlotDraft {
   max: string | number;
   step: string | number;
   presets: string;
+  /** `number` only. Empty leaves it to the bounds: a stepper when both are set. */
+  control: "" | NumberControl;
   /** Empty means the parameter is not a scaler; see `BuildParameterSlot.scaler`. The filter
    *  and tag lists are comma-separated like `optionsFromTags`. */
   scalerMode: "" | Scaler["mode"];
@@ -167,6 +170,7 @@ export function buildDraft(slot: Slot | null | undefined): SlotDraft {
     max: source.max == null ? "" : String(source.max),
     step: source.step == null ? "" : String(source.step),
     presets: (source.presets ?? []).join(", "),
+    control: source.control ?? "",
     scalerMode: source.scaler?.mode ?? "",
     scalerFilters: (source.scaler?.applies?.filter ?? []).join(", "),
     scalerTags: (source.scaler?.applies?.tags ?? []).join(", "),
@@ -268,6 +272,8 @@ const BUILDERS: {
         .map((part) => number(part))
         .filter((value): value is number => value !== undefined);
       putIfSet(slot, "presets", presets);
+      if (local.paramType === "number" && local.control)
+        slot.control = local.control;
       if (local.scalerMode) {
         const applies: NonNullable<Scaler["applies"]> = {};
         putIfSet(applies, "filter", commaList(local.scalerFilters));
@@ -405,6 +411,10 @@ const CHECKS: DiffCheck<Slot>[] = [
     JSON.stringify((old as BuildParameterSlot).scaler) !==
     JSON.stringify((nw as BuildParameterSlot).scaler)
       ? "edit scaler"
+      : null,
+  (old, nw) =>
+    (old as BuildParameterSlot).control !== (nw as BuildParameterSlot).control
+      ? `edit control to "${(nw as BuildParameterSlot).control ?? "stepper if bounded"}"`
       : null,
 ];
 

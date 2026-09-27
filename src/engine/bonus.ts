@@ -5,12 +5,18 @@
 // overrides against *all* rows, so its results could depend on slot ordering. Nothing here does.
 
 import * as conditions from "./conditions";
+import { bonusInputSpec } from "./inputs";
 import { getPath } from "../lib/build-path";
 import { bonusIdOf, occurrenceCountFor } from "../lib/bonus-attachment";
 import { assignedRows, inlineRepetitionCount } from "../lib/inline-repetition";
 import { isDisabled } from "../lib/slot-toggle";
 import { expandSlots } from "../lib/item-picker-list";
-import { bonusStatAddress, readInput } from "../lib/build-inputs";
+import {
+  bonusInputAddress,
+  bonusStatAddress,
+  readInput,
+  storedInput,
+} from "../lib/build-inputs";
 import type {
   AssignedItemStats,
   PublishConflict,
@@ -602,10 +608,29 @@ export function evaluateBonus(
   bonus: Bonus,
   ctx: EvalContext,
   dynamicValues: Record<string, number> = {},
-  { hasSources = true }: { hasSources?: boolean } = {},
+  {
+    hasSources = true,
+    inputValues = {},
+  }: {
+    hasSources?: boolean;
+    inputValues?: Record<string, number | boolean>;
+  } = {},
 ): BonusEvaluation {
-  // What an occurrence leaf naming no bonus counts (`EvalContext.self`).
-  const own: EvalContext = { ...ctx, self: bonus.id };
+  // What an occurrence leaf naming no bonus counts (`EvalContext.self`), and the inputs an
+  // input leaf reads.
+  const own: EvalContext = {
+    ...ctx,
+    self: bonus.id,
+    inputs: new Map(
+      Object.entries(bonus.inputs ?? {}).map(([name, def]) => {
+        const { label, format } = bonusInputSpec(def, name);
+        return [
+          name,
+          { label, format, value: inputValues[name] ?? def.default },
+        ];
+      }),
+    ),
+  };
   const evaluated = (bonus.grants ?? []).map((grant) => ({
     raw: grant,
     ...evaluateGrant(grant, own, dynamicValues),
@@ -720,6 +745,23 @@ function resolveDynamicValues(
   return out;
 }
 
+/** Every input the bonus declares, typed or defaulted, keyed by name. A boolean input reads as
+ *  a boolean, anything else as a number. */
+export function resolveInputValues(
+  bonus: Bonus,
+  build: Build,
+): Record<string, number | boolean> {
+  const out: Record<string, number | boolean> = {};
+  for (const [name, def] of Object.entries(bonus.inputs ?? {})) {
+    const address = bonusInputAddress(bonus.id, name);
+    if (def.type === "boolean") {
+      const stored = storedInput(build, address);
+      out[name] = stored == null ? Boolean(def.default) : Boolean(stored);
+    } else out[name] = readInput(build, address, Number(def.default));
+  }
+  return out;
+}
+
 export function resolve(db: Db, build: Build): ResolvedBonuses {
   const {
     ctx,
@@ -773,8 +815,10 @@ export function resolve(db: Db, build: Build): ResolvedBonuses {
     const sources = [...group.sources].sort((a, b) => a.order - b.order);
     const anchor = sources[0] ?? group.anchor!;
     const dynamicValues = resolveDynamicValues(group.bonus, build);
+    const inputValues = resolveInputValues(group.bonus, build);
     const result = evaluateBonus(group.bonus, ctx, dynamicValues, {
       hasSources: sources.length > 0,
+      inputValues,
     });
 
     let stacks = 1;
@@ -788,7 +832,11 @@ export function resolve(db: Db, build: Build): ResolvedBonuses {
       id: group.id,
       bonus: group.bonus,
       bonusId: anchor.bonusId,
-      sources: sources.map((s) => ({ name: s.source, slotId: s.slotId })),
+      sources: sources.map((s) => ({
+        name: s.source,
+        slotId: s.slotId,
+        itemId: s.itemId,
+      })),
       carrier:
         !sources.length && group.carried
           ? {
@@ -804,6 +852,7 @@ export function resolve(db: Db, build: Build): ResolvedBonuses {
       stats: result.stats,
       previewStats: result.previewStats,
       dynamicValues,
+      inputValues,
       grants: result.grants,
       problems: result.problems,
       stacks,
