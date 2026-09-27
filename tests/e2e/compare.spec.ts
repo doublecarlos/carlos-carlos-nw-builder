@@ -45,6 +45,33 @@ test("highlighting a diff and applying it copies the compare build's choice", as
   await expect(row).not.toHaveClass(/is-diff/);
 });
 
+test("only showing changes is reported in the filter bar and cleared with the filters", async ({
+  page,
+}) => {
+  await openBuilder(page);
+  await chooseItem(page, "gear.head", HEAD_ITEM);
+
+  await page.getByTestId("nav-add-build").click();
+  await chooseCombo(page.locator(".compare-select"), "Build 1");
+  const onlyChanges = page.getByRole("checkbox", { name: "Only show changes" });
+  await onlyChanges.check();
+
+  const chip = page.getByTestId("slot-filter-only-diff");
+  await expect(chip).toContainText("only changes vs Build 1");
+  await expect(page.getByTestId("slot-filter-count")).toHaveText("1 match");
+  await expect(slotRow(page, "gear.neck")).toBeHidden();
+
+  await page.getByTestId("slot-filter-clear").click();
+  await expect(chip).toBeHidden();
+  await expect(onlyChanges).not.toBeChecked();
+  await expect(page.getByTestId("slot-filter-clear")).toBeDisabled();
+  await expect(slotRow(page, "gear.neck")).toBeVisible();
+
+  await onlyChanges.check();
+  await page.getByTestId("slot-filter-only-diff-clear").click();
+  await expect(onlyChanges).not.toBeChecked();
+});
+
 test("copying a section from another build fills its slots", async ({
   page,
 }) => {
