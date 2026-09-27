@@ -41,10 +41,9 @@ import { readDynamicValue } from "../lib/dynamic-stats";
 import * as insignia from "../engine/insignia";
 import * as stableBrowser from "../stores/stableBrowser";
 import { expandSlots } from "../lib/item-picker-list";
-import { isDisabled } from "../lib/slot-toggle";
 import { useHoverCard } from "../composables/useHoverCard";
 import { occurrenceRowsForItem } from "../composables/useItemBonusOccurrences";
-import { itemScaleFactor, itemScalers } from "../composables/useItemScale";
+import { itemScalers } from "../composables/useItemScale";
 import { useCompareDiff, type SlotDiff } from "../composables/useCompareDiff";
 import { useItemUndoRedo } from "../composables/useUndoRedo";
 import * as storage from "../storage/storage";
@@ -387,10 +386,7 @@ function rowDiffers(slotDef: Slot) {
 }
 
 /** Every non-quick slotDef in canonical order, grouped by section -- unaffected by the active
- *  text/stat filter or the only-diff toggle, unlike `sections.value`'s own per-section lists.
- *  `sections` and `bonusesBySlot` both read their slot lists off this rather than off each
- *  other: `slotMatchesFilters` (used by `sections`) matches against `statSummary`, which reads
- *  `bonusesBySlot` -- if that read `sections.value` back, the two computeds would cycle. */
+ *  text/stat filter or the only-diff toggle, unlike `sections.value`'s own per-section lists. */
 const editorSlots = computed(() => expandSlots(db.value.slots, build.value));
 
 const allSlotsBySection = computed(() =>
@@ -489,32 +485,15 @@ const noBorderIds = computed(() => {
   return ids;
 });
 
-/**
- * slotId -> active bonuses to credit to *that* row's inline summary, one row-line per
- * bonus rather than a name attached to raw numbers. A bonus fed by several equipped
- * items (an occurrence-count requirement, or a flat bonus two items both grant) would otherwise
- * print on every one of their rows -- read together that looks like each item grants it
- * independently, when really they share credit for one thing. Google Sheets' own
- * summary sidesteps this by crediting a shared bonus to only the first contributing row;
- * this walks the slots in the same canonical (not display/expanded) order and does the
- * same, via a `shown` set threaded through the whole pass.
- */
+/** slotId -> the active bonuses the engine credits to that row (`EvaluatedBonus.slotId`), the
+ *  same attribution its stats follow. A bonus fed by several rows is listed on one of them only. */
 const bonusesBySlot = computed(() => {
-  const shown = new Set<string>();
   const map = new Map<string, EvaluatedBonus[]>();
-  for (const { slots } of allSlotsBySection.value) {
-    for (const slotDef of slots) {
-      const item = itemIn(slotDef.id);
-      if (!item) continue;
-      const entries: EvaluatedBonus[] = [];
-      for (const raw of db.value.bonusesFor(item)) {
-        const resolved = bonusById.value.get(raw.bonus.id);
-        if (!resolved?.active || shown.has(resolved.id)) continue;
-        shown.add(resolved.id);
-        entries.push(resolved);
-      }
-      if (entries.length) map.set(slotDef.id, entries);
-    }
+  for (const entry of result.value.bonuses) {
+    if (!entry.active) continue;
+    const list = map.get(entry.slotId);
+    if (list) list.push(entry);
+    else map.set(entry.slotId, [entry]);
   }
   return map;
 });
@@ -737,17 +716,15 @@ const editLabel = computed(() => {
   return `Edit this item in ${where} (${modKey}+Click the row)`;
 });
 
-// A switched-off row contributes nothing, and says so the way every row whose bonus is
-// inactive already does: no summary at all.
+// A row that contributes nothing (switched off, or 0 copies) shows no summary at all, the way a
+// row whose bonus is inactive already does.
 function statSummary(slotId: string) {
-  const item = itemIn(slotId);
-  if (!item) return "";
-  if (isDisabled(build.value, db.value.slotFor(slotId))) return "";
+  const row = rowBySlot.value.get(slotId);
+  if (!row?.item || !row.repetitions) return "";
   return slotStatSummary(
-    item,
-    itemScaleFactor(item),
+    row.item,
+    row.stats,
     bonusesBySlot.value.get(slotId) ?? [],
-    dynamicValuesFor(slotId, item),
   );
 }
 

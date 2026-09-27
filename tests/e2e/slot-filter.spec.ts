@@ -19,21 +19,21 @@ import { expectTopmost } from "./support/occlusion";
 
 const DYNAMIC_RING_SLOT = "gear.ring1";
 
-/** A ring whose only stat is Accuracy the player types in. */
-async function importDynamicRing(page: Page) {
-  const id = "test-filter-dynamic-ring";
+/** Imports a build holding one catalog ring, made of `fields`, in `DYNAMIC_RING_SLOT`. */
+async function importRing(page: Page, fields: Record<string, unknown>) {
+  const id = "test-filter-ring";
   await importText(
     page,
     JSON.stringify({
-      name: "Dynamic filter test",
+      name: "Ring filter test",
       choices: { [DYNAMIC_RING_SLOT]: id },
       catalog: {
         items: {
           [id]: {
             id,
-            name: "Test Filter Dynamic Ring",
+            name: "Test Filter Ring",
             filter: "gear_ring",
-            dynamicStats: [{ stat: "acc", min: 0, max: 1000, default: 500 }],
+            ...fields,
           },
         },
         bonuses: {},
@@ -44,6 +44,12 @@ async function importDynamicRing(page: Page) {
   await confirmImport(page);
   await expect(page.getByTestId("app-header")).toContainText(/imported/i);
 }
+
+/** A ring whose only stat is Accuracy the player types in. */
+const importDynamicRing = (page: Page) =>
+  importRing(page, {
+    dynamicStats: [{ stat: "acc", min: 0, max: 1000, default: 500 }],
+  });
 
 test.describe("slot filter: text", () => {
   test("typing a slot label shows only matching slots and hides sections with no match", async ({
@@ -134,6 +140,22 @@ test.describe("slot filter: text", () => {
     await slotFilterInput(page).fill("Acc ");
     await expect(slotRow(page, DYNAMIC_RING_SLOT)).toBeVisible();
     await expect(slotRow(page, "gear.head")).toBeHidden();
+  });
+
+  test("a repeated item's summary shows the total of every copy", async ({
+    page,
+  }) => {
+    await openBuilder(page);
+    await importRing(page, {
+      power: 111,
+      inlineRepetition: { min: 0, max: 4, default: 3 },
+    });
+
+    await expect(slotRow(page, DYNAMIC_RING_SLOT)).toContainText("+333");
+    await slotFilterInput(page).fill("333");
+    await expect(slotRow(page, DYNAMIC_RING_SLOT)).toBeVisible();
+    await slotFilterInput(page).fill("111");
+    await expect(slotRow(page, DYNAMIC_RING_SLOT)).toBeHidden();
   });
 
   test("multiple whitespace-separated words each match, even across different fields", async ({
