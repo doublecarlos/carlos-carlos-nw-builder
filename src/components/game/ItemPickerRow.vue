@@ -68,7 +68,7 @@ const picker = useTemplateRef<InstanceType<typeof ItemPicker>>("picker");
 
 const occurrenceRows = useItemBonusOccurrences(computed(() => props.item));
 
-/** The item this slot's pick would migrate to, or null when it is not retired. */
+/** The item this slot's pick would migrate to, or null when it has no replacement. */
 const replacement = computed(() =>
   props.db.replacementFor(props.build.choices?.[props.slotDef.id]),
 );
@@ -204,14 +204,15 @@ const stableGroup = computed(() => {
     >
       <template #label>{{ repetitionLabel }}</template>
     </InlineRepetitionStepper>
-    <!-- The build-wide notice's offer, scoped to this row. -->
+    <!-- The build-wide notice, scoped to this row. -->
     <span
-      v-if="replacement"
+      v-if="replacement || pickedItem?.hideFromPicker"
       class="flex shrink-0 items-center gap-1"
       :data-testid="'slot-retired:' + slotDef.id"
     >
       <BaseBadge variant="warn">retired</BaseBadge>
       <IconButton
+        v-if="replacement"
         :title="`Replace with ${replacement.name}`"
         :data-testid="'slot-retired-apply:' + slotDef.id"
         @click="buildEditor.applyRetiredItem(slotDef.id)"

@@ -33,6 +33,7 @@ ordinary one.
 | DraftFormBar                              | Shared header bar (title, status badges, Save/Revert/Duplicate/Delete) for an editor form  |
 | DragHandle                                | The grip affordance on a draggable row; `touch-action: none` so touch drags don't scroll   |
 | DropIndicator                             | The drag-and-drop insertion line for one `useDropList`                                     |
+| FilterChip                                | An active filter set from elsewhere, as a chip with its own clear button                   |
 | FormBar                                   | Sticky action bar at the top of an editing form                                            |
 | FormField                                 | Label-above-control stack, the basic form unit                                             |
 | FormGrid                                  | Wrapping row of FormField instances                                                        |

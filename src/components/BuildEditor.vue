@@ -21,6 +21,7 @@ import TextRow from "./game/TextRow.vue";
 import BaseButton from "./ui/BaseButton.vue";
 import BaseInput from "./ui/BaseInput.vue";
 import BaseBadge from "./ui/BaseBadge.vue";
+import FilterChip from "./ui/FilterChip.vue";
 import ComboBox from "./ui/ComboBox.vue";
 import CheckMenu from "./ui/CheckMenu.vue";
 import HistoryButtons from "./ui/HistoryButtons.vue";
@@ -29,6 +30,8 @@ import QuickOptions from "./game/QuickOptions.vue";
 import {
   ChevronsDownUp,
   ChevronsUpDown,
+  Crosshair,
+  Replace,
   SlidersHorizontal,
   FilterX,
 } from "@lucide/vue";
@@ -82,9 +85,14 @@ const build = computed(() => props.build);
 const resolved = engine.resolved;
 const bonusById = engine.bonusById;
 
-/** The swaps "update" would make, one per line. */
+/** Each retired item and its replacement, one per line. */
 const retiredTitle = computed(() =>
-  buildEditor.retired.value.map(({ from, to }) => `${from} → ${to}`).join("\n"),
+  buildEditor.retired.value
+    .map(({ from, to }) => `${from} → ${to ?? "no replacement"}`)
+    .join("\n"),
+);
+const retiredReplaceable = computed(() =>
+  buildEditor.retired.value.some(({ to }) => to),
 );
 
 // Only ever mounted when `engine.resolved.value.ok` -- the throw documents that invariant
@@ -146,22 +154,72 @@ const { canUndo, canRedo, undoLabel, redoLabel, undo, redo } =
 
 const modKey = isMac ? "Cmd" : "Ctrl";
 
-// The filter lives in a store because the Bonuses tab, in the other column, is a second author
-// for it: clicking a near miss narrows this list to the slots that could supply that bonus, or
-// whatever one of its conditions is short of.
+// The filter lives in a store because it has other authors: the Bonuses tab narrows this list
+// to the slots that could supply a near miss, and the retired notice to the retired picks.
 const filterText = slotFilter.text;
 const filterStat = slotFilter.stat;
-const filterActive = slotFilter.isActive;
 
-/** "Only show changes" narrows the list like a filter, so the bar reports it and clears it too. */
-const onlyDiffActive = computed(() => onlyDiff.value && !!compareBuild.value);
+/** A filter set from outside the bar's own controls, shown in it as a chip. */
+interface ChipFilter {
+  /** Suffix of the chip's test id, `slot-filter-<key>`. */
+  key: string;
+  active: () => boolean;
+  label: () => string;
+  clearLabel: string;
+  clear: () => void;
+  /** Whether a row survives this filter. */
+  keeps: (slotDef: Slot) => boolean;
+}
+
+const CHIP_FILTERS: ChipFilter[] = [
+  {
+    key: "need",
+    active: () => !!slotFilter.need.value,
+    label: () => `could supply ${slotFilter.label.value}`,
+    clearLabel: "Clear the supply filter",
+    clear: slotFilter.clearNeed,
+    keeps: suppliesNeed,
+  },
+  // Saved with the build as part of its compare setup, unlike the others.
+  {
+    key: "only-diff",
+    active: () => onlyDiff.value && !!compareBuild.value,
+    label: () => `only changes vs ${compareBuild.value?.name}`,
+    clearLabel: "Show all slots again",
+    clear: () => compare.setCompareFlag("onlyDiff", false),
+    keeps: rowDiffers,
+  },
+  {
+    key: "retired",
+    active: () => slotFilter.retired.value,
+    label: () => "only retired items",
+    clearLabel: "Clear the retired filter",
+    clear: () => (slotFilter.retired.value = false),
+    keeps: (slotDef) => buildEditor.retiredBySlot.value.has(slotDef.id),
+  },
+];
+
+const activeChips = computed(() =>
+  CHIP_FILTERS.filter((filter) => filter.active()),
+);
 const anyFilterActive = computed(
-  () => filterActive.value || onlyDiffActive.value,
+  () =>
+    !!filterText.value.trim() ||
+    !!filterStat.value ||
+    activeChips.value.length > 0,
+);
+
+// The retired filter has nothing left to show once every retired item is gone.
+watch(
+  () => buildEditor.retired.value.length,
+  (count) => {
+    if (!count) slotFilter.retired.value = false;
+  },
 );
 
 function clearAllFilters() {
   slotFilter.clear();
-  compare.setCompareFlag("onlyDiff", false);
+  for (const filter of activeChips.value) filter.clear();
 }
 
 const pickerOptionItems = computed(() =>
@@ -199,32 +257,32 @@ function slotGrantsStat(slotDef: Slot, statKey: string): boolean {
   return !!rowBySlot.value.get(slotDef.id)?.stats[statKey];
 }
 
-/** A slotDef is kept when its own label matches the text query, when the section's own
- *  header does -- a matching header pulls in every slot underneath it, unfiltered by text --
- *  when its current choice's (or linked item's) name matches, or when its rendered stat
- *  summary (the text next to the picker, `statSummary`) does. The stat filter is independent
- *  of all of that: it always narrows the result further. */
+/** Whether this slotDef could supply the need being filtered on. A list's rows are indexed
+ *  under the container (lib/bonus-slots.ts), not under each row. The container itself
+ *  counts too: the answer to "where could this come from" can be a row not added yet. */
+function suppliesNeed(slotDef: Slot): boolean {
+  const suppliers = supplierSlots.value;
+  if (!suppliers) return false;
+  if (suppliers.has(slotDef.id)) return true;
+  return slotDef.type === "item_picker" && !!slotDef.list
+    ? suppliers.has(slotDef.list)
+    : false;
+}
+
+/** A slotDef is kept when every active chip filter keeps it and the text and stat filters
+ *  match. Text matches its own label, the section's header (which pulls in every slot
+ *  underneath it), its current choice's (or linked item's) name, or its rendered stat
+ *  summary (`statSummary`). The stat filter and the chips always narrow the result further. */
 function slotMatchesFilters(section: SlotSection, slotDef: Slot): boolean {
   if (slotDef.type === "separator" || slotDef.type === "text") return false;
+  if (!activeChips.value.every((filter) => filter.keeps(slotDef))) return false;
   // A list's container is its "Add" row: no choice or stats for the text and stat filters to
-  // match, so it only survives a supply filter naming the list, the one filter whose answer
-  // can be a row that does not exist yet. It counts as a match like any other row.
+  // match, so it only survives a chip that keeps it explicitly.
   if (slotDef.type === "item_picker_list") {
-    if (filterStat.value || !supplierSlots.value?.has(slotDef.id)) return false;
+    if (filterStat.value || !activeChips.value.length) return false;
     return matchesQuery([section.label, slotDef.label], filterText.value);
   }
   if (filterStat.value && !slotGrantsStat(slotDef, filterStat.value))
-    return false;
-  // Narrows the same way the stat filter does, and for the same reason: it answers "where
-  // could this come from", so it must survive the text query rather than widen it. A list's
-  // rows are indexed under the container (lib/bonus-slots.ts), not under each row.
-  if (
-    supplierSlots.value &&
-    !supplierSlots.value.has(slotDef.id) &&
-    !(slotDef.type === "item_picker" && slotDef.list
-      ? supplierSlots.value.has(slotDef.list)
-      : false)
-  )
     return false;
   return matchesQuery(
     [
@@ -242,7 +300,7 @@ function slotMatchesFilters(section: SlotSection, slotDef: Slot): boolean {
  *  manually-toggled `expanded` state underneath is left untouched, so clearing the filter
  *  restores whatever the user had before. */
 function sectionExpanded(sectionId: string) {
-  return filterActive.value ? true : expanded[sectionId];
+  return anyFilterActive.value ? true : expanded[sectionId];
 }
 
 /** slotId -> the engine's resolved row, so the item object is never looked up twice. */
@@ -405,12 +463,10 @@ const sections = computed<SectionRow[]>(() => {
       // narrowed) one below -- the badge's job is telling a *collapsed* section apart, where
       // `slots` would otherwise be invisible. Same reasoning for `unsaved`.
       const diffs = compareBuild.value ? allSlots.filter(rowDiffers).length : 0;
-      const slots = allSlots.filter((slotDef) => {
-        if (onlyDiffActive.value && !rowDiffers(slotDef)) return false;
-        if (filterActive.value && !slotMatchesFilters(section, slotDef))
-          return false;
-        return true;
-      });
+      const slots = allSlots.filter(
+        (slotDef) =>
+          !anyFilterActive.value || slotMatchesFilters(section, slotDef),
+      );
       // The fill-count badge only means anything for item_picker slots -- a build_parameter
       // always has *some* value, "filled" isn't a meaningful state for it. A section made
       // entirely of build_parameter slots ends up with total 0, so the badge just doesn't render.
@@ -884,9 +940,9 @@ async function runJump(target: goTo.JumpTarget) {
     target.sectionId ?? db.value.slotFor(target.slotId)?.section;
   if (!sectionId) return;
   if (target.slotId) {
-    // A row the slot filter hides is not in the DOM to land on, and "take me to this row"
-    // outranks a filter left behind. Only the filter: compare's "only diff" is its own mode.
-    if (slotFilter.isActive.value) slotFilter.clear();
+    // A row a filter hides is not in the DOM to land on, and "take me to this row" outranks
+    // a filter left behind.
+    if (anyFilterActive.value) clearAllFilters();
     expanded[sectionId] = true;
     await nextTick();
   }
@@ -952,44 +1008,10 @@ watch(
           @click="clearAllFilters"
           ><FilterX />clear filters</BaseButton
         >
-        <!-- The need filter has no control of its own here (it is set from the Bonuses tab
-             and the hover card), so it needs something on screen saying it is on and how to
-             drop it. -->
-        <BaseBadge
-          v-if="slotFilter.need.value"
-          variant="near"
-          data-testid="slot-filter-need"
-        >
-          could supply {{ slotFilter.label.value }}
-          <button
-            type="button"
-            class="ml-1 cursor-pointer font-semibold"
-            aria-label="Clear the supply filter"
-            data-testid="slot-filter-need-clear"
-            @click="slotFilter.clearNeed()"
-          >
-            ✕
-          </button>
-        </BaseBadge>
-        <BaseBadge
-          v-if="onlyDiffActive"
-          variant="near"
-          data-testid="slot-filter-only-diff"
-        >
-          only changes vs {{ compareBuild?.name }}
-          <button
-            type="button"
-            class="ml-1 cursor-pointer font-semibold"
-            aria-label="Show all slots again"
-            data-testid="slot-filter-only-diff-clear"
-            @click="compare.setCompareFlag('onlyDiff', false)"
-          >
-            ✕
-          </button>
-        </BaseBadge>
         <BaseBadge
           v-if="buildEditor.retired.value.length"
-          variant="near"
+          variant="warn"
+          class="inline-flex items-center gap-2"
           data-testid="retired-items"
           :title="retiredTitle"
         >
@@ -997,14 +1019,39 @@ watch(
             buildEditor.retired.value.length === 1 ? "" : "s"
           }}
           <button
+            v-if="!slotFilter.retired.value"
             type="button"
-            class="ml-1 cursor-pointer font-semibold underline"
+            class="flex cursor-pointer"
+            title="Show only the slots holding them"
+            aria-label="Show only the slots holding retired items"
+            data-testid="retired-items-show"
+            @click="slotFilter.retired.value = true"
+          >
+            <Crosshair class="h-3.5 w-3.5" />
+          </button>
+          <button
+            v-if="retiredReplaceable"
+            type="button"
+            class="flex cursor-pointer"
+            title="Replace every retired item that has a replacement"
+            aria-label="Replace every retired item that has a replacement"
             data-testid="retired-items-apply"
             @click="buildEditor.applyRetiredItems()"
           >
-            update
+            <Replace class="h-3.5 w-3.5" />
           </button>
         </BaseBadge>
+        <!-- Filters set from elsewhere (the Bonuses tab, the hover card, the compare menu,
+             the retired notice) have no control here, so each says it is on and how to drop
+             it. -->
+        <FilterChip
+          v-for="filter in activeChips"
+          :key="filter.key"
+          :testid="`slot-filter-${filter.key}`"
+          :clear-label="filter.clearLabel"
+          @clear="filter.clear()"
+          >{{ filter.label() }}</FilterChip
+        >
         <BaseBadge
           v-if="anyFilterActive"
           variant="near"

@@ -262,6 +262,62 @@ describe("retiredChoices", () => {
   });
 });
 
+describe("retiredSlots", () => {
+  it("reports hidden and replaced picks alike, and skips live ones", () => {
+    const found = db.retiredSlots(
+      testDb,
+      buildWith({ choices: { ring1: "hidden", ring2: "old-ring" } }),
+    );
+    expect(found).toEqual(
+      new Map([
+        ["ring1", ["hidden"]],
+        ["ring2", ["old-ring"]],
+      ]),
+    );
+    expect(
+      db.retiredSlots(testDb, buildWith({ choices: { ring1: "live" } })).size,
+    ).toBe(0);
+  });
+
+  it("counts a point-assignment row only while it is assigned", () => {
+    const at = (count: number) =>
+      db.retiredSlots(
+        testDb,
+        buildWith({ assignments: { "boons.tier1": { "hidden-boon": count } } }),
+      );
+    expect(at(2).get("boons.tier1")).toEqual(["hidden-boon"]);
+    expect(at(0).size).toBe(0);
+  });
+
+  it("reaches an optionsFrom param holding a retired item", () => {
+    const withFlavour = db.build(
+      [
+        ...items,
+        {
+          id: "old-flavour",
+          name: "Old Flavour",
+          filter: "test_flavour",
+          hideFromPicker: true,
+        },
+      ],
+      [],
+      NW_SCHEMA,
+      slotsData,
+    );
+    const found = db.retiredSlots(
+      withFlavour,
+      buildWith({ context: { class: "", flavour: "old-flavour" } as never }),
+    );
+    expect(found.get("options.flavour")).toEqual(["old-flavour"]);
+  });
+
+  it("ignores a choice stored under a slot that no longer exists", () => {
+    expect(
+      db.retiredSlots(testDb, buildWith({ choices: { gone: "hidden" } })).size,
+    ).toBe(0);
+  });
+});
+
 describe("migrateItemIds", () => {
   it("returns the same object when nothing is retired", () => {
     const build = buildWith({ choices: { ring1: "live" } });

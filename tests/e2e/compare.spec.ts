@@ -72,6 +72,28 @@ test("only showing changes is reported in the filter bar and cleared with the fi
   await expect(onlyChanges).not.toBeChecked();
 });
 
+test("only showing changes opens a collapsed section holding one, like any filter", async ({
+  page,
+}) => {
+  await openBuilder(page);
+  await chooseItem(page, "gear.head", HEAD_ITEM);
+
+  await page.getByTestId("nav-add-build").click();
+  await chooseCombo(page.locator(".compare-select"), "Build 1");
+  await ensureSectionExpanded(page, "gear");
+  await headerRow(page, "gear").click();
+  await expect(headerRow(page, "gear")).toContainText("▸");
+
+  const onlyChanges = page.getByRole("checkbox", { name: "Only show changes" });
+  await onlyChanges.check();
+  await expect(headerRow(page, "gear")).toContainText("▾");
+  await expect(slotRow(page, "gear.head")).toBeVisible();
+
+  // The section's own collapsed state is back once the filter is gone.
+  await onlyChanges.uncheck();
+  await expect(headerRow(page, "gear")).toContainText("▸");
+});
+
 test("copying a section from another build fills its slots", async ({
   page,
 }) => {
