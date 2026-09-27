@@ -72,14 +72,14 @@ export function undo() {
   const b = builds.build.value;
   if (!b) return;
   const json = history.undo("build", b.id, b);
-  if (json != null) builds.replaceActive(JSON.parse(json));
+  if (json != null) builds.restoreSnapshot(json);
 }
 
 export function redo() {
   const b = builds.build.value;
   if (!b) return;
   const json = history.redo("build", b.id, b);
-  if (json != null) builds.replaceActive(JSON.parse(json));
+  if (json != null) builds.restoreSnapshot(json);
 }
 
 // --- build content edits --------------------------------------------------------------------
