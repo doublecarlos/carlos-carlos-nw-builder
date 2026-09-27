@@ -489,6 +489,22 @@
     ]
   },
   {
+    "id": "burning-radiant-shift-stacks",
+    "name": "Burning/Radiant Shift stacks",
+    "grants": [
+      {
+        "when": {
+          "toggle": "combat"
+        },
+        "stats": {
+          "outgoing_damage": 0.01
+        }
+      }
+    ],
+    "stacking": "perSource",
+    "maxStacks": 7
+  },
+  {
     "id": "campfire-buff-bonus",
     "name": "Campfire Buff",
     "grants": [
@@ -574,6 +590,19 @@
     ]
   },
   {
+    "id": "celestial-fluid-aurora-s-power",
+    "name": "Celestial Fluid Aurora's Power",
+    "grants": [
+      {
+        "stats": {
+          "power_p": 0.05
+        }
+      }
+    ],
+    "stacking": "perSource",
+    "maxStacks": 10
+  },
+  {
     "id": "cha-lua-accuracy-severity",
     "name": "Cha Lua",
     "grants": [
@@ -584,6 +613,17 @@
         "stats": {
           "acc_p": 0.1,
           "sev_p": 0.03
+        }
+      }
+    ]
+  },
+  {
+    "id": "companion-il-fix",
+    "name": "Companion IL Fix",
+    "grants": [
+      {
+        "stats": {
+          "il": -1
         }
       }
     ]
@@ -694,6 +734,20 @@
     ]
   },
   {
+    "id": "doomsayer-2",
+    "name": "Doomsayer",
+    "grants": [
+      {
+        "when": {
+          "toggle": "combat"
+        },
+        "stats": {
+          "outgoing_damage": 0.1
+        }
+      }
+    ]
+  },
+  {
     "id": "drizzt",
     "name": "Drizzt",
     "grants": [
@@ -797,6 +851,42 @@
             }
           }
         ]
+      }
+    ]
+  },
+  {
+    "id": "executioner-s-gift-2",
+    "name": "Executioner's Gift",
+    "grants": [
+      {
+        "name": "Encounters",
+        "when": {
+          "toggle": "combat"
+        },
+        "stats": {
+          "outgoing_damage": 0.15
+        },
+        "scaledBy": "scalers.encounterDamage"
+      },
+      {
+        "name": "At-wills",
+        "when": {
+          "toggle": "combat"
+        },
+        "stats": {
+          "outgoing_damage": 0.15
+        },
+        "scaledBy": "scalers.atWillDamage"
+      },
+      {
+        "name": "Dailies",
+        "when": {
+          "toggle": "combat"
+        },
+        "stats": {
+          "outgoing_damage": 0.15
+        },
+        "scaledBy": "scalers.dailyDamage"
       }
     ]
   },
@@ -2426,14 +2516,6 @@
         "stats": {
           "acc_p": 0.05
         }
-      },
-      {
-        "when": {
-          "toggle": "combat"
-        },
-        "stats": {
-          "strike_p": 0.055
-        }
       }
     ]
   },
@@ -2445,7 +2527,27 @@
         "stats": {
           "acc_p": 0.06
         }
-      },
+      }
+    ]
+  },
+  {
+    "id": "m33-dashing-ranger-s-strike",
+    "name": "M33 Dashing Ranger's Strike",
+    "grants": [
+      {
+        "when": {
+          "toggle": "combat"
+        },
+        "stats": {
+          "strike_p": 0.055
+        }
+      }
+    ]
+  },
+  {
+    "id": "m33-dashing-ranger-s-strike-celestial",
+    "name": "M33 Dashing Ranger's Strike (Celestial)",
+    "grants": [
       {
         "when": {
           "toggle": "combat"
@@ -3968,6 +4070,9 @@
     "name": "Shattered Resolve Stacks",
     "grants": [
       {
+        "when": {
+          "toggle": "combat"
+        },
         "stats": {
           "defense_p": 0.036,
           "awareness_p": 0.036,
@@ -4008,6 +4113,29 @@
         ]
       }
     ]
+  },
+  {
+    "id": "soul-sparks",
+    "name": "Soul Sparks",
+    "grants": [
+      {
+        "stats": {
+          "outgoing_damage": 0.005
+        }
+      },
+      {
+        "when": {
+          "equipped": {
+            "item": "wrathful-souls"
+          }
+        },
+        "stats": {
+          "outgoing_damage": 0.005
+        }
+      }
+    ],
+    "stacking": "perSource",
+    "maxStacks": 30
   },
   {
     "id": "soul-sparks-average",
@@ -4399,6 +4527,27 @@
         "stats": {
           "control_bonus_p": 0.05
         }
+      }
+    ]
+  },
+  {
+    "id": "wraith-claw-damage",
+    "name": "Wraith Claw's damage",
+    "grants": [
+      {
+        "when": {
+          "toggle": "combat"
+        },
+        "stats": {},
+        "dynamicStats": [
+          {
+            "stat": "overall_damage",
+            "min": 0,
+            "max": 0.1,
+            "default": 0.03,
+            "label": "Wraith Claw's damage"
+          }
+        ]
       }
     ]
   }

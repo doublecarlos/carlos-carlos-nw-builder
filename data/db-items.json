@@ -1930,7 +1930,16 @@
       "Enchantment_Combat_O_V2_R6_Account"
     ],
     "shortDescription": "Max Mana +10%",
-    "longDescription": "Max Mana +10%"
+    "longDescription": "Max Mana +10%",
+    "bonuses": [
+      {
+        "bonus": "celestial-fluid-aurora-s-power",
+        "min": 0,
+        "max": 10,
+        "default": 0,
+        "label": "Power stacks"
+      }
+    ]
   },
   {
     "id": "celestial-lion-s-presence",
@@ -2494,6 +2503,14 @@
     "name": "Divine Equilibrium",
     "filter": "class_feat",
     "longDescription": "Increases your damage dealt by 15% whenever your\ncurrent divinity is exactly half of your maximum\ndivinity. This effect decreases as your divinity\nbecomes further away from this point.",
+    "dynamicStats": [
+      {
+        "stat": "outgoing_damage",
+        "min": 0,
+        "max": 0.15,
+        "default": 0.15
+      }
+    ],
     "allowedClass": ["cleric"],
     "tags": ["exclusive:arbiter"],
     "bonuses": ["paragon-exclusive"]
@@ -2604,7 +2621,16 @@
     "longDescription": "Whenever you use an encounter power that inflicts a\nnegative condition on an enemy, you gain the effect\nof Doomsayer, increasing damage dealt by 10%.\n\nDuration: 10s.",
     "allowedClass": ["cleric"],
     "tags": ["exclusive:arbiter"],
-    "bonuses": ["paragon-exclusive"]
+    "bonuses": [
+      {
+        "bonus": "doomsayer-2",
+        "min": 0,
+        "max": 1,
+        "default": 1,
+        "label": "Proc"
+      },
+      "paragon-exclusive"
+    ]
   },
   {
     "id": "double-scorch",
@@ -2712,7 +2738,7 @@
     "longDescription": "Your powers deal up to 30% more damage as your\ntarget's health diminishes.",
     "allowedClass": ["warlock"],
     "tags": ["exclusive:hellbringer"],
-    "bonuses": ["paragon-exclusive"]
+    "bonuses": ["executioner-s-gift-2", "paragon-exclusive"]
   },
   {
     "id": "expanded-faith",
@@ -2949,7 +2975,8 @@
     "name": "Generic Companion",
     "filter": "companion",
     "il": 1800,
-    "combined_rating": 1530
+    "combined_rating": 1530,
+    "bonuses": ["companion-il-fix"]
   },
   {
     "id": "generic-defense",
@@ -4649,7 +4676,16 @@
     "ap_gain": 0.015,
     "combined_rating": 4560,
     "gameIds": ["Ring_M33_Lightdps_R5"],
-    "bonuses": ["m33-dashing-ranger"]
+    "bonuses": [
+      "m33-dashing-ranger",
+      {
+        "bonus": "m33-dashing-ranger-s-strike",
+        "min": 0,
+        "max": 1,
+        "default": 1,
+        "label": "Movement proc"
+      }
+    ]
   },
   {
     "id": "m33-coldsilver-ring-of-initiative",
@@ -4843,7 +4879,14 @@
     "bonuses": [
       "m33-frostsilver-loop-of-the-arcane-accuracy",
       "m33-frostsilver-loop-of-the-arcane-power",
-      "m33-dashing-ranger-celestial"
+      "m33-dashing-ranger-celestial",
+      {
+        "bonus": "m33-dashing-ranger-s-strike-celestial",
+        "min": 0,
+        "max": 1,
+        "default": 1,
+        "label": "Movement proc"
+      }
     ]
   },
   {
@@ -5488,7 +5531,16 @@
       "options.forte2b": "awareness_p"
     },
     "allowedClass": ["warlock"],
-    "tags": ["paragon"]
+    "tags": ["paragon"],
+    "bonuses": [
+      {
+        "bonus": "soul-sparks",
+        "min": 1,
+        "max": 30,
+        "default": 30
+      },
+      "wraith-claw-damage"
+    ]
   },
   {
     "id": "paragon-minstrel",
@@ -5584,7 +5636,15 @@
     "longDescription": "Encounter powers which generate Radiant Judgement\nnow grant Radiant Shift. Encounter powers which\ngenerate Burning Judgement now grant Burning Shift.\nThese effects may stack up to 4 times.\n\nRadiant Shift Effect: Increases damage dealt by 1%\nBurning Shift Effect: Increases damage dealt by 1%\nDuration: 60s\n\nIf either Radiant Shift or Burning Shift exceed one\nanother by a single stack, both effects will expire\nimmediately. Upon reaching 4 stacks of both Radiant\nShift and Burning Shift both effects will be consumed\ninstantly restoring your divinity to full.",
     "allowedClass": ["cleric"],
     "tags": ["exclusive:arbiter"],
-    "bonuses": ["paragon-exclusive"]
+    "bonuses": [
+      "paragon-exclusive",
+      {
+        "bonus": "burning-radiant-shift-stacks",
+        "min": 0,
+        "max": 7,
+        "default": 7
+      }
+    ]
   },
   {
     "id": "perfect-vision-acc",
@@ -6348,6 +6408,7 @@
     "name": "Soul Puppet",
     "filter": "class_stuff",
     "overall_damage": 0.03,
+    "hideFromPicker": true,
     "allowedClass": ["warlock"],
     "tags": ["exclusive:hellbringer"],
     "bonuses": ["paragon-exclusive"]
@@ -6366,6 +6427,7 @@
     "name": "Soul Sparks (average)",
     "filter": "class_stuff",
     "outgoing_damage": 0.03,
+    "hideFromPicker": true,
     "allowedClass": ["warlock"],
     "bonuses": ["soul-sparks-average", "paragon-exclusive"]
   },
@@ -6373,6 +6435,7 @@
     "id": "soul-sparks-max",
     "name": "Soul Sparks (max)",
     "filter": "class_stuff",
+    "hideFromPicker": true,
     "allowedClass": ["warlock"],
     "tags": ["exclusive:hellbringer"],
     "bonuses": ["soul-sparks-max", "paragon-exclusive"]

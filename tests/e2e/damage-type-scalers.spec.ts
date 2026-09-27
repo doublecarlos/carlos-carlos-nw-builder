@@ -158,8 +158,8 @@ test("a scaled ladder shows every rung at the share, each noting its real value"
   await expect(card).not.toContainText("+22.00%");
   await expect(card).not.toContainText("+30.00%");
   // Soul Investiture ships at its full five stacks, so the top rung is the live one and the
-  // panel carries its 12%.
-  await expect(statValue(page, "outgoing_damage")).toHaveText("12.00%");
+  // panel carries its 12%, plus Hellbringer's 15% from 30 Soul Sparks.
+  await expect(statValue(page, "outgoing_damage")).toHaveText("27.00%");
 });
 
 test("the bonus inspector breaks a scaled bonus down under its own heading", async ({
