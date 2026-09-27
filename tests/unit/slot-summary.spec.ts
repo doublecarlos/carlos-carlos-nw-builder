@@ -1,5 +1,4 @@
-// BuildEditor.vue's per-row stat summary and insignia bonus-slot placeholder, moved to
-// lib/slot-summary.ts so they are testable independent of the component.
+// BuildEditor.vue's per-row stat summary and insignia bonus-slot placeholder.
 import { describe, it, expect } from "vitest";
 import * as db from "../../src/data/db";
 import {
@@ -24,48 +23,38 @@ const part = (key: string, value: number) =>
 
 describe("slotStatSummary", () => {
   it("returns an empty string for an item with nothing to show", () => {
-    expect(slotStatSummary(item(), 1, [])).toBe("");
+    expect(slotStatSummary(item(), {}, [])).toBe("");
   });
 
-  it("lists the item's own non-zero stats, scaled by the factor", () => {
-    expect(slotStatSummary(item({ power: 100 }), 1, [])).toBe(
-      part("power", 100),
-    );
-    expect(slotStatSummary(item({ power: 100 }), 2, [])).toBe(
-      part("power", 200),
-    );
+  it("lists the row's non-zero stat totals, not the item's own stats", () => {
+    expect(
+      slotStatSummary(item({ power: 100 }), { power: 300, acc: 0 }, []),
+    ).toBe(part("power", 300));
+    expect(slotStatSummary(item({ power: 100 }), {}, [])).toBe("");
   });
 
   it("leads with the item's own description, then its insignia slot summary", () => {
     const withDescription = item({ shortDescription: "Grants a boon." });
-    expect(slotStatSummary(withDescription, 1, [])).toBe("Grants a boon.");
+    expect(slotStatSummary(withDescription, {}, [])).toBe("Grants a boon.");
 
     const mount = item({ insigniaSlots: [{ shape: "square" }] });
-    expect(slotStatSummary(mount, 1, [])).toBe("Slots: square");
+    expect(slotStatSummary(mount, {}, [])).toBe("Slots: square");
   });
 
-  it("folds an active bonus's appliedStats into the same totals", () => {
+  it("adds an active grant's description before the stat totals", () => {
     const bonus = {
-      appliedStats: { power: 10 },
       grants: [{ active: true, raw: { shortDescription: "Active grant." } }],
     } as unknown as EvaluatedBonus;
-    expect(slotStatSummary(item({ power: 90 }), 1, [bonus])).toBe(
+    expect(slotStatSummary(item(), { power: 100 }, [bonus])).toBe(
       `Active grant. • ${part("power", 100)}`,
     );
   });
 
-  it("adds the item's own dynamic stat values to its fixed ones", () => {
-    expect(
-      slotStatSummary(item({ power: 100 }), 1, [], { power: 50, acc: 20 }),
-    ).toBe(`${part("power", 150)} • ${part("acc", 20)}`);
-  });
-
   it("skips an inactive grant's description", () => {
     const bonus = {
-      appliedStats: {},
       grants: [{ active: false, raw: { shortDescription: "Hidden." } }],
     } as unknown as EvaluatedBonus;
-    expect(slotStatSummary(item(), 1, [bonus])).toBe("");
+    expect(slotStatSummary(item(), {}, [bonus])).toBe("");
   });
 });
 
