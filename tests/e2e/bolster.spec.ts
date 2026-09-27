@@ -29,7 +29,7 @@ function statValue(page: Page, key: string) {
 }
 
 /** The same cell as a number, for asserting a *change* rather than a total. A rating row shows
- *  the stat plus every combined-rating contribution folded in (engine stage 3), so the absolute
+ *  the stat plus every combined-rating contribution folded in (engine stage 2), so the absolute
  *  figure depends on everything else equipped -- the delta is what this feature owns. */
 async function statNumber(page: Page, key: string): Promise<number> {
   const text = await statValue(page, key).textContent();

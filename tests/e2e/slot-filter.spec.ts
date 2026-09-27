@@ -2,8 +2,10 @@
 // visible slots and sections, the section-header-match override, forcing a matching but
 // manually-collapsed section back open, and the clear-filters affordance. Also covers matching
 // on a slot's current choice and its rendered stat summary.
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 import {
+  confirmImport,
+  importText,
   openBuilder,
   headerRow,
   slotRow,
@@ -14,6 +16,34 @@ import {
   slotFilterClearButton,
 } from "./support/app";
 import { expectTopmost } from "./support/occlusion";
+
+const DYNAMIC_RING_SLOT = "gear.ring1";
+
+/** A ring whose only stat is Accuracy the player types in. */
+async function importDynamicRing(page: Page) {
+  const id = "test-filter-dynamic-ring";
+  await importText(
+    page,
+    JSON.stringify({
+      name: "Dynamic filter test",
+      choices: { [DYNAMIC_RING_SLOT]: id },
+      catalog: {
+        items: {
+          [id]: {
+            id,
+            name: "Test Filter Dynamic Ring",
+            filter: "gear_ring",
+            dynamicStats: [{ stat: "acc", min: 0, max: 1000, default: 500 }],
+          },
+        },
+        bonuses: {},
+        sectionPresets: {},
+      },
+    }),
+  );
+  await confirmImport(page);
+  await expect(page.getByTestId("app-header")).toContainText(/imported/i);
+}
 
 test.describe("slot filter: text", () => {
   test("typing a slot label shows only matching slots and hides sections with no match", async ({
@@ -95,6 +125,17 @@ test.describe("slot filter: text", () => {
     await expect(slotRow(page, "gear.head")).toBeHidden();
   });
 
+  test("a dynamic stat's value shows in the stat summary it matches against", async ({
+    page,
+  }) => {
+    await openBuilder(page);
+    await importDynamicRing(page);
+
+    await slotFilterInput(page).fill("Acc ");
+    await expect(slotRow(page, DYNAMIC_RING_SLOT)).toBeVisible();
+    await expect(slotRow(page, "gear.head")).toBeHidden();
+  });
+
   test("multiple whitespace-separated words each match, even across different fields", async ({
     page,
   }) => {
@@ -168,6 +209,17 @@ test.describe("slot filter: stat", () => {
 
     await chooseCombo(slotFilterStatCombo(page), "Power");
     await expect(slotRow(page, "buffs.food")).toBeVisible();
+  });
+
+  test("a slot matches through its item's own dynamic stat", async ({
+    page,
+  }) => {
+    await openBuilder(page);
+    await importDynamicRing(page);
+
+    await chooseCombo(slotFilterStatCombo(page), "Accuracy");
+    await expect(slotRow(page, DYNAMIC_RING_SLOT)).toBeVisible();
+    await expect(slotRow(page, "gear.head")).toBeHidden();
   });
 });
 

@@ -54,6 +54,12 @@ describe("slotStatSummary", () => {
     );
   });
 
+  it("adds the item's own dynamic stat values to its fixed ones", () => {
+    expect(
+      slotStatSummary(item({ power: 100 }), 1, [], { power: 50, acc: 20 }),
+    ).toBe(`${part("power", 150)} • ${part("acc", 20)}`);
+  });
+
   it("skips an inactive grant's description", () => {
     const bonus = {
       appliedStats: {},

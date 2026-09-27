@@ -23,6 +23,7 @@ const bonus = (over: Partial<EvaluatedBonus> = {}): EvaluatedBonus =>
     chose: null,
     stats: null,
     previewStats: null,
+    dynamicValues: {},
     grants: [],
     problems: [],
     stacks: 1,

@@ -189,12 +189,13 @@ const supplierSlots = computed(() =>
 
 /** Whether this slotDef's *current choice* grants the given stat -- read straight off the
  *  engine's own resolved row vector (`rowBySlot`, `EngineRow.stats`), which already sums the
- *  row's item stats, its point_assignment items' stats (scaled by count), and any active bonus
- *  attributed to it (engine.ts's `rowVectors`) -- the same numbers the row's own stat summary
- *  is built from, untouched by any later pipeline stage. Deliberately not "could some other,
- *  not-yet-chosen candidate item grant this instead" -- that would mean re-running the engine
- *  per candidate item per slot (see ItemPicker.vue's `previewBonusStats`), and would defeat the
- *  filter's own point: finding where a stat is actually coming from in *this* build. */
+ *  row's item stats (fixed and dynamic), its point_assignment items' stats (scaled by count),
+ *  and any active bonus attributed to it (engine.ts's `rowVectors`) -- the same numbers the
+ *  row's own stat summary is built from, untouched by any later pipeline stage. Deliberately
+ *  not "could some other, not-yet-chosen candidate item grant this instead" -- that would mean
+ *  re-running the engine per candidate item per slot (see ItemPicker.vue's
+ *  `previewBonusStats`), and would defeat the filter's own point: finding where a stat is
+ *  actually coming from in *this* build. */
 function slotGrantsStat(slotDef: Slot, statKey: string): boolean {
   return !!rowBySlot.value.get(slotDef.id)?.stats[statKey];
 }
@@ -301,16 +302,19 @@ const hoveredItem = computed(() =>
 const hoveredDynamicValues = computed(() => {
   const item = hoveredItem.value;
   const slotId = hover.value?.slotId;
-  if (!item?.dynamicStats?.length || !slotId || itemIn(slotId) !== item) {
-    return {};
-  }
+  if (!item || !slotId || itemIn(slotId) !== item) return {};
+  return dynamicValuesFor(slotId, item);
+});
+
+/** stat -> one copy's value for each of `item`'s own dynamic stats at `slotId`. */
+function dynamicValuesFor(slotId: string, item: Item): Record<string, number> {
   return Object.fromEntries(
-    item.dynamicStats.map((config) => [
+    (item.dynamicStats ?? []).map((config) => [
       config.stat,
       readDynamicValue(build.value, slotId, config),
     ]),
   );
-});
+}
 
 /**
  * Every bonus the hovered item takes part in -- its own inline ones and its sets'.
@@ -743,6 +747,7 @@ function statSummary(slotId: string) {
     item,
     itemScaleFactor(item),
     bonusesBySlot.value.get(slotId) ?? [],
+    dynamicValuesFor(slotId, item),
   );
 }
 

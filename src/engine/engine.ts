@@ -62,20 +62,26 @@ const sheetRound = (value: number, digits = 2) => {
 };
 
 /**
- * Per-slot stat vectors: the item's own stats plus the bonuses attributed to that slot.
- * Kept as rows because multiplicative stats combine per row, not per source.
+ * Per-slot stat vectors: the item's own stats, its dynamic stats' values, and the bonuses
+ * attributed to that slot. Kept as rows because multiplicative stats combine per row, not per
+ * source.
  *
  * `scaleFactorFor` applies to the item's own fields only -- mount/companion bolster scales what
  * the item itself carries, while the assignment and bonus stats merged in below reached this
  * row by attribution (bonus.ts's `anchor.slotId`) rather than by belonging to the item, and are
  * not the granting item's to scale. Scaling the bonuses that genuinely should is separate work.
  */
-function rowVectors(resolved: ResolvedBonuses, keys: StatKey[]): EngineRow[] {
+function rowVectors(
+  build: Build,
+  resolved: ResolvedBonuses,
+  keys: StatKey[],
+): EngineRow[] {
   return resolved.rows.map((row) => {
     const stats = zeros(keys);
-    // Kept apart from `stats`, which merges the bonus and assignment stats in below: the stat
-    // source popover needs the item's own share, and recomputing it there let the two disagree.
+    // Kept apart from `stats`, which merges everything in below: the stat source popover needs
+    // each share on its own, and recomputing them there let the two disagree.
     const itemStats: Record<string, number> = {};
+    const dynamicStats: Record<string, number> = {};
     if (row.item) {
       const factor = scaleFactorFor(resolved.ctx, row.item);
       for (const key of keys) {
@@ -86,6 +92,13 @@ function rowVectors(resolved: ResolvedBonuses, keys: StatKey[]): EngineRow[] {
           itemStats[key] = scaledStat(row.item, key, factor) * row.repetitions;
           stats[key] = itemStats[key];
         }
+      }
+      // The declared range is not clamped here. An unset value reads as its config's default.
+      for (const config of row.item.dynamicStats ?? []) {
+        const value =
+          readDynamicValue(build, row.slotId, config) * row.repetitions;
+        dynamicStats[config.stat] = value;
+        stats[config.stat] = (stats[config.stat] ?? 0) + value;
       }
     }
     // A point_assignment row has no single item to read stats off of -- its assignments'
@@ -107,7 +120,7 @@ function rowVectors(resolved: ResolvedBonuses, keys: StatKey[]): EngineRow[] {
       item: row.item,
       stats,
       itemStats,
-      dynamicStats: {},
+      dynamicStats,
       repetitions: row.repetitions,
     };
   });
@@ -153,7 +166,7 @@ function run(
   const keys: StatKey[] = schema.statKeys;
   const context = build.context ?? {};
   const multiplicative = new Set(schema.multiplicativeStats);
-  const rows = rowVectors(resolved, keys);
+  const rows = rowVectors(build, resolved, keys);
 
   // --- stage 1: initial sums -----------------------------------------------------------
   const sums = zeros(keys);
@@ -171,30 +184,13 @@ function run(
   }
   for (const [key, product] of products) sums[key] = product - 1;
 
-  // --- stage 2: dynamic stat resolution --------------------------------------------------
-  // The declared range is NOT clamped here. An unset value reads as its config's own `default`.
-  const dynamicStatMods = zeros(keys);
-  for (const row of rows) {
-    for (const config of row.item?.dynamicStats ?? []) {
-      // Scaled by the row's repetition count for the same reason its plain stats are: one
-      // magnitude typed against an item that is in the build N times describes each of those N.
-      const value =
-        readDynamicValue(build, row.slotId, config) * row.repetitions;
-      dynamicStatMods[config.stat] += value;
-      row.dynamicStats[config.stat] = value;
-    }
-  }
-  const afterDynamicStatMods = addVectors(sums, dynamicStatMods, keys);
-
-  // --- stage 3: combined rating --------------------------------------------------------
-  const afterCombinedRating: Record<StatKey, number> = {
-    ...afterDynamicStatMods,
-  };
+  // --- stage 2: combined rating --------------------------------------------------------
+  const afterCombinedRating: Record<StatKey, number> = { ...sums };
   for (const key of schema.ratingStats) {
     afterCombinedRating[key] += sums.combined_rating;
   }
 
-  // --- stage 4: caps -------------------------------------------------------------------
+  // --- stage 3: caps -------------------------------------------------------------------
   // Calculates caps for each applicable stat, based on the build's item level.
   // It is assumed that nothing after this stage alters Item Level.
   const itemLevel = afterCombinedRating.il;
@@ -207,7 +203,7 @@ function run(
   const atCap = (key: StatKey, value: number) =>
     caps[key] > 0 ? Math.min(value, caps[key]) : value;
 
-  // --- stage 5: rating -> percent ------------------------------------------------------
+  // --- stage 4: rating -> percent ------------------------------------------------------
   const ratingPct = zeros(keys);
   for (const rule of schema.ratingConversion) {
     const shortfall = Math.max(
@@ -218,7 +214,7 @@ function run(
   }
   const afterRatingPct = addVectors(afterCombinedRating, ratingPct, keys);
 
-  // --- stage 6: stat contributions ----------------------------------------------------------
+  // --- stage 5: stat contributions ----------------------------------------------------------
   // One ordered rule list, defining source and target stats, and the divisor.
   // Applied against running totals. Each rule read its source at the source's cap.
   // Rules generated by the engine (forte, mag/phys debuff) are applied last.
@@ -242,7 +238,7 @@ function run(
     applied.push({ source: rule.source, target: rule.target, value });
   }
 
-  // --- stage 7: final caps -------------------------------------------------------------
+  // --- stage 6: final caps -------------------------------------------------------------
   const capped = zeros(keys);
   const overcap = zeros(keys);
   const headroom = zeros(keys);
@@ -261,8 +257,6 @@ function run(
     rows,
     stages: {
       sums,
-      dynamicStatMods,
-      afterDynamicStatMods,
       afterCombinedRating,
       caps,
       ratingPct,
@@ -485,8 +479,8 @@ function insigniaWarnings(db: Db, build: Build): EngineError[] {
   }));
 }
 
-/** Dynamic stats carry a declared range. The value is used as typed (see stage 2); flagging it
- * here is what makes that safe. */
+/** Dynamic stats carry a declared range. The value is used as typed (see `rowVectors`);
+ * flagging it here is what makes that safe. */
 function itemDynamicStatRanges(build: Build, row: ResolvedRow): EngineError[] {
   const errors: EngineError[] = [];
   for (const config of row.item?.dynamicStats ?? []) {

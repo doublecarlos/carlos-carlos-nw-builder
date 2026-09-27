@@ -79,8 +79,7 @@ function bonusSources(result: ResolvedBuild, key: StatKey): StatSource[] {
   return out;
 }
 
-/** Stage 2: every typed dynamic-stat value targeting this key, attributed to the item that
- *  carries it. */
+/** Every item's own typed dynamic-stat value targeting this key, one line per build row. */
 function dynamicStatSources(result: ResolvedBuild, key: StatKey): StatSource[] {
   const out: StatSource[] = [];
   for (const row of result.rows) {
@@ -96,7 +95,7 @@ function dynamicStatSources(result: ResolvedBuild, key: StatKey): StatSource[] {
   return out;
 }
 
-/** Stage 3: `combined_rating` feeds every rating stat equally -- one line, not attributed
+/** Stage 2: `combined_rating` feeds every rating stat equally -- one line, not attributed
  * further back to whichever items/bonuses granted `combined_rating` itself (that's its own
  * row in "Other stats", with its own popover). */
 function combinedRatingSource(
@@ -108,7 +107,7 @@ function combinedRatingSource(
   return value ? [{ name: "Combined rating", value }] : [];
 }
 
-/** Stage 5: the rating -> percent conversion. Always present and always first for
+/** Stage 4: the rating -> percent conversion. Always present and always first for
  * a paired percent stat. */
 function ratingContributionSource(
   result: ResolvedBuild,
@@ -121,7 +120,7 @@ function ratingContributionSource(
   ];
 }
 
-/** Stage 6: every contribution rule targeting this key, one line per source stat.
+/** Stage 5: every contribution rule targeting this key, one line per source stat.
  * Two rules with the same source fold into one line, in the order the pipeline applied them. */
 function contributionSources(
   result: ResolvedBuild,

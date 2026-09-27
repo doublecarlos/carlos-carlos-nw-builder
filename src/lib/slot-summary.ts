@@ -7,18 +7,22 @@ import { oneShortOf, slotSummary, stableRef } from "../engine/insignia";
 import { scaledStat } from "../engine/scaling";
 import type { Build, Db, EvaluatedBonus, Item } from "../types";
 
-// The item's own stats plus whatever active bonuses are credited to this row, summed key by
-// key rather than attributed separately: one number per stat, not a name-tagged breakdown.
+// The item's own stats, its dynamic stats' values, and whatever active bonuses are credited to
+// this row, summed key by key rather than attributed separately: one number per stat, not a
+// name-tagged breakdown.
 export function slotStatSummary(
   item: Item,
   scaleFactor: number,
   bonuses: EvaluatedBonus[],
+  dynamicValues: Record<string, number> = {},
 ): string {
   const totals: Record<string, number> = {};
   for (const key of NW_SCHEMA.statKeys) {
     if (item[key])
       totals[key] = (totals[key] ?? 0) + scaledStat(item, key, scaleFactor);
   }
+  for (const [key, value] of Object.entries(dynamicValues))
+    totals[key] = (totals[key] ?? 0) + value;
   const descriptions: string[] = [];
   const slots = slotSummary(item);
   if (slots) descriptions.push(slots);

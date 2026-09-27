@@ -98,6 +98,13 @@ const slotsData: SlotsData = {
       type: "item_picker",
       filter: "necks",
     },
+    {
+      id: "gear.neck2",
+      label: "Neck 2",
+      section: "gear",
+      type: "item_picker",
+      filter: "necks",
+    },
   ],
 };
 
@@ -120,17 +127,28 @@ function resolveWith(
   itemStats: Partial<Item>,
   context: Partial<BuildContext> = {},
 ) {
-  const neck: Item = {
-    id: "neck",
-    name: "Neck",
+  return resolveWithNecks([itemStats], context);
+}
+
+/** As `resolveWith`, one neck slot per entry, each its own row. */
+function resolveWithNecks(
+  necksStats: Partial<Item>[],
+  context: Partial<BuildContext> = {},
+) {
+  const necks: Item[] = necksStats.map((itemStats, index) => ({
+    id: `neck${index}`,
+    name: `Neck ${index}`,
     filter: "necks",
     ...itemStats,
-  };
-  const testDb = db.build([neck], [], schema, slotsData);
+  }));
+  const slotIds = ["gear.neck", "gear.neck2"];
+  const testDb = db.build(necks, [], schema, slotsData);
   const build = {
     id: "b",
     name: "b",
-    choices: { "gear.neck": neck.id },
+    choices: Object.fromEntries(
+      necks.map((neck, index) => [slotIds[index], neck.id]),
+    ),
     values: {},
     assignments: {},
     occurrenceInputs: {},
@@ -282,5 +300,27 @@ describe("enemy incoming magical/physical damage debuff", () => {
       { damageType: "physical" },
     );
     expect(physicalBuild.stages.totals.enemy_incoming_damage).toBeCloseTo(0, 9);
+  });
+});
+
+describe("an item's dynamic stats sum with its fixed ones", () => {
+  it("spreads a dynamic combined rating over every rating stat", () => {
+    const result = resolveWith({
+      forte: 100,
+      dynamicStats: [
+        { stat: "combined_rating", min: 0, max: 5000, default: 1000 },
+      ],
+    });
+    expect(result.stages.sums.combined_rating).toBe(1000);
+    expect(result.stages.afterCombinedRating.forte).toBe(1100);
+    expect(result.stages.afterCombinedRating.out_healing).toBe(1000);
+  });
+
+  it("combines a dynamic multiplicative stat per row, like a fixed one", () => {
+    const neck = {
+      dynamicStats: [{ stat: "hit_points_mult", min: 0, max: 1, default: 0.1 }],
+    };
+    const result = resolveWithNecks([neck, neck]);
+    expect(result.stages.sums.hit_points_mult).toBeCloseTo(1.1 * 1.1 - 1, 9);
   });
 });

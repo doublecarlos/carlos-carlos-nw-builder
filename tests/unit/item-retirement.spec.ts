@@ -542,9 +542,15 @@ describe("exporting a build that still holds a retired id", () => {
  */
 describe("accepting the offer does not move the numbers", () => {
   const SLOT = "companions.universal1";
-  const damage = (build: Build) =>
-    engine.resolveBuild(catalog.makeDb([]), build).stages.dynamicStatMods
-      .overall_damage;
+  /** The build's summed damage, and the slot's dynamic share of it. */
+  const damage = (build: Build) => {
+    const result = engine.resolveBuild(catalog.makeDb([]), build);
+    return {
+      total: result.stages.sums.overall_damage,
+      dynamic: result.rows.find((row) => row.slotId === SLOT)?.dynamicStats
+        .overall_damage,
+    };
+  };
 
   it.each([
     ["celestial-lion-s-presence-2-stalwart-golden-lion-damage-utility", 0.02],
@@ -556,19 +562,15 @@ describe("accepting the offer does not move the numbers", () => {
       ...storage.defaultBuild("imported"),
       choices: { [SLOT]: id },
     });
-    // Before: the build still holds the retired item, whose own flat stat this is. It is not
-    // a dynamic stat at all yet, so it lands in `sums` rather than `dynamicStatMods`.
-    expect(
-      engine.resolveBuild(db, build).stages.sums.overall_damage,
-    ).toBeCloseTo(want, 10);
-    expect(damage(build)).toBe(0);
+    // Before: the build still holds the retired item, whose own flat stat this is.
+    const before = damage(build);
+    expect(before.total).toBeCloseTo(want, 10);
+    expect(before.dynamic).toBeUndefined();
 
     // After: the replacement's dynamic stat, seeded to the same number.
-    const migrated = migrateItemIds(db, build);
-    expect(damage(migrated)).toBeCloseTo(want, 10);
-    expect(engine.resolveBuild(db, migrated).stages.sums.overall_damage).toBe(
-      0,
-    );
+    const after = damage(migrateItemIds(db, build));
+    expect(after.total).toBeCloseTo(want, 10);
+    expect(after.dynamic).toBeCloseTo(want, 10);
   });
 });
 
