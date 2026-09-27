@@ -29,11 +29,11 @@ describe("migrateListSlots", () => {
   it("carries a row's magnitudes and repetition counts with its pick", () => {
     const migrated = migrateListSlots({
       choices: { "misc.misc4": "a" },
-      values: { "misc.misc4": { power: 10 } },
+      values: { "misc.misc4": { stat: { power: 10 } } },
       assignments: { "misc.misc4": { a: 3 } },
       disabledSlots: {},
     });
-    expect(migrated.values).toEqual({ "misc.misc#1": { power: 10 } });
+    expect(migrated.values).toEqual({ "misc.misc#1": { stat: { power: 10 } } });
     expect(migrated.assignments).toEqual({ "misc.misc#1": { a: 3 } });
   });
 
@@ -62,7 +62,7 @@ describe("migrateListSlots", () => {
   it("drops a retired id carrying a magnitude but no pick", () => {
     const migrated = migrateListSlots({
       choices: {},
-      values: { "group.group3": { power: 10 } },
+      values: { "group.group3": { stat: { power: 10 } } },
       assignments: {},
       disabledSlots: {},
     });

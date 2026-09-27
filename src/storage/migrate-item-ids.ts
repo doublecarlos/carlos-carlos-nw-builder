@@ -7,7 +7,6 @@
 // Pure and idempotent: an id it produces is one nothing supersedes.
 import { retiredChoices } from "../data/db";
 import { getPath, setPath } from "../lib/build-path";
-import { dynamicValueKey } from "../lib/dynamic-stats";
 import type { Build, BuildContext, Db } from "../types";
 
 /** Every stored id in `build` that `db` now resolves to a different item, old id to new. */
@@ -125,10 +124,12 @@ function seedValues(db: Db, build: Build, only?: string): Build["values"] {
     );
     for (const [stat, value] of Object.entries(seeds)) {
       if (value === undefined || !declared.has(stat)) continue;
-      const key = dynamicValueKey(stat);
-      if (values[slotId]?.[key] !== undefined) continue;
+      if (values[slotId]?.stat?.[stat] !== undefined) continue;
       if (values === build.values) values = { ...build.values };
-      values[slotId] = { ...values[slotId], [key]: value };
+      values[slotId] = {
+        ...values[slotId],
+        stat: { ...values[slotId]?.stat, [stat]: value },
+      };
     }
   }
   return values;

@@ -10,7 +10,7 @@ import { bonusIdOf, occurrenceCountFor } from "../lib/bonus-attachment";
 import { assignedRows, inlineRepetitionCount } from "../lib/inline-repetition";
 import { isDisabled } from "../lib/slot-toggle";
 import { expandSlots } from "../lib/item-picker-list";
-import { readDynamicValue } from "../lib/dynamic-stats";
+import { bonusStatAddress, readInput } from "../lib/build-inputs";
 import type {
   AssignedItemStats,
   PublishConflict,
@@ -700,25 +700,21 @@ interface Group {
   carried: boolean;
 }
 
-/** Every dynamic-stat value this bonus's grants/variants declare, resolved against `slotId`
- *  (the bonus's first contributing source by build order -- see the "instancing slot" comment
- *  below) and defaulted, keyed by stat. Two configs across different grants/variants of the
- *  same bonus targeting the same stat share one stored value -- there is only one slot this
- *  bonus resolves its dynamic values against, regardless of which of its grants asks. */
+/** Every dynamic-stat value this bonus's grants/variants declare, defaulted, keyed by stat.
+ *  Configs of one bonus naming the same stat share one stored value. */
 function resolveDynamicValues(
   bonus: Bonus,
   build: Build,
-  slotId: string,
 ): Record<string, number> {
   const out: Record<string, number> = {};
+  const read = (config: DynamicStatConfig) =>
+    readInput(build, bonusStatAddress(bonus.id, config.stat), config.default);
   for (const grant of bonus.grants ?? []) {
-    for (const config of grant.dynamicStats ?? []) {
-      out[config.stat] = readDynamicValue(build, slotId, config, bonus.id);
-    }
+    for (const config of grant.dynamicStats ?? [])
+      out[config.stat] = read(config);
     for (const variant of grant.variants ?? []) {
-      for (const config of variant.dynamicStats ?? []) {
-        out[config.stat] = readDynamicValue(build, slotId, config, bonus.id);
-      }
+      for (const config of variant.dynamicStats ?? [])
+        out[config.stat] = read(config);
     }
   }
   return out;
@@ -752,7 +748,7 @@ export function resolve(db: Db, build: Build): ResolvedBonuses {
   // see its doc comment for why -- but only where nothing real already reached this bonus; a
   // group with at least one real source is untouched. Among several zero anchors, a carried
   // one wins the instancing slot: it is the row the bonus is actually on, so that is where
-  // its dynamic values are read from and where the inspector's slot link should land.
+  // its controls render and where the inspector's slot link should land.
   for (const anchor of zeroCandidates) {
     const group = groups.get(anchor.bonus.id);
     if (!group) {
@@ -772,18 +768,11 @@ export function resolve(db: Db, build: Build): ResolvedBonuses {
   // Evaluate everything before applying any exclusion, so exclusion never cascades and the
   // outcome cannot depend on evaluation order.
   const evaluated: EvaluatedBonus[] = [...groups.values()].map((group) => {
-    // Sorted before evaluating (not after, as a plain stat-attribution readout could afford
-    // to) -- resolving this bonus's dynamic values needs its first slot up front, since that
-    // resolution feeds straight into `evaluateBonus`'s stats, not just `EvaluatedBonus.slotId`.
     // A zero-sources group has no real candidate to sort/read here, so it falls back to the
     // anchor that made it reachable in the first place (always set in that case).
     const sources = [...group.sources].sort((a, b) => a.order - b.order);
     const anchor = sources[0] ?? group.anchor!;
-    const dynamicValues = resolveDynamicValues(
-      group.bonus,
-      build,
-      anchor.slotId,
-    );
+    const dynamicValues = resolveDynamicValues(group.bonus, build);
     const result = evaluateBonus(group.bonus, ctx, dynamicValues, {
       hasSources: sources.length > 0,
     });

@@ -52,6 +52,7 @@ const testBuild = (): Build => ({
   name: "b",
   choices: {},
   values: {},
+  bonusValues: {},
   assignments: {},
   occurrenceInputs: {},
   listRows: {},

@@ -85,6 +85,7 @@ function testBuild(overrides: Partial<Build> = {}): Build {
     name: "b",
     choices: { "buffs.elixir": elixir.id },
     values: {},
+    bonusValues: {},
     assignments: {},
     occurrenceInputs: {},
     listRows: {},

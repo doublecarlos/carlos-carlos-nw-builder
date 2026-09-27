@@ -66,7 +66,7 @@ describe("buildDraft / toPreset round trip", () => {
       section: "gear",
       params: { "options.flavour": "sweet" },
       choices: { ring1: "ring" },
-      values: { ring1: { power: 5 } },
+      values: { ring1: { stat: { power: 5 } } },
       assignments: { "boons.tier1": { boon: 2 } },
       clears: ["ring1"],
     };

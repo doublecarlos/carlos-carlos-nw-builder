@@ -199,7 +199,9 @@
       },
       "values": {
         "gear.offhandMod2": {
-          "ca": 3589
+          "stat": {
+            "ca": 3589
+          }
         }
       },
       "occurrenceInputs": {

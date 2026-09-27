@@ -50,6 +50,7 @@ function testBuild(context: Record<string, unknown> = {}): Build {
     name: "b",
     choices: {},
     values: {},
+    bonusValues: {},
     assignments: {},
     occurrenceInputs: {},
     listRows: {},

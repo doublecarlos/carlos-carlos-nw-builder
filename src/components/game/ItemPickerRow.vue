@@ -28,6 +28,7 @@ import {
 } from "../../composables/useDynamicStats";
 import { stat as formatStat } from "../../lib/format";
 import { inlineRepetitionCount } from "../../lib/inline-repetition";
+import { inputKey } from "../../lib/build-inputs";
 import type { Build, Db, Item, ItemPickerSlot } from "../../types";
 import type { ValueDiff } from "../../composables/useCompareDiff";
 
@@ -94,11 +95,7 @@ const dynamicStatRows = useSlotDynamicStats(
 );
 
 function setDynamic(row: DynamicStatRow, raw: string | number) {
-  buildEditor.setDynamicValue(
-    props.slotDef.id,
-    row.key,
-    raw === "" ? "" : String(raw),
-  );
+  buildEditor.setDynamicValue(row.address, raw === "" ? "" : String(raw));
 }
 
 function rangeNote(row: DynamicStatRow) {
@@ -247,7 +244,7 @@ const stableGroup = computed(() => {
        (useDynamicStats.ts), one input per row, driven entirely by the item/bonus's own
        declared configs so a second (or third) one works with no UI change. -->
   <div v-if="dynamicStatRows.length" class="mt-1 flex flex-col gap-1.5">
-    <InputRow v-for="row in dynamicStatRows" :key="row.key">
+    <InputRow v-for="row in dynamicStatRows" :key="inputKey(row.address)">
       <StatValueInput
         :stat-key="row.stat"
         :min="row.min"
@@ -288,13 +285,13 @@ const stableGroup = computed(() => {
   <template v-if="highlightDiff">
     <p
       v-for="diff in valueDiffs ?? []"
-      :key="diff.key"
+      :key="inputKey(diff.address)"
       class="slot-diff-note mt-0.5 text-muted"
     >
       {{ compareBuild?.name }}: {{ diff.label }} {{ diff.otherLabel }}
       <BaseLink
         class="ml-0.5"
-        @click.stop="buildEditor.applyValueFromCompare(slotDef.id, diff.key)"
+        @click.stop="buildEditor.applyValueFromCompare(diff.address)"
       >
         apply
       </BaseLink>

@@ -132,6 +132,7 @@ function testBuild(choices: Record<string, string>): Build {
     name: "b",
     choices,
     values: {},
+    bonusValues: {},
     assignments: {},
     occurrenceInputs: {},
     listRows: {},

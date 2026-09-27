@@ -14,7 +14,7 @@ import {
   fieldDiffLabel,
   type DiffCheck,
 } from "./draft-fields";
-import type { SectionPreset, Db } from "../types";
+import type { BonusValues, SectionPreset, Db, SlotValues } from "../types";
 
 interface ParamRow {
   slotId: string;
@@ -23,8 +23,8 @@ interface ParamRow {
 interface ItemRow {
   slotId: string;
   choice: string;
-  /** One entry per dynamic-stat config the chosen item declares, keyed by `dynamicValueKey`,
-   *  same shape `Build.values[slotId]` stores, since a preset just seeds that. */
+  /** One entry per dynamic-stat config the chosen item declares, by stat key, as
+   *  `Build.values[slotId].stat` stores it, since a preset just seeds that. */
   values: Record<string, number | string | null>;
 }
 interface AssignmentRow {
@@ -45,7 +45,14 @@ export interface PresetDraft {
   /** Item id to bonus id to count, draft-wide rather than per row, mirroring the field it
    *  writes (see the module comment). */
   occurrences: Record<string, Record<string, number>>;
+  /** Carried through unedited, so saving the form keeps them. */
+  bonusValues: Record<string, BonusValues>;
 }
+
+/** A deep copy that also works on a reactive draft, which `structuredClone` rejects. */
+const copyBonusValues = (
+  source: Record<string, BonusValues> | undefined,
+): Record<string, BonusValues> => JSON.parse(JSON.stringify(source ?? {}));
 
 export function buildDraft(
   preset: SectionPreset | null | undefined,
@@ -61,7 +68,7 @@ export function buildDraft(
     itemRows: entriesToRows(source.choices, (slotId, choice) => ({
       slotId,
       choice,
-      values: { ...(source.values?.[slotId] ?? {}) },
+      values: { ...(source.values?.[slotId]?.stat ?? {}) },
     })),
     assignmentRows: entriesToRows(source.assignments, (slotId, counts) => ({
       slotId,
@@ -74,6 +81,7 @@ export function buildDraft(
         { ...counts },
       ]),
     ),
+    bonusValues: copyBonusValues(source.bonusValues),
   };
 }
 
@@ -121,7 +129,7 @@ export function toPreset(
   // Two fields at once per row (`choices`/`values`), so this stays a plain loop rather than
   // `rowsToEntries`, which is for one record per row list, not two filtered together.
   const choices: Record<string, string> = {};
-  const values: Record<string, Record<string, number>> = {};
+  const values: Record<string, SlotValues> = {};
   for (const row of local.itemRows) {
     if (!row.slotId || !row.choice) continue;
     choices[row.slotId] = row.choice;
@@ -130,7 +138,7 @@ export function toPreset(
       const number = numberOrUnset(raw);
       if (number !== undefined) rowValues[key] = number;
     }
-    if (Object.keys(rowValues).length) values[row.slotId] = rowValues;
+    if (Object.keys(rowValues).length) values[row.slotId] = { stat: rowValues };
   }
   putIfSet(preset, "choices", choices);
   putIfSet(preset, "values", values);
@@ -152,6 +160,7 @@ export function toPreset(
     if (Object.keys(kept).length) occurrences[itemId] = kept;
   }
   putIfSet(preset, "occurrences", occurrences);
+  putIfSet(preset, "bonusValues", copyBonusValues(local.bonusValues));
 
   putIfSet(preset, "clears", [
     ...new Set(local.clearRows.map((row) => row.slotId).filter(Boolean)),
@@ -170,7 +179,8 @@ const CHECKS: DiffCheck<SectionPreset>[] = [
       : null,
   (old, nw) =>
     JSON.stringify(old.choices) !== JSON.stringify(nw.choices) ||
-    JSON.stringify(old.values) !== JSON.stringify(nw.values)
+    JSON.stringify(old.values) !== JSON.stringify(nw.values) ||
+    JSON.stringify(old.bonusValues) !== JSON.stringify(nw.bonusValues)
       ? "edit item choices"
       : null,
   (old, nw) =>

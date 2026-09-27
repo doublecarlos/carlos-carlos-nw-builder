@@ -17,6 +17,7 @@ import { APP_COMMIT } from "../lib/app-info";
 import { getPath, setPath } from "../lib/build-path";
 import { deepEqual } from "../lib/deep-equal";
 import { storedListRows } from "../lib/item-picker-list";
+import { migratePresetSettings, migrateSettings } from "./migrate-values";
 import { REQUIRED_SLOT_IDS } from "../lib/demo-slots";
 import type { SlotData } from "../lib/slot-fields";
 import {
@@ -207,6 +208,7 @@ export function defaultBuild(name = "New build", db: Db = baseDb()): Build {
     name,
     choices,
     values: {},
+    bonusValues: {},
     assignments,
     occurrenceInputs: {},
     listRows,
@@ -350,11 +352,13 @@ export function normalize(
       ) as Build["downloaded"])
     : undefined;
 
+  const settings = migrateSettings(raw.values, raw.bonusValues);
+
   // Both migrations run over the coerced maps, and this one over all three at once: renaming a
   // pick onto its list row has to take that row's magnitudes and repetition counts with it.
   const stored = migrateListSlots({
     choices: migrateClassToChoice(strings(raw.choices), context),
-    values: nestedNumbers(raw.values, {}),
+    values: settings.values,
     assignments: nestedNumbers(raw.assignments, base.assignments),
     disabledSlots: offSlots(raw.disabledSlots),
   });
@@ -416,10 +420,10 @@ export function normalize(
       typeof raw.name === "string" && raw.name.trim() ? raw.name : base.name,
     choices: stored.choices,
     // No seeded defaults to fall back on (unlike `assignments`, which seeds every
-    // point_assignment row's every item up front): a `DynamicStatConfig`'s own `default` is
-    // read directly wherever the value is used (`readDynamicValue`) when a slot has no entry
-    // here at all, same reasoning `occurrenceInputs` below already documents.
+    // point_assignment row's every item up front): an absent value reads as its config's
+    // `default` (`readInput`).
     values: stored.values,
+    bonusValues: settings.bonusValues,
     assignments: stored.assignments,
     occurrenceInputs: nestedNumbers(raw.occurrenceInputs, {}),
     listRows: rowCounts(raw.listRows, base.listRows, stored),
@@ -552,7 +556,12 @@ function migrateDownloaded(
 /** Coerces and migrates a stored overlay, the way a layer or a build's embedded catalog holds
  *  one. */
 export function normalizeLayerOverlay(raw: unknown): CatalogOverlay {
-  return migrateOverlayListSlots(catalog.normalizeOverlay(raw));
+  const overlay = migrateOverlayListSlots(catalog.normalizeOverlay(raw));
+  const sectionPresets: CatalogOverlay["sectionPresets"] = {};
+  for (const [id, preset] of Object.entries(overlay.sectionPresets)) {
+    sectionPresets[id] = preset ? migratePresetSettings(preset) : preset;
+  }
+  return { ...overlay, sectionPresets };
 }
 
 /** Tolerant coercion, same spirit as `normalize`. */

@@ -2,7 +2,7 @@
 // bonus it takes part in differs from the compare build.
 import { computed, type Ref } from "vue";
 import { getPath } from "../lib/build-path";
-import { dynamicValueKey } from "../lib/dynamic-stats";
+import { itemStatAddress, storedInput } from "../lib/build-inputs";
 import { label as statLabel, pctInput, statInput } from "../lib/format";
 import { repetitionRows } from "../lib/inline-repetition";
 import { expandSlots } from "../lib/item-picker-list";
@@ -14,6 +14,7 @@ import type {
   BonusOccurrenceConfig,
   Db,
   EvaluatedBonus,
+  InputAddress,
   Item,
   ItemPickerSlot,
   PointAssignmentSlot,
@@ -23,7 +24,7 @@ import type {
 } from "../types";
 
 export interface ValueDiff {
-  key: string;
+  address: InputAddress;
   label: string;
   /** The compare build's value as its input shows it; "(none)" when unset. */
   otherLabel: string;
@@ -257,19 +258,19 @@ export function useCompareDiff(options: {
     if (!compareBuild.value || differs(slotId)) return [];
     const item = itemIn(slotId);
     if (!item?.dynamicStats?.length) return [];
-    const mine = build.value.values[slotId] ?? {};
-    const other = compareBuild.value.values?.[slotId] ?? {};
     const out: ValueDiff[] = [];
     for (const config of item.dynamicStats) {
-      const key = dynamicValueKey(config.stat);
-      const mineValue = mine[key] ?? null;
-      const otherValue = other[key] ?? null;
+      const address = itemStatAddress(slotId, config.stat);
+      const mineValue = storedInput(build.value, address) ?? null;
+      const otherValue = storedInput(compareBuild.value, address) ?? null;
       if (mineValue !== otherValue) {
         out.push({
-          key,
+          address,
           label: config.label ?? statLabel(config.stat),
           otherLabel:
-            otherValue === null ? "(none)" : statInput(config.stat, otherValue),
+            otherValue === null
+              ? "(none)"
+              : statInput(config.stat, Number(otherValue)),
         });
       }
     }

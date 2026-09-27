@@ -31,14 +31,23 @@ import {
   parseRowSlotId,
   rowSlotId,
 } from "../lib/item-picker-list";
+import {
+  bonusStatAddress,
+  inputKey,
+  itemStatAddress,
+  storedInput,
+  writeInput,
+} from "../lib/build-inputs";
 import type {
   Build,
   BuildParameterSlot,
+  InputAddress,
   ItemPickerListSlot,
   ItemPickerSlot,
   PointAssignmentSlot,
   SectionPreset,
   Slot,
+  SlotValues,
 } from "../types";
 
 // Re-export computed accessors so BuildBar.vue etc. can keep importing from buildEditor.
@@ -176,29 +185,30 @@ export function removeListRow(rowId: string) {
   b.listRows[row.listId] = count - 1;
 }
 
-/** Sets one dynamic-stat value at one slot -- `key` is a `dynamicValueKey` (dynamic-stats.ts),
- *  since a slot can carry more than one (an item with several `dynamicStats` entries, or an
- *  item's own entry alongside a bonus's). Clearing the last key at a slot drops the slot's
- *  whole entry rather than leaving an empty object behind. */
-export function setDynamicValue(slotId: string, key: string, raw: string) {
+/** Names the value at `address` in an undo label. */
+function inputLabel(address: InputAddress): string {
+  if (address.store === "values")
+    return `${slotLabel(address.slotId)} ${address.key}`;
+  if (address.store === "bonusValues") {
+    const bonus = db.value.bonusById.get(address.bonusId);
+    return `${bonus?.name ?? address.bonusId} ${address.key}`;
+  }
+  return inputKey(address);
+}
+
+/** Sets one dynamic-stat value. An empty `raw` clears it back to its default. */
+export function setDynamicValue(address: InputAddress, raw: string) {
   const b = builds.build.value;
   if (!b) return;
-  const shown = raw === "" || raw == null ? "(none)" : raw;
+  const cleared = raw === "" || raw == null;
   history.snapshot(
     "build",
     b.id,
-    `value:${slotId}:${key}`,
-    `${slotLabel(slotId)} ${key} → ${shown}`,
+    inputKey(address),
+    `${inputLabel(address)} → ${cleared ? "(none)" : raw}`,
     b,
   );
-  if (raw === "" || raw == null) {
-    if (!b.values[slotId]) return;
-    const { [key]: _removed, ...rest } = b.values[slotId];
-    if (Object.keys(rest).length) b.values[slotId] = rest;
-    else delete b.values[slotId];
-  } else {
-    b.values[slotId] = { ...b.values[slotId], [key]: Number(raw) };
-  }
+  writeInput(b, address, cleared ? null : Number(raw));
 }
 
 /** Takes one `toggleable` slot's pick out of the calculation, or puts it back, leaving the
@@ -237,30 +247,21 @@ export function applyFromCompare(slotId: string) {
   copySlotData(b, other, slotId);
 }
 
-/** Copies one dynamic-stat value (`key`, a `dynamicValueKey`) from the compare build --
- *  per-key rather than whole-slot, since a slot can carry several independent values now
- *  (see `setDynamicValue`). */
-export function applyValueFromCompare(slotId: string, key: string) {
+/** Copies one dynamic-stat value from the compare build. */
+export function applyValueFromCompare(address: InputAddress) {
   const other = compare.compareBuild.value;
   if (!other) return;
   const b = builds.build.value;
   if (!b) return;
-  const slot = slotLabel(slotId);
-  const value = other.values?.[slotId]?.[key];
+  const value = storedInput(other, address) ?? null;
   history.snapshot(
     "build",
     b.id,
-    `value:${slotId}:${key}`,
-    `${slot} ${key} → ${value ?? "(none)"} (from "${other.name}")`,
+    inputKey(address),
+    `${inputLabel(address)} → ${value ?? "(none)"} (from "${other.name}")`,
     b,
   );
-  if (value != null) {
-    b.values[slotId] = { ...b.values[slotId], [key]: value };
-  } else if (b.values[slotId]) {
-    const { [key]: _removed, ...rest } = b.values[slotId];
-    if (Object.keys(rest).length) b.values[slotId] = rest;
-    else delete b.values[slotId];
-  }
+  writeInput(b, address, value);
 }
 
 export function setParam(
@@ -668,7 +669,19 @@ export function applyPreset(preset: SectionPreset) {
   }
 
   for (const [slotId, value] of Object.entries(preset.values ?? {})) {
-    b.values[slotId] = { ...b.values[slotId], ...value };
+    for (const [stat, n] of Object.entries(value.stat ?? {}))
+      writeInput(b, itemStatAddress(slotId, stat), n);
+  }
+
+  for (const [bonusId, value] of Object.entries(preset.bonusValues ?? {})) {
+    for (const [stat, n] of Object.entries(value.stat ?? {}))
+      writeInput(b, bonusStatAddress(bonusId, stat), n);
+    for (const [name, n] of Object.entries(value.input ?? {}))
+      writeInput(
+        b,
+        { store: "bonusValues", bonusId, kind: "input", key: name },
+        n,
+      );
   }
 
   for (const [slotId, rows] of Object.entries(preset.assignments ?? {})) {
@@ -703,7 +716,7 @@ export function presetFromSection(
   const fresh = freshDefaults();
   const params: Record<string, string | number | boolean> = {};
   const choices: Record<string, string> = {};
-  const values: Record<string, Record<string, number>> = {};
+  const values: Record<string, SlotValues> = {};
   const assignments: Record<string, Record<string, number>> = {};
   const occurrences: Record<string, Record<string, number>> = {};
   const clears: string[] = [];
@@ -746,7 +759,7 @@ export function presetFromSection(
     const repetitions = b.assignments[slot.id];
     const atDefault =
       choice === (fresh.choices[slot.id] ?? "") &&
-      !Object.keys(value ?? {}).length &&
+      !Object.keys(value?.stat ?? {}).length &&
       !Object.keys(repetitions ?? {}).length;
     // Only when nothing hangs off the pick: `clears` would drop a magnitude or repetition
     // count the player did set.
@@ -760,7 +773,8 @@ export function presetFromSection(
     }
     choices[slot.id] = choice;
     carryOccurrences(choice);
-    if (value && Object.keys(value).length) values[slot.id] = { ...value };
+    if (value?.stat && Object.keys(value.stat).length)
+      values[slot.id] = { stat: { ...value.stat } };
     // An `item_picker` pick that repeats inline carries its count the same way a
     // point_assignment row does -- same field, same shape.
     if (repetitions && Object.keys(repetitions).length)
