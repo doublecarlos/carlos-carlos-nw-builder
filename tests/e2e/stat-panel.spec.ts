@@ -107,6 +107,27 @@ test.describe("stat source popover", () => {
     const rows = card.locator('[data-testid="stat-card-row"]');
     await expect(rows).toHaveCount(1);
     await expect(rows.first()).toContainText(HEAD_ITEM);
+    await expect(card.getByTestId("stat-card-multiplicative")).toHaveCount(0);
+  });
+
+  test("a multiplicative stat's card says its rows multiply", async ({
+    page,
+  }) => {
+    await openBuilder(page);
+    await chooseItem(
+      page,
+      "enchantments.combatDefense",
+      "Celestial Rime Temper",
+    );
+
+    await statInfoButton(page, "hit_points_mult").click();
+    const card = statCard(page);
+    await expect(
+      card
+        .locator('[data-testid="stat-card-row"]')
+        .filter({ hasText: "Celestial Rime Temper" }),
+    ).toHaveCount(1);
+    await expect(card.getByTestId("stat-card-multiplicative")).toBeVisible();
   });
 
   test("clicking an item's row closes the card and jumps to its build row", async ({

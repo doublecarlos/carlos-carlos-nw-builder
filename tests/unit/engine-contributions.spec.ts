@@ -7,6 +7,7 @@ import type {
   Build,
   BuildContext,
   Item,
+  ResolvedBuild,
   Schema,
   SlotsData,
   StatDef,
@@ -160,6 +161,12 @@ function resolveWithNecks(
   return engine.resolveBuild(testDb, build);
 }
 
+/** The contribution rules the ledger recorded, as `source>target`, in pipeline order. */
+const appliedRules = (result: ResolvedBuild) =>
+  result.ledger
+    .filter((entry) => entry.kind === "contribution")
+    .map((entry) => `${entry.sourceStat}>${entry.stat}`);
+
 const forte = { primary: "power_p", secondaryA: "sev_p" };
 
 describe("forte split reads the capped forte percent", () => {
@@ -247,9 +254,7 @@ describe("stat contributions", () => {
 
   it("lists every applied rule in pipeline order, forte last", () => {
     const result = resolveWith({ dex: 30, con: 20, wis: 40 }, { forte });
-    expect(
-      result.appliedContributions.map((c) => `${c.source}>${c.target}`),
-    ).toEqual([
+    expect(appliedRules(result)).toEqual([
       "dex>sev_p",
       "wis>out_healing_p",
       "con>hit_points_mult",
@@ -262,11 +267,12 @@ describe("stat contributions", () => {
 
   it("picks physical debuff as source for a physical build", () => {
     const result = resolveWith({}, { forte, damageType: "physical" });
-    expect(
-      result.appliedContributions.map((c) => `${c.source}>${c.target}`),
-    ).toContain("enemy_incoming_damage_physical>enemy_incoming_damage");
-    expect(result.appliedContributions.map((c) => c.source)).not.toContain(
-      "enemy_incoming_damage_magical",
+    const rules = appliedRules(result);
+    expect(rules).toContain(
+      "enemy_incoming_damage_physical>enemy_incoming_damage",
+    );
+    expect(rules).not.toContain(
+      "enemy_incoming_damage_magical>enemy_incoming_damage",
     );
   });
 });

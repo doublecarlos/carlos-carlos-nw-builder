@@ -1,185 +1,153 @@
 // Per-stat source attribution for StatPanel.vue's stat source popover: "why is this number
 // what it is", one stat at a time rather than one bonus at a time (BonusInspector.vue's own job).
 //
-// Each helper below mirrors exactly one pipeline stage from engine.ts's `run()`, reading that
-// stage's own output (a resolved build's `stages.*` or `appliedContributions`, or an
-// `EngineRow`'s own `itemStats`/`dynamicStats`) rather than recomputing its math, so this can
-// never drift from what the panel displays. Regrouping is all that is left: the pipeline needs
-// stats summed per row, this needs them named per source, each linked back to the build row
-// that produced it where there is one.
+// Reads the engine's ledger (`ResolvedBuild.ledger`), which records every contribution as the
+// pipeline applies it. What is left here is display: naming each entry, ordering the lines and
+// splitting a rating/percent pair into its two sections.
 import { NW_SCHEMA } from "../data/data";
 import { bonusTitle } from "../lib/format";
-import { assignedRows } from "../lib/inline-repetition";
-import type { ResolvedBuild, Build, Db, StatKey } from "../types";
+import type {
+  EvaluatedBonus,
+  LedgerEntry,
+  LedgerKind,
+  ResolvedBuild,
+  StatKey,
+} from "../types";
 
 export interface StatSource {
   name: string;
   value: number;
   /** The build row this line came from; absent for a pipeline stage's own line (Rating
-   * contribution, Combined rating, an ability score, Outgoing Healing, Forte), which has no
-   * row to jump to. */
+   * contribution, Combined rating, an ability score, Outgoing Healing, Forte, Over cap), which
+   * has no row to jump to. */
   slotId?: string;
 }
 export interface StatSourceSection {
   title: string;
   key: string;
   sources: StatSource[];
+  /** The stat's sources combine multiplicatively, so the lines do not simply add up. */
+  multiplicative: boolean;
 }
 
-/** Every equipped item's own stat (pre-bonus, pre-pipeline), one line per build row: the
- * same item in two slots (two rings) is two lines, each linking to its own row. */
-function itemSources(result: ResolvedBuild, key: StatKey): StatSource[] {
-  const out: StatSource[] = [];
-  for (const row of result.rows) {
-    const value = row.itemStats[key];
-    if (!row.item || !value) continue;
-    out.push({ name: row.item.name, value, slotId: row.slotId });
-  }
-  return out;
-}
+/** Line order within a section: the rating conversion leads, pipeline stages close. */
+const KIND_ORDER: LedgerKind[] = [
+  "ratingConversion",
+  "item",
+  "assignment",
+  "bonus",
+  "dynamic",
+  "combinedRating",
+  "contribution",
+];
 
-/** Every point_assignment row's item stat × its count, one line per item, each linking to the
- * slot itself since its items share one build row. The counterpart to `itemSources` above for
- * a slot with no single `ResolvedRow.item` to read: bonus.ts's `collect()` folds these into
- * `assignmentStatsBySlot` for the pipeline, and this re-attributes them to the item that
- * earned them. */
-function assignmentSources(
-  db: Db | null | undefined,
-  build: Build | null | undefined,
-  key: StatKey,
-): StatSource[] {
-  if (!db || !build) return [];
-  const out: StatSource[] = [];
-  for (const slot of db.slots) {
-    if (slot.type !== "point_assignment") continue;
-    for (const { item, count } of assignedRows(db, build, slot)) {
-      if (count <= 0) continue;
-      const raw = item[key];
-      if (!raw) continue;
-      out.push({
-        name: item.name,
-        value: (raw as number) * count,
-        slotId: slot.id,
-      });
-    }
-  }
-  return out;
-}
+const statLabel = (key: StatKey) => NW_SCHEMA.statByKey[key]?.label ?? key;
 
-/** Every active bonus's applied (post-stacking) contribution to this stat, linked to the
- * bonus's instancing slot. */
-function bonusSources(result: ResolvedBuild, key: StatKey): StatSource[] {
-  const out: StatSource[] = [];
-  for (const entry of result.bonuses) {
-    const value = entry.active ? entry.appliedStats?.[key] : null;
-    if (value) {
-      out.push({ name: bonusTitle(entry), value, slotId: entry.slotId });
-    }
-  }
-  return out;
-}
-
-/** Every item's own typed dynamic-stat value targeting this key, one line per build row. */
-function dynamicStatSources(result: ResolvedBuild, key: StatKey): StatSource[] {
-  const out: StatSource[] = [];
-  for (const row of result.rows) {
-    const value = row.dynamicStats[key];
-    if (value) {
-      out.push({
-        name: `${row.item!.name} (dynamic stat)`,
-        value,
-        slotId: row.slotId,
-      });
-    }
-  }
-  return out;
-}
-
-/** Stage 2: `combined_rating` feeds every rating stat equally -- one line, not attributed
- * further back to whichever items/bonuses granted `combined_rating` itself (that's its own
- * row in "Other stats", with its own popover). */
-function combinedRatingSource(
+/** Display name for one entry. */
+function nameOf(
+  entry: LedgerEntry,
   result: ResolvedBuild,
-  key: StatKey,
-): StatSource[] {
-  if (!NW_SCHEMA.ratingStats.includes(key)) return [];
-  const value = result.stages.sums?.combined_rating ?? 0;
-  return value ? [{ name: "Combined rating", value }] : [];
-}
-
-/** Stage 4: the rating -> percent conversion. Always present and always first for
- * a paired percent stat. */
-function ratingContributionSource(
-  result: ResolvedBuild,
-  key: StatKey,
-): StatSource[] {
-  const rule = NW_SCHEMA.ratingConversion.find((r) => r.percent === key);
-  if (!rule) return [];
-  return [
-    { name: "Rating contribution", value: result.stages.ratingPct?.[key] ?? 0 },
-  ];
-}
-
-/** Stage 5: every contribution rule targeting this key, one line per source stat.
- * Two rules with the same source fold into one line, in the order the pipeline applied them. */
-function contributionSources(
-  result: ResolvedBuild,
-  key: StatKey,
-): StatSource[] {
-  const bySource = new Map<StatKey, number>();
-  for (const { source, target, value } of result.appliedContributions) {
-    if (target !== key || !value) continue;
-    bySource.set(source, (bySource.get(source) ?? 0) + value);
+  bonusById: Map<string, EvaluatedBonus>,
+): string {
+  const itemName = (id: string) => result.context.itemNames.get(id) ?? id;
+  switch (entry.kind) {
+    case "item":
+    case "assignment":
+      return itemName(entry.itemId!);
+    case "dynamic":
+      return `${itemName(entry.itemId!)} (dynamic stat)`;
+    case "bonus": {
+      const bonus = bonusById.get(entry.bonusId!);
+      return bonus ? bonusTitle(bonus) : entry.bonusId!;
+    }
+    case "combinedRating":
+      return "Combined rating";
+    case "ratingConversion":
+      return "Rating contribution";
+    case "contribution":
+      return statLabel(entry.sourceStat!);
   }
-  return [...bySource].map(([source, value]) => ({
-    name: NW_SCHEMA.statByKey[source]?.label ?? source,
-    value,
-  }));
 }
 
-/** Every contribution to one stat key, in the order they'd appear reading the pipeline
- * top to bottom. Works for any key -- rating, paired percent, unpaired percent, flat -- each
- * helper above is a no-op for stages that don't touch that particular key. */
+/** The stats StatPanel.vue shows at their cap: a rating pair's percentage. A rating shows its
+ * uncapped total, with the excess in its own column. */
+const CAPPED_ON_PANEL = new Set(
+  NW_SCHEMA.ratingConversion.map((r) => r.percent),
+);
+
+/** Every line for one stat key. A zero entry is left out, except the rating conversion, which
+ * a paired percent stat always shows. Contribution rules reading the same source stat fold
+ * into one line. A percentage over its cap closes with a negative "Over cap" line, so the
+ * lines add up to the capped value the panel shows. */
 function sourcesFor(
   result: ResolvedBuild,
-  build: Build | null | undefined,
-  db: Db | null | undefined,
+  bonusById: Map<string, EvaluatedBonus>,
   key: StatKey,
 ): StatSource[] {
-  return [
-    ...ratingContributionSource(result, key),
-    ...itemSources(result, key),
-    ...assignmentSources(db, build, key),
-    ...bonusSources(result, key),
-    ...dynamicStatSources(result, key),
-    ...combinedRatingSource(result, key),
-    ...contributionSources(result, key),
-  ];
+  const entries = result.ledger
+    .filter(
+      (entry) =>
+        entry.stat === key &&
+        (entry.value !== 0 || entry.kind === "ratingConversion"),
+    )
+    .sort((a, b) => KIND_ORDER.indexOf(a.kind) - KIND_ORDER.indexOf(b.kind));
+
+  const out: StatSource[] = [];
+  const bySourceStat = new Map<StatKey, StatSource>();
+  for (const entry of entries) {
+    if (entry.kind === "contribution") {
+      const folded = bySourceStat.get(entry.sourceStat!);
+      if (folded) {
+        folded.value += entry.value;
+        continue;
+      }
+    }
+    const source: StatSource = {
+      name: nameOf(entry, result, bonusById),
+      value: entry.value,
+    };
+    if (entry.slotId) source.slotId = entry.slotId;
+    if (entry.kind === "contribution")
+      bySourceStat.set(entry.sourceStat!, source);
+    out.push(source);
+  }
+
+  const overcap = CAPPED_ON_PANEL.has(key) ? result.stages.overcap[key] : 0;
+  if (overcap > 0) out.push({ name: "Over cap", value: -overcap });
+  return out;
 }
 
-/** One section for a plain stat, two (Rating / Percentage) for a rating+percent pair -- the
- * percentage section's own first source is always `ratingContributionSource`'s "Rating
- * contribution" line, per `sourcesFor`'s ordering. */
+function section(
+  result: ResolvedBuild,
+  bonusById: Map<string, EvaluatedBonus>,
+  title: string,
+  key: StatKey,
+): StatSourceSection {
+  return {
+    title,
+    key,
+    sources: sourcesFor(result, bonusById, key),
+    multiplicative: result.ledger.some(
+      (entry) =>
+        entry.stat === key &&
+        entry.value !== 0 &&
+        entry.combine === "multiplicative",
+    ),
+  };
+}
+
+/** One section for a plain stat, two (Rating / Percentage) for a rating+percent pair. */
 export function sectionsFor(
   result: ResolvedBuild,
-  build: Build | null | undefined,
-  db: Db | null | undefined,
   key: StatKey,
 ): StatSourceSection[] {
+  const bonusById = new Map(result.bonuses.map((bonus) => [bonus.id, bonus]));
   const rule = NW_SCHEMA.ratingConversion.find((r) => r.rating === key);
   if (rule) {
     return [
-      {
-        title: "Rating",
-        key: rule.rating,
-        sources: sourcesFor(result, build, db, rule.rating),
-      },
-      {
-        title: "Percentage",
-        key: rule.percent,
-        sources: sourcesFor(result, build, db, rule.percent),
-      },
+      section(result, bonusById, "Rating", rule.rating),
+      section(result, bonusById, "Percentage", rule.percent),
     ];
   }
-  return [{ title: "", key, sources: sourcesFor(result, build, db, key) }];
+  return [section(result, bonusById, "", key)];
 }

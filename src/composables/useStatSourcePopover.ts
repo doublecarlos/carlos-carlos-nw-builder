@@ -5,7 +5,7 @@ import { NW_SCHEMA } from "../data/data";
 import * as goTo from "../stores/goTo";
 import type BasePanel from "../components/ui/BasePanel.vue";
 import type BasePopover from "../components/ui/BasePopover.vue";
-import type { ResolvedBuild, Build, Db } from "../types";
+import type { ResolvedBuild } from "../types";
 
 /**
  * StatPanel's "why is this number what it is" popover: click a stat's info button, get a
@@ -16,8 +16,6 @@ import type { ResolvedBuild, Build, Db } from "../types";
  */
 export function useStatSourcePopover(
   result: Ref<ResolvedBuild> | ComputedRef<ResolvedBuild>,
-  build: Ref<Build>,
-  db: Ref<Db>,
 ) {
   const root = ref<InstanceType<typeof BasePanel> | null>(null);
   const tooltip = ref<InstanceType<typeof BasePopover> | null>(null);
@@ -34,9 +32,7 @@ export function useStatSourcePopover(
       "",
   );
   const openSections = computed(() =>
-    openCard.value
-      ? sectionsFor(result.value, build.value, db.value, openCard.value.key)
-      : [],
+    openCard.value ? sectionsFor(result.value, openCard.value.key) : [],
   );
 
   /**

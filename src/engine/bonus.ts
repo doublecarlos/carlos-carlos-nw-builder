@@ -12,6 +12,7 @@ import { isDisabled } from "../lib/slot-toggle";
 import { expandSlots } from "../lib/item-picker-list";
 import { readDynamicValue } from "../lib/dynamic-stats";
 import type {
+  AssignedItemStats,
   PublishConflict,
   Db,
   Build,
@@ -120,8 +121,8 @@ function collectAttachments(
 /**
  * One point_assignment slot's contribution -- every point behaves exactly like one more
  * item_picker slot choosing that item, so this bumps `equipped`/tags by each item's own
- * `inlineRepetition` count (into the caller's running maps) and sums the row's own stats into a
- * bucket (engine.ts's `rowVectors` adds this alongside `bonusStatsBySlot`).
+ * `inlineRepetition` count (into the caller's running maps) and records each item's stats times
+ * its count (engine.ts's `rowVectors` adds these alongside `bonusStatsBySlot`).
  *
  * A bonus attachment's own occurrence count follows the same split `collect()`'s item_picker
  * branch would if a single item could carry both shapes: a bare-id attachment scales with the
@@ -140,11 +141,11 @@ function collectInlineRepetition(
   bonusOccurrences: Map<string, number>,
 ): {
   row: ResolvedRow;
-  statBucket: Map<string, number>;
+  itemStats: AssignedItemStats[];
   candidates: Candidate[];
   zeroCandidates: Candidate[];
 } {
-  const statBucket = new Map<string, number>();
+  const itemStats: AssignedItemStats[] = [];
   const candidates: Candidate[] = [];
   const zeroCandidates: Candidate[] = [];
 
@@ -155,14 +156,12 @@ function collectInlineRepetition(
       bump(equipped, item.id, count);
       for (const tag of item.tags ?? []) bump(tags, tag, count);
 
+      const stats = new Map<string, number>();
       for (const key of db.schema.statKeys) {
         const raw = item[key];
-        if (!raw) continue;
-        statBucket.set(
-          key,
-          (statBucket.get(key) ?? 0) + (raw as number) * count,
-        );
+        if (raw) stats.set(key, (raw as number) * count);
       }
+      if (stats.size) itemStats.push({ itemId: item.id, stats });
     }
 
     collectAttachments(
@@ -186,7 +185,7 @@ function collectInlineRepetition(
       item: null,
       repetitions: 0,
     },
-    statBucket,
+    itemStats,
     candidates,
     zeroCandidates,
   };
@@ -208,7 +207,7 @@ export function collect(
   rows: ResolvedRow[];
   candidates: Candidate[];
   zeroCandidates: Candidate[];
-  assignmentStatsBySlot: Map<string, Map<string, number>>;
+  assignmentStatsBySlot: Map<string, AssignedItemStats[]>;
   publishConflicts: PublishConflict[];
 } {
   const context = build.context ?? {};
@@ -218,7 +217,7 @@ export function collect(
   const rows: ResolvedRow[] = [];
   const candidates: Candidate[] = [];
   const zeroCandidates: Candidate[] = [];
-  const assignmentStatsBySlot = new Map<string, Map<string, number>>();
+  const assignmentStatsBySlot = new Map<string, AssignedItemStats[]>();
   /** path -> every equipped item asserting a value for it (`Item.publishes`). Collected during
    *  the slot walk purely because that is where the equipped items are already in hand; nothing
    *  is decided from it until the walk is over, so slot order cannot affect the outcome. */
@@ -255,8 +254,8 @@ export function collect(
       // No single `item` to attribute this row to -- its stats land in
       // `assignmentStatsBySlot` instead (engine.ts's `rowVectors` adds both alongside
       // `bonusStatsBySlot`).
-      if (collected.statBucket.size)
-        assignmentStatsBySlot.set(slot.id, collected.statBucket);
+      if (collected.itemStats.length)
+        assignmentStatsBySlot.set(slot.id, collected.itemStats);
       return;
     }
 
@@ -475,16 +474,9 @@ function scaledPayload(
 function evaluateGrant(
   grant: Grant,
   ctx: EvalContext,
-  explain = true,
   dynamicValues: Record<string, number> = {},
 ): GrantEvaluation {
-  const gate: ConditionExplain = explain
-    ? conditions.explain(grant.when, ctx)
-    : {
-        ok: conditions.evaluate(grant.when, ctx),
-        leaves: [],
-        unmet: [],
-      };
+  const gate = conditions.explain(grant.when, ctx);
 
   // Carried on every shape, active or not, so an inactive grant's preview can scale too.
   const scale = grantScale(grant, ctx);
@@ -501,9 +493,7 @@ function evaluateGrant(
   // Explained even under an unmet gate: the hover card labels each variant rung by its own
   // conditions, and without them every rung would read as unconditional.
   const explainVariants = () =>
-    explain && grant.variants
-      ? grant.variants.map((v) => conditions.explain(v.when, ctx))
-      : undefined;
+    grant.variants?.map((v) => conditions.explain(v.when, ctx));
 
   if (!gate.ok) {
     const variantBranches = explainVariants();
@@ -521,14 +511,14 @@ function evaluateGrant(
     };
   }
 
-  // `variants`: first match wins (role-dependent payloads). When explaining, every branch is
-  // evaluated (not just up to the first match) so the hover card can show why the *other*
-  // branches didn't apply too, not only the one that won.
+  // `variants`: first match wins (role-dependent payloads). Every branch is explained (not just
+  // up to the first match) so the hover card can show why the *other* branches didn't apply
+  // too, not only the one that won.
   if (grant.variants) {
-    const variantBranches = explainVariants();
-    const index = variantBranches
-      ? variantBranches.findIndex((b) => b.ok)
-      : grant.variants.findIndex((v) => conditions.evaluate(v.when, ctx));
+    const variantBranches = grant.variants.map((v) =>
+      conditions.explain(v.when, ctx),
+    );
+    const index = variantBranches.findIndex((b) => b.ok);
     return index === -1
       ? inactive({ variantBranches })
       : {
@@ -611,7 +601,6 @@ export function isHiddenBonus(bonus: Bonus): boolean {
 export function evaluateBonus(
   bonus: Bonus,
   ctx: EvalContext,
-  explain = true,
   dynamicValues: Record<string, number> = {},
   { hasSources = true }: { hasSources?: boolean } = {},
 ): BonusEvaluation {
@@ -619,7 +608,7 @@ export function evaluateBonus(
   const own: EvalContext = { ...ctx, self: bonus.id };
   const evaluated = (bonus.grants ?? []).map((grant) => ({
     raw: grant,
-    ...evaluateGrant(grant, own, explain, dynamicValues),
+    ...evaluateGrant(grant, own, dynamicValues),
   }));
   // `hasSources: false` (resolve()'s zero-sources group) forces every grant inactive regardless
   // of what its own `when` resolves to -- there is nothing occurring to grant it for. Not just
@@ -735,11 +724,7 @@ function resolveDynamicValues(
   return out;
 }
 
-export function resolve(
-  db: Db,
-  build: Build,
-  { explain = true }: { explain?: boolean } = {},
-): ResolvedBonuses {
+export function resolve(db: Db, build: Build): ResolvedBonuses {
   const {
     ctx,
     rows,
@@ -799,7 +784,7 @@ export function resolve(
       build,
       anchor.slotId,
     );
-    const result = evaluateBonus(group.bonus, ctx, explain, dynamicValues, {
+    const result = evaluateBonus(group.bonus, ctx, dynamicValues, {
       hasSources: sources.length > 0,
     });
 

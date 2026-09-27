@@ -31,12 +31,39 @@ export interface StatContribution {
   divisor: number;
 }
 
-/** What one StatContribution actually added to its target in a resolved build, in rule
- * order. */
-export interface AppliedContribution {
-  source: StatKey;
-  target: StatKey;
+/** What kind of contribution a `LedgerEntry` records. */
+export type LedgerKind =
+  | "item"
+  | "dynamic"
+  | "assignment"
+  | "bonus"
+  | "combinedRating"
+  | "ratingConversion"
+  | "contribution";
+
+/** The `Stages` vector an entry first lands in. Additive entries up to a stage sum to it. */
+export type LedgerStage =
+  "sums" | "afterCombinedRating" | "afterRatingPct" | "totals";
+
+/**
+ * One contribution to one stat, recorded by engine.ts's `run()`.
+ * Holds ids only; display text is the reader's job (stat-sources.ts).
+ *
+ * `combine` says how the entry reaches its stat. A multiplicative stat adds its row entries
+ * per build row (`slotId`), then multiplies the rows as `(1 + a) * (1 + b) - 1`; a
+ * contribution rule multiplies into the running total the same way.
+ */
+export interface LedgerEntry {
+  stat: StatKey;
   value: number;
+  kind: LedgerKind;
+  stage: LedgerStage;
+  combine: "additive" | "multiplicative";
+  slotId?: string;
+  itemId?: string;
+  bonusId?: string;
+  /** The stat a contribution rule or combined rating read from. */
+  sourceStat?: StatKey;
 }
 
 export interface RoleDef {
@@ -990,8 +1017,8 @@ export interface GrantEvaluation {
   chose: string | null;
   problem: GrantProblem | null;
   /** One `ConditionExplain` per entry of `raw.variants`, in order -- lets the hover card
-   * show every branch (met or not), not just the one that won. Only populated when `explain`
-   * is on and the grant actually carries `variants`. */
+   * show every branch (met or not), not just the one that won. Only populated when the grant
+   * carries `variants`. */
   variantBranches?: ConditionExplain[];
   /** The scaler applied to this grant's `stats`, for display. Present whenever `raw.scaledBy`
    * names a live scaler, active or not and including at a multiplier of 0, so an inactive
@@ -1069,10 +1096,16 @@ export interface ResolvedBonuses {
   publishConflicts: PublishConflict[];
   bonuses: EvaluatedBonus[];
   bonusStatsBySlot: Map<string, Map<StatKey, number>>;
-  /** A `point_assignment` slot's own item stats (each row's item stats × its count, summed) --
-   * the counterpart to `bonusStatsBySlot` for the item side rather than the bonus side, since
-   * a `point_assignment` row has no single `ResolvedRow.item` to read stats off of. */
-  assignmentStatsBySlot: Map<string, Map<StatKey, number>>;
+  /** A `point_assignment` slot's own item stats, per assigned item. The counterpart to
+   * `bonusStatsBySlot` for the item side, since a `point_assignment` row has no single
+   * `ResolvedRow.item` to read stats off of. */
+  assignmentStatsBySlot: Map<string, AssignedItemStats[]>;
+}
+
+/** One item's stats in a `point_assignment` slot, already multiplied by its count. */
+export interface AssignedItemStats {
+  itemId: string;
+  stats: Map<StatKey, number>;
 }
 
 /** One path with two equipped items asserting different values for it. */
@@ -1113,11 +1146,6 @@ export interface EngineRow {
   choice: string | undefined;
   item: Item | null;
   stats: Record<StatKey, number>;
-  /** The item's own fixed and dynamic shares of `stats`, both already multiplied by
-   * `repetitions`. Sparse: only the keys the row contributes to. Kept so stat-sources.ts can
-   * attribute a total without recomputing either. */
-  itemStats: Record<string, number>;
-  dynamicStats: Record<string, number>;
   /** Carried through from the row's `ResolvedRow`. `stats` above is already multiplied by it;
    * the count itself is here for the stages that need it (maxCopies, dynamic stats). */
   repetitions: number;
@@ -1169,7 +1197,8 @@ export interface ResolvedBuild {
   rows: EngineRow[];
   bonuses: EvaluatedBonus[];
   stages: Stages;
-  appliedContributions: AppliedContribution[];
+  /** Every contribution to every stat, in pipeline order. */
+  ledger: LedgerEntry[];
   derived: DerivedOutputs;
   errors: EngineError[];
 }
