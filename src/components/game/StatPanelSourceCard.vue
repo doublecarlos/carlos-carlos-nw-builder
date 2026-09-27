@@ -31,6 +31,7 @@ const sectionRows = computed(() =>
   props.sections.map((section) => ({
     key: section.key,
     title: section.title,
+    multiplicative: section.multiplicative,
     rows: section.sources.map((source, index): StatRow => ({
       key: `${source.slotId ?? ""}:${source.name}:${index}`,
       label: source.name,
@@ -86,6 +87,13 @@ const sectionRows = computed(() =>
           data-testid="stat-card-empty"
         >
           no contributing sources
+        </div>
+        <div
+          v-if="section.multiplicative"
+          class="statcard-note py-0.5 text-muted"
+          data-testid="stat-card-multiplicative"
+        >
+          Rows multiply: (1 + a) × (1 + b) × … − 1
         </div>
         <div
           v-if="i < sectionRows.length - 1"

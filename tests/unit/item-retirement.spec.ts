@@ -547,8 +547,12 @@ describe("accepting the offer does not move the numbers", () => {
     const result = engine.resolveBuild(catalog.makeDb([]), build);
     return {
       total: result.stages.sums.overall_damage,
-      dynamic: result.rows.find((row) => row.slotId === SLOT)?.dynamicStats
-        .overall_damage,
+      dynamic: result.ledger.find(
+        (entry) =>
+          entry.kind === "dynamic" &&
+          entry.slotId === SLOT &&
+          entry.stat === "overall_damage",
+      )?.value,
     };
   };
 

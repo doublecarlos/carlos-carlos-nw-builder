@@ -355,8 +355,13 @@ describe("bonus model semantics", () => {
   it("Dynamic stats use the typed value and warn when out of range", () => {
     // FIX #6. Clamping silently rewrites the number the user typed, and would make the engine
     // disagree with the sheet for no stated reason.
-    const offhandMod = (result: ReturnType<typeof runBuild>) =>
-      result.rows.find((row) => row.slotId === "gear.offhandMod2")!;
+    const dynamicCa = (result: ReturnType<typeof runBuild>) =>
+      result.ledger.find(
+        (entry) =>
+          entry.kind === "dynamic" &&
+          entry.slotId === "gear.offhandMod2" &&
+          entry.stat === "ca",
+      )?.value;
     const inRange = runBuild(
       { "gear.offhandMod2": "CA (M32+, 600 to 3600)" },
       {},
@@ -367,14 +372,14 @@ describe("bonus model semantics", () => {
       {},
       { "gear.offhandMod2": { ca: 5800 } },
     );
-    expect(offhandMod(inRange).dynamicStats.ca).toBeCloseTo(2000, 9);
+    expect(dynamicCa(inRange)).toBeCloseTo(2000, 9);
     // Not errors.length === 0: BASE_CONTEXT leaves every leveling ability-score slot at its
     // default (unassigned), which trips the unrelated "level-attr-warning" bonusRule -- this
     // assertion only cares that an in-range typed value raises no outOfRange error.
     expect(
       inRange.errors.some((e: EngineError) => e.kind === "outOfRange"),
     ).toBe(false);
-    expect(offhandMod(over).dynamicStats.ca).toBeCloseTo(5800, 9);
+    expect(dynamicCa(over)).toBeCloseTo(5800, 9);
     expect(over.errors.some((e: EngineError) => e.kind === "outOfRange")).toBe(
       true,
     );

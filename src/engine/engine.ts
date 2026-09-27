@@ -1,7 +1,8 @@
 // The calculation pipeline and derived outputs.
 //
 // `run()` gathers every row's stats and calculates the final results over multiple stages.
-// Every intermediate stage is kept, which makes inspecting stat sources possible.
+// Every intermediate stage is kept, along with a ledger of each contribution to each stat,
+// which is what the stat source popover reads.
 
 import * as bonus from "./bonus";
 import { scaleFactorFor, scaledStat } from "./scaling";
@@ -22,7 +23,7 @@ import type {
   EngineRow,
   Stages,
   StatContribution,
-  AppliedContribution,
+  LedgerEntry,
   DerivedOutputs,
   EngineError,
   ResolvedBuild,
@@ -70,60 +71,114 @@ const sheetRound = (value: number, digits = 2) => {
  * the item itself carries, while the assignment and bonus stats merged in below reached this
  * row by attribution (bonus.ts's `anchor.slotId`) rather than by belonging to the item, and are
  * not the granting item's to scale. Scaling the bonuses that genuinely should is separate work.
+ *
+ * Each item, dynamic and assignment share is also recorded in `ledger` on its own. Bonus
+ * shares are recorded by `bonusEntries`, since `bonusStatsBySlot` has already merged them per
+ * slot.
  */
 function rowVectors(
   build: Build,
   resolved: ResolvedBonuses,
   keys: StatKey[],
+  combineOf: (stat: StatKey) => LedgerEntry["combine"],
+  ledger: LedgerEntry[],
 ): EngineRow[] {
-  return resolved.rows.map((row) => {
+  const rows: EngineRow[] = [];
+  for (const row of resolved.rows) {
     const stats = zeros(keys);
-    // Kept apart from `stats`, which merges everything in below: the stat source popover needs
-    // each share on its own, and recomputing them there let the two disagree.
-    const itemStats: Record<string, number> = {};
-    const dynamicStats: Record<string, number> = {};
+    const { slotId } = row;
     if (row.item) {
+      const itemId = row.item.id;
       const factor = scaleFactorFor(resolved.ctx, row.item);
       for (const key of keys) {
         // `repetitions` is 1 for an ordinary pick, so this only bites for an item that
         // declares an `inlineRepetition`: N repetitions carry N times the stat line, exactly as
         // N separate picks of the item would.
-        if (row.item[key]) {
-          itemStats[key] = scaledStat(row.item, key, factor) * row.repetitions;
-          stats[key] = itemStats[key];
-        }
+        if (!row.item[key]) continue;
+        const value = scaledStat(row.item, key, factor) * row.repetitions;
+        stats[key] = value;
+        if (value)
+          ledger.push({
+            stat: key,
+            value,
+            kind: "item",
+            stage: "sums",
+            combine: combineOf(key),
+            slotId,
+            itemId,
+          });
       }
       // The declared range is not clamped here. An unset value reads as its config's default.
       for (const config of row.item.dynamicStats ?? []) {
-        const value =
-          readDynamicValue(build, row.slotId, config) * row.repetitions;
-        dynamicStats[config.stat] = value;
+        const value = readDynamicValue(build, slotId, config) * row.repetitions;
         stats[config.stat] = (stats[config.stat] ?? 0) + value;
+        if (value)
+          ledger.push({
+            stat: config.stat,
+            value,
+            kind: "dynamic",
+            stage: "sums",
+            combine: combineOf(config.stat),
+            slotId,
+            itemId,
+          });
       }
     }
     // A point_assignment row has no single item to read stats off of -- its assignments'
-    // items, scaled by count, were already summed by bonus.ts's collect() into this map.
-    const assignmentStats = resolved.assignmentStatsBySlot.get(row.slotId);
-    if (assignmentStats) {
-      for (const [key, value] of assignmentStats)
+    // items, scaled by count, were already collected by bonus.ts's collect().
+    for (const assigned of resolved.assignmentStatsBySlot.get(slotId) ?? []) {
+      for (const [key, value] of assigned.stats) {
         stats[key] = (stats[key] ?? 0) + value;
+        ledger.push({
+          stat: key,
+          value,
+          kind: "assignment",
+          stage: "sums",
+          combine: combineOf(key),
+          slotId,
+          itemId: assigned.itemId,
+        });
+      }
     }
-    const bonusStats = resolved.bonusStatsBySlot.get(row.slotId);
+    const bonusStats = resolved.bonusStatsBySlot.get(slotId);
     if (bonusStats) {
       for (const [key, value] of bonusStats)
         stats[key] = (stats[key] ?? 0) + value;
     }
-    return {
-      slotId: row.slotId,
+    rows.push({
+      slotId,
       slot: row.slot,
       choice: row.choice,
       item: row.item,
       stats,
-      itemStats,
-      dynamicStats,
       repetitions: row.repetitions,
-    };
-  });
+    });
+  }
+  return rows;
+}
+
+/** One entry per active bonus and stat, on the bonus's instancing slot: the same values
+ * `bonusStatsBySlot` merged into `rowVectors`' rows. */
+function bonusEntries(
+  resolved: ResolvedBonuses,
+  combineOf: (stat: StatKey) => LedgerEntry["combine"],
+  ledger: LedgerEntry[],
+) {
+  for (const entry of resolved.bonuses) {
+    if (!entry.active || !entry.appliedStats) continue;
+    for (const [stat, value] of Object.entries(entry.appliedStats)) {
+      if (!value) continue;
+      ledger.push({
+        stat,
+        value,
+        kind: "bonus",
+        stage: "sums",
+        combine: combineOf(stat),
+        slotId: entry.slotId,
+        bonusId: entry.id,
+      });
+    }
+  }
 }
 
 const FORTE_SOURCE: StatKey = "forte_p";
@@ -153,20 +208,28 @@ function enemyIncomingMagPhysRule(context: BuildContext): StatContribution[] {
   return [{ source, target: "enemy_incoming_damage", divisor: 1 }];
 }
 
+/**
+ * Every contribution is recorded into `ledger` in pipeline order. Row entries are recorded
+ * only when nonzero; every rating conversion and contribution rule records one entry, zero or
+ * not.
+ */
 function run(
   db: Db,
   build: Build,
   resolved: ResolvedBonuses,
+  ledger: LedgerEntry[],
 ): {
   rows: EngineRow[];
   stages: Stages;
-  appliedContributions: AppliedContribution[];
 } {
   const { schema } = db;
   const keys: StatKey[] = schema.statKeys;
   const context = build.context ?? {};
   const multiplicative = new Set(schema.multiplicativeStats);
-  const rows = rowVectors(build, resolved, keys);
+  const combineOf = (stat: StatKey): LedgerEntry["combine"] =>
+    multiplicative.has(stat) ? "multiplicative" : "additive";
+  const rows = rowVectors(build, resolved, keys, combineOf, ledger);
+  bonusEntries(resolved, combineOf, ledger);
 
   // --- stage 1: initial sums -----------------------------------------------------------
   const sums = zeros(keys);
@@ -188,6 +251,15 @@ function run(
   const afterCombinedRating: Record<StatKey, number> = { ...sums };
   for (const key of schema.ratingStats) {
     afterCombinedRating[key] += sums.combined_rating;
+    if (sums.combined_rating)
+      ledger.push({
+        stat: key,
+        value: sums.combined_rating,
+        kind: "combinedRating",
+        stage: "afterCombinedRating",
+        combine: combineOf(key),
+        sourceStat: "combined_rating",
+      });
   }
 
   // --- stage 3: caps -------------------------------------------------------------------
@@ -211,6 +283,14 @@ function run(
       0,
     );
     ratingPct[rule.percent] = rule.capPct - shortfall / 100000;
+    ledger.push({
+      stat: rule.percent,
+      value: ratingPct[rule.percent],
+      kind: "ratingConversion",
+      stage: "afterRatingPct",
+      combine: combineOf(rule.percent),
+      sourceStat: rule.rating,
+    });
   }
   const afterRatingPct = addVectors(afterCombinedRating, ratingPct, keys);
 
@@ -224,7 +304,6 @@ function run(
     ...enemyIncomingMagPhysRule(context),
   ];
   const contributions = zeros(keys);
-  const applied: AppliedContribution[] = [];
   const totals: Record<StatKey, number> = { ...afterRatingPct };
   for (const rule of rules) {
     let value = atCap(rule.source, totals[rule.source] ?? 0) / rule.divisor;
@@ -235,7 +314,14 @@ function run(
     totals[rule.target] = multiplicative.has(rule.target)
       ? (1 + totals[rule.target]) * (1 + value) - 1
       : totals[rule.target] + value;
-    applied.push({ source: rule.source, target: rule.target, value });
+    ledger.push({
+      stat: rule.target,
+      value,
+      kind: "contribution",
+      stage: "totals",
+      combine: combineOf(rule.target),
+      sourceStat: rule.source,
+    });
   }
 
   // --- stage 6: final caps -------------------------------------------------------------
@@ -267,7 +353,6 @@ function run(
       overcap,
       headroom,
     },
-    appliedContributions: applied,
   };
 }
 
@@ -727,22 +812,19 @@ function publishConflicts(db: Db, resolved: ResolvedBonuses): EngineError[] {
 
 // --- entry point ---
 
-export function resolveBuild(
-  db: Db,
-  stored: Build,
-  options?: { explain?: boolean },
-): ResolvedBuild {
+export function resolveBuild(db: Db, stored: Build): ResolvedBuild {
   // Derived here, not written to the build, so everything below sees an ordinary equipped item.
   // Inside `resolveBuild` so the picker's per-candidate resolves get the same treatment.
   const build = withDerivedBonuses(db, stored);
-  const resolved = bonus.resolve(db, build, options);
-  const { rows, stages, appliedContributions } = run(db, build, resolved);
+  const resolved = bonus.resolve(db, build);
+  const ledger: LedgerEntry[] = [];
+  const { rows, stages } = run(db, build, resolved, ledger);
   return {
     context: resolved.ctx,
     rows,
     bonuses: resolved.bonuses,
     stages,
-    appliedContributions,
+    ledger,
     derived: derive(db, build, stages),
     errors: [
       ...findErrors(db, build, resolved),

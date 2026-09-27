@@ -122,8 +122,7 @@ const result = computed(() => {
 const compareResult = computed(() =>
   engine.compareResolved.value?.ok ? engine.compareResolved.value.result : null,
 );
-// Only needed for the stat source popover's point_assignment lines and the compare toggle;
-// the rest of the panel reads entirely off `result`.
+// Only needed for the compare controls; the rest of the panel reads entirely off `result`.
 const props = defineProps<{ build: Build }>();
 const build = computed(() => props.build);
 
@@ -496,7 +495,7 @@ const {
   toggleCard,
   closeCard,
   goToSlot,
-} = useStatSourcePopover(result, build, engine.db);
+} = useStatSourcePopover(result);
 </script>
 
 <template>

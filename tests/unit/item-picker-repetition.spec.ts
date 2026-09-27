@@ -370,7 +370,7 @@ describe("what the stat popover credits", () => {
       assignments: { "gear.shard": { [gem.id]: count } },
     });
     const result = engine.resolveBuild(testDb, build);
-    const [section] = sectionsFor(result, build, testDb, "power");
+    const [section] = sectionsFor(result, "power");
     return section.sources.find((source) => source.name === gem.name)?.value;
   };
 
