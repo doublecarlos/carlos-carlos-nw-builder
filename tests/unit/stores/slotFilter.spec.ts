@@ -1,4 +1,4 @@
-// stores/slotFilter.ts: three filters behind one clear button, with the supply filter (set from
+// stores/slotFilter.ts: several filters behind one clear button, with the supply filter (set from
 // the Bonuses tab and the hover card) droppable on its own.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -48,15 +48,22 @@ describe("slotFilter", () => {
     expect(store.isActive.value).toBe(true);
   });
 
-  it("clear drops all three", () => {
+  it("the retired filter activates on its own", () => {
+    store.retired.value = true;
+    expect(store.isActive.value).toBe(true);
+  });
+
+  it("clear drops them all", () => {
     store.text.value = "boons";
     store.stat.value = "power";
+    store.retired.value = true;
     store.showSuppliersOf({ kind: "bonus", bonusId: "a" }, "A");
 
     store.clear();
 
     expect(store.text.value).toBe("");
     expect(store.stat.value).toBe("");
+    expect(store.retired.value).toBe(false);
     expect(store.need.value).toBeNull();
     expect(store.isActive.value).toBe(false);
   });

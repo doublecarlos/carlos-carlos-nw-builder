@@ -8,6 +8,7 @@ import * as history from "./history";
 import * as navHistory from "./navHistory";
 import { showUndoNotice } from "./notice";
 import { db } from "./resolved";
+import { retiredSlots } from "../data/db";
 import {
   migrateItemIds,
   migrateSlotItem,
@@ -314,16 +315,27 @@ export function applyParamFromCompare(slot: BuildParameterSlot) {
   setPath(b.context, slot.path, fromVal);
 }
 
-/** Every superseded item id the active build stores, old name to new. Off `replacements`, not
- *  `retiredChoices`, so a retirement reaching the build only through a point-assignment count
- *  is offered too. */
+/** Slot id to the retired item ids it holds, for the slot list's retired filter. */
+export const retiredBySlot = computed(() => {
+  const b = builds.build.value;
+  return b ? retiredSlots(db.value, b) : new Map<string, string[]>();
+});
+
+/** Every retired item the active build stores, with its replacement's name when it has one.
+ *  Replacements come off `replacements`, not `retiredChoices`, so a retirement reaching the
+ *  build only through a point-assignment count is offered too. */
 export const retired = computed(() => {
   const b = builds.build.value;
   if (!b) return [];
-  return [...replacements(db.value, b)].map(([from, to]) => ({
-    from: db.value.get(from)?.name ?? from,
-    to: db.value.get(to)?.name ?? to,
-  }));
+  const map = replacements(db.value, b);
+  const ids = new Set(map.keys());
+  for (const held of retiredBySlot.value.values())
+    for (const id of held) ids.add(id);
+  const name = (id: string) => db.value.get(id)?.name ?? id;
+  return [...ids].map((id) => {
+    const to = map.get(id);
+    return { from: name(id), to: to ? name(to) : null };
+  });
 });
 
 /** Swaps every retired item the active build holds. One undoable step; the seeds keep the
@@ -333,7 +345,7 @@ export function applyRetiredItems() {
   if (!b) return;
   const migrated = migrateItemIds(db.value, b);
   if (migrated === b) return;
-  const count = retired.value.length;
+  const count = retired.value.filter(({ to }) => to).length;
   history.snapshot(
     "build",
     b.id,

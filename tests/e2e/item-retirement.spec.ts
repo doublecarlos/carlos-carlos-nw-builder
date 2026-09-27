@@ -231,3 +231,45 @@ test("a replaced item keeps its slot until the offer is accepted", async ({
   await expect(notice).toHaveCount(0);
   await expect(pickerInput(head)).toHaveValue(NEW_ITEM);
 });
+
+test("a retired item with no replacement is flagged, and can be filtered to", async ({
+  page,
+}) => {
+  await openBuilder(page);
+  await addLayer(page);
+  await openLayer(page);
+  await createItem(page, OLD_ITEM);
+  await createItem(page, NEW_ITEM);
+
+  await openBuild(page);
+  await chooseItem(page, "gear.ring1", OLD_ITEM);
+
+  await openLayer(page);
+  await retireItem(page, OLD_ITEM);
+
+  await openBuild(page);
+  const notice = page.getByTestId("retired-items");
+  await expect(notice).toContainText("1 retired item");
+  // Nothing to swap onto, so no update offer.
+  await expect(page.getByTestId("retired-items-apply")).toHaveCount(0);
+  await expect(page.getByTestId("slot-retired:gear.ring1")).toBeVisible();
+  await expect(page.getByTestId("slot-retired-apply:gear.ring1")).toHaveCount(
+    0,
+  );
+
+  await page.getByTestId("retired-items-show").click();
+  await expect(page.getByTestId("slot-filter-retired")).toBeVisible();
+  await expect(page.getByTestId("slot-filter-count")).toContainText("1 match");
+  await expect(slotRow(page, "gear.ring1")).toBeVisible();
+  await expect(slotRow(page, "gear.ring2")).toHaveCount(0);
+
+  await page.getByTestId("slot-filter-retired-clear").click();
+  await expect(page.getByTestId("slot-filter-retired")).toHaveCount(0);
+  await expect(slotRow(page, "gear.ring2")).toBeVisible();
+
+  // The filter ends by itself once nothing retired is left to show.
+  await page.getByTestId("retired-items-show").click();
+  await chooseItem(page, "gear.ring1", NEW_ITEM);
+  await expect(notice).toHaveCount(0);
+  await expect(page.getByTestId("slot-filter-retired")).toHaveCount(0);
+});

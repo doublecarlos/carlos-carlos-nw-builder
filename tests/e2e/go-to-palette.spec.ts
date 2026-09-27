@@ -8,6 +8,8 @@ import {
   cursorRow,
   slotRow,
   slotFilterInput,
+  chooseItem,
+  chooseCombo,
 } from "./support/app";
 import {
   addBuild,
@@ -169,6 +171,26 @@ test.describe("choosing a destination", () => {
       "data-cursor-key",
       "slot:gear.offhandMod1",
     );
+  });
+
+  test("a slot hidden by only showing changes clears that too", async ({
+    page,
+  }) => {
+    await openBuilder(page);
+    await chooseItem(page, "gear.head", "M29 Enchanted Depthweave Cap");
+    await page.getByTestId("nav-add-build").click();
+    await chooseCombo(page.locator(".compare-select"), "Build 1");
+    const onlyChanges = page.getByRole("checkbox", {
+      name: "Only show changes",
+    });
+    await onlyChanges.check();
+    await expect(slotRow(page, "gear.offhandMod1")).toBeHidden();
+
+    await openPalette(page, "offhand mod 1");
+    await page.keyboard.press("Enter");
+
+    await expect(onlyChanges).not.toBeChecked();
+    await expect(slotRow(page, "gear.offhandMod1")).toBeVisible();
   });
 
   test("a section lands the cursor on its header, without opening it", async ({

@@ -1,10 +1,10 @@
 // What the build editor's slot list is filtered by.
 //
-// A store rather than BuildEditor's own refs because the filter has a second author: the
+// A store rather than BuildEditor's own refs because the filter has other authors: the
 // Bonuses tab, in the other column, sets `need` when a near miss is clicked, and so does the
-// hover card. The text and stat filters live here too: they are the same control to a user,
-// cleared by the same button, and splitting them across a component and a store would only
-// hide that.
+// hover card. The retired-items notice sets `retired`. The text and stat filters live here
+// too: they are the same control to a user, cleared by the same button, and splitting them
+// across a component and a store would only hide that.
 //
 // Not persisted: a filter is where you are right now, not a preference. It survives switching
 // builds (the list it filters is the same shape either way) but not a reload.
@@ -20,16 +20,20 @@ export const stat = ref("");
 /** Something the build lacks: keep only slots that could supply it (see lib/bonus-slots.ts). */
 export const need = ref<SupplyNeed | null>(null);
 
+/** Keep only slots holding a retired item. Set from the retired-items notice. */
+export const retired = ref(false);
+
 /** How the need reads to the user, for the active-filter chip; an id alone reads as a slug. */
 export const label = ref("");
 
 export const isActive = computed(
-  () => !!text.value.trim() || !!stat.value || !!need.value,
+  () => !!text.value.trim() || !!stat.value || !!need.value || retired.value,
 );
 
 export function clear() {
   text.value = "";
   stat.value = "";
+  retired.value = false;
   clearNeed();
 }
 

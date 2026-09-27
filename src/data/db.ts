@@ -9,6 +9,7 @@ import { bonusIdOf } from "../lib/bonus-attachment";
 import { replacementIdOf, replacementValuesOf } from "../lib/item-replacement";
 import { resolvedOptions } from "../lib/param-options";
 import { parseRowSlotId, rowSlot } from "../lib/item-picker-list";
+import { getPath } from "../lib/build-path";
 import { copyCounts, copyCountsExcluding } from "../lib/copy-counts";
 import {
   isPreferredSlot,
@@ -492,4 +493,31 @@ export function retiredChoices(db: Db, build: Build): RetiredChoice[] {
     if (to) retired.push({ slotId, from: itemId, to });
   }
   return retired;
+}
+
+/** Withheld from new picks (`hideFromPicker`) or superseded (`replacedBy`). */
+export const isRetired = (db: Db, id: string): boolean =>
+  !!db.get(id)?.hideFromPicker || !!db.replacementFor(id);
+
+/** Every slot whose stored value names a retired item, slot id to those item ids. Unlike
+ *  `retiredChoices` this includes a retirement with no replacement, and reaches
+ *  point_assignment rows (at a nonzero count) and `optionsFrom` params. */
+export function retiredSlots(db: Db, build: Build): Map<string, string[]> {
+  const found = new Map<string, string[]>();
+  const note = (slotId: string, id: unknown) => {
+    if (typeof id !== "string" || !id || !isRetired(db, id)) return;
+    if (!db.slotFor(slotId)) return;
+    const ids = found.get(slotId);
+    if (ids) ids.push(id);
+    else found.set(slotId, [id]);
+  };
+  for (const [slotId, id] of Object.entries(build.choices ?? {}))
+    note(slotId, id);
+  for (const [slotId, counts] of Object.entries(build.assignments ?? {}))
+    for (const [id, count] of Object.entries(counts))
+      if (count > 0) note(slotId, id);
+  for (const slot of db.slots)
+    if (slot.type === "build_parameter" && slot.optionsFrom)
+      note(slot.id, getPath(build.context, slot.path));
+  return found;
 }
