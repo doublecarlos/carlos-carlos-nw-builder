@@ -153,6 +153,12 @@ const booleanDefaultOptions = [
   { value: "true", label: "on" },
 ];
 
+const controlOptions = [
+  { value: "", label: "stepper if bounded" },
+  { value: "stepper", label: "stepper" },
+  { value: "field", label: "field" },
+];
+
 const scalerModeOptions = [
   { value: "", label: "not a scaler" },
   { value: "relative", label: "relative (1 + value)" },
@@ -377,6 +383,20 @@ function save() {
               class="w-full"
               type="text"
               data-testid="slot-presets-input"
+            />
+          </FormField>
+          <FormField
+            v-if="draft.paramType === 'number'"
+            label="Control"
+            class="w-44"
+          >
+            <ComboBox
+              :model-value="draft.control"
+              :options="controlOptions"
+              data-testid="slot-control-input"
+              @update:model-value="
+                (v) => (draft.control = v as SlotDraft['control'])
+              "
             />
           </FormField>
         </template>

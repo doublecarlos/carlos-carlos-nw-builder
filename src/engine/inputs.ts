@@ -2,6 +2,7 @@
 // reads this table, so a new kind of value gets its errors by adding an entry.
 import {
   assignmentAddress,
+  bonusInputAddress,
   bonusStatAddress,
   itemStatAddress,
   occurrenceAddress,
@@ -26,8 +27,10 @@ import type {
   EngineError,
   EvaluatedBonus,
   InputAddress,
+  InputDef,
   InputSpec,
   Item,
+  NumberControl,
   ResolvedRow,
 } from "../types";
 
@@ -39,7 +42,7 @@ export interface InputSource {
 }
 
 export type InputKindId =
-  "itemDynamic" | "bonusDynamic" | "occurrence" | "repetition";
+  "itemDynamic" | "bonusDynamic" | "bonusInput" | "occurrence" | "repetition";
 
 export interface InputEntry {
   kind: InputKindId;
@@ -52,12 +55,37 @@ export interface InputEntry {
   slotId: string;
   /** Display name of what declares the value, which its error message leads with. */
   source: string;
+  /** The item carrying the value on its slot, where a slot holds several. */
+  itemId?: string;
 }
 
 export interface InputKind {
   id: InputKindId;
   /** Every declared value this kind has on the build, active or not. */
   entries(db: Db, build: Build, resolved: InputSource): InputEntry[];
+}
+
+/** Whether a value can take a stepper: a number with both bounds, which the buttons clamp to. */
+export function canStep(value: {
+  type: string;
+  min?: number;
+  max?: number;
+}): boolean {
+  return (
+    value.type === "number" &&
+    Number.isFinite(value.min) &&
+    Number.isFinite(value.max)
+  );
+}
+
+/** How a number value is edited: a stepper where one fits, unless `control` asks for a field. */
+export function numberControl(value: {
+  type: string;
+  min?: number;
+  max?: number;
+  control?: NumberControl;
+}): NumberControl {
+  return canStep(value) && value.control !== "field" ? "stepper" : "field";
 }
 
 /** A dynamic stat's spec: percent units for a percent/mult stat. */
@@ -96,9 +124,35 @@ export function paramSpec(slot: BuildParameterSlot): InputSpec {
     max: slot.max ?? Infinity,
     ...(slot.step !== undefined ? { step: slot.step } : {}),
     ...(slot.presets ? { presets: slot.presets } : {}),
+    ...(slot.control ? { control: slot.control } : {}),
     default: Number(slot.default ?? 0),
     label: slot.label,
     format: percent ? pctInput : String,
+  };
+}
+
+/** A bonus input's spec. A boolean reads as 0..1. */
+export function bonusInputSpec(def: InputDef, name: string): InputSpec {
+  const label = def.label ?? name;
+  if (def.type === "boolean")
+    return {
+      type: "boolean",
+      min: 0,
+      max: 1,
+      default: def.default ? 1 : 0,
+      label,
+      format: (value) => (value ? "on" : "off"),
+    };
+  return {
+    type: def.type,
+    min: def.min ?? -Infinity,
+    max: def.max ?? Infinity,
+    ...(def.step !== undefined ? { step: def.step } : {}),
+    ...(def.presets ? { presets: def.presets } : {}),
+    ...(def.control ? { control: def.control } : {}),
+    default: Number(def.default),
+    label,
+    format: def.type === "percent" ? pctInput : String,
   };
 }
 
@@ -150,6 +204,27 @@ const bonusDynamic: InputKind = {
           value: readInput(build, address, config.default),
           slotId: entry.slotId,
           source: entry.bonus.name ?? entry.bonusId,
+        };
+      }),
+    ),
+};
+
+/** One entry per input of every bonus on the build, attributed to the bonus's anchor. */
+const bonusInput: InputKind = {
+  id: "bonusInput",
+  entries: (_db, build, resolved) =>
+    resolved.bonuses.flatMap((entry) =>
+      Object.entries(entry.bonus.inputs ?? {}).map(([name, def]) => {
+        const address = bonusInputAddress(entry.bonusId, name);
+        const spec = bonusInputSpec(def, name);
+        return {
+          kind: "bonusInput" as const,
+          address,
+          spec,
+          value: readInput(build, address, spec.default),
+          slotId: entry.slotId,
+          source: entry.bonus.name ?? entry.bonusId,
+          itemId: entry.sources[0]?.itemId ?? entry.carrier?.itemId,
         };
       }),
     ),
@@ -218,6 +293,7 @@ const repetition: InputKind = {
 export const INPUT_KINDS: InputKind[] = [
   repetition,
   occurrence,
+  bonusInput,
   itemDynamic,
   bonusDynamic,
 ];

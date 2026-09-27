@@ -44,12 +44,13 @@ ordinary one.
 | IdField                                   | Read-only display of a frozen, generator-assigned id                                       |
 | InputRow                                  | A typed control in a fixed leading column, right-aligned, with its description after it    |
 | LinkList                                  | A comma-separated run of BaseLinks inside a sentence, some entries optionally plain text   |
-| NumberStepper                             | A whole-number field between -/+ buttons; Ctrl/Cmd+click jumps to a bound                  |
+| NumberStepper                             | A number field between -/+ buttons stepping by `step`; Ctrl/Cmd+click jumps to a bound     |
 | OcrHint                                   | Marks a field that reads pasted screenshots                                                |
 | OcrTextField                              | A description field that also OCRs a pasted screenshot into it                             |
 | PaletteInput                              | GoToPalette's own combobox-trigger search field                                            |
 | PanelHead                                 | A panel's own internal section heading (not BasePanel's header slot)                       |
 | PercentInput                              | A percent field over a decimal-stored value (`0.09` stored, `9` typed)                     |
+| PresetButtons                             | A row of one-click values next to a number field, the current one highlighted              |
 | RailGutter / RailToggle                   | A side rail's show/hide-and-resize edge, and the button that collapses/restores it         |
 | RepeatableRows                            | A list whose rows share one Add/Remove pair, with an empty state that still offers Add     |
 | SegmentedControl                          | "Pick exactly one of a few options", with a `tone` per option                              |

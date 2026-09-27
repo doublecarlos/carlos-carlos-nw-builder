@@ -24,6 +24,7 @@ import { replacementIdOf, replacementValuesOf } from "../lib/item-replacement";
 import { parseRowSlotId, rowSlot } from "../lib/item-picker-list";
 import { REQUIRED_SLOT_IDS, gameImportReferences } from "../lib/demo-slots";
 import { INSIGNIA_SHAPES } from "../types";
+import { canStep } from "../engine/inputs";
 
 import type {
   Item,
@@ -32,6 +33,8 @@ import type {
   CatalogOverlay,
   CatalogGroup,
   ConditionWhen,
+  InputCondition,
+  InputDef,
   ParamCondition,
   LintFinding,
   Slot,
@@ -659,6 +662,7 @@ const CONDITION_KEYS = new Set([
   "bonusOccurrences",
   "equipped",
   "param",
+  "input",
   "all",
   "any",
   "not",
@@ -768,11 +772,43 @@ function checkParamCondition(
   }
 }
 
+function checkInputCondition(
+  spec: InputCondition | undefined,
+  path: string,
+  report: (level: "error" | "warn", message: string) => void,
+  inputs: Record<string, InputDef>,
+) {
+  if (!spec || typeof spec !== "object" || !spec.key) {
+    report("error", `${path}: input condition has no "key"`);
+    return;
+  }
+  const def = Object.hasOwn(inputs, spec.key) ? inputs[spec.key] : null;
+  if (!def) {
+    report(
+      "error",
+      `${path}: input "${spec.key}" is not declared by this bonus; the condition can never be active`,
+    );
+    return;
+  }
+  const ranged =
+    spec.atLeast !== undefined ||
+    spec.below !== undefined ||
+    spec.exactly !== undefined;
+  if (def.type === "boolean" && (spec.is === undefined || ranged))
+    report("error", `${path}: input "${spec.key}" is a boolean; use "is"`);
+  else if (def.type !== "boolean" && (!ranged || spec.is !== undefined))
+    report(
+      "error",
+      `${path}: input "${spec.key}" is a number; use atLeast/below/exactly`,
+    );
+}
+
 function checkConditions(
   when: ConditionWhen | undefined,
   path: string,
   report: (level: "error" | "warn", message: string) => void,
   paramSlots: Map<string, BuildParameterSlot>,
+  inputs: Record<string, InputDef> = {},
 ) {
   if (!when || typeof when !== "object") return;
   for (const [key, spec] of Object.entries(when)) {
@@ -786,12 +822,16 @@ function checkConditions(
     }
     if (key === "all" || key === "any") {
       if (Array.isArray(spec))
-        spec.forEach((sub) => checkConditions(sub, path, report, paramSlots));
+        spec.forEach((sub) =>
+          checkConditions(sub, path, report, paramSlots, inputs),
+        );
       else report("error", `${path}: "${key}" must be a list`);
     } else if (key === "not") {
-      checkConditions(spec as ConditionWhen, path, report, paramSlots);
+      checkConditions(spec as ConditionWhen, path, report, paramSlots, inputs);
     } else if (key === "param") {
       checkParamCondition(spec as ParamCondition, path, report, paramSlots);
+    } else if (key === "input") {
+      checkInputCondition(spec as InputCondition, path, report, inputs);
     }
   }
 }
@@ -853,6 +893,65 @@ function conditionPaths(when: ConditionWhen | undefined, out: Set<string>) {
       // isn't, hence its own branch.
       out.add(key);
     }
+  }
+}
+
+/** Every input name a `when`'s input leaves read, flattened out of its combinators. */
+function inputNames(when: ConditionWhen | undefined, out: Set<string>) {
+  if (!when || typeof when !== "object") return;
+  if (when.input?.key) out.add(when.input.key);
+  for (const sub of [...(when.all ?? []), ...(when.any ?? [])])
+    inputNames(sub, out);
+  inputNames(when.not, out);
+}
+
+const INPUT_TYPES = new Set(["boolean", "number", "percent"]);
+const NUMBER_CONTROLS = new Set(["stepper", "field"]);
+
+/** A declared `control` is a known one, and a stepper has a bounded number to step. Shared by
+ *  bonus inputs and build parameters. */
+function controlProblem(
+  value: { type: string; min?: number; max?: number; control?: unknown },
+  label: string,
+): string | null {
+  if (value.control === undefined) return null;
+  if (!NUMBER_CONTROLS.has(value.control as string))
+    return `${label}: control must be "stepper" or "field"`;
+  if (value.control === "stepper" && !canStep(value))
+    return `${label}: a stepper needs a number with both min and max`;
+  return null;
+}
+const INPUT_NAME = /^[a-zA-Z_]\w*$/;
+
+/** A bonus's input declarations: a valid name and type, a boolean default on a boolean, and
+ *  bounds on a number or percent. */
+function checkInputDefs(
+  inputs: Record<string, InputDef>,
+  report: (level: "error" | "warn", message: string) => void,
+) {
+  for (const [name, def] of Object.entries(inputs)) {
+    const label = `input "${name}"`;
+    if (!INPUT_NAME.test(name))
+      report(
+        "error",
+        `${label}: a name is a letter or _ then letters, digits or _`,
+      );
+    if (!def || typeof def !== "object" || !INPUT_TYPES.has(def.type)) {
+      report("error", `${label}: type must be boolean, number or percent`);
+      continue;
+    }
+    const control = controlProblem(def, label);
+    if (control) report("error", control);
+    if (def.type === "boolean") {
+      if (typeof def.default !== "boolean")
+        report("error", `${label}: a boolean's default is true or false`);
+      continue;
+    }
+    const problem = checkBounds(
+      { min: def.min, max: def.max, default: def.default },
+      label,
+    );
+    if (problem) report("error", problem);
   }
 }
 
@@ -1019,6 +1118,14 @@ export function validateSlots(slots: Slot[]): LintFinding[] {
         });
       }
     }
+    const control = controlProblem({ ...slot, type: slot.paramType }, slot.id);
+    if (control)
+      findings.push({
+        level: "error",
+        kind: "slot",
+        name: slot.id,
+        message: control,
+      });
     if (slot.scaler) {
       // A scaler's value becomes a multiplier, so only a numeric param can carry one; an
       // unknown `mode` would silently resolve as `absolute` in bonus.ts.
@@ -2318,14 +2425,25 @@ export function validate(
       report("error", "a bonus has no id");
       continue;
     }
+    const bonusReport = (level: "error" | "warn", message: string) =>
+      report(level, message, bonus.id, "bonus");
+    const inputs = bonus.inputs ?? {};
+    checkInputDefs(inputs, bonusReport);
+    const readInputs = new Set<string>();
     bonus.grants?.forEach((grant, index) => {
       const label = `grant ${index + 1}`;
-      checkConditions(
-        grant.when,
-        label,
-        (level, message) => report(level, message, bonus.id, "bonus"),
-        paramSlots,
-      );
+      checkConditions(grant.when, label, bonusReport, paramSlots, inputs);
+      inputNames(grant.when, readInputs);
+      for (const variant of grant.variants ?? []) {
+        checkConditions(
+          variant.when,
+          `${label} variant`,
+          bonusReport,
+          paramSlots,
+          inputs,
+        );
+        inputNames(variant.when, readInputs);
+      }
       checkStats(grant.stats, label, bonus.id, "bonus");
       checkDynamicStats(
         grant.dynamicStats,
@@ -2371,6 +2489,10 @@ export function validate(
         }
       }
     });
+    for (const name of Object.keys(inputs)) {
+      if (!readInputs.has(name))
+        bonusReport("warn", `input "${name}" is never read by a condition`);
+    }
   }
 
   return findings;

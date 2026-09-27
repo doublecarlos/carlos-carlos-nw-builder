@@ -36,6 +36,7 @@ import type {
   Bonus,
   StatValues,
   DynamicStatConfig,
+  InputDef,
 } from "../types";
 
 // Exactly what the engine reads off a tier (bonus.ts `evaluateBonus`). Anything else on a
@@ -308,6 +309,8 @@ export interface BonusDraft {
   stacking?: string;
   maxStacks?: number | string | null;
   excludes?: string[];
+  /** Carried through unedited. */
+  inputs?: Record<string, InputDef>;
 }
 
 /** Assembles a bonus-level draft (id/name/grants plus the bonus-level stacking/excludes
@@ -321,6 +324,8 @@ export function toBonus(draft: BonusDraft): Bonus {
     name: draft.name.trim() || draft.id.trim(),
     grants,
   };
+  if (draft.inputs && Object.keys(draft.inputs).length)
+    out.inputs = JSON.parse(JSON.stringify(draft.inputs));
   putIfSet(out, "stacking", draft.stacking);
   if (draft.maxStacks) out.maxStacks = Number(draft.maxStacks);
   putIfSet(out, "excludes", [...(draft.excludes ?? [])]);

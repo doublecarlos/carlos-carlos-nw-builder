@@ -1009,13 +1009,13 @@ describe("a bonus reachable only through a currently-zero occurrence count", () 
     // stacks, sources, or the applied stats, even though it's equipped in the same build.
     expect(entry?.stacks).toBe(2);
     expect(entry?.sources).toEqual([
-      { name: "Dial Item", slotId: "slot1" },
-      { name: "Dial Item", slotId: "slot1" },
+      { name: "Dial Item", slotId: "slot1", itemId: "dial-item" },
+      { name: "Dial Item", slotId: "slot1", itemId: "dial-item" },
     ]);
     expect(entry?.appliedStats?.power_p).toBeCloseTo(2 * 0.02, 9);
   });
 
-  it("sources carry each contributing slot's id, in build order", () => {
+  it("sources carry each contributing slot and item, in build order", () => {
     const result = engine.resolveBuild(
       testDb,
       buildWith(
@@ -1029,8 +1029,8 @@ describe("a bonus reachable only through a currently-zero occurrence count", () 
     const entry = result.bonuses.find((b) => b.id === "stacking-bonus");
     expect(entry?.stacks).toBe(2);
     expect(entry?.sources).toEqual([
-      { name: "Dial Item", slotId: "slot1" },
-      { name: "Other Dial Item", slotId: "slot2" },
+      { name: "Dial Item", slotId: "slot1", itemId: "dial-item" },
+      { name: "Other Dial Item", slotId: "slot2", itemId: "other-dial-item" },
     ]);
   });
 
