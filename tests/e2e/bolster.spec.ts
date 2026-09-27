@@ -110,12 +110,13 @@ test.describe("mount and companion bolster", () => {
     await chooseItem(page, "mounts.mountEquip", MOUNT_EQUIP);
     await chooseItem(page, "companions.companion", "Generic Companion");
 
-    // Mount equip 1750 + companion 1800, each at its own max: 3937 + 3960 -> 7897.
-    await expect(statValue(page, "il")).toHaveText("7,897");
+    // Mount equip 1750 + companion 1800, each at its own max, minus the companion's 1 IL fix:
+    // 3937 + 3960 - 1 -> 7896.
+    await expect(statValue(page, "il")).toHaveText("7,896");
 
     await setBolster(page, "companions.bolster", 0);
-    // Only the companion drops to base: 3937 + 1800.
-    await expect(statValue(page, "il")).toHaveText("5,737");
+    // Only the companion drops to base: 3937 + 1800 - 1.
+    await expect(statValue(page, "il")).toHaveText("5,736");
   });
 });
 
