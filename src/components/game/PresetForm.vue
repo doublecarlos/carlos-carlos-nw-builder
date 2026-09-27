@@ -28,7 +28,6 @@ import IdField from "../ui/IdField.vue";
 import * as catalog from "../../data/catalog";
 import { useEditorDraft } from "../../composables/useEditorDraft";
 import { occurrenceRows } from "../../composables/useItemBonusOccurrences";
-import { dynamicValueKey } from "../../lib/dynamic-stats";
 import { parseRowSlotId, rowSlot } from "../../lib/item-picker-list";
 import {
   buildDraft,
@@ -397,7 +396,7 @@ function save() {
           class="flex items-center gap-1"
         >
           <BaseInput
-            v-model.number="row.values[dynamicValueKey(config.stat)]"
+            v-model.number="row.values[config.stat]"
             class="w-24"
             type="number"
             :placeholder="String(config.default)"

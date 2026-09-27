@@ -70,7 +70,7 @@ type RunResult = ReturnType<typeof engine.resolveBuild> & {
 function runBuild(
   choicesByName: Record<string, string>,
   contextOverrides: Partial<BuildContext> = {},
-  values: Record<string, Record<string, number>> = {},
+  values: Build["values"] = {},
 ): RunResult {
   const choices = Object.fromEntries(
     Object.entries(choicesByName).map(([slot, name]) => [slot, idOf(name)]),
@@ -365,12 +365,12 @@ describe("bonus model semantics", () => {
     const inRange = runBuild(
       { "gear.offhandMod2": "CA (M32+, 600 to 3600)" },
       {},
-      { "gear.offhandMod2": { ca: 2000 } },
+      { "gear.offhandMod2": { stat: { ca: 2000 } } },
     );
     const over = runBuild(
       { "gear.offhandMod2": "CA (M32+, 600 to 3600)" },
       {},
-      { "gear.offhandMod2": { ca: 5800 } },
+      { "gear.offhandMod2": { stat: { ca: 5800 } } },
     );
     expect(dynamicCa(inRange)).toBeCloseTo(2000, 9);
     // Not errors.length === 0: BASE_CONTEXT leaves every leveling ability-score slot at its

@@ -12,7 +12,7 @@ import type {
 /** `item`'s repetition count at `slotId`. No config means "in the build exactly once", so this
  * returns 1 and every caller can multiply unconditionally. Otherwise the stored count, falling
  * back to the config's `default` when the build has never touched it -- the same fallback
- * `occurrenceCountFor` and `readDynamicValue` make for their own configs. */
+ * `occurrenceCountFor` and `readInput` make for their own configs. */
 export function inlineRepetitionCount(
   build: Build,
   slotId: string,

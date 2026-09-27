@@ -99,6 +99,7 @@ function testBuild(overrides: Partial<Build> = {}): Build {
     name: "b",
     choices: { "gear.shard": shard.id },
     values: {},
+    bonusValues: {},
     assignments: {},
     occurrenceInputs: {},
     listRows: {},

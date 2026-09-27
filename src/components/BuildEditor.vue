@@ -40,7 +40,7 @@ import { statPickerOptions } from "../lib/format";
 import { matchesQuery } from "../lib/text-filter";
 import { slotStablePlaceholder, slotStatSummary } from "../lib/slot-summary";
 import { slotsSupplying } from "../lib/bonus-slots";
-import { readDynamicValue } from "../lib/dynamic-stats";
+import { itemStatAddress, readInput } from "../lib/build-inputs";
 import * as insignia from "../engine/insignia";
 import * as stableBrowser from "../stores/stableBrowser";
 import { expandSlots } from "../lib/item-picker-list";
@@ -368,7 +368,11 @@ function dynamicValuesFor(slotId: string, item: Item): Record<string, number> {
   return Object.fromEntries(
     (item.dynamicStats ?? []).map((config) => [
       config.stat,
-      readDynamicValue(build.value, slotId, config),
+      readInput(
+        build.value,
+        itemStatAddress(slotId, config.stat),
+        config.default,
+      ),
     ]),
   );
 }

@@ -7,13 +7,17 @@
 import { computed, type ComputedRef, type Ref } from "vue";
 import * as builds from "../stores/builds";
 import { resolved } from "../stores/resolved";
-import { dynamicValueKey, readDynamicValue } from "../lib/dynamic-stats";
+import {
+  bonusStatAddress,
+  itemStatAddress,
+  readInput,
+} from "../lib/build-inputs";
 import { label as statLabel } from "../lib/format";
-import type { Item } from "../types";
+import type { InputAddress, Item } from "../types";
 
 export interface DynamicStatRow {
-  /** This value's storage key within `Build.values[slotId]` -- see `dynamicValueKey`. */
-  key: string;
+  /** Where this value is stored. */
+  address: InputAddress;
   stat: string;
   label: string;
   value: number;
@@ -34,11 +38,12 @@ export function dynamicStatRowsForSlot(
   const rows: DynamicStatRow[] = [];
 
   for (const config of item.dynamicStats ?? []) {
+    const address = itemStatAddress(slotId, config.stat);
     rows.push({
-      key: dynamicValueKey(config.stat),
+      address,
       stat: config.stat,
       label: config.label ?? statLabel(config.stat),
-      value: readDynamicValue(b, slotId, config),
+      value: readInput(b, address, config.default),
       min: config.min,
       max: config.max,
       defaultValue: config.default,
@@ -55,11 +60,12 @@ export function dynamicStatRowsForSlot(
               ?.dynamicStats ?? [])
           : (grant.raw.dynamicStats ?? []);
         for (const config of configs) {
+          const address = bonusStatAddress(entry.bonusId, config.stat);
           rows.push({
-            key: dynamicValueKey(config.stat, entry.bonusId),
+            address,
             stat: config.stat,
             label: config.label ?? statLabel(config.stat),
-            value: readDynamicValue(b, slotId, config, entry.bonusId),
+            value: readInput(b, address, config.default),
             min: config.min,
             max: config.max,
             defaultValue: config.default,

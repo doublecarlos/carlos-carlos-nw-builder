@@ -4,6 +4,10 @@
 // different key, or the window elapsing, doesn't.
 import { afterEach, describe, expect, it, vi } from "vitest";
 import * as storage from "../../../src/storage/storage";
+import {
+  bonusStatAddress,
+  itemStatAddress,
+} from "../../../src/lib/build-inputs";
 import type { ItemPickerSlot } from "../../../src/types";
 
 async function freshStores() {
@@ -343,7 +347,7 @@ describe("buildEditor.applyPreset", () => {
     section: "options",
     params: { "options.role": "dps" },
     choices: { ring1: "ItemA" },
-    values: { ring1: { power: 42 } },
+    values: { ring1: { stat: { power: 42 } } },
     assignments: { "boons.tier1": { "boon-tier1-power": 3 } },
     occurrences: { ItemA: { "stack-bonus": 4 } },
   };
@@ -362,13 +366,26 @@ describe("buildEditor.applyPreset", () => {
 
     expect(builds.build.value!.context.role).toBe("dps");
     expect(builds.build.value!.choices.ring1).toBe("ItemA");
-    expect(builds.build.value!.values.ring1).toEqual({ power: 42 });
+    expect(builds.build.value!.values.ring1).toEqual({ stat: { power: 42 } });
     expect(builds.build.value!.assignments["boons.tier1"]).toEqual({
       ...seededRows,
       "boon-tier1-power": 3,
     });
     expect(builds.build.value!.occurrenceInputs.ItemA).toEqual({
       "stack-bonus": 4,
+    });
+  });
+
+  it("merges bonus settings per bonus", async () => {
+    const { builds, buildEditor } = await freshStores();
+    buildEditor.setDynamicValue(bonusStatAddress("proc", "crit"), "0.1");
+    buildEditor.applyPreset({
+      ...preset,
+      bonusValues: { proc: { stat: { power: 5 }, input: { on: true } } },
+    });
+    expect(builds.build.value!.bonusValues.proc).toEqual({
+      stat: { crit: 0.1, power: 5 },
+      input: { on: true },
     });
   });
 
@@ -460,7 +477,7 @@ describe("buildEditor.applyPreset clears", () => {
     const { builds, buildEditor } = await freshStores();
     buildEditor.setParam(roleSlot, "dps");
     buildEditor.setChoice("gear.head", "ItemA");
-    buildEditor.setDynamicValue("gear.head", "power", "5");
+    buildEditor.setDynamicValue(itemStatAddress("gear.head", "power"), "5");
     buildEditor.setAssignment(tier1Slot, "boon-tier1-power", 3);
 
     buildEditor.applyPreset({
@@ -548,7 +565,7 @@ describe("buildEditor.presetFromSection", () => {
   it("captures a section's picks, values and occurrence counts", async () => {
     const { buildEditor } = await freshStores();
     buildEditor.setChoice("gear.head", "ItemA");
-    buildEditor.setDynamicValue("gear.head", "power", "5");
+    buildEditor.setDynamicValue(itemStatAddress("gear.head", "power"), "5");
     buildEditor.setOccurrenceInput("ItemA", "stack-bonus", 2, "Stack Bonus");
 
     const preset = buildEditor.presetFromSection("gear", "My Gear");
@@ -556,7 +573,7 @@ describe("buildEditor.presetFromSection", () => {
     expect(preset.label).toBe("My Gear");
     expect(preset.section).toBe("gear");
     expect(preset.choices?.["gear.head"]).toBe("ItemA");
-    expect(preset.values?.["gear.head"]).toEqual({ power: 5 });
+    expect(preset.values?.["gear.head"]).toEqual({ stat: { power: 5 } });
     expect(preset.occurrences?.ItemA).toEqual({ "stack-bonus": 2 });
   });
 
@@ -676,7 +693,7 @@ describe("buildEditor.clearSection", () => {
   it("clears an item_picker slot's choice and value", async () => {
     const { builds, buildEditor } = await freshStores();
     buildEditor.setChoice("gear.head", "ItemA");
-    buildEditor.setDynamicValue("gear.head", "power", "5");
+    buildEditor.setDynamicValue(itemStatAddress("gear.head", "power"), "5");
 
     buildEditor.clearSection("gear", "Gear");
     expect(builds.build.value!.choices["gear.head"]).toBeUndefined();
@@ -785,13 +802,13 @@ describe("buildEditor undo labels", () => {
 
   it("setDynamicValue includes the new value in the label", async () => {
     const { buildEditor } = await freshStores();
-    buildEditor.setDynamicValue("ring1", "power", "42");
+    buildEditor.setDynamicValue(itemStatAddress("ring1", "power"), "42");
     expect(buildEditor.undoLabel.value).toContain("→ 42");
   });
 
   it("setDynamicValue shows (none) when clearing", async () => {
     const { buildEditor } = await freshStores();
-    buildEditor.setDynamicValue("ring1", "power", "");
+    buildEditor.setDynamicValue(itemStatAddress("ring1", "power"), "");
     expect(buildEditor.undoLabel.value).toContain("→ (none)");
   });
 });
@@ -827,7 +844,7 @@ describe("buildEditor item_picker_list rows", () => {
     buildEditor.setChoice(row(1), "ItemA");
     buildEditor.setChoice(row(2), "ItemB");
     buildEditor.setChoice(row(3), "ItemC");
-    buildEditor.setDynamicValue(row(3), "power", "42");
+    buildEditor.setDynamicValue(itemStatAddress(row(3), "power"), "42");
 
     buildEditor.removeListRow(row(2));
 
@@ -836,7 +853,7 @@ describe("buildEditor item_picker_list rows", () => {
     expect(build.choices[row(1)]).toBe("ItemA");
     expect(build.choices[row(2)]).toBe("ItemC");
     expect(build.choices[row(3)]).toBeUndefined();
-    expect(build.values[row(2)]).toEqual({ power: 42 });
+    expect(build.values[row(2)]).toEqual({ stat: { power: 42 } });
     expect(build.values[row(3)]).toBeUndefined();
   });
 
@@ -1015,7 +1032,7 @@ describe("buildEditor slot data", () => {
     const { builds, buildEditor } = await freshStores();
     const other = builds.build.value!;
     other.choices[SLOT] = "ItemA";
-    other.values[SLOT] = { magnitude: 5 };
+    other.values[SLOT] = { stat: { magnitude: 5 } };
     other.assignments[SLOT] = { ItemA: 3 };
     other.disabledSlots[SLOT] = true;
 
@@ -1025,7 +1042,7 @@ describe("buildEditor slot data", () => {
     buildEditor.applyFromCompare(SLOT);
 
     expect(mine.choices[SLOT]).toBe("ItemA");
-    expect(mine.values[SLOT]).toEqual({ magnitude: 5 });
+    expect(mine.values[SLOT]).toEqual({ stat: { magnitude: 5 } });
     expect(mine.assignments[SLOT]).toEqual({ ItemA: 3 });
     expect(mine.disabledSlots[SLOT]).toBe(true);
     // Copied, not shared: editing one build must not reach into the other.
@@ -1040,7 +1057,7 @@ describe("buildEditor slot data", () => {
     const mine = builds.build.value!;
     mine.compare.id = other.id;
     mine.choices[SLOT] = "ItemA";
-    mine.values[SLOT] = { magnitude: 5 };
+    mine.values[SLOT] = { stat: { magnitude: 5 } };
     mine.assignments[SLOT] = { ItemA: 3 };
     mine.disabledSlots[SLOT] = true;
 
@@ -1058,7 +1075,7 @@ describe("buildEditor slot data", () => {
     // Set before the mount, so the pick lands while the group is still in its manual fallback.
     buildEditor.setChoice(INSIGNIA, "aggression-barbed");
     const build = builds.build.value!;
-    build.values[INSIGNIA] = { magnitude: 5 };
+    build.values[INSIGNIA] = { stat: { magnitude: 5 } };
     build.disabledSlots[INSIGNIA] = true;
 
     // A barbed insignia in slot 1, which this mount declares as crescent.

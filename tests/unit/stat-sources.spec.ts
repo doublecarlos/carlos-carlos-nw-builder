@@ -110,6 +110,7 @@ const build: Build = {
   name: "b",
   choices: { "gear.ring1": ring.id, "gear.ring2": ring.id },
   values: {},
+  bonusValues: {},
   assignments: { "boons.tier1": { [boon.id]: 3 } },
   occurrenceInputs: {},
   listRows: {},

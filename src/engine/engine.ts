@@ -6,11 +6,11 @@
 
 import * as bonus from "./bonus";
 import { scaleFactorFor, scaledStat } from "./scaling";
-import { occurrenceCountFor } from "../lib/bonus-attachment";
 import { assignedRows } from "../lib/inline-repetition";
 import { copyCounts } from "../lib/copy-counts";
 import { misplacedInsignia, withDerivedBonuses } from "./insignia";
-import { dynamicValueKey, readDynamicValue } from "../lib/dynamic-stats";
+import { itemStatAddress, readInput } from "../lib/build-inputs";
+import { inputRanges, paramSpec, rangeError } from "./inputs";
 import type {
   Db,
   Build,
@@ -19,7 +19,6 @@ import type {
   Schema,
   StatKey,
   ResolvedBonuses,
-  ResolvedRow,
   EngineRow,
   Stages,
   StatContribution,
@@ -29,7 +28,6 @@ import type {
   ResolvedBuild,
   BuildContext,
 } from "../types";
-import { outOfRangeErrorMessage } from "../lib/format";
 
 const zeros = (keys: StatKey[]) => {
   const out: Record<StatKey, number> = {};
@@ -110,7 +108,12 @@ function rowVectors(
       }
       // The declared range is not clamped here. An unset value reads as its config's default.
       for (const config of row.item.dynamicStats ?? []) {
-        const value = readDynamicValue(build, slotId, config) * row.repetitions;
+        const value =
+          readInput(
+            build,
+            itemStatAddress(slotId, config.stat),
+            config.default,
+          ) * row.repetitions;
         stats[config.stat] = (stats[config.stat] ?? 0) + value;
         if (value)
           ledger.push({
@@ -497,33 +500,17 @@ function parameterRanges(db: Db, resolved: ResolvedBonuses): EngineError[] {
     if (slot.paramType !== "number" && slot.paramType !== "percent") continue;
     if (slot.min === undefined && slot.max === undefined) continue;
     const value = Number(resolved.ctx.params.get(slot.path));
-    if (!Number.isFinite(value)) continue;
-    if (
-      (slot.min !== undefined && value < slot.min) ||
-      (slot.max !== undefined && value > slot.max)
-    ) {
-      // Percent params are stored as decimals but read and typed as percentages, so the
-      // message has to speak the same units the control does.
-      const show = (n: number) =>
-        slot.paramType === "percent"
-          ? `${Math.round(n * 10000) / 100}%`
-          : String(n);
-      const low = slot.min === undefined ? "" : show(slot.min);
-      const high = slot.max === undefined ? "" : show(slot.max);
-      errors.push({
-        slotId: slot.id,
-        kind: "outOfRange",
-        choice: slot.label,
-        message: outOfRangeErrorMessage(slot.label, show(value), low, high),
-        severity: "error",
-      });
-    }
+    const error = rangeError(slot.id, slot.label, paramSpec(slot), value, {
+      store: "context",
+      path: slot.path,
+    });
+    if (error) errors.push(error);
   }
   return errors;
 }
 
-/** Every `point_assignment` row with points on it: the same class and copy checks a pick gets,
- * plus its own count against the row's declared bounds. */
+/** Every `point_assignment` row with points on it gets the same class and copy checks a pick
+ * gets. Its count's range is `inputRanges`' business. */
 function assignmentErrors(
   db: Db,
   build: Build,
@@ -535,19 +522,7 @@ function assignmentErrors(
     if (slot.type !== "point_assignment") continue;
     for (const { item, count } of assignedRows(db, build, slot)) {
       if (count <= 0) continue;
-      const { min, max: rowMax } = item.inlineRepetition!;
-
       errors.push(...checkItemErrors(slot.id, item, db, cls, counts));
-
-      if (count < min || count > rowMax) {
-        errors.push({
-          slotId: slot.id,
-          kind: "outOfRange",
-          choice: item.name,
-          message: outOfRangeErrorMessage(item.name, count, min, rowMax),
-          severity: "error",
-        });
-      }
     }
   }
   return errors;
@@ -564,90 +539,9 @@ function insigniaWarnings(db: Db, build: Build): EngineError[] {
   }));
 }
 
-/** Dynamic stats carry a declared range. The value is used as typed (see `rowVectors`);
- * flagging it here is what makes that safe. */
-function itemDynamicStatRanges(build: Build, row: ResolvedRow): EngineError[] {
-  const errors: EngineError[] = [];
-  for (const config of row.item?.dynamicStats ?? []) {
-    const typed = build.values?.[row.slotId]?.[dynamicValueKey(config.stat)];
-    const value = Number(typed);
-    if (
-      typed != null &&
-      Number.isFinite(value) &&
-      (value < config.min || value > config.max)
-    ) {
-      errors.push({
-        slotId: row.slotId,
-        kind: "outOfRange",
-        choice: row.item!.name,
-        message: outOfRangeErrorMessage(
-          row.item!.name,
-          value,
-          config.min,
-          config.max,
-        ),
-        severity: "error",
-      });
-    }
-  }
-  return errors;
-}
-
-/** An `item_picker` pick's own inline-repetition count. A `point_assignment` row's counts are
- * `assignmentErrors`' business, against the slot's item list rather than a single pick. */
-function repetitionRange(row: ResolvedRow): EngineError[] {
-  const repetition = row.item?.inlineRepetition;
-  if (
-    !repetition ||
-    (row.repetitions >= repetition.min && row.repetitions <= repetition.max)
-  )
-    return [];
-  return [
-    {
-      slotId: row.slotId,
-      kind: "outOfRange",
-      choice: row.item!.name,
-      message: outOfRangeErrorMessage(
-        row.item!.name,
-        row.repetitions,
-        repetition.min,
-        repetition.max,
-      ),
-      severity: "error",
-    },
-  ];
-}
-
-/** A `BonusOccurrenceConfig`'s count: not achievable through the stepper's own clamped buttons,
- * but a hand-edited or imported build can carry one. */
-function occurrenceRanges(build: Build, row: ResolvedRow): EngineError[] {
-  const errors: EngineError[] = [];
-  const itemInputs = build.occurrenceInputs?.[row.item!.id];
-  for (const attachment of row.item?.bonuses ?? []) {
-    if (typeof attachment === "string") continue;
-    const count = occurrenceCountFor(attachment, itemInputs);
-    if (count < attachment.min || count > attachment.max) {
-      errors.push({
-        slotId: row.slotId,
-        kind: "outOfRange",
-        choice: row.item!.name,
-        message: outOfRangeErrorMessage(
-          row.item!.name,
-          count,
-          attachment.min,
-          attachment.max,
-        ),
-        severity: "error",
-      });
-    }
-  }
-  return errors;
-}
-
 /** Every rule that reads one resolved row, in row order so a slot's errors stay together. */
 function rowErrors(
   db: Db,
-  build: Build,
   resolved: ResolvedBonuses,
   counts: Map<string, number>,
 ): EngineError[] {
@@ -668,78 +562,9 @@ function rowErrors(
     }
     errors.push(
       ...checkItemErrors(row.slotId, row.item, db, resolved.ctx.class, counts),
-      ...itemDynamicStatRanges(build, row),
-      ...repetitionRange(row),
-      ...occurrenceRanges(build, row),
     );
   }
   return errors;
-}
-
-/** A grant/variant's dynamic stat, resolved against the bonus's first contributing slot
- * (bonus.ts's `resolve`) regardless of whether the bonus is currently active: a hand-edited or
- * imported value can be stale but should still be flagged once it would matter again. */
-function bonusDynamicStatRanges(
-  build: Build,
-  resolved: ResolvedBonuses,
-): EngineError[] {
-  const errors: EngineError[] = [];
-  for (const entry of resolved.bonuses) {
-    for (const grant of entry.grants) {
-      for (const config of grant.raw.dynamicStats ?? []) {
-        errors.push(
-          ...dynamicStatRangeError(
-            entry.slotId,
-            entry.bonusId,
-            entry.bonus.name ?? entry.bonusId,
-            config,
-            build,
-          ),
-        );
-      }
-      for (const variant of grant.raw.variants ?? []) {
-        for (const config of variant.dynamicStats ?? []) {
-          errors.push(
-            ...dynamicStatRangeError(
-              entry.slotId,
-              entry.bonusId,
-              entry.bonus.name ?? entry.bonusId,
-              config,
-              build,
-            ),
-          );
-        }
-      }
-    }
-  }
-
-  return errors;
-}
-
-function dynamicStatRangeError(
-  slotId: string,
-  bonusId: string,
-  name: string,
-  config: { stat: StatKey; min: number; max: number },
-  build: Build,
-): EngineError[] {
-  const typed = build.values?.[slotId]?.[dynamicValueKey(config.stat, bonusId)];
-  const value = Number(typed);
-  if (
-    typed == null ||
-    !Number.isFinite(value) ||
-    (value >= config.min && value <= config.max)
-  )
-    return [];
-  return [
-    {
-      slotId,
-      kind: "outOfRange",
-      choice: name,
-      message: outOfRangeErrorMessage(name, value, config.min, config.max),
-      severity: "error",
-    },
-  ];
 }
 
 function findErrors(
@@ -752,8 +577,8 @@ function findErrors(
     ...parameterRanges(db, resolved),
     ...assignmentErrors(db, build, resolved.ctx.class, counts),
     ...insigniaWarnings(db, build),
-    ...rowErrors(db, build, resolved, counts),
-    ...bonusDynamicStatRanges(build, resolved),
+    ...rowErrors(db, resolved, counts),
+    ...inputRanges(db, build, resolved),
   ];
 }
 

@@ -872,6 +872,25 @@ function occurrenceTargets(when: ConditionWhen | undefined, out: string[]) {
  * slot's `filter`, and every `item_picker` slot's `filter`/`tags` selector. Standalone from
  * `validate()` below since it needs only the slot list, not a composed catalog.
  */
+/** The load check every bounded declaration shares: `min`, `max` and `default` are finite
+ * numbers and `min <= default <= max`. Returns the problem, labeled with `label`, or null. */
+export function checkBounds(
+  config: { min: unknown; max: unknown; default: unknown },
+  label: string,
+): string | null {
+  const { min, max, default: def } = config;
+  if (
+    typeof min !== "number" ||
+    typeof max !== "number" ||
+    typeof def !== "number" ||
+    ![min, max, def].every(Number.isFinite)
+  )
+    return `${label} has a non-numeric min/max/default`;
+  if (min > max || def < min || def > max)
+    return outOfRangeErrorMessage(`${label} default`, def, min, max);
+  return null;
+}
+
 export function validateSlots(slots: Slot[]): LintFinding[] {
   const findings: LintFinding[] = [];
   const seenPaths = new Map<string, string>();
@@ -1996,10 +2015,8 @@ export function validate(
     }
   };
 
-  /** Same shape as an occurrence config's own check (`bonus "x" occurrence config ...` below)
-   *  -- stat exists, min/max/default are finite numbers, default falls within min-max. Shared
-   *  by an item's own `dynamicStats` and a grant/variant's, since both use the identical
-   *  `DynamicStatConfig` shape. */
+  /** Shared by an item's own `dynamicStats` and a grant/variant's: the stat exists and its
+   *  bounds pass `checkBounds`. */
   const checkDynamicStats = (
     configs:
       | { stat: string; min: unknown; max: unknown; default: unknown }[]
@@ -2018,35 +2035,8 @@ export function validate(
         );
         continue;
       }
-      const { min, max, default: def } = config;
-      if (
-        ![min, max, def].every(
-          (n) => typeof n === "number" && Number.isFinite(n),
-        )
-      ) {
-        report(
-          "error",
-          `${label} "${config.stat}" has a non-numeric min/max/default`,
-          name,
-          kind,
-        );
-      } else if (
-        (min as number) > (max as number) ||
-        (def as number) < (min as number) ||
-        (def as number) > (max as number)
-      ) {
-        report(
-          "error",
-          outOfRangeErrorMessage(
-            `${label} "${config.stat}" default`,
-            def as number,
-            min as number,
-            max as number,
-          ),
-          name,
-          kind,
-        );
-      }
+      const problem = checkBounds(config, `${label} "${config.stat}"`);
+      if (problem) report("error", problem, name, kind);
     }
   };
 
@@ -2104,24 +2094,8 @@ export function validate(
     }
 
     if (item.inlineRepetition) {
-      const { min, max, default: def } = item.inlineRepetition;
-      if (
-        ![min, max, def].every(
-          (n) => typeof n === "number" && Number.isFinite(n),
-        )
-      ) {
-        report(
-          "error",
-          "inlineRepetition has a non-numeric min/max/default",
-          item.id,
-        );
-      } else if (min > max || def < min || def > max) {
-        report(
-          "error",
-          outOfRangeErrorMessage(`inlineRepetition default`, def, min, max),
-          item.id,
-        );
-      }
+      const problem = checkBounds(item.inlineRepetition, "inlineRepetition");
+      if (problem) report("error", problem, item.id);
     }
 
     // A typo in any of these fails silently: the resolver simply never matches.
@@ -2279,29 +2253,11 @@ export function validate(
         report("warn", `bonus "${bonusId}" has no definition`, item.id);
       }
       if (typeof attachment === "string") continue;
-      const { min, max, default: def } = attachment;
-      if (
-        ![min, max, def].every(
-          (n) => typeof n === "number" && Number.isFinite(n),
-        )
-      ) {
-        report(
-          "error",
-          `bonus "${bonusId}" occurrence config has a non-numeric min/max/default`,
-          item.id,
-        );
-      } else if (min > max || def < min || def > max) {
-        report(
-          "error",
-          outOfRangeErrorMessage(
-            `bonus "${bonusId}" occurrence config default`,
-            def,
-            min,
-            max,
-          ),
-          item.id,
-        );
-      }
+      const problem = checkBounds(
+        attachment,
+        `bonus "${bonusId}" occurrence config`,
+      );
+      if (problem) report("error", problem, item.id);
       if (
         attachment.label !== undefined &&
         (typeof attachment.label !== "string" || !attachment.label.trim())

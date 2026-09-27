@@ -354,7 +354,7 @@ describe("migrateItemIds", () => {
   });
 
   it("leaves Build.values untouched, since it is keyed by slot rather than by item", () => {
-    const values = { ring1: { power: 500 } };
+    const values = { ring1: { stat: { power: 500 } } };
     const migrated = migrateItemIds(
       testDb,
       buildWith({ choices: { ring1: "old-ring" }, values }),
@@ -458,7 +458,7 @@ describe("migrating onto a dynamic stat", () => {
       seeded,
       buildWith({ choices: { ring1: "fixed-2" } }),
     );
-    expect(migrated.values.ring1).toEqual({ overall_damage: 0.02 });
+    expect(migrated.values.ring1).toEqual({ stat: { overall_damage: 0.02 } });
   });
 
   it("never overwrites a magnitude the player already typed", () => {
@@ -466,10 +466,10 @@ describe("migrating onto a dynamic stat", () => {
       seeded,
       buildWith({
         choices: { ring1: "fixed-2" },
-        values: { ring1: { overall_damage: 0.07 } },
+        values: { ring1: { stat: { overall_damage: 0.07 } } },
       }),
     );
-    expect(migrated.values.ring1.overall_damage).toBe(0.07);
+    expect(migrated.values.ring1.stat?.overall_damage).toBe(0.07);
   });
 
   it("writes nothing for a bare-id replacement, which carries no values", () => {
@@ -579,7 +579,9 @@ describe("exporting a build that still holds a retired id", () => {
     ]);
     const migrated = migrateItemIds(importedDb, imported);
     expect(migrated.choices["gear.ring1"]).toBe(REPLACEMENT);
-    expect(migrated.values["gear.ring1"]).toEqual({ overall_damage: 0.02 });
+    expect(migrated.values["gear.ring1"]).toEqual({
+      stat: { overall_damage: 0.02 },
+    });
     // The notice is driven by this being empty -- a rewrite that leaves anything behind is a
     // button that visibly does nothing.
     expect(replacements(importedDb, migrated).size).toBe(0);
@@ -675,7 +677,7 @@ describe("migrateSlotItem", () => {
       buildWith({ choices: { ring1: "fixed", ring2: "fixed" } }),
       "ring1",
     );
-    expect(migrated.values.ring1).toEqual({ overall_damage: 0.02 });
+    expect(migrated.values.ring1).toEqual({ stat: { overall_damage: 0.02 } });
     expect(migrated.values.ring2).toBeUndefined();
   });
 

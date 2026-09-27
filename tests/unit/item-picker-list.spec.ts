@@ -133,7 +133,7 @@ describe("storedListRows", () => {
     expect(
       storedListRows({
         choices: { "misc.misc#2": "item-a", "gear.head": "item-b" },
-        values: { "misc.misc#5": { power: 1 } },
+        values: { "misc.misc#5": { stat: { power: 1 } } },
         assignments: { "group.group#3": { "item-c": 2 } },
         disabledSlots: {},
       }),

@@ -457,7 +457,7 @@ describe("GrantEvaluation.scale", () => {
       entryOf(build, "gated-dynamic-scaled").previewStats ?? {};
     expect(preview().power).toBeCloseTo(100, 9);
 
-    build.values = { "gear.ring1": { "gated-dynamic-scaled:power": 500 } };
+    build.bonusValues = { "gated-dynamic-scaled": { stat: { power: 500 } } };
     expect(preview().power).toBeCloseTo(200, 9);
     expect(preview().outgoing_damage).toBeCloseTo(0.06, 9);
   });
