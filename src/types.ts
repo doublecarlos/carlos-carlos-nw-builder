@@ -597,6 +597,17 @@ export interface ParamCondition {
  * percent one. */
 export type InputCondition = Omit<ParamCondition, "equals">;
 
+/** A formula (engine/formula.ts) plus the text shown for it. Every formula site takes this
+ * shape: `Grant.scale`, `Grant.tierBy`, `Bonus.formulas` and the `formula` condition leaf. */
+export interface FormulaRef {
+  formula: string;
+  /** Overrides the label derived from the formula. */
+  label?: string;
+}
+
+/** The `formula` leaf: a formula's result checked against a range. */
+export type FormulaCondition = FormulaRef & RangeSpec;
+
 /** How a number value is edited: -/+ buttons around the field, or the field alone. */
 export type NumberControl = "stepper" | "field";
 
@@ -622,6 +633,7 @@ export interface ConditionWhen {
   equipped?: RangeSpec & { tag?: string; item?: string };
   param?: ParamCondition;
   input?: InputCondition;
+  formula?: FormulaCondition;
   all?: ConditionWhen[];
   any?: ConditionWhen[];
   not?: ConditionWhen;
@@ -635,9 +647,10 @@ export interface GrantVariant {
   dynamicStats?: DynamicStatConfig[];
 }
 
+/** One rung of a tier ladder over the grant's `tierBy` measure. */
 export interface GrantTier {
-  /** Absent altogether reads as `{ atLeast: 1 }` of the owning bonus. */
-  bonusOccurrences?: BonusOccurrenceSpec;
+  /** Lowest `tierBy` value this tier applies at. The highest threshold reached wins. */
+  atLeast: number;
   stats: StatValues;
 }
 
@@ -675,13 +688,14 @@ export interface Grant {
    *  relevant (`GrantVariant.dynamicStats`). */
   dynamicStats?: DynamicStatConfig[];
   variants?: GrantVariant[];
+  /** The measure `tiers` are keyed by. Defaults to `occurrences()`, the bonus's own count. */
+  tierBy?: FormulaRef;
   tiers?: GrantTier[];
   problem?: GrantProblem;
-  /** Names a scaler by its parameter path (`scalers.encounterDamage`). This grant's resolved
-   *  stats are multiplied by that scaler's multiplier, whichever payload shape wins: for a
-   *  bonus that only applies to part of your damage, where the catalog stores the real game
-   *  value and the player owns the share it represents. */
-  scaledBy?: string;
+  /** Multiplies whichever payload wins. Above 0 the grant applies scaled, at exactly 0 it is
+   *  inactive, and a negative or non-finite result is an error. `stats` keeps the real game
+   *  value, e.g. `scaler("scalers.encounterDamage")` for the share of damage it applies to. */
+  scale?: FormulaRef;
   /** Same as `Item.shortDescription`/`longDescription`, shown whenever this grant is
    * active -- next to its slot's stat summary and on that slot's hover card
    * respectively, alongside the item's own text. */
@@ -710,6 +724,8 @@ export interface Bonus {
   /** Values the player sets, by name. One value per bonus per build: every copy and carrier
    *  of the bonus reads the same one, as duplicate procs trigger together. */
   inputs?: Record<string, InputDef>;
+  /** Formulas any formula site of this bonus reads as `$name`. */
+  formulas?: Record<string, FormulaRef>;
   grants?: Grant[];
   excludes?: string[];
   stacking?: "perSource" | string;
@@ -1034,6 +1050,22 @@ export interface EvalContext {
   /** The `self` bonus's inputs, by name, what the `input` leaf reads. Set per bonus alongside
    *  `self`. */
   inputs?: Map<string, ResolvedInput>;
+  /** The `self` bonus's named formulas and their results so far. Set per bonus alongside
+   *  `self`. */
+  formulas?: FormulaScope;
+}
+
+/** A formula's result, or why it has none. */
+export type FormulaResult =
+  { ok: true; value: number } | { ok: false; error: string };
+
+/** One bonus evaluation's named formulas, each evaluated at most once. */
+export interface FormulaScope {
+  named: Record<string, FormulaRef>;
+  /** By name. Null while that formula is being evaluated, which is how a cycle is caught. */
+  results: Map<string, FormulaResult | null>;
+  /** Runtime errors that decide a grant of the bonus, deduplicated. */
+  errors: Set<string>;
 }
 
 /** One bonus input's current value, defaulted, with the label its leaf shows. */
@@ -1068,6 +1100,8 @@ export interface ConditionLeafResult {
   ok: boolean;
   label: string;
   detail?: string;
+  /** Why a formula leaf has no value. The leaf reads as unmet. */
+  error?: string;
   children?: ConditionLeafResult[];
   /** Set by the `equipped` and `bonusOccurrences` leaves, which count something a slot can
    *  hold. Absent for leaves about the context (duration, toggles, a param). */
@@ -1102,19 +1136,23 @@ export interface GrantEvaluation {
    * show every branch (met or not), not just the one that won. Only populated when the grant
    * carries `variants`. */
   variantBranches?: ConditionExplain[];
-  /** The scaler applied to this grant's `stats`, for display. Present whenever `raw.scaledBy`
-   * names a live scaler, active or not and including at a multiplier of 0, so an inactive
-   * grant's preview scales the same way its live payload would. */
+  /** The grant's resolved `scale`, for display. Present whenever `raw.scale` is set, active or
+   * not, so an inactive grant's preview scales the same way its live payload would. */
   scale?: GrantScale;
 }
 
-/** How a grant's payload was scaled: the scaler's identity and the payload it multiplied,
+/** How a grant's payload was scaled: the formula's result and the payload it multiplied,
  * so a card can print the real value beside the effective one. */
 export interface GrantScale {
-  path: string;
+  formula: string;
+  /** The formula's label, else the formula itself. */
   label: string;
-  value: number;
+  /** The scaler's path when the formula is a single `scaler(...)`, so a note can link it. */
+  path?: string;
+  /** 0 when the formula failed. */
   multiplier: number;
+  /** Why the formula has no usable result: a runtime error or a negative value. */
+  error?: string;
   /** The resolved payload before the multiplier (the catalog's real value plus any typed
    * dynamic stat), which `stats` no longer holds once scaled. Null while the grant is
    * inactive, like `stats`. */
@@ -1131,6 +1169,7 @@ export interface BonusEvaluation {
   /** Every active grant's `problem` payload, in grant order -- a bonus mixing stat and problem
    * grants reports both, same as it sums both grants' stats. */
   problems: GrantProblem[];
+  formulaErrors: string[];
 }
 
 /** A contributing item's name and the build slot it sits in. */
@@ -1167,6 +1206,8 @@ export interface EvaluatedBonus {
   inputValues: Record<string, number | boolean>;
   grants: (GrantEvaluation & { raw: Grant })[];
   problems: GrantProblem[];
+  /** Runtime formula errors, reported as slot errors while the bonus is carried. */
+  formulaErrors: string[];
   stacks: number;
   excluded: boolean;
   excludedBy: string | null;
@@ -1214,7 +1255,8 @@ export interface EngineError {
     | "missing"
     | "bonusRule"
     | "insigniaSlot"
-    | "publishConflict";
+    | "publishConflict"
+    | "formula";
   choice: string;
   message: string;
   severity: "error" | "warning";

@@ -1,6 +1,6 @@
-// A grant naming a scaler in `scaledBy` (bonus.ts's `evaluateGrant`): whichever payload shape
-// wins is multiplied by that scaler's resolved multiplier, and `perSource` stacking then
-// multiplies the already-scaled value.
+// A grant scaled by `scaler(...)` (bonus.ts's `evaluateGrant`): whichever payload shape wins is
+// multiplied by that scaler's resolved multiplier, and `perSource` stacking then multiplies the
+// already-scaled value. A share of 0 leaves the grant inactive.
 //
 // A synthetic catalog rather than the shipped one: one absolute scaler at a known share, and
 // one bonus per payload shape so each claim reads on its own.
@@ -27,6 +27,7 @@ import type {
   Item,
   ItemPickerSlot,
   BuildParameterSlot,
+  Slot,
   Schema,
   SlotsData,
 } from "../../src/types";
@@ -58,19 +59,22 @@ const schema: Schema = {
 };
 
 const SCALER = "scalers.encounterDamage";
+const byScaler = (path: string) => ({ formula: `scaler("${path}")` });
 
 const flatBonus: Bonus = {
   id: "flat-scaled",
-  grants: [{ stats: { outgoing_damage: 0.15, power: 100 }, scaledBy: SCALER }],
+  grants: [
+    { stats: { outgoing_damage: 0.15, power: 100 }, scale: byScaler(SCALER) },
+  ],
 };
 const tierBonus: Bonus = {
   id: "tier-scaled",
   grants: [
     {
-      scaledBy: SCALER,
+      scale: byScaler(SCALER),
       tiers: [
-        { bonusOccurrences: { atLeast: 1 }, stats: { outgoing_damage: 0.22 } },
-        { bonusOccurrences: { atLeast: 5 }, stats: { outgoing_damage: 0.3 } },
+        { atLeast: 1, stats: { outgoing_damage: 0.22 } },
+        { atLeast: 5, stats: { outgoing_damage: 0.3 } },
       ],
     },
   ],
@@ -79,7 +83,7 @@ const variantBonus: Bonus = {
   id: "variant-scaled",
   grants: [
     {
-      scaledBy: SCALER,
+      scale: byScaler(SCALER),
       variants: [
         { when: { role: "dps" }, stats: { outgoing_damage: 0.1 } },
         { when: { role: "tank" }, stats: { outgoing_damage: 0.2 } },
@@ -90,7 +94,7 @@ const variantBonus: Bonus = {
 const stackedBonus: Bonus = {
   id: "stacked-scaled",
   stacking: "perSource",
-  grants: [{ stats: { outgoing_damage: 0.1 }, scaledBy: SCALER }],
+  grants: [{ stats: { outgoing_damage: 0.1 }, scale: byScaler(SCALER) }],
 };
 const dynamicBonus: Bonus = {
   id: "dynamic-scaled",
@@ -98,14 +102,16 @@ const dynamicBonus: Bonus = {
     {
       stats: { outgoing_damage: 0.1 },
       dynamicStats: [{ stat: "power", min: 0, max: 1000, default: 250 }],
-      scaledBy: SCALER,
+      scale: byScaler(SCALER),
     },
   ],
 };
-/** Names a scaler no slot declares: catalog validation rejects it, the engine leaves it at x1. */
+/** Names a scaler no slot declares: catalog validation rejects it, and the engine reports it. */
 const strayBonus: Bonus = {
   id: "stray-scaled",
-  grants: [{ stats: { outgoing_damage: 0.1 }, scaledBy: "scalers.missing" }],
+  grants: [
+    { stats: { outgoing_damage: 0.1 }, scale: byScaler("scalers.missing") },
+  ],
 };
 /** Scaled but gated on a toggle, so it can be evaluated inactive and previewed. */
 const gatedBonus: Bonus = {
@@ -114,7 +120,7 @@ const gatedBonus: Bonus = {
     {
       when: { toggle: "combat" },
       stats: { outgoing_damage: 0.15 },
-      scaledBy: SCALER,
+      scale: byScaler(SCALER),
     },
   ],
 };
@@ -126,7 +132,7 @@ const gatedDynamicBonus: Bonus = {
       when: { toggle: "combat" },
       stats: { outgoing_damage: 0.15 },
       dynamicStats: [{ stat: "power", min: 0, max: 1000, default: 250 }],
-      scaledBy: SCALER,
+      scale: byScaler(SCALER),
     },
   ],
 };
@@ -246,8 +252,18 @@ describe("a flat grant scaled by an absolute scaler", () => {
       "flat-scaled",
     );
 
-  it("grants nothing at a share of 0", () => {
-    expect(flat(0).stats).toEqual({ outgoing_damage: 0, power: 0 });
+  it("is inactive at a share of 0, previewing the real value", () => {
+    const entry = entryOf(
+      buildWith({ "gear.ring1": "flat-ring" }, share(0)),
+      "flat-scaled",
+    );
+    expect(entry.active).toBe(false);
+    expect(entry.excluded).toBe(false);
+    expect(entry.stats).toBeNull();
+    expect(entry.previewStats).toEqual({ outgoing_damage: 0.15, power: 100 });
+    expect(entry.gate.unmet).toEqual([
+      { ok: false, label: "Encounter Damage > 0", detail: "you have 0" },
+    ]);
   });
 
   it("grants the share of the real value in between", () => {
@@ -277,12 +293,18 @@ describe("a flat grant scaled by an absolute scaler", () => {
     expect(stats.power).toBeCloseTo(100, 9);
   });
 
-  it("leaves a grant naming an unknown scaler unscaled", () => {
-    const { stats } = bonusOf(
-      buildWith({ "gear.ring1": "stray-ring" }, share(0.4)),
-      "stray-scaled",
+  it("reports a grant naming an unknown scaler and leaves it inactive", () => {
+    const build = buildWith({ "gear.ring1": "stray-ring" }, share(0.4));
+    const resolved = engine.resolveBuild(testDb, build);
+    const entry = resolved.bonuses.find((b) => b.bonusId === "stray-scaled")!;
+    expect(entry.active).toBe(false);
+    expect(resolved.errors).toContainEqual(
+      expect.objectContaining({
+        slotId: "gear.ring1",
+        kind: "formula",
+        message: 'scaler("scalers.missing") is not a scaler',
+      }),
     );
-    expect(stats.outgoing_damage).toBe(0.1);
   });
 });
 
@@ -325,9 +347,14 @@ describe("stacking on top of a scaled grant", () => {
   });
 });
 
-describe("catalog.validateScaledBy", () => {
-  it("rejects a scaledBy naming no scaler parameter", () => {
-    const findings = catalog.validateScaledBy(slotsData.slots, [strayBonus]);
+describe("catalog.validate: scale formulas", () => {
+  const scaleFindings = (slots: Slot[], bonuses: Bonus[]) =>
+    catalog
+      .validate([], bonuses, schema, [], slots, [], [])
+      .filter((f) => f.kind === "bonus" && /scale/.test(f.message));
+
+  it("rejects a scaler() naming no scaler parameter", () => {
+    const findings = scaleFindings(slotsData.slots, [strayBonus]);
     expect(findings).toHaveLength(1);
     expect(findings[0]).toMatchObject({
       level: "error",
@@ -335,23 +362,19 @@ describe("catalog.validateScaledBy", () => {
       name: "stray-scaled",
     });
     expect(findings[0].message).toMatch(
-      /grant 1: scaledBy names "scalers.missing"/,
+      /grant 1 scale: scaler\("scalers.missing"\) is not a parameter declaring a scaler/,
     );
   });
 
   it("rejects a parameter that is not a scaler", () => {
     const plain: BuildParameterSlot = { ...shareParam, scaler: undefined };
-    const findings = catalog.validateScaledBy([plain], [flatBonus]);
+    const findings = scaleFindings([plain], [flatBonus]);
     expect(findings.map((f) => f.name)).toEqual(["flat-scaled"]);
   });
 
-  it("accepts a scaledBy naming a declared scaler", () => {
+  it("accepts a scaler() naming a declared scaler", () => {
     expect(
-      catalog.validateScaledBy(slotsData.slots, [
-        flatBonus,
-        tierBonus,
-        variantBonus,
-      ]),
+      scaleFindings(slotsData.slots, [flatBonus, tierBonus, variantBonus]),
     ).toEqual([]);
   });
 
@@ -363,20 +386,24 @@ describe("catalog.validateScaledBy", () => {
     };
     const reader: Bonus = {
       id: "reads-added",
-      grants: [{ stats: { outgoing_damage: 0.1 }, scaledBy: added.path }],
+      grants: [
+        { stats: { outgoing_damage: 0.1 }, scale: byScaler(added.path) },
+      ],
     };
     const shipped = catalog.base().slots;
-    expect(catalog.validateScaledBy(shipped, [reader])).toHaveLength(1);
-    expect(catalog.validateScaledBy([...shipped, added], [reader])).toEqual([]);
+    expect(scaleFindings(shipped, [reader])).toHaveLength(1);
+    expect(scaleFindings([...shipped, added], [reader])).toEqual([]);
   });
 
-  it("is wired into validate()", () => {
-    const findings = catalog.validate([], [strayBonus]);
-    expect(
-      findings.some(
-        (f) => f.name === "stray-scaled" && /scaledBy names/.test(f.message),
-      ),
-    ).toBe(true);
+  it("reports a leftover scaledBy with its replacement", () => {
+    const legacy = {
+      id: "legacy",
+      grants: [{ stats: { outgoing_damage: 0.1 }, scaledBy: SCALER }],
+    } as unknown as Bonus;
+    const [finding] = scaleFindings(slotsData.slots, [legacy]);
+    expect(finding.message).toBe(
+      'grant 1: "scaledBy" is not read; use "scale": { "formula": "scaler(\\"scalers.encounterDamage\\")" }',
+    );
   });
 });
 
@@ -387,9 +414,9 @@ describe("GrantEvaluation.scale", () => {
       "flat-scaled",
     ).grants;
     expect(grant.scale).toEqual({
-      path: SCALER,
+      formula: 'scaler("scalers.encounterDamage")',
       label: "Encounter Damage",
-      value: 0.4,
+      path: SCALER,
       multiplier: 0.4,
       unscaled: { outgoing_damage: 0.15, power: 100 },
     });
@@ -401,7 +428,8 @@ describe("GrantEvaluation.scale", () => {
       "flat-scaled",
     ).grants;
     expect(grant.scale?.multiplier).toBe(0);
-    expect(grant.stats).toEqual({ outgoing_damage: 0, power: 0 });
+    expect(grant.active).toBe(false);
+    expect(grant.stats).toBeNull();
   });
 
   it("is carried by tier and variant grants", () => {
@@ -425,7 +453,7 @@ describe("GrantEvaluation.scale", () => {
     });
   });
 
-  it("is absent from an unscaled grant and one naming an unknown scaler", () => {
+  it("is absent from an unscaled grant, and carries the error of a failed one", () => {
     const plain = entryOf(
       buildWith({ "gear.ring1": "plain-ring" }, share(0.4)),
       "plain",
@@ -435,7 +463,10 @@ describe("GrantEvaluation.scale", () => {
       buildWith({ "gear.ring1": "stray-ring" }, share(0.4)),
       "stray-scaled",
     ).grants[0];
-    expect(stray).not.toHaveProperty("scale");
+    expect(stray.scale).toMatchObject({
+      multiplier: 0,
+      error: 'scaler("scalers.missing") is not a scaler',
+    });
   });
 
   it("stays on an inactive grant with no payload, and scales the bonus preview", () => {
@@ -491,7 +522,7 @@ describe("grantRows for a scaled grant", () => {
     expect(row.scaled).toBe(true);
   });
 
-  it("keeps the row at a share of 0, its note showing the unset share", () => {
+  it("previews the real value at a share of 0, its note showing the unset share", () => {
     const [row] = grantRows(
       entryOf(
         buildWith({ "gear.ring1": "flat-ring" }, share(0)),
@@ -499,11 +530,11 @@ describe("grantRows for a scaled grant", () => {
       ),
       slotsData.slots,
     );
-    expect(row.active).toBe(true);
+    expect(row.active).toBe(false);
     expect(row.stats?.[0]).toEqual({
       key: "outgoing_damage",
       label: "Outgoing Damage",
-      value: "0.00%",
+      value: "+15.00%",
       note: [
         { text: "15.00% x 0.00% " },
         { text: "Encounter Damage", slotId: "gear.encounterShare" },
@@ -627,7 +658,7 @@ describe("grantRows for a scaled grant", () => {
         {
           tiers: [
             {
-              bonusOccurrences: { atLeast: 1 },
+              atLeast: 1,
               stats: { outgoing_damage: 0.22 },
             },
           ],

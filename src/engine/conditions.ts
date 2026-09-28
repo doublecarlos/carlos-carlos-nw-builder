@@ -7,6 +7,13 @@
 // consult a computed stat or another bonus's output, which is what keeps evaluation single-pass
 // and free of cycles.
 
+import { equippedCount, occurrenceCount, taggedCount } from "./lookups";
+import {
+  evaluateFormula,
+  formulaFormat,
+  formulaLabel,
+  formulaText,
+} from "./formula";
 import type {
   BonusOccurrenceSpec,
   ConditionWhen,
@@ -17,21 +24,14 @@ import type {
   ConditionExplain,
   ParamCondition,
   InputCondition,
+  FormulaCondition,
 } from "../types";
 
 const asArray = <T>(value: T | T[]): T[] =>
   Array.isArray(value) ? value : [value];
 
-const countOf = (
-  map: Map<string, number> | undefined,
-  key: string | null | undefined,
-): number => {
-  if (!map || key == null) return 0;
-  return map.get(key) ?? 0;
-};
-
 /** Counted noun for a label the user reads. Kept local rather than pulled from lib/format,
- *  which loads the stat schema -- this module deliberately depends on nothing but types. */
+ *  which loads the stat schema. */
 const plural = (count: number, noun: string) =>
   count === 1 ? noun : `${noun}s`;
 
@@ -145,7 +145,7 @@ const LEAVES: Record<
   bonusOccurrences(spec, ctx) {
     const s = spec as BonusOccurrenceSpec;
     const target = s.bonus ?? ctx.self;
-    const have = countOf(ctx.bonusOccurrences, target);
+    const have = occurrenceCount(ctx, s.bonus);
     const displayName =
       (target && ctx.bonusNames?.get(target)) ?? target ?? "this bonus";
     const wanted = s.exactly ?? s.atLeast ?? 1;
@@ -228,6 +228,23 @@ const LEAVES: Record<
     };
   },
 
+  /** A formula's result against a range. Fails closed when the formula has no value. Reads
+   *  by the formula's label, else its text. */
+  formula(spec, ctx) {
+    const s = spec as FormulaCondition;
+    const range = { atLeast: s.atLeast, below: s.below, exactly: s.exactly };
+    const format = formulaFormat(s, ctx);
+    const label = `${formulaLabel(s, ctx) ?? formulaText(s)} ${describeRange(range, format)}`;
+    const result = evaluateFormula(s.formula, ctx);
+    if (!result.ok)
+      return { ok: false, label, detail: result.error, error: result.error };
+    return {
+      ok: inRange(result.value, range),
+      label,
+      detail: `you have ${format(result.value)}`,
+    };
+  },
+
   // `spec.item`, when used instead of `tag`, is an item id (bonus.ts's `collect()` keys
   // `ctx.equipped` by id), shown through `ctx.itemNames` since this module has no `Db` of its
   // own to resolve a display name; an id the map does not know is shown as is.
@@ -236,7 +253,7 @@ const LEAVES: Record<
     const range = countRange(s) as RangeSpec;
     const wanted = range.exactly ?? range.atLeast ?? 1;
     if (s.tag != null) {
-      const have = countOf(ctx.tags, s.tag);
+      const have = taggedCount(ctx, s.tag);
       return {
         ok: inRange(have, range),
         label: `${wanted}× ${plural(wanted, "item")} tagged "${s.tag}"`,
@@ -245,7 +262,7 @@ const LEAVES: Record<
       };
     }
     const item = s.item ?? "";
-    const have = countOf(ctx.equipped, item);
+    const have = equippedCount(ctx, item);
     return {
       ok: inRange(have, range),
       label: `${wanted}× ${ctx.itemNames?.get(item) ?? item}`,
@@ -310,12 +327,14 @@ function describeAny(
 // --- combinators -----------------------------------------------------------------------
 
 /** Evaluate `when`, pushing per-leaf results into `out` when explaining. `depth` counts the
- * compounds already entered, and only shapes the summary text -- never the verdict. */
+ * compounds already entered, and only shapes the summary text -- never the verdict. When
+ * `errorsAs` is set, a leaf whose formula failed counts as that instead of unmet. */
 function walk(
   when: ConditionWhen | undefined,
   ctx: EvalContext,
   out: ConditionLeafResult[] | null,
   depth = 0,
+  errorsAs?: boolean,
 ): boolean {
   if (!when) return true;
   let ok = true;
@@ -325,7 +344,7 @@ function walk(
       // No wrapper leaf of its own: `all` flattens into the surrounding conjunction, which
       // is exactly how both summaries already join siblings.
       for (const sub of spec as ConditionWhen[]) {
-        if (!walk(sub, ctx, out, depth)) ok = false;
+        if (!walk(sub, ctx, out, depth, errorsAs)) ok = false;
       }
       continue;
     }
@@ -340,7 +359,7 @@ function walk(
       // alternatives, then flattens into the shared `children` tree.
       for (const sub of alternatives) {
         const own: ConditionLeafResult[] = [];
-        if (walk(sub, ctx, out ? own : null, depth + 1)) anyOk = true;
+        if (walk(sub, ctx, out ? own : null, depth + 1, errorsAs)) anyOk = true;
         texts.push(conjoin(own));
         branch.push(...own);
       }
@@ -365,6 +384,7 @@ function walk(
         ctx,
         out ? inner : null,
         depth + 1,
+        errorsAs,
       );
       out?.push({
         ok: !innerOk,
@@ -385,7 +405,11 @@ function walk(
 
     const result = leaf(spec, ctx);
     out?.push(result);
-    if (!result.ok) ok = false;
+    const passed =
+      result.error !== undefined && errorsAs !== undefined
+        ? errorsAs
+        : result.ok;
+    if (!passed) ok = false;
   }
 
   return ok;
@@ -405,4 +429,42 @@ export function explain(
   const leaves: ConditionLeafResult[] = [];
   const ok = walk(when, ctx, leaves);
   return { ok, leaves, unmet: leaves.filter((leaf) => !leaf.ok) };
+}
+
+const leafErrors = (
+  leaves: ConditionLeafResult[],
+  out: ConditionLeafResult[],
+) => {
+  for (const leaf of leaves) {
+    if (leaf.error !== undefined) out.push(leaf);
+    if (leaf.children) leafErrors(leaf.children, out);
+  }
+  return out;
+};
+
+/** `explained` with the formula errors that decide it: those without which `when` would
+ *  resolve differently. A deciding error fails the gate closed, even under a `not`. Errors
+ *  that change nothing, like one in an `any` another branch already meets, are dropped. */
+export function settleErrors(
+  when: ConditionWhen | undefined,
+  ctx: EvalContext,
+  explained: ConditionExplain,
+): { gate: ConditionExplain; errors: string[] } {
+  const failed = leafErrors(explained.leaves, []);
+  if (
+    !failed.length ||
+    walk(when, ctx, null, 0, true) === walk(when, ctx, null, 0, false)
+  )
+    return { gate: explained, errors: [] };
+  return {
+    gate: {
+      ok: false,
+      leaves: explained.leaves,
+      unmet: [
+        ...explained.unmet,
+        ...failed.filter((leaf) => !explained.unmet.includes(leaf)),
+      ],
+    },
+    errors: failed.map((leaf) => leaf.error!),
+  };
 }

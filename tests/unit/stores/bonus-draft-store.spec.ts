@@ -394,17 +394,17 @@ describe("BonusDraftStore.moveBranch", () => {
 });
 
 describe("BonusDraftStore tier seeding", () => {
-  it("setPayload('tiers') seeds the auto-created tier on the owning bonus", () => {
+  it("setPayload('tiers') seeds one tier at 1", () => {
     const { gs } = makeStore("tiers");
-    expect(gs.grant.tiers[0].bonus).toBe("");
+    expect(gs.grant.tiers).toEqual([{ atLeast: 1, stats: [] }]);
   });
 
-  it("addTier inherits an explicit bonus from the tier above", () => {
+  it("addTier starts one above the tier before it, copying its stats", () => {
     const { gs } = makeStore("tiers");
-    gs.grant.tiers[0].bonus = "other-bonus";
+    gs.addTierStat(0);
     gs.addTier();
-    expect(gs.grant.tiers[1].bonus).toBe("other-bonus");
     expect(gs.grant.tiers[1].atLeast).toBe(2);
+    expect(gs.grant.tiers[1].stats).toEqual([{ key: "", value: 0 }]);
   });
 });
 

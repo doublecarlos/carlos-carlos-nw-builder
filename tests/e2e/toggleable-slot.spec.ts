@@ -210,11 +210,11 @@ test.describe("toggleable slot", () => {
               {
                 tiers: [
                   {
-                    bonusOccurrences: { bonus: BONUS_ID, atLeast: 1 },
+                    atLeast: 1,
                     stats: { awareness: 100 },
                   },
                   {
-                    bonusOccurrences: { bonus: BONUS_ID, atLeast: 2 },
+                    atLeast: 2,
                     stats: { awareness: BONUS_POWER },
                   },
                 ],

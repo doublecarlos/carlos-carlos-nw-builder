@@ -364,19 +364,6 @@ test.describe("bonus stat payload editing", () => {
     await page.getByRole("button", { name: "Add stat" }).first().click();
     await expect(page.locator(".stat-row")).toHaveCount(rowsBefore + 1);
 
-    // The tier's bonus combo lists every bonus, each row carrying its id.
-    await page
-      .locator(".combo--bonus")
-      .first()
-      .getByTestId("picker-input")
-      .click();
-    await expect(
-      page
-        .getByTestId("picker-menu")
-        .getByText("executioner-s-covenant", { exact: true }),
-    ).toBeVisible();
-    await page.keyboard.press("Escape");
-
     // Fill the new row, then wait past the 700ms auto-save debounce: the row must
     // survive the round-trip and the bonus must be marked edited.
     await pickStat(page.locator(".stat-row").last());

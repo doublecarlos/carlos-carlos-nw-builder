@@ -216,9 +216,7 @@
       {
         "tiers": [
           {
-            "bonusOccurrences": {
-              "atLeast": 1
-            },
+            "atLeast": 1,
             "stats": {
               "acc": 1000,
               "ca": 1000,
@@ -231,9 +229,7 @@
             }
           },
           {
-            "bonusOccurrences": {
-              "atLeast": 2
-            },
+            "atLeast": 2,
             "stats": {
               "acc": 1500,
               "ca": 1500,
@@ -246,9 +242,7 @@
             }
           },
           {
-            "bonusOccurrences": {
-              "atLeast": 3
-            },
+            "atLeast": 3,
             "stats": {
               "acc": 1750,
               "ca": 1750,
@@ -548,27 +542,21 @@
       {
         "tiers": [
           {
-            "bonusOccurrences": {
-              "atLeast": 1
-            },
+            "atLeast": 1,
             "stats": {
               "out_healing_p": 0.05,
               "forte": 2500
             }
           },
           {
-            "bonusOccurrences": {
-              "atLeast": 2
-            },
+            "atLeast": 2,
             "stats": {
               "out_healing_p": 0.075,
               "forte": 3750
             }
           },
           {
-            "bonusOccurrences": {
-              "atLeast": 3
-            },
+            "atLeast": 3,
             "stats": {
               "out_healing_p": 0.0875,
               "forte": 4375
@@ -806,9 +794,7 @@
       {
         "tiers": [
           {
-            "bonusOccurrences": {
-              "atLeast": 1
-            },
+            "atLeast": 1,
             "stats": {
               "acc": 1500,
               "ca": 1500,
@@ -821,9 +807,7 @@
             }
           },
           {
-            "bonusOccurrences": {
-              "atLeast": 2
-            },
+            "atLeast": 2,
             "stats": {
               "acc": 2250,
               "ca": 2250,
@@ -836,9 +820,7 @@
             }
           },
           {
-            "bonusOccurrences": {
-              "atLeast": 3
-            },
+            "atLeast": 3,
             "stats": {
               "acc": 2625,
               "ca": 2625,
@@ -866,7 +848,9 @@
         "stats": {
           "outgoing_damage": 0.15
         },
-        "scaledBy": "scalers.encounterDamage"
+        "scale": {
+          "formula": "scaler(\"scalers.encounterDamage\")"
+        }
       },
       {
         "name": "At-wills",
@@ -876,7 +860,9 @@
         "stats": {
           "outgoing_damage": 0.15
         },
-        "scaledBy": "scalers.atWillDamage"
+        "scale": {
+          "formula": "scaler(\"scalers.atWillDamage\")"
+        }
       },
       {
         "name": "Dailies",
@@ -886,7 +872,9 @@
         "stats": {
           "outgoing_damage": 0.15
         },
-        "scaledBy": "scalers.dailyDamage"
+        "scale": {
+          "formula": "scaler(\"scalers.dailyDamage\")"
+        }
       }
     ]
   },
@@ -1019,27 +1007,21 @@
       {
         "tiers": [
           {
-            "bonusOccurrences": {
-              "atLeast": 1
-            },
+            "atLeast": 1,
             "stats": {
               "movement": 0.1,
               "stamina_regen": 0.1
             }
           },
           {
-            "bonusOccurrences": {
-              "atLeast": 2
-            },
+            "atLeast": 2,
             "stats": {
               "movement": 0.15,
               "stamina_regen": 0.15
             }
           },
           {
-            "bonusOccurrences": {
-              "atLeast": 3
-            },
+            "atLeast": 3,
             "stats": {
               "movement": 0.175,
               "stamina_regen": 0.175
@@ -1110,27 +1092,21 @@
       {
         "tiers": [
           {
-            "bonusOccurrences": {
-              "atLeast": 1
-            },
+            "atLeast": 1,
             "stats": {
               "defense": 2500,
               "hit_points_p": 0.08
             }
           },
           {
-            "bonusOccurrences": {
-              "atLeast": 2
-            },
+            "atLeast": 2,
             "stats": {
               "defense": 3000,
               "hit_points_p": 0.12
             }
           },
           {
-            "bonusOccurrences": {
-              "atLeast": 3
-            },
+            "atLeast": 3,
             "stats": {
               "defense": 3500,
               "hit_points_p": 0.15
@@ -1162,9 +1138,7 @@
       {
         "tiers": [
           {
-            "bonusOccurrences": {
-              "atLeast": 1
-            },
+            "atLeast": 1,
             "stats": {
               "power": 2000,
               "strike": 1500,
@@ -1173,9 +1147,7 @@
             }
           },
           {
-            "bonusOccurrences": {
-              "atLeast": 2
-            },
+            "atLeast": 2,
             "stats": {
               "power": 3500,
               "strike": 2750,
@@ -1184,9 +1156,7 @@
             }
           },
           {
-            "bonusOccurrences": {
-              "atLeast": 3
-            },
+            "atLeast": 3,
             "stats": {
               "power": 4500,
               "strike": 3750,
@@ -1205,9 +1175,7 @@
       {
         "tiers": [
           {
-            "bonusOccurrences": {
-              "atLeast": 1
-            },
+            "atLeast": 1,
             "stats": {
               "power": 2500,
               "defense": 2500,
@@ -1215,9 +1183,7 @@
             }
           },
           {
-            "bonusOccurrences": {
-              "atLeast": 2
-            },
+            "atLeast": 2,
             "stats": {
               "power": 4500,
               "defense": 4500,
@@ -1225,9 +1191,7 @@
             }
           },
           {
-            "bonusOccurrences": {
-              "atLeast": 3
-            },
+            "atLeast": 3,
             "stats": {
               "power": 6000,
               "defense": 6000,
@@ -2936,25 +2900,19 @@
       {
         "tiers": [
           {
-            "bonusOccurrences": {
-              "atLeast": 1
-            },
+            "atLeast": 1,
             "stats": {
               "severity": 5000
             }
           },
           {
-            "bonusOccurrences": {
-              "atLeast": 2
-            },
+            "atLeast": 2,
             "stats": {
               "severity": 7500
             }
           },
           {
-            "bonusOccurrences": {
-              "atLeast": 3
-            },
+            "atLeast": 3,
             "stats": {
               "severity": 8750
             }
@@ -2996,9 +2954,7 @@
       {
         "tiers": [
           {
-            "bonusOccurrences": {
-              "atLeast": 1
-            },
+            "atLeast": 1,
             "stats": {
               "power": 1500,
               "strike": 1500,
@@ -3011,9 +2967,7 @@
             }
           },
           {
-            "bonusOccurrences": {
-              "atLeast": 2
-            },
+            "atLeast": 2,
             "stats": {
               "power": 2250,
               "strike": 2250,
@@ -3026,9 +2980,7 @@
             }
           },
           {
-            "bonusOccurrences": {
-              "atLeast": 3
-            },
+            "atLeast": 3,
             "stats": {
               "power": 2625,
               "strike": 2625,
@@ -3243,45 +3195,35 @@
         },
         "tiers": [
           {
-            "bonusOccurrences": {
-              "atLeast": 1
-            },
+            "atLeast": 1,
             "stats": {
               "ca": 2953,
               "awareness": 2953
             }
           },
           {
-            "bonusOccurrences": {
-              "atLeast": 2
-            },
+            "atLeast": 2,
             "stats": {
               "ca": 4429,
               "awareness": 4429
             }
           },
           {
-            "bonusOccurrences": {
-              "atLeast": 3
-            },
+            "atLeast": 3,
             "stats": {
               "ca": 5167,
               "awareness": 5167
             }
           },
           {
-            "bonusOccurrences": {
-              "atLeast": 4
-            },
+            "atLeast": 4,
             "stats": {
               "ca": 5536,
               "awareness": 5536
             }
           },
           {
-            "bonusOccurrences": {
-              "atLeast": 5
-            },
+            "atLeast": 5,
             "stats": {
               "ca": 5721,
               "awareness": 5721
@@ -3298,36 +3240,28 @@
         },
         "tiers": [
           {
-            "bonusOccurrences": {
-              "atLeast": 1
-            },
+            "atLeast": 1,
             "stats": {
               "ca": 1476,
               "awareness": 1476
             }
           },
           {
-            "bonusOccurrences": {
-              "atLeast": 2
-            },
+            "atLeast": 2,
             "stats": {
               "ca": 2214,
               "awareness": 2214
             }
           },
           {
-            "bonusOccurrences": {
-              "atLeast": 3
-            },
+            "atLeast": 3,
             "stats": {
               "ca": 2583,
               "awareness": 2583
             }
           },
           {
-            "bonusOccurrences": {
-              "atLeast": 4
-            },
+            "atLeast": 4,
             "stats": {
               "ca": 2768,
               "awareness": 2768
@@ -3929,47 +3863,39 @@
         },
         "tiers": [
           {
-            "bonusOccurrences": {
-              "atLeast": 1
-            },
+            "atLeast": 1,
             "stats": {
               "outgoing_damage": 0.22
             }
           },
           {
-            "bonusOccurrences": {
-              "atLeast": 2
-            },
+            "atLeast": 2,
             "stats": {
               "outgoing_damage": 0.24
             }
           },
           {
-            "bonusOccurrences": {
-              "atLeast": 3
-            },
+            "atLeast": 3,
             "stats": {
               "outgoing_damage": 0.26
             }
           },
           {
-            "bonusOccurrences": {
-              "atLeast": 4
-            },
+            "atLeast": 4,
             "stats": {
               "outgoing_damage": 0.28
             }
           },
           {
-            "bonusOccurrences": {
-              "atLeast": 5
-            },
+            "atLeast": 5,
             "stats": {
               "outgoing_damage": 0.3
             }
           }
         ],
-        "scaledBy": "scalers.encounterDamage"
+        "scale": {
+          "formula": "scaler(\"scalers.encounterDamage\")"
+        }
       }
     ]
   },
@@ -4267,7 +4193,9 @@
         "stats": {
           "outgoing_damage_mult": 0.05
         },
-        "scaledBy": "scalers.encounterDamage",
+        "scale": {
+          "formula": "scaler(\"scalers.encounterDamage\")"
+        },
         "longDescription": "Encounter powers deal 5% more damage."
       }
     ]
@@ -4406,7 +4334,9 @@
         "stats": {
           "outgoing_damage": 0.15
         },
-        "scaledBy": "scalers.encounterDamage"
+        "scale": {
+          "formula": "scaler(\"scalers.encounterDamage\")"
+        }
       },
       {
         "name": "At-wills",
@@ -4416,7 +4346,9 @@
         "stats": {
           "outgoing_damage": 0.15
         },
-        "scaledBy": "scalers.atWillDamage"
+        "scale": {
+          "formula": "scaler(\"scalers.atWillDamage\")"
+        }
       },
       {
         "name": "Dailies",
@@ -4426,7 +4358,9 @@
         "stats": {
           "outgoing_damage": 0.15
         },
-        "scaledBy": "scalers.dailyDamage"
+        "scale": {
+          "formula": "scaler(\"scalers.dailyDamage\")"
+        }
       }
     ]
   },

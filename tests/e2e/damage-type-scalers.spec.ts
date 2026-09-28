@@ -1,7 +1,7 @@
 // End-to-end coverage for the damage-type share parameters: the three controls sit in their
-// own scalers section, a share moves the stat panel through a grant that names it in
-// `scaledBy`, and the hover card of a scaled item explains the number at every share, including
-// the 0 every new build starts from, with the scaler's name linking to its row.
+// own scalers section, a share moves the stat panel through a grant scaled by it, and the hover
+// card of a scaled item explains the number at every share, including the 0 every new build
+// starts from, with the scaler's name linking to its row.
 import { test, expect, type Page } from "@playwright/test";
 import {
   openBuilder,
@@ -86,10 +86,10 @@ test("the hover card explains a scaled grant at 0 and once the share is set", as
 
   await hoverForCard(page, label);
   await expect(card).toBeVisible();
-  // The row stays at 0, and its note shows the unset share rather than looking broken.
+  // At 0 the grant is inactive: the row previews the real value, its note the unset share.
   await expect(
     card.getByTestId("item-card-grant").getByTestId("stat-row"),
-  ).toContainText("0.00%");
+  ).toContainText("+5.00%");
   await expect(card.getByTestId("stat-row-note")).toContainText(
     "5.00% x 0.00% Encounter damage",
   );

@@ -392,7 +392,7 @@ describe("catalog.validate: bonus inputs", () => {
 
   it("warns about an input nothing reads", () => {
     expect(messages({ ...proc, grants: [proc.grants![0]] })).toEqual([
-      'warn: input "stacks" is never read by a condition',
+      'warn: input "stacks" is never read by a condition or formula',
     ]);
   });
 });

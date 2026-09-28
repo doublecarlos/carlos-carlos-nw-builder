@@ -1,5 +1,5 @@
 // End-to-end coverage for the bonus pickers: BonusComboBox, shared by "attach an existing
-// bonus" and the occurrence condition/tier rows, and the `excludes` TokenInput, which draws the
+// bonus" and the occurrence condition rows, and the `excludes` TokenInput, which draws the
 // same rows. Rows lead with the name and carry the id, a typed id finds its row first, and an
 // occurrence leaf defaults to the bonus it sits in.
 import { test, expect, type Page, type Locator } from "@playwright/test";

@@ -404,7 +404,7 @@ function save() {
 
       <!-- A scaler multiplies stat lines by this parameter's value, so only a numeric param
            can be one. Filters/tags name the items scaled wholesale; a scaler with neither is
-           reached only through a grant's own `scaledBy`. -->
+           reached only through a grant's `scale` formula. -->
       <FormGrid v-if="numeric" class="mb-2">
         <FormField label="Scales stats" class="w-52">
           <ComboBox
