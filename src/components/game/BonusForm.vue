@@ -19,10 +19,10 @@ import IdField from "../ui/IdField.vue";
 import * as bonusDraft from "../../lib/bonus-draft";
 import * as catalog from "../../data/catalog";
 import { useEditorDraft } from "../../composables/useEditorDraft";
-import { deepEqual } from "../../lib/deep-equal";
 import { BonusDraftStore } from "../../stores/bonus-draft";
 import { bonusDraftRegistryKey } from "../../composables/bonusDraftRegistry";
 import BonusOptionRow from "./BonusOptionRow.vue";
+import BonusInputRowList from "./BonusInputRowList.vue";
 import type { Bonus, BonusOption, BuildParameterSlot, Db } from "../../types";
 import type { EntryStatus } from "../../data/catalog";
 import FormSectionDescription from "../ui/FormSectionDescription.vue";
@@ -100,19 +100,6 @@ const emit = defineEmits<{
   "open-item": [itemId: string];
 }>();
 
-function buildDraft(bonus: Bonus | null | undefined): bonusDraft.BonusDraft {
-  const source = bonus ?? ({} as Partial<Bonus>);
-  return {
-    id: source.id ?? "",
-    name: source.name ?? "",
-    grants: (source.grants ?? []).map((grant) => bonusDraft.toDraft(grant)),
-    stacking: source.stacking ?? "",
-    maxStacks: source.maxStacks ?? null,
-    excludes: [...(source.excludes ?? [])],
-    ...(source.inputs && { inputs: JSON.parse(JSON.stringify(source.inputs)) }),
-  };
-}
-
 function computeId(local: bonusDraft.BonusDraft): string {
   return local.name.trim()
     ? catalog.nextId(
@@ -128,45 +115,6 @@ function toBonus(local: bonusDraft.BonusDraft): Bonus {
   return bonusDraft.toBonus({ ...local, id });
 }
 
-function diffLabel(oldJson: string, newJson: string): string {
-  try {
-    const old = JSON.parse(oldJson);
-    const nw = JSON.parse(newJson);
-    if (old.name !== nw.name) return `edit name → "${nw.name}"`;
-    if (old.stacking !== nw.stacking)
-      return `edit stacking → "${nw.stacking || "(none)"}"`;
-    if (old.maxStacks !== nw.maxStacks)
-      return `edit max stacks → ${nw.maxStacks ?? "(none)"}`;
-    if (JSON.stringify(old.excludes) !== JSON.stringify(nw.excludes)) {
-      const oldSet = new Set(old.excludes ?? []);
-      const newSet = new Set(nw.excludes ?? []);
-      const added = (nw.excludes ?? []).filter(
-        (v: string) => !oldSet.has(v),
-      ).length;
-      const removed = (old.excludes ?? []).filter(
-        (v: string) => !newSet.has(v),
-      ).length;
-      if (added && removed) return `edit excludes (+${added} / −${removed})`;
-      if (added) return `add exclude${added > 1 ? "s" : ""} (${added})`;
-      if (removed)
-        return `remove exclude${removed > 1 ? "s" : ""} (${removed})`;
-      return "edit excludes";
-    }
-    if (!deepEqual(old.grants, nw.grants)) {
-      const oldCount = (old.grants ?? []).length;
-      const newCount = (nw.grants ?? []).length;
-      if (newCount > oldCount)
-        return `add grant${newCount - oldCount > 1 ? "s" : ""} (${newCount} total)`;
-      if (newCount < oldCount)
-        return `remove grant${oldCount - newCount > 1 ? "s" : ""} (${newCount} total)`;
-      return `edit grants (${newCount} total)`;
-    }
-  } catch {
-    // JSON parse error, shouldn't happen but be safe.
-  }
-  return "edit bonus";
-}
-
 // Existing bonuses: live edits. New bonuses: draft until Save.
 const isNew = computed(() => !props.source && !props.fixedId);
 
@@ -175,16 +123,18 @@ const { draft, error, dirty, displayId, scheduleSnapshot, scheduleEmit } =
     source: () => props.source,
     isNew,
     buildDraft: (source) =>
-      buildDraft(
-        source ??
-          (props.duplicateFrom ? { ...props.duplicateFrom, id: "" } : null),
-      ),
+      source
+        ? bonusDraft.buildDraft(source)
+        : bonusDraft.buildDraft(
+            props.duplicateFrom ? { ...props.duplicateFrom, id: "" } : null,
+            false,
+          ),
     initialDraft: () =>
       props.initialDraft
         ? JSON.parse(JSON.stringify(props.initialDraft))
         : undefined,
     toEntity: toBonus,
-    diffLabel,
+    diffLabel: bonusDraft.diffLabel,
     hasContent: (d) => Boolean(d.name || d.grants.length),
     // Hold off saving while any grant's condition tree is half-drawn (a leaf with no value
     // yet, an empty group branch): `rowsToWhen` drops it silently, and the source round-trip
@@ -226,6 +176,15 @@ const scalerOptions = computed<BonusOption[]>(() =>
         slot.type === "build_parameter" && Boolean(slot.scaler),
     )
     .map((slot) => ({ value: slot.path, label: slot.label })),
+);
+
+/** The bonus's inputs as the `input` condition leaf offers them, read live off the draft so a
+ *  just-declared input is pickable before saving. */
+const inputOptions = computed(() =>
+  bonusDraft.inputOptions(draft.value.inputs),
+);
+const duplicateInputNames = computed(() =>
+  bonusDraft.duplicateInputNames(draft.value.inputs),
 );
 
 defineExpose({ draft, dirty });
@@ -387,6 +346,25 @@ if (bonusDraftRegistry && props.registryId) {
         </template>
       </TokenInput>
 
+      <FormSection>Inputs</FormSection>
+      <FormSectionDescription
+        >Values the player sets on the build, on the first item carrying this
+        bonus. Can be used with "input" conditions.</FormSectionDescription
+      >
+      <BonusInputRowList
+        :rows="draft.inputs"
+        @add="draft.inputs.push(bonusDraft.newInput())"
+        @remove="(i) => draft.inputs.splice(i, 1)"
+      />
+      <p
+        v-if="duplicateInputNames.length"
+        class="mb-2 text-danger"
+        data-testid="bonus-input-duplicate"
+      >
+        Input ids must be unique: {{ duplicateInputNames.join(", ") }}. Only the
+        last of each is saved.
+      </p>
+
       <FormSection>
         Grants
         <IconButton title="Add grant" @click="addGrant"
@@ -399,6 +377,7 @@ if (bonusDraftRegistry && props.registryId) {
         :store="draftStore"
         :tags="tags"
         :bonus-options="bonusOptions"
+        :input-options="inputOptions"
         :scaler-options="scalerOptions"
         :registry-id="registryId"
         @error="error = $event"

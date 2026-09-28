@@ -27,7 +27,16 @@ import {
   whenRowsComplete,
   type ConditionRow,
 } from "../engine/condition-draft";
-import { entriesToRows, rowsToEntries, putIfSet } from "./draft-fields";
+import {
+  entriesToRows,
+  rowsToEntries,
+  putIfSet,
+  numberOrUnset,
+  fieldDiffLabel,
+  arrayDiffLabel,
+  type DiffCheck,
+} from "./draft-fields";
+import { deepEqual } from "./deep-equal";
 import type {
   BonusOccurrenceSpec,
   Grant,
@@ -37,6 +46,7 @@ import type {
   StatValues,
   DynamicStatConfig,
   InputDef,
+  NumberControl,
 } from "../types";
 
 // Exactly what the engine reads off a tier (bonus.ts `evaluateBonus`). Anything else on a
@@ -302,15 +312,149 @@ export function toGrant(draft: GrantDraft): Grant {
   return out;
 }
 
+/** One `Bonus.inputs` entry. Numeric fields are widened like `DynamicStatDraft`'s, in stored
+ *  units (a percent as a decimal). `on` is a boolean input's default, kept apart from the
+ *  numeric one so switching type mid-edit loses neither. */
+export interface InputDraft {
+  /** The input's id: the key builds store its value under and conditions read it by. */
+  name: string;
+  /** Declared by the bonus when the form opened, so builds may already hold a value under
+   *  `name`: the form shows it read-only. An input added since stays editable. */
+  frozen: boolean;
+  type: InputDef["type"];
+  label: string;
+  on: boolean;
+  default: number | string | null;
+  min: number | string | null;
+  max: number | string | null;
+  step: number | string | null;
+  /** Comma-separated. */
+  presets: string;
+  /** `number` only. Empty leaves it to the bounds: a stepper when both are set. */
+  control: "" | NumberControl;
+}
+
+export const newInput = (): InputDraft => ({
+  name: "",
+  frozen: false,
+  type: "boolean",
+  label: "",
+  on: false,
+  default: null,
+  min: null,
+  max: null,
+  step: null,
+  presets: "",
+  control: "",
+});
+
+export const inputRows = (
+  inputs: Record<string, InputDef> | undefined,
+): InputDraft[] =>
+  entriesToRows(inputs, (name, def) => ({
+    name,
+    frozen: true,
+    type: def.type,
+    label: def.label ?? "",
+    on: def.type === "boolean" && def.default === true,
+    default: def.type === "boolean" ? null : Number(def.default),
+    min: def.min ?? null,
+    max: def.max ?? null,
+    step: def.step ?? null,
+    presets: (def.presets ?? []).join(", "),
+    control: def.control ?? "",
+  }));
+
+/** Unnamed rows are dropped. A boolean keeps only its default and label. */
+export const rowsToInputs = (
+  rows: InputDraft[] | undefined,
+): Record<string, InputDef> =>
+  rowsToEntries(
+    rows,
+    (row) => row.name.trim(),
+    (row) => {
+      if (row.type === "boolean") {
+        const def: InputDef = { type: row.type, default: row.on };
+        putIfSet(def, "label", row.label.trim());
+        return def;
+      }
+      const def = { type: row.type } as InputDef;
+      putIfSet(def, "min", numberOrUnset(row.min));
+      putIfSet(def, "max", numberOrUnset(row.max));
+      putIfSet(def, "step", numberOrUnset(row.step));
+      putIfSet(
+        def,
+        "presets",
+        row.presets
+          .split(",")
+          .map((part) => numberOrUnset(part.trim()))
+          .filter((value): value is number => value !== undefined),
+      );
+      if (row.type === "number" && row.control) def.control = row.control;
+      def.default = numberOrUnset(row.default) ?? 0;
+      putIfSet(def, "label", row.label.trim());
+      return def;
+    },
+  );
+
+/** Names given to more than one row. Only the last of them is saved. */
+export const duplicateInputNames = (rows: InputDraft[]): string[] => {
+  const seen = new Set<string>();
+  const dupes = new Set<string>();
+  for (const row of rows) {
+    const name = row.name.trim();
+    if (!name) continue;
+    if (seen.has(name)) dupes.add(name);
+    seen.add(name);
+  }
+  return [...dupes];
+};
+
+/** A bonus input as the `input` condition leaf's picker offers it. */
+export interface InputOption {
+  value: string;
+  label: string;
+  type: InputDef["type"];
+}
+
+export const inputOptions = (rows: InputDraft[]): InputOption[] =>
+  rows
+    .filter((row) => row.name.trim())
+    .map((row) => ({
+      value: row.name.trim(),
+      label: row.label.trim() || row.name.trim(),
+      type: row.type,
+    }));
+
 export interface BonusDraft {
   id: string;
   name: string;
+  inputs: InputDraft[];
   grants: GrantDraft[];
   stacking?: string;
   maxStacks?: number | string | null;
   excludes?: string[];
-  /** Carried through unedited. */
-  inputs?: Record<string, InputDef>;
+}
+
+/** `saved` is false for a bonus seeded from another (a duplicate): no build holds its input
+ *  values yet, so none of its input ids are frozen. */
+export function buildDraft(
+  bonus: Bonus | null | undefined,
+  saved = true,
+): BonusDraft {
+  const source = bonus ?? ({} as Partial<Bonus>);
+  return {
+    id: source.id ?? "",
+    name: source.name ?? "",
+    inputs: inputRows(source.inputs).map((row) => ({
+      ...row,
+      frozen: saved,
+    })),
+    grants: (source.grants ?? []).map((grant) => toDraft(grant)),
+    stacking: source.stacking ?? "",
+    maxStacks: source.maxStacks ?? null,
+    excludes: [...(source.excludes ?? [])],
+  };
 }
 
 /** Assembles a bonus-level draft (id/name/grants plus the bonus-level stacking/excludes
@@ -324,8 +468,7 @@ export function toBonus(draft: BonusDraft): Bonus {
     name: draft.name.trim() || draft.id.trim(),
     grants,
   };
-  if (draft.inputs && Object.keys(draft.inputs).length)
-    out.inputs = JSON.parse(JSON.stringify(draft.inputs));
+  putIfSet(out, "inputs", rowsToInputs(draft.inputs));
   putIfSet(out, "stacking", draft.stacking);
   if (draft.maxStacks) out.maxStacks = Number(draft.maxStacks);
   putIfSet(out, "excludes", [...(draft.excludes ?? [])]);
@@ -351,4 +494,54 @@ export function duplicateDraft(draft: GrantDraft): GrantDraft {
       dynamicStats: variant.dynamicStats.map((d) => ({ ...d })),
     })),
   };
+}
+
+/** Labels a change to `Bonus.inputs`: which names were added or removed, else the first
+ *  input whose declaration changed. */
+function inputsDiffLabel(
+  old: Record<string, InputDef>,
+  nw: Record<string, InputDef>,
+): string {
+  const oldNames = Object.keys(old);
+  const nwNames = Object.keys(nw);
+  const sameNames =
+    oldNames.length === nwNames.length &&
+    oldNames.every((name) => Object.hasOwn(nw, name));
+  if (!sameNames) return arrayDiffLabel("input", oldNames, nwNames);
+  const changed = nwNames.find((name) => !deepEqual(old[name], nw[name]));
+  return changed ? `edit input "${changed}"` : "reorder inputs";
+}
+
+const CHECKS: DiffCheck<Bonus>[] = [
+  (old, nw) => (old.name !== nw.name ? `edit name → "${nw.name}"` : null),
+  (old, nw) =>
+    old.stacking !== nw.stacking
+      ? `edit stacking → "${nw.stacking || "(none)"}"`
+      : null,
+  (old, nw) =>
+    old.maxStacks !== nw.maxStacks
+      ? `edit max stacks → ${nw.maxStacks ?? "(none)"}`
+      : null,
+  (old, nw) =>
+    JSON.stringify(old.excludes) !== JSON.stringify(nw.excludes)
+      ? arrayDiffLabel("exclude", old.excludes ?? [], nw.excludes ?? [])
+      : null,
+  (old, nw) =>
+    JSON.stringify(old.inputs) !== JSON.stringify(nw.inputs)
+      ? inputsDiffLabel(old.inputs ?? {}, nw.inputs ?? {})
+      : null,
+  (old, nw) => {
+    if (deepEqual(old.grants, nw.grants)) return null;
+    const oldCount = (old.grants ?? []).length;
+    const newCount = (nw.grants ?? []).length;
+    if (newCount > oldCount)
+      return `add grant${newCount - oldCount > 1 ? "s" : ""} (${newCount} total)`;
+    if (newCount < oldCount)
+      return `remove grant${oldCount - newCount > 1 ? "s" : ""} (${newCount} total)`;
+    return `edit grants (${newCount} total)`;
+  },
+];
+
+export function diffLabel(oldJson: string, newJson: string): string {
+  return fieldDiffLabel(CHECKS, oldJson, newJson, "edit bonus");
 }
