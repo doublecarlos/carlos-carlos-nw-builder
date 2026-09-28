@@ -1,7 +1,9 @@
 <script setup lang="ts">
 // How a bonus reads as a picker row, wherever one is offered: the name leads, the id sits
 // under it in small type. Shared by BonusComboBox (one bonus) and the `excludes` TokenInput
-// (several), so the two never drift on what a bonus row looks like.
+// (several), so the two never drift on what a bonus row looks like. The `input` condition
+// leaf's picker borrows it for an input's label over its name. The second line is dropped when it
+// would repeat the first.
 import type { BonusOption } from "../../types";
 
 defineProps<{ option: BonusOption }>();
@@ -13,6 +15,7 @@ defineProps<{ option: BonusOption }>();
       {{ option.label }}
     </div>
     <div
+      v-if="option.value !== option.label"
       class="overflow-hidden text-ellipsis whitespace-nowrap text-xs text-muted"
       data-testid="bonus-option-id"
     >

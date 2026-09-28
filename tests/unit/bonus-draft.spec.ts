@@ -3,8 +3,20 @@
 // verified separately since bonus-draft-store.spec.ts only covers the GrantStore mutation
 // layer, not this conversion.
 import { describe, it, expect } from "vitest";
-import { toDraft, toGrant, needsJson } from "../../src/lib/bonus-draft";
-import type { Grant } from "../../src/types";
+import {
+  toDraft,
+  toGrant,
+  needsJson,
+  buildDraft,
+  toBonus,
+  newInput,
+  inputRows,
+  rowsToInputs,
+  duplicateInputNames,
+  inputOptions,
+  diffLabel,
+} from "../../src/lib/bonus-draft";
+import type { Bonus, Grant } from "../../src/types";
 
 describe("bonus-draft problem payload", () => {
   it("a simple problem grant round-trips through the form, not JSON", () => {
@@ -312,5 +324,125 @@ describe("bonus-draft tiers", () => {
     const draft = toDraft(grant);
     expect(draft.tiers.map((tier) => tier.bonus)).toEqual(["", "other"]);
     expect(toGrant(draft)).toEqual(grant);
+  });
+});
+
+describe("bonus-draft inputs", () => {
+  const bonus: Bonus = {
+    id: "proc",
+    name: "Proc",
+    inputs: {
+      active: { type: "boolean", default: true, label: "Proc" },
+      stacks: {
+        type: "number",
+        min: 0,
+        max: 12,
+        step: 2,
+        presets: [0, 6, 12],
+        control: "field",
+        default: 12,
+      },
+      share: { type: "percent", min: 0, max: 0.5, default: 0.1 },
+    },
+    grants: [
+      { when: { input: { key: "active", is: true } }, stats: { power: 1 } },
+    ],
+  };
+
+  it("round-trips a bonus's inputs and the grants reading them", () => {
+    const draft = buildDraft(bonus);
+    expect(draft.grants[0].mode).toBe("simple");
+    expect(toBonus(draft)).toEqual(bonus);
+  });
+
+  it("writes a number's fields in declaration order", () => {
+    expect(Object.keys(rowsToInputs(inputRows(bonus.inputs)).stacks)).toEqual([
+      "type",
+      "min",
+      "max",
+      "step",
+      "presets",
+      "control",
+      "default",
+    ]);
+  });
+
+  it("drops unnamed rows and omits inputs when none are named", () => {
+    const draft = buildDraft({ id: "b", name: "B", grants: [] });
+    draft.inputs.push(newInput());
+    expect(toBonus(draft)).not.toHaveProperty("inputs");
+  });
+
+  it("keeps only a boolean's default and label after switching type", () => {
+    const [row] = inputRows({
+      stacks: { type: "number", min: 0, max: 3, default: 2 },
+    });
+    row.type = "boolean";
+    row.on = true;
+    expect(rowsToInputs([row])).toEqual({
+      stacks: { type: "boolean", default: true },
+    });
+  });
+
+  it("writes control on a number only", () => {
+    const row = { ...newInput(), name: "x", type: "percent" as const };
+    row.min = 0;
+    row.max = 1;
+    row.control = "field";
+    expect(rowsToInputs([row]).x).not.toHaveProperty("control");
+  });
+
+  it("freezes the ids a saved bonus declares, not new or duplicated ones", () => {
+    expect(buildDraft(bonus).inputs.every((row) => row.frozen)).toBe(true);
+    expect(buildDraft(bonus, false).inputs.some((row) => row.frozen)).toBe(
+      false,
+    );
+    expect(newInput().frozen).toBe(false);
+  });
+
+  it("reports names used twice", () => {
+    const rows = ["a", "b", " a "].map((name) => ({ ...newInput(), name }));
+    expect(duplicateInputNames(rows)).toEqual(["a"]);
+  });
+
+  it("offers named inputs with their type for the input leaf", () => {
+    expect(inputOptions(inputRows(bonus.inputs))).toEqual([
+      { value: "active", label: "Proc", type: "boolean" },
+      { value: "stacks", label: "stacks", type: "number" },
+      { value: "share", label: "share", type: "percent" },
+    ]);
+  });
+});
+
+describe("bonus-draft diffLabel", () => {
+  const label = (old: Bonus, nw: Bonus) =>
+    diffLabel(JSON.stringify(old), JSON.stringify(nw));
+  const base: Bonus = { id: "b", name: "B", grants: [] };
+
+  it("names an added or removed input", () => {
+    const withInput: Bonus = {
+      ...base,
+      inputs: { active: { type: "boolean", default: false } },
+    };
+    expect(label(base, withInput)).toBe("add input (1)");
+    expect(label(withInput, base)).toBe("remove input (1)");
+  });
+
+  it("names the input whose declaration changed", () => {
+    const old: Bonus = {
+      ...base,
+      inputs: { active: { type: "boolean", default: false } },
+    };
+    const nw: Bonus = {
+      ...base,
+      inputs: { active: { type: "boolean", default: true } },
+    };
+    expect(label(old, nw)).toBe('edit input "active"');
+  });
+
+  it("keeps the excludes labels", () => {
+    expect(label(base, { ...base, excludes: ["x", "y"] })).toBe(
+      "add excludes (2)",
+    );
   });
 });

@@ -8,6 +8,7 @@
 import { computed } from "vue";
 import ComboBox from "../ui/ComboBox.vue";
 import BonusComboBox from "./BonusComboBox.vue";
+import BonusOptionRow from "./BonusOptionRow.vue";
 import IconButton from "../ui/IconButton.vue";
 import DragHandle from "../ui/DragHandle.vue";
 import DropIndicator from "../ui/DropIndicator.vue";
@@ -37,6 +38,7 @@ import {
   type ConditionRow,
 } from "../../engine/condition-draft";
 import type { BonusOption, BuildParameterSlot } from "../../types";
+import type { InputOption } from "../../lib/bonus-draft";
 import {
   dragSource,
   useDragHandle,
@@ -92,6 +94,8 @@ const props = withDefaults(
     depth?: number;
     /** Every known bonus, for the occurrences leaf's picker. */
     bonusOptions?: BonusOption[];
+    /** The edited bonus's own inputs, for the `input` leaf's picker. */
+    inputOptions?: InputOption[];
     /** Identifies which condition tree `path` is root-relative to -- opaque to this component,
      *  interpreted by whichever ancestor owns the store (see `transfer` above). */
     treeId?: string;
@@ -102,6 +106,7 @@ const props = withDefaults(
   {
     depth: 0,
     bonusOptions: () => [],
+    inputOptions: () => [],
     treeId: "",
     path: () => [],
   },
@@ -454,6 +459,18 @@ function changeParamKey(row: ConditionRow, key: string) {
   row.is = null;
   row.equals = "";
 }
+
+/** The name doubles as search text, as a bonus picker's id does. */
+const searchableInputs = computed(() =>
+  props.inputOptions.map((option) => ({ ...option, search: option.value })),
+);
+
+/** Same reset as `changeParamKey`, by the input's declared type. */
+function changeInputKey(row: ConditionRow, key: string) {
+  changeParamKey(row, key);
+  const input = props.inputOptions.find((option) => option.value === key);
+  row.form = input?.type === "boolean" ? "boolean" : "number";
+}
 </script>
 
 <template>
@@ -558,8 +575,12 @@ function changeParamKey(row: ConditionRow, key: string) {
             allow-at-least-one
           />
         </template>
-        <template v-else-if="row.type === 'param'">
-          <FormField label="Parameter" class="min-w-0">
+        <template v-else-if="row.type === 'param' || row.type === 'input'">
+          <FormField
+            v-if="row.type === 'param'"
+            label="Parameter"
+            class="min-w-0"
+          >
             <ComboBox
               class="w-48"
               :model-value="row.key"
@@ -568,10 +589,28 @@ function changeParamKey(row: ConditionRow, key: string) {
               @update:model-value="(v) => changeParamKey(row, v)"
             />
           </FormField>
+          <FormField v-else label="Input" class="min-w-0">
+            <ComboBox
+              class="w-48"
+              data-testid="condition-input-key"
+              :model-value="row.key"
+              :options="searchableInputs"
+              :placeholder="
+                inputOptions.length ? '- input -' : '- no inputs declared -'
+              "
+              menu-class="w-max min-w-(--anchor-width) max-w-[min(22rem,80vw)]"
+              @update:model-value="(v) => changeInputKey(row, v)"
+            >
+              <template #option="{ option }">
+                <BonusOptionRow :option="option" />
+              </template>
+            </ComboBox>
+          </FormField>
           <template v-if="row.form === 'boolean'">
             <FormField label="Is" class="min-w-0">
               <ComboBox
                 class="w-24"
+                data-testid="condition-is"
                 :model-value="
                   row.is === true ? 'on' : row.is === false ? 'off' : ''
                 "
@@ -709,6 +748,7 @@ function changeParamKey(row: ConditionRow, key: string) {
                 :rows="branch"
                 :depth="depth + 1"
                 :bonus-options="bonusOptions"
+                :input-options="inputOptions"
                 :tree-id="treeId"
                 :path="[...path, i, bi]"
                 class="ml-4 border-l-1 border-solid pl-2"

@@ -42,7 +42,7 @@ import {
   type ConditionLocation,
   type ConditionBranchLocation,
 } from "../../stores/bonus-draft";
-import type { GrantDraft } from "../../lib/bonus-draft";
+import type { GrantDraft, InputOption } from "../../lib/bonus-draft";
 import type { BonusOption } from "../../types";
 import { bonusDraftRegistryKey } from "../../composables/bonusDraftRegistry";
 import {
@@ -60,6 +60,8 @@ const props = withDefaults(
     tags?: string[];
     /** Every known bonus, for the tier and occurrence-condition pickers. */
     bonusOptions?: BonusOption[];
+    /** The bonus's own inputs, for the `input` condition leaf. */
+    inputOptions?: InputOption[];
     /** Every parameter declaring a scaler, keyed by its path, for each grant's "scaled by"
      *  picker. */
     scalerOptions?: BonusOption[];
@@ -70,6 +72,7 @@ const props = withDefaults(
   {
     tags: () => [],
     bonusOptions: () => [],
+    inputOptions: () => [],
     scalerOptions: () => [],
     registryId: "",
   },
@@ -413,6 +416,7 @@ function toggleJson(gIndex: number) {
           :rows="grant.conditions"
           :depth="0"
           :bonus-options="bonusOptions"
+          :input-options="inputOptions"
           :tree-id="grantTreeId(gIndex)"
           :path="[]"
           @update="(updated) => props.store.setConditions(gIndex, updated)"
@@ -609,6 +613,7 @@ function toggleJson(gIndex: number) {
                 :rows="variant.conditions"
                 :depth="0"
                 :bonus-options="bonusOptions"
+                :input-options="inputOptions"
                 :tree-id="variantTreeId(gIndex, vIndex)"
                 :path="[]"
                 @update="

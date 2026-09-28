@@ -29,7 +29,7 @@ import FormSection from "../ui/FormSection.vue";
 import DragHandle from "../ui/DragHandle.vue";
 import DropIndicator from "../ui/DropIndicator.vue";
 import type { Db, Bonus, BonusOption } from "../../types";
-import type { BonusDraft } from "../../lib/bonus-draft";
+import { buildDraft, type BonusDraft } from "../../lib/bonus-draft";
 import type { BonusDraftStore } from "../../stores/bonus-draft";
 import type { OccurrenceDraft } from "../../lib/item-draft";
 import { occurrenceSummary } from "../../lib/occurrence-mode";
@@ -172,14 +172,7 @@ function occurrenceChip(slot: Slot): string | null {
  * is only ever consulted on mount), not kept in sync with later edits to the item's own name. */
 function initialDraftFor(slot: Slot): BonusDraft | null {
   if (slot.id || slot.seed) return null;
-  return {
-    id: "",
-    name: props.itemName,
-    grants: [],
-    stacking: "",
-    maxStacks: null,
-    excludes: [],
-  };
+  return { ...buildDraft(null), name: props.itemName };
 }
 
 function addPending(seed: Bonus | null) {

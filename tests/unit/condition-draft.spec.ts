@@ -537,3 +537,37 @@ describe("condition-draft path addressing", () => {
     });
   });
 });
+
+describe("condition-draft input leaf", () => {
+  it("round-trips a boolean input leaf through the form", () => {
+    const when = { input: { key: "procActive", is: true } };
+    expect(whenIsRepresentable(when)).toBe(true);
+    const rows = whenToRows(when);
+    expect(rows[0]).toMatchObject({ type: "input", form: "boolean" });
+    expect(rowsToWhen(rows)).toEqual(when);
+  });
+
+  it("round-trips a numeric input leaf in range and exact modes", () => {
+    for (const when of [
+      { input: { key: "stacks", atLeast: 3, below: 7 } },
+      { input: { key: "stacks", exactly: 5 } },
+    ]) {
+      expect(rowsToWhen(whenToRows(when))).toEqual(when);
+    }
+  });
+
+  it("is incomplete until it names an input and a comparison", () => {
+    const row = newLeafRow("input");
+    expect(whenRowsComplete([row])).toBe(false);
+    row.key = "stacks";
+    expect(whenRowsComplete([row])).toBe(false);
+    row.atLeast = 2;
+    expect(whenRowsComplete([row])).toBe(true);
+  });
+
+  it("drops to JSON for a key the input leaf does not have", () => {
+    expect(
+      whenIsRepresentable({ input: { key: "x", equals: "a" } as never }),
+    ).toBe(false);
+  });
+});

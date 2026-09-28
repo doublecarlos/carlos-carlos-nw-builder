@@ -7,7 +7,7 @@ import * as engine from "../../src/engine/engine";
 import { explain } from "../../src/engine/conditions";
 import { inputEntries, numberControl } from "../../src/engine/inputs";
 import { bonusInputAddress, writeInput } from "../../src/lib/build-inputs";
-import { toBonus } from "../../src/lib/bonus-draft";
+import { buildDraft, toBonus } from "../../src/lib/bonus-draft";
 import type {
   Bonus,
   Build,
@@ -427,12 +427,6 @@ describe("carrying inputs through export and the bonus form", () => {
   });
 
   it("keeps a bonus's inputs when the form saves it", () => {
-    const bonus = toBonus({
-      id: "proc",
-      name: "Proc",
-      grants: [],
-      inputs: proc.inputs,
-    });
-    expect(bonus.inputs).toEqual(proc.inputs);
+    expect(toBonus(buildDraft(proc)).inputs).toEqual(proc.inputs);
   });
 });

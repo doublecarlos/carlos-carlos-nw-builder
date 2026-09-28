@@ -20,6 +20,7 @@ export const LEAF_TYPES = [
   "bonusOccurrences",
   "equipped",
   "param",
+  "input",
 ];
 
 // Caps how many `all`/`any`/`not` groups can nest inside one another. Purely a UI guard
@@ -146,7 +147,7 @@ function leafFromSpec(
       ...countFields(s),
     };
   }
-  if (type === "param") {
+  if (type === "param" || type === "input") {
     // form picks which of the three mutually-exclusive comparisons the row shows --
     // inferred from whichever field the spec actually carries, not from looking up
     // the addressed slot's paramType (so a row for a since-renamed/removed slot
@@ -236,7 +237,8 @@ function leafToSpec(
     const range = countSpec(row);
     return range && { ...target, ...range };
   }
-  if (row.type === "param") {
+  // `input` mirrors `param` without the string form.
+  if (row.type === "param" || row.type === "input") {
     if (!row.key) return undefined;
     if (row.form === "boolean") {
       return row.is === true || row.is === false
@@ -524,6 +526,7 @@ const RANGE_LEAF_KEYS: Record<string, Set<string>> = {
   bonusOccurrences: new Set(["bonus", "atLeast", "below", "exactly"]),
   equipped: new Set(["tag", "item", "atLeast", "below", "exactly"]),
   param: new Set(["key", "atLeast", "below", "exactly", "is", "equals"]),
+  input: new Set(["key", "atLeast", "below", "exactly", "is"]),
 };
 
 function leafSpecIsRepresentable(key: string, spec: unknown): boolean {
