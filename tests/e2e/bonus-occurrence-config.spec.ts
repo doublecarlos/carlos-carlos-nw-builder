@@ -68,11 +68,11 @@ function buildWithOccurrenceRing(
             {
               tiers: [
                 {
-                  bonusOccurrences: { bonus: STEPPER_BONUS_ID, atLeast: 1 },
+                  atLeast: 1,
                   stats: { power: 10 },
                 },
                 {
-                  bonusOccurrences: { bonus: STEPPER_BONUS_ID, atLeast: 3 },
+                  atLeast: 3,
                   stats: { power: 50 },
                 },
               ],

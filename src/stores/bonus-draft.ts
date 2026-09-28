@@ -70,7 +70,6 @@ export class GrantStore {
     if (payload === "tiers" && grant.tiers.length === 0) {
       const last = grant.tiers[grant.tiers.length - 1];
       grant.tiers.push({
-        bonus: last?.bonus ?? "",
         atLeast: (last?.atLeast ?? 0) + 1,
         stats: last ? last.stats.map((s) => ({ ...s })) : [],
       });
@@ -165,7 +164,6 @@ export class GrantStore {
     const grant = this.grant;
     const last = grant.tiers[grant.tiers.length - 1];
     grant.tiers.push({
-      bonus: last?.bonus ?? "",
       atLeast: (last?.atLeast ?? 0) + 1,
       stats: last ? last.stats.map((s) => ({ ...s })) : [],
     });
@@ -181,7 +179,6 @@ export class GrantStore {
     const grant = this.grant;
     const ref = grant.tiers[index];
     grant.tiers.splice(index + 1, 0, {
-      bonus: ref?.bonus ?? "",
       atLeast: (ref?.atLeast ?? 0) + 1,
       stats: [],
     });

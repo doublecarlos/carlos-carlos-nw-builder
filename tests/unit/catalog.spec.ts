@@ -837,7 +837,7 @@ describe("catalog.validate: bonusOccurrences targets", () => {
               bonusOccurrences: {},
               any: [{ bonusOccurrences: { bonus: "other" } }],
             },
-            tiers: [{ bonusOccurrences: { atLeast: 2 }, stats: {} }],
+            tiers: [{ atLeast: 1, stats: {} }],
           },
         ],
       },
@@ -856,11 +856,6 @@ describe("catalog.validate: bonusOccurrences targets", () => {
               { when: { bonusOccurrences: { bonus: "self" } }, stats: {} },
             ],
           },
-          {
-            tiers: [
-              { bonusOccurrences: { bonus: "self", atLeast: 1 }, stats: {} },
-            ],
-          },
         ],
       },
     ]);
@@ -872,10 +867,6 @@ describe("catalog.validate: bonusOccurrences targets", () => {
       [
         "warn",
         'grant 2: bonusOccurrences names this bonus itself; omit "bonus"',
-      ],
-      [
-        "warn",
-        'grant 3: bonusOccurrences names this bonus itself; omit "bonus"',
       ],
     ]);
   });

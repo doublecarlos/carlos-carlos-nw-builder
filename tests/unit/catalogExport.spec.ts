@@ -131,9 +131,6 @@ describe("catalogExport.toBonusesFile", () => {
             },
             { stats: {} },
           ],
-          tiers: [
-            { bonusOccurrences: { bonus: "self", atLeast: 1 }, stats: {} },
-          ],
         },
       ],
     };
@@ -150,7 +147,6 @@ describe("catalogExport.toBonusesFile", () => {
         { when: { bonusOccurrences: { atLeast: 2 } }, stats: {} },
         { stats: {} },
       ],
-      tiers: [{ bonusOccurrences: { atLeast: 1 }, stats: {} }],
     });
     // The input is left alone: the exporter reads the catalog, it does not edit it.
     expect(bonus.grants![0].when!.bonusOccurrences!.bonus).toBe("self");
@@ -198,7 +194,7 @@ describe("catalogExport.toBonusesFile", () => {
     expect(parsed[0].name).toBe("Named Bonus");
   });
 
-  it("orders grant, variant, tier and problem keys, and their stats by schema.json", () => {
+  it("orders bonus, grant, variant, tier, formula and problem keys, and stats by schema.json", () => {
     const bonus = {
       id: "b",
       grants: [
@@ -212,13 +208,39 @@ describe("catalogExport.toBonusesFile", () => {
           variants: [{ stats: { acc: 1, acc_p: 2 }, when: { toggle: "t" } }],
         },
         {
-          tiers: [{ stats: { power: 1 }, bonusOccurrences: { atLeast: 2 } }],
+          tiers: [{ stats: { power: 1 }, atLeast: 2 }],
+          tierBy: { label: "Stacks", formula: "$stacks" },
+          scale: { label: "Share", formula: "input('share')" },
         },
         { problem: { message: "m", severity: "error" } },
+        {
+          when: {
+            formula: { atLeast: 1, formula: "duration", label: "Time" },
+          },
+          stats: {},
+        },
       ],
+      formulas: { stacks: { label: "Stacks", formula: "duration / 5" } },
+      inputs: { share: { type: "percent", min: 0, max: 1, default: 1 } },
     } as Bonus;
     const [parsed] = JSON.parse(catalogExport.toBonusesFile([bonus]));
-    const [plain, varied, tiered, problem] = parsed.grants;
+    const [plain, varied, tiered, problem, gated] = parsed.grants;
+    expect(Object.keys(parsed)).toEqual([
+      "id",
+      "name",
+      "inputs",
+      "formulas",
+      "grants",
+    ]);
+    expect(Object.keys(parsed.formulas.stacks)).toEqual(["formula", "label"]);
+    expect(Object.keys(tiered)).toEqual(["tierBy", "tiers", "scale"]);
+    expect(Object.keys(tiered.tierBy)).toEqual(["formula", "label"]);
+    expect(Object.keys(tiered.scale)).toEqual(["formula", "label"]);
+    expect(Object.keys(gated.when.formula)).toEqual([
+      "formula",
+      "label",
+      "atLeast",
+    ]);
     expect(Object.keys(plain)).toEqual([
       "name",
       "when",
@@ -228,7 +250,7 @@ describe("catalogExport.toBonusesFile", () => {
     expect(Object.keys(plain.stats)).toEqual(["power_p", "power"]);
     expect(Object.keys(varied.variants[0])).toEqual(["when", "stats"]);
     expect(Object.keys(varied.variants[0].stats)).toEqual(["acc_p", "acc"]);
-    expect(Object.keys(tiered.tiers[0])).toEqual(["bonusOccurrences", "stats"]);
+    expect(Object.keys(tiered.tiers[0])).toEqual(["atLeast", "stats"]);
     expect(Object.keys(problem.problem)).toEqual(["severity", "message"]);
   });
 

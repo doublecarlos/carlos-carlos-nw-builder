@@ -1,5 +1,5 @@
 // The three shipped entries that store a real game value and reach a damage-type share
-// through `scaledBy`: Warlock's Curse (one grant per power type), Risky Investment (a Soul
+// through a `scaler(...)` scale: Warlock's Curse (one grant per power type), Risky Investment (a Soul
 // Investiture stack ladder, encounters only) and the Sturdy Crescent Collar (encounters
 // only). Resolved against the shipped catalog on a Hellbringer build so the gates each entry
 // carries (class, paragon, combat) are the real ones.
@@ -86,13 +86,27 @@ describe("shipped damage-type scaled entries", () => {
     );
   });
 
-  it("contribute nothing at the default shares of 0", () => {
+  it("stay inactive at the default shares of 0, without reporting an error", () => {
     const result = resolve();
-    expect(bonusStats(result, "risky-investment").outgoing_damage).toBe(0);
-    expect(
-      bonusStats(result, "sturdy-crescent-collar").outgoing_damage_mult,
-    ).toBe(0);
-    expect(bonusStats(result, "warlock-s-curse").outgoing_damage).toBe(0);
+    const ids = [
+      "risky-investment",
+      "sturdy-crescent-collar",
+      "warlock-s-curse",
+    ];
+    const entries = ids.map((id) =>
+      result.bonuses.find((b) => b.bonusId === id),
+    );
+    expect(entries.map((entry) => entry?.active)).toEqual([
+      false,
+      false,
+      false,
+    ]);
+    expect(entries.map((entry) => entry?.appliedStats)).toEqual([
+      null,
+      null,
+      null,
+    ]);
+    expect(result.errors.filter((e) => e.kind === "formula")).toEqual([]);
   });
 
   it("give Risky Investment nothing at zero Soul Investiture stacks", () => {

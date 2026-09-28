@@ -8,7 +8,6 @@
 // mutation, which schedules an undo snapshot in BonusForm.
 
 import { computed, inject, ref } from "vue";
-import BonusComboBox from "./BonusComboBox.vue";
 import ComboBox from "../ui/ComboBox.vue";
 import ConditionRows, {
   type ConditionTreeLocation,
@@ -58,7 +57,7 @@ const props = withDefaults(
   defineProps<{
     store: BonusDraftStore;
     tags?: string[];
-    /** Every known bonus, for the tier and occurrence-condition pickers. */
+    /** Every known bonus, for the occurrence-condition picker. */
     bonusOptions?: BonusOption[];
     /** The bonus's own inputs, for the `input` condition leaf. */
     inputOptions?: InputOption[];
@@ -512,13 +511,6 @@ function toggleJson(gIndex: number) {
                   @click="gs(gIndex).removeTier(tIndex)"
                   ><Trash
                 /></IconButton>
-                <BonusComboBox
-                  class="combo--bonus w-44"
-                  :model-value="tier.bonus"
-                  :options="bonusOptions"
-                  self
-                  @update:model-value="(v) => (tier.bonus = v)"
-                />
                 <BaseInput
                   v-model.number="tier.atLeast"
                   type="number"

@@ -585,10 +585,24 @@ function findErrors(
 /** Data-authored errors/warnings: any active bonus grant carrying a `problem` payload
  * (types.ts's `Grant.problem`) instead of stats. One `EngineError` per active problem grant,
  * attributed to the same slot its stats would have been (`EvaluatedBonus.slotId`) -- an
- * excluded or inactive bonus reports nothing, same as it grants no stats. */
+ * excluded or inactive bonus reports nothing, same as it grants no stats. Formula failures
+ * are reported here too. */
 function bonusProblems(resolved: ResolvedBonuses): EngineError[] {
   const errors: EngineError[] = [];
   for (const entry of resolved.bonuses) {
+    // A failed formula is reported while the bonus is on the build, active or not: the
+    // failure may be what keeps it inactive.
+    if (!entry.excluded) {
+      for (const message of entry.formulaErrors) {
+        errors.push({
+          slotId: entry.slotId,
+          kind: "formula",
+          choice: entry.bonus.name ?? entry.bonusId,
+          message,
+          severity: "error",
+        });
+      }
+    }
     if (!entry.active) continue;
     for (const problem of entry.problems) {
       errors.push({

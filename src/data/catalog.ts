@@ -25,6 +25,15 @@ import { parseRowSlotId, rowSlot } from "../lib/item-picker-list";
 import { REQUIRED_SLOT_IDS, gameImportReferences } from "../lib/demo-slots";
 import { INSIGNIA_SHAPES } from "../types";
 import { canStep } from "../engine/inputs";
+import {
+  checkFormula,
+  formulaSites,
+  namedCycles,
+  parseFormula,
+  scalerFormula,
+  transitiveReads,
+  type FormulaSite,
+} from "../engine/formula";
 
 import type {
   Item,
@@ -33,6 +42,8 @@ import type {
   CatalogOverlay,
   CatalogGroup,
   ConditionWhen,
+  FormulaCondition,
+  Grant,
   InputCondition,
   InputDef,
   ParamCondition,
@@ -663,6 +674,7 @@ const CONDITION_KEYS = new Set([
   "equipped",
   "param",
   "input",
+  "formula",
   "all",
   "any",
   "not",
@@ -832,6 +844,20 @@ function checkConditions(
       checkParamCondition(spec as ParamCondition, path, report, paramSlots);
     } else if (key === "input") {
       checkInputCondition(spec as InputCondition, path, report, inputs);
+    } else if (key === "formula") {
+      // The formula itself is checked with the bonus's other formula sites.
+      const s = spec as FormulaCondition;
+      if (
+        s &&
+        typeof s === "object" &&
+        s.atLeast === undefined &&
+        s.below === undefined &&
+        s.exactly === undefined
+      )
+        report(
+          "error",
+          `${path}: formula condition needs atLeast/below/exactly`,
+        );
     }
   }
 }
@@ -953,6 +979,177 @@ function checkInputDefs(
     );
     if (problem) report("error", problem);
   }
+}
+
+/** What a formula may look up, resolved against the composed catalog. */
+interface FormulaVocabulary {
+  paramSlots: Map<string, BuildParameterSlot>;
+  bonusIds: Set<string>;
+  itemIds: Set<string>;
+  tags: Set<string>;
+}
+
+/** One formula site: its shape, its text, and every id, path and input it reads. Input names
+ *  it reads are added to `readInputs`. */
+function checkFormulaSite(
+  site: FormulaSite,
+  bonus: Bonus,
+  vocabulary: FormulaVocabulary,
+  report: (level: "error" | "warn", message: string) => void,
+  readInputs: Set<string>,
+) {
+  const { ref, where } = site;
+  if (!ref || typeof ref !== "object" || typeof ref.formula !== "string") {
+    report("error", `${where}: needs a "formula" string`);
+    return;
+  }
+  if (
+    ref.label !== undefined &&
+    (typeof ref.label !== "string" || !ref.label.trim())
+  )
+    report("error", `${where}: label must be a non-empty string`);
+
+  const named = Object.keys(bonus.formulas ?? {});
+  for (const issue of checkFormula(ref.formula, named))
+    report(
+      "error",
+      `${where}: ${issue.message} (column ${issue.start + 1} of "${ref.formula}")`,
+    );
+
+  const { reads } = parseFormula(ref.formula);
+  for (const path of reads.params) {
+    const slot = vocabulary.paramSlots.get(path);
+    if (!slot)
+      report(
+        "error",
+        `${where}: param("${path}") is not a build_parameter's path`,
+      );
+    else if (slot.paramType !== "number" && slot.paramType !== "percent")
+      report(
+        "error",
+        `${where}: param("${path}") is a ${slot.paramType}; formulas read numbers, so test it in "when"`,
+      );
+  }
+  for (const path of reads.scalers) {
+    if (!vocabulary.paramSlots.get(path)?.scaler)
+      report(
+        "error",
+        `${where}: scaler("${path}") is not a parameter declaring a scaler`,
+      );
+  }
+  const inputs = bonus.inputs ?? {};
+  for (const { name } of reads.inputs) {
+    readInputs.add(name);
+    const def = Object.hasOwn(inputs, name) ? inputs[name] : null;
+    if (!def)
+      report(
+        "error",
+        `${where}: input("${name}") is not declared by this bonus`,
+      );
+    else if (def.type === "boolean")
+      report(
+        "error",
+        `${where}: input("${name}") is a boolean; formulas read numbers, so test it in "when"`,
+      );
+  }
+  for (const id of reads.bonuses) {
+    if (id === bonus.id)
+      report(
+        "warn",
+        `${where}: occurrences("${id}") names this bonus itself; use occurrences()`,
+      );
+    else if (!vocabulary.bonusIds.has(id))
+      report("error", `${where}: occurrences("${id}") names no bonus`);
+  }
+  for (const id of reads.items) {
+    if (!vocabulary.itemIds.has(id))
+      report("error", `${where}: equipped("${id}") names no item`);
+  }
+  for (const tag of reads.tags) {
+    if (!vocabulary.tags.has(tag))
+      report("warn", `${where}: tagged("${tag}") matches no item`);
+  }
+}
+
+const FORMULA_NAME = /^[a-zA-Z_]\w*$/;
+
+/** Every formula `bonus` declares or uses, plus reference cycles among its named formulas. */
+function checkBonusFormulas(
+  bonus: Bonus,
+  vocabulary: FormulaVocabulary,
+  report: (level: "error" | "warn", message: string) => void,
+  readInputs: Set<string>,
+) {
+  const named = bonus.formulas ?? {};
+  for (const name of Object.keys(named)) {
+    if (!FORMULA_NAME.test(name))
+      report(
+        "error",
+        `formula "${name}": a name is a letter or _ then letters, digits or _`,
+      );
+  }
+  for (const cycle of namedCycles(named))
+    report(
+      "error",
+      `formulas refer to each other in a loop: ${cycle.map((name) => `$${name}`).join(" → ")}`,
+    );
+  for (const site of formulaSites(bonus))
+    checkFormulaSite(site, bonus, vocabulary, report, readInputs);
+}
+
+/** A grant's tier ladder and the fields that shape how it is scaled or counted. */
+function checkGrantShape(
+  grant: Grant,
+  label: string,
+  bonus: Bonus,
+  report: (level: "error" | "warn", message: string) => void,
+) {
+  const legacy = (grant as { scaledBy?: unknown }).scaledBy;
+  if (legacy !== undefined)
+    report(
+      "error",
+      `${label}: "scaledBy" is not read; use "scale": { "formula": ${JSON.stringify(scalerFormula(String(legacy)))} }`,
+    );
+  if (grant.tierBy && !grant.tiers)
+    report("warn", `${label}: tierBy does nothing without tiers`);
+
+  if (grant.tiers) {
+    const seen = new Set<number>();
+    grant.tiers.forEach((tier, index) => {
+      if (typeof tier.atLeast !== "number" || !Number.isFinite(tier.atLeast)) {
+        report(
+          "error",
+          `${label} tier ${index + 1}: needs a numeric "atLeast" (a tier is { atLeast, stats }); the tier never applies`,
+        );
+        return;
+      }
+      if (seen.has(tier.atLeast))
+        report(
+          "error",
+          `${label}: two tiers start at ${tier.atLeast}; only one can apply`,
+        );
+      seen.add(tier.atLeast);
+    });
+    const lowest = Math.min(...seen);
+    if (!grant.tierBy && seen.size && lowest > 1)
+      report(
+        "warn",
+        `${label}: the lowest tier starts at ${lowest} occurrences, so fewer grant nothing`,
+      );
+  }
+
+  // perSource already multiplies by the source count, so a scale counting them again squares it.
+  if (
+    bonus.stacking === "perSource" &&
+    typeof grant.scale?.formula === "string" &&
+    transitiveReads(grant.scale.formula, bonus.formulas ?? {}).some(
+      (reads) => reads.ownOccurrences || reads.bonuses.includes(bonus.id),
+    )
+  )
+    report(
+      "warn",
+      `${label}: scale counts this bonus's own occurrences, which perSource stacking already multiplies by`,
+    );
 }
 
 /** Every bonus id a `when`'s occurrence leaves name, flattened out of its combinators. */
@@ -1452,10 +1649,15 @@ export function validateParamReaders(
     const read = new Set<string>();
     for (const grant of bonus.grants ?? []) {
       conditionPaths(grant.when, read);
-      // Only `when` carries a condition -- a tier gates on `bonusOccurrences` alone, and a
-      // `problem` rides on its grant's own `when`.
+      // Only `when` carries a condition leaf, and a `problem` rides on its grant's own
+      // `when`. Formulas report their own reads below.
       for (const variant of grant.variants ?? [])
         conditionPaths(variant.when, read);
+    }
+    for (const { ref } of formulaSites(bonus)) {
+      if (typeof ref?.formula !== "string") continue;
+      const { reads } = parseFormula(ref.formula);
+      for (const path of [...reads.params, ...reads.scalers]) read.add(path);
     }
     for (const path of read) {
       const slotId = missing.get(path);
@@ -1469,42 +1671,6 @@ export function validateParamReaders(
           `fails closed, so this bonus silently never applies`,
       });
     }
-  }
-  return findings;
-}
-
-/**
- * A grant's `scaledBy` has to name a `build_parameter` declaring a `scaler`, resolved against
- * the composed slot list so a layer may point at a scaler it added itself. bonus.ts's
- * `evaluateGrant` treats an unknown scaler as x1, so the grant would silently apply at full
- * strength instead of the share the author meant.
- */
-export function validateScaledBy(
-  slots: Slot[],
-  bonuses: Bonus[],
-): LintFinding[] {
-  const scalerPaths = new Set(
-    slots
-      .filter(
-        (slot): slot is BuildParameterSlot =>
-          slot.type === "build_parameter" && !!slot.scaler,
-      )
-      .map((slot) => slot.path),
-  );
-  const findings: LintFinding[] = [];
-  for (const bonus of bonuses) {
-    bonus.grants?.forEach((grant, index) => {
-      if (grant.scaledBy === undefined || scalerPaths.has(grant.scaledBy))
-        return;
-      findings.push({
-        level: "error",
-        kind: "bonus",
-        name: bonus.id,
-        message:
-          `grant ${index + 1}: scaledBy names "${grant.scaledBy}", which is not a ` +
-          `parameter declaring a scaler; the grant would apply unscaled`,
-      });
-    });
   }
   return findings;
 }
@@ -2007,7 +2173,6 @@ export function validate(
     ...validatePresets(presets, slots, sections),
     ...validateParamSchema(slots, schema),
     ...validateParamReaders(slots, bonuses),
-    ...validateScaledBy(slots, bonuses),
     ...validateBonusAttachments(items, bonuses),
     ...validateReplacements(items, schema),
     ...validateMaxCopies(items, slots, db.filterDefaultsOf(filters)),
@@ -2075,6 +2240,12 @@ export function validate(
     ].filter((value): value is string => typeof value === "string" && !!value),
   );
   const bonusIds = new Set(bonuses.map((bonus) => bonus.id));
+  const formulaVocabulary = (): FormulaVocabulary => ({
+    paramSlots,
+    bonusIds,
+    itemIds: new Set(byId.keys()),
+    tags: new Set(items.flatMap((item) => item.tags ?? [])),
+  });
   const seenIds = new Set();
   const gameIdOwners = new Map<string, Set<string>>();
   const paramSlots = new Map<string, BuildParameterSlot>();
@@ -2420,6 +2591,7 @@ export function validate(
     }
   }
 
+  let vocabulary: FormulaVocabulary | undefined;
   for (const bonus of bonuses) {
     if (!bonus.id) {
       report("error", "a bonus has no id");
@@ -2430,8 +2602,13 @@ export function validate(
     const inputs = bonus.inputs ?? {};
     checkInputDefs(inputs, bonusReport);
     const readInputs = new Set<string>();
+    if (bonus.formulas || formulaSites(bonus).length) {
+      vocabulary ??= formulaVocabulary();
+      checkBonusFormulas(bonus, vocabulary, bonusReport, readInputs);
+    }
     bonus.grants?.forEach((grant, index) => {
       const label = `grant ${index + 1}`;
+      checkGrantShape(grant, label, bonus, bonusReport);
       checkConditions(grant.when, label, bonusReport, paramSlots, inputs);
       inputNames(grant.when, readInputs);
       for (const variant of grant.variants ?? []) {
@@ -2467,10 +2644,6 @@ export function validate(
       occurrenceTargets(grant.when, targets);
       for (const variant of grant.variants ?? [])
         occurrenceTargets(variant.when, targets);
-      for (const tier of grant.tiers ?? []) {
-        const named = tier.bonusOccurrences?.bonus;
-        if (named !== undefined) targets.push(named);
-      }
       for (const target of new Set(targets)) {
         if (target === bonus.id) {
           report(
@@ -2491,7 +2664,10 @@ export function validate(
     });
     for (const name of Object.keys(inputs)) {
       if (!readInputs.has(name))
-        bonusReport("warn", `input "${name}" is never read by a condition`);
+        bonusReport(
+          "warn",
+          `input "${name}" is never read by a condition or formula`,
+        );
     }
   }
 

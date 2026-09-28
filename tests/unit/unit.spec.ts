@@ -765,18 +765,9 @@ describe("BonusOccurrenceConfig resolution", () => {
     grants: [
       {
         tiers: [
-          {
-            bonusOccurrences: { bonus: "tier-bonus", atLeast: 1 },
-            stats: { power_p: 0.01 },
-          },
-          {
-            bonusOccurrences: { bonus: "tier-bonus", atLeast: 3 },
-            stats: { power_p: 0.05 },
-          },
-          {
-            bonusOccurrences: { bonus: "tier-bonus", atLeast: 5 },
-            stats: { power_p: 0.1 },
-          },
+          { atLeast: 1, stats: { power_p: 0.01 } },
+          { atLeast: 3, stats: { power_p: 0.05 } },
+          { atLeast: 5, stats: { power_p: 0.1 } },
         ],
       },
     ],

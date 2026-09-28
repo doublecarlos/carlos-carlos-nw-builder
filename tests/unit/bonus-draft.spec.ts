@@ -101,7 +101,7 @@ describe("bonus-draft problem payload", () => {
   it("problem combined with tiers or variants falls through to JSON, same as tiers+variants does", () => {
     const withTiers: Grant = {
       problem: { severity: "error", message: "x" },
-      tiers: [{ bonusOccurrences: { bonus: "s", atLeast: 1 }, stats: {} }],
+      tiers: [{ atLeast: 1, stats: {} }],
     };
     expect(needsJson(withTiers)).toBe(true);
 
@@ -169,12 +169,14 @@ describe("bonus-draft short/long description", () => {
   });
 });
 
-describe("bonus-draft scaledBy", () => {
-  it("round-trips on a flat grant and stays in the form", () => {
+describe("bonus-draft scale", () => {
+  const byScaler = { formula: 'scaler("scalers.encounterDamage")' };
+
+  it("round-trips a single scaler() on a flat grant and stays in the form", () => {
     const grant: Grant = {
       when: { toggle: "combat" },
       stats: { outgoing_damage: 0.15 },
-      scaledBy: "scalers.encounterDamage",
+      scale: byScaler,
     };
     expect(needsJson(grant)).toBe(false);
     const draft = toDraft(grant);
@@ -184,10 +186,8 @@ describe("bonus-draft scaledBy", () => {
 
   it("round-trips alongside a tiered payload, since it applies per grant", () => {
     const grant: Grant = {
-      tiers: [
-        { bonusOccurrences: { atLeast: 1 }, stats: { outgoing_damage: 0.22 } },
-      ],
-      scaledBy: "scalers.encounterDamage",
+      tiers: [{ atLeast: 1, stats: { outgoing_damage: 0.22 } }],
+      scale: byScaler,
     };
     expect(toGrant(toDraft(grant))).toEqual(grant);
   });
@@ -195,11 +195,28 @@ describe("bonus-draft scaledBy", () => {
   it("clearing it in the draft drops the key from the rebuilt grant", () => {
     const draft = toDraft({
       stats: { outgoing_damage: 0.15 },
-      scaledBy: "scalers.encounterDamage",
+      scale: byScaler,
     });
     draft.scaledBy = "";
-    expect(toGrant(draft)).not.toHaveProperty("scaledBy");
-    expect(toGrant(toDraft({ stats: {} }))).not.toHaveProperty("scaledBy");
+    expect(toGrant(draft)).not.toHaveProperty("scale");
+    expect(toGrant(toDraft({ stats: {} }))).not.toHaveProperty("scale");
+  });
+
+  it("any other formula, a labeled scale, tierBy or an unknown key forces JSON", () => {
+    const stats = { outgoing_damage: 0.15 };
+    expect(needsJson({ stats, scale: { formula: "duration / 5" } })).toBe(true);
+    expect(needsJson({ stats, scale: { ...byScaler, label: "Share" } })).toBe(
+      true,
+    );
+    expect(
+      needsJson({
+        tierBy: { formula: "duration" },
+        tiers: [{ atLeast: 1, stats }],
+      }),
+    ).toBe(true);
+    expect(
+      needsJson({ stats, scaledBy: "scalers.encounterDamage" } as Grant),
+    ).toBe(true);
   });
 });
 
@@ -261,7 +278,7 @@ describe("bonus-draft dynamic stats", () => {
   it("dynamicStats combined with tiers, variants, or problem on the same grant forces JSON", () => {
     const withTiers: Grant = {
       dynamicStats: [{ stat: "power", min: 0, max: 5, default: 1 }],
-      tiers: [{ bonusOccurrences: { bonus: "s", atLeast: 1 }, stats: {} }],
+      tiers: [{ atLeast: 1, stats: {} }],
     };
     expect(needsJson(withTiers)).toBe(true);
 
@@ -310,20 +327,24 @@ describe("bonus-draft grant with an equipped.below condition", () => {
 });
 
 describe("bonus-draft tiers", () => {
-  it("a tier naming no bonus round-trips without one, and an explicit bonus is kept", () => {
+  it("a tier ladder round-trips through the form", () => {
     const grant: Grant = {
       tiers: [
-        { bonusOccurrences: { atLeast: 1 }, stats: { power: 1 } },
-        {
-          bonusOccurrences: { bonus: "other", atLeast: 2 },
-          stats: { power: 2 },
-        },
+        { atLeast: 1, stats: { power: 1 } },
+        { atLeast: 2, stats: { power: 2 } },
       ],
     };
     expect(needsJson(grant)).toBe(false);
     const draft = toDraft(grant);
-    expect(draft.tiers.map((tier) => tier.bonus)).toEqual(["", "other"]);
+    expect(draft.tiers.map((tier) => tier.atLeast)).toEqual([1, 2]);
     expect(toGrant(draft)).toEqual(grant);
+  });
+
+  it("a tier missing atLeast or carrying another key forces JSON", () => {
+    const old = {
+      tiers: [{ bonusOccurrences: { atLeast: 1 }, stats: {} }],
+    } as unknown as Grant;
+    expect(needsJson(old)).toBe(true);
   });
 });
 

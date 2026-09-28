@@ -9,6 +9,7 @@ import {
 import { descriptionParagraphs } from "./description";
 import { findParamSlot } from "./build-path";
 import { isHiddenBonus } from "../engine/bonus";
+import { formatNumber } from "../engine/formula";
 import type { OccurrenceRow } from "../composables/useItemBonusOccurrences";
 import type {
   BonusSource,
@@ -41,7 +42,8 @@ export interface StatLine {
 }
 
 /** What a note needs to know about one scaler acting on a value: `ResolvedScaler` and
- *  `GrantScale` both carry these fields. */
+ *  `GrantScale` both carry these fields. A factor with a `path` is a scaler's multiplier,
+ *  shown as a percentage; one without is a formula's plain result. */
 export type ScaleFactor = Pick<GrantScale, "label" | "multiplier" | "path">;
 
 /**
@@ -50,7 +52,7 @@ export type ScaleFactor = Pick<GrantScale, "label" | "multiplier" | "path">;
  * scaler. Scalers compose multiplicatively (scaling.ts's `scaleFactorFor`), so listing each
  * factor in turn keeps every label next to its own number and every link on its own name. The
  * scaler's name links to its parameter slot when `slots` has it; without a catalog (the layer
- * editor's preview card) it stays text.
+ * editor's preview card) or a scaler behind it, it stays text.
  */
 export function scaleNote(
   rawValue: number | undefined,
@@ -61,8 +63,8 @@ export function scaleNote(
   const parts: NotePart[] = [];
   let text = formatStat(statKey, rawValue);
   for (const { label, multiplier, path } of scalers) {
-    text += ` x ${pct(multiplier)} `;
-    const slotId = findParamSlot(slots, path)?.id;
+    text += ` x ${path ? pct(multiplier) : formatNumber(multiplier)} `;
+    const slotId = path ? findParamSlot(slots, path)?.id : undefined;
     parts.push({ text }, slotId ? { text: label, slotId } : { text: label });
     text = "";
   }
@@ -182,7 +184,7 @@ function tierGrant(entry: EvaluatedBonus) {
   return entry.grants?.find((g) => g.raw.tiers) ?? null;
 }
 
-// Tiers have no `when` of their own (bonus.ts matches occurrence count directly), so the
+// Tiers have no `when` of their own (bonus.ts matches the `tierBy` measure directly), so the
 // active tier is read off `chose` instead of the gate. Every rung shows what it would grant
 // under the grant's scaler, with the real value in its note.
 function tierLadderFor(grant: ResolvedGrant | null, slots: Slot[]) {
@@ -194,7 +196,7 @@ function tierLadderFor(grant: ResolvedGrant | null, slots: Slot[]) {
       : null;
   return tiers
     .map((tier) => {
-      const atLeast = tier.bonusOccurrences?.atLeast ?? 1;
+      const { atLeast } = tier;
       const active = atLeast === activeAt;
       return {
         atLeast,
@@ -263,13 +265,15 @@ function previewStatsFor(
 }
 
 // Every line scaled and annotated: the effective value on the row, the real one and the
-// scaler in the note, so the number shown never silently disagrees with the catalog.
+// scaler in the note, so the number shown never silently disagrees with the catalog. A scale
+// of 0 keeps the grant inactive, so its preview shows the real value beside the "x 0" note.
 function scaledLines(
   unscaled: StatValues,
   scale: GrantScale,
   slots: Slot[],
 ): StatLine[] {
-  return statList(unscaled, scale.multiplier).map((line) => ({
+  const factor = scale.multiplier > 0 ? scale.multiplier : 1;
+  return statList(unscaled, factor).map((line) => ({
     ...line,
     note: scaleNote(unscaled[line.key], line.key, [scale], slots),
   }));

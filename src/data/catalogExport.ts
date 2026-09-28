@@ -13,6 +13,7 @@ import type {
   BonusOccurrenceSpec,
   ConditionWhen,
   DynamicStatConfig,
+  FormulaRef,
   Grant,
   GrantTier,
   GrantVariant,
@@ -40,6 +41,7 @@ const BONUS_KEYS = [
   "id",
   "name",
   "inputs",
+  "formulas",
   "grants",
   "excludes",
   "stacking",
@@ -51,9 +53,10 @@ const GRANT_KEYS = [
   "stats",
   "dynamicStats",
   "variants",
+  "tierBy",
   "tiers",
   "problem",
-  "scaledBy",
+  "scale",
   "shortDescription",
   "longDescription",
 ] as const;
@@ -68,7 +71,15 @@ const INPUT_KEYS = [
   "default",
 ] as const;
 const VARIANT_KEYS = ["when", "stats", "dynamicStats"] as const;
-const TIER_KEYS = ["bonusOccurrences", "stats"] as const;
+const TIER_KEYS = ["atLeast", "stats"] as const;
+const FORMULA_KEYS = ["formula", "label"] as const;
+const FORMULA_LEAF_KEYS = [
+  "formula",
+  "label",
+  "atLeast",
+  "below",
+  "exactly",
+] as const;
 const PROBLEM_KEYS = [
   "severity",
   "message",
@@ -133,6 +144,7 @@ function implicitSelf(
   return rest;
 }
 
+/** Also puts each formula leaf's keys in order. */
 function whenWithImplicitSelf(
   when: ConditionWhen,
   self: string,
@@ -140,6 +152,7 @@ function whenWithImplicitSelf(
   const out: ConditionWhen = { ...when };
   if (out.bonusOccurrences)
     out.bonusOccurrences = implicitSelf(out.bonusOccurrences, self);
+  if (out.formula) out.formula = orderKeys(out.formula, FORMULA_LEAF_KEYS);
   if (out.all) out.all = out.all.map((sub) => whenWithImplicitSelf(sub, self));
   if (out.any) out.any = out.any.map((sub) => whenWithImplicitSelf(sub, self));
   if (out.not) out.not = whenWithImplicitSelf(out.not, self);
@@ -185,15 +198,6 @@ function grantWithImplicitSelf(grant: Grant, self: string): Grant {
   const out: Grant = withWhen(grant, self);
   if (out.variants)
     out.variants = out.variants.map((variant) => withWhen(variant, self));
-  if (out.tiers)
-    out.tiers = out.tiers.map((tier) =>
-      tier.bonusOccurrences
-        ? {
-            ...tier,
-            bonusOccurrences: implicitSelf(tier.bonusOccurrences, self),
-          }
-        : tier,
-    );
   return out;
 }
 
@@ -204,6 +208,9 @@ function canonicalVariant(variant: GrantVariant, schema: Schema): GrantVariant {
     out.dynamicStats = canonicalDynamicStats(out.dynamicStats);
   return out;
 }
+
+const canonicalFormula = (ref: FormulaRef): FormulaRef =>
+  orderKeys(ref, FORMULA_KEYS);
 
 function canonicalTier(tier: GrantTier, schema: Schema): GrantTier {
   const out = orderKeys(tier, TIER_KEYS);
@@ -223,6 +230,8 @@ function canonicalGrant(grant: Grant, self: string, schema: Schema): Grant {
   if (out.tiers)
     out.tiers = out.tiers.map((tier) => canonicalTier(tier, schema));
   if (out.problem) out.problem = orderKeys(out.problem, PROBLEM_KEYS);
+  if (out.scale) out.scale = canonicalFormula(out.scale);
+  if (out.tierBy) out.tierBy = canonicalFormula(out.tierBy);
   return out;
 }
 
@@ -240,6 +249,14 @@ export function toBonusesFile(
             Object.entries(bonus.inputs).map(([name, def]) => [
               name,
               orderKeys(def, INPUT_KEYS),
+            ]),
+          ),
+        }),
+        ...(bonus.formulas && {
+          formulas: Object.fromEntries(
+            Object.entries(bonus.formulas).map(([name, ref]) => [
+              name,
+              canonicalFormula(ref),
             ]),
           ),
         }),

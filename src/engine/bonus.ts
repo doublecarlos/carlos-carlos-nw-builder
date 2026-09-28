@@ -6,6 +6,14 @@
 
 import * as conditions from "./conditions";
 import { bonusInputSpec } from "./inputs";
+import {
+  evaluateFormula,
+  formulaLabel,
+  formulaScope,
+  formulaText,
+  singleRead,
+} from "./formula";
+import { occurrenceCount } from "./lookups";
 import { getPath } from "../lib/build-path";
 import { bonusIdOf, occurrenceCountFor } from "../lib/bonus-attachment";
 import { assignedRows, inlineRepetitionCount } from "../lib/inline-repetition";
@@ -29,8 +37,11 @@ import type {
   DynamicStatConfig,
   EvalContext,
   ConditionExplain,
+  ConditionWhen,
+  ConditionLeafResult,
   GrantEvaluation,
   GrantScale,
+  GrantTier,
   BonusEvaluation,
   EvaluatedBonus,
   PointAssignmentSlot,
@@ -433,28 +444,51 @@ function withDynamicStats(
   return out;
 }
 
-/** The scaler a grant's `scaledBy` names, as the display record `GrantEvaluation.scale`
- *  carries. A scaler the context does not know resolves to nothing: catalog validation
- *  rejects the reference, so this only happens for an overlay in flux, and leaving the grant
- *  unscaled keeps the bonus visible rather than zeroing it. */
+/** A grant's `scale` resolved against the context, as the display record
+ *  `GrantEvaluation.scale` carries. A failed or negative formula resolves to a multiplier of 0
+ *  with its `error`, which the caller reports only while the grant's gate is met. */
 function grantScale(
   grant: Grant,
   ctx: EvalContext,
 ): Omit<GrantScale, "unscaled"> | undefined {
-  const scaler =
-    grant.scaledBy === undefined ? undefined : ctx.scalers.get(grant.scaledBy);
-  if (!scaler) return undefined;
-  const { path, label, value, multiplier } = scaler;
-  return { path, label, value, multiplier };
+  if (!grant.scale) return undefined;
+  const formula = formulaText(grant.scale);
+  const result = evaluateFormula(grant.scale.formula, ctx);
+  const read = singleRead(grant.scale.formula);
+  const base = {
+    formula,
+    label: formulaLabel(grant.scale, ctx) ?? formula,
+    ...(read?.kind === "scaler" && { path: read.path }),
+  };
+  if (!result.ok) return { ...base, multiplier: 0, error: result.error };
+  if (result.value < 0) {
+    const error = `${formula} is negative (${result.value})`;
+    return { ...base, multiplier: 0, error };
+  }
+  return { ...base, multiplier: result.value };
 }
 
-/** Applies a scaler's multiplier to a resolved payload. Returns `stats` unchanged (same
- *  reference) when nothing scales it. */
+/** The unmet requirement a scale not above 0 adds to its grant's gate, so the grant reads as
+ *  one step from active, like a carrier at 0. */
+function scaleLeaf(
+  scale: Omit<GrantScale, "unscaled">,
+): ConditionLeafResult | null {
+  if (scale.multiplier > 0) return null;
+  return {
+    ok: false,
+    label: `${scale.label} > 0`,
+    detail: scale.error ?? "you have 0",
+  };
+}
+
+/** Applies a scale's multiplier to a resolved payload. Returns `stats` unchanged (same
+ *  reference) when nothing scales it, and at a multiplier of 0, where the payload previews
+ *  at its real value. */
 function scaledStats(
   stats: StatValues,
   scale: Pick<GrantScale, "multiplier"> | undefined,
 ): StatValues {
-  if (!scale) return stats;
+  if (!scale || !(scale.multiplier > 0)) return stats;
   return Object.fromEntries(
     Object.entries(stats).map(([key, value]) => [
       key,
@@ -482,10 +516,28 @@ function evaluateGrant(
   ctx: EvalContext,
   dynamicValues: Record<string, number> = {},
 ): GrantEvaluation {
-  const gate = conditions.explain(grant.when, ctx);
+  // A formula error becomes a slot error only where it decides the outcome, so a grant that is
+  // off for another reason stays quiet.
+  const report = (errors: string[]) => {
+    for (const error of errors) ctx.formulas?.errors.add(error);
+  };
+  const settle = (when: ConditionWhen | undefined) =>
+    conditions.settleErrors(when, ctx, conditions.explain(when, ctx));
 
   // Carried on every shape, active or not, so an inactive grant's preview can scale too.
   const scale = grantScale(grant, ctx);
+  const unmetScale = scale && scaleLeaf(scale);
+  const { gate: explained, errors } = settle(grant.when);
+  report(errors);
+  if (explained.ok && scale?.error) report([scale.error]);
+  const gate: ConditionExplain = unmetScale
+    ? {
+        ok: false,
+        leaves: [...explained.leaves, unmetScale],
+        unmet: [...explained.unmet, unmetScale],
+      }
+    : explained;
+
   const inactive = (extra: Partial<GrantEvaluation> = {}): GrantEvaluation => ({
     active: false,
     gate,
@@ -498,13 +550,10 @@ function evaluateGrant(
 
   // Explained even under an unmet gate: the hover card labels each variant rung by its own
   // conditions, and without them every rung would read as unconditional.
-  const explainVariants = () =>
-    grant.variants?.map((v) => conditions.explain(v.when, ctx));
+  const settled = grant.variants?.map((v) => settle(v.when));
+  const variantBranches = settled?.map((v) => v.gate);
 
-  if (!gate.ok) {
-    const variantBranches = explainVariants();
-    return inactive(variantBranches ? { variantBranches } : {});
-  }
+  if (!gate.ok) return inactive(variantBranches ? { variantBranches } : {});
 
   // `problem`: reports a build error/warning instead of granting stats.
   if (grant.problem) {
@@ -520,11 +569,11 @@ function evaluateGrant(
   // `variants`: first match wins (role-dependent payloads). Every branch is explained (not just
   // up to the first match) so the hover card can show why the *other* branches didn't apply
   // too, not only the one that won.
-  if (grant.variants) {
-    const variantBranches = grant.variants.map((v) =>
-      conditions.explain(v.when, ctx),
-    );
+  if (grant.variants && settled && variantBranches) {
     const index = variantBranches.findIndex((b) => b.ok);
+    // Branches past the first match are never reached, so their errors decide nothing.
+    const reached = index === -1 ? settled : settled.slice(0, index + 1);
+    for (const branch of reached) report(branch.errors);
     return index === -1
       ? inactive({ variantBranches })
       : {
@@ -544,30 +593,30 @@ function evaluateGrant(
         };
   }
 
-  // `tiers`: highest matching occurrence threshold wins. Payloads are absolute, not cumulative
-  // -- the legacy exact-match on occurrence count made them mutually exclusive.
+  // `tiers`: a threshold ladder over `tierBy`, the highest threshold reached wins. Payloads
+  // are absolute, not cumulative.
   if (grant.tiers) {
-    let best: (typeof grant.tiers)[number] | null = null;
-    let bestAt = -1;
+    const measure = grant.tierBy
+      ? evaluateFormula(grant.tierBy.formula, ctx)
+      : { ok: true as const, value: occurrenceCount(ctx) };
+    if (!measure.ok) {
+      report([measure.error]);
+      return inactive();
+    }
+    let best: GrantTier | null = null;
     for (const tier of grant.tiers) {
-      const need = tier.bonusOccurrences?.atLeast ?? 1;
       if (
-        need > bestAt &&
-        conditions.evaluate(
-          { bonusOccurrences: tier.bonusOccurrences ?? {} },
-          ctx,
-        )
-      ) {
+        tier.atLeast <= measure.value &&
+        tier.atLeast > (best?.atLeast ?? -Infinity)
+      )
         best = tier;
-        bestAt = need;
-      }
     }
     return best
       ? {
           active: true,
           gate,
           ...scaledPayload(best.stats, scale),
-          chose: `tier:${bestAt}`,
+          chose: `tier:${best.atLeast}`,
           problem: null,
         }
       : inactive();
@@ -616,11 +665,13 @@ export function evaluateBonus(
     inputValues?: Record<string, number | boolean>;
   } = {},
 ): BonusEvaluation {
-  // What an occurrence leaf naming no bonus counts (`EvalContext.self`), and the inputs an
-  // input leaf reads.
+  // What an occurrence leaf naming no bonus counts (`EvalContext.self`), the inputs an input
+  // leaf reads, and the named formulas any formula reads.
+  const formulas = formulaScope(bonus);
   const own: EvalContext = {
     ...ctx,
     self: bonus.id,
+    formulas,
     inputs: new Map(
       Object.entries(bonus.inputs ?? {}).map(([name, def]) => {
         const { label, format } = bonusInputSpec(def, name);
@@ -706,6 +757,7 @@ export function evaluateBonus(
     previewStats,
     grants: results,
     problems,
+    formulaErrors: hasSources ? [...formulas.errors] : [],
   };
 }
 
@@ -855,6 +907,7 @@ export function resolve(db: Db, build: Build): ResolvedBonuses {
       inputValues,
       grants: result.grants,
       problems: result.problems,
+      formulaErrors: result.formulaErrors,
       stacks,
       excluded: false,
       excludedBy: null as string | null,

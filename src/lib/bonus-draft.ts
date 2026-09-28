@@ -11,9 +11,9 @@
 // `all`/`any`/`not`, see condition-draft.ts), a flat stat payload (optionally with its own
 // dynamic stats), a *tiered* payload keyed on bonus occurrences, and a *variants* payload
 // (first matching condition wins, each with its own optional dynamic stats). Only conditions
-// nested deeper than `MAX_DEPTH`, unrecognized condition keys, complex tiers, or a grant using
-// both `tiers` and `variants` fall through to the JSON escape hatch: the editor never silently
-// flattens a structure it has no widget for.
+// nested deeper than `MAX_DEPTH`, unrecognized condition keys, complex tiers, a grant using
+// both `tiers` and `variants`, or a formula the form has no field for fall through to the JSON
+// escape hatch: the editor never silently flattens a structure it has no widget for.
 //
 // Stacking/`excludes` are a *bonus*-level property now (one grant among several shouldn't
 // imply the whole bonus stacks), so they're edited once by the caller (BonusForm.vue/
@@ -37,8 +37,9 @@ import {
   type DiffCheck,
 } from "./draft-fields";
 import { deepEqual } from "./deep-equal";
+import { scalerFormula, singleRead } from "../engine/formula";
 import type {
-  BonusOccurrenceSpec,
+  FormulaRef,
   Grant,
   GrantVariant,
   GrantProblem,
@@ -49,10 +50,21 @@ import type {
   NumberControl,
 } from "../types";
 
-// Exactly what the engine reads off a tier (bonus.ts `evaluateBonus`). Anything else on a
-// tier would be dropped by the form, so its presence forces JSON mode instead.
-const TIER_KEYS = new Set(["bonusOccurrences", "stats"]);
-const OCCURRENCE_KEYS = new Set(["bonus", "atLeast"]);
+// Exactly what the form edits on a grant and a tier. Anything else would be dropped by the
+// form, so its presence forces JSON mode instead.
+const GRANT_KEYS = new Set([
+  "name",
+  "when",
+  "stats",
+  "dynamicStats",
+  "variants",
+  "tiers",
+  "problem",
+  "scale",
+  "shortDescription",
+  "longDescription",
+]);
+const TIER_KEYS = new Set(["atLeast", "stats"]);
 const VARIANT_KEYS = new Set(["when", "stats", "dynamicStats"]);
 const PROBLEM_KEYS = new Set([
   "severity",
@@ -66,12 +78,18 @@ const tiersAreSimple = (tiers: NonNullable<Grant["tiers"]>) =>
   (tiers ?? []).every(
     (tier) =>
       Object.keys(tier).every((key) => TIER_KEYS.has(key)) &&
-      tier.bonusOccurrences &&
-      typeof tier.bonusOccurrences === "object" &&
-      Object.keys(tier.bonusOccurrences).every((key) =>
-        OCCURRENCE_KEYS.has(key),
-      ),
+      typeof tier.atLeast === "number",
   );
+
+/** The scaler path of a `scale` the form's "Scaled by" field can show: a single
+ *  `scaler(...)` with no label of its own. */
+const scaledByPath = (scale: FormulaRef | undefined): string | null => {
+  if (!scale) return "";
+  if (scale.label !== undefined || typeof scale.formula !== "string")
+    return null;
+  const read = singleRead(scale.formula);
+  return read?.kind === "scaler" ? read.path : null;
+};
 
 const variantsAreSimple = (variants: NonNullable<Grant["variants"]>) =>
   (variants ?? []).every(
@@ -97,6 +115,8 @@ const problemIsSimple = (problem: GrantProblem) =>
  *  rule `tiers`/`variants`/`problem` already follow. */
 export const needsJson = (grant: Grant) =>
   Boolean(
+    Object.keys(grant).some((key) => !GRANT_KEYS.has(key)) ||
+    scaledByPath(grant.scale) === null ||
     !whenIsRepresentable(grant.when) ||
     (grant.tiers && !tiersAreSimple(grant.tiers)) ||
     (grant.variants && (grant.tiers || !variantsAreSimple(grant.variants))) ||
@@ -184,8 +204,6 @@ export const newVariant = (): VariantDraft => ({
 });
 
 export interface TierDraft {
-  /** Empty means the bonus the tier belongs to (`BonusOccurrenceSpec`). */
-  bonus: string;
   atLeast: number;
   stats: StatRow[];
 }
@@ -209,8 +227,8 @@ export interface GrantDraft {
   name: string;
   shortDescription: string;
   longDescription: string;
-  /** Path of the scaler parameter this grant's stats are multiplied by, or "" for none;
-   * see `Grant.scaledBy`. Per grant like `name`, since it scales whichever payload wins. */
+  /** Path of the scaler parameter this grant's `scale` reads, or "" for none. Per grant like
+   * `name`, since it scales whichever payload wins. Any other `scale` is edited as JSON. */
   scaledBy: string;
 }
 
@@ -233,8 +251,7 @@ export function toDraft(grant: Grant = {}): GrantDraft {
     tiers: json
       ? []
       : (grant.tiers ?? []).map((tier) => ({
-          bonus: tier.bonusOccurrences?.bonus ?? "",
-          atLeast: tier.bonusOccurrences?.atLeast ?? 1,
+          atLeast: tier.atLeast,
           stats: statRows(tier.stats),
         })),
     variants: json
@@ -254,7 +271,7 @@ export function toDraft(grant: Grant = {}): GrantDraft {
     name: json ? "" : (grant.name ?? ""),
     shortDescription: json ? "" : (grant.shortDescription ?? ""),
     longDescription: json ? "" : (grant.longDescription ?? ""),
-    scaledBy: json ? "" : (grant.scaledBy ?? ""),
+    scaledBy: json ? "" : (scaledByPath(grant.scale) ?? ""),
   };
 }
 
@@ -286,12 +303,10 @@ export function toGrant(draft: GrantDraft): Grant {
     putIfSet(out.problem, "label", draft.problemLabel);
     if (draft.problemHideFromPicker) out.problem.hideFromPicker = true;
   } else if (draft.payload === "tiers") {
-    out.tiers = draft.tiers.map((tier) => {
-      const occurrences: BonusOccurrenceSpec = {};
-      putIfSet(occurrences, "bonus", tier.bonus);
-      occurrences.atLeast = Number(tier.atLeast) || 1;
-      return { bonusOccurrences: occurrences, stats: rowsToStats(tier.stats) };
-    });
+    out.tiers = draft.tiers.map((tier) => ({
+      atLeast: Number(tier.atLeast) || 1,
+      stats: rowsToStats(tier.stats),
+    }));
   } else if (draft.payload === "variants") {
     out.variants = draft.variants.map((variant) => {
       const entry: GrantVariant = { stats: rowsToStats(variant.stats) };
@@ -307,7 +322,7 @@ export function toGrant(draft: GrantDraft): Grant {
   putIfSet(out, "name", draft.name);
   putIfSet(out, "shortDescription", draft.shortDescription);
   putIfSet(out, "longDescription", draft.longDescription);
-  putIfSet(out, "scaledBy", draft.scaledBy);
+  if (draft.scaledBy) out.scale = { formula: scalerFormula(draft.scaledBy) };
 
   return out;
 }
@@ -430,6 +445,8 @@ export interface BonusDraft {
   id: string;
   name: string;
   inputs: InputDraft[];
+  /** Carried through unedited. */
+  formulas?: Record<string, FormulaRef>;
   grants: GrantDraft[];
   stacking?: string;
   maxStacks?: number | string | null;
@@ -450,6 +467,7 @@ export function buildDraft(
       ...row,
       frozen: saved,
     })),
+    formulas: source.formulas,
     grants: (source.grants ?? []).map((grant) => toDraft(grant)),
     stacking: source.stacking ?? "",
     maxStacks: source.maxStacks ?? null,
@@ -469,6 +487,8 @@ export function toBonus(draft: BonusDraft): Bonus {
     grants,
   };
   putIfSet(out, "inputs", rowsToInputs(draft.inputs));
+  if (draft.formulas && Object.keys(draft.formulas).length)
+    out.formulas = draft.formulas;
   putIfSet(out, "stacking", draft.stacking);
   if (draft.maxStacks) out.maxStacks = Number(draft.maxStacks);
   putIfSet(out, "excludes", [...(draft.excludes ?? [])]);
@@ -530,6 +550,7 @@ const CHECKS: DiffCheck<Bonus>[] = [
     JSON.stringify(old.inputs) !== JSON.stringify(nw.inputs)
       ? inputsDiffLabel(old.inputs ?? {}, nw.inputs ?? {})
       : null,
+  (old, nw) => (deepEqual(old.formulas, nw.formulas) ? null : "edit formulas"),
   (old, nw) => {
     if (deepEqual(old.grants, nw.grants)) return null;
     const oldCount = (old.grants ?? []).length;

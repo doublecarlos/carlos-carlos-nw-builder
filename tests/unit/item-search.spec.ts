@@ -34,7 +34,7 @@ const setBonus: Bonus = {
       stats: { severity: 400 },
     },
     {
-      tiers: [{ bonusOccurrences: { atLeast: 2 }, stats: { crit_avoid: 250 } }],
+      tiers: [{ atLeast: 2, stats: { crit_avoid: 250 } }],
     },
   ],
 };

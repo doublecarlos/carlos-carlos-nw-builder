@@ -329,8 +329,8 @@ describe("itemCardRows", () => {
   it("builds a tier ladder in ascending order, marking the active tier", () => {
     const raw: Grant = {
       tiers: [
-        { bonusOccurrences: { atLeast: 2 }, stats: { power: 20 } },
-        { bonusOccurrences: { atLeast: 1 }, stats: { power: 10 } },
+        { atLeast: 2, stats: { power: 20 } },
+        { atLeast: 1, stats: { power: 10 } },
       ],
     };
     const [row] = itemCardRows(
@@ -647,7 +647,9 @@ describe("itemCardRows", () => {
         { name: "Item A", slotId: "slot1" },
         { name: "Item B", slotId: "slot2" },
       ],
-      grants: [grantEval({ tiers: [{ stats: {} }] }, { active: true })],
+      grants: [
+        grantEval({ tiers: [{ atLeast: 1, stats: {} }] }, { active: true }),
+      ],
     });
     expect(
       itemCardRows(item({ name: "Item A" }), [tiered], [])[0].sharedWith,
