@@ -5,8 +5,8 @@
 // they are evaluated while a bonus resolves, before any stat is computed.
 //
 // Grammar: numbers, `+ - * /`, unary minus, parentheses, the variables `duration` and
-// `enemies`, `$name` references to the bonus's named formulas, and calls to FUNCTIONS. String
-// literals are only valid as an id or path argument, since ids contain `-`.
+// `enemies`, `$name` references to the bonus's named formulas and number inputs, and calls to
+// FUNCTIONS. String literals are only valid as an id or path argument, since ids contain `-`.
 
 import { equippedCount, occurrenceCount, taggedCount } from "./lookups";
 import type {
@@ -68,19 +68,13 @@ const suggesting = (
   ...(fix && { fix, brief }),
 });
 
-/** One `input()` read. A record so a read of another bonus's input can add fields. */
-export interface InputRead {
-  name: string;
-}
-
 /** Everything a formula looks up, for load validation and relevance. */
 export interface FormulaReads {
   /** `param("path")` paths. */
   params: string[];
   /** `scaler("path")` paths. */
   scalers: string[];
-  inputs: InputRead[];
-  /** `$name` references, without the sigil. */
+  /** `$name` references, without the sigil. `splitNamed` tells inputs from named formulas. */
   named: (Span & { name: string })[];
   /** `occurrences("id")` ids. */
   bonuses: string[];
@@ -91,7 +85,7 @@ export interface FormulaReads {
   /** `tagged("tag")` tags. */
   tags: string[];
   /** Bare identifiers that are not variables. Reported by `checkFormula`, which knows the
-   *  bonus's named formulas and can suggest the missing sigil. */
+   *  bonus's `$` names and can suggest the missing sigil. */
   unknown: (Span & { name: string })[];
 }
 
@@ -176,7 +170,7 @@ interface FormulaFunction {
 
 type LookupCheck = (
   arg: string,
-  owner: Pick<Bonus, "id" | "inputs">,
+  owner: Pick<Bonus, "id">,
   vocabulary: FormulaVocabulary,
 ) => Omit<FormulaLint, keyof Span | "syntax"> | null;
 
@@ -340,42 +334,6 @@ const FUNCTIONS: Record<string, FormulaFunction> = {
             message: `scaler("${path}") is not a parameter declaring a scaler`,
           },
   },
-  // One argument reads the bonus's own input. Kept as a signature list so reading another
-  // bonus's input can be added as further arities.
-  input: {
-    usage: 'input("name")',
-    signatures: [
-      {
-        params: ["string"],
-        compile:
-          ([name], source) =>
-          (ctx) => {
-            const value = ctx.inputs?.get(str(name))?.value;
-            if (typeof value !== "number")
-              throw new FormulaError(
-                `${source} is not a number input of this bonus`,
-              );
-            return value;
-          },
-        reads: ([name], reads) => void reads.inputs.push({ name }),
-      },
-    ],
-    check(name, owner) {
-      const inputs = owner.inputs ?? {};
-      const def = Object.hasOwn(inputs, name) ? inputs[name] : null;
-      if (!def)
-        return {
-          level: "error",
-          message: `input("${name}") is not declared by this bonus`,
-        };
-      if (def.type === "boolean")
-        return {
-          level: "error",
-          message: `input("${name}") is a boolean; formulas read numbers, so test it in "when"`,
-        };
-      return null;
-    },
-  },
 };
 
 export const FORMULA_FUNCTIONS = Object.keys(FUNCTIONS);
@@ -439,10 +397,13 @@ function tokenize(text: string): Token[] {
       i++;
       const raw = match(IDENTIFIER);
       if (!raw)
-        throw new ParseError('"$" must be followed by a formula name', {
-          start,
-          end: i,
-        });
+        throw new ParseError(
+          '"$" must be followed by a formula or input name',
+          {
+            start,
+            end: i,
+          },
+        );
       i += raw.length;
       tokens.push({ type: "named", value: raw, start, end: i });
     } else if (char === '"' || char === "'") {
@@ -586,7 +547,6 @@ const span = ({ start, end }: Span): Span => ({ start, end });
 const emptyReads = (): FormulaReads => ({
   params: [],
   scalers: [],
-  inputs: [],
   named: [],
   bonuses: [],
   ownOccurrences: false,
@@ -768,13 +728,22 @@ function parseUncached(text: string): ParsedFormula {
 
 // Evaluation
 
-/** Evaluates `name`, a named formula of the bonus in `ctx.formulas`, at most once per scope. */
+/** Evaluates `$name`: a named formula of the bonus in `ctx.formulas`, at most once per scope,
+ *  else a number input of the bonus. */
 function evaluateNamed(name: string, ctx: EvalContext): number {
   const scope = ctx.formulas;
   const ref =
     scope && Object.hasOwn(scope.named, name) ? scope.named[name] : null;
-  if (!scope || !ref)
-    throw new FormulaError(`$${name} is not a formula of this bonus`);
+  if (!scope || !ref) {
+    const input = ctx.inputs?.get(name);
+    if (!input)
+      throw new FormulaError(
+        `$${name} is not a formula or input of this bonus`,
+      );
+    if (typeof input.value !== "number")
+      throw new FormulaError(`$${name} is a boolean input, not a number`);
+    return input.value;
+  }
   let result = scope.results.get(name);
   if (result === null) throw new FormulaError(`$${name} refers to itself`);
   if (result === undefined) {
@@ -820,27 +789,71 @@ export const formulaText = (ref: FormulaRef): string =>
 /** The formula reading one scaler's multiplier. */
 export const scalerFormula = (path: string) => `scaler("${path}")`;
 
-/** What a formula consisting of one lookup reads, which is what its label comes from. */
+/** What a formula consisting of one lookup reads, which is what its label comes from. A
+ *  `$name` is a named formula or an input, which `namedKind` tells apart. */
 export function singleRead(
   formula: string,
-):
-  | { kind: "input"; name: string }
-  | { kind: "scaler"; path: string }
-  | { kind: "named"; name: string }
-  | null {
+): { kind: "scaler"; path: string } | { kind: "named"; name: string } | null {
   const { ast } = parseFormula(formula);
   if (ast?.kind === "named") return { kind: "named", name: ast.name };
   if (
     ast?.kind === "call" &&
+    ast.name === "scaler" &&
     ast.args.length === 1 &&
     ast.args[0].kind === "string"
-  ) {
-    const value = ast.args[0].value;
-    if (ast.name === "input") return { kind: "input", name: value };
-    if (ast.name === "scaler") return { kind: "scaler", path: value };
-  }
+  )
+    return { kind: "scaler", path: ast.args[0].value };
   return null;
 }
+
+/** The bonus declarations a `$name` resolves against. */
+export interface NamedScope {
+  inputs?: { has(name: string): boolean };
+  formulas?: Pick<FormulaScope, "named">;
+}
+
+/** What `$name` reads in `scope`: a named formula, else an input. A name declared as both
+ *  reads the formula and fails validation. */
+export function namedKind(
+  name: string,
+  scope: NamedScope,
+): "formula" | "input" | null {
+  const named = scope.formulas?.named;
+  if (named && Object.hasOwn(named, name)) return "formula";
+  return scope.inputs?.has(name) ? "input" : null;
+}
+
+/** `owner`'s declarations as `namedKind` reads them. */
+export const ownerScope = (
+  owner: Pick<Bonus, "inputs" | "formulas">,
+): NamedScope => ({
+  inputs: new Set(Object.keys(owner.inputs ?? {})),
+  formulas: { named: owner.formulas ?? {} },
+});
+
+/** `reads.named` split against the bonus: inputs read and named formulas referenced. Names
+ *  the bonus does not declare are in neither. */
+export function splitNamed(
+  reads: FormulaReads,
+  scope: NamedScope,
+): { inputs: string[]; formulas: string[] } {
+  const inputs: string[] = [];
+  const formulas: string[] = [];
+  for (const { name } of reads.named) {
+    const kind = namedKind(name, scope);
+    if (kind === "input") inputs.push(name);
+    else if (kind === "formula") formulas.push(name);
+  }
+  return { inputs, formulas };
+}
+
+/** Names `owner` declares both as a named formula and as an input. */
+export const inputFormulaClashes = (
+  owner: Pick<Bonus, "inputs" | "formulas">,
+): string[] =>
+  Object.keys(owner.formulas ?? {}).filter((name) =>
+    Object.hasOwn(owner.inputs ?? {}, name),
+  );
 
 /** What a derived label reads. An `EvalContext` is one; the editor builds one from its draft
  *  and catalog, so labels need no build. */
@@ -850,9 +863,9 @@ export interface LabelContext {
   formulas?: Pick<FormulaScope, "named">;
 }
 
-/** The label shown for `ref`: its own, else the one its single lookup derives (an input's or
- *  scaler's label, or a named formula's label). Undefined when there is none, and the caller
- *  shows the formula itself. */
+/** The label shown for `ref`: its own, else the one its single lookup derives (a scaler's
+ *  label, or a `$name`'s: the named formula's or the input's). Undefined when there is none,
+ *  and the caller shows the formula itself. */
 export function formulaLabel(
   ref: FormulaRef,
   ctx: LabelContext,
@@ -861,12 +874,11 @@ export function formulaLabel(
   if (ref.label) return ref.label;
   const read = singleRead(ref.formula);
   if (!read) return undefined;
-  if (read.kind === "input") return ctx.inputs?.get(read.name)?.label;
   if (read.kind === "scaler") return ctx.scalers.get(read.path)?.label;
-  const named = ctx.formulas?.named;
-  const target =
-    named && Object.hasOwn(named, read.name) ? named[read.name] : null;
-  if (!target || depth > 8) return read.name;
+  const kind = namedKind(read.name, ctx);
+  if (kind === "input") return ctx.inputs?.get(read.name)?.label;
+  if (kind !== "formula" || depth > 8) return read.name;
+  const target = ctx.formulas!.named[read.name];
   return formulaLabel(target, ctx, depth + 1) ?? read.name;
 }
 
@@ -876,7 +888,10 @@ export function formulaFormat(
   ctx: EvalContext,
 ): (value: number) => string {
   const read = singleRead(ref.formula);
-  const input = read?.kind === "input" ? ctx.inputs?.get(read.name) : null;
+  const input =
+    read?.kind === "named" && namedKind(read.name, ctx) === "input"
+      ? ctx.inputs?.get(read.name)
+      : null;
   return input?.format ?? formatNumber;
 }
 
@@ -923,8 +938,8 @@ export function formulaSites(bonus: Bonus): FormulaSite[] {
   return out;
 }
 
-/** Problems with `formula` given the named formulas its bonus declares: parse problems,
- *  unknown names (suggesting a missing `$`) and unknown `$names`. */
+/** Problems with `formula` given the `$` names its bonus declares (named formulas and
+ *  inputs): parse problems, unknown names (suggesting a missing `$`) and unknown `$names`. */
 export function checkFormula(
   formula: string,
   named: readonly string[],
@@ -951,7 +966,7 @@ export function checkFormula(
     const hint = closest(reference.name, named);
     issues.push(
       suggesting(
-        `"$${reference.name}" is not a formula of this bonus`,
+        `"$${reference.name}" is not a formula or input of this bonus`,
         reference,
         hint ? { ...span(reference), text: `$${hint}` } : null,
       ),
@@ -988,7 +1003,8 @@ export function namedCycles(named: Record<string, FormulaRef>): string[][] {
   return cycles;
 }
 
-/** Everything `formula` reads, following `$name` references through `named`. */
+/** Everything `formula` reads, following `$name` references through `named`. A `$name` that
+ *  is not in `named` reads an input, which `splitNamed` finds in the returned reads. */
 export function transitiveReads(
   formula: string,
   named: Record<string, FormulaRef>,
@@ -1075,24 +1091,39 @@ export interface FormulaLint extends FormulaIssue {
   syntax: boolean;
 }
 
-/** Every problem with `formula` as a formula of `owner`: its text and named references
- *  (`checkFormula`), then each lookup the catalog cannot satisfy, in text order. Shared
- *  by load validation and the editor, so both say the same thing. */
+/** Every problem with `formula` as a formula of `owner`: its text and `$` references
+ *  (`checkFormula`), then each boolean input read as a number and each lookup the catalog
+ *  cannot satisfy, in text order. Shared by load validation and the editor, so both say the
+ *  same thing. */
 export function lintFormula(
   formula: string,
   owner: Pick<Bonus, "id" | "inputs" | "formulas">,
   vocabulary: FormulaVocabulary,
 ): FormulaLint[] {
-  const out: FormulaLint[] = checkFormula(
-    formula,
-    Object.keys(owner.formulas ?? {}),
-  ).map((issue) => ({ ...issue, level: "error", syntax: true }));
-  for (const call of lookupCalls(parseFormula(formula).ast)) {
+  const inputs = owner.inputs ?? {};
+  const out: FormulaLint[] = checkFormula(formula, [
+    ...Object.keys(owner.formulas ?? {}),
+    ...Object.keys(inputs),
+  ]).map((issue) => ({ ...issue, level: "error", syntax: true }));
+  const parsed = parseFormula(formula);
+  const scope = ownerScope(owner);
+  const problems: FormulaLint[] = [];
+  for (const reference of parsed.reads.named) {
+    if (namedKind(reference.name, scope) !== "input") continue;
+    if (inputs[reference.name].type !== "boolean") continue;
+    problems.push({
+      level: "error",
+      message: `$${reference.name} is a boolean input; formulas read numbers, so test it in "when"`,
+      ...span(reference),
+      syntax: false,
+    });
+  }
+  for (const call of lookupCalls(parsed.ast)) {
     if (call.arg === null) continue;
     const problem = FUNCTIONS[call.name].check!(call.arg, owner, vocabulary);
-    if (problem) out.push({ ...problem, ...span(call), syntax: false });
+    if (problem) problems.push({ ...problem, ...span(call), syntax: false });
   }
-  return out;
+  return [...out, ...problems.sort((a, b) => a.start - b.start)];
 }
 
 // Explaining
@@ -1100,7 +1131,8 @@ export function lintFormula(
 /** One run of a formula's text. A lookup, variable or `$name` carries what it read. */
 export interface FormulaPart {
   text: string;
-  /** Set on a lookup, variable or `$name`. `arg` is a lookup's quoted argument. */
+  /** Set on a lookup, variable or `$name`. `arg` is a lookup's quoted argument or the name
+   *  after `$`, read as `named` for a named formula and `input` for an input. */
   read?: { kind: string; arg?: string };
   /** What the read resolved to, absent when it failed. */
   value?: number;
@@ -1143,7 +1175,13 @@ export function explainFormula(
   const reads: { node: FormulaNode; read: FormulaPart["read"] }[] = [];
   for (const node of nodes(ast)) {
     if (node.kind === "named")
-      reads.push({ node, read: { kind: "named", arg: node.name } });
+      reads.push({
+        node,
+        read: {
+          kind: namedKind(node.name, ctx) === "input" ? "input" : "named",
+          arg: node.name,
+        },
+      });
     else if (node.kind === "variable" && Object.hasOwn(VARIABLES, node.name))
       reads.push({ node, read: { kind: node.name } });
   }

@@ -133,7 +133,7 @@ const reference = computed(() => {
       items: Object.entries(owner?.inputs ?? {})
         .filter(([, def]) => def.type !== "boolean")
         .map(([name, def]) => ({
-          insert: `input("${name}")`,
+          insert: `$${name}`,
           hint: def.label,
         })),
     },

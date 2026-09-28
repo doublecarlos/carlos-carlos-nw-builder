@@ -1,6 +1,6 @@
 // End-to-end coverage for authoring formulas in the layer editor: a grant's scale checked as it
-// is typed and previewed against the build, named formulas offered to every field, a tier
-// measure, and the formula condition leaf, each surviving a save and reopen.
+// is typed and previewed against the build, named formulas and inputs offered to every field,
+// a tier measure, and the formula condition leaf, each surviving a save and reopen.
 import { test, expect, type Locator, type Page } from "@playwright/test";
 import { chooseCombo, openBuilder } from "./support/app";
 import { addLayer, layerRow } from "./support/nav";
@@ -115,7 +115,7 @@ test("a named formula is offered to every field and lends it its label", async (
   await expect(measure).toHaveAttribute("placeholder", "occurrences()");
   await measure.fill("$stack");
   await expect(page.getByTestId("grant-tier-by-issue")).toContainText(
-    '"$stack" is not a formula of this bonus',
+    '"$stack" is not a formula or input of this bonus',
   );
   await page.getByTestId("grant-tier-by-fix").click();
   await expect(measure).toHaveValue("$stacks");
@@ -125,6 +125,40 @@ test("a named formula is offered to every field and lends it its label", async (
   await expect(page.getByTestId("bonus-formula-label")).toHaveValue("Stacks");
   await expect(page.getByTestId("grant-tier-by")).toHaveValue("$stacks");
   await expect(page.getByTestId("grant-scale")).toHaveValue("$stacks");
+});
+
+test("an input is read as $name, sharing its names with the named formulas", async ({
+  page,
+}) => {
+  await newBonusWithGrant(page);
+  await page.getByRole("button", { name: "Add input" }).click();
+  const input = page.locator(".bonus-input-row").last();
+  await input.getByTestId("bonus-input-id").fill("procs");
+  await chooseCombo(input.getByTestId("bonus-input-type"), "number");
+  await input.getByTestId("bonus-input-label").fill("Procs");
+
+  await page.getByTestId("grant-scale-reference-toggle").click();
+  await page
+    .getByTestId("grant-scale-reference")
+    .getByTestId("grant-scale-reference-item")
+    .filter({ hasText: "$procs" })
+    .click();
+  const scale = page.getByTestId("grant-scale");
+  await expect(scale).toHaveValue("$procs");
+  await expect(page.getByTestId("grant-scale-issue")).toHaveCount(0);
+  await expect(page.getByTestId("grant-scale-label")).toHaveAttribute(
+    "placeholder",
+    "Procs",
+  );
+
+  // A formula can't take a name an input already has.
+  await page.getByTestId("add-bonus-formula").click();
+  await page.getByTestId("bonus-formula-name").fill("procs");
+  await expect(page.getByTestId("bonus-formula-name-issue")).toHaveText(
+    "also an input of this bonus; rename the formula",
+  );
+  await page.getByTestId("bonus-formula-name").fill("doubled");
+  await expect(page.getByTestId("bonus-formula-name-issue")).toHaveCount(0);
 });
 
 test("a formula condition leaf edits its formula and range", async ({

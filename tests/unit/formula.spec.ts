@@ -10,10 +10,13 @@ import {
   formulaLabel,
   formulaScope,
   geometric,
+  inputFormulaClashes,
   namedCycles,
+  ownerScope,
   parseFormula,
   perSourceScaleWarning,
   singleRead,
+  splitNamed,
   transitiveReads,
 } from "../../src/engine/formula";
 import { explain } from "../../src/engine/conditions";
@@ -167,17 +170,29 @@ describe("build lookups", () => {
     );
   });
 
-  it("reads the bonus's own number input, but not a boolean one", () => {
+  it("reads the bonus's own number input as $name, but not a boolean one", () => {
     const context = ctx({
       inputs: new Map([
         ["stacks", { label: "Stacks", value: 3, format: String }],
         ["on", { label: "On", value: true, format: String }],
       ]),
     });
-    expect(value('input("stacks") * 2', context)).toBe(6);
-    expect(errorOf('input("on")', context)).toBe(
-      'input("on") is not a number input of this bonus',
+    expect(value("$stacks * 2", context)).toBe(6);
+    expect(errorOf("$on", context)).toBe(
+      "$on is a boolean input, not a number",
     );
+  });
+
+  it("reads a named formula over an input declaring the same name", () => {
+    const context = inBonus(
+      { stacks: { formula: "5" } },
+      {
+        inputs: new Map([
+          ["stacks", { label: "Stacks", value: 3, format: String }],
+        ]),
+      },
+    );
+    expect(value("$stacks", context)).toBe(5);
   });
 
   it("reads duration and enemies", () => {
@@ -222,7 +237,7 @@ describe("named formulas", () => {
       b: { formula: "$a + 1" },
     });
     expect(errorOf("$missing", context)).toBe(
-      "$missing is not a formula of this bonus",
+      "$missing is not a formula or input of this bonus",
     );
     expect(errorOf("$a", context)).toBe("$a refers to itself");
   });
@@ -255,7 +270,7 @@ describe("parse problems", () => {
     expect(issues("")).toEqual([["formula is empty", 0, 0]]);
   });
 
-  it("suggests the missing sigil on a named formula, and a close name otherwise", () => {
+  it("suggests the missing sigil on a $ name, and a close name otherwise", () => {
     expect(issues("stacks * 2", ["stacks"])).toEqual([
       ['unknown name "stacks"; did you mean "$stacks"?', 0, 6],
     ]);
@@ -264,7 +279,7 @@ describe("parse problems", () => {
     ]);
     expect(issues("$stakcs", ["stacks"])).toEqual([
       [
-        '"$stakcs" is not a formula of this bonus; did you mean "$stacks"?',
+        '"$stakcs" is not a formula or input of this bonus; did you mean "$stacks"?',
         0,
         7,
       ],
@@ -290,7 +305,6 @@ describe("parse problems", () => {
     expect(issues("occurrences(1, 2)")[0][0]).toBe(
       "occurrences() takes 0 or 1 arguments",
     );
-    expect(issues('input("a", "b")')[0][0]).toBe("input() takes 1 argument");
     expect(issues("param(duration)")[0][0]).toBe(
       'param() takes a quoted id or path, like param("...")',
     );
@@ -308,14 +322,16 @@ describe("parse problems", () => {
 describe("reads", () => {
   it("lists every path, id and input a formula looks up", () => {
     const { reads } = parseFormula(
-      'param("bolster") * scaler("scalers.x") + input("stacks") + $ramp' +
+      'param("bolster") * scaler("scalers.x") + $stacks + $ramp' +
         ' + occurrences() + occurrences("other") + equipped("ring") + tagged("t")',
     );
     expect(reads).toMatchObject({
       params: ["bolster"],
       scalers: ["scalers.x"],
-      inputs: [{ name: "stacks" }],
-      named: [expect.objectContaining({ name: "ramp" })],
+      named: [
+        expect.objectContaining({ name: "stacks" }),
+        expect.objectContaining({ name: "ramp" }),
+      ],
       bonuses: ["other"],
       ownOccurrences: true,
       items: ["ring"],
@@ -333,8 +349,29 @@ describe("reads", () => {
     expect(all.flatMap((reads) => reads.params)).toEqual(["p"]);
   });
 
+  it("split $ names into inputs and named formulas against the bonus", () => {
+    const scope = ownerScope({
+      inputs: { stacks: { type: "number", default: 0 } },
+      formulas: { ramp: { formula: "1" } },
+    });
+    expect(
+      splitNamed(parseFormula("$stacks + $ramp + $gone").reads, scope),
+    ).toEqual({ inputs: ["stacks"], formulas: ["ramp"] });
+  });
+
   it("parses each distinct text once", () => {
     expect(parseFormula("duration * 2")).toBe(parseFormula("duration * 2"));
+  });
+});
+
+describe("inputFormulaClashes", () => {
+  it("names each formula an input also declares", () => {
+    expect(
+      inputFormulaClashes({
+        inputs: { stacks: { type: "number", default: 0 } },
+        formulas: { stacks: { formula: "1" }, ramp: { formula: "2" } },
+      }),
+    ).toEqual(["stacks"]);
   });
 });
 
@@ -385,7 +422,7 @@ describe("labels", () => {
   const label = (ref: FormulaRef) => formulaLabel(ref, context);
 
   it("derives one from a single input, scaler or named formula", () => {
-    expect(label({ formula: 'input("procs")' })).toBe("Procs");
+    expect(label({ formula: "$procs" })).toBe("Procs");
     expect(label({ formula: 'scaler("scalers.x")' })).toBe("Encounter share");
     expect(label({ formula: "$stacks" })).toBe("Stacks");
     expect(label({ formula: "$share" })).toBe("Encounter share");
@@ -438,10 +475,8 @@ describe("the formula condition leaf", () => {
       ]),
     });
     expect(
-      explain(
-        { formula: { formula: 'input("uptime")', atLeast: 0.75 } },
-        context,
-      ).leaves[0],
+      explain({ formula: { formula: "$uptime", atLeast: 0.75 } }, context)
+        .leaves[0],
     ).toEqual({ ok: false, label: "Uptime ≥ 75%", detail: "you have 50%" });
   });
 });
@@ -491,7 +526,7 @@ describe("lintFormula", () => {
   it("passes a formula whose every lookup the catalog satisfies", () => {
     expect(
       lint(
-        'param("bolster") * scaler("scalers.x") + input("n") + $stacks' +
+        'param("bolster") * scaler("scalers.x") + $n + $stacks' +
           ' + occurrences("other") + equipped("ring") + tagged("t")',
       ),
     ).toEqual([]);
@@ -500,7 +535,7 @@ describe("lintFormula", () => {
   it("marks each lookup it cannot satisfy at the call, after the text's own problems", () => {
     expect(
       lint(
-        'stacks + param("flag") + scaler("bolster") + input("on") + occurrences("self") + tagged("x")',
+        'stacks + param("flag") + scaler("bolster") + $on + occurrences("self") + tagged("x")',
       ),
     ).toEqual([
       [
@@ -523,8 +558,8 @@ describe("lintFormula", () => {
       ],
       [
         "error",
-        'input("on") is a boolean; formulas read numbers, so test it in "when"',
-        'input("on")',
+        '$on is a boolean input; formulas read numbers, so test it in "when"',
+        "$on",
         false,
       ],
       [
@@ -563,6 +598,17 @@ describe("explainFormula", () => {
     ]);
     expect(substituted).toBe("5 * 2 + 1");
     expect(result).toEqual({ ok: true, value: 11 });
+  });
+
+  it("marks a $ input as an input read", () => {
+    const context = ctx({
+      inputs: new Map([["n", { label: "N", value: 3, format: String }]]),
+    });
+    expect(explainFormula("$n + 1", context).parts[0]).toEqual({
+      text: "$n",
+      read: { kind: "input", arg: "n" },
+      value: 3,
+    });
   });
 
   it("keeps a read that fails as text, and carries the failure", () => {

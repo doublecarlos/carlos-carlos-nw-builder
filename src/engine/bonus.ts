@@ -659,7 +659,7 @@ export function isHiddenBonus(bonus: Bonus): boolean {
 }
 
 /** `ctx` as `bonus` reads it: what an occurrence leaf naming no bonus counts (`self`), the
- *  inputs an input leaf reads, and a fresh scope for the named formulas any formula reads. */
+ *  inputs an input leaf and `$name` read, and a fresh scope for the named formulas. */
 export function bonusContext(
   bonus: Pick<Bonus, "id" | "inputs" | "formulas">,
   ctx: EvalContext,

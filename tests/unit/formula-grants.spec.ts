@@ -81,10 +81,19 @@ const gated: Bonus = {
   },
   grants: [
     {
-      when: { formula: { formula: 'input("procs") * 2', atLeast: 6 } },
+      when: { formula: { formula: "$procs * 2", atLeast: 6 } },
       stats: { power: 50 },
     },
   ],
+};
+
+/** 10 power per proc, the count set on the build. */
+const perProc: Bonus = {
+  id: "per-proc",
+  inputs: {
+    procs: { type: "number", min: 0, max: 10, default: 2, label: "Procs" },
+  },
+  grants: [{ stats: { power: 10 }, scale: { formula: "$procs" } }],
 };
 
 const broken: Bonus = {
@@ -182,6 +191,7 @@ const bonuses = [
   ladder,
   counted,
   gated,
+  perProc,
   broken,
   negative,
   malformed,
@@ -398,10 +408,24 @@ describe("the formula condition leaf", () => {
     const inactive = entry(build, "gated");
     expect(inactive.active).toBe(false);
     expect(inactive.gate.unmet).toEqual([
-      { ok: false, label: 'input("procs") * 2 ≥ 6', detail: "you have 4" },
+      { ok: false, label: "$procs * 2 ≥ 6", detail: "you have 4" },
     ]);
     writeInput(build, bonusInputAddress("gated", "procs"), 3);
     expect(entry(build, "gated").active).toBe(true);
+  });
+});
+
+describe("$ inputs", () => {
+  it("scale a grant by the value set on the build", () => {
+    const build = buildWith(["per-proc"]);
+    const scaled = entry(build, "per-proc");
+    expect(scaled.appliedStats).toEqual({ power: 20 });
+    expect(scaled.grants[0].scale).toMatchObject({
+      label: "Procs",
+      multiplier: 2,
+    });
+    writeInput(build, bonusInputAddress("per-proc", "procs"), 5);
+    expect(entry(build, "per-proc").appliedStats).toEqual({ power: 50 });
   });
 });
 
@@ -458,7 +482,7 @@ describe("catalog.validate: formulas", () => {
           inputs: {
             n: { type: "number", min: 0, max: 5, default: 1 },
           },
-          formulas: { base: { formula: 'param("num") + input("n")' } },
+          formulas: { base: { formula: 'param("num") + $n' } },
           grants: [
             {
               stats: { power: 1 },
@@ -491,7 +515,7 @@ describe("catalog.validate: formulas", () => {
             stats: {},
             scale: {
               formula:
-                'param("nope") + param("flag") + scaler("num") + input("on") + input("x")' +
+                'param("nope") + param("flag") + scaler("num") + $on' +
                 ' + occurrences("ghost") + occurrences("lookups") + equipped("ghost") + tagged("ghost")',
             },
           },
@@ -501,8 +525,7 @@ describe("catalog.validate: formulas", () => {
       `error: grant 1 scale: param("nope") is not a build_parameter's path`,
       'error: grant 1 scale: param("flag") is a boolean; formulas read numbers, so test it in "when"',
       'error: grant 1 scale: scaler("num") is not a parameter declaring a scaler',
-      'error: grant 1 scale: input("on") is a boolean; formulas read numbers, so test it in "when"',
-      'error: grant 1 scale: input("x") is not declared by this bonus',
+      'error: grant 1 scale: $on is a boolean input; formulas read numbers, so test it in "when"',
       'error: grant 1 scale: occurrences("ghost") names no bonus',
       'warn: grant 1 scale: occurrences("lookups") names this bonus itself; use occurrences()',
       'error: grant 1 scale: equipped("ghost") names no item',
@@ -531,7 +554,7 @@ describe("catalog.validate: formulas", () => {
       'error: formula "bad-name": a name is a letter or _ then letters, digits or _',
       "error: formulas refer to each other in a loop: $a → $b → $a",
       'error: grant 1 scale: unknown name "a"; did you mean "$a"? (column 1 of "a + $c")',
-      'error: grant 1 scale: "$c" is not a formula of this bonus; did you mean "$a"? (column 5 of "a + $c")',
+      'error: grant 1 scale: "$c" is not a formula or input of this bonus; did you mean "$a"? (column 5 of "a + $c")',
       "warn: grant 1: tierBy does nothing without tiers",
     ]);
   });
@@ -575,11 +598,40 @@ describe("catalog.validate: formulas", () => {
       lint({
         id: "leaf",
         inputs: { n: { type: "number", min: 0, max: 5, default: 1 } },
-        grants: [{ when: { formula: { formula: 'input("n")' } }, stats: {} }],
+        grants: [{ when: { formula: { formula: "$n" } }, stats: {} }],
       }),
     ).toEqual([
       "error: grant 1: formula condition needs atLeast/below/exactly",
     ]);
+  });
+
+  it("rejects a name declared both as a formula and as an input", () => {
+    expect(
+      lint({
+        id: "clash",
+        inputs: { n: { type: "number", min: 0, max: 5, default: 1 } },
+        formulas: { n: { formula: "2" } },
+        grants: [{ stats: {}, scale: { formula: "$n" } }],
+      }),
+    ).toEqual([
+      'error: formula "n": "$n" is also an input of this bonus; rename the formula',
+      // $n reads the formula, leaving the input unread.
+      'warn: input "n" is never read by a condition or formula',
+    ]);
+  });
+
+  it("warns on an input no condition or formula reads", () => {
+    expect(
+      lint({
+        id: "unread",
+        inputs: {
+          n: { type: "number", min: 0, max: 5, default: 1 },
+          m: { type: "number", min: 0, max: 5, default: 1 },
+        },
+        formulas: { twice: { formula: "$n * 2" } },
+        grants: [{ stats: {}, scale: { formula: "$twice" } }],
+      }),
+    ).toEqual(['warn: input "m" is never read by a condition or formula']);
   });
 });
 
@@ -627,6 +679,19 @@ describe("the inspector's formula lines", () => {
         substituted: "1 / 0",
         result: "division by zero in 1 / enemies",
         failed: true,
+      },
+    ]);
+  });
+
+  it("links a $ input to the row where it is set", () => {
+    const [grant] = linesAt("per-proc", {});
+    expect(grant.lines).toEqual([
+      {
+        title: "Scale (Procs)",
+        parts: [{ text: "$procs", slotId: expect.any(String) }],
+        substituted: null,
+        result: "2",
+        failed: false,
       },
     ]);
   });

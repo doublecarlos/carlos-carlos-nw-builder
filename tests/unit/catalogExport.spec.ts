@@ -210,7 +210,7 @@ describe("catalogExport.toBonusesFile", () => {
         {
           tiers: [{ stats: { power: 1 }, atLeast: 2 }],
           tierBy: { label: "Stacks", formula: "$stacks" },
-          scale: { label: "Share", formula: "input('share')" },
+          scale: { label: "Share", formula: "$share" },
         },
         { problem: { message: "m", severity: "error" } },
         {

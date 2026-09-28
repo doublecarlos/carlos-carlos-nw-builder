@@ -25,7 +25,7 @@ import BonusOptionRow from "./BonusOptionRow.vue";
 import BonusInputRowList from "./BonusInputRowList.vue";
 import NamedFormulaRowList from "./NamedFormulaRowList.vue";
 import { provideFormulaContext } from "../../composables/useFormulaContext";
-import { namedCycles } from "../../engine/formula";
+import { inputFormulaClashes, namedCycles } from "../../engine/formula";
 import type { Bonus, BonusOption, Db } from "../../types";
 import type { EntryStatus } from "../../data/catalog";
 import FormSectionDescription from "../ui/FormSectionDescription.vue";
@@ -177,6 +177,9 @@ const formulaContext = provideFormulaContext(() =>
 );
 const formulaCycles = computed(() =>
   namedCycles(formulaContext.owner.value.formulas ?? {}),
+);
+const formulaInputClashes = computed(() =>
+  inputFormulaClashes(formulaContext.owner.value),
 );
 const duplicateFormulaNames = computed(() =>
   bonusDraft.duplicateFormulaNames(draft.value.formulas),
@@ -339,6 +342,7 @@ if (bonusDraftRegistry && props.registryId) {
       <NamedFormulaRowList
         :rows="draft.formulas"
         :cycles="formulaCycles"
+        :clashes="formulaInputClashes"
         @add="draft.formulas.push(bonusDraft.newNamedFormula())"
         @remove="(i) => draft.formulas.splice(i, 1)"
       />
