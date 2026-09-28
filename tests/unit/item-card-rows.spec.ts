@@ -4,10 +4,12 @@ import { describe, it, expect } from "vitest";
 import {
   dynamicNoteText,
   itemCardRows,
+  scaleNote,
   statList,
+  tierHeading,
   withDynamicNotes,
 } from "../../src/lib/item-card-rows";
-import { int, label as statLabel, signedStat } from "../../src/lib/format";
+import { int, label as statLabel, pct, signedStat } from "../../src/lib/format";
 import type {
   DynamicStatConfig,
   EvaluatedBonus,
@@ -339,9 +341,36 @@ describe("itemCardRows", () => {
       [],
     );
     expect(row.grants[0].tiers).toEqual([
-      { atLeast: 1, stats: [line("power", 10)], active: false },
-      { atLeast: 2, stats: [line("power", 20)], active: true },
+      {
+        atLeast: 1,
+        heading: "1 equipped",
+        stats: [line("power", 10)],
+        active: false,
+      },
+      {
+        atLeast: 2,
+        heading: "2 equipped",
+        stats: [line("power", 20)],
+        active: true,
+      },
     ]);
+  });
+
+  it("names a tierBy rung by its measure's label, else its formula", () => {
+    const raw: Grant = {
+      tierBy: { formula: "$stacks" },
+      tiers: [{ atLeast: 3, stats: { power: 1 } }],
+    };
+    const measure = { formula: "$stacks", value: 4 };
+    expect(tierHeading(grantEval(raw, { measure }), 3)).toBe("$stacks ≥ 3");
+    expect(
+      tierHeading(
+        grantEval(raw, { measure: { ...measure, label: "Stacks" } }),
+        3,
+      ),
+    ).toBe("Stacks ≥ 3");
+    // A measure that failed still names the rung by the formula.
+    expect(tierHeading(grantEval(raw), 3)).toBe("$stacks ≥ 3");
   });
 
   it("builds a variant ladder from variantBranches, active flag off `chose`", () => {
@@ -665,5 +694,15 @@ describe("itemCardRows", () => {
     expect(
       itemCardRows(item({ name: "Item A" }), [stacking], [])[0].sharedWith,
     ).toBeNull();
+  });
+});
+
+describe("scaleNote", () => {
+  it("names a labeled formula after its factor, and an unlabeled one not at all", () => {
+    expect(
+      scaleNote(0.018, "strike_p", [{ label: "Stacks", multiplier: 5 }], []),
+    ).toEqual([{ text: `${pct(0.018)} x 5 ` }, { text: "Stacks" }]);
+    const [only] = scaleNote(0.018, "strike_p", [{ multiplier: 5 }], []);
+    expect(only.text.endsWith(" x 5")).toBe(true);
   });
 });

@@ -571,3 +571,40 @@ describe("condition-draft input leaf", () => {
     ).toBe(false);
   });
 });
+
+describe("condition-draft formula leaf", () => {
+  it("round-trips a formula leaf with its label in range and exact modes", () => {
+    for (const when of [
+      { formula: { formula: "$stacks", label: "Stacks", atLeast: 3 } },
+      { formula: { formula: "enemies * 2", atLeast: 1, below: 5 } },
+      { formula: { formula: "$stacks", exactly: 5 } },
+    ]) {
+      expect(whenIsRepresentable(when)).toBe(true);
+      expect(rowsToWhen(whenToRows(when))).toEqual(when);
+    }
+  });
+
+  it("is incomplete until it has a formula and a range, and trims both texts", () => {
+    const row = newLeafRow("formula");
+    expect(whenRowsComplete([row])).toBe(false);
+    row.formula = " $stacks ";
+    expect(whenRowsComplete([row])).toBe(false);
+    row.atLeast = 3;
+    row.label = "  ";
+    expect(whenRowsComplete([row])).toBe(true);
+    expect(rowsToWhen([row])).toEqual({
+      formula: { formula: "$stacks", atLeast: 3 },
+    });
+  });
+
+  it("drops to JSON for a malformed formula or an unknown key", () => {
+    expect(
+      whenIsRepresentable({ formula: { formula: 3, atLeast: 1 } as never }),
+    ).toBe(false);
+    expect(
+      whenIsRepresentable({
+        formula: { formula: "1", atLeast: 1, key: "x" } as never,
+      }),
+    ).toBe(false);
+  });
+});

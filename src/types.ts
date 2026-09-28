@@ -1139,14 +1139,17 @@ export interface GrantEvaluation {
   /** The grant's resolved `scale`, for display. Present whenever `raw.scale` is set, active or
    * not, so an inactive grant's preview scales the same way its live payload would. */
   scale?: GrantScale;
+  /** The value `raw.tierBy` measured, with its label, for naming the tier rungs. Absent
+   * without `tierBy` or when it failed. */
+  measure?: { formula: string; label?: string; value: number };
 }
 
 /** How a grant's payload was scaled: the formula's result and the payload it multiplied,
  * so a card can print the real value beside the effective one. */
 export interface GrantScale {
   formula: string;
-  /** The formula's label, else the formula itself. */
-  label: string;
+  /** The formula's own or derived label. Absent when it has neither. */
+  label?: string;
   /** The scaler's path when the formula is a single `scaler(...)`, so a note can link it. */
   path?: string;
   /** 0 when the formula failed. */

@@ -5,7 +5,7 @@
 import { computed, inject, onMounted, onUnmounted } from "vue";
 import BonusRows from "./BonusRows.vue";
 import IconButton from "../ui/IconButton.vue";
-import { CirclePlus } from "@lucide/vue";
+import { Plus } from "@lucide/vue";
 import ComboBox from "../ui/ComboBox.vue";
 import TokenInput from "../ui/TokenInput.vue";
 import BaseInput from "../ui/BaseInput.vue";
@@ -23,7 +23,10 @@ import { BonusDraftStore } from "../../stores/bonus-draft";
 import { bonusDraftRegistryKey } from "../../composables/bonusDraftRegistry";
 import BonusOptionRow from "./BonusOptionRow.vue";
 import BonusInputRowList from "./BonusInputRowList.vue";
-import type { Bonus, BonusOption, BuildParameterSlot, Db } from "../../types";
+import NamedFormulaRowList from "./NamedFormulaRowList.vue";
+import { provideFormulaContext } from "../../composables/useFormulaContext";
+import { namedCycles } from "../../engine/formula";
+import type { Bonus, BonusOption, Db } from "../../types";
 import type { EntryStatus } from "../../data/catalog";
 import FormSectionDescription from "../ui/FormSectionDescription.vue";
 import OcrTextField from "../ui/OcrTextField.vue";
@@ -167,15 +170,16 @@ const stackingOptions = [
   { value: "perSource", label: "once per contributing slot" },
 ];
 
-/** Every parameter declaring a scaler, read off the composed db so one a layer added is
- *  offered alongside the shipped ones. */
-const scalerOptions = computed<BonusOption[]>(() =>
-  props.db.slots
-    .filter(
-      (slot): slot is BuildParameterSlot =>
-        slot.type === "build_parameter" && Boolean(slot.scaler),
-    )
-    .map((slot) => ({ value: slot.path, label: slot.label })),
+/** What every formula field of the form checks and previews against, read live off the
+ *  draft so a just-declared input or named formula is usable before saving. */
+const formulaContext = provideFormulaContext(() =>
+  bonusDraft.formulaOwner(draft.value, displayId.value),
+);
+const formulaCycles = computed(() =>
+  namedCycles(formulaContext.owner.value.formulas ?? {}),
+);
+const duplicateFormulaNames = computed(() =>
+  bonusDraft.duplicateFormulaNames(draft.value.formulas),
 );
 
 /** The bonus's inputs as the `input` condition leaf offers them, read live off the draft so a
@@ -307,6 +311,61 @@ if (bonusDraftRegistry && props.registryId) {
         <template v-else> Not granted by any item. </template>
       </p>
 
+      <FormSection>Inputs</FormSection>
+      <FormSectionDescription
+        >Values the player sets on the build, on the first item carrying this
+        bonus. Can be used in formulas and in "input"
+        conditions.</FormSectionDescription
+      >
+      <BonusInputRowList
+        :rows="draft.inputs"
+        @add="draft.inputs.push(bonusDraft.newInput())"
+        @remove="(i) => draft.inputs.splice(i, 1)"
+      />
+      <p
+        v-if="duplicateInputNames.length"
+        class="mb-2 text-danger"
+        data-testid="bonus-input-duplicate"
+      >
+        Input ids must be unique: {{ duplicateInputNames.join(", ") }}. Only the
+        last of each is saved.
+      </p>
+
+      <FormSection>Formulas</FormSection>
+      <FormSectionDescription
+        >Named formulas. Can be referenced in other formulas as
+        <code>$name</code>.</FormSectionDescription
+      >
+      <NamedFormulaRowList
+        :rows="draft.formulas"
+        :cycles="formulaCycles"
+        @add="draft.formulas.push(bonusDraft.newNamedFormula())"
+        @remove="(i) => draft.formulas.splice(i, 1)"
+      />
+      <p
+        v-if="duplicateFormulaNames.length"
+        class="mb-2 text-danger"
+        data-testid="bonus-formula-duplicate"
+      >
+        Formula names must be unique: {{ duplicateFormulaNames.join(", ") }}.
+        Only the last of each is saved.
+      </p>
+
+      <FormSection>Grants</FormSection>
+      <BonusRows
+        :store="draftStore"
+        :tags="tags"
+        :bonus-options="bonusOptions"
+        :input-options="inputOptions"
+        :registry-id="registryId"
+        @error="error = $event"
+      />
+      <!-- After the list, where a new grant lands, like the other list sections. -->
+      <div class="mb-1 flex items-center gap-1.5">
+        <IconButton title="Add grant" @click="addGrant"><Plus /></IconButton>
+        <span v-if="!draft.grants.length" class="text-muted">No grants.</span>
+      </div>
+
       <FormSection>Stacking</FormSection>
       <div class="flex flex-wrap items-center gap-1.5 mb-1">
         <FormField label="Behavior">
@@ -314,6 +373,7 @@ if (bonusDraftRegistry && props.registryId) {
             class="w-64"
             :model-value="draft.stacking"
             :options="stackingOptions"
+            data-testid="bonus-stacking"
             @update:model-value="(v) => (draft.stacking = v)"
           />
         </FormField>
@@ -345,43 +405,6 @@ if (bonusDraftRegistry && props.registryId) {
           <BonusOptionRow :option="option" />
         </template>
       </TokenInput>
-
-      <FormSection>Inputs</FormSection>
-      <FormSectionDescription
-        >Values the player sets on the build, on the first item carrying this
-        bonus. Can be used with "input" conditions.</FormSectionDescription
-      >
-      <BonusInputRowList
-        :rows="draft.inputs"
-        @add="draft.inputs.push(bonusDraft.newInput())"
-        @remove="(i) => draft.inputs.splice(i, 1)"
-      />
-      <p
-        v-if="duplicateInputNames.length"
-        class="mb-2 text-danger"
-        data-testid="bonus-input-duplicate"
-      >
-        Input ids must be unique: {{ duplicateInputNames.join(", ") }}. Only the
-        last of each is saved.
-      </p>
-
-      <FormSection>
-        Grants
-        <IconButton title="Add grant" @click="addGrant"
-          ><CirclePlus
-        /></IconButton>
-        <span v-if="!draft.grants.length" class="text-muted">none yet</span>
-      </FormSection>
-
-      <BonusRows
-        :store="draftStore"
-        :tags="tags"
-        :bonus-options="bonusOptions"
-        :input-options="inputOptions"
-        :scaler-options="scalerOptions"
-        :registry-id="registryId"
-        @error="error = $event"
-      />
     </template>
   </div>
 </template>

@@ -33,7 +33,8 @@ const controlOptions = [
 <template>
   <RepeatableRows
     :rows="rows"
-    row-class="bonus-input-row flex flex-wrap items-center gap-1.5 mb-1"
+    row-class="bonus-input-row flex flex-wrap items-start gap-1.5 mb-1"
+    labeled-fields
     add-label="Add input"
     remove-label="Remove input"
     add-testid="add-bonus-input"

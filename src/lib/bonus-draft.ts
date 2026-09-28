@@ -9,11 +9,12 @@
 // label (ItemCard.vue's hover card), optional, for telling a multi-grant bonus's parts apart.
 // What the form covers structurally: the condition tree (leaves plus
 // `all`/`any`/`not`, see condition-draft.ts), a flat stat payload (optionally with its own
-// dynamic stats), a *tiered* payload keyed on bonus occurrences, and a *variants* payload
-// (first matching condition wins, each with its own optional dynamic stats). Only conditions
-// nested deeper than `MAX_DEPTH`, unrecognized condition keys, complex tiers, a grant using
-// both `tiers` and `variants`, or a formula the form has no field for fall through to the JSON
-// escape hatch: the editor never silently flattens a structure it has no widget for.
+// dynamic stats), a *tiered* payload keyed on `tierBy` (bonus occurrences by default), a
+// *variants* payload (first matching condition wins, each with its own optional dynamic stats)
+// and a `scale` formula. Only conditions nested deeper than `MAX_DEPTH`, unrecognized
+// condition keys, complex tiers, a grant using both `tiers` and `variants`, or a malformed
+// formula fall through to the JSON escape hatch: the editor never silently flattens a
+// structure it has no widget for.
 //
 // Stacking/`excludes` are a *bonus*-level property now (one grant among several shouldn't
 // imply the whole bonus stacks), so they're edited once by the caller (BonusForm.vue/
@@ -37,7 +38,6 @@ import {
   type DiffCheck,
 } from "./draft-fields";
 import { deepEqual } from "./deep-equal";
-import { scalerFormula, singleRead } from "../engine/formula";
 import type {
   FormulaRef,
   Grant,
@@ -59,6 +59,7 @@ const GRANT_KEYS = new Set([
   "dynamicStats",
   "variants",
   "tiers",
+  "tierBy",
   "problem",
   "scale",
   "shortDescription",
@@ -81,15 +82,16 @@ const tiersAreSimple = (tiers: NonNullable<Grant["tiers"]>) =>
       typeof tier.atLeast === "number",
   );
 
-/** The scaler path of a `scale` the form's "Scaled by" field can show: a single
- *  `scaler(...)` with no label of its own. */
-const scaledByPath = (scale: FormulaRef | undefined): string | null => {
-  if (!scale) return "";
-  if (scale.label !== undefined || typeof scale.formula !== "string")
-    return null;
-  const read = singleRead(scale.formula);
-  return read?.kind === "scaler" ? read.path : null;
-};
+const FORMULA_KEYS = new Set(["formula", "label"]);
+
+/** Absent, or a `FormulaRef` the formula field edits without losing anything. */
+const formulaIsSimple = (ref: FormulaRef | undefined) =>
+  ref === undefined ||
+  (typeof ref === "object" &&
+    ref !== null &&
+    Object.keys(ref).every((key) => FORMULA_KEYS.has(key)) &&
+    typeof ref.formula === "string" &&
+    (ref.label === undefined || typeof ref.label === "string"));
 
 const variantsAreSimple = (variants: NonNullable<Grant["variants"]>) =>
   (variants ?? []).every(
@@ -116,7 +118,9 @@ const problemIsSimple = (problem: GrantProblem) =>
 export const needsJson = (grant: Grant) =>
   Boolean(
     Object.keys(grant).some((key) => !GRANT_KEYS.has(key)) ||
-    scaledByPath(grant.scale) === null ||
+    !formulaIsSimple(grant.scale) ||
+    !formulaIsSimple(grant.tierBy) ||
+    (grant.tierBy && !grant.tiers) ||
     !whenIsRepresentable(grant.when) ||
     (grant.tiers && !tiersAreSimple(grant.tiers)) ||
     (grant.variants && (grant.tiers || !variantsAreSimple(grant.variants))) ||
@@ -203,10 +207,39 @@ export const newVariant = (): VariantDraft => ({
   dynamicStats: [],
 });
 
+/** One `FormulaRef` as its field edits it. An empty `formula` means none. */
+export interface FormulaDraft {
+  formula: string;
+  label: string;
+}
+
+export const formulaDraft = (ref?: FormulaRef): FormulaDraft => ({
+  formula: ref?.formula ?? "",
+  label: ref?.label ?? "",
+});
+
+/** Undefined for an empty formula, which the site then does without. */
+export function draftToFormula(draft: FormulaDraft): FormulaRef | undefined {
+  const formula = draft.formula.trim();
+  if (!formula) return undefined;
+  const out: FormulaRef = { formula };
+  putIfSet(out, "label", draft.label.trim());
+  return out;
+}
+
 export interface TierDraft {
   atLeast: number;
   stats: StatRow[];
 }
+
+/** A tier row's threshold. 0 and below are kept, since a `tierBy` measure can reach them; a
+ *  cleared field reads as 1. */
+const tierThreshold = (value: number | string): number => {
+  const threshold = Number(value);
+  return String(value).trim() !== "" && Number.isFinite(threshold)
+    ? threshold
+    : 1;
+};
 
 export interface GrantDraft {
   uid: string;
@@ -227,9 +260,10 @@ export interface GrantDraft {
   name: string;
   shortDescription: string;
   longDescription: string;
-  /** Path of the scaler parameter this grant's `scale` reads, or "" for none. Per grant like
-   * `name`, since it scales whichever payload wins. Any other `scale` is edited as JSON. */
-  scaledBy: string;
+  /** Per grant like `name`, since it scales whichever payload wins. */
+  scale: FormulaDraft;
+  /** The measure `tiers` are keyed by. Empty means `occurrences()`. */
+  tierBy: FormulaDraft;
 }
 
 export function toDraft(grant: Grant = {}): GrantDraft {
@@ -271,7 +305,8 @@ export function toDraft(grant: Grant = {}): GrantDraft {
     name: json ? "" : (grant.name ?? ""),
     shortDescription: json ? "" : (grant.shortDescription ?? ""),
     longDescription: json ? "" : (grant.longDescription ?? ""),
-    scaledBy: json ? "" : (scaledByPath(grant.scale) ?? ""),
+    scale: formulaDraft(json ? undefined : grant.scale),
+    tierBy: formulaDraft(json ? undefined : grant.tierBy),
   };
 }
 
@@ -303,8 +338,9 @@ export function toGrant(draft: GrantDraft): Grant {
     putIfSet(out.problem, "label", draft.problemLabel);
     if (draft.problemHideFromPicker) out.problem.hideFromPicker = true;
   } else if (draft.payload === "tiers") {
+    putIfSet(out, "tierBy", draftToFormula(draft.tierBy));
     out.tiers = draft.tiers.map((tier) => ({
-      atLeast: Number(tier.atLeast) || 1,
+      atLeast: tierThreshold(tier.atLeast),
       stats: rowsToStats(tier.stats),
     }));
   } else if (draft.payload === "variants") {
@@ -322,7 +358,7 @@ export function toGrant(draft: GrantDraft): Grant {
   putIfSet(out, "name", draft.name);
   putIfSet(out, "shortDescription", draft.shortDescription);
   putIfSet(out, "longDescription", draft.longDescription);
-  if (draft.scaledBy) out.scale = { formula: scalerFormula(draft.scaledBy) };
+  putIfSet(out, "scale", draftToFormula(draft.scale));
 
   return out;
 }
@@ -412,18 +448,21 @@ export const rowsToInputs = (
     },
   );
 
-/** Names given to more than one row. Only the last of them is saved. */
-export const duplicateInputNames = (rows: InputDraft[]): string[] => {
+function duplicateNames(names: string[]): string[] {
   const seen = new Set<string>();
   const dupes = new Set<string>();
-  for (const row of rows) {
-    const name = row.name.trim();
+  for (const raw of names) {
+    const name = raw.trim();
     if (!name) continue;
     if (seen.has(name)) dupes.add(name);
     seen.add(name);
   }
   return [...dupes];
-};
+}
+
+/** Names given to more than one row. Only the last of them is saved. */
+export const duplicateInputNames = (rows: InputDraft[]): string[] =>
+  duplicateNames(rows.map((row) => row.name));
 
 /** A bonus input as the `input` condition leaf's picker offers it. */
 export interface InputOption {
@@ -441,12 +480,43 @@ export const inputOptions = (rows: InputDraft[]): InputOption[] =>
       type: row.type,
     }));
 
+/** One `Bonus.formulas` entry. */
+export interface NamedFormulaDraft extends FormulaDraft {
+  /** Referenced as `$name`. */
+  name: string;
+}
+
+export const newNamedFormula = (): NamedFormulaDraft => ({
+  name: "",
+  formula: "",
+  label: "",
+});
+
+export const namedFormulaRows = (
+  formulas: Record<string, FormulaRef> | undefined,
+): NamedFormulaDraft[] =>
+  entriesToRows(formulas, (name, ref) => ({ name, ...formulaDraft(ref) }));
+
+/** Unnamed rows are dropped. A named row with no formula is kept, so load validation reports
+ *  it rather than references to it going quietly unknown. */
+export const rowsToNamedFormulas = (
+  rows: NamedFormulaDraft[] | undefined,
+): Record<string, FormulaRef> =>
+  rowsToEntries(
+    rows,
+    (row) => row.name.trim(),
+    (row) => draftToFormula(row) ?? { formula: "" },
+  );
+
+/** Names given to more than one row, the same check as `duplicateInputNames`. */
+export const duplicateFormulaNames = (rows: NamedFormulaDraft[]): string[] =>
+  duplicateNames(rows.map((row) => row.name));
+
 export interface BonusDraft {
   id: string;
   name: string;
   inputs: InputDraft[];
-  /** Carried through unedited. */
-  formulas?: Record<string, FormulaRef>;
+  formulas: NamedFormulaDraft[];
   grants: GrantDraft[];
   stacking?: string;
   maxStacks?: number | string | null;
@@ -467,13 +537,25 @@ export function buildDraft(
       ...row,
       frozen: saved,
     })),
-    formulas: source.formulas,
+    formulas: namedFormulaRows(source.formulas),
     grants: (source.grants ?? []).map((grant) => toDraft(grant)),
     stacking: source.stacking ?? "",
     maxStacks: source.maxStacks ?? null,
     excludes: [...(source.excludes ?? [])],
   };
 }
+
+/** The parts of `draft` its formulas read or are checked against, as a saved bonus `id` would
+ *  have them. */
+export const formulaOwner = (
+  draft: BonusDraft,
+  id: string,
+): Pick<Bonus, "id" | "inputs" | "formulas" | "stacking"> => ({
+  id,
+  inputs: rowsToInputs(draft.inputs),
+  formulas: rowsToNamedFormulas(draft.formulas),
+  ...(draft.stacking && { stacking: draft.stacking }),
+});
 
 /** Assembles a bonus-level draft (id/name/grants plus the bonus-level stacking/excludes
  * fields) back into the JSON shape, the same "only include if present" convention `toGrant`
@@ -487,8 +569,7 @@ export function toBonus(draft: BonusDraft): Bonus {
     grants,
   };
   putIfSet(out, "inputs", rowsToInputs(draft.inputs));
-  if (draft.formulas && Object.keys(draft.formulas).length)
-    out.formulas = draft.formulas;
+  putIfSet(out, "formulas", rowsToNamedFormulas(draft.formulas));
   putIfSet(out, "stacking", draft.stacking);
   if (draft.maxStacks) out.maxStacks = Number(draft.maxStacks);
   putIfSet(out, "excludes", [...(draft.excludes ?? [])]);
@@ -501,6 +582,8 @@ export function duplicateDraft(draft: GrantDraft): GrantDraft {
     ...draft,
     uid: `b${Math.random().toString(36).slice(2, 8)}`,
     conditions: draft.conditions.map(cloneRow),
+    scale: { ...draft.scale },
+    tierBy: { ...draft.tierBy },
     stats: draft.stats.map((s) => ({ ...s })),
     dynamicStats: draft.dynamicStats.map((d) => ({ ...d })),
     tiers: draft.tiers.map((tier) => ({
@@ -516,20 +599,23 @@ export function duplicateDraft(draft: GrantDraft): GrantDraft {
   };
 }
 
-/** Labels a change to `Bonus.inputs`: which names were added or removed, else the first
- *  input whose declaration changed. */
-function inputsDiffLabel(
-  old: Record<string, InputDef>,
-  nw: Record<string, InputDef>,
+/** Labels a change to a record of named declarations (`Bonus.inputs`, `Bonus.formulas`):
+ *  which names were added or removed, else the first entry that changed. `shown` is how a
+ *  name reads in the label. */
+function recordDiffLabel<T>(
+  noun: string,
+  old: Record<string, T>,
+  nw: Record<string, T>,
+  shown: (name: string) => string,
 ): string {
   const oldNames = Object.keys(old);
   const nwNames = Object.keys(nw);
   const sameNames =
     oldNames.length === nwNames.length &&
     oldNames.every((name) => Object.hasOwn(nw, name));
-  if (!sameNames) return arrayDiffLabel("input", oldNames, nwNames);
+  if (!sameNames) return arrayDiffLabel(noun, oldNames, nwNames);
   const changed = nwNames.find((name) => !deepEqual(old[name], nw[name]));
-  return changed ? `edit input "${changed}"` : "reorder inputs";
+  return changed ? `edit ${noun} ${shown(changed)}` : `reorder ${noun}s`;
 }
 
 const CHECKS: DiffCheck<Bonus>[] = [
@@ -548,9 +634,22 @@ const CHECKS: DiffCheck<Bonus>[] = [
       : null,
   (old, nw) =>
     JSON.stringify(old.inputs) !== JSON.stringify(nw.inputs)
-      ? inputsDiffLabel(old.inputs ?? {}, nw.inputs ?? {})
+      ? recordDiffLabel(
+          "input",
+          old.inputs ?? {},
+          nw.inputs ?? {},
+          (name) => `"${name}"`,
+        )
       : null,
-  (old, nw) => (deepEqual(old.formulas, nw.formulas) ? null : "edit formulas"),
+  (old, nw) =>
+    JSON.stringify(old.formulas) !== JSON.stringify(nw.formulas)
+      ? recordDiffLabel(
+          "formula",
+          old.formulas ?? {},
+          nw.formulas ?? {},
+          (name) => `$${name}`,
+        )
+      : null,
   (old, nw) => {
     if (deepEqual(old.grants, nw.grants)) return null;
     const oldCount = (old.grants ?? []).length;

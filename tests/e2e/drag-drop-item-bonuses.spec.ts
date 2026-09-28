@@ -42,6 +42,9 @@ test("dragging an attached bonus onto another reorders the item's bonuses", asyn
   await expect(bonusTitles(page)).toHaveText(NAMES);
 
   const cards = page.getByTestId("bonus-card");
+  // Collapsed, so each card fits the viewport and the drop lands in its lower band.
+  await page.getByTestId("bonus-collapse-all").click();
+  await expect(cards.first()).toHaveAttribute("data-expanded", "false");
   // Drag the first bonus after the third.
   await dragOnto(
     cards.nth(0).getByTestId("bonus-drag-handle"),

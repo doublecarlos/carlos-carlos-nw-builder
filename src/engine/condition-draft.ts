@@ -6,7 +6,12 @@
 // groups, exactly mirroring what conditions.ts's `walk()` does with an object's keys. A group's
 // branches are each their own rows list, so nesting is just ConditionRows containing itself.
 
-import type { BonusOccurrenceSpec, ConditionWhen, RangeSpec } from "../types";
+import type {
+  BonusOccurrenceSpec,
+  ConditionWhen,
+  FormulaCondition,
+  RangeSpec,
+} from "../types";
 
 // Every leaf conditions.ts understands. `all`/`any`/`not` are handled structurally, not
 // as leaves -- see below.
@@ -21,6 +26,7 @@ export const LEAF_TYPES = [
   "equipped",
   "param",
   "input",
+  "formula",
 ];
 
 // Caps how many `all`/`any`/`not` groups can nest inside one another. Purely a UI guard
@@ -58,6 +64,9 @@ export interface ConditionRow {
   is?: boolean | null;
   equals?: string;
   value?: string;
+  /** The `formula` leaf's `FormulaRef` fields. */
+  formula?: string;
+  label?: string;
 }
 
 const uid = () => `c${Math.random().toString(36).slice(2, 8)}`;
@@ -180,6 +189,19 @@ function leafFromSpec(
         : (s?.equals ?? ""),
     };
   }
+  if (type === "formula") {
+    const s = spec as FormulaCondition | undefined;
+    const exact = s?.exactly != null;
+    return {
+      type,
+      formula: s?.formula ?? "",
+      label: s?.label ?? "",
+      atLeast: exact ? null : (s?.atLeast ?? null),
+      below: exact ? null : (s?.below ?? null),
+      exactly: s?.exactly ?? null,
+      rangeMode: exact ? "exact" : "range",
+    };
+  }
   return {
     type,
     value: Array.isArray(spec) ? spec.join(", ") : String(spec ?? ""),
@@ -210,6 +232,7 @@ function leafToSpec(
   | string[]
   | number
   | RangeSpec
+  | FormulaCondition
   | ({ key: string } & Record<string, unknown>)
   | undefined {
   if (row.type === "duration" || row.type === "enemies") {
@@ -236,6 +259,13 @@ function leafToSpec(
     if (!target) return undefined;
     const range = countSpec(row);
     return range && { ...target, ...range };
+  }
+  if (row.type === "formula") {
+    const formula = row.formula?.trim();
+    const range = countSpec(row);
+    if (!formula || !range || !Object.keys(range).length) return undefined;
+    const label = row.label?.trim();
+    return { formula, ...(label && { label }), ...range };
   }
   // `input` mirrors `param` without the string form.
   if (row.type === "param" || row.type === "input") {
@@ -527,6 +557,7 @@ const RANGE_LEAF_KEYS: Record<string, Set<string>> = {
   equipped: new Set(["tag", "item", "atLeast", "below", "exactly"]),
   param: new Set(["key", "atLeast", "below", "exactly", "is", "equals"]),
   input: new Set(["key", "atLeast", "below", "exactly", "is"]),
+  formula: new Set(["formula", "label", "atLeast", "below", "exactly"]),
 };
 
 function leafSpecIsRepresentable(key: string, spec: unknown): boolean {
@@ -536,6 +567,14 @@ function leafSpecIsRepresentable(key: string, spec: unknown): boolean {
   if (!allowed) return true;
   if (spec == null) return true;
   if (typeof spec !== "object" || Array.isArray(spec)) return false;
+  if (
+    key === "formula" &&
+    (typeof (spec as FormulaCondition).formula !== "string" ||
+      !["string", "undefined"].includes(
+        typeof (spec as FormulaCondition).label,
+      ))
+  )
+    return false;
   return Object.keys(spec).every((k) => allowed.has(k));
 }
 

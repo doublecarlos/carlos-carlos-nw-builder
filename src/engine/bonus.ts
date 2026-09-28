@@ -455,9 +455,10 @@ function grantScale(
   const formula = formulaText(grant.scale);
   const result = evaluateFormula(grant.scale.formula, ctx);
   const read = singleRead(grant.scale.formula);
+  const label = formulaLabel(grant.scale, ctx);
   const base = {
     formula,
-    label: formulaLabel(grant.scale, ctx) ?? formula,
+    ...(label && { label }),
     ...(read?.kind === "scaler" && { path: read.path }),
   };
   if (!result.ok) return { ...base, multiplier: 0, error: result.error };
@@ -476,7 +477,7 @@ function scaleLeaf(
   if (scale.multiplier > 0) return null;
   return {
     ok: false,
-    label: `${scale.label} > 0`,
+    label: `${scale.label ?? scale.formula} > 0`,
     detail: scale.error ?? "you have 0",
   };
 }
@@ -603,6 +604,14 @@ function evaluateGrant(
       report([measure.error]);
       return inactive();
     }
+    const label = grant.tierBy && formulaLabel(grant.tierBy, ctx);
+    const measured = grant.tierBy && {
+      measure: {
+        formula: formulaText(grant.tierBy),
+        ...(label && { label }),
+        value: measure.value,
+      },
+    };
     let best: GrantTier | null = null;
     for (const tier of grant.tiers) {
       if (
@@ -618,8 +627,9 @@ function evaluateGrant(
           ...scaledPayload(best.stats, scale),
           chose: `tier:${best.atLeast}`,
           problem: null,
+          ...measured,
         }
-      : inactive();
+      : inactive(measured || {});
   }
 
   return {
@@ -648,6 +658,29 @@ export function isHiddenBonus(bonus: Bonus): boolean {
   return grants.length > 0 && grants.every((g) => g.problem != null);
 }
 
+/** `ctx` as `bonus` reads it: what an occurrence leaf naming no bonus counts (`self`), the
+ *  inputs an input leaf reads, and a fresh scope for the named formulas any formula reads. */
+export function bonusContext(
+  bonus: Pick<Bonus, "id" | "inputs" | "formulas">,
+  ctx: EvalContext,
+  inputValues: Record<string, number | boolean> = {},
+): EvalContext {
+  return {
+    ...ctx,
+    self: bonus.id,
+    formulas: formulaScope(bonus),
+    inputs: new Map(
+      Object.entries(bonus.inputs ?? {}).map(([name, def]) => {
+        const { label, format } = bonusInputSpec(def, name);
+        return [
+          name,
+          { label, format, value: inputValues[name] ?? def.default },
+        ];
+      }),
+    ),
+  };
+}
+
 /**
  * Resolve a whole bonus: every grant it carries, summed. A bonus is one unit -- its final
  * stats are the sum of every currently-active grant, not one independently-tracked row
@@ -665,23 +698,8 @@ export function evaluateBonus(
     inputValues?: Record<string, number | boolean>;
   } = {},
 ): BonusEvaluation {
-  // What an occurrence leaf naming no bonus counts (`EvalContext.self`), the inputs an input
-  // leaf reads, and the named formulas any formula reads.
-  const formulas = formulaScope(bonus);
-  const own: EvalContext = {
-    ...ctx,
-    self: bonus.id,
-    formulas,
-    inputs: new Map(
-      Object.entries(bonus.inputs ?? {}).map(([name, def]) => {
-        const { label, format } = bonusInputSpec(def, name);
-        return [
-          name,
-          { label, format, value: inputValues[name] ?? def.default },
-        ];
-      }),
-    ),
-  };
+  const own = bonusContext(bonus, ctx, inputValues);
+  const formulas = own.formulas!;
   const evaluated = (bonus.grants ?? []).map((grant) => ({
     raw: grant,
     ...evaluateGrant(grant, own, dynamicValues),
@@ -800,7 +818,7 @@ function resolveDynamicValues(
 /** Every input the bonus declares, typed or defaulted, keyed by name. A boolean input reads as
  *  a boolean, anything else as a number. */
 export function resolveInputValues(
-  bonus: Bonus,
+  bonus: Pick<Bonus, "id" | "inputs">,
   build: Build,
 ): Record<string, number | boolean> {
   const out: Record<string, number | boolean> = {};

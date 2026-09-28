@@ -26,13 +26,15 @@ import { REQUIRED_SLOT_IDS, gameImportReferences } from "../lib/demo-slots";
 import { INSIGNIA_SHAPES } from "../types";
 import { canStep } from "../engine/inputs";
 import {
-  checkFormula,
   formulaSites,
+  isFormulaName,
+  lintFormula,
   namedCycles,
   parseFormula,
+  perSourceScaleWarning,
   scalerFormula,
-  transitiveReads,
   type FormulaSite,
+  type FormulaVocabulary,
 } from "../engine/formula";
 
 import type {
@@ -981,14 +983,6 @@ function checkInputDefs(
   }
 }
 
-/** What a formula may look up, resolved against the composed catalog. */
-interface FormulaVocabulary {
-  paramSlots: Map<string, BuildParameterSlot>;
-  bonusIds: Set<string>;
-  itemIds: Set<string>;
-  tags: Set<string>;
-}
-
 /** One formula site: its shape, its text, and every id, path and input it reads. Input names
  *  it reads are added to `readInputs`. */
 function checkFormulaSite(
@@ -1009,69 +1003,16 @@ function checkFormulaSite(
   )
     report("error", `${where}: label must be a non-empty string`);
 
-  const named = Object.keys(bonus.formulas ?? {});
-  for (const issue of checkFormula(ref.formula, named))
+  for (const issue of lintFormula(ref.formula, bonus, vocabulary))
     report(
-      "error",
-      `${where}: ${issue.message} (column ${issue.start + 1} of "${ref.formula}")`,
+      issue.level,
+      issue.syntax
+        ? `${where}: ${issue.message} (column ${issue.start + 1} of "${ref.formula}")`
+        : `${where}: ${issue.message}`,
     );
-
-  const { reads } = parseFormula(ref.formula);
-  for (const path of reads.params) {
-    const slot = vocabulary.paramSlots.get(path);
-    if (!slot)
-      report(
-        "error",
-        `${where}: param("${path}") is not a build_parameter's path`,
-      );
-    else if (slot.paramType !== "number" && slot.paramType !== "percent")
-      report(
-        "error",
-        `${where}: param("${path}") is a ${slot.paramType}; formulas read numbers, so test it in "when"`,
-      );
-  }
-  for (const path of reads.scalers) {
-    if (!vocabulary.paramSlots.get(path)?.scaler)
-      report(
-        "error",
-        `${where}: scaler("${path}") is not a parameter declaring a scaler`,
-      );
-  }
-  const inputs = bonus.inputs ?? {};
-  for (const { name } of reads.inputs) {
+  for (const { name } of parseFormula(ref.formula).reads.inputs)
     readInputs.add(name);
-    const def = Object.hasOwn(inputs, name) ? inputs[name] : null;
-    if (!def)
-      report(
-        "error",
-        `${where}: input("${name}") is not declared by this bonus`,
-      );
-    else if (def.type === "boolean")
-      report(
-        "error",
-        `${where}: input("${name}") is a boolean; formulas read numbers, so test it in "when"`,
-      );
-  }
-  for (const id of reads.bonuses) {
-    if (id === bonus.id)
-      report(
-        "warn",
-        `${where}: occurrences("${id}") names this bonus itself; use occurrences()`,
-      );
-    else if (!vocabulary.bonusIds.has(id))
-      report("error", `${where}: occurrences("${id}") names no bonus`);
-  }
-  for (const id of reads.items) {
-    if (!vocabulary.itemIds.has(id))
-      report("error", `${where}: equipped("${id}") names no item`);
-  }
-  for (const tag of reads.tags) {
-    if (!vocabulary.tags.has(tag))
-      report("warn", `${where}: tagged("${tag}") matches no item`);
-  }
 }
-
-const FORMULA_NAME = /^[a-zA-Z_]\w*$/;
 
 /** Every formula `bonus` declares or uses, plus reference cycles among its named formulas. */
 function checkBonusFormulas(
@@ -1082,7 +1023,7 @@ function checkBonusFormulas(
 ) {
   const named = bonus.formulas ?? {};
   for (const name of Object.keys(named)) {
-    if (!FORMULA_NAME.test(name))
+    if (!isFormulaName(name))
       report(
         "error",
         `formula "${name}": a name is a letter or _ then letters, digits or _`,
@@ -1138,18 +1079,9 @@ function checkGrantShape(
       );
   }
 
-  // perSource already multiplies by the source count, so a scale counting them again squares it.
-  if (
-    bonus.stacking === "perSource" &&
-    typeof grant.scale?.formula === "string" &&
-    transitiveReads(grant.scale.formula, bonus.formulas ?? {}).some(
-      (reads) => reads.ownOccurrences || reads.bonuses.includes(bonus.id),
-    )
-  )
-    report(
-      "warn",
-      `${label}: scale counts this bonus's own occurrences, which perSource stacking already multiplies by`,
-    );
+  const perSource =
+    grant.scale && perSourceScaleWarning(grant.scale.formula, bonus);
+  if (perSource) report("warn", `${label}: ${perSource}`);
 }
 
 /** Every bonus id a `when`'s occurrence leaves name, flattened out of its combinators. */
@@ -2241,7 +2173,7 @@ export function validate(
   );
   const bonusIds = new Set(bonuses.map((bonus) => bonus.id));
   const formulaVocabulary = (): FormulaVocabulary => ({
-    paramSlots,
+    params: paramSlots,
     bonusIds,
     itemIds: new Set(byId.keys()),
     tags: new Set(items.flatMap((item) => item.tags ?? [])),

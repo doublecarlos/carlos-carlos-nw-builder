@@ -5,6 +5,7 @@ import * as db from "../../src/data/db";
 import * as catalog from "../../src/data/catalog";
 import * as engine from "../../src/engine/engine";
 import { bonusInputAddress, writeInput } from "../../src/lib/build-inputs";
+import { choseLabel, grantFormulas } from "../../src/lib/bonus-inspector";
 import type {
   Bonus,
   Build,
@@ -306,7 +307,8 @@ describe("malformed formulas", () => {
     const result = resolve(buildWith(["malformed"], { enemies: 2 }));
     const bonus = result.bonuses.find((b) => b.id === "malformed")!;
     expect(bonus.active).toBe(false);
-    expect(bonus.grants[0].scale?.label).toBe('"enemies"');
+    expect(bonus.grants[0].scale?.formula).toBe('"enemies"');
+    expect(bonus.grants[0].scale?.label).toBeUndefined();
     expect(bonus.grants[1].gate.unmet[0].label).toBe(
       '{"formula":3,"atLeast":1} ≥ 1',
     );
@@ -364,6 +366,20 @@ describe("tiers", () => {
       chose: "tier:3",
       appliedStats: { power: 30 },
     });
+  });
+
+  it("carry the tierBy measure, active or not, for naming the rungs", () => {
+    const at = (enemies: number) =>
+      entry(buildWith(["ladder"], { enemies }), "ladder");
+    expect(at(5).grants[0].measure).toEqual({ formula: "enemies", value: 5 });
+    expect(at(0).grants[0].measure).toEqual({ formula: "enemies", value: 0 });
+    expect(choseLabel(at(5))).toBe("enemies ≥ 3");
+    expect(entry(buildWith(["counted"]), "counted").grants[0].measure).toBe(
+      undefined,
+    );
+    expect(
+      choseLabel(entry(buildWith(["counted", "counted"]), "counted")),
+    ).toBe("2 equipped");
   });
 
   it("count the bonus's own occurrences without a tierBy, in any order", () => {
@@ -564,5 +580,58 @@ describe("catalog.validate: formulas", () => {
     ).toEqual([
       "error: grant 1: formula condition needs atLeast/below/exactly",
     ]);
+  });
+});
+
+describe("the inspector's formula lines", () => {
+  const linesAt = (id: string, context: Partial<Build["context"]>) => {
+    const result = resolve(buildWith([id], context));
+    const bonus = result.bonuses.find((b) => b.id === id)!;
+    return grantFormulas(bonus, result.context, testDb.slots);
+  };
+
+  it("explains a scale, then the named formulas it uses, against the build", () => {
+    expect(linesAt("ramp", { duration: 30 })).toEqual([
+      {
+        key: 0,
+        label: "always on",
+        lines: [
+          {
+            title: "Scale (Stacks)",
+            parts: [{ text: "$stacks" }],
+            substituted: null,
+            result: "5",
+            failed: false,
+          },
+          {
+            title: "$stacks (Stacks)",
+            parts: [
+              { text: "min(floor(" },
+              { text: "duration" },
+              { text: " / 5), 5)" },
+            ],
+            substituted: "min(floor(30 / 5), 5)",
+            result: "5",
+            failed: false,
+          },
+        ],
+      },
+    ]);
+  });
+
+  it("explains a tier measure, and a failure as its error", () => {
+    expect(linesAt("broken-ladder", { enemies: 0 })[0].lines).toEqual([
+      {
+        title: "Tier measure",
+        parts: [{ text: "1 / " }, { text: "enemies" }],
+        substituted: "1 / 0",
+        result: "division by zero in 1 / enemies",
+        failed: true,
+      },
+    ]);
+  });
+
+  it("lists nothing for a bonus without scale or tierBy", () => {
+    expect(linesAt("counted", {})).toEqual([]);
   });
 });
