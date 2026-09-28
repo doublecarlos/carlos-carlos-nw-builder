@@ -411,7 +411,7 @@ const rows = computed(() =>
                           tier.active ? 'font-semibold text-text' : 'text-muted'
                         "
                       >
-                        {{ tier.atLeast }} equipped:
+                        {{ tier.heading }}:
                       </div>
                       <StatRows
                         :rows="tier.stats"

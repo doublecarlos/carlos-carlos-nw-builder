@@ -11,6 +11,7 @@
 import { equippedCount, occurrenceCount, taggedCount } from "./lookups";
 import type {
   Bonus,
+  BuildParameterSlot,
   ConditionWhen,
   EvalContext,
   FormulaRef,
@@ -46,7 +47,26 @@ export type FormulaNode = Span &
 /** A problem with a formula's text, spanning `start` to `end` (character offsets). */
 export interface FormulaIssue extends Span {
   message: string;
+  /** A likely correction: `text` in place of `start` to `end`. `message` names it too. */
+  fix?: FormulaFix;
+  /** `message` without the correction, for a caller offering `fix` on its own. */
+  brief?: string;
 }
+
+export interface FormulaFix extends Span {
+  text: string;
+}
+
+/** An issue whose `message` suggests `fix`, when there is one. */
+const suggesting = (
+  brief: string,
+  at: Span,
+  fix: FormulaFix | null,
+): FormulaIssue => ({
+  message: fix ? `${brief}; did you mean "${fix.text}"?` : brief,
+  ...span(at),
+  ...(fix && { fix, brief }),
+});
 
 /** One `input()` read. A record so a read of another bonus's input can add fields. */
 export interface InputRead {
@@ -143,125 +163,226 @@ const extremum = (fn: (...values: number[]) => number): Signature[] => [
 export const geometric = (n: number, ratio: number): number =>
   ratio === 1 ? n : (1 - ratio ** n) / (1 - ratio);
 
-/** Every function, by name, each with one signature per accepted argument count. */
-const FUNCTIONS: Record<string, Signature[]> = {
-  min: extremum(Math.min),
-  max: extremum(Math.max),
-  floor: unary(Math.floor),
-  ceil: unary(Math.ceil),
-  clamp: [
-    {
-      params: ["number", "number", "number"],
-      compile: (args) => {
-        const [x, lo, hi] = args.map(num);
-        return (ctx) => Math.min(Math.max(x(ctx), lo(ctx)), hi(ctx));
-      },
-    },
-  ],
-  pow: [
-    {
-      params: ["number", "number"],
-      compile: (args) => {
-        const [base, exponent] = args.map(num);
-        return (ctx) => base(ctx) ** exponent(ctx);
-      },
-    },
-  ],
-  geometric: [
-    {
-      params: ["number", "number"],
-      compile: (args) => {
-        const [n, ratio] = args.map(num);
-        return (ctx) => geometric(n(ctx), ratio(ctx));
-      },
-    },
-  ],
-  occurrences: [
-    {
-      params: [],
-      compile: () => (ctx) => occurrenceCount(ctx),
-      reads: (_, reads) => {
-        reads.ownOccurrences = true;
-      },
-    },
-    {
-      params: ["string"],
-      compile:
-        ([id]) =>
-        (ctx) =>
-          occurrenceCount(ctx, str(id)),
-      reads: ([id], reads) => void reads.bonuses.push(id),
-    },
-  ],
-  equipped: [
-    {
-      params: ["string"],
-      compile:
-        ([id]) =>
-        (ctx) =>
-          equippedCount(ctx, str(id)),
-      reads: ([id], reads) => void reads.items.push(id),
-    },
-  ],
-  tagged: [
-    {
-      params: ["string"],
-      compile:
-        ([tag]) =>
-        (ctx) =>
-          taggedCount(ctx, str(tag)),
-      reads: ([tag], reads) => void reads.tags.push(tag),
-    },
-  ],
-  param: [
-    {
-      params: ["string"],
-      compile:
-        ([path], source) =>
-        (ctx) => {
-          const value = ctx.params.get(str(path));
-          if (typeof value !== "number")
-            throw new FormulaError(`${source} has no number value`);
-          return value;
+/** A function a formula can call. */
+interface FormulaFunction {
+  /** How it is called, for the editor's reference list. */
+  usage: string;
+  /** One per accepted argument count. */
+  signatures: Signature[];
+  /** Set on a lookup, a function reading the build by one quoted argument (or none): what the
+   *  catalog finds wrong with that argument, if anything. */
+  check?: LookupCheck;
+}
+
+type LookupCheck = (
+  arg: string,
+  owner: Pick<Bonus, "id" | "inputs">,
+  vocabulary: FormulaVocabulary,
+) => Omit<FormulaLint, keyof Span | "syntax"> | null;
+
+/** Every function, by name. */
+const FUNCTIONS: Record<string, FormulaFunction> = {
+  min: { usage: "min(a, b, ...)", signatures: extremum(Math.min) },
+  max: { usage: "max(a, b, ...)", signatures: extremum(Math.max) },
+  floor: { usage: "floor(x)", signatures: unary(Math.floor) },
+  ceil: { usage: "ceil(x)", signatures: unary(Math.ceil) },
+  clamp: {
+    usage: "clamp(x, low, high)",
+    signatures: [
+      {
+        params: ["number", "number", "number"],
+        compile: (args) => {
+          const [x, lo, hi] = args.map(num);
+          return (ctx) => Math.min(Math.max(x(ctx), lo(ctx)), hi(ctx));
         },
-      reads: ([path], reads) => void reads.params.push(path),
-    },
-  ],
-  scaler: [
-    {
-      params: ["string"],
-      compile:
-        ([path], source) =>
-        (ctx) => {
-          const scaler = ctx.scalers.get(str(path));
-          if (!scaler) throw new FormulaError(`${source} is not a scaler`);
-          return scaler.multiplier;
+      },
+    ],
+  },
+  pow: {
+    usage: "pow(base, exponent)",
+    signatures: [
+      {
+        params: ["number", "number"],
+        compile: (args) => {
+          const [base, exponent] = args.map(num);
+          return (ctx) => base(ctx) ** exponent(ctx);
         },
-      reads: ([path], reads) => void reads.scalers.push(path),
+      },
+    ],
+  },
+  geometric: {
+    usage: "geometric(n, ratio)",
+    signatures: [
+      {
+        params: ["number", "number"],
+        compile: (args) => {
+          const [n, ratio] = args.map(num);
+          return (ctx) => geometric(n(ctx), ratio(ctx));
+        },
+      },
+    ],
+  },
+  occurrences: {
+    usage: 'occurrences() or occurrences("bonus-id")',
+    signatures: [
+      {
+        params: [],
+        compile: () => (ctx) => occurrenceCount(ctx),
+        reads: (_, reads) => {
+          reads.ownOccurrences = true;
+        },
+      },
+      {
+        params: ["string"],
+        compile:
+          ([id]) =>
+          (ctx) =>
+            occurrenceCount(ctx, str(id)),
+        reads: ([id], reads) => void reads.bonuses.push(id),
+      },
+    ],
+    check(id, owner, { bonusIds }) {
+      if (id === owner.id)
+        return {
+          level: "warn",
+          message: `occurrences("${id}") names this bonus itself; use occurrences()`,
+        };
+      return bonusIds.has(id)
+        ? null
+        : { level: "error", message: `occurrences("${id}") names no bonus` };
     },
-  ],
+  },
+  equipped: {
+    usage: 'equipped("item-id")',
+    signatures: [
+      {
+        params: ["string"],
+        compile:
+          ([id]) =>
+          (ctx) =>
+            equippedCount(ctx, str(id)),
+        reads: ([id], reads) => void reads.items.push(id),
+      },
+    ],
+    check: (id, _, { itemIds }) =>
+      itemIds.has(id)
+        ? null
+        : { level: "error", message: `equipped("${id}") names no item` },
+  },
+  tagged: {
+    usage: 'tagged("tag")',
+    signatures: [
+      {
+        params: ["string"],
+        compile:
+          ([tag]) =>
+          (ctx) =>
+            taggedCount(ctx, str(tag)),
+        reads: ([tag], reads) => void reads.tags.push(tag),
+      },
+    ],
+    check: (tag, _, { tags }) =>
+      tags.has(tag)
+        ? null
+        : { level: "warn", message: `tagged("${tag}") matches no item` },
+  },
+  param: {
+    usage: 'param("path")',
+    signatures: [
+      {
+        params: ["string"],
+        compile:
+          ([path], source) =>
+          (ctx) => {
+            const value = ctx.params.get(str(path));
+            if (typeof value !== "number")
+              throw new FormulaError(`${source} has no number value`);
+            return value;
+          },
+        reads: ([path], reads) => void reads.params.push(path),
+      },
+    ],
+    check(path, _, { params }) {
+      const slot = params.get(path);
+      if (!slot)
+        return {
+          level: "error",
+          message: `param("${path}") is not a build_parameter's path`,
+        };
+      if (slot.paramType !== "number" && slot.paramType !== "percent")
+        return {
+          level: "error",
+          message: `param("${path}") is a ${slot.paramType}; formulas read numbers, so test it in "when"`,
+        };
+      return null;
+    },
+  },
+  scaler: {
+    usage: 'scaler("path")',
+    signatures: [
+      {
+        params: ["string"],
+        compile:
+          ([path], source) =>
+          (ctx) => {
+            const scaler = ctx.scalers.get(str(path));
+            if (!scaler) throw new FormulaError(`${source} is not a scaler`);
+            return scaler.multiplier;
+          },
+        reads: ([path], reads) => void reads.scalers.push(path),
+      },
+    ],
+    check: (path, _, { params }) =>
+      params.get(path)?.scaler
+        ? null
+        : {
+            level: "error",
+            message: `scaler("${path}") is not a parameter declaring a scaler`,
+          },
+  },
   // One argument reads the bonus's own input. Kept as a signature list so reading another
   // bonus's input can be added as further arities.
-  input: [
-    {
-      params: ["string"],
-      compile:
-        ([name], source) =>
-        (ctx) => {
-          const value = ctx.inputs?.get(str(name))?.value;
-          if (typeof value !== "number")
-            throw new FormulaError(
-              `${source} is not a number input of this bonus`,
-            );
-          return value;
-        },
-      reads: ([name], reads) => void reads.inputs.push({ name }),
+  input: {
+    usage: 'input("name")',
+    signatures: [
+      {
+        params: ["string"],
+        compile:
+          ([name], source) =>
+          (ctx) => {
+            const value = ctx.inputs?.get(str(name))?.value;
+            if (typeof value !== "number")
+              throw new FormulaError(
+                `${source} is not a number input of this bonus`,
+              );
+            return value;
+          },
+        reads: ([name], reads) => void reads.inputs.push({ name }),
+      },
+    ],
+    check(name, owner) {
+      const inputs = owner.inputs ?? {};
+      const def = Object.hasOwn(inputs, name) ? inputs[name] : null;
+      if (!def)
+        return {
+          level: "error",
+          message: `input("${name}") is not declared by this bonus`,
+        };
+      if (def.type === "boolean")
+        return {
+          level: "error",
+          message: `input("${name}") is a boolean; formulas read numbers, so test it in "when"`,
+        };
+      return null;
     },
-  ],
+  },
 };
 
 export const FORMULA_FUNCTIONS = Object.keys(FUNCTIONS);
 export const FORMULA_VARIABLES = Object.keys(VARIABLES);
+
+/** How `name`, one of `FORMULA_FUNCTIONS`, is called. */
+export const formulaUsage = (name: string) => FUNCTIONS[name].usage;
 
 // Tokenizer
 
@@ -285,6 +406,9 @@ class ParseError extends Error {
 }
 
 const IDENTIFIER = /[a-zA-Z_]\w*/y;
+
+/** Whether `name` can be declared as a named formula and referenced as `$name`. */
+export const isFormulaName = (name: string) => /^[a-zA-Z_]\w*$/.test(name);
 const NUMBER = /(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?/y;
 
 function tokenize(text: string): Token[] {
@@ -546,13 +670,22 @@ function compile(
     }
     case "call": {
       const signatures = Object.hasOwn(FUNCTIONS, node.name)
-        ? FUNCTIONS[node.name]
+        ? FUNCTIONS[node.name].signatures
         : undefined;
       if (!signatures) {
         const suggestion = closest(node.name, FORMULA_FUNCTIONS);
-        return fail(
-          `unknown function "${node.name}"${suggestion ? `; did you mean "${suggestion}"?` : ""}`,
-        );
+        const fix = suggestion
+          ? {
+              start: node.start,
+              end: node.start + node.name.length,
+              text: suggestion,
+            }
+          : null;
+        const issue = suggesting(`unknown function "${node.name}"`, node, fix);
+        issues.push(issue);
+        return () => {
+          throw new FormulaError(issue.message);
+        };
       }
       const signature = signatureFor(signatures, node.args.length);
       if (!signature)
@@ -670,7 +803,9 @@ export function evaluateFormula(
 }
 
 /** A fresh scope for one evaluation of `bonus`. */
-export const formulaScope = (bonus: Bonus): FormulaScope => ({
+export const formulaScope = (
+  bonus: Pick<Bonus, "id" | "formulas">,
+): FormulaScope => ({
   named: bonus.formulas ?? {},
   results: new Map(),
   errors: new Set(),
@@ -707,12 +842,20 @@ export function singleRead(
   return null;
 }
 
+/** What a derived label reads. An `EvalContext` is one; the editor builds one from its draft
+ *  and catalog, so labels need no build. */
+export interface LabelContext {
+  inputs?: ReadonlyMap<string, { label: string }>;
+  scalers: ReadonlyMap<string, { label: string }>;
+  formulas?: Pick<FormulaScope, "named">;
+}
+
 /** The label shown for `ref`: its own, else the one its single lookup derives (an input's or
  *  scaler's label, or a named formula's label). Undefined when there is none, and the caller
  *  shows the formula itself. */
 export function formulaLabel(
   ref: FormulaRef,
-  ctx: EvalContext,
+  ctx: LabelContext,
   depth = 0,
 ): string | undefined {
   if (ref.label) return ref.label;
@@ -795,20 +938,24 @@ export function checkFormula(
           ...FORMULA_VARIABLES,
           ...named.map((n) => `$${n}`),
         ]);
-    issues.push({
-      message: `unknown name "${unknown.name}"${hint ? `; did you mean "${hint}"?` : ""}`,
-      start: unknown.start,
-      end: unknown.end,
-    });
+    issues.push(
+      suggesting(
+        `unknown name "${unknown.name}"`,
+        unknown,
+        hint ? { ...span(unknown), text: hint } : null,
+      ),
+    );
   }
   for (const reference of parsed.reads.named) {
     if (named.includes(reference.name)) continue;
     const hint = closest(reference.name, named);
-    issues.push({
-      message: `"$${reference.name}" is not a formula of this bonus${hint ? `; did you mean "$${hint}"?` : ""}`,
-      start: reference.start,
-      end: reference.end,
-    });
+    issues.push(
+      suggesting(
+        `"$${reference.name}" is not a formula of this bonus`,
+        reference,
+        hint ? { ...span(reference), text: `$${hint}` } : null,
+      ),
+    );
   }
   return issues.sort((a, b) => a.start - b.start);
 }
@@ -860,6 +1007,172 @@ export function transitiveReads(
   };
   walk(formula);
   return out;
+}
+
+/** Why a grant `scale` of `bonus` squares its source count: it counts the bonus's own
+ *  occurrences, which `perSource` stacking already multiplies by. Null when it does not. */
+export function perSourceScaleWarning(
+  formula: string,
+  bonus: Pick<Bonus, "id" | "formulas" | "stacking">,
+): string | null {
+  if (bonus.stacking !== "perSource" || typeof formula !== "string")
+    return null;
+  const counts = transitiveReads(formula, bonus.formulas ?? {}).some(
+    (reads) => reads.ownOccurrences || reads.bonuses.includes(bonus.id),
+  );
+  return counts
+    ? "scale counts this bonus's own occurrences, which perSource stacking already multiplies by"
+    : null;
+}
+
+/** Every node of `node`'s tree, parents before children. */
+function* nodes(node: FormulaNode): Generator<FormulaNode> {
+  yield node;
+  if (node.kind === "negate") yield* nodes(node.operand);
+  else if (node.kind === "binary") {
+    yield* nodes(node.left);
+    yield* nodes(node.right);
+  } else if (node.kind === "call") {
+    for (const arg of node.args) yield* nodes(arg);
+  }
+}
+
+/** A lookup call whose arguments are well formed, with its quoted argument. */
+interface LookupCall extends Span {
+  name: string;
+  arg: string | null;
+  node: FormulaNode;
+}
+
+function lookupCalls(ast: FormulaNode | null): LookupCall[] {
+  if (!ast) return [];
+  const out: LookupCall[] = [];
+  for (const node of nodes(ast)) {
+    if (node.kind !== "call" || !FUNCTIONS[node.name]?.check) continue;
+    const [first] = node.args;
+    if (node.args.length > 1 || (first && first.kind !== "string")) continue;
+    const arg = first?.kind === "string" ? first.value : null;
+    out.push({ name: node.name, arg, node, ...span(node) });
+  }
+  return out;
+}
+
+// Linting
+
+/** What a formula may look up, resolved against a catalog. */
+export interface FormulaVocabulary {
+  /** Every build parameter, by path. */
+  params: Map<string, BuildParameterSlot>;
+  bonusIds: Set<string>;
+  itemIds: Set<string>;
+  tags: Set<string>;
+}
+
+/** A formula problem worth showing its author. `syntax` marks one from the text itself, as
+ *  opposed to a lookup the catalog cannot satisfy. */
+export interface FormulaLint extends FormulaIssue {
+  level: "error" | "warn";
+  syntax: boolean;
+}
+
+/** Every problem with `formula` as a formula of `owner`: its text and named references
+ *  (`checkFormula`), then each lookup the catalog cannot satisfy, in text order. Shared
+ *  by load validation and the editor, so both say the same thing. */
+export function lintFormula(
+  formula: string,
+  owner: Pick<Bonus, "id" | "inputs" | "formulas">,
+  vocabulary: FormulaVocabulary,
+): FormulaLint[] {
+  const out: FormulaLint[] = checkFormula(
+    formula,
+    Object.keys(owner.formulas ?? {}),
+  ).map((issue) => ({ ...issue, level: "error", syntax: true }));
+  for (const call of lookupCalls(parseFormula(formula).ast)) {
+    if (call.arg === null) continue;
+    const problem = FUNCTIONS[call.name].check!(call.arg, owner, vocabulary);
+    if (problem) out.push({ ...problem, ...span(call), syntax: false });
+  }
+  return out;
+}
+
+// Explaining
+
+/** One run of a formula's text. A lookup, variable or `$name` carries what it read. */
+export interface FormulaPart {
+  text: string;
+  /** Set on a lookup, variable or `$name`. `arg` is a lookup's quoted argument. */
+  read?: { kind: string; arg?: string };
+  /** What the read resolved to, absent when it failed. */
+  value?: number;
+}
+
+/** A formula with each read resolved against a build: the text split at every read, the
+ *  formula with those values in place, and the result. */
+export interface FormulaExplain {
+  parts: FormulaPart[];
+  substituted: string;
+  result: FormulaResult;
+}
+
+/** The node `node` alone, evaluated, or undefined when it fails. */
+function nodeValue(
+  node: FormulaNode,
+  text: string,
+  ctx: EvalContext,
+): number | undefined {
+  const issues: FormulaIssue[] = [];
+  const evaluate = compile(node, text, issues, emptyReads());
+  if (issues.length) return undefined;
+  try {
+    return evaluate(ctx);
+  } catch (error) {
+    if (error instanceof FormulaError) return undefined;
+    throw error;
+  }
+}
+
+export function explainFormula(
+  formula: string,
+  ctx: EvalContext,
+): FormulaExplain {
+  const result = evaluateFormula(formula, ctx);
+  const { ast } = parseFormula(formula);
+  if (!ast) return { parts: [{ text: formula }], substituted: formula, result };
+
+  // A lookup's argument is a string, never a read, so reads never nest.
+  const reads: { node: FormulaNode; read: FormulaPart["read"] }[] = [];
+  for (const node of nodes(ast)) {
+    if (node.kind === "named")
+      reads.push({ node, read: { kind: "named", arg: node.name } });
+    else if (node.kind === "variable" && Object.hasOwn(VARIABLES, node.name))
+      reads.push({ node, read: { kind: node.name } });
+  }
+  for (const call of lookupCalls(ast))
+    reads.push({
+      node: call.node,
+      read: { kind: call.name, ...(call.arg !== null && { arg: call.arg }) },
+    });
+  reads.sort((a, b) => a.node.start - b.node.start);
+
+  const parts: FormulaPart[] = [];
+  let at = 0;
+  for (const { node, read } of reads) {
+    if (node.start > at) parts.push({ text: formula.slice(at, node.start) });
+    const value = nodeValue(node, formula, ctx);
+    parts.push({
+      text: formula.slice(node.start, node.end),
+      read,
+      ...(value !== undefined && { value }),
+    });
+    at = node.end;
+  }
+  if (at < formula.length) parts.push({ text: formula.slice(at) });
+  const substituted = parts
+    .map((part) =>
+      part.value === undefined ? part.text : formatNumber(part.value),
+    )
+    .join("");
+  return { parts, substituted, result };
 }
 
 /** Edits between two names, a swap of neighbors counting as one. */

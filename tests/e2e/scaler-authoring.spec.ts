@@ -1,4 +1,4 @@
-// End-to-end coverage for authoring scalers in the layer editor: a grant's "scaled by" picker
+// End-to-end coverage for authoring scalers in the layer editor: a grant scaled by a scaler
 // and a parameter's scaler block both persist through the form and come back on reopen.
 import { test, expect, type Page } from "@playwright/test";
 import { openBuilder, chooseCombo } from "./support/app";
@@ -19,7 +19,7 @@ async function openEditorRow(page: Page, text: string) {
   await page.locator(".editor-row", { hasText: text }).first().click();
 }
 
-test("a grant's scaler is picked from the scaler parameters and survives reopening", async ({
+test("a grant's scaler is picked from the scale's reference list and survives reopening", async ({
   page,
 }) => {
   await openLayer(page);
@@ -28,10 +28,17 @@ test("a grant's scaler is picked from the scaler parameters and survives reopeni
   await page.getByTestId("bonus-name-input").fill(BONUS);
   await page.getByLabel("Add grant").click();
 
-  const picker = page.getByTestId("grant-scaled-by");
-  await expect(picker.getByTestId("picker-input")).toHaveValue("not scaled");
-  await chooseCombo(picker, "Encounter damage");
-  await expect(picker.getByTestId("picker-input")).toHaveValue(
+  const scale = page.getByTestId("grant-scale");
+  await expect(scale).toHaveAttribute("placeholder", "not scaled");
+  await page.getByTestId("grant-scale-reference-toggle").click();
+  await page
+    .getByTestId("grant-scale-reference-item")
+    .filter({ hasText: "Encounter damage" })
+    .click();
+  await expect(scale).toHaveValue('scaler("scalers.encounterDamage")');
+  // The scaler's own label stands in for the formula until one is typed.
+  await expect(page.getByTestId("grant-scale-label")).toHaveAttribute(
+    "placeholder",
     "Encounter damage",
   );
   await page.getByRole("button", { name: "Save bonus" }).click();
@@ -43,9 +50,7 @@ test("a grant's scaler is picked from the scaler parameters and survives reopeni
   );
   await openEditorRow(page, BONUS);
   await expect(page.getByTestId("bonus-name-input")).toHaveValue(BONUS);
-  await expect(picker.getByTestId("picker-input")).toHaveValue(
-    "Encounter damage",
-  );
+  await expect(scale).toHaveValue('scaler("scalers.encounterDamage")');
 });
 
 test("a parameter's scaler mode and filters are editable and survive reopening", async ({

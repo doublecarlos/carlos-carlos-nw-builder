@@ -7,8 +7,7 @@
 // writes directly onto `draft.value.grants`. The store's `onChange()` is called after every
 // mutation, which schedules an undo snapshot in BonusForm.
 
-import { computed, inject, ref } from "vue";
-import ComboBox from "../ui/ComboBox.vue";
+import { inject, ref } from "vue";
 import ConditionRows, {
   type ConditionTreeLocation,
   type ConditionBranchTreeLocation,
@@ -16,6 +15,10 @@ import ConditionRows, {
 import IconButton from "../ui/IconButton.vue";
 import StatRowList from "./StatRowList.vue";
 import DynamicStatRowList from "./DynamicStatRowList.vue";
+import FormulaField from "./FormulaField.vue";
+import type { FormulaInputIssue } from "../ui/FormulaInput.vue";
+import { useFormulaContext } from "../../composables/useFormulaContext";
+import { perSourceScaleWarning } from "../../engine/formula";
 import {
   ArrowDown,
   ArrowUp,
@@ -61,9 +64,6 @@ const props = withDefaults(
     bonusOptions?: BonusOption[];
     /** The bonus's own inputs, for the `input` condition leaf. */
     inputOptions?: InputOption[];
-    /** Every parameter declaring a scaler, keyed by its path, for each grant's "scaled by"
-     *  picker. */
-    scalerOptions?: BonusOption[];
     /** This bonus's key in ItemBonuses' cross-bonus condition-drag registry, forwarded from
      *  BonusForm -- see bonusDraftRegistry.ts. Empty outside ItemBonuses. */
     registryId?: string;
@@ -72,15 +72,22 @@ const props = withDefaults(
     tags: () => [],
     bonusOptions: () => [],
     inputOptions: () => [],
-    scalerOptions: () => [],
     registryId: "",
   },
 );
 
-/** The path doubles as search text so typing `scalers.` narrows to the damage-type shares. */
-const searchableScalers = computed(() =>
-  props.scalerOptions.map((option) => ({ ...option, search: option.value })),
-);
+const formulaContext = useFormulaContext();
+
+/** The perSource warning for `grant`'s scale, marked over the whole formula. */
+function scaleIssues(grant: GrantDraft): FormulaInputIssue[] {
+  const owner = formulaContext?.owner.value;
+  const formula = grant.scale.formula;
+  const message =
+    owner && formula.trim() ? perSourceScaleWarning(formula, owner) : null;
+  return message
+    ? [{ start: 0, end: formula.length, message, level: "warn" }]
+    : [];
+}
 
 // Guard against a grant being removed while an event handler is still firing.
 function gs(index: number) {
@@ -429,7 +436,7 @@ function toggleJson(gIndex: number) {
             :model-value="grant.payload"
             :options="[
               { value: 'flat', label: 'the same always' },
-              { value: 'tiers', label: 'tiered by bonus occurrences' },
+              { value: 'tiers', label: 'tiered' },
               { value: 'variants', label: 'varies by condition' },
               { value: 'problem', label: 'reports a problem' },
             ]"
@@ -457,8 +464,17 @@ function toggleJson(gIndex: number) {
         <!-- tiered payload -->
         <template v-else-if="grant.payload === 'tiers'">
           <p class="text-muted">
-            Grants stats from the highest matching tier; others are ignored.
+            Grants stats from the highest tier the measure reaches; others are
+            ignored.
           </p>
+          <FormSection sub>Measure</FormSection>
+          <FormulaField
+            v-model:formula="grant.tierBy.formula"
+            v-model:label="grant.tierBy.label"
+            class="mb-1.5"
+            placeholder="occurrences()"
+            testid="grant-tier-by"
+          />
           <div v-bind="tierDropList(grant.uid).listProps()" class="relative">
             <DropIndicator
               :pos="tierDropList(grant.uid).separatorStyle.value"
@@ -514,10 +530,13 @@ function toggleJson(gIndex: number) {
                 <BaseInput
                   v-model.number="tier.atLeast"
                   type="number"
-                  min="1"
+                  :min="grant.tierBy.formula.trim() ? undefined : 1"
                   class="w-16"
                 />
-                <span class="text-muted"
+                <span v-if="grant.tierBy.formula.trim()" class="text-muted"
+                  >or more</span
+                >
+                <span v-else class="text-muted"
                   >{{ tier.atLeast === 1 ? "occurrence" : "occurrences" }} or
                   more</span
                 >
@@ -687,34 +706,17 @@ function toggleJson(gIndex: number) {
           </BaseCheckbox>
         </template>
 
-        <!-- Per grant rather than per tier/variant: the scaler multiplies whichever payload
+        <!-- Per grant rather than per tier/variant: the scale multiplies whichever payload
              wins, so it sits with the grant-wide fields. -->
-        <div class="my-1.5 flex flex-wrap items-center gap-1.5">
-          <FormSection sub inline>Scaled by</FormSection>
-          <ComboBox
-            v-model="grant.scaledBy"
-            class="w-64"
-            :options="searchableScalers"
-            show-empty-option
-            :closed-display="grant.scaledBy ? '' : 'not scaled'"
-            menu-class="w-max min-w-(--anchor-width) max-w-[min(22rem,80vw)]"
-            data-testid="grant-scaled-by"
-          >
-            <template #empty>not scaled</template>
-            <template #option="{ option }">
-              <div class="min-w-0 leading-tight">
-                <div class="overflow-hidden text-ellipsis whitespace-nowrap">
-                  {{ option.label }}
-                </div>
-                <div
-                  class="overflow-hidden text-ellipsis whitespace-nowrap text-xs text-muted"
-                >
-                  {{ option.value }}
-                </div>
-              </div>
-            </template>
-          </ComboBox>
-        </div>
+        <FormSection sub>Scale</FormSection>
+        <FormulaField
+          v-model:formula="grant.scale.formula"
+          v-model:label="grant.scale.label"
+          class="mb-1.5"
+          placeholder="not scaled"
+          :extra-issues="scaleIssues(grant)"
+          testid="grant-scale"
+        />
 
         <FormSection sub>Name and description (optional)</FormSection>
         <div class="mb-1.5 flex flex-wrap items-start gap-1.5">

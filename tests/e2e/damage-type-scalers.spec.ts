@@ -126,6 +126,29 @@ test("the scaler's name in a note links to its parameter row", async ({
   );
 });
 
+test("the inspector explains the collar's scale and links the scaler to its row", async ({
+  page,
+}) => {
+  await openBuilder(page);
+  await equipCollar(page);
+  await setShare(page, "scalers.encounterDamage", 40);
+  await page.getByRole("button", { name: /Bonuses/ }).click();
+
+  const entry = page.getByTestId("bonus-entry-sturdy-crescent-collar");
+  await entry.getByRole("button").first().click();
+  const line = entry.getByTestId("bonus-formula-line");
+  await expect(line).toContainText("Scale (Encounter damage):");
+  await expect(line).toContainText("= 0.4");
+
+  await line
+    .getByRole("button", { name: 'scaler("scalers.encounterDamage")' })
+    .click();
+  await expect(cursorRow(page)).toHaveAttribute(
+    "data-cursor-key",
+    "slot:scalers.encounterDamage",
+  );
+});
+
 test("a scaled ladder shows every rung at the share, each noting its real value", async ({
   page,
 }) => {

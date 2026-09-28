@@ -23,7 +23,7 @@ import type {
   StatValues,
 } from "../types";
 
-type ResolvedGrant = GrantEvaluation & { raw: Grant };
+export type ResolvedGrant = GrantEvaluation & { raw: Grant };
 
 /** One run of a stat line's note. A part carrying a slot id is a scaler's name and renders as
  *  a link to that parameter's row; without one it is plain text. */
@@ -52,7 +52,8 @@ export type ScaleFactor = Pick<GrantScale, "label" | "multiplier" | "path">;
  * scaler. Scalers compose multiplicatively (scaling.ts's `scaleFactorFor`), so listing each
  * factor in turn keeps every label next to its own number and every link on its own name. The
  * scaler's name links to its parameter slot when `slots` has it; without a catalog (the layer
- * editor's preview card) or a scaler behind it, it stays text.
+ * editor's preview card) or a scaler behind it, it stays text. A formula with no label shows
+ * its number alone.
  */
 export function scaleNote(
   rawValue: number | undefined,
@@ -63,11 +64,16 @@ export function scaleNote(
   const parts: NotePart[] = [];
   let text = formatStat(statKey, rawValue);
   for (const { label, multiplier, path } of scalers) {
-    text += ` x ${path ? pct(multiplier) : formatNumber(multiplier)} `;
+    text += ` x ${path ? pct(multiplier) : formatNumber(multiplier)}`;
+    if (!label) continue;
     const slotId = path ? findParamSlot(slots, path)?.id : undefined;
-    parts.push({ text }, slotId ? { text: label, slotId } : { text: label });
+    parts.push(
+      { text: `${text} ` },
+      { text: label, ...(slotId && { slotId }) },
+    );
     text = "";
   }
+  if (text) parts.push({ text });
   return parts;
 }
 
@@ -184,6 +190,14 @@ function tierGrant(entry: EvaluatedBonus) {
   return entry.grants?.find((g) => g.raw.tiers) ?? null;
 }
 
+/** What a tier rung reads as: the occurrence count it needs, or its `tierBy` measure's label
+ *  (else its formula) against its threshold. */
+export function tierHeading(grant: ResolvedGrant, atLeast: number): string {
+  const measure =
+    grant.measure?.label ?? grant.measure?.formula ?? grant.raw.tierBy?.formula;
+  return measure ? `${measure} ≥ ${atLeast}` : `${atLeast} equipped`;
+}
+
 // Tiers have no `when` of their own (bonus.ts matches the `tierBy` measure directly), so the
 // active tier is read off `chose` instead of the gate. Every rung shows what it would grant
 // under the grant's scaler, with the real value in its note.
@@ -200,6 +214,7 @@ function tierLadderFor(grant: ResolvedGrant | null, slots: Slot[]) {
       const active = atLeast === activeAt;
       return {
         atLeast,
+        heading: tierHeading(grant!, atLeast),
         active,
         stats: rungLines(tier.stats, active, grant!, slots),
       };
@@ -244,7 +259,8 @@ function variantLadderFor(
   });
 }
 
-function grantLabel(grant: ResolvedGrant) {
+/** A grant's name, else its conditions, else "always on". */
+export function grantLabel(grant: ResolvedGrant) {
   if (grant.raw.name) return grant.raw.name;
   const fromConditions = (grant.gate?.leaves ?? [])
     .map((leaf) => leaf.label)

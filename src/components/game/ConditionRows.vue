@@ -25,6 +25,7 @@ import FormField from "../ui/FormField.vue";
 import BaseInput from "../ui/BaseInput.vue";
 import TokenInput from "../ui/TokenInput.vue";
 import RangeOrExactFields from "./RangeOrExactFields.vue";
+import FormulaField from "./FormulaField.vue";
 import { useEditorDb } from "../../composables/useEditorDb";
 import {
   LEAF_TYPES,
@@ -573,6 +574,23 @@ function changeInputKey(row: ConditionRow, key: string) {
             v-model:exactly="row.exactly"
             v-model:range-mode="row.rangeMode"
             allow-at-least-one
+          />
+        </template>
+        <template v-else-if="row.type === 'formula'">
+          <FormField label="Formula" class="min-w-72 flex-1">
+            <FormulaField
+              :formula="row.formula ?? ''"
+              :label="row.label ?? ''"
+              testid="condition-formula"
+              @update:formula="(v) => (row.formula = v)"
+              @update:label="(v) => (row.label = v)"
+            />
+          </FormField>
+          <RangeOrExactFields
+            v-model:at-least="row.atLeast"
+            v-model:below="row.below"
+            v-model:exactly="row.exactly"
+            v-model:range-mode="row.rangeMode"
           />
         </template>
         <template v-else-if="row.type === 'param' || row.type === 'input'">

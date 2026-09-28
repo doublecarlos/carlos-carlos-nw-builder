@@ -15,6 +15,10 @@ import {
   duplicateInputNames,
   inputOptions,
   diffLabel,
+  newNamedFormula,
+  rowsToNamedFormulas,
+  duplicateFormulaNames,
+  formulaOwner,
 } from "../../src/lib/bonus-draft";
 import type { Bonus, Grant } from "../../src/types";
 
@@ -172,15 +176,18 @@ describe("bonus-draft short/long description", () => {
 describe("bonus-draft scale", () => {
   const byScaler = { formula: 'scaler("scalers.encounterDamage")' };
 
-  it("round-trips a single scaler() on a flat grant and stays in the form", () => {
+  it("round-trips any formula and its label on a flat grant", () => {
     const grant: Grant = {
       when: { toggle: "combat" },
-      stats: { outgoing_damage: 0.15 },
-      scale: byScaler,
+      stats: { strike_p: 0.018 },
+      scale: { formula: "min(floor(duration / 5), 5)", label: "Stacks" },
     };
     expect(needsJson(grant)).toBe(false);
     const draft = toDraft(grant);
-    expect(draft.scaledBy).toBe("scalers.encounterDamage");
+    expect(draft.scale).toEqual({
+      formula: "min(floor(duration / 5), 5)",
+      label: "Stacks",
+    });
     expect(toGrant(draft)).toEqual(grant);
   });
 
@@ -192,31 +199,130 @@ describe("bonus-draft scale", () => {
     expect(toGrant(toDraft(grant))).toEqual(grant);
   });
 
-  it("clearing it in the draft drops the key from the rebuilt grant", () => {
+  it("clearing the formula drops the key, and a blank label is left out", () => {
     const draft = toDraft({
       stats: { outgoing_damage: 0.15 },
       scale: byScaler,
     });
-    draft.scaledBy = "";
+    draft.scale.label = "  ";
+    expect(toGrant(draft).scale).toEqual(byScaler);
+    draft.scale.formula = " ";
     expect(toGrant(draft)).not.toHaveProperty("scale");
     expect(toGrant(toDraft({ stats: {} }))).not.toHaveProperty("scale");
   });
 
-  it("any other formula, a labeled scale, tierBy or an unknown key forces JSON", () => {
+  it("a malformed formula or an unknown key forces JSON", () => {
     const stats = { outgoing_damage: 0.15 };
-    expect(needsJson({ stats, scale: { formula: "duration / 5" } })).toBe(true);
-    expect(needsJson({ stats, scale: { ...byScaler, label: "Share" } })).toBe(
+    expect(
+      needsJson({ stats, scale: { formula: 3 } } as unknown as Grant),
+    ).toBe(true);
+    expect(
+      needsJson({
+        stats,
+        scale: { ...byScaler, extra: 1 },
+      } as unknown as Grant),
+    ).toBe(true);
+    expect(needsJson({ stats, scale: "duration" } as unknown as Grant)).toBe(
       true,
     );
     expect(
-      needsJson({
-        tierBy: { formula: "duration" },
-        tiers: [{ atLeast: 1, stats }],
-      }),
-    ).toBe(true);
-    expect(
       needsJson({ stats, scaledBy: "scalers.encounterDamage" } as Grant),
     ).toBe(true);
+  });
+});
+
+describe("bonus-draft tierBy", () => {
+  const tiers = [
+    { atLeast: 1, stats: { strike_p: 0.018 } },
+    { atLeast: 3, stats: { strike_p: 0.054 } },
+  ];
+
+  it("round-trips on a tiered grant", () => {
+    const grant: Grant = { tierBy: { formula: "$stacks" }, tiers };
+    expect(needsJson(grant)).toBe(false);
+    const draft = toDraft(grant);
+    expect(draft.tierBy).toEqual({ formula: "$stacks", label: "" });
+    expect(toGrant(draft)).toEqual(grant);
+  });
+
+  it("is dropped once the payload is no longer tiered", () => {
+    const draft = toDraft({ tierBy: { formula: "$stacks" }, tiers });
+    draft.payload = "flat";
+    expect(toGrant(draft)).not.toHaveProperty("tierBy");
+  });
+
+  it("without tiers forces JSON, since the form would drop it", () => {
+    expect(needsJson({ tierBy: { formula: "1" }, stats: {} })).toBe(true);
+  });
+
+  it("keeps a threshold of 0 or below, and reads a cleared one as 1", () => {
+    const grant: Grant = {
+      tierBy: { formula: "$stacks" },
+      tiers: [
+        { atLeast: -1, stats: {} },
+        { atLeast: 0, stats: {} },
+        { atLeast: 3, stats: {} },
+      ],
+    };
+    expect(toGrant(toDraft(grant))).toEqual(grant);
+
+    const draft = toDraft(grant);
+    // What a cleared number field binds through `v-model.number`.
+    (draft.tiers[2] as { atLeast: number | string }).atLeast = "";
+    expect(toGrant(draft).tiers?.map((tier) => tier.atLeast)).toEqual([
+      -1, 0, 1,
+    ]);
+  });
+});
+
+describe("bonus-draft named formulas", () => {
+  const formulas = {
+    stacks: { formula: "min(floor(duration / 5), 5)", label: "Stacks" },
+    half: { formula: "$stacks / 2" },
+  };
+
+  it("round-trip through the bonus draft", () => {
+    const bonus: Bonus = { id: "b", name: "B", formulas, grants: [] };
+    const draft = buildDraft(bonus);
+    expect(draft.formulas).toEqual([
+      { name: "stacks", formula: formulas.stacks.formula, label: "Stacks" },
+      { name: "half", formula: "$stacks / 2", label: "" },
+    ]);
+    expect(toBonus(draft)).toEqual(bonus);
+  });
+
+  it("drop unnamed rows and keep a named one with no formula", () => {
+    expect(
+      rowsToNamedFormulas([
+        { ...newNamedFormula(), formula: "1" },
+        { ...newNamedFormula(), name: "empty" },
+      ]),
+    ).toEqual({ empty: { formula: "" } });
+  });
+
+  it("report names given twice", () => {
+    expect(
+      duplicateFormulaNames([
+        { ...newNamedFormula(), name: "a" },
+        { ...newNamedFormula(), name: " a " },
+        { ...newNamedFormula(), name: "b" },
+      ]),
+    ).toEqual(["a"]);
+  });
+
+  it("are what the draft's formulas read, with its inputs", () => {
+    const draft = buildDraft({
+      id: "b",
+      name: "B",
+      formulas,
+      inputs: { n: { type: "number", default: 2 } },
+      grants: [],
+    });
+    expect(formulaOwner(draft, "b")).toEqual({
+      id: "b",
+      inputs: { n: { type: "number", default: 2 } },
+      formulas,
+    });
   });
 });
 
@@ -459,6 +565,21 @@ describe("bonus-draft diffLabel", () => {
       inputs: { active: { type: "boolean", default: true } },
     };
     expect(label(old, nw)).toBe('edit input "active"');
+  });
+
+  it("names an added, removed or edited formula by its reference", () => {
+    const withFormula: Bonus = {
+      ...base,
+      formulas: { stacks: { formula: "duration / 5" } },
+    };
+    expect(label(base, withFormula)).toBe("add formula (1)");
+    expect(label(withFormula, base)).toBe("remove formula (1)");
+    expect(
+      label(withFormula, {
+        ...base,
+        formulas: { stacks: { formula: "duration / 5", label: "Stacks" } },
+      }),
+    ).toBe("edit formula $stacks");
   });
 
   it("keeps the excludes labels", () => {

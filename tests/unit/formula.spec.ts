@@ -4,16 +4,25 @@ import { describe, expect, it } from "vitest";
 import {
   checkFormula,
   evaluateFormula,
+  explainFormula,
+  isFormulaName,
+  lintFormula,
   formulaLabel,
   formulaScope,
   geometric,
   namedCycles,
   parseFormula,
+  perSourceScaleWarning,
   singleRead,
   transitiveReads,
 } from "../../src/engine/formula";
 import { explain } from "../../src/engine/conditions";
-import type { EvalContext, FormulaRef, ResolvedScaler } from "../../src/types";
+import type {
+  BuildParameterSlot,
+  EvalContext,
+  FormulaRef,
+  ResolvedScaler,
+} from "../../src/types";
 
 function ctx(overrides: Partial<EvalContext> = {}): EvalContext {
   return {
@@ -265,6 +274,17 @@ describe("parse problems", () => {
     ]);
   });
 
+  it("carries each suggestion as a fix for the name alone", () => {
+    const [unknown] = checkFormula("stacks * 2", ["stacks"]);
+    expect(unknown).toMatchObject({
+      brief: 'unknown name "stacks"',
+      fix: { start: 0, end: 6, text: "$stacks" },
+    });
+    const [fn] = checkFormula("mni(1, 2)", []);
+    expect(fn.fix).toEqual({ start: 0, end: 3, text: "min" });
+    expect(checkFormula("zzzzzz", [])[0]).not.toHaveProperty("fix");
+  });
+
   it("checks argument counts and which arguments are quoted", () => {
     expect(issues("min(1)")[0][0]).toBe("min() takes at least 2 arguments");
     expect(issues("occurrences(1, 2)")[0][0]).toBe(
@@ -423,5 +443,175 @@ describe("the formula condition leaf", () => {
         context,
       ).leaves[0],
     ).toEqual({ ok: false, label: "Uptime ≥ 75%", detail: "you have 50%" });
+  });
+});
+
+describe("lintFormula", () => {
+  const param = (path: string, extra: Partial<BuildParameterSlot> = {}) =>
+    [
+      path,
+      {
+        id: path,
+        label: path,
+        section: "s",
+        type: "build_parameter",
+        path,
+        paramType: "number",
+        ...extra,
+      } as BuildParameterSlot,
+    ] as const;
+  const vocabulary = {
+    params: new Map([
+      param("bolster"),
+      param("flag", { paramType: "boolean" }),
+      param("scalers.x", { scaler: { mode: "absolute" } }),
+    ]),
+    bonusIds: new Set(["other"]),
+    itemIds: new Set(["ring"]),
+    tags: new Set(["t"]),
+  };
+  const owner = {
+    id: "self",
+    inputs: {
+      n: { type: "number" as const, default: 1 },
+      on: { type: "boolean" as const, default: false },
+    },
+    formulas: { stacks: { formula: "1" } },
+  };
+  const lint = (formula: string) =>
+    lintFormula(formula, owner, vocabulary).map(
+      ({ level, message, start, end, syntax }) => [
+        level,
+        message,
+        formula.slice(start, end),
+        syntax,
+      ],
+    );
+
+  it("passes a formula whose every lookup the catalog satisfies", () => {
+    expect(
+      lint(
+        'param("bolster") * scaler("scalers.x") + input("n") + $stacks' +
+          ' + occurrences("other") + equipped("ring") + tagged("t")',
+      ),
+    ).toEqual([]);
+  });
+
+  it("marks each lookup it cannot satisfy at the call, after the text's own problems", () => {
+    expect(
+      lint(
+        'stacks + param("flag") + scaler("bolster") + input("on") + occurrences("self") + tagged("x")',
+      ),
+    ).toEqual([
+      [
+        "error",
+        'unknown name "stacks"; did you mean "$stacks"?',
+        "stacks",
+        true,
+      ],
+      [
+        "error",
+        'param("flag") is a boolean; formulas read numbers, so test it in "when"',
+        'param("flag")',
+        false,
+      ],
+      [
+        "error",
+        'scaler("bolster") is not a parameter declaring a scaler',
+        'scaler("bolster")',
+        false,
+      ],
+      [
+        "error",
+        'input("on") is a boolean; formulas read numbers, so test it in "when"',
+        'input("on")',
+        false,
+      ],
+      [
+        "warn",
+        'occurrences("self") names this bonus itself; use occurrences()',
+        'occurrences("self")',
+        false,
+      ],
+      ["warn", 'tagged("x") matches no item', 'tagged("x")', false],
+    ]);
+  });
+});
+
+describe("explainFormula", () => {
+  it("splits the text at every read and substitutes each read's value", () => {
+    const context = inBonus(
+      { stacks: { formula: "min(floor(duration / 5), 5)" } },
+      {
+        duration: 30,
+        params: new Map([["bolster", 2]]),
+      },
+    );
+    const { parts, substituted, result } = explainFormula(
+      '$stacks * param("bolster") + 1',
+      context,
+    );
+    expect(parts).toEqual([
+      { text: "$stacks", read: { kind: "named", arg: "stacks" }, value: 5 },
+      { text: " * " },
+      {
+        text: 'param("bolster")',
+        read: { kind: "param", arg: "bolster" },
+        value: 2,
+      },
+      { text: " + 1" },
+    ]);
+    expect(substituted).toBe("5 * 2 + 1");
+    expect(result).toEqual({ ok: true, value: 11 });
+  });
+
+  it("keeps a read that fails as text, and carries the failure", () => {
+    const { parts, substituted, result } = explainFormula(
+      'duration + param("gone")',
+      ctx({ duration: 4 }),
+    );
+    expect(parts.at(-1)).toEqual({
+      text: 'param("gone")',
+      read: { kind: "param", arg: "gone" },
+    });
+    expect(substituted).toBe('4 + param("gone")');
+    expect(result.ok).toBe(false);
+  });
+
+  it("returns the text whole when it does not parse", () => {
+    expect(explainFormula("1 +", ctx())).toMatchObject({
+      parts: [{ text: "1 +" }],
+      substituted: "1 +",
+      result: { ok: false },
+    });
+  });
+});
+
+describe("perSourceScaleWarning", () => {
+  const bonus = {
+    id: "self",
+    stacking: "perSource",
+    formulas: { count: { formula: 'occurrences("self")' } },
+  };
+
+  it("warns on a perSource scale counting its own occurrences, even through a name", () => {
+    expect(perSourceScaleWarning("occurrences() / 2", bonus)).toContain(
+      "perSource stacking already multiplies by",
+    );
+    expect(perSourceScaleWarning("$count", bonus)).not.toBeNull();
+  });
+
+  it("passes another bonus's count, or any scale without perSource", () => {
+    expect(perSourceScaleWarning('occurrences("other")', bonus)).toBeNull();
+    expect(
+      perSourceScaleWarning("occurrences()", { ...bonus, stacking: undefined }),
+    ).toBeNull();
+  });
+});
+
+describe("isFormulaName", () => {
+  it("takes a letter or _ then word characters", () => {
+    expect(["stacks", "_x", "a1_b"].every(isFormulaName)).toBe(true);
+    expect(["1a", "a-b", "$a", ""].some(isFormulaName)).toBe(false);
   });
 });

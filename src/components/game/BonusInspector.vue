@@ -4,10 +4,13 @@ import { bonusTitle } from "../../lib/format";
 import { statList, excluderFor, grantRows } from "../../lib/item-card-rows";
 import type { GrantRow } from "../../lib/item-card-rows";
 import {
+  choseLabel,
   collapseSources,
+  grantFormulas,
   inspectorBonuses,
   isNearMiss,
   occurrenceStateText,
+  type GrantFormulas,
 } from "../../lib/bonus-inspector";
 import { occurrenceRowsForItem } from "../../composables/useItemBonusOccurrences";
 import { matchesQuery } from "../../lib/text-filter";
@@ -60,14 +63,6 @@ const db = engine.db;
 const query = ref("");
 const nearMissOnly = ref(false);
 const open = reactive<Record<string, boolean>>({});
-
-function choseLabel(chose: string | null) {
-  if (!chose || chose === "stats") return "";
-  const [kind, value] = chose.split(":");
-  if (kind === "tier") return `${value} equipped`;
-  if (kind === "variant") return `variant ${Number(value) + 1}`;
-  return chose;
-}
 
 /** Narrows the build editor's slot list to the rows that could supply what one unmet
  *  condition counts (an item, a tag, an occurrence of another bonus). The list is in the next
@@ -153,6 +148,8 @@ interface Entry {
   scaledGrants: GrantRow[];
   /** Whether the scaled grants need their own labels to tell them apart. */
   manyGrants: boolean;
+  /** The grants a formula scales or tiers, each formula explained against the build. */
+  formulas: GrantFormulas[];
   unmet: UnmetLine[];
   /** The carrier's occurrence control at 0, the reason an entry with a met gate is inactive. */
   zeroOccurrence: ZeroOccurrence | null;
@@ -202,13 +199,14 @@ const entries = computed<Entry[]>(() => {
       slot: db.value.slotFor(entry.slotId)?.label ?? entry.slotId,
       excludedBy: excluderFor(entry, engine.bonusById.value),
       stacks: entry.stacks ?? 1,
-      chose: choseLabel(entry.chose),
+      chose: choseLabel(entry),
       payload: entry.active ? (entry.appliedStats ?? null) : entry.previewStats,
       perStack: entry.stacks > 1 ? entry.stats : null,
       scaledGrants: entry.grants.some((grant) => grant.scale)
         ? grantRows(entry, db.value.slots).filter((grant) => grant.scaled)
         : [],
       manyGrants: entry.grants.length > 1,
+      formulas: grantFormulas(entry, result.value.context, db.value.slots),
       unmet: unmet.map(unmetLine),
       zeroOccurrence: zeroOccurrenceFor(entry),
       nearMiss: isNearMiss(entry),
@@ -429,6 +427,50 @@ const counts = computed(() => {
                   row-testid="bonus-grant-stat-row"
                   @go-to-slot="jumpToSlot"
                 />
+              </div>
+            </div>
+            <div
+              v-if="entry.formulas.length"
+              class="my-1"
+              data-testid="bonus-formulas"
+            >
+              <p class="text-muted">Formulas:</p>
+              <div
+                v-for="grant in entry.formulas"
+                :key="grant.key"
+                class="mt-1 ml-4"
+              >
+                <p v-if="entry.manyGrants" class="text-muted">
+                  {{ grant.label }}:
+                </p>
+                <div
+                  v-for="line in grant.lines"
+                  :key="line.title"
+                  class="mb-1"
+                  data-testid="bonus-formula-line"
+                >
+                  <span class="text-muted">{{ line.title }}: </span>
+                  <span class="font-mono"
+                    ><template v-for="(part, i) in line.parts" :key="i"
+                      ><BaseLink
+                        v-if="part.slotId"
+                        @click="jumpToSlot(part.slotId)"
+                        >{{ part.text }}</BaseLink
+                      ><template v-else>{{ part.text }}</template></template
+                    ></span
+                  >
+                  <div class="ml-4 font-mono">
+                    <template v-if="line.substituted"
+                      >= {{ line.substituted }}
+                    </template>
+                    <span v-if="line.failed" class="font-sans text-warn">{{
+                      line.result
+                    }}</span>
+                    <template v-else
+                      >= <strong>{{ line.result }}</strong></template
+                    >
+                  </div>
+                </div>
               </div>
             </div>
             <p class="mt-1 block text-muted">
