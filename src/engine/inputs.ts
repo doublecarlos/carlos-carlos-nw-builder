@@ -5,7 +5,6 @@ import {
   bonusInputAddress,
   bonusStatAddress,
   itemStatAddress,
-  occurrenceAddress,
   readInput,
 } from "../lib/build-inputs";
 import {
@@ -29,7 +28,6 @@ import type {
   InputAddress,
   InputDef,
   InputSpec,
-  Item,
   NumberControl,
   ResolvedRow,
 } from "../types";
@@ -42,7 +40,7 @@ export interface InputSource {
 }
 
 export type InputKindId =
-  "itemDynamic" | "bonusDynamic" | "bonusInput" | "occurrence" | "repetition";
+  "itemDynamic" | "bonusDynamic" | "bonusInput" | "repetition";
 
 export interface InputEntry {
   kind: InputKindId;
@@ -224,39 +222,9 @@ const bonusInput: InputKind = {
           value: readInput(build, address, spec.default),
           slotId: entry.slotId,
           source: entry.bonus.name ?? entry.bonusId,
-          itemId: entry.sources[0]?.itemId ?? entry.carrier?.itemId,
+          itemId: entry.sources[0]?.itemId,
         };
       }),
-    ),
-};
-
-/** The items a row holds: its pick, or every candidate of a `point_assignment` slot. */
-function rowItems(db: Db, row: InputSource["rows"][number]): Item[] {
-  if (row.slot.type === "point_assignment") return db.forSlot(row.slotId);
-  return row.item ? [row.item] : [];
-}
-
-const occurrence: InputKind = {
-  id: "occurrence",
-  entries: (db, build, resolved) =>
-    resolved.rows.flatMap((row) =>
-      rowItems(db, row).flatMap((item) =>
-        (item.bonuses ?? []).flatMap((attachment) => {
-          if (typeof attachment === "string") return [];
-          const address = occurrenceAddress(item.id, attachment.bonus);
-          const bonus = db.bonusById.get(attachment.bonus);
-          return [
-            {
-              kind: "occurrence" as const,
-              address,
-              spec: countSpec(attachment, bonus?.name ?? attachment.bonus),
-              value: readInput(build, address, attachment.default),
-              slotId: row.slotId,
-              source: item.name,
-            },
-          ];
-        }),
-      ),
     ),
 };
 
@@ -292,7 +260,6 @@ const repetition: InputKind = {
 /** In the order a row shows them: counts before typed stats. */
 export const INPUT_KINDS: InputKind[] = [
   repetition,
-  occurrence,
   bonusInput,
   itemDynamic,
   bonusDynamic,

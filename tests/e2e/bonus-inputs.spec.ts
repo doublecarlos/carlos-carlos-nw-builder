@@ -155,3 +155,81 @@ test("a number input declared as a field takes typed values and presets", async 
   await field.fill("20");
   await expect(summary(row)).not.toContainText("777");
 });
+
+test("a proc left off still shows in the hover card, explained by its input", async ({
+  page,
+}) => {
+  await openWith(page, { "gear.ring1": RING_ID });
+  const row = slotRow(page, "gear.ring1");
+  await row.scrollIntoViewIfNeeded();
+  await row.hover();
+  const card = page.getByTestId("item-card");
+  await expect(card).toContainText("Test Input Bonus");
+  await expect(card).toContainText("Proc is on");
+});
+
+const STACK_RING_ID = "test-stack-ring";
+const STACK_BONUS_ID = "test-stack-bonus";
+
+/** A ring whose bonus grants 20 power per stack, scaled by a stack input. */
+async function openWithStacks(page: Page, stacks?: number) {
+  await openBuilder(page);
+  await importText(
+    page,
+    JSON.stringify({
+      name: "Stack input test",
+      choices: { "gear.ring1": STACK_RING_ID },
+      ...(stacks !== undefined && {
+        bonusValues: { [STACK_BONUS_ID]: { input: { stacks } } },
+      }),
+      catalog: {
+        items: {
+          [STACK_RING_ID]: {
+            id: STACK_RING_ID,
+            name: "Test Stack Ring",
+            filter: "gear_ring",
+            bonuses: [STACK_BONUS_ID],
+          },
+        },
+        bonuses: {
+          [STACK_BONUS_ID]: {
+            id: STACK_BONUS_ID,
+            name: "Test Stack Bonus",
+            inputs: {
+              stacks: {
+                type: "number",
+                min: 0,
+                max: 5,
+                default: 0,
+                label: "Stacks",
+              },
+            },
+            grants: [{ stats: { power: 20 }, scale: { formula: "$stacks" } }],
+          },
+        },
+        sectionPresets: {},
+      },
+    }),
+  );
+  await confirmImport(page);
+  await expect(page.getByTestId("app-header")).toContainText(/imported/i);
+  const row = slotRow(page, "gear.ring1");
+  await row.scrollIntoViewIfNeeded();
+  await row.hover();
+  return page.getByTestId("item-card");
+}
+
+test("a stack input at 0 previews what one stack would give", async ({
+  page,
+}) => {
+  const card = await openWithStacks(page);
+  await expect(card).toContainText("Test Stack Bonus");
+  await expect(card).toContainText("Stacks > 0");
+  await expect(card).toContainText("Power+20");
+});
+
+test("a stack input above 0 scales the payload", async ({ page }) => {
+  const card = await openWithStacks(page, 3);
+  await expect(card).toContainText("Test Stack Bonus");
+  await expect(card).toContainText("Power+60");
+});

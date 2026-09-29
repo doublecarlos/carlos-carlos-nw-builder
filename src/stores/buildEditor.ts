@@ -195,8 +195,6 @@ function inputLabel(address: InputAddress): string {
       return `${slotLabel(address.slotId)} ${address.key}`;
     case "bonusValues":
       return `${bonusName(address.bonusId)} ${address.key}`;
-    case "occurrenceInputs":
-      return `${itemName(address.itemId)} ${bonusName(address.bonusId)}`;
     case "assignments":
       return `${slotLabel(address.slotId)} ${itemName(address.itemId)}`;
     case "context":
@@ -610,13 +608,6 @@ export function applyPreset(preset: SectionPreset) {
   for (const [slotId, rows] of Object.entries(preset.assignments ?? {})) {
     b.assignments[slotId] = { ...b.assignments[slotId], ...rows };
   }
-
-  // Per-item, not per-slot (see `SectionPreset.occurrences`), and merged per item so a preset
-  // naming one of an item's several occurrence configs leaves the others at their current
-  // counts -- same per-key merge `values`/`assignments` above already do.
-  for (const [itemId, counts] of Object.entries(preset.occurrences ?? {})) {
-    b.occurrenceInputs[itemId] = { ...b.occurrenceInputs[itemId], ...counts };
-  }
 }
 
 /**
@@ -641,16 +632,12 @@ export function presetFromSection(
   const choices: Record<string, string> = {};
   const values: Record<string, SlotValues> = {};
   const assignments: Record<string, Record<string, number>> = {};
-  const occurrences: Record<string, Record<string, number>> = {};
   const bonusValues: Record<string, BonusValues> = {};
   const clears: string[] = [];
 
-  /** An item the snapshot references carries its occurrence counts and its bonuses' settings
-   *  along. Neither is stored per slot, so they'd otherwise be lost. */
+  /** An item the snapshot references carries its bonuses' settings along. They are not
+   *  stored per slot, so they'd otherwise be lost. */
   function carryItemState(itemId: string) {
-    const counts = b!.occurrenceInputs[itemId];
-    if (counts && Object.keys(counts).length)
-      occurrences[itemId] = { ...counts };
     const item = db.value.get(itemId);
     for (const { bonus } of item ? db.value.bonusesFor(item) : []) {
       const settings = b!.bonusValues[bonus.id];
@@ -714,7 +701,6 @@ export function presetFromSection(
   if (Object.keys(choices).length) preset.choices = choices;
   if (Object.keys(values).length) preset.values = values;
   if (Object.keys(assignments).length) preset.assignments = assignments;
-  if (Object.keys(occurrences).length) preset.occurrences = occurrences;
   if (Object.keys(bonusValues).length) preset.bonusValues = bonusValues;
   if (clears.length) preset.clears = clears;
 

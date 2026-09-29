@@ -54,7 +54,6 @@ const testBuild = (): Build => ({
   values: {},
   bonusValues: {},
   assignments: {},
-  occurrenceInputs: {},
   listRows: {},
   disabledSlots: {},
   context: {} as Build["context"],

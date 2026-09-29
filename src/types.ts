@@ -309,13 +309,6 @@ export interface SectionPreset {
   /** `point_assignment` slots -- slot id to `{ itemId: count }`, merged into the existing row
    * rather than replacing it, one count at a time like the build editor's steppers. */
   assignments?: Record<string, Record<string, number>>;
-  /** Each item's `BonusOccurrenceConfig` count(s), item id then bonus id -- keyed by item, not
-   * by slot, because `Build.occurrenceInputs` (the field this writes into) is itself per-item:
-   * an item's count follows the item wherever it is picked, so a slot key here would have
-   * nothing to address. Reaches items picked through `choices` and items stepped on a
-   * `point_assignment` row alike, which is also why this is the one field a preset carries that
-   * the section's slot ids don't scope. */
-  occurrences?: Record<string, Record<string, number>>;
   /** Slot ids the preset resets to their built-in default instead of setting -- the one field
    * that *removes* rather than writes, so a preset can say "this section has no ring" rather
    * than only ever adding to whatever was already there. Same per-slot-type handling
@@ -418,12 +411,8 @@ export interface Item {
    * grows a stepper). Named apart from either slot type deliberately -- it is the item's own
    * property, so both consumers read the same declaration. */
   inlineRepetition?: InlineRepetitionConfig;
-  /** A bare id means "always exactly 1 occurrence of this bonus" (the original, still-common
-   * shape). A `BonusOccurrenceConfig` lets the same item instead declare a typed, player-set
-   * count for one bonus -- e.g. one item standing in for 1-5 stacks of a set bonus instead of 5
-   * separate mutually-exclusive items, or a stacking effect that coexists with the item's own
-   * always-on stats. An item may mix both shapes, one entry per bonus it carries. */
-  bonuses?: (string | BonusOccurrenceConfig)[];
+  /** The bonuses this item carries, by id. Each is one occurrence per repetition of the item. */
+  bonuses?: string[];
   /** Short blurb shown alongside the item's stat summary in the build editor, for an
    * effect that reads better as text than as a stat (e.g. a proc) -- see
    * `BuildEditor.vue`'s `statSummary`. */
@@ -528,39 +517,18 @@ export interface BoundedValueConfig {
 export interface InlineRepetitionConfig extends BoundedValueConfig {
   priority?: number;
   /** Overrides this item's repetition stepper caption -- its own `name` on a point-assignment
-   *  row, the default "Copies" on an `item_picker` row. Same per-attachment display override
-   *  `BonusOccurrenceConfig.label` makes; item lists and hover cards still show the real name. */
-  label?: string;
-}
-
-/** One item's typed occurrence count for one bonus it carries -- an `Item.bonuses` entry in
- * place of a bare id, see `Item.bonuses`'s own doc comment. `bonus` is required (unlike
- * `InlineRepetitionConfig`, which needs none: an item may carry several of these, one per bonus,
- * so each has to say which bonus it's for). `min === max` needs no player input at all -- the
- * item always contributes `min` occurrences, same as a bare-id attachment always contributes 1
- * but with a magnitude other than 1. Deliberately not named/shaped after `InlineRepetitionConfig`
- * even though the bounds match: the two are independent counts (see bonus.ts's
- * `collectInlineRepetition` -- a plain-id bonus scales with the item's own inline-repetition
- * count, but a `BonusOccurrenceConfig`-carrying one does not) that may not stay structurally
- * identical as either one grows. */
-export interface BonusOccurrenceConfig extends BoundedValueConfig {
-  bonus: string; // Bonus.id
-  /** Overrides the bonus's own `name` for this attachment's row only: the checkbox/stepper
-   *  the build editor shows, and its compare-diff note. Everywhere else (bonus lists, hover
-   *  cards, etc.) still shows the bonus's real name; this only reads differently on this one
-   *  item's own input, e.g. a bonus named for its overall effect whose per-item stepper should
-   *  read "Stacks" instead. */
+   *  row, the default "Copies" on an `item_picker` row. Item lists and hover cards still show
+   *  the real name. */
   label?: string;
 }
 
 /** One player-typed magnitude an item or a grant/variant declares -- `Item.dynamicStats`,
- *  `Grant.dynamicStats`, `GrantVariant.dynamicStats`. Same `min`/`max`/`default` shape as
- *  `BonusOccurrenceConfig` (a `default` is what makes an unset value read as something other
- *  than 0), just addressing a stat directly instead of a bonus's occurrence count. */
+ *  `Grant.dynamicStats`, `GrantVariant.dynamicStats`. A `default` is what makes an unset value
+ *  read as something other than 0. */
 export interface DynamicStatConfig extends BoundedValueConfig {
   stat: StatKey;
   /** Overrides the stat's own label for this one input, same convention
-   *  `BonusOccurrenceConfig.label`/`InlineRepetitionConfig.label` already use. */
+   *  `InlineRepetitionConfig.label` already uses. */
   label?: string;
 }
 
@@ -623,12 +591,11 @@ export interface ConditionWhen {
   damageType?: string | string[];
   duration?: RangeLike;
   enemies?: RangeLike;
-  /** How many occurrences of a bonus are attached across every equipped item, tallied from
-   *  each contributing item's `BonusOccurrenceConfig` (or 1 per bare-id attachment). An
-   *  omitted `bonus` is the bonus this condition sits in (`EvalContext.self`); only a bonus
-   *  gating on a different one names it. "At least one of itself" as a grant's whole condition
-   *  is no gate at all (a 0-count attachment already forces every grant inactive), so the
-   *  exporter drops it. */
+  /** How many occurrences of a bonus are attached across every equipped item, one per
+   *  carrying item's repetition. An omitted `bonus` is the bonus this condition sits in
+   *  (`EvalContext.self`); only a bonus gating on a different one names it. "At least one of
+   *  itself" as a grant's whole condition is no gate at all (a 0-count attachment already
+   *  forces every grant inactive), so the exporter drops it. */
   bonusOccurrences?: BonusOccurrenceSpec;
   equipped?: RangeSpec & { tag?: string; item?: string };
   param?: ParamCondition;
@@ -879,7 +846,6 @@ export type InputAddress =
       kind: keyof BonusValues;
       key: string;
     }
-  | { store: "occurrenceInputs"; itemId: string; bonusId: string }
   | { store: "assignments"; slotId: string; itemId: string }
   | { store: "context"; path: string };
 
@@ -917,11 +883,6 @@ export interface Build {
    * slot's rows are seeded up front (`defaultBuild`); an item_picker's cannot be (the pick
    * changes), so that one falls back to the config's own `default` on read. */
   assignments: Record<string, Record<string, number>>;
-  /** Every item's typed `BonusOccurrenceConfig` count(s), by item id then bonus id -- keyed by
-   * bonus id (not just item id) since one item may carry several such configs, each needing its
-   * own count (see `Item.bonuses`). A key absent here reads as that config's own `default` --
-   * only explicit overrides a user made are stored. */
-  occurrenceInputs: Record<string, Record<string, number>>;
   /** Each `item_picker_list`'s row count, by container slot id. Stored rather than derived
    * from `choices` so a row left empty is still a row. Absent reads as `defaultRows`. */
   listRows: Record<string, number>;
@@ -1189,12 +1150,6 @@ export interface EvaluatedBonus {
   bonusId: string;
   /** One entry per contributing slot, in build order. */
   sources: BonusSource[];
-  /** An item on the build that carries this bonus without contributing an occurrence (its
-   *  occurrence config sits at 0), so the inspector can say which control to flip and where.
-   *  Null whenever there is a real source, or when the bonus is only reachable through a
-   *  carrier at 0 points. A bonus is on the build when it has a source or a carrier
-   *  (lib/bonus-inspector.ts's `isCarried`). */
-  carrier: { itemId: string; name: string; slotId: string } | null;
   slotId: string;
   /** A bonus is active if at least one of its grants is active and it comes from a real source. */
   active: boolean;

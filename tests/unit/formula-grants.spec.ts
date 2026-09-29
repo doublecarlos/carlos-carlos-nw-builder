@@ -239,7 +239,6 @@ function buildWith(
     values: {},
     bonusValues: {},
     assignments: {},
-    occurrenceInputs: {},
     listRows: {},
     disabledSlots: {},
     context: { role: "dps", toggles: {}, ...context } as Build["context"],

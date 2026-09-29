@@ -99,7 +99,6 @@ function buildWith(choices: Record<string, string> = {}): Build {
     choices,
     values: {},
     assignments: {},
-    occurrenceInputs: {},
     listRows: {},
     disabledSlots: {},
     context: { class: "" },

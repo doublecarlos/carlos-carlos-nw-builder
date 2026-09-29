@@ -9,10 +9,8 @@ import {
   grantFormulas,
   inspectorBonuses,
   isNearMiss,
-  occurrenceStateText,
   type GrantFormulas,
 } from "../../lib/bonus-inspector";
-import { occurrenceRowsForItem } from "../../composables/useItemBonusOccurrences";
 import { matchesQuery } from "../../lib/text-filter";
 import { supplyNeedFor } from "../../lib/bonus-slots";
 import * as engine from "../../stores/resolved";
@@ -91,22 +89,6 @@ function unmetLine(leaf: ConditionLeafResult): UnmetLine {
   };
 }
 
-/** Why a carried bonus has no occurrence: the carrier's own control for it sits at 0. Reads
- *  the same rows the carrier's picker renders, so the label is the control's own; a carrier
- *  with no such row (a fixed config) falls back to plain wording. */
-function zeroOccurrenceFor(entry: EvaluatedBonus): ZeroOccurrence | null {
-  const carrier = entry.carrier;
-  if (!carrier) return null;
-  const row = occurrenceRowsForItem(db.value.get(carrier.itemId)).find(
-    (candidate) => candidate.bonusId === entry.id,
-  );
-  return {
-    label: row?.label ?? "count",
-    state: row ? occurrenceStateText(row) : "0",
-    carrier,
-  };
-}
-
 /** Parks the build editor's cursor on a row this bonus comes from. */
 function jumpToSlot(slotId: string) {
   goTo.requestJump({ slotId });
@@ -120,12 +102,6 @@ function statText(stats: StatValues | null | undefined): string {
 
 function toggle(id: string) {
   open[id] = !open[id];
-}
-
-interface ZeroOccurrence {
-  label: string;
-  state: string;
-  carrier: NonNullable<EvaluatedBonus["carrier"]>;
 }
 
 interface Entry {
@@ -151,8 +127,6 @@ interface Entry {
   /** The grants a formula scales or tiers, each formula explained against the build. */
   formulas: GrantFormulas[];
   unmet: UnmetLine[];
-  /** The carrier's occurrence control at 0, the reason an entry with a met gate is inactive. */
-  zeroOccurrence: ZeroOccurrence | null;
   nearMiss: boolean;
   state: "excluded" | "active" | "inactive";
   dotClass: string;
@@ -190,12 +164,7 @@ const entries = computed<Entry[]>(() => {
       title,
       qualifier:
         (titleCounts.get(title) ?? 0) > 1 ? conditionSummary(entry) : "",
-      // A carrier contributing nothing is still where the bonus comes from.
-      sources: collapseSources(
-        entry.sources.length || !entry.carrier
-          ? entry.sources
-          : [{ name: entry.carrier.name, slotId: entry.carrier.slotId }],
-      ),
+      sources: collapseSources(entry.sources),
       slot: db.value.slotFor(entry.slotId)?.label ?? entry.slotId,
       excludedBy: excluderFor(entry, engine.bonusById.value),
       stacks: entry.stacks ?? 1,
@@ -208,7 +177,6 @@ const entries = computed<Entry[]>(() => {
       manyGrants: entry.grants.length > 1,
       formulas: grantFormulas(entry, result.value.context, db.value.slots),
       unmet: unmet.map(unmetLine),
-      zeroOccurrence: zeroOccurrenceFor(entry),
       nearMiss: isNearMiss(entry),
       state,
       dotClass: STATE_DOT[state],
@@ -368,22 +336,6 @@ const counts = computed(() => {
               </ul>
             </li>
           </ul>
-
-          <p
-            v-if="entry.zeroOccurrence"
-            class="mt-1 pl-3.5 text-muted"
-            data-testid="bonus-zero-occurrence"
-          >
-            <span class="text-warn"
-              >{{ entry.zeroOccurrence.label }}:
-              {{ entry.zeroOccurrence.state }}</span
-            >
-            on
-            <BaseLink
-              @click="jumpToSlot(entry.zeroOccurrence.carrier.slotId)"
-              >{{ entry.zeroOccurrence.carrier.name }}</BaseLink
-            >
-          </p>
 
           <p
             v-if="entry.excludedBy"

@@ -2,8 +2,21 @@
   {
     "id": "accursed-resolve",
     "name": "Accursed Resolve",
+    "inputs": {
+      "active": {
+        "type": "boolean",
+        "label": "Proc",
+        "default": false
+      }
+    },
     "grants": [
       {
+        "when": {
+          "input": {
+            "key": "active",
+            "is": true
+          }
+        },
         "stats": {
           "power": 3500,
           "deflect": 3500
@@ -485,6 +498,15 @@
   {
     "id": "burning-radiant-shift-stacks",
     "name": "Burning/Radiant Shift stacks",
+    "inputs": {
+      "stacks": {
+        "type": "number",
+        "label": "Stacks",
+        "min": 0,
+        "max": 7,
+        "default": 7
+      }
+    },
     "grants": [
       {
         "when": {
@@ -492,11 +514,12 @@
         },
         "stats": {
           "outgoing_damage": 0.01
+        },
+        "scale": {
+          "formula": "$stacks"
         }
       }
-    ],
-    "stacking": "perSource",
-    "maxStacks": 7
+    ]
   },
   {
     "id": "campfire-buff-bonus",
@@ -569,8 +592,21 @@
   {
     "id": "cavalry-s-alarm",
     "name": "Cavalry's Alarm",
+    "inputs": {
+      "active": {
+        "type": "boolean",
+        "label": "Proc",
+        "default": false
+      }
+    },
     "grants": [
       {
+        "when": {
+          "input": {
+            "key": "active",
+            "is": true
+          }
+        },
         "stats": {
           "combined_rating": 3000
         }
@@ -580,15 +616,25 @@
   {
     "id": "celestial-fluid-aurora-s-power",
     "name": "Celestial Fluid Aurora's Power",
+    "inputs": {
+      "stacks": {
+        "type": "number",
+        "label": "Power stacks",
+        "min": 0,
+        "max": 10,
+        "default": 0
+      }
+    },
     "grants": [
       {
         "stats": {
           "power_p": 0.05
+        },
+        "scale": {
+          "formula": "$stacks"
         }
       }
-    ],
-    "stacking": "perSource",
-    "maxStacks": 10
+    ]
   },
   {
     "id": "cha-lua-accuracy-severity",
@@ -619,39 +665,37 @@
   {
     "id": "death-s-bulwark-stats",
     "name": "Death's Bulwark Stats",
+    "inputs": {
+      "active": {
+        "type": "boolean",
+        "label": "Proc",
+        "default": false
+      }
+    },
     "grants": [
       {
-        "variants": [
+        "when": {
+          "input": {
+            "key": "active",
+            "is": true
+          }
+        },
+        "tiers": [
           {
-            "when": {
-              "equipped": {
-                "item": "boon-master-death-s-bulwark",
-                "exactly": 1
-              }
-            },
+            "atLeast": 1,
             "stats": {
               "defense_p": 0.02
             }
           },
           {
-            "when": {
-              "equipped": {
-                "item": "boon-master-death-s-bulwark",
-                "exactly": 2
-              }
-            },
+            "atLeast": 2,
             "stats": {
               "defense_p": 0.04,
               "crit_avoid_p": 0.04
             }
           },
           {
-            "when": {
-              "equipped": {
-                "item": "boon-master-death-s-bulwark",
-                "exactly": 3
-              }
-            },
+            "atLeast": 3,
             "stats": {
               "defense_p": 0.06,
               "crit_avoid_p": 0.06
@@ -664,39 +708,37 @@
   {
     "id": "deathly-rage-stats",
     "name": "Deathly Rage Stats",
+    "inputs": {
+      "active": {
+        "type": "boolean",
+        "label": "Proc",
+        "default": false
+      }
+    },
     "grants": [
       {
-        "variants": [
+        "when": {
+          "input": {
+            "key": "active",
+            "is": true
+          }
+        },
+        "tiers": [
           {
-            "when": {
-              "equipped": {
-                "item": "boon-master-deathly-rage",
-                "exactly": 1
-              }
-            },
+            "atLeast": 1,
             "stats": {
               "ca_p": 0.02
             }
           },
           {
-            "when": {
-              "equipped": {
-                "item": "boon-master-deathly-rage",
-                "exactly": 2
-              }
-            },
+            "atLeast": 2,
             "stats": {
               "power_p": 0.04,
               "ca_p": 0.04
             }
           },
           {
-            "when": {
-              "equipped": {
-                "item": "boon-master-deathly-rage",
-                "exactly": 3
-              }
-            },
+            "atLeast": 3,
             "stats": {
               "power_p": 0.06,
               "ca_p": 0.06,
@@ -724,10 +766,21 @@
   {
     "id": "doomsayer-2",
     "name": "Doomsayer",
+    "inputs": {
+      "active": {
+        "type": "boolean",
+        "label": "Proc",
+        "default": true
+      }
+    },
     "grants": [
       {
         "when": {
-          "toggle": "combat"
+          "toggle": "combat",
+          "input": {
+            "key": "active",
+            "is": true
+          }
         },
         "stats": {
           "outgoing_damage": 0.1
@@ -949,8 +1002,21 @@
   {
     "id": "fighter-s-unshakable-shieldarm",
     "name": "Fighter's Unshakable Shieldarm",
+    "inputs": {
+      "active": {
+        "type": "boolean",
+        "label": "Blocking (10% Crit Avoid)",
+        "default": true
+      }
+    },
     "grants": [
       {
+        "when": {
+          "input": {
+            "key": "active",
+            "is": true
+          }
+        },
         "stats": {
           "crit_avoid_p": 0.1
         }
@@ -991,14 +1057,25 @@
   {
     "id": "frigid-winds-2",
     "name": "Frigid Winds",
+    "inputs": {
+      "chill": {
+        "type": "number",
+        "label": "Chill stacks",
+        "min": 1,
+        "max": 6,
+        "default": 6
+      }
+    },
     "grants": [
       {
         "stats": {
           "outgoing_damage": 0.015
+        },
+        "scale": {
+          "formula": "$chill"
         }
       }
-    ],
-    "stacking": "perSource"
+    ]
   },
   {
     "id": "gladiator-s-guile",
@@ -1646,10 +1723,21 @@
   {
     "id": "m31-bloodletting-ascendant",
     "name": "M31 Bloodletting (Ascendant)",
+    "inputs": {
+      "active": {
+        "type": "boolean",
+        "label": "Proc",
+        "default": true
+      }
+    },
     "grants": [
       {
         "when": {
-          "toggle": "combat"
+          "toggle": "combat",
+          "input": {
+            "key": "active",
+            "is": true
+          }
         },
         "stats": {
           "outgoing_damage": 0.09,
@@ -2326,10 +2414,21 @@
   {
     "id": "m33-bloodletting",
     "name": "M33 Bloodletting",
+    "inputs": {
+      "active": {
+        "type": "boolean",
+        "label": "Proc",
+        "default": true
+      }
+    },
     "grants": [
       {
         "when": {
-          "toggle": "combat"
+          "toggle": "combat",
+          "input": {
+            "key": "active",
+            "is": true
+          }
         },
         "stats": {
           "outgoing_damage": 0.035,
@@ -2342,10 +2441,21 @@
   {
     "id": "m33-bloodletting-celestial",
     "name": "M33 Bloodletting (Celestial)",
+    "inputs": {
+      "active": {
+        "type": "boolean",
+        "label": "Proc",
+        "default": true
+      }
+    },
     "grants": [
       {
         "when": {
-          "toggle": "combat"
+          "toggle": "combat",
+          "input": {
+            "key": "active",
+            "is": true
+          }
         },
         "stats": {
           "outgoing_damage": 0.05,
@@ -2497,10 +2607,21 @@
   {
     "id": "m33-dashing-ranger-s-strike",
     "name": "M33 Dashing Ranger's Strike",
+    "inputs": {
+      "active": {
+        "type": "boolean",
+        "label": "Movement proc",
+        "default": true
+      }
+    },
     "grants": [
       {
         "when": {
-          "toggle": "combat"
+          "toggle": "combat",
+          "input": {
+            "key": "active",
+            "is": true
+          }
         },
         "stats": {
           "strike_p": 0.055
@@ -2511,10 +2632,21 @@
   {
     "id": "m33-dashing-ranger-s-strike-celestial",
     "name": "M33 Dashing Ranger's Strike (Celestial)",
+    "inputs": {
+      "active": {
+        "type": "boolean",
+        "label": "Movement proc",
+        "default": true
+      }
+    },
     "grants": [
       {
         "when": {
-          "toggle": "combat"
+          "toggle": "combat",
+          "input": {
+            "key": "active",
+            "is": true
+          }
         },
         "stats": {
           "strike_p": 0.065
@@ -2871,8 +3003,21 @@
   {
     "id": "magistrate-patience",
     "name": "Magistrate Patience",
+    "inputs": {
+      "active": {
+        "type": "boolean",
+        "label": "Proc",
+        "default": false
+      }
+    },
     "grants": [
       {
+        "when": {
+          "input": {
+            "key": "active",
+            "is": true
+          }
+        },
         "stats": {
           "crit_avoid": 2500
         }
@@ -2896,8 +3041,21 @@
   {
     "id": "master-cruelty",
     "name": "Master Cruelty",
+    "inputs": {
+      "active": {
+        "type": "boolean",
+        "label": "Proc",
+        "default": true
+      }
+    },
     "grants": [
       {
+        "when": {
+          "input": {
+            "key": "active",
+            "is": true
+          }
+        },
         "tiers": [
           {
             "atLeast": 1,
@@ -2924,8 +3082,21 @@
   {
     "id": "master-s-precision",
     "name": "Master's Precision",
+    "inputs": {
+      "active": {
+        "type": "boolean",
+        "label": "Proc",
+        "default": false
+      }
+    },
     "grants": [
       {
+        "when": {
+          "input": {
+            "key": "active",
+            "is": true
+          }
+        },
         "stats": {
           "strike": 5000
         }
@@ -2935,17 +3106,27 @@
   {
     "id": "masterwork-sets",
     "name": "Masterwork Sets",
+    "inputs": {
+      "stacks": {
+        "type": "number",
+        "label": "Stacks",
+        "min": 0,
+        "max": 4,
+        "default": 0
+      }
+    },
     "grants": [
       {
         "stats": {
           "outgoing_damage": 0.02,
           "overall_healing": 0.02,
           "incoming_damage": -0.02
+        },
+        "scale": {
+          "formula": "$stacks"
         }
       }
-    ],
-    "stacking": "perSource",
-    "maxStacks": 4
+    ]
   },
   {
     "id": "mender-s-covenant",
@@ -3049,8 +3230,21 @@
   {
     "id": "momentum-s-movement-speed",
     "name": "Momentum's Movement Speed",
+    "inputs": {
+      "active": {
+        "type": "boolean",
+        "label": "Movement Speed Buff",
+        "default": false
+      }
+    },
     "grants": [
       {
+        "when": {
+          "input": {
+            "key": "active",
+            "is": true
+          }
+        },
         "stats": {
           "movement": 0.2
         }
@@ -3183,91 +3377,32 @@
   {
     "id": "pack-tactics",
     "name": "Pack Tactics",
+    "inputs": {
+      "stacks": {
+        "type": "number",
+        "label": "Stacks",
+        "min": 0,
+        "max": 4,
+        "default": 1
+      }
+    },
+    "formulas": {
+      "self": {
+        "formula": "min(equipped(\"pack-tactics-self\"), 1)"
+      }
+    },
     "grants": [
       {
         "when": {
-          "toggle": "party",
-          "not": {
-            "equipped": {
-              "item": "pack-tactics-self"
-            }
-          }
+          "toggle": "party"
         },
-        "tiers": [
-          {
-            "atLeast": 1,
-            "stats": {
-              "ca": 2953,
-              "awareness": 2953
-            }
-          },
-          {
-            "atLeast": 2,
-            "stats": {
-              "ca": 4429,
-              "awareness": 4429
-            }
-          },
-          {
-            "atLeast": 3,
-            "stats": {
-              "ca": 5167,
-              "awareness": 5167
-            }
-          },
-          {
-            "atLeast": 4,
-            "stats": {
-              "ca": 5536,
-              "awareness": 5536
-            }
-          },
-          {
-            "atLeast": 5,
-            "stats": {
-              "ca": 5721,
-              "awareness": 5721
-            }
-          }
-        ]
-      },
-      {
-        "when": {
-          "toggle": "party",
-          "equipped": {
-            "item": "pack-tactics-self"
-          }
+        "stats": {
+          "ca": 2953,
+          "awareness": 2953
         },
-        "tiers": [
-          {
-            "atLeast": 1,
-            "stats": {
-              "ca": 1476,
-              "awareness": 1476
-            }
-          },
-          {
-            "atLeast": 2,
-            "stats": {
-              "ca": 2214,
-              "awareness": 2214
-            }
-          },
-          {
-            "atLeast": 3,
-            "stats": {
-              "ca": 2583,
-              "awareness": 2583
-            }
-          },
-          {
-            "atLeast": 4,
-            "stats": {
-              "ca": 2768,
-              "awareness": 2768
-            }
-          }
-        ]
+        "scale": {
+          "formula": "geometric($stacks + $self, 0.5) - $self"
+        }
       }
     ]
   },
@@ -3522,8 +3657,21 @@
   {
     "id": "predator-s-instinct",
     "name": "Predator's Instinct",
+    "inputs": {
+      "active": {
+        "type": "boolean",
+        "label": "Proc",
+        "default": false
+      }
+    },
     "grants": [
       {
+        "when": {
+          "input": {
+            "key": "active",
+            "is": true
+          }
+        },
         "stats": {
           "acc": 3000,
           "ca": 3000,
@@ -3799,6 +3947,15 @@
   {
     "id": "raptor-s-instincts-tamed-velociraptor-power-offense",
     "name": "Raptor's Instincts",
+    "inputs": {
+      "raptors": {
+        "type": "number",
+        "label": "Other raptors in party",
+        "min": 0,
+        "max": 4,
+        "default": 4
+      }
+    },
     "grants": [
       {
         "when": {
@@ -3806,10 +3963,12 @@
         },
         "stats": {
           "power_p": 0.045
+        },
+        "scale": {
+          "formula": "$raptors"
         }
       }
-    ],
-    "stacking": "perSource"
+    ]
   },
   {
     "id": "rattatoule-accuracy",
@@ -3829,6 +3988,15 @@
   {
     "id": "relative-haste-2",
     "name": "Relative Haste",
+    "inputs": {
+      "chilled": {
+        "type": "number",
+        "label": "Chilled enemies",
+        "min": 1,
+        "max": 4,
+        "default": 1
+      }
+    },
     "grants": [
       {
         "when": {
@@ -3836,17 +4004,31 @@
         },
         "stats": {
           "recharge": 0.05
+        },
+        "scale": {
+          "formula": "$chilled"
         }
       }
-    ],
-    "stacking": "perSource",
-    "maxStacks": 4
+    ]
   },
   {
     "id": "rimefire-weaving-2",
     "name": "Rimefire Weaving",
+    "inputs": {
+      "active": {
+        "type": "boolean",
+        "label": "Rimefire active",
+        "default": true
+      }
+    },
     "grants": [
       {
+        "when": {
+          "input": {
+            "key": "active",
+            "is": true
+          }
+        },
         "stats": {
           "enemy_incoming_damage": 0.05
         }
@@ -3856,10 +4038,26 @@
   {
     "id": "risky-investment",
     "name": "Risky Investment",
+    "inputs": {
+      "investiture": {
+        "type": "number",
+        "label": "Soul Investiture",
+        "min": 0,
+        "max": 5,
+        "default": 5
+      }
+    },
     "grants": [
       {
         "when": {
-          "toggle": "combat"
+          "toggle": "combat",
+          "input": {
+            "key": "investiture",
+            "atLeast": 1
+          }
+        },
+        "tierBy": {
+          "formula": "$investiture"
         },
         "tiers": [
           {
@@ -3994,6 +4192,15 @@
   {
     "id": "shattered-resolve-stacks",
     "name": "Shattered Resolve Stacks",
+    "inputs": {
+      "stacks": {
+        "type": "number",
+        "label": "Stacks",
+        "min": 0,
+        "max": 5,
+        "default": 5
+      }
+    },
     "grants": [
       {
         "when": {
@@ -4003,17 +4210,31 @@
           "defense_p": 0.036,
           "awareness_p": 0.036,
           "deflect_p": 0.036
+        },
+        "scale": {
+          "formula": "$stacks"
         }
       }
-    ],
-    "stacking": "perSource",
-    "maxStacks": 5
+    ]
   },
   {
     "id": "shepherd-s-devotion",
     "name": "Shepherd's Devotion",
+    "inputs": {
+      "active": {
+        "type": "boolean",
+        "label": "Proc",
+        "default": false
+      }
+    },
     "grants": [
       {
+        "when": {
+          "input": {
+            "key": "active",
+            "is": true
+          }
+        },
         "stats": {
           "defense": 1500
         }
@@ -4043,10 +4264,22 @@
   {
     "id": "soul-sparks",
     "name": "Soul Sparks",
+    "inputs": {
+      "sparks": {
+        "type": "number",
+        "label": "Soul Sparks",
+        "min": 1,
+        "max": 30,
+        "default": 30
+      }
+    },
     "grants": [
       {
         "stats": {
           "outgoing_damage": 0.005
+        },
+        "scale": {
+          "formula": "$sparks"
         }
       },
       {
@@ -4057,11 +4290,12 @@
         },
         "stats": {
           "outgoing_damage": 0.005
+        },
+        "scale": {
+          "formula": "$sparks"
         }
       }
-    ],
-    "stacking": "perSource",
-    "maxStacks": 30
+    ]
   },
   {
     "id": "soul-sparks-average",
@@ -4229,8 +4463,21 @@
   {
     "id": "swath-of-destruction-2",
     "name": "Swath of Destruction",
+    "inputs": {
+      "active": {
+        "type": "boolean",
+        "label": "Smolder active",
+        "default": true
+      }
+    },
     "grants": [
       {
+        "when": {
+          "input": {
+            "key": "active",
+            "is": true
+          }
+        },
         "stats": {
           "enemy_incoming_damage": 0.03
         }
@@ -4240,14 +4487,26 @@
   {
     "id": "swift-synergy",
     "name": "Swift Synergy",
+    "inputs": {
+      "stacks": {
+        "type": "number",
+        "label": "Stacks",
+        "min": 0,
+        "max": 12,
+        "default": 12
+      }
+    },
     "grants": [
       {
         "when": {
           "toggle": "combat"
         },
         "stats": {
-          "ca_p": 0.054000000000000006,
-          "sev_p": 0.054000000000000006
+          "ca_p": 0.0045,
+          "sev_p": 0.0045
+        },
+        "scale": {
+          "formula": "$stacks"
         }
       },
       {
@@ -4262,8 +4521,11 @@
           ]
         },
         "stats": {
-          "ca_p": 0.054000000000000006,
-          "sev_p": 0.054000000000000006
+          "ca_p": 0.0045,
+          "sev_p": 0.0045
+        },
+        "scale": {
+          "formula": "$stacks"
         }
       }
     ]
@@ -4285,8 +4547,21 @@
   {
     "id": "trainer-s-restoration",
     "name": "Trainer's Restoration",
+    "inputs": {
+      "active": {
+        "type": "boolean",
+        "label": "Proc",
+        "default": false
+      }
+    },
     "grants": [
       {
+        "when": {
+          "input": {
+            "key": "active",
+            "is": true
+          }
+        },
         "stats": {
           "inc_healing": 3500,
           "out_healing": 3500

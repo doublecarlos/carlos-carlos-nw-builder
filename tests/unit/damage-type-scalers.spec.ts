@@ -26,7 +26,7 @@ const SHARES = { encounterDamage: 0.4, atWillDamage: 0.05, dailyDamage: 0.05 };
 
 function resolve(
   context: Record<string, unknown> = {},
-  occurrenceInputs: Build["occurrenceInputs"] = {},
+  bonusValues: Build["bonusValues"] = {},
 ) {
   return engine.resolveBuild(shipped, {
     id: "b",
@@ -34,7 +34,7 @@ function resolve(
     choices: CHOICES,
     values: {},
     assignments: {},
-    occurrenceInputs,
+    bonusValues,
     listRows: storedListRows({
       choices: CHOICES,
       values: {},
@@ -54,18 +54,14 @@ function bonusStats(result: ReturnType<typeof resolve>, id: string) {
 
 /** Risky Investment's Soul Investiture count, which ships at its full five stacks. */
 const stacksOf = (stacks: number) => ({
-  "risky-investment": { "risky-investment": stacks },
+  "risky-investment": { input: { investiture: stacks } },
 });
 
 describe("shipped damage-type scaled entries", () => {
   it("start Risky Investment at five Soul Investiture stacks", () => {
-    const attachment = shipped
-      .get("risky-investment")!
-      .bonuses!.find(
-        (entry) =>
-          typeof entry !== "string" && entry.bonus === "risky-investment",
-      );
-    expect(attachment).toMatchObject({ default: 5, max: 5 });
+    expect(
+      shipped.bonusById.get("risky-investment")!.inputs!.investiture,
+    ).toMatchObject({ default: 5, max: 5 });
   });
 
   it("reproduce the old pre-multiplied values at the weights those assumed", () => {

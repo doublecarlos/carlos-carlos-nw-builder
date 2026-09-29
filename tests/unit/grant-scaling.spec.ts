@@ -69,9 +69,11 @@ const flatBonus: Bonus = {
 };
 const tierBonus: Bonus = {
   id: "tier-scaled",
+  inputs: { stacks: { type: "number", min: 0, max: 5, default: 0 } },
   grants: [
     {
       scale: byScaler(SCALER),
+      tierBy: { formula: "$stacks" },
       tiers: [
         { atLeast: 1, stats: { outgoing_damage: 0.22 } },
         { atLeast: 5, stats: { outgoing_damage: 0.3 } },
@@ -149,9 +151,7 @@ const ring = (id: string, bonuses: Item["bonuses"]): Item => ({
 });
 const items: Item[] = [
   ring("flat-ring", ["flat-scaled"]),
-  ring("tier-ring", [
-    { bonus: "tier-scaled", min: 0, max: 5, default: 0, label: "Stacks" },
-  ]),
+  ring("tier-ring", ["tier-scaled"]),
   ring("variant-ring", ["variant-scaled"]),
   ring("stacked-ring", ["stacked-scaled"]),
   ring("dynamic-ring", ["dynamic-scaled"]),
@@ -207,7 +207,7 @@ const testDb = db.build(
 function buildWith(
   choices: Record<string, string>,
   context: Record<string, unknown> = {},
-  occurrenceInputs: Build["occurrenceInputs"] = {},
+  bonusValues: Build["bonusValues"] = {},
 ): Build {
   return {
     id: "b",
@@ -215,7 +215,7 @@ function buildWith(
     choices,
     values: {},
     assignments: {},
-    occurrenceInputs,
+    bonusValues,
     listRows: storedListRows({
       choices,
       values: {},
@@ -313,7 +313,7 @@ describe("tier and variant payloads", () => {
     const at = (count: number) =>
       bonusOf(
         buildWith({ "gear.ring1": "tier-ring" }, share(0.4), {
-          "tier-ring": { "tier-scaled": count },
+          "tier-scaled": { input: { stacks: count } },
         }),
         "tier-scaled",
       ).stats.outgoing_damage;
@@ -435,7 +435,7 @@ describe("GrantEvaluation.scale", () => {
   it("is carried by tier and variant grants", () => {
     const tier = entryOf(
       buildWith({ "gear.ring1": "tier-ring" }, share(0.4), {
-        "tier-ring": { "tier-scaled": 5 },
+        "tier-scaled": { input: { stacks: 5 } },
       }),
       "tier-scaled",
     ).grants[0];
@@ -588,7 +588,7 @@ describe("grantRows for a scaled grant", () => {
   it("scales every tier rung, noting the real value under each", () => {
     const entry = entryOf(
       buildWith({ "gear.ring1": "tier-ring" }, share(0.4), {
-        "tier-ring": { "tier-scaled": 5 },
+        "tier-scaled": { input: { stacks: 5 } },
       }),
       "tier-scaled",
     );
@@ -669,11 +669,7 @@ describe("grantRows for a scaled grant", () => {
       engine
         .resolveBuild(
           db.build(
-            [
-              ring("plain-tier-ring", [
-                { bonus: "plain-tier", min: 0, max: 5, default: 1 },
-              ]),
-            ],
+            [ring("plain-tier-ring", ["plain-tier"])],
             [plainTier],
             schema,
             slotsData,
@@ -717,7 +713,6 @@ describe("grantRows for a scaled grant", () => {
     const [row] = itemCardRows(
       testDb.get("flat-ring")!,
       [entry],
-      [],
       new Map(),
       slotsData.slots,
     );

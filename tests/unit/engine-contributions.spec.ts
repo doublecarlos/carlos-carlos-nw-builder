@@ -152,7 +152,6 @@ function resolveWithNecks(
     ),
     values: {},
     assignments: {},
-    occurrenceInputs: {},
     listRows: {},
     disabledSlots: {},
     context: { ...CONTEXT, ...context },

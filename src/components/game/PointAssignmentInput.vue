@@ -2,8 +2,7 @@
 // Pure control for one PointAssignmentSlot: no label, no diff markup, no row chrome, the same
 // division of concerns BuildParamInput.vue keeps for build_parameter. One
 // InlineRepetitionStepper per candidate item. Whatever belongs under an item's stepper (its
-// bonus occurrence counts) comes from the caller through the `item` slot, since the build
-// editor and PresetForm.vue read and write those differently.
+// bonus inputs) comes from the caller through the `item` slot.
 import { computed, useTemplateRef } from "vue";
 import InlineRepetitionStepper from "./InlineRepetitionStepper.vue";
 import { db } from "../../stores/resolved";

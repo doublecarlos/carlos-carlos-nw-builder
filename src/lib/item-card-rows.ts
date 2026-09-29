@@ -10,7 +10,6 @@ import { descriptionParagraphs } from "./description";
 import { findParamSlot } from "./build-path";
 import { isHiddenBonus } from "../engine/bonus";
 import { formatNumber } from "../engine/formula";
-import type { OccurrenceRow } from "../composables/useItemBonusOccurrences";
 import type {
   BonusSource,
   DynamicStatConfig,
@@ -137,17 +136,6 @@ export function statList(
       multiplier === 1 ? value : (value ?? 0) * multiplier,
     ),
   }));
-}
-
-// Only surfaced for an inactive row whose reason is this item's own count sitting at 0.
-function zeroOccurrenceNote(
-  bonusId: string,
-  active: boolean,
-  occurrenceRowByBonusId: Map<string, OccurrenceRow>,
-) {
-  if (active) return null;
-  const row = occurrenceRowByBonusId.get(bonusId);
-  return row && row.value === 0 ? row : null;
 }
 
 // Other items crediting the same non-tiered, non-stacking bonus, so it doesn't read as
@@ -384,7 +372,6 @@ export type ItemCardRow = ReturnType<typeof buildItemCardRow>;
 function buildItemCardRow(
   entry: EvaluatedBonus,
   item: Item,
-  occurrenceRowByBonusId: Map<string, OccurrenceRow>,
   bonusById: Map<string, EvaluatedBonus>,
   slots: Slot[],
 ) {
@@ -402,11 +389,6 @@ function buildItemCardRow(
     dotClass: STATE_DOT[state],
     muted: state !== "active",
     name: entry.bonus?.name ?? null,
-    zeroOccurrence: zeroOccurrenceNote(
-      entry.id,
-      entry.active,
-      occurrenceRowByBonusId,
-    ),
     excludedBy: excluderFor(entry, bonusById),
     stacks: entry.stacks ?? 1,
     grants: grantRows(entry, slots),
@@ -429,16 +411,10 @@ const STATE_DOT: Record<string, string> = {
 export function itemCardRows(
   item: Item,
   bonuses: EvaluatedBonus[],
-  occurrenceRows: OccurrenceRow[],
   bonusById: Map<string, EvaluatedBonus> = new Map(),
   slots: Slot[] = [],
 ): ItemCardRow[] {
-  const occurrenceRowByBonusId = new Map(
-    occurrenceRows.map((row) => [row.bonusId, row]),
-  );
   return bonuses
     .filter((entry) => !isHiddenBonus(entry.bonus))
-    .map((entry) =>
-      buildItemCardRow(entry, item, occurrenceRowByBonusId, bonusById, slots),
-    );
+    .map((entry) => buildItemCardRow(entry, item, bonusById, slots));
 }

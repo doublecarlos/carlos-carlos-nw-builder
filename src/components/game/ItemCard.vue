@@ -20,7 +20,6 @@ import {
   scaleNote,
 } from "../../lib/item-card-rows";
 import type { ItemCardRow, StatLine } from "../../lib/item-card-rows";
-import { occurrenceStateText } from "../../lib/bonus-inspector";
 import { supplyNeedFor } from "../../lib/bonus-slots";
 import {
   PREFERRED_MARK,
@@ -30,7 +29,6 @@ import {
   slotSummary,
 } from "../../engine/insignia";
 import { composeFactor, scaledStat } from "../../engine/scaling";
-import type { OccurrenceRow } from "../../composables/useItemBonusOccurrences";
 import type {
   Item,
   Db,
@@ -60,12 +58,6 @@ const props = withDefaults(
     /** The catalog, for what the card cannot read off the item alone: its replacement, its
      *  effective copy cap, its stable reach, and which unmet conditions a slot could supply. */
     db?: Db | null;
-    /** `item`'s own BonusOccurrenceConfig rows (useItemBonusOccurrences.ts) -- same data
-     *  ItemPickerRow.vue's checkbox/stepper inputs read, resolved by the caller rather than
-     *  here so this component stays prop-driven. Lets an inactive row that's `item`'s own
-     *  count-of-0 explain that directly instead of only through a generic unmet-gate
-     *  leaf, which reads oddly for a bonus gated on its own occurrence count. */
-    occurrenceRows?: OccurrenceRow[];
     /** Mount/companion bolster acting on this item (`itemScalers`), resolved by the caller
      *  rather than read from the store here so this component stays prop-driven. Scales the
      *  item's own stat line only, since the bonus payloads below are attributed to a slot, not
@@ -90,7 +82,6 @@ const props = withDefaults(
     bonuses: () => [],
     slotLabel: "",
     db: null,
-    occurrenceRows: () => [],
     scalers: () => [],
     dynamicValues: () => ({}),
     editLabel: "",
@@ -215,7 +206,6 @@ const rows = computed(() =>
   itemCardRows(
     props.item,
     props.bonuses,
-    props.occurrenceRows,
     props.bonusById,
     props.db?.slots ?? [],
   ).map((row) => ({
@@ -315,14 +305,6 @@ const rows = computed(() =>
               row.name || "always"
             }}</span>
             <BaseBadge v-if="row.stacks > 1">×{{ row.stacks }}</BaseBadge>
-          </div>
-          <div
-            v-if="row.zeroOccurrence"
-            class="pl-3 leading-snug text-muted"
-            data-testid="item-card-bonus-zero-occurrence"
-          >
-            {{ row.zeroOccurrence.label }}:
-            {{ occurrenceStateText(row.zeroOccurrence) }} on this item
           </div>
           <div
             v-if="row.secondary && row.firstSource"

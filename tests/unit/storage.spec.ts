@@ -609,39 +609,50 @@ describe("scaler parameters", () => {
   });
 });
 
-// BonusOccurrenceConfig: unlike `assignments`, no shipped item has one of these yet, so
-// there is nothing to seed a default from -- an absent entry falls back to the config's own
-// `default` at read time instead (bonus.ts's `collect()`), not to a build-carried value.
-describe("BonusOccurrenceConfig: occurrenceInputs", () => {
-  it("defaultBuild starts with no occurrenceInputs entries at all", () => {
-    const build = storage.defaultBuild();
-    expect(build.occurrenceInputs).toEqual({});
-  });
-
-  it("normalize preserves a valid occurrenceInputs payload", () => {
-    const raw = {
+// Occurrence counts were retired for bonus inputs. Stored counts are dropped, not migrated,
+// and an old layer's typed attachments reduce to their bonus ids.
+describe("retired occurrence counts", () => {
+  it("normalize drops a stored occurrenceInputs field, snapshot included", () => {
+    const stale = {
       ...storage.defaultBuild(),
       occurrenceInputs: { "some-item": { "some-bonus": 3 } },
     };
-    const build = storage.normalize(raw);
-    expect(build.occurrenceInputs).toEqual({
-      "some-item": { "some-bonus": 3 },
+    const build = storage.normalize({
+      ...stale,
+      downloaded: { snapshot: stale, at: 1000 },
     });
+    expect(build).not.toHaveProperty("occurrenceInputs");
+    expect(build.downloaded?.snapshot).not.toHaveProperty("occurrenceInputs");
+    expect(
+      storage.sameContent(build, build.downloaded!.snapshot as Build),
+    ).toBe(true);
   });
 
-  it("normalize drops a garbage count rather than keeping it", () => {
-    const raw = {
-      ...storage.defaultBuild(),
-      occurrenceInputs: { "some-item": { "some-bonus": "not-a-number" } },
-    };
-    const build = storage.normalize(raw);
-    expect(build.occurrenceInputs).toEqual({ "some-item": {} });
-  });
-
-  it("normalize defaults occurrenceInputs entirely when the payload has none at all", () => {
-    const raw = { ...storage.defaultBuild(), occurrenceInputs: undefined };
-    const build = storage.normalize(raw);
-    expect(build.occurrenceInputs).toEqual({});
+  it("a layer reduces typed attachments to their bonus ids and drops preset counts", () => {
+    const overlay = storage.normalizeLayerOverlay({
+      items: {
+        ring: {
+          id: "ring",
+          name: "Ring",
+          filter: "rings",
+          bonuses: [
+            "plain",
+            { bonus: "proc", min: 0, max: 1, default: 0, label: "Proc" },
+            { min: 0 },
+          ],
+        },
+      },
+      sectionPresets: {
+        p: {
+          id: "p",
+          label: "P",
+          section: "gear",
+          occurrences: { ring: { proc: 1 } },
+        },
+      },
+    });
+    expect(overlay.items.ring?.bonuses).toEqual(["plain", "proc"]);
+    expect(overlay.sectionPresets.p).not.toHaveProperty("occurrences");
   });
 });
 

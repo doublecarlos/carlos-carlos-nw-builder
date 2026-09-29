@@ -20,10 +20,9 @@ export function replacements(db: Db, build: Build): Map<string, string> {
 
   for (const { from, to } of retiredChoices(db, build)) map.set(from, to.id);
   // Reached through `choices` too whenever the same item is also picked somewhere, but a
-  // point-assignment row or a leftover occurrence count can name a retired item on its own.
+  // point-assignment row can name a retired item on its own.
   for (const counts of Object.values(build.assignments ?? {}))
     for (const id of Object.keys(counts)) note(id);
-  for (const id of Object.keys(build.occurrenceInputs ?? {})) note(id);
   for (const path of optionsFromPaths(db)) {
     const current = getPath(build.context, path);
     if (typeof current === "string") note(current);
@@ -74,20 +73,6 @@ export function migrateItemIds(db: Db, build: Build): Build {
   for (const [slotId, counts] of Object.entries(build.assignments ?? {}))
     assignments[slotId] = moveCounts(counts, map);
 
-  // Two passes so the result does not depend on key order: retired counts land first, the
-  // replacement's own overwrite them per bonus.
-  const occurrenceInputs: Record<string, Record<string, number>> = {};
-  const entries = Object.entries(build.occurrenceInputs ?? {});
-  for (const [itemId, byBonus] of entries) {
-    const moved = map.get(itemId);
-    if (moved)
-      occurrenceInputs[moved] = { ...occurrenceInputs[moved], ...byBonus };
-  }
-  for (const [itemId, byBonus] of entries) {
-    if (!map.has(itemId))
-      occurrenceInputs[itemId] = { ...occurrenceInputs[itemId], ...byBonus };
-  }
-
   // Cloned, not shallow-copied: a param path may address a nested branch a shallow copy would
   // still share with the input.
   let context = build.context;
@@ -100,7 +85,7 @@ export function migrateItemIds(db: Db, build: Build): Build {
     setPath(context, path, moved);
   }
 
-  return { ...build, choices, values, assignments, occurrenceInputs, context };
+  return { ...build, choices, values, assignments, context };
 }
 
 /**
@@ -135,12 +120,7 @@ function seedValues(db: Db, build: Build, only?: string): Build["values"] {
   return values;
 }
 
-/**
- * One slot's retired pick swapped, leaving the rest of the build alone -- the per-row "update".
- *
- * `occurrenceInputs` is keyed by item id with no slot to scope it, so those counts move only
- * once nothing else in the build still holds the retired item.
- */
+/** One slot's retired pick swapped, leaving the rest of the build alone -- the per-row "update". */
 export function migrateSlotItem(db: Db, build: Build, slotId: string): Build {
   const from = build.choices?.[slotId];
   const to = from ? db.replacementFor(from) : null;
@@ -149,17 +129,5 @@ export function migrateSlotItem(db: Db, build: Build, slotId: string): Build {
   const choices = { ...build.choices, [slotId]: to.id };
   const values = seedValues(db, { ...build, choices: build.choices }, slotId);
 
-  const stillHeld =
-    Object.values(choices).includes(from) ||
-    Object.values(build.assignments ?? {}).some((counts) => from in counts);
-  const counts = build.occurrenceInputs?.[from];
-  const occurrenceInputs =
-    stillHeld || !counts
-      ? build.occurrenceInputs
-      : (() => {
-          const { [from]: moved, ...rest } = build.occurrenceInputs;
-          return { ...rest, [to.id]: { ...rest[to.id], ...moved } };
-        })();
-
-  return { ...build, choices, values, occurrenceInputs };
+  return { ...build, choices, values };
 }

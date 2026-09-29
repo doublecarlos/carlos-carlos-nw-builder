@@ -19,7 +19,6 @@ import * as db from "./db";
 import { findParamSlot } from "../lib/build-path";
 import { resolvedOptions } from "../lib/param-options";
 import { deepEqual } from "../lib/deep-equal";
-import { bonusIdOf } from "../lib/bonus-attachment";
 import { replacementIdOf, replacementValuesOf } from "../lib/item-replacement";
 import { parseRowSlotId, rowSlot } from "../lib/item-picker-list";
 import { REQUIRED_SLOT_IDS, gameImportReferences } from "../lib/demo-slots";
@@ -132,6 +131,26 @@ export function normalizeOverlay(raw: unknown): CatalogOverlay {
         visibleWhen?: unknown;
       };
       overlay.slots[id] = rest as Slot;
+    }
+  }
+  // An item's bonuses are ids; an old typed occurrence config reduces to its bonus id.
+  for (const [id, item] of Object.entries(overlay.items)) {
+    if (!item || !Array.isArray(item.bonuses) || isStringList(item.bonuses))
+      continue;
+    const bonuses = (item.bonuses as unknown[]).flatMap((entry) => {
+      if (typeof entry === "string") return [entry];
+      const bonus = (entry as { bonus?: unknown } | null)?.bonus;
+      return typeof bonus === "string" ? [bonus] : [];
+    });
+    overlay.items[id] = { ...item, bonuses };
+  }
+  // Presets no longer carry occurrence counts; an old overlay's are dropped.
+  for (const [id, preset] of Object.entries(overlay.sectionPresets)) {
+    if (preset && "occurrences" in preset) {
+      const { occurrences: _dropped, ...rest } = preset as SectionPreset & {
+        occurrences?: unknown;
+      };
+      overlay.sectionPresets[id] = rest as SectionPreset;
     }
   }
   if (isStringList(source.sectionOrder))
@@ -524,10 +543,10 @@ export function unlinkBonus(
   let next = overlay;
   for (const item of items) {
     const attachments = item.bonuses ?? [];
-    if (!attachments.some((entry) => bonusIdOf(entry) === bonusId)) continue;
+    if (!attachments.includes(bonusId)) continue;
     next = upsert(next, "items", item.id, {
       ...item,
-      bonuses: attachments.filter((entry) => bonusIdOf(entry) !== bonusId),
+      bonuses: attachments.filter((entry) => entry !== bonusId),
     });
   }
   return next;
@@ -604,8 +623,7 @@ export function referencedOverlay(db: Db, build: Build): CatalogOverlay {
     visitedItems.add(id);
     const item = db.get(id);
     if (!item) continue;
-    for (const attachment of item.bonuses ?? [])
-      bonusIds.add(bonusIdOf(attachment));
+    for (const bonusId of item.bonuses ?? []) bonusIds.add(bonusId);
   }
 
   // Follow bonus excludes transitively - bonuses can chain through excludes
@@ -1629,7 +1647,7 @@ export function validateBonusAttachments(
 ): LintFinding[] {
   const attached = new Set<string>();
   for (const item of items) {
-    for (const entry of item.bonuses ?? []) attached.add(bonusIdOf(entry));
+    for (const bonusId of item.bonuses ?? []) attached.add(bonusId);
   }
   return bonuses
     .filter((bonus) => bonus.id && !attached.has(bonus.id))
@@ -1639,6 +1657,41 @@ export function validateBonusAttachments(
       name: bonus.id,
       message: "not attached to any item",
     }));
+}
+
+/**
+ * A bonus whose tiers count its own occurrences reads an inline-repeating carrier's count as a
+ * rank. A second carrier would add to that rank, so a bonus carried both ways is flagged.
+ */
+export function validateRankTiers(
+  items: Item[],
+  bonuses: Bonus[],
+): LintFinding[] {
+  const carriers = new Map<string, Item[]>();
+  for (const item of items) {
+    for (const bonusId of item.bonuses ?? []) {
+      const list = carriers.get(bonusId);
+      if (list) list.push(item);
+      else carriers.set(bonusId, [item]);
+    }
+  }
+  return bonuses.flatMap((bonus) => {
+    const countsSelf = (bonus.grants ?? []).some(
+      (grant) => grant.tiers && !grant.tierBy,
+    );
+    const carried = carriers.get(bonus.id) ?? [];
+    const ranked = carried.find((item) => item.inlineRepetition);
+    if (!countsSelf || !ranked || carried.length < 2) return [];
+    const others = carried.filter((item) => item !== ranked);
+    return [
+      {
+        level: "warn" as const,
+        kind: "bonus" as const,
+        name: bonus.id,
+        message: `tiers count this bonus's occurrences, which "${ranked.id}" sets by its repetitions, but "${others[0].id}" carries it too and adds to that count`,
+      },
+    ];
+  });
 }
 
 /**
@@ -2118,6 +2171,7 @@ export function validate(
     ...validateParamSchema(slots, schema),
     ...validateParamReaders(slots, bonuses),
     ...validateBonusAttachments(items, bonuses),
+    ...validateRankTiers(items, bonuses),
     ...validateReplacements(items, schema),
     ...validateMaxCopies(items, slots, db.filterDefaultsOf(filters)),
     ...validateStableSlots(slots),
@@ -2469,26 +2523,9 @@ export function validate(
         );
       }
     }
-    for (const attachment of item.bonuses ?? []) {
-      const bonusId = bonusIdOf(attachment);
+    for (const bonusId of item.bonuses ?? []) {
       if (!bonusIds.has(bonusId)) {
         report("warn", `bonus "${bonusId}" has no definition`, item.id);
-      }
-      if (typeof attachment === "string") continue;
-      const problem = checkBounds(
-        attachment,
-        `bonus "${bonusId}" occurrence config`,
-      );
-      if (problem) report("error", problem, item.id);
-      if (
-        attachment.label !== undefined &&
-        (typeof attachment.label !== "string" || !attachment.label.trim())
-      ) {
-        report(
-          "error",
-          `bonus "${bonusId}" occurrence config label is present but not a non-empty string`,
-          item.id,
-        );
       }
     }
     checkDynamicStats(item.dynamicStats, "dynamicStats", item.id);

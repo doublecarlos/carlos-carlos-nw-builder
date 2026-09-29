@@ -15,7 +15,6 @@ import {
 } from "./formula";
 import { occurrenceCount } from "./lookups";
 import { getPath } from "../lib/build-path";
-import { bonusIdOf, occurrenceCountFor } from "../lib/bonus-attachment";
 import { assignedRows, inlineRepetitionCount } from "../lib/inline-repetition";
 import { isDisabled } from "../lib/slot-toggle";
 import { expandSlots } from "../lib/item-picker-list";
@@ -66,10 +65,6 @@ interface Candidate extends BonusCandidate {
   itemId: string;
   slotId: string;
   order: number;
-  /** Whether the item carrying this attachment is itself on the build: always for a real
-   *  candidate, and for a zero one only when its count is the attachment's own (a typed 0)
-   *  rather than the item's (0 points spent, inline repetition at 0). */
-  carried: boolean;
 }
 
 // --- pass 1: collect ---
@@ -82,22 +77,19 @@ interface Candidate extends BonusCandidate {
  * `repetitions === 0` means the *item itself* has zero real occurrences right now -- a
  * point_assignment candidate with nothing spent on it, or an item_picker pick whose
  * own `inlineRepetition` sits at 0 -- still walked so its bonuses stay reachable for a
- * hover/inspector preview (see below), not actually "in" the build. Every attachment reads as 0
- * then, including a typed (`BonusOccurrenceConfig`) one's own stored value -- there's nothing
- * here to independently resolve one against. An item with no `inlineRepetition` at all never
- * reaches 0 (an unchosen slot is not walked, and a chosen one is worth exactly 1).
+ * hover/inspector preview (see below), not actually "in" the build. An item with no
+ * `inlineRepetition` at all never reaches 0 (an unchosen slot is not walked, and a chosen one
+ * is worth exactly 1).
  *
- * Either way, a 0-count attachment has no real candidate to push -- but dropping it silently
- * leaves its bonus completely unreachable in `resolve()`'s evaluate pass whenever nothing else
- * contributes it either, so a hover card/inspector can't tell "typed to 0" (or "0 points spent")
- * apart from "doesn't carry this bonus at all". An anchor-only entry goes to
+ * A 0-count attachment has no real candidate to push -- but dropping it silently leaves its
+ * bonus completely unreachable in `resolve()`'s evaluate pass whenever nothing else contributes
+ * it either, so a hover card could not preview it. An anchor-only entry goes to
  * `zeroCandidates` instead, just to make the bonus reachable -- it is never counted as a source
  * (stacking, attribution), only used as a fallback slot/order to resolve against when a bonus
  * has no real source anywhere.
  */
 function collectAttachments(
   item: Item,
-  build: Build,
   bonusById: Map<string, Bonus>,
   slotId: string,
   order: number,
@@ -106,18 +98,10 @@ function collectAttachments(
   zeroCandidates: Candidate[],
   repetitions = 1,
 ) {
-  const itemInputs = build.occurrenceInputs?.[item.id];
-  for (const attachment of item.bonuses ?? []) {
-    const bonusId = bonusIdOf(attachment);
+  for (const bonusId of item.bonuses ?? []) {
     const bonus = bonusById.get(bonusId);
     if (!bonus) continue;
-    const count =
-      repetitions === 0
-        ? 0
-        : typeof attachment === "string"
-          ? repetitions
-          : occurrenceCountFor(attachment, itemInputs);
-    bump(bonusOccurrences, bonusId, count);
+    bump(bonusOccurrences, bonusId, repetitions);
     const candidate = {
       bonus,
       bonusId,
@@ -125,13 +109,12 @@ function collectAttachments(
       source: item.name,
       slotId,
       order,
-      carried: repetitions > 0,
     };
-    if (count === 0) {
+    if (repetitions === 0) {
       zeroCandidates.push(candidate);
       continue;
     }
-    for (let i = 0; i < count; i++) candidates.push(candidate);
+    for (let i = 0; i < repetitions; i++) candidates.push(candidate);
   }
 }
 
@@ -139,14 +122,8 @@ function collectAttachments(
  * One point_assignment slot's contribution -- every point behaves exactly like one more
  * item_picker slot choosing that item, so this bumps `equipped`/tags by each item's own
  * `inlineRepetition` count (into the caller's running maps) and records each item's stats times
- * its count (engine.ts's `rowVectors` adds these alongside `bonusStatsBySlot`).
- *
- * A bonus attachment's own occurrence count follows the same split `collect()`'s item_picker
- * branch would if a single item could carry both shapes: a bare-id attachment scales with the
- * item's own repetition count (N repetitions read as N picks of that bonus, same as N picks of
- * the item itself), while a `BonusOccurrenceConfig` attachment carries its own typed, independent
- * count (`build.occurrenceInputs`, the same per-item storage an item_picker item's occurrence
- * stepper already uses).
+ * its count (engine.ts's `rowVectors` adds these alongside `bonusStatsBySlot`). Each bonus the
+ * item carries counts once per repetition, as N picks of the item would.
  */
 function collectInlineRepetition(
   slot: PointAssignmentSlot,
@@ -183,7 +160,6 @@ function collectInlineRepetition(
 
     collectAttachments(
       item,
-      build,
       db.bonusById,
       slot.id,
       order,
@@ -306,16 +282,10 @@ export function collect(
       }
     }
 
-    // Each attachment's occurrence count is its own, not a single count shared by the whole
-    // item: an item can carry a plain bare-id bonus (`repetitions` -- 1 for an ordinary pick,
-    // N for one repeating inline) alongside a BonusOccurrenceConfig for a different
-    // bonus (a player-set count), so the two must be resolved and pushed independently. A
-    // config's count duplicates its candidate that many times, same as collectInlineRepetition
-    // does for its own BonusOccurrenceConfig attachments, so `stacking: "perSource"` sees N
-    // sources from one item exactly as it would from N separate item_picker picks.
+    // `repetitions` is 1 for an ordinary pick and N for one repeating inline, so
+    // `stacking: "perSource"` sees N sources from one item exactly as it would from N picks.
     collectAttachments(
       item,
-      build,
       db.bonusById,
       slot.id,
       order,
@@ -470,7 +440,7 @@ function grantScale(
 }
 
 /** The unmet requirement a scale not above 0 adds to its grant's gate, so the grant reads as
- *  one step from active, like a carrier at 0. */
+ *  one step from active. */
 function scaleLeaf(
   scale: Omit<GrantScale, "unscaled">,
 ): ConditionLeafResult | null {
@@ -706,10 +676,9 @@ export function evaluateBonus(
   }));
   // `hasSources: false` (resolve()'s zero-sources group) forces every grant inactive regardless
   // of what its own `when` resolves to -- there is nothing occurring to grant it for. Not just
-  // the bonus-level `active` below: an unconditional grant (no `when` at all, e.g. Shattered
-  // Resolve's flat per-stack payload) would otherwise stay `active: true` on its own, and some
-  // consumers (ItemCard.vue, useSlotInputs.ts) read each grant's own `.active` directly rather
-  // than the bonus-level one. `gate`/`raw` stay real either way, for the near-miss branch.
+  // the bonus-level `active` below: an unconditional grant (no `when` at all) would otherwise
+  // stay `active: true` on its own, and some consumers (ItemCard.vue, useSlotInputs.ts) read
+  // each grant's own `.active` directly rather than the bonus-level one. `gate`/`raw` stay real either way, for the near-miss branch.
   const results = hasSources
     ? evaluated
     : evaluated.map((r) => ({
@@ -790,9 +759,6 @@ interface Group {
    *  slotId/order/bonusId fallback wherever `sources[0]` would otherwise be read. Absent for
    *  any group with at least one real source. */
   anchor?: Candidate;
-  /** Whether an item carrying this bonus is on the build: implied by a real source, and for a
-   *  zero-sources group true once any of its zero anchors is carried. */
-  carried: boolean;
 }
 
 /** Every dynamic-stat value this bonus's grants/variants declare, defaulted, keyed by stat.
@@ -848,33 +814,19 @@ export function resolve(db: Db, build: Build): ResolvedBonuses {
     const id = candidate.bonus.id;
     const group = groups.get(id);
     if (group) group.sources.push(candidate);
-    else
-      groups.set(id, {
-        id,
-        bonus: candidate.bonus,
-        sources: [candidate],
-        carried: true,
-      });
+    else groups.set(id, { id, bonus: candidate.bonus, sources: [candidate] });
   }
   // Seed a sources-less group for each zero-only attachment collectAttachments() flagged --
   // see its doc comment for why -- but only where nothing real already reached this bonus; a
-  // group with at least one real source is untouched. Among several zero anchors, a carried
-  // one wins the instancing slot: it is the row the bonus is actually on, so that is where
-  // its controls render and where the inspector's slot link should land.
+  // group with at least one real source is untouched.
   for (const anchor of zeroCandidates) {
-    const group = groups.get(anchor.bonus.id);
-    if (!group) {
-      groups.set(anchor.bonus.id, {
-        id: anchor.bonus.id,
-        bonus: anchor.bonus,
-        sources: [],
-        anchor,
-        carried: anchor.carried,
-      });
-    } else if (!group.sources.length && anchor.carried && !group.carried) {
-      group.anchor = anchor;
-      group.carried = true;
-    }
+    if (groups.has(anchor.bonus.id)) continue;
+    groups.set(anchor.bonus.id, {
+      id: anchor.bonus.id,
+      bonus: anchor.bonus,
+      sources: [],
+      anchor,
+    });
   }
 
   // Evaluate everything before applying any exclusion, so exclusion never cascades and the
@@ -907,14 +859,6 @@ export function resolve(db: Db, build: Build): ResolvedBonuses {
         slotId: s.slotId,
         itemId: s.itemId,
       })),
-      carrier:
-        !sources.length && group.carried
-          ? {
-              itemId: anchor.itemId,
-              name: anchor.source,
-              slotId: anchor.slotId,
-            }
-          : null,
       slotId: anchor.slotId, // instancing slot, used for stat attribution
       active: result.active,
       gate: result.gate,

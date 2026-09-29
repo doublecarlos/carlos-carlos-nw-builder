@@ -38,9 +38,7 @@ interface InputView {
 }
 
 const addressItem = (address: InputAddress) =>
-  address.store === "occurrenceInputs" || address.store === "assignments"
-    ? address.itemId
-    : undefined;
+  address.store === "assignments" ? address.itemId : undefined;
 
 /** The dynamic stats a grant applies right now: its chosen variant's, or its own. */
 function activeStatConfigs(
@@ -91,23 +89,6 @@ const VIEWS: Record<InputKindId, InputView> = {
         : "",
     control: (entry) =>
       entry.spec.type === "boolean" ? "checkbox" : numberControl(entry.spec),
-  },
-  /** A fixed count (`min === max`) takes no input. */
-  occurrence: {
-    visible: (entry) => entry.spec.min !== entry.spec.max,
-    itemId: (entry) => addressItem(entry.address),
-    testid: (entry, slot) => {
-      if (entry.address.store !== "occurrenceInputs") return "";
-      const { itemId, bonusId } = entry.address;
-      const prefix =
-        slot.type === "point_assignment"
-          ? `assignment-occurrence-${itemId}`
-          : "occurrence";
-      const part = entry.spec.type === "boolean" ? "toggle" : "input";
-      return `${prefix}-${part}-${bonusId}`;
-    },
-    control: (entry) =>
-      entry.spec.type === "boolean" ? "checkbox" : "stepper",
   },
   repetition: {
     visible: () => true,

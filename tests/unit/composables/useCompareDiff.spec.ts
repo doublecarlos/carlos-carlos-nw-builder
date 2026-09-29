@@ -93,7 +93,6 @@ function build(overrides: Partial<Build> = {}): Build {
     values: {},
     bonusValues: {},
     assignments: {},
-    occurrenceInputs: {},
     listRows: {},
     disabledSlots: {},
     context: { role: "dps" } as Build["context"],

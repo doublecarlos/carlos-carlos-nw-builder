@@ -8,9 +8,9 @@ import {
   assignmentAddress,
   bonusStatAddress,
   itemStatAddress,
-  occurrenceAddress,
+  bonusInputAddress,
 } from "../../../src/lib/build-inputs";
-import type { ItemPickerSlot } from "../../../src/types";
+import type { Build, ItemPickerSlot } from "../../../src/types";
 
 async function freshStores() {
   vi.resetModules();
@@ -199,65 +199,30 @@ describe("buildEditor point_assignment edits", () => {
   });
 });
 
-describe("buildEditor.setInput on occurrence counts", () => {
-  it("writes the count under the item id, keyed by bonus id", async () => {
-    const { builds, buildEditor } = await freshStores();
-    buildEditor.setInput(occurrenceAddress("test-ring", "test-bonus"), 3);
-    expect(builds.build.value!.occurrenceInputs).toEqual({
-      "test-ring": { "test-bonus": 3 },
-    });
-  });
-
-  it("a second bonus on the same item does not clobber the first", async () => {
-    const { builds, buildEditor } = await freshStores();
-    buildEditor.setInput(occurrenceAddress("test-ring", "bonus-a"), 2);
-    buildEditor.setInput(occurrenceAddress("test-ring", "bonus-b"), 1);
-    expect(builds.build.value!.occurrenceInputs).toEqual({
-      "test-ring": { "bonus-a": 2, "bonus-b": 1 },
-    });
-  });
-
-  it("the same bonus on a different item is tracked independently", async () => {
-    const { builds, buildEditor } = await freshStores();
-    buildEditor.setInput(occurrenceAddress("ring-a", "shared-bonus"), 2);
-    buildEditor.setInput(occurrenceAddress("ring-b", "shared-bonus"), 5);
-    expect(builds.build.value!.occurrenceInputs).toEqual({
-      "ring-a": { "shared-bonus": 2 },
-      "ring-b": { "shared-bonus": 5 },
-    });
-  });
-
-  it("undo reverts one bonus's count without touching a sibling's", async () => {
-    const { builds, buildEditor } = await freshStores();
-    buildEditor.setInput(occurrenceAddress("test-ring", "bonus-a"), 2);
-    buildEditor.setInput(occurrenceAddress("test-ring", "bonus-b"), 1);
-    buildEditor.undo();
-    expect(builds.build.value!.occurrenceInputs).toEqual({
-      "test-ring": { "bonus-a": 2 },
-    });
-  });
-});
-
 // A custom ring living in a layer, which is where catalog content the shipped data has not
 // got belongs. Both test builds pick it, and the layer resolves it whichever one is active.
-describe("buildEditor.applyInputFromCompare on occurrence counts", () => {
-  const RING_ID = "test-occurrence-ring";
-  const STACK_BONUS_ID = "test-occurrence-stack-bonus";
+describe("buildEditor.applyInputFromCompare on bonus inputs", () => {
+  const RING_ID = "test-input-ring";
+  const STACK_BONUS_ID = "test-input-stack-bonus";
+  const address = bonusInputAddress(STACK_BONUS_ID, "stacks");
 
   const ringOverlay = {
     items: {
       [RING_ID]: {
         id: RING_ID,
-        name: "Test Occurrence Ring",
+        name: "Test Input Ring",
         filter: "gear_ring",
-        bonuses: [{ bonus: STACK_BONUS_ID, min: 0, max: 5, default: 0 }],
+        bonuses: [STACK_BONUS_ID],
       },
     },
     bonuses: {
       [STACK_BONUS_ID]: {
         id: STACK_BONUS_ID,
         name: "Stack Bonus",
-        grants: [{ stats: { power: 10 } }],
+        inputs: {
+          stacks: { type: "number" as const, min: 0, max: 5, default: 0 },
+        },
+        grants: [{ stats: { power: 10 }, scale: { formula: "$stacks" } }],
       },
     },
     sectionPresets: {},
@@ -274,68 +239,50 @@ describe("buildEditor.applyInputFromCompare on occurrence counts", () => {
     return stores;
   }
 
-  function buildWithRing(
-    name: string,
-    occurrenceInputs: Record<string, Record<string, number>> = {},
-  ) {
-    return {
-      ...storage.defaultBuild(name),
-      choices: { "gear.ring1": RING_ID },
-      occurrenceInputs,
-    };
+  function buildWithRing(name: string, stacks?: number): Build {
+    const build = storage.defaultBuild(name);
+    build.choices = { "gear.ring1": RING_ID };
+    if (stacks !== undefined)
+      build.bonusValues = { [STACK_BONUS_ID]: { input: { stacks } } };
+    return build;
   }
 
-  it("copies the compare build's counts onto the active build's item", async () => {
+  it("copies the compare build's value onto the active build", async () => {
     const { builds, buildEditor, compare } = await storesWithRing();
-    const active = buildWithRing("Active", {
-      [RING_ID]: { [STACK_BONUS_ID]: 2 },
-    });
-    const other = buildWithRing("Other", {
-      [RING_ID]: { [STACK_BONUS_ID]: 4 },
-    });
+    const active = buildWithRing("Active", 2);
+    const other = buildWithRing("Other", 4);
     builds.replaceActive(other);
     builds.replaceActive(active);
     compare.setCompareBuild(other.id);
 
-    buildEditor.applyInputFromCompare(
-      occurrenceAddress(RING_ID, STACK_BONUS_ID),
-    );
+    buildEditor.applyInputFromCompare(address);
 
-    expect(builds.build.value!.occurrenceInputs[RING_ID]).toEqual({
-      [STACK_BONUS_ID]: 4,
+    expect(builds.build.value!.bonusValues[STACK_BONUS_ID]).toEqual({
+      input: { stacks: 4 },
     });
   });
 
-  it("clears the count when the compare build stores none, so it reads the attachment's default", async () => {
+  it("clears the value when the compare build stores none, so it reads the input's default", async () => {
     const { builds, buildEditor, compare } = await storesWithRing();
-    const active = buildWithRing("Active", {
-      [RING_ID]: { [STACK_BONUS_ID]: 2 },
-    });
+    const active = buildWithRing("Active", 2);
     const other = buildWithRing("Other");
     builds.replaceActive(other);
     builds.replaceActive(active);
     compare.setCompareBuild(other.id);
 
-    buildEditor.applyInputFromCompare(
-      occurrenceAddress(RING_ID, STACK_BONUS_ID),
-    );
+    buildEditor.applyInputFromCompare(address);
 
-    expect(builds.build.value!.occurrenceInputs[RING_ID]).toBeUndefined();
+    expect(builds.build.value!.bonusValues[STACK_BONUS_ID]).toBeUndefined();
   });
 
   it("does nothing without a compare build selected", async () => {
     const { builds, buildEditor } = await storesWithRing();
-    const active = buildWithRing("Active", {
-      [RING_ID]: { [STACK_BONUS_ID]: 2 },
-    });
-    builds.replaceActive(active);
+    builds.replaceActive(buildWithRing("Active", 2));
 
-    buildEditor.applyInputFromCompare(
-      occurrenceAddress(RING_ID, STACK_BONUS_ID),
-    );
+    buildEditor.applyInputFromCompare(address);
 
-    expect(builds.build.value!.occurrenceInputs[RING_ID]).toEqual({
-      [STACK_BONUS_ID]: 2,
+    expect(builds.build.value!.bonusValues[STACK_BONUS_ID]).toEqual({
+      input: { stacks: 2 },
     });
   });
 });
@@ -344,8 +291,7 @@ describe("buildEditor.applyInputFromCompare on occurrence counts", () => {
 // `ring1`/`ring1` (a fictitious item_picker slot, same test-only convention the rest of this
 // file uses for choices/values), the real shipped `boons.tier1` point_assignment slot
 // (same rationale as the describe block above -- exercising the merge against real seeded
-// data rather than a synthetic row), and one occurrence count for the item that row picks
-// (keyed by item id, not slot id -- see `SectionPreset.occurrences`).
+// data rather than a synthetic row).
 describe("buildEditor.applyPreset", () => {
   const preset = {
     id: "test-preset",
@@ -355,7 +301,6 @@ describe("buildEditor.applyPreset", () => {
     choices: { ring1: "ItemA" },
     values: { ring1: { stat: { power: 42 } } },
     assignments: { "boons.tier1": { "boon-tier1-power": 3 } },
-    occurrences: { ItemA: { "stack-bonus": 4 } },
   };
 
   const tier1Slot = {
@@ -366,7 +311,7 @@ describe("buildEditor.applyPreset", () => {
     filter: "boon_tier1",
   };
 
-  it("writes params/choices/values/assignments/occurrences in one call", async () => {
+  it("writes params/choices/values/assignments in one call", async () => {
     const { builds, buildEditor } = await freshStores();
     buildEditor.applyPreset(preset);
 
@@ -376,9 +321,6 @@ describe("buildEditor.applyPreset", () => {
     expect(builds.build.value!.assignments["boons.tier1"]).toEqual({
       ...seededRows,
       "boon-tier1-power": 3,
-    });
-    expect(builds.build.value!.occurrenceInputs.ItemA).toEqual({
-      "stack-bonus": 4,
     });
   });
 
@@ -392,28 +334,6 @@ describe("buildEditor.applyPreset", () => {
     expect(builds.build.value!.bonusValues.proc).toEqual({
       stat: { crit: 0.1, power: 5 },
       input: { on: true },
-    });
-  });
-
-  it("merges into an item's occurrence counts without clobbering its other bonus", async () => {
-    const { builds, buildEditor } = await freshStores();
-    buildEditor.setInput(occurrenceAddress("ItemA", "other-bonus"), 2);
-    buildEditor.setInput(occurrenceAddress("ItemA", "stack-bonus"), 1);
-    buildEditor.applyPreset(preset);
-
-    expect(builds.build.value!.occurrenceInputs.ItemA).toEqual({
-      "other-bonus": 2,
-      "stack-bonus": 4,
-    });
-  });
-
-  it("leaves another item's occurrence counts untouched", async () => {
-    const { builds, buildEditor } = await freshStores();
-    buildEditor.setInput(occurrenceAddress("ItemB", "stack-bonus"), 5);
-    buildEditor.applyPreset(preset);
-
-    expect(builds.build.value!.occurrenceInputs.ItemB).toEqual({
-      "stack-bonus": 5,
     });
   });
 
@@ -447,7 +367,6 @@ describe("buildEditor.applyPreset", () => {
     expect(builds.build.value!.context.role).toBeUndefined();
     expect(builds.build.value!.choices.ring1).toBeUndefined();
     expect(builds.build.value!.assignments["boons.tier1"]).toEqual(seededRows);
-    expect(builds.build.value!.occurrenceInputs.ItemA).toBeUndefined();
   });
 
   it("ignores a params entry whose slot id is not a build_parameter", async () => {
@@ -574,11 +493,10 @@ describe("buildEditor.applyPreset clears", () => {
 // it through `applyPreset` from a *different* starting state is the real contract -- a
 // faithful snapshot has to reproduce the section, not merge into whatever was there.
 describe("buildEditor.presetFromSection", () => {
-  it("captures a section's picks, values and occurrence counts", async () => {
+  it("captures a section's picks and values", async () => {
     const { buildEditor } = await freshStores();
     buildEditor.setChoice("gear.head", "ItemA");
     buildEditor.setInput(itemStatAddress("gear.head", "power"), 5);
-    buildEditor.setInput(occurrenceAddress("ItemA", "stack-bonus"), 2);
 
     const preset = buildEditor.presetFromSection("gear", "My Gear");
 
@@ -586,7 +504,6 @@ describe("buildEditor.presetFromSection", () => {
     expect(preset.section).toBe("gear");
     expect(preset.choices?.["gear.head"]).toBe("ItemA");
     expect(preset.values?.["gear.head"]).toEqual({ stat: { power: 5 } });
-    expect(preset.occurrences?.ItemA).toEqual({ "stack-bonus": 2 });
   });
 
   it("captures the settings of the bonuses its items carry, and no others", async () => {

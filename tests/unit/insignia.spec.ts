@@ -10,6 +10,7 @@ import { NW_SLOTS } from "../../src/data/data";
 import type {
   Build,
   FilterDef,
+  InputDef,
   Item,
   Schema,
   Slot,
@@ -197,7 +198,6 @@ function testBuild(choices: Record<string, string>): Build {
     values: {},
     bonusValues: {},
     assignments: {},
-    occurrenceInputs: {},
     listRows: {},
     disabledSlots: {},
     context: {
@@ -938,14 +938,20 @@ describe("the shipped insignia bonuses", () => {
     (i) => i.filter === "insignia_bonus" && i.bonuses?.length,
   );
 
-  /** One bonus resolved on its own, with every occurrence input at `count`. */
-  function resolveAlone(item: Item, count: (max: number) => number) {
+  /** One bonus resolved on its own, with each of its inputs at `value` (at its default when
+   *  omitted). */
+  function resolveAlone(
+    item: Item,
+    value?: (def: InputDef) => number | boolean,
+  ) {
     const build = defaultBuild();
     build.choices[insignia.bonusSlotId(shipped, 1)!] = item.id;
-    const attachment = item.bonuses![0];
-    if (typeof attachment !== "string") {
-      build.occurrenceInputs[item.id] = {
-        [attachment.bonus]: count(attachment.max),
+    const bonus = shipped.bonusById.get(item.id)!;
+    if (value && bonus.inputs) {
+      build.bonusValues[item.id] = {
+        input: Object.fromEntries(
+          Object.entries(bonus.inputs).map(([name, def]) => [name, value(def)]),
+        ),
       };
     }
     return engineRun(shipped, build).bonuses.find((b) => b.id === item.id);
@@ -955,7 +961,9 @@ describe("the shipped insignia bonuses", () => {
     // Reported per bonus so a failure names the one that broke.
     const inert = modelled
       .filter((item) => {
-        const bonus = resolveAlone(item, (max) => max);
+        const bonus = resolveAlone(item, (def) =>
+          def.type === "boolean" ? true : (def.max ?? 1),
+        );
         return (
           !bonus?.active ||
           !Object.values(bonus.appliedStats ?? {}).some((v) => v)
@@ -967,12 +975,12 @@ describe("the shipped insignia bonuses", () => {
 
   it("a Proc bonus grants nothing until its toggle is on", () => {
     const procs = modelled.filter((item) => {
-      const a = item.bonuses![0];
-      return typeof a !== "string" && a.label === "Proc" && a.default === 0;
+      const proc = shipped.bonusById.get(item.id)?.inputs?.active;
+      return proc?.label === "Proc" && proc.default === false;
     });
     expect(procs.length).toBeGreaterThan(0);
     const leaking = procs
-      .filter((item) => resolveAlone(item, () => 0)?.active)
+      .filter((item) => resolveAlone(item)?.active)
       .map((item) => item.id);
     expect(leaking).toEqual([]);
   });

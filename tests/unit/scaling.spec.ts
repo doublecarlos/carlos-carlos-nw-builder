@@ -154,7 +154,6 @@ function buildWith(
     choices,
     values: {},
     assignments: {},
-    occurrenceInputs: {},
     listRows: storedListRows({
       choices,
       values: {},
@@ -433,7 +432,7 @@ describe("aura mount equips carry their own payload", () => {
   function run(
     choices: Record<string, string>,
     context: Record<string, unknown> = {},
-    occurrenceInputs: Record<string, Record<string, number>> = {},
+    bonusValues: Build["bonusValues"] = {},
   ) {
     return engine.resolveBuild(shipped, {
       id: "b",
@@ -441,7 +440,7 @@ describe("aura mount equips carry their own payload", () => {
       choices,
       values: {},
       assignments: {},
-      occurrenceInputs,
+      bonusValues,
       listRows: storedListRows({
         choices,
         values: {},
@@ -529,10 +528,11 @@ describe("aura mount equips carry their own payload", () => {
     const result = run(
       { [GROUP_SLOT]: "pack-tactics-group" },
       {},
-      { "pack-tactics-group": { "pack-tactics": 2 } },
+      { "pack-tactics": { input: { stacks: 2 } } },
     );
+    // 2953 for the first, half as much for the second.
     expect(result.bonuses.find((b) => b.id === "pack-tactics")?.stats?.ca).toBe(
-      4429,
+      4429.5,
     );
   });
 
@@ -543,19 +543,19 @@ describe("aura mount equips carry their own payload", () => {
         [GROUP_SLOT]: "pack-tactics-group",
       },
       {},
-      { "pack-tactics-group": { "pack-tactics": 2 } },
+      { "pack-tactics": { input: { stacks: 2 } } },
     );
-    // Three contributors in total: the pool is 5167, of which your 2953-equivalent share is
-    // the item's own (scaled) stat line, leaving 2214 for the other two.
+    // Three contributors in total: the pool is 5167.75, of which your 2953-equivalent share is
+    // the item's own (scaled) stat line, leaving 2214.75 for the other two.
     expect(result.bonuses.find((b) => b.id === "pack-tactics")?.stats?.ca).toBe(
-      2214,
+      2214.75,
     );
     // The mount row carries its own stats and nothing else: only the group item attaches the
     // bonus now, so that is the slot it anchors to (bonus.ts's `anchor.slotId`).
     expect(selfRow(result).stats.ca).toBeCloseTo(1312.5 * 2.25, 9);
     expect(
       result.rows.find((r) => r.slotId === GROUP_SLOT)!.stats.ca,
-    ).toBeCloseTo(2214, 9);
+    ).toBeCloseTo(2214.75, 9);
   });
 
   it("Pack Tactics: your own alone is just the item, no bonus at all", () => {

@@ -12,7 +12,7 @@ import {
   confirmImport,
   hoverForCard,
   importText,
-  occurrenceCheckbox,
+  bonusInputControl,
   undoButton,
 } from "./support/app";
 import { addBuild } from "./support/nav";
@@ -332,7 +332,9 @@ test("the bonus row derives itself and cannot be picked by hand", async ({
   // Accursed Resolve only pays out while debuffed, so its Proc input reaches the derived bonus
   // the same way it would a picked one.
   await expect(row.getByTestId("slot-stat-summary")).toBeEmpty();
-  await occurrenceCheckbox(row, "accursed-resolve").check();
+  await bonusInputControl(row, "accursed-resolve", "active")
+    .locator("input")
+    .check();
   await expect(row.getByTestId("slot-stat-summary")).toContainText("Power");
 
   // The group is what gets edited, so the row states its result and opens no list.

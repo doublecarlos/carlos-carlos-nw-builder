@@ -127,7 +127,6 @@ function testBuild(context: Record<string, unknown>): Build {
     values: {},
     bonusValues: {},
     assignments: {},
-    occurrenceInputs: {},
     listRows: {},
     disabledSlots: {},
     context: context as unknown as Build["context"],

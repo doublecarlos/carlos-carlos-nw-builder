@@ -525,21 +525,19 @@ describe("forSlot candidate ordering", () => {
   });
 });
 
-// An Item.bonuses entry can now be a bare id or a BonusOccurrenceConfig -- every join
-// point that reads item.bonuses (bonusesFor, bonusMembers) has to resolve either shape to the
-// same bonus id.
-describe("Db.bonusesFor / bonusMembers with mixed bonus attachments", () => {
+// Every join point that reads item.bonuses (bonusesFor, bonusMembers) resolves each id.
+describe("Db.bonusesFor / bonusMembers with several bonus attachments", () => {
   const bonusA = { id: "bonus-a", grants: [{ stats: { power_p: 0.01 } }] };
   const bonusB = { id: "bonus-b", grants: [{ stats: { power_p: 0.02 } }] };
   const item: Item = {
     id: "mixed-item",
     name: "Mixed Item",
     filter: "gear_ring",
-    bonuses: ["bonus-a", { bonus: "bonus-b", min: 0, max: 5, default: 1 }],
+    bonuses: ["bonus-a", "bonus-b"],
   };
   const built = db.build([item], [bonusA, bonusB], NW_SCHEMA, NW_SLOTS);
 
-  it("bonusesFor resolves both a bare id and a BonusOccurrenceConfig to their bonus", () => {
+  it("bonusesFor resolves each id to its bonus", () => {
     const candidates = built.bonusesFor(item);
     expect(candidates.map((c) => c.bonusId).sort()).toEqual([
       "bonus-a",
