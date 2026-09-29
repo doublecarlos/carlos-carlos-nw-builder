@@ -136,7 +136,7 @@ function previewBonusStats(item: Item): BonusStatsPreview | null {
       ...ctx.build,
       choices: { ...ctx.build.choices, [ctx.slotId]: item.id },
     };
-    const result = engine.resolveBuild(ctx.db, hypothetical);
+    const result = engine.resolveBonuses(ctx.db, hypothetical);
 
     const current: Record<string, number> = {};
     for (const bonus of result.bonuses) {
@@ -206,7 +206,7 @@ const EMPTY_PREVIEW: ReturnType<typeof bonusStatPreview> = {
  *  `null` while closed, so touching it costs nothing: the `isOpen` guard runs *before* any
  *  `previewBonusStats` call, so a closed picker's `options`/`matchMap` (both derived from this)
  *  track only `isOpen`/`props.items` as reactive dependencies, not the deep build state
- *  `resolveBuild` reads -- same "closed rows never pay the cost" property `matchMap` alone used
+ *  `resolveBonuses` reads -- same "closed rows never pay the cost" property `matchMap` alone used
  *  to have, now shared across filtering too. */
 const candidateStats = computed(() => {
   if (!isOpen.value) return null;

@@ -4,7 +4,10 @@ import { describe, it, expect } from "vitest";
 import * as db from "../../src/data/db";
 import * as insignia from "../../src/engine/insignia";
 import * as catalog from "../../src/data/catalog";
-import { resolveBuild as engineRun } from "../../src/engine/engine";
+import {
+  resolveBonuses,
+  resolveBuild as engineRun,
+} from "../../src/engine/engine";
 import { defaultBuild } from "../../src/storage/storage";
 import { NW_SLOTS } from "../../src/data/data";
 import type {
@@ -971,6 +974,20 @@ describe("the shipped insignia bonuses", () => {
       })
       .map((item) => item.id);
     expect(inert).toEqual([]);
+  });
+
+  it("bonus-only resolution derives the bonus like a full resolve", () => {
+    const item = modelled.find((i) => i.insigniaRecipe?.length === 4)!;
+    const build = defaultBuild();
+    const slotIds = insignia.insigniaSlotIds(shipped, 1);
+    item.insigniaRecipe!.forEach((shape, i) => {
+      build.choices[slotIds[i]] = shipped.items.find(
+        (candidate) => candidate.insigniaShape === shape,
+      )!.id;
+    });
+    const bonuses = resolveBonuses(shipped, build).bonuses;
+    expect(bonuses.some((b) => b.id === item.id)).toBe(true);
+    expect(bonuses).toEqual(engineRun(shipped, build).bonuses);
   });
 
   it("a Proc bonus grants nothing until its toggle is on", () => {
