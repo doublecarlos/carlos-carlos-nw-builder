@@ -34,7 +34,7 @@ ordinary one.
 | DragHandle                                | The grip affordance on a draggable row; `touch-action: none` so touch drags don't scroll   |
 | DropIndicator                             | The drag-and-drop insertion line for one `useDropList`                                     |
 | FilterChip                                | An active filter set from elsewhere, as a chip with its own clear button                   |
-| FormulaInput                              | A one-line expression field marking each problem's range under it, problems passed in      |
+| FormulaInput                              | A one-line expression field marking each problem's range under it; `#leading` adornment    |
 | FormBar                                   | Sticky action bar at the top of an editing form                                            |
 | FormField                                 | Label-above-control stack, the basic form unit                                             |
 | FormGrid                                  | Wrapping row of FormField instances                                                        |

@@ -6,7 +6,7 @@
 // The vocabulary, the checks and the preview come from the bonus form's formula context
 // (useFormulaContext.ts). Outside one, only the text itself is checked.
 import { computed, ref, useTemplateRef } from "vue";
-import { BookOpen } from "@lucide/vue";
+import { Sigma } from "@lucide/vue";
 import BaseButton from "../ui/BaseButton.vue";
 import BaseInput from "../ui/BaseInput.vue";
 import FormulaInput, { type FormulaInputIssue } from "../ui/FormulaInput.vue";
@@ -159,26 +159,26 @@ const reference = computed(() => {
         :issues="issues"
         :placeholder="placeholder"
         :testid="testid"
+      >
+        <template #leading>
+          <IconButton
+            :title="
+              showReference ? 'Hide formula reference' : 'Formula reference'
+            "
+            :aria-pressed="showReference"
+            :data-testid="`${testid}-reference-toggle`"
+            @click="showReference = !showReference"
+            ><Sigma
+          /></IconButton>
+        </template>
+      </FormulaInput>
+      <BaseInput
+        v-model="label"
+        type="text"
+        class="w-36"
+        :placeholder="derivedLabel ?? 'Label (optional)'"
+        :data-testid="`${testid}-label`"
       />
-      <!-- Its own row, so the icon centers on the label field while the formula field grows
-           with its problems below. -->
-      <div class="flex items-center gap-1.5">
-        <BaseInput
-          v-model="label"
-          type="text"
-          class="w-36"
-          :placeholder="derivedLabel ?? 'Label (optional)'"
-          :data-testid="`${testid}-label`"
-        />
-        <IconButton
-          :title="
-            showReference ? 'Hide formula reference' : 'Formula reference'
-          "
-          :data-testid="`${testid}-reference-toggle`"
-          @click="showReference = !showReference"
-          ><BookOpen
-        /></IconButton>
-      </div>
     </div>
     <p v-if="preview" class="text-muted" :data-testid="`${testid}-preview`">
       On build "{{ preview.build }}":
