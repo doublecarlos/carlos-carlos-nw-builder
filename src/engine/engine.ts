@@ -651,9 +651,14 @@ function publishConflicts(db: Db, resolved: ResolvedBonuses): EngineError[] {
 
 // --- entry point ---
 
+/** Bonus resolution alone, for callers that read only `bonuses` (the picker's per-candidate
+ *  previews). Skips the stat pipeline and error checks `resolveBuild` adds. */
+export function resolveBonuses(db: Db, stored: Build): ResolvedBonuses {
+  return bonus.resolve(db, withDerivedBonuses(db, stored));
+}
+
 export function resolveBuild(db: Db, stored: Build): ResolvedBuild {
   // Derived here, not written to the build, so everything below sees an ordinary equipped item.
-  // Inside `resolveBuild` so the picker's per-candidate resolves get the same treatment.
   const build = withDerivedBonuses(db, stored);
   const resolved = bonus.resolve(db, build);
   const ledger: LedgerEntry[] = [];
