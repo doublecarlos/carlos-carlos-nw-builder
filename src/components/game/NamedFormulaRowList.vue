@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // A repeatable list of a bonus's named formulas: a name, referenced as `$name` by any formula
 // of the bonus, and the formula it stands for. The same row-mutating shape as
-// `BonusInputRowList`.
+// `BonusInputRowList`. Inputs share the `$` names, so a name an input has is flagged.
 import BaseInput from "../ui/BaseInput.vue";
 import FormField from "../ui/FormField.vue";
 import RepeatableRows from "../ui/RepeatableRows.vue";
@@ -14,6 +14,8 @@ const props = defineProps<{
   rows: NamedFormulaDraft[];
   /** Reference cycles among the rows, each as the names along it, first repeated last. */
   cycles: string[][];
+  /** Row names the bonus also declares as inputs. */
+  clashes: string[];
 }>();
 const emit = defineEmits<{ add: []; remove: [index: number] }>();
 
@@ -61,6 +63,12 @@ function rowIssues(row: NamedFormulaDraft): FormulaInputIssue[] {
           class="text-danger"
           data-testid="bonus-formula-name-issue"
           >a letter or _, then letters, digits or _</span
+        >
+        <span
+          v-else-if="clashes.includes(row.name.trim())"
+          class="text-danger"
+          data-testid="bonus-formula-name-issue"
+          >also an input of this bonus; rename the formula</span
         >
       </FormField>
       <FormField label="Formula" class="min-w-72 flex-1">

@@ -27,14 +27,18 @@ import { INSIGNIA_SHAPES } from "../types";
 import { canStep } from "../engine/inputs";
 import {
   formulaSites,
+  inputFormulaClashes,
   isFormulaName,
   lintFormula,
   namedCycles,
+  ownerScope,
   parseFormula,
   perSourceScaleWarning,
   scalerFormula,
+  splitNamed,
   type FormulaSite,
   type FormulaVocabulary,
+  type NamedScope,
 } from "../engine/formula";
 
 import type {
@@ -984,10 +988,11 @@ function checkInputDefs(
 }
 
 /** One formula site: its shape, its text, and every id, path and input it reads. Input names
- *  it reads are added to `readInputs`. */
+ *  it reads (`$name` in `scope`) are added to `readInputs`. */
 function checkFormulaSite(
   site: FormulaSite,
   bonus: Bonus,
+  scope: NamedScope,
   vocabulary: FormulaVocabulary,
   report: (level: "error" | "warn", message: string) => void,
   readInputs: Set<string>,
@@ -1010,11 +1015,12 @@ function checkFormulaSite(
         ? `${where}: ${issue.message} (column ${issue.start + 1} of "${ref.formula}")`
         : `${where}: ${issue.message}`,
     );
-  for (const { name } of parseFormula(ref.formula).reads.inputs)
+  for (const name of splitNamed(parseFormula(ref.formula).reads, scope).inputs)
     readInputs.add(name);
 }
 
-/** Every formula `bonus` declares or uses, plus reference cycles among its named formulas. */
+/** Every formula `bonus` declares or uses, plus reference cycles among its named formulas and
+ *  names it declares both as a formula and as an input. */
 function checkBonusFormulas(
   bonus: Bonus,
   vocabulary: FormulaVocabulary,
@@ -1029,13 +1035,19 @@ function checkBonusFormulas(
         `formula "${name}": a name is a letter or _ then letters, digits or _`,
       );
   }
+  for (const name of inputFormulaClashes(bonus))
+    report(
+      "error",
+      `formula "${name}": "$${name}" is also an input of this bonus; rename the formula`,
+    );
   for (const cycle of namedCycles(named))
     report(
       "error",
       `formulas refer to each other in a loop: ${cycle.map((name) => `$${name}`).join(" → ")}`,
     );
+  const scope = ownerScope(bonus);
   for (const site of formulaSites(bonus))
-    checkFormulaSite(site, bonus, vocabulary, report, readInputs);
+    checkFormulaSite(site, bonus, scope, vocabulary, report, readInputs);
 }
 
 /** A grant's tier ladder and the fields that shape how it is scaled or counted. */
