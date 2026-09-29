@@ -124,8 +124,8 @@ describe("the input leaf", () => {
     );
     expect(result.ok).toBe(false);
     expect(result.leaves[0]).toMatchObject({
-      label: "Proc is on",
-      detail: "you have off",
+      label: "Proc on",
+      detail: "",
     });
   });
 

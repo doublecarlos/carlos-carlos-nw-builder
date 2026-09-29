@@ -11,14 +11,7 @@
 // against the shipped data, and the export would fill with noise digits. Both directions round
 // to a precision far finer than any real game value.
 import { ref, computed, nextTick } from "vue";
-
-/** decimal -> percent number. 0.036 -> 3.6, not 3.5999999999999996. */
-const toPercent = (value: number | string) =>
-  Number((Number(value) * 100).toFixed(10));
-
-/** percent number -> decimal. 3.6 -> 0.036, not 0.036000000000000004. */
-const toDecimal = (percent: number | string) =>
-  Number((Number(percent) / 100).toFixed(12));
+import { toDecimal, toPercent } from "../../lib/format";
 
 /** Up to 4 decimals, trailing zeros trimmed: 9, 3.6, 9.85. The % sign is a fixed suffix in
  * the template, not part of this text, so it stays visible while typing too. */

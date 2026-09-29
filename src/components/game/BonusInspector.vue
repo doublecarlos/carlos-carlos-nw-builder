@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive, computed } from "vue";
+import { ref, reactive, computed, nextTick, useTemplateRef, watch } from "vue";
 import { bonusTitle } from "../../lib/format";
 import { statList, excluderFor, grantRows } from "../../lib/item-card-rows";
 import type { GrantRow } from "../../lib/item-card-rows";
@@ -16,6 +16,7 @@ import { supplyNeedFor } from "../../lib/bonus-slots";
 import * as engine from "../../stores/resolved";
 import * as goTo from "../../stores/goTo";
 import * as slotFilter from "../../stores/slotFilter";
+import * as details from "../../stores/details";
 import BasePanel from "../ui/BasePanel.vue";
 import PanelHead from "../ui/PanelHead.vue";
 import BaseBadge from "../ui/BaseBadge.vue";
@@ -185,8 +186,14 @@ const entries = computed<Entry[]>(() => {
   });
 });
 
+/** A bonus id a hover card asked for. While the filter still reads exactly that id, only that
+ *  bonus matches, not every id containing it; editing the filter goes back to plain matching. */
+const pinnedId = ref<string | null>(null);
+
 const filtered = computed(() => {
+  const pinned = pinnedId.value === query.value ? pinnedId.value : null;
   return entries.value.filter((entry) => {
+    if (pinned) return entry.id === pinned;
     if (nearMissOnly.value && !entry.nearMiss) return false;
     return matchesQuery(
       [entry.title, entry.id, ...entry.sources.map((s) => s.label)],
@@ -213,6 +220,30 @@ const groups = computed(() => {
   ];
 });
 
+const panel = useTemplateRef<InstanceType<typeof BasePanel>>("panel");
+
+// A request from a hover card: filter the list down to the bonus by its id, open it, and
+// bring it into view once the tab shows. Clearing the filter brings the rest back.
+watch(
+  details.inspectRequest,
+  async (id) => {
+    if (!id) return;
+    details.consumeInspect();
+    if (!entries.value.some((entry) => entry.id === id)) return;
+    query.value = id;
+    pinnedId.value = id;
+    nearMissOnly.value = false;
+    open[id] = true;
+    await nextTick();
+    // Centered, so the sticky filter bar never covers it.
+    const root: HTMLElement | undefined = panel.value?.$el;
+    root
+      ?.querySelector(`[data-bonus-id="${CSS.escape(id)}"]`)
+      ?.scrollIntoView({ block: "center" });
+  },
+  { immediate: true },
+);
+
 const counts = computed(() => {
   const all = entries.value;
   return {
@@ -224,7 +255,7 @@ const counts = computed(() => {
 </script>
 
 <template>
-  <BasePanel>
+  <BasePanel ref="panel">
     <div class="sticky top-0 z-sticky bg-surface pb-0.5">
       <ClearableInput
         v-model="query"
@@ -253,6 +284,7 @@ const counts = computed(() => {
           :key="entry.id"
           class="py-1.5"
           :data-testid="`bonus-entry-${entry.id}`"
+          :data-bonus-id="entry.id"
           :data-state="entry.state"
         >
           <div class="flex w-full items-center gap-1.5">

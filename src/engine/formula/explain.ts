@@ -1,8 +1,10 @@
 // Formulas as the player sees them: labels, number formatting and a formula's reads resolved
 // against a build.
 
+import { pctInput } from "../../lib/format";
 import type {
   EvalContext,
+  FormulaRead,
   FormulaRef,
   FormulaResult,
   FormulaScope,
@@ -98,6 +100,10 @@ export interface FormulaPart {
   read?: { kind: string; arg?: string };
   /** What the read resolved to, absent when it failed. */
   value?: number;
+  /** A scaler's or param's label, which reads better than the lookup call. */
+  label?: string;
+  /** `value` in the read's own units, as the substituted text shows it. */
+  valueText?: string;
 }
 
 /** A formula with each read resolved against a build: the text split at every read, the
@@ -124,6 +130,9 @@ function nodeValue(
     throw error;
   }
 }
+
+/** The reads whose substituted value keeps its own units. */
+const FORMATTED_KINDS = new Set(["scaler", "input"]);
 
 export function explainFormula(
   formula: string,
@@ -159,18 +168,105 @@ export function explainFormula(
   for (const { node, read } of reads) {
     if (node.start > at) parts.push({ text: formula.slice(at, node.start) });
     const value = nodeValue(node, formula, ctx);
+    const described =
+      read && value !== undefined ? describeRead(read, value, ctx) : null;
     parts.push({
       text: formula.slice(node.start, node.end),
       read,
       ...(value !== undefined && { value }),
+      ...(described?.path && { label: described.label }),
+      // Percents and input units read well inside arithmetic; a duration's "s" does not.
+      ...(described &&
+        FORMATTED_KINDS.has(described.kind) && {
+          valueText: described.text,
+        }),
     });
     at = node.end;
   }
   if (at < formula.length) parts.push({ text: formula.slice(at) });
   const substituted = parts
     .map((part) =>
-      part.value === undefined ? part.text : formatNumber(part.value),
+      part.value === undefined
+        ? part.text
+        : (part.valueText ?? formatNumber(part.value)),
     )
     .join("");
   return { parts, substituted, result };
+}
+
+/** What tells one read apart from another: its kind and argument. */
+export const readKey = (read: NonNullable<FormulaPart["read"]>) =>
+  `${read.kind}:${read.arg ?? ""}`;
+
+/** How one read is named and formatted: a scaler as a percent, an input in its own units. Null
+ *  for a lookup with nothing to name, like `equipped`. */
+export function describeRead(
+  read: NonNullable<FormulaPart["read"]>,
+  value: number,
+  ctx: EvalContext,
+): FormulaRead | null {
+  const described = describeReadAs(read, value, ctx);
+  return described && { key: readKey(read), ...described };
+}
+
+function describeReadAs(
+  read: NonNullable<FormulaPart["read"]>,
+  value: number,
+  ctx: EvalContext,
+): Omit<FormulaRead, "key"> | null {
+  const arg = read.arg ?? "";
+  switch (read.kind) {
+    case "scaler":
+      return {
+        kind: read.kind,
+        label: ctx.scalers.get(arg)?.label ?? arg,
+        text: pctInput(value),
+        path: arg,
+      };
+    case "param":
+      return {
+        kind: read.kind,
+        label: ctx.paramLabels?.get(arg) ?? arg,
+        text: formatNumber(value),
+        path: arg,
+      };
+    case "input": {
+      const input = ctx.inputs?.get(arg);
+      return {
+        kind: read.kind,
+        label: input?.label ?? arg,
+        text: (input?.format ?? formatNumber)(value),
+      };
+    }
+    case "named": {
+      const ref = ctx.formulas?.named[arg];
+      return {
+        kind: read.kind,
+        label: (ref && formulaLabel(ref, ctx)) ?? arg,
+        text: formatNumber(value),
+      };
+    }
+    case "duration":
+      return { kind: read.kind, label: "duration", text: `${value}s` };
+    case "enemies":
+      return { kind: read.kind, label: "enemies", text: formatNumber(value) };
+    default:
+      return null;
+  }
+}
+
+/** Every value `formula` reads directly, once each, in text order. A read that failed is
+ *  left out, as the formula's own error already explains it. */
+export function formulaReads(formula: string, ctx: EvalContext): FormulaRead[] {
+  const seen = new Set<string>();
+  const out: FormulaRead[] = [];
+  for (const { read, value } of explainFormula(formula, ctx).parts) {
+    if (!read || value === undefined) continue;
+    const key = readKey(read);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const described = describeRead(read, value, ctx);
+    if (described) out.push(described);
+  }
+  return out;
 }

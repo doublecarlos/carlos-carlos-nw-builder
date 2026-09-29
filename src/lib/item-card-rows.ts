@@ -9,11 +9,14 @@ import {
 import { descriptionParagraphs } from "./description";
 import { findParamSlot } from "./build-path";
 import { isHiddenBonus } from "../engine/bonus";
+import { scaleLadder } from "../engine/scale-steps";
 import { formatNumber } from "../engine/formula";
 import type {
   BonusSource,
   DynamicStatConfig,
+  EvalContext,
   EvaluatedBonus,
+  FormulaRead,
   Grant,
   GrantEvaluation,
   GrantScale,
@@ -42,8 +45,25 @@ export interface StatLine {
 
 /** What a note needs to know about one scaler acting on a value: `ResolvedScaler` and
  *  `GrantScale` both carry these fields. A factor with a `path` is a scaler's multiplier,
- *  shown as a percentage; one without is a formula's plain result. */
-export type ScaleFactor = Pick<GrantScale, "label" | "multiplier" | "path">;
+ *  shown as a percentage; one without is a formula's plain result, with `reads` naming what
+ *  a compound formula read. */
+export type ScaleFactor = Pick<
+  GrantScale,
+  "label" | "multiplier" | "path" | "reads"
+>;
+
+/** `reads` as note parts, "Stacks: 12, Encounter Damage: 40%", each scaler or param name
+ *  linking to its parameter row when `slots` has it. */
+export function readParts(reads: FormulaRead[], slots: Slot[]): NotePart[] {
+  return reads.flatMap((read, index) => {
+    const slotId = read.path ? findParamSlot(slots, read.path)?.id : undefined;
+    return [
+      ...(index ? [{ text: ", " }] : []),
+      { text: read.label, ...(slotId && { slotId }) },
+      { text: `: ${read.text}` },
+    ];
+  });
+}
 
 /**
  * The note under a scaled stat line, shared by an item's bolstered rows and a scaled grant's so
@@ -52,7 +72,7 @@ export type ScaleFactor = Pick<GrantScale, "label" | "multiplier" | "path">;
  * factor in turn keeps every label next to its own number and every link on its own name. The
  * scaler's name links to its parameter slot when `slots` has it; without a catalog (the layer
  * editor's preview card) or a scaler behind it, it stays text. A formula with no label shows
- * its number alone.
+ * its number alone, and a compound one follows it with what it read, in parentheses.
  */
 export function scaleNote(
   rawValue: number | undefined,
@@ -62,18 +82,25 @@ export function scaleNote(
 ): NotePart[] {
   const parts: NotePart[] = [];
   let text = formatStat(statKey, rawValue);
-  for (const { label, multiplier, path } of scalers) {
-    text += ` x ${path ? pct(multiplier) : formatNumber(multiplier)}`;
-    if (!label) continue;
-    const slotId = path ? findParamSlot(slots, path)?.id : undefined;
-    parts.push(
-      { text: `${text} ` },
-      { text: label, ...(slotId && { slotId }) },
-    );
+  const flush = (extra: NotePart[]) => {
+    parts.push({ text }, ...extra);
     text = "";
+  };
+  for (const { label, multiplier, path, reads } of scalers) {
+    text += ` x ${path ? pct(multiplier) : formatNumber(multiplier)}`;
+    if (label) {
+      const slotId = path ? findParamSlot(slots, path)?.id : undefined;
+      text += " ";
+      flush([{ text: label, ...(slotId && { slotId }) }]);
+    }
+    if (reads?.length) {
+      text += " (";
+      flush(readParts(reads, slots));
+      text = ")";
+    }
   }
   if (text) parts.push({ text });
-  return parts;
+  return parts.filter((part) => part.text);
 }
 
 /**
@@ -210,6 +237,40 @@ function tierLadderFor(grant: ResolvedGrant | null, slots: Slot[]) {
     .sort((a, b) => a.atLeast - b.atLeast);
 }
 
+// A scale's step ladder, shown like tiers so the payload at every value is visible. Only a
+// grant whose scale asks for it with `steps` has one, and only where the caller passes the
+// build's context to evaluate it against. Values where the grant would not apply are left
+// out. The rung holding the build's value is current while the grant is active. None for a
+// stacking bonus, whose line is per stack.
+function stepLadderFor(
+  entry: EvaluatedBonus,
+  grant: ResolvedGrant,
+  preview: StatValues | null,
+  ctx: EvalContext | undefined,
+) {
+  const unscaled = grant.scale?.unscaled ?? preview;
+  if (!ctx || !unscaled || entry.bonus?.stacking === "perSource") return null;
+  const ladder = scaleLadder(entry.bonus, grant.raw, ctx, entry.inputValues);
+  if (!ladder) return null;
+  const { format, label, current, steps } = ladder;
+  const reached = steps.filter((step) => step.from <= current).at(-1);
+  const rungs = steps
+    .filter((step) => step.granted)
+    .map((step) => {
+      const range =
+        step.from === step.to
+          ? format(step.from)
+          : `${format(step.from)} to ${format(step.to)}`;
+      return {
+        atLeast: step.from,
+        heading: `${label} ${range}`,
+        active: grant.active && step === reached,
+        stats: statList(unscaled, step.value),
+      };
+    });
+  return rungs.length ? { rungs, readKey: ladder.readKey } : null;
+}
+
 // `variantBranches` explains every branch, not just the winner, so an unmatched one can
 // show why it didn't apply.
 function variantLadderFor(
@@ -336,15 +397,25 @@ function grantStatLines(
 }
 
 /** One row per grant of `entry`, with each stat line already formatted. `slots` resolves a
- *  scaler's parameter slot for the note links. Shared with BonusInspector.vue, which shows the
- *  scaled grants' lines under the bonus payload. */
-export function grantRows(entry: EvaluatedBonus, slots: Slot[] = []) {
+ *  scaler's parameter slot for the note links, and `ctx`, the build's context, lets a scale's
+ *  step ladder be laid out. Shared with BonusInspector.vue, which shows the scaled grants'
+ *  lines under the bonus payload. */
+export function grantRows(
+  entry: EvaluatedBonus,
+  slots: Slot[] = [],
+  ctx?: EvalContext,
+) {
   const stacks = entry.stacks ?? 1;
   const stacking = entry.bonus?.stacking === "perSource";
   return (entry.grants ?? []).map((grant, index) => {
     const preview = grant.active
       ? null
       : previewStatsFor(grant.raw, entry.dynamicValues);
+    const steps = stepLadderFor(entry, grant, preview, ctx);
+    // Whatever else the formula read is noted beside the ladder.
+    const stepReads = steps
+      ? (grant.scale?.reads ?? []).filter((read) => read.key !== steps.readKey)
+      : [];
     return {
       key: index,
       label: grantLabel(grant),
@@ -353,6 +424,8 @@ export function grantRows(entry: EvaluatedBonus, slots: Slot[] = []) {
       problem: grant.problem,
       tiers: tierLadderFor(grant, slots),
       variants: variantLadderFor(grant, slots, entry.dynamicValues),
+      steps: steps?.rungs ?? null,
+      stepNote: stepReads.length ? readParts(stepReads, slots) : null,
       eachStack: stacking && preview != null,
       descriptions: grant.active
         ? descriptionParagraphs(
@@ -374,6 +447,7 @@ function buildItemCardRow(
   item: Item,
   bonusById: Map<string, EvaluatedBonus>,
   slots: Slot[],
+  ctx: EvalContext | undefined,
 ) {
   const sharedWith = sharedSources(entry, item.name);
   const isFirst =
@@ -391,7 +465,11 @@ function buildItemCardRow(
     name: entry.bonus?.name ?? null,
     excludedBy: excluderFor(entry, bonusById),
     stacks: entry.stacks ?? 1,
-    grants: grantRows(entry, slots),
+    grants: grantRows(entry, slots, ctx),
+    // Whether a formula shapes the bonus, which the inspector explains.
+    formulaic: (entry.grants ?? []).some(
+      (grant) => grant.raw.scale || grant.raw.tierBy,
+    ),
     sharedWith,
     // A shared bonus shows real numbers on exactly one card; the rest point to it.
     secondary: Boolean(sharedWith) && !isFirst,
@@ -407,14 +485,16 @@ const STATE_DOT: Record<string, string> = {
 
 // `bonusById` covers the whole build, not just `bonuses`: an excluder usually sits on
 // another item. `slots` is the catalog's slot list, for linking a scaled grant to its
-// scaler's parameter.
+// scaler's parameter. `ctx` is the build's context, which a scale's step ladder is
+// evaluated against.
 export function itemCardRows(
   item: Item,
   bonuses: EvaluatedBonus[],
   bonusById: Map<string, EvaluatedBonus> = new Map(),
   slots: Slot[] = [],
+  ctx?: EvalContext,
 ): ItemCardRow[] {
   return bonuses
     .filter((entry) => !isHiddenBonus(entry.bonus))
-    .map((entry) => buildItemCardRow(entry, item, bonusById, slots));
+    .map((entry) => buildItemCardRow(entry, item, bonusById, slots, ctx));
 }

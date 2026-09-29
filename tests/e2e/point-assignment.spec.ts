@@ -312,7 +312,7 @@ test.describe("point_assignment hover card for an unselected candidate", () => {
       "Test Dial Boon",
     );
     await expect(card).toContainText("Test Dial Bonus");
-    await expect(card).toContainText("Proc is on");
+    await expect(card).toContainText("needs Proc on");
   });
 
   test("once points are actually spent, its input still independently gates the bonus", async ({
@@ -333,7 +333,7 @@ test.describe("point_assignment hover card for an unselected candidate", () => {
     const card = page.getByTestId("item-card");
     await expect(card).toContainText("Test Dial Bonus");
     // Spending points on the item itself doesn't turn its proc on.
-    await expect(card).toContainText("Proc is on");
+    await expect(card).toContainText("needs Proc on");
   });
 
   test("a checked proc left over from before doesn't activate its bonus once the item is back at 0 points", async ({

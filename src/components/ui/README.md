@@ -46,6 +46,7 @@ ordinary one.
 | InputRow                                  | A typed control in a fixed leading column, right-aligned, with its description after it    |
 | LinkList                                  | A comma-separated run of BaseLinks inside a sentence, some entries optionally plain text   |
 | NumberStepper                             | A number field between -/+ buttons stepping by `step`; Ctrl/Cmd+click jumps to a bound     |
+| NumberOrPercentInput                      | A number field, or a PercentInput when `percent` is set                                    |
 | OcrHint                                   | Marks a field that reads pasted screenshots                                                |
 | OcrTextField                              | A description field that also OCRs a pasted screenshot into it                             |
 | PaletteInput                              | GoToPalette's own combobox-trigger search field                                            |

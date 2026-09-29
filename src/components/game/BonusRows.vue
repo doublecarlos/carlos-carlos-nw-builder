@@ -7,7 +7,7 @@
 // writes directly onto `draft.value.grants`. The store's `onChange()` is called after every
 // mutation, which schedules an undo snapshot in BonusForm.
 
-import { inject, ref } from "vue";
+import { computed, inject, ref } from "vue";
 import ConditionRows, {
   type ConditionTreeLocation,
   type ConditionBranchTreeLocation,
@@ -18,7 +18,12 @@ import DynamicStatRowList from "./DynamicStatRowList.vue";
 import FormulaField from "./FormulaField.vue";
 import type { FormulaInputIssue } from "../ui/FormulaInput.vue";
 import { useFormulaContext } from "../../composables/useFormulaContext";
-import { perSourceScaleWarning } from "../../engine/formula";
+import {
+  perSourceScaleWarning,
+  stepAxis,
+  stepsProblem,
+  stepsRangeWarning,
+} from "../../engine/formula";
 import {
   ArrowDown,
   ArrowUp,
@@ -31,6 +36,7 @@ import {
 import BaseButton from "../ui/BaseButton.vue";
 import BaseCheckbox from "../ui/BaseCheckbox.vue";
 import BaseInput from "../ui/BaseInput.vue";
+import NumberOrPercentInput from "../ui/NumberOrPercentInput.vue";
 import BaseTextarea from "../ui/BaseTextarea.vue";
 import SegmentedControl from "../ui/SegmentedControl.vue";
 import DragHandle from "../ui/DragHandle.vue";
@@ -44,7 +50,11 @@ import {
   type ConditionLocation,
   type ConditionBranchLocation,
 } from "../../stores/bonus-draft";
-import type { GrantDraft, InputOption } from "../../lib/bonus-draft";
+import {
+  draftToSteps,
+  type GrantDraft,
+  type InputOption,
+} from "../../lib/bonus-draft";
 import type { BonusOption } from "../../types";
 import { bonusDraftRegistryKey } from "../../composables/bonusDraftRegistry";
 import {
@@ -88,6 +98,48 @@ function scaleIssues(grant: GrantDraft): FormulaInputIssue[] {
     ? [{ start: 0, end: formula.length, message, level: "warn" }]
     : [];
 }
+
+/** By grant uid: why its scale's step fields cannot lay out a ladder, or what they list that
+ *  the build can never reach, shown under them. */
+const stepsIssues = computed(() => {
+  const owner = formulaContext?.owner.value;
+  const out = new Map<string, string>();
+  if (!owner) return out;
+  for (const grant of props.store.grants) {
+    const steps = draftToSteps(grant.scaleSteps);
+    const formula = grant.scale.formula.trim();
+    if (!steps || !formula) continue;
+    const issue =
+      stepsProblem(steps, formula, owner) ?? stepsRangeWarning(steps, owner);
+    if (issue) out.set(grant.uid, issue);
+  }
+  return out;
+});
+
+/** Uids of the grants whose ladder varies a percent input or param, so its bounds and step
+ *  are typed in percent. */
+const percentSteps = computed(() => {
+  const owner = formulaContext?.owner.value;
+  const params = formulaContext?.vocabulary.value.params;
+  const out = new Set<string>();
+  for (const grant of props.store.grants) {
+    const axis = stepAxis(grant.scaleSteps.over);
+    const percent =
+      axis?.kind === "input"
+        ? owner?.inputs?.[axis.name]?.type === "percent"
+        : axis?.kind === "param" &&
+          params?.get(axis.path)?.paramType === "percent";
+    if (percent) out.add(grant.uid);
+  }
+  return out;
+});
+
+/** The ladder's number fields, labeled as the row reads: "from 0 to 5 by 1". */
+const STEP_FIELDS = [
+  { key: "min", label: "from" },
+  { key: "max", label: "to" },
+  { key: "step", label: "by" },
+] as const;
 
 // Guard against a grant being removed while an event handler is still firing.
 function gs(index: number) {
@@ -717,6 +769,40 @@ function toggleJson(gIndex: number) {
           :extra-issues="scaleIssues(grant)"
           testid="grant-scale"
         />
+        <!-- Opt-in: the hover card lays the payload out at each of these values. Only a flat
+             payload has one to lay out. -->
+        <template v-if="grant.payload === 'flat' && grant.scale.formula.trim()">
+          <div
+            class="mb-1.5 flex flex-wrap items-center gap-1.5"
+            data-testid="grant-scale-steps"
+          >
+            <span class="text-muted">Show a ladder over</span>
+            <BaseInput
+              v-model="grant.scaleSteps.over"
+              class="w-40"
+              placeholder="$stacks or duration"
+              data-testid="grant-scale-steps-over"
+            />
+            <template v-if="grant.scaleSteps.over.trim()">
+              <template v-for="field in STEP_FIELDS" :key="field.key">
+                <span class="text-muted">{{ field.label }}</span>
+                <NumberOrPercentInput
+                  v-model="grant.scaleSteps[field.key]"
+                  :percent="percentSteps.has(grant.uid)"
+                  class="w-16"
+                  :data-testid="`grant-scale-steps-${field.key}`"
+                />
+              </template>
+            </template>
+          </div>
+          <p
+            v-if="stepsIssues.has(grant.uid)"
+            class="mb-1.5 text-warn"
+            data-testid="grant-scale-steps-issue"
+          >
+            {{ stepsIssues.get(grant.uid) }}
+          </p>
+        </template>
 
         <FormSection sub>Name and description (optional)</FormSection>
         <div class="mb-1.5 flex flex-wrap items-start gap-1.5">

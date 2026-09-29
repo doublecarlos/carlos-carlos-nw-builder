@@ -165,7 +165,7 @@ test("a proc left off still shows in the hover card, explained by its input", as
   await row.hover();
   const card = page.getByTestId("item-card");
   await expect(card).toContainText("Test Input Bonus");
-  await expect(card).toContainText("Proc is on");
+  await expect(card).toContainText("needs Proc on");
 });
 
 const STACK_RING_ID = "test-stack-ring";

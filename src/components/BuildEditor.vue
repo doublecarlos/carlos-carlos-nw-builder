@@ -61,6 +61,7 @@ import * as selection from "../stores/selection";
 import * as layers from "../stores/layers";
 import * as layerEditorUi from "../stores/layerEditorUi";
 import * as goTo from "../stores/goTo";
+import * as details from "../stores/details";
 import { isMac } from "../lib/platform";
 import { animateScrollTop, type CancelScroll } from "../lib/animate-scroll";
 import type {
@@ -754,6 +755,11 @@ function onCardGoToSlot(slotId: string) {
   goTo.requestJump({ slotId });
 }
 
+function onCardInspect(bonusId: string) {
+  closeCard();
+  details.inspectBonus(bonusId);
+}
+
 /** Same dismissal: the filter rewrites the list under the card, likely dropping its own row. */
 function onCardLocate(need: SupplyNeed, label: string) {
   closeCard();
@@ -1208,9 +1214,11 @@ watch(
             :edit-label="editLabel"
             :stable-group="hoveredStableGroup"
             :bonus-by-id="bonusById"
+            :context="result.context"
             @edit="onCardEdit"
             @go-to-slot="onCardGoToSlot"
             @locate="onCardLocate"
+            @inspect="onCardInspect"
             @open-stable="openStableFromCard"
             @mouseenter="onCardEnter"
             @mouseleave="onCardLeave"

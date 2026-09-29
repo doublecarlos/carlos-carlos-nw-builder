@@ -102,10 +102,11 @@ const LEAVES: Record<
   toggle(spec, ctx) {
     const wanted = asArray(spec as string | string[]);
     const on = wanted.filter((name) => ctx.toggles?.[name]);
+    // Unmet means every listed toggle is off, which the label already says.
     return {
       ok: on.length > 0,
       label: `${wanted.join(" or ")} enabled`,
-      detail: on.length ? "" : `off: ${wanted.join(", ")}`,
+      detail: "",
     };
   },
 
@@ -175,19 +176,21 @@ const LEAVES: Record<
       };
     }
     const value = ctx.params.get(s.key);
+    const name = ctx.paramLabels?.get(s.key) ?? s.key;
 
+    // A switch has two states, so an unmet one needs no "you have".
     if (s.is !== undefined) {
       return {
         ok: value === s.is,
-        label: `${s.key} is ${s.is ? "on" : "off"}`,
-        detail: `you have ${value === undefined ? "-" : value ? "on" : "off"}`,
+        label: `${name} ${s.is ? "on" : "off"}`,
+        detail: "",
       };
     }
     if (s.equals !== undefined) {
       const wanted = asArray(s.equals);
       return {
         ok: wanted.includes(value as string),
-        label: `${s.key}: ${wanted.join(" or ")}`,
+        label: `${name}: ${wanted.join(" or ")}`,
         detail: `you have ${value ?? "-"}`,
       };
     }
@@ -195,7 +198,7 @@ const LEAVES: Record<
     const range = { atLeast: s.atLeast, below: s.below, exactly: s.exactly };
     return {
       ok: inRange(numeric, range),
-      label: `${s.key} ${describeRange(range)}`,
+      label: `${name} ${describeRange(range)}`,
       detail: `you have ${value ?? 0}`,
     };
   },
@@ -216,8 +219,8 @@ const LEAVES: Record<
     if (s.is !== undefined) {
       return {
         ok: Boolean(value) === s.is,
-        label: `${label} is ${s.is ? "on" : "off"}`,
-        detail: `you have ${value ? "on" : "off"}`,
+        label: `${label} ${s.is ? "on" : "off"}`,
+        detail: "",
       };
     }
     const range = { atLeast: s.atLeast, below: s.below, exactly: s.exactly };

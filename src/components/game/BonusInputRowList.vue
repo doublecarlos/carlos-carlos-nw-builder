@@ -5,6 +5,7 @@
 import ComboBox from "../ui/ComboBox.vue";
 import RepeatableRows from "../ui/RepeatableRows.vue";
 import BaseInput from "../ui/BaseInput.vue";
+import NumberOrPercentInput from "../ui/NumberOrPercentInput.vue";
 import FormField from "../ui/FormField.vue";
 import IdField from "../ui/IdField.vue";
 import type { InputDraft } from "../../lib/bonus-draft";
@@ -22,6 +23,14 @@ const onOffOptions = [
   { value: "false", label: "off" },
   { value: "true", label: "on" },
 ];
+
+/** A number or percent input's numeric fields, typed in the units the input shows. */
+const NUMBER_FIELDS = [
+  { key: "default", label: "Default" },
+  { key: "min", label: "Min" },
+  { key: "max", label: "Max" },
+  { key: "step", label: "Step" },
+] as const;
 
 const controlOptions = [
   { value: "", label: "stepper if bounded" },
@@ -86,41 +95,23 @@ const controlOptions = [
       </FormField>
       <template v-else>
         <FormField
-          label="Default"
-          :hint="row.type === 'percent' ? 'decimal, 0.1 = 10%' : undefined"
+          v-for="field in NUMBER_FIELDS"
+          :key="field.key"
+          :label="field.label"
         >
-          <BaseInput
-            v-model="row.default"
+          <NumberOrPercentInput
+            v-model="row[field.key]"
+            :percent="row.type === 'percent'"
             class="w-20"
-            type="number"
-            data-testid="bonus-input-default"
+            :data-testid="`bonus-input-${field.key}`"
           />
         </FormField>
-        <FormField label="Min">
-          <BaseInput
-            v-model="row.min"
-            class="w-20"
-            type="number"
-            data-testid="bonus-input-min"
-          />
-        </FormField>
-        <FormField label="Max">
-          <BaseInput
-            v-model="row.max"
-            class="w-20"
-            type="number"
-            data-testid="bonus-input-max"
-          />
-        </FormField>
-        <FormField label="Step">
-          <BaseInput
-            v-model="row.step"
-            class="w-20"
-            type="number"
-            data-testid="bonus-input-step"
-          />
-        </FormField>
-        <FormField label="Presets" hint="comma-separated">
+        <FormField
+          label="Presets"
+          :hint="
+            row.type === 'percent' ? 'comma-separated, in %' : 'comma-separated'
+          "
+        >
           <BaseInput
             v-model="row.presets"
             class="w-32"

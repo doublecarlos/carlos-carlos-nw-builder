@@ -34,6 +34,8 @@ import {
   parseFormula,
   perSourceScaleWarning,
   scalerFormula,
+  stepsProblem,
+  stepsRangeWarning,
   splitNamed,
   type FormulaSite,
   type FormulaVocabulary,
@@ -1112,6 +1114,19 @@ function checkGrantShape(
   const perSource =
     grant.scale && perSourceScaleWarning(grant.scale.formula, bonus);
   if (perSource) report("warn", `${label}: ${perSource}`);
+
+  const steps = grant.scale?.steps;
+  if (steps !== undefined) {
+    if (grant.tiers || grant.variants || grant.problem)
+      report(
+        "warn",
+        `${label}: scale steps lay out a flat payload; this grant shows none`,
+      );
+    const problem = stepsProblem(steps, grant.scale!.formula, bonus);
+    const range = problem ? null : stepsRangeWarning(steps, bonus);
+    if (problem) report("error", `${label}: ${problem}`);
+    if (range) report("warn", `${label}: ${range}`);
+  }
 }
 
 /** Every bonus id a `when`'s occurrence leaves name, flattened out of its combinators. */
