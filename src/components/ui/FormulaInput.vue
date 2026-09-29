@@ -2,8 +2,9 @@
 // A one-line expression field that shows problems where they are: the text again under the
 // field with each problem's range marked, then the messages, each with a one-click fix when
 // the caller has one. It knows nothing about what the expression means; the caller parses it
-// and hands the problems in.
-import { computed, nextTick, useId, useTemplateRef } from "vue";
+// and hands the problems in. `#leading` sits inside the field on its left, such as a button
+// acting on it; the marked text under the field shifts with it so the marks stay aligned.
+import { computed, nextTick, useId, useSlots, useTemplateRef } from "vue";
 import BaseLink from "./BaseLink.vue";
 
 export interface FormulaInputIssue {
@@ -27,6 +28,8 @@ const props = withDefaults(
 );
 
 const model = defineModel<string>({ default: "" });
+const slots = useSlots();
+const indent = computed(() => (slots.leading ? "pl-6 pr-1.5" : "px-1.5"));
 const field = useTemplateRef<HTMLInputElement>("field");
 const messagesId = useId();
 
@@ -86,23 +89,32 @@ defineExpose({ insert });
 
 <template>
   <div class="flex min-w-0 flex-col gap-0.5">
-    <input
-      ref="field"
-      v-model="model"
-      type="text"
-      spellcheck="false"
-      autocomplete="off"
-      class="w-full rounded-md border bg-surface px-1.5 py-0.5 font-mono focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
-      :class="hasError ? 'border-danger' : 'border-line'"
-      :placeholder="placeholder"
-      :aria-invalid="hasError || undefined"
-      :aria-describedby="issues.length ? messagesId : undefined"
-      :data-testid="testid"
-    />
+    <div class="relative">
+      <input
+        ref="field"
+        v-model="model"
+        type="text"
+        spellcheck="false"
+        autocomplete="off"
+        class="w-full rounded-md border bg-surface py-0.5 font-mono focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+        :class="[hasError ? 'border-danger' : 'border-line', indent]"
+        :placeholder="placeholder"
+        :aria-invalid="hasError || undefined"
+        :aria-describedby="issues.length ? messagesId : undefined"
+        :data-testid="testid"
+      />
+      <span
+        v-if="$slots.leading"
+        class="absolute inset-y-0 left-0.5 flex items-center"
+      >
+        <slot name="leading" />
+      </span>
+    </div>
     <template v-if="issues.length">
       <div
         v-if="model"
-        class="overflow-hidden text-ellipsis whitespace-pre px-1.5 font-mono text-muted"
+        class="overflow-hidden text-ellipsis whitespace-pre font-mono text-muted"
+        :class="indent"
         aria-hidden="true"
       >
         <span
