@@ -25,6 +25,16 @@ export const pct = (value: unknown, digits = 2) =>
 export const pctInput = (value: unknown) =>
   finite(value) ? `${Number((value * 100).toFixed(4))}%` : "-";
 
+/** A stored decimal in percent units, rounded past float noise: 0.036 -> 3.6, not
+ *  3.5999999999999996. */
+export const toPercent = (value: number | string) =>
+  Number((Number(value) * 100).toFixed(10));
+
+/** A percent back to its stored decimal, rounded past float noise: 3.6 -> 0.036, not
+ *  0.036000000000000004. */
+export const toDecimal = (percent: number | string) =>
+  Number((Number(percent) / 100).toFixed(12));
+
 /** A typed stat value as its input shows it: percent units for a percent/mult stat. */
 export const statInput = (key: StatKey, value: number) =>
   isPercentKind(kindOf(key)) ? pctInput(value) : String(value);

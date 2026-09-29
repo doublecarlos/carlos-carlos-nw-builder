@@ -12,7 +12,7 @@
 // the caller (ConditionRows.vue) already owns direct mutation rights over its own `row` objects.
 import { computed } from "vue";
 import FormField from "../ui/FormField.vue";
-import BaseInput from "../ui/BaseInput.vue";
+import NumberOrPercentInput from "../ui/NumberOrPercentInput.vue";
 import SegmentedControl from "../ui/SegmentedControl.vue";
 
 const props = withDefaults(
@@ -23,8 +23,11 @@ const props = withDefaults(
     /** Offer the unbounded "at least 1" mode, which writes no range at all. Count leaves only:
      *  conditions.ts reads a bare `duration` as "any", which is a different thing. */
     allowAtLeastOne?: boolean;
+    /** Type the values in percent, for a percent input or param. They are still stored as
+     *  decimals. */
+    percent?: boolean;
   }>(),
-  { unitSuffix: "", allowAtLeastOne: false },
+  { unitSuffix: "", allowAtLeastOne: false, percent: false },
 );
 
 const atLeast = defineModel<string | number | null>("atLeast", {
@@ -67,15 +70,27 @@ function setRangeMode(mode: RangeMode) {
   </FormField>
   <template v-if="rangeMode === 'range'">
     <FormField :label="`At least${unitSuffix}`" class="min-w-0"
-      ><BaseInput v-model="atLeast" class="w-24" type="number" step="any"
+      ><NumberOrPercentInput
+        v-model="atLeast"
+        :percent="percent"
+        class="w-24"
+        step="any"
     /></FormField>
     <FormField :label="`Below${unitSuffix}`" class="min-w-0"
-      ><BaseInput v-model="below" class="w-24" type="number" step="any"
+      ><NumberOrPercentInput
+        v-model="below"
+        :percent="percent"
+        class="w-24"
+        step="any"
     /></FormField>
   </template>
   <template v-else-if="rangeMode === 'exact'">
     <FormField :label="`Exactly${unitSuffix}`" class="min-w-0"
-      ><BaseInput v-model="exactly" class="w-24" type="number" step="any"
+      ><NumberOrPercentInput
+        v-model="exactly"
+        :percent="percent"
+        class="w-24"
+        step="any"
     /></FormField>
   </template>
 </template>

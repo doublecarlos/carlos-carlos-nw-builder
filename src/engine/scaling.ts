@@ -50,6 +50,12 @@ export function activeScalersFor(
   return out;
 }
 
+/** A scaler's multiplier at `value`: `relative` adds to a base of 1, `absolute` is the value. */
+export const scalerMultiplier = (
+  mode: ResolvedScaler["mode"],
+  value: number,
+): number => (mode === "relative" ? 1 + value : value);
+
 /**
  * The one multiplier a set of scalers amounts to, or 1 for none.
  *

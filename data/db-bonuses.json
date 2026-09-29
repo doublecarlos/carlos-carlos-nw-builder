@@ -2556,29 +2556,19 @@
         "when": {
           "toggle": "combat"
         },
-        "variants": [
-          {
-            "when": {
-              "duration": {
-                "atLeast": 10,
-                "below": 30
-              }
-            },
-            "stats": {
-              "strike_p": 0.036
-            }
-          },
-          {
-            "when": {
-              "duration": {
-                "atLeast": 30
-              }
-            },
-            "stats": {
-              "strike_p": 0.09
-            }
+        "stats": {
+          "strike_p": 0.018
+        },
+        "scale": {
+          "formula": "clamp(floor(duration/5), 0, 5)",
+          "label": "full 5s intervals",
+          "steps": {
+            "over": "duration",
+            "min": 0,
+            "max": 25,
+            "step": 5
           }
-        ]
+        }
       }
     ]
   },
@@ -3388,7 +3378,8 @@
     },
     "formulas": {
       "self": {
-        "formula": "min(equipped(\"pack-tactics-self\"), 1)"
+        "formula": "min(equipped(\"pack-tactics-self\"), 1)",
+        "label": "own Pack Tactics"
       }
     },
     "grants": [
@@ -3401,7 +3392,14 @@
           "awareness": 2953
         },
         "scale": {
-          "formula": "geometric($stacks + $self, 0.5) - $self"
+          "formula": "geometric($stacks + $self, 0.5) - $self",
+          "label": "stacking multiplier",
+          "steps": {
+            "over": "$stacks",
+            "min": 0,
+            "max": 4,
+            "step": 1
+          }
         }
       }
     ]
@@ -4049,6 +4047,7 @@
     },
     "grants": [
       {
+        "name": "Base 20%",
         "when": {
           "toggle": "combat",
           "input": {
@@ -4056,43 +4055,33 @@
             "atLeast": 1
           }
         },
-        "tierBy": {
-          "formula": "$investiture"
+        "stats": {
+          "outgoing_damage": 0.2
         },
-        "tiers": [
-          {
-            "atLeast": 1,
-            "stats": {
-              "outgoing_damage": 0.22
-            }
-          },
-          {
-            "atLeast": 2,
-            "stats": {
-              "outgoing_damage": 0.24
-            }
-          },
-          {
-            "atLeast": 3,
-            "stats": {
-              "outgoing_damage": 0.26
-            }
-          },
-          {
-            "atLeast": 4,
-            "stats": {
-              "outgoing_damage": 0.28
-            }
-          },
-          {
-            "atLeast": 5,
-            "stats": {
-              "outgoing_damage": 0.3
-            }
-          }
-        ],
         "scale": {
           "formula": "scaler(\"scalers.encounterDamage\")"
+        }
+      },
+      {
+        "name": "+2% per stack",
+        "when": {
+          "toggle": "combat",
+          "input": {
+            "key": "investiture",
+            "atLeast": 1
+          }
+        },
+        "stats": {
+          "outgoing_damage": 0.02
+        },
+        "scale": {
+          "formula": "$investiture * scaler(\"scalers.encounterDamage\")",
+          "steps": {
+            "over": "$investiture",
+            "min": 1,
+            "max": 5,
+            "step": 1
+          }
         }
       }
     ]
@@ -4498,18 +4487,21 @@
     },
     "grants": [
       {
+        "name": "Up to 6 stacks",
         "when": {
           "toggle": "combat"
         },
         "stats": {
-          "ca_p": 0.0045,
-          "sev_p": 0.0045
+          "ca_p": 0.009,
+          "sev_p": 0.009
         },
         "scale": {
-          "formula": "$stacks"
+          "formula": "clamp($stacks, 0, 6)",
+          "label": "stacks up to 6"
         }
       },
       {
+        "name": "Stacks 7 to 12, in a party",
         "when": {
           "all": [
             {
@@ -4521,11 +4513,12 @@
           ]
         },
         "stats": {
-          "ca_p": 0.0045,
-          "sev_p": 0.0045
+          "ca_p": 0.009,
+          "sev_p": 0.009
         },
         "scale": {
-          "formula": "$stacks"
+          "formula": "clamp($stacks - 6, 0, 6)",
+          "label": "stacks past 6"
         }
       }
     ]
@@ -4602,7 +4595,6 @@
     "name": "Warlock's Curse",
     "grants": [
       {
-        "name": "Encounters",
         "when": {
           "toggle": "combat"
         },
@@ -4610,31 +4602,7 @@
           "outgoing_damage": 0.15
         },
         "scale": {
-          "formula": "scaler(\"scalers.encounterDamage\")"
-        }
-      },
-      {
-        "name": "At-wills",
-        "when": {
-          "toggle": "combat"
-        },
-        "stats": {
-          "outgoing_damage": 0.15
-        },
-        "scale": {
-          "formula": "scaler(\"scalers.atWillDamage\")"
-        }
-      },
-      {
-        "name": "Dailies",
-        "when": {
-          "toggle": "combat"
-        },
-        "stats": {
-          "outgoing_damage": 0.15
-        },
-        "scale": {
-          "formula": "scaler(\"scalers.dailyDamage\")"
+          "formula": "scaler(\"scalers.encounterDamage\") + scaler(\"scalers.atWillDamage\") + scaler(\"scalers.dailyDamage\")"
         }
       }
     ]

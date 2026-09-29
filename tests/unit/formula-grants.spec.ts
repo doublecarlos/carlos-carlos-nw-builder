@@ -497,6 +497,25 @@ describe("catalog.validate: formulas", () => {
     ).toEqual([]);
   });
 
+  it("checks a scale's step ladder hint", () => {
+    const steps = { over: "duration", min: 0, max: 25, step: 5 };
+    expect(
+      lint({
+        id: "stepped",
+        grants: [
+          { stats: { power: 1 }, scale: { formula: "enemies", steps } },
+          {
+            tiers: [{ atLeast: 1, stats: { power: 1 } }],
+            scale: { formula: "duration", steps },
+          },
+        ],
+      }),
+    ).toEqual([
+      "error: grant 1: the scale formula does not read duration",
+      "warn: grant 2: scale steps lay out a flat payload; this grant shows none",
+    ]);
+  });
+
   it("names the position of a parse problem", () => {
     expect(
       lint({ id: "bad", grants: [{ stats: {}, scale: { formula: "1 +" } }] }),

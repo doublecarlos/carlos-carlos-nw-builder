@@ -141,7 +141,7 @@ test("the inspector explains the collar's scale and links the scaler to its row"
   await expect(line).toContainText("= 0.4");
 
   await line
-    .getByRole("button", { name: 'scaler("scalers.encounterDamage")' })
+    .getByRole("button", { name: "Encounter damage", exact: true })
     .click();
   await expect(cursorRow(page)).toHaveAttribute(
     "data-cursor-key",
@@ -149,7 +149,7 @@ test("the inspector explains the collar's scale and links the scaler to its row"
   );
 });
 
-test("a scaled ladder shows every rung at the share, each noting its real value", async ({
+test("a scaled bonus shows its base at the share and a step ladder per stack", async ({
   page,
 }) => {
   await openBuilder(page);
@@ -166,22 +166,20 @@ test("a scaled ladder shows every rung at the share, each noting its real value"
   await hoverForCard(page, label);
   await expect(card).toBeVisible();
 
-  // Five rungs, 22% to 30% before the share, all written at 40% of that.
-  const rows = card.getByTestId("stat-row");
-  await expect(rows.getByTestId("stat-row-note")).toHaveCount(5);
-  await expect(rows.nth(0)).toContainText("+8.80%");
-  await expect(rows.nth(0).getByTestId("stat-row-note")).toHaveText(
-    "22.00% x 40.00% Encounter damage",
+  // The base 20% is written at 40% of that, noting its real value.
+  const [base, perStack] = await card.getByTestId("item-card-grant").all();
+  await expect(base).toContainText("+8.00%");
+  await expect(base.getByTestId("stat-row-note")).toHaveText(
+    "20.00% x 40.00% Encounter damage",
   );
-  await expect(rows.nth(4)).toContainText("+12.00%");
-  await expect(rows.nth(4).getByTestId("stat-row-note")).toHaveText(
-    "30.00% x 40.00% Encounter damage",
-  );
-  // The ladder is the whole story: no unscaled 22% or 30% anywhere on the card but the notes.
-  await expect(card).not.toContainText("+22.00%");
-  await expect(card).not.toContainText("+30.00%");
-  // Soul Investiture ships at its full five stacks, so the top rung is the live one and the
-  // panel carries its 12%, plus Hellbringer's 15% from 30 Soul Sparks.
+  // 2% per stack, laddered from 1 to 5 stacks, each rung at the share.
+  const ladder = perStack.getByTestId("item-card-ladder");
+  await expect(ladder).toContainText("Soul Investiture 1:");
+  await expect(ladder).toContainText("+0.80%");
+  await expect(ladder).toContainText("Soul Investiture 5:");
+  await expect(ladder).toContainText("+4.00%");
+  // Soul Investiture ships at its full five stacks, so the panel carries 8% and 4%, plus
+  // Hellbringer's 15% from 30 Soul Sparks.
   await expect(statValue(page, "outgoing_damage")).toHaveText("27.00%");
 });
 

@@ -593,6 +593,7 @@ describe("explainFormula", () => {
         text: 'param("bolster")',
         read: { kind: "param", arg: "bolster" },
         value: 2,
+        label: "bolster",
       },
       { text: " + 1" },
     ]);
@@ -608,6 +609,7 @@ describe("explainFormula", () => {
       text: "$n",
       read: { kind: "input", arg: "n" },
       value: 3,
+      valueText: "3",
     });
   });
 

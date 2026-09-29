@@ -63,6 +63,29 @@ test("a scale is checked as it is typed and previewed against the build", async 
   await expect(page.getByTestId("grant-scale-label")).toHaveValue("Ramp");
 });
 
+test("a scale's step ladder is checked as it is typed and saved with it", async ({
+  page,
+}) => {
+  await newBonusWithGrant(page);
+  await page.getByTestId("grant-scale").fill("floor(duration / 5)");
+  const over = page.getByTestId("grant-scale-steps-over");
+
+  await over.fill("enemies");
+  await expect(page.getByTestId("grant-scale-steps-issue")).toHaveText(
+    "the scale formula does not read enemies",
+  );
+  await over.fill("duration");
+  await page.getByTestId("grant-scale-steps-max").fill("25");
+  await page.getByTestId("grant-scale-steps-step").fill("5");
+  await expect(page.getByTestId("grant-scale-steps-issue")).toHaveCount(0);
+
+  await saveAndReopen(page);
+  await expect(over).toHaveValue("duration");
+  await expect(page.getByTestId("grant-scale-steps-min")).toHaveValue("0");
+  await expect(page.getByTestId("grant-scale-steps-max")).toHaveValue("25");
+  await expect(page.getByTestId("grant-scale-steps-step")).toHaveValue("5");
+});
+
 test("a label without a formula is flagged, since it is not saved", async ({
   page,
 }) => {

@@ -461,6 +461,16 @@ function changeParamKey(row: ConditionRow, key: string) {
   row.equals = "";
 }
 
+/** Whether a `param` or `input` leaf compares a percent, whose fields take percent units. */
+function comparesPercent(row: ConditionRow): boolean {
+  if (row.type === "input")
+    return (
+      props.inputOptions.find((option) => option.value === row.key)?.type ===
+      "percent"
+    );
+  return paramSlotFor(row.key)?.paramType === "percent";
+}
+
 /** The name doubles as search text, as a bonus picker's id does. */
 const searchableInputs = computed(() =>
   props.inputOptions.map((option) => ({ ...option, search: option.value })),
@@ -660,6 +670,7 @@ function changeInputKey(row: ConditionRow, key: string) {
               v-model:below="row.below"
               v-model:exactly="row.exactly"
               v-model:range-mode="row.rangeMode"
+              :percent="comparesPercent(row)"
             />
           </template>
         </template>

@@ -9,11 +9,13 @@ import { bonusInputSpec } from "./inputs";
 import {
   evaluateFormula,
   formulaLabel,
+  formulaReads,
   formulaScope,
   formulaText,
   singleRead,
 } from "./formula";
 import { occurrenceCount } from "./lookups";
+import { scalerMultiplier } from "./scaling";
 import { getPath } from "../lib/build-path";
 import { assignedRows, inlineRepetitionCount } from "../lib/inline-repetition";
 import { isDisabled } from "../lib/slot-toggle";
@@ -300,8 +302,10 @@ export function collect(
   // the build has no value for falls back to its declared `default`, so a condition reads
   // exactly what the UI shows.
   const params = new Map<string, string | number | boolean>();
+  const paramLabels = new Map<string, string>();
   for (const slot of db.slots) {
     if (slot.type !== "build_parameter") continue;
+    paramLabels.set(slot.path, slot.label);
     const value = getPath(context, slot.path);
     const resolved = (value === undefined ? slot.default : value) as
       string | number | boolean | undefined;
@@ -346,7 +350,7 @@ export function collect(
       mode,
       applies,
       value,
-      multiplier: mode === "relative" ? 1 + value : value,
+      multiplier: scalerMultiplier(mode, value),
     });
   }
 
@@ -381,6 +385,7 @@ export function collect(
     bonusNames,
     itemNames,
     params,
+    paramLabels,
     scalers,
   };
 
@@ -426,10 +431,12 @@ function grantScale(
   const result = evaluateFormula(grant.scale.formula, ctx);
   const read = singleRead(grant.scale.formula);
   const label = formulaLabel(grant.scale, ctx);
+  // A single read already names what it scales by; only a compound formula lists its reads.
   const base = {
     formula,
     ...(label && { label }),
     ...(read?.kind === "scaler" && { path: read.path }),
+    ...(!read && { reads: formulaReads(grant.scale.formula, ctx) }),
   };
   if (!result.ok) return { ...base, multiplier: 0, error: result.error };
   if (result.value < 0) {
@@ -440,15 +447,22 @@ function grantScale(
 }
 
 /** The unmet requirement a scale not above 0 adds to its grant's gate, so the grant reads as
- *  one step from active. */
+ *  one step from active. A compound formula is named by what it read rather than by its text,
+ *  e.g. "multiplier > 0 - Stacks: 0". */
 function scaleLeaf(
   scale: Omit<GrantScale, "unscaled">,
 ): ConditionLeafResult | null {
   if (scale.multiplier > 0) return null;
+  const reads = scale.reads ?? [];
+  const name = scale.label ?? (reads.length ? "multiplier" : scale.formula);
   return {
     ok: false,
-    label: `${scale.label ?? scale.formula} > 0`,
-    detail: scale.error ?? "you have 0",
+    label: `${name} > 0`,
+    detail:
+      scale.error ??
+      (reads.length
+        ? reads.map((read) => `${read.label}: ${read.text}`).join(", ")
+        : "you have 0"),
   };
 }
 

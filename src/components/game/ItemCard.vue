@@ -32,11 +32,12 @@ import { composeFactor, scaledStat } from "../../engine/scaling";
 import type {
   Item,
   Db,
+  EvalContext,
   EvaluatedBonus,
   ResolvedScaler,
   SupplyNeed,
 } from "../../types";
-import { Crosshair, SquarePen, Table, TriangleAlert } from "@lucide/vue";
+import { Crosshair, Sigma, SquarePen, Table, TriangleAlert } from "@lucide/vue";
 import BaseBadge from "../ui/BaseBadge.vue";
 import BaseCard from "../ui/BaseCard.vue";
 import BaseCardHeader from "../ui/BaseCardHeader.vue";
@@ -77,6 +78,9 @@ const props = withDefaults(
     /** Every resolved bonus in the build by id, so an "overridden by" line can name the
      *  excluder and link to its slot; that bonus usually sits on another item. */
     bonusById?: Map<string, EvaluatedBonus>;
+    /** The build's context, which a scale's step ladder is evaluated against. Without one a
+     *  scaled grant shows its single line. */
+    context?: EvalContext | null;
   }>(),
   {
     bonuses: () => [],
@@ -87,6 +91,7 @@ const props = withDefaults(
     editLabel: "",
     stableGroup: null,
     bonusById: () => new Map(),
+    context: null,
   },
 );
 
@@ -96,6 +101,8 @@ const emit = defineEmits<{
   "go-to-slot": [slotId: string];
   /** Asks the caller to narrow its slot list to what could supply an unmet condition. */
   locate: [need: SupplyNeed, label: string];
+  /** Asks the caller to show the bonus in the inspector, which explains its formulas. */
+  inspect: [bonusId: string];
 }>();
 
 /** What this item would be swapped for, when the card has a catalog to ask. */
@@ -208,6 +215,7 @@ const rows = computed(() =>
     props.bonuses,
     props.bonusById,
     props.db?.slots ?? [],
+    props.context ?? undefined,
   ).map((row) => ({
     ...row,
     sharedWith: row.sharedWith
@@ -219,6 +227,8 @@ const rows = computed(() =>
     // No catalog (the layer editor's preview card) means no "where would I get this" action.
     grants: row.grants.map((grant) => ({
       ...grant,
+      // A scale's steps read like tiers, so both render as one ladder.
+      ladder: grant.tiers ?? grant.steps,
       unmet: grant.unmet.map((leaf) => ({
         leaf,
         need: props.db ? supplyNeedFor(props.db, leaf) : null,
@@ -305,6 +315,14 @@ const rows = computed(() =>
               row.name || "always"
             }}</span>
             <BaseBadge v-if="row.stacks > 1">×{{ row.stacks }}</BaseBadge>
+            <IconButton
+              v-if="row.formulaic"
+              title="Show how this is calculated"
+              data-testid="item-card-inspect"
+              @click="emit('inspect', row.id)"
+            >
+              <Sigma />
+            </IconButton>
           </div>
           <div
             v-if="row.secondary && row.firstSource"
@@ -378,13 +396,14 @@ const rows = computed(() =>
                 <div v-if="g.problem" class="text-warn">
                   {{ g.problem.message }}
                 </div>
-                <!-- A ladder's rungs are already at the grant's scale, each noting the
+                <!-- A tier ladder's rungs are already at the grant's scale, each noting the
                      catalog's real value, so a scaled line reads the same here as on a flat
-                     grant or on the item's own rows above. -->
-                <template v-else-if="g.tiers">
-                  <div>
+                     grant or on the item's own rows above. A scale's step ladder shows each
+                     input value's payload instead. -->
+                <template v-else-if="g.ladder">
+                  <div data-testid="item-card-ladder">
                     <div
-                      v-for="tier in g.tiers"
+                      v-for="tier in g.ladder"
                       :key="tier.atLeast"
                       class="py-1 border-t border-t-1 border-line last:border-b last:border-b-1"
                     >
@@ -403,6 +422,20 @@ const rows = computed(() =>
                       ></StatRows>
                     </div>
                   </div>
+                  <p
+                    v-if="g.stepNote"
+                    class="text-muted"
+                    data-testid="item-card-step-note"
+                  >
+                    with
+                    <template v-for="(part, i) in g.stepNote" :key="i"
+                      ><BaseLink
+                        v-if="part.slotId"
+                        @click="emit('go-to-slot', part.slotId)"
+                        >{{ part.text }}</BaseLink
+                      ><template v-else>{{ part.text }}</template></template
+                    >
+                  </p>
                 </template>
                 <template v-else-if="g.variants">
                   <div>

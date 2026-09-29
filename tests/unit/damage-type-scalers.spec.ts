@@ -118,7 +118,10 @@ describe("shipped damage-type scaled entries", () => {
         resolve({ scalers: { encounterDamage: 1 } }, stacksOf(stacks)),
         "risky-investment",
       ).outgoing_damage;
-    expect([1, 2, 3, 4, 5].map(at)).toEqual([0.22, 0.24, 0.26, 0.28, 0.3]);
+    // The base and the per-stack grant are summed, so compare past float noise.
+    [0.22, 0.24, 0.26, 0.28, 0.3].forEach((expected, index) =>
+      expect(at(index + 1)).toBeCloseTo(expected, 10),
+    );
   });
 
   it("keep the collar's item level and combined rating as unscaled item stats", () => {

@@ -80,6 +80,15 @@ describe("conditions.ts param leaf", () => {
     expect(result.unmet[0].detail).toContain("0.2");
   });
 
+  it("names a param by its slot label, and a switch by its state alone", () => {
+    const c = ctx(
+      { feature: false },
+      { paramLabels: new Map([["feature", "Feature"]]) },
+    );
+    const result = explain({ param: { key: "feature", is: true } }, c);
+    expect(result.unmet[0]).toMatchObject({ label: "Feature on", detail: "" });
+  });
+
   it("number form: exactly, a single-value alternative to atLeast/below", () => {
     const c = ctx({ bolster: 0.5 });
     expect(evaluate({ param: { key: "bolster", exactly: 0.5 } }, c)).toBe(true);
@@ -335,10 +344,10 @@ describe("conditions.ts toggle leaf", () => {
     ).toBe(true);
   });
 
-  it("explains a list as the choice it is, and names what is off", () => {
+  it("explains a list as the choice it is, with no detail repeating it", () => {
     const result = explain({ toggle: ["combat", "party"] }, ctx({}));
     expect(result.leaves[0].label).toBe("combat or party enabled");
-    expect(result.leaves[0].detail).toBe("off: combat, party");
+    expect(result.leaves[0].detail).toBe("");
   });
 });
 

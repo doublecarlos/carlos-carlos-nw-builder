@@ -211,6 +211,78 @@ describe("bonus-draft scale", () => {
     expect(toGrant(toDraft({ stats: {} }))).not.toHaveProperty("scale");
   });
 
+  it("round-trips a step ladder hint, dropped with the formula or a cleared axis", () => {
+    const grant: Grant = {
+      stats: { strike_p: 0.018 },
+      scale: {
+        formula: "clamp(floor(duration / 5), 0, 5)",
+        steps: { over: "duration", min: 0, max: 25, step: 5 },
+      },
+    };
+    expect(needsJson(grant)).toBe(false);
+    const draft = toDraft(grant);
+    expect(toGrant(draft)).toEqual(grant);
+    draft.scaleSteps.over = " ";
+    expect(toGrant(draft).scale).not.toHaveProperty("steps");
+    draft.scaleSteps.over = "duration";
+    draft.scale.formula = "";
+    expect(toGrant(draft)).not.toHaveProperty("scale");
+  });
+
+  it("fills a cleared step number from the others", () => {
+    const draft = toDraft({ stats: {}, scale: { formula: "$n" } });
+    draft.scaleSteps = { over: "$n", min: 2, max: "", step: null };
+    expect(toGrant(draft).scale?.steps).toEqual({
+      over: "$n",
+      min: 2,
+      max: 2,
+      step: 1,
+    });
+  });
+
+  it("saves steps on a flat payload only, keeping them in the draft", () => {
+    const draft = toDraft({
+      stats: {},
+      scale: {
+        formula: "duration",
+        steps: { over: "duration", min: 0, max: 5, step: 1 },
+      },
+    });
+    draft.payload = "tiers";
+    expect(toGrant(draft).scale).toEqual({ formula: "duration" });
+    draft.payload = "flat";
+    expect(toGrant(draft).scale?.steps).toEqual({
+      over: "duration",
+      min: 0,
+      max: 5,
+      step: 1,
+    });
+  });
+
+  it("steps beside a tiered payload force JSON rather than being dropped", () => {
+    expect(
+      needsJson({
+        tiers: [{ atLeast: 1, stats: {} }],
+        scale: {
+          formula: "duration",
+          steps: { over: "duration", min: 0, max: 5, step: 1 },
+        },
+      }),
+    ).toBe(true);
+  });
+
+  it("an unknown steps key forces JSON", () => {
+    expect(
+      needsJson({
+        stats: {},
+        scale: {
+          formula: "duration",
+          steps: { over: "duration", min: 0, max: 5, step: 1, extra: 1 },
+        },
+      } as unknown as Grant),
+    ).toBe(true);
+  });
+
   it("a malformed formula or an unknown key forces JSON", () => {
     const stats = { outgoing_damage: 0.15 };
     expect(
@@ -509,6 +581,23 @@ describe("bonus-draft inputs", () => {
     expect(rowsToInputs([row])).toEqual({
       stacks: { type: "boolean", default: true },
     });
+  });
+
+  it("edits a percent input's presets in percent, stored as decimals", () => {
+    const [row] = inputRows({
+      share: { type: "percent", default: 0.1, presets: [0.1, 0.036] },
+    });
+    expect(row.presets).toBe("10, 3.6");
+    row.presets = "25%, 3.6";
+    expect(rowsToInputs([row]).share.presets).toEqual([0.25, 0.036]);
+  });
+
+  it("leaves a number input's presets as typed", () => {
+    const [row] = inputRows({
+      stacks: { type: "number", default: 0, presets: [1, 5] },
+    });
+    expect(row.presets).toBe("1, 5");
+    expect(rowsToInputs([row]).stacks.presets).toEqual([1, 5]);
   });
 
   it("writes control on a number only", () => {

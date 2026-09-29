@@ -573,6 +573,21 @@ export interface FormulaRef {
   label?: string;
 }
 
+/** The build value a scale's step ladder varies, and the values it shows: `min` to `max` in
+ *  `step`s. `over` is one read: a `$input` of the bonus, a variable like `duration`, or
+ *  `param("path")`. */
+export interface ScaleSteps {
+  over: string;
+  min: number;
+  max: number;
+  step: number;
+}
+
+/** A grant's `scale`. With `steps`, the hover card lays the payload out at each value. */
+export interface ScaleRef extends FormulaRef {
+  steps?: ScaleSteps;
+}
+
 /** The `formula` leaf: a formula's result checked against a range. */
 export type FormulaCondition = FormulaRef & RangeSpec;
 
@@ -662,7 +677,7 @@ export interface Grant {
   /** Multiplies whichever payload wins. Above 0 the grant applies scaled, at exactly 0 it is
    *  inactive, and a negative or non-finite result is an error. `stats` keeps the real game
    *  value, e.g. `scaler("scalers.encounterDamage")` for the share of damage it applies to. */
-  scale?: FormulaRef;
+  scale?: ScaleRef;
   /** Same as `Item.shortDescription`/`longDescription`, shown whenever this grant is
    * active -- next to its slot's stat summary and on that slot's hover card
    * respectively, alongside the item's own text. */
@@ -1005,6 +1020,8 @@ export interface EvalContext {
   /** Every `build_parameter`'s current value, keyed by its (context-relative) `path` -- what
    *  the `param` leaf reads. Built once by bonus.ts's `collect()`. */
   params: Map<string, string | number | boolean>;
+  /** Every `build_parameter`'s label, by its `path`, for naming a param in a leaf or note. */
+  paramLabels?: Map<string, string>;
   /** Every `build_parameter` declaring a `scaler`, by its `path`. Resolved once so the
    *  engine, the stat-source popover and the UI cannot compute different multipliers. */
   scalers: Map<string, ResolvedScaler>;
@@ -1105,6 +1122,16 @@ export interface GrantEvaluation {
   measure?: { formula: string; label?: string; value: number };
 }
 
+/** A value a formula read, named and formatted for the player. `key` tells reads apart, and
+ *  `path` is set on a scaler or param, whose parameter row a note links to. */
+export interface FormulaRead {
+  key: string;
+  kind: string;
+  label: string;
+  text: string;
+  path?: string;
+}
+
 /** How a grant's payload was scaled: the formula's result and the payload it multiplied,
  * so a card can print the real value beside the effective one. */
 export interface GrantScale {
@@ -1117,6 +1144,9 @@ export interface GrantScale {
   multiplier: number;
   /** Why the formula has no usable result: a runtime error or a negative value. */
   error?: string;
+  /** What a formula reading more than one thing read, so a note can name each value. Absent
+   *  on a single read, whose `label` already names it. */
+  reads?: FormulaRead[];
   /** The resolved payload before the multiplier (the catalog's real value plus any typed
    * dynamic stat), which `stats` no longer holds once scaled. Null while the grant is
    * inactive, like `stats`. */

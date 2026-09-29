@@ -38,9 +38,11 @@ import {
   type DiffCheck,
 } from "./draft-fields";
 import { deepEqual } from "./deep-equal";
+import { toDecimal, toPercent } from "./format";
 import type {
   FormulaRef,
   Grant,
+  ScaleSteps,
   GrantVariant,
   GrantProblem,
   Bonus,
@@ -83,15 +85,27 @@ const tiersAreSimple = (tiers: NonNullable<Grant["tiers"]>) =>
   );
 
 const FORMULA_KEYS = new Set(["formula", "label"]);
+const SCALE_KEYS = new Set([...FORMULA_KEYS, "steps"]);
+const STEPS_KEYS = new Set(["over", "min", "max", "step"]);
 
-/** Absent, or a `FormulaRef` the formula field edits without losing anything. */
-const formulaIsSimple = (ref: FormulaRef | undefined) =>
+/** Absent, or a `FormulaRef` the formula field edits without losing anything. `keys` are the
+ *  fields the site's form edits. */
+const formulaIsSimple = (ref: FormulaRef | undefined, keys = FORMULA_KEYS) =>
   ref === undefined ||
   (typeof ref === "object" &&
     ref !== null &&
-    Object.keys(ref).every((key) => FORMULA_KEYS.has(key)) &&
+    Object.keys(ref).every((key) => keys.has(key)) &&
     typeof ref.formula === "string" &&
     (ref.label === undefined || typeof ref.label === "string"));
+
+/** Absent, or `steps` the scale's step fields edit without losing anything. */
+const stepsAreSimple = (steps: ScaleSteps | undefined) =>
+  steps === undefined ||
+  (typeof steps === "object" &&
+    steps !== null &&
+    Object.keys(steps).every((key) => STEPS_KEYS.has(key)) &&
+    typeof steps.over === "string" &&
+    [steps.min, steps.max, steps.step].every((n) => typeof n === "number"));
 
 const variantsAreSimple = (variants: NonNullable<Grant["variants"]>) =>
   (variants ?? []).every(
@@ -114,11 +128,14 @@ const problemIsSimple = (problem: GrantProblem) =>
  *  `ItemForm.vue`'s "Dynamic stats" section), but `Grant.dynamicStats` only ever applies
  *  alongside the flat payload, so pairing it with `tiers`/`variants`/`problem` on the same
  *  grant has no widget and falls to JSON, same "drop to JSON rather than silently flatten"
- *  rule `tiers`/`variants`/`problem` already follow. */
+ *  rule `tiers`/`variants`/`problem` already follow. A scale's `steps` is the same: its
+ *  fields show on a flat payload only. */
 export const needsJson = (grant: Grant) =>
   Boolean(
     Object.keys(grant).some((key) => !GRANT_KEYS.has(key)) ||
-    !formulaIsSimple(grant.scale) ||
+    !formulaIsSimple(grant.scale, SCALE_KEYS) ||
+    !stepsAreSimple(grant.scale?.steps) ||
+    (grant.scale?.steps && (grant.tiers || grant.variants || grant.problem)) ||
     !formulaIsSimple(grant.tierBy) ||
     (grant.tierBy && !grant.tiers) ||
     !whenIsRepresentable(grant.when) ||
@@ -227,6 +244,35 @@ export function draftToFormula(draft: FormulaDraft): FormulaRef | undefined {
   return out;
 }
 
+/** A scale's `steps` as its fields edit them. An empty `over` means none. */
+export interface StepsDraft {
+  over: string;
+  min: number | string | null;
+  max: number | string | null;
+  step: number | string | null;
+}
+
+export const stepsDraft = (steps?: ScaleSteps): StepsDraft => ({
+  over: steps?.over ?? "",
+  min: steps?.min ?? null,
+  max: steps?.max ?? null,
+  step: steps?.step ?? null,
+});
+
+/** Undefined without an `over`. A cleared number falls back to a 0 minimum, one value (the
+ *  minimum) and a step of 1, which load validation and the field's own check report. */
+export function draftToSteps(draft: StepsDraft): ScaleSteps | undefined {
+  const over = draft.over.trim();
+  if (!over) return undefined;
+  const min = numberOrUnset(draft.min) ?? 0;
+  return {
+    over,
+    min,
+    max: numberOrUnset(draft.max) ?? min,
+    step: numberOrUnset(draft.step) ?? 1,
+  };
+}
+
 export interface TierDraft {
   atLeast: number;
   stats: StatRow[];
@@ -262,6 +308,8 @@ export interface GrantDraft {
   longDescription: string;
   /** Per grant like `name`, since it scales whichever payload wins. */
   scale: FormulaDraft;
+  /** The scale's step ladder, kept only while the scale has a formula. */
+  scaleSteps: StepsDraft;
   /** The measure `tiers` are keyed by. Empty means `occurrences()`. */
   tierBy: FormulaDraft;
 }
@@ -306,6 +354,7 @@ export function toDraft(grant: Grant = {}): GrantDraft {
     shortDescription: json ? "" : (grant.shortDescription ?? ""),
     longDescription: json ? "" : (grant.longDescription ?? ""),
     scale: formulaDraft(json ? undefined : grant.scale),
+    scaleSteps: stepsDraft(json ? undefined : grant.scale?.steps),
     tierBy: formulaDraft(json ? undefined : grant.tierBy),
   };
 }
@@ -358,7 +407,11 @@ export function toGrant(draft: GrantDraft): Grant {
   putIfSet(out, "name", draft.name);
   putIfSet(out, "shortDescription", draft.shortDescription);
   putIfSet(out, "longDescription", draft.longDescription);
-  putIfSet(out, "scale", draftToFormula(draft.scale));
+  const scale = draftToFormula(draft.scale);
+  // Only a flat payload has a ladder; the draft keeps the fields for switching back.
+  const steps =
+    draft.payload === "flat" ? draftToSteps(draft.scaleSteps) : undefined;
+  putIfSet(out, "scale", scale && steps ? { ...scale, steps } : scale);
 
   return out;
 }
@@ -379,7 +432,7 @@ export interface InputDraft {
   min: number | string | null;
   max: number | string | null;
   step: number | string | null;
-  /** Comma-separated. */
+  /** Comma-separated, in the units the input shows: percent for a `percent` input. */
   presets: string;
   /** `number` only. Empty leaves it to the bounds: a stepper when both are set. */
   control: "" | NumberControl;
@@ -412,7 +465,9 @@ export const inputRows = (
     min: def.min ?? null,
     max: def.max ?? null,
     step: def.step ?? null,
-    presets: (def.presets ?? []).join(", "),
+    presets: (def.presets ?? [])
+      .map((value) => (def.type === "percent" ? toPercent(value) : value))
+      .join(", "),
     control: def.control ?? "",
   }));
 
@@ -438,8 +493,9 @@ export const rowsToInputs = (
         "presets",
         row.presets
           .split(",")
-          .map((part) => numberOrUnset(part.trim()))
-          .filter((value): value is number => value !== undefined),
+          .map((part) => numberOrUnset(part.replace("%", "").trim()))
+          .filter((value): value is number => value !== undefined)
+          .map((value) => (row.type === "percent" ? toDecimal(value) : value)),
       );
       if (row.type === "number" && row.control) def.control = row.control;
       def.default = numberOrUnset(row.default) ?? 0;
@@ -583,6 +639,7 @@ export function duplicateDraft(draft: GrantDraft): GrantDraft {
     uid: `b${Math.random().toString(36).slice(2, 8)}`,
     conditions: draft.conditions.map(cloneRow),
     scale: { ...draft.scale },
+    scaleSteps: { ...draft.scaleSteps },
     tierBy: { ...draft.tierBy },
     stats: draft.stats.map((s) => ({ ...s })),
     dynamicStats: draft.dynamicStats.map((d) => ({ ...d })),

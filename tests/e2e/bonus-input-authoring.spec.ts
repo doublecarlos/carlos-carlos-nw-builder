@@ -116,6 +116,81 @@ test("a number input takes bounds and a range condition", async ({ page }) => {
   expect(json.when).toEqual({ input: { key: "stacks", atLeast: 3 } });
 });
 
+test("a percent input's numbers are typed in percent and saved as decimals", async ({
+  page,
+}) => {
+  await openNewBonus(page);
+  const input = await addInput(page, "share");
+  await chooseCombo(input.getByTestId("bonus-input-type"), "percent");
+  const field = (key: string) =>
+    input.getByTestId(`bonus-input-${key}`).locator("input");
+  await field("min").fill("0");
+  await field("max").fill("100");
+  await field("step").fill("5");
+  await field("default").fill("25");
+  await input.getByTestId("bonus-input-presets").fill("10, 50%");
+  await page.getByRole("button", { name: "Save bonus" }).click();
+
+  await openEditorRow(page, "Risky Investment");
+  await openEditorRow(page, BONUS);
+  const reopened = page.locator(".bonus-input-row").last();
+  await expect(
+    reopened.getByTestId("bonus-input-default").locator("input"),
+  ).toHaveValue("25");
+  await expect(
+    reopened.getByTestId("bonus-input-max").locator("input"),
+  ).toHaveValue("100");
+  await expect(reopened.getByTestId("bonus-input-presets")).toHaveValue(
+    "10, 50",
+  );
+});
+
+/** A percent input, and the grant JSON its leaf or scale produces. */
+async function percentInput(page: Page) {
+  await openNewBonus(page);
+  const input = await addInput(page, "share");
+  await chooseCombo(input.getByTestId("bonus-input-type"), "percent");
+  return input;
+}
+
+async function grantJson(page: Page) {
+  const grant = page.getByTestId("bonus-grant-row").first();
+  await grant.getByLabel("Edit as JSON").click();
+  return JSON.parse(await grant.locator("textarea").inputValue());
+}
+
+test("a percent input's range condition is typed in percent", async ({
+  page,
+}) => {
+  await percentInput(page);
+  const leaf = await addInputCondition(page);
+  await chooseCombo(leaf.getByTestId("condition-input-key"), "share");
+  await leaf.locator('input[inputmode="decimal"]').first().fill("25");
+  expect((await grantJson(page)).when).toEqual({
+    input: { key: "share", atLeast: 0.25 },
+  });
+});
+
+test("a ladder over a percent input takes its bounds in percent", async ({
+  page,
+}) => {
+  await percentInput(page);
+  await page.getByLabel("Add grant").click();
+  await page.getByTestId("grant-scale").fill("$share");
+  await page.getByTestId("grant-scale-steps-over").fill("$share");
+  const field = (key: string) =>
+    page.getByTestId(`grant-scale-steps-${key}`).locator("input");
+  await field("min").fill("0");
+  await field("max").fill("100");
+  await field("step").fill("25");
+  expect((await grantJson(page)).scale.steps).toEqual({
+    over: "$share",
+    min: 0,
+    max: 1,
+    step: 0.25,
+  });
+});
+
 test("a repeated input id is flagged", async ({ page }) => {
   await openNewBonus(page);
   await addInput(page, "stacks");

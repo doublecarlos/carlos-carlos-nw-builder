@@ -116,17 +116,23 @@ function formulaLine(
   const value = result.ok ? formatNumber(result.value) : result.error;
   return {
     title: label && label !== title ? `${title} (${label})` : title,
-    parts: parts.map(({ text, read }) => {
+    parts: parts.map(({ text, read, label: readLabel }) => {
       const slotId =
         read?.kind === "param" || read?.kind === "scaler"
           ? findParamSlot(slots, read.arg ?? "")?.id
           : read?.kind === "input"
             ? inputSlotId
             : undefined;
-      return slotId ? { text, slotId } : { text };
+      // A lookup shows as the parameter it reads, not as its call.
+      const shown = readLabel ?? text;
+      return slotId ? { text: shown, slotId } : { text: shown };
     }),
     substituted:
-      substituted === ref.formula || substituted === value ? null : substituted,
+      substituted === ref.formula ||
+      substituted === value ||
+      (parts.length === 1 && parts[0].read)
+        ? null
+        : substituted,
     result: value,
     failed: !result.ok,
   };

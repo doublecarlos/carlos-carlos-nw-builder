@@ -8,8 +8,15 @@ import type {
   ConditionWhen,
   FormulaRef,
   FormulaScope,
+  ScaleSteps,
 } from "../../types";
-import { span, suggesting, type FormulaIssue, type FormulaReads } from "./ast";
+import {
+  nodes,
+  span,
+  suggesting,
+  type FormulaIssue,
+  type FormulaReads,
+} from "./ast";
 import { FORMULA_VARIABLES, FUNCTIONS, lookupCalls } from "./functions";
 import { parseFormula } from "./language";
 
@@ -257,4 +264,137 @@ export function lintFormula(
     if (problem) problems.push({ ...problem, ...span(call), syntax: false });
   }
   return [...out, ...problems.sort((a, b) => a.start - b.start)];
+}
+
+// Step ladders
+
+/** What a scale's step ladder varies: an input of the bonus, a variable, or a param. */
+export type StepAxis =
+  | { kind: "input"; name: string }
+  | { kind: "variable"; name: string }
+  | { kind: "param"; path: string };
+
+/** `over` as a step axis: one `$name`, variable or `param("path")`, else null. Whether a
+ *  `$name` is a number input of the bonus is `stepsProblem`'s check. */
+export function stepAxis(over: string): StepAxis | null {
+  const { ast } = parseFormula(over);
+  if (ast?.kind === "named") return { kind: "input", name: ast.name };
+  if (ast?.kind === "variable" && FORMULA_VARIABLES.includes(ast.name))
+    return { kind: "variable", name: ast.name };
+  if (
+    ast?.kind === "call" &&
+    ast.name === "param" &&
+    ast.args.length === 1 &&
+    ast.args[0].kind === "string"
+  )
+    return { kind: "param", path: ast.args[0].value };
+  return null;
+}
+
+/** The axis as `explainFormula` reports its read. */
+export const axisRead = (axis: StepAxis): { kind: string; arg?: string } =>
+  axis.kind === "input"
+    ? { kind: "input", arg: axis.name }
+    : axis.kind === "param"
+      ? { kind: "param", arg: axis.path }
+      : { kind: axis.name };
+
+/** Whether `formula` reads `axis`, directly or through the named formulas it uses. */
+function readsAxis(
+  formula: string,
+  named: Record<string, FormulaRef>,
+  axis: StepAxis,
+): boolean {
+  const seen = new Set<string>();
+  const walk = (text: string): boolean => {
+    const { ast, reads } = parseFormula(text);
+    // A scaler is its param's value as a multiplier, so reading it reads the param.
+    if (
+      axis.kind === "param" &&
+      (reads.params.includes(axis.path) || reads.scalers.includes(axis.path))
+    )
+      return true;
+    if (
+      axis.kind === "variable" &&
+      ast &&
+      [...nodes(ast)].some(
+        (node) => node.kind === "variable" && node.name === axis.name,
+      )
+    )
+      return true;
+    for (const { name } of reads.named) {
+      if (!Object.hasOwn(named, name)) {
+        if (axis.kind === "input" && name === axis.name) return true;
+        continue;
+      }
+      if (seen.has(name)) continue;
+      seen.add(name);
+      const ref = named[name];
+      if (typeof ref?.formula === "string" && walk(ref.formula)) return true;
+    }
+    return false;
+  };
+  return walk(formula);
+}
+
+/** The most values one step ladder evaluates. */
+export const MAX_STEP_VALUES = 100;
+
+/** How many values `steps` covers, counted without listing them. */
+const stepCount = ({ min, max, step }: ScaleSteps) =>
+  Math.floor((max - min) / step + 1e-9) + 1;
+
+/** The values `steps` covers, from `min` to `max`. */
+export function stepValues(steps: ScaleSteps): number[] {
+  return Array.from(
+    { length: stepCount(steps) },
+    (_, i) => Math.round((steps.min + i * steps.step) * 1e9) / 1e9,
+  );
+}
+
+/** Why `steps` cannot lay out a ladder for the scale `formula` of `owner`, else null. */
+export function stepsProblem(
+  steps: ScaleSteps,
+  formula: string,
+  owner: Pick<Bonus, "inputs" | "formulas">,
+): string | null {
+  if (!steps || typeof steps !== "object")
+    return "steps must be { over, min, max, step }";
+  const axis = typeof steps.over === "string" ? stepAxis(steps.over) : null;
+  if (!axis)
+    return `steps.over must be a $input, ${FORMULA_VARIABLES.join(", ")} or param("path")`;
+  if (axis.kind === "input") {
+    const def = owner.inputs?.[axis.name];
+    if (!def || Object.hasOwn(owner.formulas ?? {}, axis.name))
+      return `steps.over: $${axis.name} is not an input of this bonus`;
+    if (def.type === "boolean")
+      return `steps.over: $${axis.name} is a boolean input; steps vary a number`;
+  }
+  const { min, max, step } = steps;
+  if (![min, max, step].every((n) => Number.isFinite(n)))
+    return "steps needs numeric min, max and step";
+  if (step <= 0) return "steps.step must be above 0";
+  if (min > max) return "steps.min is above steps.max";
+  const count = stepCount(steps);
+  if (count > MAX_STEP_VALUES)
+    return `steps covers ${count} values; at most ${MAX_STEP_VALUES}`;
+  if (!readsAxis(formula, owner.formulas ?? {}, axis))
+    return `the scale formula does not read ${steps.over}`;
+  return null;
+}
+
+/** Why a valid `steps` over an input lists values the input cannot take, else null. Those
+ *  rows could never be the build's own. Variables and params are left alone, as they often
+ *  declare no bounds. */
+export function stepsRangeWarning(
+  steps: ScaleSteps,
+  owner: Pick<Bonus, "inputs">,
+): string | null {
+  const axis = stepAxis(steps.over);
+  const def = axis?.kind === "input" ? owner.inputs?.[axis.name] : undefined;
+  if (!def || def.type === "boolean") return null;
+  const below = def.min !== undefined && steps.min < def.min;
+  const above = def.max !== undefined && steps.max > def.max;
+  if (!below && !above) return null;
+  return `steps go past ${steps.over}'s own range of ${def.min ?? "-∞"} to ${def.max ?? "∞"}; those rows can never be the build's`;
 }
