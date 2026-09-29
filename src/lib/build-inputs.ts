@@ -17,8 +17,6 @@ export function storedInput(
       return build.bonusValues?.[address.bonusId]?.[address.kind]?.[
         address.key
       ];
-    case "occurrenceInputs":
-      return build.occurrenceInputs?.[address.itemId]?.[address.bonusId];
     case "assignments":
       return build.assignments?.[address.slotId]?.[address.itemId];
     case "context":
@@ -102,17 +100,6 @@ export function writeInput(
       );
       return;
     }
-    case "occurrenceInputs":
-      setEntry(
-        build.occurrenceInputs,
-        address.itemId,
-        withKey(
-          build.occurrenceInputs[address.itemId],
-          address.bonusId,
-          toNumber(value),
-        ),
-      );
-      return;
     case "assignments":
       setEntry(
         build.assignments,
@@ -141,8 +128,6 @@ export function inputKey(address: InputAddress): string {
       return `values:${address.slotId}:${address.kind}:${address.key}`;
     case "bonusValues":
       return `bonusValues:${address.bonusId}:${address.kind}:${address.key}`;
-    case "occurrenceInputs":
-      return `occurrenceInputs:${address.itemId}:${address.bonusId}`;
     case "assignments":
       return `assignments:${address.slotId}:${address.itemId}`;
     case "context":
@@ -178,9 +163,3 @@ export const assignmentAddress = (
   slotId: string,
   itemId: string,
 ): InputAddress => ({ store: "assignments", slotId, itemId });
-
-/** Where one item's count for one BonusOccurrenceConfig attachment is stored. */
-export const occurrenceAddress = (
-  itemId: string,
-  bonusId: string,
-): InputAddress => ({ store: "occurrenceInputs", itemId, bonusId });

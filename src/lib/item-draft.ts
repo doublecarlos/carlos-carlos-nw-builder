@@ -5,7 +5,6 @@
 // it is unit-testable and Vue-free.
 import { NW_SCHEMA } from "../data/data";
 import { replacementIdOf, replacementValuesOf } from "./item-replacement";
-import { isPlainOccurrence } from "./occurrence-mode";
 import {
   entriesToRows,
   rowsToEntries,
@@ -24,26 +23,9 @@ import {
   type StatRow,
   type DynamicStatDraft,
 } from "./bonus-draft";
-import type {
-  Item,
-  BonusOccurrenceConfig,
-  ItemReplacement,
-  StatValues,
-} from "../types";
+import type { Item, ItemReplacement, StatValues } from "../types";
 
 export type { StatRow, DynamicStatDraft };
-
-/** One attached bonus's editable occurrence bounds: mirrors `BonusOccurrenceConfig`'s own
- *  `min`/`max`/`default`, just widened to `number | string | null` like every other numeric
- *  draft field so a cleared input reads as empty rather than `0`. `label` mirrors the config's
- *  own optional field directly (always a string here; "" reads as unset, same as
- *  `DynamicStatDraft.label`). */
-export interface OccurrenceDraft {
-  min: number | string | null;
-  max: number | string | null;
-  default: number | string | null;
-  label: string;
-}
 
 export interface ItemDraft {
   name: string;
@@ -60,11 +42,6 @@ export interface ItemDraft {
   tags: string[];
   gameIds: string[];
   bonuses: string[];
-  /** Present only for a bonus id upgraded to a `BonusOccurrenceConfig`; absence means a
-   *  plain-id attachment (always 1 occurrence), same "optional fields" convention
-   *  `DynamicStatDraft` uses. Keyed by bonus id, not array index, since it tracks
-   *  `draft.bonuses` entries by identity. */
-  bonusOccurrences: Record<string, OccurrenceDraft>;
   dynamicStats: DynamicStatDraft[];
   repetitionMin: number | string | null;
   repetitionMax: number | string | null;
@@ -104,21 +81,6 @@ export function hasInlineRepetition(d: ItemDraft): boolean {
 
 export function buildDraft(item: Item | null | undefined): ItemDraft {
   const source = item ?? ({} as Partial<Item>);
-  const bonuses: string[] = [];
-  const bonusOccurrences: Record<string, OccurrenceDraft> = {};
-  for (const entry of source.bonuses ?? []) {
-    if (typeof entry === "string") {
-      bonuses.push(entry);
-    } else {
-      bonuses.push(entry.bonus);
-      bonusOccurrences[entry.bonus] = {
-        min: entry.min,
-        max: entry.max,
-        default: entry.default,
-        label: entry.label ?? "",
-      };
-    }
-  }
   return {
     name: source.name ?? "",
     filter: source.filter ?? "",
@@ -134,8 +96,7 @@ export function buildDraft(item: Item | null | undefined): ItemDraft {
     allowedClass: [...(source.allowedClass ?? [])],
     tags: [...(source.tags ?? [])],
     gameIds: [...(source.gameIds ?? [])],
-    bonuses,
-    bonusOccurrences,
+    bonuses: [...(source.bonuses ?? [])],
     dynamicStats: dynamicStatRows(source.dynamicStats),
     repetitionMin: source.inlineRepetition?.min ?? null,
     repetitionMax: source.inlineRepetition?.max ?? null,
@@ -186,23 +147,7 @@ export function toItem(local: ItemDraft, ctx: ItemDraftContext): Item {
 
   putIfSet(item, "tags", [...local.tags]);
   putIfSet(item, "gameIds", [...local.gameIds]);
-  if (local.bonuses.length) {
-    const bonuses: (string | BonusOccurrenceConfig)[] = local.bonuses.map(
-      (id) => {
-        const occurrence = local.bonusOccurrences[id];
-        if (!occurrence || isPlainOccurrence(occurrence)) return id;
-        const config: BonusOccurrenceConfig = {
-          bonus: id,
-          min: Number(occurrence.min) || 0,
-          max: Number(occurrence.max) || 0,
-          default: Number(occurrence.default) || 0,
-        };
-        putIfSet(config, "label", occurrence.label.trim());
-        return config;
-      },
-    );
-    item.bonuses = bonuses;
-  }
+  putIfSet(item, "bonuses", [...local.bonuses]);
   // A typed 0 is a deliberate "unlimited even so", so `numberOrUnset` (emptiness, not
   // truthiness) is what decides whether this is written at all.
   putIfSet(item, "maxCopies", numberOrUnset(local.maxCopies));
@@ -297,48 +242,6 @@ function replacementOf(value: unknown): ItemReplacement | null {
     : (value as ItemReplacement);
 }
 
-/** A saved item's `bonuses` entries mix plain ids and `BonusOccurrenceConfig` objects; split
- *  that into "which bonuses are attached" (id order/membership) and "which attached ones carry
- *  an occurrence config" so attach/detach and occurrence edits get distinct, readable diff
- *  labels instead of one opaque "edit bonuses". */
-function bonusIdsOf(entries: unknown): string[] {
-  return Array.isArray(entries)
-    ? entries.map((e) =>
-        typeof e === "string" ? e : (e as { bonus: string }).bonus,
-      )
-    : [];
-}
-function occurrenceConfigsOf(entries: unknown): Record<string, unknown> {
-  const configs: Record<string, unknown> = {};
-  if (Array.isArray(entries)) {
-    for (const e of entries) {
-      if (typeof e !== "string") configs[(e as { bonus: string }).bonus] = e;
-    }
-  }
-  return configs;
-}
-
-/** Labels an occurrence-config change with the specific bonus id it touched, same spirit as
- *  `arrayDiffLabel`: "edit occurrence config" alone wouldn't say which of an item's several
- *  attachments changed. */
-function diffOccurrenceLabel(
-  oldConfigs: Record<string, unknown>,
-  nwConfigs: Record<string, unknown>,
-): string {
-  const oldKeys = new Set(Object.keys(oldConfigs));
-  const nwKeys = new Set(Object.keys(nwConfigs));
-  const added = [...nwKeys].filter((id) => !oldKeys.has(id));
-  const removed = [...oldKeys].filter((id) => !nwKeys.has(id));
-  if (added.length) return `add occurrence config for "${added[0]}"`;
-  if (removed.length) return `remove occurrence config for "${removed[0]}"`;
-  const changed = [...nwKeys].find(
-    (id) => JSON.stringify(oldConfigs[id]) !== JSON.stringify(nwConfigs[id]),
-  );
-  return changed
-    ? `edit occurrence config for "${changed}"`
-    : "edit occurrence config";
-}
-
 const CHECKS: DiffCheck<Item>[] = [
   (old, nw) => (old.name !== nw.name ? `edit name → "${nw.name}"` : null),
   (old, nw) =>
@@ -377,8 +280,8 @@ const CHECKS: DiffCheck<Item>[] = [
       ? arrayDiffLabel("game id", old.gameIds ?? [], nw.gameIds ?? [])
       : null,
   (old, nw) => {
-    const oldIds = bonusIdsOf(old.bonuses);
-    const nwIds = bonusIdsOf(nw.bonuses);
+    const oldIds = old.bonuses ?? [];
+    const nwIds = nw.bonuses ?? [];
     if (JSON.stringify(oldIds) === JSON.stringify(nwIds)) return null;
     // Same ids in a different order is a pure reorder, distinct from membership edits.
     if (
@@ -387,13 +290,6 @@ const CHECKS: DiffCheck<Item>[] = [
     )
       return "reorder bonuses";
     return arrayDiffLabel("bonus", oldIds, nwIds);
-  },
-  (old, nw) => {
-    const oldConfigs = occurrenceConfigsOf(old.bonuses);
-    const nwConfigs = occurrenceConfigsOf(nw.bonuses);
-    return JSON.stringify(oldConfigs) !== JSON.stringify(nwConfigs)
-      ? diffOccurrenceLabel(oldConfigs, nwConfigs)
-      : null;
   },
   (old, nw) =>
     JSON.stringify(old.dynamicStats) !== JSON.stringify(nw.dynamicStats)

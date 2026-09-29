@@ -13,11 +13,11 @@
 // per-paramType/per-slot-type value editing code.
 import { computed } from "vue";
 import { Plus, Trash } from "@lucide/vue";
-import BonusOccurrenceInputs from "./BonusOccurrenceInputs.vue";
 import BuildParamInput from "./BuildParamInput.vue";
 import ItemPicker from "./ItemPicker.vue";
 import PointAssignmentInput from "./PointAssignmentInput.vue";
 import StatValueInput from "./StatValueInput.vue";
+import BaseCheckbox from "../ui/BaseCheckbox.vue";
 import ComboBox from "../ui/ComboBox.vue";
 import IconButton from "../ui/IconButton.vue";
 import BaseInput from "../ui/BaseInput.vue";
@@ -26,12 +26,14 @@ import FormField from "../ui/FormField.vue";
 import FormGrid from "../ui/FormGrid.vue";
 import FormSection from "../ui/FormSection.vue";
 import IdField from "../ui/IdField.vue";
+import NumberStepper from "../ui/NumberStepper.vue";
+import PercentInput from "../ui/PercentInput.vue";
 import * as catalog from "../../data/catalog";
 import { useEditorDraft } from "../../composables/useEditorDraft";
-import { occurrenceRows } from "../../composables/useItemBonusOccurrences";
+import { numberControl } from "../../engine/inputs";
 import { parseRowSlotId, rowSlot } from "../../lib/item-picker-list";
 import {
-  bonusStatGroups,
+  bonusSettingGroups,
   buildDraft,
   toPreset,
   diffLabel,
@@ -42,6 +44,7 @@ import type {
   Db,
   BuildParameterSlot,
   ItemPickerSlot,
+  InputDef,
   ItemPickerListSlot,
   PointAssignmentSlot,
 } from "../../types";
@@ -125,22 +128,41 @@ const { draft, error, dirty, displayId } = useEditorDraft<
   draftNoun: "preset",
 });
 
-function occurrenceRowsFor(itemId: string) {
-  return occurrenceRows(props.db.get(itemId), draft.value.occurrences[itemId]);
-}
-
-function setOccurrence(itemId: string, bonusId: string, count: number) {
-  draft.value.occurrences[itemId] = {
-    ...draft.value.occurrences[itemId],
-    [bonusId]: count,
-  };
-}
-
 /** Settings for every bonus the rows' items carry, stored once per bonus like the build's. */
-const bonusGroups = computed(() => bonusStatGroups(draft.value, props.db));
+const bonusGroups = computed(() => bonusSettingGroups(draft.value, props.db));
 
 function bonusStat(bonusId: string, stat: string) {
   return draft.value.bonusValues[bonusId]?.stat[stat] ?? "";
+}
+
+/** A bonus input as the preset sets it, or its default while the preset leaves it alone. */
+function bonusInput(bonusId: string, name: string, def: InputDef) {
+  return draft.value.bonusValues[bonusId]?.input[name] ?? def.default;
+}
+
+/** `null` leaves the input out of the preset, so applying it keeps the build's value. */
+function setBonusInput(
+  bonusId: string,
+  name: string,
+  value: number | boolean | null,
+) {
+  const current = draft.value.bonusValues[bonusId] ?? { stat: {}, input: {} };
+  const { [name]: _dropped, ...input } = current.input;
+  draft.value.bonusValues[bonusId] = {
+    ...current,
+    input: value === null ? input : { ...input, [name]: value },
+  };
+}
+
+/** An emptied number field leaves the input out of the preset. */
+function onBonusInputField(
+  bonusId: string,
+  name: string,
+  raw: string | number | null,
+) {
+  if (raw === "" || raw === null) setBonusInput(bonusId, name, null);
+  else if (typeof raw === "number" && Number.isFinite(raw))
+    setBonusInput(bonusId, name, raw);
 }
 
 function setBonusStat(
@@ -251,7 +273,6 @@ function chooseSection(section: string) {
   draft.value.itemRows = [];
   draft.value.assignmentRows = [];
   draft.value.clearRows = [];
-  draft.value.occurrences = {};
   draft.value.bonusValues = {};
 }
 
@@ -425,15 +446,6 @@ function save() {
           />
           <span class="text-muted">{{ config.label ?? config.stat }}</span>
         </span>
-        <!-- The picked item's own occurrence inputs, written into the draft-wide map keyed by
-             that item rather than by this row's slot. -->
-        <BonusOccurrenceInputs
-          :rows="occurrenceRowsFor(row.choice)"
-          :testid-prefix="`preset-occurrence-${row.choice}`"
-          @change="
-            (bonusId, count) => setOccurrence(row.choice, bonusId, count)
-          "
-        />
       </div>
 
       <FormSection
@@ -467,28 +479,14 @@ function save() {
           @change="
             (itemId, count) => (row.counts = { ...row.counts, [itemId]: count })
           "
-        >
-          <template #item="{ item }">
-            <div
-              v-if="occurrenceRowsFor(item.id).length"
-              class="flex flex-wrap items-center justify-center gap-2"
-            >
-              <BonusOccurrenceInputs
-                :rows="occurrenceRowsFor(item.id)"
-                :testid-prefix="`assignment-occurrence-${item.id}`"
-                @change="
-                  (bonusId, count) => setOccurrence(item.id, bonusId, count)
-                "
-              />
-            </div>
-          </template>
-        </PointAssignmentInput>
+        />
       </div>
 
       <template v-if="bonusGroups.length">
         <FormSection>Bonus settings</FormSection>
         <FormSectionDescription>
-          Dynamic stats of the bonuses these items carry, set once per bonus.
+          Dynamic stats and inputs of the bonuses these items carry, set once
+          per bonus.
         </FormSectionDescription>
         <FormGrid
           v-for="group in bonusGroups"
@@ -508,6 +506,61 @@ function save() {
               :model-value="bonusStat(group.bonusId, config.stat)"
               @update:model-value="
                 setBonusStat(group.bonusId, config.stat, $event)
+              "
+            />
+          </FormField>
+          <FormField
+            v-for="input in group.inputs"
+            :key="input.name"
+            :label="`${group.name}: ${input.def.label ?? input.name}`"
+          >
+            <BaseCheckbox
+              v-if="input.def.type === 'boolean'"
+              :data-testid="`preset-bonus-input-${group.bonusId}-${input.name}`"
+              :model-value="
+                Boolean(bonusInput(group.bonusId, input.name, input.def))
+              "
+              @update:model-value="
+                setBonusInput(group.bonusId, input.name, $event as boolean)
+              "
+            />
+            <NumberStepper
+              v-else-if="numberControl(input.def) === 'stepper'"
+              :min="input.def.min ?? 0"
+              :max="input.def.max ?? 0"
+              :step="input.def.step"
+              :data-testid="`preset-bonus-input-${group.bonusId}-${input.name}`"
+              :model-value="
+                Number(bonusInput(group.bonusId, input.name, input.def))
+              "
+              @update:model-value="
+                setBonusInput(group.bonusId, input.name, $event)
+              "
+            />
+            <PercentInput
+              v-else-if="input.def.type === 'percent'"
+              class="w-24"
+              :data-testid="`preset-bonus-input-${group.bonusId}-${input.name}`"
+              :model-value="
+                Number(bonusInput(group.bonusId, input.name, input.def))
+              "
+              @update:model-value="
+                onBonusInputField(group.bonusId, input.name, $event)
+              "
+            />
+            <BaseInput
+              v-else
+              type="number"
+              class="w-24"
+              :min="input.def.min"
+              :max="input.def.max"
+              :step="input.def.step"
+              :data-testid="`preset-bonus-input-${group.bonusId}-${input.name}`"
+              :model-value="
+                Number(bonusInput(group.bonusId, input.name, input.def))
+              "
+              @update:model-value="
+                onBonusInputField(group.bonusId, input.name, $event)
               "
             />
           </FormField>

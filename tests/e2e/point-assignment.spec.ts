@@ -224,16 +224,16 @@ test.describe("point_assignment hover card", () => {
 });
 
 // bonus.ts's collectInlineRepetition walks every point_assignment candidate for reachability
-// regardless of its own count, same as an item_picker item's zero-valued BonusOccurrenceConfig
-// already does -- so hovering an unselected candidate (0 points spent) still shows its bonuses,
-// inactive with their own zero-occurrence notes, instead of nothing at all.
+// regardless of its own count, so hovering an unselected candidate (0 points spent) still shows
+// its bonuses, inactive and explained by their own inputs, instead of nothing at all.
 test.describe("point_assignment hover card for an unselected candidate", () => {
   const DIAL_ITEM_ID = "test-tier1-dial-item";
   const DIAL_BONUS_ID = "test-tier1-dial-bonus";
-  // Mirrors the shipped "Deathly Rage" shape: a bare-id bonus gated on a sibling
-  // BonusOccurrenceConfig attachment on the same item.
-  const PROC_BONUS_ID = "test-tier1-proc-bonus";
+  const MASTER_ITEM_ID = "test-tier1-master-item";
+  // Mirrors the shipped "Deathly Rage" shape: a proc input gating tiers on the boon's rank.
   const STATS_BONUS_ID = "test-tier1-stats-bonus";
+
+  const proc = { type: "boolean", default: false, label: "Proc" };
 
   async function importBoons(page: Page) {
     const fileInput = page
@@ -252,53 +252,36 @@ test.describe("point_assignment hover card for an unselected candidate", () => {
                 name: "Test Dial Boon",
                 filter: "boon_tier1",
                 inlineRepetition: { min: 0, max: 3, default: 0 },
-                bonuses: [
-                  {
-                    bonus: DIAL_BONUS_ID,
-                    min: 0,
-                    max: 1,
-                    default: 0,
-                    label: "Proc",
-                  },
-                ],
+                bonuses: [DIAL_BONUS_ID],
               },
-              "test-tier1-master-item": {
-                id: "test-tier1-master-item",
+              [MASTER_ITEM_ID]: {
+                id: MASTER_ITEM_ID,
                 name: "Test Master Boon",
                 filter: "boon_tier1",
                 inlineRepetition: { min: 0, max: 3, default: 0 },
-                bonuses: [
-                  STATS_BONUS_ID,
-                  {
-                    bonus: PROC_BONUS_ID,
-                    min: 0,
-                    max: 1,
-                    default: 0,
-                    label: "proc",
-                  },
-                ],
+                bonuses: [STATS_BONUS_ID],
               },
             },
             bonuses: {
               [DIAL_BONUS_ID]: {
                 id: DIAL_BONUS_ID,
                 name: "Test Dial Bonus",
-                grants: [{ stats: { power: 5 } }],
-              },
-              [PROC_BONUS_ID]: {
-                id: PROC_BONUS_ID,
-                name: "Test Proc",
-                grants: [],
+                inputs: { active: proc },
+                grants: [
+                  {
+                    when: { input: { key: "active", is: true } },
+                    stats: { power: 5 },
+                  },
+                ],
               },
               [STATS_BONUS_ID]: {
                 id: STATS_BONUS_ID,
                 name: "Test Master Stats",
+                inputs: { active: proc },
                 grants: [
                   {
-                    when: {
-                      bonusOccurrences: { bonus: PROC_BONUS_ID, exactly: 1 },
-                    },
-                    stats: { power: 100 },
+                    when: { input: { key: "active", is: true } },
+                    tiers: [{ atLeast: 1, stats: { power: 100 } }],
                   },
                 ],
               },
@@ -313,7 +296,7 @@ test.describe("point_assignment hover card for an unselected candidate", () => {
     await expect(page.getByTestId("app-header")).toContainText(/imported/i);
   }
 
-  test("at 0 points, still shows the candidate's own bonus, explained by its own zero-valued config", async ({
+  test("at 0 points, still shows the candidate's own bonus, explained by its input", async ({
     page,
   }) => {
     await openBuilder(page);
@@ -329,12 +312,10 @@ test.describe("point_assignment hover card for an unselected candidate", () => {
       "Test Dial Boon",
     );
     await expect(card).toContainText("Test Dial Bonus");
-    await expect(
-      card.getByTestId("item-card-bonus-zero-occurrence"),
-    ).toContainText("Proc: off on this item");
+    await expect(card).toContainText("Proc is on");
   });
 
-  test("once points are actually spent, its own config still independently gates the bonus", async ({
+  test("once points are actually spent, its input still independently gates the bonus", async ({
     page,
   }) => {
     await openBuilder(page);
@@ -344,18 +325,18 @@ test.describe("point_assignment hover card for an unselected candidate", () => {
     await row.scrollIntoViewIfNeeded();
     await stepAssignment(row, DIAL_ITEM_ID, "increase");
     await expect(assignmentInput(row, DIAL_ITEM_ID)).toHaveValue("1");
+    await expect(
+      row.getByTestId(`bonus-input-${DIAL_BONUS_ID}-active`).locator("input"),
+    ).not.toBeChecked();
 
     await assignmentLabel(row, DIAL_ITEM_ID).hover();
     const card = page.getByTestId("item-card");
     await expect(card).toContainText("Test Dial Bonus");
-    // The bonus attachment is still its own independent 0-valued config -- spending points on
-    // the item itself doesn't turn it on.
-    await expect(
-      card.getByTestId("item-card-bonus-zero-occurrence"),
-    ).toContainText("Proc: off on this item");
+    // Spending points on the item itself doesn't turn its proc on.
+    await expect(card).toContainText("Proc is on");
   });
 
-  test("a checked proc left over from before doesn't falsely activate its bonus while the item is at 0 points", async ({
+  test("a checked proc left over from before doesn't activate its bonus once the item is back at 0 points", async ({
     page,
   }) => {
     await openBuilder(page);
@@ -363,28 +344,22 @@ test.describe("point_assignment hover card for an unselected candidate", () => {
 
     const row = slotRow(page, SLOT_ID);
     await row.scrollIntoViewIfNeeded();
-    // A point_assignment item's own occurrence checkbox/stepper testids are keyed by item id
-    // *and* bonus id (PointAssignmentInput.vue) -- an item_picker row's own `occurrenceCheckbox`
-    // helper only keys by bonus id, since a picker row has just the one item.
+    await stepAssignment(row, MASTER_ITEM_ID, "increase");
     await row
-      .getByTestId(
-        `assignment-occurrence-test-tier1-master-item-toggle-${PROC_BONUS_ID}`,
-      )
+      .getByTestId(`bonus-input-${STATS_BONUS_ID}-active`)
       .locator("input")
       .check();
+    await stepAssignment(row, MASTER_ITEM_ID, "decrease");
+    await expect(assignmentInput(row, MASTER_ITEM_ID)).toHaveValue("0");
     // The checkbox keeps real focus after `.check()`, which useHoverCard.ts's own
     // onFocusIn/onFocusOut treats as "editing" and suppresses the next hover for -- blur it
     // explicitly rather than just moving the pointer away.
     await page.keyboard.press("Escape");
     await row.locator(".slot-label").click();
 
-    await assignmentLabel(row, "test-tier1-master-item").hover();
+    await assignmentLabel(row, MASTER_ITEM_ID).hover();
     const card = page.getByTestId("item-card");
     await expect(card).toContainText("Test Master Stats");
-    // Reads inactive, with the real "you have 0" reason -- not as if the checked proc made it
-    // active, and not multiplied down to a wrong "0" preview either.
-    await expect(card).toContainText("needs 1 occurrence of Test Proc");
-    await expect(card).toContainText("you have 0");
     await expect(card.locator(".bg-ok")).toHaveCount(0);
   });
 });

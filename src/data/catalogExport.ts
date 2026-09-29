@@ -321,7 +321,7 @@ const PRESET_KEYS = [
   "choices",
   "values",
   "assignments",
-  "occurrences",
+  "bonusValues",
   "clears",
 ] as const;
 const FILTER_KEYS = ["maxCopies", "fields"] as const;

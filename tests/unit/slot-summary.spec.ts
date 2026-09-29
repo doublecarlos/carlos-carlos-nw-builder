@@ -134,7 +134,6 @@ function testBuild(choices: Record<string, string>): Build {
     values: {},
     bonusValues: {},
     assignments: {},
-    occurrenceInputs: {},
     listRows: {},
     disabledSlots: {},
     context: {

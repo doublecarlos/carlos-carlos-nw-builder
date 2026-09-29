@@ -33,10 +33,10 @@ const schema: Schema = {
 };
 
 const FLAT_BONUS = "flat-bonus";
-const TYPED_BONUS = "typed-bonus";
+const SCALED_BONUS = "scaled-bonus";
 
-/** Carries both attachment shapes plus a published value, so one switched-off row can prove
- *  every channel an item reaches the calculation through is closed. */
+/** Carries a flat bonus, one scaled by an input, and a published value, so one switched-off
+ *  row can prove every channel an item reaches the calculation through is closed. */
 const elixir: Item = {
   id: "elixir",
   name: "Test Elixir",
@@ -45,12 +45,17 @@ const elixir: Item = {
   power: 10,
   maxCopies: 1,
   publishes: { "options.mode": "brewed" },
-  bonuses: [FLAT_BONUS, { bonus: TYPED_BONUS, min: 0, max: 3, default: 2 }],
+  bonuses: [FLAT_BONUS, SCALED_BONUS],
 };
 
 const bonuses: Bonus[] = [
   { id: FLAT_BONUS, name: "Flat", grants: [{ stats: { power: 100 } }] },
-  { id: TYPED_BONUS, name: "Typed", grants: [{ stats: { power: 1000 } }] },
+  {
+    id: SCALED_BONUS,
+    name: "Scaled",
+    inputs: { stacks: { type: "number", min: 0, max: 3, default: 2 } },
+    grants: [{ stats: { power: 500 }, scale: { formula: "$stacks" } }],
+  },
 ];
 
 const slots: Slot[] = [
@@ -87,7 +92,6 @@ function testBuild(overrides: Partial<Build> = {}): Build {
     values: {},
     bonusValues: {},
     assignments: {},
-    occurrenceInputs: {},
     listRows: {},
     disabledSlots: {},
     context: { role: "dps" } as Build["context"],
@@ -127,16 +131,16 @@ describe("what the engine collects", () => {
     expect(row.repetitions).toBe(0);
   });
 
-  it("zeroes both attachment shapes, the typed count included", () => {
+  it("zeroes every attachment's occurrence count", () => {
     const { ctx } = bonus.collect(testDb, switchedOff());
     expect(ctx.bonusOccurrences.get(FLAT_BONUS) ?? 0).toBe(0);
-    expect(ctx.bonusOccurrences.get(TYPED_BONUS) ?? 0).toBe(0);
+    expect(ctx.bonusOccurrences.get(SCALED_BONUS) ?? 0).toBe(0);
   });
 
   it("keeps those bonuses reachable, so a hover card can still explain them", () => {
     const { zeroCandidates } = bonus.collect(testDb, switchedOff());
     expect(zeroCandidates.some((c) => c.bonusId === FLAT_BONUS)).toBe(true);
-    expect(zeroCandidates.some((c) => c.bonusId === TYPED_BONUS)).toBe(true);
+    expect(zeroCandidates.some((c) => c.bonusId === SCALED_BONUS)).toBe(true);
   });
 
   it("collects everything again once the box is checked", () => {
@@ -145,7 +149,7 @@ describe("what the engine collects", () => {
     expect(ctx.tags.get("consumable")).toBe(1);
     expect(ctx.params.get("options.mode")).toBe("brewed");
     expect(ctx.bonusOccurrences.get(FLAT_BONUS)).toBe(1);
-    expect(ctx.bonusOccurrences.get(TYPED_BONUS)).toBe(2);
+    expect(ctx.bonusOccurrences.get(SCALED_BONUS)).toBe(1);
   });
 });
 
@@ -160,8 +164,7 @@ describe("what the engine computes", () => {
   it("totals exactly what an empty slot would, and the pick when switched on", () => {
     const empty = testBuild({ choices: {} });
     expect(totalPower(switchedOff())).toBe(totalPower(empty));
-    // The typed attachment grants once however many occurrences it counts: what the checkbox
-    // has to change is the occurrence count, not this bonus's own stacking rule.
+    // The scaled bonus grants 500 per stack at its default of 2.
     expect(totalPower(testBuild())).toBe(10 + 100 + 1000);
   });
 });

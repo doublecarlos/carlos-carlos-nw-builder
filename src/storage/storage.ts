@@ -210,7 +210,6 @@ export function defaultBuild(name = "New build", db: Db = baseDb()): Build {
     values: {},
     bonusValues: {},
     assignments,
-    occurrenceInputs: {},
     listRows,
     disabledSlots: {},
     context,
@@ -425,7 +424,6 @@ export function normalize(
     values: stored.values,
     bonusValues: settings.bonusValues,
     assignments: stored.assignments,
-    occurrenceInputs: nestedNumbers(raw.occurrenceInputs, {}),
     listRows: rowCounts(raw.listRows, base.listRows, stored),
     disabledSlots: stored.disabledSlots,
     // `context`'s pass-through fields (class/role/damageType) are not individually

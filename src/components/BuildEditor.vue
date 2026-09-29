@@ -45,7 +45,6 @@ import * as insignia from "../engine/insignia";
 import * as stableBrowser from "../stores/stableBrowser";
 import { expandSlots } from "../lib/item-picker-list";
 import { useHoverCard } from "../composables/useHoverCard";
-import { occurrenceRowsForItem } from "../composables/useItemBonusOccurrences";
 import { itemScalers } from "../composables/useItemScale";
 import { useCompareDiff, type SlotDiff } from "../composables/useCompareDiff";
 import { useItemUndoRedo } from "../composables/useUndoRedo";
@@ -399,13 +398,6 @@ const hoveredBonuses = computed(() => {
   }
   return out;
 });
-
-/** The hovered item's own BonusOccurrenceConfig rows -- lets ItemCard.vue's inactive-bonus
- *  rendering explain a row that's inactive because *this* item's own count is 0, the same
- *  data ItemPickerRow.vue's checkbox/stepper inputs already read. */
-const hoveredOccurrenceRows = computed(() =>
-  occurrenceRowsForItem(hoveredItem.value),
-);
 
 // --- quick compare ---------------------------------------------------------------------
 
@@ -1209,7 +1201,6 @@ watch(
             v-if="hover && hoveredItem"
             :item="hoveredItem"
             :bonuses="hoveredBonuses"
-            :occurrence-rows="hoveredOccurrenceRows"
             :scalers="itemScalers(hoveredItem)"
             :dynamic-values="hoveredDynamicValues"
             :db="db"

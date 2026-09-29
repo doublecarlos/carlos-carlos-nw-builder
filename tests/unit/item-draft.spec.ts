@@ -57,47 +57,14 @@ describe("buildDraft / toItem round trip", () => {
     expect(toItem(buildDraft(seeded), { id: "old2" })).toEqual(seeded);
   });
 
-  it("round-trips a mix of bare and occurrence-config bonus attachments", () => {
+  it("round-trips its bonus attachments in order", () => {
     const item: Item = {
       id: "gear",
       name: "Gear",
       filter: "ring",
-      bonuses: [
-        "plain_bonus",
-        { bonus: "scaling_bonus", min: 1, max: 5, default: 1 },
-      ],
+      bonuses: ["plain_bonus", "scaling_bonus"],
     };
     expect(toItem(buildDraft(item), { id: "gear" })).toEqual(item);
-  });
-
-  it("writes a fixed count of exactly 1 with no label back as a bare id", () => {
-    const draft = buildDraft({
-      id: "gear",
-      name: "Gear",
-      filter: "ring",
-      bonuses: ["plain_bonus"],
-    });
-    draft.bonusOccurrences = {
-      plain_bonus: { min: 1, max: 1, default: 1, label: "" },
-    };
-    expect(toItem(draft, { id: "gear" }).bonuses).toEqual(["plain_bonus"]);
-  });
-
-  it("keeps a fixed count of 1 as a config once it carries a label or another bound", () => {
-    const draft = buildDraft({
-      id: "gear",
-      name: "Gear",
-      filter: "ring",
-      bonuses: ["labeled", "counted"],
-    });
-    draft.bonusOccurrences = {
-      labeled: { min: 1, max: 1, default: 1, label: "Stacks" },
-      counted: { min: 3, max: 3, default: 3, label: "" },
-    };
-    expect(toItem(draft, { id: "gear" }).bonuses).toEqual([
-      { bonus: "labeled", min: 1, max: 1, default: 1, label: "Stacks" },
-      { bonus: "counted", min: 3, max: 3, default: 3 },
-    ]);
   });
 
   it("round-trips insignia slots, universal and shaped", () => {
@@ -163,17 +130,6 @@ describe("diffLabel", () => {
 
   it("labels a tag addition with a count", () => {
     expect(labelFor({ tags: ["a", "b"] })).toBe("add tags (2)");
-  });
-
-  it("labels an occurrence-config addition by bonus id", () => {
-    const old: Item = { ...base, bonuses: ["b1"] };
-    const nw: Item = {
-      ...base,
-      bonuses: [{ bonus: "b1", min: 1, max: 3, default: 1 }],
-    };
-    expect(diffLabel(JSON.stringify(old), JSON.stringify(nw))).toBe(
-      'add occurrence config for "b1"',
-    );
   });
 
   it("labels a pure reorder distinctly from a membership edit", () => {

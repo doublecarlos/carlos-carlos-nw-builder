@@ -886,114 +886,53 @@ describe("catalog.validate: bonusOccurrences targets", () => {
   });
 });
 
-describe("catalog.validate: BonusOccurrenceConfig attachments", () => {
-  it("a well-formed occurrence config attached to a real bonus passes clean", () => {
-    const items: Item[] = [
+describe("catalog.validateRankTiers", () => {
+  const ranked: Bonus = {
+    id: "rank-bonus",
+    grants: [
       {
-        id: "stacking-item",
-        name: "Stacking Item",
-        filter: "gear_ring",
-        bonuses: [{ bonus: "real-bonus", min: 0, max: 5, default: 0 }],
-      },
-    ];
-    const bonuses: Bonus[] = [{ id: "real-bonus", grants: [] }];
-    const findings = catalog.validate(items, bonuses);
-    expect(findings.filter((f) => f.name === "stacking-item")).toEqual([]);
-  });
-
-  it("an occurrence config referencing an undefined bonus is a warning, same as a bare id would be", () => {
-    const items: Item[] = [
-      {
-        id: "orphan-attachment",
-        name: "Orphan Attachment",
-        filter: "gear_ring",
-        bonuses: [{ bonus: "no-such-bonus", min: 0, max: 5, default: 0 }],
-      },
-    ];
-    const findings = catalog.validate(items, []);
-    const finding = findings.find((f) => f.name === "orphan-attachment");
-    expect(finding?.level).toBe("warn");
-    expect(finding?.message).toMatch(/no-such-bonus.*has no definition/);
-  });
-
-  it("an occurrence config's default outside its own min/max is an error", () => {
-    const items: Item[] = [
-      {
-        id: "bad-occurrence",
-        name: "Bad Occurrence",
-        filter: "gear_ring",
-        bonuses: [{ bonus: "real-bonus", min: 1, max: 4, default: 0 }],
-      },
-    ];
-    const bonuses: Bonus[] = [{ id: "real-bonus", grants: [] }];
-    const findings = catalog.validate(items, bonuses);
-    expect(
-      findings.some(
-        (f) => f.name === "bad-occurrence" && /must be between/.test(f.message),
-      ),
-    ).toBe(true);
-  });
-
-  it("an occurrence config with a non-numeric bound is an error", () => {
-    const items: Item[] = [
-      {
-        id: "bad-shape",
-        name: "Bad Shape",
-        filter: "gear_ring",
-        bonuses: [
-          {
-            bonus: "real-bonus",
-            min: 0,
-            max: "five" as unknown as number,
-            default: 0,
-          },
+        tiers: [
+          { atLeast: 1, stats: { power: 1 } },
+          { atLeast: 2, stats: { power: 2 } },
         ],
       },
-    ];
-    const bonuses: Bonus[] = [{ id: "real-bonus", grants: [] }];
-    const findings = catalog.validate(items, bonuses);
-    expect(
-      findings.some(
-        (f) => f.name === "bad-shape" && /non-numeric/.test(f.message),
-      ),
-    ).toBe(true);
+    ],
+  };
+  const boon: Item = {
+    id: "boon",
+    name: "Boon",
+    filter: "boons",
+    bonuses: ["rank-bonus"],
+    inlineRepetition: { min: 0, max: 3, default: 0 },
+  };
+  const ring: Item = {
+    id: "ring",
+    name: "Ring",
+    filter: "gear_ring",
+    bonuses: ["rank-bonus"],
+  };
+
+  it("passes a rank bonus with one inline-repeating carrier", () => {
+    expect(catalog.validateRankTiers([boon], [ranked])).toEqual([]);
   });
 
-  it("a well-formed label passes clean", () => {
-    const items: Item[] = [
-      {
-        id: "labeled-item",
-        name: "Labeled Item",
-        filter: "gear_ring",
-        bonuses: [
-          { bonus: "real-bonus", min: 0, max: 5, default: 0, label: "Stacks" },
-        ],
-      },
-    ];
-    const bonuses: Bonus[] = [{ id: "real-bonus", grants: [] }];
-    const findings = catalog.validate(items, bonuses);
-    expect(findings.filter((f) => f.name === "labeled-item")).toEqual([]);
+  it("flags a second carrier adding to the rank", () => {
+    const [finding] = catalog.validateRankTiers([boon, ring], [ranked]);
+    expect(finding).toMatchObject({ level: "warn", name: "rank-bonus" });
+    expect(finding.message).toMatch(/"boon".*"ring"/);
   });
 
-  it("a present but blank label is an error", () => {
-    const items: Item[] = [
-      {
-        id: "blank-label",
-        name: "Blank Label",
-        filter: "gear_ring",
-        bonuses: [
-          { bonus: "real-bonus", min: 0, max: 5, default: 0, label: "   " },
-        ],
-      },
-    ];
-    const bonuses: Bonus[] = [{ id: "real-bonus", grants: [] }];
-    const findings = catalog.validate(items, bonuses);
-    expect(
-      findings.some(
-        (f) =>
-          f.name === "blank-label" && /label.*non-empty string/.test(f.message),
-      ),
-    ).toBe(true);
+  it("passes tiers read off their own measure", () => {
+    const measured: Bonus = {
+      ...ranked,
+      grants: [{ ...ranked.grants![0], tierBy: { formula: "duration" } }],
+    };
+    expect(catalog.validateRankTiers([boon, ring], [measured])).toEqual([]);
+  });
+
+  it("passes copies of a bonus no carrier repeats inline", () => {
+    const other: Item = { ...ring, id: "ring2" };
+    expect(catalog.validateRankTiers([ring, other], [ranked])).toEqual([]);
   });
 });
 
@@ -1428,7 +1367,6 @@ describe("catalog.referencedOverlay", () => {
       values: {},
       bonusValues: {},
       assignments: {},
-      occurrenceInputs: {},
       listRows: {},
       disabledSlots: {},
       context: {} as Build["context"],
@@ -1448,7 +1386,6 @@ describe("catalog.referencedOverlay", () => {
       values: {},
       bonusValues: {},
       assignments: {},
-      occurrenceInputs: {},
       listRows: {},
       disabledSlots: {},
       context: {} as Build["context"],
@@ -1476,7 +1413,6 @@ describe("catalog.referencedOverlay", () => {
       values: {},
       bonusValues: {},
       assignments: {},
-      occurrenceInputs: {},
       listRows: {},
       disabledSlots: {},
       context: {} as Build["context"],
@@ -1498,7 +1434,6 @@ describe("catalog.referencedOverlay", () => {
       values: {},
       bonusValues: {},
       assignments: {},
-      occurrenceInputs: {},
       listRows: {},
       disabledSlots: {},
       context: {} as Build["context"],
@@ -1528,7 +1463,6 @@ describe("catalog.referencedOverlay", () => {
       values: {},
       bonusValues: {},
       assignments: {},
-      occurrenceInputs: {},
       listRows: {},
       disabledSlots: {},
       context: {} as Build["context"],
@@ -1554,7 +1488,6 @@ describe("catalog.referencedOverlay", () => {
       values: {},
       bonusValues: {},
       assignments: {},
-      occurrenceInputs: {},
       listRows: {},
       disabledSlots: {},
       context: {} as Build["context"],
@@ -1586,7 +1519,6 @@ describe("catalog.referencedOverlay", () => {
       values: {},
       bonusValues: {},
       assignments: {},
-      occurrenceInputs: {},
       listRows: {},
       disabledSlots: {},
       context: { race: "elf" } as unknown as Build["context"],
@@ -1658,14 +1590,6 @@ describe("catalog.validateBonusAttachments", () => {
     expect(findings[0].name).toBe("orphan");
   });
 
-  it("counts an occurrence-config attachment as attached", () => {
-    const findings = catalog.validateBonusAttachments(
-      [item("a", [{ bonus: "used", min: 0, max: 1, default: 0 }])],
-      [bonus("used")],
-    );
-    expect(findings).toEqual([]);
-  });
-
   it("finds nothing wrong with the shipped catalog", () => {
     expect(catalog.validateBonusAttachments(NW_ITEMS, NW_BONUSES)).toEqual([]);
   });
@@ -1684,12 +1608,6 @@ describe("catalog.unlinkBonus", () => {
     const items = [item("a", ["keep", "drop"])];
     const next = catalog.unlinkBonus({} as CatalogOverlay, items, "drop");
     expect(next.items?.a).toEqual({ ...items[0], bonuses: ["keep"] });
-  });
-
-  it("removes an occurrence-config attachment too", () => {
-    const items = [item("a", [{ bonus: "drop", min: 0, max: 2, default: 1 }])];
-    const next = catalog.unlinkBonus({} as CatalogOverlay, items, "drop");
-    expect(next.items?.a).toEqual({ ...items[0], bonuses: [] });
   });
 
   it("leaves items that do not reference the bonus untouched", () => {

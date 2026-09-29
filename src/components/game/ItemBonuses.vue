@@ -1,18 +1,17 @@
 <script setup lang="ts">
 // "Bonuses": every bonus group the open item belongs to, editable in place.
 //
-// A thin orchestrator over BonusForm.vue: this owns which ids are attached, each
-// attachment's occurrence config and which cards are open; all bonus editing is BonusForm's,
-// the same component the standalone "Bonuses" section uses, so there is one editing surface.
-// A pending slot has no id until its first save, which persists the bonus and attaches the
-// resulting id in one step. Each card's single header row is BonusForm's embedded
-// DraftFormBar, filled through its slots (chevron, occurrence chip, Detach); the chevron is
-// the accessible toggle and the rest of the row a wider hit area for the same fold. A lone
-// attached bonus starts open, several start closed, and a pending one is always open.
+// A thin orchestrator over BonusForm.vue: this owns which ids are attached and which cards
+// are open; all bonus editing is BonusForm's, the same component the standalone "Bonuses"
+// section uses, so there is one editing surface. A pending slot has no id until its first
+// save, which persists the bonus and attaches the resulting id in one step. Each card's single
+// header row is BonusForm's embedded DraftFormBar, filled through its slots (chevron,
+// Detach); the chevron is the accessible toggle and the rest of the row a wider hit area for
+// the same fold. A lone attached bonus starts open, several start closed, and a pending one is
+// always open.
 import { ref, computed, provide } from "vue";
 import BonusForm from "./BonusForm.vue";
 import BonusComboBox from "./BonusComboBox.vue";
-import BonusOccurrenceSection from "./BonusOccurrenceSection.vue";
 import IconButton from "../ui/IconButton.vue";
 import {
   ArrowDown,
@@ -31,8 +30,6 @@ import DropIndicator from "../ui/DropIndicator.vue";
 import type { Db, Bonus, BonusOption } from "../../types";
 import { buildDraft, type BonusDraft } from "../../lib/bonus-draft";
 import type { BonusDraftStore } from "../../stores/bonus-draft";
-import type { OccurrenceDraft } from "../../lib/item-draft";
-import { occurrenceSummary } from "../../lib/occurrence-mode";
 import { bonusDraftRegistryKey } from "../../composables/bonusDraftRegistry";
 import {
   dragSource,
@@ -51,9 +48,6 @@ const props = withDefaults(
   defineProps<{
     /** Bonus ids the item currently declares. */
     attachedBonusIds?: string[];
-    /** Occurrence config for an attached id upgraded from a plain attachment (always 1
-     *  occurrence) to a typed, player-set count; absent means plain. Keyed by bonus id. */
-    occurrenceConfigs?: Record<string, OccurrenceDraft>;
     /** Seeds the Name field of a brand-new private bonus. */
     itemName?: string;
     /** The item being edited, so its own "Granted by" entry is not a link to itself. */
@@ -69,7 +63,6 @@ const props = withDefaults(
   }>(),
   {
     attachedBonusIds: () => [],
-    occurrenceConfigs: () => ({}),
     itemName: "",
     itemId: undefined,
     allBonusIds: () => [],
@@ -85,9 +78,6 @@ const emit = defineEmits<{
   "detach-bonus": [id: string];
   "attach-bonus": [id: string];
   "update-bonus": [payload: { id: string; bonus: Bonus }];
-  "update-occurrence": [
-    payload: { id: string; occurrence: OccurrenceDraft | null },
-  ];
   "move-bonus": [payload: { from: number; to: number }];
   "open-item": [itemId: string];
 }>();
@@ -153,18 +143,6 @@ const attachable = computed(() => {
 
 function sourceFor(slot: Slot): Bonus | null {
   return slot.id ? (props.db.bonusById.get(slot.id) ?? null) : null;
-}
-
-/** An occurrence config only makes sense once the attachment has a real bonus id; a pending
- *  (not-yet-saved) slot has none yet, so this reads as "no config" for it too. */
-function occurrenceFor(id: string | null): OccurrenceDraft | null {
-  return id ? (props.occurrenceConfigs[id] ?? null) : null;
-}
-
-/** The compact chip beside the title: how many times this attachment counts. A pending slot
- *  has no attachment yet, so it shows none. */
-function occurrenceChip(slot: Slot): string | null {
-  return slot.id ? occurrenceSummary(occurrenceFor(slot.id)) : null;
 }
 
 /** A pending slot's id previews from Name, so it's seeded with the item's own name: the
@@ -379,12 +357,6 @@ function nudgeBonus(index: number, delta: -1 | 1) {
             <BaseBadge v-if="slot.id && !sourceFor(slot)" variant="warn"
               >not defined yet</BaseBadge
             >
-            <span
-              v-if="occurrenceChip(slot)"
-              class="rounded-full bg-surface-2 px-1.5 text-muted"
-              data-testid="occurrence-chip"
-              >{{ occurrenceChip(slot) }}</span
-            >
           </template>
           <template #extra-actions>
             <template v-if="slot.id">
@@ -407,15 +379,6 @@ function nudgeBonus(index: number, delta: -1 | 1) {
               ><Unlink
             /></IconButton>
           </template>
-          <BonusOccurrenceSection
-            v-if="slot.id"
-            :occurrence="occurrenceFor(slot.id)"
-            :bonus-id="slot.id"
-            :bonus-name="sourceFor(slot)?.name ?? ''"
-            @update:occurrence="
-              emit('update-occurrence', { id: slot.id, occurrence: $event })
-            "
-          />
         </BonusForm>
       </div>
     </div>

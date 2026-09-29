@@ -37,9 +37,8 @@ const schema: Schema = {
 };
 
 const STACK_BONUS = "stack-bonus";
-const PROC_BONUS = "proc-bonus";
 
-/** Repeats 0-3 times, carrying both attachment shapes so the two counts can be told apart. */
+/** Repeats 0-3 times, carrying a bonus that counts once per repetition. */
 const shard: Item = {
   id: "shard",
   name: "Test Shard",
@@ -48,7 +47,7 @@ const shard: Item = {
   power: 10,
   maxCopies: 2,
   inlineRepetition: { min: 0, max: 3, default: 1 },
-  bonuses: [STACK_BONUS, { bonus: PROC_BONUS, min: 0, max: 1, default: 0 }],
+  bonuses: [STACK_BONUS],
 };
 
 /** Repeats, carries stats, carries no bonuses -- so a row's stats are the item's line alone. */
@@ -72,7 +71,6 @@ const plain: Item = {
 
 const bonuses: Bonus[] = [
   { id: STACK_BONUS, name: "Stack", grants: [{ stats: { power: 100 } }] },
-  { id: PROC_BONUS, name: "Proc", grants: [{ stats: { power: 1000 } }] },
 ];
 
 const slots: Slot[] = [
@@ -101,7 +99,6 @@ function testBuild(overrides: Partial<Build> = {}): Build {
     values: {},
     bonusValues: {},
     assignments: {},
-    occurrenceInputs: {},
     listRows: {},
     disabledSlots: {},
     context: { role: "dps" } as Build["context"],
@@ -174,14 +171,6 @@ describe("what the engine collects", () => {
     expect(ctx.bonusOccurrences.get(STACK_BONUS)).toBe(3);
   });
 
-  it("leaves a BonusOccurrenceConfig attachment on its own independent count", () => {
-    const build = withCount(3);
-    build.occurrenceInputs = { [shard.id]: { [PROC_BONUS]: 1 } };
-    const { ctx } = bonus.collect(testDb, build);
-    expect(ctx.bonusOccurrences.get(STACK_BONUS)).toBe(3);
-    expect(ctx.bonusOccurrences.get(PROC_BONUS)).toBe(1);
-  });
-
   it("equips nothing at a count of 0, while keeping the bonus reachable", () => {
     const { ctx, zeroCandidates } = bonus.collect(testDb, withCount(0));
     expect(ctx.equipped.has(shard.id)).toBe(false);
@@ -202,11 +191,9 @@ describe("what the engine collects", () => {
   });
 });
 
-// Whether a carrier is on the build is a different question from whether it contributes an
-// occurrence: the inspector lists a bonus whose carrier sits at count 0 (switchable on) but
-// not one only reachable through a pick at 0 points. `carrier` is what tells the two apart
-// once `sources` is empty.
-describe("what the engine names as carrier", () => {
+// A point_assignment carrier at 0 points keeps its bonus reachable without putting it on the
+// build: it resolves with no sources, which is what the inspector reads as "not carried".
+describe("a point_assignment carrier's sources", () => {
   const pointSlot: PointAssignmentSlot = {
     id: "gear.points",
     label: "Points",
@@ -218,56 +205,24 @@ describe("what the engine names as carrier", () => {
     ...slotsData,
     slots: [...slots, pointSlot],
   });
-  const entry = (build: Build, id: string, from = testDb) =>
-    bonus.resolve(from, build).bonuses.find((b) => b.id === id)!;
+  const stackAt = (points: number) =>
+    bonus
+      .resolve(
+        pointDb,
+        testBuild({
+          choices: {},
+          assignments: { "gear.points": { [shard.id]: points } },
+        }),
+      )
+      .bonuses.find((b) => b.id === STACK_BONUS)!;
 
-  it("a point_assignment carrier at 0 points is not on the build", () => {
-    const build = testBuild({
-      choices: {},
-      assignments: { "gear.points": { [shard.id]: 0 } },
-    });
-    expect(entry(build, PROC_BONUS, pointDb).carrier).toBeNull();
-    expect(entry(build, STACK_BONUS, pointDb).carrier).toBeNull();
+  it("has none at 0 points, anchored on the row", () => {
+    expect(stackAt(0).sources).toEqual([]);
+    expect(stackAt(0).slotId).toBe("gear.points");
   });
 
-  it("a point_assignment carrier at 1 point is named even with its config at 0", () => {
-    const build = testBuild({
-      choices: {},
-      assignments: { "gear.points": { [shard.id]: 1 } },
-    });
-    const proc = entry(build, PROC_BONUS, pointDb);
-    expect(proc.carrier?.slotId).toBe("gear.points");
-    expect(proc.sources).toEqual([]);
-    expect(proc.active).toBe(false);
-    expect(entry(build, STACK_BONUS, pointDb).sources).toHaveLength(1);
-  });
-
-  it("names the carrier only while it is on the build and contributes nothing", () => {
-    const build = withCount(1);
-    build.occurrenceInputs = { [shard.id]: { [PROC_BONUS]: 0 } };
-    expect(entry(build, PROC_BONUS).carrier).toEqual({
-      itemId: shard.id,
-      name: shard.name,
-      slotId: "gear.shard",
-    });
-    // A real source: the sources list already says where it comes from.
-    expect(entry(build, STACK_BONUS).carrier).toBeNull();
-    // Uncarried: nothing on the build to point at.
-    expect(entry(withCount(0), PROC_BONUS).carrier).toBeNull();
-  });
-
-  it("a carried zero anchor wins the instancing slot over an uncarried one", () => {
-    // Same bonus reachable twice with no real source: through the pick repeating 0 times
-    // (first in build order) and through a point spent on it with the proc still at 0.
-    const build = testBuild({
-      assignments: {
-        "gear.shard": { [shard.id]: 0 },
-        "gear.points": { [shard.id]: 1 },
-      },
-    });
-    const proc = entry(build, PROC_BONUS, pointDb);
-    expect(proc.carrier?.slotId).toBe("gear.points");
-    expect(proc.slotId).toBe("gear.points");
+  it("has one per point spent", () => {
+    expect(stackAt(2).sources).toHaveLength(2);
   });
 });
 

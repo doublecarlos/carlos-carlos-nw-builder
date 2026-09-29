@@ -98,7 +98,6 @@ function buildWith(overrides: Partial<Build> = {}): Build {
     choices: {},
     values: {},
     assignments: {},
-    occurrenceInputs: {},
     listRows: {},
     disabledSlots: {},
     context: { class: "" },
@@ -324,7 +323,7 @@ describe("migrateItemIds", () => {
     expect(migrateItemIds(testDb, build)).toBe(build);
   });
 
-  it("rewrites choices, assignments and occurrence inputs together", () => {
+  it("rewrites choices and assignments together", () => {
     const retiredBoon = db.build(
       [
         ...items,
@@ -345,12 +344,10 @@ describe("migrateItemIds", () => {
       buildWith({
         choices: { ring1: "old-ring", ring2: "live" },
         assignments: { "boons.tier1": { "old-boon": 3 } },
-        occurrenceInputs: { "old-ring": { someBonus: 2 } },
       }),
     );
     expect(migrated.choices).toEqual({ ring1: "new-ring", ring2: "live" });
     expect(migrated.assignments["boons.tier1"]).toEqual({ "live-boon": 3 });
-    expect(migrated.occurrenceInputs).toEqual({ "new-ring": { someBonus: 2 } });
   });
 
   it("leaves Build.values untouched, since it is keyed by slot rather than by item", () => {
@@ -393,28 +390,6 @@ describe("migrateItemIds", () => {
     );
     expect(replacements(testDb, once).size).toBe(0);
     expect(migrateItemIds(testDb, once)).toBe(once);
-  });
-
-  // Both key orders, since a plain merge would silently let whichever key came last win.
-  it.each([
-    ["retired first", { "old-ring": { b: 1 }, "new-ring": { b: 4 } }],
-    ["replacement first", { "new-ring": { b: 4 }, "old-ring": { b: 1 } }],
-  ])(
-    "keeps the count already stored under the replacement (%s)",
-    (_label, occurrenceInputs) => {
-      const migrated = migrateItemIds(testDb, buildWith({ occurrenceInputs }));
-      expect(migrated.occurrenceInputs["new-ring"].b).toBe(4);
-    },
-  );
-
-  it("carries a retired item's other bonus counts across the merge", () => {
-    const migrated = migrateItemIds(
-      testDb,
-      buildWith({
-        occurrenceInputs: { "old-ring": { b: 1, c: 7 }, "new-ring": { b: 4 } },
-      }),
-    );
-    expect(migrated.occurrenceInputs["new-ring"]).toEqual({ b: 4, c: 7 });
   });
 });
 
@@ -679,32 +654,6 @@ describe("migrateSlotItem", () => {
     );
     expect(migrated.values.ring1).toEqual({ stat: { overall_damage: 0.02 } });
     expect(migrated.values.ring2).toBeUndefined();
-  });
-
-  it("leaves occurrence counts in place while another slot still holds the retired item", () => {
-    // They are keyed by item id with no slot to scope them, so moving them here would take
-    // them out from under the slot that has not been migrated yet.
-    const migrated = migrateSlotItem(
-      testDb,
-      buildWith({
-        choices: { ring1: "old-ring", ring2: "old-ring" },
-        occurrenceInputs: { "old-ring": { b: 3 } },
-      }),
-      "ring1",
-    );
-    expect(migrated.occurrenceInputs).toEqual({ "old-ring": { b: 3 } });
-  });
-
-  it("moves them once the last slot holding it is migrated", () => {
-    const migrated = migrateSlotItem(
-      testDb,
-      buildWith({
-        choices: { ring1: "old-ring" },
-        occurrenceInputs: { "old-ring": { b: 3 } },
-      }),
-      "ring1",
-    );
-    expect(migrated.occurrenceInputs).toEqual({ "new-ring": { b: 3 } });
   });
 
   it("does nothing to a slot whose pick is not retired", () => {

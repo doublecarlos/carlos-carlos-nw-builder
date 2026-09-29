@@ -199,7 +199,8 @@ test.describe("toggleable slot", () => {
             id: ELIXIR_ID,
             name: ELIXIR_NAME,
             filter: "consumable_elixir",
-            bonuses: [{ bonus: BONUS_ID, min: 0, max: 4, default: 2 }],
+            bonuses: [BONUS_ID],
+            inlineRepetition: { min: 0, max: 4, default: 2 },
           },
         },
         bonuses: {

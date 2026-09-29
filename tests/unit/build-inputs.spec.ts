@@ -8,7 +8,7 @@ import {
   bonusStatAddress,
   inputKey,
   itemStatAddress,
-  occurrenceAddress,
+  bonusInputAddress,
   readInput,
   storedInput,
   writeInput,
@@ -31,7 +31,6 @@ function emptyBuild(overrides: Partial<Build> = {}): Build {
     values: {},
     bonusValues: {},
     assignments: {},
-    occurrenceInputs: {},
     listRows: {},
     disabledSlots: {},
     context: { role: "dps" } as Build["context"],
@@ -52,7 +51,6 @@ describe("readInput", () => {
     const build = emptyBuild({
       values: { ring: { stat: { power: 5 } } },
       bonusValues: { proc: { stat: { power: 7 }, input: { stacks: 3 } } },
-      occurrenceInputs: { item: { proc: 2 } },
       assignments: { boons: { boon: 4 } },
     });
     build.context.enemies = 6;
@@ -60,13 +58,6 @@ describe("readInput", () => {
     expect(readInput(build, itemStatAddress("ring", "power"), 0)).toBe(5);
     expect(readInput(build, bonusStatAddress("proc", "power"), 0)).toBe(7);
     expect(readInput(build, bonusInput, 0)).toBe(3);
-    expect(
-      readInput(
-        build,
-        { store: "occurrenceInputs", itemId: "item", bonusId: "proc" },
-        0,
-      ),
-    ).toBe(2);
     expect(
       readInput(
         build,
@@ -124,22 +115,13 @@ describe("writeInput", () => {
     expect(build.bonusValues).toEqual({});
   });
 
-  it("clears occurrence counts and repetition counts the same way", () => {
-    const build = emptyBuild({
-      occurrenceInputs: { item: { proc: 2 } },
-      assignments: { boons: { boon: 4 } },
-    });
-    writeInput(
-      build,
-      { store: "occurrenceInputs", itemId: "item", bonusId: "proc" },
-      null,
-    );
+  it("drops a repetition count's slot once its last count is cleared", () => {
+    const build = emptyBuild({ assignments: { boons: { boon: 4 } } });
     writeInput(
       build,
       { store: "assignments", slotId: "boons", itemId: "boon" },
       null,
     );
-    expect(build.occurrenceInputs).toEqual({});
     expect(build.assignments).toEqual({});
   });
 });
@@ -208,10 +190,15 @@ describe("inputRanges", () => {
     name: "Test Boon",
     filter: "boons",
     inlineRepetition: { min: 1, max: 3, default: 0 },
-    bonuses: [{ bonus: "stack", min: 0, max: 2, default: 0 }],
+    bonuses: ["stack"],
   };
   const bonuses: Bonus[] = [
-    { id: "stack", name: "Stack", grants: [] },
+    {
+      id: "stack",
+      name: "Stack",
+      inputs: { count: { type: "number", min: 0, max: 2, default: 0 } },
+      grants: [],
+    },
     {
       id: "proc",
       name: "Proc",
@@ -275,10 +262,13 @@ describe("inputRanges", () => {
     expect(error.address).toEqual(bonusStatAddress("proc", "power"));
   });
 
-  it("checks the occurrence counts of a point_assignment row's items", () => {
-    const [error] = errorsFor({ occurrenceInputs: { boon: { stack: 3 } } });
+  it("checks the inputs of a point_assignment row's item bonuses", () => {
+    const [error] = errorsFor({
+      assignments: { "boons.row": { boon: 1 } },
+      bonusValues: { stack: { input: { count: 3 } } },
+    });
     expect(error.slotId).toBe("boons.row");
-    expect(error.address).toEqual(occurrenceAddress("boon", "stack"));
+    expect(error.address).toEqual(bonusInputAddress("stack", "count"));
   });
 
   it("accepts 0 on a point_assignment row whatever its declared min", () => {

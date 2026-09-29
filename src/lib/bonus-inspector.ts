@@ -8,7 +8,6 @@ import {
 } from "../engine/formula";
 import { findParamSlot } from "./build-path";
 import { grantLabel, tierHeading, type NotePart } from "./item-card-rows";
-import type { OccurrenceRow } from "../composables/useItemBonusOccurrences";
 import type {
   BonusSource,
   EvalContext,
@@ -23,10 +22,9 @@ import type {
  *
  * A problem-only bonus (one that exists purely to report a build error/warning) is already
  * surfaced inline on its slot and in the errors summary; listed here too, especially while
- * inactive, it reads as a bonus that never grants anything. An uncarried bonus (bonus.ts's
+ * inactive, it reads as a bonus that never grants anything. A bonus with no source (bonus.ts's
  * `resolve()` seeds one for a carrier at 0 points) exists so the hover card can preview it,
- * but nothing on the build carries it yet. A carried bonus whose occurrence config sits at 0
- * is listed, inactive: the item is on the build and the player can switch the bonus on.
+ * but nothing on the build carries it yet.
  */
 export function inspectorBonuses(bonuses: EvaluatedBonus[]): EvaluatedBonus[] {
   return bonuses.filter(
@@ -34,11 +32,9 @@ export function inspectorBonuses(bonuses: EvaluatedBonus[]): EvaluatedBonus[] {
   );
 }
 
-/** Whether an item carrying this bonus is on the build: a real source, or a carrier whose
- *  occurrence config sits at 0. */
-export function isCarried(entry: EvaluatedBonus): boolean {
-  return entry.sources.length > 0 || entry.carrier != null;
-}
+/** Whether an item carrying this bonus is on the build. */
+export const isCarried = (entry: EvaluatedBonus): boolean =>
+  entry.sources.length > 0;
 
 export interface SourceLink {
   key: string;
@@ -66,20 +62,12 @@ export function collapseSources(sources: BonusSource[]): SourceLink[] {
 }
 
 /**
- * One step from active: a single failing condition, or a carrier on the build whose gate is
- * met and only its occurrence control is off. Shared by the inspector's badge and the tab's
- * count, so "1 away" means one thing.
+ * One step from active: a single failing condition. Shared by the inspector's badge and the
+ * tab's count, so "1 away" means one thing.
  */
 export function isNearMiss(entry: EvaluatedBonus): boolean {
   if (entry.active || entry.excluded) return false;
-  const unmet = entry.gate?.unmet?.length ?? 0;
-  return unmet === 1 || (entry.carrier != null && unmet === 0);
-}
-
-/** How an occurrence control at 0 reads: a checkbox is "off", a stepper is at "0". Shared by
- *  the hover card's note and the inspector's reason line. */
-export function occurrenceStateText(row: OccurrenceRow): string {
-  return row.kind === "checkbox" ? "off" : "0";
+  return (entry.gate?.unmet?.length ?? 0) === 1;
 }
 
 /** A bonus's `chose` badge: the tier or variant that won. */

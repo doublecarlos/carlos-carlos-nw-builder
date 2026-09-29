@@ -7,7 +7,6 @@ import { describe, it, expect } from "vitest";
 import * as db from "../../src/data/db";
 import * as engine from "../../src/engine/engine";
 import { isHiddenBonus } from "../../src/engine/bonus";
-import { bonusIdOf } from "../../src/lib/bonus-attachment";
 import { storedListRows } from "../../src/lib/item-picker-list";
 import type {
   Build,
@@ -421,14 +420,6 @@ describe("bonus model semantics", () => {
       walk(grant.when);
       (grant.variants ?? []).forEach((v: Grant) => walk(v.when));
     };
-    // item.bonuses is a (string | BonusOccurrenceConfig)[] -- look up the actual bonuses by id.
-    const bonusesById = new Map(built.bonuses.map((b) => [b.id, b]));
-    for (const item of built.items) {
-      for (const attachment of item.bonuses ?? []) {
-        const bonus = bonusesById.get(bonusIdOf(attachment));
-        bonus?.grants?.forEach(visit);
-      }
-    }
     for (const bonus of built.bonuses) bonus.grants?.forEach(visit);
     const allowed = new Set([
       "toggle",
@@ -440,6 +431,7 @@ describe("bonus model semantics", () => {
       "enemies",
       "bonusOccurrences",
       "equipped",
+      "input",
     ]);
     const unknown = [...seen].filter((k) => !allowed.has(k));
     expect(unknown).toEqual([]);
@@ -484,21 +476,6 @@ describe("point_assignment resolution", () => {
     allowedClass: ["fighter"],
     inlineRepetition: { min: 0, max: 2, default: 0 },
   };
-  // An item on a point_assignment row can also carry a BonusOccurrenceConfig attachment,
-  // whose count is independent of the row's own repetition count -- unlike a bare-id
-  // attachment (boon-power-bonus above), which scales with it.
-  const configBonus: Bonus = {
-    id: "boon-config-bonus",
-    stacking: "perSource",
-    grants: [{ stats: { power_p: 0.05 } }],
-  };
-  const configItem: Item = {
-    id: "boon-config",
-    name: "Boon Config",
-    filter: "test_boon_tier",
-    bonuses: [{ bonus: "boon-config-bonus", min: 0, max: 5, default: 0 }],
-    inlineRepetition: { min: 0, max: 4, default: 0 },
-  };
 
   const pointSlot: PointAssignmentSlot = {
     id: "boons.tier1",
@@ -512,23 +489,19 @@ describe("point_assignment resolution", () => {
     slots: [pointSlot],
   };
   const testDb = db.build(
-    [powerItem, restrictedItem, configItem],
-    [powerBonus, configBonus],
+    [powerItem, restrictedItem],
+    [powerBonus],
     schema,
     slotsData,
   );
 
-  function buildWith(
-    counts: Record<string, number>,
-    occurrenceInputs: Record<string, Record<string, number>> = {},
-  ): Build {
+  function buildWith(counts: Record<string, number>): Build {
     return {
       id: "b",
       name: "b",
       choices: {},
       values: {},
       assignments: { "boons.tier1": counts },
-      occurrenceInputs,
       context: BASE_CONTEXT,
       compare: { id: "", highlight: false, onlyDiff: false, statLines: false },
     } as unknown as Build;
@@ -578,37 +551,14 @@ describe("point_assignment resolution", () => {
     );
     expect(result.errors.some((e) => e.kind === "class")).toBe(true);
   });
-
-  it("a BonusOccurrenceConfig attachment's count is independent of the row's own repetition count", () => {
-    // The row's own count (3) would apply to a bare-id bonus, but boon-config-bonus carries a
-    // BonusOccurrenceConfig of its own -- its count comes from occurrenceInputs instead.
-    const result = engine.resolveBuild(
-      testDb,
-      buildWith(
-        { "boon-config": 3 },
-        { "boon-config": { "boon-config-bonus": 5 } },
-      ),
-    );
-    expect(
-      result.bonuses.find((b) => b.id === "boon-config-bonus")?.stacks,
-    ).toBe(5);
-  });
-
-  it("a BonusOccurrenceConfig attachment with no explicit input falls back to its own default, not the row's count", () => {
-    const result = engine.resolveBuild(testDb, buildWith({ "boon-config": 3 }));
-    expect(
-      result.bonuses.find((b) => b.id === "boon-config-bonus")?.active,
-    ).toBeFalsy();
-  });
 });
 
-// A point_assignment item at 0 points is now reachable (an anchor, same as the item_picker
-// case) rather than skipped entirely -- but reachable must not mean "resolved for real": a
-// checked-but-inactive typed config (e.g. a proc checkbox left on from a previous count) must
-// not leak through as a real occurrence just because the item itself is still walked for
-// reachability. A synthetic db mirrors the shipped "Deathly Rage" shape: a bare-id bonus gated
-// on a sibling BonusOccurrenceConfig attachment on the same item.
-describe("a point_assignment item's own config stays 0 while the item itself is at 0 points", () => {
+// A point_assignment item at 0 points is reachable (an anchor, same as the item_picker case)
+// rather than skipped entirely -- but reachable must not mean "resolved for real": a proc left
+// on must not activate the bonus just because the item itself is still walked for
+// reachability. A synthetic db mirrors the shipped "Deathly Rage" shape: a proc input gating
+// tiers on the boon's own rank.
+describe("a point_assignment item's bonus stays inactive while the item itself is at 0 points", () => {
   const schema: Schema = {
     stats: [],
     statByKey: {},
@@ -622,13 +572,16 @@ describe("a point_assignment item's own config stays 0 while the item itself is 
     roles: { dps: { label: "dps", hpBonus: 1, damageBonus: 1 } },
   };
 
-  const procBonus: Bonus = { id: "boon-master-proc", grants: [] };
   const statsBonus: Bonus = {
     id: "boon-master-stats",
+    inputs: { active: { type: "boolean", default: false, label: "Proc" } },
     grants: [
       {
-        when: { bonusOccurrences: { bonus: "boon-master-proc", exactly: 1 } },
-        stats: { power_p: 0.1 },
+        when: { input: { key: "active", is: true } },
+        tiers: [
+          { atLeast: 1, stats: { power_p: 0.1 } },
+          { atLeast: 3, stats: { power_p: 0.3 } },
+        ],
       },
     ],
   };
@@ -636,10 +589,7 @@ describe("a point_assignment item's own config stays 0 while the item itself is 
     id: "boon-master",
     name: "Boon Master",
     filter: "test_boon_master",
-    bonuses: [
-      "boon-master-stats",
-      { bonus: "boon-master-proc", min: 0, max: 1, default: 0, label: "proc" },
-    ],
+    bonuses: ["boon-master-stats"],
     inlineRepetition: { min: 0, max: 3, default: 0 },
   };
 
@@ -654,16 +604,13 @@ describe("a point_assignment item's own config stays 0 while the item itself is 
     sections: [{ id: "boons", label: "Boons", slotIds: [] }],
     slots: [pointSlot],
   };
-  const testDb = db.build(
-    [masterItem],
-    [procBonus, statsBonus],
-    schema,
-    slotsData,
-  );
+  const testDb = db.build([masterItem], [statsBonus], schema, slotsData);
+
+  const procOn = { "boon-master-stats": { input: { active: true } } };
 
   function buildWith(
     counts: Record<string, number>,
-    occurrenceInputs: Record<string, Record<string, number>> = {},
+    bonusValues: Build["bonusValues"] = {},
   ): Build {
     return {
       id: "b",
@@ -671,232 +618,53 @@ describe("a point_assignment item's own config stays 0 while the item itself is 
       choices: {},
       values: {},
       assignments: { "boons.master": counts },
-      occurrenceInputs,
+      bonusValues,
       context: BASE_CONTEXT,
       compare: { id: "", highlight: false, onlyDiff: false, statLines: false },
     } as unknown as Build;
   }
 
   it("a checked proc doesn't activate the stats bonus while the item has 0 points", () => {
-    const result = engine.resolveBuild(
-      testDb,
-      buildWith({}, { "boon-master": { "boon-master-proc": 1 } }),
-    );
+    const result = engine.resolveBuild(testDb, buildWith({}, procOn));
     const entry = result.bonuses.find((b) => b.id === "boon-master-stats");
     expect(entry?.active).toBe(false);
-    expect(entry?.gate?.unmet?.[0]?.detail).toBe("you have 0");
     expect(result.stages.sums.power_p).toBe(0);
   });
 
   it("still reaches the resolved list, inactive with no sources, rather than vanishing", () => {
-    const result = engine.resolveBuild(
-      testDb,
-      buildWith({}, { "boon-master": { "boon-master-proc": 1 } }),
-    );
+    const result = engine.resolveBuild(testDb, buildWith({}, procOn));
     const entry = result.bonuses.find((b) => b.id === "boon-master-stats");
     expect(entry).toBeDefined();
     expect(entry?.sources).toEqual([]);
   });
 
-  it("once real points are spent, the same checked proc activates it for real", () => {
-    const result = engine.resolveBuild(
+  it("once real points are spent, the checked proc picks the tier for the rank", () => {
+    const one = engine.resolveBuild(
       testDb,
-      buildWith(
-        { "boon-master": 1 },
-        { "boon-master": { "boon-master-proc": 1 } },
-      ),
+      buildWith({ "boon-master": 1 }, procOn),
     );
+    expect(one.stages.sums.power_p).toBeCloseTo(0.1, 9);
+    const three = engine.resolveBuild(
+      testDb,
+      buildWith({ "boon-master": 3 }, procOn),
+    );
+    expect(three.stages.sums.power_p).toBeCloseTo(0.3, 9);
+  });
+
+  it("an unchecked proc keeps the bonus off at any rank", () => {
+    const result = engine.resolveBuild(testDb, buildWith({ "boon-master": 3 }));
     const entry = result.bonuses.find((b) => b.id === "boon-master-stats");
-    expect(entry?.active).toBe(true);
-    expect(result.stages.sums.power_p).toBeCloseTo(0.1, 9);
+    expect(entry?.active).toBe(false);
+    expect(entry?.gate?.unmet).toHaveLength(1);
   });
 });
 
-// BonusOccurrenceConfig: an item_picker item can attach a typed, player-set occurrence
-// count for one bonus instead of the fixed "1 occurrence per equip" a bare bonus id always
-// means -- e.g. one item standing in for 1-5 stacks of a set bonus, or an item with both an
-// always-on bonus and a separately-variable stacking one. A synthetic db isolates the mechanism
-// from the shipped data, which doesn't author any of these yet.
-describe("BonusOccurrenceConfig resolution", () => {
-  const schema: Schema = {
-    stats: [],
-    statByKey: {},
-    statKeys: ["power_p"],
-    multiplicativeStats: [],
-    ratingStats: [],
-    abilityStats: [],
-    ratingConversion: [],
-    statContributions: [],
-    forteSplit: {},
-    roles: { dps: { label: "dps", hpBonus: 1, damageBonus: 1 } },
-  };
-
-  // Mirrors the motivating "Shattered Resolve" example: an always-on bonus (bare id,
-  // always 1 occurrence) plus a separately-variable stacking bonus (BonusOccurrenceConfig,
-  // 0-5), both on one item, alongside the item's own flat stat.
-  const stackItem: Item = {
-    id: "stack-item",
-    name: "Stacking Trinket",
-    filter: "test_slot",
-    power_p: 0.005,
-    bonuses: [
-      "always-bonus",
-      { bonus: "tier-bonus", min: 0, max: 5, default: 0 },
-    ],
-  };
-  // A fixed (min === max) config: the item always contributes 3 occurrences, no player input
-  // needed at all.
-  const fixedItem: Item = {
-    id: "fixed-item",
-    name: "Fixed Triplet",
-    filter: "test_slot",
-    bonuses: [{ bonus: "fixed-bonus", min: 3, max: 3, default: 3 }],
-  };
-
-  const alwaysBonus: Bonus = {
-    id: "always-bonus",
-    grants: [{ stats: { power_p: 0.02 } }],
-  };
-  // Absolute, mutually-exclusive tiers -- same "highest matching occurrence threshold wins"
-  // mechanism the shipped Gladiator's Guile bonus already uses, just fed by one item's typed
-  // count instead of by several separately-equipped items.
-  const tierBonus: Bonus = {
-    id: "tier-bonus",
-    grants: [
-      {
-        tiers: [
-          { atLeast: 1, stats: { power_p: 0.01 } },
-          { atLeast: 3, stats: { power_p: 0.05 } },
-          { atLeast: 5, stats: { power_p: 0.1 } },
-        ],
-      },
-    ],
-  };
-  // perSource stacking: with a fixed 3-occurrence attachment, one item alone should produce the
-  // same `stacks: 3` that three separate item_picker picks would.
-  const fixedBonus: Bonus = {
-    id: "fixed-bonus",
-    stacking: "perSource",
-    grants: [{ stats: { power_p: 0.02 } }],
-  };
-
-  const slotsData: SlotsData = {
-    sections: [{ id: "test", label: "Test", slotIds: [] }],
-    slots: [
-      {
-        id: "slot1",
-        label: "Slot 1",
-        section: "test",
-        type: "item_picker",
-        filter: "test_slot",
-      },
-      {
-        id: "slot2",
-        label: "Slot 2",
-        section: "test",
-        type: "item_picker",
-        filter: "test_slot",
-      },
-    ],
-  };
-  const testDb = db.build(
-    [stackItem, fixedItem],
-    [alwaysBonus, tierBonus, fixedBonus],
-    schema,
-    slotsData,
-  );
-
-  function buildWith(
-    choices: Record<string, string>,
-    occurrenceInputs: Record<string, Record<string, number>> = {},
-  ): Build {
-    return {
-      id: "b",
-      name: "b",
-      choices,
-      values: {},
-      assignments: {},
-      procs: {},
-      occurrenceInputs,
-      context: BASE_CONTEXT,
-      compare: { id: "", highlight: false, onlyDiff: false, statLines: false },
-    } as unknown as Build;
-  }
-
-  it("a bare string attachment always contributes exactly 1 occurrence, unaffected by a sibling config", () => {
-    const result = engine.resolveBuild(
-      testDb,
-      buildWith({ slot1: "stack-item" }),
-    );
-    const activeById = new Map(
-      result.bonuses.filter((b) => b.active).map((b) => [b.id, b]),
-    );
-    expect(activeById.get("always-bonus")?.stacks).toBe(1);
-    expect(activeById.get("always-bonus")?.stats?.power_p).toBeCloseTo(0.02, 9);
-    // tier-bonus defaults to 0 occurrences (its own `default`) -- no build entry needed, and
-    // not active since no tier matches 0.
-    expect(activeById.has("tier-bonus")).toBe(false);
-    // The item's own flat stat still applies regardless of either bonus.
-    expect(result.stages.sums.power_p).toBeCloseTo(0.005 + 0.02, 9);
-  });
-
-  it("build.occurrenceInputs sets a per-item, per-bonus count that picks the matching tier", () => {
-    const result = engine.resolveBuild(
-      testDb,
-      buildWith({ slot1: "stack-item" }, { "stack-item": { "tier-bonus": 3 } }),
-    );
-    const tier = result.bonuses.find((b) => b.id === "tier-bonus");
-    expect(tier?.active).toBe(true);
-    expect(tier?.chose).toBe("tier:3");
-    expect(tier?.stats?.power_p).toBeCloseTo(0.05, 9);
-    // always-bonus (a bare id, still 1 occurrence) is untouched by tier-bonus's own count.
-    const always = result.bonuses.find((b) => b.id === "always-bonus");
-    expect(always?.active).toBe(true);
-    expect(always?.stats?.power_p).toBeCloseTo(0.02, 9);
-  });
-
-  it("one item's count of 5 reaches the top tier -- the case that used to need 5 separate items", () => {
-    const result = engine.resolveBuild(
-      testDb,
-      buildWith({ slot1: "stack-item" }, { "stack-item": { "tier-bonus": 5 } }),
-    );
-    const tier = result.bonuses.find((b) => b.id === "tier-bonus");
-    expect(tier?.chose).toBe("tier:5");
-    expect(tier?.stats?.power_p).toBeCloseTo(0.1, 9);
-  });
-
-  it("a min === max config contributes its fixed count with no build.occurrenceInputs entry", () => {
-    const result = engine.resolveBuild(
-      testDb,
-      buildWith({ slot1: "fixed-item" }),
-    );
-    const fixed = result.bonuses.find((b) => b.id === "fixed-bonus");
-    expect(fixed?.active).toBe(true);
-    // perSource stacking sees 3 sources from the one item, same as 3 separate picks would.
-    expect(fixed?.stacks).toBe(3);
-    expect(fixed?.appliedStats?.power_p).toBeCloseTo(3 * 0.02, 9);
-  });
-
-  it("a count outside the config's min/max is flagged as outOfRange, not clamped", () => {
-    // Not achievable through a stepper's own clamped +/- buttons, but a hand-edited or
-    // imported build can carry one -- same reasoning as point_assignment's own outOfRange check.
-    const result = engine.resolveBuild(
-      testDb,
-      buildWith({ slot1: "stack-item" }, { "stack-item": { "tier-bonus": 9 } }),
-    );
-    expect(result.errors.some((e) => e.kind === "outOfRange")).toBe(true);
-    // The raw (unclamped) count is still what the engine evaluates against.
-    const tier = result.bonuses.find((b) => b.id === "tier-bonus");
-    expect(tier?.chose).toBe("tier:5");
-  });
-});
-
-// A bonus whose only source anywhere is currently a 0-valued BonusOccurrenceConfig still
-// resolves -- inactive, via a sources-less "anchor" group (bonus.ts's `collectAttachments`/
-// `resolve()`) -- rather than being absent from `result.bonuses` entirely. The anchor must never
-// be counted as a real source anywhere stacking/attribution reads `sources`, which the
-// mixed-source tests below exist to pin down.
-describe("a bonus reachable only through a currently-zero occurrence count", () => {
+// A bonus whose only source anywhere is currently a pick repeated 0 times still resolves --
+// inactive, via a sources-less "anchor" group (bonus.ts's `collectAttachments`/`resolve()`) --
+// rather than being absent from `result.bonuses` entirely. The anchor must never be counted
+// as a real source anywhere stacking/attribution reads `sources`, which the mixed-source tests
+// below exist to pin down.
+describe("a bonus reachable only through a currently-zero repetition count", () => {
   const schema: Schema = {
     stats: [],
     statByKey: {},
@@ -924,13 +692,15 @@ describe("a bonus reachable only through a currently-zero occurrence count", () 
     id: "dial-item",
     name: "Dial Item",
     filter: "test_slot",
-    bonuses: [{ bonus: "stacking-bonus", min: 0, max: 3, default: 0 }],
+    bonuses: ["stacking-bonus"],
+    inlineRepetition: { min: 0, max: 3, default: 0 },
   };
   const otherDialItem: Item = {
     id: "other-dial-item",
     name: "Other Dial Item",
     filter: "test_slot",
-    bonuses: [{ bonus: "stacking-bonus", min: 0, max: 3, default: 0 }],
+    bonuses: ["stacking-bonus"],
+    inlineRepetition: { min: 0, max: 3, default: 0 },
   };
 
   const slotsData: SlotsData = {
@@ -961,15 +731,14 @@ describe("a bonus reachable only through a currently-zero occurrence count", () 
 
   function buildWith(
     choices: Record<string, string>,
-    occurrenceInputs: Record<string, Record<string, number>> = {},
+    assignments: Record<string, Record<string, number>> = {},
   ): Build {
     return {
       id: "b",
       name: "b",
       choices,
       values: {},
-      assignments: {},
-      occurrenceInputs,
+      assignments,
       context: BASE_CONTEXT,
       compare: { id: "", highlight: false, onlyDiff: false, statLines: false },
     } as unknown as Build;
@@ -991,7 +760,7 @@ describe("a bonus reachable only through a currently-zero occurrence count", () 
       testDb,
       buildWith(
         { slot1: "dial-item", slot2: "other-dial-item" },
-        { "dial-item": { "stacking-bonus": 2 } },
+        { slot1: { "dial-item": 2 } },
       ),
     );
     const entry = result.bonuses.find((b) => b.id === "stacking-bonus");
@@ -1012,8 +781,8 @@ describe("a bonus reachable only through a currently-zero occurrence count", () 
       buildWith(
         { slot2: "other-dial-item", slot1: "dial-item" },
         {
-          "dial-item": { "stacking-bonus": 1 },
-          "other-dial-item": { "stacking-bonus": 1 },
+          slot1: { "dial-item": 1 },
+          slot2: { "other-dial-item": 1 },
         },
       ),
     );
@@ -1067,9 +836,8 @@ describe("an unconditional stacking grant reachable only through a currently-zer
     id: "stack-item",
     name: "Stack Item",
     filter: "test_slot",
-    bonuses: [
-      { bonus: "unconditional-stacking-bonus", min: 0, max: 5, default: 5 },
-    ],
+    bonuses: ["unconditional-stacking-bonus"],
+    inlineRepetition: { min: 0, max: 5, default: 5 },
   };
 
   const slotsData: SlotsData = {
@@ -1092,15 +860,14 @@ describe("an unconditional stacking grant reachable only through a currently-zer
   );
 
   function buildWith(
-    occurrenceInputs: Record<string, Record<string, number>>,
+    assignments: Record<string, Record<string, number>>,
   ): Build {
     return {
       id: "b",
       name: "b",
       choices: { slot1: "stack-item" },
       values: {},
-      assignments: {},
-      occurrenceInputs,
+      assignments,
       context: BASE_CONTEXT,
       compare: { id: "", highlight: false, onlyDiff: false, statLines: false },
     } as unknown as Build;
@@ -1109,7 +876,7 @@ describe("an unconditional stacking grant reachable only through a currently-zer
   it("at 0 stacks, both the bonus and its own (only) grant read inactive", () => {
     const result = engine.resolveBuild(
       testDb,
-      buildWith({ "stack-item": { "unconditional-stacking-bonus": 0 } }),
+      buildWith({ slot1: { "stack-item": 0 } }),
     );
     const entry = result.bonuses.find(
       (b) => b.id === "unconditional-stacking-bonus",
@@ -1122,7 +889,7 @@ describe("an unconditional stacking grant reachable only through a currently-zer
   it("at 0 stacks, the preview is what one stack would give, not zero", () => {
     const result = engine.resolveBuild(
       testDb,
-      buildWith({ "stack-item": { "unconditional-stacking-bonus": 0 } }),
+      buildWith({ slot1: { "stack-item": 0 } }),
     );
     const entry = result.bonuses.find(
       (b) => b.id === "unconditional-stacking-bonus",
@@ -1139,204 +906,6 @@ describe("an unconditional stacking grant reachable only through a currently-zer
     expect(entry?.grants?.[0]?.active).toBe(true);
     expect(entry?.stacks).toBe(5);
     expect(entry?.appliedStats?.power_p).toBeCloseTo(5 * 0.036, 9);
-  });
-});
-
-// Per-item boolean occurrence attachments, formerly "procs": a `min:0,max:1`
-// BonusOccurrenceConfig attached to an item gates that same bonus's own grant via a
-// self-referential `bonusOccurrences: { bonus: <own id>, atLeast: 1 }` condition, reading
-// `build.occurrenceInputs` instead of the old dedicated `build.procs`/`proc` leaf. A synthetic
-// db isolates this from the shipped data.
-describe("per-item boolean occurrence attachments (formerly procs)", () => {
-  const schema: Schema = {
-    stats: [],
-    statByKey: {},
-    statKeys: ["power_p", "crit_p"],
-    multiplicativeStats: [],
-    ratingStats: [],
-    abilityStats: [],
-    ratingConversion: [],
-    statContributions: [],
-    forteSplit: {},
-    roles: { dps: { label: "dps", hpBonus: 1, damageBonus: 1 } },
-  };
-
-  const procRing: Item = {
-    id: "proc-ring",
-    name: "Proc Ring",
-    bonuses: [{ bonus: "proc-ring-bonus", min: 0, max: 1, default: 1 }],
-  };
-  const procRingBonus: Bonus = {
-    id: "proc-ring-bonus",
-    grants: [
-      {
-        when: { bonusOccurrences: { bonus: "proc-ring-bonus", atLeast: 1 } },
-        stats: { power_p: 0.05 },
-      },
-    ],
-  };
-
-  // Two independent toggles on one item are two separate bonuses, each with its own occurrence
-  // attachment -- unlike the old grant-index-keyed proc, two grants sharing one bonus id would
-  // now share that one bonus's occurrence count instead of toggling independently.
-  const doubleProcTrinket: Item = {
-    id: "double-proc-trinket",
-    name: "Double Proc Trinket",
-    bonuses: [
-      { bonus: "double-proc-a", min: 0, max: 1, default: 1 },
-      { bonus: "double-proc-b", min: 0, max: 1, default: 1 },
-    ],
-  };
-  const doubleProcABonus: Bonus = {
-    id: "double-proc-a",
-    grants: [
-      {
-        when: { bonusOccurrences: { bonus: "double-proc-a", atLeast: 1 } },
-        stats: { power_p: 0.01 },
-      },
-    ],
-  };
-  const doubleProcBBonus: Bonus = {
-    id: "double-proc-b",
-    grants: [
-      {
-        when: { bonusOccurrences: { bonus: "double-proc-b", atLeast: 1 } },
-        stats: { crit_p: 0.02 },
-      },
-    ],
-  };
-
-  // A custom checkbox label (BonusOccurrenceConfig.label) and a toggle that starts off
-  // rather than the usual default-on.
-  const situationalTrinket: Item = {
-    id: "situational-trinket",
-    name: "Situational Trinket",
-    bonuses: [
-      {
-        bonus: "situational-trinket-bonus",
-        min: 0,
-        max: 1,
-        default: 0,
-        label: "Only vs. bosses",
-      },
-    ],
-  };
-  const situationalTrinketBonus: Bonus = {
-    id: "situational-trinket-bonus",
-    grants: [
-      {
-        when: {
-          bonusOccurrences: { bonus: "situational-trinket-bonus", atLeast: 1 },
-        },
-        stats: { power_p: 0.07 },
-      },
-    ],
-  };
-
-  const gearSlot: ItemPickerSlot = {
-    id: "gear.ring1",
-    label: "Ring 1",
-    section: "gear",
-    type: "item_picker",
-    filter: "test_gear",
-  };
-  const slotsData: SlotsData = {
-    sections: [{ id: "gear", label: "Gear", slotIds: [] }],
-    slots: [gearSlot],
-  };
-  const testDb = db.build(
-    [procRing, doubleProcTrinket, situationalTrinket],
-    [
-      procRingBonus,
-      doubleProcABonus,
-      doubleProcBBonus,
-      situationalTrinketBonus,
-    ],
-    schema,
-    slotsData,
-  );
-
-  function buildWith(
-    choice: string,
-    occurrenceInputs: Record<string, Record<string, number>> = {},
-  ): Build {
-    return {
-      id: "b",
-      name: "b",
-      choices: { "gear.ring1": choice },
-      values: {},
-      assignments: {},
-      occurrenceInputs,
-      context: BASE_CONTEXT,
-      compare: { id: "", highlight: false, onlyDiff: false, statLines: false },
-    } as unknown as Build;
-  }
-
-  it("defaults on: a grant with no explicit occurrenceInputs entry still fires", () => {
-    const result = engine.resolveBuild(testDb, buildWith("proc-ring"));
-    expect(result.bonuses.find((b) => b.id === "proc-ring-bonus")?.active).toBe(
-      true,
-    );
-  });
-
-  // A self-referential attachment's own count *is* its candidate count (bonus.ts's
-  // `collect()`): 0 occurrences means zero real candidates. The bonus still resolves --
-  // inactive, with a preview of what it would grant -- rather than vanishing from
-  // `result.bonuses` entirely, so a hover card/inspector can tell "typed to 0" apart from
-  // "doesn't carry this bonus at all". Same behavior a stacking (non-boolean) config's
-  // own 0-occurrence case already has -- a boolean attachment gets no special case.
-  it("an explicit 0 count resolves the bonus as inactive, with a preview of what it would grant", () => {
-    const result = engine.resolveBuild(
-      testDb,
-      buildWith("proc-ring", { "proc-ring": { "proc-ring-bonus": 0 } }),
-    );
-    const entry = result.bonuses.find((b) => b.id === "proc-ring-bonus");
-    expect(entry?.active).toBe(false);
-    expect(entry?.stats).toBeNull();
-    expect(entry?.previewStats).toEqual({ power_p: 0.05 });
-    expect(entry?.sources).toEqual([]);
-  });
-
-  it("two independent boolean attachments on one item toggle independently", () => {
-    const bothOn = engine.resolveBuild(
-      testDb,
-      buildWith("double-proc-trinket"),
-    );
-    expect(bothOn.stages.sums.power_p).toBeCloseTo(0.01, 9);
-    expect(bothOn.stages.sums.crit_p).toBeCloseTo(0.02, 9);
-
-    const firstOff = engine.resolveBuild(
-      testDb,
-      buildWith("double-proc-trinket", {
-        "double-proc-trinket": { "double-proc-a": 0 },
-      }),
-    );
-    expect(firstOff.stages.sums.power_p).toBe(0);
-    expect(firstOff.stages.sums.crit_p).toBeCloseTo(0.02, 9);
-  });
-
-  it("a default: 0 config starts off (resolved but inactive) with no explicit occurrenceInputs entry", () => {
-    const result = engine.resolveBuild(
-      testDb,
-      buildWith("situational-trinket"),
-    );
-    const entry = result.bonuses.find(
-      (b) => b.id === "situational-trinket-bonus",
-    );
-    expect(entry?.active).toBe(false);
-    expect(entry?.previewStats).toEqual({ power_p: 0.07 });
-  });
-
-  it("an explicit 1 count overrides a config's default: 0", () => {
-    const result = engine.resolveBuild(
-      testDb,
-      buildWith("situational-trinket", {
-        "situational-trinket": { "situational-trinket-bonus": 1 },
-      }),
-    );
-    expect(
-      result.bonuses.find((b) => b.id === "situational-trinket-bonus")?.active,
-    ).toBe(true);
   });
 });
 

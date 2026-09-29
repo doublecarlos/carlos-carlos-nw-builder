@@ -112,7 +112,6 @@ const build: Build = {
   values: {},
   bonusValues: {},
   assignments: { "boons.tier1": { [boon.id]: 3 } },
-  occurrenceInputs: {},
   listRows: {},
   disabledSlots: {},
   context: { role: "dps", forte: { primary: "power_p" } } as Build["context"],

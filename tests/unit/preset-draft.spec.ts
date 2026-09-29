@@ -1,13 +1,13 @@
 // Coverage for lib/preset-draft.ts, the draft <-> SectionPreset conversion PresetForm.vue
-// delegates to (see that module's header comment). `occurrences` is the field worth the most
-// attention here: it is item-keyed rather than slot-keyed, and `toPreset` is only supposed to
-// keep an entry while some row on the draft still reaches that item (an item-picker row's own
-// pick, or a point-assignment row's candidates); see `authoredItemIdsOf`.
+// delegates to (see that module's header comment). `bonusValues` is the field worth the most
+// attention here: it is bonus-keyed rather than slot-keyed, and `toPreset` is only supposed to
+// keep an entry while some row on the draft still reaches an item carrying that bonus (an
+// item-picker row's own pick, or a point-assignment row's candidates).
 import { describe, it, expect } from "vitest";
 import * as db from "../../src/data/db";
 import { NW_SCHEMA } from "../../src/data/data";
 import {
-  bonusStatGroups,
+  bonusSettingGroups,
   buildDraft,
   toPreset,
   diffLabel,
@@ -54,13 +54,22 @@ const boon: Item = {
   name: "Boon",
   filter: "test_boon",
   inlineRepetition: { min: 0, max: 3, default: 0 },
+  bonuses: ["boon-proc"],
 };
 const proc: Bonus = {
   id: "proc",
   name: "Proc",
   grants: [{ dynamicStats: [{ stat: "power", min: 0, max: 100, default: 5 }] }],
 };
-const testDb = db.build([ring, boon], [proc], NW_SCHEMA, slotsData);
+const boonProc: Bonus = {
+  id: "boon-proc",
+  name: "Boon Proc",
+  inputs: { active: { type: "boolean", default: false, label: "Proc" } },
+  grants: [
+    { when: { input: { key: "active", is: true } }, stats: { power: 1 } },
+  ],
+};
+const testDb = db.build([ring, boon], [proc, boonProc], NW_SCHEMA, slotsData);
 
 const ctx = (id: string) => ({ id, db: testDb });
 
@@ -88,26 +97,28 @@ describe("buildDraft / toPreset round trip", () => {
     expect(toPreset(buildDraft(preset), ctx("p2"))).toEqual(preset);
   });
 
-  it("drops an occurrence entry once no row still reaches that item", () => {
+  it("drops a bonus input once no row still reaches an item carrying it", () => {
     const preset: SectionPreset = {
       id: "p3",
       label: "Preset 3",
       section: "gear",
       choices: { ring1: "ring" },
-      occurrences: { ring: { some_bonus: 2 } },
+      bonusValues: { proc: { input: { active: true } } },
     };
     const draft = buildDraft(preset);
     // The item picker row no longer names "ring", so nothing on the draft reaches it anymore.
     draft.itemRows[0]!.choice = "";
-    expect(toPreset(draft, ctx("p3")).occurrences).toBeUndefined();
+    expect(toPreset(draft, ctx("p3")).bonusValues).toBeUndefined();
   });
 
-  it("keeps an occurrence entry reached only through a point-assignment row's candidates", () => {
+  it("keeps a bonus input reached only through a point-assignment row's candidates", () => {
     const draft = buildDraft({ id: "p4", label: "Preset 4", section: "gear" });
     draft.assignmentRows.push({ slotId: "boons.tier1", counts: {} });
-    draft.occurrences.boon = { some_bonus: 1 };
+    draft.bonusValues["boon-proc"] = { stat: {}, input: { active: true } };
     const preset = toPreset(draft, ctx("p4"));
-    expect(preset.occurrences).toEqual({ boon: { some_bonus: 1 } });
+    expect(preset.bonusValues).toEqual({
+      "boon-proc": { input: { active: true } },
+    });
   });
 
   it("round-trips a carried bonus's settings", () => {
@@ -149,7 +160,7 @@ describe("buildDraft / toPreset round trip", () => {
   });
 });
 
-describe("bonusStatGroups", () => {
+describe("bonusSettingGroups", () => {
   it("offers the dynamic stats of every bonus a picked item carries", () => {
     const draft = buildDraft({
       id: "p1",
@@ -157,11 +168,29 @@ describe("bonusStatGroups", () => {
       section: "gear",
       choices: { ring1: "ring" },
     });
-    expect(bonusStatGroups(draft, testDb)).toEqual([
-      { bonusId: "proc", name: "Proc", configs: proc.grants![0]!.dynamicStats },
+    expect(bonusSettingGroups(draft, testDb)).toEqual([
+      {
+        bonusId: "proc",
+        name: "Proc",
+        configs: proc.grants![0]!.dynamicStats,
+        inputs: [],
+      },
     ]);
     draft.itemRows[0]!.choice = "";
-    expect(bonusStatGroups(draft, testDb)).toEqual([]);
+    expect(bonusSettingGroups(draft, testDb)).toEqual([]);
+  });
+
+  it("offers the inputs of a point-assignment row's item bonuses", () => {
+    const draft = buildDraft({ id: "p1", label: "P", section: "gear" });
+    draft.assignmentRows.push({ slotId: "boons.tier1", counts: {} });
+    expect(bonusSettingGroups(draft, testDb)).toEqual([
+      {
+        bonusId: "boon-proc",
+        name: "Boon Proc",
+        configs: [],
+        inputs: [{ name: "active", def: boonProc.inputs!.active }],
+      },
+    ]);
   });
 });
 

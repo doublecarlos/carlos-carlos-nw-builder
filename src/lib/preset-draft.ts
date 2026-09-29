@@ -1,9 +1,9 @@
 // The draft <-> SectionPreset conversion for PresetForm.vue, the same pattern bonus-draft.ts
 // and item-draft.ts already carry for their own entities (see bonus-draft.ts's header comment).
 //
-// `occurrences` and `bonusValues` have no row list of their own: they are keyed by item and by
-// bonus, not by slot, so they are authored against whichever items the rows put on screen (an
-// item row's own pick, or a point_assignment row's items). `authoredItemIdsOf` needs
+// `bonusValues` has no row list of its own: it is keyed by bonus, not by slot, so it is
+// authored against the bonuses of whichever items the rows put on screen (an item row's own
+// pick, or a point_assignment row's items). `authoredItemIdsOf` needs
 // `Db.forSlot` to resolve that, so both it and `toPreset` (which calls it) take a `Db` in their
 // context rather than reading `props.db` directly.
 import {
@@ -18,6 +18,7 @@ import { bonusStatConfigs } from "../engine/inputs";
 import type {
   BonusValues,
   DynamicStatConfig,
+  InputDef,
   SectionPreset,
   Db,
   SlotValues,
@@ -49,10 +50,8 @@ export interface PresetDraft {
   itemRows: ItemRow[];
   assignmentRows: AssignmentRow[];
   clearRows: ClearRow[];
-  /** Item id to bonus id to count, draft-wide rather than per row, mirroring the field it
-   *  writes (see the module comment). */
-  occurrences: Record<string, Record<string, number>>;
-  /** Bonus id to its settings, draft-wide like `occurrences`. */
+  /** Bonus id to its settings, draft-wide rather than per row, mirroring the field it writes
+   *  (see the module comment). An input left out reads as its default. */
   bonusValues: Record<string, BonusValuesDraft>;
 }
 
@@ -83,12 +82,6 @@ export function buildDraft(
       counts: { ...counts },
     })),
     clearRows: (source.clears ?? []).map((slotId) => ({ slotId })),
-    occurrences: Object.fromEntries(
-      Object.entries(source.occurrences ?? {}).map(([itemId, counts]) => [
-        itemId,
-        { ...counts },
-      ]),
-    ),
     bonusValues: Object.fromEntries(
       Object.entries(source.bonusValues ?? {}).map(([bonusId, values]) => [
         bonusId,
@@ -98,9 +91,8 @@ export function buildDraft(
   };
 }
 
-/** Every item the form currently offers occurrence inputs for: each item row's own pick, plus
- *  every item a point_assignment row lists (that row renders a set of inputs per item, the same
- *  as the build editor's own). What `toPreset` keeps `occurrences` entries for. */
+/** Every item the form currently puts on screen: each item row's own pick, plus every item a
+ *  point_assignment row lists. */
 function authoredItemIdsOf(local: PresetDraft, db: Db): Set<string> {
   const ids = new Set<string>();
   for (const row of local.itemRows) if (row.choice) ids.add(row.choice);
@@ -121,21 +113,30 @@ function authoredBonusIdsOf(local: PresetDraft, db: Db): Set<string> {
   return ids;
 }
 
-/** One bonus's dynamic stats the form offers settings for. */
-export interface BonusStatGroup {
+/** One bonus's dynamic stats and inputs the form offers settings for. */
+export interface BonusSettingGroup {
   bonusId: string;
   name: string;
   configs: DynamicStatConfig[];
+  inputs: { name: string; def: InputDef }[];
 }
 
-/** Every bonus the authored items carry that declares dynamic stats. What `toPreset` keeps
- *  `bonusValues` entries for. */
-export function bonusStatGroups(local: PresetDraft, db: Db): BonusStatGroup[] {
+/** Every bonus the authored items carry that declares dynamic stats or inputs. What
+ *  `toPreset` keeps `bonusValues` entries for. */
+export function bonusSettingGroups(
+  local: PresetDraft,
+  db: Db,
+): BonusSettingGroup[] {
   return [...authoredBonusIdsOf(local, db)].flatMap((bonusId) => {
     const bonus = db.bonusById.get(bonusId);
-    const configs = bonus ? bonusStatConfigs(bonus) : [];
-    return configs.length
-      ? [{ bonusId, name: bonus?.name ?? bonusId, configs }]
+    if (!bonus) return [];
+    const configs = bonusStatConfigs(bonus);
+    const inputs = Object.entries(bonus.inputs ?? {}).map(([name, def]) => ({
+      name,
+      def,
+    }));
+    return configs.length || inputs.length
+      ? [{ bonusId, name: bonus.name ?? bonusId, configs, inputs }]
       : [];
   });
 }
@@ -205,17 +206,6 @@ export function toPreset(
   }
   putIfSet(preset, "assignments", assignments);
 
-  const occurrences: Record<string, Record<string, number>> = {};
-  for (const itemId of authoredItemIdsOf(local, ctx.db)) {
-    const counts = local.occurrences[itemId];
-    if (!counts) continue;
-    const kept = Object.fromEntries(
-      Object.entries(counts).filter(([, count]) => Number.isFinite(count)),
-    );
-    if (Object.keys(kept).length) occurrences[itemId] = kept;
-  }
-  putIfSet(preset, "occurrences", occurrences);
-
   const bonusValues: Record<string, BonusValues> = {};
   for (const bonusId of authoredBonusIdsOf(local, ctx.db)) {
     const draft = local.bonusValues[bonusId];
@@ -251,10 +241,6 @@ const CHECKS: DiffCheck<SectionPreset>[] = [
   (old, nw) =>
     JSON.stringify(old.assignments) !== JSON.stringify(nw.assignments)
       ? "edit point assignments"
-      : null,
-  (old, nw) =>
-    JSON.stringify(old.occurrences) !== JSON.stringify(nw.occurrences)
-      ? "edit bonus occurrences"
       : null,
   (old, nw) =>
     JSON.stringify(old.clears) !== JSON.stringify(nw.clears)

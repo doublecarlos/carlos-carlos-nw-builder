@@ -45,7 +45,6 @@ import {
   hasInlineRepetition,
   FIELD_GROUPS,
   type ItemDraft,
-  type OccurrenceDraft,
   type FieldGroup,
 } from "../../lib/item-draft";
 import BaseCheckbox from "../ui/BaseCheckbox.vue";
@@ -399,10 +398,6 @@ function detachBonus(id: string) {
   draft.value.bonuses = draft.value.bonuses.filter(
     (bonusId: string) => bonusId !== id,
   );
-  if (id in draft.value.bonusOccurrences) {
-    const { [id]: _removed, ...rest } = draft.value.bonusOccurrences;
-    draft.value.bonusOccurrences = rest;
-  }
 }
 
 /** Reorders `draft.bonuses`. `to` is a pre-removal gap index, matching the drop list. */
@@ -415,21 +410,6 @@ function moveBonus(from: number, to: number) {
   const [moved] = next.splice(from, 1);
   next.splice(insertAt, 0, moved);
   draft.value.bonuses = next;
-}
-
-/** Toggle or edit one attached bonus's occurrence config: `occurrence: null` drops it back
- *  to a plain-id attachment (always 1 occurrence), mirroring `removeInlineRepetition`'s
- *  clear-back-to-unset behavior. */
-function updateBonusOccurrence(id: string, occurrence: OccurrenceDraft | null) {
-  if (occurrence) {
-    draft.value.bonusOccurrences = {
-      ...draft.value.bonusOccurrences,
-      [id]: occurrence,
-    };
-  } else if (id in draft.value.bonusOccurrences) {
-    const { [id]: _removed, ...rest } = draft.value.bonusOccurrences;
-    draft.value.bonusOccurrences = rest;
-  }
 }
 
 // --- which field groups this item is offered ---------------------------------------------
@@ -854,7 +834,6 @@ function showsGroup(group: FieldGroup): boolean {
     <template v-if="showsGroup('bonuses')">
       <ItemBonuses
         :attached-bonus-ids="draft.bonuses"
-        :occurrence-configs="draft.bonusOccurrences"
         :item-name="draft.name"
         :item-id="source?.id"
         :db="db"
@@ -867,7 +846,6 @@ function showsGroup(group: FieldGroup): boolean {
         @update-bonus="$emit('update-bonus', $event)"
         @detach-bonus="detachBonus"
         @attach-bonus="attachBonus"
-        @update-occurrence="(e) => updateBonusOccurrence(e.id, e.occurrence)"
         @move-bonus="({ from, to }) => moveBonus(from, to)"
         @open-item="$emit('open-item', $event)"
       />

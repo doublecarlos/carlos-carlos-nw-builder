@@ -5,9 +5,7 @@ import {
   collapseSources,
   inspectorBonuses,
   isNearMiss,
-  occurrenceStateText,
 } from "../../src/lib/bonus-inspector";
-import type { OccurrenceRow } from "../../src/composables/useItemBonusOccurrences";
 import type { EvaluatedBonus } from "../../src/types";
 
 const bonus = (over: Partial<EvaluatedBonus> = {}): EvaluatedBonus =>
@@ -16,7 +14,6 @@ const bonus = (over: Partial<EvaluatedBonus> = {}): EvaluatedBonus =>
     bonus: { id: "b1", name: "Test Bonus", grants: [{ stats: { power: 1 } }] },
     bonusId: "b1",
     sources: [{ name: "Test Item", slotId: "slot1" }],
-    carrier: null,
     slotId: "slot1",
     active: false,
     gate: { ok: true, leaves: [], unmet: [] },
@@ -38,17 +35,8 @@ describe("inspectorBonuses", () => {
   });
 
   it("drops an uncarried bonus: reachable for the hover card, not on the build", () => {
-    const zero = bonus({ id: "zero", sources: [], carrier: null });
+    const zero = bonus({ id: "zero", sources: [] });
     expect(inspectorBonuses([bonus(), zero]).map((b) => b.id)).toEqual(["b1"]);
-  });
-
-  it("keeps a carried bonus whose own count sits at 0, as one the player can switch on", () => {
-    const off = bonus({
-      id: "off",
-      sources: [],
-      carrier: { itemId: "i1", name: "Test Item", slotId: "slot1" },
-    });
-    expect(inspectorBonuses([off]).map((b) => b.id)).toEqual(["off"]);
   });
 
   it("drops a problem-only bonus, which the errors summary already reports", () => {
@@ -117,8 +105,6 @@ describe("isNearMiss", () => {
     leaves: unmet,
     unmet,
   });
-  const carrier = { itemId: "i1", name: "Test Item", slotId: "slot1" };
-
   it("one failing condition is one away", () => {
     expect(isNearMiss(bonus({ gate: gate(leaf) }))).toBe(true);
   });
@@ -127,13 +113,7 @@ describe("isNearMiss", () => {
     expect(isNearMiss(bonus({ gate: gate(leaf, leaf) }))).toBe(false);
   });
 
-  it("a carrier with a met gate is one away: its control is all that is off", () => {
-    expect(isNearMiss(bonus({ gate: gate(), sources: [], carrier }))).toBe(
-      true,
-    );
-  });
-
-  it("a met gate with no carrier is not (nothing to flip)", () => {
+  it("a met gate is not (nothing to flip)", () => {
     expect(isNearMiss(bonus({ gate: gate() }))).toBe(false);
   });
 
@@ -142,22 +122,5 @@ describe("isNearMiss", () => {
     expect(
       isNearMiss(bonus({ excluded: true, excludedBy: "b2", gate: gate(leaf) })),
     ).toBe(false);
-  });
-});
-
-describe("occurrenceStateText", () => {
-  const row = (kind: OccurrenceRow["kind"]): OccurrenceRow => ({
-    bonusId: "b1",
-    label: "Proc",
-    value: 0,
-    min: 0,
-    max: kind === "checkbox" ? 1 : 5,
-    defaultValue: 0,
-    kind,
-  });
-
-  it("reads a checkbox as off and a stepper as 0", () => {
-    expect(occurrenceStateText(row("checkbox"))).toBe("off");
-    expect(occurrenceStateText(row("stepper"))).toBe("0");
   });
 });

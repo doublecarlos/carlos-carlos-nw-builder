@@ -1,5 +1,5 @@
-// The shared InputRow layout on an item_picker row's typed inputs: dynamic stats and
-// stepper-shaped occurrence configs share one control column; checkbox configs stay inline.
+// The shared InputRow layout on an item_picker row's typed inputs: dynamic stats and stepper
+// bonus inputs share one control column; checkbox inputs stay inline.
 import { test, expect, type Page } from "@playwright/test";
 import { confirmImport, openBuilder, slotRow } from "./support/app";
 
@@ -34,34 +34,40 @@ async function importRing(page: Page) {
                   label: "Power Bonus",
                 },
               ],
-              bonuses: [
-                {
-                  bonus: STEPPER_BONUS_ID,
-                  min: 0,
-                  max: 5,
-                  default: 0,
-                  label: "Stacks",
-                },
-                {
-                  bonus: CHECKBOX_BONUS_ID,
-                  min: 0,
-                  max: 1,
-                  default: 0,
-                  label: "Buff active",
-                },
-              ],
+              bonuses: [STEPPER_BONUS_ID, CHECKBOX_BONUS_ID],
             },
           },
           bonuses: {
             [STEPPER_BONUS_ID]: {
               id: STEPPER_BONUS_ID,
               name: "Test Stepper Bonus",
-              grants: [{ stats: { power: 10 } }],
+              inputs: {
+                stacks: {
+                  type: "number",
+                  min: 0,
+                  max: 5,
+                  default: 0,
+                  label: "Stacks",
+                },
+              },
+              grants: [{ stats: { power: 10 }, scale: { formula: "$stacks" } }],
             },
             [CHECKBOX_BONUS_ID]: {
               id: CHECKBOX_BONUS_ID,
               name: "Test Checkbox Bonus",
-              grants: [{ stats: { power: 100 } }],
+              inputs: {
+                active: {
+                  type: "boolean",
+                  default: false,
+                  label: "Buff active",
+                },
+              },
+              grants: [
+                {
+                  when: { input: { key: "active", is: true } },
+                  stats: { power: 100 },
+                },
+              ],
             },
           },
           sectionPresets: {},
@@ -73,7 +79,7 @@ async function importRing(page: Page) {
   await expect(page.getByTestId("app-header")).toContainText(/imported/i);
 }
 
-test("a dynamic stat and an occurrence stepper share one aligned control column", async ({
+test("a dynamic stat and a bonus input stepper share one aligned control column", async ({
   page,
 }) => {
   await openBuilder(page);
@@ -82,10 +88,10 @@ test("a dynamic stat and an occurrence stepper share one aligned control column"
   const row = slotRow(page, RING_SLOT);
   await expect(row.getByTestId("slot-dynamic:power")).toHaveValue("500");
   await expect(
-    row.getByTestId(`occurrence-input-${STEPPER_BONUS_ID}`),
+    row.getByTestId(`bonus-input-${STEPPER_BONUS_ID}-stacks`),
   ).toHaveValue("0");
 
-  // The occurrence block renders before the dynamic-stat block, so the stepper row is first.
+  // Bonus inputs render before dynamic stats, so the stepper row is first.
   const rows = row.getByTestId("input-row");
   await expect(rows).toHaveCount(2);
   await expect(rows.nth(0)).toContainText("Stacks");
@@ -118,14 +124,14 @@ test("a dynamic stat's limits read as a muted note after its name", async ({
   await expect(note).toContainText(/\(from 0 to 1,?000\)/);
 });
 
-test("a checkbox-shaped config keeps its label as normal text on one clickable row", async ({
+test("a checkbox input keeps its label as normal text on one clickable row", async ({
   page,
 }) => {
   await openBuilder(page);
   await importRing(page);
 
   const checkbox = slotRow(page, RING_SLOT).getByTestId(
-    `occurrence-toggle-${CHECKBOX_BONUS_ID}`,
+    `bonus-input-${CHECKBOX_BONUS_ID}-active`,
   );
   await expect(checkbox).toContainText("Buff active");
   await expect(checkbox).not.toHaveClass(/text-muted/);

@@ -204,9 +204,11 @@
           }
         }
       },
-      "occurrenceInputs": {
+      "bonusValues": {
         "risky-investment": {
-          "risky-investment": 5
+          "input": {
+            "investiture": 5
+          }
         }
       },
       "listRows": {

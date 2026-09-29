@@ -26,7 +26,7 @@ const NEED_LOCATE = `bonus-need-locate-${BONUS_ID}-0`;
 const GEM_SLOT_KEY = /^slot:enchantments\./;
 const GEM_SLOT_COUNT = 8;
 
-/** A master boon whose only bonus is a proc config defaulting to 0. At 0 points the bonus is
+/** A master boon whose only bonus has a proc input defaulting to off. At 0 points the bonus is
  *  reachable for the hover card but not on the build; with a point spent it is carried, and
  *  listed inactive until the proc is switched on. */
 const BOON_SLOT = "boons.tier_master";
@@ -106,18 +106,15 @@ test("a boon's proc bonus is listed, inactive, once a point is spent on the boon
 
   const entry = page.getByTestId(`bonus-entry-${BOON_BONUS}`);
   await expect(entry).toHaveAttribute("data-state", "inactive");
-  // The reason is the proc control on the boon itself, one flip away from active.
-  const reason = entry.getByTestId("bonus-zero-occurrence");
-  await expect(reason).toContainText("Proc");
-  await expect(reason).toContainText("off");
+  // The reason is the proc input on the boon itself, one flip away from active.
+  await expect(entry).toContainText("Proc is on");
   await expect(entry.getByText("1 away")).toBeVisible();
-  // Expanded, the boon is what the bonus comes from, its control notwithstanding.
+  // Expanded, the boon is what the bonus comes from.
   await entry.getByRole("button", { name: /Death's Bulwark Stats/ }).click();
-  await expect(entry.getByTestId("bonus-from")).toHaveText(
-    `from ${shippedItemName(BOON)}`,
-  );
+  const from = entry.getByTestId("bonus-from");
+  await expect(from).toHaveText(`from ${shippedItemName(BOON)}`);
 
-  await reason.getByRole("button", { name: shippedItemName(BOON) }).click();
+  await from.getByRole("button", { name: shippedItemName(BOON) }).click();
 
   expect(await cursorKey(page)).toBe(`slot:${BOON_SLOT}`);
 });

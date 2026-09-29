@@ -1,7 +1,7 @@
 // The `Build` fields keyed by slot id, and the operations that treat all of them as one unit.
 //
-// `occurrenceInputs` (keyed by item id) and `listRows` (a count per list container, not per
-// slot) are deliberately not in the family: a slot move or clear must leave both alone.
+// `bonusValues` (keyed by bonus id) and `listRows` (a count per list container, not per slot)
+// are deliberately not in the family: a slot move or clear must leave both alone.
 import type { Build } from "../types";
 
 export const SLOT_FIELDS = [
