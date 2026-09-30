@@ -44,6 +44,8 @@ ordinary one.
 | IconButton                                | Icon-only button; `title` is its tooltip and, unless `label` is given, its accessible name |
 | IdField                                   | Read-only display of a frozen, generator-assigned id                                       |
 | InputRow                                  | A typed control in a fixed leading column, right-aligned, with its description after it    |
+| ListAddRow                                | The add row after a list of cards: "+", other ways of adding, and the empty note           |
+| ListCardHeader                            | A reorderable card's header: grip, optional fold, "Noun N", then the row actions           |
 | LinkList                                  | A comma-separated run of BaseLinks inside a sentence, some entries optionally plain text   |
 | NumberStepper                             | A number field between -/+ buttons stepping by `step`; Ctrl/Cmd+click jumps to a bound     |
 | NumberOrPercentInput                      | A number field, or a PercentInput when `percent` is set                                    |

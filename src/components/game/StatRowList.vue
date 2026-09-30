@@ -38,5 +38,8 @@ const emit = defineEmits<{ add: []; remove: [index: number] }>();
         @keydown="focusNextCombo"
       />
     </template>
+    <template #empty>
+      <span class="text-muted">No stats.</span>
+    </template>
   </RepeatableRows>
 </template>

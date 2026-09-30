@@ -372,6 +372,38 @@ export const grantWhenIsComplete = (grant: GrantDraft): boolean =>
   (grant.payload !== "variants" ||
     grant.variants.every((variant) => whenRowsComplete(variant.conditions)));
 
+const counted = (count: number, noun: string) =>
+  `${count} ${noun}${count === 1 ? "" : "s"}`;
+
+/** One line standing in for a folded grant: its name when it has one, else what it grants. */
+export function grantSummary(grant: GrantDraft): string {
+  if (grant.mode === "json") return "edited as JSON";
+  if (grant.name.trim()) return grant.name.trim();
+  const parts: string[] = [];
+  if (grant.payload === "problem") {
+    parts.push(
+      [grant.problemSeverity, grant.problemMessage.trim()]
+        .filter(Boolean)
+        .join(": "),
+    );
+  } else if (grant.payload === "tiers") {
+    parts.push(counted(grant.tiers.length, "tier"));
+  } else if (grant.payload === "variants") {
+    parts.push(counted(grant.variants.length, "variant"));
+  } else {
+    const stats = grant.stats.filter((row) => row.key).length;
+    const dynamic = grant.dynamicStats.length;
+    parts.push(
+      stats || !dynamic ? counted(stats, "stat") : "",
+      dynamic ? counted(dynamic, "dynamic stat") : "",
+    );
+  }
+  if (grant.conditions.length) parts.push("conditional");
+  const scale = grant.scale.label.trim() || grant.scale.formula.trim();
+  if (scale) parts.push(`scaled by ${scale}`);
+  return parts.filter(Boolean).join(", ");
+}
+
 /** Throws on unparseable JSON so the caller can report it rather than dropping the grant. */
 export function toGrant(draft: GrantDraft): Grant {
   if (draft.mode === "json") return JSON.parse(draft.json);

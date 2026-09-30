@@ -15,6 +15,7 @@ import BaseButton from "./BaseButton.vue";
 import FormBar from "./FormBar.vue";
 import IconButton from "./IconButton.vue";
 import type { EntryStatus } from "../../data/catalog";
+import { clickedControl } from "../../lib/control-click";
 
 const props = withDefaults(
   defineProps<{
@@ -61,19 +62,8 @@ const emit = defineEmits<{
   toggle: [];
 }>();
 
-/** Toggles unless the click landed on a control. Reads the event's path rather than
- *  `target.closest`: a control that re-renders on click has already detached the target. */
 function onBarClick(event: MouseEvent) {
-  if (!props.toggleable) return;
-  for (const node of event.composedPath()) {
-    if (node === event.currentTarget) break;
-    if (
-      node instanceof Element &&
-      node.matches("button, a, input, label, select, textarea")
-    )
-      return;
-  }
-  emit("toggle");
+  if (props.toggleable && !clickedControl(event)) emit("toggle");
 }
 
 /** One secondary action, drawn as an icon button with its title as the tooltip. */

@@ -4,8 +4,6 @@
 // - New bonuses (source == null): explicit Save button, draft until name is finalized
 import { computed, inject, onMounted, onUnmounted } from "vue";
 import BonusRows from "./BonusRows.vue";
-import IconButton from "../ui/IconButton.vue";
-import { Plus } from "@lucide/vue";
 import ComboBox from "../ui/ComboBox.vue";
 import TokenInput from "../ui/TokenInput.vue";
 import BaseInput from "../ui/BaseInput.vue";
@@ -196,10 +194,6 @@ const duplicateInputNames = computed(() =>
 
 defineExpose({ draft, dirty });
 
-function addGrant() {
-  draft.value.grants.push(bonusDraft.toDraft({ when: {}, stats: {} }));
-}
-
 function save() {
   error.value = "";
   const name = draft.value.name.trim();
@@ -283,7 +277,7 @@ if (bonusDraftRegistry && props.registryId) {
     <template v-if="!collapsed">
       <!-- The embedding item's per-attachment settings, ahead of the bonus's own definition. -->
       <slot />
-      <FormSection>Identification</FormSection>
+      <FormSection :nested="embedded">Identification</FormSection>
       <FormGrid class="mb-2">
         <FormField label="Name" class="flex-1">
           <OcrTextField
@@ -314,7 +308,7 @@ if (bonusDraftRegistry && props.registryId) {
         <template v-else> Not granted by any item. </template>
       </p>
 
-      <FormSection>Inputs</FormSection>
+      <FormSection :nested="embedded">Inputs</FormSection>
       <FormSectionDescription
         >Values the player sets on the build, on the first item carrying this
         bonus. Can be used in formulas and in "input"
@@ -334,7 +328,7 @@ if (bonusDraftRegistry && props.registryId) {
         last of each is saved.
       </p>
 
-      <FormSection>Formulas</FormSection>
+      <FormSection :nested="embedded">Formulas</FormSection>
       <FormSectionDescription
         >Named formulas. Can be referenced in other formulas as
         <code>$name</code>.</FormSectionDescription
@@ -355,22 +349,18 @@ if (bonusDraftRegistry && props.registryId) {
         Only the last of each is saved.
       </p>
 
-      <FormSection>Grants</FormSection>
+      <!-- Owns its own "Grants" heading, since the heading's fold controls act on its cards. -->
       <BonusRows
         :store="draftStore"
         :tags="tags"
         :bonus-options="bonusOptions"
         :input-options="inputOptions"
         :registry-id="registryId"
+        :nested="embedded"
         @error="error = $event"
       />
-      <!-- After the list, where a new grant lands, like the other list sections. -->
-      <div class="mb-1 flex items-center gap-1.5">
-        <IconButton title="Add grant" @click="addGrant"><Plus /></IconButton>
-        <span v-if="!draft.grants.length" class="text-muted">No grants.</span>
-      </div>
 
-      <FormSection>Stacking</FormSection>
+      <FormSection :nested="embedded">Stacking</FormSection>
       <div class="flex flex-wrap items-center gap-1.5 mb-1">
         <FormField label="Behavior">
           <ComboBox
@@ -393,7 +383,7 @@ if (bonusDraftRegistry && props.registryId) {
         </template>
       </div>
 
-      <FormSection>Suppressed bonuses</FormSection>
+      <FormSection :nested="embedded">Suppressed bonuses</FormSection>
       <FormSectionDescription
         >If this bonus has at least one active grant, it will suppress the
         bonuses listed below.</FormSectionDescription

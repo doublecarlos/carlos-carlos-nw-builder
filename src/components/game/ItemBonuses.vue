@@ -20,7 +20,6 @@ import {
   ChevronRight,
   ChevronsDownUp,
   ChevronsUpDown,
-  CirclePlus,
   Unlink,
 } from "@lucide/vue";
 import BaseBadge from "../ui/BaseBadge.vue";
@@ -37,6 +36,7 @@ import {
   useDropList,
   type DragSource,
 } from "../../composables/useDragAndDrop";
+import ListAddRow from "../ui/ListAddRow.vue";
 import FormSectionDescription from "../ui/FormSectionDescription.vue";
 
 // Lets a condition be dragged from one bonus's tree straight into another's, both attached to
@@ -253,27 +253,10 @@ function nudgeBonus(index: number, delta: -1 | 1) {
   <div>
     <FormSection>
       Bonuses
-      <IconButton title="Add bonus" @click="addBonus"
-        ><CirclePlus
-      /></IconButton>
-      <!-- A control inside the heading, not heading text: drops the heading's own case,
-           weight and tracking so the picker and its menu read like every other picker. -->
-      <span
-        v-if="attachable.length"
-        class="inline-flex items-center gap-1.5 font-normal normal-case tracking-normal"
-      >
-        or
-        <BonusComboBox
-          class="w-56"
-          model-value=""
-          :options="attachable"
-          placeholder="Attach an existing one…"
-          @update:model-value="attachExisting"
-        />
-      </span>
       <!-- Same pair, order and icons as the build editor's own section controls; only worth
            a row's width once there is more than one card to fold. -->
       <span
+        v-if="slots.length > 1"
         class="ml-auto inline-flex items-center gap-1.5 font-normal normal-case tracking-normal text-[16px]"
       >
         <IconButton
@@ -293,10 +276,6 @@ function nudgeBonus(index: number, delta: -1 | 1) {
       </span>
     </FormSection>
 
-    <FormSectionDescription v-if="!slots.length">
-      This item has no bonuses.
-    </FormSectionDescription>
-
     <div v-bind="bonusesDropList.listProps()" class="relative">
       <DropIndicator :pos="bonusesDropList.separatorStyle.value" />
 
@@ -305,7 +284,7 @@ function nudgeBonus(index: number, delta: -1 | 1) {
         :key="slot.key"
         data-testid="bonus-card"
         :data-expanded="isExpanded(slot)"
-        class="mb-2.5 rounded-md border border-line bg-accent-soft/30 px-2.5 py-1"
+        class="mb-2.5 rounded-md border border-line-strong bg-accent-soft/30 px-2.5 py-1"
         :class="[
           slot.id && dragSource?.key === slot.id && 'is-drag-source opacity-50',
         ]"
@@ -382,5 +361,25 @@ function nudgeBonus(index: number, delta: -1 | 1) {
         </BonusForm>
       </div>
     </div>
+
+    <!-- The empty note gets its own line: after the attach picker it would read as trailing
+         text rather than the list's state. -->
+    <FormSectionDescription v-if="!slots.length" data-testid="bonus-empty">
+      This item has no bonuses.
+    </FormSectionDescription>
+
+    <!-- After the cards, since both ways of adding append one at the end. -->
+    <ListAddRow title="Add bonus" data-testid="bonus-add-row" @add="addBonus">
+      <span v-if="attachable.length" class="inline-flex items-center gap-1.5">
+        or
+        <BonusComboBox
+          class="w-56"
+          model-value=""
+          :options="attachable"
+          placeholder="Attach an existing one…"
+          @update:model-value="attachExisting"
+        />
+      </span>
+    </ListAddRow>
   </div>
 </template>
