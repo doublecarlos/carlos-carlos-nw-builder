@@ -51,10 +51,7 @@ const emit = defineEmits<{ add: []; remove: [index: number] }>();
       </FormField>
     </template>
     <template #empty>
-      <span class="text-muted"
-        >No dynamic stats defined. A dynamic stat's value is typed per
-        build.</span
-      >
+      <span class="text-muted">No dynamic stats.</span>
     </template>
   </RepeatableRows>
 </template>

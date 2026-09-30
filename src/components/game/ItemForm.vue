@@ -824,6 +824,9 @@ function showsGroup(group: FieldGroup): boolean {
 
     <template v-if="showsGroup('dynamicStats')">
       <FormSection data-testid="group-dynamic-stats">Dynamic stats</FormSection>
+      <FormSectionDescription
+        >Stats whose value is typed per build.</FormSectionDescription
+      >
       <DynamicStatRowList
         :rows="draft.dynamicStats"
         @add="addDynamicStat"

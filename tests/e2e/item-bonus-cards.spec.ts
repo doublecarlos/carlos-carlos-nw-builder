@@ -89,3 +89,33 @@ test("a card folds from anywhere on its header row except its own controls", asy
   await expect(page.getByTestId("bonus-card")).toHaveCount(1);
   await expect(card).toHaveAttribute("data-expanded", "true");
 });
+
+test("the empty note sits above the add row, which follows the cards", async ({
+  page,
+}) => {
+  await openBuilder(page);
+  await addLayer(page);
+  await layerRow(page, "Layer 1").locator(".nav-name").click();
+  await page.getByTestId("new-item").click();
+  await page.getByTestId("item-name-input").fill(UNIQUE_ITEM);
+  await setItemFilter(page, "gear_head");
+
+  const addRow = page.getByTestId("bonus-add-row");
+  const empty = page.getByTestId("bonus-empty");
+  await expect(empty).toHaveText("This item has no bonuses.");
+  await expect(addRow.getByLabel("Add bonus")).toBeVisible();
+  const emptyBox = await empty.boundingBox();
+  const emptyRowBox = await addRow.boundingBox();
+  expect(emptyRowBox!.y).toBeGreaterThan(emptyBox!.y + emptyBox!.height - 1);
+
+  await addAndSaveBonus(page, UNIQUE_BONUS);
+  await expect(empty).toBeHidden();
+  const cardBox = await page.getByTestId("bonus-card").last().boundingBox();
+  const rowBox = await addRow.boundingBox();
+  expect(rowBox!.y).toBeGreaterThan(cardBox!.y + cardBox!.height - 1);
+
+  // The fold pair only appears once there is more than one card.
+  await expect(page.getByTestId("bonus-expand-all")).toHaveCount(0);
+  await addAndSaveBonus(page, SECOND_BONUS);
+  await expect(page.getByTestId("bonus-expand-all")).toBeVisible();
+});

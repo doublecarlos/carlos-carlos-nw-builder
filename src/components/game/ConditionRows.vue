@@ -103,9 +103,12 @@ const props = withDefaults(
     /** This rows-list's own coordinates from the tree root: `[]` at the root, `[i, bi]` for
      *  the `bi`-th branch of `rows[i]`, and so on recursively. */
     path?: number[];
+    /** Shown beside the add controls while the list is empty, saying what no condition means. */
+    emptyText?: string;
   }>(),
   {
     depth: 0,
+    emptyText: "",
     bonusOptions: () => [],
     inputOptions: () => [],
     treeId: "",
@@ -811,6 +814,9 @@ function changeInputKey(row: ConditionRow, key: string) {
           ><CircleAlert
         /></IconButton>
       </template>
+      <span v-if="emptyText && !rows.length" class="ml-1 text-muted">{{
+        emptyText
+      }}</span>
     </div>
   </div>
 </template>

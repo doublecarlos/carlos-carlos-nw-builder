@@ -297,6 +297,11 @@ export class BonusDraftStore {
     return this._getGrants();
   }
 
+  addGrant(): void {
+    this._getGrants().push(bonusDraft.toDraft({ when: {}, stats: {} }));
+    this.onChange();
+  }
+
   removeGrant(index: number): void {
     this._getGrants().splice(index, 1);
     this.onChange();

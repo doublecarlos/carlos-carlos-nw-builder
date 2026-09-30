@@ -25,21 +25,19 @@ import {
   stepsRangeWarning,
 } from "../../engine/formula";
 import {
-  ArrowDown,
-  ArrowUp,
-  CirclePlus,
-  Copy,
+  ChevronsDownUp,
+  ChevronsUpDown,
   FileJson,
   Plus,
   Trash,
 } from "@lucide/vue";
-import BaseButton from "../ui/BaseButton.vue";
 import BaseCheckbox from "../ui/BaseCheckbox.vue";
 import BaseInput from "../ui/BaseInput.vue";
 import NumberOrPercentInput from "../ui/NumberOrPercentInput.vue";
 import BaseTextarea from "../ui/BaseTextarea.vue";
 import SegmentedControl from "../ui/SegmentedControl.vue";
-import DragHandle from "../ui/DragHandle.vue";
+import ListAddRow from "../ui/ListAddRow.vue";
+import ListCardHeader from "../ui/ListCardHeader.vue";
 import OcrTextField from "../ui/OcrTextField.vue";
 import FormSection from "../ui/FormSection.vue";
 import DropIndicator from "../ui/DropIndicator.vue";
@@ -52,6 +50,7 @@ import {
 } from "../../stores/bonus-draft";
 import {
   draftToSteps,
+  grantSummary,
   type GrantDraft,
   type InputOption,
 } from "../../lib/bonus-draft";
@@ -77,14 +76,39 @@ const props = withDefaults(
     /** This bonus's key in ItemBonuses' cross-bonus condition-drag registry, forwarded from
      *  BonusForm -- see bonusDraftRegistry.ts. Empty outside ItemBonuses. */
     registryId?: string;
+    /** Draws the "Grants" heading as BonusForm's own `nested` sections. */
+    nested?: boolean;
   }>(),
   {
     tags: () => [],
     bonusOptions: () => [],
     inputOptions: () => [],
     registryId: "",
+    nested: false,
   },
 );
+
+/** Uids of folded grants: local UI state, neither saved nor undone. A new grant starts open. */
+const collapsedUids = ref(new Set<string>());
+
+function isExpanded(grant: GrantDraft): boolean {
+  return !collapsedUids.value.has(grant.uid);
+}
+
+function toggleGrant(grant: GrantDraft) {
+  if (collapsedUids.value.has(grant.uid)) collapsedUids.value.delete(grant.uid);
+  else collapsedUids.value.add(grant.uid);
+}
+
+const collapsedCount = computed(
+  () => props.store.grants.filter((grant) => !isExpanded(grant)).length,
+);
+
+function setAllGrants(expanded: boolean) {
+  collapsedUids.value = new Set(
+    expanded ? [] : props.store.grants.map((grant) => grant.uid),
+  );
+}
 
 const formulaContext = useFormulaContext();
 
@@ -402,6 +426,31 @@ function toggleJson(gIndex: number) {
 </script>
 
 <template>
+  <FormSection :nested="nested">
+    Grants
+    <!-- Same pair as the item's "Bonuses" heading; only worth a row once there is more than
+         one grant to fold. -->
+    <span
+      v-if="props.store.grants.length > 1"
+      class="ml-auto inline-flex items-center gap-1.5 font-normal normal-case tracking-normal text-[16px]"
+    >
+      <IconButton
+        :disabled="!collapsedCount"
+        title="Expand all"
+        data-testid="grant-expand-all"
+        @click="setAllGrants(true)"
+        ><ChevronsUpDown
+      /></IconButton>
+      <IconButton
+        :disabled="collapsedCount === props.store.grants.length"
+        title="Collapse all"
+        data-testid="grant-collapse-all"
+        @click="setAllGrants(false)"
+        ><ChevronsDownUp
+      /></IconButton>
+    </span>
+  </FormSection>
+
   <div v-bind="grantsDropList.listProps()" class="relative">
     <DropIndicator :pos="grantsDropList.separatorStyle.value" />
 
@@ -409,448 +458,423 @@ function toggleJson(gIndex: number) {
       v-for="(grant, gIndex) in props.store.grants"
       :key="grant.uid"
       data-testid="bonus-grant-row"
-      class="mb-2 rounded-md border-2 border-line bg-surface-2 p-2.5"
+      :data-expanded="isExpanded(grant)"
+      class="mb-2 rounded-md border border-line bg-surface-2 p-2.5"
       :class="[dragSource?.key === grant.uid && 'is-drag-source opacity-50']"
       v-bind="grantsDropList.rowProps(gIndex)"
     >
-      <div class="flex flex-wrap items-center gap-2">
-        <DragHandle
-          data-testid="grant-drag-handle"
-          v-bind="grantDragHandleProps(gIndex)"
-        />
-        <span class="text-muted">Grant {{ gIndex + 1 }}</span>
-        <div class="flex flex-wrap items-center gap-1.5">
-          <IconButton
-            title="Move grant up"
-            :disabled="gIndex === 0"
-            @click="props.store.moveGrant(gIndex, -1)"
-          >
-            <ArrowUp />
-          </IconButton>
-          <IconButton
-            title="Move grant down"
-            :disabled="gIndex === props.store.grants.length - 1"
-            @click="props.store.moveGrant(gIndex, 1)"
-          >
-            <ArrowDown />
-          </IconButton>
-          <IconButton
-            title="Duplicate grant"
-            @click="props.store.duplicateGrant(gIndex)"
-          >
-            <Copy />
-          </IconButton>
-          <IconButton
-            title="Insert grant below"
-            @click="props.store.insertGrant(gIndex)"
-          >
-            <CirclePlus />
-          </IconButton>
-          <IconButton
-            title="Remove grant"
-            @click="props.store.removeGrant(gIndex)"
-          >
-            <Trash />
-          </IconButton>
+      <ListCardHeader
+        noun="grant"
+        :index="gIndex"
+        :count="props.store.grants.length"
+        :drag-handle="grantDragHandleProps(gIndex)"
+        drag-testid="grant-drag-handle"
+        :expanded="isExpanded(grant)"
+        @toggle="toggleGrant(grant)"
+        @move="props.store.moveGrant(gIndex, $event)"
+        @duplicate="props.store.duplicateGrant(gIndex)"
+        @insert="props.store.insertGrant(gIndex)"
+        @remove="props.store.removeGrant(gIndex)"
+      >
+        <span
+          v-if="!isExpanded(grant)"
+          class="min-w-0 truncate"
+          data-testid="grant-summary"
+          >{{ grantSummary(grant) }}</span
+        >
+        <template #actions>
           <IconButton
             :title="grant.mode === 'json' ? 'Use the form' : 'Edit as JSON'"
             @click="toggleJson(gIndex)"
           >
             <FileJson />
           </IconButton>
-        </div>
-      </div>
+        </template>
+      </ListCardHeader>
 
-      <BaseTextarea
-        v-if="grant.mode === 'json'"
-        v-model="grant.json"
-        class="mt-1 w-full font-mono"
-        rows="8"
-      />
-
-      <template v-else>
-        <FormSection sub>Active when</FormSection>
-        <ConditionRows
-          :rows="grant.conditions"
-          :depth="0"
-          :bonus-options="bonusOptions"
-          :input-options="inputOptions"
-          :tree-id="grantTreeId(gIndex)"
-          :path="[]"
-          @update="(updated) => props.store.setConditions(gIndex, updated)"
-          @transfer="onConditionTransfer"
-          @transfer-branch="onBranchTransfer"
+      <template v-if="isExpanded(grant)">
+        <BaseTextarea
+          v-if="grant.mode === 'json'"
+          v-model="grant.json"
+          class="mt-1 w-full font-mono"
+          rows="8"
         />
 
-        <FormSection sub>
-          Payload
-          <SegmentedControl
-            :model-value="grant.payload"
-            :options="[
-              { value: 'flat', label: 'the same always' },
-              { value: 'tiers', label: 'tiered' },
-              { value: 'variants', label: 'varies by condition' },
-              { value: 'problem', label: 'reports a problem' },
-            ]"
-            @update:model-value="gs(gIndex).setPayload($event)"
-          />
-        </FormSection>
-
-        <!-- flat payload -->
-        <template v-if="grant.payload === 'flat'">
-          <FormSection sub>Stats</FormSection>
-          <StatRowList
-            :rows="grant.stats"
-            @add="gs(gIndex).addStat()"
-            @remove="(i: number) => gs(gIndex).removeStat(i)"
+        <template v-else>
+          <FormSection sub>Active when</FormSection>
+          <ConditionRows
+            :rows="grant.conditions"
+            :depth="0"
+            :bonus-options="bonusOptions"
+            :input-options="inputOptions"
+            :tree-id="grantTreeId(gIndex)"
+            :path="[]"
+            empty-text="Always active."
+            @update="(updated) => props.store.setConditions(gIndex, updated)"
+            @transfer="onConditionTransfer"
+            @transfer-branch="onBranchTransfer"
           />
 
-          <FormSection sub>Dynamic stats</FormSection>
-          <DynamicStatRowList
-            :rows="grant.dynamicStats"
-            @add="gs(gIndex).addDynamicStat()"
-            @remove="(i: number) => gs(gIndex).removeDynamicStat(i)"
-          />
-        </template>
+          <FormSection sub>Payload</FormSection>
 
-        <!-- tiered payload -->
-        <template v-else-if="grant.payload === 'tiers'">
-          <p class="text-muted">
-            Grants stats from the highest tier the measure reaches; others are
-            ignored.
-          </p>
-          <FormSection sub>Measure</FormSection>
-          <FormulaField
-            v-model:formula="grant.tierBy.formula"
-            v-model:label="grant.tierBy.label"
-            class="mb-1.5"
-            placeholder="occurrences()"
-            testid="grant-tier-by"
-          />
-          <div v-bind="tierDropList(grant.uid).listProps()" class="relative">
-            <DropIndicator
-              :pos="tierDropList(grant.uid).separatorStyle.value"
-            />
-
-            <!-- Boxed, not just a left rule: with tiers stacked, a thin line alone isn't
-                 enough contrast. Tiers use `bg-surface` to stand out against the parent's
-                 `bg-surface-2`. -->
-            <div
-              v-for="(tier, tIndex) in grant.tiers"
-              :key="tIndex"
-              data-testid="bonus-tier-row"
-              class="my-1.5 rounded-md border-2 border-l-4 border-line border-l-accent bg-surface px-2.5 py-1.5"
-              :class="[
-                dragSource?.containerId === `tiers:${grant.uid}` &&
-                  dragSource?.key === String(tIndex) &&
-                  'is-drag-source opacity-50',
+          <!-- The payload switch and what it decides sit on a rail, apart from the grant-wide
+               fields after it. Neutral, since the accent edge already marks a tier or
+               variant card. -->
+          <div class="border-l-1 border-line pl-4" data-testid="grant-payload">
+            <SegmentedControl
+              class="mb-1.5"
+              :model-value="grant.payload"
+              :options="[
+                { value: 'flat', label: 'the same always' },
+                { value: 'tiers', label: 'tiered' },
+                { value: 'variants', label: 'varies by condition' },
+                { value: 'problem', label: 'reports a problem' },
               ]"
-              v-bind="tierDropList(grant.uid).rowProps(tIndex)"
-            >
-              <div class="mb-1 flex flex-wrap items-center gap-1.5">
-                <DragHandle
-                  data-testid="tier-drag-handle"
-                  v-bind="tierDragHandleProps(grant.uid, tIndex)"
-                />
-                <IconButton
-                  title="Move tier up"
-                  :disabled="tIndex === 0"
-                  @click="gs(gIndex).moveTier(tIndex, -1)"
-                  ><ArrowUp
-                /></IconButton>
-                <IconButton
-                  title="Move tier down"
-                  :disabled="tIndex === grant.tiers.length - 1"
-                  @click="gs(gIndex).moveTier(tIndex, 1)"
-                  ><ArrowDown
-                /></IconButton>
-                <IconButton
-                  title="Duplicate tier"
-                  @click="gs(gIndex).duplicateTier(tIndex)"
-                  ><Copy
-                /></IconButton>
-                <IconButton
-                  title="Insert tier"
-                  @click="gs(gIndex).insertTier(tIndex)"
-                  ><CirclePlus
-                /></IconButton>
-                <IconButton
-                  title="Remove tier"
-                  @click="gs(gIndex).removeTier(tIndex)"
-                  ><Trash
-                /></IconButton>
-                <BaseInput
-                  v-model.number="tier.atLeast"
-                  type="number"
-                  :min="grant.tierBy.formula.trim() ? undefined : 1"
-                  class="w-16"
-                />
-                <span v-if="grant.tierBy.formula.trim()" class="text-muted"
-                  >or more</span
-                >
-                <span v-else class="text-muted"
-                  >{{ tier.atLeast === 1 ? "occurrence" : "occurrences" }} or
-                  more</span
-                >
-              </div>
-              <StatRowList
-                :rows="tier.stats"
-                @add="gs(gIndex).addTierStat(tIndex)"
-                @remove="(i: number) => gs(gIndex).removeTierStat(i, tIndex)"
-              />
-            </div>
-          </div>
-          <IconButton
-            v-if="!grant.tiers.length"
-            title="Add tier"
-            @click="gs(gIndex).addTier()"
-            ><CirclePlus
-          /></IconButton>
-        </template>
-
-        <!-- variant payload -->
-        <template v-else-if="grant.payload === 'variants'">
-          <p class="text-muted">
-            Grants stats from the first matching variant; others are ignored.
-          </p>
-          <div v-bind="variantDropList(grant.uid).listProps()" class="relative">
-            <DropIndicator
-              :pos="variantDropList(grant.uid).separatorStyle.value"
+              @update:model-value="gs(gIndex).setPayload($event)"
             />
-
-            <div
-              v-for="(variant, vIndex) in grant.variants"
-              :key="variant.uid"
-              data-testid="bonus-variant-row"
-              class="my-1.5 rounded-md border-2 border-l-4 border-line border-l-accent bg-surface px-2.5 py-1.5"
-              :class="[
-                dragSource?.key === variant.uid && 'is-drag-source opacity-50',
-              ]"
-              v-bind="variantDropList(grant.uid).rowProps(vIndex)"
-            >
-              <div class="mb-1 flex flex-wrap items-center gap-2">
-                <DragHandle
-                  data-testid="variant-drag-handle"
-                  v-bind="
-                    variantDragHandleProps(grant.uid, variant.uid, vIndex)
-                  "
-                />
-                <span class="text-muted">Variant {{ vIndex + 1 }}</span>
-                <div class="flex flex-wrap items-center gap-1.5">
-                  <IconButton
-                    title="Move variant up"
-                    :disabled="vIndex === 0"
-                    @click="gs(gIndex).moveVariant(vIndex, -1)"
-                  >
-                    <ArrowUp />
-                  </IconButton>
-                  <IconButton
-                    title="Move variant down"
-                    :disabled="vIndex === grant.variants.length - 1"
-                    @click="gs(gIndex).moveVariant(vIndex, 1)"
-                  >
-                    <ArrowDown />
-                  </IconButton>
-                  <IconButton
-                    title="Duplicate variant"
-                    @click="gs(gIndex).duplicateVariant(vIndex)"
-                  >
-                    <Copy />
-                  </IconButton>
-                  <IconButton
-                    title="Insert variant"
-                    @click="gs(gIndex).insertVariant(vIndex)"
-                  >
-                    <CirclePlus />
-                  </IconButton>
-                  <IconButton
-                    title="Remove variant"
-                    @click="gs(gIndex).removeVariant(vIndex)"
-                  >
-                    <Trash />
-                  </IconButton>
-                </div>
-              </div>
-              <FormSection sub>When</FormSection>
-              <ConditionRows
-                :rows="variant.conditions"
-                :depth="0"
-                :bonus-options="bonusOptions"
-                :input-options="inputOptions"
-                :tree-id="variantTreeId(gIndex, vIndex)"
-                :path="[]"
-                @update="
-                  (updated) =>
-                    props.store.setVariantConditions(gIndex, vIndex, updated)
-                "
-                @transfer="onConditionTransfer"
-                @transfer-branch="onBranchTransfer"
-              />
+            <!-- flat payload -->
+            <template v-if="grant.payload === 'flat'">
+              <p class="text-muted">Grants stats defined here.</p>
               <FormSection sub>Stats</FormSection>
               <StatRowList
-                :rows="variant.stats"
-                @add="gs(gIndex).addVariantStat(vIndex)"
-                @remove="(i: number) => gs(gIndex).removeVariantStat(i, vIndex)"
+                :rows="grant.stats"
+                @add="gs(gIndex).addStat()"
+                @remove="(i: number) => gs(gIndex).removeStat(i)"
               />
 
               <FormSection sub>Dynamic stats</FormSection>
               <DynamicStatRowList
-                :rows="variant.dynamicStats"
-                @add="gs(gIndex).addVariantDynamicStat(vIndex)"
-                @remove="
-                  (i: number) => gs(gIndex).removeVariantDynamicStat(i, vIndex)
-                "
+                :rows="grant.dynamicStats"
+                @add="gs(gIndex).addDynamicStat()"
+                @remove="(i: number) => gs(gIndex).removeDynamicStat(i)"
+              />
+            </template>
+
+            <!-- tiered payload -->
+            <template v-else-if="grant.payload === 'tiers'">
+              <p class="text-muted">
+                Grants stats from the highest tier the measure reaches; others
+                are ignored.
+              </p>
+              <FormSection sub>Measure</FormSection>
+              <FormulaField
+                v-model:formula="grant.tierBy.formula"
+                v-model:label="grant.tierBy.label"
+                class="mb-1.5"
+                placeholder="occurrences()"
+                testid="grant-tier-by"
+              />
+              <div
+                v-bind="tierDropList(grant.uid).listProps()"
+                class="relative"
+              >
+                <DropIndicator
+                  :pos="tierDropList(grant.uid).separatorStyle.value"
+                />
+
+                <!-- Boxed with an accent rule, on `bg-surface` against the grant's
+                     `bg-surface-2`, so stacked tiers stay apart. -->
+                <div
+                  v-for="(tier, tIndex) in grant.tiers"
+                  :key="tIndex"
+                  data-testid="bonus-tier-row"
+                  class="my-1.5 rounded-md border border-l-4 border-line border-l-accent bg-surface px-2.5 py-1.5"
+                  :class="[
+                    dragSource?.containerId === `tiers:${grant.uid}` &&
+                      dragSource?.key === String(tIndex) &&
+                      'is-drag-source opacity-50',
+                  ]"
+                  v-bind="tierDropList(grant.uid).rowProps(tIndex)"
+                >
+                  <ListCardHeader
+                    class="mb-1"
+                    noun="tier"
+                    :index="tIndex"
+                    :count="grant.tiers.length"
+                    :drag-handle="tierDragHandleProps(grant.uid, tIndex)"
+                    drag-testid="tier-drag-handle"
+                    @move="gs(gIndex).moveTier(tIndex, $event)"
+                    @duplicate="gs(gIndex).duplicateTier(tIndex)"
+                    @insert="gs(gIndex).insertTier(tIndex)"
+                    @remove="gs(gIndex).removeTier(tIndex)"
+                  >
+                    <BaseInput
+                      v-model.number="tier.atLeast"
+                      type="number"
+                      :min="grant.tierBy.formula.trim() ? undefined : 1"
+                      class="w-16"
+                    />
+                    <span v-if="grant.tierBy.formula.trim()" class="text-muted"
+                      >or more</span
+                    >
+                    <span v-else class="text-muted"
+                      >{{
+                        tier.atLeast === 1 ? "occurrence" : "occurrences"
+                      }}
+                      or more</span
+                    >
+                  </ListCardHeader>
+                  <StatRowList
+                    :rows="tier.stats"
+                    @add="gs(gIndex).addTierStat(tIndex)"
+                    @remove="
+                      (i: number) => gs(gIndex).removeTierStat(i, tIndex)
+                    "
+                  />
+                </div>
+              </div>
+              <ListAddRow
+                title="Add tier"
+                testid="add-tier"
+                :empty="!grant.tiers.length"
+                @add="gs(gIndex).addTier()"
+              >
+                <template #empty>No tiers.</template>
+              </ListAddRow>
+            </template>
+
+            <!-- variant payload -->
+            <template v-else-if="grant.payload === 'variants'">
+              <p class="text-muted">
+                Grants stats from the first matching variant; others are
+                ignored.
+              </p>
+              <div
+                v-bind="variantDropList(grant.uid).listProps()"
+                class="relative"
+              >
+                <DropIndicator
+                  :pos="variantDropList(grant.uid).separatorStyle.value"
+                />
+
+                <div
+                  v-for="(variant, vIndex) in grant.variants"
+                  :key="variant.uid"
+                  data-testid="bonus-variant-row"
+                  class="my-1.5 rounded-md border border-l-4 border-line border-l-accent bg-surface px-2.5 py-1.5"
+                  :class="[
+                    dragSource?.key === variant.uid &&
+                      'is-drag-source opacity-50',
+                  ]"
+                  v-bind="variantDropList(grant.uid).rowProps(vIndex)"
+                >
+                  <ListCardHeader
+                    class="mb-1"
+                    noun="variant"
+                    :index="vIndex"
+                    :count="grant.variants.length"
+                    :drag-handle="
+                      variantDragHandleProps(grant.uid, variant.uid, vIndex)
+                    "
+                    drag-testid="variant-drag-handle"
+                    @move="gs(gIndex).moveVariant(vIndex, $event)"
+                    @duplicate="gs(gIndex).duplicateVariant(vIndex)"
+                    @insert="gs(gIndex).insertVariant(vIndex)"
+                    @remove="gs(gIndex).removeVariant(vIndex)"
+                  />
+                  <FormSection sub>When</FormSection>
+                  <ConditionRows
+                    :rows="variant.conditions"
+                    :depth="0"
+                    :bonus-options="bonusOptions"
+                    :input-options="inputOptions"
+                    :tree-id="variantTreeId(gIndex, vIndex)"
+                    :path="[]"
+                    empty-text="Always matches."
+                    @update="
+                      (updated) =>
+                        props.store.setVariantConditions(
+                          gIndex,
+                          vIndex,
+                          updated,
+                        )
+                    "
+                    @transfer="onConditionTransfer"
+                    @transfer-branch="onBranchTransfer"
+                  />
+                  <FormSection sub>Stats</FormSection>
+                  <StatRowList
+                    :rows="variant.stats"
+                    @add="gs(gIndex).addVariantStat(vIndex)"
+                    @remove="
+                      (i: number) => gs(gIndex).removeVariantStat(i, vIndex)
+                    "
+                  />
+
+                  <FormSection sub>Dynamic stats</FormSection>
+                  <DynamicStatRowList
+                    :rows="variant.dynamicStats"
+                    @add="gs(gIndex).addVariantDynamicStat(vIndex)"
+                    @remove="
+                      (i: number) =>
+                        gs(gIndex).removeVariantDynamicStat(i, vIndex)
+                    "
+                  />
+                </div>
+              </div>
+              <ListAddRow
+                title="Add variant"
+                testid="add-variant"
+                :empty="!grant.variants.length"
+                @add="gs(gIndex).addVariant()"
+              >
+                <template #empty>No variants.</template>
+              </ListAddRow>
+            </template>
+
+            <!-- problem payload: reports a build error/warning instead of granting stats -->
+            <template v-else-if="grant.payload === 'problem'">
+              <p class="text-muted">
+                Shows a warning or error. Grants no stats.
+              </p>
+              <div class="my-1.5 flex flex-wrap items-center gap-1.5">
+                <FormSection sub inline>Severity</FormSection>
+                <SegmentedControl
+                  v-model="grant.problemSeverity"
+                  :options="[
+                    {
+                      value: 'error',
+                      label: 'error',
+                      tone: 'danger',
+                      testid: 'problem-severity-error',
+                    },
+                    {
+                      value: 'warning',
+                      label: 'warning',
+                      tone: 'warn',
+                      testid: 'problem-severity-warning',
+                    },
+                  ]"
+                />
+              </div>
+              <BaseInput
+                v-model="grant.problemLabel"
+                data-testid="problem-label"
+                type="text"
+                class="mb-1.5 w-full"
+                placeholder="Label (defaults to the slot's name)"
+              />
+              <BaseTextarea
+                v-model="grant.problemMessage"
+                data-testid="problem-message"
+                class="mb-1.5 w-full"
+                rows="2"
+                placeholder="Message"
+              />
+              <BaseCheckbox
+                v-model="grant.problemHideFromPicker"
+                data-testid="problem-hide-from-picker"
+                inline
+              >
+                Hide item from pickers if selecting it would trigger this
+                {{ grant.problemSeverity }}
+              </BaseCheckbox>
+            </template>
+          </div>
+
+          <!-- Per grant rather than per tier/variant: the scale multiplies whichever payload
+               wins, so it sits with the grant-wide fields. -->
+          <FormSection sub>Scale</FormSection>
+          <FormulaField
+            v-model:formula="grant.scale.formula"
+            v-model:label="grant.scale.label"
+            class="mb-1.5"
+            placeholder="not scaled"
+            :extra-issues="scaleIssues(grant)"
+            testid="grant-scale"
+          />
+          <!-- Opt-in: the hover card lays the payload out at each of these values. Only a flat
+               payload has one to lay out. -->
+          <template
+            v-if="grant.payload === 'flat' && grant.scale.formula.trim()"
+          >
+            <div
+              class="mb-1.5 flex flex-wrap items-center gap-1.5"
+              data-testid="grant-scale-steps"
+            >
+              <span class="text-muted">Show a ladder over</span>
+              <BaseInput
+                v-model="grant.scaleSteps.over"
+                class="w-40"
+                placeholder="$stacks or duration"
+                data-testid="grant-scale-steps-over"
+              />
+              <template v-if="grant.scaleSteps.over.trim()">
+                <template v-for="field in STEP_FIELDS" :key="field.key">
+                  <span class="text-muted">{{ field.label }}</span>
+                  <NumberOrPercentInput
+                    v-model="grant.scaleSteps[field.key]"
+                    :percent="percentSteps.has(grant.uid)"
+                    class="w-16"
+                    :data-testid="`grant-scale-steps-${field.key}`"
+                  />
+                </template>
+              </template>
+            </div>
+            <p
+              v-if="stepsIssues.has(grant.uid)"
+              class="mb-1.5 text-warn"
+              data-testid="grant-scale-steps-issue"
+            >
+              {{ stepsIssues.get(grant.uid) }}
+            </p>
+          </template>
+
+          <FormSection sub>Name and description (optional)</FormSection>
+          <div class="mb-1.5 flex flex-wrap items-start gap-1.5">
+            <IconButton
+              v-if="!nameDescriptionActive(grant)"
+              title="Add name and description"
+              data-testid="add-grant-name-description"
+              @click="addNameDescription(grant)"
+              ><Plus
+            /></IconButton>
+            <IconButton
+              v-else
+              title="Remove name and description"
+              data-testid="remove-grant-name-description"
+              @click="removeNameDescription(gIndex)"
+              ><Trash
+            /></IconButton>
+            <div
+              v-if="nameDescriptionActive(grant)"
+              class="flex min-w-0 flex-1 flex-col gap-1.5"
+              data-testid="grant-name-description-fields"
+            >
+              <OcrTextField
+                v-model="grant.name"
+                type="input"
+                single-line
+                :rows="1"
+                class="w-full"
+                data-testid="grant-name"
+                placeholder="Name"
+              />
+              <OcrTextField
+                v-model="grant.shortDescription"
+                :rows="2"
+                single-line
+                class="w-full"
+                data-testid="grant-short-description"
+                placeholder="Short description, shown in the stat summary"
+              />
+              <OcrTextField
+                v-model="grant.longDescription"
+                :rows="5"
+                data-testid="grant-long-description"
+                placeholder="Long description, shown in the hover card"
               />
             </div>
           </div>
-          <BaseButton
-            variant="ghost"
-            data-testid="add-variant"
-            @click="gs(gIndex).addVariant()"
-            ><CirclePlus />add variant</BaseButton
-          >
         </template>
-
-        <!-- problem payload: reports a build error/warning instead of granting stats -->
-        <template v-else-if="grant.payload === 'problem'">
-          <p class="text-muted">Shows a warning or error. Grants no stats.</p>
-          <div class="my-1.5 flex flex-wrap items-center gap-1.5">
-            <FormSection sub inline>Severity</FormSection>
-            <SegmentedControl
-              v-model="grant.problemSeverity"
-              :options="[
-                {
-                  value: 'error',
-                  label: 'error',
-                  tone: 'danger',
-                  testid: 'problem-severity-error',
-                },
-                {
-                  value: 'warning',
-                  label: 'warning',
-                  tone: 'warn',
-                  testid: 'problem-severity-warning',
-                },
-              ]"
-            />
-          </div>
-          <BaseInput
-            v-model="grant.problemLabel"
-            data-testid="problem-label"
-            type="text"
-            class="mb-1.5 w-full"
-            placeholder="Label (defaults to the slot's name)"
-          />
-          <BaseTextarea
-            v-model="grant.problemMessage"
-            data-testid="problem-message"
-            class="mb-1.5 w-full"
-            rows="2"
-            placeholder="Message"
-          />
-          <BaseCheckbox
-            v-model="grant.problemHideFromPicker"
-            data-testid="problem-hide-from-picker"
-            inline
-          >
-            Hide item from pickers if selecting it would trigger this
-            {{ grant.problemSeverity }}
-          </BaseCheckbox>
-        </template>
-
-        <!-- Per grant rather than per tier/variant: the scale multiplies whichever payload
-             wins, so it sits with the grant-wide fields. -->
-        <FormSection sub>Scale</FormSection>
-        <FormulaField
-          v-model:formula="grant.scale.formula"
-          v-model:label="grant.scale.label"
-          class="mb-1.5"
-          placeholder="not scaled"
-          :extra-issues="scaleIssues(grant)"
-          testid="grant-scale"
-        />
-        <!-- Opt-in: the hover card lays the payload out at each of these values. Only a flat
-             payload has one to lay out. -->
-        <template v-if="grant.payload === 'flat' && grant.scale.formula.trim()">
-          <div
-            class="mb-1.5 flex flex-wrap items-center gap-1.5"
-            data-testid="grant-scale-steps"
-          >
-            <span class="text-muted">Show a ladder over</span>
-            <BaseInput
-              v-model="grant.scaleSteps.over"
-              class="w-40"
-              placeholder="$stacks or duration"
-              data-testid="grant-scale-steps-over"
-            />
-            <template v-if="grant.scaleSteps.over.trim()">
-              <template v-for="field in STEP_FIELDS" :key="field.key">
-                <span class="text-muted">{{ field.label }}</span>
-                <NumberOrPercentInput
-                  v-model="grant.scaleSteps[field.key]"
-                  :percent="percentSteps.has(grant.uid)"
-                  class="w-16"
-                  :data-testid="`grant-scale-steps-${field.key}`"
-                />
-              </template>
-            </template>
-          </div>
-          <p
-            v-if="stepsIssues.has(grant.uid)"
-            class="mb-1.5 text-warn"
-            data-testid="grant-scale-steps-issue"
-          >
-            {{ stepsIssues.get(grant.uid) }}
-          </p>
-        </template>
-
-        <FormSection sub>Name and description (optional)</FormSection>
-        <div class="mb-1.5 flex flex-wrap items-start gap-1.5">
-          <IconButton
-            v-if="!nameDescriptionActive(grant)"
-            title="Add name and description"
-            data-testid="add-grant-name-description"
-            @click="addNameDescription(grant)"
-            ><Plus
-          /></IconButton>
-          <IconButton
-            v-else
-            title="Remove name and description"
-            data-testid="remove-grant-name-description"
-            @click="removeNameDescription(gIndex)"
-            ><Trash
-          /></IconButton>
-          <div
-            v-if="nameDescriptionActive(grant)"
-            class="flex min-w-0 flex-1 flex-col gap-1.5"
-            data-testid="grant-name-description-fields"
-          >
-            <OcrTextField
-              v-model="grant.name"
-              type="input"
-              single-line
-              :rows="1"
-              class="w-full"
-              data-testid="grant-name"
-              placeholder="Name"
-            />
-            <OcrTextField
-              v-model="grant.shortDescription"
-              :rows="2"
-              single-line
-              class="w-full"
-              data-testid="grant-short-description"
-              placeholder="Short description, shown in the stat summary"
-            />
-            <OcrTextField
-              v-model="grant.longDescription"
-              :rows="5"
-              data-testid="grant-long-description"
-              placeholder="Long description, shown in the hover card"
-            />
-          </div>
-        </div>
       </template>
     </div>
   </div>
+  <ListAddRow
+    title="Add grant"
+    :empty="!props.store.grants.length"
+    @add="props.store.addGrant()"
+  >
+    <template #empty>No grants.</template>
+  </ListAddRow>
 </template>
