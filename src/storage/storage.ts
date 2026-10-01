@@ -17,6 +17,7 @@ import { APP_COMMIT } from "../lib/app-info";
 import { getPath, setPath } from "../lib/build-path";
 import { deepEqual } from "../lib/deep-equal";
 import { storedListRows } from "../lib/item-picker-list";
+import { migrateOccurrenceInputs } from "./migrate-occurrences";
 import { migratePresetSettings, migrateSettings } from "./migrate-values";
 import { REQUIRED_SLOT_IDS } from "../lib/demo-slots";
 import type { SlotData } from "../lib/slot-fields";
@@ -422,7 +423,10 @@ export function normalize(
     // point_assignment row's every item up front): an absent value reads as its config's
     // `default` (`readInput`).
     values: stored.values,
-    bonusValues: settings.bonusValues,
+    bonusValues: migrateOccurrenceInputs(
+      raw.occurrenceInputs,
+      settings.bonusValues,
+    ),
     assignments: stored.assignments,
     listRows: rowCounts(raw.listRows, base.listRows, stored),
     disabledSlots: stored.disabledSlots,
