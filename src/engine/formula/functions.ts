@@ -61,6 +61,10 @@ const extremum = (fn: (...values: number[]) => number): Signature[] => [
   },
 ];
 
+/** Up to four decimals, trailing zeros dropped. */
+export const formatNumber = (value: number) =>
+  String(Math.round(value * 10000) / 10000);
+
 /** `1 + ratio + ratio² + ...` over `n` terms: a stack worth `ratio` times the one before. */
 export const geometric = (n: number, ratio: number): number =>
   ratio === 1 ? n : (1 - ratio ** n) / (1 - ratio);
@@ -79,6 +83,8 @@ interface FormulaFunction {
   /** Set on a lookup, a function reading the build by one quoted argument (or none): what the
    *  catalog finds wrong with that argument, if anything. */
   check?: LookupCheck;
+  /** What a formula that is only this call reads as, from the call's arguments. */
+  label?: (args: FormulaNode[]) => string | undefined;
 }
 
 type LookupCheck = (
@@ -128,6 +134,13 @@ export const FUNCTIONS: Record<string, FormulaFunction> = {
         },
       },
     ],
+    label: ([, ratio]) => {
+      if (ratio?.kind !== "number") return "stack multiplier";
+      // At a ratio of 1 it is the stack count itself.
+      if (ratio.value === 1) return undefined;
+      if (ratio.value === 0.5) return "halving-stack multiplier";
+      return `stack multiplier (each ${formatNumber(ratio.value * 100)}% of the last)`;
+    },
   },
   intervals: {
     usage: "intervals(x, every, max)",
@@ -140,6 +153,13 @@ export const FUNCTIONS: Record<string, FormulaFunction> = {
         },
       },
     ],
+    label: ([x, every]) => {
+      if (every?.kind !== "number") return "full intervals";
+      const size = formatNumber(every.value);
+      return x?.kind === "variable" && x.name === "duration"
+        ? `full ${size}s intervals`
+        : `full intervals of ${size}`;
+    },
   },
   occurrences: {
     usage: 'occurrences() or occurrences("bonus-id")',

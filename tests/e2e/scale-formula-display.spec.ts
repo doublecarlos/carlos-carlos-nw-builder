@@ -93,7 +93,9 @@ test("a scale without steps keeps one line, noting what it read", async ({
 }) => {
   const card = await openWithRamp(page, 2, false);
   await expect(card.getByTestId("item-card-ladder")).toHaveCount(0);
-  await expect(card).toContainText("100 x 1.5 (Stacks: 2)");
+  await expect(card).toContainText(
+    "100 x 1.5 halving-stack multiplier (Stacks: 2)",
+  );
 });
 
 test("the card's formula link filters the inspector down to exactly the bonus", async ({
@@ -154,4 +156,49 @@ test("an intervals scale is labeled by its interval", async ({ page }) => {
   await row.hover();
   const card = page.getByTestId("item-card");
   await expect(card).toContainText("full 5s intervals");
+});
+
+test("a stacking scale notes how many occurrences it counted", async ({
+  page,
+}) => {
+  await openBuilder(page);
+  const ring = (id: string, name: string) => ({
+    id,
+    name,
+    filter: "gear_ring",
+    bonuses: [BONUS_ID],
+  });
+  await importText(
+    page,
+    JSON.stringify({
+      name: "Occurrences test",
+      choices: { "gear.ring1": RING_ID, "gear.ring2": OTHER_RING_ID },
+      catalog: {
+        items: {
+          [RING_ID]: ring(RING_ID, "Test Ramp Ring"),
+          [OTHER_RING_ID]: ring(OTHER_RING_ID, "Test Other Ring"),
+        },
+        bonuses: {
+          [BONUS_ID]: {
+            id: BONUS_ID,
+            name: "Test Ramp Bonus",
+            grants: [
+              {
+                stats: { power: 100 },
+                scale: { formula: "geometric(min(occurrences(), 3), 0.5)" },
+              },
+            ],
+          },
+        },
+        sectionPresets: {},
+      },
+    }),
+  );
+  await confirmImport(page);
+  const row = slotRow(page, "gear.ring1");
+  await row.scrollIntoViewIfNeeded();
+  await row.hover();
+  await expect(page.getByTestId("item-card")).toContainText(
+    "100 x 1.5 halving-stack multiplier (occurrences: 2)",
+  );
 });
