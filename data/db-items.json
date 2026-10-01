@@ -4352,7 +4352,7 @@
     "ap_gain": 0.015,
     "combined_rating": 3920,
     "gameIds": ["Ring_M32_Mediumdps_S-tier"],
-    "bonuses": ["m32-deathsilver-ring-of-submission-strike"]
+    "bonuses": ["m32-critical-spiker"]
   },
   {
     "id": "m32-doomcleaver-celestial",
@@ -4444,7 +4444,7 @@
     "ap_gain": 0.015,
     "combined_rating": 3720,
     "gameIds": ["Ring_M32_Lightdps_A-tier"],
-    "bonuses": ["m32-rotsteel-loop-of-ash-ca"]
+    "bonuses": ["m32-combatant-s-advantage"]
   },
   {
     "id": "m32-rotsteel-ring-of-blight-severity",
@@ -4468,7 +4468,7 @@
     "ap_gain": 0.015,
     "combined_rating": 3720,
     "gameIds": ["Ring_M32_Mediumdps_A-tier"],
-    "bonuses": ["m32-rotsteel-ring-of-spores-strike"]
+    "bonuses": ["m32-combatant-s-impact"]
   },
   {
     "id": "m32-sigil-of-the-abyss",

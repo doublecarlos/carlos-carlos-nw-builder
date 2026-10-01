@@ -65,6 +65,11 @@ const extremum = (fn: (...values: number[]) => number): Signature[] => [
 export const geometric = (n: number, ratio: number): number =>
   ratio === 1 ? n : (1 - ratio ** n) / (1 - ratio);
 
+/** How many full `every`-long intervals fit in `x`, at most `max`: a stack gained every
+ *  `every`, capped at `max` stacks. */
+export const intervals = (x: number, every: number, max: number): number =>
+  Math.min(Math.floor(x / every), max);
+
 /** A function a formula can call. */
 interface FormulaFunction {
   /** How it is called, for the editor's reference list. */
@@ -120,6 +125,18 @@ export const FUNCTIONS: Record<string, FormulaFunction> = {
         compile: (args) => {
           const [n, ratio] = args.map(num);
           return (ctx) => geometric(n(ctx), ratio(ctx));
+        },
+      },
+    ],
+  },
+  intervals: {
+    usage: "intervals(x, every, max)",
+    signatures: [
+      {
+        params: ["number", "number", "number"],
+        compile: (args) => {
+          const [x, every, max] = args.map(num);
+          return (ctx) => intervals(x(ctx), every(ctx), max(ctx));
         },
       },
     ],

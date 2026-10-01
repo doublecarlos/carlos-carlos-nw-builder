@@ -149,28 +149,33 @@ describe("bonus model semantics", () => {
   });
 
   // --- condition language --------------------------------------------------------------
-  it("Duration is a continuous axis, and bucket boundaries are half-open", () => {
-    // Legacy had four fixed buckets; `-combat_short-` means [10, 30) and
-    // `-combat_medium_plus-` means >= 30. Off-bucket values must behave sensibly. Also proves
-    // the grants restructuring (2026-07-27): this bonus is two mutually-exclusive duration
-    // grants under one id now, not two separately-tracked bonuses -- they'd better not both
-    // fire at once.
-    const ID = "m32-deathsilver-ring-of-submission-strike";
-    const ring = {
-      "gear.ring1": "M32 Deathsilver Ring of Submission",
-    };
-    const at = (duration: number) => runBuild(ring, { duration });
+  it("A duration threshold is inclusive", () => {
+    const ID = "m33-relentless-reserves";
+    const bracers = { "gear.arms": "M33 Wintermarked Skirmisher Bracers" };
+    const at = (duration: number) =>
+      runBuild(bracers, { class: "rogue", duration });
 
-    expect(at(9).activeById.has(ID)).toBe(false);
-    expect(at(10).activeById.has(ID)).toBe(true);
-    expect(at(10).statOf(ID, "strike_p")).toBeCloseTo(0.022, 9);
-    expect(at(29).statOf(ID, "strike_p")).toBeCloseTo(0.022, 9);
-    expect(at(30).statOf(ID, "strike_p")).toBeCloseTo(0.066, 9);
-    expect(at(85).statOf(ID, "strike_p")).toBeCloseTo(0.066, 9);
+    expect(at(9).statOf(ID, "mana_regen")).toBeUndefined();
+    expect(at(10).statOf(ID, "mana_regen")).toBeCloseTo(0.1, 9);
+    expect(at(85).statOf(ID, "mana_regen")).toBeCloseTo(0.1, 9);
+  });
+
+  it("Duration scaling counts full intervals, up to the cap", () => {
+    // 1.1% per full 5s, at most 6 stacks.
+    const ID = "m32-critical-spiker";
+    const ring = { "gear.ring1": "M32 Deathsilver Ring of Submission" };
+    const at = (duration: number) =>
+      runBuild(ring, { duration }).statOf(ID, "strike_p");
+
+    expect(at(4)).toBeUndefined();
+    expect(at(5)).toBeCloseTo(0.011, 9);
+    expect(at(29)).toBeCloseTo(0.055, 9);
+    expect(at(30)).toBeCloseTo(0.066, 9);
+    expect(at(85)).toBeCloseTo(0.066, 9);
   });
 
   it("Toggles gate bonuses, and a two-toggle condition needs both", () => {
-    const ID = "m32-deathsilver-ring-of-submission-strike";
+    const ID = "m32-critical-spiker";
     const ring = {
       "gear.ring1": "M32 Deathsilver Ring of Submission",
     };
@@ -182,17 +187,37 @@ describe("bonus model semantics", () => {
 
   // --- tiers, variants, stacking, exclusion ---------------------------------------------
   it("Occurrence tiers are absolute and mutually exclusive, not cumulative", () => {
-    // Gladiator's Guile grants 10% at one insignia and 15% at two -- not 25%.
-    const ID = "gladiator-s-guile";
-    const one = runBuild({ "insignia.bonus1": "Gladiator's Guile" });
+    // Guardian's Spirit grants 2500 defense at one insignia and 3000 at two, not 5500.
+    const ID = "guardian-s-spirit";
+    const one = runBuild({ "insignia.bonus1": "Guardian's Spirit" });
     const two = runBuild({
-      "insignia.bonus1": "Gladiator's Guile",
-      "insignia.bonus2": "Gladiator's Guile",
+      "insignia.bonus1": "Guardian's Spirit",
+      "insignia.bonus2": "Guardian's Spirit",
     });
-    expect(one.statOf(ID, "movement")).toBeCloseTo(0.1, 9);
+    expect(one.statOf(ID, "defense")).toBeCloseTo(2500, 9);
     expect(one.activeById.get(ID)!.chose).toBe("tier:1");
-    expect(two.statOf(ID, "movement")).toBeCloseTo(0.15, 9);
+    expect(two.statOf(ID, "defense")).toBeCloseTo(3000, 9);
     expect(two.activeById.get(ID)!.chose).toBe("tier:2");
+  });
+
+  it("Halving insignia stacks scale geometrically, capped at three", () => {
+    const ID = "gladiator-s-guile";
+    const slots = [
+      "insignia.bonus1",
+      "insignia.bonus2",
+      "insignia.bonus3",
+      "insignia.bonus4",
+    ];
+    const withCopies = (n: number) =>
+      runBuild(
+        Object.fromEntries(
+          slots.slice(0, n).map((slot) => [slot, "Gladiator's Guile"]),
+        ),
+      ).statOf(ID, "movement");
+    expect(withCopies(1)).toBeCloseTo(0.1, 9);
+    expect(withCopies(2)).toBeCloseTo(0.15, 9);
+    expect(withCopies(3)).toBeCloseTo(0.175, 9);
+    expect(withCopies(4)).toBeCloseTo(0.175, 9);
   });
 
   it("Role variants select exactly one payload, summed with the bonus's other grants", () => {
@@ -219,16 +244,15 @@ describe("bonus model semantics", () => {
   });
 
   it("A variant grant under an unmet gate still explains every variant branch", () => {
-    // The set's last grant wants the Wildspace location before its role variants apply; with
-    // no location chosen the grant is inactive, and the hover card still needs each variant's
-    // own conditions to label its rungs.
+    // The set's role variants want a single enemy; against several the grant is inactive, and
+    // the hover card still needs each variant's own conditions to label its rungs.
     const ID = "m28-voidtouched-set";
     const result = runBuild(
       {
         "gear.mainhand": "M28 Voidtouched Pactblade",
         "gear.offhand": "M28 Voidtouched Tome",
       },
-      { role: "dps" },
+      { role: "dps", enemies: 3 },
     );
     const gated = result.activeById
       .get(ID)!

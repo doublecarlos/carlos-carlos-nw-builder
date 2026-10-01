@@ -115,3 +115,43 @@ test("the card's formula link filters the inspector down to exactly the bonus", 
   await page.getByTestId("bonus-filter-clear").click();
   await expect(other).toBeVisible();
 });
+
+test("an intervals scale is labeled by its interval", async ({ page }) => {
+  await openBuilder(page);
+  await importText(
+    page,
+    JSON.stringify({
+      name: "Intervals test",
+      choices: { "gear.ring1": RING_ID },
+      catalog: {
+        items: {
+          [RING_ID]: {
+            id: RING_ID,
+            name: "Test Ramp Ring",
+            filter: "gear_ring",
+            bonuses: [BONUS_ID],
+          },
+        },
+        bonuses: {
+          [BONUS_ID]: {
+            id: BONUS_ID,
+            name: "Test Ramp Bonus",
+            grants: [
+              {
+                stats: { power: 100 },
+                scale: { formula: "intervals(duration, 5, 6)" },
+              },
+            ],
+          },
+        },
+        sectionPresets: {},
+      },
+    }),
+  );
+  await confirmImport(page);
+  const row = slotRow(page, "gear.ring1");
+  await row.scrollIntoViewIfNeeded();
+  await row.hover();
+  const card = page.getByTestId("item-card");
+  await expect(card).toContainText("full 5s intervals");
+});

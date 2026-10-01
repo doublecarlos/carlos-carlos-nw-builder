@@ -357,9 +357,9 @@ test.describe("bonus stat payload editing", () => {
   test("adding a stat to a tiered payload adds it to the tier and survives auto-save", async ({
     page,
   }) => {
-    const bonusRow = await openBonus(page, "Executioner's Covenant");
+    const bonusRow = await openBonus(page, "Guardian's Spirit");
 
-    // Two tiers, eight stats each.
+    // Three tiers, two stats each.
     const rowsBefore = await page.locator(".stat-row").count();
     await page.getByRole("button", { name: "Add stat" }).first().click();
     await expect(page.locator(".stat-row")).toHaveCount(rowsBefore + 1);
