@@ -609,9 +609,32 @@ describe("scaler parameters", () => {
   });
 });
 
-// Occurrence counts were retired for bonus inputs. Stored counts are dropped, not migrated,
+// Occurrence counts were retired for bonus inputs. A build's counts move onto those inputs,
 // and an old layer's typed attachments reduce to their bonus ids.
 describe("retired occurrence counts", () => {
+  it("normalize moves stored counts onto bonus inputs, snapshot included", () => {
+    const stale = {
+      ...storage.defaultBuild(),
+      occurrenceInputs: {
+        "accursed-resolve": { "accursed-resolve": 1 },
+        "frigid-winds": { "frigid-winds-2": 2 },
+      },
+    };
+    const build = storage.normalize({
+      ...stale,
+      downloaded: { snapshot: stale, at: 1000 },
+    });
+    const expected = {
+      "accursed-resolve": { input: { active: true } },
+      "frigid-winds-2": { input: { chill: 2 } },
+    };
+    expect(build.bonusValues).toEqual(expected);
+    expect(build.downloaded?.snapshot.bonusValues).toEqual(expected);
+    expect(
+      storage.sameContent(build, build.downloaded!.snapshot as Build),
+    ).toBe(true);
+  });
+
   it("normalize drops a stored occurrenceInputs field, snapshot included", () => {
     const stale = {
       ...storage.defaultBuild(),
