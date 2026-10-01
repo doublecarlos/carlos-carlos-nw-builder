@@ -111,6 +111,12 @@ describe("functions", () => {
       value("min(floor(duration / 5), 5)", ctx({ duration }));
     expect([0, 4, 5, 14, 25, 60].map(stacks)).toEqual([0, 0, 1, 2, 5, 5]);
   });
+
+  it("intervals counts full intervals up to its cap", () => {
+    const stacks = (duration: number) =>
+      value("intervals(duration, 5, 5)", ctx({ duration }));
+    expect([0, 4, 5, 14, 25, 60].map(stacks)).toEqual([0, 0, 1, 2, 5, 5]);
+  });
 });
 
 describe("build lookups", () => {
@@ -429,8 +435,29 @@ describe("labels", () => {
     expect(label({ formula: "$bare" })).toBe("bare");
   });
 
+  it("derives one from an intervals call, in seconds over duration", () => {
+    expect(label({ formula: "intervals(duration, 5, 6)" })).toBe(
+      "full 5s intervals",
+    );
+    expect(label({ formula: "intervals(duration, 2.5, 4)" })).toBe(
+      "full 2.5s intervals",
+    );
+    expect(label({ formula: "intervals($procs, 2, 4)" })).toBe(
+      "full intervals of 2",
+    );
+    expect(label({ formula: "intervals(duration, $procs, 4)" })).toBe(
+      "full intervals",
+    );
+    expect(
+      label({ formula: "intervals(duration, 2, 10) * 2" }),
+    ).toBeUndefined();
+  });
+
   it("lets a site's own label win, and has none for anything else", () => {
     expect(label({ formula: "$stacks", label: "Charges" })).toBe("Charges");
+    expect(
+      label({ formula: "intervals(duration, 5, 6)", label: "Stacks" }),
+    ).toBe("Stacks");
     expect(label({ formula: "$stacks * 2" })).toBeUndefined();
     expect(singleRead("$stacks * 2")).toBeNull();
   });

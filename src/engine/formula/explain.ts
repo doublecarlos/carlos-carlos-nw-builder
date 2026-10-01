@@ -54,9 +54,23 @@ export interface LabelContext {
   formulas?: Pick<FormulaScope, "named">;
 }
 
+/** The label of a formula that is only an `intervals` call, e.g. "full 5s intervals" over
+ *  duration, else "full intervals of 2", or "full intervals" when `every` is not a literal. */
+function intervalsLabel(formula: string): string | undefined {
+  const { ast } = parseFormula(formula);
+  if (ast?.kind !== "call" || ast.name !== "intervals" || ast.args.length !== 3)
+    return undefined;
+  const [x, every] = ast.args;
+  if (every.kind !== "number") return "full intervals";
+  const size = formatNumber(every.value);
+  return x.kind === "variable" && x.name === "duration"
+    ? `full ${size}s intervals`
+    : `full intervals of ${size}`;
+}
+
 /** The label shown for `ref`: its own, else the one its single lookup derives (a scaler's
- *  label, or a `$name`'s: the named formula's or the input's). Undefined when there is none,
- *  and the caller shows the formula itself. */
+ *  label, or a `$name`'s: the named formula's or the input's), else an `intervals` call's.
+ *  Undefined when there is none, and the caller shows the formula itself. */
 export function formulaLabel(
   ref: FormulaRef,
   ctx: LabelContext,
@@ -64,7 +78,7 @@ export function formulaLabel(
 ): string | undefined {
   if (ref.label) return ref.label;
   const read = singleRead(ref.formula);
-  if (!read) return undefined;
+  if (!read) return intervalsLabel(ref.formula);
   if (read.kind === "scaler") return ctx.scalers.get(read.path)?.label;
   const kind = namedKind(read.name, ctx);
   if (kind === "input") return ctx.inputs?.get(read.name)?.label;
