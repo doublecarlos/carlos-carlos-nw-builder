@@ -17,7 +17,7 @@ import {
   type FormulaIssue,
   type FormulaNode,
 } from "./ast";
-import { lookupCalls, VARIABLES } from "./functions";
+import { formatNumber, FUNCTIONS, lookupCalls, VARIABLES } from "./functions";
 import { compile, evaluateFormula, parseFormula } from "./language";
 
 // Labels
@@ -54,22 +54,16 @@ export interface LabelContext {
   formulas?: Pick<FormulaScope, "named">;
 }
 
-/** The label of a formula that is only an `intervals` call, e.g. "full 5s intervals" over
- *  duration, else "full intervals of 2", or "full intervals" when `every` is not a literal. */
-function intervalsLabel(formula: string): string | undefined {
+/** The label a formula that is only a function call derives from that function. */
+function callLabel(formula: string): string | undefined {
   const { ast } = parseFormula(formula);
-  if (ast?.kind !== "call" || ast.name !== "intervals" || ast.args.length !== 3)
-    return undefined;
-  const [x, every] = ast.args;
-  if (every.kind !== "number") return "full intervals";
-  const size = formatNumber(every.value);
-  return x.kind === "variable" && x.name === "duration"
-    ? `full ${size}s intervals`
-    : `full intervals of ${size}`;
+  return ast?.kind === "call"
+    ? FUNCTIONS[ast.name]?.label?.(ast.args)
+    : undefined;
 }
 
 /** The label shown for `ref`: its own, else the one its single lookup derives (a scaler's
- *  label, or a `$name`'s: the named formula's or the input's), else an `intervals` call's.
+ *  label, or a `$name`'s: the named formula's or the input's), else a function call's.
  *  Undefined when there is none, and the caller shows the formula itself. */
 export function formulaLabel(
   ref: FormulaRef,
@@ -78,7 +72,7 @@ export function formulaLabel(
 ): string | undefined {
   if (ref.label) return ref.label;
   const read = singleRead(ref.formula);
-  if (!read) return intervalsLabel(ref.formula);
+  if (!read) return callLabel(ref.formula);
   if (read.kind === "scaler") return ctx.scalers.get(read.path)?.label;
   const kind = namedKind(read.name, ctx);
   if (kind === "input") return ctx.inputs?.get(read.name)?.label;
@@ -99,10 +93,6 @@ export function formulaFormat(
       : null;
   return input?.format ?? formatNumber;
 }
-
-/** Up to four decimals, trailing zeros dropped. */
-export const formatNumber = (value: number) =>
-  String(Math.round(value * 10000) / 10000);
 
 // Explaining
 
@@ -212,8 +202,8 @@ export function explainFormula(
 export const readKey = (read: NonNullable<FormulaPart["read"]>) =>
   `${read.kind}:${read.arg ?? ""}`;
 
-/** How one read is named and formatted: a scaler as a percent, an input in its own units. Null
- *  for a lookup with nothing to name, like `equipped`. */
+/** How one read is named and formatted: a scaler as a percent, an input in its own units, a
+ *  lookup by the bonus, item or tag it counts. */
 export function describeRead(
   read: NonNullable<FormulaPart["read"]>,
   value: number,
@@ -264,6 +254,26 @@ function describeReadAs(
       return { kind: read.kind, label: "duration", text: `${value}s` };
     case "enemies":
       return { kind: read.kind, label: "enemies", text: formatNumber(value) };
+    case "occurrences":
+      return {
+        kind: read.kind,
+        label: read.arg
+          ? `${ctx.bonusNames?.get(arg) ?? arg} occurrences`
+          : "occurrences",
+        text: formatNumber(value),
+      };
+    case "equipped":
+      return {
+        kind: read.kind,
+        label: `${ctx.itemNames?.get(arg) ?? arg} equipped`,
+        text: formatNumber(value),
+      };
+    case "tagged":
+      return {
+        kind: read.kind,
+        label: `tagged "${arg}"`,
+        text: formatNumber(value),
+      };
     default:
       return null;
   }

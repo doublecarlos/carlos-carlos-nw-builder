@@ -11,6 +11,7 @@ export {
 export {
   FORMULA_FUNCTIONS,
   FORMULA_VARIABLES,
+  formatNumber,
   formulaUsage,
   geometric,
 } from "./functions";
@@ -46,7 +47,6 @@ export {
 } from "./analysis";
 export {
   explainFormula,
-  formatNumber,
   formulaFormat,
   formulaLabel,
   describeRead,

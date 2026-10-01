@@ -238,8 +238,7 @@
           "deflect": -1000
         },
         "scale": {
-          "formula": "geometric(min(occurrences(), 3), 0.5)",
-          "label": "stacking multiplier"
+          "formula": "geometric(min(occurrences(), 3), 0.5)"
         }
       }
     ]
@@ -541,8 +540,7 @@
           "forte": 2500
         },
         "scale": {
-          "formula": "geometric(min(occurrences(), 3), 0.5)",
-          "label": "stacking multiplier"
+          "formula": "geometric(min(occurrences(), 3), 0.5)"
         }
       }
     ]
@@ -814,8 +812,7 @@
           "deflect": -1500
         },
         "scale": {
-          "formula": "geometric(min(occurrences(), 3), 0.5)",
-          "label": "stacking multiplier"
+          "formula": "geometric(min(occurrences(), 3), 0.5)"
         }
       }
     ]
@@ -1018,8 +1015,7 @@
           "stamina_regen": 0.1
         },
         "scale": {
-          "formula": "geometric(min(occurrences(), 3), 0.5)",
-          "label": "stacking multiplier"
+          "formula": "geometric(min(occurrences(), 3), 0.5)"
         }
       }
     ]
@@ -2802,8 +2798,7 @@
           "severity": 5000
         },
         "scale": {
-          "formula": "geometric(min(occurrences(), 3), 0.5)",
-          "label": "stacking multiplier"
+          "formula": "geometric(min(occurrences(), 3), 0.5)"
         }
       }
     ]
@@ -2873,8 +2868,7 @@
           "out_healing": 1500
         },
         "scale": {
-          "formula": "geometric(min(occurrences(), 3), 0.5)",
-          "label": "stacking multiplier"
+          "formula": "geometric(min(occurrences(), 3), 0.5)"
         }
       }
     ]
@@ -3105,7 +3099,7 @@
         },
         "scale": {
           "formula": "geometric($stacks + $self, 0.5) - $self",
-          "label": "stacking multiplier",
+          "label": "halving-stack multiplier",
           "steps": {
             "over": "$stacks",
             "min": 0,

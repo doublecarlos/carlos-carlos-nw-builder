@@ -5,6 +5,7 @@ import {
   checkFormula,
   evaluateFormula,
   explainFormula,
+  formulaReads,
   isFormulaName,
   lintFormula,
   formulaLabel,
@@ -453,6 +454,20 @@ describe("labels", () => {
     ).toBeUndefined();
   });
 
+  it("derives one from a geometric call, as a multiplier", () => {
+    expect(label({ formula: "geometric(min(occurrences(), 3), 0.5)" })).toBe(
+      "halving-stack multiplier",
+    );
+    expect(label({ formula: "geometric($procs, 0.75)" })).toBe(
+      "stack multiplier (each 75% of the last)",
+    );
+    expect(label({ formula: "geometric($procs, $procs)" })).toBe(
+      "stack multiplier",
+    );
+    expect(label({ formula: "geometric($procs, 1)" })).toBeUndefined();
+    expect(label({ formula: "geometric($procs, 0.5) - 1" })).toBeUndefined();
+  });
+
   it("lets a site's own label win, and has none for anything else", () => {
     expect(label({ formula: "$stacks", label: "Charges" })).toBe("Charges");
     expect(
@@ -596,6 +611,32 @@ describe("lintFormula", () => {
         false,
       ],
       ["warn", 'tagged("x") matches no item', 'tagged("x")', false],
+    ]);
+  });
+});
+
+describe("formulaReads", () => {
+  it("names each lookup by the bonus, item or tag it counts", () => {
+    const context = ctx({
+      self: "own",
+      bonusOccurrences: new Map([
+        ["own", 2],
+        ["other", 3],
+      ]),
+      bonusNames: new Map([["other", "Other Bonus"]]),
+      equipped: new Map([["ring", 1]]),
+      itemNames: new Map([["ring", "Test Ring"]]),
+      tags: new Map([["fire", 4]]),
+    });
+    const formula =
+      'occurrences() + occurrences("other") + equipped("ring") + tagged("fire")';
+    expect(
+      formulaReads(formula, context).map(({ label, text }) => [label, text]),
+    ).toEqual([
+      ["occurrences", "2"],
+      ["Other Bonus occurrences", "3"],
+      ["Test Ring equipped", "1"],
+      ['tagged "fire"', "4"],
     ]);
   });
 });
