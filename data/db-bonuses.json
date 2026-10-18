@@ -1462,6 +1462,32 @@
     ]
   },
   {
+    "id": "m26-reckless-rage",
+    "name": "M26 Reckless Rage",
+    "inputs": {
+      "stacks": {
+        "type": "number",
+        "min": 0,
+        "max": 6,
+        "default": 6
+      }
+    },
+    "grants": [
+      {
+        "when": {
+          "toggle": "combat"
+        },
+        "stats": {
+          "sev_p": 0.03,
+          "deflect_p": -0.01
+        },
+        "scale": {
+          "formula": "$stacks"
+        }
+      }
+    ]
+  },
+  {
     "id": "m28-voidtouched-set",
     "name": "M28 Voidtouched Set",
     "formulas": {
@@ -2170,6 +2196,21 @@
     ]
   },
   {
+    "id": "m33-5-rising-reflexes",
+    "name": "M33.5 Rising Reflexes",
+    "grants": [
+      {
+        "stats": {
+          "defense": 1935,
+          "awareness": 1935
+        },
+        "scale": {
+          "formula": "intervals(duration, 5, 5)"
+        }
+      }
+    ]
+  },
+  {
     "id": "m33-accumulating-precision",
     "name": "M33 Accumulating Precision",
     "grants": [
@@ -2451,6 +2492,22 @@
     ]
   },
   {
+    "id": "m33-freezing-fortitude",
+    "name": "M33 Freezing Fortitude",
+    "grants": [
+      {
+        "when": {
+          "bonusOccurrences": {
+            "atLeast": 2
+          }
+        },
+        "stats": {
+          "defense_p": 0.04
+        }
+      }
+    ]
+  },
+  {
     "id": "m33-freezing-grasp",
     "name": "M33 Freezing Grasp",
     "grants": [
@@ -2619,7 +2676,8 @@
         "when": {
           "enemies": {
             "atLeast": 2
-          }
+          },
+          "toggle": "combat"
         },
         "stats": {
           "power_p": 0.0325
@@ -2722,6 +2780,32 @@
         },
         "scale": {
           "formula": "intervals(duration, 5, 10)"
+        }
+      }
+    ]
+  },
+  {
+    "id": "m33-surging-fortification",
+    "name": "M33 Surging Fortification",
+    "grants": [
+      {
+        "stats": {
+          "defense_p": 0.0035,
+          "awareness_p": 0.004
+        },
+        "scale": {
+          "formula": "intervals(duration, 5, 10)"
+        }
+      }
+    ]
+  },
+  {
+    "id": "m33-survivor-s-avoidance",
+    "name": "M33 Survivor's Avoidance",
+    "grants": [
+      {
+        "stats": {
+          "crit_avoid_p": 0.1
         }
       }
     ]
@@ -4225,6 +4309,30 @@
         "scale": {
           "formula": "clamp($stacks - 6, 0, 6)",
           "label": "stacks past 6"
+        }
+      }
+    ]
+  },
+  {
+    "id": "sword-coast-tactician-2",
+    "name": "Sword Coast Tactician",
+    "inputs": {
+      "active": {
+        "type": "boolean",
+        "label": "On Sword Coast",
+        "default": false
+      }
+    },
+    "grants": [
+      {
+        "when": {
+          "input": {
+            "key": "active",
+            "is": true
+          }
+        },
+        "stats": {
+          "outgoing_damage": 0.02
         }
       }
     ]
