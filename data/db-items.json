@@ -654,6 +654,18 @@
     "bonuses": ["paragon-exclusive"]
   },
   {
+    "id": "aoth-s-wisdom",
+    "name": "Aoth's Wisdom",
+    "filter": "companion_power",
+    "il": 900,
+    "acc_p": 0.045,
+    "ca_p": 0.045,
+    "combined_rating": 900,
+    "gameIds": ["Pet_Aoth_Fezim_Brightwing_Bonus"],
+    "longDescription": "Aoth's companion power. Role: Offense/Utility.",
+    "tags": ["companion_power:utility", "companion_power:offense"]
+  },
+  {
     "id": "apocalipse-set",
     "name": "Apocalipse Set",
     "filter": "group_buff",
@@ -3822,6 +3834,17 @@
     "allowedClass": ["barbarian"]
   },
   {
+    "id": "m26-abyss-conquerer-s-mauler-plate",
+    "name": "M26 Abyss Conquerer's Mauler Plate",
+    "filter": "gear_armor",
+    "il": 2050,
+    "ca": 1538,
+    "strike": 1538,
+    "combined_rating": 1845,
+    "gameIds": ["Body_M26_Heavydps_Dungeon_Chase_R2"],
+    "bonuses": ["m26-reckless-rage"]
+  },
+  {
     "id": "m26-scintillant-amulet",
     "name": "M26 Scintillant Amulet",
     "filter": "gear_neck",
@@ -4554,6 +4577,17 @@
     "bonuses": ["m33-5-evolving-form"]
   },
   {
+    "id": "m33-5-renewed-delzoun-helm",
+    "name": "M33.5 Renewed Delzoun Helm",
+    "filter": "gear_head",
+    "il": 5200,
+    "acc": 1950,
+    "awareness": 3900,
+    "combined_rating": 4680,
+    "gameIds": ["Head_M33_5_Alltank_B-tier"],
+    "bonuses": ["m33-5-rising-reflexes"]
+  },
+  {
     "id": "m33-5-voidbound-belt",
     "name": "M33.5 Voidbound Belt",
     "filter": "gear_waist",
@@ -4659,6 +4693,19 @@
     "bonuses": ["m33-freezing-energy", "m33-survivor-s-gift-celestial"]
   },
   {
+    "id": "m33-deep-riven-stonevein-harness",
+    "name": "M33 Deep-Riven Stonevein Harness",
+    "filter": "gear_pants",
+    "il": 4850,
+    "awareness": 2328,
+    "deflect": 2728,
+    "deflect_sev": 2728,
+    "recharge": 0.015,
+    "combined_rating": 4365,
+    "gameIds": ["Pants_M33_Heavytank_2_Sss-tier"],
+    "bonuses": ["m33-survivor-s-avoidance", "m33-freezing-fortitude"]
+  },
+  {
     "id": "m33-deep-riven-stormbind-tunic",
     "name": "M33 Deep-Riven Stormbind Tunic",
     "filter": "gear_pants",
@@ -4696,6 +4743,19 @@
     "combined_rating": 4365,
     "gameIds": ["Shirt_M33_Mediumheal_Sss-tier"],
     "bonuses": ["m33-freezing-energy", "m33-graceful-harmony-celestial"]
+  },
+  {
+    "id": "m33-frost-riven-stonevein-straps",
+    "name": "M33 Frost-Riven Stonevein Straps",
+    "filter": "gear_shirt",
+    "il": 4850,
+    "awareness": 1746,
+    "crit_avoid": 3201,
+    "deflect_sev": 3274,
+    "recharge": 0.015,
+    "combined_rating": 4365,
+    "gameIds": ["Shirt_M33_Heavytank_2_Sss-tier"],
+    "bonuses": ["m33-surging-fortification", "m33-freezing-fortitude"]
   },
   {
     "id": "m33-frost-riven-stormbind-tunic",
@@ -4773,7 +4833,6 @@
     "name": "M33 Frostsilver Loop of the Arcane",
     "filter": "gear_ring",
     "il": 6000,
-    "acc_p": 0.06,
     "ca": 7200,
     "strike": 10800,
     "ap_gain": 0.015,
@@ -4932,6 +4991,7 @@
     "name": "M33 Wintermarked Lifeward Vambraces",
     "filter": "gear_arms",
     "il": 5700,
+    "forte_p": 0.045,
     "power": 2992,
     "severity": 5130,
     "combined_rating": 5130,
@@ -7588,7 +7648,9 @@
     "filter": "overload",
     "il": 1,
     "power_p": 0.05,
-    "ca_p": 0.05
+    "ca_p": 0.05,
+    "gameIds": ["Enchantment_Overload_Combat_Adv_Swordcoast"],
+    "bonuses": ["sword-coast-tactician-2"]
   },
   {
     "id": "tactician-s-precision",
@@ -7695,6 +7757,17 @@
     "acc": 1312.5,
     "ca": 1312.5,
     "combined_rating": 1575
+  },
+  {
+    "id": "undying-overlord",
+    "name": "Undying Overlord",
+    "filter": "companion_power",
+    "il": 900,
+    "incoming_damage": -0.09,
+    "combined_rating": 900,
+    "gameIds": ["Pet_Lich_Player_Bonus"],
+    "longDescription": "Lich companion power. Role: Defense.",
+    "tags": ["companion_power:defense"]
   },
   {
     "id": "unified-crescent-collar",
