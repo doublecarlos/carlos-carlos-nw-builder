@@ -413,7 +413,7 @@ describe("load validation", () => {
     ]);
   });
 
-  it("finds nothing wrong with the shipped weapon mod slots", () => {
+  it("finds nothing wrong with the shipped gear mod slots", () => {
     const base = catalog.base();
     const findings = catalog.validateSlotAvailability({
       items: base.items,
@@ -425,9 +425,13 @@ describe("load validation", () => {
       (slot) => slot.type === "item_picker" && slot.availableWhen,
     );
     expect(gated.map((slot) => slot.id)).toEqual([
+      "gear.headMod",
+      "gear.armorMod",
+      "gear.armsMod",
       "gear.mainhandMod",
       "gear.offhandMod1",
       "gear.offhandMod2",
+      "gear.bootsMod",
     ]);
   });
 });

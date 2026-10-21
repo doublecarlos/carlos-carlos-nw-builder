@@ -404,6 +404,18 @@
           "parent": "gear.head"
         },
         {
+          "id": "gear.headMod",
+          "label": "Head mod",
+          "type": "item_picker",
+          "filter": "modification_head",
+          "parent": "gear.head",
+          "availableWhen": {
+            "equipped": {
+              "tag": "artifact:head"
+            }
+          }
+        },
+        {
           "id": "gear.armor",
           "label": "Armor",
           "type": "item_picker",
@@ -417,6 +429,18 @@
           "parent": "gear.armor"
         },
         {
+          "id": "gear.armorMod",
+          "label": "Armor mod",
+          "type": "item_picker",
+          "filter": "modification_armor",
+          "parent": "gear.armor",
+          "availableWhen": {
+            "equipped": {
+              "tag": "artifact:armor"
+            }
+          }
+        },
+        {
           "id": "gear.arms",
           "label": "Arms",
           "type": "item_picker",
@@ -428,6 +452,18 @@
           "type": "item_picker",
           "filter": "reinforcement_armor_kit",
           "parent": "gear.arms"
+        },
+        {
+          "id": "gear.armsMod",
+          "label": "Arms mod",
+          "type": "item_picker",
+          "filter": "modification_arms",
+          "parent": "gear.arms",
+          "availableWhen": {
+            "equipped": {
+              "tag": "artifact:arms"
+            }
+          }
         },
         {
           "id": "gear.mainhand",
@@ -489,6 +525,18 @@
           "type": "item_picker",
           "filter": "reinforcement_armor_kit",
           "parent": "gear.boots"
+        },
+        {
+          "id": "gear.bootsMod",
+          "label": "Boots mod",
+          "type": "item_picker",
+          "filter": "modification_boots",
+          "parent": "gear.boots",
+          "availableWhen": {
+            "equipped": {
+              "tag": "artifact:boots"
+            }
+          }
         },
         {
           "id": "gear.sepBootsNeck",

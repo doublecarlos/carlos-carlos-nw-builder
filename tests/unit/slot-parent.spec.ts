@@ -82,15 +82,19 @@ describe("groupUnderParents", () => {
 });
 
 describe("compose places nested slots after their parent", () => {
-  it("keeps the shipped weapon mods under their weapons", () => {
+  it("keeps the shipped gear mods under their gear pieces", () => {
     const gear = catalog
       .compose([])
       .slots.filter((slot) => slot.section === "gear")
       .map((slot) => slot.id);
     const at = (id: string) => gear.indexOf(id);
+    expect(at("gear.headMod")).toBe(at("gear.head") + 2);
+    expect(at("gear.armorMod")).toBe(at("gear.armor") + 2);
+    expect(at("gear.armsMod")).toBe(at("gear.arms") + 2);
     expect(at("gear.mainhandMod")).toBe(at("gear.mainhand") + 1);
     expect(at("gear.offhandMod1")).toBe(at("gear.offhand") + 1);
     expect(at("gear.offhandMod2")).toBe(at("gear.offhand") + 2);
+    expect(at("gear.bootsMod")).toBe(at("gear.boots") + 2);
   });
 
   it("regroups a child that a layer orders elsewhere", () => {

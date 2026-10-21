@@ -2020,7 +2020,7 @@
         "when": {
           "not": {
             "equipped": {
-              "tag": "artifact:mainhand"
+              "tag": "artifact:m32-mainhand"
             }
           }
         },
@@ -2040,7 +2040,7 @@
         "when": {
           "not": {
             "equipped": {
-              "tag": "artifact:offhand"
+              "tag": "artifact:m32-offhand"
             }
           }
         },
@@ -3085,6 +3085,86 @@
           "ca_p": 0.05
         },
         "longDescription": "When you deal damage with a Daily power, your next\nencounter power within 20 seconds will deal 20%\nmore damage. (30 second cooldown)"
+      }
+    ]
+  },
+  {
+    "id": "m34-artifact-armor-modification-validation",
+    "name": "M34+ Artifact Armor Modification Validation",
+    "grants": [
+      {
+        "when": {
+          "not": {
+            "equipped": {
+              "tag": "artifact:m34-armor"
+            }
+          }
+        },
+        "problem": {
+          "severity": "error",
+          "message": "This modification is not valid for the equipped armor.",
+          "hideFromPicker": true
+        }
+      }
+    ]
+  },
+  {
+    "id": "m34-artifact-arms-modification-validation",
+    "name": "M34+ Artifact Arms Modification Validation",
+    "grants": [
+      {
+        "when": {
+          "not": {
+            "equipped": {
+              "tag": "artifact:m34-arms"
+            }
+          }
+        },
+        "problem": {
+          "severity": "error",
+          "message": "This modification is not valid for the equipped arms piece.",
+          "hideFromPicker": true
+        }
+      }
+    ]
+  },
+  {
+    "id": "m34-artifact-boots-modification-validation",
+    "name": "M34+ Artifact Boots Modification Validation",
+    "grants": [
+      {
+        "when": {
+          "not": {
+            "equipped": {
+              "tag": "artifact:m34-boots"
+            }
+          }
+        },
+        "problem": {
+          "severity": "error",
+          "message": "This modification is not valid for the equipped boots.",
+          "hideFromPicker": true
+        }
+      }
+    ]
+  },
+  {
+    "id": "m34-artifact-head-modification-validation",
+    "name": "M34+ Artifact Head Modification Validation",
+    "grants": [
+      {
+        "when": {
+          "not": {
+            "equipped": {
+              "tag": "artifact:m34-head"
+            }
+          }
+        },
+        "problem": {
+          "severity": "error",
+          "message": "This modification is not valid for the equipped head piece.",
+          "hideFromPicker": true
+        }
       }
     ]
   },

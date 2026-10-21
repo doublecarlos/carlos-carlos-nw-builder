@@ -4355,7 +4355,7 @@
     "combined_rating": 4725,
     "gameIds": ["Secondary_M32_Warlock_All_R6"],
     "allowedClass": ["warlock"],
-    "tags": ["artifact:offhand"],
+    "tags": ["artifact:offhand", "artifact:m32-offhand"],
     "bonuses": ["m32-impending-doom-celestial"]
   },
   {
@@ -4368,7 +4368,7 @@
     "combined_rating": 4005,
     "gameIds": ["Secondary_M32_Warlock_All_R4"],
     "allowedClass": ["warlock"],
-    "tags": ["artifact:offhand"],
+    "tags": ["artifact:offhand", "artifact:m32-offhand"],
     "bonuses": ["m32-omen-of-doom-legendary"]
   },
   {
@@ -4382,7 +4382,7 @@
     "combined_rating": 4320,
     "gameIds": ["Secondary_M32_Warlock_All_R5"],
     "allowedClass": ["warlock"],
-    "tags": ["artifact:offhand"],
+    "tags": ["artifact:offhand", "artifact:m32-offhand"],
     "bonuses": ["m32-omen-of-doom-mythic"]
   },
   {
@@ -4421,7 +4421,7 @@
     "combined_rating": 4725,
     "gameIds": ["Primary_M32_Barbarian_All_R6"],
     "allowedClass": ["barbarian"],
-    "tags": ["artifact:mainhand"],
+    "tags": ["artifact:mainhand", "artifact:m32-mainhand"],
     "bonuses": [
       "m32-doomcleaver-celestial",
       "m32-knot-of-the-bloodhound-celestial"
@@ -4438,7 +4438,7 @@
     "combined_rating": 4725,
     "gameIds": ["Secondary_M32_Barbarian_All_R6"],
     "allowedClass": ["barbarian"],
-    "tags": ["artifact:offhand"],
+    "tags": ["artifact:offhand", "artifact:m32-offhand"],
     "bonuses": [
       "m32-doomcleaver-celestial",
       "m32-knot-of-the-bloodhound-celestial"
@@ -4456,7 +4456,7 @@
     "combined_rating": 4725,
     "gameIds": ["Primary_M32_Warlock_All_R6"],
     "allowedClass": ["warlock"],
-    "tags": ["artifact:mainhand"],
+    "tags": ["artifact:mainhand", "artifact:m32-mainhand"],
     "bonuses": ["m32-impending-doom-celestial"]
   },
   {
@@ -4471,7 +4471,7 @@
     "combined_rating": 4005,
     "gameIds": ["Primary_M32_Warlock_All_R4"],
     "allowedClass": ["warlock"],
-    "tags": ["artifact:mainhand"],
+    "tags": ["artifact:mainhand", "artifact:m32-mainhand"],
     "bonuses": ["m32-omen-of-doom-legendary"]
   },
   {
@@ -4486,7 +4486,7 @@
     "combined_rating": 4320,
     "gameIds": ["Primary_M32_Warlock_All_R5"],
     "allowedClass": ["warlock"],
-    "tags": ["artifact:mainhand"],
+    "tags": ["artifact:mainhand", "artifact:m32-mainhand"],
     "bonuses": ["m32-omen-of-doom-mythic"]
   },
   {
@@ -4535,7 +4535,7 @@
     "combined_rating": 4005,
     "gameIds": ["Secondary_M32_Cleric_All_R4"],
     "allowedClass": ["cleric"],
-    "tags": ["artifact:offhand"],
+    "tags": ["artifact:offhand", "artifact:m32-offhand"],
     "bonuses": ["m32-cleric-s-impending-doom-legendary"]
   },
   {
@@ -4548,7 +4548,7 @@
     "forte": 2362,
     "combined_rating": 4725,
     "allowedClass": ["cleric"],
-    "tags": ["artifact:offhand"],
+    "tags": ["artifact:offhand", "artifact:m32-offhand"],
     "bonuses": ["m32-cleric-s-impending-doom-celestial"]
   },
   {
@@ -4562,7 +4562,7 @@
     "base_damage_flat": 200,
     "combined_rating": 4725,
     "allowedClass": ["cleric"],
-    "tags": ["artifact:mainhand"],
+    "tags": ["artifact:mainhand", "artifact:m32-mainhand"],
     "bonuses": ["m32-cleric-s-impending-doom-celestial"]
   },
   {
@@ -4577,7 +4577,7 @@
     "combined_rating": 4005,
     "gameIds": ["Primary_M32_Cleric_All_R4"],
     "allowedClass": ["cleric"],
-    "tags": ["artifact:mainhand"],
+    "tags": ["artifact:mainhand", "artifact:m32-mainhand"],
     "bonuses": ["m32-cleric-s-impending-doom-legendary"]
   },
   {
@@ -4592,7 +4592,7 @@
     "combined_rating": 4320,
     "gameIds": ["Primary_M32_Cleric_All_R5"],
     "allowedClass": ["cleric"],
-    "tags": ["artifact:mainhand"],
+    "tags": ["artifact:mainhand", "artifact:m32-mainhand"],
     "bonuses": ["m32-cleric-s-impending-doom-mythic"]
   },
   {
@@ -4952,7 +4952,7 @@
     "combined_rating": 4320,
     "gameIds": ["Secondary_M32_Cleric_All_R5"],
     "allowedClass": ["cleric"],
-    "tags": ["artifact:offhand"],
+    "tags": ["artifact:offhand", "artifact:m32-offhand"],
     "bonuses": ["m32-cleric-s-impending-doom-mythic"]
   },
   {
@@ -5004,7 +5004,7 @@
     "combined_rating": 5220,
     "gameIds": ["Secondary_M33_Bard_S-tier"],
     "allowedClass": ["bard"],
-    "tags": ["artifact:offhand"],
+    "tags": ["artifact:offhand", "artifact:m32-offhand"],
     "bonuses": ["m33-chilling-flow-mythic"]
   },
   {
@@ -5068,7 +5068,7 @@
     "combined_rating": 5220,
     "gameIds": ["Primary_M33_Devoted_S-tier"],
     "allowedClass": ["cleric"],
-    "tags": ["artifact:mainhand"],
+    "tags": ["artifact:mainhand", "artifact:m32-mainhand"],
     "bonuses": ["m33-chilling-flow-mythic"]
   },
   {
@@ -5082,7 +5082,7 @@
     "combined_rating": 5220,
     "gameIds": ["Secondary_M33_Devoted_S-tier"],
     "allowedClass": ["cleric"],
-    "tags": ["artifact:offhand"],
+    "tags": ["artifact:offhand", "artifact:m32-offhand"],
     "bonuses": ["m33-chilling-flow-mythic"]
   },
   {
@@ -5097,7 +5097,7 @@
     "combined_rating": 5220,
     "gameIds": ["Primary_M33_Bard_S-tier"],
     "allowedClass": ["bard"],
-    "tags": ["artifact:mainhand"],
+    "tags": ["artifact:mainhand", "artifact:m32-mainhand"],
     "bonuses": ["m33-chilling-flow-mythic"]
   },
   {
@@ -5138,6 +5138,132 @@
     "bonuses": ["m33-tactical-reserves"]
   },
   {
+    "id": "m34-armor-critical-severity-900-to-5400",
+    "name": "Critical Severity (M34+, 900 to 5400)",
+    "filter": "modification_armor",
+    "dynamicStats": [
+      {
+        "stat": "severity",
+        "min": 900,
+        "max": 5400,
+        "default": 900
+      }
+    ],
+    "bonuses": ["m34-artifact-armor-modification-validation"]
+  },
+  {
+    "id": "m34-armor-defense-600-to-3200",
+    "name": "Defense (M34+, 600 to 3200)",
+    "filter": "modification_armor",
+    "dynamicStats": [
+      {
+        "stat": "defense",
+        "min": 600,
+        "max": 3200,
+        "default": 600
+      }
+    ],
+    "bonuses": ["m34-artifact-armor-modification-validation"]
+  },
+  {
+    "id": "m34-armor-forte-700-to-4100",
+    "name": "Forte (M34+, 700 to 4100)",
+    "filter": "modification_armor",
+    "dynamicStats": [
+      {
+        "stat": "forte",
+        "min": 700,
+        "max": 4100,
+        "default": 700
+      }
+    ],
+    "bonuses": ["m34-artifact-armor-modification-validation"]
+  },
+  {
+    "id": "m34-armor-health-4100-to-24200",
+    "name": "Health (M34+, 4100 to 24200)",
+    "filter": "modification_armor",
+    "dynamicStats": [
+      {
+        "stat": "hit_points",
+        "min": 4100,
+        "max": 24200,
+        "default": 4100
+      }
+    ],
+    "bonuses": ["m34-artifact-armor-modification-validation"]
+  },
+  {
+    "id": "m34-armor-incoming-healing-1000-to-4400",
+    "name": "Incoming Healing (M34+, 1000 to 4400)",
+    "filter": "modification_armor",
+    "dynamicStats": [
+      {
+        "stat": "inc_healing",
+        "min": 1000,
+        "max": 4400,
+        "default": 1000
+      }
+    ],
+    "bonuses": ["m34-artifact-armor-modification-validation"]
+  },
+  {
+    "id": "m34-armor-outgoing-healing-700-to-3700",
+    "name": "Outgoing Healing (M34+, 700 to 3700)",
+    "filter": "modification_armor",
+    "dynamicStats": [
+      {
+        "stat": "out_healing",
+        "min": 700,
+        "max": 3700,
+        "default": 700
+      }
+    ],
+    "bonuses": ["m34-artifact-armor-modification-validation"]
+  },
+  {
+    "id": "m34-arms-control-bonus-800-to-4500",
+    "name": "Control Bonus (M34+, 800 to 4500)",
+    "filter": "modification_arms",
+    "dynamicStats": [
+      {
+        "stat": "control_bonus",
+        "min": 800,
+        "max": 4500,
+        "default": 800
+      }
+    ],
+    "bonuses": ["m34-artifact-arms-modification-validation"]
+  },
+  {
+    "id": "m34-arms-deflect-severity-1200-to-6800",
+    "name": "Deflect Severity (M34+, 1200 to 6800)",
+    "filter": "modification_arms",
+    "dynamicStats": [
+      {
+        "stat": "deflect_sev",
+        "min": 1200,
+        "max": 6800,
+        "default": 1200
+      }
+    ],
+    "bonuses": ["m34-artifact-arms-modification-validation"]
+  },
+  {
+    "id": "m34-arms-health-2050-to-12550",
+    "name": "Health (M34+, 2050 to 12550)",
+    "filter": "modification_arms",
+    "dynamicStats": [
+      {
+        "stat": "hit_points",
+        "min": 2050,
+        "max": 12550,
+        "default": 2050
+      }
+    ],
+    "bonuses": ["m34-artifact-arms-modification-validation"]
+  },
+  {
     "id": "m34-ashen-bindings-of-the-devourer-2",
     "name": "M34 Ashen Bindings of the Devourer +2",
     "filter": "gear_arms",
@@ -5147,6 +5273,7 @@
     "combined_rating": 6075,
     "shortDescription": "Max Divinity / Soulweave / Performance +26%",
     "allowedClass": ["bard", "cleric"],
+    "tags": ["artifact:arms", "artifact:m34-arms"],
     "bonuses": [
       "m34-ashen-bindings-of-the-devourer-2",
       "m34-dps-celestial-ashen-vestments"
@@ -5162,6 +5289,7 @@
     "combined_rating": 5445,
     "gameIds": ["Feet_M34_Lightdps_R4"],
     "allowedClass": ["warlock", "wizard"],
+    "tags": ["artifact:boots", "artifact:m34-boots"],
     "bonuses": [
       "m34-ashen-boots-of-the-devourer",
       "m34-dps-legendary-ashen-vestments"
@@ -5177,6 +5305,7 @@
     "combined_rating": 5760,
     "gameIds": ["Feet_M34_Lightdps_R5"],
     "allowedClass": ["warlock", "wizard"],
+    "tags": ["artifact:boots", "artifact:m34-boots"],
     "bonuses": [
       "m34-ashen-boots-of-the-devourer-1",
       "m34-dps-mythic-ashen-vestments"
@@ -5192,6 +5321,7 @@
     "combined_rating": 6075,
     "gameIds": ["Feet_M34_Lightdps_R6"],
     "allowedClass": ["warlock", "wizard"],
+    "tags": ["artifact:boots", "artifact:m34-boots"],
     "bonuses": [
       "m34-ashen-boots-of-the-devourer-2",
       "m34-dps-celestial-ashen-vestments"
@@ -5208,6 +5338,7 @@
     "gameIds": ["Arms_M34_Mediumheal_R6"],
     "shortDescription": "Max Divinity / Soulweave / Performance +26%",
     "allowedClass": ["bard", "warlock"],
+    "tags": ["artifact:arms", "artifact:m34-arms"],
     "bonuses": [
       "m34-ashen-bracers-of-the-devourer-2",
       "m34-healer-celestial-ashen-vestments"
@@ -5222,6 +5353,7 @@
     "acc": 6581,
     "combined_rating": 6075,
     "allowedClass": ["ranger", "rogue"],
+    "tags": ["artifact:head", "artifact:m34-head"],
     "bonuses": [
       "m34-ashen-cap-of-the-devourer-2",
       "m34-dps-celestial-ashen-vestments"
@@ -5237,6 +5369,7 @@
     "combined_rating": 6075,
     "gameIds": ["Head_M34_Mediumheal_R6"],
     "allowedClass": ["bard", "warlock"],
+    "tags": ["artifact:head", "artifact:m34-head"],
     "bonuses": [
       "m34-ashen-coif-of-the-devourer-2",
       "m34-healer-celestial-ashen-vestments"
@@ -5251,6 +5384,7 @@
     "acc": 6581,
     "combined_rating": 6075,
     "allowedClass": ["bard", "cleric"],
+    "tags": ["artifact:head", "artifact:m34-head"],
     "bonuses": [
       "m34-ashen-cowl-of-the-devourer-2",
       "m34-dps-celestial-ashen-vestments"
@@ -5266,6 +5400,7 @@
     "combined_rating": 6075,
     "gameIds": ["Head_M34_Heavydps_R6"],
     "allowedClass": ["barbarian", "fighter"],
+    "tags": ["artifact:head", "artifact:m34-head"],
     "bonuses": [
       "m34-ashen-crown-of-the-devourer-2",
       "m34-dps-celestial-ashen-vestments"
@@ -5281,6 +5416,7 @@
     "combined_rating": 6075,
     "gameIds": ["Body_M34_Heavydps_R6"],
     "allowedClass": ["barbarian", "fighter"],
+    "tags": ["artifact:armor", "artifact:m34-armor"],
     "bonuses": [
       "m34-ashen-cuirass-of-the-devourer-2",
       "m34-dps-celestial-ashen-vestments"
@@ -5296,6 +5432,7 @@
     "combined_rating": 5445,
     "gameIds": ["Head_M34_Lightdps_R4"],
     "allowedClass": ["warlock", "wizard"],
+    "tags": ["artifact:head", "artifact:m34-head"],
     "bonuses": [
       "m34-ashen-hood-of-the-devourer",
       "m34-dps-legendary-ashen-vestments"
@@ -5311,6 +5448,7 @@
     "combined_rating": 5760,
     "gameIds": ["Head_M34_Lightdps_R5"],
     "allowedClass": ["warlock", "wizard"],
+    "tags": ["artifact:head", "artifact:m34-head"],
     "bonuses": [
       "m34-ashen-hood-of-the-devourer-1",
       "m34-dps-mythic-ashen-vestments"
@@ -5326,6 +5464,7 @@
     "combined_rating": 6075,
     "gameIds": ["Head_M34_Lightdps_R6"],
     "allowedClass": ["warlock", "wizard"],
+    "tags": ["artifact:head", "artifact:m34-head"],
     "bonuses": [
       "m34-ashen-hood-of-the-devourer-2",
       "m34-dps-celestial-ashen-vestments"
@@ -5340,6 +5479,7 @@
     "ca": 4050,
     "combined_rating": 6075,
     "allowedClass": ["bard", "cleric", "ranger", "rogue"],
+    "tags": ["artifact:armor", "artifact:m34-armor"],
     "bonuses": [
       "m34-ashen-jerkin-of-the-devourer-2",
       "m34-dps-celestial-ashen-vestments"
@@ -5355,6 +5495,7 @@
     "combined_rating": 5445,
     "gameIds": ["Body_M34_Lightdps_R4"],
     "allowedClass": ["warlock", "wizard"],
+    "tags": ["artifact:armor", "artifact:m34-armor"],
     "bonuses": [
       "m34-ashen-robes-of-the-devourer",
       "m34-dps-legendary-ashen-vestments"
@@ -5370,6 +5511,7 @@
     "combined_rating": 5760,
     "gameIds": ["Body_M34_Lightdps_R5"],
     "allowedClass": ["warlock", "wizard"],
+    "tags": ["artifact:armor", "artifact:m34-armor"],
     "bonuses": [
       "m34-ashen-robes-of-the-devourer-1",
       "m34-dps-mythic-ashen-vestments"
@@ -5385,6 +5527,7 @@
     "combined_rating": 6075,
     "gameIds": ["Body_M34_Lightdps_R6"],
     "allowedClass": ["warlock", "wizard"],
+    "tags": ["artifact:armor", "artifact:m34-armor"],
     "bonuses": [
       "m34-ashen-robes-of-the-devourer-2",
       "m34-dps-celestial-ashen-vestments"
@@ -5400,6 +5543,7 @@
     "combined_rating": 6075,
     "gameIds": ["Feet_M34_Mediumheal_R6"],
     "allowedClass": ["bard", "warlock"],
+    "tags": ["artifact:boots", "artifact:m34-boots"],
     "bonuses": [
       "m34-ashen-shoes-of-the-devourer-2",
       "m34-healer-celestial-ashen-vestments"
@@ -5416,6 +5560,7 @@
     "combined_rating": 5445,
     "gameIds": ["Arms_M34_Lightdps_R4"],
     "allowedClass": ["warlock", "wizard"],
+    "tags": ["artifact:arms", "artifact:m34-arms"],
     "bonuses": [
       "m34-ashen-sleeves-of-the-devourer",
       "m34-dps-legendary-ashen-vestments"
@@ -5432,6 +5577,7 @@
     "combined_rating": 5760,
     "gameIds": ["Arms_M34_Lightdps_R5"],
     "allowedClass": ["warlock", "wizard"],
+    "tags": ["artifact:arms", "artifact:m34-arms"],
     "bonuses": [
       "m34-ashen-sleeves-of-the-devourer-1",
       "m34-dps-mythic-ashen-vestments"
@@ -5448,6 +5594,7 @@
     "combined_rating": 6075,
     "gameIds": ["Arms_M34_Lightdps_R6"],
     "allowedClass": ["warlock", "wizard"],
+    "tags": ["artifact:arms", "artifact:m34-arms"],
     "bonuses": [
       "m34-ashen-sleeves-of-the-devourer-2",
       "m34-dps-celestial-ashen-vestments"
@@ -5462,6 +5609,7 @@
     "severity": 6075,
     "combined_rating": 6075,
     "allowedClass": ["bard", "cleric", "ranger", "rogue"],
+    "tags": ["artifact:boots", "artifact:m34-boots"],
     "bonuses": [
       "m34-ashen-striders-of-the-devourer-2",
       "m34-dps-celestial-ashen-vestments"
@@ -5477,6 +5625,7 @@
     "recharge": 0.017,
     "combined_rating": 6075,
     "allowedClass": ["ranger", "rogue"],
+    "tags": ["artifact:arms", "artifact:m34-arms"],
     "bonuses": [
       "m34-ashen-swiftguards-of-the-devourer-2",
       "m34-dps-celestial-ashen-vestments"
@@ -5492,6 +5641,7 @@
     "combined_rating": 6075,
     "gameIds": ["Body_M34_Mediumheal_R6"],
     "allowedClass": ["bard", "warlock"],
+    "tags": ["artifact:armor", "artifact:m34-armor"],
     "bonuses": [
       "m34-ashen-tunic-of-the-devourer-2",
       "m34-healer-celestial-ashen-vestments"
@@ -5508,6 +5658,7 @@
     "combined_rating": 6075,
     "gameIds": ["Arms_M34_Heavydps_R6"],
     "allowedClass": ["barbarian", "fighter"],
+    "tags": ["artifact:arms", "artifact:m34-arms"],
     "bonuses": [
       "m34-ashen-vambraces-of-the-devourer-2",
       "m34-dps-celestial-ashen-vestments"
@@ -5523,10 +5674,138 @@
     "combined_rating": 6075,
     "gameIds": ["Feet_M34_Heavydps_R6"],
     "allowedClass": ["barbarian", "fighter"],
+    "tags": ["artifact:boots", "artifact:m34-boots"],
     "bonuses": [
       "m34-ashen-warboots-of-the-devourer-2",
       "m34-dps-celestial-ashen-vestments"
     ]
+  },
+  {
+    "id": "m34-boots-control-resist-800-to-4500",
+    "name": "Control Resist (M34+, 800 to 4500)",
+    "filter": "modification_boots",
+    "dynamicStats": [
+      {
+        "stat": "control_resist",
+        "min": 800,
+        "max": 4500,
+        "default": 800
+      }
+    ],
+    "bonuses": ["m34-artifact-boots-modification-validation"]
+  },
+  {
+    "id": "m34-boots-deflect-severity-1200-to-6800",
+    "name": "Deflect Severity (M34+, 1200 to 6800)",
+    "filter": "modification_boots",
+    "dynamicStats": [
+      {
+        "stat": "deflect_sev",
+        "min": 1200,
+        "max": 6800,
+        "default": 1200
+      }
+    ],
+    "bonuses": ["m34-artifact-boots-modification-validation"]
+  },
+  {
+    "id": "m34-boots-movement-speed-25-to-125",
+    "name": "Movement Speed (M34+, 25 to 125 points)",
+    "filter": "modification_boots",
+    "dynamicStats": [
+      {
+        "stat": "movement",
+        "min": 0.0025,
+        "max": 0.0125,
+        "default": 0.0025,
+        "label": "Movement Speed (100 points = 1%)"
+      }
+    ],
+    "bonuses": ["m34-artifact-boots-modification-validation"]
+  },
+  {
+    "id": "m34-head-accuracy-1000-to-5800",
+    "name": "Accuracy (M34+, 1000 to 5800)",
+    "filter": "modification_head",
+    "dynamicStats": [
+      {
+        "stat": "acc",
+        "min": 1000,
+        "max": 5800,
+        "default": 1000
+      }
+    ],
+    "bonuses": ["m34-artifact-head-modification-validation"]
+  },
+  {
+    "id": "m34-head-awareness-600-to-3600",
+    "name": "Awareness (M34+, 600 to 3600)",
+    "filter": "modification_head",
+    "dynamicStats": [
+      {
+        "stat": "awareness",
+        "min": 600,
+        "max": 3600,
+        "default": 600
+      }
+    ],
+    "bonuses": ["m34-artifact-head-modification-validation"]
+  },
+  {
+    "id": "m34-head-combat-advantage-600-to-3600",
+    "name": "Combat Advantage (M34+, 600 to 3600)",
+    "filter": "modification_head",
+    "dynamicStats": [
+      {
+        "stat": "ca",
+        "min": 600,
+        "max": 3600,
+        "default": 600
+      }
+    ],
+    "bonuses": ["m34-artifact-head-modification-validation"]
+  },
+  {
+    "id": "m34-head-critical-avoidance-900-to-5000",
+    "name": "Critical Avoidance (M34+, 900 to 5000)",
+    "filter": "modification_head",
+    "dynamicStats": [
+      {
+        "stat": "crit_avoid",
+        "min": 900,
+        "max": 5000,
+        "default": 900
+      }
+    ],
+    "bonuses": ["m34-artifact-head-modification-validation"]
+  },
+  {
+    "id": "m34-head-critical-strike-900-to-5400",
+    "name": "Critical Strike (M34+, 900 to 5400)",
+    "filter": "modification_head",
+    "dynamicStats": [
+      {
+        "stat": "strike",
+        "min": 900,
+        "max": 5400,
+        "default": 900
+      }
+    ],
+    "bonuses": ["m34-artifact-head-modification-validation"]
+  },
+  {
+    "id": "m34-head-power-600-to-3200",
+    "name": "Power (M34+, 600 to 3200)",
+    "filter": "modification_head",
+    "dynamicStats": [
+      {
+        "stat": "power",
+        "min": 600,
+        "max": 3200,
+        "default": 600
+      }
+    ],
+    "bonuses": ["m34-artifact-head-modification-validation"]
   },
   {
     "id": "maestro-s-observation",
