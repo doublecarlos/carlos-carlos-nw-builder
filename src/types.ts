@@ -211,8 +211,8 @@ export interface ItemPickerSlot {
    *  state are cleared (slot-availability.ts). Cannot be combined with `default`. */
   availableWhen?: ConditionWhen;
   /** Another `item_picker` in the same section this slot belongs to, like a weapon's mod. The
-   *  slot renders nested right after it, and is unavailable while the parent is. One level
-   *  deep: a parent cannot have a parent of its own. */
+   *  slot renders nested right after it, and is unavailable while the parent is unavailable or
+   *  empty. One level deep: a parent cannot have a parent of its own. */
   parent?: string;
 }
 

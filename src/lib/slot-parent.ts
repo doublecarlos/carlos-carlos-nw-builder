@@ -1,5 +1,5 @@
 // Nested slots. An `item_picker` naming a `parent` renders right after that slot, indented
-// under it, and is unavailable while the parent is.
+// under it, and is unavailable while the parent is unavailable or empty.
 import type { Slot } from "../types";
 
 /** The id a slot names as its `parent`, or undefined for a top-level one. */

@@ -287,6 +287,51 @@ describe("pruneUnavailableSlots: nested slots", () => {
   });
 });
 
+describe("pruneUnavailableSlots: children of an unconditional parent", () => {
+  /** Nested under the weapon, which has no condition of its own. */
+  const kitSlot: ItemPickerSlot = {
+    id: "gear.kit",
+    label: "Kit",
+    section: "gear",
+    type: "item_picker",
+    filter: "gems",
+    parent: "gear.weapon",
+  };
+  const kitDb = db.build(items, bonuses, schema, {
+    sections: [{ id: "gear", label: "Gear", slotIds: [] }],
+    slots: [weaponSlot, kitSlot],
+    presets: [],
+  });
+  const kitBuild = (choices: Build["choices"]) =>
+    filledBuild({ choices, values: {} });
+
+  it("keeps the child while the parent holds a pick", () => {
+    const { build, cleared, hidden } = pruneUnavailableSlots(
+      kitDb,
+      kitBuild({ "gear.weapon": "stick", "gear.kit": "gem" }),
+    );
+    expect(hidden.size).toBe(0);
+    expect(cleared).toEqual([]);
+    expect(build.choices["gear.kit"]).toBe("gem");
+  });
+
+  it("hides and empties the child while the parent is empty", () => {
+    const { build, cleared, hidden } = pruneUnavailableSlots(
+      kitDb,
+      kitBuild({ "gear.kit": "gem" }),
+    );
+    expect([...hidden]).toEqual(["gear.kit"]);
+    expect(cleared).toEqual(["gear.kit"]);
+    expect(build.choices["gear.kit"]).toBeUndefined();
+  });
+
+  it("hides an empty child without reporting it cleared", () => {
+    const { cleared, hidden } = pruneUnavailableSlots(kitDb, kitBuild({}));
+    expect([...hidden]).toEqual(["gear.kit"]);
+    expect(cleared).toEqual([]);
+  });
+});
+
 describe("clearSlotContents", () => {
   it("empties every row of a list in place", () => {
     const build = filledBuild();

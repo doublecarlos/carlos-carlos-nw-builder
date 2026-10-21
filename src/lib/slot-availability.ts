@@ -1,6 +1,7 @@
-// Conditional slots. A slot carrying `availableWhen` exists only while its condition holds; one
-// that fails it is hidden and holds nothing, in storage and in the engine. What the build
-// stores is what the editor shows.
+// Conditional slots. A slot carrying `availableWhen` exists only while its condition holds, and
+// a nested slot only while its parent is available and holds a pick. One that fails is hidden
+// and holds nothing, in storage and in the engine. What the build stores is what the editor
+// shows.
 //
 // The condition reads the build's stored picks, never the resolved results, so a slot's
 // visibility cannot depend on what the engine made of it.
@@ -122,41 +123,45 @@ export interface PruneResult {
 
 const NOTHING_HIDDEN: ReadonlySet<string> = new Set();
 
-/** The conditional parent a nested slot also depends on, or undefined. */
-function conditionalParent(db: Db, slot: Slot): Slot | undefined {
+/** The parent a nested slot depends on, or undefined for a top-level one. */
+function parentSlot(db: Db, slot: Slot): Slot | undefined {
   const parentId = nestedParentId(slot, db.slotById);
-  const parent = parentId ? db.slotById.get(parentId) : undefined;
-  return parent && availabilityOf(parent) ? parent : undefined;
+  return parentId ? db.slotById.get(parentId) : undefined;
 }
 
 /**
- * Empties every slot whose `availableWhen` fails, or whose parent's does. Pure: `build` is
- * never written.
+ * Empties every slot whose `availableWhen` fails, or whose parent is hidden or empty. Pure:
+ * `build` is never written.
  *
  * Repeats until a pass clears nothing, since emptying one slot can hide another. Each pass
  * only removes values, so a slot is cleared at most once and the loop always ends.
  */
 export function pruneUnavailableSlots(db: Db, build: Build): PruneResult {
   const conditional = db.slots.filter(
-    (slot) => availabilityOf(slot) || conditionalParent(db, slot),
+    (slot) => availabilityOf(slot) || parentSlot(db, slot),
   );
   if (!conditional.length)
     return { build, cleared: [], hidden: NOTHING_HIDDEN };
+  const gated = conditional.filter((slot) => availabilityOf(slot));
 
   let current = build;
   const cleared: string[] = [];
   for (;;) {
-    const ctx = availabilityContext(db, current);
+    const ctx = gated.length ? availabilityContext(db, current) : undefined;
     const failing = new Set(
-      conditional
-        .filter((slot) => !slotAvailable(slot, ctx))
-        .map((slot) => slot.id),
+      ctx
+        ? gated
+            .filter((slot) => !slotAvailable(slot, ctx))
+            .map((slot) => slot.id)
+        : [],
     );
-    const hidden = conditional.filter(
-      (slot) =>
-        failing.has(slot.id) ||
-        failing.has(conditionalParent(db, slot)?.id ?? ""),
-    );
+    const hidden = conditional.filter((slot) => {
+      if (failing.has(slot.id)) return true;
+      const parent = parentSlot(db, slot);
+      return (
+        !!parent && (failing.has(parent.id) || !current.choices?.[parent.id])
+      );
+    });
     const emptied = hidden.filter((slot) => holdsAnything(current, slot));
     if (!emptied.length)
       return {

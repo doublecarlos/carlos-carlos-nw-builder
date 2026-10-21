@@ -1,6 +1,6 @@
 // End-to-end coverage for nested slots (`parent`): a nested row renders right after its parent
-// with an indent guide, keeps its parent on screen while filtering, and can be authored in the
-// slot form. Driven through the shipped weapon mod slots.
+// with an indent guide, only while the parent holds a pick, keeps its parent on screen while
+// filtering, and can be authored in the slot form. Driven through the shipped gear slots.
 import { test, expect, type Page } from "@playwright/test";
 import {
   openBuilder,
@@ -48,6 +48,18 @@ test("a weapon mod renders nested right after its weapon", async ({ page }) => {
   ).toHaveCount(0);
 });
 
+test("a reinforcement shows only while its gear piece is picked", async ({
+  page,
+}) => {
+  await openBuilder(page);
+  await chooseClass(page, "warlock");
+  await ensureSectionExpanded(page, "gear");
+  await expect(slotRow(page, "reinforcements.armorKit1")).toHaveCount(0);
+
+  await chooseItem(page, "gear.head", "M34 Ashen Coif of the Devourer +2");
+  await expect(slotRow(page, "reinforcements.armorKit1")).toBeVisible();
+});
+
 test("filtering to a nested slot keeps its parent as context", async ({
   page,
 }) => {
@@ -85,6 +97,7 @@ test("nesting a slot in the slot form moves it under its parent", async ({
     .locator(".nav-name")
     .click();
   await ensureSectionExpanded(page, "gear");
+  await chooseItem(page, "gear.shirt", "M31 Bloodwoven Ink");
 
   const ids = await gearRowIds(page);
   expect(ids.indexOf("gear.pants")).toBe(ids.indexOf("gear.shirt") + 1);

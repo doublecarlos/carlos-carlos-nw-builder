@@ -18,6 +18,7 @@ import {
 // Unique across the whole item table (grep-checked) and allowed for the default "warlock"
 // class, so it always shows up in the Head slot's own filtered picker list.
 const HEAD_ITEM = "M29 Enchanted Depthweave Cap";
+const BOOTS_ITEM = "M31 Greaves of the Crimson March";
 
 test.describe("choosing and clearing an item", () => {
   test("choosing an item fills the slot and updates the section's filled count", async ({
@@ -35,7 +36,10 @@ test.describe("choosing and clearing an item", () => {
     await expect(pickerInput(slotRow(page, "gear.head"))).toHaveValue(
       HEAD_ITEM,
     );
-    await expect(header.locator(".section-count")).toHaveText(`1/${total}`);
+    // Picking the head also reveals its reinforcement slot.
+    await expect(header.locator(".section-count")).toHaveText(
+      `1/${Number(total) + 1}`,
+    );
   });
 
   test('clearing a slot via the picker\'s "empty" option removes the item', async ({
@@ -523,6 +527,7 @@ test.describe("separator slots", () => {
     page,
   }) => {
     await openBuilder(page);
+    await chooseItem(page, "gear.boots", BOOTS_ITEM);
     await parkCursorOnRow(page, "reinforcements.armorKit4");
     await expect(cursorRow(page)).toHaveAttribute(
       "data-cursor-key",
@@ -540,6 +545,7 @@ test.describe("separator slots", () => {
     page,
   }) => {
     await openBuilder(page);
+    await chooseItem(page, "gear.boots", BOOTS_ITEM);
     // The Boots reinforcement sits right above the separator: its own border is suppressed so
     // it doesn't double up against the separator's bar. Neck has no separator after it and
     // keeps its own.
