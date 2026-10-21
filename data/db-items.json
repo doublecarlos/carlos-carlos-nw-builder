@@ -5138,6 +5138,397 @@
     "bonuses": ["m33-tactical-reserves"]
   },
   {
+    "id": "m34-ashen-bindings-of-the-devourer-2",
+    "name": "M34 Ashen Bindings of the Devourer +2",
+    "filter": "gear_arms",
+    "il": 6750,
+    "acc": 6581,
+    "severity": 6075,
+    "combined_rating": 6075,
+    "shortDescription": "Max Divinity / Soulweave / Performance +26%",
+    "allowedClass": ["bard", "cleric"],
+    "bonuses": [
+      "m34-ashen-bindings-of-the-devourer-2",
+      "m34-dps-celestial-ashen-vestments"
+    ]
+  },
+  {
+    "id": "m34-ashen-boots-of-the-devourer",
+    "name": "M34 Ashen Boots of the Devourer",
+    "filter": "gear_boots",
+    "il": 6050,
+    "strike": 5445,
+    "severity": 5445,
+    "combined_rating": 5445,
+    "gameIds": ["Feet_M34_Lightdps_R4"],
+    "allowedClass": ["warlock", "wizard"],
+    "bonuses": [
+      "m34-ashen-boots-of-the-devourer",
+      "m34-dps-legendary-ashen-vestments"
+    ]
+  },
+  {
+    "id": "m34-ashen-boots-of-the-devourer-1",
+    "name": "M34 Ashen Boots of the Devourer +1",
+    "filter": "gear_boots",
+    "il": 6400,
+    "strike": 5760,
+    "severity": 5760,
+    "combined_rating": 5760,
+    "gameIds": ["Feet_M34_Lightdps_R5"],
+    "allowedClass": ["warlock", "wizard"],
+    "bonuses": [
+      "m34-ashen-boots-of-the-devourer-1",
+      "m34-dps-mythic-ashen-vestments"
+    ]
+  },
+  {
+    "id": "m34-ashen-boots-of-the-devourer-2",
+    "name": "M34 Ashen Boots of the Devourer +2",
+    "filter": "gear_boots",
+    "il": 6750,
+    "strike": 6075,
+    "severity": 6075,
+    "combined_rating": 6075,
+    "gameIds": ["Feet_M34_Lightdps_R6"],
+    "allowedClass": ["warlock", "wizard"],
+    "bonuses": [
+      "m34-ashen-boots-of-the-devourer-2",
+      "m34-dps-celestial-ashen-vestments"
+    ]
+  },
+  {
+    "id": "m34-ashen-bracers-of-the-devourer-2",
+    "name": "M34 Ashen Bracers of the Devourer +2",
+    "filter": "gear_arms",
+    "il": 6750,
+    "severity": 6075,
+    "out_healing": 4050,
+    "combined_rating": 6075,
+    "gameIds": ["Arms_M34_Mediumheal_R6"],
+    "shortDescription": "Max Divinity / Soulweave / Performance +26%",
+    "allowedClass": ["bard", "warlock"],
+    "bonuses": [
+      "m34-ashen-bracers-of-the-devourer-2",
+      "m34-healer-celestial-ashen-vestments"
+    ]
+  },
+  {
+    "id": "m34-ashen-cap-of-the-devourer-2",
+    "name": "M34 Ashen Cap of the Devourer +2",
+    "filter": "gear_head",
+    "il": 6750,
+    "power": 3544,
+    "acc": 6581,
+    "combined_rating": 6075,
+    "allowedClass": ["ranger", "rogue"],
+    "bonuses": [
+      "m34-ashen-cap-of-the-devourer-2",
+      "m34-dps-celestial-ashen-vestments"
+    ]
+  },
+  {
+    "id": "m34-ashen-coif-of-the-devourer-2",
+    "name": "M34 Ashen Coif of the Devourer +2",
+    "filter": "gear_head",
+    "il": 6750,
+    "power": 3544,
+    "out_healing": 4050,
+    "combined_rating": 6075,
+    "gameIds": ["Head_M34_Mediumheal_R6"],
+    "allowedClass": ["bard", "warlock"],
+    "bonuses": [
+      "m34-ashen-coif-of-the-devourer-2",
+      "m34-healer-celestial-ashen-vestments"
+    ]
+  },
+  {
+    "id": "m34-ashen-cowl-of-the-devourer-2",
+    "name": "M34 Ashen Cowl of the Devourer +2",
+    "filter": "gear_head",
+    "il": 6750,
+    "power": 3544,
+    "acc": 6581,
+    "combined_rating": 6075,
+    "allowedClass": ["bard", "cleric"],
+    "bonuses": [
+      "m34-ashen-cowl-of-the-devourer-2",
+      "m34-dps-celestial-ashen-vestments"
+    ]
+  },
+  {
+    "id": "m34-ashen-crown-of-the-devourer-2",
+    "name": "M34 Ashen Crown of the Devourer +2",
+    "filter": "gear_head",
+    "il": 6750,
+    "power": 3544,
+    "acc": 6581,
+    "combined_rating": 6075,
+    "gameIds": ["Head_M34_Heavydps_R6"],
+    "allowedClass": ["barbarian", "fighter"],
+    "bonuses": [
+      "m34-ashen-crown-of-the-devourer-2",
+      "m34-dps-celestial-ashen-vestments"
+    ]
+  },
+  {
+    "id": "m34-ashen-cuirass-of-the-devourer-2",
+    "name": "M34 Ashen Cuirass of the Devourer +2",
+    "filter": "gear_armor",
+    "il": 6750,
+    "ca": 4050,
+    "defense": 3544,
+    "combined_rating": 6075,
+    "gameIds": ["Body_M34_Heavydps_R6"],
+    "allowedClass": ["barbarian", "fighter"],
+    "bonuses": [
+      "m34-ashen-cuirass-of-the-devourer-2",
+      "m34-dps-celestial-ashen-vestments"
+    ]
+  },
+  {
+    "id": "m34-ashen-hood-of-the-devourer",
+    "name": "M34 Ashen Hood of the Devourer",
+    "filter": "gear_head",
+    "il": 6050,
+    "power": 3176,
+    "acc": 5899,
+    "combined_rating": 5445,
+    "gameIds": ["Head_M34_Lightdps_R4"],
+    "allowedClass": ["warlock", "wizard"],
+    "bonuses": [
+      "m34-ashen-hood-of-the-devourer",
+      "m34-dps-legendary-ashen-vestments"
+    ]
+  },
+  {
+    "id": "m34-ashen-hood-of-the-devourer-1",
+    "name": "M34 Ashen Hood of the Devourer +1",
+    "filter": "gear_head",
+    "il": 6400,
+    "power": 3360,
+    "acc": 6240,
+    "combined_rating": 5760,
+    "gameIds": ["Head_M34_Lightdps_R5"],
+    "allowedClass": ["warlock", "wizard"],
+    "bonuses": [
+      "m34-ashen-hood-of-the-devourer-1",
+      "m34-dps-mythic-ashen-vestments"
+    ]
+  },
+  {
+    "id": "m34-ashen-hood-of-the-devourer-2",
+    "name": "M34 Ashen Hood of the Devourer +2",
+    "filter": "gear_head",
+    "il": 6750,
+    "power": 3544,
+    "acc": 6581,
+    "combined_rating": 6075,
+    "gameIds": ["Head_M34_Lightdps_R6"],
+    "allowedClass": ["warlock", "wizard"],
+    "bonuses": [
+      "m34-ashen-hood-of-the-devourer-2",
+      "m34-dps-celestial-ashen-vestments"
+    ]
+  },
+  {
+    "id": "m34-ashen-jerkin-of-the-devourer-2",
+    "name": "M34 Ashen Jerkin of the Devourer +2",
+    "filter": "gear_armor",
+    "il": 6750,
+    "power": 3544,
+    "ca": 4050,
+    "combined_rating": 6075,
+    "allowedClass": ["bard", "cleric", "ranger", "rogue"],
+    "bonuses": [
+      "m34-ashen-jerkin-of-the-devourer-2",
+      "m34-dps-celestial-ashen-vestments"
+    ]
+  },
+  {
+    "id": "m34-ashen-robes-of-the-devourer",
+    "name": "M34 Ashen Robes of the Devourer",
+    "filter": "gear_armor",
+    "il": 6050,
+    "power": 3176,
+    "ca": 3630,
+    "combined_rating": 5445,
+    "gameIds": ["Body_M34_Lightdps_R4"],
+    "allowedClass": ["warlock", "wizard"],
+    "bonuses": [
+      "m34-ashen-robes-of-the-devourer",
+      "m34-dps-legendary-ashen-vestments"
+    ]
+  },
+  {
+    "id": "m34-ashen-robes-of-the-devourer-1",
+    "name": "M34 Ashen Robes of the Devourer +1",
+    "filter": "gear_armor",
+    "il": 6400,
+    "power": 3360,
+    "ca": 3840,
+    "combined_rating": 5760,
+    "gameIds": ["Body_M34_Lightdps_R5"],
+    "allowedClass": ["warlock", "wizard"],
+    "bonuses": [
+      "m34-ashen-robes-of-the-devourer-1",
+      "m34-dps-mythic-ashen-vestments"
+    ]
+  },
+  {
+    "id": "m34-ashen-robes-of-the-devourer-2",
+    "name": "M34 Ashen Robes of the Devourer +2",
+    "filter": "gear_armor",
+    "il": 6750,
+    "power": 3544,
+    "ca": 4050,
+    "combined_rating": 6075,
+    "gameIds": ["Body_M34_Lightdps_R6"],
+    "allowedClass": ["warlock", "wizard"],
+    "bonuses": [
+      "m34-ashen-robes-of-the-devourer-2",
+      "m34-dps-celestial-ashen-vestments"
+    ]
+  },
+  {
+    "id": "m34-ashen-shoes-of-the-devourer-2",
+    "name": "M34 Ashen Shoes of the Devourer +2",
+    "filter": "gear_boots",
+    "il": 6750,
+    "strike": 6075,
+    "severity": 6075,
+    "combined_rating": 6075,
+    "gameIds": ["Feet_M34_Mediumheal_R6"],
+    "allowedClass": ["bard", "warlock"],
+    "bonuses": [
+      "m34-ashen-shoes-of-the-devourer-2",
+      "m34-healer-celestial-ashen-vestments"
+    ]
+  },
+  {
+    "id": "m34-ashen-sleeves-of-the-devourer",
+    "name": "M34 Ashen Sleeves of the Devourer",
+    "filter": "gear_arms",
+    "il": 6050,
+    "power": 3176,
+    "acc": 5899,
+    "recharge": 0.013,
+    "combined_rating": 5445,
+    "gameIds": ["Arms_M34_Lightdps_R4"],
+    "allowedClass": ["warlock", "wizard"],
+    "bonuses": [
+      "m34-ashen-sleeves-of-the-devourer",
+      "m34-dps-legendary-ashen-vestments"
+    ]
+  },
+  {
+    "id": "m34-ashen-sleeves-of-the-devourer-1",
+    "name": "M34 Ashen Sleeves of the Devourer +1",
+    "filter": "gear_arms",
+    "il": 6400,
+    "power": 3360,
+    "acc": 6240,
+    "recharge": 0.015,
+    "combined_rating": 5760,
+    "gameIds": ["Arms_M34_Lightdps_R5"],
+    "allowedClass": ["warlock", "wizard"],
+    "bonuses": [
+      "m34-ashen-sleeves-of-the-devourer-1",
+      "m34-dps-mythic-ashen-vestments"
+    ]
+  },
+  {
+    "id": "m34-ashen-sleeves-of-the-devourer-2",
+    "name": "M34 Ashen Sleeves of the Devourer +2",
+    "filter": "gear_arms",
+    "il": 6750,
+    "power": 3544,
+    "acc": 6581,
+    "recharge": 0.017,
+    "combined_rating": 6075,
+    "gameIds": ["Arms_M34_Lightdps_R6"],
+    "allowedClass": ["warlock", "wizard"],
+    "bonuses": [
+      "m34-ashen-sleeves-of-the-devourer-2",
+      "m34-dps-celestial-ashen-vestments"
+    ]
+  },
+  {
+    "id": "m34-ashen-striders-of-the-devourer-2",
+    "name": "M34 Ashen Striders of the Devourer +2",
+    "filter": "gear_boots",
+    "il": 6750,
+    "strike": 6075,
+    "severity": 6075,
+    "combined_rating": 6075,
+    "allowedClass": ["bard", "cleric", "ranger", "rogue"],
+    "bonuses": [
+      "m34-ashen-striders-of-the-devourer-2",
+      "m34-dps-celestial-ashen-vestments"
+    ]
+  },
+  {
+    "id": "m34-ashen-swiftguards-of-the-devourer-2",
+    "name": "M34 Ashen Swiftguards of the Devourer +2",
+    "filter": "gear_arms",
+    "il": 6750,
+    "acc": 6581,
+    "severity": 6075,
+    "recharge": 0.017,
+    "combined_rating": 6075,
+    "allowedClass": ["ranger", "rogue"],
+    "bonuses": [
+      "m34-ashen-swiftguards-of-the-devourer-2",
+      "m34-dps-celestial-ashen-vestments"
+    ]
+  },
+  {
+    "id": "m34-ashen-tunic-of-the-devourer-2",
+    "name": "M34 Ashen Tunic of the Devourer +2",
+    "filter": "gear_armor",
+    "il": 6750,
+    "power": 3544,
+    "defense": 3544,
+    "combined_rating": 6075,
+    "gameIds": ["Body_M34_Mediumheal_R6"],
+    "allowedClass": ["bard", "warlock"],
+    "bonuses": [
+      "m34-ashen-tunic-of-the-devourer-2",
+      "m34-healer-celestial-ashen-vestments"
+    ]
+  },
+  {
+    "id": "m34-ashen-vambraces-of-the-devourer-2",
+    "name": "M34 Ashen Vambraces of the Devourer +2",
+    "filter": "gear_arms",
+    "il": 6750,
+    "acc": 6581,
+    "severity": 6075,
+    "recharge": 0.017,
+    "combined_rating": 6075,
+    "gameIds": ["Arms_M34_Heavydps_R6"],
+    "allowedClass": ["barbarian", "fighter"],
+    "bonuses": [
+      "m34-ashen-vambraces-of-the-devourer-2",
+      "m34-dps-celestial-ashen-vestments"
+    ]
+  },
+  {
+    "id": "m34-ashen-warboots-of-the-devourer-2",
+    "name": "M34 Ashen Warboots of the Devourer +2",
+    "filter": "gear_boots",
+    "il": 6750,
+    "strike": 6075,
+    "severity": 6075,
+    "combined_rating": 6075,
+    "gameIds": ["Feet_M34_Heavydps_R6"],
+    "allowedClass": ["barbarian", "fighter"],
+    "bonuses": [
+      "m34-ashen-warboots-of-the-devourer-2",
+      "m34-dps-celestial-ashen-vestments"
+    ]
+  },
+  {
     "id": "maestro-s-observation",
     "name": "Maestro's Observation",
     "filter": "companion_power",
