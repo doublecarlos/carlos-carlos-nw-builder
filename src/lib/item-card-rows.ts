@@ -471,7 +471,7 @@ function buildItemCardRow(
       (grant) => grant.raw.scale || grant.raw.tierBy,
     ),
     sharedWith,
-    // A shared bonus shows real numbers on exactly one card; the rest point to it.
+    // A shared bonus counts on exactly one card; the rest point to it.
     secondary: Boolean(sharedWith) && !isFirst,
     firstSource: entry.sources?.[0] ?? null,
   };

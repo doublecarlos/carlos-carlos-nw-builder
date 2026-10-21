@@ -335,147 +335,145 @@ const rows = computed(() =>
               >{{ row.firstSource.name }}</BaseLink
             >
           </div>
-          <template v-else>
-            <div v-if="row.sharedWith" class="pl-3 leading-snug text-muted">
-              Other parts:
-              <LinkList
-                :items="row.sharedWith"
-                link-testid="item-card-shared-source"
-                @select="emit('go-to-slot', $event)"
+          <div v-if="row.sharedWith" class="pl-3 leading-snug text-muted">
+            Other parts:
+            <LinkList
+              :items="row.sharedWith"
+              link-testid="item-card-shared-source"
+              @select="emit('go-to-slot', $event)"
+            />
+          </div>
+
+          <!-- One block per grant -- own label, own active state, own ladder/unmet. The
+               label/border chrome only appears once there's more than one grant to tell
+               apart; a single grant already reads fine under the bonus's own name/dot and
+               "Conditions: ..." line above, so repeating that here would just be noise. -->
+          <div class="pl-3">
+            <div
+              v-for="g in row.grants"
+              :key="g.key"
+              data-testid="item-card-grant"
+              :class="
+                row.grants.length > 1 &&
+                'mt-1.5 border-l-2 border-t-2 border-b-2 border-line pl-2 pt-1.5'
+              "
+            >
+              <div
+                v-if="g.unmet.length <= 0"
+                class="flex items-center gap-1.5"
+                :class="!g.active && 'text-muted'"
+              >
+                <span
+                  v-if="row.grants.length > 1"
+                  class="size-1.5 flex-none rounded-full"
+                  :class="g.active ? 'bg-ok' : 'bg-muted opacity-50'"
+                ></span>
+                <span class="min-w-0 flex items-center flex-1">{{
+                  g.label
+                }}</span>
+              </div>
+              <div
+                v-for="({ leaf, need }, i) in g.unmet"
+                :key="i"
+                class="text-warn flex items-center gap-2"
+                data-testid="item-card-bonus-unmet"
+              >
+                <span class="flex-1">
+                  needs {{ leaf.label
+                  }}<span v-if="leaf.detail"> - {{ leaf.detail }}</span>
+                </span>
+                <IconButton
+                  v-if="need"
+                  class="ml-1 align-middle text-warn"
+                  title="Show the slots that could supply this"
+                  data-testid="item-card-need-locate"
+                  @click="emit('locate', need, leaf.label)"
+                >
+                  <Crosshair />
+                </IconButton>
+              </div>
+              <div v-if="g.problem" class="text-warn">
+                {{ g.problem.message }}
+              </div>
+              <!-- A tier ladder's rungs are already at the grant's scale, each noting the
+                   catalog's real value, so a scaled line reads the same here as on a flat
+                   grant or on the item's own rows above. A scale's step ladder shows each
+                   input value's payload instead. -->
+              <template v-else-if="g.ladder">
+                <div data-testid="item-card-ladder">
+                  <div
+                    v-for="tier in g.ladder"
+                    :key="tier.atLeast"
+                    class="py-1 border-t border-t-1 border-line last:border-b last:border-b-1"
+                  >
+                    <div
+                      :class="
+                        tier.active ? 'font-semibold text-text' : 'text-muted'
+                      "
+                    >
+                      {{ tier.heading }}:
+                    </div>
+                    <StatRows
+                      :rows="tier.stats"
+                      :active="tier.active"
+                      class="ml-4"
+                      @go-to-slot="emit('go-to-slot', $event)"
+                    ></StatRows>
+                  </div>
+                </div>
+                <p
+                  v-if="g.stepNote"
+                  class="text-muted"
+                  data-testid="item-card-step-note"
+                >
+                  with
+                  <template v-for="(part, i) in g.stepNote" :key="i"
+                    ><BaseLink
+                      v-if="part.slotId"
+                      @click="emit('go-to-slot', part.slotId)"
+                      >{{ part.text }}</BaseLink
+                    ><template v-else>{{ part.text }}</template></template
+                  >
+                </p>
+              </template>
+              <template v-else-if="g.variants">
+                <div>
+                  <div
+                    v-for="v in g.variants"
+                    :key="v.key"
+                    class="py-1 border-t border-t-1 border-line last:border-b last:border-b-1"
+                  >
+                    <div
+                      :class="
+                        v.active ? 'font-semibold text-text' : 'text-muted'
+                      "
+                    >
+                      {{ v.label }}:
+                    </div>
+                    <StatRows
+                      :rows="v.stats"
+                      :active="v.active"
+                      class="ml-4"
+                      @go-to-slot="emit('go-to-slot', $event)"
+                    ></StatRows>
+                  </div>
+                </div>
+              </template>
+              <StatRows
+                v-else-if="g.stats"
+                :rows="g.stats"
+                :active="g.active"
+                :notes="grantNotes(row, g)"
+                @go-to-slot="emit('go-to-slot', $event)"
+              ></StatRows>
+              <DescriptionText
+                v-if="g.descriptions.length"
+                class="mt-1"
+                :paragraphs="g.descriptions"
+                data-testid="item-card-grant-description"
               />
             </div>
-
-            <!-- One block per grant -- own label, own active state, own ladder/unmet. The
-                 label/border chrome only appears once there's more than one grant to tell
-                 apart; a single grant already reads fine under the bonus's own name/dot and
-                 "Conditions: ..." line above, so repeating that here would just be noise. -->
-            <div class="pl-3">
-              <div
-                v-for="g in row.grants"
-                :key="g.key"
-                data-testid="item-card-grant"
-                :class="
-                  row.grants.length > 1 &&
-                  'mt-1.5 border-l-2 border-t-2 border-b-2 border-line pl-2 pt-1.5'
-                "
-              >
-                <div
-                  v-if="g.unmet.length <= 0"
-                  class="flex items-center gap-1.5"
-                  :class="!g.active && 'text-muted'"
-                >
-                  <span
-                    v-if="row.grants.length > 1"
-                    class="size-1.5 flex-none rounded-full"
-                    :class="g.active ? 'bg-ok' : 'bg-muted opacity-50'"
-                  ></span>
-                  <span class="min-w-0 flex items-center flex-1">{{
-                    g.label
-                  }}</span>
-                </div>
-                <div
-                  v-for="({ leaf, need }, i) in g.unmet"
-                  :key="i"
-                  class="text-warn flex items-center gap-2"
-                  data-testid="item-card-bonus-unmet"
-                >
-                  <span class="flex-1">
-                    needs {{ leaf.label
-                    }}<span v-if="leaf.detail"> - {{ leaf.detail }}</span>
-                  </span>
-                  <IconButton
-                    v-if="need"
-                    class="ml-1 align-middle text-warn"
-                    title="Show the slots that could supply this"
-                    data-testid="item-card-need-locate"
-                    @click="emit('locate', need, leaf.label)"
-                  >
-                    <Crosshair />
-                  </IconButton>
-                </div>
-                <div v-if="g.problem" class="text-warn">
-                  {{ g.problem.message }}
-                </div>
-                <!-- A tier ladder's rungs are already at the grant's scale, each noting the
-                     catalog's real value, so a scaled line reads the same here as on a flat
-                     grant or on the item's own rows above. A scale's step ladder shows each
-                     input value's payload instead. -->
-                <template v-else-if="g.ladder">
-                  <div data-testid="item-card-ladder">
-                    <div
-                      v-for="tier in g.ladder"
-                      :key="tier.atLeast"
-                      class="py-1 border-t border-t-1 border-line last:border-b last:border-b-1"
-                    >
-                      <div
-                        :class="
-                          tier.active ? 'font-semibold text-text' : 'text-muted'
-                        "
-                      >
-                        {{ tier.heading }}:
-                      </div>
-                      <StatRows
-                        :rows="tier.stats"
-                        :active="tier.active"
-                        class="ml-4"
-                        @go-to-slot="emit('go-to-slot', $event)"
-                      ></StatRows>
-                    </div>
-                  </div>
-                  <p
-                    v-if="g.stepNote"
-                    class="text-muted"
-                    data-testid="item-card-step-note"
-                  >
-                    with
-                    <template v-for="(part, i) in g.stepNote" :key="i"
-                      ><BaseLink
-                        v-if="part.slotId"
-                        @click="emit('go-to-slot', part.slotId)"
-                        >{{ part.text }}</BaseLink
-                      ><template v-else>{{ part.text }}</template></template
-                    >
-                  </p>
-                </template>
-                <template v-else-if="g.variants">
-                  <div>
-                    <div
-                      v-for="v in g.variants"
-                      :key="v.key"
-                      class="py-1 border-t border-t-1 border-line last:border-b last:border-b-1"
-                    >
-                      <div
-                        :class="
-                          v.active ? 'font-semibold text-text' : 'text-muted'
-                        "
-                      >
-                        {{ v.label }}:
-                      </div>
-                      <StatRows
-                        :rows="v.stats"
-                        :active="v.active"
-                        class="ml-4"
-                        @go-to-slot="emit('go-to-slot', $event)"
-                      ></StatRows>
-                    </div>
-                  </div>
-                </template>
-                <StatRows
-                  v-else-if="g.stats"
-                  :rows="g.stats"
-                  :active="g.active"
-                  :notes="grantNotes(row, g)"
-                  @go-to-slot="emit('go-to-slot', $event)"
-                ></StatRows>
-                <DescriptionText
-                  v-if="g.descriptions.length"
-                  class="mt-1"
-                  :paragraphs="g.descriptions"
-                  data-testid="item-card-grant-description"
-                />
-              </div>
-            </div>
-          </template>
+          </div>
           <div
             v-if="row.excludedBy"
             class="pl-3 text-warn"
