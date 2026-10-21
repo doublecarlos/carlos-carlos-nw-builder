@@ -52,6 +52,16 @@
     },
     "grants": [
       {
+        "when": {
+          "all": [
+            {
+              "toggle": "party"
+            },
+            {
+              "toggle": "combat"
+            }
+          ]
+        },
         "stats": {
           "defense_p": 0.0025,
           "deflect_p": 0.0025
@@ -1227,6 +1237,48 @@
     ]
   },
   {
+    "id": "healer-s-influence-ascendant-2",
+    "name": "Healer's Influence (Ascendant)",
+    "grants": [
+      {
+        "when": {
+          "all": [
+            {
+              "toggle": "party"
+            },
+            {
+              "toggle": "combat"
+            }
+          ]
+        },
+        "stats": {
+          "defense_p": 0.035
+        }
+      }
+    ]
+  },
+  {
+    "id": "healer-s-influence-greater-2",
+    "name": "Healer's Influence (Greater)",
+    "grants": [
+      {
+        "when": {
+          "all": [
+            {
+              "toggle": "party"
+            },
+            {
+              "toggle": "combat"
+            }
+          ]
+        },
+        "stats": {
+          "defense_p": 0.03
+        }
+      }
+    ]
+  },
+  {
     "id": "hot-wings-accuracy-severity",
     "name": "Hot Wings",
     "grants": [
@@ -1749,6 +1801,13 @@
         "type": "boolean",
         "label": "Proc",
         "default": true
+      },
+      "effectiveness": {
+        "type": "percent",
+        "min": 0,
+        "max": 1,
+        "step": 0.1,
+        "default": 1
       }
     },
     "grants": [
@@ -1761,7 +1820,21 @@
           }
         },
         "stats": {
-          "outgoing_damage": 0.09,
+          "outgoing_damage": 0.09
+        },
+        "scale": {
+          "formula": "$effectiveness"
+        }
+      },
+      {
+        "when": {
+          "toggle": "combat",
+          "input": {
+            "key": "active",
+            "is": true
+          }
+        },
+        "stats": {
           "hit_points_mult": -0.2
         }
       }
@@ -2321,6 +2394,9 @@
     "name": "M33.5 Rising Reflexes",
     "grants": [
       {
+        "when": {
+          "toggle": "combat"
+        },
         "stats": {
           "defense": 1935,
           "awareness": 1935
@@ -2373,6 +2449,13 @@
         "type": "boolean",
         "label": "Proc",
         "default": true
+      },
+      "effectiveness": {
+        "type": "percent",
+        "min": 0,
+        "max": 1,
+        "step": 0.1,
+        "default": 1
       }
     },
     "grants": [
@@ -2385,7 +2468,21 @@
           }
         },
         "stats": {
-          "outgoing_damage": 0.035,
+          "outgoing_damage": 0.035
+        },
+        "scale": {
+          "formula": "$effectiveness"
+        }
+      },
+      {
+        "when": {
+          "toggle": "combat",
+          "input": {
+            "key": "active",
+            "is": true
+          }
+        },
+        "stats": {
           "hit_points_mult": -0.1
         }
       }
@@ -2400,6 +2497,13 @@
         "type": "boolean",
         "label": "Proc",
         "default": true
+      },
+      "effectiveness": {
+        "type": "percent",
+        "min": 0,
+        "max": 1,
+        "step": 0.1,
+        "default": 1
       }
     },
     "grants": [
@@ -2412,7 +2516,21 @@
           }
         },
         "stats": {
-          "outgoing_damage": 0.05,
+          "outgoing_damage": 0.05
+        },
+        "scale": {
+          "formula": "$effectiveness"
+        }
+      },
+      {
+        "when": {
+          "toggle": "combat",
+          "input": {
+            "key": "active",
+            "is": true
+          }
+        },
+        "stats": {
           "hit_points_mult": -0.1
         }
       }
@@ -2910,6 +3028,9 @@
     "name": "M33 Surging Fortification",
     "grants": [
       {
+        "when": {
+          "toggle": "combat"
+        },
         "stats": {
           "defense_p": 0.0035,
           "awareness_p": 0.004

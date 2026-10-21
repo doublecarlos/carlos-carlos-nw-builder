@@ -3026,6 +3026,18 @@
     "bonuses": ["guardian-s-spirit"]
   },
   {
+    "id": "healer-s-influence-ascendant",
+    "name": "Healer's Influence (Ascendant)",
+    "filter": "group_buff",
+    "bonuses": ["healer-s-influence-ascendant-2"]
+  },
+  {
+    "id": "healer-s-influence-greater",
+    "name": "Healer's Influence (Greater)",
+    "filter": "group_buff",
+    "bonuses": ["healer-s-influence-greater-2"]
+  },
+  {
     "id": "hero-soul-forte-celestial",
     "name": "Hero Soul",
     "filter": "mount_equip",
@@ -4603,6 +4615,7 @@
     "il": 5200,
     "acc": 1950,
     "awareness": 3900,
+    "deflect": 1950,
     "combined_rating": 4680,
     "gameIds": ["Head_M33_5_Alltank_B-tier"],
     "bonuses": ["m33-5-rising-reflexes"]
@@ -5015,6 +5028,7 @@
     "severity": 5130,
     "combined_rating": 5130,
     "gameIds": ["Body_M33_Lightdps_S-tier"],
+    "allowedClass": ["warlock", "wizard"],
     "bonuses": ["m33-tactical-daily-greater"]
   },
   {
@@ -5120,6 +5134,7 @@
     "forte": 2308,
     "combined_rating": 5130,
     "gameIds": ["Feet_M33_Lightdps_S-tier"],
+    "allowedClass": ["warlock", "wizard"],
     "bonuses": ["m33-tactical-reserves"]
   },
   {
