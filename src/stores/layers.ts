@@ -21,7 +21,12 @@ import { layerOrder, persistMeta } from "./meta";
 import { flagStorageFailed, showNotice, showUndoNotice } from "./notice";
 import * as catalog from "../data/catalog";
 import { deepEqual } from "../lib/deep-equal";
-import type { Layer, CatalogOverlay, SectionPreset } from "../types";
+import type {
+  Layer,
+  CatalogGroup,
+  CatalogOverlay,
+  SectionPreset,
+} from "../types";
 
 const SAVE_DEBOUNCE_MS = 250;
 
@@ -60,14 +65,12 @@ export function ensureTargetLayer(): Layer {
   return targetLayer.value ?? createLayer();
 }
 
-/** Every id any layer's overlay names, enabled or not, since disabled layers are missing from
- *  the composed catalog. The caller adds the composed ids. */
-export function allocatableIds(): string[] {
+/** Every id any layer's overlay names in `group`, enabled or not, since disabled layers are
+ *  missing from the composed catalog. The caller adds the composed ids. */
+export function allocatableIds(group: CatalogGroup): string[] {
   const ids: string[] = [];
-  for (const layer of _layers.value.values()) {
-    for (const group of catalog.GROUPS)
-      ids.push(...Object.keys(layer.overlay[group] ?? {}));
-  }
+  for (const layer of _layers.value.values())
+    ids.push(...Object.keys(layer.overlay[group] ?? {}));
   return ids;
 }
 

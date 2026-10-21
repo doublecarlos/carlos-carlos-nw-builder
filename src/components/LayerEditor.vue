@@ -601,16 +601,30 @@ const hasUnsavedDraft = (row: EditorRow | OutlineRow) => {
   return draftDirty[group]?.() ?? false;
 };
 
-/** Every id a new entry must not collide with: every layer's overlay, enabled or not, plus
- *  the composed db. */
+/** Per group, every id a new entry must not collide with: every layer's overlay, enabled or
+ *  not, plus the composed db. Groups are separate id spaces, so an item and its bonus can
+ *  share an id. */
 const allocatableIds = computed(() => {
-  const ids = new Set<string>(layers.allocatableIds());
-  for (const item of engine.db.value.items) ids.add(item.id);
-  for (const preset of engine.db.value.presets) ids.add(preset.id);
-  for (const slot of engine.db.value.slots) ids.add(slot.id);
-  for (const section of engine.db.value.sections) ids.add(section.id);
-  for (const filter of engine.db.value.filters) ids.add(filter.id);
-  return [...ids];
+  const { items, bonuses, presets, slots, sections, filters } = engine.db.value;
+  const composed: Record<EditorGroup, { id: string }[]> = {
+    items,
+    bonuses,
+    sectionPresets: presets,
+    slots,
+    sections,
+    filters,
+  };
+  return Object.fromEntries(
+    catalog.GROUPS.map((group) => [
+      group,
+      [
+        ...new Set([
+          ...layers.allocatableIds(group),
+          ...composed[group].map((entry) => entry.id),
+        ]),
+      ],
+    ]),
+  ) as Record<EditorGroup, string[]>;
 });
 
 const findings = computed(() =>
@@ -1524,7 +1538,8 @@ onUnmounted(() => {
           :all-bonus-ids="allBonusIds"
           :tags="tagList"
           :bonus-options="bonusOptions"
-          :allocatable-ids="allocatableIds"
+          :allocatable-ids="allocatableIds.items"
+          :allocatable-bonus-ids="allocatableIds.bonuses"
           @save="onSave"
           @update:item="onUpdateItem"
           @delete="onDelete"
@@ -1548,7 +1563,7 @@ onUnmounted(() => {
           :all-bonus-ids="allBonusIds"
           :tags="tagList"
           :bonus-options="bonusOptions"
-          :allocatable-ids="allocatableIds"
+          :allocatable-ids="allocatableIds.bonuses"
           @save="onSaveBonusTop"
           @update:bonus="onUpdateBonusTop"
           @delete="onDeleteBonusTop"
@@ -1564,7 +1579,7 @@ onUnmounted(() => {
           :fixed-id="selectedFilterId"
           :status="selectedStatus"
           :db="db"
-          :allocatable-ids="allocatableIds"
+          :allocatable-ids="allocatableIds.filters"
           @save="onSaveFilter"
           @update:filter="onUpdateFilter"
           @delete="onDeleteFilter"
@@ -1577,7 +1592,7 @@ onUnmounted(() => {
           :source="selectedSection"
           :status="selectedStatus"
           :db="db"
-          :allocatable-ids="allocatableIds"
+          :allocatable-ids="allocatableIds.sections"
           @save="onSaveSection"
           @update:section="onUpdateSection"
           @delete="onDeleteSection"
@@ -1594,7 +1609,7 @@ onUnmounted(() => {
           :default-section="newEntrySection"
           :status="selectedStatus"
           :db="db"
-          :allocatable-ids="allocatableIds"
+          :allocatable-ids="allocatableIds.slots"
           @save="onSaveSlot"
           @update:slot="onUpdateSlot"
           @delete="onDeleteSlot"
@@ -1610,7 +1625,7 @@ onUnmounted(() => {
           :default-section="newEntrySection"
           :status="selectedStatus"
           :db="db"
-          :allocatable-ids="allocatableIds"
+          :allocatable-ids="allocatableIds.sectionPresets"
           @save="onSavePreset"
           @update:preset="onUpdatePreset"
           @delete="onDeletePreset"

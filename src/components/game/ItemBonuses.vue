@@ -58,7 +58,7 @@ const props = withDefaults(
     tags?: string[];
     /** Every known bonus, for "attach an existing bonus" and the pickers in each form. */
     bonusOptions?: BonusOption[];
-    /** All existing ids for collision-free id allocation. */
+    /** Every existing bonus id, for collision-free id allocation. */
     allocatableIds?: string[];
   }>(),
   {
