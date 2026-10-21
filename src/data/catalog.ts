@@ -126,7 +126,8 @@ export function normalizeOverlay(raw: unknown): CatalogOverlay {
     if (section && !isStringList(section.slotIds))
       overlay.sections[id] = { ...section, slotIds: [] };
   }
-  // Slots no longer carry a visibility condition; an old overlay's is dropped.
+  // An old overlay's display-only `visibleWhen` is dropped, never read as `availableWhen`:
+  // it was written for a slot that kept its value while hidden.
   for (const [id, slot] of Object.entries(overlay.slots)) {
     if (slot && "visibleWhen" in slot) {
       const { visibleWhen: _dropped, ...rest } = slot as Slot & {
@@ -1709,6 +1710,145 @@ export function validateRankTiers(
   });
 }
 
+/** Every leaf of a `when`, combinators flattened. */
+function eachLeaf(
+  when: ConditionWhen | undefined,
+  visit: (key: string, spec: unknown) => void,
+) {
+  if (!when || typeof when !== "object") return;
+  for (const [key, spec] of Object.entries(when)) {
+    if (key === "all" || key === "any") {
+      if (Array.isArray(spec))
+        for (const sub of spec) eachLeaf(sub as ConditionWhen, visit);
+    } else if (key === "not") eachLeaf(spec as ConditionWhen, visit);
+    else visit(key, spec);
+  }
+}
+
+/** Leaves `availableWhen` cannot use: they read a bonus's own scope, and a slot has none. */
+export const BONUS_ONLY_LEAVES: Record<string, string> = {
+  input: "an input belongs to a bonus",
+  formula: "a formula needs a bonus's scope",
+};
+
+/** What `checkSlotAvailability` resolves references against. */
+export interface AvailabilityRefs {
+  items: Item[];
+  bonuses: Bonus[];
+  slots: Slot[];
+}
+
+/** Whether `item` is one of `slot`'s candidates, resolved as `Db.forSlot` does. */
+function offeredBy(slot: ItemPickerSlot | ItemPickerListSlot, item: Item) {
+  return slot.tags?.length
+    ? (item.tags ?? []).some((tag) => slot.tags!.includes(tag))
+    : item.filter === slot.filter;
+}
+
+/**
+ * The authoring errors in one slot's `availableWhen`: a slot type that cannot carry one, a
+ * `default` that would refill a hidden slot, leaves that need a bonus scope, references to
+ * nothing, and a condition the slot's own pick can meet.
+ */
+export function checkSlotAvailability(
+  slot: Slot,
+  refs: AvailabilityRefs,
+): string[] {
+  const when = (slot as { availableWhen?: ConditionWhen }).availableWhen;
+  if (!when) return [];
+  if (slot.type !== "item_picker" && slot.type !== "item_picker_list")
+    return [
+      `${slot.id}: availableWhen is only meaningful on an item_picker or item_picker_list, this is a ${slot.type}`,
+    ];
+
+  const errors: string[] = [];
+  if (slot.type === "item_picker" && slot.default)
+    errors.push(
+      `${slot.id}: a slot with availableWhen cannot have a default; it would refill the slot while hidden`,
+    );
+
+  const paramSlots = new Map<string, BuildParameterSlot>();
+  for (const other of refs.slots)
+    if (other.type === "build_parameter") paramSlots.set(other.path, other);
+  checkConditions(
+    when,
+    `${slot.id} availableWhen`,
+    (level, message) => {
+      if (level === "error") errors.push(message);
+    },
+    paramSlots,
+  );
+
+  const itemIds = new Set(refs.items.map((item) => item.id));
+  const tags = new Set(refs.items.flatMap((item) => item.tags ?? []));
+  const bonusIds = new Set(refs.bonuses.map((bonus) => bonus.id));
+  const own = refs.items.filter((item) => offeredBy(slot, item));
+  const selfSupplied = (supplies: (item: Item) => boolean) =>
+    own.some(supplies);
+
+  eachLeaf(when, (key, spec) => {
+    const reason = BONUS_ONLY_LEAVES[key];
+    if (reason) {
+      errors.push(
+        `${slot.id}: availableWhen cannot use "${key}"; ${reason}, not to a slot`,
+      );
+      return;
+    }
+    if (key === "equipped") {
+      const { tag, item } = (spec ?? {}) as { tag?: string; item?: string };
+      if (tag != null && !tags.has(tag))
+        errors.push(
+          `${slot.id}: availableWhen reads tag "${tag}", which no item carries`,
+        );
+      if (tag == null && item != null && !itemIds.has(item))
+        errors.push(
+          `${slot.id}: availableWhen reads item "${item}", which does not exist`,
+        );
+      if (
+        selfSupplied((candidate) =>
+          tag != null
+            ? (candidate.tags ?? []).includes(tag)
+            : candidate.id === item,
+        )
+      )
+        errors.push(
+          `${slot.id}: availableWhen can be met by this slot's own pick; once cleared, the slot could never be filled again`,
+        );
+    }
+    if (key === "bonusOccurrences") {
+      const bonus = (spec as { bonus?: string } | null)?.bonus;
+      if (bonus == null) {
+        errors.push(
+          `${slot.id}: availableWhen's bonusOccurrences needs a "bonus"; a slot has no bonus of its own`,
+        );
+        return;
+      }
+      if (!bonusIds.has(bonus))
+        errors.push(
+          `${slot.id}: availableWhen reads bonus "${bonus}", which does not exist`,
+        );
+      if (selfSupplied((candidate) => !!candidate.bonuses?.includes(bonus)))
+        errors.push(
+          `${slot.id}: availableWhen can be met by this slot's own pick; once cleared, the slot could never be filled again`,
+        );
+    }
+  });
+  return [...new Set(errors)];
+}
+
+export function validateSlotAvailability(
+  refs: AvailabilityRefs,
+): LintFinding[] {
+  return refs.slots.flatMap((slot) =>
+    checkSlotAvailability(slot, refs).map((message): LintFinding => ({
+      level: "error",
+      kind: "slot",
+      name: slot.id,
+      message,
+    })),
+  );
+}
+
 /**
  * Lint every `ItemPickerSlot.default` against the catalog: an id that does not exist, or is
  * not one of that slot's own candidates, leaves the slot quietly empty in every fresh build.
@@ -1735,10 +1875,7 @@ export function validateSlotDefaults(
     }
     // Same `filter` XOR `tags` resolution `Db.forSlot` does: a default the slot would never
     // offer is silently no default at all.
-    const candidate = slot.tags?.length
-      ? (item.tags ?? []).some((tag) => slot.tags!.includes(tag))
-      : item.filter === slot.filter;
-    if (!candidate) {
+    if (!offeredBy(slot, item)) {
       findings.push({
         level: "error",
         kind: "slot",
@@ -2181,6 +2318,7 @@ export function validate(
   const findings: LintFinding[] = [
     ...validateSlots(slots),
     ...validateSlotDefaults(slots, items),
+    ...validateSlotAvailability({ items, bonuses, slots }),
     ...validateSections(sections, slots, sectionOrder),
     ...validatePresets(presets, slots, sections),
     ...validateParamSchema(slots, schema),

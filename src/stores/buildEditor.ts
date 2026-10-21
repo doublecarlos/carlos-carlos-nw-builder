@@ -1,13 +1,13 @@
-// Every mutation that writes the active build's *content* goes through here, and every one of
-// them snapshots before mutating -- the history store owns the undo stack.
+// Every mutation that writes the active build's *content* goes through here. Each one snapshots
+// before mutating, since the history store owns the undo stack, and ends with
+// `builds.finishEdit`, which empties any slot the edit made unavailable.
 import { computed, toRaw, watch } from "vue";
 import * as storage from "../storage/storage";
 import * as builds from "./builds";
 import * as compare from "./compare";
 import * as history from "./history";
 import * as navHistory from "./navHistory";
-import { showUndoNotice } from "./notice";
-import { db } from "./resolved";
+import { db, hiddenSlots } from "./resolved";
 import { retiredSlots } from "../data/db";
 import {
   migrateItemIds,
@@ -24,6 +24,7 @@ import {
   replaceSlotData,
   storedSlotIds,
 } from "../lib/slot-fields";
+import { slotShown } from "../lib/slot-availability";
 import { itemLabel, normalizeGroup, stableRef } from "../engine/insignia";
 import {
   expandSlots,
@@ -122,6 +123,7 @@ export function setChoice(slotId: string, id: string) {
     clearSlotData(b, slotId);
   }
   normalizeStable(b, slotId);
+  builds.finishEdit(b.id);
 }
 
 /**
@@ -158,6 +160,7 @@ export function addListRow(slot: ItemPickerListSlot) {
   if (!b) return;
   history.snapshot("build", b.id, null, `add ${slot.label} row`, b);
   b.listRows[slot.id] = listRowCount(b, slot) + 1;
+  builds.finishEdit(b.id);
 }
 
 /**
@@ -184,6 +187,7 @@ export function removeListRow(rowId: string) {
   }
   moveSlotData(b, rowSlotId(row.listId, count));
   b.listRows[row.listId] = count - 1;
+  builds.finishEdit(b.id);
 }
 
 /** Names the value at `address` in an undo label. */
@@ -226,6 +230,7 @@ export function setInput(
     b,
   );
   writeInput(b, address, value);
+  builds.finishEdit(b.id);
 }
 
 /** Takes one `toggleable` slot's pick out of the calculation, or puts it back, leaving the
@@ -242,6 +247,7 @@ export function setSlotDisabled(slot: ItemPickerSlot, disabled: boolean) {
   );
   if (disabled) b.disabledSlots[slot.id] = true;
   else delete b.disabledSlots[slot.id];
+  builds.finishEdit(b.id);
 }
 
 export function applyFromCompare(slotId: string) {
@@ -262,6 +268,7 @@ export function applyFromCompare(slotId: string) {
     b,
   );
   copySlotData(b, other, slotId);
+  builds.finishEdit(b.id);
 }
 
 /** Copies one typed value from the compare build, clearing it when the compare build stores
@@ -280,6 +287,7 @@ export function applyInputFromCompare(address: InputAddress) {
     b,
   );
   writeInput(b, address, value);
+  builds.finishEdit(b.id);
 }
 
 export function setParam(
@@ -303,6 +311,7 @@ export function setParam(
     b,
   );
   setPath(b.context, slot.path, value);
+  builds.finishEdit(b.id);
 }
 
 export function resetParamToDefault(slot: BuildParameterSlot) {
@@ -316,6 +325,7 @@ export function resetParamToDefault(slot: BuildParameterSlot) {
     b,
   );
   setPath(b.context, slot.path, slot.default);
+  builds.finishEdit(b.id);
 }
 
 export function applyParamFromCompare(slot: BuildParameterSlot) {
@@ -332,6 +342,7 @@ export function applyParamFromCompare(slot: BuildParameterSlot) {
     b,
   );
   setPath(b.context, slot.path, fromVal);
+  builds.finishEdit(b.id);
 }
 
 /** Slot id to the retired item ids it holds, for the slot list's retired filter. */
@@ -373,6 +384,7 @@ export function applyRetiredItems() {
     b,
   );
   builds.replaceActive(migrated);
+  builds.finishEdit(b.id);
 }
 
 /** One slot's retired pick swapped, leaving the rest alone -- the per-row counterpart. */
@@ -390,6 +402,7 @@ export function applyRetiredItem(slotId: string) {
     b,
   );
   builds.replaceActive(migrateSlotItem(db.value, b, slotId));
+  builds.finishEdit(b.id);
 }
 
 export function resetAssignmentsToDefault(
@@ -408,6 +421,7 @@ export function resetAssignmentsToDefault(
   for (const item of repetitionRows(db.value, b, slot))
     reset[item.id] = item.inlineRepetition!.default;
   b.assignments[slot.id] = reset;
+  builds.finishEdit(b.id);
 }
 
 /** A workspace operation rather than a content edit, so it lands on the nav undo stack. */
@@ -446,6 +460,7 @@ export function clearSlots() {
   // build_parameter is.
   replaceSlotData(b, fresh);
   b.listRows = fresh.listRows;
+  builds.finishEdit(b.id);
 }
 
 export function resetAll() {
@@ -455,7 +470,7 @@ export function resetAll() {
   const fresh = storage.defaultBuild(b.name, db.value);
   fresh.id = b.id;
   builds.replaceActive(fresh);
-  showUndoNotice(`Reset “${b.name}”`, () => builds.undoFor(b.id));
+  builds.finishEdit(b.id, `Reset “${b.name}”`);
 }
 
 export function copySection(fromId: string, sectionIds: string[]) {
@@ -498,6 +513,7 @@ export function copySection(fromId: string, sectionIds: string[]) {
     if (slot.type !== "item_picker") continue;
     copySlotData(b, source, slot.id);
   }
+  builds.finishEdit(b.id);
 }
 
 /** Resets one slot to its default from `fresh`, per type like `copySection`. `fresh` is passed
@@ -533,7 +549,7 @@ export function clearSection(sectionId: string, label: string) {
   for (const slot of buildSlots()) {
     if (slot.section === sectionId) clearSlot(b, slot, fresh);
   }
-  showUndoNotice(`Cleared ${label}`, () => builds.undoFor(b.id));
+  builds.finishEdit(b.id, `Cleared ${label}`);
 }
 
 /**
@@ -608,6 +624,7 @@ export function applyPreset(preset: SectionPreset) {
   for (const [slotId, rows] of Object.entries(preset.assignments ?? {})) {
     b.assignments[slotId] = { ...b.assignments[slotId], ...rows };
   }
+  builds.finishEdit(b.id);
 }
 
 /**
@@ -646,7 +663,9 @@ export function presetFromSection(
   }
 
   for (const slot of buildSlots()) {
-    if (slot.section !== sectionId) continue;
+    // A hidden slot is not part of the section as it stands.
+    if (slot.section !== sectionId || !slotShown(slot, hiddenSlots.value))
+      continue;
 
     if (slot.type === "build_parameter") {
       const value = getPath(b.context, slot.path);

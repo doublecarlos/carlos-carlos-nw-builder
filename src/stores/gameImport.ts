@@ -232,7 +232,11 @@ export function commit() {
   const recognized = newReports.reduce((sum, r) => sum + r.counts.imported, 0);
   const total = newReports.reduce(
     (sum, r) =>
-      sum + r.counts.imported + r.counts.unrecognized + r.counts.overflow,
+      sum +
+      r.counts.imported +
+      r.counts.unrecognized +
+      r.counts.overflow +
+      r.counts.unavailable,
     0,
   );
   showNotice(

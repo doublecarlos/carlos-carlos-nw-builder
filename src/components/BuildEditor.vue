@@ -18,6 +18,7 @@ import BuildSlot from "./game/BuildSlot.vue";
 import SeparatorRow from "./game/SeparatorRow.vue";
 import ItemPickerListRow from "./game/ItemPickerListRow.vue";
 import TextRow from "./game/TextRow.vue";
+import CompareOnlyRow from "./game/CompareOnlyRow.vue";
 import BaseButton from "./ui/BaseButton.vue";
 import BaseInput from "./ui/BaseInput.vue";
 import BaseBadge from "./ui/BaseBadge.vue";
@@ -43,7 +44,7 @@ import { slotsSupplying } from "../lib/bonus-slots";
 import { itemStatAddress, readInput } from "../lib/build-inputs";
 import * as insignia from "../engine/insignia";
 import * as stableBrowser from "../stores/stableBrowser";
-import { expandSlots } from "../lib/item-picker-list";
+import { slotsWithCompare } from "../lib/slot-availability";
 import { useHoverCard } from "../composables/useHoverCard";
 import { itemScalers } from "../composables/useItemScale";
 import { useCompareDiff, type SlotDiff } from "../composables/useCompareDiff";
@@ -440,9 +441,25 @@ function rowDiffers(slotDef: Slot) {
   return rowHasDiff(slotDef.id);
 }
 
-/** Every non-quick slotDef in canonical order, grouped by section -- unaffected by the active
- *  text/stat filter or the only-diff toggle, unlike `sections.value`'s own per-section lists. */
-const editorSlots = computed(() => expandSlots(db.value.slots, build.value));
+/** Whether the editor is looking at differences, which is when a slot this build hides gets a
+ *  read-only row for what the compare build holds there. */
+const showsCompareRows = computed(
+  () => !!compareBuild.value && (highlightDiff.value || onlyDiff.value),
+);
+
+/** Every slotDef in canonical order, unaffected by the active text/stat filter or the
+ *  only-diff toggle, unlike `sections.value`'s own per-section lists. Unavailable slots are
+ *  left out, so no badge, diff or count downstream sees them, except as compare-only rows. */
+const comparedSlots = computed(() =>
+  slotsWithCompare(
+    db.value.slots,
+    build.value,
+    engine.hiddenSlots.value,
+    showsCompareRows.value ? compareBuild.value : null,
+  ),
+);
+const editorSlots = computed(() => comparedSlots.value.slots);
+const compareOnly = computed(() => comparedSlots.value.compareOnly);
 
 const allSlotsBySection = computed(() =>
   db.value.sections.map((section) => ({
@@ -467,8 +484,10 @@ const sections = computed<SectionRow[]>(() => {
       // The fill-count badge only means anything for item_picker slots -- a build_parameter
       // always has *some* value, "filled" isn't a meaningful state for it. A section made
       // entirely of build_parameter slots ends up with total 0, so the badge just doesn't render.
+      // A compare-only row is not this build's to fill.
       const pickerSlots = slots.filter(
-        (slotDef) => slotDef.type === "item_picker",
+        (slotDef) =>
+          slotDef.type === "item_picker" && !compareOnly.value.has(slotDef.id),
       );
       let filled = 0;
       let errors = 0;
@@ -642,6 +661,10 @@ const rowDataBySlot = computed(() => {
         slotDef.type === "item_picker_list"
       )
         continue;
+      if (compareOnly.value.has(slotDef.id)) {
+        map.set(slotDef.id, { ...EMPTY_ROW_DATA, diff: rowDiff(slotDef.id) });
+        continue;
+      }
       const candidates = slotCandidateList(
         db.value,
         slotDef.id,
@@ -1173,6 +1196,16 @@ watch(
               :slot-def="slotDef"
               class="col-span-full"
               :on-arrow="moveCursor"
+            />
+            <CompareOnlyRow
+              v-else-if="compareOnly.has(slotDef.id)"
+              :slot-def="slotDef"
+              :compare-name="compareBuild?.name ?? ''"
+              :other-choice-label="
+                rowDataFor(slotDef.id).diff?.otherChoiceLabel ?? ''
+              "
+              :highlight-diff="highlightDiff"
+              :no-border="noBorderIds.has(slotDef.id)"
             />
             <BuildSlot
               v-else

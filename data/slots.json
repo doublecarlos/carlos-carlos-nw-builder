@@ -424,19 +424,34 @@
           "id": "gear.mainhandMod",
           "label": "Mainhand mod",
           "type": "item_picker",
-          "filter": "modification_mainhand"
+          "filter": "modification_mainhand",
+          "availableWhen": {
+            "equipped": {
+              "tag": "artifact:mainhand"
+            }
+          }
         },
         {
           "id": "gear.offhandMod1",
           "label": "Offhand Mod 1",
           "type": "item_picker",
-          "filter": "modification_offhand_static"
+          "filter": "modification_offhand_static",
+          "availableWhen": {
+            "equipped": {
+              "tag": "artifact:offhand"
+            }
+          }
         },
         {
           "id": "gear.offhandMod2",
           "label": "Offhand Mod 2",
           "type": "item_picker",
-          "filter": "modification_offhand_dynamic"
+          "filter": "modification_offhand_dynamic",
+          "availableWhen": {
+            "equipped": {
+              "tag": "artifact:offhand"
+            }
+          }
         },
         {
           "id": "gear.boots",

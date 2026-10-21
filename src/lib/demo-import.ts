@@ -3,6 +3,7 @@
 import * as storage from "../storage/storage";
 import { itemPublishing } from "../data/db";
 import { normalizeGroup, stableGroups } from "../engine/insignia";
+import { pruneUnavailableSlots, slotShown } from "./slot-availability";
 import {
   GAME_IMPORT_DATA,
   REQUIRED_SLOT_IDS,
@@ -19,6 +20,9 @@ export type SlotOutcome =
   | { kind: "unrecognized"; bag: string; slot: number; gameId: string }
   | { kind: "ignored"; bag: string; gameId: string; reason: string }
   | { kind: "overflow"; bag: string; gameId: string; itemId: string }
+  /** Recognized and placed, but the slot is unavailable for this build (a weapon mod under a
+   *  non-artifact weapon), so it was cleared. */
+  | { kind: "unavailable"; slotId: string; gameId: string; itemId: string }
   /** App slot the demo has no counterpart for; the user fills it by hand. */
   | { kind: "notInDemo"; slotId: string };
 
@@ -109,6 +113,16 @@ export function buildFromLoadout(
     if (!build.choices[slotId]) build.choices[slotId] = itemId;
   }
 
+  // Last of the placement, as any pick above can hide a slot.
+  const pruned = pruneUnavailableSlots(db, build);
+  const cleared = new Set(pruned.cleared);
+  outcomes.forEach((outcome, index) => {
+    if (outcome.kind !== "imported") return;
+    const slot = db.slotFor(outcome.slotId);
+    if (slot && !slotShown(slot, cleared))
+      outcomes[index] = { ...outcome, kind: "unavailable" };
+  });
+
   const notInDemo = notInDemoSlotIds(db.slots);
   if (!classItem) notInDemo.push(REQUIRED_SLOT_IDS.class.id);
   if (!race) notInDemo.push(REQUIRED_SLOT_IDS.race.id);
@@ -119,12 +133,13 @@ export function buildFromLoadout(
     unrecognized: 0,
     ignored: 0,
     overflow: 0,
+    unavailable: 0,
     notInDemo: 0,
   };
   for (const outcome of outcomes) counts[outcome.kind] += 1;
 
   return {
-    build,
+    build: pruned.build,
     report: { character: character.name, loadout: label, outcomes, counts },
   };
 }

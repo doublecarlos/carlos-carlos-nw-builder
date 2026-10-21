@@ -100,13 +100,13 @@ test.describe("choosing a destination", () => {
   }) => {
     await openBuilder(page);
 
-    await openPalette(page, "offhand mod 1");
+    await openPalette(page, "weapon offhand");
     await page.keyboard.press("Enter");
 
     // Not merely scrolled into view: parked, so the existing row keys take over from here.
     await expect(cursorRow(page)).toHaveAttribute(
       "data-cursor-key",
-      "slot:gear.offhandMod1",
+      "slot:gear.offhand",
     );
     await expect(palette(page)).toBeHidden();
   });
@@ -116,7 +116,7 @@ test.describe("choosing a destination", () => {
   }) => {
     await openBuilder(page);
 
-    await openPalette(page, "offhand mod 1");
+    await openPalette(page, "weapon offhand");
     await page.keyboard.press("Enter");
     await expect(palette(page)).toBeHidden();
 
@@ -124,7 +124,7 @@ test.describe("choosing a destination", () => {
       .poll(async () =>
         page.evaluate(() => {
           const row = document
-            .querySelector('[data-cursor-key="slot:gear.offhandMod1"]')!
+            .querySelector('[data-cursor-key="slot:gear.offhand"]')!
             .getBoundingClientRect();
           const header = document
             .querySelector(
@@ -144,14 +144,14 @@ test.describe("choosing a destination", () => {
     await headerRow(page, "gear").click();
     await expect(headerRow(page, "gear")).toContainText("▸");
 
-    await openPalette(page, "offhand mod 1");
+    await openPalette(page, "weapon offhand");
     await page.keyboard.press("Enter");
 
     // The one place navigating rewrites the layout, and deliberately: unlike Mod+arrow,
     // which lands on a header that exists either way, a row in a closed section has nothing
     // to land on at all.
     await expect(headerRow(page, "gear")).toContainText("▾");
-    await expect(slotRow(page, "gear.offhandMod1")).toBeVisible();
+    await expect(slotRow(page, "gear.offhand")).toBeVisible();
   });
 
   test("a slot hidden by the slot filter clears the filter on the way", async ({
@@ -159,17 +159,17 @@ test.describe("choosing a destination", () => {
   }) => {
     await openBuilder(page);
     await slotFilterInput(page).fill("boons");
-    await expect(slotRow(page, "gear.offhandMod1")).toBeHidden();
+    await expect(slotRow(page, "gear.offhand")).toBeHidden();
 
-    await openPalette(page, "offhand mod 1");
+    await openPalette(page, "weapon offhand");
     await page.keyboard.press("Enter");
 
     // A filtered-out row is not in the DOM to land on, so the jump has to win over the filter.
     await expect(slotFilterInput(page)).toHaveValue("");
-    await expect(slotRow(page, "gear.offhandMod1")).toBeVisible();
+    await expect(slotRow(page, "gear.offhand")).toBeVisible();
     await expect(cursorRow(page)).toHaveAttribute(
       "data-cursor-key",
-      "slot:gear.offhandMod1",
+      "slot:gear.offhand",
     );
   });
 
@@ -184,13 +184,13 @@ test.describe("choosing a destination", () => {
       name: "Only show changes",
     });
     await onlyChanges.check();
-    await expect(slotRow(page, "gear.offhandMod1")).toBeHidden();
+    await expect(slotRow(page, "gear.offhand")).toBeHidden();
 
-    await openPalette(page, "offhand mod 1");
+    await openPalette(page, "weapon offhand");
     await page.keyboard.press("Enter");
 
     await expect(onlyChanges).not.toBeChecked();
-    await expect(slotRow(page, "gear.offhandMod1")).toBeVisible();
+    await expect(slotRow(page, "gear.offhand")).toBeVisible();
   });
 
   test("a section lands the cursor on its header, without opening it", async ({
@@ -258,13 +258,13 @@ test.describe("choosing a destination", () => {
   }) => {
     await openBuilder(page);
 
-    await openPalette(page, "offhand mod");
+    await openPalette(page, "weapon");
     await page.keyboard.press("ArrowDown");
     await page.keyboard.press("Enter");
 
     await expect(cursorRow(page)).toHaveAttribute(
       "data-cursor-key",
-      "slot:gear.offhandMod2",
+      "slot:gear.offhand",
     );
   });
 
@@ -317,13 +317,13 @@ test.describe("choosing a destination", () => {
     await page.getByTestId("nav-add-layer").click();
     await expect(page.getByTestId("builder-content")).toBeHidden();
 
-    await openPalette(page, "offhand mod 1");
+    await openPalette(page, "weapon offhand");
     await page.keyboard.press("Enter");
 
     // The request waits in the store until BuildEditor mounts and consumes it.
     await expect(cursorRow(page)).toHaveAttribute(
       "data-cursor-key",
-      "slot:gear.offhandMod1",
+      "slot:gear.offhand",
     );
   });
 

@@ -4,8 +4,8 @@ import { computed, type Ref } from "vue";
 import { getPath } from "../lib/build-path";
 import { inputKey } from "../lib/build-inputs";
 import { pctInput } from "../lib/format";
-import { expandSlots } from "../lib/item-picker-list";
 import { isDisabled } from "../lib/slot-toggle";
+import { slotsWithCompare } from "../lib/slot-availability";
 import { itemLabel, stableRef } from "../engine/insignia";
 import { inputEntries, type InputEntry } from "../engine/inputs";
 import type {
@@ -274,7 +274,14 @@ export function useCompareDiff(options: {
   const rowDiffsBySlot = computed(() => {
     const map = new Map<string, SlotDiff>();
     if (!compareBuild.value) return map;
-    for (const slot of expandSlots(db.value.slots, build.value)) {
+    // A slot this build hides differs only where the compare build fills it.
+    const { slots } = slotsWithCompare(
+      db.value.slots,
+      build.value,
+      result.value.hiddenSlots,
+      compareBuild.value,
+    );
+    for (const slot of slots) {
       const choice = differs(slot.id);
       const disabled = disabledDiffers(build.value, compareBuild.value, slot);
       const inputs = inputDiffs(slot.id);

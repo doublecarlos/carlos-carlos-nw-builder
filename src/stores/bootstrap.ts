@@ -85,4 +85,6 @@ export async function hydrate() {
   // Last of all, with both stores live and persisting: a build stored with its catalog still
   // embedded hands it to a layer here, and the stripped build and new layer both get written.
   builds._unpackStoredCatalogs();
+  // After the unpack, whose layers can change which slots are available.
+  builds.pruneAll();
 }
