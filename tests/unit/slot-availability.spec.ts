@@ -231,6 +231,62 @@ describe("pruneUnavailableSlots", () => {
   });
 });
 
+describe("pruneUnavailableSlots: nested slots", () => {
+  /** Nested under the conditional mod slot, with no condition of its own. */
+  const plainChild: ItemPickerSlot = {
+    id: "gear.gem",
+    label: "Gem",
+    section: "gear",
+    type: "item_picker",
+    filter: "gems",
+    parent: "gear.mod",
+  };
+  /** Nested too, with a condition that holds for a plain weapon. */
+  const gatedChild: ItemPickerSlot = {
+    id: "gear.charm",
+    label: "Charm",
+    section: "gear",
+    type: "item_picker",
+    filter: "charms",
+    parent: "gear.mod",
+    availableWhen: { equipped: { item: "stick" } },
+  };
+  const nestedDb = db.build(items, bonuses, schema, {
+    sections: [{ id: "gear", label: "Gear", slotIds: [] }],
+    slots: [weaponSlot, modSlot, plainChild, gatedChild],
+    presets: [],
+  });
+  const nestedBuild = (weapon: string) =>
+    filledBuild({
+      choices: {
+        "gear.weapon": weapon,
+        "gear.mod": "mod",
+        "gear.gem": "gem",
+        "gear.charm": "charm",
+      },
+    });
+
+  it("hides and empties every child while the parent is unavailable", () => {
+    const { build, cleared, hidden } = pruneUnavailableSlots(
+      nestedDb,
+      nestedBuild("stick"),
+    );
+    expect([...hidden].sort()).toEqual(["gear.charm", "gear.gem", "gear.mod"]);
+    expect(cleared.sort()).toEqual(["gear.charm", "gear.gem", "gear.mod"]);
+    expect(build.choices["gear.gem"]).toBeUndefined();
+    expect(build.choices["gear.charm"]).toBeUndefined();
+  });
+
+  it("still applies a child's own condition while the parent is available", () => {
+    const { build, hidden } = pruneUnavailableSlots(
+      nestedDb,
+      nestedBuild("relic"),
+    );
+    expect([...hidden]).toEqual(["gear.charm"]);
+    expect(build.choices["gear.gem"]).toBe("gem");
+  });
+});
+
 describe("clearSlotContents", () => {
   it("empties every row of a list in place", () => {
     const build = filledBuild();

@@ -45,6 +45,11 @@ import { itemStatAddress, readInput } from "../lib/build-inputs";
 import * as insignia from "../engine/insignia";
 import * as stableBrowser from "../stores/stableBrowser";
 import { slotsWithCompare } from "../lib/slot-availability";
+import {
+  nestedParentId,
+  parentOf,
+  type NestPosition,
+} from "../lib/slot-parent";
 import { useHoverCard } from "../composables/useHoverCard";
 import { itemScalers } from "../composables/useItemScale";
 import { useCompareDiff, type SlotDiff } from "../composables/useCompareDiff";
@@ -420,6 +425,8 @@ interface SectionRow extends SlotSection {
   diffs: number;
   total: number;
   presets: SectionPreset[];
+  /** Parents shown only because a nested slot of theirs matches the filter. */
+  context: ReadonlySet<string>;
   /** How many point-assignment stepper columns a row can hold at most, or 0 when the section
    *  has none. BuildSection.vue gives the section one shared content track per column. */
   assignmentColumns: number;
@@ -477,15 +484,28 @@ const sections = computed<SectionRow[]>(() => {
       // narrowed) one below -- the badge's job is telling a *collapsed* section apart, where
       // `slots` would otherwise be invisible. Same reasoning for `unsaved`.
       const diffs = compareBuild.value ? allSlots.filter(rowDiffers).length : 0;
-      const slots = allSlots.filter(
+      const matched = allSlots.filter(
         (slotDef) =>
           !anyFilterActive.value || slotMatchesFilters(section, slotDef),
+      );
+      // A matching nested slot keeps its parent on screen, as context.
+      const matchedIds = new Set(matched.map((slotDef) => slotDef.id));
+      const wanted = new Set(matched.map((slotDef) => parentOf(slotDef)));
+      const context = new Set(
+        allSlots
+          .filter(
+            (slotDef) => wanted.has(slotDef.id) && !matchedIds.has(slotDef.id),
+          )
+          .map((slotDef) => slotDef.id),
+      );
+      const slots = allSlots.filter(
+        (slotDef) => matchedIds.has(slotDef.id) || context.has(slotDef.id),
       );
       // The fill-count badge only means anything for item_picker slots -- a build_parameter
       // always has *some* value, "filled" isn't a meaningful state for it. A section made
       // entirely of build_parameter slots ends up with total 0, so the badge just doesn't render.
       // A compare-only row is not this build's to fill.
-      const pickerSlots = slots.filter(
+      const pickerSlots = matched.filter(
         (slotDef) =>
           slotDef.type === "item_picker" && !compareOnly.value.has(slotDef.id),
       );
@@ -502,7 +522,7 @@ const sections = computed<SectionRow[]>(() => {
       // point_assignment slots can also produce errors (class/maxCopies/outOfRange, per-item
       // rather than per-slot), but they never count toward `filled` -- like build_parameter, a
       // point_assignment slot always has *some* value, so "filled" isn't meaningful for it.
-      for (const slotDef of slots) {
+      for (const slotDef of matched) {
         if (slotDef.type !== "point_assignment") continue;
         for (const error of errorsBySlot.value.get(slotDef.id) ?? []) {
           if (error.severity === "warning") warnings += 1;
@@ -520,6 +540,7 @@ const sections = computed<SectionRow[]>(() => {
         warnings,
         diffs,
         total: pickerSlots.length,
+        context,
         assignmentColumns: pointSlots.length
           ? Math.max(
               ...pointSlots.map(
@@ -538,7 +559,10 @@ const sections = computed<SectionRow[]>(() => {
 /** Total rendered slots across every visible section, for the "N matches" indicator next to
  *  the filter controls. */
 const filteredSlotCount = computed(() =>
-  sections.value.reduce((sum, section) => sum + section.slots.length, 0),
+  sections.value.reduce(
+    (sum, section) => sum + section.slots.length - section.context.size,
+    0,
+  ),
 );
 
 /** Ids of rows immediately followed by a separator in their section's rendered slot list --
@@ -555,6 +579,32 @@ const noBorderIds = computed(() => {
     }
   }
   return ids;
+});
+
+/** Parents rendered only as context for a matching nested slot, across every section. */
+const contextIds = computed(
+  () => new Set(sections.value.flatMap((section) => [...section.context])),
+);
+
+/** Rendered rows nested under a parent that renders in the same section, by id, with where
+ *  each sits among its siblings. */
+const nestById = computed(() => {
+  const nest = new Map<string, NestPosition>();
+  for (const section of sections.value) {
+    const rendered = new Set(section.slots.map((slotDef) => slotDef.id));
+    const parents = section.slots.map((slotDef) => {
+      const parentId = nestedParentId(slotDef, db.value.slotById);
+      return parentId && rendered.has(parentId) ? parentId : undefined;
+    });
+    parents.forEach((parentId, i) => {
+      if (!parentId) return;
+      nest.set(section.slots[i].id, {
+        first: parents[i - 1] !== parentId,
+        last: parents[i + 1] !== parentId,
+      });
+    });
+  }
+  return nest;
 });
 
 /** slotId -> the active bonuses the engine credits to that row (`EvaluatedBonus.slotId`), the
@@ -1206,6 +1256,7 @@ watch(
               "
               :highlight-diff="highlightDiff"
               :no-border="noBorderIds.has(slotDef.id)"
+              :nest="nestById.get(slotDef.id)"
             />
             <BuildSlot
               v-else
@@ -1216,6 +1267,8 @@ watch(
               :highlight-diff="highlightDiff"
               :is-hovered="hover?.slotId === slotDef.id"
               :no-border="noBorderIds.has(slotDef.id)"
+              :nest="nestById.get(slotDef.id)"
+              :class="contextIds.has(slotDef.id) && 'opacity-60'"
               :on-arrow="moveCursor"
               :item="rowDataFor(slotDef.id).item"
               :items="rowDataFor(slotDef.id).items"

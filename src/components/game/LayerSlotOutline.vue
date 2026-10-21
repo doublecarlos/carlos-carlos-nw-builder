@@ -40,6 +40,7 @@ import {
   type OutlineMove,
   type OutlineRow,
 } from "../../lib/slot-outline";
+import { stepIndex } from "../../lib/slot-parent";
 import type { CatalogOverlay, Db } from "../../types";
 
 const SECTION_KIND = "outline-section";
@@ -229,11 +230,13 @@ function moveBy(row: OutlineRow, delta: 1 | -1): OutlineMove | null {
     return { kind: "section", key: row.key, index: to };
   }
   if (row.kind !== "slot") return null;
-  const place = slotPlaces.value.get(row.key);
   const section = props.db.slotById.get(row.key)?.section;
-  if (!place || !section) return null;
-  const to = place.index + delta;
-  if (to < 0 || to > place.count - 1) return null;
+  if (!section) return null;
+  const members = props.db.authoredSlots.filter(
+    (slot) => slot.section === section,
+  );
+  const to = stepIndex(members, row.key, delta);
+  if (to === null) return null;
   return { kind: "slot", key: row.key, sectionId: section, index: to };
 }
 
@@ -456,8 +459,9 @@ onKeyStroke(["ArrowDown", "ArrowUp", "Enter"], (event) => {
               v-for="entry in view.slots"
               :key="`slot:${entry.row.key}`"
               tabindex="0"
-              class="editor-row flex cursor-pointer items-center gap-1.5 border-b border-line/45 py-1 pl-5 pr-2 hover:bg-surface-2"
+              class="editor-row relative flex cursor-pointer items-center gap-1.5 border-b border-line/45 py-1 pr-2 hover:bg-surface-2"
               :class="[
+                entry.row.nested ? 'pl-9' : 'pl-5',
                 isSelected(entry.row) && 'is-on bg-accent-soft',
                 dragSource?.kind === SLOT_KIND &&
                   dragSource.key === entry.row.key &&
@@ -467,6 +471,12 @@ onKeyStroke(["ArrowDown", "ArrowUp", "Enter"], (event) => {
               v-bind="entry.draggable ? view.drop.rowProps(entry.index) : {}"
               @click="onRowClick(entry.row)"
             >
+              <span
+                v-if="entry.row.nested"
+                aria-hidden="true"
+                data-testid="outline-nest-guide"
+                class="pointer-events-none absolute inset-y-0 left-7 w-px bg-line"
+              />
               <DragHandle
                 v-if="entry.draggable"
                 tooltip="Drag to reorder or move to another section"

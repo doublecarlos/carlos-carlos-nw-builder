@@ -8,6 +8,7 @@ import {
   toSlot,
   diffLabel,
   findPathConflict,
+  parentOptions,
   slotSaveError,
   switchWhenMode,
   TYPE_FIELDS,
@@ -521,5 +522,66 @@ describe("availableWhen", () => {
     const draft = { ...buildDraft(gated), whenMode: "json" as const };
     draft.whenJson = "{ nope";
     expect(slotSaveError(draft, testDb, gated.id)).toMatch(/not valid JSON/);
+  });
+});
+
+describe("parent", () => {
+  const mount = {
+    id: "stable.mount",
+    label: "Mount",
+    section: "stable",
+    type: "item_picker" as const,
+    filter: "mount",
+  };
+  const nested = {
+    id: "stable.ins",
+    label: "Insignia",
+    section: "stable",
+    type: "item_picker" as const,
+    filter: "insignia",
+    parent: "stable.mount",
+  };
+  const parentDb = db.build(items, [], NW_SCHEMA, {
+    ...slotsData,
+    slots: [...slotsData.slots, mount, nested],
+  });
+
+  it("round-trips on an item_picker and is dropped by other types", () => {
+    expect(roundTrip(nested)).toEqual(nested);
+    const draft = { ...buildDraft(nested), type: "item_picker_list" as const };
+    expect(toSlot(draft, ctx(nested))).not.toHaveProperty("parent");
+  });
+
+  it("labels nesting and un-nesting", () => {
+    const { parent: _parent, ...topLevel } = nested;
+    expect(diffLabel(JSON.stringify(topLevel), JSON.stringify(nested))).toBe(
+      'nest under "stable.mount"',
+    );
+    expect(diffLabel(JSON.stringify(nested), JSON.stringify(topLevel))).toBe(
+      "stop nesting",
+    );
+  });
+
+  it("offers the section's top-level item pickers other than itself", () => {
+    const values = (ownId: string) =>
+      parentOptions(parentDb, "stable", ownId).map((option) => option.value);
+    expect(values("stable.new")).toEqual(["", "stable.mount"]);
+    expect(values("stable.mount")).toEqual([""]);
+    expect(values("boons.x")).toEqual(["", "stable.mount"]);
+    expect(
+      parentOptions(parentDb, "boons", "x").map((option) => option.value),
+    ).toEqual([""]);
+  });
+
+  it("blocks saving a parent the layout cannot nest under", () => {
+    expect(slotSaveError(buildDraft(nested), parentDb, nested.id)).toBeNull();
+    const missing = { ...buildDraft(nested), parent: "stable.ghost" };
+    expect(slotSaveError(missing, parentDb, nested.id)).toMatch(
+      /does not exist/,
+    );
+    const nestingParent = { ...buildDraft(mount), parent: "stable.ins" };
+    expect(slotSaveError(nestingParent, parentDb, mount.id)).toMatch(
+      /nested itself/,
+    );
   });
 });

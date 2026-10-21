@@ -30,6 +30,7 @@ import {
   isNumeric,
   nounOf,
   findPathConflict,
+  parentOptions,
   slotSaveError,
   switchWhenMode,
   AVAILABILITY_LEAF_TYPES,
@@ -134,6 +135,10 @@ const numeric = computed(() => isNumeric(draft.value.paramType));
 
 const sectionOptions = computed(() =>
   props.db.sections.map((s) => ({ value: s.id, label: s.label })),
+);
+
+const parentChoices = computed(() =>
+  parentOptions(props.db, draft.value.section, slotId(draft.value)),
 );
 
 const optionsSourceOptions = [
@@ -632,6 +637,20 @@ function save() {
           :items="candidates"
           :selected-item="db.get(draft.itemDefault)"
           :db="db"
+        />
+      </FormField>
+    </FormGrid>
+
+    <FormGrid v-if="fields.has('parent')" class="mb-2">
+      <FormField
+        label="Nested under"
+        hint="shown indented after it, and hidden while it is"
+        class="w-64"
+      >
+        <ComboBox
+          v-model="draft.parent"
+          :options="parentChoices"
+          data-testid="slot-parent-input"
         />
       </FormField>
     </FormGrid>

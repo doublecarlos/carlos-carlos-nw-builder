@@ -9,6 +9,7 @@ import { evaluate } from "../engine/conditions";
 import { withDerivedBonuses } from "../engine/insignia";
 import { expandSlots, parseRowSlotId } from "./item-picker-list";
 import { SLOT_FIELDS, clearSlotData, storedSlotIds } from "./slot-fields";
+import { nestedParentId } from "./slot-parent";
 import type { Build, ConditionWhen, Db, EvalContext, Slot } from "../types";
 
 /** A slot's `availableWhen`, or undefined for one that has none or whose type cannot carry one. */
@@ -121,14 +122,24 @@ export interface PruneResult {
 
 const NOTHING_HIDDEN: ReadonlySet<string> = new Set();
 
+/** The conditional parent a nested slot also depends on, or undefined. */
+function conditionalParent(db: Db, slot: Slot): Slot | undefined {
+  const parentId = nestedParentId(slot, db.slotById);
+  const parent = parentId ? db.slotById.get(parentId) : undefined;
+  return parent && availabilityOf(parent) ? parent : undefined;
+}
+
 /**
- * Empties every slot whose `availableWhen` fails. Pure: `build` is never written.
+ * Empties every slot whose `availableWhen` fails, or whose parent's does. Pure: `build` is
+ * never written.
  *
  * Repeats until a pass clears nothing, since emptying one slot can hide another. Each pass
  * only removes values, so a slot is cleared at most once and the loop always ends.
  */
 export function pruneUnavailableSlots(db: Db, build: Build): PruneResult {
-  const conditional = db.slots.filter((slot) => availabilityOf(slot));
+  const conditional = db.slots.filter(
+    (slot) => availabilityOf(slot) || conditionalParent(db, slot),
+  );
   if (!conditional.length)
     return { build, cleared: [], hidden: NOTHING_HIDDEN };
 
@@ -136,7 +147,16 @@ export function pruneUnavailableSlots(db: Db, build: Build): PruneResult {
   const cleared: string[] = [];
   for (;;) {
     const ctx = availabilityContext(db, current);
-    const hidden = conditional.filter((slot) => !slotAvailable(slot, ctx));
+    const failing = new Set(
+      conditional
+        .filter((slot) => !slotAvailable(slot, ctx))
+        .map((slot) => slot.id),
+    );
+    const hidden = conditional.filter(
+      (slot) =>
+        failing.has(slot.id) ||
+        failing.has(conditionalParent(db, slot)?.id ?? ""),
+    );
     const emptied = hidden.filter((slot) => holdsAnything(current, slot));
     if (!emptied.length)
       return {

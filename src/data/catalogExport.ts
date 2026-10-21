@@ -291,6 +291,7 @@ const SLOT_KEYS = [
   "filter",
   "tags",
   "list",
+  "parent",
   "stable",
   "paramType",
   "path",

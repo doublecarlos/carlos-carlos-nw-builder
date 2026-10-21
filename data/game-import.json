@@ -276,7 +276,16 @@
     {
       "label": "Reinforcements",
       "reason": "Not recorded in the game export.",
-      "sections": ["reinforcements"]
+      "slotIds": [
+        "reinforcements.armorKit1",
+        "reinforcements.armorKit2",
+        "reinforcements.armorKit3",
+        "reinforcements.armorKit4",
+        "reinforcements.jewel1",
+        "reinforcements.jewel2",
+        "reinforcements.jewel3",
+        "reinforcements.jewel4"
+      ]
     },
     {
       "label": "Buffs (consumables, etc.)",

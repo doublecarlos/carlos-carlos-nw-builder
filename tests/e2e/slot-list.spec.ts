@@ -189,7 +189,7 @@ test.describe("section collapse/expand", () => {
     await openBuilder(page);
     // All sections start open by default -- see `data/slots.json`'s `defaultOpen` per section.
     await expect(slotRow(page, "gear.head")).toBeVisible();
-    await expect(slotRow(page, "reinforcements.armorKit1")).toBeVisible();
+    await expect(slotRow(page, "buffs.eventFood")).toBeVisible();
     await expect(slotRow(page, "options.class")).toBeVisible();
 
     await page.getByRole("button", { name: "collapse all" }).click();
@@ -198,7 +198,7 @@ test.describe("section collapse/expand", () => {
 
     await page.getByRole("button", { name: "expand all" }).click();
     await expect(slotRow(page, "gear.head")).toBeVisible();
-    await expect(slotRow(page, "reinforcements.armorKit1")).toBeVisible();
+    await expect(slotRow(page, "buffs.eventFood")).toBeVisible();
     await expect(slotRow(page, "options.class")).toBeVisible();
   });
 
@@ -239,28 +239,28 @@ test.describe("section collapse/expand", () => {
   test("open/closed state survives a reload", async ({ page }) => {
     await openBuilder(page);
     // All sections start open by default.
-    await expect(slotRow(page, "reinforcements.armorKit1")).toBeVisible();
+    await expect(slotRow(page, "buffs.eventFood")).toBeVisible();
 
-    await headerRow(page, "reinforcements").click();
-    await expect(slotRow(page, "reinforcements.armorKit1")).toBeHidden();
+    await headerRow(page, "buffs").click();
+    await expect(slotRow(page, "buffs.eventFood")).toBeHidden();
 
     await page.reload();
     await expect(headerRow(page, "gear")).toBeVisible();
-    await expect(slotRow(page, "reinforcements.armorKit1")).toBeHidden();
+    await expect(slotRow(page, "buffs.eventFood")).toBeHidden();
   });
 
   test("open/closed state is a UI preference, not saved with the build", async ({
     page,
   }) => {
     await openBuilder(page);
-    // Collapse reinforcements (it starts open by default).
-    await headerRow(page, "reinforcements").click();
-    await expect(slotRow(page, "reinforcements.armorKit1")).toBeHidden();
+    // Collapse buffs (it starts open by default).
+    await headerRow(page, "buffs").click();
+    await expect(slotRow(page, "buffs.eventFood")).toBeHidden();
 
     // A brand-new build sees the same section states -- proving they live outside any one
     // build's own document rather than resetting to the shared defaults.
     await page.getByTestId("nav-add-build").click();
-    await expect(slotRow(page, "reinforcements.armorKit1")).toBeHidden();
+    await expect(slotRow(page, "buffs.eventFood")).toBeHidden();
 
     // Collapsing is not a build edit, so it never lands on the undo stack.
     await expect(undoButton(page)).toBeDisabled();
@@ -318,9 +318,9 @@ test.describe("keyboard cursor", () => {
       "header:gear",
     );
 
-    // Walk through all Gear slots.
+    // Walk through all Gear slots, nested reinforcements included.
     const gearSlotCount = await page
-      .locator('[data-cursor-key^="slot:gear."]')
+      .locator('[data-section-id="gear"] [data-cursor-key^="slot:"]')
       .count();
     for (let i = 0; i < gearSlotCount; i += 1)
       await page.keyboard.press("ArrowDown");
@@ -519,12 +519,14 @@ test.describe("separator slots", () => {
     await expect(separator).not.toHaveAttribute("data-cursor-key");
   });
 
-  test("ArrowDown from Boots skips straight to Neck", async ({ page }) => {
+  test("ArrowDown from the Boots reinforcement skips straight to Neck", async ({
+    page,
+  }) => {
     await openBuilder(page);
-    await parkCursorOnRow(page, "gear.boots");
+    await parkCursorOnRow(page, "reinforcements.armorKit4");
     await expect(cursorRow(page)).toHaveAttribute(
       "data-cursor-key",
-      "slot:gear.boots",
+      "slot:reinforcements.armorKit4",
     );
 
     await page.keyboard.press("ArrowDown");
@@ -538,9 +540,10 @@ test.describe("separator slots", () => {
     page,
   }) => {
     await openBuilder(page);
-    // Boots sits right above the separator: its own border is suppressed so it doesn't
-    // double up against the separator's bar. Neck has no separator after it and keeps its own.
-    await expect(slotRow(page, "gear.boots")).toHaveCSS(
+    // The Boots reinforcement sits right above the separator: its own border is suppressed so
+    // it doesn't double up against the separator's bar. Neck has no separator after it and
+    // keeps its own.
+    await expect(slotRow(page, "reinforcements.armorKit4")).toHaveCSS(
       "border-bottom-width",
       "0px",
     );

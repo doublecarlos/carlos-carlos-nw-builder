@@ -13,6 +13,7 @@ import {
   BONUS_ONLY_LEAVES,
   STABLE_ROLE_FILTER,
   checkSlotAvailability,
+  checkSlotParent,
   validateSlotDefaults,
 } from "../data/catalog";
 import {
@@ -55,6 +56,7 @@ export type SlotFieldGroup =
   | "defaultRows"
   | "stable"
   | "availability"
+  | "parent"
   | "text";
 
 export const TYPE_FIELDS: Record<Slot["type"], SlotFieldGroup[]> = {
@@ -62,6 +64,7 @@ export const TYPE_FIELDS: Record<Slot["type"], SlotFieldGroup[]> = {
   item_picker: [
     "selector",
     "itemDefault",
+    "parent",
     "pickerFlags",
     "stable",
     "availability",
@@ -143,6 +146,8 @@ export interface SlotDraft {
   itemDefault: string;
   disallowEmpty: boolean;
   hidePreview: boolean;
+  /** The id of the slot this one nests under, or empty for a top-level slot. */
+  parent: string;
   /** Shared with `item_picker_list`, which hands it to every row. */
   toggleable: boolean;
   /** Shared with `build_parameter`: both render in the quick strip. */
@@ -212,6 +217,7 @@ export function buildDraft(slot: Slot | null | undefined): SlotDraft {
     itemDefault: slot?.type === "item_picker" ? (slot.default ?? "") : "",
     disallowEmpty: source.disallowEmpty ?? false,
     hidePreview: source.hidePreview ?? false,
+    parent: source.parent ?? "",
     toggleable: source.toggleable ?? false,
     quick: source.quick ?? false,
     stableRole: source.stable?.role ?? "",
@@ -387,6 +393,7 @@ const BUILDERS: {
     putSelector(slot, local);
     putIfSet(slot, "default", local.itemDefault.trim());
     putIfSet(slot, "availableWhen", availableWhenOf(local));
+    putIfSet(slot, "parent", local.parent);
     if (local.disallowEmpty) slot.disallowEmpty = true;
     if (local.hidePreview) slot.hidePreview = true;
     if (local.toggleable) slot.toggleable = true;
@@ -499,6 +506,12 @@ const CHECKS: DiffCheck<Slot>[] = [
       ? "edit availability condition"
       : null,
   (old, nw) =>
+    (old as ItemPickerSlot).parent !== (nw as ItemPickerSlot).parent
+      ? (nw as ItemPickerSlot).parent
+        ? `nest under "${(nw as ItemPickerSlot).parent}"`
+        : "stop nesting"
+      : null,
+  (old, nw) =>
     (old as BuildParameterSlot).control !== (nw as BuildParameterSlot).control
       ? `edit control to "${(nw as BuildParameterSlot).control ?? "stepper if bounded"}"`
       : null,
@@ -506,6 +519,26 @@ const CHECKS: DiffCheck<Slot>[] = [
 
 export function diffLabel(oldJson: string, newJson: string): string {
   return fieldDiffLabel(CHECKS, oldJson, newJson, "edit slot");
+}
+
+/** The slots a slot in `section` can nest under: its top-level item pickers, other than itself. */
+export function parentOptions(
+  db: Db,
+  section: string,
+  ownId: string,
+): { value: string; label: string }[] {
+  return [
+    { value: "", label: "- none -" },
+    ...db.authoredSlots
+      .filter(
+        (slot) =>
+          slot.type === "item_picker" &&
+          slot.section === section &&
+          slot.id !== ownId &&
+          !slot.parent,
+      )
+      .map((slot) => ({ value: slot.id, label: slot.label || slot.id })),
+  ];
 }
 
 /** The other slot already sitting on this `path`, if any. Two slots sharing a path silently
@@ -589,10 +622,9 @@ export function slotSaveError(
     const [finding] = validateSlotDefaults([slot], db.items);
     if (finding) return finding.message;
   }
-  const [unavailable] = checkSlotAvailability(slot, {
-    items: db.items,
-    bonuses: db.bonuses,
-    slots: db.slots,
-  });
-  return unavailable ?? null;
+  const refs = { items: db.items, bonuses: db.bonuses, slots: db.slots };
+  const [unavailable] = checkSlotAvailability(slot, refs);
+  if (unavailable) return unavailable;
+  const [badParent] = checkSlotParent(slot, refs);
+  return badParent ?? null;
 }

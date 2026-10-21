@@ -21,6 +21,11 @@ import { resolvedOptions } from "../lib/param-options";
 import { deepEqual } from "../lib/deep-equal";
 import { replacementIdOf, replacementValuesOf } from "../lib/item-replacement";
 import { parseRowSlotId, rowSlot } from "../lib/item-picker-list";
+import {
+  groupUnderParents,
+  nestedParentId,
+  parentOf,
+} from "../lib/slot-parent";
 import { REQUIRED_SLOT_IDS, gameImportReferences } from "../lib/demo-slots";
 import { INSIGNIA_SHAPES } from "../types";
 import { canStep } from "../engine/inputs";
@@ -218,8 +223,8 @@ function orderSections(
 
 /**
  * Slots in render order: per section, its `slotIds` first (ignoring ids that aren't its
- * members), then its other members. Slots of a missing section go last, so the engine and
- * lint still see them.
+ * members), then its other members, each nested slot pulled right after its parent. Slots of
+ * a missing section go last, so the engine and lint still see them.
  */
 function layoutSlots(slots: Slot[], sections: SlotSection[]): Slot[] {
   const members = new Map<string, Slot[]>();
@@ -233,13 +238,15 @@ function layoutSlots(slots: Slot[], sections: SlotSection[]): Slot[] {
     const own = members.get(section.id) ?? [];
     members.delete(section.id);
     const ownById = new Map(own.map((slot) => [slot.id, slot]));
+    const ordered: Slot[] = [];
     for (const id of section.slotIds) {
       const slot = ownById.get(id);
       if (!slot) continue;
-      out.push(slot);
+      ordered.push(slot);
       ownById.delete(id);
     }
-    out.push(...ownById.values());
+    ordered.push(...ownById.values());
+    out.push(...groupUnderParents(ordered));
   }
   for (const orphans of members.values()) out.push(...orphans);
   return out;
@@ -461,8 +468,50 @@ const withAt = (ids: string[], id: string, index: number) => {
 };
 
 /**
+ * Where `group` lands among `rest` (the members without it), given `index` counted after
+ * removing only the moved slot, as `withAt` takes it. A nested slot stays among its siblings.
+ * A top-level one never splits another parent from its children: landing inside a group
+ * snaps to its start when moving up, else to its end.
+ */
+function groupIndex(
+  slot: Slot,
+  group: string[],
+  before: string[],
+  rest: string[],
+  index: number,
+  byId: Map<string, Slot>,
+) {
+  const from = before.indexOf(slot.id);
+  const movingUp = from !== -1 && index < from;
+  // The first member the slot ends up in front of, skipping its own group.
+  const others = before.filter((id) => id !== slot.id);
+  const anchor = others
+    .slice(Math.max(0, index))
+    .find((id) => !group.includes(id));
+  const at = anchor === undefined ? rest.length : rest.indexOf(anchor);
+  const parentOfId = (id: string) => {
+    const entry = byId.get(id);
+    return entry ? nestedParentId(entry, byId) : undefined;
+  };
+  const parentId = nestedParentId(slot, byId);
+  if (parentId) {
+    const first = rest.indexOf(parentId) + 1;
+    let last = first;
+    while (last < rest.length && parentOfId(rest[last]) === parentId) last += 1;
+    return Math.max(first, Math.min(last, at));
+  }
+  const inside = at < rest.length ? parentOfId(rest[at]) : undefined;
+  if (!inside) return at;
+  if (movingUp) return rest.indexOf(inside);
+  let end = at;
+  while (end < rest.length && parentOfId(rest[end]) === inside) end += 1;
+  return end;
+}
+
+/**
  * Put `slotId` at `index` among `toSection`'s members, writing the target section's full
  * `slotIds`, and for a cross-section move, the source section and the slot's new `section`.
+ * A parent moves with its nested slots, and a nested slot only reorders among its siblings.
  * The slot id is kept, since build data is keyed by it. Unchanged when the slot or section is
  * not in `layout`, or the move is a no-op.
  */
@@ -477,25 +526,38 @@ export function moveSlot(
   const target = layout.sections.find((section) => section.id === toSection);
   if (!slot || !target) return overlay;
 
+  const byId = new Map(layout.slots.map((entry) => [entry.id, entry]));
+  const crossSection = slot.section !== toSection;
+  if (crossSection && nestedParentId(slot, byId)) return overlay;
+
+  const children = layout.slots.filter(
+    (entry) => nestedParentId(entry, byId) === slotId,
+  );
+  const group = [slotId, ...children.map((entry) => entry.id)];
   const before = membersOf(layout, toSection);
-  const after = withAt(before, slotId, index);
-  if (slot.section === toSection && deepEqual(before, after)) return overlay;
+  const rest = before.filter((id) => !group.includes(id));
+  const at = groupIndex(slot, group, before, rest, index, byId);
+  const after = [...rest.slice(0, at), ...group, ...rest.slice(at)];
+  if (!crossSection && deepEqual(before, after)) return overlay;
 
   let next = upsert(overlay, "sections", toSection, {
     ...target,
     slotIds: after,
   });
-  if (slot.section !== toSection) {
+  if (crossSection) {
     const source = layout.sections.find(
       (section) => section.id === slot.section,
     );
     if (source) {
       next = upsert(next, "sections", source.id, {
         ...source,
-        slotIds: membersOf(layout, source.id).filter((id) => id !== slotId),
+        slotIds: membersOf(layout, source.id).filter(
+          (id) => !group.includes(id),
+        ),
       });
     }
-    next = upsert(next, "slots", slotId, { ...slot, section: toSection });
+    for (const entry of [slot, ...children])
+      next = upsert(next, "slots", entry.id, { ...entry, section: toSection });
   }
   return next;
 }
@@ -1782,9 +1844,6 @@ export function checkSlotAvailability(
   const itemIds = new Set(refs.items.map((item) => item.id));
   const tags = new Set(refs.items.flatMap((item) => item.tags ?? []));
   const bonusIds = new Set(refs.bonuses.map((bonus) => bonus.id));
-  const own = refs.items.filter((item) => offeredBy(slot, item));
-  const selfSupplied = (supplies: (item: Item) => boolean) =>
-    own.some(supplies);
 
   eachLeaf(when, (key, spec) => {
     const reason = BONUS_ONLY_LEAVES[key];
@@ -1804,16 +1863,6 @@ export function checkSlotAvailability(
         errors.push(
           `${slot.id}: availableWhen reads item "${item}", which does not exist`,
         );
-      if (
-        selfSupplied((candidate) =>
-          tag != null
-            ? (candidate.tags ?? []).includes(tag)
-            : candidate.id === item,
-        )
-      )
-        errors.push(
-          `${slot.id}: availableWhen can be met by this slot's own pick; once cleared, the slot could never be filled again`,
-        );
     }
     if (key === "bonusOccurrences") {
       const bonus = (spec as { bonus?: string } | null)?.bonus;
@@ -1827,13 +1876,92 @@ export function checkSlotAvailability(
         errors.push(
           `${slot.id}: availableWhen reads bonus "${bonus}", which does not exist`,
         );
-      if (selfSupplied((candidate) => !!candidate.bonuses?.includes(bonus)))
-        errors.push(
-          `${slot.id}: availableWhen can be met by this slot's own pick; once cleared, the slot could never be filled again`,
-        );
     }
   });
+  if (metByPick(when, refs.items, slot))
+    errors.push(
+      `${slot.id}: availableWhen can be met by this slot's own pick; once cleared, the slot could never be filled again`,
+    );
   return [...new Set(errors)];
+}
+
+/** Whether a pick in `slot` could meet an `equipped` or `bonusOccurrences` leaf of `when`. */
+function metByPick(
+  when: ConditionWhen,
+  items: Item[],
+  slot: ItemPickerSlot | ItemPickerListSlot,
+): boolean {
+  const own = items.filter((item) => offeredBy(slot, item));
+  let met = false;
+  eachLeaf(when, (key, spec) => {
+    if (key === "equipped") {
+      const { tag, item } = (spec ?? {}) as { tag?: string; item?: string };
+      met ||= own.some((candidate) =>
+        tag != null
+          ? (candidate.tags ?? []).includes(tag)
+          : candidate.id === item,
+      );
+    }
+    if (key === "bonusOccurrences") {
+      const bonus = (spec as { bonus?: string } | null)?.bonus;
+      met ||=
+        bonus != null &&
+        own.some((candidate) => !!candidate.bonuses?.includes(bonus));
+    }
+  });
+  return met;
+}
+
+/**
+ * The authoring errors in one slot's `parent`: a slot type that cannot carry one, a parent
+ * that is missing, not a top-level `item_picker` of the same section, and a parent condition
+ * the slot's own pick can meet. A parent cannot be nested itself.
+ */
+export function checkSlotParent(slot: Slot, refs: AvailabilityRefs): string[] {
+  const parentId = (slot as { parent?: string }).parent;
+  if (parentId === undefined) return [];
+  if (slot.type !== "item_picker")
+    return [
+      `${slot.id}: parent is only meaningful on an item_picker, this is a ${slot.type}`,
+    ];
+  if (parentId === slot.id)
+    return [`${slot.id}: a slot cannot be its own parent`];
+  const parent = refs.slots.find((other) => other.id === parentId);
+  if (!parent) return [`${slot.id}: parent "${parentId}" does not exist`];
+  if (parent.type !== "item_picker")
+    return [
+      `${slot.id}: parent "${parentId}" is a ${parent.type}; only an item_picker can have nested slots`,
+    ];
+  if (parent.section !== slot.section)
+    return [
+      `${slot.id}: parent "${parentId}" is in section "${parent.section}", not "${slot.section}"`,
+    ];
+  if (parent.parent)
+    return [
+      `${slot.id}: parent "${parentId}" is nested itself; slots nest one level deep`,
+    ];
+
+  const errors: string[] = [];
+  if (refs.slots.some((other) => parentOf(other) === slot.id))
+    errors.push(
+      `${slot.id}: has nested slots, so it cannot be nested itself; slots nest one level deep`,
+    );
+  if (parent.availableWhen && metByPick(parent.availableWhen, refs.items, slot))
+    errors.push(
+      `${slot.id}: the availableWhen of parent "${parentId}" can be met by this slot's own pick; once cleared, the slot could never be filled again`,
+    );
+  return errors;
+}
+
+export function validateSlotParents(refs: AvailabilityRefs): LintFinding[] {
+  return refs.slots.flatMap((slot) =>
+    checkSlotParent(slot, refs).map((message): LintFinding => ({
+      level: "error",
+      kind: "slot",
+      name: slot.id,
+      message,
+    })),
+  );
 }
 
 export function validateSlotAvailability(
@@ -2319,6 +2447,7 @@ export function validate(
     ...validateSlots(slots),
     ...validateSlotDefaults(slots, items),
     ...validateSlotAvailability({ items, bonuses, slots }),
+    ...validateSlotParents({ items, bonuses, slots }),
     ...validateSections(sections, slots, sectionOrder),
     ...validatePresets(presets, slots, sections),
     ...validateParamSchema(slots, schema),

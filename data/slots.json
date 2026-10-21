@@ -397,10 +397,24 @@
           "filter": "gear_head"
         },
         {
+          "id": "reinforcements.armorKit1",
+          "label": "Head reinforcement",
+          "type": "item_picker",
+          "filter": "reinforcement_armor_kit",
+          "parent": "gear.head"
+        },
+        {
           "id": "gear.armor",
           "label": "Armor",
           "type": "item_picker",
           "filter": "gear_armor"
+        },
+        {
+          "id": "reinforcements.armorKit2",
+          "label": "Armor reinforcement",
+          "type": "item_picker",
+          "filter": "reinforcement_armor_kit",
+          "parent": "gear.armor"
         },
         {
           "id": "gear.arms",
@@ -409,10 +423,29 @@
           "filter": "gear_arms"
         },
         {
+          "id": "reinforcements.armorKit3",
+          "label": "Arms reinforcement",
+          "type": "item_picker",
+          "filter": "reinforcement_armor_kit",
+          "parent": "gear.arms"
+        },
+        {
           "id": "gear.mainhand",
           "label": "Weapon Mainhand",
           "type": "item_picker",
           "filter": "gear_weapon_mainhand"
+        },
+        {
+          "id": "gear.mainhandMod",
+          "label": "Mainhand mod",
+          "type": "item_picker",
+          "filter": "modification_mainhand",
+          "parent": "gear.mainhand",
+          "availableWhen": {
+            "equipped": {
+              "tag": "artifact:mainhand"
+            }
+          }
         },
         {
           "id": "gear.offhand",
@@ -421,21 +454,11 @@
           "filter": "gear_weapon_offhand"
         },
         {
-          "id": "gear.mainhandMod",
-          "label": "Mainhand mod",
-          "type": "item_picker",
-          "filter": "modification_mainhand",
-          "availableWhen": {
-            "equipped": {
-              "tag": "artifact:mainhand"
-            }
-          }
-        },
-        {
           "id": "gear.offhandMod1",
           "label": "Offhand Mod 1",
           "type": "item_picker",
           "filter": "modification_offhand_static",
+          "parent": "gear.offhand",
           "availableWhen": {
             "equipped": {
               "tag": "artifact:offhand"
@@ -447,6 +470,7 @@
           "label": "Offhand Mod 2",
           "type": "item_picker",
           "filter": "modification_offhand_dynamic",
+          "parent": "gear.offhand",
           "availableWhen": {
             "equipped": {
               "tag": "artifact:offhand"
@@ -460,6 +484,13 @@
           "filter": "gear_boots"
         },
         {
+          "id": "reinforcements.armorKit4",
+          "label": "Boots reinforcement",
+          "type": "item_picker",
+          "filter": "reinforcement_armor_kit",
+          "parent": "gear.boots"
+        },
+        {
           "id": "gear.sepBootsNeck",
           "type": "separator"
         },
@@ -470,10 +501,24 @@
           "filter": "gear_neck"
         },
         {
+          "id": "reinforcements.jewel1",
+          "label": "Neck reinforcement",
+          "type": "item_picker",
+          "filter": "reinforcement_jewel",
+          "parent": "gear.neck"
+        },
+        {
           "id": "gear.ring1",
           "label": "Ring 1",
           "type": "item_picker",
           "filter": "gear_ring"
+        },
+        {
+          "id": "reinforcements.jewel2",
+          "label": "Ring 1 reinforcement",
+          "type": "item_picker",
+          "filter": "reinforcement_jewel",
+          "parent": "gear.ring1"
         },
         {
           "id": "gear.ring2",
@@ -482,10 +527,24 @@
           "filter": "gear_ring"
         },
         {
+          "id": "reinforcements.jewel3",
+          "label": "Ring 2 reinforcement",
+          "type": "item_picker",
+          "filter": "reinforcement_jewel",
+          "parent": "gear.ring2"
+        },
+        {
           "id": "gear.waist",
           "label": "Waist",
           "type": "item_picker",
           "filter": "gear_waist"
+        },
+        {
+          "id": "reinforcements.jewel4",
+          "label": "Waist reinforcement",
+          "type": "item_picker",
+          "filter": "reinforcement_jewel",
+          "parent": "gear.waist"
         },
         {
           "id": "gear.shirt",
@@ -498,61 +557,6 @@
           "label": "Pants",
           "type": "item_picker",
           "filter": "gear_pants"
-        }
-      ]
-    },
-    {
-      "id": "reinforcements",
-      "label": "Reinforcements",
-      "defaultOpen": true,
-      "slots": [
-        {
-          "id": "reinforcements.armorKit1",
-          "label": "Armor Kit 1",
-          "type": "item_picker",
-          "filter": "reinforcement_armor_kit"
-        },
-        {
-          "id": "reinforcements.armorKit2",
-          "label": "Armor Kit 2",
-          "type": "item_picker",
-          "filter": "reinforcement_armor_kit"
-        },
-        {
-          "id": "reinforcements.armorKit3",
-          "label": "Armor Kit 3",
-          "type": "item_picker",
-          "filter": "reinforcement_armor_kit"
-        },
-        {
-          "id": "reinforcements.armorKit4",
-          "label": "Armor Kit 4",
-          "type": "item_picker",
-          "filter": "reinforcement_armor_kit"
-        },
-        {
-          "id": "reinforcements.jewel1",
-          "label": "Jewel 1",
-          "type": "item_picker",
-          "filter": "reinforcement_jewel"
-        },
-        {
-          "id": "reinforcements.jewel2",
-          "label": "Jewel 2",
-          "type": "item_picker",
-          "filter": "reinforcement_jewel"
-        },
-        {
-          "id": "reinforcements.jewel3",
-          "label": "Jewel 3",
-          "type": "item_picker",
-          "filter": "reinforcement_jewel"
-        },
-        {
-          "id": "reinforcements.jewel4",
-          "label": "Jewel 4",
-          "type": "item_picker",
-          "filter": "reinforcement_jewel"
         }
       ]
     },

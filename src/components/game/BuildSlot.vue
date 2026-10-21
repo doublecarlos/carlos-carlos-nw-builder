@@ -17,6 +17,7 @@
 // Purely presentational for anything that needs cross-row coordination (hover card) -- those
 // stay owned by BuildEditor.vue and arrive as props/emits.
 import ItemPickerRow from "./ItemPickerRow.vue";
+import NestGuide from "./NestGuide.vue";
 import BuildParameterRow from "./BuildParameterRow.vue";
 import PointAssignmentRow from "./PointAssignmentRow.vue";
 import * as buildEditor from "../../stores/buildEditor";
@@ -34,6 +35,7 @@ import type {
   PointAssignmentSlot,
 } from "../../types";
 import type { SlotDiff } from "../../composables/useCompareDiff";
+import type { NestPosition } from "../../lib/slot-parent";
 
 const props = defineProps<{
   slotDef: RowSlot;
@@ -66,6 +68,8 @@ const props = defineProps<{
   /** True for the row immediately above a separator -- its own bottom border would otherwise
    *  double up against the separator's, so BuildEditor.vue suppresses it for that one row. */
   noBorder?: boolean;
+  /** Set for a slot nested under a parent: its label is indented beside a guide line. */
+  nest?: NestPosition;
 }>();
 
 // Unpacked once here rather than read as `props.diff?.x` at each spot below: this row forwards
@@ -180,7 +184,9 @@ useCursorRowKeys(anchor, {
   <div
     class="relative grid col-span-full py-1 pr-2.5 focus-within:outline-2 focus-within:-outline-offset-1 focus-within:outline-accent [grid-template-columns:subgrid]"
     :class="[
-      noBorder ? 'border-b-0' : 'border-b border-line/45 last:border-b-0',
+      noBorder || (nest && !nest.last)
+        ? 'border-b-0'
+        : 'border-b border-line/45 last:border-b-0',
       isHovered && 'is-hovered bg-accent-soft/40',
       highlightDiff &&
         (choiceDiffers ||
@@ -195,11 +201,13 @@ useCursorRowKeys(anchor, {
     @mouseleave="emit('leave')"
     @click="onRowClick"
   >
+    <NestGuide v-if="nest" :nest="nest" />
     <!-- `self-start` plus the control's own vertical box keeps the label and toggle on the
          row's first line once diff notes make the row taller. The left padding lives here, not
          on the row: on the row it would push the label into the shared label-to-control gap. -->
     <div
-      class="col-start-1 flex w-44 shrink-0 items-center justify-between gap-1 min-w-0 self-start border-y border-transparent py-0.5 pl-2.5"
+      class="col-start-1 flex w-44 shrink-0 items-center justify-between gap-1 min-w-0 self-start border-y border-transparent py-0.5"
+      :class="nest ? 'pl-6' : 'pl-2.5'"
     >
       <!-- A point_assignment row has no single control to point `for` at (it is a row of
            steppers, one per item), so it labels the group instead -- see `aria-labelledby`

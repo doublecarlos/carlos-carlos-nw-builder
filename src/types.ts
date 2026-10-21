@@ -210,6 +210,10 @@ export interface ItemPickerSlot {
    *  fails the slot is hidden and holds nothing: its pick, values, repetition counts and off
    *  state are cleared (slot-availability.ts). Cannot be combined with `default`. */
   availableWhen?: ConditionWhen;
+  /** Another `item_picker` in the same section this slot belongs to, like a weapon's mod. The
+   *  slot renders nested right after it, and is unavailable while the parent is. One level
+   *  deep: a parent cannot have a parent of its own. */
+  parent?: string;
 }
 
 /** A row of independent numeric steppers sharing one label, one per item matching `filter` --

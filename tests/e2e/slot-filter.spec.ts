@@ -265,7 +265,8 @@ test.describe("clear filters button", () => {
     await expect(page.getByTestId("slot-filter-count")).toBeHidden();
 
     await slotFilterInput(page).fill("Arms");
-    await expect(page.getByTestId("slot-filter-count")).toHaveText("1 match");
+    // Arms and its nested Arms reinforcement.
+    await expect(page.getByTestId("slot-filter-count")).toHaveText("2 matches");
   });
 });
 
