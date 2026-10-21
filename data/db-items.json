@@ -636,6 +636,12 @@
     "shortDescription": "Whenever you receive damage you grant stacks of Ally's Resilience to all nearby teammates. Each stack gives 0.25% Defense and Deflect. Max 20 stacks from all sources. 10s duration."
   },
   {
+    "id": "ally-s-resilience-2",
+    "name": "Ally's Resilience",
+    "filter": "group_buff",
+    "bonuses": ["ally-s-resilience-3"]
+  },
+  {
     "id": "always-spiteful",
     "name": "Always Spiteful",
     "filter": "class_feat",
@@ -2769,6 +2775,13 @@
     "bonuses": ["flask-of-potency-1-severity"]
   },
   {
+    "id": "fleeting-haste",
+    "name": "Fleeting Haste",
+    "filter": "insignia_bonus",
+    "insigniaRecipe": ["crescent", "barbed", "barbed", "barbed"],
+    "bonuses": ["fleeting-haste-2"]
+  },
+  {
     "id": "focused-light",
     "name": "Focused Light",
     "filter": "feat2",
@@ -2933,6 +2946,13 @@
     "filter": "enchantment_defense",
     "il": 1800,
     "combined_rating": 1620
+  },
+  {
+    "id": "gladiator-s-craftiness",
+    "name": "Gladiator's Craftiness",
+    "filter": "insignia_bonus",
+    "insigniaRecipe": ["regal", "regal", "illuminated", "enlightened"],
+    "bonuses": ["gladiator-s-craftiness-2"]
   },
   {
     "id": "gladiator-s-guile",
@@ -4987,6 +5007,17 @@
     "bonuses": ["m33-critical-breaker"]
   },
   {
+    "id": "m33-wintermarked-hunter-s-coat",
+    "name": "M33 Wintermarked Hunter's Coat",
+    "filter": "gear_armor",
+    "il": 5700,
+    "ca": 3420,
+    "severity": 5130,
+    "combined_rating": 5130,
+    "gameIds": ["Body_M33_Lightdps_S-tier"],
+    "bonuses": ["m33-tactical-daily-greater"]
+  },
+  {
     "id": "m33-wintermarked-lifeward-vambraces",
     "name": "M33 Wintermarked Lifeward Vambraces",
     "filter": "gear_arms",
@@ -5078,6 +5109,18 @@
     "gameIds": ["Arms_M33_Lightdps_S-tier"],
     "allowedClass": ["warlock", "wizard"],
     "bonuses": ["m33-eagle-s-mastery-lesser"]
+  },
+  {
+    "id": "m33-wintermarked-trail-boots",
+    "name": "M33 Wintermarked Trail Boots",
+    "filter": "gear_boots",
+    "il": 5700,
+    "acc": 3335,
+    "ca": 2736,
+    "forte": 2308,
+    "combined_rating": 5130,
+    "gameIds": ["Feet_M33_Lightdps_S-tier"],
+    "bonuses": ["m33-tactical-reserves"]
   },
   {
     "id": "maestro-s-observation",
