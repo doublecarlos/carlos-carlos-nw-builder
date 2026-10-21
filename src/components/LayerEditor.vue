@@ -1290,16 +1290,7 @@ onMounted(() => {
     ui.value.preset = "";
     showNotice("New preset from the current build. Name it and save.");
   } else if (newItemSeed) {
-    // BuildEditor's Ctrl/Cmd+click on an empty slot row: the blank draft *is* the point of the
-    // jump, so restoring whatever this layer had open before would throw it away. The per-layer
-    // memory is rewritten to match, since that is what a later remount restores from.
-    tab.value = "items";
-    ui.value.section = "items";
-    ui.value.item = "";
-    const narrowedTo = [newItemSeed.filter, ...(newItemSeed.tags ?? [])]
-      .filter(Boolean)
-      .join(", ");
-    showNotice(`New item, pre-filled for "${narrowedTo}"`);
+    showNewItemSeed(newItemSeed);
   } else {
     restoreSelection(source);
   }
@@ -1327,6 +1318,33 @@ watch(
     query.value = ui.value.q;
   },
 );
+
+/** A seeded new-item draft: the blank draft *is* the point of the jump, so restoring whatever
+ *  this layer had open before would throw it away. The per-layer memory is rewritten to match,
+ *  since that is what a later remount restores from. */
+function showNewItemSeed(seed: Item) {
+  tab.value = "items";
+  ui.value.section = "items";
+  ui.value.item = "";
+  const narrowedTo = [seed.filter, ...(seed.tags ?? [])]
+    .filter(Boolean)
+    .join(", ");
+  showNotice(`New item, pre-filled for "${narrowedTo}"`);
+}
+
+// A seed sent while this editor is already showing. Registered after the layer watcher so a
+// seed that arrives with a layer switch lands on the new layer's reset state. The sender has
+// already confirmed any discard, through the selection change.
+watch(layerEditorUi.newItemSeed, () => {
+  const seed = layerEditorUi.takeNewItemSeed();
+  if (!seed) return;
+  for (const sibling of groupsOfTab(GROUPS.items.tab))
+    selectedBySection[sibling] = null;
+  slotsGroup.value = "items";
+  duplicateItemSeed.value = seed;
+  newItemCounter.value++;
+  showNewItemSeed(seed);
+});
 
 onUnmounted(() => {
   router.apply(

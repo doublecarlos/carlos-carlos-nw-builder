@@ -19,7 +19,9 @@ import {
   ChevronRight,
   ChevronsDownUp,
   ChevronsUpDown,
+  Plus,
 } from "@lucide/vue";
+import { STABLE_ROLE_FILTER } from "../../data/catalog";
 import { PREFERRED_MARK, readGroup } from "../../engine/insignia";
 import { stableCards, type StableCard } from "../../lib/stable-rows";
 import * as stableBrowser from "../../stores/stableBrowser";
@@ -36,6 +38,8 @@ const props = defineProps<{
 const emit = defineEmits<{
   close: [];
   apply: [payload: { group: number; mount: string }];
+  /** A new catalog item in this filter, authored in the layer editor. */
+  create: [filter: string];
 }>();
 
 const tab = stableBrowser.tab;
@@ -91,6 +95,11 @@ function apply(mount: Item) {
   if (props.group === null) return;
   emit("apply", { group: props.group, mount: mount.id });
   emit("close");
+}
+
+function create(filter: string) {
+  emit("close");
+  emit("create", filter);
 }
 </script>
 
@@ -250,5 +259,20 @@ function apply(mount: Item) {
       >. <br />
       Using another replaces the mount and drops any incompatible insignia.
     </p>
+
+    <div
+      class="flex flex-none justify-end gap-2 border-t border-line px-4 py-2"
+    >
+      <BaseButton
+        data-testid="stable-new-mount"
+        @click="create(STABLE_ROLE_FILTER.mount)"
+        ><Plus />New mount</BaseButton
+      >
+      <BaseButton
+        data-testid="stable-new-bonus"
+        @click="create(STABLE_ROLE_FILTER.bonus)"
+        ><Plus />New insignia bonus</BaseButton
+      >
+    </div>
   </BaseModal>
 </template>

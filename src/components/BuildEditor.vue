@@ -801,14 +801,12 @@ function onUpdatePreset(preset: SectionPreset) {
 function onRowClick(event: MouseEvent, slotId: string, itemId?: string) {
   if (!(isMac ? event.metaKey : event.ctrlKey)) return;
   const item = itemId ? db.value.get(itemId) : itemIn(slotId);
-  const seed = item ? null : newItemSeedFor(slotId);
-  if (!item && !seed) return;
-  if (seed) layerEditorUi.seedNewItem(seed);
-  openInLayerEditor(item?.id ?? null);
+  if (item) return openInLayerEditor(item.id);
+  const seed = newItemSeedFor(slotId);
+  if (seed) void layerEditorUi.openNewItem(seed);
 }
 
-/** `itemId` null means the editor opens whatever draft the caller seeded instead. */
-function openInLayerEditor(itemId: string | null) {
+function openInLayerEditor(itemId: string) {
   const layer = layers.ensureTargetLayer();
   router.apply({ item: itemId });
   selection.selectLayer(layer.id);

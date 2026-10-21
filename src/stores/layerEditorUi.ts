@@ -6,7 +6,10 @@
 // but a fresh mount needs *something* to fall back on once that URL is gone. Field names
 // mirror the router params so either can be the source. Only one of `slot`/`preset`/`sectionId`
 // is set at a time; `slotsGroup` is the Slots tab group last shown.
-import { reactive } from "vue";
+import { reactive, readonly, shallowRef } from "vue";
+import * as router from "../lib/router";
+import * as layers from "./layers";
+import * as selection from "./selection";
 import type { Item, SectionPreset } from "../types";
 
 export interface LayerEditorUiState {
@@ -50,25 +53,38 @@ export function getState(layerId: string): LayerEditorUiState {
 }
 
 // --- pending new-item seed ----------------------------------------------------------------
-// Not per-layer state like the record above: a one-shot handoff to whichever LayerEditor mounts
-// next. BuildEditor.vue leaves a blank item here when Ctrl/Cmd+click lands on an empty slot row
-// (`newItemSeedFor`), so the item form's very first render already knows what that row can
-// hold. Deliberately not reactive -- it is read once, during the mounting component's setup,
-// and never rendered from.
+// Not per-layer state like the record above: a one-shot handoff to the next LayerEditor to
+// show it. BuildEditor.vue leaves a blank item here when Ctrl/Cmd+click lands on an empty slot
+// row (`newItemSeedFor`), so the item form's very first render already knows what that row can
+// hold. A mounting editor takes it during setup; one already showing watches `newItemSeed`.
 
-let pendingNewItem: Item | null = null;
+const pendingNewItem = shallowRef<Item | null>(null);
+
+/** The seed waiting for an editor, for one already mounted to pick up. */
+export const newItemSeed = readonly(pendingNewItem);
 
 /** Hands the next mounting LayerEditor an item to build a brand-new draft from. */
 export function seedNewItem(seed: Item) {
-  pendingNewItem = seed;
+  pendingNewItem.value = seed;
 }
 
 /** Reads the pending seed and clears it in the same call: a seed belongs to exactly the mount
  * it was set up for, and must not resurrect on a later visit to the same layer. */
 export function takeNewItemSeed(): Item | null {
-  const seed = pendingNewItem;
-  pendingNewItem = null;
+  const seed = pendingNewItem.value;
+  pendingNewItem.value = null;
   return seed;
+}
+
+/** Opens the target layer's editor on a new item draft built from `seed`, whether or not an
+ * editor is already showing. Seeded only once the selection lands, so a cancelled discard
+ * leaves nothing pending. */
+export async function openNewItem(seed: Item) {
+  const layer = layers.ensureTargetLayer();
+  const selected = selection.selectLayer(layer.id);
+  if (!(selected instanceof Promise ? await selected : selected)) return;
+  router.apply({ item: null });
+  seedNewItem(seed);
 }
 
 // --- pending new-preset seed ---------------------------------------------------------------
