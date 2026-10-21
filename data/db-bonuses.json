@@ -39,6 +39,30 @@
     ]
   },
   {
+    "id": "ally-s-resilience-3",
+    "name": "Ally's Resilience",
+    "inputs": {
+      "stacks": {
+        "type": "number",
+        "label": "Stacks",
+        "min": 0,
+        "max": 20,
+        "default": 20
+      }
+    },
+    "grants": [
+      {
+        "stats": {
+          "defense_p": 0.0025,
+          "deflect_p": 0.0025
+        },
+        "scale": {
+          "formula": "$stacks"
+        }
+      }
+    ]
+  },
+  {
     "id": "apocalipse-set",
     "name": "Apocalipse Set",
     "grants": [
@@ -983,6 +1007,31 @@
     ]
   },
   {
+    "id": "fleeting-haste-2",
+    "name": "Fleeting Haste",
+    "inputs": {
+      "active": {
+        "type": "boolean",
+        "label": "Action points below 100%",
+        "default": true
+      }
+    },
+    "grants": [
+      {
+        "when": {
+          "input": {
+            "key": "active",
+            "is": true
+          }
+        },
+        "stats": {
+          "recharge": 0.065,
+          "movement": 0.065
+        }
+      }
+    ]
+  },
+  {
     "id": "frigid-winds-2",
     "name": "Frigid Winds",
     "inputs": {
@@ -1002,6 +1051,78 @@
         "scale": {
           "formula": "$chill"
         }
+      }
+    ]
+  },
+  {
+    "id": "gladiator-s-craftiness-2",
+    "name": "Gladiator's Craftiness",
+    "inputs": {
+      "stamina": {
+        "type": "percent",
+        "min": 0,
+        "max": 1,
+        "step": 0.1,
+        "default": 1
+      }
+    },
+    "grants": [
+      {
+        "when": {
+          "input": {
+            "key": "stamina",
+            "atLeast": 0.75
+          }
+        },
+        "tiers": [
+          {
+            "atLeast": 1,
+            "stats": {
+              "movement": 0.125
+            }
+          },
+          {
+            "atLeast": 2,
+            "stats": {
+              "movement": 0.175
+            }
+          },
+          {
+            "atLeast": 3,
+            "stats": {
+              "movement": 0.2
+            }
+          }
+        ]
+      },
+      {
+        "when": {
+          "input": {
+            "key": "stamina",
+            "atLeast": 0,
+            "below": 0.25
+          }
+        },
+        "tiers": [
+          {
+            "atLeast": 1,
+            "stats": {
+              "stamina_regen": 0.125
+            }
+          },
+          {
+            "atLeast": 2,
+            "stats": {
+              "stamina_regen": 0.175
+            }
+          },
+          {
+            "atLeast": 3,
+            "stats": {
+              "stamina_regen": 0.2
+            }
+          }
+        ]
       }
     ]
   },
@@ -2819,6 +2940,30 @@
           "power_p": 0.02,
           "out_healing_p": 0.07
         }
+      }
+    ]
+  },
+  {
+    "id": "m33-tactical-daily-greater",
+    "name": "M33 Tactical Daily (Greater)",
+    "grants": [
+      {
+        "stats": {
+          "ca_p": 0.05
+        },
+        "longDescription": "When you deal damage with a Daily power, for the\nnext 30 seconds your next Encounter Power deals\n+20% more damage."
+      }
+    ]
+  },
+  {
+    "id": "m33-tactical-reserves",
+    "name": "M33 Tactical Reserves",
+    "grants": [
+      {
+        "stats": {
+          "ca_p": 0.05
+        },
+        "longDescription": "When you deal damage with a Daily power, your next\nencounter power within 20 seconds will deal 20%\nmore damage. (30 second cooldown)"
       }
     ]
   },
