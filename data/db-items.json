@@ -2666,6 +2666,27 @@
     "filter": "scenario_flag"
   },
   {
+    "id": "ethereal-jaunt",
+    "name": "Ethereal Jaunt",
+    "filter": "mount",
+    "gameIds": ["Mount_M34_Ethereal_Jaunt_Slots"],
+    "insigniaSlots": [
+      {
+        "shape": "regal"
+      },
+      {
+        "shape": "regal"
+      },
+      {
+        "universal": true
+      },
+      {
+        "universal": true,
+        "preferred": "enlightened"
+      }
+    ]
+  },
+  {
     "id": "etrien",
     "name": "Etrien",
     "filter": "group_buff",
@@ -6736,6 +6757,27 @@
     "name": "Rattatoule",
     "filter": "consumable_food",
     "bonuses": ["rattatoule-accuracy"]
+  },
+  {
+    "id": "rattlegut",
+    "name": "Rattlegut",
+    "filter": "mount",
+    "gameIds": ["Mount_M34_Gravegobbler_Slots"],
+    "insigniaSlots": [
+      {
+        "shape": "illuminated"
+      },
+      {
+        "shape": "barbed"
+      },
+      {
+        "universal": true
+      },
+      {
+        "universal": true,
+        "preferred": "illuminated"
+      }
+    ]
   },
   {
     "id": "recharge-bonus",
