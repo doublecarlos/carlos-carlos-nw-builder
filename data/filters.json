@@ -120,6 +120,18 @@
   "leveling_wis": {
     "fields": ["inlineRepetition"]
   },
+  "modification_armor": {
+    "fields": ["allowedClass"]
+  },
+  "modification_arms": {
+    "fields": ["allowedClass"]
+  },
+  "modification_boots": {
+    "fields": ["allowedClass"]
+  },
+  "modification_head": {
+    "fields": ["allowedClass"]
+  },
   "modification_mainhand": {
     "fields": ["allowedClass"]
   },

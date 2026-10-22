@@ -941,6 +941,9 @@ describe("the shipped insignia bonuses", () => {
     (i) => i.filter === "insignia_bonus" && i.bonuses?.length,
   );
 
+  /** The bonus an insignia bonus item grants. */
+  const bonusOf = (item: Item) => shipped.bonusById.get(item.bonuses![0])!;
+
   /** One bonus resolved on its own, with each of its inputs at `value` (at its default when
    *  omitted). */
   function resolveAlone(
@@ -949,15 +952,15 @@ describe("the shipped insignia bonuses", () => {
   ) {
     const build = defaultBuild();
     build.choices[insignia.bonusSlotId(shipped, 1)!] = item.id;
-    const bonus = shipped.bonusById.get(item.id)!;
+    const bonus = bonusOf(item);
     if (value && bonus.inputs) {
-      build.bonusValues[item.id] = {
+      build.bonusValues[bonus.id] = {
         input: Object.fromEntries(
           Object.entries(bonus.inputs).map(([name, def]) => [name, value(def)]),
         ),
       };
     }
-    return engineRun(shipped, build).bonuses.find((b) => b.id === item.id);
+    return engineRun(shipped, build).bonuses.find((b) => b.id === bonus.id);
   }
 
   it("every modelled bonus resolves and grants something", () => {
@@ -986,13 +989,13 @@ describe("the shipped insignia bonuses", () => {
       )!.id;
     });
     const bonuses = resolveBonuses(shipped, build).bonuses;
-    expect(bonuses.some((b) => b.id === item.id)).toBe(true);
+    expect(bonuses.some((b) => b.id === bonusOf(item).id)).toBe(true);
     expect(bonuses).toEqual(engineRun(shipped, build).bonuses);
   });
 
   it("a Proc bonus grants nothing until its toggle is on", () => {
     const procs = modelled.filter((item) => {
-      const proc = shipped.bonusById.get(item.id)?.inputs?.active;
+      const proc = bonusOf(item).inputs?.active;
       return proc?.label === "Proc" && proc.default === false;
     });
     expect(procs.length).toBeGreaterThan(0);

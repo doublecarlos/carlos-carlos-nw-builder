@@ -7,7 +7,7 @@
 // stack (`navHistory.ts`). A build leaving the pool always goes through the trash, so undoing
 // a create and undoing a delete are the same two primitives run in opposite directions:
 // `trashBuild` and `restoreBuild`. Neither records anything.
-import { computed, ref, watch } from "vue";
+import { computed, ref, toRaw, watch } from "vue";
 import { useDebounceFn } from "@vueuse/core";
 import { onPageHide } from "../lib/page-lifecycle";
 import * as storage from "../storage/storage";
@@ -28,6 +28,10 @@ import {
   unpackNotice,
   type UnpackedCatalog,
 } from "./buildCatalog";
+import {
+  clearSlotContents,
+  pruneUnavailableSlots,
+} from "../lib/slot-availability";
 import type { Build, BuildNavEntry, BuildOption } from "../types";
 
 const SAVE_DEBOUNCE_MS = 250;
@@ -122,8 +126,62 @@ export function replaceActive(newBuild: Build) {
 /** Puts an undo/redo snapshot back as the active build. A persisted snapshot can predate a
  *  format change, so it goes through `normalize` like any stored build. */
 export function restoreSnapshot(json: string) {
-  replaceActive(storage.normalize(JSON.parse(json)));
+  const b = storage.normalize(JSON.parse(json));
+  pruneStored(b);
+  replaceActive(b);
 }
+
+// --- slot availability ----------------------------------------------------------------------
+
+/** Empties `b`'s unavailable slots in place. Returns the ids it cleared. */
+function pruneStored(b: Build): string[] {
+  const db = engineDb.value;
+  const { cleared } = pruneUnavailableSlots(db, toRaw(b));
+  for (const slotId of cleared) {
+    const slot = db.slotById.get(slotId);
+    if (slot) clearSlotContents(b, slot);
+  }
+  return cleared;
+}
+
+/**
+ * Every build edit ends here. Empties the slots the edit made unavailable, inside the edit's own
+ * undo step, then shows `done` (the edit's own notice, if any) and what was cleared, with an
+ * undo that takes back both.
+ */
+export function finishEdit(id: string, done = "") {
+  const b = _builds.value.get(id);
+  if (!b) return;
+  const cleared = pruneStored(b)
+    .map((slotId) => engineDb.value.slotById.get(slotId)?.label ?? slotId)
+    .join(", ");
+  const text = cleared
+    ? done
+      ? `${done}; cleared ${cleared}`
+      : `Cleared ${cleared}`
+    : done;
+  if (text) showUndoNotice(text, () => undoFor(id));
+}
+
+/** Empties every stored build's unavailable slots, for a catalog change or a load. Not
+ *  undoable: the catalog, not an edit, is what hid them. */
+export function pruneAll() {
+  const names: string[] = [];
+  for (const b of _builds.value.values()) {
+    if (!pruneStored(b).length) continue;
+    markDirty(b.id);
+    names.push(`“${b.name}”`);
+  }
+  if (names.length)
+    showNotice(
+      `Cleared slots that are no longer available in ${names.join(", ")}`,
+    );
+}
+
+// A catalog change can hide slots in any build, open or not.
+watch(engineDb, () => {
+  if (!_loading.value) pruneAll();
+});
 
 /** Puts a build into the pool at `placement`. */
 function addBuild(b: Build, placement: BuildPlacement) {
@@ -313,9 +371,7 @@ export function revertToDownloaded(id: string) {
   const restored = storage.revertToDownloaded(b) as Build;
   _builds.value.set(id, restored);
   markDirty(id);
-  showUndoNotice(`Reverted “${b.name}” to the last downloaded copy`, () =>
-    undoFor(id),
-  );
+  finishEdit(id, `Reverted “${b.name}” to the last downloaded copy`);
 }
 
 /** Undo on one build's own stack whether or not it is selected, which is what an undo notice
@@ -343,12 +399,14 @@ export function setChoiceFor(
   history.snapshot("build", id, `choice:${slotId}`, label, b);
   b.choices[slotId] = itemId;
   markDirty(id);
+  finishEdit(id);
 }
 
 export function importBuilds(newBuilds: Build[], stale: boolean) {
   const unpacked: UnpackedCatalog[] = [];
   for (const b of newBuilds) {
     const result = unpackCatalog(b);
+    pruneStored(b);
     if (result) unpacked.push(result);
     _builds.value.set(b.id, b);
     folders.appendBuild(b.id);
@@ -382,6 +440,7 @@ export function upsertImported(
   replacing: boolean,
 ): UnpackedCatalog | null {
   const unpacked = unpackCatalog(build);
+  pruneStored(build);
   const existing = _builds.value.get(build.id);
   if (replacing && existing) trash._add("build", existing);
   else if (!existing) folders.appendBuild(build.id);

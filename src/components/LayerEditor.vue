@@ -601,16 +601,30 @@ const hasUnsavedDraft = (row: EditorRow | OutlineRow) => {
   return draftDirty[group]?.() ?? false;
 };
 
-/** Every id a new entry must not collide with: every layer's overlay, enabled or not, plus
- *  the composed db. */
+/** Per group, every id a new entry must not collide with: every layer's overlay, enabled or
+ *  not, plus the composed db. Groups are separate id spaces, so an item and its bonus can
+ *  share an id. */
 const allocatableIds = computed(() => {
-  const ids = new Set<string>(layers.allocatableIds());
-  for (const item of engine.db.value.items) ids.add(item.id);
-  for (const preset of engine.db.value.presets) ids.add(preset.id);
-  for (const slot of engine.db.value.slots) ids.add(slot.id);
-  for (const section of engine.db.value.sections) ids.add(section.id);
-  for (const filter of engine.db.value.filters) ids.add(filter.id);
-  return [...ids];
+  const { items, bonuses, presets, slots, sections, filters } = engine.db.value;
+  const composed: Record<EditorGroup, { id: string }[]> = {
+    items,
+    bonuses,
+    sectionPresets: presets,
+    slots,
+    sections,
+    filters,
+  };
+  return Object.fromEntries(
+    catalog.GROUPS.map((group) => [
+      group,
+      [
+        ...new Set([
+          ...layers.allocatableIds(group),
+          ...composed[group].map((entry) => entry.id),
+        ]),
+      ],
+    ]),
+  ) as Record<EditorGroup, string[]>;
 });
 
 const findings = computed(() =>
@@ -1276,16 +1290,7 @@ onMounted(() => {
     ui.value.preset = "";
     showNotice("New preset from the current build. Name it and save.");
   } else if (newItemSeed) {
-    // BuildEditor's Ctrl/Cmd+click on an empty slot row: the blank draft *is* the point of the
-    // jump, so restoring whatever this layer had open before would throw it away. The per-layer
-    // memory is rewritten to match, since that is what a later remount restores from.
-    tab.value = "items";
-    ui.value.section = "items";
-    ui.value.item = "";
-    const narrowedTo = [newItemSeed.filter, ...(newItemSeed.tags ?? [])]
-      .filter(Boolean)
-      .join(", ");
-    showNotice(`New item, pre-filled for "${narrowedTo}"`);
+    showNewItemSeed(newItemSeed);
   } else {
     restoreSelection(source);
   }
@@ -1313,6 +1318,33 @@ watch(
     query.value = ui.value.q;
   },
 );
+
+/** A seeded new-item draft: the blank draft *is* the point of the jump, so restoring whatever
+ *  this layer had open before would throw it away. The per-layer memory is rewritten to match,
+ *  since that is what a later remount restores from. */
+function showNewItemSeed(seed: Item) {
+  tab.value = "items";
+  ui.value.section = "items";
+  ui.value.item = "";
+  const narrowedTo = [seed.filter, ...(seed.tags ?? [])]
+    .filter(Boolean)
+    .join(", ");
+  showNotice(`New item, pre-filled for "${narrowedTo}"`);
+}
+
+// A seed sent while this editor is already showing. Registered after the layer watcher so a
+// seed that arrives with a layer switch lands on the new layer's reset state. The sender has
+// already confirmed any discard, through the selection change.
+watch(layerEditorUi.newItemSeed, () => {
+  const seed = layerEditorUi.takeNewItemSeed();
+  if (!seed) return;
+  for (const sibling of groupsOfTab(GROUPS.items.tab))
+    selectedBySection[sibling] = null;
+  slotsGroup.value = "items";
+  duplicateItemSeed.value = seed;
+  newItemCounter.value++;
+  showNewItemSeed(seed);
+});
 
 onUnmounted(() => {
   router.apply(
@@ -1524,7 +1556,8 @@ onUnmounted(() => {
           :all-bonus-ids="allBonusIds"
           :tags="tagList"
           :bonus-options="bonusOptions"
-          :allocatable-ids="allocatableIds"
+          :allocatable-ids="allocatableIds.items"
+          :allocatable-bonus-ids="allocatableIds.bonuses"
           @save="onSave"
           @update:item="onUpdateItem"
           @delete="onDelete"
@@ -1548,7 +1581,7 @@ onUnmounted(() => {
           :all-bonus-ids="allBonusIds"
           :tags="tagList"
           :bonus-options="bonusOptions"
-          :allocatable-ids="allocatableIds"
+          :allocatable-ids="allocatableIds.bonuses"
           @save="onSaveBonusTop"
           @update:bonus="onUpdateBonusTop"
           @delete="onDeleteBonusTop"
@@ -1564,7 +1597,7 @@ onUnmounted(() => {
           :fixed-id="selectedFilterId"
           :status="selectedStatus"
           :db="db"
-          :allocatable-ids="allocatableIds"
+          :allocatable-ids="allocatableIds.filters"
           @save="onSaveFilter"
           @update:filter="onUpdateFilter"
           @delete="onDeleteFilter"
@@ -1577,7 +1610,7 @@ onUnmounted(() => {
           :source="selectedSection"
           :status="selectedStatus"
           :db="db"
-          :allocatable-ids="allocatableIds"
+          :allocatable-ids="allocatableIds.sections"
           @save="onSaveSection"
           @update:section="onUpdateSection"
           @delete="onDeleteSection"
@@ -1594,7 +1627,7 @@ onUnmounted(() => {
           :default-section="newEntrySection"
           :status="selectedStatus"
           :db="db"
-          :allocatable-ids="allocatableIds"
+          :allocatable-ids="allocatableIds.slots"
           @save="onSaveSlot"
           @update:slot="onUpdateSlot"
           @delete="onDeleteSlot"
@@ -1610,7 +1643,7 @@ onUnmounted(() => {
           :default-section="newEntrySection"
           :status="selectedStatus"
           :db="db"
-          :allocatable-ids="allocatableIds"
+          :allocatable-ids="allocatableIds.sectionPresets"
           @save="onSavePreset"
           @update:preset="onUpdatePreset"
           @delete="onDeletePreset"

@@ -80,6 +80,14 @@ export const compareResolved = computed<Resolution | null>(() => {
   }
 });
 
+const NOTHING_HIDDEN: ReadonlySet<string> = new Set();
+
+/** The active build's unavailable slots, which no list of slots shows. None while the build
+ *  fails to resolve: a broken build should not also hide its rows. */
+export const hiddenSlots = computed<ReadonlySet<string>>(() =>
+  resolved.value.ok ? resolved.value.result.hiddenSlots : NOTHING_HIDDEN,
+);
+
 /** Every resolved bonus by id, hidden ones included: an "overridden by" line can name an
  * excluder the inspector's own list leaves out. Empty while the build fails to resolve. */
 export const bonusById = computed<Map<string, EvaluatedBonus>>(() =>

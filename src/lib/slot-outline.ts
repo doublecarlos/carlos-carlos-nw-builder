@@ -5,6 +5,7 @@
 // restored, and slots whose section no longer exists go in a trailing bucket.
 import * as catalog from "../data/catalog";
 import { matchesQuery } from "./text-filter";
+import { nestedParentId } from "./slot-parent";
 import type { CatalogOverlay, Db, SectionPreset, Slot } from "../types";
 import type { EntryStatus } from "../data/catalog";
 
@@ -17,6 +18,8 @@ export interface OutlineRow {
   /** The secondary column: a slot's type, or a section's slot count. */
   detail: string;
   status: EntryStatus;
+  /** True for a slot nested under the slot above it. */
+  nested?: boolean;
 }
 
 export interface OutlineGroup {
@@ -35,13 +38,17 @@ export const ORPHAN_LABEL = "No section";
 const slotName = (slot: Slot) =>
   slot.label || (slot.type === "text" ? slot.text : "") || slot.id;
 
-const slotRow = (slot: Slot, overlay: CatalogOverlay): OutlineRow => ({
-  key: slot.id,
-  kind: "slot",
-  name: slotName(slot),
-  detail: slot.type,
-  status: catalog.statusOf(overlay, "slots", slot.id),
-});
+const slotRow = (slot: Slot, db: Db, overlay: CatalogOverlay): OutlineRow => {
+  const row: OutlineRow = {
+    key: slot.id,
+    kind: "slot",
+    name: slotName(slot),
+    detail: slot.type,
+    status: catalog.statusOf(overlay, "slots", slot.id),
+  };
+  if (nestedParentId(slot, db.slotById)) row.nested = true;
+  return row;
+};
 
 const presetRow = (
   preset: SectionPreset,
@@ -100,7 +107,7 @@ export function buildOutline(db: Db, overlay: CatalogOverlay): OutlineGroup[] {
   const bucket = (sectionId: string) => groups.get(sectionId) ?? orphans;
 
   for (const slot of db.authoredSlots)
-    bucket(slot.section).slots.push(slotRow(slot, overlay));
+    bucket(slot.section).slots.push(slotRow(slot, db, overlay));
   for (const id of catalog.tombstoneIds(overlay, "slots")) {
     const base = shipped.slots.find((slot) => slot.id === id);
     bucket(base?.section ?? "").slots.push({

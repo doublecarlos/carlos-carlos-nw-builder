@@ -52,6 +52,16 @@
     },
     "grants": [
       {
+        "when": {
+          "all": [
+            {
+              "toggle": "party"
+            },
+            {
+              "toggle": "combat"
+            }
+          ]
+        },
         "stats": {
           "defense_p": 0.0025,
           "deflect_p": 0.0025
@@ -1227,6 +1237,48 @@
     ]
   },
   {
+    "id": "healer-s-influence-ascendant-2",
+    "name": "Healer's Influence (Ascendant)",
+    "grants": [
+      {
+        "when": {
+          "all": [
+            {
+              "toggle": "party"
+            },
+            {
+              "toggle": "combat"
+            }
+          ]
+        },
+        "stats": {
+          "defense_p": 0.035
+        }
+      }
+    ]
+  },
+  {
+    "id": "healer-s-influence-greater-2",
+    "name": "Healer's Influence (Greater)",
+    "grants": [
+      {
+        "when": {
+          "all": [
+            {
+              "toggle": "party"
+            },
+            {
+              "toggle": "combat"
+            }
+          ]
+        },
+        "stats": {
+          "defense_p": 0.03
+        }
+      }
+    ]
+  },
+  {
     "id": "hot-wings-accuracy-severity",
     "name": "Hot Wings",
     "grants": [
@@ -1749,6 +1801,13 @@
         "type": "boolean",
         "label": "Proc",
         "default": true
+      },
+      "effectiveness": {
+        "type": "percent",
+        "min": 0,
+        "max": 1,
+        "step": 0.1,
+        "default": 1
       }
     },
     "grants": [
@@ -1761,7 +1820,21 @@
           }
         },
         "stats": {
-          "outgoing_damage": 0.09,
+          "outgoing_damage": 0.09
+        },
+        "scale": {
+          "formula": "$effectiveness"
+        }
+      },
+      {
+        "when": {
+          "toggle": "combat",
+          "input": {
+            "key": "active",
+            "is": true
+          }
+        },
+        "stats": {
           "hit_points_mult": -0.2
         }
       }
@@ -1947,7 +2020,7 @@
         "when": {
           "not": {
             "equipped": {
-              "tag": "artifact:mainhand"
+              "tag": "artifact:m32-mainhand"
             }
           }
         },
@@ -1967,7 +2040,7 @@
         "when": {
           "not": {
             "equipped": {
-              "tag": "artifact:offhand"
+              "tag": "artifact:m32-offhand"
             }
           }
         },
@@ -2321,6 +2394,9 @@
     "name": "M33.5 Rising Reflexes",
     "grants": [
       {
+        "when": {
+          "toggle": "combat"
+        },
         "stats": {
           "defense": 1935,
           "awareness": 1935
@@ -2373,6 +2449,13 @@
         "type": "boolean",
         "label": "Proc",
         "default": true
+      },
+      "effectiveness": {
+        "type": "percent",
+        "min": 0,
+        "max": 1,
+        "step": 0.1,
+        "default": 1
       }
     },
     "grants": [
@@ -2385,7 +2468,21 @@
           }
         },
         "stats": {
-          "outgoing_damage": 0.035,
+          "outgoing_damage": 0.035
+        },
+        "scale": {
+          "formula": "$effectiveness"
+        }
+      },
+      {
+        "when": {
+          "toggle": "combat",
+          "input": {
+            "key": "active",
+            "is": true
+          }
+        },
+        "stats": {
           "hit_points_mult": -0.1
         }
       }
@@ -2400,6 +2497,13 @@
         "type": "boolean",
         "label": "Proc",
         "default": true
+      },
+      "effectiveness": {
+        "type": "percent",
+        "min": 0,
+        "max": 1,
+        "step": 0.1,
+        "default": 1
       }
     },
     "grants": [
@@ -2412,7 +2516,21 @@
           }
         },
         "stats": {
-          "outgoing_damage": 0.05,
+          "outgoing_damage": 0.05
+        },
+        "scale": {
+          "formula": "$effectiveness"
+        }
+      },
+      {
+        "when": {
+          "toggle": "combat",
+          "input": {
+            "key": "active",
+            "is": true
+          }
+        },
+        "stats": {
           "hit_points_mult": -0.1
         }
       }
@@ -2910,6 +3028,9 @@
     "name": "M33 Surging Fortification",
     "grants": [
       {
+        "when": {
+          "toggle": "combat"
+        },
         "stats": {
           "defense_p": 0.0035,
           "awareness_p": 0.004
@@ -2964,6 +3085,500 @@
           "ca_p": 0.05
         },
         "longDescription": "When you deal damage with a Daily power, your next\nencounter power within 20 seconds will deal 20%\nmore damage. (30 second cooldown)"
+      }
+    ]
+  },
+  {
+    "id": "m34-artifact-armor-modification-validation",
+    "name": "M34+ Artifact Armor Modification Validation",
+    "grants": [
+      {
+        "when": {
+          "not": {
+            "equipped": {
+              "tag": "artifact:m34-armor"
+            }
+          }
+        },
+        "problem": {
+          "severity": "error",
+          "message": "This modification is not valid for the equipped armor.",
+          "hideFromPicker": true
+        }
+      }
+    ]
+  },
+  {
+    "id": "m34-artifact-arms-modification-validation",
+    "name": "M34+ Artifact Arms Modification Validation",
+    "grants": [
+      {
+        "when": {
+          "not": {
+            "equipped": {
+              "tag": "artifact:m34-arms"
+            }
+          }
+        },
+        "problem": {
+          "severity": "error",
+          "message": "This modification is not valid for the equipped arms piece.",
+          "hideFromPicker": true
+        }
+      }
+    ]
+  },
+  {
+    "id": "m34-artifact-boots-modification-validation",
+    "name": "M34+ Artifact Boots Modification Validation",
+    "grants": [
+      {
+        "when": {
+          "not": {
+            "equipped": {
+              "tag": "artifact:m34-boots"
+            }
+          }
+        },
+        "problem": {
+          "severity": "error",
+          "message": "This modification is not valid for the equipped boots.",
+          "hideFromPicker": true
+        }
+      }
+    ]
+  },
+  {
+    "id": "m34-artifact-head-modification-validation",
+    "name": "M34+ Artifact Head Modification Validation",
+    "grants": [
+      {
+        "when": {
+          "not": {
+            "equipped": {
+              "tag": "artifact:m34-head"
+            }
+          }
+        },
+        "problem": {
+          "severity": "error",
+          "message": "This modification is not valid for the equipped head piece.",
+          "hideFromPicker": true
+        }
+      }
+    ]
+  },
+  {
+    "id": "m34-ashen-bindings-of-the-devourer-2",
+    "name": "M34 Ashen Bindings of the Devourer +2",
+    "grants": [
+      {
+        "stats": {
+          "strike_p": 0.086
+        }
+      }
+    ]
+  },
+  {
+    "id": "m34-ashen-boots-of-the-devourer",
+    "name": "M34 Ashen Boots of the Devourer",
+    "grants": [
+      {
+        "stats": {
+          "ca_p": 0.051,
+          "movement": 0.04
+        }
+      }
+    ]
+  },
+  {
+    "id": "m34-ashen-boots-of-the-devourer-1",
+    "name": "M34 Ashen Boots of the Devourer +1",
+    "grants": [
+      {
+        "stats": {
+          "ca_p": 0.06,
+          "movement": 0.05
+        }
+      }
+    ]
+  },
+  {
+    "id": "m34-ashen-boots-of-the-devourer-2",
+    "name": "M34 Ashen Boots of the Devourer +2",
+    "grants": [
+      {
+        "stats": {
+          "ca_p": 0.069,
+          "movement": 0.06
+        }
+      }
+    ]
+  },
+  {
+    "id": "m34-ashen-bracers-of-the-devourer-2",
+    "name": "M34 Ashen Bracers of the Devourer +2",
+    "grants": [
+      {
+        "stats": {
+          "power_p": 0.058
+        }
+      }
+    ]
+  },
+  {
+    "id": "m34-ashen-cap-of-the-devourer-2",
+    "name": "M34 Ashen Cap of the Devourer +2",
+    "grants": [
+      {
+        "stats": {
+          "acc_p": 0.086,
+          "ap_gain": 0.017
+        }
+      }
+    ]
+  },
+  {
+    "id": "m34-ashen-coif-of-the-devourer-2",
+    "name": "M34 Ashen Coif of the Devourer +2",
+    "grants": [
+      {
+        "stats": {
+          "out_healing_p": 0.069,
+          "mana_regen": 0.26
+        }
+      }
+    ]
+  },
+  {
+    "id": "m34-ashen-cowl-of-the-devourer-2",
+    "name": "M34 Ashen Cowl of the Devourer +2",
+    "grants": [
+      {
+        "stats": {
+          "acc_p": 0.086,
+          "mana_regen": 0.26
+        }
+      }
+    ]
+  },
+  {
+    "id": "m34-ashen-crown-of-the-devourer-2",
+    "name": "M34 Ashen Crown of the Devourer +2",
+    "grants": [
+      {
+        "stats": {
+          "acc_p": 0.086,
+          "ap_gain": 0.017
+        }
+      }
+    ]
+  },
+  {
+    "id": "m34-ashen-cuirass-of-the-devourer-2",
+    "name": "M34 Ashen Cuirass of the Devourer +2",
+    "grants": [
+      {
+        "stats": {
+          "sev_p": 0.086,
+          "outgoing_damage": 0.052
+        }
+      }
+    ]
+  },
+  {
+    "id": "m34-ashen-hood-of-the-devourer",
+    "name": "M34 Ashen Hood of the Devourer",
+    "grants": [
+      {
+        "stats": {
+          "acc_p": 0.068,
+          "ap_gain": 0.013
+        }
+      }
+    ]
+  },
+  {
+    "id": "m34-ashen-hood-of-the-devourer-1",
+    "name": "M34 Ashen Hood of the Devourer +1",
+    "grants": [
+      {
+        "stats": {
+          "acc_p": 0.075,
+          "ap_gain": 0.015
+        }
+      }
+    ]
+  },
+  {
+    "id": "m34-ashen-hood-of-the-devourer-2",
+    "name": "M34 Ashen Hood of the Devourer +2",
+    "grants": [
+      {
+        "stats": {
+          "acc_p": 0.086,
+          "ap_gain": 0.017
+        }
+      }
+    ]
+  },
+  {
+    "id": "m34-ashen-jerkin-of-the-devourer-2",
+    "name": "M34 Ashen Jerkin of the Devourer +2",
+    "grants": [
+      {
+        "stats": {
+          "sev_p": 0.086,
+          "outgoing_damage": 0.052
+        }
+      }
+    ]
+  },
+  {
+    "id": "m34-ashen-robes-of-the-devourer",
+    "name": "M34 Ashen Robes of the Devourer",
+    "grants": [
+      {
+        "stats": {
+          "sev_p": 0.064,
+          "outgoing_damage": 0.038
+        }
+      }
+    ]
+  },
+  {
+    "id": "m34-ashen-robes-of-the-devourer-1",
+    "name": "M34 Ashen Robes of the Devourer +1",
+    "grants": [
+      {
+        "stats": {
+          "sev_p": 0.075,
+          "outgoing_damage": 0.045
+        }
+      }
+    ]
+  },
+  {
+    "id": "m34-ashen-robes-of-the-devourer-2",
+    "name": "M34 Ashen Robes of the Devourer +2",
+    "grants": [
+      {
+        "stats": {
+          "sev_p": 0.086,
+          "outgoing_damage": 0.052
+        }
+      }
+    ]
+  },
+  {
+    "id": "m34-ashen-shoes-of-the-devourer-2",
+    "name": "M34 Ashen Shoes of the Devourer +2",
+    "grants": [
+      {
+        "stats": {
+          "sev_p": 0.086,
+          "movement": 0.06
+        }
+      }
+    ]
+  },
+  {
+    "id": "m34-ashen-sleeves-of-the-devourer",
+    "name": "M34 Ashen Sleeves of the Devourer",
+    "grants": [
+      {
+        "stats": {
+          "strike_p": 0.064
+        }
+      }
+    ]
+  },
+  {
+    "id": "m34-ashen-sleeves-of-the-devourer-1",
+    "name": "M34 Ashen Sleeves of the Devourer +1",
+    "grants": [
+      {
+        "stats": {
+          "strike_p": 0.075
+        }
+      }
+    ]
+  },
+  {
+    "id": "m34-ashen-sleeves-of-the-devourer-2",
+    "name": "M34 Ashen Sleeves of the Devourer +2",
+    "grants": [
+      {
+        "stats": {
+          "strike_p": 0.086
+        }
+      }
+    ]
+  },
+  {
+    "id": "m34-ashen-striders-of-the-devourer-2",
+    "name": "M34 Ashen Striders of the Devourer +2",
+    "grants": [
+      {
+        "stats": {
+          "ca_p": 0.069,
+          "movement": 0.06
+        }
+      }
+    ]
+  },
+  {
+    "id": "m34-ashen-swiftguards-of-the-devourer-2",
+    "name": "M34 Ashen Swiftguards of the Devourer +2",
+    "grants": [
+      {
+        "stats": {
+          "strike_p": 0.086
+        }
+      }
+    ]
+  },
+  {
+    "id": "m34-ashen-tunic-of-the-devourer-2",
+    "name": "M34 Ashen Tunic of the Devourer +2",
+    "grants": [
+      {
+        "stats": {
+          "strike_p": 0.086,
+          "overall_healing": 0.05
+        }
+      }
+    ]
+  },
+  {
+    "id": "m34-ashen-vambraces-of-the-devourer-2",
+    "name": "M34 Ashen Vambraces of the Devourer +2",
+    "grants": [
+      {
+        "stats": {
+          "strike_p": 0.086
+        }
+      }
+    ]
+  },
+  {
+    "id": "m34-ashen-warboots-of-the-devourer-2",
+    "name": "M34 Ashen Warboots of the Devourer +2",
+    "grants": [
+      {
+        "stats": {
+          "ca_p": 0.069,
+          "movement": 0.06
+        }
+      }
+    ]
+  },
+  {
+    "id": "m34-dps-celestial-ashen-vestments",
+    "name": "M34 DPS Celestial Ashen Vestments",
+    "grants": [
+      {
+        "when": {
+          "bonusOccurrences": {
+            "atLeast": 2
+          }
+        },
+        "stats": {
+          "strike_p": 0.04
+        }
+      },
+      {
+        "when": {
+          "bonusOccurrences": {
+            "atLeast": 3
+          }
+        },
+        "stats": {
+          "magical_damage_boost": 0.08,
+          "physical_damage_boost": 0.08
+        }
+      }
+    ]
+  },
+  {
+    "id": "m34-dps-legendary-ashen-vestments",
+    "name": "M34 DPS Legendary Ashen Vestments",
+    "grants": [
+      {
+        "when": {
+          "bonusOccurrences": {
+            "atLeast": 2
+          }
+        },
+        "stats": {
+          "strike_p": 0.03
+        }
+      },
+      {
+        "when": {
+          "bonusOccurrences": {
+            "atLeast": 3
+          }
+        },
+        "stats": {
+          "magical_damage_boost": 0.06,
+          "physical_damage_boost": 0.06
+        }
+      }
+    ]
+  },
+  {
+    "id": "m34-dps-mythic-ashen-vestments",
+    "name": "M34 DPS Mythic Ashen Vestments",
+    "grants": [
+      {
+        "when": {
+          "bonusOccurrences": {
+            "atLeast": 2
+          }
+        },
+        "stats": {
+          "strike_p": 0.035
+        }
+      },
+      {
+        "when": {
+          "bonusOccurrences": {
+            "atLeast": 3
+          }
+        },
+        "stats": {
+          "magical_damage_boost": 0.07,
+          "physical_damage_boost": 0.07
+        }
+      }
+    ]
+  },
+  {
+    "id": "m34-healer-celestial-ashen-vestments",
+    "name": "M34 Healer Celestial Ashen Vestments",
+    "grants": [
+      {
+        "when": {
+          "bonusOccurrences": {
+            "atLeast": 2
+          }
+        },
+        "stats": {
+          "strike_p": 0.04
+        }
+      },
+      {
+        "when": {
+          "bonusOccurrences": {
+            "atLeast": 3
+          }
+        },
+        "stats": {
+          "out_healing_p": 0.08,
+          "magical_damage_boost": 0.08,
+          "physical_damage_boost": 0.08
+        }
       }
     ]
   },

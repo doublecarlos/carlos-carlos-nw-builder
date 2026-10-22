@@ -291,6 +291,7 @@ const SLOT_KEYS = [
   "filter",
   "tags",
   "list",
+  "parent",
   "stable",
   "paramType",
   "path",
@@ -309,6 +310,7 @@ const SLOT_KEYS = [
   "disallowEmpty",
   "hidePreview",
   "toggleable",
+  "availableWhen",
 ] as const;
 const SELECTOR_KEYS = ["filter", "tags"] as const;
 const OPTION_KEYS = ["value", "label"] as const;

@@ -38,6 +38,7 @@ import * as builds from "../stores/builds";
 import * as engine from "../stores/resolved";
 import { mountSlotId } from "../engine/insignia";
 import * as buildEditor from "../stores/buildEditor";
+import * as layerEditorUi from "../stores/layerEditorUi";
 import GoToPalette from "./GoToPalette.vue";
 import { isMac } from "../lib/platform";
 
@@ -77,6 +78,10 @@ function onTool(action: string) {
 function applyStableMount(applied: { group: number; mount: string }) {
   const slotId = mountSlotId(engine.db.value, applied.group);
   if (slotId) buildEditor.setChoice(slotId, applied.mount);
+}
+
+function createStableItem(filter: string) {
+  void layerEditorUi.openNewItem({ id: "", name: "", filter });
 }
 
 async function onImportFile(event: Event) {
@@ -148,6 +153,7 @@ async function onImportFile(event: Event) {
       :group="stableBrowser.group.value"
       @close="stableBrowser.close()"
       @apply="applyStableMount"
+      @create="createStableItem"
     />
 
     <input

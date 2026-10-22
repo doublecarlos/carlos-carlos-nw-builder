@@ -10,6 +10,7 @@ import { assignedRows } from "../lib/inline-repetition";
 import { copyCounts } from "../lib/copy-counts";
 import { misplacedInsignia, withDerivedBonuses } from "./insignia";
 import { itemStatAddress, readInput } from "../lib/build-inputs";
+import { pruneUnavailableSlots } from "../lib/slot-availability";
 import { inputRanges, paramSpec, rangeError } from "./inputs";
 import type {
   Db,
@@ -654,12 +655,19 @@ function publishConflicts(db: Db, resolved: ResolvedBonuses): EngineError[] {
 /** Bonus resolution alone, for callers that read only `bonuses` (the picker's per-candidate
  *  previews). Skips the stat pipeline and error checks `resolveBuild` adds. */
 export function resolveBonuses(db: Db, stored: Build): ResolvedBonuses {
-  return bonus.resolve(db, withDerivedBonuses(db, stored));
+  const { build } = pruneUnavailableSlots(db, stored);
+  return bonus.resolve(db, withDerivedBonuses(db, build));
 }
 
 export function resolveBuild(db: Db, stored: Build): ResolvedBuild {
+  // The stores save pruned builds, so this only clears what a store path forgot to.
+  const pruned = pruneUnavailableSlots(db, stored);
+  if (import.meta.env.DEV && pruned.cleared.length)
+    console.warn(
+      `resolveBuild cleared unavailable slots the stored build still holds: ${pruned.cleared.join(", ")}`,
+    );
   // Derived here, not written to the build, so everything below sees an ordinary equipped item.
-  const build = withDerivedBonuses(db, stored);
+  const build = withDerivedBonuses(db, pruned.build);
   const resolved = bonus.resolve(db, build);
   const ledger: LedgerEntry[] = [];
   const { rows, stages } = run(db, build, resolved, ledger);
@@ -675,6 +683,7 @@ export function resolveBuild(db: Db, stored: Build): ResolvedBuild {
       ...bonusProblems(resolved),
       ...publishConflicts(db, resolved),
     ],
+    hiddenSlots: pruned.hidden,
   };
 }
 

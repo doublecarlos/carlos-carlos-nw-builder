@@ -157,8 +157,23 @@ describe("layers store", () => {
       filters: {},
     });
     layers.setLayerEnabled(l.id, false);
-    const ids = layers.allocatableIds();
+    const ids = layers.allocatableIds("items");
     expect(ids).toContain("custom-item");
+  });
+
+  it("allocatableIds only lists the requested group", async () => {
+    const { layers } = await freshStores();
+    const l = layers.createLayer();
+    layers.updateOverlay(l.id, {
+      items: { shared: { id: "shared", name: "Shared" } },
+      bonuses: { "own-bonus": { id: "own-bonus", name: "Own" } },
+      sectionPresets: {},
+      slots: {},
+      sections: {},
+      filters: {},
+    });
+    expect(layers.allocatableIds("items")).toEqual(["shared"]);
+    expect(layers.allocatableIds("bonuses")).toEqual(["own-bonus"]);
   });
 
   it("allocatableIds covers every overlay group, layout and filters included", async () => {
@@ -186,14 +201,15 @@ describe("layers store", () => {
       sections: { extras: { id: "extras", label: "Extras", slotIds: [] } },
       filters: { pet: { id: "pet", maxCopies: 1 } },
     });
-    expect(layers.allocatableIds()).toEqual(
-      expect.arrayContaining(["custom-preset", "extras.note", "extras", "pet"]),
-    );
+    expect(layers.allocatableIds("sectionPresets")).toEqual(["custom-preset"]);
+    expect(layers.allocatableIds("slots")).toEqual(["extras.note"]);
+    expect(layers.allocatableIds("sections")).toEqual(["extras"]);
+    expect(layers.allocatableIds("filters")).toEqual(["pet"]);
   });
 
   it("allocatableIds returns empty when no layers have items", async () => {
     const { layers } = await freshStores();
-    expect(layers.allocatableIds()).toEqual([]);
+    expect(layers.allocatableIds("items")).toEqual([]);
   });
 
   it("ensureTargetLayer prefers the last selected layer", async () => {

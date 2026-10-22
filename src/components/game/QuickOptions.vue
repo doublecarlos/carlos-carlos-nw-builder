@@ -17,6 +17,7 @@ import BuildParamInput from "./BuildParamInput.vue";
 import ItemPicker from "./ItemPicker.vue";
 import BaseTooltip from "../ui/BaseTooltip.vue";
 import { getPath } from "../../lib/build-path";
+import { slotShown } from "../../lib/slot-availability";
 import { paramDiffers, paramDiffTitle } from "../../composables/useCompareDiff";
 import * as compare from "../../stores/compare";
 import * as buildEditor from "../../stores/buildEditor";
@@ -41,7 +42,11 @@ const isQuick = (slot: Slot): slot is QuickSlot =>
 
 /** Off the composed catalog, not the shipped file: a layer can add, edit or remove a
  * `quick` slot, and this strip has to show what the build editor is actually resolving. */
-const quickSlots = computed(() => engine.db.value.slots.filter(isQuick));
+const quickSlots = computed(() =>
+  engine.db.value.slots
+    .filter(isQuick)
+    .filter((slot) => slotShown(slot, engine.hiddenSlots.value)),
+);
 
 /** Only a `build_parameter` can be a bare checkbox; a picker is always a labeled control. */
 const isBooleanParam = (slot: QuickSlot) =>

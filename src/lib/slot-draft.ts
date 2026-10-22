@@ -9,9 +9,24 @@ import {
   fieldDiffLabel,
   type DiffCheck,
 } from "./draft-fields";
-import { STABLE_ROLE_FILTER, validateSlotDefaults } from "../data/catalog";
+import {
+  BONUS_ONLY_LEAVES,
+  STABLE_ROLE_FILTER,
+  checkSlotAvailability,
+  checkSlotParent,
+  validateSlotDefaults,
+} from "../data/catalog";
+import {
+  LEAF_TYPES,
+  rowsToWhen,
+  whenIsRepresentable,
+  whenRowsComplete,
+  whenToRows,
+  type ConditionRow,
+} from "../engine/condition-draft";
 import type {
   BuildParameterSlot,
+  ConditionWhen,
   Db,
   ItemPickerListSlot,
   ItemPickerSlot,
@@ -40,12 +55,21 @@ export type SlotFieldGroup =
   | "toggleable"
   | "defaultRows"
   | "stable"
+  | "availability"
+  | "parent"
   | "text";
 
 export const TYPE_FIELDS: Record<Slot["type"], SlotFieldGroup[]> = {
   build_parameter: ["param"],
-  item_picker: ["selector", "itemDefault", "pickerFlags", "stable"],
-  item_picker_list: ["selector", "defaultRows", "toggleable"],
+  item_picker: [
+    "selector",
+    "itemDefault",
+    "parent",
+    "pickerFlags",
+    "stable",
+    "availability",
+  ],
+  item_picker_list: ["selector", "defaultRows", "toggleable", "availability"],
   point_assignment: ["filter"],
   separator: [],
   text: ["text"],
@@ -60,6 +84,11 @@ export const SLOT_TYPE_OPTIONS: { value: Slot["type"]; label: string }[] = [
   { value: "separator", label: "separator" },
   { value: "text", label: "text" },
 ];
+
+/** The condition leaves `availableWhen` can read. */
+export const AVAILABILITY_LEAF_TYPES = LEAF_TYPES.filter(
+  (type) => !(type in BONUS_ONLY_LEAVES),
+);
 
 /** What a message calls a slot of this type. */
 export function nounOf(type: Slot["type"]): string {
@@ -117,6 +146,8 @@ export interface SlotDraft {
   itemDefault: string;
   disallowEmpty: boolean;
   hidePreview: boolean;
+  /** The id of the slot this one nests under, or empty for a top-level slot. */
+  parent: string;
   /** Shared with `item_picker_list`, which hands it to every row. */
   toggleable: boolean;
   /** Shared with `build_parameter`: both render in the quick strip. */
@@ -127,6 +158,11 @@ export interface SlotDraft {
   stableIndex: string | number;
   // --- item_picker_list ---------------------------------------------------------------------
   defaultRows: string | number;
+  // --- item_picker / item_picker_list: availableWhen ----------------------------------------
+  /** As condition rows, or as raw JSON when the rows cannot express it. */
+  whenMode: "rows" | "json";
+  when: ConditionRow[];
+  whenJson: string;
   // --- text ---------------------------------------------------------------------------------
   text: string;
 }
@@ -144,6 +180,7 @@ type SlotFields = Partial<
 
 export function buildDraft(slot: Slot | null | undefined): SlotDraft {
   const source = (slot ?? {}) as SlotFields;
+  const representable = whenIsRepresentable(source.availableWhen);
   return {
     type: slot?.type ?? "build_parameter",
     label: source.label ?? "",
@@ -180,6 +217,7 @@ export function buildDraft(slot: Slot | null | undefined): SlotDraft {
     itemDefault: slot?.type === "item_picker" ? (slot.default ?? "") : "",
     disallowEmpty: source.disallowEmpty ?? false,
     hidePreview: source.hidePreview ?? false,
+    parent: source.parent ?? "",
     toggleable: source.toggleable ?? false,
     quick: source.quick ?? false,
     stableRole: source.stable?.role ?? "",
@@ -188,8 +226,55 @@ export function buildDraft(slot: Slot | null | undefined): SlotDraft {
     stableIndex:
       source.stable?.index == null ? "" : String(source.stable.index),
     defaultRows: source.defaultRows == null ? "" : String(source.defaultRows),
+    whenMode: representable ? "rows" : "json",
+    when: representable ? whenToRows(source.availableWhen) : [],
+    whenJson: source.availableWhen
+      ? JSON.stringify(source.availableWhen, null, 2)
+      : "",
     text: source.text ?? "",
   };
+}
+
+/**
+ * Swaps the `availableWhen` editor between rows and raw JSON, in place. Returns why it could
+ * not, or "" when it did: a condition the rows cannot express stays in JSON.
+ */
+export function switchWhenMode(local: SlotDraft): string {
+  if (local.whenMode === "rows") {
+    const when = rowsToWhen(local.when);
+    local.whenJson = Object.keys(when).length
+      ? JSON.stringify(when, null, 2)
+      : "";
+    local.whenMode = "json";
+    return "";
+  }
+  const text = local.whenJson.trim();
+  if (!text) {
+    local.when = [];
+    local.whenMode = "rows";
+    return "";
+  }
+  try {
+    const when: unknown = JSON.parse(text);
+    if (!whenIsRepresentable(when as ConditionWhen))
+      return "That condition is too complex for the form. Keeping it as JSON.";
+    local.when = whenToRows(when as ConditionWhen);
+    local.whenMode = "rows";
+    return "";
+  } catch (err: unknown) {
+    return `That condition is not valid JSON: ${err instanceof Error ? err.message : String(err)}`;
+  }
+}
+
+/** The authored `availableWhen`, or undefined. Throws on invalid JSON, which
+ *  `slotSaveError` reports first. */
+function availableWhenOf(local: SlotDraft): ConditionWhen | undefined {
+  if (local.whenMode === "json") {
+    const text = local.whenJson.trim();
+    return text ? (JSON.parse(text) as ConditionWhen) : undefined;
+  }
+  const when = rowsToWhen(local.when);
+  return Object.keys(when).length ? when : undefined;
 }
 
 /** Whether a brand-new draft holds anything worth saving. */
@@ -307,6 +392,8 @@ const BUILDERS: {
     };
     putSelector(slot, local);
     putIfSet(slot, "default", local.itemDefault.trim());
+    putIfSet(slot, "availableWhen", availableWhenOf(local));
+    putIfSet(slot, "parent", local.parent);
     if (local.disallowEmpty) slot.disallowEmpty = true;
     if (local.hidePreview) slot.hidePreview = true;
     if (local.toggleable) slot.toggleable = true;
@@ -328,6 +415,7 @@ const BUILDERS: {
     putSelector(slot, local);
     putIfSet(slot, "defaultRows", number(local.defaultRows));
     if (local.toggleable) slot.toggleable = true;
+    putIfSet(slot, "availableWhen", availableWhenOf(local));
     return slot;
   },
   point_assignment: (local, common) => {
@@ -413,6 +501,17 @@ const CHECKS: DiffCheck<Slot>[] = [
       ? "edit scaler"
       : null,
   (old, nw) =>
+    JSON.stringify((old as ItemPickerSlot).availableWhen) !==
+    JSON.stringify((nw as ItemPickerSlot).availableWhen)
+      ? "edit availability condition"
+      : null,
+  (old, nw) =>
+    (old as ItemPickerSlot).parent !== (nw as ItemPickerSlot).parent
+      ? (nw as ItemPickerSlot).parent
+        ? `nest under "${(nw as ItemPickerSlot).parent}"`
+        : "stop nesting"
+      : null,
+  (old, nw) =>
     (old as BuildParameterSlot).control !== (nw as BuildParameterSlot).control
       ? `edit control to "${(nw as BuildParameterSlot).control ?? "stepper if bounded"}"`
       : null,
@@ -420,6 +519,26 @@ const CHECKS: DiffCheck<Slot>[] = [
 
 export function diffLabel(oldJson: string, newJson: string): string {
   return fieldDiffLabel(CHECKS, oldJson, newJson, "edit slot");
+}
+
+/** The slots a slot in `section` can nest under: its top-level item pickers, other than itself. */
+export function parentOptions(
+  db: Db,
+  section: string,
+  ownId: string,
+): { value: string; label: string }[] {
+  return [
+    { value: "", label: "- none -" },
+    ...db.authoredSlots
+      .filter(
+        (slot) =>
+          slot.type === "item_picker" &&
+          slot.section === section &&
+          slot.id !== ownId &&
+          !slot.parent,
+      )
+      .map((slot) => ({ value: slot.id, label: slot.label || slot.id })),
+  ];
 }
 
 /** The other slot already sitting on this `path`, if any. Two slots sharing a path silently
@@ -473,6 +592,18 @@ export function slotSaveError(
         : Boolean(local.filter.trim());
     if (!hasSelector) return "The slot needs an item filter or tags.";
   }
+  if (local.type === "item_picker" || local.type === "item_picker_list") {
+    if (local.whenMode === "json") {
+      try {
+        const text = local.whenJson.trim();
+        if (text) JSON.parse(text);
+      } catch (err: unknown) {
+        return `"Available when" is not valid JSON: ${err instanceof Error ? err.message : String(err)}`;
+      }
+    } else if (!whenRowsComplete(local.when)) {
+      return "Finish or remove the half-filled condition under “Available when”.";
+    }
+  }
   if (local.type === "item_picker" && local.stableRole) {
     const wanted = STABLE_ROLE_FILTER[local.stableRole];
     if (local.selectorSource !== "filter" || local.filter.trim() !== wanted)
@@ -491,5 +622,9 @@ export function slotSaveError(
     const [finding] = validateSlotDefaults([slot], db.items);
     if (finding) return finding.message;
   }
-  return null;
+  const refs = { items: db.items, bonuses: db.bonuses, slots: db.slots };
+  const [unavailable] = checkSlotAvailability(slot, refs);
+  if (unavailable) return unavailable;
+  const [badParent] = checkSlotParent(slot, refs);
+  return badParent ?? null;
 }

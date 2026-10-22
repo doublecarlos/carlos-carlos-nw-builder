@@ -105,10 +105,13 @@ const props = withDefaults(
     path?: number[];
     /** Shown beside the add controls while the list is empty, saying what no condition means. */
     emptyText?: string;
+    /** The leaf types offered, for a condition that cannot read every leaf. */
+    leafTypes?: readonly string[];
   }>(),
   {
     depth: 0,
     emptyText: "",
+    leafTypes: () => LEAF_TYPES,
     bonusOptions: () => [],
     inputOptions: () => [],
     treeId: "",
@@ -121,10 +124,12 @@ const canNest = computed(() => props.depth < maxNestDepth);
 const labels: Record<string, string> = {
   bonusOccurrences: "occurrences",
 };
-const typeOptions = LEAF_TYPES.map((t) => ({
-  value: t,
-  label: labels[t] ?? t,
-}));
+const typeOptions = computed(() =>
+  props.leafTypes.map((t) => ({
+    value: t,
+    label: labels[t] ?? t,
+  })),
+);
 function opLabel(op?: string) {
   if (op === "not") return "not";
   return op === "any" ? "any of" : "all of";
@@ -781,6 +786,7 @@ function changeInputKey(row: ConditionRow, key: string) {
                 :depth="depth + 1"
                 :bonus-options="bonusOptions"
                 :input-options="inputOptions"
+                :leaf-types="leafTypes"
                 :tree-id="treeId"
                 :path="[...path, i, bi]"
                 class="ml-4 border-l-1 border-solid pl-2"

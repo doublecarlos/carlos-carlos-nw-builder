@@ -67,6 +67,8 @@ const props = withDefaults(
     /** Every known bonus, forwarded to ItemBonuses for its pickers. */
     bonusOptions?: BonusOption[];
     allocatableIds?: string[];
+    /** Bonus id pool, forwarded to ItemBonuses for new bonuses. */
+    allocatableBonusIds?: string[];
   }>(),
   {
     source: null,
@@ -77,6 +79,7 @@ const props = withDefaults(
     tags: () => [],
     bonusOptions: () => [],
     allocatableIds: () => [],
+    allocatableBonusIds: () => [],
   },
 );
 
@@ -843,7 +846,7 @@ function showsGroup(group: FieldGroup): boolean {
         :all-bonus-ids="allBonusIds"
         :tags="tags"
         :bonus-options="bonusOptions"
-        :allocatable-ids="props.allocatableIds"
+        :allocatable-ids="props.allocatableBonusIds"
         @save-bonus="$emit('save-bonus', $event)"
         @delete-bonus="$emit('delete-bonus', $event)"
         @update-bonus="$emit('update-bonus', $event)"

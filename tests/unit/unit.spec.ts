@@ -385,13 +385,15 @@ describe("bonus model semantics", () => {
           entry.slotId === "gear.offhandMod2" &&
           entry.stat === "ca",
       )?.value;
+    // The mod slot exists only under an artifact offhand.
+    const offhand = "M32 Codex of Eternal Chains (Celestial)";
     const inRange = runBuild(
-      { "gear.offhandMod2": "CA (M32+, 600 to 3600)" },
+      { "gear.offhand": offhand, "gear.offhandMod2": "CA (M32+, 600 to 3600)" },
       {},
       { "gear.offhandMod2": { stat: { ca: 2000 } } },
     );
     const over = runBuild(
-      { "gear.offhandMod2": "CA (M32+, 600 to 3600)" },
+      { "gear.offhand": offhand, "gear.offhandMod2": "CA (M32+, 600 to 3600)" },
       {},
       { "gear.offhandMod2": { stat: { ca: 5800 } } },
     );

@@ -41,7 +41,8 @@ const combined = computed(() => {
     total +=
       report.counts.imported +
       report.counts.unrecognized +
-      report.counts.overflow;
+      report.counts.overflow +
+      report.counts.unavailable;
   }
   return { recognized, total };
 });
@@ -55,14 +56,14 @@ interface ImportedSection {
   rows: ImportedRow[];
 }
 
-/** Every `imported` outcome, grouped by the real build section (in section order) rather than
+/** Every outcome of `kind`, grouped by the real build section (in section order) rather than
  *  by bag -- this is the reassurance panel, so it should read the way the build editor does. */
-const importedBySection = computed<ImportedSection[]>(() => {
+function placedBySection(kind: "imported" | "unavailable"): ImportedSection[] {
   const report = activeReport.value;
   if (!report) return [];
   const bySection = new Map<string, ImportedRow[]>();
   for (const outcome of report.outcomes) {
-    if (outcome.kind !== "imported") continue;
+    if (outcome.kind !== kind) continue;
     const slot = db.value.slotById.get(outcome.slotId);
     if (!slot) continue;
     const row: ImportedRow = {
@@ -79,7 +80,10 @@ const importedBySection = computed<ImportedSection[]>(() => {
       sectionLabel: section.label,
       rows: bySection.get(section.id)!,
     }));
-});
+}
+
+const importedBySection = computed(() => placedBySection("imported"));
+const unavailableBySection = computed(() => placedBySection("unavailable"));
 
 interface UnrecognizedRow {
   slot: number;
@@ -97,6 +101,8 @@ interface UnrecognizedRow {
   /** Mapped, but every candidate slot for it was already filled -- shown as a note rather than
    *  silently looking unmapped. */
   overflow: boolean;
+  /** Mapped into a slot this build does not have, so it was cleared. */
+  unavailable: boolean;
 }
 interface UnrecognizedBag {
   bag: string;
@@ -114,7 +120,9 @@ const unrecognizedByBag = computed<UnrecognizedBag[]>(() => {
     // moved to "imported"/"overflow" since -- this check is for narrowing, not a real case.
     if (!outcome || outcome.kind === "notInDemo") continue;
     const mappedItemId =
-      outcome.kind === "imported" || outcome.kind === "overflow"
+      outcome.kind === "imported" ||
+      outcome.kind === "overflow" ||
+      outcome.kind === "unavailable"
         ? outcome.itemId
         : null;
     const row: UnrecognizedRow = {
@@ -124,6 +132,7 @@ const unrecognizedByBag = computed<UnrecognizedBag[]>(() => {
       canMap: candidateSlotIds(origin.bag, origin.slot).length > 0,
       mappedItem: mappedItemId ? (db.value.get(mappedItemId) ?? null) : null,
       overflow: outcome.kind === "overflow",
+      unavailable: outcome.kind === "unavailable",
     };
     const list = byBag.get(origin.bag);
     if (list) list.push(row);
@@ -290,6 +299,8 @@ async function copyUnrecognizedIds() {
                       {{ row.mappedItem.name
                       }}<span v-if="row.overflow" class="text-muted">
                         (slot already full)</span
+                      ><span v-if="row.unavailable" class="text-muted">
+                        (slot not available)</span
                       >
                     </template>
                     <template v-else>Not mapped</template>
@@ -318,6 +329,38 @@ async function copyUnrecognizedIds() {
                 </div>
               </template>
             </div>
+          </div>
+        </div>
+      </details>
+
+      <details
+        v-if="activeReport.counts.unavailable"
+        open
+        data-testid="game-import-report-unavailable"
+      >
+        <summary class="cursor-pointer font-semibold">
+          Not available ({{ activeReport.counts.unavailable }})
+        </summary>
+        <div class="mt-2 flex flex-col gap-2">
+          <p>
+            These items were recognized, but their slot isn't available with the
+            rest of this build, for example a weapon mod without an artifact
+            weapon.
+          </p>
+          <div
+            v-for="section in unavailableBySection"
+            :key="section.sectionLabel"
+          >
+            <p class="text-sm font-semibold text-muted">
+              {{ section.sectionLabel }}
+            </p>
+            <p
+              v-for="(row, index) in section.rows"
+              :key="index"
+              data-testid="game-import-report-unavailable-row"
+            >
+              {{ row.slotLabel }} → {{ row.itemName }}
+            </p>
           </div>
         </div>
       </details>

@@ -5,12 +5,14 @@
 // `TYPE_FIELDS[draft.type]` decides which blocks render. `type` is only editable on a new draft,
 // since build data stored under a saved slot depends on its type.
 import { computed } from "vue";
-import { Plus, Trash } from "@lucide/vue";
+import { FileJson, Plus, Trash } from "@lucide/vue";
 import ComboBox from "../ui/ComboBox.vue";
+import ConditionRows from "./ConditionRows.vue";
 import IconButton from "../ui/IconButton.vue";
 import ItemPicker from "./ItemPicker.vue";
 import BaseCheckbox from "../ui/BaseCheckbox.vue";
 import BaseInput from "../ui/BaseInput.vue";
+import BaseTextarea from "../ui/BaseTextarea.vue";
 import DraftFormBar from "../ui/DraftFormBar.vue";
 import FormField from "../ui/FormField.vue";
 import FormGrid from "../ui/FormGrid.vue";
@@ -28,12 +30,17 @@ import {
   isNumeric,
   nounOf,
   findPathConflict,
+  parentOptions,
   slotSaveError,
+  switchWhenMode,
+  AVAILABILITY_LEAF_TYPES,
   SLOT_TYPE_OPTIONS,
   TYPE_FIELDS,
   type SlotDraft,
 } from "../../lib/slot-draft";
+import type { ConditionRow } from "../../engine/condition-draft";
 import type {
+  BonusOption,
   BuildParameterSlot,
   Db,
   Item,
@@ -130,6 +137,10 @@ const sectionOptions = computed(() =>
   props.db.sections.map((s) => ({ value: s.id, label: s.label })),
 );
 
+const parentChoices = computed(() =>
+  parentOptions(props.db, draft.value.section, slotId(draft.value)),
+);
+
 const optionsSourceOptions = [
   { value: "inline", label: "listed here" },
   { value: "tags", label: "items with tags" },
@@ -177,6 +188,13 @@ const tagOptions = computed(() =>
   [...props.db.itemsByTag.keys()].sort().join(", "),
 );
 
+/** Every known bonus as a choice for the occurrences condition, by name. */
+const bonusOptions = computed<BonusOption[]>(() =>
+  props.db.bonuses
+    .map((bonus) => ({ value: bonus.id, label: bonus.name ?? bonus.id }))
+    .sort((a, b) => a.label.localeCompare(b.label)),
+);
+
 /** The items this slot's selector offers, resolved as `Db.forSlot` does, for the default picker. */
 const candidates = computed<Item[]>(() => {
   if (draft.value.selectorSource === "tags") {
@@ -218,6 +236,14 @@ function addOption() {
 }
 function removeOption(index: number) {
   draft.value.options.splice(index, 1);
+}
+
+function setConditions(rows: ConditionRow[]) {
+  draft.value.when = rows;
+}
+
+function toggleWhenMode() {
+  error.value = switchWhenMode(draft.value);
 }
 
 function save() {
@@ -615,6 +641,20 @@ function save() {
       </FormField>
     </FormGrid>
 
+    <FormGrid v-if="fields.has('parent')" class="mb-2">
+      <FormField
+        label="Nested under"
+        hint="shown indented after it, and hidden while it is"
+        class="w-64"
+      >
+        <ComboBox
+          v-model="draft.parent"
+          :options="parentChoices"
+          data-testid="slot-parent-input"
+        />
+      </FormField>
+    </FormGrid>
+
     <div v-if="fields.has('pickerFlags')" class="mb-2 flex flex-wrap gap-x-4">
       <BaseCheckbox
         v-model="draft.disallowEmpty"
@@ -711,6 +751,43 @@ function save() {
           </FormField>
         </template>
       </FormGrid>
+    </template>
+
+    <!-- availableWhen ------------------------------------------------------------------- -->
+    <template v-if="fields.has('availability')">
+      <FormSection
+        >Available when
+        <IconButton
+          :title="draft.whenMode === 'json' ? 'Use the form' : 'Edit as JSON'"
+          data-testid="slot-when-json-toggle"
+          @click="toggleWhenMode"
+          ><FileJson
+        /></IconButton>
+      </FormSection>
+      <FormSectionDescription>
+        While this fails, the slot is hidden and emptied in every build. It
+        reads what the build holds, so it cannot depend on this slot's own pick.
+      </FormSectionDescription>
+      <BaseTextarea
+        v-if="draft.whenMode === 'json'"
+        v-model="draft.whenJson"
+        class="mb-2 w-full font-mono"
+        rows="6"
+        data-testid="slot-when-json"
+      />
+      <ConditionRows
+        v-else
+        class="mb-2"
+        :rows="draft.when"
+        :depth="0"
+        :bonus-options="bonusOptions"
+        :leaf-types="AVAILABILITY_LEAF_TYPES"
+        tree-id="slot"
+        :path="[]"
+        empty-text="Always available."
+        data-testid="slot-when"
+        @update="setConditions"
+      />
     </template>
   </div>
 </template>

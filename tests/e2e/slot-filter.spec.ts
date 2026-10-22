@@ -265,6 +265,7 @@ test.describe("clear filters button", () => {
     await expect(page.getByTestId("slot-filter-count")).toBeHidden();
 
     await slotFilterInput(page).fill("Arms");
+    // Arms only: its reinforcement is hidden while Arms is empty.
     await expect(page.getByTestId("slot-filter-count")).toHaveText("1 match");
   });
 });

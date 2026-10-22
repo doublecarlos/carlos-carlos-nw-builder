@@ -206,6 +206,14 @@ export interface ItemPickerSlot {
   list?: string;
   /** See `StableSlotRef`. Absent on every slot outside the stable. */
   stable?: StableSlotRef;
+  /** The slot exists only while this holds, read against the build's stored picks. While it
+   *  fails the slot is hidden and holds nothing: its pick, values, repetition counts and off
+   *  state are cleared (slot-availability.ts). Cannot be combined with `default`. */
+  availableWhen?: ConditionWhen;
+  /** Another `item_picker` in the same section this slot belongs to, like a weapon's mod. The
+   *  slot renders nested right after it, and is unavailable while the parent is unavailable or
+   *  empty. One level deep: a parent cannot have a parent of its own. */
+  parent?: string;
 }
 
 /** A row of independent numeric steppers sharing one label, one per item matching `filter` --
@@ -276,6 +284,9 @@ export interface ItemPickerListSlot {
   tags?: string[];
   /** Handed to every row, each with its own off state. See `ItemPickerSlot.toggleable`. */
   toggleable?: boolean;
+  /** Gates the container and every row; a failing one also drops the row count. See
+   *  `ItemPickerSlot.availableWhen`. */
+  availableWhen?: ConditionWhen;
 }
 
 export type Slot =
@@ -1319,4 +1330,7 @@ export interface ResolvedBuild {
   ledger: LedgerEntry[];
   derived: DerivedOutputs;
   errors: EngineError[];
+  /** Slots whose `availableWhen` fails for this build, by id. The engine resolves the build with
+   *  them emptied. */
+  hiddenSlots: ReadonlySet<string>;
 }

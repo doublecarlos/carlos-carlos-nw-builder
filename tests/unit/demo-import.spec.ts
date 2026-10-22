@@ -489,3 +489,33 @@ describe("buildFromLoadout: the stable", () => {
     expect(imported).toMatchObject({ itemId: "test-enlightened-pref" });
   });
 });
+
+describe("buildFromLoadout: unavailable slots", () => {
+  /** The head slot exists only under an artifact mainhand, which `test-mainhand` is not. */
+  const head = catalog.base().slots.find((slot) => slot.id === "gear.head")!;
+  const gatedDb = catalog.makeDb([
+    catalog.upsert(overlay, "slots", head.id, {
+      ...head,
+      availableWhen: { equipped: { tag: "artifact:mainhand" } },
+    }),
+  ]);
+
+  it("clears an item whose slot the rest of the loadout hides, and reports it", () => {
+    const character = characterOf("Carlos", "Player_Bard", []);
+    const loadout = loadoutOf([
+      demoItem("Head", 0, "Head_Test"),
+      demoItem("Melee", 0, "Primary_Test"),
+    ]);
+    const { build, report } = buildFromLoadout(character, loadout, gatedDb);
+    expect(build.choices["gear.head"]).toBeUndefined();
+    expect(build.choices["gear.mainhand"]).toBe("test-mainhand");
+    expect(report.counts.unavailable).toBe(1);
+    expect(report.counts.imported).toBe(1);
+    expect(report.outcomes).toContainEqual({
+      kind: "unavailable",
+      slotId: "gear.head",
+      gameId: "Head_Test",
+      itemId: "test-head",
+    });
+  });
+});

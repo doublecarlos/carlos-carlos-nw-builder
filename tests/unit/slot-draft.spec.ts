@@ -8,7 +8,9 @@ import {
   toSlot,
   diffLabel,
   findPathConflict,
+  parentOptions,
   slotSaveError,
+  switchWhenMode,
   TYPE_FIELDS,
 } from "../../src/lib/slot-draft";
 import type {
@@ -442,6 +444,144 @@ describe("slotSaveError", () => {
     });
     expect(slotSaveError(draft, testDb, "stable.x")).toMatch(
       /needs a position/,
+    );
+  });
+});
+
+describe("availableWhen", () => {
+  const gated = {
+    id: "stable.ins",
+    label: "Insignia",
+    section: "stable",
+    type: "item_picker" as const,
+    filter: "insignia",
+    availableWhen: { equipped: { item: "mount-a" } },
+  };
+
+  it("round-trips on an item_picker and an item_picker_list", () => {
+    expect(roundTrip(gated)).toEqual(gated);
+    const list = { ...gated, type: "item_picker_list" as const };
+    expect(roundTrip(list)).toEqual(list);
+  });
+
+  it("keeps a condition the rows cannot express as JSON", () => {
+    const deep = {
+      ...gated,
+      availableWhen: {
+        all: [{ not: { any: [{ not: { any: [{ not: { toggle: "x" } }] } }] } }],
+      },
+    };
+    const draft = buildDraft(deep);
+    expect(draft.whenMode).toBe("json");
+    expect(toSlot(draft, ctx(deep))).toEqual(deep);
+  });
+
+  it("switches between rows and JSON without losing the condition", () => {
+    const draft = buildDraft(gated);
+    expect(switchWhenMode(draft)).toBe("");
+    expect(draft.whenMode).toBe("json");
+    expect(JSON.parse(draft.whenJson)).toEqual(gated.availableWhen);
+    expect(switchWhenMode(draft)).toBe("");
+    expect(draft.whenMode).toBe("rows");
+    expect(toSlot(draft, ctx(gated))).toEqual(gated);
+  });
+
+  it("reports invalid JSON instead of switching", () => {
+    const draft = { ...buildDraft(gated), whenMode: "json" as const };
+    draft.whenJson = "{ nope";
+    expect(switchWhenMode(draft)).toMatch(/not valid JSON/);
+    expect(draft.whenMode).toBe("json");
+  });
+
+  it("is dropped by a type that cannot carry it", () => {
+    const draft = { ...buildDraft(gated), type: "point_assignment" as const };
+    expect(toSlot(draft, ctx(gated))).not.toHaveProperty("availableWhen");
+  });
+
+  it("labels a condition change", () => {
+    const edited = { ...gated, availableWhen: { toggle: "x" } };
+    expect(diffLabel(JSON.stringify(gated), JSON.stringify(edited))).toBe(
+      "edit availability condition",
+    );
+  });
+
+  it("blocks saving a condition with a default, or one met by the slot's own pick", () => {
+    const withDefault = { ...buildDraft(gated), itemDefault: "ins-a" };
+    expect(slotSaveError(withDefault, testDb, gated.id)).toMatch(
+      /cannot have a default/,
+    );
+    const selfMet = buildDraft({
+      ...gated,
+      availableWhen: { equipped: { item: "ins-a" } },
+    });
+    expect(slotSaveError(selfMet, testDb, gated.id)).toMatch(/own pick/);
+    expect(slotSaveError(buildDraft(gated), testDb, gated.id)).toBeNull();
+  });
+
+  it("blocks saving bad JSON", () => {
+    const draft = { ...buildDraft(gated), whenMode: "json" as const };
+    draft.whenJson = "{ nope";
+    expect(slotSaveError(draft, testDb, gated.id)).toMatch(/not valid JSON/);
+  });
+});
+
+describe("parent", () => {
+  const mount = {
+    id: "stable.mount",
+    label: "Mount",
+    section: "stable",
+    type: "item_picker" as const,
+    filter: "mount",
+  };
+  const nested = {
+    id: "stable.ins",
+    label: "Insignia",
+    section: "stable",
+    type: "item_picker" as const,
+    filter: "insignia",
+    parent: "stable.mount",
+  };
+  const parentDb = db.build(items, [], NW_SCHEMA, {
+    ...slotsData,
+    slots: [...slotsData.slots, mount, nested],
+  });
+
+  it("round-trips on an item_picker and is dropped by other types", () => {
+    expect(roundTrip(nested)).toEqual(nested);
+    const draft = { ...buildDraft(nested), type: "item_picker_list" as const };
+    expect(toSlot(draft, ctx(nested))).not.toHaveProperty("parent");
+  });
+
+  it("labels nesting and un-nesting", () => {
+    const { parent: _parent, ...topLevel } = nested;
+    expect(diffLabel(JSON.stringify(topLevel), JSON.stringify(nested))).toBe(
+      'nest under "stable.mount"',
+    );
+    expect(diffLabel(JSON.stringify(nested), JSON.stringify(topLevel))).toBe(
+      "stop nesting",
+    );
+  });
+
+  it("offers the section's top-level item pickers other than itself", () => {
+    const values = (ownId: string) =>
+      parentOptions(parentDb, "stable", ownId).map((option) => option.value);
+    expect(values("stable.new")).toEqual(["", "stable.mount"]);
+    expect(values("stable.mount")).toEqual([""]);
+    expect(values("boons.x")).toEqual(["", "stable.mount"]);
+    expect(
+      parentOptions(parentDb, "boons", "x").map((option) => option.value),
+    ).toEqual([""]);
+  });
+
+  it("blocks saving a parent the layout cannot nest under", () => {
+    expect(slotSaveError(buildDraft(nested), parentDb, nested.id)).toBeNull();
+    const missing = { ...buildDraft(nested), parent: "stable.ghost" };
+    expect(slotSaveError(missing, parentDb, nested.id)).toMatch(
+      /does not exist/,
+    );
+    const nestingParent = { ...buildDraft(mount), parent: "stable.ins" };
+    expect(slotSaveError(nestingParent, parentDb, mount.id)).toMatch(
+      /nested itself/,
     );
   });
 });

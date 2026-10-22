@@ -269,14 +269,31 @@
       "slotIds": ["options.class"]
     },
     {
-      "label": "Weapon modifications",
+      "label": "Gear modifications",
       "reason": "Not recorded in the game export.",
-      "slotIds": ["gear.mainhandMod", "gear.offhandMod1", "gear.offhandMod2"]
+      "slotIds": [
+        "gear.headMod",
+        "gear.armorMod",
+        "gear.armsMod",
+        "gear.mainhandMod",
+        "gear.offhandMod1",
+        "gear.offhandMod2",
+        "gear.bootsMod"
+      ]
     },
     {
       "label": "Reinforcements",
       "reason": "Not recorded in the game export.",
-      "sections": ["reinforcements"]
+      "slotIds": [
+        "reinforcements.armorKit1",
+        "reinforcements.armorKit2",
+        "reinforcements.armorKit3",
+        "reinforcements.armorKit4",
+        "reinforcements.jewel1",
+        "reinforcements.jewel2",
+        "reinforcements.jewel3",
+        "reinforcements.jewel4"
+      ]
     },
     {
       "label": "Buffs (consumables, etc.)",

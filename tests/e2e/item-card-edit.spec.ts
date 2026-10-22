@@ -88,6 +88,8 @@ test("the card's link to a shared bonus's first source parks the cursor on that 
   await hoverForCard(page, slotRow(page, "gear.pants"));
   const link = card(page).getByTestId("item-card-first-source");
   await expect(link).toHaveText(SHIRT_ITEM);
+  // The secondary card still shows the bonus itself.
+  await expect(card(page).getByTestId("item-card-grant").first()).toBeVisible();
 
   await link.click();
 

@@ -1,5 +1,6 @@
 import { computed } from "vue";
 import { expandSlots } from "../lib/item-picker-list";
+import { slotShown } from "../lib/slot-availability";
 import { itemLabel } from "../engine/insignia";
 import type { GoToEntry } from "../lib/go-to";
 import * as engine from "../stores/resolved";
@@ -13,8 +14,8 @@ import * as layers from "../stores/layers";
  *
  * The slot list mirrors what BuildEditor.vue actually renders (`allSlotsBySection`): no
  * separators or text rows, since neither is a place the cursor can land, no `quick` slot (it
- * lives in the QuickOptions strip, not in a section). Offering a target the editor has no row
- * for is worse than not offering it.
+ * lives in the QuickOptions strip, not in a section) and no unavailable slot. Offering a target
+ * the editor has no row for is worse than not offering it.
  */
 export function useGoToEntries() {
   return computed<GoToEntry[]>(() => {
@@ -37,6 +38,7 @@ export function useGoToEntries() {
       for (const section of db.sections) {
         for (const slotDef of expandSlots(db.slots, active)) {
           if (slotDef.section !== section.id) continue;
+          if (!slotShown(slotDef, resolved.result.hiddenSlots)) continue;
           if (
             slotDef.type === "separator" ||
             slotDef.type === "text" ||

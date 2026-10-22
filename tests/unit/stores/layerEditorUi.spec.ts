@@ -1,11 +1,20 @@
 // Tests for stores/layerEditorUi.ts: the per-layer tab, search and selection remembered
-// across LayerEditor.vue remounts, plus the one-shot new-item seed BuildEditor.vue hands over.
-import { describe, expect, it } from "vitest";
+// across LayerEditor.vue remounts, plus the one-shot new-item seed handed to the next editor.
+import { describe, expect, it, vi } from "vitest";
 import {
   getState,
+  newItemSeed,
+  openNewItem,
   seedNewItem,
   takeNewItemSeed,
 } from "../../../src/stores/layerEditorUi";
+import * as selection from "../../../src/stores/selection";
+
+vi.mock("../../../src/stores/selection", () => ({ selectLayer: vi.fn() }));
+vi.mock("../../../src/stores/layers", () => ({
+  ensureTargetLayer: () => ({ id: "layer-target" }),
+}));
+vi.mock("../../../src/lib/router", () => ({ apply: vi.fn() }));
 
 describe("layerEditorUi store", () => {
   it("returns empty defaults for a layer never seen before", () => {
@@ -85,5 +94,32 @@ describe("new-item seed", () => {
       name: "",
       tags: ["companion_power:offense"],
     });
+  });
+});
+
+describe("openNewItem", () => {
+  const seed = { id: "", name: "", filter: "mount" };
+
+  it("seeds synchronously when the selection lands at once", () => {
+    vi.mocked(selection.selectLayer).mockReturnValue(true);
+    void openNewItem(seed);
+
+    expect(selection.selectLayer).toHaveBeenCalledWith("layer-target");
+    expect(newItemSeed.value).toEqual(seed);
+    expect(takeNewItemSeed()).toBe(seed);
+  });
+
+  it("seeds after a confirmed discard", async () => {
+    vi.mocked(selection.selectLayer).mockResolvedValue(true);
+    await openNewItem(seed);
+
+    expect(takeNewItemSeed()).toBe(seed);
+  });
+
+  it("leaves nothing pending when the discard is cancelled", async () => {
+    vi.mocked(selection.selectLayer).mockResolvedValue(false);
+    await openNewItem(seed);
+
+    expect(takeNewItemSeed()).toBeNull();
   });
 });
