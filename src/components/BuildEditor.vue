@@ -41,6 +41,7 @@ import { statPickerOptions } from "../lib/format";
 import { matchesQuery } from "../lib/text-filter";
 import { slotStablePlaceholder, slotStatSummary } from "../lib/slot-summary";
 import { slotsSupplying } from "../lib/bonus-slots";
+import { bonusesForItem } from "../lib/candidate-preview";
 import { itemStatAddress, readInput } from "../lib/build-inputs";
 import * as insignia from "../engine/insignia";
 import * as stableBrowser from "../stores/stableBrowser";
@@ -384,26 +385,14 @@ function dynamicValuesFor(slotId: string, item: Item): Record<string, number> {
 }
 
 /**
- * Every bonus the hovered item takes part in -- its own inline ones and its sets'.
- * Not `bonuses.filter(b => b.slotId === …)`: a set bonus is attributed to the single
- * slotDef that instanced it, so the other items in the set would show nothing. A
- * point_assignment candidate at 0 points still has a (reachable, inactive) entry here --
- * `collect()`'s `collectAttachments` walks every candidate in the slot regardless of its own
- * count, not just the ones with points spent (bonus.ts's own comment on why).
+ * Every bonus the hovered item takes part in. A point_assignment candidate at 0 points still
+ * has a (reachable, inactive) entry here -- `collect()`'s `collectAttachments` walks every
+ * candidate in the slot regardless of its own count, not just the ones with points spent
+ * (bonus.ts's own comment on why).
  */
 const hoveredBonuses = computed(() => {
   const item = hoveredItem.value;
-  if (!item) return [];
-  const seen = new Set<string>();
-  const out: EvaluatedBonus[] = [];
-  for (const entry of db.value.bonusesFor(item)) {
-    const resolved = bonusById.value.get(entry.bonus.id);
-    if (resolved && !seen.has(resolved.id)) {
-      seen.add(resolved.id);
-      out.push(resolved);
-    }
-  }
-  return out;
+  return item ? bonusesForItem(db.value, item, bonusById.value) : [];
 });
 
 // --- quick compare ---------------------------------------------------------------------

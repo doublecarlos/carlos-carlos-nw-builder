@@ -34,7 +34,7 @@ const model = defineModel<string>({ default: "" });
 const input = useTemplateRef("input");
 const menu = useTemplateRef("menu");
 
-const { open, query, highlight, close } = useMenuNavigation({
+const { open, query, highlight, close, pointAt } = useMenuNavigation({
   target: input,
   entryCount: () => entries.value.length,
   onHighlightChange: () => menu.value?.scrollToHighlighted(),
@@ -142,7 +142,7 @@ onKeyStroke(
         :highlighted="index === highlight"
         :selected="entry === model"
         @mousedown.prevent="commit(entry)"
-        @mouseenter="highlight = index"
+        @mousemove="pointAt($event, index)"
       >
         <span class="flex items-center gap-2">
           <span

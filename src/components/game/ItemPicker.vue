@@ -3,7 +3,8 @@
 // Item objects to the generic {value, label} options format and renders the item-specific
 // stat preview (plus, given `bonusPreview`, the bonus stats picking it would add now, and
 // the ones it's a step toward but hasn't unlocked yet) through ComboBox's `#option` slot --
-// or, with `hidePreview`, nothing but the name.
+// or, with `hidePreview`, nothing but the name. The highlighted candidate's full ItemCard sits
+// beside the open menu (ComboBox's `#aside` slot).
 //
 // A native <datalist> was considered and rejected: it cannot show item level and a stat
 // preview per row, and its keyboard behavior is not controllable. This is ~120 lines instead.
@@ -11,24 +12,29 @@
 // The component owns only its own transient UI state (open / query / highlight). The chosen
 // value is `model` and every change leaves via `update:model`, so the single build document
 // in App.vue stays the only source of truth (undo stack has a single place to hook into).
-import { ref, computed } from "vue";
+import { ref, shallowRef, computed } from "vue";
+import { useTimeoutFn } from "@vueuse/core";
 import {
   itemPreview,
   bonusStatPreview,
   hasBonuses,
   int as fmtInt,
 } from "../../lib/format";
-import * as engine from "../../engine/engine";
-import { itemScaleFactor } from "../../composables/useItemScale";
+import { itemScaleFactor, itemScalers } from "../../composables/useItemScale";
 import { scaledStat } from "../../engine/scaling";
 import { itemSearchText } from "../../lib/item-search";
+import {
+  bonusesForItem,
+  resolveWithCandidate,
+} from "../../lib/candidate-preview";
 import * as pickerLens from "../../stores/pickerLens";
 import { PREFERRED_MARK, itemDisplay } from "../../engine/insignia";
 import { qualityColor, toneStyle } from "../../lib/item-quality";
 import type { InsigniaGroup } from "../../engine/insignia";
-import type { Item, Db, Build } from "../../types";
+import type { Item, Db, Build, EvaluatedBonus } from "../../types";
 import ComboBox from "../ui/ComboBox.vue";
-import type { ComboBoxExposed } from "../ui/ComboBox.vue";
+import type { ComboBoxExposed, HighlightSource } from "../ui/ComboBox.vue";
+import ItemCard from "./ItemCard.vue";
 
 const props = withDefaults(
   defineProps<{
@@ -133,11 +139,7 @@ function previewBonusStats(item: Item): BonusStatsPreview | null {
   const ctx = props.bonusPreview;
   if (!ctx) return null;
   try {
-    const hypothetical: Build = {
-      ...ctx.build,
-      choices: { ...ctx.build.choices, [ctx.slotId]: item.id },
-    };
-    const result = engine.resolveBonuses(ctx.db, hypothetical);
+    const result = resolveWithCandidate(ctx.db, ctx.build, ctx.slotId, item.id);
 
     const current: Record<string, number> = {};
     for (const bonus of result.bonuses) {
@@ -361,6 +363,73 @@ const selectedLabel = computed(() =>
 
 const selectedTone = computed(() => qualityColor(props.selectedItem?.quality));
 
+// --- highlighted candidate's item card ----------------------------------------------------
+
+/** Pause before a pointer-driven highlight reaches the card, so sweeping the list does not
+ *  resolve a hypothetical build for every row it crosses. */
+const POINTER_CARD_DELAY_MS = 100;
+
+const cardItemId = shallowRef<string | null>(null);
+let pendingCardId: string | null = null;
+const { start: startCardTimer, stop: stopCardTimer } = useTimeoutFn(
+  () => {
+    cardItemId.value = pendingCardId;
+  },
+  POINTER_CARD_DELAY_MS,
+  { immediate: false },
+);
+
+function onHighlighted(value: string | null, source: HighlightSource) {
+  stopCardTimer();
+  // Leaving a candidate (the empty row, a closed menu) clears the card at once.
+  if (source === "keyboard" || value === null) {
+    cardItemId.value = value;
+    return;
+  }
+  pendingCardId = value;
+  startCardTimer();
+}
+
+const cardItem = computed(() => {
+  const id = cardItemId.value;
+  if (!id || !pickerLens.showCard.value) return null;
+  return props.items.find((item) => item.id === id) ?? null;
+});
+
+/** One resolve for the card's candidate alone; `candidateStats` keeps only sums per row. A
+ *  resolve that throws leaves the card with the item's own lines and no bonuses. */
+const card = computed(() => {
+  const item = cardItem.value;
+  if (!item) return null;
+  const ctx = props.bonusPreview;
+  let bonuses: EvaluatedBonus[] = [];
+  let bonusById = new Map<string, EvaluatedBonus>();
+  let context = null;
+  if (ctx) {
+    try {
+      const result = resolveWithCandidate(
+        ctx.db,
+        ctx.build,
+        ctx.slotId,
+        item.id,
+      );
+      bonusById = new Map(result.bonuses.map((bonus) => [bonus.id, bonus]));
+      bonuses = bonusesForItem(ctx.db, item, bonusById);
+      context = result.ctx;
+    } catch {
+      // Card without bonuses, as for a picker with no build.
+    }
+  }
+  return {
+    item,
+    bonuses,
+    bonusById,
+    context,
+    db: ctx?.db ?? props.db,
+    scalers: itemScalers(item),
+  };
+});
+
 defineExpose({
   /** Focus the underlying input -- same open/clear behavior as a direct click (ComboBox's
    *  own `onFocus` opens the list and starts a fresh query). */
@@ -392,7 +461,20 @@ defineExpose({
     @update:model-value="model = $event"
     @update:open="isOpen = $event"
     @update:query="query = $event"
+    @update:highlighted="onHighlighted"
   >
+    <template v-if="card" #aside>
+      <ItemCard
+        class="w-80 max-w-[90vw]"
+        readonly
+        :item="card.item"
+        :bonuses="card.bonuses"
+        :bonus-by-id="card.bonusById"
+        :context="card.context"
+        :db="card.db"
+        :scalers="card.scalers"
+      />
+    </template>
     <template #option="{ option }">
       <div class="flex items-baseline gap-1.5" :class="option.group && 'pl-3'">
         <span class="flex min-w-0 flex-1 items-baseline font-semibold">

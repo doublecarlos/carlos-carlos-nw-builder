@@ -14,6 +14,9 @@ export interface ComboBoxOption {
 
 /** What a template ref on this component can call. Spelled out rather than derived with
  *  `InstanceType<typeof ComboBox>`, which a generic component has no constructor to give. */
+/** What last moved the highlight. */
+export type HighlightSource = "pointer" | "keyboard";
+
 export interface ComboBoxExposed {
   focusInput: () => void;
   focusAndSeed: (char: string) => void;
@@ -26,10 +29,19 @@ export interface ComboBoxExposed {
 // damage type, forte picks).
 //
 // Reuses ComboBoxMenu/ComboBoxMenuRow primitives for the floating dropdown.
-import { ref, computed, watch, nextTick, useId, useTemplateRef } from "vue";
+import {
+  ref,
+  shallowRef,
+  computed,
+  watch,
+  nextTick,
+  useId,
+  useTemplateRef,
+} from "vue";
 import { onKeyStroke } from "@vueuse/core";
 import { blurToRowAnchor } from "../../lib/row-cursor";
 import { filterAndRank } from "../../lib/text-filter";
+import { createPointerMoveFilter } from "../../lib/pointer-moved";
 import ComboBoxMenu from "./ComboBoxMenu.vue";
 import ComboBoxMenuRow from "./ComboBoxMenuRow.vue";
 
@@ -90,6 +102,9 @@ const emit = defineEmits<{
   /** Mirrors what has been typed, for a caller whose option list depends on the query
    *  (ItemPicker's exact-id override). Filtering itself stays here. */
   "update:query": [value: string];
+  /** The option under the cursor, or null on the empty row or while closed. `source` lets a
+   *  caller delay its reaction to a pointer sweeping the list. */
+  "update:highlighted": [value: string | null, source: HighlightSource];
 }>();
 
 const model = defineModel<string>({ default: "" });
@@ -99,6 +114,8 @@ watch(open, (value) => emit("update:open", value));
 const query = ref("");
 watch(query, (value) => emit("update:query", value));
 const highlight = ref(0);
+/** Set by a pointer moving over a row; every other highlight change comes from the keyboard. */
+const highlightSource = shallowRef<HighlightSource>("keyboard");
 const input = useTemplateRef("input");
 const list = ref<InstanceType<typeof ComboBoxMenu> | null>(null);
 
@@ -182,6 +199,36 @@ watch(highlight, () => {
   nextTick(() => list.value?.scrollToHighlighted());
 });
 
+/** An open menu shows the current value as the placeholder, so it keeps the value's look;
+ *  only a real placeholder reads muted. */
+const placeholderClass = computed(() =>
+  !model.value
+    ? "placeholder:text-muted"
+    : props.tone
+      ? "placeholder:text-(--tone)"
+      : "placeholder:text-text",
+);
+
+function setHighlight(index: number, source: HighlightSource = "keyboard") {
+  highlightSource.value = source;
+  highlight.value = index;
+}
+
+const pointerMoved = createPointerMoveFilter();
+
+function onRowPointer(event: MouseEvent, index: number) {
+  if (pointerMoved(event)) setHighlight(index, "pointer");
+}
+
+/** Follows filtering too: the same index can land on a different option as the list narrows. */
+const highlightedValue = computed(() => {
+  const row = open.value ? rows.value[highlight.value] : undefined;
+  return row?.kind === "option" ? row.option.value : null;
+});
+watch(highlightedValue, (value) =>
+  emit("update:highlighted", value, highlightSource.value),
+);
+
 /** The first row the cursor may rest on -- past a heading when the list opens on one. */
 const firstStop = () => stops.value[0] ?? 0;
 
@@ -191,18 +238,28 @@ function onFocus() {
   if (props.readonly || open.value) return;
   open.value = true;
   query.value = "";
-  // Start on whatever is already selected, not on "empty" -- `rows` reflects the
-  // now-open (unfiltered) list since `open` was just set above.
+  highlightSelected();
+  // A caller may only settle its options once it hears the menu opened (ItemPicker withholds
+  // and reorders candidates then), which moves the selected option to another index.
+  const opened = highlight.value;
+  nextTick(() => {
+    if (open.value && !query.value && highlight.value === opened)
+      highlightSelected();
+  });
+}
+
+/** Starts on whatever is already selected, not on "empty". */
+function highlightSelected() {
   const current = rows.value.findIndex(
     (row) => row.kind === "option" && row.option.value === model.value,
   );
-  highlight.value = current === -1 ? firstStop() : current;
+  setHighlight(current === -1 ? firstStop() : current);
 }
 
 function onInput(event: Event) {
   query.value = (event.target as HTMLInputElement).value;
   open.value = true;
-  highlight.value = firstStop();
+  setHighlight(firstStop());
 }
 
 function onBlur() {
@@ -248,7 +305,7 @@ function focusAndSeed(char: string) {
   if (props.readonly) return;
   open.value = true;
   query.value = char;
-  highlight.value = firstStop();
+  setHighlight(firstStop());
   nextTick(() => input.value?.focus());
 }
 
@@ -295,7 +352,7 @@ onKeyStroke(
       Math.max((at === -1 ? 0 : at) + step, 0),
       stops.value.length - 1,
     );
-    highlight.value = stops.value[next] ?? highlight.value;
+    setHighlight(stops.value[next] ?? highlight.value);
   },
   { target: input },
 );
@@ -338,15 +395,17 @@ onKeyStroke(
       :id="inputId"
       ref="input"
       data-testid="picker-input"
-      class="w-full rounded-md border bg-surface py-0.5 pl-1.5 pr-6 placeholder:text-muted focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
+      class="w-full rounded-md border bg-surface py-0.5 pl-1.5 pr-6 focus:outline-2 focus:-outline-offset-1 focus:outline-accent"
       :class="[
         invalid
           ? 'border-danger'
           : tone
             ? 'border-[color-mix(in_oklab,var(--tone)_25%,var(--line))]'
             : 'border-line',
-        tone && !open && 'text-(--tone)',
+        tone && 'text-(--tone)',
+        placeholderClass,
       ]"
+      :data-filled="model ? '' : undefined"
       :style="tone ? { '--tone': tone } : undefined"
       type="text"
       :readonly="readonly"
@@ -402,7 +461,7 @@ onKeyStroke(
           :highlighted="highlight === index"
           :selected="model === ''"
           @mousedown.prevent="choose(null)"
-          @mouseenter="highlight = index"
+          @mousemove="onRowPointer($event, index)"
         >
           <slot name="empty">- empty -</slot>
         </ComboBoxMenuRow>
@@ -414,7 +473,7 @@ onKeyStroke(
           :highlighted="highlight === index"
           :selected="row.option.value === model"
           @mousedown.prevent="choose(row.option)"
-          @mouseenter="highlight = index"
+          @mousemove="onRowPointer($event, index)"
         >
           <slot
             v-if="$slots.option"
@@ -437,6 +496,8 @@ onKeyStroke(
       <ComboBoxMenuRow v-if="hiddenCount" muted presentational>
         <slot name="more" :count="hiddenCount">{{ hiddenCount }} more</slot>
       </ComboBoxMenuRow>
+
+      <template v-if="$slots.aside" #aside><slot name="aside" /></template>
     </ComboBoxMenu>
   </div>
 </template>

@@ -147,12 +147,13 @@
 }
 
 /* Build values read heavier than their labels. Set on a container of build controls; an empty
- * control's placeholder stays at normal weight. */
+ * control's placeholder stays at normal weight. A filled combo box shows its value as the
+ * placeholder while open, so that one keeps the weight. */
 @utility build-values {
   & input {
     font-weight: var(--font-weight-semibold);
   }
-  & input::placeholder {
+  & input:not([data-filled])::placeholder {
     font-weight: var(--font-weight-normal);
   }
 }

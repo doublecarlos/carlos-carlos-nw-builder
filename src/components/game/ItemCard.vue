@@ -10,6 +10,9 @@
 // useHoverCard's window-level scroll listener can tell a scroll inside the card apart from
 // one outside it that should close the card. BuildEditor keeps it open while the pointer is
 // over it and closes it on leave.
+//
+// ItemPicker.vue also shows one beside its open menu for the highlighted candidate, `readonly`
+// there since the candidate is not in the build to navigate from.
 import { computed } from "vue";
 import { NW_SCHEMA } from "../../data/data";
 import { int, label as statLabel, signedStat } from "../../lib/format";
@@ -79,9 +82,13 @@ const props = withDefaults(
     /** Every resolved bonus in the build by id, so an "overridden by" line can name the
      *  excluder and link to its slot; that bonus usually sits on another item. */
     bonusById?: Map<string, EvaluatedBonus>;
-    /** The build's context, which a scale's step ladder is evaluated against. Without one a
-     *  scaled grant shows its single line. */
+    /** The context a scale's step ladder is evaluated against. It must come from the same
+     *  resolve as `bonuses`, or a ladder reading `equipped(...)` disagrees with its grant line
+     *  (a picker candidate's card passes its own resolve's). Without one a scaled grant shows
+     *  its single line. */
     context?: EvalContext | null;
+    /** Content only: links render as plain text and the action buttons are hidden. */
+    readonly?: boolean;
   }>(),
   {
     bonuses: () => [],
@@ -93,6 +100,7 @@ const props = withDefaults(
     stableGroup: null,
     bonusById: () => new Map(),
     context: null,
+    readonly: false,
   },
 );
 
@@ -223,6 +231,7 @@ const rows = computed(() =>
       ? row.sharedWith.map<LinkListItem>((part) => ({
           key: part.slotId,
           label: part.name,
+          plain: props.readonly,
         }))
       : null,
     // No catalog (the layer editor's preview card) means no "where would I get this" action.
@@ -267,7 +276,7 @@ const rows = computed(() =>
         >iL {{ scaledIl }}</span
       >
       <IconButton
-        v-if="editLabel"
+        v-if="editLabel && !readonly"
         :title="editLabel"
         class="-my-1 -mr-1"
         data-testid="item-card-edit"
@@ -301,6 +310,7 @@ const rows = computed(() =>
         :paragraphs="longDescription"
       />
       <StatRows
+        :readonly="readonly"
         :rows="stats"
         empty-text="no direct stats"
         @go-to-slot="emit('go-to-slot', $event)"
@@ -326,7 +336,7 @@ const rows = computed(() =>
             }}</span>
             <BaseBadge v-if="row.stacks > 1">×{{ row.stacks }}</BaseBadge>
             <IconButton
-              v-if="row.formulaic"
+              v-if="row.formulaic && !readonly"
               title="Show how this is calculated"
               data-testid="item-card-inspect"
               @click="emit('inspect', row.id)"
@@ -340,6 +350,7 @@ const rows = computed(() =>
           >
             This bonus was accounted for in
             <BaseLink
+              :plain="readonly"
               data-testid="item-card-first-source"
               @click="emit('go-to-slot', row.firstSource.slotId)"
               >{{ row.firstSource.name }}</BaseLink
@@ -393,7 +404,7 @@ const rows = computed(() =>
                   }}<span v-if="leaf.detail"> - {{ leaf.detail }}</span>
                 </span>
                 <IconButton
-                  v-if="need"
+                  v-if="need && !readonly"
                   class="ml-1 align-middle text-warn"
                   title="Show the slots that could supply this"
                   data-testid="item-card-need-locate"
@@ -424,6 +435,7 @@ const rows = computed(() =>
                       {{ tier.heading }}:
                     </div>
                     <StatRows
+                      :readonly="readonly"
                       :rows="tier.stats"
                       :active="tier.active"
                       class="ml-4"
@@ -440,6 +452,7 @@ const rows = computed(() =>
                   <template v-for="(part, i) in g.stepNote" :key="i"
                     ><BaseLink
                       v-if="part.slotId"
+                      :plain="readonly"
                       @click="emit('go-to-slot', part.slotId)"
                       >{{ part.text }}</BaseLink
                     ><template v-else>{{ part.text }}</template></template
@@ -461,6 +474,7 @@ const rows = computed(() =>
                       {{ v.label }}:
                     </div>
                     <StatRows
+                      :readonly="readonly"
                       :rows="v.stats"
                       :active="v.active"
                       class="ml-4"
@@ -471,6 +485,7 @@ const rows = computed(() =>
               </template>
               <StatRows
                 v-else-if="g.stats"
+                :readonly="readonly"
                 :rows="g.stats"
                 :active="g.active"
                 :notes="grantNotes(row, g)"
@@ -491,7 +506,7 @@ const rows = computed(() =>
           >
             Overridden by
             <BaseLink
-              :plain="!row.excludedBy.slotId"
+              :plain="readonly || !row.excludedBy.slotId"
               @click="emit('go-to-slot', row.excludedBy.slotId)"
               >{{ row.excludedBy.name }}</BaseLink
             >

@@ -29,12 +29,15 @@ withDefaults(
     /** Test id applied to every row; a row's note carries it with a `-note` suffix and each
      *  link in the note with `-note-link`. */
     rowTestid?: string;
+    /** Writes a note's slot links as plain text, for a card with nowhere to navigate. */
+    readonly?: boolean;
   }>(),
   {
     active: true,
     notes: () => [],
     emptyText: "",
     rowTestid: "stat-row",
+    readonly: false,
   },
 );
 
@@ -80,6 +83,7 @@ const NOTE_CLASS = `${ROW_COLLAPSE} text-muted`;
         ><template v-for="(part, i) in row.note" :key="i"
           ><BaseLink
             v-if="part.slotId"
+            :plain="readonly"
             :data-testid="`${rowTestid}-note-link`"
             @click.stop="emit('go-to-slot', part.slotId)"
             >{{ part.text }}</BaseLink
